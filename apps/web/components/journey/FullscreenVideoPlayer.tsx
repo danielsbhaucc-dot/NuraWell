@@ -183,19 +183,14 @@ export function FullscreenVideoPlayer({
   }, [useHlsImmersive, isPlaying, exitConfirmOpen, sendToPlayer, flashIcon]);
 
   const iframeUrl = bunnyIframeUrl(bunnyEmbedId);
-
-  const useMeasuredTop = typeof viewportInsetTopPx === 'number' && viewportInsetTopPx > 0;
+  // Keep prop for backwards compatibility with callers; immersive now always covers full viewport.
+  void viewportInsetTopPx;
 
   if (!mounted || typeof document === 'undefined') return null;
 
   return createPortal(
     <div
-      className={
-        useMeasuredTop
-          ? 'fixed z-[300] bg-black flex flex-col left-0 right-0 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))]'
-          : 'fixed z-[300] bg-black flex flex-col left-0 right-0 top-[calc(4rem+env(safe-area-inset-top,0px))] bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] md:inset-0'
-      }
-      style={useMeasuredTop ? { top: viewportInsetTopPx } : undefined}
+      className="fixed inset-0 z-[300] bg-black flex flex-col"
     >
       <button
         type="button"
