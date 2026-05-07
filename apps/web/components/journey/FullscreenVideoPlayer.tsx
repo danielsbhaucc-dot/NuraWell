@@ -384,10 +384,10 @@ export function FullscreenVideoPlayer({
             <motion.div
               className="w-full max-w-md rounded-3xl p-6"
               style={{
-                background: 'linear-gradient(155deg, rgba(255,255,255,0.32) 0%, rgba(220,252,231,0.2) 100%)',
-                border: '1px solid rgba(255,255,255,0.38)',
-                boxShadow: '0 24px 60px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.32)',
-                backdropFilter: 'blur(14px)',
+                background: 'linear-gradient(165deg, rgba(254,254,254,0.98) 0%, rgba(236,253,245,0.96) 100%)',
+                border: '1px solid rgba(16,185,129,0.25)',
+                boxShadow: '0 24px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.32)',
+                backdropFilter: 'blur(6px)',
               }}
               onClick={e => e.stopPropagation()}
               initial={{ opacity: 0, y: 20, scale: 0.96 }}
@@ -397,7 +397,11 @@ export function FullscreenVideoPlayer({
             >
               <motion.div
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4 text-xs font-bold text-emerald-700"
-                style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)' }}
+                style={{
+                  background: 'rgba(255,255,255,0.72)',
+                  border: '1px solid rgba(16,185,129,0.22)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)',
+                }}
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.08, duration: 0.2 }}
