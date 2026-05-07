@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { CheckCircle2, XCircle, ArrowLeft, HelpCircle, Sparkles, ClipboardList, RotateCcw } from 'lucide-react';
 import type { QuizQuestion } from '../../lib/types/journey';
 import { AIFeedbackCard } from '../ai/AIFeedbackCard';
@@ -24,7 +24,7 @@ export function QuizSection({ questions, existingAnswers, onComplete, onResetQui
   const [showExplanation, setShowExplanation] = useState(false);
   const [isComplete, setIsComplete] = useState(Object.keys(existingAnswers).length === questions.length);
   const [resultsOpen, setResultsOpen] = useState(false);
-  const [sheetDragY, setSheetDragY] = useState(0);
+  const sheetDragControls = useDragControls();
   const [almogNote, setAlmogNote] = useState<string | null>(null);
   const [almogLoading, setAlmogLoading] = useState(false);
   const [almogError, setAlmogError] = useState(false);
@@ -169,36 +169,41 @@ export function QuizSection({ questions, existingAnswers, onComplete, onResetQui
                 initial={{ y: 120, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 120, opacity: 0 }}
-                transition={{ type: 'spring', damping: 28 }}
+                transition={{ type: 'spring', damping: 32, stiffness: 380 }}
                 drag="y"
-                dragConstraints={{ top: 0, bottom: 320 }}
-                dragElastic={{ top: 0, bottom: 0.2 }}
-                onDrag={(event, info) => {
-                  setSheetDragY(Math.max(0, info.offset.y));
-                }}
-                onDragEnd={(event, info) => {
-                  if (info.offset.y > 120 || info.velocity.y > 850) {
+                dragControls={sheetDragControls}
+                dragListener={false}
+                dragConstraints={{ top: 0, bottom: 420 }}
+                dragElastic={{ top: 0, bottom: 0.22 }}
+                onDragEnd={(_, info) => {
+                  if (info.offset.y > 100 || info.velocity.y > 650) {
                     setResultsOpen(false);
                   }
-                  setSheetDragY(0);
                 }}
-                className="w-full sm:max-w-md max-h-[85vh] overflow-hidden rounded-t-3xl sm:rounded-3xl flex flex-col"
-                style={{
-                  background: '#fff',
-                  boxShadow: '0 -8px 40px rgba(0,0,0,0.12)',
-                  border: '1px solid rgba(16,185,129,0.15)',
-                  y: sheetDragY,
-                }}
+                className="w-full sm:max-w-md max-h-[85vh] flex flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl shadow-[0_-8px_40px_rgba(0,0,0,0.14)] border border-emerald-200/40"
                 onClick={e => e.stopPropagation()}
               >
-                <div className="pt-2 pb-1 shrink-0 flex justify-center">
-                  <div className="w-12 h-1.5 rounded-full bg-white/70" />
+                <div
+                  className="shrink-0 cursor-grab touch-none select-none active:cursor-grabbing"
+                  style={{ background: 'linear-gradient(160deg, #064e3b 0%, #047857 45%, #10b981 100%)' }}
+                  onPointerDown={(e) => sheetDragControls.start(e)}
+                >
+                  <div className="pt-2.5 pb-2 flex justify-center">
+                    <div className="w-11 h-1.5 rounded-full bg-white/45" />
+                  </div>
+                  <div className="px-5 pb-4 text-center">
+                    <p className="text-white font-black text-lg">מפת התשובות</p>
+                    <p className="text-white/85 text-xs mt-1">מה ענית בכל שאלה</p>
+                  </div>
                 </div>
-                <div className="px-5 py-4 text-center shrink-0" style={{ background: 'linear-gradient(145deg, #047857, #10b981)' }}>
-                  <p className="text-white font-black text-lg">מפת התשובות</p>
-                  <p className="text-white/85 text-xs mt-1">מה ענית בכל שאלה</p>
-                </div>
-                <div className="overflow-y-auto p-4 space-y-3 text-right">
+                <div
+                  className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain bg-white p-4 space-y-3 text-right [scrollbar-gutter:stable]"
+                  style={{
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarWidth: 'thin',
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
                   {questions.map((q, i) => {
                     const picked = answers[q.id];
                     const ok = picked === q.correct_index;

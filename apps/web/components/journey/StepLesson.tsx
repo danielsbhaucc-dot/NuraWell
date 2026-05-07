@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
+import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import type { JourneyStep, JourneyStepProgress, StepSection } from '../../lib/types/journey';
 import { VideoSection } from './VideoSection';
@@ -69,6 +70,7 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
   const lastLoggedTopRef = useRef<number | null>(null);
   const [immersiveViewportTopPx, setImmersiveViewportTopPx] = useState<number | null>(null);
   const progressRef = useRef(progress);
+  const sectionSwipeDirRef = useRef(0);
   useEffect(() => {
     progressRef.current = progress;
   }, [progress]);
@@ -108,24 +110,42 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
     await saveJourneyProgress(userId, step.id, update);
   }, [userId, step.id]);
 
-  const goToSection = useCallback((section: StepSection) => {
+  const applySection = useCallback((section: StepSection) => {
     setCurrentSection(section);
     updateProgress({ last_section: section });
   }, [updateProgress]);
 
-  const goNext = useCallback(() => {
-    if (!isLastSection) {
-      const nextSection = SECTIONS[currentIndex + 1];
-      goToSection(nextSection);
-    }
-  }, [currentIndex, isLastSection, goToSection]);
+  const goToSection = useCallback(
+    (section: StepSection) => {
+      sectionSwipeDirRef.current = 0;
+      applySection(section);
+    },
+    [applySection]
+  );
 
-  const goBack = useCallback(() => {
-    if (currentIndex > 0) {
-      const prevSection = SECTIONS[currentIndex - 1];
-      goToSection(prevSection);
-    }
-  }, [currentIndex, goToSection]);
+  const goNext = useCallback(
+    (fromSwipe?: boolean) => {
+      if (isLastSection) {
+        if (fromSwipe) sectionSwipeDirRef.current = 0;
+        return;
+      }
+      if (!fromSwipe) sectionSwipeDirRef.current = 0;
+      applySection(SECTIONS[currentIndex + 1]);
+    },
+    [currentIndex, isLastSection, applySection]
+  );
+
+  const goBack = useCallback(
+    (fromSwipe?: boolean) => {
+      if (currentIndex <= 0) {
+        if (fromSwipe) sectionSwipeDirRef.current = 0;
+        return;
+      }
+      if (!fromSwipe) sectionSwipeDirRef.current = 0;
+      applySection(SECTIONS[currentIndex - 1]);
+    },
+    [currentIndex, applySection]
+  );
 
   const handleVideoComplete = useCallback(() => {
     updateProgress({ video_watched: true });
@@ -203,7 +223,7 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
       >
         <div className="relative z-10 px-4 pb-8 pt-3">
           <div className="flex items-center justify-between mb-3">
-            <button onClick={goBack} disabled={currentIndex === 0}
+            <button onClick={() => goBack()} disabled={currentIndex === 0}
               className="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
               style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
               <ArrowRight className="w-4 h-4 text-white" />
@@ -214,7 +234,7 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
                 {step.title}
               </h1>
             </div>
-            <button onClick={goNext} disabled={isLastSection}
+            <button onClick={() => goNext()} disabled={isLastSection}
               className="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
               style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
               <ArrowLeft className="w-4 h-4 text-white" />
@@ -227,7 +247,38 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
 
       {/* Content */}
       <div style={{ borderRadius: '26px 26px 0 0', marginTop: '-14px', position: 'relative', zIndex: 3 }}>
-        <div key={currentSection} className="px-4 py-6 transition-opacity duration-200 ease-out">
+        <motion.div
+          key={currentSection}
+          custom={sectionSwipeDirRef.current}
+          variants={{
+            enter: (dir: number) =>
+              dir === 0
+                ? { x: 0, opacity: 1 }
+                : { x: dir * 22, opacity: 0.88 },
+            center: { x: 0, opacity: 1 },
+          }}
+          initial="enter"
+          animate="center"
+          transition={{ duration: 0.2, ease: [0.25, 0.9, 0.35, 1] }}
+          onAnimationComplete={() => {
+            sectionSwipeDirRef.current = 0;
+          }}
+          className="px-4 py-6"
+          onPanEnd={(_, info) => {
+            const ox = info.offset.x;
+            const vx = info.velocity.x;
+            const oy = info.offset.y;
+            if (Math.abs(ox) < 52 && Math.abs(vx) < 380) return;
+            if (Math.abs(ox) < Math.abs(oy) * 1.35) return;
+            if (ox > 36 || vx > 220) {
+              sectionSwipeDirRef.current = 1;
+              goBack(true);
+            } else if (ox < -36 || vx < -220) {
+              sectionSwipeDirRef.current = -1;
+              goNext(true);
+            }
+          }}
+        >
             {currentSection === 'video' && (
               <VideoSection
                 key={videoRemount}
@@ -258,6 +309,8 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
             {currentSection === 'game' && (
               <MiniGame
                 key={gameRemount}
+                stepId={step.id}
+                userId={userId}
                 items={step.game_items}
                 existingAnswers={progress.game_answers}
                 onComplete={handleGameComplete}
@@ -282,7 +335,7 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
                 onComplete={handleLessonComplete}
               />
             )}
-        </div>
+        </motion.div>
       </div>
     </div>
   );

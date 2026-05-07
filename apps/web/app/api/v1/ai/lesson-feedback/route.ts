@@ -95,6 +95,7 @@ export async function POST(request: Request) {
     const completion = await client.chat.completions.create({
       model: AI_MODELS.empathy,
       temperature: 0.65,
+      max_tokens: 220,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userEventText },

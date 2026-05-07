@@ -1,24 +1,31 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useRef } from 'react';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { CheckCircle2, XCircle, Gamepad2, ArrowLeft, Sparkles, ClipboardList, RotateCcw } from 'lucide-react';
 import type { GameItem } from '../../lib/types/journey';
+import { AIFeedbackCard } from '../ai/AIFeedbackCard';
 
 interface MiniGameProps {
   items: GameItem[];
   existingAnswers: Record<string, boolean>;
   onComplete: (answers: Record<string, boolean>, score: number) => void;
   onResetGame?: () => void;
+  stepId?: string;
+  userId?: string;
 }
 
-export function MiniGame({ items, existingAnswers, onComplete, onResetGame }: MiniGameProps) {
+export function MiniGame({ items, existingAnswers, onComplete, onResetGame, stepId, userId }: MiniGameProps) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, boolean>>(existingAnswers);
   const [showResult, setShowResult] = useState(false);
   const [isComplete, setIsComplete] = useState(Object.keys(existingAnswers).length === items.length);
   const [resultsOpen, setResultsOpen] = useState(false);
-  const [sheetDragY, setSheetDragY] = useState(0);
+  const sheetDragControls = useDragControls();
+  const [almogNote, setAlmogNote] = useState<string | null>(null);
+  const [almogLoading, setAlmogLoading] = useState(false);
+  const [almogError, setAlmogError] = useState(false);
+  const gameFeedbackRequestedRef = useRef(false);
 
   const item = items[currentIdx];
   const isAnswered = showResult || answers[item?.id] !== undefined;
@@ -35,7 +42,38 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame }: Mi
       setCurrentIdx(currentIdx + 1);
       setShowResult(false);
     } else {
+      const finalScore = items.reduce(
+        (acc, it) => acc + (answers[it.id] === it.is_true ? 1 : 0),
+        0
+      );
       setIsComplete(true);
+      if (stepId && !gameFeedbackRequestedRef.current) {
+        gameFeedbackRequestedRef.current = true;
+        const pct = items.length > 0 ? Math.round((finalScore / items.length) * 100) : 0;
+        setAlmogLoading(true);
+        setAlmogError(false);
+        void fetch('/api/v1/ai/lesson-feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            step_id: stepId,
+            ...(userId ? { user_id: userId } : {}),
+            interaction_type: 'game',
+            score: pct,
+            summary: `במשחק נכון/לא נכון: ${finalScore} מתוך ${items.length} נכונים`,
+          }),
+        })
+          .then(async (res) => {
+            const data = (await res.json()) as { reply?: string };
+            if (res.ok && data.reply) setAlmogNote(data.reply);
+            else setAlmogError(true);
+          })
+          .catch(() => {
+            setAlmogNote(null);
+            setAlmogError(true);
+          })
+          .finally(() => setAlmogLoading(false));
+      }
     }
   };
 
@@ -55,6 +93,17 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame }: Mi
         <p className="text-gray-500 text-lg mb-4">
           <strong className="text-emerald-600">{score}</strong> מתוך <strong>{items.length}</strong> נכונים
         </p>
+
+        {stepId && (almogLoading || almogNote || almogError) && (
+          <div className="mt-2 mb-2">
+            <AIFeedbackCard
+              loading={almogLoading}
+              text={almogNote}
+              error={almogError}
+              variant="amber"
+            />
+          </div>
+        )}
 
         <div className="mt-8 flex flex-col gap-3 max-w-sm mx-auto">
           <button
@@ -102,36 +151,41 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame }: Mi
                 initial={{ y: 120, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 120, opacity: 0 }}
-                transition={{ type: 'spring', damping: 28 }}
+                transition={{ type: 'spring', damping: 32, stiffness: 380 }}
                 drag="y"
-                dragConstraints={{ top: 0, bottom: 320 }}
-                dragElastic={{ top: 0, bottom: 0.2 }}
-                onDrag={(event, info) => {
-                  setSheetDragY(Math.max(0, info.offset.y));
-                }}
-                onDragEnd={(event, info) => {
-                  if (info.offset.y > 120 || info.velocity.y > 850) {
+                dragControls={sheetDragControls}
+                dragListener={false}
+                dragConstraints={{ top: 0, bottom: 420 }}
+                dragElastic={{ top: 0, bottom: 0.22 }}
+                onDragEnd={(_, info) => {
+                  if (info.offset.y > 100 || info.velocity.y > 650) {
                     setResultsOpen(false);
                   }
-                  setSheetDragY(0);
                 }}
-                className="w-full sm:max-w-md max-h-[85vh] overflow-hidden rounded-t-3xl sm:rounded-3xl flex flex-col"
-                style={{
-                  background: '#fff',
-                  boxShadow: '0 -8px 40px rgba(0,0,0,0.12)',
-                  border: '1px solid rgba(245,158,11,0.2)',
-                  y: sheetDragY,
-                }}
+                className="w-full sm:max-w-md max-h-[85vh] flex flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl shadow-[0_-8px_40px_rgba(0,0,0,0.14)] border border-amber-200/50"
                 onClick={e => e.stopPropagation()}
               >
-                <div className="pt-2 pb-1 shrink-0 flex justify-center">
-                  <div className="w-12 h-1.5 rounded-full bg-amber-200" />
+                <div
+                  className="shrink-0 cursor-grab touch-none select-none active:cursor-grabbing"
+                  style={{ background: 'linear-gradient(160deg, #78350f 0%, #b45309 45%, #f59e0b 100%)' }}
+                  onPointerDown={(e) => sheetDragControls.start(e)}
+                >
+                  <div className="pt-2.5 pb-2 flex justify-center">
+                    <div className="w-11 h-1.5 rounded-full bg-white/45" />
+                  </div>
+                  <div className="px-5 pb-4 text-center">
+                    <p className="text-white font-black text-lg">מפת האינטואיציה</p>
+                    <p className="text-white/90 text-xs mt-1">מה סימנת מול מה שבאמת נכון</p>
+                  </div>
                 </div>
-                <div className="px-5 py-4 text-center shrink-0" style={{ background: 'linear-gradient(145deg, #b45309, #f59e0b)' }}>
-                  <p className="text-white font-black text-lg">מפת האינטואיציה</p>
-                  <p className="text-white/90 text-xs mt-1">מה סימנת מול מה שבאמת נכון</p>
-                </div>
-                <div className="overflow-y-auto p-4 space-y-3 text-right">
+                <div
+                  className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain bg-white p-4 space-y-3 text-right [scrollbar-gutter:stable]"
+                  style={{
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarWidth: 'thin',
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
                   {items.map((it, i) => {
                     const picked = answers[it.id];
                     const ok = picked === it.is_true;
