@@ -9,12 +9,14 @@ import {
 } from '../../lib/journey/bunny-pull';
 import { HlsVideoGate } from './HlsVideoGate';
 import { FullscreenVideoPlayer } from './FullscreenVideoPlayer';
+import type { ImmersiveAttentionStop } from '../../lib/journey/immersiveAttentionStops';
 
 interface VideoSectionProps {
   provider: string | null;
   externalId: string | null;
   externalUrl: string | null;
   title: string;
+  immersiveAttentionStops?: ImmersiveAttentionStop[];
   onComplete: () => void;
   isWatched: boolean;
   /** Bottom edge of step chrome (header + progress) in viewport px — immersive video starts here */
@@ -60,6 +62,7 @@ export function VideoSection({
   externalId,
   externalUrl,
   title,
+  immersiveAttentionStops,
   onComplete,
   isWatched,
   immersiveViewportTopPx,
@@ -242,6 +245,7 @@ export function VideoSection({
           bunnyEmbedId={bunnyEmbedId}
           pullZoneHlsSrc={bunnyHlsSrc}
           title={title}
+          attentionStops={immersiveAttentionStops}
           viewportInsetTopPx={immersiveViewportTopPx ?? undefined}
           onEnded={handleImmersiveEnded}
           onExit={handleImmersiveExit}
