@@ -189,6 +189,8 @@ export function VideoSection({
   const shouldBlockInlineUntilImmersiveEnds =
     immersiveReady && isBunnyProvider && !!bunnyEmbedId && !isPlaceholder && !immersiveFinished;
 
+  const willRenderFullscreen = immersiveReady && immersiveOpen && !!bunnyEmbedId;
+
   return (
     <div className="space-y-5">
       {immersiveReady && immersiveOpen && bunnyEmbedId && (

@@ -1,18 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, ArrowLeft, HelpCircle, Sparkles, ClipboardList, RotateCcw } from 'lucide-react';
 import type { QuizQuestion } from '../../lib/types/journey';
+import { AIFeedbackCard } from '../ai/AIFeedbackCard';
 
 interface QuizSectionProps {
   questions: QuizQuestion[];
   existingAnswers: Record<string, number>;
   onComplete: (answers: Record<string, number>, score: number) => void;
   onResetQuiz?: () => void;
+  /** Journey step UUID — when set, triggers Almog feedback via `/api/v1/ai/lesson-feedback` once per completion. */
+  stepId?: string;
+  /** Passed to API for session alignment (optional but recommended). */
+  userId?: string;
 }
 
-export function QuizSection({ questions, existingAnswers, onComplete, onResetQuiz }: QuizSectionProps) {
+export function QuizSection({ questions, existingAnswers, onComplete, onResetQuiz, stepId, userId }: QuizSectionProps) {
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>(existingAnswers);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -20,6 +25,10 @@ export function QuizSection({ questions, existingAnswers, onComplete, onResetQui
   const [isComplete, setIsComplete] = useState(Object.keys(existingAnswers).length === questions.length);
   const [resultsOpen, setResultsOpen] = useState(false);
   const [sheetDragY, setSheetDragY] = useState(0);
+  const [almogNote, setAlmogNote] = useState<string | null>(null);
+  const [almogLoading, setAlmogLoading] = useState(false);
+  const [almogError, setAlmogError] = useState(false);
+  const quizFeedbackRequestedRef = useRef(false);
 
   const question = questions[currentQ];
   const isAnswered = selectedOption !== null || answers[question?.id] !== undefined;
@@ -42,7 +51,38 @@ export function QuizSection({ questions, existingAnswers, onComplete, onResetQui
       setSelectedOption(null);
       setShowExplanation(false);
     } else {
+      const finalScore = questions.reduce(
+        (acc, q) => acc + (answers[q.id] === q.correct_index ? 1 : 0),
+        0
+      );
       setIsComplete(true);
+      if (stepId && !quizFeedbackRequestedRef.current) {
+        quizFeedbackRequestedRef.current = true;
+        const pct = questions.length > 0 ? Math.round((finalScore / questions.length) * 100) : 0;
+        setAlmogLoading(true);
+        setAlmogError(false);
+        void fetch('/api/v1/ai/lesson-feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            step_id: stepId,
+            ...(userId ? { user_id: userId } : {}),
+            interaction_type: 'quiz',
+            score: pct,
+            summary: `ענה נכון על ${finalScore} מתוך ${questions.length} שאלות`,
+          }),
+        })
+          .then(async (res) => {
+            const data = (await res.json()) as { reply?: string };
+            if (res.ok && data.reply) setAlmogNote(data.reply);
+            else setAlmogError(true);
+          })
+          .catch(() => {
+            setAlmogNote(null);
+            setAlmogError(true);
+          })
+          .finally(() => setAlmogLoading(false));
+      }
     }
   };
 
@@ -60,6 +100,16 @@ export function QuizSection({ questions, existingAnswers, onComplete, onResetQui
         <p className="text-gray-500 text-lg mb-2">
           ענית נכון על <strong className="text-emerald-600">{score}</strong> מתוך <strong>{questions.length}</strong> שאלות
         </p>
+        {stepId && (almogLoading || almogNote || almogError) && (
+          <div className="mt-5">
+            <AIFeedbackCard
+              loading={almogLoading}
+              text={almogNote}
+              error={almogError}
+              variant="emerald"
+            />
+          </div>
+        )}
         <div className="mt-4 flex justify-center gap-2 flex-wrap">
           {questions.map((q, i) => (
             <div key={q.id} className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"

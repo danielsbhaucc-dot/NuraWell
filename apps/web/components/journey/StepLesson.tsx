@@ -247,6 +247,8 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
             {currentSection === 'quiz' && (
               <QuizSection
                 key={quizRemount}
+                stepId={step.id}
+                userId={userId}
                 questions={step.quiz_questions}
                 existingAnswers={progress.quiz_answers}
                 onComplete={handleQuizComplete}
@@ -264,6 +266,8 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
             )}
             {currentSection === 'commitment' && step.commitment && (
               <CommitmentSection
+                stepId={step.id}
+                userId={userId}
                 commitment={step.commitment}
                 isAccepted={progress.commitment_accepted}
                 onAccept={handleCommitmentAccept}
