@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="NuraWell">
+  <rect width="192" height="192" rx="32" fill="#10b981" />
+  <path
+    d="M50 132V60h22l22 38 22-38h26v72h-20V94l-18 31H84L66 94v38H50z"
+    fill="#ffffff"
+  />
+</svg>

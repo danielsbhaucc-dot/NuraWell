@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nurawell.ai — Final Logo</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0f0f;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 60px 24px;
+    gap: 48px;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .label {
+    color: #ffffff33;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+
+  .version-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ===== DARK VERSION ===== */
+  .logo-dark {
+    background: #0a0f0f;
+    border: 1px solid #14FFEC11;
+    padding: 48px 72px;
+    border-radius: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .logo-dark::before {
+    content: '';
+    position: absolute;
+    width: 260px;
+    height: 160px;
+    background: radial-gradient(ellipse, #14FFEC0d 0%, transparent 70%);
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  /* ===== LIGHT VERSION ===== */
+  .logo-light {
+    background: #f4f7f7;
+    padding: 48px 72px;
+    border-radius: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* ===== HEART ICON DARK ===== */
+  .icon-wrap-dark {
+    width: 72px;
+    height: 66px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 18px;
+  }
+
+  .icon-glow-dark {
+    position: absolute;
+    inset: -16px;
+    background: radial-gradient(ellipse, #14FFEC1a 0%, transparent 70%);
+    animation: glowPulse 3s ease-in-out infinite;
+  }
+
+  @keyframes glowPulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+  }
+
+  .heartbeat-line-dark {
+    animation: beat 1.6s ease-in-out infinite;
+  }
+
+  .heartbeat-line-light {
+    animation: beat 1.6s ease-in-out infinite;
+  }
+
+  @keyframes beat {
+    0%, 100% { opacity: 0.75; }
+    45% { opacity: 1; }
+  }
+
+  /* ===== WORDMARK ===== */
+  .wordmark {
+    display: flex;
+    align-items: baseline;
+  }
+
+  .wn-dark {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 46px;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+    line-height: 1;
+  }
+
+  .ww-dark {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: 46px;
+    color: #14FFEC;
+    line-height: 1;
+  }
+
+  .wai-dark {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 14px;
+    color: #14FFEC66;
+    margin-left: 2px;
+    align-self: flex-start;
+    margin-top: 7px;
+  }
+
+  .wn-light {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 46px;
+    letter-spacing: -0.5px;
+    color: #1A1A2E;
+    line-height: 1;
+  }
+
+  .ww-light {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: 46px;
+    color: #0D7377;
+    line-height: 1;
+  }
+
+  .wai-light {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 14px;
+    color: #0D737777;
+    margin-left: 2px;
+    align-self: flex-start;
+    margin-top: 7px;
+  }
+
+  /* Tagline */
+  .tagline-dark {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 10.5px;
+    letter-spacing: 3.5px;
+    text-transform: uppercase;
+    color: #ffffff33;
+    margin-top: 12px;
+  }
+
+  .tagline-light {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 10.5px;
+    letter-spacing: 3.5px;
+    text-transform: uppercase;
+    color: #1A1A2E44;
+    margin-top: 12px;
+  }
+
+  /* ===== HORIZONTAL SMALL ===== */
+  .logo-horizontal {
+    background: #0a0f0f;
+    border: 1px solid #14FFEC11;
+    padding: 20px 36px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .wn-sm { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 30px; color: #fff; }
+  .ww-sm { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 30px; color: #14FFEC; }
+  .wai-sm { font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: 10px; color: #14FFEC55; margin-left: 1px; align-self: flex-start; margin-top: 5px; }
+
+</style>
+</head>
+<body>
+
+  <!-- DARK VERSION -->
+  <div class="version-block">
+    <div class="label">Dark Version</div>
+    <div class="logo-dark">
+      <div class="icon-wrap-dark">
+        <div class="icon-glow-dark"></div>
+        <svg width="72" height="66" viewBox="0 0 72 60" fill="none">
+          <!-- heart outline faint -->
+          <path d="M36 52C36 52 8 34 8 18C8 10 14 4 22 4C27 4 31.5 6.5 36 11C40.5 6.5 45 4 50 4C58 4 64 10 64 18C64 34 36 52 36 52Z"
+            fill="url(#hfDark)" opacity="0.15"/>
+          <path d="M36 52C36 52 8 34 8 18C8 10 14 4 22 4C27 4 31.5 6.5 36 11C40.5 6.5 45 4 50 4C58 4 64 10 64 18C64 34 36 52 36 52Z"
+            stroke="url(#hsDark)" stroke-width="1.5" fill="none"/>
+          <!-- heartbeat line -->
+          <polyline class="heartbeat-line-dark"
+            points="2,30 12,30 17,16 22,44 28,24 34,30 38,30 44,10 50,38 56,30 70,30"
+            stroke="#14FFEC" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="hfDark" x1="36" y1="4" x2="36" y2="52" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#14FFEC"/>
+              <stop offset="100%" stop-color="#0D7377"/>
+            </linearGradient>
+            <linearGradient id="hsDark" x1="36" y1="4" x2="36" y2="52" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#14FFEC"/>
+              <stop offset="100%" stop-color="#0D737788"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="wordmark">
+        <span class="wn-dark">Nura</span>
+        <span class="ww-dark">well</span>
+        <span class="wai-dark">.ai</span>
+      </div>
+      <div class="tagline-dark">Your light · Your way</div>
+    </div>
+  </div>
+
+  <!-- LIGHT VERSION -->
+  <div class="version-block">
+    <div class="label">Light Version</div>
+    <div class="logo-light">
+      <div class="icon-wrap-dark" style="margin-bottom:18px;">
+        <svg width="72" height="66" viewBox="0 0 72 60" fill="none">
+          <path d="M36 52C36 52 8 34 8 18C8 10 14 4 22 4C27 4 31.5 6.5 36 11C40.5 6.5 45 4 50 4C58 4 64 10 64 18C64 34 36 52 36 52Z"
+            fill="url(#hfLight)" opacity="0.15"/>
+          <path d="M36 52C36 52 8 34 8 18C8 10 14 4 22 4C27 4 31.5 6.5 36 11C40.5 6.5 45 4 50 4C58 4 64 10 64 18C64 34 36 52 36 52Z"
+            stroke="url(#hsLight)" stroke-width="1.5" fill="none"/>
+          <polyline class="heartbeat-line-light"
+            points="2,30 12,30 17,16 22,44 28,24 34,30 38,30 44,10 50,38 56,30 70,30"
+            stroke="#0D7377" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="hfLight" x1="36" y1="4" x2="36" y2="52" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#0D7377"/>
+              <stop offset="100%" stop-color="#0a4a4d"/>
+            </linearGradient>
+            <linearGradient id="hsLight" x1="36" y1="4" x2="36" y2="52" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#0D7377"/>
+              <stop offset="100%" stop-color="#0D737755"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="wordmark">
+        <span class="wn-light">Nura</span>
+        <span class="ww-light">well</span>
+        <span class="wai-light">.ai</span>
+      </div>
+      <div class="tagline-light">Your light · Your way</div>
+    </div>
+  </div>
+
+  <!-- HORIZONTAL SMALL -->
+  <div class="version-block">
+    <div class="label">Horizontal / Small</div>
+    <div class="logo-horizontal">
+      <svg width="40" height="36" viewBox="0 0 72 60" fill="none">
+        <path d="M36 52C36 52 8 34 8 18C8 10 14 4 22 4C27 4 31.5 6.5 36 11C40.5 6.5 45 4 50 4C58 4 64 10 64 18C64 34 36 52 36 52Z"
+          fill="url(#hfSm)" opacity="0.15"/>
+        <path d="M36 52C36 52 8 34 8 18C8 10 14 4 22 4C27 4 31.5 6.5 36 11C40.5 6.5 45 4 50 4C58 4 64 10 64 18C64 34 36 52 36 52Z"
+          stroke="url(#hsSm)" stroke-width="2" fill="none"/>
+        <polyline points="2,30 12,30 17,16 22,44 28,24 34,30 38,30 44,10 50,38 56,30 70,30"
+          stroke="#14FFEC" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <defs>
+          <linearGradient id="hfSm" x1="36" y1="4" x2="36" y2="52" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#14FFEC"/><stop offset="100%" stop-color="#0D7377"/>
+          </linearGradient>
+          <linearGradient id="hsSm" x1="36" y1="4" x2="36" y2="52" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#14FFEC"/><stop offset="100%" stop-color="#0D7377"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="wordmark">
+        <span class="wn-sm">Nura</span>
+        <span class="ww-sm">well</span>
+        <span class="wai-sm">.ai</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
