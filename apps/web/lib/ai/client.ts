@@ -56,7 +56,7 @@ export const AI_MODELS = {
   empathy: 'openai/gpt-5-mini',
   /** Reserved for high-stakes moments (re-engagement after long absence). */
   critical: 'openai/gpt-5',
-  /** Background analytics via DeepSeek's native API. */
+  /** Default DeepSeek HTTP chat id; cron uses `getDeepseekAnalysisModel()` (same default, env override). */
   background: 'deepseek-chat',
 } as const;
 
