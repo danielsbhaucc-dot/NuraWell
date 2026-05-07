@@ -1,45 +1,126 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, CheckCircle2, ArrowLeft, Sparkles } from 'lucide-react';
 import type { CommitmentData } from '../../lib/types/journey';
+import { AIFeedbackCard } from '../ai/AIFeedbackCard';
 
 interface CommitmentSectionProps {
   commitment: CommitmentData;
   isAccepted: boolean;
   onAccept: () => void;
   onChoose?: (accepted: boolean) => void;
+  stepId?: string;
+  userId?: string;
 }
 
-export function CommitmentSection({ commitment, isAccepted, onAccept, onChoose }: CommitmentSectionProps) {
+export function CommitmentSection({
+  commitment,
+  isAccepted,
+  onAccept,
+  onChoose,
+  stepId,
+  userId,
+}: CommitmentSectionProps) {
   const [accepted, setAccepted] = useState(isAccepted);
+  const [feedbackFlow, setFeedbackFlow] = useState(false);
+  const [almogLoading, setAlmogLoading] = useState(false);
+  const [almogText, setAlmogText] = useState<string | null>(null);
+  const [almogError, setAlmogError] = useState(false);
+  const pendingChoiceRef = useRef<boolean | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
     setAccepted(isAccepted);
   }, [isAccepted]);
 
+  const runLessonFeedback = async (acceptedChoice: boolean) => {
+    if (!stepId) return;
+    setAlmogLoading(true);
+    setAlmogText(null);
+    setAlmogError(false);
+    const ac = new AbortController();
+    abortRef.current = ac;
+    try {
+      const res = await fetch('/api/v1/ai/lesson-feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: ac.signal,
+        body: JSON.stringify({
+          step_id: stepId,
+          ...(userId ? { user_id: userId } : {}),
+          interaction_type: 'commitment',
+          commitment_text: acceptedChoice ? commitment.text : undefined,
+          summary: acceptedChoice ? undefined : 'אני ממשיך בלי התחייבות כרגע',
+        }),
+      });
+      const data = (await res.json()) as { reply?: string };
+      if (res.ok && data.reply) setAlmogText(data.reply);
+      else setAlmogError(true);
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return;
+      setAlmogError(true);
+    } finally {
+      setAlmogLoading(false);
+      abortRef.current = null;
+    }
+  };
+
   const handleAccept = () => {
     setAccepted(true);
-    if (onChoose) onChoose(true);
-    else onAccept();
+    if (!stepId) {
+      if (onChoose) onChoose(true);
+      else onAccept();
+      return;
+    }
+    pendingChoiceRef.current = true;
+    setFeedbackFlow(true);
+    void runLessonFeedback(true);
   };
 
   const handleContinueWithoutCommitment = () => {
     setAccepted(false);
-    if (onChoose) onChoose(false);
+    if (!stepId) {
+      if (onChoose) onChoose(false);
+      return;
+    }
+    pendingChoiceRef.current = false;
+    setFeedbackFlow(true);
+    void runLessonFeedback(false);
+  };
+
+  const handleContinueAfterAlmog = () => {
+    const c = pendingChoiceRef.current;
+    if (c === true) {
+      if (onChoose) onChoose(true);
+      else onAccept();
+    } else if (c === false && onChoose) {
+      onChoose(false);
+    }
   };
 
   const handleUndoCommitment = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setFeedbackFlow(false);
+    setAlmogLoading(false);
+    setAlmogText(null);
+    setAlmogError(false);
     setAccepted(false);
-    if (onChoose) onChoose(false);
+    pendingChoiceRef.current = null;
   };
+
+  const showChoiceButtons = !feedbackFlow;
+  const showAlmogCard = feedbackFlow && !!stepId;
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
-          style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+        <div
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
+          style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}
+        >
           <Heart className="w-4 h-4 text-amber-600" />
           <span className="text-sm font-bold text-amber-700">התחייבות</span>
         </div>
@@ -51,7 +132,6 @@ export function CommitmentSection({ commitment, isAccepted, onAccept, onChoose }
         </p>
       </div>
 
-      {/* Commitment card — green header + white body */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -62,70 +142,124 @@ export function CommitmentSection({ commitment, isAccepted, onAccept, onChoose }
           boxShadow: accepted ? '0 4px 20px rgba(16,185,129,0.1)' : '0 4px 20px rgba(0,0,0,0.06)',
         }}
       >
-        {/* Green gradient header */}
-        <div className="px-6 py-5 text-center" style={{ background: 'linear-gradient(145deg, #047857, #059669, #10b981)' }}>
+        <div
+          className="px-6 py-5 text-center"
+          style={{ background: 'linear-gradient(145deg, #047857, #059669, #10b981)' }}
+        >
           <div className="text-5xl mb-3">{commitment.emoji}</div>
-          <p className="text-lg font-black leading-relaxed text-white">
-            {commitment.text}
-          </p>
+          <p className="text-lg font-black leading-relaxed text-white">{commitment.text}</p>
         </div>
-        {/* White body */}
         <div className="p-6 bg-white text-center">
-        <p className="text-sm text-gray-500 leading-relaxed mb-6">
-          {commitment.description}
-        </p>
+          <p className="text-sm text-gray-500 leading-relaxed mb-6">{commitment.description}</p>
 
-        {accepted ? (
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="space-y-3"
-          >
-            <div className="inline-flex items-center gap-2 px-6 py-3 rounded-xl"
-              style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)' }}>
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span className="text-emerald-700 font-bold">קיבלת על עצמך! 🌟</span>
+          {feedbackFlow && !accepted && (
+            <p className="text-sm text-gray-600 mb-4 leading-relaxed">מחכים למילה קצרה מאלמוג לפני שממשיכים.</p>
+          )}
+
+          {showChoiceButtons && accepted ? (
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="space-y-3"
+            >
+              <div
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl"
+                style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)' }}
+              >
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <span className="text-emerald-700 font-bold">קיבלת על עצמך! 🌟</span>
+              </div>
+              <div className="flex items-center justify-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span className="text-sm text-gray-500">אתה יכול לעשות את זה!</span>
+                <Sparkles className="w-4 h-4 text-amber-500" />
+              </div>
+            </motion.div>
+          ) : null}
+
+          {showChoiceButtons && !accepted ? (
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={handleAccept}
+                className="w-full py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
+                style={{
+                  background: 'linear-gradient(135deg, #047857, #10b981)',
+                  boxShadow: '0 6px 20px rgba(16,185,129,0.3)',
+                }}
+              >
+                <Heart className="w-5 h-5" fill="white" />
+                <span>אני מתחייב/ת וממשיך/ה</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleContinueWithoutCommitment}
+                className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.08)' }}
+              >
+                להמשיך בלי התחייבות כרגע
+              </button>
             </div>
-            <div className="flex items-center justify-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span className="text-sm text-gray-500">אתה יכול לעשות את זה!</span>
-              <Sparkles className="w-4 h-4 text-amber-500" />
-            </div>
-          </motion.div>
-        ) : (
-          <div className="space-y-3">
-            <button onClick={handleAccept}
-              className="w-full py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
-              style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}>
-              <Heart className="w-5 h-5" fill="white" />
-              <span>אני מתחייב/ת וממשיך/ה</span>
-            </button>
-            <button onClick={handleContinueWithoutCommitment}
-              className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-gray-700 transition-colors"
-              style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.08)' }}>
-              להמשיך בלי התחייבות כרגע
-            </button>
-          </div>
-        )}
-        </div>{/* end white body */}
+          ) : null}
+
+          {feedbackFlow && accepted && (
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="space-y-3"
+            >
+              <div
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl"
+                style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)' }}
+              >
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <span className="text-emerald-700 font-bold">קיבלת על עצמך! 🌟</span>
+              </div>
+            </motion.div>
+          )}
+        </div>
       </motion.div>
 
-      {/* Auto-continue for accepted */}
-      {accepted && (
+      {showAlmogCard && (
+        <AIFeedbackCard
+          loading={almogLoading}
+          text={almogText}
+          error={almogError}
+          variant="amber"
+          action={
+            !almogLoading ? (
+              <button
+                type="button"
+                onClick={handleContinueAfterAlmog}
+                className="w-full py-3.5 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99]"
+                style={{
+                  background: 'linear-gradient(135deg, #047857, #10b981)',
+                  boxShadow: '0 6px 20px rgba(16,185,129,0.28)',
+                }}
+              >
+                <span>המשך לשלב הבא</span>
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            ) : null
+          }
+        />
+      )}
+
+      {(accepted || feedbackFlow) && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.2 }}
+          className="flex justify-center"
         >
-          <div className="flex justify-center">
-            <button
-              type="button"
-              onClick={handleUndoCommitment}
-              className="text-sm text-gray-500 hover:text-gray-700 transition-colors underline underline-offset-2"
-            >
-              התחרטתי — בטל/י התחייבות
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleUndoCommitment}
+            disabled={almogLoading}
+            className="text-sm text-gray-500 hover:text-gray-700 transition-colors underline underline-offset-2 disabled:opacity-40"
+          >
+            התחרטתי — בטל/י התחייבות
+          </button>
         </motion.div>
       )}
     </div>
