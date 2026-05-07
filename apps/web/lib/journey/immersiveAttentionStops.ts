@@ -3,6 +3,10 @@ export interface ImmersiveAttentionStop {
   time_seconds: number;
   question: string;
   feedback: string;
+  options?: string[];
+  correct_option_index?: number | null;
+  feedback_correct?: string | null;
+  feedback_incorrect?: string | null;
   auto_resume_seconds: number;
 }
 
@@ -40,17 +44,33 @@ function normalizeStop(value: unknown): ImmersiveAttentionStop | null {
   const timeSeconds = Number(row.time_seconds);
   const question = typeof row.question === 'string' ? row.question.trim() : '';
   const feedback = typeof row.feedback === 'string' ? row.feedback.trim() : '';
+  const options = Array.isArray(row.options)
+    ? row.options.map(opt => (typeof opt === 'string' ? opt.trim() : '')).filter(Boolean)
+    : [];
+  const correctOptionIndex = row.correct_option_index === null || row.correct_option_index === undefined
+    ? null
+    : Number(row.correct_option_index);
+  const feedbackCorrect = typeof row.feedback_correct === 'string' ? row.feedback_correct.trim() : null;
+  const feedbackIncorrect = typeof row.feedback_incorrect === 'string' ? row.feedback_incorrect.trim() : null;
   const autoResumeSeconds = Number(row.auto_resume_seconds);
 
   if (!Number.isFinite(timeSeconds) || timeSeconds < 0) return null;
   if (!question) return null;
-  if (!feedback) return null;
+  if (!feedback && !feedbackCorrect && !feedbackIncorrect) return null;
 
   return {
     id,
     time_seconds: Math.round(timeSeconds),
     question,
     feedback,
+    options: options.length ? options : undefined,
+    correct_option_index: Number.isInteger(correctOptionIndex)
+      && (correctOptionIndex as number) >= 0
+      && (options.length ? (correctOptionIndex as number) < options.length : true)
+      ? (correctOptionIndex as number)
+      : null,
+    feedback_correct: feedbackCorrect,
+    feedback_incorrect: feedbackIncorrect,
     auto_resume_seconds: Number.isFinite(autoResumeSeconds) && autoResumeSeconds > 0 ? Math.round(autoResumeSeconds) : 6,
   };
 }

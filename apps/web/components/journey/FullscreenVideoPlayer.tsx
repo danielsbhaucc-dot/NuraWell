@@ -53,6 +53,7 @@ export function FullscreenVideoPlayer({
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const [activeAttentionStop, setActiveAttentionStop] = useState<ImmersiveAttentionStop | null>(null);
   const [attentionFeedbackOpen, setAttentionFeedbackOpen] = useState(false);
+  const [attentionFeedbackText, setAttentionFeedbackText] = useState('');
   const [autoResumeSecondsLeft, setAutoResumeSecondsLeft] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
   const iconTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -81,25 +82,6 @@ export function FullscreenVideoPlayer({
       title,
       immersiveMode: useHlsImmersive ? 'hls' : 'iframe',
     });
-    // #region agent log
-    fetch('http://127.0.0.1:7304/ingest/e0c3e9ba-ee31-4fb3-b095-72fbc06088f4', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6fc6a6' },
-      body: JSON.stringify({
-        sessionId: '6fc6a6',
-        runId: 'pre-fix',
-        hypothesisId: 'H3',
-        location: 'FullscreenVideoPlayer.tsx:mount',
-        message: 'FullscreenVideoPlayer mounted',
-        data: {
-          bunnyEmbedId,
-          titleLen: title?.length ?? 0,
-          immersiveMode: useHlsImmersive ? 'hls' : 'iframe',
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [bunnyEmbedId, title, useHlsImmersive]);
 
   useEffect(() => {
@@ -168,6 +150,15 @@ export function FullscreenVideoPlayer({
     };
   }, [useHlsImmersive, pullZoneHlsSrc, hlsListenKey]);
 
+  const sendToPlayer = useCallback((event: string, extra?: Record<string, unknown>) => {
+    const iframe = iframeRef.current;
+    if (!iframe?.contentWindow) return;
+    iframe.contentWindow.postMessage(
+      JSON.stringify({ event, ...extra }),
+      'https://iframe.mediadelivery.net'
+    );
+  }, []);
+
   const pausePlayback = useCallback(() => {
     if (useHlsImmersive) {
       hlsVideoRef.current?.pause();
@@ -197,6 +188,7 @@ export function FullscreenVideoPlayer({
     pausePlayback();
     setActiveAttentionStop(nextStop);
     setAttentionFeedbackOpen(false);
+    setAttentionFeedbackText('');
     setAutoResumeSecondsLeft(null);
   }, [attentionStops, activeAttentionStop, exitConfirmOpen, pausePlayback]);
 
@@ -205,6 +197,7 @@ export function FullscreenVideoPlayer({
     answeredAttentionIdsRef.current.add(activeAttentionStop.id);
     setActiveAttentionStop(null);
     setAttentionFeedbackOpen(false);
+    setAttentionFeedbackText('');
     setAutoResumeSecondsLeft(null);
     if (autoResumeIntervalRef.current) {
       clearInterval(autoResumeIntervalRef.current);
@@ -213,8 +206,16 @@ export function FullscreenVideoPlayer({
     resumePlayback();
   }, [activeAttentionStop, resumePlayback]);
 
-  const openAttentionFeedback = useCallback(() => {
+  const openAttentionFeedback = useCallback((selectedIndex: number) => {
     if (!activeAttentionStop) return;
+    const hasCorrectAnswer = Number.isInteger(activeAttentionStop.correct_option_index);
+    const isCorrect = hasCorrectAnswer && selectedIndex === activeAttentionStop.correct_option_index;
+    const feedbackToShow = hasCorrectAnswer
+      ? (isCorrect
+          ? (activeAttentionStop.feedback_correct || activeAttentionStop.feedback || 'יפה!')
+          : (activeAttentionStop.feedback_incorrect || activeAttentionStop.feedback || 'כמעט, ממשיכים.'))
+      : (activeAttentionStop.feedback || 'מצוין, ממשיכים.');
+    setAttentionFeedbackText(feedbackToShow);
     setAttentionFeedbackOpen(true);
     const total = Math.max(3, activeAttentionStop.auto_resume_seconds || 6);
     setAutoResumeSecondsLeft(total);
@@ -233,15 +234,6 @@ export function FullscreenVideoPlayer({
       });
     }, 1000);
   }, [activeAttentionStop, finishAttentionStop]);
-
-  const sendToPlayer = useCallback((event: string, extra?: Record<string, unknown>) => {
-    const iframe = iframeRef.current;
-    if (!iframe?.contentWindow) return;
-    iframe.contentWindow.postMessage(
-      JSON.stringify({ event, ...extra }),
-      'https://iframe.mediadelivery.net'
-    );
-  }, []);
 
   const flashIcon = useCallback(() => {
     setShowIcon(true);
@@ -434,24 +426,20 @@ export function FullscreenVideoPlayer({
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.18 }}
                   >
-                    <motion.button
-                      type="button"
-                      onClick={openAttentionFeedback}
-                      className="py-3 rounded-2xl font-bold text-white"
-                      style={{ background: 'linear-gradient(135deg, #059669, #10b981)' }}
-                      whileTap={{ scale: 0.97 }}
-                    >
-                      כן
-                    </motion.button>
-                    <motion.button
-                      type="button"
-                      onClick={openAttentionFeedback}
-                      className="py-3 rounded-2xl font-bold text-gray-700"
-                      style={{ background: 'rgba(15,23,42,0.08)', border: '1px solid rgba(15,23,42,0.12)' }}
-                      whileTap={{ scale: 0.97 }}
-                    >
-                      לא
-                    </motion.button>
+                    {(activeAttentionStop.options?.length ? activeAttentionStop.options : ['כן', 'לא']).map((option, idx) => (
+                      <motion.button
+                        key={`${activeAttentionStop.id}-${idx}`}
+                        type="button"
+                        onClick={() => openAttentionFeedback(idx)}
+                        className={`py-3 rounded-2xl font-bold ${idx === 0 ? 'text-white' : 'text-gray-700'}`}
+                        style={idx === 0
+                          ? { background: 'linear-gradient(135deg, #059669, #10b981)' }
+                          : { background: 'rgba(15,23,42,0.08)', border: '1px solid rgba(15,23,42,0.12)' }}
+                        whileTap={{ scale: 0.97 }}
+                      >
+                        {option}
+                      </motion.button>
+                    ))}
                   </motion.div>
                 ) : (
                   <motion.div
@@ -462,7 +450,7 @@ export function FullscreenVideoPlayer({
                     transition={{ duration: 0.2 }}
                   >
                     <p className="text-base leading-relaxed font-semibold mb-4" style={{ color: '#1f2937' }}>
-                      {activeAttentionStop.feedback}
+                      {attentionFeedbackText}
                     </p>
                     <div className="flex items-center justify-between gap-3">
                       <motion.button

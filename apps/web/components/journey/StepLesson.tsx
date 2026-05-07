@@ -36,11 +36,29 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
   const effectiveImmersiveAttentionStops = immersiveAttentionStops.length
     ? immersiveAttentionStops
     : (step.step_number === 1 ? [{
+        id: 'satiety-brain-checkpoint',
+        time_seconds: 85,
+        question: 'רגע, אז מתי בעצם המוח שלנו מבין שאנחנו שבעים?',
+        options: ['רק כשהקלוריות נספגות בדם.', 'ברגע שהקיבה נמתחת פיזית.'],
+        correct_option_index: 1,
+        feedback_correct: 'בול. המוח מקבל אותות שובע כבר מהמתיחה של הקיבה ומההורמונים שמופרשים בדרך - לא רק אחרי ספיגת קלוריות בדם.',
+        feedback_incorrect: 'כמעט. לרוב המוח מתחיל לקבל סימן שובע כבר כשהקיבה נמתחת פיזית, עוד לפני שכל הקלוריות נספגות בדם.',
+        feedback: 'בול. המוח מקבל אותות שובע כבר מהמתיחה של הקיבה ומההורמונים שמופרשים בדרך - לא רק אחרי ספיגת קלוריות בדם.',
+        auto_resume_seconds: 6,
+      }, {
         id: 'default-water-hamburger-checkpoint',
         time_seconds: 105,
         question: 'האם לדעתך זה אומר שהגוף שורף המבורגר שלם מעצם שתיית מים לפני האוכל?',
         feedback: 'ממש לא. שתיית מים לפני ארוחה יכולה לתרום לשובע ולהפחית במעט את צריכת הקלוריות, אבל בדרך כלל מדובר בתוספת מתונה של עשרות קלוריות בלבד.',
         auto_resume_seconds: 6,
+      }, {
+        id: 'self-reflection-sweet-craving-checkpoint',
+        time_seconds: 120,
+        question: 'קרה לך פעם שחיפשת משהו מתוק בארון ובעצם... פשוט לא שתית כל היום?',
+        options: ['ברור, קורה לי מלא', 'האמת שפחות'],
+        correct_option_index: null,
+        feedback: 'ההיפותלמוס במוח לפעמים מבלבל בין צמא לרעב. בפעם הבאה שהדודא למתוק תופסת אותך - קודם כוס מים, חכי שתי דקות, ותני לגוף הזדמנות להירגע.',
+        auto_resume_seconds: 7,
       }] : []);
   const [progress, setProgress] = useState<JourneyStepProgress>(initialProgress);
   const [currentSection, setCurrentSection] = useState<StepSection>(initialProgress.last_section || 'video');
@@ -63,24 +81,9 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
       const bottom = el.getBoundingClientRect().bottom;
       const px = Math.max(0, Math.round(bottom));
       setImmersiveViewportTopPx(px);
-      // #region agent log
       if (lastLoggedTopRef.current !== px) {
         lastLoggedTopRef.current = px;
-        fetch('http://127.0.0.1:7304/ingest/e0c3e9ba-ee31-4fb3-b095-72fbc06088f4', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6fc6a6' },
-          body: JSON.stringify({
-            sessionId: '6fc6a6',
-            runId: 'pre-fix',
-            hypothesisId: 'H4',
-            location: 'StepLesson.tsx:stepChromeMeasure',
-            message: 'Step chrome bottom → immersive top',
-            data: { immersiveViewportTopPx: px, stepId: step.id, currentSection },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
       }
-      // #endregion
     };
 
     measure();
@@ -94,30 +97,6 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
       window.removeEventListener('scroll', measure, true);
     };
   }, [step.id, currentSection]);
-
-  useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7304/ingest/e0c3e9ba-ee31-4fb3-b095-72fbc06088f4', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6fc6a6' },
-      body: JSON.stringify({
-        sessionId: '6fc6a6',
-        runId: 'pre-fix',
-        hypothesisId: 'H1',
-        location: 'StepLesson.tsx:currentSection',
-        message: 'StepLesson section + step video fields',
-        data: {
-          currentSection,
-          stepId: step.id,
-          video_provider: step.video_provider,
-          progress_last_section: progress.last_section,
-          origin: typeof window !== 'undefined' ? window.location.origin : 'ssr',
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }, [currentSection, step.id, step.video_provider, progress.last_section]);
 
   const currentIndex = SECTIONS.indexOf(currentSection);
   const isLastSection = currentIndex === SECTIONS.length - 1;

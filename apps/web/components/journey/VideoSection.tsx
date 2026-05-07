@@ -161,30 +161,6 @@ export function VideoSection({
         setImmersiveFinished(true);
       }
     }
-    // #region agent log
-    fetch('http://127.0.0.1:7304/ingest/e0c3e9ba-ee31-4fb3-b095-72fbc06088f4', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6fc6a6' },
-      body: JSON.stringify({
-        sessionId: '6fc6a6',
-        runId: 'pre-fix',
-        hypothesisId: 'H2',
-        location: 'VideoSection.tsx:immersiveEffect',
-        message: 'Immersive gate branch',
-        data: {
-          branch,
-          pathname,
-          providerKey,
-          isPlaceholder,
-          isBunnyProvider,
-          isWatched,
-          bunnyEmbedId: bunnyEmbedId ?? null,
-          hasHls: Boolean(bunnyHlsSrc),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     setImmersiveLogicBranch(branch);
   }, [isPlaceholder, isBunnyProvider, bunnyEmbedId, pathname, providerKey, bunnyHlsSrc, isWatched]);
 
@@ -206,37 +182,6 @@ export function VideoSection({
   const showBunnyHls = !isPlaceholder && isBunnyHls && inlinePlaying;
   const shouldBlockInlineUntilImmersiveEnds =
     immersiveReady && isBunnyProvider && !!bunnyEmbedId && !isPlaceholder && !immersiveFinished;
-
-  const willRenderFullscreen = Boolean(immersiveReady && immersiveOpen && bunnyEmbedId);
-  useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7304/ingest/e0c3e9ba-ee31-4fb3-b095-72fbc06088f4', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '6fc6a6' },
-      body: JSON.stringify({
-        sessionId: '6fc6a6',
-        runId: 'pre-fix',
-        hypothesisId: 'H3',
-        location: 'VideoSection.tsx:renderGate',
-        message: 'Fullscreen render predicate',
-        data: {
-          willRenderFullscreen,
-          immersiveReady,
-          immersiveOpen,
-          bunnyEmbedId: bunnyEmbedId ?? null,
-          shouldBlockInlineUntilImmersiveEnds,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }, [
-    willRenderFullscreen,
-    immersiveReady,
-    immersiveOpen,
-    bunnyEmbedId,
-    shouldBlockInlineUntilImmersiveEnds,
-  ]);
 
   return (
     <div className="space-y-5">
