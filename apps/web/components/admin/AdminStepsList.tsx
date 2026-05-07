@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   Plus, Edit3, Eye, EyeOff, Trash2, GripVertical,
-  Video, HelpCircle, Gamepad2, Heart, FileText, CheckCircle2
+  Video, HelpCircle, Gamepad2, Heart, FileText, CheckCircle2, Brain
 } from 'lucide-react';
 import type { JourneyStep } from '../../lib/types/journey';
+import { parseImmersiveAttentionStops } from '../../lib/journey/immersiveAttentionStops';
 
 interface AdminStepsListProps {
   steps: JourneyStep[];
@@ -76,6 +77,10 @@ export function AdminStepsList({ steps: initialSteps }: AdminStepsListProps) {
               opacity: isDeleting === step.id ? 0.5 : 1,
             }}
           >
+            {(() => {
+              const attentionStopsCount = parseImmersiveAttentionStops(step.text_content).length;
+              return (
+                <>
             {/* Drag handle + number */}
             <div className="flex items-center gap-2 text-gray-400">
               <GripVertical className="w-4 h-4" />
@@ -124,6 +129,11 @@ export function AdminStepsList({ steps: initialSteps }: AdminStepsListProps) {
                     <FileText className="w-3 h-3" /> {step.researches.length} מחקרים
                   </span>
                 )}
+                {attentionStopsCount > 0 && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700">
+                    <Brain className="w-3 h-3" /> {attentionStopsCount} עצירות קשב
+                  </span>
+                )}
               </div>
             </div>
 
@@ -146,6 +156,9 @@ export function AdminStepsList({ steps: initialSteps }: AdminStepsListProps) {
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
+                </>
+              );
+            })()}
           </motion.div>
         ))}
       </div>

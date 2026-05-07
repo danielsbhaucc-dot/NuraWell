@@ -9,6 +9,7 @@ import { MiniGame } from './MiniGame';
 import { CommitmentSection } from './CommitmentSection';
 import { SummarySection } from './SummarySection';
 import { StepProgress } from './StepProgress';
+import { parseImmersiveAttentionStops } from '../../lib/journey/immersiveAttentionStops';
 
 interface StepLessonProps {
   step: JourneyStep;
@@ -31,6 +32,16 @@ async function saveJourneyProgress(
 }
 
 export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
+  const immersiveAttentionStops = parseImmersiveAttentionStops(step.text_content);
+  const effectiveImmersiveAttentionStops = immersiveAttentionStops.length
+    ? immersiveAttentionStops
+    : (step.step_number === 1 ? [{
+        id: 'default-water-hamburger-checkpoint',
+        time_seconds: 105,
+        question: 'האם לדעתך זה אומר שהגוף שורף המבורגר שלם מעצם שתיית מים לפני האוכל?',
+        feedback: 'ממש לא. שתיית מים לפני ארוחה יכולה לתרום לשובע ולהפחית במעט את צריכת הקלוריות, אבל בדרך כלל מדובר בתוספת מתונה של עשרות קלוריות בלבד.',
+        auto_resume_seconds: 6,
+      }] : []);
   const [progress, setProgress] = useState<JourneyStepProgress>(initialProgress);
   const [currentSection, setCurrentSection] = useState<StepSection>(initialProgress.last_section || 'video');
   const [quizRemount, setQuizRemount] = useState(0);
@@ -234,6 +245,7 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
                 externalId={step.video_external_id}
                 externalUrl={step.video_external_url}
                 title={step.video_title || step.title}
+                immersiveAttentionStops={effectiveImmersiveAttentionStops}
                 onComplete={handleVideoComplete}
                 isWatched={progress.video_watched}
                 immersiveViewportTopPx={immersiveViewportTopPx}

@@ -4,12 +4,19 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Save, ArrowRight, Plus, Trash2, Video, HelpCircle,
-  Gamepad2, Heart, FileText, BookOpen, ListChecks, Sparkles
+  Gamepad2, Heart, FileText, BookOpen, ListChecks, Sparkles, Brain
 } from 'lucide-react';
 import type {
   JourneyStep, QuizQuestion, GameItem, CommitmentData,
   Research, JourneyTask, JourneyHabit
 } from '../../lib/types/journey';
+import {
+  formatSecondsAsClock,
+  parseClockToSeconds,
+  parseImmersiveAttentionStops,
+  serializeImmersiveAttentionStops,
+  type ImmersiveAttentionStop,
+} from '../../lib/journey/immersiveAttentionStops';
 
 interface StepEditorProps {
   step: JourneyStep | null;
@@ -20,6 +27,13 @@ const emptyGame: GameItem = { id: '', statement: '', is_true: true, explanation:
 const emptyResearch: Research = { id: '', title: '', authors: '', year: '', journal: '', finding: '', url: null };
 const emptyTask: JourneyTask = { id: '', title: '', description: null, emoji: '✅' };
 const emptyHabit: JourneyHabit = { id: '', title: '', description: null, emoji: '💪', frequency: 'daily' };
+const emptyAttentionStop: ImmersiveAttentionStop = {
+  id: '',
+  time_seconds: 105,
+  question: 'האם לדעתך זה אומר שהגוף שורף המבורגר שלם רק כי שתינו מים לפני הארוחה?',
+  feedback: 'לא. שתיית מים לפני הארוחה יכולה לתרום לתחושת שובע ולעזור לצרוך מעט פחות קלוריות, אבל מדובר בדרך כלל בהבדל מתון של עשרות קלוריות - לא שריפה של ארוחה שלמה.',
+  auto_resume_seconds: 6,
+};
 
 function genId() { return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`; }
 
@@ -41,6 +55,9 @@ export function StepEditor({ step }: StepEditorProps) {
   const [videoExternalId, setVideoExternalId] = useState(step?.video_external_id || '');
   const [videoExternalUrl, setVideoExternalUrl] = useState(step?.video_external_url || '');
   const [videoTitle, setVideoTitle] = useState(step?.video_title || '');
+  const [immersiveAttentionStops, setImmersiveAttentionStops] = useState<ImmersiveAttentionStop[]>(
+    parseImmersiveAttentionStops(step?.text_content)
+  );
 
   // Structured data
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>(step?.quiz_questions || []);
@@ -69,6 +86,7 @@ export function StepEditor({ step }: StepEditorProps) {
           ? (videoExternalUrl.trim() || null)
           : null,
       video_title: videoTitle || null,
+      text_content: serializeImmersiveAttentionStops(immersiveAttentionStops),
       quiz_questions: quizQuestions, game_items: gameItems,
       commitment, researches, tasks, habits,
       pdf_url: pdfUrl || null, pdf_name: pdfName || null,
@@ -187,6 +205,83 @@ export function StepEditor({ step }: StepEditorProps) {
             <input value={videoTitle} onChange={e => setVideoTitle(e.target.value)}
               className="input-field" placeholder="כותרת שתופיע מעל הסרטון" />
           </Field>
+
+          <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }}>
+            <div className="flex items-center gap-2">
+              <Brain className="w-4 h-4 text-blue-600" />
+              <h3 className="text-sm font-black text-blue-800">עצירות קשב במסך מלא ({immersiveAttentionStops.length})</h3>
+            </div>
+            <p className="text-xs text-blue-900/80 leading-relaxed">
+              יופיע רק בנגן מסך מלא: הסרטון יעצור בזמן שתבחרו, תוצג שאלה קצרה, ואז משוב והמשך אוטומטי או ידני.
+            </p>
+            {immersiveAttentionStops.map((stop, si) => (
+              <div key={stop.id || si} className="p-3 rounded-xl bg-white border border-blue-100 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-blue-700">נקודה {si + 1}</span>
+                  <button
+                    onClick={() => setImmersiveAttentionStops(prev => prev.filter((_, i) => i !== si))}
+                    className="text-red-400 hover:text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="זמן עצירה (MM:SS)">
+                    <input
+                      value={formatSecondsAsClock(stop.time_seconds)}
+                      onChange={e => {
+                        const arr = [...immersiveAttentionStops];
+                        arr[si] = { ...arr[si], time_seconds: parseClockToSeconds(e.target.value) };
+                        setImmersiveAttentionStops(arr);
+                      }}
+                      className="input-field"
+                      dir="ltr"
+                      placeholder="01:45"
+                    />
+                  </Field>
+                  <Field label="המשך אוטומטי אחרי (שניות)">
+                    <input
+                      type="number"
+                      min={3}
+                      value={stop.auto_resume_seconds}
+                      onChange={e => {
+                        const arr = [...immersiveAttentionStops];
+                        arr[si] = { ...arr[si], auto_resume_seconds: Number(e.target.value) || 6 };
+                        setImmersiveAttentionStops(arr);
+                      }}
+                      className="input-field"
+                    />
+                  </Field>
+                </div>
+                <Field label="שאלה (מוצגת עם כן / לא)">
+                  <input
+                    value={stop.question}
+                    onChange={e => {
+                      const arr = [...immersiveAttentionStops];
+                      arr[si] = { ...arr[si], question: e.target.value };
+                      setImmersiveAttentionStops(arr);
+                    }}
+                    className="input-field"
+                  />
+                </Field>
+                <Field label="משוב מקצועי אחרי בחירה">
+                  <textarea
+                    value={stop.feedback}
+                    onChange={e => {
+                      const arr = [...immersiveAttentionStops];
+                      arr[si] = { ...arr[si], feedback: e.target.value };
+                      setImmersiveAttentionStops(arr);
+                    }}
+                    className="input-field min-h-[80px]"
+                  />
+                </Field>
+              </div>
+            ))}
+            <AddButton
+              label="הוסף נקודת קשב"
+              onClick={() => setImmersiveAttentionStops(prev => [...prev, { ...emptyAttentionStop, id: genId() }])}
+            />
+          </div>
         </Section>
 
         {/* ═══ QUIZ ═══ */}

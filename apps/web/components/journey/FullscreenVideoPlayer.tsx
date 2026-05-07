@@ -2,8 +2,11 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Play, Pause } from 'lucide-react';
+import { X, Play, Pause, Sparkles, Clock3 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { HlsVideoGate } from './HlsVideoGate';
+import type { ImmersiveAttentionStop } from '../../lib/journey/immersiveAttentionStops';
+import { formatSecondsAsClock } from '../../lib/journey/immersiveAttentionStops';
 
 interface FullscreenVideoPlayerProps {
   /** bunnyEmbedId = "{libraryId}/{videoId}" — used for iframe fallback when no Pull Zone HLS */
@@ -14,6 +17,7 @@ interface FullscreenVideoPlayerProps {
    */
   pullZoneHlsSrc?: string | null;
   title: string;
+  attentionStops?: ImmersiveAttentionStop[];
   onEnded: () => void;
   onExit: () => void;
   /** Future checkpoints: called on every timeupdate */
@@ -33,6 +37,7 @@ export function FullscreenVideoPlayer({
   bunnyEmbedId,
   pullZoneHlsSrc,
   title,
+  attentionStops = [],
   onEnded,
   onExit,
   onTimeUpdate,
@@ -46,8 +51,13 @@ export function FullscreenVideoPlayer({
   const [isPlaying, setIsPlaying] = useState(true);
   const [showIcon, setShowIcon] = useState(false);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
+  const [activeAttentionStop, setActiveAttentionStop] = useState<ImmersiveAttentionStop | null>(null);
+  const [attentionFeedbackOpen, setAttentionFeedbackOpen] = useState(false);
+  const [autoResumeSecondsLeft, setAutoResumeSecondsLeft] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
   const iconTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoResumeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const answeredAttentionIdsRef = useRef<Set<string>>(new Set());
   const onEndedRef = useRef(onEnded);
   const onTimeUpdateRef = useRef(onTimeUpdate);
   const mountedRef = useRef(true);
@@ -99,8 +109,13 @@ export function FullscreenVideoPlayer({
     return () => {
       document.body.style.overflow = prev;
       if (iconTimerRef.current) clearTimeout(iconTimerRef.current);
+      if (autoResumeIntervalRef.current) clearInterval(autoResumeIntervalRef.current);
     };
   }, [mounted]);
+
+  useEffect(() => {
+    answeredAttentionIdsRef.current.clear();
+  }, [attentionStops, bunnyEmbedId]);
 
   useEffect(() => {
     if (useHlsImmersive) return;
@@ -122,7 +137,10 @@ export function FullscreenVideoPlayer({
       } else if (event === 'pause') {
         if (mountedRef.current) setIsPlaying(false);
       } else if (event === 'timeupdate') {
-        onTimeUpdateRef.current?.(Number(data.seconds ?? 0), Number(data.duration ?? 0));
+        const seconds = Number(data.seconds ?? 0);
+        const duration = Number(data.duration ?? 0);
+        onTimeUpdateRef.current?.(seconds, duration);
+        handleAttentionCheck(seconds);
       }
     };
     window.addEventListener('message', handler);
@@ -135,7 +153,10 @@ export function FullscreenVideoPlayer({
     if (!v) return;
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
-    const onTimeUpdateEv = () => onTimeUpdateRef.current?.(v.currentTime, v.duration || 0);
+    const onTimeUpdateEv = () => {
+      onTimeUpdateRef.current?.(v.currentTime, v.duration || 0);
+      handleAttentionCheck(v.currentTime);
+    };
     v.addEventListener('play', onPlay);
     v.addEventListener('pause', onPause);
     v.addEventListener('timeupdate', onTimeUpdateEv);
@@ -146,6 +167,72 @@ export function FullscreenVideoPlayer({
       v.removeEventListener('timeupdate', onTimeUpdateEv);
     };
   }, [useHlsImmersive, pullZoneHlsSrc, hlsListenKey]);
+
+  const pausePlayback = useCallback(() => {
+    if (useHlsImmersive) {
+      hlsVideoRef.current?.pause();
+      setIsPlaying(false);
+      return;
+    }
+    sendToPlayer('pause');
+    setIsPlaying(false);
+  }, [sendToPlayer, useHlsImmersive]);
+
+  const resumePlayback = useCallback(() => {
+    if (useHlsImmersive) {
+      void hlsVideoRef.current?.play();
+      setIsPlaying(true);
+      return;
+    }
+    sendToPlayer('play');
+    setIsPlaying(true);
+  }, [sendToPlayer, useHlsImmersive]);
+
+  const handleAttentionCheck = useCallback((seconds: number) => {
+    if (!attentionStops.length || activeAttentionStop || exitConfirmOpen) return;
+    const nextStop = attentionStops.find(stop => (
+      !answeredAttentionIdsRef.current.has(stop.id) && seconds >= stop.time_seconds
+    ));
+    if (!nextStop) return;
+    pausePlayback();
+    setActiveAttentionStop(nextStop);
+    setAttentionFeedbackOpen(false);
+    setAutoResumeSecondsLeft(null);
+  }, [attentionStops, activeAttentionStop, exitConfirmOpen, pausePlayback]);
+
+  const finishAttentionStop = useCallback(() => {
+    if (!activeAttentionStop) return;
+    answeredAttentionIdsRef.current.add(activeAttentionStop.id);
+    setActiveAttentionStop(null);
+    setAttentionFeedbackOpen(false);
+    setAutoResumeSecondsLeft(null);
+    if (autoResumeIntervalRef.current) {
+      clearInterval(autoResumeIntervalRef.current);
+      autoResumeIntervalRef.current = null;
+    }
+    resumePlayback();
+  }, [activeAttentionStop, resumePlayback]);
+
+  const openAttentionFeedback = useCallback(() => {
+    if (!activeAttentionStop) return;
+    setAttentionFeedbackOpen(true);
+    const total = Math.max(3, activeAttentionStop.auto_resume_seconds || 6);
+    setAutoResumeSecondsLeft(total);
+    if (autoResumeIntervalRef.current) clearInterval(autoResumeIntervalRef.current);
+    autoResumeIntervalRef.current = setInterval(() => {
+      setAutoResumeSecondsLeft(prev => {
+        if (prev === null || prev <= 1) {
+          if (autoResumeIntervalRef.current) {
+            clearInterval(autoResumeIntervalRef.current);
+            autoResumeIntervalRef.current = null;
+          }
+          finishAttentionStop();
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [activeAttentionStop, finishAttentionStop]);
 
   const sendToPlayer = useCallback((event: string, extra?: Record<string, unknown>) => {
     const iframe = iframeRef.current;
@@ -163,7 +250,7 @@ export function FullscreenVideoPlayer({
   }, []);
 
   const handleTap = useCallback(() => {
-    if (exitConfirmOpen) return;
+    if (exitConfirmOpen || activeAttentionStop) return;
     if (useHlsImmersive) {
       const v = hlsVideoRef.current;
       if (!v) return;
@@ -180,7 +267,7 @@ export function FullscreenVideoPlayer({
       setIsPlaying(true);
     }
     flashIcon();
-  }, [useHlsImmersive, isPlaying, exitConfirmOpen, sendToPlayer, flashIcon]);
+  }, [useHlsImmersive, isPlaying, exitConfirmOpen, activeAttentionStop, sendToPlayer, flashIcon]);
 
   const iframeUrl = bunnyIframeUrl(bunnyEmbedId);
   // Keep prop for backwards compatibility with callers; immersive now always covers full viewport.
@@ -291,6 +378,121 @@ export function FullscreenVideoPlayer({
           </div>
         </div>
       )}
+      <AnimatePresence>
+        {activeAttentionStop && (
+          <motion.div
+            className="absolute inset-0 z-[321] flex items-center justify-center p-5"
+            style={{ background: 'rgba(2,6,23,0.76)' }}
+            onClick={() => setActiveAttentionStop(activeAttentionStop)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+          >
+            <motion.div
+              className="w-full max-w-md rounded-3xl p-6"
+              style={{
+                background: 'linear-gradient(160deg, rgba(255,255,255,0.98) 0%, rgba(236,253,245,0.96) 100%)',
+                border: '1px solid rgba(16,185,129,0.28)',
+                boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
+              }}
+              onClick={e => e.stopPropagation()}
+              initial={{ opacity: 0, y: 20, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.98 }}
+              transition={{ duration: 0.26, ease: 'easeOut' }}
+            >
+              <motion.div
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4 text-xs font-bold text-emerald-700"
+                style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)' }}
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.08, duration: 0.2 }}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                נקודת קשב
+                <span className="opacity-80">· {formatSecondsAsClock(activeAttentionStop.time_seconds)}</span>
+              </motion.div>
+
+              <motion.p
+                className="text-[22px] leading-snug font-black mb-5"
+                style={{ color: '#1A1730' }}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.12, duration: 0.2 }}
+              >
+                {activeAttentionStop.question}
+              </motion.p>
+
+              <AnimatePresence mode="wait">
+                {!attentionFeedbackOpen ? (
+                  <motion.div
+                    key="answers"
+                    className="grid grid-cols-2 gap-2.5"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <motion.button
+                      type="button"
+                      onClick={openAttentionFeedback}
+                      className="py-3 rounded-2xl font-bold text-white"
+                      style={{ background: 'linear-gradient(135deg, #059669, #10b981)' }}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      כן
+                    </motion.button>
+                    <motion.button
+                      type="button"
+                      onClick={openAttentionFeedback}
+                      className="py-3 rounded-2xl font-bold text-gray-700"
+                      style={{ background: 'rgba(15,23,42,0.08)', border: '1px solid rgba(15,23,42,0.12)' }}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      לא
+                    </motion.button>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="feedback"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <p className="text-base leading-relaxed font-semibold mb-4" style={{ color: '#1f2937' }}>
+                      {activeAttentionStop.feedback}
+                    </p>
+                    <div className="flex items-center justify-between gap-3">
+                      <motion.button
+                        type="button"
+                        onClick={finishAttentionStop}
+                        className="flex-1 py-3 rounded-2xl font-bold text-white"
+                        style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        הבנתי, ממשיכים
+                      </motion.button>
+                      <motion.div
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-emerald-800"
+                        style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)' }}
+                        key={autoResumeSecondsLeft ?? 0}
+                        initial={{ scale: 1.05, opacity: 0.8 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.18 }}
+                      >
+                        <Clock3 className="w-3.5 h-3.5" />
+                        ממשיך אוטומטית בעוד {autoResumeSecondsLeft ?? 0}ש׳
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>,
     document.body
   );
