@@ -18,6 +18,7 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame }: Mi
   const [showResult, setShowResult] = useState(false);
   const [isComplete, setIsComplete] = useState(Object.keys(existingAnswers).length === items.length);
   const [resultsOpen, setResultsOpen] = useState(false);
+  const [sheetDragY, setSheetDragY] = useState(0);
 
   const item = items[currentIdx];
   const isAnswered = showResult || answers[item?.id] !== undefined;
@@ -63,7 +64,7 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame }: Mi
             style={{ background: 'rgba(245,158,11,0.15)', border: '1.5px solid rgba(245,158,11,0.35)' }}
           >
             <ClipboardList className="w-5 h-5" />
-            <span>סיכום הניסויים שלי</span>
+            <span>מפת האינטואיציה שלי</span>
           </button>
           {onResetGame && (
             <button
@@ -102,16 +103,32 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame }: Mi
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 120, opacity: 0 }}
                 transition={{ type: 'spring', damping: 28 }}
+                drag="y"
+                dragConstraints={{ top: 0, bottom: 320 }}
+                dragElastic={{ top: 0, bottom: 0.2 }}
+                onDrag={(event, info) => {
+                  setSheetDragY(Math.max(0, info.offset.y));
+                }}
+                onDragEnd={(event, info) => {
+                  if (info.offset.y > 120 || info.velocity.y > 850) {
+                    setResultsOpen(false);
+                  }
+                  setSheetDragY(0);
+                }}
                 className="w-full sm:max-w-md max-h-[85vh] overflow-hidden rounded-t-3xl sm:rounded-3xl flex flex-col"
                 style={{
                   background: '#fff',
                   boxShadow: '0 -8px 40px rgba(0,0,0,0.12)',
                   border: '1px solid rgba(245,158,11,0.2)',
+                  y: sheetDragY,
                 }}
                 onClick={e => e.stopPropagation()}
               >
+                <div className="pt-2 pb-1 shrink-0 flex justify-center">
+                  <div className="w-12 h-1.5 rounded-full bg-amber-200" />
+                </div>
                 <div className="px-5 py-4 text-center shrink-0" style={{ background: 'linear-gradient(145deg, #b45309, #f59e0b)' }}>
-                  <p className="text-white font-black text-lg">סיכום הניסויים</p>
+                  <p className="text-white font-black text-lg">מפת האינטואיציה</p>
                   <p className="text-white/90 text-xs mt-1">מה סימנת מול מה שבאמת נכון</p>
                 </div>
                 <div className="overflow-y-auto p-4 space-y-3 text-right">
@@ -119,8 +136,15 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame }: Mi
                     const picked = answers[it.id];
                     const ok = picked === it.is_true;
                     return (
-                      <div key={it.id} className="rounded-2xl p-4" style={{ background: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.06)' }}>
-                        <p className="text-xs font-bold text-amber-800 mb-1">משפט {i + 1}</p>
+                      <div key={it.id} className="rounded-2xl p-4"
+                        style={{ background: 'linear-gradient(165deg, #ffffff 0%, #fffbeb 100%)', border: '1px solid rgba(245,158,11,0.2)', boxShadow: '0 4px 12px rgba(245,158,11,0.08)' }}>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-black text-amber-800">משפט {i + 1}</p>
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: ok ? 'rgba(16,185,129,0.16)' : 'rgba(239,68,68,0.12)', color: ok ? '#047857' : '#b91c1c' }}>
+                            {ok ? 'פגעת בול' : 'שווה חידוד'}
+                          </span>
+                        </div>
                         <p className="text-sm font-bold mb-2 leading-relaxed" style={{ color: '#1A1730' }}>&ldquo;{it.statement}&rdquo;</p>
                         <p className="text-xs text-gray-600">
                           ענית: <strong style={{ color: ok ? '#059669' : '#dc2626' }}>{picked === true ? 'נכון' : picked === false ? 'לא נכון' : '—'}</strong>

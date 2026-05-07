@@ -19,6 +19,9 @@ interface VideoSectionProps {
   immersiveAttentionStops?: ImmersiveAttentionStop[];
   onComplete: () => void;
   isWatched: boolean;
+  onResetVideoWatch?: () => void;
+  canResetVideoWatch?: boolean;
+  videoResetNote?: string;
   /** Bottom edge of step chrome (header + progress) in viewport px — immersive video starts here */
   immersiveViewportTopPx?: number | null;
 }
@@ -65,6 +68,9 @@ export function VideoSection({
   immersiveAttentionStops,
   onComplete,
   isWatched,
+  onResetVideoWatch,
+  canResetVideoWatch = false,
+  videoResetNote,
   immersiveViewportTopPx,
 }: VideoSectionProps) {
   const router = useRouter();
@@ -308,10 +314,30 @@ export function VideoSection({
 
       <div className="text-center transition-opacity duration-300 ease-out">
         {isWatched ? (
-          <div className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-emerald-700 font-bold"
-            style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>
-            <CheckCircle2 className="w-5 h-5" />
-            <span>צפית בסרטון ✓</span>
+          <div className="space-y-2.5">
+            <div className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-emerald-700 font-bold"
+              style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>
+              <CheckCircle2 className="w-5 h-5" />
+              <span>צפית בסרטון ✓</span>
+            </div>
+            {onResetVideoWatch && (
+              <div>
+                <button
+                  type="button"
+                  onClick={onResetVideoWatch}
+                  disabled={!canResetVideoWatch}
+                  className="px-4 py-2 rounded-xl text-xs font-bold disabled:opacity-55 disabled:cursor-not-allowed"
+                  style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.1)', color: '#4b5563' }}
+                >
+                  בטל סימון צפייה
+                </button>
+                {!canResetVideoWatch && (
+                  <p className="text-[11px] text-gray-500 mt-1.5">
+                    {videoResetNote || 'איפוס צפייה זמין רק באיפוס מלא של כל השיעור.'}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         ) : null}
         <button onClick={onComplete}

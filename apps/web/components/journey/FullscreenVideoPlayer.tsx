@@ -217,7 +217,7 @@ export function FullscreenVideoPlayer({
       : (activeAttentionStop.feedback || 'מצוין, ממשיכים.');
     setAttentionFeedbackText(feedbackToShow);
     setAttentionFeedbackOpen(true);
-    const total = Math.max(3, activeAttentionStop.auto_resume_seconds || 6);
+    const total = Math.max(3, activeAttentionStop.auto_resume_seconds || 10);
     setAutoResumeSecondsLeft(total);
     if (autoResumeIntervalRef.current) clearInterval(autoResumeIntervalRef.current);
     autoResumeIntervalRef.current = setInterval(() => {
@@ -384,9 +384,10 @@ export function FullscreenVideoPlayer({
             <motion.div
               className="w-full max-w-md rounded-3xl p-6"
               style={{
-                background: 'linear-gradient(160deg, rgba(255,255,255,0.98) 0%, rgba(236,253,245,0.96) 100%)',
-                border: '1px solid rgba(16,185,129,0.28)',
-                boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
+                background: 'linear-gradient(155deg, rgba(255,255,255,0.32) 0%, rgba(220,252,231,0.2) 100%)',
+                border: '1px solid rgba(255,255,255,0.38)',
+                boxShadow: '0 24px 60px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.32)',
+                backdropFilter: 'blur(14px)',
               }}
               onClick={e => e.stopPropagation()}
               initial={{ opacity: 0, y: 20, scale: 0.96 }}
@@ -433,8 +434,16 @@ export function FullscreenVideoPlayer({
                         onClick={() => openAttentionFeedback(idx)}
                         className={`py-3 rounded-2xl font-bold ${idx === 0 ? 'text-white' : 'text-gray-700'}`}
                         style={idx === 0
-                          ? { background: 'linear-gradient(135deg, #059669, #10b981)' }
-                          : { background: 'rgba(15,23,42,0.08)', border: '1px solid rgba(15,23,42,0.12)' }}
+                          ? {
+                              background: 'linear-gradient(135deg, rgba(5,150,105,0.9), rgba(16,185,129,0.92))',
+                              border: '1px solid rgba(255,255,255,0.28)',
+                              boxShadow: '0 6px 16px rgba(5,150,105,0.28)',
+                            }
+                          : {
+                              background: 'rgba(255,255,255,0.5)',
+                              border: '1px solid rgba(255,255,255,0.42)',
+                              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.26)',
+                            }}
                         whileTap={{ scale: 0.97 }}
                       >
                         {option}
@@ -452,19 +461,27 @@ export function FullscreenVideoPlayer({
                     <p className="text-base leading-relaxed font-semibold mb-4" style={{ color: '#1f2937' }}>
                       {attentionFeedbackText}
                     </p>
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                       <motion.button
                         type="button"
                         onClick={finishAttentionStop}
-                        className="flex-1 py-3 rounded-2xl font-bold text-white"
-                        style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
+                        className="w-full sm:flex-1 min-h-[50px] px-4 py-3 rounded-2xl font-black text-[15px] text-white"
+                        style={{
+                          background: 'linear-gradient(135deg, #059669, #10b981)',
+                          border: '1px solid rgba(255,255,255,0.28)',
+                          boxShadow: '0 10px 22px rgba(5,150,105,0.3), inset 0 1px 0 rgba(255,255,255,0.25)',
+                        }}
                         whileTap={{ scale: 0.98 }}
                       >
                         הבנתי, ממשיכים
                       </motion.button>
                       <motion.div
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-emerald-800"
-                        style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)' }}
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold text-emerald-900 w-full sm:w-auto"
+                        style={{
+                          background: 'rgba(255,255,255,0.46)',
+                          border: '1px solid rgba(255,255,255,0.4)',
+                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.22)',
+                        }}
                         key={autoResumeSecondsLeft ?? 0}
                         initial={{ scale: 1.05, opacity: 0.8 }}
                         animate={{ scale: 1, opacity: 1 }}

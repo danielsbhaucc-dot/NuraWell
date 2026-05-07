@@ -19,6 +19,7 @@ export function QuizSection({ questions, existingAnswers, onComplete, onResetQui
   const [showExplanation, setShowExplanation] = useState(false);
   const [isComplete, setIsComplete] = useState(Object.keys(existingAnswers).length === questions.length);
   const [resultsOpen, setResultsOpen] = useState(false);
+  const [sheetDragY, setSheetDragY] = useState(0);
 
   const question = questions[currentQ];
   const isAnswered = selectedOption !== null || answers[question?.id] !== undefined;
@@ -119,14 +120,30 @@ export function QuizSection({ questions, existingAnswers, onComplete, onResetQui
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 120, opacity: 0 }}
                 transition={{ type: 'spring', damping: 28 }}
+                drag="y"
+                dragConstraints={{ top: 0, bottom: 320 }}
+                dragElastic={{ top: 0, bottom: 0.2 }}
+                onDrag={(event, info) => {
+                  setSheetDragY(Math.max(0, info.offset.y));
+                }}
+                onDragEnd={(event, info) => {
+                  if (info.offset.y > 120 || info.velocity.y > 850) {
+                    setResultsOpen(false);
+                  }
+                  setSheetDragY(0);
+                }}
                 className="w-full sm:max-w-md max-h-[85vh] overflow-hidden rounded-t-3xl sm:rounded-3xl flex flex-col"
                 style={{
                   background: '#fff',
                   boxShadow: '0 -8px 40px rgba(0,0,0,0.12)',
                   border: '1px solid rgba(16,185,129,0.15)',
+                  y: sheetDragY,
                 }}
                 onClick={e => e.stopPropagation()}
               >
+                <div className="pt-2 pb-1 shrink-0 flex justify-center">
+                  <div className="w-12 h-1.5 rounded-full bg-white/70" />
+                </div>
                 <div className="px-5 py-4 text-center shrink-0" style={{ background: 'linear-gradient(145deg, #047857, #10b981)' }}>
                   <p className="text-white font-black text-lg">מפת התשובות</p>
                   <p className="text-white/85 text-xs mt-1">מה ענית בכל שאלה</p>
@@ -136,9 +153,16 @@ export function QuizSection({ questions, existingAnswers, onComplete, onResetQui
                     const picked = answers[q.id];
                     const ok = picked === q.correct_index;
                     return (
-                      <div key={q.id} className="rounded-2xl p-4" style={{ background: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.06)' }}>
-                        <p className="text-xs font-bold text-emerald-700 mb-1">שאלה {i + 1}</p>
-                        <p className="text-sm font-bold mb-2" style={{ color: '#1A1730' }}>{q.question}</p>
+                      <div key={q.id} className="rounded-2xl p-4"
+                        style={{ background: 'linear-gradient(165deg, #ffffff 0%, #f0fdf4 100%)', border: '1px solid rgba(16,185,129,0.15)', boxShadow: '0 4px 12px rgba(16,185,129,0.08)' }}>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-black text-emerald-700">שאלה {i + 1}</p>
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: ok ? 'rgba(16,185,129,0.16)' : 'rgba(239,68,68,0.12)', color: ok ? '#047857' : '#b91c1c' }}>
+                            {ok ? 'נכון' : 'צריך חיזוק'}
+                          </span>
+                        </div>
+                        <p className="text-sm font-bold mb-2 leading-relaxed" style={{ color: '#1A1730' }}>{q.question}</p>
                         <p className="text-xs text-gray-500 mb-1">
                           תשובתך: <strong style={{ color: ok ? '#059669' : '#dc2626' }}>{picked !== undefined ? q.options[picked] : '—'}</strong>
                         </p>
@@ -147,7 +171,7 @@ export function QuizSection({ questions, existingAnswers, onComplete, onResetQui
                             נכון: <strong className="text-emerald-700">{q.options[q.correct_index]}</strong>
                           </p>
                         )}
-                        <p className="text-xs text-gray-600 leading-relaxed mt-2 border-t border-gray-100 pt-2">{q.explanation}</p>
+                        <p className="text-xs text-gray-600 leading-relaxed mt-2 border-t border-emerald-100 pt-2">{q.explanation}</p>
                       </div>
                     );
                   })}

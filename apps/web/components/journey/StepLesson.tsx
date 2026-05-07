@@ -44,13 +44,13 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
         feedback_correct: 'בול. המוח מקבל אותות שובע כבר מהמתיחה של הקיבה ומההורמונים שמופרשים בדרך - לא רק אחרי ספיגת קלוריות בדם.',
         feedback_incorrect: 'כמעט. לרוב המוח מתחיל לקבל סימן שובע כבר כשהקיבה נמתחת פיזית, עוד לפני שכל הקלוריות נספגות בדם.',
         feedback: 'בול. המוח מקבל אותות שובע כבר מהמתיחה של הקיבה ומההורמונים שמופרשים בדרך - לא רק אחרי ספיגת קלוריות בדם.',
-        auto_resume_seconds: 6,
+        auto_resume_seconds: 10,
       }, {
         id: 'default-water-hamburger-checkpoint',
         time_seconds: 105,
         question: 'האם לדעתך זה אומר שהגוף שורף המבורגר שלם מעצם שתיית מים לפני האוכל?',
         feedback: 'ממש לא. שתיית מים לפני ארוחה יכולה לתרום לשובע ולהפחית במעט את צריכת הקלוריות, אבל בדרך כלל מדובר בתוספת מתונה של עשרות קלוריות בלבד.',
-        auto_resume_seconds: 6,
+        auto_resume_seconds: 10,
       }, {
         id: 'self-reflection-sweet-craving-checkpoint',
         time_seconds: 120,
@@ -58,7 +58,7 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
         options: ['ברור, קורה לי מלא', 'האמת שפחות'],
         correct_option_index: null,
         feedback: 'ההיפותלמוס במוח לפעמים מבלבל בין צמא לרעב. בפעם הבאה שהדודא למתוק תופסת אותך - קודם כוס מים, חכי שתי דקות, ותני לגוף הזדמנות להירגע.',
-        auto_resume_seconds: 7,
+        auto_resume_seconds: 10,
       }] : []);
   const [progress, setProgress] = useState<JourneyStepProgress>(initialProgress);
   const [currentSection, setCurrentSection] = useState<StepSection>(initialProgress.last_section || 'video');
@@ -147,6 +147,11 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
     goNext();
   }, [updateProgress, goNext]);
 
+  const handleCommitmentChoice = useCallback((accepted: boolean) => {
+    updateProgress({ commitment_accepted: accepted });
+    goNext();
+  }, [updateProgress, goNext]);
+
   const handleLessonComplete = useCallback(() => {
     updateProgress({ is_completed: true, completed_at: new Date().toISOString() });
   }, [updateProgress]);
@@ -181,6 +186,12 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
     setVideoRemount(k => k + 1);
     goToSection('video');
   }, [updateProgress, goToSection]);
+
+  const resetVideoWatchOnly = useCallback(async () => {
+    if (progress.video_watched) return;
+    await updateProgress({ video_watched: false });
+    setVideoRemount(k => k + 1);
+  }, [progress.video_watched, updateProgress]);
 
   return (
     <div className="min-h-screen" style={{ background: '#EDF5F0' }}>
@@ -227,6 +238,9 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
                 immersiveAttentionStops={effectiveImmersiveAttentionStops}
                 onComplete={handleVideoComplete}
                 isWatched={progress.video_watched}
+                onResetVideoWatch={resetVideoWatchOnly}
+                canResetVideoWatch={!progress.video_watched}
+                videoResetNote="אם סיימת צפייה, האיפוס יתבצע דרך איפוס מלא של השיעור."
                 immersiveViewportTopPx={immersiveViewportTopPx}
               />
             )}
@@ -253,6 +267,7 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
                 commitment={step.commitment}
                 isAccepted={progress.commitment_accepted}
                 onAccept={handleCommitmentAccept}
+                onChoose={handleCommitmentChoice}
               />
             )}
             {currentSection === 'summary' && (

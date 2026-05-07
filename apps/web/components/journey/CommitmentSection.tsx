@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, CheckCircle2, ArrowLeft, Sparkles } from 'lucide-react';
 import type { CommitmentData } from '../../lib/types/journey';
@@ -9,14 +9,29 @@ interface CommitmentSectionProps {
   commitment: CommitmentData;
   isAccepted: boolean;
   onAccept: () => void;
+  onChoose?: (accepted: boolean) => void;
 }
 
-export function CommitmentSection({ commitment, isAccepted, onAccept }: CommitmentSectionProps) {
+export function CommitmentSection({ commitment, isAccepted, onAccept, onChoose }: CommitmentSectionProps) {
   const [accepted, setAccepted] = useState(isAccepted);
+  useEffect(() => {
+    setAccepted(isAccepted);
+  }, [isAccepted]);
 
   const handleAccept = () => {
     setAccepted(true);
-    onAccept();
+    if (onChoose) onChoose(true);
+    else onAccept();
+  };
+
+  const handleContinueWithoutCommitment = () => {
+    setAccepted(false);
+    if (onChoose) onChoose(false);
+  };
+
+  const handleUndoCommitment = () => {
+    setAccepted(false);
+    if (onChoose) onChoose(false);
   };
 
   return (
@@ -83,11 +98,12 @@ export function CommitmentSection({ commitment, isAccepted, onAccept }: Commitme
               className="w-full py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
               style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}>
               <Heart className="w-5 h-5" fill="white" />
-              <span>אני מתחייב/ת!</span>
+              <span>אני מתחייב/ת וממשיך/ה</span>
             </button>
-            <button onClick={handleAccept}
-              className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
-              אולי בפעם הבאה →
+            <button onClick={handleContinueWithoutCommitment}
+              className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.08)' }}>
+              להמשיך בלי התחייבות כרגע
             </button>
           </div>
         )}
@@ -101,7 +117,15 @@ export function CommitmentSection({ commitment, isAccepted, onAccept }: Commitme
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <p className="text-center text-sm text-gray-400">ממשיכים אוטומטית לסיכום...</p>
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={handleUndoCommitment}
+              className="text-sm text-gray-500 hover:text-gray-700 transition-colors underline underline-offset-2"
+            >
+              התחרטתי — בטל/י התחייבות
+            </button>
+          </div>
         </motion.div>
       )}
     </div>

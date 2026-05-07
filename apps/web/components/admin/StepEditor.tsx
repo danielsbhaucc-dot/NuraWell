@@ -32,7 +32,7 @@ const emptyAttentionStop: ImmersiveAttentionStop = {
   time_seconds: 105,
   question: 'האם לדעתך זה אומר שהגוף שורף המבורגר שלם רק כי שתינו מים לפני הארוחה?',
   feedback: 'לא. שתיית מים לפני הארוחה יכולה לתרום לתחושת שובע ולעזור לצרוך מעט פחות קלוריות, אבל מדובר בדרך כלל בהבדל מתון של עשרות קלוריות - לא שריפה של ארוחה שלמה.',
-  auto_resume_seconds: 6,
+  auto_resume_seconds: 10,
 };
 
 function genId() { return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`; }
@@ -246,7 +246,7 @@ export function StepEditor({ step }: StepEditorProps) {
                       value={stop.auto_resume_seconds}
                       onChange={e => {
                         const arr = [...immersiveAttentionStops];
-                        arr[si] = { ...arr[si], auto_resume_seconds: Number(e.target.value) || 6 };
+                        arr[si] = { ...arr[si], auto_resume_seconds: Number(e.target.value) || 10 };
                         setImmersiveAttentionStops(arr);
                       }}
                       className="input-field"

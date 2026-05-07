@@ -71,7 +71,7 @@ function normalizeStop(value: unknown): ImmersiveAttentionStop | null {
       : null,
     feedback_correct: feedbackCorrect,
     feedback_incorrect: feedbackIncorrect,
-    auto_resume_seconds: Number.isFinite(autoResumeSeconds) && autoResumeSeconds > 0 ? Math.round(autoResumeSeconds) : 6,
+    auto_resume_seconds: Number.isFinite(autoResumeSeconds) && autoResumeSeconds > 0 ? Math.round(autoResumeSeconds) : 10,
   };
 }
 
