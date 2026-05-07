@@ -1,0 +1,28 @@
+{
+  "name": "weight-loss-course-system",
+  "private": true,
+  "version": "1.0.0",
+  "description": "AI-powered weight loss course system - Mobile First",
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "db:generate": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" --schema public > packages/shared/types/database.ts",
+    "db:migrate": "supabase migration up",
+    "db:reset": "supabase db reset"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "prettier": "^3.2.5",
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  },
+  "packageManager": "npm@10.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

@@ -1,0 +1,162 @@
+import type { Config } from 'tailwindcss';
+
+const config: Config = {
+  darkMode: ['class'],
+  content: [
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#ecfdf5',
+          100: '#d1fae5',
+          200: '#a7f3d0',
+          300: '#6ee7b7',
+          400: '#34d399',
+          500: '#10b981',
+          600: '#059669',
+          700: '#047857',
+          800: '#065f46',
+          900: '#064e3b',
+        },
+        secondary: {
+          50: '#f0fdfa',
+          100: '#ccfbf1',
+          200: '#99f6e4',
+          300: '#5eead4',
+          400: '#2dd4bf',
+          500: '#14b8a6',
+          600: '#0d9488',
+          700: '#0f766e',
+          800: '#115e59',
+          900: '#134e4a',
+        },
+        accent: {
+          50: '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbbf24',
+          500: '#f59e0b',
+          600: '#d97706',
+          700: '#b45309',
+          800: '#92400e',
+          900: '#78350f',
+        },
+        energy: {
+          50: '#fff7ed',
+          100: '#ffedd5',
+          200: '#fed7aa',
+          300: '#fdba74',
+          400: '#fb923c',
+          500: '#f97316',
+          600: '#ea580c',
+          700: '#c2410c',
+        },
+        success: {
+          light: '#86efac',
+          DEFAULT: '#22c55e',
+          dark: '#15803d',
+        },
+        warning: {
+          DEFAULT: '#eab308',
+          light: '#fef08a',
+          dark: '#a16207',
+        },
+        background: '#f8faf8',
+        'background-soft': '#f0f5f1',
+        'background-card': '#ffffff',
+        'text-primary': '#1a2e23',
+        'text-secondary': '#4a6354',
+        'text-muted': '#7a9185',
+        border: '#e2ebe5',
+        input: '#ffffff',
+        ring: '#10b981',
+      },
+      borderRadius: {
+        lg: '1rem',
+        md: '0.75rem',
+        sm: '0.5rem',
+        xl: '1.25rem',
+        '2xl': '1.5rem',
+        '3xl': '2rem',
+        '4xl': '2.5rem',
+      },
+      fontFamily: {
+        sans: ['Heebo', 'Rubik', 'system-ui', 'sans-serif'],
+        display: ['Rubik', 'Heebo', 'system-ui', 'sans-serif'],
+      },
+      backdropBlur: {
+        xs: '2px',
+        '4xl': '72px',
+      },
+      boxShadow: {
+        'glass': '0 8px 32px 0 rgba(0,0,0,0.06)',
+        'glass-sm': '0 4px 16px 0 rgba(0,0,0,0.04)',
+        'glow-primary': '0 4px 20px rgba(16,185,129,0.15)',
+        'glow-secondary': '0 4px 20px rgba(20,184,166,0.12)',
+        'glow-accent': '0 4px 20px rgba(245,158,11,0.12)',
+        'card': '0 4px 24px -4px rgba(0,0,0,0.08)',
+        'inner-glow': 'inset 0 1px 0 rgba(255,255,255,0.5)',
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.5s ease-out',
+        'fade-in-up': 'fadeInUp 0.5s ease-out',
+        'slide-up': 'slideUp 0.3s ease-out',
+        'slide-in-right': 'slideInRight 0.3s ease-out',
+        'bounce-soft': 'bounceSoft 2s infinite',
+        'pulse-slow': 'pulse 3s infinite',
+        'float': 'float 6s ease-in-out infinite',
+        'shimmer': 'shimmer 2s linear infinite',
+        'spin-slow': 'spin 8s linear infinite',
+        'scale-in': 'scaleIn 0.2s ease-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        fadeInUp: {
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideUp: {
+          '0%': { transform: 'translateY(10px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        slideInRight: {
+          '0%': { transform: 'translateX(20px)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
+        },
+        bounceSoft: {
+          '0%, 100%': { transform: 'translateY(-5%)' },
+          '50%': { transform: 'translateY(0)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-20px)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        scaleIn: {
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+      },
+      spacing: {
+        'safe-top': 'env(safe-area-inset-top)',
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
+      },
+    },
+  },
+  plugins: [require('tailwindcss-animate')],
+};
+
+export default config;
