@@ -1,6 +1,35 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../../lib/supabase/server';
 
+type TaskDecisionStatus = 'accepted' | 'rejected' | 'pending';
+
+function normalizeBooleanMap(value: unknown): Record<string, boolean> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const out: Record<string, boolean> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (!k.trim() || typeof v !== 'boolean') continue;
+    out[k] = v;
+  }
+  return out;
+}
+
+function normalizeTaskStatuses(value: unknown): Record<string, { status: TaskDecisionStatus; decided_at: string | null; reason?: string | null }> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const out: Record<string, { status: TaskDecisionStatus; decided_at: string | null; reason?: string | null }> = {};
+  for (const [taskId, raw] of Object.entries(value as Record<string, unknown>)) {
+    if (!taskId.trim() || !raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+    const row = raw as Record<string, unknown>;
+    const status = row.status;
+    if (status !== 'accepted' && status !== 'rejected' && status !== 'pending') continue;
+    out[taskId] = {
+      status,
+      decided_at: typeof row.decided_at === 'string' ? row.decided_at : null,
+      reason: typeof row.reason === 'string' ? row.reason : null,
+    };
+  }
+  return out;
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -15,6 +44,13 @@ export async function POST(request: Request) {
 
     if (!step_id) {
       return NextResponse.json({ error: 'step_id is required' }, { status: 400 });
+    }
+
+    if ('tasks_completed' in updateFields) {
+      updateFields.tasks_completed = normalizeBooleanMap(updateFields.tasks_completed);
+    }
+    if ('task_statuses' in updateFields) {
+      updateFields.task_statuses = normalizeTaskStatuses(updateFields.task_statuses);
     }
 
     // Upsert journey progress

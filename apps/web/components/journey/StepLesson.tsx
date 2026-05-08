@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import type { JourneyStep, JourneyStepProgress, StepSection } from '../../lib/types/journey';
+import type { JourneyStep, JourneyStepProgress, JourneyTaskDecisionStatus, StepSection } from '../../lib/types/journey';
 import { VideoSection } from './VideoSection';
 import { QuizSection } from './QuizSection';
 import { MiniGame } from './MiniGame';
@@ -176,6 +176,26 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
     updateProgress({ is_completed: true, completed_at: new Date().toISOString() });
   }, [updateProgress]);
 
+  const handleTaskDecisionChange = useCallback((taskId: string, status: JourneyTaskDecisionStatus) => {
+    const nowIso = new Date().toISOString();
+    const currentTaskStatuses = progressRef.current.task_statuses ?? {};
+    const nextTaskStatuses = {
+      ...currentTaskStatuses,
+      [taskId]: {
+        status,
+        decided_at: nowIso,
+      },
+    };
+    const nextTasksCompleted = {
+      ...(progressRef.current.tasks_completed ?? {}),
+      [taskId]: status === 'accepted',
+    };
+    updateProgress({
+      task_statuses: nextTaskStatuses,
+      tasks_completed: nextTasksCompleted,
+    });
+  }, [updateProgress]);
+
   const resetQuizProgress = useCallback(async () => {
     const u: Partial<JourneyStepProgress> = { quiz_answers: {}, quiz_score: null };
     await updateProgress(u);
@@ -196,6 +216,9 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
       game_answers: {},
       game_score: null,
       commitment_accepted: false,
+      tasks_completed: {},
+      task_statuses: {},
+      habits_progress: {},
       is_completed: false,
       completed_at: null,
       last_section: 'video',
@@ -333,6 +356,7 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
                 progress={progress}
                 onReplay={handleReplay}
                 onComplete={handleLessonComplete}
+                onTaskDecisionChange={handleTaskDecisionChange}
               />
             )}
         </motion.div>

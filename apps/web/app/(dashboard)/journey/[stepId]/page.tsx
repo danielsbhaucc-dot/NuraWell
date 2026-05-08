@@ -73,6 +73,7 @@ export default async function StepPage({ params }: { params: Promise<{ stepId: s
     game_score: null,
     commitment_accepted: false,
     tasks_completed: {},
+    task_statuses: {},
     habits_progress: {},
     is_completed: false,
     completed_at: null,

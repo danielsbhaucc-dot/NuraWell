@@ -3,6 +3,9 @@ const EMPTY_USER_AI_MEMORY = {
   weaknesses: [],
   victories: [],
   notes: [],
+  habits_memory: [],
+  tasks_memory: [],
+  task_commitment_state: {},
 } as const;
 
 export type UserAiMemory = {
@@ -10,6 +13,9 @@ export type UserAiMemory = {
   weaknesses: string[];
   victories: string[];
   notes: string[];
+  habits_memory: string[];
+  tasks_memory: string[];
+  task_commitment_state: Record<string, 'accepted' | 'rejected' | 'pending'>;
 };
 
 function toStringArray(value: unknown): string[] {
@@ -28,7 +34,24 @@ function normalizeMemory(raw: unknown): UserAiMemory {
     weaknesses: toStringArray(memory.weaknesses),
     victories: toStringArray(memory.victories),
     notes: toStringArray(memory.notes),
+    habits_memory: toStringArray(memory.habits_memory),
+    tasks_memory: toStringArray(memory.tasks_memory),
+    task_commitment_state: normalizeTaskCommitmentState(memory.task_commitment_state),
   };
+}
+
+function normalizeTaskCommitmentState(value: unknown): Record<string, 'accepted' | 'rejected' | 'pending'> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+  const out: Record<string, 'accepted' | 'rejected' | 'pending'> = {};
+  for (const [key, status] of Object.entries(value as Record<string, unknown>)) {
+    if (!key.trim()) continue;
+    if (status === 'accepted' || status === 'rejected' || status === 'pending') {
+      out[key] = status;
+    }
+  }
+  return out;
 }
 
 /**

@@ -6,7 +6,12 @@ import {
   FileCheck, RotateCcw, BookOpen, Download, CheckCircle2,
   ChevronDown, ExternalLink, Award, Sparkles, ListChecks, Heart
 } from 'lucide-react';
-import type { JourneyStep, JourneyStepProgress, Research } from '../../lib/types/journey';
+import type {
+  JourneyStep,
+  JourneyStepProgress,
+  JourneyTaskDecisionStatus,
+  Research,
+} from '../../lib/types/journey';
 import Link from 'next/link';
 
 interface SummarySectionProps {
@@ -14,9 +19,10 @@ interface SummarySectionProps {
   progress: JourneyStepProgress;
   onReplay: () => void;
   onComplete: () => void;
+  onTaskDecisionChange: (taskId: string, status: JourneyTaskDecisionStatus) => void;
 }
 
-export function SummarySection({ step, progress, onReplay, onComplete }: SummarySectionProps) {
+export function SummarySection({ step, progress, onReplay, onComplete, onTaskDecisionChange }: SummarySectionProps) {
   const [expandedResearch, setExpandedResearch] = useState<string | null>(null);
   const quizTotal = step.quiz_questions.length;
   const quizCorrect = progress.quiz_score ?? 0;
@@ -121,16 +127,49 @@ export function SummarySection({ step, progress, onReplay, onComplete }: Summary
             <h3 className="font-black text-base" style={{ color: '#1A1730' }}>משימות לביצוע</h3>
           </div>
           <div className="space-y-2">
-            {step.tasks.map((task) => (
+            {step.tasks.map((task) => {
+              const decision = progress.task_statuses?.[task.id];
+              const status = decision?.status ?? 'pending';
+              return (
               <div key={task.id} className="flex items-start gap-3 p-3 rounded-xl"
                 style={{ background: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.04)' }}>
                 <span className="text-xl flex-shrink-0">{task.emoji}</span>
-                <div>
+                <div className="flex-1">
                   <p className="font-bold text-sm" style={{ color: '#1A1730' }}>{task.title}</p>
                   {task.description && <p className="text-xs text-gray-500 mt-0.5">{task.description}</p>}
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onTaskDecisionChange(task.id, 'accepted')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                        status === 'accepted'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      }`}
+                    >
+                      מקובל עליי
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onTaskDecisionChange(task.id, 'rejected')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                        status === 'rejected'
+                          ? 'bg-rose-600 text-white'
+                          : 'bg-rose-50 text-rose-700 border border-rose-200'
+                      }`}
+                    >
+                      לא מקובל כרגע
+                    </button>
+                    {status === 'pending' && (
+                      <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
+                        ממתין לבחירה
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </motion.div>
       )}

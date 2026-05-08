@@ -18,7 +18,8 @@ const chatBodySchema = z.object({
 const BASE_SYSTEM_PROMPT = `${NURAWELL_MENTOR_PROMPT}
 
 הנחיות נוספות לצ'אט:
-- בלי רשימות כברירת מחדל. דבר כמו בן אדם אמיתי בשיחה טבעית.
+- דבר כמו חבר אמיתי בשיחה טבעית, לא כמו טקסט "מוכן מראש".
+- בלי רשימות כברירת מחדל.
 - אם המשתמש צריך בהירות מעשית, אפשר לתת 1-3 צעדים קצרים בלבד.
 - אל תגיד למשתמש שביצעת "שמירה בזיכרון" או "עדכנתי זיכרון".
 - לעולם אל תחזיר תשובה ריקה.`;
@@ -28,14 +29,30 @@ const EMPTY_MEMORY: UserAiMemory = {
   weaknesses: [],
   victories: [],
   notes: [],
+  habits_memory: [],
+  tasks_memory: [],
+  task_commitment_state: {},
 };
 const memoryToolSchema = z.object({
   commitments: z.array(z.string()),
   weaknesses: z.array(z.string()),
   victories: z.array(z.string()),
   notes: z.array(z.string()),
+  habits_memory: z.array(z.string()),
+  tasks_memory: z.array(z.string()),
+  task_commitment_state: z.record(z.enum(['accepted', 'rejected', 'pending'])),
 });
 const MEMORY_MAX_ITEMS_PER_CATEGORY = 20;
+type TaskDecisionStatus = 'accepted' | 'rejected' | 'pending';
+
+type ActiveJourneyContext = {
+  stepId: string;
+  stepTitle: string;
+  commitmentAccepted: boolean;
+  tasks: Array<{ id: string; title: string }>;
+  habits: Array<{ id: string; title: string }>;
+  taskStatuses: Record<string, TaskDecisionStatus>;
+} | null;
 
 function normalizeLine(s: string): string {
   return s.replace(/\s+/g, ' ').trim();
@@ -117,6 +134,75 @@ function genderAddressingHint(gender: 'male' | 'female' | null | undefined): str
   return 'מגדר המשתמש לא ידוע. נסח ניטרלי כשאפשר, בלי להמציא.';
 }
 
+function normalizeJourneyItems(value: unknown): Array<{ id: string; title: string }> {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null;
+      const row = item as Record<string, unknown>;
+      const id = typeof row.id === 'string' ? row.id.trim() : '';
+      const title = typeof row.title === 'string' ? row.title.trim() : '';
+      if (!id || !title) return null;
+      return { id, title };
+    })
+    .filter((item): item is { id: string; title: string } => Boolean(item))
+    .slice(0, 12);
+}
+
+function normalizeTaskStatuses(value: unknown): Record<string, TaskDecisionStatus> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const out: Record<string, TaskDecisionStatus> = {};
+  for (const [taskId, raw] of Object.entries(value as Record<string, unknown>)) {
+    if (!taskId.trim() || !raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+    const status = (raw as { status?: unknown }).status;
+    if (status === 'accepted' || status === 'rejected' || status === 'pending') {
+      out[taskId] = status;
+    }
+  }
+  return out;
+}
+
+async function getActiveJourneyContext(
+  supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
+  userId: string
+): Promise<ActiveJourneyContext> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: progressData } = await (supabase as any)
+    .from('journey_progress')
+    .select('step_id, commitment_accepted, task_statuses, updated_at')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const latestProgress = (progressData ?? null) as {
+    step_id?: string | null;
+    commitment_accepted?: boolean | null;
+    task_statuses?: unknown;
+  } | null;
+  const stepId = latestProgress?.step_id ?? null;
+  if (!stepId) return null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: stepData } = await (supabase as any)
+    .from('journey_steps')
+    .select('id, title, tasks, habits')
+    .eq('id', stepId)
+    .maybeSingle();
+
+  const step = (stepData ?? null) as { id?: string; title?: string | null; tasks?: unknown; habits?: unknown } | null;
+  if (!step?.id) return null;
+
+  return {
+    stepId: step.id,
+    stepTitle: step.title?.trim() || 'צעד נוכחי',
+    commitmentAccepted: Boolean(latestProgress?.commitment_accepted),
+    tasks: normalizeJourneyItems(step.tasks),
+    habits: normalizeJourneyItems(step.habits),
+    taskStatuses: normalizeTaskStatuses(latestProgress?.task_statuses),
+  };
+}
+
 async function syncUserMemoryAfterTurn(params: {
   openrouter: ReturnType<typeof createOpenAI>;
   supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'];
@@ -124,9 +210,10 @@ async function syncUserMemoryAfterTurn(params: {
   currentMemory: UserAiMemory;
   userMessage: string;
   assistantMessage: string;
+  activeJourneyContext: ActiveJourneyContext;
   debugId: string;
 }) {
-  const { openrouter, supabase, userId, currentMemory, userMessage, assistantMessage, debugId } = params;
+  const { openrouter, supabase, userId, currentMemory, userMessage, assistantMessage, activeJourneyContext, debugId } = params;
 
   try {
     const { object: updatedMemory } = await generateObject({
@@ -134,8 +221,8 @@ async function syncUserMemoryAfterTurn(params: {
       temperature: 0.2,
       schema: memoryToolSchema,
       system: `אתה מעדכן זיכרון משתמש דחוס למאמן AI.
-החזר רק אובייקט JSON עם המפתחות: commitments, weaknesses, victories, notes.
-כל המפתחות הם מערכי מחרוזות בלבד.
+החזר רק אובייקט JSON עם המפתחות: commitments, weaknesses, victories, notes, habits_memory, tasks_memory, task_commitment_state.
+כל השדות הם מערכי מחרוזות, חוץ מ-task_commitment_state שהוא אובייקט סטטוסים.
 כללים:
 - שמור רק פרטים יציבים וחשובים לטווח בינוני/ארוך.
 - אל תשמור ניסוחים גולמיים של המשתמש. נסח כל פריט בצורה קצרה, כללית ושימושית.
@@ -144,6 +231,8 @@ async function syncUserMemoryAfterTurn(params: {
 - אם יש עדכון מהותי חדש, עדכן את הרשימות לפי חשיבות ורעננות והסר רעש ישן.
 - אל תשמור ב-notes הנחיות אימון גנריות כמו "להיות קצר/פרקטי" אלא רק מידע אישי ייחודי למשתמש.
 - כשיש הצהרת הרגל קונקרטית (למשל ריצה/מים/שינה), היא צריכה להיכנס ל-commitments.
+- כשיש הרגל קונקרטי מתוך צעד journey נוכחי, הוסף/עדכן גם ב-habits_memory.
+- כשיש החלטה על משימה (מקובל/לא מקובל), הוסף/עדכן גם ב-tasks_memory וגם ב-task_commitment_state לפי taskId.
 - כשיש קושי עקבי (למשל סופ"ש/שכחה/עייפות), הוא צריך להיכנס ל-weaknesses.
 - כשיש הצלחה מדידה/ברורה, היא צריכה להיכנס ל-victories.
 - תיאור כלי update_user_memory: אתה מעדכן זיכרון בשיטת Smart Compression.
@@ -153,6 +242,9 @@ async function syncUserMemoryAfterTurn(params: {
 - weaknesses: קשיים חוזרים/טריגרים.
 - victories: הצלחות קונקרטיות משמעותיות.
 - notes: תובנות קצרות על סגנון תמיכה או הקשר אישי חשוב.
+- habits_memory: רשימת הרגלים פעילים/רלוונטיים למשתמש (בקצרה).
+- tasks_memory: רשימת משימות פעילות או שנדחו (בקצרה, עם ניסוח ברור).
+- task_commitment_state: אובייקט { "<taskId>": "accepted|rejected|pending" } בלבד.
 - מגבלות גודל: עד ${MEMORY_MAX_ITEMS_PER_CATEGORY} פריטים לכל קטגוריה.`,
       prompt: `זיכרון קיים:
 ${JSON.stringify(currentMemory)}
@@ -162,6 +254,9 @@ ${userMessage}
 
 תשובת עוזר אחרונה:
 ${assistantMessage}
+
+קונטקסט journey פעיל:
+${JSON.stringify(activeJourneyContext)}
 
 עדכן את הזיכרון.`,
     });
@@ -180,6 +275,15 @@ ${assistantMessage}
         []
       ),
       notes: (updatedMemory.notes ?? []).reduce((acc, line) => addUniqueLine(acc, line, MEMORY_MAX_ITEMS_PER_CATEGORY), []),
+      habits_memory: (updatedMemory.habits_memory ?? []).reduce(
+        (acc, line) => addUniqueLine(acc, line, MEMORY_MAX_ITEMS_PER_CATEGORY),
+        []
+      ),
+      tasks_memory: (updatedMemory.tasks_memory ?? []).reduce(
+        (acc, line) => addUniqueLine(acc, line, MEMORY_MAX_ITEMS_PER_CATEGORY),
+        []
+      ),
+      task_commitment_state: updatedMemory.task_commitment_state ?? {},
     };
     await upsertUserAiMemory(supabase, userId, normalizedUpdated);
   } catch (err) {
@@ -264,6 +368,7 @@ export async function POST(request: Request) {
   let userMemory: UserAiMemory = EMPTY_MEMORY;
   let profileFullName: string | null = null;
   let profileGender: 'male' | 'female' | null = null;
+  let activeJourneyContext: ActiveJourneyContext = null;
   try {
     userMemory = await getUserAiMemory(supabase, user.id);
   } catch (memoryErr) {
@@ -284,6 +389,15 @@ export async function POST(request: Request) {
       debug_id: debugId,
       stage: 'profile_read_failed',
       error: profileErr instanceof Error ? profileErr.message : String(profileErr),
+    });
+  }
+  try {
+    activeJourneyContext = await getActiveJourneyContext(supabase, user.id);
+  } catch (journeyCtxErr) {
+    console.warn('[ai/chat]', {
+      debug_id: debugId,
+      stage: 'journey_context_read_failed',
+      error: journeyCtxErr instanceof Error ? journeyCtxErr.message : String(journeyCtxErr),
     });
   }
 
@@ -362,7 +476,9 @@ export async function POST(request: Request) {
 זהו הזיכרון העדכני של המשתמש בפורמט JSON: ${JSON.stringify(userMemory)}. עליך להתחשב בו בתשובות שלך.
 ${personalNameInstruction}
 ${genderAddressingHint(profileGender)}
+קונטקסט journey פעיל (אם קיים): ${JSON.stringify(activeJourneyContext)}
 אם המשתמש מציין קושי חדש, הצלחה, או פרט קריטי - הדגש זאת בתשובה באופן קונקרטי.
+אם המשתמש מתייחס למשימה או הרגל, התייחס רק לפריטים שמופיעים בקונטקסט journey הפעיל.
 מחק פרטים לא רלוונטיים כדי לחסוך מקום.
 אל תכתוב למשתמש שביצעת "שמירה בזיכרון" או "עדכנתי את הזיכרון".`;
 
@@ -415,6 +531,7 @@ ${genderAddressingHint(profileGender)}
               currentMemory: userMemory,
               userMessage: lastUserText,
               assistantMessage: assistantText,
+              activeJourneyContext,
               debugId,
             });
           });

@@ -81,6 +81,14 @@ export interface JourneyHabit {
   frequency: 'daily' | 'weekly' | 'per_meal';
 }
 
+export type JourneyTaskDecisionStatus = 'accepted' | 'rejected' | 'pending';
+
+export interface JourneyTaskDecision {
+  status: JourneyTaskDecisionStatus;
+  decided_at: string | null;
+  reason?: string | null;
+}
+
 // Progress tracking
 export interface JourneyStepProgress {
   step_id: string;
@@ -92,6 +100,7 @@ export interface JourneyStepProgress {
   game_score: number | null;
   commitment_accepted: boolean;
   tasks_completed: Record<string, boolean>;
+  task_statuses: Record<string, JourneyTaskDecision>;
   habits_progress: Record<string, boolean[]>;
   is_completed: boolean;
   completed_at: string | null;
