@@ -72,6 +72,14 @@ function shouldAttemptMemorySync(userMessage: string): boolean {
     'צריך חיזוק',
     'תעודד אותי',
     'ניצחון קטן',
+    'ריצה',
+    'רץ',
+    'אימון',
+    'מתאמן',
+    'הליכה',
+    'כושר',
+    'שינה',
+    'תזונה',
   ];
   return strongSignals.some((s) => t.includes(s));
 }
@@ -108,11 +116,16 @@ async function syncUserMemoryAfterTurn(params: {
 - אל תשמור ניסוחים גולמיים של המשתמש. נסח כל פריט בצורה קצרה, כללית ושימושית.
 - מחק פרטים זמניים, כפולים או לא רלוונטיים.
 - אם אין עדכון מהותי חדש, השאר את הרשימות כפי שהן.
+- אם יש עדכון מהותי חדש, עדכן את הרשימות לפי חשיבות ורעננות והסר רעש ישן.
+- אל תשמור ב-notes הנחיות אימון גנריות כמו "להיות קצר/פרקטי" אלא רק מידע אישי ייחודי למשתמש.
+- כשיש הצהרת הרגל קונקרטית (למשל ריצה/מים/שינה), היא צריכה להיכנס ל-commitments.
+- כשיש קושי עקבי (למשל סופ"ש/שכחה/עייפות), הוא צריך להיכנס ל-weaknesses.
+- כשיש הצלחה מדידה/ברורה, היא צריכה להיכנס ל-victories.
 - commitments: הרגלים/כוונות לביצוע.
 - weaknesses: קשיים חוזרים/טריגרים.
 - victories: הצלחות קונקרטיות משמעותיות.
 - notes: תובנות קצרות על סגנון תמיכה או הקשר אישי חשוב.
-- עד 6 פריטים בכל מערך, קצר ותמציתי.`,
+- מגבלות גודל קשיחות: commitments עד 5, weaknesses עד 5, victories עד 5, notes עד 3.`,
       prompt: `זיכרון קיים:
 ${JSON.stringify(currentMemory)}
 
@@ -126,10 +139,10 @@ ${assistantMessage}
     });
 
     const normalizedUpdated: UserAiMemory = {
-      commitments: (updatedMemory.commitments ?? []).reduce((acc, line) => addUniqueLine(acc, line), []),
-      weaknesses: (updatedMemory.weaknesses ?? []).reduce((acc, line) => addUniqueLine(acc, line), []),
-      victories: (updatedMemory.victories ?? []).reduce((acc, line) => addUniqueLine(acc, line), []),
-      notes: (updatedMemory.notes ?? []).reduce((acc, line) => addUniqueLine(acc, line), []),
+      commitments: (updatedMemory.commitments ?? []).reduce((acc, line) => addUniqueLine(acc, line, 5), []),
+      weaknesses: (updatedMemory.weaknesses ?? []).reduce((acc, line) => addUniqueLine(acc, line, 5), []),
+      victories: (updatedMemory.victories ?? []).reduce((acc, line) => addUniqueLine(acc, line, 5), []),
+      notes: (updatedMemory.notes ?? []).reduce((acc, line) => addUniqueLine(acc, line, 3), []),
     };
     await upsertUserAiMemory(supabase, userId, normalizedUpdated);
   } catch (err) {
