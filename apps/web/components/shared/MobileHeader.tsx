@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
 import { BookOpen, TrendingUp, UserCircle, X, Menu, Bell } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface MobileHeaderProps {
@@ -19,15 +19,8 @@ const menuItems = [
 
 export function MobileHeader({ user, title }: MobileHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [greeting, setGreeting] = useState('שלום,');
-
-  const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'שלום';
-
-  useEffect(() => {
-    const hour = new Date().getHours();
-    const nextGreeting = hour < 12 ? 'בוקר טוב,' : hour < 17 ? 'צהריים טובים,' : hour < 21 ? 'ערב טוב,' : 'לילה טוב,';
-    setGreeting(nextGreeting);
-  }, []);
+  const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'משתמש';
+  const firstName = String(fullName).trim().split(/\s+/)[0] || 'משתמש';
 
   return (
     <>
@@ -35,12 +28,30 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
         style={{ background: 'linear-gradient(160deg, #047857 0%, #059669 50%, #10b981 100%)' }}>
 
         <div className="container-mobile h-16 flex items-center justify-between gap-3 relative z-10">
-          {/* Greeting */}
-          <Link href="/courses" className="no-tap-highlight" onClick={() => setIsMenuOpen(false)}>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', fontWeight: 400, marginBottom: '2px' }}>{greeting}</div>
-            <div style={{ fontSize: '22px', fontWeight: 900, color: '#fff', lineHeight: 1, fontFamily: "'Rubik','Heebo',sans-serif" }}>
-              {userName} <span style={{ fontSize: '18px' }}>☀️</span>
+          {/* Left label */}
+          <Link href="/courses" prefetch className="no-tap-highlight min-w-[72px]" onClick={() => setIsMenuOpen(false)}>
+            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontFamily: "'Rubik','Heebo',sans-serif" }}>
+              {title || 'NuraWell'}
             </div>
+          </Link>
+
+          {/* Center brand logo */}
+          <Link
+            href="/"
+            prefetch
+            aria-label="מעבר למסך הבית"
+            className="absolute left-1/2 -translate-x-1/2 rounded-xl px-3 py-1.5 no-tap-highlight"
+            style={{
+              background: 'rgba(255,255,255,0.14)',
+              border: '1px solid rgba(255,255,255,0.28)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.24)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+            }}
+          >
+            <span style={{ color: '#fff', fontWeight: 900, fontSize: '13px', letterSpacing: '0.2px', fontFamily: "'Rubik','Heebo',sans-serif" }}>
+              NuraWell.ai
+            </span>
           </Link>
 
           {/* Actions */}
@@ -88,6 +99,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch
                     onClick={() => setIsMenuOpen(false)}
                     className={`flex items-center gap-3.5 px-5 py-4 transition-all hover:bg-gray-50 active:bg-gray-100 no-tap-highlight ${idx < menuItems.length - 1 ? 'border-b border-gray-100' : ''}`}
                   >
@@ -102,7 +114,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
                 <div className="px-5 py-3.5 border-t border-gray-100 flex items-center gap-2.5">
                   <UserCircle className="w-4 h-4 text-gray-400" />
                   <p className="text-xs text-gray-400 font-medium">
-                    שלום, {user.email?.split('@')[0]}
+                    שלום, {firstName}
                   </p>
                 </div>
               </div>

@@ -103,12 +103,15 @@ export default async function CoursesPage() {
   const avgProgress = enrolledCourses.length
     ? Math.round(enrolledCourses.reduce((s, c) => s + c.progress, 0) / enrolledCourses.length)
     : 0;
+  const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'משתמש';
+  const firstName = String(fullName).trim().split(/\s+/)[0] || 'משתמש';
 
   return (
     <CoursesClientWrapper
       enrolledCourses={enrolledCourses}
       availableCourses={availableCourses}
       stats={{ totalLessonsCompleted, activeCoursesCount, avgProgress }}
+      firstName={firstName}
     />
   );
 }
