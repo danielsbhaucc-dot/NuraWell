@@ -62,6 +62,44 @@ function extractAssistantText(data: OpenRouterResponse): string {
     .trim();
   if (fromOutput) return fromOutput;
 
+  // Last-resort extraction: recursively collect string leaves and pick the most
+  // informative candidate. OpenRouter providers sometimes wrap assistant text
+  // in non-standard nested shapes.
+  const skipExact = new Set([
+    'assistant',
+    'user',
+    'system',
+    'stop',
+    'length',
+    'content_filter',
+  ]);
+  const candidates: string[] = [];
+  const walk = (node: unknown) => {
+    if (!node) return;
+    if (typeof node === 'string') {
+      const s = node.trim();
+      if (s.length >= 8 && !skipExact.has(s.toLowerCase())) candidates.push(s);
+      return;
+    }
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item);
+      return;
+    }
+    if (typeof node === 'object') {
+      for (const value of Object.values(node as Record<string, unknown>)) walk(value);
+    }
+  };
+  walk(data.choices?.[0]?.message);
+  walk(data.output?.[0]);
+  walk(data.choices?.[0]);
+
+  if (candidates.length > 0) {
+    const best = candidates
+      .sort((a, b) => b.length - a.length)
+      .find((s) => /[\p{L}\p{N}]/u.test(s));
+    if (best) return best;
+  }
+
   return '';
 }
 
