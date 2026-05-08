@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { MessageCircle, Send, Loader2, X } from 'lucide-react';
 import { Drawer } from 'vaul';
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
+import { TextStreamChatTransport } from 'ai';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 
@@ -33,6 +34,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const { avatarUrl: avatarSrc } = useAlmogAvatarUrl();
   const [open, setOpen] = useState(false);
   const [online, setOnline] = useState(true);
+  const [input, setInput] = useState('');
   const sessionIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -73,18 +75,22 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     };
   }, []);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, stop } = useChat({
-    api: '/api/v1/ai/chat',
-    fetch: fetchWithSession,
-    body: {
-      user_id: userId,
-      session_id: sessionIdRef.current ?? undefined,
-    },
+  const { messages, sendMessage, status, stop } = useChat({
+    transport: new TextStreamChatTransport({
+      api: '/api/v1/ai/chat',
+      fetch: fetchWithSession,
+      body: () => ({
+        user_id: userId,
+        session_id: sessionIdRef.current ?? undefined,
+      }),
+    }),
   });
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length, isLoading, open]);
+  }, [messages.length, status, open]);
+
+  const isLoading = status === 'submitted' || status === 'streaming';
 
   return (
     <Drawer.Root open={open} onOpenChange={setOpen} direction="bottom" shouldScaleBackground>
@@ -191,8 +197,9 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
 
               {messages.map((msg, i) => {
                 const isUser = msg.role === 'user';
+                const text = msg.parts.map((p) => (p.type === 'text' ? p.text : '')).join('');
                 return (
-                  <div key={msg.id ?? `${i}-${msg.content.slice(0, 16)}`} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                  <div key={msg.id ?? `${i}-${text.slice(0, 16)}`} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                     <div
                       className="max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed shadow-[0_4px_16px_rgba(15,23,42,0.07)]"
                       style={
@@ -209,10 +216,10 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                             }
                       }
                     >
-                      {!isUser && isLoading && i === messages.length - 1 && !msg.content ? (
+                      {!isUser && isLoading && i === messages.length - 1 && msg.parts.length === 0 ? (
                         <AlmogChatTypingDots />
                       ) : (
-                        msg.content || '\u00a0'
+                        text || '\u00a0'
                       )}
                     </div>
                   </div>
@@ -227,19 +234,26 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 <form
                   className="flex items-end gap-2"
                   onSubmit={(e) => {
-                    handleSubmit(e, {
-                      body: {
-                        user_id: userId,
-                        session_id: sessionIdRef.current ?? undefined,
-                      },
-                    });
+                    e.preventDefault();
+                    const text = input.trim();
+                    if (!text || isLoading) return;
+                    sendMessage(
+                      { text },
+                      {
+                        body: {
+                          user_id: userId,
+                          session_id: sessionIdRef.current ?? undefined,
+                        },
+                      }
+                    );
+                    setInput('');
                   }}
                 >
                   <textarea
                     dir="rtl"
                     rows={1}
                     value={input}
-                    onChange={handleInputChange}
+                    onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();

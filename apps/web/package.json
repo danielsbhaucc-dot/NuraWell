@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.63",
+    "@ai-sdk/react": "^3.0.178",
     "@aws-sdk/client-s3": "^3.1045.0",
     "@radix-ui/react-checkbox": "^1.1.0",
     "@radix-ui/react-dialog": "^1.1.0",
@@ -33,6 +34,7 @@
     "postcss": "^8.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "swr": "^2.4.1",
     "tailwind-merge": "^2.3.0",
     "tailwindcss": "^3.4.0",
     "tailwindcss-animate": "^1.0.0",

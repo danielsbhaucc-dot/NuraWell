@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { streamText } from 'ai';
+import { convertToModelMessages, streamText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { buildUserContext } from '../../../../../lib/ai/memory';
 import { NURAWELL_MENTOR_PROMPT } from '../../../../../lib/ai/prompts';
@@ -8,13 +8,8 @@ import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route
 export const runtime = 'edge';
 
 const chatBodySchema = z.object({
-  /** `useChat` sends the full transcript. */
-  messages: z.array(
-    z.object({
-      role: z.enum(['system', 'user', 'assistant']),
-      content: z.string(),
-    })
-  ),
+  /** `useChat` sends UI messages (with parts). Keep it flexible. */
+  messages: z.array(z.unknown()),
   session_id: z.string().uuid().optional(),
   user_id: z.string().uuid().optional(),
 });
@@ -45,6 +40,31 @@ async function insertInteraction(
   if (error) throw error;
 }
 
+function uiMessageText(msg: unknown): string {
+  if (!msg || typeof msg !== 'object') return '';
+  if ('content' in msg && typeof (msg as { content: unknown }).content === 'string') {
+    return (msg as { content: string }).content;
+  }
+  if ('parts' in msg && Array.isArray((msg as { parts: unknown }).parts)) {
+    return ((msg as { parts: unknown[] }).parts ?? [])
+      .map((p) => {
+        if (!p || typeof p !== 'object') return '';
+        const type = (p as { type?: unknown }).type;
+        const text = (p as { text?: unknown }).text;
+        if (type === 'text' && typeof text === 'string') return text;
+        return '';
+      })
+      .join('');
+  }
+  return '';
+}
+
+function uiMessageRole(msg: unknown): 'system' | 'user' | 'assistant' | null {
+  if (!msg || typeof msg !== 'object') return null;
+  const r = (msg as { role?: unknown }).role;
+  return r === 'system' || r === 'user' || r === 'assistant' ? r : null;
+}
+
 export async function POST(request: Request) {
   const { supabase, user, authError } = await createSupabaseForApiRoute(request);
   if (authError || !user) {
@@ -66,22 +86,16 @@ export async function POST(request: Request) {
   const { contextString } = await buildUserContext(supabase, user.id);
   const systemPrompt = `${NURAWELL_MENTOR_PROMPT}\n\n${contextString}`;
 
-  const normalizedMessages = [
-    { role: 'system' as const, content: systemPrompt },
-    // `useChat` already includes history; keep it but cap length a bit.
-    ...messages
-      .filter((m) => m.role !== 'system')
-      .slice(-12)
-      .map((m) => ({ role: m.role, content: m.content.slice(0, 1200) })),
-  ];
-
-  const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content?.trim();
+  const lastUser = [...messages]
+    .reverse()
+    .find((m) => uiMessageRole(m) === 'user');
+  const lastUserText = uiMessageText(lastUser).trim();
   if (lastUser) {
     await insertInteraction(supabase, {
       user_id: user.id,
       session_id: sessionId,
       role: 'user',
-      content: lastUser,
+      content: lastUserText,
       model_name: 'openai/gpt-5-mini',
       metadata: { edge: true },
     });
@@ -90,8 +104,8 @@ export async function POST(request: Request) {
   const result = streamText({
     model: openrouter.chat('openai/gpt-5-mini'),
     temperature: 0.85,
-    maxTokens: 260,
-    messages: normalizedMessages,
+    maxOutputTokens: 260,
+    messages: await convertToModelMessages(messages as never[]),
     onFinish: async ({ text, usage }) => {
       const t = (text ?? '').trim();
       if (!t) return;
@@ -104,16 +118,15 @@ export async function POST(request: Request) {
         tokens_used: usage?.totalTokens,
         metadata: {
           edge: true,
-          input_tokens: usage?.promptTokens,
-          output_tokens: usage?.completionTokens,
         },
       });
     },
   });
 
-  return result.toDataStreamResponse({
+  return result.toTextStreamResponse({
     headers: {
       'x-session-id': sessionId,
+      'Cache-Control': 'no-cache, no-transform',
     },
   });
 }

@@ -132,7 +132,7 @@ export async function POST(request: Request) {
       const out = await generateText({
         model: openrouter.chat('openai/gpt-5-mini'),
         temperature: 0.72,
-        maxTokens: 180,
+        maxOutputTokens: 180,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userEventText },
