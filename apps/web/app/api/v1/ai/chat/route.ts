@@ -49,6 +49,8 @@ function isLikelyReadableAssistantText(text: string): boolean {
 
   // Reject long encoded/token-like blobs.
   if (/[A-Za-z0-9+/_=-]{80,}/.test(t)) return false;
+  // Reject identifier-like blobs (no spaces, only token chars).
+  if (/^[A-Za-z0-9._-]+$/.test(t) && t.length > 12) return false;
 
   const letters = t.match(/\p{L}/gu)?.length ?? 0;
   const spaces = t.match(/\s/g)?.length ?? 0;
@@ -69,56 +71,21 @@ function extractAssistantText(data: OpenRouterResponse): string {
   const fromChoiceText = String(data.choices?.[0]?.text ?? '').trim();
   if (fromChoiceText && isLikelyReadableAssistantText(fromChoiceText)) return fromChoiceText;
 
-  const outputParts = data.output?.[0]?.content ?? [];
+  const outputParts = (data.output?.[0]?.content ?? []).filter((p) => {
+    const type = String(p?.type ?? '').toLowerCase();
+    return !type || type === 'text' || type === 'output_text';
+  });
   const fromOutput = outputParts
     .map((p) => {
       if (!p) return '';
-      if (typeof p.text === 'string' && p.text.trim()) return p.text;
-      if (typeof p.content === 'string' && p.content.trim()) return p.content;
-      if (typeof p.value === 'string' && p.value.trim()) return p.value;
+      if (typeof p.text === 'string' && p.text.trim()) return p.text.trim();
+      if (typeof p.content === 'string' && p.content.trim()) return p.content.trim();
+      if (typeof p.value === 'string' && p.value.trim()) return p.value.trim();
       return '';
     })
-    .join('')
+    .join(' ')
     .trim();
   if (fromOutput && isLikelyReadableAssistantText(fromOutput)) return fromOutput;
-
-  // Last-resort extraction: recursively collect string leaves and pick the most
-  // informative candidate. OpenRouter providers sometimes wrap assistant text
-  // in non-standard nested shapes.
-  const skipExact = new Set([
-    'assistant',
-    'user',
-    'system',
-    'stop',
-    'length',
-    'content_filter',
-  ]);
-  const candidates: string[] = [];
-  const walk = (node: unknown) => {
-    if (!node) return;
-    if (typeof node === 'string') {
-      const s = node.trim();
-      if (s.length >= 8 && !skipExact.has(s.toLowerCase())) candidates.push(s);
-      return;
-    }
-    if (Array.isArray(node)) {
-      for (const item of node) walk(item);
-      return;
-    }
-    if (typeof node === 'object') {
-      for (const value of Object.values(node as Record<string, unknown>)) walk(value);
-    }
-  };
-  walk(data.choices?.[0]?.message);
-  walk(data.output?.[0]);
-  walk(data.choices?.[0]);
-
-  if (candidates.length > 0) {
-    const best = candidates
-      .filter((s) => isLikelyReadableAssistantText(s))
-      .sort((a, b) => b.length - a.length)[0];
-    if (best) return best;
-  }
 
   return '';
 }
