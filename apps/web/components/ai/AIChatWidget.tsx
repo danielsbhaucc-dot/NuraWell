@@ -1,36 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { MessageCircle, Send, Loader2, X } from 'lucide-react';
 import { Drawer } from 'vaul';
+import { useChat } from 'ai/react';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 
 const SESSION_STORAGE_KEY = 'nurawell_almog_chat_session';
-const STREAM_FIRST_TOKEN_TIMEOUT_MS = 4500;
-
-type ChatMessage = { role: 'user' | 'assistant'; text: string };
-
-function parseSseBlocks(buffer: string): { events: { event: string; data: string }[]; rest: string } {
-  const events: { event: string; data: string }[] = [];
-  let rest = buffer;
-  for (;;) {
-    const idx = rest.search(/\r?\n\r?\n/);
-    if (idx === -1) break;
-    const raw = rest.slice(0, idx);
-    const sepLen = rest[idx] === '\r' ? 4 : 2;
-    rest = rest.slice(idx + sepLen);
-    let eventName = 'message';
-    const dataLines: string[] = [];
-    for (const line of raw.split('\n')) {
-      if (line.startsWith('event:')) eventName = line.slice(6).trim();
-      else if (line.startsWith('data:')) dataLines.push(line.slice(5).trim());
-    }
-    events.push({ event: eventName, data: dataLines.join('') });
-  }
-  return { events, rest };
-}
 
 function AlmogChatTypingDots() {
   return (
@@ -48,34 +26,24 @@ function AlmogChatTypingDots() {
 }
 
 export interface AIChatWidgetProps {
-  /** Must match the logged-in user; server rejects mismatched IDs. Context is loaded for this user. */
   userId: string;
 }
 
 export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const { avatarUrl: avatarSrc } = useAlmogAvatarUrl();
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [waitingTokens, setWaitingTokens] = useState(false);
   const [online, setOnline] = useState(true);
   const sessionIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     try {
       const s = sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (s) sessionIdRef.current = s;
     } catch {
-      /* private mode */
+      /* */
     }
   }, []);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, waitingTokens, open]);
 
   useEffect(() => {
     const onOnline = () => setOnline(true);
@@ -89,205 +57,34 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     };
   }, []);
 
-  const stopStream = useCallback(() => {
-    abortRef.current?.abort();
-    abortRef.current = null;
-  }, []);
-
-  const requestNonStreamFallback = useCallback(
-    async (text: string): Promise<string | null> => {
-      try {
-        const res = await fetch('/api/v1/ai/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: text,
-            stream: false,
-            user_id: userId,
-            ...(sessionIdRef.current ? { session_id: sessionIdRef.current } : {}),
-          }),
-        });
-        const data = (await res.json()) as { reply?: string; session_id?: string };
-        if (!res.ok || !data.reply) return null;
-        if (typeof data.session_id === 'string') {
-          sessionIdRef.current = data.session_id;
-          try {
-            sessionStorage.setItem(SESSION_STORAGE_KEY, data.session_id);
-          } catch {
-            // noop
-          }
-        }
-        return data.reply;
-      } catch {
-        return null;
-      }
-    },
-    [userId]
-  );
-
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
-    if (!text || busy) return;
-    setInput('');
-    setMessages((m) => [...m, { role: 'user', text }]);
-    setBusy(true);
-    setWaitingTokens(true);
-    setMessages((m) => [...m, { role: 'assistant', text: '' }]);
-
-    const ac = new AbortController();
-    abortRef.current = ac;
-
-    let streamDeliveredToken = false;
-    let streamTimedOut = false;
-    const streamTimeout = setTimeout(() => {
-      if (!streamDeliveredToken && abortRef.current === ac) {
-        streamTimedOut = true;
-        ac.abort();
-      }
-    }, STREAM_FIRST_TOKEN_TIMEOUT_MS);
-
-    const applySseEvent = (event: string, dataStr: string) => {
-      let payload: Record<string, unknown> = {};
-      try {
-        payload = JSON.parse(dataStr || '{}') as Record<string, unknown>;
-      } catch {
-        return;
-      }
-      if (event === 'meta' && typeof payload.session_id === 'string') {
-        sessionIdRef.current = payload.session_id;
+  const fetchWithSession = useMemo(() => {
+    return async (url: RequestInfo | URL, init?: RequestInit) => {
+      const res = await fetch(url, init);
+      const sid = res.headers.get('x-session-id');
+      if (sid) {
+        sessionIdRef.current = sid;
         try {
-          sessionStorage.setItem(SESSION_STORAGE_KEY, payload.session_id);
+          sessionStorage.setItem(SESSION_STORAGE_KEY, sid);
         } catch {
           /* */
         }
       }
-      if (event === 'token' && typeof payload.t === 'string') {
-        const piece = payload.t;
-        if (!piece) return;
-        streamDeliveredToken = true;
-        setWaitingTokens(false);
-        setMessages((m) => {
-          const next = [...m];
-          const last = next[next.length - 1];
-          if (last?.role === 'assistant') {
-            next[next.length - 1] = { role: 'assistant', text: last.text + piece };
-          }
-          return next;
-        });
-      }
-      if (event === 'error') {
-        throw new Error(typeof payload.message === 'string' ? payload.message : 'שגיאת סטרים');
-      }
+      return res;
     };
+  }, []);
 
-    const drainSseBuffer = (buf: string): string => {
-      let rest = buf;
-      for (let i = 0; i < 64; i++) {
-        const { events, rest: r } = parseSseBlocks(rest);
-        rest = r;
-        for (const { event, data } of events) {
-          applySseEvent(event, data);
-        }
-        if (events.length === 0) break;
-      }
-      return rest;
-    };
+  const { messages, input, handleInputChange, handleSubmit, isLoading, stop } = useChat({
+    api: '/api/v1/ai/chat',
+    fetch: fetchWithSession,
+    body: {
+      user_id: userId,
+      session_id: sessionIdRef.current ?? undefined,
+    },
+  });
 
-    try {
-      const res = await fetch('/api/v1/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: ac.signal,
-        body: JSON.stringify({
-          message: text,
-          stream: true,
-          user_id: userId,
-          ...(sessionIdRef.current ? { session_id: sessionIdRef.current } : {}),
-        }),
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error('אין גוף תשובה מהשרת');
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (value) {
-          buffer += decoder.decode(value, { stream: true });
-        }
-        buffer = drainSseBuffer(buffer);
-        if (done) {
-          buffer += decoder.decode();
-          buffer = drainSseBuffer(buffer);
-          break;
-        }
-      }
-
-      if (!streamDeliveredToken) {
-        const fallbackReply = await requestNonStreamFallback(text);
-        setMessages((m) => {
-          const next = [...m];
-          const last = next[next.length - 1];
-          if (last?.role === 'assistant' && !last.text?.trim()) {
-            next[next.length - 1] = fallbackReply
-              ? { role: 'assistant', text: fallbackReply }
-              : {
-                  role: 'assistant',
-                  text: 'משהו נתקע בדרך. נסה שוב עוד רגע?',
-                };
-          }
-          return next;
-        });
-      }
-    } catch (e) {
-      if ((e as Error).name === 'AbortError') {
-        if (streamTimedOut) {
-          const fallbackReply = await requestNonStreamFallback(text);
-          setMessages((m) => {
-            const next = [...m];
-            const last = next[next.length - 1];
-            if (last?.role === 'assistant') {
-              next[next.length - 1] = fallbackReply
-                ? { role: 'assistant', text: fallbackReply }
-                : {
-                    role: 'assistant',
-                    text: 'לוקח לשרת יותר מהרגיל. אפשר לנסות שוב, או להמתין רגע ואחזור מיד.',
-                  };
-            }
-            return next;
-          });
-          return;
-        }
-        setMessages((m) => {
-          const next = [...m];
-          const last = next[next.length - 1];
-          if (last?.role === 'assistant' && !last.text) next.pop();
-          return next;
-        });
-      } else {
-        const fallbackReply = await requestNonStreamFallback(text);
-        setMessages((m) => {
-          const next = [...m];
-          const last = next[next.length - 1];
-          if (last?.role === 'assistant') {
-            next[next.length - 1] = fallbackReply
-              ? { role: 'assistant', text: fallbackReply }
-              : { role: 'assistant', text: 'אני איתך, אבל החיבור היה לא יציב. אפשר לנסות שוב באותה שאלה.' };
-          }
-          return next;
-        });
-      }
-    } finally {
-      clearTimeout(streamTimeout);
-      setWaitingTokens(false);
-      setBusy(false);
-      abortRef.current = null;
-    }
-  }, [busy, input, userId, requestNonStreamFallback]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length, isLoading, open]);
 
   return (
     <Drawer.Root open={open} onOpenChange={setOpen} direction="bottom" shouldScaleBackground>
@@ -321,6 +118,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
         >
           <Drawer.Title className="sr-only">שיחה עם אלמוג</Drawer.Title>
           <Drawer.Description className="sr-only">צ׳אט אישי עם המנטור אלמוג</Drawer.Description>
+
           <div className="h-full flex flex-col overflow-hidden rounded-t-[28px] bg-white">
             <div
               className="shrink-0 rounded-t-[28px] text-white shadow-[0_4px_24px_rgba(6,78,59,0.35)]"
@@ -345,7 +143,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                       אלמוג
                     </p>
                     <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-white/85">
-                      {busy ? (
+                      {isLoading ? (
                         <>
                           <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-200" />
                           אלמוג מקליד
@@ -368,7 +166,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                   type="button"
                   aria-label="סגור"
                   onClick={() => {
-                    stopStream();
+                    stop();
                     setOpen(false);
                   }}
                   className="shrink-0 rounded-xl p-2 hover:bg-white/10"
@@ -394,7 +192,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
               {messages.map((msg, i) => {
                 const isUser = msg.role === 'user';
                 return (
-                  <div key={`${i}-${msg.text.slice(0, 16)}`} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                  <div key={msg.id ?? `${i}-${msg.content.slice(0, 16)}`} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                     <div
                       className="max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed shadow-[0_4px_16px_rgba(15,23,42,0.07)]"
                       style={
@@ -411,10 +209,10 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                             }
                       }
                     >
-                      {!isUser && waitingTokens && i === messages.length - 1 && !msg.text ? (
+                      {!isUser && isLoading && i === messages.length - 1 && !msg.content ? (
                         <AlmogChatTypingDots />
                       ) : (
-                        msg.text || '\u00a0'
+                        msg.content || '\u00a0'
                       )}
                     </div>
                   </div>
@@ -424,47 +222,49 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
               <div ref={bottomRef} />
             </div>
 
-            <div
-              className="shrink-0 border-t border-slate-200/90 bg-white p-3"
-              style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
-            >
+            <div className="shrink-0 border-t border-slate-200/90 bg-white p-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
               <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-2 shadow-[0_-2px_16px_rgba(15,23,42,0.05)]">
-                <div className="flex items-end gap-2">
+                <form
+                  className="flex items-end gap-2"
+                  onSubmit={(e) => {
+                    handleSubmit(e, {
+                      body: {
+                        user_id: userId,
+                        session_id: sessionIdRef.current ?? undefined,
+                      },
+                    });
+                  }}
+                >
                   <textarea
                     dir="rtl"
                     rows={1}
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={handleInputChange}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        void sendMessage();
+                        (e.currentTarget.form as HTMLFormElement | null)?.requestSubmit();
                       }
                     }}
-                    disabled={busy}
+                    disabled={isLoading}
                     placeholder="כתוב לי מה עובר עליך..."
                     className="max-h-28 min-h-[44px] flex-1 resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[15px] text-right text-gray-900 shadow-inner outline-none disabled:opacity-60"
                   />
-                  {busy && (
-                    <button
-                      type="button"
-                      onClick={stopStream}
-                      className="shrink-0 rounded-xl px-2 py-2 text-xs font-bold text-gray-600 hover:bg-slate-100/90"
-                    >
+                  {isLoading && (
+                    <button type="button" onClick={stop} className="shrink-0 rounded-xl px-2 py-2 text-xs font-bold text-gray-600 hover:bg-slate-100/90">
                       עצור
                     </button>
                   )}
                   <button
-                    type="button"
-                    disabled={busy || !input.trim()}
-                    onClick={() => void sendMessage()}
+                    type="submit"
+                    disabled={isLoading || !input.trim()}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-md disabled:opacity-40"
                     style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
                     aria-label="שלח"
                   >
-                    {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                   </button>
-                </div>
+                </form>
               </div>
             </div>
           </div>
@@ -473,3 +273,4 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     </Drawer.Root>
   );
 }
+
