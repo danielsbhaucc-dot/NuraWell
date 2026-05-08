@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { streamText } from 'ai';
+import { streamText, tool } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
+import { getUserAiMemory, upsertUserAiMemory } from '../../../../../lib/ai/user-memory';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 
 export const runtime = 'edge';
@@ -15,6 +16,12 @@ const chatBodySchema = z.object({
 const BASE_SYSTEM_PROMPT =
   'אתה אלמוג, מנטור אמפתי ומעשי. ענה בקצרה ובעברית טבעית, בלי לחזור על אותם משפטים. לעולם אל תחזיר תשובה ריקה.';
 const EMPTY_RESPONSE_FALLBACK = 'אני כאן איתך. ספר לי במשפט אחד מה הכי כבד עכשיו, ונחשוב יחד על צעד קטן להמשך.';
+const MEMORY_TOOL_SCHEMA = z.object({
+  commitments: z.array(z.string()),
+  weaknesses: z.array(z.string()),
+  victories: z.array(z.string()),
+  notes: z.array(z.string()),
+});
 
 async function insertInteraction(
   supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
@@ -84,6 +91,7 @@ export async function POST(request: Request) {
   }
 
   const sessionId = parsed.data.session_id ?? crypto.randomUUID();
+  const memory = await getUserAiMemory(supabase, user.id);
 
   const lastUser = [...messages]
     .reverse()
@@ -151,6 +159,13 @@ export async function POST(request: Request) {
   });
 
   try {
+    const systemPromptWithMemory = `${BASE_SYSTEM_PROMPT}
+
+זהו הזיכרון העדכני של המשתמש בפורמט JSON: ${JSON.stringify(memory)}. עליך להתחשב בו בתשובות שלך.
+
+אם המשתמש מציין קושי חדש, הצלחה, או פרט קריטי, השתמש בכלי update_user_memory כדי לדחוס ולעדכן את הזיכרון.
+מחק פרטים לא רלוונטיים כדי לחסוך מקום.`;
+
     stage = 'stream_init';
     const result = streamText({
       model: openrouter.chat('openai/gpt-5-mini'),
@@ -160,8 +175,19 @@ export async function POST(request: Request) {
         // Reduce internal reasoning overrun that can yield empty visible text.
         openai: { reasoningEffort: 'low' },
       },
-      system: BASE_SYSTEM_PROMPT,
+      system: systemPromptWithMemory,
       messages: recentMessages,
+      tools: {
+        update_user_memory: tool({
+          description:
+            'Update compressed long-term user memory with arrays for commitments, weaknesses, victories, and notes.',
+          inputSchema: MEMORY_TOOL_SCHEMA,
+          execute: async (input) => {
+            const updated = await upsertUserAiMemory(supabase, user.id, input);
+            return { ok: true, memory: updated };
+          },
+        }),
+      },
       onFinish: async ({ text, usage }) => {
         const finishStage = 'on_finish';
         const t = (text ?? '').trim();
