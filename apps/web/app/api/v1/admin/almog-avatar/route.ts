@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
-import { almogAvatarAppImageUrl, getAlmogAvatarUrl, resolveAlmogPublicBaseUrl } from '../../../../../lib/ai/almog-avatar';
+import { almogCdnHostname, getAlmogAvatarUrl, resolveAlmogPublicBaseUrl } from '../../../../../lib/ai/almog-avatar';
 import {
   ALMOG_AVATAR_LEGACY_KEYS,
   ALMOG_AVATAR_OBJECT_KEY,
@@ -33,12 +33,16 @@ export async function GET(request: Request) {
   const auth = await assertAdmin(request);
   if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: auth.status });
 
-  const bucket = r2ImageBucketName();
-  const avatar_url = bucket ? almogAvatarAppImageUrl('0') : getAlmogAvatarUrl();
+  const cdnBase = resolveAlmogPublicBaseUrl();
+  const avatar_url = cdnBase ? getAlmogAvatarUrl() : null;
 
   return NextResponse.json({
     avatar_url,
-    is_configured: Boolean(bucket || resolveAlmogPublicBaseUrl()),
+    cdn_base: cdnBase ?? null,
+    cdn_hostname: almogCdnHostname(),
+    public_object_path: `/${ALMOG_AVATAR_OBJECT_KEY}`,
+    is_configured: Boolean(r2ImageBucketName() && cdnBase),
+    r2_bucket_configured: Boolean(r2ImageBucketName()),
     expected_key: ALMOG_AVATAR_OBJECT_KEY,
   });
 }
@@ -106,9 +110,16 @@ export async function POST(request: Request) {
     );
 
     const version = Date.now().toString();
+    const cdnBase = resolveAlmogPublicBaseUrl();
+    const avatar_url = cdnBase ? getAlmogAvatarUrl(version) : null;
+
     return NextResponse.json({
       ok: true,
-      avatar_url: almogAvatarAppImageUrl(version),
+      avatar_url,
+      cdn_base: cdnBase ?? null,
+      cdn_hostname: almogCdnHostname(),
+      public_object_path: `/${ALMOG_AVATAR_OBJECT_KEY}`,
+      cdn_configured: Boolean(cdnBase),
       original_bytes: originalForStats,
       optimized_bytes: buf.length,
       saved_percent: Math.max(0, Math.round((1 - buf.length / Math.max(1, originalForStats)) * 100)),

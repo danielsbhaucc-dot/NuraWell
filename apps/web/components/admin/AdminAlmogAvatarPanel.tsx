@@ -10,7 +10,11 @@ import {
 
 type UploadResult = {
   ok?: boolean;
-  avatar_url?: string;
+  avatar_url?: string | null;
+  cdn_base?: string | null;
+  cdn_hostname?: string | null;
+  public_object_path?: string;
+  cdn_configured?: boolean;
   original_bytes?: number;
   optimized_bytes?: number;
   saved_percent?: number;
@@ -33,7 +37,14 @@ export function AdminAlmogAvatarPanel() {
   const [uploadTick, setUploadTick] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [fileObjectUrl, setFileObjectUrl] = useState<string | null>(null);
-  const { avatarUrl: remoteAvatarUrl, hasCustom, ready: avatarMetaReady, refresh } = useAlmogAvatarUrl(uploadTick);
+  const {
+    avatarUrl: remoteAvatarUrl,
+    hasCustom,
+    ready: avatarMetaReady,
+    cdnConfigured,
+    cdnHostname,
+    refresh,
+  } = useAlmogAvatarUrl(uploadTick);
 
   useEffect(() => {
     if (!file) {
@@ -136,6 +147,25 @@ export function AdminAlmogAvatarPanel() {
           <p className="text-sm text-gray-600 mt-1.5 leading-relaxed max-w-xl">
             מוצגת בצ&apos;אט, במשובים ובהתראות. עדיף תמונה ברורה של הפנים, ריבועית או פורטרט.
           </p>
+          {avatarMetaReady && cdnConfigured && cdnHostname ? (
+            <p className="text-xs text-gray-500 mt-2 leading-relaxed max-w-xl">
+              קובץ ציבורי ב־CDN{' '}
+              <span className="font-semibold text-emerald-800">{cdnHostname}</span>
+              {': '}
+              <code className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-700" dir="ltr">
+                /almog/avatar
+              </code>
+              <span className="text-gray-500"> — כל העלאה מחליפה את אותו האובייקט ב־R2.</span>
+            </p>
+          ) : avatarMetaReady ? (
+            <p className="text-xs text-amber-800 mt-2 leading-relaxed max-w-xl rounded-lg bg-amber-50/90 border border-amber-200/80 px-3 py-2">
+              חסרה כתובת CDN בשרת (<code className="text-[11px]">NEXT_PUBLIC_CDN_URL</code>, למשל{' '}
+              <code className="text-[11px]" dir="ltr">
+                https://cdn.nurawell.ai
+              </code>
+              ). בלי זה העלאה ל־R2 עדיין עובדת, אבל האתר לא יבנה קישור ציבורי להצגה.
+            </p>
+          ) : null}
         </div>
         <div className="flex justify-center sm:justify-end shrink-0">
           <div
@@ -219,13 +249,35 @@ export function AdminAlmogAvatarPanel() {
         <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/95 px-4 py-3 text-sm text-emerald-950">
           <p className="inline-flex items-center gap-2 font-bold">
             <CheckCircle2 className="h-4 w-4" />
-            נשמר בהצלחה
+            נשמר ב־R2 והוחלף הקובץ הציבורי
           </p>
           <p className="mt-1.5 text-emerald-900/90">
             גודל לפני: {bytesLabel(result.original_bytes)} · אחרי אופטימיזציה:{' '}
             {bytesLabel(result.optimized_bytes)}
             {typeof result.saved_percent === 'number' ? ` · כ־${result.saved_percent}% פחות נפח` : null}
           </p>
+          {typeof result.avatar_url === 'string' && result.avatar_url.startsWith('https://') ? (
+            <p className="mt-3 text-right">
+              <span className="text-xs font-bold text-emerald-900 block mb-1">
+                קישור CDN{result.cdn_hostname ? ` (${result.cdn_hostname})` : ''}
+              </span>
+              <a
+                href={result.avatar_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all text-xs font-mono text-emerald-800 underline decoration-emerald-400 hover:text-emerald-950"
+                dir="ltr"
+              >
+                {result.avatar_url}
+              </a>
+            </p>
+          ) : (
+            <p className="mt-3 text-xs text-amber-900 bg-amber-100/80 rounded-lg px-3 py-2 border border-amber-200">
+              הקובץ עלה לדלי. הגדר ב־Vercel את{' '}
+              <code className="text-[11px]">NEXT_PUBLIC_CDN_URL=https://cdn.nurawell.ai</code> כדי שהממשק יציג
+              קישור מלא ושהדפדפן יטען מה־CDN.
+            </p>
+          )}
         </div>
       )}
     </section>
