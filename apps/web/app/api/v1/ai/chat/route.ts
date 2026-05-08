@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { generateObject, streamText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
+import { after } from 'next/server';
 import { getUserAiMemory, upsertUserAiMemory, type UserAiMemory } from '../../../../../lib/ai/user-memory';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 
@@ -31,6 +32,48 @@ const memoryToolSchema = z.object({
 
 function normalizeLine(s: string): string {
   return s.replace(/\s+/g, ' ').trim();
+}
+
+function shouldAttemptMemorySync(userMessage: string): boolean {
+  const t = normalizeLine(userMessage);
+  if (!t || t.length < 14) return false;
+
+  // Skip casual/small-talk turns to avoid noisy memory updates.
+  const smallTalkPatterns = [
+    /^היי\b/,
+    /^הי\b/,
+    /^שלום\b/,
+    /^בוקר טוב\b/,
+    /^ערב טוב\b/,
+    /^אחלה יום\b/,
+    /^מה נשמע\b/,
+  ];
+  if (smallTalkPatterns.some((p) => p.test(t))) return false;
+
+  const strongSignals = [
+    'מהיום',
+    'התחלתי',
+    'אני מתחיל',
+    'אני עושה',
+    'אני שותה',
+    'כל בוקר',
+    'כל יום',
+    'הצלחתי',
+    'סיימתי',
+    'קשה לי',
+    'נשבר לי',
+    'נופל ב',
+    'בסופ"ש',
+    'בסופשים',
+    'שוכח',
+    'מעדיף',
+    'לא עובד לי',
+    'עוזר לי',
+    'צריך חיזוק',
+    'תעודד אותי',
+    'ניצחון קטן',
+  ];
+  return strongSignals.some((s) => t.includes(s));
 }
 
 function addUniqueLine(target: string[], line: string, max = 6): string[] {
@@ -249,7 +292,8 @@ export async function POST(request: Request) {
 
 זהו הזיכרון העדכני של המשתמש בפורמט JSON: ${JSON.stringify(userMemory)}. עליך להתחשב בו בתשובות שלך.
 אם המשתמש מציין קושי חדש, הצלחה, או פרט קריטי - הדגש זאת בתשובה באופן קונקרטי.
-מחק פרטים לא רלוונטיים כדי לחסוך מקום.`;
+מחק פרטים לא רלוונטיים כדי לחסוך מקום.
+אל תכתוב למשתמש שביצעת "שמירה בזיכרון" או "עדכנתי את הזיכרון".`;
 
     stage = 'stream_init';
     const result = streamText({
@@ -290,16 +334,18 @@ export async function POST(request: Request) {
           });
         }
 
-        // Reliability over best-effort: persist memory update before finishing turn.
-        if (memoryToolEnabled) {
-          await syncUserMemoryAfterTurn({
-            openrouter,
-            supabase,
-            userId: user.id,
-            currentMemory: userMemory,
-            userMessage: lastUserText,
-            assistantMessage: assistantText,
-            debugId,
+        // Run memory sync in reliable background to keep chat response fast.
+        if (memoryToolEnabled && shouldAttemptMemorySync(lastUserText)) {
+          after(async () => {
+            await syncUserMemoryAfterTurn({
+              openrouter,
+              supabase,
+              userId: user.id,
+              currentMemory: userMemory,
+              userMessage: lastUserText,
+              assistantMessage: assistantText,
+              debugId,
+            });
           });
         }
       },
