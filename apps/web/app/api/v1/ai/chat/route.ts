@@ -151,6 +151,10 @@ async function callOpenRouterChat(system: string, userPrompt: string): Promise<{
     throw new Error(`OpenRouter HTTP ${response.status}: ${errBody.slice(0, 300)}`);
   }
   const data = (await response.json()) as OpenRouterResponse;
+  console.log('--- RAW OPENROUTER RESPONSE ---', JSON.stringify(data, null, 2));
+  if ((data as any).error) {
+    throw new Error(`OpenRouter JSON Error: ${JSON.stringify((data as any).error)}`);
+  }
   const text = extractAssistantText(data);
   return { text, totalTokens: data.usage?.total_tokens };
 }
@@ -294,13 +298,15 @@ export async function POST(request: Request) {
   let assistantText = '';
   let totalTokens: number | undefined;
   let retryUsed = false;
+  let actualError: any = null;
 
   try {
     const out = await callOpenRouterChat(mergedSystemPrompt, lastUserText);
     assistantText = out.text;
     totalTokens = out.totalTokens;
-  } catch {
-    // Retry below with tighter prompt.
+  } catch (err) {
+    console.error('CRITICAL: First attempt failed:', err);
+    actualError = err;
   }
 
   if (!assistantText) {
@@ -312,8 +318,9 @@ export async function POST(request: Request) {
       );
       assistantText = retry.text;
       totalTokens = retry.totalTokens ?? totalTokens;
-    } catch {
-      // Final fallback below.
+    } catch (err) {
+      console.error('CRITICAL: Retry attempt failed:', err);
+      actualError = actualError || err;
     }
   }
 
@@ -321,6 +328,7 @@ export async function POST(request: Request) {
     return new Response(
       JSON.stringify({
         error: 'Model did not return visible text',
+        details: actualError instanceof Error ? actualError.message : String(actualError),
         retry_used: retryUsed,
       }),
       {
