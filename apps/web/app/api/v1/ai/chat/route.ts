@@ -23,6 +23,8 @@ const openrouter = createOpenAI({
   },
 });
 
+const EMPTY_RESPONSE_FALLBACK = 'אני איתך. תכתוב לי במשפט אחד מה הכי יושב עליך עכשיו ונפרק את זה יחד.';
+
 async function insertInteraction(
   supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
   payload: {
@@ -127,25 +129,75 @@ export async function POST(request: Request) {
     ],
     onFinish: async ({ text, usage }) => {
       const t = (text ?? '').trim();
-      if (!t) return;
+      const assistantText = t || EMPTY_RESPONSE_FALLBACK;
       await insertInteraction(supabase, {
         user_id: user.id,
         session_id: sessionId,
         role: 'assistant',
-        content: t,
+        content: assistantText,
         model_name: 'openai/gpt-5-mini',
         tokens_used: usage?.totalTokens,
         metadata: {
           edge: true,
+          fallback_used: !t,
         },
       });
     },
   });
-
-  return result.toTextStreamResponse({
+  const upstream = result.toTextStreamResponse({
     headers: {
       'x-session-id': sessionId,
       'Cache-Control': 'no-cache, no-transform',
     },
+  });
+
+  if (!upstream.body) {
+    return new Response(EMPTY_RESPONSE_FALLBACK, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'x-session-id': sessionId,
+        'Cache-Control': 'no-cache, no-transform',
+      },
+    });
+  }
+
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  let hadVisibleText = false;
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const reader = upstream.body!.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) {
+            const chunkText = decoder.decode(value, { stream: true });
+            if (!hadVisibleText && chunkText.trim().length > 0) hadVisibleText = true;
+            controller.enqueue(value);
+          }
+        }
+        const trailing = decoder.decode();
+        if (!hadVisibleText && trailing.trim().length > 0) hadVisibleText = true;
+        if (!hadVisibleText) controller.enqueue(encoder.encode(EMPTY_RESPONSE_FALLBACK));
+        controller.close();
+      } catch (error) {
+        controller.error(error);
+      } finally {
+        reader.releaseLock();
+      }
+    },
+  });
+
+  const headers = new Headers(upstream.headers);
+  headers.set('x-session-id', sessionId);
+  headers.set('Cache-Control', 'no-cache, no-transform');
+  if (!headers.get('Content-Type')) headers.set('Content-Type', 'text/plain; charset=utf-8');
+
+  return new Response(stream, {
+    status: upstream.status,
+    statusText: upstream.statusText,
+    headers,
   });
 }
