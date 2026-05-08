@@ -8,6 +8,7 @@ import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 
 const SESSION_STORAGE_KEY = 'nurawell_almog_chat_session';
+const STREAM_FIRST_TOKEN_TIMEOUT_MS = 4500;
 
 type ChatMessage = { role: 'user' | 'assistant'; text: string };
 
@@ -137,6 +138,13 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     abortRef.current = ac;
 
     let streamDeliveredToken = false;
+    let streamTimedOut = false;
+    const streamTimeout = setTimeout(() => {
+      if (!streamDeliveredToken && abortRef.current === ac) {
+        streamTimedOut = true;
+        ac.abort();
+      }
+    }, STREAM_FIRST_TOKEN_TIMEOUT_MS);
 
     const applySseEvent = (event: string, dataStr: string) => {
       let payload: Record<string, unknown> = {};
@@ -237,6 +245,23 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       }
     } catch (e) {
       if ((e as Error).name === 'AbortError') {
+        if (streamTimedOut) {
+          const fallbackReply = await requestNonStreamFallback(text);
+          setMessages((m) => {
+            const next = [...m];
+            const last = next[next.length - 1];
+            if (last?.role === 'assistant') {
+              next[next.length - 1] = fallbackReply
+                ? { role: 'assistant', text: fallbackReply }
+                : {
+                    role: 'assistant',
+                    text: 'לוקח לשרת יותר מהרגיל. אפשר לנסות שוב, או להמתין רגע ואחזור מיד.',
+                  };
+            }
+            return next;
+          });
+          return;
+        }
         setMessages((m) => {
           const next = [...m];
           const last = next[next.length - 1];
@@ -257,6 +282,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
         });
       }
     } finally {
+      clearTimeout(streamTimeout);
       setWaitingTokens(false);
       setBusy(false);
       abortRef.current = null;

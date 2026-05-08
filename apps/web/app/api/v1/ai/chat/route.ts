@@ -207,15 +207,16 @@ export async function POST(request: Request) {
     const client = getClientForModel('empathy');
 
     if (stream) {
+      const chatMessages: ChatMessageParam[] = [
+        { role: 'system', content: systemPrompt },
+        ...trimmedHistory,
+        { role: 'user', content: message },
+      ];
       const openaiStream = await client.chat.completions.create({
         model: AI_MODELS.empathy,
         temperature: 0.85,
         max_tokens: 260,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...trimmedHistory,
-          { role: 'user', content: message },
-        ],
+        messages: chatMessages,
         stream: true,
       });
 
@@ -243,6 +244,33 @@ export async function POST(request: Request) {
                 model_name: AI_MODELS.empathy,
                 metadata: { streamed: true },
               });
+            } else {
+              // Some providers finish stream with no text; fallback to non-stream same model.
+              const { reply, usage, retried, emptyAfterRetry } = await completeWithRetryOnSameModel(
+                client,
+                chatMessages
+              );
+              if (reply.trim()) {
+                controller.enqueue(encodeSse('token', { t: reply }));
+                await insertInteraction(supabase, {
+                  user_id: user.id,
+                  session_id: sessionId,
+                  role: 'assistant',
+                  content: reply,
+                  context_type,
+                  context_id,
+                  model_name: AI_MODELS.empathy,
+                  tokens_used: usage?.total_tokens,
+                  metadata: {
+                    streamed: true,
+                    stream_empty_fallback: true,
+                    retried_same_model: retried,
+                    fallback_used: emptyAfterRetry,
+                    input_tokens: usage?.prompt_tokens,
+                    output_tokens: usage?.completion_tokens,
+                  },
+                });
+              }
             }
             controller.enqueue(encodeSse('done', {}));
             controller.close();
