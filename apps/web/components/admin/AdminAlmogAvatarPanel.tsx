@@ -3,6 +3,10 @@
 import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { ImageUp, Loader2, CheckCircle2, AlertTriangle, Upload } from 'lucide-react';
 import { getAlmogAvatarUrl } from '../../lib/ai/almog-avatar';
+import {
+  encodeImageToWebpBlob,
+  isWebpEncodeUnsupportedError,
+} from '../../lib/client/encodeAlmogAvatarWebp';
 
 type UploadResult = {
   ok?: boolean;
@@ -43,9 +47,29 @@ export function AdminAlmogAvatarPanel() {
     if (!file || busy) return;
     setBusy(true);
     setResult(null);
+    const originalSize = file.size;
     try {
+      let webpBlob: Blob;
+      try {
+        webpBlob = await encodeImageToWebpBlob(file, 900, 0.84);
+      } catch (e) {
+        if (isWebpEncodeUnsupportedError(e)) {
+          setResult({
+            error:
+              'הדפדפן לא יודע לייצא WebP כאן. פתח את לוח הניהול מכרום, אדג\' או דפדפן מעודכן, ונסה שוב.',
+          });
+          return;
+        }
+        setResult({
+          error: 'לא הצלחנו להכין את התמונה במכשיר. נסה קובץ אחר או תמונה קטנה יותר.',
+        });
+        return;
+      }
+
+      const webpFile = new File([webpBlob], 'almog.webp', { type: 'image/webp' });
       const form = new FormData();
-      form.append('file', file);
+      form.append('file', webpFile);
+      form.append('original_bytes', String(originalSize));
       const res = await fetch('/api/v1/admin/almog-avatar', { method: 'POST', body: form });
       const raw = await res.text();
       let data: UploadResult = {};
