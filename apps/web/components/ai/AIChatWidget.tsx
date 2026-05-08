@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { MessageCircle, Send, Loader2, X } from 'lucide-react';
 import { Drawer } from 'vaul';
@@ -20,6 +20,143 @@ function getMessageText(msg: { parts?: Array<{ type: string; text?: string }>; c
     .map((p) => (p.type === 'text' && typeof p.text === 'string' ? p.text : ''))
     .join('')
     .trim();
+}
+
+type MessageBlock =
+  | { type: 'paragraph'; text: string }
+  | { type: 'list'; items: Array<{ kind: 'bullet' | 'numbered'; text: string; number?: string }> };
+
+function parseMessageBlocks(text: string): MessageBlock[] {
+  const lines = text.replace(/\r\n/g, '\n').split('\n');
+  const blocks: MessageBlock[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const raw = lines[i] ?? '';
+    const line = raw.trim();
+
+    if (!line) {
+      i += 1;
+      continue;
+    }
+
+    const bulletMatch = line.match(/^[-*•]\s+(.+)$/);
+    const numberedMatch = line.match(/^(\d+)[\.\)]\s+(.+)$/);
+
+    if (bulletMatch || numberedMatch) {
+      const listItems: Array<{ kind: 'bullet' | 'numbered'; text: string; number?: string }> = [];
+
+      while (i < lines.length) {
+        const itemRaw = (lines[i] ?? '').trim();
+        const bulletItem = itemRaw.match(/^[-*•]\s+(.+)$/);
+        const numberedItem = itemRaw.match(/^(\d+)[\.\)]\s+(.+)$/);
+        if (!bulletItem && !numberedItem) break;
+
+        if (numberedItem) {
+          listItems.push({ kind: 'numbered', text: numberedItem[2].trim(), number: numberedItem[1] });
+        } else if (bulletItem) {
+          listItems.push({ kind: 'bullet', text: bulletItem[1].trim() });
+        }
+        i += 1;
+      }
+
+      if (listItems.length) {
+        blocks.push({ type: 'list', items: listItems });
+        continue;
+      }
+    }
+
+    const paragraphLines: string[] = [];
+    while (i < lines.length) {
+      const paragraphRaw = lines[i] ?? '';
+      const paragraphLine = paragraphRaw.trim();
+      if (!paragraphLine) {
+        i += 1;
+        break;
+      }
+      if (/^[-*•]\s+(.+)$/.test(paragraphLine) || /^(\d+)[\.\)]\s+(.+)$/.test(paragraphLine)) {
+        break;
+      }
+      paragraphLines.push(paragraphRaw);
+      i += 1;
+    }
+
+    if (paragraphLines.length) {
+      blocks.push({ type: 'paragraph', text: paragraphLines.join('\n').trim() });
+    } else {
+      i += 1;
+    }
+  }
+
+  return blocks;
+}
+
+function renderInlineStyledText(text: string): ReactNode[] {
+  const tokens = text.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
+  return tokens
+    .filter(Boolean)
+    .map((token, index) => {
+      const boldByStars = token.startsWith('**') && token.endsWith('**') && token.length > 4;
+      const boldByUnderscore = token.startsWith('__') && token.endsWith('__') && token.length > 4;
+      if (boldByStars || boldByUnderscore) {
+        const clean = token.slice(2, -2).trim();
+        return (
+          <span
+            key={`hl-${index}`}
+            className="mx-0.5 rounded-md px-1.5 py-0.5 font-bold"
+            style={{ background: 'rgba(16,185,129,0.15)', color: '#065f46' }}
+          >
+            {clean}
+          </span>
+        );
+      }
+      return <Fragment key={`txt-${index}`}>{token}</Fragment>;
+    });
+}
+
+function renderAlmogMessage(text: string): ReactNode {
+  const blocks = parseMessageBlocks(text);
+  return (
+    <div className="space-y-2.5">
+      {blocks.map((block, blockIndex) => {
+        if (block.type === 'paragraph') {
+          return (
+            <p key={`p-${blockIndex}`} className="whitespace-pre-wrap leading-7">
+              {renderInlineStyledText(block.text)}
+            </p>
+          );
+        }
+
+        return (
+          <div
+            key={`l-${blockIndex}`}
+            className="rounded-xl border border-emerald-100/80 bg-emerald-50/35 px-2.5 py-1.5"
+            style={{ boxShadow: 'inset 0 0 0 1px rgba(16,185,129,0.08)' }}
+          >
+            <ul className="m-0 list-none space-y-1.5 p-0">
+              {block.items.map((item, itemIndex) => (
+                <li
+                  key={`li-${blockIndex}-${itemIndex}`}
+                  className="flex items-start gap-2.5 border-b border-emerald-100/80 pb-1.5 last:border-b-0 last:pb-0"
+                >
+                  <span
+                    className="mt-1 inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-xs font-bold"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(16,185,129,0.26), rgba(16,185,129,0.1))',
+                      color: '#047857',
+                    }}
+                  >
+                    {item.kind === 'numbered' ? item.number : '•'}
+                  </span>
+                  <span className="flex-1 leading-7">{renderInlineStyledText(item.text)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function AlmogChatTypingDots() {
@@ -252,7 +389,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                             }
                       }
                     >
-                      {text}
+                      {isUser ? <p className="whitespace-pre-wrap">{text}</p> : renderAlmogMessage(text)}
                     </div>
                   </div>
                 );
