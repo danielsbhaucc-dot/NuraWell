@@ -68,4 +68,7 @@ WHERE (
   OR task_statuses = '{}'::jsonb
 )
 AND jsonb_typeof(tasks_completed) = 'object'
-AND jsonb_object_length(tasks_completed) > 0;
+AND EXISTS (
+  SELECT 1
+  FROM jsonb_each(tasks_completed)
+);

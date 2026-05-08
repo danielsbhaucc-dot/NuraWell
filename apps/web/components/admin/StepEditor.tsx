@@ -21,6 +21,7 @@ import {
 interface StepEditorProps {
   step: JourneyStep | null;
 }
+type EditorSectionId = 'basic' | 'video' | 'quiz' | 'game' | 'commitment' | 'research' | 'tasks' | 'habits' | 'pdf';
 
 const emptyQuiz: QuizQuestion = { id: '', question: '', options: ['', '', '', ''], correct_index: 0, explanation: '' };
 const emptyGame: GameItem = { id: '', statement: '', is_true: true, explanation: '' };
@@ -41,6 +42,7 @@ export function StepEditor({ step }: StepEditorProps) {
   const router = useRouter();
   const isNew = !step;
   const [saving, setSaving] = useState(false);
+  const [activeSection, setActiveSection] = useState<EditorSectionId>('basic');
 
   // Basic fields
   const [title, setTitle] = useState(step?.title || '');
@@ -110,6 +112,21 @@ export function StepEditor({ step }: StepEditorProps) {
     setSaving(false);
   };
 
+  const sectionOrder: EditorSectionId[] = ['basic', 'video', 'quiz', 'game', 'commitment', 'research', 'tasks', 'habits', 'pdf'];
+  const activeSectionIndex = sectionOrder.indexOf(activeSection);
+  const canGoBack = activeSectionIndex > 0;
+  const canGoNext = activeSectionIndex < sectionOrder.length - 1;
+
+  const goPrevSection = () => {
+    if (!canGoBack) return;
+    setActiveSection(sectionOrder[activeSectionIndex - 1]);
+  };
+
+  const goNextSection = () => {
+    if (!canGoNext) return;
+    setActiveSection(sectionOrder[activeSectionIndex + 1]);
+  };
+
   return (
     <div className="max-w-3xl mx-auto pb-20">
       {/* Header */}
@@ -130,8 +147,81 @@ export function StepEditor({ step }: StepEditorProps) {
       </div>
 
       <div className="space-y-6">
+        {/* ═══ SECTION NAVIGATION ═══ */}
+        <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 18px rgba(6,78,59,0.06)' }}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-black" style={{ color: '#1A1730' }}>מבנה הצעד</h2>
+            <span className="text-xs text-gray-500">לחיצה על שלב פותחת את הטופס שלו</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            <SectionTab
+              number={1}
+              label="פרטים בסיסיים"
+              color="#047857"
+              active={activeSection === 'basic'}
+              onClick={() => setActiveSection('basic')}
+            />
+            <SectionTab
+              number={2}
+              label="וידאו"
+              color="#2563eb"
+              active={activeSection === 'video'}
+              onClick={() => setActiveSection('video')}
+            />
+            <SectionTab
+              number={3}
+              label="שאלות הבנה"
+              color="#059669"
+              active={activeSection === 'quiz'}
+              onClick={() => setActiveSection('quiz')}
+            />
+            <SectionTab
+              number={4}
+              label="משחק"
+              color="#d97706"
+              active={activeSection === 'game'}
+              onClick={() => setActiveSection('game')}
+            />
+            <SectionTab
+              number={5}
+              label="התחייבות"
+              color="#db2777"
+              active={activeSection === 'commitment'}
+              onClick={() => setActiveSection('commitment')}
+            />
+            <SectionTab
+              number={6}
+              label="מחקרים"
+              color="#7c3aed"
+              active={activeSection === 'research'}
+              onClick={() => setActiveSection('research')}
+            />
+            <SectionTab
+              number={7}
+              label="משימות"
+              color="#ea580c"
+              active={activeSection === 'tasks'}
+              onClick={() => setActiveSection('tasks')}
+            />
+            <SectionTab
+              number={8}
+              label="הרגלים"
+              color="#10b981"
+              active={activeSection === 'habits'}
+              onClick={() => setActiveSection('habits')}
+            />
+            <SectionTab
+              number={9}
+              label="PDF"
+              color="#ef4444"
+              active={activeSection === 'pdf'}
+              onClick={() => setActiveSection('pdf')}
+            />
+          </div>
+        </div>
+
         {/* ═══ BASIC INFO ═══ */}
-        <Section title="פרטים בסיסיים" icon={BookOpen} color="#047857">
+        <Section title="פרטים בסיסיים" icon={BookOpen} color="#047857" sectionNumber={1} isVisible={activeSection === 'basic'}>
           <Field label="כותרת הצעד">
             <input value={title} onChange={e => setTitle(e.target.value)}
               className="input-field" placeholder='למשל: 2 כוסות מים לפני כל ארוחה 💧' />
@@ -163,7 +253,7 @@ export function StepEditor({ step }: StepEditorProps) {
         </Section>
 
         {/* ═══ VIDEO ═══ */}
-        <Section title="סרטון" icon={Video} color="#3b82f6">
+        <Section title="וידאו" icon={Video} color="#3b82f6" sectionNumber={2} isVisible={activeSection === 'video'}>
           <div className="grid grid-cols-2 gap-3">
             <Field label="ספק וידאו">
               <select value={videoProvider} onChange={e => setVideoProvider(e.target.value)}
@@ -285,7 +375,7 @@ export function StepEditor({ step }: StepEditorProps) {
         </Section>
 
         {/* ═══ QUIZ ═══ */}
-        <Section title={`שאלות הבנה (${quizQuestions.length})`} icon={HelpCircle} color="#10b981">
+        <Section title={`שאלות הבנה (${quizQuestions.length})`} icon={HelpCircle} color="#10b981" sectionNumber={3} isVisible={activeSection === 'quiz'}>
           {quizQuestions.map((q, qi) => (
             <div key={q.id || qi} className="p-4 rounded-xl bg-gray-50 border border-gray-100 space-y-3">
               <div className="flex items-center justify-between">
@@ -317,7 +407,7 @@ export function StepEditor({ step }: StepEditorProps) {
         </Section>
 
         {/* ═══ GAME ═══ */}
-        <Section title={`משחק נכון/לא נכון (${gameItems.length})`} icon={Gamepad2} color="#f59e0b">
+        <Section title={`משחק נכון/לא נכון (${gameItems.length})`} icon={Gamepad2} color="#f59e0b" sectionNumber={4} isVisible={activeSection === 'game'}>
           {gameItems.map((g, gi) => (
             <div key={g.id || gi} className="p-4 rounded-xl bg-gray-50 border border-gray-100 space-y-3">
               <div className="flex items-center justify-between">
@@ -347,7 +437,7 @@ export function StepEditor({ step }: StepEditorProps) {
         </Section>
 
         {/* ═══ COMMITMENT ═══ */}
-        <Section title="התחייבות" icon={Heart} color="#ec4899">
+        <Section title="התחייבות" icon={Heart} color="#ec4899" sectionNumber={5} isVisible={activeSection === 'commitment'}>
           {commitment ? (
             <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 space-y-3">
               <Field label="טקסט ההתחייבות">
@@ -376,7 +466,7 @@ export function StepEditor({ step }: StepEditorProps) {
         </Section>
 
         {/* ═══ RESEARCHES ═══ */}
-        <Section title={`מחקרים (${researches.length})`} icon={FileText} color="#8b5cf6">
+        <Section title={`מחקרים (${researches.length})`} icon={FileText} color="#8b5cf6" sectionNumber={6} isVisible={activeSection === 'research'}>
           {researches.map((r, ri) => (
             <div key={r.id || ri} className="p-4 rounded-xl bg-gray-50 border border-gray-100 space-y-3">
               <div className="flex items-center justify-between">
@@ -404,16 +494,22 @@ export function StepEditor({ step }: StepEditorProps) {
         </Section>
 
         {/* ═══ TASKS ═══ */}
-        <Section title={`משימות (${tasks.length})`} icon={ListChecks} color="#f97316">
+        <Section title={`משימות (${tasks.length})`} icon={ListChecks} color="#f97316" sectionNumber={7} isVisible={activeSection === 'tasks'}>
+          <div className="rounded-xl p-3 text-xs leading-relaxed" style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.18)', color: '#9a3412' }}>
+            כל משימה צריכה להיות פעולה ברורה שאפשר לסמן עליה &quot;מקובל/לא מקובל&quot; בסוף הצעד.
+            מומלץ 2-5 משימות קצרות ומעשיות.
+            <br />
+            דוגמה: &quot;לשתות 2 כוסות מים לפני ארוחת ערב&quot;.
+          </div>
           {tasks.map((t, ti) => (
             <div key={t.id || ti} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
               <input value={t.emoji} onChange={e => { const arr = [...tasks]; arr[ti] = { ...arr[ti], emoji: e.target.value }; setTasks(arr); }}
-                className="w-12 input-field text-center text-xl" />
+                className="w-12 input-field text-center text-xl" placeholder="✅" />
               <div className="flex-1 space-y-2">
                 <input value={t.title} onChange={e => { const arr = [...tasks]; arr[ti] = { ...arr[ti], title: e.target.value }; setTasks(arr); }}
-                  className="input-field" placeholder="כותרת המשימה" />
+                  className="input-field" placeholder="מה המשתמש אמור לבצע בפועל?" />
                 <input value={t.description || ''} onChange={e => { const arr = [...tasks]; arr[ti] = { ...arr[ti], description: e.target.value || null }; setTasks(arr); }}
-                  className="input-field" placeholder="תיאור (אופציונלי)" />
+                  className="input-field" placeholder="פירוט קצר (אופציונלי): זמן/כמות/הקשר" />
               </div>
               <button onClick={() => setTasks(prev => prev.filter((_, i) => i !== ti))}
                 className="text-red-400 hover:text-red-600 mt-2"><Trash2 className="w-4 h-4" /></button>
@@ -423,16 +519,21 @@ export function StepEditor({ step }: StepEditorProps) {
         </Section>
 
         {/* ═══ HABITS ═══ */}
-        <Section title={`הרגלים (${habits.length})`} icon={Sparkles} color="#10b981">
+        <Section title={`הרגלים (${habits.length})`} icon={Sparkles} color="#10b981" sectionNumber={8} isVisible={activeSection === 'habits'}>
+          <div className="rounded-xl p-3 text-xs leading-relaxed" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', color: '#065f46' }}>
+            הרגל = דפוס חוזר (לא משימה חד-פעמית). מומלץ להוסיף עד 1-2 הרגלים בכל צעד.
+            <br />
+            דוגמה: &quot;לפני כל ארוחה שותה כוס מים&quot;.
+          </div>
           {habits.map((h, hi) => (
             <div key={h.id || hi} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
               <input value={h.emoji} onChange={e => { const arr = [...habits]; arr[hi] = { ...arr[hi], emoji: e.target.value }; setHabits(arr); }}
-                className="w-12 input-field text-center text-xl" />
+                className="w-12 input-field text-center text-xl" placeholder="💪" />
               <div className="flex-1 space-y-2">
                 <input value={h.title} onChange={e => { const arr = [...habits]; arr[hi] = { ...arr[hi], title: e.target.value }; setHabits(arr); }}
-                  className="input-field" placeholder="כותרת ההרגל" />
+                  className="input-field" placeholder="שם קצר להרגל (למשל: מים לפני ארוחה)" />
                 <input value={h.description || ''} onChange={e => { const arr = [...habits]; arr[hi] = { ...arr[hi], description: e.target.value || null }; setHabits(arr); }}
-                  className="input-field" placeholder="תיאור (אופציונלי)" />
+                  className="input-field" placeholder="איך לבצע בפועל (אופציונלי)" />
                 <select value={h.frequency} onChange={e => { const arr = [...habits]; arr[hi] = { ...arr[hi], frequency: e.target.value as 'daily' | 'weekly' | 'per_meal' }; setHabits(arr); }}
                   className="input-field">
                   <option value="daily">יומי</option>
@@ -448,7 +549,7 @@ export function StepEditor({ step }: StepEditorProps) {
         </Section>
 
         {/* ═══ PDF ═══ */}
-        <Section title="קובץ PDF" icon={FileText} color="#ef4444">
+        <Section title="קובץ PDF" icon={FileText} color="#ef4444" sectionNumber={9} isVisible={activeSection === 'pdf'}>
           <Field label="כתובת PDF">
             <input value={pdfUrl} onChange={e => setPdfUrl(e.target.value)}
               className="input-field" placeholder="https://..." dir="ltr" />
@@ -458,6 +559,28 @@ export function StepEditor({ step }: StepEditorProps) {
               className="input-field" placeholder="סיכום השיעור.pdf" />
           </Field>
         </Section>
+
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={goPrevSection}
+            disabled={!canGoBack}
+            className="px-4 py-2.5 rounded-xl font-bold text-sm border transition disabled:opacity-40"
+            style={{ borderColor: 'rgba(0,0,0,0.12)', background: '#fff', color: '#374151' }}
+          >
+            שלב קודם
+          </button>
+          <span className="text-xs text-gray-500">שלב {activeSectionIndex + 1} מתוך {sectionOrder.length}</span>
+          <button
+            type="button"
+            onClick={goNextSection}
+            disabled={!canGoNext}
+            className="px-4 py-2.5 rounded-xl font-bold text-sm text-white transition disabled:opacity-40"
+            style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
+          >
+            שלב הבא
+          </button>
+        </div>
       </div>
 
       {/* Floating save */}
@@ -475,16 +598,67 @@ export function StepEditor({ step }: StepEditorProps) {
 
 // ── Helper components ──
 
-function Section({ title, icon: Icon, color, children }: { title: string; icon: React.ElementType; color: string; children: React.ReactNode }) {
+function Section({
+  title,
+  icon: Icon,
+  color,
+  sectionNumber,
+  isVisible,
+  children,
+}: {
+  title: string;
+  icon: React.ElementType;
+  color: string;
+  sectionNumber: number;
+  isVisible: boolean;
+  children: React.ReactNode;
+}) {
+  if (!isVisible) return null;
   return (
-    <div className="rounded-2xl p-5 space-y-4" style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 2px 8px rgba(6,78,59,0.04)' }}>
+    <div className="rounded-2xl p-5 space-y-4" style={{ background: 'rgba(255,255,255,0.98)', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 6px 20px rgba(6,78,59,0.07)' }}>
       <div className="flex items-center gap-2">
-        <div className="w-1.5 h-6 rounded-full" style={{ background: color }} />
+        <div className="w-7 h-7 rounded-full text-white text-xs font-black flex items-center justify-center" style={{ background: color }}>
+          {sectionNumber}
+        </div>
         <Icon className="w-4 h-4" style={{ color }} />
         <h2 className="font-black text-[15px]" style={{ color: '#1A1730' }}>{title}</h2>
       </div>
       {children}
     </div>
+  );
+}
+
+function SectionTab({
+  number,
+  label,
+  color,
+  active,
+  onClick,
+}: {
+  number: number;
+  label: string;
+  color: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center gap-2 rounded-xl px-3 py-2.5 transition-all text-right"
+      style={{
+        background: active ? 'rgba(255,255,255,1)' : 'rgba(249,250,251,0.8)',
+        border: active ? `1px solid ${color}` : '1px solid rgba(0,0,0,0.08)',
+        boxShadow: active ? '0 4px 14px rgba(0,0,0,0.08)' : 'none',
+      }}
+    >
+      <span className="w-6 h-6 rounded-full text-white text-[11px] font-black flex items-center justify-center" style={{ background: color }}>
+        {number}
+      </span>
+      <span className="text-sm font-bold" style={{ color: active ? '#111827' : '#4b5563' }}>
+        {label}
+      </span>
+    </button>
   );
 }
 
