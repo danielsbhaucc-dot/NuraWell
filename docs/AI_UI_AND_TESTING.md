@@ -61,8 +61,8 @@
 - API אדמין חדש: `POST /api/v1/admin/almog-avatar`.
 - תהליך ההעלאה:
   1. קובץ נבחר בלוח אדמין.
-  2. בצד שרת: `sharp` מבצע `resize` (עד רוחב ~900px), `rotate` אוטומטי לפי EXIF, המרה ל-`webp` איכות 84.
-  3. ל-R2 נשמר **רק** פלט WebP דחוס (אין שמירת קובץ מקור) תחת המפתח `almog/avatar` עם `Content-Type: image/webp`.
+  2. בדפדפן (לוח אדמין): יצוא ל-WebP ושינוי גודל (עד צלע ~900px) לפני שליחה — בלי ספריות native בשרת (מתאים ל-Vercel).
+  3. השרת מאמת שזה WebP ושומר **רק** את הקובץ הדחוס ב-R2 תחת `almog/avatar` עם `Content-Type: image/webp`.
   4. כל רכיבי אלמוג (צ'אט/משוב/התראות AI) קוראים URL אחיד דרך `getAlmogAvatarUrl()`.
 
 **הגדרת R2:**

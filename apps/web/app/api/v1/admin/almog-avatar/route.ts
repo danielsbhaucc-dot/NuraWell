@@ -3,11 +3,8 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 import { getAlmogAvatarUrl } from '../../../../../lib/ai/almog-avatar';
 
-/** Vercel serverless body limit is ~4.5MB; multipart overhead needs margin. */
-const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
-const OUTPUT_WIDTH = 900;
-const OUTPUT_QUALITY = 84;
-/** Single canonical key — extensionless; R2 serves correct Content-Type. */
+/** Client sends pre-compressed WebP; keep margin under Vercel ~4.5MB body limit. */
+const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 const OBJECT_KEY = 'almog/avatar';
 
 export const runtime = 'nodejs';
@@ -19,6 +16,11 @@ function imageBucketName(): string | undefined {
     process.env.R2_BUCKET_NAME?.trim() ||
     undefined
   );
+}
+
+function isWebpBuffer(buf: Buffer): boolean {
+  if (buf.length < 12) return false;
+  return buf.subarray(0, 4).toString('ascii') === 'RIFF' && buf.subarray(8, 12).toString('ascii') === 'WEBP';
 }
 
 async function assertAdmin(request: Request) {
@@ -42,16 +44,6 @@ function getR2Client(): S3Client {
     endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
     credentials: { accessKeyId, secretAccessKey },
   });
-}
-
-async function optimizeImageWebP(input: Buffer): Promise<Buffer> {
-  const sharpModule = await import('sharp');
-  const sharpFn = sharpModule.default;
-  return sharpFn(input)
-    .rotate()
-    .resize({ width: OUTPUT_WIDTH, withoutEnlargement: true })
-    .webp({ quality: OUTPUT_QUALITY, effort: 6 })
-    .toBuffer();
 }
 
 export async function GET(request: Request) {
@@ -82,38 +74,37 @@ export async function POST(request: Request) {
 
     const form = await request.formData();
     const file = form.get('file');
+    const originalBytesRaw = form.get('original_bytes');
+    const originalBytesParsed =
+      typeof originalBytesRaw === 'string' ? Number.parseInt(originalBytesRaw, 10) : NaN;
+
     if (!(file instanceof File)) {
       return NextResponse.json({ error: 'לא נבחר קובץ' }, { status: 400 });
     }
     if (file.size <= 0 || file.size > MAX_UPLOAD_BYTES) {
       return NextResponse.json(
-        { error: 'הקובץ גדול מדי (עד כ־4MB). נסה גרסה קטנה יותר.' },
+        { error: 'הקובץ גדול מדי אחרי הכנה. נסה תמונה קטנה יותר.' },
         { status: 400 }
       );
     }
 
-    const input = Buffer.from(await file.arrayBuffer());
-
-    let webp: Buffer;
-    try {
-      webp = await optimizeImageWebP(input);
-    } catch (e) {
-      console.error('[almog-avatar] sharp failed', e);
+    const buf = Buffer.from(await file.arrayBuffer());
+    if (!isWebpBuffer(buf)) {
       return NextResponse.json(
-        {
-          error:
-            'לא הצלחנו לדחוס את התמונה בשרת. נסה קובץ אחר (JPEG/PNG) או גרסה קטנה יותר, ואם זה חוזר — בדוק לוגי Deploy.',
-        },
-        { status: 502 }
+        { error: 'הקובץ חייב להיות WebP לאחר הכנה בדפדפן. רענן ונסה שוב.' },
+        { status: 400 }
       );
     }
+
+    const originalForStats =
+      Number.isFinite(originalBytesParsed) && originalBytesParsed > 0 ? originalBytesParsed : file.size;
 
     const s3 = getR2Client();
     await s3.send(
       new PutObjectCommand({
         Bucket: bucket,
         Key: OBJECT_KEY,
-        Body: webp,
+        Body: buf,
         ContentType: 'image/webp',
         CacheControl: 'public, max-age=31536000, immutable',
       })
@@ -123,9 +114,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       avatar_url: getAlmogAvatarUrl(version),
-      original_bytes: file.size,
-      optimized_bytes: webp.length,
-      saved_percent: Math.max(0, Math.round((1 - webp.length / Math.max(1, file.size)) * 100)),
+      original_bytes: originalForStats,
+      optimized_bytes: buf.length,
+      saved_percent: Math.max(0, Math.round((1 - buf.length / Math.max(1, originalForStats)) * 100)),
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
