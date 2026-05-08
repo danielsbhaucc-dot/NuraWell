@@ -104,7 +104,12 @@ function renderInlineStyledText(text: string): ReactNode[] {
           <span
             key={`hl-${index}`}
             className="mx-0.5 rounded-md px-1.5 py-0.5 font-bold"
-            style={{ background: 'rgba(16,185,129,0.15)', color: '#065f46' }}
+            style={{
+              background: 'linear-gradient(145deg, rgba(255,255,255,0.28), rgba(255,255,255,0.14))',
+              color: '#f8fafc',
+              border: '1px solid rgba(255,255,255,0.35)',
+              textShadow: '0 1px 1px rgba(2,6,23,0.25)',
+            }}
           >
             {clean}
           </span>
