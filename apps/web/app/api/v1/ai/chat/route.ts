@@ -42,12 +42,32 @@ function normalizeOpenRouterContent(content: OpenRouterResponse['choices'][numbe
   return '';
 }
 
+function isLikelyReadableAssistantText(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  if (t.length < 2) return false;
+
+  // Reject long encoded/token-like blobs.
+  if (/[A-Za-z0-9+/_=-]{80,}/.test(t)) return false;
+
+  const letters = t.match(/\p{L}/gu)?.length ?? 0;
+  const spaces = t.match(/\s/g)?.length ?? 0;
+  const words = t.split(/\s+/).filter(Boolean).length;
+
+  if (letters === 0) return false;
+  // Very long text with almost no spacing is usually garbage payload.
+  if (t.length > 120 && words < 4) return false;
+  if (t.length > 180 && spaces < 3) return false;
+
+  return true;
+}
+
 function extractAssistantText(data: OpenRouterResponse): string {
   const fromMessage = normalizeOpenRouterContent(data.choices?.[0]?.message?.content);
-  if (fromMessage) return fromMessage;
+  if (fromMessage && isLikelyReadableAssistantText(fromMessage)) return fromMessage;
 
   const fromChoiceText = String(data.choices?.[0]?.text ?? '').trim();
-  if (fromChoiceText) return fromChoiceText;
+  if (fromChoiceText && isLikelyReadableAssistantText(fromChoiceText)) return fromChoiceText;
 
   const outputParts = data.output?.[0]?.content ?? [];
   const fromOutput = outputParts
@@ -60,7 +80,7 @@ function extractAssistantText(data: OpenRouterResponse): string {
     })
     .join('')
     .trim();
-  if (fromOutput) return fromOutput;
+  if (fromOutput && isLikelyReadableAssistantText(fromOutput)) return fromOutput;
 
   // Last-resort extraction: recursively collect string leaves and pick the most
   // informative candidate. OpenRouter providers sometimes wrap assistant text
@@ -95,8 +115,8 @@ function extractAssistantText(data: OpenRouterResponse): string {
 
   if (candidates.length > 0) {
     const best = candidates
-      .sort((a, b) => b.length - a.length)
-      .find((s) => /[\p{L}\p{N}]/u.test(s));
+      .filter((s) => isLikelyReadableAssistantText(s))
+      .sort((a, b) => b.length - a.length)[0];
     if (best) return best;
   }
 
