@@ -29,6 +29,7 @@ const memoryToolSchema = z.object({
   victories: z.array(z.string()),
   notes: z.array(z.string()),
 });
+const MEMORY_MAX_ITEMS_PER_CATEGORY = 20;
 
 function normalizeLine(s: string): string {
   return s.replace(/\s+/g, ' ').trim();
@@ -121,11 +122,14 @@ async function syncUserMemoryAfterTurn(params: {
 - כשיש הצהרת הרגל קונקרטית (למשל ריצה/מים/שינה), היא צריכה להיכנס ל-commitments.
 - כשיש קושי עקבי (למשל סופ"ש/שכחה/עייפות), הוא צריך להיכנס ל-weaknesses.
 - כשיש הצלחה מדידה/ברורה, היא צריכה להיכנס ל-victories.
+- תיאור כלי update_user_memory: אתה מעדכן זיכרון בשיטת Smart Compression.
+- Smart Compression: כשיש פריטים דומים/חוזרים, מזג אותם לתובנה אחת עמוקה ויציבה (למשל "מתקשה באופן עקבי בסופי שבוע"),
+  במקום למחוק עיוור (FIFO). שמור את ההקשר ההיסטורי החשוב דרך ניסוח מאוחד, לא דרך שכפול פריטים.
 - commitments: הרגלים/כוונות לביצוע.
 - weaknesses: קשיים חוזרים/טריגרים.
 - victories: הצלחות קונקרטיות משמעותיות.
 - notes: תובנות קצרות על סגנון תמיכה או הקשר אישי חשוב.
-- מגבלות גודל קשיחות: commitments עד 5, weaknesses עד 5, victories עד 5, notes עד 3.`,
+- מגבלות גודל: עד ${MEMORY_MAX_ITEMS_PER_CATEGORY} פריטים לכל קטגוריה.`,
       prompt: `זיכרון קיים:
 ${JSON.stringify(currentMemory)}
 
@@ -139,10 +143,19 @@ ${assistantMessage}
     });
 
     const normalizedUpdated: UserAiMemory = {
-      commitments: (updatedMemory.commitments ?? []).reduce((acc, line) => addUniqueLine(acc, line, 5), []),
-      weaknesses: (updatedMemory.weaknesses ?? []).reduce((acc, line) => addUniqueLine(acc, line, 5), []),
-      victories: (updatedMemory.victories ?? []).reduce((acc, line) => addUniqueLine(acc, line, 5), []),
-      notes: (updatedMemory.notes ?? []).reduce((acc, line) => addUniqueLine(acc, line, 3), []),
+      commitments: (updatedMemory.commitments ?? []).reduce(
+        (acc, line) => addUniqueLine(acc, line, MEMORY_MAX_ITEMS_PER_CATEGORY),
+        []
+      ),
+      weaknesses: (updatedMemory.weaknesses ?? []).reduce(
+        (acc, line) => addUniqueLine(acc, line, MEMORY_MAX_ITEMS_PER_CATEGORY),
+        []
+      ),
+      victories: (updatedMemory.victories ?? []).reduce(
+        (acc, line) => addUniqueLine(acc, line, MEMORY_MAX_ITEMS_PER_CATEGORY),
+        []
+      ),
+      notes: (updatedMemory.notes ?? []).reduce((acc, line) => addUniqueLine(acc, line, MEMORY_MAX_ITEMS_PER_CATEGORY), []),
     };
     await upsertUserAiMemory(supabase, userId, normalizedUpdated);
   } catch (err) {
