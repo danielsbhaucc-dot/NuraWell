@@ -136,14 +136,14 @@ function renderAlmogMessage(text: string): ReactNode {
         return (
           <div
             key={`l-${blockIndex}`}
-            className="rounded-xl border border-emerald-100/80 bg-emerald-50/35 px-2.5 py-1.5"
-            style={{ boxShadow: 'inset 0 0 0 1px rgba(16,185,129,0.08)' }}
+            className="rounded-2xl border border-white/25 bg-slate-900/30 px-3 py-2"
+            style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)' }}
           >
-            <ul className="m-0 list-none space-y-1.5 p-0">
+            <ul className="m-0 list-none space-y-2 p-0">
               {block.items.map((item, itemIndex) => (
                 <li
                   key={`li-${blockIndex}-${itemIndex}`}
-                  className="flex items-start gap-2.5 border-b border-emerald-100/80 pb-1.5 last:border-b-0 last:pb-0"
+                  className="flex items-start gap-2.5 border-b border-white/15 pb-2 last:border-b-0 last:pb-0"
                 >
                   {(() => {
                     const accent = listAccentPalette[itemIndex % listAccentPalette.length];
@@ -196,7 +196,7 @@ function AlmogChatTypingDots() {
       {[0, 1, 2].map((i) => (
         <motion.span
           key={i}
-          className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.35)]"
+          className="h-2 w-2 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.45)]"
           animate={{ y: [0, -5, 0], opacity: [0.35, 1, 0.35] }}
           transition={{ duration: 0.75, repeat: Infinity, ease: 'easeInOut', delay: i * 0.14 }}
         />
@@ -394,7 +394,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
             </div>
 
             <div
-              className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-[#f0fdf9] via-[#f8fafc] to-white px-3 py-4 text-right [box-shadow:inset_0_1px_0_rgba(255,255,255,0.9)]"
+              className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-[#0f172a] via-[#111827] to-[#0b1220] px-3 py-4 text-right [box-shadow:inset_0_1px_0_rgba(255,255,255,0.06)]"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               {messages.length === 0 && (
@@ -409,11 +409,11 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
               {messages.length > 0 && (
                 <div className="flex justify-center">
                   <div
-                    className="rounded-full border px-3 py-1 text-[11px] font-semibold text-emerald-900/80"
+                    className="rounded-full border px-3 py-1 text-[11px] font-semibold text-white/70"
                     style={{
-                      background: 'linear-gradient(145deg, rgba(236,253,245,0.9), rgba(224,242,254,0.65))',
-                      borderColor: 'rgba(148,163,184,0.35)',
-                      boxShadow: '0 6px 20px rgba(15,23,42,0.08)',
+                      background: 'linear-gradient(145deg, rgba(255,255,255,0.12), rgba(148,163,184,0.08))',
+                      borderColor: 'rgba(255,255,255,0.18)',
+                      boxShadow: '0 6px 20px rgba(2,6,23,0.35)',
                     }}
                   >
                     {`תחילת שיחה • ${formatHebrewDate(firstMessageDate)}`}
@@ -469,12 +469,14 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                   <div
                     className="max-w-[88%] rounded-3xl px-4 py-3 text-[16px] leading-relaxed shadow-[0_4px_16px_rgba(15,23,42,0.07)]"
                     style={{
-                      background: 'linear-gradient(165deg, rgba(16,185,129,0.92), rgba(5,150,105,0.88))',
-                      border: '1px solid rgba(16,185,129,0.22)',
+                      background: 'linear-gradient(165deg, rgba(30,41,59,0.95), rgba(51,65,85,0.9))',
+                      border: '1px solid rgba(255,255,255,0.18)',
                       color: '#f8fafc',
                     }}
                   >
-                    <AlmogChatTypingDots />
+                    <div className="inline-flex items-center gap-1.5">
+                      <AlmogChatTypingDots />
+                    </div>
                   </div>
                 </div>
               )}
