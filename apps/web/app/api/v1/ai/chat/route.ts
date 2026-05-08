@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { convertToModelMessages, streamText } from 'ai';
+import { streamText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { buildUserContext } from '../../../../../lib/ai/memory';
 import { NURAWELL_MENTOR_PROMPT } from '../../../../../lib/ai/prompts';
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     .reverse()
     .find((m) => uiMessageRole(m) === 'user');
   const lastUserText = uiMessageText(lastUser).trim();
-  if (lastUser) {
+  if (lastUserText) {
     await insertInteraction(supabase, {
       user_id: user.id,
       session_id: sessionId,
@@ -101,11 +101,30 @@ export async function POST(request: Request) {
     });
   }
 
+  const sanitizedMessages = messages
+    .map((m) => {
+      const role = uiMessageRole(m);
+      if (!role || role === 'system') return null;
+      const text = uiMessageText(m).trim();
+      if (!text) return null;
+      return {
+        role,
+        content: text,
+      };
+    })
+    .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m));
+
   const result = streamText({
     model: openrouter.chat('openai/gpt-5-mini'),
     temperature: 0.85,
     maxOutputTokens: 260,
-    messages: await convertToModelMessages(messages as never[]),
+    messages: [
+      {
+        role: 'system',
+        content: systemPrompt,
+      },
+      ...sanitizedMessages,
+    ],
     onFinish: async ({ text, usage }) => {
       const t = (text ?? '').trim();
       if (!t) return;

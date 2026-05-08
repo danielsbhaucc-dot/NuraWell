@@ -11,6 +11,13 @@ import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 
 const SESSION_STORAGE_KEY = 'nurawell_almog_chat_session';
 
+function getMessageText(parts: Array<{ type: string; text?: string }>): string {
+  return parts
+    .map((p) => (p.type === 'text' && typeof p.text === 'string' ? p.text : ''))
+    .join('')
+    .trim();
+}
+
 function AlmogChatTypingDots() {
   return (
     <span className="inline-flex items-center gap-1.5 px-2 py-1" aria-hidden>
@@ -197,7 +204,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
 
               {messages.map((msg, i) => {
                 const isUser = msg.role === 'user';
-                const text = msg.parts.map((p) => (p.type === 'text' ? p.text : '')).join('');
+                const text = getMessageText(msg.parts as Array<{ type: string; text?: string }>);
+                if (!isUser && !text) return null;
                 return (
                   <div key={msg.id ?? `${i}-${text.slice(0, 16)}`} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                     <div
@@ -216,15 +224,26 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                             }
                       }
                     >
-                      {!isUser && isLoading && i === messages.length - 1 && msg.parts.length === 0 ? (
-                        <AlmogChatTypingDots />
-                      ) : (
-                        text || '\u00a0'
-                      )}
+                      {text}
                     </div>
                   </div>
                 );
               })}
+
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div
+                    className="max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed shadow-[0_4px_16px_rgba(15,23,42,0.07)]"
+                    style={{
+                      background: '#ffffff',
+                      border: '1px solid rgba(16,185,129,0.22)',
+                      color: '#1A1730',
+                    }}
+                  >
+                    <AlmogChatTypingDots />
+                  </div>
+                </div>
+              )}
 
               <div ref={bottomRef} />
             </div>
