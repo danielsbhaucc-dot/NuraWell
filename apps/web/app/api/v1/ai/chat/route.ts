@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { streamText } from 'ai';
+import { convertToModelMessages, streamText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { buildUserContext } from '../../../../../lib/ai/memory';
 import { NURAWELL_MENTOR_PROMPT } from '../../../../../lib/ai/prompts';
@@ -116,17 +116,17 @@ export async function POST(request: Request) {
     })
     .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m));
 
+  const uiMessagesForModel = sanitizedMessages.map((m) => ({
+    role: m.role,
+    parts: [{ type: 'text' as const, text: m.content }],
+  }));
+
   const result = streamText({
     model: openrouter.chat('openai/gpt-5-mini'),
     temperature: 0.85,
     maxOutputTokens: 260,
-    messages: [
-      {
-        role: 'system',
-        content: systemPrompt,
-      },
-      ...sanitizedMessages,
-    ],
+    system: systemPrompt,
+    messages: await convertToModelMessages(uiMessagesForModel as never[]),
     onFinish: async ({ text, usage }) => {
       const t = (text ?? '').trim();
       const assistantText = t || EMPTY_RESPONSE_FALLBACK;
