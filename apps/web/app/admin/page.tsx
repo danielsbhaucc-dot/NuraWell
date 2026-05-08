@@ -1,6 +1,7 @@
 import { createClient } from '../../lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { AdminStepsList } from '../../components/admin/AdminStepsList';
+import { AdminAlmogAvatarPanel } from '../../components/admin/AdminAlmogAvatarPanel';
 import type { JourneyStep } from '../../lib/types/journey';
 
 export const dynamic = 'force-dynamic';
@@ -25,5 +26,10 @@ export default async function AdminPage() {
     .select('*')
     .order('step_number');
 
-  return <AdminStepsList steps={(steps as JourneyStep[]) || []} />;
+  return (
+    <div>
+      <AdminAlmogAvatarPanel />
+      <AdminStepsList steps={(steps as JourneyStep[]) || []} />
+    </div>
+  );
 }

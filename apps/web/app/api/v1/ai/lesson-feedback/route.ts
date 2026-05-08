@@ -29,6 +29,27 @@ type AiInteractionInsert = {
   metadata?: Record<string, unknown>;
 };
 
+function buildFallbackFeedback(payload: z.infer<typeof lessonFeedbackSchema>): string {
+  if (payload.interaction_type === 'quiz') {
+    if ((payload.score ?? 0) >= 80) {
+      return 'אהבתי את הדרך שבה שמרת פוקוס בחידון. רואים שאתה כבר תופס את העיקר, ועכשיו מספיק לחזק נקודה אחת קטנה כדי לעגן את זה סופית.';
+    }
+    return 'זה ממש בסדר שזה עוד לא יושב חלק לגמרי. בוא ניקח רק נקודה אחת מהחידון וניישם אותה כבר בארוחה הבאה.';
+  }
+
+  if (payload.interaction_type === 'game') {
+    if ((payload.score ?? 0) >= 80) {
+      return 'יפה, קלטת טוב את הניואנסים במשחק. זה בדיוק הבסיס שמתחיל להפוך ידע לאוטומט ביום-יום.';
+    }
+    return 'גם כשהמשחק מאתגר זה סימן שאתה לומד באמת. צעד קטן עכשיו: עצור לשתי שניות לפני החלטה הבאה ותן לעצמך תשובה מודעת.';
+  }
+
+  if (payload.commitment_text) {
+    return `אהבתי את ההתחייבות שבחרת: "${payload.commitment_text}". לא צריך מושלם, צריך עקבי - מספיק צעד קטן אחד כבר היום כדי לנעוץ את זה.`;
+  }
+  return 'טוב שהמשכת גם בלי התחייבות מלאה כרגע. לפעמים מספיק רק להשאיר דלת פתוחה לצעד קטן בהמשך היום.';
+}
+
 async function insertInteraction(
   supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
   payload: AiInteractionInsert
@@ -92,19 +113,36 @@ export async function POST(request: Request) {
     });
 
     const client = getClientForModel('empathy');
-    const completion = await client.chat.completions.create({
-      model: AI_MODELS.empathy,
-      temperature: 0.65,
-      max_tokens: 220,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userEventText },
-      ],
-    });
+    let assistantReply = '';
+    let usage:
+      | {
+          total_tokens?: number;
+          prompt_tokens?: number;
+          completion_tokens?: number;
+        }
+      | undefined;
+    let fallbackUsed = false;
 
-    const assistantReply = completion.choices[0]?.message?.content?.trim();
+    try {
+      const completion = await client.chat.completions.create({
+        model: AI_MODELS.empathy,
+        temperature: 0.72,
+        max_tokens: 180,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userEventText },
+        ],
+      });
+
+      assistantReply = completion.choices[0]?.message?.content?.trim() ?? '';
+      usage = completion.usage;
+    } catch {
+      fallbackUsed = true;
+    }
+
     if (!assistantReply) {
-      return NextResponse.json({ error: 'Empty AI response' }, { status: 502 });
+      fallbackUsed = true;
+      assistantReply = buildFallbackFeedback(payload);
     }
 
     await insertInteraction(supabase, {
@@ -115,11 +153,12 @@ export async function POST(request: Request) {
       context_type: 'lesson',
       context_id: contextId,
       model_name: AI_MODELS.empathy,
-      tokens_used: completion.usage?.total_tokens,
+      tokens_used: usage?.total_tokens,
       metadata: {
         interaction_type: payload.interaction_type,
-        input_tokens: completion.usage?.prompt_tokens,
-        output_tokens: completion.usage?.completion_tokens,
+        input_tokens: usage?.prompt_tokens,
+        output_tokens: usage?.completion_tokens,
+        fallback_used: fallbackUsed,
       },
     });
 

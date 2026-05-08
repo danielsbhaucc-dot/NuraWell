@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, CheckCheck, Loader2 } from 'lucide-react';
+import { getAlmogAvatarUrl } from '../../lib/ai/almog-avatar';
 
 type NotificationItem = {
   id: string;
@@ -28,6 +29,7 @@ function timeAgo(iso: string): string {
 }
 
 export function NotificationsInbox() {
+  const avatarSrc = getAlmogAvatarUrl();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -143,10 +145,14 @@ export function NotificationsInbox() {
                         className={`rounded-2xl border px-3 py-2.5 text-right ${n.is_read ? 'bg-white border-gray-200' : 'bg-emerald-50 border-emerald-200'}`}
                         onClick={() => void markOne(n.id)}
                       >
-                        <p className="text-sm font-black text-gray-900">
-                          <span className="ml-1">{n.icon_emoji ?? '🔔'}</span>
-                          {n.title}
-                        </p>
+                        <div className="flex items-center justify-end gap-2">
+                          {n.type === 'ai_message' ? (
+                            <img src={avatarSrc} alt="אלמוג" className="h-7 w-7 rounded-lg object-cover border border-emerald-200" />
+                          ) : (
+                            <span>{n.icon_emoji ?? '🔔'}</span>
+                          )}
+                          <p className="text-sm font-black text-gray-900">{n.title}</p>
+                        </div>
                         <p className="mt-1 text-sm leading-relaxed text-gray-700">{n.body}</p>
                         <p className="mt-1 text-[11px] text-gray-500">{timeAgo(n.created_at)}</p>
                       </div>
