@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 import { almogCdnHostname, getAlmogAvatarUrl, resolveAlmogPublicBaseUrl } from '../../../../../lib/ai/almog-avatar';
 import {
@@ -109,6 +109,14 @@ export async function POST(request: Request) {
       })
     );
 
+    // Verify write succeeded in the exact key/bucket the UI expects.
+    await s3.send(
+      new HeadObjectCommand({
+        Bucket: bucket,
+        Key: ALMOG_AVATAR_OBJECT_KEY,
+      })
+    );
+
     const version = Date.now().toString();
     const cdnBase = resolveAlmogPublicBaseUrl();
     const avatar_url = cdnBase ? getAlmogAvatarUrl(version) : null;
@@ -120,6 +128,8 @@ export async function POST(request: Request) {
       cdn_hostname: almogCdnHostname(),
       public_object_path: `/${ALMOG_AVATAR_OBJECT_KEY}`,
       cdn_configured: Boolean(cdnBase),
+      bucket,
+      object_key: ALMOG_AVATAR_OBJECT_KEY,
       original_bytes: originalForStats,
       optimized_bytes: buf.length,
       saved_percent: Math.max(0, Math.round((1 - buf.length / Math.max(1, originalForStats)) * 100)),
