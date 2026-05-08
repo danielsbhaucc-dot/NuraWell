@@ -22,7 +22,8 @@ export function getAlmogAvatarUrl(cacheBuster?: string): string {
   const base = process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL?.trim();
   if (!base) return DEFAULT_AVATAR;
   const normalized = base.endsWith('/') ? base.slice(0, -1) : base;
-  const url = `${normalized}/almog/avatar.webp`;
+  /** Object key in storage: `almog/avatar` (WebP only, no file extension in key). */
+  const url = `${normalized}/almog/avatar`;
   return cacheBuster ? `${url}?v=${encodeURIComponent(cacheBuster)}` : url;
 }
 

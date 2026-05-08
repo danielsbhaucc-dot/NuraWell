@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  /** Native / heavy deps must not be bundled into Route Handlers (avoids 503 on Vercel). */
+  serverExternalPackages: ['sharp', '@aws-sdk/client-s3'],
   typescript: {
     ignoreBuildErrors: true,
   },
