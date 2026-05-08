@@ -159,6 +159,24 @@ function renderAlmogMessage(text: string): ReactNode {
   );
 }
 
+function formatHebrewDate(dateLike: Date | string | undefined): string {
+  const date = dateLike ? new Date(dateLike) : new Date();
+  return new Intl.DateTimeFormat('he-IL', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(date);
+}
+
+function formatHebrewTime(dateLike: Date | string | undefined): string {
+  const date = dateLike ? new Date(dateLike) : new Date();
+  return new Intl.DateTimeFormat('he-IL', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
 function AlmogChatTypingDots() {
   return (
     <span className="inline-flex items-center gap-1.5 px-2 py-1" aria-hidden>
@@ -252,6 +270,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   }, [messages.length, status, open]);
 
   const isLoading = status === 'submitted' || status === 'streaming';
+  const firstMessageDate = messages.length > 0 ? (messages[0]?.createdAt ?? new Date()) : undefined;
 
   if (!mounted) return null;
 
@@ -358,6 +377,21 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 </div>
               )}
 
+              {messages.length > 0 && (
+                <div className="flex justify-center">
+                  <div
+                    className="rounded-full border px-3 py-1 text-xs font-medium text-emerald-900/80"
+                    style={{
+                      background: 'linear-gradient(145deg, rgba(236,253,245,0.92), rgba(209,250,229,0.86))',
+                      borderColor: 'rgba(16,185,129,0.3)',
+                      boxShadow: '0 6px 20px rgba(16,185,129,0.12)',
+                    }}
+                  >
+                    {`תחילת שיחה • ${formatHebrewDate(firstMessageDate)}`}
+                  </div>
+                </div>
+              )}
+
               {error && (
                 <div
                   className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm leading-relaxed text-red-700 shadow-sm"
@@ -374,22 +408,27 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 return (
                   <div key={msg.id ?? `${i}-${text.slice(0, 16)}`} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                     <div
-                      className="max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed shadow-[0_4px_16px_rgba(15,23,42,0.07)]"
+                      className="max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed shadow-[0_8px_26px_rgba(15,23,42,0.08)]"
                       style={
                         isUser
                           ? {
-                              background: 'linear-gradient(145deg, #e0f2fe, #dbeafe)',
-                              border: '1px solid rgba(59,130,246,0.35)',
+                              background: 'linear-gradient(160deg, rgba(219,234,254,0.96), rgba(239,246,255,0.95))',
+                              border: '1px solid rgba(59,130,246,0.42)',
                               color: '#1e3a8a',
+                              boxShadow: '0 10px 28px rgba(59,130,246,0.14), inset 0 1px 0 rgba(255,255,255,0.45)',
                             }
                           : {
-                              background: '#ffffff',
-                              border: '1px solid rgba(16,185,129,0.22)',
+                              background: 'linear-gradient(165deg, rgba(255,255,255,0.98), rgba(240,253,250,0.84))',
+                              border: '1px solid rgba(16,185,129,0.3)',
                               color: '#1A1730',
+                              boxShadow: '0 10px 30px rgba(16,185,129,0.14), inset 0 1px 0 rgba(255,255,255,0.65)',
                             }
                       }
                     >
                       {isUser ? <p className="whitespace-pre-wrap">{text}</p> : renderAlmogMessage(text)}
+                      <div className={`mt-1.5 text-[11px] ${isUser ? 'text-blue-700/75' : 'text-emerald-900/55'}`}>
+                        {formatHebrewTime(msg.createdAt)}
+                      </div>
                     </div>
                   </div>
                 );
