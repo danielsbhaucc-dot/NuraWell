@@ -4,10 +4,21 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 import { getAlmogAvatarUrl } from '../../../../../lib/ai/almog-avatar';
 
-const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+/** Vercel serverless body limit is ~4.5MB; multipart overhead needs margin. */
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 const OUTPUT_WIDTH = 900;
 const OUTPUT_QUALITY = 84;
 const OBJECT_KEY = 'almog/avatar.webp';
+
+export const runtime = 'nodejs';
+
+function imageBucketName(): string | undefined {
+  return (
+    process.env.R2_IMAGE_BUCKET_NAME?.trim() ||
+    process.env.R2_BUCKET_NAME?.trim() ||
+    undefined
+  );
+}
 
 async function assertAdmin(request: Request) {
   const { supabase, user, authError } = await createSupabaseForApiRoute(request);
@@ -23,7 +34,7 @@ function getR2Client(): S3Client {
   const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim();
   const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY?.trim();
   if (!accountId || !accessKeyId || !secretAccessKey) {
-    throw new Error('R2 credentials are missing');
+    throw new Error('חסרים פרטי התחברות לאחסון התמונות (בדוק משתני סביבה)');
   }
   return new S3Client({
     region: 'auto',
@@ -48,18 +59,27 @@ export async function POST(request: Request) {
   if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: auth.status });
 
   try {
-    const bucket = process.env.R2_BUCKET_NAME?.trim();
+    const bucket = imageBucketName();
     if (!bucket) {
-      return NextResponse.json({ error: 'R2_BUCKET_NAME is missing' }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: 'חסרה הגדרת אחסון תמונות בשרת. פנה למנהל המערכת.',
+          detail: 'R2_IMAGE_BUCKET_NAME',
+        },
+        { status: 500 }
+      );
     }
 
     const form = await request.formData();
     const file = form.get('file');
     if (!(file instanceof File)) {
-      return NextResponse.json({ error: 'Missing file' }, { status: 400 });
+      return NextResponse.json({ error: 'לא נבחר קובץ' }, { status: 400 });
     }
     if (file.size <= 0 || file.size > MAX_UPLOAD_BYTES) {
-      return NextResponse.json({ error: 'File too large (max 8MB)' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'הקובץ גדול מדי (עד כ־4MB). נסה גרסה קטנה יותר.' },
+        { status: 400 }
+      );
     }
 
     const input = Buffer.from(await file.arrayBuffer());
@@ -89,10 +109,12 @@ export async function POST(request: Request) {
       saved_percent: Math.max(0, Math.round((1 - optimized.length / Math.max(1, file.size)) * 100)),
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Upload failed' },
-      { status: 500 }
-    );
+    const msg = error instanceof Error ? error.message : String(error);
+    const friendly =
+      msg.includes('credentials') || msg.includes('חסרים')
+        ? msg
+        : 'העלאה נכשלה. אם זה חוזר — בדוק הגדרות אחסון ומפתחות בשרת.';
+    return NextResponse.json({ error: friendly, detail: msg }, { status: 500 });
   }
 }
 
