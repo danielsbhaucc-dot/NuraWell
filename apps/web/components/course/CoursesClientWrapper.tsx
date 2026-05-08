@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { GraduationCap, BookOpen, TrendingUp, Award } from 'lucide-react';
 import { CourseCard } from '../shared/CourseCard';
 import type { CourseWithProgress, UserStats } from '../../lib/types/course';
+import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
+import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 
 interface CoursesClientWrapperProps {
   enrolledCourses: CourseWithProgress[];
@@ -53,6 +55,7 @@ const statCards = (stats: UserStats) => [
 export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats }: CoursesClientWrapperProps) {
   const isEmpty = enrolledCourses.length === 0 && availableCourses.length === 0;
   const totalSegments = enrolledCourses.length > 0 ? Math.max(enrolledCourses.length, 6) : 6;
+  const { avatarUrl } = useAlmogAvatarUrl();
 
   return (
     <div>
@@ -70,8 +73,13 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
             transition={{ duration: 0.5, delay: 0.1 }}
             className="flex items-end gap-3.5"
           >
-            {/* Avatar with spinning ring */}
-            <div className="relative flex-shrink-0">
+            {/* Almog avatar + open chat */}
+            <button
+              type="button"
+              className="relative flex-shrink-0"
+              onClick={() => window.dispatchEvent(new Event('open-almog-chat'))}
+              aria-label="פתח צ׳אט עם אלמוג"
+            >
               <div className="absolute rounded-full" style={{ inset: '-8px', background: 'conic-gradient(from 0deg, #14b8a6, #10b981, #f59e0b, #10b981, #14b8a6)', filter: 'blur(14px)', opacity: 0.55, zIndex: -1, animation: 'spinRing 6s linear infinite' }} />
               <div className="spin-ring" style={{
                 width: '82px', height: '82px', borderRadius: '50%',
@@ -79,10 +87,16 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: '0 4px 16px rgba(16,185,129,0.2)',
               }}>
-                <div style={{ width: '74px', height: '74px', borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3px' }}>
-                  <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'linear-gradient(145deg, #047857, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '34px', overflow: 'hidden' }}>
-                    🧑‍⚕️
-                  </div>
+                <div style={{ width: '74px', height: '74px', borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3px', overflow: 'hidden' }}>
+                  <img
+                    src={avatarUrl}
+                    alt="אלמוג"
+                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                    }}
+                  />
                 </div>
               </div>
               {/* Speaking pill */}
@@ -91,7 +105,7 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
                 <span style={{ width: '3px', height: '3px', background: 'white', borderRadius: '50%', display: 'inline-block' }} />
                 <span style={{ width: '3px', height: '3px', background: 'white', borderRadius: '50%', display: 'inline-block' }} />
               </div>
-            </div>
+            </button>
 
             {/* Glass speech bubble */}
             <motion.div
