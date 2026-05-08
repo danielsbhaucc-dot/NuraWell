@@ -262,61 +262,69 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
       </div>
 
       {isEditOpen && (
-        <div className="fixed inset-0 z-[280] flex items-end justify-center bg-slate-900/45 p-3 sm:items-center">
-          <div className="w-full max-w-md rounded-3xl border border-emerald-100 bg-white p-5 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-black text-slate-900">עריכת פרופיל</h3>
+        <div
+          className="fixed inset-0 z-[280] flex items-start justify-center bg-slate-900/45 p-3 pt-20 sm:items-center sm:pt-3"
+          style={{ paddingTop: 'max(5rem, env(safe-area-inset-top))' }}
+        >
+          <div className="w-full max-w-md overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-2xl">
+            <div
+              className="flex items-center justify-between px-4 py-3 text-white"
+              style={{ background: 'linear-gradient(145deg, #047857, #10b981)' }}
+            >
+              <h3 className="text-lg font-black">עריכת פרופיל</h3>
               <button
                 type="button"
                 onClick={() => setIsEditOpen(false)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/90 hover:bg-white/15"
                 aria-label="סגור"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="space-y-3">
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">שם מלא</label>
-                <input
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-400"
-                  placeholder="הכנס שם מלא"
-                  dir="rtl"
-                />
+            <div className="p-5">
+              <div className="space-y-3">
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-slate-700">שם מלא</label>
+                  <input
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-400"
+                    placeholder="הכנס שם מלא"
+                    dir="rtl"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-slate-700">מגדר</label>
+                  <select
+                    value={genderInput}
+                    onChange={(e) => setGenderInput((e.target.value as 'male' | 'female' | '') ?? '')}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-400"
+                  >
+                    <option value="">ללא בחירה</option>
+                    <option value="male">זכר</option>
+                    <option value="female">נקבה</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">מגדר</label>
-                <select
-                  value={genderInput}
-                  onChange={(e) => setGenderInput((e.target.value as 'male' | 'female' | '') ?? '')}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-400"
-                >
-                  <option value="">ללא בחירה</option>
-                  <option value="male">זכר</option>
-                  <option value="female">נקבה</option>
-                </select>
-              </div>
+              {saveError && <p className="mt-3 text-sm font-semibold text-red-600">{saveError}</p>}
+
+              <button
+                type="button"
+                onClick={saveProfile}
+                disabled={savingProfile || isPending}
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:opacity-60"
+              >
+                {savingProfile ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                שמירה
+              </button>
             </div>
-
-            {saveError && <p className="mt-3 text-sm font-semibold text-red-600">{saveError}</p>}
-
-            <button
-              type="button"
-              onClick={saveProfile}
-              disabled={savingProfile || isPending}
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:opacity-60"
-            >
-              {savingProfile ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              שמירה
-            </button>
           </div>
         </div>
       )}
