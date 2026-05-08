@@ -1,8 +1,4 @@
 import { z } from 'zod';
-import { generateText } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
-import { buildUserContext } from '../../../../../lib/ai/memory';
-import { NURAWELL_MENTOR_PROMPT } from '../../../../../lib/ai/prompts';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 
 export const runtime = 'edge';
@@ -14,27 +10,80 @@ const chatBodySchema = z.object({
   user_id: z.string().uuid().optional(),
 });
 
-const openrouter = createOpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY ?? '',
-  baseURL: 'https://openrouter.ai/api/v1',
-  headers: {
-    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL ?? 'https://nurawell.ai',
-    'X-Title': 'NuraWell',
-  },
-});
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const OPENROUTER_MODEL = 'openai/gpt-5-mini';
+const BASE_SYSTEM_PROMPT = 'אתה אלמוג, מנטור אמפתי ומעשי. ענה בקצרה ובעברית טבעית.';
 
-async function callOpenRouterChat(system: string, userPrompt: string): Promise<{ text: string; totalTokens?: number }> {
-  const out = await generateText({
-    model: openrouter.chat('openai/gpt-5-mini'),
-    temperature: 0.75,
-    maxOutputTokens: 260,
-    system,
-    prompt: userPrompt,
+type OpenRouterResponse = {
+  choices?: Array<{
+    message?: {
+      content?:
+        | string
+        | Array<{
+            type?: string;
+            text?: string;
+          }>;
+    };
+  }>;
+  usage?: { total_tokens?: number };
+  error?: unknown;
+};
+
+async function callOpenRouterChat(userPrompt: string): Promise<{ text: string; totalTokens?: number }> {
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (!apiKey) throw new Error('OPENROUTER_API_KEY missing');
+
+  const response = await fetch(OPENROUTER_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL ?? 'https://nurawell.ai',
+      'X-Title': 'NuraWell',
+    },
+    body: JSON.stringify({
+      model: OPENROUTER_MODEL,
+      temperature: 0.7,
+      max_tokens: 220,
+      messages: [
+        { role: 'system', content: BASE_SYSTEM_PROMPT },
+        { role: 'user', content: userPrompt },
+      ],
+    }),
   });
-  return {
-    text: (out.text ?? '').trim(),
-    totalTokens: out.usage?.totalTokens,
-  };
+
+  const raw = await response.text();
+  if (!response.ok) {
+    throw new Error(`OpenRouter HTTP ${response.status}: ${raw.slice(0, 300)}`);
+  }
+
+  let data: OpenRouterResponse;
+  try {
+    data = JSON.parse(raw) as OpenRouterResponse;
+  } catch {
+    throw new Error(`OpenRouter invalid JSON: ${raw.slice(0, 300)}`);
+  }
+
+  if (data.error) {
+    throw new Error(`OpenRouter JSON error: ${JSON.stringify(data.error).slice(0, 300)}`);
+  }
+
+  const content = data.choices?.[0]?.message?.content;
+  let text = '';
+  if (typeof content === 'string') {
+    text = content.trim();
+  } else if (Array.isArray(content)) {
+    text = content
+      .map((p) => (typeof p?.text === 'string' ? p.text : ''))
+      .join('')
+      .trim();
+  }
+
+  if (!text) {
+    throw new Error(`OpenRouter empty assistant content: ${raw.slice(0, 400)}`);
+  }
+
+  return { text, totalTokens: data.usage?.total_tokens };
 }
 
 async function insertInteraction(
@@ -97,9 +146,6 @@ export async function POST(request: Request) {
 
   const sessionId = parsed.data.session_id ?? crypto.randomUUID();
 
-  const { contextString } = await buildUserContext(supabase, user.id);
-  const systemPrompt = `${NURAWELL_MENTOR_PROMPT}\n\n${contextString}`;
-
   const lastUser = [...messages]
     .reverse()
     .find((m) => uiMessageRole(m) === 'user');
@@ -121,40 +167,32 @@ export async function POST(request: Request) {
 
   let assistantText = '';
   let totalTokens: number | undefined;
-  let retryUsed = false;
-  let actualError: any = null;
+  let actualError: unknown = null;
   const assistantModelName = 'openai/gpt-5-mini';
 
   try {
-    const out = await callOpenRouterChat(systemPrompt, lastUserText);
+    const out = await callOpenRouterChat(lastUserText);
     assistantText = out.text;
     totalTokens = out.totalTokens;
   } catch (err) {
-    console.error('CRITICAL: First attempt failed:', err);
+    console.error('[ai/chat] first attempt failed:', err);
     actualError = err;
-  }
-
-  if (!assistantText) {
-    retryUsed = true;
+    // One retry with same provider/model for transient failures.
     try {
-      const retry = await callOpenRouterChat(
-        `${NURAWELL_MENTOR_PROMPT}\nענה תשובה קצרה, פרקטית וחמה בעברית בלבד.`,
-        lastUserText
-      );
+      const retry = await callOpenRouterChat(lastUserText);
       assistantText = retry.text;
       totalTokens = retry.totalTokens ?? totalTokens;
-    } catch (err) {
-      console.error('CRITICAL: Retry attempt failed:', err);
-      actualError = actualError || err;
+    } catch (retryErr) {
+      console.error('[ai/chat] retry failed:', retryErr);
+      actualError = retryErr;
     }
   }
 
   if (!assistantText) {
     return new Response(
       JSON.stringify({
-        error: 'Model did not return visible text',
-        details: actualError instanceof Error ? actualError.message : String(actualError),
-        retry_used: retryUsed,
+        error: 'GPT-5-mini chat failed',
+        details: actualError instanceof Error ? actualError.message : String(actualError ?? 'unknown'),
       }),
       {
         status: 502,
@@ -167,19 +205,19 @@ export async function POST(request: Request) {
     );
   }
 
-  await insertInteraction(supabase, {
-    user_id: user.id,
-    session_id: sessionId,
-    role: 'assistant',
-    content: assistantText,
-    model_name: assistantModelName,
-    tokens_used: totalTokens,
-    metadata: {
-      edge: true,
-      fallback_used: false,
-      retry_used: retryUsed,
-    },
-  });
+  try {
+    await insertInteraction(supabase, {
+      user_id: user.id,
+      session_id: sessionId,
+      role: 'assistant',
+      content: assistantText,
+      model_name: assistantModelName,
+      tokens_used: totalTokens,
+      metadata: { edge: true },
+    });
+  } catch (persistErr) {
+    console.error('[ai/chat] assistant persistence failed:', persistErr);
+  }
 
   return new Response(assistantText, {
     status: 200,
