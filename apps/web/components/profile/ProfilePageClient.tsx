@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '../../lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface ProfileData {
   id: string;
@@ -63,6 +64,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
   const initials = profile?.full_name
     ? profile.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
     : email[0]?.toUpperCase() ?? 'U';
+  const firstName = (profile?.full_name || email.split('@')[0] || 'משתמש').trim().split(/\s+/)[0] || 'משתמש';
 
   const stats = [
     { label: 'שיעורים הושלמו', value: totalCompleted, icon: Award,    color: '#10b981' },
@@ -124,6 +126,15 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           >
             <Settings className="h-4 w-4" />
           </button>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.03 }}
+          className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-[0_8px_22px_rgba(16,185,129,0.07)]"
+        >
+          <p className="text-sm font-bold text-emerald-700">שלום, {firstName}</p>
         </motion.div>
 
         {/* Avatar + Name Card */}
@@ -222,9 +233,10 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
             { label: 'ההתקדמות שלי', href: '/progress', icon: Award,    emoji: '📊' },
             { label: 'הקורסים שלי',  href: '/courses',  icon: BookOpen, emoji: '📚' },
           ].map((item, idx, arr) => (
-            <a
+            <Link
               key={item.href}
               href={item.href}
+              prefetch
               className="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors"
               style={idx < arr.length - 1 ? { borderBottom: '1px solid rgba(255,255,255,0.06)' } : {}}
             >
@@ -234,7 +246,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
               </div>
               <span className="flex-1 text-sm font-semibold text-slate-700">{item.label}</span>
               <ChevronLeft className="w-4 h-4 text-slate-600" />
-            </a>
+            </Link>
           ))}
         </motion.div>
 
@@ -247,11 +259,15 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           <button
             onClick={handleSignOut}
             disabled={isSigningOut}
-            className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl font-bold text-red-400 transition-all hover:bg-red-500/10 active:scale-98"
-            style={{ border: '1px solid rgba(239,68,68,0.2)' }}
+            className="w-full flex items-center justify-center gap-2 rounded-2xl p-4 font-bold text-red-700 transition-all active:scale-98"
+            style={{
+              background: 'linear-gradient(135deg, rgba(254,226,226,0.92), rgba(254,202,202,0.85))',
+              border: '1px solid rgba(248,113,113,0.45)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
+            }}
           >
             {isSigningOut ? (
-              <div className="w-5 h-5 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-red-700/30 border-t-red-700 rounded-full animate-spin" />
             ) : (
               <LogOut className="w-4 h-4" />
             )}

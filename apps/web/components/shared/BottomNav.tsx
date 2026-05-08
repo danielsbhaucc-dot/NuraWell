@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { BookOpen, TrendingUp, UserCircle, Compass, Route } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { motion } from 'framer-motion';
+import { useEffect } from 'react';
 
 const leftItems = [
   { href: '/courses',  label: 'קורסים',  icon: BookOpen   },
@@ -17,6 +18,12 @@ const rightItems = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    const fastRoutes = ['/courses', '/journey', '/progress', '/profile'];
+    fastRoutes.forEach((href) => router.prefetch(href));
+  }, [router]);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom nav-bottom">
@@ -25,6 +32,7 @@ export function BottomNav() {
         <div className="absolute left-1/2 -translate-x-1/2 -top-5 z-20">
           <Link
             href="/courses"
+            prefetch
             className="flex items-center justify-center no-tap-highlight touch-manipulation transition-transform hover:scale-105 active:scale-95"
             style={{
               width: '58px', height: '58px',
@@ -64,6 +72,7 @@ function NavItem({ item, isActive }: { item: { href: string; label: string; icon
     <div className="flex-1 flex justify-center">
       <Link
         href={item.href}
+        prefetch
         className={cn(
           'relative flex flex-col items-center gap-0.5 px-2 py-2 rounded-2xl transition-all duration-200 no-tap-highlight touch-manipulation',
           isActive ? 'text-[#047857]' : 'text-[#9896B8] hover:text-[#5A5880]'

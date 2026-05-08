@@ -11,6 +11,7 @@ interface CoursesClientWrapperProps {
   enrolledCourses: CourseWithProgress[];
   availableCourses: CourseWithProgress[];
   stats: UserStats;
+  firstName: string;
 }
 
 const container = {
@@ -52,10 +53,20 @@ const statCards = (stats: UserStats) => [
   },
 ];
 
-export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats }: CoursesClientWrapperProps) {
+function getTimeGreeting(now: Date): string {
+  const hour = now.getHours();
+  if (hour === 5) return 'חמש לפנות בוקר,';
+  if (hour >= 6 && hour < 12) return 'בוקר טוב,';
+  if (hour >= 12 && hour < 17) return 'צהריים טובים,';
+  if (hour >= 17 && hour < 21) return 'ערב טוב,';
+  return 'לילה טוב,';
+}
+
+export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats, firstName }: CoursesClientWrapperProps) {
   const isEmpty = enrolledCourses.length === 0 && availableCourses.length === 0;
   const totalSegments = enrolledCourses.length > 0 ? Math.max(enrolledCourses.length, 6) : 6;
   const { avatarUrl } = useAlmogAvatarUrl();
+  const heroGreeting = getTimeGreeting(new Date());
 
   return (
     <div>
@@ -66,6 +77,24 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
         <div className="absolute pointer-events-none" style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,166,35,0.3) 0%, transparent 70%)', bottom: '20px', left: '50%', filter: 'blur(12px)' }} />
 
         <div className="relative z-10" style={{ padding: '12px 20px 40px' }}>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="mb-3.5 rounded-2xl px-4 py-2.5"
+            style={{
+              background: 'rgba(255,255,255,0.16)',
+              border: '1px solid rgba(255,255,255,0.28)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+            }}
+          >
+            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.76)', fontWeight: 600 }}>ברכה אישית</div>
+            <div style={{ fontSize: '19px', color: '#fff', fontWeight: 900, fontFamily: "'Rubik','Heebo',sans-serif", lineHeight: 1.15 }}>
+              {heroGreeting} {firstName}
+            </div>
+          </motion.div>
+
           {/* Avatar + Speech Bubble */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -80,8 +109,8 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
               onClick={() => window.dispatchEvent(new Event('open-almog-chat'))}
               aria-label="פתח צ׳אט עם אלמוג"
             >
-              <div className="absolute rounded-full" style={{ inset: '-8px', background: 'conic-gradient(from 0deg, #14b8a6, #10b981, #f59e0b, #10b981, #14b8a6)', filter: 'blur(14px)', opacity: 0.55, zIndex: -1, animation: 'spinRing 6s linear infinite' }} />
-              <div className="spin-ring" style={{
+              <div className="absolute rounded-full" style={{ inset: '-8px', background: 'conic-gradient(from 0deg, #14b8a6, #10b981, #f59e0b, #10b981, #14b8a6)', filter: 'blur(14px)', opacity: 0.55, zIndex: -1 }} />
+              <div style={{
                 width: '82px', height: '82px', borderRadius: '50%',
                 background: 'conic-gradient(from 0deg, #14b8a6 0%, #10b981 30%, #f59e0b 55%, #10b981 75%, #14b8a6 100%)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
