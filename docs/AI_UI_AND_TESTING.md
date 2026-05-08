@@ -20,16 +20,19 @@
 - גוף הבקשה כולל `user_id` שחייב להתאים ל-session (אחרת 403). הקונטקסט האישי נטען בשרת מ-`profiles` (כולל `ai_context`, רצף, `last_active_at`) דרך `buildUserContext()`.
 - מודל צ'אט קבוע: **`openai/gpt-5-mini` דרך OpenRouter** (אין מעבר אוטומטי למודל אחר). אם התקבלה תשובה ריקה, השרת מבצע retry אחד עם אותו מודל בדיוק.
 
-### 3) Cron מאוחד (ניתוח + נידג' חזרה)
+### 3) Cron מאוחד (ניתוח + נידג' חזרה) על Edge Runtime
 
 נתיב יחיד (חיסכון ב-invocations של Vercel):
 
 **`GET` או `POST`** — [`apps/web/app/api/v1/ai/cron/master/route.ts`](../apps/web/app/api/v1/ai/cron/master/route.ts)
 
-**אבטחה:** חובה `CRON_SECRET` בסביבה. אחד מהבאים:
+**Runtime:** הנתיב רץ על `edge` (מתאים למגבלות Vercel).
+
+**אבטחה:** חובה להגדיר לפחות אחד מהמשתנים (`CRON_SECRET` / `CRON_JOB_ORG_TOKEN`). אחד מהבאים:
 
 - כותרת `Authorization: Bearer <CRON_SECRET>`
 - או query `?secret=<CRON_SECRET>`
+- או כותרת `x-cron-job-org-token: <CRON_JOB_ORG_TOKEN>` (מומלץ ל-cron-job.org)
 
 **שלב א — ניתוח (24 שעות אחרונות)**  
 
@@ -85,14 +88,16 @@
 - לא חובה למימוש הנוכחי כי האופטימיזציה כבר מתבצעת בצד שרת.
 - אם רוצים חתימות URL/CDN חכם/טרנספורמציות on-the-fly, ניתן להוסיף Cloudflare Worker בהמשך.
 
-### 6) תזמון Cron חינמי
+### 6) תזמון Cron חינמי עם cron-job.org
 
 - הוסר Cron מ-`vercel.json` כדי לא להיות תלוי בתוכנית בתשלום.
-- תזמון מתבצע דרך GitHub Actions:  
-  [`/.github/workflows/nurawell-cron.yml`](../.github/workflows/nurawell-cron.yml)
-- נדרש להגדיר ב-GitHub Secrets:
-  - `CRON_SECRET`
-  - `VERCEL_APP_URL` (למשל `https://nurawell.vercel.app`)
+- תזמון מומלץ: `cron-job.org` ישירות לנתיב:
+  - `GET https://<your-domain>/api/v1/ai/cron/master`
+- הגדרות מומלצות ב-cron-job.org:
+  - תדירות התחלתית: פעם ביום.
+  - Method: `GET`.
+  - Custom header: `x-cron-job-org-token: <CRON_JOB_ORG_TOKEN>`.
+  - Timeout צד cron-job.org הוא ~30 שניות, לכן לשמור על חלון משתמשים קטן יחסית (`CRON_MAX_ANALYSIS_USERS`, `CRON_MAX_NUDGE_USERS`).
 
 ### 7) מודלים וסביבה
 
@@ -100,7 +105,7 @@
 |--------|------------|
 | אלמוג (צ'אט, פידבק בשיעור, נידג' Cron) | `openai/gpt-5-mini` דרך **OpenRouter** |
 | ניתוח Cron | **DeepSeek API** — `getDeepseekAnalysisModel()` → `deepseek-chat` (ברירת מחדל) |
-| מפתחות | `OPENROUTER_API_KEY`, `DEEPSEEK_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (Cron בלבד), `CRON_SECRET` |
+| מפתחות | `OPENROUTER_API_KEY`, `DEEPSEEK_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (Cron בלבד), `CRON_SECRET` או `CRON_JOB_ORG_TOKEN` |
 
 רשימה מלאה של משתני אופציה: [`apps/web/.env.example`](../apps/web/.env.example).
 

@@ -5,6 +5,7 @@ import { buildUserContext, type AiUserContext } from '../../../../../../lib/ai/m
 import { ANALYSIS_PROMPT, REENGAGEMENT_PROMPT } from '../../../../../../lib/ai/prompts';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 
+export const runtime = 'edge';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
@@ -67,14 +68,27 @@ function shouldNudgeUser(profile: {
 
 function authorizeCron(request: Request): NextResponse | null {
   const secret = process.env.CRON_SECRET?.trim();
-  if (!secret) {
-    return NextResponse.json({ error: 'CRON_SECRET is not configured' }, { status: 500 });
+  const cronJobOrgToken = process.env.CRON_JOB_ORG_TOKEN?.trim();
+  if (!secret && !cronJobOrgToken) {
+    return NextResponse.json(
+      { error: 'Missing cron auth env: set CRON_SECRET and/or CRON_JOB_ORG_TOKEN' },
+      { status: 500 }
+    );
   }
+
   const auth = request.headers.get('authorization');
+  const cronToken =
+    request.headers.get('x-cron-job-org-token') ?? request.headers.get('x-cronjob-token');
   const q = new URL(request.url).searchParams.get('secret');
-  if (auth === `Bearer ${secret}` || q === secret) {
+
+  const hasBearer = Boolean(secret) && auth === `Bearer ${secret}`;
+  const hasQuerySecret = Boolean(secret) && q === secret;
+  const hasCronJobOrgToken = Boolean(cronJobOrgToken) && cronToken === cronJobOrgToken;
+
+  if (hasBearer || hasQuerySecret || hasCronJobOrgToken) {
     return null;
   }
+
   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 }
 
