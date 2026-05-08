@@ -3,8 +3,7 @@
 import { useState, useTransition } from 'react';
 import { motion } from 'framer-motion';
 import {
-  User, Mail, Award, BookOpen, Flame, LogOut,
-  ChevronLeft, Shield, Settings
+  User, Award, BookOpen, Flame, LogOut, ChevronLeft, Shield, Settings, Save, X
 } from 'lucide-react';
 import { createClient } from '../../lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -21,6 +20,7 @@ interface ProfileData {
   current_weight_kg: number | null;
   height_cm: number | null;
   activity_level: string | null;
+  gender: 'male' | 'female' | null;
 }
 
 interface ProfilePageClientProps {
@@ -42,6 +42,11 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [nameInput, setNameInput] = useState(profile?.full_name ?? '');
+  const [genderInput, setGenderInput] = useState<'male' | 'female' | ''>(profile?.gender ?? '');
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -65,14 +70,60 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
     { label: 'רצף ימים',       value: profile?.streak_days ?? 0, icon: Flame, color: '#f97316' },
   ];
 
+  const saveProfile = async () => {
+    const cleanName = nameInput.trim();
+    if (cleanName.length < 2) {
+      setSaveError('יש להזין שם מלא תקין.');
+      return;
+    }
+
+    setSavingProfile(true);
+    setSaveError(null);
+    try {
+      const res = await fetch('/api/v1/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: cleanName,
+          gender: genderInput || null,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error('save_failed');
+      }
+
+      setIsEditOpen(false);
+      startTransition(() => router.refresh());
+    } catch {
+      setSaveError('לא הצלחנו לשמור כרגע. נסה שוב בעוד רגע.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-mesh-subtle">
+    <div className="min-h-screen bg-gradient-to-b from-[#f2fbf8] via-[#f8fafc] to-white">
       <div className="container-mobile py-6 pb-8 space-y-5">
 
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-          <h1 className="text-2xl font-black text-white mb-1">הפרופיל שלי 👤</h1>
-          <p className="text-slate-400 text-sm">נהל את הפרופיל האישי שלך</p>
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="flex items-start justify-between"
+        >
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 mb-1">הפרופיל שלי 👤</h1>
+            <p className="text-slate-500 text-sm">נהל את הפרופיל האישי שלך</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsEditOpen(true)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-white text-emerald-700 shadow-sm transition hover:bg-emerald-50"
+            aria-label="עריכת פרופיל"
+          >
+            <Settings className="h-4 w-4" />
+          </button>
         </motion.div>
 
         {/* Avatar + Name Card */}
@@ -80,7 +131,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="glass-card p-5"
+          className="rounded-3xl border border-emerald-100 bg-white p-5 shadow-[0_10px_30px_rgba(16,185,129,0.08)]"
         >
           <div className="flex items-center gap-4">
             {/* Avatar */}
@@ -92,17 +143,20 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
             </div>
             {/* Info */}
             <div className="flex-1 min-w-0">
-              <p className="text-lg font-black text-white line-clamp-1">
+              <p className="text-lg font-black text-slate-900 line-clamp-1">
                 {profile?.full_name || 'משתמש NuraWell'}
               </p>
-              <p className="text-sm text-slate-400 line-clamp-1">{email}</p>
+              <p className="text-sm text-slate-500 line-clamp-1">{email}</p>
               <div className="flex items-center gap-2 mt-1.5">
                 {profile?.role === 'admin' && (
                   <span className="badge-accent text-xs">
                     <Shield className="w-3 h-3 inline-block ml-0.5" /> מנהל
                   </span>
                 )}
-                <span className="text-xs text-slate-500">חבר מאז {memberSince}</span>
+                <span className="text-xs text-slate-500">
+                  חבר מאז {memberSince}
+                  {profile?.gender === 'male' ? ' • זכר' : profile?.gender === 'female' ? ' • נקבה' : ''}
+                </span>
               </div>
             </div>
           </div>
@@ -116,12 +170,12 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           className="grid grid-cols-3 gap-3"
         >
           {stats.map((s) => (
-            <div key={s.label} className="glass-card p-3 text-center">
+            <div key={s.label} className="rounded-2xl border border-emerald-100 bg-white p-3 text-center shadow-[0_6px_20px_rgba(16,185,129,0.06)]">
               <div className="w-8 h-8 rounded-xl mx-auto mb-1.5 flex items-center justify-center"
                 style={{ background: `${s.color}22`, border: `1px solid ${s.color}44` }}>
                 <s.icon className="w-4 h-4" style={{ color: s.color }} />
               </div>
-              <p className="text-xl font-black text-white">{s.value}</p>
+              <p className="text-xl font-black text-slate-900">{s.value}</p>
               <p className="text-xs text-slate-500 mt-0.5 leading-tight">{s.label}</p>
             </div>
           ))}
@@ -133,9 +187,9 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="glass-card p-5"
+            className="rounded-3xl border border-emerald-100 bg-white p-5 shadow-[0_10px_30px_rgba(16,185,129,0.08)]"
           >
-            <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+            <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
               <User className="w-4 h-4 text-primary-400" />
               פרטים אישיים
             </h3>
@@ -161,7 +215,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="glass-card overflow-hidden"
+          className="rounded-3xl border border-emerald-100 bg-white overflow-hidden shadow-[0_10px_30px_rgba(16,185,129,0.08)]"
           style={{ padding: 0 }}
         >
           {[
@@ -178,7 +232,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
                 style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 {item.emoji}
               </div>
-              <span className="flex-1 text-sm font-semibold text-slate-200">{item.label}</span>
+              <span className="flex-1 text-sm font-semibold text-slate-700">{item.label}</span>
               <ChevronLeft className="w-4 h-4 text-slate-600" />
             </a>
           ))}
@@ -206,6 +260,66 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
         </motion.div>
 
       </div>
+
+      {isEditOpen && (
+        <div className="fixed inset-0 z-[280] flex items-end justify-center bg-slate-900/45 p-3 sm:items-center">
+          <div className="w-full max-w-md rounded-3xl border border-emerald-100 bg-white p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-black text-slate-900">עריכת פרופיל</h3>
+              <button
+                type="button"
+                onClick={() => setIsEditOpen(false)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
+                aria-label="סגור"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-700">שם מלא</label>
+                <input
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-400"
+                  placeholder="הכנס שם מלא"
+                  dir="rtl"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-700">מגדר</label>
+                <select
+                  value={genderInput}
+                  onChange={(e) => setGenderInput((e.target.value as 'male' | 'female' | '') ?? '')}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-400"
+                >
+                  <option value="">ללא בחירה</option>
+                  <option value="male">זכר</option>
+                  <option value="female">נקבה</option>
+                </select>
+              </div>
+            </div>
+
+            {saveError && <p className="mt-3 text-sm font-semibold text-red-600">{saveError}</p>}
+
+            <button
+              type="button"
+              onClick={saveProfile}
+              disabled={savingProfile || isPending}
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:opacity-60"
+            >
+              {savingProfile ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              שמירה
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -214,7 +328,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-1">
       <span className="text-sm text-slate-400">{label}</span>
-      <span className="text-sm font-semibold text-white">{value}</span>
+      <span className="text-sm font-semibold text-slate-800">{value}</span>
     </div>
   );
 }

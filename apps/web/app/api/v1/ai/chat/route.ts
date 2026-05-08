@@ -3,6 +3,7 @@ import { generateObject, streamText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { after } from 'next/server';
 import { getUserAiMemory, upsertUserAiMemory, type UserAiMemory } from '../../../../../lib/ai/user-memory';
+import { NURAWELL_MENTOR_PROMPT } from '../../../../../lib/ai/prompts';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 
 export const runtime = 'edge';
@@ -14,8 +15,13 @@ const chatBodySchema = z.object({
   user_id: z.string().uuid().optional(),
 });
 
-const BASE_SYSTEM_PROMPT =
-  'אתה אלמוג, מנטור אמפתי ומעשי. ענה בקצרה ובעברית טבעית, בלי לחזור על אותם משפטים. לעולם אל תחזיר תשובה ריקה.';
+const BASE_SYSTEM_PROMPT = `${NURAWELL_MENTOR_PROMPT}
+
+הנחיות נוספות לצ'אט:
+- בלי רשימות כברירת מחדל. דבר כמו בן אדם אמיתי בשיחה טבעית.
+- אם המשתמש צריך בהירות מעשית, אפשר לתת 1-3 צעדים קצרים בלבד.
+- אל תגיד למשתמש שביצעת "שמירה בזיכרון" או "עדכנתי זיכרון".
+- לעולם אל תחזיר תשובה ריקה.`;
 const EMPTY_RESPONSE_FALLBACK = 'אני כאן איתך. ספר לי במשפט אחד מה הכי כבד עכשיו, ונחשוב יחד על צעד קטן להמשך.';
 const EMPTY_MEMORY: UserAiMemory = {
   commitments: [],
@@ -91,6 +97,24 @@ function addUniqueLine(target: string[], line: string, max = 6): string[] {
   const exists = target.some((item) => normalizeLine(item) === normalized);
   if (exists) return target.slice(0, max);
   return [normalized, ...target].slice(0, max);
+}
+
+function extractFirstName(fullName: string | null | undefined): string | null {
+  if (!fullName) return null;
+  const clean = fullName.trim();
+  if (!clean) return null;
+  const first = clean.split(/\s+/)[0]?.trim();
+  return first || null;
+}
+
+function genderAddressingHint(gender: 'male' | 'female' | null | undefined): string {
+  if (gender === 'female') {
+    return 'המשתמשת היא נקבה. פנה אליה בלשון נקבה.';
+  }
+  if (gender === 'male') {
+    return 'המשתמש הוא זכר. פנה אליו בלשון זכר.';
+  }
+  return 'מגדר המשתמש לא ידוע. נסח ניטרלי כשאפשר, בלי להמציא.';
 }
 
 async function syncUserMemoryAfterTurn(params: {
@@ -238,6 +262,8 @@ export async function POST(request: Request) {
   const memoryToolEnabled = process.env.AI_MEMORY_TOOL_ENABLED === '1';
 
   let userMemory: UserAiMemory = EMPTY_MEMORY;
+  let profileFullName: string | null = null;
+  let profileGender: 'male' | 'female' | null = null;
   try {
     userMemory = await getUserAiMemory(supabase, user.id);
   } catch (memoryErr) {
@@ -245,6 +271,19 @@ export async function POST(request: Request) {
       debug_id: debugId,
       stage: 'memory_read_failed',
       error: memoryErr instanceof Error ? memoryErr.message : String(memoryErr),
+    });
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any).from('profiles').select('full_name, gender').eq('id', user.id).maybeSingle();
+    const profile = (data ?? null) as { full_name?: string | null; gender?: 'male' | 'female' | null } | null;
+    profileFullName = profile?.full_name ?? null;
+    profileGender = profile?.gender ?? null;
+  } catch (profileErr) {
+    console.warn('[ai/chat]', {
+      debug_id: debugId,
+      stage: 'profile_read_failed',
+      error: profileErr instanceof Error ? profileErr.message : String(profileErr),
     });
   }
 
@@ -314,9 +353,15 @@ export async function POST(request: Request) {
   });
 
   try {
+    const firstName = extractFirstName(profileFullName);
+    const personalNameInstruction = firstName
+      ? `השם הפרטי של המשתמש הוא "${firstName}". אם טבעי ומתאים, פנה אליו/אליה בשם הפרטי בלבד (בלי שם משפחה).`
+      : 'אין שם פרטי זמין בפרופיל כרגע.';
     const systemPromptWithMemory = `${BASE_SYSTEM_PROMPT}
 
 זהו הזיכרון העדכני של המשתמש בפורמט JSON: ${JSON.stringify(userMemory)}. עליך להתחשב בו בתשובות שלך.
+${personalNameInstruction}
+${genderAddressingHint(profileGender)}
 אם המשתמש מציין קושי חדש, הצלחה, או פרט קריטי - הדגש זאת בתשובה באופן קונקרטי.
 מחק פרטים לא רלוונטיים כדי לחסוך מקום.
 אל תכתוב למשתמש שביצעת "שמירה בזיכרון" או "עדכנתי את הזיכרון".`;

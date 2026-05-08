@@ -2,7 +2,7 @@
 
 import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { MessageCircle, Send, Loader2, X } from 'lucide-react';
+import { MessageCircle, Send, Loader2, X, Paperclip, Smile } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useChat } from '@ai-sdk/react';
 import { TextStreamChatTransport } from 'ai';
@@ -326,17 +326,18 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
         <Drawer.Overlay className="fixed inset-0 z-[200] bg-slate-900/55" />
         <Drawer.Content
           dir="rtl"
-          className="fixed bottom-0 right-0 left-0 z-[210] mx-auto w-full max-w-md rounded-t-[28px] outline-none bg-white"
+          className="fixed bottom-0 right-0 left-0 z-[210] mx-auto w-full max-w-md rounded-t-[28px] outline-none"
           style={{
-            border: '1px solid rgba(16,185,129,0.18)',
-            boxShadow: '0 -16px 48px rgba(6,78,59,0.18)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            background: 'linear-gradient(180deg, rgba(15,23,42,0.96), rgba(2,6,23,0.96))',
+            boxShadow: '0 -24px 60px rgba(2,6,23,0.45)',
             height: 'min(92dvh, 680px)',
           }}
         >
           <Drawer.Title className="sr-only">שיחה עם אלמוג</Drawer.Title>
           <Drawer.Description className="sr-only">צ׳אט אישי עם המנטור אלמוג</Drawer.Description>
 
-          <div className="h-full flex flex-col overflow-hidden rounded-t-[28px] bg-white">
+          <div className="h-full flex flex-col overflow-hidden rounded-t-[28px] bg-transparent backdrop-blur-2xl">
             <div
               className="shrink-0 rounded-t-[28px] text-white shadow-[0_4px_24px_rgba(6,78,59,0.35)]"
               style={{ background: 'linear-gradient(160deg, #064e3b 0%, #047857 45%, #10b981 100%)' }}
@@ -399,8 +400,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
             >
               {messages.length === 0 && (
                 <div
-                  className="rounded-2xl border border-emerald-100/90 bg-white p-4 text-sm leading-relaxed text-gray-700 shadow-sm"
-                  style={{ boxShadow: '0 8px 28px rgba(6,78,59,0.07)' }}
+                  className="rounded-2xl border border-white/20 bg-white/10 p-4 text-sm leading-relaxed text-slate-100 shadow-sm"
+                  style={{ boxShadow: '0 8px 28px rgba(2,6,23,0.35)' }}
                 >
                   אפשר לכתוב לי מה עובר עליך עכשיו, ואבנה איתך צעד קטן ומדויק להיום.
                 </div>
@@ -423,7 +424,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
 
               {error && (
                 <div
-                  className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm leading-relaxed text-red-700 shadow-sm"
+                  className="rounded-2xl border border-red-300/35 bg-red-500/10 p-3 text-sm leading-relaxed text-red-100 shadow-sm"
                   role="alert"
                 >
                   הייתה בעיה בקבלת תשובה מאלמוג כרגע. נסה שוב בעוד כמה שניות.
@@ -435,17 +436,17 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 const text = getMessageText(msg as { parts?: Array<{ type: string; text?: string }>; content?: string | null });
                 if (!isUser && !text) return null;
                 return (
-                  <div key={msg.id ?? `${i}-${text.slice(0, 16)}`} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                  <div key={msg.id ?? `${i}-${text.slice(0, 16)}`} className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}>
                     <div
                       className="max-w-[88%] rounded-3xl px-4 py-3 text-[16px] leading-relaxed shadow-[0_8px_26px_rgba(15,23,42,0.08)]"
                       style={
                         isUser
                           ? {
-                              background: 'linear-gradient(160deg, rgba(219,234,254,0.55), rgba(239,246,255,0.25))',
-                              border: '1px solid rgba(59,130,246,0.42)',
-                              color: '#1e3a8a',
-                              backdropFilter: 'blur(10px)',
-                              boxShadow: '0 10px 28px rgba(59,130,246,0.14), inset 0 1px 0 rgba(255,255,255,0.45)',
+                              background: 'linear-gradient(165deg, rgba(51,65,85,0.62), rgba(30,41,59,0.48))',
+                              border: '1px solid rgba(255,255,255,0.2)',
+                              color: '#e2e8f0',
+                              backdropFilter: 'blur(8px)',
+                              boxShadow: '0 8px 24px rgba(2,6,23,0.35), inset 0 1px 0 rgba(255,255,255,0.18)',
                             }
                           : {
                               background: 'linear-gradient(165deg, rgba(16,185,129,0.92), rgba(5,150,105,0.88))',
@@ -456,7 +457,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                       }
                     >
                       {isUser ? <p className="whitespace-pre-wrap">{text}</p> : renderAlmogMessage(text)}
-                      <div className={`mt-1.5 text-[11px] ${isUser ? 'text-blue-700/75' : 'text-emerald-50/80'}`}>
+                      <div className={`mt-1.5 text-[11px] ${isUser ? 'text-slate-300/75' : 'text-emerald-50/80'}`}>
                         {formatHebrewTime(msg.createdAt)}
                       </div>
                     </div>
@@ -465,7 +466,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
               })}
 
               {isLoading && (
-                <div className="flex justify-start">
+                <div className="flex justify-end">
                   <div
                     className="max-w-[88%] rounded-3xl px-4 py-3 text-[16px] leading-relaxed shadow-[0_4px_16px_rgba(15,23,42,0.07)]"
                     style={{
@@ -484,8 +485,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
               <div ref={bottomRef} />
             </div>
 
-            <div className="shrink-0 border-t border-slate-200/90 bg-white p-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-2 shadow-[0_-2px_16px_rgba(15,23,42,0.05)]">
+            <div className="shrink-0 border-t border-white/10 bg-slate-900/70 p-3 backdrop-blur-2xl" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+              <div className="rounded-2xl border border-white/15 bg-white/5 p-2 shadow-[0_-2px_16px_rgba(2,6,23,0.4)]">
                 <form
                   className="flex items-end gap-2"
                   onSubmit={(e) => {
@@ -504,6 +505,13 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                     setInput('');
                   }}
                 >
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-xl p-2 text-white/50 transition hover:bg-white/10 hover:text-white/90"
+                    aria-label="צרף"
+                  >
+                    <Paperclip className="h-[18px] w-[18px]" />
+                  </button>
                   <textarea
                     dir="rtl"
                     rows={1}
@@ -517,10 +525,17 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                     }}
                     disabled={isLoading}
                     placeholder="כתוב לי מה עובר עליך..."
-                    className="max-h-28 min-h-[44px] flex-1 resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[15px] text-right text-gray-900 shadow-inner outline-none disabled:opacity-60"
+                    className="max-h-28 min-h-[44px] flex-1 resize-none rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-[15px] text-right text-white shadow-inner outline-none placeholder:text-white/35 disabled:opacity-60"
                   />
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-xl p-2 text-white/50 transition hover:bg-white/10 hover:text-white/90"
+                    aria-label="אימוג׳י"
+                  >
+                    <Smile className="h-[18px] w-[18px]" />
+                  </button>
                   {isLoading && (
-                    <button type="button" onClick={stop} className="shrink-0 rounded-xl px-2 py-2 text-xs font-bold text-gray-600 hover:bg-slate-100/90">
+                    <button type="button" onClick={stop} className="shrink-0 rounded-xl px-2 py-2 text-xs font-bold text-white/80 hover:bg-white/10">
                       עצור
                     </button>
                   )}

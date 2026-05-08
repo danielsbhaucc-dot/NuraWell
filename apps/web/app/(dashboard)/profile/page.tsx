@@ -15,7 +15,7 @@ export default async function ProfilePage() {
 
   const { data: rawProfile } = await supabase
     .from('profiles')
-    .select('id, full_name, role, avatar_url, created_at, streak_days, onboarding_completed, goal_weight_kg, current_weight_kg, height_cm, activity_level')
+    .select('id, full_name, role, avatar_url, created_at, streak_days, onboarding_completed, goal_weight_kg, current_weight_kg, height_cm, activity_level, gender')
     .eq('id', user.id)
     .single();
 
@@ -31,6 +31,7 @@ export default async function ProfilePage() {
     current_weight_kg: number | null;
     height_cm: number | null;
     activity_level: string | null;
+    gender: 'male' | 'female' | null;
   } | null;
 
   const { data: rawStats } = await supabase
