@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { streamText } from 'ai';
+import { generateObject, streamText, tool } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
+import { getUserAiMemory, upsertUserAiMemory, type UserAiMemory } from '../../../../../lib/ai/user-memory';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 
 export const runtime = 'edge';
@@ -15,6 +16,67 @@ const chatBodySchema = z.object({
 const BASE_SYSTEM_PROMPT =
   'אתה אלמוג, מנטור אמפתי ומעשי. ענה בקצרה ובעברית טבעית, בלי לחזור על אותם משפטים. לעולם אל תחזיר תשובה ריקה.';
 const EMPTY_RESPONSE_FALLBACK = 'אני כאן איתך. ספר לי במשפט אחד מה הכי כבד עכשיו, ונחשוב יחד על צעד קטן להמשך.';
+const EMPTY_MEMORY: UserAiMemory = {
+  commitments: [],
+  weaknesses: [],
+  victories: [],
+  notes: [],
+};
+const memoryToolSchema = z.object({
+  commitments: z.array(z.string()),
+  weaknesses: z.array(z.string()),
+  victories: z.array(z.string()),
+  notes: z.array(z.string()),
+});
+
+async function syncUserMemoryAfterTurn(params: {
+  openrouter: ReturnType<typeof createOpenAI>;
+  supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'];
+  userId: string;
+  currentMemory: UserAiMemory;
+  userMessage: string;
+  assistantMessage: string;
+  debugId: string;
+}) {
+  const { openrouter, supabase, userId, currentMemory, userMessage, assistantMessage, debugId } = params;
+
+  try {
+    const { object: updatedMemory } = await generateObject({
+      model: openrouter.chat('openai/gpt-5-mini'),
+      temperature: 0.2,
+      schema: memoryToolSchema,
+      system: `אתה מעדכן זיכרון משתמש דחוס למאמן AI.
+החזר רק אובייקט JSON עם המפתחות: commitments, weaknesses, victories, notes.
+כל המפתחות הם מערכי מחרוזות בלבד.
+כללים:
+- שמור רק פרטים יציבים וחשובים לטווח בינוני/ארוך.
+- מחק פרטים זמניים, כפולים או לא רלוונטיים.
+- commitments: הרגלים/כוונות לביצוע.
+- weaknesses: קשיים חוזרים/טריגרים.
+- victories: הצלחות קונקרטיות משמעותיות.
+- notes: תובנות קצרות על סגנון תמיכה או הקשר אישי חשוב.
+- עד 6 פריטים בכל מערך, קצר ותמציתי.`,
+      prompt: `זיכרון קיים:
+${JSON.stringify(currentMemory)}
+
+הודעת משתמש אחרונה:
+${userMessage}
+
+תשובת עוזר אחרונה:
+${assistantMessage}
+
+עדכן את הזיכרון.`,
+    });
+
+    await upsertUserAiMemory(supabase, userId, updatedMemory);
+  } catch (err) {
+    console.error('[ai/chat]', {
+      debug_id: debugId,
+      stage: 'memory_sync_after_turn_failed',
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
 
 async function insertInteraction(
   supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
@@ -84,6 +146,18 @@ export async function POST(request: Request) {
   }
 
   const sessionId = parsed.data.session_id ?? crypto.randomUUID();
+  const memoryToolEnabled = process.env.AI_MEMORY_TOOL_ENABLED === '1';
+
+  let userMemory: UserAiMemory = EMPTY_MEMORY;
+  try {
+    userMemory = await getUserAiMemory(supabase, user.id);
+  } catch (memoryErr) {
+    console.warn('[ai/chat]', {
+      debug_id: debugId,
+      stage: 'memory_read_failed',
+      error: memoryErr instanceof Error ? memoryErr.message : String(memoryErr),
+    });
+  }
 
   const lastUser = [...messages]
     .reverse()
@@ -151,17 +225,46 @@ export async function POST(request: Request) {
   });
 
   try {
+    const systemPromptWithMemory = `${BASE_SYSTEM_PROMPT}
+
+זהו הזיכרון העדכני של המשתמש בפורמט JSON: ${JSON.stringify(userMemory)}. עליך להתחשב בו בתשובות שלך.
+אם המשתמש מציין קושי חדש, הצלחה, או פרט קריטי, השתמש בכלי update_user_memory כדי לדחוס ולעדכן את הזיכרון.
+מחק פרטים לא רלוונטיים כדי לחסוך מקום.`;
+
     stage = 'stream_init';
     const result = streamText({
       model: openrouter.chat('openai/gpt-5-mini'),
       temperature: 0.75,
       maxOutputTokens: 480,
+      maxSteps: memoryToolEnabled ? 3 : 1,
       providerOptions: {
         // Reduce internal reasoning overrun that can yield empty visible text.
         openai: { reasoningEffort: 'low' },
       },
-      system: BASE_SYSTEM_PROMPT,
+      system: systemPromptWithMemory,
       messages: recentMessages,
+      tools: memoryToolEnabled
+        ? {
+            update_user_memory: tool({
+              description:
+                'Update the full compressed user memory. Keep only relevant high-signal items.',
+              inputSchema: memoryToolSchema,
+              execute: async (input) => {
+                try {
+                  const updated = await upsertUserAiMemory(supabase, user.id, input);
+                  return { ok: true, memory: updated };
+                } catch (memoryWriteErr) {
+                  console.error('[ai/chat]', {
+                    debug_id: debugId,
+                    stage: 'memory_write_failed',
+                    error: memoryWriteErr instanceof Error ? memoryWriteErr.message : String(memoryWriteErr),
+                  });
+                  return { ok: false };
+                }
+              },
+            }),
+          }
+        : undefined,
       onFinish: async ({ text, usage }) => {
         const finishStage = 'on_finish';
         const t = (text ?? '').trim();
@@ -187,6 +290,19 @@ export async function POST(request: Request) {
             debug_id: debugId,
             stage: `${finishStage}_persist_assistant`,
             error: persistErr instanceof Error ? persistErr.message : String(persistErr),
+          });
+        }
+
+        // Safety net: even if the model didn't call the tool, sync memory explicitly.
+        if (memoryToolEnabled) {
+          await syncUserMemoryAfterTurn({
+            openrouter,
+            supabase,
+            userId: user.id,
+            currentMemory: userMemory,
+            userMessage: lastUserText,
+            assistantMessage: assistantText,
+            debugId,
           });
         }
       },
