@@ -22,7 +22,10 @@ type OpenRouterResponse = {
         | Array<{
             type?: string;
             text?: string;
+            content?: string;
+            value?: string;
           }>;
+      refusal?: string;
     };
   }>;
   usage?: { total_tokens?: number };
@@ -74,12 +77,21 @@ async function callOpenRouterChat(userPrompt: string): Promise<{ text: string; t
     text = content.trim();
   } else if (Array.isArray(content)) {
     text = content
-      .map((p) => (typeof p?.text === 'string' ? p.text : ''))
+      .map((p) => {
+        if (typeof p?.text === 'string') return p.text;
+        if (typeof p?.content === 'string') return p.content;
+        if (typeof p?.value === 'string') return p.value;
+        return '';
+      })
       .join('')
       .trim();
   }
 
   if (!text) {
+    const refusal = String(data.choices?.[0]?.message?.refusal ?? '').trim();
+    if (refusal) {
+      return { text: refusal, totalTokens: data.usage?.total_tokens };
+    }
     throw new Error(`OpenRouter empty assistant content: ${raw.slice(0, 400)}`);
   }
 
