@@ -77,8 +77,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="he" dir="rtl">
+    <html lang="he" dir="rtl" translate="no" className="notranslate" suppressHydrationWarning>
       <head>
+        <meta name="google" content="notranslate" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -99,7 +100,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen bg-background font-sans antialiased">
+      <body className="min-h-screen bg-background font-sans antialiased notranslate">
         {children}
       </body>
     </html>
