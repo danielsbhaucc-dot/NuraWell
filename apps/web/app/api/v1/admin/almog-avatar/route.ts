@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
-import { almogCdnHostname, getAlmogAvatarUrl, resolveAlmogPublicBaseUrl } from '../../../../../lib/ai/almog-avatar';
+import {
+  almogCdnHostname,
+  getAlmogAvatarUrl,
+  resolveAlmogPublicBaseUrl,
+  resolveCdnImagesPrefix,
+} from '../../../../../lib/ai/almog-avatar';
 import {
   ALMOG_AVATAR_LEGACY_KEYS,
   ALMOG_AVATAR_OBJECT_KEY,
@@ -40,7 +45,7 @@ export async function GET(request: Request) {
     avatar_url,
     cdn_base: cdnBase ?? null,
     cdn_hostname: almogCdnHostname(),
-    public_object_path: `/${ALMOG_AVATAR_OBJECT_KEY}`,
+    public_object_path: `${resolveCdnImagesPrefix()}/${ALMOG_AVATAR_OBJECT_KEY}`,
     is_configured: Boolean(r2ImageBucketName() && cdnBase),
     r2_bucket_configured: Boolean(r2ImageBucketName()),
     expected_key: ALMOG_AVATAR_OBJECT_KEY,
@@ -126,7 +131,7 @@ export async function POST(request: Request) {
       avatar_url,
       cdn_base: cdnBase ?? null,
       cdn_hostname: almogCdnHostname(),
-      public_object_path: `/${ALMOG_AVATAR_OBJECT_KEY}`,
+      public_object_path: `${resolveCdnImagesPrefix()}/${ALMOG_AVATAR_OBJECT_KEY}`,
       cdn_configured: Boolean(cdnBase),
       bucket,
       object_key: ALMOG_AVATAR_OBJECT_KEY,

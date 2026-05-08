@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { HeadObjectCommand } from '@aws-sdk/client-s3';
-import { almogCdnHostname, resolveAlmogPublicBaseUrl } from '../../../../lib/ai/almog-avatar';
+import {
+  almogCdnHostname,
+  resolveAlmogPublicBaseUrl,
+  resolveCdnImagesPrefix,
+} from '../../../../lib/ai/almog-avatar';
 import {
   ALMOG_AVATAR_OBJECT_KEY,
   getR2Client,
@@ -12,7 +16,7 @@ export const runtime = 'nodejs';
 function cdnAvatarUrl(v: string): string | null {
   const base = resolveAlmogPublicBaseUrl();
   if (!base) return null;
-  return `${base}/${ALMOG_AVATAR_OBJECT_KEY}?v=${encodeURIComponent(v)}`;
+  return `${base}${resolveCdnImagesPrefix()}/${ALMOG_AVATAR_OBJECT_KEY}?v=${encodeURIComponent(v)}`;
 }
 
 /**
@@ -34,7 +38,7 @@ export async function GET() {
   if (!bucket) {
     return NextResponse.json(
       {
-        url: `${base}/${ALMOG_AVATAR_OBJECT_KEY}`,
+        url: `${base}${resolveCdnImagesPrefix()}/${ALMOG_AVATAR_OBJECT_KEY}`,
         has_custom: false,
         cdn_hostname,
         cdn_configured: true,
