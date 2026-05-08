@@ -13,6 +13,7 @@ const chatBodySchema = z.object({
 });
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const DEEPSEEK_URL = 'https://api.deepseek.com/v1/chat/completions';
 
 type OpenRouterResponse = {
   choices?: Array<{
@@ -123,6 +124,39 @@ async function callOpenRouterChat(system: string, userPrompt: string): Promise<{
     throw new Error(`OpenRouter JSON Error: ${JSON.stringify((data as any).error)}`);
   }
   const text = extractAssistantText(data);
+  return { text, totalTokens: data.usage?.total_tokens };
+}
+
+async function callDeepSeekChat(system: string, userPrompt: string): Promise<{ text: string; totalTokens?: number }> {
+  const apiKey = process.env.DEEPSEEK_API_KEY ?? '';
+  if (!apiKey) {
+    throw new Error('DEEPSEEK_API_KEY missing');
+  }
+  const response = await fetch(DEEPSEEK_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: process.env.DEEPSEEK_ANALYSIS_MODEL?.trim() || 'deepseek-chat',
+      temperature: 0.7,
+      max_tokens: 220,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: userPrompt },
+      ],
+    }),
+  });
+  if (!response.ok) {
+    const errBody = await response.text();
+    throw new Error(`DeepSeek HTTP ${response.status}: ${errBody.slice(0, 300)}`);
+  }
+  const data = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+    usage?: { total_tokens?: number };
+  };
+  const text = String(data.choices?.[0]?.message?.content ?? '').trim();
   return { text, totalTokens: data.usage?.total_tokens };
 }
 
@@ -265,7 +299,9 @@ export async function POST(request: Request) {
   let assistantText = '';
   let totalTokens: number | undefined;
   let retryUsed = false;
+  let deepseekUsed = false;
   let actualError: any = null;
+  let assistantModelName = 'openai/gpt-5-mini';
 
   try {
     const out = await callOpenRouterChat(mergedSystemPrompt, lastUserText);
@@ -287,6 +323,22 @@ export async function POST(request: Request) {
       totalTokens = retry.totalTokens ?? totalTokens;
     } catch (err) {
       console.error('CRITICAL: Retry attempt failed:', err);
+      actualError = actualError || err;
+    }
+  }
+
+  if (!assistantText) {
+    try {
+      const deepseek = await callDeepSeekChat(
+        `${NURAWELL_MENTOR_PROMPT}\nענה בקצרה ובעברית טבעית. בלי טקסט טכני, בלי מזהים, בלי payload.`,
+        lastUserText
+      );
+      assistantText = deepseek.text;
+      totalTokens = deepseek.totalTokens ?? totalTokens;
+      deepseekUsed = true;
+      assistantModelName = process.env.DEEPSEEK_ANALYSIS_MODEL?.trim() || 'deepseek-chat';
+    } catch (err) {
+      console.error('CRITICAL: DeepSeek fallback failed:', err);
       actualError = actualError || err;
     }
   }
@@ -314,12 +366,13 @@ export async function POST(request: Request) {
     session_id: sessionId,
     role: 'assistant',
     content: assistantText,
-    model_name: 'openai/gpt-5-mini',
+    model_name: assistantModelName,
     tokens_used: totalTokens,
     metadata: {
       edge: true,
       fallback_used: false,
       retry_used: retryUsed,
+      deepseek_used: deepseekUsed,
     },
   });
 
