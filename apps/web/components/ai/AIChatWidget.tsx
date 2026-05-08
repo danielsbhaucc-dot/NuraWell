@@ -11,7 +11,11 @@ import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 
 const SESSION_STORAGE_KEY = 'nurawell_almog_chat_session';
 
-function getMessageText(parts: Array<{ type: string; text?: string }>): string {
+function getMessageText(msg: { parts?: Array<{ type: string; text?: string }>; content?: string | null }): string {
+  if (typeof msg.content === 'string' && msg.content.trim()) {
+    return msg.content.trim();
+  }
+  const parts = Array.isArray(msg.parts) ? msg.parts : [];
   return parts
     .map((p) => (p.type === 'text' && typeof p.text === 'string' ? p.text : ''))
     .join('')
@@ -204,7 +208,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
 
               {messages.map((msg, i) => {
                 const isUser = msg.role === 'user';
-                const text = getMessageText(msg.parts as Array<{ type: string; text?: string }>);
+                const text = getMessageText(msg as { parts?: Array<{ type: string; text?: string }>; content?: string | null });
                 if (!isUser && !text) return null;
                 return (
                   <div key={msg.id ?? `${i}-${text.slice(0, 16)}`} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
