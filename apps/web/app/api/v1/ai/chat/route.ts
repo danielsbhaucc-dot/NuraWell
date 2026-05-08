@@ -14,15 +14,6 @@ const chatBodySchema = z.object({
 
 const BASE_SYSTEM_PROMPT = 'אתה אלמוג, מנטור אמפתי ומעשי. ענה בקצרה ובעברית טבעית.';
 
-const openrouter = createOpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY ?? '',
-  baseURL: 'https://openrouter.ai/api/v1',
-  headers: {
-    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL ?? 'https://nurawell.ai',
-    'X-Title': 'NuraWell',
-  },
-});
-
 async function insertInteraction(
   supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
   payload: {
@@ -101,6 +92,33 @@ export async function POST(request: Request) {
   if (!lastUserText) {
     return new Response(JSON.stringify({ error: 'Empty user message' }), { status: 400 });
   }
+
+  const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (!openrouterKey) {
+    return new Response(
+      JSON.stringify({
+        error: 'OPENROUTER_API_KEY is missing in server environment',
+        details: 'Set OPENROUTER_API_KEY in Vercel Project Settings -> Environment Variables, then redeploy.',
+      }),
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'x-session-id': sessionId,
+          'Cache-Control': 'no-cache, no-transform',
+        },
+      }
+    );
+  }
+
+  const openrouter = createOpenAI({
+    apiKey: openrouterKey,
+    baseURL: 'https://openrouter.ai/api/v1',
+    headers: {
+      'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL ?? 'https://nurawell.ai',
+      'X-Title': 'NuraWell',
+    },
+  });
 
   try {
     const result = streamText({
