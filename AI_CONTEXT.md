@@ -7,6 +7,43 @@
 
 **לא לעדכן** בשביל תיקוני באג קטנים, שינויי ניסוח בלי השפעה ארכיטקטונית, או רפקטור פנימי שאינו משנה חוזים ציבוריים. המטרה: למנוע רעש ולשמור על מסמכים אמינים וקצרים.
 
+## ✅ Known Good Baseline (Chat)
+
+כאשר יש תקלה בצ'אט, זה הבסיס שמוכח שעובד כרגע וצריך לחזור אליו:
+
+- Route: `apps/web/app/api/v1/ai/chat/route.ts`
+  - `runtime = 'edge'`
+  - שימוש ב-`streamText` (Vercel AI SDK) + `toTextStreamResponse`
+  - ספק יחיד בצ'אט: OpenRouter עם `openai/gpt-5-mini`
+  - fallback שרת לתוכן ריק (כדי להימנע מהודעות "שקטות")
+- UI: `apps/web/components/ai/AIChatWidget.tsx`
+  - שימוש ב-`useChat` עם `TextStreamChatTransport`
+  - שימור `x-session-id` מהשרת
+- תצורת סביבה חובה:
+  - `OPENROUTER_API_KEY`
+  - `NEXT_PUBLIC_APP_URL`
+
+אם שיפור חדש שוב גורם ל־502/empty stream, חוזרים קודם לבסיס הזה ורק אז ממשיכים ניסויים.
+
+## 🔁 Safe Change Policy (AI Chat)
+
+עבור שינויים בצ'אט/AI:
+
+1. לבצע שינוי קטן אחד בלבד בכל קומיט.
+2. לבדוק ידנית 3 הודעות רצופות (כולל הודעת "עומס" כמו: "אני עייף היה יום כבד").
+3. אם תקין — קומיט.
+4. אם לא תקין — rollback מיידי לקומיט האחרון היציב.
+
+פקודות מומלצות:
+
+```bash
+git log --oneline -10
+git revert <bad_commit_sha>
+git push origin main
+```
+
+הערה: עדיף `git revert` על `reset --hard` בפרודקשן כדי לשמור היסטוריה נקייה ושחזור בטוח.
+
 ## System Overview
 Mobile-first, AI-ready course system for weight loss with RTL support, built with Next.js 15 + Supabase + Tailwind CSS.
 
