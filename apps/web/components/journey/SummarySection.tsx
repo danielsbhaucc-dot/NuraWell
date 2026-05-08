@@ -135,12 +135,12 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
           <p className="text-xs text-gray-500 mb-3">
             בחר מה מקובל עליך כרגע. אלמוג יזכור את הבחירה שלך ויתאים את ההכוונה בהתאם.
           </p>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {step.tasks.map((task) => {
               const decision = progress.task_statuses?.[task.id];
               const status = decision?.status ?? 'pending';
               return (
-              <div key={task.id} className="flex items-start gap-3 p-3 rounded-xl"
+              <div key={task.id} className="p-3.5 rounded-xl"
                 style={{
                   background: status === 'accepted'
                     ? 'rgba(16,185,129,0.06)'
@@ -153,15 +153,18 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                       ? '1px solid rgba(244,63,94,0.22)'
                       : '1px solid rgba(0,0,0,0.06)',
                 }}>
-                <span className="text-xl flex-shrink-0">{task.emoji}</span>
-                <div className="flex-1">
-                  <p className="font-bold text-sm" style={{ color: '#1A1730' }}>{task.title}</p>
-                  {task.description && <p className="text-xs text-gray-500 mt-0.5">{task.description}</p>}
-                  <div className="mt-2 flex items-center gap-2 flex-wrap">
+                <div className="flex items-start gap-3">
+                  <span className="text-xl flex-shrink-0 mt-0.5">{task.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm leading-snug" style={{ color: '#1A1730' }}>{task.title}</p>
+                    {task.description && <p className="text-xs text-gray-500 mt-1">{task.description}</p>}
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => onTaskDecisionChange(task.id, 'accepted')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      className={`w-full px-3 py-2.5 rounded-xl text-sm font-bold transition ${
                         status === 'accepted'
                           ? 'bg-emerald-600 text-white'
                           : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
@@ -172,7 +175,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                     <button
                       type="button"
                       onClick={() => onTaskDecisionChange(task.id, 'rejected')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      className={`w-full px-3 py-2.5 rounded-xl text-sm font-bold transition ${
                         status === 'rejected'
                           ? 'bg-rose-600 text-white'
                           : 'bg-rose-50 text-rose-700 border border-rose-200'
@@ -180,6 +183,8 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                     >
                       לא מקובל כרגע
                     </button>
+                </div>
+                <div className="mt-2 flex items-center">
                     {status === 'accepted' && (
                       <span className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-1">
                         סומן: מקובל
@@ -195,7 +200,6 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                         ממתין לבחירה
                       </span>
                     )}
-                  </div>
                 </div>
               </div>
               );
@@ -221,18 +225,20 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
           <p className="text-xs text-gray-500 mb-3">
             אלו ההרגלים של הצעד הזה. אלמוג יתבסס עליהם בשיחות שלך.
           </p>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {step.habits.map((habit) => (
-              <div key={habit.id} className="flex items-start gap-3 p-3 rounded-xl"
+              <div key={habit.id} className="p-3.5 rounded-xl"
                 style={{ background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.1)' }}>
-                <span className="text-xl flex-shrink-0">{habit.emoji}</span>
-                <div className="flex-1">
-                  <p className="font-bold text-sm" style={{ color: '#1A1730' }}>{habit.title}</p>
-                  {habit.description && <p className="text-xs text-gray-500 mt-0.5">{habit.description}</p>}
-                  <span className="inline-flex mt-2 text-[11px] px-2 py-1 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold">
-                    תדירות: {getHabitFrequencyLabel(habit.frequency)}
-                  </span>
+                <div className="flex items-start gap-3">
+                  <span className="text-xl flex-shrink-0 mt-0.5">{habit.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm leading-snug" style={{ color: '#1A1730' }}>{habit.title}</p>
+                    {habit.description && <p className="text-xs text-gray-500 mt-1">{habit.description}</p>}
+                  </div>
                 </div>
+                <span className="inline-flex mt-3 text-[11px] px-2 py-1 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold">
+                  תדירות: {getHabitFrequencyLabel(habit.frequency)}
+                </span>
               </div>
             ))}
           </div>
