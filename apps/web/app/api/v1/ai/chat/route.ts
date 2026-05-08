@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { convertToModelMessages, streamText } from 'ai';
+import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { buildUserContext } from '../../../../../lib/ai/memory';
 import { NURAWELL_MENTOR_PROMPT } from '../../../../../lib/ai/prompts';
@@ -67,6 +67,35 @@ function uiMessageRole(msg: unknown): 'system' | 'user' | 'assistant' | null {
   return r === 'system' || r === 'user' || r === 'assistant' ? r : null;
 }
 
+async function buildRecentMemoryBlock(
+  supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
+  userId: string
+): Promise<string> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('ai_interactions')
+    .select('role, content, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(12);
+
+  const rows = (data ?? []) as Array<{ role?: string; content?: string | null }>;
+  if (!rows.length) return '';
+
+  const lines = rows
+    .reverse()
+    .map((r) => {
+      const role = r.role === 'assistant' ? 'אלמוג' : r.role === 'user' ? 'משתמש' : 'מערכת';
+      const content = String(r.content ?? '').trim();
+      if (!content) return '';
+      return `${role}: ${content}`;
+    })
+    .filter(Boolean);
+
+  if (!lines.length) return '';
+  return `זיכרון שיחות אחרונות (פנימי בלבד):\n${lines.join('\n')}`;
+}
+
 export async function POST(request: Request) {
   const { supabase, user, authError } = await createSupabaseForApiRoute(request);
   if (authError || !user) {
@@ -115,89 +144,84 @@ export async function POST(request: Request) {
       };
     })
     .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m));
+  if (!lastUserText) {
+    return new Response(JSON.stringify({ error: 'Empty user message' }), { status: 400 });
+  }
 
-  const uiMessagesForModel = sanitizedMessages.map((m) => ({
-    role: m.role,
-    parts: [{ type: 'text' as const, text: m.content }],
-  }));
+  const recentChatContext = sanitizedMessages
+    .slice(-8)
+    .map((m) => `${m.role === 'assistant' ? 'אלמוג' : 'משתמש'}: ${m.content}`)
+    .join('\n');
+  const persistedMemoryContext = await buildRecentMemoryBlock(supabase, user.id);
+  const mergedSystemPrompt = [
+    systemPrompt,
+    persistedMemoryContext,
+    recentChatContext ? `הודעות אחרונות מהסשן הנוכחי (פנימי בלבד):\n${recentChatContext}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 
-  const result = streamText({
-    model: openrouter.chat('openai/gpt-5-mini'),
-    temperature: 0.85,
-    maxOutputTokens: 260,
-    system: systemPrompt,
-    messages: await convertToModelMessages(uiMessagesForModel as never[]),
-    onFinish: async ({ text, usage }) => {
-      const t = (text ?? '').trim();
-      const assistantText = t || EMPTY_RESPONSE_FALLBACK;
-      await insertInteraction(supabase, {
-        user_id: user.id,
-        session_id: sessionId,
-        role: 'assistant',
-        content: assistantText,
-        model_name: 'openai/gpt-5-mini',
-        tokens_used: usage?.totalTokens,
-        metadata: {
-          edge: true,
-          fallback_used: !t,
-        },
+  let assistantText = '';
+  let totalTokens: number | undefined;
+  let fallbackUsed = false;
+  let retryUsed = false;
+
+  try {
+    const out = await generateText({
+      model: openrouter.chat('openai/gpt-5-mini'),
+      temperature: 0.85,
+      maxOutputTokens: 260,
+      system: mergedSystemPrompt,
+      prompt: lastUserText,
+    });
+    assistantText = (out.text ?? '').trim();
+    totalTokens = out.usage?.totalTokens;
+  } catch {
+    // Retry below with tighter prompt.
+  }
+
+  if (!assistantText) {
+    retryUsed = true;
+    try {
+      const retry = await generateText({
+        model: openrouter.chat('openai/gpt-5-mini'),
+        temperature: 0.6,
+        maxOutputTokens: 200,
+        system: `${NURAWELL_MENTOR_PROMPT}\nענה תשובה קצרה, פרקטית וחמה בעברית בלבד.`,
+        prompt: lastUserText,
       });
+      assistantText = (retry.text ?? '').trim();
+      totalTokens = retry.usage?.totalTokens ?? totalTokens;
+    } catch {
+      // Final fallback below.
+    }
+  }
+
+  if (!assistantText) {
+    fallbackUsed = true;
+    assistantText = EMPTY_RESPONSE_FALLBACK;
+  }
+
+  await insertInteraction(supabase, {
+    user_id: user.id,
+    session_id: sessionId,
+    role: 'assistant',
+    content: assistantText,
+    model_name: 'openai/gpt-5-mini',
+    tokens_used: totalTokens,
+    metadata: {
+      edge: true,
+      fallback_used: fallbackUsed,
+      retry_used: retryUsed,
     },
   });
-  const upstream = result.toTextStreamResponse({
+
+  return new Response(assistantText, {
+    status: 200,
     headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
       'x-session-id': sessionId,
       'Cache-Control': 'no-cache, no-transform',
     },
-  });
-
-  if (!upstream.body) {
-    return new Response(EMPTY_RESPONSE_FALLBACK, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'x-session-id': sessionId,
-        'Cache-Control': 'no-cache, no-transform',
-      },
-    });
-  }
-
-  const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
-  let hadVisibleText = false;
-
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const reader = upstream.body!.getReader();
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (value) {
-            const chunkText = decoder.decode(value, { stream: true });
-            if (!hadVisibleText && chunkText.trim().length > 0) hadVisibleText = true;
-            controller.enqueue(value);
-          }
-        }
-        const trailing = decoder.decode();
-        if (!hadVisibleText && trailing.trim().length > 0) hadVisibleText = true;
-        if (!hadVisibleText) controller.enqueue(encoder.encode(EMPTY_RESPONSE_FALLBACK));
-        controller.close();
-      } catch (error) {
-        controller.error(error);
-      } finally {
-        reader.releaseLock();
-      }
-    },
-  });
-
-  const headers = new Headers(upstream.headers);
-  headers.set('x-session-id', sessionId);
-  headers.set('Cache-Control', 'no-cache, no-transform');
-  if (!headers.get('Content-Type')) headers.set('Content-Type', 'text/plain; charset=utf-8');
-
-  return new Response(stream, {
-    status: upstream.status,
-    statusText: upstream.statusText,
-    headers,
   });
 }
