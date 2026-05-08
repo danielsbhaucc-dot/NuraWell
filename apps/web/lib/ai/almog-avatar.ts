@@ -41,3 +41,8 @@ export function getAlmogAvatarUrl(cacheBuster?: string): string {
   return cacheBuster ? `${url}?v=${encodeURIComponent(cacheBuster)}` : url;
 }
 
+/** Same-origin image URL (R2 via API). Prefer in UI so the file always matches the upload bucket. */
+export function almogAvatarAppImageUrl(cacheBuster: string): string {
+  return `/api/v1/almog-avatar/image?v=${encodeURIComponent(cacheBuster)}`;
+}
+

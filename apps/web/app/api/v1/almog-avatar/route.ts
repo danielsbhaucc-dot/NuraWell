@@ -10,17 +10,16 @@ import {
 export const runtime = 'nodejs';
 
 /**
- * Public: resolved CDN URL for Almog avatar with cache-buster from R2 metadata.
- * Fixes client-only NEXT_PUBLIC_* mismatch and immutable CDN caching after uploads.
+ * Public: avatar image URL (same-origin proxy) + has_custom from R2 HeadObject.
  */
 export async function GET() {
-  const base = resolveAlmogPublicBaseUrl();
-  if (!base) {
-    return NextResponse.json({ url: null, has_custom: false }, { headers: { 'Cache-Control': 'no-store' } });
-  }
-
   const bucket = r2ImageBucketName();
+
   if (!bucket) {
+    const base = resolveAlmogPublicBaseUrl();
+    if (!base) {
+      return NextResponse.json({ url: null, has_custom: false }, { headers: { 'Cache-Control': 'no-store' } });
+    }
     return NextResponse.json(
       { url: `${base}/${ALMOG_AVATAR_OBJECT_KEY}`, has_custom: false },
       { headers: { 'Cache-Control': 'no-store' } }
@@ -37,13 +36,8 @@ export async function GET() {
     );
     const vRaw = head.LastModified?.getTime() ?? head.ETag?.replace(/"/g, '') ?? '1';
     const v = String(vRaw);
-    return NextResponse.json(
-      {
-        url: `${base}/${ALMOG_AVATAR_OBJECT_KEY}?v=${encodeURIComponent(v)}`,
-        has_custom: true,
-      },
-      { headers: { 'Cache-Control': 'no-store' } }
-    );
+    const url = `/api/v1/almog-avatar/image?v=${encodeURIComponent(v)}`;
+    return NextResponse.json({ url, has_custom: true }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e: unknown) {
     const err = e as { name?: string; $metadata?: { httpStatusCode?: number } };
     const notFound =
@@ -54,8 +48,9 @@ export async function GET() {
       return NextResponse.json({ url: null, has_custom: false }, { headers: { 'Cache-Control': 'no-store' } });
     }
     console.error('[almog-avatar public GET]', e);
+    const v = String(Date.now());
     return NextResponse.json(
-      { url: `${base}/${ALMOG_AVATAR_OBJECT_KEY}?v=${Date.now()}`, has_custom: false },
+      { url: `/api/v1/almog-avatar/image?v=${encodeURIComponent(v)}`, has_custom: false },
       { headers: { 'Cache-Control': 'no-store' } }
     );
   }

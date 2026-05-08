@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
-import { getAlmogAvatarUrl, resolveAlmogPublicBaseUrl } from '../../../../../lib/ai/almog-avatar';
+import { almogAvatarAppImageUrl, getAlmogAvatarUrl, resolveAlmogPublicBaseUrl } from '../../../../../lib/ai/almog-avatar';
 import {
   ALMOG_AVATAR_LEGACY_KEYS,
   ALMOG_AVATAR_OBJECT_KEY,
@@ -33,9 +33,12 @@ export async function GET(request: Request) {
   const auth = await assertAdmin(request);
   if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: auth.status });
 
+  const bucket = r2ImageBucketName();
+  const avatar_url = bucket ? almogAvatarAppImageUrl('0') : getAlmogAvatarUrl();
+
   return NextResponse.json({
-    avatar_url: getAlmogAvatarUrl(),
-    is_configured: Boolean(resolveAlmogPublicBaseUrl()),
+    avatar_url,
+    is_configured: Boolean(bucket || resolveAlmogPublicBaseUrl()),
     expected_key: ALMOG_AVATAR_OBJECT_KEY,
   });
 }
@@ -84,7 +87,7 @@ export async function POST(request: Request) {
 
     const s3 = getR2Client();
 
-    for (const key of [...ALMOG_AVATAR_LEGACY_KEYS, ALMOG_AVATAR_OBJECT_KEY]) {
+    for (const key of ALMOG_AVATAR_LEGACY_KEYS) {
       try {
         await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
       } catch {
@@ -105,7 +108,7 @@ export async function POST(request: Request) {
     const version = Date.now().toString();
     return NextResponse.json({
       ok: true,
-      avatar_url: getAlmogAvatarUrl(version),
+      avatar_url: almogAvatarAppImageUrl(version),
       original_bytes: originalForStats,
       optimized_bytes: buf.length,
       saved_percent: Math.max(0, Math.round((1 - buf.length / Math.max(1, originalForStats)) * 100)),

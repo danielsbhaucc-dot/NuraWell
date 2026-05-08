@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { MessageCircle, Send, Loader2, X } from 'lucide-react';
 import { Drawer } from 'vaul';
+import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 
 const SESSION_STORAGE_KEY = 'nurawell_almog_chat_session';
@@ -244,17 +245,17 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       </Drawer.Trigger>
 
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-[200] bg-slate-900/45" />
+        <Drawer.Overlay className="fixed inset-0 z-[200] bg-slate-900/55" />
         <Drawer.Content
           dir="rtl"
-          className="fixed bottom-0 right-0 left-0 z-[210] mx-auto w-full max-w-md rounded-t-[28px] outline-none bg-transparent"
+          className="fixed bottom-0 right-0 left-0 z-[210] mx-auto w-full max-w-md rounded-t-[28px] outline-none bg-white"
           style={{
-            border: '1px solid rgba(16,185,129,0.22)',
-            boxShadow: '0 -16px 48px rgba(6,78,59,0.22)',
+            border: '1px solid rgba(16,185,129,0.18)',
+            boxShadow: '0 -16px 48px rgba(6,78,59,0.18)',
             height: 'min(92dvh, 680px)',
           }}
         >
-          <div className="h-full flex flex-col overflow-hidden rounded-t-[28px] bg-slate-900/5 backdrop-blur-[2px]">
+          <div className="h-full flex flex-col overflow-hidden rounded-t-[28px] bg-white">
             <div
               className="shrink-0 rounded-t-[28px] text-white shadow-[0_4px_24px_rgba(6,78,59,0.35)]"
               style={{ background: 'linear-gradient(160deg, #064e3b 0%, #047857 45%, #10b981 100%)' }}
@@ -268,6 +269,10 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                     src={avatarSrc}
                     alt="אלמוג"
                     className="h-12 w-12 shrink-0 rounded-2xl object-cover border border-white/45 shadow-md"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                    }}
                   />
                   <div className="min-w-0 text-right">
                     <p className="text-xl font-black leading-none" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
@@ -308,16 +313,13 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
             </div>
 
             <div
-              className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-white/88 via-slate-50/92 to-slate-100/95 px-3 py-4 text-right backdrop-blur-md [box-shadow:inset_0_1px_0_rgba(255,255,255,0.65)]"
+              className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-[#f0fdf9] via-[#f8fafc] to-white px-3 py-4 text-right [box-shadow:inset_0_1px_0_rgba(255,255,255,0.9)]"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               {messages.length === 0 && (
                 <div
-                  className="rounded-2xl border border-white/70 p-4 text-sm leading-relaxed text-gray-700 shadow-sm"
-                  style={{
-                    background: 'linear-gradient(145deg, rgba(255,255,255,0.92) 0%, rgba(236,253,245,0.75) 100%)',
-                    boxShadow: '0 8px 28px rgba(6,78,59,0.06)',
-                  }}
+                  className="rounded-2xl border border-emerald-100/90 bg-white p-4 text-sm leading-relaxed text-gray-700 shadow-sm"
+                  style={{ boxShadow: '0 8px 28px rgba(6,78,59,0.07)' }}
                 >
                   אפשר לכתוב לי מה עובר עליך עכשיו, ואבנה איתך צעד קטן ומדויק להיום.
                 </div>
@@ -328,17 +330,17 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 return (
                   <div key={`${i}-${msg.text.slice(0, 16)}`} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                     <div
-                      className="max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed shadow-[0_4px_18px_rgba(15,23,42,0.06)] backdrop-blur-sm"
+                      className="max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed shadow-[0_4px_16px_rgba(15,23,42,0.07)]"
                       style={
                         isUser
                           ? {
-                              background: 'linear-gradient(145deg, rgba(224,242,254,0.95), rgba(219,234,254,0.88))',
-                              border: '1px solid rgba(59,130,246,0.28)',
+                              background: 'linear-gradient(145deg, #e0f2fe, #dbeafe)',
+                              border: '1px solid rgba(59,130,246,0.35)',
                               color: '#1e3a8a',
                             }
                           : {
-                              background: 'linear-gradient(165deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.88) 100%)',
-                              border: '1px solid rgba(16,185,129,0.2)',
+                              background: '#ffffff',
+                              border: '1px solid rgba(16,185,129,0.22)',
                               color: '#1A1730',
                             }
                       }
@@ -365,15 +367,10 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
             </div>
 
             <div
-              className="shrink-0 border-t border-white/50 bg-gradient-to-t from-white/80 to-white/55 p-3 backdrop-blur-lg"
+              className="shrink-0 border-t border-slate-200/90 bg-white p-3"
               style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
             >
-              <div
-                className="rounded-2xl border border-white/80 p-2 shadow-[0_-4px_24px_rgba(6,78,59,0.08)]"
-                style={{
-                  background: 'linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(248,250,252,0.88) 100%)',
-                }}
-              >
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-2 shadow-[0_-2px_16px_rgba(15,23,42,0.05)]">
                 <div className="flex items-end gap-2">
                   <textarea
                     dir="rtl"
@@ -388,7 +385,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                     }}
                     disabled={busy}
                     placeholder="כתוב לי מה עובר עליך..."
-                    className="max-h-28 min-h-[44px] flex-1 resize-none rounded-xl border border-slate-200/80 bg-white/90 px-3 py-2.5 text-[15px] text-right text-gray-900 shadow-inner outline-none backdrop-blur-sm disabled:opacity-60"
+                    className="max-h-28 min-h-[44px] flex-1 resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[15px] text-right text-gray-900 shadow-inner outline-none disabled:opacity-60"
                   />
                   {busy && (
                     <button
