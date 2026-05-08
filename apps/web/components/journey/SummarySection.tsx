@@ -80,18 +80,18 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
           <p className="text-white/90 font-bold">{getScoreMessage(overallScore)}</p>
         </div>
         {/* White body */}
-        <div className="p-5 bg-white">
-        <div className="flex justify-center gap-4 text-sm">
-          <div className="px-3 py-2 rounded-xl" style={{ background: 'rgba(16,185,129,0.1)' }}>
+        <div className="p-4 sm:p-5 bg-white">
+        <div className="flex flex-wrap justify-center gap-2 sm:gap-3 text-sm">
+          <div className="px-3 py-2 rounded-xl flex-1 min-w-[120px] text-center" style={{ background: 'rgba(16,185,129,0.1)' }}>
             <span className="text-gray-500">שאלות: </span>
             <strong className="text-emerald-700">{quizCorrect}/{quizTotal}</strong>
           </div>
-          <div className="px-3 py-2 rounded-xl" style={{ background: 'rgba(245,158,11,0.1)' }}>
+          <div className="px-3 py-2 rounded-xl flex-1 min-w-[120px] text-center" style={{ background: 'rgba(245,158,11,0.1)' }}>
             <span className="text-gray-500">משחק: </span>
             <strong className="text-amber-700">{gameCorrect}/{gameTotal}</strong>
           </div>
           {progress.commitment_accepted && (
-            <div className="px-3 py-2 rounded-xl" style={{ background: 'rgba(16,185,129,0.1)' }}>
+            <div className="px-3 py-2 rounded-xl flex-1 min-w-[120px] text-center" style={{ background: 'rgba(16,185,129,0.1)' }}>
               <Heart className="w-4 h-4 text-emerald-600 inline" fill="currentColor" />
               <span className="text-emerald-700 font-bold mr-1">התחייבות ✓</span>
             </div>
@@ -156,11 +156,11 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                 <div className="flex items-start gap-3">
                   <span className="text-xl flex-shrink-0 mt-0.5">{task.emoji}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm leading-snug" style={{ color: '#1A1730' }}>{task.title}</p>
+                    <p className="font-bold text-sm leading-snug break-words" style={{ color: '#1A1730' }}>{task.title}</p>
                     {task.description && <p className="text-xs text-gray-500 mt-1">{task.description}</p>}
                   </div>
                 </div>
-                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="mt-3 flex flex-col sm:flex-row gap-2">
                     <button
                       type="button"
                       onClick={() => onTaskDecisionChange(task.id, 'accepted')}
@@ -232,7 +232,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                 <div className="flex items-start gap-3">
                   <span className="text-xl flex-shrink-0 mt-0.5">{habit.emoji}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm leading-snug" style={{ color: '#1A1730' }}>{habit.title}</p>
+                    <p className="font-bold text-sm leading-snug break-words" style={{ color: '#1A1730' }}>{habit.title}</p>
                     {habit.description && <p className="text-xs text-gray-500 mt-1">{habit.description}</p>}
                   </div>
                 </div>
