@@ -1,6 +1,4 @@
 import { z } from 'zod';
-import { generateText } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
 import { buildUserContext } from '../../../../../lib/ai/memory';
 import { NURAWELL_MENTOR_PROMPT } from '../../../../../lib/ai/prompts';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
@@ -14,16 +12,56 @@ const chatBodySchema = z.object({
   user_id: z.string().uuid().optional(),
 });
 
-const openrouter = createOpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY ?? '',
-  baseURL: 'https://openrouter.ai/api/v1',
-  headers: {
-    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL ?? 'https://nurawell.ai',
-    'X-Title': 'NuraWell',
-  },
-});
-
 const EMPTY_RESPONSE_FALLBACK = 'אני איתך. תכתוב לי במשפט אחד מה הכי יושב עליך עכשיו ונפרק את זה יחד.';
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+type OpenRouterResponse = {
+  choices?: Array<{ message?: { content?: string | Array<{ type?: string; text?: string }> } }>;
+  usage?: { total_tokens?: number };
+};
+
+function normalizeOpenRouterContent(content: OpenRouterResponse['choices'][number]['message']['content']): string {
+  if (typeof content === 'string') return content.trim();
+  if (Array.isArray(content)) {
+    return content
+      .map((p) => (p && p.type === 'text' && typeof p.text === 'string' ? p.text : ''))
+      .join('')
+      .trim();
+  }
+  return '';
+}
+
+async function callOpenRouterChat(system: string, userPrompt: string): Promise<{ text: string; totalTokens?: number }> {
+  const apiKey = process.env.OPENROUTER_API_KEY ?? '';
+  if (!apiKey) {
+    throw new Error('OPENROUTER_API_KEY missing');
+  }
+  const response = await fetch(OPENROUTER_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL ?? 'https://nurawell.ai',
+      'X-Title': 'NuraWell',
+    },
+    body: JSON.stringify({
+      model: 'openai/gpt-5-mini',
+      temperature: 0.85,
+      max_tokens: 260,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: userPrompt },
+      ],
+    }),
+  });
+  if (!response.ok) {
+    const errBody = await response.text();
+    throw new Error(`OpenRouter HTTP ${response.status}: ${errBody.slice(0, 300)}`);
+  }
+  const data = (await response.json()) as OpenRouterResponse;
+  const text = normalizeOpenRouterContent(data.choices?.[0]?.message?.content);
+  return { text, totalTokens: data.usage?.total_tokens };
+}
 
 async function insertInteraction(
   supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
@@ -167,15 +205,9 @@ export async function POST(request: Request) {
   let retryUsed = false;
 
   try {
-    const out = await generateText({
-      model: openrouter.chat('openai/gpt-5-mini'),
-      temperature: 0.85,
-      maxOutputTokens: 260,
-      system: mergedSystemPrompt,
-      prompt: lastUserText,
-    });
-    assistantText = (out.text ?? '').trim();
-    totalTokens = out.usage?.totalTokens;
+    const out = await callOpenRouterChat(mergedSystemPrompt, lastUserText);
+    assistantText = out.text;
+    totalTokens = out.totalTokens;
   } catch {
     // Retry below with tighter prompt.
   }
@@ -183,15 +215,12 @@ export async function POST(request: Request) {
   if (!assistantText) {
     retryUsed = true;
     try {
-      const retry = await generateText({
-        model: openrouter.chat('openai/gpt-5-mini'),
-        temperature: 0.6,
-        maxOutputTokens: 200,
-        system: `${NURAWELL_MENTOR_PROMPT}\nענה תשובה קצרה, פרקטית וחמה בעברית בלבד.`,
-        prompt: lastUserText,
-      });
-      assistantText = (retry.text ?? '').trim();
-      totalTokens = retry.usage?.totalTokens ?? totalTokens;
+      const retry = await callOpenRouterChat(
+        `${NURAWELL_MENTOR_PROMPT}\nענה תשובה קצרה, פרקטית וחמה בעברית בלבד.`,
+        lastUserText
+      );
+      assistantText = retry.text;
+      totalTokens = retry.totalTokens ?? totalTokens;
     } catch {
       // Final fallback below.
     }

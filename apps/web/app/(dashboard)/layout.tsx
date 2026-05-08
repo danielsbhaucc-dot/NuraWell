@@ -1,9 +1,13 @@
 import { createClient } from '../../lib/supabase/server';
 import { redirect } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { MobileHeader } from '../../components/shared/MobileHeader';
 import { BottomNav } from '../../components/shared/BottomNav';
-import { AIChatWidget } from '../../components/ai/AIChatWidget';
-import { NotificationsInbox } from '../../components/ai/NotificationsInbox';
+
+const AIOverlaysClient = dynamic(
+  () => import('../../components/ai/AIOverlaysClient').then((m) => m.AIOverlaysClient),
+  { ssr: false }
+);
 
 export default async function DashboardLayout({
   children,
@@ -24,8 +28,7 @@ export default async function DashboardLayout({
         {children}
       </main>
       <BottomNav />
-      <NotificationsInbox />
-      <AIChatWidget userId={user.id} />
+      <AIOverlaysClient userId={user.id} />
     </div>
   );
 }
