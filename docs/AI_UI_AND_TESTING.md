@@ -55,7 +55,32 @@
   - `PATCH /api/v1/notifications` — סימון התראה בודדת או כולן כנקראו.
 - כפתור פעמון צף, מונה unread, ופתיחת חלונית עם ניווט ל-`action_url`.
 
-### 5) תזמון Cron חינמי
+### 5) אווטאר אלמוג מ-R2 (כולל אופטימיזציה)
+
+- פאנל אדמין חדש: `admin` → "אווטאר אלמוג (R2)".
+- API אדמין חדש: `POST /api/v1/admin/almog-avatar`.
+- תהליך ההעלאה:
+  1. קובץ נבחר בלוח אדמין.
+  2. בצד שרת: `sharp` מבצע `resize` (עד רוחב ~900px), `rotate` אוטומטי לפי EXIF, המרה ל-`webp` איכות 84.
+  3. הקובץ נשמר ל-R2 תחת מפתח קבוע: `almog/avatar.webp`.
+  4. כל רכיבי אלמוג (צ'אט/משוב/התראות AI) קוראים URL אחיד דרך `getAlmogAvatarUrl()`.
+
+**הגדרת R2:**
+- צור bucket ב-Cloudflare R2.
+- פתח public/custom domain לבקט (לקריאה ציבורית).
+- צור API Token עם הרשאות Object Read/Write לבקט.
+- הגדר סביבות:
+  - `NEXT_PUBLIC_R2_PUBLIC_BASE_URL`
+  - `R2_ACCOUNT_ID`
+  - `R2_ACCESS_KEY_ID`
+  - `R2_SECRET_ACCESS_KEY`
+  - `R2_BUCKET_NAME`
+
+**הערת Worker (אופציונלי):**
+- לא חובה למימוש הנוכחי כי האופטימיזציה כבר מתבצעת בצד שרת.
+- אם רוצים חתימות URL/CDN חכם/טרנספורמציות on-the-fly, ניתן להוסיף Cloudflare Worker בהמשך.
+
+### 6) תזמון Cron חינמי
 
 - הוסר Cron מ-`vercel.json` כדי לא להיות תלוי בתוכנית בתשלום.
 - תזמון מתבצע דרך GitHub Actions:  
@@ -64,7 +89,7 @@
   - `CRON_SECRET`
   - `VERCEL_APP_URL` (למשל `https://nurawell.vercel.app`)
 
-### 6) מודלים וסביבה
+### 7) מודלים וסביבה
 
 | שימוש | מודל / ספק |
 |--------|------------|

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { getAlmogAvatarUrl } from '../../lib/ai/almog-avatar';
 
 export type AIFeedbackCardVariant = 'emerald' | 'amber';
 
@@ -50,6 +51,7 @@ export function AIFeedbackCard({
   className = '',
 }: AIFeedbackCardProps) {
   const v = variantStyles[variant];
+  const avatarSrc = getAlmogAvatarUrl();
 
   return (
     <motion.div
@@ -64,28 +66,26 @@ export function AIFeedbackCard({
       }}
     >
       <div className="mb-2 flex items-center justify-end gap-2">
+        <img src={avatarSrc} alt="אלמוג" className="h-8 w-8 rounded-xl object-cover border border-white/70 shadow-sm" />
+        <div className="text-right">
+          <p className={`text-xs font-black ${v.title}`}>{title}</p>
+          <p className="text-[11px] text-gray-500">מנטור אישי</p>
+        </div>
         <Sparkles className={`h-4 w-4 shrink-0 ${v.icon}`} />
-        <p className={`text-xs font-black ${v.title}`}>{title}</p>
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-600 leading-relaxed">
-          רגע קטן, כותב לך משהו אישי
-          <span className="inline-flex gap-0.5 mr-1 align-middle">
-            <span className="inline-block animate-bounce" style={{ animationDelay: '0ms' }}>
-              .
-            </span>
-            <span className="inline-block animate-bounce" style={{ animationDelay: '150ms' }}>
-              .
-            </span>
-            <span className="inline-block animate-bounce" style={{ animationDelay: '300ms' }}>
-              .
-            </span>
+        <div className="inline-flex items-center gap-2 text-gray-600">
+          <span className="text-sm font-semibold">אלמוג מקליד</span>
+          <span className="inline-flex items-end gap-1 align-middle">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80 animate-bounce" />
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/70 animate-bounce" style={{ animationDelay: '120ms' }} />
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/60 animate-bounce" style={{ animationDelay: '240ms' }} />
           </span>
-        </p>
+        </div>
       ) : error ? (
         <p className="text-sm text-gray-600 leading-relaxed">
-          לא הצלחנו לטעון את המשוב עכשיו — אפשר פשוט להמשיך, ואני כאן גם בצ&apos;אט.
+          לא הצלחתי להביא את המשוב המלא כרגע, אבל אני עדיין איתך. ממשיכים צעד קטן קדימה.
         </p>
       ) : text ? (
         <p className="text-sm text-gray-800 leading-relaxed">{text}</p>

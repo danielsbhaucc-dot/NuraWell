@@ -109,8 +109,8 @@ export async function POST(request: Request) {
     if (stream) {
       const openaiStream = await client.chat.completions.create({
         model: AI_MODELS.empathy,
-        temperature: 0.8,
-        max_tokens: 400,
+        temperature: 0.85,
+        max_tokens: 260,
         messages: [
           { role: 'system', content: systemPrompt },
           ...trimmedHistory,
@@ -167,8 +167,8 @@ export async function POST(request: Request) {
 
     const completion = await client.chat.completions.create({
       model: AI_MODELS.empathy,
-      temperature: 0.8,
-      max_tokens: 400,
+      temperature: 0.85,
+      max_tokens: 260,
       messages: [
         { role: 'system', content: systemPrompt },
         ...trimmedHistory,
