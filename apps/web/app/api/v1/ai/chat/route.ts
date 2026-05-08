@@ -12,7 +12,8 @@ const chatBodySchema = z.object({
   user_id: z.string().uuid().optional(),
 });
 
-const BASE_SYSTEM_PROMPT = 'אתה אלמוג, מנטור אמפתי ומעשי. ענה בקצרה ובעברית טבעית.';
+const BASE_SYSTEM_PROMPT = 'אתה אלמוג, מנטור אמפתי ומעשי. ענה בקצרה ובעברית טבעית. לעולם אל תחזיר תשובה ריקה.';
+const EMPTY_RESPONSE_FALLBACK = 'אני כאן איתך. ספר לי במשפט אחד מה הכי כבד עכשיו, ונחשוב יחד על צעד קטן להמשך.';
 
 async function insertInteraction(
   supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
@@ -147,8 +148,14 @@ export async function POST(request: Request) {
       prompt: lastUserText,
       onFinish: async ({ text, usage }) => {
         const finishStage = 'on_finish';
-        const assistantText = (text ?? '').trim();
-        if (!assistantText) return;
+        const t = (text ?? '').trim();
+        const assistantText = t || EMPTY_RESPONSE_FALLBACK;
+        if (!t) {
+          console.warn('[ai/chat]', {
+            debug_id: debugId,
+            stage: `${finishStage}_empty_text_fallback`,
+          });
+        }
         try {
           await insertInteraction(supabase, {
             user_id: user.id,
@@ -157,7 +164,7 @@ export async function POST(request: Request) {
             content: assistantText,
             model_name: 'openai/gpt-5-mini',
             tokens_used: usage?.totalTokens,
-            metadata: { edge: true, streamed: true },
+            metadata: { edge: true, streamed: true, fallback_used: !t },
           });
         } catch (persistErr) {
           console.error('[ai/chat]', {
@@ -178,13 +185,71 @@ export async function POST(request: Request) {
       model: 'openai/gpt-5-mini',
     });
 
-    return result.toTextStreamResponse({
+    const upstream = result.toTextStreamResponse({
       headers: {
         'x-session-id': sessionId,
         'x-debug-id': debugId,
         'x-debug-stage': stage,
         'Cache-Control': 'no-cache, no-transform',
       },
+    });
+
+    if (!upstream.body) {
+      return new Response(EMPTY_RESPONSE_FALLBACK, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'x-session-id': sessionId,
+          'x-debug-id': debugId,
+          'x-debug-stage': 'no_body_fallback',
+          'Cache-Control': 'no-cache, no-transform',
+        },
+      });
+    }
+
+    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
+    let hadVisibleText = false;
+
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        const reader = upstream.body!.getReader();
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) {
+              const chunkText = decoder.decode(value, { stream: true });
+              if (!hadVisibleText && chunkText.trim().length > 0) hadVisibleText = true;
+              controller.enqueue(value);
+            }
+          }
+          const trailing = decoder.decode();
+          if (!hadVisibleText && trailing.trim().length > 0) hadVisibleText = true;
+          if (!hadVisibleText) {
+            controller.enqueue(encoder.encode(EMPTY_RESPONSE_FALLBACK));
+            console.warn('[ai/chat]', { debug_id: debugId, stage: 'stream_empty_fallback' });
+          }
+          controller.close();
+        } catch (streamErr) {
+          controller.error(streamErr);
+        } finally {
+          reader.releaseLock();
+        }
+      },
+    });
+
+    const headers = new Headers(upstream.headers);
+    headers.set('x-session-id', sessionId);
+    headers.set('x-debug-id', debugId);
+    headers.set('x-debug-stage', stage);
+    headers.set('Cache-Control', 'no-cache, no-transform');
+    if (!headers.get('Content-Type')) headers.set('Content-Type', 'text/plain; charset=utf-8');
+
+    return new Response(stream, {
+      status: upstream.status,
+      statusText: upstream.statusText,
+      headers,
     });
   } catch (err) {
     console.error('[ai/chat]', {
