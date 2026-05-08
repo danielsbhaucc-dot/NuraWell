@@ -46,6 +46,12 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
     return 'כדאי לצפות שוב ולנסות שוב 💪';
   };
 
+  const getHabitFrequencyLabel = (frequency: 'daily' | 'weekly' | 'per_meal') => {
+    if (frequency === 'daily') return 'יומי';
+    if (frequency === 'weekly') return 'שבועי';
+    return 'לפני ארוחה';
+  };
+
   return (
     <div className="space-y-5 pb-8">
       {/* Header */}
@@ -126,18 +132,32 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
             <ListChecks className="w-4 h-4 text-amber-600" />
             <h3 className="font-black text-base" style={{ color: '#1A1730' }}>משימות לביצוע</h3>
           </div>
+          <p className="text-xs text-gray-500 mb-3">
+            בחר מה מקובל עליך כרגע. אלמוג יזכור את הבחירה שלך ויתאים את ההכוונה בהתאם.
+          </p>
           <div className="space-y-2">
             {step.tasks.map((task) => {
               const decision = progress.task_statuses?.[task.id];
               const status = decision?.status ?? 'pending';
               return (
               <div key={task.id} className="flex items-start gap-3 p-3 rounded-xl"
-                style={{ background: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.04)' }}>
+                style={{
+                  background: status === 'accepted'
+                    ? 'rgba(16,185,129,0.06)'
+                    : status === 'rejected'
+                      ? 'rgba(244,63,94,0.06)'
+                      : 'rgba(0,0,0,0.02)',
+                  border: status === 'accepted'
+                    ? '1px solid rgba(16,185,129,0.25)'
+                    : status === 'rejected'
+                      ? '1px solid rgba(244,63,94,0.22)'
+                      : '1px solid rgba(0,0,0,0.06)',
+                }}>
                 <span className="text-xl flex-shrink-0">{task.emoji}</span>
                 <div className="flex-1">
                   <p className="font-bold text-sm" style={{ color: '#1A1730' }}>{task.title}</p>
                   {task.description && <p className="text-xs text-gray-500 mt-0.5">{task.description}</p>}
-                  <div className="mt-2 flex items-center gap-2">
+                  <div className="mt-2 flex items-center gap-2 flex-wrap">
                     <button
                       type="button"
                       onClick={() => onTaskDecisionChange(task.id, 'accepted')}
@@ -160,6 +180,16 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                     >
                       לא מקובל כרגע
                     </button>
+                    {status === 'accepted' && (
+                      <span className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-1">
+                        סומן: מקובל
+                      </span>
+                    )}
+                    {status === 'rejected' && (
+                      <span className="text-[11px] text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-2 py-1">
+                        סומן: לא מקובל כרגע
+                      </span>
+                    )}
                     {status === 'pending' && (
                       <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
                         ממתין לבחירה
@@ -188,14 +218,20 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
             <Heart className="w-4 h-4 text-emerald-600" />
             <h3 className="font-black text-base" style={{ color: '#1A1730' }}>הרגלים חדשים</h3>
           </div>
+          <p className="text-xs text-gray-500 mb-3">
+            אלו ההרגלים של הצעד הזה. אלמוג יתבסס עליהם בשיחות שלך.
+          </p>
           <div className="space-y-2">
             {step.habits.map((habit) => (
               <div key={habit.id} className="flex items-start gap-3 p-3 rounded-xl"
                 style={{ background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.1)' }}>
                 <span className="text-xl flex-shrink-0">{habit.emoji}</span>
-                <div>
+                <div className="flex-1">
                   <p className="font-bold text-sm" style={{ color: '#1A1730' }}>{habit.title}</p>
                   {habit.description && <p className="text-xs text-gray-500 mt-0.5">{habit.description}</p>}
+                  <span className="inline-flex mt-2 text-[11px] px-2 py-1 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold">
+                    תדירות: {getHabitFrequencyLabel(habit.frequency)}
+                  </span>
                 </div>
               </div>
             ))}
