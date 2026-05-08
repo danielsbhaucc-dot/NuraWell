@@ -1,3 +1,5 @@
+import { ALMOG_AVATAR_OBJECT_KEY } from '../storage/r2-almog';
+
 const DEFAULT_AVATAR =
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
@@ -17,32 +19,36 @@ const DEFAULT_AVATAR =
 /** Placeholder when no R2 object / no public base (use in client after API fallback). */
 export const ALMOG_AVATAR_FALLBACK = DEFAULT_AVATAR;
 
-const OBJECT_KEY = 'almog/avatar';
-
 /**
- * CDN base for Almog assets. Prefer NEXT_PUBLIC_* for static pages; R2_PUBLIC_BASE_URL is server-only fallback (exposed via /api/v1/almog-avatar).
+ * Public CDN origin for R2 (custom domain), no trailing slash.
+ * Production: https://cdn.nurawell.ai — must match the Worker / public bucket binding.
  */
 export function resolveAlmogPublicBaseUrl(): string | undefined {
   const base =
+    process.env.NEXT_PUBLIC_CDN_URL?.trim() ||
     process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL?.trim() ||
     process.env.R2_PUBLIC_BASE_URL?.trim();
   if (!base) return undefined;
   return base.endsWith('/') ? base.slice(0, -1) : base;
 }
 
+/** Hostname for UI labels (e.g. cdn.nurawell.ai). */
+export function almogCdnHostname(): string | null {
+  const b = resolveAlmogPublicBaseUrl();
+  if (!b) return null;
+  try {
+    return new URL(b).hostname;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Public URL for Almog avatar (server or when NEXT_PUBLIC base is inlined in client).
- * Client components should prefer `useAlmogAvatarUrl()` so URL works without NEXT_PUBLIC at build time.
+ * Absolute HTTPS URL to the avatar object on the CDN (R2 behind Cloudflare).
  */
 export function getAlmogAvatarUrl(cacheBuster?: string): string {
   const normalized = resolveAlmogPublicBaseUrl();
   if (!normalized) return DEFAULT_AVATAR;
-  const url = `${normalized}/${OBJECT_KEY}`;
+  const url = `${normalized}/${ALMOG_AVATAR_OBJECT_KEY}`;
   return cacheBuster ? `${url}?v=${encodeURIComponent(cacheBuster)}` : url;
 }
-
-/** Same-origin image URL (R2 via API). Prefer in UI so the file always matches the upload bucket. */
-export function almogAvatarAppImageUrl(cacheBuster: string): string {
-  return `/api/v1/almog-avatar/image?v=${encodeURIComponent(cacheBuster)}`;
-}
-

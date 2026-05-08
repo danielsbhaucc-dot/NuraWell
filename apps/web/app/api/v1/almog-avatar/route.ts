@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { HeadObjectCommand } from '@aws-sdk/client-s3';
-import { resolveAlmogPublicBaseUrl } from '../../../../lib/ai/almog-avatar';
+import { almogCdnHostname, resolveAlmogPublicBaseUrl } from '../../../../lib/ai/almog-avatar';
 import {
   ALMOG_AVATAR_OBJECT_KEY,
   getR2Client,
@@ -9,19 +9,36 @@ import {
 
 export const runtime = 'nodejs';
 
+function cdnAvatarUrl(v: string): string | null {
+  const base = resolveAlmogPublicBaseUrl();
+  if (!base) return null;
+  return `${base}/${ALMOG_AVATAR_OBJECT_KEY}?v=${encodeURIComponent(v)}`;
+}
+
 /**
- * Public: avatar image URL (same-origin proxy) + has_custom from R2 HeadObject.
+ * Public: absolute CDN URL for img src + has_custom from R2 HeadObject.
  */
 export async function GET() {
+  const base = resolveAlmogPublicBaseUrl();
+  const cdn_hostname = almogCdnHostname();
+
+  if (!base) {
+    return NextResponse.json(
+      { url: null, has_custom: false, cdn_hostname: null, cdn_configured: false },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
+  }
+
   const bucket = r2ImageBucketName();
 
   if (!bucket) {
-    const base = resolveAlmogPublicBaseUrl();
-    if (!base) {
-      return NextResponse.json({ url: null, has_custom: false }, { headers: { 'Cache-Control': 'no-store' } });
-    }
     return NextResponse.json(
-      { url: `${base}/${ALMOG_AVATAR_OBJECT_KEY}`, has_custom: false },
+      {
+        url: `${base}/${ALMOG_AVATAR_OBJECT_KEY}`,
+        has_custom: false,
+        cdn_hostname,
+        cdn_configured: true,
+      },
       { headers: { 'Cache-Control': 'no-store' } }
     );
   }
@@ -36,8 +53,16 @@ export async function GET() {
     );
     const vRaw = head.LastModified?.getTime() ?? head.ETag?.replace(/"/g, '') ?? '1';
     const v = String(vRaw);
-    const url = `/api/v1/almog-avatar/image?v=${encodeURIComponent(v)}`;
-    return NextResponse.json({ url, has_custom: true }, { headers: { 'Cache-Control': 'no-store' } });
+    const url = cdnAvatarUrl(v);
+    return NextResponse.json(
+      {
+        url,
+        has_custom: true,
+        cdn_hostname,
+        cdn_configured: true,
+      },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
   } catch (e: unknown) {
     const err = e as { name?: string; $metadata?: { httpStatusCode?: number } };
     const notFound =
@@ -45,12 +70,20 @@ export async function GET() {
       err.name === 'NoSuchKey' ||
       err.$metadata?.httpStatusCode === 404;
     if (notFound) {
-      return NextResponse.json({ url: null, has_custom: false }, { headers: { 'Cache-Control': 'no-store' } });
+      return NextResponse.json(
+        { url: null, has_custom: false, cdn_hostname, cdn_configured: true },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     }
     console.error('[almog-avatar public GET]', e);
-    const v = String(Date.now());
+    const url = cdnAvatarUrl(String(Date.now()));
     return NextResponse.json(
-      { url: `/api/v1/almog-avatar/image?v=${encodeURIComponent(v)}`, has_custom: false },
+      {
+        url,
+        has_custom: false,
+        cdn_hostname,
+        cdn_configured: true,
+      },
       { headers: { 'Cache-Control': 'no-store' } }
     );
   }
