@@ -31,6 +31,9 @@ type AiInteractionInsert = {
   metadata?: Record<string, unknown>;
 };
 
+const MAX_HISTORY_MESSAGES = 5;
+const MAX_HISTORY_CHARS = 500;
+
 async function insertInteraction(
   supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
   payload: AiInteractionInsert
@@ -73,6 +76,24 @@ export async function POST(request: Request) {
     const { contextString } = await buildUserContext(supabase, user.id);
     const systemPrompt = `${NURAWELL_MENTOR_PROMPT}\n\n${contextString}`;
 
+    // Keep only the last few turns to reduce latency and token cost.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: historyRows } = await (supabase as any)
+      .from('ai_interactions')
+      .select('role, content')
+      .eq('user_id', user.id)
+      .eq('session_id', sessionId)
+      .in('role', ['user', 'assistant'])
+      .order('created_at', { ascending: false })
+      .limit(MAX_HISTORY_MESSAGES);
+
+    const trimmedHistory = ((historyRows ?? []) as { role: 'user' | 'assistant'; content: string }[])
+      .reverse()
+      .map((msg) => ({
+        role: msg.role,
+        content: msg.content.slice(0, MAX_HISTORY_CHARS),
+      }));
+
     await insertInteraction(supabase, {
       user_id: user.id,
       session_id: sessionId,
@@ -88,9 +109,11 @@ export async function POST(request: Request) {
     if (stream) {
       const openaiStream = await client.chat.completions.create({
         model: AI_MODELS.empathy,
-        temperature: 0.6,
+        temperature: 0.8,
+        max_tokens: 400,
         messages: [
           { role: 'system', content: systemPrompt },
+          ...trimmedHistory,
           { role: 'user', content: message },
         ],
         stream: true,
@@ -144,9 +167,11 @@ export async function POST(request: Request) {
 
     const completion = await client.chat.completions.create({
       model: AI_MODELS.empathy,
-      temperature: 0.6,
+      temperature: 0.8,
+      max_tokens: 400,
       messages: [
         { role: 'system', content: systemPrompt },
+        ...trimmedHistory,
         { role: 'user', content: message },
       ],
     });

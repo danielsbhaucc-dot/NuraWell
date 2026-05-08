@@ -1,154 +1,151 @@
-/**
- * User memory utilities for NuraWell AI.
- *
- * Strategy: instead of replaying full conversation history into each LLM
- * request, we maintain a compact "user card" in `profiles.ai_context`
- * (JSONB) and inject it as a short string into the system message.
- * This keeps each request under ~600 input tokens.
- *
- * `ai_context` is updated periodically by a background analyser (DeepSeek)
- * via {@link updateAiContext} - never on every chat turn.
- */
-
-
-/**
- * Compact user state used by every AI prompt. All fields are optional so
- * the structure can grow over time without migrations.
- */
 export interface AiUserContext {
-  /** Preferred display name (may differ from `profiles.full_name`). */
-  name?: string;
-  /** Habits the user explicitly committed to in journey commitment steps. */
-  committed_habits?: string[];
-  /** Numeric step number of the last journey step the user finished. */
-  last_lesson_completed?: number;
-  /** Detected weakness, e.g. "consistency_evening", "stress_eating". */
   weakness_pattern?: string;
-  /** Engagement pattern, e.g. "active_mornings", "weekend_drop". */
   engagement_pattern?: string;
-  /** Tone calibration, e.g. "responds_well_to_humor". */
   tone_notes?: string;
-  /** Free-form Hebrew note from the analyser. */
+  commitment_status?: 'active' | 'paused' | 'abandoned' | string;
+  fatigue_signal?: boolean;
+  dropout_risk?: 'low' | 'medium' | 'high' | string;
   notes?: string;
 }
 
-export interface BuildUserContextOptions {
-  /** Append streak / inactivity stats to the context string. Default true. */
-  includeStats?: boolean;
-}
-
 export interface BuildUserContextResult {
-  /** Hebrew string ready to be injected into a system message. */
   contextString: string;
-  /** Raw fields, useful for routing decisions (e.g. choose `critical` model
-   * when `daysSinceLastActive > 3`). */
   raw: {
     name: string | null;
-    streakDays: number;
     daysSinceLastActive: number | null;
     aiContext: AiUserContext;
+    weeklyCompleted: number;
   };
 }
 
 interface ProfileRow {
   full_name: string | null;
-  streak_days: number | null;
   last_active_at: string | null;
   ai_context: AiUserContext | null;
 }
 
-const MS_PER_DAY = 86_400_000;
+interface JourneyProgressRow {
+  step_id: string | null;
+  completed_at: string | null;
+  quiz_score: number | null;
+  game_score: number | null;
+  commitment_accepted: boolean | null;
+}
 
-const HEBREW_LABELS: Record<Exclude<keyof AiUserContext, 'name'>, string> = {
-  committed_habits: 'הרגלים שקיבל על עצמו',
-  last_lesson_completed: 'צעד אחרון שהושלם',
-  weakness_pattern: 'נקודת חולשה מזוהה',
-  engagement_pattern: 'דפוס מעורבות',
-  tone_notes: 'טון אישי',
-  notes: 'הערות',
-};
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function daysDiffFromNow(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / DAY_MS);
+}
+
+function isoDaysAgo(days: number): string {
+  return new Date(Date.now() - days * DAY_MS).toISOString();
+}
 
 /**
- * Loads a user's profile and renders a short Hebrew context block for the
- * system message.
- *
- * @returns Always resolves - on error returns a "new user" placeholder so
- * the chat never fails because of missing context.
+ * בונה קונטקסט דחוס למודל - 3 שכבות, בערך עד ~500 טוקנים.
+ * לא שולח raw data של תמלילים אלא תקצירי התנהגות.
  */
 export async function buildUserContext(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
-  userId: string,
-  options: BuildUserContextOptions = {}
+  userId: string
 ): Promise<BuildUserContextResult> {
-  const { includeStats = true } = options;
-
-  const { data, error } = await supabase
+  const { data: profileData } = await supabase
     .from('profiles')
-    .select('full_name, streak_days, last_active_at, ai_context')
+    .select('full_name, last_active_at, ai_context')
     .eq('id', userId)
     .single();
 
-  const dataRow = data as ProfileRow | null;
-
-  if (error || !dataRow) {
+  const profile = (profileData ?? null) as ProfileRow | null;
+  if (!profile) {
     return {
-      contextString: 'מידע על המשתמש: משתמש חדש - אין עדיין נתונים אישיים. הכר אותו בעדינות.',
-      raw: { name: null, streakDays: 0, daysSinceLastActive: null, aiContext: {} },
+      contextString: 'מידע על המשתמש: משתמש חדש - אין עדיין נתונים אישיים.',
+      raw: { name: null, daysSinceLastActive: null, aiContext: {}, weeklyCompleted: 0 },
     };
   }
 
-  const aiContext: AiUserContext = dataRow.ai_context ?? {};
-  const streakDays = dataRow.streak_days ?? 0;
-  const daysSinceLastActive = dataRow.last_active_at
-    ? Math.floor((Date.now() - new Date(dataRow.last_active_at).getTime()) / MS_PER_DAY)
+  const ctx = (profile.ai_context ?? {}) as AiUserContext;
+  const daysSinceLastActive = profile.last_active_at
+    ? daysDiffFromNow(profile.last_active_at)
     : null;
 
-  const lines: string[] = [];
+  const weekStartIso = isoDaysAgo(7);
+  const { data: recentProgressData } = await supabase
+    .from('journey_progress')
+    .select('step_id, completed_at, quiz_score, game_score, commitment_accepted')
+    .eq('user_id', userId)
+    .gte('completed_at', weekStartIso)
+    .order('completed_at', { ascending: false })
+    .limit(15);
 
-  const displayName = aiContext.name ?? dataRow.full_name ?? null;
-  if (displayName) lines.push(`- שם: ${displayName}`);
+  const recentProgress = (recentProgressData ?? []) as JourneyProgressRow[];
 
-  for (const key of Object.keys(HEBREW_LABELS) as (keyof typeof HEBREW_LABELS)[]) {
-    const value = aiContext[key];
-    if (value === undefined || value === null) continue;
-    if (Array.isArray(value)) {
-      if (value.length === 0) continue;
-      lines.push(`- ${HEBREW_LABELS[key]}: ${value.join(', ')}`);
-    } else {
-      lines.push(`- ${HEBREW_LABELS[key]}: ${value}`);
-    }
+  const { data: commitmentsData } = await supabase
+    .from('journey_progress')
+    .select('step_id, commitment_accepted, completed_at')
+    .eq('user_id', userId)
+    .eq('commitment_accepted', true)
+    .order('completed_at', { ascending: false })
+    .limit(3);
+
+  const commitments = (commitmentsData ?? []) as JourneyProgressRow[];
+
+  const progressSummary = summarizeWeeklyProgress(recentProgress);
+  const commitmentSummary = summarizeCommitments(commitments);
+
+  const parts: string[] = [];
+  parts.push(`שם: ${profile.full_name ?? 'המשתמש'}`);
+
+  if (daysSinceLastActive !== null) {
+    parts.push(`ימים מאז כניסה: ${daysSinceLastActive}`);
   }
 
-  if (includeStats) {
-    if (streakDays > 0) lines.push(`- רצף ימים פעילים: ${streakDays}`);
-    if (daysSinceLastActive !== null && daysSinceLastActive > 0) {
-      lines.push(`- ימים מאז פעילות אחרונה: ${daysSinceLastActive}`);
-    }
-  }
-
-  const contextString =
-    lines.length === 0
-      ? 'מידע על המשתמש: משתמש חדש - אין עדיין נתונים אישיים. הכר אותו בעדינות.'
-      : `מידע על המשתמש (לשימושך הפנימי, אל תצטט אותו):\n${lines.join('\n')}`;
+  if (ctx.weakness_pattern) parts.push(`חולשה שזוהתה: ${ctx.weakness_pattern}`);
+  if (ctx.fatigue_signal) parts.push('אות עייפות: כן');
+  if (ctx.dropout_risk && ctx.dropout_risk !== 'low') parts.push(`סיכון נטישה: ${ctx.dropout_risk}`);
+  if (ctx.tone_notes) parts.push(`טון שעובד: ${ctx.tone_notes}`);
+  if (ctx.commitment_status) parts.push(`מצב התחייבות: ${ctx.commitment_status}`);
+  if (commitmentSummary) parts.push(`התחייבויות: ${commitmentSummary}`);
+  if (progressSummary) parts.push(`שבוע אחרון: ${progressSummary}`);
+  if (ctx.notes) parts.push(`תובנה: ${ctx.notes}`);
 
   return {
-    contextString,
+    contextString: `מידע על המשתמש (לשימוש פנימי בלבד):\n${parts.join('\n')}`,
     raw: {
-      name: data.full_name,
-      streakDays,
+      name: profile.full_name,
       daysSinceLastActive,
-      aiContext,
+      aiContext: ctx,
+      weeklyCompleted: recentProgress.length,
     },
   };
 }
 
+function summarizeWeeklyProgress(progress: JourneyProgressRow[]): string {
+  if (!progress.length) return 'אין פעילות בשבוע האחרון';
+
+  const completed = progress.length;
+  const scores = progress.filter((p) => p.quiz_score !== null).map((p) => p.quiz_score as number);
+  const avgScore = scores.length
+    ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+    : null;
+  const gameWins = progress.filter(
+    (p) => typeof p.game_score === 'number' && (p.game_score as number) >= 80
+  ).length;
+
+  const parts = [`${completed} שלבים הושלמו`];
+  if (avgScore !== null) parts.push(`ציון ממוצע ${avgScore}%`);
+  if (gameWins > 0) parts.push(`${gameWins} משחקים חזקים`);
+  return parts.join(', ');
+}
+
+function summarizeCommitments(commitments: JourneyProgressRow[]): string {
+  if (!commitments.length) return '';
+  return `${commitments.length} הרגלים פעילים`;
+}
+
 /**
- * Shallow-merges a patch into `profiles.ai_context`. Intended to be called
- * by the background analyser, never from a hot user request.
- *
- * @throws Error when the update fails (e.g. RLS denial). Callers should
- * catch and log; chat features must keep working without context updates.
+ * ממזג patch לתוך profiles.ai_context תוך whitelist לשדות מותרים בלבד.
  */
 export async function updateAiContext(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -156,19 +153,29 @@ export async function updateAiContext(
   userId: string,
   patch: Partial<AiUserContext>
 ): Promise<AiUserContext> {
-  const { data: existing, error: fetchError } = await supabase
+  const allowedFields: (keyof AiUserContext)[] = [
+    'weakness_pattern',
+    'engagement_pattern',
+    'tone_notes',
+    'commitment_status',
+    'fatigue_signal',
+    'dropout_risk',
+    'notes',
+  ];
+
+  const { data: existing } = await supabase
     .from('profiles')
     .select('ai_context')
     .eq('id', userId)
     .single();
 
-  if (fetchError) {
-    throw new Error(`buildUserContext: failed to read profile - ${fetchError.message}`);
-  }
+  const current = ((existing as { ai_context: AiUserContext | null } | null)?.ai_context ?? {}) as AiUserContext;
 
-  const row = existing as { ai_context: AiUserContext | null } | null;
-  const current: AiUserContext = row?.ai_context ?? {};
-  const merged: AiUserContext = { ...current, ...patch };
+  const filtered = Object.fromEntries(
+    Object.entries(patch).filter(([k]) => allowedFields.includes(k as keyof AiUserContext))
+  ) as Partial<AiUserContext>;
+
+  const merged: AiUserContext = { ...current, ...filtered };
 
   const { error: updateError } = await supabase
     .from('profiles')

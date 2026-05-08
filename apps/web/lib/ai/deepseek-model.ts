@@ -4,6 +4,5 @@
  * Override with `DEEPSEEK_ANALYSIS_MODEL` if DeepSeek renames tiers.
  */
 export function getDeepseekAnalysisModel(): string {
-  const m = process.env.DEEPSEEK_ANALYSIS_MODEL?.trim();
-  return m || 'deepseek-chat';
+  return process.env.DEEPSEEK_ANALYSIS_MODEL ?? 'deepseek-chat';
 }

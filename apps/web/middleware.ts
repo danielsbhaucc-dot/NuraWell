@@ -129,6 +129,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/courses', request.url));
   }
 
+  // Fire-and-forget activity heartbeat for cron nudges.
+  const isPageRequest = !pathname.startsWith('/api/');
+  if (user && isPageRequest) {
+    void (async () => {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ last_active_at: new Date().toISOString() })
+          .eq('id', user.id);
+      } catch {
+        // Ignore heartbeat update failures.
+      }
+    })();
+  }
+
   return response;
 }
 

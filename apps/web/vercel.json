@@ -3,11 +3,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install --legacy-peer-deps",
-  "regions": ["iad1"],
-  "crons": [
-    {
-      "path": "/api/v1/ai/cron/master",
-      "schedule": "0 7 * * *"
-    }
-  ]
+  "regions": ["iad1"]
 }

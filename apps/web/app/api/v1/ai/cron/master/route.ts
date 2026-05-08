@@ -11,13 +11,59 @@ export const dynamic = 'force-dynamic';
 /** Service-role Supabase client; tables like `ai_interactions` may be absent from generated `Database` types. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AdminDb = any;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const ALLOWED_CONTEXT_PATCH_KEYS = new Set([
   'weakness_pattern',
   'engagement_pattern',
   'tone_notes',
+  'commitment_status',
+  'fatigue_signal',
+  'dropout_risk',
   'notes',
 ]);
+
+interface NudgeDecision {
+  should: boolean;
+  reason: string;
+  urgency: 'low' | 'medium' | 'high';
+}
+
+function shouldNudgeUser(profile: {
+  last_active_at: string | null;
+  ai_context: Record<string, unknown> | null;
+}): NudgeDecision {
+  if (!profile.last_active_at) {
+    return { should: false, reason: 'no_activity_data', urgency: 'low' };
+  }
+
+  const daysSince = Math.floor((Date.now() - new Date(profile.last_active_at).getTime()) / DAY_MS);
+  const ctx = profile.ai_context ?? {};
+  const dropoutRisk = String(ctx.dropout_risk ?? 'low');
+  const engagementPattern = String(ctx.engagement_pattern ?? '');
+
+  let nudgeAfterDays = 2;
+
+  if (dropoutRisk === 'high') nudgeAfterDays = 1;
+  else if (dropoutRisk === 'medium') nudgeAfterDays = 2;
+  else if (dropoutRisk === 'low') nudgeAfterDays = 4;
+
+  if (engagementPattern === 'weekend_drop') nudgeAfterDays += 1;
+
+  if (daysSince < nudgeAfterDays) {
+    return { should: false, reason: 'too_soon', urgency: 'low' };
+  }
+
+  if (daysSince > 21) {
+    return { should: true, reason: 'long_absence', urgency: 'high' };
+  }
+
+  if (dropoutRisk === 'high') {
+    return { should: true, reason: 'high_dropout_risk', urgency: 'high' };
+  }
+
+  return { should: true, reason: 'normal_inactivity', urgency: 'medium' };
+}
 
 function authorizeCron(request: Request): NextResponse | null {
   const secret = process.env.CRON_SECRET?.trim();
@@ -44,6 +90,11 @@ function parseAnalysisJson(raw: string): Partial<AiUserContext> {
     if (typeof v === 'string' && v.trim()) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (out as any)[key] = v.trim();
+      continue;
+    }
+    if (typeof v === 'boolean') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (out as any)[key] = v;
     }
   }
   return out;
@@ -58,8 +109,6 @@ async function runMasterCron() {
   const admin: AdminDb = createAdminClient();
 
   const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const inactivityDays = Math.max(1, Number(process.env.CRON_INACTIVITY_DAYS) || 2);
-  const inactiveBefore = new Date(Date.now() - inactivityDays * 24 * 60 * 60 * 1000).toISOString();
   const maxAnalysis = Math.min(100, Math.max(1, Number(process.env.CRON_MAX_ANALYSIS_USERS) || 20));
   const maxNudge = Math.min(100, Math.max(1, Number(process.env.CRON_MAX_NUDGE_USERS) || 20));
   const nudgeCooldownHours = Math.max(12, Number(process.env.CRON_NUDGE_COOLDOWN_HOURS) || 48);
@@ -155,18 +204,28 @@ async function runMasterCron() {
   // --- 2) Inactive users → GPT-5-mini (OpenRouter) nudge → notifications (cooldown)
   const { data: stale, error: stErr } = await admin
     .from('profiles')
-    .select('id, last_active_at')
-    .lt('last_active_at', inactiveBefore)
+    .select('id, last_active_at, ai_context')
     .order('last_active_at', { ascending: true })
     .limit(maxNudge);
 
   if (stErr) {
     errors.push(`profiles stale: ${stErr.message}`);
   } else {
-    const staleIds = ((stale ?? []) as { id: string }[]).map((p) => p.id);
+    const staleProfiles = (stale ?? []) as {
+      id: string;
+      last_active_at: string | null;
+      ai_context: Record<string, unknown> | null;
+    }[];
 
-    for (const userId of staleIds) {
+    for (const profile of staleProfiles) {
+      const userId = profile.id;
       try {
+        const decision = shouldNudgeUser(profile);
+        if (!decision.should) {
+          nudgeSkipped++;
+          continue;
+        }
+
         const { data: recentNudge } = await admin
           .from('notifications')
           .select('id')
@@ -209,7 +268,7 @@ async function runMasterCron() {
           is_read: false,
           is_sent: false,
           send_at: new Date().toISOString(),
-          metadata: { source: 'cron_master', model: AI_MODELS.empathy },
+          metadata: { source: 'cron_master', model: AI_MODELS.empathy, reason: decision.reason, urgency: decision.urgency },
         });
 
         if (insErr) throw new Error(insErr.message);
@@ -223,7 +282,6 @@ async function runMasterCron() {
   return NextResponse.json({
     ok: true,
     window_hours: 24,
-    inactivity_days: inactivityDays,
     analyzed,
     analysis_skipped: analysisSkipped,
     nudged,

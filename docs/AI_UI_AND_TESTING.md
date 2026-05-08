@@ -38,16 +38,33 @@
 
 **שלב ב — נידג' להחזרת משתמשים**
 
-- משתמשים עם `last_active_at` לפני **X ימים** (`CRON_INACTIVITY_DAYS`, ברירת מחדל 2), עד `CRON_MAX_NUDGE_USERS` (ברירת מחדל 20).
+- בחירה דינמית לפי `shouldNudgeUser()`:
+  - `dropout_risk=high` → נידג' מוקדם יותר (יום).
+  - `dropout_risk=low` → סבלנות ארוכה יותר (4 ימים).
+  - `engagement_pattern=weekend_drop` → עוד יום חסד.
 - דילוג אם כבר נשלחה התראה מסוג `ai_message` ב-`CRON_NUDGE_COOLDOWN_HOURS` שעות (ברירת מחדל 48).
 - יוצר טקסט ב-**GPT-5-mini דרך OpenRouter** (`openai/gpt-5-mini`, אותו מזהה כמו שאר אלמוג) עם `REENGAGEMENT_PROMPT` + `buildUserContext`.
-- מכניס שורה ל-`notifications` (`type: ai_message`, `title: אלמוג`, `action_url: /journey`).
+- מכניס שורה ל-`notifications` (`type: ai_message`, `title: אלמוג`, `action_url: /journey`) + `metadata` עם `reason` ו-`urgency`.
 
-**הערה:** אין כרגע מסך באפליקציה שמציג את טבלת `notifications` — השורות נשמרות ל-push / מימוש UI עתידי.
+### 4) UI התראות (דשבורד)
 
-**תזמון Vercel:** ב-[`apps/web/vercel.json`](../apps/web/vercel.json) מוגדר Cron יומי `0 7 * * *` (07:00 UTC). דורש תוכנית שתומכת ב-Crons; בפרויקט ודא ש-root ה-build הוא `apps/web` כמו היום.
+- קומפוננטה חדשה: [`components/ai/NotificationsInbox.tsx`](../apps/web/components/ai/NotificationsInbox.tsx)
+- מחוברת ב-[`app/(dashboard)/layout.tsx`](../apps/web/app/(dashboard)/layout.tsx)
+- API חדש:
+  - `GET /api/v1/notifications` — 20 התראות אחרונות של המשתמש.
+  - `PATCH /api/v1/notifications` — סימון התראה בודדת או כולן כנקראו.
+- כפתור פעמון צף, מונה unread, ופתיחת חלונית עם ניווט ל-`action_url`.
 
-### 4) מודלים וסביבה
+### 5) תזמון Cron חינמי
+
+- הוסר Cron מ-`vercel.json` כדי לא להיות תלוי בתוכנית בתשלום.
+- תזמון מתבצע דרך GitHub Actions:  
+  [`/.github/workflows/nurawell-cron.yml`](../.github/workflows/nurawell-cron.yml)
+- נדרש להגדיר ב-GitHub Secrets:
+  - `CRON_SECRET`
+  - `VERCEL_APP_URL` (למשל `https://nurawell.vercel.app`)
+
+### 6) מודלים וסביבה
 
 | שימוש | מודל / ספק |
 |--------|------------|
@@ -70,24 +87,30 @@
 | [`components/ai/AIChatWidget.tsx`](../apps/web/components/ai/AIChatWidget.tsx) | צ'אט |
 | [`components/ai/AIFeedbackCard.tsx`](../apps/web/components/ai/AIFeedbackCard.tsx) | פידבק בשיעור |
 
-## איך לבדוק (ידני)
+## איך לבדוק (E2E ידני אמיתי)
 
-1. **מיגרציות:** `000002_ai_ready_tables.sql` רצה ב-Supabase (`ai_interactions`, `notifications`, `profiles.ai_context`, …).
-2. **צ'אט:** דשבורד → כפתור צף → הודעה → בדיקה ב-`ai_interactions`.
-3. **חידון / משחק / התחייבות:** צעד מסע → סיים חלק → כרטיס אלמוג; בדוק `ai_interactions`.
-4. **Cron (מקומי):**  
-   `curl -s "http://localhost:3000/api/v1/ai/cron/master?secret=YOUR_CRON_SECRET"`  
-   (או Header Bearer). ודא `SUPABASE_SERVICE_ROLE_KEY` ו-`CRON_SECRET` ב-`.env.local`.
+1. **מיגרציות:** ודא `000002_ai_ready_tables.sql` רצה (`ai_interactions`, `notifications`, `profiles.ai_context`).
+2. **מסלול שיעור מלא (חובה):**
+   - חידון → בדוק הופעת `AIFeedbackCard`.
+   - משחק → בדוק הופעת `AIFeedbackCard`.
+   - התחייבות → בדוק פידבק והמשך.
+3. **אימות DB אחרי המסלול:**
+   - בדוק שב-`ai_interactions` יש לפחות 6 רשומות חדשות לאותו משתמש (user/assistant לכל שלב).
+   - בדוק שהטקסטים של assistant מרגישים טבעיים וקצרים (2-4 משפטים, ללא ניסוח רובוטי).
+4. **בדיקת נידג' + UI התראות:**
+   - הרץ cron (`GET /api/v1/ai/cron/master` עם secret).
+   - ודא שנוספה שורה ב-`notifications`.
+   - היכנס לדשבורד: פעמון ההתראות מציג unread, לחיצה פותחת רשימה, ולחיצה על כרטיס מסמנת כנקרא.
 5. **סקריפט צ'אט:** `node --env-file=.env.local scripts/test-ai-chat.mjs` (מתוך `apps/web`).
 
 ## מה עדיין לא / להמשך פיתוח
 
-- **UI להתראות** — טעינת `notifications` בדשבורד / Push.
-- **עדכון `last_active_at`** — ה-Cron מסתמך עליו; לוודא שכל כניסה משמעותית מעדכנת את השדה (טריגר/מידלוור).
+- **Push אמיתי** (FCM/APNS/WebPush) מעבר ל-inbox בתוך האפליקציה.
+- **פילטרים/ארכיון להתראות** (כרגע מוצגות 20 אחרונות בלבד).
 - **מסך הגדרות נידג'** — תדירות, טון, ביטול התראות.
 - **בדיקות אוטומטיות** — אינטגרציה ל-Cron ול-endpoints.
 - **החמרת אבטחה** — להסיר מפתחות אמיתיים מ-`.env.example` אם הועלו בטעות; רוטציה אם נחשפו.
 
 ---
 
-*עודכן: MiniGame מחובר ל-AI, Cron מאוחד master, נידג'ים ב-GPT-5-mini.*
+*עודכן: UI התראות בדשבורד, Cron חינמי ב-GitHub Actions, E2E ידני למסלול שיעור מלא.*

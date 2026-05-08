@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { MobileHeader } from '../../components/shared/MobileHeader';
 import { BottomNav } from '../../components/shared/BottomNav';
 import { AIChatWidget } from '../../components/ai/AIChatWidget';
+import { NotificationsInbox } from '../../components/ai/NotificationsInbox';
 
 export default async function DashboardLayout({
   children,
@@ -23,6 +24,7 @@ export default async function DashboardLayout({
         {children}
       </main>
       <BottomNav />
+      <NotificationsInbox />
       <AIChatWidget userId={user.id} />
     </div>
   );
