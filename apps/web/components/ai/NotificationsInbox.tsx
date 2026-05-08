@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, CheckCheck, Loader2 } from 'lucide-react';
-import { getAlmogAvatarUrl } from '../../lib/ai/almog-avatar';
+import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 
 type NotificationItem = {
   id: string;
@@ -29,7 +29,7 @@ function timeAgo(iso: string): string {
 }
 
 export function NotificationsInbox() {
-  const avatarSrc = getAlmogAvatarUrl();
+  const { avatarUrl: avatarSrc } = useAlmogAvatarUrl();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);

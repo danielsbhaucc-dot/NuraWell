@@ -1,0 +1,34 @@
+import { S3Client } from '@aws-sdk/client-s3';
+
+/** Single object key for Almog profile image (WebP bytes, no extension in key). */
+export const ALMOG_AVATAR_OBJECT_KEY = 'almog/avatar';
+
+/** Legacy keys to remove on replace (older uploads / CDN paths). */
+export const ALMOG_AVATAR_LEGACY_KEYS = [
+  'almog/avatar.webp',
+  'almog/avatar.png',
+  'almog/avatar.jpg',
+  'almog/avatar.jpeg',
+] as const;
+
+export function r2ImageBucketName(): string | undefined {
+  return (
+    process.env.R2_IMAGE_BUCKET_NAME?.trim() ||
+    process.env.R2_BUCKET_NAME?.trim() ||
+    undefined
+  );
+}
+
+export function getR2Client(): S3Client {
+  const accountId = process.env.R2_ACCOUNT_ID?.trim();
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY?.trim();
+  if (!accountId || !accessKeyId || !secretAccessKey) {
+    throw new Error('חסרים פרטי התחברות לאחסון התמונות (בדוק משתני סביבה)');
+  }
+  return new S3Client({
+    region: 'auto',
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    credentials: { accessKeyId, secretAccessKey },
+  });
+}

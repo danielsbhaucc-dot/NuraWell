@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { ImageUp, Loader2, CheckCircle2, AlertTriangle, Upload } from 'lucide-react';
-import { getAlmogAvatarUrl } from '../../lib/ai/almog-avatar';
+import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import {
   encodeImageToWebpBlob,
   isWebpEncodeUnsupportedError,
@@ -30,13 +30,22 @@ export function AdminAlmogAvatarPanel() {
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<UploadResult | null>(null);
-  const [cacheBuster, setCacheBuster] = useState<string>(() => Date.now().toString());
+  const [uploadTick, setUploadTick] = useState(0);
   const [dragOver, setDragOver] = useState(false);
+  const [fileObjectUrl, setFileObjectUrl] = useState<string | null>(null);
+  const { avatarUrl: remoteAvatarUrl, hasCustom, ready: avatarMetaReady, refresh } = useAlmogAvatarUrl(uploadTick);
 
-  const preview = useMemo(
-    () => (file ? URL.createObjectURL(file) : getAlmogAvatarUrl(cacheBuster)),
-    [file, cacheBuster]
-  );
+  useEffect(() => {
+    if (!file) {
+      setFileObjectUrl(null);
+      return;
+    }
+    const u = URL.createObjectURL(file);
+    setFileObjectUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [file]);
+
+  const preview = file && fileObjectUrl ? fileObjectUrl : remoteAvatarUrl;
 
   const pickFiles = useCallback((list: FileList | null) => {
     const f = list?.[0];
@@ -95,7 +104,8 @@ export function AdminAlmogAvatarPanel() {
       setResult(data);
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
-      setCacheBuster(Date.now().toString());
+      setUploadTick((t) => t + 1);
+      void refresh();
     } catch {
       setResult({
         error: 'לא הצלחנו להתחבר לשרת. בדוק חיבור אינטרנט ונסה שוב.',
@@ -121,7 +131,7 @@ export function AdminAlmogAvatarPanel() {
             className="text-xl font-black tracking-tight"
             style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
-            תמונת אלמוג
+            {avatarMetaReady && hasCustom ? 'עדכן תמונת פרופיל' : 'העלאת תמונת פרופיל'}
           </h2>
           <p className="text-sm text-gray-600 mt-1.5 leading-relaxed max-w-xl">
             מוצגת בצ&apos;אט, במשובים ובהתראות. עדיף תמונה ברורה של הפנים, ריבועית או פורטרט.
@@ -192,7 +202,7 @@ export function AdminAlmogAvatarPanel() {
           }}
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageUp className="h-5 w-5" />}
-          שמור תמונה
+          {avatarMetaReady && hasCustom ? 'עדכן תמונה' : 'שמור תמונה'}
         </button>
       </div>
 

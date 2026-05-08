@@ -14,16 +14,30 @@ const DEFAULT_AVATAR =
     </svg>`
   );
 
+/** Placeholder when no R2 object / no public base (use in client after API fallback). */
+export const ALMOG_AVATAR_FALLBACK = DEFAULT_AVATAR;
+
+const OBJECT_KEY = 'almog/avatar';
+
 /**
- * Public URL for Almog avatar.
- * Expected: Cloudflare R2 public/custom domain base URL + fixed object key.
+ * CDN base for Almog assets. Prefer NEXT_PUBLIC_* for static pages; R2_PUBLIC_BASE_URL is server-only fallback (exposed via /api/v1/almog-avatar).
+ */
+export function resolveAlmogPublicBaseUrl(): string | undefined {
+  const base =
+    process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL?.trim() ||
+    process.env.R2_PUBLIC_BASE_URL?.trim();
+  if (!base) return undefined;
+  return base.endsWith('/') ? base.slice(0, -1) : base;
+}
+
+/**
+ * Public URL for Almog avatar (server or when NEXT_PUBLIC base is inlined in client).
+ * Client components should prefer `useAlmogAvatarUrl()` so URL works without NEXT_PUBLIC at build time.
  */
 export function getAlmogAvatarUrl(cacheBuster?: string): string {
-  const base = process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL?.trim();
-  if (!base) return DEFAULT_AVATAR;
-  const normalized = base.endsWith('/') ? base.slice(0, -1) : base;
-  /** Object key in storage: `almog/avatar` (WebP only, no file extension in key). */
-  const url = `${normalized}/almog/avatar`;
+  const normalized = resolveAlmogPublicBaseUrl();
+  if (!normalized) return DEFAULT_AVATAR;
+  const url = `${normalized}/${OBJECT_KEY}`;
   return cacheBuster ? `${url}?v=${encodeURIComponent(cacheBuster)}` : url;
 }
 

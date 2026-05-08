@@ -1,22 +1,19 @@
 import { NextResponse } from 'next/server';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
-import { getAlmogAvatarUrl } from '../../../../../lib/ai/almog-avatar';
+import { getAlmogAvatarUrl, resolveAlmogPublicBaseUrl } from '../../../../../lib/ai/almog-avatar';
+import {
+  ALMOG_AVATAR_LEGACY_KEYS,
+  ALMOG_AVATAR_OBJECT_KEY,
+  getR2Client,
+  r2ImageBucketName,
+} from '../../../../../lib/storage/r2-almog';
 
 /** Client sends pre-compressed WebP; keep margin under Vercel ~4.5MB body limit. */
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
-const OBJECT_KEY = 'almog/avatar';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
-
-function imageBucketName(): string | undefined {
-  return (
-    process.env.R2_IMAGE_BUCKET_NAME?.trim() ||
-    process.env.R2_BUCKET_NAME?.trim() ||
-    undefined
-  );
-}
 
 function isWebpBuffer(buf: Buffer): boolean {
   if (buf.length < 12) return false;
@@ -32,28 +29,14 @@ async function assertAdmin(request: Request) {
   return { ok: true as const };
 }
 
-function getR2Client(): S3Client {
-  const accountId = process.env.R2_ACCOUNT_ID?.trim();
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim();
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY?.trim();
-  if (!accountId || !accessKeyId || !secretAccessKey) {
-    throw new Error('חסרים פרטי התחברות לאחסון התמונות (בדוק משתני סביבה)');
-  }
-  return new S3Client({
-    region: 'auto',
-    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-    credentials: { accessKeyId, secretAccessKey },
-  });
-}
-
 export async function GET(request: Request) {
   const auth = await assertAdmin(request);
   if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: auth.status });
 
   return NextResponse.json({
     avatar_url: getAlmogAvatarUrl(),
-    is_configured: Boolean(process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL),
-    expected_key: OBJECT_KEY,
+    is_configured: Boolean(resolveAlmogPublicBaseUrl()),
+    expected_key: ALMOG_AVATAR_OBJECT_KEY,
   });
 }
 
@@ -62,7 +45,7 @@ export async function POST(request: Request) {
   if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: auth.status });
 
   try {
-    const bucket = imageBucketName();
+    const bucket = r2ImageBucketName();
     if (!bucket) {
       return NextResponse.json(
         {
@@ -100,10 +83,19 @@ export async function POST(request: Request) {
       Number.isFinite(originalBytesParsed) && originalBytesParsed > 0 ? originalBytesParsed : file.size;
 
     const s3 = getR2Client();
+
+    for (const key of [...ALMOG_AVATAR_LEGACY_KEYS, ALMOG_AVATAR_OBJECT_KEY]) {
+      try {
+        await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+      } catch {
+        /* ignore missing */
+      }
+    }
+
     await s3.send(
       new PutObjectCommand({
         Bucket: bucket,
-        Key: OBJECT_KEY,
+        Key: ALMOG_AVATAR_OBJECT_KEY,
         Body: buf,
         ContentType: 'image/webp',
         CacheControl: 'public, max-age=31536000, immutable',

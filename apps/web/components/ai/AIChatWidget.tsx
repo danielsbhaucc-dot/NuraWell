@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { MessageCircle, Send, Loader2, Sparkles, X } from 'lucide-react';
+import { MessageCircle, Send, Loader2, X } from 'lucide-react';
 import { Drawer } from 'vaul';
-import { getAlmogAvatarUrl } from '../../lib/ai/almog-avatar';
+import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 
 const SESSION_STORAGE_KEY = 'nurawell_almog_chat_session';
 
@@ -36,7 +36,7 @@ export interface AIChatWidgetProps {
 }
 
 export function AIChatWidget({ userId }: AIChatWidgetProps) {
-  const avatarSrc = getAlmogAvatarUrl();
+  const { avatarUrl: avatarSrc } = useAlmogAvatarUrl();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -247,47 +247,36 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
         <Drawer.Overlay className="fixed inset-0 z-[200] bg-slate-900/45" />
         <Drawer.Content
           dir="rtl"
-          className="fixed bottom-0 right-0 left-0 z-[210] mx-auto w-full max-w-md rounded-t-[28px] outline-none"
+          className="fixed bottom-0 right-0 left-0 z-[210] mx-auto w-full max-w-md rounded-t-[28px] outline-none bg-transparent"
           style={{
-            background: '#fff',
-            border: '1px solid rgba(16,185,129,0.2)',
-            boxShadow: '0 -12px 40px rgba(0,0,0,0.18)',
+            border: '1px solid rgba(16,185,129,0.22)',
+            boxShadow: '0 -16px 48px rgba(6,78,59,0.22)',
             height: 'min(92dvh, 680px)',
           }}
         >
-          <div
-            className="h-full flex flex-col overflow-hidden rounded-t-[28px]"
-            style={{ background: 'linear-gradient(180deg, #f5fffb 0%, #ffffff 18%)' }}
-          >
-            <div className="pt-2 pb-1 shrink-0 flex justify-center">
-              <div className="w-12 h-1.5 rounded-full bg-white/70" />
-            </div>
-
+          <div className="h-full flex flex-col overflow-hidden rounded-t-[28px] bg-slate-900/5 backdrop-blur-[2px]">
             <div
-              className="shrink-0 px-4 pt-2 pb-4 text-white"
-              style={{ background: 'linear-gradient(145deg, #064e3b, #047857 60%, #10b981)' }}
+              className="shrink-0 rounded-t-[28px] text-white shadow-[0_4px_24px_rgba(6,78,59,0.35)]"
+              style={{ background: 'linear-gradient(160deg, #064e3b 0%, #047857 45%, #10b981 100%)' }}
             >
-              <div className="flex items-center justify-between gap-2">
-                <button
-                  type="button"
-                  aria-label="סגור"
-                  onClick={() => {
-                    stopStream();
-                    setOpen(false);
-                  }}
-                  className="rounded-xl p-2 hover:bg-white/10"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
+              <div className="pt-2.5 pb-2 flex justify-center">
+                <div className="w-11 h-1.5 rounded-full bg-white/45" />
+              </div>
+              <div className="flex items-center justify-between gap-3 px-4 pb-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <img
+                    src={avatarSrc}
+                    alt="אלמוג"
+                    className="h-12 w-12 shrink-0 rounded-2xl object-cover border border-white/45 shadow-md"
+                  />
+                  <div className="min-w-0 text-right">
                     <p className="text-xl font-black leading-none" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
                       אלמוג
                     </p>
-                    <p className="text-xs text-white/85 mt-1 inline-flex items-center gap-1.5">
+                    <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-white/85">
                       {busy ? (
                         <>
-                          <span className="h-2 w-2 rounded-full bg-emerald-200 animate-pulse" />
+                          <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-200" />
                           מקליד...
                         </>
                       ) : online ? (
@@ -303,18 +292,33 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                       )}
                     </p>
                   </div>
-                  <img
-                    src={avatarSrc}
-                    alt="אלמוג"
-                    className="h-12 w-12 rounded-2xl object-cover border border-white/45 shadow-sm"
-                  />
                 </div>
+                <button
+                  type="button"
+                  aria-label="סגור"
+                  onClick={() => {
+                    stopStream();
+                    setOpen(false);
+                  }}
+                  className="shrink-0 rounded-xl p-2 hover:bg-white/10"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-4 text-right" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div
+              className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-white/88 via-slate-50/92 to-slate-100/95 px-3 py-4 text-right backdrop-blur-md [box-shadow:inset_0_1px_0_rgba(255,255,255,0.65)]"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
               {messages.length === 0 && (
-                <div className="rounded-2xl p-4 bg-white/85 border border-emerald-100 text-gray-700 leading-relaxed text-sm">
+                <div
+                  className="rounded-2xl border border-white/70 p-4 text-sm leading-relaxed text-gray-700 shadow-sm"
+                  style={{
+                    background: 'linear-gradient(145deg, rgba(255,255,255,0.92) 0%, rgba(236,253,245,0.75) 100%)',
+                    boxShadow: '0 8px 28px rgba(6,78,59,0.06)',
+                  }}
+                >
                   אפשר לכתוב לי מה עובר עליך עכשיו, ואבנה איתך צעד קטן ומדויק להיום.
                 </div>
               )}
@@ -324,17 +328,17 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 return (
                   <div key={`${i}-${msg.text.slice(0, 16)}`} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                     <div
-                      className="max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed shadow-sm"
+                      className="max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed shadow-[0_4px_18px_rgba(15,23,42,0.06)] backdrop-blur-sm"
                       style={
                         isUser
                           ? {
-                              background: 'linear-gradient(145deg, #e0f2fe, #dbeafe)',
-                              border: '1px solid rgba(59,130,246,0.22)',
+                              background: 'linear-gradient(145deg, rgba(224,242,254,0.95), rgba(219,234,254,0.88))',
+                              border: '1px solid rgba(59,130,246,0.28)',
                               color: '#1e3a8a',
                             }
                           : {
-                              background: '#ffffff',
-                              border: '1px solid rgba(16,185,129,0.16)',
+                              background: 'linear-gradient(165deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.88) 100%)',
+                              border: '1px solid rgba(16,185,129,0.2)',
                               color: '#1A1730',
                             }
                       }
@@ -360,19 +364,17 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
               <div ref={bottomRef} />
             </div>
 
-            <div className="shrink-0 border-t border-gray-100 p-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-              <div className="rounded-2xl border border-gray-200 bg-white p-2">
+            <div
+              className="shrink-0 border-t border-white/50 bg-gradient-to-t from-white/80 to-white/55 p-3 backdrop-blur-lg"
+              style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+            >
+              <div
+                className="rounded-2xl border border-white/80 p-2 shadow-[0_-4px_24px_rgba(6,78,59,0.08)]"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(248,250,252,0.88) 100%)',
+                }}
+              >
                 <div className="flex items-end gap-2">
-                  <button
-                    type="button"
-                    disabled={busy || !input.trim()}
-                    onClick={() => void sendMessage()}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white disabled:opacity-40"
-                    style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
-                    aria-label="שלח"
-                  >
-                    {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-                  </button>
                   <textarea
                     dir="rtl"
                     rows={1}
@@ -386,18 +388,28 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                     }}
                     disabled={busy}
                     placeholder="כתוב לי מה עובר עליך..."
-                    className="max-h-28 min-h-[44px] flex-1 resize-none rounded-xl bg-white px-3 py-2.5 text-[15px] text-right text-gray-900 outline-none disabled:opacity-60"
+                    className="max-h-28 min-h-[44px] flex-1 resize-none rounded-xl border border-slate-200/80 bg-white/90 px-3 py-2.5 text-[15px] text-right text-gray-900 shadow-inner outline-none backdrop-blur-sm disabled:opacity-60"
                   />
                   {busy && (
-                    <button type="button" onClick={stopStream} className="rounded-xl px-2 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100">
+                    <button
+                      type="button"
+                      onClick={stopStream}
+                      className="shrink-0 rounded-xl px-2 py-2 text-xs font-bold text-gray-600 hover:bg-slate-100/90"
+                    >
                       עצור
                     </button>
                   )}
+                  <button
+                    type="button"
+                    disabled={busy || !input.trim()}
+                    onClick={() => void sendMessage()}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-md disabled:opacity-40"
+                    style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
+                    aria-label="שלח"
+                  >
+                    {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                  </button>
                 </div>
-                <p className="mt-1 px-1 text-[11px] text-gray-500 inline-flex items-center gap-1">
-                  <Sparkles className="h-3 w-3 text-emerald-500" />
-                  תשובות קצרות, אישיות, ולעניין.
-                </p>
               </div>
             </div>
           </div>
