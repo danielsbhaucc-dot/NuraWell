@@ -41,16 +41,6 @@ function addUniqueLine(target: string[], line: string, max = 6): string[] {
   return [normalized, ...target].slice(0, max);
 }
 
-function shouldAttemptMemorySync(userMessage: string): boolean {
-  const t = normalizeLine(userMessage);
-  if (!t || t.length < 10) return false;
-  const commitmentHints = ['מהיום', 'אני שותה', 'אני מתחיל', 'אני עושה', 'כל בוקר', 'כל יום', 'אחרי שאני קם'];
-  const weaknessHints = ['קשה לי', 'נופל ב', 'נשבר לי', 'בסופ"ש', 'בסופשים', 'שוכח', 'אין לי כוח'];
-  const victoryHints = ['הצלחתי', 'עמדתי', 'סיימתי', 'הצלחתי היום', 'החזקתי'];
-  const noteHints = ['מעדיף', 'עוזר לי', 'לא עובד לי', 'תזכיר לי', 'יותר קל לי', 'פחות עובד לי'];
-  return [...commitmentHints, ...weaknessHints, ...victoryHints, ...noteHints].some((h) => t.includes(h));
-}
-
 async function syncUserMemoryAfterTurn(params: {
   openrouter: ReturnType<typeof createOpenAI>;
   supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'];
@@ -300,9 +290,9 @@ export async function POST(request: Request) {
           });
         }
 
-        // Safety net: even if the model didn't call the tool, sync memory explicitly.
-        if (memoryToolEnabled && shouldAttemptMemorySync(lastUserText)) {
-          void syncUserMemoryAfterTurn({
+        // Reliability over best-effort: persist memory update before finishing turn.
+        if (memoryToolEnabled) {
+          await syncUserMemoryAfterTurn({
             openrouter,
             supabase,
             userId: user.id,
