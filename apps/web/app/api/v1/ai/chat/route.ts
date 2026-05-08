@@ -12,7 +12,6 @@ const chatBodySchema = z.object({
   user_id: z.string().uuid().optional(),
 });
 
-const EMPTY_RESPONSE_FALLBACK = 'אני איתך. תכתוב לי במשפט אחד מה הכי יושב עליך עכשיו ונפרק את זה יחד.';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 type OpenRouterResponse = {
@@ -201,7 +200,6 @@ export async function POST(request: Request) {
 
   let assistantText = '';
   let totalTokens: number | undefined;
-  let fallbackUsed = false;
   let retryUsed = false;
 
   try {
@@ -227,8 +225,20 @@ export async function POST(request: Request) {
   }
 
   if (!assistantText) {
-    fallbackUsed = true;
-    assistantText = EMPTY_RESPONSE_FALLBACK;
+    return new Response(
+      JSON.stringify({
+        error: 'Model did not return visible text',
+        retry_used: retryUsed,
+      }),
+      {
+        status: 502,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'x-session-id': sessionId,
+          'Cache-Control': 'no-cache, no-transform',
+        },
+      }
+    );
   }
 
   await insertInteraction(supabase, {
@@ -240,7 +250,7 @@ export async function POST(request: Request) {
     tokens_used: totalTokens,
     metadata: {
       edge: true,
-      fallback_used: fallbackUsed,
+      fallback_used: false,
       retry_used: retryUsed,
     },
   });
