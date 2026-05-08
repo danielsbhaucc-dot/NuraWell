@@ -91,7 +91,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     };
   }, []);
 
-  const { messages, sendMessage, status, stop } = useChat({
+  const { messages, sendMessage, status, stop, error } = useChat({
     transport: new TextStreamChatTransport({
       api: '/api/v1/ai/chat',
       fetch: fetchWithSession,
@@ -210,6 +210,15 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                   style={{ boxShadow: '0 8px 28px rgba(6,78,59,0.07)' }}
                 >
                   אפשר לכתוב לי מה עובר עליך עכשיו, ואבנה איתך צעד קטן ומדויק להיום.
+                </div>
+              )}
+
+              {error && (
+                <div
+                  className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm leading-relaxed text-red-700 shadow-sm"
+                  role="alert"
+                >
+                  הייתה בעיה בקבלת תשובה מאלמוג כרגע. נסה שוב בעוד כמה שניות.
                 </div>
               )}
 

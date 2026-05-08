@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
 import { BookOpen, TrendingUp, UserCircle, X, Menu, Bell } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface MobileHeaderProps {
@@ -19,10 +19,15 @@ const menuItems = [
 
 export function MobileHeader({ user, title }: MobileHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [greeting, setGreeting] = useState('שלום,');
 
   const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'שלום';
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'בוקר טוב,' : hour < 17 ? 'צהריים טובים,' : hour < 21 ? 'ערב טוב,' : 'לילה טוב,';
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    const nextGreeting = hour < 12 ? 'בוקר טוב,' : hour < 17 ? 'צהריים טובים,' : hour < 21 ? 'ערב טוב,' : 'לילה טוב,';
+    setGreeting(nextGreeting);
+  }, []);
 
   return (
     <>
