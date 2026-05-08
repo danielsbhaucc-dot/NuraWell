@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { generateObject, streamText, tool } from 'ai';
+import { generateObject, streamText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { getUserAiMemory, upsertUserAiMemory, type UserAiMemory } from '../../../../../lib/ai/user-memory';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
@@ -228,7 +228,7 @@ export async function POST(request: Request) {
     const systemPromptWithMemory = `${BASE_SYSTEM_PROMPT}
 
 זהו הזיכרון העדכני של המשתמש בפורמט JSON: ${JSON.stringify(userMemory)}. עליך להתחשב בו בתשובות שלך.
-אם המשתמש מציין קושי חדש, הצלחה, או פרט קריטי, השתמש בכלי update_user_memory כדי לדחוס ולעדכן את הזיכרון.
+אם המשתמש מציין קושי חדש, הצלחה, או פרט קריטי - הדגש זאת בתשובה באופן קונקרטי.
 מחק פרטים לא רלוונטיים כדי לחסוך מקום.`;
 
     stage = 'stream_init';
@@ -236,35 +236,12 @@ export async function POST(request: Request) {
       model: openrouter.chat('openai/gpt-5-mini'),
       temperature: 0.75,
       maxOutputTokens: 480,
-      maxSteps: memoryToolEnabled ? 3 : 1,
       providerOptions: {
         // Reduce internal reasoning overrun that can yield empty visible text.
         openai: { reasoningEffort: 'low' },
       },
       system: systemPromptWithMemory,
       messages: recentMessages,
-      tools: memoryToolEnabled
-        ? {
-            update_user_memory: tool({
-              description:
-                'Update the full compressed user memory. Keep only relevant high-signal items.',
-              inputSchema: memoryToolSchema,
-              execute: async (input) => {
-                try {
-                  const updated = await upsertUserAiMemory(supabase, user.id, input);
-                  return { ok: true, memory: updated };
-                } catch (memoryWriteErr) {
-                  console.error('[ai/chat]', {
-                    debug_id: debugId,
-                    stage: 'memory_write_failed',
-                    error: memoryWriteErr instanceof Error ? memoryWriteErr.message : String(memoryWriteErr),
-                  });
-                  return { ok: false };
-                }
-              },
-            }),
-          }
-        : undefined,
       onFinish: async ({ text, usage }) => {
         const finishStage = 'on_finish';
         const t = (text ?? '').trim();
@@ -295,7 +272,7 @@ export async function POST(request: Request) {
 
         // Safety net: even if the model didn't call the tool, sync memory explicitly.
         if (memoryToolEnabled) {
-          await syncUserMemoryAfterTurn({
+          void syncUserMemoryAfterTurn({
             openrouter,
             supabase,
             userId: user.id,
