@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { CheckCircle2, XCircle, ArrowLeft, HelpCircle, Sparkles, ClipboardList, RotateCcw } from 'lucide-react';
 import type { QuizQuestion } from '../../lib/types/journey';
 import { AIFeedbackCard } from '../ai/AIFeedbackCard';
+import { AlmogInstantFeedback } from './AlmogInstantFeedback';
 
 interface QuizSectionProps {
   questions: QuizQuestion[];
@@ -333,18 +334,15 @@ export function QuizSection({ questions, existingAnswers, onComplete, onResetQui
             <AnimatePresence>
               {showExplanation && (
                 <motion.div
+                  key="quiz-feedback"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="mt-4 p-4 rounded-xl"
-                  style={{
-                    background: isCorrect ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.08)',
-                    border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'}`,
-                  }}>
-                  <p className="text-sm font-bold mb-1" style={{ color: isCorrect ? '#059669' : '#d97706' }}>
-                    {isCorrect ? '✓ תשובה נכונה!' : '✗ לא בדיוק...'}
-                  </p>
-                  <p className="text-sm text-gray-600 leading-relaxed">{question.explanation}</p>
+                  className="overflow-hidden"
+                >
+                  <AlmogInstantFeedback isCorrect={isCorrect} tone="quiz">
+                    <p className="text-sm leading-relaxed text-gray-800">{question.explanation}</p>
+                  </AlmogInstantFeedback>
                 </motion.div>
               )}
             </AnimatePresence>

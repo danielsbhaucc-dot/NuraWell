@@ -5,6 +5,8 @@ import { buildUserContext } from '../../../../../lib/ai/memory';
 import { NURAWELL_MENTOR_PROMPT } from '../../../../../lib/ai/prompts';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 
+export const runtime = 'nodejs';
+
 const chatRequestSchema = z.object({
   message: z.string().trim().min(1).max(2000),
   session_id: z.string().uuid().optional(),
@@ -45,6 +47,22 @@ async function insertInteraction(
 
 function encodeSse(event: string, data: unknown): Uint8Array {
   return new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
+/** OpenRouter / multi-modal may return `content` as string or as typed parts[]. */
+function streamDeltaPiece(chunk: { choices: Array<{ delta?: { content?: unknown } }> }): string {
+  const raw = chunk.choices[0]?.delta?.content;
+  if (typeof raw === 'string') return raw;
+  if (Array.isArray(raw)) {
+    return raw
+      .map((p) =>
+        p && typeof p === 'object' && 'text' in p && typeof (p as { text: unknown }).text === 'string'
+          ? (p as { text: string }).text
+          : ''
+      )
+      .join('');
+  }
+  return '';
 }
 
 export async function POST(request: Request) {
@@ -125,7 +143,7 @@ export async function POST(request: Request) {
           let fullText = '';
           try {
             for await (const chunk of openaiStream) {
-              const piece = chunk.choices[0]?.delta?.content ?? '';
+              const piece = streamDeltaPiece(chunk as { choices: Array<{ delta?: { content?: unknown } }> });
               if (piece) {
                 fullText += piece;
                 controller.enqueue(encodeSse('token', { t: piece }));
@@ -161,6 +179,7 @@ export async function POST(request: Request) {
           'Content-Type': 'text/event-stream; charset=utf-8',
           'Cache-Control': 'no-cache, no-transform',
           Connection: 'keep-alive',
+          'X-Accel-Buffering': 'no',
         },
       });
     }

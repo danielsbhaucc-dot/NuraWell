@@ -2,9 +2,10 @@
 
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
-import { CheckCircle2, XCircle, Gamepad2, ArrowLeft, Sparkles, ClipboardList, RotateCcw } from 'lucide-react';
+import { Gamepad2, ArrowLeft, Sparkles, ClipboardList, RotateCcw } from 'lucide-react';
 import type { GameItem } from '../../lib/types/journey';
 import { AIFeedbackCard } from '../ai/AIFeedbackCard';
+import { AlmogInstantFeedback } from './AlmogInstantFeedback';
 
 interface MiniGameProps {
   items: GameItem[];
@@ -293,17 +294,9 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, step
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-4"
               >
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  {isCorrect ? (
-                    <><CheckCircle2 className="w-6 h-6 text-emerald-500" /><span className="font-bold text-emerald-600 text-lg">תשובה נכונה!</span></>
-                  ) : (
-                    <><XCircle className="w-6 h-6 text-red-500" /><span className="font-bold text-red-600 text-lg">לא בדיוק...</span></>
-                  )}
-                </div>
-                <div className="p-3 rounded-xl text-sm text-gray-600 leading-relaxed"
-                  style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)' }}>
-                  {item.explanation}
-                </div>
+                <AlmogInstantFeedback isCorrect={isCorrect} tone="game">
+                  <p className="text-sm leading-relaxed text-gray-800">{item.explanation}</p>
+                </AlmogInstantFeedback>
               </motion.div>
             )}
           </div>

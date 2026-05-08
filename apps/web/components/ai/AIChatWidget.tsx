@@ -31,6 +31,21 @@ function parseSseBlocks(buffer: string): { events: { event: string; data: string
   return { events, rest };
 }
 
+function AlmogChatTypingDots() {
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2 py-1" aria-hidden>
+      {[0, 1, 2].map((i) => (
+        <motion.span
+          key={i}
+          className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.35)]"
+          animate={{ y: [0, -5, 0], opacity: [0.35, 1, 0.35] }}
+          transition={{ duration: 0.75, repeat: Infinity, ease: 'easeInOut', delay: i * 0.14 }}
+        />
+      ))}
+    </span>
+  );
+}
+
 export interface AIChatWidgetProps {
   /** Must match the logged-in user; server rejects mismatched IDs. Context is loaded for this user. */
   userId: string;
@@ -121,6 +136,55 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     const ac = new AbortController();
     abortRef.current = ac;
 
+    let streamDeliveredToken = false;
+
+    const applySseEvent = (event: string, dataStr: string) => {
+      let payload: Record<string, unknown> = {};
+      try {
+        payload = JSON.parse(dataStr || '{}') as Record<string, unknown>;
+      } catch {
+        return;
+      }
+      if (event === 'meta' && typeof payload.session_id === 'string') {
+        sessionIdRef.current = payload.session_id;
+        try {
+          sessionStorage.setItem(SESSION_STORAGE_KEY, payload.session_id);
+        } catch {
+          /* */
+        }
+      }
+      if (event === 'token' && typeof payload.t === 'string') {
+        const piece = payload.t;
+        if (!piece) return;
+        streamDeliveredToken = true;
+        setWaitingTokens(false);
+        setMessages((m) => {
+          const next = [...m];
+          const last = next[next.length - 1];
+          if (last?.role === 'assistant') {
+            next[next.length - 1] = { role: 'assistant', text: last.text + piece };
+          }
+          return next;
+        });
+      }
+      if (event === 'error') {
+        throw new Error(typeof payload.message === 'string' ? payload.message : 'שגיאת סטרים');
+      }
+    };
+
+    const drainSseBuffer = (buf: string): string => {
+      let rest = buf;
+      for (let i = 0; i < 64; i++) {
+        const { events, rest: r } = parseSseBlocks(rest);
+        rest = r;
+        for (const { event, data } of events) {
+          applySseEvent(event, data);
+        }
+        if (events.length === 0) break;
+      }
+      return rest;
+    };
+
     try {
       const res = await fetch('/api/v1/ai/chat', {
         method: 'POST',
@@ -141,62 +205,36 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
 
       const decoder = new TextDecoder();
       let buffer = '';
-      let gotToken = false;
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const { events, rest } = parseSseBlocks(buffer);
-        buffer = rest;
-
-        for (const { event, data: dataStr } of events) {
-          let payload: Record<string, unknown> = {};
-          try {
-            payload = JSON.parse(dataStr || '{}') as Record<string, unknown>;
-          } catch {
-            continue;
-          }
-          if (event === 'meta' && typeof payload.session_id === 'string') {
-            sessionIdRef.current = payload.session_id;
-            try {
-              sessionStorage.setItem(SESSION_STORAGE_KEY, payload.session_id);
-            } catch {
-              /* */
-            }
-          }
-          if (event === 'token' && typeof payload.t === 'string' && payload.t) {
-            if (!gotToken) {
-              gotToken = true;
-              setWaitingTokens(false);
-            }
-            const piece = payload.t;
-            setMessages((m) => {
-              const next = [...m];
-              const last = next[next.length - 1];
-              if (last?.role === 'assistant') {
-                next[next.length - 1] = { role: 'assistant', text: last.text + piece };
-              }
-              return next;
-            });
-          }
-          if (event === 'error') {
-            throw new Error(typeof payload.message === 'string' ? payload.message : 'שגיאת סטרים');
-          }
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+        }
+        buffer = drainSseBuffer(buffer);
+        if (done) {
+          buffer += decoder.decode();
+          buffer = drainSseBuffer(buffer);
+          break;
         }
       }
 
-      setMessages((m) => {
-        const next = [...m];
-        const last = next[next.length - 1];
-        if (last?.role === 'assistant' && !last.text.trim()) {
-          next[next.length - 1] = {
-            role: 'assistant',
-            text: 'משהו נתקע בדרך. נסה שוב עוד רגע?',
-          };
-        }
-        return next;
-      });
+      if (!streamDeliveredToken) {
+        const fallbackReply = await requestNonStreamFallback(text);
+        setMessages((m) => {
+          const next = [...m];
+          const last = next[next.length - 1];
+          if (last?.role === 'assistant' && !last.text?.trim()) {
+            next[next.length - 1] = fallbackReply
+              ? { role: 'assistant', text: fallbackReply }
+              : {
+                  role: 'assistant',
+                  text: 'משהו נתקע בדרך. נסה שוב עוד רגע?',
+                };
+          }
+          return next;
+        });
+      }
     } catch (e) {
       if ((e as Error).name === 'AbortError') {
         setMessages((m) => {
@@ -223,7 +261,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       setBusy(false);
       abortRef.current = null;
     }
-  }, [busy, input, userId]);
+  }, [busy, input, userId, requestNonStreamFallback]);
 
   return (
     <Drawer.Root open={open} onOpenChange={setOpen} direction="bottom" shouldScaleBackground>
@@ -282,7 +320,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                       {busy ? (
                         <>
                           <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-200" />
-                          מקליד...
+                          אלמוג מקליד
                         </>
                       ) : online ? (
                         <>
@@ -346,15 +384,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                       }
                     >
                       {!isUser && waitingTokens && i === messages.length - 1 && !msg.text ? (
-                        <span className="inline-flex items-center gap-2 text-gray-600">
-                          <Loader2 className="h-5 w-5 animate-spin shrink-0 text-emerald-600" />
-                          <span className="font-semibold">אלמוג מקליד</span>
-                          <span className="inline-flex gap-1">
-                            <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-emerald-500/80" />
-                            <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-emerald-500/70" style={{ animationDelay: '120ms' }} />
-                            <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-emerald-500/60" style={{ animationDelay: '240ms' }} />
-                          </span>
-                        </span>
+                        <AlmogChatTypingDots />
                       ) : (
                         msg.text || '\u00a0'
                       )}
