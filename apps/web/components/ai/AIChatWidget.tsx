@@ -254,6 +254,12 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     };
   }, []);
 
+  useEffect(() => {
+    const onOpenChat = () => setOpen(true);
+    window.addEventListener('open-almog-chat', onOpenChat);
+    return () => window.removeEventListener('open-almog-chat', onOpenChat);
+  }, []);
+
   const fetchWithSession = useMemo(() => {
     return async (url: RequestInfo | URL, init?: RequestInit) => {
       const res = await fetch(url, init);
