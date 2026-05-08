@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { createClient } from '../../../lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { CoursesClientWrapper } from '../../../components/course/CoursesClientWrapper';
+import { TestMemoryButton } from '../../../components/ai/TestMemoryButton';
 import type { CourseWithProgress } from '../../../lib/types/course';
 // Note: Supabase client returns 'never' types without generated DB types.
 // Using (supabase as any) with explicit interfaces is intentional until DB types are generated.
@@ -105,10 +106,18 @@ export default async function CoursesPage() {
     : 0;
 
   return (
-    <CoursesClientWrapper
-      enrolledCourses={enrolledCourses}
-      availableCourses={availableCourses}
-      stats={{ totalLessonsCompleted, activeCoursesCount, avgProgress }}
-    />
+    <>
+      <section className="mx-auto mb-3 w-full max-w-5xl px-4">
+        <div className="rounded-2xl border border-emerald-200 bg-white p-3 shadow-sm">
+          <p className="mb-2 text-xs font-semibold text-emerald-700">בדיקת תשתית זיכרון AI (זמני)</p>
+          <TestMemoryButton />
+        </div>
+      </section>
+      <CoursesClientWrapper
+        enrolledCourses={enrolledCourses}
+        availableCourses={availableCourses}
+        stats={{ totalLessonsCompleted, activeCoursesCount, avgProgress }}
+      />
+    </>
   );
 }
