@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { MessageCircle, Send, Loader2, X } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
+import { TextStreamChatTransport } from 'ai';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 
@@ -79,6 +79,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     return async (url: RequestInfo | URL, init?: RequestInit) => {
       const res = await fetch(url, init);
       const sid = res.headers.get('x-session-id');
+      const dbg = res.headers.get('x-debug-id');
       if (sid) {
         sessionIdRef.current = sid;
         try {
@@ -87,12 +88,19 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
           /* */
         }
       }
+      if (!res.ok && dbg) {
+        console.error('[ai/chat client] request failed', {
+          status: res.status,
+          debug_id: dbg,
+          debug_stage: res.headers.get('x-debug-stage'),
+        });
+      }
       return res;
     };
   }, []);
 
   const { messages, sendMessage, status, stop, error } = useChat({
-    transport: new DefaultChatTransport({
+    transport: new TextStreamChatTransport({
       api: '/api/v1/ai/chat',
       fetch: fetchWithSession,
       body: () => ({
