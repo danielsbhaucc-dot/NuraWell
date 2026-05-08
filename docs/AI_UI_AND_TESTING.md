@@ -18,6 +18,7 @@
 
 - `POST /api/v1/ai/chat` עם `stream: true` — סטרימינג SSE, שמירה ל-`ai_interactions`.
 - גוף הבקשה כולל `user_id` שחייב להתאים ל-session (אחרת 403). הקונטקסט האישי נטען בשרת מ-`profiles` (כולל `ai_context`, רצף, `last_active_at`) דרך `buildUserContext()`.
+- מודל צ'אט קבוע: **`openai/gpt-5-mini` דרך OpenRouter** (אין מעבר אוטומטי למודל אחר). אם התקבלה תשובה ריקה, השרת מבצע retry אחד עם אותו מודל בדיוק.
 
 ### 3) Cron מאוחד (ניתוח + נידג' חזרה)
 
@@ -55,22 +56,26 @@
   - `PATCH /api/v1/notifications` — סימון התראה בודדת או כולן כנקראו.
 - כפתור פעמון צף, מונה unread, ופתיחת חלונית עם ניווט ל-`action_url`.
 
-### 5) אווטאר אלמוג מ-R2 (כולל אופטימיזציה)
+### 5) אווטאר אלמוג מ-R2 + CDN Worker (כולל אופטימיזציה)
 
 - פאנל אדמין חדש: `admin` → "אווטאר אלמוג (R2)".
 - API אדמין חדש: `POST /api/v1/admin/almog-avatar`.
 - תהליך ההעלאה:
   1. קובץ נבחר בלוח אדמין.
   2. בדפדפן (לוח אדמין): יצוא ל-WebP ושינוי גודל (עד צלע ~900px) לפני שליחה — בלי ספריות native בשרת (מתאים ל-Vercel).
-  3. השרת מאמת שזה WebP ושומר **רק** את הקובץ הדחוס ב-R2 תחת `almog/avatar` עם `Content-Type: image/webp`.
-  4. כל רכיבי אלמוג (צ'אט/משוב/התראות AI) קוראים URL אחיד דרך `getAlmogAvatarUrl()`.
+  3. השרת מאמת שזה WebP ושומר **רק** את הקובץ הדחוס ב-R2 תחת `almog/avatar.webp` עם `Content-Type: image/webp`.
+  4. השרת מאמת מיד אחרי העלאה (`HeadObject`) שהכתיבה הצליחה באותו bucket/key.
+  5. כל רכיבי אלמוג (צ'אט/משוב/התראות AI) קוראים URL אחיד דרך `getAlmogAvatarUrl()`.
 
-**הגדרת R2:**
+**הגדרת R2 + CDN Worker:**
 - צור bucket ב-Cloudflare R2.
-- פתח public/custom domain לבקט (לקריאה ציבורית).
+- חבר את הדומיין `cdn.nurawell.ai` ל-Worker שמנתב buckets לפי path.
+- חשוב: נתיבי תמונות חייבים לעבור דרך prefix של תמונות (ברירת מחדל: `/images`), כלומר:
+  - `https://cdn.nurawell.ai/images/almog/avatar.webp`
 - צור API Token עם הרשאות Object Read/Write לבקט.
 - הגדר סביבות:
-  - `NEXT_PUBLIC_R2_PUBLIC_BASE_URL`
+  - `NEXT_PUBLIC_CDN_URL` (למשל `https://cdn.nurawell.ai`)
+  - `NEXT_PUBLIC_CDN_IMAGES_PREFIX` (אופציונלי, ברירת מחדל `/images`)
   - `R2_ACCOUNT_ID`
   - `R2_ACCESS_KEY_ID`
   - `R2_SECRET_ACCESS_KEY`
@@ -138,4 +143,4 @@
 
 ---
 
-*עודכן: UI התראות בדשבורד, Cron חינמי ב-GitHub Actions, E2E ידני למסלול שיעור מלא.*
+*עודכן: UI התראות בדשבורד, Cron חינמי ב-GitHub Actions, CDN Worker עם `/images` לאווטאר, ו-E2E ידני למסלול שיעור מלא.*

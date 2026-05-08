@@ -68,6 +68,14 @@ function streamDeltaPiece(chunk: { choices: Array<{ delta?: { content?: unknown 
 /** Non-stream responses may also return content as string or parts[]. */
 function assistantMessageText(raw: unknown): string {
   if (typeof raw === 'string') return raw.trim();
+  if (raw && typeof raw === 'object') {
+    if ('text' in raw && typeof (raw as { text: unknown }).text === 'string') {
+      return (raw as { text: string }).text.trim();
+    }
+    if ('content' in raw) {
+      return assistantMessageText((raw as { content: unknown }).content);
+    }
+  }
   if (Array.isArray(raw)) {
     return raw
       .map((p) => {
@@ -81,6 +89,62 @@ function assistantMessageText(raw: unknown): string {
       .trim();
   }
   return '';
+}
+
+type ChatMessageParam = { role: 'system' | 'user' | 'assistant'; content: string };
+
+async function completeWithRetryOnSameModel(
+  client: ReturnType<typeof getClientForModel>,
+  messages: ChatMessageParam[]
+): Promise<{
+  reply: string;
+  modelUsed: string;
+  usage: { total_tokens?: number; prompt_tokens?: number; completion_tokens?: number } | undefined;
+  retried: boolean;
+  emptyAfterRetry: boolean;
+}> {
+  const first = await client.chat.completions.create({
+    model: AI_MODELS.empathy,
+    temperature: 0.85,
+    max_tokens: 260,
+    messages,
+  });
+  const firstText = assistantMessageText(first.choices[0]?.message?.content);
+  if (firstText) {
+    return {
+      reply: firstText,
+      modelUsed: AI_MODELS.empathy,
+      usage: first.usage,
+      retried: false,
+      emptyAfterRetry: false,
+    };
+  }
+
+  // Retry once with the SAME chat model (gpt-5-mini via OpenRouter), no model switch.
+  const second = await client.chat.completions.create({
+    model: AI_MODELS.empathy,
+    temperature: 0.75,
+    max_tokens: 260,
+    messages,
+  });
+  const secondText = assistantMessageText(second.choices[0]?.message?.content);
+  if (secondText) {
+    return {
+      reply: secondText,
+      modelUsed: AI_MODELS.empathy,
+      usage: second.usage,
+      retried: true,
+      emptyAfterRetry: false,
+    };
+  }
+
+  return {
+    reply: 'אני כאן איתך. כרגע התשובה יצאה ריקה, אז בוא ננסה שוב את אותה שאלה בעוד רגע.',
+    modelUsed: AI_MODELS.empathy,
+    usage: second.usage ?? first.usage,
+    retried: true,
+    emptyAfterRetry: true,
+  };
 }
 
 export async function POST(request: Request) {
@@ -202,22 +266,13 @@ export async function POST(request: Request) {
       });
     }
 
-    const completion = await client.chat.completions.create({
-      model: AI_MODELS.empathy,
-      temperature: 0.85,
-      max_tokens: 260,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...trimmedHistory,
-        { role: 'user', content: message },
-      ],
-    });
-
-    const assistantReplyRaw = completion.choices[0]?.message?.content;
-    const parsedAssistantReply = assistantMessageText(assistantReplyRaw);
-    const assistantReply =
-      parsedAssistantReply ||
-      'אני כאן איתך. כרגע התשובה יצאה ריקה, אז בוא ננסה שוב את אותה שאלה בעוד רגע.';
+    const chatMessages: ChatMessageParam[] = [
+      { role: 'system', content: systemPrompt },
+      ...trimmedHistory,
+      { role: 'user', content: message },
+    ];
+    const { reply: assistantReply, modelUsed, usage, retried, emptyAfterRetry } =
+      await completeWithRetryOnSameModel(client, chatMessages);
 
     await insertInteraction(supabase, {
       user_id: user.id,
@@ -226,12 +281,13 @@ export async function POST(request: Request) {
       content: assistantReply,
       context_type,
       context_id,
-      model_name: AI_MODELS.empathy,
-      tokens_used: completion.usage?.total_tokens,
+      model_name: modelUsed,
+      tokens_used: usage?.total_tokens,
       metadata: {
-        input_tokens: completion.usage?.prompt_tokens,
-        output_tokens: completion.usage?.completion_tokens,
-        fallback_used: parsedAssistantReply.length === 0,
+        input_tokens: usage?.prompt_tokens,
+        output_tokens: usage?.completion_tokens,
+        fallback_used: emptyAfterRetry,
+        retried_same_model: retried,
       },
     });
 
