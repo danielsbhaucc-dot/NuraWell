@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import sharp from 'sharp';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 import { getAlmogAvatarUrl } from '../../../../../lib/ai/almog-avatar';
@@ -8,9 +7,11 @@ import { getAlmogAvatarUrl } from '../../../../../lib/ai/almog-avatar';
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 const OUTPUT_WIDTH = 900;
 const OUTPUT_QUALITY = 84;
-const OBJECT_KEY = 'almog/avatar.webp';
+/** Single canonical key — extensionless; R2 serves correct Content-Type. */
+const OBJECT_KEY = 'almog/avatar';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 function imageBucketName(): string | undefined {
   return (
@@ -43,6 +44,16 @@ function getR2Client(): S3Client {
   });
 }
 
+async function optimizeImageWebP(input: Buffer): Promise<Buffer> {
+  const sharpModule = await import('sharp');
+  const sharpFn = sharpModule.default;
+  return sharpFn(input)
+    .rotate()
+    .resize({ width: OUTPUT_WIDTH, withoutEnlargement: true })
+    .webp({ quality: OUTPUT_QUALITY, effort: 6 })
+    .toBuffer();
+}
+
 export async function GET(request: Request) {
   const auth = await assertAdmin(request);
   if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: auth.status });
@@ -64,7 +75,6 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: 'חסרה הגדרת אחסון תמונות בשרת. פנה למנהל המערכת.',
-          detail: 'R2_IMAGE_BUCKET_NAME',
         },
         { status: 500 }
       );
@@ -83,18 +93,27 @@ export async function POST(request: Request) {
     }
 
     const input = Buffer.from(await file.arrayBuffer());
-    const optimized = await sharp(input)
-      .rotate()
-      .resize({ width: OUTPUT_WIDTH, withoutEnlargement: true })
-      .webp({ quality: OUTPUT_QUALITY, effort: 6 })
-      .toBuffer();
+
+    let webp: Buffer;
+    try {
+      webp = await optimizeImageWebP(input);
+    } catch (e) {
+      console.error('[almog-avatar] sharp failed', e);
+      return NextResponse.json(
+        {
+          error:
+            'לא הצלחנו לדחוס את התמונה בשרת. נסה קובץ אחר (JPEG/PNG) או גרסה קטנה יותר, ואם זה חוזר — בדוק לוגי Deploy.',
+        },
+        { status: 502 }
+      );
+    }
 
     const s3 = getR2Client();
     await s3.send(
       new PutObjectCommand({
         Bucket: bucket,
         Key: OBJECT_KEY,
-        Body: optimized,
+        Body: webp,
         ContentType: 'image/webp',
         CacheControl: 'public, max-age=31536000, immutable',
       })
@@ -105,8 +124,8 @@ export async function POST(request: Request) {
       ok: true,
       avatar_url: getAlmogAvatarUrl(version),
       original_bytes: file.size,
-      optimized_bytes: optimized.length,
-      saved_percent: Math.max(0, Math.round((1 - optimized.length / Math.max(1, file.size)) * 100)),
+      optimized_bytes: webp.length,
+      saved_percent: Math.max(0, Math.round((1 - webp.length / Math.max(1, file.size)) * 100)),
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
@@ -114,7 +133,7 @@ export async function POST(request: Request) {
       msg.includes('credentials') || msg.includes('חסרים')
         ? msg
         : 'העלאה נכשלה. אם זה חוזר — בדוק הגדרות אחסון ומפתחות בשרת.';
+    console.error('[almog-avatar POST]', msg);
     return NextResponse.json({ error: friendly, detail: msg }, { status: 500 });
   }
 }
-
