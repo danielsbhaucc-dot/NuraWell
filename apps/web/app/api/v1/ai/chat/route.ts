@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { generateText } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
 import { buildUserContext } from '../../../../../lib/ai/memory';
 import { NURAWELL_MENTOR_PROMPT } from '../../../../../lib/ai/prompts';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
@@ -12,152 +14,27 @@ const chatBodySchema = z.object({
   user_id: z.string().uuid().optional(),
 });
 
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const DEEPSEEK_URL = 'https://api.deepseek.com/v1/chat/completions';
-
-type OpenRouterResponse = {
-  choices?: Array<{
-    message?: { content?: string | Array<{ type?: string; text?: string; content?: string; value?: string }> };
-    text?: string;
-  }>;
-  output?: Array<{
-    content?: Array<{ type?: string; text?: string; content?: string; value?: string }>;
-  }>;
-  usage?: { total_tokens?: number };
-};
-
-function normalizeOpenRouterContent(content: OpenRouterResponse['choices'][number]['message']['content']): string {
-  if (typeof content === 'string') return content.trim();
-  if (Array.isArray(content)) {
-    return content
-      .map((p) => {
-        if (!p) return '';
-        if (typeof p.text === 'string' && p.text.trim()) return p.text;
-        if (typeof p.content === 'string' && p.content.trim()) return p.content;
-        if (typeof p.value === 'string' && p.value.trim()) return p.value;
-        return '';
-      })
-      .join('')
-      .trim();
-  }
-  return '';
-}
-
-function isLikelyReadableAssistantText(text: string): boolean {
-  const t = text.trim();
-  if (!t) return false;
-  if (t.length < 2) return false;
-
-  // Reject long encoded/token-like blobs.
-  if (/[A-Za-z0-9+/_=-]{80,}/.test(t)) return false;
-  // Reject identifier-like blobs (no spaces, only token chars).
-  if (/^[A-Za-z0-9._-]+$/.test(t) && t.length > 12) return false;
-
-  const letters = t.match(/\p{L}/gu)?.length ?? 0;
-  const spaces = t.match(/\s/g)?.length ?? 0;
-  const words = t.split(/\s+/).filter(Boolean).length;
-
-  if (letters === 0) return false;
-  // Very long text with almost no spacing is usually garbage payload.
-  if (t.length > 120 && words < 4) return false;
-  if (t.length > 180 && spaces < 3) return false;
-
-  return true;
-}
-
-function extractAssistantText(data: OpenRouterResponse): string {
-  const fromMessage = normalizeOpenRouterContent(data.choices?.[0]?.message?.content);
-  if (fromMessage && isLikelyReadableAssistantText(fromMessage)) return fromMessage;
-
-  const fromChoiceText = String(data.choices?.[0]?.text ?? '').trim();
-  if (fromChoiceText && isLikelyReadableAssistantText(fromChoiceText)) return fromChoiceText;
-
-  const outputParts = (data.output?.[0]?.content ?? []).filter((p) => {
-    const type = String(p?.type ?? '').toLowerCase();
-    return !type || type === 'text' || type === 'output_text';
-  });
-  const fromOutput = outputParts
-    .map((p) => {
-      if (!p) return '';
-      if (typeof p.text === 'string' && p.text.trim()) return p.text.trim();
-      if (typeof p.content === 'string' && p.content.trim()) return p.content.trim();
-      if (typeof p.value === 'string' && p.value.trim()) return p.value.trim();
-      return '';
-    })
-    .join(' ')
-    .trim();
-  if (fromOutput && isLikelyReadableAssistantText(fromOutput)) return fromOutput;
-
-  return '';
-}
+const openrouter = createOpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY ?? '',
+  baseURL: 'https://openrouter.ai/api/v1',
+  headers: {
+    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL ?? 'https://nurawell.ai',
+    'X-Title': 'NuraWell',
+  },
+});
 
 async function callOpenRouterChat(system: string, userPrompt: string): Promise<{ text: string; totalTokens?: number }> {
-  const apiKey = process.env.OPENROUTER_API_KEY ?? '';
-  if (!apiKey) {
-    throw new Error('OPENROUTER_API_KEY missing');
-  }
-  const response = await fetch(OPENROUTER_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL ?? 'https://nurawell.ai',
-      'X-Title': 'NuraWell',
-    },
-    body: JSON.stringify({
-      model: 'openai/gpt-5-mini',
-      temperature: 0.85,
-      max_tokens: 260,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: userPrompt },
-      ],
-    }),
+  const out = await generateText({
+    model: openrouter.chat('openai/gpt-5-mini'),
+    temperature: 0.75,
+    maxOutputTokens: 260,
+    system,
+    prompt: userPrompt,
   });
-  if (!response.ok) {
-    const errBody = await response.text();
-    throw new Error(`OpenRouter HTTP ${response.status}: ${errBody.slice(0, 300)}`);
-  }
-  const data = (await response.json()) as OpenRouterResponse;
-  console.log('--- RAW OPENROUTER RESPONSE ---', JSON.stringify(data, null, 2));
-  if ((data as any).error) {
-    throw new Error(`OpenRouter JSON Error: ${JSON.stringify((data as any).error)}`);
-  }
-  const text = extractAssistantText(data);
-  return { text, totalTokens: data.usage?.total_tokens };
-}
-
-async function callDeepSeekChat(system: string, userPrompt: string): Promise<{ text: string; totalTokens?: number }> {
-  const apiKey = process.env.DEEPSEEK_API_KEY ?? '';
-  if (!apiKey) {
-    throw new Error('DEEPSEEK_API_KEY missing');
-  }
-  const response = await fetch(DEEPSEEK_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: process.env.DEEPSEEK_ANALYSIS_MODEL?.trim() || 'deepseek-chat',
-      temperature: 0.7,
-      max_tokens: 220,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: userPrompt },
-      ],
-    }),
-  });
-  if (!response.ok) {
-    const errBody = await response.text();
-    throw new Error(`DeepSeek HTTP ${response.status}: ${errBody.slice(0, 300)}`);
-  }
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-    usage?: { total_tokens?: number };
+  return {
+    text: (out.text ?? '').trim(),
+    totalTokens: out.usage?.totalTokens,
   };
-  const text = String(data.choices?.[0]?.message?.content ?? '').trim();
-  return { text, totalTokens: data.usage?.total_tokens };
 }
 
 async function insertInteraction(
@@ -202,35 +79,6 @@ function uiMessageRole(msg: unknown): 'system' | 'user' | 'assistant' | null {
   return r === 'system' || r === 'user' || r === 'assistant' ? r : null;
 }
 
-async function buildRecentMemoryBlock(
-  supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
-  userId: string
-): Promise<string> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
-    .from('ai_interactions')
-    .select('role, content, created_at')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(12);
-
-  const rows = (data ?? []) as Array<{ role?: string; content?: string | null }>;
-  if (!rows.length) return '';
-
-  const lines = rows
-    .reverse()
-    .map((r) => {
-      const role = r.role === 'assistant' ? 'אלמוג' : r.role === 'user' ? 'משתמש' : 'מערכת';
-      const content = String(r.content ?? '').trim();
-      if (!content) return '';
-      return `${role}: ${content}`;
-    })
-    .filter(Boolean);
-
-  if (!lines.length) return '';
-  return `זיכרון שיחות אחרונות (פנימי בלבד):\n${lines.join('\n')}`;
-}
-
 export async function POST(request: Request) {
   const { supabase, user, authError } = await createSupabaseForApiRoute(request);
   if (authError || !user) {
@@ -267,44 +115,18 @@ export async function POST(request: Request) {
     });
   }
 
-  const sanitizedMessages = messages
-    .map((m) => {
-      const role = uiMessageRole(m);
-      if (!role || role === 'system') return null;
-      const text = uiMessageText(m).trim();
-      if (!text) return null;
-      return {
-        role,
-        content: text,
-      };
-    })
-    .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m));
   if (!lastUserText) {
     return new Response(JSON.stringify({ error: 'Empty user message' }), { status: 400 });
   }
 
-  const recentChatContext = sanitizedMessages
-    .slice(-8)
-    .map((m) => `${m.role === 'assistant' ? 'אלמוג' : 'משתמש'}: ${m.content}`)
-    .join('\n');
-  const persistedMemoryContext = await buildRecentMemoryBlock(supabase, user.id);
-  const mergedSystemPrompt = [
-    systemPrompt,
-    persistedMemoryContext,
-    recentChatContext ? `הודעות אחרונות מהסשן הנוכחי (פנימי בלבד):\n${recentChatContext}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n\n');
-
   let assistantText = '';
   let totalTokens: number | undefined;
   let retryUsed = false;
-  let deepseekUsed = false;
   let actualError: any = null;
-  let assistantModelName = 'openai/gpt-5-mini';
+  const assistantModelName = 'openai/gpt-5-mini';
 
   try {
-    const out = await callOpenRouterChat(mergedSystemPrompt, lastUserText);
+    const out = await callOpenRouterChat(systemPrompt, lastUserText);
     assistantText = out.text;
     totalTokens = out.totalTokens;
   } catch (err) {
@@ -323,22 +145,6 @@ export async function POST(request: Request) {
       totalTokens = retry.totalTokens ?? totalTokens;
     } catch (err) {
       console.error('CRITICAL: Retry attempt failed:', err);
-      actualError = actualError || err;
-    }
-  }
-
-  if (!assistantText) {
-    try {
-      const deepseek = await callDeepSeekChat(
-        `${NURAWELL_MENTOR_PROMPT}\nענה בקצרה ובעברית טבעית. בלי טקסט טכני, בלי מזהים, בלי payload.`,
-        lastUserText
-      );
-      assistantText = deepseek.text;
-      totalTokens = deepseek.totalTokens ?? totalTokens;
-      deepseekUsed = true;
-      assistantModelName = process.env.DEEPSEEK_ANALYSIS_MODEL?.trim() || 'deepseek-chat';
-    } catch (err) {
-      console.error('CRITICAL: DeepSeek fallback failed:', err);
       actualError = actualError || err;
     }
   }
@@ -372,7 +178,6 @@ export async function POST(request: Request) {
       edge: true,
       fallback_used: false,
       retry_used: retryUsed,
-      deepseek_used: deepseekUsed,
     },
   });
 
