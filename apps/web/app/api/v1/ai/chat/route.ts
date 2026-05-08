@@ -57,18 +57,27 @@ function uiMessageRole(msg: unknown): 'system' | 'user' | 'assistant' | null {
 }
 
 export async function POST(request: Request) {
+  const debugId = crypto.randomUUID();
+  const startedAt = Date.now();
+  let stage = 'init';
+
   const { supabase, user, authError } = await createSupabaseForApiRoute(request);
   if (authError || !user) {
+    console.error('[ai/chat]', { debug_id: debugId, stage: 'auth', error: 'unauthorized' });
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
+  stage = 'auth_ok';
 
   const parsed = chatBodySchema.safeParse(await request.json());
   if (!parsed.success) {
+    console.error('[ai/chat]', { debug_id: debugId, stage: 'body_validation', error: parsed.error.flatten() });
     return new Response(JSON.stringify({ error: 'Invalid request body' }), { status: 400 });
   }
+  stage = 'body_ok';
 
   const { messages, user_id: bodyUserId } = parsed.data;
   if (bodyUserId && bodyUserId !== user.id) {
+    console.error('[ai/chat]', { debug_id: debugId, stage: 'user_mismatch', body_user_id: bodyUserId, session_user_id: user.id });
     return new Response(JSON.stringify({ error: 'Forbidden: user_id does not match session' }), { status: 403 });
   }
 
@@ -79,6 +88,7 @@ export async function POST(request: Request) {
     .find((m) => uiMessageRole(m) === 'user');
   const lastUserText = uiMessageText(lastUser).trim();
   if (lastUserText) {
+    stage = 'insert_user_interaction';
     await insertInteraction(supabase, {
       user_id: user.id,
       session_id: sessionId,
@@ -90,21 +100,28 @@ export async function POST(request: Request) {
   }
 
   if (!lastUserText) {
+    console.error('[ai/chat]', { debug_id: debugId, stage: 'empty_message' });
     return new Response(JSON.stringify({ error: 'Empty user message' }), { status: 400 });
   }
+  stage = 'message_ok';
 
   const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
   if (!openrouterKey) {
+    console.error('[ai/chat]', { debug_id: debugId, stage: 'env_missing_key' });
     return new Response(
       JSON.stringify({
         error: 'OPENROUTER_API_KEY is missing in server environment',
         details: 'Set OPENROUTER_API_KEY in Vercel Project Settings -> Environment Variables, then redeploy.',
+        debug_id: debugId,
+        stage: 'env_missing_key',
       }),
       {
         status: 500,
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
           'x-session-id': sessionId,
+          'x-debug-id': debugId,
+          'x-debug-stage': 'env_missing_key',
           'Cache-Control': 'no-cache, no-transform',
         },
       }
@@ -121,6 +138,7 @@ export async function POST(request: Request) {
   });
 
   try {
+    stage = 'stream_init';
     const result = streamText({
       model: openrouter.chat('openai/gpt-5-mini'),
       temperature: 0.7,
@@ -128,6 +146,7 @@ export async function POST(request: Request) {
       system: BASE_SYSTEM_PROMPT,
       prompt: lastUserText,
       onFinish: async ({ text, usage }) => {
+        const finishStage = 'on_finish';
         const assistantText = (text ?? '').trim();
         if (!assistantText) return;
         try {
@@ -141,39 +160,56 @@ export async function POST(request: Request) {
             metadata: { edge: true, streamed: true },
           });
         } catch (persistErr) {
-          console.error('[ai/chat] assistant persistence failed:', persistErr);
+          console.error('[ai/chat]', {
+            debug_id: debugId,
+            stage: `${finishStage}_persist_assistant`,
+            error: persistErr instanceof Error ? persistErr.message : String(persistErr),
+          });
         }
       },
     });
 
-    return result.toDataStreamResponse({
+    stage = 'stream_response';
+    console.info('[ai/chat]', {
+      debug_id: debugId,
+      stage,
+      elapsed_ms: Date.now() - startedAt,
+      session_id: sessionId,
+      model: 'openai/gpt-5-mini',
+    });
+
+    return result.toTextStreamResponse({
       headers: {
         'x-session-id': sessionId,
+        'x-debug-id': debugId,
+        'x-debug-stage': stage,
         'Cache-Control': 'no-cache, no-transform',
       },
     });
   } catch (err) {
+    console.error('[ai/chat]', {
+      debug_id: debugId,
+      stage,
+      elapsed_ms: Date.now() - startedAt,
+      error: err instanceof Error ? err.message : String(err),
+    });
     return new Response(
       JSON.stringify({
         error: 'GPT-5-mini chat failed',
         details: err instanceof Error ? err.message : String(err),
+        debug_id: debugId,
+        stage,
       }),
       {
         status: 502,
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
           'x-session-id': sessionId,
+          'x-debug-id': debugId,
+          'x-debug-stage': stage,
           'Cache-Control': 'no-cache, no-transform',
         },
       }
     );
   }
-
-  return new Response(null, {
-    status: 500,
-    headers: {
-      'x-session-id': sessionId,
-      'Cache-Control': 'no-cache, no-transform',
-    },
-  });
 }
