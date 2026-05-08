@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { MessageCircle, Send, Loader2, X } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useChat } from '@ai-sdk/react';
-import { TextStreamChatTransport } from 'ai';
+import { DefaultChatTransport } from 'ai';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 
@@ -92,7 +92,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   }, []);
 
   const { messages, sendMessage, status, stop, error } = useChat({
-    transport: new TextStreamChatTransport({
+    transport: new DefaultChatTransport({
       api: '/api/v1/ai/chat',
       fetch: fetchWithSession,
       body: () => ({
