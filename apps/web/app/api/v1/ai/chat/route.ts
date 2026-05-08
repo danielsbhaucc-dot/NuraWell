@@ -65,6 +65,24 @@ function streamDeltaPiece(chunk: { choices: Array<{ delta?: { content?: unknown 
   return '';
 }
 
+/** Non-stream responses may also return content as string or parts[]. */
+function assistantMessageText(raw: unknown): string {
+  if (typeof raw === 'string') return raw.trim();
+  if (Array.isArray(raw)) {
+    return raw
+      .map((p) => {
+        if (!p || typeof p !== 'object') return '';
+        if ('text' in p && typeof (p as { text: unknown }).text === 'string') {
+          return (p as { text: string }).text;
+        }
+        return '';
+      })
+      .join('')
+      .trim();
+  }
+  return '';
+}
+
 export async function POST(request: Request) {
   try {
     const { supabase, user, authError } = await createSupabaseForApiRoute(request);
@@ -195,10 +213,11 @@ export async function POST(request: Request) {
       ],
     });
 
-    const assistantReply = completion.choices[0]?.message?.content?.trim();
-    if (!assistantReply) {
-      return NextResponse.json({ error: 'Empty AI response' }, { status: 502 });
-    }
+    const assistantReplyRaw = completion.choices[0]?.message?.content;
+    const parsedAssistantReply = assistantMessageText(assistantReplyRaw);
+    const assistantReply =
+      parsedAssistantReply ||
+      'אני כאן איתך. כרגע התשובה יצאה ריקה, אז בוא ננסה שוב את אותה שאלה בעוד רגע.';
 
     await insertInteraction(supabase, {
       user_id: user.id,
@@ -212,6 +231,7 @@ export async function POST(request: Request) {
       metadata: {
         input_tokens: completion.usage?.prompt_tokens,
         output_tokens: completion.usage?.completion_tokens,
+        fallback_used: parsedAssistantReply.length === 0,
       },
     });
 
