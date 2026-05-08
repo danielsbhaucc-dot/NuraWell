@@ -43,11 +43,16 @@ export interface AIChatWidgetProps {
 
 export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const { avatarUrl: avatarSrc } = useAlmogAvatarUrl();
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [online, setOnline] = useState(true);
   const [input, setInput] = useState('');
   const sessionIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     try {
@@ -102,6 +107,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   }, [messages.length, status, open]);
 
   const isLoading = status === 'submitted' || status === 'streaming';
+
+  if (!mounted) return null;
 
   return (
     <Drawer.Root open={open} onOpenChange={setOpen} direction="bottom" shouldScaleBackground>

@@ -30,6 +30,7 @@ function timeAgo(iso: string): string {
 
 export function NotificationsInbox() {
   const { avatarUrl: avatarSrc } = useAlmogAvatarUrl();
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -45,6 +46,10 @@ export function NotificationsInbox() {
     } finally {
       setBusy(false);
     }
+  }, []);
+
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
   useEffect(() => {
@@ -68,6 +73,8 @@ export function NotificationsInbox() {
     });
     setItems((prev) => prev.map((n) => ({ ...n, is_read: true })));
   }, []);
+
+  if (!mounted) return null;
 
   return (
     <>
