@@ -12,7 +12,8 @@ const chatBodySchema = z.object({
   user_id: z.string().uuid().optional(),
 });
 
-const BASE_SYSTEM_PROMPT = 'אתה אלמוג, מנטור אמפתי ומעשי. ענה בקצרה ובעברית טבעית. לעולם אל תחזיר תשובה ריקה.';
+const BASE_SYSTEM_PROMPT =
+  'אתה אלמוג, מנטור אמפתי ומעשי. ענה בקצרה ובעברית טבעית, בלי לחזור על אותם משפטים. לעולם אל תחזיר תשובה ריקה.';
 const EMPTY_RESPONSE_FALLBACK = 'אני כאן איתך. ספר לי במשפט אחד מה הכי כבד עכשיו, ונחשוב יחד על צעד קטן להמשך.';
 
 async function insertInteraction(
@@ -106,6 +107,17 @@ export async function POST(request: Request) {
   }
   stage = 'message_ok';
 
+  const recentMessages = messages
+    .map((m) => {
+      const role = uiMessageRole(m);
+      if (!role || role === 'system') return null;
+      const content = uiMessageText(m).trim();
+      if (!content) return null;
+      return { role, content };
+    })
+    .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m))
+    .slice(-10);
+
   const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
   if (!openrouterKey) {
     console.error('[ai/chat]', { debug_id: debugId, stage: 'env_missing_key' });
@@ -142,10 +154,14 @@ export async function POST(request: Request) {
     stage = 'stream_init';
     const result = streamText({
       model: openrouter.chat('openai/gpt-5-mini'),
-      temperature: 0.7,
-      maxOutputTokens: 220,
+      temperature: 0.75,
+      maxOutputTokens: 480,
+      providerOptions: {
+        // Reduce internal reasoning overrun that can yield empty visible text.
+        openai: { reasoningEffort: 'low' },
+      },
       system: BASE_SYSTEM_PROMPT,
-      prompt: lastUserText,
+      messages: recentMessages,
       onFinish: async ({ text, usage }) => {
         const finishStage = 'on_finish';
         const t = (text ?? '').trim();
