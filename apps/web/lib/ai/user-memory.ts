@@ -54,3 +54,26 @@ export async function getUserAiMemory(supabase: any, userId: string): Promise<Us
   return normalizeMemory((data as { memory?: unknown }).memory);
 }
 
+/**
+ * Upserts a full memory JSON for the user, overriding existing memory value.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function upsertUserAiMemory(supabase: any, userId: string, memoryJson: unknown): Promise<UserAiMemory> {
+  const normalized = normalizeMemory(memoryJson);
+
+  const { error } = await supabase.from('user_ai_memory').upsert(
+    {
+      user_id: userId,
+      memory: normalized,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id' }
+  );
+
+  if (error) {
+    throw new Error(`upsertUserAiMemory: failed to upsert memory - ${error.message}`);
+  }
+
+  return normalized;
+}
+
