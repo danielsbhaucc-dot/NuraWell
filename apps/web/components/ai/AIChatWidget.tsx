@@ -116,6 +116,12 @@ function renderInlineStyledText(text: string): ReactNode[] {
 
 function renderAlmogMessage(text: string): ReactNode {
   const blocks = parseMessageBlocks(text);
+  const listAccentPalette = [
+    { from: '#10b981', to: '#059669', text: '#ecfdf5', glow: 'rgba(16,185,129,0.35)' },
+    { from: '#14b8a6', to: '#0f766e', text: '#f0fdfa', glow: 'rgba(20,184,166,0.35)' },
+    { from: '#22c55e', to: '#15803d', text: '#f0fdf4', glow: 'rgba(34,197,94,0.3)' },
+    { from: '#34d399', to: '#047857', text: '#ecfdf5', glow: 'rgba(52,211,153,0.32)' },
+  ];
   return (
     <div className="space-y-2.5">
       {blocks.map((block, blockIndex) => {
@@ -139,15 +145,22 @@ function renderAlmogMessage(text: string): ReactNode {
                   key={`li-${blockIndex}-${itemIndex}`}
                   className="flex items-start gap-2.5 border-b border-emerald-100/80 pb-1.5 last:border-b-0 last:pb-0"
                 >
+                  {(() => {
+                    const accent = listAccentPalette[itemIndex % listAccentPalette.length];
+                    return (
                   <span
-                    className="mt-1 inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-xs font-bold"
+                    className="mt-1 inline-flex h-6 min-w-[1.65rem] items-center justify-center rounded-full px-1.5 text-[11px] font-extrabold tracking-tight"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(16,185,129,0.26), rgba(16,185,129,0.1))',
-                      color: '#047857',
+                      background: `linear-gradient(145deg, ${accent.from}, ${accent.to})`,
+                      color: accent.text,
+                      border: '1px solid rgba(255,255,255,0.45)',
+                      boxShadow: `0 6px 14px ${accent.glow}, inset 0 1px 0 rgba(255,255,255,0.38)`,
                     }}
                   >
                     {item.kind === 'numbered' ? item.number : '•'}
                   </span>
+                    );
+                  })()}
                   <span className="flex-1 leading-7">{renderInlineStyledText(item.text)}</span>
                 </li>
               ))}
@@ -192,6 +205,11 @@ function AlmogChatTypingDots() {
   );
 }
 
+function typingEllipsis(step: number): string {
+  const frames = ['.', '..', '...'];
+  return frames[step % frames.length] ?? '.';
+}
+
 export interface AIChatWidgetProps {
   userId: string;
 }
@@ -202,6 +220,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const [open, setOpen] = useState(false);
   const [online, setOnline] = useState(true);
   const [input, setInput] = useState('');
+  const [typingStep, setTypingStep] = useState(0);
   const sessionIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -270,6 +289,16 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   }, [messages.length, status, open]);
 
   const isLoading = status === 'submitted' || status === 'streaming';
+  useEffect(() => {
+    if (!isLoading) {
+      setTypingStep(0);
+      return;
+    }
+    const id = window.setInterval(() => {
+      setTypingStep((s) => (s + 1) % 3);
+    }, 420);
+    return () => window.clearInterval(id);
+  }, [isLoading]);
   const firstMessageDate = messages.length > 0 ? (messages[0]?.createdAt ?? new Date()) : undefined;
 
   if (!mounted) return null;
@@ -320,21 +349,21 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                   <img
                     src={avatarSrc}
                     alt="אלמוג"
-                    className="h-12 w-12 shrink-0 rounded-2xl object-cover border border-white/45 shadow-md"
+                    className="h-14 w-14 shrink-0 rounded-2xl object-cover border border-white/45 shadow-md"
                     onError={(e) => {
                       e.currentTarget.onerror = null;
                       e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
                     }}
                   />
                   <div className="min-w-0 text-right">
-                    <p className="text-xl font-black leading-none" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
+                    <p className="text-2xl font-black leading-none tracking-tight" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
                       אלמוג
                     </p>
-                    <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-white/85">
+                    <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-white/85" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
                       {isLoading ? (
                         <>
                           <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-200" />
-                          אלמוג מקליד
+                          {`אלמוג מקליד${typingEllipsis(typingStep)}`}
                         </>
                       ) : online ? (
                         <>
@@ -380,11 +409,11 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
               {messages.length > 0 && (
                 <div className="flex justify-center">
                   <div
-                    className="rounded-full border px-3 py-1 text-xs font-medium text-emerald-900/80"
+                    className="rounded-full border px-3 py-1 text-[11px] font-semibold text-emerald-900/80"
                     style={{
-                      background: 'linear-gradient(145deg, rgba(236,253,245,0.92), rgba(209,250,229,0.86))',
-                      borderColor: 'rgba(16,185,129,0.3)',
-                      boxShadow: '0 6px 20px rgba(16,185,129,0.12)',
+                      background: 'linear-gradient(145deg, rgba(236,253,245,0.9), rgba(224,242,254,0.65))',
+                      borderColor: 'rgba(148,163,184,0.35)',
+                      boxShadow: '0 6px 20px rgba(15,23,42,0.08)',
                     }}
                   >
                     {`תחילת שיחה • ${formatHebrewDate(firstMessageDate)}`}
@@ -408,25 +437,26 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 return (
                   <div key={msg.id ?? `${i}-${text.slice(0, 16)}`} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                     <div
-                      className="max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed shadow-[0_8px_26px_rgba(15,23,42,0.08)]"
+                      className="max-w-[88%] rounded-3xl px-4 py-3 text-[16px] leading-relaxed shadow-[0_8px_26px_rgba(15,23,42,0.08)]"
                       style={
                         isUser
                           ? {
-                              background: 'linear-gradient(160deg, rgba(219,234,254,0.96), rgba(239,246,255,0.95))',
+                              background: 'linear-gradient(160deg, rgba(219,234,254,0.55), rgba(239,246,255,0.25))',
                               border: '1px solid rgba(59,130,246,0.42)',
                               color: '#1e3a8a',
+                              backdropFilter: 'blur(10px)',
                               boxShadow: '0 10px 28px rgba(59,130,246,0.14), inset 0 1px 0 rgba(255,255,255,0.45)',
                             }
                           : {
-                              background: 'linear-gradient(165deg, rgba(255,255,255,0.98), rgba(240,253,250,0.84))',
+                              background: 'linear-gradient(165deg, rgba(16,185,129,0.92), rgba(5,150,105,0.88))',
                               border: '1px solid rgba(16,185,129,0.3)',
-                              color: '#1A1730',
-                              boxShadow: '0 10px 30px rgba(16,185,129,0.14), inset 0 1px 0 rgba(255,255,255,0.65)',
+                              color: '#f8fafc',
+                              boxShadow: '0 10px 30px rgba(16,185,129,0.25), inset 0 1px 0 rgba(255,255,255,0.25)',
                             }
                       }
                     >
                       {isUser ? <p className="whitespace-pre-wrap">{text}</p> : renderAlmogMessage(text)}
-                      <div className={`mt-1.5 text-[11px] ${isUser ? 'text-blue-700/75' : 'text-emerald-900/55'}`}>
+                      <div className={`mt-1.5 text-[11px] ${isUser ? 'text-blue-700/75' : 'text-emerald-50/80'}`}>
                         {formatHebrewTime(msg.createdAt)}
                       </div>
                     </div>
@@ -437,11 +467,11 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
               {isLoading && (
                 <div className="flex justify-start">
                   <div
-                    className="max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed shadow-[0_4px_16px_rgba(15,23,42,0.07)]"
+                    className="max-w-[88%] rounded-3xl px-4 py-3 text-[16px] leading-relaxed shadow-[0_4px_16px_rgba(15,23,42,0.07)]"
                     style={{
-                      background: '#ffffff',
+                      background: 'linear-gradient(165deg, rgba(16,185,129,0.92), rgba(5,150,105,0.88))',
                       border: '1px solid rgba(16,185,129,0.22)',
-                      color: '#1A1730',
+                      color: '#f8fafc',
                     }}
                   >
                     <AlmogChatTypingDots />
