@@ -1,11 +1,11 @@
 import { S3Client } from '@aws-sdk/client-s3';
 
-/** Single object key for Almog profile image (WebP bytes, no extension in key). */
-export const ALMOG_AVATAR_OBJECT_KEY = 'almog/avatar';
+/** Single public object key for Almog profile image (WebP). */
+export const ALMOG_AVATAR_OBJECT_KEY = 'almog/avatar.webp';
 
 /** Legacy keys to remove on replace (older uploads / CDN paths). */
 export const ALMOG_AVATAR_LEGACY_KEYS = [
-  'almog/avatar.webp',
+  'almog/avatar',
   'almog/avatar.png',
   'almog/avatar.jpg',
   'almog/avatar.jpeg',
