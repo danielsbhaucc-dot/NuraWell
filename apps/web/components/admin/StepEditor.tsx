@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Save, ArrowRight, Plus, Trash2, Video, HelpCircle,
-  Gamepad2, Heart, FileText, BookOpen, ListChecks, Sparkles, Brain
+  Gamepad2, Heart, FileText, BookOpen, ListChecks, Sparkles, Brain, ChevronDown
 } from 'lucide-react';
 import type {
   JourneyStep, QuizQuestion, GameItem, CommitmentData,
@@ -43,6 +43,9 @@ export function StepEditor({ step }: StepEditorProps) {
   const isNew = !step;
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<EditorSectionId>('basic');
+  const [expandedResearch, setExpandedResearch] = useState<number | null>(0);
+  const [expandedTask, setExpandedTask] = useState<number | null>(0);
+  const [expandedHabit, setExpandedHabit] = useState<number | null>(0);
 
   // Basic fields
   const [title, setTitle] = useState(step?.title || '');
@@ -128,12 +131,24 @@ export function StepEditor({ step }: StepEditorProps) {
   };
 
   return (
-    <div className="max-w-3xl mx-auto pb-20">
+    <div className="max-w-3xl mx-auto pb-24 relative">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 rounded-[32px]"
+        style={{
+          background: 'linear-gradient(145deg, rgba(16,185,129,0.14), rgba(59,130,246,0.12), rgba(168,85,247,0.10))',
+          filter: 'blur(0px)',
+        }}
+      />
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div
+        className="flex items-center gap-3 mb-5 rounded-2xl px-3 py-3 backdrop-blur-md"
+        style={{ background: 'rgba(255,255,255,0.62)', border: '1px solid rgba(255,255,255,0.65)', boxShadow: '0 10px 24px rgba(16,24,40,0.08)' }}
+      >
         <button onClick={() => router.push('/admin')}
-          className="w-9 h-9 rounded-xl flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-colors">
-          <ArrowRight className="w-4 h-4 text-gray-600" />
+          className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-sm"
+          style={{ background: 'linear-gradient(135deg, #0f766e, #10b981)', border: '1px solid rgba(255,255,255,0.55)' }}>
+          <ArrowRight className="w-5 h-5 text-white" />
         </button>
         <h1 className="text-xl font-black flex-1" style={{ color: '#1A1730' }}>
           {isNew ? 'צעד חדש' : `עריכת: ${step!.title}`}
@@ -146,14 +161,26 @@ export function StepEditor({ step }: StepEditorProps) {
         </button>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* ═══ SECTION NAVIGATION ═══ */}
-        <div className="rounded-2xl p-4 space-y-3" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 18px rgba(6,78,59,0.06)' }}>
+        <div
+          className="rounded-2xl p-4 space-y-3 backdrop-blur-md"
+          style={{
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.75), rgba(241,245,249,0.75))',
+            border: '1px solid rgba(255,255,255,0.9)',
+            boxShadow: '0 14px 32px rgba(15,23,42,0.12)',
+          }}
+        >
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-black" style={{ color: '#1A1730' }}>מבנה הצעד</h2>
-            <span className="text-xs text-gray-500">לחיצה על שלב פותחת את הטופס שלו</span>
+            <h2
+              className="text-sm font-black px-3 py-1.5 rounded-lg"
+              style={{ color: '#1A1730', background: 'linear-gradient(135deg, rgba(16,185,129,0.18), rgba(59,130,246,0.18))' }}
+            >
+              מבנה הצעד
+            </h2>
+            <span className="text-xs text-gray-600">לחיצה על שלב פותחת את הטופס שלו</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <SectionTab
               number={1}
               label="פרטים בסיסיים"
@@ -230,7 +257,7 @@ export function StepEditor({ step }: StepEditorProps) {
             <textarea value={description} onChange={e => setDescription(e.target.value)}
               className="input-field min-h-[60px]" placeholder="תיאור קצר שיופיע ברשימת הצעדים" />
           </Field>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="מספר צעד">
               <input type="number" value={stepNumber} onChange={e => setStepNumber(Number(e.target.value))}
                 className="input-field" min={1} />
@@ -254,7 +281,7 @@ export function StepEditor({ step }: StepEditorProps) {
 
         {/* ═══ VIDEO ═══ */}
         <Section title="וידאו" icon={Video} color="#3b82f6" sectionNumber={2} isVisible={activeSection === 'video'}>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="ספק וידאו">
               <select value={videoProvider} onChange={e => setVideoProvider(e.target.value)}
                 className="input-field">
@@ -315,7 +342,7 @@ export function StepEditor({ step }: StepEditorProps) {
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <Field label="זמן עצירה (MM:SS)">
                     <input
                       value={formatSecondsAsClock(stop.time_seconds)}
@@ -444,12 +471,12 @@ export function StepEditor({ step }: StepEditorProps) {
                 <input value={commitment.text} onChange={e => setCommitment({ ...commitment, text: e.target.value })}
                   className="input-field" />
               </Field>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <Field label="אימוג'י">
                   <input value={commitment.emoji} onChange={e => setCommitment({ ...commitment, emoji: e.target.value })}
                     className="input-field text-center text-2xl" />
                 </Field>
-                <div className="col-span-3">
+                <div className="sm:col-span-3">
                   <Field label="תיאור">
                     <input value={commitment.description} onChange={e => setCommitment({ ...commitment, description: e.target.value })}
                       className="input-field" />
@@ -468,26 +495,36 @@ export function StepEditor({ step }: StepEditorProps) {
         {/* ═══ RESEARCHES ═══ */}
         <Section title={`מחקרים (${researches.length})`} icon={FileText} color="#8b5cf6" sectionNumber={6} isVisible={activeSection === 'research'}>
           {researches.map((r, ri) => (
-            <div key={r.id || ri} className="p-4 rounded-xl bg-gray-50 border border-gray-100 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-gray-600">מחקר {ri + 1}</span>
-                <button onClick={() => setResearches(prev => prev.filter((_, i) => i !== ri))}
-                  className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
-              </div>
-              <input value={r.title} onChange={e => { const arr = [...researches]; arr[ri] = { ...arr[ri], title: e.target.value }; setResearches(arr); }}
-                className="input-field" placeholder="שם המחקר (אנגלית)" dir="ltr" />
-              <div className="grid grid-cols-3 gap-2">
-                <input value={r.authors} onChange={e => { const arr = [...researches]; arr[ri] = { ...arr[ri], authors: e.target.value }; setResearches(arr); }}
-                  className="input-field" placeholder="חוקרים" dir="ltr" />
-                <input value={r.year} onChange={e => { const arr = [...researches]; arr[ri] = { ...arr[ri], year: e.target.value }; setResearches(arr); }}
-                  className="input-field" placeholder="שנה" dir="ltr" />
-                <input value={r.journal} onChange={e => { const arr = [...researches]; arr[ri] = { ...arr[ri], journal: e.target.value }; setResearches(arr); }}
-                  className="input-field" placeholder="כתב עת" dir="ltr" />
-              </div>
-              <textarea value={r.finding} onChange={e => { const arr = [...researches]; arr[ri] = { ...arr[ri], finding: e.target.value }; setResearches(arr); }}
-                className="input-field min-h-[60px]" placeholder="ממצא עיקרי (בעברית)" />
-              <input value={r.url || ''} onChange={e => { const arr = [...researches]; arr[ri] = { ...arr[ri], url: e.target.value || null }; setResearches(arr); }}
-                className="input-field" placeholder="קישור (אופציונלי)" dir="ltr" />
+            <div key={r.id || ri} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(139,92,246,0.18)', background: 'rgba(255,255,255,0.72)' }}>
+              <button
+                type="button"
+                onClick={() => setExpandedResearch(expandedResearch === ri ? null : ri)}
+                className="w-full p-3 flex items-center justify-between text-right"
+                style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(99,102,241,0.08))' }}
+              >
+                <span className="text-sm font-bold text-violet-900">מחקר {ri + 1}</span>
+                <ChevronDown className={`w-4 h-4 text-violet-700 transition-transform ${expandedResearch === ri ? 'rotate-180' : ''}`} />
+              </button>
+              {expandedResearch === ri && (
+                <div className="p-3 space-y-3">
+                  <input value={r.title} onChange={e => { const arr = [...researches]; arr[ri] = { ...arr[ri], title: e.target.value }; setResearches(arr); }}
+                    className="input-field" placeholder="שם המחקר (אנגלית)" dir="ltr" />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <input value={r.authors} onChange={e => { const arr = [...researches]; arr[ri] = { ...arr[ri], authors: e.target.value }; setResearches(arr); }}
+                      className="input-field" placeholder="חוקרים" dir="ltr" />
+                    <input value={r.year} onChange={e => { const arr = [...researches]; arr[ri] = { ...arr[ri], year: e.target.value }; setResearches(arr); }}
+                      className="input-field" placeholder="שנה" dir="ltr" />
+                    <input value={r.journal} onChange={e => { const arr = [...researches]; arr[ri] = { ...arr[ri], journal: e.target.value }; setResearches(arr); }}
+                      className="input-field" placeholder="כתב עת" dir="ltr" />
+                  </div>
+                  <textarea value={r.finding} onChange={e => { const arr = [...researches]; arr[ri] = { ...arr[ri], finding: e.target.value }; setResearches(arr); }}
+                    className="input-field min-h-[60px]" placeholder="ממצא עיקרי (בעברית)" />
+                  <input value={r.url || ''} onChange={e => { const arr = [...researches]; arr[ri] = { ...arr[ri], url: e.target.value || null }; setResearches(arr); }}
+                    className="input-field" placeholder="קישור (אופציונלי)" dir="ltr" />
+                  <button onClick={() => setResearches(prev => prev.filter((_, i) => i !== ri))}
+                    className="text-red-500 hover:text-red-700 text-sm font-semibold">מחק מחקר</button>
+                </div>
+              )}
             </div>
           ))}
           <AddButton label="הוסף מחקר" onClick={() => setResearches(prev => [...prev, { ...emptyResearch, id: genId() }])} />
@@ -502,17 +539,34 @@ export function StepEditor({ step }: StepEditorProps) {
             דוגמה: &quot;לשתות 2 כוסות מים לפני ארוחת ערב&quot;.
           </div>
           {tasks.map((t, ti) => (
-            <div key={t.id || ti} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-              <input value={t.emoji} onChange={e => { const arr = [...tasks]; arr[ti] = { ...arr[ti], emoji: e.target.value }; setTasks(arr); }}
-                className="w-12 input-field text-center text-xl" placeholder="✅" />
-              <div className="flex-1 space-y-2">
-                <input value={t.title} onChange={e => { const arr = [...tasks]; arr[ti] = { ...arr[ti], title: e.target.value }; setTasks(arr); }}
-                  className="input-field" placeholder="מה המשתמש אמור לבצע בפועל?" />
-                <input value={t.description || ''} onChange={e => { const arr = [...tasks]; arr[ti] = { ...arr[ti], description: e.target.value || null }; setTasks(arr); }}
-                  className="input-field" placeholder="פירוט קצר (אופציונלי): זמן/כמות/הקשר" />
-              </div>
-              <button onClick={() => setTasks(prev => prev.filter((_, i) => i !== ti))}
-                className="text-red-400 hover:text-red-600 mt-2"><Trash2 className="w-4 h-4" /></button>
+            <div key={t.id || ti} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(249,115,22,0.2)', background: 'rgba(255,255,255,0.75)' }}>
+              <button
+                type="button"
+                onClick={() => setExpandedTask(expandedTask === ti ? null : ti)}
+                className="w-full p-3 flex items-center justify-between text-right"
+                style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.15), rgba(251,146,60,0.10))' }}
+              >
+                <span className="text-sm font-bold text-orange-900">משימה {ti + 1}: {t.title || 'ללא כותרת'}</span>
+                <ChevronDown className={`w-4 h-4 text-orange-700 transition-transform ${expandedTask === ti ? 'rotate-180' : ''}`} />
+              </button>
+              {expandedTask === ti && (
+                <div className="p-3 space-y-2">
+                  <Field label="אימוג'י">
+                    <input value={t.emoji} onChange={e => { const arr = [...tasks]; arr[ti] = { ...arr[ti], emoji: e.target.value }; setTasks(arr); }}
+                      className="w-16 input-field text-center text-xl" placeholder="✅" />
+                  </Field>
+                  <Field label="כותרת המשימה (חובה)">
+                    <input value={t.title} onChange={e => { const arr = [...tasks]; arr[ti] = { ...arr[ti], title: e.target.value }; setTasks(arr); }}
+                      className="input-field" placeholder="מה המשתמש אמור לבצע בפועל?" />
+                  </Field>
+                  <Field label="פירוט קצר (אופציונלי)">
+                    <input value={t.description || ''} onChange={e => { const arr = [...tasks]; arr[ti] = { ...arr[ti], description: e.target.value || null }; setTasks(arr); }}
+                      className="input-field" placeholder="לדוגמה: היום עד 20:00, 10 דקות הליכה" />
+                  </Field>
+                  <button onClick={() => setTasks(prev => prev.filter((_, i) => i !== ti))}
+                    className="text-red-500 hover:text-red-700 text-sm font-semibold">מחק משימה</button>
+                </div>
+              )}
             </div>
           ))}
           <AddButton label="הוסף משימה" onClick={() => setTasks(prev => [...prev, { ...emptyTask, id: genId() }])} />
@@ -526,23 +580,42 @@ export function StepEditor({ step }: StepEditorProps) {
             דוגמה: &quot;לפני כל ארוחה שותה כוס מים&quot;.
           </div>
           {habits.map((h, hi) => (
-            <div key={h.id || hi} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-              <input value={h.emoji} onChange={e => { const arr = [...habits]; arr[hi] = { ...arr[hi], emoji: e.target.value }; setHabits(arr); }}
-                className="w-12 input-field text-center text-xl" placeholder="💪" />
-              <div className="flex-1 space-y-2">
-                <input value={h.title} onChange={e => { const arr = [...habits]; arr[hi] = { ...arr[hi], title: e.target.value }; setHabits(arr); }}
-                  className="input-field" placeholder="שם קצר להרגל (למשל: מים לפני ארוחה)" />
-                <input value={h.description || ''} onChange={e => { const arr = [...habits]; arr[hi] = { ...arr[hi], description: e.target.value || null }; setHabits(arr); }}
-                  className="input-field" placeholder="איך לבצע בפועל (אופציונלי)" />
-                <select value={h.frequency} onChange={e => { const arr = [...habits]; arr[hi] = { ...arr[hi], frequency: e.target.value as 'daily' | 'weekly' | 'per_meal' }; setHabits(arr); }}
-                  className="input-field">
-                  <option value="daily">יומי</option>
-                  <option value="weekly">שבועי</option>
-                  <option value="per_meal">לפני כל ארוחה</option>
-                </select>
-              </div>
-              <button onClick={() => setHabits(prev => prev.filter((_, i) => i !== hi))}
-                className="text-red-400 hover:text-red-600 mt-2"><Trash2 className="w-4 h-4" /></button>
+            <div key={h.id || hi} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(16,185,129,0.24)', background: 'rgba(255,255,255,0.76)' }}>
+              <button
+                type="button"
+                onClick={() => setExpandedHabit(expandedHabit === hi ? null : hi)}
+                className="w-full p-3 flex items-center justify-between text-right"
+                style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.16), rgba(6,182,212,0.10))' }}
+              >
+                <span className="text-sm font-bold text-emerald-900">הרגל {hi + 1}: {h.title || 'ללא כותרת'}</span>
+                <ChevronDown className={`w-4 h-4 text-emerald-700 transition-transform ${expandedHabit === hi ? 'rotate-180' : ''}`} />
+              </button>
+              {expandedHabit === hi && (
+                <div className="p-3 space-y-2">
+                  <Field label="אימוג'י">
+                    <input value={h.emoji} onChange={e => { const arr = [...habits]; arr[hi] = { ...arr[hi], emoji: e.target.value }; setHabits(arr); }}
+                      className="w-16 input-field text-center text-xl" placeholder="💪" />
+                  </Field>
+                  <Field label="שם ההרגל (חובה)">
+                    <input value={h.title} onChange={e => { const arr = [...habits]; arr[hi] = { ...arr[hi], title: e.target.value }; setHabits(arr); }}
+                      className="input-field" placeholder="שם קצר להרגל (למשל: מים לפני ארוחה)" />
+                  </Field>
+                  <Field label="איך לבצע בפועל (אופציונלי)">
+                    <input value={h.description || ''} onChange={e => { const arr = [...habits]; arr[hi] = { ...arr[hi], description: e.target.value || null }; setHabits(arr); }}
+                      className="input-field" placeholder="תיאור תכל'ס למשתמש" />
+                  </Field>
+                  <Field label="תדירות">
+                    <select value={h.frequency} onChange={e => { const arr = [...habits]; arr[hi] = { ...arr[hi], frequency: e.target.value as 'daily' | 'weekly' | 'per_meal' }; setHabits(arr); }}
+                      className="input-field">
+                      <option value="daily">יומי</option>
+                      <option value="weekly">שבועי</option>
+                      <option value="per_meal">לפני כל ארוחה</option>
+                    </select>
+                  </Field>
+                  <button onClick={() => setHabits(prev => prev.filter((_, i) => i !== hi))}
+                    className="text-red-500 hover:text-red-700 text-sm font-semibold">מחק הרגל</button>
+                </div>
+              )}
             </div>
           ))}
           <AddButton label="הוסף הרגל" onClick={() => setHabits(prev => [...prev, { ...emptyHabit, id: genId() }])} />
@@ -560,7 +633,7 @@ export function StepEditor({ step }: StepEditorProps) {
           </Field>
         </Section>
 
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 rounded-2xl p-3 backdrop-blur-sm" style={{ background: 'rgba(255,255,255,0.68)', border: '1px solid rgba(255,255,255,0.9)' }}>
           <button
             type="button"
             onClick={goPrevSection}
@@ -615,7 +688,7 @@ function Section({
 }) {
   if (!isVisible) return null;
   return (
-    <div className="rounded-2xl p-5 space-y-4" style={{ background: 'rgba(255,255,255,0.98)', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 6px 20px rgba(6,78,59,0.07)' }}>
+    <div className="rounded-2xl p-4 sm:p-5 space-y-4 backdrop-blur-md" style={{ background: 'rgba(255,255,255,0.74)', border: '1px solid rgba(255,255,255,0.95)', boxShadow: '0 12px 28px rgba(6,78,59,0.10)' }}>
       <div className="flex items-center gap-2">
         <div className="w-7 h-7 rounded-full text-white text-xs font-black flex items-center justify-center" style={{ background: color }}>
           {sectionNumber}
@@ -647,7 +720,7 @@ function SectionTab({
       onClick={onClick}
       className="w-full flex items-center gap-2 rounded-xl px-3 py-2.5 transition-all text-right"
       style={{
-        background: active ? 'rgba(255,255,255,1)' : 'rgba(249,250,251,0.8)',
+        background: active ? 'rgba(255,255,255,0.98)' : 'rgba(248,250,252,0.84)',
         border: active ? `1px solid ${color}` : '1px solid rgba(0,0,0,0.08)',
         boxShadow: active ? '0 4px 14px rgba(0,0,0,0.08)' : 'none',
       }}
@@ -665,7 +738,7 @@ function SectionTab({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="text-xs font-bold text-gray-500 mb-1.5 block">{label}</label>
+      <label className="text-xs font-bold text-gray-600 mb-1.5 block">{label}</label>
       {children}
     </div>
   );
