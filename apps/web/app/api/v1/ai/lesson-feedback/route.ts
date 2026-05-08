@@ -1,9 +1,11 @@
-import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { AI_MODELS, getClientForModel } from '../../../../../lib/ai/client';
+import { generateText } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
 import { buildUserContext } from '../../../../../lib/ai/memory';
 import { LESSON_FEEDBACK_PROMPT } from '../../../../../lib/ai/prompts';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
+
+export const runtime = 'edge';
 
 const lessonFeedbackSchema = z.object({
   step_id: z.string().uuid().optional(),
@@ -60,28 +62,36 @@ async function insertInteraction(
   if (error) throw error;
 }
 
+const openrouter = createOpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY ?? '',
+  baseURL: 'https://openrouter.ai/api/v1',
+  headers: {
+    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL ?? 'https://nurawell.ai',
+    'X-Title': 'NuraWell',
+  },
+});
+
 export async function POST(request: Request) {
   try {
     const { supabase, user, authError } = await createSupabaseForApiRoute(request);
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
     }
 
     const parsed = lessonFeedbackSchema.safeParse(await request.json());
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: 'Invalid request body',
-          details: parsed.error.flatten(),
-        },
+      return new Response(
+        JSON.stringify({ error: 'Invalid request body', details: parsed.error.flatten() }),
         { status: 400 }
       );
     }
 
     const payload = parsed.data;
     if (payload.user_id && payload.user_id !== user.id) {
-      return NextResponse.json({ error: 'Forbidden: user_id does not match session' }, { status: 403 });
+      return new Response(JSON.stringify({ error: 'Forbidden: user_id does not match session' }), {
+        status: 403,
+      });
     }
     const sessionId = crypto.randomUUID();
     const contextId = payload.step_id ?? payload.lesson_id;
@@ -106,36 +116,30 @@ export async function POST(request: Request) {
       content: userEventText,
       context_type: 'lesson',
       context_id: contextId,
-      model_name: AI_MODELS.empathy,
+      model_name: 'openai/gpt-5-mini',
       metadata: {
         interaction_type: payload.interaction_type,
       },
     });
 
-    const client = getClientForModel('empathy');
     let assistantReply = '';
     let usage:
-      | {
-          total_tokens?: number;
-          prompt_tokens?: number;
-          completion_tokens?: number;
-        }
+      | { totalTokens?: number; promptTokens?: number; completionTokens?: number }
       | undefined;
     let fallbackUsed = false;
 
     try {
-      const completion = await client.chat.completions.create({
-        model: AI_MODELS.empathy,
+      const out = await generateText({
+        model: openrouter.chat('openai/gpt-5-mini'),
         temperature: 0.72,
-        max_tokens: 180,
+        maxTokens: 180,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userEventText },
         ],
       });
-
-      assistantReply = completion.choices[0]?.message?.content?.trim() ?? '';
-      usage = completion.usage;
+      assistantReply = (out.text ?? '').trim();
+      usage = out.usage;
     } catch {
       fallbackUsed = true;
     }
@@ -152,22 +156,21 @@ export async function POST(request: Request) {
       content: assistantReply,
       context_type: 'lesson',
       context_id: contextId,
-      model_name: AI_MODELS.empathy,
-      tokens_used: usage?.total_tokens,
+      model_name: 'openai/gpt-5-mini',
+      tokens_used: usage?.totalTokens,
       metadata: {
         interaction_type: payload.interaction_type,
-        input_tokens: usage?.prompt_tokens,
-        output_tokens: usage?.completion_tokens,
+        input_tokens: usage?.promptTokens,
+        output_tokens: usage?.completionTokens,
         fallback_used: fallbackUsed,
       },
     });
 
-    return NextResponse.json({
-      reply: assistantReply,
-      session_id: sessionId,
+    return new Response(JSON.stringify({ reply: assistantReply, session_id: sessionId }), {
+      headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('[API /v1/ai/lesson-feedback POST]', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
   }
 }
