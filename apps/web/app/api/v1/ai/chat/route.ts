@@ -15,7 +15,13 @@ const chatBodySchema = z.object({
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 type OpenRouterResponse = {
-  choices?: Array<{ message?: { content?: string | Array<{ type?: string; text?: string }> } }>;
+  choices?: Array<{
+    message?: { content?: string | Array<{ type?: string; text?: string; content?: string; value?: string }> };
+    text?: string;
+  }>;
+  output?: Array<{
+    content?: Array<{ type?: string; text?: string; content?: string; value?: string }>;
+  }>;
   usage?: { total_tokens?: number };
 };
 
@@ -23,10 +29,39 @@ function normalizeOpenRouterContent(content: OpenRouterResponse['choices'][numbe
   if (typeof content === 'string') return content.trim();
   if (Array.isArray(content)) {
     return content
-      .map((p) => (p && p.type === 'text' && typeof p.text === 'string' ? p.text : ''))
+      .map((p) => {
+        if (!p) return '';
+        if (typeof p.text === 'string' && p.text.trim()) return p.text;
+        if (typeof p.content === 'string' && p.content.trim()) return p.content;
+        if (typeof p.value === 'string' && p.value.trim()) return p.value;
+        return '';
+      })
       .join('')
       .trim();
   }
+  return '';
+}
+
+function extractAssistantText(data: OpenRouterResponse): string {
+  const fromMessage = normalizeOpenRouterContent(data.choices?.[0]?.message?.content);
+  if (fromMessage) return fromMessage;
+
+  const fromChoiceText = String(data.choices?.[0]?.text ?? '').trim();
+  if (fromChoiceText) return fromChoiceText;
+
+  const outputParts = data.output?.[0]?.content ?? [];
+  const fromOutput = outputParts
+    .map((p) => {
+      if (!p) return '';
+      if (typeof p.text === 'string' && p.text.trim()) return p.text;
+      if (typeof p.content === 'string' && p.content.trim()) return p.content;
+      if (typeof p.value === 'string' && p.value.trim()) return p.value;
+      return '';
+    })
+    .join('')
+    .trim();
+  if (fromOutput) return fromOutput;
+
   return '';
 }
 
@@ -58,7 +93,7 @@ async function callOpenRouterChat(system: string, userPrompt: string): Promise<{
     throw new Error(`OpenRouter HTTP ${response.status}: ${errBody.slice(0, 300)}`);
   }
   const data = (await response.json()) as OpenRouterResponse;
-  const text = normalizeOpenRouterContent(data.choices?.[0]?.message?.content);
+  const text = extractAssistantText(data);
   return { text, totalTokens: data.usage?.total_tokens };
 }
 
