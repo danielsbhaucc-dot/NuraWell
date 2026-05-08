@@ -293,6 +293,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
             height: 'min(92dvh, 680px)',
           }}
         >
+          <Drawer.Title className="sr-only">שיחה עם אלמוג</Drawer.Title>
+          <Drawer.Description className="sr-only">צ׳אט אישי עם המנטור אלמוג</Drawer.Description>
           <div className="h-full flex flex-col overflow-hidden rounded-t-[28px] bg-white">
             <div
               className="shrink-0 rounded-t-[28px] text-white shadow-[0_4px_24px_rgba(6,78,59,0.35)]"
