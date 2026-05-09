@@ -15,6 +15,7 @@ import type {
 } from '../../lib/types/journey';
 import Link from 'next/link';
 import { AlmogAvatarChip } from './AlmogPresence';
+import { isCommitmentGateResolved } from '../../lib/journey/commitment-gate';
 
 interface SummarySectionProps {
   step: JourneyStep;
@@ -140,13 +141,25 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               <span className="text-gray-600 block text-xs mb-0.5">משחק</span>
               <strong className="text-amber-800 text-base">{gameCorrect}/{gameTotal}</strong>
             </div>
-            {progress.commitment_accepted && (
+            {step.commitment && isCommitmentGateResolved(true, progress) && (
               <div
-                className="px-3 py-2.5 rounded-2xl flex-1 min-w-full sm:min-w-[120px] text-center border border-white/50 shadow-sm"
-                style={{ background: 'rgba(255,255,255,0.55)' }}
+                className="px-3 py-2.5 rounded-2xl flex-1 min-w-full sm:min-w-[120px] text-center border border-white/55 shadow-sm"
+                style={{
+                  background: progress.commitment_accepted
+                    ? 'rgba(236,253,245,0.75)'
+                    : 'rgba(255,247,237,0.85)',
+                }}
               >
-                <Heart className="w-4 h-4 text-emerald-600 inline mb-0.5" fill="currentColor" />
-                <span className="text-emerald-800 font-bold block text-sm">התחייבות ✓</span>
+                {progress.commitment_accepted ? (
+                  <Heart className="w-4 h-4 text-emerald-600 inline mb-0.5" fill="currentColor" aria-hidden />
+                ) : (
+                  <Heart className="w-4 h-4 text-amber-700 inline mb-0.5" fill="none" strokeWidth={2} aria-hidden />
+                )}
+                <span
+                  className={`font-bold block text-sm ${progress.commitment_accepted ? 'text-emerald-800' : 'text-amber-900'}`}
+                >
+                  {progress.commitment_accepted ? 'התחייבות ✓' : 'בלי התחייבות בשלב זה'}
+                </span>
               </div>
             )}
           </div>
@@ -161,7 +174,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               <h3 className="font-black text-base" style={{ color: '#1A1730' }}>מה למדנו?</h3>
             </div>
             <div
-              className="max-w-lg mx-auto rounded-2xl border border-white/45 px-4 py-4"
+              className="max-w-lg mx-auto rounded-2xl border border-white/45 px-4 py-4 min-w-0"
               style={{
                 background: 'rgba(255,255,255,0.28)',
                 backdropFilter: 'blur(16px)',
@@ -169,7 +182,12 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                 boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55)',
               }}
             >
-              <p className="text-[15px] text-gray-800 leading-relaxed">{step.summary_text}</p>
+              <p
+                className="text-[15px] text-gray-800 leading-relaxed [overflow-wrap:anywhere] break-words hyphens-auto"
+                lang="he"
+              >
+                {step.summary_text}
+              </p>
             </div>
           </div>
         )}
@@ -234,14 +252,11 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                               {task.emoji}
                             </div>
                             <div className="min-w-0 flex-1 text-right space-y-1.5">
-                              <p
-                                className="font-black text-[15px] sm:text-[15px] leading-snug text-[#1A1730] break-words"
-                                style={{ wordBreak: 'break-word' }}
-                              >
+                              <p className="font-black text-[15px] leading-snug text-[#1A1730] [overflow-wrap:anywhere] break-words">
                                 {task.title}
                               </p>
                               {task.description ? (
-                                <p className="text-[12px] sm:text-[13px] text-gray-600 leading-relaxed break-words border-t border-white/40 pt-2">
+                                <p className="text-[12px] sm:text-[13px] text-gray-600 leading-relaxed [overflow-wrap:anywhere] break-words border-t border-white/40 pt-2">
                                   {task.description}
                                 </p>
                               ) : null}
@@ -278,19 +293,25 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                             </button>
                           </div>
 
-                          <div className="flex justify-end border-t border-white/35 px-3 py-2">
+                          <div className="flex justify-end border-t border-white/35 px-3 py-2.5">
                             {status === 'accepted' && (
-                              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/70 border border-emerald-200/80 rounded-full px-2.5 py-1">
+                              <span
+                                className="text-[10px] sm:text-[11px] font-bold tracking-wide text-emerald-900 bg-gradient-to-r from-emerald-50 to-teal-50/90 border border-emerald-300/50 rounded-full px-3 py-1.5 shadow-sm shadow-emerald-900/5"
+                                style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.65)' }}
+                              >
                                 נשמר · מקובל
                               </span>
                             )}
                             {status === 'rejected' && (
-                              <span className="text-[10px] font-bold text-rose-800 bg-rose-100/70 border border-rose-200/80 rounded-full px-2.5 py-1">
+                              <span
+                                className="text-[10px] sm:text-[11px] font-bold tracking-wide text-rose-900 bg-gradient-to-r from-rose-50 to-orange-50/90 border border-rose-300/45 rounded-full px-3 py-1.5 shadow-sm shadow-rose-900/5"
+                                style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.65)' }}
+                              >
                                 נשמר · לא מקובל כרגע
                               </span>
                             )}
                             {status === 'pending' && (
-                              <span className="text-[10px] font-semibold text-amber-900/90 bg-amber-50/90 border border-amber-200/70 rounded-full px-2.5 py-1">
+                              <span className="text-[10px] sm:text-[11px] font-semibold text-amber-950/95 bg-amber-100/85 border border-amber-300/55 rounded-full px-3 py-1.5 shadow-sm">
                                 נא לבחור למעלה
                               </span>
                             )}
@@ -311,26 +332,68 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               <Heart className="w-4 h-4 text-emerald-600" />
               <h3 className="font-black text-base" style={{ color: '#1A1730' }}>הרגלים חדשים</h3>
             </div>
-            <p className="text-xs text-gray-600 mb-3">
+            <p className="text-xs text-gray-600 mb-4 leading-relaxed">
               אלו ההרגלים של הצעד הזה. אלמוג יתבסס עליהם בשיחות שלך.
             </p>
-            <div className="space-y-3">
+            <div className="flex flex-col gap-4 max-w-lg mx-auto w-full min-w-0">
               {step.habits.map((habit) => (
                 <div
                   key={habit.id}
-                  className="p-3.5 rounded-xl border border-white/55 shadow-sm"
-                  style={{ background: 'rgba(255,255,255,0.42)', backdropFilter: 'blur(8px)' }}
+                  className="w-full rounded-[22px] p-[1px] shrink-0"
+                  style={{
+                    background:
+                      'linear-gradient(145deg, rgba(52,211,153,0.55), rgba(167,243,208,0.35), rgba(255,255,255,0.65))',
+                  }}
                 >
-                  <div className="flex items-start gap-3">
-                    <span className="text-xl flex-shrink-0 mt-0.5">{habit.emoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm leading-snug break-words" style={{ color: '#1A1730' }}>{habit.title}</p>
-                      {habit.description && <p className="text-xs text-gray-600 mt-1">{habit.description}</p>}
+                  <div
+                    className="rounded-[21px] overflow-hidden min-h-0 h-auto"
+                    style={{
+                      background:
+                        'linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(236,253,245,0.45) 55%, rgba(255,255,255,0.38) 100%)',
+                      backdropFilter: 'blur(22px) saturate(1.25)',
+                      WebkitBackdropFilter: 'blur(22px) saturate(1.25)',
+                      boxShadow:
+                        '0 16px 40px rgba(6,78,59,0.09), inset 0 1px 1px rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25)',
+                      border: '1px solid rgba(255,255,255,0.55)',
+                    }}
+                  >
+                    <div className="flex flex-row-reverse items-start gap-3 px-4 pt-4 pb-3">
+                      <div
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl shadow-inner"
+                        style={{
+                          background: 'rgba(255,255,255,0.65)',
+                          border: '1px solid rgba(255,255,255,0.85)',
+                          boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.95)',
+                        }}
+                        aria-hidden
+                      >
+                        {habit.emoji}
+                      </div>
+                      <div className="min-w-0 flex-1 text-right space-y-2">
+                        <p
+                          className="font-black text-[15px] leading-snug text-[#1A1730] [overflow-wrap:anywhere] break-words"
+                        >
+                          {habit.title}
+                        </p>
+                        {habit.description ? (
+                          <p className="text-[12px] sm:text-[13px] text-gray-600 leading-relaxed [overflow-wrap:anywhere] break-words border-t border-emerald-900/[0.07] pt-2">
+                            {habit.description}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="px-4 pb-4 pt-0 flex justify-start">
+                      <span
+                        className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide px-3 py-1.5 rounded-full border border-emerald-400/35 text-emerald-900"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(209,250,229,0.95), rgba(167,243,208,0.35))',
+                          boxShadow: '0 4px 14px rgba(16,185,129,0.12), inset 0 1px 0 rgba(255,255,255,0.75)',
+                        }}
+                      >
+                        תדירות · {getHabitFrequencyLabel(habit.frequency)}
+                      </span>
                     </div>
                   </div>
-                  <span className="inline-flex mt-3 text-[11px] px-2 py-1 rounded-md border border-emerald-200/80 bg-emerald-50/90 text-emerald-800 font-semibold">
-                    תדירות: {getHabitFrequencyLabel(habit.frequency)}
-                  </span>
                 </div>
               ))}
             </div>
@@ -345,7 +408,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               <Award className="w-4 h-4 text-blue-500" />
               <h3 className="font-black text-base" style={{ color: '#1A1730' }}>מחקרים תומכים</h3>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3 max-w-lg mx-auto w-full min-w-0">
               {step.researches.map((research) => (
                 <ResearchItem
                   key={research.id}
@@ -469,13 +532,33 @@ function LessonScoreRing({ percent }: { percent: number }) {
 
 function ResearchItem({ research, isExpanded, onToggle }: { research: Research; isExpanded: boolean; onToggle: () => void }) {
   return (
-    <div className="rounded-xl overflow-hidden border border-white/50 shadow-sm" style={{ background: 'rgba(255,255,255,0.38)' }}>
-      <button onClick={onToggle}
-        className="w-full flex items-center gap-2 p-3 text-right transition-all hover:bg-white/35">
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold truncate" style={{ color: '#1A1730' }}>{research.title}</p>
-          <p className="text-xs text-gray-400">{research.authors} ({research.year})</p>
+    <div
+      className="rounded-[18px] overflow-hidden border border-white/55 shadow-md shadow-emerald-950/5"
+      style={{
+        background:
+          'linear-gradient(165deg, rgba(255,255,255,0.52) 0%, rgba(239,246,255,0.42) 40%, rgba(255,255,255,0.38) 100%)',
+        backdropFilter: 'blur(14px)',
+        WebkitBackdropFilter: 'blur(14px)',
+      }}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-start gap-3 p-3.5 text-start transition-all hover:bg-white/25 active:bg-white/30"
+      >
+        <ChevronDown
+          className={`w-4 h-4 text-emerald-700/50 transition-transform shrink-0 mt-1 ${isExpanded ? 'rotate-180' : ''}`}
+        />
+        <div className="flex-1 min-w-0 dir-ltr text-left">
+          <p
+            className="text-sm font-bold text-gray-900 leading-snug break-words [overflow-wrap:anywhere]"
+            lang="en"
+          >
+            {research.title}
+          </p>
+          <p className="text-xs text-gray-500 mt-1 break-words">
+            {research.authors} ({research.year})
+          </p>
         </div>
       </button>
       <AnimatePresence>
@@ -486,13 +569,21 @@ function ResearchItem({ research, isExpanded, onToggle }: { research: Research; 
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="px-3 pb-3 pt-0">
-              <p className="text-xs text-gray-500 mb-1 italic">{research.journal}</p>
-              <p className="text-sm text-gray-600 leading-relaxed mb-2">{research.finding}</p>
+            <div className="px-3.5 pb-3.5 pt-0 border-t border-white/40">
+              <p className="text-xs text-gray-500 mb-2 italic dir-ltr text-left break-words" lang="en">
+                {research.journal}
+              </p>
+              <p className="text-sm text-gray-700 leading-relaxed mb-2 dir-ltr text-left break-words hyphens-auto" lang="en">
+                {research.finding}
+              </p>
               {research.url && (
-                <a href={research.url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 font-semibold">
-                  <ExternalLink className="w-3 h-3" /> צפה במחקר המלא
+                <a
+                  href={research.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-semibold dir-ltr"
+                >
+                  <ExternalLink className="w-3 h-3 shrink-0" /> צפה במחקר המלא
                 </a>
               )}
             </div>

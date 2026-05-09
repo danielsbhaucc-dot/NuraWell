@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { Check, Play, HelpCircle, Gamepad2, Heart, FileCheck } from 'lucide-react';
 import type { StepSection, JourneyStepProgress } from '../../lib/types/journey';
+import { isCommitmentGateResolved } from '../../lib/journey/commitment-gate';
 
 const sectionMeta: Record<StepSection, { label: string; short: string; icon: React.ElementType }> = {
   video: { label: 'סרטון', short: 'סרטון', icon: Play },
@@ -19,7 +20,12 @@ interface StepProgressProps {
   onSectionClick: (section: StepSection) => void;
 }
 
-function isSectionDone(section: StepSection, progress: JourneyStepProgress): boolean {
+function isSectionDone(
+  section: StepSection,
+  progress: JourneyStepProgress,
+  sections: StepSection[]
+): boolean {
+  const hasCommitment = sections.includes('commitment');
   switch (section) {
     case 'video':
       return progress.video_watched;
@@ -28,7 +34,7 @@ function isSectionDone(section: StepSection, progress: JourneyStepProgress): boo
     case 'game':
       return progress.game_score !== null;
     case 'commitment':
-      return progress.commitment_accepted;
+      return isCommitmentGateResolved(hasCommitment, progress);
     case 'summary':
       return progress.is_completed;
     default:
@@ -41,8 +47,8 @@ export function StepProgress({ sections, currentSection, progress, onSectionClic
     const meta = sectionMeta[section];
     const Icon = meta.icon;
     const isCurrent = section === currentSection;
-    const isDone = isSectionDone(section, progress);
-    const prevDone = index > 0 && isSectionDone(sections[index - 1], progress);
+    const isDone = isSectionDone(section, progress, sections);
+    const prevDone = index > 0 && isSectionDone(sections[index - 1], progress, sections);
 
     const connector =
       index > 0 ? (
@@ -50,9 +56,7 @@ export function StepProgress({ sections, currentSection, progress, onSectionClic
           key={`seg-${sections[index - 1]}-to-${section}`}
           className="h-[3px] flex-1 min-w-[6px] rounded-full self-center transition-all duration-300"
           style={{
-            background: prevDone
-              ? 'linear-gradient(90deg, #34d399, #6ee7b7)'
-              : 'rgba(255,255,255,0.22)',
+            background: prevDone ? 'rgba(52,211,153,0.95)' : 'rgba(255,255,255,0.22)',
           }}
           aria-hidden
         />
@@ -103,10 +107,10 @@ export function StepProgress({ sections, currentSection, progress, onSectionClic
   });
 
   return (
-    <div className="w-full" dir="ltr">
+    <div className="w-full" dir="rtl">
       <div className="flex w-full items-center justify-between gap-0">{nodes}</div>
       <p className="mt-2.5 text-center text-[10px] sm:text-xs text-white/85 font-medium leading-snug">
-        {isSectionDone(currentSection, progress) ? (
+        {isSectionDone(currentSection, progress, sections) ? (
           <>
             <span className="text-emerald-100">שלב זה הושלם</span>
             {' · '}
