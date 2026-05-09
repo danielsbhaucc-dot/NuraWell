@@ -80,13 +80,12 @@ function authorizeCron(request: Request): NextResponse | null {
   const auth = request.headers.get('authorization');
   const cronToken =
     request.headers.get('x-cron-job-org-token') ?? request.headers.get('x-cronjob-token');
-  const q = new URL(request.url).searchParams.get('secret');
 
   const hasBearer = Boolean(secret) && auth === `Bearer ${secret}`;
-  const hasQuerySecret = Boolean(secret) && q === secret;
   const hasCronJobOrgToken = Boolean(cronJobOrgToken) && cronToken === cronJobOrgToken;
 
-  if (hasBearer || hasQuerySecret || hasCronJobOrgToken) {
+  /** לא מאמתים מפתח ב-query string — נשמר בלוגים/הפניות והוא דולף בקלות */
+  if (hasBearer || hasCronJobOrgToken) {
     return null;
   }
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../../lib/supabase/server';
+import { journeyProgressUpsertSchema } from '../../../../lib/validation/journey-progress-upsert';
 
 type TaskDecisionStatus = 'accepted' | 'rejected' | 'pending';
 
@@ -39,33 +40,34 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { step_id, ...updateFields } = body;
-
-    if (!step_id) {
-      return NextResponse.json({ error: 'step_id is required' }, { status: 400 });
+    const parsed = journeyProgressUpsertSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid request body', details: parsed.error.flatten() },
+        { status: 400 }
+      );
     }
 
-    if ('tasks_completed' in updateFields) {
-      updateFields.tasks_completed = normalizeBooleanMap(updateFields.tasks_completed);
+    const { step_id, tasks_completed, task_statuses, ...rest } = parsed.data;
+
+    const row: Record<string, unknown> = {
+      user_id: user.id,
+      step_id,
+      ...rest,
+      updated_at: new Date().toISOString(),
+    };
+    if (tasks_completed !== undefined) {
+      row.tasks_completed = normalizeBooleanMap(tasks_completed);
     }
-    if ('task_statuses' in updateFields) {
-      updateFields.task_statuses = normalizeTaskStatuses(updateFields.task_statuses);
+    if (task_statuses !== undefined) {
+      row.task_statuses = normalizeTaskStatuses(task_statuses);
     }
 
     // Upsert journey progress
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from('journey_progress')
-      .upsert(
-        {
-          user_id: user.id,
-          step_id,
-          ...updateFields,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_id,step_id' }
-      );
+      .upsert(row, { onConflict: 'user_id,step_id' });
 
     if (error) {
       console.error('Journey progress save error:', error);

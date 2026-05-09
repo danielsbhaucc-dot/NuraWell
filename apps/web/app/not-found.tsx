@@ -6,7 +6,7 @@ import { ArrowLeft, Home, Search, Leaf, Sparkles } from 'lucide-react';
 
 export default function NotFoundPage() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4 py-10 bg-mesh">
+    <main id="main-content" className="min-h-screen flex flex-col items-center justify-center px-4 py-10 bg-mesh">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { createClient } from '../../../../lib/supabase/server';
 import { LessonPageClient } from '../../../../components/course/LessonPageClient';
 import type { LessonDetail, MediaFile, LessonTask, LessonHabit, ExternalLink } from '../../../../lib/types/course';
+import { sanitizeLessonHtml } from '../../../../lib/sanitize-lesson-html';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -122,7 +123,7 @@ export default async function LessonPage({ params }: PageProps) {
     title: lesson.title,
     description: lesson.description,
     lesson_type: lesson.lesson_type as LessonDetail['lesson_type'],
-    text_content: lesson.text_content,
+    text_content: sanitizeLessonHtml(lesson.text_content),
     external_links: (lesson.external_links as ExternalLink[]) || [],
     tasks: (lesson.tasks as LessonTask[]) || [],
     habits: (lesson.habits as LessonHabit[]) || [],

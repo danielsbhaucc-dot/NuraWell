@@ -103,7 +103,25 @@ export default async function CoursesPage() {
   const avgProgress = enrolledCourses.length
     ? Math.round(enrolledCourses.reduce((s, c) => s + c.progress, 0) / enrolledCourses.length)
     : 0;
-  const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'משתמש';
+
+  interface ProfileRow {
+    full_name: string | null;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profileRow } = await (supabase as any)
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user.id)
+    .maybeSingle();
+  const profile = profileRow as ProfileRow | null;
+  const profileFullName = profile?.full_name?.trim();
+  const metaFullName =
+    typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name.trim() : '';
+  const fullName =
+    (profileFullName && profileFullName.length > 0 ? profileFullName : null) ??
+    (metaFullName.length > 0 ? metaFullName : null) ??
+    user.email?.split('@')[0] ??
+    'משתמש';
   const firstName = String(fullName).trim().split(/\s+/)[0] || 'משתמש';
 
   return (

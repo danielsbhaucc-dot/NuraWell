@@ -30,7 +30,7 @@ const itemVariants = {
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-mesh overflow-x-hidden">
+    <main id="main-content" className="min-h-screen bg-mesh overflow-x-hidden">
       {/* Hero Section */}
       <section className="relative min-h-screen flex flex-col justify-center items-center px-4 pt-20 pb-32">
         <motion.div

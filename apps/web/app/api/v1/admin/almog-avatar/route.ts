@@ -146,6 +146,10 @@ export async function POST(request: Request) {
         ? msg
         : 'העלאה נכשלה. אם זה חוזר — בדוק הגדרות אחסון ומפתחות בשרת.';
     console.error('[almog-avatar POST]', msg);
-    return NextResponse.json({ error: friendly, detail: msg }, { status: 500 });
+    const payload: { error: string; detail?: string } = { error: friendly };
+    if (process.env.NODE_ENV !== 'production') {
+      payload.detail = msg;
+    }
+    return NextResponse.json(payload, { status: 500 });
   }
 }

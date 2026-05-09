@@ -34,6 +34,9 @@ export const metadata: Metadata = {
   creator: 'NuraWell',
   publisher: 'NuraWell',
   metadataBase: metadataBaseUrl(),
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     title: 'NuraWell | המסע שלך לבריאות מתחיל כאן ✨',
     description: 'מערכת AI חכמה לירידה במשקל - קורסים, מנטור אישי, ומעקב התקדמות',
@@ -93,7 +96,7 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'WebSite',
               name: 'NuraWell',
-              url: 'https://nurawell.co.il',
+              url: siteOrigin,
               description: 'מערכת AI חכמה לירידה במשקל',
               inLanguage: 'he',
             }),
@@ -101,6 +104,12 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-background font-sans antialiased notranslate">
+        <a
+          href="#main-content"
+          className="absolute start-[-10000px] top-auto z-[100] overflow-hidden focus:fixed focus:start-4 focus:top-16 focus:h-auto focus:w-auto focus:overflow-visible focus:rounded-xl focus:bg-teal-600 focus:px-4 focus:py-3 focus:text-white focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-300"
+        >
+          דלג לתוכן הראשי
+        </a>
         {children}
       </body>
     </html>

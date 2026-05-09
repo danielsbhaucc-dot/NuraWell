@@ -2,10 +2,11 @@
 
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
-import { Gamepad2, ArrowLeft, Sparkles, ClipboardList, RotateCcw } from 'lucide-react';
+import { Gamepad2, ArrowLeft, ClipboardList, RotateCcw } from 'lucide-react';
 import type { GameItem } from '../../lib/types/journey';
 import { AIFeedbackCard } from '../ai/AIFeedbackCard';
 import { AlmogInstantFeedback } from './AlmogInstantFeedback';
+import { AlmogCompletionHero } from './AlmogPresence';
 
 interface MiniGameProps {
   items: GameItem[];
@@ -83,13 +84,7 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, step
   if (isComplete) {
     return (
       <div className="text-center py-8">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-5"
-          style={{ background: 'rgba(16,185,129,0.12)', border: '2px solid rgba(16,185,129,0.3)' }}>
-          <Sparkles className="w-10 h-10 text-emerald-600" />
-        </motion.div>
+        <AlmogCompletionHero />
         <h2 className="text-2xl font-black mb-2" style={{ color: '#1A1730' }}>סיימת את המשחק! 🎮</h2>
         <p className="text-gray-500 text-lg mb-4">
           <strong className="text-emerald-600">{score}</strong> מתוך <strong>{items.length}</strong> נכונים

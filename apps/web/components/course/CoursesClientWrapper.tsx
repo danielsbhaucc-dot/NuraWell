@@ -89,7 +89,6 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats,
               WebkitBackdropFilter: 'blur(10px)',
             }}
           >
-            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.76)', fontWeight: 600 }}>ברכה אישית</div>
             <div style={{ fontSize: '19px', color: '#fff', fontWeight: 900, fontFamily: "'Rubik','Heebo',sans-serif", lineHeight: 1.15 }}>
               {heroGreeting} {firstName}
             </div>

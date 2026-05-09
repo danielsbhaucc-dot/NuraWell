@@ -695,23 +695,24 @@ ${genderAddressingHint(profileGender)}
       elapsed_ms: Date.now() - startedAt,
       error: err instanceof Error ? err.message : String(err),
     });
-    return new Response(
-      JSON.stringify({
-        error: 'GPT-5-mini chat failed',
-        details: err instanceof Error ? err.message : String(err),
-        debug_id: debugId,
-        stage,
-      }),
-      {
-        status: 502,
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'x-session-id': sessionId,
-          'x-debug-id': debugId,
-          'x-debug-stage': stage,
-          'Cache-Control': 'no-cache, no-transform',
-        },
-      }
-    );
+    const isProd = process.env.NODE_ENV === 'production';
+    const body = isProd
+      ? { error: 'שירות הצ׳אט אינו זמין כרגע. נסה שוב בעוד רגע.', debug_id: debugId }
+      : {
+          error: 'GPT-5-mini chat failed',
+          details: err instanceof Error ? err.message : String(err),
+          debug_id: debugId,
+          stage,
+        };
+    return new Response(JSON.stringify(body), {
+      status: 502,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'x-session-id': sessionId,
+        'x-debug-id': debugId,
+        'x-debug-stage': stage,
+        'Cache-Control': 'no-cache, no-transform',
+      },
+    });
   }
 }
