@@ -20,6 +20,8 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
+    /** פחות קוד בבנדל — איקונים ואנימציות נטענים פר-סמל/פר קומפוננטה */
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
   images: {
     remotePatterns: [

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+
+export const runtime = 'edge';
 import { z } from 'zod';
 import { readJsonBody } from '../../../../../lib/api/json-request';
 import { requireApiAdmin } from '../../../../../lib/api/route-guards';

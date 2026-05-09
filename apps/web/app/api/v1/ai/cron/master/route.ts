@@ -5,7 +5,8 @@ import { buildUserContext, type AiUserContext } from '../../../../../../lib/ai/m
 import { ANALYSIS_PROMPT, REENGAGEMENT_PROMPT } from '../../../../../../lib/ai/prompts';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 
-export const runtime = 'edge';
+/** Batch ארוך + קריאות מודלים מרובות — Node לזמן הרצה ארוך יותר מבשרת Vercel Edge */
+export const runtime = 'nodejs';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 

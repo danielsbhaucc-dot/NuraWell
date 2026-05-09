@@ -1,6 +1,7 @@
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { getUserAiMemory, upsertUserAiMemory } from '../../../../../lib/ai/user-memory';
 
+/** Vercel Edge — קריאת זיכרון AI קלה */
 export const runtime = 'edge';
 
 const DUMMY_MEMORY = {
