@@ -53,7 +53,38 @@ export function AlmogCompletionHero({
   );
 }
 
-/** סיכום צעד במסע — נוכחות קומפקטית של אלמוג */
+/** תמונת אלמוג קומפקטית לשורות כותרת */
+export function AlmogAvatarChip({ size = 44 }: { size?: number }) {
+  const { avatarUrl } = useAlmogAvatarUrl();
+  const px = `${size}px`;
+
+  return (
+    <div
+      className="relative shrink-0 rounded-full p-[2px]"
+      style={{
+        background: 'linear-gradient(145deg, #34d399, #059669, #f59e0b)',
+        boxShadow: '0 4px 16px rgba(4,120,87,0.22)',
+      }}
+    >
+      <div className="rounded-full bg-white p-[2px]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={avatarUrl}
+          alt="אלמוג"
+          width={size}
+          height={size}
+          className="rounded-full object-cover object-top block"
+          style={{ width: px, height: px }}
+          onError={(e) => {
+            e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** @deprecated השתמשו בשורת כותרת עם AlmogAvatarChip ב-SummarySection */
 export function AlmogInlinePresence({
   title = 'אלמוג',
   subtitle = 'מסכם איתך את הצעד',
@@ -61,8 +92,6 @@ export function AlmogInlinePresence({
   title?: string;
   subtitle?: string;
 }) {
-  const { avatarUrl } = useAlmogAvatarUrl();
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -70,27 +99,7 @@ export function AlmogInlinePresence({
       transition={{ duration: 0.35 }}
       className="flex items-center justify-center gap-3 mb-4 px-2"
     >
-      <div
-        className="relative shrink-0 rounded-full p-[2px]"
-        style={{
-          background: 'linear-gradient(145deg, #6ee7b7, #059669)',
-          boxShadow: '0 4px 14px rgba(4,120,87,0.18)',
-        }}
-      >
-        <div className="rounded-full bg-white p-[2px]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={avatarUrl}
-            alt="אלמוג"
-            width={48}
-            height={48}
-            className="w-12 h-12 rounded-full object-cover object-top block"
-            onError={(e) => {
-              e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
-            }}
-          />
-        </div>
-      </div>
+      <AlmogAvatarChip size={48} />
       <div className="text-right min-w-0">
         <p className="font-black text-sm text-emerald-900">{title}</p>
         <p className="text-xs text-gray-600 leading-snug">{subtitle}</p>
