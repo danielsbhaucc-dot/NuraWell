@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
+import { requireApiAdmin } from '../../../../../lib/api/route-guards';
 import {
   almogCdnHostname,
   getAlmogAvatarUrl,
@@ -25,18 +25,9 @@ function isWebpBuffer(buf: Buffer): boolean {
   return buf.subarray(0, 4).toString('ascii') === 'RIFF' && buf.subarray(8, 12).toString('ascii') === 'WEBP';
 }
 
-async function assertAdmin(request: Request) {
-  const { supabase, user, authError } = await createSupabaseForApiRoute(request);
-  if (authError || !user) return { ok: false as const, status: 401 };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (supabase as any).from('profiles').select('role').eq('id', user.id).single();
-  if (!profile || profile.role !== 'admin') return { ok: false as const, status: 403 };
-  return { ok: true as const };
-}
-
 export async function GET(request: Request) {
-  const auth = await assertAdmin(request);
-  if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: auth.status });
+  const auth = await requireApiAdmin(request);
+  if (!auth.ok) return auth.response;
 
   const cdnBase = resolveAlmogPublicBaseUrl();
   const avatar_url = cdnBase ? getAlmogAvatarUrl() : null;
@@ -53,8 +44,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await assertAdmin(request);
-  if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: auth.status });
+  const auth = await requireApiAdmin(request);
+  if (!auth.ok) return auth.response;
 
   try {
     const bucket = r2ImageBucketName();

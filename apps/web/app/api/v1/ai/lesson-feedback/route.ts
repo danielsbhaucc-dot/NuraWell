@@ -2,8 +2,10 @@ import { z } from 'zod';
 import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { buildUserContext } from '../../../../../lib/ai/memory';
+import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
 import { LESSON_FEEDBACK_PROMPT } from '../../../../../lib/ai/prompts';
-import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
+import { readJsonBody } from '../../../../../lib/api/json-request';
+import { requireApiSession } from '../../../../../lib/api/route-guards';
 
 export const runtime = 'edge';
 
@@ -18,18 +20,6 @@ const lessonFeedbackSchema = z.object({
   commitment_text: z.string().trim().max(500).optional(),
   summary: z.string().trim().max(1200).optional(),
 });
-
-type AiInteractionInsert = {
-  user_id: string;
-  session_id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  context_type?: 'general' | 'lesson' | 'progress' | 'nutrition' | 'exercise' | 'motivation';
-  context_id?: string;
-  model_name?: string;
-  tokens_used?: number;
-  metadata?: Record<string, unknown>;
-};
 
 function buildFallbackFeedback(payload: z.infer<typeof lessonFeedbackSchema>): string {
   if (payload.interaction_type === 'quiz') {
@@ -52,16 +42,6 @@ function buildFallbackFeedback(payload: z.infer<typeof lessonFeedbackSchema>): s
   return 'טוב שהמשכת גם בלי התחייבות מלאה כרגע. לפעמים מספיק רק להשאיר דלת פתוחה לצעד קטן בהמשך היום.';
 }
 
-async function insertInteraction(
-  supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
-  payload: AiInteractionInsert
-) {
-  // `ai_interactions` exists in SQL migrations but may not exist in local TS DB types yet.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).from('ai_interactions').insert(payload);
-  if (error) throw error;
-}
-
 const openrouter = createOpenAI({
   apiKey: process.env.OPENROUTER_API_KEY ?? '',
   baseURL: 'https://openrouter.ai/api/v1',
@@ -73,13 +53,13 @@ const openrouter = createOpenAI({
 
 export async function POST(request: Request) {
   try {
-    const { supabase, user, authError } = await createSupabaseForApiRoute(request);
+    const auth = await requireApiSession(request);
+    if (!auth.ok) return auth.response;
 
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-    }
+    const raw = await readJsonBody(request);
+    if (!raw.ok) return raw.response;
 
-    const parsed = lessonFeedbackSchema.safeParse(await request.json());
+    const parsed = lessonFeedbackSchema.safeParse(raw.value);
     if (!parsed.success) {
       return new Response(
         JSON.stringify({ error: 'Invalid request body', details: parsed.error.flatten() }),
@@ -88,6 +68,8 @@ export async function POST(request: Request) {
     }
 
     const payload = parsed.data;
+    const { supabase, user } = auth;
+
     if (payload.user_id && payload.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Forbidden: user_id does not match session' }), {
         status: 403,
@@ -109,7 +91,7 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join('\n');
 
-    await insertInteraction(supabase, {
+    await insertAiInteraction(supabase, {
       user_id: user.id,
       session_id: sessionId,
       role: 'user',
@@ -149,7 +131,7 @@ export async function POST(request: Request) {
       assistantReply = buildFallbackFeedback(payload);
     }
 
-    await insertInteraction(supabase, {
+    await insertAiInteraction(supabase, {
       user_id: user.id,
       session_id: sessionId,
       role: 'assistant',

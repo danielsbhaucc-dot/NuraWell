@@ -9,7 +9,10 @@ import {
   upsertUserAiMemory,
   type UserAiMemory,
 } from '../../../../../lib/ai/user-memory';
+import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
 import { CHAT_PROACTIVE_AND_PRIORITY, NURAWELL_MENTOR_PROMPT } from '../../../../../lib/ai/prompts';
+import { readJsonBody } from '../../../../../lib/api/json-request';
+import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 
 export const runtime = 'edge';
@@ -339,23 +342,6 @@ ${JSON.stringify(activeJourneyContext)}
   }
 }
 
-async function insertInteraction(
-  supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
-  payload: {
-    user_id: string;
-    session_id: string;
-    role: 'user' | 'assistant' | 'system';
-    content: string;
-    model_name?: string;
-    tokens_used?: number;
-    metadata?: Record<string, unknown>;
-  }
-) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).from('ai_interactions').insert(payload);
-  if (error) throw error;
-}
-
 function uiMessageText(msg: unknown): string {
   if (!msg || typeof msg !== 'object') return '';
   if ('content' in msg && typeof (msg as { content: unknown }).content === 'string') {
@@ -386,14 +372,18 @@ export async function POST(request: Request) {
   const startedAt = Date.now();
   let stage = 'init';
 
-  const { supabase, user, authError } = await createSupabaseForApiRoute(request);
-  if (authError || !user) {
+  const auth = await requireApiSession(request);
+  if (!auth.ok) {
     console.error('[ai/chat]', { debug_id: debugId, stage: 'auth', error: 'unauthorized' });
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    return auth.response;
   }
+  const { supabase, user } = auth;
   stage = 'auth_ok';
 
-  const parsed = chatBodySchema.safeParse(await request.json());
+  const rawBody = await readJsonBody(request);
+  if (!rawBody.ok) return rawBody.response;
+
+  const parsed = chatBodySchema.safeParse(rawBody.value);
   if (!parsed.success) {
     console.error('[ai/chat]', { debug_id: debugId, stage: 'body_validation', error: parsed.error.flatten() });
     return new Response(JSON.stringify({ error: 'Invalid request body' }), { status: 400 });
@@ -461,7 +451,7 @@ export async function POST(request: Request) {
   const lastUserText = uiMessageText(lastUser).trim();
   if (lastUserText) {
     stage = 'insert_user_interaction';
-    await insertInteraction(supabase, {
+    await insertAiInteraction(supabase, {
       user_id: user.id,
       session_id: sessionId,
       role: 'user',
@@ -565,7 +555,7 @@ ${genderAddressingHint(profileGender)}
           });
         }
         try {
-          await insertInteraction(supabase, {
+          await insertAiInteraction(supabase, {
             user_id: user.id,
             session_id: sessionId,
             role: 'assistant',

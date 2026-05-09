@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createSupabaseForApiRoute } from '../../../../lib/supabase/api-route-client';
+import { readJsonBody } from '../../../../lib/api/json-request';
+import { requireApiSession } from '../../../../lib/api/route-guards';
+import { jsonZodError } from '../../../../lib/validation/zod-http';
 
 const markSchema = z.object({
   id: z.string().uuid().optional(),
@@ -9,10 +11,10 @@ const markSchema = z.object({
 
 export async function GET(request: Request) {
   try {
-    const { supabase, user, authError } = await createSupabaseForApiRoute(request);
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireApiSession(request);
+    if (!auth.ok) return auth.response;
+
+    const { supabase, user } = auth;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
@@ -37,17 +39,18 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const { supabase, user, authError } = await createSupabaseForApiRoute(request);
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireApiSession(request);
+    if (!auth.ok) return auth.response;
 
-    const parsed = markSchema.safeParse(await request.json());
-    if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid body', details: parsed.error.flatten() }, { status: 400 });
-    }
+    const raw = await readJsonBody(request);
+    if (!raw.ok) return raw.response;
+
+    const parsed = markSchema.safeParse(raw.value);
+    if (!parsed.success) return jsonZodError(parsed.error, 'Invalid body');
 
     const { id, mark_all } = parsed.data;
+    const { supabase, user } = auth;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase as any).from('notifications').update({ is_read: true }).eq('user_id', user.id);
 

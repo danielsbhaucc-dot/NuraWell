@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '../../../../lib/supabase/server';
+import { readJsonBody } from '../../../../lib/api/json-request';
+import { requireApiSession } from '../../../../lib/api/route-guards';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const auth = await requireApiSession(request);
+    if (!auth.ok) return auth.response;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const raw = await readJsonBody(request);
+    if (!raw.ok) return raw.response;
 
-    const body = await request.json() as {
+    const body = raw.value as {
       lesson_id: string;
       is_completed?: boolean;
       task_progress?: Record<string, boolean>;
@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
       time_spent_seconds?: number;
     };
 
+    const { supabase, user } = auth;
     const { lesson_id, is_completed, task_progress, habit_progress, time_spent_seconds } = body;
 
     if (!lesson_id) {
@@ -72,12 +73,10 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const auth = await requireApiSession(request);
+    if (!auth.ok) return auth.response;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { supabase, user } = auth;
 
     const { searchParams } = new URL(request.url);
     const lessonId = searchParams.get('lesson_id');

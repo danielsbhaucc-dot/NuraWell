@@ -1,31 +1,18 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '../../../../../lib/supabase/server';
+import { readJsonBody } from '../../../../../lib/api/json-request';
+import { requireApiAdmin } from '../../../../../lib/api/route-guards';
 import {
   journeyStepInsertSchema,
   journeyStepPatchSchema,
 } from '../../../../../lib/validation/admin-journey-step';
+import { jsonZodError } from '../../../../../lib/validation/zod-http';
 
-async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+export async function GET(request: Request) {
+  const auth = await requireApiAdmin(request);
+  if (!auth.ok) return auth.response;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (supabase as any)
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile || profile.role !== 'admin') return null;
-  return user;
-}
-
-// GET — list all steps (admin sees all, including unpublished)
-export async function GET() {
-  const supabase = await createClient();
-  const admin = await requireAdmin(supabase);
-  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { supabase } = auth;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
@@ -37,19 +24,17 @@ export async function GET() {
   return NextResponse.json(data);
 }
 
-// POST — create new step
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const admin = await requireAdmin(supabase);
-  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requireApiAdmin(request);
+  if (!auth.ok) return auth.response;
 
-  const parsed = journeyStepInsertSchema.safeParse(await request.json());
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: 'Invalid request body', details: parsed.error.flatten() },
-      { status: 400 }
-    );
-  }
+  const raw = await readJsonBody(request);
+  if (!raw.ok) return raw.response;
+
+  const parsed = journeyStepInsertSchema.safeParse(raw.value);
+  if (!parsed.success) return jsonZodError(parsed.error);
+
+  const { supabase } = auth;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
@@ -62,24 +47,22 @@ export async function POST(request: Request) {
   return NextResponse.json(data);
 }
 
-// PATCH — update step
 export async function PATCH(request: Request) {
-  const supabase = await createClient();
-  const admin = await requireAdmin(supabase);
-  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requireApiAdmin(request);
+  if (!auth.ok) return auth.response;
 
-  const parsed = journeyStepPatchSchema.safeParse(await request.json());
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: 'Invalid request body', details: parsed.error.flatten() },
-      { status: 400 }
-    );
-  }
+  const raw = await readJsonBody(request);
+  if (!raw.ok) return raw.response;
+
+  const parsed = journeyStepPatchSchema.safeParse(raw.value);
+  if (!parsed.success) return jsonZodError(parsed.error);
 
   const { id, ...updateFields } = parsed.data;
   const cleaned = Object.fromEntries(
     Object.entries(updateFields).filter(([, v]) => v !== undefined)
   );
+
+  const { supabase } = auth;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
@@ -93,20 +76,17 @@ export async function PATCH(request: Request) {
   return NextResponse.json(data);
 }
 
-// DELETE — remove step
 export async function DELETE(request: Request) {
-  const supabase = await createClient();
-  const admin = await requireAdmin(supabase);
-  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requireApiAdmin(request);
+  if (!auth.ok) return auth.response;
+
+  const { supabase } = auth;
 
   let bodyId: string | undefined;
-  try {
-    const body = await request.json();
-    if (body && typeof body === 'object' && 'id' in body && typeof (body as { id: unknown }).id === 'string') {
-      bodyId = (body as { id: string }).id;
-    }
-  } catch {
-    /* empty body */
+  const raw = await readJsonBody(request);
+  if (raw.ok && raw.value && typeof raw.value === 'object' && 'id' in raw.value) {
+    const idVal = (raw.value as { id?: unknown }).id;
+    if (typeof idVal === 'string') bodyId = idVal;
   }
   const qId = new URL(request.url).searchParams.get('id') ?? undefined;
   const idRaw = bodyId ?? qId;

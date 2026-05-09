@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '../../../../lib/supabase/server';
+import { readJsonBody } from '../../../../lib/api/json-request';
+import { requireApiSession } from '../../../../lib/api/route-guards';
 import { journeyProgressUpsertSchema } from '../../../../lib/validation/journey-progress-upsert';
+import { jsonZodError } from '../../../../lib/validation/zod-http';
 
 type TaskDecisionStatus = 'accepted' | 'rejected' | 'pending';
 
@@ -33,22 +35,17 @@ function normalizeTaskStatuses(value: unknown): Record<string, { status: TaskDec
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const auth = await requireApiSession(request);
+    if (!auth.ok) return auth.response;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const raw = await readJsonBody(request);
+    if (!raw.ok) return raw.response;
 
-    const parsed = journeyProgressUpsertSchema.safeParse(await request.json());
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid request body', details: parsed.error.flatten() },
-        { status: 400 }
-      );
-    }
+    const parsed = journeyProgressUpsertSchema.safeParse(raw.value);
+    if (!parsed.success) return jsonZodError(parsed.error);
 
     const { step_id, tasks_completed, task_statuses, ...rest } = parsed.data;
+    const { supabase, user } = auth;
 
     const row: Record<string, unknown> = {
       user_id: user.id,
@@ -63,7 +60,6 @@ export async function POST(request: Request) {
       row.task_statuses = normalizeTaskStatuses(task_statuses);
     }
 
-    // Upsert journey progress
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from('journey_progress')
@@ -83,12 +79,10 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const auth = await requireApiSession(request);
+    if (!auth.ok) return auth.response;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { supabase, user } = auth;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)

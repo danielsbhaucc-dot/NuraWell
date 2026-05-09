@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '../../../../lib/supabase/server';
+import { readJsonBody } from '../../../../lib/api/json-request';
+import { requireApiSession } from '../../../../lib/api/route-guards';
+import { jsonZodError } from '../../../../lib/validation/zod-http';
 
 const updateProfileSchema = z.object({
   full_name: z.string().trim().min(2).max(80),
@@ -9,24 +11,17 @@ const updateProfileSchema = z.object({
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireApiSession(request);
+    if (!auth.ok) return auth.response;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const raw = await readJsonBody(request);
+    if (!raw.ok) return raw.response;
 
-    const parsed = updateProfileSchema.safeParse(await request.json());
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid request body', details: parsed.error.flatten() },
-        { status: 400 }
-      );
-    }
+    const parsed = updateProfileSchema.safeParse(raw.value);
+    if (!parsed.success) return jsonZodError(parsed.error);
 
     const { full_name, gender } = parsed.data;
+    const { supabase, user } = auth;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('profiles') as any)
       .update({
@@ -46,4 +41,3 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-

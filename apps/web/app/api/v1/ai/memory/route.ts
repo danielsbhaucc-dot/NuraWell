@@ -1,4 +1,4 @@
-import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
+import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { getUserAiMemory, upsertUserAiMemory } from '../../../../../lib/ai/user-memory';
 
 export const runtime = 'edge';
@@ -18,12 +18,10 @@ const DUMMY_MEMORY = {
 
 export async function GET(request: Request) {
   try {
-    const { supabase, user, authError } = await createSupabaseForApiRoute(request);
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-    }
+    const auth = await requireApiSession(request);
+    if (!auth.ok) return auth.response;
 
-    const memory = await getUserAiMemory(supabase, user.id);
+    const memory = await getUserAiMemory(auth.supabase, auth.user.id);
     return new Response(JSON.stringify({ memory }), {
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
     });
@@ -47,13 +45,11 @@ export async function POST(request: Request) {
       });
     }
 
-    const { supabase, user, authError } = await createSupabaseForApiRoute(request);
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-    }
+    const auth = await requireApiSession(request);
+    if (!auth.ok) return auth.response;
 
-    await upsertUserAiMemory(supabase, user.id, DUMMY_MEMORY, { replace: true });
-    const memory = await getUserAiMemory(supabase, user.id);
+    await upsertUserAiMemory(auth.supabase, auth.user.id, DUMMY_MEMORY, { replace: true });
+    const memory = await getUserAiMemory(auth.supabase, auth.user.id);
 
     return new Response(JSON.stringify({ ok: true, memory }), {
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
@@ -68,4 +64,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
