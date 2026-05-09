@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type CSSProperties } from 'react';
+import { useId, useState, type CSSProperties } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileCheck, RotateCcw, BookOpen, Download, CheckCircle2,
@@ -13,7 +13,7 @@ import type {
   Research,
 } from '../../lib/types/journey';
 import Link from 'next/link';
-import { AlmogInlinePresence } from './AlmogPresence';
+import { AlmogAvatarChip } from './AlmogPresence';
 
 interface SummarySectionProps {
   step: JourneyStep;
@@ -54,55 +54,77 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
   };
 
   const glassPanelStyle: CSSProperties = {
-    background: 'linear-gradient(165deg, rgba(255,255,255,0.52) 0%, rgba(236,253,245,0.38) 45%, rgba(255,255,255,0.44) 100%)',
-    backdropFilter: 'blur(22px)',
-    WebkitBackdropFilter: 'blur(22px)',
-    boxShadow: '0 18px 48px rgba(6,78,59,0.1), inset 0 1px 0 rgba(255,255,255,0.65)',
-    border: '1px solid rgba(255,255,255,0.55)',
+    background:
+      'linear-gradient(165deg, rgba(255,255,255,0.34) 0%, rgba(167,243,208,0.2) 38%, rgba(255,255,255,0.3) 100%)',
+    backdropFilter: 'blur(28px) saturate(1.35)',
+    WebkitBackdropFilter: 'blur(28px) saturate(1.35)',
+    boxShadow: '0 28px 56px rgba(6,78,59,0.12), inset 0 1px 1px rgba(255,255,255,0.72), inset 0 -1px 0 rgba(255,255,255,0.25)',
+    border: '1px solid rgba(255,255,255,0.38)',
   };
 
   const sectionDividerClass = 'border-t border-emerald-900/[0.06]';
 
   return (
-    <div className="pb-8">
+    <div className="pb-8 w-full max-w-full min-w-0">
       {/* פאנל זכוכית אחד לכל תוכן הסיכום */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-[28px] overflow-hidden"
+        className="rounded-[28px] overflow-x-clip overflow-y-visible w-full max-w-full min-w-0"
         style={glassPanelStyle}
       >
-        <div className="px-4 pt-5 pb-3 sm:px-6 sm:pt-6">
-          <div className="text-center">
+        <div className="px-3 sm:px-6 pt-5 pb-2">
+          <div className="flex items-center justify-center gap-3 flex-row-reverse flex-wrap sm:flex-nowrap">
             <div
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
-              style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.22)' }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full"
+              style={{
+                background: 'rgba(255,255,255,0.42)',
+                border: '1px solid rgba(255,255,255,0.55)',
+                backdropFilter: 'blur(12px)',
+                boxShadow: '0 4px 18px rgba(6,78,59,0.06)',
+              }}
             >
-              <FileCheck className="w-4 h-4 text-emerald-600" />
-              <span className="text-sm font-bold text-emerald-700">סיכום השיעור</span>
+              <FileCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+              <span className="text-sm font-black text-emerald-900">סיכום השיעור</span>
             </div>
+            <AlmogAvatarChip size={46} />
           </div>
-          <AlmogInlinePresence />
+          <p className="text-center text-[11px] sm:text-xs text-emerald-900/75 font-semibold mt-2">
+            מסכם איתך את הצעד
+          </p>
         </div>
 
-        {/* ציון — רצועה ירוקה רציפה בתוך הזכוכית */}
-        <div className="px-4 sm:px-6 py-6 sm:py-7" style={{ background: 'linear-gradient(145deg, #047857, #059669, #10b981)' }}>
-          <div className="flex flex-col items-center gap-5 sm:flex-row sm:justify-center sm:gap-10">
-            <LessonScoreRing percent={overallScore} />
-            <div className="text-center sm:text-right flex flex-col items-center sm:items-end gap-2 min-w-0">
-              <div className="text-4xl sm:text-5xl leading-none">{getScoreEmoji(overallScore)}</div>
-              <p className="text-white/95 font-bold text-[15px] sm:text-base leading-snug max-w-[280px] sm:max-w-xs">
-                {getScoreMessage(overallScore)}
-              </p>
+        {/* ציון — קופסה מעוגלת (לא רוחב מלא) */}
+        <div className="px-3 sm:px-6 pb-4 pt-1">
+          <div
+            className="max-w-[min(100%,380px)] mx-auto rounded-[26px] overflow-hidden"
+            style={{
+              boxShadow:
+                '0 16px 42px rgba(4,120,87,0.35), 0 0 0 1px rgba(255,255,255,0.35) inset, 0 0 32px rgba(52,211,153,0.25)',
+            }}
+          >
+            <div
+              className="px-5 sm:px-7 py-6 sm:py-8"
+              style={{ background: 'linear-gradient(155deg, #065f46 0%, #047857 38%, #059669 65%, #34d399 100%)' }}
+            >
+              <div className="flex flex-col items-center gap-5 sm:flex-row sm:justify-center sm:gap-8">
+                <LessonScoreRing percent={overallScore} />
+                <div className="text-center sm:text-right flex flex-col items-center sm:items-end gap-2 min-w-0">
+                  <div className="text-4xl sm:text-5xl leading-none drop-shadow-sm">{getScoreEmoji(overallScore)}</div>
+                  <p className="text-white/95 font-bold text-[15px] sm:text-base leading-snug max-w-[240px] sm:max-w-xs">
+                    {getScoreMessage(overallScore)}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <div
-          className={`px-4 sm:px-6 py-4 ${sectionDividerClass}`}
-          style={{ background: 'rgba(255,255,255,0.28)' }}
+          className={`px-3 sm:px-6 py-4 ${sectionDividerClass}`}
+          style={{ background: 'rgba(255,255,255,0.22)' }}
         >
-          <div className="flex flex-wrap justify-stretch gap-2.5 sm:gap-3 text-sm">
+          <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3 text-sm max-w-lg mx-auto w-full">
             <div
               className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-white/50 shadow-sm"
               style={{ background: 'rgba(255,255,255,0.55)' }}
@@ -131,50 +153,61 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
 
         {/* Summary text */}
         {step.summary_text && (
-          <div className={`px-4 sm:px-6 py-5 ${sectionDividerClass}`}>
-            <div className="flex items-center gap-2 mb-3">
+          <div className={`px-3 sm:px-6 py-5 ${sectionDividerClass}`}>
+            <div className="flex items-center gap-2 mb-3 max-w-lg mx-auto">
               <div className="w-1.5 h-6 rounded-full" style={{ background: 'linear-gradient(to bottom, #6ee7b7, #047857)' }} />
               <BookOpen className="w-4 h-4 text-emerald-600" />
               <h3 className="font-black text-base" style={{ color: '#1A1730' }}>מה למדנו?</h3>
             </div>
-            <p className="text-[15px] text-gray-700 leading-relaxed">{step.summary_text}</p>
+            <div
+              className="max-w-lg mx-auto rounded-2xl border border-white/45 px-4 py-4"
+              style={{
+                background: 'rgba(255,255,255,0.28)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55)',
+              }}
+            >
+              <p className="text-[15px] text-gray-800 leading-relaxed">{step.summary_text}</p>
+            </div>
           </div>
         )}
 
         {/* Tasks */}
         {step.tasks.length > 0 && (
-          <div className={`px-4 sm:px-6 py-5 ${sectionDividerClass}`}>
-            <div className="flex items-center gap-2 mb-2">
+          <div className={`px-3 sm:px-6 py-5 w-full min-w-0 max-w-full overflow-x-clip ${sectionDividerClass}`}>
+            <div className="flex items-center gap-2 mb-2 max-w-lg mx-auto">
               <div className="w-1.5 h-6 rounded-full shrink-0" style={{ background: 'linear-gradient(to bottom, #fbbf24, #d97706)' }} />
               <ListChecks className="w-4 h-4 text-amber-600 shrink-0" />
               <h3 className="font-black text-base min-w-0" style={{ color: '#1A1730' }}>משימות לביצוע</h3>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600 mb-4 leading-relaxed">
+            <p className="text-xs sm:text-sm text-gray-600 mb-4 leading-relaxed max-w-lg mx-auto px-0.5">
               בחר מה מקובל עליך כרגע. אלמוג יזכור את הבחירה שלך ויתאים את ההכוונה בהתאם.
             </p>
-            <div className="space-y-4">
+            <div className="space-y-4 w-full max-w-lg mx-auto min-w-0 px-0.5">
               {step.tasks.map((task) => {
                 const decision = progress.task_statuses?.[task.id];
                 const status = decision?.status ?? 'pending';
                 return (
                   <div
                     key={task.id}
-                    className="w-full max-w-full rounded-2xl p-4 sm:p-5 overflow-hidden transition-shadow"
+                    className="w-full max-w-full min-w-0 rounded-2xl p-4 sm:p-4 overflow-hidden transition-shadow"
                     style={{
                       background:
                         status === 'accepted'
-                          ? 'rgba(236,253,245,0.72)'
+                          ? 'rgba(236,253,245,0.55)'
                           : status === 'rejected'
-                            ? 'rgba(255,241,242,0.72)'
-                            : 'rgba(255,255,255,0.45)',
+                            ? 'rgba(255,241,242,0.5)'
+                            : 'rgba(255,255,255,0.32)',
                       border:
                         status === 'accepted'
-                          ? '1px solid rgba(16,185,129,0.28)'
+                          ? '1px solid rgba(16,185,129,0.3)'
                           : status === 'rejected'
-                            ? '1px solid rgba(244,63,94,0.22)'
-                            : '1px solid rgba(255,255,255,0.65)',
-                      boxShadow: '0 4px 16px rgba(6,78,59,0.05), inset 0 1px 0 rgba(255,255,255,0.7)',
-                      backdropFilter: 'blur(8px)',
+                            ? '1px solid rgba(244,63,94,0.25)'
+                            : '1px solid rgba(255,255,255,0.5)',
+                      boxShadow: '0 8px 24px rgba(6,78,59,0.07), inset 0 1px 0 rgba(255,255,255,0.65)',
+                      backdropFilter: 'blur(14px) saturate(1.2)',
+                      WebkitBackdropFilter: 'blur(14px) saturate(1.2)',
                     }}
                   >
                     <div className="flex flex-row gap-3 sm:gap-4 items-start w-full">
@@ -358,31 +391,48 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
 }
 
 function LessonScoreRing({ percent }: { percent: number }) {
+  const rid = useId().replace(/:/g, '');
+  const gradId = `lessonScoreRingStroke-${rid}`;
   const r = 38;
   const c = 2 * Math.PI * r;
   const clamped = Math.min(100, Math.max(0, percent));
   const dashOffset = c - (clamped / 100) * c;
 
   return (
-    <div className="relative h-[100px] w-[100px] shrink-0">
-      <svg className="h-[100px] w-[100px] -rotate-90 drop-shadow-md" viewBox="0 0 100 100" aria-hidden>
-        <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="8" />
-        <circle
-          cx="50"
-          cy="50"
-          r={r}
-          fill="none"
-          stroke="rgba(255,255,255,0.98)"
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={dashOffset}
-          className="transition-[stroke-dashoffset] duration-700 ease-out"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-white pointer-events-none">
-        <span className="text-2xl font-black leading-none tracking-tight">{clamped}%</span>
-        <span className="text-[10px] font-bold text-white/85 mt-1">התקדמות</span>
+    <div
+      className="relative h-[104px] w-[104px] shrink-0 rounded-full p-[3px]"
+      style={{
+        background: 'linear-gradient(135deg, #fbbf24 0%, #34d399 40%, #22d3ee 75%, #c4b5fd 100%)',
+        boxShadow: '0 10px 32px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.35)',
+      }}
+    >
+      <div className="relative flex h-full w-full items-center justify-center rounded-full bg-emerald-950/45 p-1.5">
+        <svg width={90} height={90} viewBox="0 0 100 100" className="-rotate-90 shrink-0" aria-hidden>
+          <defs>
+            <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#fef08a" />
+              <stop offset="40%" stopColor="#4ade80" />
+              <stop offset="100%" stopColor="#38bdf8" />
+            </linearGradient>
+          </defs>
+          <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="8" />
+          <circle
+            cx="50"
+            cy="50"
+            r={r}
+            fill="none"
+            stroke={`url(#${gradId})`}
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={dashOffset}
+            className="transition-[stroke-dashoffset] duration-700 ease-out"
+          />
+        </svg>
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-white">
+          <span className="text-2xl font-black leading-none tracking-tight drop-shadow-md">{clamped}%</span>
+          <span className="text-[10px] font-bold text-white/90 mt-0.5">התקדמות</span>
+        </div>
       </div>
     </div>
   );

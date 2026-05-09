@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import type { JourneyStep, JourneyStepProgress, JourneyTaskDecisionStatus, StepSection } from '../../lib/types/journey';
@@ -18,8 +18,6 @@ interface StepLessonProps {
   userId: string;
 }
 
-const SECTIONS: StepSection[] = ['video', 'quiz', 'game', 'commitment', 'summary'];
-
 async function saveJourneyProgress(
   userId: string,
   stepId: string,
@@ -33,6 +31,11 @@ async function saveJourneyProgress(
 }
 
 export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
+  const sections = useMemo<StepSection[]>(() => {
+    const base: StepSection[] = ['video', 'quiz', 'game', 'commitment', 'summary'];
+    return step.commitment ? base : base.filter((s) => s !== 'commitment');
+  }, [step.commitment]);
+
   const immersiveAttentionStops = parseImmersiveAttentionStops(step.text_content);
   const effectiveImmersiveAttentionStops = immersiveAttentionStops.length
     ? immersiveAttentionStops
@@ -62,7 +65,17 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
         auto_resume_seconds: 10,
       }] : []);
   const [progress, setProgress] = useState<JourneyStepProgress>(initialProgress);
-  const [currentSection, setCurrentSection] = useState<StepSection>(initialProgress.last_section || 'video');
+  const [currentSection, setCurrentSection] = useState<StepSection>(() => {
+    let s = initialProgress.last_section || 'video';
+    if (!step.commitment && s === 'commitment') s = 'summary';
+    return s;
+  });
+  /** נדרש כדי לאפשר מעבר לסיכום רק אחרי טיפול בהתחייבות (כולל דחייה) */
+  const commitmentEverResolved = useRef(
+    !step.commitment ||
+      initialProgress.last_section === 'summary' ||
+      initialProgress.is_completed
+  );
   const [quizRemount, setQuizRemount] = useState(0);
   const [gameRemount, setGameRemount] = useState(0);
   const [videoRemount, setVideoRemount] = useState(0);
@@ -74,6 +87,12 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
   useEffect(() => {
     progressRef.current = progress;
   }, [progress]);
+
+  useEffect(() => {
+    if (progress.last_section === 'summary' || progress.is_completed) {
+      commitmentEverResolved.current = true;
+    }
+  }, [progress.last_section, progress.is_completed]);
 
   useLayoutEffect(() => {
     const el = stepChromeRef.current;
@@ -100,8 +119,25 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
     };
   }, [step.id, currentSection]);
 
-  const currentIndex = SECTIONS.indexOf(currentSection);
-  const isLastSection = currentIndex === SECTIONS.length - 1;
+  const currentIndex = sections.indexOf(currentSection);
+  const isLastSection = currentIndex >= 0 && currentIndex === sections.length - 1;
+
+  const canNavigateToTarget = useCallback(
+    (target: StepSection) => {
+      const p = progressRef.current;
+      const ti = sections.indexOf(target);
+      if (ti < 0) return false;
+      for (let j = 0; j < ti; j++) {
+        const s = sections[j];
+        if (s === 'video' && !p.video_watched) return false;
+        if (s === 'quiz' && step.quiz_questions.length > 0 && p.quiz_score === null) return false;
+        if (s === 'game' && step.game_items.length > 0 && p.game_score === null) return false;
+        if (s === 'commitment' && step.commitment && !commitmentEverResolved.current) return false;
+      }
+      return true;
+    },
+    [sections, step.commitment, step.quiz_questions.length, step.game_items.length]
+  );
 
   const updateProgress = useCallback(async (update: Partial<JourneyStepProgress>) => {
     const newProgress = { ...progressRef.current, ...update };
@@ -117,22 +153,28 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
 
   const goToSection = useCallback(
     (section: StepSection) => {
+      if (!canNavigateToTarget(section)) return;
       sectionSwipeDirRef.current = 0;
       applySection(section);
     },
-    [applySection]
+    [applySection, canNavigateToTarget]
   );
 
   const goNext = useCallback(
     (fromSwipe?: boolean) => {
-      if (isLastSection) {
+      if (currentIndex < 0 || isLastSection) {
+        if (fromSwipe) sectionSwipeDirRef.current = 0;
+        return;
+      }
+      const nextSec = sections[currentIndex + 1];
+      if (!canNavigateToTarget(nextSec)) {
         if (fromSwipe) sectionSwipeDirRef.current = 0;
         return;
       }
       if (!fromSwipe) sectionSwipeDirRef.current = 0;
-      applySection(SECTIONS[currentIndex + 1]);
+      applySection(nextSec);
     },
-    [currentIndex, isLastSection, applySection]
+    [currentIndex, isLastSection, sections, canNavigateToTarget, applySection]
   );
 
   const goBack = useCallback(
@@ -142,10 +184,22 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
         return;
       }
       if (!fromSwipe) sectionSwipeDirRef.current = 0;
-      applySection(SECTIONS[currentIndex - 1]);
+      applySection(sections[currentIndex - 1]);
     },
-    [currentIndex, applySection]
+    [currentIndex, sections, applySection]
   );
+
+  useEffect(() => {
+    if (!step.commitment && currentSection === 'commitment') {
+      setCurrentSection('summary');
+    }
+  }, [step.commitment, currentSection]);
+
+  useEffect(() => {
+    if (sections.length && sections.indexOf(currentSection) < 0) {
+      setCurrentSection('video');
+    }
+  }, [sections, currentSection]);
 
   const handleVideoComplete = useCallback(() => {
     updateProgress({ video_watched: true });
@@ -163,11 +217,13 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
   }, [updateProgress, goNext]);
 
   const handleCommitmentAccept = useCallback(() => {
+    commitmentEverResolved.current = true;
     updateProgress({ commitment_accepted: true });
     goNext();
   }, [updateProgress, goNext]);
 
   const handleCommitmentChoice = useCallback((accepted: boolean) => {
+    commitmentEverResolved.current = true;
     updateProgress({ commitment_accepted: accepted });
     goNext();
   }, [updateProgress, goNext]);
@@ -209,6 +265,7 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
   }, [updateProgress]);
 
   const handleReplay = useCallback(async () => {
+    if (step.commitment) commitmentEverResolved.current = false;
     const reset: Partial<JourneyStepProgress> = {
       video_watched: false,
       quiz_answers: {},
@@ -228,7 +285,7 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
     setGameRemount(k => k + 1);
     setVideoRemount(k => k + 1);
     goToSection('video');
-  }, [updateProgress, goToSection]);
+  }, [step.commitment, updateProgress, goToSection]);
 
   const resetVideoWatchOnly = useCallback(async () => {
     if (progress.video_watched) return;
@@ -246,7 +303,7 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
       >
         <div className="relative z-10 px-4 pb-8 pt-3">
           <div className="flex items-center justify-between mb-3">
-            <button onClick={() => goBack()} disabled={currentIndex === 0}
+            <button onClick={() => goBack()} disabled={currentIndex <= 0}
               className="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
               style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
               <ArrowRight className="w-4 h-4 text-white" />
@@ -257,14 +314,23 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
                 {step.title}
               </h1>
             </div>
-            <button onClick={() => goNext()} disabled={isLastSection}
+            <button
+              onClick={() => goNext()}
+              disabled={
+                currentIndex < 0 ||
+                isLastSection ||
+                !sections[currentIndex + 1] ||
+                !canNavigateToTarget(sections[currentIndex + 1]!)
+              }
               className="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
-              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
+              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}
+              aria-label="השלב הבא"
+            >
               <ArrowLeft className="w-4 h-4 text-white" />
             </button>
           </div>
 
-          <StepProgress sections={SECTIONS} currentSection={currentSection} progress={progress} onSectionClick={goToSection} />
+          <StepProgress sections={sections} currentSection={currentSection} progress={progress} onSectionClick={goToSection} />
         </div>
       </div>
 
@@ -286,7 +352,7 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
           onAnimationComplete={() => {
             sectionSwipeDirRef.current = 0;
           }}
-          className="px-4 py-6"
+          className="px-4 py-6 overflow-x-clip touch-pan-y"
           onPanEnd={(_, info) => {
             const ox = info.offset.x;
             const vx = info.velocity.x;
@@ -297,6 +363,11 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
               sectionSwipeDirRef.current = 1;
               goBack(true);
             } else if (ox < -36 || vx < -220) {
+              const nextSec = currentIndex >= 0 ? sections[currentIndex + 1] : undefined;
+              if (!nextSec || !canNavigateToTarget(nextSec)) {
+                sectionSwipeDirRef.current = 0;
+                return;
+              }
               sectionSwipeDirRef.current = -1;
               goNext(true);
             }
