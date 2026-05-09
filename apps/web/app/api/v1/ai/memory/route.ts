@@ -8,6 +8,12 @@ const DUMMY_MEMORY = {
   weaknesses: ['קשה לי בסופשים'],
   victories: ['סיימתי צום ארוך'],
   notes: [],
+  habits_memory: [],
+  tasks_memory: [],
+  task_commitment_state: {},
+  already_suggested: [],
+  failure_patterns: [],
+  personal_timeline: [],
 };
 
 export async function GET(request: Request) {
@@ -34,12 +40,19 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return new Response(JSON.stringify({ error: 'Not available in production' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      });
+    }
+
     const { supabase, user, authError } = await createSupabaseForApiRoute(request);
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
     }
 
-    await upsertUserAiMemory(supabase, user.id, DUMMY_MEMORY);
+    await upsertUserAiMemory(supabase, user.id, DUMMY_MEMORY, { replace: true });
     const memory = await getUserAiMemory(supabase, user.id);
 
     return new Response(JSON.stringify({ ok: true, memory }), {

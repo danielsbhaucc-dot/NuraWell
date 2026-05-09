@@ -1,3 +1,5 @@
+import { getUserAiMemory } from './user-memory';
+
 export interface AiUserContext {
   weakness_pattern?: string;
   engagement_pattern?: string;
@@ -5,6 +7,8 @@ export interface AiUserContext {
   commitment_status?: 'active' | 'paused' | 'abandoned' | string;
   fatigue_signal?: boolean;
   dropout_risk?: 'low' | 'medium' | 'high' | string;
+  /** ניתוח תמליל תקופתי (Cron) */
+  current_mood_signal?: 'frustrated' | 'motivated' | 'disengaged' | 'neutral' | 'unknown' | string;
   notes?: string;
 }
 
@@ -15,6 +19,7 @@ export interface BuildUserContextResult {
     daysSinceLastActive: number | null;
     aiContext: AiUserContext;
     weeklyCompleted: number;
+    chatCommitmentsPreview: string[];
   };
 }
 
@@ -61,7 +66,13 @@ export async function buildUserContext(
   if (!profile) {
     return {
       contextString: 'מידע על המשתמש: משתמש חדש - אין עדיין נתונים אישיים.',
-      raw: { name: null, daysSinceLastActive: null, aiContext: {}, weeklyCompleted: 0 },
+      raw: {
+        name: null,
+        daysSinceLastActive: null,
+        aiContext: {},
+        weeklyCompleted: 0,
+        chatCommitmentsPreview: [],
+      },
     };
   }
 
@@ -109,6 +120,20 @@ export async function buildUserContext(
   if (commitmentSummary) parts.push(`התחייבויות: ${commitmentSummary}`);
   if (progressSummary) parts.push(`שבוע אחרון: ${progressSummary}`);
   if (ctx.notes) parts.push(`תובנה: ${ctx.notes}`);
+  if (ctx.current_mood_signal && ctx.current_mood_signal !== 'unknown') {
+    parts.push(`אות מצב רגשי (ניתוח אחרון): ${ctx.current_mood_signal}`);
+  }
+
+  let chatCommitmentsPreview: string[] = [];
+  try {
+    const chatMemory = await getUserAiMemory(supabase, userId);
+    chatCommitmentsPreview = chatMemory.commitments.slice(0, 3);
+    if (chatCommitmentsPreview.length > 0) {
+      parts.push(`התחייבויות מהצ'אט (עדכניות): ${chatCommitmentsPreview.join('; ')}`);
+    }
+  } catch {
+    /* זיכרון צ'אט אופציונלי — לא לשבור קונטקסט אם השאילתה נכשלת */
+  }
 
   return {
     contextString: `מידע על המשתמש (לשימוש פנימי בלבד):\n${parts.join('\n')}`,
@@ -117,6 +142,7 @@ export async function buildUserContext(
       daysSinceLastActive,
       aiContext: ctx,
       weeklyCompleted: recentProgress.length,
+      chatCommitmentsPreview,
     },
   };
 }
@@ -160,6 +186,7 @@ export async function updateAiContext(
     'commitment_status',
     'fatigue_signal',
     'dropout_risk',
+    'current_mood_signal',
     'notes',
   ];
 
