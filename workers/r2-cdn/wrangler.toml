@@ -1,0 +1,14 @@
+# החלף את שמות הדליים בשמות האמיתיים בחשבון Cloudflare שלך.
+name = "nurawell-r2-cdn"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+# תמונות — נתיב ציבורי /images/*
+[[r2_buckets]]
+binding = "MAIN_BUCKET"
+bucket_name = "REPLACE_ME_IMAGES_BUCKET"
+
+# מסמכים וקבצים — נתיב ציבורי /files/*
+[[r2_buckets]]
+binding = "FILES_BUCKET"
+bucket_name = "REPLACE_ME_FILES_BUCKET"
