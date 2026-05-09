@@ -21,6 +21,7 @@ const ALLOWED_CONTEXT_PATCH_KEYS = new Set([
   'commitment_status',
   'fatigue_signal',
   'dropout_risk',
+  'current_mood_signal',
   'notes',
 ]);
 
