@@ -339,16 +339,24 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
         <motion.div
           key={currentSection}
           custom={sectionSwipeDirRef.current}
+          dir="rtl"
           variants={{
+            /* dir: +1 = מעבר קדימה (השלב הבא), -1 = חזרה אחורה — מתואם להחלקה ב־RTL */
             enter: (dir: number) =>
               dir === 0
                 ? { x: 0, opacity: 1 }
-                : { x: dir * 22, opacity: 0.88 },
+                : { x: dir * 26, opacity: 0.82 },
             center: { x: 0, opacity: 1 },
           }}
           initial="enter"
           animate="center"
-          transition={{ duration: 0.2, ease: [0.25, 0.9, 0.35, 1] }}
+          transition={{
+            type: 'spring',
+            stiffness: 380,
+            damping: 36,
+            mass: 0.85,
+            opacity: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
+          }}
           onAnimationComplete={() => {
             sectionSwipeDirRef.current = 0;
           }}
@@ -357,19 +365,25 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
             const ox = info.offset.x;
             const vx = info.velocity.x;
             const oy = info.offset.y;
-            if (Math.abs(ox) < 52 && Math.abs(vx) < 380) return;
-            if (Math.abs(ox) < Math.abs(oy) * 1.35) return;
-            if (ox > 36 || vx > 220) {
-              sectionSwipeDirRef.current = 1;
-              goBack(true);
-            } else if (ox < -36 || vx < -220) {
+            if (Math.abs(ox) < 48 && Math.abs(vx) < 320) return;
+            if (Math.abs(ox) < Math.abs(oy) * 1.4) return;
+
+            /* RTL: החלקה ימינה (ox>0) = קדימה לשלב הבא, שמאלה = חזרה (כמו מחווני המסע) */
+            if (ox > 40 || vx > 240) {
               const nextSec = currentIndex >= 0 ? sections[currentIndex + 1] : undefined;
               if (!nextSec || !canNavigateToTarget(nextSec)) {
                 sectionSwipeDirRef.current = 0;
                 return;
               }
-              sectionSwipeDirRef.current = -1;
+              sectionSwipeDirRef.current = 1;
               goNext(true);
+            } else if (ox < -40 || vx < -240) {
+              if (currentIndex <= 0) {
+                sectionSwipeDirRef.current = 0;
+                return;
+              }
+              sectionSwipeDirRef.current = -1;
+              goBack(true);
             }
           }}
         >
