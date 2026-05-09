@@ -79,6 +79,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const siteOrigin = metadataBaseUrl().origin;
   return (
     <html lang="he" dir="rtl" translate="no" className="notranslate" suppressHydrationWarning>
       <head>
