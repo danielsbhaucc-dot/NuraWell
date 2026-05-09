@@ -11,6 +11,7 @@ import { CommitmentSection } from './CommitmentSection';
 import { SummarySection } from './SummarySection';
 import { StepProgress } from './StepProgress';
 import { parseImmersiveAttentionStops } from '../../lib/journey/immersiveAttentionStops';
+import { isCommitmentGateResolved } from '../../lib/journey/commitment-gate';
 
 interface StepLessonProps {
   step: JourneyStep;
@@ -72,9 +73,7 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
   });
   /** נדרש כדי לאפשר מעבר לסיכום רק אחרי טיפול בהתחייבות (כולל דחייה) */
   const commitmentEverResolved = useRef(
-    !step.commitment ||
-      initialProgress.last_section === 'summary' ||
-      initialProgress.is_completed
+    isCommitmentGateResolved(Boolean(step.commitment), initialProgress)
   );
   const [quizRemount, setQuizRemount] = useState(0);
   const [gameRemount, setGameRemount] = useState(0);
@@ -112,10 +111,10 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
   }, [currentSection]);
 
   useEffect(() => {
-    if (progress.last_section === 'summary' || progress.is_completed) {
+    if (isCommitmentGateResolved(Boolean(step.commitment), progress)) {
       commitmentEverResolved.current = true;
     }
-  }, [progress.last_section, progress.is_completed]);
+  }, [step.commitment, progress]);
 
   useLayoutEffect(() => {
     const el = stepChromeRef.current;
