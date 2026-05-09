@@ -19,7 +19,7 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-dashboard">
       <MobileHeader user={user} />
-      <main className="pb-24 pt-16 min-h-screen page-enter">
+      <main id="main-content" className="pb-24 pt-16 min-h-screen page-enter" tabIndex={-1}>
         {children}
       </main>
       <BottomNav />

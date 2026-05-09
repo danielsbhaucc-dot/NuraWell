@@ -69,6 +69,7 @@ export default function RegisterPage() {
     <>
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
       <main
+        id="main-content"
         className="min-h-screen flex flex-col justify-center px-4 py-10 bg-mesh"
       >
 

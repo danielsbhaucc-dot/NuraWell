@@ -61,6 +61,7 @@ function LoginFormContent() {
     <>
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
       <main
+        id="main-content"
         className="min-h-screen flex flex-col justify-center px-4 py-10 bg-mesh"
       >
 
@@ -179,7 +180,7 @@ function LoginFormContent() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <main className="min-h-screen bg-mesh flex items-center justify-center">
+      <main id="main-content" className="min-h-screen bg-mesh flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary-500/30 border-t-primary-500 rounded-full animate-spin" />
       </main>
     }>
