@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { animate, motion, useMotionValue } from 'framer-motion';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import type { JourneyStep, JourneyStepProgress, JourneyTaskDecisionStatus, StepSection } from '../../lib/types/journey';
 import { VideoSection } from './VideoSection';
@@ -84,9 +84,32 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
   const [immersiveViewportTopPx, setImmersiveViewportTopPx] = useState<number | null>(null);
   const progressRef = useRef(progress);
   const sectionSwipeDirRef = useRef(0);
+  /** עקיבה אחרי האצבע בהחלקה + סנאפ אחרי שחרור */
+  const xDrag = useMotionValue(0);
   useEffect(() => {
     progressRef.current = progress;
   }, [progress]);
+
+  /* אחרי מעבר מהחלקה: x נשאר במיקום האצבע — נסיים בספרינג ל־0; אחרי כפתורים — איפוס */
+  useLayoutEffect(() => {
+    const dir = sectionSwipeDirRef.current;
+    if (dir !== 0) {
+      const ctrl = animate(xDrag, 0, {
+        type: 'spring',
+        stiffness: 420,
+        damping: 38,
+        mass: 0.78,
+      });
+      void ctrl.then(() => {
+        sectionSwipeDirRef.current = 0;
+      });
+      return () => {
+        ctrl.stop();
+      };
+    }
+    xDrag.set(0);
+    return undefined;
+  }, [currentSection]);
 
   useEffect(() => {
     if (progress.last_section === 'summary' || progress.is_completed) {
@@ -338,53 +361,63 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
       <div style={{ borderRadius: '26px 26px 0 0', marginTop: '-14px', position: 'relative', zIndex: 3 }}>
         <motion.div
           key={currentSection}
-          custom={sectionSwipeDirRef.current}
           dir="rtl"
-          variants={{
-            /* dir: +1 = מעבר קדימה (השלב הבא), -1 = חזרה אחורה — מתואם להחלקה ב־RTL */
-            enter: (dir: number) =>
-              dir === 0
-                ? { x: 0, opacity: 1 }
-                : { x: dir * 26, opacity: 0.82 },
-            center: { x: 0, opacity: 1 },
-          }}
-          initial="enter"
-          animate="center"
-          transition={{
-            type: 'spring',
-            stiffness: 380,
-            damping: 36,
-            mass: 0.85,
-            opacity: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
-          }}
-          onAnimationComplete={() => {
-            sectionSwipeDirRef.current = 0;
-          }}
-          className="px-4 py-6 overflow-x-clip touch-pan-y"
-          onPanEnd={(_, info) => {
+          style={{ x: xDrag, willChange: 'transform' }}
+          drag="x"
+          dragDirectionLock
+          dragConstraints={{ left: -240, right: 240 }}
+          dragElastic={0.08}
+          dragMomentum={false}
+          dragTransition={{ bounceStiffness: 420, bounceDamping: 28 }}
+          whileDrag={{ cursor: 'grabbing' }}
+          className="cursor-grab touch-pan-y px-4 py-6 overflow-x-clip"
+          onDragEnd={(_, info) => {
             const ox = info.offset.x;
             const vx = info.velocity.x;
             const oy = info.offset.y;
-            if (Math.abs(ox) < 48 && Math.abs(vx) < 320) return;
-            if (Math.abs(ox) < Math.abs(oy) * 1.4) return;
+            const TH = 52;
+            const VH = 260;
 
-            /* RTL: החלקה ימינה (ox>0) = קדימה לשלב הבא, שמאלה = חזרה (כמו מחווני המסע) */
-            if (ox > 40 || vx > 240) {
+            const snapBack = () => {
+              void animate(xDrag, 0, {
+                type: 'spring',
+                stiffness: 520,
+                damping: 42,
+                mass: 0.75,
+              });
+            };
+
+            /* תנועה קטנה או כמעט רק אנכית — רק חזרה למרכז */
+            if (Math.abs(ox) < 48 && Math.abs(vx) < 320) {
+              snapBack();
+              return;
+            }
+            if (Math.abs(ox) < Math.abs(oy) * 1.35) {
+              snapBack();
+              return;
+            }
+
+            /* RTL: ימינה (ox>0) = השלב הבא, שמאלה = חזרה */
+            if (ox > TH || vx > VH) {
               const nextSec = currentIndex >= 0 ? sections[currentIndex + 1] : undefined;
               if (!nextSec || !canNavigateToTarget(nextSec)) {
-                sectionSwipeDirRef.current = 0;
+                snapBack();
                 return;
               }
               sectionSwipeDirRef.current = 1;
               goNext(true);
-            } else if (ox < -40 || vx < -240) {
+              return;
+            }
+            if (ox < -TH || vx < -VH) {
               if (currentIndex <= 0) {
-                sectionSwipeDirRef.current = 0;
+                snapBack();
                 return;
               }
               sectionSwipeDirRef.current = -1;
               goBack(true);
+              return;
             }
+            snapBack();
           }}
         >
             {currentSection === 'video' && (
