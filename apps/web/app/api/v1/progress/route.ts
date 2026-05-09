@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const runtime = 'edge';
 import { readJsonBody } from '../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../lib/api/route-guards';
 

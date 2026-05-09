@@ -7,6 +7,7 @@ import { LESSON_FEEDBACK_PROMPT } from '../../../../../lib/ai/prompts';
 import { readJsonBody } from '../../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 
+/** Vercel Edge — תגובת משוב AI מהירה */
 export const runtime = 'edge';
 
 const lessonFeedbackSchema = z.object({

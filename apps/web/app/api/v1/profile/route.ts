@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
+
+/** נקודות קצה קלות (Supabase + Zod) — Edge ב-Vercel לזמני תגובה גלובליים קצרים */
+export const runtime = 'edge';
 import { readJsonBody } from '../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../lib/api/route-guards';
 import { jsonZodError } from '../../../../lib/validation/zod-http';
