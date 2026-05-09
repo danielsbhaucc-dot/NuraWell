@@ -4,7 +4,8 @@ import { useId, useState, type CSSProperties } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileCheck, RotateCcw, BookOpen, Download, CheckCircle2,
-  ChevronDown, ExternalLink, Award, Sparkles, ListChecks, Heart
+  ChevronDown, ExternalLink, Award, Sparkles, ListChecks, Heart,
+  Check, X,
 } from 'lucide-react';
 import type {
   JourneyStep,
@@ -184,88 +185,116 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
             <p className="text-xs sm:text-sm text-gray-600 mb-4 leading-relaxed max-w-lg mx-auto px-0.5">
               בחר מה מקובל עליך כרגע. אלמוג יזכור את הבחירה שלך ויתאים את ההכוונה בהתאם.
             </p>
-            <div className="space-y-4 w-full max-w-lg mx-auto min-w-0 px-0.5">
+            <div className="flex flex-col gap-4 w-full max-w-lg mx-auto min-w-0">
               {step.tasks.map((task) => {
                 const decision = progress.task_statuses?.[task.id];
                 const status = decision?.status ?? 'pending';
+
+                const ringGradient =
+                  status === 'accepted'
+                    ? 'linear-gradient(145deg, rgba(52,211,153,0.75), rgba(167,243,208,0.45), rgba(255,255,255,0.55))'
+                    : status === 'rejected'
+                      ? 'linear-gradient(145deg, rgba(251,113,133,0.65), rgba(254,215,170,0.4), rgba(255,255,255,0.5))'
+                      : 'linear-gradient(145deg, rgba(255,255,255,0.85), rgba(167,243,208,0.55), rgba(204,251,241,0.45))';
+
+                const innerBg =
+                  status === 'accepted'
+                    ? 'linear-gradient(180deg, rgba(255,255,255,0.62) 0%, rgba(209,250,229,0.42) 100%)'
+                    : status === 'rejected'
+                      ? 'linear-gradient(180deg, rgba(255,255,255,0.58) 0%, rgba(255,241,242,0.45) 100%)'
+                      : 'linear-gradient(180deg, rgba(255,255,255,0.52) 0%, rgba(240,253,250,0.34) 100%)';
+
                 return (
                   <div
                     key={task.id}
-                    className="w-full max-w-full min-w-0 rounded-2xl p-4 sm:p-4 overflow-hidden transition-shadow"
-                    style={{
-                      background:
-                        status === 'accepted'
-                          ? 'rgba(236,253,245,0.55)'
-                          : status === 'rejected'
-                            ? 'rgba(255,241,242,0.5)'
-                            : 'rgba(255,255,255,0.32)',
-                      border:
-                        status === 'accepted'
-                          ? '1px solid rgba(16,185,129,0.3)'
-                          : status === 'rejected'
-                            ? '1px solid rgba(244,63,94,0.25)'
-                            : '1px solid rgba(255,255,255,0.5)',
-                      boxShadow: '0 8px 24px rgba(6,78,59,0.07), inset 0 1px 0 rgba(255,255,255,0.65)',
-                      backdropFilter: 'blur(14px) saturate(1.2)',
-                      WebkitBackdropFilter: 'blur(14px) saturate(1.2)',
-                    }}
+                    className="w-full max-w-full min-w-0 h-auto shrink-0 rounded-[22px] p-[1px]"
+                    style={{ background: ringGradient }}
                   >
-                    <div className="flex flex-row gap-3 sm:gap-4 items-start w-full">
-                      <span className="text-2xl shrink-0 leading-none pt-0.5 select-none" aria-hidden>
-                        {task.emoji}
-                      </span>
-                      <div className="min-w-0 flex-1 space-y-1.5">
-                        <p
-                          className="font-bold text-[15px] sm:text-base leading-relaxed break-words text-pretty"
-                          style={{ color: '#1A1730', wordBreak: 'break-word' }}
-                        >
-                          {task.title}
-                        </p>
-                        {task.description && (
-                          <p className="text-[13px] sm:text-sm text-gray-600 leading-relaxed break-words">{task.description}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-col gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => onTaskDecisionChange(task.id, 'accepted')}
-                        className={`w-full px-4 py-3 rounded-2xl text-sm font-bold transition shadow-sm ${
-                          status === 'accepted'
-                            ? 'bg-emerald-600 text-white shadow-emerald-900/15'
-                            : 'bg-emerald-50/90 text-emerald-800 border border-emerald-200/90 hover:bg-emerald-100'
-                        }`}
-                      >
-                        מקובל עליי
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onTaskDecisionChange(task.id, 'rejected')}
-                        className={`w-full px-4 py-3 rounded-2xl text-sm font-bold transition shadow-sm ${
-                          status === 'rejected'
-                            ? 'bg-rose-600 text-white shadow-rose-900/15'
-                            : 'bg-rose-50/90 text-rose-800 border border-rose-200/90 hover:bg-rose-100'
-                        }`}
-                      >
-                        לא מקובל כרגע
-                      </button>
-                    </div>
-                    <div className="mt-3 flex justify-start">
-                      {status === 'accepted' && (
-                        <span className="text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200/90 rounded-lg px-2.5 py-1 font-semibold">
-                          סומן: מקובל
-                        </span>
-                      )}
-                      {status === 'rejected' && (
-                        <span className="text-[11px] text-rose-800 bg-rose-50 border border-rose-200/90 rounded-lg px-2.5 py-1 font-semibold">
-                          סומן: לא מקובל כרגע
-                        </span>
-                      )}
-                      {status === 'pending' && (
-                        <span className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200/90 rounded-lg px-2.5 py-1 font-semibold">
-                          ממתין לבחירה
-                        </span>
-                      )}
+                    <div
+                      className="rounded-[21px] overflow-hidden"
+                      style={{
+                        background: innerBg,
+                        backdropFilter: 'blur(22px) saturate(1.25)',
+                        WebkitBackdropFilter: 'blur(22px) saturate(1.25)',
+                        boxShadow:
+                          '0 14px 42px rgba(6,78,59,0.1), inset 0 1px 1px rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.2)',
+                      }}
+                    >
+                          {/* כותרת — גובה לפי תוכן בלבד */}
+                          <div className="flex flex-row-reverse items-start gap-3 px-4 pt-4 pb-3">
+                            <div
+                              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl shadow-inner"
+                              style={{
+                                background: 'rgba(255,255,255,0.55)',
+                                border: '1px solid rgba(255,255,255,0.75)',
+                                boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.9)',
+                              }}
+                              aria-hidden
+                            >
+                              {task.emoji}
+                            </div>
+                            <div className="min-w-0 flex-1 text-right space-y-1.5">
+                              <p
+                                className="font-black text-[15px] sm:text-[15px] leading-snug text-[#1A1730] break-words"
+                                style={{ wordBreak: 'break-word' }}
+                              >
+                                {task.title}
+                              </p>
+                              {task.description ? (
+                                <p className="text-[12px] sm:text-[13px] text-gray-600 leading-relaxed break-words border-t border-white/40 pt-2">
+                                  {task.description}
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          {/* כפתורים — שורה כפולה במובייל חוסכת גובה */}
+                          <div className="grid grid-cols-2 gap-2 px-3 pb-3 pt-0">
+                            <button
+                              type="button"
+                              onClick={() => onTaskDecisionChange(task.id, 'accepted')}
+                              className={`flex min-h-[44px] items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] sm:text-xs font-black transition active:scale-[0.98] ${
+                                status === 'accepted'
+                                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/20'
+                                  : 'border border-emerald-300/70 bg-white/50 text-emerald-900 hover:bg-emerald-50/90'
+                              }`}
+                              style={{ backdropFilter: 'blur(8px)' }}
+                            >
+                              <Check className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={3} />
+                              <span className="leading-tight">מקובל עליי</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onTaskDecisionChange(task.id, 'rejected')}
+                              className={`flex min-h-[44px] items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] sm:text-xs font-black transition active:scale-[0.98] ${
+                                status === 'rejected'
+                                  ? 'bg-rose-600 text-white shadow-md shadow-rose-900/15'
+                                  : 'border border-rose-300/70 bg-white/45 text-rose-900 hover:bg-rose-50/90'
+                              }`}
+                              style={{ backdropFilter: 'blur(8px)' }}
+                            >
+                              <X className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={3} />
+                              <span className="leading-tight">לא מקובל</span>
+                            </button>
+                          </div>
+
+                          <div className="flex justify-end border-t border-white/35 px-3 py-2">
+                            {status === 'accepted' && (
+                              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/70 border border-emerald-200/80 rounded-full px-2.5 py-1">
+                                נשמר · מקובל
+                              </span>
+                            )}
+                            {status === 'rejected' && (
+                              <span className="text-[10px] font-bold text-rose-800 bg-rose-100/70 border border-rose-200/80 rounded-full px-2.5 py-1">
+                                נשמר · לא מקובל כרגע
+                              </span>
+                            )}
+                            {status === 'pending' && (
+                              <span className="text-[10px] font-semibold text-amber-900/90 bg-amber-50/90 border border-amber-200/70 rounded-full px-2.5 py-1">
+                                נא לבחור למעלה
+                              </span>
+                            )}
+                          </div>
                     </div>
                   </div>
                 );
