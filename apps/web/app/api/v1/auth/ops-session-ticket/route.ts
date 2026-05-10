@@ -68,10 +68,17 @@ export async function POST(request: Request) {
   if (error) {
     console.error('[ops-session-ticket] rpc', error.message, error.code, error.details, error.hint);
     const msg = error.message || 'RPC failed';
-    const hint =
-      msg.toLowerCase().includes('invalid api key') || msg.includes('401')
-        ? ' עדכון SUPABASE_SERVICE_ROLE_KEY ב-Vercel לא מנתק את מסד הנתונים ולא משנה את Supabase — רק מתקן מה שהשרת שולח. אל תלחץ Rotate ב-Supabase אלא אם בכוונה מחליפים מפתח בכל המערכת. השווה לטאב Legacy: הערך חייב להיות בדיוק ה-service_role (JWT) או sb_secret ב-SUPABASE_SECRET_KEY, בלי רווח או שורה בסוף.'
-        : '';
+    const lower = msg.toLowerCase();
+    const missingRpc =
+      lower.includes('schema cache') || /could not find the function/i.test(msg);
+    let hint = '';
+    if (missingRpc) {
+      hint =
+        ' הפונקציה insert_ops_auth_ticket עדיין לא קיימת בפרויקט Supabase הזה (או מטמון PostgREST לא התעדכן). הרץ את המיגרציות 000007–000009 מהריפו (supabase db push / Dashboard Migrations), או הדבק את תוכן הקבצים מ־supabase/migrations ב-SQL Editor. אחרי יצירת הפונקציות הרץ: NOTIFY pgrst, \'reload schema\';';
+    } else if (lower.includes('invalid api key') || msg.includes('401')) {
+      hint =
+        ' עדכון SUPABASE_SERVICE_ROLE_KEY ב-Vercel לא מנתק את מסד הנתונים ולא משנה את Supabase — רק מתקן מה שהשרת שולח. אל תלחץ Rotate ב-Supabase אלא אם בכוונה מחליפים מפתח בכל המערכת. השווה לטאב Legacy: הערך חייב להיות בדיוק ה-service_role (JWT) או sb_secret ב-SUPABASE_SECRET_KEY, בלי רווח או שורה בסוף.';
+    }
     return NextResponse.json(
       {
         error: `${msg}.${hint}`,
