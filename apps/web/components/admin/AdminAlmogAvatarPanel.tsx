@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { ImageUp, Loader2, CheckCircle2, AlertTriangle, Upload } from 'lucide-react';
+import { ImageUp, Loader2, CheckCircle2, AlertTriangle, Upload, UserCircle } from 'lucide-react';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import {
   encodeImageToWebpBlob,
@@ -128,24 +128,21 @@ export function AdminAlmogAvatarPanel() {
 
   return (
     <section
-      className="rounded-2xl p-5 mb-6 overflow-hidden"
-      style={{
-        background: 'linear-gradient(165deg, #ffffff 0%, #f8fafc 100%)',
-        border: '1px solid rgba(6,78,59,0.1)',
-        boxShadow: '0 8px 28px rgba(6,78,59,0.07)',
-      }}
+      className="relative mb-6 overflow-hidden rounded-3xl border border-white/60 bg-white/60 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl transition-all sm:p-6 md:p-8 sm:hover:shadow-[0_8px_30px_rgb(16,185,129,0.08)]"
       dir="rtl"
     >
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="text-right flex-1">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex-1 text-right">
           <h2
-            className="text-xl font-black tracking-tight"
-            style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
+            className="flex flex-wrap items-center gap-2 text-lg font-black tracking-tight text-slate-800 sm:text-xl"
+            style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
-            {avatarMetaReady && hasCustom ? 'עדכן תמונת פרופיל' : 'העלאת תמונת פרופיל'}
+            <UserCircle className="h-6 w-6 shrink-0 text-emerald-500" aria-hidden />
+            {avatarMetaReady && hasCustom ? 'עדכון תמונת פרופיל — אלמוג' : 'תמונת פרופיל — אלמוג'}
           </h2>
-          <p className="text-sm text-gray-600 mt-1.5 leading-relaxed max-w-xl">
-            מוצגת בצ&apos;אט, במשובים ובהתראות. עדיף תמונה ברורה של הפנים, ריבועית או פורטרט.
+          <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-slate-600">
+            רק לדמות אלמוג בצ&apos;אט: מוצגת בצ&apos;אט, במשובים ובהתראות. עדיף תמונה ברורה של פנים,
+            ריבועית או פורטרט.
           </p>
           {avatarMetaReady && cdnConfigured && cdnHostname ? (
             <p className="text-xs text-gray-500 mt-2 leading-relaxed max-w-xl">
@@ -167,11 +164,8 @@ export function AdminAlmogAvatarPanel() {
             </p>
           ) : null}
         </div>
-        <div className="flex justify-center sm:justify-end shrink-0">
-          <div
-            className="relative h-20 w-20 rounded-2xl overflow-hidden ring-2 ring-emerald-200/80 ring-offset-2 ring-offset-white shadow-md"
-            style={{ background: '#ecfdf5' }}
-          >
+        <div className="flex shrink-0 justify-center sm:justify-end">
+          <div className="relative h-20 w-20 overflow-hidden rounded-2xl bg-emerald-50 shadow-md ring-2 ring-emerald-200/80 ring-offset-2 ring-offset-white">
             <img src={preview} alt="תצוגה מקדימה" className="h-full w-full object-cover" />
           </div>
         </div>
@@ -200,20 +194,17 @@ export function AdminAlmogAvatarPanel() {
             pickFiles(e.dataTransfer.files);
           }}
           className={[
-            'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-8 transition-all',
+            'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-10 transition-all active:scale-[0.99] sm:py-8',
             dragOver
-              ? 'border-emerald-500 bg-emerald-50/80 scale-[1.01]'
-              : 'border-gray-200 bg-white/80 hover:border-emerald-300 hover:bg-emerald-50/40',
+              ? 'scale-[1.01] border-emerald-500 bg-emerald-50/90'
+              : 'border-emerald-200/90 bg-emerald-50/40 hover:border-emerald-300 hover:bg-emerald-50/70',
           ].join(' ')}
         >
-          <div
-            className="flex h-12 w-12 items-center justify-center rounded-full"
-            style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.12))' }}
-          >
-            <Upload className="h-6 w-6 text-emerald-700" strokeWidth={2} />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-emerald-100">
+            <Upload className="h-6 w-6 text-emerald-600" strokeWidth={2} />
           </div>
-          <p className="text-sm font-bold text-gray-800">גרור תמונה לכאן או לחץ לבחירה</p>
-          <p className="text-xs text-gray-500">PNG, JPEG, WebP או AVIF · עד כ־4MB</p>
+          <p className="text-sm font-bold text-slate-800">גרור תמונה לכאן או לחץ לבחירה</p>
+          <p className="text-xs text-slate-500">PNG, JPEG, WebP או AVIF · עד כ־4MB</p>
           {file && (
             <p className="text-xs font-semibold text-emerald-800 mt-1">
               נבחר: {file.name}
@@ -225,14 +216,10 @@ export function AdminAlmogAvatarPanel() {
           type="button"
           onClick={() => void onUpload()}
           disabled={!file || busy}
-          className="inline-flex w-full sm:w-auto sm:self-end items-center justify-center gap-2 rounded-2xl px-6 py-3.5 font-bold text-white shadow-lg disabled:opacity-45 disabled:shadow-none transition-transform active:scale-[0.98]"
-          style={{
-            background: 'linear-gradient(135deg, #047857, #10b981)',
-            boxShadow: '0 8px 24px rgba(16,185,129,0.35)',
-          }}
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-500 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-500/30 transition-transform hover:brightness-110 active:scale-[0.98] disabled:opacity-45 disabled:shadow-none sm:w-auto sm:self-end sm:text-[15px]"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageUp className="h-5 w-5" />}
-          {avatarMetaReady && hasCustom ? 'עדכן תמונה' : 'שמור תמונה'}
+          {avatarMetaReady && hasCustom ? 'עדכן תמונת אלמוג' : 'שמור תמונת אלמוג'}
         </button>
       </div>
 

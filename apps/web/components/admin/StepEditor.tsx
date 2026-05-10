@@ -106,7 +106,7 @@ export function StepEditor({ step }: StepEditorProps) {
     });
 
     if (res.ok) {
-      router.push('/admin');
+      router.push('/admin/journey');
       router.refresh();
     } else {
       const err = await res.json();
@@ -145,7 +145,7 @@ export function StepEditor({ step }: StepEditorProps) {
         className="flex items-center gap-3 mb-5 rounded-2xl px-3 py-3 backdrop-blur-md"
         style={{ background: 'rgba(255,255,255,0.62)', border: '1px solid rgba(255,255,255,0.65)', boxShadow: '0 10px 24px rgba(16,24,40,0.08)' }}
       >
-        <button onClick={() => router.push('/admin')}
+        <button onClick={() => router.push('/admin/journey')}
           className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-sm"
           style={{ background: 'linear-gradient(135deg, #0f766e, #10b981)', border: '1px solid rgba(255,255,255,0.55)' }}>
           <ArrowRight className="w-5 h-5 text-white" />
