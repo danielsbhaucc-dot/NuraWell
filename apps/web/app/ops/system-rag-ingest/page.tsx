@@ -17,7 +17,7 @@ export default function SystemRagIngestPage() {
         <div>
           <h1 className="font-display text-2xl font-black text-slate-900 sm:text-3xl">לאמן את אלמוג</h1>
           <p className="mt-1 text-[15px] leading-relaxed text-slate-600">
-            העלו חומר לימוד או הנחיות — אלמוג ילמד אותו וישתמש בו בשיחות, רק כשכל משתמש מגיע לצעד או לקורס המתאים.
+            העלו חומר לימוד או הנחיות — אלמוג ילמד אותו וישתמש בו בשיחות, רק כשכל משתמש מגיע לשלב בתחנה המתאימה או לקורס המתאים.
             אין צורך במילים טכניות: בוחרים את התוכן, מאשרים לאן הוא משויך, ולוחצים &quot;אמן את אלמוג&quot;.
           </p>
         </div>

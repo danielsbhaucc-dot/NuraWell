@@ -3,13 +3,13 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Lock, Play, Sparkles, Droplets, Map } from 'lucide-react';
+import { CheckCircle2, Lock, Play, Sparkles, Droplets, MapPin, Route } from 'lucide-react';
 import type { JourneyStepWithProgress } from '../../lib/types/journey';
-import type { JourneyCourseGroup } from '../../lib/journey/group-journey-by-course';
+import type { JourneyStationGroup } from '../../lib/journey/group-journey-by-station';
 import { cn } from '../../lib/cn';
 
 interface JourneyPageProps {
-  groups: JourneyCourseGroup[];
+  groups: JourneyStationGroup[];
   initialExpandedKey: string;
 }
 
@@ -87,7 +87,7 @@ export function JourneyPage({ groups, initialExpandedKey }: JourneyPageProps) {
               הדרך שלך לבריאות 🌿
             </h1>
             <p className="text-white/80 text-sm max-w-md mx-auto leading-relaxed">
-              כל מסע הוא סיפור קצר — בוחרים באיזה להתמקד, ופותחים את הצעדים הרלוונטיים
+              בוחרים תחנה במסלול, ומתקדמים צעד־אחר־צעד בתוכה
             </p>
             {totalAcrossAll.all > 0 && (
               <div
@@ -124,29 +124,30 @@ export function JourneyPage({ groups, initialExpandedKey }: JourneyPageProps) {
             <h3 className="text-xl font-black mb-2" style={{ color: '#1A1730' }}>
               עוד לא התחלת את המסע
             </h3>
-            <p className="text-sm text-gray-500">בקרו יופיעו כאן מסעות וצעדים חדשים</p>
+            <p className="text-sm text-gray-500">כשיצטרפו תחנות וצעדים — הם יופיעו כאן</p>
           </div>
         )}
 
         {groups.length > 0 && (
           <>
             <div className="flex items-center gap-2 mb-4 px-1">
-              <Map className="w-5 h-5 text-emerald-700 shrink-0" aria-hidden />
+              <Route className="w-5 h-5 text-emerald-700 shrink-0" aria-hidden />
               <div className="w-1.5 h-6 rounded-full shrink-0" style={{ background: 'linear-gradient(to bottom, #6ee7b7, #047857)' }} />
               <span
                 className="text-lg font-black flex-1 text-right"
                 style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
               >
-                מפת המסעות
+                התחנות במסלול
               </span>
             </div>
 
             <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-thin [-webkit-overflow-scrolling:touch]">
-              {groups.map((g) => {
+              {groups.map((g, idx) => {
                 const done = g.steps.filter((s) => s.progress?.is_completed).length;
                 const total = g.steps.length;
                 const pct = total ? Math.round((done / total) * 100) : 0;
                 const isSel = g.key === expandedKey;
+                const isEmpty = total === 0;
 
                 return (
                   <button
@@ -154,33 +155,58 @@ export function JourneyPage({ groups, initialExpandedKey }: JourneyPageProps) {
                     type="button"
                     onClick={() => setExpandedKey(g.key)}
                     className={cn(
-                      'snap-start shrink-0 rounded-2xl px-4 py-3 text-right transition-all min-w-[min(88vw,280px)] sm:min-w-[260px]',
+                      'snap-start shrink-0 rounded-2xl px-4 py-3.5 text-right transition-all min-w-[min(88vw,300px)] sm:min-w-[280px]',
                       'border shadow-md active:scale-[0.99]',
                       isSel
-                        ? 'ring-2 ring-emerald-400/80 ring-offset-2 ring-offset-[#EDF5F0]'
-                        : 'opacity-95 hover:opacity-100'
+                        ? 'ring-2 ring-emerald-400/90 ring-offset-2 ring-offset-[#EDF5F0]'
+                        : 'opacity-95 hover:opacity-100',
+                      isEmpty && !isSel && 'opacity-80'
                     )}
                     style={{
                       background: isSel
-                        ? 'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(236,253,245,0.96) 100%)'
-                        : 'rgba(255,255,255,0.88)',
-                      borderColor: isSel ? 'rgba(16,185,129,0.45)' : 'rgba(255,255,255,0.9)',
+                        ? 'linear-gradient(145deg, rgba(255,255,255,0.99) 0%, rgba(236,253,245,0.97) 55%, rgba(209,250,229,0.35) 100%)'
+                        : 'rgba(255,255,255,0.9)',
+                      borderColor: isSel ? 'rgba(16,185,129,0.5)' : 'rgba(226,232,240,0.9)',
                       boxShadow: isSel
-                        ? '0 10px 28px rgba(16,185,129,0.18)'
-                        : '0 4px 16px rgba(6,78,59,0.08)',
+                        ? '0 12px 32px rgba(16,185,129,0.2), inset 0 1px 0 rgba(255,255,255,0.9)'
+                        : '0 4px 18px rgba(15,118,110,0.07)',
                     }}
                   >
-                    <p className="text-[15px] font-black leading-snug mb-1 line-clamp-2" style={{ color: '#1A1730' }}>
-                      {g.courseTitle}
-                    </p>
-                    <p className="text-xs text-gray-500 mb-3">
-                      {done}/{total} צעדים · {pct}%
+                    <div className="flex items-start gap-3 mb-2">
+                      <div
+                        className="shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center text-sm font-black text-white"
+                        style={{
+                          background: isSel
+                            ? 'linear-gradient(135deg, #047857, #10b981)'
+                            : 'linear-gradient(135deg, #0f766e, #14b8a6)',
+                          boxShadow: '0 4px 12px rgba(4,120,87,0.25)',
+                        }}
+                      >
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0 opacity-90" aria-hidden />
+                          <p
+                            className="text-[15px] font-black leading-snug line-clamp-2 text-right"
+                            style={{ color: '#1A1730' }}
+                          >
+                            {g.title}
+                          </p>
+                        </div>
+                        {g.description ? (
+                          <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mt-1">{g.description}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-600 mb-2.5 font-medium">
+                      {isEmpty ? 'אין עדיין צעדים בתחנה' : `${done}/${total} צעדים · ${pct}%`}
                     </p>
                     <div className="h-1.5 rounded-full bg-emerald-900/10 overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all"
+                        className="h-full rounded-full transition-all duration-500"
                         style={{
-                          width: `${pct}%`,
+                          width: `${isEmpty ? 0 : pct}%`,
                           background: 'linear-gradient(90deg, #047857, #34d399)',
                         }}
                       />
@@ -192,23 +218,41 @@ export function JourneyPage({ groups, initialExpandedKey }: JourneyPageProps) {
 
             {activeGroup && (
               <>
-                <div className="flex items-center gap-2 mt-8 mb-5 px-1">
-                  <div className="w-1.5 h-6 rounded-full" style={{ background: 'linear-gradient(to bottom, #6ee7b7, #047857)' }} />
-                  <span
-                    className="text-lg font-black flex-1 text-right"
-                    style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
-                  >
-                    צעדים · {activeGroup.courseTitle}
-                  </span>
+                <div
+                  className="mt-8 mb-4 rounded-2xl px-4 py-3 border border-emerald-100/80"
+                  style={{
+                    background: 'linear-gradient(120deg, rgba(255,255,255,0.95) 0%, rgba(236,253,245,0.5) 100%)',
+                    boxShadow: '0 2px 14px rgba(6,95,70,0.06)',
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-7 rounded-full shrink-0" style={{ background: 'linear-gradient(to bottom, #34d399, #047857)' }} />
+                    <div className="flex-1 text-right min-w-0">
+                      <p className="text-xs font-bold text-emerald-800/90">הצעדים בתחנה</p>
+                      <p
+                        className="text-lg font-black leading-snug mt-0.5 line-clamp-2"
+                        style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
+                      >
+                        {activeGroup.title}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 {totalCount > 0 && (
                   <p className="text-center text-sm font-bold text-emerald-800 mb-4">
-                    {completedCount}/{totalCount} צעדים במסע הזה
+                    {completedCount}/{totalCount} צעדים הושלמו כאן
                   </p>
                 )}
 
-                <div className="relative">
+                {totalCount === 0 && (
+                  <p className="text-center text-sm text-gray-500 mb-6 py-6 rounded-xl bg-white/60 border border-dashed border-emerald-200/80">
+                    בתחנה הזו עדיין אין צעדים — זה יתעדכן מיד כשהתוכן יתפרסם.
+                  </p>
+                )}
+
+                {totalCount > 0 && (
+                <div className="relative" key={expandedKey}>
                   <div
                     className="absolute right-[23px] top-0 bottom-0 w-0.5"
                     style={{ background: 'linear-gradient(to bottom, #10b981, #d1fae5, transparent)' }}
@@ -334,6 +378,7 @@ export function JourneyPage({ groups, initialExpandedKey }: JourneyPageProps) {
                     })}
                   </div>
                 </div>
+                )}
               </>
             )}
           </>

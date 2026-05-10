@@ -84,6 +84,25 @@ export function AlmogAvatarChip({ size = 44 }: { size?: number }) {
   );
 }
 
+/** תמונת אלמוג + תג שם ירוק מתחת — כמו בגיבוי סיום, בקומפקטיות */
+export function AlmogAvatarChipWithNameTag({ size = 46, name = 'אלמוג' }: { size?: number; name?: string }) {
+  return (
+    <div className="flex flex-col items-center gap-2 shrink-0">
+      <AlmogAvatarChip size={size} />
+      <span
+        className="px-3.5 py-1 rounded-full text-[11px] font-black text-white shadow-md whitespace-nowrap"
+        style={{
+          background: 'linear-gradient(135deg, #047857, #10b981)',
+          border: '1px solid rgba(255,255,255,0.38)',
+          boxShadow: '0 4px 14px rgba(4,120,87,0.28)',
+        }}
+      >
+        {name}
+      </span>
+    </div>
+  );
+}
+
 /** @deprecated השתמשו בשורת כותרת עם AlmogAvatarChip ב-SummarySection */
 export function AlmogInlinePresence({
   title = 'אלמוג',
