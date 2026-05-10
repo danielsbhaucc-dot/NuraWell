@@ -12,9 +12,11 @@ import { parseImmersiveAttentionStops } from '../../lib/journey/immersiveAttenti
 
 interface AdminStepsListProps {
   steps: JourneyStep[];
+  /** כשהכותרת מוצגת בעמוד העוטף (למשל `/admin/journey`) — מסתירים כפילות כותרת */
+  showIntro?: boolean;
 }
 
-export function AdminStepsList({ steps: initialSteps }: AdminStepsListProps) {
+export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminStepsListProps) {
   const [steps, setSteps] = useState(initialSteps);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
@@ -45,18 +47,28 @@ export function AdminStepsList({ steps: initialSteps }: AdminStepsListProps) {
 
   return (
     <div>
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-black" style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}>
-            ניהול צעדי מסע
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">{steps.length} צעדים</p>
-        </div>
-        <Link href="/admin/steps/new"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white transition-all hover:scale-105 active:scale-95"
-          style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}>
-          <Plus className="w-4 h-4" />
+      <div
+        className={[
+          'mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4',
+          showIntro ? 'sm:justify-between' : 'sm:justify-end',
+        ].join(' ')}
+      >
+        {showIntro ? (
+          <div className="min-w-0">
+            <h1
+              className="text-2xl font-black leading-tight text-slate-900 sm:text-[1.75rem]"
+              style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+            >
+              ניהול צעדי מסע
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">{steps.length} צעדים</p>
+          </div>
+        ) : null}
+        <Link
+          href="/admin/steps/new"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:brightness-110 active:scale-[0.98] sm:w-auto sm:min-w-0 sm:self-end sm:py-2.5"
+        >
+          <Plus className="h-4 w-4" />
           <span>צעד חדש</span>
         </Link>
       </div>
@@ -69,11 +81,8 @@ export function AdminStepsList({ steps: initialSteps }: AdminStepsListProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="rounded-2xl p-4 flex items-center gap-4 transition-all hover:shadow-md"
+            className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white/75 p-4 shadow-sm backdrop-blur-md transition-all sm:flex-row sm:items-center sm:gap-4 sm:hover:border-emerald-100 sm:hover:bg-white/90 sm:hover:shadow-md"
             style={{
-              background: 'rgba(255,255,255,0.95)',
-              border: '1px solid rgba(0,0,0,0.06)',
-              boxShadow: '0 2px 8px rgba(6,78,59,0.04)',
               opacity: isDeleting === step.id ? 0.5 : 1,
             }}
           >
@@ -81,19 +90,22 @@ export function AdminStepsList({ steps: initialSteps }: AdminStepsListProps) {
               const attentionStopsCount = parseImmersiveAttentionStops(step.text_content).length;
               return (
                 <>
+            <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
             {/* Drag handle + number */}
-            <div className="flex items-center gap-2 text-gray-400">
-              <GripVertical className="w-4 h-4" />
-              <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black"
-                style={{ background: 'rgba(16,185,129,0.1)', color: '#047857' }}>
+            <div className="flex shrink-0 items-center gap-2 text-gray-400">
+              <GripVertical className="hidden h-4 w-4 sm:block" aria-hidden />
+              <span
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-black sm:h-8 sm:w-8"
+                style={{ background: 'rgba(16,185,129,0.1)', color: '#047857' }}
+              >
                 {step.step_number}
               </span>
             </div>
 
             {/* Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-bold text-[15px] truncate" style={{ color: '#1A1730' }}>
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 flex flex-wrap items-center gap-2">
+                <h3 className="text-[15px] font-bold leading-snug text-[#1A1730] sm:truncate">
                   {step.title}
                 </h3>
                 {step.is_published ? (
@@ -136,24 +148,33 @@ export function AdminStepsList({ steps: initialSteps }: AdminStepsListProps) {
                 )}
               </div>
             </div>
+            </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              <button onClick={() => handleTogglePublish(step.id, step.is_published)}
+            {/* Actions — שורה נפרדת במובייל, אזורי מגע מוגדלים */}
+            <div className="flex shrink-0 items-center justify-end gap-1 border-t border-slate-100 pt-3 sm:border-t-0 sm:pt-0">
+              <button
+                type="button"
+                onClick={() => handleTogglePublish(step.id, step.is_published)}
                 title={step.is_published ? 'הסתר' : 'פרסם'}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-gray-100"
-                style={{ color: step.is_published ? '#059669' : '#9ca3af' }}>
-                {step.is_published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl transition-colors hover:bg-slate-100 active:bg-slate-200/80"
+                style={{ color: step.is_published ? '#059669' : '#9ca3af' }}
+              >
+                {step.is_published ? <Eye className="h-[1.125rem] w-[1.125rem]" /> : <EyeOff className="h-[1.125rem] w-[1.125rem]" />}
               </button>
-              <Link href={`/admin/steps/${step.id}`}
+              <Link
+                href={`/admin/steps/${step.id}`}
                 title="ערוך"
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-gray-100 text-gray-500">
-                <Edit3 className="w-4 h-4" />
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-slate-100 active:bg-slate-200/80"
+              >
+                <Edit3 className="h-[1.125rem] w-[1.125rem]" />
               </Link>
-              <button onClick={() => handleDelete(step.id)}
+              <button
+                type="button"
+                onClick={() => handleDelete(step.id)}
                 title="מחק"
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-red-50 text-gray-400 hover:text-red-500">
-                <Trash2 className="w-4 h-4" />
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 active:bg-red-100/80"
+              >
+                <Trash2 className="h-[1.125rem] w-[1.125rem]" />
               </button>
             </div>
                 </>
@@ -169,10 +190,11 @@ export function AdminStepsList({ steps: initialSteps }: AdminStepsListProps) {
           <CheckCircle2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-xl font-black mb-2" style={{ color: '#1A1730' }}>אין צעדים עדיין</h3>
           <p className="text-sm text-gray-500 mb-6">צרו את הצעד הראשון במסע</p>
-          <Link href="/admin/steps/new"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white"
-            style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}>
-            <Plus className="w-4 h-4" /> צעד חדש
+          <Link
+            href="/admin/steps/new"
+            className="inline-flex min-h-11 w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-500 px-6 py-3 font-bold text-white shadow-lg shadow-emerald-500/25 active:scale-[0.98] sm:w-auto"
+          >
+            <Plus className="h-4 w-4" /> צעד חדש
           </Link>
         </div>
       )}
