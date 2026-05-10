@@ -3,7 +3,11 @@ import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireApiAdmin } from '@/lib/api/route-guards';
 import { isOpsLoginRedirectUrl } from '@/lib/ops-host';
-import { assertServiceRoleKey } from '@/lib/supabase/service-role-jwt';
+import {
+  assertServiceRoleKey,
+  assertServiceRoleMatchesProjectUrl,
+  normalizeServiceRoleKeyEnv,
+} from '@/lib/supabase/service-role-jwt';
 
 export const runtime = 'nodejs';
 
@@ -32,9 +36,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No session' }, { status: 401 });
   }
 
-  const serviceKeyRaw = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const serviceKey = serviceKeyRaw?.trim();
+  const serviceKey = normalizeServiceRoleKeyEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
   if (!serviceKey || !url) {
     return NextResponse.json(
       { error: 'חסר SUPABASE_SERVICE_ROLE_KEY או NEXT_PUBLIC_SUPABASE_URL ב-Vercel' },
@@ -47,20 +50,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: keyCheck.message }, { status: 500 });
   }
 
+  const refCheck = assertServiceRoleMatchesProjectUrl(serviceKey, url);
+  if (!refCheck.ok) {
+    return NextResponse.json({ error: refCheck.message }, { status: 500 });
+  }
+
   const expires_at = new Date(Date.now() + 120_000).toISOString();
-  const restUrl = `${url.replace(/\/$/, '')}/rest/v1/ops_auth_tickets`;
-  const insRes = await fetch(restUrl, {
+  const base = url.replace(/\/$/, '');
+  const rpcUrl = `${base}/rest/v1/rpc/insert_ops_auth_ticket`;
+
+  const insRes = await fetch(rpcUrl, {
     method: 'POST',
     headers: {
       apikey: serviceKey,
       Authorization: `Bearer ${serviceKey}`,
       'Content-Type': 'application/json',
-      Prefer: 'return=representation',
     },
     body: JSON.stringify({
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
-      expires_at,
+      p_access_token: session.access_token,
+      p_refresh_token: session.refresh_token,
+      p_expires_at: expires_at,
     }),
   });
 
@@ -70,23 +79,27 @@ export async function POST(request: Request) {
       typeof insBody === 'object' && insBody !== null && 'message' in insBody
         ? String((insBody as { message: unknown }).message)
         : insRes.statusText;
-    console.error('[ops-session-ticket] insert', insRes.status, msg, insBody);
+    const hint =
+      typeof insBody === 'object' && insBody !== null && 'hint' in insBody
+        ? String((insBody as { hint: unknown }).hint)
+        : '';
+    console.error('[ops-session-ticket] rpc insert', insRes.status, msg, hint, insBody);
     return NextResponse.json(
       {
         error:
           insRes.status === 401
-            ? 'Supabase דחה את מפתח ה-service_role (401). ודא שהמיגרציה ops_auth_tickets רצה ושב-Vercel מוגדר Service role המלא מלוח הבקרה.'
+            ? `Supabase דחה את הבקשה (401). ${msg}${hint ? ` — ${hint}` : ''} אם הודעת ref כבר עברה, הרץ מיגרציה 000009 (פונקציות RPC) ב-Supabase.`
             : `Ticket failed: ${msg}`,
-        status: insRes.status,
+        code: insRes.status,
       },
       { status: 500 },
     );
   }
 
-  const rows = Array.isArray(insBody) ? insBody : null;
-  const inserted = rows?.[0] as { id?: string } | undefined;
-  if (!inserted?.id) {
-    return NextResponse.json({ error: 'Ticket failed: no id returned' }, { status: 500 });
+  const insertedId = typeof insBody === 'string' ? insBody : null;
+
+  if (!insertedId || !z.string().uuid().safeParse(insertedId).success) {
+    return NextResponse.json({ error: 'Ticket failed: unexpected RPC response', detail: insBody }, { status: 500 });
   }
 
   const opsBase = process.env.NEXT_PUBLIC_OPS_URL?.trim();
@@ -94,7 +107,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'NEXT_PUBLIC_OPS_URL missing' }, { status: 500 });
   }
   const opsOrigin = opsBase.startsWith('http') ? opsBase.replace(/\/$/, '') : `https://${opsBase.replace(/\/$/, '')}`;
-  const ingestUrl = `${opsOrigin}/auth/ops-ingest?t=${inserted.id}`;
+  const ingestUrl = `${opsOrigin}/auth/ops-ingest?t=${insertedId}`;
 
   return NextResponse.json({ ingestUrl });
 }

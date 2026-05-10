@@ -2,7 +2,11 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { mergeAuthCookieOptions } from '@/lib/supabase/cookie-options';
-import { assertServiceRoleKey } from '@/lib/supabase/service-role-jwt';
+import {
+  assertServiceRoleKey,
+  assertServiceRoleMatchesProjectUrl,
+  normalizeServiceRoleKeyEnv,
+} from '@/lib/supabase/service-role-jwt';
 
 export const runtime = 'nodejs';
 
@@ -31,7 +35,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const serviceKey = normalizeServiceRoleKeyEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   if (!serviceKey || !url) {
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
@@ -42,34 +46,37 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: keyCheck.message }, { status: 500 });
   }
 
+  const refCheck = assertServiceRoleMatchesProjectUrl(serviceKey, url);
+  if (!refCheck.ok) {
+    return NextResponse.json({ error: refCheck.message }, { status: 500 });
+  }
+
   const base = url.replace(/\/$/, '');
-  const headers = {
-    apikey: serviceKey,
-    Authorization: `Bearer ${serviceKey}`,
-  };
+  const rpcUrl = `${base}/rest/v1/rpc/claim_ops_auth_ticket`;
 
-  const selRes = await fetch(
-    `${base}/rest/v1/ops_auth_tickets?id=eq.${ticketId}&select=access_token,refresh_token,expires_at`,
-    { headers, cache: 'no-store' }
-  );
-  const rows = (await selRes.json().catch(() => null)) as unknown;
-  if (!selRes.ok || !Array.isArray(rows) || rows.length === 0) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
-  const r = rows[0] as { access_token: string; refresh_token: string; expires_at: string };
-  if (new Date(r.expires_at) < new Date()) {
-    await fetch(`${base}/rest/v1/ops_auth_tickets?id=eq.${ticketId}`, {
-      method: 'DELETE',
-      headers: { ...headers, Prefer: 'return=minimal' },
-    });
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
-  await fetch(`${base}/rest/v1/ops_auth_tickets?id=eq.${ticketId}`, {
-    method: 'DELETE',
-    headers: { ...headers, Prefer: 'return=minimal' },
+  const claimRes = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_id: ticketId }),
   });
+
+  const claimBody = (await claimRes.json().catch(() => null)) as unknown;
+  if (!claimRes.ok) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  const row =
+    claimBody !== null && typeof claimBody === 'object' && !Array.isArray(claimBody)
+      ? (claimBody as { access_token?: string; refresh_token?: string; expires_at?: string })
+      : null;
+
+  if (!row?.access_token || !row?.refresh_token) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
 
   let response = NextResponse.redirect(new URL('/', request.url));
 
@@ -92,8 +99,8 @@ export async function GET(request: NextRequest) {
   );
 
   const { error: setErr } = await supabase.auth.setSession({
-    access_token: r.access_token,
-    refresh_token: r.refresh_token,
+    access_token: row.access_token,
+    refresh_token: row.refresh_token,
   });
 
   if (setErr) {
