@@ -11,6 +11,7 @@ import {
   Globe,
   LayoutDashboard,
   BookOpen,
+  Layers,
   ListTree,
   Map,
   Menu,
@@ -61,7 +62,9 @@ export function AdminShell({
   const isAlmogSettings = np === '/ops/almog';
   const isSiteSettings = np === '/ops/site-settings';
   const isSystemRagIngest = np === '/ops/system-rag-ingest';
-  const isJourneyManage = np.startsWith('/ops/journey') || np.startsWith('/ops/steps');
+  const isJourneyHub = np === '/ops/journey-hub';
+  const isJourneyManage =
+    np.startsWith('/ops/journey') || np.startsWith('/ops/steps') || isJourneyHub;
 
   const [journeySettingsOpen, setJourneySettingsOpen] = useState(isJourneyManage);
 
@@ -155,7 +158,7 @@ export function AdminShell({
       >
         <div
           className={cn(
-            'flex h-full flex-col overflow-y-auto overscroll-contain border-l border-white/60 bg-white/45 px-3 py-5 shadow-[0_16px_48px_rgba(99,102,241,0.12)] backdrop-blur-2xl sm:px-4 sm:py-6',
+            'flex h-full min-h-0 flex-col overscroll-contain border-l border-white/70 bg-white/50 px-3 py-5 shadow-[0_20px_56px_rgba(99,102,241,0.14)] backdrop-blur-2xl sm:px-4 sm:py-6',
             sidebarCollapsed && 'lg:px-2 lg:py-5',
           )}
         >
@@ -208,7 +211,7 @@ export function AdminShell({
             </div>
           </div>
 
-          <nav className="flex-1 space-y-2" aria-label="ניווט פאנל ניהול">
+          <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-0.5" aria-label="ניווט פאנל ניהול">
             <Link
               href="/"
               onClick={() => setSidebarOpen(false)}
@@ -230,16 +233,6 @@ export function AdminShell({
             >
               <UserCircle size={20} className={cn('shrink-0', isAlmogSettings && 'text-violet-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>הגדרות אלמוג</span>
-            </Link>
-
-            <Link
-              href="/site-settings"
-              onClick={() => setSidebarOpen(false)}
-              className={navBtn(isSiteSettings, 'sky')}
-              title="הגדרות אתר"
-            >
-              <Globe size={20} className={cn('shrink-0', isSiteSettings && 'text-sky-600')} />
-              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>הגדרות אתר</span>
             </Link>
 
             <Link
@@ -272,7 +265,7 @@ export function AdminShell({
                   onClick={() => setJourneySettingsOpen((o) => !o)}
                   className={cn(
                     'flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-right text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
-                    isJourneyManage && !isHome && !isAlmogSettings && !isSiteSettings
+                    isJourneyManage && !isHome && !isAlmogSettings
                       ? 'bg-amber-400/20 font-semibold text-amber-950'
                       : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
                   )}
@@ -292,17 +285,32 @@ export function AdminShell({
                   <ul className="mr-2 mt-1 space-y-1 border-r border-amber-400/40 pr-3 pb-2">
                     <li>
                       <Link
+                        href="/journey-hub"
+                        onClick={() => setSidebarOpen(false)}
+                        className={cn(
+                          'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-amber-400/25 sm:text-[15px]',
+                          isJourneyHub
+                            ? 'bg-amber-400/25 font-bold text-amber-950'
+                            : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
+                        )}
+                      >
+                        <Layers size={17} className="shrink-0 opacity-90" />
+                        מסע ותחנות
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
                         href="/journey"
                         onClick={() => setSidebarOpen(false)}
                         className={cn(
                           'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-amber-400/25 sm:text-[15px]',
-                          isJourneyManage
+                          (np === '/ops/journey' || np.startsWith('/ops/steps')) && !isJourneyHub
                             ? 'bg-amber-400/25 font-bold text-amber-950'
                             : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
                         )}
                       >
                         <ListTree size={17} className="shrink-0 opacity-90" />
-                        ניהול
+                        רשימת צעדים
                       </Link>
                     </li>
                   </ul>
@@ -311,7 +319,19 @@ export function AdminShell({
             )}
           </nav>
 
-          <div className={cn('mt-8 border-t border-white/40 pt-5', sidebarCollapsed && 'lg:mt-6')}>
+          <div className={cn('shrink-0 space-y-2 border-t border-white/45 pt-5', sidebarCollapsed && 'lg:pt-4')}>
+            <Link
+              href="/site-settings"
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                navBtn(isSiteSettings, 'sky'),
+                'border border-white/40 bg-white/30 shadow-sm',
+              )}
+              title="הגדרות אתר"
+            >
+              <Globe size={20} className={cn('shrink-0', isSiteSettings && 'text-sky-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>הגדרות אתר</span>
+            </Link>
             <Link
               href={coursesHref}
               className={cn(

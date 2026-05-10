@@ -87,12 +87,15 @@ export async function POST(request: Request) {
 
   let stepNumber: number | undefined;
   let stepCourseId: string | null | undefined;
+  let stationId: string | undefined;
+  let stationTitle: string | undefined;
+  let stationOrder: number | undefined;
 
   if (dataType === 'step' && stepId) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: stepRow, error: stepErr } = await (supabase as any)
       .from('journey_steps')
-      .select('id, step_number, course_id')
+      .select('id, step_number, course_id, station_id, journey_stations(id, title, sort_order)')
       .eq('id', stepId)
       .maybeSingle();
 
@@ -104,6 +107,16 @@ export async function POST(request: Request) {
     }
     stepNumber = stepRow.step_number as number;
     stepCourseId = (stepRow.course_id as string | null) ?? null;
+    const st = stepRow.journey_stations as
+      | { id?: string; title?: string; sort_order?: number }
+      | { id?: string; title?: string; sort_order?: number }[]
+      | null;
+    const station = Array.isArray(st) ? st[0] : st;
+    if (station?.id) {
+      stationId = station.id;
+      if (typeof station.title === 'string') stationTitle = station.title;
+      if (typeof station.sort_order === 'number') stationOrder = station.sort_order;
+    }
   }
 
   const chunks = chunkLongText(transcript);
@@ -132,6 +145,9 @@ export async function POST(request: Request) {
       metadata.stepId = stepId;
       if (typeof stepNumber === 'number') metadata.stepNumber = stepNumber;
       if (stepCourseId) metadata.courseId = stepCourseId;
+      if (stationId) metadata.stationId = stationId;
+      if (stationTitle) metadata.stationTitle = stationTitle;
+      if (typeof stationOrder === 'number') metadata.stationOrder = stationOrder;
     }
 
     return {

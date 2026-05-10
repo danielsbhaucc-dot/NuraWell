@@ -116,6 +116,11 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
                 ) : (
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">טיוטה</span>
                 )}
+                {step.journey_stations?.title ? (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-800">
+                    תחנה: {step.journey_stations.title}
+                  </span>
+                ) : null}
               </div>
               {/* Content badges */}
               <div className="flex items-center gap-1.5 flex-wrap">

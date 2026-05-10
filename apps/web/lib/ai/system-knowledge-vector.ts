@@ -14,6 +14,10 @@ export type SystemKnowledgeVectorMetadata = {
   stepId?: string;
   /** מספר צעד להצגה וסינון (1, 2, …) */
   stepNumber?: number;
+  /** תחנה במסע */
+  stationId?: string;
+  stationTitle?: string;
+  stationOrder?: number;
   courseId?: string;
 };
 
