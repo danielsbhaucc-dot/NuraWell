@@ -81,7 +81,7 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white/75 p-4 shadow-sm backdrop-blur-md transition-all sm:flex-row sm:items-center sm:gap-4 sm:hover:border-emerald-100 sm:hover:bg-white/90 sm:hover:shadow-md"
+            className="flex flex-col gap-3 rounded-2xl border border-white/40 bg-white/45 p-4 shadow-[0_8px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all sm:flex-row sm:items-center sm:gap-4 sm:hover:border-emerald-400/35 sm:hover:bg-white/55 sm:hover:shadow-[0_10px_36px_rgba(16,185,129,0.12)]"
             style={{
               opacity: isDeleting === step.id ? 0.5 : 1,
             }}
