@@ -17,10 +17,12 @@ import {
   Menu,
   PanelRightClose,
   PanelRightOpen,
+  Sparkles,
   UserCircle,
   X,
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { OpsSessionGuard } from './OpsSessionGuard';
 
 const SIDEBAR_COLLAPSED_KEY = 'nura-admin-sidebar-collapsed';
 
@@ -62,15 +64,21 @@ export function AdminShell({
   const isAlmogSettings = np === '/ops/almog';
   const isSiteSettings = np === '/ops/site-settings';
   const isSystemRagIngest = np === '/ops/system-rag-ingest';
+  const isAlmogNavSection = isAlmogSettings || isSystemRagIngest;
   const isJourneyHub = np === '/ops/journey-hub';
   const isJourneyManage =
     np.startsWith('/ops/journey') || np.startsWith('/ops/steps') || isJourneyHub;
 
   const [journeySettingsOpen, setJourneySettingsOpen] = useState(isJourneyManage);
+  const [almogNavOpen, setAlmogNavOpen] = useState(isAlmogNavSection);
 
   useEffect(() => {
     if (isJourneyManage) setJourneySettingsOpen(true);
   }, [isJourneyManage]);
+
+  useEffect(() => {
+    if (isAlmogNavSection) setAlmogNavOpen(true);
+  }, [isAlmogNavSection]);
 
   useEffect(() => {
     try {
@@ -141,6 +149,7 @@ export function AdminShell({
       className="min-h-[100dvh] bg-gradient-to-br from-emerald-50 via-cyan-50/80 to-violet-100/90 font-sans text-slate-900 touch-manipulation"
       dir="rtl"
     >
+      <OpsSessionGuard />
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
         <div className="absolute -top-28 -right-20 h-[22rem] w-[22rem] rounded-full bg-gradient-to-br from-emerald-400/45 to-teal-400/35 blur-3xl" />
         <div className="absolute top-1/4 -left-16 h-72 w-72 rounded-full bg-gradient-to-tr from-fuchsia-400/35 to-violet-400/30 blur-3xl" />
@@ -225,28 +234,75 @@ export function AdminShell({
               )}
             </Link>
 
-            <Link
-              href="/almog"
-              onClick={() => setSidebarOpen(false)}
-              className={navBtn(isAlmogSettings, 'violet')}
-              title="הגדרות אלמוג"
-            >
-              <UserCircle size={20} className={cn('shrink-0', isAlmogSettings && 'text-violet-600')} />
-              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>הגדרות אלמוג</span>
-            </Link>
+            {sidebarCollapsed ? (
+              <Link
+                href="/almog"
+                onClick={() => setSidebarOpen(false)}
+                className={navBtn(isAlmogNavSection, 'violet')}
+                title="אלמוג — הגדרות ואימון"
+              >
+                <Sparkles size={20} className={cn('shrink-0', isAlmogNavSection && 'text-violet-600')} />
+                <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>אלמוג</span>
+              </Link>
+            ) : (
+              <div className="rounded-2xl border border-white/50 bg-white/35 backdrop-blur-md">
+                <button
+                  type="button"
+                  onClick={() => setAlmogNavOpen((o) => !o)}
+                  className={cn(
+                    'flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-right text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
+                    isAlmogNavSection && !isHome && !isJourneyManage
+                      ? 'bg-violet-500/15 font-semibold text-violet-950'
+                      : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
+                  )}
+                  aria-expanded={almogNavOpen}
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <Sparkles size={20} className={cn('shrink-0', isAlmogNavSection && 'text-violet-600')} />
+                    <span className="truncate">אלמוג</span>
+                  </span>
+                  <ChevronDown
+                    size={18}
+                    className={cn('shrink-0 text-slate-400 transition-transform', almogNavOpen && '-rotate-180')}
+                  />
+                </button>
 
-            <Link
-              href="/system-rag-ingest"
-              onClick={() => setSidebarOpen(false)}
-              className={navBtn(isSystemRagIngest, 'emerald')}
-              title="לאמן את אלמוג — חומר למסע"
-            >
-              <BookOpen size={20} className={cn('shrink-0', isSystemRagIngest && 'text-emerald-600')} />
-              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>לאמן את אלמוג</span>
-              {isSystemRagIngest && showNavLabels && (
-                <span className="mr-auto hidden h-2 w-2 rounded-full bg-emerald-500 lg:inline-block" aria-hidden />
-              )}
-            </Link>
+                {almogNavOpen && (
+                  <ul className="mr-2 mt-1 space-y-1 border-r border-violet-400/35 pr-3 pb-2">
+                    <li>
+                      <Link
+                        href="/almog"
+                        onClick={() => setSidebarOpen(false)}
+                        className={cn(
+                          'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-violet-400/20 sm:text-[15px]',
+                          isAlmogSettings
+                            ? 'bg-violet-400/20 font-bold text-violet-950'
+                            : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
+                        )}
+                      >
+                        <UserCircle size={17} className="shrink-0 opacity-90" />
+                        הגדרות אלמוג
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/system-rag-ingest"
+                        onClick={() => setSidebarOpen(false)}
+                        className={cn(
+                          'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-violet-400/20 sm:text-[15px]',
+                          isSystemRagIngest
+                            ? 'bg-violet-400/20 font-bold text-violet-950'
+                            : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
+                        )}
+                      >
+                        <BookOpen size={17} className="shrink-0 opacity-90" />
+                        לאמן את אלמוג
+                      </Link>
+                    </li>
+                  </ul>
+                )}
+              </div>
+            )}
 
             {sidebarCollapsed ? (
               <Link
@@ -265,7 +321,7 @@ export function AdminShell({
                   onClick={() => setJourneySettingsOpen((o) => !o)}
                   className={cn(
                     'flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-right text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
-                    isJourneyManage && !isHome && !isAlmogSettings
+                    isJourneyManage && !isHome && !isAlmogNavSection
                       ? 'bg-amber-400/20 font-semibold text-amber-950'
                       : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
                   )}

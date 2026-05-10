@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { motion, AnimatePresence, useDragControls } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Gamepad2, ArrowLeft, ClipboardList, RotateCcw } from 'lucide-react';
 import type { GameItem } from '../../lib/types/journey';
-import { AIFeedbackCard } from '../ai/AIFeedbackCard';
 import { AlmogInstantFeedback } from './AlmogInstantFeedback';
 import { AlmogCompletionHero } from './AlmogPresence';
+import { JourneyResultsDrawer } from './JourneyResultsDrawer';
 
 interface MiniGameProps {
   items: GameItem[];
@@ -17,17 +17,12 @@ interface MiniGameProps {
   userId?: string;
 }
 
-export function MiniGame({ items, existingAnswers, onComplete, onResetGame, stepId, userId }: MiniGameProps) {
+export function MiniGame({ items, existingAnswers, onComplete, onResetGame }: MiniGameProps) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, boolean>>(existingAnswers);
   const [showResult, setShowResult] = useState(false);
   const [isComplete, setIsComplete] = useState(Object.keys(existingAnswers).length === items.length);
   const [resultsOpen, setResultsOpen] = useState(false);
-  const sheetDragControls = useDragControls();
-  const [almogNote, setAlmogNote] = useState<string | null>(null);
-  const [almogLoading, setAlmogLoading] = useState(false);
-  const [almogError, setAlmogError] = useState(false);
-  const gameFeedbackRequestedRef = useRef(false);
 
   const item = items[currentIdx];
   const isAnswered = showResult || answers[item?.id] !== undefined;
@@ -49,33 +44,6 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, step
         0
       );
       setIsComplete(true);
-      if (stepId && !gameFeedbackRequestedRef.current) {
-        gameFeedbackRequestedRef.current = true;
-        const pct = items.length > 0 ? Math.round((finalScore / items.length) * 100) : 0;
-        setAlmogLoading(true);
-        setAlmogError(false);
-        void fetch('/api/v1/ai/lesson-feedback', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            step_id: stepId,
-            ...(userId ? { user_id: userId } : {}),
-            interaction_type: 'game',
-            score: pct,
-            summary: `במשחק נכון/לא נכון: ${finalScore} מתוך ${items.length} נכונים`,
-          }),
-        })
-          .then(async (res) => {
-            const data = (await res.json()) as { reply?: string };
-            if (res.ok && data.reply) setAlmogNote(data.reply);
-            else setAlmogError(true);
-          })
-          .catch(() => {
-            setAlmogNote(null);
-            setAlmogError(true);
-          })
-          .finally(() => setAlmogLoading(false));
-      }
     }
   };
 
@@ -89,17 +57,6 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, step
         <p className="text-gray-500 text-lg mb-4">
           <strong className="text-emerald-600">{score}</strong> מתוך <strong>{items.length}</strong> נכונים
         </p>
-
-        {stepId && (almogLoading || almogNote || almogError) && (
-          <div className="mt-2 mb-2">
-            <AIFeedbackCard
-              loading={almogLoading}
-              text={almogNote}
-              error={almogError}
-              variant="amber"
-            />
-          </div>
-        )}
 
         <div className="mt-8 flex flex-col gap-3 max-w-sm mx-auto">
           <button
@@ -133,93 +90,54 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, step
           </button>
         </div>
 
-        <AnimatePresence>
-          {resultsOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[180] flex items-end sm:items-center justify-center p-0 sm:p-6"
-              style={{ background: 'rgba(15,23,42,0.45)' }}
-              onClick={() => setResultsOpen(false)}
-            >
-              <motion.div
-                initial={{ y: 120, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 120, opacity: 0 }}
-                transition={{ type: 'spring', damping: 32, stiffness: 380 }}
-                drag="y"
-                dragControls={sheetDragControls}
-                dragListener={false}
-                dragConstraints={{ top: 0, bottom: 420 }}
-                dragElastic={{ top: 0, bottom: 0.22 }}
-                onDragEnd={(_, info) => {
-                  if (info.offset.y > 100 || info.velocity.y > 650) {
-                    setResultsOpen(false);
-                  }
+        <JourneyResultsDrawer
+          open={resultsOpen}
+          onOpenChange={setResultsOpen}
+          variant="game"
+          title="מפת האינטואיציה"
+          subtitle="מה סימנת מול מה שבאמת נכון"
+        >
+          {items.map((it, i) => {
+            const picked = answers[it.id];
+            const ok = picked === it.is_true;
+            return (
+              <div
+                key={it.id}
+                className="rounded-2xl p-4"
+                style={{
+                  background: 'linear-gradient(165deg, #ffffff 0%, #fffbeb 100%)',
+                  border: '1px solid rgba(245,158,11,0.2)',
+                  boxShadow: '0 4px 12px rgba(245,158,11,0.08)',
                 }}
-                className="w-full sm:max-w-md max-h-[85vh] flex flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl shadow-[0_-8px_40px_rgba(0,0,0,0.14)] border border-amber-200/50"
-                onClick={e => e.stopPropagation()}
               >
-                <div
-                  className="shrink-0 cursor-grab touch-none select-none active:cursor-grabbing"
-                  style={{ background: 'linear-gradient(160deg, #78350f 0%, #b45309 45%, #f59e0b 100%)' }}
-                  onPointerDown={(e) => sheetDragControls.start(e)}
-                >
-                  <div className="pt-2.5 pb-2 flex justify-center">
-                    <div className="w-11 h-1.5 rounded-full bg-white/45" />
-                  </div>
-                  <div className="px-5 pb-4 text-center">
-                    <p className="text-white font-black text-lg">מפת האינטואיציה</p>
-                    <p className="text-white/90 text-xs mt-1">מה סימנת מול מה שבאמת נכון</p>
-                  </div>
-                </div>
-                <div
-                  className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain bg-white p-4 space-y-3 text-right [scrollbar-gutter:stable]"
-                  style={{
-                    WebkitOverflowScrolling: 'touch',
-                    scrollbarWidth: 'thin',
-                  }}
-                  onPointerDown={(e) => e.stopPropagation()}
-                >
-                  {items.map((it, i) => {
-                    const picked = answers[it.id];
-                    const ok = picked === it.is_true;
-                    return (
-                      <div key={it.id} className="rounded-2xl p-4"
-                        style={{ background: 'linear-gradient(165deg, #ffffff 0%, #fffbeb 100%)', border: '1px solid rgba(245,158,11,0.2)', boxShadow: '0 4px 12px rgba(245,158,11,0.08)' }}>
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-xs font-black text-amber-800">משפט {i + 1}</p>
-                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                            style={{ background: ok ? 'rgba(16,185,129,0.16)' : 'rgba(239,68,68,0.12)', color: ok ? '#047857' : '#b91c1c' }}>
-                            {ok ? 'פגעת בול' : 'שווה חידוד'}
-                          </span>
-                        </div>
-                        <p className="text-sm font-bold mb-2 leading-relaxed" style={{ color: '#1A1730' }}>&ldquo;{it.statement}&rdquo;</p>
-                        <p className="text-xs text-gray-600">
-                          ענית: <strong style={{ color: ok ? '#059669' : '#dc2626' }}>{picked === true ? 'נכון' : picked === false ? 'לא נכון' : '—'}</strong>
-                          {' · '}
-                          נכון: <strong className="text-emerald-700">{it.is_true ? 'נכון' : 'לא נכון'}</strong>
-                        </p>
-                        <p className="text-xs text-gray-600 leading-relaxed mt-2 border-t border-gray-100 pt-2">{it.explanation}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="p-4 shrink-0 border-t border-gray-100">
-                  <button
-                    type="button"
-                    onClick={() => setResultsOpen(false)}
-                    className="w-full py-3.5 rounded-2xl font-bold text-white"
-                    style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-black text-amber-800">משפט {i + 1}</p>
+                  <span
+                    className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                    style={{
+                      background: ok ? 'rgba(16,185,129,0.16)' : 'rgba(239,68,68,0.12)',
+                      color: ok ? '#047857' : '#b91c1c',
+                    }}
                   >
-                    סגירה
-                  </button>
+                    {ok ? 'פגעת בול' : 'שווה חידוד'}
+                  </span>
                 </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <p className="text-sm font-bold mb-2 leading-relaxed" style={{ color: '#1A1730' }}>
+                  &ldquo;{it.statement}&rdquo;
+                </p>
+                <p className="text-xs text-gray-600">
+                  ענית:{' '}
+                  <strong style={{ color: ok ? '#059669' : '#dc2626' }}>
+                    {picked === true ? 'נכון' : picked === false ? 'לא נכון' : '—'}
+                  </strong>
+                  {' · '}
+                  נכון: <strong className="text-emerald-700">{it.is_true ? 'נכון' : 'לא נכון'}</strong>
+                </p>
+                <p className="text-xs text-gray-600 leading-relaxed mt-2 border-t border-gray-100 pt-2">{it.explanation}</p>
+              </div>
+            );
+          })}
+        </JourneyResultsDrawer>
       </div>
     );
   }

@@ -53,6 +53,32 @@ function extractImmersiveJsonArray(textContent: string): string | null {
   return sliceTopLevelJsonArray(text, absoluteBracket);
 }
 
+/**
+ * גרסאות ישנות / ייבוא ידני: מערך JSON ללא קידומת NW_IMMERSIVE_STOPS_V1,
+ * או טקסט לפני/אחרי הבלוק הרגיל שלא נסרק כראוי.
+ */
+function extractLegacyImmersiveJsonArray(textContent: string): string | null {
+  const text = textContent.startsWith('\uFEFF') ? textContent.slice(1) : textContent;
+  const trimmed = text.trim();
+  if (trimmed.startsWith('[')) {
+    const slice = sliceTopLevelJsonArray(trimmed, 0);
+    if (slice) return slice;
+  }
+  const firstBracket = text.indexOf('[');
+  if (firstBracket === -1) return null;
+  const slice = sliceTopLevelJsonArray(text, firstBracket);
+  if (!slice) return null;
+  try {
+    const parsed = JSON.parse(slice) as unknown;
+    if (Array.isArray(parsed) && parsed.length && parsed.some((row) => row && typeof row === 'object' && 'time_seconds' in (row as object))) {
+      return slice;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 /** מסיר את בלוק עצירות הקשב מהמחרוזת (למשל טקסט נלווה שנשמר באותו שדה) */
 export function stripImmersiveAttentionBlock(textContent: string | null | undefined): string {
   if (!textContent) return '';
@@ -75,7 +101,7 @@ export function stripImmersiveAttentionBlock(textContent: string | null | undefi
 
 export function parseImmersiveAttentionStops(textContent: string | null | undefined): ImmersiveAttentionStop[] {
   if (!textContent) return [];
-  const jsonSlice = extractImmersiveJsonArray(textContent);
+  const jsonSlice = extractImmersiveJsonArray(textContent) ?? extractLegacyImmersiveJsonArray(textContent);
   if (!jsonSlice) return [];
   try {
     const parsed = JSON.parse(jsonSlice) as unknown;

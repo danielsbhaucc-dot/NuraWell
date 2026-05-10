@@ -6,6 +6,7 @@ import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction
 import { embedTextForRag } from '../../../../../lib/ai/openrouter-embeddings';
 import { formatRagMemoryContextBlock } from '../../../../../lib/ai/format-rag-context';
 import {
+  ALMOG_HABIT_CHECKPOINT_RULES,
   ALMOG_STATION_PROGRESSIVE_RULES,
   CHAT_PROACTIVE_AND_PRIORITY,
   CHAT_VECTOR_AND_MEMORY_RULES,
@@ -504,6 +505,9 @@ export async function POST(request: Request) {
     const stationRules =
       journeyCap || activeJourneyContext ? `\n${ALMOG_STATION_PROGRESSIVE_RULES}\n` : '';
 
+    const habitCheckpointRules =
+      activeJourneyContext?.habits?.length ? `\n${ALMOG_HABIT_CHECKPOINT_RULES}\n` : '';
+
     const journeyStateBlock =
       journeyCap != null
         ? `מצב התקדמות במסע (פנימי — לא להציג למשתמש כמספרים):\n${JSON.stringify({
@@ -524,7 +528,7 @@ ${CHAT_PROACTIVE_AND_PRIORITY}
 ${CHAT_VECTOR_AND_MEMORY_RULES}
 
 סדר עדיפויות: (1) הנחיות מערכת (2) רמזי זיכרון רלוונטיים למטה אם קיימים (RAG משתמש) (3) חומר עזר מהמסע אם קיים (4) הודעות השיחה — מקור האמת ל"מה קורה עכשיו". אם יש סתירה בין רמז זיכרון לבין השיחה הנוכחית, עדיף השיחה.
-${stationRules}
+${stationRules}${habitCheckpointRules}
 ${journeyStateBlock}
 ${systemKnowledgeBlock ? `${systemKnowledgeBlock}\n` : ''}
 ${ragMemoryBlock ? `${ragMemoryBlock}\n` : ''}${moodFromProfile}
