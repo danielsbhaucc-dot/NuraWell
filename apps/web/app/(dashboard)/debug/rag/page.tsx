@@ -91,8 +91,9 @@ export default function RagDebugPage() {
             <code className="rounded bg-neutral-100 px-1 text-xs">exact_refresh</code>.
           </li>
           <li>
-            ב-production אם מקבלים 404 — הזן את{' '}
-            <code className="rounded bg-neutral-100 px-1 text-xs">RAG_SELF_TEST_SECRET</code> בשדה למטה (כמו ב-Vercel).
+            אם הגדרת ב-Vercel את{' '}
+            <code className="rounded bg-neutral-100 px-1 text-xs">RAG_SELF_TEST_SECRET</code> — חובה להזין אותו בשדה למטה
+            (כותרת לשרת). בלי משתנה כזה בשרת, מספיק להיות מחובר לאפליקציה.
           </li>
         </ol>
       </section>

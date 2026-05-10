@@ -13,20 +13,26 @@ const bodySchema = z.object({
 
 /**
  * בדיקת מסלול RAG: חילוץ (Llama Scout), מועמדים לאיחוד, שליפה סמנטית — ובחירה לכתיבה.
- * ב-production דורש כותרת `x-rag-self-test-secret` תואמת ל-RAG_SELF_TEST_SECRET.
+ * נדרש משתמש מחובר. אופציונלי: אם ב-Vercel מוגדר RAG_SELF_TEST_SECRET — חובה גם כותרת x-rag-self-test-secret תואמת (שכבת נעילה נוספת).
  */
 export async function POST(request: Request) {
   const auth = await requireApiSession(request);
   if (!auth.ok) return auth.response;
 
-  if (process.env.NODE_ENV === 'production') {
+  const expectedSecret = process.env.RAG_SELF_TEST_SECRET?.trim();
+  if (expectedSecret) {
     const secret = request.headers.get('x-rag-self-test-secret');
-    const expected = process.env.RAG_SELF_TEST_SECRET?.trim();
-    if (!expected || secret !== expected) {
-      return new Response(JSON.stringify({ error: 'Not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      });
+    if (secret !== expectedSecret) {
+      return new Response(
+        JSON.stringify({
+          error: 'Forbidden',
+          hint: 'Set header x-rag-self-test-secret to match RAG_SELF_TEST_SECRET, or remove that env var to allow signed-in users only.',
+        }),
+        {
+          status: 403,
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        }
+      );
     }
   }
 
