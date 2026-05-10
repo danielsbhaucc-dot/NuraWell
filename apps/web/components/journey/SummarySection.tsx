@@ -211,27 +211,21 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
           })();
           return (
             <div className="px-3 sm:px-6 pb-1 pt-6">
-              <div className="relative mx-auto w-full max-w-lg min-w-0 pr-11 sm:pr-[52px]">
+              <div className="relative mx-auto w-full max-w-lg min-w-0">
                 <div
-                  className="pointer-events-none absolute right-[21px] top-12 bottom-10 z-0 border-r-2 border-dashed border-emerald-400/50"
+                  className="pointer-events-none absolute right-[23px] top-14 bottom-14 z-0 border-r-2 border-dashed border-emerald-400/45"
                   aria-hidden
                 />
                 <div
-                  className="pointer-events-none absolute right-[13px] top-1 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-emerald-200/90 bg-white shadow-md shadow-emerald-900/10"
+                  className="pointer-events-none absolute right-[15px] top-0 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200/95 bg-gradient-to-br from-white to-emerald-50 shadow-md shadow-emerald-900/15"
                   aria-hidden
                 >
-                  <Route className="h-3.5 w-3.5 text-emerald-600" strokeWidth={2.4} />
+                  <Route className="h-4 w-4 text-emerald-600" strokeWidth={2.4} />
                 </div>
-                <div className="relative z-[1] space-y-10">
+                <div className="relative z-[1] space-y-12">
         {/* מה למדנו */}
         {step.summary_text && (
-          <div className="relative">
-            <div
-              className="absolute right-0 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full border-[2.5px] border-emerald-500 bg-white text-sm font-black text-emerald-900 shadow-md shadow-emerald-900/10"
-              aria-hidden
-            >
-              {nextTimeline()}
-            </div>
+          <TimelineRailRow stepNum={nextTimeline()} accent="emerald">
             <AccordionSummarySection
               title="מה למדנו?"
               subtitle="נקודות מרכזיות מהשיעור"
@@ -241,24 +235,20 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               onToggle={() => toggleAccordion('learn')}
             >
               <p
-                className="text-[15px] text-gray-800 leading-relaxed [overflow-wrap:anywhere] break-words hyphens-auto"
+                className="m-0 text-[16px] sm:text-[17px] leading-[1.85] text-slate-700 [overflow-wrap:anywhere] break-words hyphens-auto antialiased"
                 lang="he"
+                style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
               >
                 {step.summary_text}
               </p>
             </AccordionSummarySection>
-          </div>
+          </TimelineRailRow>
         )}
 
         {/* Tasks */}
         {step.tasks.length > 0 && (
-          <div className="relative w-full min-w-0 max-w-full overflow-x-clip">
-            <div
-              className="absolute right-0 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full border-[2.5px] border-emerald-500 bg-white text-sm font-black text-emerald-900 shadow-md shadow-emerald-900/10"
-              aria-hidden
-            >
-              {nextTimeline()}
-            </div>
+          <TimelineRailRow stepNum={nextTimeline()} accent="amber">
+            <div className="w-full min-w-0 max-w-full overflow-x-clip">
             <AccordionSummarySection
               title="משימות לביצוע"
               subtitle="בחר מה מקובל עליך כרגע — אלמוג יזכור ויתאים את ההכוונה"
@@ -331,11 +321,14 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                               {taskEmoji}
                             </div>
                             <div className="min-w-0 flex-1 text-right space-y-2">
-                              <p className="font-black text-[15px] sm:text-[16px] leading-snug text-[#1A1730] [overflow-wrap:anywhere] break-words tracking-tight">
+                              <p
+                                className="font-black text-[16px] sm:text-[17px] leading-snug text-slate-800 [overflow-wrap:anywhere] break-words tracking-tight"
+                                style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+                              >
                                 {task.title}
                               </p>
                               {task.description ? (
-                                <p className="text-[12px] sm:text-[13px] text-gray-600/95 leading-relaxed [overflow-wrap:anywhere] break-words rounded-xl bg-white/35 px-3 py-2 border border-white/50">
+                                <p className="text-[13px] sm:text-[14px] text-slate-600 leading-relaxed [overflow-wrap:anywhere] break-words rounded-xl bg-white/45 px-3 py-2.5 border border-white/55">
                                   {task.description}
                                 </p>
                               ) : null}
@@ -415,18 +408,13 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               })}
             </div>
             </AccordionSummarySection>
-          </div>
+            </div>
+          </TimelineRailRow>
         )}
 
         {/* Habits */}
         {step.habits.length > 0 && (
-          <div className="relative">
-            <div
-              className="absolute right-0 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full border-[2.5px] border-emerald-500 bg-white text-sm font-black text-emerald-900 shadow-md shadow-emerald-900/10"
-              aria-hidden
-            >
-              {nextTimeline()}
-            </div>
+          <TimelineRailRow stepNum={nextTimeline()} accent="emerald">
             <AccordionSummarySection
               title="הרגלים חדשים"
               subtitle="אלו ההרגלים של השלב — אלמוג יתבסס עליהם בשיחות"
@@ -483,11 +471,14 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                           background: 'linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(240,253,250,0.5) 100%)',
                         }}
                       >
-                        <p className="font-black text-[15px] leading-snug text-[#1A1730] [overflow-wrap:anywhere] break-words">
+                        <p
+                          className="font-black text-[16px] leading-snug text-slate-800 [overflow-wrap:anywhere] break-words"
+                          style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+                        >
                           {habit.title}
                         </p>
                         {habit.description ? (
-                          <p className="text-[12px] sm:text-[13px] text-gray-600 leading-relaxed [overflow-wrap:anywhere] break-words mt-2 border-t border-emerald-900/[0.08] pt-2">
+                          <p className="mt-2 border-t border-emerald-900/[0.08] pt-2 text-[13px] sm:text-[14px] leading-relaxed text-slate-600 [overflow-wrap:anywhere] break-words">
                             {habit.description}
                           </p>
                         ) : null}
@@ -515,18 +506,12 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               })}
             </div>
             </AccordionSummarySection>
-          </div>
+          </TimelineRailRow>
         )}
 
         {/* Research accordion */}
         {step.researches.length > 0 && (
-          <div className="relative">
-            <div
-              className="absolute right-0 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full border-[2.5px] border-emerald-500 bg-white text-sm font-black text-emerald-900 shadow-md shadow-emerald-900/10"
-              aria-hidden
-            >
-              {nextTimeline()}
-            </div>
+          <TimelineRailRow stepNum={nextTimeline()} accent="sky">
             <AccordionSummarySection
               title="מחקרים תומכים"
               subtitle="מקורות וממצאים לעיון"
@@ -546,18 +531,12 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               ))}
             </div>
             </AccordionSummarySection>
-          </div>
+          </TimelineRailRow>
         )}
 
         {/* PDF Download */}
         {step.pdf_url && (
-          <div className="relative">
-            <div
-              className="absolute right-0 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full border-[2.5px] border-emerald-500 bg-white text-sm font-black text-emerald-900 shadow-md shadow-emerald-900/10"
-              aria-hidden
-            >
-              {nextTimeline()}
-            </div>
+          <TimelineRailRow stepNum={nextTimeline()} accent="teal">
             <AccordionSummarySection
               title="חומר להורדה"
               subtitle="סיכום בקובץ PDF"
@@ -583,13 +562,15 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                 <Download className="w-5 h-5 text-red-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm" style={{ color: '#1A1730' }}>הורד סיכום PDF</p>
-                <p className="text-xs text-gray-600">{step.pdf_name || 'סיכום השיעור'}</p>
+                <p className="text-[16px] font-bold text-slate-800" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
+                  הורד סיכום PDF
+                </p>
+                <p className="mt-0.5 text-[13px] text-slate-600">{step.pdf_name || 'סיכום השיעור'}</p>
               </div>
               <ExternalLink className="w-4 h-4 text-gray-400 shrink-0" />
             </a>
             </AccordionSummarySection>
-          </div>
+          </TimelineRailRow>
         )}
                 </div>
               </div>
@@ -717,6 +698,69 @@ function SummaryGlassSection({
   );
 }
 
+type TimelineAccent = 'emerald' | 'amber' | 'sky' | 'teal';
+
+function timelineAccentStyle(accent: TimelineAccent): { gradient: string; shadow: string } {
+  switch (accent) {
+    case 'emerald':
+      return {
+        gradient: 'linear-gradient(155deg, #047857 0%, #059669 42%, #34d399 100%)',
+        shadow: '0 8px 22px rgba(4,120,87,0.42)',
+      };
+    case 'amber':
+      return {
+        gradient: 'linear-gradient(155deg, #c2410c 0%, #ea580c 48%, #fbbf24 100%)',
+        shadow: '0 8px 22px rgba(234,88,12,0.38)',
+      };
+    case 'sky':
+      return {
+        gradient: 'linear-gradient(155deg, #1e40af 0%, #2563eb 45%, #38bdf8 100%)',
+        shadow: '0 8px 22px rgba(37,99,235,0.35)',
+      };
+    case 'teal':
+      return {
+        gradient: 'linear-gradient(155deg, #0f766e 0%, #14b8a6 50%, #5eead4 100%)',
+        shadow: '0 8px 22px rgba(15,118,110,0.38)',
+      };
+  }
+}
+
+function TimelineStepBadge({ step, accent }: { step: number; accent: TimelineAccent }) {
+  const { gradient, shadow } = timelineAccentStyle(accent);
+  return (
+    <span
+      className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[17px] font-black tabular-nums tracking-tight text-white"
+      style={{
+        background: gradient,
+        boxShadow: `${shadow}, 0 0 0 3px rgba(255,255,255,0.96)`,
+        textShadow: '0 1px 2px rgba(0,0,0,0.18)',
+      }}
+      aria-hidden
+    >
+      {step}
+    </span>
+  );
+}
+
+function TimelineRailRow({
+  stepNum,
+  accent,
+  children,
+}: {
+  stepNum: number;
+  accent: TimelineAccent;
+  children: ReactNode;
+}) {
+  return (
+    <div dir="rtl" className="flex items-start gap-3 sm:gap-4">
+      <div className="flex w-[50px] shrink-0 flex-col items-center pt-2 sm:w-[52px]">
+        <TimelineStepBadge step={stepNum} accent={accent} />
+      </div>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
+}
+
 function AccordionSummarySection({
   title,
   subtitle,
@@ -801,14 +845,15 @@ function AccordionSummarySection({
             className="overflow-hidden"
           >
             <div
-              className="px-3.5 py-4 sm:px-4 sm:py-[18px]"
+              className="px-4 py-5 sm:px-5 sm:py-6 text-[16px] sm:text-[17px] leading-relaxed text-slate-700 antialiased [&_p]:leading-[1.8] [&_li]:leading-relaxed"
               style={{
+                fontFamily: "'Rubik','Heebo',sans-serif",
                 background:
-                  'linear-gradient(165deg, rgba(255,255,255,0.58) 0%, rgba(236,253,245,0.4) 52%, rgba(255,255,255,0.52) 100%)',
+                  'linear-gradient(165deg, rgba(255,255,255,0.78) 0%, rgba(248,250,252,0.92) 40%, rgba(236,253,245,0.45) 100%)',
                 backdropFilter: 'blur(24px) saturate(1.25)',
                 WebkitBackdropFilter: 'blur(24px) saturate(1.25)',
                 borderTop: '1px solid rgba(255,255,255,0.62)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.75)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
               }}
             >
               {children}
@@ -891,12 +936,12 @@ function ResearchItem({ research, isExpanded, onToggle }: { research: Research; 
         />
         <div className="flex-1 min-w-0 dir-ltr text-left">
           <p
-            className="text-sm font-bold text-gray-900 leading-snug break-words [overflow-wrap:anywhere]"
+            className="text-[15px] font-bold text-slate-800 leading-snug break-words [overflow-wrap:anywhere]"
             lang="en"
           >
             {research.title}
           </p>
-          <p className="text-xs text-gray-500 mt-1 break-words">
+          <p className="mt-1 text-[13px] text-slate-500 break-words">
             {research.authors} ({research.year})
           </p>
         </div>
@@ -910,10 +955,10 @@ function ResearchItem({ research, isExpanded, onToggle }: { research: Research; 
             className="overflow-hidden"
           >
             <div className="px-3.5 pb-3.5 pt-0 border-t border-white/40">
-              <p className="text-xs text-gray-500 mb-2 italic dir-ltr text-left break-words" lang="en">
+              <p className="mb-2 text-[13px] italic text-slate-500 dir-ltr text-left break-words" lang="en">
                 {research.journal}
               </p>
-              <p className="text-sm text-gray-700 leading-relaxed mb-2 dir-ltr text-left break-words hyphens-auto" lang="en">
+              <p className="mb-2 text-[15px] leading-relaxed text-slate-700 dir-ltr text-left break-words hyphens-auto" lang="en">
                 {research.finding}
               </p>
               {research.url && (
