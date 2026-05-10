@@ -17,17 +17,20 @@ import Link from 'next/link';
 import { AlmogAvatarChip } from './AlmogPresence';
 import { isCommitmentGateResolved } from '../../lib/journey/commitment-gate';
 import { emojiFromWellnessText } from '../../lib/emoji-from-text';
+import { useProgressReport } from '../progress-report/ProgressReportProvider';
 
 interface SummarySectionProps {
   step: JourneyStep;
   progress: JourneyStepProgress;
   onReplay: () => void;
   onComplete: () => void;
-  onTaskDecisionChange: (taskId: string, status: JourneyTaskDecisionStatus) => void;
+  onTaskDecisionChange: (taskId: string, status: JourneyTaskDecisionStatus) => void | Promise<void>;
 }
 
 export function SummarySection({ step, progress, onReplay, onComplete, onTaskDecisionChange }: SummarySectionProps) {
+  const progressReport = useProgressReport();
   const [expandedResearch, setExpandedResearch] = useState<string | null>(null);
+  const [taskBusyId, setTaskBusyId] = useState<string | null>(null);
   const quizTotal = step.quiz_questions.length;
   const quizCorrect = progress.quiz_score ?? 0;
   const gameTotal = step.game_items.length;
@@ -204,7 +207,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
             <p className="text-xs sm:text-sm text-gray-600 mb-4 leading-relaxed max-w-lg mx-auto px-0.5">
               בחר מה מקובל עליך כרגע. אלמוג יזכור את הבחירה שלך ויתאים את ההכוונה בהתאם.
             </p>
-            <div className="flex flex-col gap-4 w-full max-w-lg mx-auto min-w-0">
+            <div className="flex flex-col gap-5 w-full max-w-lg mx-auto min-w-0">
               {step.tasks.map((task) => {
                 const decision = progress.task_statuses?.[task.id];
                 const status = decision?.status ?? 'pending';
@@ -215,90 +218,110 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
 
                 const ringGradient =
                   status === 'accepted'
-                    ? 'linear-gradient(145deg, rgba(52,211,153,0.75), rgba(167,243,208,0.45), rgba(255,255,255,0.55))'
+                    ? 'linear-gradient(135deg, rgba(16,185,129,0.55), rgba(110,231,183,0.35), rgba(255,255,255,0.7))'
                     : status === 'rejected'
-                      ? 'linear-gradient(145deg, rgba(251,113,133,0.65), rgba(254,215,170,0.4), rgba(255,255,255,0.5))'
-                      : 'linear-gradient(145deg, rgba(255,255,255,0.85), rgba(167,243,208,0.55), rgba(204,251,241,0.45))';
+                      ? 'linear-gradient(135deg, rgba(251,113,133,0.5), rgba(253,186,116,0.35), rgba(255,255,255,0.65))'
+                      : 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(167,243,208,0.4), rgba(204,251,241,0.5))';
 
                 const innerBg =
                   status === 'accepted'
-                    ? 'linear-gradient(180deg, rgba(255,255,255,0.62) 0%, rgba(209,250,229,0.42) 100%)'
+                    ? 'linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(209,250,229,0.38) 100%)'
                     : status === 'rejected'
-                      ? 'linear-gradient(180deg, rgba(255,255,255,0.58) 0%, rgba(255,241,242,0.45) 100%)'
-                      : 'linear-gradient(180deg, rgba(255,255,255,0.52) 0%, rgba(240,253,250,0.34) 100%)';
+                      ? 'linear-gradient(180deg, rgba(255,255,255,0.68) 0%, rgba(255,241,242,0.42) 100%)'
+                      : 'linear-gradient(180deg, rgba(255,255,255,0.58) 0%, rgba(236,253,245,0.28) 100%)';
+
+                const accentBar =
+                  status === 'accepted'
+                    ? 'linear-gradient(180deg, #059669, #34d399)'
+                    : status === 'rejected'
+                      ? 'linear-gradient(180deg, #e11d48, #fb7185)'
+                      : 'linear-gradient(180deg, rgba(5,150,105,0.35), rgba(52,211,153,0.2))';
 
                 return (
                   <div
                     key={task.id}
-                    className="w-full max-w-full min-w-0 h-auto shrink-0 rounded-[22px] p-[1px]"
+                    className="w-full max-w-full min-w-0 h-auto shrink-0 rounded-[24px] p-[1.5px]"
                     style={{ background: ringGradient }}
                   >
                     <div
-                      className="rounded-[21px] overflow-hidden"
+                      className="rounded-[22px] overflow-hidden relative"
                       style={{
                         background: innerBg,
                         backdropFilter: 'blur(22px) saturate(1.25)',
                         WebkitBackdropFilter: 'blur(22px) saturate(1.25)',
                         boxShadow:
-                          '0 14px 42px rgba(6,78,59,0.1), inset 0 1px 1px rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.2)',
+                          '0 18px 48px rgba(6,78,59,0.11), 0 0 0 1px rgba(255,255,255,0.5) inset, inset 0 1px 1px rgba(255,255,255,0.9)',
                       }}
                     >
-                          {/* כותרת — גובה לפי תוכן בלבד */}
-                          <div className="flex flex-row-reverse items-start gap-3 px-4 pt-4 pb-3">
+                      <div
+                        className="absolute right-0 top-3 bottom-3 w-1 rounded-full opacity-90"
+                        style={{ background: accentBar }}
+                        aria-hidden
+                      />
+                          <div className="flex flex-row-reverse items-start gap-3.5 px-4 pt-4 pb-3 pr-5">
                             <div
-                              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl shadow-inner"
+                              className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[18px] text-[26px]"
                               style={{
-                                background: 'rgba(255,255,255,0.55)',
-                                border: '1px solid rgba(255,255,255,0.75)',
-                                boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.9)',
+                                background: 'linear-gradient(145deg, rgba(255,255,255,0.92), rgba(236,253,245,0.5))',
+                                border: '1px solid rgba(255,255,255,0.85)',
+                                boxShadow: '0 6px 20px rgba(6,78,59,0.08), inset 0 1px 0 rgba(255,255,255,0.95)',
                               }}
                               aria-hidden
                             >
                               {taskEmoji}
                             </div>
-                            <div className="min-w-0 flex-1 text-right space-y-1.5">
-                              <p className="font-black text-[15px] leading-snug text-[#1A1730] [overflow-wrap:anywhere] break-words">
+                            <div className="min-w-0 flex-1 text-right space-y-2">
+                              <p className="font-black text-[15px] sm:text-[16px] leading-snug text-[#1A1730] [overflow-wrap:anywhere] break-words tracking-tight">
                                 {task.title}
                               </p>
                               {task.description ? (
-                                <p className="text-[12px] sm:text-[13px] text-gray-600 leading-relaxed [overflow-wrap:anywhere] break-words border-t border-white/40 pt-2">
+                                <p className="text-[12px] sm:text-[13px] text-gray-600/95 leading-relaxed [overflow-wrap:anywhere] break-words rounded-xl bg-white/35 px-3 py-2 border border-white/50">
                                   {task.description}
                                 </p>
                               ) : null}
                             </div>
                           </div>
 
-                          {/* כפתורים — שורה כפולה במובייל חוסכת גובה */}
-                          <div className="grid grid-cols-2 gap-2 px-3 pb-3 pt-0">
+                          <div className="grid grid-cols-2 gap-2.5 px-3 pb-3 pt-0">
                             <button
                               type="button"
-                              onClick={() => onTaskDecisionChange(task.id, 'accepted')}
-                              className={`flex min-h-[44px] items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] sm:text-xs font-black transition active:scale-[0.98] ${
+                              disabled={taskBusyId === task.id}
+                              onClick={async () => {
+                                setTaskBusyId(task.id);
+                                try {
+                                  await Promise.resolve(onTaskDecisionChange(task.id, 'accepted'));
+                                  progressReport.open('task_execution');
+                                } finally {
+                                  setTaskBusyId(null);
+                                }
+                              }}
+                              className={`flex min-h-[48px] items-center justify-center gap-1.5 rounded-2xl px-2 py-2.5 text-[11px] sm:text-xs font-black transition active:scale-[0.98] disabled:opacity-60 ${
                                 status === 'accepted'
-                                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/20'
-                                  : 'border border-emerald-300/70 bg-white/50 text-emerald-900 hover:bg-emerald-50/90'
+                                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/18 ring-1 ring-white/25'
+                                  : 'border border-emerald-400/45 bg-white/60 text-emerald-900 hover:bg-emerald-50/95'
                               }`}
                               style={{ backdropFilter: 'blur(8px)' }}
                             >
-                              <Check className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={3} />
+                              <Check className="h-4 w-4 shrink-0 opacity-95" strokeWidth={3} />
                               <span className="leading-tight">מקובל עליי</span>
                             </button>
                             <button
                               type="button"
-                              onClick={() => onTaskDecisionChange(task.id, 'rejected')}
-                              className={`flex min-h-[44px] items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] sm:text-xs font-black transition active:scale-[0.98] ${
+                              disabled={taskBusyId === task.id}
+                              onClick={() => void onTaskDecisionChange(task.id, 'rejected')}
+                              className={`flex min-h-[48px] items-center justify-center gap-1.5 rounded-2xl px-2 py-2.5 text-[11px] sm:text-xs font-black transition active:scale-[0.98] disabled:opacity-60 ${
                                 status === 'rejected'
-                                  ? 'bg-rose-600 text-white shadow-md shadow-rose-900/15'
-                                  : 'border border-rose-300/70 bg-white/45 text-rose-900 hover:bg-rose-50/90'
+                                  ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/15 ring-1 ring-white/20'
+                                  : 'border border-rose-300/65 bg-white/55 text-rose-900 hover:bg-rose-50/95'
                               }`}
                               style={{ backdropFilter: 'blur(8px)' }}
                             >
-                              <X className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={3} />
+                              <X className="h-4 w-4 shrink-0 opacity-95" strokeWidth={3} />
                               <span className="leading-tight">לא מקובל</span>
                             </button>
                           </div>
 
-                          <div className="flex justify-end flex-wrap gap-2 border-t border-white/35 px-3 py-2.5">
+                          <div className="flex justify-end flex-wrap gap-2 border-t border-emerald-900/[0.07] px-3 py-3 bg-white/[0.12]">
                             {status === 'accepted' && (
                               <span
                                 className="text-[10px] sm:text-[11px] font-bold tracking-wide text-emerald-900 bg-gradient-to-r from-emerald-50 to-teal-50/90 border border-emerald-300/50 rounded-full px-3 py-1.5 shadow-sm shadow-emerald-900/5"
