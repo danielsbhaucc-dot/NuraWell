@@ -3,9 +3,9 @@ import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireApiAdmin } from '@/lib/api/route-guards';
 import { isOpsLoginRedirectUrl } from '@/lib/ops-host';
+import { createServiceSupabaseAdmin } from '@/lib/supabase/service-admin-client';
 import {
-  assertServiceRoleKey,
-  assertServiceRoleMatchesProjectUrl,
+  assertSupabaseBackendSecretKey,
   normalizeServiceRoleKeyEnv,
 } from '@/lib/supabase/service-role-jwt';
 
@@ -37,69 +37,53 @@ export async function POST(request: Request) {
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const serviceKey = normalizeServiceRoleKeyEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const serviceKey = normalizeServiceRoleKeyEnv(
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY,
+  );
   if (!serviceKey || !url) {
-    return NextResponse.json(
-      { error: 'חסר SUPABASE_SERVICE_ROLE_KEY או NEXT_PUBLIC_SUPABASE_URL ב-Vercel' },
-      { status: 500 },
-    );
-  }
-
-  const keyCheck = assertServiceRoleKey(serviceKey);
-  if (!keyCheck.ok) {
-    return NextResponse.json({ error: keyCheck.message }, { status: 500 });
-  }
-
-  const refCheck = assertServiceRoleMatchesProjectUrl(serviceKey, url);
-  if (!refCheck.ok) {
-    return NextResponse.json({ error: refCheck.message }, { status: 500 });
-  }
-
-  const expires_at = new Date(Date.now() + 120_000).toISOString();
-  const base = url.replace(/\/$/, '');
-  const rpcUrl = `${base}/rest/v1/rpc/insert_ops_auth_ticket`;
-
-  const insRes = await fetch(rpcUrl, {
-    method: 'POST',
-    headers: {
-      apikey: serviceKey,
-      Authorization: `Bearer ${serviceKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      p_access_token: session.access_token,
-      p_refresh_token: session.refresh_token,
-      p_expires_at: expires_at,
-    }),
-  });
-
-  const insBody = (await insRes.json().catch(() => null)) as unknown;
-  if (!insRes.ok) {
-    const msg =
-      typeof insBody === 'object' && insBody !== null && 'message' in insBody
-        ? String((insBody as { message: unknown }).message)
-        : insRes.statusText;
-    const hint =
-      typeof insBody === 'object' && insBody !== null && 'hint' in insBody
-        ? String((insBody as { hint: unknown }).hint)
-        : '';
-    console.error('[ops-session-ticket] rpc insert', insRes.status, msg, hint, insBody);
     return NextResponse.json(
       {
         error:
-          insRes.status === 401
-            ? `Supabase דחה את הבקשה (401). ${msg}${hint ? ` — ${hint}` : ''} אם הודעת ref כבר עברה, הרץ מיגרציה 000009 (פונקציות RPC) ב-Supabase.`
-            : `Ticket failed: ${msg}`,
-        code: insRes.status,
+          'חסר NEXT_PUBLIC_SUPABASE_URL או מפתח שרת (SUPABASE_SERVICE_ROLE_KEY / SUPABASE_SECRET_KEY) ב-Vercel',
       },
       { status: 500 },
     );
   }
 
-  const insertedId = typeof insBody === 'string' ? insBody : null;
+  const keyCheck = assertSupabaseBackendSecretKey(serviceKey, url);
+  if (!keyCheck.ok) {
+    return NextResponse.json({ error: keyCheck.message }, { status: 500 });
+  }
 
+  const expires_at = new Date(Date.now() + 120_000).toISOString();
+  const admin = createServiceSupabaseAdmin(url, serviceKey);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (admin as any).rpc('insert_ops_auth_ticket', {
+    p_access_token: session.access_token,
+    p_refresh_token: session.refresh_token,
+    p_expires_at: expires_at,
+  });
+
+  if (error) {
+    console.error('[ops-session-ticket] rpc', error.message, error.code, error.details, error.hint);
+    const msg = error.message || 'RPC failed';
+    const hint =
+      msg.toLowerCase().includes('invalid api key') || msg.includes('401')
+        ? ' פתח ב-Supabase → Settings → API Keys → טאב Legacy והעתק את service_role (JWT) ל-SUPABASE_SERVICE_ROLE_KEY, או מפתח sb_secret_ ל-SUPABASE_SECRET_KEY. ודא שאין רווחים/שורה נוספת במשתנה ב-Vercel.'
+        : '';
+    return NextResponse.json(
+      {
+        error: `${msg}.${hint}`,
+        code: error.code,
+      },
+      { status: 500 },
+    );
+  }
+
+  const insertedId = typeof data === 'string' ? data : null;
   if (!insertedId || !z.string().uuid().safeParse(insertedId).success) {
-    return NextResponse.json({ error: 'Ticket failed: unexpected RPC response', detail: insBody }, { status: 500 });
+    return NextResponse.json({ error: 'Ticket failed: unexpected RPC response', detail: data }, { status: 500 });
   }
 
   const opsBase = process.env.NEXT_PUBLIC_OPS_URL?.trim();

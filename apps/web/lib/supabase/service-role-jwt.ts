@@ -33,13 +33,18 @@ export function jwtRoleClaim(jwt: string): string | null {
   return typeof role === 'string' ? role : null;
 }
 
-/** מנקה מרכאות כפולות ש-Vercel/CLI לפעמים שומרים סביב הערך */
+function isSupabaseSecretApiKey(key: string): boolean {
+  return key.startsWith('sb_secret_');
+}
+
+/** מנקה BOM, מרכאות, ורווחים/שורות שבורים בהדבקה ל-Vercel */
 export function normalizeServiceRoleKeyEnv(raw: string | undefined): string {
   if (!raw) return '';
-  let k = raw.trim();
+  let k = raw.replace(/^\uFEFF/, '').trim();
   if ((k.startsWith('"') && k.endsWith('"')) || (k.startsWith("'") && k.endsWith("'"))) {
     k = k.slice(1, -1).trim();
   }
+  k = k.split(/\s+/).join('').trim();
   return k;
 }
 
@@ -66,6 +71,39 @@ export function assertServiceRoleKey(key: string): { ok: true } | { ok: false; m
     };
   }
   return { ok: true };
+}
+
+/**
+ * Legacy JWT service_role או מפתח sb_secret חדש (לא JWT — בלי בדיקת ref).
+ * אם הודבק sb_publishable / anon בטעות — עוצרים מוקדם.
+ */
+export function assertSupabaseBackendSecretKey(
+  key: string,
+  supabaseUrl: string
+): { ok: true } | { ok: false; message: string } {
+  if (!key) {
+    return {
+      ok: false,
+      message: 'חסר מפתח שרת: הגדר ב-Vercel את SUPABASE_SERVICE_ROLE_KEY (מומלץ: Legacy service_role JWT) או SUPABASE_SECRET_KEY (sb_secret_).',
+    };
+  }
+  if (key.startsWith('sb_publishable_')) {
+    return {
+      ok: false,
+      message: 'הוגדר מפתח sb_publishable (ציבורי). לשרת צריך sb_secret או Legacy service_role מ־Settings → API Keys.',
+    };
+  }
+  if (isSupabaseSecretApiKey(key)) {
+    return { ok: true };
+  }
+  const roleCheck = assertServiceRoleKey(key);
+  if (!roleCheck.ok) {
+    return {
+      ok: false,
+      message: `${roleCheck.message} אם ב-Dashboard מופיע רק מפתח sb_secret_, העתק אותו ל-SUPABASE_SECRET_KEY (או החלף את משתנה ה-service role).`,
+    };
+  }
+  return assertServiceRoleMatchesProjectUrl(key, supabaseUrl);
 }
 
 export function assertServiceRoleMatchesProjectUrl(

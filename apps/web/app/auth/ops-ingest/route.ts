@@ -2,9 +2,9 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { mergeAuthCookieOptions } from '@/lib/supabase/cookie-options';
+import { createServiceSupabaseAdmin } from '@/lib/supabase/service-admin-client';
 import {
-  assertServiceRoleKey,
-  assertServiceRoleMatchesProjectUrl,
+  assertSupabaseBackendSecretKey,
   normalizeServiceRoleKeyEnv,
 } from '@/lib/supabase/service-role-jwt';
 
@@ -35,46 +35,29 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  const serviceKey = normalizeServiceRoleKeyEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const serviceKey = normalizeServiceRoleKeyEnv(
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY,
+  );
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   if (!serviceKey || !url) {
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
   }
 
-  const keyCheck = assertServiceRoleKey(serviceKey);
+  const keyCheck = assertSupabaseBackendSecretKey(serviceKey, url);
   if (!keyCheck.ok) {
     return NextResponse.json({ error: keyCheck.message }, { status: 500 });
   }
 
-  const refCheck = assertServiceRoleMatchesProjectUrl(serviceKey, url);
-  if (!refCheck.ok) {
-    return NextResponse.json({ error: refCheck.message }, { status: 500 });
-  }
+  const admin = createServiceSupabaseAdmin(url, serviceKey);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (admin as any).rpc('claim_ops_auth_ticket', { p_id: ticketId });
 
-  const base = url.replace(/\/$/, '');
-  const rpcUrl = `${base}/rest/v1/rpc/claim_ops_auth_ticket`;
-
-  const claimRes = await fetch(rpcUrl, {
-    method: 'POST',
-    headers: {
-      apikey: serviceKey,
-      Authorization: `Bearer ${serviceKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ p_id: ticketId }),
-  });
-
-  const claimBody = (await claimRes.json().catch(() => null)) as unknown;
-  if (!claimRes.ok) {
+  if (error || data === null || typeof data !== 'object' || Array.isArray(data)) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  const row =
-    claimBody !== null && typeof claimBody === 'object' && !Array.isArray(claimBody)
-      ? (claimBody as { access_token?: string; refresh_token?: string; expires_at?: string })
-      : null;
-
-  if (!row?.access_token || !row?.refresh_token) {
+  const row = data as { access_token?: string; refresh_token?: string };
+  if (!row.access_token || !row.refresh_token) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
