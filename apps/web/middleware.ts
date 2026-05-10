@@ -1,7 +1,12 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { mergeAuthCookieOptions } from './lib/supabase/cookie-options';
-import { isOpsPreviewHostname, opsCanonicalHostname, requestHostname } from './lib/ops-host';
+import {
+  isOpsPanelBrowserPath,
+  isOpsPreviewHostname,
+  opsCanonicalHostname,
+  requestHostname,
+} from './lib/ops-host';
 
 const PUBLIC_ROUTES = [
   '/',
@@ -65,6 +70,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
+  /** דומיין Ops משרת רק את הפאנל; /login, /courses וכו׳ → דף הבית של הפאנל */
+  if (effectiveOpsHost) {
+    const skipPanelGate =
+      pathname.startsWith('/api') || pathname.startsWith('/_next');
+    if (!skipPanelGate && !isOpsPanelBrowserPath(pathname)) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+  }
+
   let response = NextResponse.next({
     request: {
       headers: requestHeaders,
@@ -121,8 +135,10 @@ export async function middleware(request: NextRequest) {
   if (needsOpsGate && !pathname.startsWith('/api')) {
     if (!user) {
       const loginUrl = new URL('/login', mainOrigin);
-      const back = `${request.nextUrl.protocol}//${incomingHost}${pathname}`;
-      loginUrl.searchParams.set('redirect', back);
+      const opsReturnUrl = isOpsPanelBrowserPath(pathname)
+        ? new URL(pathname, request.nextUrl.origin).href
+        : new URL('/', request.nextUrl.origin).href;
+      loginUrl.searchParams.set('redirect', opsReturnUrl);
       return NextResponse.redirect(loginUrl);
     }
 

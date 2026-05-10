@@ -23,3 +23,14 @@ export function isOpsPreviewHostname(hostnameHeader: string | null): boolean {
   const h = requestHostname(hostnameHeader);
   return h.endsWith('.vercel.app');
 }
+
+/**
+ * נתיבי URL כפי שהדפדפן רואה בדומיין Ops (לפני rewrite פנימי).
+ * רק אלה מותרים; כל השאר → הפניה לעמוד הבית של הפאנל (`/`).
+ */
+export function isOpsPanelBrowserPath(pathname: string): boolean {
+  const p = pathname.endsWith('/') && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
+  if (p === '/' || p === '') return true;
+  const prefixes = ['/journey', '/almog', '/steps', '/ops'];
+  return prefixes.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
+}

@@ -1,7 +1,12 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '../supabase/server';
-import { isOpsHostname, isOpsPreviewHostname, requestHostname } from '../ops-host';
+import {
+  isOpsHostname,
+  isOpsPanelBrowserPath,
+  isOpsPreviewHostname,
+  requestHostname,
+} from '../ops-host';
 
 function appBase(): string {
   return (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
@@ -35,10 +40,18 @@ export async function ensureOpsAdminServer(): Promise<void> {
   } = await supabase.auth.getUser();
 
   const path = h.get('x-pathname') || '/';
+  const opsReturnPath = isOpsPanelBrowserPath(path) ? path : '/';
 
   if (!user) {
     if (app && opsPublic) {
-      redirect(`${app}/login?redirect=${encodeURIComponent(`${opsPublic}${path}`)}`);
+      const base = opsPublic.replace(/\/$/, '');
+      let afterLogin: string;
+      try {
+        afterLogin = new URL(opsReturnPath, `${base}/`).href;
+      } catch {
+        afterLogin = `${base}/`;
+      }
+      redirect(`${app}/login?redirect=${encodeURIComponent(afterLogin)}`);
     }
     redirect(app ? `${app}/login` : '/login');
   }
