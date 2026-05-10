@@ -1,4 +1,5 @@
 import { embedTextForRag } from './openrouter-embeddings';
+import { normalizeFactTextForDedupe, stableMemoryVectorId } from './memory-fact-dedupe';
 import {
   DEDUP_QUERY_TOP_K,
   SIMILARITY_MERGE_THRESHOLD,
@@ -16,7 +17,7 @@ import type { ExtractedMemoryFact, MemoryExtractionResult } from './extract-memo
 
 export type IngestVectorMemoryResult = {
   facts_extracted: number;
-  upserts: Array<{ id: string; action: 'inserted' | 'merged'; text: string }>;
+  upserts: Array<{ id: string; action: 'inserted' | 'merged' | 'exact_refresh'; text: string }>;
   skipped_reason?: string;
 };
 
@@ -47,6 +48,7 @@ export async function ingestUserMessageIntoVectorMemory(params: {
 
   for (const fact of extraction.facts) {
     const vec = await embedTextForRag(fact.text);
+    const normFact = normalizeFactTextForDedupe(fact.text);
 
     const candidates = await queryUserMemoryVectors({
       userId: params.userId,
@@ -54,9 +56,31 @@ export async function ingestUserMessageIntoVectorMemory(params: {
       topK: DEDUP_QUERY_TOP_K,
     });
 
-    const best = candidates.find((h) => h.score >= SIMILARITY_MERGE_THRESHOLD && hitMetaText(h));
-
     const now = new Date().toISOString();
+
+    /** כפילות מילולית (אותו ניסוח נורמלי) — רענון וקטור קיים, בלי שורה חדשה */
+    const exactHit = candidates.find((h) => {
+      const t = hitMetaText(h);
+      return t != null && normalizeFactTextForDedupe(t) === normFact;
+    });
+    if (exactHit) {
+      const meta: UserMemoryVectorMetadata = {
+        userId: params.userId,
+        text: fact.text.trim(),
+        category: fact.category,
+        updatedAt: now,
+      };
+      await upsertUserMemoryVector({
+        namespace: UPSTASH_NAMESPACE_USER_MEMORY,
+        id: exactHit.id,
+        vector: vec,
+        metadata: meta,
+      });
+      upserts.push({ id: exactHit.id, action: 'exact_refresh', text: fact.text.trim() });
+      continue;
+    }
+
+    const best = candidates.find((h) => h.score >= SIMILARITY_MERGE_THRESHOLD && hitMetaText(h));
 
     if (best && hitMetaText(best)) {
       const prevText = hitMetaText(best)!;
@@ -81,10 +105,10 @@ export async function ingestUserMessageIntoVectorMemory(params: {
       continue;
     }
 
-    const id = crypto.randomUUID();
+    const id = await stableMemoryVectorId(params.userId, normFact);
     const meta: UserMemoryVectorMetadata = {
       userId: params.userId,
-      text: fact.text,
+      text: fact.text.trim(),
       category: fact.category,
       updatedAt: now,
     };
@@ -96,7 +120,7 @@ export async function ingestUserMessageIntoVectorMemory(params: {
       metadata: meta,
     });
 
-    upserts.push({ id, action: 'inserted', text: fact.text });
+    upserts.push({ id, action: 'inserted', text: fact.text.trim() });
   }
 
   return { facts_extracted: extraction.facts.length, upserts };
