@@ -31,6 +31,6 @@ export function isOpsPreviewHostname(hostnameHeader: string | null): boolean {
 export function isOpsPanelBrowserPath(pathname: string): boolean {
   const p = pathname.endsWith('/') && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
   if (p === '/' || p === '') return true;
-  const prefixes = ['/journey', '/almog', '/steps', '/ops'];
+  const prefixes = ['/journey', '/almog', '/steps', '/site-settings', '/ops'];
   return prefixes.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
 }

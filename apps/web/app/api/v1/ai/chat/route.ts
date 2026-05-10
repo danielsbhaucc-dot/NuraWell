@@ -19,6 +19,7 @@ import { ingestUserMessageIntoVectorMemory } from '../../../../../lib/ai/vector-
 import { readJsonBody } from '../../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
+import { publicAppUrlForAiReferer } from '../../../../../lib/public-app-url';
 
 /** Vercel Edge — סטרימינג צ׳אט ו-TTFB נמוך קרוב ל-POP הגלובלי */
 export const runtime = 'edge';
@@ -400,7 +401,7 @@ export async function POST(request: Request) {
     apiKey: openrouterKey,
     baseURL: 'https://openrouter.ai/api/v1',
     headers: {
-      'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL ?? 'https://nurawell.ai',
+      'HTTP-Referer': publicAppUrlForAiReferer(),
       'X-Title': 'NuraWell',
     },
   });

@@ -6,6 +6,7 @@ import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction
 import { LESSON_FEEDBACK_PROMPT } from '../../../../../lib/ai/prompts';
 import { readJsonBody } from '../../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../../lib/api/route-guards';
+import { publicAppUrlForAiReferer } from '../../../../../lib/public-app-url';
 
 /** Vercel Edge — תגובת משוב AI מהירה */
 export const runtime = 'edge';
@@ -49,7 +50,7 @@ const openrouter = createOpenAI({
   apiKey: process.env.OPENROUTER_API_KEY ?? '',
   baseURL: 'https://openrouter.ai/api/v1',
   headers: {
-    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL ?? 'https://nurawell.ai',
+    'HTTP-Referer': publicAppUrlForAiReferer(),
     'X-Title': 'NuraWell',
   },
 });

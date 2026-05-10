@@ -7,6 +7,7 @@ import {
   opsCanonicalHostname,
   requestHostname,
 } from './lib/ops-host';
+import { resolvePublicAppOriginForOpsRedirect } from './lib/public-app-url';
 
 const PUBLIC_ROUTES = [
   '/',
@@ -23,26 +24,6 @@ function copyCookies(from: NextResponse, to: NextResponse) {
   from.cookies.getAll().forEach((c) => {
     to.cookies.set(c);
   });
-}
-
-/**
- * בסיס ל־redirect מ־Ops לדומיין הציבורי (login / courses).
- * אם NEXT_PUBLIC_APP_URL לא מלא (חסר https://) או לא תקין — נופלים ל־origin של הבקשה כדי שלא יקרוס ה־middleware ב־Vercel.
- */
-function middlewarePublicOrigin(request: NextRequest): string {
-  const raw = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (raw) {
-    const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw.replace(/^\/+/, '')}`;
-    try {
-      const u = new URL(withProtocol.endsWith('/') ? withProtocol.slice(0, -1) : withProtocol);
-      if (u.protocol === 'http:' || u.protocol === 'https:') {
-        return u.origin;
-      }
-    } catch {
-      /* משתנה סביבה שבור — מתעלמים */
-    }
-  }
-  return request.nextUrl.origin;
 }
 
 export async function middleware(request: NextRequest) {
@@ -130,9 +111,11 @@ export async function middleware(request: NextRequest) {
     devOpsPath ||
     (effectiveOpsHost && !pathname.startsWith('/api') && !pathname.startsWith('/_next'));
 
-  const mainOrigin = middlewarePublicOrigin(request);
-
   if (needsOpsGate && !pathname.startsWith('/api')) {
+    /** בפיתוח מקומי /ops — לוגין על אותו host; בדומיין Ops — כתובת מה־DB / env / Vercel */
+    const mainOrigin = devOpsPath
+      ? request.nextUrl.origin
+      : await resolvePublicAppOriginForOpsRedirect();
     if (!user) {
       const loginUrl = new URL('/login', mainOrigin);
       const opsReturnUrl = isOpsPanelBrowserPath(pathname)

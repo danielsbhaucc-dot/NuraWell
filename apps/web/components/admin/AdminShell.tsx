@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import {
   ArrowLeft,
   ChevronDown,
+  Globe,
   LayoutDashboard,
   ListTree,
   Map,
@@ -19,6 +20,8 @@ type AdminShellProps = {
   children: React.ReactNode;
   /** שם פרטי מהפרופיל; אם ריק — מציגים רק שלום עם אימוג׳י */
   adminFirstName: string;
+  /** כתובת האתר הציבורי (ללא סלאש סיום) — ממסד / env */
+  mainAppBase: string;
 };
 
 /** תואם גם rewrite מ־ops.example.com/journey וגם גישה ישירה ל־/ops/journey בפיתוח */
@@ -29,14 +32,14 @@ function normalizeOpsPathname(pathname: string): string {
   return `/ops${p}`;
 }
 
-export function AdminShell({ children, adminFirstName }: AdminShellProps) {
+export function AdminShell({ children, adminFirstName, mainAppBase }: AdminShellProps) {
   const pathname = usePathname();
   const np = normalizeOpsPathname(pathname);
-  const appBase = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
-  const coursesHref = appBase ? `${appBase}/courses` : '/courses';
+  const coursesHref = mainAppBase ? `${mainAppBase}/courses` : '/courses';
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isHome = np === '/ops';
   const isAlmogSettings = np === '/ops/almog';
+  const isSiteSettings = np === '/ops/site-settings';
   const isJourneyManage = np.startsWith('/ops/journey') || np.startsWith('/ops/steps');
 
   const [journeySettingsOpen, setJourneySettingsOpen] = useState(isJourneyManage);
@@ -136,13 +139,27 @@ export function AdminShell({ children, adminFirstName }: AdminShellProps) {
               <span>הגדרות אלמוג</span>
             </Link>
 
+            <Link
+              href="/site-settings"
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                'flex min-h-11 w-full items-center gap-3 rounded-2xl px-4 py-3 text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
+                isSiteSettings
+                  ? 'border border-emerald-400/35 bg-white/15 font-bold text-emerald-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-md'
+                  : 'text-slate-300 hover:bg-white/10 hover:text-white',
+              )}
+            >
+              <Globe size={20} className={isSiteSettings ? 'text-emerald-400' : ''} />
+              <span>הגדרות אתר</span>
+            </Link>
+
             <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md">
               <button
                 type="button"
                 onClick={() => setJourneySettingsOpen((o) => !o)}
                 className={cn(
                   'flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-right text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
-                  isJourneyManage && !isHome && !isAlmogSettings
+                  isJourneyManage && !isHome && !isAlmogSettings && !isSiteSettings
                     ? 'bg-white/10 font-semibold text-emerald-200'
                     : 'text-slate-300 hover:bg-white/10 hover:text-white',
                 )}

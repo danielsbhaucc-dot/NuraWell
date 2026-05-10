@@ -9,6 +9,9 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   env: {
+    /** עד חיבור דומיין קבוע — Vercel; אפשר לעקוף ב־Dashboard או בפאנל (site_settings) */
+    NEXT_PUBLIC_APP_URL:
+      process.env.NEXT_PUBLIC_APP_URL || 'https://nurawell.vercel.app',
     NEXT_PUBLIC_OPS_HOSTNAME: process.env.NEXT_PUBLIC_OPS_HOSTNAME || '',
     NEXT_PUBLIC_OPS_URL: process.env.NEXT_PUBLIC_OPS_URL || '',
     NEXT_PUBLIC_AUTH_COOKIE_DOMAIN: process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN || '',

@@ -7,10 +7,7 @@ import {
   isOpsPreviewHostname,
   requestHostname,
 } from '../ops-host';
-
-function appBase(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
-}
+import { publicAppBaseNoSlashFromServer, publicAppBaseNoSlashSync } from '../public-app-url';
 
 function opsPublicBase(): string {
   return (process.env.NEXT_PUBLIC_OPS_URL || '').replace(/\/$/, '');
@@ -20,7 +17,7 @@ function opsPublicBase(): string {
 export async function ensureOpsAdminServer(): Promise<void> {
   const h = await headers();
   const host = requestHostname(h.get('x-forwarded-host') || h.get('host'));
-  const app = appBase();
+  const appSync = publicAppBaseNoSlashSync();
   const opsPublic = opsPublicBase();
 
   const isLocalDev =
@@ -31,10 +28,11 @@ export async function ensureOpsAdminServer(): Promise<void> {
     isOpsHostname(forwardedHost) || isOpsPreviewHostname(forwardedHost);
 
   if (process.env.NODE_ENV === 'production' && !allowedOpsHost && !isLocalDev) {
-    redirect(app ? `${app}/courses` : '/courses');
+    redirect(appSync ? `${appSync}/courses` : '/courses');
   }
 
   const supabase = await createClient();
+  const app = await publicAppBaseNoSlashFromServer(supabase);
   const {
     data: { user },
   } = await supabase.auth.getUser();

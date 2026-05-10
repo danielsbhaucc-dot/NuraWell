@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { ensureOpsAdminServer } from '@/lib/auth/ensure-ops-admin-server';
 import { AdminShell } from '@/components/admin/AdminShell';
+import { publicAppBaseNoSlashFromServer } from '@/lib/public-app-url';
 
 export const metadata: Metadata = {
   title: 'פאנל ניהול',
@@ -18,6 +19,7 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
   await ensureOpsAdminServer();
 
   const supabase = await createClient();
+  const mainAppBase = await publicAppBaseNoSlashFromServer(supabase);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -32,5 +34,9 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
     adminFirstName = firstNameFromFullName(profile?.full_name as string | null);
   }
 
-  return <AdminShell adminFirstName={adminFirstName}>{children}</AdminShell>;
+  return (
+    <AdminShell adminFirstName={adminFirstName} mainAppBase={mainAppBase}>
+      {children}
+    </AdminShell>
+  );
 }

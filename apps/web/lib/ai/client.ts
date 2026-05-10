@@ -9,11 +9,12 @@
  */
 
 import OpenAI from 'openai';
+import { publicAppUrlForAiReferer } from '../public-app-url';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 const DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://nurawell.ai';
+const APP_URL = publicAppUrlForAiReferer();
 const APP_TITLE = 'NuraWell';
 
 if (!process.env.OPENROUTER_API_KEY && process.env.NODE_ENV === 'production') {
