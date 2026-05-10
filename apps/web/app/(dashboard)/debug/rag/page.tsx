@@ -76,24 +76,47 @@ export default function RagDebugPage() {
       </p>
 
       <section className="mb-8 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
-        <h2 className="mb-2 font-medium text-neutral-800">איך לוודא שזה עובד (פשוט)</h2>
-        <ol className="list-decimal pr-5 text-sm leading-relaxed text-neutral-700 space-y-2">
+        <h2 className="mb-2 font-medium text-neutral-800">איך לוודא שזה עובד</h2>
+        <ol className="list-decimal pr-5 text-sm leading-relaxed text-neutral-700 space-y-3">
           <li>
-            לחץ <strong>«בדיקת חיבור»</strong> — צריך לראות ירוק: מפתח OpenRouter מוגדר ו-Upstash נגיש.
+            <strong>חיבור</strong> — «בדיקת חיבור»: OpenRouter + Upstash = כן. בלי זה אין embedding/וקטורים.
           </li>
           <li>
-            הקלד משפט על הרגלים/משקל (לא «היי» בלבד), ולחץ <strong>«חילוץ בלבד»</strong> — ב־
-            <code className="rounded bg-neutral-100 px-1 text-xs">preview.extraction.facts</code> יופיעו עובדות.
+            <strong>חילוץ JSON (Llama)</strong> — «חילוץ בלבד»: ב־
+            <code className="rounded bg-neutral-100 px-1 text-xs">preview.extraction.facts</code> אמורות להופיע
+            עובדות עם <code className="rounded bg-neutral-100 px-1 text-xs">category</code> ו־
+            <code className="rounded bg-neutral-100 px-1 text-xs">text</code>. אם המערך ריק — או שאין תוכן לליווי,
+            או שהפרסור נכשל (אז גם <code className="rounded bg-neutral-100 px-1 text-xs">raw_model_text</code> יעזור לבדוק).
           </li>
           <li>
-            אופציונלי: <strong>«חילוץ + כתיבה ל-Upstash»</strong> — רק אחרי שחיבור תקין; אם כבר יש זיכרון דומה,
-            תראה <code className="rounded bg-neutral-100 px-1 text-xs">merged</code> או{' '}
-            <code className="rounded bg-neutral-100 px-1 text-xs">exact_refresh</code>.
+            <strong>שליפה מ-Upstash</strong> — ב־
+            <code className="rounded bg-neutral-100 px-1 text-xs">preview.query_probe.top_hits</code> אמורים להופיע
+            עד 3 פריטים רלוונטיים למשתמש המחובר (מסוננים לפי userId).
           </li>
           <li>
-            אם הגדרת ב-Vercel את{' '}
-            <code className="rounded bg-neutral-100 px-1 text-xs">RAG_SELF_TEST_SECRET</code> — חובה להזין אותו בשדה למטה
-            (כותרת לשרת). בלי משתנה כזה בשרת, מספיק להיות מחובר לאפליקציה.
+            <strong>כתיבה ומיזוג</strong> — «חילוץ + כתיבה»: ב־
+            <code className="rounded bg-neutral-100 px-1 text-xs">ingest_result.upserts</code> חפש{' '}
+            <code className="rounded bg-neutral-100 px-1 text-xs">inserted</code>,{' '}
+            <code className="rounded bg-neutral-100 px-1 text-xs">merged</code>,{' '}
+            <code className="rounded bg-neutral-100 px-1 text-xs">exact_refresh</code> — כך נמנעות כפילויות במסד.
+          </li>
+          <li>
+            <strong>סוף־לסוף בצ&apos;אט</strong> — אחרי כתיבה, שלח בצ&apos;אט שאלה שקשורה לעובדה ששמרת; בתשובה אמור להופיע
+            רמז מהזיכרון (בלי שהמנטור אומר ש&quot;שמר&quot;).
+          </li>
+          <li>
+            <strong>זיכרון JSON ישן (Supabase)</strong> — אם מפעילים שוב את{' '}
+            <code className="rounded bg-neutral-100 px-1 text-xs">AI_LEGACY_JSON_MEMORY_PROMPT</code>, הכתיבה ל־
+            <code className="rounded bg-neutral-100 px-1 text-xs">user_ai_memory</code> היא <strong>מיזוג</strong> עם
+            השורה הקיימת (לא החלפה מלאה), אלא אם בודקים במכוון עם replace.
+          </li>
+          <li>
+            <code className="rounded bg-neutral-100 px-1 text-xs">POST /api/v1/ai/memory</code> עם דמה — רק בפיתוח;
+            ב-production מחזיר 403.
+          </li>
+          <li>
+            אם ב-Vercel מוגדר <code className="rounded bg-neutral-100 px-1 text-xs">RAG_SELF_TEST_SECRET</code> — הזן כאן;
+            אחרת מספיק session.
           </li>
         </ol>
       </section>

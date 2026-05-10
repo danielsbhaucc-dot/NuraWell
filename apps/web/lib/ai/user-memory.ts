@@ -180,7 +180,9 @@ export async function getUserAiMemory(supabase: any, userId: string): Promise<Us
 }
 
 /**
- * Upserts memory JSON. ברירת מחדל: מיזוג עם הזיכרון הקיים כדי שלא יימחק מידע אם התקבלה תגובה חלקית.
+ * Upserts memory JSON.
+ * ברירת מחדל (`replace` לא מועבר): **מיזוג עמוק שמרני** עם השורה הקיים (`mergeAiMemory`) —
+ * מערכים ריקים מהמודל לא דורסים נתונים קיימים. רק `replace: true` מחליף את כל האובייקט (בדיקות מכוונות בלבד).
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function upsertUserAiMemory(

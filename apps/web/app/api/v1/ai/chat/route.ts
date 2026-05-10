@@ -12,7 +12,11 @@ import {
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
 import { embedTextForRag } from '../../../../../lib/ai/openrouter-embeddings';
 import { formatRagMemoryContextBlock } from '../../../../../lib/ai/format-rag-context';
-import { CHAT_PROACTIVE_AND_PRIORITY, NURAWELL_MENTOR_PROMPT } from '../../../../../lib/ai/prompts';
+import {
+  CHAT_PROACTIVE_AND_PRIORITY,
+  CHAT_VECTOR_AND_MEMORY_RULES,
+  NURAWELL_MENTOR_PROMPT,
+} from '../../../../../lib/ai/prompts';
 import { RAG_TOP_K } from '../../../../../lib/ai/rag-config';
 import {
   isUpstashVectorConfigured,
@@ -364,6 +368,7 @@ ${JSON.stringify(activeJourneyContext)}
       failure_patterns: (updatedMemory.failure_patterns ?? []).slice(0, MEMORY_MAX_FAILURE_PATTERNS),
       personal_timeline: (updatedMemory.personal_timeline ?? []).slice(0, MEMORY_MAX_TIMELINE),
     };
+    // mergeAiMemory בתוך upsert — לא replace; מגן על מערכים ריקים מהמודל
     await upsertUserAiMemory(supabase, userId, normalizedUpdated);
   } catch (err) {
     console.error('[ai/chat]', {
@@ -574,6 +579,8 @@ export async function POST(request: Request) {
     const systemPromptWithMemory = `${BASE_SYSTEM_PROMPT}
 
 ${CHAT_PROACTIVE_AND_PRIORITY}
+
+${CHAT_VECTOR_AND_MEMORY_RULES}
 
 סדר עדיפויות: (1) הנחיות מערכת (2) זיכרון מובנה למטה (3) הודעות השיחה — הן מקור האמת ל"מה קורה עכשיו". אם יש סתירה בין זיכרון ישן לבין השיחה הנוכחית, עדיף השיחה.
 

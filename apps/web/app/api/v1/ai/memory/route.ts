@@ -4,7 +4,8 @@ import { getUserAiMemory, upsertUserAiMemory } from '../../../../../lib/ai/user-
 /** Vercel Edge — קריאת זיכרון AI קלה */
 export const runtime = 'edge';
 
-const DUMMY_MEMORY = {
+/** רק לפיתוח מקומי — POST נחסם לחלוטין ב-production (מטעמי בטיחות). */
+const DEV_DUMMY_MEMORY = {
   commitments: ['לשתות מים בבוקר'],
   weaknesses: ['קשה לי בסופשים'],
   victories: ['סיימתי צום ארוך'],
@@ -40,16 +41,22 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     if (process.env.NODE_ENV === 'production') {
-      return new Response(JSON.stringify({ error: 'Not available in production' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      });
+      return new Response(
+        JSON.stringify({
+          error: 'Forbidden',
+          hint: 'POST זה לפיתוח בלבד; לא זמין ב-production.',
+        }),
+        {
+          status: 403,
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        }
+      );
     }
 
     const auth = await requireApiSession(request);
     if (!auth.ok) return auth.response;
 
-    await upsertUserAiMemory(auth.supabase, auth.user.id, DUMMY_MEMORY, { replace: true });
+    await upsertUserAiMemory(auth.supabase, auth.user.id, DEV_DUMMY_MEMORY, { replace: true });
     const memory = await getUserAiMemory(auth.supabase, auth.user.id);
 
     return new Response(JSON.stringify({ ok: true, memory }), {

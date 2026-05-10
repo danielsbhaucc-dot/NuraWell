@@ -131,6 +131,20 @@ export async function buildUserContext(
     if (chatCommitmentsPreview.length > 0) {
       parts.push(`התחייבויות מהצ'אט (עדכניות): ${chatCommitmentsPreview.join('; ')}`);
     }
+    const w = chatMemory.weaknesses.filter(Boolean).slice(-2);
+    if (w.length > 0) {
+      parts.push(`חולשות / קושי חוזר מהצ'אט (תקציר): ${w.join('; ')}`);
+    }
+    const fp = chatMemory.failure_patterns.slice(-3);
+    if (fp.length > 0) {
+      parts.push(
+        `דפוסי כשל מהצ'אט: ${fp.map((p) => `${p.trigger} → ${p.behavior}`).join(' | ')}`
+      );
+    }
+    const tl = chatMemory.personal_timeline.slice(-2);
+    if (tl.length > 0) {
+      parts.push(`ציר זמן אישי (תקציר): ${tl.map((t) => `שבוע ${t.week}: ${t.note}`).join(' | ')}`);
+    }
   } catch {
     /* זיכרון צ'אט אופציונלי — לא לשבור קונטקסט אם השאילתה נכשלת */
   }
