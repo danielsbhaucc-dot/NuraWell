@@ -12,8 +12,7 @@ import {
 import type { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { Drawer } from 'vaul';
-import { motion } from 'framer-motion';
-import { CheckCheck, Loader2, Sparkles } from 'lucide-react';
+import { CheckCheck, Loader2, Zap } from 'lucide-react';
 import { createClient } from '../../lib/supabase/client';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
@@ -33,10 +32,11 @@ function timeAgo(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diffMs / 60000);
   if (mins < 1) return 'עכשיו';
-  if (mins < 60) return `לפני ${mins} דק'`;
+  if (mins < 60) return `לפני ${mins} דק׳`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `לפני ${hours} שעות`;
   const days = Math.floor(hours / 24);
+  if (days === 1) return 'אתמול';
   return `לפני ${days} ימים`;
 }
 
@@ -104,7 +104,6 @@ export function NotificationsProvider({
     void load();
   }, [load]);
 
-  /** Realtime: הוספת התראה חדשה מיד כשהשרת מכניס שורה */
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -133,7 +132,6 @@ export function NotificationsProvider({
     };
   }, [userId]);
 
-  /** גיבוי: ריענון שקט כשהטאב פעיל */
   useEffect(() => {
     const tick = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
@@ -177,177 +175,204 @@ export function NotificationsProvider({
     [open, unreadCount]
   );
 
+  const glassShellStyle = {
+    border: '1px solid rgba(255,255,255,0.52)',
+    boxShadow:
+      '0 -24px 64px rgba(6,78,59,0.14), 0 0 0 1px rgba(255,255,255,0.35) inset, inset 0 1px 0 rgba(255,255,255,0.65)',
+    background:
+      'linear-gradient(168deg, rgba(255,255,255,0.58) 0%, rgba(236,253,245,0.42) 42%, rgba(255,255,255,0.52) 100%)',
+    backdropFilter: 'blur(26px) saturate(1.35)',
+    WebkitBackdropFilter: 'blur(26px) saturate(1.35)',
+  } as const;
+
   return (
     <NotificationsDrawerContext.Provider value={ctxValue}>
       {children}
 
       <Drawer.Root open={open} onOpenChange={setOpen} direction="bottom" shouldScaleBackground>
         <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 z-[240] bg-gradient-to-t from-fuchsia-950/50 via-emerald-950/35 to-slate-900/40 backdrop-blur-[3px]" />
+          <Drawer.Overlay className="fixed inset-0 z-[240] bg-emerald-950/38 backdrop-blur-[4px]" />
           <Drawer.Content
             dir="rtl"
-            className="fixed bottom-0 left-0 right-0 z-[250] mx-auto flex max-h-[88dvh] w-full max-w-md flex-col rounded-t-[28px] outline-none overflow-hidden"
-            style={{
-              border: '2px solid rgba(255,255,255,0.35)',
-              boxShadow:
-                '0 -28px 80px rgba(16,185,129,0.22), 0 -8px 40px rgba(192,38,211,0.12), inset 0 1px 0 rgba(255,255,255,0.5)',
-              background:
-                'linear-gradient(165deg, rgba(255,255,255,0.92) 0%, rgba(236,253,245,0.88) 35%, rgba(253,242,248,0.9) 70%, rgba(255,255,255,0.95) 100%)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-            }}
+            className="fixed bottom-0 left-0 right-0 z-[250] mx-auto flex max-h-[88dvh] w-full max-w-md flex-col rounded-t-[26px] outline-none overflow-hidden"
+            style={glassShellStyle}
           >
-            <Drawer.Title className="sr-only">התראות</Drawer.Title>
-            <Drawer.Description className="sr-only">הודעות מאלמוג והמערכת</Drawer.Description>
+            <Drawer.Title className="sr-only">התראות חיות</Drawer.Title>
+            <Drawer.Description className="sr-only">
+              עדכונים מאלמוג והמערכת בזמן אמת
+            </Drawer.Description>
 
-            {/* מחוון מגירה — סגנון TikTok */}
             <div className="flex justify-center pt-2.5 pb-1 shrink-0">
               <div
-                className="h-1.5 w-14 rounded-full"
-                style={{
-                  background:
-                    'linear-gradient(90deg, #10b981, #d946ef, #f97316, #10b981)',
-                  boxShadow: '0 2px 8px rgba(16,185,129,0.4)',
-                }}
+                className="h-1.5 w-12 rounded-full bg-white/55"
+                style={{ boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.9)' }}
               />
             </div>
 
-            {/* כותרת צבעונית */}
+            {/* כותרת — מדרג טיל–אמרלד בלבד */}
             <div
               className="relative shrink-0 px-4 pb-4 pt-2 overflow-hidden"
               style={{
-                background:
-                  'linear-gradient(125deg, #047857 0%, #10b981 35%, #a855f7 68%, #f97316 100%)',
+                background: 'linear-gradient(118deg, #0f766e 0%, #047857 38%, #059669 72%, #10b981 100%)',
+                boxShadow: 'inset 0 -1px 0 rgba(0,0,0,0.06)',
               }}
             >
               <div
-                className="absolute inset-0 opacity-30 pointer-events-none"
+                className="pointer-events-none absolute inset-0 opacity-[0.14]"
                 style={{
                   backgroundImage:
-                    'radial-gradient(circle at 20% 80%, white 0%, transparent 45%), radial-gradient(circle at 80% 20%, #fde68a 0%, transparent 40%)',
+                    'radial-gradient(circle at 18% 85%, rgba(255,255,255,0.55) 0%, transparent 42%), radial-gradient(circle at 82% 15%, rgba(167,243,208,0.5) 0%, transparent 38%)',
                 }}
               />
-              <div className="relative flex items-center gap-3">
-                <motion.div
-                  className="relative shrink-0"
-                  initial={{ scale: 0.92 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 22 }}
-                >
-                  <div
-                    className="rounded-2xl p-[2px]"
-                    style={{
-                      background: 'linear-gradient(135deg, #fff, #a7f3d0, #f0abfc)',
-                      boxShadow: '0 8px 28px rgba(0,0,0,0.25)',
-                    }}
-                  >
-                    <img
-                      src={almogAvatar}
-                      alt="אלמוג"
-                      className="h-14 w-14 rounded-[14px] object-cover bg-emerald-900/20"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
-                      }}
-                    />
-                  </div>
-                  <span className="absolute -bottom-1 -left-1 flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs shadow-md border border-emerald-200">
-                    🌿
-                  </span>
-                </motion.div>
-                <div className="flex-1 min-w-0 text-right text-white">
-                  <p className="flex items-center justify-end gap-1.5 text-lg font-black drop-shadow-sm" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
-                    <Sparkles className="h-5 w-5 text-amber-200 shrink-0" />
-                    התראות חיות
-                  </p>
-                  <p className="text-xs font-semibold text-white/90 mt-0.5">
-                    מאלמוג והמערכת — נפתח למטה כמו בטיקטוק
-                  </p>
-                </div>
+              <div className="relative flex items-start justify-between gap-3">
                 <button
                   type="button"
-                  className="shrink-0 inline-flex items-center gap-1 rounded-xl bg-white/20 px-2.5 py-1.5 text-xs font-black text-white border border-white/30 backdrop-blur-sm active:scale-95 transition-transform"
+                  className="shrink-0 inline-flex items-center gap-1 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-black text-emerald-900 shadow-md shadow-emerald-950/10 ring-1 ring-white/80 transition active:scale-[0.97]"
                   onClick={() => void markAll()}
                 >
-                  <CheckCheck className="h-3.5 w-3.5" />
+                  <CheckCheck className="h-3.5 w-3.5 text-emerald-700" strokeWidth={2.5} />
                   הכל נקרא
                 </button>
+
+                <div className="min-w-0 flex-1 text-right pr-0.5">
+                  <div className="flex items-center justify-end gap-2">
+                    <span className="relative flex h-2.5 w-2.5 shrink-0">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/70 opacity-75" />
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
+                    </span>
+                    <p
+                      className="text-[17px] font-black text-white leading-tight drop-shadow-sm"
+                      style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+                    >
+                      התראות חיות
+                    </p>
+                  </div>
+                  <p className="text-[11px] sm:text-xs font-semibold text-white/88 mt-1.5 leading-snug max-w-[240px] mr-auto">
+                    מאלמוג המערכת — עדכון בזמן אמת
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-8 pt-3 space-y-3 scrollbar-hide">
+            {/* גוף — שכבת זכוכית פנימית */}
+            <div
+              className="min-h-0 flex-1 overflow-y-auto px-3 sm:px-4 pb-10 pt-4 space-y-3 scrollbar-hide"
+              style={{
+                background:
+                  'linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(236,253,245,0.22) 45%, rgba(255,255,255,0.26) 100%)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.45)',
+              }}
+            >
               {busy && items.length === 0 && (
-                <div className="flex items-center justify-center py-16 text-emerald-700">
-                  <Loader2 className="h-8 w-8 animate-spin" />
+                <div className="flex items-center justify-center py-16 text-teal-800">
+                  <Loader2 className="h-8 w-8 animate-spin opacity-85" />
                 </div>
               )}
               {!busy && items.length === 0 && (
-                <div className="py-12 text-center px-4">
-                  <p className="text-4xl mb-3">✨</p>
-                  <p className="text-sm font-bold text-emerald-900">אין התראות חדשות</p>
-                  <p className="text-xs text-gray-600 mt-2 leading-relaxed">
-                    כשאלמוג ישלח תזכורת או עדכון — זה יופיע כאן מיד (Realtime).
+                <div
+                  className="py-14 text-center px-4 rounded-2xl mx-1"
+                  style={{
+                    border: '1px solid rgba(255,255,255,0.5)',
+                    background: 'rgba(255,255,255,0.42)',
+                    backdropFilter: 'blur(12px)',
+                  }}
+                >
+                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500/25 to-emerald-500/20 ring-1 ring-emerald-600/15">
+                    <span className="text-2xl" aria-hidden>
+                      🌿
+                    </span>
+                  </div>
+                  <p className="text-sm font-black text-emerald-950">אין התראות חדשות</p>
+                  <p className="text-xs text-emerald-900/65 mt-2 leading-relaxed max-w-xs mx-auto font-medium">
+                    כשאלמוג או המערכת ישלחו עדכון — יופיע כאן מיד (Realtime).
                   </p>
                 </div>
               )}
               {items.map((n) => {
                 const isAi = n.type === 'ai_message';
                 const CardInner = (
-                  <div
-                    className={`relative overflow-hidden rounded-2xl p-[1px] transition-transform active:scale-[0.99] ${
-                      n.is_read ? 'opacity-90' : ''
+                  <article
+                    className={`relative overflow-hidden rounded-[18px] text-right transition-transform active:scale-[0.99] ${
+                      n.is_read ? 'opacity-[0.94]' : ''
                     }`}
                     style={{
-                      background: isAi
-                        ? 'linear-gradient(135deg, #10b981, #d946ef, #f97316, #22d3ee)'
-                        : 'linear-gradient(135deg, #94a3b8, #cbd5e1)',
+                      border: '1px solid rgba(255,255,255,0.62)',
+                      background: n.is_read
+                        ? 'linear-gradient(165deg, rgba(255,255,255,0.52) 0%, rgba(248,250,252,0.44) 100%)'
+                        : 'linear-gradient(165deg, rgba(255,255,255,0.62) 0%, rgba(236,253,245,0.48) 100%)',
+                      backdropFilter: 'blur(18px)',
+                      WebkitBackdropFilter: 'blur(18px)',
+                      boxShadow:
+                        '0 10px 28px rgba(6,78,59,0.07), inset 0 1px 0 rgba(255,255,255,0.72)',
                     }}
                   >
-                    <div
-                      className="rounded-[15px] px-3.5 py-3 text-right"
-                      style={{
-                        background: n.is_read
-                          ? 'linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,250,252,0.95))'
-                          : 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(236,253,245,0.75))',
-                      }}
-                    >
-                      <div className="flex items-start gap-3 flex-row-reverse">
-                        {isAi ? (
-                          <img
-                            src={almogAvatar}
-                            alt=""
-                            className="h-11 w-11 shrink-0 rounded-xl object-cover border-2 border-white shadow-md"
-                            style={{ boxShadow: '0 4px 14px rgba(16,185,129,0.35)' }}
-                            onError={(e) => {
-                              e.currentTarget.onerror = null;
-                              e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
-                            }}
-                          />
-                        ) : (
-                          <span className="text-2xl shrink-0">{n.icon_emoji ?? '🔔'}</span>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className="text-sm font-black leading-tight text-transparent bg-clip-text"
-                            style={{
-                              backgroundImage: 'linear-gradient(90deg, #047857, #7c3aed, #ea580c)',
-                              WebkitBackgroundClip: 'text',
-                              backgroundClip: 'text',
-                            }}
-                          >
-                            {n.title}
-                          </p>
-                          <p className="mt-1.5 text-[13px] leading-relaxed text-gray-800 font-medium">
+                    {!n.is_read && (
+                      <>
+                        <span
+                          className="absolute top-3 bottom-3 start-0 w-[3px] rounded-full bg-gradient-to-b from-teal-500 to-emerald-500 shadow-sm"
+                          aria-hidden
+                        />
+                        <span
+                          className="absolute top-3 start-2 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white/90 shadow-sm"
+                          aria-hidden
+                        />
+                      </>
+                    )}
+                    <div className="px-3.5 py-3.5 ps-5">
+                      <div className="flex flex-row-reverse items-start gap-3">
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <div className="flex flex-row-reverse items-baseline justify-between gap-2">
+                            <h4 className="text-[13px] font-black text-teal-800 leading-snug [overflow-wrap:anywhere]">
+                              {n.title}
+                            </h4>
+                            <time
+                              className="shrink-0 text-[10px] font-semibold text-slate-500 tabular-nums"
+                              dateTime={n.created_at}
+                            >
+                              {timeAgo(n.created_at)}
+                            </time>
+                          </div>
+                          <p className="text-[13px] leading-relaxed text-slate-800 font-medium [overflow-wrap:anywhere]">
                             {n.body}
                           </p>
-                          <p className="mt-2 text-[11px] font-semibold text-gray-500">{timeAgo(n.created_at)}</p>
+                        </div>
+
+                        <div className="shrink-0 pt-0.5">
+                          {isAi ? (
+                            <div
+                              className="relative h-11 w-11 overflow-hidden rounded-full ring-2 ring-white shadow-md"
+                              style={{ boxShadow: '0 4px 14px rgba(4,120,87,0.22)' }}
+                            >
+                              <img
+                                src={almogAvatar}
+                                alt=""
+                                className="h-full w-full object-cover bg-teal-900/15"
+                                onError={(e) => {
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              className="flex h-11 w-11 items-center justify-center rounded-full text-xl shadow-inner leading-none"
+                              style={{
+                                background: 'linear-gradient(145deg, rgba(13,148,136,0.18), rgba(16,185,129,0.22))',
+                                border: '1px solid rgba(255,255,255,0.65)',
+                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)',
+                              }}
+                            >
+                              {n.icon_emoji ? (
+                                <span aria-hidden>{n.icon_emoji}</span>
+                              ) : (
+                                <Zap className="h-5 w-5 text-teal-700" strokeWidth={2.2} aria-hidden />
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
-                      {!n.is_read && (
-                        <span className="absolute top-2 left-2 h-2.5 w-2.5 rounded-full bg-gradient-to-br from-fuchsia-500 to-orange-400 shadow-sm" />
-                      )}
                     </div>
-                  </div>
+                  </article>
                 );
 
                 if (n.action_url) {
@@ -359,14 +384,26 @@ export function NotificationsProvider({
                         void markOne(n.id);
                         setOpen(false);
                       }}
-                      className="block"
+                      className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/50 rounded-[18px]"
                     >
                       {CardInner}
                     </Link>
                   );
                 }
                 return (
-                  <div key={n.id} className="block cursor-pointer" onClick={() => void markOne(n.id)}>
+                  <div
+                    key={n.id}
+                    role="button"
+                    tabIndex={0}
+                    className="block cursor-pointer rounded-[18px] focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/50"
+                    onClick={() => void markOne(n.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        void markOne(n.id);
+                      }
+                    }}
+                  >
                     {CardInner}
                   </div>
                 );
