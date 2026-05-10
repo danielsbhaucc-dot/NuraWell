@@ -10,7 +10,15 @@ import {
   type UserAiMemory,
 } from '../../../../../lib/ai/user-memory';
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
+import { embedTextForRag } from '../../../../../lib/ai/openrouter-embeddings';
+import { formatRagMemoryContextBlock } from '../../../../../lib/ai/format-rag-context';
 import { CHAT_PROACTIVE_AND_PRIORITY, NURAWELL_MENTOR_PROMPT } from '../../../../../lib/ai/prompts';
+import { RAG_TOP_K } from '../../../../../lib/ai/rag-config';
+import {
+  isUpstashVectorConfigured,
+  queryUserMemoryVectors,
+} from '../../../../../lib/ai/upstash-vector-rest';
+import { ingestUserMessageIntoVectorMemory } from '../../../../../lib/ai/vector-memory-ingest';
 import { readJsonBody } from '../../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
@@ -75,10 +83,33 @@ function normalizeLine(s: string): string {
   return s.replace(/\s+/g, ' ').trim();
 }
 
-/** סנכרון זיכרון מהצ'אט פעיל כברירת מחדל; השבתה מפורשת: AI_MEMORY_TOOL_ENABLED=0 */
+/** סנכרון GPT→Supabase JSON; בתור הנוכחי פעיל רק יחד עם AI_LEGACY_JSON_MEMORY_PROMPT (ראה memoryToolEnabled ב-route). */
 function isAiMemorySyncEnabled(): boolean {
   const v = process.env.AI_MEMORY_TOOL_ENABLED?.trim().toLowerCase();
   return v !== '0' && v !== 'false';
+}
+
+/** שליפת RAG מ-Upstash — דורש משתני סביבה + AI_VECTOR_RAG_ENABLED לא 0 */
+function isVectorRagRetrieveEnabled(): boolean {
+  const v = process.env.AI_VECTOR_RAG_ENABLED?.trim().toLowerCase();
+  if (v === '0' || v === 'false') return false;
+  return isUpstashVectorConfigured();
+}
+
+/** כתיבת וקטורים למסלול הרקע — AI_VECTOR_INGEST_ENABLED לא 0 */
+function isVectorIngestEnabled(): boolean {
+  const v = process.env.AI_VECTOR_INGEST_ENABLED?.trim().toLowerCase();
+  if (v === '0' || v === 'false') return false;
+  return isUpstashVectorConfigured();
+}
+
+/**
+ * זיכרון מובנה מ־`user_ai_memory` (Supabase) בפרומפט + סנכרון GPT הישן אחרי תור.
+ * רק אם `AI_LEGACY_JSON_MEMORY_PROMPT=1` — ברירת מחדל מושבתת (מסלול וקטורים בלבד).
+ */
+function isLegacyJsonMemoryPromptEnabled(): boolean {
+  const v = process.env.AI_LEGACY_JSON_MEMORY_PROMPT?.trim().toLowerCase();
+  return v === '1' || v === 'true';
 }
 
 function shouldAttemptMemorySync(userMessage: string): boolean {
@@ -398,21 +429,24 @@ export async function POST(request: Request) {
   }
 
   const sessionId = parsed.data.session_id ?? crypto.randomUUID();
-  const memoryToolEnabled = isAiMemorySyncEnabled();
+  const legacyJsonMemoryPrompt = isLegacyJsonMemoryPromptEnabled();
+  const memoryToolEnabled = isAiMemorySyncEnabled() && legacyJsonMemoryPrompt;
 
   let userMemory: UserAiMemory = EMPTY_MEMORY;
   let profileFullName: string | null = null;
   let profileGender: 'male' | 'female' | null = null;
   let profileMoodSignal: string | undefined;
   let activeJourneyContext: ActiveJourneyContext = null;
-  try {
-    userMemory = await getUserAiMemory(supabase, user.id);
-  } catch (memoryErr) {
-    console.warn('[ai/chat]', {
-      debug_id: debugId,
-      stage: 'memory_read_failed',
-      error: memoryErr instanceof Error ? memoryErr.message : String(memoryErr),
-    });
+  if (legacyJsonMemoryPrompt) {
+    try {
+      userMemory = await getUserAiMemory(supabase, user.id);
+    } catch (memoryErr) {
+      console.warn('[ai/chat]', {
+        debug_id: debugId,
+        stage: 'memory_read_failed',
+        error: memoryErr instanceof Error ? memoryErr.message : String(memoryErr),
+      });
+    }
   }
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -517,6 +551,25 @@ export async function POST(request: Request) {
       ? `השם הפרטי של המשתמש הוא "${firstName}". אם טבעי ומתאים, פנה אליו/אליה בשם הפרטי בלבד (בלי שם משפחה).`
       : 'אין שם פרטי זמין בפרופיל כרגע.';
     const memorySlicesJson = formatMemorySlicesForPrompt(userMemory);
+    let ragMemoryBlock = '';
+    if (isVectorRagRetrieveEnabled()) {
+      try {
+        const qv = await embedTextForRag(lastUserText);
+        const hits = await queryUserMemoryVectors({
+          userId: user.id,
+          vector: qv,
+          topK: RAG_TOP_K,
+        });
+        ragMemoryBlock = formatRagMemoryContextBlock(hits, RAG_TOP_K);
+      } catch (ragErr) {
+        console.warn('[ai/chat]', {
+          debug_id: debugId,
+          stage: 'rag_retrieve_failed',
+          error: ragErr instanceof Error ? ragErr.message : String(ragErr),
+        });
+      }
+    }
+
     const moodFromProfile = moodCoachingHint(profileMoodSignal);
     const systemPromptWithMemory = `${BASE_SYSTEM_PROMPT}
 
@@ -525,7 +578,7 @@ ${CHAT_PROACTIVE_AND_PRIORITY}
 סדר עדיפויות: (1) הנחיות מערכת (2) זיכרון מובנה למטה (3) הודעות השיחה — הן מקור האמת ל"מה קורה עכשיו". אם יש סתירה בין זיכרון ישן לבין השיחה הנוכחית, עדיף השיחה.
 
 זיכרון מובנה (מוקד עדכני מול דפוסים, JSON דחוס): ${memorySlicesJson}
-${moodFromProfile}
+${ragMemoryBlock ? `${ragMemoryBlock}\n` : ''}${moodFromProfile}
 ${personalNameInstruction}
 ${genderAddressingHint(profileGender)}
 קונטקסט journey פעיל (אם קיים): ${JSON.stringify(activeJourneyContext)}
@@ -599,6 +652,31 @@ ${genderAddressingHint(profileGender)}
           console.info('[Memory] Skipped sync — disabled (set AI_MEMORY_TOOL_ENABLED=0)', {
             debug_id: debugId,
             user_id: user.id,
+          });
+        }
+
+        if (isVectorIngestEnabled() && shouldAttemptMemorySync(lastUserText)) {
+          after(async () => {
+            try {
+              const ing = await ingestUserMessageIntoVectorMemory({
+                userId: user.id,
+                userMessage: lastUserText,
+              });
+              if (ing.upserts.length) {
+                console.info('[ai/chat]', {
+                  debug_id: debugId,
+                  stage: 'vector_ingest_ok',
+                  facts_extracted: ing.facts_extracted,
+                  upsert_count: ing.upserts.length,
+                });
+              }
+            } catch (vecErr) {
+              console.error('[ai/chat]', {
+                debug_id: debugId,
+                stage: 'vector_ingest_failed',
+                error: vecErr instanceof Error ? vecErr.message : String(vecErr),
+              });
+            }
           });
         }
       },
