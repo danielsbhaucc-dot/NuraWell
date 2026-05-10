@@ -1,5 +1,3 @@
-import { getUserAiMemory } from './user-memory';
-
 export interface AiUserContext {
   weakness_pattern?: string;
   engagement_pattern?: string;
@@ -124,30 +122,7 @@ export async function buildUserContext(
     parts.push(`אות מצב רגשי (ניתוח אחרון): ${ctx.current_mood_signal}`);
   }
 
-  let chatCommitmentsPreview: string[] = [];
-  try {
-    const chatMemory = await getUserAiMemory(supabase, userId);
-    chatCommitmentsPreview = chatMemory.commitments.slice(0, 3);
-    if (chatCommitmentsPreview.length > 0) {
-      parts.push(`התחייבויות מהצ'אט (עדכניות): ${chatCommitmentsPreview.join('; ')}`);
-    }
-    const w = chatMemory.weaknesses.filter(Boolean).slice(-2);
-    if (w.length > 0) {
-      parts.push(`חולשות / קושי חוזר מהצ'אט (תקציר): ${w.join('; ')}`);
-    }
-    const fp = chatMemory.failure_patterns.slice(-3);
-    if (fp.length > 0) {
-      parts.push(
-        `דפוסי כשל מהצ'אט: ${fp.map((p) => `${p.trigger} → ${p.behavior}`).join(' | ')}`
-      );
-    }
-    const tl = chatMemory.personal_timeline.slice(-2);
-    if (tl.length > 0) {
-      parts.push(`ציר זמן אישי (תקציר): ${tl.map((t) => `שבוע ${t.week}: ${t.note}`).join(' | ')}`);
-    }
-  } catch {
-    /* זיכרון צ'אט אופציונלי — לא לשבור קונטקסט אם השאילתה נכשלת */
-  }
+  const chatCommitmentsPreview: string[] = [];
 
   return {
     contextString: `מידע על המשתמש (לשימוש פנימי בלבד):\n${parts.join('\n')}`,

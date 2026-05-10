@@ -105,16 +105,6 @@ export default function RagDebugPage() {
             רמז מהזיכרון (בלי שהמנטור אומר ש&quot;שמר&quot;).
           </li>
           <li>
-            <strong>זיכרון JSON ישן (Supabase)</strong> — אם מפעילים שוב את{' '}
-            <code className="rounded bg-neutral-100 px-1 text-xs">AI_LEGACY_JSON_MEMORY_PROMPT</code>, הכתיבה ל־
-            <code className="rounded bg-neutral-100 px-1 text-xs">user_ai_memory</code> היא <strong>מיזוג</strong> עם
-            השורה הקיימת (לא החלפה מלאה), אלא אם בודקים במכוון עם replace.
-          </li>
-          <li>
-            <code className="rounded bg-neutral-100 px-1 text-xs">POST /api/v1/ai/memory</code> עם דמה — רק בפיתוח;
-            ב-production מחזיר 403.
-          </li>
-          <li>
             אם ב-Vercel מוגדר <code className="rounded bg-neutral-100 px-1 text-xs">RAG_SELF_TEST_SECRET</code> — הזן כאן;
             אחרת מספיק session.
           </li>

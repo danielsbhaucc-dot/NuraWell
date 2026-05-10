@@ -1,14 +1,7 @@
 import { z } from 'zod';
-import { generateObject, streamText } from 'ai';
+import { streamText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { after } from 'next/server';
-import {
-  formatMemorySlicesForPrompt,
-  getUserAiMemory,
-  MEMORY_MAX_STRING_ITEMS_PER_CATEGORY,
-  upsertUserAiMemory,
-  type UserAiMemory,
-} from '../../../../../lib/ai/user-memory';
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
 import { embedTextForRag } from '../../../../../lib/ai/openrouter-embeddings';
 import { formatRagMemoryContextBlock } from '../../../../../lib/ai/format-rag-context';
@@ -55,32 +48,6 @@ const BASE_SYSTEM_PROMPT = `${NURAWELL_MENTOR_PROMPT}
 - אל תגיד למשתמש שביצעת "שמירה בזיכרון" או "עדכנתי זיכרון".
 - לעולם אל תחזיר תשובה ריקה.`;
 const EMPTY_RESPONSE_FALLBACK = 'אני כאן איתך. ספר לי במשפט אחד מה הכי כבד עכשיו, ונחשוב יחד על צעד קטן להמשך.';
-const EMPTY_MEMORY: UserAiMemory = {
-  commitments: [],
-  weaknesses: [],
-  victories: [],
-  notes: [],
-  habits_memory: [],
-  tasks_memory: [],
-  task_commitment_state: {},
-  already_suggested: [],
-  failure_patterns: [],
-  personal_timeline: [],
-};
-const MEMORY_MAX_FAILURE_PATTERNS = 5;
-const MEMORY_MAX_TIMELINE = 4;
-const memoryToolSchema = z.object({
-  commitments: z.array(z.string()),
-  weaknesses: z.array(z.string()),
-  victories: z.array(z.string()),
-  notes: z.array(z.string()),
-  habits_memory: z.array(z.string()),
-  tasks_memory: z.array(z.string()),
-  task_commitment_state: z.record(z.enum(['accepted', 'rejected', 'pending'])),
-  already_suggested: z.array(z.string()),
-  failure_patterns: z.array(z.object({ trigger: z.string(), behavior: z.string() })),
-  personal_timeline: z.array(z.object({ week: z.number(), note: z.string() })),
-});
 type TaskDecisionStatus = 'accepted' | 'rejected' | 'pending';
 
 type ActiveJourneyContext = {
@@ -94,12 +61,6 @@ type ActiveJourneyContext = {
 
 function normalizeLine(s: string): string {
   return s.replace(/\s+/g, ' ').trim();
-}
-
-/** סנכרון GPT→Supabase JSON; בתור הנוכחי פעיל רק יחד עם AI_LEGACY_JSON_MEMORY_PROMPT (ראה memoryToolEnabled ב-route). */
-function isAiMemorySyncEnabled(): boolean {
-  const v = process.env.AI_MEMORY_TOOL_ENABLED?.trim().toLowerCase();
-  return v !== '0' && v !== 'false';
 }
 
 /** שליפת RAG מ-Upstash — דורש משתני סביבה + AI_VECTOR_RAG_ENABLED לא 0 */
@@ -116,15 +77,7 @@ function isVectorIngestEnabled(): boolean {
   return isUpstashVectorConfigured();
 }
 
-/**
- * זיכרון מובנה מ־`user_ai_memory` (Supabase) בפרומפט + סנכרון GPT הישן אחרי תור.
- * רק אם `AI_LEGACY_JSON_MEMORY_PROMPT=1` — ברירת מחדל מושבתת (מסלול וקטורים בלבד).
- */
-function isLegacyJsonMemoryPromptEnabled(): boolean {
-  const v = process.env.AI_LEGACY_JSON_MEMORY_PROMPT?.trim().toLowerCase();
-  return v === '1' || v === 'true';
-}
-
+/** מתי להריץ חילוץ/כתיבת וקטורים ברקע (לא small talk קצר) */
 function shouldAttemptMemorySync(userMessage: string): boolean {
   const t = normalizeLine(userMessage);
   if (!t || t.length < 14) return false;
@@ -173,14 +126,6 @@ function shouldAttemptMemorySync(userMessage: string): boolean {
     'תזונה',
   ];
   return strongSignals.some((s) => t.includes(s));
-}
-
-function addUniqueLine(target: string[], line: string, max = 6): string[] {
-  const normalized = normalizeLine(line);
-  if (!normalized) return target;
-  const exists = target.some((item) => normalizeLine(item) === normalized);
-  if (exists) return target.slice(0, max);
-  return [normalized, ...target].slice(0, max);
 }
 
 function extractFirstName(fullName: string | null | undefined): string | null {
@@ -316,108 +261,6 @@ async function getActiveJourneyContext(
   };
 }
 
-async function syncUserMemoryAfterTurn(params: {
-  openrouter: ReturnType<typeof createOpenAI>;
-  supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'];
-  userId: string;
-  currentMemory: UserAiMemory;
-  userMessage: string;
-  assistantMessage: string;
-  activeJourneyContext: ActiveJourneyContext;
-  debugId: string;
-}) {
-  const { openrouter, supabase, userId, currentMemory, userMessage, assistantMessage, activeJourneyContext, debugId } = params;
-
-  try {
-    const { object: updatedMemory } = await generateObject({
-      model: openrouter.chat('openai/gpt-5-mini'),
-      temperature: 0.2,
-      schema: memoryToolSchema,
-      system: `אתה מעדכן זיכרון משתמש דחוס למאמן AI.
-החזר רק אובייקט JSON עם המפתחות: commitments, weaknesses, victories, notes, habits_memory, tasks_memory, task_commitment_state, already_suggested, failure_patterns, personal_timeline.
-מבנה: כל הקטגוריות הרגילות הן מערכי מחרוזות; task_commitment_state אובייקט סטטוסים; failure_patterns הוא [{ "trigger", "behavior" }]; personal_timeline הוא [{ "week": מספר, "note": "..." }] עד ${MEMORY_MAX_TIMELINE} פריטים.
-כללים:
-- שמור רק פרטים יציבים וחשובים לטווח בינוני/ארוך.
-- אל תשמור ניסוחים גולמיים של המשתמש. נסח כל פריט בצורה קצרה, כללית ושימושית.
-- מחק פרטים זמניים, כפולים או לא רלוונטיים.
-- אם אין עדכון מהותי חדש, השאר את הרשימות כפי שהן.
-- אם יש עדכון מהותי חדש, עדכן את הרשימות לפי חשיבות ורעננות והסר רעש ישן.
-- אל תשמור ב-notes הנחיות אימון גנריות כמו "להיות קצר/פרקטי" אלא רק מידע אישי ייחודי למשתמש.
-- כשיש הצהרת הרגל קונקרטית (למשל ריצה/מים/שינה), היא צריכה להיכנס ל-commitments.
-- כשיש הרגל קונקרטי מתוך צעד journey נוכחי, הוסף/עדכן גם ב-habits_memory.
-- כשיש החלטה על משימה (מקובל/לא מקובל), הוסף/עדכן גם ב-tasks_memory וגם ב-task_commitment_state לפי taskId.
-- כשיש קושי עקבי (למשל סופ"ש/שכחה/עייפות), הוא צריך להיכנס ל-weaknesses.
-- כשיש הצלחה מדידה/ברורה, היא צריכה להיכנס ל-victories.
-- תיאור כלי update_user_memory: אתה מעדכן זיכרון בשיטת Smart Compression.
-- Smart Compression: כשיש פריטים דומים/חוזרים, מזג אותם לתובנה אחת עמוקה ויציבה (למשל "מתקשה באופן עקבי בסופי שבוע"),
-  במקום למחוק עיוור (FIFO). שמור את ההקשר ההיסטורי החשוב דרך ניסוח מאוחד, לא דרך שכפול פריטים.
-- commitments: הרגלים/כוונות לביצוע.
-- weaknesses: קשיים חוזרים/טריגרים.
-- victories: הצלחות קונקרטיות משמעותיות.
-- notes: תובנות קצרות על סגנון תמיכה או הקשר אישי חשוב.
-- habits_memory: רשימת הרגלים פעילים/רלוונטיים למשתמש (בקצרה).
-- tasks_memory: רשימת משימות פעילות או שנדחו (בקצרה, עם ניסוח ברור).
-- task_commitment_state: אובייקט { "<taskId>": "accepted|rejected|pending" } בלבד.
-- already_suggested: הצעות שהועלו על ידי המאמן והמשתמש דחה / לא רצה — כדי שלא יחזרו (קצר).
-- failure_patterns: דפוסי כשל חוזרים (טריגר → התנהגות), עד ${MEMORY_MAX_FAILURE_PATTERNS} פריטים.
-- personal_timeline: ציר זמן גס בשבועות (מספר שבוע + הערה קצרה), עד ${MEMORY_MAX_TIMELINE} פריטים.
-- מגבלות גודל: עד ${MEMORY_MAX_STRING_ITEMS_PER_CATEGORY} פריטים לכל קטגוריית מחרוזות.`,
-      prompt: `זיכרון קיים:
-${JSON.stringify(currentMemory)}
-
-הודעת משתמש אחרונה:
-${userMessage}
-
-תשובת עוזר אחרונה:
-${assistantMessage}
-
-קונטקסט journey פעיל:
-${JSON.stringify(activeJourneyContext)}
-
-עדכן את הזיכרון.`,
-    });
-
-    const normalizedUpdated: UserAiMemory = {
-      commitments: (updatedMemory.commitments ?? []).reduce(
-        (acc, line) => addUniqueLine(acc, line, MEMORY_MAX_STRING_ITEMS_PER_CATEGORY),
-        []
-      ),
-      weaknesses: (updatedMemory.weaknesses ?? []).reduce(
-        (acc, line) => addUniqueLine(acc, line, MEMORY_MAX_STRING_ITEMS_PER_CATEGORY),
-        []
-      ),
-      victories: (updatedMemory.victories ?? []).reduce(
-        (acc, line) => addUniqueLine(acc, line, MEMORY_MAX_STRING_ITEMS_PER_CATEGORY),
-        []
-      ),
-      notes: (updatedMemory.notes ?? []).reduce((acc, line) => addUniqueLine(acc, line, MEMORY_MAX_STRING_ITEMS_PER_CATEGORY), []),
-      habits_memory: (updatedMemory.habits_memory ?? []).reduce(
-        (acc, line) => addUniqueLine(acc, line, MEMORY_MAX_STRING_ITEMS_PER_CATEGORY),
-        []
-      ),
-      tasks_memory: (updatedMemory.tasks_memory ?? []).reduce(
-        (acc, line) => addUniqueLine(acc, line, MEMORY_MAX_STRING_ITEMS_PER_CATEGORY),
-        []
-      ),
-      task_commitment_state: updatedMemory.task_commitment_state ?? {},
-      already_suggested: (updatedMemory.already_suggested ?? []).reduce(
-        (acc, line) => addUniqueLine(acc, line, MEMORY_MAX_STRING_ITEMS_PER_CATEGORY),
-        []
-      ),
-      failure_patterns: (updatedMemory.failure_patterns ?? []).slice(0, MEMORY_MAX_FAILURE_PATTERNS),
-      personal_timeline: (updatedMemory.personal_timeline ?? []).slice(0, MEMORY_MAX_TIMELINE),
-    };
-    // mergeAiMemory בתוך upsert — לא replace; מגן על מערכים ריקים מהמודל
-    await upsertUserAiMemory(supabase, userId, normalizedUpdated);
-  } catch (err) {
-    console.error('[ai/chat]', {
-      debug_id: debugId,
-      stage: 'memory_sync_after_turn_failed',
-      error: err instanceof Error ? err.message : String(err),
-    });
-  }
-}
-
 function uiMessageText(msg: unknown): string {
   if (!msg || typeof msg !== 'object') return '';
   if ('content' in msg && typeof (msg as { content: unknown }).content === 'string') {
@@ -483,21 +326,8 @@ export async function POST(request: Request) {
   stage = 'message_ok';
 
   const sessionId = parsed.data.session_id ?? crypto.randomUUID();
-  const legacyJsonMemoryPrompt = isLegacyJsonMemoryPromptEnabled();
-  const memoryToolEnabled = isAiMemorySyncEnabled() && legacyJsonMemoryPrompt;
 
-  /** זיכרון + פרופיל + journey + רישום user בקריאות מקבילות — פחות זמן עד streamText */
-  const memoryPromise = legacyJsonMemoryPrompt
-    ? getUserAiMemory(supabase, user.id).catch((memoryErr) => {
-        console.warn('[ai/chat]', {
-          debug_id: debugId,
-          stage: 'memory_read_failed',
-          error: memoryErr instanceof Error ? memoryErr.message : String(memoryErr),
-        });
-        return EMPTY_MEMORY;
-      })
-    : Promise.resolve(EMPTY_MEMORY);
-
+  /** פרופיל + journey + רישום user בקריאות מקבילות — פחות זמן עד streamText */
   const journeyPromise = getActiveJourneyContext(supabase, user.id).catch((journeyCtxErr) => {
     console.warn('[ai/chat]', {
       debug_id: debugId,
@@ -522,8 +352,7 @@ export async function POST(request: Request) {
     });
   });
 
-  const [userMemory, profileRow, activeJourneyContext] = await Promise.all([
-    memoryPromise,
+  const [profileRow, activeJourneyContext] = await Promise.all([
     fetchChatProfileRow(supabase, user.id),
     journeyPromise,
     insertPromise,
@@ -581,7 +410,6 @@ export async function POST(request: Request) {
     const personalNameInstruction = firstName
       ? `השם הפרטי של המשתמש הוא "${firstName}". אם טבעי ומתאים, פנה אליו/אליה בשם הפרטי בלבד (בלי שם משפחה).`
       : 'אין שם פרטי זמין בפרופיל כרגע.';
-    const memorySlicesJson = formatMemorySlicesForPrompt(userMemory);
     let ragMemoryBlock = '';
     if (isVectorRagRetrieveEnabled()) {
       try {
@@ -608,14 +436,12 @@ ${CHAT_PROACTIVE_AND_PRIORITY}
 
 ${CHAT_VECTOR_AND_MEMORY_RULES}
 
-סדר עדיפויות: (1) הנחיות מערכת (2) זיכרון מובנה למטה (3) הודעות השיחה — הן מקור האמת ל"מה קורה עכשיו". אם יש סתירה בין זיכרון ישן לבין השיחה הנוכחית, עדיף השיחה.
+סדר עדיפויות: (1) הנחיות מערכת (2) רמזי זיכרון רלוונטיים למטה אם קיימים (RAG) (3) הודעות השיחה — מקור האמת ל"מה קורה עכשיו". אם יש סתירה בין רמז זיכרון לבין השיחה הנוכחית, עדיף השיחה.
 
-זיכרון מובנה (מוקד עדכני מול דפוסים, JSON דחוס): ${memorySlicesJson}
 ${ragMemoryBlock ? `${ragMemoryBlock}\n` : ''}${moodFromProfile}
 ${personalNameInstruction}
 ${genderAddressingHint(profileGender)}
 קונטקסט journey פעיל (אם קיים): ${JSON.stringify(activeJourneyContext)}
-אל תחזור על ניסוחים שמופיעים ב-avoid_repeating / already_suggested אלא אם המשתמש ביקש במפורש.
 אם המשתמש מציין קושי חדש, הצלחה, או פרט קריטי - הדגש זאת בתשובה באופן קונקרטי.
 אם המשתמש מתייחס למשימה או הרגל, התייחס רק לפריטים שמופיעים בקונטקסט journey הפעיל.
 אל תכתוב למשתמש שביצעת "שמירה בזיכרון" או "עדכנתי את הזיכרון".`;
@@ -656,35 +482,6 @@ ${genderAddressingHint(profileGender)}
             debug_id: debugId,
             stage: `${finishStage}_persist_assistant`,
             error: persistErr instanceof Error ? persistErr.message : String(persistErr),
-          });
-        }
-
-        // Run memory sync in reliable background to keep chat response fast.
-        if (memoryToolEnabled) {
-          if (shouldAttemptMemorySync(lastUserText)) {
-            after(async () => {
-              await syncUserMemoryAfterTurn({
-                openrouter,
-                supabase,
-                userId: user.id,
-                currentMemory: userMemory,
-                userMessage: lastUserText,
-                assistantMessage: assistantText,
-                activeJourneyContext,
-                debugId,
-              });
-            });
-          } else {
-            console.info('[Memory] Skipped sync — weak signal / small talk', {
-              debug_id: debugId,
-              user_id: user.id,
-              message_preview: lastUserText.slice(0, 120),
-            });
-          }
-        } else {
-          console.info('[Memory] Skipped sync — disabled (set AI_MEMORY_TOOL_ENABLED=0)', {
-            debug_id: debugId,
-            user_id: user.id,
           });
         }
 
