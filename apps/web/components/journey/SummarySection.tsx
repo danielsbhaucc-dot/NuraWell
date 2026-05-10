@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type CSSProperties } from 'react';
+import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileCheck, RotateCcw, BookOpen, Download, CheckCircle2,
@@ -64,11 +64,13 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
       'linear-gradient(165deg, rgba(255,255,255,0.34) 0%, rgba(167,243,208,0.2) 38%, rgba(255,255,255,0.3) 100%)',
     backdropFilter: 'blur(28px) saturate(1.35)',
     WebkitBackdropFilter: 'blur(28px) saturate(1.35)',
-    boxShadow: '0 28px 56px rgba(6,78,59,0.12), inset 0 1px 1px rgba(255,255,255,0.72), inset 0 -1px 0 rgba(255,255,255,0.25)',
-    border: '1px solid rgba(255,255,255,0.38)',
+    boxShadow:
+      '0 32px 64px rgba(6,78,59,0.14), 0 0 0 1px rgba(255,255,255,0.45) inset, inset 0 1px 1px rgba(255,255,255,0.78)',
+    border: '1px solid rgba(255,255,255,0.48)',
   };
 
-  const sectionDividerClass = 'border-t border-emerald-900/[0.06]';
+  /** הפרדה ברורה בין כותרת לגוף — כמו כרטיסי הפיצ׳רים בעמוד הנחיתה, עם גוף זכוכית */
+  const sectionStackClass = 'px-3 sm:px-6 space-y-5 pb-1';
 
   return (
     <div className="pb-8 w-full max-w-full min-w-0">
@@ -126,65 +128,68 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
           </div>
         </div>
 
-        <div
-          className={`px-3 sm:px-6 py-4 ${sectionDividerClass}`}
-          style={{ background: 'rgba(255,255,255,0.22)' }}
-        >
-          <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3 text-sm max-w-lg mx-auto w-full">
-            <div
-              className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-white/50 shadow-sm"
-              style={{ background: 'rgba(255,255,255,0.55)' }}
-            >
-              <span className="text-gray-600 block text-xs mb-0.5">שאלות</span>
-              <strong className="text-emerald-800 text-base">{quizCorrect}/{quizTotal}</strong>
-            </div>
-            <div
-              className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-white/50 shadow-sm"
-              style={{ background: 'rgba(255,255,255,0.5)' }}
-            >
-              <span className="text-gray-600 block text-xs mb-0.5">משחק</span>
-              <strong className="text-amber-800 text-base">{gameCorrect}/{gameTotal}</strong>
-            </div>
-            {step.commitment && isCommitmentGateResolved(true, progress) && (
+        <div className={`${sectionStackClass} pt-4`}>
+          <SummaryGlassSection
+            title="מדדים מהשיעור"
+            subtitle="שאלות, משחק והתחייבות"
+            headerGradient="linear-gradient(145deg, #047857, #059669, #10b981)"
+            icon={<FileCheck className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+          >
+            <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3 text-sm w-full">
               <div
-                className="px-3 py-2.5 rounded-2xl flex-1 min-w-full sm:min-w-[120px] text-center border border-white/55 shadow-sm"
+                className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-emerald-900/10 shadow-sm"
                 style={{
-                  background: progress.commitment_accepted
-                    ? 'rgba(236,253,245,0.75)'
-                    : 'rgba(255,247,237,0.85)',
+                  background: 'rgba(255,255,255,0.72)',
+                  boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(255,255,255,0.9)',
                 }}
               >
-                {progress.commitment_accepted ? (
-                  <Heart className="w-4 h-4 text-emerald-600 inline mb-0.5" fill="currentColor" aria-hidden />
-                ) : (
-                  <Heart className="w-4 h-4 text-amber-700 inline mb-0.5" fill="none" strokeWidth={2} aria-hidden />
-                )}
-                <span
-                  className={`font-bold block text-sm ${progress.commitment_accepted ? 'text-emerald-800' : 'text-amber-900'}`}
-                >
-                  {progress.commitment_accepted ? 'התחייבות ✓' : 'בלי התחייבות בשלב זה'}
-                </span>
+                <span className="text-gray-600 block text-xs mb-0.5">שאלות</span>
+                <strong className="text-emerald-800 text-base">{quizCorrect}/{quizTotal}</strong>
               </div>
-            )}
-          </div>
+              <div
+                className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-emerald-900/10 shadow-sm"
+                style={{
+                  background: 'rgba(255,255,255,0.68)',
+                  boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(255,255,255,0.88)',
+                }}
+              >
+                <span className="text-gray-600 block text-xs mb-0.5">משחק</span>
+                <strong className="text-amber-800 text-base">{gameCorrect}/{gameTotal}</strong>
+              </div>
+              {step.commitment && isCommitmentGateResolved(true, progress) && (
+                <div
+                  className="px-3 py-2.5 rounded-2xl flex-1 min-w-full sm:min-w-[120px] text-center border border-emerald-900/10 shadow-sm"
+                  style={{
+                    background: progress.commitment_accepted
+                      ? 'rgba(236,253,245,0.92)'
+                      : 'rgba(255,247,237,0.92)',
+                    boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(255,255,255,0.85)',
+                  }}
+                >
+                  {progress.commitment_accepted ? (
+                    <Heart className="w-4 h-4 text-emerald-600 inline mb-0.5" fill="currentColor" aria-hidden />
+                  ) : (
+                    <Heart className="w-4 h-4 text-amber-700 inline mb-0.5" fill="none" strokeWidth={2} aria-hidden />
+                  )}
+                  <span
+                    className={`font-bold block text-sm ${progress.commitment_accepted ? 'text-emerald-800' : 'text-amber-900'}`}
+                  >
+                    {progress.commitment_accepted ? 'התחייבות ✓' : 'בלי התחייבות בשלב זה'}
+                  </span>
+                </div>
+              )}
+            </div>
+          </SummaryGlassSection>
         </div>
 
         {/* Summary text */}
         {step.summary_text && (
-          <div className={`px-3 sm:px-6 py-5 ${sectionDividerClass}`}>
-            <div className="flex items-center gap-2 mb-3 max-w-lg mx-auto">
-              <div className="w-1.5 h-6 rounded-full" style={{ background: 'linear-gradient(to bottom, #6ee7b7, #047857)' }} />
-              <BookOpen className="w-4 h-4 text-emerald-600" />
-              <h3 className="font-black text-base" style={{ color: '#1A1730' }}>מה למדנו?</h3>
-            </div>
-            <div
-              className="max-w-lg mx-auto rounded-2xl border border-white/45 px-4 py-4 min-w-0"
-              style={{
-                background: 'rgba(255,255,255,0.28)',
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55)',
-              }}
+          <div className={sectionStackClass}>
+            <SummaryGlassSection
+              title="מה למדנו?"
+              subtitle="נקודות מרכזיות מהשיעור"
+              headerGradient="linear-gradient(145deg, #065f46, #047857, #059669)"
+              icon={<BookOpen className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
             >
               <p
                 className="text-[15px] text-gray-800 leading-relaxed [overflow-wrap:anywhere] break-words hyphens-auto"
@@ -192,22 +197,20 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               >
                 {step.summary_text}
               </p>
-            </div>
+            </SummaryGlassSection>
           </div>
         )}
 
         {/* Tasks */}
         {step.tasks.length > 0 && (
-          <div className={`px-3 sm:px-6 py-5 w-full min-w-0 max-w-full overflow-x-clip ${sectionDividerClass}`}>
-            <div className="flex items-center gap-2 mb-2 max-w-lg mx-auto">
-              <div className="w-1.5 h-6 rounded-full shrink-0" style={{ background: 'linear-gradient(to bottom, #fbbf24, #d97706)' }} />
-              <ListChecks className="w-4 h-4 text-amber-600 shrink-0" />
-              <h3 className="font-black text-base min-w-0" style={{ color: '#1A1730' }}>משימות לביצוע</h3>
-            </div>
-            <p className="text-xs sm:text-sm text-gray-600 mb-4 leading-relaxed max-w-lg mx-auto px-0.5">
-              בחר מה מקובל עליך כרגע. אלמוג יזכור את הבחירה שלך ויתאים את ההכוונה בהתאם.
-            </p>
-            <div className="flex flex-col gap-5 w-full max-w-lg mx-auto min-w-0">
+          <div className={`${sectionStackClass} w-full min-w-0 max-w-full overflow-x-clip`}>
+            <SummaryGlassSection
+              title="משימות לביצוע"
+              subtitle="בחר מה מקובל עליך כרגע — אלמוג יזכור ויתאים את ההכוונה"
+              headerGradient="linear-gradient(145deg, #b45309, #d97706, #f59e0b)"
+              icon={<ListChecks className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+            >
+            <div className="flex flex-col gap-5 w-full min-w-0">
               {step.tasks.map((task) => {
                 const decision = progress.task_statuses?.[task.id];
                 const status = decision?.status ?? 'pending';
@@ -354,21 +357,20 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                 );
               })}
             </div>
+            </SummaryGlassSection>
           </div>
         )}
 
         {/* Habits */}
         {step.habits.length > 0 && (
-          <div className={`px-4 sm:px-6 py-5 ${sectionDividerClass}`}>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-1.5 h-6 rounded-full" style={{ background: 'linear-gradient(to bottom, #34d399, #047857)' }} />
-              <Heart className="w-4 h-4 text-emerald-600" />
-              <h3 className="font-black text-base" style={{ color: '#1A1730' }}>הרגלים חדשים</h3>
-            </div>
-            <p className="text-xs text-gray-600 mb-4 leading-relaxed">
-              אלו ההרגלים של הצעד הזה. אלמוג יתבסס עליהם בשיחות שלך.
-            </p>
-            <div className="flex flex-col gap-4 max-w-lg mx-auto w-full min-w-0">
+          <div className={sectionStackClass}>
+            <SummaryGlassSection
+              title="הרגלים חדשים"
+              subtitle="אלו ההרגלים של הצעד — אלמוג יתבסס עליהם בשיחות"
+              headerGradient="linear-gradient(145deg, #047857, #10b981, #34d399)"
+              icon={<Heart className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+            >
+            <div className="flex flex-col gap-4 w-full min-w-0">
               {step.habits.map((habit) => {
                 const habitEmoji = emojiFromWellnessText(
                   `${habit.title} ${habit.description ?? ''}`,
@@ -441,18 +443,20 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                 );
               })}
             </div>
+            </SummaryGlassSection>
           </div>
         )}
 
         {/* Research accordion */}
         {step.researches.length > 0 && (
-          <div className={`px-4 sm:px-6 py-5 ${sectionDividerClass}`}>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-1.5 h-6 rounded-full" style={{ background: 'linear-gradient(to bottom, #60a5fa, #3b82f6)' }} />
-              <Award className="w-4 h-4 text-blue-500" />
-              <h3 className="font-black text-base" style={{ color: '#1A1730' }}>מחקרים תומכים</h3>
-            </div>
-            <div className="space-y-3 max-w-lg mx-auto w-full min-w-0">
+          <div className={sectionStackClass}>
+            <SummaryGlassSection
+              title="מחקרים תומכים"
+              subtitle="מקורות וממצאים לעיון"
+              headerGradient="linear-gradient(145deg, #1d4ed8, #3b82f6, #60a5fa)"
+              icon={<Award className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+            >
+            <div className="space-y-3 w-full min-w-0">
               {step.researches.map((research) => (
                 <ResearchItem
                   key={research.id}
@@ -462,18 +466,30 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                 />
               ))}
             </div>
+            </SummaryGlassSection>
           </div>
         )}
 
         {/* PDF Download */}
         {step.pdf_url && (
-          <div className={`px-4 sm:px-6 py-4 ${sectionDividerClass}`}>
+          <div className={sectionStackClass}>
+            <SummaryGlassSection
+              title="חומר להורדה"
+              subtitle="סיכום בקובץ PDF"
+              headerGradient="linear-gradient(145deg, #0f766e, #14b8a6, #2dd4bf)"
+              icon={<Download className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+            >
             <a
               href={step.pdf_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 p-4 rounded-2xl transition-all hover:scale-[1.01] border border-white/50 shadow-sm"
-              style={{ background: 'rgba(255,255,255,0.45)', backdropFilter: 'blur(10px)' }}
+              className="flex items-center gap-3 p-4 rounded-2xl transition-all hover:scale-[1.01] border border-white/55 shadow-md"
+              style={{
+                background: 'rgba(255,255,255,0.62)',
+                backdropFilter: 'blur(14px)',
+                WebkitBackdropFilter: 'blur(14px)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85), 0 8px 24px rgba(6,78,59,0.08)',
+              }}
             >
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                 style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
@@ -485,11 +501,23 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               </div>
               <ExternalLink className="w-4 h-4 text-gray-400 shrink-0" />
             </a>
+            </SummaryGlassSection>
           </div>
         )}
 
         {/* Action buttons */}
-        <div className={`px-4 sm:px-6 py-5 ${sectionDividerClass} space-y-3`} style={{ background: 'rgba(255,255,255,0.18)' }}>
+        <div className={`${sectionStackClass} pt-2 pb-6`}>
+          <div
+            className="max-w-lg mx-auto w-full rounded-[24px] overflow-hidden space-y-3 p-4"
+            style={{
+              border: '1px solid rgba(255,255,255,0.55)',
+              background: 'linear-gradient(165deg, rgba(255,255,255,0.48) 0%, rgba(236,253,245,0.4) 100%)',
+              backdropFilter: 'blur(22px)',
+              WebkitBackdropFilter: 'blur(22px)',
+              boxShadow: '0 14px 40px rgba(6,78,59,0.12), inset 0 1px 0 rgba(255,255,255,0.75)',
+            }}
+          >
+          <p className="text-center text-[11px] font-bold text-emerald-900/75">המשך בשיעור</p>
           <button
             type="button"
             onClick={onReplay}
@@ -520,8 +548,79 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               <span>חזרה למסע</span>
             </Link>
           )}
+          </div>
         </div>
       </motion.div>
+    </div>
+  );
+}
+
+function SummaryGlassSection({
+  title,
+  subtitle,
+  headerGradient,
+  icon,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  headerGradient: string;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className="max-w-lg mx-auto w-full min-w-0 rounded-[24px] overflow-hidden"
+      style={{
+        border: '1px solid rgba(255,255,255,0.58)',
+        boxShadow:
+          '0 16px 48px rgba(6,78,59,0.13), 0 0 0 1px rgba(255,255,255,0.22) inset',
+      }}
+    >
+      <div
+        className="flex items-center gap-3 px-4 py-3.5 sm:px-5 sm:py-4"
+        style={{
+          background: headerGradient,
+          boxShadow: 'inset 0 -1px 0 rgba(0,0,0,0.07)',
+        }}
+      >
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+          style={{
+            background: 'rgba(255,255,255,0.22)',
+            border: '1px solid rgba(255,255,255,0.38)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4)',
+          }}
+        >
+          {icon}
+        </div>
+        <div className="min-w-0 flex-1 text-right">
+          <h3
+            className="text-[15px] sm:text-base font-black text-white leading-snug"
+            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.14)' }}
+          >
+            {title}
+          </h3>
+          {subtitle ? (
+            <p className="text-[11px] sm:text-xs font-semibold text-white/90 mt-1 leading-relaxed">
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
+      </div>
+      <div
+        className="px-3.5 py-4 sm:px-4 sm:py-[18px]"
+        style={{
+          background:
+            'linear-gradient(165deg, rgba(255,255,255,0.58) 0%, rgba(236,253,245,0.4) 52%, rgba(255,255,255,0.52) 100%)',
+          backdropFilter: 'blur(24px) saturate(1.25)',
+          WebkitBackdropFilter: 'blur(24px) saturate(1.25)',
+          borderTop: '1px solid rgba(255,255,255,0.62)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.75)',
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -577,12 +676,14 @@ function LessonScoreRing({ percent }: { percent: number }) {
 function ResearchItem({ research, isExpanded, onToggle }: { research: Research; isExpanded: boolean; onToggle: () => void }) {
   return (
     <div
-      className="rounded-[18px] overflow-hidden border border-white/55 shadow-md shadow-emerald-950/5"
+      className="rounded-[18px] overflow-hidden border border-white/70 ring-1 ring-emerald-900/[0.05]"
       style={{
         background:
-          'linear-gradient(165deg, rgba(255,255,255,0.52) 0%, rgba(239,246,255,0.42) 40%, rgba(255,255,255,0.38) 100%)',
-        backdropFilter: 'blur(14px)',
-        WebkitBackdropFilter: 'blur(14px)',
+          'linear-gradient(165deg, rgba(255,255,255,0.62) 0%, rgba(239,246,255,0.48) 40%, rgba(255,255,255,0.45) 100%)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        boxShadow:
+          '0 8px 28px rgba(6,78,59,0.08), inset 0 1px 0 rgba(255,255,255,0.85)',
       }}
     >
       <button

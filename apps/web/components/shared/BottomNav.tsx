@@ -6,7 +6,7 @@ import { BookOpen, TrendingUp, UserCircle, Compass, Route } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { motion } from 'framer-motion';
 import { useEffect } from 'react';
-import { useProgressReport } from '../progress-report/ProgressReportProvider';
+import { useActionHub } from '../action-hub/ActionHubProvider';
 
 const leftItems = [
   { href: '/courses',  label: 'קורסים',  icon: BookOpen   },
@@ -20,10 +20,10 @@ const rightItems = [
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const progressReport = useProgressReport();
+  const actionHub = useActionHub();
 
   useEffect(() => {
-    const fastRoutes = ['/courses', '/journey', '/progress', '/profile'];
+    const fastRoutes = ['/courses', '/journey', '/journey/declined', '/progress', '/profile'];
     fastRoutes.forEach((href) => router.prefetch(href));
   }, [router]);
 
@@ -34,8 +34,8 @@ export function BottomNav() {
         <div className="absolute left-1/2 -translate-x-1/2 -top-5 z-20">
           <button
             type="button"
-            aria-label="דיווח התקדמות וצפייה במשימות"
-            onClick={() => progressReport.open()}
+            aria-label="תפריט משימות — עדכון ודחיות"
+            onClick={() => actionHub.open()}
             className="flex items-center justify-center no-tap-highlight touch-manipulation transition-transform hover:scale-105 active:scale-95"
             style={{
               width: '58px', height: '58px',
