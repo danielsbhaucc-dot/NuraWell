@@ -16,7 +16,7 @@ type StationRow = {
 
 type StepWithStation = JourneyStep;
 
-type AdminJourneyHubProps {
+type AdminJourneyHubProps = {
   initialStations: StationRow[];
   initialSteps: StepWithStation[];
 };
