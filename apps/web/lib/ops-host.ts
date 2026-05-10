@@ -59,6 +59,6 @@ export function isOpsPanelBrowserPath(pathname: string): boolean {
   const p = pathname.endsWith('/') && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
   if (p === '/' || p === '') return true;
   if (p === '/auth/ops-ingest') return true;
-  const prefixes = ['/journey', '/almog', '/steps', '/site-settings', '/ops'];
+  const prefixes = ['/journey', '/almog', '/steps', '/site-settings', '/system-rag-ingest', '/ops'];
   return prefixes.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
 }
