@@ -67,13 +67,18 @@ export async function GET(request: Request) {
 
     q = q.order('created_at', { ascending: false }).limit(p.limit);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const countPromise = (supabase as any)
-      .from('notifications')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .is('archived_at', null)
-      .eq('is_read', false);
+    /** עימוד (cursor): ללא COUNT מלא — חוסך טעינה על טבלאות גדולות */
+    const includeUnreadTotal = !p.cursor;
+
+    const countPromise = includeUnreadTotal
+      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from('notifications')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .is('archived_at', null)
+          .eq('is_read', false)
+      : Promise.resolve({ count: null as number | null, error: null });
 
     const [{ data, error }, countResult] = await Promise.all([q, countPromise]);
 
@@ -92,13 +97,13 @@ export async function GET(request: Request) {
     );
 
     const unread_total =
-      typeof countResult?.count === 'number' ? countResult.count : 0;
+      includeUnreadTotal && typeof countResult?.count === 'number' ? countResult.count : undefined;
 
     return NextResponse.json({
       notifications: data ?? [],
       next_cursor,
       limit: p.limit,
-      unread_total,
+      ...(unread_total !== undefined ? { unread_total } : {}),
     });
   } catch (error) {
     return NextResponse.json(

@@ -48,3 +48,20 @@ describe('nextCursorFromRows', () => {
     expect(nextCursorFromRows(rows, 40)).toBe(rows[39]?.created_at ?? null);
   });
 });
+
+describe('parseInboxSearchParams performance', () => {
+  it('parses 50k typical queries quickly (pure CPU)', () => {
+    const qs = new URLSearchParams({
+      limit: '40',
+      unread_only: '1',
+      types: 'ai_message,streak',
+    });
+    const t0 = performance.now();
+    const n = 50_000;
+    for (let i = 0; i < n; i++) {
+      parseInboxSearchParams(qs);
+    }
+    const ms = performance.now() - t0;
+    expect(ms).toBeLessThan(800);
+  });
+});
