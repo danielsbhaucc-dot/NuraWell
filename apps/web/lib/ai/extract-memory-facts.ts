@@ -13,74 +13,79 @@ export type MemoryExtractionResult = {
   raw_model_text: string;
 };
 
-function tryParseJsonObject(text: string): unknown {
-  const t = text.trim();
-  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const body = fence ? fence[1].trim() : t;
-  return JSON.parse(body) as unknown;
+/** תוכן בין גדרות markdown ```json ... ``` */
+function stripMarkdownFences(text: string): string {
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  return (fence ? fence[1] : text).trim();
 }
 
 /**
- * מחלץ עובדות מובנות מהודעת משתמש (שפה טבעית) — מתעלם מ-small talk.
+ * מחלץ מחרוזת JSON אובייקט: מהסוגר המסולסל הראשון ועד האחרון (לפי בקשה).
+ * לא מטפל ב-} בתוך מחרוזות — אם JSON.parse נכשל, המפלים הבאים ינסו.
  */
-export async function extractMemoryFactsFromUserMessage(userMessage: string): Promise<MemoryExtractionResult> {
-  const msg = userMessage.replace(/\s+/g, ' ').trim();
-  if (msg.length < 6) {
-    return { facts: [], raw_model_text: '' };
-  }
-
-  const system = `אתה מנוע חילוץ עובדות לליווי בריאות, הרגלים וירידה במשקל (NuraWell).
-החזר JSON בלבד, בלי markdown, בלי טקסט לפני/אחרי.
-סכימה:
-{
-  "facts": [
-    { "category": "strength" | "weakness" | "success" | "failure" | "schedule", "text": "מחרוזת קצרה בעברית" }
-  ]
+function extractObjectByOutermostBraces(text: string): string | null {
+  const t = text.trim();
+  const start = t.indexOf('{');
+  const end = t.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) return null;
+  return t.slice(start, end + 1);
 }
 
-חוקים:
-- אם ההודעה היא small talk, ברכה, "היי", "מה נשמע", או בלי מידע סביבתי/התנהגותי — החזר {"facts":[]}.
-- אל תשמור מידע לא קשור לליווי (מצב עבודה בטכנולוגיה, באגים ב-Next.js, שוק ציפורים וכו') — facts ריק.
-- שמור רק מה שרלוונטי לבריאות, אוכל, תנועה, שינה, לחץ, משקל, הרגלים, התחייבויות, לו"ז אימונים, דפוסי כישלון/הצלחה.
-- כל "text": משפט אחד או שניים, לכל היותר ~220 תווים, ניסוח מקוצע ושימושי.
-- category:
-  - strength: נקודת חוזק / משאב
-  - weakness: חולשה / קושי חוזר
-  - success: הצלחה / ניצחון / עמידה במטרה
-  - failure: כשל / סטייה / נפילה
-  - schedule: לו"ז, תזמון, "מתאמן ביום X", "שותה מים בבוקר" וכו'
-- אותו עניין — פריט אחד. לא כפל טקסטים.
-- אם אין עובדות — {"facts":[]}.`;
+/**
+ * תבניות כמו facts: [...] בלי מסגרת מלאה — עוטף ל-{ "facts": [...] }
+ */
+function tryWrapFactsKeyValue(text: string): string | null {
+  const t = text.trim();
+  const m = t.match(/facts\s*:\s*(\[[\s\S]*\])/i);
+  if (m) return `{"facts":${m[1]}}`;
+  return null;
+}
 
-  const completion = await openrouter.chat.completions.create({
-    model: MEMORY_EXTRACTION_MODEL_OPENROUTER,
-    temperature: 0.1,
-    max_tokens: 800,
-    messages: [
-      { role: 'system', content: system },
-      { role: 'user', content: `ההודעה:\n${msg}` },
-    ],
-  });
+/** המודל החזיר רק מערך של פריטים */
+function tryWrapBareFactsArray(text: string): string | null {
+  const t = text.trim();
+  const start = t.indexOf('[');
+  const end = t.lastIndexOf(']');
+  if (start === -1 || end === -1 || end <= start) return null;
+  const inner = t.slice(start, end + 1).trim();
+  if (!inner.startsWith('[')) return null;
+  return `{"facts":${inner}}`;
+}
 
-  const raw = completion.choices[0]?.message?.content ?? '';
-  if (!raw.trim()) {
-    return { facts: [], raw_model_text: raw };
+/**
+ * ניסיונות פרסור ברורים — ללא זריקת חריג; מחזיר null אם כל הניסיונות נכשלו.
+ */
+function parseModelJsonPayload(raw: string): unknown | null {
+  const stripped = stripMarkdownFences(raw);
+
+  /** קודם facts: [...] בלי אובייקט חיצוני — לפני slice של {…} שעלול לתפוס רק אובייקט פריט */
+  const attempts: Array<string | null> = [
+    tryWrapFactsKeyValue(stripped),
+    extractObjectByOutermostBraces(stripped),
+    tryWrapBareFactsArray(stripped),
+    stripped.length > 0 ? stripped : null,
+  ];
+
+  for (const candidate of attempts) {
+    if (!candidate) continue;
+    try {
+      return JSON.parse(candidate) as unknown;
+    } catch {
+      /* ניסיון הבא */
+    }
   }
 
-  let parsed: unknown;
-  try {
-    parsed = tryParseJsonObject(raw);
-  } catch {
-    return { facts: [], raw_model_text: raw };
-  }
+  return null;
+}
 
+function normalizeFactsFromParsed(parsed: unknown): ExtractedMemoryFact[] {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    return { facts: [], raw_model_text: raw };
+    return [];
   }
 
   const factsRaw = (parsed as { facts?: unknown }).facts;
   if (!Array.isArray(factsRaw)) {
-    return { facts: [], raw_model_text: raw };
+    return [];
   }
 
   const allowed: MemoryVectorCategory[] = ['strength', 'weakness', 'success', 'failure', 'schedule'];
@@ -98,5 +103,76 @@ export async function extractMemoryFactsFromUserMessage(userMessage: string): Pr
     facts.push({ category: category as MemoryVectorCategory, text: clean });
   }
 
-  return { facts: dedupeExtractedFacts(facts), raw_model_text: raw };
+  return dedupeExtractedFacts(facts);
+}
+
+/**
+ * מחלץ עובדות מובנות מהודעת משתמש (שפה טבעית) — מתעלם מ-small talk.
+ */
+export async function extractMemoryFactsFromUserMessage(userMessage: string): Promise<MemoryExtractionResult> {
+  const msg = userMessage.replace(/\s+/g, ' ').trim();
+  if (msg.length < 6) {
+    return { facts: [], raw_model_text: '' };
+  }
+
+  try {
+    return await extractMemoryFactsFromUserMessageInner(msg);
+  } catch {
+    return { facts: [], raw_model_text: '' };
+  }
+}
+
+async function extractMemoryFactsFromUserMessageInner(msg: string): Promise<MemoryExtractionResult> {
+  const system = `אתה מנוע חילוץ עובדות לליווי בריאות, הרגלים וירידה במשקל (NuraWell).
+
+פורמט פלט — חובה מוחלטת:
+- החזר אובייקט JSON יחיד ותקין בלבד.
+- בלי markdown: אסור להשתמש ב-\`\`\` או ב-json או בכותרות.
+- אסור טקסט לפני הסוגר הראשון או אחרי הסוגר האחרון.
+- האובייקט חייב להתחיל ב-{ ולהסתיים ב-}.
+- השדה היחיד הוא "facts" — מערך של אובייקטים, או מערך ריק.
+
+דוגמה תקינה בלבד (שכפל את המבנה, לא את התוכן):
+{"facts":[{"category":"schedule","text":"מתכנן הליכה ביום שני בבוקר"}]}
+
+דוגמה כשאין מה לשמור:
+{"facts":[]}
+
+סכימת כל פריט במערך facts:
+{ "category": "strength" | "weakness" | "success" | "failure" | "schedule", "text": "מחרוזת קצרה בעברית" }
+
+חוקי תוכן:
+- אם ההודעה היא small talk, ברכה, "היי", "מה נשמע", או בלי מידע סביבתי/התנהגותי — החזר {"facts":[]}.
+- אל תשמור מידע לא קשור לליווי (עבודה בטכנולוגיה, באגים, וכו') — {"facts":[]}.
+- שמור רק מה שרלוונטי לבריאות, אוכל, תנועה, שינה, לחץ, משקל, הרגלים, התחייבויות, לו"ז אימונים, דפוסי כישלון/הצלחה.
+- כל "text": משפט אחד או שניים, לכל היותר ~220 תווים, ניסוח מקוצע ושימושי.
+- category: strength | weakness | success | failure | schedule (כפי שמוגדר למעלה).
+- אותו עניין — פריט אחד. לא כפל טקסטים.
+- אם אין עובדות — {"facts":[]}.
+
+בדיקה לפני שליחה: המחרוזת שלך חייבת להיות parse-able כ-JSON ללא תיקונים.`;
+
+  const completion = await openrouter.chat.completions.create({
+    model: MEMORY_EXTRACTION_MODEL_OPENROUTER,
+    temperature: 0.1,
+    max_tokens: 800,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: `ההודעה:\n${msg}` },
+    ],
+  });
+
+  const raw = completion.choices[0]?.message?.content ?? '';
+  if (!raw.trim()) {
+    return { facts: [], raw_model_text: raw };
+  }
+
+  const parsed = parseModelJsonPayload(raw);
+
+  if (parsed === null) {
+    return { facts: [], raw_model_text: raw };
+  }
+
+  const facts = normalizeFactsFromParsed(parsed);
+  return { facts, raw_model_text: raw };
 }
