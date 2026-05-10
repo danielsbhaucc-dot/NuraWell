@@ -1,25 +1,35 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   ArrowLeft,
+  Bell,
   ChevronDown,
   Globe,
   LayoutDashboard,
   ListTree,
   Map,
   Menu,
+  PanelRightClose,
+  PanelRightOpen,
   UserCircle,
   X,
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 
+const SIDEBAR_COLLAPSED_KEY = 'nura-admin-sidebar-collapsed';
+
 type AdminShellProps = {
   children: React.ReactNode;
   /** שם פרטי מהפרופיל; אם ריק — מציגים רק שלום עם אימוג׳י */
   adminFirstName: string;
+  /** שם מלא לכותרת */
+  adminDisplayName?: string;
+  /** תמונת פרופיל (אופציונלי) */
+  adminAvatarUrl?: string | null;
   /** כתובת האתר הציבורי (ללא סלאש סיום) — ממסד / env */
   mainAppBase: string;
 };
@@ -32,11 +42,20 @@ function normalizeOpsPathname(pathname: string): string {
   return `/ops${p}`;
 }
 
-export function AdminShell({ children, adminFirstName, mainAppBase }: AdminShellProps) {
+export function AdminShell({
+  children,
+  adminFirstName,
+  adminDisplayName = 'מנהל',
+  adminAvatarUrl = null,
+  mainAppBase,
+}: AdminShellProps) {
   const pathname = usePathname();
   const np = normalizeOpsPathname(pathname);
   const coursesHref = mainAppBase ? `${mainAppBase}/courses` : '/courses';
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapseReady, setSidebarCollapseReady] = useState(false);
+
   const isHome = np === '/ops';
   const isAlmogSettings = np === '/ops/almog';
   const isSiteSettings = np === '/ops/site-settings';
@@ -47,6 +66,24 @@ export function AdminShell({ children, adminFirstName, mainAppBase }: AdminShell
   useEffect(() => {
     if (isJourneyManage) setJourneySettingsOpen(true);
   }, [isJourneyManage]);
+
+  useEffect(() => {
+    try {
+      setSidebarCollapsed(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1');
+    } catch {
+      /* ignore */
+    }
+    setSidebarCollapseReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!sidebarCollapseReady) return;
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, sidebarCollapsed ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
+  }, [sidebarCollapsed, sidebarCollapseReady]);
 
   useEffect(() => {
     if (!sidebarOpen) return;
@@ -68,143 +105,209 @@ export function AdminShell({ children, adminFirstName, mainAppBase }: AdminShell
       </>
     );
 
+  const showNavLabels = !sidebarCollapsed;
+  const mainPadLg = sidebarCollapsed ? 'lg:pr-[4.75rem]' : 'lg:pr-64';
+
+  const navBtn = (active: boolean, color: 'emerald' | 'violet' | 'sky' | 'amber') =>
+    cn(
+      'flex min-h-11 w-full items-center gap-3 rounded-2xl px-3 py-3 text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
+      showNavLabels ? 'px-4' : 'justify-center px-2',
+      active
+        ? {
+            emerald:
+              'border border-emerald-400/50 bg-emerald-500/15 font-bold text-emerald-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-md',
+            violet:
+              'border border-violet-400/45 bg-violet-500/15 font-bold text-violet-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-md',
+            sky: 'border border-sky-400/45 bg-sky-500/15 font-bold text-sky-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-md',
+            amber:
+              'border border-amber-400/50 bg-amber-400/15 font-bold text-amber-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-md',
+          }[color]
+        : 'text-slate-600 hover:bg-white/55 hover:text-slate-900',
+    );
+
+  const bottomNavClass = (active: boolean) =>
+    cn(
+      'flex min-h-[3.25rem] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-2 text-[10px] font-semibold transition-colors sm:text-[11px]',
+      active ? 'text-emerald-800' : 'text-slate-500',
+    );
+
   return (
     <div
-      className="min-h-[100dvh] bg-gradient-to-br from-slate-400/55 via-slate-300/65 to-slate-500/50 font-sans text-slate-900 touch-manipulation"
+      className="min-h-[100dvh] bg-gradient-to-br from-emerald-50 via-cyan-50/80 to-violet-100/90 font-sans text-slate-900 touch-manipulation"
       dir="rtl"
     >
-      {/* רקע דקורטיבי — קונטרסט עדין על גוון כהה יותר */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
-        <div className="absolute -top-36 -right-36 h-80 w-80 rounded-full bg-emerald-500/25 blur-3xl sm:h-96 sm:w-96 sm:bg-emerald-400/30" />
-        <div className="absolute top-32 -left-24 h-64 w-64 rounded-full bg-teal-600/20 blur-3xl sm:h-72 sm:w-72 sm:bg-teal-500/25" />
-        <div className="absolute bottom-0 left-1/3 h-48 w-48 rounded-full bg-slate-900/10 blur-3xl" />
+        <div className="absolute -top-28 -right-20 h-[22rem] w-[22rem] rounded-full bg-gradient-to-br from-emerald-400/45 to-teal-400/35 blur-3xl" />
+        <div className="absolute top-1/4 -left-16 h-72 w-72 rounded-full bg-gradient-to-tr from-fuchsia-400/35 to-violet-400/30 blur-3xl" />
+        <div className="absolute bottom-10 right-1/3 h-56 w-56 rounded-full bg-gradient-to-tl from-amber-300/40 to-orange-300/30 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-gradient-to-tr from-sky-400/30 to-cyan-300/25 blur-3xl" />
       </div>
 
       <aside
         className={cn(
-          'fixed top-0 right-0 z-40 h-[100dvh] max-h-[100dvh] w-[min(18rem,calc(100vw-1rem))] sm:w-64 transition-transform duration-300 ease-in-out',
+          'fixed top-0 right-0 z-40 h-[100dvh] max-h-[100dvh] transition-[transform,width] duration-300 ease-in-out',
+          'w-[min(18.5rem,calc(100vw-1.25rem))]',
+          sidebarCollapsed ? 'lg:w-[4.75rem]' : 'lg:w-64',
           sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0',
         )}
       >
-        <div className="h-full overflow-y-auto overscroll-contain border-l border-white/25 bg-slate-950/35 px-3 py-5 shadow-[0_16px_48px_rgba(15,23,42,0.35)] backdrop-blur-2xl sm:px-4 sm:py-6">
-          <div className="mb-8 flex items-center justify-between pl-1 sm:mb-10 sm:pl-2">
+        <div
+          className={cn(
+            'flex h-full flex-col overflow-y-auto overscroll-contain border-l border-white/60 bg-white/45 px-3 py-5 shadow-[0_16px_48px_rgba(99,102,241,0.12)] backdrop-blur-2xl sm:px-4 sm:py-6',
+            sidebarCollapsed && 'lg:px-2 lg:py-5',
+          )}
+        >
+          <div
+            className={cn(
+              'mb-6 flex items-center justify-between gap-2 sm:mb-8',
+              sidebarCollapsed && 'lg:mb-6 lg:flex-col lg:gap-3',
+            )}
+          >
             <Link
               href="/"
-              className="flex min-w-0 items-center gap-2.5 sm:gap-3"
+              className={cn(
+                'flex min-w-0 items-center gap-2.5 sm:gap-3',
+                sidebarCollapsed && 'lg:w-full lg:justify-center',
+              )}
               onClick={() => setSidebarOpen(false)}
+              title="NuraAdmin"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-lg font-bold text-white shadow-lg shadow-emerald-900/40 sm:h-10 sm:w-10 sm:text-xl">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-lg font-black text-white shadow-lg shadow-emerald-600/35">
                 N
               </div>
-              <span className="bg-gradient-to-l from-emerald-300 to-teal-300 bg-clip-text text-xl font-black text-transparent sm:text-2xl">
+              <span
+                className={cn(
+                  'bg-gradient-to-l from-emerald-600 via-teal-600 to-cyan-700 bg-clip-text font-display text-xl font-black text-transparent sm:text-2xl',
+                  sidebarCollapsed && 'lg:hidden',
+                )}
+              >
                 NuraAdmin
               </span>
             </Link>
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(false)}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-300 hover:bg-white/10 hover:text-white active:bg-white/15 lg:hidden"
-              aria-label="סגור תפריט"
-            >
-              <X size={24} />
-            </button>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setSidebarCollapsed((c) => !c)}
+                className="hidden min-h-10 min-w-10 items-center justify-center rounded-xl border border-white/50 bg-white/40 text-slate-700 shadow-sm backdrop-blur-md transition-colors hover:bg-white/70 lg:inline-flex"
+                aria-expanded={!sidebarCollapsed}
+                aria-label={sidebarCollapsed ? 'הרחב תפריט צד' : 'כווץ תפריט צד'}
+                title={sidebarCollapsed ? 'הרחב תפריט' : 'כווץ תפריט'}
+              >
+                {sidebarCollapsed ? <PanelRightOpen size={20} /> : <PanelRightClose size={20} />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(false)}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-600 hover:bg-white/60 active:bg-white/80 lg:hidden"
+                aria-label="סגור תפריט"
+              >
+                <X size={24} />
+              </button>
+            </div>
           </div>
 
-          <nav className="space-y-2" aria-label="ניווט פאנל ניהול">
+          <nav className="flex-1 space-y-2" aria-label="ניווט פאנל ניהול">
             <Link
               href="/"
               onClick={() => setSidebarOpen(false)}
-              className={cn(
-                'flex min-h-11 w-full items-center gap-3 rounded-2xl px-4 py-3 text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
-                isHome
-                  ? 'border border-emerald-400/35 bg-white/15 font-bold text-emerald-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-md'
-                  : 'text-slate-300 hover:bg-white/10 hover:text-white',
-              )}
+              className={navBtn(isHome, 'emerald')}
+              title="ראשי"
             >
-              <LayoutDashboard size={20} className={isHome ? 'text-emerald-400' : ''} />
-              <span>ראשי</span>
+              <LayoutDashboard size={20} className={cn('shrink-0', isHome && 'text-emerald-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>ראשי</span>
+              {isHome && showNavLabels && (
+                <span className="mr-auto hidden h-2 w-2 rounded-full bg-emerald-500 lg:inline-block" aria-hidden />
+              )}
             </Link>
 
             <Link
               href="/almog"
               onClick={() => setSidebarOpen(false)}
-              className={cn(
-                'flex min-h-11 w-full items-center gap-3 rounded-2xl px-4 py-3 text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
-                isAlmogSettings
-                  ? 'border border-emerald-400/35 bg-white/15 font-bold text-emerald-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-md'
-                  : 'text-slate-300 hover:bg-white/10 hover:text-white',
-              )}
+              className={navBtn(isAlmogSettings, 'violet')}
+              title="הגדרות אלמוג"
             >
-              <UserCircle size={20} className={isAlmogSettings ? 'text-emerald-400' : ''} />
-              <span>הגדרות אלמוג</span>
+              <UserCircle size={20} className={cn('shrink-0', isAlmogSettings && 'text-violet-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>הגדרות אלמוג</span>
             </Link>
 
             <Link
               href="/site-settings"
               onClick={() => setSidebarOpen(false)}
-              className={cn(
-                'flex min-h-11 w-full items-center gap-3 rounded-2xl px-4 py-3 text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
-                isSiteSettings
-                  ? 'border border-emerald-400/35 bg-white/15 font-bold text-emerald-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-md'
-                  : 'text-slate-300 hover:bg-white/10 hover:text-white',
-              )}
+              className={navBtn(isSiteSettings, 'sky')}
+              title="הגדרות אתר"
             >
-              <Globe size={20} className={isSiteSettings ? 'text-emerald-400' : ''} />
-              <span>הגדרות אתר</span>
+              <Globe size={20} className={cn('shrink-0', isSiteSettings && 'text-sky-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>הגדרות אתר</span>
             </Link>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md">
-              <button
-                type="button"
-                onClick={() => setJourneySettingsOpen((o) => !o)}
-                className={cn(
-                  'flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-right text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
-                  isJourneyManage && !isHome && !isAlmogSettings && !isSiteSettings
-                    ? 'bg-white/10 font-semibold text-emerald-200'
-                    : 'text-slate-300 hover:bg-white/10 hover:text-white',
-                )}
-                aria-expanded={journeySettingsOpen}
+            {sidebarCollapsed ? (
+              <Link
+                href="/journey"
+                onClick={() => setSidebarOpen(false)}
+                className={navBtn(isJourneyManage, 'amber')}
+                title="הגדרות מסע — ניהול"
               >
-                <span className="flex items-center gap-3">
-                  <Map size={20} className={isJourneyManage ? 'text-emerald-400' : ''} />
-                  הגדרות מסע
-                </span>
-                <ChevronDown
-                  size={18}
-                  className={cn('shrink-0 text-slate-400 transition-transform', journeySettingsOpen && '-rotate-180')}
-                />
-              </button>
+                <Map size={20} className={cn('shrink-0', isJourneyManage && 'text-amber-600')} />
+                <span className="lg:sr-only">הגדרות מסע</span>
+              </Link>
+            ) : (
+              <div className="rounded-2xl border border-white/50 bg-white/35 backdrop-blur-md">
+                <button
+                  type="button"
+                  onClick={() => setJourneySettingsOpen((o) => !o)}
+                  className={cn(
+                    'flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-right text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
+                    isJourneyManage && !isHome && !isAlmogSettings && !isSiteSettings
+                      ? 'bg-amber-400/20 font-semibold text-amber-950'
+                      : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
+                  )}
+                  aria-expanded={journeySettingsOpen}
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <Map size={20} className={cn('shrink-0', isJourneyManage && 'text-amber-600')} />
+                    <span className="truncate">הגדרות מסע</span>
+                  </span>
+                  <ChevronDown
+                    size={18}
+                    className={cn('shrink-0 text-slate-400 transition-transform', journeySettingsOpen && '-rotate-180')}
+                  />
+                </button>
 
-              {journeySettingsOpen && (
-                <ul className="mr-2 mt-1 space-y-1 border-r border-emerald-500/35 pr-3 pb-2">
-                  <li>
-                    <Link
-                      href="/journey"
-                      onClick={() => setSidebarOpen(false)}
-                      className={cn(
-                        'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-emerald-500/25 sm:text-[15px]',
-                        isJourneyManage
-                          ? 'bg-emerald-500/25 font-bold text-emerald-100'
-                          : 'text-slate-300 hover:bg-white/10 hover:text-white',
-                      )}
-                    >
-                      <ListTree size={17} className="shrink-0 opacity-90" />
-                      ניהול
-                    </Link>
-                  </li>
-                </ul>
-              )}
-            </div>
+                {journeySettingsOpen && (
+                  <ul className="mr-2 mt-1 space-y-1 border-r border-amber-400/40 pr-3 pb-2">
+                    <li>
+                      <Link
+                        href="/journey"
+                        onClick={() => setSidebarOpen(false)}
+                        className={cn(
+                          'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-amber-400/25 sm:text-[15px]',
+                          isJourneyManage
+                            ? 'bg-amber-400/25 font-bold text-amber-950'
+                            : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
+                        )}
+                      >
+                        <ListTree size={17} className="shrink-0 opacity-90" />
+                        ניהול
+                      </Link>
+                    </li>
+                  </ul>
+                )}
+              </div>
+            )}
           </nav>
 
-          <div className="mt-10 border-t border-white/15 pt-6">
+          <div className={cn('mt-8 border-t border-white/40 pt-5', sidebarCollapsed && 'lg:mt-6')}>
             <Link
               href={coursesHref}
-              className="flex min-h-11 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-400 transition-colors hover:bg-white/10 hover:text-slate-100 active:bg-white/15"
+              className={cn(
+                'flex min-h-11 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-500 transition-colors hover:bg-white/55 hover:text-slate-800 active:bg-white/70',
+                sidebarCollapsed && 'lg:justify-center lg:px-2',
+              )}
               onClick={() => setSidebarOpen(false)}
+              title="חזרה לאפליקציה"
             >
               <ArrowLeft size={18} className="shrink-0" />
-              חזרה לאפליקציה
+              <span className={cn(!showNavLabels && 'lg:sr-only')}>חזרה לאפליקציה</span>
             </Link>
           </div>
         </div>
@@ -213,30 +316,67 @@ export function AdminShell({ children, adminFirstName, mainAppBase }: AdminShell
       {sidebarOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-30 touch-none bg-slate-950/50 backdrop-blur-[3px] lg:hidden"
+          className="fixed inset-0 z-30 touch-none bg-slate-900/25 backdrop-blur-[2px] lg:hidden"
           aria-label="סגור תפריט"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      <main className="relative z-10 flex min-h-[100dvh] flex-col pb-[env(safe-area-inset-bottom)] lg:pr-64">
-        <header className="safe-area-top sticky top-0 z-20 flex min-h-[3.25rem] items-center justify-between gap-2 border-b border-white/20 bg-slate-950/25 px-3 py-2.5 shadow-[0_8px_32px_rgba(15,23,42,0.2)] backdrop-blur-2xl sm:min-h-14 sm:gap-3 sm:px-4 sm:py-3">
-          <div className="flex min-w-0 items-center gap-2 sm:gap-3 lg:hidden">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(true)}
-              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-white/25 bg-white/15 p-0 text-slate-100 shadow-inner backdrop-blur-md active:bg-white/25"
-              aria-label="פתח תפריט"
-            >
-              <Menu size={22} />
-            </button>
-            <span className="truncate text-[15px] font-bold text-slate-100 sm:text-base">פאנל ניהול</span>
-          </div>
+      <main
+        className={cn(
+          'relative z-10 flex min-h-[100dvh] flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-[env(safe-area-inset-bottom)]',
+          mainPadLg,
+        )}
+      >
+        <header className="safe-area-top sticky top-0 z-20 border-b border-white/50 bg-gradient-to-l from-emerald-200/95 via-teal-100/90 to-cyan-100/85 shadow-[0_8px_28px_rgba(16,185,129,0.15)] backdrop-blur-xl">
+          <div className="header-grid-pattern opacity-50" aria-hidden />
+          <div className="relative flex min-h-[3.5rem] items-center gap-2 px-3 py-2.5 sm:min-h-14 sm:gap-3 sm:px-4 sm:py-3">
+            <div className="flex shrink-0 items-center gap-2 sm:gap-2.5 lg:hidden">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-white/60 bg-white/50 text-slate-800 shadow-sm backdrop-blur-md active:scale-[0.98]"
+                aria-label="פתח תפריט"
+              >
+                <Menu size={22} />
+              </button>
+            </div>
 
-          <div className="flex min-h-11 min-w-0 flex-1 items-center justify-end">
-            <p className="truncate text-right text-[13px] font-semibold tracking-tight text-slate-100 sm:text-sm md:text-base">
+            <p className="min-w-0 flex-1 truncate text-right font-display text-[13px] font-bold tracking-tight text-emerald-950 sm:text-sm md:text-base">
               {greeting}
             </p>
+
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              <span className="hidden max-w-[12rem] truncate text-left text-sm font-semibold text-emerald-900/90 md:inline">
+                {adminDisplayName}
+              </span>
+              <button
+                type="button"
+                className="relative inline-flex min-h-10 min-w-10 items-center justify-center rounded-2xl border border-white/55 bg-white/45 text-emerald-900 shadow-sm backdrop-blur-md transition-colors hover:bg-white/70"
+                aria-label="התראות (בקרוב)"
+              >
+                <Bell size={20} className="opacity-90" />
+              </button>
+              <div
+                className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-white/80 bg-gradient-to-br from-violet-200 to-emerald-200 shadow-md ring-2 ring-white/90"
+                title={adminDisplayName}
+              >
+                {adminAvatarUrl && adminAvatarUrl.startsWith('http') ? (
+                  <Image
+                    src={adminAvatarUrl}
+                    alt={adminDisplayName}
+                    fill
+                    className="object-cover"
+                    sizes="40px"
+                    unoptimized
+                  />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center font-display text-sm font-bold text-emerald-900">
+                    {adminDisplayName.charAt(0)}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         </header>
 
@@ -247,6 +387,28 @@ export function AdminShell({ children, adminFirstName, mainAppBase }: AdminShell
           {children}
         </div>
       </main>
+
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-white/55 bg-white/55 px-2 py-2 shadow-[0_-8px_32px_rgba(99,102,241,0.12)] backdrop-blur-2xl safe-area-bottom lg:hidden"
+        aria-label="ניווט מהיר"
+      >
+        <Link href="/" onClick={() => setSidebarOpen(false)} className={bottomNavClass(isHome)}>
+          <LayoutDashboard className={cn('h-5 w-5', isHome ? 'text-emerald-600' : '')} />
+          ראשי
+        </Link>
+        <Link href="/almog" onClick={() => setSidebarOpen(false)} className={bottomNavClass(isAlmogSettings)}>
+          <UserCircle className={cn('h-5 w-5', isAlmogSettings ? 'text-violet-600' : '')} />
+          אלמוג
+        </Link>
+        <Link href="/site-settings" onClick={() => setSidebarOpen(false)} className={bottomNavClass(isSiteSettings)}>
+          <Globe className={cn('h-5 w-5', isSiteSettings ? 'text-sky-600' : '')} />
+          אתר
+        </Link>
+        <Link href="/journey" onClick={() => setSidebarOpen(false)} className={bottomNavClass(isJourneyManage)}>
+          <Map className={cn('h-5 w-5', isJourneyManage ? 'text-amber-600' : '')} />
+          מסע
+        </Link>
+      </nav>
     </div>
   );
 }
