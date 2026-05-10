@@ -1,4 +1,5 @@
 import { openrouter } from './client';
+import { dedupeExtractedFacts } from './memory-fact-dedupe';
 import { MEMORY_EXTRACTION_MODEL_OPENROUTER } from './rag-config';
 import type { MemoryVectorCategory } from './upstash-vector-rest';
 
@@ -97,5 +98,5 @@ export async function extractMemoryFactsFromUserMessage(userMessage: string): Pr
     facts.push({ category: category as MemoryVectorCategory, text: clean });
   }
 
-  return { facts, raw_model_text: raw };
+  return { facts: dedupeExtractedFacts(facts), raw_model_text: raw };
 }
