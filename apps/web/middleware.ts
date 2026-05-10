@@ -20,6 +20,26 @@ function copyCookies(from: NextResponse, to: NextResponse) {
   });
 }
 
+/**
+ * בסיס ל־redirect מ־Ops לדומיין הציבורי (login / courses).
+ * אם NEXT_PUBLIC_APP_URL לא מלא (חסר https://) או לא תקין — נופלים ל־origin של הבקשה כדי שלא יקרוס ה־middleware ב־Vercel.
+ */
+function middlewarePublicOrigin(request: NextRequest): string {
+  const raw = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (raw) {
+    const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw.replace(/^\/+/, '')}`;
+    try {
+      const u = new URL(withProtocol.endsWith('/') ? withProtocol.slice(0, -1) : withProtocol);
+      if (u.protocol === 'http:' || u.protocol === 'https:') {
+        return u.origin;
+      }
+    } catch {
+      /* משתנה סביבה שבור — מתעלמים */
+    }
+  }
+  return request.nextUrl.origin;
+}
+
 export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -96,9 +116,7 @@ export async function middleware(request: NextRequest) {
     devOpsPath ||
     (effectiveOpsHost && !pathname.startsWith('/api') && !pathname.startsWith('/_next'));
 
-  const mainOrigin =
-    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-    `${request.nextUrl.protocol}//${request.nextUrl.host}`;
+  const mainOrigin = middlewarePublicOrigin(request);
 
   if (needsOpsGate && !pathname.startsWith('/api')) {
     if (!user) {
