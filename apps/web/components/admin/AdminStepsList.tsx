@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   Plus, Edit3, Eye, EyeOff, Trash2, GripVertical,
@@ -12,11 +13,13 @@ import { parseImmersiveAttentionStops } from '../../lib/journey/immersiveAttenti
 
 interface AdminStepsListProps {
   steps: JourneyStep[];
-  /** כשהכותרת מוצגת בעמוד העוטף (למשל `/admin/journey`) — מסתירים כפילות כותרת */
+  /** כשהכותרת מוצגת בעמוד העוטף (למשל `/journey`) — מסתירים כפילות כותרת */
   showIntro?: boolean;
 }
 
 export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminStepsListProps) {
+  const pathname = usePathname();
+  const opsBase = pathname.startsWith('/ops') ? '/ops' : '';
   const [steps, setSteps] = useState(initialSteps);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
@@ -65,7 +68,7 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
           </div>
         ) : null}
         <Link
-          href="/admin/steps/new"
+          href={`${opsBase}/steps/new`}
           className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:brightness-110 active:scale-[0.98] sm:w-auto sm:min-w-0 sm:self-end sm:py-2.5"
         >
           <Plus className="h-4 w-4" />
@@ -162,7 +165,7 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
                 {step.is_published ? <Eye className="h-[1.125rem] w-[1.125rem]" /> : <EyeOff className="h-[1.125rem] w-[1.125rem]" />}
               </button>
               <Link
-                href={`/admin/steps/${step.id}`}
+                href={`${opsBase}/steps/${step.id}`}
                 title="ערוך"
                 className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-slate-100 active:bg-slate-200/80"
               >
@@ -191,7 +194,7 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
           <h3 className="text-xl font-black mb-2" style={{ color: '#1A1730' }}>אין צעדים עדיין</h3>
           <p className="text-sm text-gray-500 mb-6">צרו את הצעד הראשון במסע</p>
           <Link
-            href="/admin/steps/new"
+            href={`${opsBase}/steps/new`}
             className="inline-flex min-h-11 w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-500 px-6 py-3 font-bold text-white shadow-lg shadow-emerald-500/25 active:scale-[0.98] sm:w-auto"
           >
             <Plus className="h-4 w-4" /> צעד חדש

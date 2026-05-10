@@ -72,6 +72,15 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
     { label: 'רצף ימים',       value: profile?.streak_days ?? 0, icon: Flame, color: '#f97316' },
   ];
 
+  const opsUrl = process.env.NEXT_PUBLIC_OPS_URL?.replace(/\/$/, '');
+  const profileMenuItems = [
+    ...(profile?.role === 'admin' && opsUrl
+      ? [{ label: 'פאנל ניהול', href: `${opsUrl}/`, icon: Shield, emoji: '🛠️' }]
+      : []),
+    { label: 'ההתקדמות שלי', href: '/progress', icon: Award, emoji: '📊' },
+    { label: 'הקורסים שלי', href: '/courses', icon: BookOpen, emoji: '📚' },
+  ];
+
   const saveProfile = async () => {
     const cleanName = nameInput.trim();
     if (cleanName.length < 2) {
@@ -229,12 +238,9 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           className="rounded-3xl border border-emerald-100 bg-white overflow-hidden shadow-[0_10px_30px_rgba(16,185,129,0.08)]"
           style={{ padding: 0 }}
         >
-          {[
-            { label: 'ההתקדמות שלי', href: '/progress', icon: Award,    emoji: '📊' },
-            { label: 'הקורסים שלי',  href: '/courses',  icon: BookOpen, emoji: '📚' },
-          ].map((item, idx, arr) => (
+          {profileMenuItems.map((item, idx, arr) => (
             <Link
-              key={item.href}
+              key={`${item.href}-${item.label}`}
               href={item.href}
               prefetch
               className="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors"

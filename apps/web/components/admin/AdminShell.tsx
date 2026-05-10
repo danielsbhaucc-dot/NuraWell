@@ -21,13 +21,23 @@ type AdminShellProps = {
   adminFirstName: string;
 };
 
+/** תואם גם rewrite מ־ops.example.com/journey וגם גישה ישירה ל־/ops/journey בפיתוח */
+function normalizeOpsPathname(pathname: string): string {
+  const p = pathname.endsWith('/') && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
+  if (p.startsWith('/ops')) return p;
+  if (p === '/' || p === '') return '/ops';
+  return `/ops${p}`;
+}
+
 export function AdminShell({ children, adminFirstName }: AdminShellProps) {
   const pathname = usePathname();
+  const np = normalizeOpsPathname(pathname);
+  const appBase = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
+  const coursesHref = appBase ? `${appBase}/courses` : '/courses';
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const isHome = pathname === '/admin';
-  const isAlmogSettings = pathname === '/admin/almog';
-  const isJourneyManage =
-    pathname === '/admin/journey' || pathname.startsWith('/admin/steps');
+  const isHome = np === '/ops';
+  const isAlmogSettings = np === '/ops/almog';
+  const isJourneyManage = np.startsWith('/ops/journey') || np.startsWith('/ops/steps');
 
   const [journeySettingsOpen, setJourneySettingsOpen] = useState(isJourneyManage);
 
@@ -76,7 +86,7 @@ export function AdminShell({ children, adminFirstName }: AdminShellProps) {
         <div className="h-full overflow-y-auto overscroll-contain border-l border-white/25 bg-slate-950/35 px-3 py-5 shadow-[0_16px_48px_rgba(15,23,42,0.35)] backdrop-blur-2xl sm:px-4 sm:py-6">
           <div className="mb-8 flex items-center justify-between pl-1 sm:mb-10 sm:pl-2">
             <Link
-              href="/admin"
+              href="/"
               className="flex min-w-0 items-center gap-2.5 sm:gap-3"
               onClick={() => setSidebarOpen(false)}
             >
@@ -99,7 +109,7 @@ export function AdminShell({ children, adminFirstName }: AdminShellProps) {
 
           <nav className="space-y-2" aria-label="ניווט פאנל ניהול">
             <Link
-              href="/admin"
+              href="/"
               onClick={() => setSidebarOpen(false)}
               className={cn(
                 'flex min-h-11 w-full items-center gap-3 rounded-2xl px-4 py-3 text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
@@ -113,7 +123,7 @@ export function AdminShell({ children, adminFirstName }: AdminShellProps) {
             </Link>
 
             <Link
-              href="/admin/almog"
+              href="/almog"
               onClick={() => setSidebarOpen(false)}
               className={cn(
                 'flex min-h-11 w-full items-center gap-3 rounded-2xl px-4 py-3 text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
@@ -152,7 +162,7 @@ export function AdminShell({ children, adminFirstName }: AdminShellProps) {
                 <ul className="mr-2 mt-1 space-y-1 border-r border-emerald-500/35 pr-3 pb-2">
                   <li>
                     <Link
-                      href="/admin/journey"
+                      href="/journey"
                       onClick={() => setSidebarOpen(false)}
                       className={cn(
                         'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-emerald-500/25 sm:text-[15px]',
@@ -172,7 +182,7 @@ export function AdminShell({ children, adminFirstName }: AdminShellProps) {
 
           <div className="mt-10 border-t border-white/15 pt-6">
             <Link
-              href="/courses"
+              href={coursesHref}
               className="flex min-h-11 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-400 transition-colors hover:bg-white/10 hover:text-slate-100 active:bg-white/15"
               onClick={() => setSidebarOpen(false)}
             >

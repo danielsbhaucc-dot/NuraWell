@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
-
-export const runtime = 'edge';
 import { z } from 'zod';
-import { readJsonBody } from '../../../../../lib/api/json-request';
-import { requireApiAdmin } from '../../../../../lib/api/route-guards';
+import { readJsonBody } from '@/lib/api/json-request';
+import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import {
   journeyStepInsertSchema,
   journeyStepPatchSchema,
-} from '../../../../../lib/validation/admin-journey-step';
-import { jsonZodError } from '../../../../../lib/validation/zod-http';
+} from '@/lib/validation/admin-journey-step';
+import { jsonZodError } from '@/lib/validation/zod-http';
+
+export const runtime = 'edge';
 
 export async function GET(request: Request) {
-  const auth = await requireApiAdmin(request);
+  const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
   const { supabase } = auth;
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireApiAdmin(request);
+  const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
   const raw = await readJsonBody(request);
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const auth = await requireApiAdmin(request);
+  const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
   const raw = await readJsonBody(request);
@@ -60,9 +60,7 @@ export async function PATCH(request: Request) {
   if (!parsed.success) return jsonZodError(parsed.error);
 
   const { id, ...updateFields } = parsed.data;
-  const cleaned = Object.fromEntries(
-    Object.entries(updateFields).filter(([, v]) => v !== undefined)
-  );
+  const cleaned = Object.fromEntries(Object.entries(updateFields).filter(([, v]) => v !== undefined));
 
   const { supabase } = auth;
 
@@ -79,7 +77,7 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const auth = await requireApiAdmin(request);
+  const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
   const { supabase } = auth;
@@ -99,10 +97,7 @@ export async function DELETE(request: Request) {
   const id = idParsed.data;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
-    .from('journey_steps')
-    .delete()
-    .eq('id', id);
+  const { error } = await (supabase as any).from('journey_steps').delete().eq('id', id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });

@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
-import { createClient } from '../../lib/supabase/server';
-import { ensureAdminServer } from '../../lib/auth/ensure-admin-server';
-import { AdminShell } from '../../components/admin/AdminShell';
+import { createClient } from '@/lib/supabase/server';
+import { ensureOpsAdminServer } from '@/lib/auth/ensure-ops-admin-server';
+import { AdminShell } from '@/components/admin/AdminShell';
 
 export const metadata: Metadata = {
-  title: 'פאנל ניהול | NuraWell',
+  title: 'פאנל ניהול',
+  robots: { index: false, follow: false },
 };
 
 function firstNameFromFullName(fullName: string | null | undefined): string {
@@ -13,8 +14,8 @@ function firstNameFromFullName(fullName: string | null | undefined): string {
   return t.split(/\s+/)[0] ?? '';
 }
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  await ensureAdminServer();
+export default async function OpsLayout({ children }: { children: React.ReactNode }) {
+  await ensureOpsAdminServer();
 
   const supabase = await createClient();
   const {

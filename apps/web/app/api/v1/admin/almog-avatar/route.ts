@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server';
 import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { requireApiAdmin } from '../../../../../lib/api/route-guards';
+import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import {
   almogCdnHostname,
   getAlmogAvatarUrl,
   resolveAlmogPublicBaseUrl,
   resolveCdnImagesPrefix,
-} from '../../../../../lib/ai/almog-avatar';
+} from '@/lib/ai/almog-avatar';
 import {
   ALMOG_AVATAR_LEGACY_KEYS,
   ALMOG_AVATAR_OBJECT_KEY,
   getR2Client,
   r2ImageBucketName,
-} from '../../../../../lib/storage/r2-almog';
+} from '@/lib/storage/r2-almog';
 
 /** Client sends pre-compressed WebP; keep margin under Vercel ~4.5MB body limit. */
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
@@ -26,7 +26,7 @@ function isWebpBuffer(buf: Buffer): boolean {
 }
 
 export async function GET(request: Request) {
-  const auth = await requireApiAdmin(request);
+  const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
   const cdnBase = resolveAlmogPublicBaseUrl();
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireApiAdmin(request);
+  const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
   try {
@@ -105,7 +105,6 @@ export async function POST(request: Request) {
       })
     );
 
-    // Verify write succeeded in the exact key/bucket the UI expects.
     await s3.send(
       new HeadObjectCommand({
         Bucket: bucket,

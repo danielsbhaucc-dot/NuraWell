@@ -1,8 +1,8 @@
-import { AdminAlmogAvatarPanel } from '../../../components/admin/AdminAlmogAvatarPanel';
+import { AdminAlmogAvatarPanel } from '@/components/admin/AdminAlmogAvatarPanel';
 
 export const dynamic = 'force-dynamic';
 
-export default function AdminAlmogPage() {
+export default function OpsAlmogPage() {
   return (
     <div className="space-y-6 sm:space-y-8">
       <div>

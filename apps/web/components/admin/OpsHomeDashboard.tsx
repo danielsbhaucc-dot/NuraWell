@@ -1,21 +1,17 @@
+'use client';
+
 import Link from 'next/link';
-import { createClient } from '../../lib/supabase/server';
-import type { JourneyStep } from '../../lib/types/journey';
+import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Route, Sparkles } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+type OpsHomeDashboardProps = {
+  publishedCount: number;
+  totalSteps: number;
+};
 
-export default async function AdminPage() {
-  const supabase = await createClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: steps } = await (supabase as any)
-    .from('journey_steps')
-    .select('id,is_published')
-    .order('step_number');
-
-  const list = (steps as Pick<JourneyStep, 'id' | 'is_published'>[]) || [];
-  const publishedCount = list.filter((s) => s.is_published).length;
+export function OpsHomeDashboard({ publishedCount, totalSteps }: OpsHomeDashboardProps) {
+  const pathname = usePathname() ?? '';
+  const opsBase = pathname.startsWith('/ops') ? '/ops' : '';
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -33,12 +29,12 @@ export default async function AdminPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
         <div className="rounded-3xl border border-white/35 bg-white/40 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.1)] backdrop-blur-xl transition-all active:scale-[0.99] sm:p-5 sm:hover:border-emerald-300/40 sm:hover:shadow-[0_12px_44px_rgba(16,185,129,0.18)]">
           <p className="text-sm font-semibold text-slate-600">צעדים במסע</p>
-          <p className="mt-1 text-3xl font-black tabular-nums text-slate-900">{list.length}</p>
+          <p className="mt-1 text-3xl font-black tabular-nums text-slate-900">{totalSteps}</p>
           <p className="mt-2 text-xs text-slate-500">{publishedCount} פורסמו ללקוחות</p>
         </div>
 
         <Link
-          href="/admin/journey"
+          href={opsBase ? `${opsBase}/journey` : '/journey'}
           className="group block rounded-3xl border border-emerald-400/25 bg-gradient-to-br from-emerald-900/15 via-emerald-800/10 to-teal-900/20 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-all active:scale-[0.99] sm:p-5 sm:hover:border-emerald-400/45 sm:hover:shadow-[0_12px_44px_rgba(16,185,129,0.22)]"
         >
           <div className="flex items-start justify-between gap-3">
@@ -54,7 +50,7 @@ export default async function AdminPage() {
         </Link>
 
         <Link
-          href="/admin/almog"
+          href={opsBase ? `${opsBase}/almog` : '/almog'}
           className="group block rounded-3xl border border-slate-400/25 bg-gradient-to-br from-slate-800/12 via-slate-700/10 to-slate-900/18 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-all active:scale-[0.99] sm:col-span-2 sm:p-5 sm:hover:border-slate-500/35 sm:hover:shadow-[0_12px_44px_rgba(15,23,42,0.18)]"
         >
           <div className="flex items-start justify-between gap-3">

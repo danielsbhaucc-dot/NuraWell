@@ -9,6 +9,9 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   env: {
+    NEXT_PUBLIC_OPS_HOSTNAME: process.env.NEXT_PUBLIC_OPS_HOSTNAME || '',
+    NEXT_PUBLIC_OPS_URL: process.env.NEXT_PUBLIC_OPS_URL || '',
+    NEXT_PUBLIC_AUTH_COOKIE_DOMAIN: process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN || '',
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
     NEXT_PUBLIC_BUNNY_PULL_ORIGIN:

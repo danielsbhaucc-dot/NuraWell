@@ -1,4 +1,4 @@
-import { StepEditor } from '../../../../components/admin/StepEditor';
+import { StepEditor } from '@/components/admin/StepEditor';
 
 export const dynamic = 'force-dynamic';
 

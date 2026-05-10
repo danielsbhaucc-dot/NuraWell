@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { Database } from '../types/database';
+import { mergeAuthCookieOptions } from './cookie-options';
 
 /**
  * Create a Supabase client for server components/actions
@@ -19,14 +20,14 @@ export async function createClient() {
         },
         set(name: string, value: string, options: CookieOptions) {
           try {
-            cookieStore.set({ name, value, ...options });
+            cookieStore.set(mergeAuthCookieOptions({ name, value, ...options }));
           } catch (error) {
             // Handle middleware context
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
-            cookieStore.set({ name, value: '', ...options });
+            cookieStore.set(mergeAuthCookieOptions({ name, value: '', ...options }));
           } catch (error) {
             // Handle middleware context
           }

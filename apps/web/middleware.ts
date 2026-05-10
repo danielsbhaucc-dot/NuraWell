@@ -1,8 +1,8 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { mergeAuthCookieOptions } from './lib/supabase/cookie-options';
+import { isOpsPreviewHostname, opsCanonicalHostname, requestHostname } from './lib/ops-host';
 
-// Public routes that don't require authentication
-// PWA / metadata routes must stay public — otherwise the browser gets an HTML login page and reports a manifest JSON syntax error.
 const PUBLIC_ROUTES = [
   '/',
   '/login',
@@ -14,117 +14,144 @@ const PUBLIC_ROUTES = [
   '/manifest.webmanifest',
 ];
 
-// Admin-only routes
-const ADMIN_ROUTES = ['/admin'];
+function copyCookies(from: NextResponse, to: NextResponse) {
+  from.cookies.getAll().forEach((c) => {
+    to.cookies.set(c);
+  });
+}
 
 export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  const pathname = request.nextUrl.pathname;
+  const hostHeader = request.headers.get('x-forwarded-host') || request.headers.get('host');
+  const incomingHost = requestHostname(hostHeader);
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-pathname', pathname);
+
+  const opsCanon = opsCanonicalHostname();
+  const isOpsHost = opsCanon !== '' && incomingHost === opsCanon;
+  const isPreviewOpsHost = isOpsPreviewHostname(hostHeader);
+  const effectiveOpsHost = isOpsHost || isPreviewOpsHost;
+  const isLocal = incomingHost === 'localhost' || incomingHost === '127.0.0.1';
 
   if (!supabaseUrl || !supabaseKey) {
     if (process.env.NODE_ENV === 'development') {
       // eslint-disable-next-line no-console
       console.warn('[middleware] Missing NEXT_PUBLIC_SUPABASE_* — skipping auth.');
     }
-    return NextResponse.next();
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   let response = NextResponse.next({
     request: {
-      headers: request.headers,
+      headers: requestHeaders,
     },
   });
 
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseKey,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          });
-        },
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    cookies: {
+      get(name: string) {
+        return request.cookies.get(name)?.value;
       },
+      set(name: string, value: string, options: CookieOptions) {
+        const merged = mergeAuthCookieOptions({ name, value, ...options });
+        request.cookies.set(merged);
+        response = NextResponse.next({
+          request: {
+            headers: requestHeaders,
+          },
+        });
+        response.cookies.set(merged);
+      },
+      remove(name: string, options: CookieOptions) {
+        const merged = mergeAuthCookieOptions({ name, value: '', ...options });
+        request.cookies.set(merged);
+        response = NextResponse.next({
+          request: {
+            headers: requestHeaders,
+          },
+        });
+        response.cookies.set(merged);
+      },
+    },
+  });
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  /** גישה ישירה ל־/ops מהדומיין הציבורי — כאילו לא קיים */
+  const canUseOpsPathPrefix =
+    (isLocal && process.env.NODE_ENV === 'development') || effectiveOpsHost;
+  if (pathname.startsWith('/ops') && !canUseOpsPathPrefix) {
+    return NextResponse.redirect(new URL('/courses', request.url));
+  }
+
+  const devOpsPath = Boolean(isLocal && process.env.NODE_ENV === 'development' && pathname.startsWith('/ops'));
+
+  const needsOpsGate =
+    devOpsPath ||
+    (effectiveOpsHost && !pathname.startsWith('/api') && !pathname.startsWith('/_next'));
+
+  const mainOrigin =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+    `${request.nextUrl.protocol}//${request.nextUrl.host}`;
+
+  if (needsOpsGate && !pathname.startsWith('/api')) {
+    if (!user) {
+      const loginUrl = new URL('/login', mainOrigin);
+      const back = `${request.nextUrl.protocol}//${incomingHost}${pathname}`;
+      loginUrl.searchParams.set('redirect', back);
+      return NextResponse.redirect(loginUrl);
     }
-  );
 
-  const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
 
-  const { pathname } = request.nextUrl;
+    if (!profile || profile.role !== 'admin') {
+      return NextResponse.redirect(new URL('/courses', mainOrigin));
+    }
+  }
 
-  // Check if route is public
+  /** Rewrite: ops.nurawell.ai/ → /ops, ops.nurawell.ai/journey → /ops/journey */
+  if (effectiveOpsHost && !pathname.startsWith('/api') && !pathname.startsWith('/_next')) {
+    const url = request.nextUrl.clone();
+    if (pathname === '/' || pathname === '') {
+      url.pathname = '/ops';
+    } else if (pathname.startsWith('/ops')) {
+      url.pathname = pathname;
+    } else {
+      url.pathname = `/ops${pathname}`;
+    }
+    const rewriteRes = NextResponse.rewrite(url, {
+      request: { headers: requestHeaders },
+    });
+    copyCookies(response, rewriteRes);
+    rewriteRes.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return rewriteRes;
+  }
+
   const isPublicRoute =
-    PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(`${route}/`)) ||
+    PUBLIC_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`)) ||
     pathname.startsWith('/api/') ||
     pathname.endsWith('.webmanifest');
 
-  // Check if route is admin-only
-  const isAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route));
-
-  // Redirect unauthenticated users from protected routes
   if (!user && !isPublicRoute) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Check admin role for admin routes
-  if (isAdminRoute && user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile || profile.role !== 'admin') {
-      return NextResponse.redirect(new URL('/courses', request.url));
-    }
-  }
-
-  // Redirect /dashboard to /courses
   if (pathname === '/dashboard') {
     return NextResponse.redirect(new URL('/courses', request.url));
   }
 
-  // Redirect authenticated users away from auth pages
   if (user && (pathname === '/login' || pathname === '/register')) {
     return NextResponse.redirect(new URL('/courses', request.url));
   }
 
-  // Fire-and-forget activity heartbeat for cron nudges.
   const isPageRequest = !pathname.startsWith('/api/');
   if (user && isPageRequest) {
     void (async () => {
@@ -134,7 +161,7 @@ export async function middleware(request: NextRequest) {
           .update({ last_active_at: new Date().toISOString() })
           .eq('id', user.id);
       } catch {
-        // Ignore heartbeat update failures.
+        /* ignore */
       }
     })();
   }
@@ -142,16 +169,8 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
-// Configure which routes use this middleware
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     '/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|webmanifest)$).*)',
   ],
 };

@@ -1,17 +1,14 @@
-import { createClient } from '../../../lib/supabase/server';
-import { AdminStepsList } from '../../../components/admin/AdminStepsList';
-import type { JourneyStep } from '../../../lib/types/journey';
+import { createClient } from '@/lib/supabase/server';
+import { AdminStepsList } from '@/components/admin/AdminStepsList';
+import type { JourneyStep } from '@/lib/types/journey';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminJourneyPage() {
+export default async function OpsJourneyPage() {
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: steps } = await (supabase as any)
-    .from('journey_steps')
-    .select('*')
-    .order('step_number');
+  const { data: steps } = await (supabase as any).from('journey_steps').select('*').order('step_number');
 
   return (
     <div>
