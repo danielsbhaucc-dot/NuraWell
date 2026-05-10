@@ -24,18 +24,28 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
     data: { user },
   } = await supabase.auth.getUser();
   let adminFirstName = '';
+  let adminDisplayName = 'מנהל';
+  let adminAvatarUrl: string | null = null;
   if (user) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profile } = await (supabase as any)
       .from('profiles')
-      .select('full_name')
+      .select('full_name, avatar_url')
       .eq('id', user.id)
       .single();
     adminFirstName = firstNameFromFullName(profile?.full_name as string | null);
+    const full = (profile?.full_name as string | null)?.trim();
+    if (full) adminDisplayName = full;
+    adminAvatarUrl = (profile?.avatar_url as string | null) ?? null;
   }
 
   return (
-    <AdminShell adminFirstName={adminFirstName} mainAppBase={mainAppBase}>
+    <AdminShell
+      adminFirstName={adminFirstName}
+      adminDisplayName={adminDisplayName}
+      adminAvatarUrl={adminAvatarUrl}
+      mainAppBase={mainAppBase}
+    >
       {children}
     </AdminShell>
   );
