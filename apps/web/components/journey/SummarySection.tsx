@@ -53,6 +53,8 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
     return 'כדאי לצפות שוב ולנסות שוב 💪';
   };
 
+  const WEEKDAY_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'] as const;
+
   const getHabitFrequencyLabel = (frequency: 'daily' | 'weekly' | 'per_meal') => {
     if (frequency === 'daily') return 'יומי';
     if (frequency === 'weekly') return 'שבועי';
@@ -435,6 +437,12 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                             }}
                           >
                             תדירות · {getHabitFrequencyLabel(habit.frequency)}
+                            {habit.frequency === 'weekly' &&
+                            typeof habit.weekly_day === 'number' &&
+                            habit.weekly_day >= 0 &&
+                            habit.weekly_day <= 6
+                              ? ` · יום ${WEEKDAY_HE[habit.weekly_day]}`
+                              : ''}
                           </span>
                         </div>
                       </div>

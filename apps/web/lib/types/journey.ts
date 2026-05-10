@@ -82,6 +82,8 @@ export interface JourneyHabit {
   description: string | null;
   emoji: string;
   frequency: 'daily' | 'weekly' | 'per_meal';
+  /** יום בשבוע לבדיקות שבועיות — 0=ראשון … 6=שבת (אזור ירושלים) */
+  weekly_day?: number | null;
 }
 
 export type JourneyTaskDecisionStatus = 'accepted' | 'rejected' | 'pending';
