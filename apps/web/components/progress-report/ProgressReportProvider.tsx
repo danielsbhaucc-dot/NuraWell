@@ -90,7 +90,7 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
       if (!ts || ts.status !== 'accepted') return;
       setSaving(taskId);
       try {
-        await fetch('/api/v1/journey-progress', {
+        const res = await fetch('/api/v1/journey-progress', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -104,6 +104,13 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
             },
           }),
         });
+        if (res.ok && done) {
+          void fetch('/api/v1/almog-task-celebration', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ step_id: stepId, task_id: taskId }),
+          }).catch(() => {});
+        }
         await load();
       } finally {
         setSaving(null);
