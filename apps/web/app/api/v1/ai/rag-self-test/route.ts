@@ -4,6 +4,8 @@ import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { ingestUserMessageIntoVectorMemory, previewVectorMemoryIngest } from '../../../../../lib/ai/vector-memory-ingest';
 
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
+export const preferredRegion = 'fra1';
 
 const bodySchema = z.object({
   message: z.string().min(1),

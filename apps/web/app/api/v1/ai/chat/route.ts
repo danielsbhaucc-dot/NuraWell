@@ -30,6 +30,15 @@ import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route
 /** Vercel Edge — סטרימינג צ׳אט ו-TTFB נמוך קרוב ל-POP הגלובלי */
 export const runtime = 'edge';
 
+/** לא נשמרים סטטיים; תמיד ריצה צינורית עם cookies */
+export const dynamic = 'force-dynamic';
+
+/**
+ * אזור קרוב ל-EU (מתאים לישראל/אירופה מול Supabase EU וספקי AI).
+ * ניתן לשנות בפרויקט אם ה-DB באזור אחר.
+ */
+export const preferredRegion = 'fra1';
+
 const chatBodySchema = z.object({
   /** `useChat` sends UI messages (with parts). Keep it flexible. */
   messages: z.array(z.unknown()),
@@ -236,6 +245,36 @@ function normalizeTaskStatuses(value: unknown): Record<string, TaskDecisionStatu
   return out;
 }
 
+async function fetchChatProfileRow(
+  supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
+  userId: string
+): Promise<{
+  full_name: string | null;
+  gender: 'male' | 'female' | null;
+  mood_signal: string | undefined;
+}> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from('profiles')
+      .select('full_name, gender, ai_context')
+      .eq('id', userId)
+      .maybeSingle();
+    const profile = (data ?? null) as {
+      full_name?: string | null;
+      gender?: 'male' | 'female' | null;
+      ai_context?: { current_mood_signal?: string } | null;
+    } | null;
+    return {
+      full_name: profile?.full_name ?? null,
+      gender: profile?.gender ?? null,
+      mood_signal: profile?.ai_context?.current_mood_signal,
+    };
+  } catch {
+    return { full_name: null, gender: null, mood_signal: undefined };
+  }
+}
+
 async function getActiveJourneyContext(
   supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
   userId: string
@@ -433,79 +472,66 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: 'Forbidden: user_id does not match session' }), { status: 403 });
   }
 
-  const sessionId = parsed.data.session_id ?? crypto.randomUUID();
-  const legacyJsonMemoryPrompt = isLegacyJsonMemoryPromptEnabled();
-  const memoryToolEnabled = isAiMemorySyncEnabled() && legacyJsonMemoryPrompt;
-
-  let userMemory: UserAiMemory = EMPTY_MEMORY;
-  let profileFullName: string | null = null;
-  let profileGender: 'male' | 'female' | null = null;
-  let profileMoodSignal: string | undefined;
-  let activeJourneyContext: ActiveJourneyContext = null;
-  if (legacyJsonMemoryPrompt) {
-    try {
-      userMemory = await getUserAiMemory(supabase, user.id);
-    } catch (memoryErr) {
-      console.warn('[ai/chat]', {
-        debug_id: debugId,
-        stage: 'memory_read_failed',
-        error: memoryErr instanceof Error ? memoryErr.message : String(memoryErr),
-      });
-    }
-  }
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
-      .from('profiles')
-      .select('full_name, gender, ai_context')
-      .eq('id', user.id)
-      .maybeSingle();
-    const profile = (data ?? null) as {
-      full_name?: string | null;
-      gender?: 'male' | 'female' | null;
-      ai_context?: { current_mood_signal?: string } | null;
-    } | null;
-    profileFullName = profile?.full_name ?? null;
-    profileGender = profile?.gender ?? null;
-    profileMoodSignal = profile?.ai_context?.current_mood_signal;
-  } catch (profileErr) {
-    console.warn('[ai/chat]', {
-      debug_id: debugId,
-      stage: 'profile_read_failed',
-      error: profileErr instanceof Error ? profileErr.message : String(profileErr),
-    });
-  }
-  try {
-    activeJourneyContext = await getActiveJourneyContext(supabase, user.id);
-  } catch (journeyCtxErr) {
-    console.warn('[ai/chat]', {
-      debug_id: debugId,
-      stage: 'journey_context_read_failed',
-      error: journeyCtxErr instanceof Error ? journeyCtxErr.message : String(journeyCtxErr),
-    });
-  }
-
   const lastUser = [...messages]
     .reverse()
     .find((m) => uiMessageRole(m) === 'user');
   const lastUserText = uiMessageText(lastUser).trim();
-  if (lastUserText) {
-    stage = 'insert_user_interaction';
-    await insertAiInteraction(supabase, {
-      user_id: user.id,
-      session_id: sessionId,
-      role: 'user',
-      content: lastUserText,
-      model_name: 'openai/gpt-5-mini',
-      metadata: { edge: true },
-    });
-  }
-
   if (!lastUserText) {
     console.error('[ai/chat]', { debug_id: debugId, stage: 'empty_message' });
     return new Response(JSON.stringify({ error: 'Empty user message' }), { status: 400 });
   }
   stage = 'message_ok';
+
+  const sessionId = parsed.data.session_id ?? crypto.randomUUID();
+  const legacyJsonMemoryPrompt = isLegacyJsonMemoryPromptEnabled();
+  const memoryToolEnabled = isAiMemorySyncEnabled() && legacyJsonMemoryPrompt;
+
+  /** זיכרון + פרופיל + journey + רישום user בקריאות מקבילות — פחות זמן עד streamText */
+  const memoryPromise = legacyJsonMemoryPrompt
+    ? getUserAiMemory(supabase, user.id).catch((memoryErr) => {
+        console.warn('[ai/chat]', {
+          debug_id: debugId,
+          stage: 'memory_read_failed',
+          error: memoryErr instanceof Error ? memoryErr.message : String(memoryErr),
+        });
+        return EMPTY_MEMORY;
+      })
+    : Promise.resolve(EMPTY_MEMORY);
+
+  const journeyPromise = getActiveJourneyContext(supabase, user.id).catch((journeyCtxErr) => {
+    console.warn('[ai/chat]', {
+      debug_id: debugId,
+      stage: 'journey_context_read_failed',
+      error: journeyCtxErr instanceof Error ? journeyCtxErr.message : String(journeyCtxErr),
+    });
+    return null;
+  });
+
+  const insertPromise = insertAiInteraction(supabase, {
+    user_id: user.id,
+    session_id: sessionId,
+    role: 'user',
+    content: lastUserText,
+    model_name: 'openai/gpt-5-mini',
+    metadata: { edge: true },
+  }).catch((persistErr) => {
+    console.warn('[ai/chat]', {
+      debug_id: debugId,
+      stage: 'persist_user_turn_failed',
+      error: persistErr instanceof Error ? persistErr.message : String(persistErr),
+    });
+  });
+
+  const [userMemory, profileRow, activeJourneyContext] = await Promise.all([
+    memoryPromise,
+    fetchChatProfileRow(supabase, user.id),
+    journeyPromise,
+    insertPromise,
+  ]);
+
+  const profileFullName = profileRow.full_name;
+  const profileGender = profileRow.gender;
+  const profileMoodSignal = profileRow.mood_signal;
 
   const recentMessages = messages
     .map((m) => {

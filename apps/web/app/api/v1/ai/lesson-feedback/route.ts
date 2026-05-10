@@ -9,6 +9,8 @@ import { requireApiSession } from '../../../../../lib/api/route-guards';
 
 /** Vercel Edge — תגובת משוב AI מהירה */
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
+export const preferredRegion = 'fra1';
 
 const lessonFeedbackSchema = z.object({
   step_id: z.string().uuid().optional(),

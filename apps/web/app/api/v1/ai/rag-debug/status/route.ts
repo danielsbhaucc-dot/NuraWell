@@ -2,6 +2,8 @@ import { requireApiSession } from '../../../../../../lib/api/route-guards';
 import { isUpstashVectorConfigured } from '../../../../../../lib/ai/upstash-vector-rest';
 
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
+export const preferredRegion = 'fra1';
 
 async function upstashPing(): Promise<{ ok: boolean; error?: string }> {
   if (!isUpstashVectorConfigured()) {
