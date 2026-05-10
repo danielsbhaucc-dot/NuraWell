@@ -276,7 +276,10 @@ export function QuizSection({ questions, existingAnswers, onComplete, onResetQui
           style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}
         >
           <div className="px-5 py-4" style={{ background: 'linear-gradient(145deg, #047857, #059669, #10b981)' }}>
-            <h3 className="text-lg font-black leading-snug text-white">
+            <h3
+              className="text-lg font-black leading-snug text-white tracking-tight"
+              style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+            >
               {question.question}
             </h3>
           </div>

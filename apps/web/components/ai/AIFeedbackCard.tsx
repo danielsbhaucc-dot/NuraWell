@@ -8,7 +8,7 @@ import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 export type AIFeedbackCardVariant = 'emerald' | 'amber';
 
 export interface AIFeedbackCardProps {
-  /** Shown above the body (default: מילה מאלמוג) */
+  /** כותרת אופציונלית מעל גוף הטקסט */
   title?: string;
   loading: boolean;
   /** Almog reply text; ignored while loading unless error */
@@ -44,7 +44,7 @@ const variantStyles: Record<
 };
 
 export function AIFeedbackCard({
-  title = 'מילה מאלמוג',
+  title = '',
   loading,
   text,
   error = false,
@@ -54,6 +54,7 @@ export function AIFeedbackCard({
 }: AIFeedbackCardProps) {
   const v = variantStyles[variant];
   const { avatarUrl: avatarSrc } = useAlmogAvatarUrl();
+  const titleTrim = title.trim();
 
   return (
     <motion.div
@@ -68,7 +69,10 @@ export function AIFeedbackCard({
         boxShadow: v.shadow,
       }}
     >
-      <div className="flex items-center gap-3 px-4 py-3.5" style={{ background: v.headerBar }}>
+      <div
+        className={`flex items-center gap-3 px-4 ${titleTrim ? 'py-3.5' : 'py-3'}`}
+        style={{ background: v.headerBar }}
+      >
         <img
           src={avatarSrc}
           alt="אלמוג"
@@ -78,12 +82,19 @@ export function AIFeedbackCard({
             e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
           }}
         />
-        <div className="min-w-0 flex-1 text-right">
-          <p className={`text-[15px] font-black leading-tight ${v.title}`} style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
-            {title}
-          </p>
-          <p className={`mt-0.5 text-[11px] font-semibold ${v.subtitle}`}>אלמוג · מנטור אישי</p>
-        </div>
+        {titleTrim ? (
+          <div className="min-w-0 flex-1 text-right">
+            <p
+              className={`text-[15px] font-black leading-tight ${v.title}`}
+              style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+            >
+              {titleTrim}
+            </p>
+            <p className={`mt-0.5 text-[11px] font-semibold ${v.subtitle}`}>אלמוג · מנטור אישי</p>
+          </div>
+        ) : (
+          <span className="sr-only">משוב מאלמוג</span>
+        )}
       </div>
 
       <div className="px-4 py-4">
