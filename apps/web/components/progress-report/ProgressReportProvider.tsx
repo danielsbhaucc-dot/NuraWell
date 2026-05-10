@@ -30,6 +30,9 @@ type ReportStep = {
 
 type JourneyReportResponse = { steps: ReportStep[] };
 
+/** כרטיסיית ראשית במגירת הדיווח — עדכון ביצוע משימות; השנייה — הרגלים */
+export type ProgressReportTabId = 'task_execution' | 'habits';
+
 function parseItems(raw: unknown): { id: string; title: string }[] {
   if (!Array.isArray(raw)) return [];
   return raw
@@ -45,7 +48,8 @@ function parseItems(raw: unknown): { id: string; title: string }[] {
 }
 
 type ProgressReportContextValue = {
-  open: () => void;
+  /** פותח את המגירה; אופציונלי — כרטיסייה ראשונה (ברירת מחדל: עדכון ביצוע משימות) */
+  open: (tab?: ProgressReportTabId) => void;
   close: () => void;
   isOpen: boolean;
 };
@@ -60,6 +64,7 @@ export function useProgressReport(): ProgressReportContextValue {
 
 export function ProgressReportProvider({ userId: _userId, children }: { userId: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<ProgressReportTabId>('task_execution');
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<JourneyReportResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -142,7 +147,10 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
   );
 
   const value: ProgressReportContextValue = {
-    open: () => setOpen(true),
+    open: (tab) => {
+      setActiveTab(tab ?? 'task_execution');
+      setOpen(true);
+    },
     close: () => setOpen(false),
     isOpen: open,
   };
@@ -177,7 +185,7 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
             </div>
 
             <div
-              className="shrink-0 px-4 pb-3 text-right"
+              className="shrink-0 px-4 pb-2 text-right"
               style={{ borderBottom: '1px solid rgba(6,78,59,0.08)' }}
             >
               <div className="flex items-center gap-2 justify-end">
@@ -192,13 +200,46 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                     דיווח מהיר
                   </p>
                   <p className="text-xs font-semibold text-emerald-900/70">
-                    סמן משימות מקובלות והרגלים — מותאם למובייל
+                    בחרו כרטיסייה — עדכון משימות או מעקב הרגלים
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-8 pt-3 scrollbar-hide">
+            <div
+              className="shrink-0 flex gap-2 px-3 pt-3 pb-2"
+              role="tablist"
+              aria-label="סוג דיווח"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'task_execution'}
+                onClick={() => setActiveTab('task_execution')}
+                className={`min-h-10 flex-1 rounded-2xl px-2 py-2 text-center text-[11px] font-black leading-tight transition sm:text-xs ${
+                  activeTab === 'task_execution'
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/20'
+                    : 'bg-white/55 text-emerald-900/85 ring-1 ring-emerald-900/10'
+                }`}
+              >
+                עדכון ביצוע משימות
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'habits'}
+                onClick={() => setActiveTab('habits')}
+                className={`min-h-10 flex-1 rounded-2xl px-2 py-2 text-center text-[11px] font-black leading-tight transition sm:text-xs ${
+                  activeTab === 'habits'
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/20'
+                    : 'bg-white/55 text-emerald-900/85 ring-1 ring-emerald-900/10'
+                }`}
+              >
+                מעקב הרגלים
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-8 pt-1 scrollbar-hide">
               {loading && (
                 <div className="flex justify-center py-16 text-emerald-800">
                   <Loader2 className="h-8 w-8 animate-spin" />
@@ -209,129 +250,163 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
               )}
               {!loading && !error && data && (
                 <div className="space-y-5 pb-4">
-                  {data.steps.map((step) => {
-                    const tasks = parseItems(step.tasks);
-                    const habits = parseItems(step.habits);
-                    const prog = step.progress;
-                    const acceptedTasks = tasks.filter((t) => prog?.task_statuses?.[t.id]?.status === 'accepted');
-
-                    if (acceptedTasks.length === 0 && habits.length === 0) return null;
-
-                    return (
-                      <div
-                        key={step.id}
-                        className="rounded-[22px] p-[1px]"
-                        style={{
-                          background:
-                            'linear-gradient(145deg, rgba(52,211,153,0.45), rgba(167,243,208,0.25), rgba(255,255,255,0.65))',
-                        }}
-                      >
-                        <div
-                          className="rounded-[21px] px-3 py-3"
-                          style={{
-                            background: 'rgba(255,255,255,0.55)',
-                            border: '1px solid rgba(255,255,255,0.65)',
-                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)',
-                          }}
-                        >
-                          <div className="flex items-center gap-2 justify-end mb-3">
-                            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
-                            <h3 className="text-sm font-black text-[#1A1730] truncate">
-                              צעד {step.step_number}: {step.title}
-                            </h3>
+                  {activeTab === 'task_execution' && (
+                    <>
+                      {data.steps.map((step) => {
+                        const tasks = parseItems(step.tasks);
+                        const prog = step.progress;
+                        const acceptedTasks = tasks.filter((t) => prog?.task_statuses?.[t.id]?.status === 'accepted');
+                        if (acceptedTasks.length === 0) return null;
+                        return (
+                          <div
+                            key={step.id}
+                            className="rounded-[22px] p-[1px]"
+                            style={{
+                              background:
+                                'linear-gradient(145deg, rgba(52,211,153,0.45), rgba(167,243,208,0.25), rgba(255,255,255,0.65))',
+                            }}
+                          >
+                            <div
+                              className="rounded-[21px] px-3 py-3"
+                              style={{
+                                background: 'rgba(255,255,255,0.55)',
+                                border: '1px solid rgba(255,255,255,0.65)',
+                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)',
+                              }}
+                            >
+                              <div className="flex items-center gap-2 justify-end mb-3">
+                                <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+                                <h3 className="text-sm font-black text-[#1A1730] truncate">
+                                  צעד {step.step_number}: {step.title}
+                                </h3>
+                              </div>
+                              <div className="space-y-2">
+                                <p className="text-[11px] font-bold text-emerald-800/80 text-right">משימות שקיבלת</p>
+                                {acceptedTasks.map((t) => {
+                                  const done = prog?.task_statuses?.[t.id]?.execution_done === true;
+                                  const busy = saving === t.id;
+                                  const emoji = emojiFromWellnessText(t.title, '✅');
+                                  return (
+                                    <label
+                                      key={t.id}
+                                      className="flex items-center gap-3 rounded-2xl px-3 py-2.5 cursor-pointer transition active:scale-[0.99]"
+                                      style={{
+                                        background: 'rgba(255,255,255,0.72)',
+                                        border: '1px solid rgba(16,185,129,0.22)',
+                                      }}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        className="h-5 w-5 accent-emerald-600 shrink-0"
+                                        checked={done}
+                                        disabled={busy}
+                                        onChange={(e) =>
+                                          void saveTaskExecution(step.id, t.id, e.target.checked, prog ?? null)
+                                        }
+                                      />
+                                      <span className="text-xl shrink-0" aria-hidden>
+                                        {emoji}
+                                      </span>
+                                      <span className="flex-1 text-right text-sm font-bold text-[#1A1730] leading-snug">
+                                        {t.title}
+                                      </span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           </div>
+                        );
+                      })}
+                      {data.steps.every((s) => {
+                        const tasks = parseItems(s.tasks);
+                        const accepted = tasks.filter((t) => s.progress?.task_statuses?.[t.id]?.status === 'accepted');
+                        return accepted.length === 0;
+                      }) && (
+                        <p className="text-center text-sm text-emerald-900/70 py-12 px-4 leading-relaxed">
+                          אין משימות שסימנתם כמקובלות. בסיכום השיעור לחצו &quot;מקובל עליי&quot; — ואז תוכלו לדווח כאן על ביצוע.
+                        </p>
+                      )}
+                    </>
+                  )}
 
-                          {acceptedTasks.length > 0 && (
-                            <div className="space-y-2 mb-4">
-                              <p className="text-[11px] font-bold text-emerald-800/80 text-right">משימות שקיבלת</p>
-                              {acceptedTasks.map((t) => {
-                                const done = prog?.task_statuses?.[t.id]?.execution_done === true;
-                                const busy = saving === t.id;
-                                const emoji = emojiFromWellnessText(t.title, '✅');
-                                return (
-                                  <label
-                                    key={t.id}
-                                    className="flex items-center gap-3 rounded-2xl px-3 py-2.5 cursor-pointer transition active:scale-[0.99]"
-                                    style={{
-                                      background: 'rgba(255,255,255,0.72)',
-                                      border: '1px solid rgba(16,185,129,0.22)',
-                                    }}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      className="h-5 w-5 accent-emerald-600 shrink-0"
-                                      checked={done}
-                                      disabled={busy}
-                                      onChange={(e) =>
-                                        void saveTaskExecution(step.id, t.id, e.target.checked, prog ?? null)
-                                      }
-                                    />
-                                    <span className="text-xl shrink-0" aria-hidden>
-                                      {emoji}
-                                    </span>
-                                    <span className="flex-1 text-right text-sm font-bold text-[#1A1730] leading-snug">
-                                      {t.title}
-                                    </span>
-                                  </label>
-                                );
-                              })}
+                  {activeTab === 'habits' && (
+                    <>
+                      {data.steps.map((step) => {
+                        const habits = parseItems(step.habits);
+                        const prog = step.progress;
+                        if (habits.length === 0) return null;
+                        return (
+                          <div
+                            key={step.id}
+                            className="rounded-[22px] p-[1px]"
+                            style={{
+                              background:
+                                'linear-gradient(145deg, rgba(52,211,153,0.45), rgba(167,243,208,0.25), rgba(255,255,255,0.65))',
+                            }}
+                          >
+                            <div
+                              className="rounded-[21px] px-3 py-3"
+                              style={{
+                                background: 'rgba(255,255,255,0.55)',
+                                border: '1px solid rgba(255,255,255,0.65)',
+                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)',
+                              }}
+                            >
+                              <div className="flex items-center gap-2 justify-end mb-3">
+                                <Leaf className="h-4 w-4 text-emerald-600 shrink-0" />
+                                <h3 className="text-sm font-black text-[#1A1730] truncate">
+                                  צעד {step.step_number}: {step.title}
+                                </h3>
+                              </div>
+                              <div className="space-y-2">
+                                <p className="text-[11px] font-bold text-emerald-800/80 text-right flex items-center justify-end gap-1">
+                                  <Leaf className="h-3.5 w-3.5" />
+                                  הרגלים בצעד
+                                </p>
+                                {habits.map((h) => {
+                                  const arr = prog?.habits_progress?.[h.id];
+                                  const done = Array.isArray(arr) && arr.some(Boolean);
+                                  const busy = saving === h.id;
+                                  const emoji = emojiFromWellnessText(h.title, '🌿');
+                                  return (
+                                    <label
+                                      key={h.id}
+                                      className="flex items-center gap-3 rounded-2xl px-3 py-2.5 cursor-pointer transition active:scale-[0.99]"
+                                      style={{
+                                        background: 'rgba(236,253,245,0.65)',
+                                        border: '1px solid rgba(16,185,129,0.2)',
+                                      }}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        className="h-5 w-5 accent-emerald-600 shrink-0"
+                                        checked={done}
+                                        disabled={busy}
+                                        onChange={(e) =>
+                                          void saveHabitToggle(step.id, h.id, e.target.checked, prog ?? null)
+                                        }
+                                      />
+                                      <span className="text-xl shrink-0" aria-hidden>
+                                        {emoji}
+                                      </span>
+                                      <span className="flex-1 text-right text-sm font-bold text-[#1A1730] leading-snug">
+                                        {h.title}
+                                      </span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          )}
-
-                          {habits.length > 0 && (
-                            <div className="space-y-2">
-                              <p className="text-[11px] font-bold text-emerald-800/80 text-right flex items-center justify-end gap-1">
-                                <Leaf className="h-3.5 w-3.5" />
-                                הרגלים בצעד
-                              </p>
-                              {habits.map((h) => {
-                                const arr = prog?.habits_progress?.[h.id];
-                                const done = Array.isArray(arr) && arr.some(Boolean);
-                                const busy = saving === h.id;
-                                const emoji = emojiFromWellnessText(h.title, '🌿');
-                                return (
-                                  <label
-                                    key={h.id}
-                                    className="flex items-center gap-3 rounded-2xl px-3 py-2.5 cursor-pointer transition active:scale-[0.99]"
-                                    style={{
-                                      background: 'rgba(236,253,245,0.65)',
-                                      border: '1px solid rgba(16,185,129,0.2)',
-                                    }}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      className="h-5 w-5 accent-emerald-600 shrink-0"
-                                      checked={done}
-                                      disabled={busy}
-                                      onChange={(e) =>
-                                        void saveHabitToggle(step.id, h.id, e.target.checked, prog ?? null)
-                                      }
-                                    />
-                                    <span className="text-xl shrink-0" aria-hidden>
-                                      {emoji}
-                                    </span>
-                                    <span className="flex-1 text-right text-sm font-bold text-[#1A1730] leading-snug">
-                                      {h.title}
-                                    </span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {data.steps.every((s) => {
-                    const tasks = parseItems(s.tasks);
-                    const habits = parseItems(s.habits);
-                    const accepted = tasks.filter((t) => s.progress?.task_statuses?.[t.id]?.status === 'accepted');
-                    return accepted.length === 0 && habits.length === 0;
-                  }) && (
-                    <p className="text-center text-sm text-emerald-900/70 py-12 px-4 leading-relaxed">
-                      אין עדיין משימות מקובלות או הרגלים להצגה. התקדמו בצעד במסע ואז יופיעו כאן אפשרויות דיווח.
-                    </p>
+                          </div>
+                        );
+                      })}
+                      {data.steps.every((s) => parseItems(s.habits).length === 0) && (
+                        <p className="text-center text-sm text-emerald-900/70 py-12 px-4 leading-relaxed">
+                          אין הרגלים מוגדרים בצעדי המסע כרגע.
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               )}
