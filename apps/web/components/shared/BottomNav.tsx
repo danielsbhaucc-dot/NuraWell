@@ -6,6 +6,7 @@ import { BookOpen, TrendingUp, UserCircle, Compass, Route } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { motion } from 'framer-motion';
 import { useEffect } from 'react';
+import { useProgressReport } from '../progress-report/ProgressReportProvider';
 
 const leftItems = [
   { href: '/courses',  label: 'קורסים',  icon: BookOpen   },
@@ -19,6 +20,7 @@ const rightItems = [
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const progressReport = useProgressReport();
 
   useEffect(() => {
     const fastRoutes = ['/courses', '/journey', '/progress', '/profile'];
@@ -30,9 +32,10 @@ export function BottomNav() {
       <div className="container-mobile relative">
         {/* Center raised button */}
         <div className="absolute left-1/2 -translate-x-1/2 -top-5 z-20">
-          <Link
-            href="/courses"
-            prefetch
+          <button
+            type="button"
+            aria-label="דיווח התקדמות וצפייה במשימות"
+            onClick={() => progressReport.open()}
             className="flex items-center justify-center no-tap-highlight touch-manipulation transition-transform hover:scale-105 active:scale-95"
             style={{
               width: '58px', height: '58px',
@@ -43,7 +46,7 @@ export function BottomNav() {
             }}
           >
             <Compass className="w-6 h-6 text-white" strokeWidth={2} />
-          </Link>
+          </button>
         </div>
 
         <div className="flex items-center justify-around py-1.5 px-1">

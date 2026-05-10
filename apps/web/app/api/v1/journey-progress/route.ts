@@ -18,9 +18,9 @@ function normalizeBooleanMap(value: unknown): Record<string, boolean> {
   return out;
 }
 
-function normalizeTaskStatuses(value: unknown): Record<string, { status: TaskDecisionStatus; decided_at: string | null; reason?: string | null }> {
+function normalizeTaskStatuses(value: unknown): Record<string, { status: TaskDecisionStatus; decided_at: string | null; reason?: string | null; execution_done?: boolean }> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-  const out: Record<string, { status: TaskDecisionStatus; decided_at: string | null; reason?: string | null }> = {};
+  const out: Record<string, { status: TaskDecisionStatus; decided_at: string | null; reason?: string | null; execution_done?: boolean }> = {};
   for (const [taskId, raw] of Object.entries(value as Record<string, unknown>)) {
     if (!taskId.trim() || !raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
     const row = raw as Record<string, unknown>;
@@ -30,6 +30,7 @@ function normalizeTaskStatuses(value: unknown): Record<string, { status: TaskDec
       status,
       decided_at: typeof row.decided_at === 'string' ? row.decided_at : null,
       reason: typeof row.reason === 'string' ? row.reason : null,
+      ...('execution_done' in row ? { execution_done: row.execution_done === true } : {}),
     };
   }
   return out;
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const auth = await requireApiSession(request);
     if (!auth.ok) return auth.response;

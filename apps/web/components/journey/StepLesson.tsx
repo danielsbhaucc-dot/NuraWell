@@ -262,6 +262,7 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
       [taskId]: {
         status,
         decided_at: nowIso,
+        execution_done: false as const,
       },
     };
     const nextTasksCompleted = {
@@ -272,6 +273,14 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
       task_statuses: nextTaskStatuses,
       tasks_completed: nextTasksCompleted,
     });
+
+    if (status === 'accepted') {
+      void fetch('/api/v1/almog-followup/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId }),
+      }).catch(() => {});
+    }
   }, [updateProgress]);
 
   const resetQuizProgress = useCallback(async () => {

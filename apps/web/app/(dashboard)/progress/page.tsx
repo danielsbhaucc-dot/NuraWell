@@ -100,6 +100,47 @@ export default async function ProgressPage() {
   });
   const currentStreak = streakDays.findIndex(d => !d);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawJourneySteps } = await (supabase as any)
+    .from('journey_steps')
+    .select('id, step_number, title, tasks, habits')
+    .eq('is_published', true)
+    .order('step_number');
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawJourneyProg } = await (supabase as any)
+    .from('journey_progress')
+    .select('step_id, is_completed, task_statuses, habits_progress, updated_at')
+    .eq('user_id', user.id);
+
+  const jSteps = (rawJourneySteps ?? []) as { id: string; step_number: number; title: string; tasks: unknown; habits: unknown }[];
+  const jProg = (rawJourneyProg ?? []) as {
+    step_id: string;
+    is_completed: boolean | null;
+    task_statuses: Record<string, { status?: string; execution_done?: boolean }> | null;
+    habits_progress: Record<string, boolean[]> | null;
+    updated_at: string;
+  }[];
+
+  const journeyStepsTotal = jSteps.length;
+  const journeyStepsCompleted = jProg.filter(p => p.is_completed).length;
+  let journeyTasksAccepted = 0;
+  let journeyTasksReportedDone = 0;
+  let journeyHabitChecks = 0;
+  for (const p of jProg) {
+    const ts = p.task_statuses ?? {};
+    for (const row of Object.values(ts)) {
+      if (row?.status === 'accepted') {
+        journeyTasksAccepted++;
+        if (row.execution_done === true) journeyTasksReportedDone++;
+      }
+    }
+    const hp = p.habits_progress ?? {};
+    for (const arr of Object.values(hp)) {
+      if (Array.isArray(arr) && arr.some(Boolean)) journeyHabitChecks++;
+    }
+  }
+
   return (
     <ProgressPageClient
       totalCompleted={totalCompleted}
@@ -108,6 +149,11 @@ export default async function ProgressPage() {
       currentStreak={currentStreak === -1 ? 7 : currentStreak}
       courseStats={courseStats}
       recentActivity={recentActivity}
+      journeyStepsTotal={journeyStepsTotal}
+      journeyStepsCompleted={journeyStepsCompleted}
+      journeyTasksAccepted={journeyTasksAccepted}
+      journeyTasksReportedDone={journeyTasksReportedDone}
+      journeyHabitChecks={journeyHabitChecks}
     />
   );
 }

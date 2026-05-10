@@ -16,6 +16,7 @@ import type {
 import Link from 'next/link';
 import { AlmogAvatarChip } from './AlmogPresence';
 import { isCommitmentGateResolved } from '../../lib/journey/commitment-gate';
+import { emojiFromWellnessText } from '../../lib/emoji-from-text';
 
 interface SummarySectionProps {
   step: JourneyStep;
@@ -207,6 +208,10 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               {step.tasks.map((task) => {
                 const decision = progress.task_statuses?.[task.id];
                 const status = decision?.status ?? 'pending';
+                const taskEmoji = emojiFromWellnessText(
+                  `${task.title} ${task.description ?? ''}`,
+                  task.emoji || '✨'
+                );
 
                 const ringGradient =
                   status === 'accepted'
@@ -249,7 +254,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                               }}
                               aria-hidden
                             >
-                              {task.emoji}
+                              {taskEmoji}
                             </div>
                             <div className="min-w-0 flex-1 text-right space-y-1.5">
                               <p className="font-black text-[15px] leading-snug text-[#1A1730] [overflow-wrap:anywhere] break-words">
@@ -293,7 +298,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                             </button>
                           </div>
 
-                          <div className="flex justify-end border-t border-white/35 px-3 py-2.5">
+                          <div className="flex justify-end flex-wrap gap-2 border-t border-white/35 px-3 py-2.5">
                             {status === 'accepted' && (
                               <span
                                 className="text-[10px] sm:text-[11px] font-bold tracking-wide text-emerald-900 bg-gradient-to-r from-emerald-50 to-teal-50/90 border border-emerald-300/50 rounded-full px-3 py-1.5 shadow-sm shadow-emerald-900/5"
@@ -313,6 +318,11 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                             {status === 'pending' && (
                               <span className="text-[10px] sm:text-[11px] font-semibold text-amber-950/95 bg-amber-100/85 border border-amber-300/55 rounded-full px-3 py-1.5 shadow-sm">
                                 נא לבחור למעלה
+                              </span>
+                            )}
+                            {status === 'accepted' && decision?.execution_done && (
+                              <span className="text-[10px] sm:text-[11px] font-bold text-teal-900 bg-teal-50/95 border border-teal-300/50 rounded-full px-3 py-1.5 shadow-sm">
+                                דווח: בוצע ✓
                               </span>
                             )}
                           </div>
@@ -336,66 +346,77 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               אלו ההרגלים של הצעד הזה. אלמוג יתבסס עליהם בשיחות שלך.
             </p>
             <div className="flex flex-col gap-4 max-w-lg mx-auto w-full min-w-0">
-              {step.habits.map((habit) => (
-                <div
-                  key={habit.id}
-                  className="w-full rounded-[22px] p-[1px] shrink-0"
-                  style={{
-                    background:
-                      'linear-gradient(145deg, rgba(52,211,153,0.55), rgba(167,243,208,0.35), rgba(255,255,255,0.65))',
-                  }}
-                >
+              {step.habits.map((habit) => {
+                const habitEmoji = emojiFromWellnessText(
+                  `${habit.title} ${habit.description ?? ''}`,
+                  habit.emoji || '🌿'
+                );
+                const shortTitle =
+                  habit.title.length > 42 ? `${habit.title.slice(0, 40)}…` : habit.title;
+                return (
                   <div
-                    className="rounded-[21px] overflow-hidden min-h-0 h-auto"
+                    key={habit.id}
+                    className="w-full rounded-[22px] p-[1px] shrink-0 overflow-hidden"
                     style={{
                       background:
-                        'linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(236,253,245,0.45) 55%, rgba(255,255,255,0.38) 100%)',
-                      backdropFilter: 'blur(22px) saturate(1.25)',
-                      WebkitBackdropFilter: 'blur(22px) saturate(1.25)',
-                      boxShadow:
-                        '0 16px 40px rgba(6,78,59,0.09), inset 0 1px 1px rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25)',
-                      border: '1px solid rgba(255,255,255,0.55)',
+                        'linear-gradient(135deg, rgba(16,185,129,0.5), rgba(167,243,208,0.35), rgba(255,255,255,0.55))',
+                      boxShadow: '0 12px 36px rgba(6,78,59,0.1)',
                     }}
                   >
-                    <div className="flex flex-row-reverse items-start gap-3 px-4 pt-4 pb-3">
+                    <div
+                      className="flex flex-row-reverse min-h-[108px]"
+                      style={{
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)',
+                      }}
+                    >
                       <div
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl shadow-inner"
+                        className="flex w-[32%] max-w-[130px] shrink-0 flex-col items-center justify-center gap-1 px-2 py-3 text-center"
                         style={{
-                          background: 'rgba(255,255,255,0.65)',
-                          border: '1px solid rgba(255,255,255,0.85)',
-                          boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.95)',
+                          background: 'linear-gradient(180deg, rgba(52,211,153,0.85) 0%, rgba(5,150,105,0.92) 100%)',
+                          borderLeft: '1px solid rgba(255,255,255,0.35)',
                         }}
-                        aria-hidden
                       >
-                        {habit.emoji}
-                      </div>
-                      <div className="min-w-0 flex-1 text-right space-y-2">
-                        <p
-                          className="font-black text-[15px] leading-snug text-[#1A1730] [overflow-wrap:anywhere] break-words"
+                        <span className="text-2xl drop-shadow-sm" aria-hidden>
+                          {habitEmoji}
+                        </span>
+                        <span
+                          className="text-[10px] font-black leading-tight text-white/95 [overflow-wrap:anywhere] break-words px-0.5"
+                          style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                         >
+                          {shortTitle}
+                        </span>
+                      </div>
+                      <div
+                        className="min-w-0 flex-1 px-4 py-3.5 flex flex-col justify-center text-right"
+                        style={{
+                          background: 'linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(240,253,250,0.5) 100%)',
+                        }}
+                      >
+                        <p className="font-black text-[15px] leading-snug text-[#1A1730] [overflow-wrap:anywhere] break-words">
                           {habit.title}
                         </p>
                         {habit.description ? (
-                          <p className="text-[12px] sm:text-[13px] text-gray-600 leading-relaxed [overflow-wrap:anywhere] break-words border-t border-emerald-900/[0.07] pt-2">
+                          <p className="text-[12px] sm:text-[13px] text-gray-600 leading-relaxed [overflow-wrap:anywhere] break-words mt-2 border-t border-emerald-900/[0.08] pt-2">
                             {habit.description}
                           </p>
                         ) : null}
+                        <div className="mt-3 flex justify-start">
+                          <span
+                            className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide px-3 py-1.5 rounded-full border border-emerald-400/35 text-emerald-900"
+                            style={{
+                              background: 'linear-gradient(135deg, rgba(209,250,229,0.95), rgba(167,243,208,0.35))',
+                              boxShadow: '0 4px 14px rgba(16,185,129,0.12), inset 0 1px 0 rgba(255,255,255,0.75)',
+                            }}
+                          >
+                            תדירות · {getHabitFrequencyLabel(habit.frequency)}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div className="px-4 pb-4 pt-0 flex justify-start">
-                      <span
-                        className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide px-3 py-1.5 rounded-full border border-emerald-400/35 text-emerald-900"
-                        style={{
-                          background: 'linear-gradient(135deg, rgba(209,250,229,0.95), rgba(167,243,208,0.35))',
-                          boxShadow: '0 4px 14px rgba(16,185,129,0.12), inset 0 1px 0 rgba(255,255,255,0.75)',
-                        }}
-                      >
-                        תדירות · {getHabitFrequencyLabel(habit.frequency)}
-                      </span>
-                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

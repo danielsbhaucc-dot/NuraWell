@@ -90,6 +90,8 @@ export interface JourneyTaskDecision {
   status: JourneyTaskDecisionStatus;
   decided_at: string | null;
   reason?: string | null;
+  /** המשתמש סימן במסך הדיווח שביצע בפועל את המשימה (מפעיל גם דילוג על תזכורת workflow) */
+  execution_done?: boolean;
 }
 
 // Progress tracking
