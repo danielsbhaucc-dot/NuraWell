@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   Save, ArrowRight, Plus, Trash2, Video, HelpCircle,
@@ -22,6 +22,8 @@ interface StepEditorProps {
   step: JourneyStep | null;
 }
 type EditorSectionId = 'basic' | 'video' | 'quiz' | 'game' | 'commitment' | 'research' | 'tasks' | 'habits' | 'pdf';
+
+type JourneyStationOption = { id: string; title: string; sort_order: number };
 
 const emptyQuiz: QuizQuestion = { id: '', question: '', options: ['', '', '', ''], correct_index: 0, explanation: '' };
 const emptyGame: GameItem = { id: '', statement: '', is_true: true, explanation: '' };
@@ -56,6 +58,29 @@ export function StepEditor({ step }: StepEditorProps) {
   const [isPublished, setIsPublished] = useState(step?.is_published || false);
   const [durationMinutes, setDurationMinutes] = useState(step?.duration_minutes || 8);
   const [summaryText, setSummaryText] = useState(step?.summary_text || '');
+  const [stations, setStations] = useState<JourneyStationOption[]>([]);
+  const [stationId, setStationId] = useState<string>(step?.station_id ?? '');
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/v1/admin/journey-stations', { credentials: 'include' });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as unknown;
+        if (!Array.isArray(data) || cancelled) return;
+        const list = data as JourneyStationOption[];
+        setStations(
+          [...list].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.title.localeCompare(b.title, 'he'))
+        );
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Video
   const [videoProvider, setVideoProvider] = useState<string>(step?.video_provider || 'heygen');
@@ -83,8 +108,12 @@ export function StepEditor({ step }: StepEditorProps) {
     setSaving(true);
 
     const body: Record<string, unknown> = {
-      title, description: description || null, step_number: stepNumber,
-      is_published: isPublished, duration_minutes: durationMinutes,
+      title,
+      description: description || null,
+      step_number: stepNumber,
+      station_id: stationId.trim() ? stationId.trim() : null,
+      is_published: isPublished,
+      duration_minutes: durationMinutes,
       summary_text: summaryText || null,
       video_provider: videoProvider || null,
       video_external_id: videoProvider === 'custom' ? null : (videoExternalId.trim() || null),
@@ -275,6 +304,23 @@ export function StepEditor({ step }: StepEditorProps) {
               </button>
             </Field>
           </div>
+          <Field label="תחנה במסע (אופציונלי)">
+            <select
+              value={stationId}
+              onChange={(e) => setStationId(e.target.value)}
+              className="input-field"
+            >
+              <option value="">ללא תחנה</option>
+              {stations.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title} (סדר {s.sort_order})
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
+              תחנה מקבצת צעדים לוגית (ללא הגבלת כמות). ניתן לנהל תחנות במסך &quot;מסע ותחנות&quot;.
+            </p>
+          </Field>
           <Field label="טקסט סיכום">
             <textarea value={summaryText} onChange={e => setSummaryText(e.target.value)}
               className="input-field min-h-[100px]" placeholder="סיכום מפורט של תוכן השיעור..." />

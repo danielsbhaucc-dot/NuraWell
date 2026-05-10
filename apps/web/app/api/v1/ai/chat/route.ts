@@ -6,10 +6,19 @@ import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction
 import { embedTextForRag } from '../../../../../lib/ai/openrouter-embeddings';
 import { formatRagMemoryContextBlock } from '../../../../../lib/ai/format-rag-context';
 import {
+  ALMOG_STATION_PROGRESSIVE_RULES,
   CHAT_PROACTIVE_AND_PRIORITY,
   CHAT_VECTOR_AND_MEMORY_RULES,
   NURAWELL_MENTOR_PROMPT,
 } from '../../../../../lib/ai/prompts';
+import {
+  buildAlmogSystemKnowledgeFilter,
+  fetchJourneyProgressCapForRag,
+  formatSystemKnowledgeContextBlock,
+  queryAlmogSystemKnowledgeForUser,
+} from '../../../../../lib/ai/almog-system-rag';
+import { isSystemKnowledgeVectorConfigured } from '../../../../../lib/ai/system-knowledge-vector';
+import { fetchUserEnrolledCourseIds } from '../../../../../lib/api/rag-chat-access';
 import { RAG_TOP_K } from '../../../../../lib/ai/rag-config';
 import {
   isUpstashVectorConfigured,
@@ -54,6 +63,8 @@ type TaskDecisionStatus = 'accepted' | 'rejected' | 'pending';
 type ActiveJourneyContext = {
   stepId: string;
   stepTitle: string;
+  stepNumber?: number;
+  stationTitle?: string | null;
   commitmentAccepted: boolean;
   tasks: Array<{ id: string; title: string }>;
   habits: Array<{ id: string; title: string }>;
@@ -245,16 +256,33 @@ async function getActiveJourneyContext(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: stepData } = await (supabase as any)
     .from('journey_steps')
-    .select('id, title, tasks, habits')
+    .select('id, title, step_number, tasks, habits, journey_stations(title)')
     .eq('id', stepId)
     .maybeSingle();
 
-  const step = (stepData ?? null) as { id?: string; title?: string | null; tasks?: unknown; habits?: unknown } | null;
+  const step = (stepData ?? null) as {
+    id?: string;
+    title?: string | null;
+    step_number?: number;
+    tasks?: unknown;
+    habits?: unknown;
+    journey_stations?: { title?: string } | { title?: string }[] | null;
+  } | null;
   if (!step?.id) return null;
+
+  const st = step.journey_stations;
+  const stationTitle =
+    Array.isArray(st) && st[0]?.title
+      ? st[0].title
+      : st && typeof st === 'object' && 'title' in st
+        ? (st as { title?: string }).title
+        : null;
 
   return {
     stepId: step.id,
     stepTitle: step.title?.trim() || 'צעד נוכחי',
+    stepNumber: typeof step.step_number === 'number' ? step.step_number : undefined,
+    stationTitle: stationTitle ?? null,
     commitmentAccepted: Boolean(latestProgress?.commitment_accepted),
     tasks: normalizeJourneyItems(step.tasks),
     habits: normalizeJourneyItems(step.habits),
@@ -338,6 +366,24 @@ export async function POST(request: Request) {
     return null;
   });
 
+  const journeyCapPromise = fetchJourneyProgressCapForRag(supabase, user.id).catch((capErr) => {
+    console.warn('[ai/chat]', {
+      debug_id: debugId,
+      stage: 'journey_cap_read_failed',
+      error: capErr instanceof Error ? capErr.message : String(capErr),
+    });
+    return null;
+  });
+
+  const enrolledPromise = fetchUserEnrolledCourseIds(supabase, user.id).catch((enrErr) => {
+    console.warn('[ai/chat]', {
+      debug_id: debugId,
+      stage: 'enrollments_read_failed',
+      error: enrErr instanceof Error ? enrErr.message : String(enrErr),
+    });
+    return [] as string[];
+  });
+
   const insertPromise = insertAiInteraction(supabase, {
     user_id: user.id,
     session_id: sessionId,
@@ -353,11 +399,14 @@ export async function POST(request: Request) {
     });
   });
 
-  const [profileRow, activeJourneyContext] = await Promise.all([
-    fetchChatProfileRow(supabase, user.id),
-    journeyPromise,
-    insertPromise,
-  ]);
+  const [profileRow, activeJourneyContext, journeyCap, enrolledCourseIds, _userTurnInserted] =
+    await Promise.all([
+      fetchChatProfileRow(supabase, user.id),
+      journeyPromise,
+      journeyCapPromise,
+      enrolledPromise,
+      insertPromise,
+    ]);
 
   const profileFullName = profileRow.full_name;
   const profileGender = profileRow.gender;
@@ -412,15 +461,36 @@ export async function POST(request: Request) {
       ? `השם הפרטי של המשתמש הוא "${firstName}". אם טבעי ומתאים, פנה אליו/אליה בשם הפרטי בלבד (בלי שם משפחה).`
       : 'אין שם פרטי זמין בפרופיל כרגע.';
     let ragMemoryBlock = '';
-    if (isVectorRagRetrieveEnabled()) {
+    let systemKnowledgeBlock = '';
+    const skFilter =
+      journeyCap && isSystemKnowledgeVectorConfigured()
+        ? buildAlmogSystemKnowledgeFilter({
+            maxStepNumber: journeyCap.maxStepNumber,
+            enrolledCourseIds,
+          })
+        : null;
+    const needUserRag = isVectorRagRetrieveEnabled();
+    const needSystemRag = Boolean(skFilter);
+
+    if (needUserRag || needSystemRag) {
       try {
         const qv = await embedTextForRag(lastUserText);
-        const hits = await queryUserMemoryVectors({
-          userId: user.id,
-          vector: qv,
-          topK: RAG_TOP_K,
-        });
-        ragMemoryBlock = formatRagMemoryContextBlock(hits, RAG_TOP_K);
+        if (needUserRag) {
+          const hits = await queryUserMemoryVectors({
+            userId: user.id,
+            vector: qv,
+            topK: RAG_TOP_K,
+          });
+          ragMemoryBlock = formatRagMemoryContextBlock(hits, RAG_TOP_K);
+        }
+        if (needSystemRag && skFilter) {
+          const skHits = await queryAlmogSystemKnowledgeForUser({
+            questionEmbedding: qv,
+            filter: skFilter,
+            topK: 5,
+          });
+          systemKnowledgeBlock = formatSystemKnowledgeContextBlock(skHits, 5);
+        }
       } catch (ragErr) {
         console.warn('[ai/chat]', {
           debug_id: debugId,
@@ -430,6 +500,21 @@ export async function POST(request: Request) {
       }
     }
 
+    const stationRules =
+      journeyCap || activeJourneyContext ? `\n${ALMOG_STATION_PROGRESSIVE_RULES}\n` : '';
+
+    const journeyStateBlock =
+      journeyCap != null
+        ? `מצב התקדמות במסע (פנימי — לא להציג למשתמש כמספרים):\n${JSON.stringify({
+            צעד_במסך: activeJourneyContext?.stepNumber ?? journeyCap.currentStepNumber,
+            תחנה: activeJourneyContext?.stationTitle ?? journeyCap.currentStationTitle,
+            עד_צעד_כולל_חומר_עזר: journeyCap.maxStepNumber,
+            סה_צעדים_מפורסמים: journeyCap.totalPublishedSteps,
+            כל_המסע_הושלם: journeyCap.allJourneyComplete,
+            סה_תחנות: journeyCap.totalStations,
+          })}\n`
+        : '';
+
     const moodFromProfile = moodCoachingHint(profileMoodSignal);
     const systemPromptWithMemory = `${BASE_SYSTEM_PROMPT}
 
@@ -437,8 +522,10 @@ ${CHAT_PROACTIVE_AND_PRIORITY}
 
 ${CHAT_VECTOR_AND_MEMORY_RULES}
 
-סדר עדיפויות: (1) הנחיות מערכת (2) רמזי זיכרון רלוונטיים למטה אם קיימים (RAG) (3) הודעות השיחה — מקור האמת ל"מה קורה עכשיו". אם יש סתירה בין רמז זיכרון לבין השיחה הנוכחית, עדיף השיחה.
-
+סדר עדיפויות: (1) הנחיות מערכת (2) רמזי זיכרון רלוונטיים למטה אם קיימים (RAG משתמש) (3) חומר עזר מהמסע אם קיים (4) הודעות השיחה — מקור האמת ל"מה קורה עכשיו". אם יש סתירה בין רמז זיכרון לבין השיחה הנוכחית, עדיף השיחה.
+${stationRules}
+${journeyStateBlock}
+${systemKnowledgeBlock ? `${systemKnowledgeBlock}\n` : ''}
 ${ragMemoryBlock ? `${ragMemoryBlock}\n` : ''}${moodFromProfile}
 ${personalNameInstruction}
 ${genderAddressingHint(profileGender)}

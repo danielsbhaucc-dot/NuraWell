@@ -53,6 +53,7 @@ const journeyHabitSchema = z.object({
 const journeyStepPayloadSchema = z
   .object({
     course_id: z.string().uuid().nullable().optional(),
+    station_id: z.string().uuid().nullable().optional(),
     title: z.string().min(1).max(500),
     description: z.string().max(20000).nullable().optional(),
     step_number: z.number().int().min(1).max(9999).optional(),

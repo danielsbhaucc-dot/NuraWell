@@ -2,7 +2,10 @@
 
 export interface JourneyStep {
   id: string;
-  course_id: string;
+  course_id: string | null;
+  /** תחנה במסע (אופציונלי) */
+  station_id?: string | null;
+  journey_stations?: { id: string; title: string; sort_order: number } | null;
   title: string;
   description: string | null;
   step_number: number;
