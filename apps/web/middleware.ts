@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { mergeAuthCookieOptions } from './lib/supabase/cookie-options';
 import {
+  isOpsLoginRedirectUrl,
   isOpsPanelBrowserPath,
   isOpsPreviewHostname,
   opsCanonicalHostname,
@@ -111,7 +112,10 @@ export async function middleware(request: NextRequest) {
     devOpsPath ||
     (effectiveOpsHost && !pathname.startsWith('/api') && !pathname.startsWith('/_next'));
 
-  if (needsOpsGate && !pathname.startsWith('/api')) {
+  /** קליטת סשן מגשר — בלי משתמש עדיין; לא לשכתב ל־/ops/auth/… */
+  const isOpsSessionIngest = pathname === '/auth/ops-ingest';
+
+  if (needsOpsGate && !pathname.startsWith('/api') && !isOpsSessionIngest) {
     /** בפיתוח מקומי /ops — לוגין על אותו host; בדומיין Ops — כתובת מה־DB / env / Vercel */
     const mainOrigin = devOpsPath
       ? request.nextUrl.origin
@@ -139,6 +143,8 @@ export async function middleware(request: NextRequest) {
       url.pathname = '/ops';
     } else if (pathname.startsWith('/ops')) {
       url.pathname = pathname;
+    } else if (pathname.startsWith('/auth/')) {
+      url.pathname = pathname;
     } else {
       url.pathname = `/ops${pathname}`;
     }
@@ -165,7 +171,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/courses', request.url));
   }
 
-  if (user && (pathname === '/login' || pathname === '/register')) {
+  if (user && pathname === '/login') {
+    const rawRedirect = request.nextUrl.searchParams.get('redirect');
+    if (rawRedirect && isOpsLoginRedirectUrl(rawRedirect)) {
+      const bridge = new URL('/auth/bridge-to-ops', request.nextUrl.origin);
+      bridge.searchParams.set('next', rawRedirect);
+      return NextResponse.redirect(bridge);
+    }
+    return NextResponse.redirect(new URL('/courses', request.url));
+  }
+
+  if (user && pathname === '/register') {
     return NextResponse.redirect(new URL('/courses', request.url));
   }
 
