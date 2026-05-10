@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { motion } from 'framer-motion';
 import {
-  User, Award, BookOpen, Flame, LogOut, ChevronLeft, Shield, Settings, Save, X
+  User, Award, BookOpen, Flame, LogOut, ChevronLeft, Shield, Settings, Save, X, Bell
 } from 'lucide-react';
 import { createClient } from '../../lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -77,6 +77,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
     ...(profile?.role === 'admin' && opsUrl
       ? [{ label: 'פאנל ניהול', href: `${opsUrl}/`, icon: Shield, emoji: '🛠️' }]
       : []),
+    { label: 'התראות מאלמוג', href: '/settings/almog', icon: Bell, emoji: '🔔' },
     { label: 'ההתקדמות שלי', href: '/progress', icon: Award, emoji: '📊' },
     { label: 'הקורסים שלי', href: '/courses', icon: BookOpen, emoji: '📚' },
   ];

@@ -2,9 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-/** ניתן להרחיב מ־API קורסים; כרגע מזהה חופשי + דוגמאות. */
-const PRESET_COURSE_IDS = ['course-intro', 'course-nutrition', 'course-movement'];
-
 type JourneyStepRow = {
   id: string;
   step_number: number;
@@ -13,6 +10,12 @@ type JourneyStepRow = {
 
 type DataType = 'step' | 'course';
 type AccessLevel = 'public' | 'premium';
+
+const PRESET_COURSES: Array<{ id: string; label: string }> = [
+  { id: 'course-intro', label: 'מבוא ופתיחה' },
+  { id: 'course-nutrition', label: 'תזונה והרגלים' },
+  { id: 'course-movement', label: 'תנועה וכושר' },
+];
 
 export function SystemKnowledgeIngestForm() {
   const [transcript, setTranscript] = useState('');
@@ -23,7 +26,7 @@ export function SystemKnowledgeIngestForm() {
   const [selectedStepId, setSelectedStepId] = useState('');
 
   const [courseMode, setCourseMode] = useState<'preset' | 'custom'>('preset');
-  const [presetCourseId, setPresetCourseId] = useState(PRESET_COURSE_IDS[0] ?? '');
+  const [presetCourseId, setPresetCourseId] = useState(PRESET_COURSES[0]?.id ?? '');
   const [customCourseId, setCustomCourseId] = useState('');
   const [accessLevel, setAccessLevel] = useState<AccessLevel>('public');
   const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'err'>('idle');
@@ -87,7 +90,7 @@ export function SystemKnowledgeIngestForm() {
 
     if (dataType === 'course' && !effectiveCourseId) {
       setStatus('err');
-      setMessage('בחרו או הזינו מזהה קורס.');
+      setMessage('בחרו קורס מהרשימה או הזינו מזהה קורס מהמערכת.');
       return;
     }
 
@@ -121,7 +124,6 @@ export function SystemKnowledgeIngestForm() {
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
         chunks?: number;
-        batchId?: string;
       };
 
       if (!res.ok) {
@@ -131,7 +133,12 @@ export function SystemKnowledgeIngestForm() {
       }
 
       setStatus('ok');
-      setMessage(`הועלו בהצלחה ${data.chunks ?? '?'} צ'אנקים (batch: ${data.batchId ?? '—'}).`);
+      const chunks = typeof data.chunks === 'number' ? data.chunks : null;
+      setMessage(
+        chunks != null
+          ? `החומר נשמר והוטמע בהצלחה. חילקנו אותו ל־${chunks} חלקים קצרים כדי שאלמוג יוכל למצוא אותו בשיחה — רק למשתמשים שהגיעו לשלב וההרשאות המתאימות.`
+          : 'החומר נשמר והוטמע בהצלחה. אלמוג יוכל להשתמש בו לפי ההגדרות שבחרתם.'
+      );
       setTranscript('');
     } catch {
       setStatus('err');
@@ -144,9 +151,13 @@ export function SystemKnowledgeIngestForm() {
       onSubmit={onSubmit}
       className="space-y-5 rounded-3xl border border-white/60 bg-white/55 p-5 shadow-lg backdrop-blur-md sm:p-7"
     >
+      <p className="text-[15px] leading-relaxed text-slate-700">
+        הדביקו כאן טקסט לימודי או הנחיה למנטור. המערכת תפצל את זה לקטעים קצרים ותחבר לאלמוג — המשתמשים יקבלו את התוכן רק כשהם מתקדמים למקום הנכון במסע (ולפי הרשאות קורס).
+      </p>
+
       <div>
         <label htmlFor="sk-transcript" className="mb-2 block text-sm font-semibold text-slate-800">
-          תמליל / חומר גלם
+          התוכן לאימון אלמוג
         </label>
         <textarea
           id="sk-transcript"
@@ -155,14 +166,14 @@ export function SystemKnowledgeIngestForm() {
           required
           rows={12}
           className="w-full resize-y rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] text-slate-900 shadow-inner outline-none ring-emerald-500/30 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-2"
-          placeholder="הדביקו כאן טקסט ארוך — יפוצל אוטומטית לצ'אנקים."
+          placeholder="למשל: הסבר על ארוחת ערב מאוזנת, טיפים לשעות הערב, או תזכורות רכות להתמדה..."
         />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="sk-data-type" className="mb-2 block text-sm font-semibold text-slate-800">
-            סוג ידע (dataType)
+            לאן לשייך את החומר?
           </label>
           <select
             id="sk-data-type"
@@ -170,14 +181,14 @@ export function SystemKnowledgeIngestForm() {
             onChange={(ev) => setDataType(ev.target.value as DataType)}
             className="w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] font-medium text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
           >
-            <option value="step">שלב במסע (step)</option>
-            <option value="course">קורס (course)</option>
+            <option value="step">צעד ספציפי במסע</option>
+            <option value="course">קורס שלם</option>
           </select>
         </div>
 
         <div>
           <label htmlFor="sk-access" className="mb-2 block text-sm font-semibold text-slate-800">
-            רמת גישה (accessLevel)
+            מי יקבל את זה במסע?
           </label>
           <select
             id="sk-access"
@@ -185,8 +196,8 @@ export function SystemKnowledgeIngestForm() {
             onChange={(ev) => setAccessLevel(ev.target.value as AccessLevel)}
             className="w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] font-medium text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
           >
-            <option value="public">ציבורי (public)</option>
-            <option value="premium">פרימיום (premium)</option>
+            <option value="public">כל מי שהגיע לצעד המתאים</option>
+            <option value="premium">משתמשים רשומים לקורס פרימיום (מזהה קורס)</option>
           </select>
         </div>
       </div>
@@ -194,7 +205,7 @@ export function SystemKnowledgeIngestForm() {
       {dataType === 'step' && (
         <div className="space-y-2 rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-4">
           <label htmlFor="sk-step" className="block text-sm font-semibold text-emerald-950">
-            צעד במסע (נטען דינמית ממסד)
+            בחרו צעד במסע
           </label>
           {stepsLoading ? (
             <p className="text-sm text-emerald-900/80">טוען צעדים…</p>
@@ -212,15 +223,12 @@ export function SystemKnowledgeIngestForm() {
               >
                 {journeySteps.map((s) => (
                   <option key={s.id} value={s.id}>
-                    שלב {s.step_number}: {s.title}
+                    צעד {s.step_number}: {s.title}
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-emerald-900/75">
-                נשמרים בוקטור: <code className="rounded bg-white/80 px-1">stepId</code>,{' '}
-                <code className="rounded bg-white/80 px-1">stepNumber</code>
-                ; אם לצעד יש <code className="rounded bg-white/80 px-1">course_id</code> במסד — גם{' '}
-                <code className="rounded bg-white/80 px-1">courseId</code> לסינון פרימיום.
+              <p className="text-xs leading-relaxed text-emerald-900/80">
+                אלמוג ישתמש בחומר רק כשהמשתמש מתקדם לצעד הזה — בלי לחשוף תוכן של צעדים עתידיים.
               </p>
             </>
           )}
@@ -229,7 +237,7 @@ export function SystemKnowledgeIngestForm() {
 
       {dataType === 'course' && (
         <div className="space-y-3 rounded-2xl border border-amber-200/70 bg-amber-50/50 p-4">
-          <span className="block text-sm font-semibold text-amber-950">מזהה קורס (courseId)</span>
+          <span className="block text-sm font-semibold text-amber-950">לאיזה קורס לשייך?</span>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -240,7 +248,7 @@ export function SystemKnowledgeIngestForm() {
                   : 'bg-white/80 text-amber-900 hover:bg-white'
               }`}
             >
-              בחירה מהרשימה
+              מהרשימה
             </button>
             <button
               type="button"
@@ -251,7 +259,7 @@ export function SystemKnowledgeIngestForm() {
                   : 'bg-white/80 text-amber-900 hover:bg-white'
               }`}
             >
-              מזהה מותאם
+              מזהה מהמערכת
             </button>
           </div>
           {courseMode === 'preset' ? (
@@ -260,9 +268,9 @@ export function SystemKnowledgeIngestForm() {
               onChange={(ev) => setPresetCourseId(ev.target.value)}
               className="w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/35"
             >
-              {PRESET_COURSE_IDS.map((id) => (
-                <option key={id} value={id}>
-                  {id}
+              {PRESET_COURSES.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
                 </option>
               ))}
             </select>
@@ -271,10 +279,13 @@ export function SystemKnowledgeIngestForm() {
               type="text"
               value={customCourseId}
               onChange={(ev) => setCustomCourseId(ev.target.value)}
-              placeholder="מזהה קורס (מומלץ UUID כמו ב-enrollments)"
+              placeholder="הדביקו את מזהה הקורס כפי שמופיע במערכת"
               className="w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/35"
             />
           )}
+          <p className="text-xs leading-relaxed text-amber-950/85">
+            קורס פרימיום נגיש רק למשתמשים שנרשמו לאותו קורס — כך אלמוג לא חושף תוכן שלא שילמו עליו.
+          </p>
         </div>
       )}
 
@@ -283,13 +294,13 @@ export function SystemKnowledgeIngestForm() {
         disabled={status === 'loading' || (dataType === 'step' && (stepsLoading || !!stepsError || !journeySteps.length))}
         className="w-full rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-600 px-5 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-600/30 transition hover:brightness-105 active:scale-[0.99] disabled:opacity-60"
       >
-        {status === 'loading' ? 'מעלה ומטמיע…' : 'שליחה והטמעה ל־Upstash'}
+        {status === 'loading' ? 'מעלה ומחבר לאלמוג…' : 'אמן את אלמוג'}
       </button>
 
       {message ? (
         <p
           role="status"
-          className={`text-center text-sm font-medium ${status === 'err' ? 'text-red-700' : 'text-emerald-800'}`}
+          className={`text-center text-sm font-medium leading-relaxed ${status === 'err' ? 'text-red-700' : 'text-emerald-800'}`}
         >
           {message}
         </p>
