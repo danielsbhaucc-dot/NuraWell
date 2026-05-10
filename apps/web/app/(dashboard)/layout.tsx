@@ -4,6 +4,7 @@ import { MobileHeader } from '../../components/shared/MobileHeader';
 import { BottomNav } from '../../components/shared/BottomNav';
 import { AIOverlaysClient } from '../../components/ai/AIOverlaysClient';
 import { ProgressReportProvider } from '../../components/progress-report/ProgressReportProvider';
+import { ActionHubProvider } from '../../components/action-hub/ActionHubProvider';
 import { NotificationsProvider } from '../../components/notifications/NotificationsProvider';
 
 export default async function DashboardLayout({
