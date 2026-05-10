@@ -128,7 +128,7 @@ export function AdminAlmogAvatarPanel() {
 
   return (
     <section
-      className="relative mb-6 overflow-hidden rounded-3xl border border-white/60 bg-white/60 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl transition-all sm:p-6 md:p-8 sm:hover:shadow-[0_8px_30px_rgb(16,185,129,0.08)]"
+      className="relative mb-6 overflow-hidden rounded-3xl border border-white/40 bg-white/45 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-2xl transition-all sm:p-6 md:p-8 sm:hover:border-emerald-400/30 sm:hover:shadow-[0_12px_44px_rgba(16,185,129,0.15)]"
       dir="rtl"
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

@@ -15,9 +15,9 @@ export default async function AdminJourneyPage() {
 
   return (
     <div>
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl font-black leading-tight text-slate-800 sm:text-3xl">ניהול צעדי מסע</h1>
-        <p className="mt-1 text-sm leading-relaxed text-slate-500 sm:text-base">
+      <div className="mb-6 rounded-3xl border border-white/35 bg-white/35 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.1)] backdrop-blur-xl sm:mb-8 sm:p-6">
+        <h1 className="text-2xl font-black leading-tight text-slate-900 sm:text-3xl">ניהול צעדי מסע</h1>
+        <p className="mt-1 text-sm leading-relaxed text-slate-600 sm:text-base">
           עריכה, פרסום ומחיקה של צעדים במסע המשתמשים.
         </p>
       </div>
