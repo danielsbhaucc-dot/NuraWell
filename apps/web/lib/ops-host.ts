@@ -24,6 +24,33 @@ export function isOpsPreviewHostname(hostnameHeader: string | null): boolean {
   return h.endsWith('.vercel.app');
 }
 
+/** האם פרמטר redirect מ־/login מצביע על דומיין Ops (מותר לגשר סשן). */
+export function isOpsLoginRedirectUrl(redirectParam: string): boolean {
+  let u: URL;
+  try {
+    u = new URL(redirectParam);
+  } catch {
+    return false;
+  }
+  const host = u.hostname.replace(/^www\./, '').toLowerCase();
+  const canon = opsCanonicalHostname();
+  if (canon && host === canon) return true;
+  const opsUrl = process.env.NEXT_PUBLIC_OPS_URL?.trim();
+  if (opsUrl) {
+    try {
+      const withP = opsUrl.startsWith('http') ? opsUrl : `https://${opsUrl}`;
+      const oh = new URL(withP).hostname.replace(/^www\./, '').toLowerCase();
+      if (host === oh) return true;
+    } catch {
+      /* */
+    }
+  }
+  if (process.env.OPS_ALLOW_VERCEL_PREVIEW === '1' && host.endsWith('.vercel.app')) {
+    return true;
+  }
+  return false;
+}
+
 /**
  * נתיבי URL כפי שהדפדפן רואה בדומיין Ops (לפני rewrite פנימי).
  * רק אלה מותרים; כל השאר → הפניה לעמוד הבית של הפאנל (`/`).
@@ -31,6 +58,7 @@ export function isOpsPreviewHostname(hostnameHeader: string | null): boolean {
 export function isOpsPanelBrowserPath(pathname: string): boolean {
   const p = pathname.endsWith('/') && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
   if (p === '/' || p === '') return true;
+  if (p === '/auth/ops-ingest') return true;
   const prefixes = ['/journey', '/almog', '/steps', '/site-settings', '/ops'];
   return prefixes.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
 }
