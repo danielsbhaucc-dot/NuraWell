@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('journey_steps')
-    .select('*')
+    .select('*, course:courses(id, title)')
     .order('step_number');
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

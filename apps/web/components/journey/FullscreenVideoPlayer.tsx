@@ -7,6 +7,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { HlsVideoGate } from './HlsVideoGate';
 import type { ImmersiveAttentionStop } from '../../lib/journey/immersiveAttentionStops';
 import { formatSecondsAsClock } from '../../lib/journey/immersiveAttentionStops';
+import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
+import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 
 interface FullscreenVideoPlayerProps {
   /** bunnyEmbedId = "{libraryId}/{videoId}" — used for iframe fallback when no Pull Zone HLS */
@@ -43,6 +45,7 @@ export function FullscreenVideoPlayer({
   onTimeUpdate,
   viewportInsetTopPx,
 }: FullscreenVideoPlayerProps) {
+  const { avatarUrl: almogAvatarSrc } = useAlmogAvatarUrl();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const hlsVideoRef = useRef<HTMLVideoElement | null>(null);
   const [hlsListenKey, setHlsListenKey] = useState(0);
@@ -75,14 +78,6 @@ export function FullscreenVideoPlayer({
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    console.warn('[NuraWell][FullscreenVideoPlayer] mounted', {
-      bunnyEmbedId,
-      title,
-      immersiveMode: useHlsImmersive ? 'hls' : 'iframe',
-    });
-  }, [bunnyEmbedId, title, useHlsImmersive]);
 
   useEffect(() => {
     if (typeof document === 'undefined' || !mounted) return;
@@ -382,12 +377,12 @@ export function FullscreenVideoPlayer({
             transition={{ duration: 0.22, ease: 'easeOut' }}
           >
             <motion.div
-              className="w-full max-w-md rounded-3xl p-6"
+              className="w-full max-w-md rounded-3xl p-5 sm:p-6"
               style={{
-                background: 'linear-gradient(165deg, rgba(254,254,254,0.98) 0%, rgba(236,253,245,0.96) 100%)',
-                border: '1px solid rgba(16,185,129,0.25)',
-                boxShadow: '0 24px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.32)',
-                backdropFilter: 'blur(6px)',
+                background: 'linear-gradient(165deg, rgba(255,255,255,0.72) 0%, rgba(236,253,245,0.55) 100%)',
+                border: '1px solid rgba(255,255,255,0.55)',
+                boxShadow: '0 24px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.45)',
+                backdropFilter: 'blur(18px)',
               }}
               onClick={e => e.stopPropagation()}
               initial={{ opacity: 0, y: 20, scale: 0.96 }}
@@ -462,7 +457,44 @@ export function FullscreenVideoPlayer({
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <p className="text-base leading-relaxed font-semibold mb-4" style={{ color: '#1f2937' }}>
+                    <div
+                      className="mb-4 flex items-start gap-3 rounded-2xl p-3 sm:p-4"
+                      style={{
+                        background: 'rgba(255,255,255,0.38)',
+                        border: '1px solid rgba(16,185,129,0.22)',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)',
+                        backdropFilter: 'blur(12px)',
+                      }}
+                    >
+                      <img
+                        src={almogAvatarSrc}
+                        alt=""
+                        className="h-14 w-14 shrink-0 rounded-2xl object-cover ring-2 ring-white/80 shadow-md"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                        }}
+                      />
+                      <div className="min-w-0 flex-1 text-right">
+                        <div className="mb-2 inline-flex flex-wrap items-center gap-2">
+                          <span
+                            className="rounded-full px-2.5 py-1 text-[11px] font-black text-emerald-950"
+                            style={{
+                              background: 'linear-gradient(135deg, rgba(16,185,129,0.35), rgba(52,211,153,0.45))',
+                              border: '1px solid rgba(255,255,255,0.55)',
+                              boxShadow: '0 4px 12px rgba(16,185,129,0.2)',
+                            }}
+                          >
+                            אלמוג
+                          </span>
+                          <span className="text-[11px] font-semibold text-emerald-900/75">משוב אישי</span>
+                        </div>
+                        <p className="text-[13px] leading-relaxed text-emerald-950/90">
+                          רגע לפני שממשיכים — זה איך שאני רואה את זה:
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-base leading-relaxed font-semibold mb-4 text-gray-800">
                       {attentionFeedbackText}
                     </p>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">

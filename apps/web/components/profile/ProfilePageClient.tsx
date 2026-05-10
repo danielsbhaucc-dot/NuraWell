@@ -114,8 +114,8 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f2fbf8] via-[#f8fafc] to-white">
-      <div className="container-mobile py-6 pb-8 space-y-5">
+    <div className="min-h-full">
+      <div className="container-mobile py-6 pb-10 space-y-6">
 
         {/* Header */}
         <motion.div
@@ -126,7 +126,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
         >
           <div>
             <h1 className="text-2xl font-black text-slate-900 mb-1">הפרופיל שלי 👤</h1>
-            <p className="text-slate-500 text-sm">נהל את הפרופיל האישי שלך</p>
+            <p className="text-slate-600 text-sm">נהל את הפרופיל האישי שלך</p>
           </div>
           <button
             type="button"
@@ -142,9 +142,13 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.03 }}
-          className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-[0_8px_22px_rgba(16,185,129,0.07)]"
+          className="rounded-2xl border border-emerald-900/10 px-4 py-3 shadow-inner"
+          style={{
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.82) 0%, rgba(236,253,245,0.55) 100%)',
+            boxShadow: '0 10px 28px rgba(6,78,59,0.08), inset 0 1px 0 rgba(255,255,255,0.75)',
+          }}
         >
-          <p className="text-sm font-bold text-emerald-700">שלום, {firstName}</p>
+          <p className="text-sm font-bold text-emerald-900">שלום, {firstName}</p>
         </motion.div>
 
         {/* Avatar + Name Card */}
@@ -152,7 +156,11 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="rounded-3xl border border-emerald-100 bg-white p-5 shadow-[0_10px_30px_rgba(16,185,129,0.08)]"
+          className="rounded-3xl border border-emerald-900/10 p-5 backdrop-blur-md"
+          style={{
+            background: 'linear-gradient(165deg, rgba(255,255,255,0.88) 0%, rgba(236,253,245,0.35) 100%)',
+            boxShadow: '0 14px 36px rgba(6,78,59,0.11)',
+          }}
         >
           <div className="flex items-center gap-4">
             {/* Avatar */}
@@ -188,10 +196,17 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="grid grid-cols-3 gap-3"
+          className="grid grid-cols-3 gap-4"
         >
           {stats.map((s) => (
-            <div key={s.label} className="rounded-2xl border border-emerald-100 bg-white p-3 text-center shadow-[0_6px_20px_rgba(16,185,129,0.06)]">
+            <div
+              key={s.label}
+              className="rounded-2xl border border-emerald-900/10 p-3 text-center backdrop-blur-sm"
+              style={{
+                background: 'rgba(255,255,255,0.72)',
+                boxShadow: '0 8px 24px rgba(6,78,59,0.08)',
+              }}
+            >
               <div className="w-8 h-8 rounded-xl mx-auto mb-1.5 flex items-center justify-center"
                 style={{ background: `${s.color}22`, border: `1px solid ${s.color}44` }}>
                 <s.icon className="w-4 h-4" style={{ color: s.color }} />
@@ -208,7 +223,11 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="rounded-3xl border border-emerald-100 bg-white p-5 shadow-[0_10px_30px_rgba(16,185,129,0.08)]"
+            className="rounded-3xl border border-emerald-900/10 p-5 backdrop-blur-md"
+            style={{
+              background: 'linear-gradient(165deg, rgba(255,255,255,0.9) 0%, rgba(240,253,250,0.4) 100%)',
+              boxShadow: '0 14px 36px rgba(6,78,59,0.1)',
+            }}
           >
             <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
               <User className="w-4 h-4 text-primary-400" />
@@ -236,19 +255,23 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="rounded-3xl border border-emerald-100 bg-white overflow-hidden shadow-[0_10px_30px_rgba(16,185,129,0.08)]"
-          style={{ padding: 0 }}
+          className="rounded-3xl border border-emerald-900/10 overflow-hidden backdrop-blur-md"
+          style={{
+            padding: 0,
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(248,250,249,0.85) 100%)',
+            boxShadow: '0 14px 36px rgba(6,78,59,0.09)',
+          }}
         >
           {profileMenuItems.map((item, idx, arr) => (
             <Link
               key={`${item.href}-${item.label}`}
               href={item.href}
               prefetch
-              className="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors"
-              style={idx < arr.length - 1 ? { borderBottom: '1px solid rgba(255,255,255,0.06)' } : {}}
+              className="flex items-center gap-3 p-4 hover:bg-emerald-50/60 transition-colors"
+              style={idx < arr.length - 1 ? { borderBottom: '1px solid rgba(6,78,59,0.08)' } : {}}
             >
               <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)' }}>
                 {item.emoji}
               </div>
               <span className="flex-1 text-sm font-semibold text-slate-700">{item.label}</span>

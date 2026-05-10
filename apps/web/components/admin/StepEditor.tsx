@@ -50,6 +50,8 @@ export function StepEditor({ step }: StepEditorProps) {
   const [expandedResearch, setExpandedResearch] = useState<number | null>(0);
   const [expandedTask, setExpandedTask] = useState<number | null>(0);
   const [expandedHabit, setExpandedHabit] = useState<number | null>(0);
+  const [expandedQuiz, setExpandedQuiz] = useState<number | null>(null);
+  const [expandedGame, setExpandedGame] = useState<number | null>(null);
 
   // Basic fields
   const [title, setTitle] = useState(step?.title || '');
@@ -463,63 +465,119 @@ export function StepEditor({ step }: StepEditorProps) {
         {/* ═══ QUIZ ═══ */}
         <Section title={`שאלות הבנה (${quizQuestions.length})`} icon={HelpCircle} color="#10b981" sectionNumber={3} isVisible={activeSection === 'quiz'}>
           {quizQuestions.map((q, qi) => (
-            <div key={q.id || qi} className="p-4 rounded-xl bg-gray-50 border border-gray-100 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-gray-600">שאלה {qi + 1}</span>
-                <button onClick={() => setQuizQuestions(prev => prev.filter((_, i) => i !== qi))}
-                  className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
-              </div>
-              <input value={q.question} onChange={e => {
-                const arr = [...quizQuestions]; arr[qi] = { ...arr[qi], question: e.target.value }; setQuizQuestions(arr);
-              }} className="input-field" placeholder="טקסט השאלה" />
-              {q.options.map((opt, oi) => (
-                <div key={oi} className="flex items-center gap-2">
-                  <button onClick={() => {
-                    const arr = [...quizQuestions]; arr[qi] = { ...arr[qi], correct_index: oi }; setQuizQuestions(arr);
-                  }} className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${q.correct_index === oi ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
-                    {String.fromCharCode(1488 + oi)}
+            <div key={q.id || qi} className="rounded-xl border border-emerald-100 overflow-hidden" style={{ background: 'rgba(255,255,255,0.85)' }}>
+              <button
+                type="button"
+                onClick={() => setExpandedQuiz(expandedQuiz === qi ? null : qi)}
+                className="w-full p-3 flex items-center justify-between gap-2 text-right transition-colors hover:bg-emerald-50/80"
+              >
+                <span className="text-sm font-bold text-gray-800 min-w-0 flex-1 truncate">
+                  שאלה {qi + 1}
+                  {q.question.trim() ? ` — ${q.question.trim().slice(0, 72)}${q.question.trim().length > 72 ? '…' : ''}` : ''}
+                </span>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setQuizQuestions(prev => prev.filter((_, i) => i !== qi));
+                      setExpandedQuiz((ex) => (ex === qi ? null : ex));
+                    }}
+                    className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50"
+                    aria-label="מחק שאלה"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </button>
-                  <input value={opt} onChange={e => {
-                    const arr = [...quizQuestions]; const opts = [...arr[qi].options]; opts[oi] = e.target.value; arr[qi] = { ...arr[qi], options: opts }; setQuizQuestions(arr);
-                  }} className="input-field flex-1" placeholder={`תשובה ${oi + 1}`} />
+                  <ChevronDown className={`w-4 h-4 text-emerald-700 transition-transform ${expandedQuiz === qi ? 'rotate-180' : ''}`} />
                 </div>
-              ))}
-              <input value={q.explanation} onChange={e => {
-                const arr = [...quizQuestions]; arr[qi] = { ...arr[qi], explanation: e.target.value }; setQuizQuestions(arr);
-              }} className="input-field" placeholder="הסבר לתשובה הנכונה" />
+              </button>
+              {expandedQuiz === qi && (
+                <div className="p-4 pt-0 space-y-3 border-t border-emerald-100/80 bg-white/90">
+                  <input value={q.question} onChange={e => {
+                    const arr = [...quizQuestions]; arr[qi] = { ...arr[qi], question: e.target.value }; setQuizQuestions(arr);
+                  }} className="input-field" placeholder="טקסט השאלה" />
+                  {q.options.map((opt, oi) => (
+                    <div key={oi} className="flex items-center gap-2">
+                      <button type="button" onClick={() => {
+                        const arr = [...quizQuestions]; arr[qi] = { ...arr[qi], correct_index: oi }; setQuizQuestions(arr);
+                      }} className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${q.correct_index === oi ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                        {String.fromCharCode(1488 + oi)}
+                      </button>
+                      <input value={opt} onChange={e => {
+                        const arr = [...quizQuestions]; const opts = [...arr[qi].options]; opts[oi] = e.target.value; arr[qi] = { ...arr[qi], options: opts }; setQuizQuestions(arr);
+                      }} className="input-field flex-1" placeholder={`תשובה ${oi + 1}`} />
+                    </div>
+                  ))}
+                  <input value={q.explanation} onChange={e => {
+                    const arr = [...quizQuestions]; arr[qi] = { ...arr[qi], explanation: e.target.value }; setQuizQuestions(arr);
+                  }} className="input-field" placeholder="הסבר לתשובה הנכונה" />
+                </div>
+              )}
             </div>
           ))}
-          <AddButton label="הוסף שאלה" onClick={() => setQuizQuestions(prev => [...prev, { ...emptyQuiz, id: genId() }])} />
+          <AddButton label="הוסף שאלה" onClick={() => {
+            const next = quizQuestions.length;
+            setQuizQuestions(prev => [...prev, { ...emptyQuiz, id: genId() }]);
+            setExpandedQuiz(next);
+          }} />
         </Section>
 
         {/* ═══ GAME ═══ */}
         <Section title={`משחק נכון/לא נכון (${gameItems.length})`} icon={Gamepad2} color="#f59e0b" sectionNumber={4} isVisible={activeSection === 'game'}>
           {gameItems.map((g, gi) => (
-            <div key={g.id || gi} className="p-4 rounded-xl bg-gray-50 border border-gray-100 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-gray-600">טענה {gi + 1}</span>
-                <button onClick={() => setGameItems(prev => prev.filter((_, i) => i !== gi))}
-                  className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
-              </div>
-              <input value={g.statement} onChange={e => {
-                const arr = [...gameItems]; arr[gi] = { ...arr[gi], statement: e.target.value }; setGameItems(arr);
-              }} className="input-field" placeholder="טקסט הטענה" />
-              <div className="flex items-center gap-3">
-                <button onClick={() => { const arr = [...gameItems]; arr[gi] = { ...arr[gi], is_true: true }; setGameItems(arr); }}
-                  className={`px-4 py-2 rounded-lg font-bold text-sm ${g.is_true ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                  ✓ נכון
-                </button>
-                <button onClick={() => { const arr = [...gameItems]; arr[gi] = { ...arr[gi], is_true: false }; setGameItems(arr); }}
-                  className={`px-4 py-2 rounded-lg font-bold text-sm ${!g.is_true ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
-                  ✗ לא נכון
-                </button>
-              </div>
-              <input value={g.explanation} onChange={e => {
-                const arr = [...gameItems]; arr[gi] = { ...arr[gi], explanation: e.target.value }; setGameItems(arr);
-              }} className="input-field" placeholder="הסבר" />
+            <div key={g.id || gi} className="rounded-xl border border-amber-100 overflow-hidden" style={{ background: 'rgba(255,255,255,0.88)' }}>
+              <button
+                type="button"
+                onClick={() => setExpandedGame(expandedGame === gi ? null : gi)}
+                className="w-full p-3 flex items-center justify-between gap-2 text-right transition-colors hover:bg-amber-50/90"
+              >
+                <span className="text-sm font-bold text-gray-800 min-w-0 flex-1 truncate">
+                  טענה {gi + 1}
+                  {g.statement.trim() ? ` — ${g.statement.trim().slice(0, 72)}${g.statement.trim().length > 72 ? '…' : ''}` : ''}
+                </span>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setGameItems(prev => prev.filter((_, i) => i !== gi));
+                      setExpandedGame((ex) => (ex === gi ? null : ex));
+                    }}
+                    className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50"
+                    aria-label="מחק טענה"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <ChevronDown className={`w-4 h-4 text-amber-700 transition-transform ${expandedGame === gi ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+              {expandedGame === gi && (
+                <div className="p-4 pt-0 space-y-3 border-t border-amber-100/90 bg-white/90">
+                  <input value={g.statement} onChange={e => {
+                    const arr = [...gameItems]; arr[gi] = { ...arr[gi], statement: e.target.value }; setGameItems(arr);
+                  }} className="input-field" placeholder="טקסט הטענה" />
+                  <div className="flex items-center gap-3">
+                    <button type="button" onClick={() => { const arr = [...gameItems]; arr[gi] = { ...arr[gi], is_true: true }; setGameItems(arr); }}
+                      className={`px-4 py-2 rounded-lg font-bold text-sm ${g.is_true ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                      ✓ נכון
+                    </button>
+                    <button type="button" onClick={() => { const arr = [...gameItems]; arr[gi] = { ...arr[gi], is_true: false }; setGameItems(arr); }}
+                      className={`px-4 py-2 rounded-lg font-bold text-sm ${!g.is_true ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+                      ✗ לא נכון
+                    </button>
+                  </div>
+                  <input value={g.explanation} onChange={e => {
+                    const arr = [...gameItems]; arr[gi] = { ...arr[gi], explanation: e.target.value }; setGameItems(arr);
+                  }} className="input-field" placeholder="הסבר" />
+                </div>
+              )}
             </div>
           ))}
-          <AddButton label="הוסף טענה" onClick={() => setGameItems(prev => [...prev, { ...emptyGame, id: genId() }])} />
+          <AddButton label="הוסף טענה" onClick={() => {
+            const next = gameItems.length;
+            setGameItems(prev => [...prev, { ...emptyGame, id: genId() }]);
+            setExpandedGame(next);
+          }} />
         </Section>
 
         {/* ═══ COMMITMENT ═══ */}

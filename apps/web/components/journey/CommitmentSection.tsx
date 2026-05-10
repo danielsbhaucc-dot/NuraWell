@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, CheckCircle2, ArrowLeft, Sparkles } from 'lucide-react';
+import { Heart, CheckCircle2, Sparkles } from 'lucide-react';
 import type { CommitmentData } from '../../lib/types/journey';
-import { AIFeedbackCard } from '../ai/AIFeedbackCard';
 
 interface CommitmentSectionProps {
   commitment: CommitmentData;
@@ -20,99 +19,27 @@ export function CommitmentSection({
   isAccepted,
   onAccept,
   onChoose,
-  stepId,
-  userId,
 }: CommitmentSectionProps) {
   const [accepted, setAccepted] = useState(isAccepted);
-  const [feedbackFlow, setFeedbackFlow] = useState(false);
-  const [almogLoading, setAlmogLoading] = useState(false);
-  const [almogText, setAlmogText] = useState<string | null>(null);
-  const [almogError, setAlmogError] = useState(false);
-  const pendingChoiceRef = useRef<boolean | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     setAccepted(isAccepted);
   }, [isAccepted]);
 
-  const runLessonFeedback = async (acceptedChoice: boolean) => {
-    if (!stepId) return;
-    setAlmogLoading(true);
-    setAlmogText(null);
-    setAlmogError(false);
-    const ac = new AbortController();
-    abortRef.current = ac;
-    try {
-      const res = await fetch('/api/v1/ai/lesson-feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: ac.signal,
-        body: JSON.stringify({
-          step_id: stepId,
-          ...(userId ? { user_id: userId } : {}),
-          interaction_type: 'commitment',
-          commitment_text: acceptedChoice ? commitment.text : undefined,
-          summary: acceptedChoice ? undefined : 'אני ממשיך בלי התחייבות כרגע',
-        }),
-      });
-      const data = (await res.json()) as { reply?: string };
-      if (res.ok && data.reply) setAlmogText(data.reply);
-      else setAlmogError(true);
-    } catch (e) {
-      if ((e as Error).name === 'AbortError') return;
-      setAlmogError(true);
-    } finally {
-      setAlmogLoading(false);
-      abortRef.current = null;
-    }
-  };
-
   const handleAccept = () => {
     setAccepted(true);
-    if (!stepId) {
-      if (onChoose) onChoose(true);
-      else onAccept();
-      return;
-    }
-    pendingChoiceRef.current = true;
-    setFeedbackFlow(true);
-    void runLessonFeedback(true);
+    if (onChoose) onChoose(true);
+    else onAccept();
   };
 
   const handleContinueWithoutCommitment = () => {
     setAccepted(false);
-    if (!stepId) {
-      if (onChoose) onChoose(false);
-      return;
-    }
-    pendingChoiceRef.current = false;
-    setFeedbackFlow(true);
-    void runLessonFeedback(false);
-  };
-
-  const handleContinueAfterAlmog = () => {
-    const c = pendingChoiceRef.current;
-    if (c === true) {
-      if (onChoose) onChoose(true);
-      else onAccept();
-    } else if (c === false && onChoose) {
-      onChoose(false);
-    }
+    if (onChoose) onChoose(false);
   };
 
   const handleUndoCommitment = () => {
-    abortRef.current?.abort();
-    abortRef.current = null;
-    setFeedbackFlow(false);
-    setAlmogLoading(false);
-    setAlmogText(null);
-    setAlmogError(false);
     setAccepted(false);
-    pendingChoiceRef.current = null;
   };
-
-  const showChoiceButtons = !feedbackFlow;
-  const showAlmogCard = feedbackFlow && !!stepId;
 
   return (
     <div className="space-y-5">
@@ -152,11 +79,7 @@ export function CommitmentSection({
         <div className="p-6 bg-white text-center">
           <p className="text-sm text-gray-500 leading-relaxed mb-6">{commitment.description}</p>
 
-          {feedbackFlow && !accepted && (
-            <p className="text-sm text-gray-600 mb-4 leading-relaxed">מחכים למילה קצרה מאלמוג לפני שממשיכים.</p>
-          )}
-
-          {showChoiceButtons && accepted ? (
+          {accepted ? (
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -175,9 +98,7 @@ export function CommitmentSection({
                 <Sparkles className="w-4 h-4 text-amber-500" />
               </div>
             </motion.div>
-          ) : null}
-
-          {showChoiceButtons && !accepted ? (
+          ) : (
             <div className="space-y-3">
               <button
                 type="button"
@@ -200,52 +121,11 @@ export function CommitmentSection({
                 להמשיך בלי התחייבות כרגע
               </button>
             </div>
-          ) : null}
-
-          {feedbackFlow && accepted && (
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="space-y-3"
-            >
-              <div
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl"
-                style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)' }}
-              >
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                <span className="text-emerald-700 font-bold">קיבלת על עצמך! 🌟</span>
-              </div>
-            </motion.div>
           )}
         </div>
       </motion.div>
 
-      {showAlmogCard && (
-        <AIFeedbackCard
-          loading={almogLoading}
-          text={almogText}
-          error={almogError}
-          variant="amber"
-          action={
-            !almogLoading ? (
-              <button
-                type="button"
-                onClick={handleContinueAfterAlmog}
-                className="w-full py-3.5 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99]"
-                style={{
-                  background: 'linear-gradient(135deg, #047857, #10b981)',
-                  boxShadow: '0 6px 20px rgba(16,185,129,0.28)',
-                }}
-              >
-                <span>המשך לשלב הבא</span>
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-            ) : null
-          }
-        />
-      )}
-
-      {(accepted || feedbackFlow) && (
+      {accepted && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -255,8 +135,7 @@ export function CommitmentSection({
           <button
             type="button"
             onClick={handleUndoCommitment}
-            disabled={almogLoading}
-            className="text-sm text-gray-500 hover:text-gray-700 transition-colors underline underline-offset-2 disabled:opacity-40"
+            className="text-sm text-gray-500 hover:text-gray-700 transition-colors underline underline-offset-2"
           >
             התחרטתי — בטל/י התחייבות
           </button>

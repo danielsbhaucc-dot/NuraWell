@@ -6,7 +6,21 @@ type JourneyStepRow = {
   id: string;
   step_number: number;
   title: string;
+  course_id?: string | null;
+  course?: { id?: string; title?: string | null } | { id?: string; title?: string | null }[] | null;
 };
+
+function journeyStepOptionLabel(s: JourneyStepRow): string {
+  const c = s.course;
+  const title =
+    Array.isArray(c) && c[0]?.title
+      ? c[0].title
+      : c && typeof c === 'object' && 'title' in c
+        ? (c as { title?: string | null }).title
+        : null;
+  const journey = (title && String(title).trim()) || 'מסע כללי';
+  return `${journey} · שלב ${s.step_number}: ${s.title}`;
+}
 
 type DataType = 'step' | 'course';
 type AccessLevel = 'public' | 'premium';
@@ -223,7 +237,7 @@ export function SystemKnowledgeIngestForm() {
               >
                 {journeySteps.map((s) => (
                   <option key={s.id} value={s.id}>
-                    צעד {s.step_number}: {s.title}
+                    {journeyStepOptionLabel(s)}
                   </option>
                 ))}
               </select>

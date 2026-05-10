@@ -3,6 +3,11 @@ import { createClient } from '../../../lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { JourneyPage } from '../../../components/journey/JourneyPage';
 import type { JourneyStep, JourneyStepProgress } from '../../../lib/types/journey';
+import {
+  groupJourneyStepsByCourse,
+  pickInitialJourneyGroupKey,
+  type JourneyStepWithCourseDisplay,
+} from '../../../lib/journey/group-journey-by-course';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,16 +16,22 @@ export const metadata: Metadata = {
   description: 'המסע שלך לבריאות טובה יותר — שלב אחר שלב',
 };
 
+type RawStepRow = JourneyStep & {
+  course?: { id: string; title: string | null } | { id: string; title: string | null }[] | null;
+};
+
 export default async function JourneyRoute() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) redirect('/login');
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawSteps } = await (supabase as any)
     .from('journey_steps')
-    .select('*')
+    .select('*, course:courses(id, title)')
     .eq('is_published', true)
     .order('step_number');
 
@@ -30,14 +41,28 @@ export default async function JourneyRoute() {
     .select('*')
     .eq('user_id', user.id);
 
-  const steps = (rawSteps as JourneyStep[]) || [];
+  const rows = (rawSteps as RawStepRow[]) || [];
   const progressList = (rawProgress as JourneyStepProgress[]) || [];
-  const progressMap = new Map(progressList.map(p => [p.step_id, p]));
+  const progressMap = new Map(progressList.map((p) => [p.step_id, p]));
 
-  const stepsWithProgress = steps.map(step => ({
-    ...step,
-    progress: progressMap.get(step.id) || null,
-  }));
+  const stepsWithProgress: JourneyStepWithCourseDisplay[] = rows.map((row) => {
+    const c = row.course;
+    const titleFromCourse =
+      Array.isArray(c) && c[0]?.title
+        ? c[0].title
+        : c && typeof c === 'object' && 'title' in c
+          ? (c as { title?: string | null }).title
+          : null;
+    const { course: _drop, ...stepFields } = row;
+    return {
+      ...(stepFields as JourneyStep),
+      progress: progressMap.get(row.id) ?? null,
+      courseDisplayTitle: titleFromCourse ?? null,
+    };
+  });
 
-  return <JourneyPage steps={stepsWithProgress} />;
+  const groups = groupJourneyStepsByCourse(stepsWithProgress);
+  const initialExpandedKey = pickInitialJourneyGroupKey(groups, progressList);
+
+  return <JourneyPage groups={groups} initialExpandedKey={initialExpandedKey} />;
 }

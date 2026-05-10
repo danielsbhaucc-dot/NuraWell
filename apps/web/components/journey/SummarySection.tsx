@@ -70,7 +70,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
   };
 
   /** הפרדה ברורה בין כותרת לגוף — כמו כרטיסי הפיצ׳רים בעמוד הנחיתה, עם גוף זכוכית */
-  const sectionStackClass = 'px-3 sm:px-6 space-y-5 pb-1';
+  const sectionStackClass = 'px-3 sm:px-6 space-y-7 sm:space-y-8 pb-1';
 
   return (
     <div className="pb-8 w-full max-w-full min-w-0">
@@ -128,14 +128,14 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
           </div>
         </div>
 
-        <div className={`${sectionStackClass} pt-4`}>
+        <div className={`${sectionStackClass} pt-6`}>
           <SummaryGlassSection
             title="מדדים מהשיעור"
             subtitle="שאלות, משחק והתחייבות"
             headerGradient="linear-gradient(145deg, #047857, #059669, #10b981)"
             icon={<FileCheck className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
           >
-            <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3 text-sm w-full">
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 text-sm w-full">
               <div
                 className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-emerald-900/10 shadow-sm"
                 style={{

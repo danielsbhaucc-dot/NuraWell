@@ -98,6 +98,8 @@ export interface JourneyTaskDecision {
 export interface JourneyStepProgress {
   step_id: string;
   user_id: string;
+  created_at?: string;
+  updated_at?: string;
   video_watched: boolean;
   quiz_answers: Record<string, number>; // questionId -> selectedIndex
   quiz_score: number | null;
