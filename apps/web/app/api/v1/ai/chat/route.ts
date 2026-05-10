@@ -25,6 +25,7 @@ import {
   queryUserMemoryVectors,
 } from '../../../../../lib/ai/upstash-vector-rest';
 import { ingestUserMessageIntoVectorMemory } from '../../../../../lib/ai/vector-memory-ingest';
+import { applyChatSignalsFromUserMessage } from '../../../../../lib/ai/chat-signals';
 import { readJsonBody } from '../../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
@@ -570,6 +571,16 @@ ${genderAddressingHint(profileGender)}
             debug_id: debugId,
             stage: `${finishStage}_persist_assistant`,
             error: persistErr instanceof Error ? persistErr.message : String(persistErr),
+          });
+        }
+
+        try {
+          await applyChatSignalsFromUserMessage(supabase, user.id, lastUserText);
+        } catch (sigErr) {
+          console.warn('[ai/chat]', {
+            debug_id: debugId,
+            stage: `${finishStage}_chat_signals`,
+            error: sigErr instanceof Error ? sigErr.message : String(sigErr),
           });
         }
 

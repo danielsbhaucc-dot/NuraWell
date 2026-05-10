@@ -7,6 +7,8 @@ import {
 } from './rag-config';
 import { extractMemoryFactsFromUserMessage } from './extract-memory-facts';
 import { mergeTwoUserMemoryLines } from './merge-memory-lines';
+import { updateAiContext } from './memory';
+import { createAdminClient } from '../supabase/admin';
 import {
   isUpstashVectorConfigured,
   queryUserMemoryVectors,
@@ -26,6 +28,14 @@ function hitMetaText(hit: { metadata?: unknown }): string | null {
   if (!m || typeof m !== 'object') return null;
   const t = (m as { text?: unknown }).text;
   return typeof t === 'string' && t.trim() ? t.trim() : null;
+}
+
+function hitMetaMemoryLevel(hit: { metadata?: unknown }): 2 | 3 | 4 {
+  const m = hit.metadata;
+  if (!m || typeof m !== 'object') return 2;
+  const lv = (m as { memoryLevel?: unknown }).memoryLevel;
+  if (lv === 2 || lv === 3 || lv === 4) return lv;
+  return 2;
 }
 
 /**
@@ -69,6 +79,8 @@ export async function ingestUserMessageIntoVectorMemory(params: {
         text: fact.text.trim(),
         category: fact.category,
         updatedAt: now,
+        memoryLevel: fact.level,
+        isInsight: fact.level >= 3,
       };
       await upsertUserMemoryVector({
         namespace: UPSTASH_NAMESPACE_USER_MEMORY,
@@ -76,6 +88,13 @@ export async function ingestUserMessageIntoVectorMemory(params: {
         vector: vec,
         metadata: meta,
       });
+      if (fact.level === 4) {
+        const admin = createAdminClient();
+        await updateAiContext(admin, params.userId, {
+          core_insight: fact.text.trim().slice(0, 500),
+        });
+      }
+
       upserts.push({ id: exactHit.id, action: 'exact_refresh', text: fact.text.trim() });
       continue;
     }
@@ -86,12 +105,15 @@ export async function ingestUserMessageIntoVectorMemory(params: {
       const prevText = hitMetaText(best)!;
       const mergedText = await mergeTwoUserMemoryLines(prevText, fact.text);
       const mergedVec = await embedTextForRag(mergedText);
+      const mergedLevel = Math.max(hitMetaMemoryLevel(best), fact.level) as 2 | 3 | 4;
 
       const meta: UserMemoryVectorMetadata = {
         userId: params.userId,
         text: mergedText,
         category: fact.category,
         updatedAt: now,
+        memoryLevel: mergedLevel,
+        isInsight: mergedLevel >= 3,
       };
 
       await upsertUserMemoryVector({
@@ -100,6 +122,12 @@ export async function ingestUserMessageIntoVectorMemory(params: {
         vector: mergedVec,
         metadata: meta,
       });
+      if (mergedLevel === 4) {
+        const admin = createAdminClient();
+        await updateAiContext(admin, params.userId, {
+          core_insight: mergedText.trim().slice(0, 500),
+        });
+      }
 
       upserts.push({ id: best.id, action: 'merged', text: mergedText });
       continue;
@@ -111,6 +139,8 @@ export async function ingestUserMessageIntoVectorMemory(params: {
       text: fact.text.trim(),
       category: fact.category,
       updatedAt: now,
+      memoryLevel: fact.level,
+      isInsight: fact.level >= 3,
     };
 
     await upsertUserMemoryVector({
@@ -119,6 +149,12 @@ export async function ingestUserMessageIntoVectorMemory(params: {
       vector: vec,
       metadata: meta,
     });
+    if (fact.level === 4) {
+      const admin = createAdminClient();
+      await updateAiContext(admin, params.userId, {
+        core_insight: fact.text.trim().slice(0, 500),
+      });
+    }
 
     upserts.push({ id, action: 'inserted', text: fact.text.trim() });
   }

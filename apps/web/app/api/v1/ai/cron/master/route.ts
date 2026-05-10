@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
-import { deepseek, openrouter, AI_MODELS } from '../../../../../../lib/ai/client';
+import { deepseek } from '../../../../../../lib/ai/client';
 import { getDeepseekAnalysisModel } from '../../../../../../lib/ai/deepseek-model';
-import { buildUserContext, type AiUserContext } from '../../../../../../lib/ai/memory';
-import { ANALYSIS_PROMPT, REENGAGEMENT_PROMPT } from '../../../../../../lib/ai/prompts';
+import {
+  buildCronOpsNotification,
+  daysSinceIso,
+  decideStaleProfileAction,
+  nudgeThresholdDays,
+  type CronOpsAction,
+} from '../../../../../../lib/ai/cron-ops-action';
+import { type AiUserContext } from '../../../../../../lib/ai/memory';
+import { ANALYSIS_PROMPT } from '../../../../../../lib/ai/prompts';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 
 /** Batch ארוך + קריאות מודלים מרובות — Node לזמן הרצה ארוך יותר מבשרת Vercel Edge */
@@ -26,46 +33,17 @@ const ALLOWED_CONTEXT_PATCH_KEYS = new Set([
   'notes',
 ]);
 
-interface NudgeDecision {
-  should: boolean;
-  reason: string;
-  urgency: 'low' | 'medium' | 'high';
-}
+async function daysSinceLastWeightKg(admin: AdminDb, userId: string): Promise<number | null> {
+  const { data, error } = await admin
+    .from('user_measurements')
+    .select('measured_at')
+    .eq('user_id', userId)
+    .order('measured_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-function shouldNudgeUser(profile: {
-  last_active_at: string | null;
-  ai_context: Record<string, unknown> | null;
-}): NudgeDecision {
-  if (!profile.last_active_at) {
-    return { should: false, reason: 'no_activity_data', urgency: 'low' };
-  }
-
-  const daysSince = Math.floor((Date.now() - new Date(profile.last_active_at).getTime()) / DAY_MS);
-  const ctx = profile.ai_context ?? {};
-  const dropoutRisk = String(ctx.dropout_risk ?? 'low');
-  const engagementPattern = String(ctx.engagement_pattern ?? '');
-
-  let nudgeAfterDays = 2;
-
-  if (dropoutRisk === 'high') nudgeAfterDays = 1;
-  else if (dropoutRisk === 'medium') nudgeAfterDays = 2;
-  else if (dropoutRisk === 'low') nudgeAfterDays = 4;
-
-  if (engagementPattern === 'weekend_drop') nudgeAfterDays += 1;
-
-  if (daysSince < nudgeAfterDays) {
-    return { should: false, reason: 'too_soon', urgency: 'low' };
-  }
-
-  if (daysSince > 21) {
-    return { should: true, reason: 'long_absence', urgency: 'high' };
-  }
-
-  if (dropoutRisk === 'high') {
-    return { should: true, reason: 'high_dropout_risk', urgency: 'high' };
-  }
-
-  return { should: true, reason: 'normal_inactivity', urgency: 'medium' };
+  if (error || !data?.measured_at) return null;
+  return daysSinceIso(data.measured_at as string);
 }
 
 function authorizeCron(request: Request): NextResponse | null {
@@ -131,7 +109,15 @@ async function runMasterCron() {
 
   const errors: string[] = [];
   let analyzed = 0;
-  let nudged = 0;
+  let celebrated = 0;
+  let churnNotificationsSent = 0;
+  const actionCounts: Record<CronOpsAction, number> = {
+    silent: 0,
+    celebrate: 0,
+    micro_win: 0,
+    check_in: 0,
+    re_engage: 0,
+  };
   let analysisSkipped = 0;
   let nudgeSkipped = 0;
 
@@ -216,27 +202,32 @@ async function runMasterCron() {
     }
   }
 
-  // --- 2) Inactive users → GPT-5-mini (OpenRouter) nudge → notifications (cooldown)
-  const { data: stale, error: stErr } = await admin
-    .from('profiles')
-    .select('id, last_active_at, ai_context')
-    .order('last_active_at', { ascending: true })
-    .limit(maxNudge);
+  const maxCelebrate = Math.min(30, Math.max(1, Number(process.env.CRON_MAX_CELEBRATE_USERS) || 8));
+  const threeDaysAgoIso = new Date(Date.now() - 3 * DAY_MS).toISOString();
 
-  if (stErr) {
-    errors.push(`profiles stale: ${stErr.message}`);
+  // --- 2a) רצף גבוה + פעילות אחרונה — חגיגה (בלי LLM)
+  const { data: celebrateRows, error: celErr } = await admin
+    .from('profiles')
+    .select('id, full_name, last_active_at, ai_context, streak_days')
+    .gte('streak_days', 7)
+    .gte('last_active_at', threeDaysAgoIso)
+    .limit(maxCelebrate);
+
+  if (celErr) {
+    errors.push(`profiles celebrate: ${celErr.message}`);
   } else {
-    const staleProfiles = (stale ?? []) as {
+    const celebrateProfiles = (celebrateRows ?? []) as {
       id: string;
+      full_name: string | null;
       last_active_at: string | null;
       ai_context: Record<string, unknown> | null;
+      streak_days: number | null;
     }[];
 
-    for (const profile of staleProfiles) {
+    for (const profile of celebrateProfiles) {
       const userId = profile.id;
       try {
-        const decision = shouldNudgeUser(profile);
-        if (!decision.should) {
+        if (profile.ai_context?.avoid_push === true) {
           nudgeSkipped++;
           continue;
         }
@@ -254,42 +245,124 @@ async function runMasterCron() {
           continue;
         }
 
-        const { contextString } = await buildUserContext(admin, userId);
-        const systemPrompt = `${REENGAGEMENT_PROMPT}\n\n${contextString}`;
-
-        const nudgeCompletion = await openrouter.chat.completions.create({
-          model: AI_MODELS.empathy,
-          temperature: 0.65,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            {
-              role: 'user',
-              content:
-                'כתוב את גוף ההודעה לנוטיפיקציה בלבד (2–3 משפטים, מקסימום 50 מילים). בלי כותרת.',
-            },
-          ],
-        });
-
-        const body = nudgeCompletion.choices[0]?.message?.content?.trim();
-        if (!body) throw new Error('Empty nudge text');
+        const draft = buildCronOpsNotification(
+          'celebrate',
+          profile.full_name,
+          profile.streak_days
+        );
+        if (!draft) continue;
 
         const { error: insErr } = await admin.from('notifications').insert({
           user_id: userId,
           type: 'ai_message',
-          title: 'אלמוג',
-          body,
+          title: draft.title,
+          body: draft.body,
           icon_emoji: '🌿',
           action_url: '/journey',
           is_read: false,
           is_sent: false,
           send_at: new Date().toISOString(),
-          metadata: { source: 'cron_master', model: AI_MODELS.empathy, reason: decision.reason, urgency: decision.urgency },
+          metadata: {
+            source: 'cron_ops',
+            action: 'celebrate' satisfies CronOpsAction,
+            reason: 'streak_active_user',
+            urgency: 'low',
+            template: true,
+          },
         });
 
         if (insErr) throw new Error(insErr.message);
-        nudged++;
+        celebrated++;
+        actionCounts.celebrate++;
       } catch (e) {
-        errors.push(`nudge ${userId}: ${e instanceof Error ? e.message : String(e)}`);
+        errors.push(`celebrate ${userId}: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+  }
+
+  // --- 2b) נידג' לפי החלטת קצין מבצעים — תבניות קבועות (ללא LLM)
+  const twoDaysAgoIso = new Date(Date.now() - 2 * DAY_MS).toISOString();
+  const { data: churnRows, error: stErr } = await admin
+    .from('profiles')
+    .select('id, full_name, last_active_at, ai_context, streak_days')
+    .not('last_active_at', 'is', null)
+    .lt('last_active_at', twoDaysAgoIso)
+    .order('last_active_at', { ascending: false })
+    .limit(maxNudge);
+
+  if (stErr) {
+    errors.push(`profiles churn: ${stErr.message}`);
+  } else {
+    const churnProfiles = (churnRows ?? []) as {
+      id: string;
+      full_name: string | null;
+      last_active_at: string | null;
+      ai_context: Record<string, unknown> | null;
+      streak_days: number | null;
+    }[];
+
+    for (const profile of churnProfiles) {
+      const userId = profile.id;
+      try {
+        const daysSinceActive = daysSinceIso(profile.last_active_at) ?? 999;
+        const weightDays = await daysSinceLastWeightKg(admin, userId);
+        const nudgeAfter = nudgeThresholdDays(profile.ai_context ?? {});
+        const decision = decideStaleProfileAction({
+          daysSinceActive,
+          aiContext: profile.ai_context ?? {},
+          daysSinceLastWeight: weightDays,
+          nudgeAfterDays: nudgeAfter,
+        });
+
+        if (decision.action === 'silent') {
+          actionCounts.silent++;
+          nudgeSkipped++;
+          continue;
+        }
+
+        const { data: recentNudge } = await admin
+          .from('notifications')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('type', 'ai_message')
+          .gte('created_at', cooldownIso)
+          .limit(1);
+
+        if (recentNudge && (recentNudge as unknown[]).length > 0) {
+          nudgeSkipped++;
+          continue;
+        }
+
+        const draft = buildCronOpsNotification(decision.action, profile.full_name, profile.streak_days);
+        if (!draft) {
+          nudgeSkipped++;
+          continue;
+        }
+
+        const { error: insErr } = await admin.from('notifications').insert({
+          user_id: userId,
+          type: 'ai_message',
+          title: draft.title,
+          body: draft.body,
+          icon_emoji: '🌿',
+          action_url: '/journey',
+          is_read: false,
+          is_sent: false,
+          send_at: new Date().toISOString(),
+          metadata: {
+            source: 'cron_ops',
+            action: decision.action,
+            reason: decision.reason,
+            urgency: decision.urgency,
+            template: true,
+          },
+        });
+
+        if (insErr) throw new Error(insErr.message);
+        actionCounts[decision.action]++;
+        churnNotificationsSent++;
+      } catch (e) {
+        errors.push(`cron_ops ${userId}: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
   }
@@ -299,7 +372,9 @@ async function runMasterCron() {
     window_hours: 24,
     analyzed,
     analysis_skipped: analysisSkipped,
-    nudged,
+    celebrated,
+    notifications_sent: celebrated + churnNotificationsSent,
+    action_counts: actionCounts,
     nudge_skipped: nudgeSkipped,
     errors: errors.length ? errors : undefined,
   });

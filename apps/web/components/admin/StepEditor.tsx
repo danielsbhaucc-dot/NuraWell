@@ -62,6 +62,14 @@ export function StepEditor({ step }: StepEditorProps) {
   const [stationId, setStationId] = useState<string>(step?.station_id ?? '');
 
   useEffect(() => {
+    if (!step) {
+      setImmersiveAttentionStops([]);
+      return;
+    }
+    setImmersiveAttentionStops(parseImmersiveAttentionStops(step.text_content));
+  }, [step?.id, step?.text_content]);
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
@@ -122,7 +130,7 @@ export function StepEditor({ step }: StepEditorProps) {
           ? (videoExternalUrl.trim() || null)
           : null,
       video_title: videoTitle || null,
-      text_content: serializeImmersiveAttentionStops(immersiveAttentionStops),
+      text_content: serializeImmersiveAttentionStops(immersiveAttentionStops, step?.text_content ?? null),
       quiz_questions: quizQuestions, game_items: gameItems,
       commitment, researches, tasks, habits,
       pdf_url: pdfUrl || null, pdf_name: pdfName || null,
@@ -222,6 +230,7 @@ export function StepEditor({ step }: StepEditorProps) {
             <SectionTab
               number={2}
               label="וידאו"
+              detail={`${immersiveAttentionStops.length} נקודות קשב`}
               color="#2563eb"
               active={activeSection === 'video'}
               onClick={() => setActiveSection('video')}
@@ -374,7 +383,9 @@ export function StepEditor({ step }: StepEditorProps) {
           <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }}>
             <div className="flex items-center gap-2">
               <Brain className="w-4 h-4 text-blue-600" />
-              <h3 className="text-sm font-black text-blue-800">עצירות קשב במסך מלא ({immersiveAttentionStops.length})</h3>
+              <h3 className="text-sm font-black text-blue-800">
+                נקודות קשב במסך מלא ({immersiveAttentionStops.length})
+              </h3>
             </div>
             <p className="text-xs text-blue-900/80 leading-relaxed">
               יופיע רק בנגן מסך מלא: הסרטון יעצור בזמן שתבחרו, תוצג שאלה קצרה, ואז משוב והמשך אוטומטי או ידני.
@@ -752,12 +763,14 @@ function Section({
 function SectionTab({
   number,
   label,
+  detail,
   color,
   active,
   onClick,
 }: {
   number: number;
   label: string;
+  detail?: string;
   color: string;
   active: boolean;
   onClick: () => void;
@@ -776,8 +789,13 @@ function SectionTab({
       <span className="w-6 h-6 rounded-full text-white text-[11px] font-black flex items-center justify-center" style={{ background: color }}>
         {number}
       </span>
-      <span className="text-sm font-bold" style={{ color: active ? '#111827' : '#4b5563' }}>
-        {label}
+      <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+        <span className="text-sm font-bold" style={{ color: active ? '#111827' : '#4b5563' }}>
+          {label}
+        </span>
+        {detail ? (
+          <span className="text-[11px] font-semibold leading-tight text-slate-500">{detail}</span>
+        ) : null}
       </span>
     </button>
   );

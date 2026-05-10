@@ -6,6 +6,10 @@ function isMemoryMeta(m: unknown): m is UserMemoryVectorMetadata {
   return typeof o.text === 'string' && typeof o.userId === 'string';
 }
 
+function metaLevel(meta: UserMemoryVectorMetadata): number {
+  return meta.memoryLevel ?? 2;
+}
+
 const CATEGORY_LABEL: Record<string, string> = {
   strength: 'חוזק',
   weakness: 'חולשה',
@@ -35,17 +39,30 @@ function formatUpdatedHint(iso: string | undefined): string {
 export function formatRagMemoryContextBlock(hits: QueryHit[], maxItems = 3): string {
   const patternLines: string[] = [];
   const recentLines: string[] = [];
+  const insightLines: string[] = [];
+
+  const sorted = [...hits].sort((a, b) => {
+    const ma = a.metadata && isMemoryMeta(a.metadata) ? metaLevel(a.metadata) : 2;
+    const mb = b.metadata && isMemoryMeta(b.metadata) ? metaLevel(b.metadata) : 2;
+    return mb - ma;
+  });
 
   let n = 0;
-  for (const h of hits) {
+  for (const h of sorted) {
     if (n >= maxItems) break;
     const meta = h.metadata;
     if (!isMemoryMeta(meta)) continue;
     const label = CATEGORY_LABEL[meta.category] ?? meta.category;
     const hint = formatUpdatedHint(meta.updatedAt);
     const suffix = hint ? ` (עודכן ${hint})` : '';
-    const line = `- (${label}) ${meta.text}${suffix}`;
-    if (PATTERN_CATEGORIES.has(meta.category)) {
+    const insightTag = meta.isInsight || meta.memoryLevel === 4 ? 'תובנה' : label;
+    const line =
+      meta.memoryLevel && meta.memoryLevel >= 3
+        ? `- (${insightTag}) ${meta.text}${suffix}`
+        : `- (${label}) ${meta.text}${suffix}`;
+    if (meta.memoryLevel && meta.memoryLevel >= 3) {
+      insightLines.push(line);
+    } else if (PATTERN_CATEGORIES.has(meta.category)) {
       patternLines.push(line);
     } else {
       recentLines.push(line);
@@ -53,12 +70,15 @@ export function formatRagMemoryContextBlock(hits: QueryHit[], maxItems = 3): str
     n += 1;
   }
 
-  if (!patternLines.length && !recentLines.length) return '';
+  if (!patternLines.length && !recentLines.length && !insightLines.length) return '';
 
   const chunks: string[] = [];
   chunks.push(
-    'זיכרון רלוונטי משיחות קודמות (שליפה סמנטית לפי ההודעה הנוכחית — רמזים בלבד, לא רשימה מלאה):'
+    'תובנות ודפוסים מזיכרון (שליפה סמנטית — רמזים בלבד; עדיפות לתובנות לפני אירועים חד-פעמיים):'
   );
+  if (insightLines.length) {
+    chunks.push(`תובנות / שבירה:\n${insightLines.join('\n')}`);
+  }
   if (recentLines.length) {
     chunks.push(`מוקד עדכני / הצלחות / לו״ז:\n${recentLines.join('\n')}`);
   }

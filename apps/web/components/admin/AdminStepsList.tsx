@@ -151,7 +151,7 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
                 )}
                 {attentionStopsCount > 0 && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700">
-                    <Brain className="w-3 h-3" /> {attentionStopsCount} עצירות קשב
+                    <Brain className="w-3 h-3" /> {attentionStopsCount} נקודות קשב
                   </span>
                 )}
               </div>

@@ -3,9 +3,13 @@ import { dedupeExtractedFacts } from './memory-fact-dedupe';
 import { MEMORY_EXTRACTION_MODEL_OPENROUTER } from './rag-config';
 import type { MemoryVectorCategory } from './upstash-vector-rest';
 
+/** רמת שמירה ל-Upstash — רק 2+ נכנסות לאינדקס */
+export type MemoryInsightLevel = 2 | 3 | 4;
+
 export type ExtractedMemoryFact = {
   category: MemoryVectorCategory;
   text: string;
+  level: MemoryInsightLevel;
 };
 
 export type MemoryExtractionResult = {
@@ -96,11 +100,19 @@ function normalizeFactsFromParsed(parsed: unknown): ExtractedMemoryFact[] {
     const row = item as Record<string, unknown>;
     const category = row.category;
     const text = row.text;
+    const levelRaw = row.level;
     if (typeof category !== 'string' || !allowed.includes(category as MemoryVectorCategory)) continue;
     if (typeof text !== 'string') continue;
+    const lv =
+      typeof levelRaw === 'number' && [2, 3, 4].includes(levelRaw)
+        ? (levelRaw as MemoryInsightLevel)
+        : typeof levelRaw === 'string' && /^[234]$/.test(levelRaw.trim())
+          ? (Number(levelRaw.trim()) as MemoryInsightLevel)
+          : null;
+    if (lv === null || lv < 2) continue;
     const clean = text.replace(/\s+/g, ' ').trim();
     if (clean.length < 4 || clean.length > 600) continue;
-    facts.push({ category: category as MemoryVectorCategory, text: clean });
+    facts.push({ category: category as MemoryVectorCategory, text: clean, level: lv });
   }
 
   return dedupeExtractedFacts(facts);
@@ -123,32 +135,37 @@ export async function extractMemoryFactsFromUserMessage(userMessage: string): Pr
 }
 
 async function extractMemoryFactsFromUserMessageInner(msg: string): Promise<MemoryExtractionResult> {
-  const system = `אתה מנוע חילוץ עובדות לליווי בריאות, הרגלים וירידה במשקל (NuraWell).
+  const system = `אתה מנוע חילוץ תובנות לליווי בריאות והרגלים (NuraWell) — לא לאגור עובדות טריוויאליות.
 
 פורמט פלט — חובה מוחלטת:
 - החזר אובייקט JSON יחיד ותקין בלבד.
 - בלי markdown: אסור להשתמש ב-\`\`\` או ב-json או בכותרות.
 - אסור טקסט לפני הסוגר הראשון או אחרי הסוגר האחרון.
-- האובייקט חייב להתחיל ב-{ ולהסתיים ב-}.
 - השדה היחיד הוא "facts" — מערך של אובייקטים, או מערך ריק.
 
-דוגמה תקינה בלבד (שכפל את המבנה, לא את התוכן):
-{"facts":[{"category":"schedule","text":"מתכנן הליכה ביום שני בבוקר"}]}
+רמות (חובה לכל פריט):
+- level 1 — עובדה חד-פעמית ("אכלתי פיצה", "אוהב פסטה") → אל תשלח בכלל (אסור להכליל facts ברמה 1).
+- level 2 — pattern חוזר / טריגר מוכח ("נופל בסופ\"ש באכילה", "ערבים אחרי יום עבודה").
+- level 3 — insight שמשנה גישה ("הקושי קשור לבדידות לא לרעב").
+- level 4 — breakthrough ("הבין ש-X גורם ל-Y וזה משנה את המשמעות").
+
+כל פריט חייב: "category", "text", "level" (מספר 2–4 בלבד).
+
+דוגמה תקינה:
+{"facts":[{"category":"weakness","level":2,"text":"דפוס חוזר של פיצוח בערב אחרי ימים עמוסים"}]}
 
 דוגמה כשאין מה לשמור:
 {"facts":[]}
 
-סכימת כל פריט במערך facts:
-{ "category": "strength" | "weakness" | "success" | "failure" | "schedule", "text": "מחרוזת קצרה בעברית" }
+סכימת כל פריט:
+{ "category": "strength" | "weakness" | "success" | "failure" | "schedule", "text": "מחרוזת קצרה בעברית", "level": 2 | 3 | 4 }
 
-חוקי תוכן:
-- אם ההודעה היא small talk, ברכה, "היי", "מה נשמע", או בלי מידע סביבתי/התנהגותי — החזר {"facts":[]}.
-- אל תשמור מידע לא קשור לליווי (עבודה בטכנולוגיה, באגים, וכו') — {"facts":[]}.
-- שמור רק מה שרלוונטי לבריאות, אוכל, תנועה, שינה, לחץ, משקל, הרגלים, התחייבויות, לו"ז אימונים, דפוסי כישלון/הצלחה.
-- כל "text": משפט אחד או שניים, לכל היותר ~220 תווים, ניסוח מקוצע ושימושי.
-- category: strength | weakness | success | failure | schedule (כפי שמוגדר למעלה).
-- אותו עניין — פריט אחד. לא כפל טקסטים.
-- אם אין עובדות — {"facts":[]}.
+חוקי תוכן (קפדניים):
+- אם אין דפוס חוזר, טריגר רגשי משמעותי, או תובנה שתשנה את גישת המנטור — החזר {"facts":[]}.
+- אם ההודעה היא small talk, ברכה, "היי", "מה נשמע", או רק עובדות חד-פעמיות לא משמעותיות — {"facts":[]}.
+- אל תשמור מידע לא קשור לליווי — {"facts":[]}.
+- כל "text": משפט אחד או שניים, עד ~220 תווים.
+- אותו עניין — פריט אחד.
 
 בדיקה לפני שליחה: המחרוזת שלך חייבת להיות parse-able כ-JSON ללא תיקונים.`;
 

@@ -8,6 +8,12 @@ export interface AiUserContext {
   /** ניתוח תמליל תקופתי (Cron) */
   current_mood_signal?: 'frustrated' | 'motivated' | 'disengaged' | 'neutral' | 'unknown' | string;
   notes?: string;
+  /** תובנת שבריר מגבולות — נטען מחילוץ רמת 4 או ידנית */
+  core_insight?: string;
+  /** חסם מרכזי שהמשתמש ציין בצ'אט (אות בזמן אמת) */
+  main_blocker?: string;
+  /** המשתמש ביקש להפחית דחיפה / התראות AI */
+  avoid_push?: boolean;
 }
 
 export interface BuildUserContextResult {
@@ -118,6 +124,9 @@ export async function buildUserContext(
   if (commitmentSummary) parts.push(`התחייבויות: ${commitmentSummary}`);
   if (progressSummary) parts.push(`שבוע אחרון: ${progressSummary}`);
   if (ctx.notes) parts.push(`תובנה: ${ctx.notes}`);
+  if (ctx.core_insight) parts.push(`תובנת ליבה (לטון המנטור): ${ctx.core_insight}`);
+  if (ctx.main_blocker) parts.push(`חסם מרכזי (מהמשתמש): ${ctx.main_blocker}`);
+  if (ctx.avoid_push) parts.push('העדפה: פחות דחיפה והתראות מאלמוג.');
   if (ctx.current_mood_signal && ctx.current_mood_signal !== 'unknown') {
     parts.push(`אות מצב רגשי (ניתוח אחרון): ${ctx.current_mood_signal}`);
   }
@@ -177,6 +186,9 @@ export async function updateAiContext(
     'dropout_risk',
     'current_mood_signal',
     'notes',
+    'core_insight',
+    'main_blocker',
+    'avoid_push',
   ];
 
   const { data: existing } = await supabase

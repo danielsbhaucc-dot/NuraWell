@@ -15,8 +15,10 @@ export function dedupeExtractedFacts(facts: ExtractedMemoryFact[]): ExtractedMem
   for (const f of facts) {
     const key = normalizeFactTextForDedupe(f.text);
     if (!key) continue;
-    if (!seen.has(key)) {
-      seen.set(key, { ...f, text: f.text.replace(/\s+/g, ' ').trim() });
+    const cleaned = { ...f, text: f.text.replace(/\s+/g, ' ').trim() };
+    const prev = seen.get(key);
+    if (!prev || cleaned.level > prev.level) {
+      seen.set(key, cleaned);
     }
   }
   return [...seen.values()];

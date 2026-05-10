@@ -12,12 +12,73 @@ export interface ImmersiveAttentionStop {
 
 const IMMERSIVE_STOPS_PREFIX = 'NW_IMMERSIVE_STOPS_V1:';
 
+/** מחלץ מערך JSON ברמה העליונה מתוך טקסט, בתוך מחרוזות מכבדים גרשיים ובריחה */
+function sliceTopLevelJsonArray(text: string, openBracketIndex: number): string | null {
+  if (text[openBracketIndex] !== '[') return null;
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  const start = openBracketIndex;
+  for (let i = openBracketIndex; i < text.length; i++) {
+    const c = text[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === '\\') esc = true;
+      else if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') {
+      inStr = true;
+      continue;
+    }
+    if (c === '[') depth++;
+    else if (c === ']') {
+      depth--;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+function extractImmersiveJsonArray(textContent: string): string | null {
+  const text = textContent.startsWith('\uFEFF') ? textContent.slice(1) : textContent;
+  const i = text.indexOf(IMMERSIVE_STOPS_PREFIX);
+  if (i === -1) return null;
+  const rawAfter = text.slice(i + IMMERSIVE_STOPS_PREFIX.length);
+  const wsLen = rawAfter.match(/^\s*/)?.[0].length ?? 0;
+  const rest = rawAfter.slice(wsLen);
+  const bracketIdx = rest.indexOf('[');
+  if (bracketIdx === -1) return null;
+  const absoluteBracket = i + IMMERSIVE_STOPS_PREFIX.length + wsLen + bracketIdx;
+  return sliceTopLevelJsonArray(text, absoluteBracket);
+}
+
+/** מסיר את בלוק עצירות הקשב מהמחרוזת (למשל טקסט נלווה שנשמר באותו שדה) */
+export function stripImmersiveAttentionBlock(textContent: string | null | undefined): string {
+  if (!textContent) return '';
+  const text = textContent.startsWith('\uFEFF') ? textContent.slice(1) : textContent;
+  const i = text.indexOf(IMMERSIVE_STOPS_PREFIX);
+  if (i === -1) return text.trim();
+  const rawAfter = text.slice(i + IMMERSIVE_STOPS_PREFIX.length);
+  const wsLen = rawAfter.match(/^\s*/)?.[0].length ?? 0;
+  const rest = rawAfter.slice(wsLen);
+  const bracketIdx = rest.indexOf('[');
+  if (bracketIdx === -1) {
+    return (text.slice(0, i) + rawAfter).trim();
+  }
+  const absoluteBracket = i + IMMERSIVE_STOPS_PREFIX.length + wsLen + bracketIdx;
+  const jsonSlice = sliceTopLevelJsonArray(text, absoluteBracket);
+  if (!jsonSlice) return text.slice(0, i).trimEnd();
+  const endBlock = absoluteBracket + jsonSlice.length;
+  return (text.slice(0, i) + text.slice(endBlock)).replace(/\n{3,}/g, '\n\n').trim();
+}
+
 export function parseImmersiveAttentionStops(textContent: string | null | undefined): ImmersiveAttentionStop[] {
-  if (!textContent || !textContent.startsWith(IMMERSIVE_STOPS_PREFIX)) return [];
-  const raw = textContent.slice(IMMERSIVE_STOPS_PREFIX.length).trim();
-  if (!raw) return [];
+  if (!textContent) return [];
+  const jsonSlice = extractImmersiveJsonArray(textContent);
+  if (!jsonSlice) return [];
   try {
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(jsonSlice) as unknown;
     if (!Array.isArray(parsed)) return [];
     return parsed
       .map(item => normalizeStop(item))
@@ -28,13 +89,24 @@ export function parseImmersiveAttentionStops(textContent: string | null | undefi
   }
 }
 
-export function serializeImmersiveAttentionStops(stops: ImmersiveAttentionStop[]): string | null {
+export function serializeImmersiveAttentionStops(
+  stops: ImmersiveAttentionStop[],
+  existingTextContent?: string | null
+): string | null {
   const normalized = stops
     .map(stop => normalizeStop(stop))
     .filter((item): item is ImmersiveAttentionStop => Boolean(item))
     .sort((a, b) => a.time_seconds - b.time_seconds);
-  if (!normalized.length) return null;
-  return `${IMMERSIVE_STOPS_PREFIX}${JSON.stringify(normalized)}`;
+
+  const remainder = stripImmersiveAttentionBlock(existingTextContent ?? '').trim();
+
+  if (!normalized.length) {
+    return remainder.length ? remainder : null;
+  }
+
+  const blob = `${IMMERSIVE_STOPS_PREFIX}${JSON.stringify(normalized)}`;
+  if (!remainder.length) return blob;
+  return `${remainder}\n\n${blob}`;
 }
 
 function normalizeStop(value: unknown): ImmersiveAttentionStop | null {

@@ -10,6 +10,10 @@ export type UserMemoryVectorMetadata = {
   updatedAt: string;
   /** גרסת סכימה — לעתיד */
   schema?: string;
+  /** רמת תובנה — 2 דפוס, 3 תובנה, 4 שבירה */
+  memoryLevel?: 2 | 3 | 4;
+  /** תובנה מובחנת (רמה 3+) */
+  isInsight?: boolean;
 };
 
 export type QueryHit = {
