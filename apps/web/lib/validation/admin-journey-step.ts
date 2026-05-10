@@ -48,6 +48,7 @@ const journeyHabitSchema = z.object({
   description: z.string().max(2000).nullable(),
   emoji: z.string().max(32),
   frequency: z.enum(['daily', 'weekly', 'per_meal']),
+  weekly_day: z.number().int().min(0).max(6).nullable().optional(),
 });
 
 const journeyStepPayloadSchema = z

@@ -29,7 +29,14 @@ const emptyQuiz: QuizQuestion = { id: '', question: '', options: ['', '', '', ''
 const emptyGame: GameItem = { id: '', statement: '', is_true: true, explanation: '' };
 const emptyResearch: Research = { id: '', title: '', authors: '', year: '', journal: '', finding: '', url: null };
 const emptyTask: JourneyTask = { id: '', title: '', description: null, emoji: '✅' };
-const emptyHabit: JourneyHabit = { id: '', title: '', description: null, emoji: '💪', frequency: 'daily' };
+const emptyHabit: JourneyHabit = {
+  id: '',
+  title: '',
+  description: null,
+  emoji: '💪',
+  frequency: 'daily',
+  weekly_day: 0,
+};
 const emptyAttentionStop: ImmersiveAttentionStop = {
   id: '',
   time_seconds: 105,
@@ -729,6 +736,27 @@ export function StepEditor({ step }: StepEditorProps) {
                       <option value="per_meal">לפני כל ארוחה</option>
                     </select>
                   </Field>
+                  {h.frequency === 'weekly' ? (
+                    <Field label="יום לבדיקה (שבועי)">
+                      <select
+                        value={h.weekly_day ?? 0}
+                        onChange={(e) => {
+                          const arr = [...habits];
+                          arr[hi] = { ...arr[hi], weekly_day: Number(e.target.value) };
+                          setHabits(arr);
+                        }}
+                        className="input-field"
+                      >
+                        <option value={0}>ראשון</option>
+                        <option value={1}>שני</option>
+                        <option value={2}>שלישי</option>
+                        <option value={3}>רביעי</option>
+                        <option value={4}>חמישי</option>
+                        <option value={5}>שישי</option>
+                        <option value={6}>שבת</option>
+                      </select>
+                    </Field>
+                  ) : null}
                   <button onClick={() => setHabits(prev => prev.filter((_, i) => i !== hi))}
                     className="text-red-500 hover:text-red-700 text-sm font-semibold">מחק הרגל</button>
                 </div>
