@@ -1,7 +1,8 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { mergeAuthCookieOptions } from '@/lib/supabase/cookie-options';
+import { assertServiceRoleKey } from '@/lib/supabase/service-role-jwt';
 
 export const runtime = 'nodejs';
 
@@ -26,38 +27,49 @@ export async function GET(request: NextRequest) {
   }
 
   const ticketId = request.nextUrl.searchParams.get('t');
-  if (!ticketId) {
+  if (!ticketId || !z.string().uuid().safeParse(ticketId).success) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   if (!serviceKey || !url) {
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
   }
 
-  const admin = createClient(url, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const keyCheck = assertServiceRoleKey(serviceKey);
+  if (!keyCheck.ok) {
+    return NextResponse.json({ error: keyCheck.message }, { status: 500 });
+  }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: row, error } = await (admin as any)
-    .from('ops_auth_tickets')
-    .select('access_token, refresh_token, expires_at')
-    .eq('id', ticketId)
-    .maybeSingle();
+  const base = url.replace(/\/$/, '');
+  const headers = {
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`,
+  };
 
-  if (error || !row) {
+  const selRes = await fetch(
+    `${base}/rest/v1/ops_auth_tickets?id=eq.${ticketId}&select=access_token,refresh_token,expires_at`,
+    { headers, cache: 'no-store' }
+  );
+  const rows = (await selRes.json().catch(() => null)) as unknown;
+  if (!selRes.ok || !Array.isArray(rows) || rows.length === 0) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  const r = row as { access_token: string; refresh_token: string; expires_at: string };
+  const r = rows[0] as { access_token: string; refresh_token: string; expires_at: string };
   if (new Date(r.expires_at) < new Date()) {
-    await admin.from('ops_auth_tickets').delete().eq('id', ticketId);
+    await fetch(`${base}/rest/v1/ops_auth_tickets?id=eq.${ticketId}`, {
+      method: 'DELETE',
+      headers: { ...headers, Prefer: 'return=minimal' },
+    });
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  await admin.from('ops_auth_tickets').delete().eq('id', ticketId);
+  await fetch(`${base}/rest/v1/ops_auth_tickets?id=eq.${ticketId}`, {
+    method: 'DELETE',
+    headers: { ...headers, Prefer: 'return=minimal' },
+  });
 
   let response = NextResponse.redirect(new URL('/', request.url));
 
