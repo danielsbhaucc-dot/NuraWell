@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     const msg = error.message || 'RPC failed';
     const hint =
       msg.toLowerCase().includes('invalid api key') || msg.includes('401')
-        ? ' פתח ב-Supabase → Settings → API Keys → טאב Legacy והעתק את service_role (JWT) ל-SUPABASE_SERVICE_ROLE_KEY, או מפתח sb_secret_ ל-SUPABASE_SECRET_KEY. ודא שאין רווחים/שורה נוספת במשתנה ב-Vercel.'
+        ? ' עדכון SUPABASE_SERVICE_ROLE_KEY ב-Vercel לא מנתק את מסד הנתונים ולא משנה את Supabase — רק מתקן מה שהשרת שולח. אל תלחץ Rotate ב-Supabase אלא אם בכוונה מחליפים מפתח בכל המערכת. השווה לטאב Legacy: הערך חייב להיות בדיוק ה-service_role (JWT) או sb_secret ב-SUPABASE_SECRET_KEY, בלי רווח או שורה בסוף.'
         : '';
     return NextResponse.json(
       {
