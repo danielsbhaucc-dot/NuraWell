@@ -1,9 +1,15 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-/** ניתן להרחיב ממסד נתונים / API; כרגע ערכים לדוגמה לבחירה מהירה. */
+/** ניתן להרחיב מ־API קורסים; כרגע מזהה חופשי + דוגמאות. */
 const PRESET_COURSE_IDS = ['course-intro', 'course-nutrition', 'course-movement'];
+
+type JourneyStepRow = {
+  id: string;
+  step_number: number;
+  title: string;
+};
 
 type DataType = 'step' | 'course';
 type AccessLevel = 'public' | 'premium';
@@ -11,12 +17,63 @@ type AccessLevel = 'public' | 'premium';
 export function SystemKnowledgeIngestForm() {
   const [transcript, setTranscript] = useState('');
   const [dataType, setDataType] = useState<DataType>('step');
+  const [journeySteps, setJourneySteps] = useState<JourneyStepRow[]>([]);
+  const [stepsLoading, setStepsLoading] = useState(true);
+  const [stepsError, setStepsError] = useState<string | null>(null);
+  const [selectedStepId, setSelectedStepId] = useState('');
+
   const [courseMode, setCourseMode] = useState<'preset' | 'custom'>('preset');
   const [presetCourseId, setPresetCourseId] = useState(PRESET_COURSE_IDS[0] ?? '');
   const [customCourseId, setCustomCourseId] = useState('');
   const [accessLevel, setAccessLevel] = useState<AccessLevel>('public');
   const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'err'>('idle');
   const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setStepsLoading(true);
+      setStepsError(null);
+      try {
+        const res = await fetch('/api/v1/admin/journey-steps', { credentials: 'include' });
+        const data = (await res.json().catch(() => null)) as JourneyStepRow[] | { error?: string } | null;
+        if (!res.ok) {
+          const err =
+            data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
+              ? data.error
+              : `שגיאה ${res.status}`;
+          if (!cancelled) setStepsError(err);
+          return;
+        }
+        if (!Array.isArray(data)) {
+          if (!cancelled) setStepsError('תגובת שרת לא צפויה');
+          return;
+        }
+        const sorted = [...data].sort((a, b) => (a.step_number ?? 0) - (b.step_number ?? 0));
+        if (!cancelled) {
+          setJourneySteps(sorted);
+          if (sorted.length && !selectedStepId) {
+            setSelectedStepId(sorted[0]!.id);
+          }
+        }
+      } catch {
+        if (!cancelled) setStepsError('שגיאת רשת בטעינת צעדים');
+      } finally {
+        if (!cancelled) setStepsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- רק בטעינה ראשונה
+  }, []);
+
+  useEffect(() => {
+    if (dataType !== 'step' || journeySteps.length === 0) return;
+    if (!selectedStepId || !journeySteps.some((s) => s.id === selectedStepId)) {
+      setSelectedStepId(journeySteps[0]!.id);
+    }
+  }, [dataType, journeySteps, selectedStepId]);
 
   const effectiveCourseId = useMemo(() => {
     if (dataType !== 'course') return '';
@@ -34,6 +91,19 @@ export function SystemKnowledgeIngestForm() {
       return;
     }
 
+    if (dataType === 'step') {
+      if (stepsError || !journeySteps.length) {
+        setStatus('err');
+        setMessage('אין צעדים זמינים — טענו מחדש או הוסיפו צעד במסע.');
+        return;
+      }
+      if (!selectedStepId) {
+        setStatus('err');
+        setMessage('בחרו צעד מהרשימה.');
+        return;
+      }
+    }
+
     try {
       const res = await fetch('/api/admin/ingest', {
         method: 'POST',
@@ -44,6 +114,7 @@ export function SystemKnowledgeIngestForm() {
           dataType,
           accessLevel,
           ...(dataType === 'course' ? { courseId: effectiveCourseId } : {}),
+          ...(dataType === 'step' ? { stepId: selectedStepId } : {}),
         }),
       });
 
@@ -99,7 +170,7 @@ export function SystemKnowledgeIngestForm() {
             onChange={(ev) => setDataType(ev.target.value as DataType)}
             className="w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] font-medium text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
           >
-            <option value="step">שלב (step)</option>
+            <option value="step">שלב במסע (step)</option>
             <option value="course">קורס (course)</option>
           </select>
         </div>
@@ -119,6 +190,42 @@ export function SystemKnowledgeIngestForm() {
           </select>
         </div>
       </div>
+
+      {dataType === 'step' && (
+        <div className="space-y-2 rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-4">
+          <label htmlFor="sk-step" className="block text-sm font-semibold text-emerald-950">
+            צעד במסע (נטען דינמית ממסד)
+          </label>
+          {stepsLoading ? (
+            <p className="text-sm text-emerald-900/80">טוען צעדים…</p>
+          ) : stepsError ? (
+            <p className="text-sm font-medium text-red-700" role="alert">
+              {stepsError}
+            </p>
+          ) : (
+            <>
+              <select
+                id="sk-step"
+                value={selectedStepId}
+                onChange={(ev) => setSelectedStepId(ev.target.value)}
+                className="w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
+              >
+                {journeySteps.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    שלב {s.step_number}: {s.title}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-emerald-900/75">
+                נשמרים בוקטור: <code className="rounded bg-white/80 px-1">stepId</code>,{' '}
+                <code className="rounded bg-white/80 px-1">stepNumber</code>
+                ; אם לצעד יש <code className="rounded bg-white/80 px-1">course_id</code> במסד — גם{' '}
+                <code className="rounded bg-white/80 px-1">courseId</code> לסינון פרימיום.
+              </p>
+            </>
+          )}
+        </div>
+      )}
 
       {dataType === 'course' && (
         <div className="space-y-3 rounded-2xl border border-amber-200/70 bg-amber-50/50 p-4">
@@ -164,7 +271,7 @@ export function SystemKnowledgeIngestForm() {
               type="text"
               value={customCourseId}
               onChange={(ev) => setCustomCourseId(ev.target.value)}
-              placeholder="למשל: course-uuid או מזהה פנימי"
+              placeholder="מזהה קורס (מומלץ UUID כמו ב-enrollments)"
               className="w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/35"
             />
           )}
@@ -173,7 +280,7 @@ export function SystemKnowledgeIngestForm() {
 
       <button
         type="submit"
-        disabled={status === 'loading'}
+        disabled={status === 'loading' || (dataType === 'step' && (stepsLoading || !!stepsError || !journeySteps.length))}
         className="w-full rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-600 px-5 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-600/30 transition hover:brightness-105 active:scale-[0.99] disabled:opacity-60"
       >
         {status === 'loading' ? 'מעלה ומטמיע…' : 'שליחה והטמעה ל־Upstash'}
