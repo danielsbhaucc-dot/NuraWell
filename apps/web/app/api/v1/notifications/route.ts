@@ -5,11 +5,30 @@ import { z } from 'zod';
 import { readJsonBody } from '../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../lib/api/route-guards';
 import { jsonZodError } from '../../../../lib/validation/zod-http';
+import {
+  nextCursorFromRows,
+  parseInboxSearchParams,
+} from '../../../../lib/notifications/inbox-params';
 
-const markSchema = z.object({
-  id: z.string().uuid().optional(),
-  mark_all: z.boolean().optional(),
-});
+const patchSchema = z
+  .object({
+    id: z.string().uuid().optional(),
+    mark_all: z.boolean().optional(),
+    archive_id: z.string().uuid().optional(),
+    unarchive_id: z.string().uuid().optional(),
+  })
+  .refine(
+    (d) => {
+      const actions = [
+        d.mark_all === true,
+        Boolean(d.id),
+        Boolean(d.archive_id),
+        Boolean(d.unarchive_id),
+      ].filter(Boolean);
+      return actions.length === 1;
+    },
+    { message: 'Provide exactly one of: mark_all (true), id, archive_id, unarchive_id' }
+  );
 
 export async function GET(request: Request) {
   try {
@@ -17,20 +36,70 @@ export async function GET(request: Request) {
     if (!auth.ok) return auth.response;
 
     const { supabase, user } = auth;
+    const url = new URL(request.url);
+    const p = parseInboxSearchParams(url.searchParams);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    let q = (supabase as any)
       .from('notifications')
-      .select('id, title, body, icon_emoji, action_url, is_read, created_at, type')
+      .select(
+        'id, title, body, icon_emoji, action_url, is_read, created_at, type, archived_at'
+      )
+      .eq('user_id', user.id);
+
+    if (p.archived) {
+      q = q.not('archived_at', 'is', null);
+    } else {
+      q = q.is('archived_at', null);
+    }
+
+    if (p.unreadOnly) {
+      q = q.eq('is_read', false);
+    }
+
+    if (p.types && p.types.length > 0) {
+      q = q.in('type', p.types);
+    }
+
+    if (p.cursor) {
+      q = q.lt('created_at', p.cursor);
+    }
+
+    q = q.order('created_at', { ascending: false }).limit(p.limit);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const countPromise = (supabase as any)
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(20);
+      .is('archived_at', null)
+      .eq('is_read', false);
+
+    const [{ data, error }, countResult] = await Promise.all([q, countPromise]);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ notifications: data ?? [] });
+    if (countResult?.error) {
+      return NextResponse.json({ error: (countResult.error as Error).message }, { status: 500 });
+    }
+
+    const rows = (data ?? []) as Array<Record<string, unknown>>;
+    const next_cursor = nextCursorFromRows(
+      rows.map((r) => ({ created_at: String(r.created_at ?? '') })),
+      p.limit
+    );
+
+    const unread_total =
+      typeof countResult?.count === 'number' ? countResult.count : 0;
+
+    return NextResponse.json({
+      notifications: data ?? [],
+      next_cursor,
+      limit: p.limit,
+      unread_total,
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },
@@ -47,29 +116,66 @@ export async function PATCH(request: Request) {
     const raw = await readJsonBody(request);
     if (!raw.ok) return raw.response;
 
-    const parsed = markSchema.safeParse(raw.value);
+    const parsed = patchSchema.safeParse(raw.value);
     if (!parsed.success) return jsonZodError(parsed.error, 'Invalid body');
 
-    const { id, mark_all } = parsed.data;
     const { supabase, user } = auth;
+    const d = parsed.data;
+    const now = new Date().toISOString();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any).from('notifications').update({ is_read: true }).eq('user_id', user.id);
+    const tbl = () => (supabase as any).from('notifications');
 
-    if (mark_all) {
-      query = query.eq('is_read', false);
-    } else if (id) {
-      query = query.eq('id', id);
-    } else {
-      return NextResponse.json({ error: 'Provide id or mark_all=true' }, { status: 400 });
+    if (d.mark_all === true) {
+      const { error } = await tbl()
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false)
+        .is('archived_at', null);
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ ok: true });
     }
 
-    const { error } = await query;
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (d.archive_id) {
+      const { error } = await tbl()
+        .update({ archived_at: now })
+        .eq('user_id', user.id)
+        .eq('id', d.archive_id);
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ ok: true });
     }
 
-    return NextResponse.json({ ok: true });
+    if (d.unarchive_id) {
+      const { error } = await tbl()
+        .update({ archived_at: null })
+        .eq('user_id', user.id)
+        .eq('id', d.unarchive_id);
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    if (d.id) {
+      const { error } = await tbl()
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('id', d.id);
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },

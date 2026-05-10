@@ -23,7 +23,7 @@ export function BottomNav() {
   const actionHub = useActionHub();
 
   useEffect(() => {
-    const fastRoutes = ['/courses', '/journey', '/journey/declined', '/progress', '/profile'];
+    const fastRoutes = ['/courses', '/journey', '/journey/declined', '/progress', '/profile', '/settings/almog'];
     fastRoutes.forEach((href) => router.prefetch(href));
   }, [router]);
 

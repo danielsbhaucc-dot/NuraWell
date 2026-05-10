@@ -3,7 +3,7 @@ import { BookOpen } from 'lucide-react';
 import { SystemKnowledgeIngestForm } from '@/components/admin/SystemKnowledgeIngestForm';
 
 export const metadata: Metadata = {
-  title: 'הזנת ידע RAG',
+  title: 'לאמן את אלמוג',
   robots: { index: false, follow: false },
 };
 
@@ -15,10 +15,10 @@ export default function SystemRagIngestPage() {
           <BookOpen size={24} aria-hidden />
         </div>
         <div>
-          <h1 className="font-display text-2xl font-black text-slate-900 sm:text-3xl">הזנת ידע למערכת (RAG)</h1>
-          <p className="mt-1 text-[15px] text-slate-600">
-            פיצול דטרמיניסטי, embedding ב־OpenRouter, ואחסון ב־Upstash Vector (namespace{' '}
-            <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sm">system-knowledge</code>).
+          <h1 className="font-display text-2xl font-black text-slate-900 sm:text-3xl">לאמן את אלמוג</h1>
+          <p className="mt-1 text-[15px] leading-relaxed text-slate-600">
+            העלו חומר לימוד או הנחיות — אלמוג ילמד אותו וישתמש בו בשיחות, רק כשכל משתמש מגיע לצעד או לקורס המתאים.
+            אין צורך במילים טכניות: בוחרים את התוכן, מאשרים לאן הוא משויך, ולוחצים &quot;אמן את אלמוג&quot;.
           </p>
         </div>
       </header>

@@ -239,10 +239,10 @@ export function AdminShell({
               href="/system-rag-ingest"
               onClick={() => setSidebarOpen(false)}
               className={navBtn(isSystemRagIngest, 'emerald')}
-              title="הזנת ידע RAG"
+              title="לאמן את אלמוג — חומר למסע"
             >
               <BookOpen size={20} className={cn('shrink-0', isSystemRagIngest && 'text-emerald-600')} />
-              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>ידע RAG</span>
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>לאמן את אלמוג</span>
               {isSystemRagIngest && showNavLabels && (
                 <span className="mr-auto hidden h-2 w-2 rounded-full bg-emerald-500 lg:inline-block" aria-hidden />
               )}

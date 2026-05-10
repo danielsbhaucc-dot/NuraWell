@@ -59,6 +59,7 @@ export function decideStaleProfileAction(params: {
   const mood = String(ctx.current_mood_signal ?? '');
 
   if (
+    !ctx.skip_weight_check_ins &&
     params.daysSinceLastWeight !== null &&
     params.daysSinceLastWeight >= 5 &&
     params.daysSinceActive <= 21
