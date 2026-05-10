@@ -14,20 +14,57 @@ const CATEGORY_LABEL: Record<string, string> = {
   schedule: 'לו״ז / התחייבות',
 };
 
+/** קטגוריות שמתאימות יותר ל"דפוסים" מאשר לאירוע חד-פעמי */
+const PATTERN_CATEGORIES = new Set<string>(['weakness', 'failure']);
+
+function formatUpdatedHint(iso: string | undefined): string {
+  if (!iso || typeof iso !== 'string') return '';
+  try {
+    const d = new Date(iso.trim());
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
+  } catch {
+    return '';
+  }
+}
+
 /**
  * טקסט להזרקה ל-system prompt — עד k פריטים.
+ * מפריד בין דפוסים (חולשה/כשל) לבין עדכני (חוזק/הצלחה/לו״ז) כדי לתת "משקל" ברור יותר למנטור.
  */
 export function formatRagMemoryContextBlock(hits: QueryHit[], maxItems = 3): string {
-  const lines: string[] = [];
+  const patternLines: string[] = [];
+  const recentLines: string[] = [];
+
   let n = 0;
   for (const h of hits) {
     if (n >= maxItems) break;
     const meta = h.metadata;
     if (!isMemoryMeta(meta)) continue;
     const label = CATEGORY_LABEL[meta.category] ?? meta.category;
-    lines.push(`- (${label}) ${meta.text}`);
+    const hint = formatUpdatedHint(meta.updatedAt);
+    const suffix = hint ? ` (עודכן ${hint})` : '';
+    const line = `- (${label}) ${meta.text}${suffix}`;
+    if (PATTERN_CATEGORIES.has(meta.category)) {
+      patternLines.push(line);
+    } else {
+      recentLines.push(line);
+    }
     n += 1;
   }
-  if (!lines.length) return '';
-  return `זיכרון רלוונטי משיחות קודמות (שליפה סמנטית, לא רשימה מלאה):\n${lines.join('\n')}`;
+
+  if (!patternLines.length && !recentLines.length) return '';
+
+  const chunks: string[] = [];
+  chunks.push(
+    'זיכרון רלוונטי משיחות קודמות (שליפה סמנטית לפי ההודעה הנוכחית — רמזים בלבד, לא רשימה מלאה):'
+  );
+  if (recentLines.length) {
+    chunks.push(`מוקד עדכני / הצלחות / לו״ז:\n${recentLines.join('\n')}`);
+  }
+  if (patternLines.length) {
+    chunks.push(`דפוסי קושי / כשל חוזר:\n${patternLines.join('\n')}`);
+  }
+
+  return chunks.join('\n\n');
 }
