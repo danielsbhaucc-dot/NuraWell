@@ -5,6 +5,7 @@ import { User } from '@supabase/supabase-js';
 import { BookOpen, TrendingUp, UserCircle, X, Menu, Bell } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNotificationsDrawer } from '../notifications/NotificationsProvider';
 
 interface MobileHeaderProps {
   user: User;
@@ -19,6 +20,7 @@ const menuItems = [
 
 export function MobileHeader({ user, title }: MobileHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { open: openNotifications, unreadCount } = useNotificationsDrawer();
   const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'משתמש';
   const firstName = String(fullName).trim().split(/\s+/)[0] || 'משתמש';
 
@@ -57,11 +59,28 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
           {/* Actions */}
           <div className="flex items-center gap-2">
             <button
-              aria-label="התראות"
-              className="w-[42px] h-[42px] rounded-[14px] flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-90"
-              style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15)' }}
+              type="button"
+              aria-label={unreadCount > 0 ? `התראות, ${unreadCount} שלא נקראו` : 'התראות'}
+              onClick={() => openNotifications()}
+              className="relative w-[42px] h-[42px] rounded-[14px] flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-90"
+              style={{
+                background: 'linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08))',
+                border: '1px solid rgba(255,255,255,0.35)',
+                backdropFilter: 'blur(10px)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 16px rgba(192,38,211,0.15)',
+              }}
             >
-              <Bell className="w-5 h-5 text-white/90" />
+              <Bell className="w-5 h-5 text-white drop-shadow-sm" strokeWidth={2.2} />
+              {unreadCount > 0 && (
+                <span
+                  className="absolute -right-0.5 -top-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-black leading-none text-white border-2 border-white/90 shadow-md"
+                  style={{
+                    background: 'linear-gradient(135deg, #f97316, #ec4899, #a855f7)',
+                  }}
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </button>
             <button
               aria-label={isMenuOpen ? 'סגור תפריט' : 'פתח תפריט'}
