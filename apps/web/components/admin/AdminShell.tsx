@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Globe,
   LayoutDashboard,
+  BookOpen,
   ListTree,
   Map,
   Menu,
@@ -59,6 +60,7 @@ export function AdminShell({
   const isHome = np === '/ops';
   const isAlmogSettings = np === '/ops/almog';
   const isSiteSettings = np === '/ops/site-settings';
+  const isSystemRagIngest = np === '/ops/system-rag-ingest';
   const isJourneyManage = np.startsWith('/ops/journey') || np.startsWith('/ops/steps');
 
   const [journeySettingsOpen, setJourneySettingsOpen] = useState(isJourneyManage);
@@ -238,6 +240,19 @@ export function AdminShell({
             >
               <Globe size={20} className={cn('shrink-0', isSiteSettings && 'text-sky-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>הגדרות אתר</span>
+            </Link>
+
+            <Link
+              href="/system-rag-ingest"
+              onClick={() => setSidebarOpen(false)}
+              className={navBtn(isSystemRagIngest, 'emerald')}
+              title="הזנת ידע RAG"
+            >
+              <BookOpen size={20} className={cn('shrink-0', isSystemRagIngest && 'text-emerald-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>ידע RAG</span>
+              {isSystemRagIngest && showNavLabels && (
+                <span className="mr-auto hidden h-2 w-2 rounded-full bg-emerald-500 lg:inline-block" aria-hidden />
+              )}
             </Link>
 
             {sidebarCollapsed ? (

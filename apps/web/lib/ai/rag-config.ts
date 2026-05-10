@@ -3,6 +3,9 @@
 /** Namespace ייעודי לזיכרון צ'אט; בעתיד אפשר להוסיף למשל `course-material`. */
 export const UPSTASH_NAMESPACE_USER_MEMORY = 'user-memory';
 
+/** ידע מערכת (RAG) — אינדקס Upstash ייעודי (UPSTASH_SYSTEM_VECTOR_*); namespace לוגי בתוך האינדקס. */
+export const UPSTASH_NAMESPACE_SYSTEM_KNOWLEDGE = 'system-knowledge';
+
 export const EMBEDDING_MODEL_OPENROUTER = 'openai/text-embedding-3-small';
 
 /** חילוץ עובדות אסינכרוני — Llama 4 Scout דרך OpenRouter */
