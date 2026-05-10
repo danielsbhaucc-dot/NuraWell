@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileCheck, RotateCcw, BookOpen, Download, CheckCircle2,
   ChevronDown, ExternalLink, Award, Sparkles, ListChecks, Heart,
-  Check, X,
+  Check, X, Route,
 } from 'lucide-react';
 import type {
   JourneyStep,
@@ -14,7 +14,7 @@ import type {
   Research,
 } from '../../lib/types/journey';
 import Link from 'next/link';
-import { AlmogAvatarChip } from './AlmogPresence';
+import { AlmogAvatarChipWithNameTag } from './AlmogPresence';
 import { isCommitmentGateResolved } from '../../lib/journey/commitment-gate';
 import { emojiFromWellnessText } from '../../lib/emoji-from-text';
 import { useProgressReport } from '../progress-report/ProgressReportProvider';
@@ -27,9 +27,21 @@ interface SummarySectionProps {
   onTaskDecisionChange: (taskId: string, status: JourneyTaskDecisionStatus) => void | Promise<void>;
 }
 
+type AccordionKey = 'learn' | 'tasks' | 'habits' | 'research' | 'pdf';
+
 export function SummarySection({ step, progress, onReplay, onComplete, onTaskDecisionChange }: SummarySectionProps) {
   const progressReport = useProgressReport();
   const [expandedResearch, setExpandedResearch] = useState<string | null>(null);
+  const [accordionOpen, setAccordionOpen] = useState<Record<AccordionKey, boolean>>({
+    learn: false,
+    tasks: false,
+    habits: false,
+    research: false,
+    pdf: false,
+  });
+  const toggleAccordion = (key: AccordionKey) => {
+    setAccordionOpen((p) => ({ ...p, [key]: !p[key] }));
+  };
   const [taskBusyId, setTaskBusyId] = useState<string | null>(null);
   const quizTotal = step.quiz_questions.length;
   const quizCorrect = progress.quiz_score ?? 0;
@@ -74,6 +86,14 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
   /** הפרדה ברורה בין כותרת לגוף — כמו כרטיסי הפיצ׳רים בעמוד הנחיתה, עם גוף זכוכית */
   const sectionStackClass = 'px-3 sm:px-6 space-y-7 sm:space-y-8 pb-1';
 
+  const hasLearn = Boolean(step.summary_text);
+  const hasTasks = step.tasks.length > 0;
+  const hasHabits = step.habits.length > 0;
+  const hasResearch = step.researches.length > 0;
+  const hasPdf = Boolean(step.pdf_url);
+  const timelineSectionCount =
+    Number(hasLearn) + Number(hasTasks) + Number(hasHabits) + Number(hasResearch) + Number(hasPdf);
+
   return (
     <div className="pb-8 w-full max-w-full min-w-0">
       {/* פאנל זכוכית אחד לכל תוכן הסיכום */}
@@ -84,7 +104,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
         style={glassPanelStyle}
       >
         <div className="px-3 sm:px-6 pt-5 pb-2">
-          <div className="flex items-center justify-center gap-3 flex-row-reverse flex-wrap sm:flex-nowrap">
+          <div className="flex items-center justify-center gap-4 flex-row-reverse flex-wrap sm:flex-nowrap">
             <div
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full"
               style={{
@@ -97,10 +117,10 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               <FileCheck className="w-4 h-4 text-emerald-700 shrink-0" />
               <span className="text-sm font-black text-emerald-900">סיכום השיעור</span>
             </div>
-            <AlmogAvatarChip size={46} />
+            <AlmogAvatarChipWithNameTag size={46} name="אלמוג" />
           </div>
           <p className="text-center text-[11px] sm:text-xs text-emerald-900/75 font-semibold mt-2">
-            מסכם איתך את הצעד
+            מסכם איתך את השלב
           </p>
         </div>
 
@@ -130,7 +150,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
           </div>
         </div>
 
-        <div className={`${sectionStackClass} pt-6`}>
+        <div className={`${sectionStackClass} pt-6 mb-5`}>
           <SummaryGlassSection
             title="מדדים מהשיעור"
             subtitle="שאלות, משחק והתחייבות"
@@ -184,14 +204,41 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
           </SummaryGlassSection>
         </div>
 
-        {/* Summary text */}
+        {timelineSectionCount > 0 ? (() => {
+          const nextTimeline = (() => {
+            let v = 0;
+            return () => ++v;
+          })();
+          return (
+            <div className="px-3 sm:px-6 pb-1 pt-6">
+              <div className="relative mx-auto w-full max-w-lg min-w-0 pr-11 sm:pr-[52px]">
+                <div
+                  className="pointer-events-none absolute right-[21px] top-12 bottom-10 z-0 border-r-2 border-dashed border-emerald-400/50"
+                  aria-hidden
+                />
+                <div
+                  className="pointer-events-none absolute right-[13px] top-1 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-emerald-200/90 bg-white shadow-md shadow-emerald-900/10"
+                  aria-hidden
+                >
+                  <Route className="h-3.5 w-3.5 text-emerald-600" strokeWidth={2.4} />
+                </div>
+                <div className="relative z-[1] space-y-10">
+        {/* מה למדנו */}
         {step.summary_text && (
-          <div className={sectionStackClass}>
-            <SummaryGlassSection
+          <div className="relative">
+            <div
+              className="absolute right-0 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full border-[2.5px] border-emerald-500 bg-white text-sm font-black text-emerald-900 shadow-md shadow-emerald-900/10"
+              aria-hidden
+            >
+              {nextTimeline()}
+            </div>
+            <AccordionSummarySection
               title="מה למדנו?"
               subtitle="נקודות מרכזיות מהשיעור"
               headerGradient="linear-gradient(145deg, #065f46, #047857, #059669)"
               icon={<BookOpen className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+              isOpen={accordionOpen.learn}
+              onToggle={() => toggleAccordion('learn')}
             >
               <p
                 className="text-[15px] text-gray-800 leading-relaxed [overflow-wrap:anywhere] break-words hyphens-auto"
@@ -199,18 +246,26 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               >
                 {step.summary_text}
               </p>
-            </SummaryGlassSection>
+            </AccordionSummarySection>
           </div>
         )}
 
         {/* Tasks */}
         {step.tasks.length > 0 && (
-          <div className={`${sectionStackClass} w-full min-w-0 max-w-full overflow-x-clip`}>
-            <SummaryGlassSection
+          <div className="relative w-full min-w-0 max-w-full overflow-x-clip">
+            <div
+              className="absolute right-0 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full border-[2.5px] border-emerald-500 bg-white text-sm font-black text-emerald-900 shadow-md shadow-emerald-900/10"
+              aria-hidden
+            >
+              {nextTimeline()}
+            </div>
+            <AccordionSummarySection
               title="משימות לביצוע"
               subtitle="בחר מה מקובל עליך כרגע — אלמוג יזכור ויתאים את ההכוונה"
               headerGradient="linear-gradient(145deg, #b45309, #d97706, #f59e0b)"
               icon={<ListChecks className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+              isOpen={accordionOpen.tasks}
+              onToggle={() => toggleAccordion('tasks')}
             >
             <div className="flex flex-col gap-5 w-full min-w-0">
               {step.tasks.map((task) => {
@@ -359,18 +414,26 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                 );
               })}
             </div>
-            </SummaryGlassSection>
+            </AccordionSummarySection>
           </div>
         )}
 
         {/* Habits */}
         {step.habits.length > 0 && (
-          <div className={sectionStackClass}>
-            <SummaryGlassSection
+          <div className="relative">
+            <div
+              className="absolute right-0 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full border-[2.5px] border-emerald-500 bg-white text-sm font-black text-emerald-900 shadow-md shadow-emerald-900/10"
+              aria-hidden
+            >
+              {nextTimeline()}
+            </div>
+            <AccordionSummarySection
               title="הרגלים חדשים"
-              subtitle="אלו ההרגלים של הצעד — אלמוג יתבסס עליהם בשיחות"
+              subtitle="אלו ההרגלים של השלב — אלמוג יתבסס עליהם בשיחות"
               headerGradient="linear-gradient(145deg, #047857, #10b981, #34d399)"
               icon={<Heart className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+              isOpen={accordionOpen.habits}
+              onToggle={() => toggleAccordion('habits')}
             >
             <div className="flex flex-col gap-4 w-full min-w-0">
               {step.habits.map((habit) => {
@@ -451,18 +514,26 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                 );
               })}
             </div>
-            </SummaryGlassSection>
+            </AccordionSummarySection>
           </div>
         )}
 
         {/* Research accordion */}
         {step.researches.length > 0 && (
-          <div className={sectionStackClass}>
-            <SummaryGlassSection
+          <div className="relative">
+            <div
+              className="absolute right-0 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full border-[2.5px] border-emerald-500 bg-white text-sm font-black text-emerald-900 shadow-md shadow-emerald-900/10"
+              aria-hidden
+            >
+              {nextTimeline()}
+            </div>
+            <AccordionSummarySection
               title="מחקרים תומכים"
               subtitle="מקורות וממצאים לעיון"
               headerGradient="linear-gradient(145deg, #1d4ed8, #3b82f6, #60a5fa)"
               icon={<Award className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+              isOpen={accordionOpen.research}
+              onToggle={() => toggleAccordion('research')}
             >
             <div className="space-y-3 w-full min-w-0">
               {step.researches.map((research) => (
@@ -474,18 +545,26 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                 />
               ))}
             </div>
-            </SummaryGlassSection>
+            </AccordionSummarySection>
           </div>
         )}
 
         {/* PDF Download */}
         {step.pdf_url && (
-          <div className={sectionStackClass}>
-            <SummaryGlassSection
+          <div className="relative">
+            <div
+              className="absolute right-0 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full border-[2.5px] border-emerald-500 bg-white text-sm font-black text-emerald-900 shadow-md shadow-emerald-900/10"
+              aria-hidden
+            >
+              {nextTimeline()}
+            </div>
+            <AccordionSummarySection
               title="חומר להורדה"
               subtitle="סיכום בקובץ PDF"
               headerGradient="linear-gradient(145deg, #0f766e, #14b8a6, #2dd4bf)"
               icon={<Download className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+              isOpen={accordionOpen.pdf}
+              onToggle={() => toggleAccordion('pdf')}
             >
             <a
               href={step.pdf_url}
@@ -509,9 +588,14 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               </div>
               <ExternalLink className="w-4 h-4 text-gray-400 shrink-0" />
             </a>
-            </SummaryGlassSection>
+            </AccordionSummarySection>
           </div>
         )}
+                </div>
+              </div>
+            </div>
+          );
+        })() : null}
 
         {/* Action buttons */}
         <div className={`${sectionStackClass} pt-2 pb-6`}>
@@ -629,6 +713,109 @@ function SummaryGlassSection({
       >
         {children}
       </div>
+    </div>
+  );
+}
+
+function AccordionSummarySection({
+  title,
+  subtitle,
+  headerGradient,
+  icon,
+  isOpen,
+  onToggle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  headerGradient: string;
+  icon: ReactNode;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  const panelUid = useId().replace(/:/g, '');
+  const btnId = `acc-h-${panelUid}`;
+  const panelId = `acc-p-${panelUid}`;
+
+  return (
+    <div
+      className="mx-auto w-full max-w-lg min-w-0 overflow-hidden rounded-[24px]"
+      style={{
+        border: '1px solid rgba(255,255,255,0.58)',
+        boxShadow:
+          '0 16px 48px rgba(6,78,59,0.13), 0 0 0 1px rgba(255,255,255,0.22) inset',
+      }}
+    >
+      <button
+        type="button"
+        id={btnId}
+        aria-expanded={isOpen}
+        aria-controls={panelId}
+        onClick={onToggle}
+        className="flex w-full flex-row-reverse items-center justify-between gap-3 px-4 py-3.5 sm:px-5 sm:py-4"
+        style={{
+          background: headerGradient,
+          boxShadow: 'inset 0 -1px 0 rgba(0,0,0,0.07)',
+        }}
+      >
+        <ChevronDown
+          className={`h-5 w-5 shrink-0 text-white/95 transition-transform duration-200 ${isOpen ? '-rotate-180' : ''}`}
+          strokeWidth={2.4}
+          aria-hidden
+        />
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+            style={{
+              background: 'rgba(255,255,255,0.22)',
+              border: '1px solid rgba(255,255,255,0.38)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4)',
+            }}
+          >
+            {icon}
+          </div>
+          <div className="min-w-0 flex-1 text-right">
+            <h3
+              className="text-[15px] font-black leading-snug text-white sm:text-base"
+              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.14)' }}
+            >
+              {title}
+            </h3>
+            {subtitle ? (
+              <p className="mt-1 text-[11px] font-semibold leading-relaxed text-white/90 sm:text-xs">{subtitle}</p>
+            ) : null}
+          </div>
+        </div>
+      </button>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            id={panelId}
+            role="region"
+            aria-labelledby={btnId}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+            className="overflow-hidden"
+          >
+            <div
+              className="px-3.5 py-4 sm:px-4 sm:py-[18px]"
+              style={{
+                background:
+                  'linear-gradient(165deg, rgba(255,255,255,0.58) 0%, rgba(236,253,245,0.4) 52%, rgba(255,255,255,0.52) 100%)',
+                backdropFilter: 'blur(24px) saturate(1.25)',
+                WebkitBackdropFilter: 'blur(24px) saturate(1.25)',
+                borderTop: '1px solid rgba(255,255,255,0.62)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.75)',
+              }}
+            >
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

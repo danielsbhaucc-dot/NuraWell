@@ -6,20 +6,25 @@ type JourneyStepRow = {
   id: string;
   step_number: number;
   title: string;
-  course_id?: string | null;
-  course?: { id?: string; title?: string | null } | { id?: string; title?: string | null }[] | null;
+  station_id?: string | null;
+  journey_stations?: { id?: string; title?: string | null; sort_order?: number } | { title?: string | null }[] | null;
 };
 
-function journeyStepOptionLabel(s: JourneyStepRow): string {
-  const c = s.course;
+function stationTitleFromStepRow(s: JourneyStepRow): string {
+  const j = s.journey_stations;
   const title =
-    Array.isArray(c) && c[0]?.title
-      ? c[0].title
-      : c && typeof c === 'object' && 'title' in c
-        ? (c as { title?: string | null }).title
+    Array.isArray(j) && j[0]?.title
+      ? j[0].title
+      : j && typeof j === 'object' && 'title' in j
+        ? (j as { title?: string | null }).title
         : null;
-  const journey = (title && String(title).trim()) || 'מסע כללי';
-  return `${journey} · שלב ${s.step_number}: ${s.title}`;
+  const t = title && String(title).trim();
+  return t || 'ללא תחנה';
+}
+
+function journeyStepOptionLabel(s: JourneyStepRow): string {
+  const station = stationTitleFromStepRow(s);
+  return `${station} · שלב ${s.step_number}: ${s.title}`;
 }
 
 type DataType = 'step' | 'course';
@@ -111,12 +116,12 @@ export function SystemKnowledgeIngestForm() {
     if (dataType === 'step') {
       if (stepsError || !journeySteps.length) {
         setStatus('err');
-        setMessage('אין צעדים זמינים — טענו מחדש או הוסיפו צעד במסע.');
+        setMessage('אין שלבים זמינים — טענו מחדש או הוסיפו שלב בתחנה.');
         return;
       }
       if (!selectedStepId) {
         setStatus('err');
-        setMessage('בחרו צעד מהרשימה.');
+        setMessage('בחרו שלב מהרשימה.');
         return;
       }
     }
@@ -150,7 +155,7 @@ export function SystemKnowledgeIngestForm() {
       const chunks = typeof data.chunks === 'number' ? data.chunks : null;
       setMessage(
         chunks != null
-          ? `החומר נשמר והוטמע בהצלחה. חילקנו אותו ל־${chunks} חלקים קצרים כדי שאלמוג יוכל למצוא אותו בשיחה — רק למשתמשים שהגיעו לשלב וההרשאות המתאימות.`
+          ? `החומר נשמר והוטמע בהצלחה. חילקנו אותו ל־${chunks} חלקים קצרים כדי שאלמוג יוכל למצוא אותו בשיחה — רק למשתמשים שהגיעו לתחנה ולשלב המתאימים וההרשאות הנכונות.`
           : 'החומר נשמר והוטמע בהצלחה. אלמוג יוכל להשתמש בו לפי ההגדרות שבחרתם.'
       );
       setTranscript('');
@@ -166,7 +171,7 @@ export function SystemKnowledgeIngestForm() {
       className="space-y-5 rounded-3xl border border-white/60 bg-white/55 p-5 shadow-lg backdrop-blur-md sm:p-7"
     >
       <p className="text-[15px] leading-relaxed text-slate-700">
-        הדביקו כאן טקסט לימודי או הנחיה למנטור. המערכת תפצל את זה לקטעים קצרים ותחבר לאלמוג — המשתמשים יקבלו את התוכן רק כשהם מתקדמים למקום הנכון במסע (ולפי הרשאות קורס).
+        הדביקו כאן טקסט לימודי או הנחיה למנטור. המערכת תפצל את זה לקטעים קצרים ותחבר לאלמוג — המשתמשים יקבלו את התוכן רק כשהם מתקדמים לתחנה ולשלב המתאימים (ולפי הרשאות קורס).
       </p>
 
       <div>
@@ -195,7 +200,7 @@ export function SystemKnowledgeIngestForm() {
             onChange={(ev) => setDataType(ev.target.value as DataType)}
             className="w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] font-medium text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
           >
-            <option value="step">צעד ספציפי במסע</option>
+            <option value="step">שלב ספציפי בתחנה</option>
             <option value="course">קורס שלם</option>
           </select>
         </div>
@@ -210,7 +215,7 @@ export function SystemKnowledgeIngestForm() {
             onChange={(ev) => setAccessLevel(ev.target.value as AccessLevel)}
             className="w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] font-medium text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
           >
-            <option value="public">כל מי שהגיע לצעד המתאים</option>
+            <option value="public">כל מי שהגיע לשלב המתאים</option>
             <option value="premium">משתמשים רשומים לקורס פרימיום (מזהה קורס)</option>
           </select>
         </div>
@@ -219,7 +224,7 @@ export function SystemKnowledgeIngestForm() {
       {dataType === 'step' && (
         <div className="space-y-2 rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-4">
           <label htmlFor="sk-step" className="block text-sm font-semibold text-emerald-950">
-            בחרו צעד במסע
+            בחרו שלב (לפי תחנה)
           </label>
           {stepsLoading ? (
             <p className="text-sm text-emerald-900/80">טוען צעדים…</p>
@@ -242,7 +247,7 @@ export function SystemKnowledgeIngestForm() {
                 ))}
               </select>
               <p className="text-xs leading-relaxed text-emerald-900/80">
-                אלמוג ישתמש בחומר רק כשהמשתמש מתקדם לצעד הזה — בלי לחשוף תוכן של צעדים עתידיים.
+                אלמוג ישתמש בחומר רק כשהמשתמש מתקדם לשלב הזה באותה תחנה — בלי לחשוף תוכן של שלבים עתידיים.
               </p>
             </>
           )}
