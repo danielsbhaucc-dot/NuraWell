@@ -21,14 +21,16 @@ export default async function DashboardLayout({
   return (
     <NotificationsProvider userId={user.id} user={user}>
       <ProgressReportProvider userId={user.id}>
-        <div className="min-h-screen bg-dashboard">
-          <MobileHeader user={user} />
-          <main id="main-content" className="pb-24 pt-16 min-h-screen page-enter" tabIndex={-1}>
-            {children}
-          </main>
-          <BottomNav />
-          <AIOverlaysClient userId={user.id} />
-        </div>
+        <ActionHubProvider>
+          <div className="min-h-screen bg-dashboard">
+            <MobileHeader user={user} />
+            <main id="main-content" className="pb-24 pt-16 min-h-screen page-enter" tabIndex={-1}>
+              {children}
+            </main>
+            <BottomNav />
+            <AIOverlaysClient userId={user.id} />
+          </div>
+        </ActionHubProvider>
       </ProgressReportProvider>
     </NotificationsProvider>
   );

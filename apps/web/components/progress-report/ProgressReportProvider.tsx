@@ -11,6 +11,7 @@ import {
 import { Drawer } from 'vaul';
 import { ClipboardCheck, Leaf, Loader2, Sparkles } from 'lucide-react';
 import { emojiFromWellnessText } from '../../lib/emoji-from-text';
+import { parseJourneyReportItems } from '../../lib/journey/journey-report-parse';
 
 type TaskStatus = 'accepted' | 'rejected' | 'pending';
 
@@ -33,19 +34,7 @@ type JourneyReportResponse = { steps: ReportStep[] };
 /** כרטיסיית ראשית במגירת הדיווח — עדכון ביצוע משימות; השנייה — הרגלים */
 export type ProgressReportTabId = 'task_execution' | 'habits';
 
-function parseItems(raw: unknown): { id: string; title: string }[] {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .map((item) => {
-      if (!item || typeof item !== 'object') return null;
-      const row = item as Record<string, unknown>;
-      const id = typeof row.id === 'string' ? row.id : '';
-      const title = typeof row.title === 'string' ? row.title : '';
-      if (!id || !title) return null;
-      return { id, title };
-    })
-    .filter((x): x is { id: string; title: string } => Boolean(x));
-}
+const parseItems = parseJourneyReportItems;
 
 type ProgressReportContextValue = {
   /** פותח את המגירה; אופציונלי — כרטיסייה ראשונה (ברירת מחדל: עדכון ביצוע משימות) */
@@ -206,37 +195,47 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
               </div>
             </div>
 
-            <div
-              className="shrink-0 flex gap-2 px-3 pt-3 pb-2"
-              role="tablist"
-              aria-label="סוג דיווח"
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 'task_execution'}
-                onClick={() => setActiveTab('task_execution')}
-                className={`min-h-10 flex-1 rounded-2xl px-2 py-2 text-center text-[11px] font-black leading-tight transition sm:text-xs ${
-                  activeTab === 'task_execution'
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/20'
-                    : 'bg-white/55 text-emerald-900/85 ring-1 ring-emerald-900/10'
-                }`}
+            <div className="shrink-0 px-3 pt-3 pb-2">
+              <div
+                className="flex gap-1 rounded-[22px] p-1"
+                role="tablist"
+                aria-label="סוג דיווח"
+                style={{
+                  background: 'rgba(255,255,255,0.42)',
+                  backdropFilter: 'blur(18px)',
+                  WebkitBackdropFilter: 'blur(18px)',
+                  border: '1px solid rgba(255,255,255,0.55)',
+                  boxShadow:
+                    'inset 0 1px 0 rgba(255,255,255,0.65), 0 6px 20px rgba(6,78,59,0.08)',
+                }}
               >
-                עדכון ביצוע משימות
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 'habits'}
-                onClick={() => setActiveTab('habits')}
-                className={`min-h-10 flex-1 rounded-2xl px-2 py-2 text-center text-[11px] font-black leading-tight transition sm:text-xs ${
-                  activeTab === 'habits'
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/20'
-                    : 'bg-white/55 text-emerald-900/85 ring-1 ring-emerald-900/10'
-                }`}
-              >
-                מעקב הרגלים
-              </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'task_execution'}
+                  onClick={() => setActiveTab('task_execution')}
+                  className={`min-h-[42px] flex-1 rounded-[16px] px-2 py-2 text-center text-[11px] font-black leading-tight transition sm:text-xs ${
+                    activeTab === 'task_execution'
+                      ? 'bg-gradient-to-l from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/25 ring-1 ring-white/25'
+                      : 'text-emerald-900/88 hover:bg-white/45'
+                  }`}
+                >
+                  עדכון ביצוע משימות
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'habits'}
+                  onClick={() => setActiveTab('habits')}
+                  className={`min-h-[42px] flex-1 rounded-[16px] px-2 py-2 text-center text-[11px] font-black leading-tight transition sm:text-xs ${
+                    activeTab === 'habits'
+                      ? 'bg-gradient-to-l from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/25 ring-1 ring-white/25'
+                      : 'text-emerald-900/88 hover:bg-white/45'
+                  }`}
+                >
+                  מעקב הרגלים
+                </button>
+              </div>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-8 pt-1 scrollbar-hide">
