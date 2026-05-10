@@ -5,6 +5,11 @@ import { z } from 'zod';
 import { embedTextForRag } from '@/lib/ai/openrouter-embeddings';
 import { AI_MODELS } from '@/lib/ai/client';
 import {
+  assertUserCanAccessStepForRag,
+  buildStepRagFilter,
+  fetchUserEnrolledCourseIds,
+} from '@/lib/api/rag-chat-access';
+import {
   escapeFilterString,
   isSystemKnowledgeVectorConfigured,
   querySystemKnowledgeVectors,
@@ -24,44 +29,35 @@ const SYSTEM_PROMPT =
   "You are an expert, razor-sharp AI guide. Answer strictly based on the provided context. If the answer isn't in the context, say 'I don't know based on the provided materials.' Do not invent information.";
 
 const chatBodySchema = z.object({
-  question: z.string().min(1),
+  question: z.string().min(1).max(16_000),
   currentContext: z.discriminatedUnion('kind', [
     z.object({ kind: z.literal('general') }),
     z.object({
       kind: z.literal('course'),
-      courseId: z.string().optional(),
+      courseId: z.string().min(1).max(200).optional(),
+    }),
+    z.object({
+      kind: z.literal('step'),
+      stepId: z.string().uuid(),
     }),
   ]),
-  userUnlockedCourses: z.array(z.string()),
 });
 
-function buildVectorFilter(params: {
-  currentContext: z.infer<typeof chatBodySchema>['currentContext'];
-  userUnlockedCourses: string[];
-}): { filter: string } | { error: string; status: number } {
-  const { currentContext, userUnlockedCourses } = params;
-
-  if (currentContext.kind === 'general') {
-    return { filter: `accessLevel = 'public'` };
-  }
-
-  const unlocked = [
-    ...new Set(
-      userUnlockedCourses.map((s) => s.trim()).filter((s) => s.length > 0)
-    ),
-  ];
-
-  if (unlocked.length === 0) {
+function buildCourseRagFilter(
+  enrolledCourseIds: string[],
+  requestedCourseId?: string
+): { filter: string } | { error: string; status: number } {
+  if (enrolledCourseIds.length === 0) {
     return {
-      error: 'אין קורסים פתוחים — לא ניתן לשאול בהקשר קורס',
+      error: 'אין קורסים פעילים — לא ניתן לשאול בהקשר קורס',
       status: 400,
     };
   }
 
-  const requested = currentContext.courseId?.trim();
+  const requested = requestedCourseId?.trim();
 
   if (requested) {
-    if (!unlocked.includes(requested)) {
+    if (!enrolledCourseIds.includes(requested)) {
       return { error: 'אין גישה לקורס המבוקש', status: 403 };
     }
     return {
@@ -70,7 +66,7 @@ function buildVectorFilter(params: {
   }
 
   return {
-    filter: `dataType = 'course' AND courseId IN (${unlocked.map(escapeFilterString).join(', ')})`,
+    filter: `dataType = 'course' AND courseId IN (${enrolledCourseIds.map(escapeFilterString).join(', ')})`,
   };
 }
 
@@ -94,6 +90,8 @@ export async function POST(request: Request) {
   const session = await requireApiSession(request);
   if (!session.ok) return session.response;
 
+  const { supabase, user } = session;
+
   if (!process.env.OPENROUTER_API_KEY?.trim()) {
     return NextResponse.json({ error: 'OPENROUTER_API_KEY חסר' }, { status: 500 });
   }
@@ -115,11 +113,31 @@ export async function POST(request: Request) {
     );
   }
 
-  const { question, currentContext, userUnlockedCourses } = parsed.data;
+  const { question, currentContext } = parsed.data;
 
-  const filterRes = buildVectorFilter({ currentContext, userUnlockedCourses });
-  if ('error' in filterRes) {
-    return NextResponse.json({ error: filterRes.error }, { status: filterRes.status });
+  let enrolledCourseIds: string[];
+  try {
+    enrolledCourseIds = await fetchUserEnrolledCourseIds(supabase, user.id);
+  } catch {
+    return NextResponse.json({ error: 'שגיאה בטעינת רישומים' }, { status: 500 });
+  }
+
+  let filterSql: string;
+
+  if (currentContext.kind === 'general') {
+    filterSql = `accessLevel = 'public'`;
+  } else if (currentContext.kind === 'course') {
+    const courseRes = buildCourseRagFilter(enrolledCourseIds, currentContext.courseId);
+    if ('error' in courseRes) {
+      return NextResponse.json({ error: courseRes.error }, { status: courseRes.status });
+    }
+    filterSql = courseRes.filter;
+  } else {
+    const stepCheck = await assertUserCanAccessStepForRag(supabase, user.id, currentContext.stepId);
+    if (!stepCheck.ok) {
+      return NextResponse.json({ error: stepCheck.message }, { status: stepCheck.status });
+    }
+    filterSql = buildStepRagFilter(currentContext.stepId, enrolledCourseIds);
   }
 
   const questionVector = await embedTextForRag(question);
@@ -127,7 +145,7 @@ export async function POST(request: Request) {
   const hits = await querySystemKnowledgeVectors({
     vector: questionVector,
     topK: RAG_TOP_K,
-    filter: filterRes.filter,
+    filter: filterSql,
   });
   const contextBlock = formatContextBlock(hits);
 

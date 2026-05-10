@@ -10,6 +10,10 @@ export type SystemKnowledgeVectorMetadata = {
   accessLevel: 'public' | 'premium';
   chunkId: string;
   text: string;
+  /** מזהה צעד במסע (journey_steps.id) — כש־dataType === 'step' */
+  stepId?: string;
+  /** מספר צעד להצגה וסינון (1, 2, …) */
+  stepNumber?: number;
   courseId?: string;
 };
 
