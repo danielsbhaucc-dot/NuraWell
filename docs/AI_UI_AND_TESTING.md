@@ -28,11 +28,12 @@
 
 **Runtime:** הנתיב רץ על `edge` (מתאים למגבלות Vercel).
 
-**אבטחה:** חובה להגדיר לפחות אחד מהמשתנים (`CRON_SECRET` / `CRON_JOB_ORG_TOKEN`). אחד מהבאים:
+**אבטחה:** מאומת דרך `apps/web/lib/api/authorize-cron.ts`. שתי אופציות:
 
-- כותרת `Authorization: Bearer <CRON_SECRET>`
-- או query `?secret=<CRON_SECRET>`
-- או כותרת `x-cron-job-org-token: <CRON_JOB_ORG_TOKEN>` (מומלץ ל-cron-job.org)
+- כותרת `Upstash-Signature` (אוטומטי מ-Upstash QStash Schedules; מאומת מול `QSTASH_CURRENT_SIGNING_KEY` / `QSTASH_NEXT_SIGNING_KEY`).
+- כותרת `Authorization: Bearer <CRON_SECRET>` להפעלה ידנית מ-curl/Postman/GitHub Actions.
+
+מדריך setup מלא: [`docs/CRON_SCHEDULES_SETUP.md`](./CRON_SCHEDULES_SETUP.md).
 
 **שלב א — ניתוח (24 שעות אחרונות)**  
 
@@ -88,16 +89,12 @@
 - לא חובה למימוש הנוכחי כי האופטימיזציה כבר מתבצעת בצד שרת.
 - אם רוצים חתימות URL/CDN חכם/טרנספורמציות on-the-fly, ניתן להוסיף Cloudflare Worker בהמשך.
 
-### 6) תזמון Cron חינמי עם cron-job.org
+### 6) תזמון Cron עם Upstash QStash
 
 - הוסר Cron מ-`vercel.json` כדי לא להיות תלוי בתוכנית בתשלום.
-- תזמון מומלץ: `cron-job.org` ישירות לנתיב:
-  - `GET https://<your-domain>/api/v1/ai/cron/master`
-- הגדרות מומלצות ב-cron-job.org:
-  - תדירות התחלתית: פעם ביום.
-  - Method: `GET`.
-  - Custom header: `x-cron-job-org-token: <CRON_JOB_ORG_TOKEN>`.
-  - Timeout צד cron-job.org הוא ~30 שניות, לכן לשמור על חלון משתמשים קטן יחסית (`CRON_MAX_ANALYSIS_USERS`, `CRON_MAX_NUDGE_USERS`).
+- כל התזמונים — Master יומי + 3× Habit Checkpoints — מוגדרים ב-**Upstash QStash → Schedules**.
+- QStash חותם כל בקשה ב-`Upstash-Signature`; השרת מאמת אותה אוטומטית.
+- מדריך מלא כולל cron expressions וטיפול בתקלות: [`docs/CRON_SCHEDULES_SETUP.md`](./CRON_SCHEDULES_SETUP.md).
 
 ### 7) מודלים וסביבה
 
@@ -105,7 +102,7 @@
 |--------|------------|
 | אלמוג (צ'אט, פידבק בשיעור, נידג' Cron) | `openai/gpt-5-mini` דרך **OpenRouter** |
 | ניתוח Cron | **DeepSeek API** — `getDeepseekAnalysisModel()` → `deepseek-chat` (ברירת מחדל) |
-| מפתחות | `OPENROUTER_API_KEY`, `DEEPSEEK_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (Cron בלבד), `CRON_SECRET` או `CRON_JOB_ORG_TOKEN` |
+| מפתחות | `OPENROUTER_API_KEY`, `DEEPSEEK_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `QSTASH_TOKEN` + `QSTASH_CURRENT_SIGNING_KEY` (Cron), `CRON_SECRET` (אופציונלי ידני) |
 
 רשימה מלאה של משתני אופציה: [`apps/web/.env.example`](../apps/web/.env.example).
 
