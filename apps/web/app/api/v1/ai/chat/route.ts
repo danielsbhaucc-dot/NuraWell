@@ -60,6 +60,34 @@ const BASE_SYSTEM_PROMPT = `${NURAWELL_MENTOR_PROMPT}
 - אל תגיד למשתמש שביצעת "שמירה בזיכרון" או "עדכנתי זיכרון".
 - לעולם אל תחזיר תשובה ריקה.`;
 const EMPTY_RESPONSE_FALLBACK = 'אני כאן איתך. ספר לי במשפט אחד מה הכי כבד עכשיו, ונחשוב יחד על צעד קטן להמשך.';
+
+/**
+ * תקרת פלט מקסימלית. 480 הסתבר כצר מדי לתשובות "3-4 משפטים + צעד קטן".
+ * 900 נותן מרווח של ~600-650 מילים בעברית — נדיב מספיק להסבר קצר אבל עדיין
+ * מונע ממנטור לדבר כמו ספר. ניתן לכוון דרך AI_CHAT_MAX_OUTPUT_TOKENS.
+ */
+const CHAT_MAX_OUTPUT_TOKENS = (() => {
+  const raw = process.env.AI_CHAT_MAX_OUTPUT_TOKENS?.trim();
+  const n = raw ? Number(raw) : NaN;
+  return Number.isFinite(n) && n >= 200 && n <= 4096 ? Math.floor(n) : 900;
+})();
+
+/** סף אזהרה — אם usage.outputTokens חוצה את הסף הזה, נסמן onFinish כ"כמעט קצוץ". */
+const CHAT_OUTPUT_TOKENS_NEAR_CAP_RATIO = 0.92;
+
+/**
+ * חלון שיחה אחורה ל-LLM. slice(-20) = עד 10 סיבובי משתמש-עוזר; חלון של 5
+ * סיבובים (הערך הקודם) קצר מדי לשיחות שבונות הקשר רגשי. RAG של זיכרון משתמש
+ * משלים פערים ארוכי-טווח, אך לא מחליף הקשר טורי קצר.
+ */
+const CHAT_HISTORY_WINDOW = 20;
+
+/**
+ * אזהרה בלוג כאשר system prompt חוצה את הסף. 4000 תווים ≈ 1000-1100 טוקנים
+ * — מעבר לזה נכנסים לסיכון של תקרת קונטקסט נמוכה לפלט.
+ */
+const SYSTEM_PROMPT_LENGTH_WARN_CHARS = 4000;
+
 type TaskDecisionStatus = 'accepted' | 'rejected' | 'pending';
 
 type ActiveJourneyContext = {
@@ -91,55 +119,37 @@ function isVectorIngestEnabled(): boolean {
   return isUpstashVectorConfigured();
 }
 
-/** מתי להריץ חילוץ/כתיבת וקטורים ברקע (לא small talk קצר) */
+/**
+ * מתי להריץ חילוץ/כתיבת וקטורים ברקע.
+ *
+ * עיקרון: פילטר רחב, לא רשימת מילים. כל הודעה עם מספיק תוכן מהותי שלא נראית
+ * small talk מועברת לחילוץ. שכבת ה-LLM ב-`extractMemoryFactsFromUserMessage`
+ * היא זו שמחליטה אם יש כאן באמת patterns/insights ראויים (level ≥ 2). כך
+ * הודעות עקיפות כמו "אני לא מצליח להתמיד עם הארוחות" לא מתפספסות.
+ *
+ * שני ספים:
+ *  1. אורך משמעותי — לפחות 30 תווי אות (עברית/לטיני). פיסוק/אימוג'ים/מספרים
+ *     לא נספרים, כי "תודה!!! 🙏🙏🙏" אינו תוכן.
+ *  2. לא small talk — ברכות, אישורים קצרים, "תודה", "אוקיי", "מה נשמע" וכד׳.
+ */
 function shouldAttemptMemorySync(userMessage: string): boolean {
   const t = normalizeLine(userMessage);
-  if (!t || t.length < 14) return false;
+  if (!t) return false;
 
-  // Skip casual/small-talk turns to avoid noisy memory updates.
+  const letterOnly = t.replace(/[^\u0590-\u05FFa-zA-Z]/g, '');
+  if (letterOnly.length < 30) return false;
+
   const smallTalkPatterns = [
-    /^היי\b/,
-    /^הי\b/,
-    /^שלום\b/,
-    /^בוקר טוב\b/,
-    /^ערב טוב\b/,
-    /^אחלה יום\b/,
-    /^מה נשמע\b/,
+    /^(?:היי|הי|שלום|אהלן|הלו|hi|hello)\b/i,
+    /^(?:בוקר|צהריים|ערב|לילה)\s+(?:טוב(?:ים)?)\b/,
+    /^(?:אחלה\s+יום|יום\s+נעים|יום\s+טוב)\b/,
+    /^(?:מה\s+נשמע|מה\s+קורה|מה\s+המצב|איך\s+הולך|איך\s+אתה|איך\s+את)\b/,
+    /^(?:תודה|תודה\s+רבה|אחלה|מעולה|סבבה|מגניב|וואו|חמוד|wow|thanks?|thx)[\s!?.\u05F3\u05F4]*$/i,
+    /^(?:ok|okay|sure|fine|yes|no|כן|לא|אוקיי|בסדר|הבנתי|נכון|ברור)[\s!?.\u05F3\u05F4]*$/i,
   ];
   if (smallTalkPatterns.some((p) => p.test(t))) return false;
 
-  const strongSignals = [
-    'מהיום',
-    'התחלתי',
-    'אני מתחיל',
-    'אני עושה',
-    'אני שותה',
-    'כל בוקר',
-    'כל יום',
-    'הצלחתי',
-    'סיימתי',
-    'קשה לי',
-    'נשבר לי',
-    'נופל ב',
-    'בסופ"ש',
-    'בסופשים',
-    'שוכח',
-    'מעדיף',
-    'לא עובד לי',
-    'עוזר לי',
-    'צריך חיזוק',
-    'תעודד אותי',
-    'ניצחון קטן',
-    'ריצה',
-    'רץ',
-    'אימון',
-    'מתאמן',
-    'הליכה',
-    'כושר',
-    'שינה',
-    'תזונה',
-  ];
-  return strongSignals.some((s) => t.includes(s));
+  return true;
 }
 
 function extractFirstName(fullName: string | null | undefined): string | null {
@@ -423,7 +433,7 @@ export async function POST(request: Request) {
       return { role, content };
     })
     .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m))
-    .slice(-10);
+    .slice(-CHAT_HISTORY_WINDOW);
 
   const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
   if (!openrouterKey) {
@@ -540,17 +550,43 @@ ${genderAddressingHint(profileGender)}
 אל תכתוב למשתמש שביצעת "שמירה בזיכרון" או "עדכנתי את הזיכרון".`;
 
     stage = 'stream_init';
+    /**
+     * תצפית בפרודקשן — אורך הפרומפט הכולל אחרי כל ההזרקות (זיכרון/journey/ידע).
+     * מעל הסף נסמן כדי לעקוב אחרי "ניפוח" שלוקח קונטקסט מהפלט.
+     */
+    const systemPromptCharCount = systemPromptWithMemory.length;
+    if (systemPromptCharCount > SYSTEM_PROMPT_LENGTH_WARN_CHARS) {
+      console.warn('[ai/chat]', {
+        debug_id: debugId,
+        stage: 'system_prompt_long',
+        chars: systemPromptCharCount,
+        warn_threshold: SYSTEM_PROMPT_LENGTH_WARN_CHARS,
+        has_rag_user_block: Boolean(ragMemoryBlock),
+        has_system_knowledge_block: Boolean(systemKnowledgeBlock),
+        has_journey_state: Boolean(journeyStateBlock),
+        has_station_rules: Boolean(stationRules),
+        has_habit_rules: Boolean(habitCheckpointRules),
+      });
+    } else {
+      console.info('[ai/chat]', {
+        debug_id: debugId,
+        stage: 'system_prompt_size',
+        chars: systemPromptCharCount,
+        history_msgs: recentMessages.length,
+      });
+    }
+
     const result = streamText({
       model: openrouter.chat('openai/gpt-5-mini'),
       temperature: 0.75,
-      maxOutputTokens: 480,
+      maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
       providerOptions: {
         // Reduce internal reasoning overrun that can yield empty visible text.
         openai: { reasoningEffort: 'low' },
       },
       system: systemPromptWithMemory,
       messages: recentMessages,
-      onFinish: async ({ text, usage }) => {
+      onFinish: async ({ text, usage, finishReason }) => {
         const finishStage = 'on_finish';
         const t = (text ?? '').trim();
         const assistantText = t || EMPTY_RESPONSE_FALLBACK;
@@ -560,6 +596,41 @@ ${genderAddressingHint(profileGender)}
             stage: `${finishStage}_empty_text_fallback`,
           });
         }
+
+        /**
+         * תיעוד שימוש בטוקנים — מאפשר לראות כמה onFinish באמת חוצות את הסף.
+         * אם הרבה תשובות נחתכות (finish_reason='length' או outputTokens קרוב לתקרה)
+         * זה האות להעלות את CHAT_MAX_OUTPUT_TOKENS עוד.
+         */
+        const outputTokens = usage?.outputTokens;
+        const inputTokens = usage?.inputTokens;
+        const totalTokens = usage?.totalTokens;
+        const nearCapTokens = Math.floor(CHAT_MAX_OUTPUT_TOKENS * CHAT_OUTPUT_TOKENS_NEAR_CAP_RATIO);
+        const wasTruncatedByLength = finishReason === 'length';
+        const wasNearCap = typeof outputTokens === 'number' && outputTokens >= nearCapTokens;
+        if (wasTruncatedByLength || wasNearCap) {
+          console.warn('[ai/chat]', {
+            debug_id: debugId,
+            stage: `${finishStage}_output_near_cap`,
+            output_tokens: outputTokens,
+            input_tokens: inputTokens,
+            total_tokens: totalTokens,
+            cap: CHAT_MAX_OUTPUT_TOKENS,
+            finish_reason: finishReason,
+            truncated_by_length: wasTruncatedByLength,
+          });
+        } else {
+          console.info('[ai/chat]', {
+            debug_id: debugId,
+            stage: `${finishStage}_usage`,
+            output_tokens: outputTokens,
+            input_tokens: inputTokens,
+            total_tokens: totalTokens,
+            cap: CHAT_MAX_OUTPUT_TOKENS,
+            finish_reason: finishReason,
+          });
+        }
+
         try {
           await insertAiInteraction(supabase, {
             user_id: user.id,
@@ -567,8 +638,14 @@ ${genderAddressingHint(profileGender)}
             role: 'assistant',
             content: assistantText,
             model_name: 'openai/gpt-5-mini',
-            tokens_used: usage?.totalTokens,
-            metadata: { edge: true, streamed: true, fallback_used: !t },
+            tokens_used: totalTokens,
+            metadata: {
+              edge: true,
+              streamed: true,
+              fallback_used: !t,
+              output_tokens: outputTokens,
+              finish_reason: finishReason,
+            },
           });
         } catch (persistErr) {
           console.error('[ai/chat]', {
