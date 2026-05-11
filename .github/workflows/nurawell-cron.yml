@@ -10,8 +10,9 @@ jobs:
     steps:
       - name: Trigger NuraWell AI Cron
         run: |
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X GET \
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Length: 0" \
             "${{ secrets.VERCEL_APP_URL }}/api/v1/ai/cron/master")
 
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)

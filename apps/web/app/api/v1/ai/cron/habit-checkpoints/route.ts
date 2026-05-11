@@ -136,10 +136,15 @@ async function runHabitCheckpointCron(request: Request) {
   });
 }
 
-export async function GET(request: Request) {
-  const denied = await authorizeCronRequest(request);
-  if (denied) return denied;
-  return runHabitCheckpointCron(request);
+/**
+ * POST בלבד. GET נסגר כדי למנוע טריגר לא-מכוון מ-prefetch/CDN/monitoring שמטרגר
+ * אלפי Workflows ועלות. הסקיידולים ב-Upstash QStash משתמשים ב-POST.
+ */
+export async function GET() {
+  return NextResponse.json(
+    { error: 'Method Not Allowed — POST only' },
+    { status: 405, headers: { Allow: 'POST' } }
+  );
 }
 
 export async function POST(request: Request) {

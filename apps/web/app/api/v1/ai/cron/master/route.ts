@@ -356,10 +356,17 @@ async function runMasterCron() {
   });
 }
 
-export async function GET(request: Request) {
-  const denied = await authorizeCronRequest(request);
-  if (denied) return denied;
-  return runMasterCron();
+/**
+ * POST בלבד.
+ * GET נסגר במכוון: הוא יכול להתבצע מ-prefetch של דפדפן, CDN warmup, monitoring,
+ * או ניווט שגוי, ולגרום לכתיבת אלפי notifications + קריאת DeepSeek בעלות.
+ * Upstash QStash Schedules ממילא שולח POST (ראו docs/CRON_SCHEDULES_SETUP.md).
+ */
+export async function GET() {
+  return NextResponse.json(
+    { error: 'Method Not Allowed — POST only' },
+    { status: 405, headers: { Allow: 'POST' } }
+  );
 }
 
 export async function POST(request: Request) {

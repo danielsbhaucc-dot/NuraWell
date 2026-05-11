@@ -11,10 +11,24 @@ import { useToast, ToastContainer } from '../../../components/shared/Toast';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * מאמת ש-redirect הוא נתיב יחסי בטוח של האתר. חוסם open-redirect לאתרים זרים
+ * (כולל `https://evil.com`, `//evil.com`, `javascript:`, `data:`).
+ * בריג' ל-domain ה-Ops הוא cross-origin — מטופל אך ורק ב-middleware (server side)
+ * דרך `isOpsLoginRedirectUrl`; הלקוח לא ינווט ישירות למקור אחר.
+ */
+function sanitizeRedirectPath(raw: string | null | undefined): string {
+  if (!raw) return '/courses';
+  if (!raw.startsWith('/')) return '/courses';
+  if (raw.startsWith('//')) return '/courses';
+  if (raw.startsWith('/\\')) return '/courses';
+  return raw;
+}
+
 function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams?.get('redirect') || '/courses';
+  const redirect = sanitizeRedirectPath(searchParams?.get('redirect'));
   const toast = useToast();
 
   const [email, setEmail] = useState('');

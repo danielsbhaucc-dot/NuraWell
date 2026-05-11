@@ -6,8 +6,49 @@ export function opsCanonicalHostname(): string {
   return process.env.NEXT_PUBLIC_OPS_HOSTNAME?.trim().toLowerCase().replace(/^www\./, '') ?? '';
 }
 
+/**
+ * Prefix של פרויקט-Vercel שמותר ב-preview. למשל "nurawell-" יתאים לכל ה-deployments
+ * של פרויקט nurawell (`nurawell-abcd1234.vercel.app`). ברירת מחדל "nurawell-" כדי שלא
+ * נקבל כל *.vercel.app אקראי מהאינטרנט (גם אם יש לו admin session — שזה דליפת cookie
+ * אחרת — לפחות לא נגדיר את ה-host כ-ops).
+ */
+function vercelPreviewProjectPrefix(): string {
+  const raw = process.env.OPS_VERCEL_PREVIEW_PROJECT_PREFIX?.trim();
+  if (raw) return raw.toLowerCase();
+  return 'nurawell-';
+}
+
 export function requestHostname(hostnameHeader: string | null): string {
   return hostnameHeader?.split(':')[0]?.toLowerCase() ?? '';
+}
+
+/**
+ * דריוואט בטוח של ה-host מאוביקט Request — Next.js בונה את `request.url` מ-host
+ * שעבר ולידציה פנימית. זה עדיף על קריאת `x-forwarded-host` ידנית, כי אם שכבת
+ * proxy לא תסיר את ה-header (בלתי-Vercel infra), header מזויף עלול לעקוף את
+ * ה-gate. כאן אנחנו דורשים ש-`request.url` ו-`x-forwarded-host`/`host` יסכימו
+ * (אם שניהם קיימים), אחרת חוזרים ל-host שמ-Next.js פירש.
+ */
+export function requestHostnameFromRequest(request: Request): string {
+  try {
+    const fromUrl = new URL(request.url).hostname.toLowerCase();
+    const forwarded = request.headers.get('x-forwarded-host');
+    const hostHeader = request.headers.get('host');
+    const headerHost = requestHostname(forwarded ?? hostHeader);
+    if (headerHost && headerHost !== fromUrl) {
+      /**
+       * חוסר התאמה בין URL ל-header → תוקף שניסה לזייף header.
+       * נחזיר רק את ה-host מה-URL (האמין יותר); המתודות שבודקות ops/preview
+       * ידחו אם זה לא דומיין מורשה.
+       */
+      return fromUrl;
+    }
+    return fromUrl || headerHost;
+  } catch {
+    return requestHostname(
+      request.headers.get('x-forwarded-host') ?? request.headers.get('host')
+    );
+  }
 }
 
 /** האם הבקשה מגיעה מכתובת Ops המוגדרת */
@@ -17,11 +58,18 @@ export function isOpsHostname(hostnameHeader: string | null): boolean {
   return requestHostname(hostnameHeader) === canonical;
 }
 
-/** תצוגת preview ב־Vercel (*.vercel.app) — רק אם OPS_ALLOW_VERCEL_PREVIEW=1 */
+/**
+ * תצוגת preview ב־Vercel — רק אם OPS_ALLOW_VERCEL_PREVIEW=1 *וגם* ה-hostname
+ * מתחיל ב-prefix של הפרויקט (ברירת מחדל "nurawell-"). זה חוסם תרחיש בו תוקף
+ * הולך לכל *.vercel.app וטוען credentials של admin כדי להגיע לפאנל.
+ */
 export function isOpsPreviewHostname(hostnameHeader: string | null): boolean {
   if (process.env.OPS_ALLOW_VERCEL_PREVIEW !== '1') return false;
   const h = requestHostname(hostnameHeader);
-  return h.endsWith('.vercel.app');
+  if (!h.endsWith('.vercel.app')) return false;
+  const prefix = vercelPreviewProjectPrefix();
+  if (!prefix) return false;
+  return h.startsWith(prefix);
 }
 
 /** האם פרמטר redirect מ־/login מצביע על דומיין Ops (מותר לגשר סשן). */
@@ -46,7 +94,8 @@ export function isOpsLoginRedirectUrl(redirectParam: string): boolean {
     }
   }
   if (process.env.OPS_ALLOW_VERCEL_PREVIEW === '1' && host.endsWith('.vercel.app')) {
-    return true;
+    const prefix = vercelPreviewProjectPrefix();
+    if (prefix && host.startsWith(prefix)) return true;
   }
   return false;
 }

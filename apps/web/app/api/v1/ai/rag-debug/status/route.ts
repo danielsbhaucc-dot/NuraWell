@@ -1,4 +1,4 @@
-import { requireApiSession } from '../../../../../../lib/api/route-guards';
+import { requireApiAdmin } from '../../../../../../lib/api/route-guards';
 import { isUpstashVectorConfigured } from '../../../../../../lib/ai/upstash-vector-rest';
 
 export const runtime = 'edge';
@@ -26,9 +26,12 @@ async function upstashPing(): Promise<{ ok: boolean; error?: string }> {
 
 /**
  * בדיקת תצורה + נגישות Upstash (בלי חילוץ AI).
+ * Admin בלבד — חושף leakage של מפתחות מוגדרים/לא, כתובת Upstash, וקיום שגיאות
+ * חיבור. אפילו ה-boolean של "האם OpenRouter מוגדר" הוא מידע אינפרסטרוקטורה
+ * שעוזר לתוקף בתכנון.
  */
 export async function GET(request: Request) {
-  const auth = await requireApiSession(request);
+  const auth = await requireApiAdmin(request);
   if (!auth.ok) return auth.response;
 
   const openrouterKey = Boolean(process.env.OPENROUTER_API_KEY?.trim());

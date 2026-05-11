@@ -132,9 +132,12 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 `/api/v1/ai/cron/habit-checkpoints` תומך בפרמטר `?dryRun=1` שמחזיר את התכנון בלי לטרגר
 Workflows אמיתיים. מצוין כדי לוודא שיש משתמשים זכאים לפני שמשגרים בפועל.
 
+> 🛡️ ה-endpoints של ה-cron מקבלים **POST בלבד**. GET סגור מ-405 (מניעת טריגר לא-מכוון מ-prefetch/CDN/monitoring).
+
 ```bash
-curl -i "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints?slot=morning&dryRun=1" \
-  -H "Authorization: Bearer <CRON_SECRET>"
+curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints?slot=morning&dryRun=1" \
+  -H "Authorization: Bearer <CRON_SECRET>" \
+  -H "Content-Length: 0"
 ```
 
 תגובה צפויה:
@@ -161,8 +164,9 @@ curl -i "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints?slot=morni
 ### דרך ג — הפעלה אמיתית מיידית
 
 ```bash
-curl -i "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints?slot=morning" \
-  -H "Authorization: Bearer <CRON_SECRET>"
+curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints?slot=morning" \
+  -H "Authorization: Bearer <CRON_SECRET>" \
+  -H "Content-Length: 0"
 ```
 
 > ה-workflow עצמו (`almog-habit-checkpoint`) חוסם כפילויות לאותו slot/יום, אז קריאה חוזרת
