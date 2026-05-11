@@ -2,6 +2,10 @@
 
 המטרה: להפעיל את `GET /api/v1/ai/cron/master` דרך `cron-job.org` בצורה מאובטחת, בלי Vercel Cron.
 
+> לתזמון של `/api/v1/ai/cron/habit-checkpoints` (3 פעמים ביום) — ראה
+> `docs/QSTASH_HABIT_CHECKPOINTS_SETUP.md`. ה-route תומך גם בכותרת `Upstash-Signature`
+> של QStash Schedules, ולא רק ב-`x-cron-job-org-token`.
+
 ## 1) הגדרת משתני סביבה ב-Vercel
 
 בפרויקט `apps/web`:

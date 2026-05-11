@@ -10,6 +10,7 @@ import {
 } from '../../../../../../lib/ai/cron-ops-action';
 import { type AiUserContext } from '../../../../../../lib/ai/memory';
 import { ANALYSIS_PROMPT } from '../../../../../../lib/ai/prompts';
+import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 
 /** Batch ארוך + קריאות מודלים מרובות — Node לזמן הרצה ארוך יותר מבשרת Vercel Edge */
@@ -44,31 +45,6 @@ async function daysSinceLastWeightKg(admin: AdminDb, userId: string): Promise<nu
 
   if (error || !data?.measured_at) return null;
   return daysSinceIso(data.measured_at as string);
-}
-
-function authorizeCron(request: Request): NextResponse | null {
-  const secret = process.env.CRON_SECRET?.trim();
-  const cronJobOrgToken = process.env.CRON_JOB_ORG_TOKEN?.trim();
-  if (!secret && !cronJobOrgToken) {
-    return NextResponse.json(
-      { error: 'Missing cron auth env: set CRON_SECRET and/or CRON_JOB_ORG_TOKEN' },
-      { status: 500 }
-    );
-  }
-
-  const auth = request.headers.get('authorization');
-  const cronToken =
-    request.headers.get('x-cron-job-org-token') ?? request.headers.get('x-cronjob-token');
-
-  const hasBearer = Boolean(secret) && auth === `Bearer ${secret}`;
-  const hasCronJobOrgToken = Boolean(cronJobOrgToken) && cronToken === cronJobOrgToken;
-
-  /** לא מאמתים מפתח ב-query string — נשמר בלוגים/הפניות והוא דולף בקלות */
-  if (hasBearer || hasCronJobOrgToken) {
-    return null;
-  }
-
-  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 }
 
 function parseAnalysisJson(raw: string): Partial<AiUserContext> {
@@ -381,13 +357,13 @@ async function runMasterCron() {
 }
 
 export async function GET(request: Request) {
-  const denied = authorizeCron(request);
+  const denied = await authorizeCronRequest(request);
   if (denied) return denied;
   return runMasterCron();
 }
 
 export async function POST(request: Request) {
-  const denied = authorizeCron(request);
+  const denied = await authorizeCronRequest(request);
   if (denied) return denied;
   return runMasterCron();
 }

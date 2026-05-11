@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Client as WorkflowClient } from '@upstash/workflow';
+import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 import { habitCheckpointSlotSchema } from '../../../../../../lib/workflows/almog-habit-checkpoint-payload';
 import { planHabitCheckpointTriggers } from '../../../../../../lib/workflows/habit-checkpoint-batch';
@@ -8,30 +9,6 @@ import { workflowPublicBaseUrl } from '../../../../../../lib/workflows/resolve-w
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
-
-function authorizeCron(request: Request): NextResponse | null {
-  const secret = process.env.CRON_SECRET?.trim();
-  const cronJobOrgToken = process.env.CRON_JOB_ORG_TOKEN?.trim();
-  if (!secret && !cronJobOrgToken) {
-    return NextResponse.json(
-      { error: 'Missing cron auth env: set CRON_SECRET and/or CRON_JOB_ORG_TOKEN' },
-      { status: 500 }
-    );
-  }
-
-  const auth = request.headers.get('authorization');
-  const cronToken =
-    request.headers.get('x-cron-job-org-token') ?? request.headers.get('x-cronjob-token');
-
-  const hasBearer = Boolean(secret) && auth === `Bearer ${secret}`;
-  const hasCronJobOrgToken = Boolean(cronJobOrgToken) && cronToken === cronJobOrgToken;
-
-  if (hasBearer || hasCronJobOrgToken) {
-    return null;
-  }
-
-  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-}
 
 async function runHabitCheckpointCron(request: Request) {
   const url = new URL(request.url);
@@ -49,8 +26,12 @@ async function runHabitCheckpointCron(request: Request) {
   }
   const slot = slotParsed.data;
 
+  /** dryRun=1 — מאפשר לבדוק תזמון מיד, מחזיר את התכנון בלי לטרגר Workflow אמיתי */
+  const dryRunRaw = url.searchParams.get('dryRun') ?? url.searchParams.get('dry_run');
+  const isDryRun = dryRunRaw === '1' || dryRunRaw === 'true';
+
   const token = process.env.QSTASH_TOKEN?.trim();
-  if (!token) {
+  if (!token && !isDryRun) {
     return NextResponse.json({ error: 'חסר QSTASH_TOKEN לטריגר Workflow' }, { status: 500 });
   }
 
@@ -103,14 +84,29 @@ async function runHabitCheckpointCron(request: Request) {
   }
 
   const eligible = plan.filter((p) => !avoidIds.has(p.userId)).slice(0, maxTriggers);
+  const workflowBase = workflowPublicBaseUrl();
+  const workflowUrl = `${workflowBase}/api/workflows/almog-habit-checkpoint`;
+
+  if (isDryRun) {
+    return NextResponse.json({
+      ok: true,
+      mode: 'dry_run',
+      slot,
+      planned_users: plan.length,
+      skipped_avoid_push: avoidIds.size,
+      would_trigger: eligible.length,
+      workflow_url: workflowUrl,
+      sample_user_ids: eligible.slice(0, 5).map((e) => e.userId),
+      hint_he:
+        'אם would_trigger>0 — ההגדרה תקינה. הסר dryRun=1 (או הפעל מ-Upstash Schedules) כדי לטרגר Workflows אמיתיים.',
+    });
+  }
 
   const baseUrl = process.env.QSTASH_URL?.trim();
   const client = new WorkflowClient({
-    token,
+    token: token!,
     ...(baseUrl ? { baseUrl } : {}),
   });
-
-  const workflowUrl = `${workflowPublicBaseUrl()}/api/workflows/almog-habit-checkpoint`;
 
   let triggered = 0;
   const errors: string[] = [];
@@ -141,13 +137,13 @@ async function runHabitCheckpointCron(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const denied = authorizeCron(request);
+  const denied = await authorizeCronRequest(request);
   if (denied) return denied;
   return runHabitCheckpointCron(request);
 }
 
 export async function POST(request: Request) {
-  const denied = authorizeCron(request);
+  const denied = await authorizeCronRequest(request);
   if (denied) return denied;
   return runHabitCheckpointCron(request);
 }
