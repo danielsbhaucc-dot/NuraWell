@@ -127,13 +127,28 @@ async function runHabitCheckpointCron(request: Request) {
     }
   }
 
-  return NextResponse.json({
-    ok: true,
+  const summary = {
     slot,
     planned_users: plan.length,
     skipped_avoid_push: avoidIds.size,
     workflow_triggers: triggered,
+    eligible_after_avoid: eligible.length,
+    errors_count: errors.length,
     workflow_url: workflowUrl,
+  };
+
+  /**
+   * נדפיס summary לקונסול כדי שיופיע ב-Vercel Logs לכל ריצה.
+   * זה מאפשר לראות מיד מה הוחזר בלי לחפור ב-Upstash response body.
+   */
+  console.log('[habit-checkpoints CRON]', JSON.stringify(summary));
+  if (errors.length > 0) {
+    console.error('[habit-checkpoints CRON errors]', JSON.stringify(errors));
+  }
+
+  return NextResponse.json({
+    ok: true,
+    ...summary,
     errors: errors.length ? errors : undefined,
   });
 }
