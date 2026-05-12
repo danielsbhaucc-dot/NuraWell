@@ -52,7 +52,8 @@ function asStatusMap(raw: unknown): Record<string, TaskStatusEntry> {
 /**
  * מזהה משימות שהמשתמש סימן `accepted` ועדיין `execution_done !== true`.
  * סורק את כל הצעדים שהמשתמש עבר/נמצא בהם — לא רק את הצעד האחרון.
- * המגבלה מקסימום 12 פריטים, מעדיפים את ה-row שעודכן לאחרונה כדי לא להציף.
+ * ללא מגבלת מספר פריטים — מחזיר את כל המשימות הפתוחות.
+ * מסודר לפי updated_at של ה-row כך שמשימות מהצעד האחרון מופיעות ראשונות.
  */
 export function collectPendingAcceptedTasks(
   rows: ProgressRow[]
@@ -78,7 +79,6 @@ export function collectPendingAcceptedTasks(
       if (s.execution_done === true) continue;
       seen.add(t.id);
       out.push({ id: t.id, title: t.title, stepTitle });
-      if (out.length >= 12) return out;
     }
   }
 

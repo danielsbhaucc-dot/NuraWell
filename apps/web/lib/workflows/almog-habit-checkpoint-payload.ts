@@ -31,8 +31,8 @@ export const almogHabitCheckpointPayloadSchema = z
     slot: habitCheckpointSlotSchema,
     /** YYYY-MM-DD — לוח שנה בירושלים (למניעת כפילויות) */
     checkpointDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    habits: z.array(habitItemSchema).max(24).default([]),
-    pendingTasks: z.array(pendingTaskSchema).max(24).default([]),
+    habits: z.array(habitItemSchema).max(200).default([]),
+    pendingTasks: z.array(pendingTaskSchema).max(200).default([]),
     stepTitle: z.string().max(500).nullable().optional(),
     stationTitle: z.string().max(500).nullable().optional(),
   })
