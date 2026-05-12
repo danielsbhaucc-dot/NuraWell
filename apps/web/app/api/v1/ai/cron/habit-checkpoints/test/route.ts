@@ -330,13 +330,17 @@ export async function POST(request: Request) {
         'אם inserted_notification.id מופיע ב-recent_notifications וגם בפעמון — הזרימה תקינה. אם הוא ב-DB אבל לא בפעמון — בעיית RLS/Frontend.',
     });
   } catch (e) {
+    console.error('[habit-checkpoint test] send_failed', e);
     return NextResponse.json(
       {
         ok: false,
         error: 'send_failed',
         details: e instanceof Error ? e.message : String(e),
+        stack:
+          process.env.NODE_ENV !== 'production' && e instanceof Error ? e.stack : undefined,
         slot,
         checkpoint_date: dateKey,
+        target_user_id: targetUserId,
       },
       { status: 500 }
     );

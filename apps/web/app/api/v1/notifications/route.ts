@@ -83,11 +83,24 @@ export async function GET(request: Request) {
     const [{ data, error }, countResult] = await Promise.all([q, countPromise]);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[notifications GET] supabase error', error);
+      return NextResponse.json(
+        {
+          error: error.message,
+          code: (error as { code?: string }).code,
+          hint: (error as { hint?: string }).hint,
+          details: (error as { details?: string }).details,
+        },
+        { status: 500 }
+      );
     }
 
     if (countResult?.error) {
-      return NextResponse.json({ error: (countResult.error as Error).message }, { status: 500 });
+      console.error('[notifications GET] count error', countResult.error);
+      return NextResponse.json(
+        { error: (countResult.error as Error).message },
+        { status: 500 }
+      );
     }
 
     const rows = (data ?? []) as Array<Record<string, unknown>>;
@@ -106,8 +119,15 @@ export async function GET(request: Request) {
       ...(unread_total !== undefined ? { unread_total } : {}),
     });
   } catch (error) {
+    console.error('[notifications GET] unexpected', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      {
+        error: error instanceof Error ? error.message : 'Internal server error',
+        stack:
+          process.env.NODE_ENV !== 'production' && error instanceof Error
+            ? error.stack
+            : undefined,
+      },
       { status: 500 }
     );
   }
