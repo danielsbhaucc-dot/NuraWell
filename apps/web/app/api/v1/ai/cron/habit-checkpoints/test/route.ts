@@ -10,7 +10,10 @@ import {
   type AlmogHabitCheckpointPayload,
   type HabitCheckpointSlot,
 } from '../../../../../../../lib/workflows/almog-habit-checkpoint-payload';
-import { collectUserJourneyHabits } from '../../../../../../../lib/workflows/habit-checkpoint-batch';
+import {
+  collectPendingAcceptedTasks,
+  collectUserJourneyHabits,
+} from '../../../../../../../lib/workflows/habit-checkpoint-batch';
 import {
   filterHabitsForSlot,
   jerusalemCalendarParts,
@@ -72,9 +75,11 @@ type ProgressRow = {
   user_id: string;
   updated_at: string;
   is_completed: boolean | null;
+  task_statuses: unknown;
   journey_steps: {
     title: string | null;
     habits: unknown;
+    tasks: unknown;
     journey_stations: unknown;
   } | null;
 };
@@ -91,9 +96,11 @@ async function fetchUserProgressRows(
       user_id,
       updated_at,
       is_completed,
+      task_statuses,
       journey_steps (
         title,
         habits,
+        tasks,
         journey_stations ( title )
       )
     `
@@ -198,28 +205,30 @@ export async function POST(request: Request) {
   const filteredHabits = bypassEligibility
     ? allHabits
     : filterHabitsForSlot(allHabits, slot, weekday);
+  const pendingTasks = collectPendingAcceptedTasks(progressRows);
 
-  let payloadHabits: AlmogHabitCheckpointPayload['habits'];
+  let payloadHabits: AlmogHabitCheckpointPayload['habits'] = filteredHabits.map((h) => ({
+    id: h.id,
+    title: h.title,
+    frequency: h.frequency,
+  }));
   let usedFallback = false;
-  if (filteredHabits.length > 0) {
-    payloadHabits = filteredHabits.map((h) => ({
-      id: h.id,
-      title: h.title,
-      frequency: h.frequency,
-    }));
-  } else if (allowFallbackHabit) {
+  if (payloadHabits.length === 0 && pendingTasks.length === 0 && allowFallbackHabit) {
     payloadHabits = [FALLBACK_HABIT];
     usedFallback = true;
-  } else {
+  }
+
+  if (payloadHabits.length === 0 && pendingTasks.length === 0) {
     return NextResponse.json(
       {
         ok: false,
-        error: 'no_habits_eligible',
+        error: 'nothing_to_send',
         details:
-          'למשתמש אין הרגלים שתואמים את החלון/יום (או שאין הרגלים בכלל במסע). שלח allowFallbackHabit=true או bypassEligibility=true לבדיקת תזרים.',
+          'למשתמש אין הרגלים תואמי חלון ואין משימות פתוחות. שלח allowFallbackHabit=true או bypassEligibility=true לבדיקת תזרים.',
         slot,
         weekday_jerusalem: weekday,
         all_habits_count: allHabits.length,
+        pending_tasks_count: 0,
       },
       { status: 200 }
     );
@@ -234,6 +243,11 @@ export async function POST(request: Request) {
     slot,
     checkpointDate: dateKey,
     habits: payloadHabits,
+    pendingTasks: pendingTasks.map((t) => ({
+      id: t.id,
+      title: t.title,
+      stepTitle: t.stepTitle,
+    })),
     stepTitle,
     stationTitle,
   };
@@ -272,6 +286,8 @@ export async function POST(request: Request) {
       all_habits_count: allHabits.length,
       eligible_habits_count: filteredHabits.length,
       sent_habits_count: payloadHabits.length,
+      pending_tasks_count: pendingTasks.length,
+      pending_task_titles: pendingTasks.slice(0, 6).map((t) => t.title),
       notification_body: result.body,
       hint_he:
         'נשלחה התראה אמיתית למסך ההתראות (פעמון). נסה לפתוח את האפליקציה ולראות אותה.',

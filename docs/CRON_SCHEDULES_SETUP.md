@@ -37,7 +37,9 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 | `POST /api/v1/ai/cron/habit-checkpoints?slot=evening` | יומי 20:00 ישראל | אותו קובץ |
 
 ה-Master cron מנתח אינטראקציות AI מ-24 השעות האחרונות + שולח נידג'ים למשתמשים לא־פעילים.
-ה-habit checkpoints מתזמן Workflows של בדיקת הרגלים לפי החלון (בוקר/צהריים/ערב).
+ה-habit checkpoints מתזמן Workflows של בדיקת הרגלים לפי החלון (בוקר/צהריים/ערב) **וגם
+מזהה משימות שהמשתמש קיבל אבל לא ביצע** — מי שאין לו לא הרגלים תואמי slot ולא משימות
+פתוחות, מדולג אוטומטית כדי לא להציף עם תזכורות מיותרות.
 
 ---
 
@@ -47,7 +49,7 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 
 שתי שיטות נתמכות:
 
-| # | שיטה | ל־ |
+| # | ש0יטה | ל־ |
 |---|---|---|
 | 1 | `Upstash-Signature` header (אוטומטי מ-QStash) | תזמונים בפרודקשן |
 | 2 | `Authorization: Bearer <CRON_SECRET>` | הפעלה ידנית מ-curl/Postman/GitHub Actions |
@@ -225,16 +227,23 @@ curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints/te
   "all_habits_count": 4,
   "eligible_habits_count": 4,
   "sent_habits_count": 4,
+  "pending_tasks_count": 2,
+  "pending_task_titles": ["לשתות 8 כוסות מים", "להחליף שמן זית לחמאה"],
   "notification_body": "היי דן, רוצה לעצור רגע ולבדוק…"
 }
 ```
+
+`pending_tasks_count` מציין כמה משימות שהמשתמש קיבל על עצמו (`status='accepted'`)
+עדיין לא דווחו כבוצעו (`execution_done` לא `true`). אם הוא 0 וגם
+`eligible_habits_count=0`, וב-CRON האמיתי, המשתמש יידלג. ב-`/test` עם
+`allowFallbackHabit=true` (ברירת מחדל) עדיין תישלח התראה לבדיקה.
 
 הודעות שגיאה ייעודיות:
 
 - `blocked_by_gate` (רק עם `bypassGate=false`) → המשתמש סימן `avoid_push` או
   שכבר נשלחה התראה לאותו slot/יום.
-- `no_habits_eligible` (רק עם `allowFallbackHabit=false`) → אין הרגלים במסע
-  שתואמים את החלון/יום הנוכחי.
+- `nothing_to_send` (רק עם `allowFallbackHabit=false`) → אין למשתמש לא הרגלים
+  תואמי חלון ולא משימות פתוחות.
 - `send_failed` → שגיאה ב-OpenRouter או ב-Supabase insert. הודעה מפורטת ב-details.
 
 ---
@@ -267,9 +276,12 @@ curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints/te
 
 - `avoid_push: true` בפרופיל המשתמש → השרת מדלג.
 - כבר נשלחה התראה לאותו slot היום → השרת מדלג.
-- אין הרגלים שתואמים ל-slot היום (למשל `weekly` רק ביום מסוים) → השרת מדלג.
+- אין הרגלים שתואמים ל-slot היום (למשל `weekly` רק ביום מסוים) **וגם** אין משימות
+  שהמשתמש סימן כ-`accepted` ועדיין לא דיווח עליהן ב-`task_statuses[id].execution_done` → השרת מדלג.
+  המשמעות: משתמש שהשלים את כל המשימות שקיבל על עצמו לא יקבל תזכורת באותו חלון.
 
-הריצו `dryRun=1` כדי לראות מי תוכנן ומי דולג.
+הריצו `dryRun=1` כדי לראות מי תוכנן ומי דולג, או `/test` כדי לראות עבור משתמש ספציפי
+כמה משימות פתוחות וכמה הרגלים תואמים נמצאו.
 
 ---
 
