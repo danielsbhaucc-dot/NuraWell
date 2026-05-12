@@ -4,13 +4,18 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, ChevronRight, Scale, Sparkles } from 'lucide-react';
+import { Bell, ChevronRight, Loader2, Scale, Send, Sparkles } from 'lucide-react';
 import { cn } from '../../lib/cn';
 
 type Props = {
   initialAvoidPush: boolean;
   initialWeightReminders: boolean;
 };
+
+type TestNotifResult =
+  | { kind: 'ok'; body: string; slot: string; usedFallback: boolean }
+  | { kind: 'blocked'; reason: string; hint?: string }
+  | { kind: 'error'; message: string };
 
 export function AlmogNudgeSettingsClient({
   initialAvoidPush,
@@ -22,6 +27,8 @@ export function AlmogNudgeSettingsClient({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<TestNotifResult | null>(null);
 
   useEffect(() => {
     setAvoidPush(initialAvoidPush);
@@ -50,6 +57,55 @@ export function AlmogNudgeSettingsClient({
       setError('לא הצלחנו לשמור. נסו שוב בעוד רגע.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function sendTestNotification() {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch('/api/v1/ai/cron/habit-checkpoints/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        notification_body?: string;
+        slot?: string;
+        used_fallback_habit?: boolean;
+        reason?: string;
+        hint_he?: string;
+      };
+      if (!res.ok || data.ok === false) {
+        if (data.error === 'blocked_by_gate') {
+          setTestResult({
+            kind: 'blocked',
+            reason: data.reason ?? 'unknown',
+            hint: data.hint_he,
+          });
+        } else {
+          setTestResult({
+            kind: 'error',
+            message: data.hint_he || data.error || 'לא הצלחנו לשלוח התראת בדיקה.',
+          });
+        }
+        return;
+      }
+      setTestResult({
+        kind: 'ok',
+        body: data.notification_body ?? '',
+        slot: data.slot ?? '',
+        usedFallback: Boolean(data.used_fallback_habit),
+      });
+    } catch (e) {
+      setTestResult({
+        kind: 'error',
+        message: e instanceof Error ? e.message : 'שגיאת רשת',
+      });
+    } finally {
+      setTesting(false);
     }
   }
 
@@ -218,6 +274,94 @@ export function AlmogNudgeSettingsClient({
           שינויים נכנסים לתוקף בתזמון הריצה היומית של המערכת ובהתאם לפעילות האחרונה שלכם.
           אין להתראות האלה השפעה על שיעורים, מסע או צ׳אט ישיר עם אלמוג.
         </p>
+
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="rounded-3xl border border-amber-200/70 bg-amber-50/60 p-5 shadow-[0_8px_24px_rgba(217,119,6,0.08)] space-y-3"
+        >
+          <div className="flex gap-3">
+            <div
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white"
+              style={{
+                background: 'linear-gradient(145deg, #f59e0b, #f97316)',
+                boxShadow: '0 6px 18px rgba(217,119,6,0.32)',
+              }}
+            >
+              <Send className="h-5 w-5" aria-hidden />
+            </div>
+            <div className="min-w-0">
+              <h2 className="font-bold text-slate-900">בדיקה מהירה</h2>
+              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                שלחו לעצמכם התראת בדיקה אמיתית עכשיו — תופיע מיד בפעמון ההתראות.
+                נועד לוודא שהזרימה עובדת בלי להמתין לתזמון הבא של אלמוג.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={testing || avoidPush}
+            onClick={() => void sendTestNotification()}
+            className={cn(
+              'inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-white transition',
+              testing
+                ? 'bg-amber-400/70 cursor-wait'
+                : avoidPush
+                  ? 'bg-slate-300 cursor-not-allowed opacity-70'
+                  : 'bg-gradient-to-l from-amber-500 to-orange-500 hover:brightness-105 shadow-lg shadow-amber-500/25'
+            )}
+          >
+            {testing ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                שולחים…
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4" aria-hidden />
+                שלחו לי התראת בדיקה עכשיו
+              </>
+            )}
+          </button>
+
+          {avoidPush ? (
+            <p className="text-xs text-slate-600">
+              כש&quot;פחות הודעות&quot; דלוק, גם בדיקה ידנית כבויה כדי לא לעקוף את ההעדפה.
+              כבו את הסוויץ למעלה (בלי לשמור) לא יעזור — צריך לשמור קודם.
+            </p>
+          ) : null}
+
+          {testResult?.kind === 'ok' ? (
+            <div className="rounded-2xl border border-emerald-300/60 bg-emerald-50 px-4 py-3 text-right">
+              <p className="text-xs font-bold text-emerald-700">
+                ההתראה נשלחה ({testResult.slot}
+                {testResult.usedFallback ? ' · בלי הרגלים אמיתיים — שימוש בפלייסהולדר' : ''})
+              </p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-emerald-900 whitespace-pre-wrap">
+                {testResult.body}
+              </p>
+            </div>
+          ) : null}
+
+          {testResult?.kind === 'blocked' ? (
+            <div className="rounded-2xl border border-amber-300 bg-amber-50/90 px-4 py-3 text-right">
+              <p className="text-xs font-bold text-amber-800">
+                נחסם על-ידי gate ({testResult.reason})
+              </p>
+              {testResult.hint ? (
+                <p className="mt-1.5 text-[13px] leading-relaxed text-amber-900">{testResult.hint}</p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {testResult?.kind === 'error' ? (
+            <p className="text-sm font-semibold text-red-700" role="alert">
+              {testResult.message}
+            </p>
+          ) : null}
+        </motion.section>
       </div>
     </div>
   );

@@ -172,6 +172,71 @@ curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints?sl
 > ה-workflow עצמו (`almog-habit-checkpoint`) חוסם כפילויות לאותו slot/יום, אז קריאה חוזרת
 > לא תיצור התראות כפולות (`apps/web/lib/workflows/habit-checkpoint-gates.ts`).
 
+### דרך ד — בדיקה עצמית של ההתראה (`/test`)
+
+ל-Endpoint נפרד שמריץ **סינכרונית** את אותו תזרים שה-CRON האמיתי מריץ אחרי
+ה-Workflow — בלי המתנה ל-QStash, בלי המתנה לחלון הזמן הבא, ועם דריסת ה-gate
+שמונע כפילויות. שימושי לבדיקה חוזרת בלי לחכות שעות.
+
+נתיב: `POST /api/v1/ai/cron/habit-checkpoints/test`
+
+קוד: `apps/web/app/api/v1/ai/cron/habit-checkpoints/test/route.ts`
+
+מסכי משתמש: כפתור "שלחו לי התראת בדיקה עכשיו" בעמוד `/settings/almog`.
+
+ברירות מחדל (אופטימליות לבדיקה):
+
+- `bypassGate=true` — דורס את ה-gate "כבר נשלחה התראה ל-slot היום".
+- `bypassEligibility=true` — לא מסנן הרגלים לפי `slot`/יום בשבוע, שולח את כל ההרגלים
+  שיש למשתמש במסע. אם אין הרגלים בכלל, משתמש בפלייסהולדר `שתיית כוס מים`
+  (`allowFallbackHabit=true`).
+- `slot` — אם לא צוין, נגזר אוטומטית משעת ירושלים הנוכחית.
+
+**אימות:**
+
+1. משתמש מחובר (cookies) → שולח התראה לעצמו, לא יכול לציין `userId` של אחר.
+2. `Authorization: Bearer <CRON_SECRET>` → דורש `userId` מפורש; טוב לקריאה מ-ops/curl.
+
+> ⚠️ ה-`/test` יוצר notification אמיתי בטבלת `notifications` של המשתמש —
+> רק שולח עוקף gate. ב-CRON האמיתי הזרימה ממשיכה לרוץ עם gate מלא. אין כאן
+> bypass לכל המשתמשים בו-זמנית.
+
+דוגמת curl (משתמש ב-CRON_SECRET, מציין userId):
+
+```bash
+curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints/test" \
+  -H "Authorization: Bearer <CRON_SECRET>" \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"<UUID>","slot":"morning"}'
+```
+
+תגובה צפויה:
+
+```json
+{
+  "ok": true,
+  "mode": "sync_debug",
+  "slot": "morning",
+  "checkpoint_date": "2026-05-12",
+  "weekday_jerusalem": 2,
+  "gate_bypassed": true,
+  "eligibility_bypassed": true,
+  "used_fallback_habit": false,
+  "all_habits_count": 4,
+  "eligible_habits_count": 4,
+  "sent_habits_count": 4,
+  "notification_body": "היי דן, רוצה לעצור רגע ולבדוק…"
+}
+```
+
+הודעות שגיאה ייעודיות:
+
+- `blocked_by_gate` (רק עם `bypassGate=false`) → המשתמש סימן `avoid_push` או
+  שכבר נשלחה התראה לאותו slot/יום.
+- `no_habits_eligible` (רק עם `allowFallbackHabit=false`) → אין הרגלים במסע
+  שתואמים את החלון/יום הנוכחי.
+- `send_failed` → שגיאה ב-OpenRouter או ב-Supabase insert. הודעה מפורטת ב-details.
+
 ---
 
 ## 6) תקלות
@@ -213,6 +278,8 @@ curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints?sl
 - `apps/web/lib/api/authorize-cron.ts` — אימות חתימה / Bearer.
 - `apps/web/app/api/v1/ai/cron/master/route.ts` — cron מאסטר יומי.
 - `apps/web/app/api/v1/ai/cron/habit-checkpoints/route.ts` — תזמון 3× ביום.
+- `apps/web/app/api/v1/ai/cron/habit-checkpoints/test/route.ts` — endpoint דיבוג סינכרוני (`/test`).
 - `apps/web/app/api/workflows/almog-habit-checkpoint/route.ts` — ה-workflow הקצה שמטפל במשתמש בודד.
 - `apps/web/lib/workflows/habit-checkpoint-eligibility.ts` — סינון הרגלים לפי slot/יום.
 - `apps/web/lib/workflows/habit-checkpoint-gates.ts` — חסימת כפילויות.
+- `apps/web/components/settings/AlmogNudgeSettingsClient.tsx` — כפתור בדיקה ב-UI ב-`/settings/almog`.
