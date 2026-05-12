@@ -43,7 +43,7 @@ export async function GET(request: Request) {
     let q = (supabase as any)
       .from('notifications')
       .select(
-        'id, title, body, icon_emoji, action_url, is_read, created_at, type, archived_at'
+        'id, title, body, icon_emoji, action_url, is_read, created_at, type, archived_at, metadata'
       )
       .eq('user_id', user.id);
 
