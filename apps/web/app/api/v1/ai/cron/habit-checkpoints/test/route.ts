@@ -274,6 +274,22 @@ export async function POST(request: Request) {
 
   try {
     const result = await sendAlmogHabitCheckpointNotification(admin, payload);
+
+    /**
+     * אבחון אחרי INSERT — שולפים את 5 ההתראות האחרונות של המשתמש דרך admin
+     * (עוקפים RLS) כדי לוודא שההתראה באמת נשמרה ב-DB ולא נמחקת אחרי INSERT.
+     * אם כאן רואים את הרשומה אבל ב-UI לא — הבעיה ב-RLS / Frontend / Session.
+     */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: recentRows } = await (admin as any)
+      .from('notifications')
+      .select('id, type, title, archived_at, is_read, is_sent, created_at, metadata')
+      .eq('user_id', targetUserId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    const inserted = result.inserted as Record<string, unknown> | null;
+
     return NextResponse.json({
       ok: true,
       mode: 'sync_debug',
@@ -283,14 +299,35 @@ export async function POST(request: Request) {
       gate_bypassed: bypassGate,
       eligibility_bypassed: bypassEligibility,
       used_fallback_habit: usedFallback,
+      target_user_id: targetUserId,
       all_habits_count: allHabits.length,
       eligible_habits_count: filteredHabits.length,
       sent_habits_count: payloadHabits.length,
       pending_tasks_count: pendingTasks.length,
       pending_task_titles: pendingTasks.slice(0, 6).map((t) => t.title),
       notification_body: result.body,
+      inserted_notification: inserted
+        ? {
+            id: inserted.id,
+            archived_at: inserted.archived_at,
+            is_read: inserted.is_read,
+            is_sent: inserted.is_sent,
+            created_at: inserted.created_at,
+          }
+        : null,
+      recent_notifications_count: Array.isArray(recentRows) ? recentRows.length : 0,
+      recent_notifications: Array.isArray(recentRows)
+        ? recentRows.map((r: Record<string, unknown>) => ({
+            id: r.id,
+            type: r.type,
+            title: r.title,
+            archived_at: r.archived_at,
+            is_read: r.is_read,
+            created_at: r.created_at,
+          }))
+        : [],
       hint_he:
-        'נשלחה התראה אמיתית למסך ההתראות (פעמון). נסה לפתוח את האפליקציה ולראות אותה.',
+        'אם inserted_notification.id מופיע ב-recent_notifications וגם בפעמון — הזרימה תקינה. אם הוא ב-DB אבל לא בפעמון — בעיית RLS/Frontend.',
     });
   } catch (e) {
     return NextResponse.json(

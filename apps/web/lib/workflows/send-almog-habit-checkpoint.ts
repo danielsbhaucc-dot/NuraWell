@@ -89,27 +89,31 @@ export async function sendAlmogHabitCheckpointNotification(
   const pendingTaskIds = payload.pendingTasks.map((t) => t.id);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (admin as any).from('notifications').insert({
-    user_id: payload.userId,
-    type: 'ai_message',
-    title,
-    body,
-    icon_emoji: '🌿',
-    action_url: '/journey',
-    is_read: false,
-    is_sent: false,
-    send_at: new Date().toISOString(),
-    metadata: {
-      source: 'almog_habit_checkpoint',
-      slot: payload.slot,
-      checkpoint_date: payload.checkpointDate,
-      habit_ids: habitIds,
-      pending_task_ids: pendingTaskIds,
-      model: AI_MODELS.empathy,
-      recipient_first_name: firstName,
-    },
-  });
+  const { data: inserted, error } = await (admin as any)
+    .from('notifications')
+    .insert({
+      user_id: payload.userId,
+      type: 'ai_message',
+      title,
+      body,
+      icon_emoji: '🌿',
+      action_url: '/journey',
+      is_read: false,
+      is_sent: false,
+      send_at: new Date().toISOString(),
+      metadata: {
+        source: 'almog_habit_checkpoint',
+        slot: payload.slot,
+        checkpoint_date: payload.checkpointDate,
+        habit_ids: habitIds,
+        pending_task_ids: pendingTaskIds,
+        model: AI_MODELS.empathy,
+        recipient_first_name: firstName,
+      },
+    })
+    .select('id, user_id, type, title, archived_at, is_read, is_sent, created_at')
+    .single();
 
   if (error) throw new Error(error.message);
-  return { body };
+  return { body, inserted: inserted as Record<string, unknown> | null };
 }

@@ -12,6 +12,15 @@ type Props = {
   initialWeightReminders: boolean;
 };
 
+type RecentNotif = {
+  id: string;
+  type: string;
+  title: string;
+  archived_at: string | null;
+  is_read: boolean;
+  created_at: string;
+};
+
 type TestNotifResult =
   | {
       kind: 'ok';
@@ -20,6 +29,11 @@ type TestNotifResult =
       usedFallback: boolean;
       pendingTasksCount: number;
       eligibleHabitsCount: number;
+      insertedId: string | null;
+      insertedArchivedAt: string | null;
+      recentCount: number;
+      recent: RecentNotif[];
+      targetUserId: string;
     }
   | { kind: 'blocked'; reason: string; hint?: string }
   | { kind: 'error'; message: string };
@@ -84,6 +98,10 @@ export function AlmogNudgeSettingsClient({
         used_fallback_habit?: boolean;
         pending_tasks_count?: number;
         eligible_habits_count?: number;
+        target_user_id?: string;
+        inserted_notification?: { id?: string; archived_at?: string | null };
+        recent_notifications_count?: number;
+        recent_notifications?: RecentNotif[];
         reason?: string;
         hint_he?: string;
       };
@@ -109,6 +127,11 @@ export function AlmogNudgeSettingsClient({
         usedFallback: Boolean(data.used_fallback_habit),
         pendingTasksCount: Number(data.pending_tasks_count ?? 0),
         eligibleHabitsCount: Number(data.eligible_habits_count ?? 0),
+        insertedId: data.inserted_notification?.id ?? null,
+        insertedArchivedAt: data.inserted_notification?.archived_at ?? null,
+        recentCount: Number(data.recent_notifications_count ?? 0),
+        recent: Array.isArray(data.recent_notifications) ? data.recent_notifications : [],
+        targetUserId: data.target_user_id ?? '',
       });
     } catch (e) {
       setTestResult({
@@ -201,7 +224,7 @@ export function AlmogNudgeSettingsClient({
           ) : null}
 
           {testResult?.kind === 'ok' ? (
-            <div className="rounded-2xl border-2 border-emerald-400 bg-white px-4 py-3 text-right space-y-1.5">
+            <div className="rounded-2xl border-2 border-emerald-400 bg-white px-4 py-3 text-right space-y-2">
               <p className="text-xs font-black text-emerald-700">
                 ✓ ההתראה נשלחה ({testResult.slot}
                 {testResult.usedFallback ? ' · פלייסהולדר' : ''})
@@ -215,11 +238,56 @@ export function AlmogNudgeSettingsClient({
                   ? `${testResult.eligibleHabitsCount} הרגלים`
                   : 'אין הרגלים תואמים'}
               </p>
-              <p className="text-[13px] leading-relaxed text-slate-800 whitespace-pre-wrap pt-1">
+              <p className="text-[13px] leading-relaxed text-slate-800 whitespace-pre-wrap pt-1 border-t border-emerald-100 pt-2">
                 {testResult.body}
               </p>
-              <p className="text-[11px] text-slate-500 pt-1">
-                פתחו את הפעמון בכותרת — ההתראה אמורה להופיע מיד.
+
+              <div className="mt-3 pt-3 border-t border-emerald-100 space-y-1.5">
+                <p className="text-[11px] font-black text-slate-700">
+                  בדיקה — מה ב-DB עכשיו (admin, עוקף RLS):
+                </p>
+                <p className="text-[10px] text-slate-600 font-mono break-all">
+                  inserted_id: {testResult.insertedId ?? '(לא הוחזר)'}
+                </p>
+                {testResult.insertedArchivedAt ? (
+                  <p className="text-[11px] font-bold text-red-600">
+                    ⚠️ ההתראה נוצרה עם archived_at — לא תופיע בפעמון!
+                  </p>
+                ) : null}
+                <p className="text-[10px] text-slate-600">
+                  סך התראות אחרונות שלך ב-DB: <strong>{testResult.recentCount}</strong>
+                </p>
+                {testResult.recent.length > 0 ? (
+                  <ul className="text-[10px] text-slate-600 space-y-0.5">
+                    {testResult.recent.map((r) => (
+                      <li key={r.id} className="font-mono flex gap-1">
+                        <span className={r.archived_at ? 'text-red-500' : 'text-emerald-700'}>
+                          {r.archived_at ? '🗄️' : '📬'}
+                        </span>
+                        <span className="truncate">
+                          {new Date(r.created_at).toLocaleTimeString('he-IL', {
+                            timeZone: 'Asia/Jerusalem',
+                          })}
+                          {' · '}
+                          {r.type}
+                          {' · '}
+                          {r.is_read ? 'נקרא' : 'חדש'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-[11px] font-bold text-red-600">
+                    ⚠️ אין שום התראה ב-DB עבור המשתמש שלך! משהו מוחק אותן.
+                  </p>
+                )}
+                <p className="text-[10px] text-slate-500 pt-1">
+                  user_id: <span className="font-mono">{testResult.targetUserId}</span>
+                </p>
+              </div>
+
+              <p className="text-[11px] text-emerald-700 pt-2 font-bold">
+                פתחו את הפעמון עכשיו — אמורה להופיע ההתראה האחרונה.
               </p>
             </div>
           ) : null}
