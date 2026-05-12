@@ -29,10 +29,18 @@ export type NotificationItem = {
   created_at: string;
   type: string;
   archived_at: string | null;
+  /** מקור — להבחנה בעיצוב (almog_habit_checkpoint וכו') */
+  source: string | null;
 };
 
 type ViewMode = 'inbox' | 'archive';
 type FilterKind = 'all' | 'unread' | 'almog';
+
+function extractSource(meta: unknown): string | null {
+  if (!meta || typeof meta !== 'object') return null;
+  const s = (meta as { source?: unknown }).source;
+  return typeof s === 'string' && s.length > 0 ? s : null;
+}
 
 function mapRealtimeRow(row: Record<string, unknown>): NotificationItem | null {
   const id = row.id;
@@ -49,6 +57,24 @@ function mapRealtimeRow(row: Record<string, unknown>): NotificationItem | null {
     created_at: typeof row.created_at === 'string' ? row.created_at : new Date().toISOString(),
     type: typeof row.type === 'string' ? row.type : 'system',
     archived_at: archived,
+    source: extractSource(row.metadata),
+  };
+}
+
+/** מיפוי שורה מ-API (כולל metadata) לטיפוס NotificationItem */
+function mapApiRow(row: Record<string, unknown>): NotificationItem {
+  return {
+    id: String(row.id ?? ''),
+    title: typeof row.title === 'string' ? row.title : '',
+    body: typeof row.body === 'string' ? row.body : '',
+    icon_emoji: typeof row.icon_emoji === 'string' ? row.icon_emoji : null,
+    action_url: typeof row.action_url === 'string' ? row.action_url : null,
+    is_read: row.is_read === true,
+    created_at: typeof row.created_at === 'string' ? row.created_at : new Date().toISOString(),
+    type: typeof row.type === 'string' ? row.type : 'system',
+    archived_at:
+      row.archived_at != null && typeof row.archived_at === 'string' ? row.archived_at : null,
+    source: extractSource(row.metadata),
   };
 }
 
@@ -123,12 +149,12 @@ export function NotificationsProvider({
         });
         const res = await fetch(url, { cache: 'no-store' });
         const data = (await res.json()) as {
-          notifications?: NotificationItem[];
+          notifications?: Array<Record<string, unknown>>;
           next_cursor?: string | null;
           unread_total?: number;
         };
         if (!res.ok) return;
-        const list = data.notifications ?? [];
+        const list = (data.notifications ?? []).map(mapApiRow);
         if (typeof data.unread_total === 'number') setUnreadTotal(data.unread_total);
         setNextCursor(data.next_cursor ?? null);
         setItems(list);
@@ -151,12 +177,12 @@ export function NotificationsProvider({
       });
       const res = await fetch(url, { cache: 'no-store' });
       const data = (await res.json()) as {
-        notifications?: NotificationItem[];
+        notifications?: Array<Record<string, unknown>>;
         next_cursor?: string | null;
         unread_total?: number;
       };
       if (!res.ok) return;
-      const list = data.notifications ?? [];
+      const list = (data.notifications ?? []).map(mapApiRow);
       if (typeof data.unread_total === 'number') setUnreadTotal(data.unread_total);
       setNextCursor(data.next_cursor ?? null);
       setItems((prev) => {
@@ -476,6 +502,7 @@ export function NotificationsProvider({
               )}
               {items.map((n) => {
                 const isAi = n.type === 'ai_message';
+                const isCheckpoint = n.source === 'almog_habit_checkpoint';
                 const relative = formatHebrewRelativeTime(n.created_at, nowMs);
 
                 const ArchiveBtn =
@@ -499,20 +526,41 @@ export function NotificationsProvider({
                     </button>
                   );
 
+                /**
+                 * עיצוב מיוחד להתראות habit-checkpoint:
+                 * - גרדיאנט אמבר-עמוק בקצה הימני (במקום הירוק הסטנדרטי) — מעיד "תובנה אישית".
+                 * - תווית "תובנה" קטנה מעל הכותרת.
+                 * - שאר העיצוב נשאר זהה כדי להתמזג עם הממשק.
+                 */
+                const cardBg = isCheckpoint
+                  ? n.is_read
+                    ? 'linear-gradient(165deg, rgba(255,255,255,0.62) 0%, rgba(254,243,199,0.30) 100%)'
+                    : 'linear-gradient(165deg, rgba(255,255,255,0.72) 0%, rgba(254,243,199,0.50) 65%, rgba(255,237,213,0.45) 100%)'
+                  : n.is_read
+                    ? 'linear-gradient(165deg, rgba(255,255,255,0.55) 0%, rgba(248,250,252,0.42) 100%)'
+                    : 'linear-gradient(165deg, rgba(255,255,255,0.65) 0%, rgba(236,253,245,0.5) 100%)';
+                const cardShadow = isCheckpoint
+                  ? '0 12px 32px rgba(180,83,9,0.10), inset 0 1px 0 rgba(255,255,255,0.78)'
+                  : '0 12px 32px rgba(6,78,59,0.08), inset 0 1px 0 rgba(255,255,255,0.78)';
+                const cardBorder = isCheckpoint
+                  ? '1px solid rgba(252,211,77,0.45)'
+                  : '1px solid rgba(255,255,255,0.68)';
+                const stripGradient = isCheckpoint
+                  ? 'bg-gradient-to-b from-amber-400 to-orange-400'
+                  : 'bg-gradient-to-b from-teal-500 to-emerald-500';
+                const dotColor = isCheckpoint ? 'bg-amber-500' : 'bg-emerald-500';
+
                 const CardInner = (
                   <article
                     className={`relative overflow-hidden rounded-[20px] text-right transition-transform active:scale-[0.99] ${
                       n.is_read ? 'opacity-[0.93]' : ''
                     }`}
                     style={{
-                      border: '1px solid rgba(255,255,255,0.68)',
-                      background: n.is_read
-                        ? 'linear-gradient(165deg, rgba(255,255,255,0.55) 0%, rgba(248,250,252,0.42) 100%)'
-                        : 'linear-gradient(165deg, rgba(255,255,255,0.65) 0%, rgba(236,253,245,0.5) 100%)',
+                      border: cardBorder,
+                      background: cardBg,
                       backdropFilter: 'blur(20px)',
                       WebkitBackdropFilter: 'blur(20px)',
-                      boxShadow:
-                        '0 12px 32px rgba(6,78,59,0.08), inset 0 1px 0 rgba(255,255,255,0.78)',
+                      boxShadow: cardShadow,
                     }}
                     lang="he"
                   >
@@ -520,11 +568,11 @@ export function NotificationsProvider({
                     {!n.is_read && (
                       <>
                         <span
-                          className="absolute top-3 bottom-3 start-0 w-[3px] rounded-full bg-gradient-to-b from-teal-500 to-emerald-500 shadow-sm"
+                          className={`absolute top-3 bottom-3 start-0 w-[3px] rounded-full shadow-sm ${stripGradient}`}
                           aria-hidden
                         />
                         <span
-                          className="absolute top-3.5 start-2.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white/95 shadow-sm"
+                          className={`absolute top-3.5 start-2.5 h-2 w-2 rounded-full ${dotColor} ring-2 ring-white/95 shadow-sm`}
                           aria-hidden
                         />
                       </>
@@ -532,9 +580,24 @@ export function NotificationsProvider({
                     <div className="px-4 py-4 ps-5 pb-12">
                       <div className="flex flex-row-reverse items-start gap-3">
                         <div className="min-w-0 flex-1 space-y-2">
+                          {isCheckpoint ? (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full px-2 py-[2px] text-[10px] font-black tracking-wide text-amber-900 shadow-sm"
+                              style={{
+                                background:
+                                  'linear-gradient(135deg, rgba(252,211,77,0.85), rgba(251,191,36,0.7))',
+                                border: '1px solid rgba(252,211,77,0.6)',
+                              }}
+                            >
+                              <span className="text-[10px]" aria-hidden>✨</span>
+                              תובנה רגע
+                            </span>
+                          ) : null}
                           <div className="flex flex-row items-baseline justify-between gap-3 w-full">
                             <h3
-                              className="text-[14px] sm:text-[15px] font-black text-teal-900 leading-snug [overflow-wrap:anywhere] break-words text-right flex-1 min-w-0 order-1"
+                              className={`text-[14px] sm:text-[15px] font-black leading-snug [overflow-wrap:anywhere] break-words text-right flex-1 min-w-0 order-1 ${
+                                isCheckpoint ? 'text-amber-950' : 'text-teal-900'
+                              }`}
                               style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                             >
                               {n.title}
