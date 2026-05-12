@@ -90,9 +90,10 @@ export function AlmogNudgeSettingsClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
-      const data = (await res.json()) as {
+      const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         error?: string;
+        details?: string;
         notification_body?: string;
         slot?: string;
         used_fallback_habit?: boolean;
@@ -113,9 +114,17 @@ export function AlmogNudgeSettingsClient({
             hint: data.hint_he,
           });
         } else {
+          const fullMessage = [
+            `HTTP ${res.status}`,
+            data.error,
+            data.details,
+            data.hint_he,
+          ]
+            .filter(Boolean)
+            .join(' · ');
           setTestResult({
             kind: 'error',
-            message: data.hint_he || data.error || 'לא הצלחנו לשלוח התראת בדיקה.',
+            message: fullMessage || 'לא הצלחנו לשלוח התראת בדיקה.',
           });
         }
         return;
