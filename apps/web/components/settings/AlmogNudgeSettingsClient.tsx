@@ -13,7 +13,14 @@ type Props = {
 };
 
 type TestNotifResult =
-  | { kind: 'ok'; body: string; slot: string; usedFallback: boolean }
+  | {
+      kind: 'ok';
+      body: string;
+      slot: string;
+      usedFallback: boolean;
+      pendingTasksCount: number;
+      eligibleHabitsCount: number;
+    }
   | { kind: 'blocked'; reason: string; hint?: string }
   | { kind: 'error'; message: string };
 
@@ -75,6 +82,8 @@ export function AlmogNudgeSettingsClient({
         notification_body?: string;
         slot?: string;
         used_fallback_habit?: boolean;
+        pending_tasks_count?: number;
+        eligible_habits_count?: number;
         reason?: string;
         hint_he?: string;
       };
@@ -98,6 +107,8 @@ export function AlmogNudgeSettingsClient({
         body: data.notification_body ?? '',
         slot: data.slot ?? '',
         usedFallback: Boolean(data.used_fallback_habit),
+        pendingTasksCount: Number(data.pending_tasks_count ?? 0),
+        eligibleHabitsCount: Number(data.eligible_habits_count ?? 0),
       });
     } catch (e) {
       setTestResult({
@@ -132,6 +143,111 @@ export function AlmogNudgeSettingsClient({
             או כשחסר עדכון משקל. כאן אפשר להרגיע או לכוון בלי מילים טכניות.
           </p>
         </motion.div>
+
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="rounded-3xl border-2 border-amber-400 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-50 p-5 shadow-[0_10px_30px_rgba(217,119,6,0.15)] space-y-3"
+        >
+          <div className="flex gap-3">
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white"
+              style={{
+                background: 'linear-gradient(145deg, #f59e0b, #f97316)',
+                boxShadow: '0 6px 18px rgba(217,119,6,0.32)',
+              }}
+            >
+              <Send className="h-5 w-5" aria-hidden />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-base font-black text-slate-900">בדיקת התראה עכשיו</h2>
+              <p className="mt-1 text-sm text-slate-700 leading-relaxed">
+                לחיצה כאן שולחת מיד התראה אמיתית מאלמוג לפעמון שלך — בלי להמתין לתזמון.
+                מתאים לוודא שהזרימה עובדת אחרי שינוי או בדיקה ראשונה.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={testing}
+            onClick={() => void sendTestNotification()}
+            className={cn(
+              'inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-black text-white transition',
+              testing
+                ? 'bg-amber-400/70 cursor-wait'
+                : 'bg-gradient-to-l from-amber-500 to-orange-500 hover:brightness-105 shadow-lg shadow-amber-500/30 active:scale-[0.98]'
+            )}
+          >
+            {testing ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                שולחים…
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4" aria-hidden />
+                שלחו לי התראת בדיקה עכשיו
+              </>
+            )}
+          </button>
+
+          {avoidPush ? (
+            <p className="text-xs text-amber-800 bg-amber-100/70 rounded-xl px-3 py-2">
+              שימו לב: ההעדפה &quot;פחות הודעות מעודדות&quot; דלוקה, ולכן ה-CRON האוטומטי
+              מדלג עליכם. הבדיקה הידנית כאן עוקפת את ההעדפה כדי לוודא שהזרימה עובדת.
+            </p>
+          ) : null}
+
+          {testResult?.kind === 'ok' ? (
+            <div className="rounded-2xl border-2 border-emerald-400 bg-white px-4 py-3 text-right space-y-1.5">
+              <p className="text-xs font-black text-emerald-700">
+                ✓ ההתראה נשלחה ({testResult.slot}
+                {testResult.usedFallback ? ' · פלייסהולדר' : ''})
+              </p>
+              <p className="text-[11px] font-semibold text-slate-500">
+                {testResult.pendingTasksCount > 0
+                  ? `${testResult.pendingTasksCount} משימות פתוחות`
+                  : 'אין משימות פתוחות'}
+                {' · '}
+                {testResult.eligibleHabitsCount > 0
+                  ? `${testResult.eligibleHabitsCount} הרגלים`
+                  : 'אין הרגלים תואמים'}
+              </p>
+              <p className="text-[13px] leading-relaxed text-slate-800 whitespace-pre-wrap pt-1">
+                {testResult.body}
+              </p>
+              <p className="text-[11px] text-slate-500 pt-1">
+                פתחו את הפעמון בכותרת — ההתראה אמורה להופיע מיד.
+              </p>
+            </div>
+          ) : null}
+
+          {testResult?.kind === 'blocked' ? (
+            <div className="rounded-2xl border border-amber-300 bg-amber-50/90 px-4 py-3 text-right">
+              <p className="text-xs font-bold text-amber-800">
+                נחסם על-ידי gate ({testResult.reason})
+              </p>
+              {testResult.hint ? (
+                <p className="mt-1.5 text-[13px] leading-relaxed text-amber-900">
+                  {testResult.hint}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {testResult?.kind === 'error' ? (
+            <div className="rounded-2xl border border-red-300 bg-red-50/90 px-4 py-3 text-right">
+              <p className="text-sm font-bold text-red-700" role="alert">
+                ✗ {testResult.message}
+              </p>
+              <p className="text-[11px] text-red-600 mt-1">
+                בדקו את הקונסול ב-DevTools (Network) לפרטים נוספים.
+              </p>
+            </div>
+          ) : null}
+        </motion.section>
 
         <motion.section
           initial={{ opacity: 0, y: 10 }}
@@ -274,94 +390,6 @@ export function AlmogNudgeSettingsClient({
           שינויים נכנסים לתוקף בתזמון הריצה היומית של המערכת ובהתאם לפעילות האחרונה שלכם.
           אין להתראות האלה השפעה על שיעורים, מסע או צ׳אט ישיר עם אלמוג.
         </p>
-
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="rounded-3xl border border-amber-200/70 bg-amber-50/60 p-5 shadow-[0_8px_24px_rgba(217,119,6,0.08)] space-y-3"
-        >
-          <div className="flex gap-3">
-            <div
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white"
-              style={{
-                background: 'linear-gradient(145deg, #f59e0b, #f97316)',
-                boxShadow: '0 6px 18px rgba(217,119,6,0.32)',
-              }}
-            >
-              <Send className="h-5 w-5" aria-hidden />
-            </div>
-            <div className="min-w-0">
-              <h2 className="font-bold text-slate-900">בדיקה מהירה</h2>
-              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
-                שלחו לעצמכם התראת בדיקה אמיתית עכשיו — תופיע מיד בפעמון ההתראות.
-                נועד לוודא שהזרימה עובדת בלי להמתין לתזמון הבא של אלמוג.
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            disabled={testing || avoidPush}
-            onClick={() => void sendTestNotification()}
-            className={cn(
-              'inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-white transition',
-              testing
-                ? 'bg-amber-400/70 cursor-wait'
-                : avoidPush
-                  ? 'bg-slate-300 cursor-not-allowed opacity-70'
-                  : 'bg-gradient-to-l from-amber-500 to-orange-500 hover:brightness-105 shadow-lg shadow-amber-500/25'
-            )}
-          >
-            {testing ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                שולחים…
-              </>
-            ) : (
-              <>
-                <Send className="h-4 w-4" aria-hidden />
-                שלחו לי התראת בדיקה עכשיו
-              </>
-            )}
-          </button>
-
-          {avoidPush ? (
-            <p className="text-xs text-slate-600">
-              כש&quot;פחות הודעות&quot; דלוק, גם בדיקה ידנית כבויה כדי לא לעקוף את ההעדפה.
-              כבו את הסוויץ למעלה (בלי לשמור) לא יעזור — צריך לשמור קודם.
-            </p>
-          ) : null}
-
-          {testResult?.kind === 'ok' ? (
-            <div className="rounded-2xl border border-emerald-300/60 bg-emerald-50 px-4 py-3 text-right">
-              <p className="text-xs font-bold text-emerald-700">
-                ההתראה נשלחה ({testResult.slot}
-                {testResult.usedFallback ? ' · בלי הרגלים אמיתיים — שימוש בפלייסהולדר' : ''})
-              </p>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-emerald-900 whitespace-pre-wrap">
-                {testResult.body}
-              </p>
-            </div>
-          ) : null}
-
-          {testResult?.kind === 'blocked' ? (
-            <div className="rounded-2xl border border-amber-300 bg-amber-50/90 px-4 py-3 text-right">
-              <p className="text-xs font-bold text-amber-800">
-                נחסם על-ידי gate ({testResult.reason})
-              </p>
-              {testResult.hint ? (
-                <p className="mt-1.5 text-[13px] leading-relaxed text-amber-900">{testResult.hint}</p>
-              ) : null}
-            </div>
-          ) : null}
-
-          {testResult?.kind === 'error' ? (
-            <p className="text-sm font-semibold text-red-700" role="alert">
-              {testResult.message}
-            </p>
-          ) : null}
-        </motion.section>
       </div>
     </div>
   );

@@ -12,21 +12,45 @@ const SLOT_HE: Record<HabitCheckpointSlot, string> = {
 
 const HABIT_CHECKPOINT_SYSTEM = `${NURAWELL_MENTOR_PROMPT}
 
-משימה: בדיקת הרגל קצרה — נוטיפיקציה חד־פעמית לחלון היום (בוקר/צהריים/ערב ייפרט בקונטקסט).
+משימה: שליחת תזכורת מעודדת קצרה — נוטיפיקציה חד־פעמית לחלון היום (בוקר/צהריים/ערב).
 כתוב טקסט לנוטיפיקציה בלבד: 2–3 משפטים, עד 45 מילים. שאלה אחת חמה, לא חקירה, לא רשימת משימות.
-התייחס רק להרגלים שמופיעים ברשימה; אל תמציא.
-התחל בפנייה אישית לפי השם והמגדר שסופקו — פעם אחת, טבעי.`;
+
+מקור התוכן:
+- אם יש "משימות פתוחות" (המשתמש קיבל אותן על עצמו ועדיין לא דיווח על ביצוע) — תן להן עדיפות. שאל ברוך אם התקדם עם משימה אחת מהן, או הזכר אותה בעדינות.
+- אם יש "הרגלים" — אפשר להזכיר רוטינה אחת רלוונטית לחלון הזמן.
+- אם יש גם וגם — מתמקדים במשימה הפתוחה הראשונה ומשלימים בתחושה רכה לגבי הרגל אחד.
+
+התייחס רק למשימות/הרגלים שמופיעים ברשימה; אל תמציא משימה חדשה.
+התחל בפנייה אישית לפי השם והמגדר שסופקו — פעם אחת, טבעי. אלמוג מדבר בגוף ראשון זכר על עצמו.`;
 
 function formatHabitsForPrompt(payload: AlmogHabitCheckpointPayload): string {
-  const lines = payload.habits.map(
-    (h) => `- ${h.title} (${h.frequency === 'per_meal' ? 'לפני ארוחות' : h.frequency === 'daily' ? 'יומי' : 'שבועי'})`
+  const habitLines = payload.habits.map(
+    (h) =>
+      `- ${h.title} (${h.frequency === 'per_meal' ? 'לפני ארוחות' : h.frequency === 'daily' ? 'יומי' : 'שבועי'})`
   );
-  return [
-    `חלון זמן: ${SLOT_HE[payload.slot]}`,
-    `הרגלים לבדיקה:`,
-    lines.join('\n'),
-    `צעד: ${payload.stepTitle ?? 'לא ידוע'} · תחנה: ${payload.stationTitle ?? 'לא ידוע'}`,
-  ].join('\n');
+  const taskLines = payload.pendingTasks.map(
+    (t) => `- ${t.title}${t.stepTitle ? ` (מתוך הצעד: ${t.stepTitle})` : ''}`
+  );
+
+  const parts: string[] = [`חלון זמן: ${SLOT_HE[payload.slot]}`];
+
+  if (taskLines.length > 0) {
+    parts.push('משימות פתוחות (התקבלו ועדיין לא דווחו כבוצעו):');
+    parts.push(taskLines.join('\n'));
+  } else {
+    parts.push('משימות פתוחות: אין כרגע — המשתמש סגר את כל מה שקיבל על עצמו.');
+  }
+
+  if (habitLines.length > 0) {
+    parts.push('הרגלים שמתאימים לחלון הזה:');
+    parts.push(habitLines.join('\n'));
+  } else {
+    parts.push('הרגלים: אין רוטינה תואמת לחלון הזה.');
+  }
+
+  parts.push(`צעד: ${payload.stepTitle ?? 'לא ידוע'} · תחנה: ${payload.stationTitle ?? 'לא ידוע'}`);
+
+  return parts.join('\n');
 }
 
 /**
@@ -62,6 +86,7 @@ export async function sendAlmogHabitCheckpointNotification(
   const title = `היי ${firstName} · מאלמוג`;
 
   const habitIds = payload.habits.map((h) => h.id);
+  const pendingTaskIds = payload.pendingTasks.map((t) => t.id);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (admin as any).from('notifications').insert({
@@ -79,6 +104,7 @@ export async function sendAlmogHabitCheckpointNotification(
       slot: payload.slot,
       checkpoint_date: payload.checkpointDate,
       habit_ids: habitIds,
+      pending_task_ids: pendingTaskIds,
       model: AI_MODELS.empathy,
       recipient_first_name: firstName,
     },

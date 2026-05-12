@@ -48,9 +48,11 @@ async function runHabitCheckpointCron(request: Request) {
       user_id,
       updated_at,
       is_completed,
+      task_statuses,
       journey_steps (
         title,
         habits,
+        tasks,
         journey_stations ( title )
       )
     `
