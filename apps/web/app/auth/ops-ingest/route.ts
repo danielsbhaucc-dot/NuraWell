@@ -7,14 +7,14 @@ import {
   assertSupabaseBackendSecretKey,
   normalizeServiceRoleKeyEnv,
 } from '@/lib/supabase/service-role-jwt';
+import { isOpsPreviewHostname } from '@/lib/ops-host';
 
 export const runtime = 'nodejs';
 
 function canIngestOnThisHost(request: NextRequest): boolean {
   if (process.env.NODE_ENV === 'development') return true;
-  if (process.env.OPS_ALLOW_VERCEL_PREVIEW === '1' && request.nextUrl.hostname.endsWith('.vercel.app')) {
-    return true;
-  }
+  const host = request.nextUrl.hostname.toLowerCase();
+  if (isOpsPreviewHostname(host)) return true;
   const raw = process.env.NEXT_PUBLIC_OPS_URL?.trim();
   if (!raw) return false;
   try {

@@ -1,0 +1,7 @@
+title = "NuraWell gitleaks config"
+
+[allowlist]
+description = "Template env placeholders are not real secrets."
+paths = [
+  '''apps/web/\.env\.example$''',
+]

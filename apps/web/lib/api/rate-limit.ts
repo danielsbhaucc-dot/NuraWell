@@ -93,6 +93,14 @@ async function checkUpstashRedis(input: RateLimitInput, now: number): Promise<Ra
       count = first.result;
     }
   } catch {
+    if (process.env.NODE_ENV === 'production') {
+      return {
+        ok: false,
+        limit: input.limit,
+        remaining: 0,
+        resetAt,
+      };
+    }
     return {
       ok: true,
       limit: input.limit,

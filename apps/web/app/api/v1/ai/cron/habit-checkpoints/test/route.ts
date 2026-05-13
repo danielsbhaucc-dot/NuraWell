@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { readJsonBody } from '../../../../../../../lib/api/json-request';
+import { consumeRateLimit, rateLimitResponse } from '../../../../../../../lib/api/rate-limit';
 import { requireApiSession } from '../../../../../../../lib/api/route-guards';
 import { createAdminClient } from '../../../../../../../lib/supabase/admin';
 import { jsonZodError } from '../../../../../../../lib/validation/zod-http';
@@ -180,12 +181,28 @@ export async function POST(request: Request) {
       );
     }
     targetUserId = session.user.id;
+
+    if (process.env.NODE_ENV === 'production') {
+      const limited = await consumeRateLimit({
+        key: targetUserId,
+        namespace: 'habit-checkpoint-test',
+        limit: 8,
+        windowSeconds: 3600,
+      });
+      if (!limited.ok) {
+        return rateLimitResponse(
+          limited,
+          'יותר מדי בקשות לבדיקת התראה. נסו שוב מאוחר יותר.'
+        );
+      }
+    }
   }
 
+  const isProduction = process.env.NODE_ENV === 'production';
   const now = new Date();
   const slot = body.slot ?? slotFromJerusalemNow(now);
-  const bypassGate = body.bypassGate ?? true;
-  const bypassEligibility = body.bypassEligibility ?? true;
+  const bypassGate = body.bypassGate ?? (!isProduction || hasCronBearer);
+  const bypassEligibility = body.bypassEligibility ?? (!isProduction || hasCronBearer);
   const allowFallbackHabit = body.allowFallbackHabit ?? true;
 
   const admin = createAdminClient();

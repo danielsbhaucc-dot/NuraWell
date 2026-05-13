@@ -22,6 +22,18 @@ export async function POST(request: Request) {
   if (!auth.ok) return auth.response;
 
   const expectedSecret = process.env.RAG_SELF_TEST_SECRET?.trim();
+  if (process.env.NODE_ENV === 'production' && !expectedSecret) {
+    return new Response(
+      JSON.stringify({
+        error: 'Forbidden',
+        hint: 'RAG self-test is disabled in production unless RAG_SELF_TEST_SECRET is configured.',
+      }),
+      {
+        status: 403,
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      }
+    );
+  }
   if (expectedSecret) {
     const secret = request.headers.get('x-rag-self-test-secret');
     if (secret !== expectedSecret) {
