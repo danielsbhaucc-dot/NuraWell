@@ -129,7 +129,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
         </form>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-7">
         {stations.map((st, idx) => (
           <motion.section
             key={st.id}
@@ -185,7 +185,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                 );
               }}
             />
-            <ul className="divide-y divide-white/40">
+            <ul className="mt-1 divide-y divide-white/40 border-t border-white/35">
               {stepsByStation(st.id).length === 0 ? (
                 <li className="px-4 py-6 text-center text-sm text-slate-500 sm:px-5">אין צעדים בתחנה זו</li>
               ) : (
