@@ -19,7 +19,10 @@ export const metadata: Metadata = {
 
 type RawStepRow = JourneyStep;
 
-type StationRow = Pick<JourneyStationMeta, 'id' | 'title' | 'description' | 'sort_order'>;
+type StationRow = Pick<
+  JourneyStationMeta,
+  'id' | 'title' | 'description' | 'sort_order' | 'cover_image_key' | 'cover_image_credit'
+>;
 
 export default async function JourneyRoute() {
   const supabase = await createClient();
@@ -33,7 +36,7 @@ export default async function JourneyRoute() {
   const [{ data: stationRows }, { data: rawSteps }] = await Promise.all([
     (supabase as any)
       .from('journey_stations')
-      .select('id, title, description, sort_order')
+      .select('id, title, description, sort_order, cover_image_key, cover_image_credit')
       .order('sort_order', { ascending: true })
       .order('title', { ascending: true }),
     (supabase as any)

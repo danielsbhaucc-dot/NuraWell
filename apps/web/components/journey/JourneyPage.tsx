@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Lock, Play, Sparkles, Droplets, MapPin, Route } from 'lucide-react';
+import { CheckCircle2, Lock, Play, Sparkles, Droplets, Route } from 'lucide-react';
 import type { JourneyStepWithProgress } from '../../lib/types/journey';
 import type { JourneyStationGroup } from '../../lib/journey/group-journey-by-station';
-import { cn } from '../../lib/cn';
+import { JourneyStationCard } from './JourneyStationCard';
 
 interface JourneyPageProps {
   groups: JourneyStationGroup[];
@@ -142,78 +142,15 @@ export function JourneyPage({ groups, initialExpandedKey }: JourneyPageProps) {
             </div>
 
             <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-thin [-webkit-overflow-scrolling:touch]">
-              {groups.map((g, idx) => {
-                const done = g.steps.filter((s) => s.progress?.is_completed).length;
-                const total = g.steps.length;
-                const pct = total ? Math.round((done / total) * 100) : 0;
-                const isSel = g.key === expandedKey;
-                const isEmpty = total === 0;
-
-                return (
-                  <button
-                    key={g.key}
-                    type="button"
-                    onClick={() => setExpandedKey(g.key)}
-                    className={cn(
-                      'snap-start shrink-0 rounded-2xl px-4 py-3.5 text-right transition-all min-w-[min(88vw,300px)] sm:min-w-[280px]',
-                      'border shadow-md active:scale-[0.99]',
-                      isSel
-                        ? 'ring-2 ring-emerald-400/90 ring-offset-2 ring-offset-[#EDF5F0]'
-                        : 'opacity-95 hover:opacity-100',
-                      isEmpty && !isSel && 'opacity-80'
-                    )}
-                    style={{
-                      background: isSel
-                        ? 'linear-gradient(145deg, rgba(255,255,255,0.99) 0%, rgba(236,253,245,0.97) 55%, rgba(209,250,229,0.35) 100%)'
-                        : 'rgba(255,255,255,0.9)',
-                      borderColor: isSel ? 'rgba(16,185,129,0.5)' : 'rgba(226,232,240,0.9)',
-                      boxShadow: isSel
-                        ? '0 12px 32px rgba(16,185,129,0.2), inset 0 1px 0 rgba(255,255,255,0.9)'
-                        : '0 4px 18px rgba(15,118,110,0.07)',
-                    }}
-                  >
-                    <div className="flex items-start gap-3 mb-2">
-                      <div
-                        className="shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center text-sm font-black text-white"
-                        style={{
-                          background: isSel
-                            ? 'linear-gradient(135deg, #047857, #10b981)'
-                            : 'linear-gradient(135deg, #0f766e, #14b8a6)',
-                          boxShadow: '0 4px 12px rgba(4,120,87,0.25)',
-                        }}
-                      >
-                        {idx + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0 opacity-90" aria-hidden />
-                          <p
-                            className="text-[15px] font-black leading-snug line-clamp-2 text-right"
-                            style={{ color: '#1A1730' }}
-                          >
-                            {g.title}
-                          </p>
-                        </div>
-                        {g.description ? (
-                          <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mt-1">{g.description}</p>
-                        ) : null}
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-600 mb-2.5 font-medium">
-                      {isEmpty ? 'אין עדיין צעדים בתחנה' : `${done}/${total} צעדים · ${pct}%`}
-                    </p>
-                    <div className="h-1.5 rounded-full bg-emerald-900/10 overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${isEmpty ? 0 : pct}%`,
-                          background: 'linear-gradient(90deg, #047857, #34d399)',
-                        }}
-                      />
-                    </div>
-                  </button>
-                );
-              })}
+              {groups.map((g, idx) => (
+                <JourneyStationCard
+                  key={g.key}
+                  group={g}
+                  index={idx}
+                  isSelected={g.key === expandedKey}
+                  onSelect={() => setExpandedKey(g.key)}
+                />
+              ))}
             </div>
 
             {activeGroup && (

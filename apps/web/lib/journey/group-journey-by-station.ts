@@ -1,10 +1,19 @@
 import type { JourneyStepProgress, JourneyStepWithProgress } from '../types/journey';
+import { getPublicCdnImageUrl } from '../cdn/public-images';
+import {
+  normalizeStationCoverCredit,
+  type StationCoverCredit,
+} from '../media/stock-image-attribution';
+
+export type { StationCoverCredit };
 
 export interface JourneyStationMeta {
   id: string;
   title: string;
   description: string | null;
   sort_order: number;
+  cover_image_key?: string | null;
+  cover_image_credit?: StationCoverCredit | null;
 }
 
 export type JourneyStationGroup = {
@@ -13,6 +22,8 @@ export type JourneyStationGroup = {
   title: string;
   description: string | null;
   sortOrder: number;
+  coverImageUrl: string | null;
+  coverImageCredit: StationCoverCredit | null;
   steps: JourneyStepWithProgress[];
 };
 
@@ -47,6 +58,8 @@ export function groupJourneyStepsByStation(
     title: st.title,
     description: st.description,
     sortOrder: st.sort_order,
+    coverImageUrl: st.cover_image_key ? getPublicCdnImageUrl(st.cover_image_key) : null,
+    coverImageCredit: normalizeStationCoverCredit(st.cover_image_credit),
     steps: (byStation.get(st.id) ?? []).sort((a, b) => (a.step_number ?? 0) - (b.step_number ?? 0)),
   }));
 
@@ -57,6 +70,8 @@ export function groupJourneyStepsByStation(
       title: 'צעדים נוספים',
       description: 'צעדים שעדיין לא שויכו לתחנה',
       sortOrder: 1_000_000,
+      coverImageUrl: null,
+      coverImageCredit: null,
       steps: orphan.sort((a, b) => (a.step_number ?? 0) - (b.step_number ?? 0)),
     });
   }
@@ -73,6 +88,8 @@ export function groupAllStepsWhenNoStations(steps: JourneyStepWithProgress[]): J
       title: 'הצעדים שלך',
       description: null,
       sortOrder: 0,
+      coverImageUrl: null,
+      coverImageCredit: null,
       steps: [...steps].sort((a, b) => (a.step_number ?? 0) - (b.step_number ?? 0)),
     },
   ];

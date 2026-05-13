@@ -6,12 +6,17 @@ import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Edit3, GripVertical, Layers, Plus, Trash2 } from 'lucide-react';
 import type { JourneyStep } from '@/lib/types/journey';
+import type { StationCoverCredit } from '@/lib/journey/group-journey-by-station';
+import { AdminStationCoverPanel } from '@/components/admin/AdminStationCoverPanel';
 
 type StationRow = {
   id: string;
   title: string;
   description: string | null;
   sort_order: number;
+  cover_image_key: string | null;
+  cover_image_credit: StationCoverCredit | null;
+  coverImageUrl: string | null;
 };
 
 type StepWithStation = JourneyStep;
@@ -44,7 +49,9 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
     if (res.ok) {
       const row = (await res.json()) as StationRow;
       setStations((prev) =>
-        [...prev, row].sort((a, b) => a.sort_order - b.sort_order || a.title.localeCompare(b.title, 'he'))
+        [...prev, { ...row, coverImageUrl: null }].sort(
+          (a, b) => a.sort_order - b.sort_order || a.title.localeCompare(b.title, 'he')
+        )
       );
       setNewTitle('');
       setNewSort(0);
@@ -155,6 +162,29 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                 </button>
               </div>
             </div>
+            <AdminStationCoverPanel
+              stationId={st.id}
+              stationTitle={st.title}
+              initialCover={{
+                coverImageKey: st.cover_image_key,
+                coverImageCredit: st.cover_image_credit,
+                coverImageUrl: st.coverImageUrl,
+              }}
+              onUpdated={(next) => {
+                setStations((prev) =>
+                  prev.map((row) =>
+                    row.id === st.id
+                      ? {
+                          ...row,
+                          cover_image_key: next.coverImageKey,
+                          cover_image_credit: next.coverImageCredit,
+                          coverImageUrl: next.coverImageUrl,
+                        }
+                      : row
+                  )
+                );
+              }}
+            />
             <ul className="divide-y divide-white/40">
               {stepsByStation(st.id).length === 0 ? (
                 <li className="px-4 py-6 text-center text-sm text-slate-500 sm:px-5">אין צעדים בתחנה זו</li>
