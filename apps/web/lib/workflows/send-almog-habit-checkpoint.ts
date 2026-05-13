@@ -234,7 +234,7 @@ export async function sendAlmogHabitCheckpointNotification(
     temperature: 0.85,
     presencePenalty: 0.4,
     frequencyPenalty: 0.45,
-    maxTokens: 280,
+    maxTokens: 640,
     messages: [
       { role: 'system', content: systemPrompt },
       {

@@ -1,14 +1,11 @@
-import type { ChatCompletionCreateParamsNonStreaming } from 'openai/resources/chat/completions';
-import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import { createOpenAI } from '@ai-sdk/openai';
+import { generateText, type ModelMessage } from 'ai';
 
-import { AI_MODELS, openrouter } from './client';
-
-type OpenRouterEmpathyCompletionParams = ChatCompletionCreateParamsNonStreaming & {
-  reasoning_effort?: 'low' | 'medium' | 'high';
-};
+import { AI_MODELS } from './client';
+import { publicAppUrlForAiReferer } from '../public-app-url';
 
 type EmpathyNotifyCompletionOptions = {
-  messages: ChatCompletionMessageParam[];
+  messages: ModelMessage[];
   maxTokens?: number;
   temperature?: number;
   presencePenalty?: number;
@@ -16,13 +13,14 @@ type EmpathyNotifyCompletionOptions = {
   label?: string;
 };
 
-function visibleBodyFromCompletion(completion: Awaited<
-  ReturnType<typeof openrouter.chat.completions.create>
->): { body: string; finishReason: string | null | undefined } {
-  const choice = completion.choices[0];
-  const body = choice?.message?.content?.trim() ?? '';
-  return { body, finishReason: choice?.finish_reason };
-}
+const openrouterAi = createOpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY ?? '',
+  baseURL: 'https://openrouter.ai/api/v1',
+  headers: {
+    'HTTP-Referer': publicAppUrlForAiReferer(),
+    'X-Title': 'NuraWell',
+  },
+});
 
 /**
  * טקסט קצר לנוטיפיקציות מאלמוג — אותו מודל כמו הצ'אט, עם reasoning נמוך
@@ -32,28 +30,34 @@ export async function completeEmpathyNotifyBody(
   options: EmpathyNotifyCompletionOptions
 ): Promise<string> {
   const temperature = options.temperature ?? 0.75;
-  const maxTokens = options.maxTokens ?? 280;
-  let lastFinishReason: string | null | undefined;
+  const maxOutputTokens = options.maxTokens ?? 640;
+  let lastFinishReason: string | undefined;
 
   for (let attempt = 0; attempt < 2; attempt++) {
-    const completion = await openrouter.chat.completions.create({
-      model: AI_MODELS.empathy,
-      temperature: attempt === 0 ? temperature : Math.min(1, temperature + 0.05),
-      max_tokens: maxTokens,
-      ...(options.presencePenalty != null ? { presence_penalty: options.presencePenalty } : {}),
-      ...(options.frequencyPenalty != null ? { frequency_penalty: options.frequencyPenalty } : {}),
-      messages: options.messages,
-      reasoning_effort: 'low',
-    } satisfies OpenRouterEmpathyCompletionParams);
+    const attemptMaxOutputTokens =
+      attempt === 0 ? maxOutputTokens : Math.max(maxOutputTokens, 1280);
 
-    const { body, finishReason } = visibleBodyFromCompletion(completion);
-    lastFinishReason = finishReason;
+    const out = await generateText({
+      model: openrouterAi.chat(AI_MODELS.empathy),
+      temperature: attempt === 0 ? temperature : Math.min(1, temperature + 0.05),
+      maxOutputTokens: attemptMaxOutputTokens,
+      providerOptions: {
+        openai: { reasoningEffort: 'low' },
+      },
+      ...(options.presencePenalty != null ? { presencePenalty: options.presencePenalty } : {}),
+      ...(options.frequencyPenalty != null ? { frequencyPenalty: options.frequencyPenalty } : {}),
+      messages: options.messages,
+    });
+
+    const body = (out.text ?? '').trim();
+    lastFinishReason = out.finishReason;
     if (body) return body;
 
     console.warn('[empathy-notify] empty completion', {
       label: options.label,
       attempt,
-      finishReason,
+      finishReason: out.finishReason,
+      maxOutputTokens: attemptMaxOutputTokens,
     });
   }
 
