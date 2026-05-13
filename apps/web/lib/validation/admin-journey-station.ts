@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { stationCoverCreditSchema } from '@/lib/media/stock-image-attribution';
+
+export { stationCoverCreditSchema, type StationCoverCredit } from '@/lib/media/stock-image-attribution';
 
 export const journeyStationInsertSchema = z
   .object({
@@ -10,4 +13,6 @@ export const journeyStationInsertSchema = z
 
 export const journeyStationPatchSchema = journeyStationInsertSchema.partial().extend({
   id: z.string().uuid(),
+  cover_image_key: z.string().min(1).max(500).nullable().optional(),
+  cover_image_credit: stationCoverCreditSchema.nullable().optional(),
 });
