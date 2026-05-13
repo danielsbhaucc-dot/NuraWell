@@ -21,12 +21,13 @@ export async function GET(request: Request) {
   }
 
   const { q, source, per_page: perPage } = parsed.data;
-  const cachedStockSearch = unstable_cache(
-    async () => searchStockImages({ q, source, perPage }),
-    ['admin-stock-image-search', q, source, String(perPage)],
-    { revalidate: 86400 }
-  );
-  const { hits, providers } = await cachedStockSearch();
+  try {
+    const cachedStockSearch = unstable_cache(
+      async () => searchStockImages({ q, source, perPage }),
+      ['admin-stock-image-search', q, source, String(perPage)],
+      { revalidate: 86400 }
+    );
+    const { hits, providers } = await cachedStockSearch();
 
   if (!providers.pixabay && !providers.pexels) {
     return NextResponse.json(
@@ -39,12 +40,22 @@ export async function GET(request: Request) {
     );
   }
 
-  return NextResponse.json(
-    { hits, providers },
-    {
-      headers: {
-        'Cache-Control': 'private, max-age=86400',
-      },
+    return NextResponse.json(
+      { hits, providers },
+      {
+        headers: {
+          'Cache-Control': 'private, max-age=86400',
+        },
+      }
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    if (message === 'PIXABAY_RATE_LIMIT' || message === 'PEXELS_RATE_LIMIT') {
+      return NextResponse.json(
+        { error: 'הגעתם למגבלת חיפוש זמנית של ספק התמונות. נסו שוב מאוחר יותר.', hits: [], providers: { pixabay: false, pexels: false } },
+        { status: 429 }
+      );
     }
-  );
+    throw error;
+  }
 }

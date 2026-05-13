@@ -63,6 +63,9 @@ async function searchPixabay(query: string, perPage: number): Promise<StockImage
   url.searchParams.set('per_page', String(perPage));
 
   const res = await fetch(url.toString(), { next: { revalidate: 86400 } });
+  if (res.status === 429) {
+    throw new Error('PIXABAY_RATE_LIMIT');
+  }
   if (!res.ok) return [];
 
   const data = (await res.json()) as { hits?: PixabayHit[] };
@@ -102,6 +105,9 @@ async function searchPexels(query: string, perPage: number): Promise<StockImageH
     headers: { Authorization: key },
     next: { revalidate: 86400 },
   });
+  if (res.status === 429) {
+    throw new Error('PEXELS_RATE_LIMIT');
+  }
   if (!res.ok) return [];
 
   const data = (await res.json()) as { photos?: PexelsPhoto[] };

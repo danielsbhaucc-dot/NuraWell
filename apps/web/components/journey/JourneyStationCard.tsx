@@ -3,7 +3,6 @@
 import { MapPin } from 'lucide-react';
 import type { JourneyStationGroup } from '../../lib/journey/group-journey-by-station';
 import { cn } from '../../lib/cn';
-import { StockImageAttribution } from '../media/StockImageAttribution';
 
 type JourneyStationCardProps = {
   group: JourneyStationGroup;
@@ -107,14 +106,6 @@ export function JourneyStationCard({ group, index, isSelected, onSelect }: Journ
         </p>
 
         <motionlessProgress hasCover={hasCover} isEmpty={isEmpty} pct={pct} />
-
-        {hasCover && group.coverImageCredit ? (
-          <StockImageAttribution
-            credit={group.coverImageCredit}
-            variant="public"
-            className="mt-2 text-[10px] leading-snug text-white/65"
-          />
-        ) : null}
       </div>
     </button>
   );

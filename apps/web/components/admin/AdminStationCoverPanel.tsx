@@ -1,17 +1,15 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { ImageIcon, Loader2, Search, Trash2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Drawer } from 'vaul';
+import { ImageIcon, Loader2, Search, Trash2, CheckCircle2, AlertTriangle, ImagePlus } from 'lucide-react';
 import {
   encodeImageToWebpBlob,
   isWebpEncodeUnsupportedError,
 } from '@/lib/client/encodeAlmogAvatarWebp';
 import type { StationCoverCredit } from '@/lib/media/stock-image-attribution';
-import { buildStationCoverCredit } from '@/lib/media/stock-image-attribution';
-import {
-  StockImageAttribution,
-  StockImageSearchAttribution,
-} from '@/components/media/StockImageAttribution';
+import { buildStationCoverCredit, providerLabel } from '@/lib/media/stock-image-attribution';
+import { StockImageSearchAttribution } from '@/components/media/StockImageAttribution';
 
 type StockImageHit = {
   id: string;
@@ -54,6 +52,7 @@ export function AdminStationCoverPanel({
   initialCover,
   onUpdated,
 }: AdminStationCoverPanelProps) {
+  const [open, setOpen] = useState(false);
   const [cover, setCover] = useState(initialCover);
   const [query, setQuery] = useState(stationTitle);
   const [source, setSource] = useState<'all' | 'pixabay' | 'pexels'>('all');
@@ -67,6 +66,8 @@ export function AdminStationCoverPanel({
   const [removeBusy, setRemoveBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const hasCover = Boolean(cover.coverImageUrl);
 
   const runSearch = useCallback(async () => {
     const q = query.trim();
@@ -159,7 +160,8 @@ export function AdminStationCoverPanel({
       };
       setCover(next);
       onUpdated(next);
-      setSuccess('תמונת הרקע נשמרה ב-R2 ותוצג במסע.');
+      setSuccess('תמונת הרקע נשמרה ותוצג במסע.');
+      setOpen(false);
     } catch {
       setError('לא הצלחנו להוריד או להעלות את התמונה.');
     } finally {
@@ -201,62 +203,114 @@ export function AdminStationCoverPanel({
   };
 
   return (
-    <div className="border-t border-white/50 bg-white/35 px-4 py-4 sm:px-5">
-      <PanelHeader stationTitle={stationTitle} hasCover={Boolean(cover.coverImageUrl)} />
+    <>
+      <CoverSummaryRow hasCover={hasCover} coverUrl={cover.coverImageUrl} onOpen={() => setOpen(true)} />
 
-      {cover.coverImageUrl ? (
-        <CoverPreview cover={cover} onRemove={() => void removeCover()} removeBusy={removeBusy} />
-      ) : null}
+      <Drawer.Root open={open} onOpenChange={setOpen} direction="bottom" shouldScaleBackground>
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 z-[180] bg-slate-900/45 backdrop-blur-[2px]" />
+          <Drawer.Content
+            dir="rtl"
+            className="fixed bottom-0 left-0 right-0 z-[190] mx-auto flex max-h-[min(92dvh,920px)] w-full max-w-2xl flex-col rounded-t-[24px] border-x border-t border-white/60 bg-white shadow-[0_-8px_40px_rgba(0,0,0,0.14)] outline-none"
+          >
+            <Drawer.Title className="sr-only">תמונת רקע לתחנה {stationTitle}</Drawer.Title>
+            <Drawer.Description className="sr-only">
+              חיפוש תמונה מ-Pixabay או Pexels והגדרת רקע לכרטיס התחנה במסע.
+            </Drawer.Description>
 
-      <div className="mt-4 flex flex-col gap-3">
-        <SearchForm
-          query={query}
-          source={source}
-          searchBusy={searchBusy}
-          onQueryChange={setQuery}
-          onSourceChange={setSource}
-          onSearch={() => void runSearch()}
-        />
+            <div className="shrink-0 rounded-t-[24px] bg-gradient-to-l from-emerald-700 to-teal-600 px-5 pb-4 pt-3">
+              <div className="mb-3 flex justify-center">
+                <div className="h-1.5 w-11 rounded-full bg-white/45" />
+              </div>
+              <p className="text-center text-lg font-black text-white">תמונת רקע — {stationTitle}</p>
+              <p className="mt-1 text-center text-xs text-white/85">
+                חיפוש, בחירה ושמירה לשרת. ללא תמונה — נשאר עיצוב ברירת המחדל.
+              </p>
+            </div>
 
-        {hits.length > 0 ? (
-          <>
-            <StockImageSearchAttribution
-              providers={providers}
-              className="text-xs leading-relaxed text-slate-600"
-            />
-            <ResultsGrid hits={hits} applyBusy={applyBusy} onApply={(hit) => void applyHit(hit)} />
-          </>
-        ) : null}
-      </div>
+            <div
+              className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-y-contain p-5 text-right"
+              style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+            >
+              {hasCover ? (
+                <CoverPreview cover={cover} onRemove={() => void removeCover()} removeBusy={removeBusy} />
+              ) : null}
 
-      {error ? (
-        <p className="mt-3 inline-flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          {error}
-        </p>
-      ) : null}
-      {success ? (
-        <p className="mt-3 inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-          <CheckCircle2 className="h-4 w-4" />
-          {success}
-        </p>
-      ) : null}
-    </div>
+              <SearchForm
+                query={query}
+                source={source}
+                searchBusy={searchBusy}
+                onQueryChange={setQuery}
+                onSourceChange={setSource}
+                onSearch={() => void runSearch()}
+              />
+
+              {hits.length > 0 ? (
+                <div className="space-y-3">
+                  <StockImageSearchAttribution
+                    providers={providers}
+                    className="text-xs leading-relaxed text-slate-600"
+                  />
+                  <ResultsGrid hits={hits} applyBusy={applyBusy} onApply={(hit) => void applyHit(hit)} />
+                </div>
+              ) : null}
+
+              {error ? (
+                <p className="inline-flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  {error}
+                </p>
+              ) : null}
+              {success ? (
+                <p className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {success}
+                </p>
+              ) : null}
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
+    </>
   );
 }
 
-function PanelHeader({ stationTitle, hasCover }: { stationTitle: string; hasCover: boolean }) {
+function CoverSummaryRow({
+  hasCover,
+  coverUrl,
+  onOpen,
+}: {
+  hasCover: boolean;
+  coverUrl: string | null;
+  onOpen: () => void;
+}) {
   return (
-    <div className="min-w-0 text-right">
-      <p className="inline-flex items-center gap-2 text-sm font-black text-slate-800">
-        <ImageIcon className="h-4 w-4 text-emerald-600" />
-        תמונת רקע לתחנה
-      </p>
-      <p className="mt-1 text-xs leading-relaxed text-slate-600">
-        {hasCover
-          ? `לתחנה "${stationTitle}" מוגדרת תמונה שתוצג בכרטיס התחנה במסע.`
-          : `בחרו תמונה מ-Pixabay או Pexels לתחנה "${stationTitle}". ללא תמונה — הכרטיס נשאר בעיצוב ברירת המחדל.`}
-      </p>
+    <div className="border-t border-white/45 bg-white/25 px-4 py-4 sm:px-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/70 bg-white/80 shadow-sm">
+            {hasCover && coverUrl ? (
+              <img src={coverUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <ImageIcon className="h-5 w-5 text-slate-400" aria-hidden />
+            )}
+          </div>
+          <div className="min-w-0 text-right">
+            <p className="text-sm font-bold text-slate-800">תמונת רקע לכרטיס התחנה</p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {hasCover ? 'מוגדרת תמונה שתוצג במסע.' : 'לא הוגדרה תמונה — יוצג עיצוב ברירת המחדל.'}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onOpen}
+          className="inline-flex min-h-10 items-center justify-center gap-2 self-end rounded-xl border border-emerald-200/80 bg-white/85 px-4 py-2 text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-white sm:self-center"
+        >
+          <ImagePlus className="h-4 w-4" />
+          {hasCover ? 'עריכת תמונה' : 'בחירת תמונה'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -271,50 +325,41 @@ function CoverPreview({
   removeBusy: boolean;
 }) {
   return (
-    <div className="mt-3 overflow-hidden rounded-2xl border border-emerald-200/70 bg-slate-900/5">
-      <motionlessPreviewInner cover={cover} onRemove={onRemove} removeBusy={removeBusy} />
+    <div className="overflow-hidden rounded-2xl border border-emerald-200/70 bg-slate-900/5">
+      <div className="relative min-h-[120px]">
+        {cover.coverImageUrl ? (
+          <img src={cover.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        ) : null}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(180deg, rgba(6,78,59,0.55) 0%, rgba(15,23,42,0.72) 100%)',
+          }}
+        />
+        <RemoveCoverButton onRemove={onRemove} removeBusy={removeBusy} />
+      </div>
     </div>
   );
 }
 
-function motionlessPreviewInner({
-  cover,
+function RemoveCoverButton({
   onRemove,
   removeBusy,
 }: {
-  cover: StationCoverState;
   onRemove: () => void;
   removeBusy: boolean;
 }) {
   return (
-    <div className="relative min-h-[120px]">
-      {cover.coverImageUrl ? (
-        <img src={cover.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
-      ) : null}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: 'linear-gradient(180deg, rgba(6,78,59,0.55) 0%, rgba(15,23,42,0.72) 100%)',
-        }}
-      />
-      <div className="relative z-10 flex items-end justify-between gap-3 p-3">
-        <button
-          type="button"
-          onClick={onRemove}
-          disabled={removeBusy}
-          className="inline-flex items-center gap-1 rounded-lg bg-white/15 px-2.5 py-1.5 text-xs font-bold text-white backdrop-blur-sm disabled:opacity-50"
-        >
-          {removeBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-          הסר
-        </button>
-        {cover.coverImageCredit ? (
-          <StockImageAttribution
-            credit={cover.coverImageCredit}
-            variant="admin"
-            className="text-[10px] leading-snug text-white/80"
-          />
-        ) : null}
-      </div>
+    <div className="relative z-10 flex items-end justify-end p-3">
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={removeBusy}
+        className="inline-flex items-center gap-1 rounded-lg bg-white/15 px-2.5 py-1.5 text-xs font-bold text-white backdrop-blur-sm disabled:opacity-50"
+      >
+        {removeBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+        הסר תמונה
+      </button>
     </div>
   );
 }
@@ -335,13 +380,13 @@ function SearchForm({
   onSearch: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
       <div className="min-w-0 flex-1">
-        <label className="mb-1 block text-xs font-bold text-slate-700">חיפוש תמונה (Pixabay / Pexels)</label>
+        <label className="mb-1 block text-xs font-bold text-slate-700">חיפוש</label>
         <input
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          className="w-full rounded-xl border border-white/80 bg-white/90 px-4 py-2.5 text-slate-900 outline-none focus:ring-2 focus:ring-emerald-400/50"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 outline-none focus:ring-2 focus:ring-emerald-400/50"
           placeholder="למשל: יער, שקיעה, מדיטציה"
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -356,7 +401,7 @@ function SearchForm({
         <select
           value={source}
           onChange={(e) => onSourceChange(e.target.value as 'all' | 'pixabay' | 'pexels')}
-          className="w-full rounded-xl border border-white/80 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-emerald-400/50"
+          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-emerald-400/50"
         >
           <option value="all">הכול</option>
           <option value="pixabay">Pixabay</option>
@@ -386,27 +431,26 @@ function ResultsGrid({
   onApply: (hit: StockImageHit) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {hits.map((hit) => (
         <button
           key={hit.id}
           type="button"
           disabled={applyBusy}
           onClick={() => onApply(hit)}
-          className="group relative overflow-hidden rounded-xl border border-white/70 bg-white/80 text-right shadow-sm transition hover:ring-2 hover:ring-emerald-400/70 disabled:opacity-60"
+          className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white text-right shadow-sm transition hover:ring-2 hover:ring-emerald-400/70 disabled:opacity-60"
         >
           <img src={hit.preview_url} alt={hit.alt || ''} className="aspect-[4/3] w-full object-cover" />
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-2">
-            <StockImageAttribution
-              credit={buildStationCoverCredit({
-                source: hit.source,
-                photographer: hit.photographer,
-                page_url: hit.page_url,
-                photographer_url: hit.photographer_url,
-              })}
-              variant="public"
-              className="line-clamp-2 text-[10px] font-semibold text-white/90"
-            />
+            <a
+              href={hit.provider_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-[10px] font-semibold text-white/90 underline decoration-white/40 underline-offset-2"
+            >
+              {providerLabel(hit.source)}
+            </a>
           </div>
         </button>
       ))}
