@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { openrouter, AI_MODELS } from '../ai/client';
+import { AI_MODELS } from '../ai/client';
+import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
 import { NURAWELL_MENTOR_PROMPT } from '../ai/prompts';
 import type { AlmogFollowupUserState } from './almog-followup-state';
@@ -37,8 +38,8 @@ export async function sendAlmogTaskFollowupNotification(
 
   const systemPrompt = `${TASK_FOLLOWUP_SYSTEM}\n\nקונטקסט מערכת:\n${formatStateForPrompt(state, taskId)}`;
 
-  const completion = await openrouter.chat.completions.create({
-    model: AI_MODELS.empathy,
+  const body = await completeEmpathyNotifyBody({
+    label: 'task_followup',
     temperature: 0.65,
     messages: [
       { role: 'system', content: systemPrompt },
@@ -52,9 +53,6 @@ export async function sendAlmogTaskFollowupNotification(
       },
     ],
   });
-
-  const body = completion.choices[0]?.message?.content?.trim();
-  if (!body) throw new Error('Empty follow-up model output');
 
   const title = `היי ${firstName} · מאלמוג`;
 
