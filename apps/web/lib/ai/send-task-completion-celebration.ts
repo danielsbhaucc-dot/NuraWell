@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { openrouter, AI_MODELS } from './client';
+import { AI_MODELS } from './client';
+import { completeEmpathyNotifyBody } from './empathy-notify-completion';
 import { fetchNotifyUserProfile } from './notify-user-profile';
 import { NURAWELL_MENTOR_PROMPT } from './prompts';
 
@@ -127,8 +128,8 @@ export async function sendTaskCompletionCelebration(
     .filter(Boolean)
     .join('\n');
 
-  const completion = await openrouter.chat.completions.create({
-    model: AI_MODELS.empathy,
+  const body = await completeEmpathyNotifyBody({
+    label: 'task_completion_celebration',
     temperature: 0.75,
     messages: [
       { role: 'system', content: `${CELEBRATION_SYSTEM}\n\nקונטקסט:\n${contextBlock}` },
@@ -142,9 +143,6 @@ export async function sendTaskCompletionCelebration(
       },
     ],
   });
-
-  const body = completion.choices[0]?.message?.content?.trim();
-  if (!body) throw new Error('Empty celebration model output');
 
   const title = `יופי, ${firstName}! · מאלמוג`;
 

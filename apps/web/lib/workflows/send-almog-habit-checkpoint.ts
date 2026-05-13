@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { openrouter, AI_MODELS } from '../ai/client';
+import { AI_MODELS } from '../ai/client';
+import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
 import { NURAWELL_MENTOR_PROMPT } from '../ai/prompts';
 import type { AlmogHabitCheckpointPayload, HabitCheckpointSlot } from './almog-habit-checkpoint-payload';
@@ -228,12 +229,12 @@ export async function sendAlmogHabitCheckpointNotification(
 
   const systemPrompt = `${HABIT_CHECKPOINT_SYSTEM}\n\nקונטקסט המשתמש לרגע הזה:\n${contextParts.join('\n')}`;
 
-  const completion = await openrouter.chat.completions.create({
-    model: AI_MODELS.empathy,
+  const body = await completeEmpathyNotifyBody({
+    label: 'habit_checkpoint',
     temperature: 0.85,
-    presence_penalty: 0.4,
-    frequency_penalty: 0.45,
-    max_tokens: 220,
+    presencePenalty: 0.4,
+    frequencyPenalty: 0.45,
+    maxTokens: 280,
     messages: [
       { role: 'system', content: systemPrompt },
       {
@@ -248,9 +249,6 @@ export async function sendAlmogHabitCheckpointNotification(
       },
     ],
   });
-
-  const body = completion.choices[0]?.message?.content?.trim();
-  if (!body) throw new Error('Empty habit checkpoint model output');
 
   const title = `היי ${firstName} · מאלמוג`;
 
