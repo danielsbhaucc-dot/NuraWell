@@ -1,5 +1,6 @@
 import { SiteSettingsForm } from '@/components/admin/SiteSettingsForm';
 import { AdminRegisterBackgroundPanel } from '@/components/admin/AdminRegisterBackgroundPanel';
+import { AdminLoginBackgroundPanel } from '@/components/admin/AdminLoginBackgroundPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,7 @@ export default function OpsSiteSettingsPage() {
       </div>
       <SiteSettingsForm />
       <AdminRegisterBackgroundPanel />
+      <AdminLoginBackgroundPanel />
     </div>
   );
 }
