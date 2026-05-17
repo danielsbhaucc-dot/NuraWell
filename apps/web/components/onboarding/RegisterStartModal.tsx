@@ -6,6 +6,11 @@ import { MessageCircle, Phone, X, FormInput, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { useMediaMobile } from '@/lib/client/useMediaMobile';
 import { MentorBubble } from './MentorBubble';
+import {
+  REGISTER_DRAWER_BODY_CLASS,
+  REGISTER_DRAWER_CONTENT_CLASS,
+  REGISTER_MODAL_PANEL_CLASS,
+} from './register-modal-styles';
 
 type RegisterStartModalProps = {
   open: boolean;
@@ -77,10 +82,7 @@ function MobileStartDrawer({ open, onClose }: RegisterStartModalProps) {
     <Drawer.Root open={open} onOpenChange={(v) => !v && onClose()} direction="bottom" shouldScaleBackground>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/55 backdrop-blur-[3px]" />
-        <Drawer.Content
-          dir="rtl"
-          className="fixed bottom-0 left-0 right-0 z-[210] mx-auto flex max-h-[min(92dvh,720px)] w-full max-w-lg flex-col rounded-t-[26px] border border-white/15 bg-gradient-to-b from-slate-900/98 to-emerald-950/98 outline-none shadow-2xl"
-        >
+        <Drawer.Content dir="rtl" className={REGISTER_DRAWER_CONTENT_CLASS}>
           <Drawer.Title className="sr-only">איך תרצו להמשיך</Drawer.Title>
           <Drawer.Description className="sr-only">בחירת ערוץ הרשמה</Drawer.Description>
 
@@ -98,9 +100,7 @@ function MobileStartDrawer({ open, onClose }: RegisterStartModalProps) {
             </button>
           </div>
 
-          <div
-            className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
-          >
+          <div className={REGISTER_DRAWER_BODY_CLASS}>
             <RegisterStartBody onClose={onClose} />
           </div>
         </Drawer.Content>
@@ -132,7 +132,7 @@ function DesktopStartModal({ open, onClose }: RegisterStartModalProps) {
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 24, opacity: 0 }}
-            className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl border border-white/20 bg-gradient-to-b from-slate-900/95 to-emerald-950/95 backdrop-blur-2xl shadow-2xl p-5 sm:p-6"
+            className={`${REGISTER_MODAL_PANEL_CLASS} max-h-[92vh] overflow-y-auto rounded-3xl p-5 sm:p-6`}
           >
             <button
               type="button"

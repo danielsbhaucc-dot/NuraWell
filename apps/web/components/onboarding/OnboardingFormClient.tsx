@@ -11,6 +11,7 @@ import { MentorBubble } from './MentorBubble';
 import { GlassChoiceButton } from './GlassChoiceButton';
 import type { MainGoal, MainObstacle, OnboardingGender, WeakestTimeOfDay } from '@/lib/onboarding/types';
 import { classifyMealSlot, mealSlotLabel } from '@/lib/onboarding/meal-schedule';
+import { genderCopy } from '@/lib/onboarding/gender-copy';
 
 const TOTAL_STEPS = 5;
 
@@ -22,12 +23,6 @@ function address(gender: OnboardingGender | '', name: string): string {
   const n = firstName(name);
   if (!gender) return n;
   return gender === 'male' ? n : n;
-}
-
-function addressYou(gender: OnboardingGender | ''): string {
-  if (gender === 'male') return 'אתה';
-  if (gender === 'female') return 'את';
-  return 'את/ה';
 }
 
 export function OnboardingFormClient() {
@@ -53,7 +48,7 @@ export function OnboardingFormClient() {
   const [password, setPassword] = useState('');
 
   const name = address('', fullName);
-  const you = addressYou(gender);
+  const gc = useMemo(() => genderCopy(gender), [gender]);
 
   const progress = useMemo(() => (step / TOTAL_STEPS) * 100, [step]);
 
@@ -64,31 +59,31 @@ export function OnboardingFormClient() {
     }
     if (step === 2) {
       if (!gender) {
-        toast.warning('עוד רגע', 'בחר/י מין לפנייה נכונה');
+        toast.warning('עוד רגע', `${gc.choose} מין לפנייה נכונה`);
         return;
       }
       if (!mainGoal) {
-        toast.warning('מטרה', 'מה המטרה העיקרית שלך?');
+        toast.warning('מטרה', `מה המטרה העיקרית של ${gc.you}?`);
         return;
       }
       const cw = Number(currentWeight);
       const tw = Number(targetWeight);
       if (!Number.isFinite(cw) || cw < 30) {
-        toast.warning('משקל', 'הזן/י משקל נוכחי תקין');
+        toast.warning('משקל', `${gc.enter} משקל נוכחי תקין`);
         return;
       }
       if (!Number.isFinite(tw) || tw < 30) {
-        toast.warning('משקל יעד', 'הזן/י משקל יעד תקין');
+        toast.warning('משקל יעד', `${gc.enter} משקל יעד תקין`);
         return;
       }
     }
     if (step === 3) {
       if (!weakest || !obstacle) {
-        toast.warning('כמעט', 'בחר/י לפחות אפשרות אחת בכל שאלה');
+        toast.warning('כמעט', `${gc.choose} לפחות אפשרות אחת בכל שאלה`);
         return;
       }
       if (obstacle === 'other' && !obstacleDetail.trim()) {
-        toast.warning('פרט/י', 'ספר/י בקצרה מה המכשול');
+        toast.warning('פרט/י', `${gc.tell} בקצרה מה המכשול`);
         return;
       }
     }
@@ -133,7 +128,7 @@ export function OnboardingFormClient() {
     startTransition(async () => {
       const result = await completeOnboarding(null, fd);
       if (result.ok) {
-        toast.success(`ברוך/ה הבא/ה, ${firstName(fullName)}!`, 'מעבירים אותך לאפליקציה...');
+        toast.success(`${gc.welcome}, ${firstName(fullName)}!`, 'מעבירים אותך לאפליקציה...');
         setTimeout(() => {
           router.push(result.redirectTo);
           router.refresh();
@@ -230,7 +225,7 @@ export function OnboardingFormClient() {
                   </div>
 
                   <p className="text-sm font-bold text-emerald-100/85 mb-2">
-                    {gender ? `${you}, מה המטרה העיקרית?` : 'מה המטרה העיקרית?'} (אפשר יותר מאחת)
+                    {gender ? `${gc.you}, מה המטרה העיקרית?` : 'מה המטרה העיקרית?'}
                   </p>
                   <div className="space-y-2 mb-4">
                     <GlassChoiceButton
@@ -302,19 +297,22 @@ export function OnboardingFormClient() {
                 <>
                   <MentorBubble mentorId="dolev">
                     <p>
-                      {gender ? `${name}, ` : ''}בוא/י נזהה את הרגעים הקשים — כדי שאדע בדיוק מתי לתמוך בך. בלי
-                      חיבורים ארוכים, רק לחיצות.
+                      {gender ? `${name}, ` : ''}
+                      {gc.come} נזהה את הרגעים הקשים — כדי שאדע בדיוק מתי לתמוך בך. בלי חיבורים ארוכים, רק
+                      לחיצות.
                     </p>
                   </MentorBubble>
 
-                  <p className="text-sm font-bold text-emerald-100/85 mt-5 mb-2">מתי הכי קשה לשמור על תזונה?</p>
+                  <p className="text-sm font-bold text-emerald-100/85 mt-5 mb-2">
+                    {gender ? `מתי הכי קשה ל${gc.you} לשמור על תזונה?` : 'מתי הכי קשה לשמור על תזונה?'}
+                  </p>
                   <div className="space-y-2 mb-5">
                     {(
                       [
-                        ['morning', '🌅', 'בוקר', 'ממהר/ת, מפספס/ת ארוחות'],
-                        ['noon', '🍽️', 'צהריים', 'אוכל/ת בחוץ / משלוחים'],
-                        ['afternoon', '😴', 'אחר הצהריים', 'עייפות אחרי העבודה'],
-                        ['evening_night', '🌙', 'ערב/לילה', 'נשנושים מול מסך'],
+                        ['morning', '🌅', 'בוקר', `${gc.hurry}, ${gc.missMeals}`],
+                        ['noon', '🍽️', 'צהריים', gc.eatOut],
+                        ['afternoon', '😴', 'אחר הצהריים', gc.tired],
+                        ['evening_night', '🌙', 'ערב/לילה', gc.snack],
                       ] as const
                     ).map(([id, emoji, title, sub]) => (
                       <GlassChoiceButton
@@ -354,7 +352,7 @@ export function OnboardingFormClient() {
                       value={obstacleDetail}
                       onChange={(e) => setObstacleDetail(e.target.value)}
                       className="onboarding-input-dark w-full mt-3"
-                      placeholder="ספר/י בקצרה..."
+                      placeholder={`${gc.tell} בקצרה...`}
                       maxLength={500}
                     />
                   ) : null}
@@ -365,8 +363,9 @@ export function OnboardingFormClient() {
                 <>
                   <MentorBubble mentorId="dolev">
                     <p>
-                      {gender ? `${name}, ` : ''}בוא/י נסדר את הקצב של היום. כמה ארוחות עיקריות יש לך?
-                      ממליץ בחום על 2–3 — כך אלמוג יידע מתי לגעת לפני ואחרי. אפשר גם לדלג.
+                      {gender ? `${name}, ` : ''}
+                      {gc.come} נסדר את הקצב של היום. כמה ארוחות עיקריות {gc.have}?
+                      {gc.recommend} בחום על 2–3 — כך אלמוג יידע מתי לגעת לפני ואחרי. אפשר גם לדלג.
                     </p>
                   </MentorBubble>
 
@@ -454,7 +453,8 @@ export function OnboardingFormClient() {
                 <>
                   <MentorBubble mentorId="dolev">
                     <p>
-                      {gender ? `מעולה ${name}! ` : ''}נשאר רק לפתוח חשבון — שם המשתמש ייווצר מהאימייל שלך. מוכן/ה?
+                      {gender ? `מעולה ${name}! ` : ''}נשאר רק לפתוח חשבון — שם המשתמש ייווצר מהאימייל שלך.{' '}
+                      {gc.ready}?
                     </p>
                   </MentorBubble>
                   <div className="space-y-4 mt-6">

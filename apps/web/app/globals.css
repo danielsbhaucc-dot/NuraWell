@@ -133,42 +133,55 @@ html {
   }
 
   .onboarding-bubble-dark {
-    position: relative;
-    background: linear-gradient(
-      145deg,
-      rgba(6, 95, 70, 0.72) 0%,
-      rgba(15, 23, 42, 0.55) 100%
-    );
-    backdrop-filter: blur(22px);
-    -webkit-backdrop-filter: blur(22px);
-    border: 1px solid rgba(110, 231, 183, 0.28);
-    box-shadow:
-      0 12px 40px rgba(0, 0, 0, 0.22),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    @apply rounded-[20px] rounded-br-md px-4 py-3.5 text-[15px] leading-relaxed;
-    color: #ecfdf5;
-  }
-
-  .onboarding-bubble-dark::after {
-    content: '';
-    position: absolute;
-    right: -6px;
-    bottom: 14px;
-    width: 14px;
-    height: 14px;
-    background: inherit;
-    border-right: 1px solid rgba(110, 231, 183, 0.28);
-    border-bottom: 1px solid rgba(110, 231, 183, 0.28);
-    transform: rotate(-45deg);
-    border-radius: 0 0 4px 0;
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+    @apply rounded-2xl px-4 py-3.5 text-[15px] leading-relaxed;
+    color: rgba(236, 253, 245, 0.95);
   }
 
   .onboarding-bubble-light {
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(4, 120, 87, 0.12);
-    box-shadow: 0 8px 28px rgba(4, 120, 87, 0.1);
-    @apply rounded-2xl rounded-tr-md px-4 py-3 text-[15px] leading-relaxed;
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(4, 120, 87, 0.14);
+    box-shadow: 0 4px 20px rgba(4, 120, 87, 0.08);
+    @apply rounded-2xl px-4 py-3.5 text-[15px] leading-relaxed;
     color: #1a2e23;
+  }
+
+  .onboarding-hero-card-photo {
+    background: rgba(2, 44, 34, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .onboarding-wave-hand {
+    display: inline-block;
+    animation: onboarding-wave 1.8s ease-in-out infinite;
+    transform-origin: 70% 70%;
+  }
+
+  @keyframes onboarding-wave {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    15% {
+      transform: rotate(18deg);
+    }
+    30% {
+      transform: rotate(-8deg);
+    }
+    45% {
+      transform: rotate(14deg);
+    }
+    60% {
+      transform: rotate(0deg);
+    }
+  }
+
+  .onboarding-mentor-avatar img {
+    object-position: center 12% !important;
   }
 
   .onboarding-input-dark {

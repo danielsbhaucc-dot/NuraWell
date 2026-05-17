@@ -56,7 +56,7 @@ export function RegisterLandingClient() {
             className={[
               'rounded-3xl p-5 sm:p-6 mb-5',
               hasPhotoBg
-                ? 'border border-white/15 bg-emerald-950/40 backdrop-blur-xl shadow-[0_16px_48px_rgba(0,0,0,0.35)]'
+                ? 'onboarding-hero-card-photo shadow-[0_16px_48px_rgba(0,0,0,0.28)]'
                 : 'glass-card-strong shadow-[0_8px_32px_rgba(4,120,87,0.12)]',
             ].join(' ')}
           >
@@ -73,8 +73,19 @@ export function RegisterLandingClient() {
               >
                 ברוכים הבאים ל־
               </span>
+              <span className="onboarding-wave-hand mr-1.5" aria-hidden>
+                👋
+              </span>
               <br />
-              <span className={hasPhotoBg ? 'text-white' : 'text-slate-900'}>NuraWell.ai</span>
+              <span
+                className={
+                  hasPhotoBg
+                    ? 'bg-gradient-to-l from-emerald-200 via-teal-100 to-amber-100 bg-clip-text text-transparent'
+                    : 'bg-gradient-to-l from-emerald-800 via-emerald-700 to-teal-700 bg-clip-text text-transparent'
+                }
+              >
+                NuraWell.ai
+              </span>
             </h1>
 
             <MentorBubble mentorId="dolev" theme={hasPhotoBg ? 'dark' : 'light'}>

@@ -39,10 +39,10 @@ export function MentorBubble({
     >
       <motion.div
         className={[
-          'relative shrink-0 w-[52px] h-[52px] sm:w-14 sm:h-14 rounded-[18px] overflow-hidden',
+          'onboarding-mentor-avatar relative shrink-0 w-[52px] h-[52px] sm:w-14 sm:h-14 rounded-2xl overflow-hidden',
           isDark
-            ? 'ring-2 ring-emerald-400/45 shadow-[0_8px_24px_rgba(16,185,129,0.25)]'
-            : 'ring-2 ring-emerald-500/25 shadow-[0_6px_20px_rgba(4,120,87,0.15)]',
+            ? 'ring-2 ring-white/15 shadow-[0_4px_16px_rgba(0,0,0,0.2)]'
+            : 'ring-2 ring-emerald-500/20 shadow-[0_4px_16px_rgba(4,120,87,0.12)]',
         ].join(' ')}
         aria-hidden={!ready}
         whileHover={{ scale: 1.02 }}
@@ -52,7 +52,7 @@ export function MentorBubble({
           alt=""
           fill
           sizes="56px"
-          className="object-cover object-top"
+          className="object-cover scale-110"
           priority={mentorId === 'dolev'}
           unoptimized={avatarUrl.startsWith('data:')}
         />
