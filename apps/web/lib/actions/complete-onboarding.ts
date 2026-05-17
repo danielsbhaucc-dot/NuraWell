@@ -27,6 +27,10 @@ const onboardingSchema = z.object({
   main_obstacle_detail: z.string().trim().max(500).optional().nullable(),
   wake_up_time: z.string().regex(timeRegex, 'שעת השכמה לא תקינה'),
   sleep_time: z.string().regex(timeRegex, 'שעת שינה לא תקינה'),
+  dinner_time: z
+    .union([z.string().regex(timeRegex, 'שעת ארוחת ערב לא תקינה'), z.literal('')])
+    .optional()
+    .nullable(),
   preferred_channel: z.enum(PREFERRED_CHANNELS).default('in_app'),
   email: z.string().email('אימייל לא תקין'),
   password: z.string().min(6, 'סיסמה קצרה מדי — לפחות 6 תווים'),
@@ -52,6 +56,7 @@ export async function completeOnboarding(
     main_obstacle_detail: formData.get('main_obstacle_detail') || null,
     wake_up_time: formData.get('wake_up_time'),
     sleep_time: formData.get('sleep_time'),
+    dinner_time: formData.get('dinner_time') || null,
     preferred_channel: formData.get('preferred_channel') || 'in_app',
     email: formData.get('email'),
     password: formData.get('password'),
@@ -94,10 +99,14 @@ export async function completeOnboarding(
     return { ok: false, error: 'לא הצלחנו ליצור משתמש. נסו שוב.' };
   }
 
+  const dinnerTime =
+    data.dinner_time && String(data.dinner_time).trim() ? String(data.dinner_time).trim() : null;
+
   const checkInTimes = calculateDailyCheckInTimes(
     data.wake_up_time,
     data.sleep_time,
-    data.weakest_time_of_day
+    data.weakest_time_of_day,
+    dinnerTime
   );
 
   const systemPrompt = generateMentorSystemPrompt({
@@ -112,6 +121,7 @@ export async function completeOnboarding(
     main_obstacle_detail: data.main_obstacle_detail,
     wake_up_time: data.wake_up_time,
     sleep_time: data.sleep_time,
+    dinner_time: dinnerTime,
     preferred_channel: data.preferred_channel,
   });
 
@@ -130,6 +140,7 @@ export async function completeOnboarding(
         data.main_obstacle === 'other' ? data.main_obstacle_detail?.trim() || null : null,
       wake_up_time: data.wake_up_time,
       sleep_time: data.sleep_time,
+      dinner_time: dinnerTime,
       preferred_channel: data.preferred_channel,
       ai_check_in_times: checkInTimes,
       ai_system_prompt: systemPrompt,
@@ -159,6 +170,7 @@ export async function completeOnboarding(
       data.main_obstacle === 'other' ? data.main_obstacle_detail?.trim() || null : null,
     wake_up_time: data.wake_up_time,
     sleep_time: data.sleep_time,
+    dinner_time: dinnerTime,
     preferred_channel: data.preferred_channel,
     ai_check_in_times: checkInTimes,
     onboarding_completed: true,

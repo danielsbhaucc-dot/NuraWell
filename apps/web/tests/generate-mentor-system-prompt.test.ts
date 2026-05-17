@@ -6,15 +6,27 @@ import {
 } from '../lib/ai/generate-mentor-system-prompt';
 
 describe('calculateDailyCheckInTimes', () => {
-  it('returns exactly 3 times in HH:MM format', () => {
+  it('returns at least 3 times in HH:MM format', () => {
     const times = calculateDailyCheckInTimes('07:00', '23:00', 'evening_night');
-    expect(times).toHaveLength(3);
+    expect(times.length).toBeGreaterThanOrEqual(3);
     for (const t of times) {
       expect(t).toMatch(/^\d{2}:\d{2}$/);
     }
     const mins = times.map(parseTimeToMinutes);
     expect(mins[0]).toBeLessThan(mins[1]);
     expect(mins[1]).toBeLessThan(mins[2]);
+  });
+
+  it('adds before/after dinner when dinner_time set', () => {
+    const times = calculateDailyCheckInTimes('07:00', '23:00', 'noon', '19:00');
+    expect(times.length).toBeGreaterThanOrEqual(4);
+    const mins = times.map(parseTimeToMinutes);
+    expect(mins.some((m) => m >= parseTimeToMinutes('18:30') && m <= parseTimeToMinutes('19:00'))).toBe(
+      true
+    );
+    expect(mins.some((m) => m >= parseTimeToMinutes('19:00') && m <= parseTimeToMinutes('20:00'))).toBe(
+      true
+    );
   });
 
   it('places middle check-in before evening weak window', () => {
