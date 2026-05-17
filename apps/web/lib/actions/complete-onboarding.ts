@@ -133,7 +133,8 @@ export async function completeOnboarding(
       ai_system_prompt: systemPrompt,
       onboarding_completed: true,
       ai_context: {
-        mentor: 'dolev',
+        mentor: 'almog',
+        intake_collected_by: 'dolev',
         onboarding_channel: data.preferred_channel,
         check_in_times: checkInTimes,
       },

@@ -39,7 +39,7 @@ export const { POST } = serve<WorkflowBody>(async (context) => {
     return { skipped: true as const, reason: gate.reason };
   }
 
-  await context.run('dolev-notify', async () => {
+  await context.run('almog-notify', async () => {
     const admin = createAdminClient();
     await sendOnboardingCheckInNotification(admin, payload, aiSystemPrompt);
   });

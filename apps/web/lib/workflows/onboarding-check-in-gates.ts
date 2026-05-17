@@ -32,7 +32,10 @@ export async function gateOnboardingCheckIn(
 
   for (const row of data ?? []) {
     const meta = (row as { metadata?: { source?: string; check_in_time?: string } }).metadata;
-    if (meta?.source === 'onboarding_check_in' && meta?.check_in_time === checkInTime) {
+    const sent =
+      meta?.source === 'almog_personalized_check_in' ||
+      meta?.source === 'onboarding_check_in';
+    if (sent && meta?.check_in_time === checkInTime) {
       return { ok: false, reason: 'already_sent_today' };
     }
   }

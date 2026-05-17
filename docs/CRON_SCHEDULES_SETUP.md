@@ -42,8 +42,10 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 מזהה משימות שהמשתמש קיבל אבל לא ביצע** — מי שאין לו לא הרגלים תואמי slot ולא משימות
 פתוחות, מדולג אוטומטית כדי לא להציף עם תזכורות מיותרות.
 
-**Onboarding check-ins (דולב):** קורא `profiles.ai_check_in_times` + `ai_system_prompt` למי שסיים הרשמה.
-שולח follow-up מותאם אישית (לא אותם 08/13/20 לכולם). חלון התאמה: ±30 דקות (ניתן לשינוי ב-`?window_minutes=`).
+**בדיקות אישיות מאלמוג (אחרי הרשמה):** דולב אוסף מידע בשאלון; אלמוג מיישם.
+קורא `profiles.ai_check_in_times` + `ai_system_prompt` למי שסיים הרשמה — זמנים מותאמים (לא 08/13/20 קבועים).
+משתמשים עם זמנים אישיים **מדולגים** ב-habit-checkpoints הקבועים כדי למנוע כפילות.
+חלון התאמה: ±30 דקות (ניתן לשינוי ב-`?window_minutes=`).
 
 ---
 
@@ -123,7 +125,7 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 | Cron | `0 20 * * *` |
 | Timezone | `Asia/Jerusalem` |
 
-#### Schedule 5 — Onboarding check-ins (דולב, זמנים אישיים)
+#### Schedule 5 — Almog personalized check-ins (זמנים מההרשמה)
 
 | שדה | ערך |
 |---|---|
