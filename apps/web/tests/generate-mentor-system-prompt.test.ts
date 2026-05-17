@@ -40,6 +40,7 @@ describe('generateMentorSystemPrompt', () => {
       sleep_time: '23:00',
       preferred_channel: 'in_app',
     });
+    expect(prompt).toContain('אלמוג');
     expect(prompt).toContain('דולב');
     expect(prompt).toContain('ישראל');
     expect(prompt).toContain('אכילה רגשית');

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Client as WorkflowClient } from '@upstash/workflow';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
+import { normalizeCheckInTimes } from '../../../../../../lib/ai/onboarding-check-in-time';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 import { habitCheckpointSlotSchema } from '../../../../../../lib/workflows/almog-habit-checkpoint-payload';
 import { planHabitCheckpointTriggers } from '../../../../../../lib/workflows/habit-checkpoint-batch';
@@ -67,12 +68,13 @@ async function runHabitCheckpointCron(request: Request) {
 
   const userIds = [...new Set(plan.map((p) => p.userId))];
   const avoidIds = new Set<string>();
+  const personalizedScheduleIds = new Set<string>();
 
   if (userIds.length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profiles, error: profErr } = await (admin as any)
       .from('profiles')
-      .select('id, ai_context')
+      .select('id, ai_context, onboarding_completed, ai_check_in_times')
       .in('id', userIds.slice(0, 2000));
 
     if (profErr) {
@@ -80,12 +82,21 @@ async function runHabitCheckpointCron(request: Request) {
     }
 
     for (const row of profiles ?? []) {
+      const id = row.id as string;
       const ctx = row.ai_context as Record<string, unknown> | null | undefined;
-      if (ctx?.avoid_push === true) avoidIds.add(row.id as string);
+      if (ctx?.avoid_push === true) avoidIds.add(id);
+      if (
+        row.onboarding_completed === true &&
+        normalizeCheckInTimes(row.ai_check_in_times).length > 0
+      ) {
+        personalizedScheduleIds.add(id);
+      }
     }
   }
 
-  const eligible = plan.filter((p) => !avoidIds.has(p.userId)).slice(0, maxTriggers);
+  const eligible = plan
+    .filter((p) => !avoidIds.has(p.userId) && !personalizedScheduleIds.has(p.userId))
+    .slice(0, maxTriggers);
   const workflowBase = workflowPublicBaseUrl();
   const workflowUrl = `${workflowBase}/api/workflows/almog-habit-checkpoint`;
 
@@ -96,6 +107,7 @@ async function runHabitCheckpointCron(request: Request) {
       slot,
       planned_users: plan.length,
       skipped_avoid_push: avoidIds.size,
+      skipped_personalized_almog: personalizedScheduleIds.size,
       would_trigger: eligible.length,
       workflow_url: workflowUrl,
       sample_user_ids: eligible.slice(0, 5).map((e) => e.userId),
@@ -131,6 +143,7 @@ async function runHabitCheckpointCron(request: Request) {
     slot,
     planned_users: plan.length,
     skipped_avoid_push: avoidIds.size,
+    skipped_personalized_almog: personalizedScheduleIds.size,
     workflow_triggers: triggered,
     eligible_after_avoid: eligible.length,
     errors_count: errors.length,

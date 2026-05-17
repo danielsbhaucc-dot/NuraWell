@@ -105,7 +105,7 @@ async function runOnboardingCheckInsCron(request: Request) {
         index: e.checkInIndex,
       })),
       hint_he:
-        'הגדר ב-Upstash Schedule: POST כל 30 דקות (0,30 * * * *) — לא פעם ביום בלבד.',
+        'אלמוג — זמנים אישיים מההרשמה. הגדר ב-Upstash: POST כל 30 דקות (0,30 * * * *).',
     });
   }
 
@@ -123,7 +123,7 @@ async function runOnboardingCheckInsCron(request: Request) {
         url: workflowUrl,
         body: JSON.stringify(item),
         retries: 2,
-        label: 'onboarding-check-in',
+        label: 'almog-personalized-check-in',
       });
       triggered++;
     } catch (e) {
