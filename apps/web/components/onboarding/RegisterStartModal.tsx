@@ -71,7 +71,7 @@ export function RegisterStartModal({ open, onClose }: RegisterStartModalProps) {
                 </div>
               </li>
               <li>
-                <motion.div
+                <div
                   className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 opacity-55 cursor-not-allowed"
                   aria-disabled="true"
                 >
@@ -81,7 +81,7 @@ export function RegisterStartModal({ open, onClose }: RegisterStartModalProps) {
                     <span className="text-xs text-white/50">בקרוב</span>
                   </span>
                   <Lock className="w-4 h-4 text-white/40 shrink-0" aria-hidden />
-                </motion.div>
+                </div>
               </li>
               <li>
                 <Link

@@ -5,21 +5,32 @@ import { motion } from 'framer-motion';
 import type { MentorId } from '@/lib/mentors/registry';
 import { useMentorAvatarUrl } from '@/lib/client/useMentorAvatarUrl';
 
+export type MentorBubbleTheme = 'dark' | 'light';
+
 type MentorBubbleProps = {
   mentorId: MentorId;
   children: React.ReactNode;
   className?: string;
+  /** dark = על רקע כהה/תמונה; light = על רקע בהיר */
+  theme?: MentorBubbleTheme;
 };
 
-export function MentorBubble({ mentorId, children, className = '' }: MentorBubbleProps) {
+export function MentorBubble({ mentorId, children, className = '', theme = 'dark' }: MentorBubbleProps) {
   const { avatarUrl, mentorName, ready } = useMentorAvatarUrl(mentorId);
+  const isDark = theme === 'dark';
 
   return (
-    <div className={`flex gap-3 items-start ${className}`} dir="rtl">
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="relative shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden ring-2 ring-emerald-400/50 shadow-lg shadow-emerald-500/20"
+    <motion.div
+      className={`flex gap-3 items-start ${className}`}
+      dir="rtl"
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <div
+        className={[
+          'relative shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden shadow-lg',
+          isDark ? 'ring-2 ring-emerald-400/50 shadow-emerald-500/25' : 'ring-2 ring-emerald-500/30 shadow-emerald-600/15',
+        ].join(' ')}
         aria-hidden={!ready}
       >
         <Image
@@ -33,17 +44,21 @@ export function MentorBubble({ mentorId, children, className = '' }: MentorBubbl
         />
       </motion.div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-bold text-emerald-300/90 mb-1" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
+        <p
+          className={[
+            'text-xs font-bold mb-1.5',
+            isDark ? 'text-emerald-200' : 'text-emerald-700',
+          ].join(' ')}
+          style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}
+        >
           {mentorName} · המנטור שלך
         </p>
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-card-strong rounded-2xl rounded-tr-md px-4 py-3 text-[15px] leading-relaxed text-white/95"
+          className={isDark ? 'onboarding-bubble-dark' : 'onboarding-bubble-light'}
         >
           {children}
         </motion.div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

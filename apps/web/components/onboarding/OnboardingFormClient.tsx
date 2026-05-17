@@ -126,7 +126,7 @@ export function OnboardingFormClient() {
   return (
     <>
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
-      <main id="main-content" className="min-h-[100dvh] bg-gradient-to-b from-emerald-950 via-slate-900 to-slate-950 px-4 py-6 pb-28">
+      <main id="main-content" className="onboarding-shell-dark px-4 py-6 pb-28">
         <motion.div className="max-w-lg mx-auto w-full">
           <div className="flex items-center justify-between mb-4">
             <Link
@@ -162,6 +162,7 @@ export function OnboardingFormClient() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -16 }}
               transition={{ duration: 0.25 }}
+              className="onboarding-panel-dark"
             >
               {step === 1 && (
                 <>
@@ -169,14 +170,14 @@ export function OnboardingFormClient() {
                     <p>שמח שבאת! לפני הכל — איך קוראים לך? אני דולב, ומכאן אדבר איתך בשם הפרטי 😊</p>
                   </MentorBubble>
                   <label className="block mt-6">
-                    <span className="text-sm font-bold text-white/80 mb-2 block">השם שלך</span>
+                    <span className="text-sm font-bold text-emerald-50 mb-2 block">השם שלך</span>
                     <input
                       type="text"
                       autoComplete="name"
                       autoFocus
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="input-premium w-full text-lg"
+                      className="onboarding-input-dark w-full text-lg"
                       placeholder="למשל: ישראל"
                     />
                   </label>
@@ -187,11 +188,11 @@ export function OnboardingFormClient() {
                 <>
                   <MentorBubble mentorId="dolev">
                     <p>
-                      נעים להכיר, <strong className="text-emerald-300">{name}</strong>! עכשיו נכיר אותך קצת יותר — בלי לחץ.
+                      נעים להכיר, <strong className="text-emerald-300 font-bold">{name}</strong>! עכשיו נכיר אותך קצת יותר — בלי לחץ.
                     </p>
                   </MentorBubble>
 
-                  <p className="text-sm font-bold text-white/70 mt-5 mb-2">מין (לפנייה נכונה)</p>
+                  <p className="text-sm font-bold text-emerald-100/85 mt-5 mb-2">מין (לפנייה נכונה)</p>
                   <div className="grid grid-cols-2 gap-2 mb-4">
                     <GlassChoiceButton
                       selected={gender === 'female'}
@@ -207,7 +208,7 @@ export function OnboardingFormClient() {
                     />
                   </div>
 
-                  <p className="text-sm font-bold text-white/70 mb-2">
+                  <p className="text-sm font-bold text-emerald-100/85 mb-2">
                     {gender ? `${you}, מה המטרה העיקרית?` : 'מה המטרה העיקרית?'} (אפשר יותר מאחת)
                   </p>
                   <div className="space-y-2 mb-4">
@@ -233,7 +234,7 @@ export function OnboardingFormClient() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <label>
-                      <span className="text-xs font-bold text-white/70">משקל נוכחי (ק״ג)</span>
+                      <span className="text-xs font-bold text-emerald-100/85">משקל נוכחי (ק״ג)</span>
                       <input
                         type="number"
                         inputMode="decimal"
@@ -241,12 +242,12 @@ export function OnboardingFormClient() {
                         max={400}
                         value={currentWeight}
                         onChange={(e) => setCurrentWeight(e.target.value)}
-                        className="input-premium w-full mt-1"
+                        className="onboarding-input-dark w-full mt-1"
                         dir="ltr"
                       />
                     </label>
                     <label>
-                      <span className="text-xs font-bold text-white/70">משקל יעד (ק״ג)</span>
+                      <span className="text-xs font-bold text-emerald-100/85">משקל יעד (ק״ג)</span>
                       <input
                         type="number"
                         inputMode="decimal"
@@ -254,13 +255,13 @@ export function OnboardingFormClient() {
                         max={400}
                         value={targetWeight}
                         onChange={(e) => setTargetWeight(e.target.value)}
-                        className="input-premium w-full mt-1"
+                        className="onboarding-input-dark w-full mt-1"
                         dir="ltr"
                       />
                     </label>
                   </div>
                   <label className="block mt-3">
-                    <span className="text-xs font-bold text-white/70">גובה (ס״מ) — מומלץ</span>
+                    <span className="text-xs font-bold text-emerald-100/85">גובה (ס״מ) — מומלץ</span>
                     <input
                       type="number"
                       inputMode="numeric"
@@ -268,7 +269,7 @@ export function OnboardingFormClient() {
                       max={250}
                       value={height}
                       onChange={(e) => setHeight(e.target.value)}
-                      className="input-premium w-full mt-1"
+                      className="onboarding-input-dark w-full mt-1"
                       placeholder="אופציונלי"
                       dir="ltr"
                     />
@@ -285,7 +286,7 @@ export function OnboardingFormClient() {
                     </p>
                   </MentorBubble>
 
-                  <p className="text-sm font-bold text-white/70 mt-5 mb-2">מתי הכי קשה לשמור על תזונה?</p>
+                  <p className="text-sm font-bold text-emerald-100/85 mt-5 mb-2">מתי הכי קשה לשמור על תזונה?</p>
                   <div className="space-y-2 mb-5">
                     {(
                       [
@@ -306,7 +307,7 @@ export function OnboardingFormClient() {
                     ))}
                   </div>
 
-                  <p className="text-sm font-bold text-white/70 mb-2">מה המכשול העיקרי בעבר?</p>
+                  <p className="text-sm font-bold text-emerald-100/85 mb-2">מה המכשול העיקרי בעבר?</p>
                   <div className="space-y-2">
                     {(
                       [
@@ -331,7 +332,7 @@ export function OnboardingFormClient() {
                       type="text"
                       value={obstacleDetail}
                       onChange={(e) => setObstacleDetail(e.target.value)}
-                      className="input-premium w-full mt-3"
+                      className="onboarding-input-dark w-full mt-3"
                       placeholder="ספר/י בקצרה..."
                       maxLength={500}
                     />
@@ -349,21 +350,21 @@ export function OnboardingFormClient() {
                   </MentorBubble>
                   <div className="grid grid-cols-2 gap-4 mt-6">
                     <label>
-                      <span className="text-xs font-bold text-white/70">שעת השכמה</span>
+                      <span className="text-xs font-bold text-emerald-100/85">שעת השכמה</span>
                       <input
                         type="time"
                         value={wakeUp}
                         onChange={(e) => setWakeUp(e.target.value)}
-                        className="input-premium w-full mt-1"
+                        className="onboarding-input-dark w-full mt-1"
                       />
                     </label>
                     <label>
-                      <span className="text-xs font-bold text-white/70">שעת שינה</span>
+                      <span className="text-xs font-bold text-emerald-100/85">שעת שינה</span>
                       <input
                         type="time"
                         value={sleep}
                         onChange={(e) => setSleep(e.target.value)}
-                        className="input-premium w-full mt-1"
+                        className="onboarding-input-dark w-full mt-1"
                       />
                     </label>
                   </div>
@@ -379,7 +380,7 @@ export function OnboardingFormClient() {
                   </MentorBubble>
                   <div className="space-y-4 mt-6">
                     <label>
-                      <span className="text-sm font-bold text-white/80 flex items-center gap-2 mb-2">
+                      <span className="text-sm font-bold text-emerald-50 flex items-center gap-2 mb-2">
                         <Mail className="w-4 h-4 text-emerald-400" />
                         אימייל
                       </span>
@@ -388,13 +389,13 @@ export function OnboardingFormClient() {
                         autoComplete="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="input-premium w-full"
+                        className="onboarding-input-dark w-full"
                         dir="ltr"
                         required
                       />
                     </label>
                     <label>
-                      <span className="text-sm font-bold text-white/80 flex items-center gap-2 mb-2">
+                      <span className="text-sm font-bold text-emerald-50 flex items-center gap-2 mb-2">
                         <Lock className="w-4 h-4 text-emerald-400" />
                         סיסמה (לפחות 6 תווים)
                       </span>
@@ -404,7 +405,7 @@ export function OnboardingFormClient() {
                         minLength={6}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="input-premium w-full"
+                        className="onboarding-input-dark w-full"
                         dir="ltr"
                         required
                       />
