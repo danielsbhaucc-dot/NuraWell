@@ -35,11 +35,15 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 | `POST /api/v1/ai/cron/habit-checkpoints?slot=morning` | יומי 08:00 ישראל | `apps/web/app/api/v1/ai/cron/habit-checkpoints/route.ts` |
 | `POST /api/v1/ai/cron/habit-checkpoints?slot=midday`  | יומי 13:00 ישראל | אותו קובץ |
 | `POST /api/v1/ai/cron/habit-checkpoints?slot=evening` | יומי 20:00 ישראל | אותו קובץ |
+| `POST /api/v1/ai/cron/onboarding-check-ins` | כל 30 דקות (מומלץ) | `apps/web/app/api/v1/ai/cron/onboarding-check-ins/route.ts` |
 
 ה-Master cron מנתח אינטראקציות AI מ-24 השעות האחרונות + שולח נידג'ים למשתמשים לא־פעילים.
 ה-habit checkpoints מתזמן Workflows של בדיקת הרגלים לפי החלון (בוקר/צהריים/ערב) **וגם
 מזהה משימות שהמשתמש קיבל אבל לא ביצע** — מי שאין לו לא הרגלים תואמי slot ולא משימות
 פתוחות, מדולג אוטומטית כדי לא להציף עם תזכורות מיותרות.
+
+**Onboarding check-ins (דולב):** קורא `profiles.ai_check_in_times` + `ai_system_prompt` למי שסיים הרשמה.
+שולח follow-up מותאם אישית (לא אותם 08/13/20 לכולם). חלון התאמה: ±30 דקות (ניתן לשינוי ב-`?window_minutes=`).
 
 ---
 
@@ -73,12 +77,13 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Supabase → Settings → API |
 | `WORKFLOW_PUBLIC_BASE_URL` | אופציונלי | אם רוצים לאלץ דומיין ספציפי ל-Workflows |
 | `CRON_MAX_HABIT_CHECKPOINT_TRIGGERS` | אופציונלי | ברירת מחדל 350, מקסימום 800 |
+| `CRON_MAX_ONBOARDING_CHECK_IN_TRIGGERS` | אופציונלי | ברירת מחדל 200, מקסימום 500 |
 
 > **חובה Redeploy ל-Production אחרי הוספה / עדכון משתני סביבה**, אחרת השרת לא יראה אותם.
 
-### ב. יצירת 4 Schedules ב-Upstash Console
+### ב. יצירת 5 Schedules ב-Upstash Console
 
-נכנסים ל-**Upstash → QStash → Schedules → Create**. יוצרים 4 schedules:
+נכנסים ל-**Upstash → QStash → Schedules → Create**. יוצרים 5 schedules:
 
 #### Schedule 1 — Master Daily
 
@@ -117,6 +122,19 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 | Method | `POST` |
 | Cron | `0 20 * * *` |
 | Timezone | `Asia/Jerusalem` |
+
+#### Schedule 5 — Onboarding check-ins (דולב, זמנים אישיים)
+
+| שדה | ערך |
+|---|---|
+| Destination URL | `https://nurawell.vercel.app/api/v1/ai/cron/onboarding-check-ins` |
+| Method | `POST` |
+| Cron | `0,30 * * * *` |
+| Timezone | `Asia/Jerusalem` |
+
+> **למה כל 30 דקות ולא פעם בשעה?** זמני הבדיקה נשמרים בדיוק (למשל 07:45). Cron שעתי ב-:00 עלול לפספס. `0,30 * * * *` = פעמיים בשעה, חלון ±30 דקות.
+
+בדיקה יבשה: `POST .../onboarding-check-ins?dryRun=1` עם `Authorization: Bearer <CRON_SECRET>`.
 
 ---
 

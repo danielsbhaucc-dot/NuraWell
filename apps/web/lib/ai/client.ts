@@ -17,6 +17,9 @@ const DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1';
 const APP_URL = publicAppUrlForAiReferer();
 const APP_TITLE = 'NuraWell';
 
+/** Allows `next build` without secrets; runtime calls fail with 401 if keys are missing. */
+const BUILD_SAFE_API_KEY = 'build-placeholder-key';
+
 if (!process.env.OPENROUTER_API_KEY && process.env.NODE_ENV === 'production') {
   // eslint-disable-next-line no-console
   console.warn('[ai/client] OPENROUTER_API_KEY is missing - OpenRouter calls will 401.');
@@ -32,7 +35,7 @@ if (!process.env.DEEPSEEK_API_KEY && process.env.NODE_ENV === 'production') {
  * OpenRouter so usage shows up under the right app in their dashboard.
  */
 export const openrouter = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY ?? '',
+  apiKey: process.env.OPENROUTER_API_KEY?.trim() || BUILD_SAFE_API_KEY,
   baseURL: OPENROUTER_BASE_URL,
   defaultHeaders: {
     'HTTP-Referer': APP_URL,
@@ -44,7 +47,7 @@ export const openrouter = new OpenAI({
  * DeepSeek client. Used for cheap, batch-style analytics from cron jobs.
  */
 export const deepseek = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY ?? '',
+  apiKey: process.env.DEEPSEEK_API_KEY?.trim() || BUILD_SAFE_API_KEY,
   baseURL: DEEPSEEK_BASE_URL,
 });
 

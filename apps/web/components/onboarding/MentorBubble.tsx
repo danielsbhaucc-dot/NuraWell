@@ -11,7 +11,6 @@ type MentorBubbleProps = {
   mentorId: MentorId;
   children: React.ReactNode;
   className?: string;
-  /** dark = על רקע כהה/תמונה; light = על רקע בהיר */
   theme?: MentorBubbleTheme;
 };
 
@@ -42,7 +41,7 @@ export function MentorBubble({ mentorId, children, className = '', theme = 'dark
           priority={mentorId === 'dolev'}
           unoptimized={avatarUrl.startsWith('data:')}
         />
-      </motion.div>
+      </div>
       <div className="flex-1 min-w-0">
         <p
           className={[
@@ -53,12 +52,10 @@ export function MentorBubble({ mentorId, children, className = '', theme = 'dark
         >
           {mentorName} · המנטור שלך
         </p>
-        <motion.div
-          className={isDark ? 'onboarding-bubble-dark' : 'onboarding-bubble-light'}
-        >
+        <div className={isDark ? 'onboarding-bubble-dark' : 'onboarding-bubble-light'}>
           {children}
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </motion.div>
   );
 }
