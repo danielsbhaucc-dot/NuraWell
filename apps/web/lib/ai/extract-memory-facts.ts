@@ -1,5 +1,6 @@
-import { getBackgroundExtractionLlm } from './background-llm';
+import { openrouter } from './client';
 import { dedupeExtractedFacts } from './memory-fact-dedupe';
+import { MEMORY_EXTRACTION_MODEL_OPENROUTER } from './rag-config';
 import type { MemoryVectorCategory } from './upstash-vector-rest';
 
 /** רמת שמירה ל-Upstash — רק 2+ נכנסות לאינדקס */
@@ -168,9 +169,8 @@ async function extractMemoryFactsFromUserMessageInner(msg: string): Promise<Memo
 
 בדיקה לפני שליחה: המחרוזת שלך חייבת להיות parse-able כ-JSON ללא תיקונים.`;
 
-  const { client, model } = getBackgroundExtractionLlm();
-  const completion = await client.chat.completions.create({
-    model,
+  const completion = await openrouter.chat.completions.create({
+    model: MEMORY_EXTRACTION_MODEL_OPENROUTER,
     temperature: 0.1,
     max_tokens: 800,
     messages: [
