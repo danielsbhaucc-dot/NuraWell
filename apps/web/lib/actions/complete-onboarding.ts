@@ -2,6 +2,8 @@
 
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { publicAppOriginSync } from '@/lib/public-app-url';
 import { generateMentorSystemPrompt, calculateDailyCheckInTimes } from '@/lib/ai/generate-mentor-system-prompt';
 import { ingestOnboardingIntoVectorMemory } from '@/lib/ai/ingest-onboarding-vector-memory';
 import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context';
@@ -38,7 +40,7 @@ const onboardingSchema = z.object({
 });
 
 export type OnboardingActionState =
-  | { ok: true; redirectTo: string }
+  | { ok: true; redirectTo: string; needsEmailVerification?: boolean }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
 
 export async function completeOnboarding(
@@ -75,11 +77,14 @@ export async function completeOnboarding(
 
   const data = parsed.data;
   const supabase = await createClient();
+  const appOrigin = publicAppOriginSync();
+  const emailRedirectTo = `${appOrigin}/auth/callback`;
 
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
     email: data.email,
     password: data.password,
     options: {
+      emailRedirectTo,
       data: {
         full_name: data.full_name,
         username: data.email.split('@')[0],
@@ -148,8 +153,9 @@ export async function completeOnboarding(
     preferred_channel: data.preferred_channel,
   });
 
+  const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: profileError } = await (supabase.from('profiles') as any)
+  const { error: profileError } = await (admin.from('profiles') as any)
     .update({
       full_name: data.full_name,
       gender: data.gender,
@@ -206,5 +212,11 @@ export async function completeOnboarding(
     console.warn('[complete-onboarding] vector ingest failed', err);
   });
 
-  return { ok: true, redirectTo: '/courses' };
+  const needsEmailVerification = !signUpData.user?.email_confirmed_at;
+
+  return {
+    ok: true,
+    redirectTo: needsEmailVerification ? '/register/check-email' : '/courses',
+    needsEmailVerification,
+  };
 }

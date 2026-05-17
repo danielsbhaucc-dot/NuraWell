@@ -15,12 +15,16 @@ const PUBLIC_ROUTES = [
   '/login',
   '/register',
   '/register/form',
+  '/register/check-email',
+  '/auth/callback',
   '/about',
   '/contact',
   '/sitemap.xml',
   '/robots.txt',
   '/manifest.webmanifest',
 ];
+
+const EMAIL_VERIFY_EXEMPT = ['/register', '/register/form', '/register/check-email', '/auth/callback'];
 
 function copyCookies(from: NextResponse, to: NextResponse) {
   from.cookies.getAll().forEach((c) => {
@@ -162,10 +166,21 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/') ||
     pathname.endsWith('.webmanifest');
 
+  const isPageRequest = !pathname.startsWith('/api/');
+
   if (!user && !isPublicRoute) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  if (user && !user.email_confirmed_at && isPageRequest) {
+    const exempt = EMAIL_VERIFY_EXEMPT.some(
+      (r) => pathname === r || pathname.startsWith(`${r}/`)
+    );
+    if (!exempt && !pathname.startsWith('/api/')) {
+      return NextResponse.redirect(new URL('/register/check-email', request.url));
+    }
   }
 
   if (pathname === '/dashboard') {
@@ -186,7 +201,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/courses', request.url));
   }
 
-  const isPageRequest = !pathname.startsWith('/api/');
   if (user && isPageRequest) {
     void (async () => {
       try {
