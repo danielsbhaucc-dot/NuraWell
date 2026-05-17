@@ -8,11 +8,8 @@ export const UPSTASH_NAMESPACE_SYSTEM_KNOWLEDGE = 'system-knowledge';
 
 export const EMBEDDING_MODEL_OPENROUTER = 'openai/text-embedding-3-small';
 
-/** חילוץ עובדות — OpenRouter (גיבוי אם אין GROQ) */
+/** חילוץ עובדות אסינכרוני — Llama דרך OpenRouter (לא מענה למשתמש) */
 export const MEMORY_EXTRACTION_MODEL_OPENROUTER = 'meta-llama/llama-4-scout';
-
-/** חילוץ/איחוד זיכרון — Groq (עבודה שחורה, לא מענה למשתמש) */
-export const MEMORY_EXTRACTION_MODEL_GROQ = 'llama-3.3-70b-versatile';
 
 export const RAG_TOP_K = 3;
 

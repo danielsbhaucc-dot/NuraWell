@@ -1,4 +1,5 @@
-import { getBackgroundExtractionLlm } from './background-llm';
+import { openrouter } from './client';
+import { MEMORY_EXTRACTION_MODEL_OPENROUTER } from './rag-config';
 
 function tryParseMerged(text: string): string | null {
   try {
@@ -29,9 +30,8 @@ export async function mergeTwoUserMemoryLines(a: string, b: string): Promise<str
   }
 
   try {
-    const { client, model } = getBackgroundExtractionLlm();
-    const completion = await client.chat.completions.create({
-      model,
+    const completion = await openrouter.chat.completions.create({
+      model: MEMORY_EXTRACTION_MODEL_OPENROUTER,
       temperature: 0.1,
       max_tokens: 400,
       messages: [
