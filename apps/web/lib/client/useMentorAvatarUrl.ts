@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { MentorId } from '../mentors/registry';
 import { MENTORS } from '../mentors/registry';
-import { getMentorAvatarFallback } from '../mentors/avatar-url';
+import { getMentorAvatarFallback, getMentorAvatarUrl } from '../mentors/avatar-url';
 
 export type MentorAvatarMeta = {
   avatarUrl: string;
@@ -30,7 +30,18 @@ export function useMentorAvatarUrl(mentorId: MentorId, refreshToken = 0): Mentor
         has_custom?: boolean;
         cdn_configured?: boolean;
       };
-      const u = typeof data.url === 'string' && data.url.length > 0 ? data.url : fallback;
+      let u = typeof data.url === 'string' && data.url.length > 0 ? data.url : fallback;
+      if (
+        data.cdn_configured &&
+        data.has_custom &&
+        typeof data.url === 'string' &&
+        data.url.includes('/images/') &&
+        !data.url.includes('X-Amz-')
+      ) {
+        u = data.url;
+      } else if (u.includes('X-Amz-') || u.includes('r2.cloudflarestorage.com')) {
+        u = data.has_custom ? getMentorAvatarUrl(mentor) : fallback;
+      }
       setAvatarUrl(u);
       setHasCustom(Boolean(data.has_custom));
       setCdnConfigured(Boolean(data.cdn_configured));

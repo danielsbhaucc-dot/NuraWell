@@ -12,8 +12,9 @@ import { GlassChoiceButton } from './GlassChoiceButton';
 import type { MainGoal, MainObstacle, OnboardingGender, WeakestTimeOfDay } from '@/lib/onboarding/types';
 import { classifyMealSlot, mealSlotLabel } from '@/lib/onboarding/meal-schedule';
 import { genderCopy } from '@/lib/onboarding/gender-copy';
+import { OnboardingSummaryStep } from './OnboardingSummaryStep';
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 function firstName(full: string): string {
   return full.trim().split(/\s+/)[0] || 'חבר/ה';
@@ -104,7 +105,46 @@ export function OnboardingFormClient() {
     setStep((s) => Math.min(TOTAL_STEPS, s + 1));
   };
 
+  const summaryData = useMemo(
+    () => ({
+      fullName,
+      gender,
+      mainGoal,
+      currentWeight,
+      targetWeight,
+      height,
+      weakest,
+      obstacle,
+      obstacleDetail,
+      mealCount,
+      mealTimes,
+      wakeUp,
+      sleep,
+      email,
+    }),
+    [
+      fullName,
+      gender,
+      mainGoal,
+      currentWeight,
+      targetWeight,
+      height,
+      weakest,
+      obstacle,
+      obstacleDetail,
+      mealCount,
+      mealTimes,
+      wakeUp,
+      sleep,
+      email,
+    ]
+  );
+
   const submit = () => {
+    if (!email.trim() || !password || password.length < 6) {
+      toast.warning('חשבון', 'מלא/י אימייל וסיסמה (לפחות 6 תווים)');
+      return;
+    }
     const fd = new FormData();
     fd.set('full_name', fullName.trim());
     fd.set('gender', gender);
@@ -128,7 +168,10 @@ export function OnboardingFormClient() {
     startTransition(async () => {
       const result = await completeOnboarding(null, fd);
       if (result.ok) {
-        toast.success(`${gc.welcome}, ${firstName(fullName)}!`, 'מעבירים אותך לאפליקציה...');
+        const sub = result.needsEmailVerification
+          ? 'שלחנו קישור לאימות — אחרי האישור אלמוג יברך אותך במייל ובאפליקציה.'
+          : 'מעבירים אותך לאפליקציה...';
+        toast.success(`${gc.welcome}, ${firstName(fullName)}!`, sub);
         setTimeout(() => {
           router.push(result.redirectTo);
           router.refresh();
@@ -450,6 +493,14 @@ export function OnboardingFormClient() {
               )}
 
               {step === 5 && (
+                <OnboardingSummaryStep
+                  data={summaryData}
+                  name={name}
+                  onEdit={(s) => setStep(s)}
+                />
+              )}
+
+              {step === 6 && (
                 <>
                   <MentorBubble mentorId="dolev">
                     <p>
@@ -524,7 +575,7 @@ export function OnboardingFormClient() {
                 disabled={pending}
                 className="flex-1 min-h-[52px] rounded-2xl font-black text-white bg-gradient-to-l from-emerald-600 to-teal-500 flex items-center justify-center gap-2 disabled:opacity-60"
               >
-                {pending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'סיום והתחלה 🎉'}
+                {pending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'סיום ושליחת אימות 🎉'}
               </button>
             )}
           </div>

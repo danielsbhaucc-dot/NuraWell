@@ -115,6 +115,7 @@ export function isOpsPanelBrowserPath(pathname: string): boolean {
     '/steps',
     '/site-settings',
     '/system-rag-ingest',
+    '/users',
     '/ops',
   ];
   return prefixes.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
