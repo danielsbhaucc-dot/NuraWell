@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Search, UserCircle, Save } from 'lucide-react';
+import { AdminUserJourneyDetail } from '@/components/admin/AdminUserJourneyDetail';
+import type { AdminUserJourneyReport } from '@/lib/admin/build-user-journey-report';
 
 type UserRow = {
   id: string;
@@ -16,12 +18,8 @@ type UserRow = {
 type UserDetail = {
   profile: Record<string, unknown>;
   auth: { email: string | null; email_confirmed_at: string | null };
-  stats: {
-    journey_steps_tracked: number;
-    journey_steps_completed: number;
-    tasks_accepted: number;
-    habits_tracked: number;
-  };
+  stats: AdminUserJourneyReport['stats'];
+  journeyReport: AdminUserJourneyReport;
 };
 
 export function AdminUsersClient() {
@@ -277,6 +275,8 @@ export function AdminUsersClient() {
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 שמירה ועדכון אלמוג
               </button>
+
+              <AdminUserJourneyDetail steps={detail.journeyReport.steps} />
             </div>
           ) : null}
         </section>

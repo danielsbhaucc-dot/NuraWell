@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { readJsonBody } from '@/lib/api/json-request';
+import { buildAdminUserJourneyReport } from '@/lib/admin/build-user-journey-report';
 import { applyAdminProfilePatch } from '@/lib/admin/update-user-onboarding';
 import { buildMealSchedule } from '@/lib/onboarding/meal-schedule';
 import { GENDERS, MAIN_GOALS, MAIN_OBSTACLES, WEAKEST_TIMES } from '@/lib/onboarding/types';
@@ -32,27 +33,7 @@ export async function GET(request: Request, context: RouteContext) {
 
   const { data: authUser } = await admin.auth.admin.getUserById(userId);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: journeyRows } = await (admin as any)
-    .from('journey_progress')
-    .select('step_id, is_completed, tasks_completed, task_statuses, habits_progress, updated_at')
-    .eq('user_id', userId);
-
-  const journey = journeyRows ?? [];
-  const completedSteps = journey.filter((j: { is_completed?: boolean }) => j.is_completed).length;
-
-  let acceptedTasks = 0;
-  let activeHabits = 0;
-  for (const j of journey) {
-    const ts = j.task_statuses as Record<string, { status?: string }> | null;
-    if (ts) {
-      acceptedTasks += Object.values(ts).filter((v) => v?.status === 'accepted').length;
-    }
-    const hp = j.habits_progress as Record<string, boolean[]> | null;
-    if (hp) {
-      activeHabits += Object.keys(hp).length;
-    }
-  }
+  const journeyReport = await buildAdminUserJourneyReport(admin, userId);
 
   return NextResponse.json({
     profile,
@@ -61,13 +42,8 @@ export async function GET(request: Request, context: RouteContext) {
       email_confirmed_at: authUser?.user?.email_confirmed_at ?? null,
       created_at: authUser?.user?.created_at ?? null,
     },
-    stats: {
-      journey_steps_tracked: journey.length,
-      journey_steps_completed: completedSteps,
-      tasks_accepted: acceptedTasks,
-      habits_tracked: activeHabits,
-    },
-    journey,
+    stats: journeyReport.stats,
+    journeyReport,
   });
 }
 
