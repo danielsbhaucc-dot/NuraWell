@@ -11,7 +11,7 @@ type RegisterHowItWorksModalProps = {
 
 const STEPS = [
   { icon: Sparkles, title: 'מכירים אותך', text: 'שאלון קצר — בלי חפירות, רק מה שחשוב באמת.' },
-  { icon: Heart, title: 'מנטור אישי', text: 'דולב (AI) לומד את הקצב, המטרות והאתגרים שלך.' },
+  { icon: Heart, title: 'מנטור אישי', text: 'אלמוג (AI) לומד את הקצב, המטרות והאתגרים שלך — אחרי שהכרנו אותך כאן.' },
   { icon: Bell, title: '3 מגעים ביום', text: 'הודעות בזמנים שמתאימים לך — במיוחד לפני הרגעים הקשים.' },
 ];
 

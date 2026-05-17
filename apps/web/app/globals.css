@@ -77,22 +77,90 @@ html {
 
   /* ---- ONBOARDING / REGISTER ---- */
   .onboarding-shell-dark {
-    @apply min-h-[100dvh];
+    @apply min-h-[100dvh] relative;
+    background: transparent;
+  }
+
+  .onboarding-shell-dark::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
     background: linear-gradient(165deg, #022c22 0%, #0f172a 42%, #064e3b 100%);
   }
 
   .onboarding-shell-light {
-    @apply min-h-[100dvh] bg-mesh;
+    @apply min-h-[100dvh] relative bg-mesh;
+  }
+
+  .onboarding-shell-light::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    @apply bg-mesh;
+  }
+
+  .onboarding-page-inner {
+    @apply relative z-[1];
+  }
+
+  .onboarding-photo-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .onboarding-photo-bg img {
+    @apply w-full h-full object-cover;
+    transform: scale(1.05);
+  }
+
+  .onboarding-photo-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgba(2, 44, 34, 0.72) 0%,
+      rgba(6, 78, 59, 0.78) 45%,
+      rgba(15, 23, 42, 0.92) 100%
+    );
   }
 
   .onboarding-bubble-dark {
-    background: rgba(6, 78, 59, 0.55);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(52, 211, 153, 0.35);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    @apply rounded-2xl rounded-tr-md px-4 py-3 text-[15px] leading-relaxed;
+    position: relative;
+    background: linear-gradient(
+      145deg,
+      rgba(6, 95, 70, 0.72) 0%,
+      rgba(15, 23, 42, 0.55) 100%
+    );
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border: 1px solid rgba(110, 231, 183, 0.28);
+    box-shadow:
+      0 12px 40px rgba(0, 0, 0, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    @apply rounded-[20px] rounded-br-md px-4 py-3.5 text-[15px] leading-relaxed;
     color: #ecfdf5;
+  }
+
+  .onboarding-bubble-dark::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    bottom: 14px;
+    width: 14px;
+    height: 14px;
+    background: inherit;
+    border-right: 1px solid rgba(110, 231, 183, 0.28);
+    border-bottom: 1px solid rgba(110, 231, 183, 0.28);
+    transform: rotate(-45deg);
+    border-radius: 0 0 4px 0;
   }
 
   .onboarding-bubble-light {
@@ -104,16 +172,18 @@ html {
   }
 
   .onboarding-input-dark {
-    @apply w-full px-5 py-4 rounded-2xl font-medium text-base transition-all duration-200;
-    background: rgba(255, 255, 255, 0.96);
-    border: 1.5px solid rgba(16, 185, 129, 0.25);
-    color: #1a2e23;
-    @apply placeholder:text-slate-400 focus:outline-none;
+    @apply w-full px-4 py-3.5 rounded-2xl font-medium text-base transition-all duration-200;
+    background: rgba(6, 78, 59, 0.45);
+    border: 1.5px solid rgba(52, 211, 153, 0.35);
+    color: #ecfdf5;
+    @apply placeholder:text-emerald-100/40 focus:outline-none;
+    color-scheme: dark;
   }
 
   .onboarding-input-dark:focus {
-    border-color: rgba(52, 211, 153, 0.65);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    border-color: rgba(110, 231, 183, 0.7);
+    background: rgba(6, 78, 59, 0.62);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.22);
   }
 
   .onboarding-panel-dark {

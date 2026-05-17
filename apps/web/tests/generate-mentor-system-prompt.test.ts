@@ -18,7 +18,7 @@ describe('calculateDailyCheckInTimes', () => {
   });
 
   it('adds before/after dinner when dinner_time set', () => {
-    const times = calculateDailyCheckInTimes('07:00', '23:00', 'noon', '19:00');
+    const times = calculateDailyCheckInTimes('07:00', '23:00', 'noon', { dinnerTime: '19:00' });
     expect(times.length).toBeGreaterThanOrEqual(4);
     const mins = times.map(parseTimeToMinutes);
     expect(mins.some((m) => m >= parseTimeToMinutes('18:30') && m <= parseTimeToMinutes('19:00'))).toBe(

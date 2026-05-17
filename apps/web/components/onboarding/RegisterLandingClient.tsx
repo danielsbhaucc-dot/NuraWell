@@ -37,17 +37,11 @@ export function RegisterLandingClient() {
       >
         {hasPhotoBg ? (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={bgUrl!}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover scale-105"
-              fetchPriority="high"
-            />
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-emerald-950/75 to-slate-950/90"
-              aria-hidden
-            />
+            <div className="onboarding-photo-bg" aria-hidden>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={bgUrl!} alt="" fetchPriority="high" />
+            </div>
+            <div className="onboarding-photo-overlay" aria-hidden />
           </>
         ) : null}
 
@@ -86,16 +80,24 @@ export function RegisterLandingClient() {
             <MentorBubble mentorId="dolev" theme={hasPhotoBg ? 'dark' : 'light'}>
               <p>
                 היי, אני{' '}
-                <strong className={hasPhotoBg ? 'text-emerald-300' : 'text-emerald-700'}>דולב</strong>{' '}
-                — המנטור שילווה אתכם בהתחלה. <em>Nura</em> זה &quot;אור&quot; בשפה עתיקה.{' '}
-                <em>Well</em> — להרגיש טוב, לא לספור קלוריות.
+                <strong className={hasPhotoBg ? 'text-emerald-300' : 'text-emerald-700'}>דולב</strong>
+                . אני כאן רק כדי להכיר אתכם — בלי שיפוט, בלי בושה. אחר כך אלמוג ילווה אתכם
+                באמת.
+              </p>
+              <p className={`mt-3 text-sm leading-relaxed ${hasPhotoBg ? 'text-emerald-50/95' : 'text-slate-600'}`}>
+                <strong className={hasPhotoBg ? 'text-white' : 'text-emerald-800'}>Nura</strong> — מארמית,
+                אחת השפות העתיקות בעולם. משמעותה <em>אור</em>. כי כל שינוי אמיתי מתחיל מרגע של הארה —
+                הרגע שהחלטת לשנות.
+                <br />
+                <strong className={hasPhotoBg ? 'text-white' : 'text-emerald-800'}>Well</strong> — באנגלית:
+                בריאות, איזון, להרגיש טוב. לא דיאטה, לא ספירת קלוריות — חיים טובים יותר.
               </p>
               <p className={`mt-2 text-sm ${hasPhotoBg ? 'text-emerald-50/90' : 'text-slate-600'}`}>
-                ביחד:{' '}
+                ביחד זה אומר:{' '}
                 <strong className={hasPhotoBg ? 'text-white' : 'text-emerald-800'}>
-                  האור שיוביל אתכם לחיים טובים יותר
-                </strong>{' '}
-                ✨
+                  האור שיוביל אותך לחיים טובים יותר
+                </strong>
+                . כמו מאמן אמיתי שיש לך — לא אפליקציה קרה.
               </p>
             </MentorBubble>
           </motion.div>

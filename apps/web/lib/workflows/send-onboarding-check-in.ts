@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
+import { NURAWELL_MENTOR_PROMPT } from '../ai/prompts';
 import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
 import { normalizeCheckInTimes } from '../ai/onboarding-check-in-time';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
@@ -34,7 +35,9 @@ export async function sendOnboardingCheckInNotification(
     ? `\n\n### מסע (הרגלים ומשימות פתוחות)\n${formatJourneyBlockForPersonalizedCheckIn(journeyCtx)}`
     : '';
 
-  const systemPrompt = `${aiSystemPrompt.trim()}${journeyBlock}${ALMOG_PERSONALIZED_APPEND}
+  const systemPrompt = `${NURAWELL_MENTOR_PROMPT}
+
+${aiSystemPrompt.trim()}${journeyBlock}${ALMOG_PERSONALIZED_APPEND}
 
 זמן מוגדר לבדיקה זו: ${payload.checkInTime} (ישראל). מגע ${payload.checkInIndex + 1} מתוך ${totalToday} היום.`;
 

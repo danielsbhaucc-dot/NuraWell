@@ -10,6 +10,7 @@ import { useToast, ToastContainer } from '@/components/shared/Toast';
 import { MentorBubble } from './MentorBubble';
 import { GlassChoiceButton } from './GlassChoiceButton';
 import type { MainGoal, MainObstacle, OnboardingGender, WeakestTimeOfDay } from '@/lib/onboarding/types';
+import { classifyMealSlot, mealSlotLabel } from '@/lib/onboarding/meal-schedule';
 
 const TOTAL_STEPS = 5;
 
@@ -46,7 +47,8 @@ export function OnboardingFormClient() {
   const [obstacleDetail, setObstacleDetail] = useState('');
   const [wakeUp, setWakeUp] = useState('07:00');
   const [sleep, setSleep] = useState('23:00');
-  const [dinnerTime, setDinnerTime] = useState('');
+  const [mealCount, setMealCount] = useState<number | null>(null);
+  const [mealTimes, setMealTimes] = useState<string[]>([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -90,6 +92,20 @@ export function OnboardingFormClient() {
         return;
       }
     }
+    if (step === 4) {
+      if (mealCount === null) {
+        toast.warning('רגע', 'כמה ארוחות עיקריות ביום? אפשר גם לדלג');
+        return;
+      }
+      if (mealCount > 0) {
+        for (let i = 0; i < mealCount; i++) {
+          if (!mealTimes[i]?.trim()) {
+            toast.warning('שעות ארוחה', `מתי הארוחה ${i + 1}?`);
+            return;
+          }
+        }
+      }
+    }
     setStep((s) => Math.min(TOTAL_STEPS, s + 1));
   };
 
@@ -106,7 +122,10 @@ export function OnboardingFormClient() {
     if (obstacle === 'other') fd.set('main_obstacle_detail', obstacleDetail);
     fd.set('wake_up_time', wakeUp);
     fd.set('sleep_time', sleep);
-    if (dinnerTime.trim()) fd.set('dinner_time', dinnerTime);
+    fd.set('meal_count', String(mealCount ?? 0));
+    if (mealCount && mealCount > 0) {
+      fd.set('meal_schedule_json', JSON.stringify(mealTimes.slice(0, mealCount)));
+    }
     fd.set('preferred_channel', 'in_app');
     fd.set('email', email.trim());
     fd.set('password', password);
@@ -129,7 +148,7 @@ export function OnboardingFormClient() {
     <>
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
       <main id="main-content" className="onboarding-shell-dark px-4 py-6 pb-28">
-        <motion.div className="max-w-lg mx-auto w-full">
+        <div className="onboarding-page-inner max-w-lg mx-auto w-full">
           <div className="flex items-center justify-between mb-4">
             <Link
               href="/register"
@@ -346,11 +365,69 @@ export function OnboardingFormClient() {
                 <>
                   <MentorBubble mentorId="dolev">
                     <p>
-                      {gender ? `${name}, ` : ''}מתי {you} קם/ה, אוכל/ת ערב ומתי הולכ/ת לישון? אלמוג יידע מתי לגעת
-                      בך — כולל לפני ואחרי ארוחת ערב אם תמלא/י למטה.
+                      {gender ? `${name}, ` : ''}בוא/י נסדר את הקצב של היום. כמה ארוחות עיקריות יש לך?
+                      ממליץ בחום על 2–3 — כך אלמוג יידע מתי לגעת לפני ואחרי. אפשר גם לדלג.
                     </p>
                   </MentorBubble>
-                  <div className="grid grid-cols-2 gap-4 mt-6">
+
+                  <p className="text-sm font-bold text-emerald-100/90 mt-4 mb-2">כמה ארוחות עיקריות ביום?</p>
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    {(
+                      [
+                        [0, 'לא עכשיו', 'נשתמש בשעות כלליות'],
+                        [1, 'ארוחה אחת', undefined],
+                        [2, 'שתיים', 'מומלץ ✨'],
+                        [3, 'שלוש', undefined],
+                      ] as const
+                    ).map(([n, title, sub]) => (
+                      <GlassChoiceButton
+                        key={n}
+                        selected={mealCount === n}
+                        onClick={() => {
+                          setMealCount(n);
+                          setMealTimes((prev) =>
+                            Array.from({ length: n }, (_, idx) => prev[idx] ?? '')
+                          );
+                        }}
+                        title={title}
+                        subtitle={sub}
+                      />
+                    ))}
+                  </div>
+
+                  {mealCount !== null && mealCount > 0 ? (
+                    <motion.div className="space-y-3 mb-4">
+                      {Array.from({ length: mealCount }, (_, i) => {
+                        const t = mealTimes[i] ?? '';
+                        const slot = t ? classifyMealSlot(t) : null;
+                        return (
+                          <label key={i}>
+                            <span className="text-xs font-bold text-emerald-100/85">
+                              שעת ארוחה {i + 1}
+                              {slot ? (
+                                <span className="text-emerald-300/80 font-normal mr-1">
+                                  · זוהה: {mealSlotLabel(slot)}
+                                </span>
+                              ) : null}
+                            </span>
+                            <input
+                              type="time"
+                              value={t}
+                              onChange={(e) => {
+                                const next = [...mealTimes];
+                                next[i] = e.target.value;
+                                setMealTimes(next);
+                              }}
+                              className="onboarding-input-dark w-full mt-1"
+                            />
+                          </label>
+                        );
+                      })}
+                    </motion.div>
+                  ) : null}
+
+                  <p className="text-sm font-bold text-emerald-100/90 mt-2 mb-2">שעות יום (תמיד)</p>
+                  <div className="grid grid-cols-2 gap-4">
                     <label>
                       <span className="text-xs font-bold text-emerald-100/85">שעת השכמה</span>
                       <input
@@ -370,21 +447,6 @@ export function OnboardingFormClient() {
                       />
                     </label>
                   </div>
-                  <label className="block mt-4">
-                    <span className="text-xs font-bold text-emerald-100/85">
-                      שעת ארוחת ערב (אופציונלי — מומלץ)
-                    </span>
-                    <input
-                      type="time"
-                      value={dinnerTime}
-                      onChange={(e) => setDinnerTime(e.target.value)}
-                      className="onboarding-input-dark w-full mt-1"
-                      aria-describedby="dinner-hint"
-                    />
-                    <span id="dinner-hint" className="text-xs text-white/50 mt-1 block">
-                      אלמוג ישלח מגע לפני ואחרי הארוחה בערב
-                    </span>
-                  </label>
                 </>
               )}
 
@@ -432,7 +494,7 @@ export function OnboardingFormClient() {
               )}
             </motion.div>
           </AnimatePresence>
-        </motion.div>
+        </div>
 
         <div className="fixed bottom-0 inset-x-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent z-20">
           <div className="max-w-lg mx-auto flex gap-2">

@@ -291,6 +291,7 @@ async function fetchChatProfileRow(
     wake_up_time: null,
     sleep_time: null,
     dinner_time: null,
+    meal_schedule: null,
     preferred_channel: null,
     ai_check_in_times: null,
     onboarding_completed: null,
@@ -303,7 +304,7 @@ async function fetchChatProfileRow(
         `full_name, gender, ai_context,
         main_goal, current_weight_kg, goal_weight_kg,
         weakest_time_of_day, main_obstacle, main_obstacle_detail,
-        wake_up_time, sleep_time, dinner_time, preferred_channel,
+        wake_up_time, sleep_time, dinner_time, meal_schedule, preferred_channel,
         ai_check_in_times, onboarding_completed`
       )
       .eq('id', userId)
@@ -321,6 +322,7 @@ async function fetchChatProfileRow(
       wake_up_time?: string | null;
       sleep_time?: string | null;
       dinner_time?: string | null;
+      meal_schedule?: Array<{ time: string; slot: string; label: string }> | null;
       preferred_channel?: string | null;
       ai_check_in_times?: unknown;
       onboarding_completed?: boolean | null;
@@ -364,6 +366,7 @@ async function fetchChatProfileRow(
         wake_up_time: wake,
         sleep_time: sleep,
         dinner_time: dinner,
+        meal_schedule: Array.isArray(profile?.meal_schedule) ? profile.meal_schedule : null,
         preferred_channel: profile?.preferred_channel ?? null,
         ai_check_in_times: Array.isArray(profile?.ai_check_in_times)
           ? (profile!.ai_check_in_times as string[])

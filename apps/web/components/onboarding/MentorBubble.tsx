@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import type { MentorId } from '@/lib/mentors/registry';
+import { MENTORS } from '@/lib/mentors/registry';
 import { useMentorAvatarUrl } from '@/lib/client/useMentorAvatarUrl';
 
 export type MentorBubbleTheme = 'dark' | 'light';
@@ -12,50 +13,72 @@ type MentorBubbleProps = {
   children: React.ReactNode;
   className?: string;
   theme?: MentorBubbleTheme;
+  /** ברירת מחדל: מנטור לדולב = "מקבל אתכם כאן" */
+  roleLabel?: string;
 };
 
-export function MentorBubble({ mentorId, children, className = '', theme = 'dark' }: MentorBubbleProps) {
+export function MentorBubble({
+  mentorId,
+  children,
+  className = '',
+  theme = 'dark',
+  roleLabel,
+}: MentorBubbleProps) {
   const { avatarUrl, mentorName, ready } = useMentorAvatarUrl(mentorId);
   const isDark = theme === 'dark';
+  const subtitle =
+    roleLabel ?? (mentorId === 'dolev' ? 'מקבל אתכם כאן' : MENTORS[mentorId].title);
 
   return (
     <motion.div
-      className={`flex gap-3 items-start ${className}`}
+      className={`flex gap-3 items-end ${className}`}
       dir="rtl"
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: 'easeOut' }}
     >
-      <div
+      <motion.div
         className={[
-          'relative shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden shadow-lg',
-          isDark ? 'ring-2 ring-emerald-400/50 shadow-emerald-500/25' : 'ring-2 ring-emerald-500/30 shadow-emerald-600/15',
+          'relative shrink-0 w-[52px] h-[52px] sm:w-14 sm:h-14 rounded-[18px] overflow-hidden',
+          isDark
+            ? 'ring-2 ring-emerald-400/45 shadow-[0_8px_24px_rgba(16,185,129,0.25)]'
+            : 'ring-2 ring-emerald-500/25 shadow-[0_6px_20px_rgba(4,120,87,0.15)]',
         ].join(' ')}
         aria-hidden={!ready}
+        whileHover={{ scale: 1.02 }}
       >
         <Image
           src={avatarUrl}
-          alt={`תמונת ${mentorName}`}
+          alt=""
           fill
-          sizes="64px"
-          className="object-cover"
+          sizes="56px"
+          className="object-cover object-top"
           priority={mentorId === 'dolev'}
           unoptimized={avatarUrl.startsWith('data:')}
         />
-      </div>
-      <div className="flex-1 min-w-0">
+      </motion.div>
+      <motion.div className="flex-1 min-w-0 pb-0.5">
         <p
           className={[
-            'text-xs font-bold mb-1.5',
-            isDark ? 'text-emerald-200' : 'text-emerald-700',
+            'text-[11px] font-bold mb-1 tracking-wide',
+            isDark ? 'text-emerald-300/90' : 'text-emerald-700',
           ].join(' ')}
           style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}
         >
-          {mentorName} · המנטור שלך
+          {mentorName}
+          <span className={isDark ? ' text-emerald-100/50 font-medium' : ' text-slate-500 font-medium'}>
+            {' '}
+            · {subtitle}
+          </span>
         </p>
-        <div className={isDark ? 'onboarding-bubble-dark' : 'onboarding-bubble-light'}>
+        <motion.div
+          className={isDark ? 'onboarding-bubble-dark' : 'onboarding-bubble-light'}
+          role="region"
+          aria-label={`הודעה מ${mentorName}`}
+        >
           {children}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </motion.div>
   );
 }

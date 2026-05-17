@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { generateMentorSystemPrompt, calculateDailyCheckInTimes } from '@/lib/ai/generate-mentor-system-prompt';
 import { ingestOnboardingIntoVectorMemory } from '@/lib/ai/ingest-onboarding-vector-memory';
 import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context';
+import { buildMealSchedule, type MealScheduleEntry } from '@/lib/onboarding/meal-schedule';
 import {
   GENDERS,
   MAIN_GOALS,
@@ -99,14 +100,35 @@ export async function completeOnboarding(
     return { ok: false, error: 'לא הצלחנו ליצור משתמש. נסו שוב.' };
   }
 
+  const mealCountRaw = formData.get('meal_count');
+  const mealCount =
+    mealCountRaw === null || mealCountRaw === ''
+      ? 0
+      : Math.min(3, Math.max(0, Number.parseInt(String(mealCountRaw), 10) || 0));
+
+  let mealSchedule: MealScheduleEntry[] = [];
+  const mealJson = formData.get('meal_schedule_json');
+  if (typeof mealJson === 'string' && mealJson.trim()) {
+    try {
+      const parsedMeals = JSON.parse(mealJson) as string[];
+      if (Array.isArray(parsedMeals)) {
+        mealSchedule = buildMealSchedule(parsedMeals);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   const dinnerTime =
-    data.dinner_time && String(data.dinner_time).trim() ? String(data.dinner_time).trim() : null;
+    mealSchedule.length === 0 && data.dinner_time && String(data.dinner_time).trim()
+      ? String(data.dinner_time).trim()
+      : null;
 
   const checkInTimes = calculateDailyCheckInTimes(
     data.wake_up_time,
     data.sleep_time,
     data.weakest_time_of_day,
-    dinnerTime
+    { dinnerTime, meals: mealSchedule.length ? mealSchedule : null }
   );
 
   const systemPrompt = generateMentorSystemPrompt({
@@ -122,6 +144,7 @@ export async function completeOnboarding(
     wake_up_time: data.wake_up_time,
     sleep_time: data.sleep_time,
     dinner_time: dinnerTime,
+    meal_schedule: mealSchedule.length ? mealSchedule : null,
     preferred_channel: data.preferred_channel,
   });
 
@@ -141,6 +164,8 @@ export async function completeOnboarding(
       wake_up_time: data.wake_up_time,
       sleep_time: data.sleep_time,
       dinner_time: dinnerTime,
+      meal_count: mealCount,
+      meal_schedule: mealSchedule.length ? mealSchedule : null,
       preferred_channel: data.preferred_channel,
       ai_check_in_times: checkInTimes,
       ai_system_prompt: systemPrompt,
@@ -171,6 +196,7 @@ export async function completeOnboarding(
     wake_up_time: data.wake_up_time,
     sleep_time: data.sleep_time,
     dinner_time: dinnerTime,
+    meal_schedule: mealSchedule.length ? mealSchedule : null,
     preferred_channel: data.preferred_channel,
     ai_check_in_times: checkInTimes,
     onboarding_completed: true,

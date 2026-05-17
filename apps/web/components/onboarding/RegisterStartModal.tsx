@@ -1,8 +1,10 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
+import { Drawer } from 'vaul';
 import { MessageCircle, Phone, X, FormInput, Lock } from 'lucide-react';
 import Link from 'next/link';
+import { useMediaMobile } from '@/lib/client/useMediaMobile';
 import { MentorBubble } from './MentorBubble';
 
 type RegisterStartModalProps = {
@@ -10,12 +12,109 @@ type RegisterStartModalProps = {
   onClose: () => void;
 };
 
-export function RegisterStartModal({ open, onClose }: RegisterStartModalProps) {
+function RegisterStartBody({ onClose }: { onClose: () => void }) {
+  return (
+    <>
+      <MentorBubble mentorId="dolev" className="mt-2 mb-5">
+        <p>
+          לפני שמתחילים — חשוב לי שתדעו: אני בינה מלאכותית. בלי שיפוט, בלי בושה, בלי צורך
+          להתנצל על מה שעבר. רק ליווי אמיתי. 🌿
+        </p>
+        <p className="mt-2 text-white/80 text-sm">איך נוח לכם להמשיך?</p>
+      </MentorBubble>
+
+      <ul className="space-y-3" role="list">
+        <li>
+          <div
+            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 opacity-55 cursor-not-allowed"
+            aria-disabled="true"
+          >
+            <Phone className="w-5 h-5 text-white/50 shrink-0" />
+            <span className="flex-1 text-right">
+              <span className="block font-bold text-white/70">שיחה עם דולב בטלפון</span>
+              <span className="text-xs text-white/50">בקרוב — עובדים על זה</span>
+            </span>
+            <Lock className="w-4 h-4 text-white/40 shrink-0" aria-hidden />
+          </div>
+        </li>
+        <li>
+          <div
+            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 opacity-55 cursor-not-allowed"
+            aria-disabled="true"
+          >
+            <MessageCircle className="w-5 h-5 text-white/50 shrink-0" />
+            <span className="flex-1 text-right">
+              <span className="block font-bold text-white/70">וואטסאפ עם דולב</span>
+              <span className="text-xs text-white/50">בקרוב</span>
+            </span>
+            <Lock className="w-4 h-4 text-white/40 shrink-0" aria-hidden />
+          </div>
+        </li>
+        <li>
+          <Link
+            href="/register/form"
+            prefetch
+            onClick={onClose}
+            className="flex items-center gap-3 rounded-2xl border border-emerald-400/60 bg-gradient-to-l from-emerald-600/40 to-teal-500/30 px-4 py-4 shadow-lg shadow-emerald-500/20 hover:brightness-110 active:scale-[0.98] transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+          >
+            <FormInput className="w-5 h-5 text-emerald-300 shrink-0" />
+            <span className="flex-1 text-right">
+              <span className="block font-bold text-white">טופס קצר באתר</span>
+              <span className="text-xs text-emerald-100/90">כמה דקות — ואני כבר מכיר אתכם</span>
+            </span>
+            <span className="text-emerald-300 text-lg" aria-hidden>
+              →
+            </span>
+          </Link>
+        </li>
+      </ul>
+    </>
+  );
+}
+
+function MobileStartDrawer({ open, onClose }: RegisterStartModalProps) {
+  return (
+    <Drawer.Root open={open} onOpenChange={(v) => !v && onClose()} direction="bottom" shouldScaleBackground>
+      <Drawer.Portal>
+        <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/55 backdrop-blur-[3px]" />
+        <Drawer.Content
+          dir="rtl"
+          className="fixed bottom-0 left-0 right-0 z-[210] mx-auto flex max-h-[min(92dvh,720px)] w-full max-w-lg flex-col rounded-t-[26px] border border-white/15 bg-gradient-to-b from-slate-900/98 to-emerald-950/98 outline-none shadow-2xl"
+        >
+          <Drawer.Title className="sr-only">איך תרצו להמשיך</Drawer.Title>
+          <Drawer.Description className="sr-only">בחירת ערוץ הרשמה</Drawer.Description>
+
+          <div className="shrink-0 rounded-t-[26px] px-5 pt-3 pb-2 relative">
+            <div className="mb-3 flex justify-center">
+              <div className="h-1.5 w-11 rounded-full bg-white/35" />
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white/70 hover:bg-white/20"
+              aria-label="סגור"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div
+            className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+          >
+            <RegisterStartBody onClose={onClose} />
+          </div>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
+  );
+}
+
+function DesktopStartModal({ open, onClose }: RegisterStartModalProps) {
   return (
     <AnimatePresence>
       {open ? (
         <motion.div
-          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -33,7 +132,7 @@ export function RegisterStartModal({ open, onClose }: RegisterStartModalProps) {
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 24, opacity: 0 }}
-            className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl border border-white/20 bg-gradient-to-b from-slate-900/95 to-emerald-950/95 backdrop-blur-2xl shadow-2xl p-5 sm:p-6"
+            className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl border border-white/20 bg-gradient-to-b from-slate-900/95 to-emerald-950/95 backdrop-blur-2xl shadow-2xl p-5 sm:p-6"
           >
             <button
               type="button"
@@ -48,60 +147,20 @@ export function RegisterStartModal({ open, onClose }: RegisterStartModalProps) {
               איך תרצו להמשיך
             </h2>
 
-            <MentorBubble mentorId="dolev" className="mt-2 mb-5">
-              <p>
-                לפני שמתחילים — חשוב לי שתדעו: אני בינה מלאכותית. בלי שיפוט, בלי בושה, בלי צורך
-                להתנצל על מה שעבר. רק ליווי אמיתי. 🌿
-              </p>
-              <p className="mt-2 text-white/80 text-sm">איך נוח לכם להמשיך?</p>
-            </MentorBubble>
-
-            <ul className="space-y-3" role="list">
-              <li>
-                <div
-                  className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 opacity-55 cursor-not-allowed"
-                  aria-disabled="true"
-                >
-                  <Phone className="w-5 h-5 text-white/50 shrink-0" />
-                  <span className="flex-1 text-right">
-                    <span className="block font-bold text-white/70">שיחה עם דולב בטלפון</span>
-                    <span className="text-xs text-white/50">בקרוב — עובדים על זה</span>
-                  </span>
-                  <Lock className="w-4 h-4 text-white/40 shrink-0" aria-hidden />
-                </div>
-              </li>
-              <li>
-                <div
-                  className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 opacity-55 cursor-not-allowed"
-                  aria-disabled="true"
-                >
-                  <MessageCircle className="w-5 h-5 text-white/50 shrink-0" />
-                  <span className="flex-1 text-right">
-                    <span className="block font-bold text-white/70">וואטסאפ עם דולב</span>
-                    <span className="text-xs text-white/50">בקרוב</span>
-                  </span>
-                  <Lock className="w-4 h-4 text-white/40 shrink-0" aria-hidden />
-                </div>
-              </li>
-              <li>
-                <Link
-                  href="/register/form"
-                  prefetch
-                  onClick={onClose}
-                  className="flex items-center gap-3 rounded-2xl border border-emerald-400/60 bg-gradient-to-l from-emerald-600/40 to-teal-500/30 px-4 py-4 shadow-lg shadow-emerald-500/20 hover:brightness-110 active:scale-[0.98] transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
-                >
-                  <FormInput className="w-5 h-5 text-emerald-300 shrink-0" />
-                  <span className="flex-1 text-right">
-                    <span className="block font-bold text-white">טופס קצר באתר</span>
-                    <span className="text-xs text-emerald-100/90">כמה דקות — ואני כבר מכיר אתכם</span>
-                  </span>
-                  <span className="text-emerald-300 text-lg" aria-hidden>→</span>
-                </Link>
-              </li>
-            </ul>
+            <RegisterStartBody onClose={onClose} />
           </motion.div>
         </motion.div>
       ) : null}
     </AnimatePresence>
   );
+}
+
+export function RegisterStartModal({ open, onClose }: RegisterStartModalProps) {
+  const mobile = useMediaMobile();
+
+  if (mobile) {
+    return <MobileStartDrawer open={open} onClose={onClose} />;
+  }
+
+  return <DesktopStartModal open={open} onClose={onClose} />;
 }

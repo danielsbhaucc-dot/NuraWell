@@ -11,6 +11,7 @@ export type OnboardingProfileForChat = {
   wake_up_time: string | null;
   sleep_time: string | null;
   dinner_time: string | null;
+  meal_schedule: Array<{ time: string; slot: string; label: string }> | null;
   preferred_channel: string | null;
   ai_check_in_times: string[] | null;
   onboarding_completed: boolean | null;
@@ -91,7 +92,13 @@ export function buildOnboardingChatContextBlock(profile: OnboardingProfileForCha
   if (obstacle) lines.push(`- מכשול מרכזי: ${obstacle}`);
   if (wake && sleep) lines.push(`- שכמה ${wake} | שינה ${sleep}`);
   const dinner = formatTimeField(profile.dinner_time);
-  if (dinner) lines.push(`- ארוחת ערב טיפוסית: ${dinner}`);
+  if (profile.meal_schedule?.length) {
+    lines.push(
+      `- ארוחות: ${profile.meal_schedule.map((m) => `${m.time} (${m.label})`).join(', ')}`
+    );
+  } else if (dinner) {
+    lines.push(`- ארוחת ערב: ${dinner}`);
+  }
   if (times.length) {
     lines.push(`- זמני מגע יומיים (ישראל): ${times.join(', ')}`);
     if (weakest && times[1]) {

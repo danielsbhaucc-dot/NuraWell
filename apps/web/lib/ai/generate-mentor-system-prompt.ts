@@ -1,5 +1,6 @@
 import type { MainGoal, MainObstacle, OnboardingGender, WeakestTimeOfDay } from '../onboarding/types';
-import { NURAWELL_MENTOR_PROMPT } from './prompts';
+import type { MealScheduleEntry } from '../onboarding/meal-schedule';
+import { formatMealScheduleForPrompt } from '../onboarding/meal-schedule';
 
 export type MentorPromptProfile = {
   full_name: string;
@@ -14,6 +15,7 @@ export type MentorPromptProfile = {
   wake_up_time: string;
   sleep_time: string;
   dinner_time?: string | null;
+  meal_schedule?: MealScheduleEntry[] | null;
   preferred_channel: 'whatsapp' | 'in_app' | 'phone';
 };
 
@@ -79,8 +81,10 @@ export function calculateDailyCheckInTimes(
   wakeUpTime: string,
   sleepTime: string,
   weakestTimeOfDay: WeakestTimeOfDay,
-  dinnerTime?: string | null
+  options?: { dinnerTime?: string | null; meals?: MealScheduleEntry[] | null }
 ): string[] {
+  const dinnerTime = options?.dinnerTime;
+  const meals = options?.meals;
   const wakeMin = parseTimeToMinutes(wakeUpTime);
   let sleepMin = parseTimeToMinutes(sleepTime);
   if (sleepMin <= wakeMin) sleepMin += 24 * 60;
@@ -105,25 +109,34 @@ export function calculateDailyCheckInTimes(
 
   const minuteSet = new Set<number>([check1, check2, check3]);
 
-  const dinnerRaw = dinnerTime?.trim();
-  if (dinnerRaw && /^\d{1,2}:\d{2}/.test(dinnerRaw)) {
-    const dinnerMin = parseTimeToMinutes(dinnerRaw.slice(0, 5));
-    const beforeDinner = Math.max(minFirst, dinnerMin - 25);
-    const afterDinner = Math.min(maxLast, dinnerMin + 35);
-    minuteSet.add(beforeDinner);
-    minuteSet.add(afterDinner);
+  if (meals?.length) {
+    for (const meal of meals) {
+      const dinnerMin = parseTimeToMinutes(meal.time);
+      minuteSet.add(Math.max(minFirst, dinnerMin - 25));
+      minuteSet.add(Math.min(maxLast, dinnerMin + 35));
+    }
+  } else {
+    const dinnerRaw = dinnerTime?.trim();
+    if (dinnerRaw && /^\d{1,2}:\d{2}/.test(dinnerRaw)) {
+      const dinnerMin = parseTimeToMinutes(dinnerRaw.slice(0, 5));
+      minuteSet.add(Math.max(minFirst, dinnerMin - 25));
+      minuteSet.add(Math.min(maxLast, dinnerMin + 35));
+    }
   }
 
-  const sorted = [...minuteSet].sort((a, b) => a - b).slice(0, 5);
+  const sorted = [...minuteSet].sort((a, b) => a - b).slice(0, 7);
   return sorted.map(formatMinutesToTime);
 }
 
+/**
+ * הקשר הרשמה בלבד — נשמר ב-DB. אלמוג מקבל את NURAWELL_MENTOR_PROMPT בנפרד (חיסכון טוקנים).
+ */
 export function generateMentorSystemPrompt(profile: MentorPromptProfile): string {
   const times = calculateDailyCheckInTimes(
     profile.wake_up_time,
     profile.sleep_time,
     profile.weakest_time_of_day,
-    profile.dinner_time
+    { dinnerTime: profile.dinner_time, meals: profile.meal_schedule }
   );
   const addr = GENDER_ADDRESS[profile.gender];
   const firstName = profile.full_name.trim().split(/\s+/)[0] || profile.full_name;
@@ -137,9 +150,14 @@ export function generateMentorSystemPrompt(profile: MentorPromptProfile): string
       ? profile.main_obstacle_detail.trim()
       : OBSTACLE_LABELS[profile.main_obstacle];
 
-  return `${NURAWELL_MENTOR_PROMPT}
+  const mealsLine =
+    profile.meal_schedule && profile.meal_schedule.length > 0
+      ? `\n- ארוחות עיקריות: ${formatMealScheduleForPrompt(profile.meal_schedule)} — מגע לפני/אחרי כל ארוחה`
+      : profile.dinner_time?.trim()
+        ? `\n- ארוחת ערב: ${profile.dinner_time.trim().slice(0, 5)}`
+        : '';
 
-## הקשר מהרשמה (אסף דולב — אתה אלמוג מיישם)
+  return `## הקשר מהרשמה (אסף דולב — אתה אלמוג מיישם)
 דולב ליווה את ${firstName} בשאלון ההצטרפות ואסף את הפרטים. מעכשיו אתה אלמוג — המנטור האמיתי.
 השתמש במידע הזה בכל follow-up ובשיחה; אל תזכיר "דולב" או "שאלון" אלא אם המשתמש/ת שואל/ת.
 
@@ -149,11 +167,7 @@ export function generateMentorSystemPrompt(profile: MentorPromptProfile): string
 - משקל נוכחי: ${profile.current_weight_kg} ק"ג | יעד: ${profile.goal_weight_kg} ק"ג${heightLine}
 - החלון הקשה ביום: ${WEAKEST_LABELS[profile.weakest_time_of_day]}
 - המכשול העיקרי: ${obstacleText}
-- שעת השכמה: ${profile.wake_up_time} | שעת שינה: ${profile.sleep_time}${
-    profile.dinner_time?.trim()
-      ? `\n- ארוחת ערב טיפוסית: ${profile.dinner_time.trim().slice(0, 5)} — מגע לפני (~25 דק) ואחרי (~35 דק) כשמתוזמן`
-      : ''
-  }
+- שעת השכמה: ${profile.wake_up_time} | שעת שינה: ${profile.sleep_time}${mealsLine}
 - ערוץ מועדף: ${profile.preferred_channel === 'in_app' ? 'באפליקציה' : profile.preferred_channel}
 
 ### זמני מגע יומיים (שעון ישראל)
