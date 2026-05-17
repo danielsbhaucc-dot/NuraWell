@@ -75,6 +75,55 @@ html {
     color: white;
   }
 
+  /* ---- ONBOARDING / REGISTER ---- */
+  .onboarding-shell-dark {
+    @apply min-h-[100dvh];
+    background: linear-gradient(165deg, #022c22 0%, #0f172a 42%, #064e3b 100%);
+  }
+
+  .onboarding-shell-light {
+    @apply min-h-[100dvh] bg-mesh;
+  }
+
+  .onboarding-bubble-dark {
+    background: rgba(6, 78, 59, 0.55);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    @apply rounded-2xl rounded-tr-md px-4 py-3 text-[15px] leading-relaxed;
+    color: #ecfdf5;
+  }
+
+  .onboarding-bubble-light {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(4, 120, 87, 0.12);
+    box-shadow: 0 8px 28px rgba(4, 120, 87, 0.1);
+    @apply rounded-2xl rounded-tr-md px-4 py-3 text-[15px] leading-relaxed;
+    color: #1a2e23;
+  }
+
+  .onboarding-input-dark {
+    @apply w-full px-5 py-4 rounded-2xl font-medium text-base transition-all duration-200;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1.5px solid rgba(16, 185, 129, 0.25);
+    color: #1a2e23;
+    @apply placeholder:text-slate-400 focus:outline-none;
+  }
+
+  .onboarding-input-dark:focus {
+    border-color: rgba(52, 211, 153, 0.65);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  }
+
+  .onboarding-panel-dark {
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    @apply rounded-3xl p-4 sm:p-5;
+  }
+
   .card-premium {
     background: #ffffff;
     border: 1px solid rgba(0, 0, 0, 0.06);
