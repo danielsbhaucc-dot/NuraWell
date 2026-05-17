@@ -3,6 +3,8 @@
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { generateMentorSystemPrompt, calculateDailyCheckInTimes } from '@/lib/ai/generate-mentor-system-prompt';
+import { ingestOnboardingIntoVectorMemory } from '@/lib/ai/ingest-onboarding-vector-memory';
+import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context';
 import {
   GENDERS,
   MAIN_GOALS,
@@ -144,6 +146,27 @@ export async function completeOnboarding(
   if (profileError) {
     return { ok: false, error: 'החשבון נוצר אך שמירת הפרופיל נכשלה. פנו לתמיכה.' };
   }
+
+  const vectorProfile: OnboardingProfileForChat = {
+    full_name: data.full_name,
+    gender: data.gender,
+    main_goal: data.main_goal,
+    current_weight_kg: data.current_weight,
+    goal_weight_kg: data.target_weight,
+    weakest_time_of_day: data.weakest_time_of_day,
+    main_obstacle: data.main_obstacle,
+    main_obstacle_detail:
+      data.main_obstacle === 'other' ? data.main_obstacle_detail?.trim() || null : null,
+    wake_up_time: data.wake_up_time,
+    sleep_time: data.sleep_time,
+    preferred_channel: data.preferred_channel,
+    ai_check_in_times: checkInTimes,
+    onboarding_completed: true,
+  };
+
+  ingestOnboardingIntoVectorMemory(userId, vectorProfile).catch((err) => {
+    console.warn('[complete-onboarding] vector ingest failed', err);
+  });
 
   return { ok: true, redirectTo: '/courses' };
 }

@@ -27,6 +27,10 @@ import {
 } from '../../../../../lib/ai/upstash-vector-rest';
 import { ingestUserMessageIntoVectorMemory } from '../../../../../lib/ai/vector-memory-ingest';
 import { applyChatSignalsFromUserMessage } from '../../../../../lib/ai/chat-signals';
+import {
+  buildOnboardingChatContextBlock,
+  type OnboardingProfileForChat,
+} from '../../../../../lib/ai/onboarding-chat-context';
 import { readJsonBody } from '../../../../../lib/api/json-request';
 import {
   consumeMultiRateLimits,
@@ -273,26 +277,92 @@ async function fetchChatProfileRow(
   full_name: string | null;
   gender: 'male' | 'female' | null;
   mood_signal: string | undefined;
+  onboarding: OnboardingProfileForChat;
 }> {
+  const emptyOnboarding: OnboardingProfileForChat = {
+    full_name: null,
+    gender: null,
+    main_goal: null,
+    current_weight_kg: null,
+    goal_weight_kg: null,
+    weakest_time_of_day: null,
+    main_obstacle: null,
+    main_obstacle_detail: null,
+    wake_up_time: null,
+    sleep_time: null,
+    preferred_channel: null,
+    ai_check_in_times: null,
+    onboarding_completed: null,
+  };
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
       .from('profiles')
-      .select('full_name, gender, ai_context')
+      .select(
+        `full_name, gender, ai_context,
+        main_goal, current_weight_kg, goal_weight_kg,
+        weakest_time_of_day, main_obstacle, main_obstacle_detail,
+        wake_up_time, sleep_time, preferred_channel,
+        ai_check_in_times, onboarding_completed`
+      )
       .eq('id', userId)
       .maybeSingle();
     const profile = (data ?? null) as {
       full_name?: string | null;
       gender?: 'male' | 'female' | null;
       ai_context?: { current_mood_signal?: string } | null;
+      main_goal?: OnboardingProfileForChat['main_goal'];
+      current_weight_kg?: number | null;
+      goal_weight_kg?: number | null;
+      weakest_time_of_day?: OnboardingProfileForChat['weakest_time_of_day'];
+      main_obstacle?: OnboardingProfileForChat['main_obstacle'];
+      main_obstacle_detail?: string | null;
+      wake_up_time?: string | null;
+      sleep_time?: string | null;
+      preferred_channel?: string | null;
+      ai_check_in_times?: unknown;
+      onboarding_completed?: boolean | null;
     } | null;
+
+    const wakeRaw = profile?.wake_up_time;
+    const sleepRaw = profile?.sleep_time;
+    const wake =
+      typeof wakeRaw === 'string'
+        ? wakeRaw.slice(0, 5)
+        : wakeRaw != null
+          ? String(wakeRaw).slice(0, 8)
+          : null;
+    const sleep =
+      typeof sleepRaw === 'string'
+        ? sleepRaw.slice(0, 5)
+        : sleepRaw != null
+          ? String(sleepRaw).slice(0, 8)
+          : null;
+
     return {
       full_name: profile?.full_name ?? null,
       gender: profile?.gender ?? null,
       mood_signal: profile?.ai_context?.current_mood_signal,
+      onboarding: {
+        full_name: profile?.full_name ?? null,
+        gender: profile?.gender ?? null,
+        main_goal: profile?.main_goal ?? null,
+        current_weight_kg: profile?.current_weight_kg ?? null,
+        goal_weight_kg: profile?.goal_weight_kg ?? null,
+        weakest_time_of_day: profile?.weakest_time_of_day ?? null,
+        main_obstacle: profile?.main_obstacle ?? null,
+        main_obstacle_detail: profile?.main_obstacle_detail ?? null,
+        wake_up_time: wake,
+        sleep_time: sleep,
+        preferred_channel: profile?.preferred_channel ?? null,
+        ai_check_in_times: Array.isArray(profile?.ai_check_in_times)
+          ? (profile!.ai_check_in_times as string[])
+          : null,
+        onboarding_completed: profile?.onboarding_completed ?? null,
+      },
     };
   } catch {
-    return { full_name: null, gender: null, mood_signal: undefined };
+    return { full_name: null, gender: null, mood_signal: undefined, onboarding: emptyOnboarding };
   }
 }
 
@@ -496,6 +566,7 @@ export async function POST(request: Request) {
   const profileFullName = profileRow.full_name;
   const profileGender = profileRow.gender;
   const profileMoodSignal = profileRow.mood_signal;
+  const onboardingContextBlock = buildOnboardingChatContextBlock(profileRow.onboarding);
 
   const recentMessages = messages
     .map((m) => {
@@ -614,7 +685,8 @@ ${CHAT_PROACTIVE_AND_PRIORITY}
 
 ${CHAT_VECTOR_AND_MEMORY_RULES}
 
-סדר עדיפויות: (1) הנחיות מערכת (2) רמזי זיכרון רלוונטיים למטה אם קיימים (RAG משתמש) (3) חומר עזר מהמסע אם קיים (4) הודעות השיחה — מקור האמת ל"מה קורה עכשיו". אם יש סתירה בין רמז זיכרון לבין השיחה הנוכחית, עדיף השיחה.
+סדר עדיפויות: (1) הנחיות מערכת (2) פרופיל הרשמה (תמיד אם קיים) (3) רמזי זיכרון RAG (4) חומר מסע (5) השיחה — מקור האמת ל"עכשיו".
+${onboardingContextBlock ? `\n${onboardingContextBlock}\n` : ''}
 ${stationRules}${habitCheckpointRules}
 ${journeyStateBlock}
 ${systemKnowledgeBlock ? `${systemKnowledgeBlock}\n` : ''}
