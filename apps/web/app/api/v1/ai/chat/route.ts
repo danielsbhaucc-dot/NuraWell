@@ -290,6 +290,7 @@ async function fetchChatProfileRow(
     main_obstacle_detail: null,
     wake_up_time: null,
     sleep_time: null,
+    dinner_time: null,
     preferred_channel: null,
     ai_check_in_times: null,
     onboarding_completed: null,
@@ -302,7 +303,7 @@ async function fetchChatProfileRow(
         `full_name, gender, ai_context,
         main_goal, current_weight_kg, goal_weight_kg,
         weakest_time_of_day, main_obstacle, main_obstacle_detail,
-        wake_up_time, sleep_time, preferred_channel,
+        wake_up_time, sleep_time, dinner_time, preferred_channel,
         ai_check_in_times, onboarding_completed`
       )
       .eq('id', userId)
@@ -319,6 +320,7 @@ async function fetchChatProfileRow(
       main_obstacle_detail?: string | null;
       wake_up_time?: string | null;
       sleep_time?: string | null;
+      dinner_time?: string | null;
       preferred_channel?: string | null;
       ai_check_in_times?: unknown;
       onboarding_completed?: boolean | null;
@@ -326,6 +328,7 @@ async function fetchChatProfileRow(
 
     const wakeRaw = profile?.wake_up_time;
     const sleepRaw = profile?.sleep_time;
+    const dinnerRaw = profile?.dinner_time;
     const wake =
       typeof wakeRaw === 'string'
         ? wakeRaw.slice(0, 5)
@@ -337,6 +340,12 @@ async function fetchChatProfileRow(
         ? sleepRaw.slice(0, 5)
         : sleepRaw != null
           ? String(sleepRaw).slice(0, 8)
+          : null;
+    const dinner =
+      typeof dinnerRaw === 'string'
+        ? dinnerRaw.slice(0, 5)
+        : dinnerRaw != null
+          ? String(dinnerRaw).slice(0, 8)
           : null;
 
     return {
@@ -354,6 +363,7 @@ async function fetchChatProfileRow(
         main_obstacle_detail: profile?.main_obstacle_detail ?? null,
         wake_up_time: wake,
         sleep_time: sleep,
+        dinner_time: dinner,
         preferred_channel: profile?.preferred_channel ?? null,
         ai_check_in_times: Array.isArray(profile?.ai_check_in_times)
           ? (profile!.ai_check_in_times as string[])

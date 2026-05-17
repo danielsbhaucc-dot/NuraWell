@@ -1,15 +1,21 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
 import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
+import { normalizeCheckInTimes } from '../ai/onboarding-check-in-time';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
 import type { OnboardingCheckInPayload } from './onboarding-check-in-payload';
+import {
+  fetchPersonalizedCheckInJourneyContext,
+  formatJourneyBlockForPersonalizedCheckIn,
+} from './personalized-check-in-journey';
 
 const ALMOG_PERSONALIZED_APPEND = `
 
-משימה: follow-up קצר מאלמוג (3–4 משפטים, עד 55 מילים) לפי הקשר ההרשמה למעלה.
-- בלי "אל תשכח" / "מומלץ" / "חשוב לזכור" / "המסע שלך"
+משימה: follow-up קצר מאלמוג (3–4 משפטים, עד 55 מילים).
+- שילוב פרופיל הרשמה + (אם יש) רוטינות/משימות מהמסע — בזרימה אחת, לא רשימה יבשה
+- בלי "אל תשכח" / "מומלץ" / "המסע שלך"
 - שאלה אחת חמה בסוף כשמתאים
-- התייחס לחלון הקשה, שעות השכמה/שינה והמכשול מהפרופיל
+- התייחס לחלון הקשה, שעות, ארוחת ערב (אם מוגדרת), והמכשול
 - אל תזכיר דולב — אתה אלמוג`;
 
 export async function sendOnboardingCheckInNotification(
@@ -17,11 +23,24 @@ export async function sendOnboardingCheckInNotification(
   payload: OnboardingCheckInPayload,
   aiSystemPrompt: string
 ): Promise<{ body: string; inserted: Record<string, unknown> | null }> {
-  const { firstName, genderInstruction } = await fetchNotifyUserProfile(admin, payload.userId);
+  const [{ firstName, genderInstruction }, journeyCtx, profileTimes] = await Promise.all([
+    fetchNotifyUserProfile(admin, payload.userId),
+    fetchPersonalizedCheckInJourneyContext(admin, payload.userId, payload.checkInTime),
+    fetchProfileCheckInTimes(admin, payload.userId),
+  ]);
 
-  const systemPrompt = `${aiSystemPrompt.trim()}${ALMOG_PERSONALIZED_APPEND}
+  const totalToday = profileTimes.length > 0 ? profileTimes.length : 3;
+  const journeyBlock = journeyCtx
+    ? `\n\n### מסע (הרגלים ומשימות פתוחות)\n${formatJourneyBlockForPersonalizedCheckIn(journeyCtx)}`
+    : '';
 
-זמן מוגדר לבדיקה זו: ${payload.checkInTime} (ישראל). זו בדיקה ${payload.checkInIndex + 1} מתוך 3 היום.`;
+  const systemPrompt = `${aiSystemPrompt.trim()}${journeyBlock}${ALMOG_PERSONALIZED_APPEND}
+
+זמן מוגדר לבדיקה זו: ${payload.checkInTime} (ישראל). מגע ${payload.checkInIndex + 1} מתוך ${totalToday} היום.`;
+
+  const journeyHint = journeyCtx
+    ? ' שילב בעדינות משהו מהמסע אם רלוונטי לשעה הזו.'
+    : '';
 
   const body = await completeEmpathyNotifyBody({
     label: 'almog_personalized_check_in',
@@ -37,7 +56,7 @@ export async function sendOnboardingCheckInNotification(
 - שם: ${firstName}
 - ${genderInstruction}
 
-כתוב הודעת follow-up אישית מאלמוג לנוטיפיקציה — רק את גוף ההודעה.`,
+כתוב הודעת follow-up אישית מאלמוג לנוטיפיקציה — רק את גוף ההודעה.${journeyHint}`,
       },
     ],
   });
@@ -53,7 +72,7 @@ export async function sendOnboardingCheckInNotification(
       title,
       body,
       icon_emoji: '🌿',
-      action_url: '/courses',
+      action_url: journeyCtx ? '/journey' : '/courses',
       is_read: false,
       is_sent: false,
       send_at: new Date().toISOString(),
@@ -64,6 +83,8 @@ export async function sendOnboardingCheckInNotification(
         checkpoint_date: payload.checkpointDate,
         model: AI_MODELS.empathy,
         mentor: 'almog',
+        habit_ids: journeyCtx?.habits.map((h) => h.id) ?? [],
+        pending_task_ids: journeyCtx?.pendingTasks.map((t) => t.id) ?? [],
       },
     })
     .select('id, user_id, type, title, archived_at, is_read, is_sent, created_at')
@@ -71,4 +92,17 @@ export async function sendOnboardingCheckInNotification(
 
   if (error) throw new Error(error.message);
   return { body, inserted: inserted as Record<string, unknown> | null };
+}
+
+async function fetchProfileCheckInTimes(
+  admin: SupabaseClient,
+  userId: string
+): Promise<string[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (admin as any)
+    .from('profiles')
+    .select('ai_check_in_times')
+    .eq('id', userId)
+    .maybeSingle();
+  return normalizeCheckInTimes((data as { ai_check_in_times?: unknown } | null)?.ai_check_in_times);
 }

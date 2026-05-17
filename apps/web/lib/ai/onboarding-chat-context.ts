@@ -10,6 +10,7 @@ export type OnboardingProfileForChat = {
   main_obstacle_detail: string | null;
   wake_up_time: string | null;
   sleep_time: string | null;
+  dinner_time: string | null;
   preferred_channel: string | null;
   ai_check_in_times: string[] | null;
   onboarding_completed: boolean | null;
@@ -89,6 +90,8 @@ export function buildOnboardingChatContextBlock(profile: OnboardingProfileForCha
   if (weakest) lines.push(`- החלון הקשה ביום: ${weakest}`);
   if (obstacle) lines.push(`- מכשול מרכזי: ${obstacle}`);
   if (wake && sleep) lines.push(`- שכמה ${wake} | שינה ${sleep}`);
+  const dinner = formatTimeField(profile.dinner_time);
+  if (dinner) lines.push(`- ארוחת ערב טיפוסית: ${dinner}`);
   if (times.length) {
     lines.push(`- זמני מגע יומיים (ישראל): ${times.join(', ')}`);
     if (weakest && times[1]) {
@@ -159,6 +162,15 @@ export function buildOnboardingVectorFacts(profile: OnboardingProfileForChat): A
       key: 'sleep',
       category: 'schedule',
       text: `שעות יום: השכמה ${wake}, שינה ${sleep}.`,
+    });
+  }
+
+  const dinner = formatTimeField(profile.dinner_time);
+  if (dinner) {
+    facts.push({
+      key: 'dinner',
+      category: 'schedule',
+      text: `ארוחת ערב טיפוסית ${dinner} — מגע לפני ואחרי כשמתוזמן.`,
     });
   }
 

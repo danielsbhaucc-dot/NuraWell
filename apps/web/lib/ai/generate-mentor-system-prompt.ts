@@ -13,6 +13,7 @@ export type MentorPromptProfile = {
   main_obstacle_detail?: string | null;
   wake_up_time: string;
   sleep_time: string;
+  dinner_time?: string | null;
   preferred_channel: 'whatsapp' | 'in_app' | 'phone';
 };
 
@@ -72,14 +73,14 @@ function weakestWindowCenterMinutes(weakest: WeakestTimeOfDay, wakeMin: number, 
 }
 
 /**
- * Calculates exactly 3 daily check-in times.
- * One check-in is placed ~40 minutes before the user's weakest_time_of_day window.
+ * זמני מגע יומיים: 3 בסיס (לפני חלון קשה) + עד 2 נוספים אם יש שעת ארוחת ערב (לפני/אחרי).
  */
 export function calculateDailyCheckInTimes(
   wakeUpTime: string,
   sleepTime: string,
-  weakestTimeOfDay: WeakestTimeOfDay
-): [string, string, string] {
+  weakestTimeOfDay: WeakestTimeOfDay,
+  dinnerTime?: string | null
+): string[] {
   const wakeMin = parseTimeToMinutes(wakeUpTime);
   let sleepMin = parseTimeToMinutes(sleepTime);
   if (sleepMin <= wakeMin) sleepMin += 24 * 60;
@@ -102,19 +103,27 @@ export function calculateDailyCheckInTimes(
   check1 = Math.max(minFirst, check1);
   check3 = Math.min(maxLast, check3);
 
-  const sorted = [check1, check2, check3].sort((a, b) => a - b);
-  return [
-    formatMinutesToTime(sorted[0]),
-    formatMinutesToTime(sorted[1]),
-    formatMinutesToTime(sorted[2]),
-  ];
+  const minuteSet = new Set<number>([check1, check2, check3]);
+
+  const dinnerRaw = dinnerTime?.trim();
+  if (dinnerRaw && /^\d{1,2}:\d{2}/.test(dinnerRaw)) {
+    const dinnerMin = parseTimeToMinutes(dinnerRaw.slice(0, 5));
+    const beforeDinner = Math.max(minFirst, dinnerMin - 25);
+    const afterDinner = Math.min(maxLast, dinnerMin + 35);
+    minuteSet.add(beforeDinner);
+    minuteSet.add(afterDinner);
+  }
+
+  const sorted = [...minuteSet].sort((a, b) => a - b).slice(0, 5);
+  return sorted.map(formatMinutesToTime);
 }
 
 export function generateMentorSystemPrompt(profile: MentorPromptProfile): string {
   const times = calculateDailyCheckInTimes(
     profile.wake_up_time,
     profile.sleep_time,
-    profile.weakest_time_of_day
+    profile.weakest_time_of_day,
+    profile.dinner_time
   );
   const addr = GENDER_ADDRESS[profile.gender];
   const firstName = profile.full_name.trim().split(/\s+/)[0] || profile.full_name;
@@ -140,16 +149,18 @@ export function generateMentorSystemPrompt(profile: MentorPromptProfile): string
 - משקל נוכחי: ${profile.current_weight_kg} ק"ג | יעד: ${profile.goal_weight_kg} ק"ג${heightLine}
 - החלון הקשה ביום: ${WEAKEST_LABELS[profile.weakest_time_of_day]}
 - המכשול העיקרי: ${obstacleText}
-- שעת השכמה: ${profile.wake_up_time} | שעת שינה: ${profile.sleep_time}
+- שעת השכמה: ${profile.wake_up_time} | שעת שינה: ${profile.sleep_time}${
+    profile.dinner_time?.trim()
+      ? `\n- ארוחת ערב טיפוסית: ${profile.dinner_time.trim().slice(0, 5)} — מגע לפני (~25 דק) ואחרי (~35 דק) כשמתוזמן`
+      : ''
+  }
 - ערוץ מועדף: ${profile.preferred_channel === 'in_app' ? 'באפליקציה' : profile.preferred_channel}
 
-### זמני מגע יומיים (שעון ישראל) — 3 בדיקות בלבד
+### זמני מגע יומיים (שעון ישראל)
 שלח follow-up קצר (2–4 משפטים) רק בזמנים:
-1. ${times[0]}
-2. ${times[1]} ← **לפני החלון הקשה** — הכנה מנטלית ותזונה ל${WEAKEST_LABELS[profile.weakest_time_of_day]}
-3. ${times[2]}
+${times.map((t, i) => `${i + 1}. ${t}${i === 1 ? ` ← לפני החלון הקשה (${WEAKEST_LABELS[profile.weakest_time_of_day]})` : ''}`).join('\n')}
 
-מחוץ לחלונות — רק אם ${addr.you} פנה/ה אליך. אם ${WEAKEST_LABELS[profile.weakest_time_of_day]} — התמקד בבדיקה 2.
+מחוץ לחלונות — רק אם ${addr.you} פנה/ה אליך.
 
 ### המכשול והיישום
 ${obstacleText} — בכל מגע: טקטיקה מעשית אחת, לא הרצאה.

@@ -46,6 +46,7 @@ export function OnboardingFormClient() {
   const [obstacleDetail, setObstacleDetail] = useState('');
   const [wakeUp, setWakeUp] = useState('07:00');
   const [sleep, setSleep] = useState('23:00');
+  const [dinnerTime, setDinnerTime] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -105,6 +106,7 @@ export function OnboardingFormClient() {
     if (obstacle === 'other') fd.set('main_obstacle_detail', obstacleDetail);
     fd.set('wake_up_time', wakeUp);
     fd.set('sleep_time', sleep);
+    if (dinnerTime.trim()) fd.set('dinner_time', dinnerTime);
     fd.set('preferred_channel', 'in_app');
     fd.set('email', email.trim());
     fd.set('password', password);
@@ -344,8 +346,8 @@ export function OnboardingFormClient() {
                 <>
                   <MentorBubble mentorId="dolev">
                     <p>
-                      {gender ? `${name}, ` : ''}מתי {you} קם/ה ומתי הולכ/ת לישון? כך אזמן את שלושת המגעים היומיים
-                      שלי — אחד מהם ממש לפני הרגע הקשה שבחרת.
+                      {gender ? `${name}, ` : ''}מתי {you} קם/ה, אוכל/ת ערב ומתי הולכ/ת לישון? אלמוג יידע מתי לגעת
+                      בך — כולל לפני ואחרי ארוחת ערב אם תמלא/י למטה.
                     </p>
                   </MentorBubble>
                   <div className="grid grid-cols-2 gap-4 mt-6">
@@ -368,6 +370,21 @@ export function OnboardingFormClient() {
                       />
                     </label>
                   </div>
+                  <label className="block mt-4">
+                    <span className="text-xs font-bold text-emerald-100/85">
+                      שעת ארוחת ערב (אופציונלי — מומלץ)
+                    </span>
+                    <input
+                      type="time"
+                      value={dinnerTime}
+                      onChange={(e) => setDinnerTime(e.target.value)}
+                      className="onboarding-input-dark w-full mt-1"
+                      aria-describedby="dinner-hint"
+                    />
+                    <span id="dinner-hint" className="text-xs text-white/50 mt-1 block">
+                      אלמוג ישלח מגע לפני ואחרי הארוחה בערב
+                    </span>
+                  </label>
                 </>
               )}
 
