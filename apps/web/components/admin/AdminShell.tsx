@@ -61,7 +61,7 @@ export function AdminShell({
   const [sidebarCollapseReady, setSidebarCollapseReady] = useState(false);
 
   const isHome = np === '/ops';
-  const isAlmogSettings = np === '/ops/almog';
+  const isAlmogSettings = np === '/ops/almog' || np === '/ops/mentors';
   const isSiteSettings = np === '/ops/site-settings';
   const isSystemRagIngest = np === '/ops/system-rag-ingest';
   const isAlmogNavSection = isAlmogSettings || isSystemRagIngest;
@@ -271,7 +271,7 @@ export function AdminShell({
                   <ul className="mr-2 mt-1 space-y-1 border-r border-violet-400/35 pr-3 pb-2">
                     <li>
                       <Link
-                        href="/almog"
+                        href="/mentors"
                         onClick={() => setSidebarOpen(false)}
                         className={cn(
                           'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-violet-400/20 sm:text-[15px]',
@@ -281,7 +281,7 @@ export function AdminShell({
                         )}
                       >
                         <UserCircle size={17} className="shrink-0 opacity-90" />
-                        הגדרות אלמוג
+                        הגדרות מנטורים
                       </Link>
                     </li>
                     <li>

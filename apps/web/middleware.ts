@@ -14,6 +14,7 @@ const PUBLIC_ROUTES = [
   '/',
   '/login',
   '/register',
+  '/register/form',
   '/about',
   '/contact',
   '/sitemap.xml',
