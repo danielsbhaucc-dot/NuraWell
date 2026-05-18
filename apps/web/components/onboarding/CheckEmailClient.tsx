@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Mail, Loader2 } from 'lucide-react';
@@ -67,7 +67,9 @@ export function CheckEmailClient({
     };
   }, [goVerified]);
 
-  const verifyCode = async () => {
+  const autoSubmittedRef = useRef('');
+
+  const verifyCode = useCallback(async () => {
     if (code.length !== VERIFICATION_CODE_LENGTH || !email) return;
     setVerifying(true);
     setMessage(null);
@@ -85,7 +87,18 @@ export function CheckEmailClient({
     }
     setSuccess('מעולה! האימייל אומת.');
     goVerified();
-  };
+  }, [code, email, goVerified]);
+
+  useEffect(() => {
+    if (code.length < VERIFICATION_CODE_LENGTH) {
+      autoSubmittedRef.current = '';
+      return;
+    }
+    if (code.length !== VERIFICATION_CODE_LENGTH || !email || verifying) return;
+    if (autoSubmittedRef.current === code) return;
+    autoSubmittedRef.current = code;
+    void verifyCode();
+  }, [code, email, verifying, verifyCode]);
 
   const resendEmail = async () => {
     if (!email) return;
