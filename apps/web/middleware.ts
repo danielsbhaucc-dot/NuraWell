@@ -175,6 +175,20 @@ export async function middleware(request: NextRequest) {
 
   const isPageRequest = !pathname.startsWith('/api/');
 
+  /** קישור אימות שנחת בדף הרשמה במקום /auth/callback */
+  const authCode = request.nextUrl.searchParams.get('code');
+  if (
+    authCode &&
+    (pathname === '/register' ||
+      pathname === '/register/form' ||
+      pathname === '/register/check-email')
+  ) {
+    const cb = new URL('/auth/callback', request.url);
+    cb.searchParams.set('code', authCode);
+    cb.searchParams.set('next', '/register/verified');
+    return NextResponse.redirect(cb);
+  }
+
   if (!user && !isPublicRoute) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
@@ -205,7 +219,14 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && pathname === '/register') {
-    return NextResponse.redirect(new URL('/courses', request.url));
+    if (user.email_confirmed_at) {
+      return NextResponse.redirect(new URL('/register/verified', request.url));
+    }
+    return NextResponse.redirect(new URL('/register/form', request.url));
+  }
+
+  if (user && user.email_confirmed_at && pathname === '/register/check-email') {
+    return NextResponse.redirect(new URL('/register/verified', request.url));
   }
 
   if (user && isPageRequest) {

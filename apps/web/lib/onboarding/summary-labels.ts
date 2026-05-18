@@ -1,5 +1,6 @@
 import type { MainGoal, MainObstacle, OnboardingGender, WeakestTimeOfDay } from './types';
 import type { MealScheduleEntry } from './meal-schedule';
+import { formatWeightRangeKg } from './format-weight-range';
 
 const GOAL: Record<MainGoal, string> = {
   weight_loss: 'ירידה במשקל',
@@ -57,8 +58,13 @@ export function formatOnboardingSummary(data: OnboardingSummaryData): { label: s
     { label: 'שם', value: data.fullName.trim() || '—' },
     { label: 'מין', value: data.gender ? GENDER[data.gender] : '—' },
     { label: 'מטרה', value: data.mainGoal ? GOAL[data.mainGoal] : '—' },
-    { label: 'משקל נוכחי', value: data.currentWeight ? `${data.currentWeight} ק״ג` : '—' },
-    { label: 'משקל יעד', value: data.targetWeight ? `${data.targetWeight} ק״ג` : '—' },
+    {
+      label: 'משקל (נוכחי → יעד)',
+      value: formatWeightRangeKg(
+        data.currentWeight ? Number(data.currentWeight) : null,
+        data.targetWeight ? Number(data.targetWeight) : null
+      ),
+    },
   ];
   if (data.height.trim()) rows.push({ label: 'גובה', value: `${data.height} ס״מ` });
   rows.push(

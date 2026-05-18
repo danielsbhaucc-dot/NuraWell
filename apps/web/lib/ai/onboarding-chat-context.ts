@@ -79,7 +79,7 @@ export function buildOnboardingChatContextBlock(profile: OnboardingProfileForCha
 
   const weightLine =
     profile.current_weight_kg != null && profile.goal_weight_kg != null
-      ? `משקל ${profile.current_weight_kg}→${profile.goal_weight_kg} ק"ג`
+      ? `משקל ${profile.current_weight_kg} → ${profile.goal_weight_kg} ק"ג`
       : null;
 
   const lines: string[] = [

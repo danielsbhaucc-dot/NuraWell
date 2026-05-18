@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
+import { PostVerifyEffects } from '@/components/onboarding/PostVerifyEffects';
 
 export const metadata = {
   title: 'האימייל אומת | NuraWell',
@@ -11,6 +12,7 @@ export default function RegisterVerifiedPage() {
       id="main-content"
       className="onboarding-shell-dark min-h-[100dvh] flex flex-col items-center justify-center px-4 py-12"
     >
+      <PostVerifyEffects />
       <section className="onboarding-page-inner max-w-md w-full text-center">
         <section
           className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-emerald-500/25 flex items-center justify-center ring-2 ring-emerald-400/40"

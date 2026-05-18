@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, Search, UserCircle, Save } from 'lucide-react';
+import { Loader2, Search, UserCircle, Save, Trash2 } from 'lucide-react';
 import { AdminUserJourneyDetail } from '@/components/admin/AdminUserJourneyDetail';
 import type { AdminUserJourneyReport } from '@/lib/admin/build-user-journey-report';
 
@@ -30,6 +30,7 @@ export function AdminUsersClient() {
   const [detail, setDetail] = useState<UserDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -104,6 +105,31 @@ export function AdminUsersClient() {
     if (selectedId) void loadDetail(selectedId);
     else setDetail(null);
   }, [selectedId, loadDetail]);
+
+  const deleteUser = async () => {
+    if (!selectedId || !detail) return;
+    const label = form.full_name || detail.auth.email || selectedId;
+    const ok = window.confirm(
+      `למחוק לצמיתות את ${label}?\n\nיפעל מחיקה מלאה של החשבון, הפרופיל, המסע, ההתראות וכל הנתונים השמורים. לא ניתן לשחזר.`
+    );
+    if (!ok) return;
+
+    setDeleting(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/v1/admin/users/${selectedId}`, { method: 'DELETE' });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? 'מחיקה נכשלה');
+      setMessage('המשתמש נמחק לצמיתות');
+      setSelectedId(null);
+      setDetail(null);
+      void loadList(q);
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'שגיאת מחיקה');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const save = async () => {
     if (!selectedId) return;
@@ -266,15 +292,26 @@ export function AdminUsersClient() {
                 />
               </label>
 
-              <button
-                type="button"
-                onClick={() => void save()}
-                disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 text-white font-bold px-4 py-2.5 hover:bg-emerald-700 disabled:opacity-60"
-              >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                שמירה ועדכון אלמוג
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => void save()}
+                  disabled={saving || deleting}
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 text-white font-bold px-4 py-2.5 hover:bg-emerald-700 disabled:opacity-60"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  שמירה ועדכון אלמוג
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void deleteUser()}
+                  disabled={saving || deleting}
+                  className="inline-flex items-center gap-2 rounded-xl border-2 border-red-300 bg-red-50 text-red-800 font-bold px-4 py-2.5 hover:bg-red-100 disabled:opacity-60"
+                >
+                  {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  מחיקה מלאה
+                </button>
+              </div>
 
               <AdminUserJourneyDetail steps={detail.journeyReport.steps} />
             </div>

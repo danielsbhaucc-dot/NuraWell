@@ -22,10 +22,19 @@ export function CheckEmailClient({ email, hasAuthError }: CheckEmailClientProps)
   );
   const [success, setSuccess] = useState<string | null>(null);
 
+  const triggerWelcomeEmail = useCallback(async () => {
+    try {
+      await fetch('/api/v1/auth/post-verify', { method: 'POST' });
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const goVerified = useCallback(() => {
+    void triggerWelcomeEmail();
     router.push('/register/verified');
     router.refresh();
-  }, [router]);
+  }, [router, triggerWelcomeEmail]);
 
   useEffect(() => {
     const supabase = createClient();

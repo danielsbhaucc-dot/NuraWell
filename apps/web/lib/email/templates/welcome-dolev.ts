@@ -1,4 +1,5 @@
 import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context';
+import { formatWeightRangeKg } from '@/lib/onboarding/format-weight-range';
 
 const GOAL_HE: Record<string, string> = {
   weight_loss: 'ירידה במשקל',
@@ -21,8 +22,11 @@ const OBSTACLE_HE: Record<string, string> = {
   other: 'אחר',
 };
 
-function row(label: string, value: string): string {
-  return `<tr><td style="padding:8px 12px;color:#6b7280;font-size:14px;white-space:nowrap">${label}</td><td style="padding:8px 12px;color:#064e3b;font-size:14px;font-weight:600">${value}</td></tr>`;
+function row(label: string, value: string, ltr = false): string {
+  const valCell = ltr
+    ? `<td dir="ltr" style="padding:8px 12px;color:#064e3b;font-size:14px;font-weight:600;text-align:left">${value}</td>`
+    : `<td style="padding:8px 12px;color:#064e3b;font-size:14px;font-weight:600">${value}</td>`;
+  return `<tr><td style="padding:8px 12px;color:#6b7280;font-size:14px;white-space:nowrap">${label}</td>${valCell}</tr>`;
 }
 
 const NO_REPLY_BANNER_HTML = `
@@ -58,8 +62,11 @@ export function buildWelcomeDolevEmailHtml(
 
   const table = [
     row('מטרה', profile.main_goal ? (GOAL_HE[profile.main_goal] ?? profile.main_goal) : '—'),
-    row('משקל נוכחי', profile.current_weight_kg ? `${profile.current_weight_kg} ק״ג` : '—'),
-    row('משקל יעד', profile.goal_weight_kg ? `${profile.goal_weight_kg} ק״ג` : '—'),
+    row(
+      'משקל (נוכחי → יעד)',
+      formatWeightRangeKg(profile.current_weight_kg, profile.goal_weight_kg),
+      true
+    ),
     row(
       'חלון קשה',
       profile.weakest_time_of_day ? (WEAKEST_HE[profile.weakest_time_of_day] ?? profile.weakest_time_of_day) : '—'
@@ -89,7 +96,8 @@ export function buildWelcomeDolevEmailHtml(
             ${firstName}, שמחתי לאשר את האימייל שלך! קיבלתי את כל מה שמילאת בהרשמה — ושמרתי לך סיכום קצר כאן למטה.
             מכאן אלמוג ילווה אותך במסע, ואני כאן אם תרצה/י לחזור לשאלות על ההרשמה.
           </p>
-          <p style="margin:0 0 12px;color:#047857;font-size:14px;font-weight:700">מה ששמרתי עליך:</p>
+          <p style="margin:0 0 8px;color:#047857;font-size:15px;font-weight:800">דו״ח סיכום ההרשמה — מדולב</p>
+          <p style="margin:0 0 12px;color:#64748b;font-size:13px">מה ששמרתי עליך:</p>
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border-radius:12px;border:1px solid #bbf7d0">${table}</table>
           <p style="margin:20px 0 0;color:#64748b;font-size:14px;line-height:1.55">
             בהצלחה רבה במסע — בקצב שלך, בלי שיפוט ובלי לחץ.

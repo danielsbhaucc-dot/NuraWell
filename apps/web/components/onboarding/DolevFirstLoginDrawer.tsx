@@ -83,7 +83,12 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
                   className="flex items-center justify-between gap-3 rounded-lg bg-white/5 px-3 py-2"
                 >
                   <span className="text-[11px] font-bold text-emerald-200/60">{row.label}</span>
-                  <span className="text-sm font-semibold text-emerald-50 text-left">{row.value}</span>
+                  <span
+                    className="text-sm font-semibold text-emerald-50 text-left"
+                    dir={row.label.includes('משקל') ? 'ltr' : undefined}
+                  >
+                    {row.value}
+                  </span>
                 </li>
               ))}
             </ul>

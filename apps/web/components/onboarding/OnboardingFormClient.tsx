@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ChevronLeft, Loader2, Mail, Lock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronLeft, Loader2, Mail, Lock } from 'lucide-react';
 import { completeOnboarding } from '@/lib/actions/complete-onboarding';
 import { useToast, ToastContainer } from '@/components/shared/Toast';
 import { MentorBubble } from './MentorBubble';
@@ -164,6 +164,9 @@ export function OnboardingFormClient() {
     fd.set('preferred_channel', 'in_app');
     fd.set('email', email.trim());
     fd.set('password', password);
+    if (typeof window !== 'undefined') {
+      fd.set('app_origin', window.location.origin);
+    }
 
     startTransition(async () => {
       const result = await completeOnboarding(null, fd);
@@ -291,7 +294,7 @@ export function OnboardingFormClient() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-end">
                     <label>
                       <span className="text-xs font-bold text-emerald-100/85">משקל נוכחי (ק״ג)</span>
                       <input
@@ -305,6 +308,13 @@ export function OnboardingFormClient() {
                         dir="ltr"
                       />
                     </label>
+                    <span
+                      className="flex h-[46px] items-center justify-center text-emerald-300/90 pb-0.5"
+                      aria-hidden
+                      title="ממשקל נוכחי ליעד"
+                    >
+                      <ArrowLeft className="w-5 h-5" strokeWidth={2.5} />
+                    </span>
                     <label>
                       <span className="text-xs font-bold text-emerald-100/85">משקל יעד (ק״ג)</span>
                       <input

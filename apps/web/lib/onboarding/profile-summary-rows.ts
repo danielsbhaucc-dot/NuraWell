@@ -1,4 +1,5 @@
 import type { OnboardingGender, MainGoal, MainObstacle, WeakestTimeOfDay } from './types';
+import { formatWeightRangeKg } from './format-weight-range';
 
 const GOAL: Record<MainGoal, string> = {
   weight_loss: 'ירידה במשקל',
@@ -51,11 +52,8 @@ export function buildProfileSummaryRows(profile: ProfileSummarySource): { label:
     { label: 'מין', value: profile.gender ? GENDER[profile.gender] : '—' },
     { label: 'מטרה', value: profile.main_goal ? GOAL[profile.main_goal] : '—' },
     {
-      label: 'משקל',
-      value:
-        profile.current_weight_kg && profile.goal_weight_kg ?
-          `${profile.current_weight_kg} → ${profile.goal_weight_kg} ק״ג`
-        : '—',
+      label: 'משקל (נוכחי → יעד)',
+      value: formatWeightRangeKg(profile.current_weight_kg, profile.goal_weight_kg),
     },
     {
       label: 'חלון קשה',

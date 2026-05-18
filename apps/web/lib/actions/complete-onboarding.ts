@@ -77,7 +77,11 @@ export async function completeOnboarding(
 
   const data = parsed.data;
   const supabase = await createClient();
-  const appOrigin = publicAppOriginSync();
+  const clientOrigin = formData.get('app_origin')?.toString().trim();
+  const appOrigin =
+    clientOrigin && /^https?:\/\//i.test(clientOrigin) ?
+      clientOrigin.replace(/\/$/, '')
+    : publicAppOriginSync();
   const emailRedirectTo = `${appOrigin}/auth/callback?next=/register/verified`;
 
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({

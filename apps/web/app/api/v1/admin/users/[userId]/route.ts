@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import { buildAdminUserJourneyReport } from '@/lib/admin/build-user-journey-report';
 import { applyAdminProfilePatch } from '@/lib/admin/update-user-onboarding';
+import { deleteUserCompletely } from '@/lib/admin/delete-user-completely';
 import { buildMealSchedule } from '@/lib/onboarding/meal-schedule';
 import { GENDERS, MAIN_GOALS, MAIN_OBSTACLES, WEAKEST_TIMES } from '@/lib/onboarding/types';
 
@@ -92,6 +93,29 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const admin = createAdminClient();
   const result = await applyAdminProfilePatch(admin, userId, patch);
+
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
+export async function DELETE(request: Request, context: RouteContext) {
+  const auth = await requireOpsApiAdmin(request);
+  if (!auth.ok) return auth.response;
+
+  const { userId } = await context.params;
+  if (!userId) {
+    return NextResponse.json({ error: 'חסר מזהה משתמש' }, { status: 400 });
+  }
+
+  if (auth.user.id === userId) {
+    return NextResponse.json({ error: 'לא ניתן למחוק את המשתמש המחובר' }, { status: 400 });
+  }
+
+  const admin = createAdminClient();
+  const result = await deleteUserCompletely(admin, userId);
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 500 });
