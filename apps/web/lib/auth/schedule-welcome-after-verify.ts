@@ -4,7 +4,7 @@ import { workflowPublicBaseUrl } from '@/lib/workflows/resolve-workflow-public-u
 const WELCOME_DELAY = process.env.WELCOME_EMAIL_DELAY?.trim() || '3m';
 
 /**
- * מתזמן workflow ברכה מאלמוג ~3 דקות אחרי אימות אימייל (פעם אחת למשתמש).
+ * מתזמן workflow גיבוי למייל ברכה מדולב ~3 דקות אחרי אימות (אם השליחה המיידית נכשלה).
  */
 export async function scheduleWelcomeAfterVerify(userId: string): Promise<void> {
   const token = process.env.QSTASH_TOKEN?.trim();

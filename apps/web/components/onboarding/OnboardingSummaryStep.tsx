@@ -35,7 +35,7 @@ export function OnboardingSummaryStep({ data, name, onEdit }: OnboardingSummaryS
       </ul>
 
       <p className="text-xs text-emerald-100/60 mt-4 text-center">
-        בלחיצה על «סיום» נשלח אימייל לאימות — ואחרי האישור אלמוג יברך אותך עם הסיכום.
+        בלחיצה על «סיום» נשלח אימייל לאימות — ואחרי האישור דולב ישלח סיכום במייל.
       </p>
 
       <nav className="flex flex-wrap gap-2 justify-center mt-4" aria-label="עריכת שלבים">

@@ -1,10 +1,6 @@
 import { serve } from '@upstash/workflow/nextjs';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { sendResendEmail } from '@/lib/email/resend';
-import {
-  buildWelcomeAlmogEmailHtml,
-  buildWelcomeAlmogEmailText,
-} from '@/lib/email/templates/welcome-almog';
+import { sendWelcomeDolevEmail } from '@/lib/auth/send-welcome-dolev-email';
 import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context';
 
 export const runtime = 'nodejs';
@@ -44,7 +40,7 @@ export const { POST } = serve<Body>(async (context) => {
     if (!email) {
       return { ok: false as const, reason: 'no_email' };
     }
-    if (!authUser.user.email_confirmed_at) {
+    if (!authUser.user?.email_confirmed_at) {
       return { ok: false as const, reason: 'email_not_confirmed' };
     }
 
@@ -61,35 +57,7 @@ export const { POST } = serve<Body>(async (context) => {
   }
 
   await context.run('notify-and-email', async () => {
-    const admin = createAdminClient();
-    const firstName = gate.firstName;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any).from('notifications').insert({
-      user_id: userId,
-      type: 'ai_message',
-      title: `היי ${firstName} · מאלמוג`,
-      body: `שמחתי לאשר את האימייל שלך! קיבלתי את כל מה שמילאת — מכאן אני איתך בקצב שלך. נתראה באפליקציה 🌿`,
-      icon_emoji: '🌿',
-      action_url: '/courses',
-      is_read: false,
-      is_sent: false,
-    });
-
-    const html = buildWelcomeAlmogEmailHtml(firstName, gate.profile);
-    const text = buildWelcomeAlmogEmailText(firstName);
-    const emailResult = await sendResendEmail({
-      to: gate.email,
-      subject: `${firstName}, ברוך/ה הבא/ה ל-NuraWell — אלמוג כאן בשבילך`,
-      html,
-      text,
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any)
-      .from('profiles')
-      .update({ welcome_email_sent_at: new Date().toISOString() })
-      .eq('id', userId);
+    await sendWelcomeDolevEmail(userId);
   });
 
   return { ok: true as const };
