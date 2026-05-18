@@ -12,7 +12,7 @@ export type SendWelcomeDolevResult =
 
 /**
  * שולח מייל ברכה מדולב עם סיכום פרופיל (פעם אחת למשתמש).
- * דורש RESEND_API_KEY + RESEND_FROM (מומלץ: Dolev <dolev@nurawell.ai>)
+ * דורש RESEND_API_KEY; שולח מ-dolev (ברירת מחדל dolev@nurawell.ai, אופציונלי RESEND_FROM_DOLEV)
  */
 export async function sendWelcomeDolevEmail(userId: string): Promise<SendWelcomeDolevResult> {
   const admin = createAdminClient();
@@ -53,6 +53,7 @@ export async function sendWelcomeDolevEmail(userId: string): Promise<SendWelcome
     subject: `${firstName}, ברוך/ה הבא/ה ל-NuraWell — דולב כאן`,
     html,
     text,
+    sender: 'dolev',
   });
 
   if (!emailResult.ok) {
