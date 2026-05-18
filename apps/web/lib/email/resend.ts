@@ -1,6 +1,6 @@
 /**
  * שליחת מייל דרך Resend HTTP API (ללא חבילה נוספת).
- * דורש RESEND_API_KEY + RESEND_FROM (למשל onboarding@nurawell.ai)
+ * דורש RESEND_API_KEY + RESEND_FROM (למשל Dolev <dolev@nurawell.ai>)
  */
 
 export type SendResendEmailInput = {

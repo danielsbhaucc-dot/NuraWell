@@ -44,34 +44,39 @@
 
 אחרי שמירה, מיילי האימות יישלחו מ-`onboarding@nurawell.ai`.
 
-### אופציה ב׳ — רק מייל ברכה מאלמוג מהאפליקציה
+### אופציה ב׳ — רק מייל ברכה מדולב מהאפליקציה
 
 הוסף ב-Vercel (או `.env.local`):
 
 ```env
 RESEND_API_KEY=re_xxxxxxxx
-RESEND_FROM=NuraWell <onboarding@nurawell.ai>
+RESEND_FROM=Dolev <dolev@nurawell.ai>
 ```
 
-מייל האימות נשאר ב-Supabase (ברירת מחדל); אחרי אימות, האפליקציה שולחת מייל ברכה מאלמוג (עיכוב ~3 דקות).
+מייל האימות נשאר ב-Supabase (ברירת מחדל); אחרי אימות, האפליקציה שולחת מייל ברכה מדולב **מיידית** (גיבוי בתור אחרי ~3 דקות).
+
+### קוד OTP בתבנית אימות Supabase
+
+ב-**Confirm signup** הוסף את `{{ .Token }}` כדי שהמשתמש יוכל להזין קוד בן 6 ספרות בדף `/register/check-email`.
 
 ## 4. משתני סביבה באפליקציה
 
 | משתנה | שימוש |
 |--------|--------|
 | `NEXT_PUBLIC_APP_URL` | בסיס ל־`emailRedirectTo` בהרשמה |
-| `RESEND_API_KEY` | מייל ברכה מאלמוג |
-| `RESEND_FROM` | שולח, חייב דומיין מאומת |
+| `RESEND_API_KEY` | מייל ברכה מדולב |
+| `RESEND_FROM` | שולח (מומלץ `Dolev <dolev@nurawell.ai>`) |
 | `QSTASH_TOKEN` | תזמון ברכה 3 דקות אחרי אימות |
 
 ## 5. מיגרציה
 
 הרץ ב-Supabase SQL:
 
-`supabase/migrations/000018_profile_welcome_email.sql`
+`supabase/migrations/000018_profile_welcome_email.sql`  
+`supabase/migrations/000020_dolev_welcome_seen.sql`
 
 ## 6. בדיקה
 
 1. הרשמה בטופס → דף "בדוק/י את האימייל"
-2. לחיצה על קישור באימייל → `/auth/callback` → `/courses`
-3. אחרי ~3 דקות: מייל מאלמוג (אם Resend מוגדר) + התראה באפליקציה
+2. לחיצה על קישור באימייל → `/auth/callback` → `/register/verified`
+3. מיידית: מייל מדולב עם סיכום (אם Resend מוגדר) + התראה באפליקציה; גיבוי אחרי ~3 דקות

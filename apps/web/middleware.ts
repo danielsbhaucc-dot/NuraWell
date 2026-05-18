@@ -16,6 +16,7 @@ const PUBLIC_ROUTES = [
   '/register',
   '/register/form',
   '/register/check-email',
+  '/register/verified',
   '/auth/callback',
   '/about',
   '/contact',
@@ -24,7 +25,13 @@ const PUBLIC_ROUTES = [
   '/manifest.webmanifest',
 ];
 
-const EMAIL_VERIFY_EXEMPT = ['/register', '/register/form', '/register/check-email', '/auth/callback'];
+const EMAIL_VERIFY_EXEMPT = [
+  '/register',
+  '/register/form',
+  '/register/check-email',
+  '/register/verified',
+  '/auth/callback',
+];
 
 function copyCookies(from: NextResponse, to: NextResponse) {
   from.cookies.getAll().forEach((c) => {

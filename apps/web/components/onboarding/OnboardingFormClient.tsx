@@ -169,7 +169,7 @@ export function OnboardingFormClient() {
       const result = await completeOnboarding(null, fd);
       if (result.ok) {
         const sub = result.needsEmailVerification
-          ? 'שלחנו קישור לאימות — אחרי האישור אלמוג יברך אותך במייל ובאפליקציה.'
+          ? 'שלחנו קישור לאימות — אחרי האישור דולב ישלח סיכום במייל.'
           : 'מעבירים אותך לאפליקציה...';
         toast.success(`${gc.welcome}, ${firstName(fullName)}!`, sub);
         setTimeout(() => {

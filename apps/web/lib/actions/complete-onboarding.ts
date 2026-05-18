@@ -78,7 +78,7 @@ export async function completeOnboarding(
   const data = parsed.data;
   const supabase = await createClient();
   const appOrigin = publicAppOriginSync();
-  const emailRedirectTo = `${appOrigin}/auth/callback`;
+  const emailRedirectTo = `${appOrigin}/auth/callback?next=/register/verified`;
 
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
     email: data.email,
@@ -216,7 +216,9 @@ export async function completeOnboarding(
 
   return {
     ok: true,
-    redirectTo: needsEmailVerification ? '/register/check-email' : '/courses',
+    redirectTo: needsEmailVerification
+      ? `/register/check-email?email=${encodeURIComponent(data.email)}`
+      : '/courses',
     needsEmailVerification,
   };
 }
