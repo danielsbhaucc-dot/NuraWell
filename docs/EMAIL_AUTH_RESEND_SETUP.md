@@ -4,13 +4,31 @@
 
 1. [Supabase Dashboard](https://supabase.com/dashboard) → הפרויקט → **Authentication** → **Providers** → **Email**
 2. הפעל **Confirm email**
-3. **Authentication** → **URL Configuration**:
-   - **Site URL**: `https://nurawell.ai` (או כתובת הפרודקשן שלך)
-   - **Redirect URLs** — הוסף:
-     - `https://nurawell.ai/auth/callback`
-     - `http://localhost:3000/auth/callback` (פיתוח)
+3. **Authentication** → **URL Configuration** (ראו הסבר למטה אם האתר על Vercel):
 
 אחרי הרשמה המשתמש מופנה ל־`/register/check-email` עד ללחיצה על הקישור במייל.
+
+### מה זה Redirect URLs? (חשוב אם האתר על `*.vercel.app`)
+
+זה **לא** קשור ל-Resend ולא לדומיין `nurawell.ai`.
+
+כשמשתמש לוחץ על קישור האימות במייל, Supabase מחזיר אותו לכתובת האתר שלך, למשל:
+
+`https://nurawell.vercel.app/auth/callback?code=...`
+
+Supabase מאפשר redirect **רק** לכתובות שמופיעות ברשימת **Redirect URLs**.
+
+לכן:
+
+| שדה | מה לשים עכשיו (Vercel) | מה לשים אחרי חיבור דומיין |
+|-----|-------------------------|---------------------------|
+| **Site URL** | `https://nurawell.vercel.app` (או ה-URL המדויק שלך ב-Vercel) | `https://nurawell.ai` |
+| **Redirect URLs** | `https://nurawell.vercel.app/auth/callback` | `https://nurawell.ai/auth/callback` |
+| | `http://localhost:3000/auth/callback` (פיתוח) | + localhost |
+
+**Vercel — משתנה חובה:** `NEXT_PUBLIC_APP_URL` = אותה כתובת בדיוק (למשל `https://nurawell.vercel.app`), כדי שהקישור במייל האימות יצביע לאותו מקום.
+
+Resend מאומת על `nurawell.ai` — זה רק ל**שליחת** מיילים (`dolev@nurawell.ai`). זה בנפרד לגמרי מה-URL של האתר ב-Vercel.
 
 ## 2. תבנית אימייל אימות (Supabase)
 
@@ -50,10 +68,13 @@
 
 ```env
 RESEND_API_KEY=re_xxxxxxxx
-RESEND_FROM=Dolev <dolev@nurawell.ai>
+# שולח ראשון (כבר קיים אצלך) — נשאר RESEND_FROM
+RESEND_FROM=NuraWell <onboarding@nurawell.ai>
+# שולח שני — דולב (אופציונלי; בלי זה משתמשים ב-dolev@nurawell.ai מהקוד)
+RESEND_FROM_DOLEV=Dolev <dolev@nurawell.ai>
 ```
 
-מייל האימות נשאר ב-Supabase (ברירת מחדל); אחרי אימות, האפליקציה שולחת מייל ברכה מדולב **מיידית** (גיבוי בתור אחרי ~3 דקות).
+מייל האימות נשאר ב-Supabase; מייל הברכה נשלח מ-**dolev** (`sender: 'dolev'` בקוד). להוספת שולחים בעתיד: `lib/email/senders.ts`.
 
 ### קוד OTP בתבנית אימות Supabase
 
@@ -64,9 +85,10 @@ RESEND_FROM=Dolev <dolev@nurawell.ai>
 | משתנה | שימוש |
 |--------|--------|
 | `NEXT_PUBLIC_APP_URL` | בסיס ל־`emailRedirectTo` בהרשמה |
-| `RESEND_API_KEY` | מייל ברכה מדולב |
-| `RESEND_FROM` | שולח (מומלץ `Dolev <dolev@nurawell.ai>`) |
-| `QSTASH_TOKEN` | תזמון ברכה 3 דקות אחרי אימות |
+| `RESEND_API_KEY` | שליחת מיילים דרך Resend |
+| `RESEND_FROM` | שולח ברירת מחדל (`default`) — השאר כמו שהיה |
+| `RESEND_FROM_DOLEV` | אופציונלי — דורס את `dolev@nurawell.ai` מהקוד |
+| `QSTASH_TOKEN` | גיבוי תזמון מייל ברכה |
 
 ## 5. מיגרציה
 
