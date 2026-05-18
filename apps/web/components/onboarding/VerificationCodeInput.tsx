@@ -8,16 +8,16 @@ type VerificationCodeInputProps = {
   disabled?: boolean;
 };
 
-const LENGTH = 6;
+export const VERIFICATION_CODE_LENGTH = 8;
 
 export function VerificationCodeInput({ value, onChange, disabled }: VerificationCodeInputProps) {
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
-  const digits = value.padEnd(LENGTH, ' ').slice(0, LENGTH).split('');
+  const digits = value.padEnd(VERIFICATION_CODE_LENGTH, ' ').slice(0, VERIFICATION_CODE_LENGTH).split('');
 
   const setDigitAt = useCallback(
     (index: number, char: string) => {
       const next = digits.map((d, i) => (i === index ? char : d === ' ' ? '' : d));
-      onChange(next.join('').replace(/\s/g, '').slice(0, LENGTH));
+      onChange(next.join('').replace(/\s/g, '').slice(0, VERIFICATION_CODE_LENGTH));
     },
     [digits, onChange]
   );
@@ -30,16 +30,16 @@ export function VerificationCodeInput({ value, onChange, disabled }: Verificatio
     }
     if (cleaned.length === 1) {
       setDigitAt(index, cleaned);
-      if (index < LENGTH - 1) inputsRef.current[index + 1]?.focus();
+      if (index < VERIFICATION_CODE_LENGTH - 1) inputsRef.current[index + 1]?.focus();
       return;
     }
-    const pasted = cleaned.slice(0, LENGTH - index);
+    const pasted = cleaned.slice(0, VERIFICATION_CODE_LENGTH - index);
     const merged = [...digits.map((d) => (d === ' ' ? '' : d))];
     for (let i = 0; i < pasted.length; i++) {
       merged[index + i] = pasted[i]!;
     }
-    onChange(merged.join('').slice(0, LENGTH));
-    const focusIdx = Math.min(index + pasted.length, LENGTH - 1);
+    onChange(merged.join('').slice(0, VERIFICATION_CODE_LENGTH));
+    const focusIdx = Math.min(index + pasted.length, VERIFICATION_CODE_LENGTH - 1);
     inputsRef.current[focusIdx]?.focus();
   };
 
@@ -51,12 +51,23 @@ export function VerificationCodeInput({ value, onChange, disabled }: Verificatio
 
   return (
     <div
-      className="flex flex-row-reverse justify-center gap-2 sm:gap-2.5"
+      className="flex flex-row justify-center gap-1.5 sm:gap-2"
       dir="ltr"
       role="group"
-      aria-label="קוד אימות בן 6 ספרות"
+      aria-label={`קוד אימות בן ${VERIFICATION_CODE_LENGTH} ספרות`}
+      onPaste={(e) => {
+        e.preventDefault();
+        const text = e.clipboardData
+          .getData('text')
+          .replace(/\D/g, '')
+          .slice(0, VERIFICATION_CODE_LENGTH);
+        if (text) {
+          onChange(text);
+          inputsRef.current[Math.min(text.length, VERIFICATION_CODE_LENGTH) - 1]?.focus();
+        }
+      }}
     >
-      {Array.from({ length: LENGTH }).map((_, i) => (
+      {Array.from({ length: VERIFICATION_CODE_LENGTH }).map((_, i) => (
         <input
           key={i}
           ref={(el) => {
@@ -65,18 +76,18 @@ export function VerificationCodeInput({ value, onChange, disabled }: Verificatio
           type="text"
           inputMode="numeric"
           autoComplete={i === 0 ? 'one-time-code' : 'off'}
-          maxLength={6}
+          maxLength={1}
           disabled={disabled}
           value={digits[i]?.trim() ? digits[i]!.trim() : ''}
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
           className={[
-            'w-11 h-14 sm:w-12 sm:h-[3.25rem] rounded-xl text-center text-xl font-black',
+            'w-9 h-12 sm:w-10 sm:h-[2.85rem] rounded-xl text-center text-lg font-black',
             'onboarding-input-dark border-2 border-emerald-500/35',
             'focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30 outline-none transition-all',
             disabled ? 'opacity-50' : '',
           ].join(' ')}
-          aria-label={`ספרה ${i + 1} מתוך ${LENGTH}`}
+          aria-label={`ספרה ${i + 1} מתוך ${VERIFICATION_CODE_LENGTH}`}
         />
       ))}
     </div>

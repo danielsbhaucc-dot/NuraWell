@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Mail, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { VerificationCodeInput } from './VerificationCodeInput';
+import { VerificationCodeInput, VERIFICATION_CODE_LENGTH } from './VerificationCodeInput';
 import { checkEmailCopy } from '@/lib/onboarding/check-email-copy';
 import type { OnboardingGender } from '@/lib/onboarding/types';
 
@@ -68,7 +68,7 @@ export function CheckEmailClient({
   }, [goVerified]);
 
   const verifyCode = async () => {
-    if (code.length !== 6 || !email) return;
+    if (code.length !== VERIFICATION_CODE_LENGTH || !email) return;
     setVerifying(true);
     setMessage(null);
     setSuccess(null);
@@ -140,7 +140,7 @@ export function CheckEmailClient({
         <button
           type="button"
           onClick={() => void verifyCode()}
-          disabled={code.length !== 6 || verifying || !email}
+          disabled={code.length !== VERIFICATION_CODE_LENGTH || verifying || !email}
           className="mt-4 w-full rounded-xl bg-emerald-600 py-3 font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2"
         >
           {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
