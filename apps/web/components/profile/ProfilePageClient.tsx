@@ -78,6 +78,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
       ? [{ label: 'פאנל ניהול', href: `${opsUrl}/`, icon: Shield, emoji: '🛠️' }]
       : []),
     { label: 'התראות מאלמוג', href: '/settings/almog', icon: Bell, emoji: '🔔' },
+    { label: 'בית', href: '/home', icon: BookOpen, emoji: '🏠' },
     { label: 'ההתקדמות שלי', href: '/progress', icon: Award, emoji: '📊' },
     { label: 'הקורסים שלי', href: '/courses', icon: BookOpen, emoji: '📚' },
   ];

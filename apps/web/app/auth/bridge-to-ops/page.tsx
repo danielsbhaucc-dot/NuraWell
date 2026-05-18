@@ -43,7 +43,7 @@ function BridgeInner() {
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center" dir="rtl">
         <p className="text-red-700">{err}</p>
-        <a href="/courses" className="mt-4 inline-block text-teal-700 underline">
+        <a href="/home" className="mt-4 inline-block text-teal-700 underline">
           חזרה לקורסים
         </a>
       </div>

@@ -55,7 +55,7 @@ export function AdminShell({
 }: AdminShellProps) {
   const pathname = usePathname();
   const np = normalizeOpsPathname(pathname);
-  const coursesHref = mainAppBase ? `${mainAppBase}/courses` : '/courses';
+  const coursesHref = mainAppBase ? `${mainAppBase}/home` : '/home';
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarCollapseReady, setSidebarCollapseReady] = useState(false);

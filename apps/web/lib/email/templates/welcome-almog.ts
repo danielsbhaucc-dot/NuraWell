@@ -81,7 +81,7 @@ export function buildWelcomeAlmogEmailHtml(
             בקרוב תקבל/י ממני גם הודעות באפליקציה בזמנים שמתאימים לך — במיוחד לפני הרגעים הקשים.
           </p>
           <p style="margin:24px 0 0;text-align:center">
-            <a href="https://nurawell.ai/courses" style="display:inline-block;background:#059669;color:#fff;text-decoration:none;padding:14px 28px;border-radius:12px;font-weight:700;font-size:15px">כניסה לאפליקציה</a>
+            <a href="https://nurawell.ai/home" style="display:inline-block;background:#059669;color:#fff;text-decoration:none;padding:14px 28px;border-radius:12px;font-weight:700;font-size:15px">כניסה לאפליקציה</a>
           </p>
         </td></tr>
         <tr><td style="padding:16px 24px;background:#f8fafc;border-top:1px solid #e2e8f0">
@@ -99,7 +99,7 @@ export function buildWelcomeAlmogEmailText(firstName: string): string {
 
 איזה כיף שהצטרפת ל-NuraWell! אני אלמוג — קיבלתי את מה שמילאת בהרשמה ואלווה אותך בקצב שלך.
 
-כניסה לאפליקציה: https://nurawell.ai/courses
+כניסה לאפליקציה: https://nurawell.ai/home
 
 — אלמוג`;
 }

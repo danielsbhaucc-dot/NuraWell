@@ -222,7 +222,7 @@ export async function completeOnboarding(
     ok: true,
     redirectTo: needsEmailVerification
       ? `/register/check-email?email=${encodeURIComponent(data.email)}`
-      : '/courses',
+      : '/home',
     needsEmailVerification,
   };
 }

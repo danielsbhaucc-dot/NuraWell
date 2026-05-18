@@ -31,7 +31,7 @@ export default function RegisterVerifiedPage() {
           לא קיבלת — בדוק/י גם בתיקיית ספאם).
         </p>
         <Link
-          href="/courses"
+          href="/home"
           className="inline-flex items-center justify-center w-full max-w-xs mx-auto rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-500 px-6 py-3.5 text-white font-bold text-[15px] shadow-lg shadow-emerald-500/25 hover:brightness-110 transition-all"
         >
           המשך לאפליקציה

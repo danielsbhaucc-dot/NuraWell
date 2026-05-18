@@ -9,6 +9,7 @@ import {
   requestHostname,
 } from './lib/ops-host';
 import { resolvePublicAppOriginForOpsRedirect } from './lib/public-app-url';
+import { APP_HOME_PATH } from './lib/navigation/app-home-path';
 
 const PUBLIC_ROUTES = [
   '/',
@@ -115,7 +116,7 @@ export async function middleware(request: NextRequest) {
   const canUseOpsPathPrefix =
     (isLocal && process.env.NODE_ENV === 'development') || effectiveOpsHost;
   if (pathname.startsWith('/ops') && !canUseOpsPathPrefix) {
-    return NextResponse.redirect(new URL('/courses', request.url));
+    return NextResponse.redirect(new URL(APP_HOME_PATH, request.url));
   }
 
   const devOpsPath = Boolean(isLocal && process.env.NODE_ENV === 'development' && pathname.startsWith('/ops'));
@@ -144,7 +145,7 @@ export async function middleware(request: NextRequest) {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
 
     if (!profile || profile.role !== 'admin') {
-      return NextResponse.redirect(new URL('/courses', mainOrigin));
+      return NextResponse.redirect(new URL(APP_HOME_PATH, mainOrigin));
     }
   }
 
@@ -205,7 +206,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname === '/dashboard') {
-    return NextResponse.redirect(new URL('/courses', request.url));
+    return NextResponse.redirect(new URL(APP_HOME_PATH, request.url));
   }
 
   if (user && pathname === '/login') {
@@ -215,7 +216,7 @@ export async function middleware(request: NextRequest) {
       bridge.searchParams.set('next', rawRedirect);
       return NextResponse.redirect(bridge);
     }
-    return NextResponse.redirect(new URL('/courses', request.url));
+    return NextResponse.redirect(new URL(APP_HOME_PATH, request.url));
   }
 
   if (user && pathname === '/register') {

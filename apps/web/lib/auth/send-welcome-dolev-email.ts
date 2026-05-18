@@ -86,7 +86,7 @@ export async function sendWelcomeDolevEmail(userId: string): Promise<SendWelcome
     title: `היי ${firstName} · מדולב`,
     body: notifyBody,
     icon_emoji: '🌿',
-    action_url: '/courses',
+    action_url: '/home',
     is_read: false,
     is_sent: false,
     metadata: { mentor: 'dolev', source: 'dolev_welcome' },

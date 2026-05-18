@@ -54,7 +54,7 @@ export default function NotFoundPage() {
         {/* Action Buttons */}
         <div className="space-y-3">
           <Link
-            href="/courses"
+            href="/home"
             className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl font-bold text-lg text-white transition-all hover:scale-[1.02] active:scale-95"
             style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 6px 20px rgba(16,185,129,0.25)' }}
           >

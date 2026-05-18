@@ -8,6 +8,7 @@ import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 import { createClient } from '../../../lib/supabase/client';
 import { NuraWellLogo } from '../../../components/shared/NuraWellLogo';
 import { useToast, ToastContainer } from '../../../components/shared/Toast';
+import { APP_HOME_PATH } from '../../../lib/navigation/app-home-path';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,10 +19,10 @@ export const dynamic = 'force-dynamic';
  * דרך `isOpsLoginRedirectUrl`; הלקוח לא ינווט ישירות למקור אחר.
  */
 function sanitizeRedirectPath(raw: string | null | undefined): string {
-  if (!raw) return '/courses';
-  if (!raw.startsWith('/')) return '/courses';
-  if (raw.startsWith('//')) return '/courses';
-  if (raw.startsWith('/\\')) return '/courses';
+  if (!raw) return APP_HOME_PATH;
+  if (!raw.startsWith('/')) return APP_HOME_PATH;
+  if (raw.startsWith('//')) return APP_HOME_PATH;
+  if (raw.startsWith('/\\')) return APP_HOME_PATH;
   return raw;
 }
 
