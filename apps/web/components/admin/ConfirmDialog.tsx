@@ -115,8 +115,8 @@ export function ConfirmDialog({
           >
             {cancelLabel}
           </button>
-        </motion.div>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
