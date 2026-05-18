@@ -6,14 +6,24 @@ import { useRouter } from 'next/navigation';
 import { Mail, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { VerificationCodeInput } from './VerificationCodeInput';
+import { checkEmailCopy } from '@/lib/onboarding/check-email-copy';
+import type { OnboardingGender } from '@/lib/onboarding/types';
 
 type CheckEmailClientProps = {
   email: string;
   hasAuthError: boolean;
+  firstName: string;
+  gender: OnboardingGender | '';
 };
 
-export function CheckEmailClient({ email, hasAuthError }: CheckEmailClientProps) {
+export function CheckEmailClient({
+  email,
+  hasAuthError,
+  firstName,
+  gender,
+}: CheckEmailClientProps) {
   const router = useRouter();
+  const copy = checkEmailCopy(gender, firstName);
   const [code, setCode] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
@@ -109,20 +119,23 @@ export function CheckEmailClient({ email, hasAuthError }: CheckEmailClientProps)
         className="text-2xl font-black text-white mb-3"
         style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}
       >
-        בדוק/י את תיבת האימייל
+        {copy.title}
       </h1>
       <p className="text-emerald-50/85 text-[15px] leading-relaxed mb-1">
-        שלחנו קישור לאימות{email ? ` ל־${email}` : ''}. אחרי האישור תועבר/י לדף האימות — ודולב
-        ישלח ברכה עם סיכום מה שמילאת.
+        {copy.lead}
+        {email ? (
+          <>
+            <br />
+            <span className="text-emerald-200/90 text-sm" dir="ltr">
+              {email}
+            </span>
+          </>
+        ) : null}
       </p>
-      <p className="text-white/45 text-xs mb-6">
-        המסך יתעדכן אוטומטית ברגע שתאשר/י את המייל (גם אם נשארת כאן).
-      </p>
+      <p className="text-white/45 text-xs mb-6">{copy.autoHint}</p>
 
       <section className="onboarding-panel-dark rounded-2xl p-5 text-right mb-4">
-        <p className="text-sm font-bold text-emerald-100 mb-3 text-center">
-          או הזן/י את קוד האימות מהמייל
-        </p>
+        <p className="text-sm font-bold text-emerald-100 mb-3 text-center">{copy.codePrompt}</p>
         <VerificationCodeInput value={code} onChange={setCode} disabled={verifying} />
         <button
           type="button"
@@ -131,7 +144,7 @@ export function CheckEmailClient({ email, hasAuthError }: CheckEmailClientProps)
           className="mt-4 w-full rounded-xl bg-emerald-600 py-3 font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2"
         >
           {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-          אימות עם קוד
+          {copy.verifyButton}
         </button>
       </section>
 
@@ -144,11 +157,11 @@ export function CheckEmailClient({ email, hasAuthError }: CheckEmailClientProps)
         disabled={resending || !email}
         className="text-sm text-emerald-300/90 font-semibold hover:underline disabled:opacity-50"
       >
-        {resending ? 'שולחים...' : 'שלחו לי שוב את מייל האימות'}
+        {resending ? copy.resending : copy.resend}
       </button>
 
       <p className="text-white/50 text-sm mt-8">
-        כבר אימתת?{' '}
+        {copy.alreadyVerified}{' '}
         <Link href="/login" className="text-emerald-300 font-bold hover:underline">
           כניסה
         </Link>

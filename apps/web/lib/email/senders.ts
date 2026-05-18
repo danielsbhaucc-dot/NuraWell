@@ -21,7 +21,7 @@ export const EMAIL_SENDERS: Record<EmailSenderKey, SenderDef> = {
   },
   dolev: {
     envVar: 'RESEND_FROM_DOLEV',
-    fallback: 'Dolev <dolev@nurawell.ai>',
+    fallback: 'Dolev NuraWell.ai <dolev@nurawell.ai>',
   },
 };
 

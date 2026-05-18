@@ -15,7 +15,11 @@ import { Drawer } from 'vaul';
 import { Archive, ArchiveRestore, CheckCheck, ChevronDown, Loader2, Zap } from 'lucide-react';
 import { createClient } from '../../lib/supabase/client';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
+import { useMentorAvatarUrl } from '../../lib/client/useMentorAvatarUrl';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
+import { getMentorAvatarFallback } from '../../lib/mentors/avatar-url';
+import { MENTORS } from '../../lib/mentors/registry';
+import type { MentorId } from '../../lib/mentors/registry';
 import { formatHebrewRelativeTime } from '../../lib/time/hebrew-relative';
 import { cn } from '../../lib/cn';
 
@@ -31,6 +35,7 @@ export type NotificationItem = {
   archived_at: string | null;
   /** מקור — להבחנה בעיצוב (almog_habit_checkpoint וכו') */
   source: string | null;
+  mentorId: MentorId;
 };
 
 type ViewMode = 'inbox' | 'archive';
@@ -40,6 +45,17 @@ function extractSource(meta: unknown): string | null {
   if (!meta || typeof meta !== 'object') return null;
   const s = (meta as { source?: unknown }).source;
   return typeof s === 'string' && s.length > 0 ? s : null;
+}
+
+function extractMentor(meta: unknown, title: string): MentorId {
+  if (meta && typeof meta === 'object') {
+    const m = (meta as { mentor?: unknown }).mentor;
+    if (m === 'dolev' || m === 'almog') return m;
+    const src = (meta as { source?: unknown }).source;
+    if (src === 'dolev_welcome') return 'dolev';
+  }
+  if (title.includes('מדולב')) return 'dolev';
+  return 'almog';
 }
 
 function mapRealtimeRow(row: Record<string, unknown>): NotificationItem | null {
@@ -58,11 +74,13 @@ function mapRealtimeRow(row: Record<string, unknown>): NotificationItem | null {
     type: typeof row.type === 'string' ? row.type : 'system',
     archived_at: archived,
     source: extractSource(row.metadata),
+    mentorId: extractMentor(row.metadata, typeof row.title === 'string' ? row.title : ''),
   };
 }
 
 /** מיפוי שורה מ-API (כולל metadata) לטיפוס NotificationItem */
 function mapApiRow(row: Record<string, unknown>): NotificationItem {
+  const title = typeof row.title === 'string' ? row.title : '';
   return {
     id: String(row.id ?? ''),
     title: typeof row.title === 'string' ? row.title : '',
@@ -75,6 +93,7 @@ function mapApiRow(row: Record<string, unknown>): NotificationItem {
     archived_at:
       row.archived_at != null && typeof row.archived_at === 'string' ? row.archived_at : null,
     source: extractSource(row.metadata),
+    mentorId: extractMentor(row.metadata, title),
   };
 }
 
@@ -125,6 +144,8 @@ export function NotificationsProvider({
 }) {
   void _user;
   const { avatarUrl: almogAvatar } = useAlmogAvatarUrl();
+  const { avatarUrl: dolevAvatar } = useMentorAvatarUrl('dolev');
+  const dolevFallback = getMentorAvatarFallback(MENTORS.dolev);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -502,8 +523,12 @@ export function NotificationsProvider({
               )}
               {items.map((n) => {
                 const isAi = n.type === 'ai_message';
+                const isDolev = n.mentorId === 'dolev';
                 const isCheckpoint = n.source === 'almog_habit_checkpoint';
                 const relative = formatHebrewRelativeTime(n.created_at, nowMs);
+                const aiAvatar = isDolev ? dolevAvatar : almogAvatar;
+                const aiAvatarFallback = isDolev ? dolevFallback : ALMOG_AVATAR_FALLBACK;
+                const aiBadge = isDolev ? 'דולב' : 'אלמוג';
 
                 const ArchiveBtn =
                   viewMode === 'inbox' ? (
@@ -625,24 +650,26 @@ export function NotificationsProvider({
                                 style={{ boxShadow: '0 4px 16px rgba(4,120,87,0.22)' }}
                               >
                                 <img
-                                  src={almogAvatar}
+                                  src={aiAvatar}
                                   alt=""
                                   className="h-full w-full object-cover bg-teal-900/15"
                                   onError={(e) => {
                                     e.currentTarget.onerror = null;
-                                    e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                                    e.currentTarget.src = aiAvatarFallback;
                                   }}
                                 />
                               </div>
                               <span
                                 className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[9px] font-black text-white shadow-md"
                                 style={{
-                                  background: 'linear-gradient(135deg, #047857, #10b981)',
+                                  background: isDolev
+                                    ? 'linear-gradient(135deg, #0f766e, #14b8a6)'
+                                    : 'linear-gradient(135deg, #047857, #10b981)',
                                   boxShadow: '0 2px 8px rgba(4,120,87,0.35)',
                                   letterSpacing: '0.02em',
                                 }}
                               >
-                                אלמוג
+                                {aiBadge}
                               </span>
                             </div>
                           ) : (

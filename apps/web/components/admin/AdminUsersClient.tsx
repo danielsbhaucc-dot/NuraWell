@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Search, UserCircle, Save, Trash2 } from 'lucide-react';
 import { AdminUserJourneyDetail } from '@/components/admin/AdminUserJourneyDetail';
+import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import type { AdminUserJourneyReport } from '@/lib/admin/build-user-journey-report';
 
 type UserRow = {
@@ -31,6 +32,7 @@ export function AdminUsersClient() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -108,13 +110,9 @@ export function AdminUsersClient() {
 
   const deleteUser = async () => {
     if (!selectedId || !detail) return;
-    const label = form.full_name || detail.auth.email || selectedId;
-    const ok = window.confirm(
-      `למחוק לצמיתות את ${label}?\n\nיפעל מחיקה מלאה של החשבון, הפרופיל, המסע, ההתראות וכל הנתונים השמורים. לא ניתן לשחזר.`
-    );
-    if (!ok) return;
 
     setDeleting(true);
+    setDeleteDialogOpen(false);
     setMessage(null);
     try {
       const res = await fetch(`/api/v1/admin/users/${selectedId}`, { method: 'DELETE' });
@@ -165,8 +163,21 @@ export function AdminUsersClient() {
     }
   };
 
+  const deleteLabel = form.full_name || detail?.auth.email || selectedId || 'משתמש זה';
+
   return (
     <div className="space-y-4">
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title="מחיקת משתמש לצמיתות"
+        description={`למחוק לצמיתות את ${deleteLabel}?\n\nיפעל מחיקה מלאה של החשבון, הפרופיל, המסע, ההתראות וכל הנתונים השמורים. לא ניתן לשחזר.`}
+        confirmLabel="מחק לצמיתות"
+        cancelLabel="ביטול"
+        variant="danger"
+        loading={deleting}
+        onConfirm={() => void deleteUser()}
+        onCancel={() => !deleting && setDeleteDialogOpen(false)}
+      />
       <header>
         <h1 className="text-2xl font-black text-slate-900">משתמשים</h1>
         <p className="text-sm text-slate-600 mt-1">חיפוש, צפייה בפרופיל הרשמה ועריכה — מעדכן את אלמוג אוטומטית.</p>
@@ -304,7 +315,7 @@ export function AdminUsersClient() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => void deleteUser()}
+                  onClick={() => setDeleteDialogOpen(true)}
                   disabled={saving || deleting}
                   className="inline-flex items-center gap-2 rounded-xl border-2 border-red-300 bg-red-50 text-red-800 font-bold px-4 py-2.5 hover:bg-red-100 disabled:opacity-60"
                 >

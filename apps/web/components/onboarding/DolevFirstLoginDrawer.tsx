@@ -53,13 +53,18 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
     };
   }, [open]);
 
+  const needHelp =
+    profile.gender === 'male' ? 'תצטרך'
+    : profile.gender === 'female' ? 'תצטרכי'
+    : 'תצטרך/י';
+
   const introMessage = firstName
-    ? `${firstName}, ${gc.welcome} ל-NuraWell! היה לי נחמד להכיר אותך בהרשמה. שמרתי את מה שסיפרת — ואני באמת שמח/ה ש${gc.you} כאן. בהצלחה רבה במסע, בקצב שלך.`
-    : `${gc.welcome} ל-NuraWell! היה לי נחמד להכיר אותך. בהצלחה רבה במסע, בקצב שלך.`;
+    ? `${firstName}, ${gc.welcome} ל-NuraWell! היה לי נחמד להכיר אותך בהרשמה. שמרתי את מה שסיפרת — ואני באמת שמח ש${gc.you} כאן. בהצלחה רבה במסע, בקצב ${gc.your}.`
+    : `${gc.welcome} ל-NuraWell! היה לי נחמד להכיר אותך. אני שמח ש${gc.you} כאן — בהצלחה רבה במסע.`;
 
   const replyMessage = firstName
-    ? `${firstName}, תודה לך על המילים החמות. אני מרגיש/ה ש${gc.you} בידיים טובות — אלמוג ילווה אותך ברגישות, ואני כאן אם תצטרך/י. הרבה בהצלחה במסע, באמת. 🌿`
-    : `תודה על המילים החמות. הרבה בהצלחה במסע — באמת, בקצב שלך. 🌿`;
+    ? `${firstName}, תודה לך על המילים החמות. אני מרגיש ש${gc.you} בידיים טובות — אלמוג ילווה אותך ברגישות, ואני כאן אם ${needHelp}. הרבה בהצלחה במסע, באמת. 🌿`
+    : `תודה על המילים החמות. אני מרגיש ש${gc.you} בידיים טובות — הרבה בהצלחה במסע. 🌿`;
 
   return (
     <Drawer.Root open={open} onOpenChange={(v) => !v && void closeDrawer()} direction="bottom" shouldScaleBackground>
