@@ -2,19 +2,20 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookOpen, TrendingUp, UserCircle, Compass, Route } from 'lucide-react';
+import { BookOpen, UserCircle, Compass, Route, Home } from 'lucide-react';
+import { APP_HOME_PATH } from '../../lib/navigation/app-home-path';
 import { cn } from '../../lib/cn';
 import { motion } from 'framer-motion';
 import { useEffect } from 'react';
 import { useActionHub } from '../action-hub/ActionHubProvider';
 
 const leftItems = [
-  { href: '/courses',  label: 'קורסים',  icon: BookOpen   },
-  { href: '/journey',  label: 'המסע שלי', icon: Route      },
+  { href: APP_HOME_PATH, label: 'בית',       icon: Home       },
+  { href: '/journey',    label: 'המסע שלי', icon: Route      },
 ];
 const rightItems = [
-  { href: '/progress', label: 'התקדמות', icon: TrendingUp },
-  { href: '/profile',  label: 'פרופיל',  icon: UserCircle },
+  { href: '/courses', label: 'קורסים', icon: BookOpen },
+  { href: '/profile', label: 'פרופיל', icon: UserCircle },
 ];
 
 export function BottomNav() {
@@ -23,7 +24,7 @@ export function BottomNav() {
   const actionHub = useActionHub();
 
   useEffect(() => {
-    const fastRoutes = ['/courses', '/journey', '/journey/declined', '/progress', '/profile', '/settings/almog'];
+    const fastRoutes = [APP_HOME_PATH, '/courses', '/journey', '/journey/declined', '/progress', '/profile', '/settings/almog'];
     fastRoutes.forEach((href) => router.prefetch(href));
   }, [router]);
 

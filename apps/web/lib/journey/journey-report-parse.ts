@@ -39,6 +39,26 @@ export function countTaskStatusesByReport(steps: JourneyReportStepShape[]) {
   return { accepted, rejected };
 }
 
+type TaskStatusEntry = { status?: string; execution_done?: boolean };
+
+/** משימות שהמשתמש לקח על עצמו (accepted) — כמה בוצעו וכמה ממתינות */
+export function countAcceptedTaskExecution(steps: JourneyReportStepShape[]) {
+  let accepted = 0;
+  let done = 0;
+  for (const step of steps) {
+    const tasks = parseJourneyReportItems(step.tasks);
+    const ts = (step.progress?.task_statuses ?? {}) as Record<string, TaskStatusEntry>;
+    for (const t of tasks) {
+      const entry = ts[t.id];
+      if (entry?.status === 'accepted') {
+        accepted++;
+        if (entry.execution_done) done++;
+      }
+    }
+  }
+  return { accepted, done, pending: Math.max(0, accepted - done) };
+}
+
 export type DeclinedTaskRow = {
   stepId: string;
   stepNumber: number;

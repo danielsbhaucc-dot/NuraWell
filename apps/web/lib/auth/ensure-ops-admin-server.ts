@@ -28,7 +28,7 @@ export async function ensureOpsAdminServer(): Promise<void> {
     isOpsHostname(forwardedHost) || isOpsPreviewHostname(forwardedHost);
 
   if (process.env.NODE_ENV === 'production' && !allowedOpsHost && !isLocalDev) {
-    redirect(appSync ? `${appSync}/courses` : '/courses');
+    redirect(appSync ? `${appSync}/home` : '/home');
   }
 
   const supabase = await createClient();
@@ -62,6 +62,6 @@ export async function ensureOpsAdminServer(): Promise<void> {
     .single();
 
   if (!profile || profile.role !== 'admin') {
-    redirect(app ? `${app}/courses` : '/courses');
+    redirect(app ? `${app}/home` : '/home');
   }
 }

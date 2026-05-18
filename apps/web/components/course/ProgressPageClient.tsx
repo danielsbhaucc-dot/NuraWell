@@ -366,7 +366,7 @@ export function ProgressPageClient({
               התחילו משיעור או מהמסע — ההתקדמות תופיע אוטומטית
             </p>
             <Link
-              href="/courses"
+              href="/home"
               className="inline-flex items-center justify-center px-6 py-3 rounded-2xl font-bold text-white"
               style={{
                 background: 'linear-gradient(135deg, #047857, #10b981)',

@@ -75,7 +75,7 @@ ${aiSystemPrompt.trim()}${journeyBlock}${ALMOG_PERSONALIZED_APPEND}
       title,
       body,
       icon_emoji: '🌿',
-      action_url: journeyCtx ? '/journey' : '/courses',
+      action_url: journeyCtx ? '/journey' : '/home',
       is_read: false,
       is_sent: false,
       send_at: new Date().toISOString(),

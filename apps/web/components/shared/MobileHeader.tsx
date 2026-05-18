@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
-import { BookOpen, TrendingUp, UserCircle, X, Menu, Bell } from 'lucide-react';
+import { BookOpen, TrendingUp, UserCircle, X, Menu, Bell, Home } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotificationsDrawer } from '../notifications/NotificationsProvider';
+import { APP_HOME_PATH } from '../../lib/navigation/app-home-path';
 
 interface MobileHeaderProps {
   user: User;
@@ -13,9 +14,10 @@ interface MobileHeaderProps {
 }
 
 const menuItems = [
-  { href: '/courses',  label: 'הקורסים שלי',  icon: BookOpen,    color: '#10b981' },
-  { href: '/progress', label: 'התקדמות שלי', icon: TrendingUp,  color: '#14b8a6' },
-  { href: '/profile',  label: 'הפרופיל שלי',  icon: UserCircle, color: '#f59e0b' },
+  { href: APP_HOME_PATH, label: 'בית',           icon: Home,        color: '#047857' },
+  { href: '/courses',    label: 'הקורסים שלי',  icon: BookOpen,    color: '#10b981' },
+  { href: '/progress',   label: 'התקדמות שלי', icon: TrendingUp,  color: '#14b8a6' },
+  { href: '/profile',    label: 'הפרופיל שלי',  icon: UserCircle, color: '#f59e0b' },
 ];
 
 export function MobileHeader({ user, title }: MobileHeaderProps) {
@@ -31,7 +33,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
 
         <div className="container-mobile h-16 flex items-center justify-between gap-3 relative z-10">
           {/* Left label */}
-          <Link href="/courses" prefetch className="no-tap-highlight min-w-[72px]" onClick={() => setIsMenuOpen(false)}>
+          <Link href={APP_HOME_PATH} prefetch className="no-tap-highlight min-w-[72px]" onClick={() => setIsMenuOpen(false)}>
             <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontFamily: "'Rubik','Heebo',sans-serif" }}>
               {title || 'NuraWell'}
             </div>
@@ -39,7 +41,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
 
           {/* Center brand logo */}
           <Link
-            href="/"
+            href={APP_HOME_PATH}
             prefetch
             aria-label="מעבר למסך הבית"
             className="absolute left-1/2 -translate-x-1/2 rounded-xl px-3 py-1.5 no-tap-highlight"

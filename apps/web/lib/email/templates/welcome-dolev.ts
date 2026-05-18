@@ -102,7 +102,7 @@ export function buildWelcomeDolevEmailHtml(
           <table dir="rtl" width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border-radius:12px;border:1px solid #bbf7d0;direction:rtl">${table}</table>
           <p style="margin:20px 0 0;color:#64748b;font-size:14px;line-height:1.55;direction:rtl;text-align:right">${copy.closing}</p>
           <p style="margin:24px 0 0;text-align:center;direction:rtl">
-            <a href="${origin}/courses" style="display:inline-block;background:#059669;color:#fff;text-decoration:none;padding:14px 28px;border-radius:12px;font-weight:700;font-size:15px">${copy.cta}</a>
+            <a href="${origin}/home" style="display:inline-block;background:#059669;color:#fff;text-decoration:none;padding:14px 28px;border-radius:12px;font-weight:700;font-size:15px">${copy.cta}</a>
           </p>
           <p style="margin:24px 0 0;padding:14px 16px;background:#fef3c7;border:2px solid #f59e0b;border-radius:12px;color:#92400e;font-size:14px;font-weight:800;text-align:center;line-height:1.45;direction:rtl">${copy.noReplyBottom}</p>
         </td></tr>
@@ -127,7 +127,7 @@ export function buildWelcomeDolevEmailText(
 
 ${copy.textPlain}
 
-${copy.cta}: ${origin}/courses
+${copy.cta}: ${origin}/home
 
 ${copy.noReplyBottom}`;
 }
