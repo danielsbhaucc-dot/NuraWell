@@ -1,6 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
 import {
+  fetchTodayChatTurns,
+  formatDailyShortTermBlock,
+} from '../ai/almog-daily-context';
+import {
   buildSlotDaypartPromptBlock,
   fetchTodayAlmogTouches,
   formatTodayTouchesCooldownBlock,
@@ -35,14 +39,21 @@ export async function sendOnboardingCheckInNotification(
 ): Promise<{ body: string; inserted: Record<string, unknown> | null }> {
   const slot = habitSlotFromCheckInTime(payload.checkInTime);
 
-  const [{ firstName, genderInstruction }, journeyCtx, profileTimes, profileSchedule, todayTouches] =
-    await Promise.all([
-      fetchNotifyUserProfile(admin, payload.userId),
-      fetchPersonalizedCheckInJourneyContext(admin, payload.userId, payload.checkInTime),
-      fetchProfileCheckInTimes(admin, payload.userId),
-      fetchProfileScheduleForCheckIn(admin, payload.userId),
-      fetchTodayAlmogTouches(admin, payload.userId),
-    ]);
+  const [
+    { firstName, genderInstruction },
+    journeyCtx,
+    profileTimes,
+    profileSchedule,
+    todayTouches,
+    todayChat,
+  ] = await Promise.all([
+    fetchNotifyUserProfile(admin, payload.userId),
+    fetchPersonalizedCheckInJourneyContext(admin, payload.userId, payload.checkInTime),
+    fetchProfileCheckInTimes(admin, payload.userId),
+    fetchProfileScheduleForCheckIn(admin, payload.userId),
+    fetchTodayAlmogTouches(admin, payload.userId),
+    fetchTodayChatTurns(admin, payload.userId),
+  ]);
 
   const totalToday = profileTimes.length > 0 ? profileTimes.length : 3;
   const journeyBlock = journeyCtx
@@ -60,17 +71,24 @@ export async function sendOnboardingCheckInNotification(
           : `המגע המתוכנן היה לפני ~${nowMin - checkMin} דקות — עדיין אפשר לעגן לרגע היום.`
       : '';
 
-  const cooldownBlock = formatTodayTouchesCooldownBlock(todayTouches, slot);
+  const dailyBlock = formatDailyShortTermBlock({
+    chatTurns: todayChat,
+    todayTouches,
+    aiContext: profileSchedule.aiContext,
+  });
+
+  const cooldownBlock =
+    !dailyBlock && todayTouches.length > 0
+      ? formatTodayTouchesCooldownBlock(todayTouches, slot)
+      : null;
 
   const profileHint = trimProfilePromptForNotify(aiSystemPrompt);
 
   const systemPrompt = `${NOTIFY_PERSONALIZED_TASK}
-${profileHint ? `הנחיית פרופיל:\n${profileHint}` : ''}${journeyBlock}
+${profileHint ? `פרופיל:${profileHint}\n` : ''}${journeyBlock}
 ${buildSlotDaypartPromptBlock(slot)}
-${cooldownBlock ?? ''}
-${profileSchedule.styleBlock}
-${profileSchedule.proximity ? `רמז זמן: ${profileSchedule.proximity}` : ''}
-מגע ${payload.checkInIndex + 1}/${totalToday} · ${payload.checkInTime} ישראל. ${timeRelation}`;
+${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : ''}${profileSchedule.proximity ?? ''}
+מגע ${payload.checkInIndex + 1}/${totalToday} ${payload.checkInTime}. ${timeRelation}`;
 
   const journeyHint = journeyCtx
     ? ' שילב בעדינות משהו מהמסע אם רלוונטי לשעה הזו.'
@@ -86,16 +104,12 @@ ${profileSchedule.proximity ? `רמז זמן: ${profileSchedule.proximity}` : ''
       { role: 'system', content: systemPrompt },
       {
         role: 'user',
-        content: `פרטי פנייה:
-- שם: ${firstName}
-- ${genderInstruction}
-
-כתוב הודעת מגע — רק גוף ההודעה, 2–3 משפטים קצרים, שאלה פתוחה בסוף (לא כן/לא).${journeyHint}`,
+        content: `${firstName} · ${genderInstruction} · מגע חברי עם אימוג'י, 2–3 משפטים, שאלה פתוחה.${journeyHint}`,
       },
     ],
   });
 
-  const title = `${firstName} · מאלמוג`;
+  const title = `${firstName} 💬`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: inserted, error } = await (admin as any)
@@ -148,13 +162,13 @@ async function fetchProfileScheduleForCheckIn(admin: SupabaseClient, userId: str
     .select('wake_up_time, sleep_time, dinner_time, meal_schedule, ai_context')
     .eq('id', userId)
     .maybeSingle();
-  return buildProfileScheduleHints(
-    data as {
-      wake_up_time?: string | null;
-      sleep_time?: string | null;
-      dinner_time?: string | null;
-      meal_schedule?: Array<{ time: string; label?: string }> | null;
-      ai_context?: import('../ai/memory').AiUserContext | null;
-    } | null
-  );
+  const row = data as {
+    wake_up_time?: string | null;
+    sleep_time?: string | null;
+    dinner_time?: string | null;
+    meal_schedule?: Array<{ time: string; label?: string }> | null;
+    ai_context?: import('../ai/memory').AiUserContext | null;
+  } | null;
+  const hints = buildProfileScheduleHints(row);
+  return { ...hints, aiContext: row?.ai_context ?? null };
 }

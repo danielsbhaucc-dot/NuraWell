@@ -4,7 +4,7 @@ import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
 import { normalizeCheckInTimes } from '../../../../../../lib/ai/onboarding-check-in-time';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 import { habitCheckpointSlotSchema } from '../../../../../../lib/workflows/almog-habit-checkpoint-payload';
-import { planHabitCheckpointTriggers } from '../../../../../../lib/workflows/habit-checkpoint-batch';
+import { planHabitCheckpointTriggersWithChat } from '../../../../../../lib/workflows/habit-checkpoint-batch';
 import { workflowPublicBaseUrl } from '../../../../../../lib/workflows/resolve-workflow-public-url';
 
 export const runtime = 'nodejs';
@@ -50,6 +50,7 @@ async function runHabitCheckpointCron(request: Request) {
       updated_at,
       is_completed,
       task_statuses,
+      habits_progress,
       journey_steps (
         title,
         habits,
@@ -64,7 +65,7 @@ async function runHabitCheckpointCron(request: Request) {
   }
 
   const now = new Date();
-  const plan = planHabitCheckpointTriggers(progressRows ?? [], slot, now);
+  const plan = await planHabitCheckpointTriggersWithChat(admin, progressRows ?? [], slot, now);
 
   const userIds = [...new Set(plan.map((p) => p.userId))];
   const avoidIds = new Set<string>();

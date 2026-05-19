@@ -1,6 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
 import {
+  fetchTodayChatTurns,
+  formatDailyShortTermBlock,
+} from '../ai/almog-daily-context';
+import {
   buildSlotDaypartPromptBlock,
   fetchTodayAlmogTouches,
   formatRecentBodiesAntiRepeatBlock,
@@ -10,7 +14,11 @@ import {
 import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
 import { buildProfileScheduleHints } from '../ai/profile-schedule-anchors';
-import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildAlmogNotifySystemPrompt } from '../ai/prompts';
+import {
+  ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
+  ALMOG_REINFORCE_NOTIFY_HINT,
+  buildAlmogNotifySystemPrompt,
+} from '../ai/prompts';
 import type { AlmogHabitCheckpointPayload, HabitCheckpointSlot } from './almog-habit-checkpoint-payload';
 
 const SLOT_HE: Record<HabitCheckpointSlot, string> = {
@@ -29,9 +37,11 @@ const WEEKDAY_HE = [
   'שבת',
 ];
 
-const HABIT_CHECKPOINT_SYSTEM = buildAlmogNotifySystemPrompt(
-  `משימה: מגע לחלון בוקר/צהריים/ערב. מסע=רקע פנימי בלבד; שפה יומיומית; שאלה פתוחה בסוף.`
+const HABIT_REMIND_SYSTEM = buildAlmogNotifySystemPrompt(
+  `מגע חלון יום. מסע=רקע פנימי; שאלה פתוחה בסוף.`
 );
+
+const HABIT_REINFORCE_SYSTEM = buildAlmogNotifySystemPrompt(ALMOG_REINFORCE_NOTIFY_HINT);
 
 function dedupeByTitle<T extends { title: string }>(items: T[]): T[] {
   const seen = new Set<string>();
@@ -45,11 +55,27 @@ function dedupeByTitle<T extends { title: string }>(items: T[]): T[] {
   return out;
 }
 
+function formatReinforceBlock(payload: AlmogHabitCheckpointPayload): string {
+  const habits = dedupeByTitle(payload.completedTodayHabits).slice(0, 2);
+  const tasks = dedupeByTitle(payload.completedTodayTasks).slice(0, 2);
+  if (payload.reinforceKind === 'presence') {
+    return 'חיזוק נוכחות: שיחה היום בצ\'אט — המשך כחבר, אימוג\'י, בלי תזכורת/משימות.';
+  }
+  const parts: string[] = ['חיזוק ביצוע:'];
+  if (habits.length) parts.push(`הרגלים:${habits.map((h) => h.title).join(',')}`);
+  if (tasks.length) parts.push(`משימות:${tasks.map((t) => t.title).join(',')}`);
+  return parts.join(' ');
+}
+
 function formatHabitsForPrompt(
   payload: AlmogHabitCheckpointPayload,
   weekdayName: string,
   timeHHMM: string
 ): string {
+  if (payload.notifyMode === 'reinforce') {
+    return formatReinforceBlock(payload);
+  }
+
   const habits = dedupeByTitle(payload.habits);
   const tasks = dedupeByTitle(payload.pendingTasks);
 
@@ -82,15 +108,8 @@ function formatHabitsForPrompt(
   }
 
   if (habitLines.length > 0) {
-    parts.push(`\nרוטינות מהמסע שמתאימות לחלון הזה (${habitLines.length}):`);
-    parts.push(habitLines.join('\n'));
-  } else {
-    parts.push('\nרוטינות: אין רוטינה תואמת לחלון הזה.');
+    parts.push(`רוטינות:${habitLines.map((l) => l.replace(/^- /, '')).join('; ')}`);
   }
-
-  parts.push(
-    `\nאיפה המשתמש במסע: צעד "${payload.stepTitle ?? 'לא ידוע'}" בתחנה "${payload.stationTitle ?? 'לא ידוע'}"`
-  );
 
   return parts.join('\n');
 }
@@ -143,26 +162,28 @@ async function fetchProfileScheduleHints(admin: SupabaseClient, userId: string) 
     .select('wake_up_time, sleep_time, dinner_time, meal_schedule, ai_context')
     .eq('id', userId)
     .maybeSingle();
-  return buildProfileScheduleHints(
-    data as {
-      wake_up_time?: string | null;
-      sleep_time?: string | null;
-      dinner_time?: string | null;
-      meal_schedule?: Array<{ time: string; label?: string }> | null;
-      ai_context?: import('../ai/memory').AiUserContext | null;
-    } | null
-  );
+  const row = data as {
+    wake_up_time?: string | null;
+    sleep_time?: string | null;
+    dinner_time?: string | null;
+    meal_schedule?: Array<{ time: string; label?: string }> | null;
+    ai_context?: import('../ai/memory').AiUserContext | null;
+  } | null;
+  const hints = buildProfileScheduleHints(row);
+  return { ...hints, aiContext: row?.ai_context ?? null };
 }
 
 export async function sendAlmogHabitCheckpointNotification(
   admin: SupabaseClient,
   payload: AlmogHabitCheckpointPayload
 ): Promise<{ body: string; inserted: Record<string, unknown> | null }> {
-  const [{ firstName, genderInstruction }, scheduleHints, todayTouches] = await Promise.all([
-    fetchNotifyUserProfile(admin, payload.userId),
-    fetchProfileScheduleHints(admin, payload.userId),
-    fetchTodayAlmogTouches(admin, payload.userId),
-  ]);
+  const [{ firstName, genderInstruction }, scheduleHints, todayTouches, todayChat] =
+    await Promise.all([
+      fetchNotifyUserProfile(admin, payload.userId),
+      fetchProfileScheduleHints(admin, payload.userId),
+      fetchTodayAlmogTouches(admin, payload.userId),
+      fetchTodayChatTurns(admin, payload.userId),
+    ]);
 
   const recentBodies = shouldFetchWeekRecentBodies(todayTouches, payload.slot)
     ? await fetchRecentAlmogBodies(admin, payload.userId)
@@ -198,20 +219,36 @@ export async function sendAlmogHabitCheckpointNotification(
   };
   const weekdayName = WEEKDAY_HE[dowMap[ilDow] ?? 0];
 
-  const contextParts: string[] = [
-    buildSlotDaypartPromptBlock(payload.slot),
-    formatHabitsForPrompt(payload, weekdayName, timeHHMM),
-  ];
-  const cooldownBlock = formatTodayTouchesCooldownBlock(todayTouches, payload.slot);
-  if (cooldownBlock) contextParts.push(cooldownBlock);
-  if (scheduleHints.proximity) {
-    contextParts.push(`\nרמז זמן: ${scheduleHints.proximity}`);
+  const dailyBlock = formatDailyShortTermBlock({
+    chatTurns: todayChat,
+    todayTouches,
+    aiContext: scheduleHints.aiContext,
+  });
+
+  const isReinforce = payload.notifyMode === 'reinforce';
+  const baseSystem = isReinforce ? HABIT_REINFORCE_SYSTEM : HABIT_REMIND_SYSTEM;
+
+  const contextParts: string[] = [buildSlotDaypartPromptBlock(payload.slot)];
+  if (!isReinforce || payload.reinforceKind !== 'presence') {
+    contextParts.push(formatHabitsForPrompt(payload, weekdayName, timeHHMM));
+  } else {
+    contextParts.push(formatReinforceBlock(payload));
   }
-  contextParts.push(`\n${scheduleHints.styleBlock}`);
-  const antiRepeat = formatRecentBodiesAntiRepeatBlock(recentBodies);
+  if (dailyBlock) contextParts.push(dailyBlock);
+  const cooldownBlock =
+    !dailyBlock && todayTouches.length > 0
+      ? formatTodayTouchesCooldownBlock(todayTouches, payload.slot)
+      : null;
+  if (cooldownBlock) contextParts.push(cooldownBlock);
+  if (scheduleHints.proximity) contextParts.push(scheduleHints.proximity);
+  if (!isReinforce && scheduleHints.styleBlock) contextParts.push(scheduleHints.styleBlock);
+  const antiRepeat =
+    !dailyBlock && recentBodies.length > 0
+      ? formatRecentBodiesAntiRepeatBlock(recentBodies)
+      : null;
   if (antiRepeat) contextParts.push(antiRepeat);
 
-  const systemPrompt = `${HABIT_CHECKPOINT_SYSTEM}\n\nקונטקסט המשתמש לרגע הזה:\n${contextParts.join('\n')}`;
+  const systemPrompt = `${baseSystem}\n\n${contextParts.join('\n')}`;
 
   const body = await completeEmpathyNotifyBody({
     label: 'habit_checkpoint',
@@ -223,18 +260,18 @@ export async function sendAlmogHabitCheckpointNotification(
       { role: 'system', content: systemPrompt },
       {
         role: 'user',
-        content: `פרטי פנייה:
-- שם פרטי: ${firstName}
-- ${genderInstruction}
-
-עכשיו ${weekdayName} בשעה ${timeHHMM} (ישראל), חלון ${SLOT_HE[payload.slot]}.
-כתוב רק את גוף ההודעה — 2–3 משפטים קצרים, שאלה פתוחה בסוף (לא כן/לא).
-בלי "עדיין ממתין"/"ראיתי שלא"/"מוכן ל...". זווית חדשה מהודעות קודמות.`,
+        content: `${firstName} · ${genderInstruction} · ${weekdayName} ${timeHHMM} · ${SLOT_HE[payload.slot]}
+${
+  isReinforce
+    ? 'חיזוק חברי עם אימוג\'י — ספציפי לשיחה/ביצוע, לא גנרי. שאלה פתוחה.'
+    : 'מגע חברי עם אימוג\'י — רק מה שלא בוצע. שאלה פתוחה.'
+}
+גוף ההודעה בלבד, 2–3 משפטים.`,
       },
     ],
   });
 
-  const title = `${firstName} · מאלמוג`;
+  const title = isReinforce ? `${firstName} 💬` : `${firstName} 🌿`;
 
   const habitIds = payload.habits.map((h) => h.id);
   const pendingTaskIds = payload.pendingTasks.map((t) => t.id);
@@ -254,6 +291,8 @@ export async function sendAlmogHabitCheckpointNotification(
       send_at: new Date().toISOString(),
       metadata: {
         source: 'almog_habit_checkpoint',
+        notify_mode: payload.notifyMode,
+        reinforce_kind: payload.reinforceKind ?? null,
         slot: payload.slot,
         checkpoint_date: payload.checkpointDate,
         habit_ids: habitIds,

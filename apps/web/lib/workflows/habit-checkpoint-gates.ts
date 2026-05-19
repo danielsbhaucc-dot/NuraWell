@@ -1,15 +1,20 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { fetchTodayAlmogTouches } from '../ai/almog-notify-day-context';
+import { shouldSkipNotifyForTouchFatigue } from '../ai/almog-daily-context';
 import type { HabitCheckpointSlot } from './almog-habit-checkpoint-payload';
+
+type NotifyMode = 'remind' | 'reinforce';
 
 export type HabitCheckpointGate =
   | { ok: true }
-  | { ok: false; reason: 'avoid_push' | 'already_sent_this_slot' };
+  | { ok: false; reason: 'avoid_push' | 'already_sent_this_slot' | 'touch_fatigue' };
 
 export async function gateAlmogHabitCheckpoint(
   admin: SupabaseClient,
   userId: string,
   checkpointDate: string,
-  slot: HabitCheckpointSlot
+  slot: HabitCheckpointSlot,
+  notifyMode: NotifyMode = 'remind'
 ): Promise<HabitCheckpointGate> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: profile, error: pErr } = await (admin as any)
@@ -45,6 +50,11 @@ export async function gateAlmogHabitCheckpoint(
   });
 
   if (dup) return { ok: false, reason: 'already_sent_this_slot' };
+
+  const todayTouches = await fetchTodayAlmogTouches(admin, userId);
+  if (shouldSkipNotifyForTouchFatigue(todayTouches, notifyMode)) {
+    return { ok: false, reason: 'touch_fatigue' };
+  }
 
   return { ok: true };
 }

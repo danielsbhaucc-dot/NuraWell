@@ -16,14 +16,20 @@ const pendingTaskSchema = z.object({
   stepTitle: z.string().max(500).nullable().optional(),
 });
 
+const completedItemSchema = z.object({
+  id: z.string().max(120),
+  title: z.string().max(500),
+});
+
+export const habitCheckpointNotifyModeSchema = z.enum(['remind', 'reinforce']);
+
+export const habitCheckpointReinforceKindSchema = z.enum(['completion', 'presence']);
+
 /**
  * Payload לטריגר Workflow של habit checkpoint.
  *
- * תקין אם **לפחות אחד מהשניים** קיים:
- *  - `habits` עם פריט אחד או יותר (תזכורת רכה לרוטינות יומיות).
- *  - `pendingTasks` עם פריט אחד או יותר (משימות שהמשתמש קיבל ולא דיווח על ביצוע).
- *
- * אם שניהם ריקים — אין על מה לטרגר את המשתמש, וה-planner מדלג עליו לפני הקריאה.
+ * remind — יש הרגל/משימה שלא סומנו בוצעו ב-DB.
+ * reinforce — חיזוק חברי: completion (בוצע ב-DB) או presence (שיחה היום, בלי תזכורת).
  */
 export const almogHabitCheckpointPayloadSchema = z
   .object({
@@ -31,15 +37,29 @@ export const almogHabitCheckpointPayloadSchema = z
     slot: habitCheckpointSlotSchema,
     /** YYYY-MM-DD — לוח שנה בירושלים (למניעת כפילויות) */
     checkpointDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    notifyMode: habitCheckpointNotifyModeSchema.default('remind'),
+    reinforceKind: habitCheckpointReinforceKindSchema.optional(),
     habits: z.array(habitItemSchema).max(200).default([]),
     pendingTasks: z.array(pendingTaskSchema).max(200).default([]),
+    completedTodayHabits: z.array(completedItemSchema).max(50).default([]),
+    completedTodayTasks: z.array(completedItemSchema).max(50).default([]),
     stepTitle: z.string().max(500).nullable().optional(),
     stationTitle: z.string().max(500).nullable().optional(),
   })
-  .refine((v) => v.habits.length + v.pendingTasks.length > 0, {
-    message: 'payload חייב לכלול לפחות הרגל אחד או משימה פתוחה אחת',
-    path: ['habits'],
-  });
+  .refine(
+    (v) => {
+      if (v.notifyMode === 'reinforce') {
+        if (v.reinforceKind === 'presence') return true;
+        return v.completedTodayHabits.length + v.completedTodayTasks.length > 0;
+      }
+      return v.habits.length + v.pendingTasks.length > 0;
+    },
+    {
+      message:
+        'remind דורש הרגל/משימה פתוחה; reinforce דורש ביצועים ב-DB או reinforceKind=presence',
+      path: ['habits'],
+    }
+  );
 
 export type AlmogHabitCheckpointPayload = z.infer<typeof almogHabitCheckpointPayloadSchema>;
 
