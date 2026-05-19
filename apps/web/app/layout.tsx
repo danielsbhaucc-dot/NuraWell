@@ -25,11 +25,21 @@ function metadataBaseUrl(): URL {
 
 export const metadata: Metadata = {
   title: {
-    default: 'NuraWell | המסע שלך לבריאות מתחיל כאן ✨',
+    default: 'NuraWell | הדרך החכמה לחיים בריאים',
     template: '%s | NuraWell',
   },
-  description: 'NuraWell - מערכת AI חכמה לירידה במשקל. קורסים אינטראקטיביים, מנטור AI אישי, מעקב התקדמות ומשימות יומיות. הצטרפו לאלפי הלקוחות שכבר שינו את חייהם!',
-  keywords: ['NuraWell', 'ירידה במשקל', 'קורסים אונליין', 'AI', 'בריאות', 'כושר', 'תזונה', 'אורח חיים בריא', 'מנטור אישי'],
+  description:
+    'NuraWell — מערכת פרימיום לשינוי אורח חיים. מסע מובנה, קורסים, מנטור AI אישי והרגלים יומיים. בלי דיאטה, בלי ספירת קלוריות, בלי הרעבה.',
+  keywords: [
+    'NuraWell',
+    'אורח חיים בריא',
+    'קורסים אונליין',
+    'AI',
+    'בריאות',
+    'הרגלים',
+    'מנטור אישי',
+    'מסע אישי',
+  ],
   authors: [{ name: 'NuraWell' }],
   creator: 'NuraWell',
   publisher: 'NuraWell',
@@ -38,17 +48,17 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: 'NuraWell | המסע שלך לבריאות מתחיל כאן ✨',
-    description: 'מערכת AI חכמה לירידה במשקל - קורסים, מנטור אישי, ומעקב התקדמות',
+    title: 'NuraWell | הדרך החכמה לחיים בריאים',
+    description: 'מסע מובנה, קורסים ומנטור AI — ליווי אישי לשינוי אורח חיים בלי דיאטה',
     type: 'website',
     locale: 'he_IL',
     siteName: 'NuraWell',
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'NuraWell - AI Weight Loss Platform' }],
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'NuraWell — הדרך החכמה לחיים בריאים' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'NuraWell | המסע שלך לבריאות מתחיל כאן',
-    description: 'מערכת AI חכמה לירידה במשקל - קורסים, מנטור אישי, ומעקב התקדמות',
+    title: 'NuraWell | הדרך החכמה לחיים בריאים',
+    description: 'מסע מובנה, קורסים ומנטור AI — ליווי אישי לשינוי אורח חיים',
     images: ['/og-image.png'],
   },
   robots: {
@@ -98,7 +108,7 @@ export default function RootLayout({
               '@type': 'WebSite',
               name: 'NuraWell',
               url: siteOrigin,
-              description: 'מערכת AI חכמה לירידה במשקל',
+              description: 'מערכת פרימיום לשינוי אורח חיים עם מנטור AI',
               inLanguage: 'he',
             }),
           }}
