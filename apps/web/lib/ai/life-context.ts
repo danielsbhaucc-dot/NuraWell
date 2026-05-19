@@ -10,7 +10,7 @@ import { israelDateKey } from './onboarding-check-in-time';
 import type { AiUserContext } from './memory';
 import { updateAiContext } from './memory';
 import { fetchNotifyUserProfile } from './notify-user-profile';
-import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildAlmogNotifySystemPrompt } from './prompts';
+import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildCompactAlmogNotifyPrompt } from './prompts';
 import { habitSlotFromCheckInTime } from '../workflows/personalized-check-in-journey';
 
 const IL_TZ = 'Asia/Jerusalem';
@@ -401,9 +401,10 @@ export async function sendLifeContextTouch(
   const slot = habitSlotFromCheckInTime(time);
   const { firstName, genderInstruction } = await fetchNotifyUserProfile(admin, userId);
 
-  const systemPrompt = `${buildAlmogNotifySystemPrompt(`מגע חברי לפי מצב/אירוע בחיים — לא תזכורת מסע.`)}
-${buildSlotDaypartPromptBlock(slot)}
-${formatLifeContextNotifyBlock(lc)}`;
+  const systemPrompt = `${buildCompactAlmogNotifyPrompt(
+    'מגע על אירוע בחיים — לא מסע.',
+    `${buildSlotDaypartPromptBlock(slot)}\n${formatLifeContextNotifyBlock(lc)}`
+  )}`;
 
   const body = await completeEmpathyNotifyBody({
     label: 'almog_life_context',

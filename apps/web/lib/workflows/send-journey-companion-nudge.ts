@@ -7,16 +7,14 @@ import {
 } from '../ai/almog-notify-day-context';
 import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
-import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildAlmogNotifySystemPrompt } from '../ai/prompts';
+import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildCompactAlmogNotifyPrompt } from '../ai/prompts';
 import {
   formatJourneyCompanionPromptBlock,
   type JourneyCompanionContext,
 } from './journey-companion';
 import { habitSlotFromCheckInTime } from './personalized-check-in-journey';
 
-const JOURNEY_COMPANION_SYSTEM = buildAlmogNotifySystemPrompt(
-  `ליווי מסע קבוע — לא נעלם גם בלי תשובה. בדוק מצב צעד/נושאים ברקע פנימי; בטון חבר, לא מעקב או אשמה.`
-);
+const JOURNEY_COMPANION_TASK = `ליווי מסע — ברקע פנימי בלבד; חבר, לא מעקב.`;
 
 export async function sendJourneyCompanionNudge(
   admin: SupabaseClient,
@@ -42,10 +40,10 @@ export async function sendJourneyCompanionNudge(
   const cooldownBlock = formatTodayTouchesCooldownBlock(todayTouches, slot);
   const companionBlock = formatJourneyCompanionPromptBlock(companion);
 
-  const systemPrompt = `${JOURNEY_COMPANION_SYSTEM}
-${buildSlotDaypartPromptBlock(slot)}
-${cooldownBlock ?? ''}
-${companionBlock}`;
+  const systemPrompt = buildCompactAlmogNotifyPrompt(
+    JOURNEY_COMPANION_TASK,
+    [buildSlotDaypartPromptBlock(slot), cooldownBlock, companionBlock].filter(Boolean).join('\n')
+  );
 
   const body = await completeEmpathyNotifyBody({
     label: 'almog_journey_companion',

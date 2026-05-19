@@ -8,6 +8,8 @@ export type OpenAlmogChatDetail = {
   title: string;
   source: string | null;
   createdAt: string;
+  /** תשובה מהפופאפ — מוצגת בצ'אט כציטוט ווטסאפ ונשלחת אוטומטית */
+  initialReply?: string;
 };
 
 export function dispatchOpenAlmogChatFromNotification(detail: OpenAlmogChatDetail): void {

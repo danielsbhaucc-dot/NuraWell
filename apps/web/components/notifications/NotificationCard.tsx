@@ -7,7 +7,7 @@ import { getMentorAvatarFallback } from '../../lib/mentors/avatar-url';
 import { MENTORS } from '../../lib/mentors/registry';
 import { formatHebrewRelativeTime } from '../../lib/time/hebrew-relative';
 import { isNotificationReplyable } from '../../lib/notifications/replyable';
-import { dispatchOpenAlmogChatFromNotification } from '../../lib/notifications/open-almog-chat';
+import { dispatchOpenAlmogReply } from '../../lib/notifications/open-almog-reply';
 import { cn } from '../../lib/cn';
 import type { NotificationItem } from './NotificationsProvider';
 
@@ -46,14 +46,16 @@ export function NotificationCard({
   const handleReply = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    void onMarkRead(n.id, !n.is_read);
     onCloseDrawer();
-    dispatchOpenAlmogChatFromNotification({
+    dispatchOpenAlmogReply({
       notificationId: n.id,
       mentorMessage: n.body,
       title: n.title,
       source: n.source,
       createdAt: n.created_at,
+      onMarkRead: () => {
+        void onMarkRead(n.id, !n.is_read);
+      },
     });
   };
 
