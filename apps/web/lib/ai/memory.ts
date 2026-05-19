@@ -1,4 +1,5 @@
 import { pruneExpiredAvoidPushUntil } from './avoid-push';
+import type { JourneyFollowUp } from './journey-follow-up-promise';
 
 export interface AiUserContext {
   weakness_pattern?: string;
@@ -24,6 +25,8 @@ export interface AiUserContext {
   coaching_style?: 'warm_friend' | 'direct' | 'gentle' | string;
   /** שעת הגעה טיפוסית לעבודה (HH:MM) — לעיגון הודעות לפני המשרד */
   work_arrival_time?: string;
+  /** מעקב אחרי הבטחה בצ'אט — "אמשיך מחר", "עוד שעה" */
+  journey_follow_up?: JourneyFollowUp | null;
   /** Web Push subscription (אופציונלי) */
   web_push?: {
     endpoint: string;
@@ -152,8 +155,15 @@ export async function buildUserContext(
   if (ctx.current_mood_signal && ctx.current_mood_signal !== 'unknown') {
     parts.push(`אות מצב רגשי (ניתוח אחרון): ${ctx.current_mood_signal}`);
   }
+  if (ctx.journey_follow_up?.label && ctx.journey_follow_up.check_at) {
+    parts.push(
+      `הבטחה למעקב במסע: ${ctx.journey_follow_up.label} (בדיקה ~${ctx.journey_follow_up.check_at})`
+    );
+  }
 
-  const chatCommitmentsPreview: string[] = [];
+  const chatCommitmentsPreview: string[] = ctx.journey_follow_up?.label
+    ? [ctx.journey_follow_up.label]
+    : [];
 
   return {
     contextString: `מידע על המשתמש (לשימוש פנימי בלבד):\n${parts.join('\n')}`,
@@ -215,6 +225,7 @@ export async function updateAiContext(
     'skip_weight_check_ins',
     'coaching_style',
     'work_arrival_time',
+    'journey_follow_up',
     'web_push',
   ];
 
@@ -233,6 +244,10 @@ export async function updateAiContext(
   let merged: AiUserContext = { ...current, ...filtered };
   if (filtered.avoid_push_until === '') {
     const { avoid_push_until: _removed, ...rest } = merged;
+    merged = rest;
+  }
+  if (filtered.journey_follow_up === null) {
+    const { journey_follow_up: _jf, ...rest } = merged;
     merged = rest;
   }
   merged = pruneExpiredAvoidPushUntil(merged);

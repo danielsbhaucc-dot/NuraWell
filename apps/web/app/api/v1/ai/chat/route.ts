@@ -62,6 +62,10 @@ import {
   fetchReturnVisitSignalsForChat,
   resolveReturnVisitContext,
 } from '../../../../../lib/ai/roller-coaster';
+import {
+  applyJourneyFollowUpFromUserMessage,
+  formatJourneyFollowUpChatBlock,
+} from '../../../../../lib/ai/journey-follow-up-promise';
 import { sendTaskCompletionCelebration } from '../../../../../lib/ai/send-task-completion-celebration';
 import { createAdminClient } from '../../../../../lib/supabase/admin';
 import {
@@ -861,6 +865,7 @@ export async function POST(request: Request) {
 
     const moodFromProfile = moodCoachingHint(profileMoodSignal);
     const coachingStyleBlock = buildCoachingStylePromptBlock(profileRow.ai_context);
+    const journeyFollowUpBlock = formatJourneyFollowUpChatBlock(profileRow.ai_context);
     const dailyShortTermBlock = formatDailyShortTermBlock({
       chatTurns: todayChatTurns,
       todayTouches: todayAlmogTouches,
@@ -900,7 +905,7 @@ export async function POST(request: Request) {
 
     const systemPromptWithMemory = `${BASE_SYSTEM_PROMPT}
 
-${coachingStyleBlock}
+${coachingStyleBlock}${journeyFollowUpBlock}
 ${notificationContextBlock ? `\n${notificationContextBlock}\n` : ''}
 
 סדר: (1) מערכת (2) פרופיל (3) RAG (4) מסע (5) השיחה = עכשיו.
@@ -1151,6 +1156,29 @@ ${JSON.stringify(journeyDataBlock)}
             debug_id: debugId,
             stage: `${finishStage}_task_intent`,
             error: taskErr instanceof Error ? taskErr.message : String(taskErr),
+          });
+        }
+
+        try {
+          const followUp = await applyJourneyFollowUpFromUserMessage(
+            supabase,
+            user.id,
+            lastUserText,
+            activeJourneyContext?.stepId ?? null
+          );
+          if (followUp.stored || followUp.cleared) {
+            console.info('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_journey_follow_up`,
+              stored: followUp.stored,
+              cleared: followUp.cleared,
+            });
+          }
+        } catch (followUpErr) {
+          console.warn('[ai/chat]', {
+            debug_id: debugId,
+            stage: `${finishStage}_journey_follow_up`,
+            error: followUpErr instanceof Error ? followUpErr.message : String(followUpErr),
           });
         }
 

@@ -95,9 +95,9 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
               WebkitBackdropFilter: 'blur(22px)',
             }}
           >
-            <Drawer.Title className="sr-only">תפריט פעולות משימות</Drawer.Title>
+            <Drawer.Title className="sr-only">דיווח התקדמות למנטור</Drawer.Title>
             <Drawer.Description className="sr-only">
-              עדכון משימות או צפייה במשימות שלא נלקחו על עצמך
+              עדכון ביצוע משימות והרגלים למנטור, או צפייה במשימות שלא נלקחו על עצמך
             </Drawer.Description>
 
             <div className="shrink-0 pt-2.5 pb-2 flex justify-center">
@@ -109,10 +109,10 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
                 className="text-lg font-black text-[#1A1730]"
                 style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
               >
-                משימות לביצוע
+                עדכון למנטור
               </p>
               <p className="text-xs font-semibold text-emerald-900/72 mt-1 leading-relaxed">
-                בחרו פעולה — הנתונים מעודכנים מהמסע שלכם
+                דווחו לאלמוג על התקדמות — משימות והרגלים מהמסע
               </p>
             </div>
 

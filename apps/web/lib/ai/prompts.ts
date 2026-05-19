@@ -30,6 +30,7 @@ export const ALMOG_NOTIFY_FRIEND_EMOJI_RULES = `חבר מהצד: ספונטני,
 
 /** כללי משותפים לנוטיפיקציות — חובה בכל workflow. */
 export const ALMOG_NOTIFY_SHARED_RULES = `מטרה: לפתוח שיחה — "מה קורה איתך", לא מעקב שיעורי בית.
+אל תיעלם גם בלי תשובה — הישאר חבר בקו; בדוק מצב מסע/נושאים ברקע פנימי בלבד, בלי להציק.
 התאם לשעה/יום/פרופיל/שיחה מהיום — לא נתוני מערכת.
 ${ALMOG_NOTIFY_FRIEND_EMOJI_RULES}`;
 
