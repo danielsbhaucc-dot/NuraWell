@@ -65,7 +65,36 @@ export function formatTaskIntentPromptBlock(intent: TaskIntentDetection): string
 export function formatHabitGapChatBlock(gap: HabitGapSignal | null): string | null {
   if (!gap || gap.daysMissed < 3) return null;
   const h = gap.habitTitle.slice(0, 36);
-  return `[פער-הרגל:${h}·${gap.daysMissed}יום] בלי שיפוט; כוס/צעד זעיר עכשיו; שאלה פתוחה.`;
+  return `[פער-הרגל:${h}·${gap.daysMissed}יום] בלי שיפוט; צעד זעיר — רק אם ההרגל לא מסומן ✓ היום בנתוני מסע.`;
+}
+
+/** הודעת פתיחה קצרה בלי בקשת פעולה מפורשת. */
+export function isCasualGreeting(text: string): boolean {
+  const t = text.trim().replace(/\s+/g, ' ');
+  if (!t || t.length > 40) return false;
+  return /^(היי|הי|שלום|הי\s|מה נשמע|אהלן|בוקר טוב|ערב טוב|צהריים טובים|מה קורה|מה נשמע\?)([!.\s?]*)$/iu.test(
+    t
+  );
+}
+
+/** הנחיות קריאת נתוני מסע — מונע "נבדוק מים" כשכבר ✓ במערכת. */
+export function formatJourneyChatGuidanceBlock(opts: {
+  journeyData: Record<string, unknown> | null;
+  isGreeting: boolean;
+}): string | null {
+  if (!opts.journeyData) return null;
+  const lines = [
+    '[נתוני מסע — מקור אמת לביצוע היום]',
+    'habits: ✓ = המשתמש כבר סימן ביצוע היום — אל תציע שוב, לא "נבדוק ביחד", לא תזכורת. אפשר חיזוק קצר במשפט.',
+    'habits: ○ = לא סומן — שאלה רכה אחת או הצעה קטנה.',
+    'tasks: ✓ בוצע · ◐ בתהליך · ○ פתוח — דבר רק לפי הסטטוס.',
+  ];
+  if (opts.isGreeting) {
+    lines.push(
+      'פתיחה (היי וכו\'): ברכה חמה וקצרה + שאלה על משימה ○ או הרגל ○ — לא על מה שכבר ✓. לא רשימת עובדות.'
+    );
+  }
+  return lines.join('\n');
 }
 
 export function formatWeightLoggedPromptBlock(kg: number): string {

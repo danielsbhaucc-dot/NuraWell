@@ -74,7 +74,7 @@ export function formatRagMemoryContextBlock(hits: QueryHit[], maxItems = 3): str
 
   const chunks: string[] = [];
   chunks.push(
-    'תובנות ודפוסים מזיכרון (שליפה סמנטית — רמזים בלבד; עדיפות לתובנות לפני אירועים חד-פעמיים):'
+    'תובנות מזיכרון (רמזים פנימיים בלבד — שלב לכל הפחות תובנה אחת לתשובה; אל תפרט רשימה למשתמש):'
   );
   if (insightLines.length) {
     chunks.push(`תובנות / שבירה:\n${insightLines.join('\n')}`);

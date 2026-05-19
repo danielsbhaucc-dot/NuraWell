@@ -126,6 +126,7 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
       send_at: new Date().toISOString(),
       metadata: {
         source: 'almog_personalized_check_in',
+        expects_reply: true,
         check_in_time: payload.checkInTime,
         check_in_index: payload.checkInIndex,
         checkpoint_date: payload.checkpointDate,

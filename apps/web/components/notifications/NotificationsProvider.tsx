@@ -10,17 +10,14 @@ import {
   type ReactNode,
 } from 'react';
 import type { User } from '@supabase/supabase-js';
-import Link from 'next/link';
 import { Drawer } from 'vaul';
-import { Archive, ArchiveRestore, CheckCheck, ChevronDown, Loader2, Zap } from 'lucide-react';
+import { CheckCheck, ChevronDown, Loader2 } from 'lucide-react';
+import { NotificationCard } from './NotificationCard';
+import { extractExpectsReply, extractSource } from '../../lib/notifications/replyable';
 import { createClient } from '../../lib/supabase/client';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { useMentorAvatarUrl } from '../../lib/client/useMentorAvatarUrl';
-import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
-import { getMentorAvatarFallback } from '../../lib/mentors/avatar-url';
-import { MENTORS } from '../../lib/mentors/registry';
 import type { MentorId } from '../../lib/mentors/registry';
-import { formatHebrewRelativeTime } from '../../lib/time/hebrew-relative';
 import { cn } from '../../lib/cn';
 
 export type NotificationItem = {
@@ -36,16 +33,12 @@ export type NotificationItem = {
   /** מקור — להבחנה בעיצוב (almog_habit_checkpoint וכו') */
   source: string | null;
   mentorId: MentorId;
+  /** האם ניתן להגיב דרך הצ'אט (הודעות מאלמוג עם שאלה) */
+  expectsReply?: boolean;
 };
 
 type ViewMode = 'inbox' | 'archive';
 type FilterKind = 'all' | 'unread' | 'almog';
-
-function extractSource(meta: unknown): string | null {
-  if (!meta || typeof meta !== 'object') return null;
-  const s = (meta as { source?: unknown }).source;
-  return typeof s === 'string' && s.length > 0 ? s : null;
-}
 
 function extractMentor(meta: unknown, title: string): MentorId {
   if (meta && typeof meta === 'object') {
@@ -75,6 +68,7 @@ function mapRealtimeRow(row: Record<string, unknown>): NotificationItem | null {
     archived_at: archived,
     source: extractSource(row.metadata),
     mentorId: extractMentor(row.metadata, typeof row.title === 'string' ? row.title : ''),
+    expectsReply: extractExpectsReply(row.metadata),
   };
 }
 
@@ -94,6 +88,7 @@ function mapApiRow(row: Record<string, unknown>): NotificationItem {
       row.archived_at != null && typeof row.archived_at === 'string' ? row.archived_at : null,
     source: extractSource(row.metadata),
     mentorId: extractMentor(row.metadata, title),
+    expectsReply: extractExpectsReply(row.metadata),
   };
 }
 
@@ -145,7 +140,6 @@ export function NotificationsProvider({
   void _user;
   const { avatarUrl: almogAvatar } = useAlmogAvatarUrl();
   const { avatarUrl: dolevAvatar } = useMentorAvatarUrl('dolev');
-  const dolevFallback = getMentorAvatarFallback(MENTORS.dolev);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -335,12 +329,6 @@ export function NotificationsProvider({
 
   const nowMs = useMemo(() => Date.now(), [timeTick, open]);
 
-  const glassBodyStyle = {
-    background:
-      'linear-gradient(180deg, rgba(255,255,255,0.32) 0%, rgba(236,253,245,0.24) 45%, rgba(255,255,255,0.3) 100%)',
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)',
-  } as const;
-
   const showMarkAll = viewMode === 'inbox' && items.some((n) => !n.is_read);
 
   return (
@@ -397,7 +385,7 @@ export function NotificationsProvider({
                   {showMarkAll ? (
                     <button
                       type="button"
-                      className="shrink-0 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1.5 text-[11px] font-black text-emerald-900 shadow-md shadow-emerald-950/10 ring-1 ring-white/80 transition active:scale-[0.97]"
+                      className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50/95 px-2.5 py-1.5 text-[11px] font-black text-emerald-900 shadow-md shadow-emerald-950/10 ring-1 ring-emerald-100/80 transition active:scale-[0.97]"
                       onClick={() => void markAll()}
                     >
                       <CheckCheck className="h-3.5 w-3.5 text-emerald-700" strokeWidth={2.5} />
@@ -410,8 +398,8 @@ export function NotificationsProvider({
                   <div className="min-w-0 flex-1 text-right pe-0.5">
                     <div className="flex items-center justify-end gap-2 flex-wrap">
                       <span className="relative flex h-2.5 w-2.5 shrink-0">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/70 opacity-75" />
-                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-100/80 opacity-75" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-50 shadow-[0_0_8px_rgba(167,243,208,0.9)]" />
                       </span>
                       <h2
                         className="text-[18px] sm:text-[19px] font-black text-white leading-tight drop-shadow-sm tracking-tight"
@@ -434,8 +422,8 @@ export function NotificationsProvider({
                     className={cn(
                       'rounded-full px-4 py-1.5 text-xs font-black transition',
                       viewMode === 'inbox'
-                        ? 'bg-white text-emerald-900 shadow'
-                        : 'bg-white/15 text-white hover:bg-white/25'
+                        ? 'bg-emerald-50/95 text-emerald-900 shadow'
+                        : 'bg-emerald-950/15 text-white hover:bg-emerald-50/20'
                     )}
                   >
                     תיבה
@@ -449,8 +437,8 @@ export function NotificationsProvider({
                     className={cn(
                       'rounded-full px-4 py-1.5 text-xs font-black transition',
                       viewMode === 'archive'
-                        ? 'bg-white text-emerald-900 shadow'
-                        : 'bg-white/15 text-white hover:bg-white/25'
+                        ? 'bg-emerald-50/95 text-emerald-900 shadow'
+                        : 'bg-emerald-950/15 text-white hover:bg-emerald-50/20'
                     )}
                   >
                     ארכיון
@@ -474,7 +462,7 @@ export function NotificationsProvider({
                           'rounded-full px-3 py-1 text-[11px] font-bold transition',
                           filterKind === k
                             ? 'bg-emerald-950/25 text-white ring-1 ring-white/40'
-                            : 'bg-white/10 text-white/90 hover:bg-white/20'
+                            : 'bg-emerald-950/10 text-white/90 hover:bg-emerald-50/15'
                         )}
                       >
                         {label}
@@ -485,24 +473,14 @@ export function NotificationsProvider({
               </div>
             </div>
 
-            <div
-              className="min-h-0 flex-1 overflow-y-auto px-3 sm:px-4 pb-10 pt-4 space-y-3.5 scrollbar-hide text-right"
-              style={glassBodyStyle}
-            >
+            <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-emerald-50/70 via-teal-50/40 to-slate-100/60 px-3 sm:px-4 pb-10 pt-3 space-y-2.5 scrollbar-hide text-right">
               {busy && items.length === 0 && (
                 <div className="flex items-center justify-center py-16 text-teal-800">
                   <Loader2 className="h-8 w-8 animate-spin opacity-85" />
                 </div>
               )}
               {!busy && items.length === 0 && (
-                <div
-                  className="py-14 text-center px-4 rounded-[20px] mx-0.5"
-                  style={{
-                    border: '1px solid rgba(255,255,255,0.5)',
-                    background: 'rgba(255,255,255,0.42)',
-                    backdropFilter: 'blur(12px)',
-                  }}
-                >
+                <div className="py-14 text-center px-4 rounded-[20px] mx-0.5 border border-emerald-200/50 bg-gradient-to-br from-emerald-100/50 to-teal-50/60 backdrop-blur-sm">
                   <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500/25 to-emerald-500/20 ring-1 ring-emerald-600/15">
                     <span className="text-2xl" aria-hidden>
                       🌿
@@ -521,213 +499,20 @@ export function NotificationsProvider({
                   </p>
                 </div>
               )}
-              {items.map((n) => {
-                const isAi = n.type === 'ai_message';
-                const isDolev = n.mentorId === 'dolev';
-                const isCheckpoint = n.source === 'almog_habit_checkpoint';
-                const relative = formatHebrewRelativeTime(n.created_at, nowMs);
-                const aiAvatar = isDolev ? dolevAvatar : almogAvatar;
-                const aiAvatarFallback = isDolev ? dolevFallback : ALMOG_AVATAR_FALLBACK;
-                const aiBadge = isDolev ? 'דולב' : 'אלמוג';
-
-                const ArchiveBtn =
-                  viewMode === 'inbox' ? (
-                    <button
-                      type="button"
-                      title="העבר לארכיון"
-                      className="absolute bottom-2 start-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white/90 text-emerald-800 shadow-md ring-1 ring-emerald-100 transition hover:bg-white"
-                      onClick={(e) => void archiveOne(n.id, e)}
-                    >
-                      <Archive className="h-4 w-4" aria-hidden />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      title="החזר לתיבה"
-                      className="absolute bottom-2 start-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white/90 text-teal-800 shadow-md ring-1 ring-teal-100 transition hover:bg-white"
-                      onClick={(e) => void unarchiveOne(n.id, e)}
-                    >
-                      <ArchiveRestore className="h-4 w-4" aria-hidden />
-                    </button>
-                  );
-
-                /**
-                 * עיצוב מיוחד להתראות habit-checkpoint:
-                 * - גרדיאנט אמבר-עמוק בקצה הימני (במקום הירוק הסטנדרטי) — מעיד "תובנה אישית".
-                 * - תווית "תובנה" קטנה מעל הכותרת.
-                 * - שאר העיצוב נשאר זהה כדי להתמזג עם הממשק.
-                 */
-                const cardBg = isCheckpoint
-                  ? n.is_read
-                    ? 'linear-gradient(165deg, rgba(255,255,255,0.62) 0%, rgba(254,243,199,0.30) 100%)'
-                    : 'linear-gradient(165deg, rgba(255,255,255,0.72) 0%, rgba(254,243,199,0.50) 65%, rgba(255,237,213,0.45) 100%)'
-                  : n.is_read
-                    ? 'linear-gradient(165deg, rgba(255,255,255,0.55) 0%, rgba(248,250,252,0.42) 100%)'
-                    : 'linear-gradient(165deg, rgba(255,255,255,0.65) 0%, rgba(236,253,245,0.5) 100%)';
-                const cardShadow = isCheckpoint
-                  ? '0 12px 32px rgba(180,83,9,0.10), inset 0 1px 0 rgba(255,255,255,0.78)'
-                  : '0 12px 32px rgba(6,78,59,0.08), inset 0 1px 0 rgba(255,255,255,0.78)';
-                const cardBorder = isCheckpoint
-                  ? '1px solid rgba(252,211,77,0.45)'
-                  : '1px solid rgba(255,255,255,0.68)';
-                const stripGradient = isCheckpoint
-                  ? 'bg-gradient-to-b from-amber-400 to-orange-400'
-                  : 'bg-gradient-to-b from-teal-500 to-emerald-500';
-                const dotColor = isCheckpoint ? 'bg-amber-500' : 'bg-emerald-500';
-
-                const CardInner = (
-                  <article
-                    className={`relative overflow-hidden rounded-[20px] text-right transition-transform active:scale-[0.99] ${
-                      n.is_read ? 'opacity-[0.93]' : ''
-                    }`}
-                    style={{
-                      border: cardBorder,
-                      background: cardBg,
-                      backdropFilter: 'blur(20px)',
-                      WebkitBackdropFilter: 'blur(20px)',
-                      boxShadow: cardShadow,
-                    }}
-                    lang="he"
-                  >
-                    {ArchiveBtn}
-                    {!n.is_read && (
-                      <>
-                        <span
-                          className={`absolute top-3 bottom-3 start-0 w-[3px] rounded-full shadow-sm ${stripGradient}`}
-                          aria-hidden
-                        />
-                        <span
-                          className={`absolute top-3.5 start-2.5 h-2 w-2 rounded-full ${dotColor} ring-2 ring-white/95 shadow-sm`}
-                          aria-hidden
-                        />
-                      </>
-                    )}
-                    <div className="px-4 py-4 ps-5 pb-12">
-                      <div className="flex flex-row-reverse items-start gap-3">
-                        <div className="min-w-0 flex-1 space-y-2">
-                          {isCheckpoint ? (
-                            <span
-                              className="inline-flex items-center gap-1 rounded-full px-2 py-[2px] text-[10px] font-black tracking-wide text-amber-900 shadow-sm"
-                              style={{
-                                background:
-                                  'linear-gradient(135deg, rgba(252,211,77,0.85), rgba(251,191,36,0.7))',
-                                border: '1px solid rgba(252,211,77,0.6)',
-                              }}
-                            >
-                              <span className="text-[10px]" aria-hidden>✨</span>
-                              תובנה רגע
-                            </span>
-                          ) : null}
-                          <div className="flex flex-row items-baseline justify-between gap-3 w-full">
-                            <h3
-                              className={`text-[14px] sm:text-[15px] font-black leading-snug [overflow-wrap:anywhere] break-words text-right flex-1 min-w-0 order-1 ${
-                                isCheckpoint ? 'text-amber-950' : 'text-teal-900'
-                              }`}
-                              style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
-                            >
-                              {n.title}
-                            </h3>
-                            <time
-                              className="order-2 shrink-0 text-[10px] sm:text-[11px] font-semibold text-slate-500 tabular-nums whitespace-nowrap"
-                              dateTime={n.created_at}
-                              title={new Date(n.created_at).toLocaleString('he-IL', {
-                                timeZone: 'Asia/Jerusalem',
-                              })}
-                            >
-                              {relative}
-                            </time>
-                          </div>
-                          <p className="text-[13px] sm:text-[14px] leading-relaxed text-slate-800 font-medium [overflow-wrap:anywhere] break-words text-right">
-                            {n.body}
-                          </p>
-                        </div>
-
-                        <div className={`shrink-0 pt-0.5 ${isAi ? 'pb-2' : ''}`}>
-                          {isAi ? (
-                            <div className="relative inline-block">
-                              <div
-                                className="relative h-12 w-12 overflow-hidden rounded-full ring-2 ring-white shadow-md"
-                                style={{ boxShadow: '0 4px 16px rgba(4,120,87,0.22)' }}
-                              >
-                                <img
-                                  src={aiAvatar}
-                                  alt=""
-                                  className="h-full w-full object-cover bg-teal-900/15"
-                                  onError={(e) => {
-                                    e.currentTarget.onerror = null;
-                                    e.currentTarget.src = aiAvatarFallback;
-                                  }}
-                                />
-                              </div>
-                              <span
-                                className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[9px] font-black text-white shadow-md"
-                                style={{
-                                  background: isDolev
-                                    ? 'linear-gradient(135deg, #0f766e, #14b8a6)'
-                                    : 'linear-gradient(135deg, #047857, #10b981)',
-                                  boxShadow: '0 2px 8px rgba(4,120,87,0.35)',
-                                  letterSpacing: '0.02em',
-                                }}
-                              >
-                                {aiBadge}
-                              </span>
-                            </div>
-                          ) : (
-                            <div
-                              className="flex h-12 w-12 items-center justify-center rounded-full text-xl shadow-inner leading-none"
-                              style={{
-                                background:
-                                  'linear-gradient(145deg, rgba(13,148,136,0.2), rgba(16,185,129,0.24))',
-                                border: '1px solid rgba(255,255,255,0.7)',
-                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
-                              }}
-                            >
-                              {n.icon_emoji ? (
-                                <span aria-hidden>{n.icon_emoji}</span>
-                              ) : (
-                                <Zap className="h-5 w-5 text-teal-700" strokeWidth={2.2} aria-hidden />
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                );
-
-                if (n.action_url) {
-                  return (
-                    <Link
-                      href={n.action_url}
-                      key={n.id}
-                      onClick={() => {
-                        void markOne(n.id, !n.is_read);
-                        setOpen(false);
-                      }}
-                      className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/50 rounded-[20px]"
-                    >
-                      {CardInner}
-                    </Link>
-                  );
-                }
-                return (
-                  <div
-                    key={n.id}
-                    role="button"
-                    tabIndex={0}
-                    className="block cursor-pointer rounded-[20px] focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/50"
-                    onClick={() => void markOne(n.id, !n.is_read)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        void markOne(n.id, !n.is_read);
-                      }
-                    }}
-                  >
-                    {CardInner}
-                  </div>
-                );
-              })}
+              {items.map((n) => (
+                <NotificationCard
+                  key={n.id}
+                  notification={n}
+                  nowMs={nowMs}
+                  viewMode={viewMode}
+                  almogAvatar={almogAvatar}
+                  dolevAvatar={dolevAvatar}
+                  onMarkRead={markOne}
+                  onArchive={archiveOne}
+                  onUnarchive={unarchiveOne}
+                  onCloseDrawer={() => setOpen(false)}
+                />
+              ))}
 
               {nextCursor ? (
                 <div className="flex justify-center pt-2 pb-6">
@@ -735,7 +520,7 @@ export function NotificationsProvider({
                     type="button"
                     disabled={loadingMore}
                     onClick={() => void loadMore()}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200/80 bg-white/80 px-5 py-2.5 text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-white disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-emerald-300/50 bg-emerald-100/70 px-5 py-2.5 text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-200/50 disabled:opacity-50"
                   >
                     {loadingMore ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

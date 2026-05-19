@@ -291,6 +291,7 @@ ${
       send_at: new Date().toISOString(),
       metadata: {
         source: 'almog_habit_checkpoint',
+        expects_reply: true,
         notify_mode: payload.notifyMode,
         reinforce_kind: payload.reinforceKind ?? null,
         slot: payload.slot,

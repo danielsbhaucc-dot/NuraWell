@@ -90,6 +90,7 @@ ${cooldownBlock ?? ''}
     send_at: new Date().toISOString(),
     metadata: {
       source: 'almog_followup_workflow',
+      expects_reply: true,
       task_id: taskId,
       model: AI_MODELS.empathy,
       recipient_first_name: firstName,

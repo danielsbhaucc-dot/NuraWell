@@ -8,6 +8,10 @@ import { useChat } from '@ai-sdk/react';
 import { TextStreamChatTransport } from 'ai';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
+import {
+  OPEN_ALMOG_CHAT_EVENT,
+  type OpenAlmogChatDetail,
+} from '../../lib/notifications/open-almog-chat';
 
 const SESSION_STORAGE_KEY = 'nurawell_almog_chat_session';
 
@@ -253,7 +257,9 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const [online, setOnline] = useState(true);
   const [input, setInput] = useState('');
   const [typingStep, setTypingStep] = useState(0);
+  const [notificationContext, setNotificationContext] = useState<OpenAlmogChatDetail | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const notificationIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -282,9 +288,16 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   }, []);
 
   useEffect(() => {
-    const onOpenChat = () => setOpen(true);
-    window.addEventListener('open-almog-chat', onOpenChat);
-    return () => window.removeEventListener('open-almog-chat', onOpenChat);
+    const onOpenChat = (e: Event) => {
+      setOpen(true);
+      const detail = (e as CustomEvent<OpenAlmogChatDetail>).detail;
+      if (detail?.notificationId && detail.mentorMessage) {
+        setNotificationContext(detail);
+        notificationIdRef.current = detail.notificationId;
+      }
+    };
+    window.addEventListener(OPEN_ALMOG_CHAT_EVENT, onOpenChat);
+    return () => window.removeEventListener(OPEN_ALMOG_CHAT_EVENT, onOpenChat);
   }, []);
 
   const fetchWithSession = useMemo(() => {
@@ -318,6 +331,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       body: () => ({
         user_id: userId,
         session_id: sessionIdRef.current ?? undefined,
+        notification_id: notificationIdRef.current ?? undefined,
       }),
     }),
   });
@@ -342,7 +356,18 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   if (!mounted) return null;
 
   return (
-    <Drawer.Root open={open} onOpenChange={setOpen} direction="bottom" shouldScaleBackground>
+    <Drawer.Root
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) {
+          setNotificationContext(null);
+          notificationIdRef.current = null;
+        }
+      }}
+      direction="bottom"
+      shouldScaleBackground
+    >
       <Drawer.Trigger asChild>
         <motion.button
           type="button"
@@ -436,13 +461,24 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
               className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-[#0f172a] via-[#111827] to-[#0b1220] px-3 py-4 text-right [box-shadow:inset_0_1px_0_rgba(255,255,255,0.06)]"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
-              {messages.length === 0 && (
+              {notificationContext && (
+                <div className="flex justify-end">
+                  <div className="max-w-[92%] rounded-3xl border border-emerald-400/30 bg-emerald-500/20 px-4 py-3 text-[15px] leading-relaxed text-emerald-50 shadow-sm">
+                    <p className="mb-1 text-[11px] font-bold text-emerald-200/90">מאלמוג · התראה</p>
+                    <p className="whitespace-pre-wrap">{notificationContext.mentorMessage}</p>
+                  </div>
+                </div>
+              )}
+              {messages.length === 0 && !notificationContext && (
                 <div
                   className="rounded-2xl border border-white/20 bg-white/10 p-4 text-sm leading-relaxed text-slate-100 shadow-sm"
                   style={{ boxShadow: '0 8px 28px rgba(2,6,23,0.35)' }}
                 >
                   אפשר לכתוב לי מה עובר עליך עכשיו, ואבנה איתך צעד קטן ומדויק להיום.
                 </div>
+              )}
+              {messages.length === 0 && notificationContext && (
+                <p className="text-center text-xs text-slate-400">כתוב את תשובתך למטה — אלמוג ימשיך משם</p>
               )}
 
               {messages.length > 0 && (
@@ -524,7 +560,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
             </div>
 
             <div className="shrink-0 border-t border-white/10 bg-slate-900/70 p-3 backdrop-blur-2xl" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-              {messages.length === 0 && (
+              {messages.length === 0 && !notificationContext && (
                 <div className="mb-2 flex flex-wrap justify-end gap-2">
                   {MICRO_WIN_QUICK_STARTERS.map((chip) => (
                     <button
@@ -565,10 +601,15 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                         body: {
                           user_id: userId,
                           session_id: sessionIdRef.current ?? undefined,
+                          notification_id: notificationIdRef.current ?? undefined,
                         },
                       }
                     );
                     setInput('');
+                    if (notificationIdRef.current) {
+                      setNotificationContext(null);
+                      notificationIdRef.current = null;
+                    }
                   }}
                 >
                   <button
@@ -590,7 +631,9 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                       }
                     }}
                     disabled={isLoading}
-                    placeholder="כתוב לי מה עובר עליך..."
+                    placeholder={
+                      notificationContext ? 'ענה לאלמוג על מה ששאל...' : 'כתוב לי מה עובר עליך...'
+                    }
                     className="max-h-28 min-h-[44px] flex-1 resize-none rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-[15px] text-right text-white shadow-inner outline-none placeholder:text-white/35 disabled:opacity-60"
                   />
                   <button
