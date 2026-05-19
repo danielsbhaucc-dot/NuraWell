@@ -120,6 +120,7 @@ const ALMOG_TOUCH_SOURCES = new Set([
   'onboarding_check_in',
   'almog_followup_workflow',
   'almog_journey_companion',
+  'almog_life_context',
   'cron_ops',
 ]);
 

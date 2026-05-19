@@ -492,10 +492,12 @@ async function runMasterCron() {
       fetchJourneyCompanionContext,
       gateJourneyCompanionNotify,
       shouldNudgeJourneyCompanion,
+      shouldSendFullJourneyCompanion,
     } = await import('../../../../../../lib/workflows/journey-companion');
     const { sendJourneyCompanionNudge } = await import(
       '../../../../../../lib/workflows/send-journey-companion-nudge'
     );
+    const { sendLifeContextTouch } = await import('../../../../../../lib/ai/life-context');
     const { isAvoidPushActive: avoidPush } = await import('../../../../../../lib/ai/avoid-push');
 
     for (const profile of (journeyCandidateRows ?? []) as {
@@ -513,8 +515,32 @@ async function runMasterCron() {
         const companion = await fetchJourneyCompanionContext(admin, userId);
         if (!companion || !shouldNudgeJourneyCompanion(companion)) continue;
 
+        const first =
+          profile.full_name?.trim().split(/\s+/)[0]?.trim() || 'שם';
+
+        if (companion.lifeContextualDue && companion.lifeContext) {
+          const lifeGate = await gateJourneyCompanionNotify(admin, userId, checkpointDate, {
+            promiseDue: true,
+            minIntervalDays: 0,
+          });
+          if (lifeGate.ok) {
+            const lifeResult = await sendLifeContextTouch(admin, userId, companion.lifeContext);
+            if (lifeResult?.inserted) {
+              const { afterAlmogInAppNotification } = await import(
+                '../../../../../../lib/notifications/after-almog-insert'
+              );
+              afterAlmogInAppNotification(userId, `${first} 🌴`, lifeResult.body);
+              journeyCompanionSent++;
+            }
+          }
+          continue;
+        }
+
+        if (!shouldSendFullJourneyCompanion(companion)) continue;
+
         const gate = await gateJourneyCompanionNotify(admin, userId, checkpointDate, {
           promiseDue: companion.followUpDue,
+          minIntervalDays: companion.nudgeIntervalDays,
         });
         if (!gate.ok) continue;
 
@@ -531,8 +557,6 @@ async function runMasterCron() {
         const { afterAlmogInAppNotification } = await import(
           '../../../../../../lib/notifications/after-almog-insert'
         );
-        const first =
-          profile.full_name?.trim().split(/\s+/)[0]?.trim() || 'שם';
         afterAlmogInAppNotification(userId, `${first} 🌿`, result.body);
         journeyCompanionSent++;
       } catch (e) {

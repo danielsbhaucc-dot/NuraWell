@@ -1,5 +1,6 @@
 import { pruneExpiredAvoidPushUntil } from './avoid-push';
 import type { JourneyFollowUp } from './journey-follow-up-promise';
+import type { LifeContext } from './life-context';
 
 export interface AiUserContext {
   weakness_pattern?: string;
@@ -27,6 +28,8 @@ export interface AiUserContext {
   work_arrival_time?: string;
   /** מעקב אחרי הבטחה בצ'אט — "אמשיך מחר", "עוד שעה" */
   journey_follow_up?: JourneyFollowUp | null;
+  /** חופשה / אשפוז / נסיעה — התאמת דחיפה וטון */
+  life_context?: LifeContext | null;
   /** Web Push subscription (אופציונלי) */
   web_push?: {
     endpoint: string;
@@ -160,6 +163,10 @@ export async function buildUserContext(
       `הבטחה למעקב במסע: ${ctx.journey_follow_up.label} (בדיקה ~${ctx.journey_follow_up.check_at})`
     );
   }
+  const life = ctx.life_context;
+  if (life?.summary) {
+    parts.push(`הקשר חיים: ${life.summary} (דחיפה: ${life.push_level})`);
+  }
 
   const chatCommitmentsPreview: string[] = ctx.journey_follow_up?.label
     ? [ctx.journey_follow_up.label]
@@ -226,6 +233,7 @@ export async function updateAiContext(
     'coaching_style',
     'work_arrival_time',
     'journey_follow_up',
+    'life_context',
     'web_push',
   ];
 
@@ -248,6 +256,10 @@ export async function updateAiContext(
   }
   if (filtered.journey_follow_up === null) {
     const { journey_follow_up: _jf, ...rest } = merged;
+    merged = rest;
+  }
+  if (filtered.life_context === null) {
+    const { life_context: _lc, ...rest } = merged;
     merged = rest;
   }
   merged = pruneExpiredAvoidPushUntil(merged);

@@ -22,6 +22,8 @@ const base: JourneyCompanionContext = {
   daysSinceLastCompanionNudge: 2,
   unansweredAlmogTouches: 0,
   nudgeIntervalDays: JOURNEY_COMPANION_INTERVAL_DAYS,
+  lifeContext: null,
+  lifeContextualDue: false,
 };
 
 describe('shouldNudgeJourneyCompanion', () => {
@@ -74,6 +76,11 @@ describe('parseJourneyFollowUpFromMessage', () => {
     const f = parseJourneyFollowUpFromMessage('אמשיך את הצעד מחר בבוקר', 'step-1', now);
     expect(f?.label).toContain('מחר');
     expect(f?.step_id).toBe('step-1');
+  });
+
+  it('מזהה מחר בבוקר אעשה X', () => {
+    const f = parseJourneyFollowUpFromMessage('מחר בבוקר אעשה את האימון', null, now);
+    expect(f?.label).toContain('אימון');
   });
 
   it('מזהה עוד שעה', () => {

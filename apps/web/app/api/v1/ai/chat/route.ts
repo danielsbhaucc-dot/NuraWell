@@ -63,6 +63,10 @@ import {
   resolveReturnVisitContext,
 } from '../../../../../lib/ai/roller-coaster';
 import {
+  applyLifeContextFromUserMessage,
+  formatLifeContextChatBlock,
+} from '../../../../../lib/ai/life-context';
+import {
   applyJourneyFollowUpFromUserMessage,
   formatJourneyFollowUpChatBlock,
 } from '../../../../../lib/ai/journey-follow-up-promise';
@@ -866,6 +870,7 @@ export async function POST(request: Request) {
     const moodFromProfile = moodCoachingHint(profileMoodSignal);
     const coachingStyleBlock = buildCoachingStylePromptBlock(profileRow.ai_context);
     const journeyFollowUpBlock = formatJourneyFollowUpChatBlock(profileRow.ai_context);
+    const lifeContextBlock = formatLifeContextChatBlock(profileRow.ai_context);
     const dailyShortTermBlock = formatDailyShortTermBlock({
       chatTurns: todayChatTurns,
       todayTouches: todayAlmogTouches,
@@ -905,7 +910,7 @@ export async function POST(request: Request) {
 
     const systemPromptWithMemory = `${BASE_SYSTEM_PROMPT}
 
-${coachingStyleBlock}${journeyFollowUpBlock}
+${coachingStyleBlock}${journeyFollowUpBlock}${lifeContextBlock}
 ${notificationContextBlock ? `\n${notificationContextBlock}\n` : ''}
 
 סדר: (1) מערכת (2) פרופיל (3) RAG (4) מסע (5) השיחה = עכשיו.
@@ -1156,6 +1161,28 @@ ${JSON.stringify(journeyDataBlock)}
             debug_id: debugId,
             stage: `${finishStage}_task_intent`,
             error: taskErr instanceof Error ? taskErr.message : String(taskErr),
+          });
+        }
+
+        try {
+          const lifeCtx = await applyLifeContextFromUserMessage(
+            supabase,
+            user.id,
+            lastUserText
+          );
+          if (lifeCtx.stored || lifeCtx.cleared) {
+            console.info('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_life_context`,
+              stored: lifeCtx.stored,
+              cleared: lifeCtx.cleared,
+            });
+          }
+        } catch (lifeCtxErr) {
+          console.warn('[ai/chat]', {
+            debug_id: debugId,
+            stage: `${finishStage}_life_context`,
+            error: lifeCtxErr instanceof Error ? lifeCtxErr.message : String(lifeCtxErr),
           });
         }
 

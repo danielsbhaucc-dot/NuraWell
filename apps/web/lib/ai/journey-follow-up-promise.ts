@@ -102,10 +102,23 @@ export function parseJourneyFollowUpFromMessage(
   const maxAhead = now.getTime() + 3 * DAY_MS;
   if (checkAt.getTime() > maxAhead) return null;
 
+  let label = shortLabel(intent);
+  const actionAfterTomorrow = msg.match(
+    /מחר(?:\s+בבוקר|\s+בערב)?\s+(?:א)?(?:עשה|אעשה|נעשה|אמשיך|נמשיך|אתחיל|נתחיל|אסיים|אכנס)\s+(.{3,72})/i
+  );
+  const actionBeforeTomorrow = msg.match(
+    /(?:א)?(?:עשה|אעשה|נעשה|אמשיך|נמשיך|אתחיל|נתחיל|אסיים)\s+(.{3,60}?)\s+מחר/i
+  );
+  const rawAction = actionAfterTomorrow?.[1] ?? actionBeforeTomorrow?.[1];
+  if (rawAction) {
+    const action = rawAction.replace(/[.!?]+$/, '').trim();
+    label = `מחר: ${action.length > 48 ? `${action.slice(0, 47)}…` : action}`;
+  }
+
   return {
     check_at: checkAt.toISOString(),
     promised_at: now.toISOString(),
-    label: shortLabel(intent),
+    label,
     ...(stepId ? { step_id: stepId } : {}),
   };
 }
@@ -129,7 +142,7 @@ export function formatJourneyFollowUpPromptBlock(followUp: JourneyFollowUp): str
     hour: '2-digit',
     minute: '2-digit',
   });
-  return `הבטחה מהשיחה (${followUp.label}, ~${when}): בדוק בעדינות אם זה קרה — "איך הלך?" לא "למה לא". אם לא — מה חסם, בלי שיפוט.`;
+  return `הבטחה (${followUp.label}, ~${when}): בדוק בעדינות אם זה קרה — "איך הלך עם זה?" לא "למה לא".`;
 }
 
 export async function applyJourneyFollowUpFromUserMessage(

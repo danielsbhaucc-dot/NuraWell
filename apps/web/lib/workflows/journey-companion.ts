@@ -1,6 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AiUserContext } from '../ai/memory';
 import {
+  companionIntervalForLife,
+  formatLifeContextNotifyBlock,
+  isLifeContextualCheckDue,
+  readLifeContext,
+  type LifeContext,
+} from '../ai/life-context';
+import {
   formatJourneyFollowUpPromptBlock,
   isJourneyFollowUpDue,
   readJourneyFollowUp,
@@ -43,6 +50,8 @@ export type JourneyCompanionContext = {
   daysSinceLastCompanionNudge: number | null;
   unansweredAlmogTouches: number;
   nudgeIntervalDays: number;
+  lifeContext: LifeContext | null;
+  lifeContextualDue: boolean;
 };
 
 type ProgressRowLite = {
@@ -116,8 +125,9 @@ function buildSnapshot(rows: ProgressRowLite[]): JourneyCompanionSnapshot {
   };
 }
 
-/** מגע ליווי — כל יום (או מיד כשהבטחה מהצ'אט מגיעה). */
+/** מגע ליווי — לפי מרווח + הבטחות + מגע חופשה/יום שנקבע */
 export function shouldNudgeJourneyCompanion(ctx: JourneyCompanionContext): boolean {
+  if (ctx.lifeContextualDue) return true;
   if (ctx.followUpDue) return true;
   if (ctx.daysSinceOnboarding < 1) return false;
   const since = ctx.daysSinceLastCompanionNudge;
@@ -125,8 +135,19 @@ export function shouldNudgeJourneyCompanion(ctx: JourneyCompanionContext): boole
   return since >= ctx.nudgeIntervalDays;
 }
 
+/** מגע מסע מלא — לא כשאשפוז/מינימום (אלא מגע חיים נפרד) */
+export function shouldSendFullJourneyCompanion(ctx: JourneyCompanionContext): boolean {
+  if (ctx.lifeContextualDue) return false;
+  if (ctx.lifeContext?.push_level === 'minimal') return false;
+  return shouldNudgeJourneyCompanion(ctx);
+}
+
 export function formatJourneyCompanionPromptBlock(ctx: JourneyCompanionContext): string {
   const parts: string[] = [];
+
+  if (ctx.lifeContext) {
+    parts.push(formatLifeContextNotifyBlock(ctx.lifeContext));
+  }
 
   parts.push(
     'עקרון: אלמוג לא נעלם — גם בלי תשובה. בדוק מצב צעד/נושאים ברקע פנימי; בטון חבר, לא מעקב.'
@@ -163,7 +184,16 @@ export function formatJourneyCompanionPromptBlock(ctx: JourneyCompanionContext):
       break;
   }
 
-  if (ctx.snapshot.openAcceptedCount > 0) {
+  if (ctx.lifeContext?.push_level === 'minimal') {
+    parts.push('אל תזכיר משימות/צעדים — רק אם הכול בסדר ואיך להתקדם כשירגישו מוכנים.');
+    return parts.join('\n');
+  }
+
+  if (ctx.lifeContext?.push_level === 'light') {
+    parts.push('אל תלחץ על מסע/משימות — מגע חברי על היום והמקום.');
+  }
+
+  if (ctx.snapshot.openAcceptedCount > 0 && ctx.lifeContext?.push_level !== 'light') {
     const titles = ctx.snapshot.pendingTaskTitles.join('; ');
     parts.push(
       `רקע פנימי: ${ctx.snapshot.openAcceptedCount} נושאים שקיבלו על עצמם (${titles}) — עניין בעדינות בשפת חיים, בלי בדיקת ביצוע.`
@@ -206,7 +236,7 @@ export async function gateJourneyCompanionNotify(
   admin: SupabaseClient,
   userId: string,
   checkpointDate: string,
-  opts?: { promiseDue?: boolean }
+  opts?: { promiseDue?: boolean; minIntervalDays?: number }
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
   const today = israelDateKey();
   if (checkpointDate !== today) {
@@ -233,8 +263,9 @@ export async function gateJourneyCompanionNotify(
     return { ok: true };
   }
 
+  const minDays = opts?.minIntervalDays ?? JOURNEY_COMPANION_INTERVAL_DAYS;
   const daysSince = await fetchDaysSinceLastJourneyCompanionNudge(admin, userId);
-  if (daysSince != null && daysSince < JOURNEY_COMPANION_INTERVAL_DAYS) {
+  if (daysSince != null && daysSince < minDays) {
     return { ok: false, reason: 'companion_interval_not_elapsed' };
   }
 
@@ -281,6 +312,9 @@ export async function fetchJourneyCompanionContext(
   const aiCtx = (profile.ai_context ?? {}) as AiUserContext;
   const followUp = readJourneyFollowUp(aiCtx);
   const followUpDue = isJourneyFollowUpDue(followUp);
+  const lifeContext = readLifeContext(aiCtx);
+  const lifeContextualDue = isLifeContextualCheckDue(lifeContext);
+  const nudgeIntervalDays = companionIntervalForLife(aiCtx);
 
   const buildBase = (
     phase: JourneyCompanionPhase,
@@ -300,7 +334,9 @@ export async function fetchJourneyCompanionContext(
     followUpDue,
     daysSinceLastCompanionNudge: daysSinceLastNudge,
     unansweredAlmogTouches: unansweredTouches,
-    nudgeIntervalDays: JOURNEY_COMPANION_INTERVAL_DAYS,
+    nudgeIntervalDays,
+    lifeContext,
+    lifeContextualDue,
     ...extra,
   });
 

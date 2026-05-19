@@ -18,10 +18,16 @@ import { normalizeCheckInTimes } from '../ai/onboarding-check-in-time';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
 import type { OnboardingCheckInPayload } from './onboarding-check-in-payload';
 import {
+  formatLifeContextNotifyBlock,
+  readLifeContext,
+  sendLifeContextTouch,
+} from '../ai/life-context';
+import {
   fetchJourneyCompanionContext,
   formatCompanionBlockForPersonalizedCheckIn,
   gateJourneyCompanionNotify,
   shouldNudgeJourneyCompanion,
+  shouldSendFullJourneyCompanion,
 } from './journey-companion';
 import {
   fetchPersonalizedCheckInJourneyContext,
@@ -64,9 +70,34 @@ export async function sendOnboardingCheckInNotification(
     fetchTodayChatTurns(admin, payload.userId),
   ]);
 
-  if (companionCtx && shouldNudgeJourneyCompanion(companionCtx)) {
+  if (
+    companionCtx?.lifeContextualDue &&
+    companionCtx.lifeContext &&
+    shouldNudgeJourneyCompanion(companionCtx)
+  ) {
+    const gate = await gateJourneyCompanionNotify(admin, payload.userId, payload.checkpointDate, {
+      promiseDue: true,
+      minIntervalDays: 0,
+    });
+    if (gate.ok) {
+      const lifeResult = await sendLifeContextTouch(
+        admin,
+        payload.userId,
+        companionCtx.lifeContext,
+        payload.checkInTime
+      );
+      if (lifeResult?.inserted) {
+        const { afterAlmogInAppNotification } = await import('../notifications/after-almog-insert');
+        afterAlmogInAppNotification(payload.userId, `${firstName} 🌴`, lifeResult.body);
+      }
+      return { body: lifeResult?.body ?? '', inserted: lifeResult?.inserted ?? null };
+    }
+  }
+
+  if (companionCtx && shouldSendFullJourneyCompanion(companionCtx)) {
     const gate = await gateJourneyCompanionNotify(admin, payload.userId, payload.checkpointDate, {
       promiseDue: companionCtx.followUpDue,
+      minIntervalDays: companionCtx.nudgeIntervalDays,
     });
     if (gate.ok) {
       const companionResult = await sendJourneyCompanionNudge(
@@ -119,9 +150,11 @@ export async function sendOnboardingCheckInNotification(
       : null;
 
   const profileHint = trimProfilePromptForNotify(aiSystemPrompt);
+  const lc = readLifeContext(profileSchedule.aiContext ?? null);
+  const lifeBlock = lc ? `\n${formatLifeContextNotifyBlock(lc)}\n` : '';
 
   const systemPrompt = `${NOTIFY_PERSONALIZED_TASK}
-${profileHint ? `פרופיל:${profileHint}\n` : ''}${journeyBlock}
+${profileHint ? `פרופיל:${profileHint}\n` : ''}${lifeBlock}${journeyBlock}
 ${buildSlotDaypartPromptBlock(slot)}
 ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : ''}${profileSchedule.proximity ?? ''}
 מגע ${payload.checkInIndex + 1}/${totalToday} ${payload.checkInTime}. ${timeRelation}`;
