@@ -305,5 +305,9 @@ ${
     .single();
 
   if (error) throw new Error(error.message);
+
+  const { afterAlmogInAppNotification } = await import('../notifications/after-almog-insert');
+  afterAlmogInAppNotification(payload.userId, title, body);
+
   return { body, inserted: inserted as Record<string, unknown> | null };
 }

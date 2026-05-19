@@ -306,6 +306,29 @@ export function buildRollerCoasterChatPromptBlock(input: {
 /**
  * אותות חזרה לצ'אט — שאילתת מגעים רק אם יש היעדרות אפשרית (חוסך DB).
  */
+/** פער הרגל היומי (3+ ימים) — לצ'אט בזמן אמת. */
+export async function fetchHabitGapForChat(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<HabitGapSignal | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('journey_progress')
+    .select('updated_at, habits_progress, journey_steps ( habits )')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+    .limit(12);
+
+  if (error || !Array.isArray(data)) return null;
+  return detectPrimaryHabitGap(
+    data as Array<{
+      updated_at: string;
+      habits_progress?: unknown;
+      journey_steps?: { habits?: unknown } | null;
+    }>
+  );
+}
+
 export async function fetchReturnVisitSignalsForChat(
   supabase: SupabaseClient,
   userId: string,

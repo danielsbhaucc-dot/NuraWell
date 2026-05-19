@@ -6,12 +6,13 @@ import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { getTimeGreeting } from '../../lib/time/greeting';
 
-interface DolevHeroHeaderProps {
+interface AlmogHeroHeaderProps {
   firstName: string;
   bubbleContent: ReactNode;
 }
 
-export function DolevHeroHeader({ firstName, bubbleContent }: DolevHeroHeaderProps) {
+/** כותרת בית עם אלמוג — לא דולב */
+export function AlmogHeroHeader({ firstName, bubbleContent }: AlmogHeroHeaderProps) {
   const { avatarUrl } = useAlmogAvatarUrl();
   const heroGreeting = getTimeGreeting(new Date());
 
@@ -157,3 +158,6 @@ export function DolevHeroHeader({ firstName, bubbleContent }: DolevHeroHeaderPro
     </>
   );
 }
+
+/** @deprecated השתמש ב-AlmogHeroHeader */
+export const DolevHeroHeader = AlmogHeroHeader;

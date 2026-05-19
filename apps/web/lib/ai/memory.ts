@@ -24,6 +24,13 @@ export interface AiUserContext {
   coaching_style?: 'warm_friend' | 'direct' | 'gentle' | string;
   /** שעת הגעה טיפוסית לעבודה (HH:MM) — לעיגון הודעות לפני המשרד */
   work_arrival_time?: string;
+  /** Web Push subscription (אופציונלי) */
+  web_push?: {
+    endpoint: string;
+    expirationTime?: number | null;
+    keys: { p256dh: string; auth: string };
+    updated_at?: string;
+  } | null;
 }
 
 export interface BuildUserContextResult {
@@ -208,6 +215,7 @@ export async function updateAiContext(
     'skip_weight_check_ins',
     'coaching_style',
     'work_arrival_time',
+    'web_push',
   ];
 
   const { data: existing } = await supabase

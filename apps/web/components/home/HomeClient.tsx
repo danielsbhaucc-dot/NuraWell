@@ -12,7 +12,7 @@ import {
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
-import { DolevHeroHeader } from './DolevHeroHeader';
+import { AlmogHeroHeader } from './DolevHeroHeader';
 import {
   countAcceptedTaskExecution,
   type JourneyReportStepShape,
@@ -66,34 +66,38 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
 
   const bubbleContent = useMemo(() => {
     if (taskLoading) {
-      return <>טוען את המשימות שלך…</>;
+      return <>רגע, אני מסתכל על המסע שלך…</>;
     }
     if (taskCounts.accepted === 0) {
       return (
         <>
-          שמחים שחזרת! 🌿
+          {firstName ? `${firstName}, ` : ''}שמח שאתה כאן 🌿
           <br />
-          <strong style={{ color: '#FFD97D', fontWeight: 700 }}>במסע שלך מחכות משימות חדשות.</strong>
+          <strong style={{ color: '#FFD97D', fontWeight: 700 }}>
+            כשנוח — תכתוב לי במשפט מה הכי חשוב היום.
+          </strong>
         </>
       );
     }
     if (taskCounts.pending > 0) {
       return (
         <>
-          יש לך {taskCounts.pending} משימות לביצוע היום.
+          יש לך {taskCounts.pending} משימות שקיבלת ועדיין לא סגרת.
           <br />
-          <strong style={{ color: '#FFD97D', fontWeight: 700 }}>בואו נתקדם צעד אחד!</strong>
+          <strong style={{ color: '#FFD97D', fontWeight: 700 }}>
+            ספר לי בצ&apos;אט כשעשית — בלי לחפש כפתורים.
+          </strong>
         </>
       );
     }
     return (
       <>
-        כל הכבוד! סיימת את כל המשימות שהתחייבת אליהן ✦
+        יופי — סגרת את מה שהתחייבת אליו היום ✦
         <br />
-        <strong style={{ color: '#FFD97D', fontWeight: 700 }}>ממשיכים יחד במסע.</strong>
+        <strong style={{ color: '#FFD97D', fontWeight: 700 }}>מה הכי מרגיש לך עכשיו?</strong>
       </>
     );
-  }, [taskCounts, taskLoading]);
+  }, [taskCounts, taskLoading, firstName]);
 
   return (
     <div>
@@ -116,7 +120,7 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
           }}
         />
         <div className="relative z-10" style={{ padding: '12px 20px 40px' }}>
-          <DolevHeroHeader firstName={firstName} bubbleContent={bubbleContent} />
+          <AlmogHeroHeader firstName={firstName} bubbleContent={bubbleContent} />
         </div>
       </div>
 

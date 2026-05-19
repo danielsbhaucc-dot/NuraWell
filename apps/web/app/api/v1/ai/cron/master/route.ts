@@ -336,6 +336,10 @@ async function runMasterCron() {
         });
 
         if (insErr) throw new Error(insErr.message);
+        const { afterAlmogInAppNotification } = await import(
+          '../../../../../../lib/notifications/after-almog-insert'
+        );
+        afterAlmogInAppNotification(userId, resolved.title, resolved.body);
         celebrated++;
         actionCounts.celebrate++;
       } catch (e) {
@@ -441,6 +445,10 @@ async function runMasterCron() {
         });
 
         if (insErr) throw new Error(insErr.message);
+        const { afterAlmogInAppNotification: afterNudge } = await import(
+          '../../../../../../lib/notifications/after-almog-insert'
+        );
+        afterNudge(userId, resolved.title, resolved.body);
 
         if (decision.action === 'crisis_reconnect') {
           const ctx = (profile.ai_context ?? {}) as Record<string, unknown>;

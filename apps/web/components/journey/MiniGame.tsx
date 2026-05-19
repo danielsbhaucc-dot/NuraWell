@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gamepad2, ArrowLeft, ClipboardList, RotateCcw } from 'lucide-react';
 import type { GameItem } from '../../lib/types/journey';
-import { AlmogInstantFeedback } from './AlmogInstantFeedback';
+import { AlmogLessonFeedback } from './AlmogLessonFeedback';
 import { AlmogCompletionHero } from './AlmogPresence';
 import { JourneyResultsDrawer } from './JourneyResultsDrawer';
 
@@ -17,7 +17,7 @@ interface MiniGameProps {
   userId?: string;
 }
 
-export function MiniGame({ items, existingAnswers, onComplete, onResetGame }: MiniGameProps) {
+export function MiniGame({ items, existingAnswers, onComplete, onResetGame, stepId }: MiniGameProps) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, boolean>>(existingAnswers);
   const [showResult, setShowResult] = useState(false);
@@ -207,9 +207,16 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame }: Mi
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-4"
               >
-                <AlmogInstantFeedback isCorrect={isCorrect} tone="game">
-                  <p className="text-sm leading-relaxed text-gray-800">{item.explanation}</p>
-                </AlmogInstantFeedback>
+                <AlmogLessonFeedback
+                  isCorrect={isCorrect}
+                  tone="game"
+                  interactionType="game"
+                  score={isCorrect ? 88 : 42}
+                  stepId={stepId}
+                  fallback={
+                    <p className="text-sm leading-relaxed text-gray-800">{item.explanation}</p>
+                  }
+                />
               </motion.div>
             )}
           </div>

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, CheckCircle2, Sparkles } from 'lucide-react';
+import { Heart, CheckCircle2 } from 'lucide-react';
 import type { CommitmentData } from '../../lib/types/journey';
+import { AlmogLessonFeedback } from './AlmogLessonFeedback';
 
 interface CommitmentSectionProps {
   commitment: CommitmentData;
@@ -19,6 +20,7 @@ export function CommitmentSection({
   isAccepted,
   onAccept,
   onChoose,
+  stepId,
 }: CommitmentSectionProps) {
   const [accepted, setAccepted] = useState(isAccepted);
 
@@ -85,21 +87,28 @@ export function CommitmentSection({
               animate={{ scale: 1, opacity: 1 }}
               className="space-y-3"
             >
-              <div
+              <motion.div
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl"
                 style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)' }}
               >
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                 <span className="text-emerald-700 font-bold">קיבלת על עצמך! 🌟</span>
-              </div>
-              <div className="flex items-center justify-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                <span className="text-sm text-gray-500">אתה יכול לעשות את זה!</span>
-                <Sparkles className="w-4 h-4 text-amber-500" />
-              </div>
+              </motion.div>
+              <AlmogLessonFeedback
+                isCorrect
+                tone="quiz"
+                interactionType="commitment"
+                commitmentText={commitment.text}
+                stepId={stepId}
+                fallback={
+                  <span className="text-sm text-gray-600">
+                    התחייבות חזקה — צעד קטן היום מספיק לנעוץ את זה.
+                  </span>
+                }
+              />
             </motion.div>
           ) : (
-            <div className="space-y-3">
+            <motion.div className="space-y-3">
               <button
                 type="button"
                 onClick={handleAccept}
@@ -120,7 +129,7 @@ export function CommitmentSection({
               >
                 להמשיך בלי התחייבות כרגע
               </button>
-            </div>
+            </motion.div>
           )}
         </div>
       </motion.div>

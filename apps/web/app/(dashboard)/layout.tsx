@@ -7,6 +7,7 @@ import { ProgressReportProvider } from '../../components/progress-report/Progres
 import { ActionHubProvider } from '../../components/action-hub/ActionHubProvider';
 import { NotificationsProvider } from '../../components/notifications/NotificationsProvider';
 import { DolevFirstLoginHost } from '../../components/onboarding/DolevFirstLoginHost';
+import { AlmogFirstLoginHost } from '../../components/onboarding/AlmogFirstLoginHost';
 import type { ProfileSummarySource } from '../../lib/onboarding/profile-summary-rows';
 
 export default async function DashboardLayout({
@@ -27,7 +28,8 @@ export default async function DashboardLayout({
     .select(
       `full_name, gender, main_goal, current_weight_kg, goal_weight_kg,
       weakest_time_of_day, main_obstacle, main_obstacle_detail,
-      wake_up_time, sleep_time, meal_schedule, dolev_welcome_seen_at, onboarding_completed`
+      wake_up_time, sleep_time, meal_schedule, dolev_welcome_seen_at, almog_welcome_seen_at,
+      onboarding_completed`
     )
     .eq('id', user.id)
     .maybeSingle();
@@ -36,6 +38,12 @@ export default async function DashboardLayout({
     Boolean(user.email_confirmed_at) &&
     profile?.onboarding_completed === true &&
     !profile?.dolev_welcome_seen_at;
+
+  const showAlmogWelcome =
+    Boolean(user.email_confirmed_at) &&
+    profile?.onboarding_completed === true &&
+    Boolean(profile?.dolev_welcome_seen_at) &&
+    !profile?.almog_welcome_seen_at;
 
   const profileForDrawer: ProfileSummarySource = {
     full_name: profile?.full_name ?? null,
@@ -57,6 +65,7 @@ export default async function DashboardLayout({
         <ActionHubProvider>
           <div className="min-h-screen bg-dashboard">
             <DolevFirstLoginHost show={Boolean(showDolevWelcome)} profile={profileForDrawer} />
+            <AlmogFirstLoginHost show={Boolean(showAlmogWelcome)} profile={profileForDrawer} />
             <MobileHeader user={user} />
             <main id="main-content" className="pb-24 pt-16 min-h-screen page-enter" tabIndex={-1}>
               {children}

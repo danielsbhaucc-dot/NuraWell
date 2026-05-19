@@ -4,7 +4,7 @@
  * RESEND_FROM הישן נשאר = שולח ברירת מחדל (default) לתאימות לאחור.
  */
 
-export const EMAIL_SENDER_KEYS = ['default', 'dolev'] as const;
+export const EMAIL_SENDER_KEYS = ['default', 'dolev', 'almog'] as const;
 export type EmailSenderKey = (typeof EMAIL_SENDER_KEYS)[number];
 
 type SenderDef = {
@@ -22,6 +22,10 @@ export const EMAIL_SENDERS: Record<EmailSenderKey, SenderDef> = {
   dolev: {
     envVar: 'RESEND_FROM_DOLEV',
     fallback: 'Dolev NuraWell.ai <dolev@nurawell.ai>',
+  },
+  almog: {
+    envVar: 'RESEND_FROM_ALMOG',
+    fallback: 'Almog · NuraWell <onboarding@nurawell.ai>',
   },
 };
 
