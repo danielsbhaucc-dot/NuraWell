@@ -23,7 +23,7 @@ const NOTIFY_PERSONALIZED_TASK = buildAlmogNotifySystemPrompt(
 );
 
 /** פרומט אישי מהפרופיל — מוגבל כדי לא לנפח טוקנים בנוטיפיקציה. */
-function trimProfilePromptForNotify(prompt: string, maxChars = 380): string {
+function trimProfilePromptForNotify(prompt: string, maxChars = 260): string {
   const t = prompt.trim();
   if (t.length <= maxChars) return t;
   return `${t.slice(0, maxChars)}…`;

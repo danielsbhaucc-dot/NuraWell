@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { buildCoachingStylePromptBlock, coachingStyleFromContext } from './almog-coaching-style';
+import { buildCoachingStylePromptBlock } from './almog-coaching-style';
 import { completeEmpathyNotifyBody } from './empathy-notify-completion';
 import type { CronOpsAction } from './cron-ops-action';
 import { extractFirstName } from './cron-ops-action';
@@ -36,7 +36,8 @@ export async function generateCronOpsNotificationBody(
   const ctx = params.aiContext as AiUserContext;
   const styleBlock = buildCoachingStylePromptBlock(ctx);
   const mood = String(ctx.current_mood_signal ?? 'unknown');
-  const notes = typeof ctx.notes === 'string' ? ctx.notes.trim() : '';
+  const notesRaw = typeof ctx.notes === 'string' ? ctx.notes.trim() : '';
+  const notes = notesRaw.length > 90 ? `${notesRaw.slice(0, 88)}…` : notesRaw;
 
   const contextBlock = [
     `סוג פעולה: ${ACTION_HE[params.action]}`,
@@ -67,7 +68,7 @@ export async function generateCronOpsNotificationBody(
 - שם: ${firstName}
 - ${genderInstruction}
 
-כתוב רק את גוף ההודעה — 2–3 משפטים קצרים, שאלה פתוחה בסוף. סגנון: ${coachingStyleFromContext(ctx)}.`,
+כתוב רק את גוף ההודעה — 2–3 משפטים קצרים, שאלה פתוחה בסוף.`,
       },
     ],
   });

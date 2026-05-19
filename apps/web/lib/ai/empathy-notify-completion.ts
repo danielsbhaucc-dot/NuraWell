@@ -6,6 +6,9 @@ import { AI_MODELS } from './client';
 import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from './prompts';
 import { publicAppUrlForAiReferer } from '../public-app-url';
 
+/** המשכה קצרה — בלי לשלוח שוב את כל system prompt */
+const NOTIFY_CONTINUE_MAX_TOKENS = 96;
+
 type EmpathyNotifyCompletionOptions = {
   messages: ModelMessage[];
   maxTokens?: number;
@@ -25,7 +28,7 @@ const openrouterAi = createOpenAI({
 });
 
 /**
- * טקסט לנוטיפיקציות מאלמוג — עם retry ועם המשכה אם נחתך באמצע (finish_reason=length).
+ * טקסט לנוטיפיקציות מאלמוג — פלט מוגבל + המשכה קלה אם נחתך באמצע.
  */
 export async function completeEmpathyNotifyBody(
   options: EmpathyNotifyCompletionOptions
@@ -36,7 +39,7 @@ export async function completeEmpathyNotifyBody(
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const attemptMaxOutputTokens =
-      attempt === 0 ? maxOutputTokens : Math.min(maxOutputTokens + 96, 384);
+      attempt === 0 ? maxOutputTokens : Math.min(maxOutputTokens + 64, 320);
 
     const baseMessages = options.messages;
 
@@ -65,6 +68,27 @@ export async function completeEmpathyNotifyBody(
 
     const body = await stitchModelTextUntilComplete(first, runOnce, baseMessages, {
       maxContinuations: 1,
+      lightweightContinue: async (partial) => {
+        const out = await generateText({
+          model: openrouterAi.chat(AI_MODELS.empathy),
+          temperature: 0.65,
+          maxOutputTokens: NOTIFY_CONTINUE_MAX_TOKENS,
+          providerOptions: { openai: { reasoningEffort: 'low' } },
+          messages: [
+            {
+              role: 'user',
+              content:
+                'המשך בעברית את גוף ההודעה לנוטיפיקציה מהמקום שנקטע. אל תחזור על התחילה. סיים משפט אחד.',
+            },
+            { role: 'assistant', content: partial },
+            {
+              role: 'user',
+              content: 'המשך.',
+            },
+          ],
+        });
+        return { text: out.text ?? '', finishReason: out.finishReason };
+      },
     });
 
     if (body) return body;
