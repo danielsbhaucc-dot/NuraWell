@@ -6,6 +6,7 @@ import {
   User, Award, BookOpen, Flame, LogOut, ChevronLeft, Shield, Settings, Save, X, Bell
 } from 'lucide-react';
 import { signOutClient } from '../../lib/auth/sign-out-client';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface ProfileData {
@@ -39,6 +40,7 @@ const activityLabels: Record<string, string> = {
 };
 
 export function ProfilePageClient({ profile, email, totalCompleted, enrolledCount }: ProfilePageClientProps) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);

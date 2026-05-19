@@ -55,10 +55,20 @@ export function formatHabitIntentPromptBlock(intent: HabitIntentDetection): stri
   return `[הרגל:${h}·כן] חיזוק קצר; אל תבקש סימון V.`;
 }
 
-export function formatTaskIntentPromptBlock(intent: TaskIntentDetection): string | null {
+export function formatTaskIntentPromptBlock(
+  intent: TaskIntentDetection,
+  opts?: { emotionalHint?: ChatSignals['emotional_hint'] }
+): string | null {
   if (intent.kind !== 'done' || !intent.taskTitle) return null;
   const t = intent.taskTitle.slice(0, 40);
-  return `[משימה:${t}·בוצע] חיזוק קצר; המערכת כבר עדכנה ביצוע.`;
+  let afterDifficulty = '';
+  if (opts?.emotionalHint === 'resigned' || opts?.emotionalHint === 'self_blame') {
+    afterDifficulty =
+      ' · לפני כן ויתור/ביקורת עצמית — חזק: "העיקר שהגעת", "אמרת שלא תצליח — ועדיין עשית".';
+  } else if (opts?.emotionalHint === 'heavy' || opts?.emotionalHint === 'frustrated') {
+    afterDifficulty = ' · אחרי קושי — חיזוק חם ספציפי, לא "מערכת".';
+  }
+  return `[משימה:${t}·בוצע] רק חיזוק אנושי קצר ("אלוף", "גאה בך") — אסור: מערכת/עדכנתי/סימנתי/המערכת עודכנה.${afterDifficulty}`;
 }
 
 /** פער הרגל 3+ ימים — רק כשלא כבר בנושא השיחה. */

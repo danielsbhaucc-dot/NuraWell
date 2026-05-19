@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import type { JourneyStepProgress } from '../../lib/types/journey';
+import { useJourneyProgressLive } from '../../lib/journey/use-journey-progress-live';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Lock, Play, Sparkles, Droplets, Route } from 'lucide-react';
 import type { JourneyStepWithProgress } from '../../lib/types/journey';
@@ -11,9 +13,34 @@ import { JourneyStationCard } from './JourneyStationCard';
 interface JourneyPageProps {
   groups: JourneyStationGroup[];
   initialExpandedKey: string;
+  userId: string;
 }
 
-export function JourneyPage({ groups, initialExpandedKey }: JourneyPageProps) {
+export function JourneyPage({ groups, initialExpandedKey, userId }: JourneyPageProps) {
+  const [liveProgressByStep, setLiveProgressByStep] = useState<
+    Record<string, JourneyStepProgress>
+  >({});
+
+  const handleLiveProgress = useCallback((remote: JourneyStepProgress) => {
+    setLiveProgressByStep((prev) => ({
+      ...prev,
+      [remote.step_id]: { ...prev[remote.step_id], ...remote },
+    }));
+  }, []);
+
+  useJourneyProgressLive(userId, handleLiveProgress);
+
+  const mergedGroups = useMemo(() => {
+    if (Object.keys(liveProgressByStep).length === 0) return groups;
+    return groups.map((g) => ({
+      ...g,
+      steps: g.steps.map((s) => {
+        const live = liveProgressByStep[s.id];
+        if (!live) return s;
+        return { ...s, progress: { ...(s.progress ?? {}), ...live } as JourneyStepProgress };
+      }),
+    }));
+  }, [groups, liveProgressByStep]);
   const [expandedKey, setExpandedKey] = useState(
     initialExpandedKey && groups.some((g) => g.key === initialExpandedKey)
       ? initialExpandedKey
@@ -21,8 +48,8 @@ export function JourneyPage({ groups, initialExpandedKey }: JourneyPageProps) {
   );
 
   const activeGroup = useMemo(
-    () => groups.find((g) => g.key === expandedKey) ?? groups[0] ?? null,
-    [groups, expandedKey]
+    () => mergedGroups.find((g) => g.key === expandedKey) ?? mergedGroups[0] ?? null,
+    [mergedGroups, expandedKey]
   );
 
   const steps = activeGroup?.steps ?? [];
@@ -31,14 +58,14 @@ export function JourneyPage({ groups, initialExpandedKey }: JourneyPageProps) {
 
   const totalAcrossAll = useMemo(
     () =>
-      groups.reduce(
+      mergedGroups.reduce(
         (acc, g) => ({
           done: acc.done + g.steps.filter((s) => s.progress?.is_completed).length,
           all: acc.all + g.steps.length,
         }),
         { done: 0, all: 0 }
       ),
-    [groups]
+    [mergedGroups]
   );
 
   return (
@@ -128,7 +155,7 @@ export function JourneyPage({ groups, initialExpandedKey }: JourneyPageProps) {
           </div>
         )}
 
-        {groups.length > 0 && (
+        {mergedGroups.length > 0 && (
           <>
             <div className="flex items-center gap-2 mb-4 px-1">
               <Route className="w-5 h-5 text-emerald-700 shrink-0" aria-hidden />
@@ -142,7 +169,7 @@ export function JourneyPage({ groups, initialExpandedKey }: JourneyPageProps) {
             </div>
 
             <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-thin [-webkit-overflow-scrolling:touch]">
-              {groups.map((g, idx) => (
+              {mergedGroups.map((g, idx) => (
                 <JourneyStationCard
                   key={g.key}
                   group={g}

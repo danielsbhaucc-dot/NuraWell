@@ -246,6 +246,19 @@ function typingEllipsis(step: number): string {
   return frames[step % frames.length] ?? '.';
 }
 
+/** ציטוט ווטסאפ בתוך בועת הודעה */
+function WhatsAppQuote({ author, text }: { author: string; text: string }) {
+  return (
+    <div
+      className="mb-2 rounded-xl bg-black/25 px-2.5 py-2 text-[13px] leading-snug"
+      style={{ borderInlineStart: '3px solid rgba(52,211,153,0.75)' }}
+    >
+      <p className="text-[10px] font-bold text-emerald-200/90">{author}</p>
+      <p className="line-clamp-4 whitespace-pre-wrap text-emerald-50/90">{text}</p>
+    </div>
+  );
+}
+
 export interface AIChatWidgetProps {
   userId: string;
 }
@@ -258,8 +271,12 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const [input, setInput] = useState('');
   const [typingStep, setTypingStep] = useState(0);
   const [notificationContext, setNotificationContext] = useState<OpenAlmogChatDetail | null>(null);
+  const [quotedReply, setQuotedReply] = useState<{ mentorMessage: string; userReply: string } | null>(
+    null
+  );
   const sessionIdRef = useRef<string | null>(null);
   const notificationIdRef = useRef<string | null>(null);
+  const pendingInitialReplyRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -294,6 +311,21 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       if (detail?.notificationId && detail.mentorMessage) {
         setNotificationContext(detail);
         notificationIdRef.current = detail.notificationId;
+        if (detail.initialReply?.trim()) {
+          pendingInitialReplyRef.current = detail.initialReply.trim();
+          setQuotedReply({
+            mentorMessage: detail.mentorMessage,
+            userReply: detail.initialReply.trim(),
+          });
+        } else {
+          pendingInitialReplyRef.current = null;
+          setQuotedReply(null);
+        }
+      } else {
+        setNotificationContext(null);
+        setQuotedReply(null);
+        notificationIdRef.current = null;
+        pendingInitialReplyRef.current = null;
       }
     };
     window.addEventListener(OPEN_ALMOG_CHAT_EVENT, onOpenChat);
@@ -339,6 +371,23 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, status, open]);
+
+  useEffect(() => {
+    const text = pendingInitialReplyRef.current;
+    if (!open || !text || status === 'submitted' || status === 'streaming') return;
+    pendingInitialReplyRef.current = null;
+    sendMessage(
+      { text },
+      {
+        body: {
+          user_id: userId,
+          session_id: sessionIdRef.current ?? undefined,
+          notification_id: notificationIdRef.current ?? undefined,
+        },
+      }
+    );
+    setNotificationContext(null);
+  }, [open, sendMessage, status, userId]);
 
   const isLoading = status === 'submitted' || status === 'streaming';
   useEffect(() => {
@@ -461,7 +510,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
               className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-[#0f172a] via-[#111827] to-[#0b1220] px-3 py-4 text-right [box-shadow:inset_0_1px_0_rgba(255,255,255,0.06)]"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
-              {notificationContext && (
+              {notificationContext && !quotedReply && (
                 <div className="flex justify-end">
                   <div className="max-w-[92%] rounded-3xl border border-emerald-400/30 bg-emerald-500/20 px-4 py-3 text-[15px] leading-relaxed text-emerald-50 shadow-sm">
                     <p className="mb-1 text-[11px] font-bold text-emerald-200/90">מאלמוג · התראה</p>
@@ -509,6 +558,11 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 const isUser = msg.role === 'user';
                 const text = getMessageText(msg as { parts?: Array<{ type: string; text?: string }>; content?: string | null });
                 if (!isUser && !text) return null;
+                const showQuote =
+                  isUser &&
+                  i === 0 &&
+                  quotedReply != null &&
+                  text.trim() === quotedReply.userReply.trim();
                 return (
                   <div key={msg.id ?? `${i}-${text.slice(0, 16)}`} className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}>
                     <div
@@ -530,7 +584,16 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                             }
                       }
                     >
-                      {isUser ? <p className="whitespace-pre-wrap">{text}</p> : renderAlmogMessage(text)}
+                      {isUser ? (
+                        <>
+                          {showQuote && quotedReply && (
+                            <WhatsAppQuote author="אלמוג" text={quotedReply.mentorMessage} />
+                          )}
+                          <p className="whitespace-pre-wrap">{text}</p>
+                        </>
+                      ) : (
+                        renderAlmogMessage(text)
+                      )}
                       <div className={`mt-1.5 text-[11px] ${isUser ? 'text-slate-300/75' : 'text-emerald-50/80'}`}>
                         {formatHebrewTime(msg.createdAt)}
                       </div>
@@ -606,9 +669,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                       }
                     );
                     setInput('');
-                    if (notificationIdRef.current) {
+                    if (notificationIdRef.current && !quotedReply) {
                       setNotificationContext(null);
-                      notificationIdRef.current = null;
                     }
                   }}
                 >

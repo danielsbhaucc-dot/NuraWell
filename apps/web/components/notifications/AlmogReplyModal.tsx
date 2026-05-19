@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Send, X } from 'lucide-react';
+import { Send, X } from 'lucide-react';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import {

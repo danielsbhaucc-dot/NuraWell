@@ -12,6 +12,7 @@ import { SummarySection } from './SummarySection';
 import { StepProgress } from './StepProgress';
 import { parseImmersiveAttentionStops } from '../../lib/journey/immersiveAttentionStops';
 import { isCommitmentGateResolved } from '../../lib/journey/commitment-gate';
+import { useJourneyProgressLive } from '../../lib/journey/use-journey-progress-live';
 
 interface StepLessonProps {
   step: JourneyStep;
@@ -62,6 +63,16 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
   useEffect(() => {
     progressRef.current = progress;
   }, [progress]);
+
+  const handleLiveProgress = useCallback((remote: JourneyStepProgress) => {
+    setProgress((prev) => {
+      const merged = { ...prev, ...remote };
+      progressRef.current = merged;
+      return merged;
+    });
+  }, []);
+
+  useJourneyProgressLive(userId, handleLiveProgress, step.id);
 
   /* אחרי מעבר מהחלקה: x נשאר במיקום האצבע — נסיים בספרינג ל־0; אחרי כפתורים — איפוס */
   useLayoutEffect(() => {

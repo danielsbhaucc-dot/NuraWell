@@ -893,7 +893,9 @@ export async function POST(request: Request) {
       skipBlocker: !shouldInjectBlockerSignal(liveSignals, dailyShortTermBlock),
     });
     const turnHabitBlock = formatHabitIntentPromptBlock(liveHabitIntent);
-    const turnTaskBlock = formatTaskIntentPromptBlock(liveTaskIntent);
+    const turnTaskBlock = formatTaskIntentPromptBlock(liveTaskIntent, {
+      emotionalHint: liveSignals.emotional_hint,
+    });
     const habitGapForPrompt =
       habitGap &&
       activeJourneyContext &&

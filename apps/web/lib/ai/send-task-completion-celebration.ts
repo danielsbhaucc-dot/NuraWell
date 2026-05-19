@@ -5,7 +5,7 @@ import { fetchNotifyUserProfile } from './notify-user-profile';
 import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildAlmogNotifySystemPrompt } from './prompts';
 
 const CELEBRATION_SYSTEM = buildAlmogNotifySystemPrompt(
-  `המשתמש סימן ביצוע — חגיגה קצרה (1–3 משפטים), לא מוגזמת.`
+  `המשתמש סימן ביצוע — חגיגה קצרה (1–3 משפטים), חם וספציפי ("אלוף", "גאה בך"). לא "מערכת" / לא "עדכנתי".`
 );
 
 type JourneyTaskJson = { id: string; title: string; description?: string | null };

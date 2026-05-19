@@ -70,5 +70,7 @@ export default async function JourneyRoute() {
         : groupAllStepsWhenNoStations(stepsWithProgress);
   const initialExpandedKey = pickInitialStationGroupKey(groups, progressList);
 
-  return <JourneyPage groups={groups} initialExpandedKey={initialExpandedKey} />;
+  return (
+    <JourneyPage groups={groups} initialExpandedKey={initialExpandedKey} userId={user.id} />
+  );
 }

@@ -5,12 +5,9 @@ export function formatNotificationReplyContextBlock(params: {
   source: string | null;
   createdAt: string;
 }): string {
-  const sourceLine = params.source ? `\nמקור פנימי: ${params.source}` : '';
-  return `[הקשר מהתראה — המשתמש עונה עכשיו בצ'אט]
-אלמוג שלח התראה (${params.createdAt}):
-כותרת: ${params.title}
-הודעה: ${params.body}${sourceLine}
-
-המשך את השיחה בצורה טבעית — התייחס ישירות לשאלה/למגע שנשלח בהתראה ולתשובת המשתמש.
-אל תחזור על כל ההודעה במלואה ואל תציין "קיבלתי התראה".`;
+  const bodySnippet = params.body.trim().slice(0, 320);
+  return `[מענה להתראה]
+אלמוג כתב: "${bodySnippet}"
+המשתמש עונה עכשיו — המשך בשיחה טבעית; התייחס לשאלה/למגע ולתשובה.
+אל תחזור על ההתראה במלואה; אל תציין "קיבלתי התראה" או "המערכת".`;
 }

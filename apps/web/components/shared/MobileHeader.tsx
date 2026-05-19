@@ -39,15 +39,13 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
       <header className="fixed top-0 left-0 right-0 z-50 safe-area-top overflow-hidden"
         style={{ background: 'linear-gradient(160deg, #047857 0%, #059669 50%, #10b981 100%)' }}>
 
-        <div className="container-mobile h-16 flex items-center justify-between gap-3 relative z-10">
-          {/* Left label */}
+        <motion.div className="container-mobile h-16 flex items-center justify-between gap-3 relative z-10">
           <Link href={APP_HOME_PATH} prefetch className="no-tap-highlight min-w-[72px]" onClick={() => setIsMenuOpen(false)}>
-            <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontFamily: "'Rubik','Heebo',sans-serif" }}>
+            <motion.div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontFamily: "'Rubik','Heebo',sans-serif" }}>
               {title || 'NuraWell'}
-            </div>
+            </motion.div>
           </Link>
 
-          {/* Center brand logo */}
           <Link
             href={APP_HOME_PATH}
             prefetch
@@ -66,8 +64,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
             </span>
           </Link>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2">
+          <motion.div className="flex items-center gap-2">
             <button
               type="button"
               aria-label={unreadCount > 0 ? `התראות, ${unreadCount} שלא נקראו` : 'התראות'}
@@ -110,10 +107,9 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
                 )}
               </AnimatePresence>
             </button>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
-        {/* Dropdown Menu */}
         <AnimatePresence>
           {isMenuOpen && (
             <motion.div
@@ -123,7 +119,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
               transition={{ duration: 0.2, ease: 'easeOut' }}
               className="container-mobile pb-4 pt-2"
             >
-              <div className="rounded-2xl overflow-hidden bg-white" style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+              <motion.div className="rounded-2xl overflow-hidden bg-white" style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
                 {menuItems.map((item, idx) => (
                   <Link
                     key={item.href}
@@ -132,27 +128,42 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
                     onClick={() => setIsMenuOpen(false)}
                     className={`flex items-center gap-3.5 px-5 py-4 transition-all hover:bg-gray-50 active:bg-gray-100 no-tap-highlight ${idx < menuItems.length - 1 ? 'border-b border-gray-100' : ''}`}
                   >
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                    <motion.div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                       style={{ background: `${item.color}12`, border: `1px solid ${item.color}25` }}>
                       <item.icon className="w-4.5 h-4.5" style={{ color: item.color }} />
-                    </div>
+                    </motion.div>
                     <span className="font-bold text-gray-800 flex-1">{item.label}</span>
                     <item.icon className="w-3.5 h-3.5 text-gray-400" />
                   </Link>
                 ))}
-                <div className="px-5 py-3.5 border-t border-gray-100 flex items-center gap-2.5">
-                  <UserCircle className="w-4 h-4 text-gray-400" />
-                  <p className="text-xs text-gray-400 font-medium">
-                    שלום, {firstName}
-                  </p>
-                </div>
-              </div>
+                <button
+                  type="button"
+                  disabled={isSigningOut}
+                  onClick={() => void handleSignOut()}
+                  className="flex w-full items-center gap-3.5 border-t border-gray-100 px-5 py-4 text-right transition hover:bg-red-50 active:bg-red-100 disabled:opacity-60"
+                >
+                  <motion.div
+                    className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
+                    style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}
+                  >
+                    {isSigningOut ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-400/40 border-t-red-600" />
+                    ) : (
+                      <LogOut className="h-4.5 w-4.5 text-red-600" />
+                    )}
+                  </motion.div>
+                  <span className="flex-1 font-bold text-red-700">התנתקות</span>
+                </button>
+                <motion.div className="flex items-center gap-2.5 border-t border-gray-100 px-5 py-3">
+                  <UserCircle className="h-4 w-4 text-gray-400" />
+                  <p className="text-xs font-medium text-gray-400">שלום, {firstName}</p>
+                </motion.div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
       </header>
 
-      {/* Backdrop */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
