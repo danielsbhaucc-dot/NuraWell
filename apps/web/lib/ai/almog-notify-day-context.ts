@@ -19,6 +19,7 @@ const ALMOG_NOTIFY_SOURCES = new Set([
   'almog_personalized_check_in',
   'onboarding_check_in',
   'almog_followup_workflow',
+  'almog_journey_companion',
   'cron_ops',
 ]);
 
@@ -161,7 +162,7 @@ export function formatTodayTouchesCooldownBlock(
   });
 
   if (unanswered.length > 0) {
-    return `מגעים קודמים היום:\n${lines.join('\n')}\nדילוג: זווית חדשה; אם ללא תשובה — הכר בעומס (לא "ראיתי שלא"); שאלה פתוחה.`;
+    return `מגעים קודמים היום:\n${lines.join('\n')}\nללא תשובה — הישאר חבר בקו ("מה קורה?" לא "למה לא ענית"); זווית חדשה; אל תיעלם.`;
   }
 
   return `מגעים קודמים היום:\n${lines.join('\n')}\nהמשך שיחה — לא לפתוח מחדש כרובוט.`;

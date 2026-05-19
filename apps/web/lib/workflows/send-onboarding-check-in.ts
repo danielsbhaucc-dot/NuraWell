@@ -18,9 +18,16 @@ import { normalizeCheckInTimes } from '../ai/onboarding-check-in-time';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
 import type { OnboardingCheckInPayload } from './onboarding-check-in-payload';
 import {
+  fetchJourneyCompanionContext,
+  formatCompanionBlockForPersonalizedCheckIn,
+  gateJourneyCompanionNotify,
+  shouldNudgeJourneyCompanion,
+} from './journey-companion';
+import {
   fetchPersonalizedCheckInJourneyContext,
   formatJourneyBlockForPersonalizedCheckIn,
 } from './personalized-check-in-journey';
+import { sendJourneyCompanionNudge } from './send-journey-companion-nudge';
 
 const NOTIFY_PERSONALIZED_TASK = buildAlmogNotifySystemPrompt(
   `מגע יומי בזמן שנקבע. שילוב פרופיל+מסע בזרימה אחת. אל תזכיר דולב.`
@@ -42,6 +49,7 @@ export async function sendOnboardingCheckInNotification(
   const [
     { firstName, genderInstruction },
     journeyCtx,
+    companionCtx,
     profileTimes,
     profileSchedule,
     todayTouches,
@@ -49,16 +57,44 @@ export async function sendOnboardingCheckInNotification(
   ] = await Promise.all([
     fetchNotifyUserProfile(admin, payload.userId),
     fetchPersonalizedCheckInJourneyContext(admin, payload.userId, payload.checkInTime),
+    fetchJourneyCompanionContext(admin, payload.userId),
     fetchProfileCheckInTimes(admin, payload.userId),
     fetchProfileScheduleForCheckIn(admin, payload.userId),
     fetchTodayAlmogTouches(admin, payload.userId),
     fetchTodayChatTurns(admin, payload.userId),
   ]);
 
+  if (companionCtx && shouldNudgeJourneyCompanion(companionCtx)) {
+    const gate = await gateJourneyCompanionNotify(admin, payload.userId, payload.checkpointDate, {
+      promiseDue: companionCtx.followUpDue,
+    });
+    if (gate.ok) {
+      const companionResult = await sendJourneyCompanionNudge(
+        admin,
+        payload.userId,
+        companionCtx,
+        payload.checkInTime
+      );
+      if (companionResult?.inserted) {
+        if (companionCtx.followUpDue) {
+          const { clearJourneyFollowUp } = await import('../ai/journey-follow-up-promise');
+          await clearJourneyFollowUp(admin, payload.userId);
+        }
+        const { afterAlmogInAppNotification } = await import('../notifications/after-almog-insert');
+        afterAlmogInAppNotification(payload.userId, `${firstName} 🌿`, companionResult.body);
+      }
+      return { body: companionResult?.body ?? '', inserted: companionResult?.inserted ?? null };
+    }
+  }
+
   const totalToday = profileTimes.length > 0 ? profileTimes.length : 3;
+  const companionStatusBlock =
+    companionCtx && !companionCtx.followUpDue
+      ? formatCompanionBlockForPersonalizedCheckIn(companionCtx)
+      : '';
   const journeyBlock = journeyCtx
-    ? `\nמסע:\n${formatJourneyBlockForPersonalizedCheckIn(journeyCtx)}`
-    : '';
+    ? `\nמסע:\n${formatJourneyBlockForPersonalizedCheckIn(journeyCtx)}${companionStatusBlock}`
+    : companionStatusBlock || '';
 
   const checkMin = parseHHMMToMinutes(payload.checkInTime);
   const nowMin = getIsraelNowMinutes();
@@ -90,9 +126,12 @@ ${buildSlotDaypartPromptBlock(slot)}
 ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : ''}${profileSchedule.proximity ?? ''}
 מגע ${payload.checkInIndex + 1}/${totalToday} ${payload.checkInTime}. ${timeRelation}`;
 
-  const journeyHint = journeyCtx
-    ? ' שילב בעדינות משהו מהמסע אם רלוונטי לשעה הזו.'
-    : '';
+  const journeyHint =
+    journeyCtx && !companionCtx
+      ? ' שילב בעדינות משהו מהמסע אם רלוונטי לשעה הזו.'
+      : companionCtx && companionCtx.phase === 'step_in_progress'
+        ? ' אפשר להזכיר בעדינות את הצעד הנוכחי במסע אם מתאים.'
+        : '';
 
   const body = await completeEmpathyNotifyBody({
     label: 'almog_personalized_check_in',

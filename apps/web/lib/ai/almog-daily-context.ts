@@ -161,12 +161,15 @@ export async function fetchUserIdsWithChatToday(
   return ids;
 }
 
-/** שער: 3+ מגעים בלי תשובה — רק לתזכורות, לא לחיזוק. */
+/**
+ * שער עייפות — לא חוסם ליווי נוכחות/מסע.
+ * אלמוג לא נעלם גם בלי תשובה; רק מפחית תזכורות הרגלים כשיש הצפה קיצונית באותו יום.
+ */
 export function shouldSkipNotifyForTouchFatigue(
   todayTouches: TodayAlmogTouch[],
-  mode: 'remind' | 'reinforce' = 'remind'
+  mode: 'remind' | 'reinforce' | 'presence' = 'remind'
 ): boolean {
-  if (mode === 'reinforce') return false;
+  if (mode === 'reinforce' || mode === 'presence') return false;
   const unanswered = todayTouches.filter((t) => !t.userRepliedSince);
-  return unanswered.length >= 3;
+  return unanswered.length >= 8;
 }

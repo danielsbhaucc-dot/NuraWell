@@ -470,13 +470,87 @@ async function runMasterCron() {
     }
   }
 
+  let journeyCompanionSent = 0;
+  const maxJourneyCompanion = Math.min(
+    25,
+    Math.max(1, Number(process.env.CRON_MAX_JOURNEY_COMPANION) || 12)
+  );
+  const thirtyDaysAgoIso = new Date(Date.now() - 30 * DAY_MS).toISOString();
+  const checkpointDate = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
+
+  const { data: journeyCandidateRows, error: jErr } = await admin
+    .from('profiles')
+    .select('id, full_name, ai_context, last_active_at, created_at')
+    .eq('onboarding_completed', true)
+    .gte('last_active_at', thirtyDaysAgoIso)
+    .limit(maxJourneyCompanion * 4);
+
+  if (jErr) {
+    errors.push(`journey_companion profiles: ${jErr.message}`);
+  } else {
+    const {
+      fetchJourneyCompanionContext,
+      gateJourneyCompanionNotify,
+      shouldNudgeJourneyCompanion,
+    } = await import('../../../../../../lib/workflows/journey-companion');
+    const { sendJourneyCompanionNudge } = await import(
+      '../../../../../../lib/workflows/send-journey-companion-nudge'
+    );
+    const { isAvoidPushActive: avoidPush } = await import('../../../../../../lib/ai/avoid-push');
+
+    for (const profile of (journeyCandidateRows ?? []) as {
+      id: string;
+      full_name: string | null;
+      ai_context: Record<string, unknown> | null;
+      last_active_at: string | null;
+      created_at: string;
+    }[]) {
+      if (journeyCompanionSent >= maxJourneyCompanion) break;
+      const userId = profile.id;
+      try {
+        if (avoidPush(profile.ai_context ?? {})) continue;
+
+        const companion = await fetchJourneyCompanionContext(admin, userId);
+        if (!companion || !shouldNudgeJourneyCompanion(companion)) continue;
+
+        const gate = await gateJourneyCompanionNotify(admin, userId, checkpointDate, {
+          promiseDue: companion.followUpDue,
+        });
+        if (!gate.ok) continue;
+
+        const result = await sendJourneyCompanionNudge(admin, userId, companion);
+        if (!result?.inserted) continue;
+
+        if (companion.followUpDue) {
+          const { clearJourneyFollowUp } = await import(
+            '../../../../../../lib/ai/journey-follow-up-promise'
+          );
+          await clearJourneyFollowUp(admin, userId);
+        }
+
+        const { afterAlmogInAppNotification } = await import(
+          '../../../../../../lib/notifications/after-almog-insert'
+        );
+        const first =
+          profile.full_name?.trim().split(/\s+/)[0]?.trim() || 'שם';
+        afterAlmogInAppNotification(userId, `${first} 🌿`, result.body);
+        journeyCompanionSent++;
+      } catch (e) {
+        errors.push(
+          `journey_companion ${userId}: ${e instanceof Error ? e.message : String(e)}`
+        );
+      }
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     window_hours: 24,
     analyzed,
     analysis_skipped: analysisSkipped,
     celebrated,
-    notifications_sent: celebrated + churnNotificationsSent,
+    journey_companion_sent: journeyCompanionSent,
+    notifications_sent: celebrated + churnNotificationsSent + journeyCompanionSent,
     action_counts: actionCounts,
     nudge_skipped: nudgeSkipped,
     errors: errors.length ? errors : undefined,

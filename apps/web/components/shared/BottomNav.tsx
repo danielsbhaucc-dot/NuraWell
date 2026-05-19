@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookOpen, UserCircle, Compass, Route, Home } from 'lucide-react';
+import { BookOpen, UserCircle, Sparkles, Route, Home } from 'lucide-react';
 import { APP_HOME_PATH } from '../../lib/navigation/app-home-path';
 import { cn } from '../../lib/cn';
 import { motion } from 'framer-motion';
@@ -35,7 +35,7 @@ export function BottomNav() {
         <div className="absolute left-1/2 -translate-x-1/2 -top-5 z-20">
           <button
             type="button"
-            aria-label="תפריט משימות — עדכון ודחיות"
+            aria-label="דיווח התקדמות למנטור — משימות והרגלים"
             onClick={() => actionHub.open()}
             className="flex items-center justify-center no-tap-highlight touch-manipulation transition-transform hover:scale-105 active:scale-95"
             style={{
@@ -46,7 +46,7 @@ export function BottomNav() {
               border: '1.5px solid rgba(255,255,255,0.15)',
             }}
           >
-            <Compass className="w-6 h-6 text-white" strokeWidth={2} />
+            <Sparkles className="w-6 h-6 text-white" strokeWidth={2} />
           </button>
         </div>
 
