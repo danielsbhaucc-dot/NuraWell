@@ -3,8 +3,16 @@
  */
 
 import type { AiUserContext } from './memory';
+import { isAvoidPushActive } from './avoid-push';
+import type { GhostingSignals, HabitGapSignal } from './roller-coaster';
 
-export type CronOpsAction = 'silent' | 'celebrate' | 'micro_win' | 'check_in' | 're_engage';
+export type CronOpsAction =
+  | 'silent'
+  | 'celebrate'
+  | 'micro_win'
+  | 'check_in'
+  | 're_engage'
+  | 'crisis_reconnect';
 
 export type CronOpsDecision = {
   action: CronOpsAction;
@@ -48,10 +56,14 @@ export function decideStaleProfileAction(params: {
   aiContext: Record<string, unknown>;
   daysSinceLastWeight: number | null;
   nudgeAfterDays: number;
+  ghosting?: GhostingSignals | null;
 }): CronOpsDecision {
   const ctx = params.aiContext as AiUserContext & Record<string, unknown>;
+  const ghosting = params.ghosting;
+  const unanswered = ghosting?.unansweredTouchCount ?? 0;
+  const habitGap = ghosting?.habitGap ?? null;
 
-  if (ctx.avoid_push === true) {
+  if (isAvoidPushActive(ctx)) {
     return { action: 'silent', reason: 'avoid_push', urgency: 'low' };
   }
 
@@ -65,6 +77,29 @@ export function decideStaleProfileAction(params: {
     params.daysSinceActive <= 21
   ) {
     return { action: 'check_in', reason: 'weight_stale', urgency: 'medium' };
+  }
+
+  if (
+    params.daysSinceActive >= 7 &&
+    (dropout === 'high' ||
+      mood === 'frustrated' ||
+      mood === 'disengaged' ||
+      unanswered >= 2)
+  ) {
+    return { action: 'crisis_reconnect', reason: 'crisis_long_absence', urgency: 'high' };
+  }
+
+  if (habitGap && habitGap.daysMissed >= 3 && params.daysSinceActive <= 14) {
+    const reason = habitGap.kind === 'water' ? 'habit_gap_water' : 'habit_gap_generic';
+    return { action: 'micro_win', reason, urgency: 'high' };
+  }
+
+  if (
+    unanswered >= 2 &&
+    params.daysSinceActive >= params.nudgeAfterDays &&
+    params.daysSinceActive <= 12
+  ) {
+    return { action: 'micro_win', reason: 'ghosting_unanswered', urgency: 'high' };
   }
 
   if (
@@ -94,7 +129,9 @@ export type CronOpsNotificationDraft = {
 export function buildCronOpsNotification(
   action: CronOpsAction,
   fullName: string | null,
-  streakDays: number | null
+  streakDays: number | null,
+  reason?: string,
+  daysSinceActive?: number
 ): CronOpsNotificationDraft | null {
   const first = extractFirstName(fullName);
 
@@ -111,7 +148,27 @@ export function buildCronOpsNotification(
             : `שמתי לב שאתה נשאר במעקב — זה חזק. מה הצעד הקטן הבא שמתאים לך היום?`,
       };
     }
+    case 'crisis_reconnect': {
+      const days = daysSinceActive ?? 7;
+      const daysHe = days >= 7 ? 'כמה ימים' : `${days} ימים`;
+      return {
+        title: `${first} · מאלמוג`,
+        body: `שמתי לב שלא היית פה ${daysHe}. אני מנחש שקצת יצאת מאיזון או שהיה סופ"ש קשוח — וזה הכי נורמלי בעולם. אני לא פה כדי לשפוט. בוא נתחיל מחדש עכשיו, רק בכוס מים אחת. אתה איתי? 💧`,
+      };
+    }
     case 'micro_win':
+      if (reason === 'habit_gap_water') {
+        return {
+          title: `${first} · מאלמוג`,
+          body: `${first}, כמה ימים בלי מים — זה קורה. אני לא פה לשפוט. כוס אחת עכשיו, רק זה. אתה איתי? 💧`,
+        };
+      }
+      if (reason === 'ghosting_unanswered') {
+        return {
+          title: `${first} · מאלמוג`,
+          body: `שמתי לב שלא ענית כבר כמה ימים — אולי עומס או סתם לא בראש. הכל בסדר. מה הכי קל לך עכשיו — מים, נשימה, או סתם לספר מה קורה?`,
+        };
+      }
       return {
         title: `${first} · מאלמוג`,
         body: 'רוצה ניצחון זעיר? כוס מים, נשימה אחת, או משהו קטן מהמסע — מה הכי קל לך עכשיו?',
@@ -130,3 +187,5 @@ export function buildCronOpsNotification(
       return null;
   }
 }
+
+export type { HabitGapSignal };

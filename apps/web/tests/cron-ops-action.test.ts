@@ -41,4 +41,16 @@ describe('decideStaleProfileAction', () => {
     });
     expect(d.action).toBe('re_engage');
   });
+
+  it('ghosting_unanswered micro_win before generic re_engage', () => {
+    const d = decideStaleProfileAction({
+      daysSinceActive: 5,
+      aiContext: { dropout_risk: 'low', current_mood_signal: 'neutral' },
+      daysSinceLastWeight: 1,
+      nudgeAfterDays: 2,
+      ghosting: { unansweredTouchCount: 2, habitGap: null },
+    });
+    expect(d.action).toBe('micro_win');
+    expect(d.reason).toBe('ghosting_unanswered');
+  });
 });

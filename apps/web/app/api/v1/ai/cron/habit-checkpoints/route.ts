@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Client as WorkflowClient } from '@upstash/workflow';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
+import { isAvoidPushActive } from '../../../../../../lib/ai/avoid-push';
 import { normalizeCheckInTimes } from '../../../../../../lib/ai/onboarding-check-in-time';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 import { habitCheckpointSlotSchema } from '../../../../../../lib/workflows/almog-habit-checkpoint-payload';
@@ -85,7 +86,7 @@ async function runHabitCheckpointCron(request: Request) {
     for (const row of profiles ?? []) {
       const id = row.id as string;
       const ctx = row.ai_context as Record<string, unknown> | null | undefined;
-      if (ctx?.avoid_push === true) avoidIds.add(id);
+      if (isAvoidPushActive(ctx)) avoidIds.add(id);
       if (
         row.onboarding_completed === true &&
         normalizeCheckInTimes(row.ai_check_in_times).length > 0

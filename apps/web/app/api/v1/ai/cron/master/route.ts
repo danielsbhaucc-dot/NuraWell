@@ -12,6 +12,12 @@ import {
   cronOpsNotificationTitle,
   generateCronOpsNotificationBody,
 } from '../../../../../../lib/ai/send-cron-ops-notification';
+import { buildCrisisCooldownPatch, isAvoidPushActive } from '../../../../../../lib/ai/avoid-push';
+import {
+  cronOpsShouldUseLlm,
+  fetchGhostingSignals,
+  type HabitGapSignal,
+} from '../../../../../../lib/ai/roller-coaster';
 import { type AiUserContext } from '../../../../../../lib/ai/memory';
 import { ANALYSIS_PROMPT } from '../../../../../../lib/ai/prompts';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
@@ -27,6 +33,7 @@ export const dynamic = 'force-dynamic';
 type AdminDb = any;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** ברירת מחדל: תבניות קבועות. LLM רק כש-cronOpsShouldUseLlm מאשר (בעיקר כשיש notes ב-ai_context). ALMOG_CRON_USE_LLM=0 — אפס טוקנים לנודנ׳ים. */
 function cronOpsUseLlm(): boolean {
   const v = process.env.ALMOG_CRON_USE_LLM?.trim().toLowerCase();
   return v !== '0' && v !== 'false';
@@ -43,10 +50,22 @@ async function resolveCronOpsBody(
     streakDays: number | null;
     aiContext: Record<string, unknown>;
     fullName: string | null;
+    urgency: 'low' | 'medium' | 'high';
+    habitGap?: HabitGapSignal | null;
   }
 ): Promise<{ title: string; body: string; template: boolean }> {
-  if (!cronOpsUseLlm()) {
-    const draft = buildCronOpsNotification(params.action, params.fullName, params.streakDays);
+  const useLlm =
+    cronOpsUseLlm() &&
+    cronOpsShouldUseLlm(params.action, params.urgency, params.aiContext, params.reason);
+
+  if (!useLlm) {
+    const draft = buildCronOpsNotification(
+      params.action,
+      params.fullName,
+      params.streakDays,
+      params.reason,
+      params.daysSinceActive
+    );
     if (!draft) throw new Error('no_template');
     return { title: draft.title, body: draft.body, template: true };
   }
@@ -59,6 +78,7 @@ async function resolveCronOpsBody(
       daysSinceLastWeight: params.daysSinceLastWeight,
       streakDays: params.streakDays,
       aiContext: params.aiContext,
+      habitGap: params.habitGap ?? null,
     });
     return {
       title: cronOpsNotificationTitle(params.action, params.fullName),
@@ -66,7 +86,13 @@ async function resolveCronOpsBody(
       template: false,
     };
   } catch (e) {
-    const draft = buildCronOpsNotification(params.action, params.fullName, params.streakDays);
+    const draft = buildCronOpsNotification(
+      params.action,
+      params.fullName,
+      params.streakDays,
+      params.reason,
+      params.daysSinceActive
+    );
     if (!draft) throw e;
     console.warn('[cron/master] LLM notify fallback to template', {
       userId: params.userId,
@@ -147,6 +173,7 @@ async function runMasterCron() {
     micro_win: 0,
     check_in: 0,
     re_engage: 0,
+    crisis_reconnect: 0,
   };
   let analysisSkipped = 0;
   let nudgeSkipped = 0;
@@ -257,7 +284,7 @@ async function runMasterCron() {
     for (const profile of celebrateProfiles) {
       const userId = profile.id;
       try {
-        if (profile.ai_context?.avoid_push === true) {
+        if (isAvoidPushActive(profile.ai_context ?? {})) {
           nudgeSkipped++;
           continue;
         }
@@ -286,6 +313,7 @@ async function runMasterCron() {
           streakDays: profile.streak_days,
           aiContext: profile.ai_context ?? {},
           fullName: profile.full_name,
+          urgency: 'low',
         });
 
         const { error: insErr } = await admin.from('notifications').insert({
@@ -343,11 +371,16 @@ async function runMasterCron() {
         const daysSinceActive = daysSinceIso(profile.last_active_at) ?? 999;
         const weightDays = await daysSinceLastWeightKg(admin, userId);
         const nudgeAfter = nudgeThresholdDays(profile.ai_context ?? {});
+        const ghosting = await fetchGhostingSignals(admin, userId, {
+          needUnanswered: daysSinceActive >= 2,
+          needHabitGap: daysSinceActive <= 14,
+        });
         const decision = decideStaleProfileAction({
           daysSinceActive,
           aiContext: profile.ai_context ?? {},
           daysSinceLastWeight: weightDays,
           nudgeAfterDays: nudgeAfter,
+          ghosting,
         });
 
         if (decision.action === 'silent') {
@@ -380,6 +413,8 @@ async function runMasterCron() {
             streakDays: profile.streak_days,
             aiContext: profile.ai_context ?? {},
             fullName: profile.full_name,
+            urgency: decision.urgency,
+            habitGap: ghosting.habitGap,
           });
         } catch {
           nudgeSkipped++;
@@ -406,6 +441,19 @@ async function runMasterCron() {
         });
 
         if (insErr) throw new Error(insErr.message);
+
+        if (decision.action === 'crisis_reconnect') {
+          const ctx = (profile.ai_context ?? {}) as Record<string, unknown>;
+          const merged = { ...ctx, ...buildCrisisCooldownPatch() };
+          const { error: coolErr } = await admin
+            .from('profiles')
+            .update({ ai_context: merged })
+            .eq('id', userId);
+          if (coolErr) {
+            errors.push(`crisis_cooldown ${userId}: ${coolErr.message}`);
+          }
+        }
+
         actionCounts[decision.action]++;
         churnNotificationsSent++;
       } catch (e) {

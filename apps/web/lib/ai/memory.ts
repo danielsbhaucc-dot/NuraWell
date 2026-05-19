@@ -1,3 +1,5 @@
+import { pruneExpiredAvoidPushUntil } from './avoid-push';
+
 export interface AiUserContext {
   weakness_pattern?: string;
   engagement_pattern?: string;
@@ -14,6 +16,8 @@ export interface AiUserContext {
   main_blocker?: string;
   /** המשתמש ביקש להפחית דחיפה / התראות AI */
   avoid_push?: boolean;
+  /** השהיית התראות עד תאריך ISO (למשל אחרי משבר) — לא מחליף avoid_push קבוע */
+  avoid_push_until?: string;
   /** כשמוגדר — לא שולחים תזכורות ייעודיות לעדכון משקל (Cron) */
   skip_weight_check_ins?: boolean;
   /** warm_friend | direct | gentle — טון ליווי (ברירת מחדל: warm_friend) */
@@ -133,6 +137,10 @@ export async function buildUserContext(
   if (ctx.core_insight) parts.push(`תובנת ליבה (לטון המנטור): ${ctx.core_insight}`);
   if (ctx.main_blocker) parts.push(`חסם מרכזי (מהמשתמש): ${ctx.main_blocker}`);
   if (ctx.avoid_push) parts.push('העדפה: פחות דחיפה והתראות מאלמוג.');
+  if (ctx.avoid_push_until) {
+    const ms = new Date(ctx.avoid_push_until).getTime();
+    if (Number.isFinite(ms) && Date.now() < ms) parts.push('השהיית דחיפה זמנית פעילה');
+  }
   if (ctx.skip_weight_check_ins) parts.push('העדפה: ללא תזכורות ייעודיות לעדכון משקל.');
   if (ctx.current_mood_signal && ctx.current_mood_signal !== 'unknown') {
     parts.push(`אות מצב רגשי (ניתוח אחרון): ${ctx.current_mood_signal}`);
@@ -196,6 +204,7 @@ export async function updateAiContext(
     'core_insight',
     'main_blocker',
     'avoid_push',
+    'avoid_push_until',
     'skip_weight_check_ins',
     'coaching_style',
     'work_arrival_time',
@@ -213,7 +222,12 @@ export async function updateAiContext(
     Object.entries(patch).filter(([k]) => allowedFields.includes(k as keyof AiUserContext))
   ) as Partial<AiUserContext>;
 
-  const merged: AiUserContext = { ...current, ...filtered };
+  let merged: AiUserContext = { ...current, ...filtered };
+  if (filtered.avoid_push_until === '') {
+    const { avoid_push_until: _removed, ...rest } = merged;
+    merged = rest;
+  }
+  merged = pruneExpiredAvoidPushUntil(merged);
 
   const { error: updateError } = await supabase
     .from('profiles')

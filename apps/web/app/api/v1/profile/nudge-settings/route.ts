@@ -40,6 +40,10 @@ export async function PATCH(request: NextRequest) {
       skip_weight_check_ins: !weight_reminders,
     };
 
+    if (!avoid_push) {
+      patch.avoid_push_until = '';
+    }
+
     if (coaching_style != null) {
       patch.coaching_style = parseCoachingStyle(coaching_style) satisfies AlmogCoachingStyle;
     }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Client as WorkflowClient } from '@upstash/workflow';
+import { isAvoidPushActive } from '../../../../../../lib/ai/avoid-push';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
 import {
   isCheckInDueNow,
@@ -62,7 +63,7 @@ async function runOnboardingCheckInsCron(request: Request) {
 
   for (const row of (rows ?? []) as ProfileRow[]) {
     const ctx = row.ai_context;
-    if (ctx?.avoid_push === true) continue;
+    if (isAvoidPushActive(ctx)) continue;
 
     const times = normalizeCheckInTimes(row.ai_check_in_times);
     const prompt = row.ai_system_prompt?.trim();

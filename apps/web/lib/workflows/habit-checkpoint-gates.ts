@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fetchTodayAlmogTouches } from '../ai/almog-notify-day-context';
 import { shouldSkipNotifyForTouchFatigue } from '../ai/almog-daily-context';
+import { isAvoidPushActive } from '../ai/avoid-push';
 import type { HabitCheckpointSlot } from './almog-habit-checkpoint-payload';
 
 type NotifyMode = 'remind' | 'reinforce';
@@ -25,7 +26,7 @@ export async function gateAlmogHabitCheckpoint(
 
   if (pErr) throw new Error(pErr.message);
   const ctx = (profile?.ai_context ?? null) as Record<string, unknown> | null;
-  if (ctx?.avoid_push === true) {
+  if (isAvoidPushActive(ctx)) {
     return { ok: false, reason: 'avoid_push' };
   }
 

@@ -137,7 +137,11 @@ export const REENGAGEMENT_PROMPT = buildAlmogNotifySystemPrompt(
 );
 
 export const CRON_OPS_NOTIFY_PROMPT = buildAlmogNotifySystemPrompt(
-  `משימה: נוטיפיקציה לפי סוג בקונטקסט (חגיגה / micro_win / משקל / re_engage). רק גוף ההודעה.`
+  `משימה: נוטיפיקציה לפי סוג בקונטקסט (חגיגה / micro_win / משקל / re_engage / crisis_reconnect). רק גוף ההודעה.`
+);
+
+export const CRISIS_RECONNECT_NOTIFY_PROMPT = buildAlmogNotifySystemPrompt(
+  `משבר רכבת-הרים: היעדרות + חיבור מחדש. הכר בקושי אפשרי (סופ"ש/עומס). לא שיפוט. צעד זעיר אחד (כוס מים). שאלה: "אתה איתי?"`
 );
 
 export const ANALYSIS_PROMPT = `אתה אנליסט התנהגותי של NuraWell. קורא אינטראקציות ומחלץ דפוסים לפרופיל.

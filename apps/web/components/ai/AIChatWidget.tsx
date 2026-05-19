@@ -11,6 +11,33 @@ import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 
 const SESSION_STORAGE_KEY = 'nurawell_almog_chat_session';
 
+const MICRO_WIN_QUICK_STARTERS = [
+  {
+    label: 'בוא נתחיל מחדש — כוס מים 💧',
+    text: 'בוא נתחיל מחדש — רק כוס מים אחת. אני איתך.',
+    markWaterHabit: true,
+  },
+  {
+    label: 'קצת קשה לי היום',
+    text: 'קצת קשה לי היום, בלי ביקורת — מה הכי קטן שאפשר לעשות עכשיו?',
+    markWaterHabit: false,
+  },
+] as const;
+
+async function postMicroWinHabit(): Promise<{ ok: boolean; habitTitle?: string }> {
+  try {
+    const res = await fetch('/api/v1/ai/micro-win', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const data = (await res.json()) as { ok?: boolean; habit_title?: string };
+    return { ok: res.ok && data.ok === true, habitTitle: data.habit_title };
+  } catch {
+    return { ok: false };
+  }
+}
+
 function getMessageText(msg: { parts?: Array<{ type: string; text?: string }>; content?: string | null }): string {
   if (typeof msg.content === 'string' && msg.content.trim()) {
     return msg.content.trim();
@@ -497,6 +524,34 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
             </div>
 
             <div className="shrink-0 border-t border-white/10 bg-slate-900/70 p-3 backdrop-blur-2xl" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+              {messages.length === 0 && (
+                <div className="mb-2 flex flex-wrap justify-end gap-2">
+                  {MICRO_WIN_QUICK_STARTERS.map((chip) => (
+                    <button
+                      key={chip.label}
+                      type="button"
+                      disabled={isLoading}
+                      onClick={async () => {
+                        if (chip.markWaterHabit) {
+                          await postMicroWinHabit();
+                        }
+                        sendMessage(
+                          { text: chip.text },
+                          {
+                            body: {
+                              user_id: userId,
+                              session_id: sessionIdRef.current ?? undefined,
+                            },
+                          }
+                        );
+                      }}
+                      className="rounded-full border border-emerald-400/35 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-100 shadow-sm transition hover:bg-emerald-500/25 disabled:opacity-50"
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="rounded-2xl border border-white/15 bg-white/5 p-2 shadow-[0_-2px_16px_rgba(2,6,23,0.4)]">
                 <form
                   className="flex items-end gap-2"

@@ -28,6 +28,13 @@ import {
 } from '../../../../../lib/ai/upstash-vector-rest';
 import { ingestUserMessageIntoVectorMemory } from '../../../../../lib/ai/vector-memory-ingest';
 import { applyChatSignalsFromUserMessage } from '../../../../../lib/ai/chat-signals';
+import { daysSinceIso } from '../../../../../lib/ai/cron-ops-action';
+import {
+  buildRollerCoasterChatPromptBlock,
+  detectRelapseInMessage,
+  fetchReturnVisitSignalsForChat,
+  resolveReturnVisitContext,
+} from '../../../../../lib/ai/roller-coaster';
 import {
   fetchTodayChatTurns,
   formatDailyShortTermBlock,
@@ -281,6 +288,7 @@ async function fetchChatProfileRow(
   gender: 'male' | 'female' | null;
   mood_signal: string | undefined;
   ai_context: AiUserContext;
+  last_active_at: string | null;
   onboarding: OnboardingProfileForChat;
 }> {
   const emptyOnboarding: OnboardingProfileForChat = {
@@ -305,7 +313,7 @@ async function fetchChatProfileRow(
     const { data } = await (supabase as any)
       .from('profiles')
       .select(
-        `full_name, gender, ai_context,
+        `full_name, gender, ai_context, last_active_at,
         main_goal, current_weight_kg, goal_weight_kg,
         weakest_time_of_day, main_obstacle, main_obstacle_detail,
         wake_up_time, sleep_time, dinner_time, meal_schedule, preferred_channel,
@@ -317,6 +325,7 @@ async function fetchChatProfileRow(
       full_name?: string | null;
       gender?: 'male' | 'female' | null;
       ai_context?: AiUserContext | null;
+      last_active_at?: string | null;
       main_goal?: OnboardingProfileForChat['main_goal'];
       current_weight_kg?: number | null;
       goal_weight_kg?: number | null;
@@ -359,6 +368,7 @@ async function fetchChatProfileRow(
       gender: profile?.gender ?? null,
       mood_signal: profile?.ai_context?.current_mood_signal,
       ai_context: (profile?.ai_context ?? {}) as AiUserContext,
+      last_active_at: profile?.last_active_at ?? null,
       onboarding: {
         full_name: profile?.full_name ?? null,
         gender: profile?.gender ?? null,
@@ -389,6 +399,7 @@ async function fetchChatProfileRow(
       gender: null,
       mood_signal: undefined,
       ai_context: {},
+      last_active_at: null,
       onboarding: emptyOnboarding,
     };
   }
@@ -605,6 +616,12 @@ export async function POST(request: Request) {
 
   const [todayChatTurns, todayAlmogTouches] = dailyContextBundle;
 
+  const returnSignalsPromise = fetchReturnVisitSignalsForChat(
+    supabase,
+    user.id,
+    profileRow.last_active_at
+  ).catch(() => ({ daysSincePriorChat: null as number | null, unansweredTouchCount: 0 }));
+
   const profileFullName = profileRow.full_name;
   const profileGender = profileRow.gender;
   const profileMoodSignal = profileRow.mood_signal;
@@ -724,11 +741,27 @@ export async function POST(request: Request) {
       todayTouches: todayAlmogTouches,
       aiContext: profileRow.ai_context,
     });
+
+    const returnSignals = await returnSignalsPromise;
+
+    const returnVisitCtx = resolveReturnVisitContext({
+      daysSincePriorChat: returnSignals.daysSincePriorChat,
+      daysSinceProfileActive: daysSinceIso(profileRow.last_active_at),
+      aiContext: profileRow.ai_context,
+      unansweredTouchCount: returnSignals.unansweredTouchCount,
+    });
+    const rollerCoasterBlock = buildRollerCoasterChatPromptBlock({
+      returnVisitCtx,
+      firstName: firstName ?? 'שם',
+      relapseDetected: detectRelapseInMessage(lastUserText),
+    });
+
     const systemPromptWithMemory = `${BASE_SYSTEM_PROMPT}
 
 ${coachingStyleBlock}
 
 סדר: (1) מערכת (2) פרופיל (3) RAG (4) מסע (5) השיחה = עכשיו.
+${rollerCoasterBlock ? `\n${rollerCoasterBlock}\n` : ''}
 ${dailyShortTermBlock ? `\n${dailyShortTermBlock}\n` : ''}
 ${onboardingContextBlock ? `\n${onboardingContextBlock}\n` : ''}
 ${stationRules}${habitCheckpointRules}

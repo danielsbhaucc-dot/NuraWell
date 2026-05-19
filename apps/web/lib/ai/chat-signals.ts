@@ -7,6 +7,7 @@
  * דרך DeepSeek שתופעל אחת לכמה הודעות ב-`after()` ותעדכן את אותם השדות.
  */
 
+import { detectRelapseInMessage } from './roller-coaster';
 import { updateAiContext, type AiUserContext } from './memory';
 
 export type ChatSignals = {
@@ -156,6 +157,10 @@ export async function applyChatSignalsFromUserMessage(
    *  - resigned / heavy / frustrated / self_blame → frustrated (טון רגיש, לא להעמיס)
    *  - low_energy → disengaged (התרחקות, צריך חיבור רך)
    */
+  if (detectRelapseInMessage(userMessage)) {
+    patch.current_mood_signal = 'frustrated';
+  }
+
   if (
     signals.emotional_hint === 'resigned' ||
     signals.emotional_hint === 'self_blame' ||
