@@ -168,7 +168,7 @@ export function generateMentorSystemPrompt(profile: MentorPromptProfile): string
 - החלון הקשה ביום: ${WEAKEST_LABELS[profile.weakest_time_of_day]}
 - המכשול העיקרי: ${obstacleText}
 - שעת השכמה: ${profile.wake_up_time} | שעת שינה: ${profile.sleep_time}${mealsLine}
-- ערוץ מועדף: ${profile.preferred_channel === 'in_app' ? 'באפליקציה' : profile.preferred_channel}
+- ערוץ מועדף: באפליקציה (צ'אט והתראות פנימיות — לא WhatsApp/SMS בשלב זה)
 
 ### זמני מגע יומיים (שעון ישראל)
 שלח מגע קצר (1–3 משפטים) רק בזמנים — ערך/שאלה לפני דרישת פעולה, לא "עדיין לא עדכנת":

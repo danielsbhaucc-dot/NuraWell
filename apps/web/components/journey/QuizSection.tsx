@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, ArrowLeft, HelpCircle, ClipboardList, RotateCcw } from 'lucide-react';
 import type { QuizQuestion } from '../../lib/types/journey';
-import { AlmogInstantFeedback } from './AlmogInstantFeedback';
+import { AlmogLessonFeedback } from './AlmogLessonFeedback';
 import { AlmogCompletionHero } from './AlmogPresence';
 import { JourneyResultsDrawer } from './JourneyResultsDrawer';
 
@@ -17,7 +17,13 @@ interface QuizSectionProps {
   userId?: string;
 }
 
-export function QuizSection({ questions, existingAnswers, onComplete, onResetQuiz }: QuizSectionProps) {
+export function QuizSection({
+  questions,
+  existingAnswers,
+  onComplete,
+  onResetQuiz,
+  stepId,
+}: QuizSectionProps) {
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>(existingAnswers);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -255,9 +261,16 @@ export function QuizSection({ questions, existingAnswers, onComplete, onResetQui
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden"
                 >
-                  <AlmogInstantFeedback isCorrect={isCorrect} tone="quiz">
-                    <p className="text-sm leading-relaxed text-gray-800">{question.explanation}</p>
-                  </AlmogInstantFeedback>
+                  <AlmogLessonFeedback
+                    isCorrect={isCorrect}
+                    tone="quiz"
+                    interactionType="quiz"
+                    score={isCorrect ? 90 : 40}
+                    stepId={stepId}
+                    fallback={
+                      <p className="text-sm leading-relaxed text-gray-800">{question.explanation}</p>
+                    }
+                  />
                 </motion.div>
               )}
             </AnimatePresence>

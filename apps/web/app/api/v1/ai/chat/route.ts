@@ -27,14 +27,41 @@ import {
   queryUserMemoryVectors,
 } from '../../../../../lib/ai/upstash-vector-rest';
 import { ingestUserMessageIntoVectorMemory } from '../../../../../lib/ai/vector-memory-ingest';
-import { applyChatSignalsFromUserMessage } from '../../../../../lib/ai/chat-signals';
+import { applyChatSignalsFromUserMessage, detectChatSignals } from '../../../../../lib/ai/chat-signals';
+import {
+  applyHabitIntentFromUserMessage,
+  detectHabitIntent,
+} from '../../../../../lib/ai/chat-habit-intent';
+import {
+  buildCompactJourneyDataBlock,
+  formatChatSignalsPromptBlock,
+  formatHabitGapChatBlock,
+  formatHabitIntentPromptBlock,
+  formatTaskIntentPromptBlock,
+  formatWeightLoggedPromptBlock,
+  shouldInjectBlockerSignal,
+  type CompactTaskState,
+} from '../../../../../lib/ai/chat-turn-context';
+import {
+  applyTaskIntentFromUserMessage,
+  detectTaskIntent,
+} from '../../../../../lib/ai/chat-task-intent';
+import { fetchPendingAcceptedTasksForUser } from '../../../../../lib/ai/mark-task-execution';
+import {
+  applyWeightFromUserMessage,
+  parseWeightKgFromMessage,
+} from '../../../../../lib/ai/chat-weight-intent';
+import { mergeHabitsDoneTodayFromRows } from '../../../../../lib/ai/almog-daily-context';
 import { daysSinceIso } from '../../../../../lib/ai/cron-ops-action';
 import {
   buildRollerCoasterChatPromptBlock,
   detectRelapseInMessage,
+  fetchHabitGapForChat,
   fetchReturnVisitSignalsForChat,
   resolveReturnVisitContext,
 } from '../../../../../lib/ai/roller-coaster';
+import { sendTaskCompletionCelebration } from '../../../../../lib/ai/send-task-completion-celebration';
+import { createAdminClient } from '../../../../../lib/supabase/admin';
 import {
   fetchTodayChatTurns,
   formatDailyShortTermBlock,
@@ -138,7 +165,8 @@ type ActiveJourneyContext = {
   commitmentAccepted: boolean;
   tasks: Array<{ id: string; title: string }>;
   habits: Array<{ id: string; title: string }>;
-  taskStatuses: Record<string, TaskDecisionStatus>;
+  habitsDoneToday: Set<string>;
+  taskStatuses: Record<string, { status: TaskDecisionStatus; execution_done?: boolean }>;
 } | null;
 
 function normalizeLine(s: string): string {
@@ -267,17 +295,33 @@ function normalizeJourneyItems(value: unknown): Array<{ id: string; title: strin
     .slice(0, 12);
 }
 
-function normalizeTaskStatuses(value: unknown): Record<string, TaskDecisionStatus> {
+function normalizeTaskStatuses(
+  value: unknown
+): Record<string, { status: TaskDecisionStatus; execution_done?: boolean }> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-  const out: Record<string, TaskDecisionStatus> = {};
+  const out: Record<string, { status: TaskDecisionStatus; execution_done?: boolean }> = {};
   for (const [taskId, raw] of Object.entries(value as Record<string, unknown>)) {
     if (!taskId.trim() || !raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
-    const status = (raw as { status?: unknown }).status;
+    const row = raw as { status?: unknown; execution_done?: unknown };
+    const status = row.status;
     if (status === 'accepted' || status === 'rejected' || status === 'pending') {
-      out[taskId] = status;
+      out[taskId] = {
+        status,
+        ...(row.execution_done === true ? { execution_done: true } : {}),
+      };
     }
   }
   return out;
+}
+
+function compactTaskState(
+  row: { status: TaskDecisionStatus; execution_done?: boolean } | undefined
+): CompactTaskState {
+  if (!row || row.status === 'pending') return 'open';
+  if (row.status === 'rejected') return 'rejected';
+  if (row.status === 'accepted' && row.execution_done === true) return 'done';
+  if (row.status === 'accepted') return 'accepted_pending';
+  return 'open';
 }
 
 async function fetchChatProfileRow(
@@ -412,7 +456,7 @@ async function getActiveJourneyContext(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: progressData } = await (supabase as any)
     .from('journey_progress')
-    .select('step_id, commitment_accepted, task_statuses, updated_at')
+    .select('step_id, commitment_accepted, task_statuses, habits_progress, updated_at')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false })
     .limit(1)
@@ -422,6 +466,8 @@ async function getActiveJourneyContext(
     step_id?: string | null;
     commitment_accepted?: boolean | null;
     task_statuses?: unknown;
+    habits_progress?: unknown;
+    updated_at?: string;
   } | null;
   const stepId = latestProgress?.step_id ?? null;
   if (!stepId) return null;
@@ -451,6 +497,15 @@ async function getActiveJourneyContext(
         ? (st as { title?: string }).title
         : null;
 
+  const habitsDoneToday = latestProgress?.habits_progress
+    ? mergeHabitsDoneTodayFromRows([
+        {
+          habits_progress: latestProgress.habits_progress,
+          updated_at: latestProgress.updated_at ?? new Date().toISOString(),
+        },
+      ])
+    : new Set<string>();
+
   return {
     stepId: step.id,
     stepTitle: sanitizeUserVisibleTitle(step.title?.trim() || 'צעד נוכחי', 160),
@@ -459,6 +514,7 @@ async function getActiveJourneyContext(
     commitmentAccepted: Boolean(latestProgress?.commitment_accepted),
     tasks: normalizeJourneyItems(step.tasks),
     habits: normalizeJourneyItems(step.habits),
+    habitsDoneToday,
     taskStatuses: normalizeTaskStatuses(latestProgress?.task_statuses),
   };
 }
@@ -726,12 +782,31 @@ export async function POST(request: Request) {
         ? `מסע (פנימי): צעד ${activeJourneyContext?.stepNumber ?? journeyCap.currentStepNumber}/${journeyCap.totalPublishedSteps}${journeyCap.allJourneyComplete ? ' · הושלם' : ''} · תחנה ${sanitizeUserVisibleTitle(activeJourneyContext?.stationTitle ?? journeyCap.currentStationTitle ?? '', 80) || '—'}\n`
         : '';
 
+    const journeyHabits = activeJourneyContext?.habits.slice(0, 8) ?? [];
+
+    const [returnSignals, pendingTasks, habitGap] = await Promise.all([
+      returnSignalsPromise,
+      fetchPendingAcceptedTasksForUser(supabase, user.id).catch(() => []),
+      fetchHabitGapForChat(supabase, user.id).catch(() => null),
+    ]);
+
+    const liveSignals = detectChatSignals(lastUserText);
+    const liveHabitIntent = detectHabitIntent(lastUserText, journeyHabits);
+    const liveTaskIntent = detectTaskIntent(lastUserText, pendingTasks);
+    const parsedWeightKg = parseWeightKgFromMessage(lastUserText);
+
     const journeyDataBlock = activeJourneyContext
-      ? {
-          step: activeJourneyContext.stepTitle,
-          tasks: activeJourneyContext.tasks.slice(0, 8).map((t) => t.title),
-          habits: activeJourneyContext.habits.slice(0, 8).map((h) => h.title),
-        }
+      ? buildCompactJourneyDataBlock({
+          stepTitle: activeJourneyContext.stepTitle,
+          tasks: activeJourneyContext.tasks.slice(0, 8).map((t) => ({
+            title: t.title,
+            state: compactTaskState(activeJourneyContext.taskStatuses[t.id]),
+          })),
+          habits: journeyHabits.map((h) => ({
+            title: h.title,
+            doneToday: activeJourneyContext.habitsDoneToday.has(h.id),
+          })),
+        })
       : null;
 
     const moodFromProfile = moodCoachingHint(profileMoodSignal);
@@ -741,8 +816,6 @@ export async function POST(request: Request) {
       todayTouches: todayAlmogTouches,
       aiContext: profileRow.ai_context,
     });
-
-    const returnSignals = await returnSignalsPromise;
 
     const returnVisitCtx = resolveReturnVisitContext({
       daysSincePriorChat: returnSignals.daysSincePriorChat,
@@ -756,11 +829,21 @@ export async function POST(request: Request) {
       relapseDetected: detectRelapseInMessage(lastUserText),
     });
 
+    const turnSignalsBlock = formatChatSignalsPromptBlock(liveSignals, {
+      skipBlocker: !shouldInjectBlockerSignal(liveSignals, dailyShortTermBlock),
+    });
+    const turnHabitBlock = formatHabitIntentPromptBlock(liveHabitIntent);
+    const turnTaskBlock = formatTaskIntentPromptBlock(liveTaskIntent);
+    const habitGapBlock = formatHabitGapChatBlock(habitGap);
+    const turnWeightBlock =
+      parsedWeightKg != null ? formatWeightLoggedPromptBlock(parsedWeightKg) : null;
+
     const systemPromptWithMemory = `${BASE_SYSTEM_PROMPT}
 
 ${coachingStyleBlock}
 
 סדר: (1) מערכת (2) פרופיל (3) RAG (4) מסע (5) השיחה = עכשיו.
+${turnSignalsBlock ? `\n${turnSignalsBlock}\n` : ''}${turnHabitBlock ? `\n${turnHabitBlock}\n` : ''}${turnTaskBlock ? `\n${turnTaskBlock}\n` : ''}${habitGapBlock ? `\n${habitGapBlock}\n` : ''}${turnWeightBlock ? `\n${turnWeightBlock}\n` : ''}
 ${rollerCoasterBlock ? `\n${rollerCoasterBlock}\n` : ''}
 ${dailyShortTermBlock ? `\n${dailyShortTermBlock}\n` : ''}
 ${onboardingContextBlock ? `\n${onboardingContextBlock}\n` : ''}
@@ -928,6 +1011,89 @@ ${JSON.stringify(journeyDataBlock)}
             debug_id: debugId,
             stage: `${finishStage}_chat_signals`,
             error: sigErr instanceof Error ? sigErr.message : String(sigErr),
+          });
+        }
+
+        try {
+          const habitIntent = await applyHabitIntentFromUserMessage(
+            supabase,
+            user.id,
+            lastUserText,
+            journeyHabits
+          );
+          if (habitIntent.marked) {
+            console.info('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_habit_intent`,
+              habit_title: habitIntent.habitTitle,
+            });
+          }
+        } catch (habitErr) {
+          console.warn('[ai/chat]', {
+            debug_id: debugId,
+            stage: `${finishStage}_habit_intent`,
+            error: habitErr instanceof Error ? habitErr.message : String(habitErr),
+          });
+        }
+
+        try {
+          const weightResult = await applyWeightFromUserMessage(
+            supabase,
+            user.id,
+            lastUserText
+          );
+          if (weightResult.logged) {
+            console.info('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_weight_intent`,
+              weight_kg: weightResult.weightKg,
+            });
+          }
+        } catch (weightErr) {
+          console.warn('[ai/chat]', {
+            debug_id: debugId,
+            stage: `${finishStage}_weight_intent`,
+            error: weightErr instanceof Error ? weightErr.message : String(weightErr),
+          });
+        }
+
+        try {
+          const taskIntent = await applyTaskIntentFromUserMessage(
+            supabase,
+            user.id,
+            lastUserText,
+            pendingTasks
+          );
+          if (taskIntent.marked && taskIntent.stepId && taskIntent.taskId) {
+            console.info('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_task_intent`,
+              task_title: taskIntent.taskTitle,
+            });
+            after(async () => {
+              try {
+                const admin = createAdminClient();
+                await sendTaskCompletionCelebration(
+                  admin,
+                  user.id,
+                  taskIntent.stepId!,
+                  taskIntent.taskId!
+                );
+              } catch (celebrateErr) {
+                console.warn('[ai/chat]', {
+                  debug_id: debugId,
+                  stage: 'task_celebration_after',
+                  error:
+                    celebrateErr instanceof Error ? celebrateErr.message : String(celebrateErr),
+                });
+              }
+            });
+          }
+        } catch (taskErr) {
+          console.warn('[ai/chat]', {
+            debug_id: debugId,
+            stage: `${finishStage}_task_intent`,
+            error: taskErr instanceof Error ? taskErr.message : String(taskErr),
           });
         }
 
