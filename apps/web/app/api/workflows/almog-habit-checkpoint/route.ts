@@ -20,7 +20,13 @@ export const { POST } = serve<AlmogHabitCheckpointPayload>(async (context) => {
 
   const gate = await context.run('gate', async () => {
     const admin = createAdminClient();
-    return gateAlmogHabitCheckpoint(admin, payload.userId, payload.checkpointDate, payload.slot);
+    return gateAlmogHabitCheckpoint(
+      admin,
+      payload.userId,
+      payload.checkpointDate,
+      payload.slot,
+      payload.notifyMode
+    );
   });
 
   if (!gate.ok) {

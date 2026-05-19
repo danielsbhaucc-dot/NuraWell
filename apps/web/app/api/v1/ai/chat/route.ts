@@ -29,6 +29,11 @@ import {
 import { ingestUserMessageIntoVectorMemory } from '../../../../../lib/ai/vector-memory-ingest';
 import { applyChatSignalsFromUserMessage } from '../../../../../lib/ai/chat-signals';
 import {
+  fetchTodayChatTurns,
+  formatDailyShortTermBlock,
+} from '../../../../../lib/ai/almog-daily-context';
+import { fetchTodayAlmogTouches } from '../../../../../lib/ai/almog-notify-day-context';
+import {
   buildOnboardingChatContextBlock,
   type OnboardingProfileForChat,
 } from '../../../../../lib/ai/onboarding-chat-context';
@@ -562,6 +567,11 @@ export async function POST(request: Request) {
     return [] as string[];
   });
 
+  const dailyContextPromise = Promise.all([
+    fetchTodayChatTurns(supabase, user.id).catch(() => [] as Awaited<ReturnType<typeof fetchTodayChatTurns>>),
+    fetchTodayAlmogTouches(supabase, user.id).catch(() => []),
+  ]).catch(() => [[], []] as const);
+
   const insertPromise = insertAiInteraction(supabase, {
     user_id: user.id,
     session_id: sessionId,
@@ -577,14 +587,23 @@ export async function POST(request: Request) {
     });
   });
 
-  const [profileRow, activeJourneyContext, journeyCap, enrolledCourseIds, _userTurnInserted] =
-    await Promise.all([
-      fetchChatProfileRow(supabase, user.id),
-      journeyPromise,
-      journeyCapPromise,
-      enrolledPromise,
-      insertPromise,
-    ]);
+  const [
+    profileRow,
+    activeJourneyContext,
+    journeyCap,
+    enrolledCourseIds,
+    dailyContextBundle,
+    _userTurnInserted,
+  ] = await Promise.all([
+    fetchChatProfileRow(supabase, user.id),
+    journeyPromise,
+    journeyCapPromise,
+    enrolledPromise,
+    dailyContextPromise,
+    insertPromise,
+  ]);
+
+  const [todayChatTurns, todayAlmogTouches] = dailyContextBundle;
 
   const profileFullName = profileRow.full_name;
   const profileGender = profileRow.gender;
@@ -700,11 +719,17 @@ export async function POST(request: Request) {
 
     const moodFromProfile = moodCoachingHint(profileMoodSignal);
     const coachingStyleBlock = buildCoachingStylePromptBlock(profileRow.ai_context);
+    const dailyShortTermBlock = formatDailyShortTermBlock({
+      chatTurns: todayChatTurns,
+      todayTouches: todayAlmogTouches,
+      aiContext: profileRow.ai_context,
+    });
     const systemPromptWithMemory = `${BASE_SYSTEM_PROMPT}
 
 ${coachingStyleBlock}
 
 סדר: (1) מערכת (2) פרופיל (3) RAG (4) מסע (5) השיחה = עכשיו.
+${dailyShortTermBlock ? `\n${dailyShortTermBlock}\n` : ''}
 ${onboardingContextBlock ? `\n${onboardingContextBlock}\n` : ''}
 ${stationRules}${habitCheckpointRules}
 ${journeyStateLine}
