@@ -1,6 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
-import { NURAWELL_MENTOR_PROMPT } from '../ai/prompts';
+import {
+  buildSlotDaypartPromptBlock,
+  fetchTodayAlmogTouches,
+  formatTodayTouchesCooldownBlock,
+} from '../ai/almog-notify-day-context';
+import { getIsraelNowMinutes, parseHHMMToMinutes } from '../ai/almog-time-context';
+import { buildProfileScheduleHints } from '../ai/profile-schedule-anchors';
+import { ALMOG_NOTIFY_SHARED_RULES, NURAWELL_MENTOR_PROMPT } from '../ai/prompts';
+import { habitSlotFromCheckInTime } from './personalized-check-in-journey';
 import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
 import { normalizeCheckInTimes } from '../ai/onboarding-check-in-time';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
@@ -12,34 +20,57 @@ import {
 
 const ALMOG_PERSONALIZED_APPEND = `
 
-משימה: follow-up קצר מאלמוג (3–4 משפטים, עד 55 מילים).
-- שילוב פרופיל הרשמה + (אם יש) רוטינות/משימות מהמסע — בזרימה אחת, לא רשימה יבשה
-- בלי "אל תשכח" / "מומלץ" / "המסע שלך"
-- שאלה אחת חמה בסוף כשמתאים
-- התייחס לחלון הקשה, שעות, ארוחת ערב (אם מוגדרת), והמכשול
-- אל תזכיר דולב — אתה אלמוג`;
+${ALMOG_NOTIFY_SHARED_RULES}
+
+משימה: מגע יומי בזמן שנקבע — "מה קורה איתך?", לא תזכורת.
+- שילוב פרופיל + מסע בזרימה אחת (לא רשימת עובדות, לא בדיקת ביצוע)
+- עגן לאנרגיית חלון היום (בוקר/צהריים/ערב) לפי רמז בקונטקסט
+- אל תזכיר דולב`;
 
 export async function sendOnboardingCheckInNotification(
   admin: SupabaseClient,
   payload: OnboardingCheckInPayload,
   aiSystemPrompt: string
 ): Promise<{ body: string; inserted: Record<string, unknown> | null }> {
-  const [{ firstName, genderInstruction }, journeyCtx, profileTimes] = await Promise.all([
-    fetchNotifyUserProfile(admin, payload.userId),
-    fetchPersonalizedCheckInJourneyContext(admin, payload.userId, payload.checkInTime),
-    fetchProfileCheckInTimes(admin, payload.userId),
-  ]);
+  const slot = habitSlotFromCheckInTime(payload.checkInTime);
+
+  const [{ firstName, genderInstruction }, journeyCtx, profileTimes, profileSchedule, todayTouches] =
+    await Promise.all([
+      fetchNotifyUserProfile(admin, payload.userId),
+      fetchPersonalizedCheckInJourneyContext(admin, payload.userId, payload.checkInTime),
+      fetchProfileCheckInTimes(admin, payload.userId),
+      fetchProfileScheduleForCheckIn(admin, payload.userId),
+      fetchTodayAlmogTouches(admin, payload.userId),
+    ]);
 
   const totalToday = profileTimes.length > 0 ? profileTimes.length : 3;
   const journeyBlock = journeyCtx
     ? `\n\n### מסע (הרגלים ומשימות פתוחות)\n${formatJourneyBlockForPersonalizedCheckIn(journeyCtx)}`
     : '';
 
+  const checkMin = parseHHMMToMinutes(payload.checkInTime);
+  const nowMin = getIsraelNowMinutes();
+  const timeRelation =
+    checkMin != null
+      ? Math.abs(checkMin - nowMin) <= 35
+        ? 'עכשיו בערך זמן המגע המתוכנן.'
+        : checkMin > nowMin
+          ? `המגע המתוכנן בעוד ~${checkMin - nowMin} דקות.`
+          : `המגע המתוכנן היה לפני ~${nowMin - checkMin} דקות — עדיין אפשר לעגן לרגע היום.`
+      : '';
+
+  const cooldownBlock = formatTodayTouchesCooldownBlock(todayTouches, slot);
+
   const systemPrompt = `${NURAWELL_MENTOR_PROMPT}
 
 ${aiSystemPrompt.trim()}${journeyBlock}${ALMOG_PERSONALIZED_APPEND}
 
-זמן מוגדר לבדיקה זו: ${payload.checkInTime} (ישראל). מגע ${payload.checkInIndex + 1} מתוך ${totalToday} היום.`;
+${buildSlotDaypartPromptBlock(slot)}
+${cooldownBlock ? `\n${cooldownBlock}` : ''}
+${profileSchedule.styleBlock}
+${profileSchedule.proximity ? `\nרמז זמן: ${profileSchedule.proximity}` : ''}
+
+זמן מגע: ${payload.checkInTime} (ישראל). ${timeRelation} מגע ${payload.checkInIndex + 1}/${totalToday} היום.`;
 
   const journeyHint = journeyCtx
     ? ' שילב בעדינות משהו מהמסע אם רלוונטי לשעה הזו.'
@@ -48,9 +79,9 @@ ${aiSystemPrompt.trim()}${journeyBlock}${ALMOG_PERSONALIZED_APPEND}
   const body = await completeEmpathyNotifyBody({
     label: 'almog_personalized_check_in',
     temperature: 0.82,
-    presencePenalty: 0.35,
-    frequencyPenalty: 0.4,
-    maxTokens: 520,
+    presencePenalty: 0.45,
+    frequencyPenalty: 0.5,
+    maxTokens: 320,
     messages: [
       { role: 'system', content: systemPrompt },
       {
@@ -59,12 +90,12 @@ ${aiSystemPrompt.trim()}${journeyBlock}${ALMOG_PERSONALIZED_APPEND}
 - שם: ${firstName}
 - ${genderInstruction}
 
-כתוב הודעת follow-up אישית מאלמוג לנוטיפיקציה — רק את גוף ההודעה.${journeyHint}`,
+כתוב הודעת מגע — רק גוף ההודעה, 2–3 משפטים קצרים, שאלה פתוחה בסוף (לא כן/לא).${journeyHint}`,
       },
     ],
   });
 
-  const title = `היי ${firstName} · מאלמוג`;
+  const title = `${firstName} · מאלמוג`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: inserted, error } = await (admin as any)
@@ -108,4 +139,22 @@ async function fetchProfileCheckInTimes(
     .eq('id', userId)
     .maybeSingle();
   return normalizeCheckInTimes((data as { ai_check_in_times?: unknown } | null)?.ai_check_in_times);
+}
+
+async function fetchProfileScheduleForCheckIn(admin: SupabaseClient, userId: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (admin as any)
+    .from('profiles')
+    .select('wake_up_time, sleep_time, dinner_time, meal_schedule, ai_context')
+    .eq('id', userId)
+    .maybeSingle();
+  return buildProfileScheduleHints(
+    data as {
+      wake_up_time?: string | null;
+      sleep_time?: string | null;
+      dinner_time?: string | null;
+      meal_schedule?: Array<{ time: string; label?: string }> | null;
+      ai_context?: import('../ai/memory').AiUserContext | null;
+    } | null
+  );
 }

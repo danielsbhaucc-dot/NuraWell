@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { streamText } from 'ai';
+import { generateText, streamText, type ModelMessage } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { after } from 'next/server';
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
@@ -8,10 +8,14 @@ import { formatRagMemoryContextBlock } from '../../../../../lib/ai/format-rag-co
 import {
   ALMOG_HABIT_CHECKPOINT_RULES,
   ALMOG_STATION_PROGRESSIVE_RULES,
+  CHAT_KNOWLEDGE_AND_REALTIME_RULES,
   CHAT_PROACTIVE_AND_PRIORITY,
   CHAT_VECTOR_AND_MEMORY_RULES,
   NURAWELL_MENTOR_PROMPT,
 } from '../../../../../lib/ai/prompts';
+import { buildCoachingStylePromptBlock } from '../../../../../lib/ai/almog-coaching-style';
+import { stitchModelTextUntilComplete } from '../../../../../lib/ai/almog-message-complete';
+import type { AiUserContext } from '../../../../../lib/ai/memory';
 import {
   buildAlmogSystemKnowledgeFilter,
   fetchJourneyProgressCapForRag,
@@ -84,11 +88,11 @@ function chatRateLimitWindows() {
 const BASE_SYSTEM_PROMPT = `${NURAWELL_MENTOR_PROMPT}
 
 הנחיות נוספות לצ'אט:
-- דבר כמו חבר אמיתי בשיחה טבעית, לא כמו טקסט "מוכן מראש".
-- בלי רשימות כברירת מחדל.
-- אם המשתמש צריך בהירות מעשית, אפשר לתת 1-3 צעדים קצרים בלבד.
-- אל תגיד למשתמש שביצעת "שמירה בזיכרון" או "עדכנתי זיכרון".
-- לעולם אל תחזיר תשובה ריקה.`;
+- דבר כמו חבר בשיחה חיה — לא תזכורות מוכנות מראש.
+- בלי רשימות כברירת מחדל; מיקרו-הודעות לפעמים.
+- מצבים בזמן אמת (אירוע, בורקסים, לחץ) — 2–3 משפטים מעשיים.
+- "מה אתה יודע עליי?" — תובנה + שאלה, לא dump עובדות.
+- אל תגיד "שמרתי בזיכרון". לעולם אל תחזיר תשובה ריקה.`;
 const EMPTY_RESPONSE_FALLBACK = 'אני כאן איתך. ספר לי במשפט אחד מה הכי כבד עכשיו, ונחשוב יחד על צעד קטן להמשך.';
 
 /**
@@ -99,7 +103,7 @@ const EMPTY_RESPONSE_FALLBACK = 'אני כאן איתך. ספר לי במשפט 
 const CHAT_MAX_OUTPUT_TOKENS = (() => {
   const raw = process.env.AI_CHAT_MAX_OUTPUT_TOKENS?.trim();
   const n = raw ? Number(raw) : NaN;
-  return Number.isFinite(n) && n >= 200 && n <= 4096 ? Math.floor(n) : 900;
+  return Number.isFinite(n) && n >= 200 && n <= 4096 ? Math.floor(n) : 1100;
 })();
 
 /** סף אזהרה — אם usage.outputTokens חוצה את הסף הזה, נסמן onFinish כ"כמעט קצוץ". */
@@ -277,6 +281,7 @@ async function fetchChatProfileRow(
   full_name: string | null;
   gender: 'male' | 'female' | null;
   mood_signal: string | undefined;
+  ai_context: AiUserContext;
   onboarding: OnboardingProfileForChat;
 }> {
   const emptyOnboarding: OnboardingProfileForChat = {
@@ -312,7 +317,7 @@ async function fetchChatProfileRow(
     const profile = (data ?? null) as {
       full_name?: string | null;
       gender?: 'male' | 'female' | null;
-      ai_context?: { current_mood_signal?: string } | null;
+      ai_context?: AiUserContext | null;
       main_goal?: OnboardingProfileForChat['main_goal'];
       current_weight_kg?: number | null;
       goal_weight_kg?: number | null;
@@ -354,6 +359,7 @@ async function fetchChatProfileRow(
       full_name: profile?.full_name ?? null,
       gender: profile?.gender ?? null,
       mood_signal: profile?.ai_context?.current_mood_signal,
+      ai_context: (profile?.ai_context ?? {}) as AiUserContext,
       onboarding: {
         full_name: profile?.full_name ?? null,
         gender: profile?.gender ?? null,
@@ -372,10 +378,20 @@ async function fetchChatProfileRow(
           ? (profile!.ai_check_in_times as string[])
           : null,
         onboarding_completed: profile?.onboarding_completed ?? null,
+        work_arrival_time:
+          typeof profile?.ai_context?.work_arrival_time === 'string'
+            ? profile.ai_context.work_arrival_time.slice(0, 5)
+            : null,
       },
     };
   } catch {
-    return { full_name: null, gender: null, mood_signal: undefined, onboarding: emptyOnboarding };
+    return {
+      full_name: null,
+      gender: null,
+      mood_signal: undefined,
+      ai_context: {},
+      onboarding: emptyOnboarding,
+    };
   }
 }
 
@@ -692,11 +708,16 @@ export async function POST(request: Request) {
         : '';
 
     const moodFromProfile = moodCoachingHint(profileMoodSignal);
+    const coachingStyleBlock = buildCoachingStylePromptBlock(profileRow.ai_context);
     const systemPromptWithMemory = `${BASE_SYSTEM_PROMPT}
 
 ${CHAT_PROACTIVE_AND_PRIORITY}
 
+${CHAT_KNOWLEDGE_AND_REALTIME_RULES}
+
 ${CHAT_VECTOR_AND_MEMORY_RULES}
+
+${coachingStyleBlock}
 
 סדר עדיפויות: (1) הנחיות מערכת (2) פרופיל הרשמה (תמיד אם קיים) (3) רמזי זיכרון RAG (4) חומר מסע (5) השיחה — מקור האמת ל"עכשיו".
 ${onboardingContextBlock ? `\n${onboardingContextBlock}\n` : ''}
@@ -756,7 +777,41 @@ ${JSON.stringify(activeJourneyContext)}
       messages: recentMessages,
       onFinish: async ({ text, usage, finishReason }) => {
         const finishStage = 'on_finish';
-        const t = (text ?? '').trim();
+        let t = (text ?? '').trim();
+        let effectiveFinishReason = finishReason;
+
+        if (finishReason === 'length' && t) {
+          try {
+            const baseMsgs: ModelMessage[] = [
+              { role: 'system', content: systemPromptWithMemory },
+              ...recentMessages,
+            ];
+            const runCont = async (msgs: ModelMessage[]) => {
+              const out = await generateText({
+                model: openrouter.chat('openai/gpt-5-mini'),
+                temperature: 0.7,
+                maxOutputTokens: Math.min(600, CHAT_MAX_OUTPUT_TOKENS),
+                providerOptions: { openai: { reasoningEffort: 'low' } },
+                messages: msgs,
+              });
+              return { text: out.text ?? '', finishReason: out.finishReason };
+            };
+            t = await stitchModelTextUntilComplete(
+              { text: t, finishReason: 'length' },
+              runCont,
+              baseMsgs,
+              { maxContinuations: 1 }
+            );
+            effectiveFinishReason = 'stop';
+          } catch (contErr) {
+            console.warn('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_continuation_failed`,
+              error: contErr instanceof Error ? contErr.message : String(contErr),
+            });
+          }
+        }
+
         const assistantText = t || EMPTY_RESPONSE_FALLBACK;
         if (!t) {
           console.warn('[ai/chat]', {
@@ -765,11 +820,6 @@ ${JSON.stringify(activeJourneyContext)}
           });
         }
 
-        /**
-         * תיעוד שימוש בטוקנים — מאפשר לראות כמה onFinish באמת חוצות את הסף.
-         * אם הרבה תשובות נחתכות (finish_reason='length' או outputTokens קרוב לתקרה)
-         * זה האות להעלות את CHAT_MAX_OUTPUT_TOKENS עוד.
-         */
         const outputTokens = usage?.outputTokens;
         const inputTokens = usage?.inputTokens;
         const totalTokens = usage?.totalTokens;
@@ -812,7 +862,8 @@ ${JSON.stringify(activeJourneyContext)}
               streamed: true,
               fallback_used: !t,
               output_tokens: outputTokens,
-              finish_reason: finishReason,
+              finish_reason: effectiveFinishReason,
+              continued_after_length: finishReason === 'length' && t !== (text ?? '').trim(),
             },
           });
         } catch (persistErr) {

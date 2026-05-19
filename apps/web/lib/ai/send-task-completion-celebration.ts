@@ -2,17 +2,15 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from './client';
 import { completeEmpathyNotifyBody } from './empathy-notify-completion';
 import { fetchNotifyUserProfile } from './notify-user-profile';
-import { NURAWELL_MENTOR_PROMPT } from './prompts';
+import { ALMOG_NOTIFY_SHARED_RULES, NURAWELL_MENTOR_PROMPT } from './prompts';
 
 const CELEBRATION_SYSTEM = `${NURAWELL_MENTOR_PROMPT}
 
-משימה: המשתמש דיווח עכשיו במערכת שסיים לבצע משימה שקיבל במסע (סימן V על ביצוע).
-כתוב הודעת נוטיפיקציה קצרה בלבד (2–4 משפטים, עד 65 מילים):
-- חגיגה אמיתית אבל לא מוגזמת; בלי "מדהים על הכל" גנרי.
-- התאם את עוצמת הרגש והטון לפי **מה שנשמע מניסוח המשימה**: צעד קטן/פשוט → הכרה חמה וקלילה; משימה שנשמעת דורשת עקביות, אנרגיה, או שינוי הרגל → הוקרה עמוקה יותר, אפשר לנרמל אם זה נשמע מאתגר.
-- אם המשימה נשמעת טכנית/יומיומית — אל תגזים בדרמה; אם נשמעת רגשית או קשה — תן מקום לרגע אנושי.
-- בלי רשימות, בלי כותרת, בלי "שמרנו בזיכרון".
-- התחל בפנייה אישית עם השם — פעם אחת, טבעי.`;
+${ALMOG_NOTIFY_SHARED_RULES}
+
+משימה: המשתמש סימן ביצוע על משימה — חגיגה אמיתית, לא מוגזמת.
+- 1–3 משפטים; התאם עוצמה למשימה (קטנה = קליל, קשה = הכרה עמוקה).
+- שאלה אופציונלית ("מה הכי עזר?") — לא חובה.`;
 
 type JourneyTaskJson = { id: string; title: string; description?: string | null };
 

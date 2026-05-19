@@ -1,16 +1,24 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
+import {
+  fetchTodayAlmogTouches,
+  formatTodayTouchesCooldownBlock,
+} from '../ai/almog-notify-day-context';
 import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
-import { NURAWELL_MENTOR_PROMPT } from '../ai/prompts';
+import { buildCoachingStylePromptBlock } from '../ai/almog-coaching-style';
+import type { AiUserContext } from '../ai/memory';
+import { ALMOG_NOTIFY_SHARED_RULES, NURAWELL_MENTOR_PROMPT } from '../ai/prompts';
 import type { AlmogFollowupUserState } from './almog-followup-state';
+import { habitSlotFromCheckInTime } from './personalized-check-in-journey';
 
 const TASK_FOLLOWUP_SYSTEM = `${NURAWELL_MENTOR_PROMPT}
 
-משימה: תזכורת פרואקטיבית — המשתמש בחר במשימה (מקובל) אך לפי המערכת עדיין לא דיווח שביצע אותה אחרי הזמן שנקבע.
-כתוב טקסט לנוטיפיקציה בלבד: 2–3 משפטים, עד 50 מילים, בלי כותרת כללית מעלפה, בלי הטפה, בלי "התגעגענו".
-התחל בפנייה אישית לפי השם והמגדר שסופקו בהנחיות המשתמש — פעם אחת, טבעי.
-השתמש בקונטקסט שסופק (תחנה, צעד, משימה, הרגלים) — אל תמציא משימות או הרגלים שלא הופיעו.`;
+${ALMOG_NOTIFY_SHARED_RULES}
+
+משימה: מגע אחרי זמן — check-in חברי, לא מעקב ביצוע.
+- "מה קורה?" / "מה חוסם?" — לא "עדיין לא סימנת" / "ראיתי שלא".
+- 2–3 משפטים קצרים, שאלה פתוחה בסוף. השתמש רק בקונטקסט שסופק.`;
 
 function formatStateForPrompt(state: AlmogFollowupUserState, taskId: string): string {
   const lines: string[] = [
@@ -34,13 +42,33 @@ export async function sendAlmogTaskFollowupNotification(
   taskId: string,
   state: AlmogFollowupUserState
 ): Promise<{ body: string }> {
-  const { firstName, genderInstruction } = await fetchNotifyUserProfile(admin, userId);
+  const slot = habitSlotFromCheckInTime(
+    new Date().toLocaleTimeString('en-GB', {
+      timeZone: 'Asia/Jerusalem',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+  );
 
-  const systemPrompt = `${TASK_FOLLOWUP_SYSTEM}\n\nקונטקסט מערכת:\n${formatStateForPrompt(state, taskId)}`;
+  const [{ firstName, genderInstruction }, styleBlock, todayTouches] = await Promise.all([
+    fetchNotifyUserProfile(admin, userId),
+    fetchCoachingStyle(admin, userId),
+    fetchTodayAlmogTouches(admin, userId),
+  ]);
+
+  const cooldownBlock = formatTodayTouchesCooldownBlock(todayTouches, slot);
+
+  const systemPrompt = `${TASK_FOLLOWUP_SYSTEM}\n\n${styleBlock}${
+    cooldownBlock ? `\n\n${cooldownBlock}` : ''
+  }\n\nקונטקסט מערכת:\n${formatStateForPrompt(state, taskId)}`;
 
   const body = await completeEmpathyNotifyBody({
     label: 'task_followup',
-    temperature: 0.65,
+    temperature: 0.78,
+    presencePenalty: 0.45,
+    frequencyPenalty: 0.5,
+    maxTokens: 320,
     messages: [
       { role: 'system', content: systemPrompt },
       {
@@ -49,12 +77,12 @@ export async function sendAlmogTaskFollowupNotification(
 - שם פרטי לשימוש בהודעה: ${firstName}
 - ${genderInstruction}
 
-כתוב את גוף ההודעה לנוטיפיקציה בלבד. עברית טבעית. אלמוג מדבר בגוף ראשון זכר על עצמו.`,
+כתוב את גוף ההודעה לנוטיפיקציה בלבד — 2–3 משפטים, שאלה פתוחה בסוף. עברית טבעית.`,
       },
     ],
   });
 
-  const title = `היי ${firstName} · מאלמוג`;
+  const title = `${firstName} · מאלמוג`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (admin as any).from('notifications').insert({
@@ -77,4 +105,15 @@ export async function sendAlmogTaskFollowupNotification(
 
   if (error) throw new Error(error.message);
   return { body };
+}
+
+async function fetchCoachingStyle(admin: SupabaseClient, userId: string): Promise<string> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (admin as any)
+    .from('profiles')
+    .select('ai_context')
+    .eq('id', userId)
+    .maybeSingle();
+  const ctx = (data as { ai_context?: AiUserContext | null } | null)?.ai_context ?? null;
+  return buildCoachingStylePromptBlock(ctx);
 }

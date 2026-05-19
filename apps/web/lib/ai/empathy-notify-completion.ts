@@ -1,6 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText, type ModelMessage } from 'ai';
 
+import { stitchModelTextUntilComplete } from './almog-message-complete';
 import { AI_MODELS } from './client';
 import { publicAppUrlForAiReferer } from '../public-app-url';
 
@@ -23,8 +24,7 @@ const openrouterAi = createOpenAI({
 });
 
 /**
- * טקסט קצר לנוטיפיקציות מאלמוג — אותו מודל כמו הצ'אט, עם reasoning נמוך
- * ו-retry אחד כדי למנוע תשובה ריקה כשהמודל "בולע" טוקנים לחשיבה פנימית.
+ * טקסט לנוטיפיקציות מאלמוג — עם retry ועם המשכה אם נחתך באמצע (finish_reason=length).
  */
 export async function completeEmpathyNotifyBody(
   options: EmpathyNotifyCompletionOptions
@@ -37,26 +37,41 @@ export async function completeEmpathyNotifyBody(
     const attemptMaxOutputTokens =
       attempt === 0 ? maxOutputTokens : Math.max(maxOutputTokens, 1280);
 
-    const out = await generateText({
-      model: openrouterAi.chat(AI_MODELS.empathy),
-      temperature: attempt === 0 ? temperature : Math.min(1, temperature + 0.05),
-      maxOutputTokens: attemptMaxOutputTokens,
-      providerOptions: {
-        openai: { reasoningEffort: 'low' },
-      },
-      ...(options.presencePenalty != null ? { presencePenalty: options.presencePenalty } : {}),
-      ...(options.frequencyPenalty != null ? { frequencyPenalty: options.frequencyPenalty } : {}),
-      messages: options.messages,
+    const baseMessages = options.messages;
+
+    const runOnce = async (msgs: ModelMessage[]) => {
+      const out = await generateText({
+        model: openrouterAi.chat(AI_MODELS.empathy),
+        temperature: attempt === 0 ? temperature : Math.min(1, temperature + 0.05),
+        maxOutputTokens: attemptMaxOutputTokens,
+        providerOptions: {
+          openai: { reasoningEffort: 'low' },
+        },
+        ...(options.presencePenalty != null ? { presencePenalty: options.presencePenalty } : {}),
+        ...(options.frequencyPenalty != null
+          ? { frequencyPenalty: options.frequencyPenalty }
+          : {}),
+        messages: msgs,
+      });
+      return {
+        text: out.text ?? '',
+        finishReason: out.finishReason,
+      };
+    };
+
+    const first = await runOnce(baseMessages);
+    lastFinishReason = first.finishReason;
+
+    const body = await stitchModelTextUntilComplete(first, runOnce, baseMessages, {
+      maxContinuations: 2,
     });
 
-    const body = (out.text ?? '').trim();
-    lastFinishReason = out.finishReason;
     if (body) return body;
 
     console.warn('[empathy-notify] empty completion', {
       label: options.label,
       attempt,
-      finishReason: out.finishReason,
+      finishReason: first.finishReason,
       maxOutputTokens: attemptMaxOutputTokens,
     });
   }

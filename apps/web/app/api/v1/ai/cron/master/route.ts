@@ -8,6 +8,10 @@ import {
   nudgeThresholdDays,
   type CronOpsAction,
 } from '../../../../../../lib/ai/cron-ops-action';
+import {
+  cronOpsNotificationTitle,
+  generateCronOpsNotificationBody,
+} from '../../../../../../lib/ai/send-cron-ops-notification';
 import { type AiUserContext } from '../../../../../../lib/ai/memory';
 import { ANALYSIS_PROMPT } from '../../../../../../lib/ai/prompts';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
@@ -22,6 +26,56 @@ export const dynamic = 'force-dynamic';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AdminDb = any;
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+function cronOpsUseLlm(): boolean {
+  const v = process.env.ALMOG_CRON_USE_LLM?.trim().toLowerCase();
+  return v !== '0' && v !== 'false';
+}
+
+async function resolveCronOpsBody(
+  admin: AdminDb,
+  params: {
+    userId: string;
+    action: Exclude<CronOpsAction, 'silent'>;
+    reason: string;
+    daysSinceActive: number;
+    daysSinceLastWeight: number | null;
+    streakDays: number | null;
+    aiContext: Record<string, unknown>;
+    fullName: string | null;
+  }
+): Promise<{ title: string; body: string; template: boolean }> {
+  if (!cronOpsUseLlm()) {
+    const draft = buildCronOpsNotification(params.action, params.fullName, params.streakDays);
+    if (!draft) throw new Error('no_template');
+    return { title: draft.title, body: draft.body, template: true };
+  }
+  try {
+    const body = await generateCronOpsNotificationBody(admin, {
+      userId: params.userId,
+      action: params.action,
+      reason: params.reason,
+      daysSinceActive: params.daysSinceActive,
+      daysSinceLastWeight: params.daysSinceLastWeight,
+      streakDays: params.streakDays,
+      aiContext: params.aiContext,
+    });
+    return {
+      title: cronOpsNotificationTitle(params.action, params.fullName),
+      body,
+      template: false,
+    };
+  } catch (e) {
+    const draft = buildCronOpsNotification(params.action, params.fullName, params.streakDays);
+    if (!draft) throw e;
+    console.warn('[cron/master] LLM notify fallback to template', {
+      userId: params.userId,
+      action: params.action,
+      error: e instanceof Error ? e.message : String(e),
+    });
+    return { title: draft.title, body: draft.body, template: true };
+  }
+}
 
 const ALLOWED_CONTEXT_PATCH_KEYS = new Set([
   'weakness_pattern',
@@ -221,18 +275,24 @@ async function runMasterCron() {
           continue;
         }
 
-        const draft = buildCronOpsNotification(
-          'celebrate',
-          profile.full_name,
-          profile.streak_days
-        );
-        if (!draft) continue;
+        const daysSinceActive = daysSinceIso(profile.last_active_at) ?? 0;
+        const weightDays = await daysSinceLastWeightKg(admin, userId);
+        const resolved = await resolveCronOpsBody(admin, {
+          userId,
+          action: 'celebrate',
+          reason: 'streak_active_user',
+          daysSinceActive,
+          daysSinceLastWeight: weightDays,
+          streakDays: profile.streak_days,
+          aiContext: profile.ai_context ?? {},
+          fullName: profile.full_name,
+        });
 
         const { error: insErr } = await admin.from('notifications').insert({
           user_id: userId,
           type: 'ai_message',
-          title: draft.title,
-          body: draft.body,
+          title: resolved.title,
+          body: resolved.body,
           icon_emoji: '🌿',
           action_url: '/journey',
           is_read: false,
@@ -243,7 +303,7 @@ async function runMasterCron() {
             action: 'celebrate' satisfies CronOpsAction,
             reason: 'streak_active_user',
             urgency: 'low',
-            template: true,
+            template: resolved.template,
           },
         });
 
@@ -256,7 +316,7 @@ async function runMasterCron() {
     }
   }
 
-  // --- 2b) נידג' לפי החלטת קצין מבצעים — תבניות קבועות (ללא LLM)
+  // --- 2b) נידג' לפי החלטת קצין מבצעים — LLM מותאם (fallback לתבנית)
   const twoDaysAgoIso = new Date(Date.now() - 2 * DAY_MS).toISOString();
   const { data: churnRows, error: stErr } = await admin
     .from('profiles')
@@ -309,8 +369,19 @@ async function runMasterCron() {
           continue;
         }
 
-        const draft = buildCronOpsNotification(decision.action, profile.full_name, profile.streak_days);
-        if (!draft) {
+        let resolved: { title: string; body: string; template: boolean };
+        try {
+          resolved = await resolveCronOpsBody(admin, {
+            userId,
+            action: decision.action,
+            reason: decision.reason,
+            daysSinceActive,
+            daysSinceLastWeight: weightDays,
+            streakDays: profile.streak_days,
+            aiContext: profile.ai_context ?? {},
+            fullName: profile.full_name,
+          });
+        } catch {
           nudgeSkipped++;
           continue;
         }
@@ -318,8 +389,8 @@ async function runMasterCron() {
         const { error: insErr } = await admin.from('notifications').insert({
           user_id: userId,
           type: 'ai_message',
-          title: draft.title,
-          body: draft.body,
+          title: resolved.title,
+          body: resolved.body,
           icon_emoji: '🌿',
           action_url: '/journey',
           is_read: false,
@@ -330,7 +401,7 @@ async function runMasterCron() {
             action: decision.action,
             reason: decision.reason,
             urgency: decision.urgency,
-            template: true,
+            template: resolved.template,
           },
         });
 
