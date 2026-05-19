@@ -5,7 +5,7 @@ import { completeEmpathyNotifyBody } from './empathy-notify-completion';
 import type { CronOpsAction } from './cron-ops-action';
 import { extractFirstName } from './cron-ops-action';
 import { fetchNotifyUserProfile } from './notify-user-profile';
-import { CRON_OPS_NOTIFY_PROMPT } from './prompts';
+import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, CRON_OPS_NOTIFY_PROMPT } from './prompts';
 import type { AiUserContext } from './memory';
 
 const ACTION_HE: Record<Exclude<CronOpsAction, 'silent'>, string> = {
@@ -58,7 +58,7 @@ export async function generateCronOpsNotificationBody(
     temperature: 0.8,
     presencePenalty: 0.45,
     frequencyPenalty: 0.5,
-    maxTokens: 320,
+    maxTokens: ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
     messages: [
       { role: 'system', content: `${CRON_OPS_NOTIFY_PROMPT}\n\nקונטקסט:\n${contextBlock}` },
       {
