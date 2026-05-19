@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '../../../../lib/supabase/server';
 import { AlmogNudgeSettingsClient } from '../../../../components/settings/AlmogNudgeSettingsClient';
+import { coachingStyleFromContext, type AlmogCoachingStyle } from '../../../../lib/ai/almog-coaching-style';
 import type { AiUserContext } from '../../../../lib/ai/memory';
 
 export const metadata: Metadata = {
@@ -25,11 +26,16 @@ export default async function AlmogNudgeSettingsPage() {
   const ctx = (row?.ai_context ?? null) as AiUserContext | null;
   const avoidPush = ctx?.avoid_push === true;
   const weightReminders = ctx?.skip_weight_check_ins !== true;
+  const coachingStyle: AlmogCoachingStyle = coachingStyleFromContext(ctx);
+  const workArrival =
+    typeof ctx?.work_arrival_time === 'string' ? ctx.work_arrival_time.slice(0, 5) : '';
 
   return (
     <AlmogNudgeSettingsClient
       initialAvoidPush={avoidPush}
       initialWeightReminders={weightReminders}
+      initialCoachingStyle={coachingStyle}
+      initialWorkArrivalTime={workArrival}
     />
   );
 }

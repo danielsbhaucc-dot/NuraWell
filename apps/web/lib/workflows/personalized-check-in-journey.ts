@@ -105,7 +105,9 @@ export function formatJourneyBlockForPersonalizedCheckIn(ctx: PersonalizedJourne
     );
   }
   if (taskLines.length) {
-    parts.push(`משימות פתוחות שהמשתמש/ת קיבל/ה ועדיין לא סימן/ה ביצוע:\n${taskLines.join('\n')}`);
+    parts.push(
+      `נושאים במסע לשיחה (רקע פנימי — לא לבדוק ביצוע):\n${taskLines.join('\n')}`
+    );
   }
   if (habitLines.length) {
     parts.push(`רוטינות מהמסע לחלון הזה:\n${habitLines.join('\n')}`);

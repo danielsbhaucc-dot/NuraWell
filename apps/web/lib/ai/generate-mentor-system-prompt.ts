@@ -171,9 +171,10 @@ export function generateMentorSystemPrompt(profile: MentorPromptProfile): string
 - ערוץ מועדף: ${profile.preferred_channel === 'in_app' ? 'באפליקציה' : profile.preferred_channel}
 
 ### זמני מגע יומיים (שעון ישראל)
-שלח follow-up קצר (2–4 משפטים) רק בזמנים:
+שלח מגע קצר (1–3 משפטים) רק בזמנים — ערך/שאלה לפני דרישת פעולה, לא "עדיין לא עדכנת":
 ${times.map((t, i) => `${i + 1}. ${t}${i === 1 ? ` ← לפני החלון הקשה (${WEAKEST_LABELS[profile.weakest_time_of_day]})` : ''}`).join('\n')}
 
+עגן לרגע: לפני שכמה, לפני ארוחה, לפני חלון קשה — לפי השעה בפועל.
 מחוץ לחלונות — רק אם ${addr.you} פנה/ה אליך.
 
 ### המכשול והיישום

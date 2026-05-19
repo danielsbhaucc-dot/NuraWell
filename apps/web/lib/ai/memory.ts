@@ -16,6 +16,10 @@ export interface AiUserContext {
   avoid_push?: boolean;
   /** כשמוגדר — לא שולחים תזכורות ייעודיות לעדכון משקל (Cron) */
   skip_weight_check_ins?: boolean;
+  /** warm_friend | direct | gentle — טון ליווי (ברירת מחדל: warm_friend) */
+  coaching_style?: 'warm_friend' | 'direct' | 'gentle' | string;
+  /** שעת הגעה טיפוסית לעבודה (HH:MM) — לעיגון הודעות לפני המשרד */
+  work_arrival_time?: string;
 }
 
 export interface BuildUserContextResult {
@@ -193,6 +197,8 @@ export async function updateAiContext(
     'main_blocker',
     'avoid_push',
     'skip_weight_check_ins',
+    'coaching_style',
+    'work_arrival_time',
   ];
 
   const { data: existing } = await supabase

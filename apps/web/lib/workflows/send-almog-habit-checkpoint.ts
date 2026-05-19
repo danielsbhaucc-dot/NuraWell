@@ -1,8 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
+import {
+  buildSlotDaypartPromptBlock,
+  fetchTodayAlmogTouches,
+  formatTodayTouchesCooldownBlock,
+} from '../ai/almog-notify-day-context';
 import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
-import { NURAWELL_MENTOR_PROMPT } from '../ai/prompts';
+import { buildProfileScheduleHints } from '../ai/profile-schedule-anchors';
+import { ALMOG_NOTIFY_SHARED_RULES, NURAWELL_MENTOR_PROMPT } from '../ai/prompts';
 import type { AlmogHabitCheckpointPayload, HabitCheckpointSlot } from './almog-habit-checkpoint-payload';
 
 const SLOT_HE: Record<HabitCheckpointSlot, string> = {
@@ -21,66 +27,17 @@ const WEEKDAY_HE = [
   'שבת',
 ];
 
-/**
- * Prompt משופר — מטרתו שאלמוג ייתן **תובנות**, לא עובדות.
- *
- * עקרונות:
- * 1. תובנה אחת קטנה שמחברת בין ההרגל/המשימה לתחושה אנושית — לא נתון מדעי.
- * 2. דירבון בכיף — לא דחיפה מתוסכלת.
- * 3. אורך מאוזן (3–5 משפטים) שמרגיש קצר אבל מספיק עמוק.
- * 4. ניקוז שונות בלי לחזור על ההודעה הקודמת שאלמוג שלח באותו slot.
- */
 const HABIT_CHECKPOINT_SYSTEM = `${NURAWELL_MENTOR_PROMPT}
 
-משימה: שלח נוטיפיקציה מאלמוג לחלון יום (בוקר/צהריים/ערב). זה לא reminder — זה רגע של חיבור.
+${ALMOG_NOTIFY_SHARED_RULES}
 
-עיקרון מרכזי — תובנות, לא עובדות:
-- אסור לזרוק נתון מדעי ("מים מפחיתים תיאבון ב-22%"). זה חינוך, לא קשר.
-- כן: תובנה קטנה שמחברת בין ההרגל/המשימה לחיים האמיתיים של המשתמש.
-- תובנה = איך זה מרגיש או מה זה נותן ברגע. לא מה זה עושה לגוף.
-- אם אין לך תובנה אמיתית — אל תכתוב משפט תובנה. עדיף בלי.
+משימה: נקודת מגע לחלון יום (בוקר/צהריים/ערב) — check-in חברי, לא מעקב ביצועים.
 
-דוגמאות לתובנה (✓ vs עובדה ✗):
-✗ "מים לפני האוכל מורידים תיאבון ועוזרים לעיכול."
-✓ "כוס המים לפני האוכל זה לא קסם — היא בעיקר נותנת לך 30 שניות לפני שהראש קופץ למסקנות."
-
-✗ "הליכה אחרי ארוחה מסייעת לשרוף קלוריות וחיונית לבריאות."
-✓ "ההליכה אחרי הארוחה לא קשורה ל'לשרוף'. היא נותנת למוח שלוש דקות לפני שהוא קופץ למסכים."
-
-✗ "החלפת לחם לבן בלחם מלא משפרת את האיזון הגליקמי."
-✓ "המעבר ללחם מלא — זה לא טעם של 'בריא'. זה רק להרגיל את הראש שמשהו אחר יכול להיות בצלחת."
-
-דירבון בכיף — לא מסכנות, לא דחיפה:
-✗ "חבל לפספס היום, התחלת כל כך יפה."
-✓ "אם הוא יקרה היום — מצוין. אם לא — מחר לא נעלם."
-
-✗ "תזכור שאתה ב-NuraWell בשביל לעצב את חייך מחדש!"
-✓ "אין דרמה אם זה לא קרה — היום הוא יום אחד מתוך הרבה."
-
-איך לדבר על משימות פתוחות והרגלים (1–3 שילובים בזרימה):
-- "משימות פתוחות" = המשתמש קיבל אותן ועדיין לא סימן ביצוע. אם יש 1–3 — אפשר להזכיר אותן בזרימה טבעית.
-- "רוטינות" = הרגלים יומיים/שבועיים. אפשר לחבר לזמן ("לפני ארוחת הצהריים").
-- **אסור** לקרוא להן "משימה" / "הרגל" בטקסט — דבר בשפת חיים. דוגמה: לא "המשימה לשתות מים" — "כוס המים לפני האוכל".
-- כשיש כמה דברים שונים: שניים בשם + "וכל השאר שדיברנו". כשהם דומים בנושא: לאחד למשפט אחד.
-
-מבנה מומלץ (לא נוקשה — שונה כל פעם):
-1. פתיחה אישית עם השם (לא "שלום ${'$'}{שם}," — טבעי כמו "היי דן, צהריים פה כבר…").
-2. הזכרה של 1–3 דברים מהקונטקסט.
-3. תובנה קטנה (לא תמיד! רק כשיש לה מקום).
-4. שאלה חמה — לא תמיד אותה. וריאציות:
-   · "מה התחושה איתך עם זה?"
-   · "מצליח/ה לשלב בעבודה/בקצב?"
-   · "מה מהדברים שדיברנו עליהם הצליח לך היום?"
-   · "ואם לא היום — אין לחץ. מה היה שם במקום?"
-   · "איך הראש שלך עכשיו?"
-
-חוקים מחייבים:
-- אסור להמציא דבר שלא ברשימה.
-- אסור: "אל תשכח" / "מומלץ" / "כדאי" / "הנה תזכורת" / "חשוב לזכור" / "המסע שלך".
-- אלמוג מדבר על עצמו בגוף ראשון זכר ("ראיתי", "חשבתי עליך").
-- אורך: 3–5 משפטים, עד 65 מילים. שאלה אחת לסיום.
-
-אם בקונטקסט יש "ההודעה האחרונה ששלחתי" — אל תחזור עליה. שנה זווית (מהרגל למשימה, מתובנה לחיבור רגשי, מבוקר לערב). חיוני שיורגש שכל הודעה חדשה.`;
+עקרונות:
+- הקשר במסע = רקע לשיחה; אל תדווח למשתמש מה "פתוח" במערכת.
+- אם יש נושא רלוונטי — שפה יומיומית ("כוס לפני האוכל"), לא "משימה"/"הרגל"/"טרם בוצע".
+- מבנה: פתיחה מגוונת לפי שעה → לפחות משפט אחד אמפתי → שאלה פתוחה אחת בסוף.
+- אם יש "מגעים היום" בלי תשובה — הכר בעומס; זווית חדשה לגמרי מהודעות קודמות.`;
 
 function dedupeByTitle<T extends { title: string }>(items: T[]): T[] {
   const seen = new Set<string>();
@@ -117,18 +74,18 @@ function formatHabitsForPrompt(
 
   if (taskLines.length > 0) {
     parts.push(
-      `\nמשימות שהמשתמש קיבל על עצמו ועדיין לא דיווח על ביצוע (${taskLines.length}):`
+      `\nנושאים במסע שאפשר לגעת בהם בשיחה (רקע פנימי — לא לבדוק ביצוע, ${taskLines.length}):`
     );
     parts.push(taskLines.join('\n'));
     parts.push(
       taskLines.length === 1
-        ? 'יש משימה אחת בלבד — אפשר להתמקד בה.'
+        ? 'נושא אחד — אפשר להזכיר בעדינות אם מתאים לרגע.'
         : taskLines.length <= 3
-          ? 'אפשר להזכיר את כולן או חלקן בזרימה טבעית.'
-          : `יש ${taskLines.length} משימות. בחר את 1–3 שנראות לך הכי רלוונטיות לחלון הזמן והזכר אותן.`
+          ? 'אפשר לבחור נושא אחד שמתאים לחלון הזמן — לא לרשום הכל.'
+          : `יש ${taskLines.length} נושאים — בחר 1 לכל היותר, בשפת חיים.`
     );
   } else {
-    parts.push('\nמשימות פתוחות: אין — המשתמש סגר את כל מה שקיבל על עצמו.');
+    parts.push('\nנושאי מסע לשיחה: אין כרגע — התמקד ברגש/יום, לא ב"משימות".');
   }
 
   if (habitLines.length > 0) {
@@ -153,10 +110,11 @@ function formatHabitsForPrompt(
  * (ב-7 הימים האחרונים). מטרתה למנוע חזרה — לא רוב הקונטקסט.
  * עלות: ~100 טוקנים בלבד.
  */
-async function fetchLastCheckpointBody(
+async function fetchRecentAlmogBodies(
   admin: SupabaseClient,
-  userId: string
-): Promise<string | null> {
+  userId: string,
+  limit = 3
+): Promise<string[]> {
   const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (admin as any)
@@ -166,27 +124,54 @@ async function fetchLastCheckpointBody(
     .eq('type', 'ai_message')
     .gte('created_at', sinceIso)
     .order('created_at', { ascending: false })
-    .limit(5);
+    .limit(12);
 
-  if (!Array.isArray(data) || data.length === 0) return null;
-
+  if (!Array.isArray(data)) return [];
+  const bodies: string[] = [];
   for (const row of data) {
-    const m = (row.metadata ?? null) as { source?: string } | null;
-    if (m?.source === 'almog_habit_checkpoint' && typeof row.body === 'string') {
-      return row.body.trim();
+    const m = (row.metadata ?? null) as { source?: string; mentor?: string } | null;
+    const src = m?.source ?? '';
+    if (
+      typeof row.body === 'string' &&
+      (src.startsWith('almog') || m?.mentor === 'almog' || src === 'cron_ops')
+    ) {
+      const t = row.body.trim();
+      if (t) bodies.push(t);
     }
+    if (bodies.length >= limit) break;
   }
-  return null;
+  return bodies;
+}
+
+async function fetchProfileScheduleHints(admin: SupabaseClient, userId: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (admin as any)
+    .from('profiles')
+    .select('wake_up_time, sleep_time, dinner_time, meal_schedule, ai_context')
+    .eq('id', userId)
+    .maybeSingle();
+  return buildProfileScheduleHints(
+    data as {
+      wake_up_time?: string | null;
+      sleep_time?: string | null;
+      dinner_time?: string | null;
+      meal_schedule?: Array<{ time: string; label?: string }> | null;
+      ai_context?: import('../ai/memory').AiUserContext | null;
+    } | null
+  );
 }
 
 export async function sendAlmogHabitCheckpointNotification(
   admin: SupabaseClient,
   payload: AlmogHabitCheckpointPayload
 ): Promise<{ body: string; inserted: Record<string, unknown> | null }> {
-  const [{ firstName, genderInstruction }, lastBody] = await Promise.all([
-    fetchNotifyUserProfile(admin, payload.userId),
-    fetchLastCheckpointBody(admin, payload.userId),
-  ]);
+  const [{ firstName, genderInstruction }, recentBodies, scheduleHints, todayTouches] =
+    await Promise.all([
+      fetchNotifyUserProfile(admin, payload.userId),
+      fetchRecentAlmogBodies(admin, payload.userId),
+      fetchProfileScheduleHints(admin, payload.userId),
+      fetchTodayAlmogTouches(admin, payload.userId),
+    ]);
 
   /**
    * זמן + יום בשבוע ב-Asia/Jerusalem — חשוב כדי שאלמוג ידע אם זה שישי אחה"צ
@@ -218,12 +203,22 @@ export async function sendAlmogHabitCheckpointNotification(
   };
   const weekdayName = WEEKDAY_HE[dowMap[ilDow] ?? 0];
 
-  const contextParts: string[] = [formatHabitsForPrompt(payload, weekdayName, timeHHMM)];
-  if (lastBody) {
-    /** קיצוץ כדי לא לבזבז טוקנים — 200 תווים מספיקים כדי לתפוס את הזווית */
-    const trimmed = lastBody.slice(0, 200);
+  const contextParts: string[] = [
+    buildSlotDaypartPromptBlock(payload.slot),
+    formatHabitsForPrompt(payload, weekdayName, timeHHMM),
+  ];
+  const cooldownBlock = formatTodayTouchesCooldownBlock(todayTouches, payload.slot);
+  if (cooldownBlock) contextParts.push(cooldownBlock);
+  if (scheduleHints.proximity) {
+    contextParts.push(`\nרמז זמן: ${scheduleHints.proximity}`);
+  }
+  contextParts.push(`\n${scheduleHints.styleBlock}`);
+  if (recentBodies.length > 0) {
+    const snippets = recentBodies
+      .map((b, i) => `${i + 1}. "${b.slice(0, 160)}${b.length > 160 ? '…' : ''}"`)
+      .join('\n');
     contextParts.push(
-      `\nההודעה האחרונה ששלחתי לאותו משתמש (אל תחזור על זווית/נושא/שאלה זהים):\n"${trimmed}${lastBody.length > 200 ? '…' : ''}"`
+      `\nהודעות ששלחת לאחרונה (אסור לחזור על פתיחה/מטאפורה/שאלה):\n${snippets}`
     );
   }
 
@@ -231,10 +226,10 @@ export async function sendAlmogHabitCheckpointNotification(
 
   const body = await completeEmpathyNotifyBody({
     label: 'habit_checkpoint',
-    temperature: 0.85,
-    presencePenalty: 0.4,
-    frequencyPenalty: 0.45,
-    maxTokens: 640,
+    temperature: 0.82,
+    presencePenalty: 0.5,
+    frequencyPenalty: 0.55,
+    maxTokens: 320,
     messages: [
       { role: 'system', content: systemPrompt },
       {
@@ -243,14 +238,14 @@ export async function sendAlmogHabitCheckpointNotification(
 - שם פרטי: ${firstName}
 - ${genderInstruction}
 
-עכשיו ${weekdayName} בשעה ${timeHHMM}. כתוב את גוף ההודעה לנוטיפיקציה בלבד —
-אישית, בלי "אל תשכח" ובלי "מומלץ", תובנה במקום עובדה. אם יש לי הודעה
-קודמת בקונטקסט — אל תחזור על הזווית שלה.`,
+עכשיו ${weekdayName} בשעה ${timeHHMM} (ישראל), חלון ${SLOT_HE[payload.slot]}.
+כתוב רק את גוף ההודעה — 2–3 משפטים קצרים, שאלה פתוחה בסוף (לא כן/לא).
+בלי "עדיין ממתין"/"ראיתי שלא"/"מוכן ל...". זווית חדשה מהודעות קודמות.`,
       },
     ],
   });
 
-  const title = `היי ${firstName} · מאלמוג`;
+  const title = `${firstName} · מאלמוג`;
 
   const habitIds = payload.habits.map((h) => h.id);
   const pendingTaskIds = payload.pendingTasks.map((t) => t.id);

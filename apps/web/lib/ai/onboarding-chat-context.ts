@@ -15,6 +15,8 @@ export type OnboardingProfileForChat = {
   preferred_channel: string | null;
   ai_check_in_times: string[] | null;
   onboarding_completed: boolean | null;
+  /** אופציונלי — work_arrival_time מ-ai_context */
+  work_arrival_time?: string | null;
 };
 
 const GOAL_HE: Record<MainGoal, string> = {
@@ -106,9 +108,14 @@ export function buildOnboardingChatContextBlock(profile: OnboardingProfileForCha
     }
   }
 
+  if (profile.work_arrival_time?.trim()) {
+    lines.push(`- הגעה לעבודה (משתמש הגדיר): ${profile.work_arrival_time.trim().slice(0, 5)}`);
+  }
+
   lines.push(
-    '- השתמש בפרטים האלה לדפוסים וטיפים מותאמים; אם חסר מידע — שאלה אחת קצרה.'
+    '- השתמש בפרטים לדפוסים וטיפים — לא כרשימת עובדות כששואלים "מה אתה יודע עליי".'
   );
+  lines.push('- אם חסר מידע — שאלה אחת קצרה.');
 
   return lines.join('\n');
 }

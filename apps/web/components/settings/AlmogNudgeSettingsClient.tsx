@@ -4,12 +4,21 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, ChevronRight, Loader2, Scale, Send, Sparkles } from 'lucide-react';
+import { Bell, ChevronRight, Loader2, MessageCircle, Scale, Send, Sparkles } from 'lucide-react';
+import type { AlmogCoachingStyle } from '../../lib/ai/almog-coaching-style';
 import { cn } from '../../lib/cn';
+
+const COACHING_OPTIONS: { id: AlmogCoachingStyle; label: string; hint: string }[] = [
+  { id: 'warm_friend', label: 'חבר קרוב', hint: 'חם, סקרני, בלי אשמה' },
+  { id: 'gentle', label: 'עדין', hint: 'איטי, מרגיע, בלי לחץ' },
+  { id: 'direct', label: 'ישיר', hint: 'תכליתי, קצר, עם אנרגיה' },
+];
 
 type Props = {
   initialAvoidPush: boolean;
   initialWeightReminders: boolean;
+  initialCoachingStyle: AlmogCoachingStyle;
+  initialWorkArrivalTime: string;
 };
 
 type RecentNotif = {
@@ -41,10 +50,14 @@ type TestNotifResult =
 export function AlmogNudgeSettingsClient({
   initialAvoidPush,
   initialWeightReminders,
+  initialCoachingStyle,
+  initialWorkArrivalTime,
 }: Props) {
   const router = useRouter();
   const [avoidPush, setAvoidPush] = useState(initialAvoidPush);
   const [weightReminders, setWeightReminders] = useState(initialWeightReminders);
+  const [coachingStyle, setCoachingStyle] = useState<AlmogCoachingStyle>(initialCoachingStyle);
+  const [workArrivalTime, setWorkArrivalTime] = useState(initialWorkArrivalTime);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
@@ -54,10 +67,20 @@ export function AlmogNudgeSettingsClient({
   useEffect(() => {
     setAvoidPush(initialAvoidPush);
     setWeightReminders(initialWeightReminders);
-  }, [initialAvoidPush, initialWeightReminders]);
+    setCoachingStyle(initialCoachingStyle);
+    setWorkArrivalTime(initialWorkArrivalTime);
+  }, [
+    initialAvoidPush,
+    initialWeightReminders,
+    initialCoachingStyle,
+    initialWorkArrivalTime,
+  ]);
 
   const dirty =
-    avoidPush !== initialAvoidPush || weightReminders !== initialWeightReminders;
+    avoidPush !== initialAvoidPush ||
+    weightReminders !== initialWeightReminders ||
+    coachingStyle !== initialCoachingStyle ||
+    workArrivalTime !== initialWorkArrivalTime;
 
   async function save() {
     setSaving(true);
@@ -69,6 +92,8 @@ export function AlmogNudgeSettingsClient({
         body: JSON.stringify({
           avoid_push: avoidPush,
           weight_reminders: weightReminders,
+          coaching_style: coachingStyle,
+          work_arrival_time: workArrivalTime.trim() ? workArrivalTime.trim() : null,
         }),
       });
       if (!res.ok) throw new Error('save_failed');
@@ -324,6 +349,65 @@ export function AlmogNudgeSettingsClient({
               </p>
             </div>
           ) : null}
+        </motion.section>
+
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.04 }}
+          className="rounded-3xl border border-violet-100 bg-white p-5 shadow-[0_10px_30px_rgba(139,92,246,0.08)] space-y-4"
+        >
+          <div className="flex gap-3">
+            <motion.div
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white"
+              style={{
+                background: 'linear-gradient(145deg, #7c3aed, #a855f7)',
+                boxShadow: '0 6px 18px rgba(124,58,237,0.35)',
+              }}
+            >
+              <MessageCircle className="h-5 w-5" aria-hidden />
+            </motion.div>
+            <div>
+              <h2 className="font-bold text-slate-900">איך אלמוג מדבר איתכם</h2>
+              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                בוחרים טון — חבר, עדין, או ישיר. משפיע על התראות ועל הצ׳אט.
+              </p>
+            </div>
+          </div>
+
+          <motion.div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="סגנון ליווי">
+            {COACHING_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                role="radio"
+                aria-checked={coachingStyle === opt.id}
+                onClick={() => setCoachingStyle(opt.id)}
+                className={cn(
+                  'rounded-2xl border px-3 py-3 text-right transition',
+                  coachingStyle === opt.id
+                    ? 'border-violet-400 bg-violet-50 ring-2 ring-violet-300/60'
+                    : 'border-slate-200 bg-slate-50/80 hover:border-violet-200'
+                )}
+              >
+                <span className="block text-sm font-bold text-slate-900">{opt.label}</span>
+                <span className="mt-0.5 block text-xs text-slate-600">{opt.hint}</span>
+              </button>
+            ))}
+          </motion.div>
+
+          <label className="block space-y-1.5">
+            <span className="text-sm font-semibold text-slate-800">שעת הגעה לעבודה (אופציונלי)</span>
+            <span className="block text-xs text-slate-500 leading-relaxed">
+              מגע קצר לפני ההגעה. התזמון מקורב (בדיקה כל ~30 דק׳).
+            </span>
+            <input
+              type="time"
+              value={workArrivalTime}
+              onChange={(e) => setWorkArrivalTime(e.target.value)}
+              className="w-full max-w-[10rem] rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900"
+            />
+          </label>
         </motion.section>
 
         <motion.section
