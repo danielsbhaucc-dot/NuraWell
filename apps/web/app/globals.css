@@ -163,6 +163,99 @@ html {
     -webkit-backdrop-filter: blur(20px);
   }
 
+  /* ---- LANDING PAGE ---- */
+  .landing-shell {
+    @apply min-h-[100dvh] relative overflow-x-hidden;
+    background-color: #f4faf7;
+    background-image:
+      radial-gradient(ellipse 90% 60% at 50% -10%, rgba(16, 185, 129, 0.14) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 50% at 100% 30%, rgba(20, 184, 166, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 40% at 0% 70%, rgba(4, 120, 87, 0.06) 0%, transparent 45%);
+  }
+
+  .landing-glass {
+    background: rgba(255, 255, 255, 0.62);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow:
+      0 4px 24px rgba(4, 120, 87, 0.06),
+      0 1px 3px rgba(15, 23, 42, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    @apply rounded-3xl;
+  }
+
+  .landing-glass-strong {
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    box-shadow:
+      0 8px 40px rgba(4, 120, 87, 0.1),
+      0 2px 8px rgba(15, 23, 42, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 1);
+    @apply rounded-3xl;
+  }
+
+  .landing-hero-title-line1 {
+    font-family: 'Rubik', 'Heebo', sans-serif;
+    @apply bg-clip-text text-transparent font-black;
+    background-image: linear-gradient(
+      118deg,
+      #047857 0%,
+      #059669 28%,
+      #0d9488 52%,
+      #10b981 78%,
+      #34d399 100%
+    );
+  }
+
+  .landing-hero-title-line2 {
+    font-family: 'Rubik', 'Heebo', sans-serif;
+    @apply bg-clip-text text-transparent font-black;
+    background-image: linear-gradient(
+      118deg,
+      #0f766e 0%,
+      #134e4a 35%,
+      #1e3a34 70%,
+      #14532d 100%
+    );
+  }
+
+  .landing-cta-primary {
+    @apply inline-flex items-center justify-center gap-2 min-h-[52px] px-7 rounded-2xl font-black text-lg text-white transition-all touch-manipulation;
+    background: linear-gradient(118deg, #047857 0%, #059669 42%, #10b981 100%);
+    box-shadow: 0 12px 36px rgba(4, 120, 87, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .landing-cta-primary:hover {
+    filter: brightness(1.06);
+    transform: translateY(-1px);
+  }
+
+  .landing-cta-primary:active {
+    transform: scale(0.98);
+  }
+
+  .landing-cta-secondary {
+    @apply inline-flex items-center justify-center gap-2 min-h-[48px] px-6 rounded-2xl font-bold text-base transition-all touch-manipulation;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(4, 120, 87, 0.18);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: #065f46;
+    box-shadow: 0 2px 12px rgba(4, 120, 87, 0.06);
+  }
+
+  .landing-cta-secondary:hover {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(16, 185, 129, 0.35);
+  }
+
+  .landing-cta-secondary:active {
+    transform: scale(0.98);
+  }
+
   .onboarding-wave-hand {
     display: inline-block;
     animation: onboarding-wave 1.8s ease-in-out infinite;
