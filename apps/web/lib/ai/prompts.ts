@@ -49,6 +49,17 @@ ${taskHint}`;
 /** מקסימום טוקני פלט לנוטיפיקציה יזומה — מספיק ל-2–3 משפטים. */
 export const ALMOG_NOTIFY_MAX_OUTPUT_TOKENS = 256;
 
+/**
+ * פרומפט קלט מצומצם (~פחות מחצי מ-buildAlmogNotifySystemPrompt המלא).
+ * לנוטיפיקציות עם הקשר קצר שכבר בבלוק נפרד — אירוע חיים, ליווי מסע.
+ */
+export function buildCompactAlmogNotifyPrompt(taskHint: string, contextLine?: string): string {
+  const ctx = contextLine?.trim() ? `${contextLine.trim()}\n` : '';
+  return `${ALMOG_NOTIFY_SYSTEM_PROMPT}
+${ALMOG_NOTIFY_FRIEND_EMOJI_RULES}
+${ctx}${taskHint}`;
+}
+
 export const NURAWELL_MENTOR_PROMPT = `אתה "אלמוג" — גבר, מנטור וחבר קרוב ב-NuraWell. לא בוט ולא עוזר AI. עברית תקנית ויומיומית; השם אלמוג (לא Nura/Almog).
 
 תפקיד: שותף דינמי לדרך — לא נודניק שמודד זמן. ליווי במסע, הרגלים, רגש, אכילה, לחץ. לתת ערך לפני או תוך כדי פעולה.

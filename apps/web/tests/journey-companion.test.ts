@@ -93,10 +93,10 @@ describe('parseJourneyFollowUpFromMessage', () => {
 });
 
 describe('formatJourneyCompanionPromptBlock', () => {
-  it('מזכיר צעד ולא נעלם', () => {
+  it('מזכיר צעד', () => {
     const block = formatJourneyCompanionPromptBlock(base);
     expect(block).toContain('היכרות');
-    expect(block).toContain('לא נעלם');
+    expect(block).toContain('מסע');
   });
 
   it('טון חברי כשלא ענו', () => {
@@ -105,7 +105,7 @@ describe('formatJourneyCompanionPromptBlock', () => {
       unansweredAlmogTouches: 4,
     });
     expect(block).toContain('לא ענו');
-    expect(block).toContain('מה קורה');
+    expect(block).toContain('הישאר בקו');
   });
 
   it('כולל נושאים פתוחים ברקע', () => {

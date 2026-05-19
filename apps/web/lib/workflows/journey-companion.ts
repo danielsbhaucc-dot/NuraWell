@@ -142,6 +142,17 @@ export function shouldSendFullJourneyCompanion(ctx: JourneyCompanionContext): bo
   return shouldNudgeJourneyCompanion(ctx);
 }
 
+/** בלוק מצומצם לשילוב במגע יומי — לא משכפל את כל בלוק הליווי */
+export function formatCompanionSnapshotForNotify(ctx: JourneyCompanionContext): string {
+  const bits = [`מסע:${ctx.phase}·${ctx.stepTitle}`];
+  if (ctx.followUp?.label) bits.push(`הבטחה:${ctx.followUp.label}`);
+  if (ctx.snapshot.openAcceptedCount > 0) {
+    bits.push(`נושאים:${ctx.snapshot.pendingTaskTitles.slice(0, 2).join(',')}`);
+  }
+  if (ctx.lifeContext) bits.push(ctx.lifeContext.summary);
+  return bits.join(' | ');
+}
+
 export function formatJourneyCompanionPromptBlock(ctx: JourneyCompanionContext): string {
   const parts: string[] = [];
 
@@ -149,18 +160,10 @@ export function formatJourneyCompanionPromptBlock(ctx: JourneyCompanionContext):
     parts.push(formatLifeContextNotifyBlock(ctx.lifeContext));
   }
 
-  parts.push(
-    'עקרון: אלמוג לא נעלם — גם בלי תשובה. בדוק מצב צעד/נושאים ברקע פנימי; בטון חבר, לא מעקב.'
-  );
-
   if (ctx.followUpDue && ctx.followUp) {
     parts.push(formatJourneyFollowUpPromptBlock(ctx.followUp));
-  }
-
-  if (ctx.unansweredAlmogTouches >= 2) {
-    parts.push(
-      `לא ענו ל-${ctx.unansweredAlmogTouches} מגעים לאחרונים — הישאר בקו ("מה קורה איתך?" לא "למה לא ענית").`
-    );
+  } else if (ctx.unansweredAlmogTouches >= 2) {
+    parts.push(`לא ענו ${ctx.unansweredAlmogTouches} מגעים — הישאר בקו, לא מאשים.`);
   }
 
   const where = ctx.stationTitle
@@ -205,9 +208,9 @@ export function formatJourneyCompanionPromptBlock(ctx: JourneyCompanionContext):
   return parts.join('\n');
 }
 
-/** בלוק קצר למגע יומי רגיל כשליווי המסע כבר נשלח היום */
+/** בלוק קצר למגע יומי רגיל — לא משכפל LLM מלא של ליווי מסע */
 export function formatCompanionBlockForPersonalizedCheckIn(ctx: JourneyCompanionContext): string {
-  return `\nליווי מסע (רקע):\n${formatJourneyCompanionPromptBlock(ctx)}`;
+  return `\nרקע מסע: ${formatCompanionSnapshotForNotify(ctx)}`;
 }
 
 export async function fetchDaysSinceLastJourneyCompanionNudge(

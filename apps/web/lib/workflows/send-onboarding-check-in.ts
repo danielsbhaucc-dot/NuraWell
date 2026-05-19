@@ -119,8 +119,9 @@ export async function sendOnboardingCheckInNotification(
   }
 
   const totalToday = profileTimes.length > 0 ? profileTimes.length : 3;
+  const lc = readLifeContext(profileSchedule.aiContext ?? null);
   const companionStatusBlock =
-    companionCtx && !companionCtx.followUpDue
+    companionCtx && !companionCtx.followUpDue && !lc
       ? formatCompanionBlockForPersonalizedCheckIn(companionCtx)
       : '';
   const journeyBlock = journeyCtx
@@ -150,7 +151,6 @@ export async function sendOnboardingCheckInNotification(
       : null;
 
   const profileHint = trimProfilePromptForNotify(aiSystemPrompt);
-  const lc = readLifeContext(profileSchedule.aiContext ?? null);
   const lifeBlock = lc ? `\n${formatLifeContextNotifyBlock(lc)}\n` : '';
 
   const systemPrompt = `${NOTIFY_PERSONALIZED_TASK}

@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
-import { BookOpen, TrendingUp, UserCircle, X, Menu, Bell, Home } from 'lucide-react';
+import { BookOpen, TrendingUp, UserCircle, X, Menu, Bell, Home, LogOut } from 'lucide-react';
 import { useState } from 'react';
+import { signOutClient } from '../../lib/auth/sign-out-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotificationsDrawer } from '../notifications/NotificationsProvider';
 import { APP_HOME_PATH } from '../../lib/navigation/app-home-path';
@@ -22,9 +23,16 @@ const menuItems = [
 
 export function MobileHeader({ user, title }: MobileHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const { open: openNotifications, unreadCount } = useNotificationsDrawer();
   const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'משתמש';
   const firstName = String(fullName).trim().split(/\s+/)[0] || 'משתמש';
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    setIsMenuOpen(false);
+    await signOutClient('/');
+  };
 
   return (
     <>

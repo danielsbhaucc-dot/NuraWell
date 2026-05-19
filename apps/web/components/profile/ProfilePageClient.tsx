@@ -5,8 +5,7 @@ import { motion } from 'framer-motion';
 import {
   User, Award, BookOpen, Flame, LogOut, ChevronLeft, Shield, Settings, Save, X, Bell
 } from 'lucide-react';
-import { createClient } from '../../lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { signOutClient } from '../../lib/auth/sign-out-client';
 import Link from 'next/link';
 
 interface ProfileData {
@@ -40,9 +39,9 @@ const activityLabels: Record<string, string> = {
 };
 
 export function ProfilePageClient({ profile, email, totalCompleted, enrolledCount }: ProfilePageClientProps) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [nameInput, setNameInput] = useState(profile?.full_name ?? '');
@@ -50,11 +49,13 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleSignOut = async () => {
+    setSignOutError(null);
     setIsSigningOut(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/');
-    router.refresh();
+    const result = await signOutClient('/');
+    if (!result.ok) {
+      setSignOutError(result.error ?? 'לא הצלחנו להתנתק. נסה שוב.');
+      setIsSigningOut(false);
+    }
   };
 
   const memberSince = profile?.created_at
@@ -304,6 +305,9 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
             )}
             התנתקות
           </button>
+          {signOutError && (
+            <p className="mt-2 text-center text-sm font-semibold text-red-600">{signOutError}</p>
+          )}
         </motion.div>
 
       </div>
