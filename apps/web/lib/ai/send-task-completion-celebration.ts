@@ -2,15 +2,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from './client';
 import { completeEmpathyNotifyBody } from './empathy-notify-completion';
 import { fetchNotifyUserProfile } from './notify-user-profile';
-import { ALMOG_NOTIFY_SHARED_RULES, NURAWELL_MENTOR_PROMPT } from './prompts';
+import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildAlmogNotifySystemPrompt } from './prompts';
 
-const CELEBRATION_SYSTEM = `${NURAWELL_MENTOR_PROMPT}
-
-${ALMOG_NOTIFY_SHARED_RULES}
-
-משימה: המשתמש סימן ביצוע על משימה — חגיגה אמיתית, לא מוגזמת.
-- 1–3 משפטים; התאם עוצמה למשימה (קטנה = קליל, קשה = הכרה עמוקה).
-- שאלה אופציונלית ("מה הכי עזר?") — לא חובה.`;
+const CELEBRATION_SYSTEM = buildAlmogNotifySystemPrompt(
+  `המשתמש סימן ביצוע — חגיגה קצרה (1–3 משפטים), לא מוגזמת.`
+);
 
 type JourneyTaskJson = { id: string; title: string; description?: string | null };
 

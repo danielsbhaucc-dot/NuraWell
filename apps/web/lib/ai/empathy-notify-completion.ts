@@ -3,6 +3,7 @@ import { generateText, type ModelMessage } from 'ai';
 
 import { stitchModelTextUntilComplete } from './almog-message-complete';
 import { AI_MODELS } from './client';
+import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from './prompts';
 import { publicAppUrlForAiReferer } from '../public-app-url';
 
 type EmpathyNotifyCompletionOptions = {
@@ -30,12 +31,12 @@ export async function completeEmpathyNotifyBody(
   options: EmpathyNotifyCompletionOptions
 ): Promise<string> {
   const temperature = options.temperature ?? 0.75;
-  const maxOutputTokens = options.maxTokens ?? 640;
+  const maxOutputTokens = options.maxTokens ?? ALMOG_NOTIFY_MAX_OUTPUT_TOKENS;
   let lastFinishReason: string | undefined;
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const attemptMaxOutputTokens =
-      attempt === 0 ? maxOutputTokens : Math.max(maxOutputTokens, 1280);
+      attempt === 0 ? maxOutputTokens : Math.min(maxOutputTokens + 96, 384);
 
     const baseMessages = options.messages;
 
@@ -63,7 +64,7 @@ export async function completeEmpathyNotifyBody(
     lastFinishReason = first.finishReason;
 
     const body = await stitchModelTextUntilComplete(first, runOnce, baseMessages, {
-      maxContinuations: 2,
+      maxContinuations: 1,
     });
 
     if (body) return body;

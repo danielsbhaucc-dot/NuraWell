@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { getIsraelNowMinutes } from './almog-time-context';
 import type { HabitCheckpointSlot } from '../workflows/almog-habit-checkpoint-payload';
 
 const SLOT_HE: Record<HabitCheckpointSlot, string> = {
@@ -7,6 +8,11 @@ const SLOT_HE: Record<HabitCheckpointSlot, string> = {
   midday: 'צהריים',
   evening: 'ערב',
 };
+
+/** קיצור snippets בפרומפט — חוסך טוקנים. */
+const TOUCH_SNIPPET_CHARS = 72;
+const MAX_TOUCHES_TODAY = 6;
+const MAX_PRIOR_IN_PROMPT = 2;
 
 const ALMOG_NOTIFY_SOURCES = new Set([
   'almog_habit_checkpoint',
@@ -24,26 +30,23 @@ export type TodayAlmogTouch = {
   userRepliedSince: boolean;
 };
 
-/** אנרגיה לפי חלון יום — מוזרק לפרומפט נוטיפיקציה. */
+/** שורה אחת — אנרגיית חלון יום (חוסך טוקנים). */
 export function buildSlotDaypartPromptBlock(slot: HabitCheckpointSlot): string {
   switch (slot) {
     case 'morning':
-      return `אנרגיית ${SLOT_HE.morning}: ממוקד, קליל, מניע לפעולה — בלי חפירות. פתיחה שמרגישה "בוא נפתח את היום", לא בוחן.
-דוגמת רוח (לא להעתיק): "בוקר טוב! הבקבוק כבר על השולחן? בוא נסגור את הפינה הזו על הבוקר."`;
+      return 'בוקר: קצר, אנרגטי, מניע — לא בוחן.';
     case 'midday':
-      return `אנרגיית ${SLOT_HE.midday}: בדיקת מצב, אמפתיה לעומס — "איך הולך?", לא "למה לא עשית".
-דוגמת רוח: "היי, אמצע היום. איך הולך עם המים? אם יש לחץ — שלוק אחד עכשיו וממשיכים."`;
+      return 'צהריים: check-in אמפתי לעומס — "איך הולך?", לא "למה לא".';
     case 'evening':
-      return `אנרגיית ${SLOT_HE.evening}: סיכום רך, עיבוד קשיים, סגירה חיובית — לא אשמה.
-דוגמת רוח: "ערב טוב. איך עבר היום? אם היה קשה — תכתוב למה ונבין יחד למחר."`;
+      return 'ערב: סיכום רך, בלי אשמה — שאלה פתוחה על היום.';
     default:
       return '';
   }
 }
 
 function jerusalemTodayStartIso(now = new Date()): string {
-  const ymd = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
-  return `${ymd}T00:00:00+02:00`;
+  const minutesSinceMidnight = getIsraelNowMinutes();
+  return new Date(now.getTime() - minutesSinceMidnight * 60 * 1000).toISOString();
 }
 
 function slotFromMetadata(meta: Record<string, unknown> | null): HabitCheckpointSlot | null {
@@ -64,8 +67,13 @@ function isAlmogNotifyRow(meta: Record<string, unknown> | null, source: string):
   return source.startsWith('almog');
 }
 
+function snippet(body: string): string {
+  const t = body.trim();
+  return t.length > TOUCH_SNIPPET_CHARS ? `${t.slice(0, TOUCH_SNIPPET_CHARS)}…` : t;
+}
+
 /**
- * מגעי אלמוג מהיום (ישראל) + האם המשתמש ענה בצ'אט אחרי כל מגע.
+ * מגעי אלמוג מהיום (ישראל). שאילתת צ'אט רק אם יש מגעים — חוסך round-trip ל-DB.
  */
 export async function fetchTodayAlmogTouches(
   admin: SupabaseClient,
@@ -82,7 +90,7 @@ export async function fetchTodayAlmogTouches(
     .eq('type', 'ai_message')
     .gte('created_at', dayStartIso)
     .order('created_at', { ascending: true })
-    .limit(20);
+    .limit(MAX_TOUCHES_TODAY);
 
   if (!Array.isArray(notifRows) || notifRows.length === 0) return [];
 
@@ -97,7 +105,7 @@ export async function fetchTodayAlmogTouches(
     touches.push({
       slot,
       slotLabel: slot ? SLOT_HE[slot] : 'מגע',
-      bodySnippet: body.length > 140 ? `${body.slice(0, 140)}…` : body,
+      bodySnippet: snippet(body),
       sentAt: String(row.created_at),
     });
   }
@@ -112,7 +120,7 @@ export async function fetchTodayAlmogTouches(
     .eq('role', 'user')
     .gte('created_at', dayStartIso)
     .order('created_at', { ascending: true })
-    .limit(50);
+    .limit(24);
 
   const replyTimes = (userMsgs ?? [])
     .map((r: { created_at?: string }) => r.created_at)
@@ -125,38 +133,45 @@ export async function fetchTodayAlmogTouches(
   });
 }
 
+/** אם כבר יש מגעים היום — לא צריך גם היסטוריית 7 ימים (חוסך טוקנים + שאילתה). */
+export function shouldFetchWeekRecentBodies(
+  todayTouches: TodayAlmogTouch[],
+  currentSlot: HabitCheckpointSlot
+): boolean {
+  const priorToday = todayTouches.filter((t) => t.slot !== currentSlot || !t.slot);
+  return priorToday.length === 0;
+}
+
 /**
- * בלוק פרומפט לחוק דילוג — מגעים קודמים היום בלי תשובה.
+ * בלוק קומפקטי לדילוג — מקסימום 2 מגעים קודמים.
  */
 export function formatTodayTouchesCooldownBlock(
   touches: TodayAlmogTouch[],
   currentSlot: HabitCheckpointSlot
 ): string | null {
-  if (touches.length === 0) return null;
-
   const prior = touches.filter((t) => t.slot !== currentSlot || !t.slot);
-  const unanswered = prior.filter((t) => !t.userRepliedSince);
+  if (prior.length === 0) return null;
 
-  const lines: string[] = ['מגעים של אלמוג היום (לפני ההודעה הנוכחית):'];
-  for (const t of prior) {
-    const reply = t.userRepliedSince ? 'המשתמש/ת ענה/תה אחרי' : 'אין תשובה בצ\'אט אחרי';
-    lines.push(
-      `- ${t.slotLabel}: "${t.bodySnippet}" (${reply})`
-    );
-  }
+  const shown = prior.slice(-MAX_PRIOR_IN_PROMPT);
+  const unanswered = shown.filter((t) => !t.userRepliedSince);
+
+  const lines = shown.map((t) => {
+    const flag = t.userRepliedSince ? 'ענה' : 'ללא תשובה';
+    return `${t.slotLabel}: "${t.bodySnippet}" (${flag})`;
+  });
 
   if (unanswered.length > 0) {
-    lines.push(
-      '',
-      'חוק דילוג (חובה):',
-      '- אל תחזור על אותה שאלה/מטאפורה/פתיחה מהמגעים שלמעלה.',
-      '- אם מגע קודם בלי תשובה — הכר בעומס ("שלחתי בבוקר, מאמין שבטירוף") במקום "ראיתי שלא עשית".',
-      '- גישה: "באתי לבדוק מה קורה איתך" — לא "באתי לבדוק שיעורי בית".',
-      '- סיים בשאלה פתוחה על תחושה/קושי — לא כן/לא.'
-    );
-  } else if (prior.length > 0) {
-    lines.push('', 'המשתמש/ת כבר דיבר/ה איתך היום — אפשר להמשיך את השיחה, לא להתחיל מחדש כמו רובוט.');
+    return `מגעים קודמים היום:\n${lines.join('\n')}\nדילוג: זווית חדשה; אם ללא תשובה — הכר בעומס (לא "ראיתי שלא"); שאלה פתוחה.`;
   }
 
-  return lines.join('\n');
+  return `מגעים קודמים היום:\n${lines.join('\n')}\nהמשך שיחה — לא לפתוח מחדש כרובוט.`;
+}
+
+/** היסטוריה שבועית קצרה — רק כשאין מגעים קודמים היום. */
+export function formatRecentBodiesAntiRepeatBlock(bodies: string[]): string | null {
+  if (bodies.length === 0) return null;
+  const lines = bodies
+    .slice(0, 2)
+    .map((b, i) => `${i + 1}. "${snippet(b)}"`);
+  return `אל תחזור על פתיחה/מטאפורה מ:\n${lines.join('\n')}`;
 }

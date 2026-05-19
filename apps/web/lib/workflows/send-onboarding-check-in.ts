@@ -7,7 +7,7 @@ import {
 } from '../ai/almog-notify-day-context';
 import { getIsraelNowMinutes, parseHHMMToMinutes } from '../ai/almog-time-context';
 import { buildProfileScheduleHints } from '../ai/profile-schedule-anchors';
-import { ALMOG_NOTIFY_SHARED_RULES, NURAWELL_MENTOR_PROMPT } from '../ai/prompts';
+import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildAlmogNotifySystemPrompt } from '../ai/prompts';
 import { habitSlotFromCheckInTime } from './personalized-check-in-journey';
 import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
 import { normalizeCheckInTimes } from '../ai/onboarding-check-in-time';
@@ -18,15 +18,16 @@ import {
   formatJourneyBlockForPersonalizedCheckIn,
 } from './personalized-check-in-journey';
 
-const ALMOG_PERSONALIZED_APPEND = `
+const NOTIFY_PERSONALIZED_TASK = buildAlmogNotifySystemPrompt(
+  `מגע יומי בזמן שנקבע. שילוב פרופיל+מסע בזרימה אחת. אל תזכיר דולב.`
+);
 
-${ALMOG_NOTIFY_SHARED_RULES}
-
-משימה: מגע יומי בזמן שנקבע — "מה קורה איתך?", לא תזכורת.
-- שילוב פרופיל + מסע בזרימה אחת (לא רשימת עובדות, לא בדיקת ביצוע)
-- עגן לאנרגיית חלון היום (בוקר/צהריים/ערב) לפי רמז בקונטקסט
-- אל תזכיר דולב`;
-
+/** פרומט אישי מהפרופיל — מוגבל כדי לא לנפח טוקנים בנוטיפיקציה. */
+function trimProfilePromptForNotify(prompt: string, maxChars = 380): string {
+  const t = prompt.trim();
+  if (t.length <= maxChars) return t;
+  return `${t.slice(0, maxChars)}…`;
+}
 export async function sendOnboardingCheckInNotification(
   admin: SupabaseClient,
   payload: OnboardingCheckInPayload,
@@ -45,7 +46,7 @@ export async function sendOnboardingCheckInNotification(
 
   const totalToday = profileTimes.length > 0 ? profileTimes.length : 3;
   const journeyBlock = journeyCtx
-    ? `\n\n### מסע (הרגלים ומשימות פתוחות)\n${formatJourneyBlockForPersonalizedCheckIn(journeyCtx)}`
+    ? `\nמסע:\n${formatJourneyBlockForPersonalizedCheckIn(journeyCtx)}`
     : '';
 
   const checkMin = parseHHMMToMinutes(payload.checkInTime);
@@ -61,16 +62,15 @@ export async function sendOnboardingCheckInNotification(
 
   const cooldownBlock = formatTodayTouchesCooldownBlock(todayTouches, slot);
 
-  const systemPrompt = `${NURAWELL_MENTOR_PROMPT}
+  const profileHint = trimProfilePromptForNotify(aiSystemPrompt);
 
-${aiSystemPrompt.trim()}${journeyBlock}${ALMOG_PERSONALIZED_APPEND}
-
+  const systemPrompt = `${NOTIFY_PERSONALIZED_TASK}
+${profileHint ? `הנחיית פרופיל:\n${profileHint}` : ''}${journeyBlock}
 ${buildSlotDaypartPromptBlock(slot)}
-${cooldownBlock ? `\n${cooldownBlock}` : ''}
+${cooldownBlock ?? ''}
 ${profileSchedule.styleBlock}
-${profileSchedule.proximity ? `\nרמז זמן: ${profileSchedule.proximity}` : ''}
-
-זמן מגע: ${payload.checkInTime} (ישראל). ${timeRelation} מגע ${payload.checkInIndex + 1}/${totalToday} היום.`;
+${profileSchedule.proximity ? `רמז זמן: ${profileSchedule.proximity}` : ''}
+מגע ${payload.checkInIndex + 1}/${totalToday} · ${payload.checkInTime} ישראל. ${timeRelation}`;
 
   const journeyHint = journeyCtx
     ? ' שילב בעדינות משהו מהמסע אם רלוונטי לשעה הזו.'
@@ -81,7 +81,7 @@ ${profileSchedule.proximity ? `\nרמז זמן: ${profileSchedule.proximity}` : 
     temperature: 0.82,
     presencePenalty: 0.45,
     frequencyPenalty: 0.5,
-    maxTokens: 320,
+    maxTokens: ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
     messages: [
       { role: 'system', content: systemPrompt },
       {

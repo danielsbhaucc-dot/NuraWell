@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
 import {
+  buildSlotDaypartPromptBlock,
   fetchTodayAlmogTouches,
   formatTodayTouchesCooldownBlock,
 } from '../ai/almog-notify-day-context';
@@ -8,29 +9,19 @@ import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
 import { buildCoachingStylePromptBlock } from '../ai/almog-coaching-style';
 import type { AiUserContext } from '../ai/memory';
-import { ALMOG_NOTIFY_SHARED_RULES, NURAWELL_MENTOR_PROMPT } from '../ai/prompts';
+import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildAlmogNotifySystemPrompt } from '../ai/prompts';
 import type { AlmogFollowupUserState } from './almog-followup-state';
 import { habitSlotFromCheckInTime } from './personalized-check-in-journey';
 
-const TASK_FOLLOWUP_SYSTEM = `${NURAWELL_MENTOR_PROMPT}
+const TASK_FOLLOWUP_SYSTEM = buildAlmogNotifySystemPrompt(
+  `משימה: מגע אחרי זמן — check-in, לא מעקב. נושא אחד מהקונטקסט בשפת חיים.`
+);
 
-${ALMOG_NOTIFY_SHARED_RULES}
-
-משימה: מגע אחרי זמן — check-in חברי, לא מעקב ביצוע.
-- "מה קורה?" / "מה חוסם?" — לא "עדיין לא סימנת" / "ראיתי שלא".
-- 2–3 משפטים קצרים, שאלה פתוחה בסוף. השתמש רק בקונטקסט שסופק.`;
-
-function formatStateForPrompt(state: AlmogFollowupUserState, taskId: string): string {
-  const lines: string[] = [
-    `מזהה משימה במערכת: ${taskId}`,
-    `כותרת המשימה (אם ידוע): ${state.taskStepTitle ?? 'לא זוהה'}`,
-    `תחנת המשימה: ${state.taskStationTitle ?? 'לא ידוע'}`,
-    `תחנה נוכחית במסע (עדכון אחרון): ${state.currentStationTitle ?? 'לא ידוע'}`,
-    `צעד נוכחי: ${state.currentStepTitle ?? 'לא ידוע'} (#${state.currentStepNumber ?? '?'})`,
-    `הרגלים פעילים בצעד הנוכחי: ${state.activeHabits.map((h) => h.title).join('; ') || 'אין'}`,
-    `הרגלים מ"צעדים שהושלמו" (שורשים): ${state.ingrainedHabits.map((h) => `${h.title} (מ${h.fromStepTitle})`).join('; ') || 'אין'}`,
-  ];
-  return lines.join('\n');
+function formatStateForPrompt(state: AlmogFollowupUserState): string {
+  const taskTitle = state.taskStepTitle ?? state.currentStepTitle ?? 'נושא במסע';
+  const habit =
+    state.activeHabits[0]?.title ?? state.ingrainedHabits[0]?.title ?? null;
+  return habit ? `נושא: ${taskTitle} · רקע: ${habit}` : `נושא: ${taskTitle}`;
 }
 
 /**
@@ -59,16 +50,18 @@ export async function sendAlmogTaskFollowupNotification(
 
   const cooldownBlock = formatTodayTouchesCooldownBlock(todayTouches, slot);
 
-  const systemPrompt = `${TASK_FOLLOWUP_SYSTEM}\n\n${styleBlock}${
-    cooldownBlock ? `\n\n${cooldownBlock}` : ''
-  }\n\nקונטקסט מערכת:\n${formatStateForPrompt(state, taskId)}`;
+  const systemPrompt = `${TASK_FOLLOWUP_SYSTEM}
+${buildSlotDaypartPromptBlock(slot)}
+${styleBlock}
+${cooldownBlock ?? ''}
+קונטקסט: ${formatStateForPrompt(state)}`;
 
   const body = await completeEmpathyNotifyBody({
     label: 'task_followup',
     temperature: 0.78,
     presencePenalty: 0.45,
     frequencyPenalty: 0.5,
-    maxTokens: 320,
+    maxTokens: ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
     messages: [
       { role: 'system', content: systemPrompt },
       {

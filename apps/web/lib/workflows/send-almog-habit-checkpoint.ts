@@ -3,12 +3,14 @@ import { AI_MODELS } from '../ai/client';
 import {
   buildSlotDaypartPromptBlock,
   fetchTodayAlmogTouches,
+  formatRecentBodiesAntiRepeatBlock,
   formatTodayTouchesCooldownBlock,
+  shouldFetchWeekRecentBodies,
 } from '../ai/almog-notify-day-context';
 import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
 import { buildProfileScheduleHints } from '../ai/profile-schedule-anchors';
-import { ALMOG_NOTIFY_SHARED_RULES, NURAWELL_MENTOR_PROMPT } from '../ai/prompts';
+import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildAlmogNotifySystemPrompt } from '../ai/prompts';
 import type { AlmogHabitCheckpointPayload, HabitCheckpointSlot } from './almog-habit-checkpoint-payload';
 
 const SLOT_HE: Record<HabitCheckpointSlot, string> = {
@@ -27,17 +29,9 @@ const WEEKDAY_HE = [
   'שבת',
 ];
 
-const HABIT_CHECKPOINT_SYSTEM = `${NURAWELL_MENTOR_PROMPT}
-
-${ALMOG_NOTIFY_SHARED_RULES}
-
-משימה: נקודת מגע לחלון יום (בוקר/צהריים/ערב) — check-in חברי, לא מעקב ביצועים.
-
-עקרונות:
-- הקשר במסע = רקע לשיחה; אל תדווח למשתמש מה "פתוח" במערכת.
-- אם יש נושא רלוונטי — שפה יומיומית ("כוס לפני האוכל"), לא "משימה"/"הרגל"/"טרם בוצע".
-- מבנה: פתיחה מגוונת לפי שעה → לפחות משפט אחד אמפתי → שאלה פתוחה אחת בסוף.
-- אם יש "מגעים היום" בלי תשובה — הכר בעומס; זווית חדשה לגמרי מהודעות קודמות.`;
+const HABIT_CHECKPOINT_SYSTEM = buildAlmogNotifySystemPrompt(
+  `משימה: מגע לחלון בוקר/צהריים/ערב. מסע=רקע פנימי בלבד; שפה יומיומית; שאלה פתוחה בסוף.`
+);
 
 function dedupeByTitle<T extends { title: string }>(items: T[]): T[] {
   const seen = new Set<string>();
@@ -59,13 +53,12 @@ function formatHabitsForPrompt(
   const habits = dedupeByTitle(payload.habits);
   const tasks = dedupeByTitle(payload.pendingTasks);
 
-  const habitLines = habits.map(
-    (h) =>
-      `- ${h.title} (${h.frequency === 'per_meal' ? 'מסביב לארוחות' : h.frequency === 'daily' ? 'יומי' : 'שבועי'})`
-  );
-  const taskLines = tasks.map(
-    (t) => `- ${t.title}${t.stepTitle ? ` (מהצעד "${t.stepTitle}")` : ''}`
-  );
+  const habitLines = habits
+    .slice(0, 2)
+    .map((h) => `- ${h.title}`);
+  const taskLines = tasks
+    .slice(0, 2)
+    .map((t) => `- ${t.title}`);
 
   const parts: string[] = [
     `חלון יום: ${SLOT_HE[payload.slot]}`,
@@ -113,7 +106,7 @@ function formatHabitsForPrompt(
 async function fetchRecentAlmogBodies(
   admin: SupabaseClient,
   userId: string,
-  limit = 3
+  limit = 2
 ): Promise<string[]> {
   const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -165,13 +158,15 @@ export async function sendAlmogHabitCheckpointNotification(
   admin: SupabaseClient,
   payload: AlmogHabitCheckpointPayload
 ): Promise<{ body: string; inserted: Record<string, unknown> | null }> {
-  const [{ firstName, genderInstruction }, recentBodies, scheduleHints, todayTouches] =
-    await Promise.all([
-      fetchNotifyUserProfile(admin, payload.userId),
-      fetchRecentAlmogBodies(admin, payload.userId),
-      fetchProfileScheduleHints(admin, payload.userId),
-      fetchTodayAlmogTouches(admin, payload.userId),
-    ]);
+  const [{ firstName, genderInstruction }, scheduleHints, todayTouches] = await Promise.all([
+    fetchNotifyUserProfile(admin, payload.userId),
+    fetchProfileScheduleHints(admin, payload.userId),
+    fetchTodayAlmogTouches(admin, payload.userId),
+  ]);
+
+  const recentBodies = shouldFetchWeekRecentBodies(todayTouches, payload.slot)
+    ? await fetchRecentAlmogBodies(admin, payload.userId)
+    : [];
 
   /**
    * זמן + יום בשבוע ב-Asia/Jerusalem — חשוב כדי שאלמוג ידע אם זה שישי אחה"צ
@@ -213,14 +208,8 @@ export async function sendAlmogHabitCheckpointNotification(
     contextParts.push(`\nרמז זמן: ${scheduleHints.proximity}`);
   }
   contextParts.push(`\n${scheduleHints.styleBlock}`);
-  if (recentBodies.length > 0) {
-    const snippets = recentBodies
-      .map((b, i) => `${i + 1}. "${b.slice(0, 160)}${b.length > 160 ? '…' : ''}"`)
-      .join('\n');
-    contextParts.push(
-      `\nהודעות ששלחת לאחרונה (אסור לחזור על פתיחה/מטאפורה/שאלה):\n${snippets}`
-    );
-  }
+  const antiRepeat = formatRecentBodiesAntiRepeatBlock(recentBodies);
+  if (antiRepeat) contextParts.push(antiRepeat);
 
   const systemPrompt = `${HABIT_CHECKPOINT_SYSTEM}\n\nקונטקסט המשתמש לרגע הזה:\n${contextParts.join('\n')}`;
 
@@ -229,7 +218,7 @@ export async function sendAlmogHabitCheckpointNotification(
     temperature: 0.82,
     presencePenalty: 0.5,
     frequencyPenalty: 0.55,
-    maxTokens: 320,
+    maxTokens: ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
     messages: [
       { role: 'system', content: systemPrompt },
       {

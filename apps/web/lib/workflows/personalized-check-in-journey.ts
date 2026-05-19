@@ -90,13 +90,8 @@ export async function fetchPersonalizedCheckInJourneyContext(
 }
 
 export function formatJourneyBlockForPersonalizedCheckIn(ctx: PersonalizedJourneyContext): string {
-  const habitLines = ctx.habits.map(
-    (h) =>
-      `- ${h.title} (${h.frequency === 'per_meal' ? 'מסביב לארוחות' : h.frequency === 'daily' ? 'יומי' : 'שבועי'})`
-  );
-  const taskLines = ctx.pendingTasks.map(
-    (t) => `- ${t.title}${t.stepTitle ? ` (צעד: ${t.stepTitle})` : ''}`
-  );
+  const habitLines = ctx.habits.slice(0, 2).map((h) => `- ${h.title}`);
+  const taskLines = ctx.pendingTasks.slice(0, 2).map((t) => `- ${t.title}`);
 
   const parts: string[] = [`חלון יום במסע: ${ctx.slot}`];
   if (ctx.stepTitle || ctx.stationTitle) {
