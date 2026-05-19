@@ -1,42 +1,65 @@
 import type { ModelMessage } from 'ai';
 
-const CONTINUE_USER = `המשך בדיוק מהנקודה שנעצרת. אל תחזור על מה שכבר נכתב. סיים את המשפט/הפסקה האחרונה ואת ההודעה — בלי לפתוח נושא חדש.`;
+const CONTINUE_USER =
+  'המשך בדיוק מהנקודה שנעצרת. אל תחזור על מה שכבר נכתב. סיים את המשפט/הפסקה האחרונה בלבד.';
+
+/** האם נראה שהטקסט הסתיים במשפט שלם (פחות סיכוי שצריך המשכה יקרה). */
+export function looksLikeCompleteHebrewMessage(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  const last = t.slice(-1);
+  if (/[.!?…]/.test(last)) return true;
+  if (/[\u05C3\u05C0]/.test(last)) return true;
+  if (t.endsWith(')') || t.endsWith('"') || t.endsWith("'")) return true;
+  return false;
+}
 
 export type GenerateChunkResult = {
   text: string;
   finishReason?: string;
 };
 
+export type StitchOptions = {
+  maxContinuations?: number;
+  /** המשכה בלי לשלוח שוב system + היסטוריה — חוסך טוקני קלט */
+  lightweightContinue?: (partialAssistant: string) => Promise<GenerateChunkResult>;
+};
+
 /**
- * ממזג מקטעי טקסט עד שהמודל סיים (לא finishReason === 'length').
- * מונע הודעות שנקטעות באמצע משפט.
+ * ממזג מקטעי טקסט עד שהמודל סיים (לא finishReason === 'length')
+ * או שהטקסט נראה שלם.
  */
 export async function stitchModelTextUntilComplete(
   initial: GenerateChunkResult,
   continueGenerate: (messages: ModelMessage[]) => Promise<GenerateChunkResult>,
   baseMessages: ModelMessage[],
-  options?: { maxContinuations?: number }
+  options?: StitchOptions
 ): Promise<string> {
-  const maxContinuations = options?.maxContinuations ?? 2;
+  const maxContinuations = options?.maxContinuations ?? 1;
   let combined = (initial.text ?? '').trim();
   let finishReason = initial.finishReason;
-  const messages: ModelMessage[] = [...baseMessages];
 
-  if (combined) {
-    messages.push({ role: 'assistant', content: combined });
+  if (
+    finishReason !== 'length' ||
+    looksLikeCompleteHebrewMessage(combined) ||
+    maxContinuations === 0
+  ) {
+    return combined;
   }
 
-  let continuations = 0;
-  while (finishReason === 'length' && continuations < maxContinuations) {
-    messages.push({ role: 'user', content: CONTINUE_USER });
-    const next = await continueGenerate(messages);
+  for (let i = 0; i < maxContinuations; i++) {
+    const next = options?.lightweightContinue
+      ? await options.lightweightContinue(combined)
+      : await continueGenerate([
+          ...baseMessages,
+          { role: 'assistant', content: combined },
+          { role: 'user', content: CONTINUE_USER },
+        ]);
+
     const piece = (next.text ?? '').trim();
-    if (piece) {
-      combined = combined ? `${combined} ${piece}` : piece;
-      messages.push({ role: 'assistant', content: piece });
-    }
+    if (piece) combined = `${combined} ${piece}`.trim();
     finishReason = next.finishReason;
-    continuations++;
+    if (finishReason !== 'length' || looksLikeCompleteHebrewMessage(combined)) break;
     if (!piece) break;
   }
 
