@@ -1,12 +1,13 @@
-import { deliverWebPushAfterAlmogNotification } from '../push/deliver-after-notification';
-
-/** Fire-and-forget push אחרי התראת in-app מאלמוג */
+/** Fire-and-forget push אחרי התראת in-app מאלמוג (לא חוסם; web-push רק ב-Node). */
 export function afterAlmogInAppNotification(
   userId: string,
   title: string,
   body: string
 ): void {
-  void deliverWebPushAfterAlmogNotification(userId, title, body).catch((e) => {
+  void (async () => {
+    const { deliverWebPushAfterAlmogNotification } = await import('../push/deliver-after-notification');
+    await deliverWebPushAfterAlmogNotification(userId, title, body);
+  })().catch((e) => {
     console.warn('[after-almog-insert] push:', e);
   });
 }

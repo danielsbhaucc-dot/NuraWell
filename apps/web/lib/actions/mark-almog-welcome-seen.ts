@@ -1,7 +1,6 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { sendWelcomeAlmogEmail } from '@/lib/auth/send-welcome-almog-email';
 
 export async function markAlmogWelcomeSeen(): Promise<{ ok: boolean }> {
   const supabase = await createClient();
@@ -23,7 +22,10 @@ export async function markAlmogWelcomeSeen(): Promise<{ ok: boolean }> {
     return { ok: false };
   }
 
-  void sendWelcomeAlmogEmail(user.id).catch((e) => {
+  void (async () => {
+    const { sendWelcomeAlmogEmail } = await import('@/lib/auth/send-welcome-almog-email');
+    await sendWelcomeAlmogEmail(user.id);
+  })().catch((e) => {
     console.warn('[mark-almog-welcome-seen] email:', e);
   });
 

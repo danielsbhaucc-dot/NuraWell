@@ -2,6 +2,8 @@
  * שליחת Web Push — רק כש-VAPID מוגדר (Node runtime).
  */
 
+import 'server-only';
+
 import type { WebPushSubscriptionJson } from './types';
 
 export function isWebPushConfigured(): boolean {
@@ -21,7 +23,7 @@ export async function sendWebPushToSubscription(
   }
 
   try {
-    const webpush = await import('web-push');
+    const webpush = await import(/* webpackIgnore: true */ 'web-push');
     webpush.setVapidDetails(
       process.env.WEB_PUSH_VAPID_SUBJECT!,
       process.env.WEB_PUSH_VAPID_PUBLIC_KEY!,

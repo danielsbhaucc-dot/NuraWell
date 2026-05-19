@@ -69,7 +69,7 @@ export async function sendTaskCompletionCelebration(
   userId: string,
   stepId: string,
   taskId: string
-): Promise<{ body: string; skipped?: boolean }> {
+): Promise<{ body: string; title?: string; skipped?: boolean }> {
   if (await recentCelebrationExists(admin, userId, taskId, 90_000)) {
     return { body: '', skipped: true };
   }
@@ -162,8 +162,5 @@ export async function sendTaskCompletionCelebration(
 
   if (error) throw new Error(error.message);
 
-  const { afterAlmogInAppNotification } = await import('../notifications/after-almog-insert');
-  afterAlmogInAppNotification(userId, title, body);
-
-  return { body };
+  return { body, title };
 }

@@ -2,8 +2,9 @@
  * אחרי insert ל-notifications — ניסיון push למכשיר (לא חוסם).
  */
 
+import 'server-only';
+
 import { createAdminClient } from '@/lib/supabase/admin';
-import { sendWebPushToSubscription, isWebPushConfigured } from './send-web-push';
 import type { WebPushStored } from './types';
 
 export async function deliverWebPushAfterAlmogNotification(
@@ -11,6 +12,7 @@ export async function deliverWebPushAfterAlmogNotification(
   title: string,
   body: string
 ): Promise<void> {
+  const { sendWebPushToSubscription, isWebPushConfigured } = await import('./send-web-push');
   if (!isWebPushConfigured()) return;
 
   const admin = createAdminClient();
