@@ -8,6 +8,7 @@ import { generateMentorSystemPrompt, calculateDailyCheckInTimes } from '@/lib/ai
 import { ingestOnboardingIntoVectorMemory } from '@/lib/ai/ingest-onboarding-vector-memory';
 import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context';
 import { buildMealSchedule, type MealScheduleEntry } from '@/lib/onboarding/meal-schedule';
+import { BODY_METRICS } from '@/lib/onboarding/body-metrics';
 import {
   GENDERS,
   MAIN_GOALS,
@@ -22,9 +23,20 @@ const onboardingSchema = z.object({
   full_name: z.string().trim().min(2, 'שם קצר מדי').max(120),
   gender: z.enum(GENDERS),
   main_goal: z.enum(MAIN_GOALS),
-  current_weight: z.coerce.number().min(30).max(400),
-  target_weight: z.coerce.number().min(30).max(400),
-  height: z.coerce.number().min(100).max(250).optional().nullable(),
+  current_weight: z.coerce
+    .number()
+    .min(BODY_METRICS.weightMin)
+    .max(BODY_METRICS.weightMax),
+  target_weight: z.coerce
+    .number()
+    .min(BODY_METRICS.weightMin)
+    .max(BODY_METRICS.weightMax),
+  height: z.coerce
+    .number()
+    .min(BODY_METRICS.heightMin)
+    .max(BODY_METRICS.heightMax)
+    .optional()
+    .nullable(),
   weakest_time_of_day: z.enum(WEAKEST_TIMES),
   main_obstacle: z.enum(MAIN_OBSTACLES),
   main_obstacle_detail: z.string().trim().max(500).optional().nullable(),

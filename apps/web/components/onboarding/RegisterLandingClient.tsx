@@ -92,23 +92,22 @@ export function RegisterLandingClient() {
               <p>
                 היי, אני{' '}
                 <strong className={hasPhotoBg ? 'text-emerald-300' : 'text-emerald-700'}>דולב</strong>
-                . אני כאן רק כדי להכיר אתכם — בלי שיפוט, בלי בושה. אחר כך אלמוג ילווה אתכם
-                באמת.
+                , מנהל ההרשמה. אקח מכם כמה פרטים זריזים — בלי שיפוט — ואעביר אתכם לאלמוג, המנטור
+                שילווה אתכם אחרי שנסיים.
               </p>
               <p className={`mt-3 text-sm leading-relaxed ${hasPhotoBg ? 'text-emerald-50/95' : 'text-slate-600'}`}>
-                <strong className={hasPhotoBg ? 'text-white' : 'text-emerald-800'}>Nura</strong> — מארמית,
-                אחת השפות העתיקות בעולם. משמעותה <em>אור</em>. כי כל שינוי אמיתי מתחיל מרגע של הארה —
-                הרגע שהחלטת לשנות.
+                <strong className={hasPhotoBg ? 'text-white' : 'text-emerald-800'}>Nura</strong> — אור. הרגע
+                שהחלטתם לשנות.
                 <br />
-                <strong className={hasPhotoBg ? 'text-white' : 'text-emerald-800'}>Well</strong> — באנגלית:
-                בריאות, איזון, להרגיש טוב. לא דיאטה, לא ספירת קלוריות — חיים טובים יותר.
+                <strong className={hasPhotoBg ? 'text-white' : 'text-emerald-800'}>Well</strong> — בריאות,
+                איזון, להרגיש טוב. לא דיאטה — חיים טובים יותר.
               </p>
               <p className={`mt-2 text-sm ${hasPhotoBg ? 'text-emerald-50/90' : 'text-slate-600'}`}>
-                ביחד זה אומר:{' '}
+                זה בנוי בשבילכם —{' '}
                 <strong className={hasPhotoBg ? 'text-white' : 'text-emerald-800'}>
-                  האור שיוביל אותך לחיים טובים יותר
+                  ליווי אישי, לא אפליקציה קרה
                 </strong>
-                . כמו מאמן אמיתי שיש לך — לא אפליקציה קרה.
+                .
               </p>
             </MentorBubble>
           </motion.div>

@@ -5,7 +5,7 @@ import { Drawer } from 'vaul';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MentorBubble } from './MentorBubble';
 import { markDolevWelcomeSeen } from '@/lib/actions/mark-dolev-welcome-seen';
-import { genderCopy } from '@/lib/onboarding/gender-copy';
+import { DOLEV_REGISTRATION_ROLE, genderCopy } from '@/lib/onboarding/gender-copy';
 import {
   buildProfileSummaryRows,
   firstNameFromFull,
@@ -53,17 +53,12 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
     };
   }, [open]);
 
-  const needHelp =
-    profile.gender === 'male' ? 'תצטרך'
-    : profile.gender === 'female' ? 'תצטרכי'
-    : 'תצטרך/י';
-
   const introMessage = firstName
     ? `${firstName}, ${gc.welcome} ל-NuraWell! היה לי נחמד להכיר אותך בהרשמה. שמרתי את מה שסיפרת — ואני באמת שמח ש${gc.you} כאן. בהצלחה רבה במסע, בקצב ${gc.your}.`
     : `${gc.welcome} ל-NuraWell! היה לי נחמד להכיר אותך. אני שמח ש${gc.you} כאן — בהצלחה רבה במסע.`;
 
   const replyMessage = firstName
-    ? `${firstName}, תודה לך על המילים החמות. אני מרגיש ש${gc.you} בידיים טובות — אלמוג ילווה אותך ברגישות, ואני כאן אם ${needHelp}. הרבה בהצלחה במסע, באמת. 🌿`
+    ? `${firstName}, תודה לך על המילים החמות. אני מרגיש ש${gc.you} בידיים טובות — אלמוג ילווה אותך ברגישות, ואני כאן אם ${gc.needHelp}. הרבה בהצלחה במסע, באמת. 🌿`
     : `תודה על המילים החמות. אני מרגיש ש${gc.you} בידיים טובות — הרבה בהצלחה במסע. 🌿`;
 
   return (
@@ -99,7 +94,7 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
             </ul>
 
             <div className="space-y-4">
-              <MentorBubble mentorId="dolev" roleLabel="מנטור הקליטה">
+              <MentorBubble mentorId="dolev" roleLabel={DOLEV_REGISTRATION_ROLE}>
                 <p className="text-[15px] leading-relaxed">{introMessage}</p>
               </MentorBubble>
 

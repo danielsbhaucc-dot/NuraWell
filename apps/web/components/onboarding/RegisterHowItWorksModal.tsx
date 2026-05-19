@@ -34,7 +34,10 @@ function HowItWorksBody() {
       </h2>
 
       <MentorBubble mentorId="dolev" className="mb-5">
-        <p>פשוט וברור — בלי התחייבות מוגזמת. ככה נבנה ליווי שמתאים לחיים שלך, לא להפך.</p>
+        <p>
+          היי, אני דולב, מנהל הרישום של NuraWell. אני אקח ממך כמה פרטים זריזים, ויחד נבנה את התיק
+          שנעביר לאלמוג — המנטור האישי שילווה אותך מהרגע שנסיים.
+        </p>
       </MentorBubble>
 
       <ol className="space-y-3">

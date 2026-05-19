@@ -107,7 +107,7 @@ export function buildWelcomeDolevEmailHtml(
           <p style="margin:24px 0 0;padding:14px 16px;background:#fef3c7;border:2px solid #f59e0b;border-radius:12px;color:#92400e;font-size:14px;font-weight:800;text-align:center;line-height:1.45;direction:rtl">${copy.noReplyBottom}</p>
         </td></tr>
         <tr><td dir="rtl" style="padding:16px 24px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center">
-          <p style="margin:0;color:#94a3b8;font-size:12px;direction:rtl">דולב · מנטור הקליטה · NuraWell</p>
+          <p style="margin:0;color:#94a3b8;font-size:12px;direction:rtl">דולב · מנהל ההרשמה · NuraWell</p>
         </td></tr>
       </table>
     </td></tr>

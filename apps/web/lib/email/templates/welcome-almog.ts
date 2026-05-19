@@ -1,4 +1,6 @@
 import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context';
+import { genderCopy } from '@/lib/onboarding/gender-copy';
+import type { OnboardingGender } from '@/lib/onboarding/types';
 
 const GOAL_HE: Record<string, string> = {
   weight_loss: 'ירידה במשקל',
@@ -27,6 +29,7 @@ function row(label: string, value: string): string {
 
 export function buildWelcomeAlmogEmailHtml(
   firstName: string,
+  gender: OnboardingGender | null | undefined,
   profile: Pick<
     OnboardingProfileForChat,
     | 'main_goal'
@@ -39,6 +42,7 @@ export function buildWelcomeAlmogEmailHtml(
     | 'meal_schedule'
   >
 ): string {
+  const gc = genderCopy(gender ?? '');
   const meals =
     profile.meal_schedule?.length ?
       profile.meal_schedule.map((m) => `${m.time} (${m.label})`).join(', ')
@@ -78,7 +82,7 @@ export function buildWelcomeAlmogEmailHtml(
           <p style="margin:0 0 12px;color:#047857;font-size:14px;font-weight:700">מה ששמרתי עליך:</p>
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border-radius:12px;border:1px solid #bbf7d0">${table}</table>
           <p style="margin:20px 0 0;color:#64748b;font-size:14px;line-height:1.55">
-            בקרוב תקבל/י ממני גם הודעות באפליקציה בזמנים שמתאימים לך — במיוחד לפני הרגעים הקשים.
+            בקרוב ${gc.willReceive} ממני גם הודעות באפליקציה בזמנים שמתאימים לך — במיוחד לפני הרגעים הקשים.
           </p>
           <p style="margin:24px 0 0;text-align:center">
             <a href="https://nurawell.ai/home" style="display:inline-block;background:#059669;color:#fff;text-decoration:none;padding:14px 28px;border-radius:12px;font-weight:700;font-size:15px">כניסה לאפליקציה</a>

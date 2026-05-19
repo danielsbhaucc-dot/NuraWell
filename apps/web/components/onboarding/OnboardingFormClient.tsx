@@ -11,6 +11,7 @@ import { MentorBubble } from './MentorBubble';
 import { GlassChoiceButton } from './GlassChoiceButton';
 import type { MainGoal, MainObstacle, OnboardingGender, WeakestTimeOfDay } from '@/lib/onboarding/types';
 import { classifyMealSlot, mealSlotLabel } from '@/lib/onboarding/meal-schedule';
+import { BODY_METRICS, validateBodyMetrics } from '@/lib/onboarding/body-metrics';
 import { genderCopy } from '@/lib/onboarding/gender-copy';
 import { OnboardingSummaryStep } from './OnboardingSummaryStep';
 
@@ -53,6 +54,31 @@ export function OnboardingFormClient() {
 
   const progress = useMemo(() => (step / TOTAL_STEPS) * 100, [step]);
 
+  const bodyMetricsErrorToast = (err: NonNullable<ReturnType<typeof validateBodyMetrics>>) => {
+    if (err.field === 'current_weight') {
+      toast.warning(
+        'משקל נוכחי',
+        err.code === 'missing' ?
+          `${gc.enter} משקל נוכחי`
+        : `${gc.enter} משקל בין ${BODY_METRICS.weightMin} ל־${BODY_METRICS.weightMax} ק״ג`
+      );
+      return;
+    }
+    if (err.field === 'target_weight') {
+      toast.warning(
+        'משקל יעד',
+        err.code === 'missing' ?
+          `${gc.enter} משקל יעד`
+        : `${gc.enter} משקל בין ${BODY_METRICS.weightMin} ל־${BODY_METRICS.weightMax} ק״ג`
+      );
+      return;
+    }
+    toast.warning(
+      'גובה',
+      `${gc.enter} גובה בין ${BODY_METRICS.heightMin} ל־${BODY_METRICS.heightMax} ס״מ, או השאר ריק`
+    );
+  };
+
   const goNext = () => {
     if (step === 1 && fullName.trim().length < 2) {
       toast.warning('רגע', 'איך לקרוא לך?');
@@ -67,14 +93,17 @@ export function OnboardingFormClient() {
         toast.warning('מטרה', `מה המטרה העיקרית של ${gc.you}?`);
         return;
       }
-      const cw = Number(currentWeight);
-      const tw = Number(targetWeight);
-      if (!Number.isFinite(cw) || cw < 30) {
-        toast.warning('משקל', `${gc.enter} משקל נוכחי תקין`);
+      const metricsErr = validateBodyMetrics({ currentWeight, targetWeight, height });
+      if (metricsErr) {
+        bodyMetricsErrorToast(metricsErr);
         return;
       }
-      if (!Number.isFinite(tw) || tw < 30) {
-        toast.warning('משקל יעד', `${gc.enter} משקל יעד תקין`);
+    }
+    if (step === 4 || step === 5) {
+      const metricsErr = validateBodyMetrics({ currentWeight, targetWeight, height });
+      if (metricsErr) {
+        bodyMetricsErrorToast(metricsErr);
+        if (step === 5) setStep(2);
         return;
       }
     }
@@ -84,7 +113,7 @@ export function OnboardingFormClient() {
         return;
       }
       if (obstacle === 'other' && !obstacleDetail.trim()) {
-        toast.warning('פרט/י', `${gc.tell} בקצרה מה המכשול`);
+        toast.warning(gc.detail, `${gc.tell} בקצרה מה המכשול`);
         return;
       }
     }
@@ -142,7 +171,13 @@ export function OnboardingFormClient() {
 
   const submit = () => {
     if (!email.trim() || !password || password.length < 6) {
-      toast.warning('חשבון', 'מלא/י אימייל וסיסמה (לפחות 6 תווים)');
+      toast.warning('חשבון', `${gc.fill} אימייל וסיסמה (לפחות 6 תווים)`);
+      return;
+    }
+    const metricsErr = validateBodyMetrics({ currentWeight, targetWeight, height });
+    if (metricsErr) {
+      bodyMetricsErrorToast(metricsErr);
+      setStep(2);
       return;
     }
     const fd = new FormData();
@@ -300,8 +335,8 @@ export function OnboardingFormClient() {
                       <input
                         type="number"
                         inputMode="decimal"
-                        min={30}
-                        max={400}
+                        min={BODY_METRICS.weightMin}
+                        max={BODY_METRICS.weightMax}
                         value={currentWeight}
                         onChange={(e) => setCurrentWeight(e.target.value)}
                         className="onboarding-input-dark w-full mt-1"
@@ -320,8 +355,8 @@ export function OnboardingFormClient() {
                       <input
                         type="number"
                         inputMode="decimal"
-                        min={30}
-                        max={400}
+                        min={BODY_METRICS.weightMin}
+                        max={BODY_METRICS.weightMax}
                         value={targetWeight}
                         onChange={(e) => setTargetWeight(e.target.value)}
                         className="onboarding-input-dark w-full mt-1"
@@ -334,8 +369,8 @@ export function OnboardingFormClient() {
                     <input
                       type="number"
                       inputMode="numeric"
-                      min={100}
-                      max={250}
+                      min={BODY_METRICS.heightMin}
+                      max={BODY_METRICS.heightMax}
                       value={height}
                       onChange={(e) => setHeight(e.target.value)}
                       className="onboarding-input-dark w-full mt-1"
@@ -506,6 +541,7 @@ export function OnboardingFormClient() {
                 <OnboardingSummaryStep
                   data={summaryData}
                   name={name}
+                  gender={gender}
                   onEdit={(s) => setStep(s)}
                 />
               )}

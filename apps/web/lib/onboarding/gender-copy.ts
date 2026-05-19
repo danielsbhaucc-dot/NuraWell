@@ -16,7 +16,21 @@ export type GenderCopy = {
   eatOut: string;
   tired: string;
   snack: string;
+  glance: string;
+  press: string;
+  fill: string;
+  detail: string;
+  needHelp: string;
+  willReceive: string;
+  checkSpam: string;
+  wantReturn: string;
+  useSupport: string;
+  sendsYouEmail: string;
+  willShowYou: string;
 };
+
+/** תווית תפקיד דולב בהרשמה — לא «מנטור» (שייך לאלמוג) */
+export const DOLEV_REGISTRATION_ROLE = 'מנהל ההרשמה';
 
 export function genderCopy(gender: OnboardingGender | ''): GenderCopy {
   if (gender === 'male') {
@@ -36,6 +50,17 @@ export function genderCopy(gender: OnboardingGender | ''): GenderCopy {
       eatOut: 'אוכל בחוץ / משלוחים',
       tired: 'עייפות אחרי העבודה',
       snack: 'נשנושים מול מסך',
+      glance: 'תעיף',
+      press: 'לחץ',
+      fill: 'מלא',
+      detail: 'פרט',
+      needHelp: 'תצטרך',
+      willReceive: 'תקבל',
+      checkSpam: 'בדוק',
+      wantReturn: 'תרצה',
+      useSupport: 'השתמש',
+      sendsYouEmail: 'דולב שולח אליך עכשיו מייל',
+      willShowYou: 'יציג לך',
     };
   }
   if (gender === 'female') {
@@ -55,6 +80,17 @@ export function genderCopy(gender: OnboardingGender | ''): GenderCopy {
       eatOut: 'אוכלת בחוץ / משלוחים',
       tired: 'עייפות אחרי העבודה',
       snack: 'נשנושים מול מסך',
+      glance: 'תעיפי',
+      press: 'לחצי',
+      fill: 'מלאי',
+      detail: 'פרטי',
+      needHelp: 'תצטרכי',
+      willReceive: 'תקבלי',
+      checkSpam: 'בדקי',
+      wantReturn: 'תרצי',
+      useSupport: 'השתמשי',
+      sendsYouEmail: 'דולב שולח אלייך עכשיו מייל',
+      willShowYou: 'יציג לך',
     };
   }
   return {
@@ -73,5 +109,16 @@ export function genderCopy(gender: OnboardingGender | ''): GenderCopy {
     eatOut: 'אוכל/ת בחוץ / משלוחים',
     tired: 'עייפות אחרי העבודה',
     snack: 'נשנושים מול מסך',
+    glance: 'תעיף/י',
+    press: 'לחץ/י',
+    fill: 'מלא/י',
+    detail: 'פרט/י',
+    needHelp: 'תצטרך/י',
+    willReceive: 'תקבל/י',
+    checkSpam: 'בדוק/י',
+    wantReturn: 'תרצה/י',
+    useSupport: 'השתמש/י',
+    sendsYouEmail: 'דולב שולח אליך/אליך עכשיו מייל',
+    willShowYou: 'יציג לך/לך',
   };
 }
