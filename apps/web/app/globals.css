@@ -204,14 +204,37 @@ html {
     z-index: 5;
   }
 
+  .landing-fade-top::before,
+  .landing-fade-bottom::after {
+    height: 180px;
+  }
+
   .landing-fade-top::before {
     top: 0;
-    background: linear-gradient(180deg, rgba(209, 250, 229, 0.95) 0%, rgba(209, 250, 229, 0.5) 35%, transparent 100%);
+    background: linear-gradient(
+      180deg,
+      rgba(209, 250, 229, 1) 0%,
+      rgba(209, 250, 229, 0.95) 12%,
+      rgba(209, 250, 229, 0.75) 30%,
+      rgba(209, 250, 229, 0.5) 50%,
+      rgba(209, 250, 229, 0.22) 75%,
+      rgba(209, 250, 229, 0.06) 90%,
+      transparent 100%
+    );
   }
 
   .landing-fade-bottom::after {
     bottom: 0;
-    background: linear-gradient(0deg, rgba(209, 250, 229, 0.95) 0%, rgba(209, 250, 229, 0.5) 35%, transparent 100%);
+    background: linear-gradient(
+      0deg,
+      rgba(209, 250, 229, 1) 0%,
+      rgba(209, 250, 229, 0.95) 12%,
+      rgba(209, 250, 229, 0.75) 30%,
+      rgba(209, 250, 229, 0.5) 50%,
+      rgba(209, 250, 229, 0.22) 75%,
+      rgba(209, 250, 229, 0.06) 90%,
+      transparent 100%
+    );
   }
 
   /* ---- Floating particles ---- */
@@ -359,15 +382,29 @@ html {
     @apply relative z-10 flex flex-col justify-end flex-1 px-5 pb-14 sm:pb-16 pt-6 max-w-xl mx-auto w-full;
   }
 
+  .landing-hero-kicker-wrap {
+    @apply absolute left-0 right-0 z-20 flex justify-center px-4 pointer-events-none;
+    top: calc(env(safe-area-inset-top, 0px) + 74px);
+  }
+
   .landing-hero-kicker {
-    @apply inline-flex items-center gap-2 text-xs font-bold tracking-wide uppercase mb-5 px-3 py-1.5 rounded-full;
-    color: rgba(167, 243, 208, 0.98);
-    background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(110, 231, 183, 0.32);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    letter-spacing: 0.05em;
-    width: fit-content;
+    @apply inline-flex items-center gap-2 text-[10px] sm:text-[11px] font-black tracking-widest uppercase px-4 py-2 rounded-full pointer-events-auto;
+    color: #064e3b;
+    background: linear-gradient(135deg, rgba(252, 211, 77, 0.85), rgba(110, 231, 183, 0.85));
+    border: 1px solid rgba(254, 243, 199, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow:
+      0 12px 32px -6px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(236, 253, 245, 0.2) inset,
+      inset 0 1px 0 rgba(254, 243, 199, 0.5);
+    letter-spacing: 0.12em;
+    text-shadow: 0 1px 0 rgba(254, 243, 199, 0.45);
+  }
+
+  .landing-hero-kicker svg {
+    color: #047857;
+    stroke-width: 2.5;
   }
 
   .landing-hero-title {
@@ -602,38 +639,62 @@ html {
   }
 
   .landing-eyebrow {
-    @apply inline-block text-xs font-bold uppercase tracking-widest mb-3 px-3 py-1 rounded-full;
-    color: #047857;
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.2);
-    letter-spacing: 0.08em;
+    @apply inline-flex items-center text-xs font-black uppercase tracking-widest mb-4 px-4 py-1.5 rounded-full;
+    color: #064e3b;
+    background: linear-gradient(135deg, rgba(252, 211, 77, 0.45), rgba(110, 231, 183, 0.55));
+    border: 1px solid rgba(4, 120, 87, 0.35);
+    box-shadow:
+      0 6px 18px -4px rgba(4, 120, 87, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    letter-spacing: 0.1em;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
-  .landing-section-dark .landing-eyebrow {
-    color: #6ee7b7;
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
+  .landing-eyebrow-light,
+  .landing-section-dark .landing-eyebrow,
+  .landing-manifesto .landing-eyebrow,
+  .landing-imagine .landing-eyebrow,
+  .landing-timeline .landing-eyebrow,
+  .landing-cta-band .landing-eyebrow {
+    color: #fef3c7;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.22), rgba(110, 231, 183, 0.18));
+    border-color: rgba(251, 191, 36, 0.4);
+    box-shadow:
+      0 6px 18px -4px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
   }
 
   .landing-h2 {
     font-family: 'Rubik', 'Heebo', sans-serif;
-    @apply text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 leading-tight tracking-tight;
+    @apply text-2xl sm:text-3xl md:text-4xl font-black leading-tight tracking-tight;
+    background: linear-gradient(118deg, #064e3b 0%, #047857 35%, #0d9488 65%, #0f766e 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 2px 12px rgba(4, 120, 87, 0.15));
   }
 
   .landing-h2-light {
-    @apply text-white;
+    background: linear-gradient(118deg, #ecfdf5 0%, #d1fae5 40%, #6ee7b7 70%, #fde68a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 2px 12px rgba(0, 0, 0, 0.25));
   }
 
   .landing-subtitle {
-    @apply mt-3 text-[15px] sm:text-base text-slate-600 leading-relaxed;
+    @apply mt-4 text-[15px] sm:text-base leading-relaxed;
+    color: #14543d;
   }
 
   .landing-subtitle-light {
-    @apply text-emerald-100/85;
+    color: rgba(209, 250, 229, 0.92);
   }
 
   .landing-body {
-    @apply text-[15px] sm:text-base text-slate-600 leading-relaxed mt-4;
+    @apply text-[15px] sm:text-base leading-relaxed mt-4;
+    color: #1f4a3a;
   }
 
   /* Cards */
@@ -642,24 +703,24 @@ html {
   }
 
   .landing-card-elevated {
-    background: rgba(255, 255, 255, 0.52);
-    border: 1px solid rgba(255, 255, 255, 0.75);
+    background: linear-gradient(135deg, rgba(236, 253, 245, 0.7), rgba(209, 250, 229, 0.55));
+    border: 1px solid rgba(110, 231, 183, 0.55);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     box-shadow:
-      0 12px 36px -10px rgba(4, 120, 87, 0.18),
-      0 2px 6px rgba(15, 23, 42, 0.04),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      0 14px 36px -10px rgba(4, 120, 87, 0.22),
+      0 2px 6px rgba(4, 120, 87, 0.08),
+      inset 0 1px 0 rgba(236, 253, 245, 0.85);
   }
 
   .landing-card-glass {
-    background: rgba(255, 255, 255, 0.65);
+    background: linear-gradient(135deg, rgba(236, 253, 245, 0.75), rgba(209, 250, 229, 0.6));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(110, 231, 183, 0.6);
     box-shadow:
-      0 12px 36px -10px rgba(4, 120, 87, 0.18),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      0 14px 36px -10px rgba(4, 120, 87, 0.22),
+      inset 0 1px 0 rgba(236, 253, 245, 0.85);
   }
 
   .landing-card-glass-dark {
@@ -671,11 +732,13 @@ html {
 
   .landing-card-title {
     font-family: 'Rubik', 'Heebo', sans-serif;
-    @apply text-base sm:text-lg font-black text-slate-900 mb-2;
+    @apply text-base sm:text-lg font-black mb-2 leading-snug;
+    color: #064e3b;
   }
 
   .landing-card-text {
-    @apply text-sm sm:text-[15px] text-slate-600 leading-relaxed;
+    @apply text-sm sm:text-[15px] leading-relaxed;
+    color: #1f4a3a;
   }
 
   /* Philosophy grid */
@@ -686,6 +749,14 @@ html {
   /* Split sections */
   .landing-split {
     @apply flex flex-col gap-8 sm:gap-10;
+  }
+
+  .landing-split-body {
+    @apply text-center md:text-right;
+  }
+
+  .landing-split-body .landing-checklist {
+    @apply inline-block text-right md:block;
   }
 
   @media (min-width: 768px) {
@@ -706,7 +777,8 @@ html {
   }
 
   .landing-checklist li {
-    @apply flex items-center gap-3 text-[15px] font-medium text-slate-700;
+    @apply flex items-center gap-3 text-[15px] font-semibold;
+    color: #0f4030;
   }
 
   /* Bento features */
@@ -783,6 +855,8 @@ html {
 
   .landing-stat-icon svg {
     @apply w-5 h-5 sm:w-6 sm:h-6;
+    stroke-width: 2.4;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
   }
 
   .landing-stat-text {
@@ -1042,7 +1116,7 @@ html {
   /* ---- Philosophy cards (colorful glass) ---- */
   .landing-philosophy-card {
     @apply relative rounded-3xl p-5 sm:p-7 overflow-hidden text-center sm:text-right;
-    background: rgba(255, 255, 255, 0.55);
+    background: linear-gradient(135deg, rgba(236, 253, 245, 0.7), rgba(209, 250, 229, 0.5));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--tone-border);
@@ -1084,20 +1158,23 @@ html {
   .landing-philosophy-icon {
     @apply flex h-16 w-16 sm:h-[4.5rem] sm:w-[4.5rem] items-center justify-center rounded-2xl mb-4 mx-auto sm:mx-0;
     background: linear-gradient(135deg, var(--tone-from), var(--tone-to));
-    color: white;
+    color: #ecfdf5;
     box-shadow:
-      0 12px 28px -6px var(--tone-shadow),
-      0 0 0 4px rgba(255, 255, 255, 0.5);
+      0 14px 28px -6px var(--tone-shadow),
+      0 0 0 4px rgba(236, 253, 245, 0.7),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
     animation: landing-icon-pulse 3s ease-in-out infinite;
   }
 
   .landing-philosophy-icon svg {
     @apply w-8 h-8 sm:w-9 sm:h-9;
+    stroke-width: 2.4;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
   }
 
   @keyframes landing-icon-pulse {
-    0%, 100% { box-shadow: 0 12px 28px -6px var(--tone-shadow), 0 0 0 4px rgba(255, 255, 255, 0.45); }
-    50% { box-shadow: 0 16px 36px -4px var(--tone-shadow), 0 0 0 6px rgba(255, 255, 255, 0.65); }
+    0%, 100% { box-shadow: 0 14px 28px -6px var(--tone-shadow), 0 0 0 4px rgba(236, 253, 245, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+    50% { box-shadow: 0 18px 36px -4px var(--tone-shadow), 0 0 0 7px rgba(236, 253, 245, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
   }
 
   /* ---- Bento icons (colorful tones) ---- */
@@ -1124,10 +1201,85 @@ html {
   .landing-card-glass-gradient {
     @apply relative overflow-hidden;
     background:
-      radial-gradient(ellipse at top right, rgba(110, 231, 183, 0.28), transparent 55%),
-      linear-gradient(145deg, rgba(236, 253, 245, 0.85) 0%, rgba(255, 255, 255, 0.98) 100%);
-    border: 1px solid rgba(16, 185, 129, 0.2);
-    box-shadow: 0 12px 40px -10px rgba(4, 120, 87, 0.18);
+      radial-gradient(ellipse 70% 60% at 100% 0%, rgba(251, 191, 36, 0.28), transparent 55%),
+      radial-gradient(ellipse 60% 80% at 0% 100%, rgba(45, 212, 191, 0.28), transparent 55%),
+      linear-gradient(145deg, rgba(167, 243, 208, 0.65) 0%, rgba(209, 250, 229, 0.55) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.45);
+    box-shadow:
+      0 18px 48px -10px rgba(4, 120, 87, 0.3),
+      inset 0 1px 0 rgba(236, 253, 245, 0.6);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  /* Featured bento layout */
+  .landing-bento-featured-inner {
+    @apply flex flex-col sm:flex-row items-center sm:items-stretch gap-5 sm:gap-7;
+  }
+
+  .landing-bento-featured-media {
+    @apply relative flex h-24 w-24 sm:h-32 sm:w-32 shrink-0 items-center justify-center;
+  }
+
+  .landing-bento-featured-ring {
+    @apply absolute inset-0 rounded-full;
+    background: conic-gradient(from 90deg, #fbbf24, #34d399, #2dd4bf, #6ee7b7, #fbbf24);
+    animation: spinRing 10s linear infinite;
+  }
+
+  .landing-bento-featured-ring::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  }
+
+  .landing-bento-featured-iconwrap {
+    @apply relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full;
+    background: linear-gradient(135deg, #047857, #34d399);
+    color: #ecfdf5;
+    box-shadow:
+      0 12px 28px -6px rgba(16, 185, 129, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    z-index: 1;
+  }
+
+  .landing-bento-featured-iconwrap svg {
+    @apply w-7 h-7 sm:w-9 sm:h-9;
+    stroke-width: 2.4;
+  }
+
+  .landing-bento-featured-body {
+    @apply flex-1 text-center sm:text-right;
+  }
+
+  .landing-bento-featured-title {
+    font-family: 'Rubik', 'Heebo', sans-serif;
+    @apply text-xl sm:text-2xl font-black leading-snug mb-2;
+    color: #064e3b;
+  }
+
+  .landing-bento-featured-text {
+    @apply text-[15px] leading-relaxed mb-4;
+    color: #1f4a3a;
+  }
+
+  .landing-bento-featured-tags {
+    @apply flex flex-wrap justify-center sm:justify-start gap-2;
+  }
+
+  .landing-bento-featured-tag {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold;
+    color: #064e3b;
+    background: linear-gradient(135deg, rgba(252, 211, 77, 0.5), rgba(110, 231, 183, 0.5));
+    border: 1px solid rgba(4, 120, 87, 0.3);
+  }
+
+  .landing-bento-featured-tag svg {
+    @apply w-3.5 h-3.5;
+    stroke-width: 2.4;
+    color: #047857;
   }
 
   .landing-bento-shine {
@@ -1157,20 +1309,31 @@ html {
   }
 
   .landing-image-badge {
-    @apply absolute bottom-4 right-4 inline-flex items-center gap-2 px-3.5 py-2.5 rounded-full text-xs font-bold;
-    background: rgba(255, 255, 255, 0.72);
-    color: #047857;
+    @apply absolute bottom-4 left-1/2 -translate-x-1/2 inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-black uppercase tracking-wider;
+    color: #064e3b;
+    background: linear-gradient(135deg, rgba(110, 231, 183, 0.85), rgba(45, 212, 191, 0.7));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     box-shadow:
-      0 10px 28px -6px rgba(4, 120, 87, 0.25),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.65);
+      0 12px 28px -6px rgba(4, 120, 87, 0.45),
+      inset 0 1px 0 rgba(236, 253, 245, 0.5);
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    letter-spacing: 0.06em;
+  }
+
+  .landing-image-badge svg {
+    color: #047857;
+    stroke-width: 2.4;
   }
 
   .landing-image-badge-warm {
+    color: #7c2d12;
+    background: linear-gradient(135deg, rgba(252, 211, 77, 0.85), rgba(251, 146, 60, 0.7));
+    border-color: rgba(249, 115, 22, 0.5);
+  }
+
+  .landing-image-badge-warm svg {
     color: #c2410c;
-    border-color: rgba(249, 115, 22, 0.25);
   }
 
   /* ---- Gradient text helper ---- */
@@ -1208,13 +1371,13 @@ html {
 
   .landing-step {
     @apply relative rounded-3xl p-6 sm:p-7 text-center overflow-hidden;
-    background: rgba(255, 255, 255, 0.7);
+    background: linear-gradient(135deg, rgba(236, 253, 245, 0.75), rgba(209, 250, 229, 0.55));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--tone-border, rgba(16, 185, 129, 0.25));
+    border: 1px solid var(--tone-border, rgba(16, 185, 129, 0.4));
     box-shadow:
-      0 12px 32px -10px var(--tone-shadow, rgba(16, 185, 129, 0.28)),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      0 14px 36px -10px var(--tone-shadow, rgba(16, 185, 129, 0.32)),
+      inset 0 1px 0 rgba(236, 253, 245, 0.85);
     z-index: 1;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
@@ -1316,14 +1479,28 @@ html {
   }
 
   .landing-cta-band .landing-btn-primary {
-    background: #ffffff;
-    color: #047857;
-    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    background:
+      radial-gradient(ellipse at top right, rgba(251, 191, 36, 0.3), transparent 60%),
+      linear-gradient(135deg, rgba(167, 243, 208, 0.4), rgba(110, 231, 183, 0.25));
+    color: #064e3b;
+    border: 1.5px solid rgba(110, 231, 183, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow:
+      0 18px 40px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(236, 253, 245, 0.18) inset,
+      inset 0 1px 0 rgba(236, 253, 245, 0.45);
+    text-shadow: 0 1px 0 rgba(236, 253, 245, 0.4);
   }
 
   .landing-cta-band .landing-btn-primary:hover {
-    background: #fefce8;
-    color: #064e3b;
+    background:
+      radial-gradient(ellipse at top right, rgba(251, 191, 36, 0.45), transparent 60%),
+      linear-gradient(135deg, rgba(167, 243, 208, 0.55), rgba(110, 231, 183, 0.4));
+    transform: translateY(-2px);
+    box-shadow:
+      0 22px 48px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(236, 253, 245, 0.55);
   }
 
   /* ---- Contrast section (instead → you get) ---- */
@@ -1342,13 +1519,13 @@ html {
   .landing-contrast-row {
     @apply relative grid items-stretch gap-2.5 sm:gap-3 rounded-3xl p-3 sm:p-4;
     grid-template-columns: 1fr auto 1fr;
-    background: rgba(255, 255, 255, 0.7);
+    background: linear-gradient(135deg, rgba(209, 250, 229, 0.45), rgba(167, 243, 208, 0.35));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(110, 231, 183, 0.55);
     box-shadow:
-      0 10px 32px -10px rgba(15, 23, 42, 0.12),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      0 14px 36px -10px rgba(4, 120, 87, 0.22),
+      inset 0 1px 0 rgba(236, 253, 245, 0.55);
     transition: transform 0.25s ease, box-shadow 0.25s ease;
   }
 
@@ -1363,13 +1540,15 @@ html {
   }
 
   .landing-contrast-bad {
-    background: linear-gradient(135deg, rgba(254, 226, 226, 0.5), rgba(254, 242, 242, 0.6));
-    border: 1px solid rgba(244, 63, 94, 0.15);
+    background: linear-gradient(135deg, rgba(254, 205, 211, 0.55), rgba(253, 164, 175, 0.35));
+    border: 1px solid rgba(244, 63, 94, 0.28);
+    box-shadow: inset 0 1px 0 rgba(254, 226, 226, 0.45);
   }
 
   .landing-contrast-good {
-    background: linear-gradient(135deg, rgba(209, 250, 229, 0.6), rgba(236, 253, 245, 0.8));
-    border: 1px solid rgba(16, 185, 129, 0.22);
+    background: linear-gradient(135deg, rgba(110, 231, 183, 0.42), rgba(167, 243, 208, 0.55));
+    border: 1px solid rgba(16, 185, 129, 0.45);
+    box-shadow: inset 0 1px 0 rgba(209, 250, 229, 0.6);
   }
 
   .landing-contrast-icon {
@@ -1378,6 +1557,8 @@ html {
 
   .landing-contrast-icon svg {
     @apply w-5 h-5;
+    stroke-width: 2.4;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
   }
 
   .landing-contrast-icon-bad {
@@ -1438,14 +1619,50 @@ html {
   }
 
   .landing-contrast-footnote {
-    @apply mt-10 flex items-center justify-center gap-2 text-center text-[15px] sm:text-base font-semibold text-emerald-900 max-w-xl mx-auto px-5 py-5 rounded-2xl;
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    @apply relative mt-12 max-w-xl mx-auto px-6 py-6 sm:px-7 sm:py-7 rounded-3xl overflow-hidden;
+    background:
+      radial-gradient(ellipse at top right, rgba(251, 191, 36, 0.18), transparent 60%),
+      linear-gradient(135deg, rgba(110, 231, 183, 0.45), rgba(45, 212, 191, 0.32));
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(16, 185, 129, 0.5);
     box-shadow:
-      0 12px 32px -10px rgba(4, 120, 87, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      0 18px 40px -10px rgba(4, 120, 87, 0.3),
+      inset 0 1px 0 rgba(236, 253, 245, 0.55);
+  }
+
+  .landing-contrast-footnote::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #fbbf24, #34d399, #2dd4bf, transparent);
+  }
+
+  .landing-contrast-footnote-icon {
+    @apply flex h-12 w-12 items-center justify-center rounded-2xl mx-auto mb-3;
+    background: linear-gradient(135deg, #fbbf24, #34d399);
+    color: #064e3b;
+    box-shadow:
+      0 10px 24px -6px rgba(251, 191, 36, 0.55),
+      inset 0 1px 0 rgba(254, 243, 199, 0.6);
+  }
+
+  .landing-contrast-footnote-icon svg {
+    @apply w-6 h-6;
+    stroke-width: 2.4;
+  }
+
+  .landing-contrast-footnote-text {
+    @apply block text-center text-[15px] sm:text-base font-bold leading-relaxed;
+    color: #064e3b;
+  }
+
+  .landing-contrast-footnote-text strong {
+    color: #047857;
+    font-weight: 900;
   }
 
   /* ---- Imagine (future self) section ---- */
@@ -1664,81 +1881,115 @@ html {
 
   .landing-faq-item {
     @apply rounded-2xl overflow-hidden;
-    background: rgba(255, 255, 255, 0.72);
+    background: linear-gradient(135deg, rgba(236, 253, 245, 0.7), rgba(209, 250, 229, 0.55));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(110, 231, 183, 0.5);
     box-shadow:
-      0 8px 24px -8px rgba(4, 120, 87, 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+      0 10px 28px -10px rgba(4, 120, 87, 0.2),
+      inset 0 1px 0 rgba(236, 253, 245, 0.7);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
   }
 
-  .landing-faq-item[open] {
-    background: rgba(255, 255, 255, 0.88);
-    border-color: rgba(16, 185, 129, 0.35);
+  .landing-faq-item.is-open {
+    background:
+      radial-gradient(ellipse at top right, rgba(251, 191, 36, 0.18), transparent 60%),
+      linear-gradient(135deg, rgba(167, 243, 208, 0.8), rgba(110, 231, 183, 0.6));
+    border-color: rgba(16, 185, 129, 0.55);
     box-shadow:
-      0 14px 32px -10px rgba(16, 185, 129, 0.25),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      0 18px 40px -12px rgba(16, 185, 129, 0.32),
+      inset 0 1px 0 rgba(236, 253, 245, 0.75);
   }
 
   .landing-faq-q {
-    @apply flex items-center gap-3 cursor-pointer px-4 py-4 sm:px-5 sm:py-5 list-none;
-    transition: background 0.2s ease;
-  }
-
-  .landing-faq-q::-webkit-details-marker {
-    display: none;
+    @apply w-full flex items-center gap-3 px-4 py-4 sm:px-5 sm:py-5;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: inherit;
+    transition: background 0.25s ease;
+    font-family: inherit;
   }
 
   .landing-faq-q:hover {
-    background: rgba(16, 185, 129, 0.04);
+    background: rgba(16, 185, 129, 0.06);
+  }
+
+  .landing-faq-q:focus-visible {
+    outline: 2px solid rgba(16, 185, 129, 0.5);
+    outline-offset: -2px;
   }
 
   .landing-faq-icon {
-    @apply flex h-9 w-9 items-center justify-center rounded-xl shrink-0;
+    @apply flex h-10 w-10 items-center justify-center rounded-xl shrink-0;
     background: linear-gradient(135deg, #047857, #34d399);
-    color: white;
-    box-shadow: 0 6px 14px -4px rgba(16, 185, 129, 0.4);
+    color: #ecfdf5;
+    box-shadow:
+      0 8px 18px -4px rgba(16, 185, 129, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    transition: transform 0.3s ease;
+  }
+
+  .landing-faq-item.is-open .landing-faq-icon {
+    background: linear-gradient(135deg, #d97706, #fbbf24);
+    box-shadow:
+      0 10px 22px -4px rgba(245, 158, 11, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transform: rotate(360deg);
   }
 
   .landing-faq-icon svg {
     @apply w-5 h-5;
+    stroke-width: 2.4;
   }
 
   .landing-faq-q-text {
     font-family: 'Rubik', 'Heebo', sans-serif;
-    @apply flex-1 text-[15px] sm:text-base font-bold text-slate-900 leading-snug;
+    @apply flex-1 text-[15px] sm:text-base font-black leading-snug;
+    color: #064e3b;
   }
 
-  .landing-faq-chev {
-    @apply flex items-center justify-center text-slate-400 shrink-0;
-    transition: transform 0.25s ease, color 0.25s ease;
-  }
-
-  .landing-faq-item[open] .landing-faq-chev {
-    transform: rotate(-90deg);
+  .landing-faq-item.is-open .landing-faq-q-text {
     color: #047857;
   }
 
+  .landing-faq-chev {
+    @apply flex items-center justify-center shrink-0;
+    color: #047857;
+    transition: transform 0.3s ease, color 0.3s ease;
+  }
+
+  .landing-faq-item.is-open .landing-faq-chev {
+    transform: rotate(-90deg);
+    color: #d97706;
+  }
+
+  .landing-faq-a-wrap {
+    overflow: hidden;
+  }
+
   .landing-faq-a {
-    @apply px-4 pb-5 pt-1 sm:px-5 sm:pb-6 text-[14px] sm:text-[15px] leading-relaxed text-slate-600;
-    padding-right: calc(1rem + 36px + 12px);
+    @apply px-4 pb-5 pt-1 sm:px-5 sm:pb-6 text-[14px] sm:text-[15px] leading-relaxed;
+    color: #1f4a3a;
+    padding-right: calc(1rem + 40px + 12px);
   }
 
   @media (min-width: 640px) {
     .landing-faq-a {
-      padding-right: calc(1.25rem + 36px + 12px);
+      padding-right: calc(1.25rem + 40px + 12px);
     }
   }
 
   /* Footer */
   .landing-footer {
-    @apply py-8 text-center border-t border-slate-100 bg-white;
+    @apply py-8 text-center;
+    background: linear-gradient(180deg, rgba(167, 243, 208, 0.45), rgba(110, 231, 183, 0.3));
+    border-top: 1px solid rgba(16, 185, 129, 0.25);
   }
 
   .landing-footer p {
-    @apply text-xs text-slate-400;
+    @apply text-xs font-semibold;
+    color: #14543d;
   }
 
   .onboarding-wave-hand {
