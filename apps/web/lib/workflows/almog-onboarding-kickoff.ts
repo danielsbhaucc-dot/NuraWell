@@ -23,7 +23,12 @@ type ProfileRow = {
 
 export type KickoffEligibility =
   | { ok: true; deferUntilIso: string | null; stepId: string; phase: string }
-  | { ok: false; reason: string };
+  | {
+      ok: false;
+      reason: string;
+      /** אם הסיבה היא הבטחה פעילה ("אמשיך מחר") — הזמן שאליו צריך לחכות. */
+      followUpCheckAt?: string;
+    };
 
 function israelHourNow(now: Date = new Date()): number {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -110,7 +115,11 @@ export async function checkKickoffEligibility(
    */
   const followUp = readJourneyFollowUp(rawCtx as AiUserContext);
   if (followUp && !isJourneyFollowUpDue(followUp)) {
-    return { ok: false, reason: 'journey_follow_up_pending' };
+    return {
+      ok: false,
+      reason: 'journey_follow_up_pending',
+      followUpCheckAt: followUp.check_at,
+    };
   }
 
   const companion = await fetchJourneyCompanionContext(admin, userId);
