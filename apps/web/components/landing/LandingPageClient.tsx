@@ -5,14 +5,19 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
+  Apple,
   Bell,
   BookOpen,
   CheckCircle2,
   ChevronLeft,
+  Compass,
+  Flame,
   Heart,
+  Leaf,
   Route,
   Sparkles,
   Sun,
+  Trophy,
   Users,
 } from 'lucide-react';
 import { NuraWellLogo } from '@/components/shared/NuraWellLogo';
@@ -79,6 +84,8 @@ export function LandingPageClient() {
           />
           <motion.div className="landing-hero-overlay" />
           <motion.div className="landing-hero-glow" />
+          <motion.div className="landing-hero-orb landing-hero-orb-1" aria-hidden />
+          <motion.div className="landing-hero-orb landing-hero-orb-2" aria-hidden />
         </motion.div>
 
         <header className="landing-nav safe-area-top">
@@ -103,22 +110,22 @@ export function LandingPageClient() {
         >
           <p className="landing-hero-kicker">
             <Sparkles className="w-4 h-4" aria-hidden />
-            NuraWell — ליווי אישי לחיים בריאים
+            NuraWell — ליווי AI אישי לחיים בריאים
           </p>
 
           <h1 className="landing-hero-title">
-            <span className="landing-hero-title-accent">הדרך החכמה</span>
-            <span className="landing-hero-title-main">לחיים בריאים</span>
+            <span className="landing-hero-title-accent">תפסיקו לספור.</span>
+            <span className="landing-hero-title-main">תתחילו לחיות.</span>
           </h1>
 
           <p className="landing-hero-lead">
-            מסע מובנה, קורסים מקצועיים ומנטור AI שמכיר אתכם —
-            <strong> בלי דיאטה, בלי ספירת קלוריות, בלי הרעבה.</strong>
+            המסע שישנה לכם את היחס לאוכל, לגוף ולעצמכם.
+            <strong> מנטור AI אישי, קורסים מקצועיים והרגלים שדבקים — חינם להתחיל.</strong>
           </p>
 
           <div className="landing-hero-cta">
             <Link href="/register" className="landing-btn-primary">
-              התחילו את המסע — חינם
+              התחילו עכשיו — חינם
               <ChevronLeft className="w-5 h-5" aria-hidden />
             </Link>
             <Link href="/login" className="landing-btn-ghost">
@@ -148,10 +155,61 @@ export function LandingPageClient() {
       </section>
 
       <main id="main-content">
-        {/* ─── פילוסופיה ─── */}
-        <section className="landing-section landing-section-white" aria-labelledby="philosophy-heading">
+        {/* ─── סטטיסטיקות / SOCIAL PROOF ─── */}
+        <section className="landing-stats-strip" aria-label="נתוני אמון">
           <div className="landing-wrap">
-            <div className="landing-section-head">
+            <ul className="landing-stats-grid">
+              {[
+                {
+                  icon: Users,
+                  value: '+1,200',
+                  label: 'משתמשים בדרך',
+                  tone: 'emerald',
+                },
+                {
+                  icon: Flame,
+                  value: '94%',
+                  label: 'נשארים שבוע ראשון',
+                  tone: 'orange',
+                },
+                {
+                  icon: Trophy,
+                  value: '4.9★',
+                  label: 'דירוג ממוצע',
+                  tone: 'amber',
+                },
+                {
+                  icon: Heart,
+                  value: '100%',
+                  label: 'בעברית, בלי דיאטה',
+                  tone: 'rose',
+                },
+              ].map((s, i) => (
+                <motion.li
+                  key={s.label}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ delay: i * 0.06, duration: 0.4, ease }}
+                  className={`landing-stat landing-stat-${s.tone}`}
+                >
+                  <span className="landing-stat-icon">
+                    <s.icon aria-hidden />
+                  </span>
+                  <div className="landing-stat-text">
+                    <strong className="landing-stat-value">{s.value}</strong>
+                    <span className="landing-stat-label">{s.label}</span>
+                  </div>
+                </motion.li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* ─── פילוסופיה ─── */}
+        <section className="landing-section landing-section-soft" aria-labelledby="philosophy-heading">
+          <div className="landing-wrap">
+            <div className="landing-section-head landing-section-head-center">
               <SectionEyebrow>למה אנחנו שונים</SectionEyebrow>
               <SectionTitle
                 id="philosophy-heading"
@@ -163,26 +221,35 @@ export function LandingPageClient() {
             <div className="landing-philosophy-grid">
               {[
                 {
+                  icon: Apple,
                   title: 'אוכלים בטעם',
                   text: 'בלי מספרים, בלי אשמה. לומדים לבחור טוב — לא לספור כל ביס.',
+                  tone: 'emerald',
                 },
                 {
+                  icon: Leaf,
                   title: 'בונים הרגלים',
                   text: 'צעדים קטנים שמתחברים לשגרה. משימות יומיות עם עידוד, לא עונש.',
+                  tone: 'teal',
                 },
                 {
+                  icon: Compass,
                   title: 'מלווים באמת',
                   text: 'דולב בקליטה, אלמוג במסע — AI שמדבר אליכם, לא אלגוריתם קר.',
+                  tone: 'amber',
                 },
               ].map((item, i) => (
                 <motion.article
                   key={item.title}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-40px' }}
-                  transition={{ delay: i * 0.08, duration: 0.45, ease }}
-                  className="landing-card landing-card-elevated"
+                  transition={{ delay: i * 0.08, duration: 0.5, ease }}
+                  className={`landing-philosophy-card landing-tone-${item.tone}`}
                 >
+                  <span className="landing-philosophy-icon">
+                    <item.icon aria-hidden />
+                  </span>
                   <h3 className="landing-card-title">{item.title}</h3>
                   <p className="landing-card-text">{item.text}</p>
                 </motion.article>
@@ -210,6 +277,10 @@ export function LandingPageClient() {
                     sizes="(max-width: 768px) 100vw, 45vw"
                     className="object-cover"
                   />
+                  <div className="landing-image-badge">
+                    <Sparkles className="w-4 h-4" aria-hidden />
+                    מסע מותאם אישית
+                  </div>
                 </div>
               </motion.div>
 
@@ -222,7 +293,7 @@ export function LandingPageClient() {
               >
                 <SectionEyebrow>המסע שלכם</SectionEyebrow>
                 <h2 id="journey-heading" className="landing-h2">
-                  שלבים, תחנות והתקדמות אמיתית
+                  שלבים, תחנות והתקדמות <span className="landing-text-gradient">אמיתית</span>
                 </h2>
                 <p className="landing-body">
                   מסלול מובנה שמתקדם איתכם — לא רשימת מטלות. רואים איפה עמדתם, מה הצעד הבא,
@@ -257,13 +328,13 @@ export function LandingPageClient() {
 
             <div className="landing-bento">
               <motion.article
-                className="landing-bento-featured landing-card-glass"
+                className="landing-bento-featured landing-card-glass-gradient"
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, ease }}
               >
-                <span className="landing-bento-icon landing-bento-icon-lg">
+                <span className="landing-bento-icon landing-bento-icon-lg landing-tone-emerald">
                   <Sparkles aria-hidden />
                 </span>
                 <h3 className="landing-card-title text-lg">אלמוג — מנטור AI אישי</h3>
@@ -271,13 +342,14 @@ export function LandingPageClient() {
                   לומד את הקצב, המטרות והאתגרים שלכם. עידוד, הכוונה ותגובות בזמן אמת — כשזה
                   באמת רלוונטי.
                 </p>
+                <span className="landing-bento-shine" aria-hidden />
               </motion.article>
 
               {[
-                { icon: BookOpen, title: 'קורסים ושיעורים', text: 'וידאו, אודיו וטקסט מקצועי בעברית.' },
-                { icon: Sun, title: 'הרגלים יומיים', text: 'בניית שגרה בריאה בצעדים קטנים.' },
-                { icon: Bell, title: 'תזכורות חכמות', text: 'מגעים עדינים לפני הרגעים הקשים.' },
-                { icon: Route, title: 'מסע מובנה', text: 'תחנות, שלבים ומשימות שמתקדמים איתכם.' },
+                { icon: BookOpen, title: 'קורסים ושיעורים', text: 'וידאו, אודיו וטקסט מקצועי בעברית.', tone: 'teal' },
+                { icon: Sun, title: 'הרגלים יומיים', text: 'בניית שגרה בריאה בצעדים קטנים.', tone: 'amber' },
+                { icon: Bell, title: 'תזכורות חכמות', text: 'מגעים עדינים לפני הרגעים הקשים.', tone: 'rose' },
+                { icon: Route, title: 'מסע מובנה', text: 'תחנות, שלבים ומשימות שמתקדמים איתכם.', tone: 'orange' },
               ].map((f, i) => (
                 <motion.article
                   key={f.title}
@@ -287,7 +359,7 @@ export function LandingPageClient() {
                   viewport={{ once: true }}
                   transition={{ delay: 0.05 + i * 0.06, duration: 0.4, ease }}
                 >
-                  <span className="landing-bento-icon">
+                  <span className={`landing-bento-icon landing-tone-${f.tone}`}>
                     <f.icon aria-hidden />
                   </span>
                   <h3 className="landing-card-title">{f.title}</h3>
@@ -311,12 +383,20 @@ export function LandingPageClient() {
               >
                 <SectionEyebrow>תנועה ואנרגיה</SectionEyebrow>
                 <h2 id="lifestyle-heading" className="landing-h2">
-                  להרגיש טוב — לא רק להיראות טוב
+                  להרגיש טוב — <span className="landing-text-gradient">לא רק להיראות טוב</span>
                 </h2>
                 <p className="landing-body">
                   שינוי שמתחיל מהראש ומהלב. קורסים, תוכן ומשימות שמחברים בין גוף, תזונה
                   ושגרה — בלי לחץ ובלי אשמה.
                 </p>
+                <ul className="landing-checklist">
+                  {['אנרגיה לאורך כל היום', 'שינה איכותית באמת', 'יחס בריא יותר לאוכל'].map((t) => (
+                    <li key={t}>
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" aria-hidden />
+                      {t}
+                    </li>
+                  ))}
+                </ul>
               </motion.div>
 
               <motion.div
@@ -334,6 +414,10 @@ export function LandingPageClient() {
                     sizes="(max-width: 768px) 100vw, 45vw"
                     className="object-cover"
                   />
+                  <div className="landing-image-badge landing-image-badge-warm">
+                    <Flame className="w-4 h-4" aria-hidden />
+                    אנרגיה לכל היום
+                  </div>
                 </div>
               </motion.div>
             </div>
@@ -401,21 +485,24 @@ export function LandingPageClient() {
                   n: '01',
                   title: 'הרשמה קצרה',
                   text: 'דולב מכיר אתכם — שאלון זריז, בלי שיפוט.',
+                  tone: 'emerald',
                 },
                 {
                   n: '02',
                   title: 'מסע מותאם',
                   text: 'קורסים, שלבים והרגלים סביב החיים שלכם.',
+                  tone: 'teal',
                 },
                 {
                   n: '03',
                   title: 'ליווי יומיומי',
                   text: 'אלמוג לצדכם — משימות, עידוד והכוונה.',
+                  tone: 'amber',
                 },
               ].map((step, i) => (
                 <motion.li
                   key={step.n}
-                  className="landing-step"
+                  className={`landing-step landing-tone-${step.tone}`}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -432,6 +519,11 @@ export function LandingPageClient() {
 
         {/* ─── CTA ─── */}
         <section className="landing-section landing-cta-band" aria-label="הצטרפות">
+          <div className="landing-cta-orbs" aria-hidden>
+            <span className="landing-cta-orb landing-cta-orb-1" />
+            <span className="landing-cta-orb landing-cta-orb-2" />
+            <span className="landing-cta-orb landing-cta-orb-3" />
+          </div>
           <div className="landing-wrap landing-cta-inner">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -439,10 +531,16 @@ export function LandingPageClient() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, ease }}
             >
-              <Users className="w-10 h-10 text-emerald-200 mx-auto mb-4" aria-hidden />
-              <h2 className="landing-cta-title">מוכנים להרגיש טוב בגוף ובנפש?</h2>
+              <span className="landing-cta-badge">
+                <Sparkles className="w-4 h-4" aria-hidden />
+                חינם להתחיל — בלי כרטיס אשראי
+              </span>
+              <h2 className="landing-cta-title">
+                החיים הבריאים שלכם <br className="hidden sm:block" />
+                <span className="landing-cta-title-accent">מתחילים היום</span>
+              </h2>
               <p className="landing-cta-text">
-                הצטרפו עכשיו — גישה למסע, לקורסים ולמנטור AI. בלי התחייבות, בלי דיאטה.
+                הצטרפו עכשיו וקבלו גישה מלאה למסע, לקורסים ולמנטור AI. בלי התחייבות, בלי דיאטה.
               </p>
               <div className="landing-cta-actions">
                 <Link href="/register" className="landing-btn-primary landing-btn-primary-lg">
