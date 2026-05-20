@@ -754,8 +754,8 @@ html {
   }
 
   .landing-card-glass-dark {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(15, 23, 42, 0.34);
+    border: 1px solid rgba(209, 250, 229, 0.24);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
   }
@@ -912,7 +912,7 @@ html {
   }
 
   .landing-stat-emerald { --stat-from: #059669; --stat-to: #34d399; --stat-shadow: rgba(16, 185, 129, 0.4); }
-  .landing-stat-orange  { --stat-from: #ea580c; --stat-to: #fb923c; --stat-shadow: rgba(249, 115, 22, 0.35); }
+  .landing-stat-mint    { --stat-from: #0d9488; --stat-to: #5eead4; --stat-shadow: rgba(20, 184, 166, 0.35); }
   .landing-stat-sky     { --stat-from: #0891b2; --stat-to: #22d3ee; --stat-shadow: rgba(8, 145, 178, 0.35); }
   .landing-stat-rose    { --stat-from: #e11d48; --stat-to: #fb7185; --stat-shadow: rgba(244, 63, 94, 0.35); }
 
@@ -1149,7 +1149,7 @@ html {
   .landing-tone-teal    { --tone-from: #0d9488; --tone-to: #2dd4bf; --tone-soft: rgba(20, 184, 166, 0.12); --tone-border: rgba(20, 184, 166, 0.25); --tone-shadow: rgba(20, 184, 166, 0.28); }
   .landing-tone-sky     { --tone-from: #0891b2; --tone-to: #22d3ee; --tone-soft: rgba(8, 145, 178, 0.12); --tone-border: rgba(8, 145, 178, 0.28); --tone-shadow: rgba(8, 145, 178, 0.3); }
   .landing-tone-rose    { --tone-from: #e11d48; --tone-to: #fb7185; --tone-soft: rgba(244, 63, 94, 0.1);  --tone-border: rgba(244, 63, 94, 0.22);  --tone-shadow: rgba(244, 63, 94, 0.25); }
-  .landing-tone-orange  { --tone-from: #ea580c; --tone-to: #fb923c; --tone-soft: rgba(249, 115, 22, 0.1); --tone-border: rgba(249, 115, 22, 0.22); --tone-shadow: rgba(249, 115, 22, 0.25); }
+  .landing-tone-mint    { --tone-from: #0d9488; --tone-to: #5eead4; --tone-soft: rgba(20, 184, 166, 0.12); --tone-border: rgba(20, 184, 166, 0.28); --tone-shadow: rgba(20, 184, 166, 0.3); }
 
   /* ---- Philosophy cards (colorful glass) ---- */
   .landing-philosophy-card {
@@ -1882,7 +1882,7 @@ html {
         #6ee7b7,
         #34d399,
         #22d3ee,
-        #fb923c,
+        #5eead4,
         #fb7185
       );
       opacity: 0.85;

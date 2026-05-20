@@ -303,7 +303,7 @@ export function LandingPageClient() {
                   icon: Flame,
                   value: '94%',
                   label: 'מרגישים שינוי בשבוע הראשון',
-                  tone: 'orange',
+                  tone: 'mint',
                 },
                 {
                   icon: Trophy,
@@ -478,7 +478,7 @@ export function LandingPageClient() {
                   icon: Zap,
                   title: 'אנרגיה ושינה',
                   text: 'לא רק מה שבצלחת — גם איך ישנים, מתנועעים ומרגישים לאורך היום.',
-                  tone: 'orange',
+                  tone: 'mint',
                 },
                 {
                   icon: Compass,
@@ -724,7 +724,7 @@ export function LandingPageClient() {
                 { icon: BookOpen, title: 'קורסים ושיעורים', text: 'וידאו, אודיו וטקסט מקצועי בעברית.', tone: 'teal' },
                 { icon: Sun, title: 'הרגלים יומיים', text: 'בניית שגרה בריאה בצעדים קטנים.', tone: 'sky' },
                 { icon: Bell, title: 'תזכורות חכמות', text: 'מגעים עדינים לפני הרגעים הקשים.', tone: 'rose' },
-                { icon: Route, title: 'מסע מובנה', text: 'תחנות, שלבים ומשימות שמתקדמים איתכם.', tone: 'orange' },
+                { icon: Route, title: 'מסע מובנה', text: 'תחנות, שלבים ומשימות שמתקדמים איתכם.', tone: 'mint' },
               ].map((f, i) => (
                 <motion.article
                   key={f.title}
@@ -864,7 +864,7 @@ export function LandingPageClient() {
                   icon: Zap,
                   title: 'הגוף מגיב',
                   text: 'יותר אנרגיה, שינה טובה יותר, תחושה אחרת — לא רק מספר על המשקל.',
-                  tone: 'orange',
+                  tone: 'mint',
                 },
                 {
                   day: 'יום 365',
