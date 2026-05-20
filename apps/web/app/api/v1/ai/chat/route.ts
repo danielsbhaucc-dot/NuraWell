@@ -6,6 +6,7 @@ import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction
 import { embedTextForRag } from '../../../../../lib/ai/openrouter-embeddings';
 import { formatRagMemoryContextBlock } from '../../../../../lib/ai/format-rag-context';
 import {
+  ALMOG_CHAT_FINAL_GUARDRAILS,
   ALMOG_HABIT_CHECKPOINT_RULES,
   ALMOG_STATION_PROGRESSIVE_RULES,
   NURAWELL_CHAT_SYSTEM_PROMPT,
@@ -982,6 +983,15 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join('\n');
 
+    /**
+     * סדר סופי של הפרומפט:
+     *   1. BASE (Voice DNA + few-shot + interaction + focus + journey-rules + priority)
+     *   2. בלוקי הקשר רלוונטיים בלבד
+     *   3. פנייה אישית (שם + מגדר)
+     *   4. ALMOG_CHAT_FINAL_GUARDRAILS — checklist 6-שורות שהמודל "רץ עליו"
+     *      לפני שהוא יוצר את התשובה. עם reasoningEffort=medium זה הסל-ביטחון
+     *      הכי אפקטיבי לחוקים שעלולים להתפספס כשהפרומפט גדל.
+     */
     const systemPromptWithMemory = [
       BASE_SYSTEM_PROMPT,
       '',
@@ -991,7 +1001,7 @@ export async function POST(request: Request) {
       '— פנייה אישית —',
       addressingFooter,
       '',
-      'תזכורת: הקטעים שלמעלה הם הקשר ונתונים. דבר בקול של אלמוג מהדוגמאות, לא בקול של מערכת. עדיפות לסטטוס ✓/○ הנוכחי על פני זיכרון ישן.',
+      ALMOG_CHAT_FINAL_GUARDRAILS,
     ]
       .filter((s) => s !== null && s !== undefined)
       .join('\n');
