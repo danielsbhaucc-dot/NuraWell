@@ -172,9 +172,11 @@ html {
     @apply w-full max-w-xl mx-auto px-5 sm:max-w-2xl sm:px-6 md:max-w-4xl lg:max-w-5xl;
   }
 
-  /* Hero — full bleed */
+  /* Hero — full bleed (mobile-first) */
   .landing-hero {
-    @apply relative flex flex-col min-h-[100dvh] min-h-[100svh] overflow-hidden;
+    @apply relative flex flex-col overflow-hidden;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .landing-hero-media {
@@ -185,9 +187,28 @@ html {
     @apply absolute inset-0;
     background: linear-gradient(
       180deg,
-      rgba(2, 44, 34, 0.55) 0%,
-      rgba(4, 47, 46, 0.72) 38%,
-      rgba(15, 23, 42, 0.92) 100%
+      rgba(2, 44, 34, 0.5) 0%,
+      rgba(4, 47, 46, 0.7) 38%,
+      rgba(4, 78, 59, 0.92) 100%
+    );
+  }
+
+  /* Smooth fade to next section */
+  .landing-hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 140px;
+    pointer-events: none;
+    z-index: 2;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(4, 78, 59, 0.5) 35%,
+      rgba(6, 95, 70, 0.92) 75%,
+      #047857 100%
     );
   }
 
@@ -252,7 +273,7 @@ html {
   }
 
   .landing-hero-content {
-    @apply relative z-10 flex flex-col justify-end flex-1 px-5 pb-10 pt-6 max-w-xl mx-auto w-full;
+    @apply relative z-10 flex flex-col justify-end flex-1 px-5 pb-14 sm:pb-16 pt-6 max-w-xl mx-auto w-full;
   }
 
   .landing-hero-kicker {
@@ -386,24 +407,32 @@ html {
     background: rgba(255, 255, 255, 0.1);
   }
 
-  /* Sections */
+  /* Sections (mobile-first) */
   .landing-section {
-    @apply py-14 sm:py-20;
+    @apply relative py-12 sm:py-20 overflow-hidden;
   }
 
   .landing-section-white {
-    @apply bg-white;
+    background:
+      radial-gradient(ellipse 60% 50% at 15% 10%, rgba(110, 231, 183, 0.18), transparent 55%),
+      radial-gradient(ellipse 50% 60% at 90% 90%, rgba(45, 212, 191, 0.16), transparent 55%),
+      radial-gradient(ellipse 40% 50% at 50% 50%, rgba(251, 191, 36, 0.06), transparent 65%),
+      linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdfa 100%);
   }
 
   .landing-section-muted {
-    background: linear-gradient(180deg, #f8faf9 0%, #f0fdf4 100%);
+    background:
+      radial-gradient(ellipse at top right, rgba(110, 231, 183, 0.22), transparent 60%),
+      radial-gradient(ellipse at bottom left, rgba(45, 212, 191, 0.15), transparent 55%),
+      linear-gradient(180deg, #ecfdf5 0%, #f0fdfa 100%);
   }
 
   .landing-section-soft {
     background:
-      radial-gradient(ellipse at top right, rgba(252, 211, 77, 0.08), transparent 55%),
-      radial-gradient(ellipse at bottom left, rgba(45, 212, 191, 0.1), transparent 55%),
-      linear-gradient(180deg, #ffffff 0%, #fafffd 100%);
+      radial-gradient(ellipse 50% 60% at 90% 0%, rgba(252, 211, 77, 0.18), transparent 55%),
+      radial-gradient(ellipse 60% 50% at 10% 100%, rgba(45, 212, 191, 0.2), transparent 55%),
+      radial-gradient(ellipse 50% 40% at 50% 50%, rgba(110, 231, 183, 0.12), transparent 65%),
+      linear-gradient(180deg, #ecfdf5 0%, #f0fdfa 50%, #ecfdf5 100%);
   }
 
   .landing-section-dark {
@@ -417,8 +446,9 @@ html {
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(ellipse 50% 40% at 80% 20%, rgba(16, 185, 129, 0.18), transparent 60%),
-      radial-gradient(ellipse 60% 50% at 20% 80%, rgba(20, 184, 166, 0.14), transparent 60%);
+      radial-gradient(ellipse 50% 40% at 80% 20%, rgba(16, 185, 129, 0.28), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 20% 80%, rgba(20, 184, 166, 0.22), transparent 60%),
+      radial-gradient(ellipse 30% 30% at 60% 60%, rgba(251, 191, 36, 0.1), transparent 65%);
     pointer-events: none;
   }
 
@@ -475,14 +505,24 @@ html {
   }
 
   .landing-card-elevated {
-    @apply bg-white border border-slate-100;
-    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow:
+      0 12px 36px -10px rgba(4, 120, 87, 0.18),
+      0 2px 6px rgba(15, 23, 42, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
   .landing-card-glass {
-    @apply border border-emerald-100/80;
-    background: linear-gradient(145deg, rgba(236, 253, 245, 0.9) 0%, rgba(255, 255, 255, 0.95) 100%);
-    box-shadow: 0 8px 32px rgba(4, 120, 87, 0.1);
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+      0 12px 36px -10px rgba(4, 120, 87, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
   }
 
   .landing-card-glass-dark {
@@ -548,18 +588,37 @@ html {
 
   /* ---- Stats Strip (social proof) ---- */
   .landing-stats-strip {
-    @apply relative -mt-10 sm:-mt-14 z-20;
+    @apply relative py-10 sm:py-14 overflow-hidden;
+    background:
+      radial-gradient(ellipse 60% 80% at 50% 0%, rgba(110, 231, 183, 0.18), transparent 60%),
+      radial-gradient(ellipse 40% 60% at 90% 100%, rgba(251, 191, 36, 0.12), transparent 65%),
+      radial-gradient(ellipse 40% 60% at 10% 100%, rgba(45, 212, 191, 0.18), transparent 65%),
+      linear-gradient(180deg, #047857 0%, #059669 50%, #0d9488 100%);
+  }
+
+  .landing-stats-strip::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(180deg, #047857 0%, transparent 100%);
+    pointer-events: none;
   }
 
   .landing-stats-grid {
-    @apply grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 list-none p-0 m-0;
+    @apply relative z-10 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 list-none p-0 m-0;
   }
 
   .landing-stat {
-    @apply relative flex items-center gap-3 p-4 sm:p-5 rounded-2xl bg-white;
-    border: 1px solid rgba(15, 23, 42, 0.05);
-    box-shadow: 0 12px 40px -10px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.04);
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    @apply relative flex items-center gap-3 p-3.5 sm:p-5 rounded-2xl overflow-hidden;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.25);
+    transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
   }
 
   .landing-stat::before {
@@ -569,20 +628,20 @@ html {
     right: 0;
     left: 0;
     height: 3px;
-    border-radius: 2px 2px 0 0;
-    background: linear-gradient(90deg, var(--stat-from, #10b981), var(--stat-to, #34d399));
+    background: linear-gradient(90deg, var(--stat-from, #6ee7b7), var(--stat-to, #fbbf24));
   }
 
   .landing-stat:hover {
     transform: translateY(-3px);
-    box-shadow: 0 18px 48px -12px rgba(15, 23, 42, 0.22), 0 4px 10px rgba(15, 23, 42, 0.05);
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.35);
   }
 
   .landing-stat-icon {
-    @apply flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl shrink-0;
+    @apply flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl shrink-0;
     background: linear-gradient(135deg, var(--stat-from, #10b981), var(--stat-to, #34d399));
     color: white;
-    box-shadow: 0 6px 18px -4px var(--stat-shadow, rgba(16, 185, 129, 0.4));
+    box-shadow: 0 6px 18px -4px var(--stat-shadow, rgba(0, 0, 0, 0.25));
   }
 
   .landing-stat-icon svg {
@@ -590,16 +649,18 @@ html {
   }
 
   .landing-stat-text {
-    @apply flex flex-col leading-tight;
+    @apply flex flex-col leading-tight min-w-0;
   }
 
   .landing-stat-value {
     font-family: 'Rubik', 'Heebo', sans-serif;
-    @apply text-lg sm:text-xl font-black text-slate-900;
+    @apply text-lg sm:text-2xl font-black text-white;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
 
   .landing-stat-label {
-    @apply text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5;
+    @apply text-[11px] sm:text-xs font-medium mt-0.5;
+    color: rgba(236, 253, 245, 0.85);
   }
 
   .landing-stat-emerald { --stat-from: #059669; --stat-to: #34d399; --stat-shadow: rgba(16, 185, 129, 0.4); }
@@ -614,11 +675,17 @@ html {
   .landing-tone-rose    { --tone-from: #e11d48; --tone-to: #fb7185; --tone-soft: rgba(244, 63, 94, 0.1);  --tone-border: rgba(244, 63, 94, 0.22);  --tone-shadow: rgba(244, 63, 94, 0.25); }
   .landing-tone-orange  { --tone-from: #ea580c; --tone-to: #fb923c; --tone-soft: rgba(249, 115, 22, 0.1); --tone-border: rgba(249, 115, 22, 0.22); --tone-shadow: rgba(249, 115, 22, 0.25); }
 
-  /* ---- Philosophy cards (colorful) ---- */
+  /* ---- Philosophy cards (colorful glass) ---- */
   .landing-philosophy-card {
-    @apply relative rounded-3xl p-6 sm:p-7 bg-white overflow-hidden;
+    @apply relative rounded-3xl p-6 sm:p-7 overflow-hidden;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--tone-border);
-    box-shadow: 0 12px 36px -12px var(--tone-shadow), 0 2px 6px rgba(15, 23, 42, 0.04);
+    box-shadow:
+      0 12px 36px -12px var(--tone-shadow),
+      0 2px 6px rgba(15, 23, 42, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
@@ -763,9 +830,14 @@ html {
   }
 
   .landing-step {
-    @apply relative rounded-3xl p-6 sm:p-7 bg-white text-center;
-    border: 1px solid var(--tone-border, rgba(16, 185, 129, 0.2));
-    box-shadow: 0 10px 30px -10px var(--tone-shadow, rgba(16, 185, 129, 0.25));
+    @apply relative rounded-3xl p-6 sm:p-7 text-center overflow-hidden;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--tone-border, rgba(16, 185, 129, 0.25));
+    box-shadow:
+      0 12px 32px -10px var(--tone-shadow, rgba(16, 185, 129, 0.28)),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
     z-index: 1;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
@@ -880,9 +952,10 @@ html {
   /* ---- Contrast section (instead → you get) ---- */
   .landing-contrast {
     background:
-      radial-gradient(ellipse at top right, rgba(244, 63, 94, 0.06), transparent 55%),
-      radial-gradient(ellipse at bottom left, rgba(16, 185, 129, 0.08), transparent 55%),
-      linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+      radial-gradient(ellipse 50% 50% at 90% 10%, rgba(244, 63, 94, 0.14), transparent 55%),
+      radial-gradient(ellipse 50% 60% at 10% 90%, rgba(16, 185, 129, 0.22), transparent 55%),
+      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(251, 191, 36, 0.08), transparent 65%),
+      linear-gradient(180deg, #fef2f2 0%, #f0fdf4 50%, #ecfdf5 100%);
   }
 
   .landing-contrast-list {
@@ -890,10 +963,15 @@ html {
   }
 
   .landing-contrast-row {
-    @apply relative grid items-stretch gap-2 sm:gap-3 rounded-3xl bg-white p-3 sm:p-4;
+    @apply relative grid items-stretch gap-2.5 sm:gap-3 rounded-3xl p-3 sm:p-4;
     grid-template-columns: 1fr auto 1fr;
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    box-shadow: 0 8px 28px -10px rgba(15, 23, 42, 0.1);
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+      0 10px 32px -10px rgba(15, 23, 42, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
     transition: transform 0.25s ease, box-shadow 0.25s ease;
   }
 
@@ -973,8 +1051,9 @@ html {
       grid-template-columns: 1fr;
     }
     .landing-contrast-arrow {
-      @apply justify-self-center;
-      transform: rotate(-90deg);
+      @apply justify-self-center py-1;
+      transform: rotate(90deg);
+      opacity: 0.7;
     }
   }
 
@@ -1072,15 +1151,22 @@ html {
 
   .landing-faq-item {
     @apply rounded-2xl overflow-hidden;
-    background: #ffffff;
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    box-shadow: 0 6px 20px -8px rgba(15, 23, 42, 0.08);
-    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+      0 8px 24px -8px rgba(4, 120, 87, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
   }
 
   .landing-faq-item[open] {
-    border-color: rgba(16, 185, 129, 0.3);
-    box-shadow: 0 12px 28px -10px rgba(16, 185, 129, 0.2);
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(16, 185, 129, 0.35);
+    box-shadow:
+      0 14px 32px -10px rgba(16, 185, 129, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
   .landing-faq-q {
