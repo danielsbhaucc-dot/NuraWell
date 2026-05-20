@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { Drawer } from 'vaul';
 import { useRouter } from 'next/navigation';
-import { ClipboardCheck, ChevronLeft, UserX } from 'lucide-react';
+import { ClipboardCheck, ChevronLeft, History, UserX } from 'lucide-react';
 import { useProgressReport } from '../progress-report/ProgressReportProvider';
 import {
   countTaskStatusesByReport,
@@ -68,6 +68,11 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
   const openDeclined = useCallback(() => {
     close();
     router.push('/journey/declined');
+  }, [close, router]);
+
+  const openHistory = useCallback(() => {
+    close();
+    router.push('/journey/history');
   }, [close, router]);
 
   const value: ActionHubContextValue = {
@@ -154,6 +159,42 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
                     </p>
                   </div>
                   <ChevronLeft className="h-5 w-5 text-emerald-800/35 shrink-0" aria-hidden />
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={openHistory}
+                className="w-full text-right rounded-[22px] p-[1px] transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(56,189,248,0.4), rgba(167,243,208,0.35), rgba(255,255,255,0.6))',
+                  boxShadow: '0 12px 36px rgba(14,116,144,0.08)',
+                }}
+              >
+                <div
+                  className="flex items-center gap-4 rounded-[21px] px-4 py-4 flex-row-reverse"
+                  style={{
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.76) 0%, rgba(240,249,255,0.45) 100%)',
+                    border: '1px solid rgba(255,255,255,0.65)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.88)',
+                  }}
+                >
+                  <div
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
+                    style={{
+                      background: 'linear-gradient(145deg, #0369a1, #38bdf8)',
+                      boxShadow: '0 8px 22px rgba(3,105,161,0.22), inset 0 1px 0 rgba(255,255,255,0.2)',
+                    }}
+                  >
+                    <History className="h-7 w-7 text-white" strokeWidth={2.2} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-black text-[15px] text-[#1A1730] leading-snug">היסטוריית משימות</p>
+                    <p className="text-[12px] text-sky-900/75 font-semibold mt-1 leading-relaxed">
+                      כל הביצועים לפי תאריך וסלוט — 60 יום אחרונים
+                    </p>
+                  </div>
+                  <ChevronLeft className="h-5 w-5 text-sky-800/35 shrink-0" aria-hidden />
                 </div>
               </button>
 

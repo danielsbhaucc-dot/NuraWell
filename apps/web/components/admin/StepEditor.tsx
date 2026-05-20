@@ -28,7 +28,15 @@ type JourneyStationOption = { id: string; title: string; sort_order: number };
 const emptyQuiz: QuizQuestion = { id: '', question: '', options: ['', '', '', ''], correct_index: 0, explanation: '' };
 const emptyGame: GameItem = { id: '', statement: '', is_true: true, explanation: '' };
 const emptyResearch: Research = { id: '', title: '', authors: '', year: '', journal: '', finding: '', url: null };
-const emptyTask: JourneyTask = { id: '', title: '', description: null, emoji: '✅' };
+const emptyTask: JourneyTask = {
+  id: '',
+  title: '',
+  description: null,
+  emoji: '✅',
+  schedule: 'one_time',
+  times_per_day: 1,
+  weekly_day: 0,
+};
 const emptyHabit: JourneyHabit = {
   id: '',
   title: '',
@@ -657,12 +665,27 @@ export function StepEditor({ step }: StepEditorProps) {
         {/* ═══ TASKS ═══ */}
         <Section title={`משימות (${tasks.length})`} icon={ListChecks} color="#f97316" sectionNumber={7} isVisible={activeSection === 'tasks'}>
           <div className="rounded-xl p-3 text-xs leading-relaxed" style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.18)', color: '#9a3412' }}>
-            כל משימה צריכה להיות פעולה ברורה שאפשר לסמן עליה &quot;מקובל/לא מקובל&quot; בסוף הצעד.
-            מומלץ 2-5 משימות קצרות ומעשיות.
+            כל משימה צריכה להיות פעולה ברורה. בנוסף ל-&quot;מקובל/לא מקובל&quot; בסיכום, אפשר לבחור תזמון:
             <br />
-            דוגמה: &quot;לשתות 2 כוסות מים לפני ארוחת ערב&quot;.
+            <strong>חד-פעמי</strong> = אישור פעם אחת · <strong>יומי</strong> = checkbox חדש כל יום · <strong>כמה פעמים ביום</strong> = סלוטים (בוקר/צהריים/ערב) ·
+            {' '}<strong>שבועי</strong> = פעם בשבוע · <strong>לפני כל ארוחה</strong> = מתואם לארוחות בפרופיל המשתמש.
+            <br />
+            דוגמה: &quot;לשתות 2 כוסות מים לפני ארוחת ערב&quot; → לפני כל ארוחה (3 פעמים).
           </div>
-          {tasks.map((t, ti) => (
+          {tasks.map((t, ti) => {
+            const schedule = t.schedule ?? 'one_time';
+            const tpdRaw = typeof t.times_per_day === 'number' ? t.times_per_day : null;
+            const tpdEffective =
+              schedule === 'multi_daily' || schedule === 'per_meal'
+                ? tpdRaw && tpdRaw >= 1 && tpdRaw <= 6
+                  ? tpdRaw
+                  : 3
+                : 1;
+            const wd =
+              typeof t.weekly_day === 'number' && t.weekly_day >= 0 && t.weekly_day <= 6
+                ? t.weekly_day
+                : 0;
+            return (
             <div key={t.id || ti} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(249,115,22,0.2)', background: 'rgba(255,255,255,0.75)' }}>
               <button
                 type="button"
@@ -687,12 +710,81 @@ export function StepEditor({ step }: StepEditorProps) {
                     <input value={t.description || ''} onChange={e => { const arr = [...tasks]; arr[ti] = { ...arr[ti], description: e.target.value || null }; setTasks(arr); }}
                       className="input-field" placeholder="לדוגמה: היום עד 20:00, 10 דקות הליכה" />
                   </Field>
+
+                  <Field label="תזמון">
+                    <select
+                      value={schedule}
+                      onChange={(e) => {
+                        const next = e.target.value as JourneyTask['schedule'];
+                        const arr = [...tasks];
+                        const nextTpd =
+                          next === 'multi_daily' || next === 'per_meal'
+                            ? tpdRaw && tpdRaw >= 1 && tpdRaw <= 6
+                              ? tpdRaw
+                              : 3
+                            : 1;
+                        arr[ti] = { ...arr[ti], schedule: next, times_per_day: nextTpd };
+                        setTasks(arr);
+                      }}
+                      className="input-field"
+                    >
+                      <option value="one_time">חד-פעמי (אישור פעם אחת)</option>
+                      <option value="daily">יומי (איפוס בכל בוקר)</option>
+                      <option value="multi_daily">כמה פעמים ביום</option>
+                      <option value="weekly">שבועי (יום קבוע)</option>
+                      <option value="per_meal">לפני כל ארוחה</option>
+                    </select>
+                  </Field>
+
+                  {(schedule === 'multi_daily' || schedule === 'per_meal') ? (
+                    <Field label={schedule === 'per_meal' ? 'כמה ארוחות (1-3)' : 'כמה פעמים ביום (1-6)'}>
+                      <select
+                        value={tpdEffective}
+                        onChange={(e) => {
+                          const arr = [...tasks];
+                          arr[ti] = { ...arr[ti], times_per_day: Number(e.target.value) };
+                          setTasks(arr);
+                        }}
+                        className="input-field"
+                      >
+                        {(schedule === 'per_meal' ? [1, 2, 3] : [2, 3, 4, 5, 6]).map((n) => (
+                          <option key={n} value={n}>
+                            {n} פעמים
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  ) : null}
+
+                  {schedule === 'weekly' ? (
+                    <Field label="יום בשבוע (לסימון השבועי)">
+                      <select
+                        value={wd}
+                        onChange={(e) => {
+                          const arr = [...tasks];
+                          arr[ti] = { ...arr[ti], weekly_day: Number(e.target.value) };
+                          setTasks(arr);
+                        }}
+                        className="input-field"
+                      >
+                        <option value={0}>ראשון</option>
+                        <option value={1}>שני</option>
+                        <option value={2}>שלישי</option>
+                        <option value={3}>רביעי</option>
+                        <option value={4}>חמישי</option>
+                        <option value={5}>שישי</option>
+                        <option value={6}>שבת</option>
+                      </select>
+                    </Field>
+                  ) : null}
+
                   <button onClick={() => setTasks(prev => prev.filter((_, i) => i !== ti))}
                     className="text-red-500 hover:text-red-700 text-sm font-semibold">מחק משימה</button>
                 </div>
               )}
             </div>
-          ))}
+          );
+          })}
           <AddButton label="הוסף משימה" onClick={() => setTasks(prev => [...prev, { ...emptyTask, id: genId() }])} />
         </Section>
 

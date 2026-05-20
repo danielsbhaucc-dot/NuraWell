@@ -97,7 +97,9 @@ export function formatJourneyChatGuidanceBlock(opts: {
     '[נתוני מסע — מקור אמת לביצוע היום]',
     'habits: ✓ = המשתמש כבר סימן ביצוע היום — אל תציע שוב, לא "נבדוק ביחד", לא תזכורת. אפשר חיזוק קצר במשפט.',
     'habits: ○ = לא סומן — שאלה רכה אחת או הצעה קטנה.',
-    'tasks: ✓ בוצע · ◐ בתהליך · ○ פתוח — דבר רק לפי הסטטוס.',
+    'tasks: ✓ בוצע היום · ◐ חלקי (למשל 1/3) · ○ פתוח — דבר רק לפי הסטטוס.',
+    'משימות יומיות/לפני-ארוחה מתאפסות מחר — ✓ היום לא אומר "סגור לנצח".',
+    'אם מופיע "היום X/Y" — שאל רק על הסלוטים שנשארו, לא על מה שכבר ✓.',
   ];
   if (opts.isGreeting) {
     lines.push(
@@ -113,6 +115,23 @@ export function formatWeightLoggedPromptBlock(kg: number): string {
 
 /** JSON קומפקטי למסע — פחות טוקנים ממערכים נפרדים. */
 export type CompactTaskState = 'open' | 'accepted_pending' | 'done' | 'rejected';
+
+export type JourneyTaskScheduleAi =
+  | 'one_time'
+  | 'daily'
+  | 'multi_daily'
+  | 'weekly'
+  | 'per_meal';
+
+export type TaskForAiContext = {
+  title: string;
+  state: CompactTaskState;
+  schedule?: JourneyTaskScheduleAi;
+  /** לדוגמה "2/3" — כמה סלוטים בוצעו היום */
+  slotsToday?: string;
+  /** סלוטים שכבר בוצעו היום — לדוגמה "בוקר, צהריים" */
+  completedSlotsLabel?: string;
+};
 
 export function buildCompactJourneyDataBlock(input: {
   stepTitle: string;
@@ -147,7 +166,7 @@ export function buildCompactJourneyDataBlock(input: {
  */
 export function formatJourneyContextAsHebrewText(input: {
   stepTitle: string;
-  tasks: Array<{ title: string; state: CompactTaskState }>;
+  tasks: TaskForAiContext[];
   habits: Array<{ title: string; doneToday: boolean }>;
 }): string | null {
   const { stepTitle, tasks, habits } = input;
@@ -175,10 +194,27 @@ export function formatJourneyContextAsHebrewText(input: {
     };
     lines.push('משימות הצעד:');
     for (const t of tasks) {
-      lines.push(`  ${prefix[t.state]} ${t.title}`);
+      let line = `  ${prefix[t.state]} ${t.title}`;
+      if (t.schedule && t.schedule !== 'one_time') {
+        const sched =
+          t.schedule === 'daily'
+            ? 'יומי'
+            : t.schedule === 'multi_daily'
+              ? 'כמה פעמים ביום'
+              : t.schedule === 'weekly'
+                ? 'שבועי'
+                : 'לפני ארוחה';
+        line += ` [${sched}`;
+        if (t.slotsToday) line += ` · היום ${t.slotsToday}`;
+        if (t.completedSlotsLabel) line += ` · בוצע: ${t.completedSlotsLabel}`;
+        line += ']';
+      }
+      lines.push(line);
     }
   }
 
-  lines.push('כללי: ✓ = בוצע היום (אל תציע שוב). ○ = פתוח (אפשר שאלה רכה). ◐ = בתהליך. ✗ = נדחה.');
+  lines.push(
+    'כללי: ✓ = בוצע היום (אל תציע שוב). ○ = פתוח (אפשר שאלה רכה). ◐ = בתהליך/חלקי. ✗ = נדחה. משימות יומיות מתאפסות מחר.'
+  );
   return lines.join('\n');
 }

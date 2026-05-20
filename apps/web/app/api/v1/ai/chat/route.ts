@@ -45,6 +45,7 @@ import {
   isCasualGreeting,
   shouldInjectBlockerSignal,
   type CompactTaskState,
+  type TaskForAiContext,
 } from '../../../../../lib/ai/chat-turn-context';
 import {
   applyTaskIntentFromUserMessage,
@@ -214,6 +215,23 @@ function buildCurrentIsraelTimeChatBlock(now = new Date()): string {
 const SYSTEM_PROMPT_LENGTH_WARN_CHARS = 4000;
 
 type TaskDecisionStatus = 'accepted' | 'rejected' | 'pending';
+type AiTaskSchedule = 'one_time' | 'daily' | 'multi_daily' | 'weekly' | 'per_meal';
+
+type ActiveJourneyTask = {
+  id: string;
+  title: string;
+  schedule: AiTaskSchedule;
+  times_per_day: number;
+  weekly_day: number;
+};
+
+type TodayTaskSlotProgress = {
+  taskId: string;
+  slotsCompleted: number;
+  slotsTotal: number;
+  /** slots שכבר סומנו היום — לצורך זיהוי מה נשאר */
+  completedSlots: string[];
+};
 
 type ActiveJourneyContext = {
   stepId: string;
@@ -221,10 +239,12 @@ type ActiveJourneyContext = {
   stepNumber?: number;
   stationTitle?: string | null;
   commitmentAccepted: boolean;
-  tasks: Array<{ id: string; title: string }>;
+  tasks: ActiveJourneyTask[];
   habits: Array<{ id: string; title: string }>;
   habitsDoneToday: Set<string>;
   taskStatuses: Record<string, { status: TaskDecisionStatus; execution_done?: boolean }>;
+  /** ביצועים של היום בלוח ירושלים — מפתח task_id */
+  todayTaskProgress: Map<string, TodayTaskSlotProgress>;
 } | null;
 
 function normalizeLine(s: string): string {
@@ -353,6 +373,50 @@ function normalizeJourneyItems(value: unknown): Array<{ id: string; title: strin
     .slice(0, 12);
 }
 
+/** ניתוח tasks JSONB עם schedule/times_per_day/weekly_day לצורך AI context */
+function normalizeJourneyTasks(value: unknown): ActiveJourneyTask[] {
+  if (!Array.isArray(value)) return [];
+  const out: ActiveJourneyTask[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== 'object') continue;
+    const row = item as Record<string, unknown>;
+    const id = typeof row.id === 'string' ? row.id.trim() : '';
+    const rawTitle = typeof row.title === 'string' ? row.title.trim() : '';
+    const title = sanitizeUserVisibleTitle(rawTitle);
+    if (!id || !title) continue;
+    const rawSchedule = row.schedule;
+    const schedule: AiTaskSchedule =
+      rawSchedule === 'daily' ||
+      rawSchedule === 'multi_daily' ||
+      rawSchedule === 'weekly' ||
+      rawSchedule === 'per_meal'
+        ? rawSchedule
+        : 'one_time';
+    let tpd = 1;
+    if (schedule === 'multi_daily' || schedule === 'per_meal') {
+      tpd =
+        typeof row.times_per_day === 'number' && row.times_per_day >= 1 && row.times_per_day <= 6
+          ? Math.floor(row.times_per_day)
+          : 3;
+    }
+    const wd =
+      typeof row.weekly_day === 'number' && row.weekly_day >= 0 && row.weekly_day <= 6
+        ? row.weekly_day
+        : 0;
+    out.push({ id, title, schedule, times_per_day: tpd, weekly_day: wd });
+    if (out.length >= 12) break;
+  }
+  return out;
+}
+
+/** מחשב כמה סלוטים צפויים יש למשימה (1 ל-one_time/daily/weekly, n ל-multi/per_meal) */
+function expectedSlotsForTask(task: ActiveJourneyTask): number {
+  if (task.schedule === 'multi_daily' || task.schedule === 'per_meal') {
+    return Math.max(1, task.times_per_day);
+  }
+  return 1;
+}
+
 function normalizeTaskStatuses(
   value: unknown
 ): Record<string, { status: TaskDecisionStatus; execution_done?: boolean }> {
@@ -380,6 +444,66 @@ function compactTaskState(
   if (row.status === 'accepted' && row.execution_done === true) return 'done';
   if (row.status === 'accepted') return 'accepted_pending';
   return 'open';
+}
+
+/** מצב משימה ל-AI — לוקח בחשבון schedule + ביצועי סלוטים של היום */
+function compactTaskStateForAi(
+  task: ActiveJourneyTask,
+  row: { status: TaskDecisionStatus; execution_done?: boolean } | undefined,
+  todayProgress: TodayTaskSlotProgress | undefined
+): CompactTaskState {
+  if (!row || row.status === 'pending') return 'open';
+  if (row.status === 'rejected') return 'rejected';
+  if (row.status !== 'accepted') return 'open';
+
+  if (task.schedule === 'one_time') {
+    return row.execution_done === true ? 'done' : 'accepted_pending';
+  }
+
+  /** משימה חוזרת — מצב לפי סלוטים של היום */
+  if (!todayProgress) return 'accepted_pending';
+  if (todayProgress.slotsCompleted >= todayProgress.slotsTotal) return 'done';
+  if (todayProgress.slotsCompleted > 0) return 'accepted_pending';
+  return 'accepted_pending';
+}
+
+const SLOT_LABEL_HE: Record<string, string> = {
+  morning: 'בוקר',
+  noon: 'צהריים',
+  evening: 'ערב',
+  meal_breakfast: 'ארוחת בוקר',
+  meal_lunch: 'ארוחת צהריים',
+  meal_dinner: 'ארוחת ערב',
+  full_day: 'היום',
+};
+
+function slotLabelHe(slot: string): string {
+  if (SLOT_LABEL_HE[slot]) return SLOT_LABEL_HE[slot];
+  const m = /^slot_(\d+)$/.exec(slot);
+  if (m) return `סלוט ${m[1]}`;
+  return slot;
+}
+
+function buildTasksForAiContext(ctx: NonNullable<ActiveJourneyContext>): TaskForAiContext[] {
+  return ctx.tasks.slice(0, 8).map((t) => {
+    const today = ctx.todayTaskProgress.get(t.id);
+    const slotsTotal = today?.slotsTotal ?? expectedSlotsForTask(t);
+    const slotsCompleted = today?.slotsCompleted ?? 0;
+    const completedSlotsLabel =
+      today && today.completedSlots.length > 0
+        ? today.completedSlots.map(slotLabelHe).join(', ')
+        : undefined;
+    return {
+      title: t.title,
+      state: compactTaskStateForAi(t, ctx.taskStatuses[t.id], today),
+      schedule: t.schedule,
+      slotsToday:
+        t.schedule !== 'one_time' && ctx.taskStatuses[t.id]?.status === 'accepted'
+          ? `${slotsCompleted}/${slotsTotal}`
+          : undefined,
+      completedSlotsLabel,
+    };
+  });
 }
 
 async function fetchChatProfileRow(
@@ -564,16 +688,59 @@ async function getActiveJourneyContext(
       ])
     : new Set<string>();
 
+  /** טוען ביצועי משימות בלוח של היום (Asia/Jerusalem) — לצורך הצגת slot progress ל-LLM */
+  const tasks = normalizeJourneyTasks(step.tasks);
+  const todayKey = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+
+  const todayTaskProgress = new Map<string, TodayTaskSlotProgress>();
+  if (tasks.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: execRows } = await (supabase as any)
+      .from('journey_task_executions')
+      .select('task_id, slot')
+      .eq('user_id', userId)
+      .eq('step_id', step.id)
+      .eq('date_key', todayKey)
+      .limit(50);
+
+    if (Array.isArray(execRows)) {
+      for (const row of execRows as Array<{ task_id?: string; slot?: string }>) {
+        const tid = typeof row.task_id === 'string' ? row.task_id : '';
+        const slot = typeof row.slot === 'string' ? row.slot : '';
+        if (!tid || !slot) continue;
+        const task = tasks.find((t) => t.id === tid);
+        if (!task) continue;
+        const existing = todayTaskProgress.get(tid) ?? {
+          taskId: tid,
+          slotsCompleted: 0,
+          slotsTotal: expectedSlotsForTask(task),
+          completedSlots: [],
+        };
+        if (!existing.completedSlots.includes(slot)) {
+          existing.completedSlots.push(slot);
+          existing.slotsCompleted += 1;
+        }
+        todayTaskProgress.set(tid, existing);
+      }
+    }
+  }
+
   return {
     stepId: step.id,
     stepTitle: sanitizeUserVisibleTitle(step.title?.trim() || 'צעד נוכחי', 160),
     stepNumber: typeof step.step_number === 'number' ? step.step_number : undefined,
     stationTitle: stationTitle ? sanitizeUserVisibleTitle(stationTitle, 160) : null,
     commitmentAccepted: Boolean(latestProgress?.commitment_accepted),
-    tasks: normalizeJourneyItems(step.tasks),
+    tasks,
     habits: normalizeJourneyItems(step.habits),
     habitsDoneToday,
     taskStatuses: normalizeTaskStatuses(latestProgress?.task_statuses),
+    todayTaskProgress,
   };
 }
 
@@ -897,13 +1064,12 @@ export async function POST(request: Request) {
     const liveTaskIntent = detectTaskIntent(lastUserText, pendingTasks);
     const parsedWeightKg = parseWeightKgFromMessage(lastUserText);
 
+    const aiTasks = activeJourneyContext ? buildTasksForAiContext(activeJourneyContext) : [];
+
     const journeyDataBlock = activeJourneyContext
       ? buildCompactJourneyDataBlock({
           stepTitle: activeJourneyContext.stepTitle,
-          tasks: activeJourneyContext.tasks.slice(0, 8).map((t) => ({
-            title: t.title,
-            state: compactTaskState(activeJourneyContext.taskStatuses[t.id]),
-          })),
+          tasks: aiTasks.map((t) => ({ title: t.title, state: t.state })),
           habits: journeyHabits.map((h) => ({
             title: h.title,
             doneToday: activeJourneyContext.habitsDoneToday.has(h.id),
@@ -1001,10 +1167,7 @@ export async function POST(request: Request) {
     if (activeJourneyContext) {
       const journeyTextBlock = formatJourneyContextAsHebrewText({
         stepTitle: activeJourneyContext.stepTitle,
-        tasks: activeJourneyContext.tasks.slice(0, 8).map((t) => ({
-          title: t.title,
-          state: compactTaskState(activeJourneyContext.taskStatuses[t.id]),
-        })),
+        tasks: aiTasks,
         habits: journeyHabits.map((h) => ({
           title: h.title,
           doneToday: activeJourneyContext.habitsDoneToday.has(h.id),

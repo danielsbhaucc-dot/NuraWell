@@ -1,14 +1,37 @@
 /**
- * סימון ביצוע משימה (execution_done) ב-journey_progress — מהצ'אט.
+ * סימון ביצוע משימה מהצ'אט:
+ *  - one_time → execution_done ב-journey_progress
+ *  - recurring → שורה ב-journey_task_executions (slot + date_key)
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+
+import type { JourneyTaskSchedule, JourneyTaskSlot } from '../types/journey';
+import {
+  currentSlotForSchedule,
+  jerusalemDateKey,
+  resolveTaskSchedule,
+  slotsForSchedule,
+} from '../journey/task-schedule';
+
+function expectedSlotCount(schedule: JourneyTaskSchedule, timesPerDay: number): number {
+  return slotsForSchedule(schedule, timesPerDay).length;
+}
 
 export type PendingAcceptedTask = {
   id: string;
   title: string;
   stepId: string;
   stepTitle: string | null;
+  schedule: JourneyTaskSchedule;
+  times_per_day: number;
+};
+
+type ParsedTaskMeta = {
+  id: string;
+  title: string;
+  schedule: JourneyTaskSchedule;
+  times_per_day: number;
 };
 
 const JOURNEY_PROGRESS_SELECT = `
@@ -23,17 +46,82 @@ const JOURNEY_PROGRESS_SELECT = `
   )
 `;
 
-function parseTasks(raw: unknown): Array<{ id: string; title: string }> {
+function parseTasksMeta(raw: unknown): ParsedTaskMeta[] {
   if (!Array.isArray(raw)) return [];
-  const out: Array<{ id: string; title: string }> = [];
+  const out: ParsedTaskMeta[] = [];
   for (const item of raw) {
     if (!item || typeof item !== 'object') continue;
     const row = item as Record<string, unknown>;
     const id = typeof row.id === 'string' ? row.id : '';
     const title = typeof row.title === 'string' ? row.title : '';
-    if (id && title) out.push({ id, title });
+    if (!id || !title) continue;
+    const { schedule, times_per_day } = resolveTaskSchedule({
+      schedule: row.schedule as JourneyTaskSchedule | undefined,
+      times_per_day: typeof row.times_per_day === 'number' ? row.times_per_day : null,
+      weekly_day: typeof row.weekly_day === 'number' ? row.weekly_day : null,
+    });
+    out.push({ id, title, schedule, times_per_day });
   }
   return out;
+}
+
+/** מזהה סלוט מהודעת המשתמש — "לפני בוקר", "בצהריים" וכו' */
+export function inferSlotFromUserMessage(
+  msg: string,
+  schedule: JourneyTaskSchedule,
+  timesPerDay: number
+): JourneyTaskSlot {
+  const m = msg.replace(/\s+/g, ' ').trim();
+
+  if (schedule === 'per_meal') {
+    if (/(?:ארוחת\s+)?בוקר|לפני\s+(?:ארוחת\s+)?בוקר|בבוקר(?!\s*מאוחר)/i.test(m)) {
+      return 'meal_breakfast';
+    }
+    if (/(?:ארוחת\s+)?צהריים|לפני\s+(?:ארוחת\s+)?צהריים|בצהריים/i.test(m)) {
+      return 'meal_lunch';
+    }
+    if (/(?:ארוחת\s+)?ערב|לפני\s+(?:ארוחת\s+)?ערב|בערב/i.test(m)) {
+      return 'meal_dinner';
+    }
+    const slots = slotsForSchedule(schedule, timesPerDay);
+    if (slots.includes('meal_breakfast')) return 'meal_breakfast';
+    if (slots.includes('meal_lunch')) return 'meal_lunch';
+    return 'meal_dinner';
+  }
+
+  if (schedule === 'multi_daily') {
+    if (/בוקר|לפני\s+בוקר|בבוקר/i.test(m)) return 'morning';
+    if (/צהריים|לפני\s+צהריים|בצהריים/i.test(m)) return 'noon';
+    if (/ערב|לפני\s+ערב|בערב/i.test(m)) return 'evening';
+    return currentSlotForSchedule(schedule, timesPerDay);
+  }
+
+  return 'full_day';
+}
+
+async function fetchTodayCompletedSlots(
+  supabase: SupabaseClient,
+  userId: string,
+  stepId: string,
+  taskId: string,
+  dateKey: string
+): Promise<Set<string>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('journey_task_executions')
+    .select('slot')
+    .eq('user_id', userId)
+    .eq('step_id', stepId)
+    .eq('task_id', taskId)
+    .eq('date_key', dateKey);
+
+  const done = new Set<string>();
+  if (Array.isArray(data)) {
+    for (const row of data as Array<{ slot?: string }>) {
+      if (typeof row.slot === 'string') done.add(row.slot);
+    }
+  }
+  return done;
 }
 
 export async function fetchPendingAcceptedTasksForUser(
@@ -49,6 +137,7 @@ export async function fetchPendingAcceptedTasksForUser(
 
   if (error || !Array.isArray(data)) return [];
 
+  const todayKey = jerusalemDateKey();
   const seen = new Set<string>();
   const out: PendingAcceptedTask[] = [];
 
@@ -56,7 +145,7 @@ export async function fetchPendingAcceptedTasksForUser(
     const stepId = row.step_id as string | undefined;
     const js = row.journey_steps as { title?: string | null; tasks?: unknown } | null;
     if (!stepId || !js) continue;
-    const tasks = parseTasks(js.tasks);
+    const tasks = parseTasksMeta(js.tasks);
     const statuses =
       row.task_statuses && typeof row.task_statuses === 'object' && !Array.isArray(row.task_statuses)
         ? (row.task_statuses as Record<string, { status?: string; execution_done?: boolean }>)
@@ -66,16 +155,32 @@ export async function fetchPendingAcceptedTasksForUser(
     for (const t of tasks) {
       if (seen.has(t.id)) continue;
       const st = statuses[t.id];
-      if (!st || st.status !== 'accepted' || st.execution_done === true) continue;
+      if (!st || st.status !== 'accepted') continue;
+
+      if (t.schedule === 'one_time') {
+        if (st.execution_done === true) continue;
+      } else {
+        const doneSlots = await fetchTodayCompletedSlots(supabase, userId, stepId, t.id, todayKey);
+        const total = expectedSlotCount(t.schedule, t.times_per_day);
+        if (doneSlots.size >= total) continue;
+      }
+
       seen.add(t.id);
-      out.push({ id: t.id, title: t.title, stepId, stepTitle });
+      out.push({
+        id: t.id,
+        title: t.title,
+        stepId,
+        stepTitle,
+        schedule: t.schedule,
+        times_per_day: t.times_per_day,
+      });
     }
   }
   return out;
 }
 
 export type TaskExecutionResult =
-  | { ok: true; stepId: string; taskId: string; taskTitle: string }
+  | { ok: true; stepId: string; taskId: string; taskTitle: string; slot?: JourneyTaskSlot }
   | { ok: false; error: 'no_match' | 'no_pending' | 'save_failed'; message?: string };
 
 function messageReferencesTask(msg: string, title: string): boolean {
@@ -86,8 +191,76 @@ function messageReferencesTask(msg: string, title: string): boolean {
   return kws.some((kw) => msg.includes(kw));
 }
 
+async function markRecurringSlot(
+  supabase: SupabaseClient,
+  userId: string,
+  pick: PendingAcceptedTask,
+  slot: JourneyTaskSlot,
+  userMessage: string
+): Promise<TaskExecutionResult> {
+  const dateKey = jerusalemDateKey();
+  const nowIso = new Date().toISOString();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: execErr } = await (supabase as any).from('journey_task_executions').upsert(
+    {
+      user_id: userId,
+      step_id: pick.stepId,
+      task_id: pick.id,
+      date_key: dateKey,
+      slot,
+      completed_at: nowIso,
+      source: 'chat',
+      note: userMessage.slice(0, 500),
+    },
+    { onConflict: 'user_id,step_id,task_id,date_key,slot' }
+  );
+
+  if (execErr) {
+    return { ok: false, error: 'save_failed', message: execErr.message };
+  }
+
+  /** אם כל הסלוטים של היום הושלמו — מסמן גם execution_done לתאימות */
+  const doneSlots = await fetchTodayCompletedSlots(supabase, userId, pick.stepId, pick.id, dateKey);
+  const total = expectedSlotCount(pick.schedule, pick.times_per_day);
+
+  if (doneSlots.size >= total) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: prog } = await (supabase as any)
+      .from('journey_progress')
+      .select('task_statuses')
+      .eq('user_id', userId)
+      .eq('step_id', pick.stepId)
+      .maybeSingle();
+
+    const prev =
+      prog?.task_statuses && typeof prog.task_statuses === 'object' && !Array.isArray(prog.task_statuses)
+        ? (prog.task_statuses as Record<string, Record<string, unknown>>)
+        : {};
+    const existing = prev[pick.id];
+    if (existing && existing.status === 'accepted' && existing.execution_done !== true) {
+      const task_statuses = {
+        ...prev,
+        [pick.id]: { ...existing, execution_done: true },
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('journey_progress').upsert(
+        {
+          user_id: userId,
+          step_id: pick.stepId,
+          task_statuses,
+          updated_at: nowIso,
+        },
+        { onConflict: 'user_id,step_id' }
+      );
+    }
+  }
+
+  return { ok: true, stepId: pick.stepId, taskId: pick.id, taskTitle: pick.title, slot };
+}
+
 /**
- * מסמן execution_done על משימה שכבר accepted.
+ * מסמן ביצוע משימה שכבר accepted — one_time או recurring slot.
  */
 export async function markTaskExecutionForUser(
   supabase: SupabaseClient,
@@ -127,6 +300,11 @@ export async function markTaskExecutionForUser(
 
   if (!pick) {
     return { ok: false, error: 'no_match' };
+  }
+
+  if (pick.schedule !== 'one_time') {
+    const slot = inferSlotFromUserMessage(msg, pick.schedule, pick.times_per_day);
+    return markRecurringSlot(supabase, userId, pick, slot, msg);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -40,6 +40,11 @@ const journeyTaskSchema = z.object({
   title: z.string().max(500),
   description: z.string().max(2000).nullable(),
   emoji: z.string().max(32),
+  schedule: z
+    .enum(['one_time', 'daily', 'multi_daily', 'weekly', 'per_meal'])
+    .optional(),
+  times_per_day: z.number().int().min(1).max(6).nullable().optional(),
+  weekly_day: z.number().int().min(0).max(6).nullable().optional(),
 });
 
 const journeyHabitSchema = z.object({

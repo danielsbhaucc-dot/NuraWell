@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from 'react';
@@ -12,6 +13,12 @@ import { Drawer } from 'vaul';
 import { ClipboardCheck, Leaf, Loader2, Sparkles } from 'lucide-react';
 import { emojiFromWellnessText } from '../../lib/emoji-from-text';
 import { parseJourneyReportItems } from '../../lib/journey/journey-report-parse';
+import type { JourneyTask, JourneyTaskSlot, JourneyTaskExecution } from '../../lib/types/journey';
+import {
+  resolveTaskSchedule,
+  scheduleLabel,
+} from '../../lib/journey/task-schedule';
+import { TaskDailySlots } from '../journey/TaskDailySlots';
 
 type TaskStatus = 'accepted' | 'rejected' | 'pending';
 
@@ -29,12 +36,56 @@ type ReportStep = {
   progress: ReportProgress | null;
 };
 
-type JourneyReportResponse = { steps: ReportStep[] };
+type TodayExecutionRow = Pick<
+  JourneyTaskExecution,
+  'step_id' | 'task_id' | 'slot' | 'date_key' | 'completed_at' | 'source'
+>;
+
+type JourneyReportResponse = {
+  steps: ReportStep[];
+  today_executions?: TodayExecutionRow[];
+  today_date_key?: string;
+};
 
 /** כרטיסיית ראשית במגירת הדיווח — עדכון ביצוע משימות; השנייה — הרגלים */
 export type ProgressReportTabId = 'task_execution' | 'habits';
 
 const parseItems = parseJourneyReportItems;
+
+/** פירוק עשיר של JSONB tasks — כולל schedule/times_per_day לצורך תצוגת slots. */
+function parseTaskItems(raw: unknown): JourneyTask[] {
+  if (!Array.isArray(raw)) return [];
+  const out: JourneyTask[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const row = item as Record<string, unknown>;
+    const id = typeof row.id === 'string' ? row.id : '';
+    const title = typeof row.title === 'string' ? row.title : '';
+    if (!id || !title) continue;
+    out.push({
+      id,
+      title,
+      description: typeof row.description === 'string' ? row.description : null,
+      emoji: typeof row.emoji === 'string' ? row.emoji : '✅',
+      schedule:
+        row.schedule === 'daily' ||
+        row.schedule === 'multi_daily' ||
+        row.schedule === 'weekly' ||
+        row.schedule === 'per_meal'
+          ? row.schedule
+          : 'one_time',
+      times_per_day:
+        typeof row.times_per_day === 'number' && row.times_per_day >= 1 && row.times_per_day <= 6
+          ? row.times_per_day
+          : null,
+      weekly_day:
+        typeof row.weekly_day === 'number' && row.weekly_day >= 0 && row.weekly_day <= 6
+          ? row.weekly_day
+          : null,
+    });
+  }
+  return out;
+}
 
 type ProgressReportContextValue = {
   /** פותח את המגירה; אופציונלי — כרטיסייה ראשונה (ברירת מחדל: עדכון ביצוע משימות) */
@@ -144,6 +195,17 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
     isOpen: open,
   };
 
+  /** קיבוץ ביצועי היום לפי step_id — מאיץ לתצוגת TaskDailySlots */
+  const stepExecutionsByStep = useMemo(() => {
+    const m = new Map<string, TodayExecutionRow[]>();
+    for (const e of data?.today_executions ?? []) {
+      const arr = m.get(e.step_id) ?? [];
+      arr.push(e);
+      m.set(e.step_id, arr);
+    }
+    return m;
+  }, [data?.today_executions]);
+
   return (
     <ProgressReportContext.Provider value={value}>
       {children}
@@ -252,10 +314,11 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                   {activeTab === 'task_execution' && (
                     <>
                       {data.steps.map((step) => {
-                        const tasks = parseItems(step.tasks);
+                        const tasks = parseTaskItems(step.tasks);
                         const prog = step.progress;
                         const acceptedTasks = tasks.filter((t) => prog?.task_statuses?.[t.id]?.status === 'accepted');
                         if (acceptedTasks.length === 0) return null;
+                        const stepExecutions = stepExecutionsByStep.get(step.id) ?? [];
                         return (
                           <div
                             key={step.id}
@@ -282,9 +345,50 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                               <div className="space-y-2">
                                 <p className="text-[11px] font-bold text-emerald-800/80 text-right">משימות שקיבלת</p>
                                 {acceptedTasks.map((t) => {
+                                  const { schedule, times_per_day, weekly_day } = resolveTaskSchedule(t);
+                                  const isRecurring = schedule !== 'one_time';
                                   const done = prog?.task_statuses?.[t.id]?.execution_done === true;
                                   const busy = saving === t.id;
                                   const emoji = emojiFromWellnessText(t.title, '✅');
+
+                                  if (isRecurring) {
+                                    const taskExecs = stepExecutions.filter((e) => e.task_id === t.id);
+                                    return (
+                                      <div
+                                        key={t.id}
+                                        className="rounded-2xl px-3 py-2.5 space-y-2"
+                                        style={{
+                                          background: 'rgba(255,255,255,0.72)',
+                                          border: '1px solid rgba(16,185,129,0.22)',
+                                        }}
+                                      >
+                                        <div className="flex items-center gap-2 justify-end">
+                                          <span
+                                            className="text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full text-emerald-900 border border-emerald-400/35"
+                                            style={{
+                                              background:
+                                                'linear-gradient(135deg, rgba(209,250,229,0.95), rgba(167,243,208,0.4))',
+                                            }}
+                                          >
+                                            {scheduleLabel(schedule, times_per_day, weekly_day)}
+                                          </span>
+                                          <span className="text-xl shrink-0" aria-hidden>
+                                            {emoji}
+                                          </span>
+                                          <span className="flex-1 text-right text-sm font-bold text-[#1A1730] leading-snug">
+                                            {t.title}
+                                          </span>
+                                        </div>
+                                        <TaskDailySlots
+                                          task={t}
+                                          stepId={step.id}
+                                          todayExecutions={taskExecs}
+                                          onExecutionsChanged={() => void load()}
+                                        />
+                                      </div>
+                                    );
+                                  }
+
                                   return (
                                     <label
                                       key={t.id}
