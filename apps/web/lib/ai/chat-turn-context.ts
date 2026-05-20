@@ -131,3 +131,54 @@ export function buildCompactJourneyDataBlock(input: {
     habits: input.habits.map((h) => `${h.doneToday ? '✓' : '○'}${h.title}`),
   };
 }
+
+/**
+ * רינדור נתוני המסע כטקסט עברי טבעי לפרומפט — לא JSON גולמי.
+ * מודלי mini מתעכלים טקסט הרבה יותר טוב מ-JSON בתוך פרומפט.
+ *
+ * דוגמה לפלט:
+ *   במסע עכשיו — צעד: "להתחיל לשתות מים בבוקר".
+ *   הרגלי היום:
+ *     ✓ כוס מים אחרי השכמה
+ *     ○ הליכה 10 דק' אחרי ארוחה
+ *   משימות פתוחות:
+ *     ○ לקנות בקבוק נשיאה
+ *     ◐ למלא טופס שעות שינה
+ */
+export function formatJourneyContextAsHebrewText(input: {
+  stepTitle: string;
+  tasks: Array<{ title: string; state: CompactTaskState }>;
+  habits: Array<{ title: string; doneToday: boolean }>;
+}): string | null {
+  const { stepTitle, tasks, habits } = input;
+  if (!stepTitle && tasks.length === 0 && habits.length === 0) return null;
+
+  const lines: string[] = [];
+  if (stepTitle) {
+    lines.push(`במסע עכשיו — צעד: "${stepTitle}".`);
+  }
+
+  if (habits.length > 0) {
+    lines.push('הרגלי היום:');
+    for (const h of habits) {
+      const mark = h.doneToday ? '✓' : '○';
+      lines.push(`  ${mark} ${h.title}`);
+    }
+  }
+
+  if (tasks.length > 0) {
+    const prefix: Record<CompactTaskState, string> = {
+      open: '○',
+      accepted_pending: '◐',
+      done: '✓',
+      rejected: '✗',
+    };
+    lines.push('משימות הצעד:');
+    for (const t of tasks) {
+      lines.push(`  ${prefix[t.state]} ${t.title}`);
+    }
+  }
+
+  lines.push('כללי: ✓ = בוצע היום (אל תציע שוב). ○ = פתוח (אפשר שאלה רכה). ◐ = בתהליך. ✗ = נדחה.');
+  return lines.join('\n');
+}
