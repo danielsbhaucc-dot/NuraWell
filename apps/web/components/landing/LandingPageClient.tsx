@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
+  AnimatePresence,
   animate,
   motion,
   useInView,
@@ -167,6 +168,8 @@ function SectionTitle({
 }
 
 export function LandingPageClient() {
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
   const { scrollYProgress } = useScroll();
   const progressScale = useSpring(scrollYProgress, {
     stiffness: 110,
@@ -227,17 +230,24 @@ export function LandingPageClient() {
         </header>
 
         <motion.div
+          className="landing-hero-kicker-wrap"
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.35, ease }}
+        >
+          <span className="landing-hero-kicker">
+            <Sparkles className="w-3.5 h-3.5" aria-hidden />
+            NuraWell · ליווי AI לחיים בריאים
+          </span>
+        </motion.div>
+
+        <motion.div
           className="landing-hero-content safe-area-bottom"
           initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, delay: 0.12, ease }}
           style={{ y: heroContentLift }}
         >
-          <p className="landing-hero-kicker">
-            <Sparkles className="w-4 h-4" aria-hidden />
-            NuraWell — ליווי AI אישי לחיים בריאים
-          </p>
-
           <h1 className="landing-hero-title">
             <span className="landing-hero-title-accent">תפסיקו לספור.</span>
             <span className="landing-hero-title-main">תתחילו לחיות.</span>
@@ -584,16 +594,22 @@ export function LandingPageClient() {
               ))}
             </ul>
 
-            <motion.p
+            <motion.div
               className="landing-contrast-footnote"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.4, duration: 0.5 }}
             >
-              <Hand className="w-4 h-4" aria-hidden />
-              אנחנו לא נכנסים לצלחת שלכם. אנחנו נותנים לכם את הכלים — אתם בוחרים.
-            </motion.p>
+              <span className="landing-contrast-footnote-icon" aria-hidden>
+                <Hand />
+              </span>
+              <span className="landing-contrast-footnote-text">
+                אנחנו <strong>לא נכנסים לצלחת שלכם.</strong>
+                <br />
+                נותנים לכם את הכלים — <strong>אתם בוחרים.</strong>
+              </span>
+            </motion.div>
           </div>
         </section>
 
@@ -617,8 +633,8 @@ export function LandingPageClient() {
                     className="object-cover"
                   />
                   <div className="landing-image-badge">
-                    <Sparkles className="w-4 h-4" aria-hidden />
-                    מסע מותאם אישית
+                    <Sparkles className="w-3.5 h-3.5" aria-hidden />
+                    מותאם אישית
                   </div>
                 </div>
               </motion.div>
@@ -677,14 +693,32 @@ export function LandingPageClient() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, ease }}
               >
-                <span className="landing-bento-icon landing-bento-icon-lg landing-tone-emerald">
-                  <Sparkles aria-hidden />
-                </span>
-                <h3 className="landing-card-title text-lg">אלמוג — מנטור AI אישי</h3>
-                <p className="landing-card-text">
-                  לומד את הקצב, המטרות והאתגרים שלכם. עידוד, הכוונה ותגובות בזמן אמת — כשזה
-                  באמת רלוונטי.
-                </p>
+                <div className="landing-bento-featured-inner">
+                  <div className="landing-bento-featured-media" aria-hidden>
+                    <span className="landing-bento-featured-ring" />
+                    <span className="landing-bento-featured-iconwrap">
+                      <Sparkles />
+                    </span>
+                  </div>
+                  <div className="landing-bento-featured-body">
+                    <h3 className="landing-bento-featured-title">אלמוג — מנטור AI אישי</h3>
+                    <p className="landing-bento-featured-text">
+                      לומד את הקצב, המטרות והאתגרים שלכם. עידוד, הכוונה ותגובות בזמן אמת —
+                      כשזה באמת רלוונטי.
+                    </p>
+                    <ul className="landing-bento-featured-tags">
+                      <li className="landing-bento-featured-tag">
+                        <Heart aria-hidden /> מבין אתכם
+                      </li>
+                      <li className="landing-bento-featured-tag">
+                        <Brain aria-hidden /> זוכר הקשר
+                      </li>
+                      <li className="landing-bento-featured-tag">
+                        <Sparkles aria-hidden /> זמין 24/7
+                      </li>
+                    </ul>
+                  </div>
+                </div>
                 <span className="landing-bento-shine" aria-hidden />
               </motion.article>
 
@@ -919,7 +953,7 @@ export function LandingPageClient() {
                     className="object-cover"
                   />
                   <div className="landing-image-badge landing-image-badge-warm">
-                    <Flame className="w-4 h-4" aria-hidden />
+                    <Flame className="w-3.5 h-3.5" aria-hidden />
                     אנרגיה לכל היום
                   </div>
                 </div>
@@ -1041,49 +1075,76 @@ export function LandingPageClient() {
               {[
                 {
                   q: 'רגע, זאת בעצם דיאטה?',
-                  a: 'לא. בכלל לא. אין תפריט, אין מאכלים אסורים, ואין רשימה של מה לאכול. NuraWell מלמד אתכם להבין את הגוף שלכם — כדי שתבחרו לבד.',
+                  a: 'לא. בכלל לא. אין תפריט מוכתב, אין מאכלים אסורים, אין רשימה של "מה לאכול היום". NuraWell מלמד אתכם להבין את הגוף שלכם — מה הוא צריך, מה משפיע עליו, ואיך לבחור בלי לחץ. ברגע שאתם מבינים, אתם לא צריכים שמישהו יגיד לכם מה לעשות.',
                 },
                 {
                   q: 'אצטרך לספור קלוריות או לשקול אוכל?',
-                  a: 'לעולם לא. אנחנו לא מאמינים שספירה היא הדרך. בריאות אמיתית מתחילה מהראש — לא מהאקסל.',
+                  a: 'לעולם לא. אנחנו לא מאמינים שמספרים = בריאות. ספירה הופכת אוכל לחישוב, ואכילה לחרדה. אצלנו לומדים לזהות רעב אמיתי, לבחור בכיף, ולהפסיק בלי אשמה — בלי לפתוח אפליקציה ולחשב ביס.',
                 },
                 {
                   q: 'מה אם אני "נופל" ואוכל משהו לא בריא?',
-                  a: 'אין נפילות פה. אין "בריא" ו"לא בריא" במובן השיפוטי. כל ארוחה היא הזדמנות, לא מבחן. ואלמוג ידע להעיף לכם חיוך — לא תוכחה.',
+                  a: 'אין נפילות פה. אין "בריא" ו"לא בריא" במובן השיפוטי. כל ארוחה היא הזדמנות חדשה, לא מבחן. אם אכלתם פיצה — סבבה. אלמוג ידע להעיף לכם חיוך, להבין למה, ולהמשיך הלאה. הקפדנות הזו של "הרסתי הכל" — היא בדיוק מה ששובר אנשים בדיאטות.',
                 },
                 {
                   q: 'כמה זמן ביום זה דורש?',
-                  a: 'בין 5 ל-10 דקות. משימה קצרה, שיעור קצר, או שיחה עם אלמוג. נכנס בקלות לסדר היום — לא הופך לעוד מטלה.',
+                  a: 'בין 5 ל-10 דקות. משימה קצרה, שיעור קצר, או שיחה עם אלמוג. נכנס בקלות לסדר היום — בזמן הקפה של הבוקר, בהפסקה בעבודה, או לפני השינה. לא הופך לעוד מטלה — הוא הופך לחלק מהיום שאתם מצפים לו.',
                 },
                 {
                   q: 'אני כבר ניסיתי הכל. למה זה יעבוד?',
-                  a: 'כי כל מה שניסיתם היה דיאטה. ופה אין דיאטה. אנחנו עובדים על הראש, על ההרגלים, ועל היחס לאוכל — לא על הצלחת.',
+                  a: 'כי כל מה שניסיתם היה דיאטה — תפריט שהוכתב לכם מבחוץ, עם תאריך התחלה ותאריך נפילה. NuraWell עובד אחרת. אנחנו לא משנים את מה שבצלחת — אנחנו משנים את היחס לאוכל, את ההרגלים היומיים, ואת איך אתם מרגישים בגוף. שינוי שמתחיל בפנים — נשאר.',
+                },
+                {
+                  q: 'זה לא רק לירידה במשקל?',
+                  a: 'בכלל לא. ירידה במשקל היא בונוס — לא המטרה. המטרה היא אורח חיים: יותר אנרגיה ביום, שינה איכותית בלילה, יחס בריא לאוכל, ותחושה טובה עם הגוף. כשהמערכת עובדת — המשקל מאזן את עצמו בלי שצריך להילחם בו.',
                 },
                 {
                   q: 'באמת חינם? איפה ה"בלאגן"?',
-                  a: 'בלי לכודים. נרשמים, מקבלים את המסע, את הקורסים ואת אלמוג. אין כרטיס אשראי, אין התחייבות, ואפשר לעזוב בכל רגע.',
+                  a: 'בלי לכודים, בלי "תקופת ניסיון" עם כרטיס אשראי בצד. נרשמים בדקה, מקבלים גישה מלאה למסע, לקורסים, להרגלים ולאלמוג. אם תרצו לעזוב — תעזבו. אין מנוי שמתחדש בהפתעה.',
                 },
-              ].map((item, i) => (
-                <motion.details
-                  key={item.q}
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-30px' }}
-                  transition={{ delay: i * 0.04, duration: 0.35, ease }}
-                  className="landing-faq-item"
-                >
-                  <summary className="landing-faq-q">
-                    <span className="landing-faq-icon">
-                      <HelpCircle aria-hidden />
-                    </span>
-                    <span className="landing-faq-q-text">{item.q}</span>
-                    <span className="landing-faq-chev" aria-hidden>
-                      <ChevronLeft className="w-5 h-5" />
-                    </span>
-                  </summary>
-                  <p className="landing-faq-a">{item.a}</p>
-                </motion.details>
-              ))}
+              ].map((item, i) => {
+                const isOpen = openFaq === i;
+                return (
+                  <motion.div
+                    key={item.q}
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-30px' }}
+                    transition={{ delay: i * 0.04, duration: 0.35, ease }}
+                    className={`landing-faq-item${isOpen ? ' is-open' : ''}`}
+                  >
+                    <button
+                      type="button"
+                      className="landing-faq-q"
+                      onClick={() => setOpenFaq(isOpen ? null : i)}
+                      aria-expanded={isOpen}
+                      aria-controls={`faq-panel-${i}`}
+                    >
+                      <span className="landing-faq-icon" aria-hidden>
+                        <HelpCircle />
+                      </span>
+                      <span className="landing-faq-q-text">{item.q}</span>
+                      <span className="landing-faq-chev" aria-hidden>
+                        <ChevronLeft className="w-5 h-5" />
+                      </span>
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {isOpen ? (
+                        <motion.div
+                          id={`faq-panel-${i}`}
+                          key="panel"
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.32, ease }}
+                          className="landing-faq-a-wrap"
+                        >
+                          <p className="landing-faq-a">{item.a}</p>
+                        </motion.div>
+                      ) : null}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
         </section>
