@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 /**
- * Payload לתזמון פנייה ראשונה של אלמוג אחרי הרשמה.
- * delayString — כמה להמתין לפני הבדיקה (לדוגמה 90m).
- * attempt — 0 לפנייה הראשונה; 1+ לניסיון חוזר אם עברו 24 שעות והמשתמש עדיין לא פתח.
+ * Payload לתזמון מגע מסע יזום של אלמוג.
+ * delayString — כמה להמתין לפני הבדיקה הראשונה (לדוגמה 90m).
+ * attempt — 0 לפנייה הראשונה; נשמר לתאימות ולדיבוג.
  */
 const delayStringSchema = z
   .string()
@@ -13,7 +13,7 @@ const delayStringSchema = z
 export const almogOnboardingKickoffPayloadSchema = z.object({
   userId: z.string().uuid(),
   delayString: delayStringSchema,
-  attempt: z.number().int().min(0).max(4).default(0),
+  attempt: z.number().int().min(0).max(21).default(0),
 });
 
 export type AlmogOnboardingKickoffPayload = z.infer<

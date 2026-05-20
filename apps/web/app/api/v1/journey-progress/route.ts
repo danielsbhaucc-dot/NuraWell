@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 import { readJsonBody } from '../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../lib/api/route-guards';
+import { scheduleAlmogKickoff } from '../../../../lib/auth/schedule-almog-kickoff';
 import { journeyProgressUpsertSchema } from '../../../../lib/validation/journey-progress-upsert';
 import { jsonZodError } from '../../../../lib/validation/zod-http';
 
@@ -71,6 +74,20 @@ export async function POST(request: Request) {
     if (error) {
       console.error('Journey progress save error:', error);
       return NextResponse.json({ error: 'Failed to save progress' }, { status: 500 });
+    }
+
+    /**
+     * כשצעד הושלם, נפתח בפועל הצעד הבא במסע.
+     * מתזמנים מגע המשך מאלמוג כך שגם הצעד הבא יקבל ליווי יזום אם המשתמש לא נכנס אליו.
+     */
+    if (rest.is_completed === true) {
+      try {
+        await scheduleAlmogKickoff(user.id, {
+          delayString: process.env.ALMOG_NEXT_STEP_DELAY?.trim() || undefined,
+        });
+      } catch (e) {
+        console.warn('[journey-progress] almog next-step schedule failed', e);
+      }
     }
 
     return NextResponse.json({ success: true });
