@@ -14,6 +14,10 @@ const pendingTaskSchema = z.object({
   id: z.string().max(120),
   title: z.string().max(500),
   stepTitle: z.string().max(500).nullable().optional(),
+  /** "יומי" / "3 פעמים ביום" / "לפני כל ארוחה" — לצורך הקשר אנושי בפרומפט. */
+  scheduleLabel: z.string().max(120).optional(),
+  /** שמות עבריים של הסלוטים שעוד פתוחים היום (לדוגמה ["ערב"]). */
+  pendingSlotLabels: z.array(z.string().max(60)).max(8).optional(),
 });
 
 const completedItemSchema = z.object({

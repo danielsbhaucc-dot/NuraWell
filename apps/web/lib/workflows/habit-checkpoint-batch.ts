@@ -12,6 +12,17 @@ import {
   parseJourneyHabitsJson,
   type ParsedJourneyHabit,
 } from './habit-checkpoint-eligibility';
+import {
+  normalizeTaskSchedule,
+  resolveTaskSchedule,
+  scheduleLabel as scheduleLabelHe,
+  slotLabel as slotLabelHe,
+  slotsForSchedule,
+} from '../journey/task-schedule';
+import type {
+  JourneyTaskSchedule,
+  JourneyTaskSlot,
+} from '../types/journey';
 
 /**
  * שדות לקריאה מ-journey_progress + מ-journey_steps לחישוב התראות.
@@ -31,7 +42,19 @@ export type ProgressRow = {
   } | null;
 };
 
-type ParsedTask = { id: string; title: string };
+/**
+ * ביצועי-סלוטים של היום פר משימה למשתמש.
+ *  key = task_id → Set<slot שבוצע היום בלוח ירושלים>.
+ */
+export type TodayExecutionsByUser = Map<string, Map<string, Set<string>>>;
+
+type ParsedTask = {
+  id: string;
+  title: string;
+  schedule: JourneyTaskSchedule;
+  times_per_day: number;
+  weekly_day: number;
+};
 
 type TaskStatusEntry = {
   status?: unknown;
@@ -47,9 +70,75 @@ function parseJourneyTasksJson(raw: unknown): ParsedTask[] {
     const id = typeof row.id === 'string' ? row.id : '';
     const title = typeof row.title === 'string' ? row.title : '';
     if (!id || !title) continue;
-    out.push({ id, title });
+    const tpdRaw = row.times_per_day;
+    const wdRaw = row.weekly_day;
+    const resolved = resolveTaskSchedule({
+      schedule: normalizeTaskSchedule(row.schedule),
+      times_per_day:
+        typeof tpdRaw === 'number' && tpdRaw >= 1 && tpdRaw <= 6 ? tpdRaw : null,
+      weekly_day:
+        typeof wdRaw === 'number' && wdRaw >= 0 && wdRaw <= 6 ? wdRaw : null,
+    });
+    out.push({
+      id,
+      title,
+      schedule: resolved.schedule,
+      times_per_day: resolved.times_per_day,
+      weekly_day: resolved.weekly_day,
+    });
   }
   return out;
+}
+
+/**
+ * Mapping מ-cron slot ל-slot ספציפי במשימת `per_meal`.
+ * משתמש בעיקר כדי לקבוע "האם המשתמש כבר ביצע את הסלוט הרלוונטי לחלון הזה".
+ */
+function perMealSlotForCronSlot(slot: HabitCheckpointSlot): JourneyTaskSlot {
+  if (slot === 'morning') return 'meal_breakfast';
+  if (slot === 'midday') return 'meal_lunch';
+  return 'meal_dinner';
+}
+
+/**
+ * האם משימה חוזרת "סגורה" לחלון הזמן הנוכחי?
+ *  - per_meal: הסלוט המתאים לחלון בוצע היום.
+ *  - daily/weekly: הסלוט היחיד full_day בוצע היום.
+ *  - multi_daily: כל הסלוטים של היום בוצעו.
+ */
+function isRecurringTaskClosedForSlot(
+  task: ParsedTask,
+  doneSlots: Set<string>,
+  cronSlot: HabitCheckpointSlot,
+  jerusalemWeekday: number
+): boolean {
+  if (task.schedule === 'one_time') return false;
+  if (task.schedule === 'weekly') {
+    if (jerusalemWeekday !== task.weekly_day) return true; /** לא רלוונטי היום בכלל */
+    return doneSlots.has('full_day');
+  }
+  if (task.schedule === 'daily') {
+    return doneSlots.has('full_day');
+  }
+  if (task.schedule === 'per_meal') {
+    const target = perMealSlotForCronSlot(cronSlot);
+    return doneSlots.has(target);
+  }
+  /** multi_daily */
+  const expected = slotsForSchedule(task.schedule, task.times_per_day);
+  return expected.every((s) => doneSlots.has(s));
+}
+
+/** אם משימה חוזרת — מחזיר אילו סלוטים עוד פתוחים היום (לרמז ב-pendingTasks). */
+function pendingSlotLabelsForToday(
+  task: ParsedTask,
+  doneSlots: Set<string>,
+  jerusalemWeekday: number
+): JourneyTaskSlot[] {
+  if (task.schedule === 'one_time') return [];
+  if (task.schedule === 'weekly' && jerusalemWeekday !== task.weekly_day) return [];
+  const expected = slotsForSchedule(task.schedule, task.times_per_day);
+  return expected.filter((s) => !doneSlots.has(s));
 }
 
 function asStatusMap(raw: unknown): Record<string, TaskStatusEntry> {
@@ -58,20 +147,47 @@ function asStatusMap(raw: unknown): Record<string, TaskStatusEntry> {
 }
 
 /**
- * מזהה משימות שהמשתמש סימן `accepted` ועדיין `execution_done !== true`.
- * סורק את כל הצעדים שהמשתמש עבר/נמצא בהם — לא רק את הצעד האחרון.
- * ללא מגבלת מספר פריטים — מחזיר את כל המשימות הפתוחות.
- * מסודר לפי updated_at של ה-row כך שמשימות מהצעד האחרון מופיעות ראשונות.
+ * מזהה משימות שהמשתמש סימן `accepted` ועדיין לא בוצעו בחלון הנוכחי.
+ *  - one_time:  `execution_done !== true`
+ *  - daily / weekly / per_meal / multi_daily: לפי `today_task_executions` של היום
+ *    (כל הסלוטים הנדרשים בוצעו → לא pending; אחרת — pending עם רמז על
+ *    הסלוטים שעוד פתוחים).
  */
 export function collectPendingAcceptedTasks(
-  rows: ProgressRow[]
-): Array<{ id: string; title: string; stepTitle: string | null }> {
+  rows: ProgressRow[],
+  options: {
+    todayDoneByTask?: ReadonlyMap<string, ReadonlySet<string>>;
+    cronSlot?: HabitCheckpointSlot;
+    jerusalemWeekday?: number;
+  } = {}
+): Array<{
+  id: string;
+  title: string;
+  stepTitle: string | null;
+  /** מחזיר רק אם זו משימה חוזרת — סלוטים שנשארו היום (לתצוגה ל-AI). */
+  pendingSlots?: JourneyTaskSlot[];
+  /** Label עברי קריא לסלוטים שעוד פתוחים — לפרומפט אלמוג. */
+  pendingSlotLabels?: string[];
+  /** Label עברי לתזמון ("3 פעמים ביום" / "לפני כל ארוחה"). */
+  scheduleLabel?: string;
+}> {
   const seen = new Set<string>();
-  const out: Array<{ id: string; title: string; stepTitle: string | null }> = [];
+  const out: Array<{
+    id: string;
+    title: string;
+    stepTitle: string | null;
+    pendingSlots?: JourneyTaskSlot[];
+    pendingSlotLabels?: string[];
+    scheduleLabel?: string;
+  }> = [];
 
   const sortedByRecent = [...rows].sort(
     (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
   );
+
+  const todayDone = options.todayDoneByTask;
+  const cronSlot = options.cronSlot ?? 'morning';
+  const weekday = options.jerusalemWeekday ?? 0;
 
   for (const r of sortedByRecent) {
     if (!r.journey_steps) continue;
@@ -85,20 +201,47 @@ export function collectPendingAcceptedTasks(
       if (!s) continue;
       if (s.status !== 'accepted') continue;
       if (s.execution_done === true) continue;
+      if (t.schedule === 'one_time') {
+        seen.add(t.id);
+        out.push({ id: t.id, title: t.title, stepTitle });
+        continue;
+      }
+      /** משימה חוזרת — בודק את הסלוטים שבוצעו היום. */
+      const doneSlots = (todayDone?.get(t.id) ?? new Set<string>()) as Set<string>;
+      const closed = isRecurringTaskClosedForSlot(t, doneSlots, cronSlot, weekday);
+      if (closed) continue;
+      const pending = pendingSlotLabelsForToday(t, doneSlots, weekday);
       seen.add(t.id);
-      out.push({ id: t.id, title: t.title, stepTitle });
+      out.push({
+        id: t.id,
+        title: t.title,
+        stepTitle,
+        pendingSlots: pending.length > 0 ? pending : undefined,
+        pendingSlotLabels: pending.length > 0 ? pending.map((s) => slotLabelHe(s)) : undefined,
+        scheduleLabel: scheduleLabelHe(t.schedule, t.times_per_day, t.weekly_day),
+      });
     }
   }
 
   return out;
 }
 
-/** משימות שסומנו accepted + execution_done — מקור האמת לפני Cron. */
+/**
+ * משימות שבוצעו היום במלואן — מקור האמת לחיזוק חברי.
+ *  - one_time: לפי `execution_done === true`.
+ *  - חוזרות: לפי `today_task_executions` (כל הסלוטים של היום בוצעו).
+ */
 export function collectCompletedAcceptedTasks(
-  rows: ProgressRow[]
+  rows: ProgressRow[],
+  options: {
+    todayDoneByTask?: ReadonlyMap<string, ReadonlySet<string>>;
+    jerusalemWeekday?: number;
+  } = {}
 ): Array<{ id: string; title: string }> {
   const seen = new Set<string>();
   const out: Array<{ id: string; title: string }> = [];
+  const todayDone = options.todayDoneByTask;
+  const weekday = options.jerusalemWeekday ?? 0;
 
   const sortedByRecent = [...rows].sort(
     (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
@@ -112,7 +255,19 @@ export function collectCompletedAcceptedTasks(
     for (const t of tasks) {
       if (seen.has(t.id)) continue;
       const s = statuses[t.id];
-      if (!s || s.status !== 'accepted' || s.execution_done !== true) continue;
+      if (!s || s.status !== 'accepted') continue;
+      if (t.schedule === 'one_time') {
+        if (s.execution_done !== true) continue;
+        seen.add(t.id);
+        out.push({ id: t.id, title: t.title });
+        continue;
+      }
+      /** משימה חוזרת — נחשבת "בוצעה היום" רק כשכל הסלוטים הנדרשים מוצו. */
+      const doneSlots = (todayDone?.get(t.id) ?? new Set<string>()) as Set<string>;
+      if (t.schedule === 'weekly' && weekday !== t.weekly_day) continue;
+      const expected = slotsForSchedule(t.schedule, t.times_per_day);
+      const allDone = expected.every((sl) => doneSlots.has(sl));
+      if (!allDone) continue;
       seen.add(t.id);
       out.push({ id: t.id, title: t.title });
     }
@@ -189,7 +344,8 @@ export type HabitCheckpointPlanItem = {
 export function planHabitCheckpointTriggers(
   progressRows: ProgressRow[],
   slot: HabitCheckpointSlot,
-  now: Date
+  now: Date,
+  todayExecutionsByUser: TodayExecutionsByUser = new Map()
 ): HabitCheckpointPlanItem[] {
   const { dateKey, weekday } = jerusalemCalendarParts(now);
   const byUser = new Map<string, ProgressRow[]>();
@@ -211,8 +367,16 @@ export function planHabitCheckpointTriggers(
       .filter((h) => habitsDoneToday.has(h.id))
       .map((h) => ({ id: h.id, title: h.title }));
 
-    const pendingTasks = collectPendingAcceptedTasks(rows);
-    const completedTodayTasks = collectCompletedAcceptedTasks(rows);
+    const userTodayDone = todayExecutionsByUser.get(userId) ?? new Map<string, Set<string>>();
+    const pendingTasks = collectPendingAcceptedTasks(rows, {
+      todayDoneByTask: userTodayDone,
+      cronSlot: slot,
+      jerusalemWeekday: weekday,
+    });
+    const completedTodayTasks = collectCompletedAcceptedTasks(rows, {
+      todayDoneByTask: userTodayDone,
+      jerusalemWeekday: weekday,
+    });
 
     const hasRemindWork = due.length > 0 || pendingTasks.length > 0;
     const hasReinforceCompletion =
@@ -241,6 +405,8 @@ export function planHabitCheckpointTriggers(
           id: t.id,
           title: t.title,
           stepTitle: t.stepTitle,
+          scheduleLabel: t.scheduleLabel,
+          pendingSlotLabels: t.pendingSlotLabels,
         })),
         completedTodayHabits,
         completedTodayTasks,
@@ -261,7 +427,8 @@ export function appendPresenceReinforceFromChat(
   progressRows: ProgressRow[],
   slot: HabitCheckpointSlot,
   now: Date,
-  chatUserIds: Set<string>
+  chatUserIds: Set<string>,
+  todayExecutionsByUser: TodayExecutionsByUser = new Map()
 ): HabitCheckpointPlanItem[] {
   if (chatUserIds.size === 0) return plan;
 
@@ -284,7 +451,12 @@ export function appendPresenceReinforceFromChat(
     const habits = collectUserJourneyHabits(rows);
     if (habits.length === 0) continue;
 
-    const pendingTasks = collectPendingAcceptedTasks(rows);
+    const userTodayDone = todayExecutionsByUser.get(userId) ?? new Map<string, Set<string>>();
+    const pendingTasks = collectPendingAcceptedTasks(rows, {
+      todayDoneByTask: userTodayDone,
+      cronSlot: slot,
+      jerusalemWeekday: weekday,
+    });
     if (pendingTasks.length > 0) continue;
 
     const habitsDoneToday = mergeHabitsDoneTodayFromRows(rows);
@@ -306,7 +478,10 @@ export function appendPresenceReinforceFromChat(
         completedTodayHabits: habits
           .filter((h) => habitsDoneToday.has(h.id))
           .map((h) => ({ id: h.id, title: h.title })),
-        completedTodayTasks: collectCompletedAcceptedTasks(rows),
+        completedTodayTasks: collectCompletedAcceptedTasks(rows, {
+          todayDoneByTask: userTodayDone,
+          jerusalemWeekday: weekday,
+        }),
         stepTitle: display?.journey_steps?.title?.trim() ?? null,
         stationTitle: stationTitleFromJoin(display?.journey_steps?.journey_stations),
       },
@@ -323,9 +498,17 @@ export async function planHabitCheckpointTriggersWithChat(
   admin: any,
   progressRows: ProgressRow[],
   slot: HabitCheckpointSlot,
-  now: Date
+  now: Date,
+  todayExecutionsByUser: TodayExecutionsByUser = new Map()
 ): Promise<HabitCheckpointPlanItem[]> {
-  const base = planHabitCheckpointTriggers(progressRows, slot, now);
+  const base = planHabitCheckpointTriggers(progressRows, slot, now, todayExecutionsByUser);
   const chatIds = await fetchUserIdsWithChatToday(admin, now);
-  return appendPresenceReinforceFromChat(base, progressRows, slot, now, chatIds);
+  return appendPresenceReinforceFromChat(
+    base,
+    progressRows,
+    slot,
+    now,
+    chatIds,
+    todayExecutionsByUser
+  );
 }

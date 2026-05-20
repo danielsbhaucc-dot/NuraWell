@@ -14,7 +14,12 @@ import type { AlmogFollowupUserState } from './almog-followup-state';
 import { habitSlotFromCheckInTime } from './personalized-check-in-journey';
 
 const TASK_FOLLOWUP_SYSTEM = buildAlmogNotifySystemPrompt(
-  `משימה: מגע אחרי זמן — check-in, לא מעקב. נושא אחד מהקונטקסט בשפת חיים.`
+  `מגע ראשון אחרי זמן — check-in של חבר, לא בקרת ביצוע.
+חוקים:
+1. אסור: "תזכורת", "האם עשית", "ביקשתי", "סיכמנו". חבר לא מנהל מעקב.
+2. שזור את הנושא בשפת חיים — שאלה רכה ("מה היה במהלך היום?") במקום בדיקה.
+3. שאלה פתוחה אחת בסוף, 2–3 משפטים, בלי רשימות/מקפים.
+4. אם הנושא הוא הרגל יומי — אל תניח שהוא נכשל; הצע נוכחות, לא בקרה.`
 );
 
 function formatStateForPrompt(state: AlmogFollowupUserState): string {

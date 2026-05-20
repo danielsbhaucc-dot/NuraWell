@@ -70,5 +70,19 @@ BEGIN
   END IF;
 END $$;
 
--- Realtime — כך שה-UI יתעדכן בלי polling
-ALTER PUBLICATION supabase_realtime ADD TABLE public.journey_task_executions;
+-- Realtime — כך שה-UI יתעדכן בלי polling.
+-- חשוב: מעטפת `DO $$ ... IF NOT EXISTS` כדי שהמיגרציה תהיה idempotent ולא תיכשל
+-- ב-CI / supabase db push כש-publication כבר כולל את הטבלה (היה הבאג ש-blocked
+-- בעבר את הריצה כולה, ובעקבותיו הטבלה לא נשמרה ב-DB).
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+      AND schemaname = 'public'
+      AND tablename = 'journey_task_executions'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.journey_task_executions;
+  END IF;
+END $$;
