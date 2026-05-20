@@ -1,8 +1,16 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import {
+  animate,
+  motion,
+  useInView,
+  useScroll,
+  useSpring,
+  useTransform,
+} from 'framer-motion';
 import {
   Activity,
   ArrowDown,
@@ -63,6 +71,73 @@ function SectionEyebrow({ children, light }: { children: React.ReactNode; light?
   );
 }
 
+/** Animated count-up for stat values. Skips non-numeric prefixes/suffixes (e.g. "+", "%", "★"). */
+function CountUp({ value, duration = 1.6 }: { value: string; duration?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-30px' });
+  const [display, setDisplay] = useState(value);
+
+  useEffect(() => {
+    if (!inView) return;
+    const match = value.match(/^([^\d]*)(\d[\d,.]*)(.*)$/);
+    if (!match) {
+      setDisplay(value);
+      return;
+    }
+    const prefix = match[1];
+    const numericRaw = match[2];
+    const suffix = match[3];
+    const hasComma = numericRaw.includes(',');
+    const target = parseFloat(numericRaw.replace(/,/g, ''));
+    if (Number.isNaN(target)) {
+      setDisplay(value);
+      return;
+    }
+    const controls = animate(0, target, {
+      duration,
+      ease: [0.22, 1, 0.36, 1],
+      onUpdate(latest) {
+        const v = Math.round(latest);
+        const formatted = hasComma ? v.toLocaleString('he-IL') : String(v);
+        setDisplay(`${prefix}${formatted}${suffix}`);
+      },
+    });
+    return () => controls.stop();
+  }, [inView, value, duration]);
+
+  return <span ref={ref}>{display}</span>;
+}
+
+/** Floating particles for dark sections (pure CSS animation, no JS cost). */
+function FloatingParticles({ count = 18 }: { count?: number }) {
+  const items = Array.from({ length: count });
+  return (
+    <div className="landing-particles" aria-hidden>
+      {items.map((_, i) => {
+        const left = (i * 53 + 7) % 100;
+        const delay = (i * 0.7) % 8;
+        const duration = 14 + ((i * 3) % 12);
+        const size = 3 + (i % 4);
+        const opacity = 0.35 + ((i % 5) * 0.1);
+        return (
+          <span
+            key={i}
+            className="landing-particle"
+            style={{
+              left: `${left}%`,
+              width: `${size}px`,
+              height: `${size}px`,
+              animationDuration: `${duration}s`,
+              animationDelay: `-${delay}s`,
+              opacity,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 function SectionTitle({
   id,
   title,
@@ -92,11 +167,37 @@ function SectionTitle({
 }
 
 export function LandingPageClient() {
+  const { scrollYProgress } = useScroll();
+  const progressScale = useSpring(scrollYProgress, {
+    stiffness: 110,
+    damping: 22,
+    restDelta: 0.001,
+  });
+
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress: heroScroll } = useScroll({
+    target: heroRef,
+    offset: ['start start', 'end start'],
+  });
+  const heroParallax = useTransform(heroScroll, [0, 1], ['0%', '-12%']);
+  const heroFade = useTransform(heroScroll, [0, 1], [1, 0.55]);
+  const heroContentLift = useTransform(heroScroll, [0, 1], ['0%', '-8%']);
+
   return (
     <div className="landing-page" dir="rtl">
+      <motion.div
+        className="landing-progress-bar"
+        style={{ scaleX: progressScale }}
+        aria-hidden
+      />
+
       {/* ─── HERO ─── */}
-      <section className="landing-hero" aria-label="ראש העמוד">
-        <motion.div className="landing-hero-media" aria-hidden>
+      <section ref={heroRef} className="landing-hero" aria-label="ראש העמוד">
+        <motion.div
+          className="landing-hero-media"
+          style={{ y: heroParallax, opacity: heroFade }}
+          aria-hidden
+        >
           <Image
             src={HERO_IMAGE}
             alt=""
@@ -130,6 +231,7 @@ export function LandingPageClient() {
           initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, delay: 0.12, ease }}
+          style={{ y: heroContentLift }}
         >
           <p className="landing-hero-kicker">
             <Sparkles className="w-4 h-4" aria-hidden />
@@ -210,17 +312,20 @@ export function LandingPageClient() {
               ].map((s, i) => (
                 <motion.li
                   key={s.label}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 24, scale: 0.94 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
                   viewport={{ once: true, margin: '-40px' }}
-                  transition={{ delay: i * 0.06, duration: 0.4, ease }}
+                  transition={{ delay: i * 0.08, duration: 0.5, ease }}
+                  whileHover={{ y: -4, scale: 1.02 }}
                   className={`landing-stat landing-stat-${s.tone}`}
                 >
                   <span className="landing-stat-icon">
                     <s.icon aria-hidden />
                   </span>
                   <div className="landing-stat-text">
-                    <strong className="landing-stat-value">{s.value}</strong>
+                    <strong className="landing-stat-value">
+                      <CountUp value={s.value} />
+                    </strong>
                     <span className="landing-stat-label">{s.label}</span>
                   </div>
                 </motion.li>
@@ -230,7 +335,8 @@ export function LandingPageClient() {
         </section>
 
         {/* ─── MANIFESTO — Way of Life (WOW) ─── */}
-        <section className="landing-section landing-manifesto" aria-labelledby="manifesto-heading">
+        <section className="landing-section landing-manifesto landing-fade-bottom" aria-labelledby="manifesto-heading">
+          <FloatingParticles count={22} />
           <div className="landing-manifesto-orbs" aria-hidden>
             <span className="landing-manifesto-orb landing-manifesto-orb-1" />
             <span className="landing-manifesto-orb landing-manifesto-orb-2" />
@@ -375,10 +481,11 @@ export function LandingPageClient() {
               ].map((item, i) => (
                 <motion.article
                   key={item.title}
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 32, scale: 0.92 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
                   viewport={{ once: true, margin: '-40px' }}
-                  transition={{ delay: i * 0.08, duration: 0.5, ease }}
+                  transition={{ delay: i * 0.1, duration: 0.55, ease }}
+                  whileHover={{ y: -6, scale: 1.02 }}
                   className={`landing-philosophy-card landing-tone-${item.tone}`}
                 >
                   <span className="landing-philosophy-icon">
@@ -607,7 +714,8 @@ export function LandingPageClient() {
         </section>
 
         {/* ─── תדמיינו את עצמכם — Future Self ─── */}
-        <section className="landing-section landing-imagine" aria-labelledby="imagine-heading">
+        <section className="landing-section landing-imagine landing-fade-top" aria-labelledby="imagine-heading">
+          <FloatingParticles count={20} />
           <div className="landing-wrap">
             <div className="landing-section-head landing-section-head-center">
               <SectionEyebrow>החיים שלכם בעוד 30 יום</SectionEyebrow>
@@ -682,7 +790,8 @@ export function LandingPageClient() {
         </section>
 
         {/* ─── אפקט ההצטברות — Timeline WOW ─── */}
-        <section className="landing-section landing-timeline" aria-labelledby="timeline-heading">
+        <section className="landing-section landing-timeline landing-fade-bottom" aria-labelledby="timeline-heading">
+          <FloatingParticles count={18} />
           <div className="landing-timeline-glow" aria-hidden />
           <div className="landing-wrap">
             <div className="landing-section-head landing-section-head-center">
@@ -735,10 +844,11 @@ export function LandingPageClient() {
               ].map((step, i) => (
                 <motion.li
                   key={step.day}
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 30, scale: 0.92 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
                   viewport={{ once: true, margin: '-30px' }}
-                  transition={{ delay: i * 0.08, duration: 0.5, ease }}
+                  transition={{ delay: i * 0.12, duration: 0.55, ease }}
+                  whileHover={{ y: -6, scale: 1.04 }}
                   className={`landing-timeline-step landing-tone-${step.tone}`}
                 >
                   <span className="landing-timeline-day">{step.day}</span>
@@ -819,7 +929,8 @@ export function LandingPageClient() {
         </section>
 
         {/* ─── מנטורים ─── */}
-        <section className="landing-section landing-section-dark" aria-labelledby="mentors-heading">
+        <section className="landing-section landing-section-dark landing-fade-top landing-fade-bottom" aria-labelledby="mentors-heading">
+          <FloatingParticles count={16} />
           <div className="landing-wrap">
             <div className="landing-section-head landing-section-head-center">
               <SectionEyebrow>הצוות שלכם</SectionEyebrow>
@@ -978,7 +1089,8 @@ export function LandingPageClient() {
         </section>
 
         {/* ─── CTA ─── */}
-        <section className="landing-section landing-cta-band" aria-label="הצטרפות">
+        <section className="landing-section landing-cta-band landing-fade-top" aria-label="הצטרפות">
+          <FloatingParticles count={24} />
           <div className="landing-cta-orbs" aria-hidden>
             <span className="landing-cta-orb landing-cta-orb-1" />
             <span className="landing-cta-orb landing-cta-orb-2" />
