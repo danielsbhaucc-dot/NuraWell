@@ -169,6 +169,88 @@ html {
     background: linear-gradient(180deg, #d1fae5 0%, #ecfdf5 40%, #f0fdfa 100%);
   }
 
+  /* ---- Scroll progress bar ---- */
+  .landing-progress-bar {
+    @apply fixed top-0 left-0 right-0 z-[60] origin-right;
+    height: 3px;
+    background: linear-gradient(
+      90deg,
+      #fbbf24 0%,
+      #34d399 30%,
+      #2dd4bf 60%,
+      #6ee7b7 100%
+    );
+    box-shadow:
+      0 0 12px rgba(52, 211, 153, 0.6),
+      0 1px 6px rgba(251, 191, 36, 0.4);
+    transform-origin: right center;
+    pointer-events: none;
+  }
+
+  /* ---- Smooth section fades (bleed into surrounding light sections) ---- */
+  .landing-fade-top,
+  .landing-fade-bottom {
+    @apply relative;
+  }
+
+  .landing-fade-top::before,
+  .landing-fade-bottom::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 90px;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .landing-fade-top::before {
+    top: 0;
+    background: linear-gradient(180deg, rgba(209, 250, 229, 0.95) 0%, rgba(209, 250, 229, 0.5) 35%, transparent 100%);
+  }
+
+  .landing-fade-bottom::after {
+    bottom: 0;
+    background: linear-gradient(0deg, rgba(209, 250, 229, 0.95) 0%, rgba(209, 250, 229, 0.5) 35%, transparent 100%);
+  }
+
+  /* ---- Floating particles ---- */
+  .landing-particles {
+    @apply absolute inset-0 pointer-events-none overflow-hidden;
+    z-index: 1;
+  }
+
+  .landing-particle {
+    @apply absolute rounded-full;
+    bottom: -10px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    animation-name: landing-particle-rise;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    will-change: transform, opacity;
+  }
+
+  @keyframes landing-particle-rise {
+    0% {
+      transform: translateY(0) translateX(0) scale(0.6);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.85;
+    }
+    50% {
+      transform: translateY(-50vh) translateX(20px) scale(1);
+    }
+    90% {
+      opacity: 0.6;
+    }
+    100% {
+      transform: translateY(-100vh) translateX(-15px) scale(0.4);
+      opacity: 0;
+    }
+  }
+
   .landing-wrap {
     @apply w-full max-w-xl mx-auto px-5 sm:max-w-2xl sm:px-6 md:max-w-4xl lg:max-w-5xl;
   }
