@@ -183,6 +183,30 @@ function chatHistoryWindow(): number {
   return Number.isFinite(n) && n >= 4 && n <= 40 ? Math.floor(n) : 12;
 }
 
+function currentIsraelDaypart(minutes: number): 'בוקר' | 'צהריים' | 'אחר הצהריים' | 'ערב' | 'לילה' {
+  if (minutes >= 5 * 60 && minutes < 11 * 60) return 'בוקר';
+  if (minutes >= 11 * 60 && minutes < 15 * 60) return 'צהריים';
+  if (minutes >= 15 * 60 && minutes < 18 * 60) return 'אחר הצהריים';
+  if (minutes >= 18 * 60 && minutes < 23 * 60) return 'ערב';
+  return 'לילה';
+}
+
+function buildCurrentIsraelTimeChatBlock(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jerusalem',
+    hour: '2-digit',
+    minute: '2-digit',
+    weekday: 'long',
+    hour12: false,
+  }).formatToParts(now);
+  const hour = parts.find((p) => p.type === 'hour')?.value ?? '00';
+  const minute = parts.find((p) => p.type === 'minute')?.value ?? '00';
+  const weekday = parts.find((p) => p.type === 'weekday')?.value ?? '';
+  const minutes = Number.parseInt(hour, 10) * 60 + Number.parseInt(minute, 10);
+  const daypart = currentIsraelDaypart(minutes);
+  return `[זמן עכשיו] ישראל ${weekday ? `${weekday} ` : ''}${hour}:${minute} · ${daypart}. עגן בעדינות אם רלוונטי; אם [יום] מראה מגע מוקדם ללא תשובה — המשך חברי, לא פתיחה חדשה ולא "למה לא ענית".`;
+}
+
 /**
  * אזהרה בלוג כאשר system prompt חוצה את הסף. 4000 תווים ≈ 1000-1100 טוקנים
  * — מעבר לזה נכנסים לסיכון של תקרת קונטקסט נמוכה לפלט.
@@ -961,6 +985,7 @@ export async function POST(request: Request) {
     if (turnWeightBlock) contextSections.push(turnWeightBlock);
 
     if (rollerCoasterBlock) contextSections.push(rollerCoasterBlock);
+    contextSections.push(buildCurrentIsraelTimeChatBlock());
     if (dailyShortTermBlock) contextSections.push(dailyShortTermBlock);
 
     if (stationRules) contextSections.push(stationRules.trim());
