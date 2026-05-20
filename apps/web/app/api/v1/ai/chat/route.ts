@@ -138,7 +138,24 @@ function chatRateLimitWindows() {
 }
 
 const BASE_SYSTEM_PROMPT = NURAWELL_CHAT_SYSTEM_PROMPT;
-const EMPTY_RESPONSE_FALLBACK = 'אני כאן איתך. ספר לי במשפט אחד מה הכי כבד עכשיו, ונחשוב יחד על צעד קטן להמשך.';
+
+/**
+ * Fallback למקרה שהמודל מחזיר טקסט ריק (קורה מדי פעם ב-edge עם reasoning).
+ * Pool של 5 ניסוחים טבעיים — בכל קריאה ננשלף אחד אקראי כדי שהמשתמש לא יראה
+ * את אותה תשובה פעמיים ברצף. כל הניסוחים בקול של אלמוג, לא של מערכת.
+ */
+const EMPTY_RESPONSE_FALLBACKS: readonly string[] = [
+  'רגע, נתקעתי על הניסוח 😅 תוכל לזרוק לי שוב במילים אחרות?',
+  'אוף, איבדתי את החוט לרגע. תספר לי עוד משפט?',
+  'יששש, פספסתי. במשפט אחד — מה הכי קורה איתך עכשיו?',
+  'אחי הלכתי לאיבוד שניה 😄 רגע — מה תפס אותך?',
+  'וואלה, חמקה לי המחשבה. תזרוק לי שוב את הקצה?',
+];
+
+function pickEmptyResponseFallback(): string {
+  const idx = Math.floor(Math.random() * EMPTY_RESPONSE_FALLBACKS.length);
+  return EMPTY_RESPONSE_FALLBACKS[idx] ?? EMPTY_RESPONSE_FALLBACKS[0];
+}
 
 /**
  * תקרת פלט מקסימלית.
@@ -1094,7 +1111,7 @@ export async function POST(request: Request) {
           }
         }
 
-        const assistantText = t || EMPTY_RESPONSE_FALLBACK;
+        const assistantText = t || pickEmptyResponseFallback();
         if (!t) {
           console.warn('[ai/chat]', {
             debug_id: debugId,
@@ -1340,7 +1357,7 @@ export async function POST(request: Request) {
     });
 
     if (!upstream.body) {
-      return new Response(EMPTY_RESPONSE_FALLBACK, {
+      return new Response(pickEmptyResponseFallback(), {
         status: 200,
         headers: {
           'Content-Type': 'text/plain; charset=utf-8',
@@ -1372,7 +1389,7 @@ export async function POST(request: Request) {
           const trailing = decoder.decode();
           if (!hadVisibleText && trailing.trim().length > 0) hadVisibleText = true;
           if (!hadVisibleText) {
-            controller.enqueue(encoder.encode(EMPTY_RESPONSE_FALLBACK));
+            controller.enqueue(encoder.encode(pickEmptyResponseFallback()));
             console.warn('[ai/chat]', { debug_id: debugId, stage: 'stream_empty_fallback' });
           }
           controller.close();
