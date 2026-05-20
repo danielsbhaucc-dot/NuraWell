@@ -128,6 +128,20 @@ export async function sendOnboardingCheckInNotification(
     ? `\nמסע:\n${formatJourneyBlockForPersonalizedCheckIn(journeyCtx)}${companionStatusBlock}`
     : companionStatusBlock || '';
 
+  /**
+   * משתמש חדש שלא פתח את הצעד הראשון — גם אם נופלים ל-fallback של check-in רגיל
+   * (למשל כי ה-gate חסם את ה-companion nudge), חייבים לדרבן לפתוח, לא לשלוח "איך הולך" גנרי.
+   * זה ההבדל בין מאמן אמיתי לבוט שמדבר על מזג האוויר.
+   */
+  const phaseForKickoff = companionCtx?.phase;
+  const isKickoffNeeded =
+    phaseForKickoff === 'not_started' || phaseForKickoff === 'step_not_opened';
+  const kickoffStepLabel =
+    isKickoffNeeded && companionCtx?.stepTitle ? `"${companionCtx.stepTitle}"` : 'הצעד הראשון';
+  const kickoffHint = isKickoffNeeded
+    ? `\n[משתמש חדש — לא פתח עדיין את ${kickoffStepLabel}] דרבון חברי קונקרטי: להיכנס ולצפות בשיעור הקצר (5–10 דקות) ולסיים את הצעד. שאלת זמן ספציפית — "מתי בא לך, עכשיו או הערב?" — לא "מה קורה". אם יש journey_follow_up (הבטחה כמו "אצפה מחר") — כבד וחכה לזמן ההוא, רק תזכיר בעדינות.`
+    : '';
+
   const checkMin = parseHHMMToMinutes(payload.checkInTime);
   const nowMin = getIsraelNowMinutes();
   const timeRelation =
@@ -154,17 +168,19 @@ export async function sendOnboardingCheckInNotification(
   const lifeBlock = lc ? `\n${formatLifeContextNotifyBlock(lc)}\n` : '';
 
   const systemPrompt = `${NOTIFY_PERSONALIZED_TASK}
-${profileHint ? `פרופיל:${profileHint}\n` : ''}${lifeBlock}${journeyBlock}
+${profileHint ? `פרופיל:${profileHint}\n` : ''}${lifeBlock}${journeyBlock}${kickoffHint}
 ${buildSlotDaypartPromptBlock(slot)}
 ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : ''}${profileSchedule.proximity ?? ''}
 מגע ${payload.checkInIndex + 1}/${totalToday} ${payload.checkInTime}. ${timeRelation}`;
 
   const journeyHint =
-    journeyCtx && !companionCtx
-      ? ' שילב בעדינות משהו מהמסע אם רלוונטי לשעה הזו.'
-      : companionCtx && companionCtx.phase === 'step_in_progress'
-        ? ' אפשר להזכיר בעדינות את הצעד הנוכחי במסע אם מתאים.'
-        : '';
+    isKickoffNeeded
+      ? ' פתח/י את ההודעה בדרבון רך לצעד הראשון (לא "איך הולך").'
+      : journeyCtx && !companionCtx
+        ? ' שילב בעדינות משהו מהמסע אם רלוונטי לשעה הזו.'
+        : companionCtx && companionCtx.phase === 'step_in_progress'
+          ? ' אפשר להזכיר בעדינות את הצעד הנוכחי במסע אם מתאים.'
+          : '';
 
   const body = await completeEmpathyNotifyBody({
     label: 'almog_personalized_check_in',
@@ -181,7 +197,17 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
     ],
   });
 
-  const title = `${firstName} 💬`;
+  /**
+   * משתמש שלא פתח את הצעד הראשון — ה-CTA מפנה ישירות לצעד (ולא רק ל-/home או /journey),
+   * כדי שלחיצה תפתח את השיעור הקצר במקום מפת המסע הכללית.
+   */
+  const kickoffActionUrl = isKickoffNeeded
+    ? companionCtx?.stepNumber != null
+      ? `/journey/${companionCtx.stepNumber}`
+      : '/journey'
+    : null;
+  const title = `${firstName} ${isKickoffNeeded ? '🚀' : '💬'}`;
+  const iconEmoji = isKickoffNeeded ? '🚀' : '🌿';
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: inserted, error } = await (admin as any)
@@ -191,8 +217,8 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
       type: 'ai_message',
       title,
       body,
-      icon_emoji: '🌿',
-      action_url: journeyCtx ? '/journey' : '/home',
+      icon_emoji: iconEmoji,
+      action_url: kickoffActionUrl ?? (journeyCtx ? '/journey' : '/home'),
       is_read: false,
       is_sent: false,
       send_at: new Date().toISOString(),
@@ -204,6 +230,8 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
         checkpoint_date: payload.checkpointDate,
         model: AI_MODELS.empathy,
         mentor: 'almog',
+        journey_kickoff: isKickoffNeeded,
+        journey_phase: phaseForKickoff ?? null,
         habit_ids: journeyCtx?.habits.map((h) => h.id) ?? [],
         pending_task_ids: journeyCtx?.pendingTasks.map((t) => t.id) ?? [],
       },

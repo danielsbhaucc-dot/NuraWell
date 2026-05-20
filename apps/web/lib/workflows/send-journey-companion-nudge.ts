@@ -60,7 +60,13 @@ export async function sendJourneyCompanionNudge(
     ],
   });
 
-  const title = `${firstName} 🌿`;
+  /**
+   * משתמש שעדיין לא פתח את הצעד — אייקון/כותרת קצת יותר מזמינה ("בוא נתחיל" במקום עלה).
+   * זה לא משנה את הטון אבל מבדיל ויזואלית בין kickoff לליווי שגרתי.
+   */
+  const isKickoff = companion.phase === 'not_started' || companion.phase === 'step_not_opened';
+  const iconEmoji = isKickoff ? '🚀' : '🌿';
+  const title = `${firstName} ${iconEmoji}`;
   const stepPath =
     companion.stepNumber != null ? String(companion.stepNumber) : companion.stepId;
   const actionUrl = `/journey/${stepPath}`;
@@ -73,7 +79,7 @@ export async function sendJourneyCompanionNudge(
       type: 'ai_message',
       title,
       body,
-      icon_emoji: '🌿',
+      icon_emoji: iconEmoji,
       action_url: actionUrl,
       is_read: false,
       is_sent: false,
@@ -83,6 +89,7 @@ export async function sendJourneyCompanionNudge(
         expects_reply: true,
         journey_phase: companion.phase,
         journey_promise: companion.followUpDue,
+        journey_kickoff: isKickoff,
         step_id: companion.stepId,
         model: AI_MODELS.empathy,
         mentor: 'almog',

@@ -14,6 +14,7 @@ const base: JourneyCompanionContext = {
   stationTitle: 'התחלה',
   stepNumber: 1,
   daysSinceOnboarding: 2,
+  minutesSinceOnboarding: 2 * 24 * 60,
   daysSinceStepTouch: null,
   lastSection: null,
   snapshot: { pendingTaskTitles: [], openAcceptedCount: 0 },
@@ -27,9 +28,46 @@ const base: JourneyCompanionContext = {
 };
 
 describe('shouldNudgeJourneyCompanion', () => {
-  it('ממתין יום אחרי אונבורדינג', () => {
-    expect(shouldNudgeJourneyCompanion({ ...base, daysSinceOnboarding: 0 })).toBe(false);
-    expect(shouldNudgeJourneyCompanion({ ...base, daysSinceOnboarding: 1 })).toBe(true);
+  it('משתמש חדש שלא פתח את הצעד — לא מחכה יום שלם', () => {
+    /** פחות משעה מההצטרפות — חוסם כדי לא להציף ישר. */
+    expect(
+      shouldNudgeJourneyCompanion({
+        ...base,
+        phase: 'not_started',
+        daysSinceOnboarding: 0,
+        minutesSinceOnboarding: 30,
+        daysSinceLastCompanionNudge: null,
+      })
+    ).toBe(false);
+
+    /** שעה+ אחרי הצטרפות — דרבון לפתוח את הצעד הראשון, גם בלי לחכות יום. */
+    expect(
+      shouldNudgeJourneyCompanion({
+        ...base,
+        phase: 'not_started',
+        daysSinceOnboarding: 0,
+        minutesSinceOnboarding: 180,
+        daysSinceLastCompanionNudge: null,
+      })
+    ).toBe(true);
+  });
+
+  it('בצעד פעיל ממתין יום אחרי אונבורדינג כרגיל', () => {
+    expect(
+      shouldNudgeJourneyCompanion({
+        ...base,
+        phase: 'step_in_progress',
+        daysSinceOnboarding: 0,
+      })
+    ).toBe(false);
+    expect(
+      shouldNudgeJourneyCompanion({
+        ...base,
+        phase: 'step_in_progress',
+        daysSinceOnboarding: 1,
+        daysSinceLastCompanionNudge: 1,
+      })
+    ).toBe(true);
   });
 
   it('מגע יומי גם באמצע צעד', () => {

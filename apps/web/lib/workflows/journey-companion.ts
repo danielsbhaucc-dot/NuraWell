@@ -42,6 +42,8 @@ export type JourneyCompanionContext = {
   stationTitle: string | null;
   stepNumber: number | null;
   daysSinceOnboarding: number;
+  /** דקות מההרשמה — חשוב למשתמש חדש (פחות מ-1 יום) שצריך דרבון בו ביום. */
+  minutesSinceOnboarding: number | null;
   daysSinceStepTouch: number | null;
   lastSection: string | null;
   snapshot: JourneyCompanionSnapshot;
@@ -98,6 +100,13 @@ function daysSince(iso: string | null | undefined): number | null {
   return Math.floor((Date.now() - new Date(iso).getTime()) / DAY_MS);
 }
 
+function minutesSince(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return null;
+  return Math.max(0, Math.floor((Date.now() - t) / 60000));
+}
+
 function stationTitleFromJoin(raw: unknown): string | null {
   if (!raw) return null;
   if (Array.isArray(raw)) {
@@ -129,6 +138,21 @@ function buildSnapshot(rows: ProgressRowLite[]): JourneyCompanionSnapshot {
 export function shouldNudgeJourneyCompanion(ctx: JourneyCompanionContext): boolean {
   if (ctx.lifeContextualDue) return true;
   if (ctx.followUpDue) return true;
+
+  /**
+   * משתמש חדש שעדיין לא נגע במסע — אסור לדחות יום שלם.
+   * מאמן אמיתי מדרבן בו ביום שבו ההצטרפות נסגרה, לא ימים אחרי.
+   * שמירה: כל עוד עברה לפחות שעה מההצטרפות (כדי לא להציף ישר אחרי הרישום).
+   */
+  if (ctx.phase === 'not_started' || ctx.phase === 'step_not_opened') {
+    if (ctx.minutesSinceOnboarding != null && ctx.minutesSinceOnboarding < 60) {
+      return false;
+    }
+    const since = ctx.daysSinceLastCompanionNudge;
+    if (since == null) return true;
+    return since >= ctx.nudgeIntervalDays;
+  }
+
   if (ctx.daysSinceOnboarding < 1) return false;
   const since = ctx.daysSinceLastCompanionNudge;
   if (since == null) return true;
@@ -171,15 +195,28 @@ export function formatJourneyCompanionPromptBlock(ctx: JourneyCompanionContext):
     : `«${ctx.stepTitle}»`;
 
   switch (ctx.phase) {
-    case 'not_started':
-      parts.push(`מסע: עדיין לא התחיל. ${where} — הזמנה רכה, לא משימה.`);
+    case 'not_started': {
+      const newcomer =
+        ctx.minutesSinceOnboarding != null && ctx.minutesSinceOnboarding < 36 * 60;
+      if (newcomer) {
+        parts.push(
+          `מסע: רק נרשם/ה ועדיין לא נכנס/ה לצעד הראשון "${ctx.stepTitle}" (כ-${Math.round((ctx.minutesSinceOnboarding ?? 0) / 60)} שעות מאז ההצטרפות). זה המגע הראשון מאלמוג: דרבון רך אבל ברור — להיכנס לצעד הראשון, לצפות בשיעור הקצר ולסיים אותו. הצעד הוא 5–10 דקות. שאלה ספציפית: "מתי בא לך להיכנס לזה — עכשיו או לקראת הערב?" — בלי "איך הולך?", זה לא נחשב פנייה. אם המשתמש/ת בשיחה הקודמת אמר/ה "אצפה מחר" — כבד את ההבטחה ופנה רק אז.`
+        );
+      } else {
+        parts.push(
+          `מסע: עדיין לא פתח/ה את הצעד הראשון "${ctx.stepTitle}". זה הצעד הקצר שפותח את כל המסע (5–10 דקות, סרטון קצר). דרבון חברי קונקרטי לפתוח אותו עכשיו או לקבוע זמן ספציפי היום — "מתי טוב לך לתת לזה 10 דקות?" — לא "איך הולך".`
+        );
+      }
       break;
+    }
     case 'step_not_opened':
-      parts.push(`מסע: ${where} מחכה — שאל מה קורה ביום, בלי לחץ.`);
+      parts.push(
+        `מסע: הגיע ${where} ועדיין לא נפתח. הזמן אותו/ה ספציפית להיכנס ולצפות בשיעור עכשיו (5–10 דקות), או "מתי טוב לך היום?" — שאלת זמן קונקרטית, לא "איך הולך".`
+      );
       break;
     case 'step_stalled':
       parts.push(
-        `מסע: התחילו ${where}, לא סיימו (${ctx.daysSinceStepTouch ?? '?'} ימים) — הכול בסדר? משהו לא ברור?`
+        `מסע: התחילו ${where}, לא סיימו (${ctx.daysSinceStepTouch ?? '?'} ימים) — מה תקע? משהו בשיעור לא ברור, או פשוט לא הסתדר עם הזמן? תזמין/י לסיים את מה שנפתח.`
       );
       break;
     case 'step_in_progress':
@@ -312,6 +349,7 @@ export async function fetchJourneyCompanionContext(
   const snapshot = buildSnapshot(progressRows);
   const progressByStep = new Map(progressRows.map((r) => [r.step_id, r]));
   const daysSinceOnboarding = daysSince(profile.created_at as string) ?? 0;
+  const minutesSinceOnboardingValue = minutesSince(profile.created_at as string);
   const aiCtx = (profile.ai_context ?? {}) as AiUserContext;
   const followUp = readJourneyFollowUp(aiCtx);
   const followUpDue = isJourneyFollowUpDue(followUp);
@@ -322,7 +360,7 @@ export async function fetchJourneyCompanionContext(
   const buildBase = (
     phase: JourneyCompanionPhase,
     step: StepRow,
-    extra: Partial<JourneyCompanionContext>
+    extra: Partial<JourneyCompanionContext> = {}
   ): JourneyCompanionContext => ({
     phase,
     stepId: step.id,
@@ -330,6 +368,7 @@ export async function fetchJourneyCompanionContext(
     stationTitle: stationTitleFromJoin(step.journey_stations),
     stepNumber: typeof step.step_number === 'number' ? step.step_number : null,
     daysSinceOnboarding,
+    minutesSinceOnboarding: minutesSinceOnboardingValue,
     daysSinceStepTouch: null,
     lastSection: null,
     snapshot,
