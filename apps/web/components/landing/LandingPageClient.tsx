@@ -309,7 +309,7 @@ export function LandingPageClient() {
                   icon: Trophy,
                   value: '4.9★',
                   label: 'דירוג ממוצע',
-                  tone: 'amber',
+                  tone: 'sky',
                 },
                 {
                   icon: Heart,
@@ -448,7 +448,7 @@ export function LandingPageClient() {
         <section className="landing-section landing-section-soft landing-section-glow" aria-labelledby="philosophy-heading">
           <div className="landing-section-orbs" aria-hidden>
             <span className="landing-section-orb landing-section-orb-emerald" />
-            <span className="landing-section-orb landing-section-orb-amber" />
+            <span className="landing-section-orb landing-section-orb-sky" />
           </div>
           <div className="landing-wrap">
             <div className="landing-section-head landing-section-head-center">
@@ -484,7 +484,7 @@ export function LandingPageClient() {
                   icon: Compass,
                   title: 'מלווים באמת',
                   text: 'דולב בקליטה, אלמוג במסע — AI שמדבר אליכם, לא אלגוריתם קר.',
-                  tone: 'amber',
+                  tone: 'sky',
                 },
               ].map((item, i) => (
                 <motion.article
@@ -722,7 +722,7 @@ export function LandingPageClient() {
 
               {[
                 { icon: BookOpen, title: 'קורסים ושיעורים', text: 'וידאו, אודיו וטקסט מקצועי בעברית.', tone: 'teal' },
-                { icon: Sun, title: 'הרגלים יומיים', text: 'בניית שגרה בריאה בצעדים קטנים.', tone: 'amber' },
+                { icon: Sun, title: 'הרגלים יומיים', text: 'בניית שגרה בריאה בצעדים קטנים.', tone: 'sky' },
                 { icon: Bell, title: 'תזכורות חכמות', text: 'מגעים עדינים לפני הרגעים הקשים.', tone: 'rose' },
                 { icon: Route, title: 'מסע מובנה', text: 'תחנות, שלבים ומשימות שמתקדמים איתכם.', tone: 'orange' },
               ].map((f, i) => (
@@ -857,7 +857,7 @@ export function LandingPageClient() {
                   icon: Brain,
                   title: 'הראש משתנה',
                   text: 'פחות אשמה, יותר בחירה. היחס לאוכל, לשינה ולתנועה — אחר.',
-                  tone: 'amber',
+                  tone: 'sky',
                 },
                 {
                   day: 'יום 90',
@@ -1037,7 +1037,7 @@ export function LandingPageClient() {
                   n: '03',
                   title: 'ליווי יומיומי',
                   text: 'אלמוג לצדכם — משימות, עידוד והכוונה.',
-                  tone: 'amber',
+                  tone: 'sky',
                 },
               ].map((step, i) => (
                 <motion.li

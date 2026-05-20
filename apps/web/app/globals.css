@@ -175,14 +175,14 @@ html {
     height: 3px;
     background: linear-gradient(
       90deg,
-      #fbbf24 0%,
+      #22d3ee 0%,
       #34d399 30%,
       #2dd4bf 60%,
       #6ee7b7 100%
     );
     box-shadow:
       0 0 12px rgba(52, 211, 153, 0.6),
-      0 1px 6px rgba(251, 191, 36, 0.4);
+      0 1px 6px rgba(34, 211, 238, 0.4);
     transform-origin: right center;
     pointer-events: none;
   }
@@ -347,7 +347,7 @@ html {
     height: 280px;
     bottom: 10%;
     left: -80px;
-    background: radial-gradient(circle, rgba(251, 191, 36, 0.32), transparent 70%);
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.32), transparent 70%);
     animation: landing-orb-float 18s ease-in-out infinite reverse;
   }
 
@@ -422,7 +422,7 @@ html {
       #a7f3d0 0%,
       #34d399 35%,
       #2dd4bf 65%,
-      #fde68a 100%
+      #67e8f9 100%
     );
     background-size: 200% 100%;
     -webkit-background-clip: text;
@@ -536,26 +536,26 @@ html {
 
   .landing-section-white {
     background:
-      radial-gradient(ellipse 70% 60% at 10% 0%, rgba(16, 185, 129, 0.32), transparent 55%),
-      radial-gradient(ellipse 60% 50% at 95% 100%, rgba(20, 184, 166, 0.28), transparent 55%),
-      radial-gradient(ellipse 50% 40% at 50% 50%, rgba(251, 191, 36, 0.14), transparent 60%),
-      linear-gradient(180deg, #bbf7d0 0%, #d1fae5 35%, #ecfdf5 100%);
+      radial-gradient(ellipse 70% 60% at 10% 0%, rgba(16, 185, 129, 0.4), transparent 55%),
+      radial-gradient(ellipse 60% 50% at 95% 100%, rgba(20, 184, 166, 0.38), transparent 55%),
+      radial-gradient(ellipse 50% 40% at 50% 50%, rgba(34, 211, 238, 0.18), transparent 60%),
+      linear-gradient(180deg, #86efac 0%, #a7f3d0 35%, #d1fae5 100%);
   }
 
   .landing-section-muted {
     background:
-      radial-gradient(ellipse at top right, rgba(110, 231, 183, 0.35), transparent 58%),
-      radial-gradient(ellipse at bottom left, rgba(45, 212, 191, 0.28), transparent 55%),
-      radial-gradient(ellipse at 50% 50%, rgba(52, 211, 153, 0.12), transparent 70%),
-      linear-gradient(180deg, #d1fae5 0%, #ccfbf1 50%, #ecfdf5 100%);
+      radial-gradient(ellipse at top right, rgba(16, 185, 129, 0.32), transparent 58%),
+      radial-gradient(ellipse at bottom left, rgba(13, 148, 136, 0.28), transparent 55%),
+      radial-gradient(ellipse at 50% 50%, rgba(4, 120, 87, 0.14), transparent 70%),
+      linear-gradient(180deg, #a7f3d0 0%, #6ee7b7 50%, #99f6e4 100%);
   }
 
   .landing-section-soft {
     background:
-      radial-gradient(ellipse 55% 65% at 95% 5%, rgba(252, 211, 77, 0.32), transparent 50%),
-      radial-gradient(ellipse 65% 55% at 5% 95%, rgba(45, 212, 191, 0.35), transparent 50%),
-      radial-gradient(ellipse 45% 45% at 50% 50%, rgba(110, 231, 183, 0.22), transparent 60%),
-      linear-gradient(180deg, #bbf7d0 0%, #d1fae5 50%, #a7f3d0 100%);
+      radial-gradient(ellipse 55% 65% at 95% 5%, rgba(34, 211, 238, 0.38), transparent 50%),
+      radial-gradient(ellipse 65% 55% at 5% 95%, rgba(20, 184, 166, 0.42), transparent 50%),
+      radial-gradient(ellipse 45% 45% at 50% 50%, rgba(16, 185, 129, 0.28), transparent 60%),
+      linear-gradient(180deg, #86efac 0%, #6ee7b7 50%, #5eead4 100%);
   }
 
   /* Floating orbs on tinted light sections */
@@ -581,12 +581,12 @@ html {
     background: radial-gradient(circle, rgba(52, 211, 153, 0.55), transparent 70%);
   }
 
-  .landing-section-orb-amber {
+  .landing-section-orb-sky {
     width: 240px;
     height: 240px;
     bottom: -50px;
     left: -50px;
-    background: radial-gradient(circle, rgba(251, 191, 36, 0.5), transparent 70%);
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.45), transparent 70%);
   }
 
   .landing-section-orb-teal {
@@ -624,7 +624,7 @@ html {
     background:
       radial-gradient(ellipse 50% 40% at 80% 20%, rgba(16, 185, 129, 0.28), transparent 60%),
       radial-gradient(ellipse 60% 50% at 20% 80%, rgba(20, 184, 166, 0.22), transparent 60%),
-      radial-gradient(ellipse 30% 30% at 60% 60%, rgba(251, 191, 36, 0.1), transparent 65%);
+      radial-gradient(ellipse 30% 30% at 60% 60%, rgba(34, 211, 238, 0.1), transparent 65%);
     pointer-events: none;
   }
 
@@ -687,8 +687,8 @@ html {
   .landing-imagine .landing-eyebrow::before,
   .landing-timeline .landing-eyebrow::before,
   .landing-cta-band .landing-eyebrow::before {
-    background: linear-gradient(135deg, #fbbf24, #6ee7b7);
-    box-shadow: 0 0 10px rgba(251, 191, 36, 0.65);
+    background: linear-gradient(135deg, #22d3ee, #6ee7b7);
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.65);
   }
 
   .landing-h2 {
@@ -702,7 +702,7 @@ html {
   }
 
   .landing-h2-light {
-    background: linear-gradient(118deg, #ecfdf5 0%, #d1fae5 40%, #6ee7b7 70%, #fde68a 100%);
+    background: linear-gradient(118deg, #ecfdf5 0%, #d1fae5 40%, #6ee7b7 70%, #a5f3fc 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -826,7 +826,7 @@ html {
     @apply relative py-10 sm:py-14 overflow-hidden;
     background:
       radial-gradient(ellipse 60% 80% at 50% 0%, rgba(110, 231, 183, 0.18), transparent 60%),
-      radial-gradient(ellipse 40% 60% at 90% 100%, rgba(251, 191, 36, 0.12), transparent 65%),
+      radial-gradient(ellipse 40% 60% at 90% 100%, rgba(34, 211, 238, 0.12), transparent 65%),
       radial-gradient(ellipse 40% 60% at 10% 100%, rgba(45, 212, 191, 0.18), transparent 65%),
       linear-gradient(180deg, #047857 0%, #059669 50%, #0d9488 100%);
   }
@@ -863,7 +863,7 @@ html {
     right: 0;
     left: 0;
     height: 3px;
-    background: linear-gradient(90deg, var(--stat-from, #6ee7b7), var(--stat-to, #fbbf24));
+    background: linear-gradient(90deg, var(--stat-from, #6ee7b7), var(--stat-to, #22d3ee));
   }
 
   .landing-stat:hover {
@@ -902,7 +902,7 @@ html {
 
   .landing-stat-emerald { --stat-from: #059669; --stat-to: #34d399; --stat-shadow: rgba(16, 185, 129, 0.4); }
   .landing-stat-orange  { --stat-from: #ea580c; --stat-to: #fb923c; --stat-shadow: rgba(249, 115, 22, 0.35); }
-  .landing-stat-amber   { --stat-from: #d97706; --stat-to: #fbbf24; --stat-shadow: rgba(245, 158, 11, 0.35); }
+  .landing-stat-sky     { --stat-from: #0891b2; --stat-to: #22d3ee; --stat-shadow: rgba(8, 145, 178, 0.35); }
   .landing-stat-rose    { --stat-from: #e11d48; --stat-to: #fb7185; --stat-shadow: rgba(244, 63, 94, 0.35); }
 
   /* ---- MANIFESTO (WOW) ---- */
@@ -941,7 +941,7 @@ html {
     height: 320px;
     bottom: -80px;
     left: -80px;
-    background: radial-gradient(circle, rgba(251, 191, 36, 0.55), transparent 70%);
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.55), transparent 70%);
     animation: landing-orb-float 22s ease-in-out infinite reverse;
   }
 
@@ -1011,17 +1011,17 @@ html {
   .landing-manifesto-line-accent {
     background: linear-gradient(
       118deg,
-      #fef3c7 0%,
-      #fbbf24 22%,
-      #6ee7b7 50%,
-      #2dd4bf 78%,
-      #fbbf24 100%
+      #ecfdf5 0%,
+      #6ee7b7 25%,
+      #34d399 50%,
+      #2dd4bf 75%,
+      #a7f3d0 100%
     );
     background-size: 200% 100%;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    filter: drop-shadow(0 4px 24px rgba(251, 191, 36, 0.35));
+    filter: drop-shadow(0 4px 24px rgba(52, 211, 153, 0.4));
     animation: landing-title-shimmer 7s ease-in-out infinite;
   }
 
@@ -1054,7 +1054,7 @@ html {
     right: 0;
     left: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(110, 231, 183, 0.6), rgba(251, 191, 36, 0.6), transparent);
+    background: linear-gradient(90deg, transparent, rgba(110, 231, 183, 0.6), rgba(34, 211, 238, 0.6), transparent);
   }
 
   .landing-manifesto-pillar:hover {
@@ -1065,9 +1065,9 @@ html {
 
   .landing-manifesto-pillar-icon {
     @apply flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl mb-3;
-    background: linear-gradient(135deg, rgba(110, 231, 183, 0.28), rgba(251, 191, 36, 0.22));
+    background: linear-gradient(135deg, rgba(110, 231, 183, 0.28), rgba(34, 211, 238, 0.22));
     border: 1px solid rgba(255, 255, 255, 0.22);
-    color: #fef3c7;
+    color: #cffafe;
     box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.3);
   }
 
@@ -1098,9 +1098,9 @@ html {
 
   .landing-manifesto-identity-label {
     @apply inline-flex items-center gap-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-4 px-3 py-1.5 rounded-full;
-    color: #fde68a;
-    background: rgba(251, 191, 36, 0.12);
-    border: 1px solid rgba(251, 191, 36, 0.25);
+    color: #a5f3fc;
+    background: rgba(34, 211, 238, 0.12);
+    border: 1px solid rgba(34, 211, 238, 0.25);
     letter-spacing: 0.12em;
   }
 
@@ -1120,7 +1120,7 @@ html {
   }
 
   .landing-manifesto-identity-text strong {
-    background: linear-gradient(118deg, #6ee7b7 0%, #2dd4bf 50%, #fbbf24 100%);
+    background: linear-gradient(118deg, #6ee7b7 0%, #2dd4bf 50%, #22d3ee 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -1135,7 +1135,7 @@ html {
   /* ---- Color tones for icons / cards ---- */
   .landing-tone-emerald { --tone-from: #059669; --tone-to: #34d399; --tone-soft: rgba(16, 185, 129, 0.12); --tone-border: rgba(16, 185, 129, 0.25); --tone-shadow: rgba(16, 185, 129, 0.28); }
   .landing-tone-teal    { --tone-from: #0d9488; --tone-to: #2dd4bf; --tone-soft: rgba(20, 184, 166, 0.12); --tone-border: rgba(20, 184, 166, 0.25); --tone-shadow: rgba(20, 184, 166, 0.28); }
-  .landing-tone-amber   { --tone-from: #d97706; --tone-to: #fbbf24; --tone-soft: rgba(245, 158, 11, 0.12); --tone-border: rgba(245, 158, 11, 0.28); --tone-shadow: rgba(245, 158, 11, 0.28); }
+  .landing-tone-sky     { --tone-from: #0891b2; --tone-to: #22d3ee; --tone-soft: rgba(8, 145, 178, 0.12); --tone-border: rgba(8, 145, 178, 0.28); --tone-shadow: rgba(8, 145, 178, 0.3); }
   .landing-tone-rose    { --tone-from: #e11d48; --tone-to: #fb7185; --tone-soft: rgba(244, 63, 94, 0.1);  --tone-border: rgba(244, 63, 94, 0.22);  --tone-shadow: rgba(244, 63, 94, 0.25); }
   .landing-tone-orange  { --tone-from: #ea580c; --tone-to: #fb923c; --tone-soft: rgba(249, 115, 22, 0.1); --tone-border: rgba(249, 115, 22, 0.22); --tone-shadow: rgba(249, 115, 22, 0.25); }
 
@@ -1252,7 +1252,7 @@ html {
   .landing-card-glass-gradient {
     @apply relative overflow-hidden;
     background:
-      radial-gradient(ellipse 70% 60% at 100% 0%, rgba(251, 191, 36, 0.28), transparent 55%),
+      radial-gradient(ellipse 70% 60% at 100% 0%, rgba(34, 211, 238, 0.28), transparent 55%),
       radial-gradient(ellipse 60% 80% at 0% 100%, rgba(45, 212, 191, 0.28), transparent 55%),
       linear-gradient(145deg, rgba(167, 243, 208, 0.65) 0%, rgba(209, 250, 229, 0.55) 100%);
     border: 1px solid rgba(16, 185, 129, 0.45);
@@ -1336,7 +1336,7 @@ html {
   .landing-bento-featured-tag {
     @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold;
     color: #064e3b;
-    background: linear-gradient(135deg, rgba(252, 211, 77, 0.5), rgba(110, 231, 183, 0.5));
+    background: linear-gradient(135deg, rgba(34, 211, 238, 0.5), rgba(110, 231, 183, 0.5));
     border: 1px solid rgba(4, 120, 87, 0.3);
   }
 
@@ -1401,18 +1401,18 @@ html {
   }
 
   .landing-image-badge-warm {
-    background: rgba(124, 45, 18, 0.42);
-    border-color: rgba(254, 215, 170, 0.3);
+    background: rgba(15, 23, 42, 0.38);
+    border-color: rgba(255, 255, 255, 0.18);
     color: #ffffff;
   }
 
   .landing-image-badge-warm::before {
-    background: #fbbf24;
-    box-shadow: 0 0 8px rgba(251, 191, 36, 0.85);
+    background: #fb7185;
+    box-shadow: 0 0 8px rgba(251, 113, 133, 0.85);
   }
 
   .landing-image-badge-warm svg {
-    color: #fed7aa;
+    color: #fda4af;
   }
 
   /* ---- Gradient text helper ---- */
@@ -1441,7 +1441,7 @@ html {
         transparent,
         rgba(16, 185, 129, 0.3) 15%,
         rgba(20, 184, 166, 0.3) 50%,
-        rgba(245, 158, 11, 0.3) 85%,
+        rgba(6, 182, 212, 0.3) 85%,
         transparent
       );
       z-index: 0;
@@ -1499,7 +1499,7 @@ html {
     height: 320px;
     top: -60px;
     right: -80px;
-    background: radial-gradient(circle, #fbbf24, transparent 70%);
+    background: radial-gradient(circle, #22d3ee, transparent 70%);
     animation: landing-orb-float 16s ease-in-out infinite;
   }
 
@@ -1542,11 +1542,11 @@ html {
   }
 
   .landing-cta-title-accent {
-    background: linear-gradient(118deg, #fef3c7 0%, #fbbf24 50%, #f59e0b 100%);
+    background: linear-gradient(118deg, #cffafe 0%, #22d3ee 50%, #06b6d4 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    filter: drop-shadow(0 2px 8px rgba(251, 191, 36, 0.3));
+    filter: drop-shadow(0 2px 8px rgba(34, 211, 238, 0.3));
   }
 
   .landing-cta-text {
@@ -1559,7 +1559,7 @@ html {
 
   .landing-cta-band .landing-btn-primary {
     background:
-      radial-gradient(ellipse at top right, rgba(251, 191, 36, 0.3), transparent 60%),
+      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.3), transparent 60%),
       linear-gradient(135deg, rgba(167, 243, 208, 0.4), rgba(110, 231, 183, 0.25));
     color: #064e3b;
     border: 1.5px solid rgba(110, 231, 183, 0.7);
@@ -1574,7 +1574,7 @@ html {
 
   .landing-cta-band .landing-btn-primary:hover {
     background:
-      radial-gradient(ellipse at top right, rgba(251, 191, 36, 0.45), transparent 60%),
+      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.45), transparent 60%),
       linear-gradient(135deg, rgba(167, 243, 208, 0.55), rgba(110, 231, 183, 0.4));
     transform: translateY(-2px);
     box-shadow:
@@ -1587,7 +1587,7 @@ html {
     background:
       radial-gradient(ellipse 50% 50% at 90% 10%, rgba(244, 63, 94, 0.22), transparent 55%),
       radial-gradient(ellipse 50% 60% at 10% 90%, rgba(16, 185, 129, 0.32), transparent 55%),
-      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(251, 191, 36, 0.14), transparent 65%),
+      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(34, 211, 238, 0.14), transparent 65%),
       linear-gradient(180deg, #fecaca 0%, #d1fae5 45%, #a7f3d0 100%);
   }
 
@@ -1700,7 +1700,7 @@ html {
   .landing-contrast-footnote {
     @apply relative mt-12 max-w-xl mx-auto px-6 py-6 sm:px-7 sm:py-7 rounded-3xl overflow-hidden;
     background:
-      radial-gradient(ellipse at top right, rgba(251, 191, 36, 0.18), transparent 60%),
+      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.18), transparent 60%),
       linear-gradient(135deg, rgba(110, 231, 183, 0.45), rgba(45, 212, 191, 0.32));
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
@@ -1717,16 +1717,16 @@ html {
     right: 0;
     left: 0;
     height: 3px;
-    background: linear-gradient(90deg, transparent, #fbbf24, #34d399, #2dd4bf, transparent);
+    background: linear-gradient(90deg, transparent, #22d3ee, #34d399, #2dd4bf, transparent);
   }
 
   .landing-contrast-footnote-icon {
     @apply flex h-12 w-12 items-center justify-center rounded-2xl mx-auto mb-3;
-    background: linear-gradient(135deg, #fbbf24, #34d399);
+    background: linear-gradient(135deg, #22d3ee, #34d399);
     color: #064e3b;
     box-shadow:
-      0 10px 24px -6px rgba(251, 191, 36, 0.55),
-      inset 0 1px 0 rgba(254, 243, 199, 0.6);
+      0 10px 24px -6px rgba(34, 211, 238, 0.55),
+      inset 0 1px 0 rgba(207, 250, 254, 0.6);
   }
 
   .landing-contrast-footnote-icon svg {
@@ -1755,7 +1755,7 @@ html {
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(ellipse 50% 40% at 80% 10%, rgba(251, 191, 36, 0.18), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 80% 10%, rgba(34, 211, 238, 0.18), transparent 60%),
       radial-gradient(ellipse 60% 50% at 10% 90%, rgba(45, 212, 191, 0.18), transparent 60%);
     pointer-events: none;
   }
@@ -1784,7 +1784,7 @@ html {
     right: 0;
     left: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(110, 231, 183, 0.6), rgba(251, 191, 36, 0.5), transparent);
+    background: linear-gradient(90deg, transparent, rgba(110, 231, 183, 0.6), rgba(34, 211, 238, 0.5), transparent);
   }
 
   .landing-imagine-card:hover {
@@ -1795,9 +1795,9 @@ html {
 
   .landing-imagine-icon {
     @apply flex h-12 w-12 items-center justify-center rounded-2xl mb-4;
-    background: linear-gradient(135deg, rgba(251, 191, 36, 0.18), rgba(45, 212, 191, 0.22));
+    background: linear-gradient(135deg, rgba(34, 211, 238, 0.18), rgba(45, 212, 191, 0.22));
     border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #fef3c7;
+    color: #cffafe;
   }
 
   .landing-imagine-icon svg {
@@ -1837,7 +1837,7 @@ html {
     @apply absolute inset-0 pointer-events-none;
     background:
       radial-gradient(ellipse 70% 50% at 50% 0%, rgba(110, 231, 183, 0.35), transparent 60%),
-      radial-gradient(ellipse 50% 40% at 90% 80%, rgba(251, 191, 36, 0.25), transparent 55%),
+      radial-gradient(ellipse 50% 40% at 90% 80%, rgba(34, 211, 238, 0.25), transparent 55%),
       radial-gradient(ellipse 50% 40% at 10% 60%, rgba(45, 212, 191, 0.3), transparent 55%);
   }
 
@@ -1868,7 +1868,7 @@ html {
         90deg,
         #6ee7b7,
         #34d399,
-        #fbbf24,
+        #22d3ee,
         #fb923c,
         #fb7185
       );
@@ -1945,7 +1945,7 @@ html {
   }
 
   .landing-timeline-quote strong {
-    @apply font-black text-amber-300;
+    @apply font-black text-cyan-300;
     font-size: 1.35em;
   }
 
@@ -1972,7 +1972,7 @@ html {
 
   .landing-faq-item.is-open {
     background:
-      radial-gradient(ellipse at top right, rgba(251, 191, 36, 0.18), transparent 60%),
+      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.18), transparent 60%),
       linear-gradient(135deg, rgba(167, 243, 208, 0.8), rgba(110, 231, 183, 0.6));
     border-color: rgba(16, 185, 129, 0.55);
     box-shadow:
@@ -2010,9 +2010,9 @@ html {
   }
 
   .landing-faq-item.is-open .landing-faq-icon {
-    background: linear-gradient(135deg, #d97706, #fbbf24);
+    background: linear-gradient(135deg, #0891b2, #22d3ee);
     box-shadow:
-      0 10px 22px -4px rgba(245, 158, 11, 0.55),
+      0 10px 22px -4px rgba(6, 182, 212, 0.55),
       inset 0 1px 0 rgba(255, 255, 255, 0.3);
     transform: rotate(360deg);
   }
@@ -2040,7 +2040,7 @@ html {
 
   .landing-faq-item.is-open .landing-faq-chev {
     transform: rotate(-90deg);
-    color: #d97706;
+    color: #0891b2;
   }
 
   .landing-faq-a-wrap {
@@ -2247,9 +2247,9 @@ html {
 
   .badge-accent {
     @apply badge;
-    background: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.2);
-    @apply text-amber-700;
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px solid rgba(6, 182, 212, 0.2);
+    @apply text-cyan-800;
   }
 
   /* ---- CONTAINERS ---- */
@@ -2392,7 +2392,7 @@ html {
 
   .text-gradient-accent {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #fbbf24, #f59e0b, #d97706);
+    background-image: linear-gradient(135deg, #22d3ee, #06b6d4, #0891b2);
   }
 
   .text-gradient-warm {
@@ -2447,7 +2447,7 @@ html {
   /* Glow Utilities — subtle for light theme */
   .glow-primary { box-shadow: 0 4px 16px rgba(16, 185, 129, 0.12); }
   .glow-secondary { box-shadow: 0 4px 16px rgba(20, 184, 166, 0.10); }
-  .glow-accent { box-shadow: 0 4px 16px rgba(245, 158, 11, 0.10); }
+  .glow-accent { box-shadow: 0 4px 16px rgba(6, 182, 212, 0.10); }
   .glow-energy { box-shadow: 0 4px 16px rgba(249, 115, 22, 0.10); }
 
   /* Touch */
