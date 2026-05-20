@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { requireApiSession } from '../../../../lib/api/route-guards';
+import { jerusalemDateKey } from '../../../../lib/journey/task-schedule';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 /**
  * תמצית מסע + התקדמות — למסך דיווח מהיר (בלי לוגיקת admin).
+ *
+ *  - מחזיר גם `today_executions`: שורות של journey_task_executions של היום בלוח ירושלים.
+ *  - מאפשר ל-UI להראות איזה סלוטים סומנו כבר היום, ולסמן מחדש מחר (איפוס יומי).
  */
 export async function GET(request: Request) {
   try {
@@ -35,13 +39,24 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed to load progress' }, { status: 500 });
     }
 
+    const todayKey = jerusalemDateKey();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rawExec } = await (supabase as any)
+      .from('journey_task_executions')
+      .select('step_id, task_id, slot, completed_at, date_key, source')
+      .eq('user_id', user.id)
+      .eq('date_key', todayKey)
+      .limit(500);
+
     const progByStep = new Map((rawProg ?? []).map((p: { step_id: string }) => [p.step_id, p]));
 
     return NextResponse.json({
+      today_date_key: todayKey,
       steps: (rawSteps ?? []).map((s: { id: string }) => ({
         ...s,
         progress: progByStep.get(s.id) ?? null,
       })),
+      today_executions: rawExec ?? [],
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

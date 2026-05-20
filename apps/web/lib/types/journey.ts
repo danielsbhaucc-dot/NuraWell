@@ -69,11 +69,45 @@ export interface Research {
   url: string | null;
 }
 
+/**
+ * תזמון משימה — קובע איך המשתמש מסמן ביצוע ואיך אלמוג מתייחס:
+ *  - one_time      = משימה חד-פעמית. accept/reject + execution_done יחיד (תאימות לאחור).
+ *  - daily         = יומית. checkbox יומי שמתאפס בכל בוקר.
+ *  - multi_daily   = X פעמים ביום. times_per_day קובע את מספר הסלוטים (2..6).
+ *                    סלוטים גנריים: morning / noon / evening (2-3) או slot_1..slot_n (4+).
+ *  - weekly        = שבועי. תיבת סימון אחת ביום שנקבע (weekly_day, 0=ראשון..6=שבת).
+ *  - per_meal      = לפני כל ארוחה. סלוטים: meal_breakfast / meal_lunch / meal_dinner
+ *                    (לפי profile.meal_schedule כשקיים).
+ */
+export type JourneyTaskSchedule =
+  | 'one_time'
+  | 'daily'
+  | 'multi_daily'
+  | 'weekly'
+  | 'per_meal';
+
+/** slot מזהה את הסלוט בתוך היום הספציפי לצורך טבלת journey_task_executions */
+export type JourneyTaskSlot =
+  | 'full_day'
+  | 'morning'
+  | 'noon'
+  | 'evening'
+  | 'meal_breakfast'
+  | 'meal_lunch'
+  | 'meal_dinner'
+  | `slot_${number}`;
+
 export interface JourneyTask {
   id: string;
   title: string;
   description: string | null;
   emoji: string;
+  /** תזמון; אם חסר → 'one_time' (תאימות לאחור) */
+  schedule?: JourneyTaskSchedule;
+  /** רלוונטי ל-multi_daily (2..6) */
+  times_per_day?: number | null;
+  /** רלוונטי ל-weekly (0..6) */
+  weekly_day?: number | null;
 }
 
 export interface JourneyHabit {
@@ -121,4 +155,18 @@ export type StepSection = 'video' | 'quiz' | 'game' | 'commitment' | 'summary';
 // For the journey list page
 export interface JourneyStepWithProgress extends JourneyStep {
   progress: JourneyStepProgress | null;
+}
+
+/** Row של ביצוע משימה בלוח (journey_task_executions) */
+export interface JourneyTaskExecution {
+  id: string;
+  user_id: string;
+  step_id: string;
+  task_id: string;
+  /** YYYY-MM-DD בלוח ירושלים */
+  date_key: string;
+  slot: JourneyTaskSlot;
+  completed_at: string;
+  source: 'manual' | 'chat' | 'reminder';
+  note?: string | null;
 }

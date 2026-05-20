@@ -18,6 +18,8 @@ import { AlmogAvatarChipWithNameTag } from './AlmogPresence';
 import { isCommitmentGateResolved } from '../../lib/journey/commitment-gate';
 import { emojiFromWellnessText } from '../../lib/emoji-from-text';
 import { useProgressReport } from '../progress-report/ProgressReportProvider';
+import { TaskDailySlots } from './TaskDailySlots';
+import { resolveTaskSchedule, scheduleLabel } from '../../lib/journey/task-schedule';
 
 interface SummarySectionProps {
   step: JourneyStep;
@@ -265,6 +267,9 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                   `${task.title} ${task.description ?? ''}`,
                   task.emoji || '✨'
                 );
+                const { schedule, times_per_day, weekly_day } = resolveTaskSchedule(task);
+                const isRecurring = schedule !== 'one_time';
+                const scheduleText = scheduleLabel(schedule, times_per_day, weekly_day);
 
                 const ringGradient =
                   status === 'accepted'
@@ -321,6 +326,20 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                               {taskEmoji}
                             </div>
                             <div className="min-w-0 flex-1 text-right space-y-2">
+                              <div className="flex items-center justify-end gap-2 flex-wrap">
+                                {isRecurring ? (
+                                  <span
+                                    className="text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full border border-emerald-400/45 text-emerald-900"
+                                    style={{
+                                      background:
+                                        'linear-gradient(135deg, rgba(209,250,229,0.95), rgba(167,243,208,0.4))',
+                                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
+                                    }}
+                                  >
+                                    תזמון · {scheduleText}
+                                  </span>
+                                ) : null}
+                              </div>
                               <p
                                 className="font-black text-[16px] sm:text-[17px] leading-snug text-slate-800 [overflow-wrap:anywhere] break-words tracking-tight"
                                 style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
@@ -396,12 +415,18 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                                 נא לבחור למעלה
                               </span>
                             )}
-                            {status === 'accepted' && decision?.execution_done && (
+                            {status === 'accepted' && !isRecurring && decision?.execution_done && (
                               <span className="text-[10px] sm:text-[11px] font-bold text-teal-900 bg-teal-50/95 border border-teal-300/50 rounded-full px-3 py-1.5 shadow-sm">
                                 דווח: בוצע ✓
                               </span>
                             )}
                           </div>
+
+                          {status === 'accepted' && isRecurring ? (
+                            <div className="px-3 pb-3">
+                              <TaskDailySlots task={task} stepId={step.id} />
+                            </div>
+                          ) : null}
                     </div>
                   </div>
                 );
