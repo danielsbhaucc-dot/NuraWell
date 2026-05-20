@@ -73,7 +73,7 @@ function SectionEyebrow({ children, light }: { children: React.ReactNode; light?
 }
 
 /** Animated count-up for stat values. Skips non-numeric prefixes/suffixes (e.g. "+", "%", "★"). */
-function CountUp({ value, duration = 1.6 }: { value: string; duration?: number }) {
+function CountUp({ value, duration = 1.1 }: { value: string; duration?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: '-30px' });
   const [display, setDisplay] = useState(value);
@@ -217,9 +217,9 @@ export function LandingPageClient() {
 
         <header className="landing-nav safe-area-top">
           <motion.div
-            initial={{ opacity: 0, y: -16 }}
+            initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease }}
+            transition={{ duration: 0.3, ease }}
             className="landing-nav-inner"
           >
             <NuraWellLogo size="sm" showTagline={false} animate={false} />
@@ -230,24 +230,22 @@ export function LandingPageClient() {
         </header>
 
         <motion.div
-          className="landing-hero-kicker-wrap"
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.35, ease }}
-        >
-          <span className="landing-hero-kicker">
-            <Sparkles className="w-3.5 h-3.5" aria-hidden />
-            NuraWell · ליווי AI לחיים בריאים
-          </span>
-        </motion.div>
-
-        <motion.div
           className="landing-hero-content safe-area-bottom"
-          initial={{ opacity: 0, y: 28 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, delay: 0.12, ease }}
+          transition={{ duration: 0.45, delay: 0.08, ease }}
           style={{ y: heroContentLift }}
         >
+          <motion.span
+            className="landing-hero-kicker"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.18, ease }}
+          >
+            <Sparkles className="w-3.5 h-3.5" aria-hidden />
+            NuraWell · ליווי AI לחיים בריאים
+          </motion.span>
+
           <h1 className="landing-hero-title">
             <span className="landing-hero-title-accent">תפסיקו לספור.</span>
             <span className="landing-hero-title-main">תתחילו לחיות.</span>
@@ -282,7 +280,7 @@ export function LandingPageClient() {
           className="landing-hero-scroll"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.2 }}
+          transition={{ delay: 0.7, duration: 0.4 }}
           aria-hidden
         >
           <span className="landing-hero-scroll-line" />
@@ -322,10 +320,10 @@ export function LandingPageClient() {
               ].map((s, i) => (
                 <motion.li
                   key={s.label}
-                  initial={{ opacity: 0, y: 24, scale: 0.94 }}
+                  initial={{ opacity: 0, y: 18, scale: 0.96 }}
                   whileInView={{ opacity: 1, y: 0, scale: 1 }}
                   viewport={{ once: true, margin: '-40px' }}
-                  transition={{ delay: i * 0.08, duration: 0.5, ease }}
+                  transition={{ delay: i * 0.04, duration: 0.32, ease }}
                   whileHover={{ y: -4, scale: 1.02 }}
                   className={`landing-stat landing-stat-${s.tone}`}
                 >
@@ -360,10 +358,10 @@ export function LandingPageClient() {
             <div className="landing-manifesto-content">
               <motion.span
                 className="landing-manifesto-eyebrow"
-                initial={{ opacity: 0, y: 16 }}
+                initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, ease }}
+                transition={{ duration: 0.32, ease }}
               >
                 <Sparkles className="w-4 h-4" aria-hidden />
                 הרעיון הגדול
@@ -372,10 +370,10 @@ export function LandingPageClient() {
               <motion.h2
                 id="manifesto-heading"
                 className="landing-manifesto-title"
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.7, delay: 0.1, ease }}
+                transition={{ duration: 0.4, delay: 0.06, ease }}
               >
                 <span className="landing-manifesto-line landing-manifesto-line-strike">
                   זה לא דיאטה.
@@ -390,7 +388,7 @@ export function LandingPageClient() {
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.3 }}
+                transition={{ duration: 0.35, delay: 0.15 }}
               >
                 אורח חיים. הרגלים. <strong>זהות חדשה.</strong>
                 <br className="hidden sm:block" />
@@ -406,10 +404,10 @@ export function LandingPageClient() {
                 ].map((pillar, i) => (
                   <motion.div
                     key={pillar.title}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 14 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ delay: 0.4 + i * 0.08, duration: 0.5, ease }}
+                    transition={{ delay: 0.2 + i * 0.05, duration: 0.32, ease }}
                     className="landing-manifesto-pillar"
                   >
                     <span className="landing-manifesto-pillar-icon">
@@ -423,10 +421,10 @@ export function LandingPageClient() {
 
               <motion.div
                 className="landing-manifesto-identity"
-                initial={{ opacity: 0, y: 16 }}
+                initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: 0.85, duration: 0.6 }}
+                transition={{ delay: 0.45, duration: 0.38 }}
               >
                 <span className="landing-manifesto-identity-label">
                   <Repeat className="w-4 h-4" aria-hidden />
@@ -491,10 +489,10 @@ export function LandingPageClient() {
               ].map((item, i) => (
                 <motion.article
                   key={item.title}
-                  initial={{ opacity: 0, y: 32, scale: 0.92 }}
+                  initial={{ opacity: 0, y: 20, scale: 0.96 }}
                   whileInView={{ opacity: 1, y: 0, scale: 1 }}
                   viewport={{ once: true, margin: '-40px' }}
-                  transition={{ delay: i * 0.1, duration: 0.55, ease }}
+                  transition={{ delay: i * 0.05, duration: 0.35, ease }}
                   whileHover={{ y: -6, scale: 1.02 }}
                   className={`landing-philosophy-card landing-tone-${item.tone}`}
                 >
@@ -562,10 +560,10 @@ export function LandingPageClient() {
               ].map((row, i) => (
                 <motion.li
                   key={row.good}
-                  initial={{ opacity: 0, y: 16 }}
+                  initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-40px' }}
-                  transition={{ delay: i * 0.05, duration: 0.4, ease }}
+                  transition={{ delay: i * 0.03, duration: 0.28, ease }}
                   className="landing-contrast-row"
                 >
                   <div className="landing-contrast-bad">
@@ -596,10 +594,10 @@ export function LandingPageClient() {
 
             <motion.div
               className="landing-contrast-footnote"
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.4, duration: 0.5 }}
+              transition={{ delay: 0.2, duration: 0.32 }}
             >
               <span className="landing-contrast-footnote-icon" aria-hidden>
                 <Hand />
@@ -619,10 +617,10 @@ export function LandingPageClient() {
             <div className="landing-split">
               <motion.div
                 className="landing-split-media"
-                initial={{ opacity: 0, scale: 0.96 }}
+                initial={{ opacity: 0, scale: 0.97 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.55, ease }}
+                transition={{ duration: 0.35, ease }}
               >
                 <div className="landing-image-frame">
                   <Image
@@ -641,10 +639,10 @@ export function LandingPageClient() {
 
               <motion.div
                 className="landing-split-body"
-                initial={{ opacity: 0, x: 24 }}
+                initial={{ opacity: 0, x: 16 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, ease }}
+                transition={{ duration: 0.32, ease }}
               >
                 <SectionEyebrow>המסע שלכם</SectionEyebrow>
                 <h2 id="journey-heading" className="landing-h2">
@@ -688,10 +686,10 @@ export function LandingPageClient() {
             <div className="landing-bento">
               <motion.article
                 className="landing-bento-featured landing-card-glass-gradient"
-                initial={{ opacity: 0, y: 24 }}
+                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, ease }}
+                transition={{ duration: 0.32, ease }}
               >
                 <div className="landing-bento-featured-inner">
                   <div className="landing-bento-featured-media" aria-hidden>
@@ -731,10 +729,10 @@ export function LandingPageClient() {
                 <motion.article
                   key={f.title}
                   className="landing-card landing-card-elevated landing-bento-item"
-                  initial={{ opacity: 0, y: 16 }}
+                  initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: 0.05 + i * 0.06, duration: 0.4, ease }}
+                  transition={{ delay: 0.03 + i * 0.04, duration: 0.28, ease }}
                 >
                   <span className={`landing-bento-icon landing-tone-${f.tone}`}>
                     <f.icon aria-hidden />
@@ -796,10 +794,10 @@ export function LandingPageClient() {
               ].map((item, i) => (
                 <motion.article
                   key={item.text}
-                  initial={{ opacity: 0, y: 24 }}
+                  initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-40px' }}
-                  transition={{ delay: i * 0.08, duration: 0.5, ease }}
+                  transition={{ delay: i * 0.04, duration: 0.32, ease }}
                   className="landing-imagine-card"
                 >
                   <span className="landing-imagine-icon">
@@ -813,10 +811,10 @@ export function LandingPageClient() {
 
             <motion.p
               className="landing-imagine-quote"
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 8 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.4, duration: 0.5 }}
+              transition={{ delay: 0.2, duration: 0.32 }}
             >
               זה לא חלום. זה מה שקורה כשמפסיקים להילחם בגוף — ומתחילים להקשיב לו.
             </motion.p>
@@ -878,10 +876,10 @@ export function LandingPageClient() {
               ].map((step, i) => (
                 <motion.li
                   key={step.day}
-                  initial={{ opacity: 0, y: 30, scale: 0.92 }}
+                  initial={{ opacity: 0, y: 18, scale: 0.96 }}
                   whileInView={{ opacity: 1, y: 0, scale: 1 }}
                   viewport={{ once: true, margin: '-30px' }}
-                  transition={{ delay: i * 0.12, duration: 0.55, ease }}
+                  transition={{ delay: i * 0.05, duration: 0.32, ease }}
                   whileHover={{ y: -6, scale: 1.04 }}
                   className={`landing-timeline-step landing-tone-${step.tone}`}
                 >
@@ -900,7 +898,7 @@ export function LandingPageClient() {
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.5, duration: 0.5 }}
+              transition={{ delay: 0.3, duration: 0.3 }}
             >
               <InfinityIcon className="w-5 h-5 shrink-0" aria-hidden />
               1% טוב יותר כל יום = <strong>37×</strong> שינוי בשנה. זה המתמטיקה של אורח חיים.
@@ -914,10 +912,10 @@ export function LandingPageClient() {
             <div className="landing-split landing-split-reverse">
               <motion.div
                 className="landing-split-body"
-                initial={{ opacity: 0, x: -24 }}
+                initial={{ opacity: 0, x: -16 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, ease }}
+                transition={{ duration: 0.32, ease }}
               >
                 <SectionEyebrow>תנועה ואנרגיה</SectionEyebrow>
                 <h2 id="lifestyle-heading" className="landing-h2">
@@ -939,10 +937,10 @@ export function LandingPageClient() {
 
               <motion.div
                 className="landing-split-media"
-                initial={{ opacity: 0, scale: 0.96 }}
+                initial={{ opacity: 0, scale: 0.97 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.55, ease }}
+                transition={{ duration: 0.35, ease }}
               >
                 <div className="landing-image-frame">
                   <Image
@@ -979,10 +977,10 @@ export function LandingPageClient() {
             <div className="landing-mentors">
               <motion.div
                 className="landing-card landing-card-glass-dark"
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 14 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.45, ease }}
+                transition={{ duration: 0.3, ease }}
               >
                 <MentorBubble mentorId="dolev" theme="dark">
                   <p>
@@ -994,10 +992,10 @@ export function LandingPageClient() {
 
               <motion.div
                 className="landing-card landing-card-glass-dark"
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 14 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: 0.1, duration: 0.45, ease }}
+                transition={{ delay: 0.06, duration: 0.3, ease }}
               >
                 <MentorBubble mentorId="almog" theme="dark">
                   <p>
@@ -1045,10 +1043,10 @@ export function LandingPageClient() {
                 <motion.li
                   key={step.n}
                   className={`landing-step landing-tone-${step.tone}`}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 14 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1, duration: 0.45, ease }}
+                  transition={{ delay: i * 0.05, duration: 0.3, ease }}
                 >
                   <span className="landing-step-num">{step.n}</span>
                   <h3 className="landing-card-title">{step.title}</h3>
@@ -1106,10 +1104,10 @@ export function LandingPageClient() {
                 return (
                   <motion.div
                     key={item.q}
-                    initial={{ opacity: 0, y: 12 }}
+                    initial={{ opacity: 0, y: 8 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: '-30px' }}
-                    transition={{ delay: i * 0.04, duration: 0.35, ease }}
+                    transition={{ delay: i * 0.025, duration: 0.22, ease }}
                     className={`landing-faq-item${isOpen ? ' is-open' : ''}`}
                   >
                     <button
@@ -1135,7 +1133,7 @@ export function LandingPageClient() {
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.32, ease }}
+                          transition={{ duration: 0.25, ease }}
                           className="landing-faq-a-wrap"
                         >
                           <p className="landing-faq-a">{item.a}</p>
@@ -1159,10 +1157,10 @@ export function LandingPageClient() {
           </div>
           <div className="landing-wrap landing-cta-inner">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, ease }}
+              transition={{ duration: 0.32, ease }}
             >
               <span className="landing-cta-badge">
                 <Sparkles className="w-4 h-4" aria-hidden />

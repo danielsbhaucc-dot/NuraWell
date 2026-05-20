@@ -379,65 +379,67 @@ html {
   }
 
   .landing-hero-content {
-    @apply relative z-10 flex flex-col justify-end flex-1 px-5 pb-14 sm:pb-16 pt-6 max-w-xl mx-auto w-full;
-  }
-
-  .landing-hero-kicker-wrap {
-    @apply absolute left-0 right-0 z-20 flex justify-center px-4 pointer-events-none;
-    top: calc(env(safe-area-inset-top, 0px) + 74px);
+    @apply relative z-10 flex flex-col justify-center flex-1 px-5 pt-8 pb-16 sm:pt-12 sm:pb-20 max-w-xl mx-auto w-full;
   }
 
   .landing-hero-kicker {
-    @apply inline-flex items-center gap-2 text-[10px] sm:text-[11px] font-black tracking-widest uppercase px-4 py-2 rounded-full pointer-events-auto;
-    color: #064e3b;
-    background: linear-gradient(135deg, rgba(252, 211, 77, 0.85), rgba(110, 231, 183, 0.85));
-    border: 1px solid rgba(254, 243, 199, 0.6);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    @apply inline-flex items-center gap-2.5 self-center text-[10px] sm:text-[11px] font-bold tracking-[0.22em] uppercase px-4 py-2 rounded-full mb-5;
+    color: #d1fae5;
+    background: rgba(2, 44, 34, 0.42);
+    border: 1px solid rgba(167, 243, 208, 0.28);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
     box-shadow:
-      0 12px 32px -6px rgba(0, 0, 0, 0.4),
-      0 0 0 1px rgba(236, 253, 245, 0.2) inset,
-      inset 0 1px 0 rgba(254, 243, 199, 0.5);
-    letter-spacing: 0.12em;
-    text-shadow: 0 1px 0 rgba(254, 243, 199, 0.45);
+      0 10px 28px -6px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 
   .landing-hero-kicker svg {
-    color: #047857;
-    stroke-width: 2.5;
+    color: #6ee7b7;
+    stroke-width: 2.4;
+  }
+
+  .landing-hero-kicker::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #6ee7b7;
+    box-shadow: 0 0 10px rgba(110, 231, 183, 0.85);
+    animation: landing-eyebrow-pulse 2s ease-in-out infinite;
   }
 
   .landing-hero-title {
-    @apply mb-5;
+    @apply mb-6;
     font-family: 'Rubik', 'Heebo', sans-serif;
   }
 
   .landing-hero-title-accent {
-    @apply block font-black leading-[0.98] tracking-tight;
-    font-size: clamp(2.75rem, 11vw, 5.5rem);
+    @apply block font-black leading-[0.95] tracking-tight;
+    font-size: clamp(3.4rem, 13vw, 6.25rem);
     background: linear-gradient(
       118deg,
       #a7f3d0 0%,
       #34d399 35%,
       #2dd4bf 65%,
-      #5eead4 100%
+      #fde68a 100%
     );
     background-size: 200% 100%;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    filter: drop-shadow(0 4px 24px rgba(52, 211, 153, 0.35));
+    filter: drop-shadow(0 6px 28px rgba(52, 211, 153, 0.4));
     animation: landing-title-shimmer 6s ease-in-out infinite;
   }
 
   .landing-hero-title-main {
-    @apply block font-black leading-[0.98] tracking-tight mt-2;
-    font-size: clamp(2.75rem, 11vw, 5.5rem);
+    @apply block font-black leading-[0.95] tracking-tight mt-2;
+    font-size: clamp(3.4rem, 13vw, 6.25rem);
     color: #ffffff;
     text-shadow:
-      0 2px 4px rgba(0, 0, 0, 0.4),
-      0 8px 32px rgba(0, 0, 0, 0.35),
-      0 0 60px rgba(110, 231, 183, 0.15);
+      0 2px 4px rgba(0, 0, 0, 0.45),
+      0 10px 36px rgba(0, 0, 0, 0.4),
+      0 0 70px rgba(110, 231, 183, 0.2);
   }
 
   @keyframes landing-title-shimmer {
@@ -639,16 +641,30 @@ html {
   }
 
   .landing-eyebrow {
-    @apply inline-flex items-center text-xs font-black uppercase tracking-widest mb-4 px-4 py-1.5 rounded-full;
-    color: #064e3b;
-    background: linear-gradient(135deg, rgba(252, 211, 77, 0.45), rgba(110, 231, 183, 0.55));
-    border: 1px solid rgba(4, 120, 87, 0.35);
+    @apply inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] mb-4 px-3.5 py-1.5 rounded-full;
+    color: #047857;
+    background: rgba(236, 253, 245, 0.55);
+    border: 1px solid rgba(16, 185, 129, 0.28);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     box-shadow:
-      0 6px 18px -4px rgba(4, 120, 87, 0.25),
-      inset 0 1px 0 rgba(255, 255, 255, 0.4);
-    letter-spacing: 0.1em;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+      0 4px 14px -4px rgba(4, 120, 87, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  }
+
+  .landing-eyebrow::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981, #2dd4bf);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.55);
+    animation: landing-eyebrow-pulse 2.4s ease-in-out infinite;
+  }
+
+  @keyframes landing-eyebrow-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.55; transform: scale(0.78); }
   }
 
   .landing-eyebrow-light,
@@ -657,12 +673,22 @@ html {
   .landing-imagine .landing-eyebrow,
   .landing-timeline .landing-eyebrow,
   .landing-cta-band .landing-eyebrow {
-    color: #fef3c7;
-    background: linear-gradient(135deg, rgba(251, 191, 36, 0.22), rgba(110, 231, 183, 0.18));
-    border-color: rgba(251, 191, 36, 0.4);
+    color: #a7f3d0;
+    background: rgba(15, 23, 42, 0.32);
+    border-color: rgba(167, 243, 208, 0.32);
     box-shadow:
-      0 6px 18px -4px rgba(0, 0, 0, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      0 4px 14px -4px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .landing-eyebrow-light::before,
+  .landing-section-dark .landing-eyebrow::before,
+  .landing-manifesto .landing-eyebrow::before,
+  .landing-imagine .landing-eyebrow::before,
+  .landing-timeline .landing-eyebrow::before,
+  .landing-cta-band .landing-eyebrow::before {
+    background: linear-gradient(135deg, #fbbf24, #6ee7b7);
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.65);
   }
 
   .landing-h2 {
@@ -1214,40 +1240,53 @@ html {
 
   /* Featured bento layout */
   .landing-bento-featured-inner {
-    @apply flex flex-col sm:flex-row items-center sm:items-stretch gap-5 sm:gap-7;
+    @apply flex flex-col sm:flex-row items-center sm:items-center gap-5 sm:gap-7;
   }
 
   .landing-bento-featured-media {
-    @apply relative flex h-24 w-24 sm:h-32 sm:w-32 shrink-0 items-center justify-center;
+    @apply relative flex h-24 w-24 sm:h-28 sm:w-28 shrink-0 items-center justify-center;
   }
 
+  /* Pulsing halo glow behind the icon */
   .landing-bento-featured-ring {
-    @apply absolute inset-0 rounded-full;
-    background: conic-gradient(from 90deg, #fbbf24, #34d399, #2dd4bf, #6ee7b7, #fbbf24);
-    animation: spinRing 10s linear infinite;
+    @apply absolute inset-0 rounded-full pointer-events-none;
+    background: radial-gradient(circle, rgba(110, 231, 183, 0.55) 0%, rgba(45, 212, 191, 0.18) 45%, transparent 75%);
+    filter: blur(8px);
+    animation: landing-halo-pulse 3.2s ease-in-out infinite;
   }
 
   .landing-bento-featured-ring::after {
     content: '';
     position: absolute;
-    inset: 4px;
+    inset: 8px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    border: 1.5px solid rgba(110, 231, 183, 0.45);
+    background: transparent;
+  }
+
+  @keyframes landing-halo-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.85; }
+    50% { transform: scale(1.08); opacity: 1; }
   }
 
   .landing-bento-featured-iconwrap {
-    @apply relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full;
-    background: linear-gradient(135deg, #047857, #34d399);
+    @apply relative flex h-16 w-16 sm:h-[4.5rem] sm:w-[4.5rem] items-center justify-center rounded-full;
+    background:
+      radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.45), transparent 55%),
+      linear-gradient(145deg, #059669 0%, #10b981 50%, #2dd4bf 100%);
     color: #ecfdf5;
     box-shadow:
-      0 12px 28px -6px rgba(16, 185, 129, 0.55),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      0 16px 36px -8px rgba(16, 185, 129, 0.6),
+      0 0 0 5px rgba(236, 253, 245, 0.55),
+      inset 0 2px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -6px 16px rgba(4, 120, 87, 0.45);
     z-index: 1;
   }
 
   .landing-bento-featured-iconwrap svg {
-    @apply w-7 h-7 sm:w-9 sm:h-9;
+    @apply w-8 h-8 sm:w-9 sm:h-9;
     stroke-width: 2.4;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
   }
 
   .landing-bento-featured-body {
@@ -1309,31 +1348,46 @@ html {
   }
 
   .landing-image-badge {
-    @apply absolute bottom-4 left-1/2 -translate-x-1/2 inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-black uppercase tracking-wider;
-    color: #064e3b;
-    background: linear-gradient(135deg, rgba(110, 231, 183, 0.85), rgba(45, 212, 191, 0.7));
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    @apply absolute top-4 right-4 inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-[11px] font-bold tracking-[0.14em] uppercase;
+    color: #ffffff;
+    background: rgba(6, 78, 59, 0.42);
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
     box-shadow:
-      0 12px 28px -6px rgba(4, 120, 87, 0.45),
-      inset 0 1px 0 rgba(236, 253, 245, 0.5);
-    border: 1px solid rgba(16, 185, 129, 0.5);
-    letter-spacing: 0.06em;
+      0 10px 28px -6px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  }
+
+  .landing-image-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #6ee7b7;
+    box-shadow: 0 0 8px rgba(110, 231, 183, 0.85);
+    animation: landing-eyebrow-pulse 2s ease-in-out infinite;
   }
 
   .landing-image-badge svg {
-    color: #047857;
+    color: #a7f3d0;
     stroke-width: 2.4;
   }
 
   .landing-image-badge-warm {
-    color: #7c2d12;
-    background: linear-gradient(135deg, rgba(252, 211, 77, 0.85), rgba(251, 146, 60, 0.7));
-    border-color: rgba(249, 115, 22, 0.5);
+    background: rgba(124, 45, 18, 0.42);
+    border-color: rgba(254, 215, 170, 0.3);
+    color: #ffffff;
+  }
+
+  .landing-image-badge-warm::before {
+    background: #fbbf24;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.85);
   }
 
   .landing-image-badge-warm svg {
-    color: #c2410c;
+    color: #fed7aa;
   }
 
   /* ---- Gradient text helper ---- */
