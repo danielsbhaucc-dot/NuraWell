@@ -165,7 +165,8 @@ html {
 
   /* ---- LANDING PAGE ---- */
   .landing-page {
-    @apply min-h-[100dvh] overflow-x-hidden bg-white;
+    @apply min-h-[100dvh] overflow-x-hidden;
+    background: linear-gradient(180deg, #d1fae5 0%, #ecfdf5 40%, #f0fdfa 100%);
   }
 
   .landing-wrap {
@@ -414,25 +415,79 @@ html {
 
   .landing-section-white {
     background:
-      radial-gradient(ellipse 60% 50% at 15% 10%, rgba(110, 231, 183, 0.18), transparent 55%),
-      radial-gradient(ellipse 50% 60% at 90% 90%, rgba(45, 212, 191, 0.16), transparent 55%),
-      radial-gradient(ellipse 40% 50% at 50% 50%, rgba(251, 191, 36, 0.06), transparent 65%),
-      linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdfa 100%);
+      radial-gradient(ellipse 70% 60% at 10% 0%, rgba(16, 185, 129, 0.32), transparent 55%),
+      radial-gradient(ellipse 60% 50% at 95% 100%, rgba(20, 184, 166, 0.28), transparent 55%),
+      radial-gradient(ellipse 50% 40% at 50% 50%, rgba(251, 191, 36, 0.14), transparent 60%),
+      linear-gradient(180deg, #bbf7d0 0%, #d1fae5 35%, #ecfdf5 100%);
   }
 
   .landing-section-muted {
     background:
-      radial-gradient(ellipse at top right, rgba(110, 231, 183, 0.22), transparent 60%),
-      radial-gradient(ellipse at bottom left, rgba(45, 212, 191, 0.15), transparent 55%),
-      linear-gradient(180deg, #ecfdf5 0%, #f0fdfa 100%);
+      radial-gradient(ellipse at top right, rgba(110, 231, 183, 0.35), transparent 58%),
+      radial-gradient(ellipse at bottom left, rgba(45, 212, 191, 0.28), transparent 55%),
+      radial-gradient(ellipse at 50% 50%, rgba(52, 211, 153, 0.12), transparent 70%),
+      linear-gradient(180deg, #d1fae5 0%, #ccfbf1 50%, #ecfdf5 100%);
   }
 
   .landing-section-soft {
     background:
-      radial-gradient(ellipse 50% 60% at 90% 0%, rgba(252, 211, 77, 0.18), transparent 55%),
-      radial-gradient(ellipse 60% 50% at 10% 100%, rgba(45, 212, 191, 0.2), transparent 55%),
-      radial-gradient(ellipse 50% 40% at 50% 50%, rgba(110, 231, 183, 0.12), transparent 65%),
-      linear-gradient(180deg, #ecfdf5 0%, #f0fdfa 50%, #ecfdf5 100%);
+      radial-gradient(ellipse 55% 65% at 95% 5%, rgba(252, 211, 77, 0.32), transparent 50%),
+      radial-gradient(ellipse 65% 55% at 5% 95%, rgba(45, 212, 191, 0.35), transparent 50%),
+      radial-gradient(ellipse 45% 45% at 50% 50%, rgba(110, 231, 183, 0.22), transparent 60%),
+      linear-gradient(180deg, #bbf7d0 0%, #d1fae5 50%, #a7f3d0 100%);
+  }
+
+  /* Floating orbs on tinted light sections */
+  .landing-section-glow > .landing-wrap {
+    @apply relative z-[1];
+  }
+
+  .landing-section-orbs {
+    @apply absolute inset-0 pointer-events-none overflow-hidden;
+  }
+
+  .landing-section-orb {
+    @apply absolute rounded-full;
+    filter: blur(55px);
+    opacity: 0.65;
+  }
+
+  .landing-section-orb-emerald {
+    width: 300px;
+    height: 300px;
+    top: -80px;
+    right: -80px;
+    background: radial-gradient(circle, rgba(52, 211, 153, 0.55), transparent 70%);
+  }
+
+  .landing-section-orb-amber {
+    width: 240px;
+    height: 240px;
+    bottom: -50px;
+    left: -50px;
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.5), transparent 70%);
+  }
+
+  .landing-section-orb-teal {
+    width: 260px;
+    height: 260px;
+    top: 25%;
+    left: -90px;
+    background: radial-gradient(circle, rgba(45, 212, 191, 0.5), transparent 70%);
+  }
+
+  .landing-section-orb-rose {
+    width: 200px;
+    height: 200px;
+    bottom: 15%;
+    right: -60px;
+    background: radial-gradient(circle, rgba(251, 113, 133, 0.4), transparent 70%);
+  }
+
+  .landing-eyebrow-light {
+    color: #6ee7b7;
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.22);
   }
 
   .landing-section-dark {
@@ -505,8 +560,8 @@ html {
   }
 
   .landing-card-elevated {
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.52);
+    border: 1px solid rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     box-shadow:
@@ -543,7 +598,7 @@ html {
 
   /* Philosophy grid */
   .landing-philosophy-grid {
-    @apply grid gap-4 sm:grid-cols-3 sm:gap-5;
+    @apply grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-5;
   }
 
   /* Split sections */
@@ -904,8 +959,8 @@ html {
 
   /* ---- Philosophy cards (colorful glass) ---- */
   .landing-philosophy-card {
-    @apply relative rounded-3xl p-6 sm:p-7 overflow-hidden;
-    background: rgba(255, 255, 255, 0.7);
+    @apply relative rounded-3xl p-5 sm:p-7 overflow-hidden text-center sm:text-right;
+    background: rgba(255, 255, 255, 0.55);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--tone-border);
@@ -945,14 +1000,22 @@ html {
   }
 
   .landing-philosophy-icon {
-    @apply flex h-14 w-14 items-center justify-center rounded-2xl mb-4;
+    @apply flex h-16 w-16 sm:h-[4.5rem] sm:w-[4.5rem] items-center justify-center rounded-2xl mb-4 mx-auto sm:mx-0;
     background: linear-gradient(135deg, var(--tone-from), var(--tone-to));
     color: white;
-    box-shadow: 0 10px 24px -6px var(--tone-shadow);
+    box-shadow:
+      0 12px 28px -6px var(--tone-shadow),
+      0 0 0 4px rgba(255, 255, 255, 0.5);
+    animation: landing-icon-pulse 3s ease-in-out infinite;
   }
 
   .landing-philosophy-icon svg {
-    @apply w-7 h-7;
+    @apply w-8 h-8 sm:w-9 sm:h-9;
+  }
+
+  @keyframes landing-icon-pulse {
+    0%, 100% { box-shadow: 0 12px 28px -6px var(--tone-shadow), 0 0 0 4px rgba(255, 255, 255, 0.45); }
+    50% { box-shadow: 0 16px 36px -4px var(--tone-shadow), 0 0 0 6px rgba(255, 255, 255, 0.65); }
   }
 
   /* ---- Bento icons (colorful tones) ---- */
@@ -1005,17 +1068,22 @@ html {
   .landing-image-frame {
     @apply relative w-full overflow-hidden rounded-3xl;
     aspect-ratio: 4 / 3;
-    box-shadow: 0 20px 50px rgba(4, 120, 87, 0.18);
+    box-shadow:
+      0 24px 56px -12px rgba(4, 120, 87, 0.28),
+      0 0 0 1px rgba(255, 255, 255, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.35);
   }
 
   .landing-image-badge {
-    @apply absolute bottom-4 right-4 inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold;
-    background: rgba(255, 255, 255, 0.95);
+    @apply absolute bottom-4 right-4 inline-flex items-center gap-2 px-3.5 py-2.5 rounded-full text-xs font-bold;
+    background: rgba(255, 255, 255, 0.72);
     color: #047857;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.2);
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow:
+      0 10px 28px -6px rgba(4, 120, 87, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.65);
   }
 
   .landing-image-badge-warm {
@@ -1179,10 +1247,10 @@ html {
   /* ---- Contrast section (instead → you get) ---- */
   .landing-contrast {
     background:
-      radial-gradient(ellipse 50% 50% at 90% 10%, rgba(244, 63, 94, 0.14), transparent 55%),
-      radial-gradient(ellipse 50% 60% at 10% 90%, rgba(16, 185, 129, 0.22), transparent 55%),
-      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(251, 191, 36, 0.08), transparent 65%),
-      linear-gradient(180deg, #fef2f2 0%, #f0fdf4 50%, #ecfdf5 100%);
+      radial-gradient(ellipse 50% 50% at 90% 10%, rgba(244, 63, 94, 0.22), transparent 55%),
+      radial-gradient(ellipse 50% 60% at 10% 90%, rgba(16, 185, 129, 0.32), transparent 55%),
+      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(251, 191, 36, 0.14), transparent 65%),
+      linear-gradient(180deg, #fecaca 0%, #d1fae5 45%, #a7f3d0 100%);
   }
 
   .landing-contrast-list {
@@ -1270,24 +1338,32 @@ html {
   }
 
   .landing-contrast-arrow {
-    @apply flex items-center justify-center text-emerald-500 px-1;
+    @apply flex items-center justify-center text-emerald-600 px-1 shrink-0;
+  }
+
+  .landing-contrast-arrow-desktop {
+    @apply hidden sm:flex;
+  }
+
+  .landing-contrast-arrow-mobile {
+    @apply flex sm:hidden py-1 justify-self-center text-emerald-600;
   }
 
   @media (max-width: 639px) {
     .landing-contrast-row {
       grid-template-columns: 1fr;
     }
-    .landing-contrast-arrow {
-      @apply justify-self-center py-1;
-      transform: rotate(90deg);
-      opacity: 0.7;
-    }
   }
 
   .landing-contrast-footnote {
-    @apply mt-10 flex items-center justify-center gap-2 text-center text-[15px] sm:text-base font-semibold text-emerald-800 max-w-xl mx-auto px-4 py-4 rounded-2xl;
-    background: rgba(16, 185, 129, 0.08);
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    @apply mt-10 flex items-center justify-center gap-2 text-center text-[15px] sm:text-base font-semibold text-emerald-900 max-w-xl mx-auto px-5 py-5 rounded-2xl;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    box-shadow:
+      0 12px 32px -10px rgba(4, 120, 87, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
   /* ---- Imagine (future self) section ---- */
@@ -1311,7 +1387,7 @@ html {
   }
 
   .landing-imagine-grid {
-    @apply grid gap-4 sm:grid-cols-2 sm:gap-5 mt-2;
+    @apply grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 lg:gap-5 mt-2;
   }
 
   .landing-imagine-card {
@@ -1365,6 +1441,134 @@ html {
     @apply mt-10 sm:mt-12 text-center text-lg sm:text-xl font-bold italic max-w-2xl mx-auto leading-relaxed;
     color: #ecfdf5;
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  /* ---- Timeline (compound effect WOW) ---- */
+  .landing-timeline {
+    @apply relative overflow-hidden;
+    background: linear-gradient(
+      155deg,
+      #0f766e 0%,
+      #059669 35%,
+      #047857 65%,
+      #064e3b 100%
+    );
+  }
+
+  .landing-timeline-glow {
+    @apply absolute inset-0 pointer-events-none;
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 0%, rgba(110, 231, 183, 0.35), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 90% 80%, rgba(251, 191, 36, 0.25), transparent 55%),
+      radial-gradient(ellipse 50% 40% at 10% 60%, rgba(45, 212, 191, 0.3), transparent 55%);
+  }
+
+  .landing-timeline > .landing-wrap {
+    @apply relative z-10;
+  }
+
+  .landing-timeline-track {
+    @apply relative grid gap-4 list-none p-0 m-0;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 640px) {
+    .landing-timeline-track {
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.75rem;
+    }
+
+    .landing-timeline-track::before {
+      content: '';
+      position: absolute;
+      top: 52px;
+      right: 8%;
+      left: 8%;
+      height: 3px;
+      border-radius: 99px;
+      background: linear-gradient(
+        90deg,
+        #6ee7b7,
+        #34d399,
+        #fbbf24,
+        #fb923c,
+        #fb7185
+      );
+      opacity: 0.85;
+      z-index: 0;
+    }
+  }
+
+  .landing-timeline-step {
+    @apply relative flex flex-col items-center text-center rounded-3xl p-5 sm:p-4 overflow-hidden z-[1];
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow:
+      0 16px 40px -12px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .landing-timeline-step::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--tone-from), var(--tone-to), transparent);
+  }
+
+  .landing-timeline-step:hover {
+    transform: translateY(-4px) scale(1.02);
+    border-color: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .landing-timeline-day {
+    font-family: 'Rubik', 'Heebo', sans-serif;
+    @apply text-[11px] sm:text-xs font-black uppercase tracking-widest mb-3 px-3 py-1 rounded-full;
+    color: #ecfdf5;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    letter-spacing: 0.1em;
+  }
+
+  .landing-timeline-icon {
+    @apply flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl mb-3;
+    background: linear-gradient(135deg, var(--tone-from), var(--tone-to));
+    color: white;
+    box-shadow: 0 10px 24px -6px var(--tone-shadow);
+  }
+
+  .landing-timeline-icon svg {
+    @apply w-6 h-6 sm:w-7 sm:h-7;
+  }
+
+  .landing-timeline-title {
+    font-family: 'Rubik', 'Heebo', sans-serif;
+    @apply text-base sm:text-[15px] font-black text-white mb-2 leading-snug;
+  }
+
+  .landing-timeline-text {
+    @apply text-[13px] sm:text-xs leading-relaxed;
+    color: rgba(236, 253, 245, 0.88);
+  }
+
+  .landing-timeline-quote {
+    @apply mt-10 sm:mt-12 flex items-center justify-center gap-2 flex-wrap text-center text-base sm:text-lg font-semibold max-w-2xl mx-auto px-5 py-5 rounded-2xl;
+    color: #ecfdf5;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .landing-timeline-quote strong {
+    @apply font-black text-amber-300;
+    font-size: 1.35em;
   }
 
   /* ---- FAQ section ---- */
