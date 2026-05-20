@@ -1,11 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../types/database';
+import { normalizeTaskSchedule } from '../journey/task-schedule';
+import type { JourneyTaskSchedule } from '../types/journey';
 
 export type AlmogFollowupUserState = {
   taskFollowupRowFound: boolean;
   taskAccepted: boolean;
   /** true = המשתמש סימן בפועל שביצע (או שדה חסר ואז נחשב שלא בוצע) */
   taskExecutionReported: boolean;
+  /** תזמון המשימה — קובע איך מתייחסים ל"דווח על ביצוע" */
+  taskSchedule: JourneyTaskSchedule;
   taskStepTitle: string | null;
   taskStationTitle: string | null;
   currentStationTitle: string | null;
@@ -21,7 +25,13 @@ type TaskStatusRow = {
   execution_done?: boolean;
 };
 
-function parseTasks(raw: unknown): { id: string; title: string }[] {
+type ParsedTaskMeta = {
+  id: string;
+  title: string;
+  schedule: JourneyTaskSchedule;
+};
+
+function parseTasks(raw: unknown): ParsedTaskMeta[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .map((item) => {
@@ -30,9 +40,10 @@ function parseTasks(raw: unknown): { id: string; title: string }[] {
       const id = typeof row.id === 'string' ? row.id : '';
       const title = typeof row.title === 'string' ? row.title : '';
       if (!id || !title) return null;
-      return { id, title };
+      const schedule = normalizeTaskSchedule(row.schedule);
+      return { id, title, schedule };
     })
-    .filter((x): x is { id: string; title: string } => Boolean(x));
+    .filter((x): x is ParsedTaskMeta => Boolean(x));
 }
 
 function parseHabits(raw: unknown): { id: string; title: string }[] {
@@ -139,6 +150,7 @@ export async function fetchAlmogFollowupUserState(
       taskFollowupRowFound: false,
       taskAccepted: false,
       taskExecutionReported: false,
+      taskSchedule: 'one_time',
       taskStepTitle: null,
       taskStationTitle: null,
       currentStationTitle,
@@ -151,16 +163,37 @@ export async function fetchAlmogFollowupUserState(
 
   const rawTs = taskRow.task_statuses?.[taskId] as TaskStatusRow | undefined;
   const taskAccepted = rawTs?.status === 'accepted';
-  const taskExecutionReported = rawTs?.execution_done === true;
 
   const taskStep = taskRow.journey_steps;
   const taskTitles = parseTasks(taskStep?.tasks);
-  const taskStepTitle = taskTitles.find((t) => t.id === taskId)?.title ?? taskStep?.title ?? null;
+  const taskMeta = taskTitles.find((t) => t.id === taskId) ?? null;
+  const taskSchedule: JourneyTaskSchedule = taskMeta?.schedule ?? 'one_time';
+  const taskStepTitle = taskMeta?.title ?? taskStep?.title ?? null;
+
+  /**
+   * עבור משימה חוזרת — `execution_done` בא רק אחרי שכל הסלוטים של היום הושלמו.
+   * לכן נשתמש בטבלת ה-executions כדי לראות אם המשתמש "נגע" במשימה בכלל —
+   * אם כן, אין טעם בתזכורת follow-up; cron יומי הוא הזרימה הנכונה.
+   */
+  let taskExecutionReported = rawTs?.execution_done === true;
+  if (!taskExecutionReported && taskSchedule !== 'one_time') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: anyExec } = await (admin as any)
+      .from('journey_task_executions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('task_id', taskId)
+      .limit(1);
+    if (Array.isArray(anyExec) && anyExec.length > 0) {
+      taskExecutionReported = true;
+    }
+  }
 
   return {
     taskFollowupRowFound: true,
     taskAccepted,
     taskExecutionReported,
+    taskSchedule,
     taskStepTitle,
     taskStationTitle: stationTitleFromJoin(taskStep?.journey_stations),
     currentStationTitle,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, Loader2, RotateCcw } from 'lucide-react';
+import { AlertTriangle, Check, Loader2, RotateCcw } from 'lucide-react';
 
 import type { JourneyTask, JourneyTaskExecution, JourneyTaskSlot } from '../../lib/types/journey';
 import {
@@ -46,6 +46,7 @@ export function TaskDailySlots({
     }
     return m;
   });
+  const [errMsg, setErrMsg] = useState<string | null>(null);
 
   /** סנכרון state מנתונים שמוזרקים מבחוץ */
   useEffect(() => {
@@ -126,6 +127,7 @@ export function TaskDailySlots({
         });
 
         if (res.ok) {
+          setErrMsg(null);
           setState((prev) => {
             const next = new Map(prev);
             next.set(key, {
@@ -137,6 +139,24 @@ export function TaskDailySlots({
           });
           onExecutionsChanged?.();
         } else {
+          /** מציג את הסיבה האמיתית — חשוב אם הטבלה חסרה ב-DB / RLS חוסם. */
+          let serverMsg = `שגיאה בשמירה (HTTP ${res.status})`;
+          try {
+            const body = (await res.json()) as {
+              error?: string;
+              code?: string;
+              hint?: string;
+            };
+            const hint = body.hint ? ` · ${body.hint}` : '';
+            if (body.code === '42P01') {
+              serverMsg = 'הטבלה לא קיימת ב-DB. הריצו את המיגרציה 000023 ב-Supabase.';
+            } else if (body.error) {
+              serverMsg = `${body.error}${hint}`;
+            }
+          } catch {
+            /* ignore JSON parse */
+          }
+          setErrMsg(serverMsg);
           setState((prev) => {
             const next = new Map(prev);
             const existing = next.get(key) ?? { completed: false, busy: false, completedAt: null };
@@ -144,7 +164,8 @@ export function TaskDailySlots({
             return next;
           });
         }
-      } catch {
+      } catch (e) {
+        setErrMsg(e instanceof Error ? e.message : 'שגיאת רשת');
         setState((prev) => {
           const next = new Map(prev);
           const existing = next.get(key) ?? { completed: false, busy: false, completedAt: null };
@@ -261,6 +282,17 @@ export function TaskDailySlots({
           ? 'הסימון מתאפס מחר — אפשר לחזור ולסמן שוב.'
           : 'הסימון לכל סלוט מתאפס מחר בבוקר. אלמוג רואה את ההתקדמות בזמן אמת.'}
       </p>
+
+      {errMsg ? (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-xl px-3 py-2 text-[11px] font-semibold leading-relaxed text-amber-900"
+          style={{ background: 'rgba(254, 243, 199, 0.85)', border: '1px solid rgba(217,119,6,0.45)' }}
+        >
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-700" aria-hidden />
+          <span className="break-words">{errMsg}</span>
+        </div>
+      ) : null}
     </div>
   );
 }

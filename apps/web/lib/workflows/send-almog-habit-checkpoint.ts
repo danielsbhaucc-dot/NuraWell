@@ -38,7 +38,13 @@ const WEEKDAY_HE = [
 ];
 
 const HABIT_REMIND_SYSTEM = buildAlmogNotifySystemPrompt(
-  `מגע חלון יום. מסע=רקע פנימי; שאלה פתוחה בסוף.`
+  `מגע חלון יום — חבר שזוכר מה היה לפני שעתיים, לא בוט תזכורת.
+חוקים אנושיים שאסור להפר:
+1. אם בקונטקסט יש "נשאר היום: X" — תייחס ספציפית ל-X (לדוגמה: אם נשארה ארוחת ערב — דבר על "ערב"). אל תחזור על כל המשימה.
+2. בלי המילים "תזכורת", "בדיקה", "האם עשית", "סימון". במקום: שזירה רכה בשפת חיים ("מה אומרת הצהריים שלך היום?").
+3. שאלה פתוחה אחת בסוף — לא כן/לא.
+4. אם זו משימה חוזרת ולא בוצע סלוט — אל תאשים ואל "תזכיר"; הצע נוכחות.
+5. אם נראה שכל הסלוטים בוצעו (קונטקסט reinforce) — חוגג ספציפית את מה שנעשה, לא כללי.`
 );
 
 const HABIT_REINFORCE_SYSTEM = buildAlmogNotifySystemPrompt(ALMOG_REINFORCE_NOTIFY_HINT);
@@ -79,12 +85,19 @@ function formatHabitsForPrompt(
   const habits = dedupeByTitle(payload.habits);
   const tasks = dedupeByTitle(payload.pendingTasks);
 
-  const habitLines = habits
-    .slice(0, 2)
-    .map((h) => `- ${h.title}`);
-  const taskLines = tasks
-    .slice(0, 2)
-    .map((t) => `- ${t.title}`);
+  /**
+   * עבור משימות חוזרות — נציין לאלמוג בדיוק מה נשאר היום:
+   *  "שתיית מים לפני כל ארוחה — נשאר היום: ארוחת ערב".
+   * זה מה שמונע מהטקסט להיות גנרי / רובוטי.
+   */
+  const taskLines = tasks.slice(0, 2).map((t) => {
+    const schedule = t.scheduleLabel ? ` (${t.scheduleLabel})` : '';
+    const pending = t.pendingSlotLabels && t.pendingSlotLabels.length > 0
+      ? ` — נשאר היום: ${t.pendingSlotLabels.join(', ')}`
+      : '';
+    return `- ${t.title}${schedule}${pending}`;
+  });
+  const habitLines = habits.slice(0, 2).map((h) => `- ${h.title}`);
 
   const parts: string[] = [
     `חלון יום: ${SLOT_HE[payload.slot]}`,
@@ -93,15 +106,13 @@ function formatHabitsForPrompt(
 
   if (taskLines.length > 0) {
     parts.push(
-      `\nנושאים במסע שאפשר לגעת בהם בשיחה (רקע פנימי — לא לבדוק ביצוע, ${taskLines.length}):`
+      `\nנושאים פתוחים מהמסע (רקע פנימי — לא משאל ביצוע ולא שאלת "האם עשית"):`
     );
     parts.push(taskLines.join('\n'));
     parts.push(
       taskLines.length === 1
-        ? 'נושא אחד — אפשר להזכיר בעדינות אם מתאים לרגע.'
-        : taskLines.length <= 3
-          ? 'אפשר לבחור נושא אחד שמתאים לחלון הזמן — לא לרשום הכל.'
-          : `יש ${taskLines.length} נושאים — בחר 1 לכל היותר, בשפת חיים.`
+        ? 'נושא אחד — שזור אותו בשפת חיים, ספציפית למה שנשאר היום. בלי "האם" / "תזכורת".'
+        : 'בחר נושא אחד שמתאים לחלון הזמן הזה (בוקר/צהריים/ערב) — אל תזכיר את שניהם.'
     );
   } else {
     parts.push('\nנושאי מסע לשיחה: אין כרגע — התמקד ברגש/יום, לא ב"משימות".');
@@ -263,10 +274,10 @@ export async function sendAlmogHabitCheckpointNotification(
         content: `${firstName} · ${genderInstruction} · ${weekdayName} ${timeHHMM} · ${SLOT_HE[payload.slot]}
 ${
   isReinforce
-    ? 'חיזוק חברי עם אימוג\'י — ספציפי לשיחה/ביצוע, לא גנרי. שאלה פתוחה.'
-    : 'מגע חברי עם אימוג\'י — רק מה שלא בוצע. שאלה פתוחה.'
+    ? 'חיזוק חברי עם אימוג\'י — ציין ספציפית מה ${firstName} עשה היום (לפי "חיזוק ביצוע: ..." בקונטקסט). אם אין — תגובה רכה לנוכחות. שאלה פתוחה אחת.'
+    : 'מגע חברי עם אימוג\'י — אם בקונטקסט יש "נשאר היום: X" — דבר ספציפית על X בשפת חיים (לדוגמה אם נשאר ערב: "איך הערב הולך?"). בלי "תזכורת" / "האם עשית". שאלה פתוחה אחת.'
 }
-גוף ההודעה בלבד, 2–3 משפטים.`,
+גוף ההודעה בלבד, 2–3 משפטים, בלי טבלאות/רשימות/מקפים.`,
       },
     ],
   });

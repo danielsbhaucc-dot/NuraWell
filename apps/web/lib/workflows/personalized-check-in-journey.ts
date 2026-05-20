@@ -57,10 +57,35 @@ export async function fetchPersonalizedCheckInJourneyContext(
 
   const rows = data as ProgressRow[];
   const slot = habitSlotFromCheckInTime(checkInTime);
-  const { weekday } = jerusalemCalendarParts(now);
+  const { dateKey: todayKey, weekday } = jerusalemCalendarParts(now);
   const habits = collectUserJourneyHabits(rows);
   const due = habits.length > 0 ? filterHabitsForSlot(habits, slot, weekday) : [];
-  const pendingTasks = collectPendingAcceptedTasks(rows);
+
+  /** טוען ביצועי סלוטים של היום עבור משימות חוזרות — כדי לא לתזכר אחרי שכבר בוצע. */
+  const todayDoneByTask = new Map<string, Set<string>>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: execRows } = await (admin as any)
+    .from('journey_task_executions')
+    .select('task_id, slot')
+    .eq('user_id', userId)
+    .eq('date_key', todayKey)
+    .limit(200);
+  if (Array.isArray(execRows)) {
+    for (const row of execRows as Array<{ task_id?: string; slot?: string }>) {
+      const tid = typeof row.task_id === 'string' ? row.task_id : '';
+      const sl = typeof row.slot === 'string' ? row.slot : '';
+      if (!tid || !sl) continue;
+      const cur = todayDoneByTask.get(tid) ?? new Set<string>();
+      cur.add(sl);
+      todayDoneByTask.set(tid, cur);
+    }
+  }
+
+  const pendingTasks = collectPendingAcceptedTasks(rows, {
+    todayDoneByTask,
+    cronSlot: slot,
+    jerusalemWeekday: weekday,
+  });
 
   if (due.length === 0 && pendingTasks.length === 0) return null;
 

@@ -222,7 +222,31 @@ export async function POST(request: Request) {
   const filteredHabits = bypassEligibility
     ? allHabits
     : filterHabitsForSlot(allHabits, slot, weekday);
-  const pendingTasks = collectPendingAcceptedTasks(progressRows);
+
+  /** טוען ביצועי-סלוטים של היום עבור המשתמש — כדי שמשימה חוזרת שכבר סומנה לא תיכלל. */
+  const todayDoneByTask = new Map<string, Set<string>>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: todayExecRows } = await (admin as any)
+    .from('journey_task_executions')
+    .select('task_id, slot')
+    .eq('user_id', targetUserId)
+    .eq('date_key', dateKey)
+    .limit(200);
+  if (Array.isArray(todayExecRows)) {
+    for (const row of todayExecRows as Array<{ task_id?: string; slot?: string }>) {
+      const tid = typeof row.task_id === 'string' ? row.task_id : '';
+      const sl = typeof row.slot === 'string' ? row.slot : '';
+      if (!tid || !sl) continue;
+      const cur = todayDoneByTask.get(tid) ?? new Set<string>();
+      cur.add(sl);
+      todayDoneByTask.set(tid, cur);
+    }
+  }
+  const pendingTasks = collectPendingAcceptedTasks(progressRows, {
+    todayDoneByTask,
+    cronSlot: slot,
+    jerusalemWeekday: weekday,
+  });
 
   let payloadHabits: AlmogHabitCheckpointPayload['habits'] = filteredHabits.map((h) => ({
     id: h.id,

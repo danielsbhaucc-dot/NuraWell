@@ -66,7 +66,52 @@ async function runHabitCheckpointCron(request: Request) {
   }
 
   const now = new Date();
-  const plan = await planHabitCheckpointTriggersWithChat(admin, progressRows ?? [], slot, now);
+
+  /**
+   * טוען ביצועי משימות-חוזרות של היום עבור כל המשתמשים — כדי שאלמוג לא יתזכר
+   * סלוט שכבר בוצע (multi_daily 2/3 → לא נשלח, full→drop).
+   */
+  const todayKey = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: execRows } = await (admin as any)
+    .from('journey_task_executions')
+    .select('user_id, task_id, slot')
+    .eq('date_key', todayKey)
+    .limit(20000);
+
+  const todayExecutionsByUser = new Map<string, Map<string, Set<string>>>();
+  if (Array.isArray(execRows)) {
+    for (const row of execRows as Array<{ user_id?: string; task_id?: string; slot?: string }>) {
+      const uid = typeof row.user_id === 'string' ? row.user_id : '';
+      const tid = typeof row.task_id === 'string' ? row.task_id : '';
+      const sl = typeof row.slot === 'string' ? row.slot : '';
+      if (!uid || !tid || !sl) continue;
+      let byTask = todayExecutionsByUser.get(uid);
+      if (!byTask) {
+        byTask = new Map<string, Set<string>>();
+        todayExecutionsByUser.set(uid, byTask);
+      }
+      let slots = byTask.get(tid);
+      if (!slots) {
+        slots = new Set<string>();
+        byTask.set(tid, slots);
+      }
+      slots.add(sl);
+    }
+  }
+
+  const plan = await planHabitCheckpointTriggersWithChat(
+    admin,
+    progressRows ?? [],
+    slot,
+    now,
+    todayExecutionsByUser
+  );
 
   const userIds = [...new Set(plan.map((p) => p.userId))];
   const avoidIds = new Set<string>();

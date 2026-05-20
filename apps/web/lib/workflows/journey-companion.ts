@@ -120,14 +120,22 @@ function stationTitleFromJoin(raw: unknown): string | null {
   return null;
 }
 
-function buildSnapshot(rows: ProgressRowLite[]): JourneyCompanionSnapshot {
+function buildSnapshot(
+  rows: ProgressRowLite[],
+  todayDoneByTask?: ReadonlyMap<string, ReadonlySet<string>>,
+  jerusalemWeekday?: number
+): JourneyCompanionSnapshot {
   const asProgress = rows.map((r) => ({
     ...r,
     user_id: '',
     habits_progress: null,
     journey_steps: r.journey_steps,
   })) as ProgressRow[];
-  const pending = collectPendingAcceptedTasks(asProgress);
+  const pending = collectPendingAcceptedTasks(asProgress, {
+    todayDoneByTask,
+    jerusalemWeekday,
+    cronSlot: 'morning',
+  });
   return {
     pendingTaskTitles: pending.slice(0, 3).map((t) => t.title),
     openAcceptedCount: pending.length,
@@ -346,7 +354,42 @@ export async function fetchJourneyCompanionContext(
   if (published.length === 0) return null;
 
   const progressRows = (progressRes.data ?? []) as ProgressRowLite[];
-  const snapshot = buildSnapshot(progressRows);
+
+  /** טוען ביצועי משימות חוזרות של היום — לסינון "כבר בוצע היום". */
+  const todayKey = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  const todayDoneByTask = new Map<string, Set<string>>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: execRows } = await (admin as any)
+    .from('journey_task_executions')
+    .select('task_id, slot')
+    .eq('user_id', userId)
+    .eq('date_key', todayKey)
+    .limit(200);
+  if (Array.isArray(execRows)) {
+    for (const row of execRows as Array<{ task_id?: string; slot?: string }>) {
+      const tid = typeof row.task_id === 'string' ? row.task_id : '';
+      const sl = typeof row.slot === 'string' ? row.slot : '';
+      if (!tid || !sl) continue;
+      const cur = todayDoneByTask.get(tid) ?? new Set<string>();
+      cur.add(sl);
+      todayDoneByTask.set(tid, cur);
+    }
+  }
+
+  const weekdayShort = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Jerusalem',
+    weekday: 'short',
+  }).format(new Date());
+  const wdMap: Record<string, number> = {
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  };
+  const weekday = wdMap[weekdayShort] ?? 0;
+  const snapshot = buildSnapshot(progressRows, todayDoneByTask, weekday);
   const progressByStep = new Map(progressRows.map((r) => [r.step_id, r]));
   const daysSinceOnboarding = daysSince(profile.created_at as string) ?? 0;
   const minutesSinceOnboardingValue = minutesSince(profile.created_at as string);
