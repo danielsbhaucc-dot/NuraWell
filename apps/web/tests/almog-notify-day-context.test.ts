@@ -12,7 +12,7 @@ describe('formatTodayTouchesCooldownBlock', () => {
     expect(formatTodayTouchesCooldownBlock([], 'midday')).toBeNull();
   });
 
-  it('includes skip rule when morning touch had no reply', () => {
+  it('keeps Almog present when morning touch had no reply', () => {
     const touches: TodayAlmogTouch[] = [
       {
         slot: 'morning',
@@ -23,8 +23,8 @@ describe('formatTodayTouchesCooldownBlock', () => {
       },
     ];
     const block = formatTodayTouchesCooldownBlock(touches, 'midday');
-    expect(block).toContain('דילוג');
     expect(block).toContain('ללא תשובה');
+    expect(block).toContain('אל תיעלם');
   });
 });
 
