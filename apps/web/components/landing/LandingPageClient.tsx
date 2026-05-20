@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
+  Activity,
   ArrowLeft,
   Apple,
   Bell,
@@ -17,7 +18,10 @@ import {
   Hand,
   Heart,
   HelpCircle,
+  Infinity as InfinityIcon,
   Leaf,
+  Moon,
+  Repeat,
   Route,
   Smile,
   Sparkles,
@@ -210,6 +214,107 @@ export function LandingPageClient() {
                 </motion.li>
               ))}
             </ul>
+          </div>
+        </section>
+
+        {/* ─── MANIFESTO — Way of Life (WOW) ─── */}
+        <section className="landing-section landing-manifesto" aria-labelledby="manifesto-heading">
+          <div className="landing-manifesto-orbs" aria-hidden>
+            <span className="landing-manifesto-orb landing-manifesto-orb-1" />
+            <span className="landing-manifesto-orb landing-manifesto-orb-2" />
+            <span className="landing-manifesto-orb landing-manifesto-orb-3" />
+            <span className="landing-manifesto-orb landing-manifesto-orb-4" />
+          </div>
+
+          <div className="landing-manifesto-grid" aria-hidden />
+
+          <div className="landing-wrap">
+            <div className="landing-manifesto-content">
+              <motion.span
+                className="landing-manifesto-eyebrow"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, ease }}
+              >
+                <Sparkles className="w-4 h-4" aria-hidden />
+                הרעיון הגדול
+              </motion.span>
+
+              <motion.h2
+                id="manifesto-heading"
+                className="landing-manifesto-title"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.7, delay: 0.1, ease }}
+              >
+                <span className="landing-manifesto-line landing-manifesto-line-strike">
+                  זה לא דיאטה.
+                </span>
+                <span className="landing-manifesto-line landing-manifesto-line-accent">
+                  זה איך אתם חיים.
+                </span>
+              </motion.h2>
+
+              <motion.p
+                className="landing-manifesto-subtitle"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+              >
+                אורח חיים. הרגלים. <strong>זהות חדשה.</strong>
+                <br className="hidden sm:block" />
+                שינוי שלא נגמר בעוד חודש — אלא מחזיק לכל החיים.
+              </motion.p>
+
+              <div className="landing-manifesto-pillars">
+                {[
+                  { icon: Apple, title: 'תזונה', subtitle: 'לא משטר' },
+                  { icon: Activity, title: 'תנועה', subtitle: 'לא כאב' },
+                  { icon: Moon, title: 'מנוחה', subtitle: 'לא עצלות' },
+                  { icon: Brain, title: 'ראש', subtitle: 'לא רק גוף' },
+                ].map((pillar, i) => (
+                  <motion.div
+                    key={pillar.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.4 + i * 0.08, duration: 0.5, ease }}
+                    className="landing-manifesto-pillar"
+                  >
+                    <span className="landing-manifesto-pillar-icon">
+                      <pillar.icon aria-hidden />
+                    </span>
+                    <strong className="landing-manifesto-pillar-title">{pillar.title}</strong>
+                    <span className="landing-manifesto-pillar-subtitle">{pillar.subtitle}</span>
+                  </motion.div>
+                ))}
+              </div>
+
+              <motion.div
+                className="landing-manifesto-identity"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.85, duration: 0.6 }}
+              >
+                <span className="landing-manifesto-identity-label">
+                  <Repeat className="w-4 h-4" aria-hidden />
+                  השפה החדשה שלכם
+                </span>
+                <p className="landing-manifesto-identity-text">
+                  אתם לא <em>"בדיאטה"</em>.
+                  <br />
+                  אתם הופכים לאדם <strong>שטוב לו בגוף שלו.</strong>
+                </p>
+                <span className="landing-manifesto-identity-footer">
+                  <InfinityIcon className="w-4 h-4" aria-hidden />
+                  הרגלים קטנים · השפעה אדירה · לכל החיים
+                </span>
+              </motion.div>
+            </div>
           </div>
         </section>
 
