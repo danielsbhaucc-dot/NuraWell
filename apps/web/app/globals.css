@@ -1960,60 +1960,73 @@ html {
 
   .landing-faq-item {
     @apply rounded-2xl overflow-hidden;
-    background: linear-gradient(135deg, rgba(236, 253, 245, 0.7), rgba(209, 250, 229, 0.55));
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(110, 231, 183, 0.5);
+    background: transparent;
+    border: 1px solid rgba(16, 185, 129, 0.32);
     box-shadow:
-      0 10px 28px -10px rgba(4, 120, 87, 0.2),
-      inset 0 1px 0 rgba(236, 253, 245, 0.7);
-    transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+      0 10px 28px -10px rgba(4, 120, 87, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
   }
 
   .landing-faq-item.is-open {
-    background:
-      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.18), transparent 60%),
-      linear-gradient(135deg, rgba(167, 243, 208, 0.8), rgba(110, 231, 183, 0.6));
-    border-color: rgba(16, 185, 129, 0.55);
+    border-color: rgba(5, 150, 105, 0.55);
     box-shadow:
       0 18px 40px -12px rgba(16, 185, 129, 0.32),
-      inset 0 1px 0 rgba(236, 253, 245, 0.75);
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
   }
 
   .landing-faq-q {
     @apply w-full flex items-center gap-3 px-4 py-4 sm:px-5 sm:py-5;
-    background: transparent;
+    background:
+      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.18), transparent 65%),
+      linear-gradient(135deg, rgba(16, 185, 129, 0.32), rgba(45, 212, 191, 0.28));
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     border: none;
     cursor: pointer;
     text-align: inherit;
-    transition: background 0.25s ease;
+    transition: background 0.25s ease, box-shadow 0.25s ease;
     font-family: inherit;
   }
 
   .landing-faq-q:hover {
-    background: rgba(16, 185, 129, 0.06);
+    background:
+      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.22), transparent 65%),
+      linear-gradient(135deg, rgba(16, 185, 129, 0.42), rgba(45, 212, 191, 0.36));
+  }
+
+  .landing-faq-item.is-open .landing-faq-q {
+    background:
+      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.22), transparent 65%),
+      linear-gradient(135deg, rgba(5, 150, 105, 0.55), rgba(20, 184, 166, 0.45));
+    box-shadow: inset 0 -1px 0 rgba(5, 150, 105, 0.45);
   }
 
   .landing-faq-q:focus-visible {
-    outline: 2px solid rgba(16, 185, 129, 0.5);
+    outline: 2px solid rgba(16, 185, 129, 0.6);
     outline-offset: -2px;
   }
 
   .landing-faq-icon {
     @apply flex h-10 w-10 items-center justify-center rounded-xl shrink-0;
-    background: linear-gradient(135deg, #047857, #34d399);
-    color: #ecfdf5;
+    background:
+      radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.45), transparent 55%),
+      linear-gradient(135deg, #ffffff, #ecfdf5);
+    color: #047857;
     box-shadow:
-      0 8px 18px -4px rgba(16, 185, 129, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.25);
-    transition: transform 0.3s ease;
+      0 8px 18px -4px rgba(4, 120, 87, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease;
   }
 
   .landing-faq-item.is-open .landing-faq-icon {
-    background: linear-gradient(135deg, #0891b2, #22d3ee);
+    background:
+      radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.55), transparent 55%),
+      linear-gradient(135deg, #064e3b, #047857);
+    color: #ecfdf5;
     box-shadow:
-      0 10px 22px -4px rgba(6, 182, 212, 0.55),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      0 10px 22px -4px rgba(4, 120, 87, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
     transform: rotate(360deg);
   }
 
@@ -2025,30 +2038,37 @@ html {
   .landing-faq-q-text {
     font-family: 'Rubik', 'Heebo', sans-serif;
     @apply flex-1 text-[15px] sm:text-base font-black leading-snug;
-    color: #064e3b;
+    color: #042f2e;
   }
 
   .landing-faq-item.is-open .landing-faq-q-text {
-    color: #047857;
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
   }
 
   .landing-faq-chev {
     @apply flex items-center justify-center shrink-0;
-    color: #047857;
+    color: #064e3b;
     transition: transform 0.3s ease, color 0.3s ease;
   }
 
   .landing-faq-item.is-open .landing-faq-chev {
     transform: rotate(-90deg);
-    color: #0891b2;
+    color: #ecfdf5;
   }
 
   .landing-faq-a-wrap {
     overflow: hidden;
+    background:
+      radial-gradient(ellipse 60% 80% at 100% 0%, rgba(110, 231, 183, 0.18), transparent 65%),
+      linear-gradient(180deg, rgba(236, 253, 245, 0.92), rgba(209, 250, 229, 0.82));
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(16, 185, 129, 0.22);
   }
 
   .landing-faq-a {
-    @apply px-4 pb-5 pt-1 sm:px-5 sm:pb-6 text-[14px] sm:text-[15px] leading-relaxed;
+    @apply px-4 pb-5 pt-4 sm:px-5 sm:pb-6 sm:pt-5 text-[14px] sm:text-[15px] leading-relaxed;
     color: #1f4a3a;
     padding-right: calc(1rem + 40px + 12px);
   }
