@@ -48,6 +48,20 @@ export const { POST } = serve<AlmogOnboardingKickoffPayload>(async (context) => 
 
     if (!eligibility.ok) {
       lastReason = eligibility.reason;
+      /**
+       * משתמש אמר "אמשיך מחר" / "בעוד שעה" — לחכות עד הזמן שהוא הבטיח,
+       * לא לישון 24 שעות שמחמיצות את החלון. כשהזמן מגיע, נבדוק שוב את ה-state.
+       */
+      if (
+        eligibility.reason === 'journey_follow_up_pending' &&
+        eligibility.followUpCheckAt
+      ) {
+        const target = new Date(eligibility.followUpCheckAt);
+        if (Number.isFinite(target.getTime()) && target.getTime() > Date.now()) {
+          await context.sleepUntil(`wait-for-follow-up-${attempt}`, target);
+          continue;
+        }
+      }
       if (eligibility.reason === 'journey_step_nudge_already_sent_recently') {
         continue;
       }
