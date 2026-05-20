@@ -22,7 +22,7 @@ type ProfileRow = {
 };
 
 export type KickoffEligibility =
-  | { ok: true; deferUntilIso: string | null }
+  | { ok: true; deferUntilIso: string | null; stepId: string; phase: string }
   | { ok: false; reason: string };
 
 function israelHourNow(now: Date = new Date()): number {
@@ -72,7 +72,8 @@ function addOneIsraelDay(dateKey: string): string {
 }
 
 /**
- * בודק האם מותר לשלוח kickoff עכשיו עבור המשתמש.
+ * בודק האם מותר לשלוח מגע מסע עכשיו עבור המשתמש.
+ * זה לא מוגבל לצעד הראשון: כל עוד יש צעד פתוח שלא הושלם, אלמוג ממשיך ללוות.
  * החזרות:
  *  - ok=true, deferUntilIso=null      → שלח עכשיו
  *  - ok=true, deferUntilIso=ISO       → סלפ עד הזמן ההוא ובדוק שוב
@@ -112,26 +113,15 @@ export async function checkKickoffEligibility(
     return { ok: false, reason: 'journey_follow_up_pending' };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: progress } = await (admin as any)
-    .from('journey_progress')
-    .select('step_id, video_watched, is_completed')
-    .eq('user_id', userId)
-    .limit(5);
-
-  const progressRows = (progress ?? []) as Array<{
-    step_id: string;
-    video_watched: boolean | null;
-    is_completed: boolean | null;
-  }>;
-
-  /** משתמש שפתח שיעור או סיים צעד — לא צריך kickoff, יש מסלולי ליווי אחרים. */
-  const touched = progressRows.some((r) => r.video_watched === true || r.is_completed === true);
-  if (touched) {
-    return { ok: false, reason: 'journey_already_started' };
+  const companion = await fetchJourneyCompanionContext(admin, userId);
+  if (!companion) {
+    return { ok: false, reason: 'journey_complete_or_missing' };
   }
 
-  /** למניעת כפל — אם כבר נשלח kickoff ב-24 השעות האחרונות, לדלג. */
+  /**
+   * למניעת כפל — אם כבר נשלח מגע מסע לאותו step ב-24 השעות האחרונות, לדלג.
+   * זה מכסה גם מגעים מה-cron היומי וגם מה-workflow הישיר.
+   */
   const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: recentNotifs } = await (admin as any)
@@ -142,17 +132,25 @@ export async function checkKickoffEligibility(
     .gte('created_at', sinceIso)
     .limit(40);
 
-  for (const r of (recentNotifs ?? []) as Array<{ metadata?: { journey_kickoff?: boolean } }>) {
-    if (r.metadata?.journey_kickoff === true) {
-      return { ok: false, reason: 'kickoff_already_sent_recently' };
+  for (const r of (recentNotifs ?? []) as Array<{
+    metadata?: { source?: string; step_id?: string };
+  }>) {
+    const meta = r.metadata;
+    if (meta?.source === 'almog_journey_companion' && meta.step_id === companion.stepId) {
+      return { ok: false, reason: 'journey_step_nudge_already_sent_recently' };
     }
   }
 
-  return { ok: true, deferUntilIso: computeDeferUntilIso() };
+  return {
+    ok: true,
+    deferUntilIso: computeDeferUntilIso(),
+    stepId: companion.stepId,
+    phase: companion.phase,
+  };
 }
 
 /**
- * שולח את ה-kickoff בפועל — משתמש ב-pipeline הקיים של אלמוג כדי שהטון יישאר אנושי.
+ * שולח מגע מסע בפועל — משתמש ב-pipeline הקיים של אלמוג כדי שהטון יישאר אנושי.
  */
 export async function sendKickoffNudgeForUser(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -162,9 +160,6 @@ export async function sendKickoffNudgeForUser(
   const companion = await fetchJourneyCompanionContext(admin, userId);
   if (!companion) {
     return { inserted: false, reason: 'no_journey_context' };
-  }
-  if (companion.phase !== 'not_started' && companion.phase !== 'step_not_opened') {
-    return { inserted: false, reason: `unexpected_phase:${companion.phase}` };
   }
 
   const result = await sendJourneyCompanionNudge(admin, userId, companion);
