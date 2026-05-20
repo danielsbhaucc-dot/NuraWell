@@ -8,17 +8,24 @@ import {
   Apple,
   Bell,
   BookOpen,
+  Brain,
   CheckCircle2,
   ChevronLeft,
+  Coffee,
   Compass,
   Flame,
+  Hand,
   Heart,
+  HelpCircle,
   Leaf,
   Route,
+  Smile,
   Sparkles,
   Sun,
+  Sunrise,
   Trophy,
   Users,
+  X,
 } from 'lucide-react';
 import { NuraWellLogo } from '@/components/shared/NuraWellLogo';
 import { MentorBubble } from '@/components/onboarding/MentorBubble';
@@ -134,7 +141,7 @@ export function LandingPageClient() {
           </div>
 
           <ul className="landing-hero-pills" aria-label="הבטחות">
-            {['בלי דיאטה', 'בלי ספירת קלוריות', 'בלי הרעבה'].map((label) => (
+            {['בלי קלוריות', 'בלי איסורים', 'בלי שיפוטיות', 'בלי הרעבה'].map((label) => (
               <li key={label} className="landing-hero-pill">
                 <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden />
                 {label}
@@ -258,6 +265,91 @@ export function LandingPageClient() {
           </div>
         </section>
 
+        {/* ─── ניגוד: במקום ↔ תקבלו ─── */}
+        <section className="landing-section landing-contrast" aria-labelledby="contrast-heading">
+          <div className="landing-wrap">
+            <div className="landing-section-head landing-section-head-center">
+              <SectionEyebrow>ההבדל המהותי</SectionEyebrow>
+              <SectionTitle
+                id="contrast-heading"
+                title="במקום מה שלא עובד — תקבלו מה שכן"
+                subtitle="כל מה שהדיאטות עשו לכם בעבר, אנחנו עושים אחרת לגמרי."
+              />
+            </div>
+
+            <ul className="landing-contrast-list">
+              {[
+                {
+                  bad: 'לספור כל קלוריה',
+                  good: 'יחס בריא לאוכל — בלי מספרים',
+                },
+                {
+                  bad: 'רשימת מאכלים אסורים',
+                  good: 'חופש בחירה מודע — הכל מותר',
+                },
+                {
+                  bad: 'תחושת אשמה אחרי כל ארוחה',
+                  good: 'שקט פנימי וליווי תומך — בלי שיפוטיות',
+                },
+                {
+                  bad: 'תפריט מוכתב שלא מתאים לחיים',
+                  good: 'ידע שמעצים אתכם לבחור לבד',
+                },
+                {
+                  bad: 'הרעבה ויומיים של נפילה',
+                  good: 'הרגלים קטנים שדבקים לאורך זמן',
+                },
+                {
+                  bad: 'מספר על המשקל שמכתיב את היום',
+                  good: 'חיים מלאים — שהמספר רק מסמן מה שכבר השתנה',
+                },
+              ].map((row, i) => (
+                <motion.li
+                  key={row.good}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ delay: i * 0.05, duration: 0.4, ease }}
+                  className="landing-contrast-row"
+                >
+                  <div className="landing-contrast-bad">
+                    <span className="landing-contrast-icon landing-contrast-icon-bad">
+                      <X aria-hidden />
+                    </span>
+                    <span className="landing-contrast-bad-text">
+                      <span className="landing-contrast-label">במקום</span>
+                      {row.bad}
+                    </span>
+                  </div>
+                  <div className="landing-contrast-arrow" aria-hidden>
+                    <ArrowLeft className="w-5 h-5" />
+                  </div>
+                  <div className="landing-contrast-good">
+                    <span className="landing-contrast-icon landing-contrast-icon-good">
+                      <CheckCircle2 aria-hidden />
+                    </span>
+                    <span className="landing-contrast-good-text">
+                      <span className="landing-contrast-label">תקבלו</span>
+                      {row.good}
+                    </span>
+                  </div>
+                </motion.li>
+              ))}
+            </ul>
+
+            <motion.p
+              className="landing-contrast-footnote"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+            >
+              <Hand className="w-4 h-4" aria-hidden />
+              אנחנו לא נכנסים לצלחת שלכם. אנחנו נותנים לכם את הכלים — אתם בוחרים.
+            </motion.p>
+          </div>
+        </section>
+
         {/* ─── מסע + תמונה ─── */}
         <section className="landing-section landing-section-muted" aria-labelledby="journey-heading">
           <div className="landing-wrap">
@@ -367,6 +459,71 @@ export function LandingPageClient() {
                 </motion.article>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* ─── תדמיינו את עצמכם — Future Self ─── */}
+        <section className="landing-section landing-imagine" aria-labelledby="imagine-heading">
+          <div className="landing-wrap">
+            <div className="landing-section-head landing-section-head-center">
+              <SectionEyebrow>החיים שלכם בעוד 30 יום</SectionEyebrow>
+              <SectionTitle
+                id="imagine-heading"
+                title="תדמיינו את עצמכם..."
+                subtitle="כי השינוי האמיתי הוא איך אתם מרגישים — לא מה אומר המאזניים."
+                light
+              />
+            </div>
+
+            <div className="landing-imagine-grid">
+              {[
+                {
+                  icon: Sunrise,
+                  text: 'מתעוררים בבוקר עם אנרגיה',
+                  highlight: 'בלי לחשוב על "מה אסור לי היום"',
+                },
+                {
+                  icon: Coffee,
+                  text: 'יושבים לארוחה משפחתית',
+                  highlight: 'ונהנים מכל ביס — בלי טיפת אשמה',
+                },
+                {
+                  icon: Brain,
+                  text: 'מקשיבים לגוף שלכם',
+                  highlight: 'יודעים מתי רעבים, מתי שבעים, מתי באמת מתחשק',
+                },
+                {
+                  icon: Smile,
+                  text: 'מסתכלים במראה',
+                  highlight: 'ורואים מישהו שטוב לו עם עצמו',
+                },
+              ].map((item, i) => (
+                <motion.article
+                  key={item.text}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ delay: i * 0.08, duration: 0.5, ease }}
+                  className="landing-imagine-card"
+                >
+                  <span className="landing-imagine-icon">
+                    <item.icon aria-hidden />
+                  </span>
+                  <p className="landing-imagine-text">{item.text}</p>
+                  <p className="landing-imagine-highlight">{item.highlight}</p>
+                </motion.article>
+              ))}
+            </div>
+
+            <motion.p
+              className="landing-imagine-quote"
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+            >
+              זה לא חלום. זה מה שקורה כשמפסיקים להילחם בגוף — ומתחילים להקשיב לו.
+            </motion.p>
           </div>
         </section>
 
@@ -517,6 +674,69 @@ export function LandingPageClient() {
           </div>
         </section>
 
+        {/* ─── FAQ - טיפול בהתנגדויות ─── */}
+        <section className="landing-section landing-section-soft" aria-labelledby="faq-heading">
+          <div className="landing-wrap landing-faq-wrap">
+            <div className="landing-section-head landing-section-head-center">
+              <SectionEyebrow>שאלות שמטרידות אתכם</SectionEyebrow>
+              <SectionTitle
+                id="faq-heading"
+                title="הכל מה שאתם רוצים לדעת"
+                subtitle="לפני שמתחילים — בואו נסיר את הספקות."
+              />
+            </div>
+
+            <div className="landing-faq-list">
+              {[
+                {
+                  q: 'רגע, זאת בעצם דיאטה?',
+                  a: 'לא. בכלל לא. אין תפריט, אין מאכלים אסורים, ואין רשימה של מה לאכול. NuraWell מלמד אתכם להבין את הגוף שלכם — כדי שתבחרו לבד.',
+                },
+                {
+                  q: 'אצטרך לספור קלוריות או לשקול אוכל?',
+                  a: 'לעולם לא. אנחנו לא מאמינים שספירה היא הדרך. בריאות אמיתית מתחילה מהראש — לא מהאקסל.',
+                },
+                {
+                  q: 'מה אם אני "נופל" ואוכל משהו לא בריא?',
+                  a: 'אין נפילות פה. אין "בריא" ו"לא בריא" במובן השיפוטי. כל ארוחה היא הזדמנות, לא מבחן. ואלמוג ידע להעיף לכם חיוך — לא תוכחה.',
+                },
+                {
+                  q: 'כמה זמן ביום זה דורש?',
+                  a: 'בין 5 ל-10 דקות. משימה קצרה, שיעור קצר, או שיחה עם אלמוג. נכנס בקלות לסדר היום — לא הופך לעוד מטלה.',
+                },
+                {
+                  q: 'אני כבר ניסיתי הכל. למה זה יעבוד?',
+                  a: 'כי כל מה שניסיתם היה דיאטה. ופה אין דיאטה. אנחנו עובדים על הראש, על ההרגלים, ועל היחס לאוכל — לא על הצלחת.',
+                },
+                {
+                  q: 'באמת חינם? איפה ה"בלאגן"?',
+                  a: 'בלי לכודים. נרשמים, מקבלים את המסע, את הקורסים ואת אלמוג. אין כרטיס אשראי, אין התחייבות, ואפשר לעזוב בכל רגע.',
+                },
+              ].map((item, i) => (
+                <motion.details
+                  key={item.q}
+                  initial={{ opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-30px' }}
+                  transition={{ delay: i * 0.04, duration: 0.35, ease }}
+                  className="landing-faq-item"
+                >
+                  <summary className="landing-faq-q">
+                    <span className="landing-faq-icon">
+                      <HelpCircle aria-hidden />
+                    </span>
+                    <span className="landing-faq-q-text">{item.q}</span>
+                    <span className="landing-faq-chev" aria-hidden>
+                      <ChevronLeft className="w-5 h-5" />
+                    </span>
+                  </summary>
+                  <p className="landing-faq-a">{item.a}</p>
+                </motion.details>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ─── CTA ─── */}
         <section className="landing-section landing-cta-band" aria-label="הצטרפות">
           <div className="landing-cta-orbs" aria-hidden>
@@ -536,11 +756,12 @@ export function LandingPageClient() {
                 חינם להתחיל — בלי כרטיס אשראי
               </span>
               <h2 className="landing-cta-title">
-                החיים הבריאים שלכם <br className="hidden sm:block" />
-                <span className="landing-cta-title-accent">מתחילים היום</span>
+                אל תחכו ליום שני הבא. <br className="hidden sm:block" />
+                <span className="landing-cta-title-accent">תתחילו עכשיו.</span>
               </h2>
               <p className="landing-cta-text">
-                הצטרפו עכשיו וקבלו גישה מלאה למסע, לקורסים ולמנטור AI. בלי התחייבות, בלי דיאטה.
+                60 שניות להירשם. גישה מלאה למסע, לקורסים ולמנטור AI שלכם.
+                <strong className="block mt-2 text-white">בלי דיאטה. בלי איסורים. בלי שיפוטיות.</strong>
               </p>
               <div className="landing-cta-actions">
                 <Link href="/register" className="landing-btn-primary landing-btn-primary-lg">
