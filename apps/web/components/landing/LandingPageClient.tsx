@@ -5,31 +5,41 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   Activity,
+  ArrowDown,
   ArrowLeft,
   Apple,
+  Ban,
+  BedDouble,
   Bell,
   BookOpen,
   Brain,
+  Calculator,
   CheckCircle2,
   ChevronLeft,
+  ClipboardList,
   Coffee,
   Compass,
   Flame,
+  Frown,
   Hand,
   Heart,
   HelpCircle,
   Infinity as InfinityIcon,
   Leaf,
   Moon,
+  PlayCircle,
   Repeat,
   Route,
+  Scale,
   Smile,
   Sparkles,
+  Star,
   Sun,
   Sunrise,
   Trophy,
   Users,
-  X,
+  Utensils,
+  Zap,
 } from 'lucide-react';
 import { NuraWellLogo } from '@/components/shared/NuraWellLogo';
 import { MentorBubble } from '@/components/onboarding/MentorBubble';
@@ -45,9 +55,11 @@ const SECTION_IMAGE_LIFESTYLE =
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
-function SectionEyebrow({ children }: { children: React.ReactNode }) {
+function SectionEyebrow({ children, light }: { children: React.ReactNode; light?: boolean }) {
   return (
-    <span className="landing-eyebrow">{children}</span>
+    <span className={light ? 'landing-eyebrow landing-eyebrow-light' : 'landing-eyebrow'}>
+      {children}
+    </span>
   );
 }
 
@@ -130,8 +142,8 @@ export function LandingPageClient() {
           </h1>
 
           <p className="landing-hero-lead">
-            המסע שישנה לכם את היחס לאוכל, לגוף ולעצמכם.
-            <strong> מנטור AI אישי, קורסים מקצועיים והרגלים שדבקים — חינם להתחיל.</strong>
+            לא רק ירידה במשקל — שינוי אמיתי באנרגיה, בשינה, בתזונה וביחס לעצמכם.
+            <strong> מנטור AI, קורסים והרגלים לכל החיים — חינם להתחיל.</strong>
           </p>
 
           <div className="landing-hero-cta">
@@ -180,7 +192,7 @@ export function LandingPageClient() {
                 {
                   icon: Flame,
                   value: '94%',
-                  label: 'נשארים שבוע ראשון',
+                  label: 'מרגישים שינוי בשבוע הראשון',
                   tone: 'orange',
                 },
                 {
@@ -192,7 +204,7 @@ export function LandingPageClient() {
                 {
                   icon: Heart,
                   value: '100%',
-                  label: 'בעברית, בלי דיאטה',
+                  label: 'אורח חיים — לא דיאטה',
                   tone: 'rose',
                 },
               ].map((s, i) => (
@@ -319,14 +331,18 @@ export function LandingPageClient() {
         </section>
 
         {/* ─── פילוסופיה ─── */}
-        <section className="landing-section landing-section-soft" aria-labelledby="philosophy-heading">
+        <section className="landing-section landing-section-soft landing-section-glow" aria-labelledby="philosophy-heading">
+          <div className="landing-section-orbs" aria-hidden>
+            <span className="landing-section-orb landing-section-orb-emerald" />
+            <span className="landing-section-orb landing-section-orb-amber" />
+          </div>
           <div className="landing-wrap">
             <div className="landing-section-head landing-section-head-center">
               <SectionEyebrow>למה אנחנו שונים</SectionEyebrow>
               <SectionTitle
                 id="philosophy-heading"
                 title="לא עוד אפליקציית דיאטה"
-                subtitle="המטרה היא אורח חיים שאפשר לחיות איתו שנים — לא מספר על המשקל שמכתיב את היום."
+                subtitle="אורח חיים שלם — תזונה, תנועה, שינה ואנרגיה. לא מספר על המשקל, לא רשימת איסורים."
               />
             </div>
 
@@ -343,6 +359,12 @@ export function LandingPageClient() {
                   title: 'בונים הרגלים',
                   text: 'צעדים קטנים שמתחברים לשגרה. משימות יומיות עם עידוד, לא עונש.',
                   tone: 'teal',
+                },
+                {
+                  icon: Zap,
+                  title: 'אנרגיה ושינה',
+                  text: 'לא רק מה שבצלחת — גם איך ישנים, מתנועעים ומרגישים לאורך היום.',
+                  tone: 'orange',
                 },
                 {
                   icon: Compass,
@@ -385,28 +407,40 @@ export function LandingPageClient() {
             <ul className="landing-contrast-list">
               {[
                 {
+                  badIcon: Calculator,
                   bad: 'לספור כל קלוריה',
+                  goodIcon: Heart,
                   good: 'יחס בריא לאוכל — בלי מספרים',
                 },
                 {
+                  badIcon: Ban,
                   bad: 'רשימת מאכלים אסורים',
+                  goodIcon: Sparkles,
                   good: 'חופש בחירה מודע — הכל מותר',
                 },
                 {
+                  badIcon: Frown,
                   bad: 'תחושת אשמה אחרי כל ארוחה',
+                  goodIcon: Smile,
                   good: 'שקט פנימי וליווי תומך — בלי שיפוטיות',
                 },
                 {
+                  badIcon: ClipboardList,
                   bad: 'תפריט מוכתב שלא מתאים לחיים',
+                  goodIcon: BookOpen,
                   good: 'ידע שמעצים אתכם לבחור לבד',
                 },
                 {
+                  badIcon: Utensils,
                   bad: 'הרעבה ויומיים של נפילה',
+                  goodIcon: Leaf,
                   good: 'הרגלים קטנים שדבקים לאורך זמן',
                 },
                 {
+                  badIcon: Scale,
                   bad: 'מספר על המשקל שמכתיב את היום',
-                  good: 'חיים מלאים — שהמספר רק מסמן מה שכבר השתנה',
+                  goodIcon: Sun,
+                  good: 'אנרגיה, שינה ואורח חיים — לא רק המשקל',
                 },
               ].map((row, i) => (
                 <motion.li
@@ -419,7 +453,7 @@ export function LandingPageClient() {
                 >
                   <div className="landing-contrast-bad">
                     <span className="landing-contrast-icon landing-contrast-icon-bad">
-                      <X aria-hidden />
+                      <row.badIcon aria-hidden />
                     </span>
                     <span className="landing-contrast-bad-text">
                       <span className="landing-contrast-label">במקום</span>
@@ -427,11 +461,12 @@ export function LandingPageClient() {
                     </span>
                   </div>
                   <div className="landing-contrast-arrow" aria-hidden>
-                    <ArrowLeft className="w-5 h-5" />
+                    <ArrowLeft className="landing-contrast-arrow-desktop w-5 h-5" />
+                    <ArrowDown className="landing-contrast-arrow-mobile w-5 h-5" />
                   </div>
                   <div className="landing-contrast-good">
                     <span className="landing-contrast-icon landing-contrast-icon-good">
-                      <CheckCircle2 aria-hidden />
+                      <row.goodIcon aria-hidden />
                     </span>
                     <span className="landing-contrast-good-text">
                       <span className="landing-contrast-label">תקבלו</span>
@@ -490,11 +525,11 @@ export function LandingPageClient() {
               >
                 <SectionEyebrow>המסע שלכם</SectionEyebrow>
                 <h2 id="journey-heading" className="landing-h2">
-                  שלבים, תחנות והתקדמות <span className="landing-text-gradient">אמיתית</span>
+                  מסע שלם — <span className="landing-text-gradient">לא רק משקל</span>
                 </h2>
                 <p className="landing-body">
-                  מסלול מובנה שמתקדם איתכם — לא רשימת מטלות. רואים איפה עמדתם, מה הצעד הבא,
-                  וחוגגים כל הישג בדרך.
+                  תזונה, תנועה, שינה והרגלים — מסלול שמתקדם איתכם בקצב שלכם.
+                  רואים איפה עמדתם, מה הצעד הבא, וחוגגים כל שינוי קטן בדרך.
                 </p>
                 <ul className="landing-checklist">
                   {['תחנות ושלבים מסודרים', 'משימות יומיות חכמות', 'מעקב בלי מספרים מעיקים'].map(
@@ -512,14 +547,18 @@ export function LandingPageClient() {
         </section>
 
         {/* ─── יכולות ─── */}
-        <section className="landing-section landing-section-white" aria-labelledby="features-heading">
+        <section className="landing-section landing-section-white landing-section-glow" aria-labelledby="features-heading">
+          <div className="landing-section-orbs" aria-hidden>
+            <span className="landing-section-orb landing-section-orb-teal" />
+            <span className="landing-section-orb landing-section-orb-rose" />
+          </div>
           <div className="landing-wrap">
             <div className="landing-section-head landing-section-head-center">
               <SectionEyebrow>מה מקבלים</SectionEyebrow>
               <SectionTitle
                 id="features-heading"
-                title="מערכת שלמה, מעוצבת לחיים"
-                subtitle="כל מה שצריך — באפליקציה אחת, בעברית, בקצב שלכם."
+                title="מערכת שלמה לאורח חיים בריא"
+                subtitle="תזונה, תנועה, שינה, הרגלים ומנטור AI — הכל במקום אחד, בעברית, בקצב שלכם."
               />
             </div>
 
@@ -602,6 +641,16 @@ export function LandingPageClient() {
                   text: 'מסתכלים במראה',
                   highlight: 'ורואים מישהו שטוב לו עם עצמו',
                 },
+                {
+                  icon: Activity,
+                  text: 'מתנועעים בכיף',
+                  highlight: 'לא "אימון חובה" — תנועה שמרגישה טוב',
+                },
+                {
+                  icon: BedDouble,
+                  text: 'נרדמים בשקט',
+                  highlight: 'שינה איכותית — חלק מאורח החיים, לא בונוס',
+                },
               ].map((item, i) => (
                 <motion.article
                   key={item.text}
@@ -632,6 +681,89 @@ export function LandingPageClient() {
           </div>
         </section>
 
+        {/* ─── אפקט ההצטברות — Timeline WOW ─── */}
+        <section className="landing-section landing-timeline" aria-labelledby="timeline-heading">
+          <div className="landing-timeline-glow" aria-hidden />
+          <div className="landing-wrap">
+            <div className="landing-section-head landing-section-head-center">
+              <SectionEyebrow light>הרגלים מצטברים</SectionEyebrow>
+              <SectionTitle
+                id="timeline-heading"
+                title="הרגל קטן היום — אורח חיים מחר"
+                subtitle="לא צריך לשנות הכל בבת אחת. כל יום מוסיף שכבה — עד שהחיים שלכם פשוט נראים אחרת."
+                light
+              />
+            </div>
+
+            <ol className="landing-timeline-track">
+              {[
+                {
+                  day: 'יום 1',
+                  icon: PlayCircle,
+                  title: 'הצעד הראשון',
+                  text: 'הרשמה, שיחה עם דולב, והבנה שזה לא דיאטה — זה התחלה חדשה.',
+                  tone: 'emerald',
+                },
+                {
+                  day: 'יום 7',
+                  icon: Leaf,
+                  title: 'הרגל ראשון נדבק',
+                  text: 'משימה יומית קטנה שהופכת לשגרה — בלי מאמץ, בלי לחץ.',
+                  tone: 'teal',
+                },
+                {
+                  day: 'יום 30',
+                  icon: Brain,
+                  title: 'הראש משתנה',
+                  text: 'פחות אשמה, יותר בחירה. היחס לאוכל, לשינה ולתנועה — אחר.',
+                  tone: 'amber',
+                },
+                {
+                  day: 'יום 90',
+                  icon: Zap,
+                  title: 'הגוף מגיב',
+                  text: 'יותר אנרגיה, שינה טובה יותר, תחושה אחרת — לא רק מספר על המשקל.',
+                  tone: 'orange',
+                },
+                {
+                  day: 'יום 365',
+                  icon: Star,
+                  title: 'זה מי שאתם',
+                  text: 'אורח חיים, לא פרויקט. אתם לא "בדיאטה" — אתם פשוט חיים אחרת.',
+                  tone: 'rose',
+                },
+              ].map((step, i) => (
+                <motion.li
+                  key={step.day}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-30px' }}
+                  transition={{ delay: i * 0.08, duration: 0.5, ease }}
+                  className={`landing-timeline-step landing-tone-${step.tone}`}
+                >
+                  <span className="landing-timeline-day">{step.day}</span>
+                  <span className="landing-timeline-icon">
+                    <step.icon aria-hidden />
+                  </span>
+                  <h3 className="landing-timeline-title">{step.title}</h3>
+                  <p className="landing-timeline-text">{step.text}</p>
+                </motion.li>
+              ))}
+            </ol>
+
+            <motion.p
+              className="landing-timeline-quote"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+            >
+              <InfinityIcon className="w-5 h-5 shrink-0" aria-hidden />
+              1% טוב יותר כל יום = <strong>37×</strong> שינוי בשנה. זה המתמטיקה של אורח חיים.
+            </motion.p>
+          </div>
+        </section>
+
         {/* ─── אורח חיים + תמונה ─── */}
         <section className="landing-section landing-section-muted" aria-labelledby="lifestyle-heading">
           <div className="landing-wrap">
@@ -648,11 +780,11 @@ export function LandingPageClient() {
                   להרגיש טוב — <span className="landing-text-gradient">לא רק להיראות טוב</span>
                 </h2>
                 <p className="landing-body">
-                  שינוי שמתחיל מהראש ומהלב. קורסים, תוכן ומשימות שמחברים בין גוף, תזונה
-                  ושגרה — בלי לחץ ובלי אשמה.
+                  לא רק מה שבצלחת — גם איך ישנים, מתנועעים ומרגישים. קורסים ומשימות שמחברים
+                  תזונה, תנועה, שינה ואנרגיה לאורח חיים אחד — בלי לחץ ובלי אשמה.
                 </p>
                 <ul className="landing-checklist">
-                  {['אנרגיה לאורך כל היום', 'שינה איכותית באמת', 'יחס בריא יותר לאוכל'].map((t) => (
+                  {['אנרגיה לאורך כל היום', 'שינה איכותית באמת', 'תנועה בכיף, לא כעונש', 'יחס בריא לאוכל'].map((t) => (
                     <li key={t}>
                       <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" aria-hidden />
                       {t}
@@ -734,7 +866,10 @@ export function LandingPageClient() {
         </section>
 
         {/* ─── איך מתחילים ─── */}
-        <section className="landing-section landing-section-white" aria-labelledby="steps-heading">
+        <section className="landing-section landing-section-white landing-section-glow" aria-labelledby="steps-heading">
+          <div className="landing-section-orbs" aria-hidden>
+            <span className="landing-section-orb landing-section-orb-emerald" />
+          </div>
           <div className="landing-wrap">
             <motion.div className="landing-section-head landing-section-head-center">
               <SectionEyebrow>פשוט להתחיל</SectionEyebrow>
