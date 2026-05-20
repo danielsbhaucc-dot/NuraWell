@@ -1992,7 +1992,7 @@ html {
     @apply w-full flex items-center gap-3 px-4 py-4 sm:px-5 sm:py-5;
     background:
       radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.18), transparent 65%),
-      linear-gradient(135deg, rgba(16, 185, 129, 0.32), rgba(45, 212, 191, 0.28));
+      linear-gradient(135deg, rgba(209, 250, 229, 0.92), rgba(167, 243, 208, 0.82));
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border: none;
@@ -2005,14 +2005,16 @@ html {
   .landing-faq-q:hover {
     background:
       radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.22), transparent 65%),
-      linear-gradient(135deg, rgba(16, 185, 129, 0.42), rgba(45, 212, 191, 0.36));
+      linear-gradient(135deg, rgba(187, 247, 208, 0.96), rgba(110, 231, 183, 0.82));
   }
 
   .landing-faq-item.is-open .landing-faq-q {
     background:
-      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.22), transparent 65%),
-      linear-gradient(135deg, rgba(5, 150, 105, 0.55), rgba(20, 184, 166, 0.45));
-    box-shadow: inset 0 -1px 0 rgba(5, 150, 105, 0.45);
+      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.2), transparent 60%),
+      linear-gradient(135deg, #047857, #0f766e);
+    box-shadow:
+      inset 0 -1px 0 rgba(2, 44, 34, 0.45),
+      0 10px 24px -14px rgba(2, 44, 34, 0.65);
   }
 
   .landing-faq-q:focus-visible {
@@ -2051,7 +2053,7 @@ html {
   .landing-faq-q-text {
     font-family: 'Heebo', 'Rubik', sans-serif;
     @apply flex-1 text-[15px] sm:text-[17px] font-black leading-[1.35];
-    color: #042f2e;
+    color: #022c22;
   }
 
   .landing-faq-item.is-open .landing-faq-q-text {
@@ -2073,16 +2075,16 @@ html {
   .landing-faq-a-wrap {
     overflow: hidden;
     background:
-      radial-gradient(ellipse 60% 80% at 100% 0%, rgba(110, 231, 183, 0.18), transparent 65%),
-      linear-gradient(180deg, rgba(236, 253, 245, 0.92), rgba(209, 250, 229, 0.82));
+      radial-gradient(ellipse 60% 80% at 100% 0%, rgba(110, 231, 183, 0.14), transparent 65%),
+      linear-gradient(180deg, rgba(236, 253, 245, 0.98), rgba(220, 252, 231, 0.94));
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border-top: 1px solid rgba(16, 185, 129, 0.22);
   }
 
   .landing-faq-a {
-    @apply px-4 pb-5 pt-4 sm:px-5 sm:pb-6 sm:pt-5 text-[14px] sm:text-[15px] leading-relaxed;
-    color: #1f4a3a;
+    @apply px-4 pb-5 pt-4 sm:px-5 sm:pb-6 sm:pt-5 text-[15px] sm:text-base leading-[1.75] font-medium;
+    color: #063f30;
     padding-right: calc(1rem + 40px + 12px);
   }
 
