@@ -16,6 +16,7 @@ import {
   Activity,
   ArrowDown,
   ArrowLeft,
+  ArrowUp,
   Apple,
   Ban,
   BedDouble,
@@ -169,6 +170,19 @@ function SectionTitle({
 
 export function LandingPageClient() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 480);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: prefersReduced ? 'auto' : 'smooth' });
+  };
 
   const { scrollYProgress } = useScroll();
   const progressScale = useSpring(scrollYProgress, {
@@ -1192,6 +1206,25 @@ export function LandingPageClient() {
       <footer className="landing-footer">
         <p>© {new Date().getFullYear()} NuraWell — הדרך החכמה לחיים בריאים</p>
       </footer>
+
+      <AnimatePresence>
+        {showScrollTop ? (
+          <motion.button
+            type="button"
+            onClick={scrollToTop}
+            aria-label="חזרה לראש העמוד"
+            className="landing-scroll-top"
+            initial={{ opacity: 0, y: 12, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.9 }}
+            transition={{ duration: 0.2, ease }}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <ArrowUp className="w-5 h-5" aria-hidden />
+          </motion.button>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
