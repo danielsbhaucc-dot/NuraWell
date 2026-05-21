@@ -60,8 +60,14 @@ export function AlmogHeroHeader({ firstName, bubbleContent, taskBadge }: AlmogHe
             style={{
               marginTop: '4px',
               fontSize: '13px',
-              color: greeting.highlight ? '#FFD97D' : 'rgba(255,255,255,0.9)',
-              fontWeight: 700,
+              color:
+                greeting.tone === 'festive'
+                  ? '#FFD97D'
+                  : greeting.tone === 'solemn'
+                    ? 'rgba(255,255,255,0.78)'
+                    : 'rgba(255,255,255,0.92)',
+              fontWeight: greeting.tone === 'solemn' ? 600 : 700,
+              fontStyle: greeting.tone === 'solemn' ? 'italic' : 'normal',
               letterSpacing: '0.2px',
               fontFamily: "'Rubik','Heebo',sans-serif",
               display: 'flex',
@@ -70,7 +76,11 @@ export function AlmogHeroHeader({ firstName, bubbleContent, taskBadge }: AlmogHe
             }}
           >
             <span aria-hidden style={{ fontSize: '13px' }}>
-              {greeting.highlight ? '✦' : '✿'}
+              {greeting.tone === 'festive'
+                ? '✦'
+                : greeting.tone === 'solemn'
+                  ? '🕯️'
+                  : '✿'}
             </span>
             <span>{greeting.occasionGreeting}</span>
           </div>
