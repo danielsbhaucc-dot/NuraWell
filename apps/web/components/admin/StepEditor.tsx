@@ -668,9 +668,9 @@ export function StepEditor({ step }: StepEditorProps) {
             כל משימה צריכה להיות פעולה ברורה. בנוסף ל-&quot;מקובל/לא מקובל&quot; בסיכום, אפשר לבחור תזמון:
             <br />
             <strong>חד-פעמי</strong> = אישור פעם אחת · <strong>יומי</strong> = checkbox חדש כל יום · <strong>כמה פעמים ביום</strong> = סלוטים (בוקר/צהריים/ערב) ·
-            {' '}<strong>שבועי</strong> = פעם בשבוע · <strong>לפני כל ארוחה</strong> = מתואם לארוחות בפרופיל המשתמש.
+            {' '}<strong>שבועי</strong> = פעם בשבוע · <strong>לפני/אחרי ארוחה</strong> = מתואם לארוחות בפרופיל המשתמש (לרבות &quot;כל הארוחות&quot; הדינמי).
             <br />
-            דוגמה: &quot;לשתות 2 כוסות מים לפני ארוחת ערב&quot; → לפני כל ארוחה (3 פעמים).
+            דוגמה: &quot;לשתות 2 כוסות מים לפני כל ארוחה&quot; → לפני כל ארוחה · 3 פעמים · לפני האוכל.
           </div>
           {tasks.map((t, ti) => {
             const schedule = t.schedule ?? 'one_time';
@@ -685,6 +685,8 @@ export function StepEditor({ step }: StepEditorProps) {
               typeof t.weekly_day === 'number' && t.weekly_day >= 0 && t.weekly_day <= 6
                 ? t.weekly_day
                 : 0;
+            const mealTiming: 'before' | 'after' = t.meal_timing === 'after' ? 'after' : 'before';
+            const mealTarget: 'fixed' | 'all' = t.meal_target === 'all' ? 'all' : 'fixed';
             return (
             <div key={t.id || ti} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(249,115,22,0.2)', background: 'rgba(255,255,255,0.75)' }}>
               <button
@@ -736,8 +738,60 @@ export function StepEditor({ step }: StepEditorProps) {
                     </select>
                   </Field>
 
-                  {(schedule === 'multi_daily' || schedule === 'per_meal') ? (
-                    <Field label={schedule === 'per_meal' ? 'כמה ארוחות (1-3)' : 'כמה פעמים ביום (1-6)'}>
+                  {schedule === 'per_meal' ? (
+                    <>
+                      <Field label="לפני או אחרי הארוחה">
+                        <select
+                          value={mealTiming}
+                          onChange={(e) => {
+                            const arr = [...tasks];
+                            arr[ti] = {
+                              ...arr[ti],
+                              meal_timing: e.target.value as 'before' | 'after',
+                            };
+                            setTasks(arr);
+                          }}
+                          className="input-field"
+                        >
+                          <option value="before">לפני הארוחה</option>
+                          <option value="after">אחרי הארוחה</option>
+                        </select>
+                      </Field>
+                      <Field label="לכמה ארוחות זה רלוונטי">
+                        <select
+                          value={mealTarget === 'all' ? 'all' : String(tpdEffective)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const arr = [...tasks];
+                            if (val === 'all') {
+                              arr[ti] = {
+                                ...arr[ti],
+                                meal_target: 'all',
+                                /** נשמור times_per_day כברירת מחדל בכל זאת — fallback אם פרופיל ריק */
+                                times_per_day: arr[ti].times_per_day ?? 3,
+                              };
+                            } else {
+                              arr[ti] = {
+                                ...arr[ti],
+                                meal_target: 'fixed',
+                                times_per_day: Number(val),
+                              };
+                            }
+                            setTasks(arr);
+                          }}
+                          className="input-field"
+                        >
+                          <option value="all">כל הארוחות של המשתמש (דינמי)</option>
+                          <option value="1">ארוחה אחת</option>
+                          <option value="2">2 ארוחות</option>
+                          <option value="3">3 ארוחות עיקריות</option>
+                        </select>
+                      </Field>
+                    </>
+                  ) : null}
+
+                  {schedule === 'multi_daily' ? (
+                    <Field label="כמה פעמים ביום (1-6)">
                       <select
                         value={tpdEffective}
                         onChange={(e) => {
@@ -747,7 +801,7 @@ export function StepEditor({ step }: StepEditorProps) {
                         }}
                         className="input-field"
                       >
-                        {(schedule === 'per_meal' ? [1, 2, 3] : [2, 3, 4, 5, 6]).map((n) => (
+                        {[2, 3, 4, 5, 6].map((n) => (
                           <option key={n} value={n}>
                             {n} פעמים
                           </option>
@@ -828,6 +882,41 @@ export function StepEditor({ step }: StepEditorProps) {
                       <option value="per_meal">לפני כל ארוחה</option>
                     </select>
                   </Field>
+                  <Field label="ימים להשגת ההרגל (ברירת מחדל 14)">
+                    <select
+                      value={typeof h.target_days === 'number' ? h.target_days : 14}
+                      onChange={(e) => {
+                        const arr = [...habits];
+                        arr[hi] = { ...arr[hi], target_days: Number(e.target.value) };
+                        setHabits(arr);
+                      }}
+                      className="input-field"
+                    >
+                      <option value={7}>שבוע (7)</option>
+                      <option value={14}>שבועיים (14)</option>
+                      <option value={21}>3 שבועות (21)</option>
+                      <option value={28}>4 שבועות (28)</option>
+                    </select>
+                  </Field>
+                  {h.frequency === 'per_meal' ? (
+                    <Field label="לפני או אחרי הארוחה">
+                      <select
+                        value={h.meal_timing === 'after' ? 'after' : 'before'}
+                        onChange={(e) => {
+                          const arr = [...habits];
+                          arr[hi] = {
+                            ...arr[hi],
+                            meal_timing: e.target.value as 'before' | 'after',
+                          };
+                          setHabits(arr);
+                        }}
+                        className="input-field"
+                      >
+                        <option value="before">לפני הארוחה</option>
+                        <option value="after">אחרי הארוחה</option>
+                      </select>
+                    </Field>
+                  ) : null}
                   {h.frequency === 'weekly' ? (
                     <Field label="יום לבדיקה (שבועי)">
                       <select

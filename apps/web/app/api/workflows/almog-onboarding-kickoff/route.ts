@@ -63,7 +63,26 @@ export const { POST } = serve<AlmogOnboardingKickoffPayload>(async (context) => 
         }
       }
       if (eligibility.reason === 'journey_step_nudge_already_sent_recently') {
+        /** כבר נשלח nudge — מבחינת kickoff status זה הצלחה. */
+        await context.run(`mark-sent-after-existing-nudge-${attempt}`, async () => {
+          const admin = createAdminClient();
+          const { markKickoffSent } = await import('../../../../lib/auth/kickoff-status');
+          await markKickoffSent(admin, payload.userId);
+        });
         continue;
+      }
+      /** סיבות לגיטימיות (avoid_push, journey_complete_or_missing וכו') → skipped */
+      const skipReasons = new Set([
+        'avoid_push_active',
+        'journey_complete_or_missing',
+        'onboarding_incomplete',
+      ]);
+      if (skipReasons.has(eligibility.reason)) {
+        await context.run(`mark-skipped-${attempt}`, async () => {
+          const admin = createAdminClient();
+          const { markKickoffSkipped } = await import('../../../../lib/auth/kickoff-status');
+          await markKickoffSkipped(admin, payload.userId, eligibility.reason);
+        });
       }
       return sent > 0
         ? { ok: true as const, sent, stopped: eligibility.reason }
@@ -94,7 +113,15 @@ export const { POST } = serve<AlmogOnboardingKickoffPayload>(async (context) => 
 
     const result = await context.run(`send-step-nudge-${attempt}`, async () => {
       const admin = createAdminClient();
-      return sendKickoffNudgeForUser(admin, payload.userId);
+      const send = await sendKickoffNudgeForUser(admin, payload.userId);
+      if (send.inserted) {
+        const { markKickoffSent } = await import('../../../../lib/auth/kickoff-status');
+        await markKickoffSent(admin, payload.userId);
+      } else if (send.reason) {
+        const { markKickoffFailed } = await import('../../../../lib/auth/kickoff-status');
+        await markKickoffFailed(admin, payload.userId, send.reason);
+      }
+      return send;
     });
 
     if (!result.inserted) {

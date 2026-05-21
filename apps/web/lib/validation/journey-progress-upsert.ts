@@ -15,6 +15,7 @@ export const journeyProgressUpsertSchema = z
     tasks_completed: z.record(z.string(), z.boolean()).optional(),
     task_statuses: z.record(z.string(), z.unknown()).optional(),
     habits_progress: z.record(z.string(), z.array(z.boolean())).optional(),
+    habit_meta: z.record(z.string(), z.unknown()).optional(),
     is_completed: z.boolean().optional(),
     completed_at: z.string().nullable().optional(),
     last_section: stepSectionSchema.optional(),

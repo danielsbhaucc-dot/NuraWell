@@ -470,6 +470,90 @@ async function runMasterCron() {
     }
   }
 
+  /**
+   * ==========================================================
+   * KICKOFF WATCHDOG — תופס משתמשים שלא קיבלו את ההתראה
+   * הראשונה. רץ לפני journey_companion הרגיל כדי שמשתמשים
+   * חדשים יקבלו עדיפות. לא מסונן ב-last_active_at — בזה הייתה
+   * הבעיה: משתמש שלא נכנס לאפליקציה אחרי האימות לא נמצא.
+   * ==========================================================
+   */
+  let kickoffWatchdogSent = 0;
+  let kickoffWatchdogSkipped = 0;
+  let kickoffWatchdogFailed = 0;
+  try {
+    const { fetchKickoffWatchdogCandidates, markKickoffSent, markKickoffSkipped, markKickoffFailed } =
+      await import('../../../../../../lib/auth/kickoff-status');
+    const { sendKickoffNudgeForUser, checkKickoffEligibility } = await import(
+      '../../../../../../lib/workflows/almog-onboarding-kickoff'
+    );
+
+    const watchdogLimit = Math.min(
+      30,
+      Math.max(5, Number(process.env.CRON_MAX_KICKOFF_WATCHDOG) || 15)
+    );
+    const candidates = await fetchKickoffWatchdogCandidates(admin, {
+      minMinutesSinceOnboarding: 90,
+      minMinutesSinceLastAttempt: 60,
+      maxAttempts: 5,
+      limit: watchdogLimit,
+    });
+
+    if (candidates.length > 0) {
+      console.info('[cron/master] kickoff_watchdog candidates', { count: candidates.length });
+    }
+
+    for (const cand of candidates) {
+      const userId = cand.userId;
+      try {
+        const eligibility = await checkKickoffEligibility(admin, userId);
+        if (!eligibility.ok) {
+          const skipReasons = new Set([
+            'avoid_push_active',
+            'journey_complete_or_missing',
+            'onboarding_incomplete',
+          ]);
+          if (skipReasons.has(eligibility.reason)) {
+            await markKickoffSkipped(admin, userId, eligibility.reason);
+            kickoffWatchdogSkipped++;
+          } else {
+            await markKickoffFailed(admin, userId, eligibility.reason);
+            kickoffWatchdogFailed++;
+          }
+          continue;
+        }
+
+        /** אם השעה לא בחלון 09:00–22:00 — נשאיר ב-pending לסיבוב הבא של ה-cron. */
+        if (eligibility.deferUntilIso) {
+          await markKickoffFailed(admin, userId, `deferred_until:${eligibility.deferUntilIso}`);
+          continue;
+        }
+
+        const result = await sendKickoffNudgeForUser(admin, userId);
+        if (result.inserted) {
+          await markKickoffSent(admin, userId);
+          kickoffWatchdogSent++;
+        } else {
+          await markKickoffFailed(admin, userId, result.reason ?? 'unknown_send_failure');
+          kickoffWatchdogFailed++;
+        }
+      } catch (e) {
+        const reason = e instanceof Error ? e.message : String(e);
+        errors.push(`kickoff_watchdog ${userId}: ${reason}`);
+        try {
+          await markKickoffFailed(admin, userId, reason);
+        } catch {
+          /* ignore */
+        }
+        kickoffWatchdogFailed++;
+      }
+    }
+  } catch (e) {
+    errors.push(
+      `kickoff_watchdog init: ${e instanceof Error ? e.message : String(e)}`
+    );
+  }
+
   let journeyCompanionSent = 0;
   const maxJourneyCompanion = Math.min(
     25,
@@ -478,12 +562,61 @@ async function runMasterCron() {
   const thirtyDaysAgoIso = new Date(Date.now() - 30 * DAY_MS).toISOString();
   const checkpointDate = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
 
-  const { data: journeyCandidateRows, error: jErr } = await admin
-    .from('profiles')
-    .select('id, full_name, ai_context, last_active_at, created_at')
-    .eq('onboarding_completed', true)
-    .gte('last_active_at', thirtyDaysAgoIso)
-    .limit(maxJourneyCompanion * 4);
+  /**
+   * שאילתה כפולה כדי לא לפספס משתמשים חדשים:
+   *   1. משתמשים פעילים ב-30 הימים האחרונים (לפי last_active_at).
+   *   2. משתמשים שנרשמו ב-7 הימים האחרונים גם אם last_active_at = null
+   *      (פספסו את האפליקציה אבל הם רלוונטיים לחלוטין ל-journey companion).
+   */
+  const sevenDaysAgoIso = new Date(Date.now() - 7 * DAY_MS).toISOString();
+  const [journeyActiveRes, journeyNewRes] = await Promise.all([
+    admin
+      .from('profiles')
+      .select('id, full_name, ai_context, last_active_at, created_at')
+      .eq('onboarding_completed', true)
+      .gte('last_active_at', thirtyDaysAgoIso)
+      .limit(maxJourneyCompanion * 4),
+    admin
+      .from('profiles')
+      .select('id, full_name, ai_context, last_active_at, created_at')
+      .eq('onboarding_completed', true)
+      .is('last_active_at', null)
+      .gte('created_at', sevenDaysAgoIso)
+      .limit(maxJourneyCompanion * 2),
+  ]);
+
+  const journeyCandidateRowsMap = new Map<
+    string,
+    {
+      id: string;
+      full_name: string | null;
+      ai_context: Record<string, unknown> | null;
+      last_active_at: string | null;
+      created_at: string;
+    }
+  >();
+  for (const row of (journeyActiveRes.data ?? []) as Array<{
+    id: string;
+    full_name: string | null;
+    ai_context: Record<string, unknown> | null;
+    last_active_at: string | null;
+    created_at: string;
+  }>) {
+    journeyCandidateRowsMap.set(row.id, row);
+  }
+  for (const row of (journeyNewRes.data ?? []) as Array<{
+    id: string;
+    full_name: string | null;
+    ai_context: Record<string, unknown> | null;
+    last_active_at: string | null;
+    created_at: string;
+  }>) {
+    if (!journeyCandidateRowsMap.has(row.id)) {
+      journeyCandidateRowsMap.set(row.id, row);
+    }
+  }
+  const journeyCandidateRows = Array.from(journeyCandidateRowsMap.values());
+  const jErr = journeyActiveRes.error ?? journeyNewRes.error;
 
   if (jErr) {
     errors.push(`journey_companion profiles: ${jErr.message}`);
@@ -574,7 +707,13 @@ async function runMasterCron() {
     analysis_skipped: analysisSkipped,
     celebrated,
     journey_companion_sent: journeyCompanionSent,
-    notifications_sent: celebrated + churnNotificationsSent + journeyCompanionSent,
+    kickoff_watchdog: {
+      sent: kickoffWatchdogSent,
+      skipped: kickoffWatchdogSkipped,
+      failed: kickoffWatchdogFailed,
+    },
+    notifications_sent:
+      celebrated + churnNotificationsSent + journeyCompanionSent + kickoffWatchdogSent,
     action_counts: actionCounts,
     nudge_skipped: nudgeSkipped,
     errors: errors.length ? errors : undefined,

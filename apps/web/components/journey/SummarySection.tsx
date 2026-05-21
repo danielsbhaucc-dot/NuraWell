@@ -267,9 +267,16 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                   `${task.title} ${task.description ?? ''}`,
                   task.emoji || '✨'
                 );
-                const { schedule, times_per_day, weekly_day } = resolveTaskSchedule(task);
+                const { schedule, times_per_day, weekly_day, meal_timing, meal_target } =
+                  resolveTaskSchedule(task);
                 const isRecurring = schedule !== 'one_time';
-                const scheduleText = scheduleLabel(schedule, times_per_day, weekly_day);
+                const scheduleText = scheduleLabel(
+                  schedule,
+                  times_per_day,
+                  weekly_day,
+                  meal_timing,
+                  meal_target
+                );
 
                 const ringGradient =
                   status === 'accepted'

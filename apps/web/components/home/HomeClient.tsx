@@ -14,13 +14,18 @@ import {
 } from 'lucide-react';
 import { AlmogHeroHeader } from './DolevHeroHeader';
 import {
-  countAcceptedTaskExecution,
+  countAcceptedTaskExecutionToday,
   type JourneyReportStepShape,
+  type TodayExecutionRow,
 } from '../../lib/journey/journey-report-parse';
 import { useProgressReport } from '../progress-report/ProgressReportProvider';
 import { useActionHub } from '../action-hub/ActionHubProvider';
 
-type JourneyReportResponse = { steps: JourneyReportStepShape[] };
+type JourneyReportResponse = {
+  steps: JourneyReportStepShape[];
+  today_executions?: TodayExecutionRow[];
+  today_date_key?: string;
+};
 
 export type HomeStats = {
   activeCoursesCount: number;
@@ -46,7 +51,12 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
   const progressReport = useProgressReport();
   const actionHub = useActionHub();
   const [taskLoading, setTaskLoading] = useState(true);
-  const [taskCounts, setTaskCounts] = useState({ accepted: 0, done: 0, pending: 0 });
+  const [taskCounts, setTaskCounts] = useState({
+    accepted: 0,
+    done: 0,
+    pending: 0,
+    dueToday: 0,
+  });
 
   const refreshTasks = useCallback(async () => {
     setTaskLoading(true);
@@ -54,7 +64,13 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
       const res = await fetch('/api/v1/journey-report', { cache: 'no-store' });
       const json = (await res.json()) as JourneyReportResponse & { error?: string };
       if (!res.ok) return;
-      setTaskCounts(countAcceptedTaskExecution(json.steps ?? []));
+      setTaskCounts(
+        countAcceptedTaskExecutionToday(
+          json.steps ?? [],
+          json.today_executions ?? [],
+          json.today_date_key
+        )
+      );
     } finally {
       setTaskLoading(false);
     }
@@ -68,7 +84,7 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
     if (taskLoading) {
       return <>רגע, אני מסתכל על המסע שלך…</>;
     }
-    if (taskCounts.accepted === 0) {
+    if (taskCounts.dueToday === 0 && taskCounts.accepted === 0) {
       return (
         <>
           {firstName ? `${firstName}, ` : ''}שמח שאתה כאן 🌿
@@ -120,7 +136,16 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
           }}
         />
         <div className="relative z-10" style={{ padding: '12px 20px 40px' }}>
-          <AlmogHeroHeader firstName={firstName} bubbleContent={bubbleContent} />
+          <AlmogHeroHeader
+            firstName={firstName}
+            bubbleContent={bubbleContent}
+            taskBadge={{
+              pending: taskCounts.pending,
+              done: taskCounts.done,
+              accepted: taskCounts.accepted,
+              loading: taskLoading,
+            }}
+          />
         </div>
       </div>
 
@@ -168,7 +193,7 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
                     {taskLoading ? '…' : taskCounts.done}
                   </span>
                   <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.75)', fontWeight: 600 }}>
-                    מתוך {taskLoading ? '…' : taskCounts.accepted || '—'}
+                    מתוך {taskLoading ? '…' : taskCounts.dueToday || taskCounts.accepted || '—'}
                   </span>
                 </div>
                 <div style={{ flex: 1 }}>
@@ -187,13 +212,17 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
                       ? 'טוען…'
                       : taskCounts.accepted === 0
                         ? 'עדיין לא לקחתם משימות במסע — בואו נתחיל'
-                        : taskCounts.pending > 0
-                          ? `${taskCounts.pending} משימות ממתינות לסימון ביצוע`
-                          : 'כל המשימות שסימנתם — בוצעו!'}
+                        : taskCounts.dueToday === 0
+                          ? 'אין משימות פעילות להיום — מחר נמשיך'
+                          : taskCounts.pending > 0
+                            ? `${taskCounts.pending} משימות ממתינות לסימון היום`
+                            : 'כל משימות היום — בוצעו! ✦'}
                   </p>
-                  {taskCounts.accepted > 0 && (
+                  {(taskCounts.dueToday > 0 || taskCounts.accepted > 0) && (
                     <div className="flex gap-1">
-                      {Array.from({ length: Math.min(taskCounts.accepted, 8) }).map((_, i) => (
+                      {Array.from({
+                        length: Math.min(taskCounts.dueToday || taskCounts.accepted, 8),
+                      }).map((_, i) => (
                         <div
                           key={i}
                           style={{

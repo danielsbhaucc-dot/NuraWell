@@ -40,6 +40,9 @@ export async function GET(request: Request) {
     }
 
     const todayKey = jerusalemDateKey();
+    const since = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000);
+    const sinceKey = jerusalemDateKey(since);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: rawExec } = await (supabase as any)
       .from('journey_task_executions')
@@ -47,6 +50,15 @@ export async function GET(request: Request) {
       .eq('user_id', user.id)
       .eq('date_key', todayKey)
       .limit(500);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rawExecRecent } = await (supabase as any)
+      .from('journey_task_executions')
+      .select('step_id, task_id, slot, completed_at, date_key, source')
+      .eq('user_id', user.id)
+      .gte('date_key', sinceKey)
+      .order('date_key', { ascending: false })
+      .limit(800);
 
     const progByStep = new Map((rawProg ?? []).map((p: { step_id: string }) => [p.step_id, p]));
 
@@ -57,6 +69,7 @@ export async function GET(request: Request) {
         progress: progByStep.get(s.id) ?? null,
       })),
       today_executions: rawExec ?? [],
+      recent_executions: rawExecRecent ?? [],
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

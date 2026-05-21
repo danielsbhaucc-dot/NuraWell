@@ -13,7 +13,20 @@ import type {
   JourneyTask,
   JourneyTaskSchedule,
   JourneyTaskSlot,
+  MealTarget,
+  MealTiming,
 } from '../types/journey';
+
+/**
+ * "פרופיל ארוחות" של המשתמש — מספר ארוחות עיקריות + תוויות.
+ * משמש לחישוב סלוטים כאשר משימה מוגדרת `meal_target='all'`.
+ */
+export type UserMealProfile = {
+  /** מספר הארוחות העיקריות שהמשתמש הגדיר (0..4 לפי DB constraint). */
+  meal_count: number | null;
+  /** רשימת הארוחות עם זמן ותווית (אופציונלי) */
+  meal_schedule?: Array<{ time?: string | null; label?: string | null }> | null;
+};
 
 /* ============================================================
  *  Date helpers (Asia/Jerusalem)
@@ -64,13 +77,39 @@ export function normalizeTaskSchedule(value: unknown): JourneyTaskSchedule {
   return 'one_time';
 }
 
-/** מאחד את ה-schedule עבור JourneyTask, כולל פולבק וברירות מחדל ל-times_per_day/weekly_day. */
-export function resolveTaskSchedule(task: Pick<JourneyTask, 'schedule' | 'times_per_day' | 'weekly_day'>): {
+/** ברירת מחדל לטיימינג ארוחה (לפני / אחרי). */
+export function normalizeMealTiming(value: unknown): MealTiming {
+  return value === 'after' ? 'after' : 'before';
+}
+
+/** ברירת מחדל למטרת ארוחה (fixed / all). */
+export function normalizeMealTarget(value: unknown): MealTarget {
+  return value === 'all' ? 'all' : 'fixed';
+}
+
+/**
+ * מאחד את ה-schedule עבור JourneyTask, כולל פולבק וברירות מחדל ל-times_per_day/weekly_day.
+ *
+ * אם `userProfile` הועבר ו-`task.meal_target === 'all'`, ה-`times_per_day` ייגזר
+ * מ-`profile.meal_count` (1..5). חוסר פרופיל → נופלים ל-`times_per_day` שהוגדר ידנית.
+ */
+export function resolveTaskSchedule(
+  task: Pick<
+    JourneyTask,
+    'schedule' | 'times_per_day' | 'weekly_day' | 'meal_timing' | 'meal_target'
+  >,
+  userProfile?: UserMealProfile | null
+): {
   schedule: JourneyTaskSchedule;
   times_per_day: number;
   weekly_day: number;
+  meal_timing: MealTiming;
+  meal_target: MealTarget;
 } {
   const schedule = normalizeTaskSchedule(task.schedule);
+  const mealTiming = normalizeMealTiming(task.meal_timing);
+  const mealTarget = normalizeMealTarget(task.meal_target);
+
   let tpd =
     typeof task.times_per_day === 'number' && task.times_per_day >= 1 && task.times_per_day <= 6
       ? Math.floor(task.times_per_day)
@@ -79,19 +118,49 @@ export function resolveTaskSchedule(task: Pick<JourneyTask, 'schedule' | 'times_
         : schedule === 'per_meal'
           ? 3
           : 1;
+
+  /** per_meal + meal_target='all' → השתמש ב-meal_count מהפרופיל (1..5). */
+  if (schedule === 'per_meal' && mealTarget === 'all' && userProfile) {
+    const profileCount =
+      typeof userProfile.meal_count === 'number' && userProfile.meal_count >= 1
+        ? Math.min(5, Math.floor(userProfile.meal_count))
+        : Array.isArray(userProfile.meal_schedule)
+          ? Math.min(5, userProfile.meal_schedule.length)
+          : null;
+    if (profileCount && profileCount >= 1) {
+      tpd = profileCount;
+    }
+  }
+
   if (schedule === 'one_time' || schedule === 'daily' || schedule === 'weekly') tpd = 1;
+
   const wd =
     typeof task.weekly_day === 'number' && task.weekly_day >= 0 && task.weekly_day <= 6
       ? task.weekly_day
       : 0;
-  return { schedule, times_per_day: tpd, weekly_day: wd };
+  return {
+    schedule,
+    times_per_day: tpd,
+    weekly_day: wd,
+    meal_timing: mealTiming,
+    meal_target: mealTarget,
+  };
 }
 
 /* ============================================================
  *  Slot helpers
  * ============================================================ */
 
-/** הסלוט "ברירת מחדל" לפי schedule + times_per_day. */
+/**
+ * הסלוט "ברירת מחדל" לפי schedule + times_per_day.
+ *
+ * עבור per_meal:
+ *   - 1   → ארוחת צהריים בלבד (סטנדרט תזונתי)
+ *   - 2   → בוקר + ערב
+ *   - 3   → בוקר + צהריים + ערב (3 ארוחות עיקריות)
+ *   - 4   → בוקר + צהריים + ביניים אחה"צ + ערב
+ *   - 5   → בוקר + ביניים בוקר + צהריים + ביניים אחה"צ + ערב
+ */
 export function slotsForSchedule(
   schedule: JourneyTaskSchedule,
   timesPerDay: number
@@ -99,6 +168,18 @@ export function slotsForSchedule(
   if (schedule === 'one_time') return ['full_day'];
   if (schedule === 'daily' || schedule === 'weekly') return ['full_day'];
   if (schedule === 'per_meal') {
+    if (timesPerDay >= 5) {
+      return [
+        'meal_breakfast',
+        'meal_snack_morning',
+        'meal_lunch',
+        'meal_snack_evening',
+        'meal_dinner',
+      ];
+    }
+    if (timesPerDay === 4) {
+      return ['meal_breakfast', 'meal_lunch', 'meal_snack_evening', 'meal_dinner'];
+    }
     if (timesPerDay >= 3) return ['meal_breakfast', 'meal_lunch', 'meal_dinner'];
     if (timesPerDay === 2) return ['meal_breakfast', 'meal_dinner'];
     return ['meal_lunch'];
@@ -114,8 +195,15 @@ export function slotsForSchedule(
   return out;
 }
 
-/** Label עברי קצר לתצוגה (UI / AI). */
-export function slotLabel(slot: JourneyTaskSlot): string {
+/**
+ * Label עברי קצר לתצוגה (UI / AI).
+ *
+ * אופציונלית — מקבל `meal_timing` ('before'/'after') שמוסיף "לפני"/"אחרי"
+ * לפני שם הארוחה. בלי הפרמטר, מציג את שם הארוחה בלבד (תאימות לאחור).
+ */
+export function slotLabel(slot: JourneyTaskSlot, mealTiming?: MealTiming): string {
+  const prefix = mealTiming === 'after' ? 'אחרי' : mealTiming === 'before' ? 'לפני' : '';
+  const wrap = (mealLabel: string) => (prefix ? `${prefix} ${mealLabel}` : mealLabel);
   switch (slot) {
     case 'full_day':
       return 'היום';
@@ -126,11 +214,15 @@ export function slotLabel(slot: JourneyTaskSlot): string {
     case 'evening':
       return 'ערב';
     case 'meal_breakfast':
-      return 'ארוחת בוקר';
+      return wrap('ארוחת בוקר');
+    case 'meal_snack_morning':
+      return wrap('ביניים בוקר');
     case 'meal_lunch':
-      return 'ארוחת צהריים';
+      return wrap('ארוחת צהריים');
+    case 'meal_snack_evening':
+      return wrap('ביניים אחה"צ');
     case 'meal_dinner':
-      return 'ארוחת ערב';
+      return wrap('ארוחת ערב');
     default: {
       const m = /^slot_(\d+)$/.exec(slot);
       if (m) return `סלוט ${m[1]}`;
@@ -145,9 +237,13 @@ export function slotEmoji(slot: JourneyTaskSlot): string {
     case 'morning':
     case 'meal_breakfast':
       return '🌅';
+    case 'meal_snack_morning':
+      return '☕';
     case 'noon':
     case 'meal_lunch':
       return '🌞';
+    case 'meal_snack_evening':
+      return '🍎';
     case 'evening':
     case 'meal_dinner':
       return '🌙';
@@ -243,11 +339,18 @@ export function isTaskActiveToday(
   return true;
 }
 
-/** Label עברי לתזמון — לתצוגות אדמין/משתמש/AI. */
+/**
+ * Label עברי לתזמון — לתצוגות אדמין/משתמש/AI.
+ *
+ * עבור per_meal: אם הוגדר mealTiming='after' → "אחרי ...".
+ * אם mealTarget='all' → "כל הארוחות" במקום מספר מדויק.
+ */
 export function scheduleLabel(
   schedule: JourneyTaskSchedule,
   timesPerDay: number,
-  weeklyDay: number
+  weeklyDay: number,
+  mealTiming: MealTiming = 'before',
+  mealTarget: MealTarget = 'fixed'
 ): string {
   const WEEKDAY = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
   switch (schedule) {
@@ -259,7 +362,11 @@ export function scheduleLabel(
       return `${timesPerDay} פעמים ביום`;
     case 'weekly':
       return `שבועי · יום ${WEEKDAY[weeklyDay] ?? '?'}`;
-    case 'per_meal':
-      return timesPerDay >= 3 ? 'לפני כל ארוחה' : `לפני ${timesPerDay} ארוחות`;
+    case 'per_meal': {
+      const prefix = mealTiming === 'after' ? 'אחרי' : 'לפני';
+      if (mealTarget === 'all') return `${prefix} כל הארוחות שלי`;
+      if (timesPerDay >= 3) return `${prefix} כל ארוחה`;
+      return `${prefix} ${timesPerDay} ארוחות`;
+    }
   }
 }

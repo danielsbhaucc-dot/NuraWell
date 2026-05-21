@@ -77,6 +77,7 @@ type ProgressRow = {
   updated_at: string;
   is_completed: boolean | null;
   task_statuses: unknown;
+  habits_progress: unknown;
   journey_steps: {
     title: string | null;
     habits: unknown;
@@ -98,6 +99,7 @@ async function fetchUserProgressRows(
       updated_at,
       is_completed,
       task_statuses,
+      habits_progress,
       journey_steps (
         title,
         habits,
@@ -283,12 +285,15 @@ export async function POST(request: Request) {
     userId: targetUserId,
     slot,
     checkpointDate: dateKey,
+    notifyMode: 'remind',
     habits: payloadHabits,
     pendingTasks: pendingTasks.map((t) => ({
       id: t.id,
       title: t.title,
       stepTitle: t.stepTitle,
     })),
+    completedTodayHabits: [],
+    completedTodayTasks: [],
     stepTitle,
     stationTitle,
   };

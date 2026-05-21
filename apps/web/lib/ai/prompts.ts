@@ -171,7 +171,8 @@ ${ALMOG_NOTIFY_SHARED_RULES}
 משימה לנוטיפיקציה הזאת: ${taskHint}`;
 }
 
-export const ALMOG_NOTIFY_MAX_OUTPUT_TOKENS = 256;
+/** תקרה גבוהה יותר — מפחית חיתוך באמצע משפט בהתראות push/in-app */
+export const ALMOG_NOTIFY_MAX_OUTPUT_TOKENS = 400;
 
 /**
  * פרומפט מצומצם — קצר ממה ש-buildAlmogNotifySystemPrompt בונה.

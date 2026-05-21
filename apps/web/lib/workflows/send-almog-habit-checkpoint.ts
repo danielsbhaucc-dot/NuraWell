@@ -184,6 +184,52 @@ async function fetchProfileScheduleHints(admin: SupabaseClient, userId: string) 
   return { ...hints, aiContext: row?.ai_context ?? null };
 }
 
+/**
+ * D4 — תזכורת לאלמוג: יש המלצת הארכה/קיצור פתוחה. נכלל ב-prompt ואחרי
+ * שליחה ננקה את הdflag כדי לא לחזור על זה.
+ */
+function formatHabitTuneBlock(aiContext: unknown): string | null {
+  if (!aiContext || typeof aiContext !== 'object') return null;
+  const ctx = aiContext as Record<string, unknown>;
+  const tune = ctx.almog_habit_tune;
+  if (!tune || typeof tune !== 'object') return null;
+  const recs = (tune as Record<string, unknown>).recommendations;
+  if (!Array.isArray(recs) || recs.length === 0) return null;
+  const first = recs[0] as { kind?: string; reason?: string; old?: number; new?: number };
+  if (!first.kind) return null;
+  switch (first.kind) {
+    case 'extend':
+      return `התאמת יעד: המשתמש בשבוע פחות יציב. הזכר ברגישות שאתה מאריך ב-${
+        (first.new ?? 0) - (first.old ?? 0)
+      } ימים — אין לחץ, ההרגל נבנה. בלי "פספסת".`;
+    case 'shorten':
+      return `התאמת יעד: יציבות חזקה — אתה מקרב את היעד ל-${first.new ?? 0} ימים. שמח אותו, "אתה כבר שם".`;
+    case 'achieve':
+      return `התאמת יעד: ההרגל הושג סופית! חוגג ספציפית, בלי תזכורות נוספות.`;
+    default:
+      return null;
+  }
+}
+
+async function clearHabitTuneFlag(admin: SupabaseClient, userId: string): Promise<void> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (admin as any)
+      .from('profiles')
+      .select('ai_context')
+      .eq('id', userId)
+      .maybeSingle();
+    const ctx = (data?.ai_context ?? {}) as Record<string, unknown>;
+    if (!ctx.almog_habit_tune) return;
+    const next = { ...ctx };
+    delete next.almog_habit_tune;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from('profiles').update({ ai_context: next }).eq('id', userId);
+  } catch (e) {
+    console.warn('[habit-tune] clear flag failed', e);
+  }
+}
+
 export async function sendAlmogHabitCheckpointNotification(
   admin: SupabaseClient,
   payload: AlmogHabitCheckpointPayload
@@ -245,6 +291,8 @@ export async function sendAlmogHabitCheckpointNotification(
   } else {
     contextParts.push(formatReinforceBlock(payload));
   }
+  const tuneBlock = formatHabitTuneBlock(scheduleHints.aiContext);
+  if (tuneBlock) contextParts.push(tuneBlock);
   if (dailyBlock) contextParts.push(dailyBlock);
   const cooldownBlock =
     !dailyBlock && todayTouches.length > 0
@@ -277,7 +325,7 @@ ${
     ? 'חיזוק חברי עם אימוג\'י — ציין ספציפית מה ${firstName} עשה היום (לפי "חיזוק ביצוע: ..." בקונטקסט). אם אין — תגובה רכה לנוכחות. שאלה פתוחה אחת.'
     : 'מגע חברי עם אימוג\'י — אם בקונטקסט יש "נשאר היום: X" — דבר ספציפית על X בשפת חיים (לדוגמה אם נשאר ערב: "איך הערב הולך?"). בלי "תזכורת" / "האם עשית". שאלה פתוחה אחת.'
 }
-גוף ההודעה בלבד, 2–3 משפטים, בלי טבלאות/רשימות/מקפים.`,
+גוף ההודעה בלבד — 2 משפטים קצרים ושלמים. חובה לסיים במשפט שלם (נקודה או סימן שאלה). בלי טבלאות/רשימות/מקפים. אל תעצור באמצע.`,
       },
     ],
   });
@@ -317,6 +365,11 @@ ${
     .single();
 
   if (error) throw new Error(error.message);
+
+  /** אם אלמוג כבר הזכיר את ההמלצה — לנקות את הflag כדי לא לחזור עליו. */
+  if (tuneBlock) {
+    await clearHabitTuneFlag(admin, payload.userId);
+  }
 
   const { afterAlmogInAppNotification } = await import('../notifications/after-almog-insert');
   afterAlmogInAppNotification(payload.userId, title, body);

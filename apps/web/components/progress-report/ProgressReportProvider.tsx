@@ -19,12 +19,16 @@ import {
   scheduleLabel,
 } from '../../lib/journey/task-schedule';
 import { TaskDailySlots } from '../journey/TaskDailySlots';
+import { HabitProgressCard } from '../journey/HabitProgressCard';
+import { computeHabitProgressSnapshot } from '../../lib/journey/habit-progress';
+import type { JourneyHabit } from '../../lib/types/journey';
 
 type TaskStatus = 'accepted' | 'rejected' | 'pending';
 
 type ReportProgress = {
   task_statuses?: Record<string, { status: TaskStatus; decided_at?: string | null; execution_done?: boolean }>;
   habits_progress?: Record<string, boolean[]>;
+  habit_meta?: unknown;
 };
 
 type ReportStep = {
@@ -44,8 +48,36 @@ type TodayExecutionRow = Pick<
 type JourneyReportResponse = {
   steps: ReportStep[];
   today_executions?: TodayExecutionRow[];
+  recent_executions?: TodayExecutionRow[];
   today_date_key?: string;
 };
+
+function parseHabitItems(raw: unknown): JourneyHabit[] {
+  if (!Array.isArray(raw)) return [];
+  const out: JourneyHabit[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const row = item as Record<string, unknown>;
+    const id = typeof row.id === 'string' ? row.id : '';
+    const title = typeof row.title === 'string' ? row.title : '';
+    if (!id || !title) continue;
+    const freq = row.frequency;
+    out.push({
+      id,
+      title,
+      description: typeof row.description === 'string' ? row.description : null,
+      emoji: typeof row.emoji === 'string' ? row.emoji : '🌿',
+      frequency:
+        freq === 'weekly' || freq === 'per_meal' ? (freq as 'weekly' | 'per_meal') : 'daily',
+      weekly_day: typeof row.weekly_day === 'number' ? row.weekly_day : null,
+      meal_timing: row.meal_timing === 'after' ? 'after' : 'before',
+      meal_target: row.meal_target === 'all' ? 'all' : 'fixed',
+      target_days:
+        typeof row.target_days === 'number' && row.target_days >= 3 ? row.target_days : null,
+    });
+  }
+  return out;
+}
 
 /** כרטיסיית ראשית במגירת הדיווח — עדכון ביצוע משימות; השנייה — הרגלים */
 export type ProgressReportTabId = 'task_execution' | 'habits';
@@ -156,28 +188,6 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
             body: JSON.stringify({ step_id: stepId, task_id: taskId }),
           }).catch(() => {});
         }
-        await load();
-      } finally {
-        setSaving(null);
-      }
-    },
-    [load]
-  );
-
-  const saveHabitToggle = useCallback(
-    async (stepId: string, habitId: string, done: boolean, progress: ReportProgress | null) => {
-      const next = { ...(progress?.habits_progress ?? {}) };
-      next[habitId] = done ? [true] : [];
-      setSaving(habitId);
-      try {
-        await fetch('/api/v1/journey-progress', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            step_id: stepId,
-            habits_progress: next,
-          }),
-        });
         await load();
       } finally {
         setSaving(null);
@@ -345,7 +355,8 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                               <div className="space-y-2">
                                 <p className="text-[11px] font-bold text-emerald-800/80 text-right">משימות שקיבלת</p>
                                 {acceptedTasks.map((t) => {
-                                  const { schedule, times_per_day, weekly_day } = resolveTaskSchedule(t);
+                                  const { schedule, times_per_day, weekly_day, meal_timing, meal_target } =
+                                    resolveTaskSchedule(t);
                                   const isRecurring = schedule !== 'one_time';
                                   const done = prog?.task_statuses?.[t.id]?.execution_done === true;
                                   const busy = saving === t.id;
@@ -370,7 +381,13 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                                                 'linear-gradient(135deg, rgba(209,250,229,0.95), rgba(167,243,208,0.4))',
                                             }}
                                           >
-                                            {scheduleLabel(schedule, times_per_day, weekly_day)}
+                                            {scheduleLabel(
+                                              schedule,
+                                              times_per_day,
+                                              weekly_day,
+                                              meal_timing,
+                                              meal_target
+                                            )}
                                           </span>
                                           <span className="text-xl shrink-0" aria-hidden>
                                             {emoji}
@@ -436,8 +453,13 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                   {activeTab === 'habits' && (
                     <>
                       {data.steps.map((step) => {
-                        const habits = parseItems(step.habits);
+                        const habits = parseHabitItems(step.habits);
+                        const tasks = parseTaskItems(step.tasks);
                         const prog = step.progress;
+                        const stepExecs = [
+                          ...(data.recent_executions ?? []),
+                          ...(data.today_executions ?? []),
+                        ].filter((e) => e.step_id === step.id);
                         if (habits.length === 0) return null;
                         return (
                           <div
@@ -468,35 +490,25 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                                   הרגלים בצעד
                                 </p>
                                 {habits.map((h) => {
-                                  const arr = prog?.habits_progress?.[h.id];
-                                  const done = Array.isArray(arr) && arr.some(Boolean);
-                                  const busy = saving === h.id;
                                   const emoji = emojiFromWellnessText(h.title, '🌿');
+                                  const snapshot = computeHabitProgressSnapshot({
+                                    habit: h,
+                                    stepTasks: tasks,
+                                    taskStatuses: (prog?.task_statuses ?? {}) as Record<
+                                      string,
+                                      { status: TaskStatus; execution_done?: boolean }
+                                    >,
+                                    executions: stepExecs,
+                                    habitMeta: prog?.habit_meta,
+                                    todayKey: data.today_date_key,
+                                  });
                                   return (
-                                    <label
+                                    <HabitProgressCard
                                       key={h.id}
-                                      className="flex items-center gap-3 rounded-2xl px-3 py-2.5 cursor-pointer transition active:scale-[0.99]"
-                                      style={{
-                                        background: 'rgba(236,253,245,0.65)',
-                                        border: '1px solid rgba(16,185,129,0.2)',
-                                      }}
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        className="h-5 w-5 accent-emerald-600 shrink-0"
-                                        checked={done}
-                                        disabled={busy}
-                                        onChange={(e) =>
-                                          void saveHabitToggle(step.id, h.id, e.target.checked, prog ?? null)
-                                        }
-                                      />
-                                      <span className="text-xl shrink-0" aria-hidden>
-                                        {emoji}
-                                      </span>
-                                      <span className="flex-1 text-right text-sm font-bold text-[#1A1730] leading-snug">
-                                        {h.title}
-                                      </span>
-                                    </label>
+                                      title={h.title}
+                                      emoji={emoji}
+                                      snapshot={snapshot}
+                                    />
                                   );
                                 })}
                               </div>

@@ -76,8 +76,11 @@ export interface Research {
  *  - multi_daily   = X פעמים ביום. times_per_day קובע את מספר הסלוטים (2..6).
  *                    סלוטים גנריים: morning / noon / evening (2-3) או slot_1..slot_n (4+).
  *  - weekly        = שבועי. תיבת סימון אחת ביום שנקבע (weekly_day, 0=ראשון..6=שבת).
- *  - per_meal      = לפני כל ארוחה. סלוטים: meal_breakfast / meal_lunch / meal_dinner
- *                    (לפי profile.meal_schedule כשקיים).
+ *  - per_meal      = משימה הקשורה לארוחה. `meal_timing` קובע אם זה לפני או אחרי,
+ *                    ו-`meal_target` קובע אם מספר הארוחות מוגדר ידנית (`fixed`) או
+ *                    נגזר מ-`profile.meal_count` (`all`). סלוטים: meal_breakfast /
+ *                    meal_lunch / meal_dinner (וכן meal_snack_morning / meal_snack_evening
+ *                    כשמשתמש הגדיר 4-5 ארוחות).
  */
 export type JourneyTaskSchedule =
   | 'one_time'
@@ -86,15 +89,33 @@ export type JourneyTaskSchedule =
   | 'weekly'
   | 'per_meal';
 
+/**
+ * האם המשימה מבוצעת לפני או אחרי הארוחה.
+ *  - before = "לפני כל ארוחה" — תזכורת לפני המקום שהמשתמש חושב לאכול.
+ *  - after  = "אחרי כל ארוחה" — תזכורת/חיזוק לאחר ארוחה.
+ *  ברירת מחדל כשחסר: 'before' (תאימות לאחור לקוד שדידע רק per_meal).
+ */
+export type MealTiming = 'before' | 'after';
+
+/**
+ * איך לקבוע כמה סלוטי-ארוחה יש במשימת per_meal:
+ *  - fixed = לפי `times_per_day` שהוגדר בעורך (1..3) — כמו עד היום.
+ *  - all   = "כל הארוחות של המשתמש" — נגזר דינמית מ-`profile.meal_count`
+ *            ו-`profile.meal_schedule`. אם למשתמש 4 ארוחות, המשימה תקבל 4 סלוטים.
+ */
+export type MealTarget = 'fixed' | 'all';
+
 /** slot מזהה את הסלוט בתוך היום הספציפי לצורך טבלת journey_task_executions */
 export type JourneyTaskSlot =
   | 'full_day'
   | 'morning'
   | 'noon'
   | 'evening'
+  | 'meal_snack_morning'
   | 'meal_breakfast'
   | 'meal_lunch'
   | 'meal_dinner'
+  | 'meal_snack_evening'
   | `slot_${number}`;
 
 export interface JourneyTask {
@@ -104,10 +125,14 @@ export interface JourneyTask {
   emoji: string;
   /** תזמון; אם חסר → 'one_time' (תאימות לאחור) */
   schedule?: JourneyTaskSchedule;
-  /** רלוונטי ל-multi_daily (2..6) */
+  /** רלוונטי ל-multi_daily (2..6) ול-per_meal (1..3 כשfixed) */
   times_per_day?: number | null;
   /** רלוונטי ל-weekly (0..6) */
   weekly_day?: number | null;
+  /** רלוונטי ל-per_meal; ברירת מחדל 'before' לתאימות לאחור */
+  meal_timing?: MealTiming | null;
+  /** רלוונטי ל-per_meal; ברירת מחדל 'fixed' לתאימות לאחור */
+  meal_target?: MealTarget | null;
 }
 
 export interface JourneyHabit {
@@ -118,6 +143,15 @@ export interface JourneyHabit {
   frequency: 'daily' | 'weekly' | 'per_meal';
   /** יום בשבוע לבדיקות שבועיות — 0=ראשון … 6=שבת (אזור ירושלים) */
   weekly_day?: number | null;
+  /** ברירת מחדל 'before' — לפני/אחרי כל ארוחה (תקף ל-per_meal). */
+  meal_timing?: MealTiming | null;
+  /** ברירת מחדל 'fixed'. אם 'all' → נגזר מ-profile.meal_count. */
+  meal_target?: MealTarget | null;
+  /**
+   * משך יעד ההרגל בימים — אחרי כמה ימים רצופים של ביצוע ההרגל ייחשב "הושג".
+   * אם לא מוגדר ברירת מחדל: 14 ימים (שבועיים). הדאשבורד מאפשר לערוך פר-משתמש.
+   */
+  target_days?: number | null;
 }
 
 export type JourneyTaskDecisionStatus = 'accepted' | 'rejected' | 'pending';
