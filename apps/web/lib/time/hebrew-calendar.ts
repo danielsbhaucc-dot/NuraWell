@@ -1,44 +1,57 @@
 /**
  * hebrew-calendar.ts
  * ------------------
- * זיהוי שבת, מוצאי שבת, ערב שבת, וחגים יהודיים מרכזיים — לטובת ברכות אישיות בעברית.
+ * זיהוי דינמי של שבת/חג/מוצ"ש/יום זיכרון/צום/ראש חודש עבור כל שנה, באמצעות
+ * @hebcal/core. שמירת timezone קבוע ב-`Asia/Jerusalem`.
  *
- *  - חישובי לוח עברי באמצעות `Intl.DateTimeFormat('en-GB-u-ca-hebrew')`. אין צורך
- *    בלוקליזציה מלאה — אנחנו רק צריכים לזהות תאריך עברי + חג כדי להציג ברכה.
- *  - כל החישובים נעשים ב-`Asia/Jerusalem`.
- *  - שבת מתחילה בכניסת שבת המקובלת (שישי 18:00) ומסתיימת במוצאי שבת המקובל
- *    (שבת 20:00). זו פשטה אינטואיטיבית — לא הלכתית — אבל מספיק טוב לברכה.
- *  - "סופ"ש" מוגדר: שישי אחה"צ (12:00 ואילך) עד מוצאי שבת.
- *  - "מוצאי שבת" מוגדר: שבת מ-20:00 עד ראשון 06:00.
+ * זרימה:
+ *   1. נמשכים אירועי hebcal של היום (+אתמול +מחר) לפי לוח ישראל (il=true).
+ *   2. נבחר ה-flag הכי משמעותי לפי priorities (MAJOR_FAST > CHAG > CHOL_HAMOED
+ *      > MODERN_HOLIDAY > MINOR_HOLIDAY > MINOR_FAST > ROSH_CHODESH).
+ *   3. שבת/ערב שבת/מוצ"ש נגזרים מהיום בשבוע ושעה בישראל (פשוט וצפוי).
+ *   4. ערב חג: אם מחר CHAG ועברנו 16:30 שעון ישראל.
+ *   5. מוצאי חג: אם אתמול CHAG ולפני 06:00 שעון ישראל.
  *
- * אם בעתיד נצטרך לוח שבעבר את החגים החלים בערב מסוים (entrance/exit) — נחליף לספריית
- * `@hebcal/core`. כרגע מספיק מה שיש פה.
+ * ברכה (`holidayLabel`) — מותאמת אישית לכל יום: חם בחגים שמחים, מכובד
+ * בימי זיכרון, רך בצומות. הברכות בנויות לבני אדם, לא תבניות.
  */
 
-export type HebrewMomentKind =
-  | 'shabbat'           /** בעצם שבת — שבת מבוקר עד 20:00 */
-  | 'shabbat_eve'       /** ערב שבת — שישי מ-12:00 עד כניסת שבת */
-  | 'motzei_shabbat'    /** מוצאי שבת — שבת 20:00 עד ראשון 06:00 */
-  | 'weekend'           /** שישי לפני 12:00 (ברכה "סופ"ש מהנה") */
-  | 'holiday'           /** חג בודד */
-  | 'holiday_eve'       /** ערב חג — אחרי 16:30 ביום שלפני חג מלא */
-  | 'motzei_chag'       /** מוצאי חג — לילה/בוקר אחרי חג */
-  | 'holiday_and_shabbat' /** חג שחל בשבת */
-  | 'chol_hamoed'       /** חול המועד פסח/סוכות */
-  | 'rosh_chodesh'      /** ראש חודש */
-  | 'weekday';
-
-export type HebrewMoment = {
-  kind: HebrewMomentKind;
-  /** שם החג/המועד לתצוגה (כולל "שמח"/"כשר ושמח"/"טוב") — null ביום חול רגיל */
-  holidayLabel: string | null;
-  /** התאריך העברי בעברית — "כ"ה תשרי" וכו'. שימושי כדי להציג בצורה משלימה. */
-  hebrewDate: string | null;
-};
+import { getHolidaysOnDate, HDate, flags, type HolidayEvent } from '@hebcal/core';
 
 const ISRAEL_TZ = 'Asia/Jerusalem';
 
-/** דקה מתחילת היום (0..1439) בלוח ירושלים. */
+export type HebrewMomentKind =
+  | 'shabbat'             // שבת — שבת בבוקר עד 20:00
+  | 'shabbat_eve'         // ערב שבת — שישי מ-12:00 עד כניסת שבת
+  | 'motzei_shabbat'      // מוצאי שבת — שבת 20:00 עד ראשון 06:00
+  | 'weekend'             // שישי לפני 12:00
+  | 'holiday'             // חג מלא — פסח/סוכות/שבועות/שמ"ע/ר"ה
+  | 'holiday_eve'         // ערב חג — אחרי 16:30 ביום שלפני
+  | 'motzei_chag'         // מוצאי חג — לפני 06:00 בבוקר אחרי
+  | 'holiday_and_shabbat' // חג שחל בשבת
+  | 'chol_hamoed'         // חול המועד
+  | 'minor_holiday'       // חנוכה, פורים, ט"ו בשבט, ל"ג בעומר
+  | 'modern_holiday'      // יום העצמאות, יום ירושלים — שמחים
+  | 'memorial'            // יום השואה, יום הזיכרון — חמורים
+  | 'major_fast'          // יום כיפור, ט' באב — חמורים
+  | 'minor_fast'          // צום גדליה, י' טבת, י"ז תמוז, תענית אסתר
+  | 'rosh_chodesh'        // ראש חודש
+  | 'weekday';            // יום חול רגיל
+
+export type HebrewMoment = {
+  kind: HebrewMomentKind;
+  /** ברכת היום הראויה — חמה לחגים, מכבדת בימי זיכרון, רכה בצומות. null ביום חול. */
+  holidayLabel: string | null;
+  /** האם הברכה "חגיגית" (זהב/הדגשה) או "חמורה" (כבוד/רוגע). */
+  tone: 'festive' | 'solemn' | 'gentle' | null;
+  /** התאריך העברי בעברית — "ה' בסיון תשפ"ו" וכו'. */
+  hebrewDate: string | null;
+};
+
+// ------------------------------------------------------------------
+// Helpers
+// ------------------------------------------------------------------
+
 function israelMinutesIntoDay(date: Date): number {
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: ISRAEL_TZ,
@@ -51,7 +64,6 @@ function israelMinutesIntoDay(date: Date): number {
   return h * 60 + m;
 }
 
-/** 0=ראשון .. 6=שבת לפי לוח ירושלים. */
 function israelWeekday(date: Date): number {
   const wdShort = new Intl.DateTimeFormat('en-US', {
     timeZone: ISRAEL_TZ,
@@ -61,201 +73,286 @@ function israelWeekday(date: Date): number {
   return map[wdShort] ?? 0;
 }
 
-/**
- * חודש עברי + יום עברי + שנה — באמצעות הלוח של Intl.
- * דוגמת פלט: { day: 25, month: 'Tishri', year: 5786 }.
- */
-type HebrewParts = { day: number; monthName: string; year: number };
-
-function hebrewParts(date: Date): HebrewParts {
-  /** קלנדר עברי + שפת en-GB → שמות החודשים באנגלית, נוח להשוואה. */
-  const parts = new Intl.DateTimeFormat('en-GB-u-ca-hebrew', {
-    timeZone: ISRAEL_TZ,
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).formatToParts(date);
-  const day = Number.parseInt(parts.find((p) => p.type === 'day')?.value ?? '0', 10) || 0;
-  const monthName = parts.find((p) => p.type === 'month')?.value ?? '';
-  const year = Number.parseInt(parts.find((p) => p.type === 'year')?.value ?? '0', 10) || 0;
-  return { day, monthName, year };
-}
-
-/** תאריך עברי לתצוגה בעברית: "כ"ה תשרי תשפ"ו". */
 function formatHebrewDate(date: Date): string | null {
   try {
-    const heFormatter = new Intl.DateTimeFormat('he-u-ca-hebrew', {
+    return new Intl.DateTimeFormat('he-u-ca-hebrew', {
       timeZone: ISRAEL_TZ,
       day: 'numeric',
       month: 'long',
       year: 'numeric',
-    });
-    return heFormatter.format(date);
+    }).format(date);
   } catch {
     return null;
   }
 }
 
 /**
- * Mapping חגים יהודיים — בהתבסס על חודש+יום בלוח העברי.
- * שמות החודשים מ-Intl באנגלית הם:
- *  Tishri, Heshvan, Kislev, Tevet, Shevat, Adar, Adar I, Adar II, Nisan, Iyar, Sivan, Tammuz, Av, Elul
- *
- * תאריכי החגים הסטנדרטיים בארץ:
- *  - ראש השנה: תשרי 1-2
- *  - יום כיפור: תשרי 10
- *  - סוכות: תשרי 15-21 (15 חג, 16-20 חוה"מ, 21 הושענא רבה)
- *  - שמיני עצרת/שמחת תורה (בארץ ביום אחד): תשרי 22
- *  - חנוכה: כסלו 25 – טבת 2/3 (8 ימים)
- *  - ט"ו בשבט: שבט 15
- *  - פורים: אדר/אדר ב' 14 (טו' שושן פורים בירושלים)
- *  - פסח: ניסן 15-21 (15 ו-21 חג, 16-20 חוה"מ)
- *  - יום העצמאות: איר 5 (תזוזות אפשריות)
- *  - ל"ג בעומר: איר 18
- *  - שבועות (בארץ ביום אחד): סיון 6
- *  - תשעה באב: אב 9 (תזוזה ל-10 כשחל בשבת)
+ * המרת Date לתאריך אזרחי בלוח ירושלים. חשוב כי `getHolidaysOnDate(Date)`
+ * משתמש בתאריך אזרחי לוקלי של הסביבה — בשרת זה UTC, לא בהכרח ישראל.
+ * לכן ניצור HDate ידני מהיום האזרחי בירושלים.
  */
-function holidayForHebrewDate(parts: HebrewParts): { label: string; isMajor: boolean } | null {
-  const { day, monthName } = parts;
-  /** ראש השנה */
-  if (monthName === 'Tishri') {
-    if (day === 1 || day === 2) return { label: 'שנה טובה ומבורכת', isMajor: true };
-    if (day === 10) return { label: 'גמר חתימה טובה', isMajor: true };
-    if (day === 15) return { label: 'חג סוכות שמח', isMajor: true };
-    if (day >= 16 && day <= 20) return { label: 'מועדים לשמחה', isMajor: false };
-    if (day === 21) return { label: 'הושענא רבה', isMajor: false };
-    if (day === 22) return { label: 'חג שמיני עצרת ושמחת תורה שמח', isMajor: true };
-  }
-  /** חנוכה — בכל מקרה היום 25 בכסלו ועד 2/3 בטבת. */
-  if (monthName === 'Kislev' && day >= 25) return { label: 'חנוכה שמח', isMajor: false };
-  if (monthName === 'Tevet' && day <= 3) return { label: 'חנוכה שמח', isMajor: false };
-  /** ט"ו בשבט */
-  if (monthName === 'Shevat' && day === 15) return { label: 'ט"ו בשבט שמח', isMajor: false };
-  /** פורים — אדר רגיל / אדר ב' */
-  if ((monthName === 'Adar' || monthName === 'Adar II') && day === 14) {
-    return { label: 'פורים שמח', isMajor: false };
-  }
-  if ((monthName === 'Adar' || monthName === 'Adar II') && day === 15) {
-    /** שושן פורים — בירושלים זה ה-14, ובכל הארץ זה היום אחרי. נשתמש בברכה רכה. */
-    return { label: 'פורים שמח', isMajor: false };
-  }
-  /** פסח */
-  if (monthName === 'Nisan') {
-    if (day === 15 || day === 21) return { label: 'חג פסח כשר ושמח', isMajor: true };
-    if (day >= 16 && day <= 20) return { label: 'מועדי חוה"מ פסח לשמחה', isMajor: false };
-  }
-  /** יום העצמאות — קלאסי 5 באייר. */
-  if (monthName === 'Iyar' && day === 5) return { label: 'יום עצמאות שמח', isMajor: false };
-  /** ל"ג בעומר */
-  if (monthName === 'Iyar' && day === 18) return { label: 'ל"ג בעומר שמח', isMajor: false };
-  /** שבועות — בארץ יום אחד, ו' סיון. */
-  if (monthName === 'Sivan' && day === 6) return { label: 'חג שבועות שמח', isMajor: true };
-  /** תשעה באב — יום צום, ברכה שונה. */
-  if (monthName === 'Av' && day === 9) return { label: 'צום קל', isMajor: false };
-  return null;
+function hdateFromIsraelDate(date: Date): HDate {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ISRAEL_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const y = Number.parseInt(parts.find((p) => p.type === 'year')?.value ?? '0', 10);
+  const m = Number.parseInt(parts.find((p) => p.type === 'month')?.value ?? '0', 10);
+  const d = Number.parseInt(parts.find((p) => p.type === 'day')?.value ?? '0', 10);
+  return new HDate(new Date(y, m - 1, d));
 }
 
-/** Date object שמייצג +24h ביחס ל-`now`. */
-function addDays(date: Date, deltaDays: number): Date {
+function addCivilDays(date: Date, deltaDays: number): Date {
   return new Date(date.getTime() + deltaDays * 24 * 60 * 60 * 1000);
 }
 
-/**
- * הזיהוי המלא: שבת/מוצ"ש/חג/חוה"מ/יום חול.
- *
- *  - אם חג בשבת — מוחזר 'holiday_and_shabbat' עם תווית חג.
- *  - אם שבת רגילה — 'shabbat' / 'motzei_shabbat' / 'shabbat_eve'.
- *  - 'weekend' לוכד שישי לפני 12:00 — לפני שמגיע "ערב שבת".
- *  - "ערב חג" — אחרי 16:30 בערב שלפני חג מלא (החג בלוח העברי הוא ב-day+1
- *    אזרחי), כי החג בפועל מתחיל בשקיעה. הברכה: "ערב X טוב, חג X שמח".
- *  - "מוצאי חג" — לפני 06:00 לאחר חג מלא — הברכה "מוצאי חג מבורך".
- */
+// ------------------------------------------------------------------
+// Event classification
+// ------------------------------------------------------------------
+
+type ClassifiedDay = {
+  kind: HebrewMomentKind | null;
+  label: string | null;
+  tone: HebrewMoment['tone'];
+  isChagFull: boolean;
+};
+
+/** טון + ברכה חמה לפי שם החג. הברכות נכתבו ידנית כדי להישמע אנושיות. */
+function warmGreetingFor(basename: string, fallbackHe: string): { label: string; tone: HebrewMoment['tone'] } {
+  /** חגי תורה הגדולים — בטון חגיגי וחם. */
+  if (basename.startsWith('Rosh Hashana')) {
+    return { label: 'שנה טובה ומתוקה, מאחלים לך בריאות וצמיחה', tone: 'festive' };
+  }
+  if (basename === 'Yom Kippur') {
+    return { label: 'גמר חתימה טובה, צום קל ומלא משמעות', tone: 'solemn' };
+  }
+  if (basename === 'Sukkot' || basename.startsWith('Sukkot')) {
+    return { label: 'חג סוכות שמח, ימים של אור ושמחה', tone: 'festive' };
+  }
+  if (basename === 'Shmini Atzeret' || basename === 'Simchat Torah') {
+    return { label: 'חג שמח, רוקדים עם התורה', tone: 'festive' };
+  }
+  if (basename === 'Pesach' || basename.startsWith('Pesach')) {
+    return { label: 'חג פסח כשר ושמח, חירות אמיתית', tone: 'festive' };
+  }
+  if (basename === 'Shavuot') {
+    return { label: 'חג שבועות שמח, זמן מתן תורתנו', tone: 'festive' };
+  }
+  /** חוה"מ. */
+  if (basename === 'Chol HaMoed Pesach' || basename.startsWith('Pesach Chol')) {
+    return { label: 'מועדי פסח לשמחה, חוה"מ נעים', tone: 'gentle' };
+  }
+  if (basename === 'Chol HaMoed Sukkot' || basename.startsWith('Sukkot Chol')) {
+    return { label: 'מועדים לשמחה, חוה"מ נעים', tone: 'gentle' };
+  }
+  if (basename === 'Hoshana Raba' || basename === "Hoshana Rabbah") {
+    return { label: 'הושענא רבה, יום של תפילה ותקווה', tone: 'gentle' };
+  }
+  /** חגים מינוריים שמחים. */
+  if (basename === 'Chanukah' || basename.startsWith('Chanukah')) {
+    return { label: 'חנוכה שמח, נר אחד מאיר את כל החושך', tone: 'festive' };
+  }
+  if (basename === 'Purim' || basename === 'Shushan Purim') {
+    return { label: 'פורים שמח, ימי שמחה וריקודים', tone: 'festive' };
+  }
+  if (basename === "Tu BiShvat" || basename === 'Tu BiShvat') {
+    return { label: 'ט"ו בשבט שמח, יום נטיעות ופירות', tone: 'gentle' };
+  }
+  if (basename === 'Lag BaOmer') {
+    return { label: 'ל"ג בעומר שמח, יום אש ושירה', tone: 'gentle' };
+  }
+  if (basename === 'Tu B\'Av' || basename === "Tu B'Av") {
+    return { label: 'ט"ו באב, יום של אהבה ואחדות', tone: 'gentle' };
+  }
+  /** ימים מודרניים — חלקם שמחים, חלקם חמורים. */
+  if (basename === "Yom HaAtzma'ut" || basename === 'Yom HaAtzmaut') {
+    return { label: 'יום העצמאות שמח, גאווה ותקווה', tone: 'festive' };
+  }
+  if (basename === 'Yom Yerushalayim') {
+    return { label: 'יום ירושלים שמח, אור על העיר', tone: 'festive' };
+  }
+  if (basename === 'Yom HaShoah') {
+    return { label: 'יום השואה והגבורה — מתייחדים עם זכר הקדושים', tone: 'solemn' };
+  }
+  if (basename === 'Yom HaZikaron') {
+    return { label: 'יום הזיכרון — מתייחדים עם זכר הנופלים והנפגעי טרור', tone: 'solemn' };
+  }
+  /** צומות. */
+  if (basename === "Tish'a B'Av" || basename === "Tisha B'Av") {
+    return { label: 'צום ט\' באב — מתאחדים בזיכרון. צום קל', tone: 'solemn' };
+  }
+  if (basename === 'Tzom Gedaliah' || basename === "Tzom Gedalia") {
+    return { label: 'צום גדליה — צום קל ומועיל', tone: 'gentle' };
+  }
+  if (basename === 'Asara B\'Tevet' || basename === "Asara B'Tevet") {
+    return { label: 'צום עשרה בטבת — צום קל', tone: 'gentle' };
+  }
+  if (basename === "Ta'anit Esther") {
+    return { label: 'תענית אסתר — צום קל', tone: 'gentle' };
+  }
+  if (basename === 'Tzom Tammuz' || basename === "Shiva Asar B'Tammuz") {
+    return { label: 'צום י"ז בתמוז — צום קל', tone: 'gentle' };
+  }
+  if (basename === "Ta'anit Bechorot") {
+    return { label: 'תענית בכורות — לבכורות', tone: 'gentle' };
+  }
+  /** ראש חודש. */
+  if (basename.startsWith('Rosh Chodesh')) {
+    return { label: 'ראש חודש מבורך, חודש של חידוש', tone: 'gentle' };
+  }
+  /** ימים מיוחדים פחות נפוצים — נחזיר את התרגום העברי מ-hebcal כברירת מחדל רכה. */
+  return { label: fallbackHe, tone: 'gentle' };
+}
+
+function classifyEvents(date: Date): ClassifiedDay {
+  const hdate = hdateFromIsraelDate(date);
+  let events: HolidayEvent[] = [];
+  try {
+    events = getHolidaysOnDate(hdate, true) ?? [];
+  } catch {
+    events = [];
+  }
+  if (events.length === 0) {
+    return { kind: null, label: null, tone: null, isChagFull: false };
+  }
+
+  /**
+   * priorities: גבוה → נמוך.
+   * אנחנו רוצים להציג את האירוע "החשוב" של היום.
+   */
+  const sorted = [...events].sort((a, b) => priority(b) - priority(a));
+  const top = sorted[0];
+  const mask = top.getFlags();
+
+  const hebrewName = (() => {
+    try {
+      return top.render('he');
+    } catch {
+      return top.getDesc();
+    }
+  })();
+  const greet = warmGreetingFor(top.basename(), hebrewName);
+
+  /** מיפוי flags → kind. */
+  let kind: HebrewMomentKind;
+  if (mask & flags.MAJOR_FAST) {
+    /** יום כיפור כן כלול ב-CHAG, אבל יוצא לפניו ב-MAJOR_FAST — נשמור כ-major_fast. */
+    kind = 'major_fast';
+  } else if (mask & flags.CHAG) {
+    kind = 'holiday';
+  } else if (mask & flags.CHOL_HAMOED) {
+    kind = 'chol_hamoed';
+  } else if (mask & flags.MODERN_HOLIDAY) {
+    /** הבחנה: יום השואה/יום הזיכרון = memorial. יום העצמאות/ירושלים = modern_holiday. */
+    if (greet.tone === 'solemn') {
+      kind = 'memorial';
+    } else {
+      kind = 'modern_holiday';
+    }
+  } else if (mask & flags.MINOR_HOLIDAY) {
+    kind = 'minor_holiday';
+  } else if (mask & flags.MINOR_FAST) {
+    kind = 'minor_fast';
+  } else if (mask & flags.ROSH_CHODESH) {
+    kind = 'rosh_chodesh';
+  } else {
+    return { kind: null, label: null, tone: null, isChagFull: false };
+  }
+
+  return {
+    kind,
+    label: greet.label,
+    tone: greet.tone,
+    isChagFull: Boolean(mask & flags.CHAG) || Boolean(mask & flags.MAJOR_FAST),
+  };
+}
+
+function priority(ev: { getFlags(): number }): number {
+  const m = ev.getFlags();
+  if (m & flags.MAJOR_FAST) return 100;
+  if (m & flags.CHAG) return 90;
+  if (m & flags.CHOL_HAMOED) return 80;
+  if (m & flags.MODERN_HOLIDAY) return 70;
+  if (m & flags.MINOR_HOLIDAY) return 60;
+  if (m & flags.MINOR_FAST) return 50;
+  if (m & flags.ROSH_CHODESH) return 40;
+  if (m & flags.EREV) return 30;
+  return 10;
+}
+
+// ------------------------------------------------------------------
+// Main API
+// ------------------------------------------------------------------
+
 export function detectHebrewMoment(now: Date = new Date()): HebrewMoment {
   const wd = israelWeekday(now);
   const minutes = israelMinutesIntoDay(now);
-  const parts = hebrewParts(now);
-  const holiday = holidayForHebrewDate(parts);
   const hebrewDate = formatHebrewDate(now);
 
-  /** בדיקת "מחר חג" — לסיכוי של ערב חג אחרי 16:30. */
-  const tomorrowParts = hebrewParts(addDays(now, 1));
-  const tomorrowHoliday = holidayForHebrewDate(tomorrowParts);
-  /** בדיקת "אתמול חג" — לסיכוי של מוצאי חג לפני 06:00. */
-  const yesterdayParts = hebrewParts(addDays(now, -1));
-  const yesterdayHoliday = holidayForHebrewDate(yesterdayParts);
+  const today = classifyEvents(now);
+  const tomorrow = classifyEvents(addCivilDays(now, 1));
+  const yesterday = classifyEvents(addCivilDays(now, -1));
 
-  /** שבת קלאסית: יום שבת (6) עד 20:00. */
   const isOnShabbat = wd === 6 && minutes < 20 * 60;
-  /** ערב שבת: שישי (5) מ-12:00 עד סוף היום. */
   const isShabbatEve = wd === 5 && minutes >= 12 * 60;
-  /** מוצאי שבת: שבת אחרי 20:00 או ראשון לפני 06:00. */
-  const isMotzeiShabbat =
-    (wd === 6 && minutes >= 20 * 60) || (wd === 0 && minutes < 6 * 60);
-  /** סופ"ש "עצמאי": שישי לפני 12:00. */
+  const isMotzeiShabbat = (wd === 6 && minutes >= 20 * 60) || (wd === 0 && minutes < 6 * 60);
   const isWeekendStart = wd === 5 && minutes < 12 * 60;
 
-  if (isOnShabbat && holiday) {
+  /** שבת + חג — חג מנצח בתווית, kind מיוחד. */
+  if (isOnShabbat && today.isChagFull) {
     return {
       kind: 'holiday_and_shabbat',
-      holidayLabel: holiday.label,
+      holidayLabel: today.label ? `שבת שלום ו${today.label.replace(/^חג /, 'חג ')}` : 'שבת שלום וחג שמח',
+      tone: 'festive',
       hebrewDate,
     };
   }
   if (isOnShabbat) {
-    return { kind: 'shabbat', holidayLabel: null, hebrewDate };
+    return { kind: 'shabbat', holidayLabel: 'שבת שלום ומבורכת', tone: 'festive', hebrewDate };
   }
   if (isMotzeiShabbat) {
-    return { kind: 'motzei_shabbat', holidayLabel: null, hebrewDate };
+    return { kind: 'motzei_shabbat', holidayLabel: 'שבוע טוב ומבורך', tone: 'gentle', hebrewDate };
   }
   if (isShabbatEve) {
-    return { kind: 'shabbat_eve', holidayLabel: null, hebrewDate };
+    return { kind: 'shabbat_eve', holidayLabel: 'שבת שלום ומבורכת', tone: 'festive', hebrewDate };
   }
-  if (holiday) {
-    /** חוה"מ מקבלים תווית אבל לא נחשבים "חג מלא". */
-    const isCholHamoed = holiday.label.startsWith('מועדים') || holiday.label.startsWith('מועדי');
+
+  /** היום הוא חג / חוה"מ / יום זיכרון / צום / ר"ח. */
+  if (today.kind && today.label) {
     return {
-      kind: isCholHamoed ? 'chol_hamoed' : 'holiday',
-      holidayLabel: holiday.label,
+      kind: today.kind,
+      holidayLabel: today.label,
+      tone: today.tone,
       hebrewDate,
     };
   }
-  /**
-   * ערב חג: שעון אזרחי עוד לא עבר חצות, אבל בפועל החג כבר נכנס בשקיעה.
-   * אחרי 16:30 בערב לפני חג מלא — להציג "ערב חג, חג X שמח".
-   * (לא חוה"מ — חוה"מ כבר מקבל תווית "מועדים לשמחה" בעצמו.)
-   */
-  if (
-    tomorrowHoliday &&
-    tomorrowHoliday.isMajor &&
-    minutes >= 16 * 60 + 30
-  ) {
+
+  /** ערב חג: מחר חג מלא ועברנו 16:30. */
+  if (tomorrow.isChagFull && tomorrow.label && minutes >= 16 * 60 + 30) {
     return {
       kind: 'holiday_eve',
-      holidayLabel: tomorrowHoliday.label,
+      holidayLabel: `ערב חג • ${tomorrow.label}`,
+      tone: 'festive',
       hebrewDate,
     };
   }
-  /**
-   * מוצאי חג: עברנו חצות לתוך יום חדש, אבל אתמול היה חג מלא — עד 06:00
-   * עדיין מציגים "מוצאי חג מבורך".
-   */
-  if (
-    yesterdayHoliday &&
-    yesterdayHoliday.isMajor &&
-    minutes < 6 * 60
-  ) {
+
+  /** מוצאי חג: אתמול חג מלא ולפני 06:00. */
+  if (yesterday.isChagFull && minutes < 6 * 60) {
     return {
       kind: 'motzei_chag',
-      holidayLabel: yesterdayHoliday.label,
+      holidayLabel: 'מוצאי חג מבורך',
+      tone: 'gentle',
       hebrewDate,
     };
   }
+
+  /** סופ"ש — שישי בבוקר. */
   if (isWeekendStart) {
-    return { kind: 'weekend', holidayLabel: null, hebrewDate };
+    return { kind: 'weekend', holidayLabel: 'סוף שבוע מהנה', tone: 'gentle', hebrewDate };
   }
-  /** ראש חודש — היום הראשון של כל חודש עברי. ה-30 נחשב לפעמים כראש חודש של החודש הבא, אבל פשטה כאן. */
-  if (parts.day === 1) {
-    return { kind: 'rosh_chodesh', holidayLabel: 'ראש חודש מבורך', hebrewDate };
-  }
-  return { kind: 'weekday', holidayLabel: null, hebrewDate };
+
+  return { kind: 'weekday', holidayLabel: null, tone: null, hebrewDate };
 }

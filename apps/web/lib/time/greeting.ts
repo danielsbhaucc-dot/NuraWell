@@ -1,11 +1,9 @@
 /**
  * greeting.ts
  * -----------
- * ברכת זמן בעברית — לפי שעה בירושלים, עם רגישות לשבת/חג/מוצ"ש/סופ"ש.
- *
- *  - שעון: תמיד `Asia/Jerusalem` (לא תלוי במכשיר).
- *  - שבת/חג/מוצ"ש מוסיפים שכבה נוספת ("בוקר טוב, X — שבת שלום").
- *  - סופ"ש מהנה מופיע ביום שישי בבוקר.
+ * ברכה אישית — לפי שעה בישראל + רגישות לחג/שבת/יום זיכרון/צום.
+ * הברכה החמה עצמה מגיעה כבר מ-`hebrew-calendar.ts`. כאן רק עוטפים אותה
+ * עם ברכת שעה ועם tone לתצוגה.
  */
 
 import { detectHebrewMoment, type HebrewMoment } from './hebrew-calendar';
@@ -22,7 +20,7 @@ function israelHour(date: Date): number {
   return Number.isFinite(h) ? h : 0;
 }
 
-/** ברכה לפי השעה ביום בלבד (בלי שכבת שבת/חג). */
+/** ברכת שעה בלבד — בלי שכבת חג. */
 export function getTimeGreeting(now: Date = new Date()): string {
   const hour = israelHour(now);
   if (hour === 5) return 'חמש לפנות בוקר,';
@@ -32,88 +30,76 @@ export function getTimeGreeting(now: Date = new Date()): string {
   return 'לילה טוב,';
 }
 
+/**
+ * ברכה לימי זיכרון — לא "בוקר טוב", אלא טון שקט יותר.
+ * בימי השואה והזיכרון לא הולמת ברכת בוקר חגיגית.
+ */
+function getTimeGreetingForSolemnDay(now: Date = new Date()): string {
+  const hour = israelHour(now);
+  if (hour >= 6 && hour < 12) return 'בוקר,';
+  if (hour >= 12 && hour < 17) return 'צהריים,';
+  if (hour >= 17 && hour < 21) return 'ערב,';
+  return 'לילה,';
+}
+
 export type PersonalGreeting = {
-  /** ברכת זמן בסיסית (כולל פסיק בסוף): "בוקר טוב," / "צהריים טובים," */
+  /** "בוקר טוב," / "צהריים טובים," — כולל פסיק. ביום זיכרון בלי "טוב". */
   timeGreeting: string;
-  /** שכבת חג/שבת/סופ"ש — להוספה אחרי השם. אם null אין מה להוסיף. */
+  /** השכבה האישית של היום: חג/שבת/יום זיכרון/צום/ר"ח. null אם אין. */
   occasionGreeting: string | null;
-  /** "כשרון פוטוגני" של הברכה לתצוגה — אם זה חג מלא, להבליט קצת יותר. */
+  /** האם להבליט (זהב), להציג רגוע (לבן), או "חמור" (אפור-לבן רך). */
   highlight: boolean;
-  /** ה-moment עצמו, לשימוש קוד צרכן (analytics/תצוגה משלימה). */
+  /** טון הברכה — לתצוגה: festive=זהב, solemn=נר רוגע, gentle=ירוק רך. */
+  tone: 'festive' | 'solemn' | 'gentle' | null;
+  /** ה-moment עצמו, לשימוש קוד צרכן. */
   moment: HebrewMoment;
 };
 
 /**
- * הברכה הראשית שמוצגת בבית — משלבת שעה ושכבת חג/שבת.
+ * הברכה הראשית — משלבת שעה ושכבת חג/שבת/זיכרון.
  *
- * דוגמאות:
- *   weekday      → "בוקר טוב," + null               → "בוקר טוב, דנה"
- *   shabbat_eve  → "צהריים טובים," + "שבת שלום"     → "צהריים טובים, דנה — שבת שלום ✦"
- *   shabbat      → "בוקר טוב," + "שבת שלום"         → "בוקר טוב, דנה — שבת שלום ✦"
- *   motzei_shabbat → "ערב טוב," + "שבוע טוב"         → "ערב טוב, דנה — שבוע טוב ✨"
- *   holiday      → "בוקר טוב," + "חג סוכות שמח"     → "בוקר טוב, דנה — חג סוכות שמח 🕯️"
- *   holiday_and_shabbat → "בוקר טוב," + "שבת שלום, חג שמח" → "בוקר טוב, דנה — שבת שלום וחג שמח ✦"
- *   weekend      → "בוקר טוב," + "סוף שבוע מהנה"    → "בוקר טוב, דנה — סוף שבוע מהנה 🌿"
+ * דוגמאות (ברכה החמה מגיעה מ-hebrew-calendar):
+ *   weekday           → "בוקר טוב, [שם]"
+ *   shabbat_eve       → "צהריים טובים, [שם]" + "שבת שלום ומבורכת"
+ *   shabbat           → "בוקר טוב, [שם]" + "שבת שלום ומבורכת"
+ *   motzei_shabbat    → "ערב טוב, [שם]" + "שבוע טוב ומבורך"
+ *   holiday (שבועות)  → "בוקר טוב, [שם]" + "חג שבועות שמח, זמן מתן תורתנו"
+ *   holiday_eve       → "ערב טוב, [שם]" + "ערב חג • חג שבועות שמח..."
+ *   motzei_chag       → "לילה טוב, [שם]" + "מוצאי חג מבורך"
+ *   memorial (שואה)   → "בוקר, [שם]" + "יום השואה והגבורה — מתייחדים..."
+ *   memorial (זיכרון) → "ערב, [שם]" + "יום הזיכרון — מתייחדים..."
+ *   major_fast (יוה"כ)→ "ערב, [שם]" + "גמר חתימה טובה, צום קל..."
+ *   minor_fast        → "בוקר טוב, [שם]" + "צום י"ז בתמוז — צום קל"
+ *   rosh_chodesh      → "בוקר טוב, [שם]" + "ראש חודש מבורך, חודש של חידוש"
+ *   weekend           → "בוקר טוב, [שם]" + "סוף שבוע מהנה"
  */
 export function getPersonalGreeting(now: Date = new Date()): PersonalGreeting {
   const moment = detectHebrewMoment(now);
-  const timeGreeting = getTimeGreeting(now);
-  let occasionGreeting: string | null = null;
-  let highlight = false;
 
-  switch (moment.kind) {
-    case 'shabbat':
-      occasionGreeting = 'שבת שלום';
-      highlight = true;
-      break;
-    case 'shabbat_eve':
-      occasionGreeting = 'שבת שלום ומבורכת';
-      highlight = true;
-      break;
-    case 'motzei_shabbat':
-      occasionGreeting = 'שבוע טוב ומבורך';
-      highlight = true;
-      break;
-    case 'weekend':
-      occasionGreeting = 'סוף שבוע מהנה';
-      highlight = false;
-      break;
-    case 'holiday':
-      occasionGreeting = moment.holidayLabel ?? 'חג שמח';
-      highlight = true;
-      break;
-    case 'holiday_eve':
-      /** ערב חג: "ערב חג שבועות, חג שמח" / "ערב חג סוכות, חג שמח". */
-      occasionGreeting = moment.holidayLabel
-        ? `ערב חג • ${moment.holidayLabel}`
-        : 'ערב חג, חג שמח';
-      highlight = true;
-      break;
-    case 'motzei_chag':
-      occasionGreeting = 'מוצאי חג מבורך';
-      highlight = true;
-      break;
-    case 'holiday_and_shabbat':
-      /** "שבת שלום וחג סוכות שמח" וכו'. אם יש tag "חג" בתווית — שילוב מסודר. */
-      occasionGreeting = moment.holidayLabel
-        ? `שבת שלום ו${moment.holidayLabel.replace(/^חג /, 'חג ')}`
-        : 'שבת שלום וחג שמח';
-      highlight = true;
-      break;
-    case 'chol_hamoed':
-      occasionGreeting = moment.holidayLabel ?? 'מועדים לשמחה';
-      highlight = false;
-      break;
-    case 'rosh_chodesh':
-      occasionGreeting = 'ראש חודש מבורך';
-      highlight = false;
-      break;
-    case 'weekday':
-    default:
-      occasionGreeting = null;
-      highlight = false;
-      break;
+  /** ימי זיכרון לאומיים + צום גדול = טון כבוד. אין "טוב" במילת הברכה. */
+  const isSolemn =
+    moment.kind === 'memorial' ||
+    moment.kind === 'major_fast' ||
+    moment.tone === 'solemn';
+
+  const timeGreeting = isSolemn ? getTimeGreetingForSolemnDay(now) : getTimeGreeting(now);
+
+  /** ב-weekday רגיל אין שכבה — מציגים רק "בוקר טוב, X". */
+  if (moment.kind === 'weekday') {
+    return {
+      timeGreeting,
+      occasionGreeting: null,
+      highlight: false,
+      tone: null,
+      moment,
+    };
   }
 
-  return { timeGreeting, occasionGreeting, highlight, moment };
+  return {
+    timeGreeting,
+    occasionGreeting: moment.holidayLabel,
+    highlight: moment.tone === 'festive',
+    tone: moment.tone,
+    moment,
+  };
 }
