@@ -491,6 +491,19 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                                 </p>
                                 {habits.map((h) => {
                                   const emoji = emojiFromWellnessText(h.title, '🌿');
+                                  /**
+                                   * חלון היסטוריה דינמי: עד פי 2 מה-target_days,
+                                   * אבל לפחות 28 ימים (חודש) ולא יותר מ-180 (חצי שנה).
+                                   * כך הרגל של 90 ימים יראה את כל ההתקדמות עד היום.
+                                   */
+                                  const targetDaysHint =
+                                    typeof h.target_days === 'number' && h.target_days >= 3
+                                      ? h.target_days
+                                      : 21;
+                                  const historyDays = Math.max(
+                                    28,
+                                    Math.min(180, Math.round(targetDaysHint * 2))
+                                  );
                                   const snapshot = computeHabitProgressSnapshot({
                                     habit: h,
                                     stepTasks: tasks,
@@ -501,6 +514,7 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                                     executions: stepExecs,
                                     habitMeta: prog?.habit_meta,
                                     todayKey: data.today_date_key,
+                                    historyDays,
                                   });
                                   return (
                                     <HabitProgressCard

@@ -26,10 +26,11 @@ export type HebrewMomentKind =
   | 'motzei_shabbat'      // מוצאי שבת — שבת 20:00 עד ראשון 06:00
   | 'weekend'             // שישי לפני 12:00
   | 'holiday'             // חג מלא — פסח/סוכות/שבועות/שמ"ע/ר"ה
-  | 'holiday_eve'         // ערב חג — אחרי 16:30 ביום שלפני
-  | 'motzei_chag'         // מוצאי חג — לפני 06:00 בבוקר אחרי
+  | 'holiday_eve'         // ערב חג — כל היום שלפני חג מלא
+  | 'motzei_chag'         // מוצאי חג — כל היום שאחרי חג מלא
   | 'holiday_and_shabbat' // חג שחל בשבת
   | 'chol_hamoed'         // חול המועד
+  | 'aseret_yemei_teshuvah' // עשרת ימי תשובה — בין ר"ה ליוה"כ
   | 'minor_holiday'       // חנוכה, פורים, ט"ו בשבט, ל"ג בעומר
   | 'modern_holiday'      // יום העצמאות, יום ירושלים — שמחים
   | 'memorial'            // יום השואה, יום הזיכרון — חמורים
@@ -286,6 +287,21 @@ function priority(ev: { getFlags(): number }): number {
 // Main API
 // ------------------------------------------------------------------
 
+/**
+ * עשרת ימי תשובה: 1-9 בתשרי. ר"ה עצמו (1-2) ויום כיפור (10) הם חגים מלאים,
+ * אז הם מנצחים. נשאר הטווח 3-9 בתשרי שאינו חג בעצמו אבל יש לו אופי ייחודי.
+ */
+function isAseretYemeiTeshuvah(date: Date): boolean {
+  try {
+    const h = hdateFromIsraelDate(date);
+    const day = h.getDate();
+    const month = h.getMonthName();
+    return month === 'Tishrei' && day >= 3 && day <= 9;
+  } catch {
+    return false;
+  }
+}
+
 export function detectHebrewMoment(now: Date = new Date()): HebrewMoment {
   const wd = israelWeekday(now);
   const minutes = israelMinutesIntoDay(now);
@@ -304,7 +320,27 @@ export function detectHebrewMoment(now: Date = new Date()): HebrewMoment {
   if (isOnShabbat && today.isChagFull) {
     return {
       kind: 'holiday_and_shabbat',
-      holidayLabel: today.label ? `שבת שלום ו${today.label.replace(/^חג /, 'חג ')}` : 'שבת שלום וחג שמח',
+      holidayLabel: today.label
+        ? `שבת שלום ו${today.label.replace(/^חג /, 'חג ')}`
+        : 'שבת שלום וחג שמח',
+      tone: 'festive',
+      hebrewDate,
+    };
+  }
+  /** שבת + ערב חג (מחר חג מלא) — שבת שלום + ברכת ערב חג. */
+  if (isOnShabbat && tomorrow.isChagFull && tomorrow.label) {
+    return {
+      kind: 'holiday_and_shabbat',
+      holidayLabel: `שבת שלום • ערב ${tomorrow.label.replace(/^חג /, 'חג ')}`,
+      tone: 'festive',
+      hebrewDate,
+    };
+  }
+  /** שבת + מוצאי חג (אתמול חג מלא). */
+  if (isOnShabbat && yesterday.isChagFull) {
+    return {
+      kind: 'holiday_and_shabbat',
+      holidayLabel: 'שבת שלום ומוצאי חג מבורך',
       tone: 'festive',
       hebrewDate,
     };
@@ -312,8 +348,26 @@ export function detectHebrewMoment(now: Date = new Date()): HebrewMoment {
   if (isOnShabbat) {
     return { kind: 'shabbat', holidayLabel: 'שבת שלום ומבורכת', tone: 'festive', hebrewDate };
   }
+  /** מוצ"ש שגם הוא מוצאי חג. */
+  if (isMotzeiShabbat && yesterday.isChagFull) {
+    return {
+      kind: 'motzei_shabbat',
+      holidayLabel: 'שבוע טוב ומוצאי חג מבורך',
+      tone: 'festive',
+      hebrewDate,
+    };
+  }
   if (isMotzeiShabbat) {
     return { kind: 'motzei_shabbat', holidayLabel: 'שבוע טוב ומבורך', tone: 'gentle', hebrewDate };
+  }
+  /** ערב שבת שהוא גם ערב חג. */
+  if (isShabbatEve && tomorrow.isChagFull && tomorrow.label) {
+    return {
+      kind: 'holiday_and_shabbat',
+      holidayLabel: `שבת שלום • ערב ${tomorrow.label.replace(/^חג /, 'חג ')}`,
+      tone: 'festive',
+      hebrewDate,
+    };
   }
   if (isShabbatEve) {
     return { kind: 'shabbat_eve', holidayLabel: 'שבת שלום ומבורכת', tone: 'festive', hebrewDate };
@@ -329,8 +383,11 @@ export function detectHebrewMoment(now: Date = new Date()): HebrewMoment {
     };
   }
 
-  /** ערב חג: מחר חג מלא ועברנו 16:30. */
-  if (tomorrow.isChagFull && tomorrow.label && minutes >= 16 * 60 + 30) {
+  /**
+   * ערב חג: מחר חג מלא — כל היום מהבוקר.
+   * שיניתי מ-16:30+ כדי לעטוף את כל היום כפי שהמשתמש ביקש.
+   */
+  if (tomorrow.isChagFull && tomorrow.label) {
     return {
       kind: 'holiday_eve',
       holidayLabel: `ערב חג • ${tomorrow.label}`,
@@ -339,11 +396,23 @@ export function detectHebrewMoment(now: Date = new Date()): HebrewMoment {
     };
   }
 
-  /** מוצאי חג: אתמול חג מלא ולפני 06:00. */
-  if (yesterday.isChagFull && minutes < 6 * 60) {
+  /**
+   * מוצאי חג: אתמול חג מלא — כל היום. (לפני המעבר ל-weekday הרגיל.)
+   */
+  if (yesterday.isChagFull) {
     return {
       kind: 'motzei_chag',
       holidayLabel: 'מוצאי חג מבורך',
+      tone: 'gentle',
+      hebrewDate,
+    };
+  }
+
+  /** עשרת ימי תשובה — אווירה אישית בין ר"ה ליוה"כ. */
+  if (isAseretYemeiTeshuvah(now)) {
+    return {
+      kind: 'aseret_yemei_teshuvah',
+      holidayLabel: 'עשרת ימי תשובה — ימים של חשבון נפש',
       tone: 'gentle',
       hebrewDate,
     };
@@ -355,4 +424,89 @@ export function detectHebrewMoment(now: Date = new Date()): HebrewMoment {
   }
 
   return { kind: 'weekday', holidayLabel: null, tone: null, hebrewDate };
+}
+
+/**
+ * האם זו "שעה שקטה" — לא לשלוח התראות יזומות. כולל:
+ *  - שבת/ערב שבת/מוצ"ש לפני 20:30
+ *  - חג מלא/ערב חג/מוצאי חג לפני 20:30
+ *  - יום השואה / יום הזיכרון
+ *  - יום כיפור / ת"ב
+ *  - לילות (אחרי 22:00 או לפני 09:00)
+ *
+ * הפונקציה הזו משמשת את workflow הקיקאוף וגם את ה-cron כדי לכבד את הקצב
+ * הטבעי של המשתמשים בלוח השנה היהודי-ישראלי.
+ */
+export function isQuietWindow(now: Date = new Date()): {
+  quiet: boolean;
+  reason?: string;
+  /** מתי כדאי לנסות שוב — ISO. */
+  retryAfterIso?: string;
+} {
+  const m = detectHebrewMoment(now);
+  const minutes = israelMinutesIntoDay(now);
+
+  /** ערב/לילה — לא שולחים אחרי 22:00 או לפני 09:00. */
+  const tooLate = minutes >= 22 * 60;
+  const tooEarly = minutes < 9 * 60;
+
+  /** קביעת זמן יציאה: מחר 09:00 שעון ישראל. */
+  const next09 = nextIsraelHour(now, 9);
+  /** קביעת זמן יציאה לאחר חג/שבת: הבוקר שאחרי, 09:00. */
+  const dayAfter09 = nextIsraelHour(addCivilDays(now, 1), 9);
+  const twoDaysAfter09 = nextIsraelHour(addCivilDays(now, 2), 9);
+
+  switch (m.kind) {
+    case 'shabbat':
+    case 'shabbat_eve':
+      return { quiet: true, reason: m.kind, retryAfterIso: dayAfter09.toISOString() };
+    case 'motzei_shabbat':
+      /** מוצ"ש שקט בלילה. נחכה ליום ראשון 09:00. */
+      return { quiet: true, reason: 'motzei_shabbat', retryAfterIso: next09.toISOString() };
+    case 'holiday':
+    case 'holiday_and_shabbat':
+    case 'major_fast':
+      return { quiet: true, reason: m.kind, retryAfterIso: twoDaysAfter09.toISOString() };
+    case 'holiday_eve':
+      return { quiet: true, reason: 'holiday_eve', retryAfterIso: twoDaysAfter09.toISOString() };
+    case 'motzei_chag':
+      /** ביום שאחרי החג אפשר לשלוח — בתנאי שעבר חלון 09-22. */
+      break;
+    case 'memorial':
+      /** יום השואה / יום הזיכרון — אווירה ציבורית, לא לשלוח התראה אישית. */
+      return { quiet: true, reason: 'memorial', retryAfterIso: dayAfter09.toISOString() };
+    default:
+      break;
+  }
+
+  if (tooLate || tooEarly) {
+    return { quiet: true, reason: 'night', retryAfterIso: next09.toISOString() };
+  }
+
+  return { quiet: false };
+}
+
+function nextIsraelHour(base: Date, israelHour: number): Date {
+  /** היום האזרחי בירושלים. */
+  const dateParts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ISRAEL_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(base);
+  const minutes = israelMinutesIntoDay(base);
+  const targetMinutes = israelHour * 60;
+  /** אם השעה היעד עוד לא הגיעה היום — היום. אחרת מחר. */
+  const candidate = new Date(`${dateParts}T${String(israelHour).padStart(2, '0')}:00:00+03:00`);
+  if (minutes < targetMinutes && Number.isFinite(candidate.getTime())) {
+    return candidate;
+  }
+  /** מחר — נשתמש ב-+24h ואז נורמלייז. */
+  const tomorrowParts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ISRAEL_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(addCivilDays(base, 1));
+  return new Date(`${tomorrowParts}T${String(israelHour).padStart(2, '0')}:00:00+03:00`);
 }
