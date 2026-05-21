@@ -21,6 +21,8 @@ export type HebrewMomentKind =
   | 'motzei_shabbat'    /** מוצאי שבת — שבת 20:00 עד ראשון 06:00 */
   | 'weekend'           /** שישי לפני 12:00 (ברכה "סופ"ש מהנה") */
   | 'holiday'           /** חג בודד */
+  | 'holiday_eve'       /** ערב חג — אחרי 16:30 ביום שלפני חג מלא */
+  | 'motzei_chag'       /** מוצאי חג — לילה/בוקר אחרי חג */
   | 'holiday_and_shabbat' /** חג שחל בשבת */
   | 'chol_hamoed'       /** חול המועד פסח/סוכות */
   | 'rosh_chodesh'      /** ראש חודש */
@@ -153,12 +155,20 @@ function holidayForHebrewDate(parts: HebrewParts): { label: string; isMajor: boo
   return null;
 }
 
+/** Date object שמייצג +24h ביחס ל-`now`. */
+function addDays(date: Date, deltaDays: number): Date {
+  return new Date(date.getTime() + deltaDays * 24 * 60 * 60 * 1000);
+}
+
 /**
  * הזיהוי המלא: שבת/מוצ"ש/חג/חוה"מ/יום חול.
  *
  *  - אם חג בשבת — מוחזר 'holiday_and_shabbat' עם תווית חג.
  *  - אם שבת רגילה — 'shabbat' / 'motzei_shabbat' / 'shabbat_eve'.
  *  - 'weekend' לוכד שישי לפני 12:00 — לפני שמגיע "ערב שבת".
+ *  - "ערב חג" — אחרי 16:30 בערב שלפני חג מלא (החג בלוח העברי הוא ב-day+1
+ *    אזרחי), כי החג בפועל מתחיל בשקיעה. הברכה: "ערב X טוב, חג X שמח".
+ *  - "מוצאי חג" — לפני 06:00 לאחר חג מלא — הברכה "מוצאי חג מבורך".
  */
 export function detectHebrewMoment(now: Date = new Date()): HebrewMoment {
   const wd = israelWeekday(now);
@@ -166,6 +176,13 @@ export function detectHebrewMoment(now: Date = new Date()): HebrewMoment {
   const parts = hebrewParts(now);
   const holiday = holidayForHebrewDate(parts);
   const hebrewDate = formatHebrewDate(now);
+
+  /** בדיקת "מחר חג" — לסיכוי של ערב חג אחרי 16:30. */
+  const tomorrowParts = hebrewParts(addDays(now, 1));
+  const tomorrowHoliday = holidayForHebrewDate(tomorrowParts);
+  /** בדיקת "אתמול חג" — לסיכוי של מוצאי חג לפני 06:00. */
+  const yesterdayParts = hebrewParts(addDays(now, -1));
+  const yesterdayHoliday = holidayForHebrewDate(yesterdayParts);
 
   /** שבת קלאסית: יום שבת (6) עד 20:00. */
   const isOnShabbat = wd === 6 && minutes < 20 * 60;
@@ -199,6 +216,37 @@ export function detectHebrewMoment(now: Date = new Date()): HebrewMoment {
     return {
       kind: isCholHamoed ? 'chol_hamoed' : 'holiday',
       holidayLabel: holiday.label,
+      hebrewDate,
+    };
+  }
+  /**
+   * ערב חג: שעון אזרחי עוד לא עבר חצות, אבל בפועל החג כבר נכנס בשקיעה.
+   * אחרי 16:30 בערב לפני חג מלא — להציג "ערב חג, חג X שמח".
+   * (לא חוה"מ — חוה"מ כבר מקבל תווית "מועדים לשמחה" בעצמו.)
+   */
+  if (
+    tomorrowHoliday &&
+    tomorrowHoliday.isMajor &&
+    minutes >= 16 * 60 + 30
+  ) {
+    return {
+      kind: 'holiday_eve',
+      holidayLabel: tomorrowHoliday.label,
+      hebrewDate,
+    };
+  }
+  /**
+   * מוצאי חג: עברנו חצות לתוך יום חדש, אבל אתמול היה חג מלא — עד 06:00
+   * עדיין מציגים "מוצאי חג מבורך".
+   */
+  if (
+    yesterdayHoliday &&
+    yesterdayHoliday.isMajor &&
+    minutes < 6 * 60
+  ) {
+    return {
+      kind: 'motzei_chag',
+      holidayLabel: yesterdayHoliday.label,
       hebrewDate,
     };
   }
