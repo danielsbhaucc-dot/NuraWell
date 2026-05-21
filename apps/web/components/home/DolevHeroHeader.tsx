@@ -4,17 +4,31 @@ import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
-import { getTimeGreeting } from '../../lib/time/greeting';
+import { getPersonalGreeting } from '../../lib/time/greeting';
 
 interface AlmogHeroHeaderProps {
   firstName: string;
   bubbleContent: ReactNode;
+  /** סטטוס משימות פתוחות לתצוגה צבעונית מתחת לברכה ("יש לך X משימות לביצוע"). */
+  taskBadge?: {
+    /** כמה משימות פתוחות שלא בוצעו עדיין היום */
+    pending: number;
+    /** כמה משימות סומנו כבוצעו היום */
+    done: number;
+    /** סה"כ משימות שהמשתמש לקח על עצמו */
+    accepted: number;
+    /** האם הנתונים עוד בטעינה */
+    loading?: boolean;
+  };
 }
 
-/** כותרת בית עם אלמוג — לא דולב */
-export function AlmogHeroHeader({ firstName, bubbleContent }: AlmogHeroHeaderProps) {
+/** כותרת בית עם אלמוג — שיקוף ברכה אישית + סטטוס משימות היום. */
+export function AlmogHeroHeader({ firstName, bubbleContent, taskBadge }: AlmogHeroHeaderProps) {
   const { avatarUrl } = useAlmogAvatarUrl();
-  const heroGreeting = getTimeGreeting(new Date());
+  const greeting = getPersonalGreeting(new Date());
+
+  /** ברירת מחדל אם לא מועבר מבחוץ — לא מציגים שורת משימות */
+  const showTaskBadge = !!taskBadge && !taskBadge.loading;
 
   return (
     <>
@@ -22,7 +36,7 @@ export function AlmogHeroHeader({ firstName, bubbleContent }: AlmogHeroHeaderPro
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className="mb-3.5 rounded-2xl px-4 py-2.5"
+        className="mb-3 rounded-2xl px-4 py-2.5"
         style={{
           background: 'rgba(255,255,255,0.16)',
           border: '1px solid rgba(255,255,255,0.28)',
@@ -31,10 +45,37 @@ export function AlmogHeroHeader({ firstName, bubbleContent }: AlmogHeroHeaderPro
         }}
       >
         <div
-          style={{ fontSize: '19px', color: '#fff', fontWeight: 900, fontFamily: "'Rubik','Heebo',sans-serif", lineHeight: 1.15 }}
+          style={{
+            fontSize: '19px',
+            color: '#fff',
+            fontWeight: 900,
+            fontFamily: "'Rubik','Heebo',sans-serif",
+            lineHeight: 1.15,
+          }}
         >
-          {heroGreeting} {firstName}
+          {greeting.timeGreeting} {firstName}
         </div>
+        {greeting.occasionGreeting ? (
+          <div
+            style={{
+              marginTop: '4px',
+              fontSize: '13px',
+              color: greeting.highlight ? '#FFD97D' : 'rgba(255,255,255,0.9)',
+              fontWeight: 700,
+              letterSpacing: '0.2px',
+              fontFamily: "'Rubik','Heebo',sans-serif",
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <span aria-hidden style={{ fontSize: '13px' }}>
+              {greeting.highlight ? '✦' : '✿'}
+            </span>
+            <span>{greeting.occasionGreeting}</span>
+          </div>
+        ) : null}
+        {showTaskBadge ? <TaskBadgeRow {...taskBadge!} /> : null}
       </motion.div>
 
       <motion.div
@@ -161,3 +202,119 @@ export function AlmogHeroHeader({ firstName, bubbleContent }: AlmogHeroHeaderPro
 
 /** @deprecated השתמש ב-AlmogHeroHeader */
 export const DolevHeroHeader = AlmogHeroHeader;
+
+/**
+ * שורת "יש לך X משימות לביצוע" מעוצבת — מופיעה רק כשיש משימות פתוחות בפועל.
+ * מצב 1 — כל המשימות בוצעו: ירוק חזק "סגרת הכל היום ✦"
+ * מצב 2 — יש משימות פתוחות: כתום-זהב "יש לך X משימות לביצוע היום"
+ * מצב 3 — אין משימות מקובלות: ענן רך "המסע מחכה לך"
+ */
+function TaskBadgeRow({
+  pending,
+  done,
+  accepted,
+}: {
+  pending: number;
+  done: number;
+  accepted: number;
+}) {
+  if (accepted === 0) {
+    return (
+      <div
+        style={{
+          marginTop: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '7px 10px',
+          borderRadius: '12px',
+          background: 'linear-gradient(135deg, rgba(167,243,208,0.22), rgba(110,231,183,0.16))',
+          border: '1px solid rgba(167,243,208,0.4)',
+          fontFamily: "'Rubik','Heebo',sans-serif",
+        }}
+      >
+        <span style={{ fontSize: '14px' }} aria-hidden>
+          ✿
+        </span>
+        <span
+          style={{
+            fontSize: '12px',
+            fontWeight: 700,
+            color: '#ECFDF5',
+            letterSpacing: '0.2px',
+          }}
+        >
+          המסע שלך מחכה — בלחיצה אתה שם
+        </span>
+      </div>
+    );
+  }
+  if (pending === 0) {
+    return (
+      <div
+        style={{
+          marginTop: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '7px 10px',
+          borderRadius: '12px',
+          background:
+            'linear-gradient(135deg, rgba(16,185,129,0.85), rgba(52,211,153,0.7))',
+          border: '1px solid rgba(255,255,255,0.4)',
+          boxShadow: '0 2px 10px rgba(4,120,87,0.25)',
+          fontFamily: "'Rubik','Heebo',sans-serif",
+        }}
+      >
+        <span style={{ fontSize: '14px' }} aria-hidden>
+          ✦
+        </span>
+        <span
+          style={{
+            fontSize: '12px',
+            fontWeight: 800,
+            color: '#FFFFFF',
+            letterSpacing: '0.2px',
+          }}
+        >
+          סגרת היום הכל — {done} מתוך {accepted}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div
+      style={{
+        marginTop: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '7px 10px',
+        borderRadius: '12px',
+        background:
+          'linear-gradient(135deg, rgba(245,158,11,0.42), rgba(251,191,36,0.32))',
+        border: '1px solid rgba(253,224,71,0.55)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)',
+        fontFamily: "'Rubik','Heebo',sans-serif",
+      }}
+    >
+      <span style={{ fontSize: '14px' }} aria-hidden>
+        ⚡
+      </span>
+      <span
+        style={{
+          fontSize: '12px',
+          fontWeight: 800,
+          color: '#FEF3C7',
+          letterSpacing: '0.2px',
+        }}
+      >
+        יש לך{' '}
+        <span style={{ color: '#FFFFFF', fontWeight: 900, fontSize: '14px' }}>
+          {pending}
+        </span>{' '}
+        {pending === 1 ? 'משימה' : 'משימות'} לביצוע היום
+      </span>
+    </div>
+  );
+}

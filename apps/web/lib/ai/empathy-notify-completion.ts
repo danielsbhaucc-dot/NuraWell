@@ -1,13 +1,16 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText, type ModelMessage } from 'ai';
 
-import { stitchModelTextUntilComplete } from './almog-message-complete';
+import {
+  looksLikeCompleteHebrewMessage,
+  stitchModelTextUntilComplete,
+} from './almog-message-complete';
 import { AI_MODELS } from './client';
 import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from './prompts';
 import { publicAppUrlForAiReferer } from '../public-app-url';
 
 /** המשכה קצרה — בלי לשלוח שוב את כל system prompt */
-const NOTIFY_CONTINUE_MAX_TOKENS = 96;
+const NOTIFY_CONTINUE_MAX_TOKENS = 160;
 
 type EmpathyNotifyCompletionOptions = {
   messages: ModelMessage[];
@@ -67,7 +70,7 @@ export async function completeEmpathyNotifyBody(
     lastFinishReason = first.finishReason;
 
     const body = await stitchModelTextUntilComplete(first, runOnce, baseMessages, {
-      maxContinuations: 1,
+      maxContinuations: 2,
       lightweightContinue: async (partial) => {
         const out = await generateText({
           model: openrouterAi.chat(AI_MODELS.empathy),
@@ -91,7 +94,13 @@ export async function completeEmpathyNotifyBody(
       },
     });
 
-    if (body) return body;
+    if (body) {
+      const trimmed = body.trim();
+      if (!looksLikeCompleteHebrewMessage(trimmed) && trimmed.length > 8) {
+        return `${trimmed}…`;
+      }
+      return trimmed;
+    }
 
     console.warn('[empathy-notify] empty completion', {
       label: options.label,

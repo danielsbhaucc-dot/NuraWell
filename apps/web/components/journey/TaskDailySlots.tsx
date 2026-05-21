@@ -12,6 +12,7 @@ import {
   slotsForSchedule,
   isTaskActiveToday,
   scheduleLabel,
+  type UserMealProfile,
 } from '../../lib/journey/task-schedule';
 
 interface TaskDailySlotsProps {
@@ -21,6 +22,8 @@ interface TaskDailySlotsProps {
   todayExecutions?: ReadonlyArray<Pick<JourneyTaskExecution, 'task_id' | 'slot' | 'date_key' | 'completed_at'>>;
   /** קולבק בעקבות עדכון מקומי — מאפשר לרענן רשימה שמוזרקת מבחוץ */
   onExecutionsChanged?: () => void;
+  /** פרופיל ארוחות של המשתמש — נדרש כש-task.meal_target === 'all' */
+  userMealProfile?: UserMealProfile | null;
 }
 
 type SlotState = Map<string, { completed: boolean; busy: boolean; completedAt: string | null }>;
@@ -33,11 +36,27 @@ export function TaskDailySlots({
   stepId,
   todayExecutions,
   onExecutionsChanged,
+  userMealProfile,
 }: TaskDailySlotsProps) {
-  const { schedule, times_per_day, weekly_day } = resolveTaskSchedule(task);
+  const { schedule, times_per_day, weekly_day, meal_timing, meal_target } = resolveTaskSchedule(
+    task,
+    userMealProfile ?? null
+  );
   const slots = useMemo(() => slotsForSchedule(schedule, times_per_day), [schedule, times_per_day]);
   const activeToday = useMemo(() => isTaskActiveToday(task), [task]);
-  const dateKey = useMemo(() => jerusalemDateKey(), []);
+  /**
+   * מתעדכן באוטומטיות בחצות (Asia/Jerusalem) באמצעות timer חוץ-חיצוני שמופעל
+   * אחת ל-דקה ובודק אם dateKey השתנה. כך משימה שנותרה פתוחה בטאב לא תכלול
+   * את הסימונים של היום הקודם.
+   */
+  const [dateKey, setDateKey] = useState<string>(() => jerusalemDateKey());
+  useEffect(() => {
+    const id = setInterval(() => {
+      const next = jerusalemDateKey();
+      setDateKey((prev) => (prev === next ? prev : next));
+    }, 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const [state, setState] = useState<SlotState>(() => {
     const m: SlotState = new Map();
@@ -138,6 +157,17 @@ export function TaskDailySlots({
             return next;
           });
           onExecutionsChanged?.();
+          if (!currentlyCompleted) {
+            const newCompleted = completedCount + 1;
+            if (newCompleted >= total && total > 0) {
+              void fetch('/api/v1/almog-task-celebration', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ step_id: stepId, task_id: task.id }),
+              }).catch(() => {});
+            }
+          }
         } else {
           /** מציג את הסיבה האמיתית — חשוב אם הטבלה חסרה ב-DB / RLS חוסם. */
           let serverMsg = `שגיאה בשמירה (HTTP ${res.status})`;
@@ -200,7 +230,7 @@ export function TaskDailySlots({
         }}
       >
         <RotateCcw className="inline w-3.5 h-3.5 ml-1 -mt-0.5 text-emerald-700" />
-        משימה שבועית — מופיעה לסימון רק ביום שנקבע ({scheduleLabel(schedule, times_per_day, weekly_day)}).
+        משימה שבועית — מופיעה לסימון רק ביום שנקבע ({scheduleLabel(schedule, times_per_day, weekly_day, meal_timing, meal_target)}).
       </div>
     );
   }
@@ -220,7 +250,7 @@ export function TaskDailySlots({
             סימון יומי
           </span>
           <span className="text-[11px] font-semibold text-emerald-800/70">
-            {scheduleLabel(schedule, times_per_day, weekly_day)}
+            {scheduleLabel(schedule, times_per_day, weekly_day, meal_timing, meal_target)}
           </span>
         </div>
         <span
@@ -261,7 +291,7 @@ export function TaskDailySlots({
                 {slotEmoji(slot)}
               </span>
               <span className="text-[11px] font-black leading-tight">
-                {slotLabel(slot)}
+                {slotLabel(slot, schedule === 'per_meal' ? meal_timing : undefined)}
               </span>
               {cell.completed ? (
                 <Check

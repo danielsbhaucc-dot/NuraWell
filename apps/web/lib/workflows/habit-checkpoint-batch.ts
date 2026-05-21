@@ -6,6 +6,8 @@ import {
   fetchUserIdsWithChatToday,
   mergeHabitsDoneTodayFromRows,
 } from '../ai/almog-daily-context';
+import { isHabitDoneTodayFromTasks } from '../journey/habit-progress';
+import { parseJourneyTasksFull } from '../journey/journey-report-parse';
 import {
   filterHabitsForSlot,
   jerusalemCalendarParts,
@@ -54,6 +56,8 @@ type ParsedTask = {
   schedule: JourneyTaskSchedule;
   times_per_day: number;
   weekly_day: number;
+  meal_timing: 'before' | 'after';
+  meal_target: 'fixed' | 'all';
 };
 
 type TaskStatusEntry = {
@@ -78,6 +82,8 @@ function parseJourneyTasksJson(raw: unknown): ParsedTask[] {
         typeof tpdRaw === 'number' && tpdRaw >= 1 && tpdRaw <= 6 ? tpdRaw : null,
       weekly_day:
         typeof wdRaw === 'number' && wdRaw >= 0 && wdRaw <= 6 ? wdRaw : null,
+      meal_timing: row.meal_timing === 'after' ? 'after' : 'before',
+      meal_target: row.meal_target === 'all' ? 'all' : 'fixed',
     });
     out.push({
       id,
@@ -85,6 +91,8 @@ function parseJourneyTasksJson(raw: unknown): ParsedTask[] {
       schedule: resolved.schedule,
       times_per_day: resolved.times_per_day,
       weekly_day: resolved.weekly_day,
+      meal_timing: resolved.meal_timing,
+      meal_target: resolved.meal_target,
     });
   }
   return out;
@@ -139,6 +147,35 @@ function pendingSlotLabelsForToday(
   if (task.schedule === 'weekly' && jerusalemWeekday !== task.weekly_day) return [];
   const expected = slotsForSchedule(task.schedule, task.times_per_day);
   return expected.filter((s) => !doneSlots.has(s));
+}
+
+/** הרגלים שבוצעו היום — לפי משימות (לא checkbox ידני). */
+function habitsDoneTodayFromTaskRows(
+  rows: ProgressRow[],
+  userTodayDone: ReadonlyMap<string, ReadonlySet<string>>,
+  todayKey: string
+): Set<string> {
+  const done = new Set<string>();
+  for (const r of rows) {
+    if (!r.journey_steps) continue;
+    const habits = parseJourneyHabitsJson(r.journey_steps.habits);
+    const tasks = parseJourneyTasksFull(r.journey_steps.tasks);
+    const statuses = asStatusMap(r.task_statuses);
+    const executions: Array<{ task_id: string; date_key: string; slot: string }> = [];
+    for (const [taskId, slots] of userTodayDone) {
+      for (const slot of slots) {
+        executions.push({ task_id: taskId, date_key: todayKey, slot });
+      }
+    }
+    for (const h of habits) {
+      if (
+        isHabitDoneTodayFromTasks(tasks, statuses as Record<string, { status?: string; execution_done?: boolean }>, executions, todayKey)
+      ) {
+        done.add(h.id);
+      }
+    }
+  }
+  return done;
 }
 
 function asStatusMap(raw: unknown): Record<string, TaskStatusEntry> {
@@ -217,8 +254,19 @@ export function collectPendingAcceptedTasks(
         title: t.title,
         stepTitle,
         pendingSlots: pending.length > 0 ? pending : undefined,
-        pendingSlotLabels: pending.length > 0 ? pending.map((s) => slotLabelHe(s)) : undefined,
-        scheduleLabel: scheduleLabelHe(t.schedule, t.times_per_day, t.weekly_day),
+        pendingSlotLabels:
+          pending.length > 0
+            ? pending.map((s) =>
+                slotLabelHe(s, t.schedule === 'per_meal' ? t.meal_timing : undefined)
+              )
+            : undefined,
+        scheduleLabel: scheduleLabelHe(
+          t.schedule,
+          t.times_per_day,
+          t.weekly_day,
+          t.meal_timing,
+          t.meal_target
+        ),
       });
     }
   }
@@ -359,15 +407,16 @@ export function planHabitCheckpointTriggers(
   const out: HabitCheckpointPlanItem[] = [];
 
   for (const [userId, rows] of byUser) {
+    const userTodayDone = todayExecutionsByUser.get(userId) ?? new Map<string, Set<string>>();
     const habits = collectUserJourneyHabits(rows);
     const slotHabits = habits.length > 0 ? filterHabitsForSlot(habits, slot, weekday) : [];
-    const habitsDoneToday = mergeHabitsDoneTodayFromRows(rows);
+    const habitsDoneToday = habitsDoneTodayFromTaskRows(rows, userTodayDone, dateKey);
+    /** תאימות לאחור: סימון ידני ישן ב-habits_progress */
+    for (const id of mergeHabitsDoneTodayFromRows(rows)) habitsDoneToday.add(id);
     const due = slotHabits.filter((h) => !habitsDoneToday.has(h.id));
     const completedTodayHabits = habits
       .filter((h) => habitsDoneToday.has(h.id))
       .map((h) => ({ id: h.id, title: h.title }));
-
-    const userTodayDone = todayExecutionsByUser.get(userId) ?? new Map<string, Set<string>>();
     const pendingTasks = collectPendingAcceptedTasks(rows, {
       todayDoneByTask: userTodayDone,
       cronSlot: slot,
@@ -459,7 +508,8 @@ export function appendPresenceReinforceFromChat(
     });
     if (pendingTasks.length > 0) continue;
 
-    const habitsDoneToday = mergeHabitsDoneTodayFromRows(rows);
+    const habitsDoneToday = habitsDoneTodayFromTaskRows(rows, userTodayDone, dateKey);
+    for (const id of mergeHabitsDoneTodayFromRows(rows)) habitsDoneToday.add(id);
     const slotHabits = filterHabitsForSlot(habits, slot, weekday);
     const due = slotHabits.filter((h) => !habitsDoneToday.has(h.id));
     if (due.length > 0) continue;
