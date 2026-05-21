@@ -82,6 +82,17 @@ export function getPersonalGreeting(now: Date = new Date()): PersonalGreeting {
       occasionGreeting = moment.holidayLabel ?? 'חג שמח';
       highlight = true;
       break;
+    case 'holiday_eve':
+      /** ערב חג: "ערב חג שבועות, חג שמח" / "ערב חג סוכות, חג שמח". */
+      occasionGreeting = moment.holidayLabel
+        ? `ערב חג • ${moment.holidayLabel}`
+        : 'ערב חג, חג שמח';
+      highlight = true;
+      break;
+    case 'motzei_chag':
+      occasionGreeting = 'מוצאי חג מבורך';
+      highlight = true;
+      break;
     case 'holiday_and_shabbat':
       /** "שבת שלום וחג סוכות שמח" וכו'. אם יש tag "חג" בתווית — שילוב מסודר. */
       occasionGreeting = moment.holidayLabel
