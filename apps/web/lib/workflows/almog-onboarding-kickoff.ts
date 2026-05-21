@@ -5,6 +5,7 @@ import {
   readJourneyFollowUp,
 } from '../ai/journey-follow-up-promise';
 import type { AiUserContext } from '../ai/memory';
+import { isQuietWindow } from '../time/hebrew-calendar';
 import { fetchJourneyCompanionContext } from './journey-companion';
 import { sendJourneyCompanionNudge } from './send-journey-companion-nudge';
 
@@ -40,10 +41,19 @@ function israelHourNow(now: Date = new Date()): number {
 }
 
 /**
- * חישוב הזמן הבא שבו מותר לשלוח התראה (09:00 ישראל הקרוב).
- * אם השעה הנוכחית בחלון — מחזיר null (אפשר עכשיו).
+ * חישוב הזמן הבא שבו מותר לשלוח התראה.
+ *
+ *  - בודק קודם את `isQuietWindow` — שבת/חג/ערב חג/יום זיכרון/יוה"כ/ת"ב/לילה.
+ *    אם זמן שקט: מחזיר את ה-retryAfterIso שלו (בד"כ הבוקר שאחרי).
+ *  - אם השעה בין 09:00-22:00 שעון ישראל — מחזיר null (אפשר עכשיו).
+ *  - אחרת — דוחים ל-09:00 הבא.
  */
 function computeDeferUntilIso(now: Date = new Date()): string | null {
+  const quiet = isQuietWindow(now);
+  if (quiet.quiet && quiet.retryAfterIso) {
+    return quiet.retryAfterIso;
+  }
+
   const hour = israelHourNow(now);
   if (hour >= NUDGE_HOUR_START && hour < NUDGE_HOUR_END) {
     return null;

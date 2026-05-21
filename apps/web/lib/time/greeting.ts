@@ -71,6 +71,8 @@ export type PersonalGreeting = {
  *   major_fast (יוה"כ)→ "ערב, [שם]" + "גמר חתימה טובה, צום קל..."
  *   minor_fast        → "בוקר טוב, [שם]" + "צום י"ז בתמוז — צום קל"
  *   rosh_chodesh      → "בוקר טוב, [שם]" + "ראש חודש מבורך, חודש של חידוש"
+ *   aseret_y. teshuvah→ "בוקר טוב, [שם]" + "עשרת ימי תשובה — ימים של חשבון נפש"
+ *   chol_hamoed       → "בוקר טוב, [שם]" + "מועדים לשמחה — חול המועד..."
  *   weekend           → "בוקר טוב, [שם]" + "סוף שבוע מהנה"
  */
 export function getPersonalGreeting(now: Date = new Date()): PersonalGreeting {
