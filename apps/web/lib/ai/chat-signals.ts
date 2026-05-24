@@ -8,18 +8,27 @@
  */
 
 import { detectRelapseInMessage } from './roller-coaster';
-import { updateAiContext, type AiUserContext } from './memory';
+import { israelDateKeyForAiContext, updateAiContext, type AiUserContext } from './memory';
 
 export type ChatSignals = {
   blocker_mentioned: boolean;
   /** תווית קצרה לטון המנטור */
   main_blocker?: string;
   avoid_push_requested: boolean;
+  daily_availability_low_requested: boolean;
   emotional_hint?: 'heavy' | 'low_energy' | 'frustrated' | 'resigned' | 'self_blame';
 };
 
 const AVOID_PUSH_RE =
   /(?:אל\s+תשלח|בלי\s+התראות|בלי\s+נוטיפיקצ|עצור\s+התראות|תפסיק\s+(?:לכתוב|להטריד)|לא\s+רוצה\s+(?:התראות|עוד\s+הודעות)|mute|השתק)/i;
+
+/**
+ * דגל זמני ליום אחד בלבד: "היום/כרגע אני לא זמין".
+ * שונה מ-AVOID_PUSH_RE: לא מבטל התראות קבוע, רק מוריד עומס לבוקר/צהריים
+ * ומשאיר מקום למגע ערב דואג.
+ */
+const DAILY_AVAILABILITY_LOW_RE =
+  /(?:(?:היום|כרגע|עכשיו|השבוע)\s*)?(?:אני\s*)?(?:לא\s+זמי(?:ן|נה)|אין\s+לי\s+(?:ראש|כוח|זמן|אנרגיה)|עמוס(?:ה)?\s+(?:מדי|מאוד|רצח)|מוצ(?:ף|פת)|יום\s+(?:מטורף|עמוס|קשוח|קשה)|פחות\s+לחפור|אל\s+תחפור|עזוב\s+אותי\s+היום)/i;
 
 const THEME_RULES: Array<{ test: RegExp; label: string }> = [
   { test: /עבודה|משרד|בוס|משמרות?/i, label: 'עומס בעבודה' },
@@ -81,10 +90,16 @@ function normalizeMsg(t: string): string {
 export function detectChatSignals(userMessage: string): ChatSignals {
   const msg = normalizeMsg(userMessage);
   if (!msg || msg.length < 4) {
-    return { blocker_mentioned: false, avoid_push_requested: false };
+    return {
+      blocker_mentioned: false,
+      avoid_push_requested: false,
+      daily_availability_low_requested: false,
+    };
   }
 
   const avoid_push_requested = AVOID_PUSH_RE.test(msg);
+  const daily_availability_low_requested =
+    !avoid_push_requested && DAILY_AVAILABILITY_LOW_RE.test(msg);
 
   const explicitBlockerPhrase =
     /(?:חוסם|חסם|מה\s+שעוצר|מה\s+שחוסם|הבעיה\s+(?:שלי\s+)?(?:היא|זה)|לא\s+יכול\s+בגלל)/i.test(
@@ -129,6 +144,7 @@ export function detectChatSignals(userMessage: string): ChatSignals {
     blocker_mentioned,
     main_blocker: blocker_mentioned ? main_blocker : undefined,
     avoid_push_requested,
+    daily_availability_low_requested,
     emotional_hint,
   };
 }
@@ -147,6 +163,13 @@ export async function applyChatSignalsFromUserMessage(
 
   if (signals.avoid_push_requested) {
     patch.avoid_push = true;
+  }
+
+  if (signals.daily_availability_low_requested) {
+    patch.daily_availability = {
+      date: israelDateKeyForAiContext(),
+      level: 'low',
+    };
   }
 
   if (signals.blocker_mentioned && signals.main_blocker) {

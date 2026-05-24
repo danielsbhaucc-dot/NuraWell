@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import { Client as WorkflowClient } from '@upstash/workflow';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
 import { isAvoidPushActive } from '../../../../../../lib/ai/avoid-push';
+import {
+  isDailyAvailabilityLowToday,
+  type AiUserContext,
+} from '../../../../../../lib/ai/memory';
 import { normalizeCheckInTimes } from '../../../../../../lib/ai/onboarding-check-in-time';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 import { habitCheckpointSlotSchema } from '../../../../../../lib/workflows/almog-habit-checkpoint-payload';
@@ -115,6 +119,7 @@ async function runHabitCheckpointCron(request: Request) {
 
   const userIds = [...new Set(plan.map((p) => p.userId))];
   const avoidIds = new Set<string>();
+  const lowAvailabilityIds = new Set<string>();
   const personalizedScheduleIds = new Set<string>();
 
   if (userIds.length > 0) {
@@ -133,6 +138,14 @@ async function runHabitCheckpointCron(request: Request) {
       const ctx = row.ai_context as Record<string, unknown> | null | undefined;
       if (isAvoidPushActive(ctx)) avoidIds.add(id);
       if (
+        slot !== 'evening' &&
+        isDailyAvailabilityLowToday(
+          (ctx as AiUserContext | null | undefined)?.daily_availability
+        )
+      ) {
+        lowAvailabilityIds.add(id);
+      }
+      if (
         row.onboarding_completed === true &&
         normalizeCheckInTimes(row.ai_check_in_times).length > 0
       ) {
@@ -142,7 +155,12 @@ async function runHabitCheckpointCron(request: Request) {
   }
 
   const eligible = plan
-    .filter((p) => !avoidIds.has(p.userId) && !personalizedScheduleIds.has(p.userId))
+    .filter(
+      (p) =>
+        !avoidIds.has(p.userId) &&
+        !lowAvailabilityIds.has(p.userId) &&
+        !personalizedScheduleIds.has(p.userId)
+    )
     .slice(0, maxTriggers);
   const workflowBase = workflowPublicBaseUrl();
   const workflowUrl = `${workflowBase}/api/workflows/almog-habit-checkpoint`;
@@ -154,6 +172,7 @@ async function runHabitCheckpointCron(request: Request) {
       slot,
       planned_users: plan.length,
       skipped_avoid_push: avoidIds.size,
+      skipped_daily_low_availability: lowAvailabilityIds.size,
       skipped_personalized_almog: personalizedScheduleIds.size,
       would_trigger: eligible.length,
       workflow_url: workflowUrl,
@@ -190,6 +209,7 @@ async function runHabitCheckpointCron(request: Request) {
     slot,
     planned_users: plan.length,
     skipped_avoid_push: avoidIds.size,
+    skipped_daily_low_availability: lowAvailabilityIds.size,
     skipped_personalized_almog: personalizedScheduleIds.size,
     workflow_triggers: triggered,
     eligible_after_avoid: eligible.length,

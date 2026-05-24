@@ -112,7 +112,16 @@ const ALLOWED_CONTEXT_PATCH_KEYS = new Set([
   'dropout_risk',
   'current_mood_signal',
   'notes',
+  'current_goal',
+  'current_focus',
+  'pending_focus',
+  'struggles',
 ]);
+
+const ARRAY_CONTEXT_PATCH_KEYS = new Set(['pending_focus', 'struggles']);
+
+const STRING_ARRAY_ITEM_MAX_LEN = 200;
+const STRING_ARRAY_MAX_ITEMS = 3;
 
 async function daysSinceLastWeightKg(admin: AdminDb, userId: string): Promise<number | null> {
   const { data, error } = await admin
@@ -127,6 +136,13 @@ async function daysSinceLastWeightKg(admin: AdminDb, userId: string): Promise<nu
   return daysSinceIso(data.measured_at as string);
 }
 
+function sanitizeStringArrayItem(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const t = raw.replace(/\s+/g, ' ').trim();
+  if (!t) return null;
+  return t.length > STRING_ARRAY_ITEM_MAX_LEN ? t.slice(0, STRING_ARRAY_ITEM_MAX_LEN - 1) + '…' : t;
+}
+
 function parseAnalysisJson(raw: string): Partial<AiUserContext> {
   let t = raw.trim();
   if (t.startsWith('```')) {
@@ -136,6 +152,20 @@ function parseAnalysisJson(raw: string): Partial<AiUserContext> {
   const out: Partial<AiUserContext> = {};
   for (const key of ALLOWED_CONTEXT_PATCH_KEYS) {
     const v = parsed[key];
+
+    if (ARRAY_CONTEXT_PATCH_KEYS.has(key)) {
+      if (!Array.isArray(v)) continue;
+      const cleaned = v
+        .map(sanitizeStringArrayItem)
+        .filter((item): item is string => item !== null)
+        .slice(0, STRING_ARRAY_MAX_ITEMS);
+      if (cleaned.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (out as any)[key] = cleaned;
+      }
+      continue;
+    }
+
     if (typeof v === 'string' && v.trim()) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (out as any)[key] = v.trim();

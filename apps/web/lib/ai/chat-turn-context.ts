@@ -42,6 +42,9 @@ export function formatChatSignalsPromptBlock(
   if (signals.avoid_push_requested) {
     parts.push('פחות-דחיפה');
   }
+  if (signals.daily_availability_low_requested) {
+    parts.push('זמינות-נמוכה-היום');
+  }
   if (parts.length === 0) return null;
   return `[אות-עכשיו] ${parts.join('·')} — ולידציה+שאלה; בלי "נסה מחר" בלי צעד עכשיו.`;
 }
