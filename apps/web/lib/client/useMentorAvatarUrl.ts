@@ -11,8 +11,17 @@ export type MentorAvatarMeta = {
   hasCustom: boolean;
   ready: boolean;
   cdnConfigured: boolean;
+  cdnHostname: string | null;
   refresh: () => Promise<void>;
 };
+
+function hostnameFromUrl(raw: string): string | null {
+  try {
+    return new URL(raw).hostname;
+  } catch {
+    return null;
+  }
+}
 
 export function useMentorAvatarUrl(mentorId: MentorId, refreshToken = 0): MentorAvatarMeta {
   const mentor = MENTORS[mentorId];
@@ -64,6 +73,7 @@ export function useMentorAvatarUrl(mentorId: MentorId, refreshToken = 0): Mentor
     hasCustom,
     ready,
     cdnConfigured,
+    cdnHostname: cdnConfigured ? hostnameFromUrl(avatarUrl) : null,
     refresh,
   };
 }

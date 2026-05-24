@@ -172,13 +172,13 @@ export async function countUnansweredAlmogTouches(
     .order('created_at', { ascending: true })
     .limit(80);
 
-  const replyTimes = (userMsgs ?? [])
+  const replyTimes = ((userMsgs ?? []) as Array<{ created_at?: string }>)
     .map((r: { created_at?: string }) => new Date(String(r.created_at)).getTime())
-    .filter((t) => Number.isFinite(t));
+    .filter((t: number) => Number.isFinite(t));
 
   let unanswered = 0;
   for (const sentMs of touchTimes) {
-    const replied = replyTimes.some((rt) => rt > sentMs);
+    const replied = replyTimes.some((rt: number) => rt > sentMs);
     if (!replied) unanswered += 1;
   }
   return unanswered;

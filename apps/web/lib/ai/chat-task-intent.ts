@@ -18,6 +18,8 @@ export type TaskIntentDetection = {
   taskTitle?: string;
 };
 
+type TaskIntentPendingTask = Pick<PendingAcceptedTask, 'id' | 'title'>;
+
 const TASK_NOT_DONE_RE =
   /(?:לא\s+(?:עשיתי|ביצעתי|הספקתי)|עדיין\s+לא|שכחתי|אעשה\s+מחר|מחר\s+אעשה)/i;
 
@@ -38,7 +40,7 @@ function messageReferencesTask(msg: string, title: string): boolean {
 
 export function detectTaskIntent(
   userMessage: string,
-  pendingTasks: PendingAcceptedTask[]
+  pendingTasks: readonly TaskIntentPendingTask[]
 ): TaskIntentDetection {
   const msg = normalizeMsg(userMessage);
   if (msg.length < 5 || pendingTasks.length === 0) return { kind: 'none' };

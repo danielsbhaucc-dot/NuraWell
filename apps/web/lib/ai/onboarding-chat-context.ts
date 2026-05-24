@@ -10,8 +10,8 @@ export type OnboardingProfileForChat = {
   main_obstacle_detail: string | null;
   wake_up_time: string | null;
   sleep_time: string | null;
-  dinner_time: string | null;
-  meal_schedule: Array<{ time: string; slot: string; label: string }> | null;
+  dinner_time?: string | null;
+  meal_schedule?: Array<{ time: string; slot: string; label: string }> | null;
   preferred_channel: string | null;
   ai_check_in_times: string[] | null;
   onboarding_completed: boolean | null;
@@ -40,7 +40,7 @@ const OBSTACLE_HE: Record<MainObstacle, string> = {
   other: 'אחר',
 };
 
-function formatTimeField(value: string | null): string | null {
+function formatTimeField(value: string | null | undefined): string | null {
   if (!value?.trim()) return null;
   const raw = value.trim();
   if (/^\d{2}:\d{2}$/.test(raw)) return raw;

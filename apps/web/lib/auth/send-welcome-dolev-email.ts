@@ -42,7 +42,7 @@ export async function sendWelcomeDolevEmail(userId: string): Promise<SendWelcome
   if (!email) {
     return { ok: false, reason: 'no_email' };
   }
-  if (!authUser.user.email_confirmed_at) {
+  if (!authUser.user?.email_confirmed_at) {
     return { ok: false, reason: 'email_not_confirmed' };
   }
 

@@ -124,13 +124,13 @@ export async function fetchTodayAlmogTouches(
     .order('created_at', { ascending: true })
     .limit(24);
 
-  const replyTimes = (userMsgs ?? [])
+  const replyTimes = ((userMsgs ?? []) as Array<{ created_at?: string }>)
     .map((r: { created_at?: string }) => r.created_at)
     .filter((t): t is string => typeof t === 'string');
 
-  return touches.map((t) => {
+  return touches.map((t: Omit<TodayAlmogTouch, 'userRepliedSince'>) => {
     const sentMs = new Date(t.sentAt).getTime();
-    const userRepliedSince = replyTimes.some((rt) => new Date(rt).getTime() > sentMs);
+    const userRepliedSince = replyTimes.some((rt: string) => new Date(rt).getTime() > sentMs);
     return { ...t, userRepliedSince };
   });
 }

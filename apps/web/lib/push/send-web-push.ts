@@ -4,6 +4,7 @@
 
 import 'server-only';
 
+import type { PushSubscription } from 'web-push';
 import type { WebPushSubscriptionJson } from './types';
 
 export function isWebPushConfigured(): boolean {
@@ -31,7 +32,7 @@ export async function sendWebPushToSubscription(
     );
 
     await webpush.sendNotification(
-      subscription as webpush.PushSubscription,
+      subscription as PushSubscription,
       JSON.stringify({
         title: payload.title,
         body: payload.body,

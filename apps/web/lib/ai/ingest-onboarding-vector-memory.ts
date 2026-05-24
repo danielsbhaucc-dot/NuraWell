@@ -37,7 +37,6 @@ export async function ingestOnboardingIntoVectorMemory(
     const id = await stableOnboardingVectorId(userId, fact.key);
     await upsertUserMemoryVector({
       id,
-      userId,
       vector: vec,
       metadata: {
         userId,

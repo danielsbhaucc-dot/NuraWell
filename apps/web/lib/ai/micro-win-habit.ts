@@ -12,6 +12,8 @@ export type MicroWinHabitResult =
   | { ok: true; stepId: string; habitId: string; habitTitle: string }
   | { ok: false; error: 'no_active_step' | 'no_habit' | 'save_failed'; message: string };
 
+type MicroWinHabitError = Extract<MicroWinHabitResult, { ok: false }>['error'];
+
 function pickMicroWinHabit(
   habits: ReturnType<typeof parseJourneyHabitsJson>,
   preferredHabitId?: string
@@ -34,7 +36,7 @@ async function loadActiveStepHabits(
   userId: string
 ): Promise<
   | { ok: true; stepId: string; habits: ReturnType<typeof parseJourneyHabitsJson>; prevHp: Record<string, boolean[]> }
-  | { ok: false; error: MicroWinHabitResult['error']; message: string }
+  | { ok: false; error: MicroWinHabitError; message: string }
 > {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: progress, error: progErr } = await (supabase as any)
