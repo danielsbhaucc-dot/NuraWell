@@ -131,6 +131,53 @@ export function isDailyAvailabilityLowToday(
   return availability.date === israelDateKeyForAiContext(now);
 }
 
+function compactHumanList(items: unknown, maxItems = 3): string[] {
+  if (!Array.isArray(items)) return [];
+  return items
+    .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    .map((item) => item.replace(/\s+/g, ' ').trim())
+    .slice(0, maxItems);
+}
+
+/**
+ * Working Memory לצ'אט — השכבה האנושית הדחוסה מתוך profiles.ai_context.
+ * זה לא RAG ולא היסטוריית שיחה: זה "מה אלמוג אמור לזכור על האדם עכשיו".
+ */
+export function formatAiWorkingMemoryPromptBlock(
+  ctx: AiUserContext | null | undefined,
+  now: Date = new Date()
+): string | null {
+  if (!ctx) return null;
+
+  const lines: string[] = ['[זיכרון עובד — מקור אמת אישי]'];
+  if (ctx.current_goal) lines.push(`יעד נוכחי: ${ctx.current_goal}`);
+  if (ctx.current_focus) lines.push(`פוקוס נוכחי: ${ctx.current_focus}`);
+  if (ctx.main_blocker) lines.push(`חסם שעלה בצ'אט: ${ctx.main_blocker}`);
+  if (ctx.current_mood_signal && ctx.current_mood_signal !== 'unknown') {
+    lines.push(`מצב רגשי אחרון: ${ctx.current_mood_signal}`);
+  }
+
+  const pending = compactHumanList(ctx.pending_focus);
+  if (pending.length > 0) {
+    lines.push(`פעולות שעל הראש שלו: ${pending.join(' · ')}`);
+  }
+
+  const struggles = compactHumanList(ctx.struggles);
+  if (struggles.length > 0) {
+    lines.push(`חסמים חוזרים: ${struggles.join(' · ')}`);
+  }
+
+  if (ctx.notes) lines.push(`תובנת רקע: ${ctx.notes}`);
+  if (ctx.tone_notes) lines.push(`טון שעובד איתו: ${ctx.tone_notes}`);
+  if (isDailyAvailabilityLowToday(ctx.daily_availability, now)) {
+    lines.push('היום זמינות נמוכה: האט קצב, בלי לחפור ובלי לדחוף משימות.');
+  }
+
+  if (lines.length === 1) return null;
+  lines.push('השתמש בזה בעדינות ובקיצור; אל תגיד "אני רואה בזיכרון" ואל תציג רשימת דאטה.');
+  return lines.join('\n');
+}
+
 /**
  * בונה קונטקסט דחוס למודל - 3 שכבות, בערך עד ~500 טוקנים.
  * לא שולח raw data של תמלילים אלא תקצירי התנהגות.
