@@ -9,8 +9,9 @@ import { AI_MODELS } from './client';
 import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from './prompts';
 import { publicAppUrlForAiReferer } from '../public-app-url';
 
-/** המשכה קצרה — בלי לשלוח שוב את כל system prompt */
+/** המשכה קצרה — עם system prompt כדי לשמור על פרסונת אלמוג גם כשמודל נחתך. */
 const NOTIFY_CONTINUE_MAX_TOKENS = 160;
+const MIN_NOTIFY_BODY_CHARS = 6;
 
 type EmpathyNotifyCompletionOptions = {
   messages: ModelMessage[];
@@ -78,10 +79,11 @@ export async function completeEmpathyNotifyBody(
           maxOutputTokens: NOTIFY_CONTINUE_MAX_TOKENS,
           providerOptions: { openai: { reasoningEffort: 'low' } },
           messages: [
+            ...baseMessages.filter((m) => m.role === 'system'),
             {
               role: 'user',
               content:
-                'המשך בעברית את גוף ההודעה לנוטיפיקציה מהמקום שנקטע. אל תחזור על התחילה. סיים משפט אחד.',
+                'המשך בעברית את גוף ההודעה לנוטיפיקציה מהמקום שנקטע. אל תחזור על התחילה. החזר רק את ההמשך, וסיים משפט אחד שלם.',
             },
             { role: 'assistant', content: partial },
             {
@@ -96,10 +98,25 @@ export async function completeEmpathyNotifyBody(
 
     if (body) {
       const trimmed = body.trim();
-      if (!looksLikeCompleteHebrewMessage(trimmed) && trimmed.length > 8) {
-        return `${trimmed}…`;
+      if (trimmed.length < MIN_NOTIFY_BODY_CHARS) {
+        console.warn('[empathy-notify] unusably short completion', {
+          label: options.label,
+          attempt,
+          length: trimmed.length,
+          finishReason: first.finishReason,
+        });
+        continue;
       }
-      return trimmed;
+      if (looksLikeCompleteHebrewMessage(trimmed)) {
+        return trimmed;
+      }
+      console.warn('[empathy-notify] incomplete completion', {
+        label: options.label,
+        attempt,
+        length: trimmed.length,
+        finishReason: first.finishReason,
+      });
+      continue;
     }
 
     console.warn('[empathy-notify] empty completion', {

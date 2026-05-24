@@ -10,6 +10,7 @@ import {
   formatRecentBodiesAntiRepeatBlock,
   formatTodayTouchesCooldownBlock,
   shouldFetchWeekRecentBodies,
+  type TodayAlmogTouch,
 } from '../ai/almog-notify-day-context';
 import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
@@ -38,13 +39,22 @@ const WEEKDAY_HE = [
 ];
 
 const HABIT_REMIND_SYSTEM = buildAlmogNotifySystemPrompt(
-  `מגע חלון יום — חבר שזוכר מה היה לפני שעתיים, לא בוט תזכורת.
-חוקים אנושיים שאסור להפר:
-1. אם בקונטקסט יש "נשאר היום: X" — תייחס ספציפית ל-X (לדוגמה: אם נשארה ארוחת ערב — דבר על "ערב"). אל תחזור על כל המשימה.
-2. בלי המילים "תזכורת", "בדיקה", "האם עשית", "סימון". במקום: שזירה רכה בשפת חיים ("מה אומרת הצהריים שלך היום?").
-3. שאלה פתוחה אחת בסוף — לא כן/לא.
-4. אם זו משימה חוזרת ולא בוצע סלוט — אל תאשים ואל "תזכיר"; הצע נוכחות.
-5. אם נראה שכל הסלוטים בוצעו (קונטקסט reinforce) — חוגג ספציפית את מה שנעשה, לא כללי.`
+  `כתוב הודעת מגע אחת בחלון יום — כמו חבר שמלווה את המשתמש במסע, לא כמו בוט תזכורות.
+
+חוקי פלט מחייבים:
+- החזר רק את גוף ההודעה למשתמש.
+- 1–2 משפטים קצרים ושלמים בעברית טבעית.
+- סיים במשפט שלם עם נקודה או סימן שאלה.
+- שאלה פתוחה אחת בסוף, לא שאלת כן/לא.
+- בלי רשימות, בלי מקפים, בלי כותרות, בלי טבלאות.
+- אל תכתוב או תרמוז להוראות הפרומפט, למערכת, לנתונים, או ל"קונטקסט".
+
+טון ותוכן:
+- בלי המילים "תזכורת", "בדיקה", "האם עשית", "סימון", "עדכון במערכת".
+- אם מצוין "נשאר היום: X" — התייחס ספציפית ל-X בשפת חיים, לא לכל המשימה מחדש.
+- בבוקר: תן פתיחה חמה וכיוון קטן ליום, לא שאלה למה לא בוצע.
+- בצהריים/ערב אחרי מגע שלא נענה: הכר בעדינות שאולי יש עומס או משהו שתופס אותו, ושאל מה קורה או מה חוסם.
+- קשר בעדינות את המשימה לצעד/תחנה הנוכחיים כשיש הקשר כזה, בלי לצטט אותו כמו כותרת טכנית.`
 );
 
 const HABIT_REINFORCE_SYSTEM = buildAlmogNotifySystemPrompt(ALMOG_REINFORCE_NOTIFY_HINT);
@@ -73,6 +83,41 @@ function formatReinforceBlock(payload: AlmogHabitCheckpointPayload): string {
   return parts.join(' ');
 }
 
+function joinNatural(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? '';
+  if (items.length === 2) return `${items[0]} ו-${items[1]}`;
+  return `${items.slice(0, -1).join(', ')} ו-${items[items.length - 1]}`;
+}
+
+function formatJourneyContext(payload: AlmogHabitCheckpointPayload): string | null {
+  const stepTitle = payload.stepTitle?.trim();
+  const stationTitle = payload.stationTitle?.trim();
+  if (stepTitle && stationTitle) {
+    return `הקשר נוכחי במסע: המשתמש נמצא בתחנה "${stationTitle}", בצעד "${stepTitle}". השתמש בזה כ"למה" עדין מאחורי המשימה, לא ככותרת טכנית.`;
+  }
+  if (stepTitle) {
+    return `הקשר נוכחי במסע: המשתמש נמצא בצעד "${stepTitle}". קשר את המגע למטרה של הצעד בעדינות.`;
+  }
+  if (stationTitle) {
+    return `הקשר נוכחי במסע: המשתמש נמצא בתחנה "${stationTitle}". שמור על תחושה שאתה זוכר איפה הוא נמצא בתוכנית.`;
+  }
+  return null;
+}
+
+function formatUnansweredTouchesBlock(
+  touches: TodayAlmogTouch[],
+  currentSlot: HabitCheckpointSlot
+): string | null {
+  if (currentSlot === 'morning') return null;
+  const prior = touches.filter((t) => t.slot !== currentSlot || !t.slot);
+  if (prior.length === 0) return null;
+  const unanswered = prior.filter((t) => !t.userRepliedSince);
+  if (unanswered.length === 0) return null;
+
+  const last = unanswered[unanswered.length - 1];
+  return `מצב תגובה היום: כבר היה מגע ${last.slotLabel} בלי תשובה מהמשתמש. אל תחזור על המשימה כאילו זה חדש; דבר כמו חבר שמבין שאולי יש עומס או חסם, ושאל בעדינות מה תופס אותו עכשיו.`;
+}
+
 function formatHabitsForPrompt(
   payload: AlmogHabitCheckpointPayload,
   weekdayName: string,
@@ -85,41 +130,43 @@ function formatHabitsForPrompt(
   const habits = dedupeByTitle(payload.habits);
   const tasks = dedupeByTitle(payload.pendingTasks);
 
-  /**
-   * עבור משימות חוזרות — נציין לאלמוג בדיוק מה נשאר היום:
-   *  "שתיית מים לפני כל ארוחה — נשאר היום: ארוחת ערב".
-   * זה מה שמונע מהטקסט להיות גנרי / רובוטי.
-   */
-  const taskLines = tasks.slice(0, 2).map((t) => {
-    const schedule = t.scheduleLabel ? ` (${t.scheduleLabel})` : '';
-    const pending = t.pendingSlotLabels && t.pendingSlotLabels.length > 0
-      ? ` — נשאר היום: ${t.pendingSlotLabels.join(', ')}`
-      : '';
-    return `- ${t.title}${schedule}${pending}`;
-  });
-  const habitLines = habits.slice(0, 2).map((h) => `- ${h.title}`);
-
   const parts: string[] = [
-    `חלון יום: ${SLOT_HE[payload.slot]}`,
+    `חלון יום: ${SLOT_HE[payload.slot]}.`,
     `${weekdayName} · השעה ${timeHHMM} בישראל`,
   ];
 
-  if (taskLines.length > 0) {
+  const journeyContext = formatJourneyContext(payload);
+  if (journeyContext) parts.push(journeyContext);
+
+  const taskNarratives = tasks.slice(0, 2).map((t) => {
+    const step = t.stepTitle?.trim();
+    const schedule = t.scheduleLabel ? `זו משימה בתזמון ${t.scheduleLabel}` : 'זו משימה פתוחה';
+    const pending =
+      t.pendingSlotLabels && t.pendingSlotLabels.length > 0
+        ? `; נשאר היום: ${joinNatural(t.pendingSlotLabels)}`
+        : '';
+    const stepContext = step && step !== payload.stepTitle ? ` מתוך הצעד "${step}"` : '';
+    return `${t.title}${stepContext} (${schedule}${pending})`;
+  });
+
+  if (taskNarratives.length > 0) {
+    const chosen = taskNarratives[0];
     parts.push(
-      `\nנושאים פתוחים מהמסע (רקע פנימי — לא משאל ביצוע ולא שאלת "האם עשית"):`
+      taskNarratives.length === 1
+        ? `המשימה החיה כרגע: ${chosen}. כתוב עליה כמו ליווי ברגע הזה, לא כמו רשימת ביצוע.`
+        : `יש כמה נושאים פתוחים: ${joinNatural(taskNarratives)}. בחר נושא אחד שמתאים לחלון ${SLOT_HE[payload.slot]} ואל תזכיר את כולם.`
     );
-    parts.push(taskLines.join('\n'));
-    parts.push(
-      taskLines.length === 1
-        ? 'נושא אחד — שזור אותו בשפת חיים, ספציפית למה שנשאר היום. בלי "האם" / "תזכורת".'
-        : 'בחר נושא אחד שמתאים לחלון הזמן הזה (בוקר/צהריים/ערב) — אל תזכיר את שניהם.'
-    );
-  } else {
-    parts.push('\nנושאי מסע לשיחה: אין כרגע — התמקד ברגש/יום, לא ב"משימות".');
   }
 
-  if (habitLines.length > 0) {
-    parts.push(`רוטינות:${habitLines.map((l) => l.replace(/^- /, '')).join('; ')}`);
+  if (habits.length > 0) {
+    const names = habits.slice(0, 2).map((h) => h.title);
+    parts.push(
+      `הרגלים שעדיין רלוונטיים להיום: ${joinNatural(names)}. התייחס אליהם כרוטינה שהמשתמש בונה, לא כ-checkbox.`
+    );
+  }
+
+  if (taskNarratives.length === 0 && habits.length === 0) {
+    parts.push('אין כרגע משימה ספציפית לפתוח איתה; התמקד בתחושת היום ובשיחה רכה.');
   }
 
   return parts.join('\n');
@@ -286,6 +333,7 @@ export async function sendAlmogHabitCheckpointNotification(
   const baseSystem = isReinforce ? HABIT_REINFORCE_SYSTEM : HABIT_REMIND_SYSTEM;
 
   const contextParts: string[] = [buildSlotDaypartPromptBlock(payload.slot)];
+  contextParts.push(`פנייה למשתמש: ${genderInstruction}`);
   if (!isReinforce || payload.reinforceKind !== 'presence') {
     contextParts.push(formatHabitsForPrompt(payload, weekdayName, timeHHMM));
   } else {
@@ -294,6 +342,10 @@ export async function sendAlmogHabitCheckpointNotification(
   const tuneBlock = formatHabitTuneBlock(scheduleHints.aiContext);
   if (tuneBlock) contextParts.push(tuneBlock);
   if (dailyBlock) contextParts.push(dailyBlock);
+  const unansweredBlock = !isReinforce
+    ? formatUnansweredTouchesBlock(todayTouches, payload.slot)
+    : null;
+  if (unansweredBlock) contextParts.push(unansweredBlock);
   const cooldownBlock =
     !dailyBlock && todayTouches.length > 0
       ? formatTodayTouchesCooldownBlock(todayTouches, payload.slot)
@@ -319,13 +371,9 @@ export async function sendAlmogHabitCheckpointNotification(
       { role: 'system', content: systemPrompt },
       {
         role: 'user',
-        content: `${firstName} · ${genderInstruction} · ${weekdayName} ${timeHHMM} · ${SLOT_HE[payload.slot]}
-${
-  isReinforce
-    ? 'חיזוק חברי עם אימוג\'י — ציין ספציפית מה ${firstName} עשה היום (לפי "חיזוק ביצוע: ..." בקונטקסט). אם אין — תגובה רכה לנוכחות. שאלה פתוחה אחת.'
-    : 'מגע חברי עם אימוג\'י — אם בקונטקסט יש "נשאר היום: X" — דבר ספציפית על X בשפת חיים (לדוגמה אם נשאר ערב: "איך הערב הולך?"). בלי "תזכורת" / "האם עשית". שאלה פתוחה אחת.'
-}
-גוף ההודעה בלבד — 2 משפטים קצרים ושלמים. חובה לסיים במשפט שלם (נקודה או סימן שאלה). בלי טבלאות/רשימות/מקפים. אל תעצור באמצע.`,
+        content: `שם המשתמש: ${firstName}
+הזמן כרגע: ${weekdayName}, ${timeHHMM}, חלון ${SLOT_HE[payload.slot]}.
+סוג המגע: ${isReinforce ? 'חיזוק חברי על נוכחות או ביצוע מהיום' : 'ליווי הרגל/משימה שעדיין פתוחים להיום'}.`,
       },
     ],
   });
