@@ -83,7 +83,8 @@ export async function POST(request: Request) {
     if (rest.is_completed === true) {
       try {
         await scheduleAlmogKickoff(user.id, {
-          delayString: process.env.ALMOG_NEXT_STEP_DELAY?.trim() || undefined,
+          delayString: process.env.ALMOG_NEXT_STEP_DELAY?.trim() || '60m',
+          source: 'journey_step_completed',
         });
       } catch (e) {
         console.warn('[journey-progress] almog next-step schedule failed', e);
