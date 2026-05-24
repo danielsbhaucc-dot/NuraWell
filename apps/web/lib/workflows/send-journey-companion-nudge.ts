@@ -44,10 +44,31 @@ function cleanText(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function firstCleanArrayText(value: unknown): string | null {
+/**
+ * שכבת בטיחות מול דליפת ניסוחים טכניים מ-ai_context.
+ * האנליסט אמור לכתוב עברית טבעית (ראה ANALYSIS_PROMPT), אבל אם בטעות נשתל
+ * snake_case_key / JSON / מזהה — לא נזריק אותו ל-LLM כ"יעד המשתמש".
+ */
+function looksHuman(text: string): boolean {
+  const t = text.trim();
+  if (t.length < 3 || t.length > 240) return false;
+  if (/[{}<>]|=>|::|\\n/.test(t)) return false;
+  if (/^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$/i.test(t)) return false;
+  const hasHebrew = /[\u0590-\u05FF]/.test(t);
+  const looksLikeIdentifier = /^[A-Za-z0-9_.-]+$/.test(t);
+  return hasHebrew || !looksLikeIdentifier;
+}
+
+function humanText(value: unknown): string | null {
+  const text = cleanText(value);
+  if (!text) return null;
+  return looksHuman(text) ? text : null;
+}
+
+function firstHumanArrayText(value: unknown): string | null {
   if (!Array.isArray(value)) return null;
   for (const item of value) {
-    const text = cleanText(item);
+    const text = humanText(item);
     if (text) return text;
   }
   return null;
@@ -56,14 +77,18 @@ function firstCleanArrayText(value: unknown): string | null {
 function extractUserGoal(row: MotivationProfileRow | null): string {
   const ctx = (row?.ai_context ?? {}) as Record<string, unknown>;
 
+  /**
+   * סדר: יעד חי שהמשתמש הזכיר → קושי מהשיחה → תובנה עמוקה → דפוס חוזר.
+   * `pending_focus` במכוון אינו בשרשרת — הוא משימות פתוחות, לא ה"למה".
+   */
   const explicit =
-    cleanText(ctx.current_goal) ??
-    cleanText(ctx.user_goal) ??
-    cleanText(ctx.primary_goal) ??
-    cleanText(ctx.main_struggle) ??
-    cleanText(ctx.main_blocker) ??
-    firstCleanArrayText(ctx.struggles) ??
-    firstCleanArrayText(ctx.pending_focus);
+    humanText(ctx.current_goal) ??
+    humanText(ctx.user_goal) ??
+    humanText(ctx.primary_goal) ??
+    humanText(ctx.main_struggle) ??
+    humanText(ctx.main_blocker) ??
+    humanText(ctx.core_insight) ??
+    firstHumanArrayText(ctx.struggles);
   if (explicit) return explicit;
 
   const obstacleDetail = cleanText(row?.main_obstacle_detail);
