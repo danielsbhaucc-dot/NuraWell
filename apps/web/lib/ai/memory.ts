@@ -16,6 +16,40 @@ export interface AiUserContext {
   core_insight?: string;
   /** חסם מרכזי שהמשתמש ציין בצ'אט (אות בזמן אמת) */
   main_blocker?: string;
+  /**
+   * היעד הראשי שהמשתמש הזכיר — משפט אחד נרטיבי בעברית.
+   * דוגמה: "להוריד 3 ק"ג עד הקיץ", "להפסיק לאכול בלילה".
+   * מתעדכן מה-Background Insight Engine או ידנית מהצ'אט.
+   * משמש כ"למה" מאחורי כל מגע — אלמוג מזכיר אותו רק כשטבעי, לא בכל הודעה.
+   */
+  current_goal?: string;
+  /**
+   * הפוקוס/הצעד שאלמוג עובד עליו עם המשתמש כרגע — כפי שהמשתמש יבין אותו.
+   * דוגמה: "שבוע 2 — כוחה של רוויה", "שבוע מים".
+   * שונה מ-`stepTitle` של ה-DB: זה הניסוח שאלמוג בחר עבור המשתמש הזה.
+   */
+  current_focus?: string;
+  /**
+   * עד 3 פעולות פתוחות שהמשתמש צריך לעשות עכשיו — סנפ-שוט אנושי, לא JSON של ה-DB.
+   * דוגמה: ["לשתות 2 כוסות מים לפני צהריים", "להירשם להליכת ערב"].
+   * מתעדכן מה-Background Insight Engine. הכוונה ל-AI היא לא "checklist" — אלא מה
+   * שאלמוג מבין שעל הראש של המשתמש; הוא יכול להזכיר אחד מהם בעדינות אם רלוונטי.
+   */
+  pending_focus?: string[];
+  /**
+   * עד 3 חסמים שהמשתמש מתמודד איתם — קצר, בעברית.
+   * דוגמה: ["מתקשה לזכור לשתות בבוקר", "לחוץ בעבודה השבוע"].
+   * שונה מ-`main_blocker` (מחרוזת בודדת, מאות בזמן אמת מהצ'אט):
+   * זה מערך מצטבר שמתעדכן מהאנליסט הרקע ושומר היסטוריה קצרה של דפוסים.
+   */
+  struggles?: string[];
+  /**
+   * זמינות יומית — דגל זמני, יום-בודד (PR C).
+   * שונה מ-`avoid_push` (קבוע) ו-`avoid_push_until` (cooldown אחרי משבר):
+   * זה "היום מוצף לי" — חוסם בוקר/צהריים ומשאיר רק מגע ערב אחד דואג.
+   * `date` ב-YYYY-MM-DD בלוח ירושלים. אם `date` לא היום — הדגל מתעלם.
+   */
+  daily_availability?: { date: string; level: 'low' | 'normal' };
   /** המשתמש ביקש להפחית דחיפה / התראות AI */
   avoid_push?: boolean;
   /** השהיית התראות עד תאריך ISO (למשל אחרי משבר) — לא מחליף avoid_push קבוע */
@@ -72,6 +106,29 @@ function daysDiffFromNow(iso: string): number {
 
 function isoDaysAgo(days: number): string {
   return new Date(Date.now() - days * DAY_MS).toISOString();
+}
+
+/** YYYY-MM-DD בלוח ירושלים — מקור אמת אחד לתאריך "היום" עבור daily_availability. */
+export function israelDateKeyForAiContext(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+}
+
+/**
+ * האם זמינות יומית "low" פעילה עכשיו (תאריך תואם להיום בירושלים).
+ * שדה ישן מאתמול → מתעלם, כדי שלא נישאר עם דגל תקוע.
+ */
+export function isDailyAvailabilityLowToday(
+  availability: AiUserContext['daily_availability'] | null | undefined,
+  now: Date = new Date()
+): boolean {
+  if (!availability || availability.level !== 'low') return false;
+  if (typeof availability.date !== 'string' || !availability.date.trim()) return false;
+  return availability.date === israelDateKeyForAiContext(now);
 }
 
 /**
@@ -149,6 +206,17 @@ export async function buildUserContext(
   if (ctx.notes) parts.push(`תובנה: ${ctx.notes}`);
   if (ctx.core_insight) parts.push(`תובנת ליבה (לטון המנטור): ${ctx.core_insight}`);
   if (ctx.main_blocker) parts.push(`חסם מרכזי (מהמשתמש): ${ctx.main_blocker}`);
+  if (ctx.current_goal) parts.push(`יעד שהמשתמש הזכיר: ${ctx.current_goal}`);
+  if (ctx.current_focus) parts.push(`פוקוס נוכחי: ${ctx.current_focus}`);
+  if (Array.isArray(ctx.pending_focus) && ctx.pending_focus.length > 0) {
+    parts.push(`פעולות פתוחות בראש שלו: ${ctx.pending_focus.slice(0, 3).join(' · ')}`);
+  }
+  if (Array.isArray(ctx.struggles) && ctx.struggles.length > 0) {
+    parts.push(`חסמים מצטברים (מהאנליסט): ${ctx.struggles.slice(0, 3).join(' · ')}`);
+  }
+  if (isDailyAvailabilityLowToday(ctx.daily_availability)) {
+    parts.push('היום: זמינות נמוכה — המשתמש ביקש להאט (מוצף/יום עמוס)');
+  }
   if (ctx.avoid_push) parts.push('העדפה: פחות דחיפה והתראות מאלמוג.');
   if (ctx.avoid_push_until) {
     const ms = new Date(ctx.avoid_push_until).getTime();
@@ -235,6 +303,11 @@ export async function updateAiContext(
     'journey_follow_up',
     'life_context',
     'web_push',
+    'current_goal',
+    'current_focus',
+    'pending_focus',
+    'struggles',
+    'daily_availability',
   ];
 
   const { data: existing } = await supabase
@@ -260,6 +333,19 @@ export async function updateAiContext(
   }
   if (filtered.life_context === null) {
     const { life_context: _lc, ...rest } = merged;
+    merged = rest;
+  }
+  if ((filtered as { daily_availability?: unknown }).daily_availability === null) {
+    const { daily_availability: _da, ...rest } = merged;
+    merged = rest;
+  }
+  /** מחיקת `pending_focus` / `struggles` בעת העברת מערך ריק — patch מפורש לאיפוס. */
+  if (Array.isArray(filtered.pending_focus) && filtered.pending_focus.length === 0) {
+    const { pending_focus: _pf, ...rest } = merged;
+    merged = rest;
+  }
+  if (Array.isArray(filtered.struggles) && filtered.struggles.length === 0) {
+    const { struggles: _s, ...rest } = merged;
     merged = rest;
   }
   merged = pruneExpiredAvoidPushUntil(merged);
