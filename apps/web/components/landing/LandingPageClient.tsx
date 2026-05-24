@@ -261,13 +261,13 @@ export function LandingPageClient() {
           </motion.span>
 
           <h1 className="landing-hero-title">
-            <span className="landing-hero-title-accent">תפסיקו לספור.</span>
-            <span className="landing-hero-title-main">תתחילו לחיות.</span>
+            <span className="landing-hero-title-accent">אתם לא נכשלתם.</span>
+            <span className="landing-hero-title-main">השיטה נכשלה.</span>
           </h1>
 
           <p className="landing-hero-lead">
-            לא רק ירידה במשקל — שינוי אמיתי באנרגיה, בשינה, בתזונה וביחס לעצמכם.
-            <strong> מנטור AI, קורסים והרגלים לכל החיים — חינם להתחיל.</strong>
+            כל דיאטה שניסיתם — תוכננה להחזיר אתכם להתחלה. NuraWell מלמד את הגוף שלכם להקשיב לעצמו ולחזור לאיזון.
+            <strong> בלי ספירה. בלי הרעבה. בלי שיפוטיות. שינוי שדבק לכל החיים — חינם להתחיל.</strong>
           </p>
 
           <div className="landing-hero-cta">
@@ -1158,6 +1158,112 @@ export function LandingPageClient() {
                 );
               })}
             </div>
+          </div>
+        </section>
+
+        {/* ─── הסיפור שלכם — WOW MOMENT ─── */}
+        <section
+          className="landing-section landing-story landing-fade-top landing-fade-bottom"
+          aria-labelledby="story-heading"
+        >
+          <FloatingParticles count={28} />
+          <div className="landing-story-glow" aria-hidden />
+          <div className="landing-story-rings" aria-hidden>
+            <span className="landing-story-ring landing-story-ring-1" />
+            <span className="landing-story-ring landing-story-ring-2" />
+            <span className="landing-story-ring landing-story-ring-3" />
+          </div>
+
+          <div className="landing-wrap landing-story-wrap">
+            <div className="landing-section-head landing-section-head-center">
+              <SectionEyebrow light>הסיפור שלכם</SectionEyebrow>
+              <motion.h2
+                id="story-heading"
+                className="landing-h2 landing-h2-light landing-story-title"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, ease }}
+              >
+                ארבע מילים. <br className="hidden sm:block" />
+                סיפור שלם.
+              </motion.h2>
+              <motion.p
+                className="landing-subtitle landing-subtitle-light landing-story-intro"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.18, duration: 0.5 }}
+              >
+                כל מי שהגיע לפה — עבר בדיוק את ארבעת הרגעים האלה.
+                <br className="hidden sm:block" />
+                <strong>הרגע הרביעי הוא הסיבה שאנחנו פה.</strong>
+              </motion.p>
+            </div>
+
+            <ol className="landing-story-words">
+              {[
+                {
+                  word: 'ניסיתם.',
+                  sub: 'דיאטה אחר דיאטה, שיטה אחר שיטה.',
+                  badge: '01',
+                  tone: 'dim',
+                },
+                {
+                  word: 'נפלתם.',
+                  sub: 'לא בגללכם — בגלל השיטה שתוכננה לכישלון.',
+                  badge: '02',
+                  tone: 'broken',
+                },
+                {
+                  word: 'קמתם.',
+                  sub: 'כי אתם חזקים מכל מספר על מאזניים.',
+                  badge: '03',
+                  tone: 'rising',
+                },
+                {
+                  word: 'הגעתם.',
+                  sub: 'לאורח חיים שמחזיק. לכם. לתמיד.',
+                  badge: '04',
+                  tone: 'glowing',
+                },
+              ].map((item, i) => (
+                <motion.li
+                  key={item.word}
+                  initial={{ opacity: 0, y: 24, scale: 0.94 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  viewport={{ once: true, margin: '-15%' }}
+                  transition={{ delay: i * 0.18, duration: 0.55, ease }}
+                  className={`landing-story-word landing-story-word-${item.tone}`}
+                >
+                  <span className="landing-story-word-badge" aria-hidden>
+                    {item.badge}
+                  </span>
+                  <span className="landing-story-word-text">{item.word}</span>
+                  <span className="landing-story-word-sub">{item.sub}</span>
+                </motion.li>
+              ))}
+            </ol>
+
+            <motion.div
+              className="landing-story-finale"
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.85, duration: 0.5 }}
+            >
+              <p className="landing-story-quote">
+                זה הזמן שלכם.{' '}
+                <strong>זה היום שלכם.</strong>
+                <br className="hidden sm:block" />
+                אנחנו פה <em>לכל השאר.</em>
+              </p>
+              <Link href="/register" className="landing-btn-primary landing-btn-primary-lg landing-story-cta">
+                <Sparkles className="w-5 h-5" aria-hidden />
+                להתחיל את הפרק החדש
+                <ChevronLeft className="w-5 h-5" aria-hidden />
+              </Link>
+            </motion.div>
           </div>
         </section>
 
