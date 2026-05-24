@@ -5,6 +5,7 @@
 import type { ChatSignals } from './chat-signals';
 import type { HabitIntentDetection } from './chat-habit-intent';
 import type { TaskIntentDetection } from './chat-task-intent';
+import type { PendingAcceptedTask } from './mark-task-execution';
 import type { HabitGapSignal } from './roller-coaster';
 
 /** מונע כפילות כשהחסם כבר מופיע ב-[יום]. */
@@ -72,6 +73,38 @@ export function formatTaskIntentPromptBlock(
     afterDifficulty = ' · אחרי קושי — חיזוק חם ספציפי, לא "מערכת".';
   }
   return `[משימה:${t}·בוצע] רק חיזוק אנושי קצר ("אלוף", "גאה בך") — אסור: מערכת/עדכנתי/סימנתי/המערכת עודכנה.${afterDifficulty}`;
+}
+
+function scheduleLabelHe(task: PendingAcceptedTask): string {
+  switch (task.schedule) {
+    case 'daily':
+      return 'יומי';
+    case 'multi_daily':
+      return `${task.times_per_day}/יום`;
+    case 'weekly':
+      return 'שבועי';
+    case 'per_meal':
+      return 'לפני ארוחות';
+    case 'one_time':
+    default:
+      return 'חד-פעמי';
+  }
+}
+
+export function formatPendingAcceptedTasksPromptBlock(
+  tasks: readonly PendingAcceptedTask[]
+): string | null {
+  if (tasks.length === 0) return null;
+  const shown = tasks.slice(0, 6);
+  const lines = [
+    '[משימות פתוחות שהמשתמש כבר קיבל — מקור אמת]',
+    ...shown.map((task) => {
+      const step = task.stepTitle ? ` · צעד: ${task.stepTitle.slice(0, 36)}` : '';
+      return `○ ${task.title.slice(0, 60)} [${scheduleLabelHe(task)}${step}]`;
+    }),
+    'אם המשתמש שואל "מה המשימות שלי" או "מה נשאר" — ענה לפי הרשימה הזו. אם הוא מדווח ביצוע — חזק בקצרה ואל תמשיך לבקש אותה.',
+  ];
+  return lines.join('\n');
 }
 
 /** פער הרגל 3+ ימים — רק כשלא כבר בנושא השיחה. */

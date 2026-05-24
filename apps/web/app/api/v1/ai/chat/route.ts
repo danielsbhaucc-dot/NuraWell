@@ -13,7 +13,10 @@ import {
 } from '../../../../../lib/ai/prompts';
 import { buildCoachingStylePromptBlock } from '../../../../../lib/ai/almog-coaching-style';
 import { stitchModelTextUntilComplete } from '../../../../../lib/ai/almog-message-complete';
-import type { AiUserContext } from '../../../../../lib/ai/memory';
+import {
+  formatAiWorkingMemoryPromptBlock,
+  type AiUserContext,
+} from '../../../../../lib/ai/memory';
 import {
   buildAlmogSystemKnowledgeFilter,
   fetchJourneyProgressCapForRag,
@@ -40,6 +43,7 @@ import {
   formatHabitIntentPromptBlock,
   formatJourneyChatGuidanceBlock,
   formatJourneyContextAsHebrewText,
+  formatPendingAcceptedTasksPromptBlock,
   formatTaskIntentPromptBlock,
   formatWeightLoggedPromptBlock,
   isCasualGreeting,
@@ -1082,6 +1086,7 @@ export async function POST(request: Request) {
       : null;
 
     const moodFromProfile = moodCoachingHint(profileMoodSignal);
+    const workingMemoryBlock = formatAiWorkingMemoryPromptBlock(profileRow.ai_context);
     const coachingStyleBlock = buildCoachingStylePromptBlock(profileRow.ai_context);
     const journeyFollowUpBlock = formatJourneyFollowUpChatBlock(profileRow.ai_context);
     const lifeContextBlock = formatLifeContextChatBlock(profileRow.ai_context);
@@ -1144,6 +1149,7 @@ export async function POST(request: Request) {
     const contextSections: string[] = [];
 
     if (coachingStyleBlock) contextSections.push(coachingStyleBlock);
+    if (workingMemoryBlock) contextSections.push(workingMemoryBlock);
     if (journeyFollowUpBlock) contextSections.push(journeyFollowUpBlock);
     if (lifeContextBlock) contextSections.push(lifeContextBlock);
     if (onboardingContextBlock) contextSections.push(onboardingContextBlock);
@@ -1163,6 +1169,8 @@ export async function POST(request: Request) {
     if (journeyStateLine) contextSections.push(journeyStateLine.trim());
 
     if (journeyGuidanceBlock) contextSections.push(journeyGuidanceBlock);
+    const pendingTasksBlock = formatPendingAcceptedTasksPromptBlock(pendingTasks);
+    if (pendingTasksBlock) contextSections.push(pendingTasksBlock);
 
     /**
      * נתוני המסע כטקסט עברי טבעי — לא JSON.

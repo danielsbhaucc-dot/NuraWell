@@ -24,13 +24,18 @@ const TASK_NOT_DONE_RE =
   /(?:לא\s+(?:עשיתי|ביצעתי|הספקתי)|עדיין\s+לא|שכחתי|אעשה\s+מחר|מחר\s+אעשה)/i;
 
 const TASK_DONE_RE =
-  /(?:עשיתי|ביצעתי|סימנתי|סיימתי|הצלחתי|כבר\s+עשיתי)(?:\s+את)?(?:\s+ה)?(?:משימה|המשימה|מה\s+שהתחייבתי)|סיימתי\s+את\s+ה/i;
+  /(?:עשיתי|ביצעתי|סימנתי|סיימתי|הצלחתי|סגרתי|בוצע|כבר\s+עשיתי)(?:\s+את)?(?:\s+ה)?(?:משימה|המשימה|מה\s+שהתחייבתי|זה)?|סיימתי\s+את\s+ה|(?:שתיתי|שתינו|שתית)\s+(?:כוס(?:ות)?\s+)?מים|כוס(?:ות)?\s+מים\s+(?:שתיתי|בוצע|סגור)/i;
+
+const WATER_TASK_TITLE_RE = /מים|שתייה|לשתות|כוס/i;
 
 function normalizeMsg(t: string): string {
   return t.replace(/\s+/g, ' ').trim();
 }
 
 function messageReferencesTask(msg: string, title: string): boolean {
+  if (WATER_TASK_TITLE_RE.test(title) && /מים|שתיתי|שתינו|שתית|כוס/i.test(msg)) {
+    return true;
+  }
   const kws = title
     .split(/[\s,·\-/]+/)
     .map((w) => w.trim())
@@ -47,7 +52,7 @@ export function detectTaskIntent(
   if (TASK_NOT_DONE_RE.test(msg)) return { kind: 'none' };
   if (!TASK_DONE_RE.test(msg)) {
     const anyRef = pendingTasks.some((t) => messageReferencesTask(msg, t.title));
-    if (!anyRef) return { kind: 'none' };
+    if (!anyRef || pendingTasks.length !== 1) return { kind: 'none' };
   }
 
   for (const t of pendingTasks) {

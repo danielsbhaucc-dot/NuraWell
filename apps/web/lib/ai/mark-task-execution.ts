@@ -184,6 +184,9 @@ export type TaskExecutionResult =
   | { ok: false; error: 'no_match' | 'no_pending' | 'save_failed'; message?: string };
 
 function messageReferencesTask(msg: string, title: string): boolean {
+  if (/מים|שתייה|לשתות|כוס/i.test(title) && /מים|שתיתי|שתינו|שתית|כוס/i.test(msg)) {
+    return true;
+  }
   const kws = title
     .split(/[\s,·\-/]+/)
     .map((w) => w.trim())
@@ -291,7 +294,7 @@ export async function markTaskExecutionForUser(
     }
   }
   const genericTaskDone =
-    /(?:עשיתי|ביצעתי|סיימתי|הצלחתי|כבר\s+עשיתי)(?:\s+את)?(?:\s+ה)?(?:משימה|המשימה|מה\s+שהתחייבתי)/i.test(
+    /(?:עשיתי|ביצעתי|סיימתי|הצלחתי|סגרתי|בוצע|כבר\s+עשיתי)(?:\s+את)?(?:\s+ה)?(?:משימה|המשימה|מה\s+שהתחייבתי|זה)|(?:שתיתי|שתינו|שתית)\s+(?:כוס(?:ות)?\s+)?מים/i.test(
       msg
     );
   if (!pick && genericTaskDone && pending.length === 1) {
