@@ -1,150 +1,185 @@
 'use client';
 
-import { MapPin } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { MapPin, ArrowLeft, CheckCircle2, Sparkles } from 'lucide-react';
 import type { JourneyStationGroup } from '../../lib/journey/group-journey-by-station';
 import { cn } from '../../lib/cn';
 
 type JourneyStationCardProps = {
   group: JourneyStationGroup;
   index: number;
-  isSelected: boolean;
   onSelect: () => void;
 };
 
-export function JourneyStationCard({ group, index, isSelected, onSelect }: JourneyStationCardProps) {
+/**
+ * תחנה בתצוגת הגלריה (Stage 1) — כרטיס גדול עם תמונה, כותרת,
+ * סטטוס התקדמות וכפתור "כניסה לתחנה". מוכן ל-layoutId לאנימציית
+ * shared-element בין הגלריה לתצוגת הפירוט.
+ */
+export function JourneyStationCard({ group, index, onSelect }: JourneyStationCardProps) {
   const done = group.steps.filter((s) => s.progress?.is_completed).length;
   const total = group.steps.length;
   const pct = total ? Math.round((done / total) * 100) : 0;
   const isEmpty = total === 0;
+  const isCompleted = total > 0 && done === total;
   const hasCover = Boolean(group.coverImageUrl);
 
+  const layoutId = `station-cover-${group.key}`;
+
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onSelect}
+      whileHover={{ y: -4 }}
+      whileTap={{ scale: 0.985 }}
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        'relative snap-start shrink-0 overflow-hidden rounded-2xl px-4 py-3.5 text-right transition-all min-w-[min(88vw,300px)] sm:min-w-[280px]',
-        'border shadow-md active:scale-[0.99]',
-        isSelected
-          ? 'ring-2 ring-emerald-400/90 ring-offset-2 ring-offset-[#EDF5F0]'
-          : 'opacity-95 hover:opacity-100',
-        isEmpty && !isSelected && 'opacity-80'
+        'group relative block w-full overflow-hidden rounded-[28px] text-right',
+        'transition-shadow duration-300',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#EDF5F0]'
       )}
       style={{
-        background: hasCover
-          ? undefined
-          : isSelected
-            ? 'linear-gradient(145deg, rgba(255,255,255,0.99) 0%, rgba(236,253,245,0.97) 55%, rgba(209,250,229,0.35) 100%)'
-            : 'rgba(255,255,255,0.9)',
-        borderColor: isSelected ? 'rgba(16,185,129,0.5)' : 'rgba(226,232,240,0.9)',
-        boxShadow: isSelected
-          ? '0 12px 32px rgba(16,185,129,0.2), inset 0 1px 0 rgba(255,255,255,0.9)'
-          : '0 4px 18px rgba(15,118,110,0.07)',
+        boxShadow:
+          '0 10px 28px rgba(6, 78, 59, 0.14), 0 2px 8px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.6)',
       }}
+      aria-label={`כניסה לתחנה ${index + 1}: ${group.title}`}
     >
-      {hasCover ? (
-        <>
+      <motion.div
+        layoutId={layoutId}
+        className="relative w-full overflow-hidden rounded-[28px]"
+        style={{ aspectRatio: '16 / 11', minHeight: 220 }}
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      >
+        {hasCover ? (
           <img
             src={group.coverImageUrl!}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
             loading="lazy"
           />
+        ) : (
           <div
             className="absolute inset-0"
             style={{
-              background: 'linear-gradient(180deg, rgba(6,78,59,0.42) 0%, rgba(15,23,42,0.78) 100%)',
+              background:
+                'linear-gradient(135deg, #047857 0%, #0f766e 45%, #14b8a6 100%)',
             }}
           />
-        </>
-      ) : null}
+        )}
 
-      <div className={cn('relative z-10', hasCover && 'text-white')}>
-        <div className="mb-2 flex items-start gap-3">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(6,78,59,0.10) 0%, rgba(6,78,59,0.35) 45%, rgba(6,15,23,0.82) 100%)',
+          }}
+        />
+
+        <div
+          className="absolute -top-12 -left-12 h-40 w-40 rounded-full opacity-60"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(167,243,208,0.55) 0%, transparent 70%)',
+            filter: 'blur(22px)',
+          }}
+        />
+
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
           <div
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl text-sm font-black text-white"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl text-base font-black text-white shadow-lg"
             style={{
-              background: isSelected
-                ? 'linear-gradient(135deg, #047857, #10b981)'
-                : 'linear-gradient(135deg, #0f766e, #14b8a6)',
-              boxShadow: hasCover ? '0 4px 12px rgba(0,0,0,0.25)' : '0 4px 12px rgba(4,120,87,0.25)',
+              background: 'linear-gradient(135deg, #047857, #10b981)',
+              boxShadow: '0 6px 16px rgba(4,120,87,0.45), inset 0 1px 0 rgba(255,255,255,0.35)',
             }}
           >
             {index + 1}
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="mb-0.5 flex items-center gap-1.5">
-              <MapPin
-                className={cn('h-3.5 w-3.5 shrink-0 opacity-90', hasCover ? 'text-emerald-100' : 'text-emerald-600')}
-                aria-hidden
-              />
-              <p
-                className={cn(
-                  'line-clamp-2 text-right text-[15px] font-black leading-snug',
-                  hasCover ? 'text-white drop-shadow-sm' : ''
-                )}
-                style={hasCover ? undefined : { color: '#1A1730' }}
-              >
-                {group.title}
-              </p>
+          {isCompleted ? (
+            <div
+              className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black text-white"
+              style={{
+                background: 'linear-gradient(135deg, rgba(16,185,129,0.95), rgba(52,211,153,0.95))',
+                boxShadow: '0 4px 12px rgba(16,185,129,0.45)',
+              }}
+            >
+              <CheckCircle2 className="h-3 w-3" /> הושלם
             </div>
-            {group.description ? (
-              <p
-                className={cn(
-                  'mt-1 line-clamp-2 text-xs leading-relaxed',
-                  hasCover ? 'text-white/80' : 'text-gray-500'
-                )}
-              >
-                {group.description}
-              </p>
-            ) : null}
+          ) : null}
+        </div>
+
+        <div className="absolute top-3 left-3 z-10">
+          <div
+            className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-md"
+            style={{
+              background: 'rgba(255,255,255,0.18)',
+              border: '1px solid rgba(255,255,255,0.28)',
+            }}
+          >
+            <MapPin className="h-3 w-3" aria-hidden />
+            תחנה
           </div>
         </div>
 
-        <p className={cn('mb-2.5 text-xs font-medium', hasCover ? 'text-emerald-50/90' : 'text-gray-600')}>
-          {isEmpty ? 'אין עדיין צעדים בתחנה' : `${done}/${total} צעדים · ${pct}%`}
-        </p>
+        <div className="absolute bottom-0 left-0 right-0 z-10 p-4 sm:p-5">
+          <h3
+            className="mb-1.5 line-clamp-2 text-right text-xl font-black leading-tight text-white drop-shadow-md sm:text-2xl"
+            style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+          >
+            {group.title}
+          </h3>
+          {group.description ? (
+            <p className="mb-3 line-clamp-2 text-right text-[13px] leading-relaxed text-white/85">
+              {group.description}
+            </p>
+          ) : null}
 
-        <MotionlessProgress hasCover={hasCover} isEmpty={isEmpty} pct={pct} />
-      </div>
-    </button>
-  );
-}
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <div
+                className="h-2 overflow-hidden rounded-full"
+                style={{ background: 'rgba(255,255,255,0.22)' }}
+              >
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${isEmpty ? 0 : pct}%` }}
+                  transition={{ duration: 0.9, delay: 0.25 + index * 0.06, ease: [0.22, 1, 0.36, 1] }}
+                  className="h-full rounded-full"
+                  style={{
+                    background:
+                      'linear-gradient(90deg, #a7f3d0, #34d399 60%, #fbbf24)',
+                    boxShadow: '0 0 10px rgba(167,243,208,0.6)',
+                  }}
+                />
+              </div>
+              <p className="mt-1.5 text-right text-[11px] font-bold text-white/90">
+                {isEmpty ? 'בקרוב' : `${done}/${total} צעדים · ${pct}%`}
+              </p>
+            </div>
 
-function MotionlessProgress({
-  hasCover,
-  isEmpty,
-  pct,
-}: {
-  hasCover: boolean;
-  isEmpty: boolean;
-  pct: number;
-}) {
-  return (
-    <div className={cn('h-1.5 overflow-hidden rounded-full', hasCover ? 'bg-white/20' : 'bg-emerald-900/10')}>
-      <MotionlessProgressFill hasCover={hasCover} isEmpty={isEmpty} pct={pct} />
-    </div>
-  );
-}
-
-function MotionlessProgressFill({
-  hasCover,
-  isEmpty,
-  pct,
-}: {
-  hasCover: boolean;
-  isEmpty: boolean;
-  pct: number;
-}) {
-  return (
-    <div
-      className="h-full rounded-full transition-all duration-500"
-      style={{
-        width: `${isEmpty ? 0 : pct}%`,
-        background: hasCover
-          ? 'linear-gradient(90deg, rgba(255,255,255,0.95), rgba(167,243,208,0.95))'
-          : 'linear-gradient(90deg, #047857, #34d399)',
-      }}
-    />
+            <div
+              className="flex items-center gap-1.5 rounded-2xl px-3 py-2 text-xs font-black text-emerald-900 shadow-md transition-transform group-hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, #ffffff, #ecfdf5)',
+                boxShadow: '0 6px 14px rgba(0,0,0,0.18)',
+              }}
+            >
+              {isCompleted ? (
+                <>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  הצג שוב
+                </>
+              ) : (
+                <>
+                  כניסה
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.button>
   );
 }
