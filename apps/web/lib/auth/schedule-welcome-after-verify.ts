@@ -24,7 +24,8 @@ export async function scheduleWelcomeAfterVerify(userId: string): Promise<void> 
   await client.trigger({
     url: workflowUrl,
     body: JSON.stringify({ userId }),
-    delay: WELCOME_DELAY,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Upstash Duration accepts strings like "3m".
+    delay: WELCOME_DELAY as any,
     retries: 2,
     label: 'welcome-after-verify',
   });

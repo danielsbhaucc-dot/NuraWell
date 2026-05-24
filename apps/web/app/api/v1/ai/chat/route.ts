@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { generateText, streamText, type ModelMessage } from 'ai';
+import { generateText, streamText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { after } from 'next/server';
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
@@ -78,8 +78,12 @@ import { createAdminClient } from '../../../../../lib/supabase/admin';
 import {
   fetchTodayChatTurns,
   formatDailyShortTermBlock,
+  type TodayChatTurn,
 } from '../../../../../lib/ai/almog-daily-context';
-import { fetchTodayAlmogTouches } from '../../../../../lib/ai/almog-notify-day-context';
+import {
+  fetchTodayAlmogTouches,
+  type TodayAlmogTouch,
+} from '../../../../../lib/ai/almog-notify-day-context';
 import {
   buildOnboardingChatContextBlock,
   type OnboardingProfileForChat,
@@ -897,10 +901,10 @@ export async function POST(request: Request) {
     return [] as string[];
   });
 
-  const dailyContextPromise = Promise.all([
-    fetchTodayChatTurns(supabase, user.id).catch(() => [] as Awaited<ReturnType<typeof fetchTodayChatTurns>>),
-    fetchTodayAlmogTouches(supabase, user.id).catch(() => []),
-  ]).catch(() => [[], []] as const);
+  const dailyContextPromise: Promise<[TodayChatTurn[], TodayAlmogTouch[]]> = Promise.all([
+    fetchTodayChatTurns(supabase, user.id).catch(() => [] as TodayChatTurn[]),
+    fetchTodayAlmogTouches(supabase, user.id).catch(() => [] as TodayAlmogTouch[]),
+  ]).catch(() => [[], []]);
 
   const notificationContextPromise = notificationId
     ? fetchNotificationContextBlock(supabase, user.id, notificationId)
@@ -1265,7 +1269,7 @@ export async function POST(request: Request) {
 
         if (finishReason === 'length' && t) {
           try {
-            const runCont = async (_msgs: ModelMessage[]) => {
+            const runCont = async (partialAssistant: string) => {
               const out = await generateText({
                 model: openrouter.chat('openai/gpt-5-mini'),
                 temperature: 0.65,
@@ -1277,7 +1281,7 @@ export async function POST(request: Request) {
                     content:
                       'המשך בעברית את תשובת אלמוג מהמקום שנקטע. אל תחזור על התחילה. סיים משפט אחד-שניים.',
                   },
-                  { role: 'assistant', content: t },
+                  { role: 'assistant', content: partialAssistant },
                   { role: 'user', content: 'המשך.' },
                 ],
               });

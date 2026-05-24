@@ -53,6 +53,16 @@ function getMessageText(msg: { parts?: Array<{ type: string; text?: string }>; c
     .trim();
 }
 
+function getMessageCreatedAt(msg: unknown): Date {
+  const raw = (msg as { createdAt?: unknown }).createdAt;
+  if (raw instanceof Date) return raw;
+  if (typeof raw === 'string') {
+    const parsed = new Date(raw);
+    if (Number.isFinite(parsed.getTime())) return parsed;
+  }
+  return new Date();
+}
+
 type MessageBlock =
   | { type: 'paragraph'; text: string }
   | { type: 'list'; items: Array<{ kind: 'bullet' | 'numbered'; text: string; number?: string }> };
@@ -400,7 +410,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     }, 420);
     return () => window.clearInterval(id);
   }, [isLoading]);
-  const firstMessageDate = messages.length > 0 ? (messages[0]?.createdAt ?? new Date()) : undefined;
+  const firstMessageDate = messages.length > 0 ? getMessageCreatedAt(messages[0]) : undefined;
 
   if (!mounted) return null;
 
@@ -595,7 +605,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                         renderAlmogMessage(text)
                       )}
                       <div className={`mt-1.5 text-[11px] ${isUser ? 'text-slate-300/75' : 'text-emerald-50/80'}`}>
-                        {formatHebrewTime(msg.createdAt)}
+                        {formatHebrewTime(getMessageCreatedAt(msg))}
                       </div>
                     </div>
                   </div>

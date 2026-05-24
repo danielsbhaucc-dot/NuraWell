@@ -17,7 +17,8 @@ export default async function AlmogNudgeSettingsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: row } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: row } = await (supabase as any)
     .from('profiles')
     .select('ai_context')
     .eq('id', user.id)

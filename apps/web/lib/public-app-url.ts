@@ -78,17 +78,7 @@ export async function resolvePublicAppOriginForOpsRedirect(): Promise<string> {
   return publicAppOriginFromEnv() ?? PUBLIC_APP_URL_DEFAULT;
 }
 
-type SupabaseLike = {
-  from: (t: string) => {
-    select: (c: string) => {
-      eq: (a: string, v: unknown) => {
-        maybeSingle: () => Promise<{ data: unknown; error: unknown }>;
-      };
-    };
-  };
-};
-
-export async function resolvePublicAppOriginFromSupabaseClient(supabase: SupabaseLike): Promise<string> {
+export async function resolvePublicAppOriginFromSupabaseClient(supabase: unknown): Promise<string> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('site_settings')
@@ -102,7 +92,7 @@ export async function resolvePublicAppOriginFromSupabaseClient(supabase: Supabas
   return normalizeToOrigin((data as { public_app_url: string }).public_app_url) ?? (publicAppOriginFromEnv() ?? PUBLIC_APP_URL_DEFAULT);
 }
 
-export async function publicAppBaseNoSlashFromServer(supabase: SupabaseLike): Promise<string> {
+export async function publicAppBaseNoSlashFromServer(supabase: unknown): Promise<string> {
   const origin = await resolvePublicAppOriginFromSupabaseClient(supabase);
   return origin.replace(/\/$/, '');
 }

@@ -105,13 +105,13 @@ export function JourneyStationCard({ group, index, isSelected, onSelect }: Journ
           {isEmpty ? 'אין עדיין צעדים בתחנה' : `${done}/${total} צעדים · ${pct}%`}
         </p>
 
-        <motionlessProgress hasCover={hasCover} isEmpty={isEmpty} pct={pct} />
+        <MotionlessProgress hasCover={hasCover} isEmpty={isEmpty} pct={pct} />
       </div>
     </button>
   );
 }
 
-function motionlessProgress({
+function MotionlessProgress({
   hasCover,
   isEmpty,
   pct,
@@ -122,12 +122,12 @@ function motionlessProgress({
 }) {
   return (
     <div className={cn('h-1.5 overflow-hidden rounded-full', hasCover ? 'bg-white/20' : 'bg-emerald-900/10')}>
-      <motionlessProgressFill hasCover={hasCover} isEmpty={isEmpty} pct={pct} />
+      <MotionlessProgressFill hasCover={hasCover} isEmpty={isEmpty} pct={pct} />
     </div>
   );
 }
 
-function motionlessProgressFill({
+function MotionlessProgressFill({
   hasCover,
   isEmpty,
   pct,

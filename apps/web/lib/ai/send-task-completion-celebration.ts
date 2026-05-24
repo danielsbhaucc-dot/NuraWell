@@ -12,17 +12,17 @@ type JourneyTaskJson = { id: string; title: string; description?: string | null 
 
 function parseTasks(raw: unknown): JourneyTaskJson[] {
   if (!Array.isArray(raw)) return [];
-  return raw
-    .map((item) => {
-      if (!item || typeof item !== 'object') return null;
-      const row = item as Record<string, unknown>;
-      const id = typeof row.id === 'string' ? row.id : '';
-      const title = typeof row.title === 'string' ? row.title : '';
-      if (!id || !title) return null;
-      const description = typeof row.description === 'string' ? row.description : null;
-      return { id, title, description };
-    })
-    .filter((x): x is JourneyTaskJson => Boolean(x));
+  const tasks: JourneyTaskJson[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const row = item as Record<string, unknown>;
+    const id = typeof row.id === 'string' ? row.id : '';
+    const title = typeof row.title === 'string' ? row.title : '';
+    if (!id || !title) continue;
+    const description = typeof row.description === 'string' ? row.description : null;
+    tasks.push({ id, title, description });
+  }
+  return tasks;
 }
 
 function stationTitleFromJoin(raw: unknown): string | null {
