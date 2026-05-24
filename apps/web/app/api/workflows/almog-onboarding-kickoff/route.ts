@@ -18,9 +18,11 @@ const NEXT_STEP_CHECK_DELAY = '24h';
 
 /**
  * Workflow: מגע מסע יזום של אלמוג עד השלמת הצעד הנוכחי.
+ * ה-workflow הזה לא מחליט "למי לשלוח" לפי slot יומי; הוא מופעל מאירוע:
+ * post-verify אחרי הרשמה או journey_step_completed אחרי סיום צעד.
  *
  * זרימה:
- *   1. sleep ראשון לפי payload.delayString (לדוגמה 90m אחרי אימות מייל).
+ *   1. sleep ראשון לפי payload.delayString (לדוגמה 90m אחרי אימות מייל, 60m אחרי סיום צעד).
  *   2. בדיקת זכאות — onboarding completed, לא avoid_push, ויש צעד לא מושלם.
  *   3. אם השעה בישראל לא בחלון 09:00–22:00 — sleep עד 09:00 הבא ובדיקה שוב.
  *   4. שליחת nudge דרך ה-pipeline הקיים של companion (טון חברי, אנושי).
