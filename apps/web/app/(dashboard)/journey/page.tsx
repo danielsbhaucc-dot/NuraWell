@@ -9,6 +9,7 @@ import {
   pickInitialStationGroupKey,
   type JourneyStationMeta,
 } from '../../../lib/journey/group-journey-by-station';
+import { firstNameFromFull } from '../../../lib/onboarding/profile-summary-rows';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +34,7 @@ export default async function JourneyRoute() {
   if (!user) redirect('/login');
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [{ data: stationRows }, { data: rawSteps }] = await Promise.all([
+  const [{ data: stationRows }, { data: rawSteps }, { data: profileRow }] = await Promise.all([
     (supabase as any)
       .from('journey_stations')
       .select('id, title, description, sort_order, cover_image_key, cover_image_credit')
@@ -44,6 +45,7 @@ export default async function JourneyRoute() {
       .select('*, journey_stations(id, title, description, sort_order)')
       .eq('is_published', true)
       .order('step_number'),
+    (supabase as any).from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
   ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -70,7 +72,23 @@ export default async function JourneyRoute() {
         : groupAllStepsWhenNoStations(stepsWithProgress);
   const initialExpandedKey = pickInitialStationGroupKey(groups, progressList);
 
+  const profile = profileRow as { full_name: string | null } | null;
+  const profileFullName = profile?.full_name?.trim();
+  const metaFullName =
+    typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name.trim() : '';
+  const fullName =
+    (profileFullName && profileFullName.length > 0 ? profileFullName : null) ??
+    (metaFullName.length > 0 ? metaFullName : null) ??
+    user.email?.split('@')[0] ??
+    'משתמש';
+  const firstName = firstNameFromFull(fullName) || 'משתמש';
+
   return (
-    <JourneyPage groups={groups} initialExpandedKey={initialExpandedKey} userId={user.id} />
+    <JourneyPage
+      groups={groups}
+      initialExpandedKey={initialExpandedKey}
+      userId={user.id}
+      firstName={firstName}
+    />
   );
 }
