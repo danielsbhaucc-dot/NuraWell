@@ -1,5 +1,7 @@
 import type {
   AlmogHabitCheckpointPayload,
+  HabitCheckpointCompletionStatus,
+  HabitCheckpointNudgeLevel,
   HabitCheckpointSlot,
 } from './almog-habit-checkpoint-payload';
 import {
@@ -379,6 +381,149 @@ export type HabitCheckpointPlanItem = {
   payload: AlmogHabitCheckpointPayload;
 };
 
+/* ============================================================
+ * State machine רב-יומי — Dormancy tracking
+ *
+ *  משתמש "פעיל" אם profiles.last_active_at עודכן ב-24 השעות האחרונות
+ *  (middleware מטריא אותו בכל בקשת API). כל חישוב ה-nudge יורד מזה.
+ *  אנחנו לא מסתמכים על "האם המשתמש ענה לאלמוג" כי זה רעש; "המשתמש
+ *  פתח את האפליקציה" = פעיל לכל דבר.
+ * ============================================================ */
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** מחשב מספר ימים שלמים בין שני תאריכים. החזרה — מספר שלם >= 0. */
+export function daysBetween(fromIso: string | null | undefined, now: Date): number {
+  if (!fromIso) return Infinity;
+  const fromMs = new Date(fromIso).getTime();
+  if (!Number.isFinite(fromMs)) return Infinity;
+  const diff = now.getTime() - fromMs;
+  if (diff <= 0) return 0;
+  return Math.floor(diff / MS_PER_DAY);
+}
+
+/**
+ * Mapping של dormancy → nudge level (קריא ב-LLM וב-cron back-off).
+ *  0: < 1d  (Active)     — שגרה רגילה
+ *  1: 1–2d  (Slipping)   — הכרה עדינה (לא בשימוש כענף נפרד ב-LLM —
+ *                          ה-prompt matrix משתמש ב-INTERDAY/INTRADAY)
+ *  2: 3–6d  (Dormant)    — אפס לחץ
+ *  3: >=7d  (Ghosted)    — back-off של שבוע
+ */
+export function computeNudgeLevel(daysSinceLastActive: number): HabitCheckpointNudgeLevel {
+  if (!Number.isFinite(daysSinceLastActive) || daysSinceLastActive >= 7) return 3;
+  if (daysSinceLastActive >= 3) return 2;
+  if (daysSinceLastActive >= 1) return 1;
+  return 0;
+}
+
+/**
+ * True last-active per user = MAX של שלושה מקורות:
+ *  1. profiles.last_active_at — מטריא middleware בכל request (כולל SW pings).
+ *  2. ai_interactions.created_at where role='user' — כתיבה אמיתית בצ'אט.
+ *  3. journey_task_executions.completed_at — סימון משימה ב-DB.
+ *
+ * מקור 1 לבדו לא אמין — Service Worker pings מסמנים "פעיל" גם כשהטלפון
+ * זרוק בכיס. השאר הם פעולות יזומות, אז ה-MAX מבטיח שלא נתייחס למשתמש
+ * כ-INTRADAY GHOSTING בזמן שהוא לא באמת פתח את האפליקציה.
+ *
+ * חלון 14 ימים — מספיק לכל ה-state machine (Ghosted מתחיל ב-7).
+ */
+const TRUE_ACTIVE_WINDOW_DAYS = 14;
+
+export async function fetchTrueLastActiveByUser(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  userIds: string[],
+  now = new Date()
+): Promise<Map<string, string | null>> {
+  const result = new Map<string, string | null>();
+  if (userIds.length === 0) return result;
+
+  const cappedIds = userIds.slice(0, 2000);
+  const windowIso = new Date(
+    now.getTime() - TRUE_ACTIVE_WINDOW_DAYS * MS_PER_DAY
+  ).toISOString();
+
+  const [profileRes, chatRes, execRes] = await Promise.all([
+    admin
+      .from('profiles')
+      .select('id, last_active_at')
+      .in('id', cappedIds),
+    admin
+      .from('ai_interactions')
+      .select('user_id, created_at')
+      .in('user_id', cappedIds)
+      .eq('role', 'user')
+      .gte('created_at', windowIso)
+      .order('created_at', { ascending: false })
+      .limit(8000),
+    admin
+      .from('journey_task_executions')
+      .select('user_id, completed_at')
+      .in('user_id', cappedIds)
+      .gte('completed_at', windowIso)
+      .order('completed_at', { ascending: false })
+      .limit(8000),
+  ]);
+
+  const upsertMax = (userId: string, iso: string | null | undefined) => {
+    if (!userId || !iso) return;
+    const ms = new Date(iso).getTime();
+    if (!Number.isFinite(ms)) return;
+    const current = result.get(userId);
+    if (!current) {
+      result.set(userId, iso);
+      return;
+    }
+    if (new Date(current).getTime() < ms) {
+      result.set(userId, iso);
+    }
+  };
+
+  if (Array.isArray(profileRes?.data)) {
+    for (const row of profileRes.data as Array<{ id?: string; last_active_at?: string | null }>) {
+      if (typeof row.id === 'string') {
+        result.set(row.id, row.last_active_at ?? null);
+      }
+    }
+  }
+
+  if (Array.isArray(chatRes?.data)) {
+    for (const row of chatRes.data as Array<{ user_id?: string; created_at?: string | null }>) {
+      if (typeof row.user_id === 'string') upsertMax(row.user_id, row.created_at);
+    }
+  }
+
+  if (Array.isArray(execRes?.data)) {
+    for (const row of execRes.data as Array<{ user_id?: string; completed_at?: string | null }>) {
+      if (typeof row.user_id === 'string') upsertMax(row.user_id, row.completed_at);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * סטטוס ביצוע מ-Supabase בלבד (SSOT).
+ *  none    — שום משימה/הרגל לא נסגרו היום, ויש פתוחים.
+ *  partial — חלק נסגרו, חלק עדיין פתוחים.
+ *  full    — הכל נסגר היום (אין שום פתוח).
+ */
+export function computeCompletionStatus(args: {
+  completedHabitsCount: number;
+  completedTasksCount: number;
+  pendingHabitsCount: number;
+  pendingTasksCount: number;
+}): HabitCheckpointCompletionStatus {
+  const completed = args.completedHabitsCount + args.completedTasksCount;
+  const pending = args.pendingHabitsCount + args.pendingTasksCount;
+  if (completed === 0 && pending === 0) return 'none';
+  if (pending === 0 && completed > 0) return 'full';
+  if (completed > 0 && pending > 0) return 'partial';
+  return 'none';
+}
+
 /**
  * מחשב למי לשלוח בדיקה בחלון הנתון — ללא קריאות AI (רק נתונים).
  *
@@ -388,12 +533,17 @@ export type HabitCheckpointPlanItem = {
  *
  * מי שיש לו משימות פתוחות יקבל התראה גם בלי הרגלים תואמי slot — האחריות
  * של הזרימה הזו היא לעודד למלא את מה שכבר הסכים לו.
+ *
+ * `lastActiveByUser` — Map מ-userId ל-ISO של profiles.last_active_at. מי שלא
+ * מופיע יסומן Ghosted (nudgeLevel=3). ה-cron route אחראי להחיל back-off של
+ * שבוע על Ghosted לפני הטריגר ל-Workflow.
  */
 export function planHabitCheckpointTriggers(
   progressRows: ProgressRow[],
   slot: HabitCheckpointSlot,
   now: Date,
-  todayExecutionsByUser: TodayExecutionsByUser = new Map()
+  todayExecutionsByUser: TodayExecutionsByUser = new Map(),
+  lastActiveByUser: ReadonlyMap<string, string | null> = new Map()
 ): HabitCheckpointPlanItem[] {
   const { dateKey, weekday } = jerusalemCalendarParts(now);
   const byUser = new Map<string, ProgressRow[]>();
@@ -437,6 +587,15 @@ export function planHabitCheckpointTriggers(
     const stepTitle = display?.journey_steps?.title?.trim() ?? null;
     const stationTitle = stationTitleFromJoin(display?.journey_steps?.journey_stations);
 
+    const daysSinceLastActive = daysBetween(lastActiveByUser.get(userId) ?? null, now);
+    const nudgeLevel = computeNudgeLevel(daysSinceLastActive);
+    const completionStatus = computeCompletionStatus({
+      completedHabitsCount: completedTodayHabits.length,
+      completedTasksCount: completedTodayTasks.length,
+      pendingHabitsCount: due.length,
+      pendingTasksCount: pendingTasks.length,
+    });
+
     out.push({
       userId,
       payload: {
@@ -461,6 +620,11 @@ export function planHabitCheckpointTriggers(
         completedTodayTasks,
         stepTitle,
         stationTitle,
+        nudgeLevel,
+        daysSinceLastActive: Number.isFinite(daysSinceLastActive)
+          ? Math.min(3650, daysSinceLastActive)
+          : 3650,
+        completionStatus,
       },
     });
   }
@@ -477,7 +641,8 @@ export function appendPresenceReinforceFromChat(
   slot: HabitCheckpointSlot,
   now: Date,
   chatUserIds: Set<string>,
-  todayExecutionsByUser: TodayExecutionsByUser = new Map()
+  todayExecutionsByUser: TodayExecutionsByUser = new Map(),
+  lastActiveByUser: ReadonlyMap<string, string | null> = new Map()
 ): HabitCheckpointPlanItem[] {
   if (chatUserIds.size === 0) return plan;
 
@@ -515,6 +680,19 @@ export function appendPresenceReinforceFromChat(
     if (due.length > 0) continue;
 
     const display = pickDisplayRow(rows);
+    const completedTodayHabits = habits
+      .filter((h) => habitsDoneToday.has(h.id))
+      .map((h) => ({ id: h.id, title: h.title }));
+    const completedTodayTasks = collectCompletedAcceptedTasks(rows, {
+      todayDoneByTask: userTodayDone,
+      jerusalemWeekday: weekday,
+    });
+    const daysSinceLastActive = daysBetween(lastActiveByUser.get(userId) ?? null, now);
+    const nudgeLevel = computeNudgeLevel(daysSinceLastActive);
+    /** presence = יש שיחה היום => הוא פעיל וגם אין פתוחים => full. */
+    const completionStatus: HabitCheckpointCompletionStatus =
+      completedTodayHabits.length + completedTodayTasks.length > 0 ? 'full' : 'none';
+
     extra.push({
       userId,
       payload: {
@@ -525,15 +703,15 @@ export function appendPresenceReinforceFromChat(
         reinforceKind: 'presence',
         habits: [],
         pendingTasks: [],
-        completedTodayHabits: habits
-          .filter((h) => habitsDoneToday.has(h.id))
-          .map((h) => ({ id: h.id, title: h.title })),
-        completedTodayTasks: collectCompletedAcceptedTasks(rows, {
-          todayDoneByTask: userTodayDone,
-          jerusalemWeekday: weekday,
-        }),
+        completedTodayHabits,
+        completedTodayTasks,
         stepTitle: display?.journey_steps?.title?.trim() ?? null,
         stationTitle: stationTitleFromJoin(display?.journey_steps?.journey_stations),
+        nudgeLevel,
+        daysSinceLastActive: Number.isFinite(daysSinceLastActive)
+          ? Math.min(3650, daysSinceLastActive)
+          : 3650,
+        completionStatus,
       },
     });
     planned.add(userId);
@@ -549,9 +727,16 @@ export async function planHabitCheckpointTriggersWithChat(
   progressRows: ProgressRow[],
   slot: HabitCheckpointSlot,
   now: Date,
-  todayExecutionsByUser: TodayExecutionsByUser = new Map()
+  todayExecutionsByUser: TodayExecutionsByUser = new Map(),
+  lastActiveByUser: ReadonlyMap<string, string | null> = new Map()
 ): Promise<HabitCheckpointPlanItem[]> {
-  const base = planHabitCheckpointTriggers(progressRows, slot, now, todayExecutionsByUser);
+  const base = planHabitCheckpointTriggers(
+    progressRows,
+    slot,
+    now,
+    todayExecutionsByUser,
+    lastActiveByUser
+  );
   const chatIds = await fetchUserIdsWithChatToday(admin, now);
   return appendPresenceReinforceFromChat(
     base,
@@ -559,6 +744,7 @@ export async function planHabitCheckpointTriggersWithChat(
     slot,
     now,
     chatIds,
-    todayExecutionsByUser
+    todayExecutionsByUser,
+    lastActiveByUser
   );
 }

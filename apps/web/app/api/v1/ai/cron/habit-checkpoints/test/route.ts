@@ -296,6 +296,9 @@ export async function POST(request: Request) {
     completedTodayTasks: [],
     stepTitle,
     stationTitle,
+    nudgeLevel: 0,
+    daysSinceLastActive: 0,
+    completionStatus: 'none',
   };
 
   if (!bypassGate) {

@@ -14,18 +14,13 @@ import {
 } from '../ai/almog-notify-day-context';
 import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
 import {
-  buildHabitCheckpointTemplateBody,
+  buildHabitCheckpointSystemPrompt,
   countUnansweredEarlierToday,
-  decideHabitCheckpointLlmUsage,
 } from '../ai/habit-checkpoint-llm';
 import { isDailyAvailabilityLowToday } from '../ai/memory';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
 import { buildProfileScheduleHints } from '../ai/profile-schedule-anchors';
-import {
-  ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
-  ALMOG_REINFORCE_NOTIFY_HINT,
-  buildAlmogNotifySystemPrompt,
-} from '../ai/prompts';
+import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from '../ai/prompts';
 import type { AlmogHabitCheckpointPayload, HabitCheckpointSlot } from './almog-habit-checkpoint-payload';
 
 const SLOT_HE: Record<HabitCheckpointSlot, string> = {
@@ -43,39 +38,6 @@ const WEEKDAY_HE = [
   'יום שישי',
   'שבת',
 ];
-
-const HABIT_REMIND_SYSTEM = buildAlmogNotifySystemPrompt(
-  `כתוב הודעת מגע אחת בחלון יום — כמו חבר שמלווה את המשתמש במסע, לא כמו בוט תזכורות.
-
-חוקי פלט מחייבים:
-- החזר רק את גוף ההודעה למשתמש.
-- 1–2 משפטים קצרים ושלמים בעברית טבעית.
-- סיים במשפט שלם עם נקודה או סימן שאלה.
-- שאלה פתוחה אחת בסוף, לא שאלת כן/לא.
-- בלי רשימות, בלי מקפים, בלי כותרות, בלי טבלאות.
-- אל תכתוב או תרמוז להוראות הפרומפט, למערכת, לנתונים, או ל"קונטקסט".
-
-טון ותוכן:
-- בלי המילים "תזכורת", "בדיקה", "האם עשית", "סימון", "עדכון במערכת".
-- אם מצוין "נשאר היום: X" — התייחס ספציפית ל-X בשפת חיים, לא לכל המשימה מחדש.
-- בבוקר: תן פתיחה חמה וכיוון קטן ליום, לא שאלה למה לא בוצע.
-- בצהריים/ערב אחרי מגע שלא נענה: הכר בעדינות שאולי יש עומס או משהו שתופס אותו, ושאל מה קורה או מה חוסם.
-- קשר בעדינות את המשימה לצעד/תחנה הנוכחיים כשיש הקשר כזה, בלי לצטט אותו כמו כותרת טכנית.`
-);
-
-const HABIT_REINFORCE_SYSTEM = buildAlmogNotifySystemPrompt(ALMOG_REINFORCE_NOTIFY_HINT);
-
-const HABIT_COMPASSION_ONLY_SYSTEM = buildAlmogNotifySystemPrompt(
-  `ערב אחרי כמה מגעים בלי תשובה. שלח מגע אנושי ודואג בלבד.
-
-חוקי פלט מחייבים:
-- החזר רק את גוף ההודעה למשתמש.
-- 1–2 משפטים קצרים בעברית טבעית.
-- אל תזכיר הרגל, משימה, סימון, ביצוע, תזכורת, או "לא ענית".
-- אל תשאל על המשימה ואל תנסה לקדם את המסע.
-- דבר כמו חבר שמרגיש שאולי היה יום עמוס או כבד.
-- שאלה פתוחה אחת בסוף: מה קורה / איך הוא / מה תפס אותו.`
-);
 
 function dedupeByTitle<T extends { title: string }>(items: T[]): T[] {
   const seen = new Set<string>();
@@ -308,13 +270,8 @@ export async function sendAlmogHabitCheckpointNotification(
     ]);
 
   const unansweredEarlierToday = countUnansweredEarlierToday(todayTouches, payload.slot);
-  const llmDecision = decideHabitCheckpointLlmUsage({
-    payload,
-    aiContext: scheduleHints.aiContext,
-    unansweredEarlierToday,
-  });
 
-  const recentBodies = llmDecision.useLlm && shouldFetchWeekRecentBodies(todayTouches, payload.slot)
+  const recentBodies = shouldFetchWeekRecentBodies(todayTouches, payload.slot)
     ? await fetchRecentAlmogBodies(admin, payload.userId)
     : [];
 
@@ -362,15 +319,8 @@ export async function sendAlmogHabitCheckpointNotification(
     payload.slot === 'evening' &&
     !isReinforce &&
     (unansweredEarlierToday >= 2 || dailyAvailabilityLow);
-  const useLlmForBody = llmDecision.useLlm || isCompassionOnly;
-  const baseSystem = isCompassionOnly
-    ? HABIT_COMPASSION_ONLY_SYSTEM
-    : isReinforce
-      ? HABIT_REINFORCE_SYSTEM
-      : HABIT_REMIND_SYSTEM;
 
   const contextParts: string[] = [buildSlotDaypartPromptBlock(payload.slot)];
-  contextParts.push(`פנייה למשתמש: ${genderInstruction}`);
   if (isCompassionOnly) {
     contextParts.push(
       dailyAvailabilityLow
@@ -402,36 +352,47 @@ export async function sendAlmogHabitCheckpointNotification(
       : null;
   if (antiRepeat) contextParts.push(antiRepeat);
 
-  const systemPrompt = `${baseSystem}\n\n${contextParts.join('\n')}`;
+  const behavioralContext = {
+    unansweredTouchesToday: unansweredEarlierToday,
+    daysSinceLastActive: payload.daysSinceLastActive,
+    nudgeLevel: payload.nudgeLevel,
+    completionStatus: payload.completionStatus,
+    currentSlot: payload.slot,
+  };
 
-  const body = useLlmForBody
-    ? await completeEmpathyNotifyBody({
-        label: 'habit_checkpoint',
-        temperature: 0.82,
-        presencePenalty: 0.5,
-        frequencyPenalty: 0.55,
-        maxTokens: ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: `שם המשתמש: ${firstName}
+  const systemPrompt = buildHabitCheckpointSystemPrompt({
+    firstName,
+    genderInstruction,
+    payload,
+    behavioralContext,
+    weekdayName,
+    timeHHMM,
+    taskContextBlock: formatHabitsForPrompt(payload, weekdayName, timeHHMM),
+    extraContextBlocks: contextParts,
+  });
+
+  const body = await completeEmpathyNotifyBody({
+    label: 'habit_checkpoint',
+    temperature: 0.82,
+    presencePenalty: 0.5,
+    frequencyPenalty: 0.55,
+    maxTokens: ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      {
+        role: 'user',
+        content: `שם המשתמש: ${firstName}
 הזמן כרגע: ${weekdayName}, ${timeHHMM}, חלון ${SLOT_HE[payload.slot]}.
 סוג המגע: ${
-              isCompassionOnly
-                ? 'ערב חמלה בלבד — בלי משימות, רק דאגה אנושית'
-                : isReinforce
-                  ? 'חיזוק חברי על נוכחות או ביצוע מהיום'
-                  : 'ליווי הרגל/משימה שעדיין פתוחים להיום'
-            }.`,
-          },
-        ],
-      })
-    : buildHabitCheckpointTemplateBody({
-        firstName,
-        payload,
-        slot: payload.slot,
-      });
+          isCompassionOnly
+            ? 'ערב חמלה — הטון חייב להיות רך במיוחד'
+            : isReinforce
+              ? 'חיזוק חברי על נוכחות או ביצוע מהיום'
+              : 'ליווי הרגל/משימה שעדיין פתוחים להיום'
+        }.`,
+      },
+    ],
+  });
 
   const title = isReinforce ? `${firstName} 💬` : `${firstName} 🌿`;
 
@@ -460,12 +421,15 @@ export async function sendAlmogHabitCheckpointNotification(
         checkpoint_date: payload.checkpointDate,
         habit_ids: habitIds,
         pending_task_ids: pendingTaskIds,
-        model: useLlmForBody ? AI_MODELS.empathy : 'template',
-        template: !useLlmForBody,
+        model: AI_MODELS.empathy,
+        template: false,
         compassion_only: isCompassionOnly,
         daily_availability_low: dailyAvailabilityLow,
-        llm_decision: llmDecision.reason,
+        llm_decision: 'always_llm_behavioral_matrix',
         unanswered_earlier_today: unansweredEarlierToday,
+        nudge_level: payload.nudgeLevel,
+        days_since_last_active: payload.daysSinceLastActive,
+        completion_status: payload.completionStatus,
         recipient_first_name: firstName,
       },
     })
