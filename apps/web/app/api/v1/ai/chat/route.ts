@@ -1130,23 +1130,32 @@ export async function POST(request: Request) {
       parsedWeightKg != null ? formatWeightLoggedPromptBlock(parsedWeightKg) : null;
 
     /**
-     * מבנה הפרומפט החדש (v4) — Voice DNA קודם, חוקים אחרונים:
+     * מבנה הפרומפט (v4.1) — Voice DNA קודם, חוקים אחרונים:
      *
      *   1. BASE_SYSTEM_PROMPT      — Voice DNA + few-shot + כללי שיחה (הקול)
-     *   2. coaching style          — האם אלמוג חבר/ישיר/עדין למשתמש הזה
-     *   3. הקשר אישי               — פרופיל הרשמה, life context, follow-ups
-     *   4. הקשר אקוטי              — אותות מההודעה הנוכחית (סדרי-עדיפות)
-     *   5. רכבת-הרים/החזרה         — אם רלוונטי
-     *   6. שיחה קצרה-טווח          — מה קרה היום (chat turns, מגעי אלמוג)
-     *   7. נתוני מסע (טקסט)         — צעד נוכחי, ✓/○ של הרגלים ומשימות
-     *   8. ידע מסע + RAG ארוך-טווח — סמנטי, נמוך בעדיפות
-     *   9. נוטיפיקציה (אם הגיע מההתראה)
+     *   2. נוטיפיקציה (אם הגיע מההתראה) — *ראשון בהקשר* — זו עדיפות עליונה
+     *      כי המשתמש מגיב להתראה ספציפית; אסור שייקבר תחת RAG/journey.
+     *   3. coaching style          — האם אלמוג חבר/ישיר/עדין למשתמש הזה
+     *   4. הקשר אישי               — פרופיל הרשמה, life context, follow-ups
+     *   5. הקשר אקוטי              — אותות מההודעה הנוכחית (סדרי-עדיפות)
+     *   6. רכבת-הרים/החזרה         — אם רלוונטי
+     *   7. שיחה קצרה-טווח          — מה קרה היום (chat turns, מגעי אלמוג)
+     *   8. נתוני מסע (טקסט)         — צעד נוכחי, ✓/○ של הרגלים ומשימות
+     *   9. ידע מסע + RAG ארוך-טווח — סמנטי, נמוך בעדיפות
      *  10. שם פרטי + מגדר          — בקצה, לא יציף את הקול
      *
      * הסיבה לסדר: ה-LLM נותן משקל גבוה יותר להתחלה. הפרסונה צריכה להגיע ראשונה
-     * כדי שכל ההקשרים שלוקחים אחריה יידברו בקול שלו.
+     * כדי שכל ההקשרים שלוקחים אחריה יידברו בקול שלו, ובלוק ההתראה (אם קיים)
+     * חייב להגיע מיד אחריה כי הוא ה"מסגור" לתשובה.
      */
     const contextSections: string[] = [];
+
+    /**
+     * עדיפות עליונה: כשהמשתמש מגיב להתראה — אלמוג חייב לדעת על מה הוא מגיב.
+     * זה ראשון בהקשר כדי שהמודל יקרא את כל המידע האישי שאחר-כך דרך הפריזמה
+     * של "מה הגעת מהתראה X". בלי זה — הוא ישאל "היי מה קורה?" אדיש להתראה.
+     */
+    if (notificationContextBlock) contextSections.push(notificationContextBlock);
 
     if (coachingStyleBlock) contextSections.push(coachingStyleBlock);
     if (workingMemoryBlock) contextSections.push(workingMemoryBlock);
@@ -1193,8 +1202,6 @@ export async function POST(request: Request) {
     if (systemKnowledgeBlock) contextSections.push(systemKnowledgeBlock);
     if (ragMemoryBlock) contextSections.push(ragMemoryBlock);
     if (moodFromProfile) contextSections.push(moodFromProfile);
-
-    if (notificationContextBlock) contextSections.push(notificationContextBlock);
 
     const addressingFooter = [personalNameInstruction, genderAddressingHint(profileGender)]
       .filter(Boolean)
