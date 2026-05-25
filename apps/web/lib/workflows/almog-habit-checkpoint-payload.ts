@@ -30,10 +30,37 @@ export const habitCheckpointNotifyModeSchema = z.enum(['remind', 'reinforce']);
 export const habitCheckpointReinforceKindSchema = z.enum(['completion', 'presence']);
 
 /**
+ * State machine רב-יומי של דורמנסי — נקבע ב-cron מתוך profiles.last_active_at.
+ *  0 = Active     — פעילות אמיתית ב-24h האחרונות
+ *  1 = Slipping   — 1–2 ימים שקטים
+ *  2 = Dormant    — 3–6 ימים שקטים
+ *  3 = Ghosted    — 7+ ימים שקטים (קיבל back-off של שבוע ב-cron)
+ */
+export const habitCheckpointNudgeLevelSchema = z.union([
+  z.literal(0),
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+]);
+
+export type HabitCheckpointNudgeLevel = z.infer<typeof habitCheckpointNudgeLevelSchema>;
+
+/** סטטוס ביצוע כפי שמחושב מ-Supabase בלבד (SSOT). */
+export const habitCheckpointCompletionStatusSchema = z.enum(['none', 'partial', 'full']);
+
+export type HabitCheckpointCompletionStatus = z.infer<
+  typeof habitCheckpointCompletionStatusSchema
+>;
+
+/**
  * Payload לטריגר Workflow של habit checkpoint.
  *
  * remind — יש הרגל/משימה שלא סומנו בוצעו ב-DB.
  * reinforce — חיזוק חברי: completion (בוצע ב-DB) או presence (שיחה היום, בלי תזכורת).
+ *
+ * שדות nudgeLevel / daysSinceLastActive / completionStatus נחושבים ב-cron route
+ * (לפני טריגר Workflow) כדי שה-LLM יקבל קונטקסט התנהגותי מלא — בלי לחזור ל-DB
+ * מתוך ה-Worker.
  */
 export const almogHabitCheckpointPayloadSchema = z
   .object({
@@ -49,6 +76,13 @@ export const almogHabitCheckpointPayloadSchema = z
     completedTodayTasks: z.array(completedItemSchema).max(50).default([]),
     stepTitle: z.string().max(500).nullable().optional(),
     stationTitle: z.string().max(500).nullable().optional(),
+
+    /** State machine — נקבע ב-cron, מועבר אטומית ל-Worker וה-LLM. */
+    nudgeLevel: habitCheckpointNudgeLevelSchema.default(0),
+    /** מספר ימים שלמים מאז last_active_at. ערך 0 = פעיל היום. */
+    daysSinceLastActive: z.number().int().min(0).max(3650).default(0),
+    /** סטטוס ביצוע כפי שמחושב מ-DB (SSOT) — לא מהמלל שהמשתמש שלח. */
+    completionStatus: habitCheckpointCompletionStatusSchema.default('none'),
   })
   .refine(
     (v) => {
