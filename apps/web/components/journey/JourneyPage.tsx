@@ -20,8 +20,6 @@ import {
   Calendar,
   Target,
   Flame,
-  ArrowLeft,
-  Heart,
 } from 'lucide-react';
 import type { JourneyStepWithProgress } from '../../lib/types/journey';
 import type { JourneyStationGroup } from '../../lib/journey/group-journey-by-station';
@@ -91,9 +89,6 @@ export function JourneyPage({ groups, userId, firstName }: JourneyPageProps) {
     ? Math.round((totalAcrossAll.done / totalAcrossAll.all) * 100)
     : 0;
 
-  // ⤵ הצעד הבא הפעיל בכל המסע — לכרטיס "להמשיך מאיפה שעצרת"
-  const nextStep = useMemo(() => findNextStep(mergedGroups), [mergedGroups]);
-
   // ⤵ ימים מאז תחילת המסע — חישוב פר-משתמש (אם יש progress כלשהו)
   const daysInJourney = useMemo(() => computeDaysInJourney(mergedGroups), [mergedGroups]);
 
@@ -130,7 +125,6 @@ export function JourneyPage({ groups, userId, firstName }: JourneyPageProps) {
               stations: totalAcrossAll.stations,
               stationsDone: totalAcrossAll.stationsDone,
             }}
-            nextStep={nextStep}
             daysInJourney={daysInJourney}
             onSelect={(key) => setSelectedKey(key)}
           />
@@ -148,14 +142,12 @@ function GalleryView({
   firstName,
   groups,
   overall,
-  nextStep,
   daysInJourney,
   onSelect,
 }: {
   firstName: string;
   groups: JourneyStationGroup[];
   overall: { done: number; all: number; pct: number; stations: number; stationsDone: number };
-  nextStep: NextStepInfo | null;
   daysInJourney: number;
   onSelect: (key: string) => void;
 }) {
@@ -191,17 +183,6 @@ function GalleryView({
           <EmptyState firstName={firstName} />
         ) : (
           <>
-            {/* כרטיס "להמשיך מאיפה שעצרת" — צעד הבא הפעיל */}
-            {nextStep ? (
-              <NextStepCard
-                firstName={firstName}
-                nextStep={nextStep}
-                onSelect={() => onSelect(nextStep.groupKey)}
-              />
-            ) : overall.all > 0 && overall.done === overall.all ? (
-              <JourneyCompletedBanner firstName={firstName} />
-            ) : null}
-
             <SectionHeader
               count={groups.length}
               completed={overall.stationsDone}
@@ -268,6 +249,9 @@ function HeroSection({
       {/* ✦ Shooting star — חולף מדי כמה שניות, מוסיף תחושת קסם */}
       {!reduced ? <ShootingStar /> : null}
 
+      {/* ✦ Light beam — קרן אור דיאגונלית שעוברת על ה-Hero אחת לפרק זמן ארוך */}
+      {!reduced ? <SweepingLightBeam /> : null}
+
       {!reduced ? <FloatingSparkles /> : null}
 
       <div className="relative z-10 px-4 pb-14 pt-3 sm:px-6">
@@ -329,22 +313,49 @@ function HeroSection({
             <span>{intro.preamble}</span>
           </motion.p>
 
-          {/* ┌─ NAME — הזרקור: שם המשתמש בענק עם שימר זהב מונפש ─┐ */}
-          <motion.h1
-            initial={{ opacity: 0, y: 14, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.7, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            className="relative text-center text-[44px] font-black leading-[1.02] sm:text-[60px]"
-            style={{
-              fontFamily: "'Rubik','Heebo',sans-serif",
-              letterSpacing: '-0.02em',
-              // ⤵ זהר רך מאחורי הטקסט כדי להעצים את האפקט
-              filter:
-                'drop-shadow(0 2px 12px rgba(2,44,34,0.55)) drop-shadow(0 0 24px rgba(167,243,208,0.28))',
-            }}
-          >
-            <ShimmerText reduced={reduced}>{firstName}</ShimmerText>
-          </motion.h1>
+          {/* ┌─ NAME — הזרקור: הילה זהב נושמת + שם בענק עם שימר זהב ─┐ */}
+          <div className="relative">
+            {/* ✦ הילה זוהבת נושמת מאחורי השם — THE wow factor */}
+            <motion.div
+              aria-hidden
+              className="pointer-events-none absolute left-1/2 top-1/2 -z-10"
+              style={{
+                width: 'min(460px, 90vw)',
+                height: 'min(280px, 60vw)',
+                transform: 'translate(-50%, -50%)',
+                background:
+                  'radial-gradient(ellipse at center, rgba(252,211,77,0.40) 0%, rgba(251,191,36,0.18) 28%, rgba(167,243,208,0.10) 55%, transparent 72%)',
+                filter: 'blur(34px)',
+                mixBlendMode: 'screen',
+              }}
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={
+                reduced
+                  ? { scale: 1, opacity: 0.7 }
+                  : { scale: [1, 1.1, 1], opacity: [0.6, 1, 0.6] }
+              }
+              transition={
+                reduced
+                  ? { duration: 0.6, delay: 0.2 }
+                  : { duration: 5.5, repeat: Infinity, ease: 'easeInOut' }
+              }
+            />
+
+            <motion.h1
+              initial={{ opacity: 0, y: 14, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.7, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              className="relative text-center text-[44px] font-black leading-[1.02] sm:text-[60px]"
+              style={{
+                fontFamily: "'Rubik','Heebo',sans-serif",
+                letterSpacing: '-0.02em',
+                filter:
+                  'drop-shadow(0 2px 12px rgba(2,44,34,0.55)) drop-shadow(0 0 28px rgba(252,211,77,0.30))',
+              }}
+            >
+              <ShimmerText reduced={reduced}>{firstName}</ShimmerText>
+            </motion.h1>
+          </div>
 
           {/* ┌─ MESSAGE — משפט הקשרי דינמי לפי שלב במסע ─┐ */}
           <motion.p
@@ -668,27 +679,6 @@ function AnimatedSparkle({ char, reduced }: { char: string; reduced: boolean }) 
    HELPERS — חישובי מצב אישיים
    ════════════════════════════════════════════════════════════════ */
 
-type NextStepInfo = {
-  step: JourneyStepWithProgress;
-  groupKey: string;
-  groupTitle: string;
-  groupIndex: number;
-};
-
-/** מאתר את הצעד הבא הפעיל של המשתמש — הצעד הראשון בקבוצה הראשונה שטרם הושלמה */
-function findNextStep(groups: JourneyStationGroup[]): NextStepInfo | null {
-  for (let gi = 0; gi < groups.length; gi += 1) {
-    const g = groups[gi];
-    if (!g) continue;
-    for (const s of g.steps) {
-      if (!s.progress?.is_completed) {
-        return { step: s, groupKey: g.key, groupTitle: g.title, groupIndex: gi };
-      }
-    }
-  }
-  return null;
-}
-
 /** מחשב כמה ימים עברו מאז שהמשתמש פתח את הצעד הראשון שלו (לפי created_at של progress) */
 function computeDaysInJourney(groups: JourneyStationGroup[]): number {
   let earliest: number | null = null;
@@ -897,6 +887,35 @@ function AuroraField({ reduced }: { reduced: boolean }) {
 }
 
 /* ════════════════════════════════════════════════════════════════
+   SWEEPING LIGHT BEAM — קרן אור דיאגונלית שסורקת את ה-Hero
+   ════════════════════════════════════════════════════════════════ */
+
+function SweepingLightBeam() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <motion.div
+        className="absolute -top-1/4 h-[150%] w-[180px]"
+        style={{
+          background:
+            'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 25%, rgba(167,243,208,0.18) 48%, rgba(252,211,77,0.16) 55%, rgba(255,255,255,0.06) 75%, transparent 100%)',
+          filter: 'blur(10px)',
+          transform: 'skewX(-14deg)',
+          mixBlendMode: 'screen',
+        }}
+        initial={{ left: '-25%' }}
+        animate={{ left: ['-25%', '120%'] }}
+        transition={{
+          duration: 4.5,
+          ease: [0.45, 0, 0.55, 1],
+          repeat: Infinity,
+          repeatDelay: 9,
+        }}
+      />
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
    SHOOTING STAR — כוכב נופל שחולף באלכסון מדי כמה שניות
    ════════════════════════════════════════════════════════════════ */
 
@@ -1048,160 +1067,7 @@ function EmptyState({ firstName }: { firstName: string }) {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   NEXT STEP CARD — "להמשיך מאיפה שעצרת" / "הצעד הבא שלך"
-   ════════════════════════════════════════════════════════════════ */
-
-function NextStepCard({
-  firstName,
-  nextStep,
-  onSelect,
-}: {
-  firstName: string;
-  nextStep: NextStepInfo;
-  onSelect: () => void;
-}) {
-  const { step, groupTitle } = nextStep;
-  const hasProgress = Boolean(step.progress && !step.progress.is_completed);
-  const ctaLabel = hasProgress ? 'להמשיך עכשיו' : 'להתחיל עכשיו';
-  const eyebrow = hasProgress
-    ? `${firstName}, להמשיך מאיפה שעצרת?`
-    : `${firstName}, הצעד הבא שלך מחכה`;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-      className="mb-5 overflow-hidden rounded-3xl"
-      style={{
-        background:
-          'linear-gradient(135deg, #ffffff 0%, #ecfdf5 55%, #d1fae5 100%)',
-        border: '1px solid rgba(16,185,129,0.22)',
-        boxShadow:
-          '0 12px 32px rgba(6,78,59,0.14), 0 2px 8px rgba(6,78,59,0.06), inset 0 1px 0 rgba(255,255,255,0.85)',
-      }}
-    >
-      <div className="relative px-4 py-4 sm:px-5">
-        {/* קישוט עדין ברקע */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -left-8 -top-8 h-32 w-32 rounded-full opacity-50"
-          style={{
-            background:
-              'radial-gradient(circle, rgba(167,243,208,0.7) 0%, transparent 70%)',
-            filter: 'blur(20px)',
-          }}
-        />
-
-        <div className="relative flex items-start gap-3">
-          {/* אייקון Play / Target */}
-          <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg"
-            style={{
-              background: 'linear-gradient(135deg, #047857, #10b981)',
-              boxShadow:
-                '0 6px 16px rgba(16,185,129,0.35), inset 0 1px 0 rgba(255,255,255,0.4)',
-            }}
-          >
-            <Play className="h-5 w-5" fill="white" />
-          </div>
-
-          <div className="min-w-0 flex-1 text-right">
-            <p className="text-[11px] font-black uppercase tracking-wide text-emerald-700/80">
-              {eyebrow}
-            </p>
-            <h3
-              className="mt-0.5 line-clamp-2 text-[17px] font-black leading-snug"
-              style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
-            >
-              {step.title}
-            </h3>
-            <p className="mt-1 line-clamp-1 text-[12px] font-bold text-emerald-700/85">
-              <span className="text-emerald-600/70">בתחנה: </span>
-              {groupTitle}
-              {step.duration_minutes ? (
-                <span className="text-emerald-600/70"> · {step.duration_minutes} דק׳</span>
-              ) : null}
-            </p>
-          </div>
-        </div>
-
-        <div className="relative mt-3 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={onSelect}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl px-4 py-2.5 text-sm font-black text-white transition-transform active:scale-[0.97]"
-            style={{
-              background: 'linear-gradient(135deg, #047857, #10b981)',
-              boxShadow: '0 6px 16px rgba(16,185,129,0.35)',
-            }}
-          >
-            <span>{ctaLabel}</span>
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-          <Link
-            href={`/journey/${step.id}`}
-            className="rounded-2xl px-3.5 py-2.5 text-xs font-bold text-emerald-800 transition-colors hover:bg-emerald-50/80"
-            style={{ border: '1px solid rgba(16,185,129,0.28)' }}
-          >
-            לצעד ישירות
-          </Link>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   COMPLETED BANNER — באנר חגיגי כשכל המסע הושלם
-   ════════════════════════════════════════════════════════════════ */
-
-function JourneyCompletedBanner({ firstName }: { firstName: string }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.05 }}
-      className="mb-5 overflow-hidden rounded-3xl"
-      style={{
-        background:
-          'linear-gradient(135deg, #fef3c7 0%, #fde68a 45%, #fcd34d 100%)',
-        border: '1px solid rgba(245,158,11,0.35)',
-        boxShadow:
-          '0 12px 28px rgba(245,158,11,0.25), inset 0 1px 0 rgba(255,255,255,0.7)',
-      }}
-    >
-      <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
-        <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg"
-          style={{
-            background: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
-            boxShadow: '0 6px 14px rgba(245,158,11,0.45)',
-          }}
-        >
-          <Trophy className="h-6 w-6" />
-        </div>
-        <div className="min-w-0 flex-1 text-right">
-          <p className="text-[11px] font-black uppercase tracking-wide text-amber-800/80">
-            כל הכבוד 🎉
-          </p>
-          <h3
-            className="mt-0.5 text-[17px] font-black leading-snug text-amber-950"
-            style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
-          >
-            {firstName}, השלמת את כל המסע!
-          </h3>
-          <p className="mt-1 text-[12px] font-bold text-amber-900/85">
-            תמיד אפשר לחזור לחיזוק או לעבור על ההרגלים שבנית.
-          </p>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   ALMOG TOUCH BANNER — תחושת ליווי אישית בתחתית הדף
+   ALMOG TOUCH BANNER — באנר זכוכית כהה, אישי ואנושי
    ════════════════════════════════════════════════════════════════ */
 
 function AlmogTouchBanner({
@@ -1215,27 +1081,60 @@ function AlmogTouchBanner({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.15 }}
-      className="mt-7 overflow-hidden rounded-3xl"
+      transition={{ duration: 0.55, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
+      className="relative mt-7 overflow-hidden rounded-[28px]"
       style={{
+        // זכוכית ירוקה כהה — שקופה, עם blur ו-saturate כדי לקבל אפקט "tinted glass"
         background:
-          'linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(236,253,245,0.94) 100%)',
-        border: '1px solid rgba(16,185,129,0.22)',
-        boxShadow: '0 8px 22px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.6)',
+          'linear-gradient(135deg, rgba(6,78,59,0.92) 0%, rgba(4,120,87,0.88) 50%, rgba(2,44,34,0.94) 100%)',
+        backdropFilter: 'blur(18px) saturate(150%)',
+        WebkitBackdropFilter: 'blur(18px) saturate(150%)',
+        border: '1px solid rgba(167,243,208,0.32)',
+        boxShadow:
+          '0 16px 38px rgba(2,44,34,0.28), 0 2px 10px rgba(2,44,34,0.10), inset 0 1px 0 rgba(255,255,255,0.18)',
       }}
     >
-      <div className="flex items-start gap-3 px-4 py-4 sm:px-5">
-        <AlmogAvatarChip size={48} />
-        <div className="min-w-0 flex-1 text-right">
-          <p className="flex items-center justify-end gap-1.5 text-[11px] font-black uppercase tracking-wide text-emerald-700/85">
-            <Heart className="h-3 w-3 text-rose-400" fill="currentColor" />
-            אלמוג איתך במסע
+      {/* ✦ זוהר זהב עדין מאחורי האווטאר */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full"
+        style={{
+          background:
+            'radial-gradient(circle, rgba(251,191,36,0.35) 0%, rgba(251,191,36,0.10) 40%, transparent 70%)',
+          filter: 'blur(22px)',
+        }}
+      />
+      {/* ✦ זוהר ירוק עדין בצד שני */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-12 -bottom-12 h-44 w-44 rounded-full"
+        style={{
+          background:
+            'radial-gradient(circle, rgba(110,231,183,0.30) 0%, transparent 70%)',
+          filter: 'blur(28px)',
+        }}
+      />
+
+      <div
+        dir="rtl"
+        className="relative flex items-center gap-4 px-4 py-4 sm:px-5 sm:py-5"
+      >
+        <AlmogAvatarChip size={52} />
+        <div className="min-w-0 flex-1">
+          <p
+            className="text-[10.5px] font-black uppercase tracking-[0.14em] text-emerald-200/90"
+            style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+          >
+            המנטור שלך · אלמוג
           </p>
           <p
-            className="mt-1 text-[14px] font-bold leading-relaxed"
-            style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
+            className="mt-1.5 text-[14.5px] font-bold leading-relaxed text-white"
+            style={{
+              fontFamily: "'Rubik','Heebo',sans-serif",
+              textShadow: '0 1px 6px rgba(2,44,34,0.45)',
+            }}
           >
             {message}
           </p>
@@ -1245,26 +1144,30 @@ function AlmogTouchBanner({
   );
 }
 
+/**
+ * הודעת אלמוג — אנושית, בגוף ראשון, בלי קלישאות שיווקיות.
+ * אורך קצר, נימה חמה ולא לחוצה.
+ */
 function buildAlmogMessage(
   firstName: string,
   overall: { done: number; all: number; pct: number; stations: number; stationsDone: number }
 ): string {
   if (overall.all === 0) {
-    return `${firstName}, אני כאן ברגע שתרצה להתחיל — בלי לחץ, בקצב שמתאים לך.`;
+    return `${firstName}, אין שום מירוץ. תגיד לי מתי, ויוצאים יחד.`;
   }
   if (overall.done === 0) {
-    return `${firstName}, הצעד הראשון תמיד הכי משמעותי. אני כאן ללוות אותך לאורך כל הדרך.`;
+    return `${firstName}, אני זוכר את הצעד הראשון של כל אחד. אני פה איתך.`;
   }
   if (overall.pct >= 100) {
-    return `${firstName}, גאה בך מאוד. עברת את כל הדרך — וזה רק תחילתו של אורח חיים חדש.`;
+    return `${firstName}, אני באמת גאה. עכשיו פשוט לשמר את מה שבנית.`;
   }
   if (overall.pct >= 60) {
-    return `${firstName}, אתה כבר מעבר לאמצע הדרך. המשך כך — אני רואה את ההשקעה שלך.`;
+    return `${firstName}, אני רואה כמה אתה משקיע. ממשיכים יחד, בקצב שלך.`;
   }
   if (overall.pct >= 30) {
-    return `${firstName}, נבנית אצלך שגרה יפה. אני כאן בכל פעם שתרצה לדבר על מה שעולה.`;
+    return `יפה לך, ${firstName}. בלי לחץ — אני פה אם יעלה משהו.`;
   }
-  return `${firstName}, כל צעד שאתה עושה חשוב לי. אני סומך עליך שתמשיך בקצב שלך.`;
+  return `${firstName}, צעד אחד בכל פעם. אני פה לאורך כל הדרך.`;
 }
 
 /* ════════════════════════════════════════════════════════════════
