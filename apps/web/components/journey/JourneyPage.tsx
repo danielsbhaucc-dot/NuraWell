@@ -1326,23 +1326,23 @@ function StationHeader({
           }}
         />
 
-        {/* Top bar with back button */}
-        <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 pt-[max(env(safe-area-inset-top),16px)] sm:px-6">
-          <motion.button
+        {/* ╔═ Top bar — כפתור חזרה זכוכיתי + תג "הושלם" אם רלוונטי ═╗
+            הכפתור הוא button רגיל (לא motion.button) כדי שלא יתנגש עם
+            אנימציית ה-layoutId של ההורה ויישאר תמיד גלוי. */}
+        <div
+          className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 sm:px-6"
+          style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}
+        >
+          <button
             type="button"
             onClick={onBack}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.95 }}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.45, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-            className="group relative flex items-center gap-2 overflow-hidden rounded-full px-4 py-2.5 text-[13.5px] font-black text-white"
+            className="group relative flex shrink-0 items-center gap-2 overflow-hidden rounded-full px-4 py-2.5 text-[13.5px] font-black text-white transition-transform duration-200 hover:scale-[1.04] active:scale-95"
             style={{
               background:
-                'linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.10) 100%)',
-              backdropFilter: 'blur(16px) saturate(170%)',
-              WebkitBackdropFilter: 'blur(16px) saturate(170%)',
-              border: '1px solid rgba(255,255,255,0.45)',
+                'linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.10) 100%)',
+              backdropFilter: 'blur(18px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(18px) saturate(180%)',
+              border: '1px solid rgba(255,255,255,0.48)',
               boxShadow:
                 '0 10px 28px rgba(2,44,34,0.32), 0 2px 6px rgba(2,44,34,0.16), inset 0 1px 0 rgba(255,255,255,0.40), inset 0 -1px 0 rgba(255,255,255,0.10)',
               textShadow: '0 1px 6px rgba(2,44,34,0.55)',
@@ -1350,13 +1350,13 @@ function StationHeader({
             }}
             aria-label="חזרה לרשימת התחנות"
           >
-            {/* ✦ specular highlight — קו אור עדין בקצה העליון */}
+            {/* ✦ specular highlight — קו אור עליון עדין */}
             <span
               aria-hidden
               className="pointer-events-none absolute inset-x-3 top-px h-px"
               style={{
                 background:
-                  'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
+                  'linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent)',
               }}
             />
             <ChevronRight
@@ -1364,12 +1364,14 @@ function StationHeader({
               strokeWidth={2.5}
             />
             <span>חזרה למסע</span>
-          </motion.button>
+          </button>
+
           {allDone ? (
             <div
               className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-black text-white shadow"
               style={{
-                background: 'linear-gradient(135deg, rgba(245,158,11,0.95), rgba(251,191,36,0.95))',
+                background:
+                  'linear-gradient(135deg, rgba(245,158,11,0.95), rgba(251,191,36,0.95))',
               }}
             >
               <Trophy className="h-3 w-3" />
