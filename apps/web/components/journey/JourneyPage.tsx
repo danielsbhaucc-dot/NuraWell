@@ -1330,8 +1330,12 @@ function StationHeader({
             הכפתור הוא button רגיל (לא motion.button) כדי שלא יתנגש עם
             אנימציית ה-layoutId של ההורה ויישאר תמיד גלוי. */}
         <div
-          className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 sm:px-6"
-          style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}
+          className="absolute inset-x-0 top-0 z-50 flex items-center justify-between px-4 sm:px-6"
+          style={{
+            // StationHeader itself starts at -mt-16 to slide under the app chrome.
+            // Add that offset back so the button sits visibly inside the station image.
+            paddingTop: 'calc(4rem + max(env(safe-area-inset-top), 16px))',
+          }}
         >
           <button
             type="button"
