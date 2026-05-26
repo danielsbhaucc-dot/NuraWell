@@ -13,10 +13,20 @@ import {
   Droplets,
   ChevronRight,
   Trophy,
+  Sun,
+  Moon,
+  Sunrise,
+  Sunset,
+  Calendar,
+  Target,
+  Flame,
+  ArrowLeft,
+  Heart,
 } from 'lucide-react';
 import type { JourneyStepWithProgress } from '../../lib/types/journey';
 import type { JourneyStationGroup } from '../../lib/journey/group-journey-by-station';
 import { JourneyStationCard } from './JourneyStationCard';
+import { AlmogAvatarChip } from './AlmogPresence';
 
 interface JourneyPageProps {
   groups: JourneyStationGroup[];
@@ -81,6 +91,12 @@ export function JourneyPage({ groups, userId, firstName }: JourneyPageProps) {
     ? Math.round((totalAcrossAll.done / totalAcrossAll.all) * 100)
     : 0;
 
+  // ⤵ הצעד הבא הפעיל בכל המסע — לכרטיס "להמשיך מאיפה שעצרת"
+  const nextStep = useMemo(() => findNextStep(mergedGroups), [mergedGroups]);
+
+  // ⤵ ימים מאז תחילת המסע — חישוב פר-משתמש (אם יש progress כלשהו)
+  const daysInJourney = useMemo(() => computeDaysInJourney(mergedGroups), [mergedGroups]);
+
   const handleBack = useCallback(() => setSelectedKey(null), []);
 
   // לחיצה על Escape חוזרת לתצוגת הגלריה
@@ -114,6 +130,8 @@ export function JourneyPage({ groups, userId, firstName }: JourneyPageProps) {
               stations: totalAcrossAll.stations,
               stationsDone: totalAcrossAll.stationsDone,
             }}
+            nextStep={nextStep}
+            daysInJourney={daysInJourney}
             onSelect={(key) => setSelectedKey(key)}
           />
         )}
@@ -130,11 +148,15 @@ function GalleryView({
   firstName,
   groups,
   overall,
+  nextStep,
+  daysInJourney,
   onSelect,
 }: {
   firstName: string;
   groups: JourneyStationGroup[];
   overall: { done: number; all: number; pct: number; stations: number; stationsDone: number };
+  nextStep: NextStepInfo | null;
+  daysInJourney: number;
   onSelect: (key: string) => void;
 }) {
   const reduced = useReducedMotion();
@@ -146,7 +168,12 @@ function GalleryView({
       transition={{ duration: 0.35 }}
     >
       {/* ═══ HERO ═══ */}
-      <HeroSection firstName={firstName} overall={overall} reduced={!!reduced} />
+      <HeroSection
+        firstName={firstName}
+        overall={overall}
+        daysInJourney={daysInJourney}
+        reduced={!!reduced}
+      />
 
       {/* ═══ BODY ═══ */}
       <div
@@ -161,9 +188,20 @@ function GalleryView({
         }}
       >
         {groups.length === 0 ? (
-          <EmptyState />
+          <EmptyState firstName={firstName} />
         ) : (
           <>
+            {/* כרטיס "להמשיך מאיפה שעצרת" — צעד הבא הפעיל */}
+            {nextStep ? (
+              <NextStepCard
+                firstName={firstName}
+                nextStep={nextStep}
+                onSelect={() => onSelect(nextStep.groupKey)}
+              />
+            ) : overall.all > 0 && overall.done === overall.all ? (
+              <JourneyCompletedBanner firstName={firstName} />
+            ) : null}
+
             <SectionHeader
               count={groups.length}
               completed={overall.stationsDone}
@@ -179,6 +217,9 @@ function GalleryView({
                 />
               ))}
             </div>
+
+            {/* באנר אישי בתחתית — אלמוג איתך */}
+            <AlmogTouchBanner firstName={firstName} overall={overall} />
           </>
         )}
       </div>
@@ -193,13 +234,25 @@ function GalleryView({
 function HeroSection({
   firstName,
   overall,
+  daysInJourney,
   reduced,
 }: {
   firstName: string;
   overall: { done: number; all: number; pct: number; stations: number; stationsDone: number };
+  daysInJourney: number;
   reduced: boolean;
 }) {
-  const intro = useMemo(() => buildIntroText(firstName, overall), [firstName, overall]);
+  // ⤵ ברכת זמן יום נחשבת בטעינה — כדי שלא תיווצר אי-התאמה בין SSR וקליינט,
+  //   נשמור אותה במצב ונחשב רק אחרי mount.
+  const [tod, setTod] = useState<TimeOfDay | null>(null);
+  useEffect(() => {
+    setTod(getTimeOfDay());
+  }, []);
+
+  const intro = useMemo(
+    () => buildIntroText(firstName, overall, tod),
+    [firstName, overall, tod]
+  );
 
   return (
     <div
@@ -209,33 +262,11 @@ function HeroSection({
           'linear-gradient(160deg, #022c22 0%, #064e3b 35%, #047857 65%, #10b981 92%, #34d399 100%)',
       }}
     >
-      {/* ✦ Background blobs */}
-      <div
-        aria-hidden
-        className="absolute pointer-events-none"
-        style={{
-          width: '260px',
-          height: '260px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(52,211,153,0.55) 0%, transparent 70%)',
-          top: '-60px',
-          right: '-60px',
-          filter: 'blur(38px)',
-        }}
-      />
-      <div
-        aria-hidden
-        className="absolute pointer-events-none"
-        style={{
-          width: '220px',
-          height: '220px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(251,191,36,0.30) 0%, transparent 70%)',
-          bottom: '-40px',
-          left: '-50px',
-          filter: 'blur(46px)',
-        }}
-      />
+      {/* ✦ Aurora — מעטה אורות זוהר מונפש שזורם ברקע ה-HERO */}
+      <AuroraField reduced={reduced} />
+
+      {/* ✦ Shooting star — חולף מדי כמה שניות, מוסיף תחושת קסם */}
+      {!reduced ? <ShootingStar /> : null}
 
       {!reduced ? <FloatingSparkles /> : null}
 
@@ -246,22 +277,58 @@ function HeroSection({
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="mx-auto max-w-xl"
         >
-          {/* Eyebrow */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.45, delay: 0.15 }}
-            className="mx-auto mb-4 flex w-fit items-center gap-2 rounded-full px-4 py-2"
-            style={{
-              background: 'rgba(255,255,255,0.16)',
-              border: '1px solid rgba(255,255,255,0.28)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-            }}
-          >
-            <Sparkles className="h-4 w-4 shrink-0 text-amber-300" />
-            <span className="text-sm font-bold text-white">המסע שלי</span>
-          </motion.div>
+          {/* Eyebrow — "המסע שלי" + יום במסע */}
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.45, delay: 0.12 }}
+              className="flex w-fit items-center gap-2 rounded-full px-3.5 py-1.5"
+              style={{
+                background: 'rgba(255,255,255,0.16)',
+                border: '1px solid rgba(255,255,255,0.28)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+              }}
+            >
+              <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-300" />
+              <span className="text-[13px] font-bold text-white">המסע שלי</span>
+            </motion.div>
+
+            {daysInJourney > 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.45, delay: 0.2 }}
+                className="flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5"
+                style={{
+                  background:
+                    'linear-gradient(135deg, rgba(251,191,36,0.22), rgba(245,158,11,0.18))',
+                  border: '1px solid rgba(251,191,36,0.5)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                }}
+              >
+                <Calendar className="h-3.5 w-3.5 shrink-0 text-amber-200" />
+                <span className="text-[12px] font-bold text-amber-50">
+                  יום {daysInJourney} במסע
+                </span>
+              </motion.div>
+            ) : null}
+          </div>
+
+          {/* ברכת זמן יום אישית — מופיעה רק אחרי mount כדי להימנע מ-mismatch */}
+          {tod ? (
+            <motion.p
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.18 }}
+              className="mb-1.5 flex items-center justify-center gap-1.5 text-center text-[13px] font-bold tracking-wide text-emerald-100/90"
+            >
+              <TimeOfDayIcon tod={tod} />
+              <span>{tod.greeting}</span>
+            </motion.p>
+          ) : null}
 
           {/* Personal greeting */}
           <motion.h1
@@ -269,7 +336,10 @@ function HeroSection({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.22 }}
             className="text-center text-[26px] font-black leading-tight text-white sm:text-[32px]"
-            style={{ fontFamily: "'Rubik','Heebo',sans-serif", textShadow: '0 2px 18px rgba(2,44,34,0.45)' }}
+            style={{
+              fontFamily: "'Rubik','Heebo',sans-serif",
+              textShadow: '0 2px 18px rgba(2,44,34,0.45)',
+            }}
           >
             {intro.headline}
           </motion.h1>
@@ -309,7 +379,8 @@ function HeroSection({
                   className="mt-0.5 text-[18px] font-black text-white"
                   style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                 >
-                  {overall.done} מתוך {overall.all} צעדים
+                  <CountUp value={overall.done} reduced={reduced} /> מתוך{' '}
+                  <CountUp value={overall.all} reduced={reduced} /> צעדים
                 </p>
                 <p className="mt-0.5 text-[12px] text-emerald-50/85">
                   {overall.stationsDone > 0
@@ -319,17 +390,138 @@ function HeroSection({
               </div>
             </motion.div>
           ) : null}
+
+          {/* צ׳יפים סטטיסטיים אישיים */}
+          {overall.all > 0 ? (
+            <StatChips overall={overall} daysInJourney={daysInJourney} />
+          ) : null}
         </motion.div>
       </div>
     </div>
   );
 }
 
-/** מסך אישי לפי שלב במסע: בלי צעדים, בתחילת הדרך, באמצע, או הושלם */
+/* ════════════════════════════════════════════════════════════════
+   STAT CHIPS — שורת הישגים אישיים מתחת ל-progress card
+   ════════════════════════════════════════════════════════════════ */
+
+function StatChips({
+  overall,
+  daysInJourney,
+}: {
+  overall: { done: number; all: number; pct: number; stations: number; stationsDone: number };
+  daysInJourney: number;
+}) {
+  const chips: Array<{ icon: React.ReactNode; label: string; value: string; tone: 'emerald' | 'amber' | 'rose' }> = [];
+
+  if (overall.stationsDone > 0) {
+    chips.push({
+      icon: <Trophy className="h-3.5 w-3.5" />,
+      label: 'תחנות',
+      value: `${overall.stationsDone}/${overall.stations}`,
+      tone: 'amber',
+    });
+  }
+  if (overall.done > 0) {
+    chips.push({
+      icon: <Target className="h-3.5 w-3.5" />,
+      label: 'צעדים',
+      value: `${overall.done}`,
+      tone: 'emerald',
+    });
+  }
+  if (daysInJourney > 1) {
+    chips.push({
+      icon: <Flame className="h-3.5 w-3.5" />,
+      label: 'ימי מסע',
+      value: `${daysInJourney}`,
+      tone: 'rose',
+    });
+  }
+
+  if (chips.length === 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.55 }}
+      className="mx-auto mt-3 flex max-w-md flex-wrap items-center justify-center gap-2"
+    >
+      {chips.map((c, i) => {
+        const palette = {
+          emerald: {
+            bg: 'linear-gradient(135deg, rgba(167,243,208,0.22), rgba(52,211,153,0.18))',
+            border: 'rgba(167,243,208,0.55)',
+            iconColor: '#a7f3d0',
+          },
+          amber: {
+            bg: 'linear-gradient(135deg, rgba(251,191,36,0.22), rgba(245,158,11,0.16))',
+            border: 'rgba(251,191,36,0.55)',
+            iconColor: '#fcd34d',
+          },
+          rose: {
+            bg: 'linear-gradient(135deg, rgba(251,113,133,0.20), rgba(244,114,182,0.16))',
+            border: 'rgba(251,113,133,0.45)',
+            iconColor: '#fda4af',
+          },
+        }[c.tone];
+
+        return (
+          <div
+            key={i}
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
+            style={{
+              background: palette.bg,
+              border: `1px solid ${palette.border}`,
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+            }}
+          >
+            <span style={{ color: palette.iconColor }}>{c.icon}</span>
+            <span className="text-[11px] font-bold text-emerald-50/90">{c.label}</span>
+            <span className="text-[13px] font-black text-white" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
+              {c.value}
+            </span>
+          </div>
+        );
+      })}
+    </motion.div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   TIME OF DAY — ברכה אישית לפי שעה
+   ════════════════════════════════════════════════════════════════ */
+
+type TimeOfDay = {
+  greeting: string;
+  bucket: 'morning' | 'noon' | 'evening' | 'night';
+};
+
+function getTimeOfDay(): TimeOfDay {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 11) return { greeting: 'בוקר טוב', bucket: 'morning' };
+  if (h >= 11 && h < 16) return { greeting: 'צהריים טובים', bucket: 'noon' };
+  if (h >= 16 && h < 20) return { greeting: 'אחר הצהריים נעימים', bucket: 'evening' };
+  if (h >= 20 && h < 24) return { greeting: 'ערב טוב', bucket: 'night' };
+  return { greeting: 'לילה שקט', bucket: 'night' };
+}
+
+function TimeOfDayIcon({ tod }: { tod: TimeOfDay }) {
+  if (tod.bucket === 'morning') return <Sunrise className="h-3.5 w-3.5 text-amber-200" />;
+  if (tod.bucket === 'noon') return <Sun className="h-3.5 w-3.5 text-amber-200" />;
+  if (tod.bucket === 'evening') return <Sunset className="h-3.5 w-3.5 text-orange-200" />;
+  return <Moon className="h-3.5 w-3.5 text-indigo-200" />;
+}
+
+/** מסך אישי לפי שלב במסע — מותאם לשם הפרטי, להתקדמות ולשעת היום */
 function buildIntroText(
   firstName: string,
-  overall: { done: number; all: number; pct: number; stations: number; stationsDone: number }
+  overall: { done: number; all: number; pct: number; stations: number; stationsDone: number },
+  tod: TimeOfDay | null
 ): { headline: string; subline: string } {
+  // הכותרת תמיד עם השם, מותאמת אישית
   if (overall.all === 0) {
     return {
       headline: `${firstName}, המסע שלך מחכה ✦`,
@@ -341,28 +533,83 @@ function buildIntroText(
     return {
       headline: `${firstName}, זה הרגע להתחיל ✿`,
       subline:
-        'בחר תחנה במסלול, ובוא נצא לדרך — צעד אחד בכל פעם, בקצב שלך.',
+        tod?.bucket === 'morning'
+          ? 'הבוקר הזה מתחיל משהו חדש. בחר תחנה ובוא נצא לדרך — צעד אחד בכל פעם, בקצב שלך.'
+          : tod?.bucket === 'night'
+            ? 'גם רגע שקט בלילה הוא רגע טוב להתחיל. בחר תחנה ופתח את הצעד הראשון שלך.'
+            : 'בחר תחנה במסלול, ובוא נצא לדרך — צעד אחד בכל פעם, בקצב שלך.',
     };
   }
   if (overall.pct >= 100) {
     return {
       headline: `${firstName}, עשית את כל הדרך! 🏆`,
       subline:
-        'השלמת את כל הצעדים. אתה יכול לחזור בכל רגע ולהתבונן שוב במה שלמדת.',
+        'השלמת את כל הצעדים. אתה יכול לחזור בכל רגע ולהתבונן שוב במה שלמדת — או להמשיך לעבות את ההרגלים שבנית.',
     };
   }
   if (overall.pct >= 60) {
     return {
       headline: `${firstName}, הקו כבר נראה באופק ✦`,
       subline:
-        'עברת יותר ממחצית הדרך. כל צעד נוסף מקבע את ההרגלים שאתה בונה לעצמך.',
+        'עברת יותר ממחצית הדרך. כל צעד נוסף מקבע את ההרגלים שאתה בונה לעצמך — וזה ממש מרשים.',
+    };
+  }
+  if (overall.pct >= 30) {
+    return {
+      headline: `${firstName}, אתה תופס מומנטום ✿`,
+      subline: 'התחלת לבנות שגרה שמתאימה לך. ממשיכים בקצב שלך — אני כאן לאורך כל הדרך.',
     };
   }
   return {
     headline: `${firstName}, ממשיכים את המסע ✿`,
     subline:
-      'אני גאה בכל צעד שאתה עושה. בחר את התחנה הבאה ובוא נמשיך יחד.',
+      tod?.bucket === 'morning'
+        ? 'בוקר חדש, צעד חדש. אני גאה בכל צעד שאתה עושה — בחר את התחנה הבאה ובוא נמשיך יחד.'
+        : 'אני גאה בכל צעד שאתה עושה. בחר את התחנה הבאה ובוא נמשיך יחד.',
   };
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HELPERS — חישובי מצב אישיים
+   ════════════════════════════════════════════════════════════════ */
+
+type NextStepInfo = {
+  step: JourneyStepWithProgress;
+  groupKey: string;
+  groupTitle: string;
+  groupIndex: number;
+};
+
+/** מאתר את הצעד הבא הפעיל של המשתמש — הצעד הראשון בקבוצה הראשונה שטרם הושלמה */
+function findNextStep(groups: JourneyStationGroup[]): NextStepInfo | null {
+  for (let gi = 0; gi < groups.length; gi += 1) {
+    const g = groups[gi];
+    if (!g) continue;
+    for (const s of g.steps) {
+      if (!s.progress?.is_completed) {
+        return { step: s, groupKey: g.key, groupTitle: g.title, groupIndex: gi };
+      }
+    }
+  }
+  return null;
+}
+
+/** מחשב כמה ימים עברו מאז שהמשתמש פתח את הצעד הראשון שלו (לפי created_at של progress) */
+function computeDaysInJourney(groups: JourneyStationGroup[]): number {
+  let earliest: number | null = null;
+  for (const g of groups) {
+    for (const s of g.steps) {
+      const ts = s.progress?.created_at;
+      if (!ts) continue;
+      const t = new Date(ts).getTime();
+      if (!Number.isFinite(t)) continue;
+      if (earliest === null || t < earliest) earliest = t;
+    }
+  }
+  if (earliest === null) return 0;
+  const diffMs = Date.now() - earliest;
+  if (diffMs < 0) return 1;
+  return Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1);
 }
 
 /** טבעת התקדמות מונפשת (SVG) — wow factor עדין ב-HERO */
@@ -413,9 +660,208 @@ function ProgressRing({ pct, reduced }: { pct: number; reduced: boolean }) {
           className="text-[15px] font-black text-white"
           style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
         >
-          {pct}%
+          <CountUp value={pct} reduced={reduced} duration={1.1} />%
         </span>
       </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   COUNT-UP — מספר שמתנפח מ-0 ליעד עם easing עדין (delight קטן)
+   ════════════════════════════════════════════════════════════════ */
+
+function CountUp({
+  value,
+  duration = 1.2,
+  reduced,
+}: {
+  value: number;
+  duration?: number;
+  reduced?: boolean;
+}) {
+  const [display, setDisplay] = useState(reduced ? value : 0);
+
+  useEffect(() => {
+    if (reduced) {
+      setDisplay(value);
+      return;
+    }
+    if (value === 0) {
+      setDisplay(0);
+      return;
+    }
+    const start = performance.now();
+    let frame = 0;
+    const tick = (now: number) => {
+      const elapsed = (now - start) / 1000;
+      const t = Math.min(1, elapsed / duration);
+      // easeOutCubic
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplay(Math.round(value * eased));
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value, duration, reduced]);
+
+  return <>{display}</>;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   AURORA FIELD — שכבת אור מונפשת שזורמת ברקע (THE wow factor)
+   ════════════════════════════════════════════════════════════════ */
+
+function AuroraField({ reduced }: { reduced: boolean }) {
+  // אם המשתמש מבקש פחות תנועה — נשמור מראה סטטי (לא מהבהב, לא זז).
+  const orbs = useMemo(
+    () => [
+      {
+        c: 'rgba(167,243,208,0.55)',
+        size: 380,
+        left: '-8%',
+        top: '4%',
+        dur: 18,
+        delay: 0,
+        x: [0, 36, -18, 0],
+        y: [0, -28, 22, 0],
+      },
+      {
+        c: 'rgba(251,191,36,0.32)',
+        size: 320,
+        left: '58%',
+        top: '38%',
+        dur: 22,
+        delay: 2.5,
+        x: [0, -30, 24, 0],
+        y: [0, 22, -20, 0],
+      },
+      {
+        c: 'rgba(110,231,183,0.42)',
+        size: 360,
+        left: '24%',
+        top: '62%',
+        dur: 26,
+        delay: 5,
+        x: [0, 28, -32, 0],
+        y: [0, -22, 18, 0],
+      },
+      {
+        c: 'rgba(56,189,248,0.22)',
+        size: 280,
+        left: '70%',
+        top: '-10%',
+        dur: 20,
+        delay: 3.5,
+        x: [0, -22, 18, 0],
+        y: [0, 26, -14, 0],
+      },
+    ],
+    []
+  );
+
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+      style={{ mixBlendMode: 'screen' }}
+    >
+      {orbs.map((o, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            width: o.size,
+            height: o.size,
+            left: o.left,
+            top: o.top,
+            background: `radial-gradient(circle, ${o.c} 0%, transparent 65%)`,
+            filter: 'blur(48px)',
+            willChange: 'transform',
+          }}
+          initial={false}
+          animate={
+            reduced
+              ? {}
+              : {
+                  x: o.x,
+                  y: o.y,
+                  scale: [1, 1.12, 0.95, 1],
+                }
+          }
+          transition={{
+            duration: o.dur,
+            delay: o.delay,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SHOOTING STAR — כוכב נופל שחולף באלכסון מדי כמה שניות
+   ════════════════════════════════════════════════════════════════ */
+
+function ShootingStar() {
+  // שלוש "תחנות זמן" אקראיות-ידניות שיוצרות תחושה לא מחזורית של כוכב נופל.
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <motion.div
+        className="absolute"
+        style={{
+          top: '22%',
+          left: '110%',
+          width: 140,
+          height: 2,
+          background:
+            'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.95) 60%, rgba(167,243,208,0.95) 100%)',
+          borderRadius: 9999,
+          filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.95)) drop-shadow(0 0 14px rgba(167,243,208,0.7))',
+          transform: 'rotate(-18deg)',
+        }}
+        initial={{ x: 0, opacity: 0 }}
+        animate={{
+          x: ['-0%', '-130%', '-130%'],
+          opacity: [0, 1, 0],
+        }}
+        transition={{
+          duration: 1.6,
+          times: [0, 0.6, 1],
+          repeat: Infinity,
+          repeatDelay: 7,
+          ease: 'easeOut',
+        }}
+      />
+      <motion.div
+        className="absolute"
+        style={{
+          top: '52%',
+          left: '110%',
+          width: 110,
+          height: 2,
+          background:
+            'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.85) 60%, rgba(251,191,36,0.9) 100%)',
+          borderRadius: 9999,
+          filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.9)) drop-shadow(0 0 14px rgba(251,191,36,0.6))',
+          transform: 'rotate(-12deg)',
+        }}
+        initial={{ x: 0, opacity: 0 }}
+        animate={{
+          x: ['-0%', '-140%', '-140%'],
+          opacity: [0, 1, 0],
+        }}
+        transition={{
+          duration: 1.8,
+          times: [0, 0.55, 1],
+          repeat: Infinity,
+          repeatDelay: 11,
+          delay: 4,
+          ease: 'easeOut',
+        }}
+      />
     </div>
   );
 }
@@ -494,16 +940,236 @@ function SectionHeader({ count, completed }: { count: number; completed: number 
   );
 }
 
-function EmptyState() {
+function EmptyState({ firstName }: { firstName: string }) {
   return (
     <div className="rounded-3xl bg-white/70 px-6 py-16 text-center backdrop-blur">
       <Droplets className="mx-auto mb-4 h-12 w-12 text-emerald-300" />
       <h3 className="mb-2 text-xl font-black" style={{ color: '#1A1730' }}>
-        עוד לא התחלת את המסע
+        {firstName}, המסע שלך מחכה
       </h3>
-      <p className="text-sm text-gray-500">כשיצטרפו תחנות וצעדים — הם יופיעו כאן</p>
+      <p className="text-sm text-gray-500">כשיצטרפו תחנות וצעדים — הם יופיעו כאן בדיוק בשבילך</p>
     </div>
   );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   NEXT STEP CARD — "להמשיך מאיפה שעצרת" / "הצעד הבא שלך"
+   ════════════════════════════════════════════════════════════════ */
+
+function NextStepCard({
+  firstName,
+  nextStep,
+  onSelect,
+}: {
+  firstName: string;
+  nextStep: NextStepInfo;
+  onSelect: () => void;
+}) {
+  const { step, groupTitle } = nextStep;
+  const hasProgress = Boolean(step.progress && !step.progress.is_completed);
+  const ctaLabel = hasProgress ? 'להמשיך עכשיו' : 'להתחיל עכשיו';
+  const eyebrow = hasProgress
+    ? `${firstName}, להמשיך מאיפה שעצרת?`
+    : `${firstName}, הצעד הבא שלך מחכה`;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+      className="mb-5 overflow-hidden rounded-3xl"
+      style={{
+        background:
+          'linear-gradient(135deg, #ffffff 0%, #ecfdf5 55%, #d1fae5 100%)',
+        border: '1px solid rgba(16,185,129,0.22)',
+        boxShadow:
+          '0 12px 32px rgba(6,78,59,0.14), 0 2px 8px rgba(6,78,59,0.06), inset 0 1px 0 rgba(255,255,255,0.85)',
+      }}
+    >
+      <div className="relative px-4 py-4 sm:px-5">
+        {/* קישוט עדין ברקע */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -left-8 -top-8 h-32 w-32 rounded-full opacity-50"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(167,243,208,0.7) 0%, transparent 70%)',
+            filter: 'blur(20px)',
+          }}
+        />
+
+        <div className="relative flex items-start gap-3">
+          {/* אייקון Play / Target */}
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg"
+            style={{
+              background: 'linear-gradient(135deg, #047857, #10b981)',
+              boxShadow:
+                '0 6px 16px rgba(16,185,129,0.35), inset 0 1px 0 rgba(255,255,255,0.4)',
+            }}
+          >
+            <Play className="h-5 w-5" fill="white" />
+          </div>
+
+          <div className="min-w-0 flex-1 text-right">
+            <p className="text-[11px] font-black uppercase tracking-wide text-emerald-700/80">
+              {eyebrow}
+            </p>
+            <h3
+              className="mt-0.5 line-clamp-2 text-[17px] font-black leading-snug"
+              style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
+            >
+              {step.title}
+            </h3>
+            <p className="mt-1 line-clamp-1 text-[12px] font-bold text-emerald-700/85">
+              <span className="text-emerald-600/70">בתחנה: </span>
+              {groupTitle}
+              {step.duration_minutes ? (
+                <span className="text-emerald-600/70"> · {step.duration_minutes} דק׳</span>
+              ) : null}
+            </p>
+          </div>
+        </div>
+
+        <div className="relative mt-3 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={onSelect}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl px-4 py-2.5 text-sm font-black text-white transition-transform active:scale-[0.97]"
+            style={{
+              background: 'linear-gradient(135deg, #047857, #10b981)',
+              boxShadow: '0 6px 16px rgba(16,185,129,0.35)',
+            }}
+          >
+            <span>{ctaLabel}</span>
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <Link
+            href={`/journey/${step.id}`}
+            className="rounded-2xl px-3.5 py-2.5 text-xs font-bold text-emerald-800 transition-colors hover:bg-emerald-50/80"
+            style={{ border: '1px solid rgba(16,185,129,0.28)' }}
+          >
+            לצעד ישירות
+          </Link>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   COMPLETED BANNER — באנר חגיגי כשכל המסע הושלם
+   ════════════════════════════════════════════════════════════════ */
+
+function JourneyCompletedBanner({ firstName }: { firstName: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.05 }}
+      className="mb-5 overflow-hidden rounded-3xl"
+      style={{
+        background:
+          'linear-gradient(135deg, #fef3c7 0%, #fde68a 45%, #fcd34d 100%)',
+        border: '1px solid rgba(245,158,11,0.35)',
+        boxShadow:
+          '0 12px 28px rgba(245,158,11,0.25), inset 0 1px 0 rgba(255,255,255,0.7)',
+      }}
+    >
+      <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
+        <div
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg"
+          style={{
+            background: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
+            boxShadow: '0 6px 14px rgba(245,158,11,0.45)',
+          }}
+        >
+          <Trophy className="h-6 w-6" />
+        </div>
+        <div className="min-w-0 flex-1 text-right">
+          <p className="text-[11px] font-black uppercase tracking-wide text-amber-800/80">
+            כל הכבוד 🎉
+          </p>
+          <h3
+            className="mt-0.5 text-[17px] font-black leading-snug text-amber-950"
+            style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+          >
+            {firstName}, השלמת את כל המסע!
+          </h3>
+          <p className="mt-1 text-[12px] font-bold text-amber-900/85">
+            תמיד אפשר לחזור לחיזוק או לעבור על ההרגלים שבנית.
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ALMOG TOUCH BANNER — תחושת ליווי אישית בתחתית הדף
+   ════════════════════════════════════════════════════════════════ */
+
+function AlmogTouchBanner({
+  firstName,
+  overall,
+}: {
+  firstName: string;
+  overall: { done: number; all: number; pct: number; stations: number; stationsDone: number };
+}) {
+  const message = useMemo(() => buildAlmogMessage(firstName, overall), [firstName, overall]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.15 }}
+      className="mt-7 overflow-hidden rounded-3xl"
+      style={{
+        background:
+          'linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(236,253,245,0.94) 100%)',
+        border: '1px solid rgba(16,185,129,0.22)',
+        boxShadow: '0 8px 22px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.6)',
+      }}
+    >
+      <div className="flex items-start gap-3 px-4 py-4 sm:px-5">
+        <AlmogAvatarChip size={48} />
+        <div className="min-w-0 flex-1 text-right">
+          <p className="flex items-center justify-end gap-1.5 text-[11px] font-black uppercase tracking-wide text-emerald-700/85">
+            <Heart className="h-3 w-3 text-rose-400" fill="currentColor" />
+            אלמוג איתך במסע
+          </p>
+          <p
+            className="mt-1 text-[14px] font-bold leading-relaxed"
+            style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
+          >
+            {message}
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function buildAlmogMessage(
+  firstName: string,
+  overall: { done: number; all: number; pct: number; stations: number; stationsDone: number }
+): string {
+  if (overall.all === 0) {
+    return `${firstName}, אני כאן ברגע שתרצה להתחיל — בלי לחץ, בקצב שמתאים לך.`;
+  }
+  if (overall.done === 0) {
+    return `${firstName}, הצעד הראשון תמיד הכי משמעותי. אני כאן ללוות אותך לאורך כל הדרך.`;
+  }
+  if (overall.pct >= 100) {
+    return `${firstName}, גאה בך מאוד. עברת את כל הדרך — וזה רק תחילתו של אורח חיים חדש.`;
+  }
+  if (overall.pct >= 60) {
+    return `${firstName}, אתה כבר מעבר לאמצע הדרך. המשך כך — אני רואה את ההשקעה שלך.`;
+  }
+  if (overall.pct >= 30) {
+    return `${firstName}, נבנית אצלך שגרה יפה. אני כאן בכל פעם שתרצה לדבר על מה שעולה.`;
+  }
+  return `${firstName}, כל צעד שאתה עושה חשוב לי. אני סומך עליך שתמשיך בקצב שלך.`;
 }
 
 /* ════════════════════════════════════════════════════════════════
