@@ -317,39 +317,57 @@ function HeroSection({
             ) : null}
           </div>
 
-          {/* ברכת זמן יום אישית — מופיעה רק אחרי mount כדי להימנע מ-mismatch */}
-          {tod ? (
-            <motion.p
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.18 }}
-              className="mb-1.5 flex items-center justify-center gap-1.5 text-center text-[13px] font-bold tracking-wide text-emerald-100/90"
-            >
-              <TimeOfDayIcon tod={tod} />
-              <span>{tod.greeting}</span>
-            </motion.p>
-          ) : null}
-
-          {/* Personal greeting */}
-          <motion.h1
-            initial={{ opacity: 0, y: 10 }}
+          {/* ┌─ Preamble — "[ברכת זמן], " — קטן ואלגנטי ─┐ */}
+          <motion.p
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.22 }}
-            className="text-center text-[26px] font-black leading-tight text-white sm:text-[32px]"
+            transition={{ duration: 0.4, delay: 0.18 }}
+            className="mb-1 flex items-center justify-center gap-1.5 text-center text-[15px] font-bold tracking-wide text-emerald-100/95 sm:text-[16px]"
+            style={{ textShadow: '0 2px 10px rgba(2,44,34,0.45)' }}
+          >
+            {tod ? <TimeOfDayIcon tod={tod} /> : null}
+            <span>{intro.preamble}</span>
+          </motion.p>
+
+          {/* ┌─ NAME — הזרקור: שם המשתמש בענק עם שימר זהב מונפש ─┐ */}
+          <motion.h1
+            initial={{ opacity: 0, y: 14, scale: 0.92 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.7, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            className="relative text-center text-[44px] font-black leading-[1.02] sm:text-[60px]"
             style={{
               fontFamily: "'Rubik','Heebo',sans-serif",
-              textShadow: '0 2px 18px rgba(2,44,34,0.45)',
+              letterSpacing: '-0.02em',
+              // ⤵ זהר רך מאחורי הטקסט כדי להעצים את האפקט
+              filter:
+                'drop-shadow(0 2px 12px rgba(2,44,34,0.55)) drop-shadow(0 0 24px rgba(167,243,208,0.28))',
             }}
           >
-            {intro.headline}
+            <ShimmerText reduced={reduced}>{firstName}</ShimmerText>
           </motion.h1>
 
-          {/* Sub-line */}
+          {/* ┌─ MESSAGE — משפט הקשרי דינמי לפי שלב במסע ─┐ */}
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.36 }}
+            className="mt-2 flex items-center justify-center gap-2 text-center text-[20px] font-black text-white sm:text-[26px]"
+            style={{
+              fontFamily: "'Rubik','Heebo',sans-serif",
+              textShadow: '0 2px 18px rgba(2,44,34,0.55)',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            <span>{intro.message}</span>
+            <AnimatedSparkle char={intro.sparkle} reduced={reduced} />
+          </motion.p>
+
+          {/* ┌─ Sub-line — טקסט מעודד מתחת ─┐ */}
           <motion.p
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.32 }}
-            className="mx-auto mt-3 max-w-md text-center text-[15px] leading-relaxed text-emerald-50/90 sm:text-base"
+            transition={{ duration: 0.55, delay: 0.46 }}
+            className="mx-auto mt-3 max-w-md text-center text-[14px] leading-relaxed text-emerald-50/90 sm:text-[15px]"
           >
             {intro.subline}
           </motion.p>
@@ -515,23 +533,34 @@ function TimeOfDayIcon({ tod }: { tod: TimeOfDay }) {
   return <Moon className="h-3.5 w-3.5 text-indigo-200" />;
 }
 
-/** מסך אישי לפי שלב במסע — מותאם לשם הפרטי, להתקדמות ולשעת היום */
+/**
+ * בונה את ארבעת מחרוזות ה-HERO לפי שלב במסע ושעת היום:
+ *  • preamble — "בוקר טוב," / "צהריים טובים," וכו׳ (אם אין tod, בלי פסיק)
+ *  • message  — המשפט ההקשרי הגדול שאחרי השם ("זה הרגע להתחיל", "ממשיכים את המסע" וכו׳)
+ *  • sparkle  — סימן/אימוג'י זוהר בסוף המשפט (✿ ✦ 🏆)
+ *  • subline  — טקסט המעודד מתחת
+ */
 function buildIntroText(
-  firstName: string,
+  _firstName: string,
   overall: { done: number; all: number; pct: number; stations: number; stationsDone: number },
   tod: TimeOfDay | null
-): { headline: string; subline: string } {
-  // הכותרת תמיד עם השם, מותאמת אישית
+): { preamble: string; message: string; sparkle: string; subline: string } {
+  const preamble = tod ? `${tod.greeting},` : 'שלום,';
+
   if (overall.all === 0) {
     return {
-      headline: `${firstName}, המסע שלך מחכה ✦`,
+      preamble,
+      message: 'המסע שלך מחכה',
+      sparkle: '✦',
       subline:
         'תחנות בדרך, צעדים אישיים והרגלים שמשתלבים בחיים — הכל מוכן להופיע ברגע שתפרוץ קדימה.',
     };
   }
   if (overall.done === 0) {
     return {
-      headline: `${firstName}, זה הרגע להתחיל ✿`,
+      preamble,
+      message: 'זה הרגע להתחיל',
+      sparkle: '✿',
       subline:
         tod?.bucket === 'morning'
           ? 'הבוקר הזה מתחיל משהו חדש. בחר תחנה ובוא נצא לדרך — צעד אחד בכל פעם, בקצב שלך.'
@@ -542,31 +571,97 @@ function buildIntroText(
   }
   if (overall.pct >= 100) {
     return {
-      headline: `${firstName}, עשית את כל הדרך! 🏆`,
+      preamble,
+      message: 'עשית את כל הדרך!',
+      sparkle: '🏆',
       subline:
         'השלמת את כל הצעדים. אתה יכול לחזור בכל רגע ולהתבונן שוב במה שלמדת — או להמשיך לעבות את ההרגלים שבנית.',
     };
   }
   if (overall.pct >= 60) {
     return {
-      headline: `${firstName}, הקו כבר נראה באופק ✦`,
+      preamble,
+      message: 'הקו כבר נראה באופק',
+      sparkle: '✦',
       subline:
         'עברת יותר ממחצית הדרך. כל צעד נוסף מקבע את ההרגלים שאתה בונה לעצמך — וזה ממש מרשים.',
     };
   }
   if (overall.pct >= 30) {
     return {
-      headline: `${firstName}, אתה תופס מומנטום ✿`,
+      preamble,
+      message: 'אתה תופס מומנטום',
+      sparkle: '✿',
       subline: 'התחלת לבנות שגרה שמתאימה לך. ממשיכים בקצב שלך — אני כאן לאורך כל הדרך.',
     };
   }
   return {
-    headline: `${firstName}, ממשיכים את המסע ✿`,
+    preamble,
+    message: 'ממשיכים את המסע',
+    sparkle: '✿',
     subline:
       tod?.bucket === 'morning'
         ? 'בוקר חדש, צעד חדש. אני גאה בכל צעד שאתה עושה — בחר את התחנה הבאה ובוא נמשיך יחד.'
         : 'אני גאה בכל צעד שאתה עושה. בחר את התחנה הבאה ובוא נמשיך יחד.',
   };
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SHIMMER TEXT — טקסט עם שיפוע זהב מונפש (השימוש: השם של המשתמש)
+   ════════════════════════════════════════════════════════════════ */
+
+function ShimmerText({
+  children,
+  reduced,
+}: {
+  children: React.ReactNode;
+  reduced: boolean;
+}) {
+  return (
+    <motion.span
+      className="inline-block"
+      style={{
+        backgroundImage:
+          'linear-gradient(110deg, #ffffff 0%, #fef3c7 22%, #fde68a 38%, #ffffff 50%, #fef9c3 62%, #ffffff 100%)',
+        backgroundSize: '300% 100%',
+        WebkitBackgroundClip: 'text',
+        backgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        color: 'transparent',
+      }}
+      animate={reduced ? {} : { backgroundPositionX: ['200%', '0%'] }}
+      transition={{ duration: 6.5, repeat: Infinity, ease: 'linear' }}
+    >
+      {children}
+    </motion.span>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ANIMATED SPARKLE — תו זוהר ליד המשפט שמסתובב ונושם בעדינות
+   ════════════════════════════════════════════════════════════════ */
+
+function AnimatedSparkle({ char, reduced }: { char: string; reduced: boolean }) {
+  return (
+    <motion.span
+      className="inline-block"
+      style={{
+        textShadow:
+          '0 0 14px rgba(252,211,77,0.7), 0 0 4px rgba(255,255,255,0.85)',
+      }}
+      animate={
+        reduced
+          ? {}
+          : {
+              rotate: [0, 12, -8, 0],
+              scale: [1, 1.18, 0.95, 1],
+            }
+      }
+      transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
+    >
+      {char}
+    </motion.span>
+  );
 }
 
 /* ════════════════════════════════════════════════════════════════
