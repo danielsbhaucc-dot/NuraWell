@@ -261,8 +261,8 @@ function HeroSection({
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="mx-auto max-w-xl"
         >
-          {/* Eyebrow — "המסע שלי" + יום במסע */}
-          <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
+          {/* ╔═ Eyebrow chips — "המסע שלי" + יום במסע ═╗ */}
+          <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
             <motion.div
               initial={{ opacity: 0, scale: 0.92 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -301,84 +301,92 @@ function HeroSection({
             ) : null}
           </div>
 
-          {/* ┌─ Preamble — "[ברכת זמן], " — קטן ואלגנטי ─┐ */}
-          <motion.p
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.18 }}
-            className="mb-1 flex items-center justify-center gap-1.5 text-center text-[15px] font-bold tracking-wide text-emerald-100/95 sm:text-[16px]"
-            style={{ textShadow: '0 2px 10px rgba(2,44,34,0.45)' }}
-          >
-            {tod ? <TimeOfDayIcon tod={tod} /> : null}
-            <span>{intro.preamble}</span>
-          </motion.p>
-
-          {/* ┌─ NAME — הזרקור: הילה זהב נושמת + שם בענק עם שימר זהב ─┐ */}
-          <div className="relative">
-            {/* ✦ הילה זוהבת נושמת מאחורי השם — THE wow factor */}
-            <motion.div
-              aria-hidden
-              className="pointer-events-none absolute left-1/2 top-1/2 -z-10"
+          {/* ╔═ HEADLINE BLOCK — preamble + NAME + message ═╗
+              שלוש שורות עם רווח אחיד ביניהן, ופרופורציה ויזואלית מדורגת:
+              ~16px → 56–72px → 22–30px (יחס 1 : 4 : 1.7) */}
+          <div className="flex flex-col items-center text-center">
+            {/* Preamble — קטן, אלגנטי, מקדים את השם */}
+            <motion.p
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.18 }}
+              className="flex items-center justify-center gap-1.5 text-[15px] font-bold tracking-wide text-emerald-100/95 sm:text-[16px]"
               style={{
-                width: 'min(460px, 90vw)',
-                height: 'min(280px, 60vw)',
-                transform: 'translate(-50%, -50%)',
-                background:
-                  'radial-gradient(ellipse at center, rgba(252,211,77,0.40) 0%, rgba(251,191,36,0.18) 28%, rgba(167,243,208,0.10) 55%, transparent 72%)',
-                filter: 'blur(34px)',
-                mixBlendMode: 'screen',
-              }}
-              initial={{ scale: 0.85, opacity: 0 }}
-              animate={
-                reduced
-                  ? { scale: 1, opacity: 0.7 }
-                  : { scale: [1, 1.1, 1], opacity: [0.6, 1, 0.6] }
-              }
-              transition={
-                reduced
-                  ? { duration: 0.6, delay: 0.2 }
-                  : { duration: 5.5, repeat: Infinity, ease: 'easeInOut' }
-              }
-            />
-
-            <motion.h1
-              initial={{ opacity: 0, y: 14, scale: 0.92 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.7, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
-              className="relative text-center text-[44px] font-black leading-[1.02] sm:text-[60px]"
-              style={{
+                textShadow: '0 2px 10px rgba(2,44,34,0.45)',
                 fontFamily: "'Rubik','Heebo',sans-serif",
-                letterSpacing: '-0.02em',
-                filter:
-                  'drop-shadow(0 2px 12px rgba(2,44,34,0.55)) drop-shadow(0 0 28px rgba(252,211,77,0.30))',
               }}
             >
-              <ShimmerText reduced={reduced}>{firstName}</ShimmerText>
-            </motion.h1>
+              {tod ? <TimeOfDayIcon tod={tod} /> : null}
+              <span>{intro.preamble}</span>
+            </motion.p>
+
+            {/* NAME — הזרקור: שם המשתמש בענק עם הילה זוהבת נושמת מאחור */}
+            <div className="relative my-1 sm:my-1.5">
+              {/* ✦ הילה זוהבת נושמת מאחורי השם — wow factor */}
+              <motion.div
+                aria-hidden
+                className="pointer-events-none absolute left-1/2 top-1/2 -z-10"
+                style={{
+                  width: 'min(520px, 94vw)',
+                  height: 'min(220px, 44vw)',
+                  transform: 'translate(-50%, -50%)',
+                  background:
+                    'radial-gradient(ellipse at center, rgba(252,211,77,0.42) 0%, rgba(251,191,36,0.18) 30%, rgba(167,243,208,0.10) 55%, transparent 72%)',
+                  filter: 'blur(34px)',
+                  mixBlendMode: 'screen',
+                }}
+                initial={{ scale: 0.85, opacity: 0 }}
+                animate={
+                  reduced
+                    ? { scale: 1, opacity: 0.7 }
+                    : { scale: [1, 1.1, 1], opacity: [0.6, 1, 0.6] }
+                }
+                transition={
+                  reduced
+                    ? { duration: 0.6, delay: 0.2 }
+                    : { duration: 5.5, repeat: Infinity, ease: 'easeInOut' }
+                }
+              />
+
+              <motion.h1
+                initial={{ opacity: 0, y: 12, scale: 0.94 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.7, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                className="relative text-[56px] font-black leading-[0.98] sm:text-[72px]"
+                style={{
+                  fontFamily: "'Rubik','Heebo',sans-serif",
+                  letterSpacing: '-0.03em',
+                  filter:
+                    'drop-shadow(0 2px 14px rgba(2,44,34,0.6)) drop-shadow(0 0 32px rgba(252,211,77,0.32))',
+                }}
+              >
+                <ShimmerText reduced={reduced}>{firstName}</ShimmerText>
+              </motion.h1>
+            </div>
+
+            {/* MESSAGE — משפט הקשרי דינמי, יורש את הקצב של הברכה */}
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.36 }}
+              className="flex items-center justify-center gap-2 text-[22px] font-black leading-[1.15] text-white sm:text-[30px]"
+              style={{
+                fontFamily: "'Rubik','Heebo',sans-serif",
+                textShadow: '0 2px 18px rgba(2,44,34,0.55)',
+                letterSpacing: '-0.015em',
+              }}
+            >
+              <span>{intro.message}</span>
+              <AnimatedSparkle char={intro.sparkle} reduced={reduced} />
+            </motion.p>
           </div>
 
-          {/* ┌─ MESSAGE — משפט הקשרי דינמי לפי שלב במסע ─┐ */}
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.36 }}
-            className="mt-2 flex items-center justify-center gap-2 text-center text-[20px] font-black text-white sm:text-[26px]"
-            style={{
-              fontFamily: "'Rubik','Heebo',sans-serif",
-              textShadow: '0 2px 18px rgba(2,44,34,0.55)',
-              letterSpacing: '-0.01em',
-            }}
-          >
-            <span>{intro.message}</span>
-            <AnimatedSparkle char={intro.sparkle} reduced={reduced} />
-          </motion.p>
-
-          {/* ┌─ Sub-line — טקסט מעודד מתחת ─┐ */}
+          {/* ╔═ Sub-line — מרווח גדול יותר כדי לסמן "מעבר לבלוק הבא" ═╗ */}
           <motion.p
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.46 }}
-            className="mx-auto mt-3 max-w-md text-center text-[14px] leading-relaxed text-emerald-50/90 sm:text-[15px]"
+            className="mx-auto mt-4 max-w-md text-center text-[14px] leading-relaxed text-emerald-50/85 sm:mt-5 sm:text-[15px]"
           >
             {intro.subline}
           </motion.p>
@@ -1320,19 +1328,43 @@ function StationHeader({
 
         {/* Top bar with back button */}
         <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 pt-[max(env(safe-area-inset-top),16px)] sm:px-6">
-          <button
+          <motion.button
             type="button"
             onClick={onBack}
-            className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-bold text-white shadow-lg backdrop-blur-md transition-transform active:scale-95"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.45, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            className="group relative flex items-center gap-2 overflow-hidden rounded-full px-4 py-2.5 text-[13.5px] font-black text-white"
             style={{
-              background: 'rgba(255,255,255,0.18)',
-              border: '1px solid rgba(255,255,255,0.32)',
+              background:
+                'linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.10) 100%)',
+              backdropFilter: 'blur(16px) saturate(170%)',
+              WebkitBackdropFilter: 'blur(16px) saturate(170%)',
+              border: '1px solid rgba(255,255,255,0.45)',
+              boxShadow:
+                '0 10px 28px rgba(2,44,34,0.32), 0 2px 6px rgba(2,44,34,0.16), inset 0 1px 0 rgba(255,255,255,0.40), inset 0 -1px 0 rgba(255,255,255,0.10)',
+              textShadow: '0 1px 6px rgba(2,44,34,0.55)',
+              fontFamily: "'Rubik','Heebo',sans-serif",
             }}
             aria-label="חזרה לרשימת התחנות"
           >
-            <ChevronRight className="h-4 w-4" />
-            חזרה למסע
-          </button>
+            {/* ✦ specular highlight — קו אור עדין בקצה העליון */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-x-3 top-px h-px"
+              style={{
+                background:
+                  'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
+              }}
+            />
+            <ChevronRight
+              className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-0.5"
+              strokeWidth={2.5}
+            />
+            <span>חזרה למסע</span>
+          </motion.button>
           {allDone ? (
             <div
               className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-black text-white shadow"
