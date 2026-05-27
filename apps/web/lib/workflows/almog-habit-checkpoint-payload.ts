@@ -53,6 +53,26 @@ export type HabitCheckpointCompletionStatus = z.infer<
 >;
 
 /**
+ * שלב cadence — קובע כמה הודעות ביום וכמה מהן אמפתיות:
+ *   active            — 0–2 ימים: 3/יום (בוקר + צהריים + ערב)
+ *   dormant_early     — 3–7 ימים: 2/יום (בוקר + ערב)
+ *   withdrawing       — 8 ימים: 1/יום (רק בוקר, אמפתי "אני כאן")
+ *   extended_absence  — 9–13 ימים: 1/יום (רק צהריים, נוכחות שקטה)
+ *   ghosted           — 14+ ימים: 1/שבוע (cooldown של 7 ימים)
+ */
+export const habitCheckpointCadenceStageSchema = z.enum([
+  'active',
+  'dormant_early',
+  'withdrawing',
+  'extended_absence',
+  'ghosted',
+]);
+
+export type HabitCheckpointCadenceStage = z.infer<
+  typeof habitCheckpointCadenceStageSchema
+>;
+
+/**
  * Payload לטריגר Workflow של habit checkpoint.
  *
  * remind — יש הרגל/משימה שלא סומנו בוצעו ב-DB.
@@ -83,6 +103,8 @@ export const almogHabitCheckpointPayloadSchema = z
     daysSinceLastActive: z.number().int().min(0).max(3650).default(0),
     /** סטטוס ביצוע כפי שמחושב מ-DB (SSOT) — לא מהמלל שהמשתמש שלח. */
     completionStatus: habitCheckpointCompletionStatusSchema.default('none'),
+    /** שלב cadence — קובע תדירות והאמפתיות של ההודעה. */
+    cadenceStage: habitCheckpointCadenceStageSchema.default('active'),
   })
   .refine(
     (v) => {

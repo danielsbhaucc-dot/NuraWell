@@ -299,6 +299,7 @@ export async function POST(request: Request) {
     nudgeLevel: 0,
     daysSinceLastActive: 0,
     completionStatus: 'none',
+    cadenceStage: 'active',
   };
 
   if (!bypassGate) {

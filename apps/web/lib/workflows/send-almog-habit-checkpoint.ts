@@ -358,6 +358,7 @@ export async function sendAlmogHabitCheckpointNotification(
     nudgeLevel: payload.nudgeLevel,
     completionStatus: payload.completionStatus,
     currentSlot: payload.slot,
+    cadenceStage: payload.cadenceStage,
   };
 
   const systemPrompt = buildHabitCheckpointSystemPrompt({
