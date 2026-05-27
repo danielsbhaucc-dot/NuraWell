@@ -1,5 +1,6 @@
 import type {
   AlmogHabitCheckpointPayload,
+  HabitCheckpointCadenceStage,
   HabitCheckpointCompletionStatus,
   HabitCheckpointNudgeLevel,
   HabitCheckpointSlot,
@@ -404,17 +405,69 @@ export function daysBetween(fromIso: string | null | undefined, now: Date): numb
 
 /**
  * Mapping של dormancy → nudge level (קריא ב-LLM וב-cron back-off).
- *  0: < 1d  (Active)     — שגרה רגילה
- *  1: 1–2d  (Slipping)   — הכרה עדינה (לא בשימוש כענף נפרד ב-LLM —
- *                          ה-prompt matrix משתמש ב-INTERDAY/INTRADAY)
- *  2: 3–6d  (Dormant)    — אפס לחץ
- *  3: >=7d  (Ghosted)    — back-off של שבוע
+ *  0: 0–2d  (Active)            — שגרה רגילה, עד 3/יום
+ *  1: 3–7d  (Dormant Early)     — 2/יום (בוקר + ערב)
+ *  2: 8–13d (Withdrawing/Ext.)  — 1/יום אמפתי
+ *  3: >=14d (Ghosted)           — 1/שבוע
  */
 export function computeNudgeLevel(daysSinceLastActive: number): HabitCheckpointNudgeLevel {
-  if (!Number.isFinite(daysSinceLastActive) || daysSinceLastActive >= 7) return 3;
-  if (daysSinceLastActive >= 3) return 2;
-  if (daysSinceLastActive >= 1) return 1;
+  if (!Number.isFinite(daysSinceLastActive) || daysSinceLastActive >= 14) return 3;
+  if (daysSinceLastActive >= 8) return 2;
+  if (daysSinceLastActive >= 3) return 1;
   return 0;
+}
+
+/**
+ * שלב cadence מדויק — קובע גם תדירות (אילו slots מותרים) וגם טון ההודעה.
+ * זה ה-source-of-truth של "כמה הודעות ביום וכמה מהן אמפתיות":
+ *
+ *   active            (0–2d):   3/יום (בוקר/צהריים/ערב). יום 2 = "יום עמוס?"
+ *   dormant_early     (3–7d):   2/יום (בוקר + ערב). חבר שמרגיש שקט.
+ *   withdrawing       (8d):     1/יום (רק בוקר). אמפתי במיוחד: "אני מבין שאתה בעומס".
+ *   extended_absence  (9–13d):  1/יום (רק צהריים). נוכחות שקטה.
+ *   ghosted           (14+d):   1/שבוע. cooldown אגרסיבי של 7 ימים.
+ */
+export function computeCadenceStage(
+  daysSinceLastActive: number
+): HabitCheckpointCadenceStage {
+  if (!Number.isFinite(daysSinceLastActive) || daysSinceLastActive >= 14) return 'ghosted';
+  if (daysSinceLastActive >= 9) return 'extended_absence';
+  if (daysSinceLastActive >= 8) return 'withdrawing';
+  if (daysSinceLastActive >= 3) return 'dormant_early';
+  return 'active';
+}
+
+/**
+ * אילו slots מותרים בכל שלב cadence — קובע את התדירות היומית.
+ *  - active: בוקר + צהריים + ערב
+ *  - dormant_early: רק בוקר + ערב (בלי הצהריים)
+ *  - withdrawing: רק בוקר (אמפתי, מסר אחד)
+ *  - extended_absence: רק צהריים (נוכחות אחת בלי לחץ)
+ *  - ghosted: רק בוקר (ובנוסף weekly cooldown של 7 ימים)
+ */
+export function allowedSlotsForCadenceStage(
+  stage: HabitCheckpointCadenceStage
+): ReadonlySet<HabitCheckpointSlot> {
+  switch (stage) {
+    case 'active':
+      return new Set<HabitCheckpointSlot>(['morning', 'midday', 'evening']);
+    case 'dormant_early':
+      return new Set<HabitCheckpointSlot>(['morning', 'evening']);
+    case 'withdrawing':
+      return new Set<HabitCheckpointSlot>(['morning']);
+    case 'extended_absence':
+      return new Set<HabitCheckpointSlot>(['midday']);
+    case 'ghosted':
+      return new Set<HabitCheckpointSlot>(['morning']);
+  }
+}
+
+/** האם ה-slot הנוכחי מותר עבור משתמש שנמצא בשלב cadence הנתון. */
+export function isSlotAllowedForCadenceStage(
+  slot: HabitCheckpointSlot,
+  stage: HabitCheckpointCadenceStage
+): boolean {
+  return allowedSlotsForCadenceStage(stage).has(slot);
 }
 
 /**
@@ -557,6 +610,14 @@ export function planHabitCheckpointTriggers(
   const out: HabitCheckpointPlanItem[] = [];
 
   for (const [userId, rows] of byUser) {
+    /**
+     * שלב cadence — נחשב לפני כל דבר אחר, כי הוא קובע אם בכלל שולחים לסלוט הזה.
+     * dormancy מבוסס על fetchTrueLastActiveByUser (פרופיל + צ'אט + executions).
+     */
+    const daysSinceLastActive = daysBetween(lastActiveByUser.get(userId) ?? null, now);
+    const cadenceStage = computeCadenceStage(daysSinceLastActive);
+    if (!isSlotAllowedForCadenceStage(slot, cadenceStage)) continue;
+
     const userTodayDone = todayExecutionsByUser.get(userId) ?? new Map<string, Set<string>>();
     const habits = collectUserJourneyHabits(rows);
     const slotHabits = habits.length > 0 ? filterHabitsForSlot(habits, slot, weekday) : [];
@@ -578,16 +639,31 @@ export function planHabitCheckpointTriggers(
     });
 
     const hasRemindWork = due.length > 0 || pendingTasks.length > 0;
-    const hasReinforceCompletion =
-      !hasRemindWork && (completedTodayHabits.length > 0 || completedTodayTasks.length > 0);
 
-    if (!hasRemindWork && !hasReinforceCompletion) continue;
+    /**
+     * חיזוק "סיימת הכל" — רק בבוקר (פתיחת יום). בצהריים/ערב המשתמש ביקש
+     * שלא נטריד אם הוא כבר סיים את הכל — שקט הוא התשובה הטובה ביותר.
+     */
+    const hasReinforceCompletion =
+      !hasRemindWork &&
+      slot === 'morning' &&
+      cadenceStage === 'active' &&
+      (completedTodayHabits.length > 0 || completedTodayTasks.length > 0);
+
+    /**
+     * בשלבים שאינם active, גם בלי הרגל/משימה פתוחים — אנחנו עדיין שולחים
+     * (זה כל הפואנטה של withdrawing/extended_absence/ghosted: לדאוג, לא לדווח).
+     * הודעה מ-LLM תהיה אמפתית-נוכחות, בלי "checkbox".
+     */
+    const hasDormancyTouch =
+      !hasRemindWork && !hasReinforceCompletion && cadenceStage !== 'active';
+
+    if (!hasRemindWork && !hasReinforceCompletion && !hasDormancyTouch) continue;
 
     const display = pickDisplayRow(rows);
     const stepTitle = display?.journey_steps?.title?.trim() ?? null;
     const stationTitle = stationTitleFromJoin(display?.journey_steps?.journey_stations);
 
-    const daysSinceLastActive = daysBetween(lastActiveByUser.get(userId) ?? null, now);
     const nudgeLevel = computeNudgeLevel(daysSinceLastActive);
     const completionStatus = computeCompletionStatus({
       completedHabitsCount: completedTodayHabits.length,
@@ -596,14 +672,25 @@ export function planHabitCheckpointTriggers(
       pendingTasksCount: pendingTasks.length,
     });
 
+    /**
+     * notifyMode: remind כשיש משימה/הרגל פתוח; reinforce אחרת (completion ב-active,
+     * presence ב-stages של dormancy — חבר שמתעניין בלי לחץ).
+     */
+    const notifyMode: 'remind' | 'reinforce' = hasRemindWork ? 'remind' : 'reinforce';
+    const reinforceKind: 'completion' | 'presence' | undefined = hasRemindWork
+      ? undefined
+      : hasReinforceCompletion
+        ? 'completion'
+        : 'presence';
+
     out.push({
       userId,
       payload: {
         userId,
         slot,
         checkpointDate: dateKey,
-        notifyMode: hasRemindWork ? 'remind' : 'reinforce',
-        reinforceKind: hasRemindWork ? undefined : 'completion',
+        notifyMode,
+        reinforceKind,
         habits: due.map((h) => ({
           id: h.id,
           title: h.title,
@@ -625,6 +712,7 @@ export function planHabitCheckpointTriggers(
           ? Math.min(3650, daysSinceLastActive)
           : 3650,
         completionStatus,
+        cadenceStage,
       },
     });
   }
@@ -634,6 +722,9 @@ export function planHabitCheckpointTriggers(
 
 /**
  * חיזוק נוכחות: דיברו בצ'אט היום, אין תזכורת פתוחה — מגע חברי (לא גנרי).
+ *
+ * מופעל רק בבוקר. בצהריים/ערב, אם המשתמש כבר סיים את כל המשימות והרגלים
+ * של היום (וגם אין מה להזכיר לו), הוא ביקש לא לקבל הודעה.
  */
 export function appendPresenceReinforceFromChat(
   plan: HabitCheckpointPlanItem[],
@@ -645,6 +736,7 @@ export function appendPresenceReinforceFromChat(
   lastActiveByUser: ReadonlyMap<string, string | null> = new Map()
 ): HabitCheckpointPlanItem[] {
   if (chatUserIds.size === 0) return plan;
+  if (slot !== 'morning') return plan;
 
   const { dateKey, weekday } = jerusalemCalendarParts(now);
   const planned = new Set(plan.map((p) => p.userId));
@@ -689,6 +781,7 @@ export function appendPresenceReinforceFromChat(
     });
     const daysSinceLastActive = daysBetween(lastActiveByUser.get(userId) ?? null, now);
     const nudgeLevel = computeNudgeLevel(daysSinceLastActive);
+    const cadenceStage = computeCadenceStage(daysSinceLastActive);
     /** presence = יש שיחה היום => הוא פעיל וגם אין פתוחים => full. */
     const completionStatus: HabitCheckpointCompletionStatus =
       completedTodayHabits.length + completedTodayTasks.length > 0 ? 'full' : 'none';
@@ -712,6 +805,7 @@ export function appendPresenceReinforceFromChat(
           ? Math.min(3650, daysSinceLastActive)
           : 3650,
         completionStatus,
+        cadenceStage,
       },
     });
     planned.add(userId);

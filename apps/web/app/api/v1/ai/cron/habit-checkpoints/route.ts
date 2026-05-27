@@ -193,16 +193,18 @@ async function runHabitCheckpointCron(request: Request) {
   }
 
   /**
-   * Ghosted back-off (nudgeLevel === 3): פעם אחת בשבוע, פעם אחת לכלל ה-3 חלונות.
+   * Ghosted back-off (cadenceStage === 'ghosted', 14+ ימים): פעם אחת בשבוע.
    *
    * הלוגיקה אינה תלויה ב-slot: מספיק שנשלחה למשתמש Ghosted **כל** הודעה
    * מסוג `almog_habit_checkpoint` ב-7 הימים האחרונים — כל ה-slots הבאים
-   * (midday, evening, וגם הימים שאחרי) ידלגו אוטומטית עד שהשבוע יחלוף.
-   * כך לא תיווצר state corruption: אם morning שלח, midday אותו יום + 6
-   * הימים הבאים יראו את אותה הודעה ויסמנו cooldown.
+   * ידלגו אוטומטית עד שהשבוע יחלוף.
+   *
+   * שאר השלבים (dormant_early/withdrawing/extended_absence) מקבלים פילטור
+   * תדירות דרך allowedSlotsForCadenceStage כבר ב-planHabitCheckpointTriggers —
+   * אין צורך ב-cooldown נוסף כי כל שלב מסנן slots לתדירות הנכונה.
    */
   const ghostedIds = plan
-    .filter((p) => p.payload.nudgeLevel === 3)
+    .filter((p) => p.payload.cadenceStage === 'ghosted')
     .map((p) => p.userId);
   const ghostedWeeklyCooldownIds = new Set<string>();
 
