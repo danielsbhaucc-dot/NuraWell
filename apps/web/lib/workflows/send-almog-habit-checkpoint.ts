@@ -69,6 +69,37 @@ function joinNatural(items: string[]): string {
   return `${items.slice(0, -1).join(', ')} ו-${items[items.length - 1]}`;
 }
 
+function buildHabitCheckpointFallbackBody(
+  firstName: string,
+  payload: AlmogHabitCheckpointPayload,
+  isCompassionOnly: boolean,
+  isReinforce: boolean
+): string {
+  if (isReinforce) {
+    return `${firstName}, ראיתי שהיית כאן היום. ממשיך איתך בקצב שלך — בלי לחץ, רק נוכחות קטנה ממני.`;
+  }
+
+  if (isCompassionOnly) {
+    return `${firstName}, נראה שהיה יום עמוס. רק בודק בעדינות איך אתה, בלי לחץ על משימות. אני כאן איתך.`;
+  }
+
+  const task = payload.pendingTasks[0];
+  if (task) {
+    const pending =
+      task.pendingSlotLabels && task.pendingSlotLabels.length > 0
+        ? ` נשאר היום: ${joinNatural(task.pendingSlotLabels)}.`
+        : '';
+    return `${firstName}, תזכורת קטנה לגבי ${task.title}.${pending} אפשר לעשות צעד קטן עכשיו?`;
+  }
+
+  const habit = payload.habits[0];
+  if (habit) {
+    return `${firstName}, תזכורת קטנה ל-${habit.title}. צעד קטן עכשיו יכול לסגור את הפינה הזאת להיום.`;
+  }
+
+  return `${firstName}, תזכורת קטנה מאלמוג — בוא ניקח צעד קטן ונמשיך מכאן.`;
+}
+
 function formatJourneyContext(payload: AlmogHabitCheckpointPayload): string | null {
   const stepTitle = payload.stepTitle?.trim();
   const stationTitle = payload.stationTitle?.trim();
@@ -372,28 +403,43 @@ export async function sendAlmogHabitCheckpointNotification(
     extraContextBlocks: contextParts,
   });
 
-  const body = await completeEmpathyNotifyBody({
-    label: 'habit_checkpoint',
-    temperature: 0.82,
-    presencePenalty: 0.5,
-    frequencyPenalty: 0.55,
-    maxTokens: ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      {
-        role: 'user',
-        content: `שם המשתמש: ${firstName}
+  let body: string;
+  let usedTemplateFallback = false;
+  let llmError: string | null = null;
+
+  try {
+    body = await completeEmpathyNotifyBody({
+      label: 'habit_checkpoint',
+      temperature: 0.82,
+      presencePenalty: 0.5,
+      frequencyPenalty: 0.55,
+      maxTokens: ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: `שם המשתמש: ${firstName}
 הזמן כרגע: ${weekdayName}, ${timeHHMM}, חלון ${SLOT_HE[payload.slot]}.
 סוג המגע: ${
-          isCompassionOnly
-            ? 'ערב חמלה — הטון חייב להיות רך במיוחד'
-            : isReinforce
-              ? 'חיזוק חברי על נוכחות או ביצוע מהיום'
-              : 'ליווי הרגל/משימה שעדיין פתוחים להיום'
-        }.`,
-      },
-    ],
-  });
+            isCompassionOnly
+              ? 'ערב חמלה — הטון חייב להיות רך במיוחד'
+              : isReinforce
+                ? 'חיזוק חברי על נוכחות או ביצוע מהיום'
+                : 'ליווי הרגל/משימה שעדיין פתוחים להיום'
+          }.`,
+        },
+      ],
+    });
+  } catch (e) {
+    usedTemplateFallback = true;
+    llmError = e instanceof Error ? e.message : String(e);
+    console.warn('[habit-checkpoint] LLM body failed; using fallback template', {
+      userId: payload.userId,
+      slot: payload.slot,
+      error: llmError,
+    });
+    body = buildHabitCheckpointFallbackBody(firstName, payload, isCompassionOnly, isReinforce);
+  }
 
   const title = isReinforce ? `${firstName} 💬` : `${firstName} 🌿`;
 
@@ -423,10 +469,13 @@ export async function sendAlmogHabitCheckpointNotification(
         habit_ids: habitIds,
         pending_task_ids: pendingTaskIds,
         model: AI_MODELS.empathy,
-        template: false,
+        template: usedTemplateFallback,
         compassion_only: isCompassionOnly,
         daily_availability_low: dailyAvailabilityLow,
-        llm_decision: 'always_llm_behavioral_matrix',
+        llm_decision: usedTemplateFallback
+          ? 'fallback_template_after_empty_or_failed_llm'
+          : 'always_llm_behavioral_matrix',
+        llm_error: llmError,
         unanswered_earlier_today: unansweredEarlierToday,
         nudge_level: payload.nudgeLevel,
         days_since_last_active: payload.daysSinceLastActive,
