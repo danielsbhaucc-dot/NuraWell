@@ -17,7 +17,10 @@ import {
   Route,
   ListChecks,
   Leaf,
+  CalendarDays,
 } from 'lucide-react';
+import { TaskHistoryStrip } from '../tasks/TaskHistoryStrip';
+import { TaskHistoryCalendar } from '../tasks/TaskHistoryCalendar';
 
 interface CourseStatItem {
   id: string;
@@ -35,6 +38,12 @@ interface ActivityItem {
   completed_at: string;
 }
 
+interface TaskHistoryDay {
+  d: string;
+  c: number;
+  t: number;
+}
+
 interface ProgressPageClientProps {
   totalCompleted: number;
   totalEnrolled: number;
@@ -47,6 +56,7 @@ interface ProgressPageClientProps {
   journeyTasksAccepted: number;
   journeyTasksReportedDone: number;
   journeyHabitChecks: number;
+  taskHistoryDays?: TaskHistoryDay[];
 }
 
 const lessonTypeIcon: Record<string, React.ElementType> = {
@@ -100,11 +110,16 @@ export function ProgressPageClient({
   journeyTasksAccepted,
   journeyTasksReportedDone,
   journeyHabitChecks,
+  taskHistoryDays,
 }: ProgressPageClientProps) {
   const journeyPct =
     journeyStepsTotal > 0 ? Math.round((journeyStepsCompleted / journeyStepsTotal) * 100) : 0;
   const taskFollowPct =
     journeyTasksAccepted > 0 ? Math.round((journeyTasksReportedDone / journeyTasksAccepted) * 100) : 0;
+
+  const historyDays = taskHistoryDays ?? [];
+  const activeDaysCount = historyDays.filter((d) => d.c >= d.t).length;
+  const hasHistorySignal = historyDays.some((d) => d.c > 0);
 
   const stats = [
     {
@@ -256,6 +271,62 @@ export function ProgressPageClient({
             <span>סימוני הרגלים (מסך דיווח): {journeyHabitChecks}</span>
           </div>
         </motion.section>
+
+        {hasHistorySignal && historyDays.length > 0 && (
+          <motion.section
+            variants={item}
+            initial="hidden"
+            animate="show"
+            className={`${glassCard} p-4`}
+          >
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(245,158,11,0.18)', border: '1px solid rgba(245,158,11,0.35)' }}
+                >
+                  <CalendarDays className="w-4 h-4 text-amber-700" strokeWidth={2.2} />
+                </div>
+                <div className="min-w-0 text-right">
+                  <h2 className="text-sm font-black text-[#1A1730]">המעקב היומי שלי</h2>
+                  <p className="text-[11px] text-gray-600 font-medium">
+                    30 הימים האחרונים — ביצועי משימות מתועדים בלוח ירושלים
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-bold text-amber-900 shrink-0 px-3 py-1.5 rounded-full border border-amber-300/60 bg-amber-50/80">
+                {activeDaysCount}/{historyDays.length}
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <p className="text-[10px] font-bold text-gray-500 mb-1.5">השבוע האחרון</p>
+                <TaskHistoryStrip days={historyDays.slice(-7)} />
+              </div>
+
+              <div>
+                <p className="text-[10px] font-bold text-gray-500 mb-1.5">חודש לאחור</p>
+                <TaskHistoryCalendar days={historyDays.slice(-28)} />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 pt-2 text-[10px] font-semibold text-gray-600">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  פעיל
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                  חלקי
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
+                  ללא דיווח
+                </span>
+              </div>
+            </div>
+          </motion.section>
+        )}
 
         {currentStreak >= 3 && (
           <motion.div
