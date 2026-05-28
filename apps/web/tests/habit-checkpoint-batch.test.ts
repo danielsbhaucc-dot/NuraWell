@@ -34,6 +34,8 @@ function activeLastActive(...userIds: string[]): Map<string, string | null> {
   return new Map(userIds.map((uid) => [uid, today]));
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 describe('planHabitCheckpointTriggers', () => {
   it('silent when all habits already marked done today (no reinforce)', () => {
     const progress: ProgressRow[] = [
@@ -115,11 +117,12 @@ describe('planHabitCheckpointTriggers', () => {
 
     const plan = planHabitCheckpointTriggers(
       progress,
-      'midday',
-      new Date('2026-05-19T13:00:00+03:00'),
+      'morning',
+      new Date('2026-05-19T08:00:00.000Z'),
       new Map(),
       activeLastActive('u1')
     );
+    expect(plan).toHaveLength(1);
     expect(plan[0]!.payload.notifyMode).toBe('remind');
     expect(plan[0]!.payload.pendingTasks.map((t) => t.id)).toEqual(['t2']);
   });
@@ -380,13 +383,14 @@ describe('planHabitCheckpointTriggers', () => {
      * דרישת מוצר: משימה לא בוצעת → 3 תזכורות ביום, גם במצב dormant_early.
      * cadence מצויין ב-payload לטון, אבל לא חוסם שליחה.
      */
-    const fiveDaysAgo = new Date('2026-05-14T08:00:00.000Z').toISOString();
+    const now = new Date('2026-05-19T08:00:00.000Z');
+    const fiveDaysAgo = new Date(now.getTime() - 5 * DAY_MS).toISOString();
     const lastActive = new Map<string, string | null>([['u-dormant', fiveDaysAgo]]);
 
     const planMidday = planHabitCheckpointTriggers(
       progress,
       'midday',
-      new Date('2026-05-19T13:00:00+03:00'),
+      now,
       new Map(),
       lastActive
     );
@@ -397,7 +401,7 @@ describe('planHabitCheckpointTriggers', () => {
     const planMorning = planHabitCheckpointTriggers(
       progress,
       'morning',
-      new Date('2026-05-19T08:00:00+03:00'),
+      now,
       new Map(),
       lastActive
     );
@@ -419,14 +423,15 @@ describe('planHabitCheckpointTriggers', () => {
       }),
     ];
 
-    /** 8+ ימים מול now ב-Asia/Jerusalem (לא 7 — floor של daysBetween). */
-    const eightDaysAgo = new Date('2026-05-10T08:00:00.000Z').toISOString();
+    /** בדיוק 8 ימים לפי daysBetween, בלי תלות ב-timezone של הסביבה. */
+    const now = new Date('2026-05-19T08:00:00.000Z');
+    const eightDaysAgo = new Date(now.getTime() - 8 * DAY_MS).toISOString();
     const lastActive = new Map<string, string | null>([['u-withdraw', eightDaysAgo]]);
 
     const morning = planHabitCheckpointTriggers(
       progress,
       'morning',
-      new Date('2026-05-19T08:00:00+03:00'),
+      now,
       new Map(),
       lastActive
     );
@@ -436,7 +441,7 @@ describe('planHabitCheckpointTriggers', () => {
     const midday = planHabitCheckpointTriggers(
       progress,
       'midday',
-      new Date('2026-05-19T13:00:00+03:00'),
+      now,
       new Map(),
       lastActive
     );
@@ -445,7 +450,7 @@ describe('planHabitCheckpointTriggers', () => {
     const evening = planHabitCheckpointTriggers(
       progress,
       'evening',
-      new Date('2026-05-19T20:00:00+03:00'),
+      now,
       new Map(),
       lastActive
     );
@@ -465,7 +470,8 @@ describe('planHabitCheckpointTriggers', () => {
       }),
     ];
 
-    const tenDaysAgo = new Date('2026-05-09T08:00:00.000Z').toISOString();
+    const now = new Date('2026-05-19T08:00:00.000Z');
+    const tenDaysAgo = new Date(now.getTime() - 10 * DAY_MS).toISOString();
     const lastActive = new Map<string, string | null>([['u-ext', tenDaysAgo]]);
 
     /**
@@ -475,7 +481,7 @@ describe('planHabitCheckpointTriggers', () => {
     const midday = planHabitCheckpointTriggers(
       progress,
       'midday',
-      new Date('2026-05-19T13:00:00+03:00'),
+      now,
       new Map(),
       lastActive
     );
@@ -491,7 +497,7 @@ describe('planHabitCheckpointTriggers', () => {
     const morning = planHabitCheckpointTriggers(
       progress,
       'morning',
-      new Date('2026-05-19T08:00:00+03:00'),
+      now,
       new Map(),
       lastActive
     );
