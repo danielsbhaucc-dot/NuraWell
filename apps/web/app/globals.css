@@ -790,16 +790,78 @@ html {
   }
 
   .landing-card-elevated {
+    position: relative;
+    overflow: hidden;
     background:
-      radial-gradient(ellipse at top right, rgba(165, 243, 252, 0.18), transparent 65%),
-      linear-gradient(135deg, rgba(255, 255, 255, 0.78) 0%, rgba(236, 253, 245, 0.62) 100%);
-    border: 1px solid rgba(16, 185, 129, 0.32);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+      /* Top-left glossy refraction */
+      linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.18) 28%, transparent 52%),
+      /* Cyan whisper top-right */
+      radial-gradient(ellipse at top right, rgba(165, 243, 252, 0.24), transparent 62%),
+      /* Emerald bloom bottom-left */
+      radial-gradient(ellipse at bottom left, rgba(110, 231, 183, 0.18), transparent 65%),
+      /* Crystal base */
+      linear-gradient(160deg, rgba(255, 255, 255, 0.88) 0%, rgba(236, 253, 245, 0.65) 55%, rgba(220, 252, 231, 0.72) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     box-shadow:
-      0 18px 42px -14px rgba(4, 120, 87, 0.22),
-      0 2px 6px rgba(15, 23, 42, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.75);
+      0 26px 56px -18px rgba(4, 120, 87, 0.28),
+      0 8px 18px -10px rgba(15, 23, 42, 0.10),
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      inset 0 0 0 1px rgba(16, 185, 129, 0.22);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+
+  /* Top sheen on elevated cards */
+  .landing-card-elevated::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 8%;
+    right: 8%;
+    height: 32%;
+    background: radial-gradient(
+      ellipse at 50% 0%,
+      rgba(255, 255, 255, 0.42) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Premium top accent rule */
+  .landing-card-elevated::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20%;
+    right: 20%;
+    height: 1.5px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(110, 231, 183, 0.7),
+      rgba(34, 211, 238, 0.8),
+      transparent
+    );
+    box-shadow: 0 0 10px rgba(110, 231, 183, 0.45);
+    border-radius: 99px;
+    z-index: 0;
+  }
+
+  .landing-card-elevated > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .landing-card-elevated:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255, 255, 255, 0.75);
+    box-shadow:
+      0 32px 64px -16px rgba(4, 120, 87, 0.34),
+      0 10px 20px -8px rgba(15, 23, 42, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 0 0 1px rgba(16, 185, 129, 0.30);
   }
 
   .landing-card-glass {
@@ -1229,40 +1291,65 @@ html {
   .landing-tone-rose    { --tone-from: #e11d48; --tone-to: #fb7185; --tone-soft: rgba(244, 63, 94, 0.1);  --tone-border: rgba(244, 63, 94, 0.22);  --tone-shadow: rgba(244, 63, 94, 0.25); }
   .landing-tone-mint    { --tone-from: #0d9488; --tone-to: #5eead4; --tone-soft: rgba(20, 184, 166, 0.12); --tone-border: rgba(20, 184, 166, 0.28); --tone-shadow: rgba(20, 184, 166, 0.3); }
 
-  /* ---- Philosophy cards (colorful frosted glass) ---- */
+  /* ---- Philosophy cards (luxury frosted glass) ---- */
   .landing-philosophy-card {
     @apply relative rounded-3xl p-5 sm:p-7 overflow-hidden text-center;
     background:
-      radial-gradient(ellipse at top right, var(--tone-soft), transparent 65%),
-      linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(236, 253, 245, 0.55) 100%);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--tone-border);
+      /* Top-left glossy refraction highlight */
+      linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.18) 28%, transparent 52%),
+      /* Soft tone bloom in opposite corner */
+      radial-gradient(ellipse at bottom left, var(--tone-soft), transparent 65%),
+      /* Cyan whisper on top-right */
+      radial-gradient(ellipse at top right, rgba(165, 243, 252, 0.20), transparent 60%),
+      /* Crystalline base plate */
+      linear-gradient(160deg, rgba(255, 255, 255, 0.86) 0%, rgba(236, 253, 245, 0.62) 55%, rgba(220, 252, 231, 0.72) 100%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.55);
     box-shadow:
-      0 18px 42px -14px var(--tone-shadow),
-      0 2px 6px rgba(15, 23, 42, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+      0 28px 60px -18px var(--tone-shadow),
+      0 8px 18px -10px rgba(15, 23, 42, 0.10),
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      inset 0 0 0 1px var(--tone-border);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   }
 
+  /* Top sheen (glassy reflection arc near the top edge) */
   .landing-philosophy-card::before {
     content: '';
     position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at bottom left, var(--tone-soft), transparent 70%);
+    top: 0;
+    left: 6%;
+    right: 6%;
+    height: 38%;
+    background: radial-gradient(
+      ellipse at 50% 0%,
+      rgba(255, 255, 255, 0.50) 0%,
+      rgba(255, 255, 255, 0.10) 45%,
+      transparent 70%
+    );
     pointer-events: none;
-    opacity: 0.5;
+    z-index: 1;
   }
 
+  /* Premium tone-coloured shimmer rule at the top edge */
   .landing-philosophy-card::after {
     content: '';
     position: absolute;
     top: 0;
-    right: 0;
-    width: 60%;
-    height: 4px;
-    background: linear-gradient(90deg, transparent, var(--tone-from), var(--tone-to));
-    border-radius: 0 0 0 4px;
+    left: 18%;
+    right: 18%;
+    height: 1.5px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--tone-from) 25%,
+      var(--tone-to) 75%,
+      transparent 100%
+    );
+    box-shadow: 0 0 12px var(--tone-shadow);
+    border-radius: 99px;
+    z-index: 1;
   }
 
   .landing-philosophy-card > * {
@@ -1270,8 +1357,13 @@ html {
   }
 
   .landing-philosophy-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 48px -14px var(--tone-shadow), 0 4px 12px rgba(15, 23, 42, 0.06);
+    transform: translateY(-6px);
+    border-color: rgba(255, 255, 255, 0.75);
+    box-shadow:
+      0 34px 70px -16px var(--tone-shadow),
+      0 12px 22px -10px rgba(15, 23, 42, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 0 0 1px var(--tone-border);
   }
 
   .landing-philosophy-icon {
@@ -1341,19 +1433,71 @@ html {
     @apply w-8 h-8;
   }
 
-  /* ---- Featured Bento (frosted glass with rich color) ---- */
+  /* ---- Featured Bento (luxury hero glass) ---- */
   .landing-card-glass-gradient {
     @apply relative overflow-hidden;
     background:
-      radial-gradient(ellipse 70% 60% at 100% 0%, rgba(34, 211, 238, 0.22), transparent 65%),
-      radial-gradient(ellipse 60% 80% at 0% 100%, rgba(45, 212, 191, 0.20), transparent 65%),
-      linear-gradient(145deg, rgba(255, 255, 255, 0.72) 0%, rgba(220, 252, 231, 0.55) 100%);
-    border: 1px solid rgba(16, 185, 129, 0.36);
+      /* Top-left glossy refraction */
+      linear-gradient(135deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.20) 26%, transparent 50%),
+      /* Cyan halo top-right */
+      radial-gradient(ellipse 70% 60% at 100% 0%, rgba(34, 211, 238, 0.32), transparent 65%),
+      /* Teal bloom bottom-left */
+      radial-gradient(ellipse 60% 80% at 0% 100%, rgba(45, 212, 191, 0.28), transparent 65%),
+      /* Centre micro-glow (subtle aura around the icon area) */
+      radial-gradient(ellipse 40% 50% at 25% 50%, rgba(110, 231, 183, 0.18), transparent 70%),
+      /* Crystalline base */
+      linear-gradient(155deg, rgba(255, 255, 255, 0.88) 0%, rgba(236, 253, 245, 0.65) 55%, rgba(207, 250, 254, 0.60) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.65);
     box-shadow:
-      0 22px 52px -14px rgba(4, 120, 87, 0.26),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+      0 36px 76px -18px rgba(4, 120, 87, 0.38),
+      0 12px 24px -10px rgba(15, 23, 42, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 0 0 1px rgba(34, 211, 238, 0.24);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  /* Premium top shimmer rule */
+  .landing-card-glass-gradient::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 18%;
+    right: 18%;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      #22d3ee 22%,
+      #34d399 50%,
+      #2dd4bf 78%,
+      transparent 100%
+    );
+    box-shadow: 0 0 16px rgba(34, 211, 238, 0.60);
+    border-radius: 99px;
+    z-index: 2;
+  }
+
+  /* Top glossy reflection — wide, premium */
+  .landing-card-glass-gradient::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 6%;
+    right: 6%;
+    height: 36%;
+    background: radial-gradient(
+      ellipse at 50% 0%,
+      rgba(255, 255, 255, 0.48) 0%,
+      transparent 72%
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .landing-card-glass-gradient > * {
+    position: relative;
+    z-index: 2;
   }
 
   /* Featured bento layout */
@@ -1553,21 +1697,76 @@ html {
   .landing-step {
     @apply relative rounded-3xl p-6 sm:p-7 text-center overflow-hidden;
     background:
-      radial-gradient(ellipse at top right, var(--tone-soft, rgba(16, 185, 129, 0.14)), transparent 65%),
-      linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(236, 253, 245, 0.55) 100%);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--tone-border, rgba(16, 185, 129, 0.32));
+      /* Top-left glossy refraction */
+      linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.18) 28%, transparent 52%),
+      /* Tone bloom on top-right */
+      radial-gradient(ellipse at top right, var(--tone-soft, rgba(16, 185, 129, 0.18)), transparent 60%),
+      /* Cyan whisper bottom-left */
+      radial-gradient(ellipse at bottom left, rgba(165, 243, 252, 0.16), transparent 65%),
+      /* Crystal base */
+      linear-gradient(160deg, rgba(255, 255, 255, 0.88) 0%, rgba(236, 253, 245, 0.62) 55%, rgba(220, 252, 231, 0.72) 100%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.55);
     box-shadow:
-      0 18px 42px -14px var(--tone-shadow, rgba(16, 185, 129, 0.30)),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      0 28px 60px -18px var(--tone-shadow, rgba(16, 185, 129, 0.32)),
+      0 8px 18px -10px rgba(15, 23, 42, 0.10),
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      inset 0 0 0 1px var(--tone-border, rgba(16, 185, 129, 0.22));
     z-index: 1;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+
+  /* Top sheen */
+  .landing-step::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 8%;
+    right: 8%;
+    height: 32%;
+    background: radial-gradient(
+      ellipse at 50% 0%,
+      rgba(255, 255, 255, 0.42) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Premium top accent rule */
+  .landing-step::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 22%;
+    right: 22%;
+    height: 1.5px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--tone-from, #34d399),
+      var(--tone-to, #22d3ee),
+      transparent
+    );
+    box-shadow: 0 0 10px var(--tone-shadow, rgba(16, 185, 129, 0.5));
+    border-radius: 99px;
+    z-index: 0;
+  }
+
+  .landing-step > * {
+    position: relative;
+    z-index: 1;
   }
 
   .landing-step:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 18px 40px -12px var(--tone-shadow, rgba(16, 185, 129, 0.35));
+    transform: translateY(-6px);
+    border-color: rgba(255, 255, 255, 0.75);
+    box-shadow:
+      0 34px 70px -16px var(--tone-shadow, rgba(16, 185, 129, 0.42)),
+      0 12px 22px -10px rgba(15, 23, 42, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 0 0 1px var(--tone-border, rgba(16, 185, 129, 0.30));
   }
 
   .landing-step-num {
@@ -1720,23 +1919,78 @@ html {
   }
 
   .landing-contrast-row {
-    @apply relative grid items-stretch gap-2.5 sm:gap-3 rounded-3xl p-3 sm:p-4;
+    @apply relative grid items-stretch gap-2.5 sm:gap-3 rounded-3xl p-3 sm:p-4 overflow-hidden;
     grid-template-columns: 1fr auto 1fr;
     background:
-      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.10), transparent 70%),
-      linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(236, 253, 245, 0.55) 100%);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(16, 185, 129, 0.32);
+      /* Top-left glossy highlight */
+      linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.18) 26%, transparent 52%),
+      /* Soft emerald bloom bottom-left */
+      radial-gradient(ellipse at bottom left, rgba(110, 231, 183, 0.16), transparent 65%),
+      /* Cyan whisper top-right */
+      radial-gradient(ellipse at top right, rgba(165, 243, 252, 0.18), transparent 65%),
+      /* Crystal base */
+      linear-gradient(160deg, rgba(255, 255, 255, 0.84) 0%, rgba(236, 253, 245, 0.6) 60%, rgba(220, 252, 231, 0.72) 100%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.55);
     box-shadow:
-      0 18px 42px -14px rgba(4, 120, 87, 0.22),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+      0 26px 56px -18px rgba(4, 120, 87, 0.26),
+      0 6px 14px -8px rgba(15, 23, 42, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 0 0 1px rgba(16, 185, 129, 0.22);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+
+  /* Top sheen for the contrast row (premium glass refraction) */
+  .landing-contrast-row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 8%;
+    right: 8%;
+    height: 30%;
+    background: radial-gradient(
+      ellipse at 50% 0%,
+      rgba(255, 255, 255, 0.40) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Premium accent line at the top centre */
+  .landing-contrast-row::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 22%;
+    right: 22%;
+    height: 1.5px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(244, 63, 94, 0.45) 25%,
+      rgba(110, 231, 183, 0.75) 75%,
+      transparent
+    );
+    border-radius: 99px;
+    box-shadow: 0 0 10px rgba(110, 231, 183, 0.5);
+    z-index: 0;
+  }
+
+  .landing-contrast-row > * {
+    position: relative;
+    z-index: 1;
   }
 
   .landing-contrast-row:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 40px -14px rgba(15, 23, 42, 0.12);
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.75);
+    box-shadow:
+      0 32px 64px -16px rgba(4, 120, 87, 0.32),
+      0 10px 20px -8px rgba(15, 23, 42, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 0 0 1px rgba(16, 185, 129, 0.30);
   }
 
   .landing-contrast-bad,
@@ -1745,15 +1999,27 @@ html {
   }
 
   .landing-contrast-bad {
-    background: linear-gradient(135deg, rgba(254, 226, 226, 0.55), rgba(254, 205, 211, 0.40));
-    border: 1px solid rgba(244, 63, 94, 0.22);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.42) 0%, transparent 38%),
+      radial-gradient(ellipse at bottom right, rgba(244, 63, 94, 0.16), transparent 65%),
+      linear-gradient(155deg, rgba(254, 226, 226, 0.78) 0%, rgba(254, 205, 211, 0.58) 100%);
+    border: 1px solid rgba(244, 63, 94, 0.30);
+    box-shadow:
+      0 8px 22px -10px rgba(244, 63, 94, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      inset 0 0 0 1px rgba(244, 63, 94, 0.14);
   }
 
   .landing-contrast-good {
-    background: linear-gradient(135deg, rgba(220, 252, 231, 0.65), rgba(209, 250, 229, 0.55));
-    border: 1px solid rgba(16, 185, 129, 0.30);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.50) 0%, transparent 38%),
+      radial-gradient(ellipse at bottom right, rgba(110, 231, 183, 0.22), transparent 65%),
+      linear-gradient(155deg, rgba(220, 252, 231, 0.85) 0%, rgba(209, 250, 229, 0.65) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.38);
+    box-shadow:
+      0 8px 22px -10px rgba(16, 185, 129, 0.30),
+      inset 0 1px 0 rgba(255, 255, 255, 0.90),
+      inset 0 0 0 1px rgba(16, 185, 129, 0.18);
   }
 
   .landing-contrast-icon {
@@ -1826,24 +2092,63 @@ html {
   .landing-contrast-footnote {
     @apply relative mt-12 max-w-xl mx-auto px-6 py-6 sm:px-7 sm:py-7 rounded-3xl overflow-hidden;
     background:
-      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.15), transparent 65%),
-      linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(220, 252, 231, 0.55) 100%);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(16, 185, 129, 0.32);
+      /* Top-left glossy reflection */
+      linear-gradient(135deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.20) 28%, transparent 54%),
+      /* Cyan bloom top-right */
+      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.24), transparent 65%),
+      /* Emerald bloom bottom-left */
+      radial-gradient(ellipse at bottom left, rgba(110, 231, 183, 0.22), transparent 65%),
+      /* Crystal base */
+      linear-gradient(155deg, rgba(255, 255, 255, 0.88) 0%, rgba(220, 252, 231, 0.62) 55%, rgba(207, 250, 254, 0.60) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.65);
     box-shadow:
-      0 22px 48px -14px rgba(4, 120, 87, 0.22),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      0 32px 68px -18px rgba(16, 185, 129, 0.34),
+      0 10px 22px -10px rgba(15, 23, 42, 0.10),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 0 0 1px rgba(34, 211, 238, 0.22);
   }
 
+  /* Bright shimmer rule at the top — premium accent */
   .landing-contrast-footnote::before {
     content: '';
     position: absolute;
     top: 0;
-    right: 0;
-    left: 0;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, #22d3ee, #34d399, #2dd4bf, transparent);
+    right: 12%;
+    left: 12%;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      #22d3ee 25%,
+      #34d399 50%,
+      #2dd4bf 75%,
+      transparent 100%
+    );
+    box-shadow: 0 0 14px rgba(34, 211, 238, 0.55);
+    border-radius: 99px;
+  }
+
+  /* Glossy top reflection arc */
+  .landing-contrast-footnote::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 8%;
+    right: 8%;
+    height: 32%;
+    background: radial-gradient(
+      ellipse at 50% 0%,
+      rgba(255, 255, 255, 0.40) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+
+  .landing-contrast-footnote > * {
+    position: relative;
+    z-index: 1;
   }
 
   .landing-contrast-footnote-icon {
@@ -2395,20 +2700,25 @@ html {
   }
 
   .landing-faq-item {
-    @apply rounded-2xl overflow-hidden;
+    @apply relative rounded-2xl overflow-hidden;
     background: transparent;
-    border: 1px solid rgba(16, 185, 129, 0.20);
+    border: 1px solid rgba(255, 255, 255, 0.55);
     box-shadow:
-      0 10px 28px -14px rgba(4, 120, 87, 0.16),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5);
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      0 18px 38px -16px rgba(4, 120, 87, 0.22),
+      0 4px 10px -6px rgba(15, 23, 42, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      inset 0 0 0 1px rgba(16, 185, 129, 0.20);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
   }
 
   .landing-faq-item.is-open {
-    border-color: rgba(5, 150, 105, 0.45);
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.75);
     box-shadow:
-      0 18px 40px -14px rgba(16, 185, 129, 0.22),
-      inset 0 1px 0 rgba(255, 255, 255, 0.55);
+      0 28px 56px -16px rgba(16, 185, 129, 0.32),
+      0 8px 18px -8px rgba(15, 23, 42, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.90),
+      inset 0 0 0 1px rgba(16, 185, 129, 0.36);
   }
 
   .landing-faq-q {
