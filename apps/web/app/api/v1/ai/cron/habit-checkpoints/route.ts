@@ -2,10 +2,6 @@ import { NextResponse } from 'next/server';
 import { Client as WorkflowClient } from '@upstash/workflow';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
 import { isAvoidPushActive } from '../../../../../../lib/ai/avoid-push';
-import {
-  isDailyAvailabilityLowToday,
-  type AiUserContext,
-} from '../../../../../../lib/ai/memory';
 import { normalizeCheckInTimes } from '../../../../../../lib/ai/onboarding-check-in-time';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 import { habitCheckpointSlotSchema } from '../../../../../../lib/workflows/almog-habit-checkpoint-payload';
@@ -165,7 +161,6 @@ async function runHabitCheckpointCron(request: Request) {
 
   const userIds = [...new Set(plan.map((p) => p.userId))];
   const avoidIds = new Set<string>();
-  const lowAvailabilityIds = new Set<string>();
   const personalizedScheduleIds = new Set<string>();
 
   if (userIds.length > 0) {
@@ -175,14 +170,11 @@ async function runHabitCheckpointCron(request: Request) {
       const id = row.id as string;
       const ctx = row.ai_context as Record<string, unknown> | null | undefined;
       if (isAvoidPushActive(ctx)) avoidIds.add(id);
-      if (
-        slot !== 'evening' &&
-        isDailyAvailabilityLowToday(
-          (ctx as AiUserContext | null | undefined)?.daily_availability
-        )
-      ) {
-        lowAvailabilityIds.add(id);
-      }
+      /**
+       * משתמש "זמינות נמוכה היום" כבר לא חוסם תזכורות:
+       *  - דרישת מוצר: 3 תזכורות ביום כשיש משימה לא בוצעת.
+       *  - הטון/תוכן ההודעה ערב כבר מותאם דרך isCompassionOnly ב-send-almog-habit-checkpoint.
+       */
       if (
         row.onboarding_completed === true &&
         normalizeCheckInTimes(row.ai_check_in_times).length > 0
@@ -237,7 +229,6 @@ async function runHabitCheckpointCron(request: Request) {
     .filter(
       (p) =>
         !avoidIds.has(p.userId) &&
-        !lowAvailabilityIds.has(p.userId) &&
         !personalizedScheduleIds.has(p.userId) &&
         !ghostedWeeklyCooldownIds.has(p.userId)
     )
@@ -252,7 +243,6 @@ async function runHabitCheckpointCron(request: Request) {
       slot,
       planned_users: plan.length,
       skipped_avoid_push: avoidIds.size,
-      skipped_daily_low_availability: lowAvailabilityIds.size,
       skipped_personalized_almog: personalizedScheduleIds.size,
       skipped_ghosted_weekly_cooldown: ghostedWeeklyCooldownIds.size,
       would_trigger: eligible.length,
@@ -290,7 +280,6 @@ async function runHabitCheckpointCron(request: Request) {
     slot,
     planned_users: plan.length,
     skipped_avoid_push: avoidIds.size,
-    skipped_daily_low_availability: lowAvailabilityIds.size,
     skipped_personalized_almog: personalizedScheduleIds.size,
     skipped_ghosted_weekly_cooldown: ghostedWeeklyCooldownIds.size,
     workflow_triggers: triggered,

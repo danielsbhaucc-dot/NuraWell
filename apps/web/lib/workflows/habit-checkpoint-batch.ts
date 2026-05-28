@@ -611,12 +611,12 @@ export function planHabitCheckpointTriggers(
 
   for (const [userId, rows] of byUser) {
     /**
-     * שלב cadence — נחשב לפני כל דבר אחר, כי הוא קובע אם בכלל שולחים לסלוט הזה.
-     * dormancy מבוסס על fetchTrueLastActiveByUser (פרופיל + צ'אט + executions).
+     * שלב cadence — מחושב מ-fetchTrueLastActiveByUser (פרופיל + צ'אט + executions).
+     * הוא משפיע רק על "מגעי נוכחות" (משתמש דורמנטי בלי משימה פתוחה).
+     * דרישת מוצר: משימה לא בוצעת → 3 תזכורות ביום תמיד, גם במצב dormant.
      */
     const daysSinceLastActive = daysBetween(lastActiveByUser.get(userId) ?? null, now);
     const cadenceStage = computeCadenceStage(daysSinceLastActive);
-    if (!isSlotAllowedForCadenceStage(slot, cadenceStage)) continue;
 
     const userTodayDone = todayExecutionsByUser.get(userId) ?? new Map<string, Set<string>>();
     const habits = collectUserJourneyHabits(rows);
@@ -641,24 +641,21 @@ export function planHabitCheckpointTriggers(
     const hasRemindWork = due.length > 0 || pendingTasks.length > 0;
 
     /**
-     * חיזוק "סיימת הכל" — רק בבוקר (פתיחת יום). בצהריים/ערב המשתמש ביקש
-     * שלא נטריד אם הוא כבר סיים את הכל — שקט הוא התשובה הטובה ביותר.
-     */
-    const hasReinforceCompletion =
-      !hasRemindWork &&
-      slot === 'morning' &&
-      cadenceStage === 'active' &&
-      (completedTodayHabits.length > 0 || completedTodayTasks.length > 0);
-
-    /**
-     * בשלבים שאינם active, גם בלי הרגל/משימה פתוחים — אנחנו עדיין שולחים
-     * (זה כל הפואנטה של withdrawing/extended_absence/ghosted: לדאוג, לא לדווח).
-     * הודעה מ-LLM תהיה אמפתית-נוכחות, בלי "checkbox".
+     * דרישת מוצר:
+     *   1) משימה לא בוצעת → 3 תזכורות ביום (כל ה-slots, גם dormant).
+     *   2) משימה בוצעה חלקית → התראה מותאמת אישית AI (מטופל ב-pendingSlotLabels).
+     *   3) הכל בוצע + אין משימות פתוחות → שקט מוחלט (ללא הודעת חיזוק).
+     *
+     * מגע נוכחות שקט למשתמשים דורמנטיים: רק אם cadenceStage != 'active'
+     * וה-slot מותר לפי allowedSlotsForCadenceStage. ל-active users — אם הכל בוצע,
+     * המערכת שותקת לחלוטין.
      */
     const hasDormancyTouch =
-      !hasRemindWork && !hasReinforceCompletion && cadenceStage !== 'active';
+      !hasRemindWork &&
+      cadenceStage !== 'active' &&
+      isSlotAllowedForCadenceStage(slot, cadenceStage);
 
-    if (!hasRemindWork && !hasReinforceCompletion && !hasDormancyTouch) continue;
+    if (!hasRemindWork && !hasDormancyTouch) continue;
 
     const display = pickDisplayRow(rows);
     const stepTitle = display?.journey_steps?.title?.trim() ?? null;
@@ -673,15 +670,14 @@ export function planHabitCheckpointTriggers(
     });
 
     /**
-     * notifyMode: remind כשיש משימה/הרגל פתוח; reinforce אחרת (completion ב-active,
-     * presence ב-stages של dormancy — חבר שמתעניין בלי לחץ).
+     * notifyMode:
+     *   remind    — יש משימה/הרגל פתוח (התראה רגילה או מותאמת AI לחלקית).
+     *   reinforce — מגע נוכחות שקט למשתמשים דורמנטיים בלבד (active לא מקבל).
      */
     const notifyMode: 'remind' | 'reinforce' = hasRemindWork ? 'remind' : 'reinforce';
     const reinforceKind: 'completion' | 'presence' | undefined = hasRemindWork
       ? undefined
-      : hasReinforceCompletion
-        ? 'completion'
-        : 'presence';
+      : 'presence';
 
     out.push({
       userId,
@@ -721,10 +717,13 @@ export function planHabitCheckpointTriggers(
 }
 
 /**
- * חיזוק נוכחות: דיברו בצ'אט היום, אין תזכורת פתוחה — מגע חברי (לא גנרי).
+ * חיזוק נוכחות מצ'אט — מושבת לחלוטין.
  *
- * מופעל רק בבוקר. בצהריים/ערב, אם המשתמש כבר סיים את כל המשימות והרגלים
- * של היום (וגם אין מה להזכיר לו), הוא ביקש לא לקבל הודעה.
+ * דרישת מוצר: "אם המשימה בוצעה ואין משימות אחרות פתוחות אז לא תישלח הודעה".
+ * זה כולל גם מצב של "המשתמש דיבר בצ'אט היום אבל סיים הכל" — שקט מוחלט.
+ *
+ * הפונקציה נשמרת בחתימתה לתאימות לאחור (טסטים/imports), אך תמיד מחזירה
+ * את התכנון הקיים בלי תוספות.
  */
 export function appendPresenceReinforceFromChat(
   plan: HabitCheckpointPlanItem[],
@@ -735,86 +734,16 @@ export function appendPresenceReinforceFromChat(
   todayExecutionsByUser: TodayExecutionsByUser = new Map(),
   lastActiveByUser: ReadonlyMap<string, string | null> = new Map()
 ): HabitCheckpointPlanItem[] {
-  if (chatUserIds.size === 0) return plan;
-  if (slot !== 'morning') return plan;
-
-  const { dateKey, weekday } = jerusalemCalendarParts(now);
-  const planned = new Set(plan.map((p) => p.userId));
-  const byUser = new Map<string, ProgressRow[]>();
-
-  for (const row of progressRows) {
-    if (!byUser.has(row.user_id)) byUser.set(row.user_id, []);
-    byUser.get(row.user_id)!.push(row);
-  }
-
-  const extra: HabitCheckpointPlanItem[] = [];
-
-  for (const userId of chatUserIds) {
-    if (planned.has(userId)) continue;
-    const rows = byUser.get(userId);
-    if (!rows?.length) continue;
-
-    const habits = collectUserJourneyHabits(rows);
-    if (habits.length === 0) continue;
-
-    const userTodayDone = todayExecutionsByUser.get(userId) ?? new Map<string, Set<string>>();
-    const pendingTasks = collectPendingAcceptedTasks(rows, {
-      todayDoneByTask: userTodayDone,
-      cronSlot: slot,
-      jerusalemWeekday: weekday,
-    });
-    if (pendingTasks.length > 0) continue;
-
-    const habitsDoneToday = habitsDoneTodayFromTaskRows(rows, userTodayDone, dateKey);
-    for (const id of mergeHabitsDoneTodayFromRows(rows)) habitsDoneToday.add(id);
-    const slotHabits = filterHabitsForSlot(habits, slot, weekday);
-    const due = slotHabits.filter((h) => !habitsDoneToday.has(h.id));
-    if (due.length > 0) continue;
-
-    const display = pickDisplayRow(rows);
-    const completedTodayHabits = habits
-      .filter((h) => habitsDoneToday.has(h.id))
-      .map((h) => ({ id: h.id, title: h.title }));
-    const completedTodayTasks = collectCompletedAcceptedTasks(rows, {
-      todayDoneByTask: userTodayDone,
-      jerusalemWeekday: weekday,
-    });
-    const daysSinceLastActive = daysBetween(lastActiveByUser.get(userId) ?? null, now);
-    const nudgeLevel = computeNudgeLevel(daysSinceLastActive);
-    const cadenceStage = computeCadenceStage(daysSinceLastActive);
-    /** presence = יש שיחה היום => הוא פעיל וגם אין פתוחים => full. */
-    const completionStatus: HabitCheckpointCompletionStatus =
-      completedTodayHabits.length + completedTodayTasks.length > 0 ? 'full' : 'none';
-
-    extra.push({
-      userId,
-      payload: {
-        userId,
-        slot,
-        checkpointDate: dateKey,
-        notifyMode: 'reinforce',
-        reinforceKind: 'presence',
-        habits: [],
-        pendingTasks: [],
-        completedTodayHabits,
-        completedTodayTasks,
-        stepTitle: display?.journey_steps?.title?.trim() ?? null,
-        stationTitle: stationTitleFromJoin(display?.journey_steps?.journey_stations),
-        nudgeLevel,
-        daysSinceLastActive: Number.isFinite(daysSinceLastActive)
-          ? Math.min(3650, daysSinceLastActive)
-          : 3650,
-        completionStatus,
-        cadenceStage,
-      },
-    });
-    planned.add(userId);
-  }
-
-  return extra.length > 0 ? [...plan, ...extra] : plan;
+  void progressRows;
+  void slot;
+  void now;
+  void chatUserIds;
+  void todayExecutionsByUser;
+  void lastActiveByUser;
+  return plan;
 }
 
-/** תכנון מלא כולל חיזוק נוכחות לפי צ'אט היום. */
+/** תכנון מלא — appendPresenceReinforceFromChat מושבת לפי דרישת מוצר. */
 export async function planHabitCheckpointTriggersWithChat(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: any,
