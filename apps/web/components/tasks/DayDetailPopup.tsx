@@ -119,12 +119,12 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
           <motion.div
             dir="rtl"
             className="relative w-full max-w-sm rounded-[26px] overflow-hidden flex flex-col"
-            style={{ maxHeight: '100%' }}
             initial={{ y: 16, opacity: 0, scale: 0.94 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 16, opacity: 0, scale: 0.94 }}
             transition={{ type: 'spring', stiffness: 320, damping: 28 }}
             style={{
+              maxHeight: '100%',
               background:
                 'linear-gradient(170deg, rgba(236,253,245,0.92) 0%, rgba(220,252,231,0.85) 50%, rgba(254,252,232,0.85) 100%)',
               border: '1px solid rgba(167,243,208,0.6)',
