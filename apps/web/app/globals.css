@@ -3531,8 +3531,9 @@ body.overflow-hidden { overflow: hidden; }
     width: 100%;
     max-width: 480px;
     margin-inline: auto;
-    margin-block: 32px;
-    height: calc(100dvh - 64px);
+    margin-top: 48px;
+    margin-bottom: 32px;
+    height: calc(100dvh - 80px);
     min-height: 0;
     border-radius: 36px;
     overflow: hidden;
@@ -3558,7 +3559,7 @@ body.overflow-hidden { overflow: hidden; }
      the LEFT edge of `main` and read as a visual seam between the column
      and the dark canvas. Scrolling still works via wheel/touch/keyboard. */
   .min-h-screen.bg-dashboard > main#main-content {
-    height: calc(100dvh - 64px);
+    height: calc(100dvh - 80px);
     min-height: 0 !important;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -3572,28 +3573,35 @@ body.overflow-hidden { overflow: hidden; }
     display: none;
   }
 
-  /* --- Fixed MobileHeader: anchor to the very top of the column --- */
+  /* --- Fixed MobileHeader: pinned to the very top of the column ---
+     Belt + suspenders on positioning so nothing during scroll can shift it. */
   .min-h-screen.bg-dashboard > header.fixed.top-0.left-0.right-0 {
-    top: 32px !important;
+    position: fixed !important;
+    top: 48px !important;
+    bottom: auto !important;
     left: 50% !important;
     right: auto !important;
-    transform: translateX(-50%);
+    transform: translateX(-50%) !important;
     width: 100%;
     max-width: 480px;
     border-radius: 36px 36px 0 0;
+    will-change: auto;
   }
 
-  /* --- Fixed BottomNav: anchor to the very bottom of the column ---
+  /* --- Fixed BottomNav: pinned to the very bottom of the column ---
      Note: NOT using overflow:hidden because the centered FAB sticks out
      of the top edge and must remain visible. */
   .min-h-screen.bg-dashboard > nav.fixed.bottom-0.left-0.right-0 {
+    position: fixed !important;
     bottom: 32px !important;
+    top: auto !important;
     left: 50% !important;
     right: auto !important;
-    transform: translateX(-50%);
+    transform: translateX(-50%) !important;
     width: 100%;
     max-width: 480px;
     border-radius: 0 0 36px 36px;
+    will-change: auto;
   }
 
   /* --- Container utilities: a hair wider on desktop for breathing room --- */
