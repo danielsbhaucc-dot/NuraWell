@@ -114,34 +114,20 @@ export function NotificationCard({
         </>
       )}
 
-      <div className="absolute top-2.5 start-2.5 z-10 flex items-center gap-1">
-        <button
-          type="button"
-          title={viewMode === 'inbox' ? 'העבר לארכיון' : 'החזר לתיבה'}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-emerald-800/70 transition hover:bg-emerald-100/80 hover:text-emerald-900"
-          onClick={(e) =>
-            viewMode === 'inbox' ? void onArchive(n.id, e) : void onUnarchive(n.id, e)
-          }
-        >
-          {viewMode === 'inbox' ? (
-            <Archive className="h-4 w-4" aria-hidden />
-          ) : (
-            <ArchiveRestore className="h-4 w-4" aria-hidden />
-          )}
-        </button>
-
-        {viewMode === 'inbox' && !n.is_read && (
-          <button
-            type="button"
-            title="סמן כנקרא"
-            aria-label="סמן כנקרא"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100/70 text-emerald-800 ring-1 ring-emerald-300/60 transition hover:bg-emerald-200/80 hover:text-emerald-900 active:scale-[0.95]"
-            onClick={handleMarkReadClick}
-          >
-            <Check className="h-4 w-4" strokeWidth={2.6} aria-hidden />
-          </button>
+      <button
+        type="button"
+        title={viewMode === 'inbox' ? 'העבר לארכיון' : 'החזר לתיבה'}
+        className="absolute top-2.5 start-2.5 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg text-emerald-800/70 transition hover:bg-emerald-100/80 hover:text-emerald-900"
+        onClick={(e) =>
+          viewMode === 'inbox' ? void onArchive(n.id, e) : void onUnarchive(n.id, e)
+        }
+      >
+        {viewMode === 'inbox' ? (
+          <Archive className="h-4 w-4" aria-hidden />
+        ) : (
+          <ArchiveRestore className="h-4 w-4" aria-hidden />
         )}
-      </div>
+      </button>
 
       <div className="px-3.5 py-3.5 pe-3 ps-10">
         <div className="flex flex-row-reverse items-start gap-3">
@@ -166,8 +152,20 @@ export function NotificationCard({
               {n.body}
             </p>
 
-            {(canReply || n.action_url) && (
+            {(canReply || n.action_url || (viewMode === 'inbox' && !n.is_read)) && (
               <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+                {viewMode === 'inbox' && !n.is_read && (
+                  <button
+                    type="button"
+                    title="סמן כנקרא"
+                    aria-label="סמן כנקרא"
+                    onClick={handleMarkReadClick}
+                    className="me-auto inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold text-emerald-700/80 transition hover:bg-emerald-100/70 hover:text-emerald-900 active:scale-[0.97]"
+                  >
+                    <Check className="h-3 w-3" strokeWidth={2.6} aria-hidden />
+                    סמן כנקרא
+                  </button>
+                )}
                 {canReply && (
                   <button
                     type="button"
