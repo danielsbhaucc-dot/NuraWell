@@ -3520,30 +3520,6 @@ body.overflow-hidden { overflow: hidden; }
     overflow: hidden;
   }
 
-  /* Decorative side-glows extending outside the column edges. */
-  body.bg-background:has(.bg-dashboard)::before,
-  body.bg-background:has(.bg-dashboard)::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    width: clamp(200px, 22vw, 360px);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  body.bg-background:has(.bg-dashboard)::before {
-    right: 50%;
-    margin-right: 260px;
-    background: radial-gradient(ellipse at left center, rgba(45, 212, 191, 0.18), transparent 75%);
-  }
-
-  body.bg-background:has(.bg-dashboard)::after {
-    left: 50%;
-    margin-left: 260px;
-    background: radial-gradient(ellipse at right center, rgba(16, 185, 129, 0.18), transparent 75%);
-  }
-
   /* --- Floating app shell ---
      The dashboard column floats inside the canvas with vertical margins,
      pronounced rounded corners, and a multi-layer shadow that lifts it off
@@ -3632,8 +3608,3 @@ body.overflow-hidden { overflow: hidden; }
   /* Body itself does not scroll on desktop dashboard; main#main-content does. */
 }
 
-/* On very wide screens (≥1440px) push the decorative side-glows out a touch. */
-@media (min-width: 1440px) {
-  body.bg-background:has(.bg-dashboard)::before { margin-right: 300px; }
-  body.bg-background:has(.bg-dashboard)::after  { margin-left: 300px; }
-}
