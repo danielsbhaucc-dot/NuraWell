@@ -256,18 +256,22 @@ export function LandingPageClient() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.18, ease }}
           >
-            <Sparkles className="w-3.5 h-3.5" aria-hidden />
-            NuraWell · ליווי AI לחיים בריאים
+            <Sparkles className="w-4 h-4" aria-hidden />
+            NuraWell · אורח חיים מלווה ב-AI
           </motion.span>
 
-          <h1 className="landing-hero-title">
-            <span className="landing-hero-title-accent">אתם לא נכשלתם.</span>
-            <span className="landing-hero-title-main">השיטה נכשלה.</span>
-          </h1>
+          <div className="landing-hero-title-wrap">
+            <span className="landing-hero-title-rule" aria-hidden />
+            <h1 className="landing-hero-title">
+              <span className="landing-hero-title-accent">תפסיקו לנסות.</span>
+              <span className="landing-hero-title-main">תתחילו לחיות.</span>
+            </h1>
+          </div>
 
           <p className="landing-hero-lead">
-            כל דיאטה שניסיתם — תוכננה להחזיר אתכם להתחלה. NuraWell מלמד את הגוף שלכם להקשיב לעצמו ולחזור לאיזון.
-            <strong> בלי ספירה. בלי הרעבה. בלי שיפוטיות. שינוי שדבק לכל החיים — חינם להתחיל.</strong>
+            לא עוד תכנית. לא עוד "משבוע הבא". NuraWell בונה איתכם אורח חיים שמרגיש נכון מהרגע הראשון —
+            גוף שקשוב לעצמו, אנרגיה אמיתית לאורך היום, וראש שקט באמת.
+            <strong> השינוי שאתם מחפשים מתחיל מבפנים — חינם להתחיל.</strong>
           </p>
 
           <div className="landing-hero-cta">
@@ -280,8 +284,8 @@ export function LandingPageClient() {
             </Link>
           </div>
 
-          <ul className="landing-hero-pills" aria-label="הבטחות">
-            {['בלי קלוריות', 'בלי איסורים', 'בלי שיפוטיות', 'בלי הרעבה'].map((label) => (
+          <ul className="landing-hero-pills" aria-label="ההבטחות שלנו">
+            {['אנרגיה אמיתית', 'שקט פנימי', 'בלי שיפוטיות', 'אורח חיים שדבק'].map((label) => (
               <li key={label} className="landing-hero-pill">
                 <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden />
                 {label}
@@ -358,7 +362,7 @@ export function LandingPageClient() {
 
         {/* ─── MANIFESTO — Way of Life (WOW) ─── */}
         <section className="landing-section landing-manifesto landing-fade-bottom" aria-labelledby="manifesto-heading">
-          <FloatingParticles count={22} />
+          <FloatingParticles count={12} />
           <div className="landing-manifesto-orbs" aria-hidden>
             <span className="landing-manifesto-orb landing-manifesto-orb-1" />
             <span className="landing-manifesto-orb landing-manifesto-orb-2" />
@@ -761,7 +765,7 @@ export function LandingPageClient() {
 
         {/* ─── תדמיינו את עצמכם — Future Self ─── */}
         <section className="landing-section landing-imagine landing-fade-top" aria-labelledby="imagine-heading">
-          <FloatingParticles count={20} />
+          <FloatingParticles count={10} />
           <div className="landing-wrap">
             <div className="landing-section-head landing-section-head-center">
               <SectionEyebrow>החיים שלכם בעוד 30 יום</SectionEyebrow>
@@ -837,7 +841,7 @@ export function LandingPageClient() {
 
         {/* ─── אפקט ההצטברות — Timeline WOW ─── */}
         <section className="landing-section landing-timeline landing-fade-bottom" aria-labelledby="timeline-heading">
-          <FloatingParticles count={18} />
+          <FloatingParticles count={10} />
           <div className="landing-timeline-glow" aria-hidden />
           <div className="landing-wrap">
             <div className="landing-section-head landing-section-head-center">
@@ -976,7 +980,7 @@ export function LandingPageClient() {
 
         {/* ─── מנטורים ─── */}
         <section className="landing-section landing-section-dark landing-fade-top landing-fade-bottom" aria-labelledby="mentors-heading">
-          <FloatingParticles count={16} />
+          <FloatingParticles count={8} />
           <div className="landing-wrap">
             <div className="landing-section-head landing-section-head-center">
               <SectionEyebrow>הצוות שלכם</SectionEyebrow>
@@ -1163,10 +1167,10 @@ export function LandingPageClient() {
 
         {/* ─── הסיפור שלכם — WOW MOMENT ─── */}
         <section
-          className="landing-section landing-story landing-fade-top landing-fade-bottom"
+          className="landing-section landing-story landing-fade-top"
           aria-labelledby="story-heading"
         >
-          <FloatingParticles count={28} />
+          <FloatingParticles count={14} />
           <div className="landing-story-glow" aria-hidden />
           <div className="landing-story-rings" aria-hidden>
             <span className="landing-story-ring landing-story-ring-1" />
@@ -1268,8 +1272,8 @@ export function LandingPageClient() {
         </section>
 
         {/* ─── CTA ─── */}
-        <section className="landing-section landing-cta-band landing-fade-top" aria-label="הצטרפות">
-          <FloatingParticles count={24} />
+        <section className="landing-section landing-cta-band" aria-label="הצטרפות">
+          <FloatingParticles count={12} />
           <div className="landing-cta-orbs" aria-hidden>
             <span className="landing-cta-orb landing-cta-orb-1" />
             <span className="landing-cta-orb landing-cta-orb-2" />

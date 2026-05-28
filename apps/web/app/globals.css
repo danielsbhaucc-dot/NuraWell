@@ -159,8 +159,8 @@ html {
   .onboarding-hero-card-photo {
     background: rgba(2, 44, 34, 0.28);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
   /* ---- LANDING PAGE ---- */
@@ -327,8 +327,9 @@ html {
 
   .landing-hero-orb {
     @apply absolute rounded-full pointer-events-none;
-    filter: blur(60px);
+    filter: blur(38px);
     opacity: 0.55;
+    will-change: transform;
   }
 
   .landing-hero-orb-1 {
@@ -362,8 +363,8 @@ html {
     @apply flex items-center justify-between max-w-xl mx-auto px-4 py-3 rounded-2xl;
     background: rgba(255, 255, 255, 0.12);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
   .landing-nav-login {
@@ -381,15 +382,18 @@ html {
   }
 
   .landing-hero-kicker {
-    @apply inline-flex items-center gap-2.5 self-center text-[10px] sm:text-[11px] font-bold tracking-[0.22em] uppercase px-4 py-2 rounded-full mb-5;
-    color: #d1fae5;
-    background: rgba(2, 44, 34, 0.42);
-    border: 1px solid rgba(167, 243, 208, 0.28);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    @apply inline-flex items-center gap-2.5 self-center text-[11px] sm:text-[12px] font-bold tracking-[0.20em] uppercase px-4 py-2 rounded-full mb-6;
+    color: #ecfdf5;
+    background:
+      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.30), transparent 70%),
+      linear-gradient(135deg, rgba(6, 78, 59, 0.55) 0%, rgba(15, 23, 42, 0.45) 100%);
+    border: 1px solid rgba(167, 243, 208, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     box-shadow:
-      0 10px 28px -6px rgba(0, 0, 0, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      0 12px 32px -8px rgba(0, 0, 0, 0.45),
+      0 0 0 1px rgba(110, 231, 183, 0.14) inset,
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
   }
 
   .landing-hero-kicker svg {
@@ -407,37 +411,56 @@ html {
     animation: landing-eyebrow-pulse 2s ease-in-out infinite;
   }
 
+  .landing-hero-title-wrap {
+    @apply relative mb-6;
+  }
+
+  /* Subtle shimmering accent rule above the title — minimal cost, big WOW */
+  .landing-hero-title-rule {
+    @apply block w-12 h-px mb-5 rounded-full;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(110, 231, 183, 0.7) 30%,
+      rgba(34, 211, 238, 0.9) 60%,
+      rgba(110, 231, 183, 0.5) 90%,
+      transparent 100%
+    );
+    box-shadow: 0 0 12px rgba(110, 231, 183, 0.55);
+  }
+
   .landing-hero-title {
-    @apply mb-6;
+    @apply mb-0;
     font-family: 'Heebo', 'Rubik', sans-serif;
   }
 
   .landing-hero-title-accent {
     @apply block font-black leading-[0.95] tracking-tight;
-    font-size: clamp(3.4rem, 13vw, 6.25rem);
+    font-size: clamp(2.4rem, 9.5vw, 4.6rem);
     background: linear-gradient(
       118deg,
-      #a7f3d0 0%,
-      #34d399 35%,
-      #2dd4bf 65%,
+      #ecfdf5 0%,
+      #6ee7b7 30%,
+      #34d399 55%,
+      #2dd4bf 78%,
       #67e8f9 100%
     );
-    background-size: 200% 100%;
+    background-size: 220% 100%;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    filter: drop-shadow(0 6px 28px rgba(52, 211, 153, 0.4));
-    animation: landing-title-shimmer 6s ease-in-out infinite;
+    filter: drop-shadow(0 8px 32px rgba(52, 211, 153, 0.45));
+    animation: landing-title-shimmer 7s ease-in-out infinite;
   }
 
   .landing-hero-title-main {
     @apply block font-black leading-[0.95] tracking-tight mt-2;
-    font-size: clamp(3.4rem, 13vw, 6.25rem);
+    font-size: clamp(3.4rem, 13.5vw, 6.5rem);
     color: #ffffff;
     text-shadow:
       0 2px 4px rgba(0, 0, 0, 0.45),
-      0 10px 36px rgba(0, 0, 0, 0.4),
-      0 0 70px rgba(110, 231, 183, 0.2);
+      0 12px 40px rgba(0, 0, 0, 0.45),
+      0 0 80px rgba(110, 231, 183, 0.28);
   }
 
   @keyframes landing-title-shimmer {
@@ -446,9 +469,26 @@ html {
   }
 
   .landing-hero-lead {
-    @apply text-[16px] sm:text-lg leading-[1.75] mb-7 max-w-md;
+    @apply relative text-[16px] sm:text-lg leading-[1.75] mb-7 max-w-md pr-4;
     color: rgba(236, 253, 245, 0.98);
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.32);
+  }
+
+  .landing-hero-lead::before {
+    content: '';
+    position: absolute;
+    top: 0.4rem;
+    right: 0;
+    bottom: 0.4rem;
+    width: 2px;
+    border-radius: 99px;
+    background: linear-gradient(
+      180deg,
+      rgba(110, 231, 183, 0.75) 0%,
+      rgba(34, 211, 238, 0.55) 50%,
+      transparent 100%
+    );
+    box-shadow: 0 0 8px rgba(110, 231, 183, 0.4);
   }
 
   .landing-hero-lead strong {
@@ -464,17 +504,18 @@ html {
   }
 
   .landing-hero-pill {
-    @apply inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full;
-    color: #d1fae5;
+    @apply inline-flex items-center gap-2 text-[13px] sm:text-sm font-semibold px-3.5 py-2 rounded-full;
+    color: #ecfdf5;
     background:
-      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.18), transparent 70%),
-      linear-gradient(135deg, rgba(6, 78, 59, 0.38) 0%, rgba(15, 23, 42, 0.32) 100%);
-    border: 1px solid rgba(167, 243, 208, 0.38);
-    backdrop-filter: blur(18px) saturate(180%);
-    -webkit-backdrop-filter: blur(18px) saturate(180%);
+      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.22), transparent 70%),
+      linear-gradient(135deg, rgba(6, 78, 59, 0.48) 0%, rgba(15, 23, 42, 0.38) 100%);
+    border: 1px solid rgba(167, 243, 208, 0.42);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     box-shadow:
-      0 6px 16px -6px rgba(0, 0, 0, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.10);
+      0 8px 22px -6px rgba(0, 0, 0, 0.40),
+      0 0 0 1px rgba(110, 231, 183, 0.12) inset,
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
 
   .landing-hero-pill svg {
@@ -579,7 +620,7 @@ html {
 
   .landing-section-orb {
     @apply absolute rounded-full;
-    filter: blur(70px);
+    filter: blur(42px);
     opacity: 0.32;
   }
 
@@ -651,16 +692,16 @@ html {
   }
 
   .landing-eyebrow {
-    @apply inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] mb-4 px-3.5 py-1.5 rounded-full;
+    @apply inline-flex items-center gap-2.5 text-[12px] sm:text-[13px] font-bold uppercase tracking-[0.16em] mb-5 px-4 py-2 rounded-full;
     color: #064e3b;
     background:
-      radial-gradient(ellipse at top right, rgba(165, 243, 252, 0.32), transparent 65%),
-      linear-gradient(135deg, rgba(167, 243, 208, 0.38) 0%, rgba(110, 231, 183, 0.22) 100%);
-    border: 1px solid rgba(16, 185, 129, 0.42);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+      radial-gradient(ellipse at top right, rgba(165, 243, 252, 0.42), transparent 65%),
+      linear-gradient(135deg, rgba(167, 243, 208, 0.48) 0%, rgba(110, 231, 183, 0.28) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.48);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     box-shadow:
-      0 8px 22px -8px rgba(4, 120, 87, 0.22),
+      0 10px 26px -8px rgba(4, 120, 87, 0.28),
       0 0 0 1px rgba(255, 255, 255, 0.30) inset,
       inset 0 1px 0 rgba(255, 255, 255, 0.55);
   }
@@ -689,13 +730,15 @@ html {
   .landing-cta-band .landing-eyebrow {
     color: #d1fae5;
     background:
-      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.22), transparent 70%),
-      linear-gradient(135deg, rgba(6, 78, 59, 0.55) 0%, rgba(15, 23, 42, 0.45) 100%);
-    border-color: rgba(167, 243, 208, 0.42);
+      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.28), transparent 70%),
+      linear-gradient(135deg, rgba(6, 78, 59, 0.62) 0%, rgba(15, 23, 42, 0.5) 100%);
+    border-color: rgba(167, 243, 208, 0.5);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     box-shadow:
-      0 8px 22px -6px rgba(0, 0, 0, 0.40),
-      0 0 0 1px rgba(110, 231, 183, 0.10) inset,
-      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      0 10px 26px -6px rgba(0, 0, 0, 0.45),
+      0 0 0 1px rgba(110, 231, 183, 0.14) inset,
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
   }
 
   .landing-eyebrow-light::before,
@@ -751,8 +794,8 @@ html {
       radial-gradient(ellipse at top right, rgba(165, 243, 252, 0.18), transparent 65%),
       linear-gradient(135deg, rgba(255, 255, 255, 0.78) 0%, rgba(236, 253, 245, 0.62) 100%);
     border: 1px solid rgba(16, 185, 129, 0.32);
-    backdrop-filter: blur(22px) saturate(170%);
-    -webkit-backdrop-filter: blur(22px) saturate(170%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     box-shadow:
       0 18px 42px -14px rgba(4, 120, 87, 0.22),
       0 2px 6px rgba(15, 23, 42, 0.06),
@@ -763,8 +806,8 @@ html {
     background:
       radial-gradient(ellipse at top right, rgba(165, 243, 252, 0.16), transparent 65%),
       linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(220, 252, 231, 0.58) 100%);
-    backdrop-filter: blur(22px) saturate(170%);
-    -webkit-backdrop-filter: blur(22px) saturate(170%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(16, 185, 129, 0.32);
     box-shadow:
       0 18px 42px -14px rgba(4, 120, 87, 0.22),
@@ -881,8 +924,8 @@ html {
       radial-gradient(ellipse at top right, rgba(255, 255, 255, 0.22), transparent 70%),
       linear-gradient(135deg, rgba(6, 78, 59, 0.32) 0%, rgba(13, 148, 136, 0.28) 100%);
     border: 1px solid rgba(167, 243, 208, 0.38);
-    backdrop-filter: blur(22px) saturate(180%);
-    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     box-shadow:
       0 14px 40px -10px rgba(0, 0, 0, 0.28),
       inset 0 1px 0 rgba(255, 255, 255, 0.14);
@@ -956,8 +999,9 @@ html {
 
   .landing-manifesto-orb {
     @apply absolute rounded-full;
-    filter: blur(70px);
+    filter: blur(42px);
     opacity: 0.7;
+    will-change: transform;
   }
 
   .landing-manifesto-orb-1 {
@@ -1017,8 +1061,8 @@ html {
       radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.22), transparent 70%),
       linear-gradient(135deg, rgba(6, 78, 59, 0.55) 0%, rgba(15, 23, 42, 0.45) 100%);
     border: 1px solid rgba(167, 243, 208, 0.42);
-    backdrop-filter: blur(18px) saturate(180%);
-    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     letter-spacing: 0.12em;
     box-shadow:
       0 8px 22px -6px rgba(0, 0, 0, 0.40),
@@ -1081,8 +1125,8 @@ html {
     @apply flex flex-col items-center text-center p-4 sm:p-5 rounded-2xl overflow-hidden relative;
     background: rgba(255, 255, 255, 0.09);
     border: 1px solid rgba(255, 255, 255, 0.24);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease;
   }
 
@@ -1128,8 +1172,8 @@ html {
     @apply relative max-w-2xl mx-auto rounded-3xl px-6 py-7 sm:px-10 sm:py-9 overflow-hidden;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     box-shadow:
       0 20px 60px -20px rgba(0, 0, 0, 0.4),
       inset 0 1px 0 rgba(255, 255, 255, 0.15);
@@ -1142,8 +1186,8 @@ html {
       radial-gradient(ellipse at top right, rgba(110, 231, 183, 0.22), transparent 70%),
       linear-gradient(135deg, rgba(34, 211, 238, 0.18) 0%, rgba(6, 78, 59, 0.32) 100%);
     border: 1px solid rgba(34, 211, 238, 0.45);
-    backdrop-filter: blur(16px) saturate(170%);
-    -webkit-backdrop-filter: blur(16px) saturate(170%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     letter-spacing: 0.12em;
     box-shadow:
       0 6px 18px -6px rgba(0, 0, 0, 0.35),
@@ -1191,8 +1235,8 @@ html {
     background:
       radial-gradient(ellipse at top right, var(--tone-soft), transparent 65%),
       linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(236, 253, 245, 0.55) 100%);
-    backdrop-filter: blur(24px) saturate(175%);
-    -webkit-backdrop-filter: blur(24px) saturate(175%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--tone-border);
     box-shadow:
       0 18px 42px -14px var(--tone-shadow),
@@ -1308,8 +1352,8 @@ html {
     box-shadow:
       0 22px 52px -14px rgba(4, 120, 87, 0.26),
       inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(26px) saturate(180%);
-    -webkit-backdrop-filter: blur(26px) saturate(180%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
   }
 
   /* Featured bento layout */
@@ -1389,8 +1433,8 @@ html {
       radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.28), transparent 70%),
       linear-gradient(135deg, rgba(167, 243, 208, 0.55) 0%, rgba(165, 243, 252, 0.42) 100%);
     border: 1px solid rgba(16, 185, 129, 0.42);
-    backdrop-filter: blur(14px) saturate(170%);
-    -webkit-backdrop-filter: blur(14px) saturate(170%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     box-shadow:
       0 4px 12px -4px rgba(4, 120, 87, 0.20),
       inset 0 1px 0 rgba(255, 255, 255, 0.5);
@@ -1434,8 +1478,8 @@ html {
     background:
       radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.32), transparent 70%),
       linear-gradient(135deg, rgba(6, 78, 59, 0.62) 0%, rgba(15, 23, 42, 0.55) 100%);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(167, 243, 208, 0.42);
     box-shadow:
       0 10px 28px -6px rgba(0, 0, 0, 0.40),
@@ -1511,8 +1555,8 @@ html {
     background:
       radial-gradient(ellipse at top right, var(--tone-soft, rgba(16, 185, 129, 0.14)), transparent 65%),
       linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(236, 253, 245, 0.55) 100%);
-    backdrop-filter: blur(24px) saturate(175%);
-    -webkit-backdrop-filter: blur(24px) saturate(175%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--tone-border, rgba(16, 185, 129, 0.32));
     box-shadow:
       0 18px 42px -14px var(--tone-shadow, rgba(16, 185, 129, 0.30)),
@@ -1541,7 +1585,20 @@ html {
     @apply relative overflow-hidden py-16 sm:py-20;
     background:
       radial-gradient(ellipse 80% 60% at 50% 0%, rgba(110, 231, 183, 0.35), transparent 60%),
-      linear-gradient(168deg, #047857 0%, #059669 42%, #0d9488 100%);
+      linear-gradient(180deg, #034b3a 0%, #047857 22%, #059669 60%, #0d9488 100%);
+  }
+
+  /* Soft welcome from STORY's deeper teal at the top */
+  .landing-cta-band::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 90px;
+    background: linear-gradient(180deg, rgba(3, 75, 58, 0.65) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 2;
   }
 
   .landing-cta-orbs {
@@ -1550,8 +1607,9 @@ html {
 
   .landing-cta-orb {
     @apply absolute rounded-full;
-    filter: blur(50px);
+    filter: blur(34px);
     opacity: 0.35;
+    will-change: transform;
   }
 
   .landing-cta-orb-1 {
@@ -1592,8 +1650,8 @@ html {
       linear-gradient(135deg, rgba(110, 231, 183, 0.20) 0%, rgba(6, 78, 59, 0.38) 100%);
     color: #ecfdf5;
     border: 1px solid rgba(167, 243, 208, 0.45);
-    backdrop-filter: blur(18px) saturate(180%);
-    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     letter-spacing: 0.05em;
     box-shadow:
       0 8px 20px -6px rgba(0, 0, 0, 0.32),
@@ -1629,8 +1687,8 @@ html {
       linear-gradient(135deg, rgba(167, 243, 208, 0.4), rgba(110, 231, 183, 0.25));
     color: #064e3b;
     border: 1.5px solid rgba(110, 231, 183, 0.7);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     box-shadow:
       0 18px 40px rgba(0, 0, 0, 0.3),
       0 0 0 1px rgba(236, 253, 245, 0.18) inset,
@@ -1667,8 +1725,8 @@ html {
     background:
       radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.10), transparent 70%),
       linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(236, 253, 245, 0.55) 100%);
-    backdrop-filter: blur(24px) saturate(170%);
-    -webkit-backdrop-filter: blur(24px) saturate(170%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(16, 185, 129, 0.32);
     box-shadow:
       0 18px 42px -14px rgba(4, 120, 87, 0.22),
@@ -1770,8 +1828,8 @@ html {
     background:
       radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.15), transparent 65%),
       linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(220, 252, 231, 0.55) 100%);
-    backdrop-filter: blur(26px) saturate(170%);
-    -webkit-backdrop-filter: blur(26px) saturate(170%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     border: 1px solid rgba(16, 185, 129, 0.32);
     box-shadow:
       0 22px 48px -14px rgba(4, 120, 87, 0.22),
@@ -1949,8 +2007,8 @@ html {
     @apply relative flex flex-col items-center text-center rounded-3xl p-5 sm:p-4 overflow-hidden z-[1];
     background: rgba(255, 255, 255, 0.11);
     border: 1px solid rgba(255, 255, 255, 0.26);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     box-shadow:
       0 16px 40px -12px rgba(0, 0, 0, 0.35),
       inset 0 1px 0 rgba(255, 255, 255, 0.15);
@@ -1981,8 +2039,8 @@ html {
       radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.22), transparent 70%),
       linear-gradient(135deg, rgba(6, 78, 59, 0.55) 0%, rgba(15, 23, 42, 0.42) 100%);
     border: 1px solid rgba(167, 243, 208, 0.42);
-    backdrop-filter: blur(14px) saturate(170%);
-    -webkit-backdrop-filter: blur(14px) saturate(170%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     letter-spacing: 0.1em;
     box-shadow:
       0 4px 14px -4px rgba(0, 0, 0, 0.35),
@@ -2028,12 +2086,26 @@ html {
   .landing-story {
     @apply relative overflow-hidden py-24 sm:py-32;
     background: linear-gradient(
-      155deg,
+      180deg,
       #050d12 0%,
-      #052e29 28%,
-      #064e3b 55%,
-      #0a1f2c 100%
+      #052e29 22%,
+      #064e3b 48%,
+      #064534 80%,
+      #034b3a 100%
     );
+  }
+
+  /* Soft bridge into the next dark CTA band — no light band, just deeper teal */
+  .landing-story::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100px;
+    background: linear-gradient(180deg, transparent 0%, rgba(4, 120, 87, 0.55) 100%);
+    pointer-events: none;
+    z-index: 2;
   }
 
   .landing-story::before {
@@ -2344,8 +2416,8 @@ html {
     background:
       radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.14), transparent 70%),
       linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(236, 253, 245, 0.55) 100%);
-    backdrop-filter: blur(22px) saturate(170%);
-    -webkit-backdrop-filter: blur(22px) saturate(170%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: none;
     cursor: pointer;
     text-align: inherit;
@@ -2428,8 +2500,8 @@ html {
     background:
       radial-gradient(ellipse 60% 80% at 100% 0%, rgba(110, 231, 183, 0.14), transparent 70%),
       linear-gradient(180deg, rgba(250, 253, 251, 0.78) 0%, rgba(236, 253, 245, 0.62) 100%);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-top: 1px solid rgba(16, 185, 129, 0.24);
   }
 
@@ -2450,6 +2522,46 @@ html {
     @apply py-8 text-center;
     background: linear-gradient(180deg, #bccdb0, #b0c2a4);
     border-top: 1px solid rgba(16, 185, 129, 0.32);
+  }
+
+  /* ---- Performance: respect reduced-motion + ease load on small screens ---- */
+  @media (prefers-reduced-motion: reduce) {
+    .landing-particle,
+    .landing-hero-orb,
+    .landing-section-orb,
+    .landing-manifesto-orb,
+    .landing-cta-orb,
+    .landing-story-ring,
+    .landing-bento-shine,
+    .landing-hero-scroll-line,
+    .landing-bento-featured-ring,
+    .landing-philosophy-icon,
+    .landing-hero-title-accent,
+    .landing-manifesto-line-accent,
+    .landing-story-word-glowing,
+    .landing-eyebrow::before,
+    .landing-hero-kicker::before,
+    .landing-image-badge::before {
+      animation: none !important;
+    }
+  }
+
+  /* On small screens, drop heaviest particles & orbs entirely; trim filter cost. */
+  @media (max-width: 640px) {
+    .landing-particle:nth-child(even) {
+      display: none;
+    }
+    .landing-section-orb,
+    .landing-manifesto-orb,
+    .landing-cta-orb {
+      filter: blur(28px);
+    }
+    .landing-hero-orb {
+      filter: blur(28px);
+    }
+    .landing-bento-shine {
+      display: none;
+    }
   }
 
   .landing-footer p {
@@ -2787,15 +2899,15 @@ html {
 
   /* ---- NAV HEADER ---- */
   .nav-header {
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     background: rgba(255, 255, 255, 0.92);
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   }
 
   .nav-bottom {
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     background: rgba(255, 255, 255, 0.88);
     border-top: 1px solid rgba(255, 255, 255, 0.70);
     box-shadow: 0 -4px 30px rgba(6, 78, 59, 0.08);
