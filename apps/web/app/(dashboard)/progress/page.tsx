@@ -146,6 +146,10 @@ export default async function ProgressPage() {
    * היסטוריית מעקב יומי — 30 ימים אחורה בלוח ירושלים.
    * c = מספר ביצועי משימות באותו יום; t = 1 (סף "פעיל היום").
    * המקור: journey_task_executions — הטבלה הייעודית של NuraWell-1 (לא JSONB ישן).
+   *
+   * שאילתה מוגבלת לטווח תאריכים מדויק (gte/lte) במקום limit שרירותי —
+   * האינדקס idx_task_exec_user_date (000023) מטפל בזה ביעילות גם
+   * לאחר שנים של שימוש. תקרה הגנתית של 600 שורות (30 ימים × 20 ביצועים).
    */
   const taskHistoryDays: { d: string; c: number; t: number }[] = [];
   for (let i = 29; i >= 0; i--) {
@@ -153,6 +157,7 @@ export default async function ProgressPage() {
     taskHistoryDays.push({ d: jerusalemDateKey(d), c: 0, t: 1 });
   }
   const sinceKey = taskHistoryDays[0]?.d ?? jerusalemDateKey(today);
+  const untilKey = taskHistoryDays[taskHistoryDays.length - 1]?.d ?? jerusalemDateKey(today);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawExecutions } = await (supabase as any)
@@ -160,7 +165,8 @@ export default async function ProgressPage() {
     .select('date_key')
     .eq('user_id', user.id)
     .gte('date_key', sinceKey)
-    .limit(2000);
+    .lte('date_key', untilKey)
+    .limit(600);
 
   if (Array.isArray(rawExecutions) && rawExecutions.length > 0) {
     const dayCount = new Map<string, number>();

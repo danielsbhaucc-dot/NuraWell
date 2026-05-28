@@ -1,9 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronDown, MapPin } from 'lucide-react';
+import { ChevronDown, Flame, MapPin } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
-import type { AdminUserJourneyStepRow } from '@/lib/admin/build-user-journey-report';
+import type {
+  AdminUserJourneyStepRow,
+  AdminUserJourneyTaskRow,
+} from '@/lib/admin/build-user-journey-report';
 
 const TASK_STATUS_HE: Record<string, string> = {
   accepted: 'קיבל',
@@ -109,40 +112,9 @@ function StepCard({ step }: { step: AdminUserJourneyStepRow }) {
 
       {step.tasks.length > 0 ? (
         <DetailBlock title="משימות">
-          <ul className="space-y-1">
+          <ul className="space-y-2">
             {step.tasks.map((t) => (
-              <li
-                key={t.id}
-                className="flex flex-wrap items-center justify-between gap-2 text-xs border-b border-slate-50 pb-1 last:border-0"
-              >
-                <span className="font-medium text-slate-800">{t.title}</span>
-                <span className="flex gap-1 shrink-0">
-                  <span
-                    className={[
-                      'rounded px-1.5 py-0.5 font-bold',
-                      t.status === 'accepted'
-                        ? 'bg-emerald-100 text-emerald-900'
-                        : t.status === 'rejected'
-                          ? 'bg-red-100 text-red-800'
-                          : t.status === 'pending'
-                            ? 'bg-amber-100 text-amber-900'
-                            : 'bg-slate-100 text-slate-500',
-                    ].join(' ')}
-                  >
-                    {TASK_STATUS_HE[t.status]}
-                  </span>
-                  {t.status === 'accepted' ? (
-                    <span
-                      className={[
-                        'rounded px-1.5 py-0.5 font-bold',
-                        t.execution_done ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600',
-                      ].join(' ')}
-                    >
-                      {t.execution_done ? 'בוצע' : 'לא בוצע'}
-                    </span>
-                  ) : null}
-                </span>
-              </li>
+              <TaskRow key={t.id} task={t} />
             ))}
           </ul>
         </DetailBlock>
@@ -154,11 +126,37 @@ function StepCard({ step }: { step: AdminUserJourneyStepRow }) {
             {step.habits.map((h) => (
               <li
                 key={h.id}
-                className="flex justify-between gap-2 text-xs border-b border-slate-50 pb-1 last:border-0"
+                className="flex flex-wrap items-center justify-between gap-2 text-xs border-b border-slate-50 pb-1 last:border-0"
               >
-                <span className="font-medium text-slate-800">{h.title}</span>
-                <span className="text-slate-600 shrink-0">
-                  {h.total > 0 ? `${h.checked}/${h.total}` : '—'}
+                <span className="font-medium text-slate-800 min-w-0">{h.title}</span>
+                <span className="flex flex-wrap items-center gap-1 shrink-0">
+                  <span className="text-slate-600">
+                    {h.total > 0 ? `סימוני היום ${h.checked}/${h.total}` : '—'}
+                  </span>
+                  {h.streak_current > 0 ? (
+                    <span className="inline-flex items-center gap-0.5 rounded-md bg-orange-100 text-orange-900 px-1.5 py-0.5 font-bold">
+                      <Flame className="w-3 h-3" />
+                      {h.streak_current}
+                    </span>
+                  ) : null}
+                  {h.streak_best > 0 && h.streak_best !== h.streak_current ? (
+                    <span className="rounded-md bg-slate-100 text-slate-600 px-1.5 py-0.5">
+                      שיא {h.streak_best}
+                    </span>
+                  ) : null}
+                  {h.target_days != null ? (
+                    <span
+                      className={[
+                        'rounded-md px-1.5 py-0.5 font-bold',
+                        h.achieved
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-violet-100 text-violet-900',
+                      ].join(' ')}
+                    >
+                      יעד {h.target_days}
+                      {h.achieved ? ' ✓' : ''}
+                    </span>
+                  ) : null}
                 </span>
               </li>
             ))}
@@ -166,6 +164,88 @@ function StepCard({ step }: { step: AdminUserJourneyStepRow }) {
         </DetailBlock>
       ) : null}
     </article>
+  );
+}
+
+function TaskExecutionDots({ task }: { task: AdminUserJourneyTaskRow }) {
+  if (task.recent_executions.length === 0) return null;
+
+  /** מציג 14 ימים אחרונים — נקודות בלוח ירושלים, מהישן לחדש (תצוגה RTL הופכת לימני→שמאל) */
+  const recentMap = new Map(task.recent_executions.map((e) => [e.date_key, e.slot_count]));
+  const days: { key: string; count: number }[] = [];
+  const now = new Date();
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+    const key = new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'Asia/Jerusalem',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(d);
+    days.push({ key, count: recentMap.get(key) ?? 0 });
+  }
+
+  return (
+    <div className="mt-1 flex items-center gap-1 flex-wrap" title="14 ימים אחרונים (חדש משמאל)">
+      {days.map((day) => (
+        <span
+          key={day.key}
+          className={[
+            'h-2.5 w-2.5 rounded-sm shrink-0',
+            day.count >= 2
+              ? 'bg-emerald-600'
+              : day.count === 1
+                ? 'bg-emerald-400'
+                : 'bg-slate-200',
+          ].join(' ')}
+          title={`${day.key}: ${day.count} ביצועים`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function TaskRow({ task }: { task: AdminUserJourneyTaskRow }) {
+  return (
+    <li className="space-y-1 border-b border-slate-50 pb-1.5 last:border-0">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+        <span className="font-medium text-slate-800 min-w-0">{task.title}</span>
+        <span className="flex flex-wrap items-center gap-1 shrink-0">
+          <span
+            className={[
+              'rounded px-1.5 py-0.5 font-bold',
+              task.status === 'accepted'
+                ? 'bg-emerald-100 text-emerald-900'
+                : task.status === 'rejected'
+                  ? 'bg-red-100 text-red-800'
+                  : task.status === 'pending'
+                    ? 'bg-amber-100 text-amber-900'
+                    : 'bg-slate-100 text-slate-500',
+            ].join(' ')}
+          >
+            {TASK_STATUS_HE[task.status]}
+          </span>
+          {task.status === 'accepted' ? (
+            <>
+              {task.active_days_last_7 > 0 || task.active_days_last_30 > 0 ? (
+                <span className="rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/60 px-1.5 py-0.5 font-bold">
+                  {task.active_days_last_7}/7 · {task.active_days_last_30}/30
+                </span>
+              ) : null}
+              <span
+                className={[
+                  'rounded px-1.5 py-0.5 font-bold',
+                  task.execution_done ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600',
+                ].join(' ')}
+              >
+                {task.execution_done ? 'בוצע פעם' : 'לא סומן'}
+              </span>
+            </>
+          ) : null}
+        </span>
+      </div>
+      {task.status === 'accepted' ? <TaskExecutionDots task={task} /> : null}
+    </li>
   );
 }
 
