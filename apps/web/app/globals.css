@@ -3517,6 +3517,7 @@ body.overflow-hidden { overflow: hidden; }
       100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
     background-attachment: fixed;
     min-height: 100vh;
+    overflow: hidden;
   }
 
   /* Decorative side-glows extending outside the column edges. */
@@ -3555,7 +3556,8 @@ body.overflow-hidden { overflow: hidden; }
     max-width: 480px;
     margin-inline: auto;
     margin-block: 24px;
-    min-height: calc(100vh - 48px);
+    height: calc(100dvh - 48px);
+    min-height: 0;
     border-radius: 36px;
     overflow: hidden;
     position: relative;
@@ -3573,6 +3575,26 @@ body.overflow-hidden { overflow: hidden; }
       inset 0 1px 0 rgba(255, 255, 255, 0.55),
       /* Inner highlight — bottom edge (subtle) */
       inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  /* Keep the rounded glass frame stable; scroll only the app content. */
+  .min-h-screen.bg-dashboard > main#main-content {
+    height: calc(100dvh - 48px);
+    min-height: 0 !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(16, 185, 129, 0.35) transparent;
+  }
+
+  .min-h-screen.bg-dashboard > main#main-content::-webkit-scrollbar { width: 6px; }
+  .min-h-screen.bg-dashboard > main#main-content::-webkit-scrollbar-track { background: transparent; }
+  .min-h-screen.bg-dashboard > main#main-content::-webkit-scrollbar-thumb {
+    background: rgba(16, 185, 129, 0.35);
+    border-radius: 99px;
+  }
+  .min-h-screen.bg-dashboard > main#main-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(16, 185, 129, 0.6);
   }
 
   /* --- Fixed MobileHeader: align with column, round top corners --- */
@@ -3607,16 +3629,7 @@ body.overflow-hidden { overflow: hidden; }
     max-width: 560px;
   }
 
-  /* --- Refined custom scrollbar (dashboard only) --- */
-  body.bg-background:has(.bg-dashboard)::-webkit-scrollbar { width: 8px; }
-  body.bg-background:has(.bg-dashboard)::-webkit-scrollbar-track { background: transparent; }
-  body.bg-background:has(.bg-dashboard)::-webkit-scrollbar-thumb {
-    background: rgba(16, 185, 129, 0.35);
-    border-radius: 99px;
-  }
-  body.bg-background:has(.bg-dashboard)::-webkit-scrollbar-thumb:hover {
-    background: rgba(16, 185, 129, 0.6);
-  }
+  /* Body itself does not scroll on desktop dashboard; main#main-content does. */
 }
 
 /* On very wide screens (≥1440px) push the decorative side-glows out a touch. */
