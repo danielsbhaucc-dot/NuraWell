@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Clock,
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 import { TaskHistoryStrip } from '../tasks/TaskHistoryStrip';
 import { TaskHistoryCalendar } from '../tasks/TaskHistoryCalendar';
+import { DayDetailPopup, type DayExecRow } from '../tasks/DayDetailPopup';
 
 interface CourseStatItem {
   id: string;
@@ -58,6 +60,8 @@ interface ProgressPageClientProps {
   journeyTasksReportedDone: number;
   journeyHabitChecks: number;
   taskHistoryDays?: TaskHistoryDay[];
+  /** פירוט ביצועים לפי יום — ל-Popup בלחיצה על עיגול */
+  taskHistoryByDay?: Record<string, DayExecRow[]>;
 }
 
 const lessonTypeIcon: Record<string, React.ElementType> = {
@@ -78,8 +82,25 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.32, ease: 'easeOut' } },
 };
 
-const glassCard =
-  'rounded-[22px] border border-white/50 shadow-[0_12px_40px_rgba(6,78,59,0.08)] backdrop-blur-xl bg-white/55';
+/** כרטיס זכוכית ירוק-קרם — ללא #FFF */
+const glassCardStyle = {
+  borderRadius: 22,
+  background:
+    'linear-gradient(170deg, rgba(236,253,245,0.82) 0%, rgba(220,252,231,0.72) 55%, rgba(254,252,232,0.68) 100%)',
+  border: '1px solid rgba(167,243,208,0.55)',
+  boxShadow: '0 12px 40px rgba(6,78,59,0.08), inset 0 1px 0 rgba(236,253,245,0.9)',
+  backdropFilter: 'blur(20px) saturate(1.2)',
+  WebkitBackdropFilter: 'blur(20px) saturate(1.2)',
+} as const;
+
+function jerusalemTodayKey(): string {
+  return new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
 
 function formatTime(minutes: number): string {
   if (minutes < 60) return `${minutes} דק'`;
@@ -112,15 +133,20 @@ export function ProgressPageClient({
   journeyTasksReportedDone,
   journeyHabitChecks,
   taskHistoryDays,
+  taskHistoryByDay = {},
 }: ProgressPageClientProps) {
+  const [popupDateKey, setPopupDateKey] = useState<string | null>(null);
+  const todayKey = jerusalemTodayKey();
+
   const journeyPct =
     journeyStepsTotal > 0 ? Math.round((journeyStepsCompleted / journeyStepsTotal) * 100) : 0;
   const taskFollowPct =
     journeyTasksAccepted > 0 ? Math.round((journeyTasksReportedDone / journeyTasksAccepted) * 100) : 0;
 
   const historyDays = taskHistoryDays ?? [];
-  const activeDaysCount = historyDays.filter((d) => d.c >= d.t).length;
-  const hasHistorySignal = historyDays.some((d) => d.c > 0);
+  const activeDaysCount = historyDays.filter((d) => d.t > 0 && d.c >= d.t).length;
+  const partialDaysCount = historyDays.filter((d) => d.t > 0 && d.c > 0 && d.c < d.t).length;
+  const showDailySection = historyDays.length > 0;
 
   const stats = [
     {
@@ -178,7 +204,9 @@ export function ProgressPageClient({
           className="grid grid-cols-2 gap-3"
         >
           {stats.map((s) => (
-            <motion.div key={s.label} variants={item} className={`${glassCard} p-3.5 flex flex-col gap-2`}>
+            <motion.div key={s.label} variants={item} style={glassCardStyle}
+            className="p-3.5 flex flex-col gap-2"
+          >
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${s.iconBg}`}>
                 <s.icon className={`w-5 h-5 ${s.accent}`} strokeWidth={2.2} />
               </div>
@@ -193,7 +221,8 @@ export function ProgressPageClient({
           variants={item}
           initial="hidden"
           animate="show"
-          className={`${glassCard} p-4`}
+          style={glassCardStyle}
+            className="p-4"
         >
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2 min-w-0">
@@ -219,13 +248,19 @@ export function ProgressPageClient({
           </div>
 
           <div className="grid grid-cols-2 gap-2.5 mb-4">
-            <div className="rounded-2xl px-3 py-2.5 bg-white/70 border border-emerald-200/40">
+            <div
+              className="rounded-2xl px-3 py-2.5 border border-emerald-200/40"
+              style={{ background: 'rgba(220,252,231,0.55)' }}
+            >
               <p className="text-[10px] font-bold text-gray-500 mb-0.5">צעדים הושלמו</p>
               <p className="text-lg font-black text-emerald-900">
                 {journeyStepsCompleted}/{journeyStepsTotal || '—'}
               </p>
             </div>
-            <div className="rounded-2xl px-3 py-2.5 bg-white/70 border border-emerald-200/40">
+            <div
+              className="rounded-2xl px-3 py-2.5 border border-emerald-200/40"
+              style={{ background: 'rgba(220,252,231,0.55)' }}
+            >
               <p className="text-[10px] font-bold text-gray-500 mb-0.5">דיווח משימות</p>
               <p className="text-lg font-black text-emerald-900">
                 {journeyTasksReportedDone}/{journeyTasksAccepted || '0'}
@@ -277,7 +312,8 @@ export function ProgressPageClient({
           variants={item}
           initial="hidden"
           animate="show"
-          className={`${glassCard} p-4 border-violet-200/40`}
+          style={glassCardStyle}
+            className="p-4 border-violet-200/40"
         >
           <div className="flex items-center justify-between gap-3 mb-3">
             <div className="flex items-center gap-2 min-w-0">
@@ -306,12 +342,13 @@ export function ProgressPageClient({
           </p>
         </motion.section>
 
-        {hasHistorySignal && historyDays.length > 0 && (
+        {showDailySection ? (
           <motion.section
             variants={item}
             initial="hidden"
             animate="show"
-            className={`${glassCard} p-4`}
+            style={glassCardStyle}
+            className="p-4"
           >
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-2 min-w-0">
@@ -322,52 +359,85 @@ export function ProgressPageClient({
                   <CalendarDays className="w-4 h-4 text-amber-700" strokeWidth={2.2} />
                 </div>
                 <div className="min-w-0 text-right">
-                  <h2 className="text-sm font-black text-[#1A1730]">המעקב היומי שלי</h2>
-                  <p className="text-[11px] text-gray-600 font-medium">
-                    30 הימים האחרונים — ביצועי משימות מתועדים בלוח ירושלים
+                  <h2 className="text-sm font-black text-emerald-950">המעקב היומי שלי</h2>
+                  <p className="text-[11px] text-emerald-900/70 font-medium">
+                    לחץ על יום לפירוט — 30 הימים האחרונים
                   </p>
                 </div>
               </div>
-              <span className="text-xs font-bold text-amber-900 shrink-0 px-3 py-1.5 rounded-full border border-amber-300/60 bg-amber-50/80">
+              <span
+                className="text-xs font-bold text-amber-900 shrink-0 px-3 py-1.5 rounded-full"
+                style={{
+                  background: 'rgba(254,243,199,0.65)',
+                  border: '1px solid rgba(251,191,36,0.45)',
+                }}
+              >
                 {activeDaysCount}/{historyDays.length}
               </span>
             </div>
 
             <div className="space-y-3">
               <div>
-                <p className="text-[10px] font-bold text-gray-500 mb-1.5">השבוע האחרון</p>
-                <TaskHistoryStrip days={historyDays.slice(-7)} />
+                <p className="text-[10px] font-bold text-emerald-900/65 mb-1.5">השבוע האחרון</p>
+                <TaskHistoryStrip
+                  days={historyDays.slice(-7)}
+                  todayKey={todayKey}
+                  activeKey={popupDateKey}
+                  onSelect={setPopupDateKey}
+                />
               </div>
 
               <div>
-                <p className="text-[10px] font-bold text-gray-500 mb-1.5">חודש לאחור</p>
-                <TaskHistoryCalendar days={historyDays.slice(-28)} />
+                <p className="text-[10px] font-bold text-emerald-900/65 mb-1.5">חודש לאחור</p>
+                <TaskHistoryCalendar
+                  days={historyDays.slice(-28)}
+                  todayKey={todayKey}
+                  activeKey={popupDateKey}
+                  onSelect={setPopupDateKey}
+                />
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 pt-2 text-[10px] font-semibold text-gray-600">
+              <div className="flex flex-wrap items-center gap-2.5 pt-2 text-[10px] font-semibold text-emerald-900/75">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  פעיל
+                  הושלם
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
                   חלקי
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
-                  ללא דיווח
+                  <span className="h-2.5 w-2.5 rounded-full bg-sky-300" />
+                  פתוח היום
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-rose-300/85" />
+                  פספוס
                 </span>
               </div>
+              {partialDaysCount > 0 ? (
+                <p
+                  className="text-[10px] font-semibold text-emerald-900/75 text-right"
+                  style={{
+                    background: 'rgba(254,252,232,0.55)',
+                    borderRadius: 10,
+                    padding: '6px 10px',
+                  }}
+                >
+                  {partialDaysCount} ימים עם ביצוע חלקי — כל צעד נחשב 🌱
+                </p>
+              ) : null}
             </div>
           </motion.section>
-        )}
+        ) : null}
 
         {currentStreak >= 3 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            className={`${glassCard} p-4 flex items-center gap-3 border-orange-200/60 bg-orange-50/50`}
+            className="p-4 flex items-center gap-3 border-orange-200/60"
+            style={{ ...glassCardStyle, background: 'rgba(254,243,199,0.45)' }}
           >
             <span className="text-3xl">🔥</span>
             <div className="text-right min-w-0">
@@ -386,8 +456,13 @@ export function ProgressPageClient({
             <motion.div variants={container} initial="hidden" animate="show" className="space-y-3">
               {courseStats.map((course) => (
                 <motion.div key={course.id} variants={item}>
-                  <Link href={`/courses/${course.id}`} className={`${glassCard} flex items-center gap-3 p-3.5 block`}>
-                    <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-white/60 bg-white/80">
+                  <Link href={`/courses/${course.id}`} style={glassCardStyle}
+            className="flex items-center gap-3 p-3.5 block"
+          >
+                    <div
+                      className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-emerald-200/50"
+                      style={{ background: 'rgba(220,252,231,0.65)' }}
+                    >
                       {course.thumbnail ? (
                         <Image
                           src={course.thumbnail}
@@ -439,7 +514,8 @@ export function ProgressPageClient({
                   <motion.div key={`${a.lesson_id}-${idx}`} variants={item}>
                     <Link
                       href={`/lessons/${a.lesson_id}`}
-                      className={`${glassCard} flex items-center gap-3 p-3 transition hover:bg-white/65`}
+                      style={glassCardStyle}
+            className="flex items-center gap-3 p-3 transition hover:opacity-90"
                     >
                       <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 bg-emerald-100 border border-emerald-200/50">
                         <CheckCircle2 className="w-4 h-4 text-emerald-700" />
@@ -463,7 +539,8 @@ export function ProgressPageClient({
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            className={`${glassCard} text-center py-14 px-4`}
+            style={glassCardStyle}
+            className="text-center py-14 px-4"
           >
             <div className="text-5xl mb-3">🌱</div>
             <h3 className="text-lg font-black text-[#1A1730] mb-2">המסע מתחיל כאן</h3>
@@ -483,6 +560,14 @@ export function ProgressPageClient({
           </motion.div>
         )}
       </div>
+
+      <DayDetailPopup
+        open={Boolean(popupDateKey)}
+        dateKey={popupDateKey}
+        todayKey={todayKey}
+        rows={popupDateKey ? (taskHistoryByDay[popupDateKey] ?? []) : []}
+        onClose={() => setPopupDateKey(null)}
+      />
     </div>
   );
 }
