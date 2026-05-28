@@ -162,6 +162,9 @@ async function runHabitCheckpointCron(request: Request) {
   const userIds = [...new Set(plan.map((p) => p.userId))];
   const avoidIds = new Set<string>();
   const personalizedScheduleIds = new Set<string>();
+  const hasPendingTasksByUser = new Map(
+    plan.map((p) => [p.userId, p.payload.pendingTasks.length > 0])
+  );
 
   if (userIds.length > 0) {
     const plannedIds = new Set(userIds);
@@ -174,10 +177,14 @@ async function runHabitCheckpointCron(request: Request) {
        * משתמש "זמינות נמוכה היום" כבר לא חוסם תזכורות:
        *  - דרישת מוצר: 3 תזכורות ביום כשיש משימה לא בוצעת.
        *  - הטון/תוכן ההודעה ערב כבר מותאם דרך isCompassionOnly ב-send-almog-habit-checkpoint.
+       *
+       * גם משתמש עם זמנים אישיים מה-onboarding לא ידולג אם יש לו משימה פתוחה.
+       * הזמנים האישיים מונעים כפילות רק עבור מגעים כלליים/הרגלים ללא משימת accepted.
        */
       if (
         row.onboarding_completed === true &&
-        normalizeCheckInTimes(row.ai_check_in_times).length > 0
+        normalizeCheckInTimes(row.ai_check_in_times).length > 0 &&
+        !hasPendingTasksByUser.get(id)
       ) {
         personalizedScheduleIds.add(id);
       }
