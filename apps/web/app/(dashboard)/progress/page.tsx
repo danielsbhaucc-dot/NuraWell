@@ -233,6 +233,7 @@ export default async function ProgressPage() {
 
   return (
     <ProgressPageClient
+      userId={user.id}
       totalCompleted={totalCompleted}
       totalEnrolled={enrollments.length}
       totalTimeMinutes={Math.round(totalTimeSeconds / 60)}

@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useProgressLiveRefresh } from '../../lib/journey/use-progress-live-refresh';
 import {
   Clock,
   BookOpen,
@@ -48,6 +50,7 @@ interface TaskHistoryDay {
 }
 
 interface ProgressPageClientProps {
+  userId: string;
   totalCompleted: number;
   totalEnrolled: number;
   totalTimeMinutes: number;
@@ -121,6 +124,7 @@ function formatDate(dateStr: string): string {
 }
 
 export function ProgressPageClient({
+  userId,
   totalCompleted,
   totalEnrolled,
   totalTimeMinutes,
@@ -135,8 +139,16 @@ export function ProgressPageClient({
   taskHistoryDays,
   taskHistoryByDay = {},
 }: ProgressPageClientProps) {
+  const router = useRouter();
   const [popupDateKey, setPopupDateKey] = useState<string | null>(null);
   const todayKey = jerusalemTodayKey();
+
+  /**
+   * עדכון לייב: בכל שינוי ב-journey_progress / journey_task_executions של המשתמש —
+   * מפעילים router.refresh() כדי שה-Server Component יישלף מחדש עם נתונים עדכניים.
+   * ה-hook מבצע debounce של 800ms כדי שסימון רצוף של מספר סלוטים יבצע רענון אחד.
+   */
+  useProgressLiveRefresh(userId, () => router.refresh());
 
   const journeyPct =
     journeyStepsTotal > 0 ? Math.round((journeyStepsCompleted / journeyStepsTotal) * 100) : 0;
