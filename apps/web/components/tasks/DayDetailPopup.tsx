@@ -90,7 +90,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
       {open && dateKey ? (
         <motion.div
           key="day-popup"
-          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center px-3 pb-4 sm:pb-0"
+          className="fixed inset-0 z-[60] flex items-center justify-center px-4 py-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -107,10 +107,10 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
             }}
           />
           <motion.div
-            className="relative w-full max-w-sm rounded-[26px] overflow-hidden"
-            initial={{ y: 30, opacity: 0, scale: 0.96 }}
+            className="relative w-full max-w-sm rounded-[26px] overflow-hidden max-h-[85vh] flex flex-col"
+            initial={{ y: 16, opacity: 0, scale: 0.94 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 30, opacity: 0, scale: 0.96 }}
+            exit={{ y: 16, opacity: 0, scale: 0.94 }}
             transition={{ type: 'spring', stiffness: 320, damping: 28 }}
             style={{
               background:
@@ -136,7 +136,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
             </button>
 
             <div
-              className="px-5 pt-5 pb-4 text-right"
+              className="px-5 pt-5 pb-4 text-right shrink-0"
               style={{
                 background:
                   'linear-gradient(150deg, rgba(167,243,208,0.55) 0%, rgba(204,251,241,0.35) 70%)',
@@ -157,7 +157,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
               </p>
             </div>
 
-            <div className="p-4 space-y-2.5 max-h-[60vh] overflow-y-auto">
+            <div className="p-4 space-y-2.5 overflow-y-auto flex-1 min-h-0">
               {sortedRows.length === 0 ? (
                 <div
                   className="rounded-2xl p-4 text-right"
@@ -278,7 +278,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
 
             {sortedRows.length > 0 ? (
               <div
-                className="px-4 py-3 text-center text-[11px] font-semibold text-emerald-900/85"
+                className="px-4 py-3 text-center text-[11px] font-semibold text-emerald-900/85 shrink-0"
                 style={{
                   background:
                     'linear-gradient(180deg, rgba(204,251,241,0.4) 0%, rgba(220,252,231,0.55) 100%)',
