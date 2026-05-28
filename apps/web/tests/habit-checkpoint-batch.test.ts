@@ -634,8 +634,8 @@ describe('planHabitCheckpointTriggers', () => {
     ];
 
     /** המשתמש סימן רק בוקר. midday עדיין יציג noon+evening כפתוחים. */
-    const todayDoneByTask = new Map<string, Set<string>>([
-      ['t_recur', new Set(['morning'])],
+    const todayDoneByTask = new Map<string, Map<string, Set<string>>>([
+      ['u-partial', new Map([['t_recur', new Set(['morning'])]])],
     ]);
 
     const midday = planHabitCheckpointTriggers(
