@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '../../../lib/supabase/server';
 import { ProgressPageClient } from '../../../components/course/ProgressPageClient';
+import { jerusalemDateKey } from '../../../lib/journey/task-schedule';
 
 export const metadata: Metadata = {
   title: 'ההתקדמות שלי',
@@ -141,6 +142,38 @@ export default async function ProgressPage() {
     }
   }
 
+  /**
+   * היסטוריית מעקב יומי — 30 ימים אחורה בלוח ירושלים.
+   * c = מספר ביצועי משימות באותו יום; t = 1 (סף "פעיל היום").
+   * המקור: journey_task_executions — הטבלה הייעודית של NuraWell-1 (לא JSONB ישן).
+   */
+  const taskHistoryDays: { d: string; c: number; t: number }[] = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
+    taskHistoryDays.push({ d: jerusalemDateKey(d), c: 0, t: 1 });
+  }
+  const sinceKey = taskHistoryDays[0]?.d ?? jerusalemDateKey(today);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawExecutions } = await (supabase as any)
+    .from('journey_task_executions')
+    .select('date_key')
+    .eq('user_id', user.id)
+    .gte('date_key', sinceKey)
+    .limit(2000);
+
+  if (Array.isArray(rawExecutions) && rawExecutions.length > 0) {
+    const dayCount = new Map<string, number>();
+    for (const row of rawExecutions as Array<{ date_key?: string }>) {
+      const key = typeof row.date_key === 'string' ? row.date_key : '';
+      if (!key) continue;
+      dayCount.set(key, (dayCount.get(key) ?? 0) + 1);
+    }
+    for (const day of taskHistoryDays) {
+      day.c = dayCount.get(day.d) ?? 0;
+    }
+  }
+
   return (
     <ProgressPageClient
       totalCompleted={totalCompleted}
@@ -154,6 +187,7 @@ export default async function ProgressPage() {
       journeyTasksAccepted={journeyTasksAccepted}
       journeyTasksReportedDone={journeyTasksReportedDone}
       journeyHabitChecks={journeyHabitChecks}
+      taskHistoryDays={taskHistoryDays}
     />
   );
 }
