@@ -42,16 +42,25 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 מזהה משימות שהמשתמש קיבל אבל לא ביצע** — מי שאין לו לא הרגלים תואמי slot ולא משימות
 פתוחות, מדולג אוטומטית כדי לא להציף עם תזכורות מיותרות.
 
-### Cadence — תדירות מותאמת לפי דורמנסי
+### דרישת מוצר (SSOT)
 
-**עד 2 ימי שקט** = 3/יום (כל שלושת ה-Schedules למטה). מ-3 ימים ומעלה המערכת מורידה
-אוטומטית את התדירות ומשנה את הטון. **אין צורך לשנות שום Schedule** — הסינון קורה
-ב-`planHabitCheckpointTriggers` לפי `cadenceStage`:
+המערכת פועלת לפי 3 כללים פשוטים — בכל חלון (בוקר / צהריים / ערב):
 
-| ימי שקט (`daysSinceLastActive`) | שלב | Slots שנשלחים | טון ההודעה |
+| מצב | התנהגות |
+|---|---|
+| יש משימה/הרגל פתוח שלא בוצע היום | **3 תזכורות ביום** — תזכורת ב-LLM פתוחה לבחירת טון/נושא |
+| המשימה בוצעה חלקית (multi_daily, per_meal) | **3 תזכורות ביום** — pendingSlotLabels בפיילוד; ה-AI מציג רק את הסלוטים שעוד פתוחים |
+| הכל בוצע + אין משימות פתוחות | **שקט מוחלט** — אין הודעה כלל ב-3 ה-slots |
+
+### Cadence — טון אישי לפי דורמנסי (לא חוסם תזכורות)
+
+**Cadence stage משפיע רק על הטון של ההודעה ועל מגעי "נוכחות שקטה"** (משתמש דורמנטי
+שכל המשימות שלו סגורות). משימה לא בוצעת **תמיד** מקבלת 3 תזכורות, בלי תלות ב-cadence.
+
+| ימי שקט (`daysSinceLastActive`) | שלב | מגעי נוכחות (כשאין משימה פתוחה) | טון ההודעה |
 |---|---|---|---|
-| 0–2 | `active` | בוקר + צהריים + ערב | בוקר="לא לשכוח לשתות מים", צהריים="איך הולך?", ערב="הכל בסדר?". יום 2 = "היה יום עמוס?" |
-| 3–7 | `dormant_early` | בוקר + ערב בלבד | חבר שמרגיש שקט: "נעלמת לי, הכל סבבה?" |
+| 0–2 | `active` | אין (שקט) | בוקר="לא לשכוח לשתות מים", צהריים="איך הולך?", ערב="הכל בסדר?". יום 2 = "היה יום עמוס?" |
+| 3–7 | `dormant_early` | בוקר + ערב | חבר שמרגיש שקט: "נעלמת לי, הכל סבבה?" |
 | 8 | `withdrawing` | רק בוקר | **אמפתי במיוחד**: "אני מבין שאתה בעומס, תעדכן כשתוכל. אני כאן בשבילך 💙" |
 | 9–13 | `extended_absence` | רק צהריים | נוכחות שקטה: "חושב עליך אחי, אני כאן" |
 | 14+ | `ghosted` | בוקר, **פעם בשבוע** (cooldown של 7 ימים) | "נעלמת לי לגמרי 🥲 אני כאן כשתחזור" |
@@ -212,6 +221,31 @@ curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints?sl
 > ה-workflow עצמו (`almog-habit-checkpoint`) חוסם כפילויות לאותו slot/יום, אז קריאה חוזרת
 > לא תיצור התראות כפולות (`apps/web/lib/workflows/habit-checkpoint-gates.ts`).
 
+### דרך ד.5 — אבחון READ-ONLY של משתמש ספציפי (`/diagnose`)
+
+Endpoint חדש שלא שולח שום דבר — רק מסביר *למה* משתמש יקבל / לא יקבל תזכורת בחלון מסוים.
+שימושי כשמשתמש מתלונן "אין לי תזכורות" ורוצים לראות בדיוק מה חוסם אותו.
+
+נתיב: `POST /api/v1/ai/cron/habit-checkpoints/diagnose`
+
+קוד: `apps/web/app/api/v1/ai/cron/habit-checkpoints/diagnose/route.ts`
+
+```bash
+curl -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints/diagnose" \
+  -H "Authorization: Bearer <CRON_SECRET>" \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"<UUID>","slot":"morning"}'
+```
+
+תגובה כוללת:
+
+- `would_send` — האם ה-cron האמיתי יישלח בסיבוב הבא.
+- `summary_he` — שורה אנושית בעברית (✅ / ❌ / ⚪).
+- `blockers[]` — רשימת חוסמים פעילים (avoid_push, personalized_schedule, ghosted_cooldown, already_sent, touch_fatigue).
+- `cadence` — `days_since_last_active` + `stage` + `slot_allowed_for_stage`.
+- `data` — ספירות (כל הרגלים, הרגלים תואמי slot, executions היום, מגעים בלי תשובה).
+- `plan_decision` — מה התכנון יעשה (notifyMode, habits + pendingTasks בפיילוד).
+
 ### דרך ד — בדיקה עצמית של ההתראה (`/test`)
 
 ל-Endpoint נפרד שמריץ **סינכרונית** את אותו תזרים שה-CRON האמיתי מריץ אחרי
@@ -310,16 +344,22 @@ curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints/te
 
 ### Schedule רץ אבל אף נוטיפיקציה לא מגיעה
 
-הסיבה לרוב מצויה ב-gate של ה-workflow (`habit-checkpoint-gates.ts`):
+הסיבה לרוב מצויה באחד מאלה:
 
-- `avoid_push: true` בפרופיל המשתמש → השרת מדלג.
-- כבר נשלחה התראה לאותו slot היום → השרת מדלג.
-- אין הרגלים שתואמים ל-slot היום (למשל `weekly` רק ביום מסוים) **וגם** אין משימות
-  שהמשתמש סימן כ-`accepted` ועדיין לא דיווח עליהן ב-`task_statuses[id].execution_done` → השרת מדלג.
-  המשמעות: משתמש שהשלים את כל המשימות שקיבל על עצמו לא יקבל תזכורת באותו חלון.
+- `avoid_push: true` בפרופיל המשתמש → השרת מדלג (משתמש ביקש לא להציק).
+- כבר נשלחה התראה לאותו slot היום → gate חוסם כפילות.
+- **המשתמש סיים את כל המשימות + ההרגלים של היום** → שקט מוחלט (לפי דרישת מוצר).
+- אין למשתמש משימות שסומנו `accepted` ב-`task_statuses[id]` → אין מה להזכיר.
+- למשתמש יש זמני check-in אישיים מההרשמה (`profiles.ai_check_in_times` לא ריק)
+  → habit-checkpoints מדלג, ההתראות באות מ-`onboarding-check-ins` במקום (Schedule 5).
+- 14+ ימי שקט (`cadenceStage='ghosted'`) + נשלחה הודעה ב-7 ימים אחרונים → weekly cooldown.
 
 הריצו `dryRun=1` כדי לראות מי תוכנן ומי דולג, או `/test` כדי לראות עבור משתמש ספציפי
 כמה משימות פתוחות וכמה הרגלים תואמים נמצאו.
+
+> ⚠️ **שינוי גרסה (2026-05-28):** `daily_availability='low'` כבר לא חוסם תזכורות בבוקר/צהריים.
+> דרישת מוצר: משימה לא בוצעת → 3 תזכורות ביום, גם אם המשתמש סימן שהיום עמוס. הטון
+> של ההודעה ערב עדיין מתאים את עצמו (`isCompassionOnly` ב-send-almog-habit-checkpoint).
 
 ---
 
@@ -329,6 +369,7 @@ curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints/te
 - `apps/web/app/api/v1/ai/cron/master/route.ts` — cron מאסטר יומי.
 - `apps/web/app/api/v1/ai/cron/habit-checkpoints/route.ts` — תזמון 3× ביום.
 - `apps/web/app/api/v1/ai/cron/habit-checkpoints/test/route.ts` — endpoint דיבוג סינכרוני (`/test`).
+- `apps/web/app/api/v1/ai/cron/habit-checkpoints/diagnose/route.ts` — endpoint READ-ONLY (`/diagnose`).
 - `apps/web/app/api/workflows/almog-habit-checkpoint/route.ts` — ה-workflow הקצה שמטפל במשתמש בודד.
 - `apps/web/lib/workflows/habit-checkpoint-eligibility.ts` — סינון הרגלים לפי slot/יום.
 - `apps/web/lib/workflows/habit-checkpoint-gates.ts` — חסימת כפילויות.

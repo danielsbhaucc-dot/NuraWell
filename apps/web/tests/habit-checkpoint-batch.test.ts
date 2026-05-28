@@ -23,8 +23,19 @@ function row(partial: Partial<ProgressRow> & { user_id: string }): ProgressRow {
   };
 }
 
+/**
+ * Helper: lastActiveByUser שמסמן את כל המשתמשים כ-active (פעילים היום) ב-tests.
+ * בלי זה — בהיעדר Map, daysSinceLastActive=Infinity → cadence='ghosted', מה
+ * שמוסיף "dormancy touch" בבוקר. אנחנו רוצים לבדוק את ההתנהגות של משתמש פעיל
+ * מובהק אלא אם הטסט מתייחס במפורש ל-cadence dormant.
+ */
+function activeLastActive(...userIds: string[]): Map<string, string | null> {
+  const today = new Date('2026-05-19T08:00:00.000Z').toISOString();
+  return new Map(userIds.map((uid) => [uid, today]));
+}
+
 describe('planHabitCheckpointTriggers', () => {
-  it('does not remind for habits already marked done today', () => {
+  it('silent when all habits already marked done today (no reinforce)', () => {
     const progress: ProgressRow[] = [
       row({
         user_id: 'u1',
@@ -38,17 +49,18 @@ describe('planHabitCheckpointTriggers', () => {
       }),
     ];
 
+    /** דרישת מוצר: הכל בוצע ואין משימות פתוחות → שקט מוחלט (משתמש active). */
     const plan = planHabitCheckpointTriggers(
       progress,
       'morning',
-      new Date('2026-05-19T06:00:00+03:00')
+      new Date('2026-05-19T06:00:00+03:00'),
+      new Map(),
+      activeLastActive('u1')
     );
-    expect(plan).toHaveLength(1);
-    expect(plan[0]!.payload.notifyMode).toBe('reinforce');
-    expect(plan[0]!.payload.habits).toHaveLength(0);
+    expect(plan).toHaveLength(0);
   });
 
-  it('uses reinforce mode when all slot habits done and no pending tasks', () => {
+  it('silent when all habits and tasks done — no morning reinforce', () => {
     const progress: ProgressRow[] = [
       row({
         user_id: 'u1',
@@ -65,17 +77,15 @@ describe('planHabitCheckpointTriggers', () => {
       }),
     ];
 
+    /** דרישת מוצר: הכל בוצע ואין פתוחים → אין הודעה גם בבוקר (משתמש active). */
     const plan = planHabitCheckpointTriggers(
       progress,
       'morning',
-      new Date('2026-05-19T06:00:00+03:00')
+      new Date('2026-05-19T06:00:00+03:00'),
+      new Map(),
+      activeLastActive('u1')
     );
-    expect(plan).toHaveLength(1);
-    expect(plan[0]!.payload.notifyMode).toBe('reinforce');
-    expect(plan[0]!.payload.habits).toHaveLength(0);
-    expect(plan[0]!.payload.pendingTasks).toHaveLength(0);
-    expect(plan[0]!.payload.completedTodayHabits).toHaveLength(1);
-    expect(plan[0]!.payload.completedTodayTasks).toHaveLength(1);
+    expect(plan).toHaveLength(0);
   });
 
   it('remind mode excludes execution_done tasks', () => {
@@ -106,7 +116,9 @@ describe('planHabitCheckpointTriggers', () => {
     const plan = planHabitCheckpointTriggers(
       progress,
       'midday',
-      new Date('2026-05-19T13:00:00+03:00')
+      new Date('2026-05-19T13:00:00+03:00'),
+      new Map(),
+      activeLastActive('u1')
     );
     expect(plan[0]!.payload.notifyMode).toBe('remind');
     expect(plan[0]!.payload.pendingTasks.map((t) => t.id)).toEqual(['t2']);
@@ -348,7 +360,7 @@ describe('planHabitCheckpointTriggers', () => {
     expect(computeNudgeLevel(14)).toBe(3);
   });
 
-  it('filters out users in dormant_early cadence when slot is midday', () => {
+  it('pending task overrides cadence stage — sends in all 3 slots even when dormant_early', () => {
     const progress: ProgressRow[] = [
       row({
         user_id: 'u-dormant',
@@ -364,7 +376,10 @@ describe('planHabitCheckpointTriggers', () => {
       }),
     ];
 
-    /** 5 ימים בלי פעילות → dormant_early. midday לא מותר → מסונן. */
+    /**
+     * דרישת מוצר: משימה לא בוצעת → 3 תזכורות ביום, גם במצב dormant_early.
+     * cadence מצויין ב-payload לטון, אבל לא חוסם שליחה.
+     */
     const fiveDaysAgo = new Date('2026-05-14T08:00:00.000Z').toISOString();
     const lastActive = new Map<string, string | null>([['u-dormant', fiveDaysAgo]]);
 
@@ -375,7 +390,9 @@ describe('planHabitCheckpointTriggers', () => {
       new Map(),
       lastActive
     );
-    expect(planMidday).toHaveLength(0);
+    expect(planMidday).toHaveLength(1);
+    expect(planMidday[0]!.payload.notifyMode).toBe('remind');
+    expect(planMidday[0]!.payload.cadenceStage).toBe('dormant_early');
 
     const planMorning = planHabitCheckpointTriggers(
       progress,
@@ -385,6 +402,7 @@ describe('planHabitCheckpointTriggers', () => {
       lastActive
     );
     expect(planMorning).toHaveLength(1);
+    expect(planMorning[0]!.payload.notifyMode).toBe('remind');
     expect(planMorning[0]!.payload.cadenceStage).toBe('dormant_early');
   });
 
@@ -401,7 +419,8 @@ describe('planHabitCheckpointTriggers', () => {
       }),
     ];
 
-    const eightDaysAgo = new Date('2026-05-11T08:00:00.000Z').toISOString();
+    /** 8+ ימים מול now ב-Asia/Jerusalem (לא 7 — floor של daysBetween). */
+    const eightDaysAgo = new Date('2026-05-10T08:00:00.000Z').toISOString();
     const lastActive = new Map<string, string | null>([['u-withdraw', eightDaysAgo]]);
 
     const morning = planHabitCheckpointTriggers(
@@ -433,7 +452,7 @@ describe('planHabitCheckpointTriggers', () => {
     expect(evening).toHaveLength(0);
   });
 
-  it('extended_absence (9-13) — only midday', () => {
+  it('extended_absence (9-13) — habit due overrides cadence; only dormancy-touch in allowed slot otherwise', () => {
     const progress: ProgressRow[] = [
       row({
         user_id: 'u-ext',
@@ -449,6 +468,10 @@ describe('planHabitCheckpointTriggers', () => {
     const tenDaysAgo = new Date('2026-05-09T08:00:00.000Z').toISOString();
     const lastActive = new Map<string, string | null>([['u-ext', tenDaysAgo]]);
 
+    /**
+     * midday עם הרגל פתוח לא תואם slot (daily → רק בוקר) אבל cadenceStage=extended_absence
+     * מאפשר midday → dormancy presence touch.
+     */
     const midday = planHabitCheckpointTriggers(
       progress,
       'midday',
@@ -458,7 +481,13 @@ describe('planHabitCheckpointTriggers', () => {
     );
     expect(midday).toHaveLength(1);
     expect(midday[0]!.payload.cadenceStage).toBe('extended_absence');
+    expect(midday[0]!.payload.notifyMode).toBe('reinforce');
+    expect(midday[0]!.payload.reinforceKind).toBe('presence');
 
+    /**
+     * morning יש הרגל יומי לא בוצע → due ולא ריק → remind בלי תלות ב-cadence.
+     * דרישת מוצר: משימה/הרגל פתוח → 3 תזכורות ביום.
+     */
     const morning = planHabitCheckpointTriggers(
       progress,
       'morning',
@@ -466,7 +495,8 @@ describe('planHabitCheckpointTriggers', () => {
       new Map(),
       lastActive
     );
-    expect(morning).toHaveLength(0);
+    expect(morning).toHaveLength(1);
+    expect(morning[0]!.payload.notifyMode).toBe('remind');
   });
 
   it('isSlotAllowedForCadenceStage utility', () => {
@@ -477,7 +507,7 @@ describe('planHabitCheckpointTriggers', () => {
     expect(isSlotAllowedForCadenceStage('morning', 'ghosted')).toBe(true);
   });
 
-  it('does NOT reinforce completion in midday/evening — silence when fully done', () => {
+  it('fully done + no open work → silence in ALL 3 slots (no reinforce)', () => {
     const progress: ProgressRow[] = [
       row({
         user_id: 'u-done',
@@ -493,31 +523,127 @@ describe('planHabitCheckpointTriggers', () => {
         },
       }),
     ];
+    const active = activeLastActive('u-done');
 
     /**
-     * morning עם הכל בוצע → reinforce (חגיגה רכה).
-     * midday/evening עם הכל בוצע → לדלג לחלוטין (אסור להציק).
+     * דרישת מוצר: אם המשימה בוצעה ואין משימות אחרות פתוחות → אין הודעה.
+     * משתמש active → ללא dormancy touch → שקט מוחלט ב-3 ה-slots.
      */
     const morning = planHabitCheckpointTriggers(
       progress,
       'morning',
-      new Date('2026-05-19T08:00:00+03:00')
+      new Date('2026-05-19T08:00:00+03:00'),
+      new Map(),
+      active
     );
-    expect(morning).toHaveLength(1);
-    expect(morning[0]!.payload.notifyMode).toBe('reinforce');
+    expect(morning).toHaveLength(0);
 
     const midday = planHabitCheckpointTriggers(
       progress,
       'midday',
-      new Date('2026-05-19T13:00:00+03:00')
+      new Date('2026-05-19T13:00:00+03:00'),
+      new Map(),
+      active
     );
     expect(midday).toHaveLength(0);
 
     const evening = planHabitCheckpointTriggers(
       progress,
       'evening',
-      new Date('2026-05-19T20:00:00+03:00')
+      new Date('2026-05-19T20:00:00+03:00'),
+      new Map(),
+      active
     );
     expect(evening).toHaveLength(0);
+  });
+
+  it('pending one-time task → 3 reminders/day (morning + midday + evening)', () => {
+    const progress: ProgressRow[] = [
+      row({
+        user_id: 'u-pending',
+        task_statuses: {
+          t1: { status: 'accepted', execution_done: false },
+        },
+        journey_steps: {
+          title: 'צעד',
+          habits: [],
+          tasks: [{ id: 't1', title: 'להגיש דוח' }],
+          journey_stations: null,
+        },
+      }),
+    ];
+    const active = activeLastActive('u-pending');
+
+    const morning = planHabitCheckpointTriggers(
+      progress,
+      'morning',
+      new Date('2026-05-19T08:00:00+03:00'),
+      new Map(),
+      active
+    );
+    const midday = planHabitCheckpointTriggers(
+      progress,
+      'midday',
+      new Date('2026-05-19T13:00:00+03:00'),
+      new Map(),
+      active
+    );
+    const evening = planHabitCheckpointTriggers(
+      progress,
+      'evening',
+      new Date('2026-05-19T20:00:00+03:00'),
+      new Map(),
+      active
+    );
+
+    expect(morning).toHaveLength(1);
+    expect(morning[0]!.payload.notifyMode).toBe('remind');
+    expect(midday).toHaveLength(1);
+    expect(midday[0]!.payload.notifyMode).toBe('remind');
+    expect(evening).toHaveLength(1);
+    expect(evening[0]!.payload.notifyMode).toBe('remind');
+  });
+
+  it('partially-done multi_daily task → still remind with pending slots in payload', () => {
+    const progress: ProgressRow[] = [
+      row({
+        user_id: 'u-partial',
+        task_statuses: {
+          t_recur: { status: 'accepted', execution_done: false },
+        },
+        journey_steps: {
+          title: 'צעד',
+          habits: [],
+          tasks: [
+            {
+              id: 't_recur',
+              title: 'שתיית מים',
+              schedule: 'multi_daily',
+              times_per_day: 3,
+            },
+          ],
+          journey_stations: null,
+        },
+      }),
+    ];
+
+    /** המשתמש סימן רק בוקר. midday עדיין יציג noon+evening כפתוחים. */
+    const todayDoneByTask = new Map<string, Set<string>>([
+      ['t_recur', new Set(['morning'])],
+    ]);
+
+    const midday = planHabitCheckpointTriggers(
+      progress,
+      'midday',
+      new Date('2026-05-19T13:00:00+03:00'),
+      todayDoneByTask,
+      activeLastActive('u-partial')
+    );
+    expect(midday).toHaveLength(1);
+    expect(midday[0]!.payload.notifyMode).toBe('remind');
+    expect(midday[0]!.payload.pendingTasks[0]!.pendingSlotLabels).toEqual([
+      'צהריים',
+      'ערב',
+    ]);
   });
 });
