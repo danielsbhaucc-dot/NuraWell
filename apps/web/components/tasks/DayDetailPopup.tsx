@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, MapPin, Sparkles, Sunrise, X } from 'lucide-react';
 import { slotLabel } from '../../lib/journey/task-schedule';
@@ -66,6 +67,14 @@ const sourceLabel: Record<DayExecRow['source'], string> = {
  *  - אם אין רשומות + זה בעבר → טקסט עדין "לא תועד ביצוע" — לא דרמטי.
  */
 export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props) {
+  /** SSR-safe: createPortal ל-document.body מדלג על אבות עם transform/filter
+   *  שהופכים position:fixed לרלטיבי לאזור התוכן (במקום ל-viewport).
+   *  זה הפתרון הוודאי שהפופאפ באמת ימורכז במסך גם במובייל וגם בדסקטופ. */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -85,12 +94,15 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
     a.completed_at.localeCompare(b.completed_at)
   );
 
-  return (
+  if (!mounted) return null;
+
+  const popupNode = (
     <AnimatePresence>
       {open && dateKey ? (
         <motion.div
           key="day-popup"
-          className="fixed inset-0 z-[60] flex items-center justify-center px-4 py-6"
+          dir="rtl"
+          className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -136,16 +148,14 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
             </button>
 
             <div
-              className="px-5 pt-5 pb-4 text-right shrink-0"
+              className="px-5 pt-5 pb-4 text-center shrink-0"
               style={{
                 background:
                   'linear-gradient(150deg, rgba(167,243,208,0.55) 0%, rgba(204,251,241,0.35) 70%)',
                 borderBottom: '1px solid rgba(167,243,208,0.45)',
               }}
             >
-              <p className="text-[11px] font-bold text-emerald-900/75 mb-0.5">
-                פירוט יום
-              </p>
+              <p className="text-[11px] font-bold text-emerald-900/75 mb-0.5">פירוט יום</p>
               <h2
                 className="text-lg font-black text-emerald-950"
                 style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
@@ -295,4 +305,6 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
       ) : null}
     </AnimatePresence>
   );
+
+  return createPortal(popupNode, document.body);
 }
