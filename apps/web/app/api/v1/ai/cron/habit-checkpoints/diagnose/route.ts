@@ -284,12 +284,6 @@ export async function POST(request: Request) {
   }
 
   const checkInTimes = normalizeCheckInTimes(profile.ai_check_in_times);
-  if (profile.onboarding_completed === true && checkInTimes.length > 0) {
-    blockers.push({
-      kind: 'personalized_schedule',
-      explanation_he: `למשתמש יש ${checkInTimes.length} זמני check-in אישיים מההרשמה (${checkInTimes.join(', ')}) — הוא מקבל דרך Schedule 5 (onboarding-check-ins) במקום habit-checkpoints.`,
-    });
-  }
 
   const lastActiveByUser = await fetchTrueLastActiveByUser(admin, [targetUserId], now);
   const trueLastActive = lastActiveByUser.get(targetUserId) ?? null;
@@ -339,6 +333,17 @@ export async function POST(request: Request) {
     lastActiveByUser
   );
   const userPlan = plan.find((p) => p.userId === targetUserId) ?? null;
+
+  if (
+    profile.onboarding_completed === true &&
+    checkInTimes.length > 0 &&
+    (userPlan?.payload.pendingTasks.length ?? 0) === 0
+  ) {
+    blockers.push({
+      kind: 'personalized_schedule',
+      explanation_he: `למשתמש יש ${checkInTimes.length} זמני check-in אישיים מההרשמה (${checkInTimes.join(', ')}) — בלי משימה פתוחה הוא מקבל דרך Schedule 5 (onboarding-check-ins) במקום habit-checkpoints. אם יש pendingTasks, החסם הזה לא מופעל.`,
+    });
+  }
 
   const wouldSend = !!userPlan && blockers.length === 0;
 

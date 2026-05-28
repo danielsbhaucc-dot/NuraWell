@@ -351,7 +351,8 @@ curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints/te
 - **המשתמש סיים את כל המשימות + ההרגלים של היום** → שקט מוחלט (לפי דרישת מוצר).
 - אין למשתמש משימות שסומנו `accepted` ב-`task_statuses[id]` → אין מה להזכיר.
 - למשתמש יש זמני check-in אישיים מההרשמה (`profiles.ai_check_in_times` לא ריק)
-  → habit-checkpoints מדלג, ההתראות באות מ-`onboarding-check-ins` במקום (Schedule 5).
+  **ואין לו משימה פתוחה** → habit-checkpoints מדלג, ההתראות באות מ-`onboarding-check-ins`
+  במקום (Schedule 5). אם יש משימת `accepted` פתוחה, habit-checkpoints עדיין שולח 3× ביום.
 - 14+ ימי שקט (`cadenceStage='ghosted'`) + נשלחה הודעה ב-7 ימים אחרונים → weekly cooldown.
 
 הריצו `dryRun=1` כדי לראות מי תוכנן ומי דולג, או `/test` כדי לראות עבור משתמש ספציפי
