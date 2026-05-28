@@ -3472,3 +3472,126 @@ body.overflow-hidden { overflow: hidden; }
   background-size: 32px 32px;
   pointer-events: none;
 }
+
+/* =============================================================================
+   DESKTOP / TABLET ADAPTATION — ≥ 768px
+   =============================================================================
+   The app is mobile-first. On wider screens we render the same mobile UI as a
+   polished, centered "app shell" inside an ambient brand-colored background.
+   Mobile (< 768px) is completely untouched — every rule below sits inside the
+   media query, so the mobile experience is preserved exactly.
+
+   Strategy:
+   • Body becomes a brand-aligned dark ambient canvas.
+   • The dashboard root (.bg-dashboard) is centered in a 480px column with a
+     subtle frame (shadow + inner ring) so it feels like a premium app surface.
+   • The position:fixed Header and BottomNav are re-anchored to the same
+     480px column instead of spanning the full viewport.
+   • Existing drawers/modals already use mx-auto+max-w-md so they auto-align.
+   • Container utilities relax a touch on desktop so dashboard pages that use
+     them get a hair of extra breathing room without changing their proportions.
+   ============================================================================= */
+@media (min-width: 768px) {
+  /* --- Ambient brand background behind the centered app shell --- */
+  html {
+    background-color: #022c22;
+  }
+
+  body.bg-background {
+    background-color: transparent;
+    background-image:
+      radial-gradient(ellipse 55% 50% at 18% 18%, rgba(45, 212, 191, 0.22), transparent 65%),
+      radial-gradient(ellipse 50% 55% at 82% 82%, rgba(16, 185, 129, 0.20), transparent 65%),
+      radial-gradient(ellipse 80% 38% at 50% 100%, rgba(34, 211, 238, 0.10), transparent 70%),
+      linear-gradient(168deg, #0b1f1d 0%, #042820 32%, #053a2c 66%, #064e3b 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  /* Decorative side-glows that sit just outside the column edges. */
+  body.bg-background::before,
+  body.bg-background::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: clamp(160px, 18vw, 280px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body.bg-background::before {
+    right: 50%;
+    margin-right: 240px;
+    background: radial-gradient(ellipse at left center, rgba(45, 212, 191, 0.20), transparent 75%);
+  }
+
+  body.bg-background::after {
+    left: 50%;
+    margin-left: 240px;
+    background: radial-gradient(ellipse at right center, rgba(16, 185, 129, 0.20), transparent 75%);
+  }
+
+  /* --- Dashboard app shell: centered column with subtle premium frame --- */
+  .min-h-screen.bg-dashboard {
+    width: 100%;
+    max-width: 480px;
+    margin-inline: auto;
+    position: relative;
+    z-index: 1;
+    box-shadow:
+      /* Far ambient drop shadow */
+      0 40px 100px -20px rgba(0, 0, 0, 0.65),
+      /* Close drop shadow for depth */
+      0 18px 50px -10px rgba(2, 44, 34, 0.55),
+      /* Soft teal halo so the column lifts off the dark bg */
+      0 0 80px -10px rgba(45, 212, 191, 0.18),
+      /* Crisp outer hairline */
+      0 0 0 1px rgba(255, 255, 255, 0.08),
+      /* Inner highlight */
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  /* --- Constrain the fixed MobileHeader (inside dashboard shell only) --- */
+  .min-h-screen.bg-dashboard > header.fixed.top-0.left-0.right-0 {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+  }
+
+  /* --- Constrain the fixed BottomNav (inside dashboard shell only) --- */
+  .min-h-screen.bg-dashboard > nav.fixed.bottom-0.left-0.right-0 {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+  }
+
+  /* --- Container utilities: a hair wider on desktop for breathing room --- */
+  .container-mobile {
+    max-width: 480px;
+  }
+  .container-page {
+    max-width: 560px;
+  }
+
+  /* --- Refined custom scrollbar so the column edge stays clean --- */
+  body.bg-background::-webkit-scrollbar { width: 8px; }
+  body.bg-background::-webkit-scrollbar-track { background: transparent; }
+  body.bg-background::-webkit-scrollbar-thumb {
+    background: rgba(16, 185, 129, 0.35);
+    border-radius: 99px;
+  }
+  body.bg-background::-webkit-scrollbar-thumb:hover {
+    background: rgba(16, 185, 129, 0.6);
+  }
+}
+
+/* On very wide screens (≥1440px) push the decorative side-glows out a touch. */
+@media (min-width: 1440px) {
+  body.bg-background::before { margin-right: 280px; }
+  body.bg-background::after  { margin-left: 280px; }
+}
