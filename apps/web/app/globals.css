@@ -3531,8 +3531,8 @@ body.overflow-hidden { overflow: hidden; }
     width: 100%;
     max-width: 480px;
     margin-inline: auto;
-    margin-block: 24px;
-    height: calc(100dvh - 48px);
+    margin-block: 32px;
+    height: calc(100dvh - 64px);
     min-height: 0;
     border-radius: 36px;
     overflow: hidden;
@@ -3553,29 +3553,28 @@ body.overflow-hidden { overflow: hidden; }
       inset 0 -1px 0 rgba(255, 255, 255, 0.08);
   }
 
-  /* Keep the rounded glass frame stable; scroll only the app content. */
+  /* Keep the rounded glass frame stable; scroll only the app content.
+     The visible scrollbar is hidden — under RTL it would otherwise sit on
+     the LEFT edge of `main` and read as a visual seam between the column
+     and the dark canvas. Scrolling still works via wheel/touch/keyboard. */
   .min-h-screen.bg-dashboard > main#main-content {
-    height: calc(100dvh - 48px);
+    height: calc(100dvh - 64px);
     min-height: 0 !important;
     overflow-y: auto;
     overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(16, 185, 129, 0.35) transparent;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
-  .min-h-screen.bg-dashboard > main#main-content::-webkit-scrollbar { width: 6px; }
-  .min-h-screen.bg-dashboard > main#main-content::-webkit-scrollbar-track { background: transparent; }
-  .min-h-screen.bg-dashboard > main#main-content::-webkit-scrollbar-thumb {
-    background: rgba(16, 185, 129, 0.35);
-    border-radius: 99px;
-  }
-  .min-h-screen.bg-dashboard > main#main-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(16, 185, 129, 0.6);
+  .min-h-screen.bg-dashboard > main#main-content::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
   }
 
-  /* --- Fixed MobileHeader: align with column, round top corners --- */
+  /* --- Fixed MobileHeader: anchor to the very top of the column --- */
   .min-h-screen.bg-dashboard > header.fixed.top-0.left-0.right-0 {
-    top: 24px !important;
+    top: 32px !important;
     left: 50% !important;
     right: auto !important;
     transform: translateX(-50%);
@@ -3584,11 +3583,11 @@ body.overflow-hidden { overflow: hidden; }
     border-radius: 36px 36px 0 0;
   }
 
-  /* --- Fixed BottomNav: align with column, round bottom corners ---
+  /* --- Fixed BottomNav: anchor to the very bottom of the column ---
      Note: NOT using overflow:hidden because the centered FAB sticks out
      of the top edge and must remain visible. */
   .min-h-screen.bg-dashboard > nav.fixed.bottom-0.left-0.right-0 {
-    bottom: 24px !important;
+    bottom: 32px !important;
     left: 50% !important;
     right: auto !important;
     transform: translateX(-50%);
