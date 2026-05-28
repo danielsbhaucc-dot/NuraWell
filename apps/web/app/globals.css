@@ -3492,82 +3492,111 @@ body.overflow-hidden { overflow: hidden; }
      them get a hair of extra breathing room without changing their proportions.
    ============================================================================= */
 @media (min-width: 768px) {
-  /* --- Ambient brand background — DASHBOARD PAGES ONLY ---
-     Scoped via :has(.bg-dashboard) so the landing page, auth shells, and
-     any other route keep their original light body background. Without this
-     scope, the dark body would bleed through gradient sections that contain
-     `transparent` stops, causing visible color "jumps" between sections. */
+  /* --- Sophisticated glass canvas — dashboard pages only --- */
   body.bg-background:has(.bg-dashboard) {
-    background-color: #022c22;
+    background-color: #06121e;
     background-image:
-      radial-gradient(ellipse 55% 50% at 18% 18%, rgba(45, 212, 191, 0.22), transparent 65%),
-      radial-gradient(ellipse 50% 55% at 82% 82%, rgba(16, 185, 129, 0.20), transparent 65%),
-      radial-gradient(ellipse 80% 38% at 50% 100%, rgba(34, 211, 238, 0.10), transparent 70%),
-      linear-gradient(168deg, #0b1f1d 0%, #042820 32%, #053a2c 66%, #064e3b 100%);
+      /* Subtle dot grain — premium texture (top-most layer) */
+      radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.022) 1px, transparent 0),
+      /* Soft top-center highlight */
+      radial-gradient(ellipse 60% 25% at 50% 0%, rgba(167, 243, 208, 0.10), transparent 70%),
+      /* Top-left vibrant teal orb */
+      radial-gradient(ellipse 50% 45% at 12% 10%, rgba(45, 212, 191, 0.30), transparent 60%),
+      /* Top-right cool cyan orb */
+      radial-gradient(ellipse 45% 40% at 88% 15%, rgba(34, 211, 238, 0.22), transparent 62%),
+      /* Bottom-left emerald orb */
+      radial-gradient(ellipse 50% 50% at 8% 88%, rgba(16, 185, 129, 0.24), transparent 65%),
+      /* Bottom-right indigo accent for visual depth */
+      radial-gradient(ellipse 45% 50% at 92% 85%, rgba(99, 102, 241, 0.14), transparent 68%),
+      /* Soft vignette around edges */
+      radial-gradient(ellipse 100% 100% at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.35) 100%),
+      /* Deep base gradient */
+      linear-gradient(168deg, #07141f 0%, #08221c 30%, #0a3025 60%, #0c4036 100%);
+    background-size:
+      22px 22px,
+      100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
     background-attachment: fixed;
     min-height: 100vh;
   }
 
-  /* Decorative side-glows that sit just outside the column edges. */
+  /* Decorative side-glows extending outside the column edges. */
   body.bg-background:has(.bg-dashboard)::before,
   body.bg-background:has(.bg-dashboard)::after {
     content: '';
     position: fixed;
     top: 0;
     bottom: 0;
-    width: clamp(160px, 18vw, 280px);
+    width: clamp(200px, 22vw, 360px);
     pointer-events: none;
     z-index: 0;
   }
 
   body.bg-background:has(.bg-dashboard)::before {
     right: 50%;
-    margin-right: 240px;
-    background: radial-gradient(ellipse at left center, rgba(45, 212, 191, 0.20), transparent 75%);
+    margin-right: 260px;
+    background: radial-gradient(ellipse at left center, rgba(45, 212, 191, 0.18), transparent 75%);
   }
 
   body.bg-background:has(.bg-dashboard)::after {
     left: 50%;
-    margin-left: 240px;
-    background: radial-gradient(ellipse at right center, rgba(16, 185, 129, 0.20), transparent 75%);
+    margin-left: 260px;
+    background: radial-gradient(ellipse at right center, rgba(16, 185, 129, 0.18), transparent 75%);
   }
 
-  /* --- Dashboard app shell: centered column with subtle premium frame --- */
+  /* --- Floating app shell ---
+     The dashboard column floats inside the canvas with vertical margins,
+     pronounced rounded corners, and a multi-layer shadow that lifts it off
+     the dark canvas. Backdrop-filter is intentionally avoided here because
+     it creates a new containing block, which would break the position:fixed
+     header and bottom nav (they would scroll with the column). The "glass"
+     character comes from the sophisticated canvas + premium edge treatment. */
   .min-h-screen.bg-dashboard {
     width: 100%;
     max-width: 480px;
     margin-inline: auto;
+    margin-block: 24px;
+    min-height: calc(100vh - 48px);
+    border-radius: 36px;
+    overflow: hidden;
     position: relative;
     z-index: 1;
     box-shadow:
       /* Far ambient drop shadow */
-      0 40px 100px -20px rgba(0, 0, 0, 0.65),
+      0 50px 120px -25px rgba(0, 0, 0, 0.75),
       /* Close drop shadow for depth */
-      0 18px 50px -10px rgba(2, 44, 34, 0.55),
-      /* Soft teal halo so the column lifts off the dark bg */
-      0 0 80px -10px rgba(45, 212, 191, 0.18),
+      0 22px 60px -12px rgba(2, 44, 34, 0.55),
+      /* Soft teal halo so the column lifts off the dark canvas */
+      0 0 100px -15px rgba(45, 212, 191, 0.22),
       /* Crisp outer hairline */
-      0 0 0 1px rgba(255, 255, 255, 0.08),
-      /* Inner highlight */
-      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      0 0 0 1px rgba(255, 255, 255, 0.10),
+      /* Inner highlight — top edge */
+      inset 0 1px 0 rgba(255, 255, 255, 0.55),
+      /* Inner highlight — bottom edge (subtle) */
+      inset 0 -1px 0 rgba(255, 255, 255, 0.08);
   }
 
-  /* --- Constrain the fixed MobileHeader (inside dashboard shell only) --- */
+  /* --- Fixed MobileHeader: align with column, round top corners --- */
   .min-h-screen.bg-dashboard > header.fixed.top-0.left-0.right-0 {
+    top: 24px !important;
     left: 50% !important;
     right: auto !important;
     transform: translateX(-50%);
     width: 100%;
     max-width: 480px;
+    border-radius: 36px 36px 0 0;
   }
 
-  /* --- Constrain the fixed BottomNav (inside dashboard shell only) --- */
+  /* --- Fixed BottomNav: align with column, round bottom corners ---
+     Note: NOT using overflow:hidden because the centered FAB sticks out
+     of the top edge and must remain visible. */
   .min-h-screen.bg-dashboard > nav.fixed.bottom-0.left-0.right-0 {
+    bottom: 24px !important;
     left: 50% !important;
     right: auto !important;
     transform: translateX(-50%);
     width: 100%;
     max-width: 480px;
+    border-radius: 0 0 36px 36px;
   }
 
   /* --- Container utilities: a hair wider on desktop for breathing room --- */
@@ -3592,6 +3621,6 @@ body.overflow-hidden { overflow: hidden; }
 
 /* On very wide screens (≥1440px) push the decorative side-glows out a touch. */
 @media (min-width: 1440px) {
-  body.bg-background:has(.bg-dashboard)::before { margin-right: 280px; }
-  body.bg-background:has(.bg-dashboard)::after  { margin-left: 280px; }
+  body.bg-background:has(.bg-dashboard)::before { margin-right: 300px; }
+  body.bg-background:has(.bg-dashboard)::after  { margin-left: 300px; }
 }
