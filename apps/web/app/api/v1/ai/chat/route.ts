@@ -92,6 +92,8 @@ import {
   buildOnboardingChatContextBlock,
   type OnboardingProfileForChat,
 } from '../../../../../lib/ai/onboarding-chat-context';
+import { buildAdminUserJourneyReport } from '../../../../../lib/admin/build-user-journey-report';
+import { formatUserProgressForAi } from '../../../../../lib/ai/format-user-progress-for-ai';
 import { readJsonBody } from '../../../../../lib/api/json-request';
 import { formatNotificationReplyContextBlock } from '../../../../../lib/notifications/notification-chat-context';
 import { extractSource } from '../../../../../lib/notifications/replyable';
@@ -929,6 +931,22 @@ export async function POST(request: Request) {
     });
   });
 
+  /**
+   * דו"ח התקדמות מלא — אותו דו"ח שהאדמין רואה ב-Ops.
+   * שקוף ל-AI כדי שיוכל לזהות דפוסים רב-יומיים (מעבר ל"היום בלבד").
+   * RLS מבטיח שהמשתמש רואה רק את הנתונים שלו.
+   */
+  const fullProgressReportPromise = buildAdminUserJourneyReport(supabase, user.id).catch(
+    (progErr) => {
+      console.warn('[ai/chat]', {
+        debug_id: debugId,
+        stage: 'full_progress_report_failed',
+        error: progErr instanceof Error ? progErr.message : String(progErr),
+      });
+      return null;
+    }
+  );
+
   const [
     profileRow,
     activeJourneyContext,
@@ -937,6 +955,7 @@ export async function POST(request: Request) {
     dailyContextBundle,
     _userTurnInserted,
     notificationContextBlock,
+    fullProgressReport,
   ] = await Promise.all([
     fetchChatProfileRow(supabase, user.id),
     journeyPromise,
@@ -945,6 +964,7 @@ export async function POST(request: Request) {
     dailyContextPromise,
     insertPromise,
     notificationContextPromise,
+    fullProgressReportPromise,
   ]);
 
   const [todayChatTurns, todayAlmogTouches] = dailyContextBundle;
@@ -1197,6 +1217,18 @@ export async function POST(request: Request) {
       if (journeyTextBlock) {
         contextSections.push(journeyTextBlock);
       }
+    }
+
+    /**
+     * דו"ח התקדמות מלא רב-יומי (אותו דו"ח שהאדמין רואה ב-Ops).
+     * מאפשר ל-Almog לזהות דפוסים כמו: "כמה ימים פעיל ב-7 האחרונים",
+     * "רצף הרגלים", "משימות שקיבל אבל לא מבצע", וכו'.
+     * נמצא אחרי "הצעד הנוכחי" כי הוא רוחבי על כל המסע, ולפני RAG
+     * שהוא ארוך-טווח וסמנטי בלבד.
+     */
+    if (fullProgressReport) {
+      const fullProgressBlock = formatUserProgressForAi(fullProgressReport);
+      if (fullProgressBlock) contextSections.push(fullProgressBlock);
     }
 
     if (systemKnowledgeBlock) contextSections.push(systemKnowledgeBlock);

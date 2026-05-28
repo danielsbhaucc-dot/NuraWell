@@ -1,10 +1,26 @@
 import { parseJourneyReportItems } from '@/lib/journey/journey-report-parse';
+import { jerusalemDateKey } from '@/lib/journey/task-schedule';
+
+/** היסטוריית ביצוע משימה — שורה אחת לכל יום שבו היה לפחות slot אחד. */
+export type AdminUserTaskExecutionDay = {
+  date_key: string;
+  slot_count: number;
+  slots: string[];
+};
 
 export type AdminUserJourneyTaskRow = {
   id: string;
   title: string;
   status: 'accepted' | 'rejected' | 'pending' | 'none';
   execution_done: boolean;
+  /** ביצועים של 30 ימים אחרונים (לוח ירושלים) — מסודר מהחדש לישן */
+  recent_executions: AdminUserTaskExecutionDay[];
+  /** כמה ימים פעילים מתוך 7 הימים האחרונים */
+  active_days_last_7: number;
+  /** כמה ימים פעילים מתוך 30 הימים האחרונים */
+  active_days_last_30: number;
+  /** סך-הכל ביצועים מתועדים בטווח 30 הימים */
+  total_executions_last_30: number;
 };
 
 export type AdminUserJourneyHabitRow = {
@@ -12,6 +28,14 @@ export type AdminUserJourneyHabitRow = {
   title: string;
   checked: number;
   total: number;
+  /** רצף נוכחי מ-habit_meta (000024_habit_meta_*) */
+  streak_current: number;
+  /** שיא רצף מ-habit_meta */
+  streak_best: number;
+  /** מטרת ימים אם הוגדרה */
+  target_days: number | null;
+  /** האם הושג היעד (achieved_at קיים ב-habit_meta) */
+  achieved: boolean;
 };
 
 export type AdminUserJourneyStepRow = {
@@ -40,7 +64,19 @@ export type AdminUserJourneyReport = {
     journey_steps_completed: number;
     tasks_accepted: number;
     habits_tracked: number;
+    /** סה"כ ביצועי משימות מתועדים ב-30 הימים האחרונים */
+    total_task_executions_last_30: number;
+    /** מספר הימים הפעילים (לפחות ביצוע אחד) ב-30 הימים האחרונים */
+    active_days_last_30: number;
   };
+};
+
+type HabitMetaEntry = {
+  target_days?: number | null;
+  streak_current?: number | null;
+  streak_best?: number | null;
+  achieved_at?: string | null;
+  extended_by?: number | null;
 };
 
 type ProgressRow = {
@@ -48,12 +84,31 @@ type ProgressRow = {
   is_completed?: boolean;
   task_statuses?: Record<string, { status?: string; execution_done?: boolean }> | null;
   habits_progress?: Record<string, boolean[]> | null;
+  habit_meta?: Record<string, HabitMetaEntry> | null;
   last_section?: string | null;
   updated_at?: string | null;
   video_watched?: boolean;
   quiz_score?: number | null;
   commitment_accepted?: boolean;
 };
+
+type ExecutionRow = {
+  step_id: string;
+  task_id: string;
+  date_key: string;
+  slot: string;
+};
+
+/** בונה רשימת 30 הימים האחרונים בלוח ירושלים (החדש ביותר ראשון) */
+function buildRecent30DayKeys(): string[] {
+  const out: string[] = [];
+  const now = new Date();
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+    out.push(jerusalemDateKey(d));
+  }
+  return out;
+}
 
 type StepRow = {
   id: string;
@@ -75,13 +130,28 @@ function taskStatus(
   return 'none';
 }
 
-/** מיזוג journey_steps + journey_progress למסך Ops — משתמש אחד */
+/**
+ * מיזוג journey_steps + journey_progress + journey_task_executions + habit_meta
+ * לדו"ח התקדמות מלא של משתמש אחד.
+ *
+ * נקרא ע"י:
+ *   - Ops (אדמין): /api/v1/admin/users/[userId] → AdminUserJourneyDetail
+ *   - AI Chat: כדי להזריק הקשר התקדמות מלא ל-Almog (קריאה בלבד)
+ *
+ * המקור לביצועים בפועל (היסטוריה רב-יומית) הוא journey_task_executions,
+ * לא JSONB ישן ב-task_statuses. ה-streak להרגלים מגיע מ-habit_meta.
+ */
 export async function buildAdminUserJourneyReport(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: any,
   userId: string
 ): Promise<AdminUserJourneyReport> {
-  const [{ data: rawSteps }, { data: rawProgress }] = await Promise.all([
+  const recentKeys = buildRecent30DayKeys();
+  const sinceKey = recentKeys[recentKeys.length - 1];
+  const recentKeySet = new Set(recentKeys);
+  const last7KeySet = new Set(recentKeys.slice(0, 7));
+
+  const [{ data: rawSteps }, { data: rawProgress }, { data: rawExecutions }] = await Promise.all([
     admin
       .from('journey_steps')
       .select('id, title, step_number, is_published, station_id, tasks, habits, journey_stations(id, title, sort_order)')
@@ -89,14 +159,47 @@ export async function buildAdminUserJourneyReport(
     admin
       .from('journey_progress')
       .select(
-        'step_id, is_completed, task_statuses, habits_progress, last_section, updated_at, video_watched, quiz_score, commitment_accepted'
+        'step_id, is_completed, task_statuses, habits_progress, habit_meta, last_section, updated_at, video_watched, quiz_score, commitment_accepted'
       )
       .eq('user_id', userId),
+    admin
+      .from('journey_task_executions')
+      .select('step_id, task_id, date_key, slot')
+      .eq('user_id', userId)
+      .gte('date_key', sinceKey)
+      .order('date_key', { ascending: false }),
   ]);
 
   const progByStep = new Map<string, ProgressRow>(
     (rawProgress ?? []).map((p: ProgressRow) => [p.step_id, p])
   );
+
+  /** index: stepId -> taskId -> dateKey -> slot[] */
+  const execIndex = new Map<string, Map<string, Map<string, string[]>>>();
+  const activeDaysAggregate = new Set<string>();
+  let totalTaskExecutionsLast30 = 0;
+
+  for (const row of (rawExecutions ?? []) as ExecutionRow[]) {
+    if (!recentKeySet.has(row.date_key)) continue;
+    totalTaskExecutionsLast30++;
+    activeDaysAggregate.add(row.date_key);
+
+    let byTask = execIndex.get(row.step_id);
+    if (!byTask) {
+      byTask = new Map();
+      execIndex.set(row.step_id, byTask);
+    }
+    let byDay = byTask.get(row.task_id);
+    if (!byDay) {
+      byDay = new Map();
+      byTask.set(row.task_id, byDay);
+    }
+    const slots = byDay.get(row.date_key) ?? [];
+    if (!slots.includes(row.slot)) {
+      slots.push(row.slot);
+      byDay.set(row.date_key, slots);
+    }
+  }
 
   let journey_steps_tracked = 0;
   let journey_steps_completed = 0;
@@ -111,6 +214,8 @@ export async function buildAdminUserJourneyReport(
       { status?: string; execution_done?: boolean }
     >;
     const hp = (prog?.habits_progress ?? {}) as Record<string, boolean[]>;
+    const hm = (prog?.habit_meta ?? {}) as Record<string, HabitMetaEntry>;
+    const stepExec = execIndex.get(s.id);
 
     const taskDefs = parseJourneyReportItems(s.tasks);
     const habitDefs = parseJourneyReportItems(s.habits);
@@ -118,11 +223,37 @@ export async function buildAdminUserJourneyReport(
     const tasks: AdminUserJourneyTaskRow[] = taskDefs.map((t) => {
       const status = taskStatus(t.id, ts);
       if (status === 'accepted') tasks_accepted++;
+
+      const taskExec = stepExec?.get(t.id);
+      const recent_executions: AdminUserTaskExecutionDay[] = [];
+      let active_days_last_7 = 0;
+      let active_days_last_30 = 0;
+      let total_executions_last_30 = 0;
+
+      if (taskExec) {
+        for (const dateKey of recentKeys) {
+          const slots = taskExec.get(dateKey);
+          if (!slots || slots.length === 0) continue;
+          recent_executions.push({
+            date_key: dateKey,
+            slot_count: slots.length,
+            slots: [...slots],
+          });
+          active_days_last_30++;
+          total_executions_last_30 += slots.length;
+          if (last7KeySet.has(dateKey)) active_days_last_7++;
+        }
+      }
+
       return {
         id: t.id,
         title: t.title,
         status,
         execution_done: ts[t.id]?.execution_done === true,
+        recent_executions,
+        active_days_last_7,
+        active_days_last_30,
+        total_executions_last_30,
       };
     });
 
@@ -130,11 +261,20 @@ export async function buildAdminUserJourneyReport(
       const arr = hp[h.id] ?? [];
       if (arr.length > 0) habits_tracked++;
       const checked = arr.filter(Boolean).length;
+      const meta = hm[h.id] ?? {};
+
       return {
         id: h.id,
         title: h.title,
         checked,
         total: arr.length,
+        streak_current: Math.max(0, Number(meta.streak_current ?? 0)),
+        streak_best: Math.max(0, Number(meta.streak_best ?? 0)),
+        target_days:
+          meta.target_days != null && Number.isFinite(Number(meta.target_days))
+            ? Number(meta.target_days)
+            : null,
+        achieved: typeof meta.achieved_at === 'string' && meta.achieved_at.length > 0,
       };
     });
 
@@ -170,6 +310,8 @@ export async function buildAdminUserJourneyReport(
       journey_steps_completed,
       tasks_accepted,
       habits_tracked,
+      total_task_executions_last_30: totalTaskExecutionsLast30,
+      active_days_last_30: activeDaysAggregate.size,
     },
   };
 }
