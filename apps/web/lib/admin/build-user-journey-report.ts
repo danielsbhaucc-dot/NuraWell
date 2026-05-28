@@ -1,5 +1,10 @@
-import { parseJourneyReportItems } from '@/lib/journey/journey-report-parse';
-import { jerusalemDateKey } from '@/lib/journey/task-schedule';
+import { parseJourneyReportItems, parseJourneyTasksFull } from '@/lib/journey/journey-report-parse';
+import {
+  isTaskActiveToday,
+  jerusalemDateKey,
+  resolveTaskSchedule,
+} from '@/lib/journey/task-schedule';
+import type { JourneyTask } from '@/lib/types/journey';
 
 /** היסטוריית ביצוע משימה — שורה אחת לכל יום שבו היה לפחות slot אחד. */
 export type AdminUserTaskExecutionDay = {
@@ -13,12 +18,20 @@ export type AdminUserJourneyTaskRow = {
   title: string;
   status: 'accepted' | 'rejected' | 'pending' | 'none';
   execution_done: boolean;
+  /** מתי לחץ "מקובל עליי" — ISO (task_statuses.decided_at) */
+  accepted_at: string | null;
+  /** ISO של הביצוע הראשון אי-פעם */
+  first_execution_at: string | null;
+  /** ISO של הביצוע האחרון אי-פעם */
+  last_execution_at: string | null;
   /** ביצועים של 30 ימים אחרונים (לוח ירושלים) — מסודר מהחדש לישן */
   recent_executions: AdminUserTaskExecutionDay[];
   /** כמה ימים פעילים מתוך 7 הימים האחרונים */
   active_days_last_7: number;
   /** כמה ימים פעילים מתוך 30 הימים האחרונים */
   active_days_last_30: number;
+  /** ימים שהיו אמורים להתבצע ב-30 ימים אחרונים אך לא בוצעו */
+  missed_days_last_30: number;
   /** סך-הכל ביצועים מתועדים בטווח 30 הימים */
   total_executions_last_30: number;
 };
@@ -82,7 +95,10 @@ type HabitMetaEntry = {
 type ProgressRow = {
   step_id: string;
   is_completed?: boolean;
-  task_statuses?: Record<string, { status?: string; execution_done?: boolean }> | null;
+  task_statuses?: Record<
+    string,
+    { status?: string; execution_done?: boolean; decided_at?: string | null }
+  > | null;
   habits_progress?: Record<string, boolean[]> | null;
   habit_meta?: Record<string, HabitMetaEntry> | null;
   last_section?: string | null;
@@ -97,7 +113,25 @@ type ExecutionRow = {
   task_id: string;
   date_key: string;
   slot: string;
+  completed_at?: string;
 };
+
+/** האם משימה הייתה אמורה להתבצע ביום dateKey (אחרי קבלה)? */
+function isTaskDueOnDateKey(
+  task: JourneyTask,
+  dateKey: string,
+  acceptedDateKey: string | null
+): boolean {
+  if (acceptedDateKey && dateKey < acceptedDateKey) return false;
+  const { schedule } = resolveTaskSchedule(task);
+  if (schedule === 'one_time') return false;
+  if (schedule === 'weekly') {
+    const [y, m, d] = dateKey.split('-').map((s) => Number.parseInt(s, 10));
+    if (!y || !m || !d) return false;
+    return isTaskActiveToday(task, new Date(Date.UTC(y, m - 1, d)));
+  }
+  return true;
+}
 
 /** בונה רשימת 30 הימים האחרונים בלוח ירושלים (החדש ביותר ראשון) */
 function buildRecent30DayKeys(): string[] {
@@ -164,10 +198,11 @@ export async function buildAdminUserJourneyReport(
       .eq('user_id', userId),
     admin
       .from('journey_task_executions')
-      .select('step_id, task_id, date_key, slot')
+      .select('step_id, task_id, date_key, slot, completed_at')
       .eq('user_id', userId)
       .gte('date_key', sinceKey)
-      .order('date_key', { ascending: false }),
+      .order('completed_at', { ascending: true })
+      .limit(5000),
   ]);
 
   const progByStep = new Map<string, ProgressRow>(
@@ -176,6 +211,8 @@ export async function buildAdminUserJourneyReport(
 
   /** index: stepId -> taskId -> dateKey -> slot[] */
   const execIndex = new Map<string, Map<string, Map<string, string[]>>>();
+  /** taskId -> { first, last } ISO timestamps (כל ההיסטוריה בטווח השאילתה) */
+  const execTimestampsByTask = new Map<string, { first: string; last: string }>();
   const activeDaysAggregate = new Set<string>();
   let totalTaskExecutionsLast30 = 0;
 
@@ -183,6 +220,19 @@ export async function buildAdminUserJourneyReport(
     if (!recentKeySet.has(row.date_key)) continue;
     totalTaskExecutionsLast30++;
     activeDaysAggregate.add(row.date_key);
+
+    if (row.completed_at) {
+      const prev = execTimestampsByTask.get(row.task_id);
+      if (!prev) {
+        execTimestampsByTask.set(row.task_id, {
+          first: row.completed_at,
+          last: row.completed_at,
+        });
+      } else {
+        if (row.completed_at < prev.first) prev.first = row.completed_at;
+        if (row.completed_at > prev.last) prev.last = row.completed_at;
+      }
+    }
 
     let byTask = execIndex.get(row.step_id);
     if (!byTask) {
@@ -217,23 +267,33 @@ export async function buildAdminUserJourneyReport(
     const hm = (prog?.habit_meta ?? {}) as Record<string, HabitMetaEntry>;
     const stepExec = execIndex.get(s.id);
 
-    const taskDefs = parseJourneyReportItems(s.tasks);
+    const taskDefsFull = parseJourneyTasksFull(s.tasks);
     const habitDefs = parseJourneyReportItems(s.habits);
 
-    const tasks: AdminUserJourneyTaskRow[] = taskDefs.map((t) => {
+    const tasks: AdminUserJourneyTaskRow[] = taskDefsFull.map((t) => {
       const status = taskStatus(t.id, ts);
       if (status === 'accepted') tasks_accepted++;
+
+      const accepted_at = ts[t.id]?.decided_at ?? null;
+      const acceptedDateKey = accepted_at
+        ? jerusalemDateKey(new Date(accepted_at))
+        : null;
+      const timestamps = execTimestampsByTask.get(t.id);
 
       const taskExec = stepExec?.get(t.id);
       const recent_executions: AdminUserTaskExecutionDay[] = [];
       let active_days_last_7 = 0;
       let active_days_last_30 = 0;
+      let missed_days_last_30 = 0;
       let total_executions_last_30 = 0;
 
-      if (taskExec) {
-        for (const dateKey of recentKeys) {
-          const slots = taskExec.get(dateKey);
-          if (!slots || slots.length === 0) continue;
+      for (const dateKey of recentKeys) {
+        const slots = taskExec?.get(dateKey);
+        const hasExec = Boolean(slots && slots.length > 0);
+        const wasDue =
+          status === 'accepted' && isTaskDueOnDateKey(t, dateKey, acceptedDateKey);
+
+        if (hasExec && slots) {
           recent_executions.push({
             date_key: dateKey,
             slot_count: slots.length,
@@ -242,6 +302,8 @@ export async function buildAdminUserJourneyReport(
           active_days_last_30++;
           total_executions_last_30 += slots.length;
           if (last7KeySet.has(dateKey)) active_days_last_7++;
+        } else if (wasDue) {
+          missed_days_last_30++;
         }
       }
 
@@ -250,9 +312,13 @@ export async function buildAdminUserJourneyReport(
         title: t.title,
         status,
         execution_done: ts[t.id]?.execution_done === true,
+        accepted_at,
+        first_execution_at: timestamps?.first ?? null,
+        last_execution_at: timestamps?.last ?? null,
         recent_executions,
         active_days_last_7,
         active_days_last_30,
+        missed_days_last_30,
         total_executions_last_30,
       };
     });

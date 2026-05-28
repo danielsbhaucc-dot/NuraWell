@@ -18,6 +18,7 @@ import {
   ListChecks,
   Leaf,
   CalendarDays,
+  History,
 } from 'lucide-react';
 import { TaskHistoryStrip } from '../tasks/TaskHistoryStrip';
 import { TaskHistoryCalendar } from '../tasks/TaskHistoryCalendar';
@@ -270,6 +271,39 @@ export function ProgressPageClient({
             <Leaf className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>סימוני הרגלים (מסך דיווח): {journeyHabitChecks}</span>
           </div>
+        </motion.section>
+
+        <motion.section
+          variants={item}
+          initial="hidden"
+          animate="show"
+          className={`${glassCard} p-4 border-violet-200/40`}
+        >
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)' }}
+              >
+                <History className="w-4 h-4 text-violet-800" strokeWidth={2.2} />
+              </div>
+              <div className="min-w-0 text-right">
+                <h2 className="text-sm font-black text-[#1A1730]">היסטוריית משימות מפורטת</h2>
+                <p className="text-[11px] text-gray-600 font-medium leading-relaxed">
+                  מתי קיבלת · ביצוע ראשון · הצלחות ופספוסים לפי תאריך ושעה
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/progress/history"
+              className="text-xs font-bold text-violet-900 shrink-0 px-3 py-1.5 rounded-full border border-violet-300/60 bg-violet-50/90"
+            >
+              פתח
+            </Link>
+          </div>
+          <p className="text-[11px] text-gray-600 font-medium leading-relaxed">
+            לכל משימה ש&quot;מקובלת עליי&quot; — ציר זמן מלא, רצפים, וסינון לפי יום / שבוע / חודש / שנה.
+          </p>
         </motion.section>
 
         {hasHistorySignal && historyDays.length > 0 && (

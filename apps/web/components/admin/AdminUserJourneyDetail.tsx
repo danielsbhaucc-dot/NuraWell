@@ -227,9 +227,29 @@ function TaskRow({ task }: { task: AdminUserJourneyTaskRow }) {
           </span>
           {task.status === 'accepted' ? (
             <>
+              {task.accepted_at ? (
+                <span
+                  className="rounded-md bg-violet-50 text-violet-900 border border-violet-200/60 px-1.5 py-0.5 font-bold"
+                  title="מקובל עליי"
+                >
+                  קיבל{' '}
+                  {new Date(task.accepted_at).toLocaleString('he-IL', {
+                    timeZone: 'Asia/Jerusalem',
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+              ) : null}
               {task.active_days_last_7 > 0 || task.active_days_last_30 > 0 ? (
                 <span className="rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/60 px-1.5 py-0.5 font-bold">
                   {task.active_days_last_7}/7 · {task.active_days_last_30}/30
+                </span>
+              ) : null}
+              {task.missed_days_last_30 > 0 ? (
+                <span className="rounded-md bg-rose-50 text-rose-800 border border-rose-200/60 px-1.5 py-0.5 font-bold">
+                  {task.missed_days_last_30} פספוס
                 </span>
               ) : null}
               <span

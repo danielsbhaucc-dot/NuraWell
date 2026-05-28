@@ -29,6 +29,20 @@ function statusLabel(status: 'accepted' | 'rejected' | 'pending' | 'none'): stri
   }
 }
 
+/** תאריך+שעה קצרים בלוח ירושלים — לפרומפט AI */
+function fmtJerusalem(iso: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleString('he-IL', {
+    timeZone: 'Asia/Jerusalem',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export function formatUserProgressForAi(report: AdminUserJourneyReport): string {
   if (!report || !Array.isArray(report.steps)) return '';
 
@@ -65,13 +79,32 @@ export function formatUserProgressForAi(report: AdminUserJourneyReport): string 
         lines.push(`  • משימה "${t.title}" — ${statusLabel(t.status)}`);
         continue;
       }
-      if (t.active_days_last_30 === 0 && !t.execution_done) {
-        lines.push(`  • משימה "${t.title}" — קיבל, עדיין לא ביצע`);
+
+      const acceptedPart = t.accepted_at ? `קיבל ${fmtJerusalem(t.accepted_at)}` : 'קיבל (ללא תאריך)';
+      const firstPart = t.first_execution_at
+        ? `התחיל ${fmtJerusalem(t.first_execution_at)}`
+        : 'עדיין לא ביצע';
+      const lastPart = t.last_execution_at
+        ? `אחרון ${fmtJerusalem(t.last_execution_at)}`
+        : '';
+
+      if (t.active_days_last_30 === 0 && !t.execution_done && !t.first_execution_at) {
+        lines.push(`  • משימה "${t.title}" — ${acceptedPart} · ${firstPart}`);
         continue;
       }
-      const exec = t.execution_done ? 'בוצע פעם' : 'לא סומן כסיים';
+
+      const missedPart =
+        t.missed_days_last_30 > 0 ? ` · ${t.missed_days_last_30} ימים פספוס ב-30` : '';
+      const recentPart =
+        t.recent_executions.length > 0
+          ? ` · אחרונים: ${t.recent_executions
+              .slice(0, 3)
+              .map((e) => `${e.date_key}(${e.slot_count})`)
+              .join(', ')}`
+          : '';
+
       lines.push(
-        `  • משימה "${t.title}" — ${t.active_days_last_7}/7 ימים פעילים · ${t.active_days_last_30}/30 · ${t.total_executions_last_30} ביצועים · ${exec}`
+        `  • משימה "${t.title}" — ${acceptedPart} · ${firstPart}${lastPart ? ` · ${lastPart}` : ''} · ${t.active_days_last_7}/7 · ${t.active_days_last_30}/30 ימים פעילים · ${t.total_executions_last_30} ביצועים${missedPart}${recentPart}`
       );
     }
 
