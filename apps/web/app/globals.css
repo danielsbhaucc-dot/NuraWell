@@ -3492,13 +3492,13 @@ body.overflow-hidden { overflow: hidden; }
      them get a hair of extra breathing room without changing their proportions.
    ============================================================================= */
 @media (min-width: 768px) {
-  /* --- Ambient brand background behind the centered app shell --- */
-  html {
+  /* --- Ambient brand background — DASHBOARD PAGES ONLY ---
+     Scoped via :has(.bg-dashboard) so the landing page, auth shells, and
+     any other route keep their original light body background. Without this
+     scope, the dark body would bleed through gradient sections that contain
+     `transparent` stops, causing visible color "jumps" between sections. */
+  body.bg-background:has(.bg-dashboard) {
     background-color: #022c22;
-  }
-
-  body.bg-background {
-    background-color: transparent;
     background-image:
       radial-gradient(ellipse 55% 50% at 18% 18%, rgba(45, 212, 191, 0.22), transparent 65%),
       radial-gradient(ellipse 50% 55% at 82% 82%, rgba(16, 185, 129, 0.20), transparent 65%),
@@ -3509,8 +3509,8 @@ body.overflow-hidden { overflow: hidden; }
   }
 
   /* Decorative side-glows that sit just outside the column edges. */
-  body.bg-background::before,
-  body.bg-background::after {
+  body.bg-background:has(.bg-dashboard)::before,
+  body.bg-background:has(.bg-dashboard)::after {
     content: '';
     position: fixed;
     top: 0;
@@ -3520,13 +3520,13 @@ body.overflow-hidden { overflow: hidden; }
     z-index: 0;
   }
 
-  body.bg-background::before {
+  body.bg-background:has(.bg-dashboard)::before {
     right: 50%;
     margin-right: 240px;
     background: radial-gradient(ellipse at left center, rgba(45, 212, 191, 0.20), transparent 75%);
   }
 
-  body.bg-background::after {
+  body.bg-background:has(.bg-dashboard)::after {
     left: 50%;
     margin-left: 240px;
     background: radial-gradient(ellipse at right center, rgba(16, 185, 129, 0.20), transparent 75%);
@@ -3578,20 +3578,20 @@ body.overflow-hidden { overflow: hidden; }
     max-width: 560px;
   }
 
-  /* --- Refined custom scrollbar so the column edge stays clean --- */
-  body.bg-background::-webkit-scrollbar { width: 8px; }
-  body.bg-background::-webkit-scrollbar-track { background: transparent; }
-  body.bg-background::-webkit-scrollbar-thumb {
+  /* --- Refined custom scrollbar (dashboard only) --- */
+  body.bg-background:has(.bg-dashboard)::-webkit-scrollbar { width: 8px; }
+  body.bg-background:has(.bg-dashboard)::-webkit-scrollbar-track { background: transparent; }
+  body.bg-background:has(.bg-dashboard)::-webkit-scrollbar-thumb {
     background: rgba(16, 185, 129, 0.35);
     border-radius: 99px;
   }
-  body.bg-background::-webkit-scrollbar-thumb:hover {
+  body.bg-background:has(.bg-dashboard)::-webkit-scrollbar-thumb:hover {
     background: rgba(16, 185, 129, 0.6);
   }
 }
 
 /* On very wide screens (≥1440px) push the decorative side-glows out a touch. */
 @media (min-width: 1440px) {
-  body.bg-background::before { margin-right: 280px; }
-  body.bg-background::after  { margin-left: 280px; }
+  body.bg-background:has(.bg-dashboard)::before { margin-right: 280px; }
+  body.bg-background:has(.bg-dashboard)::after  { margin-left: 280px; }
 }
