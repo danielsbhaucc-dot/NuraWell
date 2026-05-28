@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useProgressLiveRefresh } from '../../lib/journey/use-progress-live-refresh';
 import {
   ArrowRight,
   CalendarDays,
@@ -614,33 +615,75 @@ function StatCell({
 }
 
 /* ── Main client ────────────────────────────────────────────────── */
-export function TaskHistoryClient({ initialReport }: { initialReport: TaskHistoryReport }) {
+export function TaskHistoryClient({
+  userId,
+  initialReport,
+}: {
+  userId: string;
+  initialReport: TaskHistoryReport;
+}) {
   const [report, setReport] = useState<TaskHistoryReport>(initialReport);
   const [range, setRange] = useState<TaskHistoryRange>(initialReport.meta.range);
   const [loading, setLoading] = useState(false);
+  /** רענון לייב בלי loader גלוי — כדי שה-UI לא יכבה בכל סימון */
+  const [liveRefreshing, setLiveRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [popupDateKey, setPopupDateKey] = useState<string | null>(null);
 
   const todayKey = jerusalemTodayKey();
 
-  const loadRange = useCallback(async (next: TaskHistoryRange) => {
-    setRange(next);
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/v1/task-history?range=${next}`, { credentials: 'include' });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? `שגיאה ${res.status}`);
+  const fetchReport = useCallback(
+    async (next: TaskHistoryRange, opts: { silent?: boolean } = {}) => {
+      if (opts.silent) setLiveRefreshing(true);
+      else setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/v1/task-history?range=${next}`, {
+          credentials: 'include',
+        });
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          throw new Error(body.error ?? `שגיאה ${res.status}`);
+        }
+        const data = (await res.json()) as TaskHistoryReport;
+        setReport(data);
+      } catch (e) {
+        if (!opts.silent) setError(e instanceof Error ? e.message : 'טעינה נכשלה');
+      } finally {
+        if (opts.silent) setLiveRefreshing(false);
+        else setLoading(false);
       }
-      const data = (await res.json()) as TaskHistoryReport;
-      setReport(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'טעינה נכשלה');
-    } finally {
-      setLoading(false);
+    },
+    []
+  );
+
+  const loadRange = useCallback(
+    async (next: TaskHistoryRange) => {
+      setRange(next);
+      await fetchReport(next);
+    },
+    [fetchReport]
+  );
+
+  /**
+   * עדכון לייב: רענון שקט (ללא loader) של אותה תקופה שמוצגת —
+   * מבטיח שמשימות וביצועים מהיום מופיעים תוך פחות משנייה גם בלי לחזור למסך.
+   */
+  const rangeRef = useRef(range);
+  rangeRef.current = range;
+  useProgressLiveRefresh(userId, () => {
+    void fetchReport(rangeRef.current, { silent: true });
+  });
+
+  /** מצביע על "מסונכרן" קצרה אחרי כל רענון לייב — חיווי ויזואלי קטן ומעודן */
+  const [justSynced, setJustSynced] = useState(false);
+  useEffect(() => {
+    if (!liveRefreshing && justSynced) {
+      const id = setTimeout(() => setJustSynced(false), 1200);
+      return () => clearTimeout(id);
     }
-  }, []);
+    if (liveRefreshing) setJustSynced(true);
+  }, [liveRefreshing, justSynced]);
 
   /** Build popup rows for a given dateKey from all tasks */
   const popupRows = useMemo((): DayExecRow[] => {
@@ -743,9 +786,36 @@ export function TaskHistoryClient({ initialReport }: { initialReport: TaskHistor
               </span>
             ) : null}
           </div>
-          <p className="text-[10px] font-semibold text-emerald-900/70 text-center mt-2 px-1">
-            {meta.label}
-            {meta.range !== 'day' ? ` · ${meta.from} — ${meta.to}` : ''}
+          <p className="text-[10px] font-semibold text-emerald-900/70 text-center mt-2 px-1 flex items-center justify-center gap-1.5">
+            <span>
+              {meta.label}
+              {meta.range !== 'day' ? ` · ${meta.from} — ${meta.to}` : ''}
+            </span>
+            <AnimatePresence>
+              {liveRefreshing ? (
+                <motion.span
+                  key="sync-indicator"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="inline-flex items-center gap-1 text-emerald-700"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  לייב
+                </motion.span>
+              ) : justSynced ? (
+                <motion.span
+                  key="synced-indicator"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="inline-flex items-center gap-1 text-emerald-700"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  סונכרן
+                </motion.span>
+              ) : null}
+            </AnimatePresence>
           </p>
         </div>
 

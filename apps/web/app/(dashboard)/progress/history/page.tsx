@@ -26,5 +26,5 @@ export default async function TaskHistoryPage() {
 
   const initialReport = await buildTaskHistoryReport(supabase, user.id, { range: 'month' });
 
-  return <TaskHistoryClient initialReport={initialReport} />;
+  return <TaskHistoryClient userId={user.id} initialReport={initialReport} />;
 }
