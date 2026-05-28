@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '../../../lib/supabase/server';
 import { ProgressPageClient } from '../../../components/course/ProgressPageClient';
 import { jerusalemDateKey } from '../../../lib/journey/task-schedule';
+import { parseJourneyTasksFull } from '../../../lib/journey/journey-report-parse';
+import { buildDailyAggregateDays } from '../../../lib/journey/build-daily-aggregate-days';
 
 export const metadata: Metadata = {
   title: 'ההתקדמות שלי',
@@ -147,38 +149,87 @@ export default async function ProgressPage() {
    * c = מספר ביצועי משימות באותו יום; t = 1 (סף "פעיל היום").
    * המקור: journey_task_executions — הטבלה הייעודית של NuraWell-1 (לא JSONB ישן).
    *
-   * שאילתה מוגבלת לטווח תאריכים מדויק (gte/lte) במקום limit שרירותי —
-   * האינדקס idx_task_exec_user_date (000023) מטפל בזה ביעילות גם
-   * לאחר שנים של שימוש. תקרה הגנתית של 600 שורות (30 ימים × 20 ביצועים).
+   * נטען גם פירוט מלא של כל ביצוע (task_id + slot + completed_at) כדי שלחיצה
+   * על עיגול תפתח Popup עם רשימת המשימות שבוצעו באותו יום, כולל שעה וסלוט.
+   * הקאפ של 600 שורות מספיק ל-30 ימים × 20 ביצועים — אינדקס idx_task_exec_user_date.
    */
-  const taskHistoryDays: { d: string; c: number; t: number }[] = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
-    taskHistoryDays.push({ d: jerusalemDateKey(d), c: 0, t: 1 });
-  }
-  const sinceKey = taskHistoryDays[0]?.d ?? jerusalemDateKey(today);
-  const untilKey = taskHistoryDays[taskHistoryDays.length - 1]?.d ?? jerusalemDateKey(today);
+  const sinceKey = jerusalemDateKey(new Date(today.getTime() - 29 * 24 * 60 * 60 * 1000));
+  const untilKey = jerusalemDateKey(today);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawExecutions } = await (supabase as any)
     .from('journey_task_executions')
-    .select('date_key')
+    .select('date_key, task_id, step_id, slot, completed_at, source')
     .eq('user_id', user.id)
     .gte('date_key', sinceKey)
     .lte('date_key', untilKey)
+    .order('completed_at', { ascending: true })
     .limit(600);
 
+  /** taskId → metadata כדי להציג טקסט יפה ב-Popup ב-/progress */
+  const taskMetaById = new Map<
+    string,
+    { title: string; emoji: string; step_number: number; step_title: string }
+  >();
+  for (const step of jSteps) {
+    const tasks = parseJourneyTasksFull(step.tasks);
+    for (const task of tasks) {
+      taskMetaById.set(task.id, {
+        title: task.title,
+        emoji: task.emoji,
+        step_number: step.step_number,
+        step_title: step.title,
+      });
+    }
+  }
+
+  type DayExecRow = {
+    task_id: string;
+    task_title: string;
+    task_emoji: string;
+    step_number: number;
+    step_title: string;
+    slot: string;
+    completed_at: string;
+    source: 'manual' | 'chat' | 'reminder';
+  };
+  const taskHistoryByDay: Record<string, DayExecRow[]> = {};
+
+  const dayCount = new Map<string, number>();
+
   if (Array.isArray(rawExecutions) && rawExecutions.length > 0) {
-    const dayCount = new Map<string, number>();
-    for (const row of rawExecutions as Array<{ date_key?: string }>) {
+    for (const row of rawExecutions as Array<{
+      date_key?: string;
+      task_id?: string;
+      step_id?: string;
+      slot?: string;
+      completed_at?: string;
+      source?: string;
+    }>) {
       const key = typeof row.date_key === 'string' ? row.date_key : '';
       if (!key) continue;
       dayCount.set(key, (dayCount.get(key) ?? 0) + 1);
-    }
-    for (const day of taskHistoryDays) {
-      day.c = dayCount.get(day.d) ?? 0;
+
+      const meta = row.task_id ? taskMetaById.get(row.task_id) : undefined;
+      const arr = taskHistoryByDay[key] ?? [];
+      arr.push({
+        task_id: row.task_id ?? '',
+        task_title: meta?.title ?? 'משימה',
+        task_emoji: meta?.emoji ?? '✅',
+        step_number: meta?.step_number ?? 0,
+        step_title: meta?.step_title ?? '',
+        slot: row.slot ?? 'full_day',
+        completed_at: row.completed_at ?? '',
+        source:
+          row.source === 'chat' || row.source === 'reminder'
+            ? row.source
+            : 'manual',
+      });
+      taskHistoryByDay[key] = arr;
     }
   }
+
+  const taskHistoryDays = buildDailyAggregateDays(jSteps, jProg, dayCount, 30, today);
 
   return (
     <ProgressPageClient
@@ -194,6 +245,7 @@ export default async function ProgressPage() {
       journeyTasksReportedDone={journeyTasksReportedDone}
       journeyHabitChecks={journeyHabitChecks}
       taskHistoryDays={taskHistoryDays}
+      taskHistoryByDay={taskHistoryByDay}
     />
   );
 }

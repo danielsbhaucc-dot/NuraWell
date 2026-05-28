@@ -48,9 +48,34 @@ export interface TaskHistoryExecution {
   note?: string | null;
 }
 
+/**
+ * סטטוס יום במסע משימה.
+ *
+ *  - done           = כל הסלוטים הצפויים ביום סומנו (יום שלם / משימה חד-פעמית).
+ *  - in_progress    = "היום" + נסמן חלק מהסלוטים, אך עוד אפשר להשלים את היום.
+ *  - partial        = יום בעבר עם חלק מהסלוטים (למשל 1 מתוך 3 ארוחות).
+ *  - pending        = "היום", פעיל, 0 ביצועים — היום עוד פתוח, זה לא פספוס.
+ *  - missed         = יום בעבר שהיה אמור להיות פעיל אך לא סומן בכלל.
+ *  - off            = יום שלא היה פעיל מבחינת schedule (למשל שבועי ביום אחר).
+ *  - before_accept  = יום לפני שהמשתמש לחץ "מקובל עליי" — לא ניתן לשפוט.
+ *
+ * הבחנה חשובה: "היום" אף-פעם אינו 'missed' — תמיד pending/in_progress/done.
+ * זה מאפשר UI מעודד שלא שובר משתמש בעצם זה שטרם סימן בשעה 9:00 בבוקר.
+ */
+export type TaskHistoryDayStatus =
+  | 'done'
+  | 'in_progress'
+  | 'partial'
+  | 'pending'
+  | 'missed'
+  | 'off'
+  | 'before_accept';
+
 export interface TaskHistoryDay {
   /** YYYY-MM-DD בלוח ירושלים */
   date_key: string;
+  /** האם זה "היום" (לפי לוח ירושלים) — חשוב להבחנה pending/missed */
+  is_today: boolean;
   /** האם המשימה הייתה פעילה ביום הזה (לפי schedule + accepted_at) */
   was_due: boolean;
   /** מספר הסלוטים שצפויים ביום הזה */
@@ -59,8 +84,8 @@ export interface TaskHistoryDay {
   done_slots: number;
   /** סלוטים שבוצעו (לתצוגה: meal_lunch, morning, full_day וכו') */
   slots: string[];
-  /** סטטוס היום: done = כל מה שצריך / partial = חלק / missed = פעיל אך 0 / off = לא פעיל ביום הזה */
-  status: 'done' | 'partial' | 'missed' | 'off' | 'before_accept';
+  /** סטטוס היום (ראה הדוקומנטציה של TaskHistoryDayStatus) */
+  status: TaskHistoryDayStatus;
   /** הביצועים המדויקים של היום הזה (ISO timestamps + slot) — רלוונטי לתצוגת טיימליין */
   executions: TaskHistoryExecution[];
 }
@@ -86,12 +111,16 @@ export interface TaskHistoryEntry {
 
   /** סך כל הביצועים בטווח שנבחר */
   total_executions_in_range: number;
-  /** ימים פעילים בטווח (לפחות סלוט אחד הושלם) */
+  /** ימים פעילים בטווח (done / partial / in_progress) */
   active_days_in_range: number;
   /** ימים שהיו פעילים (was_due) בטווח */
   due_days_in_range: number;
-  /** ימים שהוחמצו (was_due && status===missed) בטווח */
+  /** ימים שהוחמצו (was_due && status===missed) בטווח — לא כולל היום הפתוח */
   missed_days_in_range: number;
+  /** ימים פתוחים: היום (pending/in_progress) — לא פספוס, עדיין פתוח */
+  pending_days_in_range: number;
+  /** ימים שסומנו בחלקיות בעבר (partial — לא היום) */
+  partial_days_in_range: number;
   /** רצף ימים רצוף נוכחי (כולל היום אם הושלם, נספר רק ימי due_days) */
   current_streak: number;
   /** השיא של רצף ימים בכל ההיסטוריה */
@@ -295,33 +324,37 @@ function computeStreaks(
   todayKey: string
 ): { current: number; best: number } {
   /**
-   * רצף = ימים פעילים רצופים (was_due && done/partial).
-   * "off" / "before_accept" מנוטרלים — לא שוברים אך גם לא נספרים.
+   * רצף נוכחי = הרצף הרצוף האחרון של ימים פעילים.
+   *
+   * חוקים פסיכולוגיים — שלא נשבור משתמש רק כי השעה 9:00 בבוקר:
+   *   - off / before_accept   → "מתנגדים", לא נספרים, לא שוברים.
+   *   - pending (היום, 0)     → "פתוח" — לא שובר את הרצף, אך לא מוסיף לו עד שיסומן.
+   *   - in_progress (היום, חלקי) → סופר כיום פעיל ברצף.
+   *   - done / partial (עבר)  → סופר כיום פעיל ברצף.
+   *   - missed (עבר, 0)       → שובר את הרצף.
    */
   let best = 0;
   let running = 0;
   let currentEndingToday = 0;
-  let runningEndsAtToday = false;
 
   for (const day of daysAsc) {
-    if (day.status === 'off' || day.status === 'before_accept') continue;
-    if (day.status === 'done' || day.status === 'partial') {
+    if (day.status === 'off' || day.status === 'before_accept' || day.status === 'pending') {
+      continue;
+    }
+    if (day.status === 'done' || day.status === 'partial' || day.status === 'in_progress') {
       running += 1;
       if (running > best) best = running;
-      if (day.date_key === todayKey) {
-        currentEndingToday = running;
-        runningEndsAtToday = true;
-      } else if (runningEndsAtToday) {
-        runningEndsAtToday = false;
-      }
+      if (day.date_key === todayKey) currentEndingToday = running;
     } else {
+      /** missed — שובר רצף */
       running = 0;
-      runningEndsAtToday = false;
     }
   }
 
-  /** "הרצף הנוכחי" – אם היום פעיל ויש רצף שמסתיים היום, זה הרצף.
-   *  אחרת – האחרון שלא הסתיים בכישלון אקטיבי קרוב. נשמור רק אם זה רץ עד היום. */
+  /** אם אין שורה של "היום" עם פעילות, ה-current יוגדר ע"י running הסופי
+   *  כל עוד היום הוא pending (לא ניטרלים שוב — pending לא שובר). */
+  if (currentEndingToday === 0 && running > 0) currentEndingToday = running;
+
   return { current: currentEndingToday, best };
 }
 
@@ -449,17 +482,34 @@ export async function buildTaskHistoryReport(
       const streakKeysDesc = listDateKeysDescending(streakWindowKey, todayKey);
 
       const buildDay = (dateKey: string): TaskHistoryDay => {
+        const isToday = dateKey === todayKey;
+        const isFuture = dateKey > todayKey;
         const execs = dayMap.get(dateKey) ?? [];
         const dueToday = isTaskDueOnDate(task, dateKey, acceptedDateKey);
         const beforeAccept = acceptedDateKey ? dateKey < acceptedDateKey : false;
-        let status: TaskHistoryDay['status'];
-        if (beforeAccept) status = 'before_accept';
-        else if (!dueToday) status = execs.length > 0 ? 'done' : 'off';
-        else if (execs.length === 0) status = 'missed';
-        else if (execs.length >= expectedSlotsPerDay) status = 'done';
-        else status = 'partial';
+
+        let status: TaskHistoryDayStatus;
+        if (beforeAccept) {
+          status = 'before_accept';
+        } else if (isFuture) {
+          /** ימים בעתיד — מוצגים כ-pending (פתוח לעתיד) ולא כ-missed */
+          status = dueToday ? 'pending' : 'off';
+        } else if (!dueToday) {
+          /** יום לא-פעיל — אם בוצע בכל זאת, נחשב done; אחרת off */
+          status = execs.length > 0 ? 'done' : 'off';
+        } else if (execs.length >= expectedSlotsPerDay && expectedSlotsPerDay > 0) {
+          status = 'done';
+        } else if (execs.length > 0) {
+          /** חלק מהסלוטים — היום עדיין פתוח להשלמה, בעבר זה כבר חלקי */
+          status = isToday ? 'in_progress' : 'partial';
+        } else {
+          /** 0 ביצועים — היום עדיין פתוח, בעבר זה פספוס */
+          status = isToday ? 'pending' : 'missed';
+        }
+
         return {
           date_key: dateKey,
+          is_today: isToday,
           was_due: dueToday,
           expected_slots: dueToday ? expectedSlotsPerDay : 0,
           done_slots: execs.length,
@@ -484,6 +534,7 @@ export async function buildTaskHistoryReport(
                   expected_slots: 1,
                   done_slots: 1,
                   slots: ['full_day'],
+                  is_today: d.is_today,
                   executions: accepted_at
                     ? [
                         {
@@ -501,16 +552,22 @@ export async function buildTaskHistoryReport(
         }
       }
 
-      /** סטטיסטיקה לטווח */
+      /** סטטיסטיקה לטווח — pending לא נספר כפספוס, רק כיום פתוח */
       let total_executions_in_range = 0;
       let active_days_in_range = 0;
       let due_days_in_range = 0;
       let missed_days_in_range = 0;
+      let pending_days_in_range = 0;
+      let partial_days_in_range = 0;
       for (const d of days) {
         total_executions_in_range += d.done_slots;
-        if (d.status === 'done' || d.status === 'partial') active_days_in_range++;
+        if (d.status === 'done' || d.status === 'partial' || d.status === 'in_progress') {
+          active_days_in_range++;
+        }
         if (d.was_due && d.status !== 'before_accept') due_days_in_range++;
         if (d.status === 'missed') missed_days_in_range++;
+        if (d.status === 'pending' || d.status === 'in_progress') pending_days_in_range++;
+        if (d.status === 'partial') partial_days_in_range++;
       }
 
       /** רצף — נחשב על חלון 90 יום בסדר עולה */
@@ -541,6 +598,8 @@ export async function buildTaskHistoryReport(
         active_days_in_range,
         due_days_in_range,
         missed_days_in_range,
+        pending_days_in_range,
+        partial_days_in_range,
         current_streak: current,
         best_streak: best,
         success_rate_pct,
@@ -595,7 +654,8 @@ export async function buildTaskHistoryReport(
  * dateKey צריך להיות **אחרי** accepted_date_key. אם לפני, ה-status יהיה 'before_accept'
  * וזה מטופל מחוץ לפונקציה הזו.
  */
-function isTaskDueOnDate(
+/** האם משימה הייתה אמורה להתבצע ביום מסוים — לשימוש גם ב-/progress (מעקב יומי מצטבר). */
+export function isTaskDueOnDate(
   task: JourneyTask,
   dateKey: string,
   acceptedDateKey: string | null

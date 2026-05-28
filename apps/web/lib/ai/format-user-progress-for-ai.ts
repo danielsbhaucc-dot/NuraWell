@@ -94,7 +94,9 @@ export function formatUserProgressForAi(report: AdminUserJourneyReport): string 
       }
 
       const missedPart =
-        t.missed_days_last_30 > 0 ? ` · ${t.missed_days_last_30} ימים פספוס ב-30` : '';
+        t.missed_days_last_30 > 0
+          ? ` · ${t.missed_days_last_30} ימים שלא תועדו ב-30 (לא לשפוט — לעודד)`
+          : '';
       const recentPart =
         t.recent_executions.length > 0
           ? ` · אחרונים: ${t.recent_executions
