@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Archive, ArchiveRestore, MessageCircle, Zap } from 'lucide-react';
+import { Archive, ArchiveRestore, Check, MessageCircle, Zap } from 'lucide-react';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { getMentorAvatarFallback } from '../../lib/mentors/avatar-url';
 import { MENTORS } from '../../lib/mentors/registry';
@@ -60,8 +60,17 @@ export function NotificationCard({
   };
 
   const handleCardClick = () => {
-    if (canReply) return;
-    void onMarkRead(n.id, !n.is_read);
+    if (!n.is_read) {
+      void onMarkRead(n.id, true);
+    }
+  };
+
+  const handleMarkReadClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!n.is_read) {
+      void onMarkRead(n.id, true);
+    }
   };
 
   return (
@@ -73,18 +82,18 @@ export function NotificationCard({
           : isCheckpoint
             ? 'border-amber-300/70 bg-gradient-to-br from-amber-50/95 via-orange-50/75 to-amber-100/60 shadow-amber-900/8'
             : 'border-amber-200/65 bg-gradient-to-br from-amber-50/90 via-yellow-50/55 to-emerald-50/70 shadow-amber-900/5',
-        !canReply && 'cursor-pointer active:scale-[0.99]'
+        'cursor-pointer active:scale-[0.99]'
       )}
       onClick={handleCardClick}
       onKeyDown={(e) => {
-        if (canReply) return;
         if (e.key === 'Enter' || e.key === ' ') {
+          if (e.target !== e.currentTarget) return;
           e.preventDefault();
-          void onMarkRead(n.id, !n.is_read);
+          if (!n.is_read) void onMarkRead(n.id, true);
         }
       }}
-      role={canReply ? undefined : 'button'}
-      tabIndex={canReply ? undefined : 0}
+      role="button"
+      tabIndex={0}
       lang="he"
     >
       {!n.is_read && (
@@ -105,20 +114,34 @@ export function NotificationCard({
         </>
       )}
 
-      <button
-        type="button"
-        title={viewMode === 'inbox' ? 'העבר לארכיון' : 'החזר לתיבה'}
-        className="absolute top-2.5 start-2.5 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg text-emerald-800/70 transition hover:bg-emerald-100/80 hover:text-emerald-900"
-        onClick={(e) =>
-          viewMode === 'inbox' ? void onArchive(n.id, e) : void onUnarchive(n.id, e)
-        }
-      >
-        {viewMode === 'inbox' ? (
-          <Archive className="h-4 w-4" aria-hidden />
-        ) : (
-          <ArchiveRestore className="h-4 w-4" aria-hidden />
+      <div className="absolute top-2.5 start-2.5 z-10 flex items-center gap-1">
+        <button
+          type="button"
+          title={viewMode === 'inbox' ? 'העבר לארכיון' : 'החזר לתיבה'}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-emerald-800/70 transition hover:bg-emerald-100/80 hover:text-emerald-900"
+          onClick={(e) =>
+            viewMode === 'inbox' ? void onArchive(n.id, e) : void onUnarchive(n.id, e)
+          }
+        >
+          {viewMode === 'inbox' ? (
+            <Archive className="h-4 w-4" aria-hidden />
+          ) : (
+            <ArchiveRestore className="h-4 w-4" aria-hidden />
+          )}
+        </button>
+
+        {viewMode === 'inbox' && !n.is_read && (
+          <button
+            type="button"
+            title="סמן כנקרא"
+            aria-label="סמן כנקרא"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100/70 text-emerald-800 ring-1 ring-emerald-300/60 transition hover:bg-emerald-200/80 hover:text-emerald-900 active:scale-[0.95]"
+            onClick={handleMarkReadClick}
+          >
+            <Check className="h-4 w-4" strokeWidth={2.6} aria-hidden />
+          </button>
         )}
-      </button>
+      </div>
 
       <div className="px-3.5 py-3.5 pe-3 ps-10">
         <div className="flex flex-row-reverse items-start gap-3">
