@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, MapPin, Sparkles, Sunrise, X } from 'lucide-react';
 import { slotLabel } from '../../lib/journey/task-schedule';
@@ -67,14 +66,6 @@ const sourceLabel: Record<DayExecRow['source'], string> = {
  *  - אם אין רשומות + זה בעבר → טקסט עדין "לא תועד ביצוע" — לא דרמטי.
  */
 export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props) {
-  /** SSR-safe: createPortal ל-document.body מדלג על אבות עם transform/filter
-   *  שהופכים position:fixed לרלטיבי לאזור התוכן (במקום ל-viewport).
-   *  זה הפתרון הוודאי שהפופאפ באמת ימורכז במסך גם במובייל וגם בדסקטופ. */
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -94,15 +85,22 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
     a.completed_at.localeCompare(b.completed_at)
   );
 
-  if (!mounted) return null;
-
-  const popupNode = (
+  return (
     <AnimatePresence>
       {open && dateKey ? (
         <motion.div
           key="day-popup"
           dir="rtl"
-          className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-6"
+          className="fixed inset-0 z-[60] flex items-center justify-center px-4"
+          /**
+           * padding מעל ל-MobileHeader (~64px) ומעל ל-BottomNav (~80px + safe-area).
+           * המטרה: לרכז את ה-popup בתוך האזור הגלוי באמת, לא בתוך כל ה-viewport,
+           * כך שהוא לא נראה "צמוד למעלה" מתחת לבר התחתון שמסתיר חלק מהמסך.
+           */
+          style={{
+            paddingTop: 'calc(64px + env(safe-area-inset-top, 0px) + 8px)',
+            paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px) + 12px)',
+          }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -119,7 +117,9 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
             }}
           />
           <motion.div
-            className="relative w-full max-w-sm rounded-[26px] overflow-hidden max-h-[85vh] flex flex-col"
+            dir="rtl"
+            className="relative w-full max-w-sm rounded-[26px] overflow-hidden flex flex-col"
+            style={{ maxHeight: '100%' }}
             initial={{ y: 16, opacity: 0, scale: 0.94 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 16, opacity: 0, scale: 0.94 }}
@@ -305,6 +305,4 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
       ) : null}
     </AnimatePresence>
   );
-
-  return createPortal(popupNode, document.body);
 }
