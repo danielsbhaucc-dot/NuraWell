@@ -13,6 +13,7 @@ import { publicAppUrlForAiReferer } from '../public-app-url';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 const DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1';
+const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
 
 const APP_URL = publicAppUrlForAiReferer();
 const APP_TITLE = 'NuraWell';
@@ -28,6 +29,11 @@ if (!process.env.OPENROUTER_API_KEY && process.env.NODE_ENV === 'production') {
 if (!process.env.DEEPSEEK_API_KEY && process.env.NODE_ENV === 'production') {
   // eslint-disable-next-line no-console
   console.warn('[ai/client] DEEPSEEK_API_KEY is missing - DeepSeek calls will 401.');
+}
+
+if (!process.env.GROQ_API_KEY && process.env.NODE_ENV === 'production') {
+  // eslint-disable-next-line no-console
+  console.warn('[ai/client] GROQ_API_KEY is missing - Groq calls will 401.');
 }
 
 /**
@@ -52,6 +58,19 @@ export const deepseek = new OpenAI({
 });
 
 /**
+ * Groq client (OpenAI-compatible REST). מנוע מהיר וזול עם LLaMA 4 —
+ * ספק ברירת המחדל שלנו ל"עבודה שחורה ברקע" של פיצ'רים חדשים
+ * (סיווגים, סיכומי שיחה, decision routing, batch analytics קצרים).
+ *
+ * הערה: לא מחליף את `deepseek` הקיים כדי לא לשבור צרכנים קיימים —
+ * שימוש חדש ב-background AI יעדיף את `groq` עם `AI_MODELS.background_groq`.
+ */
+export const groq = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY?.trim() || BUILD_SAFE_API_KEY,
+  baseURL: GROQ_BASE_URL,
+});
+
+/**
  * Canonical model ids used across the app. Kept here so swapping a model
  * is a one-line change.
  */
@@ -60,8 +79,17 @@ export const AI_MODELS = {
   empathy: 'openai/gpt-5-mini',
   /** Reserved for high-stakes moments (re-engagement after long absence). */
   critical: 'openai/gpt-5',
-  /** Default DeepSeek HTTP chat id; cron uses `getDeepseekAnalysisModel()` (same default, env override). */
+  /** Legacy DeepSeek background id; cron uses `getDeepseekAnalysisModel()` (same default, env override). */
   background: 'deepseek-chat',
+  /**
+   * Groq + LLaMA 4 Scout — ברירת המחדל החדשה לכל background AI
+   * (סיווגים, סיכומים, דיסיז'ן-רוטר וכו'). מהיר משמעותית מ-DeepSeek
+   * וזול יותר ב-volume של פיצ'רים שאינם user-facing.
+   * Override ב-env: `GROQ_BACKGROUND_MODEL`.
+   */
+  background_groq:
+    process.env.GROQ_BACKGROUND_MODEL?.trim() ||
+    'meta-llama/llama-4-scout-17b-16e-instruct',
 } as const;
 
 export type AiModelKind = keyof typeof AI_MODELS;
@@ -69,10 +97,12 @@ export type AiModelId = (typeof AI_MODELS)[AiModelKind];
 
 /**
  * Returns the right SDK client for a given model kind.
- * `empathy` and `critical` go through OpenRouter, `background` goes direct
- * to DeepSeek.
+ *   • `empathy` / `critical` → OpenRouter (GPT-5 family).
+ *   • `background`           → DeepSeek (legacy).
+ *   • `background_groq`      → Groq (LLaMA 4 — מועדף לעבודה ברקע).
  */
 export function getClientForModel(kind: AiModelKind): OpenAI {
   if (kind === 'background') return deepseek;
+  if (kind === 'background_groq') return groq;
   return openrouter;
 }
