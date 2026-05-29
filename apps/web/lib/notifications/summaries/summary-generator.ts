@@ -121,6 +121,31 @@ export async function generateAndStorePeriodicSummary(
   };
 }
 
+/**
+ * Thin alias עם החתימה הקנונית `generateSummary(userId, type, periodKey)`.
+ * נוצרה ל-cron / route handlers שמעדיפים API פשוט בלי לעצב אובייקט קלט.
+ * תחת המכסה — קוראת ל-`generateAndStorePeriodicSummary`, אז כל לוגיקת
+ * ה-cascade והסנתזה זהה.
+ */
+export async function generateSummary(
+  admin: AnySupabase,
+  userId: string,
+  type: SummaryType,
+  periodKey: string,
+  options: { modelOverride?: string; firstName?: string | null } = {}
+): Promise<GeneratedSummary> {
+  return generateAndStorePeriodicSummary(
+    admin,
+    {
+      userId,
+      type,
+      periodKey,
+      ...(options.modelOverride ? { modelOverride: options.modelOverride } : {}),
+    },
+    options.firstName ?? null
+  );
+}
+
 // ─── שלב הבנייה: metrics + child insights ──────────────────────
 
 interface BuildContext {

@@ -27,13 +27,20 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 const COACH_PERSONA = `אתה "אלמוג" — מאמן בריאות אישי של אפליקציית NuraWell. אתה כותב בעברית, חם, אנושי, אופטימי, נטול שיפוט. אתה מודע לכך שמשתמשים נופלים ולא קורה כלום — תפקידך לחזק, לעודד, ולהבליט את ההישגים האמיתיים בלי לחנף ובלי "טיפים גנריים".`;
 
+/**
+ * חוק ה-rollup: ברמות מעל יומי, אתה לא חוזה את הנתונים — אתה מקבל אותם
+ * כבר מסונתזים מתובנות הרמה התחתונה. תפקידך *להתבונן בתבנית* בין הילדים
+ * (Trend, חוזק, החמצה חוזרת) ולספר עליה — לא לסכם כל ילד בנפרד.
+ */
+const ROLLUP_DIRECTIVE = `אתה מקבל למטה רשימה של "תובנות-ילדים" — סיכומים שכבר נכתבו ברמה התחתונה. אתה לא ממציא מספרים ולא ממציא ימים. במקום זה: זהה תבנית רוחבית בין הילדים (מומנטום עולה / יורד, הישג חוזר, יום חלש שחוזר על עצמו, רבעון/שבוע שהוביל) — וספר את הסיפור הזה במשפט/ים. אל תזכיר את המילה "סיכום" או "תובנה". דבר אל המשתמש בגוף שני — כאילו אתה אומר לו את זה במפגש.`;
+
 const FORMAT_RULES_BY_TYPE: Record<SummaryType, string> = {
   daily: `אורך: 1–2 משפטים, עד ~30 מילים. אימוג'י אחד אופציונלי. בלי הקדמות ובלי כותרות. רגע קצר של רפלקציה על היום הזה בלבד.`,
-  weekly: `אורך: 2–3 משפטים, עד ~60 מילים. ציין 1 הישג אמיתי + 1 דבר ללמוד. אימוג'י אחד אופציונלי. בלי הקדמות.`,
-  monthly: `אורך: 3–4 משפטים, עד ~90 מילים. תובנה ברמת חודש: מגמה כללית, יום-בשבוע "חלש" אם בולט, רעיון להמשך. אימוג'י אחד אופציונלי.`,
-  quarterly: `אורך: 4–5 משפטים, עד ~120 מילים. תמונת רבעון: מה השתנה ביחס לחודשים? מה הקצב הכללי? קבע "כותרת רבעונית" קצרה במשפט הראשון.`,
-  semi_annual: `אורך: 5–6 משפטים, עד ~150 מילים. סגירת חצי-שנה: ציין מהפך/יציבות/ירידה, איזה רבעון הוביל, ולמה זה משמעותי לטווח השנתי.`,
-  annual: `אורך: 6–8 משפטים, עד ~200 מילים. ספר את "סיפור השנה" ב-3 קטעים: התחלה, מהפך, סיכום. הזכר מספר אחד מובהק (completion_rate או streak מקסימלי). סיים במשפט מעורר השראה לשנה הבאה.`,
+  weekly: `אורך: 2–3 משפטים, עד ~60 מילים. סנתז את 7 התובנות היומיות: 1 הישג אמיתי שחוזר + 1 דבר ללמוד. אימוג'י אחד אופציונלי. בלי הקדמות.`,
+  monthly: `אורך: 3–4 משפטים, עד ~90 מילים. רולאפ מ-4 התובנות השבועיות: זהה מגמה ברורה לאורך החודש, נקודת מפנה אם הייתה, ויום-בשבוע "חלש" אם בולט בכמה שבועות. אימוג'י אחד אופציונלי.`,
+  quarterly: `אורך: 4–5 משפטים, עד ~120 מילים. רולאפ מ-3 התובנות החודשיות: כותרת רבעונית קצרה במשפט הראשון, ואז קצב כללי + מהפך / יציבות / ירידה ביחס לחודשים שמרכיבים את הרבעון.`,
+  semi_annual: `אורך: 5–6 משפטים, עד ~150 מילים. רולאפ מ-2 התובנות הרבעוניות: ספר את הקשת בין הרבעונים — איזה הוביל, איזה התרסק או החזיק יציב, ולמה זה משמעותי לטווח השנתי שמתפתח.`,
+  annual: `אורך: 6–8 משפטים, עד ~200 מילים. רולאפ מ-2 התובנות החצי-שנתיות: ספר את "סיפור השנה" ב-3 קטעים — התחלה, מהפך, סיכום. הזכר מספר מובהק אחד מהמטריקות (completion_rate או max_streak). סיים במשפט מעורר השראה לשנה הבאה.`,
 };
 
 const TYPE_LABEL_HE: Record<SummaryType, string> = {
@@ -58,9 +65,17 @@ export interface BuildPromptInput {
   childInsights?: Array<{ periodKey: string; insight: string }>;
 }
 
-function buildSystemPrompt(type: SummaryType): string {
-  return [COACH_PERSONA, '', `כתוב סיכום ${TYPE_LABEL_HE[type]} (${type}).`, FORMAT_RULES_BY_TYPE[type]]
-    .join('\n');
+function buildSystemPrompt(type: SummaryType, isRollup: boolean): string {
+  const parts: string[] = [
+    COACH_PERSONA,
+    '',
+    `כתוב סיכום ${TYPE_LABEL_HE[type]} (${type}).`,
+    FORMAT_RULES_BY_TYPE[type],
+  ];
+  if (isRollup) {
+    parts.push('', ROLLUP_DIRECTIVE);
+  }
+  return parts.join('\n');
 }
 
 function buildUserMessage(input: BuildPromptInput): string {
@@ -72,14 +87,18 @@ function buildUserMessage(input: BuildPromptInput): string {
   lines.push('מתמטיקה דטרמיניסטית מה-DB (אל תמציא מספרים אחרים):');
   lines.push(JSON.stringify(metrics, null, 2));
 
+  // ה"בשר" של ה-rollup: התובנות של הרמה התחתונה. בעברית מודגש שזה הקלט
+  // היחיד שעליו צריך להתבסס לסיפור-המסע (המספרים הם רק ריפרנס סטטי).
   if (childInsights && childInsights.length > 0) {
     lines.push('');
-    lines.push('סיכומים של תקופות הילדה (משם נולדה התקופה הנוכחית):');
+    lines.push(`📚 תובנות הרמה התחתונה (${childInsights.length} ילדים) — זה הקלט שעליו אתה מבצע rollup:`);
     for (const child of childInsights) {
       const safe = child.insight.trim().replace(/\s+/g, ' ');
       if (!safe) continue;
-      lines.push(`- ${child.periodKey}: ${safe}`);
+      lines.push(`  • [${child.periodKey}] ${safe}`);
     }
+    lines.push('');
+    lines.push('זהה את החוט המקשר ביניהן — אל תסכם כל אחת בנפרד, ואל תזכיר תאריכים פנימיים.');
   }
 
   lines.push('');
@@ -178,7 +197,11 @@ export async function generateSummaryInsight(
   input: BuildPromptInput,
   options: GenerateSummaryInsightOptions = {}
 ): Promise<SummaryLlmResult> {
-  const systemPrompt = buildSystemPrompt(input.type);
+  // rollup = יש לפחות תובנת-ילד אחת לא ריקה. ב-daily זה תמיד false.
+  const isRollup = (input.childInsights ?? []).some(
+    (c) => c.insight && c.insight.trim().length > 0
+  );
+  const systemPrompt = buildSystemPrompt(input.type, isRollup);
   const userMessage = buildUserMessage(input);
 
   const chain = buildChain(options.model);

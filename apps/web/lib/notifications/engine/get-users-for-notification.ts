@@ -31,6 +31,7 @@ import type {
   NotificationCandidate,
   TimeOfDay,
 } from '../../types/notification-state';
+import { fetchLatestAiMemory } from './fetch-ai-memory';
 
 const LOOKBACK_DAYS = 14;
 
@@ -174,5 +175,24 @@ export async function getUsersForNotification(
   }
 
   const max = options.maxUsers ?? 500;
-  return candidates.slice(0, max);
+  const trimmed = candidates.slice(0, max);
+
+  // 5. (Phase 3) הזרקת זיכרון ארוך-טווח: לכל מועמד — שולפים ב-batch אחד
+  //    את ה-`latest_weekly_insight` וה-`latest_monthly_insight` שלו
+  //    מ-`periodic_summaries`. כשל DB כאן לא קורס את ה-engine — נשלם
+  //    תכף את ההתראה בלי הזיכרון (graceful degrade).
+  if (trimmed.length > 0) {
+    const memoryByUser = await fetchLatestAiMemory(
+      admin,
+      trimmed.map((c) => c.userId)
+    );
+    for (const candidate of trimmed) {
+      const mem = memoryByUser.get(candidate.userId);
+      if (mem && (mem.latest_weekly_insight || mem.latest_monthly_insight)) {
+        candidate.aiMemory = mem;
+      }
+    }
+  }
+
+  return trimmed;
 }
