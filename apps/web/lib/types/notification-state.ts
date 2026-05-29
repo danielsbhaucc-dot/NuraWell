@@ -6,8 +6,13 @@
  *   • consecutiveMissedDays — מספר ימים *רצופים* שהמשתמש *לא* השלים את המשימה
  *                              (לא כולל היום הנוכחי).
  *
- * החישוב נעשה ב-`deriveNotificationState` (קובץ נפרד) — הקובץ הזה
- * הוא טיפוסים בלבד כדי ש-server / workflow / UI יוכלו לייבא בלי side-effects.
+ * החישוב נעשה ב-`deriveNotificationState` (קובץ נפרד). ה-state עצמו
+ * משמש *פנימית בלבד* (לחישוב cadence + רישום ב-notification_logs לאדמין).
+ * ה-AI לא מקבל אותו — הוא מקבל הקשר דו-ממדי גולמי
+ * (`AINotificationContext`) ומחליט לבד על הטון.
+ *
+ * הקובץ הוא types-only בלי side-effects, כדי שכל strata
+ * (server / workflow / UI) יוכל לייבא בלי תלות runtime.
  */
 
 export const TIME_OF_DAY = ['morning', 'noon', 'evening'] as const;
@@ -42,17 +47,32 @@ export interface NotificationCandidate {
 }
 
 /**
- * Payload שמועבר ל-OpenAI כתוכן JSON בתוך user message,
- * אחרי שה-system prompt קבע את "אישיות אלמוג" (chat coach).
+ * הקשר דו-ממדי שעובר ל-LLM כתוכן JSON בתוך user message,
+ * אחרי שה-system prompt קבע את "אישיות אלמוג".
  *
- * ה-AI מחזיר טקסט קצר (max 15 מילים) — לא JSON, רק push body.
+ * 🚨 הכלל המכריע (מוטמע גם בקוד וגם בפרומפט):
+ *   אם `has_completed_today === true` → לעולם לא מגיעים ל-LLM. ה-filter
+ *   מתבצע ב-Supabase ב-`getUsersForNotification`. השדה כאן הוא הגנה
+ *   defensive — אם איכשהו "true" יגיע ל-AI, יש להפסיק.
+ *
+ * חוזה הפלט של ה-LLM: טקסט push קצר (max 15 מילים) — לא JSON, רק body.
  */
-export interface AINotificationPayload {
-  firstName: string;
-  taskName: string;
-  notificationState: NotificationState;
-  /** Hint נוסף — לפעמים מועיל למודל לדעת את ה-slot של היום. */
-  timeOfDay: TimeOfDay;
+export interface AINotificationContext {
+  user_first_name: string;
+  task_name: string;
+  time_of_day: TimeOfDay;
+  /**
+   * מספר ימים *רצופים לפני היום* שהמשתמש לא ביצע.
+   *   0 = רק היום הוא עוד לא סימן (אתמול בוצע / זה היום הראשון).
+   *   1 = אתמול גם הוא לא סימן וגם היום.
+   *   2+ = מספר ימים רצופים — בדרך לנשירה.
+   */
+  consecutive_missed_days: number;
+  /**
+   * ב-runtime תמיד false (כי סוננו ב-DB). נשמר ב-payload כהגנה defensive
+   * ולמתן הקשר מלא ל-AI לפי המפרט.
+   */
+  has_completed_today: boolean;
 }
 
 /** תוצאה מסוכמת לכל מועמד אחרי שה-workflow רץ עליו. */

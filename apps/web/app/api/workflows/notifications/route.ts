@@ -91,21 +91,28 @@ export const { POST } = serve<NotificationsEnginePayload>(async (context) => {
   };
 });
 
-/** קריאה ל-OpenAI + רישום + טיפול בכפילויות, ברמת משתמש בודד. */
+/** קריאה ל-LLM + רישום + טיפול בכפילויות, ברמת משתמש בודד. */
 async function dispatchOne(
   candidate: NotificationCandidate,
   today: string,
   modelOverride: string | undefined
 ): Promise<NotificationDispatchResult> {
   try {
+    // 2D context matrix שעובר ל-LLM — snake_case לפי המפרט. notificationState
+    // *לא* נשלח ל-LLM; הוא נשמר רק פנימית ב-notification_logs ו-fallbackState.
     const { body, model, usedFallback } = await generateNotificationText(
       {
-        firstName: candidate.firstName,
-        taskName: candidate.taskName,
-        notificationState: candidate.notificationState,
-        timeOfDay: candidate.timeOfDay,
+        user_first_name: candidate.firstName,
+        task_name: candidate.taskName,
+        time_of_day: candidate.timeOfDay,
+        consecutive_missed_days: candidate.consecutiveMissedDays,
+        // תמיד false ב-runtime — סוננו ב-getUsersForNotification. נשלח להגנה.
+        has_completed_today: false,
       },
-      modelOverride ? { model: modelOverride } : undefined
+      {
+        ...(modelOverride ? { model: modelOverride } : {}),
+        fallbackState: candidate.notificationState,
+      }
     );
 
     const admin = createAdminClient();
