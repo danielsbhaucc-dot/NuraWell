@@ -33,8 +33,11 @@ import { authorizeCronRequest } from '../../../../lib/api/authorize-cron';
 import { requireApiSession } from '../../../../lib/api/route-guards';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import { jsonZodError } from '../../../../lib/validation/zod-http';
+import { israelDateKey } from '../../../../lib/ai/onboarding-check-in-time';
 import {
+  buildPeriodKey,
   dispatchSummaryReadyNotification,
+  fromDateKey,
   generateAndStorePeriodicSummary,
   isValidPeriodKey,
   SUMMARY_TYPES,
@@ -45,18 +48,31 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
+/**
+ * `periodKey` יכול להיות:
+ *   • מפתח קנוני שתואם ל-`type` (e.g. "2026-W22" עבור weekly).
+ *   • המחרוזת הקסם `"auto"` — תחושב "התקופה הנוכחית" (Israel) פר ה-`type`.
+ *     שימושי לקרוני QStash סטטיים שלא יודעים מראש את ה-key.
+ */
 const bodySchema = z
   .object({
     userId: z.string().uuid(),
     type: z.enum(SUMMARY_TYPES as unknown as [SummaryType, ...SummaryType[]]),
-    periodKey: z.string().min(4).max(20),
+    periodKey: z.string().min(3).max(20),
     dispatchNotification: z.boolean().optional(),
     modelOverride: z.string().min(1).max(100).optional(),
   })
-  .refine((v) => isValidPeriodKey(v.type, v.periodKey), {
+  .refine((v) => v.periodKey === 'auto' || isValidPeriodKey(v.type, v.periodKey), {
     path: ['periodKey'],
-    message: 'periodKey does not match canonical format for the given type',
+    message: 'periodKey must be "auto" or match canonical format for the given type',
   });
+
+/** ממיר `periodKey: "auto"` ל-key אמיתי לפי "עכשיו" בלוח ירושלים. */
+function resolvePeriodKey(type: SummaryType, periodKey: string): string {
+  if (periodKey !== 'auto') return periodKey;
+  const today = fromDateKey(israelDateKey());
+  return buildPeriodKey(type, today);
+}
 
 export async function POST(request: Request) {
   try {
@@ -67,7 +83,8 @@ export async function POST(request: Request) {
     const parsed = bodySchema.safeParse(raw.value);
     if (!parsed.success) return jsonZodError(parsed.error, 'Invalid body');
 
-    const { userId, type, periodKey, dispatchNotification, modelOverride } = parsed.data;
+    const { userId, type, dispatchNotification, modelOverride } = parsed.data;
+    const periodKey = resolvePeriodKey(type, parsed.data.periodKey);
 
     // ---------- 2. Authorize ----------
     // נסה תחילה Cron/System Bearer (ל-Upstash Schedules / GitHub Actions / curl).
