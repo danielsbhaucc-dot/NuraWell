@@ -100,7 +100,7 @@ async function dispatchOne(
   try {
     // 2D context matrix שעובר ל-LLM — snake_case לפי המפרט. notificationState
     // *לא* נשלח ל-LLM; הוא נשמר רק פנימית ב-notification_logs ו-fallbackState.
-    const { body, model, usedFallback } = await generateNotificationText(
+    const { body, model, usedFallback, attempts, errors } = await generateNotificationText(
       {
         user_first_name: candidate.firstName,
         task_name: candidate.taskName,
@@ -127,6 +127,9 @@ async function dispatchOne(
       metadata: {
         consecutiveMissedDays: candidate.consecutiveMissedDays,
         usedFallback,
+        llmAttempts: attempts,
+        // רישום כשלים רק אם היו (חוסך מקום ב-DB)
+        ...(errors.length > 0 ? { llmErrors: errors } : {}),
       },
     });
 

@@ -18,12 +18,25 @@ import { AI_MODELS, getClientForModel } from '../../ai/client';
 /** OpenAI-compatible client ל-OpenRouter (משמש לטקסט ההתראה). */
 export const getNotificationLLM = () => getClientForModel('empathy');
 
-/** OpenAI-compatible client ל-Groq (משמש לעבודה ברקע, אם יתווסף בעתיד). */
+/** OpenAI-compatible client ל-Groq (רקע + fallback אם OpenRouter נופל). */
 export const getNotificationBackgroundLLM = () => getClientForModel('background_groq');
 
-/** מודל ברירת מחדל לטקסט ההתראה. Override ב-env: `NOTIFICATION_ENGINE_MODEL`. */
+/**
+ * מודל ראשי לטקסט ההתראה.
+ * Override ב-env: `NOTIFICATION_ENGINE_MODEL`.
+ */
 export const NOTIFICATION_ENGINE_MODEL =
   process.env.NOTIFICATION_ENGINE_MODEL?.trim() || AI_MODELS.empathy;
 
-/** מודל ברירת מחדל לעבודה ברקע ב-engine. */
+/**
+ * מודל משני (עדיין דרך OpenRouter) למקרה ש-gpt-5-mini החזיר שגיאה/ריק.
+ * Override ב-env: `NOTIFICATION_ENGINE_MODEL_SECONDARY`.
+ */
+export const NOTIFICATION_ENGINE_MODEL_SECONDARY =
+  process.env.NOTIFICATION_ENGINE_MODEL_SECONDARY?.trim() || 'openai/gpt-4o-mini';
+
+/**
+ * מודל שלישוני — Llama 4 דרך Groq, ספק שונה לחלוטין. נכנס רק אם כל
+ * OpenRouter נופל (אזורי outage נדירים).
+ */
 export const NOTIFICATION_BACKGROUND_MODEL = AI_MODELS.background_groq;
