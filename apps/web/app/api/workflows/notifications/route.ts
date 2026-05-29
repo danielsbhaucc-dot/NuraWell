@@ -100,6 +100,8 @@ async function dispatchOne(
   try {
     // 2D context matrix שעובר ל-LLM — snake_case לפי המפרט. notificationState
     // *לא* נשלח ל-LLM; הוא נשמר רק פנימית ב-notification_logs ו-fallbackState.
+    // Phase 3: אם getUsersForNotification צירף לזה זיכרון ארוך-טווח
+    // (latest weekly/monthly insights), אנחנו מעבירים אותו אל ה-LLM.
     const { body, model, usedFallback, attempts, errors } = await generateNotificationText(
       {
         user_first_name: candidate.firstName,
@@ -108,6 +110,7 @@ async function dispatchOne(
         consecutive_missed_days: candidate.consecutiveMissedDays,
         // תמיד false ב-runtime — סוננו ב-getUsersForNotification. נשלח להגנה.
         has_completed_today: false,
+        ...(candidate.aiMemory ? { ai_memory: candidate.aiMemory } : {}),
       },
       {
         ...(modelOverride ? { model: modelOverride } : {}),
@@ -130,6 +133,16 @@ async function dispatchOne(
         llmAttempts: attempts,
         // רישום כשלים רק אם היו (חוסך מקום ב-DB)
         ...(errors.length > 0 ? { llmErrors: errors } : {}),
+        // Phase 3: רישום שהוזרק זיכרון (אם הוזרק) — לדאשבורד אדמין
+        // ולוודא שהפיצ'ר רץ. רושמים רק את ה-period_keys, לא את הטקסט עצמו.
+        ...(candidate.aiMemory
+          ? {
+              aiMemory: {
+                weekly: candidate.aiMemory.latest_weekly_period ?? null,
+                monthly: candidate.aiMemory.latest_monthly_period ?? null,
+              },
+            }
+          : {}),
       },
     });
 

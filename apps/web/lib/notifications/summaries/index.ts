@@ -7,6 +7,7 @@
 
 export {
   generateAndStorePeriodicSummary,
+  generateSummary,
   dispatchSummaryReadyNotification,
   type GenerateSummaryInput,
   type GeneratedSummary,

@@ -32,6 +32,28 @@ export type NotificationState = (typeof NOTIFICATION_STATES)[number];
 export type NotificationCadence = 'daily' | 'weekly';
 
 /**
+ * זיכרון ארוך-טווח של ה-AI — תובנות אחרונות מהפירמידה (`periodic_summaries`).
+ *
+ * נשלף ב-`getUsersForNotification` ב-batch אחד לכל המועמדים (אחד במקום N
+ * שאילתות), ומוטמע בהקשר ה-AI כדי שההתראה תרגיש "אתה זוכר אותי" במקום
+ * אנונימית.
+ *
+ * כל השדות אופציונליים — אם אין סיכום שבועי/חודשי במשתמש, פשוט לא נשלח.
+ * ה-prompt בנוי בצורה שאם השדות חסרים, האווטאר נשמע בדיוק כמו לפני
+ * Phase 3 (zero-regression).
+ */
+export interface AINotificationMemory {
+  /** ה-ai_insight של הסיכום השבועי האחרון (max ~250 תווים בפועל). */
+  latest_weekly_insight?: string;
+  /** מתי נוצר אותו שבועי (period_key, e.g. '2026-W22'). debug-only. */
+  latest_weekly_period?: string;
+  /** ה-ai_insight של הסיכום החודשי האחרון. */
+  latest_monthly_insight?: string;
+  /** מתי נוצר אותו חודשי (period_key, e.g. '2026-M05'). debug-only. */
+  latest_monthly_period?: string;
+}
+
+/**
  * "אזרח סוג א'" של המנוע: מה ש-`getUsersForNotification` מחזיר ומה ש-Workflow
  * מעביר ל-OpenAI כפרומפט מובנה.
  */
@@ -44,6 +66,11 @@ export interface NotificationCandidate {
   consecutiveMissedDays: number;
   /** מאיזה slot הגיעה ההחלטה — לוג לבדיקות. */
   timeOfDay: TimeOfDay;
+  /**
+   * זיכרון ארוך-טווח (Phase 3). אופציונלי — אם המשתמש חדש או אין לו
+   * עדיין סיכומים תקופתיים, השדה לא יהיה כאן בכלל.
+   */
+  aiMemory?: AINotificationMemory;
 }
 
 /**
@@ -73,6 +100,15 @@ export interface AINotificationContext {
    * ולמתן הקשר מלא ל-AI לפי המפרט.
    */
   has_completed_today: boolean;
+  /**
+   * זיכרון ארוך-טווח (Phase 3) — תובנות הסיכומים האחרונים של המשתמש.
+   * השדה אופציונלי: אם אין סיכומים, ה-LLM יתעלם והפרומפט יישאר ב-2D מטריצה.
+   *
+   * 🚨 הוראה ל-LLM ב-system prompt: לא לציין את המילים "סיכום", "דו"ח",
+   *    או לתת לזה להראות כתשובה רובוטית. הזיכרון הוא "תחושת חום" שאלמוג
+   *    זוכר את המסע — לא ציטוט גולמי.
+   */
+  ai_memory?: AINotificationMemory;
 }
 
 /** תוצאה מסוכמת לכל מועמד אחרי שה-workflow רץ עליו. */
