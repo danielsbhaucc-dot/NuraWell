@@ -26,6 +26,8 @@ export {
   parsePeriodKey,
   isValidPeriodKey,
   getChildPeriodKeys,
+  fromDateKey,
+  toDateKey,
 } from './period-keys';
 
 export type {
