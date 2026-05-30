@@ -4,6 +4,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import type { JourneyTaskSchedule, JourneyTaskSlot } from '../types/journey';
 import {
   fetchPendingAcceptedTasksForUser,
   markTaskExecutionForUser,
@@ -69,18 +70,35 @@ export function detectTaskIntent(
   return { kind: 'none' };
 }
 
-export async function applyTaskIntentFromUserMessage(
-  supabase: SupabaseClient,
-  userId: string,
-  userMessage: string,
-  pending?: PendingAcceptedTask[]
-): Promise<{
+/**
+ * תוצאת `applyTaskIntentFromUserMessage` — מועשרת בנתוני סלוטים כדי שה-AI
+ * יוכל לתת תגובה אנושית מותאמת ("אלוף!" / "וגם בערב?") על בסיס:
+ *  • `schedule` — האם המשימה חד-פעמית, יומית, או רב-סלוטים.
+ *  • `slot` — איזה סלוט בדיוק זה עתה סומן (אם רלוונטי).
+ *  • `slotsRemainingToday` — כמה סלוטים נותרו פתוחים היום ובאיזה שמות.
+ *  • `wasAlreadyDone` — המשתמש דיווח על מה שכבר היה רשום (אין שגיאה,
+ *    רק "תזכורת חיובית" שזה כבר סגור).
+ */
+export type ApplyTaskIntentResult = {
   marked: boolean;
   stepId?: string;
   taskId?: string;
   taskTitle?: string;
   intent: TaskIntentDetection;
-}> {
+  schedule?: JourneyTaskSchedule;
+  slot?: JourneyTaskSlot;
+  totalSlotsToday?: number;
+  slotsCompletedToday?: number;
+  slotsRemainingToday?: JourneyTaskSlot[];
+  wasAlreadyDone?: boolean;
+};
+
+export async function applyTaskIntentFromUserMessage(
+  supabase: SupabaseClient,
+  userId: string,
+  userMessage: string,
+  pending?: PendingAcceptedTask[]
+): Promise<ApplyTaskIntentResult> {
   const list = pending ?? (await fetchPendingAcceptedTasksForUser(supabase, userId));
   const intent = detectTaskIntent(userMessage, list);
 
@@ -108,5 +126,11 @@ export async function applyTaskIntentFromUserMessage(
       taskId: result.taskId,
       taskTitle: result.taskTitle,
     },
+    schedule: result.schedule,
+    ...(result.slot ? { slot: result.slot } : {}),
+    totalSlotsToday: result.totalSlotsToday,
+    slotsCompletedToday: result.slotsCompletedToday,
+    slotsRemainingToday: result.slotsRemainingToday,
+    wasAlreadyDone: result.wasAlreadyDone,
   };
 }

@@ -1139,8 +1139,18 @@ export async function POST(request: Request) {
       skipBlocker: !shouldInjectBlockerSignal(liveSignals, dailyShortTermBlock),
     });
     const turnHabitBlock = formatHabitIntentPromptBlock(liveHabitIntent);
+    // 🎯 שיוך המשימה המזוהה לתוך הבלוק — מאפשר ל-AI לראות את ה-schedule
+    // הרב-סלוטי (per_meal / multi_daily) *לפני* שהוא מגיב, וכך לשאול
+    // אנושית "וגם בערב?" במקום חיזוק חד-פעמי. אם liveTaskIntent.kind !== 'done'
+    // ה-block יחזיר null ולא ייכנס בכלל לפרומפט.
+    const matchedTaskForBlock =
+      liveTaskIntent.kind === 'done' && liveTaskIntent.taskId
+        ? pendingTasks.find((t) => t.id === liveTaskIntent.taskId)
+        : undefined;
     const turnTaskBlock = formatTaskIntentPromptBlock(liveTaskIntent, {
       emotionalHint: liveSignals.emotional_hint,
+      ...(matchedTaskForBlock ? { matchedTask: matchedTaskForBlock } : {}),
+      userMessage: lastUserText,
     });
     const habitGapForPrompt =
       habitGap &&

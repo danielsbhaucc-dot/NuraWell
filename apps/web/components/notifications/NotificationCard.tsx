@@ -73,6 +73,8 @@ export function NotificationCard({
     }
   };
 
+  const showMarkReadIcon = viewMode === 'inbox' && !n.is_read;
+
   return (
     <article
       className={cn(
@@ -97,21 +99,15 @@ export function NotificationCard({
       lang="he"
     >
       {!n.is_read && (
-        <>
-          <span
-            className={cn(
-              'absolute top-3 bottom-3 start-0 w-[3px] rounded-full shadow-sm',
-              isCheckpoint
-                ? 'bg-gradient-to-b from-amber-400 to-orange-400'
-                : 'bg-gradient-to-b from-amber-400 to-amber-500'
-            )}
-            aria-hidden
-          />
-          <span
-            className="absolute top-4 start-2.5 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-amber-100/90 shadow-sm"
-            aria-hidden
-          />
-        </>
+        <span
+          className={cn(
+            'absolute top-3 bottom-3 start-0 w-[3px] rounded-full shadow-sm',
+            isCheckpoint
+              ? 'bg-gradient-to-b from-amber-400 to-orange-400'
+              : 'bg-gradient-to-b from-amber-400 to-amber-500'
+          )}
+          aria-hidden
+        />
       )}
 
       <button
@@ -129,7 +125,26 @@ export function NotificationCard({
         )}
       </button>
 
-      <div className="px-3.5 py-3.5 pe-3 ps-10">
+      {/**
+       * 🔘 "סמן כנקרא" — אייקון מעוגל בפינה האחורית (top-end).
+       * נמצא במקביל לכפתור הארכיון (top-start), כך שאין שני כפתורים בשורת
+       * הפעולות התחתונה — "השב לאלמוג" לא יורד למטה כשההתראה לא-קרואה.
+       * המראה: עיגול ירוק קטן עם וי לבן, מתפצל בעדינות מהרקע.
+       */}
+      {showMarkReadIcon && (
+        <button
+          type="button"
+          title="סמן כנקרא"
+          aria-label="סמן כנקרא"
+          onClick={handleMarkReadClick}
+          className="absolute top-2.5 end-2.5 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/85 text-white shadow-sm ring-2 ring-amber-100/80 transition hover:bg-emerald-600 hover:ring-emerald-100/90 active:scale-95"
+        >
+          <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+        </button>
+      )}
+
+      {/* pe-10 = נותן מקום לאייקון "סמן כנקרא" בפינה ימין-עליון */}
+      <div className={cn('px-3.5 py-3.5 ps-10', showMarkReadIcon ? 'pe-10' : 'pe-3')}>
         <div className="flex flex-row-reverse items-start gap-3">
           <div className="min-w-0 flex-1 space-y-1.5">
             {isCheckpoint && (
@@ -152,20 +167,8 @@ export function NotificationCard({
               {n.body}
             </p>
 
-            {(canReply || n.action_url || (viewMode === 'inbox' && !n.is_read)) && (
+            {(canReply || n.action_url) && (
               <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
-                {viewMode === 'inbox' && !n.is_read && (
-                  <button
-                    type="button"
-                    title="סמן כנקרא"
-                    aria-label="סמן כנקרא"
-                    onClick={handleMarkReadClick}
-                    className="me-auto inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold text-emerald-700/80 transition hover:bg-emerald-100/70 hover:text-emerald-900 active:scale-[0.97]"
-                  >
-                    <Check className="h-3 w-3" strokeWidth={2.6} aria-hidden />
-                    סמן כנקרא
-                  </button>
-                )}
                 {canReply && (
                   <button
                     type="button"
