@@ -57,24 +57,53 @@ export function isFullDayComplete(input: SlotReinforcementInput): boolean {
  * דוגמת פלט (one_time סגור):
  *   "[משימה: ללכת 20 דקות · סגור היום · טון: חיזוק חם, בלי שאלה — היום נסגר]"
  */
+/**
+ * מנסה לזהות יחידה טבעית של המשימה מתוך הכותרת
+ * (כוסות / הליכות / דקות / ארוחות / כדורים).
+ * משמש לתזכורת ל-AI שכשהוא סופר "X מתוך Y" — צריך להוסיף יחידה.
+ */
+function inferUnitHint(title: string): string {
+  const t = title.toLowerCase();
+  if (/מים|כוס|לשתות|שתיה|שתייה/.test(t)) return 'כוסות';
+  if (/הליכ|לצעוד|צעדים/.test(t)) return 'הליכות';
+  if (/אימון|ספורט|כושר/.test(t)) return 'אימונים';
+  if (/ארוח|אכל/.test(t)) return 'ארוחות';
+  if (/כדור|תרופ|ויטמ/.test(t)) return 'כדורים';
+  if (/מדיט|נשימ|רגוע/.test(t)) return 'תרגולים';
+  if (/דק/.test(t)) return 'דקות';
+  return 'פעמים';
+}
+
 export function formatSlotReinforcementBlock(input: SlotReinforcementInput): string {
   const title = input.itemTitle.trim() || 'משימה';
   const justMarkedLabel = input.justMarkedSlot
     ? slotLabel(input.justMarkedSlot)
     : null;
   const remainingLabels = input.slotsRemainingToday.map((s) => slotLabel(s));
+  const unit = inferUnitHint(title);
 
-  // המקרה הקל: משימה שכבר היתה סגורה לפני ההודעה. ה-AI לא יחזק יתר על המידה
-  // ("אתה גאון!") כי זה לא הצליח לחדש — רק נימוס חברי.
+  // הוראת זהב לכל המצבים — חוזרת בכל בלוק כדי שהמודל לא יחליק חזרה ל-AI-speak.
+  const TONE_GUARDRAIL =
+    `אסור: "נסגור?", "סגרת", "יום נקי", "יום מושלם", "איך הראש שלך?", ` +
+    `"מה תפס אותך?", "נחנו", "דילגנו" (סתם), "X מתוך Y" בלי יחידה. ` +
+    `מותר: שם המשימה במפורש, היחידה "${unit}", רגש אנושי, ולידציה.`;
+
+  // המקרה הקל: משימה שכבר היתה סגורה לפני ההודעה.
   if (input.wasAlreadyDone && input.slotsRemainingToday.length === 0) {
-    return `[משימה: ${title} · כבר היה סגור היום · טון: חמים אבל מאופק, "כל הכבוד שעדכנת" — בלי קופאות יתר]`;
+    return `[משימה: ${title} · כבר היה סגור היום · טון: חמים אבל מאופק ("כל הכבוד שעדכנת"), בלי קופאות יתר · ${TONE_GUARDRAIL}]`;
   }
 
   // משימה חד-פעמית או יומית שסגרה את היום:
   if (input.totalSlotsToday <= 1 || input.slotsRemainingToday.length === 0) {
     const isFullClose = input.slotsCompletedToday >= input.totalSlotsToday;
     if (isFullClose) {
-      return `[משימה: ${title} · סגור היום · טון: חיזוק חם וספציפי ("אלוף", "תותח", "🎯") — בלי שאלה חוזרת על המשימה, אפשר שאלה רגשית קצרה]`;
+      return [
+        `[משימה: ${title} · סגור היום (${input.slotsCompletedToday}/${input.totalSlotsToday} ${unit})`,
+        `· טון: חיזוק חם וספציפי ("אלוף", "תותח", "🎯") שמזכיר את שם המשימה במפורש`,
+        `+ שאלה רגשית ספציפית קצרה (לדוגמה: "איך הרגשת אחרי ${title}?", "מה היה הכי כיף?")`,
+        `· אסור שאלה חוזרת על המשימה`,
+        `· ${TONE_GUARDRAIL}]`,
+      ].join(' ');
     }
   }
 
@@ -83,12 +112,16 @@ export function formatSlotReinforcementBlock(input: SlotReinforcementInput): str
   const remainingPart = remainingLabels.length
     ? ` · נותרו היום: ${remainingLabels.join(', ')}`
     : '';
-  const counter = `(${input.slotsCompletedToday}/${input.totalSlotsToday})`;
+  const counter = `(${input.slotsCompletedToday}/${input.totalSlotsToday} ${unit})`;
+  const firstRemaining = remainingLabels[0] ?? 'בהמשך';
 
   return [
     `[משימה: ${title}${justPart}${remainingPart} ${counter}`,
-    `· טון: חיזוק חם וספציפי לסלוט שסומן + שאלה רכה אנושית אם יבצע גם את הסלוטים הנותרים`,
-    `(לדוגמה "תותח! 🎯 גם בערב?" / "סבבה אחי, ובארוחות הבאות?") — שאלה אחת בלבד, לא רשימה]`,
+    `· טון: חיזוק חם שמזכיר במפורש את ה${unit} שכבר נעשו ואת הסלוט שסומן,`,
+    `+ שאלה רכה ואנושית על הסלוט הבא הספציפי (לדוגמה: "גם ${firstRemaining} תזכור?", "ו${firstRemaining}?").`,
+    `אסור: "נסגור?", "סגרת", "סוגרים את היום?". מותר: "תשתה גם בערב?", "תזכור גם בארוחה הבאה?".`,
+    `שאלה אחת בלבד, לא רשימה`,
+    `· ${TONE_GUARDRAIL}]`,
   ].join(' ');
 }
 

@@ -94,7 +94,7 @@ function buildHabitCheckpointFallbackBody(
 
   const habit = payload.habits[0];
   if (habit) {
-    return `${firstName}, תזכורת קטנה ל-${habit.title}. צעד קטן עכשיו יכול לסגור את הפינה הזאת להיום.`;
+    return `${firstName}, תזכורת קטנה ל-${habit.title}. צעד קטן עכשיו יכול להשלים את ${habit.title} להיום.`;
   }
 
   return `${firstName}, תזכורת קטנה מאלמוג — בוא ניקח צעד קטן ונמשיך מכאן.`;
