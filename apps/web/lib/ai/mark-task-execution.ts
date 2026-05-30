@@ -179,8 +179,33 @@ export async function fetchPendingAcceptedTasksForUser(
   return out;
 }
 
+/**
+ * תוצאת סימון משימה מהצ'אט — *מועשרת* כדי לאפשר ל-AI לתת תגובה מותאמת:
+ *
+ *   • daily / one_time / weekly  → `schedule` = יחיד, `totalSlotsToday = 1`,
+ *                                  `slotsRemainingToday = []`.
+ *     ה-AI אומר "אלוף!" וזהו.
+ *
+ *   • per_meal / multi_daily     → `schedule` = רב-סלוט, `totalSlotsToday >= 2`,
+ *                                  `slotsRemainingToday` = הסלוטים שעוד פתוחים.
+ *     ה-AI יכול לשאול "וגם בערב?" / "תותח, רק עכשיו?" — לפי הנתון.
+ *
+ * `slotsCompletedToday` כולל את הסלוט שזה עתה סומן. השדה `wasAlreadyDone` נכון
+ * אם המשתמש סימן סלוט שכבר היה מסומן היום (idempotent, לא שגיאה).
+ */
 export type TaskExecutionResult =
-  | { ok: true; stepId: string; taskId: string; taskTitle: string; slot?: JourneyTaskSlot }
+  | {
+      ok: true;
+      stepId: string;
+      taskId: string;
+      taskTitle: string;
+      slot?: JourneyTaskSlot;
+      schedule: JourneyTaskSchedule;
+      totalSlotsToday: number;
+      slotsCompletedToday: number;
+      slotsRemainingToday: JourneyTaskSlot[];
+      wasAlreadyDone: boolean;
+    }
   | { ok: false; error: 'no_match' | 'no_pending' | 'save_failed'; message?: string };
 
 function messageReferencesTask(msg: string, title: string): boolean {
@@ -204,6 +229,17 @@ async function markRecurringSlot(
   const dateKey = jerusalemDateKey();
   const nowIso = new Date().toISOString();
 
+  // האם הסלוט הזה כבר היה מסומן לפני הקריאה? — מאפשר ל-AI לדעת אם הצליח לחדש,
+  // או שהמשתמש "מדווח" על משהו שכבר היה רשום (idempotent חביב).
+  const slotsBeforeMark = await fetchTodayCompletedSlots(
+    supabase,
+    userId,
+    pick.stepId,
+    pick.id,
+    dateKey
+  );
+  const wasAlreadyDone = slotsBeforeMark.has(slot);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: execErr } = await (supabase as any).from('journey_task_executions').upsert(
     {
@@ -226,6 +262,11 @@ async function markRecurringSlot(
   /** אם כל הסלוטים של היום הושלמו — מסמן גם execution_done לתאימות */
   const doneSlots = await fetchTodayCompletedSlots(supabase, userId, pick.stepId, pick.id, dateKey);
   const total = expectedSlotCount(pick.schedule, pick.times_per_day);
+
+  // מחשב את הסלוטים שעוד פתוחים היום — ה-AI יקבל אותם בהקשר ויוכל לשאול:
+  // "תותח! גם בבוקר?" אם evening סומן ו-morning עוד פתוח.
+  const allSlots = slotsForSchedule(pick.schedule, pick.times_per_day);
+  const slotsRemainingToday = allSlots.filter((s) => !doneSlots.has(s));
 
   if (doneSlots.size >= total) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -259,7 +300,18 @@ async function markRecurringSlot(
     }
   }
 
-  return { ok: true, stepId: pick.stepId, taskId: pick.id, taskTitle: pick.title, slot };
+  return {
+    ok: true,
+    stepId: pick.stepId,
+    taskId: pick.id,
+    taskTitle: pick.title,
+    slot,
+    schedule: pick.schedule,
+    totalSlotsToday: total,
+    slotsCompletedToday: doneSlots.size,
+    slotsRemainingToday,
+    wasAlreadyDone,
+  };
 }
 
 /**
@@ -332,7 +384,18 @@ export async function markTaskExecutionForUser(
     return { ok: false, error: 'no_match' };
   }
   if (existing.execution_done === true) {
-    return { ok: true, stepId: pick.stepId, taskId: pick.id, taskTitle: pick.title };
+    // המשתמש דיווח שוב על משימה שכבר סגורה — לא שגיאה, חיזוק חביב.
+    return {
+      ok: true,
+      stepId: pick.stepId,
+      taskId: pick.id,
+      taskTitle: pick.title,
+      schedule: pick.schedule,
+      totalSlotsToday: 1,
+      slotsCompletedToday: 1,
+      slotsRemainingToday: [],
+      wasAlreadyDone: true,
+    };
   }
 
   const nowIso = new Date().toISOString();
@@ -361,5 +424,15 @@ export async function markTaskExecutionForUser(
     return { ok: false, error: 'save_failed', message: upErr.message };
   }
 
-  return { ok: true, stepId: pick.stepId, taskId: pick.id, taskTitle: pick.title };
+  return {
+    ok: true,
+    stepId: pick.stepId,
+    taskId: pick.id,
+    taskTitle: pick.title,
+    schedule: pick.schedule,
+    totalSlotsToday: 1,
+    slotsCompletedToday: 1,
+    slotsRemainingToday: [],
+    wasAlreadyDone: false,
+  };
 }

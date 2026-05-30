@@ -6,6 +6,8 @@ import type { ChatSignals } from './chat-signals';
 import type { HabitIntentDetection } from './chat-habit-intent';
 import type { TaskIntentDetection } from './chat-task-intent';
 import type { PendingAcceptedTask } from './mark-task-execution';
+import { inferSlotFromUserMessage } from './mark-task-execution';
+import { slotLabel } from '../journey/task-schedule';
 import type { HabitGapSignal } from './roller-coaster';
 
 /** מונע כפילות כשהחסם כבר מופיע ב-[יום]. */
@@ -61,7 +63,17 @@ export function formatHabitIntentPromptBlock(intent: HabitIntentDetection): stri
 
 export function formatTaskIntentPromptBlock(
   intent: TaskIntentDetection,
-  opts?: { emotionalHint?: ChatSignals['emotional_hint'] }
+  opts?: {
+    emotionalHint?: ChatSignals['emotional_hint'];
+    /**
+     * המשימה ה-pending שזוהתה (אופציונלי). אם הועברה, נוסיף לבלוק רמז על
+     * schedule + הסלוט שמסומן עכשיו, כדי שה-AI יוכל לשאול אנושית
+     * "וגם בערב?" כשהמשימה היא per_meal / multi_daily.
+     */
+    matchedTask?: PendingAcceptedTask;
+    /** הודעת המשתמש — משמשת להסקת הסלוט אם המשתמש ציין במפורש ("בצהריים"). */
+    userMessage?: string;
+  }
 ): string | null {
   if (intent.kind !== 'done' || !intent.taskTitle) return null;
   const t = intent.taskTitle.slice(0, 40);
@@ -72,7 +84,26 @@ export function formatTaskIntentPromptBlock(
   } else if (opts?.emotionalHint === 'heavy' || opts?.emotionalHint === 'frustrated') {
     afterDifficulty = ' · אחרי קושי — חיזוק חם ספציפי, לא "מערכת".';
   }
-  return `[משימה:${t}·בוצע] רק חיזוק אנושי קצר ("אלוף", "גאה בך") — אסור: מערכת/עדכנתי/סימנתי/המערכת עודכנה.${afterDifficulty}`;
+
+  // 🎯 הקשר רב-סלוטי: כשהמשימה רב-סלוטית (per_meal / multi_daily) ה-AI חייב
+  // לדעת על כך *לפני שהוא מגיב*, כדי לשאול בעדינות "וגם בערב?" במקום
+  // לתת חיזוק חד-פעמי שמתעלם מהשאר. את הסלוט המדויק שיסומן אנחנו מסיקים
+  // מטקסט המשתמש או משעה בירושלים (אותה לוגיקה כמו `markRecurringSlot`).
+  let slotHint = '';
+  if (opts?.matchedTask) {
+    const m = opts.matchedTask;
+    if (m.schedule === 'per_meal' || m.schedule === 'multi_daily') {
+      const slot = inferSlotFromUserMessage(
+        opts.userMessage ?? '',
+        m.schedule,
+        m.times_per_day
+      );
+      const label = slotLabel(slot);
+      slotHint = ` · משימה רב-סלוטית (${m.schedule}, ${m.times_per_day}/יום) · יסומן: ${label} · ייתכן שיש סלוטים נוספים פתוחים היום — שאל בעדינות אם יבצע גם שם ("גם בערב?", "תותח, רק עכשיו?")`;
+    }
+  }
+
+  return `[משימה:${t}·בוצע]${slotHint} רק חיזוק אנושי קצר ("אלוף", "גאה בך") — אסור: מערכת/עדכנתי/סימנתי/המערכת עודכנה.${afterDifficulty}`;
 }
 
 function scheduleLabelHe(task: PendingAcceptedTask): string {
