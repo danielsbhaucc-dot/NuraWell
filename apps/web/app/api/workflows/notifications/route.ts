@@ -25,6 +25,7 @@ import { israelDateKey } from '../../../../lib/ai/onboarding-check-in-time';
 import { getUsersForNotification } from '../../../../lib/notifications/engine/get-users-for-notification';
 import { generateNotificationText } from '../../../../lib/notifications/engine/generate-notification-text';
 import { logNotification } from '../../../../lib/notifications/engine/log-notification';
+import { buildTimeAgoTextHe } from '../../../../lib/notifications/engine/derive-urgency-level';
 import {
   parseNotificationsEnginePayload,
   type NotificationsEnginePayload,
@@ -102,6 +103,9 @@ async function dispatchOne(
     // *לא* נשלח ל-LLM; הוא נשמר רק פנימית ב-notification_logs ו-fallbackState.
     // Phase 3: אם getUsersForNotification צירף לזה זיכרון ארוך-טווח
     // (latest weekly/monthly insights), אנחנו מעבירים אותו אל ה-LLM.
+    // Phase 4 (Claude merge): מוסיפים urgency_level, time_ago_text,
+    // notification_count, hours_since_last_response — מודולציית טון עדינה
+    // מעל ה-state בלי לשנות את ה-cadence הקיים.
     const { body, model, usedFallback, attempts, errors } = await generateNotificationText(
       {
         user_first_name: candidate.firstName,
@@ -110,6 +114,14 @@ async function dispatchOne(
         consecutive_missed_days: candidate.consecutiveMissedDays,
         // תמיד false ב-runtime — סוננו ב-getUsersForNotification. נשלח להגנה.
         has_completed_today: false,
+        urgency_level: candidate.urgencyLevel,
+        time_ago_text: buildTimeAgoTextHe(candidate.consecutiveMissedDays),
+        ...(typeof candidate.notificationCount === 'number'
+          ? { notification_count: candidate.notificationCount }
+          : {}),
+        ...(typeof candidate.hoursSinceLastResponse === 'number'
+          ? { hours_since_last_response: candidate.hoursSinceLastResponse }
+          : {}),
         ...(candidate.aiMemory ? { ai_memory: candidate.aiMemory } : {}),
       },
       {
@@ -129,6 +141,7 @@ async function dispatchOne(
       aiModel: model,
       metadata: {
         consecutiveMissedDays: candidate.consecutiveMissedDays,
+        urgencyLevel: candidate.urgencyLevel,
         usedFallback,
         llmAttempts: attempts,
         // רישום כשלים רק אם היו (חוסך מקום ב-DB)
@@ -142,6 +155,13 @@ async function dispatchOne(
                 monthly: candidate.aiMemory.latest_monthly_period ?? null,
               },
             }
+          : {}),
+        // Phase 4 (Claude merge): מעקב אחר response-aware context
+        ...(typeof candidate.notificationCount === 'number'
+          ? { notificationCount: candidate.notificationCount }
+          : {}),
+        ...(typeof candidate.hoursSinceLastResponse === 'number'
+          ? { hoursSinceLastResponse: candidate.hoursSinceLastResponse }
           : {}),
       },
     });

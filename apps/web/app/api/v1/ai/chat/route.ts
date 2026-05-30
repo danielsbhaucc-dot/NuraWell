@@ -79,6 +79,7 @@ import {
 } from '../../../../../lib/ai/journey-follow-up-promise';
 import { sendTaskCompletionCelebration } from '../../../../../lib/ai/send-task-completion-celebration';
 import { createAdminClient } from '../../../../../lib/supabase/admin';
+import { markUserResponded } from '../../../../../lib/notifications/engine/mark-user-responded';
 import {
   fetchTodayChatTurns,
   formatDailyShortTermBlock,
@@ -930,6 +931,12 @@ export async function POST(request: Request) {
       error: persistErr instanceof Error ? persistErr.message : String(persistErr),
     });
   });
+
+  // 📡 סימון "המשתמש פעיל עכשיו" — fire-and-forget, רץ במקביל לכל השאר.
+  // ה-notification engine יקרא את `profiles.last_responded_at` ב-cron הבא
+  // ויבחר לדלג על slot ההתראה אם הוא ראה פעילות ב-6 השעות האחרונות.
+  // כשלון פה לא מאיים על הצ'אט — בקרון הבא פשוט נראה ערך ישן יותר.
+  after(() => markUserResponded(createAdminClient(), user.id, { debugTag: 'ai/chat' }));
 
   /**
    * דו"ח התקדמות מלא — אותו דו"ח שהאדמין רואה ב-Ops.

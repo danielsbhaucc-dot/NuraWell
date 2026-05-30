@@ -57,5 +57,30 @@ export async function logNotification(
     return { ok: false, error: error.message ?? String(error) };
   }
 
+  // 🔢 Increment של `profiles.notification_count` — מאפשר ל-LLM לקבל
+  // הקשר של "כמה התראות כבר נשלחו אי-פעם למשתמש הזה" בקריאה הבאה.
+  // משתמש ב-RPC `increment_notification_count` (atomic, race-safe). הקריאה
+  // *לא* מבטלת את ההתראה אם נכשלת — נרשם warning בלבד.
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: rpcError } = await (admin as any).rpc(
+      'increment_notification_count',
+      { p_user_id: input.userId }
+    );
+    if (rpcError) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[notification-engine] increment_notification_count rpc failed:',
+        rpcError.message ?? rpcError
+      );
+    }
+  } catch (incErr) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[notification-engine] increment_notification_count threw:',
+      incErr instanceof Error ? incErr.message : incErr
+    );
+  }
+
   return { ok: true, alreadyExisted: false, id: (data as { id: string }).id };
 }
