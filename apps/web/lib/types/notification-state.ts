@@ -54,6 +54,18 @@ export interface AINotificationMemory {
 }
 
 /**
+ * רמת דחיפות רגשית — מודולציית הטון מעל ה-state.
+ * Re-export רך כדי ש-consumers יכולים לייבא ממקום אחד.
+ * המימוש ב-`lib/notifications/engine/derive-urgency-level.ts`.
+ */
+export type UrgencyLevel =
+  | 'gentle'
+  | 'friendly_nudge'
+  | 'concerned'
+  | 'worried'
+  | 'check_in';
+
+/**
  * "אזרח סוג א'" של המנוע: מה ש-`getUsersForNotification` מחזיר ומה ש-Workflow
  * מעביר ל-OpenAI כפרומפט מובנה.
  */
@@ -66,6 +78,22 @@ export interface NotificationCandidate {
   consecutiveMissedDays: number;
   /** מאיזה slot הגיעה ההחלטה — לוג לבדיקות. */
   timeOfDay: TimeOfDay;
+  /**
+   * רמת דחיפות רגשית. נגזרת דטרמיניסטית מ-(timeOfDay, consecutiveMissedDays)
+   * ב-`deriveUrgencyLevel`. שולטת על *הטון* שה-LLM יאמץ.
+   */
+  urgencyLevel: UrgencyLevel;
+  /**
+   * סך התראות שנשלחו אי-פעם למשתמש (מ-`profiles.notification_count`).
+   * נכנס לקונטקסט כדי שה-LLM יוכל להתאים את הטון למשתמש "ותיק".
+   */
+  notificationCount?: number;
+  /**
+   * כמה שעות עברו מאז שהמשתמש פעיל אחרון (כתב בצ'אט / סימן משימה).
+   * `undefined` = אין נתון. ערכים גבוהים (24+) = המשתמש "שקט".
+   * משמש גם לפילטר ("דלג אם הגיב לאחרונה") וגם להקשר ל-LLM.
+   */
+  hoursSinceLastResponse?: number;
   /**
    * זיכרון ארוך-טווח (Phase 3). אופציונלי — אם המשתמש חדש או אין לו
    * עדיין סיכומים תקופתיים, השדה לא יהיה כאן בכלל.
@@ -100,6 +128,28 @@ export interface AINotificationContext {
    * ולמתן הקשר מלא ל-AI לפי המפרט.
    */
   has_completed_today: boolean;
+  /**
+   * רמת דחיפות רגשית — מקטינה את ה-search-space של הטון ל-LLM וחוסכת
+   * לו את "ההיסק" מהמספרים. מוזרק מ-`deriveUrgencyLevel`.
+   * שדה חובה ב-context החדש (post Claude-merge).
+   */
+  urgency_level: UrgencyLevel;
+  /**
+   * תיאור אנושי של הסטריק החסר ("מאמש" / "שלושה ימים" / "שבוע"). נגזר
+   * דטרמיניסטית מ-`consecutive_missed_days` — חוסך ל-LLM להמציא מילים
+   * ומקטין hallucinations של מספרים.
+   */
+  time_ago_text?: string;
+  /**
+   * סך התראות שנשלחו אי-פעם למשתמש. נכנס *רק* כשהוא > 0, כדי לא לבלבל
+   * משתמשים חדשים. עוזר ל-LLM לדעת אם זו "הודעה ראשונה" או "ניסיון 30".
+   */
+  notification_count?: number;
+  /**
+   * שעות מאז פעילות אחרונה של המשתמש בצ'אט / סימון משימה. אופציונלי.
+   * ערכים גבוהים = לא הגיב הרבה זמן (חיזוק לטון `worried`/`check_in`).
+   */
+  hours_since_last_response?: number;
   /**
    * זיכרון ארוך-טווח (Phase 3) — תובנות הסיכומים האחרונים של המשתמש.
    * השדה אופציונלי: אם אין סיכומים, ה-LLM יתעלם והפרומפט יישאר ב-2D מטריצה.

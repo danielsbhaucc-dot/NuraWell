@@ -32,6 +32,7 @@ import {
   NOTIFICATION_ENGINE_MODEL,
   NOTIFICATION_ENGINE_MODEL_SECONDARY,
 } from './llm-clients';
+import { URGENCY_STYLE_HINTS_HE } from './derive-urgency-level';
 
 const SYSTEM_PROMPT = `אתה "אלמוג" — מאמן בריאות אישי של אפליקציית NuraWell. אתה מדבר עברית, חם, חברי, אופטימי, עם קורט הומור עדין ושימוש מדוד באימוג'ים (1–2 לכל היותר).
 
@@ -44,6 +45,13 @@ const SYSTEM_PROMPT = `אתה "אלמוג" — מאמן בריאות אישי ש
     1 = אתמול לא סימן, וגם היום עדיין לא.
     2+ = שני ימים רצופים ויותר בלי ביצוע — הוא בדרך לנשירה אמיתית.
 • has_completed_today — תמיד יגיע אליך כ-false. אם תקבל true — אל תכתוב שום הודעה.
+
+🎚️ urgency_level — *מודולציית הטון* שאתה חייב לאמץ (מחושב מראש ב-rule-engine):
+- gentle         → טון חם, מעודד, פתיחה חיובית. אימוג'י אחד טבעי.
+- friendly_nudge → טון שובב ועדין, לא שיפוטי, עם קמצוץ הומור. דחיפה אחת.
+- concerned      → טון אכפתי וקצת מודאג בלי דרמה. הראה שאתה זוכר.
+- worried        → טון חם מאוד, קצת מתגעגע, מקבל לחלוטין. אל תלחיץ.
+- check_in       → טון רגוע ונוכח כמו חבר ישן. שאל איך הוא — אל תזכיר משימה בכוח.
 
 🧠 חוקי קישור צולב בין שני הצירים (קריטיים — חצה אותם תמיד):
 1. consecutive_missed_days === 0:
@@ -84,26 +92,50 @@ const SYSTEM_PROMPT = `אתה "אלמוג" — מאמן בריאות אישי ש
 - אסור להמציא פרטים שלא קיבלת (אל תזכיר משקל, ארוחות, שעות מדויקות, מספרים).
 - שורה אחת או שתיים — אבל בלי שורה ריקה ביניהן.`;
 
+/**
+ * 🪶 Lean user message — לפי "הנחיה 2" של Claude לאופטימיזציית טוקנים.
+ *
+ * הרציונל: ה-system prompt *כבר* מכיל את כל החוקים והפרסונה. ה-user
+ * message צריך להעביר רק את הפרמטרים הקונקרטיים של הקריאה הנוכחית.
+ * החלפה של `JSON.stringify(..., null, 2)` הצפוף בשורות פייפ-מופרדות
+ * חוסכת ~60% מטוקני ה-input בלי לפגוע באיכות (המדידות במסמך Claude #2).
+ *
+ * הכלל: שורה אחת לכל שדה, כל שדה אופציונלי שאינו קיים — לא נכנס בכלל.
+ * מודולציית הטון (urgency_level) מקבלת hint קצר עם הסגנון הצפוי כדי
+ * שה-LLM לא יצטרך "להחליט מחדש" איזה רגש לאמץ.
+ */
 function buildUserMessage(ctx: AINotificationContext): string {
-  // ה-payload כבר כולל `ai_memory` אם הוא קיים. נסיר אותו מה-JSON
-  // אם הוא ריק/חסר כדי שהמודל לא יראה key מיותר ויתחיל "להמציא".
-  const cleanCtx: Record<string, unknown> = { ...ctx };
-  if (
-    !ctx.ai_memory ||
-    (!ctx.ai_memory.latest_weekly_insight && !ctx.ai_memory.latest_monthly_insight)
-  ) {
-    delete cleanCtx.ai_memory;
+  const lines: string[] = [];
+
+  // שורת פרמטרים קומפקטית, ללא JSON. כל ערך בנפרד ומסומן בעברית.
+  lines.push(`שם: ${ctx.user_first_name}`);
+  lines.push(`משימה: ${ctx.task_name}`);
+  lines.push(`חלק יום: ${ctx.time_of_day}`);
+  lines.push(`ימים רצוף ללא ביצוע: ${ctx.consecutive_missed_days}`);
+  if (ctx.time_ago_text) {
+    lines.push(`כמה זמן: ${ctx.time_ago_text}`);
+  }
+  lines.push(`טון נדרש: ${ctx.urgency_level}`);
+  if (URGENCY_STYLE_HINTS_HE[ctx.urgency_level]) {
+    lines.push(`רמז סגנון: ${URGENCY_STYLE_HINTS_HE[ctx.urgency_level]}`);
+  }
+  if (typeof ctx.notification_count === 'number' && ctx.notification_count > 0) {
+    lines.push(`מספר התראות שכבר נשלחו: ${ctx.notification_count}`);
+  }
+  if (typeof ctx.hours_since_last_response === 'number') {
+    lines.push(`שעות מאז שהיה פעיל: ${ctx.hours_since_last_response}`);
   }
 
-  return [
-    'הפק עכשיו הודעת push אחת, על בסיס הקשר 2D הבא.',
-    'חצה את שני הצירים (time_of_day × consecutive_missed_days) בקפדנות לפי החוקים שב-system.',
-    'אם ai_memory קיים — שלב רמז-זיכרון עדין כפי שמתואר ב-system. אם חסר — התעלם ממנו.',
-    '',
-    JSON.stringify(cleanCtx, null, 2),
-    '',
-    'החזר רק את ההודעה עצמה — עד 40 מילים, עד 250 תווים, בעברית.',
-  ].join('\n');
+  // זיכרון ארוך-טווח — רק אם קיים בפועל (לא מציפים את ה-LLM ב-key ריק).
+  const weekly = ctx.ai_memory?.latest_weekly_insight?.trim();
+  const monthly = ctx.ai_memory?.latest_monthly_insight?.trim();
+  if (weekly) lines.push(`רמז שבועי: ${weekly}`);
+  if (monthly) lines.push(`רמז חודשי: ${monthly}`);
+
+  lines.push('');
+  lines.push('הפק הודעת push אחת בעברית — עד 40 מילים, עד 250 תווים, בלי גרשיים.');
+
+  return lines.join('\n');
 }
 
 /** Template סטטי — נכנס *רק* כשכל 4 ניסיונות ה-LLM נכשלו. */
@@ -173,7 +205,11 @@ async function callOnce(
       {
         model,
         temperature: 0.8,
-        max_tokens: 220, // מספיק ל-~40 מילים בעברית עם מעט מרווח
+        // 🪶 Token-budget tightening לפי "הנחיה 2" של Claude. היעד הוא ~40
+        // מילים / ~250 תווים (≈ 60 טוקנים בעברית), עם buffer ל-emoji
+        // ותווים מיוחדים. 140 חוסך ~36% מ-output budget מבלי לפגוע במגבלת
+        // האורך המקסימלית של הודעת push.
+        max_tokens: 140,
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: buildUserMessage(ctx) },

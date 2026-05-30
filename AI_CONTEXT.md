@@ -261,6 +261,8 @@ When extending this codebase:
 | Auth Middleware | `apps/web/middleware.ts` |
 | DB Schema v1 | `supabase/migrations/000001_initial_schema.sql` |
 | DB Schema v2 AI | `supabase/migrations/000002_ai_ready_tables.sql` |
+| Notification Engine | `apps/web/lib/notifications/engine/` (state + urgency + LLM + log) |
+| Notification Engine — DB | `supabase/migrations/000027_ai_notification_engine.sql` + `000029_notification_response_tracking.sql` |
 | מסע — טבלאות | `supabase/migrations/000003_journey_tables.sql` |
 | מסע — טיפוסים | `apps/web/lib/types/journey.ts` |
 | מסע — פתרון URL צעד | `apps/web/lib/journey/resolve-step.ts` |

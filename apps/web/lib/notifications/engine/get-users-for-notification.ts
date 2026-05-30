@@ -27,6 +27,7 @@ import {
   deriveNotificationState,
   israelDateKey,
 } from './derive-notification-state';
+import { deriveUrgencyLevel } from './derive-urgency-level';
 import type {
   NotificationCandidate,
   TimeOfDay,
@@ -34,11 +35,20 @@ import type {
 import { fetchLatestAiMemory } from './fetch-ai-memory';
 
 const LOOKBACK_DAYS = 14;
+/**
+ * משתמש שהיה פעיל ב-`RESPONDED_RECENTLY_HOURS` השעות האחרונות מקבל "פטור"
+ * מ-slot ההתראה הזה. ההיגיון: אם הוא הרגע כתב לאלמוג / סימן משימה, הוא
+ * "בלולאה" — לדחוף לו עוד הודעת push זה רעש שיגרום לו לסלוד מהמערכת.
+ * הערך נלקח ישירות מ"הנחיה 1" של Claude (`6 * 60 * 60 * 1000`).
+ */
+const RESPONDED_RECENTLY_HOURS = 6;
 
 interface ProfileRow {
   id: string;
   full_name: string | null;
   daily_task: string | null;
+  last_responded_at: string | null;
+  notification_count: number | null;
 }
 
 interface TaskLogRow {
@@ -100,10 +110,12 @@ export async function getUsersForNotification(
   const earliest = shiftDateKey(today, -LOOKBACK_DAYS);
 
   // 1. כל המשתמשים הפעילים עם משימה יומית מוגדרת.
+  // השדות `last_responded_at` ו-`notification_count` נוספו ב-migration 000029
+  // ומאפשרים: (א) סינון של משתמשים שהגיבו לאחרונה, (ב) הזרקת counter ל-LLM.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const profilesQuery = (admin as any)
     .from('profiles')
-    .select('id, full_name, daily_task')
+    .select('id, full_name, daily_task, last_responded_at, notification_count')
     .eq('is_active', true)
     .not('daily_task', 'is', null);
 
@@ -151,11 +163,30 @@ export async function getUsersForNotification(
     set.add(row.date_key);
   }
 
-  // 4. מסננים את מי שכבר השלים היום + מחשבים state
+  // 4. מסננים את מי שכבר השלים היום / הגיב לאחרונה + מחשבים state.
+  const nowMs = Date.now();
+  const respondedRecentlyMs = RESPONDED_RECENTLY_HOURS * 60 * 60 * 1000;
+
   const candidates: NotificationCandidate[] = [];
   for (const profile of profiles) {
     const completedDates = byUser.get(profile.id) ?? new Set<string>();
     if (completedDates.has(today)) continue; // ✅ השלים היום → דלג
+
+    // ⏱️ Filter חדש: דלג אם המשתמש פעיל ב-6 השעות האחרונות (Claude #1).
+    // ההיגיון: הוא בלולאה כרגע — תוסיף עוד push וזה ייקרא לו רעש, לא ליווי.
+    let hoursSinceLastResponse: number | undefined;
+    if (profile.last_responded_at) {
+      const lastMs = Date.parse(profile.last_responded_at);
+      if (Number.isFinite(lastMs)) {
+        const diffMs = nowMs - lastMs;
+        if (diffMs >= 0 && diffMs < respondedRecentlyMs) {
+          continue; // 🔇 הגיב לאחרונה → השאר אותו במנוחה ל-slot הזה
+        }
+        if (diffMs >= 0) {
+          hoursSinceLastResponse = Math.round(diffMs / (1000 * 60 * 60));
+        }
+      }
+    }
 
     const consecutiveMissedDays = countConsecutiveMissedDays(completedDates, today);
     const state = deriveNotificationState({
@@ -164,14 +195,24 @@ export async function getUsersForNotification(
     });
     if (!state) continue; // ה-rule engine החליט "לא עכשיו" (DAY_3 בנון/ערב, או DORMANT בלי יום ראשון)
 
-    candidates.push({
+    const urgencyLevel = deriveUrgencyLevel({ timeOfDay, consecutiveMissedDays });
+
+    const candidate: NotificationCandidate = {
       userId: profile.id,
       firstName: deriveFirstName(profile.full_name),
       taskName: (profile.daily_task as string).trim(),
       notificationState: state,
       consecutiveMissedDays,
       timeOfDay,
-    });
+      urgencyLevel,
+    };
+    if (typeof hoursSinceLastResponse === 'number') {
+      candidate.hoursSinceLastResponse = hoursSinceLastResponse;
+    }
+    if (typeof profile.notification_count === 'number' && profile.notification_count > 0) {
+      candidate.notificationCount = profile.notification_count;
+    }
+    candidates.push(candidate);
   }
 
   const max = options.maxUsers ?? 500;
