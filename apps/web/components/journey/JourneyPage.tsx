@@ -92,17 +92,43 @@ export function JourneyPage({ groups, userId, firstName }: JourneyPageProps) {
   // ⤵ ימים מאז תחילת המסע — חישוב פר-משתמש (אם יש progress כלשהו)
   const daysInJourney = useMemo(() => computeDaysInJourney(mergedGroups), [mergedGroups]);
 
-  const handleBack = useCallback(() => setSelectedKey(null), []);
+  /**
+   * גלילה לראש העמוד — תומך גם בדפדפן רגיל (window) וגם בלייאאוט
+   * הדסקטופ של הדאשבורד שבו `main#main-content` הוא הקונטיינר
+   * הגוללת (עם `overflow-y: auto` ו-`height: calc(100dvh - 80px)`).
+   */
+  const scrollToTop = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    const main = document.getElementById('main-content');
+    if (main) main.scrollTo({ top: 0, behavior: 'auto' });
+  }, []);
+
+  const handleBack = useCallback(() => {
+    setSelectedKey(null);
+    scrollToTop();
+  }, [scrollToTop]);
+
+  /**
+   * בכל פעם שמתבצעת כניסה לתחנה — מקפיצים את העמוד לראש,
+   * כדי שה-HERO של התחנה (כותרת + כפתור חזרה) יהיה גלוי מיד.
+   * שימוש ב-`auto` במקום `smooth` מונע "תזוזה ארוכה" בזמן שהאנימציית
+   * shared-element כבר רצה ויוצרת תחושה חלקה.
+   */
+  const handleSelect = useCallback((key: string) => {
+    setSelectedKey(key);
+    scrollToTop();
+  }, [scrollToTop]);
 
   // לחיצה על Escape חוזרת לתצוגת הגלריה
   useEffect(() => {
     if (!selectedKey) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSelectedKey(null);
+      if (e.key === 'Escape') handleBack();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selectedKey]);
+  }, [selectedKey, handleBack]);
 
   return (
     <div className="relative pb-10">
@@ -126,7 +152,7 @@ export function JourneyPage({ groups, userId, firstName }: JourneyPageProps) {
               stationsDone: totalAcrossAll.stationsDone,
             }}
             daysInJourney={daysInJourney}
-            onSelect={(key) => setSelectedKey(key)}
+            onSelect={handleSelect}
           />
         )}
       </AnimatePresence>
@@ -449,11 +475,16 @@ function StatChips({
   overall: { done: number; all: number; pct: number; stations: number; stationsDone: number };
   daysInJourney: number;
 }) {
-  const chips: Array<{ icon: React.ReactNode; label: string; value: string; tone: 'emerald' | 'amber' | 'rose' }> = [];
+  const chips: Array<{
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+    tone: 'emerald' | 'amber' | 'rose';
+  }> = [];
 
   if (overall.stationsDone > 0) {
     chips.push({
-      icon: <Trophy className="h-3.5 w-3.5" />,
+      icon: <Trophy className="h-3.5 w-3.5" strokeWidth={2.4} />,
       label: 'תחנות',
       value: `${overall.stationsDone}/${overall.stations}`,
       tone: 'amber',
@@ -461,7 +492,7 @@ function StatChips({
   }
   if (overall.done > 0) {
     chips.push({
-      icon: <Target className="h-3.5 w-3.5" />,
+      icon: <Target className="h-3.5 w-3.5" strokeWidth={2.4} />,
       label: 'צעדים',
       value: `${overall.done}`,
       tone: 'emerald',
@@ -469,7 +500,7 @@ function StatChips({
   }
   if (daysInJourney > 1) {
     chips.push({
-      icon: <Flame className="h-3.5 w-3.5" />,
+      icon: <Flame className="h-3.5 w-3.5" strokeWidth={2.4} fill="rgba(254,215,170,0.45)" />,
       label: 'ימי מסע',
       value: `${daysInJourney}`,
       tone: 'rose',
@@ -483,44 +514,113 @@ function StatChips({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.55 }}
-      className="mx-auto mt-3 flex max-w-md flex-wrap items-center justify-center gap-2"
+      className="mx-auto mt-3.5 flex max-w-md flex-wrap items-center justify-center gap-2"
     >
       {chips.map((c, i) => {
+        /**
+         * פלטות עשירות יותר — כל צ'יפ הוא "מטבע זכוכית" קטן:
+         *  • bg → גרדיאנט קל עם דומיננטיות גוון
+         *  • border → טון מתאים עם אטימות גבוהה כדי לקבל קצה ברור
+         *  • glow → זוהר רך מאחורי האייקון (מוסיף עומק)
+         *  • iconBg → כיפת אייקון משלה (לא רק צבע)
+         */
         const palette = {
           emerald: {
-            bg: 'linear-gradient(135deg, rgba(167,243,208,0.22), rgba(52,211,153,0.18))',
-            border: 'rgba(167,243,208,0.55)',
-            iconColor: '#a7f3d0',
+            bg: 'linear-gradient(135deg, rgba(110,231,183,0.28) 0%, rgba(16,185,129,0.20) 100%)',
+            border: 'rgba(110,231,183,0.65)',
+            glow: 'rgba(110,231,183,0.42)',
+            iconBg: 'linear-gradient(135deg, rgba(167,243,208,0.95), rgba(52,211,153,0.75))',
+            iconColor: '#022c22',
+            valueColor: '#ffffff',
+            labelColor: 'rgba(236,253,245,0.92)',
           },
           amber: {
-            bg: 'linear-gradient(135deg, rgba(251,191,36,0.22), rgba(245,158,11,0.16))',
-            border: 'rgba(251,191,36,0.55)',
-            iconColor: '#fcd34d',
+            bg: 'linear-gradient(135deg, rgba(252,211,77,0.28) 0%, rgba(245,158,11,0.20) 100%)',
+            border: 'rgba(252,211,77,0.7)',
+            glow: 'rgba(252,211,77,0.5)',
+            iconBg: 'linear-gradient(135deg, rgba(253,224,71,0.98), rgba(245,158,11,0.85))',
+            iconColor: '#451a03',
+            valueColor: '#ffffff',
+            labelColor: 'rgba(254,243,199,0.95)',
           },
           rose: {
-            bg: 'linear-gradient(135deg, rgba(251,113,133,0.20), rgba(244,114,182,0.16))',
-            border: 'rgba(251,113,133,0.45)',
-            iconColor: '#fda4af',
+            bg: 'linear-gradient(135deg, rgba(253,164,175,0.26) 0%, rgba(244,114,182,0.18) 100%)',
+            border: 'rgba(253,164,175,0.6)',
+            glow: 'rgba(253,164,175,0.55)',
+            iconBg: 'linear-gradient(135deg, rgba(254,202,202,0.95), rgba(251,113,133,0.85))',
+            iconColor: '#7f1d1d',
+            valueColor: '#ffffff',
+            labelColor: 'rgba(254,226,226,0.95)',
           },
         }[c.tone];
 
         return (
-          <div
+          <motion.div
             key={i}
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
+            dir="rtl"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, delay: 0.6 + i * 0.07, ease: [0.22, 1, 0.36, 1] }}
+            whileHover={{ y: -2, scale: 1.03 }}
+            className="relative flex items-center gap-2 rounded-full py-1.5 pl-3.5 pr-1.5 overflow-hidden"
             style={{
               background: palette.bg,
               border: `1px solid ${palette.border}`,
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
+              backdropFilter: 'blur(14px) saturate(160%)',
+              WebkitBackdropFilter: 'blur(14px) saturate(160%)',
+              boxShadow: `0 6px 18px rgba(2,44,34,0.25), inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -1px 0 rgba(2,44,34,0.10)`,
             }}
           >
-            <span style={{ color: palette.iconColor }}>{c.icon}</span>
-            <span className="text-[11px] font-bold text-emerald-50/90">{c.label}</span>
-            <span className="text-[13px] font-black text-white" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
+            {/* ✦ הילה רכה מאחורי האייקון (מוסיפה עומק) */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full"
+              style={{
+                background: `radial-gradient(circle, ${palette.glow} 0%, transparent 70%)`,
+                filter: 'blur(8px)',
+              }}
+            />
+            {/* ✦ קו אור עליון — specular highlight */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-x-2 top-px h-px"
+              style={{
+                background:
+                  'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
+              }}
+            />
+
+            {/* ─── כיפת אייקון משלה ─── */}
+            <span
+              className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+              style={{
+                background: palette.iconBg,
+                color: palette.iconColor,
+                boxShadow:
+                  'inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 6px rgba(2,44,34,0.25)',
+              }}
+            >
+              {c.icon}
+            </span>
+
+            <span
+              className="relative text-[11px] font-bold tracking-wide"
+              style={{ color: palette.labelColor }}
+            >
+              {c.label}
+            </span>
+
+            <span
+              className="relative text-[14px] font-black tabular-nums"
+              style={{
+                color: palette.valueColor,
+                fontFamily: "'Rubik','Heebo',sans-serif",
+                textShadow: '0 1px 4px rgba(2,44,34,0.45)',
+              }}
+            >
               {c.value}
             </span>
-          </div>
+          </motion.div>
         );
       })}
     </motion.div>
@@ -1219,42 +1319,98 @@ function StationDetailView({
         }}
       >
         <motion.div
+          dir="rtl"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.15 }}
-          className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-emerald-100/80 bg-white/95 px-4 py-3 shadow-sm"
+          className="relative mb-5 overflow-hidden rounded-[22px]"
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(236,253,245,0.55) 0%, rgba(209,250,229,0.42) 50%, rgba(167,243,208,0.38) 100%)',
+            backdropFilter: 'blur(20px) saturate(170%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(170%)',
+            border: '1px solid rgba(167,243,208,0.55)',
+            boxShadow:
+              '0 10px 28px rgba(6,78,59,0.10), 0 2px 8px rgba(6,78,59,0.06), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(6,78,59,0.04)',
+          }}
         >
-          <div className="flex items-center gap-2">
-            <div
-              className="h-7 w-1.5 rounded-full"
-              style={{ background: 'linear-gradient(to bottom, #34d399, #047857)' }}
-            />
-            <div className="text-right">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700/80">
-                הצעדים בתחנה
-              </p>
-              <p
-                className="mt-0.5 text-[15px] font-black"
-                style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
+          {/* ✦ זוהר ירוק עדין בפינה כדי לתת לזכוכית חיים */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -left-12 -top-12 h-32 w-32 rounded-full"
+            style={{
+              background:
+                'radial-gradient(circle, rgba(52,211,153,0.45) 0%, transparent 70%)',
+              filter: 'blur(20px)',
+            }}
+          />
+          {/* ✦ קו אור עליון — specular highlight */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-4 top-px h-px"
+            style={{
+              background:
+                'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)',
+            }}
+          />
+
+          <div className="relative flex items-center justify-between gap-3 px-4 py-3.5">
+            <div className="flex items-center gap-2.5">
+              <div
+                className="h-8 w-1.5 rounded-full"
+                style={{
+                  background: 'linear-gradient(to bottom, #34d399, #047857)',
+                  boxShadow: '0 0 8px rgba(52,211,153,0.55)',
+                }}
+              />
+              <div className="text-right">
+                <p
+                  className="text-[11px] font-black uppercase tracking-[0.12em] text-emerald-700"
+                  style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+                >
+                  הצעדים בתחנה
+                </p>
+                <p
+                  className="mt-0.5 text-[15px] font-black text-emerald-950"
+                  style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+                >
+                  {completedCount} מתוך {totalCount} הושלמו
+                </p>
+              </div>
+            </div>
+
+            {allDone ? (
+              <div
+                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-black text-white"
+                style={{
+                  background:
+                    'linear-gradient(135deg, rgba(245,158,11,0.95), rgba(251,191,36,0.95))',
+                  boxShadow:
+                    '0 6px 16px rgba(245,158,11,0.4), inset 0 1px 0 rgba(255,255,255,0.35)',
+                }}
               >
-                {completedCount} מתוך {totalCount} הושלמו
-              </p>
-            </div>
+                <Trophy className="h-3.5 w-3.5" />
+                תחנה הושלמה
+              </div>
+            ) : (
+              <div
+                className="flex items-center gap-2 rounded-full px-3 py-1.5"
+                style={{
+                  background:
+                    'linear-gradient(135deg, rgba(255,255,255,0.55), rgba(236,253,245,0.45))',
+                  border: '1px solid rgba(167,243,208,0.65)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
+                }}
+              >
+                <span
+                  className="text-[13px] font-black text-emerald-700 tabular-nums"
+                  style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+                >
+                  {pct}%
+                </span>
+              </div>
+            )}
           </div>
-          {allDone ? (
-            <div
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-black text-white"
-              style={{
-                background: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
-                boxShadow: '0 6px 16px rgba(245,158,11,0.4)',
-              }}
-            >
-              <Trophy className="h-3.5 w-3.5" />
-              תחנה הושלמה
-            </div>
-          ) : (
-            <span className="text-[13px] font-black text-emerald-700">{pct}%</span>
-          )}
         </motion.div>
 
         {totalCount === 0 ? (
@@ -1293,7 +1449,75 @@ function StationHeader({
   const parallax = Math.min(60, scrollY * 0.25);
 
   return (
-    <div className="relative -mt-16 overflow-hidden">
+    <>
+      {/* ╔═ FIXED Top bar — כפתור חזרה זכוכיתי שגולל יחד עם המסך ═╗
+          ממוקם מחוץ ל-motion.div של ה-layoutId כדי ש:
+          1) האנימציית shared-element לא תפגע בהופעתו
+          2) `position: fixed` יישאר ביחס ל-viewport גם כשגוללים למטה
+          רקע עדין מאחורי הבר עוזר לקריאות כשגוללים מעל גוף הדף הבהיר. */}
+      <div
+        className="fixed inset-x-0 top-0 z-50 flex items-center justify-between px-4 sm:px-6"
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 14px)', paddingBottom: 10 }}
+      >
+        {/* scrim — חזק רק מעל גוף הדף הבהיר; מעל התמונה הכהה כמעט בלתי-מורגש */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 -z-10"
+          style={{
+            height: 'calc(env(safe-area-inset-top) + 64px)',
+            background:
+              'linear-gradient(180deg, rgba(2,44,34,0.30) 0%, rgba(2,44,34,0.10) 60%, rgba(2,44,34,0) 100%)',
+          }}
+        />
+
+        <button
+          type="button"
+          onClick={onBack}
+          className="group relative flex shrink-0 items-center gap-2 overflow-hidden rounded-full px-4 py-2.5 text-[13.5px] font-black text-white transition-transform duration-200 hover:scale-[1.04] active:scale-95"
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.10) 100%)',
+            backdropFilter: 'blur(18px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(18px) saturate(180%)',
+            border: '1px solid rgba(255,255,255,0.48)',
+            boxShadow:
+              '0 10px 28px rgba(2,44,34,0.42), 0 2px 6px rgba(2,44,34,0.20), inset 0 1px 0 rgba(255,255,255,0.40), inset 0 -1px 0 rgba(255,255,255,0.10)',
+            textShadow: '0 1px 6px rgba(2,44,34,0.65)',
+            fontFamily: "'Rubik','Heebo',sans-serif",
+          }}
+          aria-label="חזרה לרשימת התחנות"
+        >
+          {/* ✦ specular highlight — קו אור עליון עדין */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-3 top-px h-px"
+            style={{
+              background:
+                'linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent)',
+            }}
+          />
+          <ChevronRight
+            className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-0.5"
+            strokeWidth={2.5}
+          />
+          <span>חזרה למסע</span>
+        </button>
+
+        {allDone ? (
+          <div
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-black text-white shadow"
+            style={{
+              background:
+                'linear-gradient(135deg, rgba(245,158,11,0.95), rgba(251,191,36,0.95))',
+            }}
+          >
+            <Trophy className="h-3 w-3" />
+            הושלם
+          </div>
+        ) : null}
+      </div>
+
+      <div className="relative -mt-16 overflow-hidden">
       <motion.div
         layoutId={`station-cover-${group.key}`}
         transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
@@ -1325,64 +1549,6 @@ function StationHeader({
               'linear-gradient(180deg, rgba(2,44,34,0.55) 0%, rgba(2,44,34,0.35) 35%, rgba(6,15,23,0.85) 100%)',
           }}
         />
-
-        {/* ╔═ Top bar — כפתור חזרה זכוכיתי + תג "הושלם" אם רלוונטי ═╗
-            הכפתור הוא button רגיל (לא motion.button) כדי שלא יתנגש עם
-            אנימציית ה-layoutId של ההורה ויישאר תמיד גלוי. */}
-        <div
-          className="absolute inset-x-0 top-0 z-50 flex items-center justify-between px-4 sm:px-6"
-          style={{
-            // StationHeader itself starts at -mt-16 to slide under the app chrome.
-            // Add that offset back so the button sits visibly inside the station image.
-            paddingTop: 'calc(4rem + max(env(safe-area-inset-top), 16px))',
-          }}
-        >
-          <button
-            type="button"
-            onClick={onBack}
-            className="group relative flex shrink-0 items-center gap-2 overflow-hidden rounded-full px-4 py-2.5 text-[13.5px] font-black text-white transition-transform duration-200 hover:scale-[1.04] active:scale-95"
-            style={{
-              background:
-                'linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.10) 100%)',
-              backdropFilter: 'blur(18px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(18px) saturate(180%)',
-              border: '1px solid rgba(255,255,255,0.48)',
-              boxShadow:
-                '0 10px 28px rgba(2,44,34,0.32), 0 2px 6px rgba(2,44,34,0.16), inset 0 1px 0 rgba(255,255,255,0.40), inset 0 -1px 0 rgba(255,255,255,0.10)',
-              textShadow: '0 1px 6px rgba(2,44,34,0.55)',
-              fontFamily: "'Rubik','Heebo',sans-serif",
-            }}
-            aria-label="חזרה לרשימת התחנות"
-          >
-            {/* ✦ specular highlight — קו אור עליון עדין */}
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-x-3 top-px h-px"
-              style={{
-                background:
-                  'linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent)',
-              }}
-            />
-            <ChevronRight
-              className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-0.5"
-              strokeWidth={2.5}
-            />
-            <span>חזרה למסע</span>
-          </button>
-
-          {allDone ? (
-            <div
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-black text-white shadow"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(245,158,11,0.95), rgba(251,191,36,0.95))',
-              }}
-            >
-              <Trophy className="h-3 w-3" />
-              הושלם
-            </div>
-          ) : null}
-        </div>
 
         {/* Title block at bottom */}
         <div className="absolute bottom-0 left-0 right-0 z-10 px-4 pb-8 sm:px-6">
@@ -1438,7 +1604,8 @@ function StationHeader({
           </motion.div>
         </div>
       </motion.div>
-    </div>
+      </div>
+    </>
   );
 }
 

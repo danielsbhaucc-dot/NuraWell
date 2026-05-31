@@ -332,28 +332,42 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                         return (
                           <div
                             key={step.id}
+                            dir="rtl"
                             className="rounded-[22px] p-[1px]"
                             style={{
                               background:
-                                'linear-gradient(145deg, rgba(52,211,153,0.45), rgba(167,243,208,0.25), rgba(255,255,255,0.65))',
+                                'linear-gradient(145deg, rgba(52,211,153,0.55), rgba(167,243,208,0.30), rgba(110,231,183,0.25))',
                             }}
                           >
                             <div
-                              className="rounded-[21px] px-3 py-3"
+                              className="relative overflow-hidden rounded-[21px] px-3 py-3"
                               style={{
-                                background: 'rgba(255,255,255,0.55)',
-                                border: '1px solid rgba(255,255,255,0.65)',
-                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)',
+                                background:
+                                  'linear-gradient(165deg, rgba(236,253,245,0.42) 0%, rgba(209,250,229,0.30) 60%, rgba(167,243,208,0.28) 100%)',
+                                backdropFilter: 'blur(18px) saturate(160%)',
+                                WebkitBackdropFilter: 'blur(18px) saturate(160%)',
+                                border: '1px solid rgba(167,243,208,0.45)',
+                                boxShadow:
+                                  'inset 0 1px 0 rgba(255,255,255,0.55), 0 4px 16px rgba(6,78,59,0.06)',
                               }}
                             >
-                              <div className="flex items-center gap-2 justify-end mb-3">
+                              {/* ✦ קו אור עליון */}
+                              <span
+                                aria-hidden
+                                className="pointer-events-none absolute inset-x-4 top-px h-px"
+                                style={{
+                                  background:
+                                    'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
+                                }}
+                              />
+                              <div className="relative flex items-center gap-2 justify-end mb-3">
                                 <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
-                                <h3 className="text-sm font-black text-[#1A1730] truncate">
+                                <h3 className="text-sm font-black text-emerald-950 truncate text-right">
                                   צעד {step.step_number}: {step.title}
                                 </h3>
                               </div>
-                              <div className="space-y-2">
-                                <p className="text-[11px] font-bold text-emerald-800/80 text-right">משימות שקיבלת</p>
+                              <div className="relative space-y-2">
+                                <p className="text-[11px] font-bold text-emerald-800/85 text-right">משימות שקיבלת</p>
                                 {acceptedTasks.map((t) => {
                                   const { schedule, times_per_day, weekly_day, meal_timing, meal_target } =
                                     resolveTaskSchedule(t);
@@ -367,18 +381,29 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                                     return (
                                       <div
                                         key={t.id}
-                                        className="rounded-2xl px-3 py-2.5 space-y-2"
+                                        dir="rtl"
+                                        className="relative overflow-hidden rounded-2xl px-3 py-2.5 space-y-2"
                                         style={{
-                                          background: 'rgba(255,255,255,0.72)',
-                                          border: '1px solid rgba(16,185,129,0.22)',
+                                          background:
+                                            'linear-gradient(135deg, rgba(236,253,245,0.50) 0%, rgba(209,250,229,0.38) 100%)',
+                                          backdropFilter: 'blur(14px) saturate(160%)',
+                                          WebkitBackdropFilter: 'blur(14px) saturate(160%)',
+                                          border: '1px solid rgba(167,243,208,0.55)',
+                                          boxShadow:
+                                            'inset 0 1px 0 rgba(255,255,255,0.55), 0 4px 14px rgba(6,78,59,0.06)',
                                         }}
                                       >
                                         <div className="flex items-center gap-2 justify-end">
                                           <span
-                                            className="text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full text-emerald-900 border border-emerald-400/35"
+                                            className="relative overflow-hidden text-[10px] font-bold tracking-wide px-2.5 py-1 rounded-full text-emerald-900"
                                             style={{
                                               background:
-                                                'linear-gradient(135deg, rgba(209,250,229,0.95), rgba(167,243,208,0.4))',
+                                                'linear-gradient(135deg, rgba(167,243,208,0.55) 0%, rgba(52,211,153,0.35) 100%)',
+                                              backdropFilter: 'blur(10px) saturate(160%)',
+                                              WebkitBackdropFilter: 'blur(10px) saturate(160%)',
+                                              border: '1px solid rgba(52,211,153,0.55)',
+                                              boxShadow:
+                                                'inset 0 1px 0 rgba(255,255,255,0.55), 0 2px 6px rgba(6,78,59,0.10)',
                                             }}
                                           >
                                             {scheduleLabel(
@@ -392,7 +417,7 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                                           <span className="text-xl shrink-0" aria-hidden>
                                             {emoji}
                                           </span>
-                                          <span className="flex-1 text-right text-sm font-bold text-[#1A1730] leading-snug">
+                                          <span className="flex-1 text-right text-sm font-bold text-emerald-950 leading-snug">
                                             {t.title}
                                           </span>
                                         </div>
@@ -409,10 +434,15 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                                   return (
                                     <label
                                       key={t.id}
+                                      dir="rtl"
                                       className="flex items-center gap-3 rounded-2xl px-3 py-2.5 cursor-pointer transition active:scale-[0.99]"
                                       style={{
-                                        background: 'rgba(255,255,255,0.72)',
-                                        border: '1px solid rgba(16,185,129,0.22)',
+                                        background:
+                                          'linear-gradient(135deg, rgba(236,253,245,0.50) 0%, rgba(209,250,229,0.38) 100%)',
+                                        backdropFilter: 'blur(14px) saturate(160%)',
+                                        WebkitBackdropFilter: 'blur(14px) saturate(160%)',
+                                        border: '1px solid rgba(167,243,208,0.55)',
+                                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55)',
                                       }}
                                     >
                                       <input
@@ -427,7 +457,7 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                                       <span className="text-xl shrink-0" aria-hidden>
                                         {emoji}
                                       </span>
-                                      <span className="flex-1 text-right text-sm font-bold text-[#1A1730] leading-snug">
+                                      <span className="flex-1 text-right text-sm font-bold text-emerald-950 leading-snug">
                                         {t.title}
                                       </span>
                                     </label>
@@ -464,28 +494,41 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                         return (
                           <div
                             key={step.id}
+                            dir="rtl"
                             className="rounded-[22px] p-[1px]"
                             style={{
                               background:
-                                'linear-gradient(145deg, rgba(52,211,153,0.45), rgba(167,243,208,0.25), rgba(255,255,255,0.65))',
+                                'linear-gradient(145deg, rgba(52,211,153,0.55), rgba(167,243,208,0.30), rgba(110,231,183,0.25))',
                             }}
                           >
                             <div
-                              className="rounded-[21px] px-3 py-3"
+                              className="relative overflow-hidden rounded-[21px] px-3 py-3"
                               style={{
-                                background: 'rgba(255,255,255,0.55)',
-                                border: '1px solid rgba(255,255,255,0.65)',
-                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)',
+                                background:
+                                  'linear-gradient(165deg, rgba(236,253,245,0.42) 0%, rgba(209,250,229,0.30) 60%, rgba(167,243,208,0.28) 100%)',
+                                backdropFilter: 'blur(18px) saturate(160%)',
+                                WebkitBackdropFilter: 'blur(18px) saturate(160%)',
+                                border: '1px solid rgba(167,243,208,0.45)',
+                                boxShadow:
+                                  'inset 0 1px 0 rgba(255,255,255,0.55), 0 4px 16px rgba(6,78,59,0.06)',
                               }}
                             >
-                              <div className="flex items-center gap-2 justify-end mb-3">
+                              <span
+                                aria-hidden
+                                className="pointer-events-none absolute inset-x-4 top-px h-px"
+                                style={{
+                                  background:
+                                    'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
+                                }}
+                              />
+                              <div className="relative flex items-center gap-2 justify-end mb-3">
                                 <Leaf className="h-4 w-4 text-emerald-600 shrink-0" />
-                                <h3 className="text-sm font-black text-[#1A1730] truncate">
+                                <h3 className="text-sm font-black text-emerald-950 truncate text-right">
                                   צעד {step.step_number}: {step.title}
                                 </h3>
                               </div>
-                              <div className="space-y-2">
-                                <p className="text-[11px] font-bold text-emerald-800/80 text-right flex items-center justify-end gap-1">
+                              <div className="relative space-y-2">
+                                <p className="text-[11px] font-bold text-emerald-800/85 text-right flex items-center justify-end gap-1">
                                   <Leaf className="h-3.5 w-3.5" />
                                   הרגלים בצעד
                                 </p>
