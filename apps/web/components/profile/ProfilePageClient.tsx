@@ -142,15 +142,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           <button
             type="button"
             onClick={() => setIsEditOpen(true)}
-            className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-emerald-50 shadow-sm transition hover:scale-105 active:scale-95"
-            style={{
-              background: 'linear-gradient(135deg, rgba(16,185,129,0.22) 0%, rgba(167,243,208,0.30) 100%)',
-              backdropFilter: 'blur(14px) saturate(160%)',
-              WebkitBackdropFilter: 'blur(14px) saturate(160%)',
-              border: '1px solid rgba(16,185,129,0.45)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), 0 6px 18px rgba(6,78,59,0.14)',
-              color: '#047857',
-            }}
+            className="glass-pill relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-emerald-700 transition hover:scale-105 active:scale-95"
             aria-label="עריכת פרופיל"
           >
             <Settings className="h-4 w-4" />
@@ -162,16 +154,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.03 }}
-          className="relative overflow-hidden rounded-2xl px-4 py-3"
-          style={{
-            background:
-              'linear-gradient(135deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 100%)',
-            backdropFilter: 'blur(26px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(26px) saturate(180%)',
-            border: '1px solid rgba(167,243,208,0.45)',
-            boxShadow:
-              '0 10px 28px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.45)',
-          }}
+          className="glass-surface relative overflow-hidden rounded-2xl px-4 py-3"
         >
           <span
             aria-hidden
@@ -190,16 +173,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="relative overflow-hidden rounded-3xl p-5"
-          style={{
-            background:
-              'linear-gradient(165deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 60%, rgba(52,211,153,0.16) 100%)',
-            backdropFilter: 'blur(28px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-            border: '1px solid rgba(167,243,208,0.45)',
-            boxShadow:
-              '0 14px 36px rgba(6,78,59,0.12), inset 0 1px 0 rgba(255,255,255,0.45)',
-          }}
+          className="glass-surface relative overflow-hidden rounded-3xl p-5"
         >
           <div className="flex items-center gap-4">
             {/* Avatar */}
@@ -240,16 +214,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           {stats.map((s) => (
             <div
               key={s.label}
-              className="relative overflow-hidden rounded-2xl p-3 text-center"
-              style={{
-                background:
-                  'linear-gradient(165deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 100%)',
-                backdropFilter: 'blur(24px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                border: '1px solid rgba(167,243,208,0.45)',
-                boxShadow:
-                  '0 8px 22px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.45)',
-              }}
+              className="glass-surface relative overflow-hidden rounded-2xl p-3 text-center"
             >
               <div className="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center"
                 style={{
@@ -272,16 +237,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="relative overflow-hidden rounded-3xl p-5"
-            style={{
-              background:
-                'linear-gradient(165deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 100%)',
-              backdropFilter: 'blur(26px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(26px) saturate(180%)',
-              border: '1px solid rgba(167,243,208,0.45)',
-              boxShadow:
-                '0 14px 36px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.45)',
-            }}
+            className="glass-surface relative overflow-hidden rounded-3xl p-5"
           >
             <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
               <User className="w-4 h-4 text-primary-400" />
@@ -310,17 +266,8 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="relative overflow-hidden rounded-3xl"
-          style={{
-            padding: 0,
-            background:
-              'linear-gradient(180deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 100%)',
-            backdropFilter: 'blur(26px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(26px) saturate(180%)',
-            border: '1px solid rgba(167,243,208,0.45)',
-            boxShadow:
-              '0 14px 36px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.45)',
-          }}
+          className="glass-surface relative overflow-hidden rounded-3xl"
+          style={{ padding: 0 }}
         >
           {profileMenuItems.map((item, idx, arr) => (
             <Link
@@ -330,15 +277,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
               className="flex items-center gap-3 p-4 transition-colors hover:bg-emerald-100/40"
               style={idx < arr.length - 1 ? { borderBottom: '1px solid rgba(6,78,59,0.10)' } : {}}
             >
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-                style={{
-                  background:
-                    'linear-gradient(135deg, rgba(167,243,208,0.45), rgba(52,211,153,0.25))',
-                  border: '1px solid rgba(16,185,129,0.35)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55)',
-                }}
-              >
+              <div className="glass-pill w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
                 {item.emoji}
               </div>
               <span className="flex-1 text-sm font-semibold text-slate-700 text-right">{item.label}</span>
@@ -384,14 +323,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
         >
           <div
             dir="rtl"
-            className="w-full max-w-md overflow-hidden rounded-3xl shadow-2xl"
-            style={{
-              background:
-                'linear-gradient(180deg, rgba(236,253,245,0.96) 0%, rgba(209,250,229,0.94) 100%)',
-              backdropFilter: 'blur(28px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-              border: '1px solid rgba(167,243,208,0.65)',
-            }}
+            className="glass-surface w-full max-w-md overflow-hidden rounded-3xl shadow-2xl"
           >
             <div
               className="flex items-center justify-between px-4 py-3 text-white"
@@ -415,12 +347,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
                   <input
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
-                    className="w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-400"
-                    style={{
-                      background: 'rgba(255,255,255,0.55)',
-                      border: '1px solid rgba(16,185,129,0.30)',
-                      backdropFilter: 'blur(8px)',
-                    }}
+                    className="glass-pill w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-400"
                     placeholder="הכנס שם מלא"
                     dir="rtl"
                   />
@@ -431,12 +358,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
                   <select
                     value={genderInput}
                     onChange={(e) => setGenderInput((e.target.value as 'male' | 'female' | '') ?? '')}
-                    className="w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-400"
-                    style={{
-                      background: 'rgba(255,255,255,0.55)',
-                      border: '1px solid rgba(16,185,129,0.30)',
-                      backdropFilter: 'blur(8px)',
-                    }}
+                    className="glass-pill w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-400"
                   >
                     <option value="">ללא בחירה</option>
                     <option value="male">זכר</option>

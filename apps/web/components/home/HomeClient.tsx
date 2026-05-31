@@ -170,29 +170,9 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
             >
               <motion.div
                 dir="rtl"
-                className="relative flex flex-row-reverse gap-3.5 items-center p-4 overflow-hidden"
-                style={{
-                  /* רקע ירוק שקוף ברובו; ה-blur נושא את הקריאות */
-                  background:
-                    'linear-gradient(135deg, rgba(167,243,208,0.22) 0%, rgba(52,211,153,0.14) 50%, rgba(110,231,183,0.18) 100%)',
-                  backdropFilter: 'blur(28px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-                  border: '1px solid rgba(167,243,208,0.45)',
-                  borderRadius: '22px',
-                  boxShadow:
-                    '0 10px 28px rgba(6,78,59,0.10), 0 2px 8px rgba(6,78,59,0.06), inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -1px 0 rgba(6,78,59,0.04)',
-                }}
+                className="glass-surface relative flex flex-row-reverse gap-3.5 items-center p-4 overflow-hidden"
+                style={{ borderRadius: '22px' }}
               >
-                {/* ✦ זוהר ירוק עדין בפינה */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute -left-12 -top-12 h-32 w-32 rounded-full"
-                  style={{
-                    background:
-                      'radial-gradient(circle, rgba(52,211,153,0.45) 0%, transparent 70%)',
-                    filter: 'blur(20px)',
-                  }}
-                />
                 {/* ✦ קו אור עליון — specular highlight */}
                 <div
                   aria-hidden
@@ -398,33 +378,22 @@ function QuickLink({
   onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }) {
   const inner = (
-    <div
-      className="relative flex flex-col items-center gap-2 p-4 rounded-[20px] transition overflow-hidden active:scale-[0.98]"
-      style={{
-        background:
-          'linear-gradient(165deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 100%)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        border: '1px solid rgba(167,243,208,0.45)',
-        boxShadow:
-          '0 6px 18px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.45)',
-      }}
-    >
+    <div className="glass-surface relative flex flex-col items-center gap-2 p-4 rounded-[20px] transition overflow-hidden active:scale-[0.98]">
       {/* ✦ קו אור עליון */}
       <span
         aria-hidden
         className="pointer-events-none absolute inset-x-3 top-px h-px"
         style={{
           background:
-            'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
+            'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)',
         }}
       />
       <div
         className="w-11 h-11 rounded-2xl flex items-center justify-center"
         style={{
-          background: `linear-gradient(135deg, ${accent}40, ${accent}1a)`,
+          background: `linear-gradient(135deg, ${accent}33, ${accent}14)`,
           border: `1px solid ${accent}55`,
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55)',
         }}
       >
         <Icon className="w-5 h-5" style={{ color: accent }} strokeWidth={2.4} />

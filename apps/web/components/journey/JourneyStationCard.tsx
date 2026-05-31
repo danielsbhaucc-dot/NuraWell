@@ -159,15 +159,8 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
             </div>
 
             <div
-              className="relative flex items-center gap-1.5 overflow-hidden rounded-2xl px-3.5 py-2 text-xs font-black text-white shadow-md transition-transform group-hover:scale-105"
+              className="glass-pill-dark relative flex items-center gap-1.5 overflow-hidden rounded-2xl px-3.5 py-2 text-xs font-black text-white transition-transform group-hover:scale-105"
               style={{
-                background:
-                  'linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.10) 100%)',
-                backdropFilter: 'blur(16px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-                border: '1px solid rgba(255,255,255,0.42)',
-                boxShadow:
-                  '0 8px 22px rgba(2,44,34,0.32), 0 2px 6px rgba(2,44,34,0.18), inset 0 1px 0 rgba(255,255,255,0.38), inset 0 -1px 0 rgba(255,255,255,0.08)',
                 textShadow: '0 1px 4px rgba(2,44,34,0.55)',
                 fontFamily: "'Rubik','Heebo',sans-serif",
               }}

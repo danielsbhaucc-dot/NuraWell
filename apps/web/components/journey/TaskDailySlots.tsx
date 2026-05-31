@@ -223,15 +223,8 @@ export function TaskDailySlots({
     return (
       <div
         dir="rtl"
-        className="mt-2 rounded-2xl px-3 py-3 text-[12px] font-semibold text-emerald-900/85 leading-relaxed text-right"
-        style={{
-          background:
-            'linear-gradient(135deg, rgba(236,253,245,0.45) 0%, rgba(209,250,229,0.30) 100%)',
-          border: '1px dashed rgba(52,211,153,0.50)',
-          backdropFilter: 'blur(10px) saturate(150%)',
-          WebkitBackdropFilter: 'blur(10px) saturate(150%)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.50)',
-        }}
+        className="glass-inset mt-2 rounded-2xl px-3 py-3 text-[12px] font-semibold text-emerald-900/85 leading-relaxed text-right"
+        style={{ borderStyle: 'dashed' }}
       >
         <RotateCcw className="inline w-3.5 h-3.5 ml-1 -mt-0.5 text-emerald-700" />
         משימה שבועית — מופיעה לסימון רק ביום שנקבע ({scheduleLabel(schedule, times_per_day, weekly_day, meal_timing, meal_target)}).
@@ -242,23 +235,14 @@ export function TaskDailySlots({
   return (
     <div
       dir="rtl"
-      className="relative overflow-hidden mt-2 rounded-2xl px-3 py-3 space-y-2"
-      style={{
-        background:
-          'linear-gradient(180deg, rgba(167,243,208,0.20) 0%, rgba(110,231,183,0.12) 100%)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        border: '1px solid rgba(167,243,208,0.45)',
-        boxShadow:
-          'inset 0 1px 0 rgba(255,255,255,0.45), 0 4px 14px rgba(6,78,59,0.06)',
-      }}
+      className="glass-inset relative overflow-hidden mt-2 rounded-2xl px-3 py-3 space-y-2"
     >
       <span
         aria-hidden
         className="pointer-events-none absolute inset-x-3 top-px h-px"
         style={{
           background:
-            'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
+            'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
         }}
       />
       <div className="relative flex items-center justify-between">
@@ -271,21 +255,21 @@ export function TaskDailySlots({
           </span>
         </div>
         <span
-          className="text-[11px] font-black tabular-nums px-2.5 py-1 rounded-full"
-          style={{
-            background:
-              completedCount === total
-                ? 'linear-gradient(135deg, rgba(16,185,129,0.95), rgba(52,211,153,0.85))'
-                : 'linear-gradient(135deg, rgba(167,243,208,0.28), rgba(52,211,153,0.18))',
-            color: completedCount === total ? '#fff' : '#065f46',
-            border: '1px solid rgba(52,211,153,0.50)',
-            boxShadow:
-              completedCount === total
-                ? '0 2px 8px rgba(16,185,129,0.30), inset 0 1px 0 rgba(255,255,255,0.35)'
-                : 'inset 0 1px 0 rgba(255,255,255,0.45), 0 2px 6px rgba(6,78,59,0.10)',
-            backdropFilter: 'blur(14px) saturate(170%)',
-            WebkitBackdropFilter: 'blur(14px) saturate(170%)',
-          }}
+          className={`text-[11px] font-black tabular-nums px-2.5 py-1 rounded-full ${
+            completedCount === total ? '' : 'glass-pill'
+          }`}
+          style={
+            completedCount === total
+              ? {
+                  background:
+                    'linear-gradient(135deg, rgba(16,185,129,0.95), rgba(52,211,153,0.85))',
+                  color: '#fff',
+                  border: '1px solid rgba(52,211,153,0.50)',
+                  boxShadow:
+                    '0 2px 8px rgba(16,185,129,0.30), inset 0 1px 0 rgba(255,255,255,0.35)',
+                }
+              : { color: '#065f46' }
+          }
         >
           {completedCount}/{total}
         </span>
@@ -306,22 +290,20 @@ export function TaskDailySlots({
               className={`relative flex flex-col items-center justify-center gap-1 rounded-2xl py-2.5 px-2 transition active:scale-[0.97] disabled:opacity-50 ${
                 cell.completed
                   ? 'text-white ring-1 ring-white/30'
-                  : 'text-emerald-900'
+                  : 'glass-pill text-emerald-900'
               }`}
-              style={{
-                minHeight: 56,
-                background: cell.completed
-                  ? 'linear-gradient(135deg, #047857 0%, #10b981 100%)'
-                  : 'linear-gradient(135deg, rgba(167,243,208,0.22) 0%, rgba(52,211,153,0.14) 100%)',
-                border: cell.completed
-                  ? '1px solid rgba(167,243,208,0.55)'
-                  : '1px solid rgba(110,231,183,0.45)',
-                boxShadow: cell.completed
-                  ? '0 6px 16px rgba(6,78,59,0.25), inset 0 1px 0 rgba(255,255,255,0.30)'
-                  : 'inset 0 1px 0 rgba(255,255,255,0.45), 0 2px 8px rgba(6,78,59,0.06)',
-                backdropFilter: 'blur(20px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-              }}
+              style={
+                cell.completed
+                  ? {
+                      minHeight: 56,
+                      background:
+                        'linear-gradient(135deg, #047857 0%, #10b981 100%)',
+                      border: '1px solid rgba(167,243,208,0.55)',
+                      boxShadow:
+                        '0 6px 16px rgba(6,78,59,0.25), inset 0 1px 0 rgba(255,255,255,0.30)',
+                    }
+                  : { minHeight: 56 }
+              }
             >
               <span className="text-base leading-none" aria-hidden>
                 {slotEmoji(slot)}
