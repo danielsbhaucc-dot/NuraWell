@@ -343,12 +343,12 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                               className="relative overflow-hidden rounded-[21px] px-3 py-3"
                               style={{
                                 background:
-                                  'linear-gradient(165deg, rgba(236,253,245,0.42) 0%, rgba(209,250,229,0.30) 60%, rgba(167,243,208,0.28) 100%)',
-                                backdropFilter: 'blur(18px) saturate(160%)',
-                                WebkitBackdropFilter: 'blur(18px) saturate(160%)',
-                                border: '1px solid rgba(167,243,208,0.45)',
+                                  'linear-gradient(165deg, rgba(167,243,208,0.18) 0%, rgba(110,231,183,0.10) 60%, rgba(52,211,153,0.14) 100%)',
+                                backdropFilter: 'blur(26px) saturate(180%)',
+                                WebkitBackdropFilter: 'blur(26px) saturate(180%)',
+                                border: '1px solid rgba(167,243,208,0.42)',
                                 boxShadow:
-                                  'inset 0 1px 0 rgba(255,255,255,0.55), 0 4px 16px rgba(6,78,59,0.06)',
+                                  'inset 0 1px 0 rgba(255,255,255,0.45), 0 4px 16px rgba(6,78,59,0.06)',
                               }}
                             >
                               {/* ✦ קו אור עליון */}
@@ -357,7 +357,7 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                                 className="pointer-events-none absolute inset-x-4 top-px h-px"
                                 style={{
                                   background:
-                                    'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
+                                    'linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent)',
                                 }}
                               />
                               <div className="relative flex items-center gap-2 justify-end mb-3">
@@ -385,12 +385,12 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                                         className="relative overflow-hidden rounded-2xl px-3 py-2.5 space-y-2"
                                         style={{
                                           background:
-                                            'linear-gradient(135deg, rgba(236,253,245,0.50) 0%, rgba(209,250,229,0.38) 100%)',
-                                          backdropFilter: 'blur(14px) saturate(160%)',
-                                          WebkitBackdropFilter: 'blur(14px) saturate(160%)',
-                                          border: '1px solid rgba(167,243,208,0.55)',
+                                            'linear-gradient(135deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 100%)',
+                                          backdropFilter: 'blur(22px) saturate(180%)',
+                                          WebkitBackdropFilter: 'blur(22px) saturate(180%)',
+                                          border: '1px solid rgba(167,243,208,0.45)',
                                           boxShadow:
-                                            'inset 0 1px 0 rgba(255,255,255,0.55), 0 4px 14px rgba(6,78,59,0.06)',
+                                            'inset 0 1px 0 rgba(255,255,255,0.45), 0 4px 14px rgba(6,78,59,0.06)',
                                         }}
                                       >
                                         <div className="flex items-center gap-2 justify-end">
@@ -398,10 +398,10 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                                             className="relative overflow-hidden text-[10px] font-bold tracking-wide px-2.5 py-1 rounded-full text-emerald-900"
                                             style={{
                                               background:
-                                                'linear-gradient(135deg, rgba(167,243,208,0.55) 0%, rgba(52,211,153,0.35) 100%)',
-                                              backdropFilter: 'blur(10px) saturate(160%)',
-                                              WebkitBackdropFilter: 'blur(10px) saturate(160%)',
-                                              border: '1px solid rgba(52,211,153,0.55)',
+                                                'linear-gradient(135deg, rgba(167,243,208,0.32) 0%, rgba(52,211,153,0.18) 100%)',
+                                              backdropFilter: 'blur(14px) saturate(180%)',
+                                              WebkitBackdropFilter: 'blur(14px) saturate(180%)',
+                                              border: '1px solid rgba(52,211,153,0.50)',
                                               boxShadow:
                                                 'inset 0 1px 0 rgba(255,255,255,0.55), 0 2px 6px rgba(6,78,59,0.10)',
                                             }}
@@ -438,11 +438,11 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                                       className="flex items-center gap-3 rounded-2xl px-3 py-2.5 cursor-pointer transition active:scale-[0.99]"
                                       style={{
                                         background:
-                                          'linear-gradient(135deg, rgba(236,253,245,0.50) 0%, rgba(209,250,229,0.38) 100%)',
-                                        backdropFilter: 'blur(14px) saturate(160%)',
-                                        WebkitBackdropFilter: 'blur(14px) saturate(160%)',
-                                        border: '1px solid rgba(167,243,208,0.55)',
-                                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55)',
+                                          'linear-gradient(135deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 100%)',
+                                        backdropFilter: 'blur(22px) saturate(180%)',
+                                        WebkitBackdropFilter: 'blur(22px) saturate(180%)',
+                                        border: '1px solid rgba(167,243,208,0.45)',
+                                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.45)',
                                       }}
                                     >
                                       <input
@@ -505,12 +505,12 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                               className="relative overflow-hidden rounded-[21px] px-3 py-3"
                               style={{
                                 background:
-                                  'linear-gradient(165deg, rgba(236,253,245,0.42) 0%, rgba(209,250,229,0.30) 60%, rgba(167,243,208,0.28) 100%)',
-                                backdropFilter: 'blur(18px) saturate(160%)',
-                                WebkitBackdropFilter: 'blur(18px) saturate(160%)',
-                                border: '1px solid rgba(167,243,208,0.45)',
+                                  'linear-gradient(165deg, rgba(167,243,208,0.18) 0%, rgba(110,231,183,0.10) 60%, rgba(52,211,153,0.14) 100%)',
+                                backdropFilter: 'blur(26px) saturate(180%)',
+                                WebkitBackdropFilter: 'blur(26px) saturate(180%)',
+                                border: '1px solid rgba(167,243,208,0.42)',
                                 boxShadow:
-                                  'inset 0 1px 0 rgba(255,255,255,0.55), 0 4px 16px rgba(6,78,59,0.06)',
+                                  'inset 0 1px 0 rgba(255,255,255,0.45), 0 4px 16px rgba(6,78,59,0.06)',
                               }}
                             >
                               <span
@@ -518,7 +518,7 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                                 className="pointer-events-none absolute inset-x-4 top-px h-px"
                                 style={{
                                   background:
-                                    'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
+                                    'linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent)',
                                 }}
                               />
                               <div className="relative flex items-center gap-2 justify-end mb-3">

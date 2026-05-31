@@ -172,14 +172,15 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
                 dir="rtl"
                 className="relative flex flex-row-reverse gap-3.5 items-center p-4 overflow-hidden"
                 style={{
+                  /* רקע ירוק שקוף ברובו; ה-blur נושא את הקריאות */
                   background:
-                    'linear-gradient(135deg, rgba(236,253,245,0.55) 0%, rgba(209,250,229,0.42) 50%, rgba(167,243,208,0.38) 100%)',
-                  backdropFilter: 'blur(22px) saturate(170%)',
-                  WebkitBackdropFilter: 'blur(22px) saturate(170%)',
-                  border: '1px solid rgba(167,243,208,0.60)',
+                    'linear-gradient(135deg, rgba(167,243,208,0.22) 0%, rgba(52,211,153,0.14) 50%, rgba(110,231,183,0.18) 100%)',
+                  backdropFilter: 'blur(28px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+                  border: '1px solid rgba(167,243,208,0.45)',
                   borderRadius: '22px',
                   boxShadow:
-                    '0 10px 28px rgba(6,78,59,0.10), 0 2px 8px rgba(6,78,59,0.06), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(6,78,59,0.04)',
+                    '0 10px 28px rgba(6,78,59,0.10), 0 2px 8px rgba(6,78,59,0.06), inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -1px 0 rgba(6,78,59,0.04)',
                 }}
               >
                 {/* ✦ זוהר ירוק עדין בפינה */}
@@ -401,12 +402,12 @@ function QuickLink({
       className="relative flex flex-col items-center gap-2 p-4 rounded-[20px] transition overflow-hidden active:scale-[0.98]"
       style={{
         background:
-          'linear-gradient(165deg, rgba(236,253,245,0.55) 0%, rgba(209,250,229,0.38) 100%)',
-        backdropFilter: 'blur(16px) saturate(160%)',
-        WebkitBackdropFilter: 'blur(16px) saturate(160%)',
-        border: '1px solid rgba(167,243,208,0.55)',
+          'linear-gradient(165deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 100%)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        border: '1px solid rgba(167,243,208,0.45)',
         boxShadow:
-          '0 6px 18px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.55)',
+          '0 6px 18px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.45)',
       }}
     >
       {/* ✦ קו אור עליון */}
