@@ -252,12 +252,12 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
             <motion.div variants={item}>
               <Link href="/courses" prefetch className="block">
                 <div
-                  className="flex gap-3.5 items-center p-4"
+                  className="glass-surface flex gap-3.5 items-center p-4"
                   style={{
-                    background: 'linear-gradient(135deg, #FFF8E7 0%, #FFFBF0 100%)',
-                    border: '1.5px solid rgba(245,166,35,0.35)',
                     borderRadius: '20px',
-                    boxShadow: '0 4px 20px rgba(245,166,35,0.12), inset 0 1px 0 rgba(255,255,255,0.9)',
+                    border: '1px solid rgba(245,166,35,0.35)',
+                    boxShadow:
+                      '0 8px 24px rgba(245,166,35,0.14), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(255,255,255,0.10)',
                   }}
                 >
                   <div

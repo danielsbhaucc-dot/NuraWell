@@ -1141,7 +1141,7 @@ function SectionHeader({ count, completed }: { count: number; completed: number 
 
 function EmptyState({ firstName }: { firstName: string }) {
   return (
-    <div className="rounded-3xl bg-white/70 px-6 py-16 text-center backdrop-blur">
+    <div className="glass-surface rounded-3xl px-6 py-16 text-center">
       <Droplets className="mx-auto mb-4 h-12 w-12 text-emerald-300" />
       <h3 className="mb-2 text-xl font-black" style={{ color: '#1A1730' }}>
         {firstName}, המסע שלך מחכה
@@ -1364,7 +1364,10 @@ function StationDetailView({
         </motion.div>
 
         {totalCount === 0 ? (
-          <p className="rounded-2xl border border-dashed border-emerald-200/80 bg-white/60 py-6 text-center text-sm text-gray-500">
+          <p
+            className="glass-inset rounded-2xl py-6 text-center text-sm text-gray-500"
+            style={{ borderStyle: 'dashed', borderColor: 'rgba(110,231,183,0.55)' }}
+          >
             בתחנה הזו עדיין אין צעדים — זה יתעדכן מיד כשהתוכן יתפרסם.
           </p>
         ) : (
@@ -1623,18 +1626,16 @@ function StepsTimeline({
                 </div>
 
                 <div
-                  className="overflow-hidden rounded-2xl transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]"
-                  style={{
-                    background: isActive
-                      ? 'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(236,253,245,0.95) 100%)'
-                      : 'rgba(255,255,255,0.92)',
-                    border: isActive
-                      ? '1.5px solid rgba(16,185,129,0.35)'
-                      : '1px solid rgba(255,255,255,0.8)',
-                    boxShadow: isActive
-                      ? '0 8px 28px rgba(16,185,129,0.18), 0 2px 8px rgba(6,78,59,0.06)'
-                      : '0 2px 12px rgba(6,78,59,0.06)',
-                  }}
+                  className="glass-surface overflow-hidden rounded-2xl transition-all duration-200 hover:scale-[1.01] active:scale-[0.98]"
+                  style={
+                    isActive
+                      ? {
+                          border: '1.5px solid rgba(16,185,129,0.45)',
+                          boxShadow:
+                            '0 10px 28px rgba(16,185,129,0.22), inset 0 1px 0 rgba(255,255,255,0.65), inset 0 -1px 0 rgba(255,255,255,0.10), 0 0 0 4px rgba(16,185,129,0.08)',
+                        }
+                      : undefined
+                  }
                 >
                   <div className="p-4">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
