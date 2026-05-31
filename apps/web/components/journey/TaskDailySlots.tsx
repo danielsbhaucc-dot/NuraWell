@@ -245,12 +245,12 @@ export function TaskDailySlots({
       className="relative overflow-hidden mt-2 rounded-2xl px-3 py-3 space-y-2"
       style={{
         background:
-          'linear-gradient(180deg, rgba(236,253,245,0.50) 0%, rgba(209,250,229,0.38) 100%)',
-        backdropFilter: 'blur(14px) saturate(160%)',
-        WebkitBackdropFilter: 'blur(14px) saturate(160%)',
-        border: '1px solid rgba(167,243,208,0.55)',
+          'linear-gradient(180deg, rgba(167,243,208,0.20) 0%, rgba(110,231,183,0.12) 100%)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        border: '1px solid rgba(167,243,208,0.45)',
         boxShadow:
-          'inset 0 1px 0 rgba(255,255,255,0.55), 0 4px 14px rgba(6,78,59,0.06)',
+          'inset 0 1px 0 rgba(255,255,255,0.45), 0 4px 14px rgba(6,78,59,0.06)',
       }}
     >
       <span
@@ -276,15 +276,15 @@ export function TaskDailySlots({
             background:
               completedCount === total
                 ? 'linear-gradient(135deg, rgba(16,185,129,0.95), rgba(52,211,153,0.85))'
-                : 'linear-gradient(135deg, rgba(236,253,245,0.55), rgba(167,243,208,0.40))',
+                : 'linear-gradient(135deg, rgba(167,243,208,0.28), rgba(52,211,153,0.18))',
             color: completedCount === total ? '#fff' : '#065f46',
-            border: '1px solid rgba(52,211,153,0.55)',
+            border: '1px solid rgba(52,211,153,0.50)',
             boxShadow:
               completedCount === total
                 ? '0 2px 8px rgba(16,185,129,0.30), inset 0 1px 0 rgba(255,255,255,0.35)'
-                : 'inset 0 1px 0 rgba(255,255,255,0.6)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
+                : 'inset 0 1px 0 rgba(255,255,255,0.45), 0 2px 6px rgba(6,78,59,0.10)',
+            backdropFilter: 'blur(14px) saturate(170%)',
+            WebkitBackdropFilter: 'blur(14px) saturate(170%)',
           }}
         >
           {completedCount}/{total}
@@ -312,15 +312,15 @@ export function TaskDailySlots({
                 minHeight: 56,
                 background: cell.completed
                   ? 'linear-gradient(135deg, #047857 0%, #10b981 100%)'
-                  : 'linear-gradient(135deg, rgba(236,253,245,0.55) 0%, rgba(167,243,208,0.35) 100%)',
+                  : 'linear-gradient(135deg, rgba(167,243,208,0.22) 0%, rgba(52,211,153,0.14) 100%)',
                 border: cell.completed
                   ? '1px solid rgba(167,243,208,0.55)'
-                  : '1px solid rgba(52,211,153,0.45)',
+                  : '1px solid rgba(110,231,183,0.45)',
                 boxShadow: cell.completed
                   ? '0 6px 16px rgba(6,78,59,0.25), inset 0 1px 0 rgba(255,255,255,0.30)'
-                  : 'inset 0 1px 0 rgba(255,255,255,0.55), 0 2px 8px rgba(6,78,59,0.06)',
-                backdropFilter: 'blur(12px) saturate(160%)',
-                WebkitBackdropFilter: 'blur(12px) saturate(160%)',
+                  : 'inset 0 1px 0 rgba(255,255,255,0.45), 0 2px 8px rgba(6,78,59,0.06)',
+                backdropFilter: 'blur(20px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
               }}
             >
               <span className="text-base leading-none" aria-hidden>

@@ -1326,12 +1326,12 @@ function StationDetailView({
           className="relative mb-5 overflow-hidden rounded-[22px]"
           style={{
             background:
-              'linear-gradient(135deg, rgba(236,253,245,0.55) 0%, rgba(209,250,229,0.42) 50%, rgba(167,243,208,0.38) 100%)',
-            backdropFilter: 'blur(20px) saturate(170%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(170%)',
-            border: '1px solid rgba(167,243,208,0.55)',
+              'linear-gradient(135deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 50%, rgba(52,211,153,0.18) 100%)',
+            backdropFilter: 'blur(28px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+            border: '1px solid rgba(167,243,208,0.45)',
             boxShadow:
-              '0 10px 28px rgba(6,78,59,0.10), 0 2px 8px rgba(6,78,59,0.06), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(6,78,59,0.04)',
+              '0 10px 28px rgba(6,78,59,0.10), 0 2px 8px rgba(6,78,59,0.06), inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -1px 0 rgba(6,78,59,0.04)',
           }}
         >
           {/* ✦ זוהר ירוק עדין בפינה כדי לתת לזכוכית חיים */}
@@ -1397,9 +1397,11 @@ function StationDetailView({
                 className="flex items-center gap-2 rounded-full px-3 py-1.5"
                 style={{
                   background:
-                    'linear-gradient(135deg, rgba(255,255,255,0.55), rgba(236,253,245,0.45))',
-                  border: '1px solid rgba(167,243,208,0.65)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
+                    'linear-gradient(135deg, rgba(167,243,208,0.28), rgba(52,211,153,0.18))',
+                  backdropFilter: 'blur(14px) saturate(170%)',
+                  WebkitBackdropFilter: 'blur(14px) saturate(170%)',
+                  border: '1px solid rgba(110,231,183,0.55)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55)',
                 }}
               >
                 <span

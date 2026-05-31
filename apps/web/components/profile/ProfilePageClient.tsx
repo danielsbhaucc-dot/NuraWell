@@ -165,12 +165,12 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           className="relative overflow-hidden rounded-2xl px-4 py-3"
           style={{
             background:
-              'linear-gradient(135deg, rgba(236,253,245,0.55) 0%, rgba(209,250,229,0.40) 100%)',
-            backdropFilter: 'blur(18px) saturate(160%)',
-            WebkitBackdropFilter: 'blur(18px) saturate(160%)',
-            border: '1px solid rgba(167,243,208,0.55)',
+              'linear-gradient(135deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 100%)',
+            backdropFilter: 'blur(26px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(26px) saturate(180%)',
+            border: '1px solid rgba(167,243,208,0.45)',
             boxShadow:
-              '0 10px 28px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.55)',
+              '0 10px 28px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.45)',
           }}
         >
           <span
@@ -193,12 +193,12 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           className="relative overflow-hidden rounded-3xl p-5"
           style={{
             background:
-              'linear-gradient(165deg, rgba(236,253,245,0.55) 0%, rgba(209,250,229,0.38) 60%, rgba(167,243,208,0.32) 100%)',
-            backdropFilter: 'blur(22px) saturate(170%)',
-            WebkitBackdropFilter: 'blur(22px) saturate(170%)',
-            border: '1px solid rgba(167,243,208,0.55)',
+              'linear-gradient(165deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 60%, rgba(52,211,153,0.16) 100%)',
+            backdropFilter: 'blur(28px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+            border: '1px solid rgba(167,243,208,0.45)',
             boxShadow:
-              '0 14px 36px rgba(6,78,59,0.12), inset 0 1px 0 rgba(255,255,255,0.55)',
+              '0 14px 36px rgba(6,78,59,0.12), inset 0 1px 0 rgba(255,255,255,0.45)',
           }}
         >
           <div className="flex items-center gap-4">
@@ -243,12 +243,12 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
               className="relative overflow-hidden rounded-2xl p-3 text-center"
               style={{
                 background:
-                  'linear-gradient(165deg, rgba(236,253,245,0.55) 0%, rgba(209,250,229,0.35) 100%)',
-                backdropFilter: 'blur(16px) saturate(160%)',
-                WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+                  'linear-gradient(165deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 100%)',
+                backdropFilter: 'blur(24px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
                 border: '1px solid rgba(167,243,208,0.45)',
                 boxShadow:
-                  '0 8px 22px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.55)',
+                  '0 8px 22px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.45)',
               }}
             >
               <div className="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center"
@@ -275,12 +275,12 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
             className="relative overflow-hidden rounded-3xl p-5"
             style={{
               background:
-                'linear-gradient(165deg, rgba(236,253,245,0.55) 0%, rgba(209,250,229,0.35) 100%)',
-              backdropFilter: 'blur(20px) saturate(160%)',
-              WebkitBackdropFilter: 'blur(20px) saturate(160%)',
-              border: '1px solid rgba(167,243,208,0.55)',
+                'linear-gradient(165deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 100%)',
+              backdropFilter: 'blur(26px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(26px) saturate(180%)',
+              border: '1px solid rgba(167,243,208,0.45)',
               boxShadow:
-                '0 14px 36px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.55)',
+                '0 14px 36px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.45)',
             }}
           >
             <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
@@ -314,12 +314,12 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           style={{
             padding: 0,
             background:
-              'linear-gradient(180deg, rgba(236,253,245,0.58) 0%, rgba(209,250,229,0.40) 100%)',
-            backdropFilter: 'blur(20px) saturate(160%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(160%)',
-            border: '1px solid rgba(167,243,208,0.55)',
+              'linear-gradient(180deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 100%)',
+            backdropFilter: 'blur(26px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(26px) saturate(180%)',
+            border: '1px solid rgba(167,243,208,0.45)',
             boxShadow:
-              '0 14px 36px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.55)',
+              '0 14px 36px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.45)',
           }}
         >
           {profileMenuItems.map((item, idx, arr) => (
