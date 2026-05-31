@@ -214,22 +214,6 @@ function buildUserMessage(ctx: AINotificationContext): string {
   return lines.join('\n');
 }
 
-/** Template סטטי — נכנס *רק* כשכל 4 ניסיונות ה-LLM נכשלו. */
-const ULTIMATE_FALLBACK: Record<NotificationState, (name: string, task: string) => string> = {
-  MORNING_KICKOFF: (n, t) =>
-    `בוקר טוב ${n}! יום חדש מחכה — בוא נפתח אותו עם "${t}". אתה זה 💪`,
-  NOON_CHECK: (n, t) =>
-    `היי ${n}, צ'ק-אין קצר באמצע היום: עוד לא יצא "${t}" — אפשר עכשיו, גם דקה תספיק 😊`,
-  EVENING_CHECK: (n, t) =>
-    `${n}, היום כמעט נגמר ועדיין לא יצא "${t}". דקה אחת עכשיו ויש לך יום טוב מהבחינה הזו 🌙`,
-  DAY_2_MISSED: (n, t) =>
-    `${n}, אתמול פיספסנו את "${t}" וגם היום עוד לא יצא. הכל בסדר אצלך? אני כאן אם בא לך לדבר 💛`,
-  DAY_3_MISSED: (n, t) =>
-    `${n}, כבר כמה ימים בלי "${t}" — דואג באמת. מה גורם לקושי? בוא ננסה ביחד 🤝`,
-  DORMANT: (n, t) =>
-    `${n}, מתגעגע אליך כאן! "${t}" מחכה לך כשתחזור. בלי לחץ, בקצב שלך 🌿`,
-};
-
 /** מנרמל את התשובה הגולמית של ה-LLM. מחזיר '' אם פסול / ריק. */
 function postProcess(text: string): string {
   let cleaned = (text ?? '').trim();
@@ -337,22 +321,13 @@ function buildChain(modelOverride?: string): AttemptStep[] {
   return steps;
 }
 
-/** גזירת state מינימלית רק בשביל בחירת template-סוף-העולם. */
-function pickFallbackState(ctx: AINotificationContext): NotificationState {
-  if (ctx.consecutive_missed_days >= 3) return 'DORMANT';
-  if (ctx.consecutive_missed_days === 2) return 'DAY_3_MISSED';
-  if (ctx.consecutive_missed_days === 1) return 'DAY_2_MISSED';
-  if (ctx.time_of_day === 'morning') return 'MORNING_KICKOFF';
-  if (ctx.time_of_day === 'noon') return 'NOON_CHECK';
-  return 'EVENING_CHECK';
-}
-
 export interface GenerateNotificationOptions {
-  /** Override של המודל הראשי בלבד. ה-fallback chain נשאר כפי שהוא. */
+  /** Override של המודל הראשי בלבד. ה-failover chain נשאר כפי שהוא. */
   model?: string;
   /**
-   * State פנימי לבחירת template-סוף-העולם, אם כל ה-chain נכשל.
-   * אם לא יסופק → ייגזר אוטומטית מה-context.
+   * 🛑 *Deprecated* — נשאר בחתימה לתאימות אחורה, אך לא נעשה בו שימוש.
+   * אין יותר template סטטי; אם כל ה-LLM chain נכשל, הפונקציה זורקת.
+   * צרכן צריך לתפוס את ה-throw ולא להכניס notification ל-DB.
    */
   fallbackState?: NotificationState;
 }
@@ -399,19 +374,15 @@ export async function generateNotificationText(
     }
   }
 
-  // הגענו לכאן? כל ה-chain נכשל — אירוע נדיר מאוד (שני ספקים down).
-  const fallbackState = options.fallbackState ?? pickFallbackState(ctx);
-  const body = ULTIMATE_FALLBACK[fallbackState](ctx.user_first_name, ctx.task_name);
+  // 🛑 כל ה-LLM chain נכשל. אין יותר template סטטי — זורקים שגיאה.
+  // הצרכן (Upstash Workflow) צריך לתפוס, ללא להכניס notification ל-DB.
+  // עדיף שקט מהודעה רובוטית גנרית.
   // eslint-disable-next-line no-console
   console.error(
-    '[notification-engine] All LLM providers failed, using static template:',
+    '[notification-engine] All LLM providers failed, throwing (no static fallback):',
     errors
   );
-  return {
-    body,
-    model: 'static-template',
-    attempts: attemptCount,
-    usedFallback: true,
-    errors,
-  };
+  throw new Error(
+    `[notification-engine] all LLM providers failed after ${attemptCount} attempts: ${errors.join(' | ')}`
+  );
 }
