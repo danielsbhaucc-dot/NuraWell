@@ -159,21 +159,37 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
             </div>
 
             <div
-              className="flex items-center gap-1.5 rounded-2xl px-3 py-2 text-xs font-black text-emerald-900 shadow-md transition-transform group-hover:scale-105"
+              className="relative flex items-center gap-1.5 overflow-hidden rounded-2xl px-3.5 py-2 text-xs font-black text-white shadow-md transition-transform group-hover:scale-105"
               style={{
-                background: 'linear-gradient(135deg, #ffffff, #ecfdf5)',
-                boxShadow: '0 6px 14px rgba(0,0,0,0.18)',
+                background:
+                  'linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.10) 100%)',
+                backdropFilter: 'blur(16px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+                border: '1px solid rgba(255,255,255,0.42)',
+                boxShadow:
+                  '0 8px 22px rgba(2,44,34,0.32), 0 2px 6px rgba(2,44,34,0.18), inset 0 1px 0 rgba(255,255,255,0.38), inset 0 -1px 0 rgba(255,255,255,0.08)',
+                textShadow: '0 1px 4px rgba(2,44,34,0.55)',
+                fontFamily: "'Rubik','Heebo',sans-serif",
               }}
             >
+              {/* ✦ specular highlight — קו אור עליון */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-x-2 top-px h-px"
+                style={{
+                  background:
+                    'linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent)',
+                }}
+              />
               {isCompleted ? (
                 <>
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <Sparkles className="h-3.5 w-3.5 text-amber-200" />
                   הצג שוב
                 </>
               ) : (
                 <>
                   כניסה
-                  <ArrowLeft className="h-3.5 w-3.5" />
+                  <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-x-0.5" />
                 </>
               )}
             </div>

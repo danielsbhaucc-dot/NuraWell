@@ -169,16 +169,38 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
               className="w-full text-right"
             >
               <motion.div
-                className="flex gap-3.5 items-center p-4"
+                dir="rtl"
+                className="relative flex flex-row-reverse gap-3.5 items-center p-4 overflow-hidden"
                 style={{
                   background:
-                    'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(240,253,250,0.9) 100%)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255,255,255,0.8)',
+                    'linear-gradient(135deg, rgba(236,253,245,0.55) 0%, rgba(209,250,229,0.42) 50%, rgba(167,243,208,0.38) 100%)',
+                  backdropFilter: 'blur(22px) saturate(170%)',
+                  WebkitBackdropFilter: 'blur(22px) saturate(170%)',
+                  border: '1px solid rgba(167,243,208,0.60)',
                   borderRadius: '22px',
-                  boxShadow: '0 4px 24px rgba(6,78,59,0.10), 0 1px 4px rgba(6,78,59,0.06), inset 0 1px 0 rgba(255,255,255,1)',
+                  boxShadow:
+                    '0 10px 28px rgba(6,78,59,0.10), 0 2px 8px rgba(6,78,59,0.06), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(6,78,59,0.04)',
                 }}
               >
+                {/* ✦ זוהר ירוק עדין בפינה */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -left-12 -top-12 h-32 w-32 rounded-full"
+                  style={{
+                    background:
+                      'radial-gradient(circle, rgba(52,211,153,0.45) 0%, transparent 70%)',
+                    filter: 'blur(20px)',
+                  }}
+                />
+                {/* ✦ קו אור עליון — specular highlight */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-4 top-px h-px"
+                  style={{
+                    background:
+                      'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)',
+                  }}
+                />
                 <div
                   className="flex-shrink-0 flex flex-col items-center justify-center"
                   style={{
@@ -196,18 +218,18 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
                     מתוך {taskLoading ? '…' : taskCounts.dueToday || taskCounts.accepted || '—'}
                   </span>
                 </div>
-                <div style={{ flex: 1 }}>
+                <div className="relative text-right" style={{ flex: 1 }}>
                   <p
                     style={{
                       fontSize: '15px',
                       fontWeight: 800,
-                      color: '#1A1730',
+                      color: '#022c22',
                       fontFamily: "'Rubik','Heebo',sans-serif",
                     }}
                   >
                     המשימות שלי
                   </p>
-                  <p style={{ fontSize: '12px', color: '#9896B8', margin: '2px 0 8px' }}>
+                  <p style={{ fontSize: '12px', color: '#065f46', margin: '2px 0 8px', opacity: 0.85 }}>
                     {taskLoading
                       ? 'טוען…'
                       : taskCounts.accepted === 0
@@ -232,14 +254,14 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
                             background:
                               i < taskCounts.done
                                 ? 'linear-gradient(90deg, #14b8a6, #5eead4)'
-                                : 'rgba(0,0,0,0.08)',
+                                : 'rgba(6,78,59,0.12)',
                           }}
                         />
                       ))}
                     </div>
                   )}
                 </div>
-                <ChevronLeft className="w-5 h-5 text-emerald-800/35 shrink-0" aria-hidden />
+                <ChevronLeft className="relative w-5 h-5 text-emerald-800/45 shrink-0" aria-hidden />
               </motion.div>
             </button>
           </motion.div>
@@ -376,20 +398,37 @@ function QuickLink({
 }) {
   const inner = (
     <div
-      className="flex flex-col items-center gap-2 p-4 rounded-[20px] transition active:scale-[0.98]"
+      className="relative flex flex-col items-center gap-2 p-4 rounded-[20px] transition overflow-hidden active:scale-[0.98]"
       style={{
-        background: 'rgba(255,255,255,0.92)',
-        border: '1px solid rgba(255,255,255,0.85)',
-        boxShadow: '0 4px 16px rgba(6,78,59,0.08)',
+        background:
+          'linear-gradient(165deg, rgba(236,253,245,0.55) 0%, rgba(209,250,229,0.38) 100%)',
+        backdropFilter: 'blur(16px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+        border: '1px solid rgba(167,243,208,0.55)',
+        boxShadow:
+          '0 6px 18px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.55)',
       }}
     >
+      {/* ✦ קו אור עליון */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-3 top-px h-px"
+        style={{
+          background:
+            'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
+        }}
+      />
       <div
         className="w-11 h-11 rounded-2xl flex items-center justify-center"
-        style={{ background: `${accent}18`, border: `1px solid ${accent}30` }}
+        style={{
+          background: `linear-gradient(135deg, ${accent}40, ${accent}1a)`,
+          border: `1px solid ${accent}55`,
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)',
+        }}
       >
-        <Icon className="w-5 h-5" style={{ color: accent }} strokeWidth={2.2} />
+        <Icon className="w-5 h-5" style={{ color: accent }} strokeWidth={2.4} />
       </div>
-      <span className="text-[12px] font-bold text-[#1A1730]">{label}</span>
+      <span className="text-[12px] font-bold text-emerald-950">{label}</span>
     </div>
   );
 
