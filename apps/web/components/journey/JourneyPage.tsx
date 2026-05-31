@@ -518,39 +518,24 @@ function StatChips({
     >
       {chips.map((c, i) => {
         /**
-         * פלטות עשירות יותר — כל צ'יפ הוא "מטבע זכוכית" קטן:
-         *  • bg → גרדיאנט קל עם דומיננטיות גוון
-         *  • border → טון מתאים עם אטימות גבוהה כדי לקבל קצה ברור
-         *  • glow → זוהר רך מאחורי האייקון (מוסיף עומק)
-         *  • iconBg → כיפת אייקון משלה (לא רק צבע)
+         * צ'יפים על ה-HERO (רקע ירוק כהה) — זכוכית-iOS-כהה אמיתית.
+         * רקע נייטרלי-לבן-שקוף + רמז צבע מאוד עדין דרך ה-iconBg + הגלואו.
          */
         const palette = {
           emerald: {
-            bg: 'linear-gradient(135deg, rgba(110,231,183,0.28) 0%, rgba(16,185,129,0.20) 100%)',
-            border: 'rgba(110,231,183,0.65)',
-            glow: 'rgba(110,231,183,0.42)',
-            iconBg: 'linear-gradient(135deg, rgba(167,243,208,0.95), rgba(52,211,153,0.75))',
+            glow: 'rgba(167,243,208,0.45)',
+            iconBg: 'linear-gradient(135deg, rgba(167,243,208,0.95), rgba(52,211,153,0.85))',
             iconColor: '#022c22',
-            valueColor: '#ffffff',
-            labelColor: 'rgba(236,253,245,0.92)',
           },
           amber: {
-            bg: 'linear-gradient(135deg, rgba(252,211,77,0.28) 0%, rgba(245,158,11,0.20) 100%)',
-            border: 'rgba(252,211,77,0.7)',
-            glow: 'rgba(252,211,77,0.5)',
-            iconBg: 'linear-gradient(135deg, rgba(253,224,71,0.98), rgba(245,158,11,0.85))',
+            glow: 'rgba(252,211,77,0.55)',
+            iconBg: 'linear-gradient(135deg, rgba(253,224,71,0.98), rgba(245,158,11,0.92))',
             iconColor: '#451a03',
-            valueColor: '#ffffff',
-            labelColor: 'rgba(254,243,199,0.95)',
           },
           rose: {
-            bg: 'linear-gradient(135deg, rgba(253,164,175,0.26) 0%, rgba(244,114,182,0.18) 100%)',
-            border: 'rgba(253,164,175,0.6)',
             glow: 'rgba(253,164,175,0.55)',
-            iconBg: 'linear-gradient(135deg, rgba(254,202,202,0.95), rgba(251,113,133,0.85))',
+            iconBg: 'linear-gradient(135deg, rgba(254,202,202,0.95), rgba(251,113,133,0.92))',
             iconColor: '#7f1d1d',
-            valueColor: '#ffffff',
-            labelColor: 'rgba(254,226,226,0.95)',
           },
         }[c.tone];
 
@@ -562,16 +547,9 @@ function StatChips({
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, delay: 0.6 + i * 0.07, ease: [0.22, 1, 0.36, 1] }}
             whileHover={{ y: -2, scale: 1.03 }}
-            className="relative flex items-center gap-2 rounded-full py-1.5 pl-3.5 pr-1.5 overflow-hidden"
-            style={{
-              background: palette.bg,
-              border: `1px solid ${palette.border}`,
-              backdropFilter: 'blur(14px) saturate(160%)',
-              WebkitBackdropFilter: 'blur(14px) saturate(160%)',
-              boxShadow: `0 6px 18px rgba(2,44,34,0.25), inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -1px 0 rgba(2,44,34,0.10)`,
-            }}
+            className="glass-pill-dark relative flex items-center gap-2 rounded-full py-1.5 pl-3.5 pr-1.5 overflow-hidden"
           >
-            {/* ✦ הילה רכה מאחורי האייקון (מוסיפה עומק) */}
+            {/* ✦ הילה רכה מאחורי האייקון (מרמזת את הגוון מבלי לצבוע את הזכוכית) */}
             <span
               aria-hidden
               className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full"
@@ -590,7 +568,7 @@ function StatChips({
               }}
             />
 
-            {/* ─── כיפת אייקון משלה ─── */}
+            {/* ─── כיפת אייקון משלה — כאן יש את הצבע ─── */}
             <span
               className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
               style={{
@@ -605,15 +583,14 @@ function StatChips({
 
             <span
               className="relative text-[11px] font-bold tracking-wide"
-              style={{ color: palette.labelColor }}
+              style={{ color: 'rgba(255,255,255,0.92)' }}
             >
               {c.label}
             </span>
 
             <span
-              className="relative text-[14px] font-black tabular-nums"
+              className="relative text-[14px] font-black tabular-nums text-white"
               style={{
-                color: palette.valueColor,
                 fontFamily: "'Rubik','Heebo',sans-serif",
                 textShadow: '0 1px 4px rgba(2,44,34,0.45)',
               }}
@@ -1323,27 +1300,8 @@ function StationDetailView({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.15 }}
-          className="relative mb-5 overflow-hidden rounded-[22px]"
-          style={{
-            background:
-              'linear-gradient(135deg, rgba(167,243,208,0.22) 0%, rgba(110,231,183,0.14) 50%, rgba(52,211,153,0.18) 100%)',
-            backdropFilter: 'blur(28px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-            border: '1px solid rgba(167,243,208,0.45)',
-            boxShadow:
-              '0 10px 28px rgba(6,78,59,0.10), 0 2px 8px rgba(6,78,59,0.06), inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -1px 0 rgba(6,78,59,0.04)',
-          }}
+          className="glass-surface relative mb-5 overflow-hidden rounded-[22px]"
         >
-          {/* ✦ זוהר ירוק עדין בפינה כדי לתת לזכוכית חיים */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -left-12 -top-12 h-32 w-32 rounded-full"
-            style={{
-              background:
-                'radial-gradient(circle, rgba(52,211,153,0.45) 0%, transparent 70%)',
-              filter: 'blur(20px)',
-            }}
-          />
           {/* ✦ קו אור עליון — specular highlight */}
           <div
             aria-hidden
@@ -1393,17 +1351,7 @@ function StationDetailView({
                 תחנה הושלמה
               </div>
             ) : (
-              <div
-                className="flex items-center gap-2 rounded-full px-3 py-1.5"
-                style={{
-                  background:
-                    'linear-gradient(135deg, rgba(167,243,208,0.28), rgba(52,211,153,0.18))',
-                  backdropFilter: 'blur(14px) saturate(170%)',
-                  WebkitBackdropFilter: 'blur(14px) saturate(170%)',
-                  border: '1px solid rgba(110,231,183,0.55)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55)',
-                }}
-              >
+              <div className="glass-pill flex items-center gap-2 rounded-full px-3 py-1.5">
                 <span
                   className="text-[13px] font-black text-emerald-700 tabular-nums"
                   style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
