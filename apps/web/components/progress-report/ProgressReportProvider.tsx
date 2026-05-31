@@ -269,17 +269,9 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
 
             <div className="shrink-0 px-3 pt-3 pb-2">
               <div
-                className="flex gap-1 rounded-[22px] p-1"
+                className="glass-inset flex gap-1 rounded-[22px] p-1"
                 role="tablist"
                 aria-label="סוג דיווח"
-                style={{
-                  background: 'rgba(255,255,255,0.42)',
-                  backdropFilter: 'blur(18px)',
-                  WebkitBackdropFilter: 'blur(18px)',
-                  border: '1px solid rgba(255,255,255,0.55)',
-                  boxShadow:
-                    'inset 0 1px 0 rgba(255,255,255,0.65), 0 6px 20px rgba(6,78,59,0.08)',
-                }}
               >
                 <button
                   type="button"
