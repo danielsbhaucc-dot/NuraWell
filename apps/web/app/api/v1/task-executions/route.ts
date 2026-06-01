@@ -50,12 +50,17 @@ export async function POST(request: Request) {
     const parsed = taskExecutionInsertSchema.safeParse(raw.value);
     if (!parsed.success) return jsonZodError(parsed.error);
 
-    const { step_id, task_id, slot, date_key, source, note } = parsed.data;
+    const { step_id, task_id, slot, date_key, source, note, outcome } = parsed.data;
     const { supabase, user } = auth;
 
     const dk = date_key || jerusalemDateKey();
     const nowIso = new Date().toISOString();
 
+    /**
+     * outcome — האם המשתמש דיווח על "בוצע" או "ניסיתי ונכשלתי".
+     * עמודה נוספה במיגרציה 000030. אם ה-DB טרם עודכן, ההשמה תיכשל
+     * בשגיאת `column does not exist` ונחזיר את ההודעה כפי שהיא ל-UI.
+     */
     const row = {
       user_id: user.id,
       step_id,
@@ -64,6 +69,7 @@ export async function POST(request: Request) {
       slot: slot ?? 'full_day',
       completed_at: nowIso,
       source: source ?? 'manual',
+      outcome: outcome ?? 'completed',
       ...(note ? { note } : {}),
     };
 

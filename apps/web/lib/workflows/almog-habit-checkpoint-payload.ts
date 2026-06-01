@@ -73,6 +73,28 @@ export type HabitCheckpointCadenceStage = z.infer<
 >;
 
 /**
+ * רמת דחיפות רגשית — מודולציית טון מעל ה-cadence (לפי "הנחיה 1" של Claude).
+ * מחושבת דטרמיניסטית ב-`deriveUrgencyLevel` בצד ה-cron, ועוברת ל-LLM
+ * כ-style hint יחד עם system prompt של אלמוג.
+ *   gentle          — יום ראשון, חם ומעודד
+ *   friendly_nudge  — יום 1, שובב ועדין
+ *   concerned       — 2 ימים, מודאג קצת בלי דרמה
+ *   worried         — 3-6 ימים, מתגעגע אבל מקבל
+ *   check_in        — 7+, רגוע ונוכח כמו חבר ישן
+ */
+export const habitCheckpointUrgencyLevelSchema = z.enum([
+  'gentle',
+  'friendly_nudge',
+  'concerned',
+  'worried',
+  'check_in',
+]);
+
+export type HabitCheckpointUrgencyLevel = z.infer<
+  typeof habitCheckpointUrgencyLevelSchema
+>;
+
+/**
  * Payload לטריגר Workflow של habit checkpoint.
  *
  * remind — יש הרגל/משימה שלא סומנו בוצעו ב-DB.
@@ -105,6 +127,15 @@ export const almogHabitCheckpointPayloadSchema = z
     completionStatus: habitCheckpointCompletionStatusSchema.default('none'),
     /** שלב cadence — קובע תדירות והאמפתיות של ההודעה. */
     cadenceStage: habitCheckpointCadenceStageSchema.default('active'),
+    /**
+     * רמת דחיפות רגשית (5 רמות) — מודולציית טון לפי המסמך המקורי.
+     * מחושבת מ-`daysSinceLastActive` ו-`slot` ב-cron.
+     */
+    urgencyLevel: habitCheckpointUrgencyLevelSchema.default('gentle'),
+    /** סה"כ התראות שאי-פעם נשלחו למשתמש (`profiles.notification_count`). */
+    notificationCount: z.number().int().min(0).max(100000).default(0),
+    /** שעות מאז שהמשתמש פעיל לאחרונה (כתב בצ'אט/סימן משימה). undefined כשאין. */
+    hoursSinceLastResponse: z.number().int().min(0).max(100000).optional(),
   })
   .refine(
     (v) => {

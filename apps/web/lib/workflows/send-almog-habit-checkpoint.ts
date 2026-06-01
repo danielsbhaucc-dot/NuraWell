@@ -359,6 +359,27 @@ export async function sendAlmogHabitCheckpointNotification(
     completionStatus: payload.completionStatus,
     currentSlot: payload.slot,
     cadenceStage: payload.cadenceStage,
+    /**
+     * שדות מהמסמך המקורי (מועברים ב-payload ע"י ה-cron).
+     * אם payload ישן/לא תקין — `urgencyLevel` יחושב פה כ-fallback רך.
+     */
+    urgencyLevel:
+      payload.urgencyLevel ??
+      (payload.daysSinceLastActive === 0
+        ? payload.slot === 'evening'
+          ? 'friendly_nudge'
+          : 'gentle'
+        : payload.daysSinceLastActive === 1
+          ? 'friendly_nudge'
+          : payload.daysSinceLastActive === 2
+            ? 'concerned'
+            : payload.daysSinceLastActive <= 6
+              ? 'worried'
+              : 'check_in'),
+    notificationCount: payload.notificationCount ?? 0,
+    ...(typeof payload.hoursSinceLastResponse === 'number'
+      ? { hoursSinceLastResponse: payload.hoursSinceLastResponse }
+      : {}),
   };
 
   const systemPrompt = buildHabitCheckpointSystemPrompt({

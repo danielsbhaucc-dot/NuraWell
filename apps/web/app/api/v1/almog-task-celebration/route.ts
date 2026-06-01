@@ -8,13 +8,23 @@ import { createAdminClient } from '../../../../lib/supabase/admin';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const slotRe =
+  /^(?:full_day|morning|noon|evening|meal_breakfast|meal_lunch|meal_dinner|slot_[1-6])$/;
+
 const bodySchema = z.object({
   step_id: z.string().uuid(),
   task_id: z.string().min(1).max(200),
+  /** סלוט ספציפי שזה עתה סומן — מאפשר חגיגה פר-סלוט, לא רק על "הכל סגור". */
+  slot: z.string().regex(slotRe).optional(),
+  /** completed (ברירת מחדל) או attempt_failed → מסר תמיכה. */
+  outcome: z.enum(['completed', 'attempt_failed']).optional(),
+  /** המשתמש סימן סלוט שכבר היה מסומן — חיזוק עדין. */
+  was_already_done: z.boolean().optional(),
 });
 
 /**
- * אחרי סימון "ביצעתי" על משימה — נוטיפיקציה מיידית מאלמוג (AI מותאם לקלות/קושי משוער מהניסוח).
+ * אחרי סימון "ביצעתי" / "ניסיתי ונכשלתי" — נוטיפיקציה מיידית מאלמוג עם
+ * סטריק דטרמיניסטי. ראה `sendTaskCompletionCelebration`.
  */
 export async function POST(request: Request) {
   const auth = await requireApiSession(request);
@@ -34,12 +44,15 @@ export async function POST(request: Request) {
 
   try {
     const admin = createAdminClient();
-    const result = await sendTaskCompletionCelebration(
-      admin,
-      auth.user.id,
-      parsed.data.step_id,
-      parsed.data.task_id
-    );
+    const result = await sendTaskCompletionCelebration(admin, {
+      userId: auth.user.id,
+      stepId: parsed.data.step_id,
+      taskId: parsed.data.task_id,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      slot: parsed.data.slot as any,
+      outcome: parsed.data.outcome,
+      wasAlreadyDone: parsed.data.was_already_done,
+    });
 
     if (result.skipped) {
       return NextResponse.json({ ok: true, skipped: true, reason: 'recent_duplicate' });

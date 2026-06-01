@@ -300,6 +300,8 @@ export async function POST(request: Request) {
     daysSinceLastActive: 0,
     completionStatus: 'none',
     cadenceStage: 'active',
+    urgencyLevel: slot === 'evening' ? 'friendly_nudge' : 'gentle',
+    notificationCount: 0,
   };
 
   if (!bypassGate) {

@@ -301,6 +301,9 @@ export async function sendOnboardingCheckInNotification(
       daysSinceLastActive: journeyExecutionContext.daysSinceLastActive,
       completionStatus: journeyExecutionContext.completionStatus,
       cadenceStage: journeyExecutionContext.cadenceStage,
+      /** Onboarding tier — אין דחיפות מצטברת, טון gentle/friendly_nudge. */
+      urgencyLevel: slot === 'evening' ? 'friendly_nudge' : 'gentle',
+      notificationCount: 0,
     };
 
     systemPrompt = buildHabitCheckpointSystemPrompt({
@@ -314,6 +317,12 @@ export async function sendOnboardingCheckInNotification(
         currentSlot: slot,
         nudgeLevel: journeyExecutionContext.nudgeLevel,
         cadenceStage: journeyExecutionContext.cadenceStage,
+        /**
+         * Onboarding check-in — תמיד יום 0 בפועל (משתמש שהיום נכנס למסלול).
+         * Urgency = gentle/friendly_nudge לפי ה-slot. אין צבירת התראות עדיין.
+         */
+        urgencyLevel: slot === 'evening' ? 'friendly_nudge' : 'gentle',
+        notificationCount: 0,
       },
       weekdayName,
       timeHHMM,
