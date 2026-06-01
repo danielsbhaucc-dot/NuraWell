@@ -1,14 +1,15 @@
 'use client';
 
-type DayState = { d: string; c: number; t: number };
+type DayState = { d: string; c: number; t: number; a?: number };
 
 function status(
   day: DayState,
   isToday: boolean
-): 'done' | 'partial' | 'open' | 'missed' | 'off' {
+): 'done' | 'partial' | 'attempted' | 'open' | 'missed' | 'off' {
   if (day.t <= 0) return 'off';
-  if (day.c >= day.t) return 'done';
+  if (day.c >= day.t && day.c > 0) return 'done';
   if (day.c > 0) return 'partial';
+  if ((day.a ?? 0) > 0) return 'attempted';
   if (isToday) return 'open';
   return 'missed';
 }
@@ -16,6 +17,7 @@ function status(
 const cls: Record<ReturnType<typeof status>, string> = {
   done: 'bg-emerald-500',
   partial: 'bg-amber-500',
+  attempted: 'bg-violet-500',
   open: 'bg-sky-300',
   missed: 'bg-rose-300/80',
   off: 'bg-slate-200/70',

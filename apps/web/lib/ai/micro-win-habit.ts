@@ -127,3 +127,114 @@ export async function markMicroWinHabitForUser(
 ): Promise<MicroWinHabitResult> {
   return markHabitForUser(supabase, userId);
 }
+
+/**
+ * `opt-out` של הרגל ספציפי — *לא מסמן ביצוע*; מסמן ב-`habit_meta` שהמשתמש
+ * לא רוצה את ההרגל הזה. ה-cron של habit-checkpoints + ה-UI יכבדו את הסימון
+ * הזה ולא ימשיכו לבקש את ההרגל.
+ *
+ * דוגמת קלט מהמשתמש שמובילה לפה:
+ *   • "אני לא רוצה את ההרגל הזה"
+ *   • "תוריד לי את ההרגל"
+ *   • "זה לא מתאים לי"
+ *
+ * המבנה נשמר ב-`journey_progress.habit_meta`:
+ *   {
+ *     [habitId]: {
+ *       opted_out: true,
+ *       opted_out_at: '2026-01-15T10:30:00Z',
+ *       ...meta קיים אם יש (streak וכו')
+ *     }
+ *   }
+ *
+ * אין צריכים מיגרציית DDL — `habit_meta` הוא JSONB גמיש (מיגרציה 000024).
+ */
+export type OptOutHabitResult =
+  | { ok: true; stepId: string; habitId: string }
+  | { ok: false; error: 'no_active_step' | 'save_failed'; message: string };
+
+export async function optOutHabitForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  habitId: string
+): Promise<OptOutHabitResult> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: progress, error: progErr } = await (supabase as any)
+    .from('journey_progress')
+    .select('step_id, habit_meta')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (progErr) {
+    return { ok: false, error: 'save_failed', message: progErr.message };
+  }
+
+  const stepId = progress?.step_id as string | undefined;
+  if (!stepId) {
+    return { ok: false, error: 'no_active_step', message: 'אין צעד פעיל במסע' };
+  }
+
+  const prevMeta =
+    progress?.habit_meta && typeof progress.habit_meta === 'object' && !Array.isArray(progress.habit_meta)
+      ? (progress.habit_meta as Record<string, Record<string, unknown>>)
+      : {};
+
+  const existing = prevMeta[habitId] ?? {};
+  const habit_meta = {
+    ...prevMeta,
+    [habitId]: {
+      ...existing,
+      opted_out: true,
+      opted_out_at: new Date().toISOString(),
+    },
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: upErr } = await (supabase as any).from('journey_progress').upsert(
+    {
+      user_id: userId,
+      step_id: stepId,
+      habit_meta,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id,step_id' }
+  );
+
+  if (upErr) {
+    return { ok: false, error: 'save_failed', message: upErr.message };
+  }
+
+  return { ok: true, stepId, habitId };
+}
+
+/**
+ * האם הרגל זה הוסר (opt-out) ע"י המשתמש? — שימוש ב-cron ובאקסטרקציה לכבד
+ * את הרצון. מחזיר `false` בשגיאות (fail-open: עדיף לשאול ולא להתעלם).
+ */
+export async function isHabitOptedOut(
+  supabase: SupabaseClient,
+  userId: string,
+  habitId: string
+): Promise<boolean> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from('journey_progress')
+      .select('habit_meta')
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const meta =
+      data?.habit_meta && typeof data.habit_meta === 'object' && !Array.isArray(data.habit_meta)
+        ? (data.habit_meta as Record<string, { opted_out?: boolean }>)
+        : {};
+
+    return meta[habitId]?.opted_out === true;
+  } catch {
+    return false;
+  }
+}

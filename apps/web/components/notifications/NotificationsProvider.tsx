@@ -6,13 +6,15 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
-import type { User } from '@supabase/supabase-js';
+import type { RealtimeChannel, User } from '@supabase/supabase-js';
 import { Drawer } from 'vaul';
 import { CheckCheck, ChevronDown, Loader2 } from 'lucide-react';
 import { NotificationCard } from './NotificationCard';
+import { LiveToastStack } from './LiveNotificationToast';
 import { extractExpectsReply, extractSource } from '../../lib/notifications/replyable';
 import { createClient } from '../../lib/supabase/client';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
@@ -149,6 +151,12 @@ export function NotificationsProvider({
   const [filterKind, setFilterKind] = useState<FilterKind>('all');
   const [unreadTotal, setUnreadTotal] = useState(0);
   const [timeTick, setTimeTick] = useState(0);
+  /**
+   * 🔔 Live toast queue — כל התראה חדשה שמגיעה דרך realtime/SW כשהמסך
+   * פעיל ב-foreground נדחפת לכאן ומופיעה כ-toast קופץ מעל הכל.
+   * ה-stack מציג עד 3 — הישנים יוצאים אוטומטית או כשהמשתמש סוגר.
+   */
+  const [liveToasts, setLiveToasts] = useState<NotificationItem[]>([]);
 
   const filterKey = `${viewMode}-${filterKind}`;
 
@@ -218,37 +226,221 @@ export function NotificationsProvider({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- טעינה כשמשנים טאב/פילטר
   }, [filterKey]);
 
+  /**
+   * 🚀 דחיפה ל-live toast queue — נקרא ע"י realtime ו-SW כש-INSERT מתקבל
+   * והאפליקציה פעילה ב-foreground. הגנה מפני duplicate (אותו id כבר ב-toast
+   * או ב-items).
+   */
+  const enqueueToast = useCallback((row: NotificationItem) => {
+    if (row.archived_at || row.is_read) return;
+    setLiveToasts((prev) => {
+      if (prev.some((p) => p.id === row.id)) return prev;
+      // החדש בראש; הישן מאחור (FIFO על המסך)
+      return [row, ...prev].slice(0, 6);
+    });
+  }, []);
+
+  const dismissToast = useCallback((id: string) => {
+    setLiveToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  /**
+   * 📡 Realtime עמיד-לחיים — מאזין ל-INSERT-ים על `notifications` של המשתמש.
+   *
+   * 🐛 הבאג שתוקן כאן: ה-channel נסגר אחרי תקופות ארוכות של idle (טאב ברקע,
+   * שינוי רשת, sleep). הקוד הישן רק יצר channel פעם אחת ב-mount; כשהיא
+   * נסגרה, ה-UI לא קיבל יותר התראות חיות גם כשהמשתמש חזר לטאב — *זאת*
+   * הסיבה שהמסך נשאר פתוח שעה ולא התעדכן.
+   *
+   * הפתרון:
+   *  1. עוקבים אחרי `status` של ה-channel; ב-CLOSED/CHANNEL_ERROR/TIMED_OUT
+   *     מתזמנים reconnect עם backoff.
+   *  2. ב-`visibilitychange` (hidden→visible) → מצרכים `loadInitial` *וגם*
+   *     מאלצים reconnect של הchannel אם הוא לא SUBSCRIBED.
+   *  3. ב-`online` (חזרה לרשת) → reconnect.
+   *  4. שמירת `latestFiltersRef` כדי שהקלוז'ר של ה-callback יראה תמיד את
+   *     הפילטרים המעודכנים בלי לעקור את ה-channel בכל שינוי פילטר (יקר!).
+   *  5. heartbeat — אחת ל-5 דקות בודקים שה-channel באמת חי; אם לא, מחדשים.
+   */
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const channelStatusRef = useRef<string>('IDLE');
+  const reconnectTimerRef = useRef<number | null>(null);
+  const reconnectAttemptRef = useRef(0);
+  const latestFiltersRef = useRef({ viewMode, filterKind });
+
+  useEffect(() => {
+    latestFiltersRef.current = { viewMode, filterKind };
+  }, [viewMode, filterKind]);
+
+  /** Stable callback — נשמר באותו closure ב-Realtime callback. */
+  const handleRealtimeInsert = useCallback(
+    (newRow: Record<string, unknown>) => {
+      const row = mapRealtimeRow(newRow);
+      if (!row || row.archived_at) return;
+
+      const { viewMode: vm, filterKind: fk } = latestFiltersRef.current;
+      const matchesFilter =
+        vm !== 'archive' &&
+        !(fk === 'unread' && row.is_read) &&
+        !(fk === 'almog' && row.type !== 'ai_message');
+      if (matchesFilter) {
+        setItems((prev) => {
+          if (prev.some((p) => p.id === row.id)) return prev;
+          return [row, ...prev];
+        });
+      }
+      if (!row.is_read) setUnreadTotal((u) => u + 1);
+
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        enqueueToast(row);
+      }
+    },
+    [enqueueToast]
+  );
+
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel(`notifications-live-${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const row = mapRealtimeRow(payload.new as Record<string, unknown>);
-          if (!row || row.archived_at) return;
-          if (viewMode === 'archive') return;
-          if (filterKind === 'unread' && row.is_read) return;
-          if (filterKind === 'almog' && row.type !== 'ai_message') return;
-          setItems((prev) => {
-            if (prev.some((p) => p.id === row.id)) return prev;
-            return [row, ...prev];
-          });
-          if (!row.is_read) setUnreadTotal((u) => u + 1);
-        }
-      )
-      .subscribe();
+    let teardown = false;
+
+    const cleanupChannel = () => {
+      const ch = channelRef.current;
+      if (ch) {
+        void supabase.removeChannel(ch);
+        channelRef.current = null;
+      }
+    };
+
+    const scheduleReconnect = (reason: string) => {
+      if (teardown) return;
+      if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
+      reconnectAttemptRef.current += 1;
+      /** Exponential backoff עם תקרה — מתחיל ב-2s ועד 30s. */
+      const delay = Math.min(2000 * Math.pow(1.6, reconnectAttemptRef.current - 1), 30_000);
+      console.warn(
+        `[notifications-realtime] scheduling reconnect (${reason}) attempt=${reconnectAttemptRef.current} delay=${Math.round(delay)}ms`
+      );
+      reconnectTimerRef.current = window.setTimeout(() => {
+        if (teardown) return;
+        connect();
+      }, delay);
+    };
+
+    const connect = () => {
+      if (teardown) return;
+      cleanupChannel();
+
+      const channel = supabase
+        .channel(`notifications-live-${userId}-${Date.now()}`, {
+          config: { broadcast: { ack: false }, presence: { key: '' } },
+        })
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${userId}`,
+          },
+          (payload) => {
+            handleRealtimeInsert(payload.new as Record<string, unknown>);
+          }
+        )
+        .subscribe((status, err) => {
+          channelStatusRef.current = status;
+          if (status === 'SUBSCRIBED') {
+            reconnectAttemptRef.current = 0;
+            /**
+             * אחרי חיבור-מחדש — סנכרון מצב כדי לא לפספס INSERT-ים שהתרחשו
+             * בזמן שהיינו offline / channel סגור.
+             */
+            void loadInitial({ silent: true });
+          } else if (
+            status === 'CHANNEL_ERROR' ||
+            status === 'TIMED_OUT' ||
+            status === 'CLOSED'
+          ) {
+            if (err) {
+              console.warn('[notifications-realtime] channel error:', err);
+            }
+            scheduleReconnect(status);
+          }
+        });
+
+      channelRef.current = channel;
+    };
+
+    connect();
+
+    /** visibility — חזרה לטאב: רענון + ודא שה-channel חי. */
+    const onVis = () => {
+      if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
+      void loadInitial({ silent: true });
+      if (channelStatusRef.current !== 'SUBSCRIBED') {
+        console.info('[notifications-realtime] tab visible — forcing reconnect');
+        reconnectAttemptRef.current = 0;
+        connect();
+      }
+    };
+
+    /** online — חזרה לרשת: reconnect מיידי. */
+    const onOnline = () => {
+      console.info('[notifications-realtime] back online — forcing reconnect');
+      reconnectAttemptRef.current = 0;
+      connect();
+    };
+
+    /** heartbeat — אחת ל-5 דקות מאמת שה-channel SUBSCRIBED. */
+    const heartbeat = window.setInterval(() => {
+      if (
+        channelStatusRef.current !== 'SUBSCRIBED' &&
+        typeof document !== 'undefined' &&
+        document.visibilityState === 'visible'
+      ) {
+        console.warn(
+          '[notifications-realtime] heartbeat detected non-subscribed channel, reconnecting'
+        );
+        reconnectAttemptRef.current = 0;
+        connect();
+      }
+    }, 300_000);
+
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('online', onOnline);
 
     return () => {
-      void supabase.removeChannel(channel);
+      teardown = true;
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('online', onOnline);
+      if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
+      window.clearInterval(heartbeat);
+      cleanupChannel();
     };
-  }, [userId, viewMode, filterKind]);
+  }, [userId, handleRealtimeInsert, loadInitial]);
+
+  /**
+   * 📨 גשר Service Worker → חלון. ה-SW שולח postMessage כש-push מתקבל
+   * והוא מזהה client visible. אנחנו מאזינים פה ומציגים toast. זה משלים
+   * את ה-realtime למקרה שה-INSERT ל-DB טרם הסתנכרן (push לפני realtime).
+   */
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      const data = event.data;
+      if (!data || typeof data !== 'object') return;
+      if ((data as { type?: string }).type !== 'live-notification') return;
+      const payload = (data as { payload?: Record<string, unknown> }).payload;
+      if (!payload) return;
+      const row = mapRealtimeRow(payload);
+      if (!row) return;
+      enqueueToast(row);
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handleMessage);
+    };
+  }, [enqueueToast]);
 
   useEffect(() => {
     const tick = () => {
@@ -327,6 +519,22 @@ export function NotificationsProvider({
     [open, unreadTotal]
   );
 
+  /**
+   * Toast → click: סימון כנקרא, סגירת toast, ופתיחת ה-drawer כדי שהמשתמש
+   * יראה את ההתראה במלואה (UX סטנדרטי של iOS — נגיעה ב-banner פותחת).
+   */
+  const handleToastClick = useCallback(
+    (id: string) => {
+      const toast = liveToasts.find((t) => t.id === id);
+      if (toast && !toast.is_read) {
+        void markOne(id, true);
+      }
+      setLiveToasts((prev) => prev.filter((t) => t.id !== id));
+      setOpen(true);
+    },
+    [liveToasts, markOne]
+  );
+
   const nowMs = useMemo(() => Date.now(), [timeTick, open]);
 
   const showMarkAll = viewMode === 'inbox' && items.some((n) => !n.is_read);
@@ -334,6 +542,15 @@ export function NotificationsProvider({
   return (
     <NotificationsDrawerContext.Provider value={ctxValue}>
       {children}
+
+      {/* 🔔 Live toast stack — מופיע על כל המסך, גלובלי. */}
+      <LiveToastStack
+        toasts={liveToasts}
+        almogAvatar={almogAvatar}
+        dolevAvatar={dolevAvatar}
+        onDismiss={dismissToast}
+        onClick={handleToastClick}
+      />
 
       <Drawer.Root open={open} onOpenChange={setOpen} direction="bottom" shouldScaleBackground>
         <Drawer.Portal>

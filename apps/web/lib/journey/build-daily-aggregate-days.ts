@@ -18,10 +18,15 @@ import type { JourneyTask } from '../types/journey';
 
 export type DailyAggregateDay = {
   d: string;
-  /** ביצועים שתועדו */
+  /** ביצועים שתועדו (outcome=completed) */
   c: number;
   /** סלוטים צפויים (0 = יום לא פעיל — לא מציגים כפספוס) */
   t: number;
+  /**
+   * דיווחי "ניסיתי ונכשלתי" (outcome=attempt_failed) באותו יום.
+   * חשוב לצבע ההיסטוריה — אם c=0 אבל a>0, אנחנו מציגים סגול, לא רוז.
+   */
+  a?: number;
 };
 
 type StepShape = {
@@ -42,9 +47,10 @@ export function buildDailyAggregateDays(
   progressRows: ProgShape[],
   executionCountByDate: Map<string, number>,
   daysBack = 30,
-  now: Date = new Date()
+  now: Date = new Date(),
+  attemptCountByDate?: Map<string, number>
 ): DailyAggregateDay[] {
-  const todayKey = jerusalemDateKey(now);
+  void jerusalemDateKey(now); /** keep ref — todayKey unused after refactor */
   const progByStep = new Map(progressRows.map((p) => [p.step_id, p]));
 
   /** רשימת משימות מקובלות עם metadata לחישוב */
@@ -79,7 +85,8 @@ export function buildDailyAggregateDays(
       expectedTotal += slotsForSchedule(schedule, times_per_day).length;
     }
     const c = executionCountByDate.get(dateKey) ?? 0;
-    out.push({ d: dateKey, c, t: expectedTotal });
+    const a = attemptCountByDate?.get(dateKey) ?? 0;
+    out.push({ d: dateKey, c, t: expectedTotal, a });
   }
 
   /** אם אין משימות מקובלות — נשמור t=1 לתאימות (התנהגות ישנה) */
