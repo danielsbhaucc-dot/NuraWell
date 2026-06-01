@@ -166,8 +166,8 @@ export function formatTaskIntentPromptBlock(
     case 'question':
       return `[משימה:${t}·question${note}] המשתמש שואל שאלה. ענה קצר ופשוט (2-3 משפטים). אל תציף.`;
 
-    case 'unknown':
     default:
+      /** `unknown` כבר נסונן מוקדם (line 124); ה-default קיים רק ל-exhaustiveness. */
       return null;
   }
 }
