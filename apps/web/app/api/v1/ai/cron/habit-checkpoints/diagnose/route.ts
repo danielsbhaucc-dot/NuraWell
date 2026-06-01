@@ -325,11 +325,17 @@ export async function POST(request: Request) {
     .filter((h, i, arr) => arr.findIndex((x) => x.id === h.id) === i);
   const slotHabits = filterHabitsForSlot(allHabits, slot, weekday);
 
+  /**
+   * `planHabitCheckpointTriggers` מצפה למפה רב-משתמשית
+   * (user → task → slots). פה אנחנו מאבחנים משתמש יחיד, ולכן עוטפים
+   * את המפה הפנימית תחת `targetUserId`.
+   */
+  const todayExecutionsByUser = new Map([[targetUserId, todayExecutions]]);
   const plan = planHabitCheckpointTriggers(
     progressRows,
     slot,
     now,
-    todayExecutions,
+    todayExecutionsByUser,
     lastActiveByUser
   );
   const userPlan = plan.find((p) => p.userId === targetUserId) ?? null;

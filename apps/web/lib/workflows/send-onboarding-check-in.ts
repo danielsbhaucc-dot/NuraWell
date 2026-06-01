@@ -422,7 +422,11 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
  * מבוסס על מה ש-`formatHabitsForPrompt` של habit-checkpoint עושה.
  */
 function formatBehavioralTaskContextBlock(
-  journeyCtx: NonNullable<Awaited<ReturnType<typeof fetchPersonalizedCheckInJourneyContext>>>,
+  /**
+   * `journeyCtx` יכול להיות null אם המשתמש בלי step פעיל — הבלוק עדיין יציג
+   * את ה-slot/weekday הבסיסיים. הקוד בפנים כבר משתמש ב-`journeyCtx?.X`.
+   */
+  journeyCtx: Awaited<ReturnType<typeof fetchPersonalizedCheckInJourneyContext>> | null,
   exec: { completedTodayHabits: Array<{ id: string; title: string }>; completedTodayTasks: Array<{ id: string; title: string }> },
   slot: HabitCheckpointSlot,
   weekdayName: string,
