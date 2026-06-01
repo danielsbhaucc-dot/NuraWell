@@ -165,6 +165,7 @@ export async function POST(request: Request) {
   const body = parsed.data;
 
   let targetUserId: string;
+  let isAdminCaller = false;
   if (hasCronBearer) {
     if (!body.userId) {
       return NextResponse.json(
@@ -183,6 +184,15 @@ export async function POST(request: Request) {
       );
     }
     targetUserId = session.user.id;
+
+    /** ניתן ל-admin מתחבר מאזור Ops את אותן יכולות bypass כמו ל-cron. */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: profile } = await (session.supabase as any)
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+    isAdminCaller = profile?.role === 'admin';
 
     if (process.env.NODE_ENV === 'production') {
       const limited = await consumeRateLimit({
@@ -203,8 +213,14 @@ export async function POST(request: Request) {
   const isProduction = process.env.NODE_ENV === 'production';
   const now = new Date();
   const slot = body.slot ?? slotFromJerusalemNow(now);
-  const bypassGate = body.bypassGate ?? (!isProduction || hasCronBearer);
-  const bypassEligibility = body.bypassEligibility ?? (!isProduction || hasCronBearer);
+  /**
+   * 🛡️ bypassGate / bypassEligibility — flags חזקים שמוציאים את ההודעה
+   * מ-state-machine הרגיל. מאפשרים אותם רק ל-cron secret או admin
+   * בפרודקשן; משתמש רגיל ב-prod לא יכול לעקוף gate ויצירת spam.
+   */
+  const allowBypass = !isProduction || hasCronBearer || isAdminCaller;
+  const bypassGate = (body.bypassGate ?? !isProduction) && allowBypass;
+  const bypassEligibility = (body.bypassEligibility ?? !isProduction) && allowBypass;
   const allowFallbackHabit = body.allowFallbackHabit ?? true;
 
   const admin = createAdminClient();
@@ -213,8 +229,9 @@ export async function POST(request: Request) {
   try {
     progressRows = await fetchUserProgressRows(admin, targetUserId);
   } catch (e) {
+    console.error('[habit-checkpoint test] journey_progress query failed', e);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'journey_progress query failed' },
+      { error: 'journey_progress query failed' },
       { status: 500 }
     );
   }
@@ -383,16 +400,20 @@ export async function POST(request: Request) {
     });
   } catch (e) {
     console.error('[habit-checkpoint test] send_failed', e);
+    /**
+     * אל תחשוף `e.message`/`e.stack` ב-production. שומרים אותם בלוגים
+     * אבל מחזירים ללקוח רק error code שמספיק לדיבוג ב-UI.
+     */
     return NextResponse.json(
       {
         ok: false,
         error: 'send_failed',
-        details: e instanceof Error ? e.message : String(e),
-        stack:
-          process.env.NODE_ENV !== 'production' && e instanceof Error ? e.stack : undefined,
         slot,
         checkpoint_date: dateKey,
         target_user_id: targetUserId,
+        ...(process.env.NODE_ENV !== 'production' && e instanceof Error
+          ? { debug: { message: e.message, stack: e.stack } }
+          : {}),
       },
       { status: 500 }
     );

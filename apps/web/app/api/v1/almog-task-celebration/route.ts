@@ -44,6 +44,37 @@ export async function POST(request: Request) {
 
   try {
     const admin = createAdminClient();
+
+    /**
+     * 🛡️ Ownership check: לפני שאנחנו עוברים ל-service-role (admin) ומפעילים
+     * AI ויצירת התראה, נוודא שהמשתמש הנוכחי באמת בעל progress קיים על
+     * ה-step_id שמועבר. הקריאה רצה תחת ה-Supabase client של ה-session
+     * (RLS פעיל), כך שמשתמש לא יכול "לחגוג" step שלא שלו.
+     *
+     * אם הרשומה לא קיימת — זה גם מקרה לגיטימי כשמדובר ב-celebration על
+     * step שעדיין לא נוצר ל-progress עבורו, אבל כדי להישאר בטוחים נדרש
+     * שיהיה לפחות journey_progress פעיל אחד עם ה-step_id הזה.
+     */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: ownership, error: ownershipErr } = await (auth.supabase as any)
+      .from('journey_progress')
+      .select('id')
+      .eq('user_id', auth.user.id)
+      .eq('step_id', parsed.data.step_id)
+      .limit(1)
+      .maybeSingle();
+
+    if (ownershipErr) {
+      console.error('[almog-task-celebration] ownership lookup failed', ownershipErr);
+      return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    }
+    if (!ownership) {
+      return NextResponse.json(
+        { error: 'Forbidden — step not in user journey progress' },
+        { status: 403 }
+      );
+    }
+
     const result = await sendTaskCompletionCelebration(admin, {
       userId: auth.user.id,
       stepId: parsed.data.step_id,
@@ -72,6 +103,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: msg }, { status: 400 });
     }
     console.error('[almog-task-celebration]', e);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }
