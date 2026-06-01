@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server';
-import { requireApiSession } from '../../../../../lib/api/route-guards';
+import { requireApiAdmin } from '../../../../../lib/api/route-guards';
 import { workflowPublicBaseUrl } from '../../../../../lib/workflows/resolve-workflow-public-url';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * בדיקת תצורה בלי להריץ מודל: האם משתני QStash מוגדרים והאם כתובת ה-workflow נראית הגיונית.
+ * בדיקת תצורה בלי להריץ מודל: האם משתני QStash מוגדרים והאם כתובת
+ * ה-workflow נראית הגיונית.
+ *
+ * 🛡️ הגבלת אבטחה: נחשף רק ל-admin. בעבר משתמש מחובר רגיל יכול היה
+ * לראות איזה משתני סביבה מוגדרים (QSTASH/OPENROUTER/SUPABASE_SERVICE_ROLE),
+ * וכן את ה-public base URL. זה שימושי ל-recon, ולא נדרש למשתמש קצה.
  */
 export async function GET(request: Request) {
-  const auth = await requireApiSession(request);
+  const auth = await requireApiAdmin(request);
   if (!auth.ok) return auth.response;
 
   const token = Boolean(process.env.QSTASH_TOKEN?.trim());

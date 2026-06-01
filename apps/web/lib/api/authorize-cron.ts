@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Receiver } from '@upstash/qstash';
+import { workflowPublicBaseUrl } from '../workflows/resolve-workflow-public-url';
 
 /**
  * אימות אחיד לכל ה-cron routes. שתי שיטות נתמכות:
@@ -13,6 +14,38 @@ import { Receiver } from '@upstash/qstash';
  *
  *  ה-return: `null` אם הבקשה מורשית; אחרת `NextResponse` עם 401/500 לפי המצב.
  */
+
+/**
+ * בונה רשימת URLs קנוניים שנקבל מהם חתימה תקפה. QStash חותם על ה-URL שאליו
+ * הבקשה נשלחה; ב-Vercel ה-host הפנימי שונה מהציבורי, לכן בונים את הציבורי
+ * מ-`workflowPublicBaseUrl` (זה ה-URL שב-pipelines נרשם כיעד QStash).
+ *
+ * נוסיף גם וריאציה של `forwarded-host`/`request.url` כ-best-effort, אבל
+ * ה-allowlist הקנוני מבוסס env variables ולא input של הבקשה — כדי שלא
+ * נוכל להיות מולאמים על ידי headers שתוקף שולט בהם.
+ */
+function buildCanonicalUrlsForRequest(request: Request): string[] {
+  const reqUrl = new URL(request.url);
+  const path = reqUrl.pathname + (reqUrl.search ?? '');
+
+  const candidates = new Set<string>();
+
+  // 1) URL ציבורי לפי env (העדיפות הראשונה — מאומת מחוץ לבקשה).
+  try {
+    const publicBase = workflowPublicBaseUrl();
+    if (publicBase) {
+      candidates.add(`${publicBase.replace(/\/$/, '')}${path}`);
+    }
+  } catch {
+    /** ignore */
+  }
+
+  // 2) `request.url` עצמו (עובד ב-dev / curl לוקאלי / sanity).
+  candidates.add(request.url);
+
+  return [...candidates];
+}
+
 export async function authorizeCronRequest(request: Request): Promise<NextResponse | null> {
   const secret = process.env.CRON_SECRET?.trim();
   const qstashCurrent = process.env.QSTASH_CURRENT_SIGNING_KEY?.trim();
@@ -38,16 +71,25 @@ export async function authorizeCronRequest(request: Request): Promise<NextRespon
         currentSigningKey: qstashCurrent,
         nextSigningKey: qstashNext ?? '',
       });
+
       /**
-       * אנחנו לא מעבירים `url` — מאחורי ה-proxy של Vercel המארח הפנימי שונה
-       * מזה ש-QStash חתם עליו, ואז verify היה זורק שגיאה גם לבקשה תקינה.
-       * אימות חתימה על body+מפתח סודי נשאר חזק.
+       * אימות מחזק: בודקים את החתימה מול URLs קנוניים מ-allowlist (לא ערכים
+       * שנגזרים מ-headers שתוקף שולט בהם). אם אחד מהם תואם — הבקשה מורשית.
+       * זה חוסם replay בין routes שונים: חתימה תקפה ל-route A לא תאמת route B.
        */
-      const valid = await receiver.verify({
-        signature: upstashSignature,
-        body: bodyText,
-      });
-      if (valid) return null;
+      const candidateUrls = buildCanonicalUrlsForRequest(request);
+      for (const candidate of candidateUrls) {
+        try {
+          const valid = await receiver.verify({
+            signature: upstashSignature,
+            body: bodyText,
+            url: candidate,
+          });
+          if (valid) return null;
+        } catch {
+          /** ננסה את הבא */
+        }
+      }
     } catch {
       /** נופלים ל-401 בהמשך, ללא חשיפת פרטי השגיאה */
     }
