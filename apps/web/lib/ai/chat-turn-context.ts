@@ -82,7 +82,7 @@ export function formatHabitIntentPromptBlock(intent: HabitIntentDetection): stri
 
     case 'failed':
       if (!title) return null;
-      return `[הרגל:${title}·failed${note}] המשתמש *ניסה ולא הצליח* או שכח. *אל תאשים*, אל תפיק "מחר יום חדש". הכר בקושי הספציפי, טיפ מעשי קצר אחד אם רלוונטי, ושאלה רכה. 2-3 משפטים. אסור: "המשך כך", "אתה תצליח" (גנרי).`;
+      return `[הרגל:${title}·לא] category=failed${note} — המשתמש *ניסה ולא הצליח* או שכח. *אל תאשים*, אל תפיק "מחר יום חדש". הכר בקושי הספציפי, טיפ מעשי קצר אחד אם רלוונטי, ושאלה רכה. 2-3 משפטים. אסור: "המשך כך", "אתה תצליח" (גנרי).`;
 
     case 'skipped':
       if (!title) return null;
