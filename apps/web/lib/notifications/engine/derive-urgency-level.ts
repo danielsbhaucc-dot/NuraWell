@@ -11,8 +11,8 @@
  * המיפוי:
  *   • 0 ימים רצוף שלא בוצעו (זה היום הראשון):
  *       morning  → gentle          (חם, מעודד, פתיחה חיובית)
- *       noon     → gentle          (צ'ק-אין קליל)
- *       evening  → friendly_nudge  (היום כמעט נגמר — דחיפה עדינה)
+ *       noon     → friendly_nudge  (כבר נשלחה בוקר — "לא שמעתי ממך היום")
+ *       evening  → friendly_nudge  (היום כמעט נגמר — מצדיק את השתיקה)
  *   • 1 יום רצוף שלא בוצע:
  *       → friendly_nudge   (שובב, לא שיפוטי, עם הומור עדין)
  *   • 2 ימים רצוף שלא בוצעו:
@@ -36,15 +36,22 @@ export interface DeriveUrgencyInput {
   timeOfDay: TimeOfDay;
   /** מספר ימים *רצוף לפני היום* שהמשתמש לא ביצע. 0 = אתמול בוצע / יום ראשון בסטריק. */
   consecutiveMissedDays: number;
+  /**
+   * כמה התראות כבר נשלחו היום לפני ה-slot הנוכחי (0, 1 או 2).
+   * ברירת מחדל 0 — לתאימות אחורה בטסטים.
+   */
+  notificationsTodaySent?: number;
 }
 
 export function deriveUrgencyLevel({
   timeOfDay,
   consecutiveMissedDays,
+  notificationsTodaySent = 0,
 }: DeriveUrgencyInput): UrgencyLevel {
   if (consecutiveMissedDays <= 0) {
-    // יום ראשון בסטריק — הטון עדיין חם, אבל ערב = "היום כמעט נגמר".
-    return timeOfDay === 'evening' ? 'friendly_nudge' : 'gentle';
+    // יום ראשון בסטריק — בוקר חם; צהריים/ערב אחרי שכבר ניסינו היום.
+    if (timeOfDay === 'morning' && notificationsTodaySent === 0) return 'gentle';
+    return 'friendly_nudge';
   }
   if (consecutiveMissedDays === 1) return 'friendly_nudge';
   if (consecutiveMissedDays === 2) return 'concerned';

@@ -56,6 +56,10 @@ interface TaskLogRow {
   date_key: string;
 }
 
+interface NotificationLogCountRow {
+  user_id: string;
+}
+
 function shiftDateKey(dateKey: string, deltaDays: number): string {
   const [y, m, d] = dateKey.split('-').map((n) => Number.parseInt(n, 10));
   if (![y, m, d].every(Number.isFinite)) return dateKey;
@@ -163,6 +167,33 @@ export async function getUsersForNotification(
     set.add(row.date_key);
   }
 
+  // 3b. כמה התראות כבר נשלחו היום לכל משתמש (לפני ה-slot הנוכחי).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const notifLogsQuery = (admin as any)
+    .from('notification_logs')
+    .select('user_id')
+    .in('user_id', userIds)
+    .eq('date_key', today);
+
+  const { data: notifLogsData, error: notifLogsError } = (await notifLogsQuery) as {
+    data: NotificationLogCountRow[] | null;
+    error: { message: string } | null;
+  };
+  if (notifLogsError) {
+    throw new Error(
+      `getUsersForNotification(notification_logs): ${notifLogsError.message}`
+    );
+  }
+
+  const notificationsTodayByUser = new Map<string, number>();
+  for (const row of notifLogsData ?? []) {
+    if (!row?.user_id) continue;
+    notificationsTodayByUser.set(
+      row.user_id,
+      (notificationsTodayByUser.get(row.user_id) ?? 0) + 1
+    );
+  }
+
   // 4. מסננים את מי שכבר השלים היום / הגיב לאחרונה + מחשבים state.
   const nowMs = Date.now();
   const respondedRecentlyMs = RESPONDED_RECENTLY_HOURS * 60 * 60 * 1000;
@@ -195,7 +226,13 @@ export async function getUsersForNotification(
     });
     if (!state) continue; // ה-rule engine החליט "לא עכשיו" (DAY_3 בנון/ערב, או DORMANT בלי יום ראשון)
 
-    const urgencyLevel = deriveUrgencyLevel({ timeOfDay, consecutiveMissedDays });
+    const notificationsTodaySent = notificationsTodayByUser.get(profile.id) ?? 0;
+
+    const urgencyLevel = deriveUrgencyLevel({
+      timeOfDay,
+      consecutiveMissedDays,
+      notificationsTodaySent,
+    });
 
     const candidate: NotificationCandidate = {
       userId: profile.id,
@@ -205,6 +242,7 @@ export async function getUsersForNotification(
       consecutiveMissedDays,
       timeOfDay,
       urgencyLevel,
+      notificationsTodaySent,
     };
     if (typeof hoursSinceLastResponse === 'number') {
       candidate.hoursSinceLastResponse = hoursSinceLastResponse;

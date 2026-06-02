@@ -122,6 +122,10 @@ async function dispatchOne(
         ...(typeof candidate.hoursSinceLastResponse === 'number'
           ? { hours_since_last_response: candidate.hoursSinceLastResponse }
           : {}),
+        ...(typeof candidate.notificationsTodaySent === 'number' &&
+          candidate.notificationsTodaySent > 0
+          ? { notifications_today_sent: candidate.notificationsTodaySent }
+          : {}),
         ...(candidate.aiMemory ? { ai_memory: candidate.aiMemory } : {}),
       },
       {
@@ -162,6 +166,9 @@ async function dispatchOne(
           : {}),
         ...(typeof candidate.hoursSinceLastResponse === 'number'
           ? { hoursSinceLastResponse: candidate.hoursSinceLastResponse }
+          : {}),
+        ...(typeof candidate.notificationsTodaySent === 'number'
+          ? { notificationsTodaySent: candidate.notificationsTodaySent }
           : {}),
       },
     });

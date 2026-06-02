@@ -95,6 +95,11 @@ export interface NotificationCandidate {
    */
   hoursSinceLastResponse?: number;
   /**
+   * כמה התראות כבר נשלחו היום (לפני ה-slot הנוכחי) — מ-`notification_logs`.
+   * 0 = בוקר (או ראשון ביום), 1 = צהריים, 2 = ערב. משמש לטון "לא שמעתי ממך היום".
+   */
+  notificationsTodaySent?: number;
+  /**
    * זיכרון ארוך-טווח (Phase 3). אופציונלי — אם המשתמש חדש או אין לו
    * עדיין סיכומים תקופתיים, השדה לא יהיה כאן בכלל.
    */
@@ -150,6 +155,11 @@ export interface AINotificationContext {
    * ערכים גבוהים = לא הגיב הרבה זמן (חיזוק לטון `worried`/`check_in`).
    */
   hours_since_last_response?: number;
+  /**
+   * כמה התראות כבר נשלחו היום לפני הקריאה הנוכחית (0, 1 או 2).
+   * נכנס ל-LLM רק כשהוא > 0. מודולציית טון: "לא שמעתי ממך היום".
+   */
+  notifications_today_sent?: number;
   /**
    * זיכרון ארוך-טווח (Phase 3) — תובנות הסיכומים האחרונים של המשתמש.
    * השדה אופציונלי: אם אין סיכומים, ה-LLM יתעלם והפרומפט יישאר ב-2D מטריצה.
