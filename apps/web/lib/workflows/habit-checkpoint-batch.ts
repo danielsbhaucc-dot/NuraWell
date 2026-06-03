@@ -385,10 +385,12 @@ export type HabitCheckpointPlanItem = {
 /* ============================================================
  * State machine רב-יומי — Dormancy tracking
  *
- *  משתמש "פעיל" אם profiles.last_active_at עודכן ב-24 השעות האחרונות
- *  (middleware מטריא אותו בכל בקשת API). כל חישוב ה-nudge יורד מזה.
- *  אנחנו לא מסתמכים על "האם המשתמש ענה לאלמוג" כי זה רעש; "המשתמש
- *  פתח את האפליקציה" = פעיל לכל דבר.
+ *  הגדרת "פעיל" = המשתמש *ענה* בפועל: כתב בצ'אט או סימן משימה/הרגל.
+ *  *פתיחת אפליקציה לבדה לא נחשבת* — middleware מטריא את
+ *  profiles.last_active_at בכל בקשת דף (כולל Service Worker pings),
+ *  אז הוא לא משקף "המשתמש ענה". לכן ה-dormancy מחושב מ-fetchTrueLastActiveByUser
+ *  שמסתמך על אותות תגובה אמיתיים בלבד (צ'אט + ביצוע משימות), עם
+ *  created_at כרצפה כדי שמשתמש חדש שעוד לא ענה לא ייחשב Ghosted.
  * ============================================================ */
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -471,16 +473,20 @@ export function isSlotAllowedForCadenceStage(
 }
 
 /**
- * True last-active per user = MAX של שלושה מקורות:
- *  1. profiles.last_active_at — מטריא middleware בכל request (כולל SW pings).
- *  2. ai_interactions.created_at where role='user' — כתיבה אמיתית בצ'אט.
- *  3. journey_task_executions.completed_at — סימון משימה ב-DB.
+ * True last-*responded* per user = MAX של שני אותות תגובה אמיתיים:
+ *  1. ai_interactions.created_at where role='user' — כתיבה אמיתית בצ'אט.
+ *  2. journey_task_executions.completed_at — סימון משימה/הרגל ב-DB.
  *
- * מקור 1 לבדו לא אמין — Service Worker pings מסמנים "פעיל" גם כשהטלפון
- * זרוק בכיס. השאר הם פעולות יזומות, אז ה-MAX מבטיח שלא נתייחס למשתמש
- * כ-INTRADAY GHOSTING בזמן שהוא לא באמת פתח את האפליקציה.
+ * 🚫 *לא* משתמשים יותר ב-profiles.last_active_at: הוא מטריא ב-middleware
+ *    בכל בקשת דף (כולל Service Worker pings), כך ש"פתיחת אפליקציה" הייתה
+ *    מנפחת אותו ל-"עכשיו" וכל המשתמשים נראו תמיד active. דרישת המוצר:
+ *    "פעיל" = *ענה* (צ'אט/משימה), לא "פתח את האפליקציה".
  *
- * חלון 14 ימים — מספיק לכל ה-state machine (Ghosted מתחיל ב-7).
+ * רצפה: profiles.created_at. אם למשתמש אין שום אות תגובה בחלון, ה-dormancy
+ * נמדד מרגע ההצטרפות — כך משתמש חדש שעוד לא ענה לא ייחשב מיידית Ghosted
+ * (Infinity), אלא "צעיר" לפי גיל החשבון.
+ *
+ * חלון 14 ימים — מספיק לכל ה-state machine (Ghosted מתחיל ב-14).
  */
 const TRUE_ACTIVE_WINDOW_DAYS = 14;
 
@@ -501,7 +507,7 @@ export async function fetchTrueLastActiveByUser(
   const [profileRes, chatRes, execRes] = await Promise.all([
     admin
       .from('profiles')
-      .select('id, last_active_at')
+      .select('id, created_at')
       .in('id', cappedIds),
     admin
       .from('ai_interactions')
@@ -534,10 +540,11 @@ export async function fetchTrueLastActiveByUser(
     }
   };
 
+  // רצפה: created_at. *לא* last_active_at — ראה הסבר ב-doc-comment למעלה.
   if (Array.isArray(profileRes?.data)) {
-    for (const row of profileRes.data as Array<{ id?: string; last_active_at?: string | null }>) {
+    for (const row of profileRes.data as Array<{ id?: string; created_at?: string | null }>) {
       if (typeof row.id === 'string') {
-        result.set(row.id, row.last_active_at ?? null);
+        result.set(row.id, row.created_at ?? null);
       }
     }
   }

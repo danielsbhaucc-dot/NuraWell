@@ -188,7 +188,7 @@ QStash תומך ב-`L` של cron (last day of month) לפעמים — אם לא,
 לא תיצור 100 schedules. תצטרך fan-out worker.
 
 **הפתרון המומלץ:** Workflow אחד שעושה fan-out — כמו שעשינו ב-
-`apps/web/app/api/workflows/notifications/route.ts`.
+`apps/web/app/api/workflows/almog-habit-checkpoint/route.ts`.
 
 **דפוס:**
 1. `POST /api/workflows/summaries-cascade` (חדש — עוד לא בנוי).
