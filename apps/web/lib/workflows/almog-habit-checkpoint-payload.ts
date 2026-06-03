@@ -30,7 +30,8 @@ export const habitCheckpointNotifyModeSchema = z.enum(['remind', 'reinforce']);
 export const habitCheckpointReinforceKindSchema = z.enum(['completion', 'presence']);
 
 /**
- * State machine רב-יומי של דורמנסי — נקבע ב-cron מתוך profiles.last_active_at.
+ * State machine רב-יומי של דורמנסי — נקבע ב-cron מתוך תגובה אמיתית אחרונה
+ * (צ'אט משתמש או ביצוע משימה), לא מתוך פתיחת אפליקציה.
  *  0 = Active     — פעילות אמיתית ב-24h האחרונות
  *  1 = Slipping   — 1–2 ימים שקטים
  *  2 = Dormant    — 3–6 ימים שקטים
@@ -121,7 +122,7 @@ export const almogHabitCheckpointPayloadSchema = z
 
     /** State machine — נקבע ב-cron, מועבר אטומית ל-Worker וה-LLM. */
     nudgeLevel: habitCheckpointNudgeLevelSchema.default(0),
-    /** מספר ימים שלמים מאז last_active_at. ערך 0 = פעיל היום. */
+    /** מספר ימים שלמים מאז תגובה אמיתית אחרונה. ערך 0 = ענה/ביצע היום. */
     daysSinceLastActive: z.number().int().min(0).max(3650).default(0),
     /** סטטוס ביצוע כפי שמחושב מ-DB (SSOT) — לא מהמלל שהמשתמש שלח. */
     completionStatus: habitCheckpointCompletionStatusSchema.default('none'),
