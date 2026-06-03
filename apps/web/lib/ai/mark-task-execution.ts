@@ -1,7 +1,17 @@
 /**
- * סימון ביצוע משימה מהצ'אט:
- *  - one_time → execution_done ב-journey_progress
- *  - recurring → שורה ב-journey_task_executions (slot + date_key)
+ * סימון תוצאה של משימה מהצ'אט — תומך עכשיו ב-4 סוגי outcome:
+ *  - completed       (default) → ביצוע מלא
+ *  - partial                   → ביצוע חלקי (חדש, מיגרציה 000031)
+ *  - attempt_failed            → ניסה ולא הצליח (מיגרציה 000030)
+ *  - skipped                   → דילוג מודע ליום (חדש, מיגרציה 000031)
+ *
+ * עבור one_time:
+ *  - completed/partial → מסומן ב-task_statuses.execution_done
+ *  - attempt_failed/skipped → נשמר ב-task_statuses אבל לא מסמן את ה-task כהשלם
+ *
+ * עבור recurring (daily / multi_daily / weekly / per_meal):
+ *  - השורה נכתבת תמיד ל-journey_task_executions עם ה-outcome המתאים.
+ *  - רק `outcome='completed'` נחשב להשלמת סלוט לצורך execution_done הכולל.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -13,6 +23,7 @@ import {
   resolveTaskSchedule,
   slotsForSchedule,
 } from '../journey/task-schedule';
+import type { TaskExecutionOutcomeFromCategory } from './response-classifier';
 
 function expectedSlotCount(schedule: JourneyTaskSchedule, timesPerDay: number): number {
   return slotsForSchedule(schedule, timesPerDay).length;
@@ -99,6 +110,12 @@ export function inferSlotFromUserMessage(
   return 'full_day';
 }
 
+/**
+ * מחזיר רק סלוטים שסומנו כהשלמה מלאה (`outcome='completed'`).
+ * partial / attempt_failed / skipped *לא* נחשבים להשלמה לצורך
+ * סגירת הסלוט — אם המשתמש דיווח "שתיתי קצת" הוא עדיין יכול לחזור מאוחר
+ * יותר ולומר "אוקיי שתיתי עכשיו עוד שתיים" ולסגור את הסלוט.
+ */
 async function fetchTodayCompletedSlots(
   supabase: SupabaseClient,
   userId: string,
@@ -107,18 +124,39 @@ async function fetchTodayCompletedSlots(
   dateKey: string
 ): Promise<Set<string>> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data, error } = await (supabase as any)
     .from('journey_task_executions')
-    .select('slot')
+    .select('slot, outcome')
     .eq('user_id', userId)
     .eq('step_id', stepId)
     .eq('task_id', taskId)
     .eq('date_key', dateKey);
 
   const done = new Set<string>();
+  // fallback אם העמודה outcome עדיין לא קיימת ב-DB
+  if (error && (error.code === '42703' || /outcome/i.test(error.message ?? ''))) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: legacy } = await (supabase as any)
+      .from('journey_task_executions')
+      .select('slot')
+      .eq('user_id', userId)
+      .eq('step_id', stepId)
+      .eq('task_id', taskId)
+      .eq('date_key', dateKey);
+    if (Array.isArray(legacy)) {
+      for (const row of legacy as Array<{ slot?: string }>) {
+        if (typeof row.slot === 'string') done.add(row.slot);
+      }
+    }
+    return done;
+  }
   if (Array.isArray(data)) {
-    for (const row of data as Array<{ slot?: string }>) {
-      if (typeof row.slot === 'string') done.add(row.slot);
+    for (const row of data as Array<{ slot?: string; outcome?: string }>) {
+      if (typeof row.slot !== 'string') continue;
+      // רק 'completed' נחשב — אם השדה חסר (DB ישן), נחשיב כ-completed לתאימות.
+      if (!row.outcome || row.outcome === 'completed') {
+        done.add(row.slot);
+      }
     }
   }
   return done;
@@ -224,7 +262,8 @@ async function markRecurringSlot(
   userId: string,
   pick: PendingAcceptedTask,
   slot: JourneyTaskSlot,
-  userMessage: string
+  userMessage: string,
+  outcome: TaskExecutionOutcomeFromCategory
 ): Promise<TaskExecutionResult> {
   const dateKey = jerusalemDateKey();
   const nowIso = new Date().toISOString();
@@ -238,8 +277,13 @@ async function markRecurringSlot(
     pick.id,
     dateKey
   );
-  const wasAlreadyDone = slotsBeforeMark.has(slot);
+  const wasAlreadyDone = slotsBeforeMark.has(slot) && outcome === 'completed';
 
+  /**
+   * תרגום outcome קלסיפיקטור → ערך DB. שדה ה-outcome ב-DB תומך עכשיו ב-4
+   * ערכים (000030 + 000031). הקלסיפיקטור כבר מחזיר ערכים תואמים — אבל
+   * שומרים על העברה מפורשת כדי שאם בעתיד הקלסיפיקטור יוסיף ערכים, נדע פה.
+   */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: execErr } = await (supabase as any).from('journey_task_executions').upsert(
     {
@@ -250,13 +294,60 @@ async function markRecurringSlot(
       slot,
       completed_at: nowIso,
       source: 'chat',
+      outcome,
       note: userMessage.slice(0, 500),
     },
     { onConflict: 'user_id,step_id,task_id,date_key,slot' }
   );
 
   if (execErr) {
-    return { ok: false, error: 'save_failed', message: execErr.message };
+    /**
+     * fallback אם ה-DB עדיין על מיגרציה ישנה (ללא 000031 או 000030).
+     * אם השדה outcome לא קיים בכלל — ננסה בלי אותו שדה (כך שלפחות completed
+     * עדיין נכתב). אם outcome קיים אבל הערך לא חוקי (לפני 000031), נכתוב
+     * כ-attempt_failed (התואם הקרוב ביותר ל-partial/skipped עד שהמיגרציה תרוץ).
+     */
+    const msg = execErr.message ?? '';
+    if (execErr.code === '42703' || /outcome/i.test(msg)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: legacyErr } = await (supabase as any).from('journey_task_executions').upsert(
+        {
+          user_id: userId,
+          step_id: pick.stepId,
+          task_id: pick.id,
+          date_key: dateKey,
+          slot,
+          completed_at: nowIso,
+          source: 'chat',
+          note: userMessage.slice(0, 500),
+        },
+        { onConflict: 'user_id,step_id,task_id,date_key,slot' }
+      );
+      if (legacyErr) {
+        return { ok: false, error: 'save_failed', message: legacyErr.message };
+      }
+    } else if (/check.*outcome/i.test(msg) && (outcome === 'partial' || outcome === 'skipped')) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: legacyErr } = await (supabase as any).from('journey_task_executions').upsert(
+        {
+          user_id: userId,
+          step_id: pick.stepId,
+          task_id: pick.id,
+          date_key: dateKey,
+          slot,
+          completed_at: nowIso,
+          source: 'chat',
+          outcome: 'attempt_failed',
+          note: userMessage.slice(0, 500),
+        },
+        { onConflict: 'user_id,step_id,task_id,date_key,slot' }
+      );
+      if (legacyErr) {
+        return { ok: false, error: 'save_failed', message: legacyErr.message };
+      }
+    } else {
+      return { ok: false, error: 'save_failed', message: msg };
+    }
   }
 
   /** אם כל הסלוטים של היום הושלמו — מסמן גם execution_done לתאימות */
@@ -268,7 +359,8 @@ async function markRecurringSlot(
   const allSlots = slotsForSchedule(pick.schedule, pick.times_per_day);
   const slotsRemainingToday = allSlots.filter((s) => !doneSlots.has(s));
 
-  if (doneSlots.size >= total) {
+  // רק `outcome='completed'` סוגר את ה-task. partial/failed/skipped משאירים פתוח.
+  if (doneSlots.size >= total && outcome === 'completed') {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: prog } = await (supabase as any)
       .from('journey_progress')
@@ -315,7 +407,11 @@ async function markRecurringSlot(
 }
 
 /**
- * מסמן ביצוע משימה שכבר accepted — one_time או recurring slot.
+ * מסמן ביצוע (או partial / failed / skipped) של משימה שכבר accepted —
+ * one_time או recurring slot.
+ *
+ * `outcome` (ברירת מחדל 'completed') קובע איזה ערך נכתב ל-DB ואיך
+ * שמירת ה-execution_done מתבצעת. רק `completed` סוגר את ה-task כליל.
  */
 export async function markTaskExecutionForUser(
   supabase: SupabaseClient,
@@ -324,12 +420,14 @@ export async function markTaskExecutionForUser(
     taskId?: string;
     userMessage: string;
     pending?: PendingAcceptedTask[];
+    outcome?: TaskExecutionOutcomeFromCategory;
   }
 ): Promise<TaskExecutionResult> {
   const pending = opts.pending ?? (await fetchPendingAcceptedTasksForUser(supabase, userId));
   if (pending.length === 0) {
     return { ok: false, error: 'no_pending' };
   }
+  const outcome: TaskExecutionOutcomeFromCategory = opts.outcome ?? 'completed';
 
   const msg = opts.userMessage.replace(/\s+/g, ' ').trim();
 
@@ -359,7 +457,7 @@ export async function markTaskExecutionForUser(
 
   if (pick.schedule !== 'one_time') {
     const slot = inferSlotFromUserMessage(msg, pick.schedule, pick.times_per_day);
-    return markRecurringSlot(supabase, userId, pick, slot, msg);
+    return markRecurringSlot(supabase, userId, pick, slot, msg, outcome);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -399,13 +497,28 @@ export async function markTaskExecutionForUser(
   }
 
   const nowIso = new Date().toISOString();
+
+  /**
+   * עבור one_time:
+   *  - completed              → execution_done=true (סוגר את המשימה כליל).
+   *  - partial                → execution_done לא נכתב; שומר last_outcome כדי
+   *                              שהאדמין/AI יראו "התחיל אבל לא סיים".
+   *  - attempt_failed / skipped → רק last_outcome נשמר; המשימה נשארת פתוחה.
+   *
+   * השדה `last_outcome` הוא JSON-only (לא DB DDL) — `task_statuses` כבר
+   * JSONB גמיש ב-`journey_progress`. אנחנו לא משבשים את המבנה — `status`
+   * נשאר 'accepted', רק `execution_done` ו-`last_outcome` משתנים.
+   */
+  const isFullyDone = outcome === 'completed';
   const task_statuses = {
     ...prev,
     [pick.id]: {
       ...existing,
       status: 'accepted',
       decided_at: typeof existing.decided_at === 'string' ? existing.decided_at : nowIso,
-      execution_done: true,
+      ...(isFullyDone ? { execution_done: true } : {}),
+      last_outcome: outcome,
+      last_outcome_at: nowIso,
     },
   };
 
@@ -431,8 +544,8 @@ export async function markTaskExecutionForUser(
     taskTitle: pick.title,
     schedule: pick.schedule,
     totalSlotsToday: 1,
-    slotsCompletedToday: 1,
-    slotsRemainingToday: [],
+    slotsCompletedToday: isFullyDone ? 1 : 0,
+    slotsRemainingToday: isFullyDone ? [] : ['full_day'],
     wasAlreadyDone: false,
   };
 }

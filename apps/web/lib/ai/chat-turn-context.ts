@@ -52,31 +52,79 @@ export function formatChatSignalsPromptBlock(
   return `[אות-עכשיו] ${parts.join('·')} — ולידציה+שאלה; בלי "נסה מחר" בלי צעד עכשיו.`;
 }
 
+/**
+ * בלוק פרומפט מותאם ל-7 קטגוריות תגובה.
+ *
+ * הניואנס הזה הוא הלב של השיחה: הקלסיפיקטור החדש (`response-classifier.ts`)
+ * מסווג את הודעת המשתמש לאחת מ-7 קטגוריות; כאן אנחנו ממירים את הקטגוריה
+ * להנחיה קצרה ל-AI על *איך להגיב*. הקצרה מכוון — שמרנו על מינימום טוקנים,
+ * וכל ההנחיות הסגנוניות העמוקות נשארות ב-`prompts.ts` (Voice DNA של אלמוג).
+ *
+ * שינוי מהותי מהגרסה הישנה (done/miss בלבד):
+ *   "שתיתי קצת"            → partial (לפני זה היה done — חוגג טעות)
+ *   "ניסיתי אבל לא הצלחתי" → failed  (לפני זה היה miss — מאשים)
+ *   "אני לא רוצה את ההרגל" → opted_out (לפני זה היה miss — לא מכבד)
+ *   "לא היום, אקח הפסקה"   → skipped (לפני זה היה miss — דוחק)
+ */
 export function formatHabitIntentPromptBlock(intent: HabitIntentDetection): string | null {
-  if (intent.kind === 'none' || !intent.habitTitle) return null;
-  const h = intent.habitTitle.slice(0, 40);
-  if (intent.kind === 'miss') {
-    return `[הרגל:${h}·לא] דיון לא-V: סיבה→פתרון מעשי→שאלה על מחר.`;
+  const title = intent.habitTitle?.slice(0, 40);
+  const note = intent.extractedNote ? ` · פרט: ${intent.extractedNote.slice(0, 60)}` : '';
+  const category = intent.category;
+
+  switch (category) {
+    case 'done':
+      if (!title) return null;
+      return `[הרגל:${title}·done${note}] חיזוק חם וקצר (1-2 משפטים). אסור לבקש סימון V, אסור "המערכת עודכנה". אם streak פעיל - אזכר אותו בטבעיות.`;
+
+    case 'partial':
+      if (!title) return null;
+      return `[הרגל:${title}·partial${note}] המשתמש עשה *חלק*. הכר במאמץ ספציפית (מה הצליח), שאל שאלה רכה אחת מה עצר (כדי להבין לעתיד). 2-3 משפטים. *אסור* "אבל" אחרי המחמאה - זה ביטול.`;
+
+    case 'failed':
+      if (!title) return null;
+      return `[הרגל:${title}·לא] category=failed${note} — המשתמש *ניסה ולא הצליח* או שכח. *אל תאשים*, אל תפיק "מחר יום חדש". הכר בקושי הספציפי, טיפ מעשי קצר אחד אם רלוונטי, ושאלה רכה. 2-3 משפטים. אסור: "המשך כך", "אתה תצליח" (גנרי).`;
+
+    case 'skipped':
+      if (!title) return null;
+      return `[הרגל:${title}·skipped${note}] דילוג מודע היום - כבד את הבחירה. משפט אחד מכיל ("סבבה אחי", "בריא לתת לעצמך גם הפסקה"). *לא* לדחוף ל"מחר נצליח". המשתמש בחר.`;
+
+    case 'opted_out':
+      if (!title) return null;
+      return `[הרגל:${title}·opted_out${note}] המשתמש *הסיר* את ההרגל הזה לחלוטין. *כבד 100%*. אמור שירדת ממנו (לא "אורידנו", *כבר נעשה*). אפשר לשאול אם יש הרגל אחר שכן בא לו לנסות. 1-2 משפטים. אסור לשכנע, אסור "אולי בעתיד".`;
+
+    case 'question':
+      if (!title) return null;
+      return `[הרגל:${title}·question${note}] המשתמש שואל שאלה על ההרגל. ענה בקצרה ופשטות (2-3 משפטים מקסימום). אל תציף במידע. בסוף - הזכרה עדינה של ההרגל עצמו, לא חזרה אקדמית.`;
+
+    case 'unknown':
+    default:
+      return null;
   }
-  return `[הרגל:${h}·כן] חיזוק קצר; אל תבקש סימון V.`;
 }
 
+/**
+ * בלוק פרומפט מותאם למשימה עם 7 קטגוריות תגובה.
+ *
+ * שדרוג קריטי מהגרסה הישנה:
+ *   הישנה הציגה הקשר רק כש-`intent.kind === 'done'`. בכל מקרה אחר (partial,
+ *   failed, skipped, question) — *אין הקשר ל-AI*, וכתוצאה מכך אלמוג מגיב
+ *   כאילו זה הודעה רגילה במקום לטפל בדיוק בדיווח.
+ *
+ *   החדשה: כל הקטגוריות שמתייחסות למשימה (done/partial/failed/skipped/opted_out/question)
+ *   מקבלות הנחיה ספציפית. הקטגוריה `unknown` יוצאת — לא מציפים הקשר מיותר.
+ */
 export function formatTaskIntentPromptBlock(
   intent: TaskIntentDetection,
   opts?: {
     emotionalHint?: ChatSignals['emotional_hint'];
-    /**
-     * המשימה ה-pending שזוהתה (אופציונלי). אם הועברה, נוסיף לבלוק רמז על
-     * schedule + הסלוט שמסומן עכשיו, כדי שה-AI יוכל לשאול אנושית
-     * "וגם בערב?" כשהמשימה היא per_meal / multi_daily.
-     */
     matchedTask?: PendingAcceptedTask;
-    /** הודעת המשתמש — משמשת להסקת הסלוט אם המשתמש ציין במפורש ("בצהריים"). */
     userMessage?: string;
   }
 ): string | null {
-  if (intent.kind !== 'done' || !intent.taskTitle) return null;
+  if (!intent.taskTitle || intent.category === 'unknown') return null;
   const t = intent.taskTitle.slice(0, 40);
+  const note = intent.extractedNote ? ` · פרט: ${intent.extractedNote.slice(0, 60)}` : '';
+
   let afterDifficulty = '';
   if (opts?.emotionalHint === 'resigned' || opts?.emotionalHint === 'self_blame') {
     afterDifficulty =
@@ -85,25 +133,43 @@ export function formatTaskIntentPromptBlock(
     afterDifficulty = ' · אחרי קושי — חיזוק חם ספציפי, לא "מערכת".';
   }
 
-  // 🎯 הקשר רב-סלוטי: כשהמשימה רב-סלוטית (per_meal / multi_daily) ה-AI חייב
-  // לדעת על כך *לפני שהוא מגיב*, כדי לשאול בעדינות "וגם בערב?" במקום
-  // לתת חיזוק חד-פעמי שמתעלם מהשאר. את הסלוט המדויק שיסומן אנחנו מסיקים
-  // מטקסט המשתמש או משעה בירושלים (אותה לוגיקה כמו `markRecurringSlot`).
+  /**
+   * הקשר רב-סלוטי: רלוונטי רק ב-`done` ו-`partial`, כדי לשאול "וגם בערב?".
+   * ב-failed/skipped/opted_out לא רוצים להציע סלוטים נוספים — זה דוחק.
+   */
   let slotHint = '';
-  if (opts?.matchedTask) {
+  if ((intent.category === 'done' || intent.category === 'partial') && opts?.matchedTask) {
     const m = opts.matchedTask;
     if (m.schedule === 'per_meal' || m.schedule === 'multi_daily') {
-      const slot = inferSlotFromUserMessage(
-        opts.userMessage ?? '',
-        m.schedule,
-        m.times_per_day
-      );
+      const slot = inferSlotFromUserMessage(opts.userMessage ?? '', m.schedule, m.times_per_day);
       const label = slotLabel(slot);
-      slotHint = ` · משימה רב-סלוטית (${m.schedule}, ${m.times_per_day}/יום) · יסומן: ${label} · ייתכן שיש סלוטים נוספים פתוחים היום — שאל בעדינות אם יבצע גם שם ("גם בערב?", "תותח, רק עכשיו?")`;
+      slotHint = ` · משימה רב-סלוטית (${m.schedule}, ${m.times_per_day}/יום) · יסומן: ${label} · אם נשארו סלוטים פתוחים — שאל בעדינות אם יבצע גם שם.`;
     }
   }
 
-  return `[משימה:${t}·בוצע]${slotHint} רק חיזוק אנושי קצר ("אלוף", "גאה בך") — אסור: מערכת/עדכנתי/סימנתי/המערכת עודכנה.${afterDifficulty}`;
+  switch (intent.category) {
+    case 'done':
+      return `[משימה:${t}·done${note}]${slotHint} חיזוק אנושי קצר ("אלוף", "גאה בך"). אסור: מערכת/עדכנתי/סימנתי/המערכת עודכנה.${afterDifficulty}`;
+
+    case 'partial':
+      return `[משימה:${t}·partial${note}]${slotHint} המשתמש עשה *חלק*. הכר ספציפית במה הצליח (אם יודע) ושאל מה עצר. *אל תחגוג ככה לגמרי* (זה לא done). 2-3 משפטים, חם.${afterDifficulty}`;
+
+    case 'failed':
+      return `[משימה:${t}·failed${note}] המשתמש *ניסה ולא הצליח*. אל תאשים. הכר בקושי, רגש אמיתי ("אוף", "אחי"). טיפ מעשי קטן אחד אם רלוונטי. שאלה רכה. אסור "אתה תצליח" גנרי.${afterDifficulty}`;
+
+    case 'skipped':
+      return `[משימה:${t}·skipped${note}] דילוג מודע - כבד את הבחירה. משפט אחד מכיל. *אל תדחוף* ל"מחר נצליח".`;
+
+    case 'opted_out':
+      return `[משימה:${t}·opted_out${note}] המשתמש *לא רוצה* את המשימה הזו. אמור שמכבד והורד את הלחץ. אפשר לשאול אם יש משהו אחר שכן בא לו. *אל תשכנע*. 1-2 משפטים.`;
+
+    case 'question':
+      return `[משימה:${t}·question${note}] המשתמש שואל שאלה. ענה קצר ופשוט (2-3 משפטים). אל תציף.`;
+
+    default:
+      /** `unknown` כבר נסונן מוקדם (line 124); ה-default קיים רק ל-exhaustiveness. */
+      return null;
+  }
 }
 
 function scheduleLabelHe(task: PendingAcceptedTask): string {

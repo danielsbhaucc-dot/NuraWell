@@ -37,6 +37,10 @@ import {
   detectHabitIntent,
 } from '../../../../../lib/ai/chat-habit-intent';
 import {
+  classifyResponse,
+  isReportingCategory,
+} from '../../../../../lib/ai/response-classifier';
+import {
   buildCompactJourneyDataBlock,
   formatChatSignalsPromptBlock,
   formatHabitGapChatBlock,
@@ -1448,6 +1452,27 @@ export async function POST(request: Request) {
               debug_id: debugId,
               stage: `${finishStage}_habit_intent`,
               habit_title: habitIntent.habitTitle,
+              category: habitIntent.intent.category,
+              confidence: habitIntent.intent.confidence,
+              source: habitIntent.intent.source,
+            });
+          } else if (habitIntent.optedOut) {
+            console.info('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_habit_opted_out`,
+              habit_title: habitIntent.habitTitle,
+            });
+          } else if (
+            isReportingCategory(habitIntent.intent.category) &&
+            habitIntent.intent.confidence !== 'low'
+          ) {
+            // partial / failed / skipped — לוג בלי side-effect כדי שנדע
+            // שהמשתמש דיווח אבל לא הצליחנו להתאים את ההרגל.
+            console.info('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_habit_reported_no_match`,
+              category: habitIntent.intent.category,
+              habit_title: habitIntent.intent.habitTitle,
             });
           }
         } catch (habitErr) {
@@ -1491,25 +1516,45 @@ export async function POST(request: Request) {
               debug_id: debugId,
               stage: `${finishStage}_task_intent`,
               task_title: taskIntent.taskTitle,
+              category: taskIntent.category,
             });
-            after(async () => {
-              try {
-                const admin = createAdminClient();
-                await sendTaskCompletionCelebration(
-                  admin,
-                  user.id,
-                  taskIntent.stepId!,
-                  taskIntent.taskId!
-                );
-              } catch (celebrateErr) {
-                console.warn('[ai/chat]', {
-                  debug_id: debugId,
-                  stage: 'task_celebration_after',
-                  error:
-                    celebrateErr instanceof Error ? celebrateErr.message : String(celebrateErr),
-                });
-              }
-            });
+            /**
+             * 🎉 celebration / 💙 support — נקרא תמיד, גם על failed/partial:
+             *   - done       → חגיגה רגילה עם סטריק.
+             *   - partial    → חגיגה רכה (מתייחס למה שבוצע).
+             *   - failed     → outcome=attempt_failed → מסר תמיכה (לא חגיגה).
+             *   - skipped    → לא מפעילים (זה לא ניצחון ולא כישלון).
+             */
+            const celebrationOutcome: 'completed' | 'attempt_failed' | null =
+              taskIntent.category === 'done' || taskIntent.category === 'partial'
+                ? 'completed'
+                : taskIntent.category === 'failed'
+                  ? 'attempt_failed'
+                  : null;
+            if (celebrationOutcome) {
+              const slotForCelebration = taskIntent.slot;
+              const wasAlreadyDone = taskIntent.wasAlreadyDone;
+              after(async () => {
+                try {
+                  const admin = createAdminClient();
+                  await sendTaskCompletionCelebration(admin, {
+                    userId: user.id,
+                    stepId: taskIntent.stepId!,
+                    taskId: taskIntent.taskId!,
+                    slot: slotForCelebration ?? null,
+                    outcome: celebrationOutcome,
+                    wasAlreadyDone,
+                  });
+                } catch (celebrateErr) {
+                  console.warn('[ai/chat]', {
+                    debug_id: debugId,
+                    stage: 'task_celebration_after',
+                    error:
+                      celebrateErr instanceof Error ? celebrateErr.message : String(celebrateErr),
+                  });
+                }
+              });
+            }
           }
         } catch (taskErr) {
           console.warn('[ai/chat]', {

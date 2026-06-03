@@ -15,6 +15,7 @@ import {
   querySystemKnowledgeVectors,
 } from '@/lib/ai/system-knowledge-vector';
 import { readJsonBody } from '@/lib/api/json-request';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { requireApiSession } from '@/lib/api/route-guards';
 import { publicAppUrlForAiReferer } from '@/lib/public-app-url';
 
@@ -91,6 +92,19 @@ export async function POST(request: Request) {
   if (!session.ok) return session.response;
 
   const { supabase, user } = session;
+
+  /**
+   * 🛡️ Rate limiting: ה-route מפעיל embeddings + LLM streaming דרך OpenRouter.
+   * משתמש מחובר (או לולאה בלקוח) שמייצר עשרות-מאות בקשות בדקה יכול לשרוף
+   * קרדיט בעלות גבוהה. שני חלונות במקביל: short (per-minute) + long (per-hour).
+   */
+  const rl = await consumeMultiRateLimits(user.id, 'rag-chat', [
+    { limit: 20, windowSeconds: 60 },
+    { limit: 200, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) {
+    return rateLimitResponse(rl, 'יותר מדי בקשות צ\'אט. נסה שוב בעוד מספר שניות.');
+  }
 
   if (!process.env.OPENROUTER_API_KEY?.trim()) {
     return NextResponse.json({ error: 'OPENROUTER_API_KEY חסר' }, { status: 500 });

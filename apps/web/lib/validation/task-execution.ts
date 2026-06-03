@@ -8,7 +8,27 @@ const slotSchema = z
     'slot לא תקין'
   );
 
-/** POST — תיעוד ביצוע סלוט יומי של משימה */
+/**
+ * outcome — מה המשתמש מדווח על הסלוט הזה.
+ *   - `completed`       → ביצע בפועל (default).
+ *   - `attempt_failed`  → ניסה אבל לא הצליח. צבע שונה בהיסטוריה,
+ *                         והמסר מאלמוג הוא תמיכה ולא חגיגה.
+ *   - `partial`         → ביצוע חלקי ("שתיתי קצת", "1 מתוך 3"). הוסף
+ *                         במיגרציה 000031 — מאפשר לקלסיפיקטור החדש לכתוב
+ *                         סטטוס מדויק במקום לקפל ל-completed/attempt_failed.
+ *   - `skipped`         → דילוג מודע ליום אחד ("לא היום", "מוותר היום").
+ *                         שונה מ-opted_out (שמכבה את ההרגל עצמו במטא).
+ */
+export const taskExecutionOutcomeSchema = z.enum([
+  'completed',
+  'attempt_failed',
+  'partial',
+  'skipped',
+]);
+
+export type TaskExecutionOutcome = z.infer<typeof taskExecutionOutcomeSchema>;
+
+/** POST — תיעוד ביצוע / ניסיון של סלוט יומי */
 export const taskExecutionInsertSchema = z
   .object({
     step_id: z.string().uuid(),
@@ -21,6 +41,7 @@ export const taskExecutionInsertSchema = z
       .optional(),
     source: z.enum(['manual', 'chat', 'reminder']).optional(),
     note: z.string().max(2000).optional(),
+    outcome: taskExecutionOutcomeSchema.optional(),
   })
   .strict();
 

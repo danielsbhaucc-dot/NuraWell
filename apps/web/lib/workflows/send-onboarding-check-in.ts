@@ -301,6 +301,9 @@ export async function sendOnboardingCheckInNotification(
       daysSinceLastActive: journeyExecutionContext.daysSinceLastActive,
       completionStatus: journeyExecutionContext.completionStatus,
       cadenceStage: journeyExecutionContext.cadenceStage,
+      /** Onboarding tier — אין דחיפות מצטברת, טון gentle/friendly_nudge. */
+      urgencyLevel: slot === 'evening' ? 'friendly_nudge' : 'gentle',
+      notificationCount: 0,
     };
 
     systemPrompt = buildHabitCheckpointSystemPrompt({
@@ -314,6 +317,12 @@ export async function sendOnboardingCheckInNotification(
         currentSlot: slot,
         nudgeLevel: journeyExecutionContext.nudgeLevel,
         cadenceStage: journeyExecutionContext.cadenceStage,
+        /**
+         * Onboarding check-in — תמיד יום 0 בפועל (משתמש שהיום נכנס למסלול).
+         * Urgency = gentle/friendly_nudge לפי ה-slot. אין צבירת התראות עדיין.
+         */
+        urgencyLevel: slot === 'evening' ? 'friendly_nudge' : 'gentle',
+        notificationCount: 0,
       },
       weekdayName,
       timeHHMM,
@@ -413,7 +422,11 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
  * מבוסס על מה ש-`formatHabitsForPrompt` של habit-checkpoint עושה.
  */
 function formatBehavioralTaskContextBlock(
-  journeyCtx: NonNullable<Awaited<ReturnType<typeof fetchPersonalizedCheckInJourneyContext>>>,
+  /**
+   * `journeyCtx` יכול להיות null אם המשתמש בלי step פעיל — הבלוק עדיין יציג
+   * את ה-slot/weekday הבסיסיים. הקוד בפנים כבר משתמש ב-`journeyCtx?.X`.
+   */
+  journeyCtx: Awaited<ReturnType<typeof fetchPersonalizedCheckInJourneyContext>> | null,
   exec: { completedTodayHabits: Array<{ id: string; title: string }>; completedTodayTasks: Array<{ id: string; title: string }> },
   slot: HabitCheckpointSlot,
   weekdayName: string,

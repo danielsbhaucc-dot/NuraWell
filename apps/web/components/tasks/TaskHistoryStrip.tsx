@@ -1,11 +1,21 @@
 'use client';
 
-type DayState = { d: string; c: number; t: number };
+type DayState = { d: string; c: number; t: number; a?: number };
 
+/**
+ * צבעים:
+ *  - ירוק (emerald):   c >= t  → יום פעיל מלא
+ *  - אמבר (amber):     0 < c < t → ביצוע חלקי
+ *  - **סגול (violet)**: c=0 ו-a>0 → ניסה ולא הצליח (חדש)
+ *  - תכלת (sky):       היום, c=0, a=0 → פתוח עוד
+ *  - ורד (rose):       יום עבר, c=0, a=0 → פספוס
+ *  - אפור (slate):     t=0 → יום לא פעיל
+ */
 function colorFor(day: DayState, isToday: boolean): string {
   if (day.t <= 0) return 'bg-slate-200/70';
-  if (day.c >= day.t) return 'bg-emerald-500';
+  if (day.c >= day.t && day.c > 0) return 'bg-emerald-500';
   if (day.c > 0) return 'bg-amber-500';
+  if ((day.a ?? 0) > 0) return 'bg-violet-500';
   if (isToday) return 'bg-sky-300';
   return 'bg-rose-300/85';
 }
@@ -24,10 +34,11 @@ interface Props {
  * רצועה אופקית של ימים — לחיצה על עיגול פותחת Popup פירוט יומי.
  *
  * צבעים:
- *  - ירוק (done):    יום פעיל (ביצוע אחד או יותר).
- *  - אמבר (partial): נתחיל לסמן אבל לא הספקנו (כרגע לא מבדילים פר-משימה).
- *  - תכלת (open):    היום עצמו ללא ביצועים — פתוח, לא פספוס.
- *  - ורד עדין:       יום בעבר ללא ביצועים — לא נשבור על זה את הראש.
+ *  - ירוק (done):     יום פעיל (כל הסלוטים בוצעו).
+ *  - אמבר (partial):  ביצוע חלקי של היום.
+ *  - סגול (attempted): המשתמש דיווח "ניסיתי ונכשלתי" באותו יום.
+ *  - תכלת (open):     היום עצמו ללא ביצועים — פתוח, לא פספוס.
+ *  - ורד עדין:        יום בעבר ללא ביצועים — לא נשבור על זה את הראש.
  */
 export function TaskHistoryStrip({ days, onSelect, todayKey, activeKey }: Props) {
   return (

@@ -86,10 +86,17 @@ export async function GET(request: Request) {
       console.error('[notifications GET] supabase error', error);
       return NextResponse.json(
         {
-          error: error.message,
-          code: (error as { code?: string }).code,
-          hint: (error as { hint?: string }).hint,
-          details: (error as { details?: string }).details,
+          error: 'Failed to load notifications',
+          ...(process.env.NODE_ENV !== 'production'
+            ? {
+                debug: {
+                  message: error.message,
+                  code: (error as { code?: string }).code,
+                  hint: (error as { hint?: string }).hint,
+                  details: (error as { details?: string }).details,
+                },
+              }
+            : {}),
         },
         { status: 500 }
       );
@@ -98,7 +105,7 @@ export async function GET(request: Request) {
     if (countResult?.error) {
       console.error('[notifications GET] count error', countResult.error);
       return NextResponse.json(
-        { error: (countResult.error as Error).message },
+        { error: 'Failed to load notifications' },
         { status: 500 }
       );
     }
@@ -122,11 +129,10 @@ export async function GET(request: Request) {
     console.error('[notifications GET] unexpected', error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Internal server error',
-        stack:
-          process.env.NODE_ENV !== 'production' && error instanceof Error
-            ? error.stack
-            : undefined,
+        error: 'Internal server error',
+        ...(process.env.NODE_ENV !== 'production' && error instanceof Error
+          ? { debug: { message: error.message, stack: error.stack } }
+          : {}),
       },
       { status: 500 }
     );
@@ -151,6 +157,20 @@ export async function PATCH(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tbl = () => (supabase as any).from('notifications');
 
+    /** עוטף תגובת שגיאה גנרית עם לוג פנימי, בלי לחשוף message ל-prod. */
+    const errorResponse = (tag: string, err: unknown, status = 500) => {
+      console.error(`[notifications PATCH] ${tag}`, err);
+      return NextResponse.json(
+        {
+          error: 'Failed to update notification',
+          ...(process.env.NODE_ENV !== 'production' && err && typeof err === 'object'
+            ? { debug: err }
+            : {}),
+        },
+        { status }
+      );
+    };
+
     if (d.mark_all === true) {
       const { error } = await tbl()
         .update({ is_read: true })
@@ -158,9 +178,7 @@ export async function PATCH(request: Request) {
         .eq('is_read', false)
         .is('archived_at', null);
 
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
+      if (error) return errorResponse('mark_all', error);
       return NextResponse.json({ ok: true });
     }
 
@@ -170,9 +188,7 @@ export async function PATCH(request: Request) {
         .eq('user_id', user.id)
         .eq('id', d.archive_id);
 
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
+      if (error) return errorResponse('archive_id', error);
       return NextResponse.json({ ok: true });
     }
 
@@ -182,9 +198,7 @@ export async function PATCH(request: Request) {
         .eq('user_id', user.id)
         .eq('id', d.unarchive_id);
 
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
+      if (error) return errorResponse('unarchive_id', error);
       return NextResponse.json({ ok: true });
     }
 
@@ -194,16 +208,20 @@ export async function PATCH(request: Request) {
         .eq('user_id', user.id)
         .eq('id', d.id);
 
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
+      if (error) return errorResponse('mark_read', error);
       return NextResponse.json({ ok: true });
     }
 
     return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
   } catch (error) {
+    console.error('[notifications PATCH] unexpected', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      {
+        error: 'Internal server error',
+        ...(process.env.NODE_ENV !== 'production' && error instanceof Error
+          ? { debug: { message: error.message, stack: error.stack } }
+          : {}),
+      },
       { status: 500 }
     );
   }

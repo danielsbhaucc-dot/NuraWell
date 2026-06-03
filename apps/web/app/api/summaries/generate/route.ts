@@ -30,6 +30,10 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { readJsonBody } from '../../../../lib/api/json-request';
 import { authorizeCronRequest } from '../../../../lib/api/authorize-cron';
+import {
+  consumeMultiRateLimits,
+  rateLimitResponse,
+} from '../../../../lib/api/rate-limit';
 import { requireApiSession } from '../../../../lib/api/route-guards';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import { jsonZodError } from '../../../../lib/validation/zod-http';
@@ -92,35 +96,57 @@ export async function POST(request: Request) {
     const cronAuthorized = cronAuthFailure === null;
 
     let firstName: string | null = null;
+    let isAdminCaller = false;
     if (!cronAuthorized) {
       const session = await requireApiSession(request);
       if (!session.ok) return session.response;
 
       // משתמש רגיל יכול לייצר רק לעצמו; admin – יכול לכולם.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (session.supabase as any)
+        .from('profiles')
+        .select('role, full_name')
+        .eq('id', session.user.id)
+        .single();
+
+      isAdminCaller = profile?.role === 'admin';
+
       if (session.user.id !== userId) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: profile } = await (session.supabase as any)
-          .from('profiles')
-          .select('role, full_name')
-          .eq('id', session.user.id)
-          .single();
-        if (!profile || profile.role !== 'admin') {
+        if (!isAdminCaller) {
           return NextResponse.json(
             { error: 'Forbidden — can only generate summaries for yourself' },
             { status: 403 }
           );
         }
       } else {
-        // נטען את השם הפרטי כדי לחסוך שאילתה ב-engine.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: profile } = await (session.supabase as any)
-          .from('profiles')
-          .select('full_name')
-          .eq('id', session.user.id)
-          .single();
         firstName = profile?.full_name ?? null;
       }
+
+      /**
+       * 🛡️ Rate limiting למשתמשים מחוברים: ייצור סיכום מפעיל LLM cascade,
+       * שיכול להיות יקר במיוחד ל-quarterly/annual. cron לא נחנק כי הוא
+       * מורשה דרך CRON_SECRET / QStash signature.
+       */
+      const rl = await consumeMultiRateLimits(
+        session.user.id,
+        'summaries-generate',
+        [
+          { limit: 5, windowSeconds: 60 },
+          { limit: 30, windowSeconds: 3600 },
+        ]
+      );
+      if (!rl.ok) {
+        return rateLimitResponse(rl, 'יותר מדי בקשות לייצור סיכומים. נסו שוב מאוחר יותר.');
+      }
     }
+
+    /**
+     * 🛡️ `modelOverride` הוא מנגנון debug שמרשה לבחור מודל ספציפי. בעבר
+     * משתמש מחובר רגיל יכול היה להעביר אותו (= להזמין מודל יקר). מכאן
+     * והלאה רק admin/cron יכולים לעקוף.
+     */
+    const effectiveModelOverride =
+      cronAuthorized || isAdminCaller ? modelOverride : undefined;
 
     // ---------- 3. Generate (cascade) + UPSERT ----------
     // תמיד admin client: ה-engine קורא/כותב על-פני סיכומי ילדים שלא
@@ -132,7 +158,7 @@ export async function POST(request: Request) {
         userId,
         type,
         periodKey,
-        ...(modelOverride ? { modelOverride } : {}),
+        ...(effectiveModelOverride ? { modelOverride: effectiveModelOverride } : {}),
       },
       firstName
     );
@@ -167,11 +193,15 @@ export async function POST(request: Request) {
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('[/api/summaries/generate] failed:', err);
+    /**
+     * אל תחזיר ללקוח את `err.message` — הוא יכול לחשוף פרטי schema/RPC.
+     * ב-production מחזירים תגובה גנרית; ב-dev עדיין נראה את ה-stack בלוג Vercel.
+     */
     return NextResponse.json(
       {
-        error: err instanceof Error ? err.message : 'Internal server error',
+        error: 'Internal server error',
         ...(process.env.NODE_ENV !== 'production' && err instanceof Error
-          ? { stack: err.stack }
+          ? { debug: { message: err.message, stack: err.stack } }
           : {}),
       },
       { status: 500 }
