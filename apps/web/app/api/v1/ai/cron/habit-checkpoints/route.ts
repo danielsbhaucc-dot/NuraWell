@@ -8,6 +8,7 @@ import { habitCheckpointSlotSchema } from '../../../../../../lib/workflows/almog
 import {
   fetchTrueLastActiveByUser,
   planHabitCheckpointTriggersWithChat,
+  type UserResponseInfo,
 } from '../../../../../../lib/workflows/habit-checkpoint-batch';
 import { workflowPublicBaseUrl } from '../../../../../../lib/workflows/resolve-workflow-public-url';
 
@@ -120,13 +121,22 @@ async function runHabitCheckpointCron(request: Request) {
     ai_context?: Record<string, unknown> | null;
     onboarding_completed?: boolean | null;
     ai_check_in_times?: unknown;
+    last_responded_at?: string | null;
+    notification_count?: number | null;
   }> = [];
 
   if (progressUserIds.length > 0) {
+    /**
+     * `last_responded_at` + `notification_count` נוספים ל-SELECT (migration
+     * 000029). הם דרושים ל-(א) דילוג חכם אם המשתמש הגיב בשעות האחרונות,
+     * (ב) הזרקת counter ל-LLM כדי להתאים טון למשתמש "ותיק".
+     */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profiles, error: profErr } = await (admin as any)
       .from('profiles')
-      .select('id, ai_context, onboarding_completed, ai_check_in_times')
+      .select(
+        'id, ai_context, onboarding_completed, ai_check_in_times, last_responded_at, notification_count'
+      )
       .in('id', progressUserIds.slice(0, 2000));
 
     if (profErr) {
@@ -136,6 +146,19 @@ async function runHabitCheckpointCron(request: Request) {
     for (const row of profiles ?? []) {
       profileRows.push(row);
     }
+  }
+
+  /**
+   * Map: userId → { lastRespondedAt, notificationCount } — מועבר ל-planner
+   * כדי שיוכל לדלג על משתמשים פעילים ולהזריק counter ל-LLM.
+   */
+  const userResponseInfo = new Map<string, UserResponseInfo>();
+  for (const row of profileRows) {
+    userResponseInfo.set(row.id, {
+      lastRespondedAt: row.last_responded_at ?? null,
+      notificationCount:
+        typeof row.notification_count === 'number' ? row.notification_count : 0,
+    });
   }
 
   /**
@@ -156,7 +179,8 @@ async function runHabitCheckpointCron(request: Request) {
     slot,
     now,
     todayExecutionsByUser,
-    lastActiveByUser
+    lastActiveByUser,
+    userResponseInfo
   );
 
   const userIds = [...new Set(plan.map((p) => p.userId))];

@@ -157,14 +157,28 @@ export default async function ProgressPage() {
   const untilKey = jerusalemDateKey(today);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rawExecutions } = await (supabase as any)
+  let { data: rawExecutions } = await (supabase as any)
     .from('journey_task_executions')
-    .select('date_key, task_id, step_id, slot, completed_at, source')
+    .select('date_key, task_id, step_id, slot, completed_at, source, outcome')
     .eq('user_id', user.id)
     .gte('date_key', sinceKey)
     .lte('date_key', untilKey)
     .order('completed_at', { ascending: true })
     .limit(600);
+
+  /** fallback: אם העמודה outcome עדיין לא קיימת ב-DB — סלקט בלעדיה. */
+  if (!Array.isArray(rawExecutions)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const retry = await (supabase as any)
+      .from('journey_task_executions')
+      .select('date_key, task_id, step_id, slot, completed_at, source')
+      .eq('user_id', user.id)
+      .gte('date_key', sinceKey)
+      .lte('date_key', untilKey)
+      .order('completed_at', { ascending: true })
+      .limit(600);
+    rawExecutions = retry.data;
+  }
 
   /** taskId → metadata כדי להציג טקסט יפה ב-Popup ב-/progress */
   const taskMetaById = new Map<
@@ -192,10 +206,14 @@ export default async function ProgressPage() {
     slot: string;
     completed_at: string;
     source: 'manual' | 'chat' | 'reminder';
+    outcome: 'completed' | 'attempt_failed';
   };
   const taskHistoryByDay: Record<string, DayExecRow[]> = {};
 
+  /** completed: סופר רק outcome=completed (ברירת מחדל אם השדה ריק). */
   const dayCount = new Map<string, number>();
+  /** attempt_failed: מציג צבע סגול בהיסטוריה. */
+  const attemptDayCount = new Map<string, number>();
 
   if (Array.isArray(rawExecutions) && rawExecutions.length > 0) {
     for (const row of rawExecutions as Array<{
@@ -205,10 +223,16 @@ export default async function ProgressPage() {
       slot?: string;
       completed_at?: string;
       source?: string;
+      outcome?: string;
     }>) {
       const key = typeof row.date_key === 'string' ? row.date_key : '';
       if (!key) continue;
-      dayCount.set(key, (dayCount.get(key) ?? 0) + 1);
+      const outcome = row.outcome === 'attempt_failed' ? 'attempt_failed' : 'completed';
+      if (outcome === 'completed') {
+        dayCount.set(key, (dayCount.get(key) ?? 0) + 1);
+      } else {
+        attemptDayCount.set(key, (attemptDayCount.get(key) ?? 0) + 1);
+      }
 
       const meta = row.task_id ? taskMetaById.get(row.task_id) : undefined;
       const arr = taskHistoryByDay[key] ?? [];
@@ -224,12 +248,20 @@ export default async function ProgressPage() {
           row.source === 'chat' || row.source === 'reminder'
             ? row.source
             : 'manual',
+        outcome,
       });
       taskHistoryByDay[key] = arr;
     }
   }
 
-  const taskHistoryDays = buildDailyAggregateDays(jSteps, jProg, dayCount, 30, today);
+  const taskHistoryDays = buildDailyAggregateDays(
+    jSteps,
+    jProg,
+    dayCount,
+    30,
+    today,
+    attemptDayCount
+  );
 
   return (
     <ProgressPageClient

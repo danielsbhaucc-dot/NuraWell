@@ -212,147 +212,156 @@ export function TaskHistoryPageClient() {
   }
 
   return (
-    <div className="max-w-lg mx-auto w-full min-w-0 px-4 py-4 space-y-5 pb-8">
-      {/* Summary cards */}
+    <div dir="rtl" className="max-w-lg mx-auto w-full min-w-0 px-4 py-4 space-y-5 pb-8">
+      {/* ───── Summary cards — זכוכית iOS אמיתית, שקופה ונייטרלית ───── */}
       <div className="grid grid-cols-2 gap-2.5">
-        <div
-          className="rounded-2xl p-3 text-right"
-          style={{
-            background: 'linear-gradient(135deg, rgba(16,185,129,0.16), rgba(255,255,255,0.7))',
-            border: '1px solid rgba(16,185,129,0.25)',
-          }}
-        >
-          <p className="text-[10px] font-bold text-emerald-900/70">סך ביצועים (60 יום)</p>
-          <p className="text-2xl font-black text-emerald-900 tabular-nums">{summary.total}</p>
+        <div className="glass-surface relative overflow-hidden rounded-2xl p-3 text-right">
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-3 top-px h-px"
+            style={{
+              background:
+                'linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent)',
+            }}
+          />
+          <p className="relative text-[10px] font-bold text-emerald-900/75">סך ביצועים (60 יום)</p>
+          <p className="relative text-2xl font-black text-emerald-900 tabular-nums">{summary.total}</p>
         </div>
-        <div
-          className="rounded-2xl p-3 text-right"
-          style={{
-            background: 'linear-gradient(135deg, rgba(56,189,248,0.18), rgba(255,255,255,0.7))',
-            border: '1px solid rgba(56,189,248,0.25)',
-          }}
-        >
-          <p className="text-[10px] font-bold text-sky-900/70">ימים פעילים (שבוע)</p>
-          <p className="text-2xl font-black text-sky-900 tabular-nums">{summary.daysActive}/7</p>
+        <div className="glass-surface relative overflow-hidden rounded-2xl p-3 text-right">
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-3 top-px h-px"
+            style={{
+              background:
+                'linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent)',
+            }}
+          />
+          <p className="relative text-[10px] font-bold text-sky-900/75">ימים פעילים (שבוע)</p>
+          <p className="relative text-2xl font-black text-sky-900 tabular-nums">{summary.daysActive}/7</p>
         </div>
       </div>
 
-      {/* Top tasks */}
+      {/* ───── Top tasks — מרכוז + RTL + זכוכית שקופה אמיתית ───── */}
       {summary.top.length > 0 && (
         <div
-          className="rounded-2xl p-3 space-y-2"
-          style={{
-            background: 'rgba(255,255,255,0.55)',
-            border: '1px solid rgba(16,185,129,0.18)',
-          }}
+          dir="rtl"
+          className="glass-surface relative overflow-hidden rounded-2xl p-3.5 space-y-2.5"
         >
-          <div className="flex items-center gap-2 justify-end">
-            <Sparkles className="h-4 w-4 text-amber-500" />
-            <p className="text-sm font-black text-[#1A1730]">משימות הכי פעילות שלך</p>
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-4 top-px h-px"
+            style={{
+              background:
+                'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+            }}
+          />
+          <div className="relative flex items-center justify-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+            <p
+              className="text-sm font-black text-emerald-950 text-center"
+              style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+            >
+              משימות הכי פעילות שלך
+            </p>
           </div>
-          <ul className="space-y-1.5">
+          <ul className="relative space-y-1.5">
             {summary.top.map((row, idx) => (
               <li
                 key={`${row.meta?.taskId ?? idx}-${idx}`}
-                className="flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-[12px] font-semibold text-emerald-900 justify-between"
-                style={{ background: 'rgba(236,253,245,0.7)' }}
+                dir="rtl"
+                className="glass-inset flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-[12px] font-semibold text-emerald-900 justify-between"
               >
-                <span className="tabular-nums text-emerald-700">×{row.count}</span>
-                <span className="truncate text-right flex-1">
-                  {row.meta ? row.meta.taskTitle : 'משימה'}
-                </span>
                 <span className="text-base shrink-0" aria-hidden>
                   {row.meta?.taskEmoji ?? '✅'}
                 </span>
+                <span className="truncate text-right flex-1">
+                  {row.meta ? row.meta.taskTitle : 'משימה'}
+                </span>
+                <span className="tabular-nums text-emerald-700 shrink-0">×{row.count}</span>
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      {/* Day groups */}
+      {/* ───── Day groups — זכוכית שקופה ───── */}
       <div className="space-y-3">
         {groups.map((g) => (
           <div
             key={g.dateKey}
-            className="rounded-[22px] p-[1px]"
-            style={{
-              background:
-                'linear-gradient(145deg, rgba(52,211,153,0.45), rgba(167,243,208,0.25), rgba(255,255,255,0.65))',
-            }}
+            dir="rtl"
+            className="glass-surface relative overflow-hidden rounded-[22px] px-3 py-3"
           >
-            <div
-              className="rounded-[21px] px-3 py-3"
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-x-4 top-px h-px"
               style={{
-                background: 'rgba(255,255,255,0.62)',
-                border: '1px solid rgba(255,255,255,0.65)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
-                backdropFilter: 'blur(10px)',
+                background:
+                  'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
               }}
-            >
-              <div className="flex items-center justify-between flex-row-reverse mb-2">
-                <div className="flex items-center gap-2 flex-row-reverse">
-                  <CalendarDays className="h-4 w-4 text-emerald-700" />
-                  <p className="text-sm font-black text-[#1A1730]">
-                    {g.weekday ? `יום ${g.weekday} ` : ''}
-                    {g.dateLabel}
-                  </p>
-                </div>
-                <span
-                  className="text-[11px] font-black tabular-nums px-2 py-0.5 rounded-full"
-                  style={{
-                    background:
-                      'linear-gradient(135deg, rgba(16,185,129,0.95), rgba(52,211,153,0.85))',
-                    color: '#fff',
-                  }}
-                >
-                  {g.total} ביצועים
-                </span>
+            />
+            <div className="relative flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-emerald-700" />
+                <p className="text-sm font-black text-emerald-950">
+                  {g.weekday ? `יום ${g.weekday} ` : ''}
+                  {g.dateLabel}
+                </p>
               </div>
-              <ul className="space-y-1.5">
-                {g.items.map((item) => {
-                  const time = new Date(item.execution.completed_at).toLocaleTimeString('he-IL', {
-                    timeZone: 'Asia/Jerusalem',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  });
-                  return (
-                    <li
-                      key={item.execution.id}
-                      className="flex items-center gap-2.5 rounded-xl px-2.5 py-2"
-                      style={{
-                        background: 'rgba(236,253,245,0.7)',
-                        border: '1px solid rgba(16,185,129,0.16)',
-                      }}
-                    >
-                      <span className="text-base shrink-0" aria-hidden>
-                        {item.meta?.taskEmoji ?? '✅'}
-                      </span>
-                      <div className="min-w-0 flex-1 text-right">
-                        <p className="text-[13px] font-bold text-[#1A1730] truncate">
-                          {item.meta?.taskTitle ?? 'משימה'}
-                        </p>
-                        {item.meta ? (
-                          <p className="text-[10px] font-semibold text-emerald-800/70 truncate">
-                            צעד {item.meta.stepNumber}: {item.meta.stepTitle}
-                          </p>
-                        ) : null}
-                      </div>
-                      <span
-                        className="text-[10px] font-bold tracking-wide text-emerald-900 bg-white/85 border border-emerald-300/55 rounded-full px-2 py-1 flex items-center gap-1 shrink-0"
-                        title={`סלוט: ${slotLabel(item.execution.slot as JourneyTaskSlot)}`}
-                      >
-                        <span aria-hidden>{slotEmoji(item.execution.slot as JourneyTaskSlot)}</span>
-                        <span>{slotLabel(item.execution.slot as JourneyTaskSlot)}</span>
-                      </span>
-                      <span className="text-[10px] font-semibold text-emerald-900/60 tabular-nums shrink-0">
-                        {time}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
+              <span
+                className="text-[11px] font-black tabular-nums px-2.5 py-1 rounded-full"
+                style={{
+                  background:
+                    'linear-gradient(135deg, rgba(16,185,129,0.95), rgba(52,211,153,0.85))',
+                  color: '#fff',
+                  boxShadow:
+                    'inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 8px rgba(6,78,59,0.18)',
+                }}
+              >
+                {g.total} ביצועים
+              </span>
             </div>
+            <ul className="relative space-y-1.5">
+              {g.items.map((item) => {
+                const time = new Date(item.execution.completed_at).toLocaleTimeString('he-IL', {
+                  timeZone: 'Asia/Jerusalem',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                });
+                return (
+                  <li
+                    key={item.execution.id}
+                    dir="rtl"
+                    className="glass-inset flex items-center gap-2.5 rounded-xl px-2.5 py-2"
+                  >
+                    <span className="text-base shrink-0" aria-hidden>
+                      {item.meta?.taskEmoji ?? '✅'}
+                    </span>
+                    <div className="min-w-0 flex-1 text-right">
+                      <p className="text-[13px] font-bold text-emerald-950 truncate">
+                        {item.meta?.taskTitle ?? 'משימה'}
+                      </p>
+                      {item.meta ? (
+                        <p className="text-[10px] font-semibold text-emerald-800/75 truncate">
+                          צעד {item.meta.stepNumber}: {item.meta.stepTitle}
+                        </p>
+                      ) : null}
+                    </div>
+                    {/* ──── תגית סלוט: זכוכית iOS אמיתית ──── */}
+                    <span
+                      className="glass-pill relative overflow-hidden text-[10px] font-bold tracking-wide text-emerald-900 rounded-full px-2.5 py-1 flex items-center gap-1 shrink-0"
+                      title={`סלוט: ${slotLabel(item.execution.slot as JourneyTaskSlot)}`}
+                    >
+                      <span aria-hidden>{slotEmoji(item.execution.slot as JourneyTaskSlot)}</span>
+                      <span>{slotLabel(item.execution.slot as JourneyTaskSlot)}</span>
+                    </span>
+                    <span className="text-[10px] font-semibold text-emerald-900/65 tabular-nums shrink-0">
+                      {time}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         ))}
       </div>

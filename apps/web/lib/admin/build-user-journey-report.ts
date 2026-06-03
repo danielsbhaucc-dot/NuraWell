@@ -261,7 +261,7 @@ export async function buildAdminUserJourneyReport(
     const started = Boolean(prog);
     const ts = (prog?.task_statuses ?? {}) as Record<
       string,
-      { status?: string; execution_done?: boolean }
+      { status?: string; execution_done?: boolean; decided_at?: string | null }
     >;
     const hp = (prog?.habits_progress ?? {}) as Record<string, boolean[]>;
     const hm = (prog?.habit_meta ?? {}) as Record<string, HabitMetaEntry>;

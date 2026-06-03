@@ -218,7 +218,15 @@ export async function POST(request: Request) {
   if (!parsed.success) return jsonZodError(parsed.error, 'Invalid request body');
   const body = parsed.data;
 
+  const isProduction = process.env.NODE_ENV === 'production';
+
   let targetUserId: string;
+  /**
+   * isAdminCaller=true → מקבל את כל פרטי האבחון (full diagnostic).
+   * משתמש רגיל בפרודקשן → מקבל רק "would_send + reason" מצומצם, בלי
+   * full_name/last_active/blockers/onboarding info.
+   */
+  let isAdminCaller = hasCronBearer;
   if (hasCronBearer) {
     if (!body.userId) {
       return NextResponse.json(
@@ -237,6 +245,14 @@ export async function POST(request: Request) {
       );
     }
     targetUserId = session.user.id;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: profile } = await (session.supabase as any)
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+    isAdminCaller = profile?.role === 'admin';
   }
 
   const now = new Date();
@@ -257,8 +273,9 @@ export async function POST(request: Request) {
       fetchAlreadySentThisSlot(admin, targetUserId, dateKey, slot),
     ]);
   } catch (e) {
+    console.error('[habit-checkpoint diagnose] fetch failed', e);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'fetch failed' },
+      { error: 'fetch failed' },
       { status: 500 }
     );
   }
@@ -325,11 +342,17 @@ export async function POST(request: Request) {
     .filter((h, i, arr) => arr.findIndex((x) => x.id === h.id) === i);
   const slotHabits = filterHabitsForSlot(allHabits, slot, weekday);
 
+  /**
+   * `planHabitCheckpointTriggers` מצפה למפה רב-משתמשית
+   * (user → task → slots). פה אנחנו מאבחנים משתמש יחיד, ולכן עוטפים
+   * את המפה הפנימית תחת `targetUserId`.
+   */
+  const todayExecutionsByUser = new Map([[targetUserId, todayExecutions]]);
   const plan = planHabitCheckpointTriggers(
     progressRows,
     slot,
     now,
-    todayExecutions,
+    todayExecutionsByUser,
     lastActiveByUser
   );
   const userPlan = plan.find((p) => p.userId === targetUserId) ?? null;
@@ -372,6 +395,24 @@ export async function POST(request: Request) {
     summary_he = `⚪ לא יישלח: אין משימות accepted פתוחות + ${reasons.join(' + ') || 'אין הרגל פתוח לחלון זה'}.`;
   } else {
     summary_he = 'מצב לא מוגדר.';
+  }
+
+  /**
+   * 🛡️ ב-production, משתמש רגיל מקבל תגובה מצומצמת בלי PII (full_name,
+   * last_active_at, ai_context blockers וכו'). admin / cron מקבלים את
+   * האבחון המלא.
+   */
+  if (isProduction && !isAdminCaller) {
+    return NextResponse.json({
+      ok: true,
+      mode: 'diagnose_read_only_minimal',
+      slot,
+      checkpoint_date: dateKey,
+      would_send: wouldSend,
+      summary_he,
+      hint_he:
+        'אבחון מלא זמין רק ל-admin. אם תרצה דיווח מפורט פנה ל-ops.',
+    });
   }
 
   return NextResponse.json({

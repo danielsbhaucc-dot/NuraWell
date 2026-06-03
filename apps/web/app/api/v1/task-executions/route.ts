@@ -13,15 +13,29 @@ export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 /**
- * מחזיר ללקוח שגיאת Supabase מלאה כדי שנוכל לאבחן באוויר —
- * code/message/details/hint. בעיקר חשוב כש-RLS חוסם או כשהטבלה חסרה
- * (הסימן: code = '42P01' = relation does not exist).
+ * מחזיר ללקוח תגובת שגיאה. ב-production מחזירים רק "ידידותי + code"
+ * (כדי לזהות table-missing) כדי לא להדליף schema/RLS hints. ב-development
+ * שומרים על הצגה מלאה עם code/message/details/hint שעוזרים לאבחן באוויר.
  */
 function supabaseErrorPayload(
   error: { code?: string; message?: string; details?: string | null; hint?: string | null } | null
 ) {
   if (!error) return { error: 'Unknown Supabase error' };
   const tableMissing = error.code === '42P01';
+  const isProd = process.env.NODE_ENV === 'production';
+
+  if (isProd) {
+    /**
+     * code='42P01' (relation missing) הוא מצב deploy שדורש מיגרציה — נחזיר
+     * אותו ללא message/hint כדי שהלקוח יוכל להציג גרסת UI מצומצמת בלי
+     * לחשוף שם migration.
+     */
+    return {
+      error: 'Failed to save execution',
+      code: error.code ?? null,
+    };
+  }
+
   const baseHint = tableMissing
     ? 'הטבלה journey_task_executions לא קיימת ב-DB. הריצו את המיגרציה 000023_journey_task_executions.sql ב-Supabase Studio.'
     : (error.hint ?? undefined);
@@ -50,12 +64,17 @@ export async function POST(request: Request) {
     const parsed = taskExecutionInsertSchema.safeParse(raw.value);
     if (!parsed.success) return jsonZodError(parsed.error);
 
-    const { step_id, task_id, slot, date_key, source, note } = parsed.data;
+    const { step_id, task_id, slot, date_key, source, note, outcome } = parsed.data;
     const { supabase, user } = auth;
 
     const dk = date_key || jerusalemDateKey();
     const nowIso = new Date().toISOString();
 
+    /**
+     * outcome — האם המשתמש דיווח על "בוצע" או "ניסיתי ונכשלתי".
+     * עמודה נוספה במיגרציה 000030. אם ה-DB טרם עודכן, ההשמה תיכשל
+     * בשגיאת `column does not exist` ונחזיר את ההודעה כפי שהיא ל-UI.
+     */
     const row = {
       user_id: user.id,
       step_id,
@@ -64,6 +83,7 @@ export async function POST(request: Request) {
       slot: slot ?? 'full_day',
       completed_at: nowIso,
       source: source ?? 'manual',
+      outcome: outcome ?? 'completed',
       ...(note ? { note } : {}),
     };
 
@@ -92,7 +112,12 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error('task-executions POST exception:', err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Internal server error' },
+      {
+        error: 'Internal server error',
+        ...(process.env.NODE_ENV !== 'production' && err instanceof Error
+          ? { debug: { message: err.message } }
+          : {}),
+      },
       { status: 500 }
     );
   }
@@ -137,7 +162,12 @@ export async function DELETE(request: Request) {
   } catch (err) {
     console.error('task-executions DELETE exception:', err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Internal server error' },
+      {
+        error: 'Internal server error',
+        ...(process.env.NODE_ENV !== 'production' && err instanceof Error
+          ? { debug: { message: err.message } }
+          : {}),
+      },
       { status: 500 }
     );
   }
@@ -185,7 +215,12 @@ export async function GET(request: Request) {
   } catch (err) {
     console.error('task-executions GET exception:', err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Internal server error' },
+      {
+        error: 'Internal server error',
+        ...(process.env.NODE_ENV !== 'production' && err instanceof Error
+          ? { debug: { message: err.message } }
+          : {}),
+      },
       { status: 500 }
     );
   }

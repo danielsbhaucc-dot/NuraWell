@@ -4,6 +4,7 @@ import type {
   HabitCheckpointCompletionStatus,
   HabitCheckpointNudgeLevel,
   HabitCheckpointSlot,
+  HabitCheckpointUrgencyLevel,
 } from './almog-habit-checkpoint-payload';
 import {
   fetchUserIdsWithChatToday,
@@ -473,6 +474,66 @@ export function isSlotAllowedForCadenceStage(
 }
 
 /**
+ * 🎚️ רמת דחיפות רגשית (5 רמות) — מודולציית טון לפי המסמך המקורי של Claude.
+ *
+ * המיפוי בא משילוב של (slot, daysSinceLastActive) — שונה מ-`computeCadenceStage`
+ * שמטפל בתדירות. כאן אנחנו רק קובעים *טון*:
+ *
+ *   0 ימים, בוקר/צהריים  → gentle          (חם, מעודד)
+ *   0 ימים, ערב           → friendly_nudge  (היום כמעט נגמר)
+ *   1 יום                 → friendly_nudge  (שובב, לא שיפוטי)
+ *   2 ימים                → concerned       (קצת מודאג, אנושי)
+ *   3-6 ימים              → worried         (מתגעגע, חם, מקבל)
+ *   7+ ימים               → check_in        (רגוע ונוכח כמו חבר ישן)
+ *
+ * זה כללי "STYLE_GUIDE" שהיו בהנחיה המקורית, מותאמים לציר ה-state machine
+ * הקיים. ה-LLM כבר מקבל את שלב ה-cadence (active/ghosted/...) — ה-urgency
+ * הוא layer נוסף שאומר לו *באיזה רגש* לכתוב, לא *מתי*.
+ */
+export function computeUrgencyLevel(
+  slot: HabitCheckpointSlot,
+  daysSinceLastActive: number
+): HabitCheckpointUrgencyLevel {
+  const d = Number.isFinite(daysSinceLastActive) ? Math.max(0, daysSinceLastActive) : 999;
+  if (d === 0) return slot === 'evening' ? 'friendly_nudge' : 'gentle';
+  if (d === 1) return 'friendly_nudge';
+  if (d === 2) return 'concerned';
+  if (d <= 6) return 'worried';
+  return 'check_in';
+}
+
+/**
+ * 📡 חישוב שעות מאז `profiles.last_responded_at`.
+ * מוחזר `undefined` אם אין רישום (משתמש שלא ענה אי-פעם).
+ * נשמר כמספר שלם של שעות — מספיק לכל החלטות ה-UX (קפיצה של 6h, 24h וכו').
+ */
+export function hoursSinceLastResponse(
+  lastRespondedAtIso: string | null | undefined,
+  now: Date
+): number | undefined {
+  if (!lastRespondedAtIso) return undefined;
+  const ms = Date.parse(lastRespondedAtIso);
+  if (!Number.isFinite(ms)) return undefined;
+  const diffMs = now.getTime() - ms;
+  if (diffMs < 0) return 0;
+  return Math.round(diffMs / (1000 * 60 * 60));
+}
+
+/**
+ * 🔇 חוק "responded recently" מהמסמך המקורי: אם המשתמש פעיל בצ'אט
+ * בשעות האחרונות — לדלג על slot ההתראה הקרוב. ההיגיון: הוא כבר בלולאה,
+ * עוד push זה רעש שיגרום לו לסלוד מהמערכת.
+ */
+export const RESPONDED_RECENTLY_HOURS = 6;
+
+export function isUserRespondedRecently(
+  hoursSinceResp: number | undefined
+): boolean {
+  if (typeof hoursSinceResp !== 'number') return false;
+  return hoursSinceResp < RESPONDED_RECENTLY_HOURS;
+}
+
+/**
  * True last-*responded* per user = MAX של שני אותות תגובה אמיתיים:
  *  1. ai_interactions.created_at where role='user' — כתיבה אמיתית בצ'אט.
  *  2. journey_task_executions.completed_at — סימון משימה/הרגל ב-DB.
@@ -598,12 +659,26 @@ export function computeCompletionStatus(args: {
  * מופיע יסומן Ghosted (nudgeLevel=3). ה-cron route אחראי להחיל back-off של
  * שבוע על Ghosted לפני הטריגר ל-Workflow.
  */
+/**
+ * Per-user response/notification tracking — מוזרק מ-`profiles` (עמודות
+ * `last_responded_at`, `notification_count`) לפני התכנון.
+ *
+ * המסמך המקורי של Claude ביקש: דלג אם המשתמש הגיב ב-6h האחרונות, והעבר
+ * ל-LLM את `notification_count` וה-`hoursSinceLastResponse` כדי שהטון
+ * יוכל להתאים למשתמש שכבר קיבל הרבה התראות.
+ */
+export interface UserResponseInfo {
+  lastRespondedAt: string | null;
+  notificationCount: number;
+}
+
 export function planHabitCheckpointTriggers(
   progressRows: ProgressRow[],
   slot: HabitCheckpointSlot,
   now: Date,
   todayExecutionsByUser: TodayExecutionsByUser = new Map(),
-  lastActiveByUser: ReadonlyMap<string, string | null> = new Map()
+  lastActiveByUser: ReadonlyMap<string, string | null> = new Map(),
+  userResponseInfo: ReadonlyMap<string, UserResponseInfo> = new Map()
 ): HabitCheckpointPlanItem[] {
   const { dateKey, weekday } = jerusalemCalendarParts(now);
   const byUser = new Map<string, ProgressRow[]>();
@@ -624,6 +699,16 @@ export function planHabitCheckpointTriggers(
      */
     const daysSinceLastActive = daysBetween(lastActiveByUser.get(userId) ?? null, now);
     const cadenceStage = computeCadenceStage(daysSinceLastActive);
+
+    /**
+     * 🔇 דילוג חכם לפי המסמך המקורי: אם המשתמש כתב לצ'אט / סימן משימה
+     * ב-6 השעות האחרונות (`profiles.last_responded_at` נטרא ע"י
+     * `markUserResponded` בכל הודעת user) — דלג על ה-slot הזה.
+     * עדיף לא להציף משתמש שכבר בלולאה.
+     */
+    const respInfo = userResponseInfo.get(userId);
+    const hoursSinceResp = hoursSinceLastResponse(respInfo?.lastRespondedAt ?? null, now);
+    if (isUserRespondedRecently(hoursSinceResp)) continue;
 
     const userTodayDone = todayExecutionsByUser.get(userId) ?? new Map<string, Set<string>>();
     const habits = collectUserJourneyHabits(rows);
@@ -676,6 +761,10 @@ export function planHabitCheckpointTriggers(
       pendingTasksCount: pendingTasks.length,
     });
 
+    /** רמת דחיפות רגשית (מהמסמך) — מודולציית טון ל-LLM. */
+    const urgencyLevel = computeUrgencyLevel(slot, daysSinceLastActive);
+    const notificationCount = respInfo?.notificationCount ?? 0;
+
     /**
      * notifyMode:
      *   remind    — יש משימה/הרגל פתוח (התראה רגילה או מותאמת AI לחלקית).
@@ -716,6 +805,11 @@ export function planHabitCheckpointTriggers(
           : 3650,
         completionStatus,
         cadenceStage,
+        urgencyLevel,
+        notificationCount,
+        ...(typeof hoursSinceResp === 'number'
+          ? { hoursSinceLastResponse: hoursSinceResp }
+          : {}),
       },
     });
   }
@@ -758,14 +852,16 @@ export async function planHabitCheckpointTriggersWithChat(
   slot: HabitCheckpointSlot,
   now: Date,
   todayExecutionsByUser: TodayExecutionsByUser = new Map(),
-  lastActiveByUser: ReadonlyMap<string, string | null> = new Map()
+  lastActiveByUser: ReadonlyMap<string, string | null> = new Map(),
+  userResponseInfo: ReadonlyMap<string, UserResponseInfo> = new Map()
 ): Promise<HabitCheckpointPlanItem[]> {
   const base = planHabitCheckpointTriggers(
     progressRows,
     slot,
     now,
     todayExecutionsByUser,
-    lastActiveByUser
+    lastActiveByUser,
+    userResponseInfo
   );
   const chatIds = await fetchUserIdsWithChatToday(admin, now);
   return appendPresenceReinforceFromChat(
