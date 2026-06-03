@@ -655,9 +655,9 @@ export function computeCompletionStatus(args: {
  * מי שיש לו משימות פתוחות יקבל התראה גם בלי הרגלים תואמי slot — האחריות
  * של הזרימה הזו היא לעודד למלא את מה שכבר הסכים לו.
  *
- * `lastActiveByUser` — Map מ-userId ל-ISO של profiles.last_active_at. מי שלא
- * מופיע יסומן Ghosted (nudgeLevel=3). ה-cron route אחראי להחיל back-off של
- * שבוע על Ghosted לפני הטריגר ל-Workflow.
+ * `lastActiveByUser` — Map מ-userId ל-ISO של תגובה אמיתית אחרונה
+ * (צ'אט משתמש או ביצוע משימה), עם profiles.created_at כרצפה למשתמש חדש.
+ * ה-cron route אחראי להחיל back-off של שבוע על Ghosted לפני הטריגר ל-Workflow.
  */
 /**
  * Per-user response/notification tracking — מוזרק מ-`profiles` (עמודות
@@ -693,7 +693,7 @@ export function planHabitCheckpointTriggers(
 
   for (const [userId, rows] of byUser) {
     /**
-     * שלב cadence — מחושב מ-fetchTrueLastActiveByUser (פרופיל + צ'אט + executions).
+     * שלב cadence — מחושב מ-fetchTrueLastActiveByUser (צ'אט + executions, עם created_at כרצפה).
      * הוא משפיע רק על "מגעי נוכחות" (משתמש דורמנטי בלי משימה פתוחה).
      * דרישת מוצר: משימה לא בוצעת → 3 תזכורות ביום תמיד, גם במצב dormant.
      */
@@ -702,8 +702,7 @@ export function planHabitCheckpointTriggers(
 
     /**
      * 🔇 דילוג חכם לפי המסמך המקורי: אם המשתמש כתב לצ'אט / סימן משימה
-     * ב-6 השעות האחרונות (`profiles.last_responded_at` נטרא ע"י
-     * `markUserResponded` בכל הודעת user) — דלג על ה-slot הזה.
+     * ב-6 השעות האחרונות — דלג על ה-slot הזה.
      * עדיף לא להציף משתמש שכבר בלולאה.
      */
     const respInfo = userResponseInfo.get(userId);
