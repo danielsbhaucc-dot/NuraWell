@@ -10,6 +10,8 @@ interface LessonAudioControllerProps {
   videoActive: boolean;
   /** מפתח השלב הנוכחי — שינוי שלו מפעיל צליל מעבר. */
   sectionKey: string;
+  /** התחתית של ההדר הירוק (px בחלון) — כדי למקם את הבקרה בדיוק מתחתיו. */
+  anchorTopPx?: number | null;
 }
 
 const MUTE_STORAGE_KEY = 'nura-lesson-audio-muted';
@@ -67,7 +69,7 @@ function playTransitionCue(ctxRef: { current: AudioContext | null }) {
   }
 }
 
-export function LessonAudioController({ tracks, videoActive, sectionKey }: LessonAudioControllerProps) {
+export function LessonAudioController({ tracks, videoActive, sectionKey, anchorTopPx }: LessonAudioControllerProps) {
   const playable = tracks.filter((t) => !!t.url);
   const hasTracks = playable.length > 0;
 
@@ -223,7 +225,12 @@ export function LessonAudioController({ tracks, videoActive, sectionKey }: Lesso
       <div
         dir="rtl"
         className="fixed right-2 z-40 flex flex-col items-end gap-2"
-        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 4.25rem)' }}
+        style={{
+          top:
+            anchorTopPx != null
+              ? `${Math.max(8, anchorTopPx + 8)}px`
+              : 'calc(env(safe-area-inset-top, 0px) + 4.25rem)',
+        }}
         aria-label="בקרת מוזיקת רקע"
       >
         {/* פאנל מורחב — מופיע רק בלחיצה, אחרת לא תופס מקום */}
@@ -279,25 +286,25 @@ export function LessonAudioController({ tracks, videoActive, sectionKey }: Lesso
 
         {/* כפתור צף קומפקטי — השתקה בלחיצה, הרחבה בלחיצה על הלשונית */}
         {!expanded && (
-          <div className="flex items-center overflow-hidden rounded-full border border-white/45 bg-white/25 shadow-[0_6px_24px_rgba(6,78,59,0.25)] backdrop-blur-2xl">
+          <div className="flex items-center overflow-hidden rounded-full border border-white/45 bg-white/25 shadow-[0_6px_20px_rgba(6,78,59,0.22)] backdrop-blur-2xl">
             <button
               type="button"
               onClick={() => setExpanded(true)}
               aria-label="פתח בקרת מוזיקת רקע"
-              className="flex h-9 items-center pe-1 ps-2 text-emerald-800/80 transition-colors hover:text-emerald-900"
+              className="flex h-8 items-center pe-0.5 ps-1.5 text-emerald-800/80 transition-colors hover:text-emerald-900"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-3.5 w-3.5" />
             </button>
             <button
               type="button"
               onClick={toggleMute}
               aria-pressed={muted}
               aria-label={muted ? 'הפעל מוזיקת רקע' : 'השתק מוזיקת רקע'}
-              className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-emerald-900 transition-colors hover:bg-white/30"
+              className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-emerald-900 transition-colors hover:bg-white/30"
             >
-              {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+              {muted ? <VolumeX className="h-[18px] w-[18px]" /> : <Volume2 className="h-[18px] w-[18px]" />}
               {needsGesture && !muted && (
-                <span className="absolute right-1 top-1 h-2.5 w-2.5 animate-ping rounded-full bg-amber-400" />
+                <span className="absolute right-0.5 top-0.5 h-2 w-2 animate-ping rounded-full bg-amber-400" />
               )}
               {!muted && (
                 <span className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-emerald-400/30" />
