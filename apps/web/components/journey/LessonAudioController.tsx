@@ -83,6 +83,13 @@ export function LessonAudioController({ tracks, videoActive, sectionKey, anchorT
   const [needsGesture, setNeedsGesture] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  // המיקום ננעל לתחתית ההדר כשהוא במלוא גובהו, ולא "עולה" בגלילה.
+  const [stableTopPx, setStableTopPx] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (anchorTopPx == null) return;
+    setStableTopPx((prev) => (prev == null ? anchorTopPx : Math.max(prev, anchorTopPx)));
+  }, [anchorTopPx]);
 
   // העדפת השתקה נשמרת מקומית
   useEffect(() => {
@@ -181,6 +188,27 @@ export function LessonAudioController({ tracks, videoActive, sectionKey, anchorT
     };
   }, []);
 
+  // עצירת המוזיקה כשהאפליקציה נסגרת / עוברת לרקע; חידוש כשחוזרים (אם לא מושתק)
+  useEffect(() => {
+    if (!hasTracks) return;
+    const pauseAll = () => {
+      audioRef.current?.pause();
+    };
+    const onVisibility = () => {
+      if (document.hidden) {
+        pauseAll();
+      } else if (!muted) {
+        attemptPlay();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', pauseAll);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', pauseAll);
+    };
+  }, [hasTracks, muted, attemptPlay]);
+
   const handleEnded = useCallback(() => {
     if (playable.length <= 1) {
       const a = audioRef.current;
@@ -227,8 +255,8 @@ export function LessonAudioController({ tracks, videoActive, sectionKey, anchorT
         className="fixed right-2 z-40 flex flex-col items-end gap-2"
         style={{
           top:
-            anchorTopPx != null
-              ? `${Math.max(8, anchorTopPx + 8)}px`
+            stableTopPx != null
+              ? `${Math.max(8, stableTopPx + 8)}px`
               : 'calc(env(safe-area-inset-top, 0px) + 4.25rem)',
         }}
         aria-label="בקרת מוזיקת רקע"
