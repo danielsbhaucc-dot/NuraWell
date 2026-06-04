@@ -188,6 +188,23 @@ const CHAT_MAX_OUTPUT_TOKENS = (() => {
 const CHAT_OUTPUT_TOKENS_NEAR_CAP_RATIO = 0.92;
 
 /**
+ * מודל הצ'אט (אלמוג המנטור).
+ * Override ב-env: `AI_CHAT_MODEL`.
+ *
+ * 🧪 ניסוי-טון: ברירת המחדל הוחלפה זמנית מ-`openai/gpt-5-mini`
+ * ל-`anthropic/claude-sonnet-4.6` (דרך OpenRouter) כדי להשוות טון.
+ * להחזרה: להגדיר `AI_CHAT_MODEL=openai/gpt-5-mini` או לשחזר את ברירת המחדל.
+ */
+const CHAT_MODEL = process.env.AI_CHAT_MODEL?.trim() || 'anthropic/claude-sonnet-4.6';
+
+/**
+ * `reasoningEffort` הוא פרמטר ספציפי ל-OpenAI. כשמריצים מודל לא-OpenAI
+ * (למשל Claude) דרך OpenRouter — אסור לשלוח אותו, אז ה-flag הזה מגדר
+ * האם להזריק את providerOptions.openai בכלל.
+ */
+const CHAT_MODEL_IS_OPENAI = CHAT_MODEL.startsWith('openai/');
+
+/**
  * חלון שיחה אחורה ל-LLM. slice(-20) = עד 10 סיבובי משתמש-עוזר; חלון של 5
  * סיבובים (הערך הקודם) קצר מדי לשיחות שבונות הקשר רגשי. RAG של זיכרון משתמש
  * משלים פערים ארוכי-טווח, אך לא מחליף הקשר טורי קצר.
@@ -925,7 +942,7 @@ export async function POST(request: Request) {
     session_id: sessionId,
     role: 'user',
     content: lastUserText,
-    model_name: 'openai/gpt-5-mini',
+    model_name: CHAT_MODEL,
     metadata: { edge: true },
   }).catch((persistErr) => {
     console.warn('[ai/chat]', {
@@ -1308,7 +1325,7 @@ export async function POST(request: Request) {
     }
 
     const result = streamText({
-      model: openrouter.chat('openai/gpt-5-mini'),
+      model: openrouter.chat(CHAT_MODEL),
       /**
        * temperature 0.85 (v4) — מעלה שונות ומפחית טמפלייטיות.
        * 0.75 גרם לתשובות "בטוחות" מדי. 0.85 קרוב לזרימה אנושית; מעל זה
@@ -1316,15 +1333,12 @@ export async function POST(request: Request) {
        */
       temperature: 0.85,
       maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
-      providerOptions: {
-        /**
-         * reasoningEffort 'medium' (v4) — שינוי מ-'low'.
-         * 'low' היה אחראי לטון תסריטי-רובוטי: המודל קורא הוראות ומבצע אותן,
-         * בלי "להרגיש" שיחה. 'medium' עולה כמה אגורות לקריאה אבל מחזיר תשובות
-         * אנושיות ומדויקות יותר. אם נראה בעיות עלות/חביון — להעלות בחזרה.
-         */
-        openai: { reasoningEffort: 'medium' },
-      },
+      /**
+       * reasoningEffort 'medium' (v4, OpenAI בלבד) — שינוי מ-'low'.
+       * 'low' היה אחראי לטון תסריטי-רובוטי. 'medium' מחזיר תשובות אנושיות
+       * יותר. למודלים לא-OpenAI (Claude) — לא שולחים providerOptions.openai.
+       */
+      providerOptions: CHAT_MODEL_IS_OPENAI ? { openai: { reasoningEffort: 'medium' } } : {},
       system: systemPromptWithMemory,
       messages: recentMessages,
       onFinish: async ({ text, usage, finishReason }) => {
@@ -1336,10 +1350,10 @@ export async function POST(request: Request) {
           try {
             const runCont = async (partialAssistant: string) => {
               const out = await generateText({
-                model: openrouter.chat('openai/gpt-5-mini'),
+                model: openrouter.chat(CHAT_MODEL),
                 temperature: 0.65,
                 maxOutputTokens: 160,
-                providerOptions: { openai: { reasoningEffort: 'low' } },
+                providerOptions: CHAT_MODEL_IS_OPENAI ? { openai: { reasoningEffort: 'low' } } : {},
                 messages: [
                   {
                     role: 'user',
@@ -1411,7 +1425,7 @@ export async function POST(request: Request) {
             session_id: sessionId,
             role: 'assistant',
             content: assistantText,
-            model_name: 'openai/gpt-5-mini',
+            model_name: CHAT_MODEL,
             tokens_used: totalTokens,
             metadata: {
               edge: true,
@@ -1642,7 +1656,7 @@ export async function POST(request: Request) {
       stage,
       elapsed_ms: Date.now() - startedAt,
       session_id: sessionId,
-      model: 'openai/gpt-5-mini',
+      model: CHAT_MODEL,
     });
 
     const upstream = result.toTextStreamResponse({
@@ -1722,7 +1736,7 @@ export async function POST(request: Request) {
     const body = isProd
       ? { error: 'שירות הצ׳אט אינו זמין כרגע. נסה שוב בעוד רגע.', debug_id: debugId }
       : {
-          error: 'GPT-5-mini chat failed',
+          error: 'chat model request failed',
           details: err instanceof Error ? err.message : String(err),
           debug_id: debugId,
           stage,

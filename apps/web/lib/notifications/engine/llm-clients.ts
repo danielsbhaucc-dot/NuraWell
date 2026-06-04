@@ -24,9 +24,14 @@ export const getNotificationBackgroundLLM = () => getClientForModel('background_
 /**
  * מודל ראשי לטקסט ההתראה.
  * Override ב-env: `NOTIFICATION_ENGINE_MODEL`.
+ *
+ * 🧪 ניסוי-טון: ברירת המחדל הוחלפה זמנית מ-`openai/gpt-5-mini`
+ * ל-`anthropic/claude-sonnet-4.6` (דרך OpenRouter) כדי לבחון אם יש
+ * שיפור בטון/באנושיות של תוכן ההתראה. להחזרה: למחוק את ה-fallback או
+ * להגדיר `NOTIFICATION_ENGINE_MODEL=openai/gpt-5-mini` ב-env.
  */
 export const NOTIFICATION_ENGINE_MODEL =
-  process.env.NOTIFICATION_ENGINE_MODEL?.trim() || AI_MODELS.empathy;
+  process.env.NOTIFICATION_ENGINE_MODEL?.trim() || 'anthropic/claude-sonnet-4.6';
 
 /**
  * מודל משני (עדיין דרך OpenRouter) למקרה ש-gpt-5-mini החזיר שגיאה/ריק.

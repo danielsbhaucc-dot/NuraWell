@@ -6,8 +6,9 @@
  * נשארים שמישים כ-push notification בכל הדפדפנים/המכשירים).
  *
  * 🛡️ אסטרטגיית אמינות — שרשרת ניסיונות חוצת-ספקים:
- *   1. `openai/gpt-5-mini` דרך OpenRouter — ניסיון 1 (timeout 15s).
- *   2. `openai/gpt-5-mini` דרך OpenRouter — ניסיון 2 (retry אחרי 300ms).
+ *   1. מודל ראשי (`NOTIFICATION_ENGINE_MODEL`) דרך OpenRouter — ניסיון 1 (timeout 15s).
+ *      🧪 כרגע בניסוי-טון: ברירת המחדל היא `anthropic/claude-sonnet-4.6` (במקום `openai/gpt-5-mini`).
+ *   2. אותו מודל ראשי דרך OpenRouter — ניסיון 2 (retry אחרי 300ms).
  *   3. `openai/gpt-4o-mini` דרך OpenRouter — ספק זהה, מודל שונה (1 ניסיון).
  *   4. `meta-llama/llama-4-scout` דרך **Groq** — ספק שונה לחלוטין
  *       (גיבוי infra-level לכשל אזורי של OpenRouter).
