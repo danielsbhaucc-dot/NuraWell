@@ -391,6 +391,27 @@ const emptyCredit: AudioCredit = {
   license: 'Pixabay Content License',
 };
 
+type TrackDraft = { title: string; credit: AudioCredit };
+
+function draftStorageKey(playlistId: string): string {
+  return `nura-audio-track-draft:${playlistId}`;
+}
+
+function loadDraft(playlistId: string): TrackDraft | null {
+  try {
+    const raw = localStorage.getItem(draftStorageKey(playlistId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<TrackDraft>;
+    if (!parsed || typeof parsed !== 'object') return null;
+    return {
+      title: typeof parsed.title === 'string' ? parsed.title : '',
+      credit: { ...emptyCredit, ...(parsed.credit ?? {}) },
+    };
+  } catch {
+    return null;
+  }
+}
+
 function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
   const inputId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -401,8 +422,48 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
   const [phase, setPhase] = useState<'idle' | 'transcoding' | 'uploading'>('idle');
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<{ ok?: boolean; error?: string; savedPercent?: number } | null>(null);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const draftHydrated = useRef(false);
 
   const busy = phase !== 'idle';
+
+  // טעינת טיוטה שמורה (אם נכשלה העלאה קודמת / רענון דף)
+  useEffect(() => {
+    draftHydrated.current = false;
+    const draft = loadDraft(playlistId);
+    if (draft && (draft.title.trim() || draft.credit.author.trim())) {
+      setTitle(draft.title);
+      setCredit(draft.credit);
+      setDraftRestored(true);
+    } else {
+      setDraftRestored(false);
+    }
+    draftHydrated.current = true;
+  }, [playlistId]);
+
+  // שמירת טיוטה אוטומטית בכל שינוי בשדות
+  useEffect(() => {
+    if (!draftHydrated.current) return;
+    try {
+      const hasContent = title.trim() || credit.author.trim() || credit.title?.trim() || credit.link?.trim();
+      if (hasContent) {
+        localStorage.setItem(draftStorageKey(playlistId), JSON.stringify({ title, credit }));
+      } else {
+        localStorage.removeItem(draftStorageKey(playlistId));
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [title, credit, playlistId]);
+
+  const clearDraft = useCallback(() => {
+    try {
+      localStorage.removeItem(draftStorageKey(playlistId));
+    } catch {
+      /* ignore */
+    }
+    setDraftRestored(false);
+  }, [playlistId]);
 
   const pick = (list: FileList | null) => {
     const f = list?.[0];
@@ -422,6 +483,7 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
     setCredit(emptyCredit);
     setProgress(0);
     if (fileRef.current) fileRef.current.value = '';
+    clearDraft();
   };
 
   const upload = async () => {
@@ -542,6 +604,21 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
         <Upload className="h-4 w-4 text-emerald-600" />
         העלאת רצועה
       </h4>
+
+      {draftRestored && (
+        <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-amber-300/70 bg-amber-50/80 px-3 py-2">
+          <span className="text-xs font-semibold text-amber-900">
+            שוחזרו פרטים מטיוטה קודמת — בחר קובץ אודיו והעלה שוב.
+          </span>
+          <button
+            type="button"
+            onClick={reset}
+            className="shrink-0 rounded-lg border border-amber-300 bg-white/70 px-2.5 py-1 text-[11px] font-bold text-amber-800 hover:bg-white"
+          >
+            נקה טיוטה
+          </button>
+        </div>
+      )}
 
       <input
         ref={fileRef}
