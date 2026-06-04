@@ -5,7 +5,9 @@ import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { getPublicCdnImageUrl, journeyStationCoverObjectKey } from '@/lib/cdn/public-images';
 import { almogCdnHostname, resolveCdnImagesPrefix } from '@/lib/ai/almog-avatar';
 import { getR2Client, r2ImageBucketName } from '@/lib/storage/r2-almog';
+import { copyImageSourceToKey } from '@/lib/storage/apply-source-image';
 import { stationCoverCreditSchema } from '@/lib/validation/admin-journey-station';
+import { readJsonBody } from '@/lib/api/json-request';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -19,6 +21,14 @@ function isWebpBuffer(buf: Buffer): boolean {
 
 const deleteBodySchema = z.object({ station_id: z.string().uuid() }).strict();
 
+const applyFromLibrarySchema = z
+  .object({
+    station_id: z.string().uuid(),
+    source_object_key: z.string().min(1).max(1000),
+    credit: stationCoverCreditSchema.optional(),
+  })
+  .strict();
+
 export async function POST(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
@@ -27,6 +37,44 @@ export async function POST(request: Request) {
     const bucket = r2ImageBucketName();
     if (!bucket) {
       return NextResponse.json({ error: 'חסרה הגדרת אחסון תמונות בשרת.' }, { status: 500 });
+    }
+
+    const ct = request.headers.get('content-type') ?? '';
+    if (ct.includes('application/json')) {
+      const raw = await readJsonBody(request);
+      if (!raw.ok) return raw.response;
+      const lib = applyFromLibrarySchema.safeParse(raw.value);
+      if (!lib.success) {
+        return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
+      }
+      {
+        const stationId = lib.data.station_id;
+        const objectKey = journeyStationCoverObjectKey(stationId);
+        await copyImageSourceToKey({
+          sourceObjectKey: lib.data.source_object_key,
+          destObjectKey: objectKey,
+        });
+        const { supabase } = auth;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase as any)
+          .from('journey_stations')
+          .update({
+            cover_image_key: objectKey,
+            cover_image_credit: lib.data.credit ?? null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', stationId)
+          .select('id, title, cover_image_key, cover_image_credit')
+          .single();
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        const cover_url = getPublicCdnImageUrl(objectKey, String(Date.now()));
+        return NextResponse.json({
+          ok: true,
+          station: data,
+          cover_url,
+          object_key: objectKey,
+        });
+      }
     }
 
     const form = await request.formData();

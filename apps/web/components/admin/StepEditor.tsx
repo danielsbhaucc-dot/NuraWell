@@ -10,6 +10,8 @@ import type {
   JourneyStep, QuizQuestion, GameItem, CommitmentData,
   Research, JourneyTask, JourneyHabit
 } from '../../lib/types/journey';
+import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
+import type { MediaAsset } from '@/components/media-manager/types';
 import {
   formatSecondsAsClock,
   parseClockToSeconds,
@@ -57,6 +59,7 @@ const emptyAttentionStop: ImmersiveAttentionStop = {
 function genId() { return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`; }
 
 export function StepEditor({ step }: StepEditorProps) {
+  const { open: openMediaManager } = useMediaManager();
   const router = useRouter();
   const pathname = usePathname();
   const journeyListPath = pathname.startsWith('/ops') ? '/ops/journey' : '/journey';
@@ -395,6 +398,24 @@ export function StepEditor({ step }: StepEditorProps) {
 
         {/* ═══ VIDEO ═══ */}
         <Section title="וידאו" icon={Video} color="#3b82f6" sectionNumber={2} isVisible={activeSection === 'video'}>
+          <button
+            type="button"
+            onClick={() =>
+              openMediaManager({
+                kind: 'video',
+                mode: 'pick',
+                title: 'בחר וידאו',
+                onSelect: (asset: MediaAsset) => {
+                  setVideoProvider('bunny');
+                  setVideoExternalId(asset.external_id ?? '');
+                  setVideoExternalUrl(asset.external_url ?? asset.url ?? '');
+                },
+              })
+            }
+            className="mb-3 rounded-xl border border-blue-300/60 bg-blue-500/10 px-4 py-2 text-sm font-bold text-blue-900"
+          >
+            מנהל קבצים — וידאו Bunny
+          </button>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="ספק וידאו">
               <select value={videoProvider} onChange={e => setVideoProvider(e.target.value)}
@@ -989,6 +1010,23 @@ export function StepEditor({ step }: StepEditorProps) {
 
         {/* ═══ PDF ═══ */}
         <Section title="קובץ PDF" icon={FileText} color="#ef4444" sectionNumber={9} isVisible={activeSection === 'pdf'}>
+          <button
+            type="button"
+            onClick={() =>
+              openMediaManager({
+                kind: 'file',
+                mode: 'pick',
+                title: 'בחר קובץ PDF',
+                onSelect: (asset: MediaAsset) => {
+                  setPdfUrl(asset.url ?? asset.public_url ?? '');
+                  setPdfName(asset.title ?? asset.original_filename ?? 'קובץ.pdf');
+                },
+              })
+            }
+            className="mb-3 rounded-xl border border-red-300/60 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-900"
+          >
+            מנהל קבצים — PDF / קבצים
+          </button>
           <Field label="כתובת PDF">
             <input value={pdfUrl} onChange={e => setPdfUrl(e.target.value)}
               className="input-field" placeholder="https://..." dir="ltr" />

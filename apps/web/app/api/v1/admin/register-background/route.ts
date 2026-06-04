@@ -5,6 +5,8 @@ import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { getPublicCdnImageUrl } from '@/lib/cdn/public-images';
 import { almogCdnHostname, resolveCdnImagesPrefix } from '@/lib/ai/almog-avatar';
 import { getR2Client, r2ImageBucketName } from '@/lib/storage/r2-almog';
+import { copyImageSourceToKey } from '@/lib/storage/apply-source-image';
+import { readJsonBody } from '@/lib/api/json-request';
 import {
   REGISTER_BACKGROUND_LEGACY_KEYS,
   REGISTER_BACKGROUND_OBJECT_KEY,
@@ -15,6 +17,13 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+
+const applyFromLibrarySchema = z
+  .object({
+    source_object_key: z.string().min(1).max(1000),
+    credit: stationCoverCreditSchema.optional(),
+  })
+  .strict();
 
 function isWebpBuffer(buf: Buffer): boolean {
   if (buf.length < 12) return false;
@@ -55,6 +64,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'חסרה הגדרת אחסון תמונות.' }, { status: 500 });
     }
 
+    const s3 = getR2Client();
+    const { supabase } = auth;
+
+    const ct = request.headers.get('content-type') ?? '';
+    if (ct.includes('application/json')) {
+      const raw = await readJsonBody(request);
+      if (!raw.ok) return raw.response;
+      const lib = applyFromLibrarySchema.safeParse(raw.value);
+      if (lib.success) {
+        await copyImageSourceToKey({
+          sourceObjectKey: lib.data.source_object_key,
+          destObjectKey: REGISTER_BACKGROUND_OBJECT_KEY,
+        });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
+          .from('site_settings')
+          .update({
+            register_background_key: REGISTER_BACKGROUND_OBJECT_KEY,
+            register_background_credit: lib.data.credit ?? null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', 1);
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({
+          ok: true,
+          cover_url: getPublicCdnImageUrl(REGISTER_BACKGROUND_OBJECT_KEY, String(Date.now())),
+          object_key: REGISTER_BACKGROUND_OBJECT_KEY,
+        });
+      }
+    }
+
     const form = await request.formData();
     const file = form.get('file');
     const creditRaw = form.get('credit');
@@ -83,9 +123,6 @@ export async function POST(request: Request) {
     if (!isWebpBuffer(buf)) {
       return NextResponse.json({ error: 'נדרש WebP' }, { status: 400 });
     }
-
-    const s3 = getR2Client();
-    const { supabase } = auth;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: settings } = await (supabase as any)

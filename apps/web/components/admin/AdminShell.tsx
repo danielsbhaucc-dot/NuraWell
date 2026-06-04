@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { OpsSessionGuard } from './OpsSessionGuard';
+import { MediaManagerProvider } from '@/components/media-manager/MediaManagerProvider';
 
 const SIDEBAR_COLLAPSED_KEY = 'nura-admin-sidebar-collapsed';
 
@@ -148,6 +149,7 @@ export function AdminShell({
     );
 
   return (
+    <MediaManagerProvider>
     <div
       className="min-h-[100dvh] bg-gradient-to-br from-emerald-50 via-cyan-50/80 to-violet-100/90 font-sans text-slate-900 touch-manipulation"
       dir="rtl"
@@ -529,5 +531,6 @@ export function AdminShell({
         </Link>
       </nav>
     </div>
+    </MediaManagerProvider>
   );
 }

@@ -1,48 +1,20 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { ImageIcon, Loader2, Search, Trash2, CheckCircle2, AlertTriangle } from 'lucide-react';
-import {
-  encodeImageToWebpBlob,
-  isWebpEncodeUnsupportedError,
-} from '@/lib/client/encodeAlmogAvatarWebp';
-import type { StationCoverCredit } from '@/lib/media/stock-image-attribution';
-import { buildStationCoverCredit, providerLabel } from '@/lib/media/stock-image-attribution';
-import { StockImageSearchAttribution } from '@/components/media/StockImageAttribution';
-
-type StockHit = {
-  id: string;
-  source: 'pixabay' | 'pexels';
-  preview_url: string;
-  download_url: string;
-  photographer: string;
-  page_url: string;
-  photographer_url?: string;
-  provider_url: string;
-  alt?: string;
-};
-
-async function remoteImageToFile(url: string): Promise<File> {
-  const res = await fetch(`/api/v1/admin/stock-images/proxy?url=${encodeURIComponent(url)}`, {
-    credentials: 'include',
-  });
-  if (!res.ok) throw new Error('FETCH_FAILED');
-  const blob = await res.blob();
-  const type = blob.type.startsWith('image/') ? blob.type : 'image/jpeg';
-  return new File([blob], 'login-bg-source', { type });
-}
+import { ImageIcon, Loader2, Trash2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
+import { applyLoginBackgroundFromAsset } from '@/lib/media-manager/apply-asset';
+import type { MediaAsset } from '@/components/media-manager/types';
+import { GlassConfirmDialog } from '@/components/media-manager/GlassConfirmDialog';
 
 export function AdminLoginBackgroundPanel() {
+  const { open } = useMediaManager();
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
-  const [query, setQuery] = useState('wellness nature light');
-  const [source, setSource] = useState<'all' | 'pixabay' | 'pexels'>('all');
-  const [hits, setHits] = useState<StockHit[]>([]);
-  const [providers, setProviders] = useState({ pixabay: false, pexels: false });
-  const [searchBusy, setSearchBusy] = useState(false);
   const [applyBusy, setApplyBusy] = useState(false);
   const [removeBusy, setRemoveBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   const loadCurrent = useCallback(async () => {
     try {
@@ -58,180 +30,106 @@ export function AdminLoginBackgroundPanel() {
     void loadCurrent();
   }, [loadCurrent]);
 
-  const runSearch = async () => {
-    const q = query.trim();
-    if (!q) return;
-    setSearchBusy(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({ q, source, per_page: '12' });
-      const res = await fetch(`/api/v1/admin/stock-images/search?${params}`, { credentials: 'include' });
-      const data = (await res.json()) as {
-        hits?: StockHit[];
-        providers?: { pixabay: boolean; pexels: boolean };
-        error?: string;
-      };
-      if (!res.ok) {
-        setError(data.error || 'חיפוש נכשל');
-        setHits([]);
-        return;
-      }
-      setHits(data.hits ?? []);
-      setProviders(data.providers ?? { pixabay: false, pexels: false });
-      if (!data.hits?.length) setError('לא נמצאו תמונות.');
-    } catch {
-      setError('שגיאת רשת בחיפוש.');
-    } finally {
-      setSearchBusy(false);
-    }
-  };
-
-  const applyHit = async (hit: StockHit) => {
+  const applyAsset = async (asset: MediaAsset) => {
+    if (!asset.object_key || applyBusy) return;
     setApplyBusy(true);
     setError(null);
     setSuccess(null);
     try {
-      const file = await remoteImageToFile(hit.download_url);
-      const webpBlob = await encodeImageToWebpBlob(file, 1600, 0.82);
-      const webpFile = new File([webpBlob], 'login-bg.webp', { type: 'image/webp' });
-      const credit: StationCoverCredit = buildStationCoverCredit({
-        source: hit.source,
-        photographer: hit.photographer,
-        page_url: hit.page_url,
-        photographer_url: hit.photographer_url,
-      });
-      const form = new FormData();
-      form.append('file', webpFile);
-      form.append('credit', JSON.stringify(credit));
-      form.append('original_bytes', String(file.size));
-      const res = await fetch('/api/v1/admin/login-background', { method: 'POST', body: form });
+      const res = await applyLoginBackgroundFromAsset(asset);
       const data = (await res.json()) as { ok?: boolean; cover_url?: string; error?: string };
-      if (!res.ok) {
-        setError(data.error || 'העלאה נכשלה');
+      if (!res.ok || !data.ok) {
+        setError(data.error || 'שמירה נכשלה');
         return;
       }
-      setCoverUrl(data.cover_url ?? null);
-      setSuccess(`נשמר — קרדיט: ${providerLabel(hit.source)} / ${hit.photographer}`);
-    } catch (e) {
-      if (isWebpEncodeUnsupportedError(e)) {
-        setError('הדפדפן לא תומך ב-WebP.');
-      } else {
-        setError('לא הצלחנו להעלות את התמונה.');
-      }
+      setCoverUrl(data.cover_url ?? asset.url ?? null);
+      setSuccess('רקע ההתחברות עודכן.');
+    } catch {
+      setError('שגיאת רשת');
     } finally {
       setApplyBusy(false);
     }
   };
 
-  const removeCover = async () => {
+  const remove = async () => {
     setRemoveBusy(true);
-    setError(null);
     try {
       const res = await fetch('/api/v1/admin/login-background', { method: 'DELETE', credentials: 'include' });
       if (!res.ok) {
-        setError('מחיקה נכשלה');
+        setError('הסרה נכשלה');
         return;
       }
       setCoverUrl(null);
-      setSuccess('הרקע הוסר');
+      setSuccess('רקע ההתחברות הוסר.');
     } catch {
       setError('שגיאת רשת');
     } finally {
       setRemoveBusy(false);
+      setConfirmRemove(false);
     }
   };
 
   return (
-    <section className="rounded-3xl border border-white/40 bg-white/45 p-4 sm:p-6 backdrop-blur-2xl" dir="rtl">
-      <h2 className="text-lg font-black text-slate-800 mb-1 flex items-center gap-2">
-        <ImageIcon className="w-5 h-5 text-emerald-500" />
-        רקע עמוד התחברות
-      </h2>
-      <p className="text-sm text-slate-600 mb-4">
-        חיפוש ב-Pixabay או Pexels, העלאה ל-Cloudflare R2, שכבה כהה אוטומטית בדף (כמו עמוד ההרשמה). החלפת תמונה מוחקת את הישנה.
-      </p>
+    <section className="rounded-3xl border border-white/40 bg-white/40 p-5 backdrop-blur-xl" dir="rtl">
+      <h2 className="text-lg font-black text-slate-800">רקע דף התחברות</h2>
+      <p className="mt-1 text-sm text-slate-600">בחר תמונה ממנהל הקבצים (העלאה, Pixabay, Pexels).</p>
 
-      {coverUrl ? (
-        <div className="relative mb-4 h-36 rounded-2xl overflow-hidden ring-1 ring-slate-200">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={coverUrl} alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-black/40" aria-hidden />
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <div className="h-20 w-32 overflow-hidden rounded-xl border border-white/60 bg-white/25">
+          {coverUrl ? (
+            <img src={coverUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <ImageIcon className="h-6 w-6 text-slate-400" />
+            </div>
+          )}
         </div>
-      ) : null}
-
-      <div className="flex flex-col sm:flex-row gap-2 mb-3">
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="input-field flex-1 text-sm"
-          placeholder="חיפוש תמונות..."
-          onKeyDown={(e) => e.key === 'Enter' && void runSearch()}
-        />
-        <select
-          value={source}
-          onChange={(e) => setSource(e.target.value as typeof source)}
-          className="input-field text-sm sm:w-36"
-          aria-label="מקור תמונות"
-        >
-          <option value="all">הכל</option>
-          <option value="pixabay">Pixabay</option>
-          <option value="pexels">Pexels</option>
-        </select>
         <button
           type="button"
-          onClick={() => void runSearch()}
-          disabled={searchBusy}
-          className="btn-primary text-sm px-4 py-2.5 flex items-center justify-center gap-2"
+          disabled={applyBusy}
+          onClick={() =>
+            open({
+              kind: 'image',
+              mode: 'pick',
+              title: 'רקע התחברות',
+              onSelect: (a) => void applyAsset(a),
+            })
+          }
+          className="rounded-xl bg-emerald-800/85 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
         >
-          {searchBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-          חפש
+          {applyBusy ? <Loader2 className="inline h-4 w-4 animate-spin" /> : null} מנהל קבצים
         </button>
+        {coverUrl ? (
+          <button
+            type="button"
+            onClick={() => setConfirmRemove(true)}
+            className="rounded-xl border border-red-300/60 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-900"
+          >
+            הסר
+          </button>
+        ) : null}
       </div>
 
-      <StockImageSearchAttribution providers={providers} className="mb-3 text-xs text-slate-500" />
-
-      {hits.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-          {hits.map((hit) => (
-            <button
-              key={`${hit.source}-${hit.id}`}
-              type="button"
-              disabled={applyBusy}
-              onClick={() => void applyHit(hit)}
-              className="relative aspect-[4/3] rounded-xl overflow-hidden ring-1 ring-slate-200 hover:ring-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={hit.preview_url} alt={hit.alt || ''} className="w-full h-full object-cover" />
-            </button>
-          ))}
-        </div>
-      ) : null}
-
-      {coverUrl ? (
-        <button
-          type="button"
-          onClick={() => void removeCover()}
-          disabled={removeBusy}
-          className="text-sm text-red-700 font-bold flex items-center gap-2"
-        >
-          {removeBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-          הסר רקע
-        </button>
-      ) : null}
-
       {error ? (
-        <p className="mt-3 text-sm text-red-800 flex gap-2">
-          <AlertTriangle className="w-4 h-4 shrink-0" />
-          {error}
+        <p className="mt-3 flex items-center gap-2 text-sm text-red-800">
+          <AlertTriangle className="h-4 w-4" /> {error}
         </p>
       ) : null}
       {success ? (
-        <p className="mt-3 text-sm text-emerald-800 flex gap-2">
-          <CheckCircle2 className="w-4 h-4" />
-          {success}
+        <p className="mt-3 flex items-center gap-2 text-sm text-emerald-800">
+          <CheckCircle2 className="h-4 w-4" /> {success}
         </p>
       ) : null}
+
+      <GlassConfirmDialog
+        open={confirmRemove}
+        title="הסרת רקע"
+        message="להסיר את רקע דף ההתחברות?"
+        danger
+        busy={removeBusy}
+        onCancel={() => setConfirmRemove(false)}
+        onConfirm={() => void remove()}
+      />
     </section>
   );
 }
