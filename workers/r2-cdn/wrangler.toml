@@ -16,4 +16,4 @@ bucket_name = "REPLACE_ME_FILES_BUCKET"
 # אודיו (מוזיקת רקע לשיעורים) — נתיב ציבורי /audio/*
 [[r2_buckets]]
 binding = "AUDIO_BUCKET"
-bucket_name = "REPLACE_ME_AUDIO_BUCKET"
+bucket_name = "nurawell-audio"
