@@ -9,6 +9,9 @@ import {
   encodeImageToWebpBlob,
   isWebpEncodeUnsupportedError,
 } from '@/lib/client/encodeAlmogAvatarWebp';
+import { OpenMediaManagerButton } from '@/components/media-manager/OpenMediaManagerButton';
+import { applyMentorAvatarFromAsset } from '@/lib/media-manager/apply-asset';
+import type { MediaAsset } from '@/components/media-manager/types';
 
 type UploadResult = {
   ok?: boolean;
@@ -120,6 +123,34 @@ export function AdminMentorAvatarPanel({ mentorId }: AdminMentorAvatarPanelProps
           </div>
         </div>
       </div>
+
+      <OpenMediaManagerButton
+        kind="image"
+        label="מנהל קבצים — בחר או העלה תמונה"
+        className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/60 bg-emerald-800/10 px-4 py-3 text-sm font-bold text-emerald-900 sm:w-auto"
+        onPicked={(asset: MediaAsset) => {
+          void (async () => {
+            if (!asset.object_key || busy) return;
+            setBusy(true);
+            setResult(null);
+            try {
+              const res = await applyMentorAvatarFromAsset(mentorId, asset);
+              const data = (await res.json()) as UploadResult;
+              if (!res.ok) {
+                setResult({ error: data.error || 'שמירה נכשלה' });
+                return;
+              }
+              setResult(data);
+              setUploadTick((t) => t + 1);
+              void refresh();
+            } catch {
+              setResult({ error: 'שגיאת רשת' });
+            } finally {
+              setBusy(false);
+            }
+          })();
+        }}
+      />
 
       <input
         ref={fileInputRef}

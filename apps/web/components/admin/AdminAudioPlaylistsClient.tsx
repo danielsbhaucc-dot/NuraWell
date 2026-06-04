@@ -27,6 +27,8 @@ import {
 } from '@/lib/audio/transcode-client';
 import { GlassAudioPlayer } from '@/components/audio/GlassAudioPlayer';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
+import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
+import type { MediaAsset } from '@/components/media-manager/types';
 import type { AudioCredit, AudioTrack, AudioPlaylistSummary } from '@/lib/types/audio';
 
 type TrackWithUrl = AudioTrack & { url: string | null };
@@ -968,6 +970,7 @@ function normalizeCreditForUpload(credit: AudioCredit): { credit?: AudioCredit; 
 }
 
 function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
+  const { open: openMediaManager } = useMediaManager();
   const inputId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -1010,6 +1013,48 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
       /* ignore */
     }
   }, [title, credit, playlistId]);
+
+  const addFromLibrary = async (asset: MediaAsset) => {
+    if (!asset.object_key || busy) return;
+    const normalized = normalizeCreditForUpload(credit);
+    if (normalized.error) {
+      setResult({ error: normalized.error });
+      return;
+    }
+    setPhase('uploading');
+    setResult(null);
+    try {
+      const res = await fetch(
+        `/api/v1/admin/audio/playlists/${playlistId}/tracks/from-library`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source_object_key: asset.object_key,
+            title: title.trim() || asset.title || 'רצועה',
+            credit: normalized.credit,
+            duration_seconds: asset.duration_seconds ?? null,
+          }),
+        }
+      );
+      const data = (await res.json()) as AudioTrack & { error?: string };
+      if (!res.ok) {
+        setResult({ error: data.error || 'הוספה מהספרייה נכשלה' });
+        return;
+      }
+      clearDraft();
+      setTitle('');
+      setCredit(emptyCredit);
+      setDraftRestored(false);
+      onUploaded(data);
+      setResult({ ok: true });
+    } catch {
+      setResult({ error: 'שגיאת רשת' });
+    } finally {
+      setPhase('idle');
+    }
+  };
 
   const clearDraft = useCallback(() => {
     try {
@@ -1161,10 +1206,27 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
 
   return (
     <div className="rounded-2xl border border-white/60 bg-white/55 p-3 sm:p-4" dir="rtl">
-      <h4 className="mb-3 flex items-center gap-2 text-sm font-black text-slate-700">
-        <Upload className="h-4 w-4 text-emerald-600" />
-        העלאת רצועה
-      </h4>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h4 className="flex items-center gap-2 text-sm font-black text-slate-700">
+          <Upload className="h-4 w-4 text-emerald-600" />
+          העלאת רצועה
+        </h4>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() =>
+            openMediaManager({
+              kind: 'audio',
+              mode: 'pick',
+              title: 'בחר אודיו מהספרייה',
+              onSelect: (asset: MediaAsset) => void addFromLibrary(asset),
+            })
+          }
+          className="rounded-xl border border-emerald-300/70 bg-emerald-800/10 px-3 py-1.5 text-xs font-bold text-emerald-900 disabled:opacity-50"
+        >
+          מנהל קבצים
+        </button>
+      </div>
 
       {draftRestored && (
         <div className="mb-3 flex flex-col gap-2 rounded-xl border border-amber-300/60 bg-gradient-to-br from-amber-100/70 to-amber-50/40 px-3 py-2.5 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">

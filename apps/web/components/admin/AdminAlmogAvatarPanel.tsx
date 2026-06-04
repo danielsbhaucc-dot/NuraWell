@@ -7,6 +7,9 @@ import {
   encodeImageToWebpBlob,
   isWebpEncodeUnsupportedError,
 } from '../../lib/client/encodeAlmogAvatarWebp';
+import { OpenMediaManagerButton } from '@/components/media-manager/OpenMediaManagerButton';
+import { applyAlmogAvatarFromAsset } from '@/lib/media-manager/apply-asset';
+import type { MediaAsset } from '@/components/media-manager/types';
 
 type UploadResult = {
   ok?: boolean;
@@ -181,6 +184,34 @@ export function AdminAlmogAvatarPanel() {
       />
 
       <div className="mt-5 flex flex-col gap-3">
+        <OpenMediaManagerButton
+          kind="image"
+          label="מנהל קבצים — בחר או העלה תמונה"
+          pickLabel="תמונת אלמוג"
+          onPicked={(asset: MediaAsset) => {
+            void (async () => {
+              if (!asset.object_key || busy) return;
+              setBusy(true);
+              setResult(null);
+              try {
+                const res = await applyAlmogAvatarFromAsset(asset);
+                const data = (await res.json()) as UploadResult;
+                if (!res.ok) {
+                  setResult({ error: data.error || 'שמירה נכשלה' });
+                  return;
+                }
+                setResult(data);
+                setUploadTick((t) => t + 1);
+                void refresh();
+              } catch {
+                setResult({ error: 'שגיאת רשת' });
+              } finally {
+                setBusy(false);
+              }
+            })();
+          }}
+        />
+
         <label
           htmlFor={inputId}
           onDragOver={(e) => {

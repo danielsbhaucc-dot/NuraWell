@@ -24,6 +24,17 @@ export function r2AudioBucketName(): string | undefined {
   return process.env.R2_AUDIO_BUCKET_NAME?.trim() || undefined;
 }
 
+/** דלי קבצים (PDF, מצגות וכו') — מאוחסן תחת נתיב ה-Worker /files/*. */
+export function r2FilesBucketName(): string | undefined {
+  return process.env.R2_FILES_BUCKET_NAME?.trim() || undefined;
+}
+
+export function r2BucketNameForMediaBucket(bucket: 'images' | 'audio' | 'files'): string | undefined {
+  if (bucket === 'images') return r2ImageBucketName();
+  if (bucket === 'audio') return r2AudioBucketName();
+  return r2FilesBucketName();
+}
+
 export function getR2Client(): S3Client {
   const accountId = process.env.R2_ACCOUNT_ID?.trim();
   const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim();

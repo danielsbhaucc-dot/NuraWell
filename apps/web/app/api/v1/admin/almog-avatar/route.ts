@@ -13,6 +13,10 @@ import {
   getR2Client,
   r2ImageBucketName,
 } from '@/lib/storage/r2-almog';
+import {
+  copyImageSourceToKey,
+  parseSourceObjectKeyFromRequest,
+} from '@/lib/storage/apply-source-image';
 
 /** Client sends pre-compressed WebP; keep margin under Vercel ~4.5MB body limit. */
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
@@ -58,32 +62,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const form = await request.formData();
-    const file = form.get('file');
-    const originalBytesRaw = form.get('original_bytes');
-    const originalBytesParsed =
-      typeof originalBytesRaw === 'string' ? Number.parseInt(originalBytesRaw, 10) : NaN;
-
-    if (!(file instanceof File)) {
-      return NextResponse.json({ error: 'לא נבחר קובץ' }, { status: 400 });
-    }
-    if (file.size <= 0 || file.size > MAX_UPLOAD_BYTES) {
-      return NextResponse.json(
-        { error: 'הקובץ גדול מדי אחרי הכנה. נסה תמונה קטנה יותר.' },
-        { status: 400 }
-      );
-    }
-
-    const buf = Buffer.from(await file.arrayBuffer());
-    if (!isWebpBuffer(buf)) {
-      return NextResponse.json(
-        { error: 'הקובץ חייב להיות WebP לאחר הכנה בדפדפן. רענן ונסה שוב.' },
-        { status: 400 }
-      );
-    }
-
-    const originalForStats =
-      Number.isFinite(originalBytesParsed) && originalBytesParsed > 0 ? originalBytesParsed : file.size;
+    const sourceKey = await parseSourceObjectKeyFromRequest(request);
+    let originalForStats = 0;
+    let optimizedBytes = 0;
 
     const s3 = getR2Client();
 
@@ -95,15 +76,52 @@ export async function POST(request: Request) {
       }
     }
 
-    await s3.send(
-      new PutObjectCommand({
-        Bucket: bucket,
-        Key: ALMOG_AVATAR_OBJECT_KEY,
-        Body: buf,
-        ContentType: 'image/webp',
-        CacheControl: 'public, max-age=31536000, immutable',
-      })
-    );
+    if (sourceKey) {
+      const copied = await copyImageSourceToKey({
+        sourceObjectKey: sourceKey,
+        destObjectKey: ALMOG_AVATAR_OBJECT_KEY,
+      });
+      originalForStats = copied.optimizedBytes;
+      optimizedBytes = copied.optimizedBytes;
+    } else {
+      const form = await request.formData();
+      const file = form.get('file');
+      const originalBytesRaw = form.get('original_bytes');
+      const originalBytesParsed =
+        typeof originalBytesRaw === 'string' ? Number.parseInt(originalBytesRaw, 10) : NaN;
+
+      if (!(file instanceof File)) {
+        return NextResponse.json({ error: 'לא נבחר קובץ' }, { status: 400 });
+      }
+      if (file.size <= 0 || file.size > MAX_UPLOAD_BYTES) {
+        return NextResponse.json(
+          { error: 'הקובץ גדול מדי אחרי הכנה. נסה תמונה קטנה יותר.' },
+          { status: 400 }
+        );
+      }
+
+      const buf = Buffer.from(await file.arrayBuffer());
+      if (!isWebpBuffer(buf)) {
+        return NextResponse.json(
+          { error: 'הקובץ חייב להיות WebP לאחר הכנה בדפדפן. רענן ונסה שוב.' },
+          { status: 400 }
+        );
+      }
+
+      originalForStats =
+        Number.isFinite(originalBytesParsed) && originalBytesParsed > 0 ? originalBytesParsed : file.size;
+      optimizedBytes = buf.length;
+
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: ALMOG_AVATAR_OBJECT_KEY,
+          Body: buf,
+          ContentType: 'image/webp',
+          CacheControl: 'public, max-age=31536000, immutable',
+        })
+      );
+    }
 
     await s3.send(
       new HeadObjectCommand({
@@ -126,8 +144,8 @@ export async function POST(request: Request) {
       bucket,
       object_key: ALMOG_AVATAR_OBJECT_KEY,
       original_bytes: originalForStats,
-      optimized_bytes: buf.length,
-      saved_percent: Math.max(0, Math.round((1 - buf.length / Math.max(1, originalForStats)) * 100)),
+      optimized_bytes: optimizedBytes,
+      saved_percent: Math.max(0, Math.round((1 - optimizedBytes / Math.max(1, originalForStats)) * 100)),
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
