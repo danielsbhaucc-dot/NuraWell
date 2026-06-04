@@ -188,6 +188,18 @@ export function LessonAudioController({ tracks, videoActive, sectionKey, anchorT
     };
   }, []);
 
+  // Prefetch של הרצועה הבאה — מחמם את קאש ה-CDN/דפדפן כדי שמעברים יהיו מיידיים.
+  useEffect(() => {
+    if (playable.length <= 1) return;
+    const nextUrl = playable[(index + 1) % playable.length]?.url;
+    if (!nextUrl) return;
+    const id = window.setTimeout(() => {
+      // low-priority — לא חוסם את הניגון הנוכחי
+      void fetch(nextUrl, { mode: 'cors', cache: 'force-cache' }).catch(() => {});
+    }, 1500);
+    return () => window.clearTimeout(id);
+  }, [index, playable]);
+
   // עצירת המוזיקה כשהאפליקציה נסגרת / עוברת לרקע; חידוש כשחוזרים (אם לא מושתק)
   useEffect(() => {
     if (!hasTracks) return;
