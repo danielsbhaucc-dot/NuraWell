@@ -17,14 +17,31 @@ type MediaUploadZoneProps = {
   kind: Exclude<MediaKind, 'video'>;
   onUploaded: (asset: MediaAsset) => void;
   onError: (msg: string) => void;
-  showAudioSource?: boolean;
+};
+
+const SOURCE_OPTIONS: Record<Exclude<MediaKind, 'video'>, { value: MediaSource; label: string }[]> = {
+  image: [
+    { value: 'upload', label: 'העלאה שלי' },
+    { value: 'pixabay', label: 'Pixabay' },
+    { value: 'pexels', label: 'Pexels' },
+    { value: 'other', label: 'אחר (רישיון חופשי)' },
+  ],
+  audio: [
+    { value: 'upload', label: 'העלאה שלי' },
+    { value: 'suno', label: 'Suno AI Pro' },
+    { value: 'pixabay', label: 'Pixabay' },
+    { value: 'other', label: 'אחר (רישיון חופשי)' },
+  ],
+  file: [
+    { value: 'upload', label: 'העלאה שלי' },
+    { value: 'other', label: 'אחר (רישיון חופשי)' },
+  ],
 };
 
 export function MediaUploadZone({
   kind,
   onUploaded,
   onError,
-  showAudioSource = kind === 'audio',
 }: MediaUploadZoneProps) {
   const inputId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -85,19 +102,22 @@ export function MediaUploadZone({
       setBusy(true);
       setProgress({ phase: 'transcoding', percent: 0 });
 
-      const credit: MediaCredit = {
-        ...defaultCreditForSource(source),
-        author: author.trim() || undefined,
-        license: license.trim() || undefined,
-      };
+      const hasCreditInfo = source !== 'upload' || !!author.trim() || !!license.trim();
+      const credit: MediaCredit = hasCreditInfo
+        ? {
+            ...defaultCreditForSource(source),
+            author: author.trim() || undefined,
+            license: license.trim() || undefined,
+          }
+        : {};
 
       try {
         const row = await uploadMediaAsset({
           kind,
           file,
           title: title.trim() || undefined,
-          source: kind === 'audio' ? source : source === 'upload' ? 'upload' : source,
-          credit: kind === 'audio' ? credit : source !== 'upload' ? credit : {},
+          source,
+          credit,
           onProgress: setProgress,
         });
         onUploaded(row as unknown as MediaAsset);
@@ -144,7 +164,13 @@ export function MediaUploadZone({
         </div>
       ) : null}
 
-      {showAudioSource ? (
+      <div>
+        <label className="mb-1 block text-xs font-bold text-slate-700">כותרת (אופציונלי)</label>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} className={glassInputClass} />
+      </div>
+
+      <div className="rounded-2xl border border-white/40 p-3" style={{ background: 'rgba(255,255,255,0.1)' }}>
+        <p className="mb-2 text-xs font-black text-slate-700">מקור וקרדיט</p>
         <div className="grid gap-2 sm:grid-cols-3">
           <div>
             <label className="mb-1 block text-xs font-bold text-slate-700">מקור</label>
@@ -153,9 +179,11 @@ export function MediaUploadZone({
               onChange={(e) => setSource(e.target.value as MediaSource)}
               className={glassInputClass}
             >
-              <option value="upload">העלאה שלי</option>
-              <option value="suno">Suno AI Pro</option>
-              <option value="other">אחר (רישיון חופשי)</option>
+              {SOURCE_OPTIONS[kind].map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -167,11 +195,11 @@ export function MediaUploadZone({
             <input value={license} onChange={(e) => setLicense(e.target.value)} className={glassInputClass} />
           </div>
         </div>
-      ) : null}
-
-      <div>
-        <label className="mb-1 block text-xs font-bold text-slate-700">כותרת (אופציונלי)</label>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} className={glassInputClass} />
+        {source !== 'upload' ? (
+          <p className="mt-1.5 text-[10px] leading-relaxed text-slate-500">
+            ודאו עמידה בתנאי הרישיון של המקור. הקרדיט יישמר ויוצג למשתמשים בעת הצורך.
+          </p>
+        ) : null}
       </div>
 
       <div
