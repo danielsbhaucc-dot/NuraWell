@@ -31,6 +31,10 @@ export class AudioTranscodeUnsupportedError extends Error {
   }
 }
 
+/** מגבלת יעד להעלאת אודיו אחרי דחיסה (תואם לזרימת ההעלאה הישירה ל-R2). */
+export const AUDIO_UPLOAD_SIZE_LIMIT = 25 * 1024 * 1024;
+export const AUDIO_BITRATE_LADDER = [128, 96, 64] as const;
+
 function floatToInt16(input: Float32Array): Int16Array {
   const out = new Int16Array(input.length);
   for (let i = 0; i < input.length; i++) {
@@ -140,4 +144,26 @@ export async function transcodeToMp3(
     originalBytes: file.size,
     optimizedBytes: blob.size,
   };
+}
+
+/**
+ * דוחס אודיו במדרג ביטרייט עד שהוא נכנס למגבלת ההעלאה.
+ * משותף לפאנל האודיו ול-Media Manager.
+ */
+export async function transcodeUnderLimit(
+  file: File,
+  onProgress: (fraction: number) => void,
+  options: { sizeLimitBytes?: number; bitrates?: readonly number[] } = {}
+): Promise<TranscodeResult> {
+  const limit = options.sizeLimitBytes ?? AUDIO_UPLOAD_SIZE_LIMIT;
+  const bitrates = options.bitrates ?? AUDIO_BITRATE_LADDER;
+  let last: TranscodeResult | null = null;
+
+  for (const kbps of bitrates) {
+    const res = await transcodeToMp3(file, { kbps, onProgress });
+    last = res;
+    if (res.blob.size <= limit) return res;
+  }
+
+  return last as TranscodeResult;
 }
