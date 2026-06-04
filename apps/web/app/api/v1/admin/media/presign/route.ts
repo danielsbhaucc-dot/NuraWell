@@ -5,9 +5,9 @@ import { mediaPresignSchema } from '@/lib/validation/media-asset';
 import {
   bucketForKind,
   buildMediaObjectKey,
-  inferFileSubtype,
   newMediaAssetId,
 } from '@/lib/media/media-asset-keys';
+import { inferFileSubtype } from '@/lib/media/file-subtype';
 import { r2BucketNameForMediaBucket } from '@/lib/storage/r2-almog';
 import { createR2PutPresignedUrl } from '@/lib/storage/r2-presign';
 

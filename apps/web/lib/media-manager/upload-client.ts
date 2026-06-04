@@ -8,7 +8,7 @@ import {
   type TranscodeResult,
 } from '@/lib/audio/transcode-client';
 import type { FileSubtype, MediaCredit, MediaKind, MediaSource } from '@/lib/validation/media-asset';
-import { inferFileSubtype } from '@/lib/media/media-asset-keys';
+import { inferFileSubtype } from '@/lib/media/file-subtype';
 
 export type UploadPhase = 'idle' | 'transcoding' | 'uploading' | 'completing' | 'done' | 'error';
 
