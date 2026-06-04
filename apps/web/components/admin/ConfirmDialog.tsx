@@ -3,115 +3,110 @@
 import { useEffect } from 'react';
 import { AlertTriangle, Loader2, X } from 'lucide-react';
 
-type ConfirmDialogProps = {
+interface ConfirmDialogProps {
   open: boolean;
   title: string;
-  description: string;
+  message?: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  variant?: 'danger' | 'default';
-  loading?: boolean;
+  /** מראה "מסוכן" (מחיקה) — כפתור אישור אדום. */
+  danger?: boolean;
+  busy?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
-};
+}
 
+/** פופאפ אישור בעיצוב זכוכית שקוף — מחליף את confirm()/alert המובנה. */
 export function ConfirmDialog({
   open,
   title,
-  description,
+  message,
   confirmLabel = 'אישור',
   cancelLabel = 'ביטול',
-  variant = 'default',
-  loading = false,
+  danger = false,
+  busy = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !loading) onCancel();
+      if (e.key === 'Escape' && !busy) onCancel();
+      if (e.key === 'Enter' && !busy) onConfirm();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, loading, onCancel]);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, busy, onCancel, onConfirm]);
 
   if (!open) return null;
 
-  const isDanger = variant === 'danger';
-
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4" role="presentation">
+    <div
+      dir="rtl"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+    >
+      {/* רקע מטושטש שקוף */}
       <button
         type="button"
-        className="absolute inset-0 bg-slate-900/55 backdrop-blur-[3px]"
-        aria-label="סגירה"
-        disabled={loading}
-        onClick={onCancel}
+        aria-label="סגור"
+        onClick={() => !busy && onCancel()}
+        className="absolute inset-0 cursor-default bg-slate-900/30 backdrop-blur-sm"
       />
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="confirm-dialog-title"
-        aria-describedby="confirm-dialog-desc"
-        dir="rtl"
-        className="relative w-full max-w-md rounded-2xl border border-white/80 bg-white shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div
-          className={[
-            'px-5 py-4 flex items-start gap-3',
-            isDanger ? 'bg-gradient-to-l from-red-50 to-orange-50' : 'bg-gradient-to-l from-emerald-50 to-teal-50',
-          ].join(' ')}
+
+      {/* כרטיס זכוכית */}
+      <div className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-white/40 bg-white/20 p-5 shadow-[0_20px_60px_-12px_rgba(15,23,42,0.5)] ring-1 ring-inset ring-white/30 backdrop-blur-2xl backdrop-saturate-150">
+        {/* נצנוץ עליון */}
+        <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+
+        <button
+          type="button"
+          onClick={() => !busy && onCancel()}
+          aria-label="סגור"
+          className="absolute left-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/50 bg-white/40 text-slate-600 hover:bg-white/70"
         >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="flex items-start gap-3">
           <span
             className={[
-              'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
-              isDanger ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800',
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border',
+              danger
+                ? 'border-red-300/60 bg-red-100/70 text-red-600'
+                : 'border-emerald-300/60 bg-emerald-100/70 text-emerald-700',
             ].join(' ')}
-            aria-hidden
           >
             <AlertTriangle className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1 pt-0.5">
-            <h2 id="confirm-dialog-title" className="text-lg font-black text-slate-900">
-              {title}
-            </h2>
-            <p
-              id="confirm-dialog-desc"
-              className="text-sm text-slate-600 mt-1.5 leading-relaxed whitespace-pre-line"
-            >
-              {description}
-            </p>
+            <h3 className="text-base font-black text-slate-800">{title}</h3>
+            {message && <p className="mt-1 text-sm leading-snug text-slate-600">{message}</p>}
           </div>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-white/80 hover:text-slate-700 disabled:opacity-40"
-            aria-label="סגור"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
 
-        <div className="flex flex-row-reverse gap-2 px-5 py-4 bg-white border-t border-slate-100">
+        <div className="mt-5 flex gap-2">
           <button
             type="button"
             onClick={onConfirm}
-            disabled={loading}
+            disabled={busy}
             className={[
-              'flex-1 inline-flex items-center justify-center gap-2 rounded-xl py-2.5 font-bold text-white disabled:opacity-60',
-              isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700',
+              'inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black text-white shadow-lg disabled:opacity-60',
+              danger
+                ? 'bg-gradient-to-l from-red-600 to-rose-500 shadow-red-500/25'
+                : 'bg-gradient-to-l from-emerald-600 to-teal-500 shadow-emerald-500/25',
             ].join(' ')}
           >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {busy && <Loader2 className="h-4 w-4 animate-spin" />}
             {confirmLabel}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            disabled={loading}
-            className="flex-1 rounded-xl border border-slate-200 py-2.5 font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            disabled={busy}
+            className="inline-flex items-center justify-center rounded-xl border border-white/60 bg-white/40 px-4 py-2.5 text-sm font-bold text-slate-700 backdrop-blur-md hover:bg-white/70 disabled:opacity-60"
           >
             {cancelLabel}
           </button>

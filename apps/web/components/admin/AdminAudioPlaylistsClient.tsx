@@ -26,6 +26,7 @@ import {
   type TranscodeResult,
 } from '@/lib/audio/transcode-client';
 import { GlassAudioPlayer } from '@/components/audio/GlassAudioPlayer';
+import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import type { AudioCredit, AudioTrack, AudioPlaylistSummary } from '@/lib/types/audio';
 
 type TrackWithUrl = AudioTrack & { url: string | null };
@@ -70,6 +71,8 @@ export function AdminAudioPlaylistsClient() {
   const [listError, setListError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<AudioPlaylistSummary | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // create form
   const [newTitle, setNewTitle] = useState('');
@@ -138,14 +141,19 @@ export function AdminAudioPlaylistsClient() {
     }
   };
 
-  const deletePlaylist = async (pl: AudioPlaylistSummary) => {
-    if (!confirm(`למחוק את הפלייליסט "${pl.title}" וכל הרצועות שבו? פעולה זו תמחק גם את הקבצים מ-R2.`)) {
-      return;
-    }
-    const res = await fetch(`/api/v1/admin/audio/playlists/${pl.id}`, { method: 'DELETE' });
-    if (res.ok) {
-      setPlaylists((list) => list.filter((x) => x.id !== pl.id));
-      if (selectedId === pl.id) setSelectedId(null);
+  const confirmDeletePlaylist = async () => {
+    const pl = confirmDelete;
+    if (!pl || deleting) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/v1/admin/audio/playlists/${pl.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setPlaylists((list) => list.filter((x) => x.id !== pl.id));
+        if (selectedId === pl.id) setSelectedId(null);
+        setConfirmDelete(null);
+      }
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -272,7 +280,7 @@ export function AdminAudioPlaylistsClient() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => void deletePlaylist(pl)}
+                      onClick={() => setConfirmDelete(pl)}
                       title="מחק פלייליסט"
                       className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-200/70 bg-red-50/70 text-red-600 hover:bg-red-100"
                     >
@@ -338,6 +346,22 @@ export function AdminAudioPlaylistsClient() {
           טיפ: פתחו פלייליסט וגללו ל&quot;איפה זה מתנגן?&quot; כדי לשייך אותו לצעדים. אפשר גם דרך עורך הצעד.
         </p>
       )}
+
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        danger
+        title="למחוק את הפלייליסט?"
+        message={
+          confirmDelete
+            ? `"${confirmDelete.title}" וכל הרצועות שבו יימחקו לצמיתות, כולל הקבצים מ-R2. לא ניתן לשחזר.`
+            : undefined
+        }
+        confirmLabel="מחק"
+        cancelLabel="ביטול"
+        busy={deleting}
+        onConfirm={() => void confirmDeletePlaylist()}
+        onCancel={() => !deleting && setConfirmDelete(null)}
+      />
     </div>
   );
 }
@@ -372,13 +396,22 @@ function PlaylistTrackManager({ playlistId, onTrackAdded, onTrackRemoved }: Play
   }, [loadTracks]);
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmTrack, setConfirmTrack] = useState<TrackWithUrl | null>(null);
+  const [deletingTrack, setDeletingTrack] = useState(false);
 
-  const deleteTrack = async (track: TrackWithUrl) => {
-    if (!confirm(`למחוק את "${track.title}"? הקובץ יימחק גם מ-R2.`)) return;
-    const res = await fetch(`/api/v1/admin/audio/tracks/${track.id}`, { method: 'DELETE' });
-    if (res.ok) {
-      setTracks((t) => t.filter((x) => x.id !== track.id));
-      onTrackRemoved();
+  const confirmDeleteTrack = async () => {
+    const track = confirmTrack;
+    if (!track || deletingTrack) return;
+    setDeletingTrack(true);
+    try {
+      const res = await fetch(`/api/v1/admin/audio/tracks/${track.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setTracks((t) => t.filter((x) => x.id !== track.id));
+        onTrackRemoved();
+        setConfirmTrack(null);
+      }
+    } finally {
+      setDeletingTrack(false);
     }
   };
 
@@ -438,7 +471,7 @@ function PlaylistTrackManager({ playlistId, onTrackAdded, onTrackRemoved }: Play
                       </button>
                       <button
                         type="button"
-                        onClick={() => void deleteTrack(track)}
+                        onClick={() => setConfirmTrack(track)}
                         title="מחק רצועה"
                         className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-200/70 bg-red-50/70 text-red-600 hover:bg-red-100"
                       >
@@ -455,6 +488,22 @@ function PlaylistTrackManager({ playlistId, onTrackAdded, onTrackRemoved }: Play
       </div>
 
       <PlaylistStepAssigner playlistId={playlistId} />
+
+      <ConfirmDialog
+        open={confirmTrack !== null}
+        danger
+        title="למחוק את הרצועה?"
+        message={
+          confirmTrack
+            ? `"${confirmTrack.title}" יימחק לצמיתות, כולל הקובץ מ-R2. לא ניתן לשחזר.`
+            : undefined
+        }
+        confirmLabel="מחק"
+        cancelLabel="ביטול"
+        busy={deletingTrack}
+        onConfirm={() => void confirmDeleteTrack()}
+        onCancel={() => !deletingTrack && setConfirmTrack(null)}
+      />
     </div>
   );
 }
