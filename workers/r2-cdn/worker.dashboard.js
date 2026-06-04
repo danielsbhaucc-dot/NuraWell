@@ -352,6 +352,11 @@ export default {
       }
 
       if (pathname.startsWith('/audio/')) {
+        // חסימת גלישה ישירה לכתובת השיר (שפותחת נגן עם כפתור הורדה).
+        // נגן <audio> שולח Sec-Fetch-Dest: audio, prefetch שולח empty — אלו מותרים.
+        if (request.headers.get('Sec-Fetch-Dest') === 'document') {
+          return new Response('Access Denied', { status: 403 });
+        }
         const key = keyFromPath('/audio/', pathname);
         if (!key) return new Response('Object Not Found', { status: 404 });
         return serveFromBucket({
