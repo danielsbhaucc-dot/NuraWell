@@ -16,30 +16,52 @@ const MUTE_STORAGE_KEY = 'nura-lesson-audio-muted';
 const BASE_VOLUME = 0.42;
 const DUCK_VOLUME = 0.08;
 
-/** צליל מעבר עדין (chime) שנוצר סינתטית — אפס אחסון. */
-function playTransitionCue(ctxRef: { current: AudioContext | null }) {
+/** יוצר (פעם אחת) את ה-AudioContext לצליל המעבר ומנסה לחדש אותו (resume). */
+function ensureCueCtx(ctxRef: { current: AudioContext | null }): AudioContext | null {
   try {
     const Ctx =
       window.AudioContext ||
       (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Ctx) return;
+    if (!Ctx) return null;
     if (!ctxRef.current) ctxRef.current = new Ctx();
     const ctx = ctxRef.current;
     if (ctx.state === 'suspended') void ctx.resume();
-    const now = ctx.currentTime;
-    [660, 880].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      const start = now + i * 0.085;
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.16, start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.24);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(start);
-      osc.stop(start + 0.26);
-    });
+    return ctx;
+  } catch {
+    return null;
+  }
+}
+
+/** מנגן את הצלילים בפועל על context שכבר רץ. */
+function scheduleCue(ctx: AudioContext) {
+  const now = ctx.currentTime;
+  [660, 880].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const start = now + i * 0.085;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.16, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.24);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + 0.26);
+  });
+}
+
+/** צליל מעבר עדין (chime) שנוצר סינתטית — אפס אחסון. */
+function playTransitionCue(ctxRef: { current: AudioContext | null }) {
+  try {
+    const ctx = ensureCueCtx(ctxRef);
+    if (!ctx) return;
+    // אם ה-context עדיין במצב suspended (טרם מחוות משתמש) — מחדשים ואז מתזמנים,
+    // אחרת הצלילים מתוזמנים על זמן "קפוא" ולא נשמעים.
+    if (ctx.state === 'suspended') {
+      void ctx.resume().then(() => scheduleCue(ctx)).catch(() => {});
+    } else {
+      scheduleCue(ctx);
+    }
   } catch {
     /* ignore — צליל מעבר הוא תוספת, לא קריטי */
   }
@@ -100,6 +122,8 @@ export function LessonAudioController({ tracks, videoActive, sectionKey }: Lesso
 
     const onGesture = () => {
       attemptPlay();
+      // מחדשים את ה-context של צליל המעבר כבר עכשיו, כדי שיהיה "רץ" למעבר הבא
+      ensureCueCtx(cueCtxRef);
     };
     window.addEventListener('pointerdown', onGesture, { passive: true });
     window.addEventListener('keydown', onGesture);
@@ -199,7 +223,7 @@ export function LessonAudioController({ tracks, videoActive, sectionKey }: Lesso
       <div
         dir="rtl"
         className="fixed right-2 z-40 flex flex-col items-end gap-2"
-        style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5.25rem)' }}
+        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 4.25rem)' }}
         aria-label="בקרת מוזיקת רקע"
       >
         {/* פאנל מורחב — מופיע רק בלחיצה, אחרת לא תופס מקום */}
