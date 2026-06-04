@@ -155,22 +155,52 @@ function baseHeaders(object, pathname, routeLabel) {
   return headers;
 }
 
+// Range לאודיו עם קאש Edge: שומרים את הקובץ המלא ב-Cache API ופורסים ממנו את ה-Range.
 async function serveRangedAudio(params) {
-  const { bucket, key, request, routeLabel, pathname, parsedRange } = params;
+  const { bucket, key, request, ctx, routeLabel, pathname, parsedRange, tryEdgeCache } = params;
 
-  let object;
-  try {
-    object = await r2GetSafe(bucket, key, { range: parsedRange });
-  } catch {
-    return response503();
+  const url = new URL(request.url);
+  const cacheKey = new Request(`${url.origin}${url.pathname}`, { method: 'GET' });
+  const cache = caches.default;
+  const useCache = tryEdgeCache && shouldUseEdgeCache(pathname, routeLabel);
+
+  let buf = null;
+  let baseRespHeaders = null;
+
+  if (useCache) {
+    try {
+      const cached = await cache.match(cacheKey);
+      if (cached) {
+        logLine(request, 'HIT', `${routeLabel} range`);
+        buf = await cached.arrayBuffer();
+        baseRespHeaders = new Headers(cached.headers);
+      }
+    } catch (e) {
+      console.warn('[cdn] cache.match (range) failed', e);
+    }
   }
 
-  if (!object) {
-    logLine(request, 'R2', `${routeLabel} 404`);
-    return new Response('Object Not Found', { status: 404 });
+  if (!buf) {
+    let object;
+    try {
+      object = await r2GetSafe(bucket, key);
+    } catch {
+      return response503();
+    }
+    if (!object) {
+      logLine(request, 'R2', `${routeLabel} 404`);
+      return new Response('Object Not Found', { status: 404 });
+    }
+    baseRespHeaders = baseHeaders(object, pathname, routeLabel);
+    buf = await object.arrayBuffer();
+    logLine(request, 'MISS', `${routeLabel} range`);
+    if (useCache) {
+      const full200 = new Response(buf.slice(0), { status: 200, headers: baseRespHeaders });
+      ctx.waitUntil(cache.put(cacheKey, full200));
+    }
   }
 
-  const total = object.size;
+  const total = buf.byteLength;
   let start;
   let end;
   if ('suffix' in parsedRange) {
@@ -191,14 +221,14 @@ async function serveRangedAudio(params) {
     });
   }
 
-  const headers = baseHeaders(object, pathname, routeLabel);
+  const headers = new Headers(baseRespHeaders ?? undefined);
   headers.set('Content-Range', `bytes ${start}-${end}/${total}`);
   headers.set('Content-Length', String(end - start + 1));
+  headers.set('Accept-Ranges', 'bytes');
 
   const isHead = request.method === 'HEAD';
-  const body = isHead ? null : object.body;
+  const body = isHead ? null : buf.slice(start, end + 1);
 
-  logLine(request, 'R2', `${routeLabel} 206`);
   return new Response(body, { status: 206, headers });
 }
 
@@ -215,7 +245,16 @@ async function serveFromBucket(params) {
   const parsedRange = supportRange ? parseRangeHeader(request.headers.get('Range')) : null;
 
   if (parsedRange) {
-    return serveRangedAudio({ bucket, key, request, routeLabel, pathname, parsedRange });
+    return serveRangedAudio({
+      bucket,
+      key,
+      request,
+      ctx,
+      routeLabel,
+      pathname,
+      parsedRange,
+      tryEdgeCache,
+    });
   }
 
   const cache = caches.default;

@@ -200,29 +200,69 @@ function baseHeaders(
   return headers;
 }
 
+/**
+ * הגשת Range לאודיו עם קאש Edge: שומרים את הקובץ המלא ב-Cache API ופורסים ממנו
+ * את ה-Range. כך הבקשה הראשונה ממלאת את הקאש, וכל השאר נשלפות מהר מה-Edge
+ * במקום מ-R2 בכל ניגון.
+ */
 async function serveRangedAudio(params: {
   bucket: R2Bucket;
   key: string;
   request: Request;
+  ctx: ExecutionContext;
   routeLabel: RouteLabel;
   pathname: string;
   parsedRange: ParsedRange;
+  tryEdgeCache: boolean;
 }): Promise<Response> {
-  const { bucket, key, request, routeLabel, pathname, parsedRange } = params;
+  const { bucket, key, request, ctx, routeLabel, pathname, parsedRange, tryEdgeCache } = params;
 
-  let object: R2ObjectBody | R2Object | null;
-  try {
-    object = await r2GetSafe(bucket, key, { range: parsedRange as R2Range });
-  } catch {
-    return response503();
+  const url = new URL(request.url);
+  const cacheKey = new Request(`${url.origin}${url.pathname}`, { method: 'GET' });
+  const cache = caches.default;
+  const useCache = tryEdgeCache && shouldUseEdgeCache(pathname, routeLabel);
+
+  let buf: ArrayBuffer | null = null;
+  let baseRespHeaders: Headers | null = null;
+
+  if (useCache) {
+    try {
+      const cached = await cache.match(cacheKey);
+      if (cached) {
+        logLine(request, 'HIT', `${routeLabel} range`);
+        buf = await cached.arrayBuffer();
+        baseRespHeaders = new Headers(cached.headers);
+      }
+    } catch (e) {
+      console.warn('[cdn] cache.match (range) failed', e);
+    }
   }
 
-  if (!object) {
-    logLine(request, 'R2', `${routeLabel} 404`);
+  if (!buf) {
+    let object: R2ObjectBody | R2Object | null;
+    try {
+      object = await r2GetSafe(bucket, key);
+    } catch {
+      return response503();
+    }
+    if (!object) {
+      logLine(request, 'R2', `${routeLabel} 404`);
+      return new Response('Object Not Found', { status: 404 });
+    }
+    baseRespHeaders = baseHeaders(object, pathname, routeLabel);
+    buf = await (object as R2ObjectBody).arrayBuffer();
+    logLine(request, 'MISS', `${routeLabel} range`);
+    if (useCache) {
+      const full200 = new Response(buf.slice(0), { status: 200, headers: baseRespHeaders });
+      ctx.waitUntil(cache.put(cacheKey, full200));
+    }
+  }
+
+  if (!buf) {
     return new Response('Object Not Found', { status: 404 });
   }
 
-  const total = object.size;
+  const total = buf.byteLength;
   let start: number;
   let end: number;
   if ('suffix' in parsedRange) {
@@ -243,14 +283,14 @@ async function serveRangedAudio(params: {
     });
   }
 
-  const headers = baseHeaders(object, pathname, routeLabel);
+  const headers = new Headers(baseRespHeaders ?? undefined);
   headers.set('Content-Range', `bytes ${start}-${end}/${total}`);
   headers.set('Content-Length', String(end - start + 1));
+  headers.set('Accept-Ranges', 'bytes');
 
   const isHead = request.method === 'HEAD';
-  const body = isHead ? null : (object as R2ObjectBody).body;
+  const body = isHead ? null : buf.slice(start, end + 1);
 
-  logLine(request, 'R2', `${routeLabel} 206`);
   return new Response(body, { status: 206, headers });
 }
 
@@ -284,9 +324,18 @@ async function serveFromBucket(params: {
 
   const parsedRange = supportRange ? parseRangeHeader(request.headers.get('Range')) : null;
 
-  // בקשת Range → תשובת 206 ייעודית, ללא Cache API (מורכב מדי לשלב עם range).
+  // בקשת Range → תשובת 206, מוגשת מקאש ה-Edge (הקובץ המלא נשמר ונפרס).
   if (parsedRange) {
-    return serveRangedAudio({ bucket, key, request, routeLabel, pathname, parsedRange });
+    return serveRangedAudio({
+      bucket,
+      key,
+      request,
+      ctx,
+      routeLabel,
+      pathname,
+      parsedRange,
+      tryEdgeCache,
+    });
   }
 
   const cache = caches.default;
