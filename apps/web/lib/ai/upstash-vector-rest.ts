@@ -52,9 +52,27 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return (await res.json()) as T;
 }
 
-function nsPath(namespace: string, action: 'upsert' | 'query'): string {
+function nsPath(namespace: string, action: 'upsert' | 'query' | 'delete' | 'range'): string {
   const enc = encodeURIComponent(namespace);
   return `/${action}/${enc}`;
+}
+
+async function deleteJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${baseUrl()}${path}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token()}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Upstash Vector HTTP ${res.status}: ${errText}`);
+  }
+
+  return (await res.json()) as T;
 }
 
 /**
@@ -106,4 +124,101 @@ export async function upsertUserMemoryVector(params: {
 
 export function isUpstashVectorConfigured(): boolean {
   return Boolean(process.env.UPSTASH_VECTOR_REST_URL?.trim() && process.env.UPSTASH_VECTOR_REST_TOKEN?.trim());
+}
+
+export type UserMemoryListItem = {
+  id: string;
+  text: string;
+  category: MemoryVectorCategory;
+  memoryLevel?: 2 | 3 | 4;
+  isInsight?: boolean;
+  updatedAt: string;
+};
+
+function parseUserMemoryMetadata(
+  raw: UserMemoryVectorMetadata | Record<string, unknown> | undefined
+): UserMemoryListItem | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const m = raw as UserMemoryVectorMetadata;
+  const text = typeof m.text === 'string' ? m.text.trim() : '';
+  if (!text) return null;
+  const category = m.category;
+  if (
+    category !== 'strength' &&
+    category !== 'weakness' &&
+    category !== 'success' &&
+    category !== 'failure' &&
+    category !== 'schedule'
+  ) {
+    return null;
+  }
+  return {
+    id: '',
+    text,
+    category,
+    memoryLevel: m.memoryLevel,
+    isInsight: m.isInsight,
+    updatedAt: typeof m.updatedAt === 'string' ? m.updatedAt : '',
+  };
+}
+
+/** רשימת כל זיכרונות המשתמש — סריקת range עם סינון מטא-דאטה */
+export async function listUserMemoryVectors(userId: string): Promise<UserMemoryListItem[]> {
+  const namespace = UPSTASH_NAMESPACE_USER_MEMORY;
+  const items: UserMemoryListItem[] = [];
+  let cursor = '0';
+
+  for (let guard = 0; guard < 500; guard += 1) {
+    const json = await postJson<{
+      nextCursor?: string;
+      vectors?: Array<{ id: string; metadata?: UserMemoryVectorMetadata | Record<string, unknown> }>;
+      result?:
+        | Array<{ id: string; metadata?: UserMemoryVectorMetadata | Record<string, unknown> }>
+        | {
+            nextCursor?: string;
+            vectors?: Array<{ id: string; metadata?: UserMemoryVectorMetadata | Record<string, unknown> }>;
+          };
+    }>(nsPath(namespace, 'range'), {
+      cursor,
+      limit: 200,
+      includeMetadata: true,
+    });
+
+    const nested = json.result;
+    const page =
+      nested && typeof nested === 'object' && !Array.isArray(nested)
+        ? nested
+        : {
+            nextCursor: json.nextCursor,
+            vectors: json.vectors ?? (Array.isArray(nested) ? nested : []),
+          };
+
+    const vectors = page.vectors ?? [];
+    for (const v of vectors) {
+      const meta = v.metadata;
+      if (!meta || typeof meta !== 'object') continue;
+      const metaUserId = (meta as { userId?: string }).userId;
+      if (metaUserId !== userId) continue;
+      const parsed = parseUserMemoryMetadata(meta);
+      if (parsed) {
+        items.push({ ...parsed, id: v.id });
+      }
+    }
+
+    if (!page.nextCursor || vectors.length === 0) break;
+    cursor = page.nextCursor;
+  }
+
+  items.sort((a, b) => {
+    const ta = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+    const tb = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+    return tb - ta;
+  });
+
+  return items;
+}
+
+export async function deleteUserMemoryVectorById(id: string): Promise<void> {
+  const path = nsPath(UPSTASH_NAMESPACE_USER_MEMORY, 'delete');
+  await deleteJson(path, { ids: [id] });
 }

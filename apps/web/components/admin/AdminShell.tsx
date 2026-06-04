@@ -312,7 +312,7 @@ export function AdminShell({
                         )}
                       >
                         <BookOpen size={17} className="shrink-0 opacity-90" />
-                        לאמן את אלמוג
+                        ניהול ידע
                       </Link>
                     </li>
                   </ul>
