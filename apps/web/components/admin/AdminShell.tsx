@@ -25,6 +25,7 @@ import {
 import { cn } from '../../lib/cn';
 import { OpsSessionGuard } from './OpsSessionGuard';
 import { MediaManagerProvider } from '@/components/media-manager/MediaManagerProvider';
+import { AdminMediaManagerLauncher } from '@/components/media-manager/AdminMediaManagerLauncher';
 
 const SIDEBAR_COLLAPSED_KEY = 'nura-admin-sidebar-collapsed';
 
@@ -468,6 +469,11 @@ export function AdminShell({
             </p>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              <AdminMediaManagerLauncher
+                compact
+                className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-2xl border border-emerald-300/60 bg-emerald-500/15 text-emerald-950 shadow-sm backdrop-blur-md sm:hidden"
+              />
+              <AdminMediaManagerLauncher className="hidden min-h-10 items-center justify-center gap-2 rounded-2xl border border-emerald-300/60 bg-emerald-500/15 px-3 py-2 text-sm font-bold text-emerald-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-md transition hover:bg-emerald-500/25 sm:inline-flex" />
               <span className="hidden max-w-[12rem] truncate text-left text-sm font-semibold text-emerald-900/90 md:inline">
                 {adminDisplayName}
               </span>
