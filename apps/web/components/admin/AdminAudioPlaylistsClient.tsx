@@ -11,10 +11,14 @@ import {
   Loader2,
   MapPin,
   Music,
+  Pencil,
   Plus,
   RotateCcw,
+  Save,
+  Sparkles,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react';
 import {
   AudioTranscodeUnsupportedError,
@@ -367,6 +371,8 @@ function PlaylistTrackManager({ playlistId, onTrackAdded, onTrackRemoved }: Play
     void loadTracks();
   }, [loadTracks]);
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   const deleteTrack = async (track: TrackWithUrl) => {
     if (!confirm(`למחוק את "${track.title}"? הקובץ יימחק גם מ-R2.`)) return;
     const res = await fetch(`/api/v1/admin/audio/tracks/${track.id}`, { method: 'DELETE' });
@@ -375,6 +381,11 @@ function PlaylistTrackManager({ playlistId, onTrackAdded, onTrackRemoved }: Play
       onTrackRemoved();
     }
   };
+
+  const applyTrackUpdate = useCallback((updated: TrackWithUrl) => {
+    setTracks((t) => t.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)));
+    setEditingId(null);
+  }, []);
 
   return (
     <div className="mt-2 rounded-2xl border border-emerald-200/60 bg-white/40 p-3 sm:p-4">
@@ -401,24 +412,42 @@ function PlaylistTrackManager({ playlistId, onTrackAdded, onTrackRemoved }: Play
                 key={track.id}
                 className="rounded-xl border border-white/60 bg-white/65 p-3"
               >
-                <div className="flex items-center gap-2">
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-bold text-slate-800">{track.title}</span>
-                    <span className="block truncate text-[11px] text-slate-500">
-                      {formatDuration(track.duration_seconds)} · {formatBytes(track.size_bytes)} ·{' '}
-                      {track.credit?.author ? `${track.credit.author} (${track.credit.source})` : 'ללא קרדיט'}
-                    </span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => void deleteTrack(track)}
-                    title="מחק רצועה"
-                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-200/70 bg-red-50/70 text-red-600 hover:bg-red-100"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-                {track.url && <GlassAudioPlayer src={track.url} />}
+                {editingId === track.id ? (
+                  <TrackEditor
+                    track={track}
+                    onSaved={applyTrackUpdate}
+                    onCancel={() => setEditingId(null)}
+                  />
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-bold text-slate-800">{track.title}</span>
+                        <span className="block truncate text-[11px] text-slate-500">
+                          {formatDuration(track.duration_seconds)} · {formatBytes(track.size_bytes)} ·{' '}
+                          {track.credit?.author ? `${track.credit.author} (${track.credit.source})` : 'ללא קרדיט'}
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(track.id)}
+                        title="ערוך פרטים"
+                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-200/70 bg-emerald-50/70 text-emerald-700 hover:bg-emerald-100"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void deleteTrack(track)}
+                        title="מחק רצועה"
+                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-200/70 bg-red-50/70 text-red-600 hover:bg-red-100"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {track.url && <GlassAudioPlayer src={track.url} />}
+                  </>
+                )}
               </li>
             ))}
           </ul>
@@ -602,6 +631,239 @@ const emptyCredit: AudioCredit = {
   link: '',
   license: 'Pixabay Content License',
 };
+
+/** רישיון Suno Pro/Premier — לפי תנאי השימוש: בעלות מלאה ושימוש מסחרי, ללא חובת קרדיט. */
+const SUNO_LICENSE = 'Suno Pro/Premier — בעלות מלאה ושימוש מסחרי (נוצר בזמן מנוי פעיל)';
+
+type CreditSourceType = 'pixabay' | 'suno' | 'other';
+
+function detectSourceType(credit: AudioCredit): CreditSourceType {
+  const s = (credit.source || '').trim().toLowerCase();
+  if (s === 'suno' || s.includes('suno')) return 'suno';
+  if (s === 'pixabay' || s.includes('pixabay')) return 'pixabay';
+  return 'other';
+}
+
+/** מחיל ברירות מחדל למקור הנבחר, מבלי לאבד מידע שהוזן ידנית. */
+function applySourcePreset(credit: AudioCredit, type: CreditSourceType): AudioCredit {
+  if (type === 'pixabay') {
+    return { ...credit, source: 'Pixabay', license: 'Pixabay Content License' };
+  }
+  if (type === 'suno') {
+    return { ...credit, source: 'Suno', license: SUNO_LICENSE };
+  }
+  // אחר — מנקים ערכים שהוגדרו אוטומטית כדי לאפשר טקסט חופשי
+  const cleanedSource = credit.source === 'Pixabay' || credit.source === 'Suno' ? '' : credit.source;
+  const cleanedLicense =
+    credit.license === 'Pixabay Content License' || credit.license === SUNO_LICENSE ? '' : credit.license;
+  return { ...credit, source: cleanedSource, license: cleanedLicense };
+}
+
+const inputCls =
+  'w-full rounded-lg border border-white/60 bg-white/80 px-3 py-2 text-sm outline-none focus:border-emerald-400';
+
+/** טופס קרדיט משותף להעלאה ולעריכה — כולל בורר מקור (Pixabay / Suno / אחר). */
+function CreditFields({
+  credit,
+  onChange,
+}: {
+  credit: AudioCredit;
+  onChange: (next: AudioCredit) => void;
+}) {
+  const sourceType = detectSourceType(credit);
+  const isSuno = sourceType === 'suno';
+
+  const sources: { id: CreditSourceType; label: string }[] = [
+    { id: 'pixabay', label: 'Pixabay' },
+    { id: 'suno', label: 'Suno (AI)' },
+    { id: 'other', label: 'אחר' },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+      <div className="sm:col-span-2">
+        <span className="mb-1 block text-xs font-bold text-slate-600">מקור התוכן</span>
+        <div className="flex flex-wrap gap-1.5">
+          {sources.map((s) => {
+            const active = sourceType === s.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => onChange(applySourcePreset(credit, s.id))}
+                className={[
+                  'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors',
+                  active
+                    ? s.id === 'suno'
+                      ? 'border-violet-400/70 bg-violet-100/80 text-violet-800'
+                      : 'border-emerald-400/70 bg-emerald-100/80 text-emerald-800'
+                    : 'border-white/70 bg-white/60 text-slate-600 hover:bg-white/90',
+                ].join(' ')}
+              >
+                {s.id === 'suno' && <Sparkles className="h-3.5 w-3.5" />}
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {isSuno && (
+        <div className="sm:col-span-2 rounded-xl border border-violet-300/60 bg-gradient-to-br from-violet-100/70 to-fuchsia-50/40 p-3 backdrop-blur-xl">
+          <div className="flex items-center gap-1.5 text-[11px] font-black text-violet-800">
+            <Sparkles className="h-3.5 w-3.5" />
+            תוכן שנוצר ב-Suno (מנוי Pro/Premier)
+          </div>
+          <ul className="mt-1.5 list-disc space-y-0.5 pe-4 text-[11px] leading-snug text-violet-900/90">
+            <li>אין חובת קרדיט ל-Suno — הבעלות והשימוש המסחרי שלך (מומלץ לציין שנוצר ב-AI).</li>
+            <li>הרישיון תקף רק לרצועות שנוצרו בזמן מנוי Pro/Premier פעיל.</li>
+            <li>חובה להיות בעל 100% מהזכויות בחומר (ללא מילים/דגימות של אחרים).</li>
+          </ul>
+        </div>
+      )}
+
+      <label className="block">
+        <span className="mb-1 block text-xs font-bold text-slate-600">
+          {isSuno ? 'יוצר / בעל הזכויות' : 'מקור'}
+        </span>
+        <input
+          value={credit.source}
+          onChange={(e) => onChange({ ...credit, source: e.target.value })}
+          className={inputCls}
+        />
+      </label>
+      <label className="block">
+        <span className="mb-1 block text-xs font-bold text-slate-600">
+          {isSuno ? 'שם האמן/הערוץ שלך' : 'יוצר / אמן'}
+        </span>
+        <input
+          value={credit.author}
+          onChange={(e) => onChange({ ...credit, author: e.target.value })}
+          placeholder={isSuno ? 'השם שמופיע כיוצר' : 'שם היוצר ב-Pixabay'}
+          className={inputCls}
+        />
+      </label>
+      <label className="block">
+        <span className="mb-1 block text-xs font-bold text-slate-600">שם היצירה (אופציונלי)</span>
+        <input
+          value={credit.title ?? ''}
+          onChange={(e) => onChange({ ...credit, title: e.target.value })}
+          className={inputCls}
+        />
+      </label>
+      <label className="block">
+        <span className="mb-1 block text-xs font-bold text-slate-600">
+          {isSuno ? 'קישור לשיר ב-Suno (אופציונלי)' : 'קישור למקור (אופציונלי)'}
+        </span>
+        <input
+          value={credit.link ?? ''}
+          onChange={(e) => onChange({ ...credit, link: e.target.value })}
+          placeholder={isSuno ? 'https://suno.com/song/...' : 'https://pixabay.com/...'}
+          dir="ltr"
+          className={inputCls}
+        />
+      </label>
+      <label className="block sm:col-span-2">
+        <span className="mb-1 block text-xs font-bold text-slate-600">רישיון (אופציונלי)</span>
+        <input
+          value={credit.license ?? ''}
+          onChange={(e) => onChange({ ...credit, license: e.target.value })}
+          className={inputCls}
+        />
+      </label>
+    </div>
+  );
+}
+
+/* ============================ עריכת פרטי רצועה ============================ */
+
+function TrackEditor({
+  track,
+  onSaved,
+  onCancel,
+}: {
+  track: TrackWithUrl;
+  onSaved: (updated: TrackWithUrl) => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(track.title);
+  const [credit, setCredit] = useState<AudioCredit>({ ...emptyCredit, ...(track.credit ?? {}) });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const save = async () => {
+    if (saving) return;
+    if (!title.trim()) {
+      setError('יש להזין שם לרצועה');
+      return;
+    }
+    const normalized = normalizeCreditForUpload(credit);
+    if (normalized.error || !normalized.credit) {
+      setError(normalized.error || 'פרטי הקרדיט חסרים או לא תקינים');
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/v1/admin/audio/tracks/${track.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.trim(), credit: normalized.credit }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError((data as { error?: string }).error || `שגיאה בשמירה (${res.status})`);
+        return;
+      }
+      onSaved(data as TrackWithUrl);
+    } catch {
+      setError('שגיאת רשת בשמירה');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div dir="rtl" className="space-y-2.5">
+      <div className="flex items-center gap-1.5 text-xs font-black text-emerald-800">
+        <Pencil className="h-3.5 w-3.5" />
+        עריכת פרטי רצועה
+      </div>
+      <label className="block">
+        <span className="mb-1 block text-xs font-bold text-slate-600">שם הרצועה</span>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
+      </label>
+      <CreditFields credit={credit} onChange={setCredit} />
+
+      {error && (
+        <p className="flex items-center gap-1.5 text-xs text-red-700">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {error}
+        </p>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => void save()}
+          disabled={saving}
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-500 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          שמור
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={saving}
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/70 bg-white/60 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-white/90 disabled:opacity-50"
+        >
+          <X className="h-4 w-4" />
+          ביטול
+        </button>
+      </div>
+    </div>
+  );
+}
 
 type TrackDraft = { title: string; credit: AudioCredit };
 
@@ -910,58 +1172,12 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
       </label>
 
       {/* פרטי רצועה + קרדיט */}
-      <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-        <label className="block sm:col-span-2">
+      <div className="mt-3 space-y-2.5">
+        <label className="block">
           <span className="mb-1 block text-xs font-bold text-slate-600">שם הרצועה</span>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-lg border border-white/60 bg-white/80 px-3 py-2 text-sm outline-none focus:border-emerald-400"
-          />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
         </label>
-        <label className="block">
-          <span className="mb-1 block text-xs font-bold text-slate-600">מקור</span>
-          <input
-            value={credit.source}
-            onChange={(e) => setCredit((c) => ({ ...c, source: e.target.value }))}
-            className="w-full rounded-lg border border-white/60 bg-white/80 px-3 py-2 text-sm outline-none focus:border-emerald-400"
-          />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-xs font-bold text-slate-600">יוצר / אמן</span>
-          <input
-            value={credit.author}
-            onChange={(e) => setCredit((c) => ({ ...c, author: e.target.value }))}
-            placeholder="שם היוצר ב-Pixabay"
-            className="w-full rounded-lg border border-white/60 bg-white/80 px-3 py-2 text-sm outline-none focus:border-emerald-400"
-          />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-xs font-bold text-slate-600">שם היצירה (אופציונלי)</span>
-          <input
-            value={credit.title ?? ''}
-            onChange={(e) => setCredit((c) => ({ ...c, title: e.target.value }))}
-            className="w-full rounded-lg border border-white/60 bg-white/80 px-3 py-2 text-sm outline-none focus:border-emerald-400"
-          />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-xs font-bold text-slate-600">קישור למקור (אופציונלי)</span>
-          <input
-            value={credit.link ?? ''}
-            onChange={(e) => setCredit((c) => ({ ...c, link: e.target.value }))}
-            placeholder="https://pixabay.com/..."
-            dir="ltr"
-            className="w-full rounded-lg border border-white/60 bg-white/80 px-3 py-2 text-sm outline-none focus:border-emerald-400"
-          />
-        </label>
-        <label className="block sm:col-span-2">
-          <span className="mb-1 block text-xs font-bold text-slate-600">רישיון (אופציונלי)</span>
-          <input
-            value={credit.license ?? ''}
-            onChange={(e) => setCredit((c) => ({ ...c, license: e.target.value }))}
-            className="w-full rounded-lg border border-white/60 bg-white/80 px-3 py-2 text-sm outline-none focus:border-emerald-400"
-          />
-        </label>
+        <CreditFields credit={credit} onChange={setCredit} />
       </div>
 
       <button
