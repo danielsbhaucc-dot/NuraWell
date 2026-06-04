@@ -7,7 +7,9 @@ export function creditRequiresAttribution(source: MediaSource, credit?: MediaCre
   if (source === 'pixabay' || source === 'pexels') return true;
   if (source === 'suno') return false;
   if (source === 'upload') return false;
-  return Boolean(credit?.author || credit?.photographer || credit?.page_url);
+  return Boolean(
+    credit?.author || credit?.photographer || credit?.page_url || credit?.link
+  );
 }
 
 export function creditDisplayLabel(credit: MediaCredit | null | undefined, source: MediaSource): string | null {

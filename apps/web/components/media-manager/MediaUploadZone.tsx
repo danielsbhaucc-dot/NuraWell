@@ -52,23 +52,26 @@ export function MediaUploadZone({
   const [source, setSource] = useState<MediaSource>('upload');
   const [author, setAuthor] = useState('');
   const [license, setLicense] = useState('');
+  const [link, setLink] = useState('');
   const [draftRestored, setDraftRestored] = useState(false);
   const hydrated = useRef(false);
 
   useEffect(() => {
     hydrated.current = false;
     const draft = loadUploadDraft(kind);
-    if (draft && (draft.title || draft.author || draft.license || draft.source !== 'upload')) {
+    if (draft && (draft.title || draft.author || draft.license || draft.link || draft.source !== 'upload')) {
       setTitle(draft.title);
       setSource(draft.source);
       setAuthor(draft.author);
       setLicense(draft.license);
+      setLink(draft.link);
       setDraftRestored(true);
     } else {
       setTitle('');
       setSource('upload');
       setAuthor('');
       setLicense('');
+      setLink('');
       setDraftRestored(false);
     }
     hydrated.current = true;
@@ -76,8 +79,8 @@ export function MediaUploadZone({
 
   useEffect(() => {
     if (!hydrated.current) return;
-    saveUploadDraft(kind, { title, source, author, license });
-  }, [kind, title, source, author, license]);
+    saveUploadDraft(kind, { title, source, author, license, link });
+  }, [kind, title, source, author, license, link]);
 
   const resetDraft = useCallback(() => {
     clearUploadDraft(kind);
@@ -85,6 +88,7 @@ export function MediaUploadZone({
     setSource('upload');
     setAuthor('');
     setLicense('');
+    setLink('');
     setDraftRestored(false);
   }, [kind]);
 
@@ -102,12 +106,14 @@ export function MediaUploadZone({
       setBusy(true);
       setProgress({ phase: 'transcoding', percent: 0 });
 
-      const hasCreditInfo = source !== 'upload' || !!author.trim() || !!license.trim();
+      const hasCreditInfo =
+        source !== 'upload' || !!author.trim() || !!license.trim() || !!link.trim();
       const credit: MediaCredit = hasCreditInfo
         ? {
             ...defaultCreditForSource(source),
             author: author.trim() || undefined,
             license: license.trim() || undefined,
+            link: link.trim() || undefined,
           }
         : {};
 
@@ -125,6 +131,7 @@ export function MediaUploadZone({
         setTitle('');
         setAuthor('');
         setLicense('');
+        setLink('');
         setSource('upload');
         setDraftRestored(false);
       } catch (e) {
@@ -194,6 +201,19 @@ export function MediaUploadZone({
             <label className="mb-1 block text-xs font-bold text-slate-700">רישיון</label>
             <input value={license} onChange={(e) => setLicense(e.target.value)} className={glassInputClass} />
           </div>
+        </div>
+        <div className="mt-2">
+          <label className="mb-1 block text-xs font-bold text-slate-700">
+            קישור למקור (לא חובה)
+          </label>
+          <input
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            className={glassInputClass}
+            placeholder="https://..."
+            dir="ltr"
+            inputMode="url"
+          />
         </div>
         {source !== 'upload' ? (
           <p className="mt-1.5 text-[10px] leading-relaxed text-slate-500">
