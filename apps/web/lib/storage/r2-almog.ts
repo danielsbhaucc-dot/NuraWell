@@ -19,6 +19,11 @@ export function r2ImageBucketName(): string | undefined {
   );
 }
 
+/** דלי האודיו (מוזיקת רקע לשיעורים) — מאוחסן תחת נתיב ה-Worker /audio/*. */
+export function r2AudioBucketName(): string | undefined {
+  return process.env.R2_AUDIO_BUCKET_NAME?.trim() || undefined;
+}
+
 export function getR2Client(): S3Client {
   const accountId = process.env.R2_ACCOUNT_ID?.trim();
   const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim();

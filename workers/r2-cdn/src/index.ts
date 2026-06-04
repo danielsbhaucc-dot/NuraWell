@@ -1,13 +1,21 @@
 /**
- * Cloudflare Worker – נתב לשני דליי R2 + Cache API לתמונות בלבד.
+ * Cloudflare Worker – נתב לשלושה דליי R2 + Cache API לתמונות/אודיו.
  * מבוסס על הלוגיקה המקורית (403 ב-root, 400 לנתיב לא תקין, מטא־דאטה מ-R2)
- * עם הרחבות: קאש לתמונות, לוגים, 503 אם R2 נופל.
+ * עם הרחבות: קאש לתמונות, לוגים, 503 אם R2 נופל, ותמיכת Range לאודיו.
+ *
+ * נתיבים ציבוריים:
+ *   /images/*  → MAIN_BUCKET   (קאש edge, cache ארוך)
+ *   /files/*   → FILES_BUCKET  (private, ללא קאש)
+ *   /audio/*   → AUDIO_BUCKET  (מוזיקת רקע לשיעורים, תמיכת Range + קאש ארוך)
  */
 
 export interface Env {
   MAIN_BUCKET: R2Bucket;
   FILES_BUCKET: R2Bucket;
+  AUDIO_BUCKET: R2Bucket;
 }
+
+type RouteLabel = 'images' | 'files' | 'audio';
 
 const IMAGE_EXTENSIONS_CACHE = new Set([
   'jpg',
@@ -20,19 +28,49 @@ const IMAGE_EXTENSIONS_CACHE = new Set([
   'ico',
 ]);
 
+const AUDIO_EXTENSIONS = new Set([
+  'mp3',
+  'm4a',
+  'aac',
+  'ogg',
+  'oga',
+  'opus',
+  'wav',
+  'flac',
+  'webm',
+]);
+
+const AUDIO_CONTENT_TYPES: Record<string, string> = {
+  mp3: 'audio/mpeg',
+  m4a: 'audio/mp4',
+  aac: 'audio/aac',
+  ogg: 'audio/ogg',
+  oga: 'audio/ogg',
+  opus: 'audio/ogg',
+  wav: 'audio/wav',
+  flac: 'audio/flac',
+  webm: 'audio/webm',
+};
+
 function extname(path: string): string {
   const base = path.split('/').pop() ?? '';
   const i = base.lastIndexOf('.');
   return i >= 0 ? base.slice(i + 1).toLowerCase() : '';
 }
 
-function shouldUseEdgeCache(pathname: string): boolean {
-  return IMAGE_EXTENSIONS_CACHE.has(extname(pathname));
+function shouldUseEdgeCache(pathname: string, routeLabel: RouteLabel): boolean {
+  const ext = extname(pathname);
+  if (routeLabel === 'audio') return AUDIO_EXTENSIONS.has(ext);
+  return IMAGE_EXTENSIONS_CACHE.has(ext);
 }
 
-/** 30 יום תמונות, שנה SVG/ICO, שבוע GIF */
-function browserCacheControl(pathname: string): string {
+/** 30 יום תמונות, שנה SVG/ICO + אודיו (immutable, keyed by uuid), שבוע GIF */
+function browserCacheControl(pathname: string, routeLabel: RouteLabel): string {
   const ext = extname(pathname);
+  if (routeLabel === 'audio') {
+    // אובייקטי אודיו ממופתחים לפי UUID של רצועה → לעולם לא משתנים
+    return 'public, max-age=31536000, immutable';
+  }
   if (ext === 'svg' || ext === 'ico') {
     return 'public, max-age=31536000, immutable';
   }
@@ -75,9 +113,36 @@ function logLine(
   );
 }
 
-async function r2GetSafe(bucket: R2Bucket, key: string): Promise<R2Object | null> {
+type ParsedRange = { offset: number; length?: number } | { suffix: number };
+
+/** ניתוח כותרת Range יחידה (bytes=start-end / bytes=start- / bytes=-suffix). */
+function parseRangeHeader(header: string | null): ParsedRange | null {
+  if (!header) return null;
+  const m = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
+  if (!m) return null;
+  const startStr = m[1];
+  const endStr = m[2];
+  if (startStr === '' && endStr === '') return null;
+  if (startStr === '') {
+    const n = Number.parseInt(endStr, 10);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return { suffix: n };
+  }
+  const start = Number.parseInt(startStr, 10);
+  if (!Number.isFinite(start) || start < 0) return null;
+  if (endStr === '') return { offset: start };
+  const end = Number.parseInt(endStr, 10);
+  if (!Number.isFinite(end) || end < start) return null;
+  return { offset: start, length: end - start + 1 };
+}
+
+async function r2GetSafe(
+  bucket: R2Bucket,
+  key: string,
+  options?: R2GetOptions
+): Promise<R2ObjectBody | R2Object | null> {
   try {
-    return await bucket.get(key);
+    return await bucket.get(key, options);
   } catch (e) {
     console.error('[cdn] R2 error', key, e);
     throw e;
@@ -100,16 +165,115 @@ function response503(): Response {
   );
 }
 
+function baseHeaders(
+  object: R2Object,
+  pathname: string,
+  routeLabel: RouteLabel
+): Headers {
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+
+  if (!headers.get('Content-Type')) {
+    if (routeLabel === 'audio') {
+      headers.set(
+        'Content-Type',
+        AUDIO_CONTENT_TYPES[extname(pathname)] ?? 'audio/mpeg'
+      );
+    } else {
+      headers.set('Content-Type', 'application/octet-stream');
+    }
+  }
+
+  headers.set('etag', object.httpEtag);
+  headers.set('X-Content-Type-Options', 'nosniff');
+
+  if (routeLabel === 'files') {
+    headers.set('Cache-Control', 'private, no-cache');
+  } else {
+    headers.set('Cache-Control', browserCacheControl(pathname, routeLabel));
+  }
+
+  if (routeLabel === 'audio') {
+    headers.set('Accept-Ranges', 'bytes');
+  }
+
+  return headers;
+}
+
+async function serveRangedAudio(params: {
+  bucket: R2Bucket;
+  key: string;
+  request: Request;
+  routeLabel: RouteLabel;
+  pathname: string;
+  parsedRange: ParsedRange;
+}): Promise<Response> {
+  const { bucket, key, request, routeLabel, pathname, parsedRange } = params;
+
+  let object: R2ObjectBody | R2Object | null;
+  try {
+    object = await r2GetSafe(bucket, key, { range: parsedRange as R2Range });
+  } catch {
+    return response503();
+  }
+
+  if (!object) {
+    logLine(request, 'R2', `${routeLabel} 404`);
+    return new Response('Object Not Found', { status: 404 });
+  }
+
+  const total = object.size;
+  let start: number;
+  let end: number;
+  if ('suffix' in parsedRange) {
+    start = Math.max(0, total - parsedRange.suffix);
+    end = total - 1;
+  } else {
+    start = parsedRange.offset;
+    end =
+      parsedRange.length != null
+        ? Math.min(total - 1, start + parsedRange.length - 1)
+        : total - 1;
+  }
+
+  if (start >= total) {
+    return new Response('Range Not Satisfiable', {
+      status: 416,
+      headers: { 'Content-Range': `bytes */${total}` },
+    });
+  }
+
+  const headers = baseHeaders(object, pathname, routeLabel);
+  headers.set('Content-Range', `bytes ${start}-${end}/${total}`);
+  headers.set('Content-Length', String(end - start + 1));
+
+  const isHead = request.method === 'HEAD';
+  const body = isHead ? null : (object as R2ObjectBody).body;
+
+  logLine(request, 'R2', `${routeLabel} 206`);
+  return new Response(body, { status: 206, headers });
+}
+
 async function serveFromBucket(params: {
   bucket: R2Bucket;
   key: string;
   request: Request;
   ctx: ExecutionContext;
-  routeLabel: 'images' | 'files';
+  routeLabel: RouteLabel;
   pathname: string;
   tryEdgeCache: boolean;
+  supportRange: boolean;
 }): Promise<Response> {
-  const { bucket, key, request, ctx, routeLabel, pathname, tryEdgeCache } = params;
+  const {
+    bucket,
+    key,
+    request,
+    ctx,
+    routeLabel,
+    pathname,
+    tryEdgeCache,
+    supportRange,
+  } = params;
 
   if (isForbiddenKey(key)) {
     return new Response('Access Denied', { status: 403 });
@@ -118,10 +282,17 @@ async function serveFromBucket(params: {
   const isGet = request.method === 'GET';
   const isHead = request.method === 'HEAD';
 
+  const parsedRange = supportRange ? parseRangeHeader(request.headers.get('Range')) : null;
+
+  // בקשת Range → תשובת 206 ייעודית, ללא Cache API (מורכב מדי לשלב עם range).
+  if (parsedRange) {
+    return serveRangedAudio({ bucket, key, request, routeLabel, pathname, parsedRange });
+  }
+
   const cache = caches.default;
   const cacheRequest = new Request(request.url, request);
 
-  const useCacheApi = tryEdgeCache && isGet && shouldUseEdgeCache(pathname);
+  const useCacheApi = tryEdgeCache && isGet && shouldUseEdgeCache(pathname, routeLabel);
 
   if (useCacheApi) {
     try {
@@ -136,7 +307,7 @@ async function serveFromBucket(params: {
     logLine(request, 'MISS', routeLabel);
   }
 
-  let object: R2Object | null;
+  let object: R2ObjectBody | R2Object | null;
   try {
     object = await r2GetSafe(bucket, key);
   } catch {
@@ -150,29 +321,16 @@ async function serveFromBucket(params: {
 
   logLine(request, 'R2', `${routeLabel} ok`);
 
-  const headers = new Headers();
-  object.writeHttpMetadata(headers);
+  const headers = baseHeaders(object, pathname, routeLabel);
 
-  if (!headers.get('Content-Type')) {
-    headers.set('Content-Type', 'application/octet-stream');
-  }
-
-  headers.set('etag', object.httpEtag);
-  headers.set('X-Content-Type-Options', 'nosniff');
-
-  if (routeLabel === 'files') {
-    headers.set('Cache-Control', 'private, no-cache');
-  } else {
-    headers.set('Cache-Control', browserCacheControl(pathname));
-  }
-
-  const body = isHead ? null : object.body;
+  const objectBody = (object as R2ObjectBody).body ?? null;
+  const body = isHead ? null : objectBody;
   const response = new Response(body, {
     status: 200,
     headers,
   });
 
-  if (useCacheApi && object.body) {
+  if (useCacheApi && objectBody) {
     ctx.waitUntil(cache.put(cacheRequest, response.clone()));
   }
 
@@ -203,7 +361,7 @@ export default {
     }
 
     try {
-      /** 2–3. ניתוב תמונות וקבצים — אותם נתיבים, אותם דליים */
+      /** 2–4. ניתוב תמונות / קבצים / אודיו */
       if (pathname.startsWith('/images/')) {
         const key = keyFromPath('/images/', pathname);
         if (!key) {
@@ -217,6 +375,7 @@ export default {
           routeLabel: 'images',
           pathname,
           tryEdgeCache: true,
+          supportRange: false,
         });
       }
 
@@ -233,11 +392,29 @@ export default {
           routeLabel: 'files',
           pathname,
           tryEdgeCache: false,
+          supportRange: false,
         });
       }
 
-      /** 4. נתיב לא מוכר — כמו בקוד המקורי שלך */
-      return new Response('Invalid Path. Use /images/ or /files/', { status: 400 });
+      if (pathname.startsWith('/audio/')) {
+        const key = keyFromPath('/audio/', pathname);
+        if (!key) {
+          return new Response('Object Not Found', { status: 404 });
+        }
+        return serveFromBucket({
+          bucket: env.AUDIO_BUCKET,
+          key,
+          request,
+          ctx,
+          routeLabel: 'audio',
+          pathname,
+          tryEdgeCache: true,
+          supportRange: true,
+        });
+      }
+
+      /** 5. נתיב לא מוכר */
+      return new Response('Invalid Path. Use /images/, /files/ or /audio/', { status: 400 });
     } catch (e) {
       console.error('[cdn] unhandled', e);
       return response503();

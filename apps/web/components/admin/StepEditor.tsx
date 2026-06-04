@@ -24,6 +24,7 @@ interface StepEditorProps {
 type EditorSectionId = 'basic' | 'video' | 'quiz' | 'game' | 'commitment' | 'research' | 'tasks' | 'habits' | 'pdf';
 
 type JourneyStationOption = { id: string; title: string; sort_order: number };
+type AudioPlaylistOption = { id: string; title: string; is_published: boolean; track_count: number };
 
 const emptyQuiz: QuizQuestion = { id: '', question: '', options: ['', '', '', ''], correct_index: 0, explanation: '' };
 const emptyGame: GameItem = { id: '', statement: '', is_true: true, explanation: '' };
@@ -77,6 +78,8 @@ export function StepEditor({ step }: StepEditorProps) {
   const [summaryText, setSummaryText] = useState(step?.summary_text || '');
   const [stations, setStations] = useState<JourneyStationOption[]>([]);
   const [stationId, setStationId] = useState<string>(step?.station_id ?? '');
+  const [audioPlaylists, setAudioPlaylists] = useState<AudioPlaylistOption[]>([]);
+  const [audioPlaylistId, setAudioPlaylistId] = useState<string>(step?.audio_playlist_id ?? '');
 
   useEffect(() => {
     if (!step) {
@@ -98,6 +101,24 @@ export function StepEditor({ step }: StepEditorProps) {
         setStations(
           [...list].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.title.localeCompare(b.title, 'he'))
         );
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/v1/admin/audio/playlists', { credentials: 'include' });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as unknown;
+        if (!Array.isArray(data) || cancelled) return;
+        setAudioPlaylists(data as AudioPlaylistOption[]);
       } catch {
         /* ignore */
       }
@@ -151,6 +172,7 @@ export function StepEditor({ step }: StepEditorProps) {
       quiz_questions: quizQuestions, game_items: gameItems,
       commitment, researches, tasks, habits,
       pdf_url: pdfUrl || null, pdf_name: pdfName || null,
+      audio_playlist_id: audioPlaylistId.trim() ? audioPlaylistId.trim() : null,
     };
 
     if (!isNew) body.id = step!.id;
@@ -345,6 +367,24 @@ export function StepEditor({ step }: StepEditorProps) {
             </select>
             <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
               תחנה מקבצת צעדים לוגית (ללא הגבלת כמות). ניתן לנהל תחנות במסך &quot;מסע ותחנות&quot;.
+            </p>
+          </Field>
+          <Field label="מוזיקת רקע (אופציונלי)">
+            <select
+              value={audioPlaylistId}
+              onChange={(e) => setAudioPlaylistId(e.target.value)}
+              className="input-field"
+            >
+              <option value="">ללא מוזיקה</option>
+              {audioPlaylists.map((p) => (
+                <option key={p.id} value={p.id} disabled={!p.is_published}>
+                  {p.title} ({p.track_count} רצועות){p.is_published ? '' : ' — טיוטה'}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
+              הפלייליסט ינוגן ברקע לאורך כל הצעד (מהשלב הראשון ועד הסיכום), יונמך בזמן וידאו, ויוצג לו
+              קרדיט. ניתן לנהל פלייליסטים במסך &quot;מוזיקת רקע&quot;. רק פלייליסט מפורסם זמין לבחירה.
             </p>
           </Field>
           <Field label="טקסט סיכום">
