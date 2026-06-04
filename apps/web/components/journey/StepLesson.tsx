@@ -489,6 +489,7 @@ export function StepLesson({ step, initialProgress, userId, audioTracks = [] }: 
           tracks={audioTracks}
           videoActive={currentSection === 'video' && isVideoPlaying}
           sectionKey={currentSection}
+          anchorTopPx={immersiveViewportTopPx}
         />
       )}
     </div>
