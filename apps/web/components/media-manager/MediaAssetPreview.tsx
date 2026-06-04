@@ -11,9 +11,11 @@ export function MediaAssetPreview({ asset }: { asset: MediaAsset }) {
 
   if (asset.kind === 'image' && url) {
     return (
-      <div className="relative overflow-hidden rounded-xl border border-white/45">
-        <img src={url} alt={asset.alt_text ?? ''} className="max-h-48 w-full object-contain" />
-        <div className="absolute top-1 left-1">
+      <div className="relative rounded-xl border border-white/45">
+        <div className="overflow-hidden rounded-xl">
+          <img src={url} alt={asset.alt_text ?? ''} className="max-h-48 w-full object-contain" />
+        </div>
+        <div className="absolute top-1 left-1 z-10">
           <CreditBadge asset={asset} />
         </div>
       </div>
@@ -21,7 +23,14 @@ export function MediaAssetPreview({ asset }: { asset: MediaAsset }) {
   }
 
   if (asset.kind === 'audio' && url) {
-    return <GlassAudioPlayer src={url} title={asset.title ?? undefined} />;
+    return (
+      <div className="space-y-2">
+        <GlassAudioPlayer src={url} title={asset.title ?? undefined} />
+        <div className="relative flex">
+          <CreditBadge asset={asset} />
+        </div>
+      </div>
+    );
   }
 
   if (asset.kind === 'video') {

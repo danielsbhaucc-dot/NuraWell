@@ -5,6 +5,7 @@ export type UploadDraft = {
   source: MediaSource;
   author: string;
   license: string;
+  link: string;
 };
 
 function key(kind: MediaKind): string {
@@ -21,6 +22,7 @@ export function loadUploadDraft(kind: MediaKind): UploadDraft | null {
       source: (parsed.source as MediaSource) ?? 'upload',
       author: parsed.author ?? '',
       license: parsed.license ?? '',
+      link: parsed.link ?? '',
     };
   } catch {
     return null;
@@ -30,7 +32,11 @@ export function loadUploadDraft(kind: MediaKind): UploadDraft | null {
 export function saveUploadDraft(kind: MediaKind, draft: UploadDraft): void {
   try {
     const hasContent =
-      draft.title.trim() || draft.author.trim() || draft.license.trim() || draft.source !== 'upload';
+      draft.title.trim() ||
+      draft.author.trim() ||
+      draft.license.trim() ||
+      draft.link.trim() ||
+      draft.source !== 'upload';
     if (hasContent) {
       localStorage.setItem(key(kind), JSON.stringify(draft));
     } else {
