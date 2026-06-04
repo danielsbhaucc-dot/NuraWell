@@ -38,7 +38,7 @@ export function CreditBadge({ asset, className = '' }: CreditBadgeProps) {
       </button>
       {open ? (
         <div
-          className="absolute bottom-8 left-0 z-20 min-w-[10rem] max-w-[14rem] rounded-xl border border-white/50 p-2 text-[10px] leading-relaxed text-slate-800 shadow-lg"
+          className="absolute top-8 left-0 z-[60] min-w-[10rem] max-w-[14rem] rounded-xl border border-white/50 p-2 text-[10px] leading-relaxed text-slate-800 shadow-lg"
           style={{
             background: 'rgba(255,255,255,0.75)',
             backdropFilter: 'blur(12px)',

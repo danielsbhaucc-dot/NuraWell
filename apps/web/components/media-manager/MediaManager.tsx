@@ -356,26 +356,30 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                   ) : (
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                       {items.map((item) => (
-                        <button
+                        <div
                           key={item.id}
-                          type="button"
-                          onClick={() => handleSelect(item)}
                           className={cn(
-                            'group relative overflow-hidden rounded-xl border text-right transition',
+                            'group relative rounded-xl border transition',
                             selected?.id === item.id
                               ? 'border-emerald-500 ring-2 ring-emerald-400/60'
                               : 'border-white/45 hover:border-emerald-400/50'
                           )}
                           style={{ background: 'rgba(255,255,255,0.15)' }}
                         >
-                          <AssetThumb asset={item} />
-                          <div className="absolute top-1 left-1">
+                          <button
+                            type="button"
+                            onClick={() => handleSelect(item)}
+                            className="block w-full overflow-hidden rounded-xl text-right"
+                          >
+                            <AssetThumb asset={item} />
+                            <p className="truncate px-2 py-1.5 text-[11px] font-bold text-slate-800">
+                              {item.title ?? 'ללא שם'}
+                            </p>
+                          </button>
+                          <div className="absolute top-1 left-1 z-10">
                             <CreditBadge asset={item} />
                           </div>
-                          <p className="truncate px-2 py-1.5 text-[11px] font-bold text-slate-800">
-                            {item.title ?? 'ללא שם'}
-                          </p>
-                        </button>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -452,7 +456,38 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
             </div>
           </div>
 
-          <aside className="w-full shrink-0 space-y-3 border-t border-white/35 p-4 lg:w-72 lg:border-t-0 lg:border-r">
+          {selected ? (
+            <button
+              type="button"
+              aria-label="סגור תצוגה"
+              onClick={() => setSelected(null)}
+              className="fixed inset-0 z-[295] bg-slate-900/40 backdrop-blur-sm lg:hidden"
+            />
+          ) : null}
+          <aside
+            className={cn(
+              'flex-col gap-3 overflow-y-auto p-4',
+              selected
+                ? 'fixed inset-x-0 bottom-0 z-[300] flex max-h-[85dvh] rounded-t-[26px] border-t border-white/45 shadow-[0_-14px_44px_rgba(6,78,59,0.28)]'
+                : 'hidden',
+              'lg:static lg:z-auto lg:flex lg:max-h-none lg:w-72 lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-white/35 lg:shadow-none'
+            )}
+            style={{ background: 'rgba(245,250,248,0.55)', backdropFilter: 'blur(22px)' }}
+          >
+            <div className="relative mb-1 flex h-5 items-center lg:hidden">
+              <span
+                className="absolute left-1/2 top-1 h-1.5 w-12 -translate-x-1/2 rounded-full bg-slate-400/50"
+                aria-hidden
+              />
+              <button
+                type="button"
+                onClick={() => setSelected(null)}
+                aria-label="סגור תצוגה"
+                className="ml-auto rounded-lg border border-white/50 bg-white/40 p-1.5 text-slate-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
             {selected ? <MediaAssetPreview asset={selected} /> : null}
             <MediaAssetEditPanel
               asset={selected}
