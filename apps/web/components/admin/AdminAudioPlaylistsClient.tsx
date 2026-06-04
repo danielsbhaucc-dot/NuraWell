@@ -9,8 +9,10 @@ import {
   EyeOff,
   ListMusic,
   Loader2,
+  MapPin,
   Music,
   Plus,
+  RotateCcw,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -19,6 +21,7 @@ import {
   transcodeToMp3,
   type TranscodeResult,
 } from '@/lib/audio/transcode-client';
+import { GlassAudioPlayer } from '@/components/audio/GlassAudioPlayer';
 import type { AudioCredit, AudioTrack, AudioPlaylistSummary } from '@/lib/types/audio';
 
 type TrackWithUrl = AudioTrack & { url: string | null };
@@ -62,6 +65,7 @@ export function AdminAudioPlaylistsClient() {
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
 
   // create form
   const [newTitle, setNewTitle] = useState('');
@@ -112,15 +116,21 @@ export function AdminAudioPlaylistsClient() {
   };
 
   const togglePublish = async (pl: AudioPlaylistSummary) => {
-    const res = await fetch(`/api/v1/admin/audio/playlists/${pl.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_published: !pl.is_published }),
-    });
-    if (res.ok) {
-      setPlaylists((list) =>
-        list.map((x) => (x.id === pl.id ? { ...x, is_published: !pl.is_published } : x))
-      );
+    if (publishingId) return;
+    setPublishingId(pl.id);
+    try {
+      const res = await fetch(`/api/v1/admin/audio/playlists/${pl.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_published: !pl.is_published }),
+      });
+      if (res.ok) {
+        setPlaylists((list) =>
+          list.map((x) => (x.id === pl.id ? { ...x, is_published: !pl.is_published } : x))
+        );
+      }
+    } finally {
+      setPublishingId(null);
     }
   };
 
@@ -233,22 +243,28 @@ export function AdminAudioPlaylistsClient() {
                       </span>
                     </button>
 
-                    <span
-                      className={[
-                        'hidden shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold sm:inline',
-                        pl.is_published ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500',
-                      ].join(' ')}
-                    >
-                      {pl.is_published ? 'פורסם' : 'טיוטה'}
-                    </span>
-
                     <button
                       type="button"
                       onClick={() => void togglePublish(pl)}
-                      title={pl.is_published ? 'הסתר (טיוטה)' : 'פרסם'}
-                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/60 bg-white/60 text-slate-600 hover:bg-white/90"
+                      disabled={publishingId === pl.id}
+                      title={pl.is_published ? 'החזר לטיוטה' : 'פרסם פלייליסט'}
+                      className={[
+                        'inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-black transition-colors disabled:opacity-60',
+                        pl.is_published
+                          ? 'border-emerald-300/70 bg-emerald-100/80 text-emerald-800 hover:bg-emerald-200/80'
+                          : 'border-amber-300/70 bg-amber-50/90 text-amber-800 hover:bg-amber-100',
+                      ].join(' ')}
                     >
-                      {pl.is_published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                      {publishingId === pl.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : pl.is_published ? (
+                        <Eye className="h-4 w-4" />
+                      ) : (
+                        <EyeOff className="h-4 w-4" />
+                      )}
+                      <span className="hidden sm:inline">
+                        {pl.is_published ? 'פורסם' : 'פרסם'}
+                      </span>
                     </button>
                     <button
                       type="button"
@@ -261,11 +277,50 @@ export function AdminAudioPlaylistsClient() {
                   </div>
 
                   {active && (
-                    <PlaylistTrackManager
-                      playlistId={pl.id}
-                      onTrackAdded={() => adjustTrackCount(pl.id, 1)}
-                      onTrackRemoved={() => adjustTrackCount(pl.id, -1)}
-                    />
+                    <>
+                      <div
+                        className={[
+                          'mt-2 flex flex-col gap-2 rounded-2xl border px-3 py-3 sm:flex-row sm:items-center sm:justify-between',
+                          pl.is_published
+                            ? 'border-emerald-200/70 bg-emerald-50/70'
+                            : 'border-amber-200/80 bg-amber-50/80',
+                        ].join(' ')}
+                      >
+                        <div>
+                          <div className="text-sm font-black text-slate-800">
+                            {pl.is_published ? 'הפלייליסט פורסם למשתמשים' : 'הפלייליסט עדיין בטיוטה'}
+                          </div>
+                          <div className="text-[11px] text-slate-500">
+                            פרסום הוא ברמת פלייליסט: כל הרצועות שבו זמינות בצעדים ששויכו אליו.
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => void togglePublish(pl)}
+                          disabled={publishingId === pl.id}
+                          className={[
+                            'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-black text-white shadow-lg disabled:opacity-60',
+                            pl.is_published
+                              ? 'bg-gradient-to-l from-slate-600 to-slate-500 shadow-slate-500/20'
+                              : 'bg-gradient-to-l from-emerald-600 to-teal-500 shadow-emerald-500/25',
+                          ].join(' ')}
+                        >
+                          {publishingId === pl.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : pl.is_published ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                          {pl.is_published ? 'החזר לטיוטה' : 'פרסם עכשיו'}
+                        </button>
+                      </div>
+                      <PlaylistTrackManager
+                        playlistId={pl.id}
+                        onTrackAdded={() => adjustTrackCount(pl.id, 1)}
+                        onTrackRemoved={() => adjustTrackCount(pl.id, -1)}
+                      />
+                    </>
                   )}
                 </li>
               );
@@ -276,7 +331,7 @@ export function AdminAudioPlaylistsClient() {
 
       {selected && !loading && (
         <p className="px-1 text-xs text-slate-500">
-          טיפ: שייכו פלייליסט לצעד דרך עורך הצעד (&quot;רשימת צעדים&quot; → עריכה → פרטים בסיסיים → מוזיקת רקע).
+          טיפ: פתחו פלייליסט וגללו ל&quot;איפה זה מתנגן?&quot; כדי לשייך אותו לצעדים. אפשר גם דרך עורך הצעד.
         </p>
       )}
     </div>
@@ -363,15 +418,172 @@ function PlaylistTrackManager({ playlistId, onTrackAdded, onTrackRemoved }: Play
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
-                {track.url && (
-                  // eslint-disable-next-line jsx-a11y/media-has-caption
-                  <audio src={track.url} controls preload="none" className="mt-2 h-9 w-full" />
-                )}
+                {track.url && <GlassAudioPlayer src={track.url} />}
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      <PlaylistStepAssigner playlistId={playlistId} />
+    </div>
+  );
+}
+
+/* ============================ שיוך הפלייליסט לצעדים (איפה זה מתנגן) ============================ */
+
+interface JourneyStepLite {
+  id: string;
+  title: string;
+  step_number: number | null;
+  audio_playlist_id: string | null;
+  journey_stations?: { title?: string | null } | null;
+}
+
+function PlaylistStepAssigner({ playlistId }: { playlistId: string }) {
+  const [steps, setSteps] = useState<JourneyStepLite[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch('/api/v1/admin/journey-steps', { credentials: 'include' });
+        if (!res.ok) {
+          setError(`שגיאה בטעינת הצעדים (${res.status})`);
+          return;
+        }
+        const data = (await res.json()) as JourneyStepLite[];
+        if (!cancelled) setSteps(Array.isArray(data) ? data : []);
+      } catch {
+        if (!cancelled) setError('שגיאת רשת בטעינת הצעדים');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggleStep = useCallback(
+    async (step: JourneyStepLite) => {
+      const assignedHere = step.audio_playlist_id === playlistId;
+      const nextValue = assignedHere ? null : playlistId;
+      setSavingId(step.id);
+      try {
+        const res = await fetch('/api/v1/admin/journey-steps', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: step.id, audio_playlist_id: nextValue }),
+        });
+        if (res.ok) {
+          setSteps((list) =>
+            list.map((s) => (s.id === step.id ? { ...s, audio_playlist_id: nextValue } : s))
+          );
+        }
+      } finally {
+        setSavingId(null);
+      }
+    },
+    [playlistId]
+  );
+
+  const assignedCount = steps.filter((s) => s.audio_playlist_id === playlistId).length;
+  const filtered = query.trim()
+    ? steps.filter((s) => s.title.toLowerCase().includes(query.trim().toLowerCase()))
+    : steps;
+
+  return (
+    <div className="mt-4 rounded-2xl border border-sky-200/60 bg-gradient-to-br from-sky-50/70 to-white/30 p-3 backdrop-blur-xl sm:p-4">
+      <div className="mb-1 flex items-center gap-2">
+        <MapPin className="h-4 w-4 text-sky-600" />
+        <h4 className="text-sm font-black text-slate-700">איפה זה מתנגן?</h4>
+        {assignedCount > 0 && (
+          <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-bold text-sky-700">
+            {assignedCount} צעדים
+          </span>
+        )}
+      </div>
+      <p className="mb-3 text-[11px] text-slate-500">
+        בחרו את הצעדים שבהם הפלייליסט יתנגן ברקע. צעד יכול להיות משויך לפלייליסט אחד בלבד.
+      </p>
+
+      {loading ? (
+        <div className="flex items-center gap-2 py-2 text-sm text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin" /> טוען צעדים…
+        </div>
+      ) : error ? (
+        <p className="flex items-center gap-2 py-1 text-sm text-red-700">
+          <AlertTriangle className="h-4 w-4" /> {error}
+        </p>
+      ) : steps.length === 0 ? (
+        <p className="py-1 text-sm text-slate-500">אין צעדים זמינים.</p>
+      ) : (
+        <>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="חיפוש צעד לפי שם…"
+            className="mb-2 w-full rounded-lg border border-white/70 bg-white/80 px-3 py-2 text-sm outline-none focus:border-sky-400"
+          />
+          <ul className="max-h-64 space-y-1.5 overflow-y-auto pe-1">
+            {filtered.map((step) => {
+              const assignedHere = step.audio_playlist_id === playlistId;
+              const assignedElsewhere = !!step.audio_playlist_id && !assignedHere;
+              return (
+                <li key={step.id}>
+                  <button
+                    type="button"
+                    onClick={() => void toggleStep(step)}
+                    disabled={savingId === step.id}
+                    className={[
+                      'flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-right transition-colors',
+                      assignedHere
+                        ? 'border-sky-400/70 bg-sky-100/70'
+                        : 'border-white/70 bg-white/55 hover:bg-white/80',
+                    ].join(' ')}
+                  >
+                    <span
+                      className={[
+                        'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors',
+                        assignedHere ? 'border-sky-500 bg-sky-500 text-white' : 'border-slate-300 bg-white/70',
+                      ].join(' ')}
+                    >
+                      {savingId === step.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin text-sky-600" />
+                      ) : assignedHere ? (
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      ) : null}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-slate-800">
+                        {step.step_number != null ? `${step.step_number}. ` : ''}
+                        {step.title}
+                      </span>
+                      {step.journey_stations?.title && (
+                        <span className="block truncate text-[11px] text-slate-500">
+                          {step.journey_stations.title}
+                        </span>
+                      )}
+                    </span>
+                    {assignedElsewhere && (
+                      <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                        משויך לאחר
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
     </div>
   );
 }
@@ -410,6 +622,38 @@ function loadDraft(playlistId: string): TrackDraft | null {
   } catch {
     return null;
   }
+}
+
+function normalizeCreditForUpload(credit: AudioCredit): { credit?: AudioCredit; error?: string } {
+  const source = credit.source.trim();
+  const author = credit.author.trim();
+  const title = credit.title?.trim() || null;
+  const link = credit.link?.trim() || null;
+  const license = credit.license?.trim() || null;
+
+  if (!author || !source) {
+    return { error: 'יש להזין יוצר ומקור (קרדיט) לפני העלאה' };
+  }
+  if (link) {
+    try {
+      const url = new URL(link);
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        return { error: 'קישור הקרדיט חייב להיות כתובת http/https תקינה' };
+      }
+    } catch {
+      return { error: 'קישור הקרדיט לא תקין. אפשר להשאיר ריק או להזין כתובת מלאה שמתחילה ב-https://' };
+    }
+  }
+
+  return {
+    credit: {
+      source,
+      author,
+      title,
+      link,
+      license,
+    },
+  };
 }
 
 function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
@@ -492,8 +736,9 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
       setResult({ error: 'יש להזין שם לרצועה' });
       return;
     }
-    if (!credit.author.trim() || !credit.source.trim()) {
-      setResult({ error: 'יש להזין יוצר ומקור (קרדיט)' });
+    const normalizedCredit = normalizeCreditForUpload(credit);
+    if (normalizedCredit.error || !normalizedCredit.credit) {
+      setResult({ error: normalizedCredit.error || 'פרטי הקרדיט חסרים או לא תקינים' });
       return;
     }
     setResult(null);
@@ -524,18 +769,11 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
 
     try {
       const mp3 = new File([transcoded.blob], `${title.trim()}.mp3`, { type: 'audio/mpeg' });
-      const cleanCredit = {
-        source: credit.source.trim(),
-        author: credit.author.trim(),
-        title: credit.title?.trim() || null,
-        link: credit.link?.trim() || null,
-        license: credit.license?.trim() || null,
-      };
       const metadata = {
         title: title.trim(),
         duration_seconds: Math.round(transcoded.durationSeconds),
         size_bytes: mp3.size,
-        credit: cleanCredit,
+        credit: normalizedCredit.credit,
       };
 
       setPhase('uploading');
@@ -546,12 +784,18 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
       });
       const presign = (await presignRes.json().catch(() => ({}))) as {
         error?: string;
+        details?: { path?: string; message?: string }[];
         track_id?: string;
         object_key?: string;
         upload_url?: string;
       };
       if (!presignRes.ok || !presign.track_id || !presign.object_key || !presign.upload_url) {
-        setResult({ error: presign.error || `שגיאה בהכנת העלאה (${presignRes.status})` });
+        const detail = presign.details?.[0]?.path;
+        setResult({
+          error: detail
+            ? `${presign.error || 'שגיאה בהכנת העלאה'} (${detail})`
+            : presign.error || `שגיאה בהכנת העלאה (${presignRes.status})`,
+        });
         return;
       }
 
@@ -581,7 +825,13 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
       });
       const data = await completeRes.json().catch(() => ({}));
       if (!completeRes.ok) {
-        setResult({ error: (data as { error?: string }).error || `שגיאה בשמירת הרצועה (${completeRes.status})` });
+        const typed = data as { error?: string; details?: { path?: string; message?: string }[] };
+        const detail = typed.details?.[0]?.path;
+        setResult({
+          error: detail
+            ? `${typed.error || 'שגיאה בשמירת הרצועה'} (${detail})`
+            : typed.error || `שגיאה בשמירת הרצועה (${completeRes.status})`,
+        });
         return;
       }
       const savedPercent = Math.max(
@@ -606,16 +856,18 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
       </h4>
 
       {draftRestored && (
-        <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-amber-300/70 bg-amber-50/80 px-3 py-2">
-          <span className="text-xs font-semibold text-amber-900">
-            שוחזרו פרטים מטיוטה קודמת — בחר קובץ אודיו והעלה שוב.
+        <div className="mb-3 flex flex-col gap-2 rounded-xl border border-amber-300/60 bg-gradient-to-br from-amber-100/70 to-amber-50/40 px-3 py-2.5 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-xs font-semibold leading-snug text-amber-900">
+            שמרנו את הפרטים שמילאת קודם (שם וקרדיט) כדי שלא תצטרך להקליד שוב. בחר קובץ אודיו והעלה.
           </span>
           <button
             type="button"
             onClick={reset}
-            className="shrink-0 rounded-lg border border-amber-300 bg-white/70 px-2.5 py-1 text-[11px] font-bold text-amber-800 hover:bg-white"
+            title="מחיקת הפרטים השמורים והתחלה מאפס"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-amber-300/70 bg-white/30 px-3 py-1.5 text-[11px] font-bold text-amber-900 backdrop-blur-md transition-colors hover:bg-white/50"
           >
-            נקה טיוטה
+            <RotateCcw className="h-3.5 w-3.5" />
+            התחל מחדש
           </button>
         </div>
       )}
@@ -722,9 +974,27 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
         {phase === 'transcoding'
           ? `דוחס… ${progress}%`
           : phase === 'uploading'
-            ? 'מעלה…'
+            ? 'מעלה ל-CDN…'
             : 'דחוס והעלה'}
       </button>
+
+      {busy && (
+        <div className="mt-2.5" aria-live="polite">
+          <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-slate-200/70 ring-1 ring-white/60">
+            <div
+              className="nura-flow-bar absolute inset-y-0 right-0 rounded-full transition-[width] duration-200 ease-out"
+              style={{ width: phase === 'transcoding' ? `${progress}%` : '100%' }}
+            />
+            {phase === 'uploading' && (
+              <div className="absolute inset-0 animate-pulse rounded-full bg-white/20" />
+            )}
+          </div>
+          <div className="mt-1 flex items-center justify-between text-[11px] font-semibold text-slate-500">
+            <span>{phase === 'transcoding' ? 'דוחס בדפדפן (איכות מרבית, משקל נמוך)' : 'מעלה ישירות ל-CDN'}</span>
+            <span className="tabular-nums text-emerald-600">{phase === 'transcoding' ? `${progress}%` : '…'}</span>
+          </div>
+        </div>
+      )}
 
       {result?.error ? (
         <p className="mt-2 flex items-center gap-2 text-sm text-red-700">

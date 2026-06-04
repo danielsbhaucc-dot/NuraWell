@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Music2, Volume2, VolumeX, ExternalLink } from 'lucide-react';
+import { Music2, Volume2, VolumeX, ExternalLink, ChevronLeft, X } from 'lucide-react';
 import type { LessonAudioTrack } from '../../lib/types/audio';
 
 interface LessonAudioControllerProps {
@@ -58,6 +58,7 @@ export function LessonAudioController({ tracks, videoActive, sectionKey }: Lesso
   const [muted, setMuted] = useState(false);
   const [needsGesture, setNeedsGesture] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   // העדפת השתקה נשמרת מקומית
   useEffect(() => {
@@ -197,51 +198,89 @@ export function LessonAudioController({ tracks, videoActive, sectionKey }: Lesso
 
       <div
         dir="rtl"
-        className="fixed right-3 z-40 flex max-w-[min(20rem,calc(100vw-1.5rem))] items-center gap-2 rounded-2xl border border-white/40 bg-white/25 px-2.5 py-2 shadow-[0_8px_30px_rgba(6,78,59,0.25)] backdrop-blur-2xl"
+        className="fixed right-2 z-40 flex flex-col items-end gap-2"
         style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5.25rem)' }}
         aria-label="בקרת מוזיקת רקע"
       >
-        <button
-          type="button"
-          onClick={toggleMute}
-          aria-pressed={muted}
-          aria-label={muted ? 'הפעל מוזיקת רקע' : 'השתק מוזיקת רקע'}
-          className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/50 bg-white/40 text-emerald-900 transition-colors hover:bg-white/60"
-        >
-          {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-          {needsGesture && !muted && (
-            <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 animate-ping rounded-full bg-amber-400" />
-          )}
-        </button>
+        {/* פאנל מורחב — מופיע רק בלחיצה, אחרת לא תופס מקום */}
+        {expanded && (
+          <div className="w-[min(18rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-white/50 bg-gradient-to-br from-white/60 to-white/25 p-3 shadow-[0_12px_40px_rgba(6,78,59,0.3)] backdrop-blur-2xl">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-emerald-800">
+                <Music2 className={`h-3.5 w-3.5 ${muted ? '' : 'animate-pulse'}`} />
+                מוזיקת רקע
+              </span>
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                aria-label="סגור"
+                className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-white/60 bg-white/50 text-emerald-900 hover:bg-white/70"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
 
-        <div className="min-w-0 flex-1 leading-tight">
-          <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-emerald-800/80">
-            <Music2 className={`h-3 w-3 ${muted ? '' : 'animate-pulse'}`} />
-            מוזיקת רקע
+            <p className="truncate text-sm font-bold text-emerald-950">{creditTrackTitle}</p>
+            {creditAuthor && (
+              <p className="mt-0.5 text-xs text-emerald-900/90">
+                מאת <span className="font-semibold">{creditAuthor}</span>
+                {creditSource ? <span className="text-emerald-800/70"> · {creditSource}</span> : null}
+              </p>
+            )}
+
+            <div className="mt-2.5 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleMute}
+                aria-pressed={muted}
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/60 bg-white/50 px-3 py-2 text-xs font-bold text-emerald-900 transition-colors hover:bg-white/70"
+              >
+                {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                {muted ? 'הפעל' : 'השתק'}
+              </button>
+              {creditLink && (
+                <a
+                  href={creditLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 rounded-xl border border-emerald-300/60 bg-emerald-50/70 px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100/80"
+                >
+                  קרדיט
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
           </div>
-          <div className="truncate text-[11px] text-emerald-950/90">
-            <span className="font-semibold">{creditTrackTitle}</span>
-            {creditAuthor ? (
-              <>
-                {' · '}
-                {creditLink ? (
-                  <a
-                    href={creditLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-0.5 underline decoration-emerald-700/40 underline-offset-2"
-                  >
-                    {creditAuthor}
-                    <ExternalLink className="h-2.5 w-2.5" />
-                  </a>
-                ) : (
-                  <span>{creditAuthor}</span>
-                )}
-              </>
-            ) : null}
-            {creditSource ? <span className="text-emerald-800/70"> · {creditSource}</span> : null}
+        )}
+
+        {/* כפתור צף קומפקטי — השתקה בלחיצה, הרחבה בלחיצה על הלשונית */}
+        {!expanded && (
+          <div className="flex items-center overflow-hidden rounded-full border border-white/45 bg-white/25 shadow-[0_6px_24px_rgba(6,78,59,0.25)] backdrop-blur-2xl">
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              aria-label="פתח בקרת מוזיקת רקע"
+              className="flex h-9 items-center pe-1 ps-2 text-emerald-800/80 transition-colors hover:text-emerald-900"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={toggleMute}
+              aria-pressed={muted}
+              aria-label={muted ? 'הפעל מוזיקת רקע' : 'השתק מוזיקת רקע'}
+              className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-emerald-900 transition-colors hover:bg-white/30"
+            >
+              {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+              {needsGesture && !muted && (
+                <span className="absolute right-1 top-1 h-2.5 w-2.5 animate-ping rounded-full bg-amber-400" />
+              )}
+              {!muted && (
+                <span className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-emerald-400/30" />
+              )}
+            </button>
           </div>
-        </div>
+        )}
       </div>
     </>
   );

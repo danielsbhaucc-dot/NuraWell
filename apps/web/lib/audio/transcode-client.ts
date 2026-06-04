@@ -101,14 +101,28 @@ export async function transcodeToMp3(
   const total = left.length;
   const mp3Chunks: BlobPart[] = [];
 
-  for (let i = 0; i < total; i += blockSize) {
-    const l = left.subarray(i, i + blockSize);
-    const r = right ? right.subarray(i, i + blockSize) : undefined;
-    const chunk = right ? encoder.encodeBuffer(l, r) : encoder.encodeBuffer(l);
-    if (chunk.length > 0) mp3Chunks.push(new Uint8Array(chunk));
-    if (options.onProgress && i % (blockSize * 80) === 0) {
-      options.onProgress(Math.min(0.98, total > 0 ? i / total : 0));
+  // מעבדים בקבוצות ומשחררים את ה-thread בין קבוצות, כדי ש-React יצייר התקדמות אמיתית.
+  const blocksPerChunk = 200; // ~200 * 1152 דגימות לכל yield
+  const chunkSamples = blockSize * blocksPerChunk;
+  let lastReported = -1;
+
+  for (let base = 0; base < total; base += chunkSamples) {
+    const chunkEnd = Math.min(total, base + chunkSamples);
+    for (let i = base; i < chunkEnd; i += blockSize) {
+      const l = left.subarray(i, i + blockSize);
+      const r = right ? right.subarray(i, i + blockSize) : undefined;
+      const chunk = right ? encoder.encodeBuffer(l, r) : encoder.encodeBuffer(l);
+      if (chunk.length > 0) mp3Chunks.push(new Uint8Array(chunk));
     }
+    if (options.onProgress && total > 0) {
+      const pct = Math.min(0.98, chunkEnd / total);
+      if (pct - lastReported >= 0.01) {
+        options.onProgress(pct);
+        lastReported = pct;
+      }
+    }
+    // yield ל-event loop — מאפשר ל-React לעדכן את ה-UI עם האחוז העדכני
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
   }
 
   const tail = encoder.flush();

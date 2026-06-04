@@ -35,7 +35,16 @@ export async function POST(request: Request, context: RouteContext) {
   if (!raw.ok) return raw.response;
   const parsed = directUploadSchema.safeParse(raw.value);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'פרטי הרצועה/קרדיט חסרים או לא תקינים' }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: 'פרטי הרצועה/קרדיט חסרים או לא תקינים',
+        details: parsed.error.issues.map((issue) => ({
+          path: issue.path.join('.'),
+          message: issue.message,
+        })),
+      },
+      { status: 400 }
+    );
   }
 
   const admin = createAdminClient();
