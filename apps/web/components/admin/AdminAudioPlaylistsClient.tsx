@@ -23,8 +23,12 @@ import type { AudioCredit, AudioTrack, AudioPlaylistSummary } from '@/lib/types/
 
 type TrackWithUrl = AudioTrack & { url: string | null };
 
-const UPLOAD_SIZE_LIMIT = 3.8 * 1024 * 1024;
-const BITRATE_LADDER = [128, 96, 64];
+/**
+ * Vercel Serverless Functions reject large multipart bodies before our route can
+ * return JSON. Keep real payload safely below the ~4.5MB platform limit.
+ */
+const UPLOAD_SIZE_LIMIT = 3.2 * 1024 * 1024;
+const BITRATE_LADDER = [128, 96, 64, 48, 32];
 
 function formatBytes(n: number | null | undefined): string {
   if (!n || n <= 0) return '—';
@@ -447,6 +451,14 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
           e instanceof AudioTranscodeUnsupportedError
             ? 'הדפדפן לא הצליח לפענח/לדחוס את הקובץ. נסו MP3/WAV אחר.'
             : 'דחיסת האודיו נכשלה.',
+      });
+      return;
+    }
+
+    if (transcoded.blob.size > UPLOAD_SIZE_LIMIT) {
+      setPhase('idle');
+      setResult({
+        error: `הקובץ עדיין גדול מדי אחרי דחיסה (${formatBytes(transcoded.blob.size)}). נסו רצועה קצרה יותר כדי לא לעבור את מגבלת ההעלאה.`,
       });
       return;
     }
