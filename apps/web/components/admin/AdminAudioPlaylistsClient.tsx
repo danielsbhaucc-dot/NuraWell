@@ -1224,7 +1224,7 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
           }
           className="rounded-xl border border-emerald-300/70 bg-emerald-800/10 px-3 py-1.5 text-xs font-bold text-emerald-900 disabled:opacity-50"
         >
-          מנהל קבצים
+          העלאת אודיו
         </button>
       </div>
 

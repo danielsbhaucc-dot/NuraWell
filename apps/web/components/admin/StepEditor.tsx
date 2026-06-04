@@ -414,7 +414,7 @@ export function StepEditor({ step }: StepEditorProps) {
             }
             className="mb-3 rounded-xl border border-blue-300/60 bg-blue-500/10 px-4 py-2 text-sm font-bold text-blue-900"
           >
-            מנהל קבצים — וידאו Bunny
+            העלאת וידאו
           </button>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="ספק וידאו">
@@ -1025,7 +1025,7 @@ export function StepEditor({ step }: StepEditorProps) {
             }
             className="mb-3 rounded-xl border border-red-300/60 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-900"
           >
-            מנהל קבצים — PDF / קבצים
+            העלאת קובץ
           </button>
           <Field label="כתובת PDF">
             <input value={pdfUrl} onChange={e => setPdfUrl(e.target.value)}

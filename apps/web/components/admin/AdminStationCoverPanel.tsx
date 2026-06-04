@@ -189,7 +189,7 @@ function CoverSummaryRow({
           className="inline-flex min-h-10 items-center justify-center gap-2 self-end rounded-xl border border-emerald-200/80 bg-white/30 px-4 py-2 text-sm font-bold text-emerald-900 shadow-sm backdrop-blur-sm transition hover:bg-white/45 sm:self-center disabled:opacity-50"
         >
           {applyBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-          {hasCover ? 'עריכה במנהל קבצים' : 'מנהל קבצים'}
+          {hasCover ? 'החלפת תמונה' : 'העלאת תמונה'}
         </button>
       </div>
     </div>
