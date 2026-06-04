@@ -3,8 +3,8 @@ import {
   isWebpEncodeUnsupportedError,
 } from '@/lib/client/encodeAlmogAvatarWebp';
 import {
-  transcodeUnderLimit,
   AudioTranscodeUnsupportedError,
+  transcodeToMp3,
   type TranscodeResult,
 } from '@/lib/audio/transcode-client';
 import type { FileSubtype, MediaCredit, MediaKind, MediaSource } from '@/lib/validation/media-asset';
@@ -60,7 +60,16 @@ export async function compressAudioFile(
 ): Promise<{ blob: Blob; originalBytes: number; durationSeconds?: number }> {
   let transcoded: TranscodeResult;
   try {
-    transcoded = await transcodeUnderLimit(file, (f) => onTranscodeProgress(Math.round(f * 100)));
+    let last: TranscodeResult | null = null;
+    for (const kbps of [128, 96, 64]) {
+      const res = await transcodeToMp3(file, {
+        kbps,
+        onProgress: (f) => onTranscodeProgress(Math.round(f * 100)),
+      });
+      last = res;
+      if (res.blob.size <= 25 * 1024 * 1024) break;
+    }
+    transcoded = last as TranscodeResult;
   } catch (e) {
     if (e instanceof AudioTranscodeUnsupportedError) throw new Error('AUDIO_UNSUPPORTED');
     throw new Error('AUDIO_ENCODE_FAILED');
