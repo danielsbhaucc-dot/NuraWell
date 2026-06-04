@@ -34,6 +34,9 @@ export interface JourneyStep {
   pdf_url: string | null;
   pdf_name: string | null;
 
+  /** פלייליסט מוזיקת רקע שינוגן לאורך הצעד (NULL = ללא) */
+  audio_playlist_id: string | null;
+
   created_at: string;
   updated_at: string;
 }

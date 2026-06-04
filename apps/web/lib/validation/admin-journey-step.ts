@@ -79,6 +79,7 @@ const journeyStepPayloadSchema = z
     habits: z.array(journeyHabitSchema).max(40).optional(),
     pdf_url: z.string().max(4000).nullable().optional(),
     pdf_name: z.string().max(500).nullable().optional(),
+    audio_playlist_id: z.string().uuid().nullable().optional(),
   })
   .strict();
 

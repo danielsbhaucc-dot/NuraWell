@@ -3,6 +3,8 @@ import { createClient } from '../../../../lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import { StepLesson } from '../../../../components/journey/StepLesson';
 import type { JourneyStep, JourneyStepProgress } from '../../../../lib/types/journey';
+import type { LessonAudioTrack } from '../../../../lib/types/audio';
+import { getPublicCdnAudioUrl } from '../../../../lib/cdn/public-audio';
 import { isJourneyStepNumber, isJourneyStepUuid } from '../../../../lib/journey/resolve-step';
 
 export const dynamic = 'force-dynamic';
@@ -80,5 +82,41 @@ export default async function StepPage({ params }: { params: Promise<{ stepId: s
     last_section: 'video',
   };
 
-  return <StepLesson step={step as JourneyStep} initialProgress={initialProgress} userId={user.id} />;
+  let audioTracks: LessonAudioTrack[] = [];
+  if (step.audio_playlist_id) {
+    // RLS מחזיר רצועות רק אם הפלייליסט מפורסם (אחרת — אין מוזיקה, וזה תקין).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: trackRows } = await (supabase as any)
+      .from('audio_tracks')
+      .select('id, title, object_key, credit')
+      .eq('playlist_id', step.audio_playlist_id)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    if (Array.isArray(trackRows)) {
+      audioTracks = trackRows
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((t: any) => {
+          const url = getPublicCdnAudioUrl(t.object_key);
+          return url
+            ? {
+                id: t.id as string,
+                title: (t.title as string) ?? '',
+                url,
+                credit: t.credit ?? { source: '', author: '' },
+              }
+            : null;
+        })
+        .filter((x): x is LessonAudioTrack => x !== null);
+    }
+  }
+
+  return (
+    <StepLesson
+      step={step as JourneyStep}
+      initialProgress={initialProgress}
+      userId={user.id}
+      audioTracks={audioTracks}
+    />
+  );
 }

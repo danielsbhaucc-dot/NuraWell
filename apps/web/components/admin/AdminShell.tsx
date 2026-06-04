@@ -15,6 +15,7 @@ import {
   ListTree,
   Map,
   Menu,
+  Music,
   PanelRightClose,
   PanelRightOpen,
   Sparkles,
@@ -67,8 +68,9 @@ export function AdminShell({
   const isSystemRagIngest = np === '/ops/system-rag-ingest';
   const isAlmogNavSection = isAlmogSettings || isSystemRagIngest;
   const isJourneyHub = np === '/ops/journey-hub';
+  const isAudio = np === '/ops/audio' || np.startsWith('/ops/audio/');
   const isJourneyManage =
-    np.startsWith('/ops/journey') || np.startsWith('/ops/steps') || isJourneyHub;
+    np.startsWith('/ops/journey') || np.startsWith('/ops/steps') || isJourneyHub || isAudio;
 
   const [journeySettingsOpen, setJourneySettingsOpen] = useState(isJourneyManage);
   const [almogNavOpen, setAlmogNavOpen] = useState(isAlmogNavSection);
@@ -378,6 +380,21 @@ export function AdminShell({
                       >
                         <ListTree size={17} className="shrink-0 opacity-90" />
                         רשימת צעדים
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/audio"
+                        onClick={() => setSidebarOpen(false)}
+                        className={cn(
+                          'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-amber-400/25 sm:text-[15px]',
+                          isAudio
+                            ? 'bg-amber-400/25 font-bold text-amber-950'
+                            : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
+                        )}
+                      >
+                        <Music size={17} className="shrink-0 opacity-90" />
+                        מוזיקת רקע
                       </Link>
                     </li>
                   </ul>

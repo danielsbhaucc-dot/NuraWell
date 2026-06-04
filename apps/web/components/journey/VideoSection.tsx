@@ -24,6 +24,8 @@ interface VideoSectionProps {
   videoResetNote?: string;
   /** Bottom edge of step chrome (header + progress) in viewport px — immersive video starts here */
   immersiveViewportTopPx?: number | null;
+  /** מדווח כשנגן וידאו פעיל (לצורך הנמכת מוזיקת רקע). */
+  onPlaybackChange?: (active: boolean) => void;
 }
 
 function getEmbedUrl(
@@ -72,6 +74,7 @@ export function VideoSection({
   canResetVideoWatch = false,
   videoResetNote,
   immersiveViewportTopPx,
+  onPlaybackChange,
 }: VideoSectionProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -190,6 +193,20 @@ export function VideoSection({
     immersiveReady && isBunnyProvider && !!bunnyEmbedId && !isPlaceholder && !immersiveFinished;
 
   const willRenderFullscreen = immersiveReady && immersiveOpen && !!bunnyEmbedId;
+
+  // נגן וידאו פעיל = מסך מלא פתוח / ניגון inline / iframe חיצוני / HLS פעיל
+  const videoEngaged =
+    immersiveOpen || inlinePlaying || showNonBunnyIframe || showBunnyHls;
+
+  useEffect(() => {
+    onPlaybackChange?.(videoEngaged);
+  }, [videoEngaged, onPlaybackChange]);
+
+  useEffect(() => {
+    return () => {
+      onPlaybackChange?.(false);
+    };
+  }, [onPlaybackChange]);
 
   return (
     <div className="space-y-5">

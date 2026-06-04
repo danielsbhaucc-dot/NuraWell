@@ -4,7 +4,9 @@ import { useState, useCallback, useRef, useEffect, useLayoutEffect, useMemo } fr
 import { animate, motion, useMotionValue } from 'framer-motion';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import type { JourneyStep, JourneyStepProgress, JourneyTaskDecisionStatus, StepSection } from '../../lib/types/journey';
+import type { LessonAudioTrack } from '../../lib/types/audio';
 import { VideoSection } from './VideoSection';
+import { LessonAudioController } from './LessonAudioController';
 import { QuizSection } from './QuizSection';
 import { MiniGame } from './MiniGame';
 import { CommitmentSection } from './CommitmentSection';
@@ -18,6 +20,8 @@ interface StepLessonProps {
   step: JourneyStep;
   initialProgress: JourneyStepProgress;
   userId: string;
+  /** רצועות מוזיקת רקע (מהפלייליסט המשויך לצעד) — מנוגנות לאורך כל השלבים. */
+  audioTracks?: LessonAudioTrack[];
 }
 
 async function saveJourneyProgress(
@@ -32,7 +36,12 @@ async function saveJourneyProgress(
   });
 }
 
-export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
+export function StepLesson({ step, initialProgress, userId, audioTracks = [] }: StepLessonProps) {
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const handleVideoPlaybackChange = useCallback((active: boolean) => {
+    setIsVideoPlaying(active);
+  }, []);
+
   const sections = useMemo<StepSection[]>(() => {
     const base: StepSection[] = ['video', 'quiz', 'game', 'commitment', 'summary'];
     return step.commitment ? base : base.filter((s) => s !== 'commitment');
@@ -428,6 +437,7 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
                 canResetVideoWatch={!progress.video_watched}
                 videoResetNote="אם סיימת צפייה, האיפוס יתבצע דרך איפוס מלא של השיעור."
                 immersiveViewportTopPx={immersiveViewportTopPx}
+                onPlaybackChange={handleVideoPlaybackChange}
               />
             )}
             {currentSection === 'quiz' && (
@@ -473,6 +483,14 @@ export function StepLesson({ step, initialProgress, userId }: StepLessonProps) {
             )}
         </motion.div>
       </div>
+
+      {audioTracks.length > 0 && (
+        <LessonAudioController
+          tracks={audioTracks}
+          videoActive={currentSection === 'video' && isVideoPlaying}
+          sectionKey={currentSection}
+        />
+      )}
     </div>
   );
 }
