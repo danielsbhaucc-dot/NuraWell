@@ -23,12 +23,9 @@ import type { AudioCredit, AudioTrack, AudioPlaylistSummary } from '@/lib/types/
 
 type TrackWithUrl = AudioTrack & { url: string | null };
 
-/**
- * Vercel Serverless Functions reject large multipart bodies before our route can
- * return JSON. Keep real payload safely below the ~4.5MB platform limit.
- */
-const UPLOAD_SIZE_LIMIT = 3.2 * 1024 * 1024;
-const BITRATE_LADDER = [128, 96, 64, 48, 32];
+/** הגנת אחסון: ההעלאה עצמה מתבצעת ישירות ל-R2, לא דרך Vercel. */
+const UPLOAD_SIZE_LIMIT = 25 * 1024 * 1024;
+const BITRATE_LADDER = [128, 96, 64];
 
 function formatBytes(n: number | null | undefined): string {
   if (!n || n <= 0) return '—';
@@ -464,31 +461,65 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
     }
 
     try {
-      setPhase('uploading');
       const mp3 = new File([transcoded.blob], `${title.trim()}.mp3`, { type: 'audio/mpeg' });
-      const form = new FormData();
-      form.append('file', mp3);
-      form.append('title', title.trim());
-      form.append('duration_seconds', String(Math.round(transcoded.durationSeconds)));
-      form.append(
-        'credit',
-        JSON.stringify({
-          source: credit.source.trim(),
-          author: credit.author.trim(),
-          title: credit.title?.trim() || null,
-          link: credit.link?.trim() || null,
-          license: credit.license?.trim() || null,
-        })
-      );
-      form.append('original_bytes', String(file.size));
+      const cleanCredit = {
+        source: credit.source.trim(),
+        author: credit.author.trim(),
+        title: credit.title?.trim() || null,
+        link: credit.link?.trim() || null,
+        license: credit.license?.trim() || null,
+      };
+      const metadata = {
+        title: title.trim(),
+        duration_seconds: Math.round(transcoded.durationSeconds),
+        size_bytes: mp3.size,
+        credit: cleanCredit,
+      };
 
-      const res = await fetch(`/api/v1/admin/audio/playlists/${playlistId}/tracks`, {
+      setPhase('uploading');
+      const presignRes = await fetch(`/api/v1/admin/audio/playlists/${playlistId}/tracks/presign`, {
         method: 'POST',
-        body: form,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(metadata),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setResult({ error: (data as { error?: string }).error || `שגיאה ${res.status}` });
+      const presign = (await presignRes.json().catch(() => ({}))) as {
+        error?: string;
+        track_id?: string;
+        object_key?: string;
+        upload_url?: string;
+      };
+      if (!presignRes.ok || !presign.track_id || !presign.object_key || !presign.upload_url) {
+        setResult({ error: presign.error || `שגיאה בהכנת העלאה (${presignRes.status})` });
+        return;
+      }
+
+      const putRes = await fetch(presign.upload_url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'audio/mpeg' },
+        body: mp3,
+      });
+      if (!putRes.ok) {
+        setResult({
+          error:
+            putRes.status === 0
+              ? 'העלאה ישירה ל-R2 נכשלה. בדוק CORS בדלי האודיו.'
+              : `העלאה ישירה ל-R2 נכשלה (${putRes.status}). בדוק CORS והרשאות לדלי.`,
+        });
+        return;
+      }
+
+      const completeRes = await fetch(`/api/v1/admin/audio/playlists/${playlistId}/tracks/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...metadata,
+          track_id: presign.track_id,
+          object_key: presign.object_key,
+        }),
+      });
+      const data = await completeRes.json().catch(() => ({}));
+      if (!completeRes.ok) {
+        setResult({ error: (data as { error?: string }).error || `שגיאה בשמירת הרצועה (${completeRes.status})` });
         return;
       }
       const savedPercent = Math.max(

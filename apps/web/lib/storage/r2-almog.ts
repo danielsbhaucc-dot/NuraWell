@@ -37,3 +37,17 @@ export function getR2Client(): S3Client {
     credentials: { accessKeyId, secretAccessKey },
   });
 }
+
+export function getR2Credentials(): {
+  accountId: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+} {
+  const accountId = process.env.R2_ACCOUNT_ID?.trim();
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY?.trim();
+  if (!accountId || !accessKeyId || !secretAccessKey) {
+    throw new Error('חסרים פרטי התחברות ל-R2 (בדוק R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY)');
+  }
+  return { accountId, accessKeyId, secretAccessKey };
+}
