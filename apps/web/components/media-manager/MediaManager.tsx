@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  AlertTriangle,
   FileText,
   Film,
+  FolderOpen,
   ImageIcon,
   Loader2,
   Music,
@@ -65,6 +67,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
   const [fileSubtype, setFileSubtype] = useState<FileSubtype>('pdf');
   const [items, setItems] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQ, setSearchQ] = useState('');
   const [selected, setSelected] = useState<MediaAsset | null>(null);
   const [panel, setPanel] = useState<'library' | 'upload' | 'stock'>('library');
@@ -83,6 +86,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const params = new URLSearchParams({ per_page: '36', page: '1' });
       params.set('kind', activeKind);
@@ -91,17 +95,22 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
       const res = await fetch(`/api/v1/admin/media?${params}`, { credentials: 'include' });
       const data = (await res.json()) as { items?: MediaAsset[]; error?: string };
       if (!res.ok) {
-        toast.error('טעינה נכשלה', data.error);
+        const msg =
+          data.error && /media_assets|relation|does not exist|schema/i.test(data.error)
+            ? 'טבלת המדיה לא קיימת עדיין. הריצו את המיגרציה 000034_media_assets.'
+            : data.error || `טעינה נכשלה (${res.status})`;
+        setLoadError(msg);
         setItems([]);
         return;
       }
       setItems(data.items ?? []);
     } catch {
-      toast.error('שגיאת רשת', 'לא הצלחנו לטעון את הספרייה');
+      setLoadError('שגיאת רשת — לא הצלחנו לטעון את הספרייה.');
+      setItems([]);
     } finally {
       setLoading(false);
     }
-  }, [activeKind, fileSubtype, searchQ, toast]);
+  }, [activeKind, fileSubtype, searchQ]);
 
   useEffect(() => {
     if (open && panel === 'library') void load();
@@ -179,26 +188,52 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
         style={glassPanelStyle}
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="flex shrink-0 items-center justify-between border-b border-white/40 px-4 py-3 sm:px-5">
-          <div>
-            <h2 className="text-lg font-black text-slate-900">
-              {options?.title ?? 'מנהל קבצים'}
-            </h2>
-            <p className="text-xs text-slate-600">
-              {mode === 'pick' ? 'בחר קובץ ולחץ עליו' : 'ספריית מדיה — העלאה, עריכה ומחיקה'}
-            </p>
+        <header className="relative shrink-0 overflow-hidden">
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(120deg, rgba(16,185,129,0.58) 0%, rgba(13,148,136,0.42) 52%, rgba(8,145,178,0.5) 100%)',
+            }}
+            aria-hidden
+          />
+          <div
+            className="absolute inset-x-0 bottom-0 h-px"
+            style={{ background: 'rgba(255,255,255,0.45)' }}
+            aria-hidden
+          />
+          <div className="relative flex items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/45 bg-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] backdrop-blur-md">
+                <FolderOpen className="h-5 w-5 text-white" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-black text-white drop-shadow-sm">
+                  {options?.title ?? 'מנהל קבצים'}
+                </h2>
+                <p className="truncate text-xs font-medium text-white/85">
+                  {mode === 'pick' ? 'בחרו פריט ולחצו עליו' : 'ספריית מדיה — העלאה, עריכה ומחיקה'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="סגירה"
+              className="shrink-0 rounded-xl border border-white/45 bg-white/15 p-2 text-white shadow-sm backdrop-blur-md transition hover:bg-white/30"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl border border-white/50 bg-white/20 p-2 text-slate-800 backdrop-blur-sm"
-          >
-            <X className="h-5 w-5" />
-          </button>
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-white/35 px-3 py-2 lg:w-44 lg:flex-col lg:border-b-0 lg:border-l">
+          <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-white/35 px-3 py-2 lg:w-48 lg:flex-col lg:border-b-0 lg:border-l">
+            {allowedKinds.length > 1 ? (
+              <p className="hidden px-2 pb-1 text-[10px] font-black tracking-wide text-slate-500 lg:block">
+                קטגוריות
+              </p>
+            ) : null}
             {allowedKinds.map((k) => {
               const Icon = kindIcon(k);
               return (
@@ -299,6 +334,21 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                       <Search className="h-4 w-4" />
                     </button>
                   </div>
+                  {loadError ? (
+                    <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-200/20 px-3 py-2.5 text-sm text-amber-900 backdrop-blur-sm">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <div>
+                        <p className="font-bold">{loadError}</p>
+                        <button
+                          type="button"
+                          onClick={() => void load()}
+                          className="mt-1 rounded-lg border border-amber-400/60 bg-white/25 px-2.5 py-1 text-xs font-bold"
+                        >
+                          נסה שוב
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                   {loading ? (
                     <div className="flex justify-center py-12">
                       <Loader2 className="h-8 w-8 animate-spin text-emerald-700" />
@@ -329,8 +379,24 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                       ))}
                     </div>
                   )}
-                  {!loading && items.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-slate-600">אין פריטים — העלה או חפש.</p>
+                  {!loading && !loadError && items.length === 0 ? (
+                    <div className="flex flex-col items-center gap-2 py-12 text-center">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/45 bg-white/15 backdrop-blur-sm">
+                        <FolderOpen className="h-7 w-7 text-slate-500" />
+                      </div>
+                      <p className="text-sm font-bold text-slate-700">
+                        אין עדיין פריטים בקטגוריה {KIND_LABELS[activeKind]}
+                      </p>
+                      {activeKind !== 'video' ? (
+                        <button
+                          type="button"
+                          onClick={() => setPanel('upload')}
+                          className="rounded-xl bg-emerald-800/85 px-4 py-2 text-xs font-bold text-white"
+                        >
+                          העלאה עכשיו
+                        </button>
+                      ) : null}
+                    </div>
                   ) : null}
                 </>
               ) : null}

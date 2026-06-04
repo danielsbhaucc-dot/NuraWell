@@ -126,7 +126,7 @@ export function AdminMentorAvatarPanel({ mentorId }: AdminMentorAvatarPanelProps
 
       <OpenMediaManagerButton
         kind="image"
-        label="מנהל קבצים — בחר או העלה תמונה"
+        label="העלאת תמונה"
         className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/60 bg-emerald-800/10 px-4 py-3 text-sm font-bold text-emerald-900 sm:w-auto"
         onPicked={(asset: MediaAsset) => {
           void (async () => {

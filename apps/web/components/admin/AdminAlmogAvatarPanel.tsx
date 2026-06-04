@@ -186,7 +186,7 @@ export function AdminAlmogAvatarPanel() {
       <div className="mt-5 flex flex-col gap-3">
         <OpenMediaManagerButton
           kind="image"
-          label="מנהל קבצים — בחר או העלה תמונה"
+          label="העלאת תמונה"
           pickLabel="תמונת אלמוג"
           onPicked={(asset: MediaAsset) => {
             void (async () => {
