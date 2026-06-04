@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Search, UserCircle, Save, Trash2 } from 'lucide-react';
 import { AdminUserJourneyDetail } from '@/components/admin/AdminUserJourneyDetail';
+import { AlmogMemoryPanel } from '@/components/admin/AlmogMemoryPanel';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import type { AdminUserJourneyReport } from '@/lib/admin/build-user-journey-report';
 
@@ -325,6 +326,8 @@ export function AdminUsersClient() {
               </div>
 
               <AdminUserJourneyDetail steps={detail.journeyReport.steps} />
+
+              <AlmogMemoryPanel userId={selectedId} />
             </div>
           ) : null}
         </section>
