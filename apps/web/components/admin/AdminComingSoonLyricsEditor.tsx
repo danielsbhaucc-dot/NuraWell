@@ -34,6 +34,18 @@ function buildFlat(lines: LyricLineConfig[]): FlatWord[] {
   return out;
 }
 
+function normalizeLine(line: LyricLineConfig): LyricLineConfig {
+  const kind = line.kind ?? 'normal';
+  const tag = line.tag?.trim();
+  return {
+    text: line.text.trim(),
+    start: Number(line.start) || 0,
+    wordStarts: line.wordStarts,
+    kind,
+    tag: tag && (kind === 'drop' || kind === 'mega') ? tag : undefined,
+  };
+}
+
 function fmt(sec: number): string {
   if (!Number.isFinite(sec) || sec < 0) return '0.00';
   return sec.toFixed(2);
@@ -180,15 +192,22 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
       .filter(Boolean)
       .map((text, i) => {
         const prev = lines[i];
-        return { text, start: 0, kind: prev?.kind ?? 'normal', tag: prev?.tag };
+        return {
+          text,
+          start: prev?.start ?? 0,
+          wordStarts: prev?.text === text ? prev.wordStarts : undefined,
+          kind: prev?.kind ?? 'normal',
+          tag: prev?.tag,
+        };
       });
     if (newLines.length) {
       setLines(newLines);
-      resetTaps();
+      setTimes([]);
+      setTapPos(0);
       setSuccess(null);
       setError(null);
     }
-  }, [lyricsText, lines, resetTaps]);
+  }, [lyricsText, lines]);
 
   const loadDefaults = useCallback(() => {
     setLines(DEFAULT_LYRICS.lines);
@@ -208,17 +227,20 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
         const wordStarts: number[] = [];
         for (let w = 0; w < words.length; w++) {
           const flatIdx = flat.findIndex((f) => f.lineIdx === lineIdx && f.wordIdx === w);
-          const t = flatIdx >= 0 ? times[flatIdx] : undefined;
+          const t =
+            flatIdx >= 0 && typeof times[flatIdx] === 'number'
+              ? times[flatIdx]
+              : line.wordStarts?.[w];
           if (typeof t === 'number') wordStarts.push(t);
         }
         const hasFull = wordStarts.length === words.length && words.length > 0;
-        return {
+        return normalizeLine({
           text: line.text,
           start: hasFull ? wordStarts[0] : line.start || 0,
           wordStarts: hasFull ? wordStarts : undefined,
           kind: line.kind ?? 'normal',
-          tag: line.tag?.trim() || undefined,
-        };
+          tag: line.tag,
+        });
       });
 
       const payload: ComingSoonLyrics = { syncOffset: 0, lines: payloadLines };
