@@ -237,12 +237,25 @@ interface AttemptStep {
   attempts: number;
 }
 
+/** טוקנים שנצרכו בקריאת LLM בודדת — לתיעוד עלות פר-משתמש. */
+export interface NotificationTokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+}
+
 interface ChainResult {
   body: string;
   model: string;
   attempts: number;
   usedFallback: boolean;
   errors: string[];
+  /** usage של הקריאה המנצחת (אם הספק החזיר). undefined אם לא זמין. */
+  usage?: NotificationTokenUsage;
+}
+
+interface CallOnceResult {
+  text: string;
+  usage?: NotificationTokenUsage;
 }
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
@@ -252,7 +265,7 @@ async function callOnce(
   model: string,
   ctx: AINotificationContext,
   timeoutMs: number
-): Promise<string> {
+): Promise<CallOnceResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -275,7 +288,13 @@ async function callOnce(
     const raw = completion.choices?.[0]?.message?.content ?? '';
     const cleaned = postProcess(raw);
     if (!cleaned) throw new Error('empty_or_invalid_response');
-    return cleaned;
+    const usage = completion.usage
+      ? {
+          promptTokens: completion.usage.prompt_tokens ?? 0,
+          completionTokens: completion.usage.completion_tokens ?? 0,
+        }
+      : undefined;
+    return { text: cleaned, usage };
   } finally {
     clearTimeout(timer);
   }
@@ -347,13 +366,14 @@ export async function generateNotificationText(
       attemptCount += 1;
       try {
         const client = step.resolveClient();
-        const body = await callOnce(client, step.model, ctx, step.timeoutMs);
+        const { text, usage } = await callOnce(client, step.model, ctx, step.timeoutMs);
         return {
-          body,
+          body: text,
           model: step.model,
           attempts: attemptCount,
           usedFallback: false,
           errors,
+          ...(usage ? { usage } : {}),
         };
       } catch (err) {
         const msg =

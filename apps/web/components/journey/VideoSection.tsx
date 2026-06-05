@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useLayoutEffect, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { Play, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import {
@@ -26,6 +26,8 @@ interface VideoSectionProps {
   immersiveViewportTopPx?: number | null;
   /** מדווח כשנגן וידאו פעיל (לצורך הנמכת מוזיקת רקע). */
   onPlaybackChange?: (active: boolean) => void;
+  /** מדווח פעם אחת בכל *תחילת* ניגון (כולל replay) — לחישוב עלות Bunny. */
+  onViewStart?: () => void;
 }
 
 function getEmbedUrl(
@@ -75,6 +77,7 @@ export function VideoSection({
   videoResetNote,
   immersiveViewportTopPx,
   onPlaybackChange,
+  onViewStart,
 }: VideoSectionProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -201,6 +204,16 @@ export function VideoSection({
   useEffect(() => {
     onPlaybackChange?.(videoEngaged);
   }, [videoEngaged, onPlaybackChange]);
+
+  // 🎬 רישום אירוע צפייה — פעם אחת בכל מעבר false→true של ניגון פעיל.
+  // כך כל הפעלה (כולל replay) נספרת כצפייה אחת לחישוב עלות Bunny.
+  const prevEngagedRef = useRef(false);
+  useEffect(() => {
+    if (videoEngaged && !prevEngagedRef.current) {
+      onViewStart?.();
+    }
+    prevEngagedRef.current = videoEngaged;
+  }, [videoEngaged, onViewStart]);
 
   useEffect(() => {
     return () => {

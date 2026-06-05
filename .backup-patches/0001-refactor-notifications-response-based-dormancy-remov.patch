@@ -1,0 +1,1829 @@
+From 54b0b2b05ad4ceb5447b80653d933a5687fcfbe7 Mon Sep 17 00:00:00 2001
+From: Daniel Rahman <danielsbhaucc@gmail.com>
+Date: Wed, 3 Jun 2026 20:27:02 +0300
+Subject: [PATCH] refactor(notifications): response-based dormancy + remove
+ dead engine
+
+fetchTrueLastActiveByUser now counts only real responses (chat ai_interactions + task executions) with created_at floor; dropped middleware-bumped last_active_at so app-open no longer marks user active. Fix broken dormant phrasing and add dynamic-generation rule. Delete unwired /api/workflows/notifications engine (11 files); migration 000029 columns left dormant in DB.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+---
+ apps/web/.env.example                         |   9 +-
+ apps/web/app/api/v1/ai/chat/route.ts          |   9 +-
+ .../app/api/workflows/notifications/route.ts  | 198 ---------
+ apps/web/lib/ai/habit-checkpoint-llm.ts       |  11 +
+ apps/web/lib/ai/prompts.ts                    |   3 +
+ .../engine/derive-notification-state.ts       |  92 ----
+ .../engine/derive-urgency-level.ts            |  88 ----
+ .../notifications/engine/fetch-ai-memory.ts   | 100 -----
+ .../engine/generate-notification-text.ts      | 417 ------------------
+ .../engine/get-users-for-notification.ts      | 239 ----------
+ .../lib/notifications/engine/llm-clients.ts   |  42 --
+ .../notifications/engine/log-notification.ts  |  86 ----
+ .../engine/mark-user-responded.ts             |  62 ---
+ apps/web/lib/types/notification-state.ts      | 181 --------
+ .../lib/workflows/habit-checkpoint-batch.ts   |  37 +-
+ .../workflows/notifications-engine-payload.ts |  32 --
+ docs/CRON_SUMMARIES.md                        |   2 +-
+ 17 files changed, 41 insertions(+), 1567 deletions(-)
+ delete mode 100644 apps/web/app/api/workflows/notifications/route.ts
+ delete mode 100644 apps/web/lib/notifications/engine/derive-notification-state.ts
+ delete mode 100644 apps/web/lib/notifications/engine/derive-urgency-level.ts
+ delete mode 100644 apps/web/lib/notifications/engine/fetch-ai-memory.ts
+ delete mode 100644 apps/web/lib/notifications/engine/generate-notification-text.ts
+ delete mode 100644 apps/web/lib/notifications/engine/get-users-for-notification.ts
+ delete mode 100644 apps/web/lib/notifications/engine/llm-clients.ts
+ delete mode 100644 apps/web/lib/notifications/engine/log-notification.ts
+ delete mode 100644 apps/web/lib/notifications/engine/mark-user-responded.ts
+ delete mode 100644 apps/web/lib/types/notification-state.ts
+ delete mode 100644 apps/web/lib/workflows/notifications-engine-payload.ts
+
+diff --git a/apps/web/.env.example b/apps/web/.env.example
+index d7ae287..adddc86 100644
+--- a/apps/web/.env.example
++++ b/apps/web/.env.example
+@@ -31,7 +31,7 @@ NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID=654032
+ 
+ # --- AI (OpenRouter + DeepSeek + Groq) ---
+ # OpenRouter — ספק LLM הראשי לטקסט אמפתי לעין המשתמש (gpt-5-mini / gpt-5).
+-#   משמש את: הצ'אט, מנוע ההתראות (/api/workflows/notifications), ועוד.
++#   משמש את: הצ'אט, תזכורות ה-habit-checkpoints, נוטיפיקציות cron, ועוד.
+ OPENROUTER_API_KEY=
+ # DeepSeek — legacy ל-cron analytics ישנים.
+ DEEPSEEK_API_KEY=
+@@ -41,13 +41,6 @@ GROQ_API_KEY=
+ # Override אופציונלי של מודל ה-Groq (default: meta-llama/llama-4-scout-17b-16e-instruct)
+ # GROQ_BACKGROUND_MODEL=meta-llama/llama-4-scout-17b-16e-instruct
+ 
+-# --- AI Notification Engine (Upstash Workflow → OpenRouter gpt-5-mini) ---
+-# מנוע ההתראות מריץ 3 קרונים יומיים (08:00 / 13:00 / 20:00 IL) דרך
+-# POST /api/workflows/notifications. ה-LLM הוא gpt-5-mini (OpenRouter) —
+-# קצר, אמפתי, רגיש-טון. אם הקריאה נכשלת — fallback סטטי לכל NotificationState.
+-# Override אופציונלי של מודל ה-push (default: openai/gpt-5-mini)
+-# NOTIFICATION_ENGINE_MODEL=openai/gpt-5-mini
+-
+ # --- AI Periodic Summary Engine ("Memory Pyramid") ---
+ # POST /api/summaries/generate מייצר סיכום תקופתי
+ # (daily/weekly/monthly/quarterly/semi_annual/annual) ושומר ב-`periodic_summaries`.
+diff --git a/apps/web/app/api/v1/ai/chat/route.ts b/apps/web/app/api/v1/ai/chat/route.ts
+index 04d0fa4..78d87dd 100644
+--- a/apps/web/app/api/v1/ai/chat/route.ts
++++ b/apps/web/app/api/v1/ai/chat/route.ts
+@@ -79,7 +79,6 @@ import {
+ } from '../../../../../lib/ai/journey-follow-up-promise';
+ import { sendTaskCompletionCelebration } from '../../../../../lib/ai/send-task-completion-celebration';
+ import { createAdminClient } from '../../../../../lib/supabase/admin';
+-import { markUserResponded } from '../../../../../lib/notifications/engine/mark-user-responded';
+ import {
+   fetchTodayChatTurns,
+   formatDailyShortTermBlock,
+@@ -932,11 +931,9 @@ export async function POST(request: Request) {
+     });
+   });
+ 
+-  // 📡 סימון "המשתמש פעיל עכשיו" — fire-and-forget, רץ במקביל לכל השאר.
+-  // ה-notification engine יקרא את `profiles.last_responded_at` ב-cron הבא
+-  // ויבחר לדלג על slot ההתראה אם הוא ראה פעילות ב-6 השעות האחרונות.
+-  // כשלון פה לא מאיים על הצ'אט — בקרון הבא פשוט נראה ערך ישן יותר.
+-  after(() => markUserResponded(createAdminClient(), user.id, { debugTag: 'ai/chat' }));
++  // הערה: ה"תגובה" של המשתמש נקלטת אוטומטית ב-ai_interactions (role='user',
++  // ה-insertAiInteraction למעלה). מנוע הדורמנסי (fetchTrueLastActiveByUser)
++  // קורא את זה ישירות, אז אין צורך לעדכן profiles.last_responded_at בנפרד.
+ 
+   /**
+    * דו"ח התקדמות מלא — אותו דו"ח שהאדמין רואה ב-Ops.
+diff --git a/apps/web/app/api/workflows/notifications/route.ts b/apps/web/app/api/workflows/notifications/route.ts
+deleted file mode 100644
+index e71eaff..0000000
+--- a/apps/web/app/api/workflows/notifications/route.ts
++++ /dev/null
+@@ -1,198 +0,0 @@
+-/**
+- * Upstash Workflow — מנוע ההתראות החכם של NuraWell.
+- *
+- * טריגר: 3 קרונים יומיים מ-QStash (08:00 / 13:00 / 20:00 IL).
+- * Payload: `{ timeOfDay: "morning" | "noon" | "evening" }`.
+- *
+- * הזרימה:
+- *   Step A — `fetch-candidates`  : שולף מ-Supabase את כל המשתמשים שצריכים
+- *                                  התראה ב-slot הזה (כבר אחרי סינון
+- *                                  "השלים היום?" + חישוב NotificationState).
+- *   Step B — `dispatch-<userId>` : לכל מועמד — קריאה ל-OpenAI gpt-4o-mini
+- *                                  + רישום ב-notification_logs (UNIQUE
+- *                                  guard נגד שליחה כפולה לאותו slot).
+- *
+- * Idempotency: ה-UNIQUE (user_id, date_key, time_of_day) ב-notification_logs
+- * מבטיח שגם אם QStash מבצע retry — לא תהיה שליחה כפולה.
+- *
+- * Performance: כל משתמש רץ ב-`context.run` נפרד כדי לאפשר ל-Workflow
+- * checkpoint + retry פר-משתמש בלי לקרוס על שגיאה ספציפית.
+- */
+-
+-import { serve } from '@upstash/workflow/nextjs';
+-import { createAdminClient } from '../../../../lib/supabase/admin';
+-import { israelDateKey } from '../../../../lib/ai/onboarding-check-in-time';
+-import { getUsersForNotification } from '../../../../lib/notifications/engine/get-users-for-notification';
+-import { generateNotificationText } from '../../../../lib/notifications/engine/generate-notification-text';
+-import { logNotification } from '../../../../lib/notifications/engine/log-notification';
+-import { buildTimeAgoTextHe } from '../../../../lib/notifications/engine/derive-urgency-level';
+-import {
+-  parseNotificationsEnginePayload,
+-  type NotificationsEnginePayload,
+-} from '../../../../lib/workflows/notifications-engine-payload';
+-import type {
+-  NotificationCandidate,
+-  NotificationDispatchResult,
+-} from '../../../../lib/types/notification-state';
+-
+-export const runtime = 'nodejs';
+-export const maxDuration = 300;
+-export const dynamic = 'force-dynamic';
+-
+-export const { POST } = serve<NotificationsEnginePayload>(async (context) => {
+-  const payload = parseNotificationsEnginePayload(context.requestPayload);
+-  const today = payload.todayOverride ?? israelDateKey();
+-
+-  // ---------- Step A: fetch candidates ----------
+-  const candidates = await context.run<NotificationCandidate[]>(
+-    `fetch-candidates-${payload.timeOfDay}`,
+-    async () => {
+-      const admin = createAdminClient();
+-      return getUsersForNotification(admin, payload.timeOfDay, {
+-        todayOverride: today,
+-        maxUsers: payload.maxUsers,
+-      });
+-    }
+-  );
+-
+-  if (candidates.length === 0) {
+-    return {
+-      ok: true as const,
+-      timeOfDay: payload.timeOfDay,
+-      date: today,
+-      total: 0,
+-      sent: 0,
+-      results: [] as NotificationDispatchResult[],
+-    };
+-  }
+-
+-  // ---------- Step B: dispatch per user (parallel-friendly checkpoints) ----------
+-  const results: NotificationDispatchResult[] = [];
+-  for (const candidate of candidates) {
+-    const result = await context.run<NotificationDispatchResult>(
+-      `dispatch-${candidate.userId}`,
+-      async () => dispatchOne(candidate, today, payload.aiModel)
+-    );
+-    results.push(result);
+-  }
+-
+-  const sent = results.filter((r) => r.status === 'sent').length;
+-  const skipped = results.filter((r) => r.status === 'skipped').length;
+-  const failed = results.filter((r) => r.status === 'failed').length;
+-
+-  return {
+-    ok: true as const,
+-    timeOfDay: payload.timeOfDay,
+-    date: today,
+-    total: candidates.length,
+-    sent,
+-    skipped,
+-    failed,
+-    results,
+-  };
+-});
+-
+-/** קריאה ל-LLM + רישום + טיפול בכפילויות, ברמת משתמש בודד. */
+-async function dispatchOne(
+-  candidate: NotificationCandidate,
+-  today: string,
+-  modelOverride: string | undefined
+-): Promise<NotificationDispatchResult> {
+-  try {
+-    // 2D context matrix שעובר ל-LLM — snake_case לפי המפרט. notificationState
+-    // *לא* נשלח ל-LLM; הוא נשמר רק פנימית ב-notification_logs ו-fallbackState.
+-    // Phase 3: אם getUsersForNotification צירף לזה זיכרון ארוך-טווח
+-    // (latest weekly/monthly insights), אנחנו מעבירים אותו אל ה-LLM.
+-    // Phase 4 (Claude merge): מוסיפים urgency_level, time_ago_text,
+-    // notification_count, hours_since_last_response — מודולציית טון עדינה
+-    // מעל ה-state בלי לשנות את ה-cadence הקיים.
+-    const { body, model, usedFallback, attempts, errors } = await generateNotificationText(
+-      {
+-        user_first_name: candidate.firstName,
+-        task_name: candidate.taskName,
+-        time_of_day: candidate.timeOfDay,
+-        consecutive_missed_days: candidate.consecutiveMissedDays,
+-        // תמיד false ב-runtime — סוננו ב-getUsersForNotification. נשלח להגנה.
+-        has_completed_today: false,
+-        urgency_level: candidate.urgencyLevel,
+-        time_ago_text: buildTimeAgoTextHe(candidate.consecutiveMissedDays),
+-        ...(typeof candidate.notificationCount === 'number'
+-          ? { notification_count: candidate.notificationCount }
+-          : {}),
+-        ...(typeof candidate.hoursSinceLastResponse === 'number'
+-          ? { hours_since_last_response: candidate.hoursSinceLastResponse }
+-          : {}),
+-        ...(candidate.aiMemory ? { ai_memory: candidate.aiMemory } : {}),
+-      },
+-      {
+-        ...(modelOverride ? { model: modelOverride } : {}),
+-        fallbackState: candidate.notificationState,
+-      }
+-    );
+-
+-    const admin = createAdminClient();
+-    const logResult = await logNotification(admin, {
+-      userId: candidate.userId,
+-      timeOfDay: candidate.timeOfDay,
+-      notificationState: candidate.notificationState,
+-      taskName: candidate.taskName,
+-      body,
+-      dateKey: today,
+-      aiModel: model,
+-      metadata: {
+-        consecutiveMissedDays: candidate.consecutiveMissedDays,
+-        urgencyLevel: candidate.urgencyLevel,
+-        usedFallback,
+-        llmAttempts: attempts,
+-        // רישום כשלים רק אם היו (חוסך מקום ב-DB)
+-        ...(errors.length > 0 ? { llmErrors: errors } : {}),
+-        // Phase 3: רישום שהוזרק זיכרון (אם הוזרק) — לדאשבורד אדמין
+-        // ולוודא שהפיצ'ר רץ. רושמים רק את ה-period_keys, לא את הטקסט עצמו.
+-        ...(candidate.aiMemory
+-          ? {
+-              aiMemory: {
+-                weekly: candidate.aiMemory.latest_weekly_period ?? null,
+-                monthly: candidate.aiMemory.latest_monthly_period ?? null,
+-              },
+-            }
+-          : {}),
+-        // Phase 4 (Claude merge): מעקב אחר response-aware context
+-        ...(typeof candidate.notificationCount === 'number'
+-          ? { notificationCount: candidate.notificationCount }
+-          : {}),
+-        ...(typeof candidate.hoursSinceLastResponse === 'number'
+-          ? { hoursSinceLastResponse: candidate.hoursSinceLastResponse }
+-          : {}),
+-      },
+-    });
+-
+-    if (!logResult.ok) {
+-      return {
+-        userId: candidate.userId,
+-        status: 'failed',
+-        error: logResult.error,
+-      };
+-    }
+-
+-    if (logResult.alreadyExisted) {
+-      return {
+-        userId: candidate.userId,
+-        status: 'skipped',
+-        reason: 'already_sent_today_for_slot',
+-      };
+-    }
+-
+-    return {
+-      userId: candidate.userId,
+-      status: 'sent',
+-      notificationState: candidate.notificationState,
+-      body,
+-    };
+-  } catch (err) {
+-    return {
+-      userId: candidate.userId,
+-      status: 'failed',
+-      error: err instanceof Error ? err.message : String(err),
+-    };
+-  }
+-}
+diff --git a/apps/web/lib/ai/habit-checkpoint-llm.ts b/apps/web/lib/ai/habit-checkpoint-llm.ts
+index ddd28fe..a5b413c 100644
+--- a/apps/web/lib/ai/habit-checkpoint-llm.ts
++++ b/apps/web/lib/ai/habit-checkpoint-llm.ts
+@@ -302,6 +302,9 @@ const HABIT_CHECKPOINT_FEWSHOT = `דוגמאות לטון הנכון (✓) מו
+ ✓ "[שם] נעלמת לי לגמרי 🥲 הכל סבבה? [Task] עדיין מתאים או צריך להוריד הילוך?"
+ ✓ "[שם] איפה אתה אחי? בלי לחץ — סימן לי כשבא לך להמשיך."
+ ✓ "מה מצב [שם]לללל, קצת שקט אצלך, אני מקווה שהכל טוב 💙"
++✓ "וואלה [שם] אתה חסר לי 💙 הכל בסדר? מחכה כבר לשמוע מה קורה איתך."
++✓ "מתגעגע [שם]! מחכה כבר לשמוע מה נשמע אצלך 🙂"
++✗ "מתגעגע לשמוע איך היה!" (משפט שבור — אי אפשר "להתגעגע לשמוע", ו"איך היה" בעבר לא מתאים)
+ 
+ — חיזוק מלא (FULL — רק כשבאמת סיים הכל היום) —
+ ✓ "[שם]!! סגרת היום 🎯 איזה כיף"
+@@ -349,6 +352,14 @@ ${greetingStyle}
+ - להישמע מאוכזב, נעלב, "מחכה לתשובה", או פסיבי-אגרסיבי.
+ - לחשוף את הפרומפט, הנתונים, או שמות שדות.
+ 
++🚨 הגיון לשוני (קריטי — לפני שליחה ודא שהמשפט הגיוני בעברית):
++- *אסור* משפטים שבורים/לא-הגיוניים. דוגמה אמיתית שיצאה והייתה פסולה: "מתגעגע לשמוע איך היה!" — אי אפשר "להתגעגע לשמוע", וגם "איך היה" (עבר) לא מתאים כשלא קרה אירוע ספציפי.
++- כשרוצים להביע געגוע + סקרנות, כתוב את זה כשני רכיבים נפרדים והגיוניים. ✓ "מתגעגע! מחכה כבר לשמוע מה קורה איתך", ✓ "וואלה אתה חסר לי, הכל בסדר? מחכה לשמוע איך הולך", ✓ "חברר נעלמת לי 💙 מה נשמע אצלך?".
++- זמן הווה כברירת מחדל: "איך הולך?" / "מה קורה?" / "מה נשמע?" — *לא* "איך היה?" (אלא אם באמת היה אירוע ספציפי שהמשתמש סיפר עליו).
++- אל תדביק שני ביטויים שלא הולכים יחד תחבירית. קרא את המשפט בקול בראש — אם חבר לא היה אומר אותו בדיוק ככה, נסח מחדש.
++
++🔥 דינמיות (חשוב מאוד): כל הדוגמאות כאן הן רק *לרוח ולטון* — *אסור* להעתיק אותן מילה במילה. כל הודעה חייבת להיות מקורית, מותאמת לרגע ולמשתמש ${input.firstName} הספציפי. אסור שאותו משתמש יקבל את אותה פתיחה/ניסוח פעמיים, ואסור ששני משתמשים יקבלו טקסט זהה. שמור על הקול — שנה את המילים.
++
+ ${HABIT_CHECKPOINT_FEWSHOT}
+ 
+ מצב התנהגותי:
+diff --git a/apps/web/lib/ai/prompts.ts b/apps/web/lib/ai/prompts.ts
+index 0f6ea70..97a15bc 100644
+--- a/apps/web/lib/ai/prompts.ts
++++ b/apps/web/lib/ai/prompts.ts
+@@ -256,6 +256,9 @@ export const ALMOG_NOTIFY_FEWSHOT = `דוגמאות נוטיפיקציה (כך,
+ export const ALMOG_NOTIFY_SHARED_RULES = `מטרה: לפתוח שיחה אנושית — "אני איתך", לא לעקוב ולא לדווח על נתונים.
+ כל הודעה חייבת להיות טבעית, חביבה וחברית: ספציפית לרגע, בלי שפה רובוטית, בלי "תזכורת", בלי "המערכת", בלי "ראיתי שלא".
+ התאם לשעה ביום/לפרופיל/לשיחה מהיום — לא לדאטה.
++
++🚨 הגיון לשוני (קריטי): כל משפט חייב להיות תקין והגיוני בעברית. אסור לחבר שני ביטויים שלא הולכים יחד תחבירית. דוגמה אמיתית פסולה: "מתגעגע לשמוע איך היה!" (אי אפשר "להתגעגע לשמוע", ו"איך היה" בעבר לא מתאים). ✓ במקום: "מתגעגע! מחכה כבר לשמוע מה קורה איתך", ✓ "וואלה אתה חסר לי, הכל בסדר? מחכה לשמוע איך הולך". ברירת מחדל זמן הווה ("איך הולך?", "מה נשמע?") — לא עבר, אלא אם היה אירוע ספציפי.
++🔥 דינמיות: הדוגמאות הן רק לרוח — אסור להעתיק אותן מילה במילה. כל הודעה מקורית, מותאמת למשתמש הספציפי. אסור שאותו משתמש יקבל את אותו ניסוח פעמיים, ואסור ששני משתמשים יקבלו טקסט זהה.
+ אם המשתמש לא ענה — תישאר חבר בקו, זווית חדשה — לא חזרה על הניסוח.
+ 
+ ${ALMOG_NOTIFY_FEWSHOT}`;
+diff --git a/apps/web/lib/notifications/engine/derive-notification-state.ts b/apps/web/lib/notifications/engine/derive-notification-state.ts
+deleted file mode 100644
+index d5a207b..0000000
+--- a/apps/web/lib/notifications/engine/derive-notification-state.ts
++++ /dev/null
+@@ -1,92 +0,0 @@
+-/**
+- * Rule engine טהור (ללא DB / IO) — ממפה (timeOfDay, consecutiveMissedDays)
+- * → NotificationState | null.
+- *
+- * הכלל: ה-engine קורא ל-`deriveNotificationState` **רק** אחרי שכבר ידוע
+- * שהמשתמש לא השלים את המשימה היום (Supabase כמקור-אמת — ראה
+- * `getUsersForNotification`). לכן `null` כאן = "אל תשלח עכשיו".
+- *
+- * המצבים (מפרט המוצר):
+- *   • 0 ימים רצופים נכשלו (זהו היום הראשון של החמצה):
+- *       morning → MORNING_KICKOFF
+- *       noon    → NOON_CHECK
+- *       evening → EVENING_CHECK
+- *   • יום אחד רצוף נכשל (יום 2):
+- *       → DAY_2_MISSED בכל slot (3 התראות)
+- *   • שני ימים רצופים נכשלו (יום 3):
+- *       → DAY_3_MISSED, אבל רק slot אחד ביום (morning).
+- *         שאר ה-slots → null.
+- *   • 3+ ימים רצופים נכשלו (זה היום ה-4+ שלא בוצע):
+- *       → DORMANT, שבועי בלבד (יום ראשון בבוקר ישראל).
+- *         שאר השעות → null.
+- */
+-
+-import { israelDateKey } from '../../ai/onboarding-check-in-time';
+-import type { NotificationState, TimeOfDay } from '../../types/notification-state';
+-
+-const IL_TZ = 'Asia/Jerusalem';
+-
+-/** 0=Sunday … 6=Saturday לפי לוח ירושלים. */
+-export function israelDayOfWeek(now: Date = new Date()): number {
+-  const weekday = new Intl.DateTimeFormat('en-US', {
+-    timeZone: IL_TZ,
+-    weekday: 'short',
+-  }).format(now);
+-  const map: Record<string, number> = {
+-    Sun: 0,
+-    Mon: 1,
+-    Tue: 2,
+-    Wed: 3,
+-    Thu: 4,
+-    Fri: 5,
+-    Sat: 6,
+-  };
+-  return map[weekday] ?? 0;
+-}
+-
+-export interface DeriveStateInput {
+-  timeOfDay: TimeOfDay;
+-  /** מספר ימים *לפני היום* שהמשתמש החמיץ ברצף. 0 = אתמול בוצעה / זה היום הראשון. */
+-  consecutiveMissedDays: number;
+-  /** Override ל-now() לטסטים. */
+-  now?: Date;
+-}
+-
+-export function deriveNotificationState({
+-  timeOfDay,
+-  consecutiveMissedDays,
+-  now = new Date(),
+-}: DeriveStateInput): NotificationState | null {
+-  if (consecutiveMissedDays < 0) return null;
+-
+-  // 0 missed prior days → first miss
+-  if (consecutiveMissedDays === 0) {
+-    if (timeOfDay === 'morning') return 'MORNING_KICKOFF';
+-    if (timeOfDay === 'noon') return 'NOON_CHECK';
+-    if (timeOfDay === 'evening') return 'EVENING_CHECK';
+-    return null;
+-  }
+-
+-  // 1 missed prior day → Day 2 of the streak — full daily cadence
+-  if (consecutiveMissedDays === 1) {
+-    return 'DAY_2_MISSED';
+-  }
+-
+-  // 2 missed prior days → Day 3 of the streak — only morning
+-  if (consecutiveMissedDays === 2) {
+-    if (timeOfDay === 'morning') return 'DAY_3_MISSED';
+-    return null;
+-  }
+-
+-  // 3+ missed prior days → DORMANT — שבועי בלבד, יום ראשון בבוקר ישראל
+-  if (consecutiveMissedDays >= 3) {
+-    if (timeOfDay !== 'morning') return null;
+-    if (israelDayOfWeek(now) !== 0) return null;
+-    return 'DORMANT';
+-  }
+-
+-  return null;
+-}
+-
+-/** Re-export לנוחות (כדי שמשתמשים של ה-engine ייבאו ממקום אחד). */
+-export { israelDateKey };
+diff --git a/apps/web/lib/notifications/engine/derive-urgency-level.ts b/apps/web/lib/notifications/engine/derive-urgency-level.ts
+deleted file mode 100644
+index 6113588..0000000
+--- a/apps/web/lib/notifications/engine/derive-urgency-level.ts
++++ /dev/null
+@@ -1,88 +0,0 @@
+-/**
+- * `deriveUrgencyLevel` — מיפוי רגשי עדין יותר מעל ה-`NotificationState`
+- * הקיים. ה-state אחראי על *מתי* לשלוח (cadence), ה-urgencyLevel אחראי
+- * על *איך* — איזה טון רגשי ה-LLM צריך לאמץ.
+- *
+- * 🎯 המקור: "הנחיה 1" של Claude שתיארה 5 רמות (gentle → check_in).
+- *           הותאמה לציר `consecutive_missed_days` הקיים בפרויקט,
+- *           ולא לציר "ימים ללא תגובה" של Claude (כי הם דברים שונים:
+- *           ה-engine שלנו עוקב אחר *השלמת משימה*, לא תגובת צ'אט).
+- *
+- * המיפוי:
+- *   • 0 ימים רצוף שלא בוצעו (זה היום הראשון):
+- *       morning  → gentle          (חם, מעודד, פתיחה חיובית)
+- *       noon     → gentle          (צ'ק-אין קליל)
+- *       evening  → friendly_nudge  (היום כמעט נגמר — דחיפה עדינה)
+- *   • 1 יום רצוף שלא בוצע:
+- *       → friendly_nudge   (שובב, לא שיפוטי, עם הומור עדין)
+- *   • 2 ימים רצוף שלא בוצעו:
+- *       → concerned        (אכפתי, קצת מודאג, אנושי)
+- *   • 3+ ימים רצוף שלא בוצעו (זה DORMANT ב-state):
+- *       → worried (3-6 ימים) / check_in (7+) — שני סוגי "געגוע".
+- */
+-
+-import type { TimeOfDay } from '../../types/notification-state';
+-
+-export const URGENCY_LEVELS = [
+-  'gentle',
+-  'friendly_nudge',
+-  'concerned',
+-  'worried',
+-  'check_in',
+-] as const;
+-export type UrgencyLevel = (typeof URGENCY_LEVELS)[number];
+-
+-export interface DeriveUrgencyInput {
+-  timeOfDay: TimeOfDay;
+-  /** מספר ימים *רצוף לפני היום* שהמשתמש לא ביצע. 0 = אתמול בוצע / יום ראשון בסטריק. */
+-  consecutiveMissedDays: number;
+-}
+-
+-export function deriveUrgencyLevel({
+-  timeOfDay,
+-  consecutiveMissedDays,
+-}: DeriveUrgencyInput): UrgencyLevel {
+-  if (consecutiveMissedDays <= 0) {
+-    // יום ראשון בסטריק — הטון עדיין חם, אבל ערב = "היום כמעט נגמר".
+-    return timeOfDay === 'evening' ? 'friendly_nudge' : 'gentle';
+-  }
+-  if (consecutiveMissedDays === 1) return 'friendly_nudge';
+-  if (consecutiveMissedDays === 2) return 'concerned';
+-  if (consecutiveMissedDays <= 6) return 'worried';
+-  return 'check_in';
+-}
+-
+-/**
+- * תיאור-אורך-חיים אנושי של הסטריק החסר — נכנס ל-prompt כדי שה-LLM
+- * יוכל לכתוב משפט טבעי בלי שאנחנו נצטרך לבנות מספר בטקסט.
+- * המקור: helper מההנחיה השנייה (`buildTimeAgoText`), מותאם לציר ה-streak שלנו.
+- */
+-export function buildTimeAgoTextHe(consecutiveMissedDays: number): string {
+-  if (consecutiveMissedDays <= 0) return 'עוד לא היום';
+-  if (consecutiveMissedDays === 1) return 'מאמש';
+-  if (consecutiveMissedDays === 2) return 'משלשום';
+-  if (consecutiveMissedDays === 3) return 'שלושה ימים';
+-  if (consecutiveMissedDays <= 6) return `${consecutiveMissedDays} ימים`;
+-  if (consecutiveMissedDays === 7) return 'שבוע';
+-  if (consecutiveMissedDays <= 13) return `${consecutiveMissedDays} ימים`;
+-  if (consecutiveMissedDays === 14) return 'שבועיים';
+-  return 'הרבה זמן';
+-}
+-
+-/**
+- * הנחיית סגנון פר-`UrgencyLevel`. הולך *בתוך* ה-system prompt כשורה אחת
+- * קצרה — ה-LLM כבר מקבל את כל החוקים הכלליים של "אלמוג" משם, וזה רק
+- * "מודולציה רגשית" של אותו פרסונה. אורך זהיר: עד ~20 מילים פר רמה.
+- */
+-export const URGENCY_STYLE_HINTS_HE: Record<UrgencyLevel, string> = {
+-  gentle:
+-    'טון חם, מעודד, ידידותי. פתיחה חיובית. שאלה ספציפית (לא "איך הראש שלך"). אימוג\'י אחד טבעי.',
+-  friendly_nudge:
+-    'טון שובב ועדין, לא שיפוטי. משפט קצר. בלי "נסגור" או "יום נקי". דחיפה אחת לפעולה ספציפית.',
+-  concerned:
+-    'טון אכפתי, רגיש, קצת מודאג בלי דרמה. שאל ספציפית מה גורם לקושי. לא "מה תפס אותך".',
+-  worried:
+-    'טון חם מאוד, מתגעגע, מקבל. הזכר שגם ימים קשים זה אנושי ("אנחנו בני אדם"). לא להלחיץ.',
+-  check_in:
+-    'טון רגוע ונוכח, כמו חבר ישן שמתחבר אחרי הפסקה. שאל איך הוא ספציפית, לא על "הראש".',
+-};
+diff --git a/apps/web/lib/notifications/engine/fetch-ai-memory.ts b/apps/web/lib/notifications/engine/fetch-ai-memory.ts
+deleted file mode 100644
+index 57fe926..0000000
+--- a/apps/web/lib/notifications/engine/fetch-ai-memory.ts
++++ /dev/null
+@@ -1,100 +0,0 @@
+-/**
+- * `fetchLatestAiMemory` — שליפה ב-batch של "תובנת השבוע/החודש האחרונה"
+- * לכל מועמד ב-`getUsersForNotification`. שאילתה אחת לכל המשתמשים יחד,
+- * במקום N שאילתות נפרדות (חיוני כדי לא להשהות את ה-cron).
+- *
+- * 📚 אסטרטגיה:
+- *   • שולפים את כל סיכומי ה-`weekly` וה-`monthly` של 90 הימים האחרונים
+- *     לקבוצת המשתמשים, ממוינים לפי `created_at DESC`.
+- *   • הולכים ב-JS על השורות לפי הסדר; השורה הראשונה לכל (user, type) =
+- *     האחרונה (כי ה-DB החזיר DESC). שאר השורות נדחות.
+- *   • התוצאה: `Map<userId, AINotificationMemory>`.
+- *
+- * 🎯 גבולות בטיחות:
+- *   • חלון 90 יום מבטיח תוצאות מוגבלות גם למשתמשים פעילים מאוד
+- *     (~12 weekly + ~3 monthly ≈ 15 שורות לכל משתמש פעיל).
+- *   • `limit = userIds.length × 30` שומר מ-runaway אם יש פתאום
+- *     הרבה רישומים ביום אחד.
+- *   • שגיאה ב-DB *לא זורקת* — מחזירה Map ריק. ההתראות ימשיכו לעבוד
+- *     בלי הזיכרון (zero-regression: זה שדרוג, לא תלות).
+- */
+-
+-import type { SupabaseClient } from '@supabase/supabase-js';
+-import type { AINotificationMemory } from '../../types/notification-state';
+-
+-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+-type AnySupabase = SupabaseClient | any;
+-
+-interface SummaryRow {
+-  user_id: string;
+-  type: 'weekly' | 'monthly';
+-  period_key: string;
+-  ai_insight: string | null;
+-}
+-
+-/** חלון השליפה בימים. סיכומים ישנים יותר נחשבים "לא רלוונטיים" לזיכרון. */
+-const MEMORY_WINDOW_DAYS = 90;
+-
+-/** כמה שורות מותר להחזיר פר משתמש. 30 ≫ 15 בפועל = הגנה בלבד. */
+-const ROWS_PER_USER_BUFFER = 30;
+-
+-/**
+- * שולף zero-or-many `weekly` + `monthly` insights פר user_id, ומחזיר
+- * את האחרון של כל סוג. בטוח לקריאה גם כש-`userIds` ריק (no-op).
+- */
+-export async function fetchLatestAiMemory(
+-  admin: AnySupabase,
+-  userIds: ReadonlyArray<string>
+-): Promise<Map<string, AINotificationMemory>> {
+-  const out = new Map<string, AINotificationMemory>();
+-  if (!userIds || userIds.length === 0) return out;
+-
+-  const cutoffDate = new Date(Date.now() - MEMORY_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+-  const cutoffIso = cutoffDate.toISOString();
+-  const limit = userIds.length * ROWS_PER_USER_BUFFER;
+-
+-  let rows: SummaryRow[] = [];
+-  try {
+-    const { data, error } = await admin
+-      .from('periodic_summaries')
+-      .select('user_id, type, period_key, ai_insight')
+-      .in('user_id', userIds as string[])
+-      .in('type', ['weekly', 'monthly'])
+-      .gte('created_at', cutoffIso)
+-      .order('created_at', { ascending: false })
+-      .limit(limit);
+-
+-    if (error) {
+-      // eslint-disable-next-line no-console
+-      console.warn('[ai-memory] fetch failed (graceful degrade):', error.message ?? error);
+-      return out;
+-    }
+-    rows = (data ?? []) as SummaryRow[];
+-  } catch (err) {
+-    // eslint-disable-next-line no-console
+-    console.warn(
+-      '[ai-memory] fetch threw (graceful degrade):',
+-      err instanceof Error ? err.message : err
+-    );
+-    return out;
+-  }
+-
+-  // ה-DB החזיר DESC — הראשון לכל (user, type) הוא האחרון.
+-  for (const row of rows) {
+-    if (!row?.user_id || !row?.type) continue;
+-    const insight = (row.ai_insight ?? '').trim();
+-    if (!insight) continue;
+-
+-    const existing = out.get(row.user_id) ?? {};
+-    if (row.type === 'weekly' && !existing.latest_weekly_insight) {
+-      existing.latest_weekly_insight = insight;
+-      existing.latest_weekly_period = row.period_key;
+-    } else if (row.type === 'monthly' && !existing.latest_monthly_insight) {
+-      existing.latest_monthly_insight = insight;
+-      existing.latest_monthly_period = row.period_key;
+-    }
+-    out.set(row.user_id, existing);
+-  }
+-
+-  return out;
+-}
+diff --git a/apps/web/lib/notifications/engine/generate-notification-text.ts b/apps/web/lib/notifications/engine/generate-notification-text.ts
+deleted file mode 100644
+index aa7113d..0000000
+--- a/apps/web/lib/notifications/engine/generate-notification-text.ts
++++ /dev/null
+@@ -1,417 +0,0 @@
+-/**
+- * `generateNotificationText` — מייצר טקסט push אישי, רגיש-טון, על בסיס
+- * הקשר דו-ממדי (time_of_day × consecutive_missed_days).
+- *
+- * 🎯 יעד אורך: עד ~40 מילים / ~250 תווים (2 משפטים אמיתיים שעדיין
+- * נשארים שמישים כ-push notification בכל הדפדפנים/המכשירים).
+- *
+- * 🛡️ אסטרטגיית אמינות — שרשרת ניסיונות חוצת-ספקים:
+- *   1. `openai/gpt-5-mini` דרך OpenRouter — ניסיון 1 (timeout 15s).
+- *   2. `openai/gpt-5-mini` דרך OpenRouter — ניסיון 2 (retry אחרי 300ms).
+- *   3. `openai/gpt-4o-mini` דרך OpenRouter — ספק זהה, מודל שונה (1 ניסיון).
+- *   4. `meta-llama/llama-4-scout` דרך **Groq** — ספק שונה לחלוטין
+- *       (גיבוי infra-level לכשל אזורי של OpenRouter).
+- *
+- * רק אם כל ארבעה נכשלים (= OpenRouter + Groq שניהם down בו-זמנית, אירוע
+- * נדיר ביותר) — נופלים ל-template סטטי כ"חגורה+שלייקס" כדי לא להשאיר
+- * את המשתמש לגמרי בלי התראה. ב-prod זה לא אמור לקרות.
+- *
+- * 🚨 חוק defensive: אם `has_completed_today === true` הגיע איכשהו לפונקציה —
+- * זורקים מיידית בלי לקרוא ל-LLM כלל.
+- */
+-
+-import type OpenAI from 'openai';
+-import type {
+-  AINotificationContext,
+-  NotificationState,
+-} from '../../types/notification-state';
+-import {
+-  getNotificationBackgroundLLM,
+-  getNotificationLLM,
+-  NOTIFICATION_BACKGROUND_MODEL,
+-  NOTIFICATION_ENGINE_MODEL,
+-  NOTIFICATION_ENGINE_MODEL_SECONDARY,
+-} from './llm-clients';
+-import { URGENCY_STYLE_HINTS_HE } from './derive-urgency-level';
+-
+-const SYSTEM_PROMPT = `אתה "אלמוג" — חבר ליווי בריאות אנושי באפליקציית NuraWell. גבר, 34. עברית יומיומית כמו בווטסאפ. *לא* מאמן רשמי, *לא* בוט, *לא* "מערכת". אתה כותב הודעה אישית אחת לאדם שאתה מכיר.
+-
+-🚨 כללי אנטי-AI (קריטי — חציית כל אחד מהם = הודעה פסולה):
+-
+-❌ אסור לכתוב את הביטויים האלה (תרגום מכני מאנגלית, טון מערכת, או סלנג מומצא):
+-- "אני רואה ש..." / "שמתי לב ש..." (אלא אם זה ממש טבעי בסיפור)
+-- "אל תשכח" / "כדאי לזכור" / "חשוב להמשיך"
+-- "מצוין!" / "כל הכבוד" / "מדהים!" (קופאי גנרי — אין אצלך כאלה)
+-- "מה נעים לך לעשות?" / "איך אתה מרגיש?" כפתיחה
+-- "אני שמח לשמוע" / "אני מצטער לשמוע" (תרגום מאנגלית)
+-- "כבד לשמוע" / "ככה זה לפעמים"
+-- "מצב הבריאות שלך" / "המסע שלך" / "התקדמותך"
+-- "תזכורת:" / "התראה:" (אל תכתוב את המילה תזכורת)
+-
+-🚫 ביטויים שנשמעים AI ו**אסור בהחלט** (קריטי — אלה הביטויים שהמשתמשים זיהו):
+-- "איך הראש שלך?" / "מה הראש שלך?" / "מה על הראש שלך?" — שטוח ולא אנושי. שאל ספציפית: "איך עבר הבוקר?", "מה אכלת הבוקר?", "איך הייתה ההליכה?"
+-- "מה תפס אותך?" — תרגום שיווקי. אמור: "מה גרם לזה?", "מה היה הקושי?", "מה הפיל אותך?"
+-- "מה הולך אצלך?" — רובוטי. שאל קונקרטי: "איך עבר היום?", "מה קורה בעבודה?"
+-- "נסגור?" / "סגרת את היום?" / "יום נקי" / "יום מושלם" / "לסגור" סתם — ז'רגון, לא חבר. אמור: "תשתה גם בערב?", "תזכור גם בארוחה הבאה?", "תעשה גם בערב את ההליכה?"
+-- "נחנו ביום הבא" / "נחנו את זה" — לא עברית. אמור: "מחר ננסה שוב", "מחר יום חדש"
+-- "דילגנו" סתם — תמיד תוסיף: "דילגנו על המים", "פיספסנו את ההליכה"
+-- "X מתוך Y" סתם — תמיד תוסיף יחידה: "2 כוסות מתוך 3", "5 ימים מתוך 7", "4 הליכות מתוך 5"
+-- "ימים כאלה" סתם / "זה קורה" — גנרי. אמור: "יש גם ימים שעובדים פחות, זה בסדר אנחנו בני אדם"
+-- מטאפורות מומצאות ("רגליים יש לך השבוע", "אש בעיניים") — אסור. אם זה לא משהו שחבר היה כותב לך בווטסאפ — לא לכתוב
+-
+-✅ אתה כותב כך (אמיתי, חי, של חבר):
+-- "אהלן 👋" / "וואלה אחי" / "אוף 😕" / "יששש 🎯"
+-- שאלות ספציפיות: "מה אכלת היום?", "איך עבר הבוקר?", "מה גרם לקושי?"
+-- ולידציה אנושית: "זה בסדר, אנחנו בני אדם", "קורה לכולנו", "באמת לא קל"
+-- "באמת קשה" / "אני כאן אם בא לך"
+-- שאלה אחת פתוחה בסוף (לא כן/לא, לא רשימה)
+-- שובר את הקצב באמצע משפט: "רגע — אז מה היה?"
+-
+-🎯 חוק זהב: לפני שאתה כותב, שאל את עצמך — האם חבר בווטסאפ היה כותב לי את זה? אם לא — תכתוב מחדש.
+-
+-🔥 חוק קריטי על דינמיות (חשוב במיוחד בנוטיפיקציות):
+-הדוגמאות בפרומפט הזה הן רק ל*רוח* — *לא* תבניות להעתקה. אסור להעתיק מילולית ניסוחים מהדוגמאות.
+-- כל הודעת push חייבת להיות מקורית, ייחודית, מותאמת ל-${'{שם}'}, ל-${'{משימה}'}, ול-time_of_day הספציפי של *הקריאה הזאת*.
+-- אם יצרת בעבר הודעה דומה לאותו משתמש (תיראה לפעמים ב-notification_count) — *חייב* לבחור פתיחה אחרת, מטאפורה אחרת, אנרגיה אחרת. אסור לחזור על אותו דפוס.
+-- שמור על *הקול* (אלמוג, חם, ספציפי, אמיתי) — אבל לא על המילים המדויקות מהדוגמאות. שני משתמשים שונים לא יקבלו לעולם את אותה הודעה.
+-
+-📐 פורמט:
+-- 1–2 משפטים. 250 תווים מקסימום.
+-- אימוג'י אחד-שניים, רק אם נכון לרגש. לא תמיד.
+-- בלי גרשיים סביב ההודעה, בלי הקדמות, בלי כותרת.
+-- *לעולם* לא לכתוב "${'\u200F'}" (RTL marks), markdown, או bullets.
+-
+-🎚️ אתה מקבל הקשר דו-ממדי (2D context matrix):
+-• time_of_day — איפה המשתמש בתוך היום: morning / noon / evening.
+-• consecutive_missed_days — כמה ימים *רצופים לפני היום* הוא החמיץ:
+-    0 = רק היום הוא עוד לא סימן (אתמול היה תקין / זה יום ראשון בסטריק).
+-    1 = אתמול לא סימן, וגם היום עדיין לא.
+-    2+ = שני ימים רצופים ויותר בלי ביצוע — הוא בדרך לנשירה אמיתית.
+-• has_completed_today — תמיד יגיע אליך כ-false. אם תקבל true — אל תכתוב שום הודעה.
+-
+-🎚️ urgency_level — *מודולציית הטון* שאתה חייב לאמץ (מחושב מראש ב-rule-engine):
+-- gentle         → טון חם, מעודד, פתיחה חיובית. אימוג'י אחד טבעי.
+-- friendly_nudge → טון שובב ועדין, לא שיפוטי, עם קמצוץ הומור. דחיפה אחת.
+-- concerned      → טון אכפתי וקצת מודאג בלי דרמה. הראה שאתה זוכר.
+-- worried        → טון חם מאוד, קצת מתגעגע, מקבל לחלוטין. אל תלחיץ.
+-- check_in       → טון רגוע ונוכח כמו חבר ישן. שאל איך הוא — אל תזכיר משימה בכוח.
+-
+-🧠 חוקי קישור צולב בין שני הצירים (קריטיים — חצה אותם תמיד):
+-1. consecutive_missed_days === 0:
+-   • morning → פתיחת יום חיובית וחמה. "בוקר חדש, בוא נתחיל".
+-   • noon    → צ'ק-אין קליל באמצע היום. בלי לחץ.
+-   • evening → ההתמקדות היא בעובדה ש*כל היום עבר* בלי עדכון. דחיפה עדינה לסגור את היום חזק — עוד יש זמן עכשיו.
+-
+-2. consecutive_missed_days === 1:
+-   • morning → "אתמול פיספסנו את {משימה} — בוא ניתן ליום הזה התחלה חדשה".
+-   • noon    → "אתמול לא יצא לסיים את {משימה}, היום עוד לא — איך אני יכול לעזור?".
+-   • evening → ההתמקדות היא בכך ש*אתמול הוחמץ והיום כמעט נגמר*. טון מעט יותר מודאג, אבל עדיין תומך. ולידציה רכה ("יש גם ימים כאלה") ושאלה אם הכל בסדר.
+-
+-3. consecutive_missed_days >= 2:
+-   • הטון: דאגה כנה ואותנטית. המשתמש בסיכון אמיתי לנשירה. בלי שיפוט, בלי "אמרתי לך", בלי אשמה.
+-     שאל אם הכל בסדר. הזכר שאתה כאן בשבילו. הצע עזרה ספציפית רכה.
+-
+-🧠💾 זיכרון ארוך-טווח (ai_memory) — אופציונלי, יגיע רק כשיש לזה ערך:
+-• ai_memory.latest_weekly_insight — תובנה מהשבוע האחרון שלו (טקסט שכבר נכתב על-ידיך בעבר).
+-• ai_memory.latest_monthly_insight — תובנה מהחודש האחרון שלו.
+-
+-חוקי שימוש בזיכרון (קריטיים — אל תפר):
+-1. אם ai_memory חסר לחלוטין — תתעלם ממנו. ההודעה נכתבת על בסיס הציר ה-2D בלבד.
+-2. אם ai_memory קיים — שלב רמז עדין שאתה זוכר את הדפוס שלו: מומנטום עולה, יום-בשבוע חלש,
+-   הישג חוזר. *אסור* לצטט מילולית את התובנה. *אסור* לכתוב "כפי שראיתי בסיכום השבועי" /
+-   "לפי הדו"ח שלך" / "ההיסטוריה שלך מראה". זה נשמע רובוטי וזיוף.
+-3. הזיכרון נכנס *רק* כצליל-רקע: משפט שמרגיש "אתה זוכר אותי" בלי להצהיר על זה.
+-   דוגמה טובה: "אחרי שבוע עם 5 סימונים, חבל לפספס היום". דוגמה רעה: "ראיתי בסיכום השבועי
+-   שלך שהשלמת 5 ימים".
+-4. אסור להעתיק מספרים שלא קיבלת ב-ai_memory. אם המסר התובנתי הוא איכותי ("יציבות יפה")
+-   ולא מספרי, אל תמציא מספר.
+-
+-📚 דוגמאות (ככה, *לא* ככה):
+-
+-— urgency=gentle, morning:
+-✓ "אהלן ${'{שם}'} 👋 בוקר חדש — בוא נתחיל עם ${'{משימה}'}. מה בא לך הבוקר?"
+-✗ "בוקר טוב ${'{שם}'}! זוהי תזכורת לסמן את ${'{משימה}'}."
+-
+-— urgency=friendly_nudge, evening:
+-✓ "אחי, היום כמעט נגמר ולא יצא ${'{משימה}'} — דקה עכשיו ויש לך יום טוב מהבחינה הזו 🌙"
+-✗ "אחי, היום כמעט נגמר. דקה ל-${'{משימה}'} ויוצאים מהיום נקי 🌙"
+-✗ "אני רואה שעדיין לא סימנת את ${'{משימה}'} היום."
+-
+-— urgency=concerned, morning (יומיים-שלושה):
+-✓ "אוף ${'{שם}'} 😕 כבר כמה ימים בלי ${'{משימה}'} — הכל בסדר אצלך? מה גורם לדחיינות?"
+-✗ "אוף ${'{שם}'} 😕 כבר כמה ימים בלי ${'{משימה}'}. מה תפס אותך?"
+-✗ "שמתי לב שיש לך 3 ימים רצופים ללא ביצוע. חשוב להמשיך."
+-
+-— urgency=worried, after a week:
+-✓ "וואי ${'{שם}'}, מתגעגע. ${'{משימה}'} מחכה כשתחזור, בקצב שלך 💛"
+-✗ "אתה כבר שבוע לא פעיל. כדאי לחזור למסלול."
+-
+-— urgency=check_in, dormant:
+-✓ "${'{שם}'}, מה קורה איתך עכשיו? בלי לחץ עם ${'{משימה}'} — רק רוצה לדעת איך אתה."
+-✗ "${'{שם}'}, איך הראש שלך עכשיו? בלי לחץ עם ${'{משימה}'} — רק רוצה לדעת מה איתך."
+-✗ "כל הכבוד על הניסיון. בוא נחזיר את הקצב."
+-
+-— reinforcement (משימה שזה עתה בוצעה, סלוט אחד מתוך כמה):
+-✓ "תותח 💪 שתית עד עכשיו 2 כוסות מים מתוך 3 — תזכור גם את זה של הערב?"
+-✗ "תותח! 2 מתוך 3. נסגור?"
+-
+-— reinforcement (סגירה מלאה אחרי יום קשה):
+-✓ "וואלה ${'{שם}'} 🌙 שתית את כל 3 הכוסות אחרי היום הלחוץ שתיארת — לא מובן מאליו. איך מרגיש?"
+-✗ "וואלה ${'{שם}'} 🌙 שסגרת את היום נקי אחרי יום קשה — מטריף. נחנו ביום הבא?"
+-
+-❗ חוקי פלט מחמירים (לכל המצבים):
+-- 1 עד 2 משפטים. עד 40 מילים סך הכל. עד 250 תווים.
+-- עברית טבעית, פנייה אישית לפי השם (user_first_name).
+-- בלי גרשיים מסביב להודעה.
+-- בלי הקדמות כמו "הנה ההודעה:" / "אני מציע:".
+-- אימוג'י אחד עד שניים בלבד, במקום שמרגיש טבעי.
+-- אסור להמציא פרטים שלא קיבלת (אל תזכיר משקל, ארוחות, שעות מדויקות, מספרים).
+-- שורה אחת או שתיים — אבל בלי שורה ריקה ביניהן.`;
+-
+-/**
+- * 🪶 Lean user message — לפי "הנחיה 2" של Claude לאופטימיזציית טוקנים.
+- *
+- * הרציונל: ה-system prompt *כבר* מכיל את כל החוקים והפרסונה. ה-user
+- * message צריך להעביר רק את הפרמטרים הקונקרטיים של הקריאה הנוכחית.
+- * החלפה של `JSON.stringify(..., null, 2)` הצפוף בשורות פייפ-מופרדות
+- * חוסכת ~60% מטוקני ה-input בלי לפגוע באיכות (המדידות במסמך Claude #2).
+- *
+- * הכלל: שורה אחת לכל שדה, כל שדה אופציונלי שאינו קיים — לא נכנס בכלל.
+- * מודולציית הטון (urgency_level) מקבלת hint קצר עם הסגנון הצפוי כדי
+- * שה-LLM לא יצטרך "להחליט מחדש" איזה רגש לאמץ.
+- */
+-function buildUserMessage(ctx: AINotificationContext): string {
+-  const lines: string[] = [];
+-
+-  // שורת פרמטרים קומפקטית, ללא JSON. כל ערך בנפרד ומסומן בעברית.
+-  lines.push(`שם: ${ctx.user_first_name}`);
+-  lines.push(`משימה: ${ctx.task_name}`);
+-  lines.push(`חלק יום: ${ctx.time_of_day}`);
+-  lines.push(`ימים רצוף ללא ביצוע: ${ctx.consecutive_missed_days}`);
+-  if (ctx.time_ago_text) {
+-    lines.push(`כמה זמן: ${ctx.time_ago_text}`);
+-  }
+-  lines.push(`טון נדרש: ${ctx.urgency_level}`);
+-  if (URGENCY_STYLE_HINTS_HE[ctx.urgency_level]) {
+-    lines.push(`רמז סגנון: ${URGENCY_STYLE_HINTS_HE[ctx.urgency_level]}`);
+-  }
+-  if (typeof ctx.notification_count === 'number' && ctx.notification_count > 0) {
+-    lines.push(`מספר התראות שכבר נשלחו: ${ctx.notification_count}`);
+-  }
+-  if (typeof ctx.hours_since_last_response === 'number') {
+-    lines.push(`שעות מאז שהיה פעיל: ${ctx.hours_since_last_response}`);
+-  }
+-
+-  // זיכרון ארוך-טווח — רק אם קיים בפועל (לא מציפים את ה-LLM ב-key ריק).
+-  const weekly = ctx.ai_memory?.latest_weekly_insight?.trim();
+-  const monthly = ctx.ai_memory?.latest_monthly_insight?.trim();
+-  if (weekly) lines.push(`רמז שבועי: ${weekly}`);
+-  if (monthly) lines.push(`רמז חודשי: ${monthly}`);
+-
+-  lines.push('');
+-  lines.push('הפק הודעת push אחת בעברית — עד 40 מילים, עד 250 תווים, בלי גרשיים.');
+-
+-  return lines.join('\n');
+-}
+-
+-/** Template סטטי — נכנס *רק* כשכל 4 ניסיונות ה-LLM נכשלו. */
+-const ULTIMATE_FALLBACK: Record<NotificationState, (name: string, task: string) => string> = {
+-  MORNING_KICKOFF: (n, t) =>
+-    `בוקר טוב ${n}! יום חדש מחכה — בוא נפתח אותו עם "${t}". אתה זה 💪`,
+-  NOON_CHECK: (n, t) =>
+-    `היי ${n}, צ'ק-אין קצר באמצע היום: עוד לא יצא "${t}" — אפשר עכשיו, גם דקה תספיק 😊`,
+-  EVENING_CHECK: (n, t) =>
+-    `${n}, היום כמעט נגמר ועדיין לא יצא "${t}". דקה אחת עכשיו ויש לך יום טוב מהבחינה הזו 🌙`,
+-  DAY_2_MISSED: (n, t) =>
+-    `${n}, אתמול פיספסנו את "${t}" וגם היום עוד לא יצא. הכל בסדר אצלך? אני כאן אם בא לך לדבר 💛`,
+-  DAY_3_MISSED: (n, t) =>
+-    `${n}, כבר כמה ימים בלי "${t}" — דואג באמת. מה גורם לקושי? בוא ננסה ביחד 🤝`,
+-  DORMANT: (n, t) =>
+-    `${n}, מתגעגע אליך כאן! "${t}" מחכה לך כשתחזור. בלי לחץ, בקצב שלך 🌿`,
+-};
+-
+-/** מנרמל את התשובה הגולמית של ה-LLM. מחזיר '' אם פסול / ריק. */
+-function postProcess(text: string): string {
+-  let cleaned = (text ?? '').trim();
+-  // הסרת גרשיים פותחים/סוגרים אם המודל הוסיף בכל זאת
+-  cleaned = cleaned.replace(/^["'״׳`]+|["'״׳`]+$/g, '').trim();
+-  if (!cleaned) return '';
+-  // עד 2 שורות, מאוחדות ברווח (לא שורה ריקה ביניהן)
+-  const lines = cleaned
+-    .split(/\r?\n/)
+-    .map((l) => l.trim())
+-    .filter(Boolean);
+-  cleaned = lines.slice(0, 2).join(' ');
+-  if (!cleaned) return '';
+-  if (cleaned.length > 250) cleaned = `${cleaned.slice(0, 247)}…`;
+-  return cleaned;
+-}
+-
+-interface AttemptStep {
+-  /** מיתוג לקריאה ל-logs. */
+-  label: string;
+-  /** Lazy resolver של ה-client כדי לתפוס שינויי env בזמן אמת. */
+-  resolveClient: () => OpenAI;
+-  model: string;
+-  timeoutMs: number;
+-  /** מספר ניסיונות באותו צעד (retry על אותו model). */
+-  attempts: number;
+-}
+-
+-interface ChainResult {
+-  body: string;
+-  model: string;
+-  attempts: number;
+-  usedFallback: boolean;
+-  errors: string[];
+-}
+-
+-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+-
+-async function callOnce(
+-  client: OpenAI,
+-  model: string,
+-  ctx: AINotificationContext,
+-  timeoutMs: number
+-): Promise<string> {
+-  const controller = new AbortController();
+-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+-  try {
+-    const completion = await client.chat.completions.create(
+-      {
+-        model,
+-        temperature: 0.8,
+-        // 🪶 Token-budget tightening לפי "הנחיה 2" של Claude. היעד הוא ~40
+-        // מילים / ~250 תווים (≈ 60 טוקנים בעברית), עם buffer ל-emoji
+-        // ותווים מיוחדים. 140 חוסך ~36% מ-output budget מבלי לפגוע במגבלת
+-        // האורך המקסימלית של הודעת push.
+-        max_tokens: 140,
+-        messages: [
+-          { role: 'system', content: SYSTEM_PROMPT },
+-          { role: 'user', content: buildUserMessage(ctx) },
+-        ],
+-      },
+-      { signal: controller.signal }
+-    );
+-    const raw = completion.choices?.[0]?.message?.content ?? '';
+-    const cleaned = postProcess(raw);
+-    if (!cleaned) throw new Error('empty_or_invalid_response');
+-    return cleaned;
+-  } finally {
+-    clearTimeout(timer);
+-  }
+-}
+-
+-function buildChain(modelOverride?: string): AttemptStep[] {
+-  const primary = modelOverride ?? NOTIFICATION_ENGINE_MODEL;
+-  const steps: AttemptStep[] = [
+-    {
+-      label: 'openrouter-primary',
+-      resolveClient: getNotificationLLM,
+-      model: primary,
+-      timeoutMs: 15_000,
+-      attempts: 2,
+-    },
+-  ];
+-
+-  // משני: רק אם המודל שונה מהראשי (אחרת זה כפילות).
+-  if (NOTIFICATION_ENGINE_MODEL_SECONDARY !== primary) {
+-    steps.push({
+-      label: 'openrouter-secondary',
+-      resolveClient: getNotificationLLM,
+-      model: NOTIFICATION_ENGINE_MODEL_SECONDARY,
+-      timeoutMs: 15_000,
+-      attempts: 1,
+-    });
+-  }
+-
+-  // שלישוני: Groq — ספק שונה לחלוטין (cross-provider failover).
+-  steps.push({
+-    label: 'groq-tertiary',
+-    resolveClient: getNotificationBackgroundLLM,
+-    model: NOTIFICATION_BACKGROUND_MODEL,
+-    timeoutMs: 10_000,
+-    attempts: 1,
+-  });
+-
+-  return steps;
+-}
+-
+-/** גזירת state מינימלית רק בשביל בחירת template-סוף-העולם. */
+-function pickFallbackState(ctx: AINotificationContext): NotificationState {
+-  if (ctx.consecutive_missed_days >= 3) return 'DORMANT';
+-  if (ctx.consecutive_missed_days === 2) return 'DAY_3_MISSED';
+-  if (ctx.consecutive_missed_days === 1) return 'DAY_2_MISSED';
+-  if (ctx.time_of_day === 'morning') return 'MORNING_KICKOFF';
+-  if (ctx.time_of_day === 'noon') return 'NOON_CHECK';
+-  return 'EVENING_CHECK';
+-}
+-
+-export interface GenerateNotificationOptions {
+-  /** Override של המודל הראשי בלבד. ה-fallback chain נשאר כפי שהוא. */
+-  model?: string;
+-  /**
+-   * State פנימי לבחירת template-סוף-העולם, אם כל ה-chain נכשל.
+-   * אם לא יסופק → ייגזר אוטומטית מה-context.
+-   */
+-  fallbackState?: NotificationState;
+-}
+-
+-export async function generateNotificationText(
+-  ctx: AINotificationContext,
+-  options: GenerateNotificationOptions = {}
+-): Promise<ChainResult> {
+-  // 🚨 חוק קריטי: אם המשתמש כבר השלים — לא קוראים ל-LLM בכלל.
+-  if (ctx.has_completed_today) {
+-    throw new Error(
+-      'generateNotificationText: has_completed_today=true → must not call LLM'
+-    );
+-  }
+-
+-  const chain = buildChain(options.model);
+-  const errors: string[] = [];
+-  let attemptCount = 0;
+-
+-  for (const step of chain) {
+-    for (let i = 1; i <= step.attempts; i += 1) {
+-      attemptCount += 1;
+-      try {
+-        const client = step.resolveClient();
+-        const body = await callOnce(client, step.model, ctx, step.timeoutMs);
+-        return {
+-          body,
+-          model: step.model,
+-          attempts: attemptCount,
+-          usedFallback: false,
+-          errors,
+-        };
+-      } catch (err) {
+-        const msg =
+-          err instanceof Error ? `${step.label}#${i}: ${err.message}` : `${step.label}#${i}`;
+-        errors.push(msg);
+-        // eslint-disable-next-line no-console
+-        console.warn('[notification-engine] LLM attempt failed:', msg);
+-        // exp backoff קצר בין ניסיונות באותו צעד
+-        if (i < step.attempts) {
+-          await sleep(300 * i);
+-        }
+-      }
+-    }
+-  }
+-
+-  // הגענו לכאן? כל ה-chain נכשל — אירוע נדיר מאוד (שני ספקים down).
+-  const fallbackState = options.fallbackState ?? pickFallbackState(ctx);
+-  const body = ULTIMATE_FALLBACK[fallbackState](ctx.user_first_name, ctx.task_name);
+-  // eslint-disable-next-line no-console
+-  console.error(
+-    '[notification-engine] All LLM providers failed, using static template:',
+-    errors
+-  );
+-  return {
+-    body,
+-    model: 'static-template',
+-    attempts: attemptCount,
+-    usedFallback: true,
+-    errors,
+-  };
+-}
+diff --git a/apps/web/lib/notifications/engine/get-users-for-notification.ts b/apps/web/lib/notifications/engine/get-users-for-notification.ts
+deleted file mode 100644
+index 5cc7b70..0000000
+--- a/apps/web/lib/notifications/engine/get-users-for-notification.ts
++++ /dev/null
+@@ -1,239 +0,0 @@
+-/**
+- * `getUsersForNotification(timeOfDay)` —
+- * שולף את כל המועמדים לקבלת התראת engine ב-slot הזה.
+- *
+- * הזרימה (Supabase = source of truth):
+- *   1. מביא את כל ה-profiles הפעילים (`is_active = true`) שיש להם
+- *      `daily_task` (אחרת אין מה להזכיר להם).
+- *   2. מסנן החוצה משתמשים שכבר השלימו את המשימה היום (`task_logs` עם
+- *      `date_key = today_il`).
+- *   3. מחשב לכל משתמש שנותר: `consecutiveMissedDays` (לפני היום),
+- *      תוך scan של 14 הימים האחרונים מ-`task_logs`.
+- *   4. מעביר ל-`deriveNotificationState` כדי לקבל NotificationState
+- *      או null (לא לשלוח עכשיו).
+- *   5. מחזיר רק מי שיש להם state פעיל.
+- *
+- * אופטימיזציה:
+- *   • שאילתה אחת ל-profiles + שאילתה אחת ל-task_logs (last 14d לכל המשתמשים).
+- *   • החישוב עצמו ב-memory (O(users × 14)).
+- *
+- * ❗ דחיית הכפילויות (לא לשלוח אותה התראה פעמיים באותו slot) נעשית
+- *    ב-`logNotification` דרך UNIQUE constraint על
+- *    (user_id, date_key, time_of_day) ב-notification_logs.
+- */
+-
+-import type { SupabaseClient } from '@supabase/supabase-js';
+-import {
+-  deriveNotificationState,
+-  israelDateKey,
+-} from './derive-notification-state';
+-import { deriveUrgencyLevel } from './derive-urgency-level';
+-import type {
+-  NotificationCandidate,
+-  TimeOfDay,
+-} from '../../types/notification-state';
+-import { fetchLatestAiMemory } from './fetch-ai-memory';
+-
+-const LOOKBACK_DAYS = 14;
+-/**
+- * משתמש שהיה פעיל ב-`RESPONDED_RECENTLY_HOURS` השעות האחרונות מקבל "פטור"
+- * מ-slot ההתראה הזה. ההיגיון: אם הוא הרגע כתב לאלמוג / סימן משימה, הוא
+- * "בלולאה" — לדחוף לו עוד הודעת push זה רעש שיגרום לו לסלוד מהמערכת.
+- * הערך נלקח ישירות מ"הנחיה 1" של Claude (`6 * 60 * 60 * 1000`).
+- */
+-const RESPONDED_RECENTLY_HOURS = 6;
+-
+-interface ProfileRow {
+-  id: string;
+-  full_name: string | null;
+-  daily_task: string | null;
+-  last_responded_at: string | null;
+-  notification_count: number | null;
+-}
+-
+-interface TaskLogRow {
+-  user_id: string;
+-  date_key: string;
+-}
+-
+-function shiftDateKey(dateKey: string, deltaDays: number): string {
+-  const [y, m, d] = dateKey.split('-').map((n) => Number.parseInt(n, 10));
+-  if (![y, m, d].every(Number.isFinite)) return dateKey;
+-  // נשתמש ב-UTC כדי להימנע מהשפעת DST. שלוקח אופסט קטן זה לא משנה
+-  // כי אנחנו רק מייצרים מחרוזת YYYY-MM-DD תוך מעבר רציף של ימים.
+-  const dt = new Date(Date.UTC(y, m - 1, d));
+-  dt.setUTCDate(dt.getUTCDate() + deltaDays);
+-  const yyyy = dt.getUTCFullYear();
+-  const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');
+-  const dd = String(dt.getUTCDate()).padStart(2, '0');
+-  return `${yyyy}-${mm}-${dd}`;
+-}
+-
+-function deriveFirstName(fullName: string | null | undefined): string {
+-  const trimmed = (fullName ?? '').trim();
+-  if (!trimmed) return 'חבר';
+-  return trimmed.split(/\s+/)[0] ?? 'חבר';
+-}
+-
+-/**
+- * סופר ימים *רצופים* (בדיוק לפני היום) שאין להם רישום ב-task_logs.
+- * עוצר ברגע שמוצא יום אחד עם רישום.
+- *
+- * @param completedDates Set של `date_key`s שהיו בהם השלמות (חלון של LOOKBACK_DAYS).
+- */
+-function countConsecutiveMissedDays(
+-  completedDates: ReadonlySet<string>,
+-  today: string
+-): number {
+-  let missed = 0;
+-  for (let delta = 1; delta <= LOOKBACK_DAYS; delta += 1) {
+-    const day = shiftDateKey(today, -delta);
+-    if (completedDates.has(day)) break;
+-    missed += 1;
+-  }
+-  return missed;
+-}
+-
+-export interface GetUsersForNotificationOptions {
+-  /** Override ל-today (ירושלים) לצרכי טסטים. */
+-  todayOverride?: string;
+-  /** קייפ בטיחות: כמה משתמשים מקסימום להחזיר ב-batch. */
+-  maxUsers?: number;
+-}
+-
+-export async function getUsersForNotification(
+-  admin: SupabaseClient,
+-  timeOfDay: TimeOfDay,
+-  options: GetUsersForNotificationOptions = {}
+-): Promise<NotificationCandidate[]> {
+-  const today = options.todayOverride ?? israelDateKey();
+-  const earliest = shiftDateKey(today, -LOOKBACK_DAYS);
+-
+-  // 1. כל המשתמשים הפעילים עם משימה יומית מוגדרת.
+-  // השדות `last_responded_at` ו-`notification_count` נוספו ב-migration 000029
+-  // ומאפשרים: (א) סינון של משתמשים שהגיבו לאחרונה, (ב) הזרקת counter ל-LLM.
+-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+-  const profilesQuery = (admin as any)
+-    .from('profiles')
+-    .select('id, full_name, daily_task, last_responded_at, notification_count')
+-    .eq('is_active', true)
+-    .not('daily_task', 'is', null);
+-
+-  const { data: profilesData, error: profilesError } = (await profilesQuery) as {
+-    data: ProfileRow[] | null;
+-    error: { message: string } | null;
+-  };
+-  if (profilesError) {
+-    throw new Error(`getUsersForNotification(profiles): ${profilesError.message}`);
+-  }
+-
+-  const profiles = (profilesData ?? []).filter(
+-    (p) => typeof p.daily_task === 'string' && p.daily_task.trim().length > 0
+-  );
+-  if (profiles.length === 0) return [];
+-
+-  const userIds = profiles.map((p) => p.id);
+-
+-  // 2. כל ה-task_logs ב-LOOKBACK_DAYS האחרונים לקבוצת המשתמשים.
+-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+-  const logsQuery = (admin as any)
+-    .from('task_logs')
+-    .select('user_id, date_key')
+-    .in('user_id', userIds)
+-    .gte('date_key', earliest)
+-    .lte('date_key', today);
+-
+-  const { data: logsData, error: logsError } = (await logsQuery) as {
+-    data: TaskLogRow[] | null;
+-    error: { message: string } | null;
+-  };
+-  if (logsError) {
+-    throw new Error(`getUsersForNotification(task_logs): ${logsError.message}`);
+-  }
+-
+-  // 3. group-by user → Set of date_keys
+-  const byUser = new Map<string, Set<string>>();
+-  for (const row of logsData ?? []) {
+-    if (!row?.user_id || !row?.date_key) continue;
+-    let set = byUser.get(row.user_id);
+-    if (!set) {
+-      set = new Set<string>();
+-      byUser.set(row.user_id, set);
+-    }
+-    set.add(row.date_key);
+-  }
+-
+-  // 4. מסננים את מי שכבר השלים היום / הגיב לאחרונה + מחשבים state.
+-  const nowMs = Date.now();
+-  const respondedRecentlyMs = RESPONDED_RECENTLY_HOURS * 60 * 60 * 1000;
+-
+-  const candidates: NotificationCandidate[] = [];
+-  for (const profile of profiles) {
+-    const completedDates = byUser.get(profile.id) ?? new Set<string>();
+-    if (completedDates.has(today)) continue; // ✅ השלים היום → דלג
+-
+-    // ⏱️ Filter חדש: דלג אם המשתמש פעיל ב-6 השעות האחרונות (Claude #1).
+-    // ההיגיון: הוא בלולאה כרגע — תוסיף עוד push וזה ייקרא לו רעש, לא ליווי.
+-    let hoursSinceLastResponse: number | undefined;
+-    if (profile.last_responded_at) {
+-      const lastMs = Date.parse(profile.last_responded_at);
+-      if (Number.isFinite(lastMs)) {
+-        const diffMs = nowMs - lastMs;
+-        if (diffMs >= 0 && diffMs < respondedRecentlyMs) {
+-          continue; // 🔇 הגיב לאחרונה → השאר אותו במנוחה ל-slot הזה
+-        }
+-        if (diffMs >= 0) {
+-          hoursSinceLastResponse = Math.round(diffMs / (1000 * 60 * 60));
+-        }
+-      }
+-    }
+-
+-    const consecutiveMissedDays = countConsecutiveMissedDays(completedDates, today);
+-    const state = deriveNotificationState({
+-      timeOfDay,
+-      consecutiveMissedDays,
+-    });
+-    if (!state) continue; // ה-rule engine החליט "לא עכשיו" (DAY_3 בנון/ערב, או DORMANT בלי יום ראשון)
+-
+-    const urgencyLevel = deriveUrgencyLevel({ timeOfDay, consecutiveMissedDays });
+-
+-    const candidate: NotificationCandidate = {
+-      userId: profile.id,
+-      firstName: deriveFirstName(profile.full_name),
+-      taskName: (profile.daily_task as string).trim(),
+-      notificationState: state,
+-      consecutiveMissedDays,
+-      timeOfDay,
+-      urgencyLevel,
+-    };
+-    if (typeof hoursSinceLastResponse === 'number') {
+-      candidate.hoursSinceLastResponse = hoursSinceLastResponse;
+-    }
+-    if (typeof profile.notification_count === 'number' && profile.notification_count > 0) {
+-      candidate.notificationCount = profile.notification_count;
+-    }
+-    candidates.push(candidate);
+-  }
+-
+-  const max = options.maxUsers ?? 500;
+-  const trimmed = candidates.slice(0, max);
+-
+-  // 5. (Phase 3) הזרקת זיכרון ארוך-טווח: לכל מועמד — שולפים ב-batch אחד
+-  //    את ה-`latest_weekly_insight` וה-`latest_monthly_insight` שלו
+-  //    מ-`periodic_summaries`. כשל DB כאן לא קורס את ה-engine — נשלם
+-  //    תכף את ההתראה בלי הזיכרון (graceful degrade).
+-  if (trimmed.length > 0) {
+-    const memoryByUser = await fetchLatestAiMemory(
+-      admin,
+-      trimmed.map((c) => c.userId)
+-    );
+-    for (const candidate of trimmed) {
+-      const mem = memoryByUser.get(candidate.userId);
+-      if (mem && (mem.latest_weekly_insight || mem.latest_monthly_insight)) {
+-        candidate.aiMemory = mem;
+-      }
+-    }
+-  }
+-
+-  return trimmed;
+-}
+diff --git a/apps/web/lib/notifications/engine/llm-clients.ts b/apps/web/lib/notifications/engine/llm-clients.ts
+deleted file mode 100644
+index 35f0143..0000000
+--- a/apps/web/lib/notifications/engine/llm-clients.ts
++++ /dev/null
+@@ -1,42 +0,0 @@
+-/**
+- * LLM clients ל-Notification Engine.
+- *
+- * החלטות ארכיטקטורה:
+- *   • טקסט ההתראה (user-facing, אמפתי, רגיש-טון) — **OpenRouter** עם
+- *     `openai/gpt-5-mini`. זה גם המודל המוגדר כ-`AI_MODELS.empathy`
+- *     בכל שאר האפליקציה, אז יש קוהרנטיות של טון על פני כל ערוצי ה-AI.
+- *   • "עבודה שחורה ברקע" (סיווגים, decision routing, סיכומים פנימיים) —
+- *     **Groq** עם `meta-llama/llama-4-scout-17b-16e-instruct`. מהיר מאוד
+- *     וזול ב-volume, אידיאלי לפעולות שאינן נראות למשתמש.
+- *
+- * הקובץ הזה לא יוצר client חדש — הוא re-export של ה-singletons
+- * ב-`lib/ai/client.ts` כדי לשמור על client אחד per ספק ב-runtime.
+- */
+-
+-import { AI_MODELS, getClientForModel } from '../../ai/client';
+-
+-/** OpenAI-compatible client ל-OpenRouter (משמש לטקסט ההתראה). */
+-export const getNotificationLLM = () => getClientForModel('empathy');
+-
+-/** OpenAI-compatible client ל-Groq (רקע + fallback אם OpenRouter נופל). */
+-export const getNotificationBackgroundLLM = () => getClientForModel('background_groq');
+-
+-/**
+- * מודל ראשי לטקסט ההתראה.
+- * Override ב-env: `NOTIFICATION_ENGINE_MODEL`.
+- */
+-export const NOTIFICATION_ENGINE_MODEL =
+-  process.env.NOTIFICATION_ENGINE_MODEL?.trim() || AI_MODELS.empathy;
+-
+-/**
+- * מודל משני (עדיין דרך OpenRouter) למקרה ש-gpt-5-mini החזיר שגיאה/ריק.
+- * Override ב-env: `NOTIFICATION_ENGINE_MODEL_SECONDARY`.
+- */
+-export const NOTIFICATION_ENGINE_MODEL_SECONDARY =
+-  process.env.NOTIFICATION_ENGINE_MODEL_SECONDARY?.trim() || 'openai/gpt-4o-mini';
+-
+-/**
+- * מודל שלישוני — Llama 4 דרך Groq, ספק שונה לחלוטין. נכנס רק אם כל
+- * OpenRouter נופל (אזורי outage נדירים).
+- */
+-export const NOTIFICATION_BACKGROUND_MODEL = AI_MODELS.background_groq;
+diff --git a/apps/web/lib/notifications/engine/log-notification.ts b/apps/web/lib/notifications/engine/log-notification.ts
+deleted file mode 100644
+index 1ff94da..0000000
+--- a/apps/web/lib/notifications/engine/log-notification.ts
++++ /dev/null
+@@ -1,86 +0,0 @@
+-/**
+- * `logNotification` — שומר רשומה ב-`notification_logs`.
+- *
+- * הטבלה מוגדרת עם UNIQUE על (user_id, date_key, time_of_day) ולכן insert
+- * כפול ייכשל עם `23505`. אנחנו מטפלים בזה כ-"כבר נשלח היום" ולא כשגיאה,
+- * וה-workflow ידלג בלי לקרוס.
+- */
+-
+-import type { SupabaseClient } from '@supabase/supabase-js';
+-import type {
+-  NotificationState,
+-  TimeOfDay,
+-} from '../../types/notification-state';
+-
+-export interface LogNotificationInput {
+-  userId: string;
+-  timeOfDay: TimeOfDay;
+-  notificationState: NotificationState;
+-  taskName: string;
+-  body: string;
+-  dateKey: string;
+-  aiModel: string;
+-  metadata?: Record<string, unknown>;
+-}
+-
+-export type LogNotificationResult =
+-  | { ok: true; alreadyExisted: false; id: string }
+-  | { ok: true; alreadyExisted: true }
+-  | { ok: false; error: string };
+-
+-export async function logNotification(
+-  admin: SupabaseClient,
+-  input: LogNotificationInput
+-): Promise<LogNotificationResult> {
+-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+-  const { data, error } = await (admin as any)
+-    .from('notification_logs')
+-    .insert({
+-      user_id: input.userId,
+-      time_of_day: input.timeOfDay,
+-      notification_state: input.notificationState,
+-      task_name: input.taskName,
+-      body: input.body,
+-      date_key: input.dateKey,
+-      ai_model: input.aiModel,
+-      metadata: input.metadata ?? {},
+-    })
+-    .select('id')
+-    .single();
+-
+-  if (error) {
+-    // 23505 = unique_violation → כבר נשלחה התראה לאותו slot היום
+-    const code = (error as { code?: string }).code;
+-    if (code === '23505') {
+-      return { ok: true, alreadyExisted: true };
+-    }
+-    return { ok: false, error: error.message ?? String(error) };
+-  }
+-
+-  // 🔢 Increment של `profiles.notification_count` — מאפשר ל-LLM לקבל
+-  // הקשר של "כמה התראות כבר נשלחו אי-פעם למשתמש הזה" בקריאה הבאה.
+-  // משתמש ב-RPC `increment_notification_count` (atomic, race-safe). הקריאה
+-  // *לא* מבטלת את ההתראה אם נכשלת — נרשם warning בלבד.
+-  try {
+-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+-    const { error: rpcError } = await (admin as any).rpc(
+-      'increment_notification_count',
+-      { p_user_id: input.userId }
+-    );
+-    if (rpcError) {
+-      // eslint-disable-next-line no-console
+-      console.warn(
+-        '[notification-engine] increment_notification_count rpc failed:',
+-        rpcError.message ?? rpcError
+-      );
+-    }
+-  } catch (incErr) {
+-    // eslint-disable-next-line no-console
+-    console.warn(
+-      '[notification-engine] increment_notification_count threw:',
+-      incErr instanceof Error ? incErr.message : incErr
+-    );
+-  }
+-
+-  return { ok: true, alreadyExisted: false, id: (data as { id: string }).id };
+-}
+diff --git a/apps/web/lib/notifications/engine/mark-user-responded.ts b/apps/web/lib/notifications/engine/mark-user-responded.ts
+deleted file mode 100644
+index 5bed23a..0000000
+--- a/apps/web/lib/notifications/engine/mark-user-responded.ts
++++ /dev/null
+@@ -1,62 +0,0 @@
+-/**
+- * `markUserResponded` — fire-and-forget helper שמעדכן את
+- * `profiles.last_responded_at = NOW()`.
+- *
+- * נקרא ע"י נתיב הצ'אט (`/api/v1/ai/chat`) אחרי שמשתמש שולח הודעה,
+- * וע"י flows אחרים שבהם המשתמש "מסמן נוכחות" (סימון משימה ידני
+- * דרך פעולת push, וכו'). מטרת הסימון: לאפשר ל-notification engine
+- * לדלג על slot ההתראה הקרוב אם המשתמש פעיל ב-6 השעות האחרונות.
+- *
+- * 🛡️ העיקרון: כשלון כאן *לא* יקרוס את הקריאה הצרכנית. ה-engine פשוט
+- * יראה ערך ישן יותר בקרון הבא — אובדן UX זניח לעומת השלת הצ'אט.
+- *
+- * 🔌 שימוש (next.js after()):
+- *   import { after } from 'next/server';
+- *   after(() => markUserResponded(createAdminClient(), user.id));
+- */
+-
+-import type { SupabaseClient } from '@supabase/supabase-js';
+-
+-export interface MarkUserRespondedOptions {
+-  /** רישום debug אופציונלי לקונסול עם תיוג. */
+-  debugTag?: string;
+-}
+-
+-export async function markUserResponded(
+-  admin: SupabaseClient,
+-  userId: string,
+-  options: MarkUserRespondedOptions = {}
+-): Promise<void> {
+-  if (!userId) return;
+-  const tag = options.debugTag ?? 'notification-engine';
+-
+-  try {
+-    // עדיפות 1: RPC אטומי (מוגדר ב-migration 000029).
+-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+-    const { error: rpcError } = await (admin as any).rpc(
+-      'touch_last_responded_at',
+-      { p_user_id: userId }
+-    );
+-    if (rpcError) {
+-      // אם ה-RPC לא קיים (deploy מאחור), fallback ל-UPDATE רגיל.
+-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+-      const { error: updateError } = await (admin as any)
+-        .from('profiles')
+-        .update({ last_responded_at: new Date().toISOString() })
+-        .eq('id', userId);
+-      if (updateError) {
+-        // eslint-disable-next-line no-console
+-        console.warn(`[${tag}] markUserResponded: rpc+update both failed`, {
+-          rpc: rpcError.message ?? rpcError,
+-          update: updateError.message ?? updateError,
+-        });
+-      }
+-    }
+-  } catch (err) {
+-    // eslint-disable-next-line no-console
+-    console.warn(
+-      `[${tag}] markUserResponded threw:`,
+-      err instanceof Error ? err.message : err
+-    );
+-  }
+-}
+diff --git a/apps/web/lib/types/notification-state.ts b/apps/web/lib/types/notification-state.ts
+deleted file mode 100644
+index 12bb4c2..0000000
+--- a/apps/web/lib/types/notification-state.ts
++++ /dev/null
+@@ -1,181 +0,0 @@
+-/**
+- * Notification State — ה"מכונת מצבים" של מנוע ההתראות.
+- *
+- * נגזרת דטרמיניסטית מתוך:
+- *   • timeOfDay        — איזה קרון הופעל (08:00 / 13:00 / 20:00).
+- *   • consecutiveMissedDays — מספר ימים *רצופים* שהמשתמש *לא* השלים את המשימה
+- *                              (לא כולל היום הנוכחי).
+- *
+- * החישוב נעשה ב-`deriveNotificationState` (קובץ נפרד). ה-state עצמו
+- * משמש *פנימית בלבד* (לחישוב cadence + רישום ב-notification_logs לאדמין).
+- * ה-AI לא מקבל אותו — הוא מקבל הקשר דו-ממדי גולמי
+- * (`AINotificationContext`) ומחליט לבד על הטון.
+- *
+- * הקובץ הוא types-only בלי side-effects, כדי שכל strata
+- * (server / workflow / UI) יוכל לייבא בלי תלות runtime.
+- */
+-
+-export const TIME_OF_DAY = ['morning', 'noon', 'evening'] as const;
+-export type TimeOfDay = (typeof TIME_OF_DAY)[number];
+-
+-export const NOTIFICATION_STATES = [
+-  'MORNING_KICKOFF',
+-  'NOON_CHECK',
+-  'EVENING_CHECK',
+-  'DAY_2_MISSED',
+-  'DAY_3_MISSED',
+-  'DORMANT',
+-] as const;
+-export type NotificationState = (typeof NOTIFICATION_STATES)[number];
+-
+-/** Cadence — האם המצב הזה רץ יומי (default) או שבועי (DORMANT). */
+-export type NotificationCadence = 'daily' | 'weekly';
+-
+-/**
+- * זיכרון ארוך-טווח של ה-AI — תובנות אחרונות מהפירמידה (`periodic_summaries`).
+- *
+- * נשלף ב-`getUsersForNotification` ב-batch אחד לכל המועמדים (אחד במקום N
+- * שאילתות), ומוטמע בהקשר ה-AI כדי שההתראה תרגיש "אתה זוכר אותי" במקום
+- * אנונימית.
+- *
+- * כל השדות אופציונליים — אם אין סיכום שבועי/חודשי במשתמש, פשוט לא נשלח.
+- * ה-prompt בנוי בצורה שאם השדות חסרים, האווטאר נשמע בדיוק כמו לפני
+- * Phase 3 (zero-regression).
+- */
+-export interface AINotificationMemory {
+-  /** ה-ai_insight של הסיכום השבועי האחרון (max ~250 תווים בפועל). */
+-  latest_weekly_insight?: string;
+-  /** מתי נוצר אותו שבועי (period_key, e.g. '2026-W22'). debug-only. */
+-  latest_weekly_period?: string;
+-  /** ה-ai_insight של הסיכום החודשי האחרון. */
+-  latest_monthly_insight?: string;
+-  /** מתי נוצר אותו חודשי (period_key, e.g. '2026-M05'). debug-only. */
+-  latest_monthly_period?: string;
+-}
+-
+-/**
+- * רמת דחיפות רגשית — מודולציית הטון מעל ה-state.
+- * Re-export רך כדי ש-consumers יכולים לייבא ממקום אחד.
+- * המימוש ב-`lib/notifications/engine/derive-urgency-level.ts`.
+- */
+-export type UrgencyLevel =
+-  | 'gentle'
+-  | 'friendly_nudge'
+-  | 'concerned'
+-  | 'worried'
+-  | 'check_in';
+-
+-/**
+- * "אזרח סוג א'" של המנוע: מה ש-`getUsersForNotification` מחזיר ומה ש-Workflow
+- * מעביר ל-OpenAI כפרומפט מובנה.
+- */
+-export interface NotificationCandidate {
+-  userId: string;
+-  firstName: string;
+-  taskName: string;
+-  notificationState: NotificationState;
+-  /** למחקר / debug: כמה ימים רצוף לא בוצעה המשימה (לא כולל היום). */
+-  consecutiveMissedDays: number;
+-  /** מאיזה slot הגיעה ההחלטה — לוג לבדיקות. */
+-  timeOfDay: TimeOfDay;
+-  /**
+-   * רמת דחיפות רגשית. נגזרת דטרמיניסטית מ-(timeOfDay, consecutiveMissedDays)
+-   * ב-`deriveUrgencyLevel`. שולטת על *הטון* שה-LLM יאמץ.
+-   */
+-  urgencyLevel: UrgencyLevel;
+-  /**
+-   * סך התראות שנשלחו אי-פעם למשתמש (מ-`profiles.notification_count`).
+-   * נכנס לקונטקסט כדי שה-LLM יוכל להתאים את הטון למשתמש "ותיק".
+-   */
+-  notificationCount?: number;
+-  /**
+-   * כמה שעות עברו מאז שהמשתמש פעיל אחרון (כתב בצ'אט / סימן משימה).
+-   * `undefined` = אין נתון. ערכים גבוהים (24+) = המשתמש "שקט".
+-   * משמש גם לפילטר ("דלג אם הגיב לאחרונה") וגם להקשר ל-LLM.
+-   */
+-  hoursSinceLastResponse?: number;
+-  /**
+-   * זיכרון ארוך-טווח (Phase 3). אופציונלי — אם המשתמש חדש או אין לו
+-   * עדיין סיכומים תקופתיים, השדה לא יהיה כאן בכלל.
+-   */
+-  aiMemory?: AINotificationMemory;
+-}
+-
+-/**
+- * הקשר דו-ממדי שעובר ל-LLM כתוכן JSON בתוך user message,
+- * אחרי שה-system prompt קבע את "אישיות אלמוג".
+- *
+- * 🚨 הכלל המכריע (מוטמע גם בקוד וגם בפרומפט):
+- *   אם `has_completed_today === true` → לעולם לא מגיעים ל-LLM. ה-filter
+- *   מתבצע ב-Supabase ב-`getUsersForNotification`. השדה כאן הוא הגנה
+- *   defensive — אם איכשהו "true" יגיע ל-AI, יש להפסיק.
+- *
+- * חוזה הפלט של ה-LLM: טקסט push קצר (max 15 מילים) — לא JSON, רק body.
+- */
+-export interface AINotificationContext {
+-  user_first_name: string;
+-  task_name: string;
+-  time_of_day: TimeOfDay;
+-  /**
+-   * מספר ימים *רצופים לפני היום* שהמשתמש לא ביצע.
+-   *   0 = רק היום הוא עוד לא סימן (אתמול בוצע / זה היום הראשון).
+-   *   1 = אתמול גם הוא לא סימן וגם היום.
+-   *   2+ = מספר ימים רצופים — בדרך לנשירה.
+-   */
+-  consecutive_missed_days: number;
+-  /**
+-   * ב-runtime תמיד false (כי סוננו ב-DB). נשמר ב-payload כהגנה defensive
+-   * ולמתן הקשר מלא ל-AI לפי המפרט.
+-   */
+-  has_completed_today: boolean;
+-  /**
+-   * רמת דחיפות רגשית — מקטינה את ה-search-space של הטון ל-LLM וחוסכת
+-   * לו את "ההיסק" מהמספרים. מוזרק מ-`deriveUrgencyLevel`.
+-   * שדה חובה ב-context החדש (post Claude-merge).
+-   */
+-  urgency_level: UrgencyLevel;
+-  /**
+-   * תיאור אנושי של הסטריק החסר ("מאמש" / "שלושה ימים" / "שבוע"). נגזר
+-   * דטרמיניסטית מ-`consecutive_missed_days` — חוסך ל-LLM להמציא מילים
+-   * ומקטין hallucinations של מספרים.
+-   */
+-  time_ago_text?: string;
+-  /**
+-   * סך התראות שנשלחו אי-פעם למשתמש. נכנס *רק* כשהוא > 0, כדי לא לבלבל
+-   * משתמשים חדשים. עוזר ל-LLM לדעת אם זו "הודעה ראשונה" או "ניסיון 30".
+-   */
+-  notification_count?: number;
+-  /**
+-   * שעות מאז פעילות אחרונה של המשתמש בצ'אט / סימון משימה. אופציונלי.
+-   * ערכים גבוהים = לא הגיב הרבה זמן (חיזוק לטון `worried`/`check_in`).
+-   */
+-  hours_since_last_response?: number;
+-  /**
+-   * זיכרון ארוך-טווח (Phase 3) — תובנות הסיכומים האחרונים של המשתמש.
+-   * השדה אופציונלי: אם אין סיכומים, ה-LLM יתעלם והפרומפט יישאר ב-2D מטריצה.
+-   *
+-   * 🚨 הוראה ל-LLM ב-system prompt: לא לציין את המילים "סיכום", "דו"ח",
+-   *    או לתת לזה להראות כתשובה רובוטית. הזיכרון הוא "תחושת חום" שאלמוג
+-   *    זוכר את המסע — לא ציטוט גולמי.
+-   */
+-  ai_memory?: AINotificationMemory;
+-}
+-
+-/** תוצאה מסוכמת לכל מועמד אחרי שה-workflow רץ עליו. */
+-export type NotificationDispatchResult =
+-  | {
+-      userId: string;
+-      status: 'sent';
+-      notificationState: NotificationState;
+-      body: string;
+-    }
+-  | {
+-      userId: string;
+-      status: 'skipped';
+-      reason: string;
+-    }
+-  | {
+-      userId: string;
+-      status: 'failed';
+-      error: string;
+-    };
+diff --git a/apps/web/lib/workflows/habit-checkpoint-batch.ts b/apps/web/lib/workflows/habit-checkpoint-batch.ts
+index 88f84d8..2b9f299 100644
+--- a/apps/web/lib/workflows/habit-checkpoint-batch.ts
++++ b/apps/web/lib/workflows/habit-checkpoint-batch.ts
+@@ -385,10 +385,12 @@ export type HabitCheckpointPlanItem = {
+ /* ============================================================
+  * State machine רב-יומי — Dormancy tracking
+  *
+- *  משתמש "פעיל" אם profiles.last_active_at עודכן ב-24 השעות האחרונות
+- *  (middleware מטריא אותו בכל בקשת API). כל חישוב ה-nudge יורד מזה.
+- *  אנחנו לא מסתמכים על "האם המשתמש ענה לאלמוג" כי זה רעש; "המשתמש
+- *  פתח את האפליקציה" = פעיל לכל דבר.
++ *  הגדרת "פעיל" = המשתמש *ענה* בפועל: כתב בצ'אט או סימן משימה/הרגל.
++ *  *פתיחת אפליקציה לבדה לא נחשבת* — middleware מטריא את
++ *  profiles.last_active_at בכל בקשת דף (כולל Service Worker pings),
++ *  אז הוא לא משקף "המשתמש ענה". לכן ה-dormancy מחושב מ-fetchTrueLastActiveByUser
++ *  שמסתמך על אותות תגובה אמיתיים בלבד (צ'אט + ביצוע משימות), עם
++ *  created_at כרצפה כדי שמשתמש חדש שעוד לא ענה לא ייחשב Ghosted.
+  * ============================================================ */
+ 
+ const MS_PER_DAY = 24 * 60 * 60 * 1000;
+@@ -471,16 +473,20 @@ export function isSlotAllowedForCadenceStage(
+ }
+ 
+ /**
+- * True last-active per user = MAX של שלושה מקורות:
+- *  1. profiles.last_active_at — מטריא middleware בכל request (כולל SW pings).
+- *  2. ai_interactions.created_at where role='user' — כתיבה אמיתית בצ'אט.
+- *  3. journey_task_executions.completed_at — סימון משימה ב-DB.
++ * True last-*responded* per user = MAX של שני אותות תגובה אמיתיים:
++ *  1. ai_interactions.created_at where role='user' — כתיבה אמיתית בצ'אט.
++ *  2. journey_task_executions.completed_at — סימון משימה/הרגל ב-DB.
+  *
+- * מקור 1 לבדו לא אמין — Service Worker pings מסמנים "פעיל" גם כשהטלפון
+- * זרוק בכיס. השאר הם פעולות יזומות, אז ה-MAX מבטיח שלא נתייחס למשתמש
+- * כ-INTRADAY GHOSTING בזמן שהוא לא באמת פתח את האפליקציה.
++ * 🚫 *לא* משתמשים יותר ב-profiles.last_active_at: הוא מטריא ב-middleware
++ *    בכל בקשת דף (כולל Service Worker pings), כך ש"פתיחת אפליקציה" הייתה
++ *    מנפחת אותו ל-"עכשיו" וכל המשתמשים נראו תמיד active. דרישת המוצר:
++ *    "פעיל" = *ענה* (צ'אט/משימה), לא "פתח את האפליקציה".
+  *
+- * חלון 14 ימים — מספיק לכל ה-state machine (Ghosted מתחיל ב-7).
++ * רצפה: profiles.created_at. אם למשתמש אין שום אות תגובה בחלון, ה-dormancy
++ * נמדד מרגע ההצטרפות — כך משתמש חדש שעוד לא ענה לא ייחשב מיידית Ghosted
++ * (Infinity), אלא "צעיר" לפי גיל החשבון.
++ *
++ * חלון 14 ימים — מספיק לכל ה-state machine (Ghosted מתחיל ב-14).
+  */
+ const TRUE_ACTIVE_WINDOW_DAYS = 14;
+ 
+@@ -501,7 +507,7 @@ export async function fetchTrueLastActiveByUser(
+   const [profileRes, chatRes, execRes] = await Promise.all([
+     admin
+       .from('profiles')
+-      .select('id, last_active_at')
++      .select('id, created_at')
+       .in('id', cappedIds),
+     admin
+       .from('ai_interactions')
+@@ -534,10 +540,11 @@ export async function fetchTrueLastActiveByUser(
+     }
+   };
+ 
++  // רצפה: created_at. *לא* last_active_at — ראה הסבר ב-doc-comment למעלה.
+   if (Array.isArray(profileRes?.data)) {
+-    for (const row of profileRes.data as Array<{ id?: string; last_active_at?: string | null }>) {
++    for (const row of profileRes.data as Array<{ id?: string; created_at?: string | null }>) {
+       if (typeof row.id === 'string') {
+-        result.set(row.id, row.last_active_at ?? null);
++        result.set(row.id, row.created_at ?? null);
+       }
+     }
+   }
+diff --git a/apps/web/lib/workflows/notifications-engine-payload.ts b/apps/web/lib/workflows/notifications-engine-payload.ts
+deleted file mode 100644
+index 7abd2de..0000000
+--- a/apps/web/lib/workflows/notifications-engine-payload.ts
++++ /dev/null
+@@ -1,32 +0,0 @@
+-/**
+- * Zod schema ל-payload שקרון QStash שולח ל-`/api/workflows/notifications`.
+- *
+- * QStash מתוזמן 3 פעמים ביום (08:00 / 13:00 / 20:00 שעון ישראל) — וכל קרון
+- * שולח POST עם `{ "timeOfDay": "morning" | "noon" | "evening" }`.
+- *
+- * אופציונלי: `todayOverride` בשביל DRY-RUN ידני (Postman/cURL) כדי לבדוק
+- * את ה-engine בלי להמתין לקרון אמיתי.
+- */
+-
+-import { z } from 'zod';
+-import { TIME_OF_DAY } from '../types/notification-state';
+-
+-export const notificationsEnginePayloadSchema = z
+-  .object({
+-    timeOfDay: z.enum(TIME_OF_DAY),
+-    todayOverride: z
+-      .string()
+-      .regex(/^\d{4}-\d{2}-\d{2}$/)
+-      .optional(),
+-    /** קייפ בטיחות אופציונלי (default 500 בקוד). */
+-    maxUsers: z.number().int().positive().max(2000).optional(),
+-    /** Override של מודל ה-OpenAI (default: gpt-4o-mini). */
+-    aiModel: z.string().trim().min(1).max(64).optional(),
+-  })
+-  .strict();
+-
+-export type NotificationsEnginePayload = z.infer<typeof notificationsEnginePayloadSchema>;
+-
+-export function parseNotificationsEnginePayload(raw: unknown): NotificationsEnginePayload {
+-  return notificationsEnginePayloadSchema.parse(raw);
+-}
+diff --git a/docs/CRON_SUMMARIES.md b/docs/CRON_SUMMARIES.md
+index 44ece8f..4d672b0 100644
+--- a/docs/CRON_SUMMARIES.md
++++ b/docs/CRON_SUMMARIES.md
+@@ -188,7 +188,7 @@ QStash תומך ב-`L` של cron (last day of month) לפעמים — אם לא,
+ לא תיצור 100 schedules. תצטרך fan-out worker.
+ 
+ **הפתרון המומלץ:** Workflow אחד שעושה fan-out — כמו שעשינו ב-
+-`apps/web/app/api/workflows/notifications/route.ts`.
++`apps/web/app/api/workflows/almog-habit-checkpoint/route.ts`.
+ 
+ **דפוס:**
+ 1. `POST /api/workflows/summaries-cascade` (חדש — עוד לא בנוי).
+-- 
+2.53.0.windows.2
+

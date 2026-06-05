@@ -106,7 +106,7 @@ async function dispatchOne(
     // Phase 4 (Claude merge): מוסיפים urgency_level, time_ago_text,
     // notification_count, hours_since_last_response — מודולציית טון עדינה
     // מעל ה-state בלי לשנות את ה-cadence הקיים.
-    const { body, model, usedFallback, attempts, errors } = await generateNotificationText(
+    const { body, model, usedFallback, attempts, errors, usage } = await generateNotificationText(
       {
         user_first_name: candidate.firstName,
         task_name: candidate.taskName,
@@ -148,6 +148,14 @@ async function dispatchOne(
         urgencyLevel: candidate.urgencyLevel,
         usedFallback,
         llmAttempts: attempts,
+        // 💰 תיעוד טוקנים לחישוב עלות פר-משתמש (cost dashboard).
+        // נשמר רק אם הספק החזיר usage.
+        ...(usage
+          ? {
+              prompt_tokens: usage.promptTokens,
+              completion_tokens: usage.completionTokens,
+            }
+          : {}),
         // רישום כשלים רק אם היו (חוסך מקום ב-DB)
         ...(errors.length > 0 ? { llmErrors: errors } : {}),
         // Phase 3: רישום שהוזרק זיכרון (אם הוזרק) — לדאשבורד אדמין

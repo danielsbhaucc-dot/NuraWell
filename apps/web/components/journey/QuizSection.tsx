@@ -7,12 +7,14 @@ import type { QuizQuestion } from '../../lib/types/journey';
 import { AlmogLessonFeedback } from './AlmogLessonFeedback';
 import { AlmogCompletionHero } from './AlmogPresence';
 import { JourneyResultsDrawer } from './JourneyResultsDrawer';
+import { QuestionTtsPlayer } from './QuestionTtsPlayer';
 
 interface QuizSectionProps {
   questions: QuizQuestion[];
   existingAnswers: Record<string, number>;
   onComplete: (answers: Record<string, number>, score: number) => void;
   onResetQuiz?: () => void;
+  onTtsPlayingChange?: (playing: boolean) => void;
   stepId?: string;
   userId?: string;
 }
@@ -22,6 +24,7 @@ export function QuizSection({
   existingAnswers,
   onComplete,
   onResetQuiz,
+  onTtsPlayingChange,
   stepId,
 }: QuizSectionProps) {
   const [currentQ, setCurrentQ] = useState(0);
@@ -177,6 +180,12 @@ export function QuizSection({
           <span className="text-sm font-bold text-emerald-700">שאלות הבנה</span>
         </div>
         <p className="text-sm text-gray-500">שאלה {currentQ + 1} מתוך {questions.length}</p>
+        <QuestionTtsPlayer
+          className="mt-3"
+          audioUrl={question?.tts?.status === 'ready' ? question.tts.url : null}
+          playbackKey={`${question?.id ?? currentQ}-${currentQ}`}
+          onPlayingChange={onTtsPlayingChange}
+        />
       </div>
 
       <div className="flex justify-center gap-2">

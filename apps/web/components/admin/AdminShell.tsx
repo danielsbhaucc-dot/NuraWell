@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   Bell,
   ChevronDown,
+  DollarSign,
   Globe,
   LayoutDashboard,
   BookOpen,
@@ -65,6 +66,7 @@ export function AdminShell({
 
   const isHome = np === '/ops';
   const isUsers = np === '/ops/users' || np.startsWith('/ops/users/');
+  const isCosts = np === '/ops/costs';
   const isAlmogSettings = np === '/ops/almog' || np === '/ops/mentors';
   const isSiteSettings = np === '/ops/site-settings';
   const isSystemRagIngest = np === '/ops/system-rag-ingest';
@@ -248,6 +250,16 @@ export function AdminShell({
             >
               <UserCircle size={20} className={cn('shrink-0', isUsers && 'text-emerald-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>משתמשים</span>
+            </Link>
+
+            <Link
+              href="/costs"
+              onClick={() => setSidebarOpen(false)}
+              className={navBtn(isCosts, 'emerald')}
+              title="עלויות"
+            >
+              <DollarSign size={20} className={cn('shrink-0', isCosts && 'text-emerald-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>עלויות</span>
             </Link>
 
             {sidebarCollapsed ? (

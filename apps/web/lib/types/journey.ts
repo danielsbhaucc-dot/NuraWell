@@ -41,12 +41,29 @@ export interface JourneyStep {
   updated_at: string;
 }
 
+/** Cached ElevenLabs TTS for a quiz question or game statement (stored in JSONB). */
+export interface QuestionTtsMeta {
+  /** Hash of normalized text + voice + model — skip regen when unchanged. */
+  content_hash: string;
+  object_key: string;
+  url: string;
+  media_asset_id?: string;
+  voice_id: string;
+  model_id: string;
+  size_bytes?: number;
+  status: 'ready' | 'error';
+  error?: string;
+  generated_at?: string;
+}
+
 export interface QuizQuestion {
   id: string;
   question: string;
   options: string[];
   correct_index: number;
   explanation: string;
+  /** Pre-generated question audio (R2 + media library). */
+  tts?: QuestionTtsMeta | null;
 }
 
 export interface GameItem {
@@ -54,6 +71,8 @@ export interface GameItem {
   statement: string;
   is_true: boolean;
   explanation: string;
+  /** Pre-generated statement audio (R2 + media library). */
+  tts?: QuestionTtsMeta | null;
 }
 
 export interface CommitmentData {

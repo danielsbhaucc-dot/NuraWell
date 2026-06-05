@@ -8,6 +8,8 @@ interface LessonAudioControllerProps {
   tracks: LessonAudioTrack[];
   /** האם וידאו מתנגן כרגע — אם כן, מנמיכים את עוצמת המוזיקה (duck). */
   videoActive: boolean;
+  /** האם הקראת שאלה פעילה — מנמיך מוזיקת רקע (duck) כמו בווידאו. */
+  ttsActive?: boolean;
   /** מפתח השלב הנוכחי — שינוי שלו מפעיל צליל מעבר. */
   sectionKey: string;
   /** התחתית של ההדר הירוק (px בחלון) — כדי למקם את הבקרה בדיוק מתחתיו. */
@@ -69,7 +71,7 @@ function playTransitionCue(ctxRef: { current: AudioContext | null }) {
   }
 }
 
-export function LessonAudioController({ tracks, videoActive, sectionKey, anchorTopPx }: LessonAudioControllerProps) {
+export function LessonAudioController({ tracks, videoActive, ttsActive = false, sectionKey, anchorTopPx }: LessonAudioControllerProps) {
   const playable = tracks.filter((t) => !!t.url);
   const hasTracks = playable.length > 0;
 
@@ -153,7 +155,8 @@ export function LessonAudioController({ tracks, videoActive, sectionKey, anchorT
   // הנמכה/השתקה חלקה של העוצמה
   useEffect(() => {
     if (!hasTracks) return;
-    const target = muted ? 0 : videoActive ? DUCK_VOLUME : BASE_VOLUME;
+    const shouldDuck = videoActive || ttsActive;
+    const target = muted ? 0 : shouldDuck ? DUCK_VOLUME : BASE_VOLUME;
     if (rampRef.current) cancelAnimationFrame(rampRef.current);
     const tick = () => {
       const a = audioRef.current;
@@ -171,7 +174,7 @@ export function LessonAudioController({ tracks, videoActive, sectionKey, anchorT
     return () => {
       if (rampRef.current) cancelAnimationFrame(rampRef.current);
     };
-  }, [muted, videoActive, hasTracks]);
+  }, [muted, videoActive, ttsActive, hasTracks]);
 
   // צליל מעבר בכל החלפת שלב (אלא אם מושתק)
   useEffect(() => {
