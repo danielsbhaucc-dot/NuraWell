@@ -20,6 +20,8 @@ type AdminStationCoverPanelProps = {
   stationTitle: string;
   initialCover: StationCoverState;
   onUpdated: (next: StationCoverState) => void;
+  /** בתוך פופאפ — ללא מסגרות חיצוניות */
+  embedded?: boolean;
 };
 
 export function AdminStationCoverPanel({
@@ -27,6 +29,7 @@ export function AdminStationCoverPanel({
   stationTitle,
   initialCover,
   onUpdated,
+  embedded = false,
 }: AdminStationCoverPanelProps) {
   const { open } = useMediaManager();
   const [cover, setCover] = useState(initialCover);
@@ -115,6 +118,7 @@ export function AdminStationCoverPanel({
   return (
     <>
       <CoverSummaryRow
+        embedded={embedded}
         hasCover={hasCover}
         coverUrl={cover.coverImageUrl}
         applyBusy={applyBusy}
@@ -122,7 +126,7 @@ export function AdminStationCoverPanel({
       />
 
       {hasCover ? (
-        <div className="border-t border-white/40 bg-white/20 px-4 py-3 sm:px-5">
+        <div className={embedded ? 'mt-3' : 'border-t border-white/40 bg-white/20 px-4 py-3 sm:px-5'}>
           <CoverPreview cover={cover} onRemove={() => setConfirmRemove(true)} removeBusy={removeBusy} />
         </div>
       ) : null}
@@ -155,18 +159,26 @@ export function AdminStationCoverPanel({
 }
 
 function CoverSummaryRow({
+  embedded,
   hasCover,
   coverUrl,
   applyBusy,
   onOpen,
 }: {
+  embedded?: boolean;
   hasCover: boolean;
   coverUrl: string | null;
   applyBusy: boolean;
   onOpen: () => void;
 }) {
   return (
-    <div className="border-t border-white/40 bg-white/20 px-4 py-3 sm:px-5">
+    <div
+      className={
+        embedded
+          ? 'rounded-2xl border border-white/45 bg-white/25 p-4 backdrop-blur-md'
+          : 'border-t border-white/40 bg-white/20 px-4 py-3 sm:px-5'
+      }
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/50 bg-white/25 shadow-sm backdrop-blur-md">
@@ -207,7 +219,7 @@ function CoverPreview({
   removeBusy: boolean;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-emerald-200/70 bg-slate-900/5">
+    <div className="overflow-hidden rounded-2xl border border-white/45 bg-white/15 backdrop-blur-md">
       <div className="relative min-h-[120px]">
         {cover.coverImageUrl ? (
           <img src={cover.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
