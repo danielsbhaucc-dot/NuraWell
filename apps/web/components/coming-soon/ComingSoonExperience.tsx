@@ -4,20 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { AnimatePresence, motion } from 'framer-motion';
 import { Brain, HeartPulse, Leaf, Play, Repeat, ShieldCheck, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { activeWordIndex, resolveLyrics, type ComingSoonLyrics } from '@/lib/coming-soon/lyrics';
-
-/* משפטי שיווק — *כוכביות* מסמנות מילים מודגשות (גרדיאנט) */
-const REVOLUTION_LINES = [
-  'השינוי האמיתי לא מתחיל בצלחת — הוא מתחיל ב*מחשבה אחת* שאתה מאמין בה.',
-  'אתה לא צריך עוד דיאטה. אתה צריך *מערכת שמבינה אותך*.',
-  'כל בחירה קטנה היום בונה את *האדם שתהיה מחר*.',
-  '*NuraWell* לא סופרת קלוריות — היא בונה מחדש את *הביטחון שלך*.',
-  'הגוף מקשיב לכל מילה שאתה אומר לעצמך. *בוא נשנה את השיחה.*',
-  'מנטור AI שלא שופט ולא לוחץ — רק *מלווה אותך קדימה*.',
-  'לא עוד "מחר אני מתחיל". *המחר מתחיל עכשיו.*',
-  'השלווה שחיפשת נמצאת בצד השני של *ההרגלים החדשים*.',
-  'אתה במרחק *החלטה אחת* מהגרסה הכי טובה של עצמך.',
-  'בריאות היא לא יעד — היא *הדרך שבה אתה חי* כל יום.',
-];
+import { resolveRevolutionLines } from '@/lib/coming-soon/revolution-lines';
 
 const FEATURES = [
   { icon: Brain, title: 'מנטור AI אישי', desc: 'מלווה חכם שזוכר אותך, מבין אותך ומדבר בגובה העיניים — מתי שתצטרך.' },
@@ -66,10 +53,12 @@ export function ComingSoonExperience({
   songUrl,
   songTitle,
   lyrics,
+  revolutionLines,
 }: {
   songUrl: string | null;
   songTitle: string | null;
   lyrics?: ComingSoonLyrics | null;
+  revolutionLines?: string[] | null;
 }) {
   const [phase, setPhase] = useState<Phase>('intro');
   const [activeLine, setActiveLine] = useState(-1);
@@ -77,6 +66,7 @@ export function ComingSoonExperience({
   const [muted, setMuted] = useState(false);
   const [revIndex, setRevIndex] = useState(0);
 
+  const revolution = useMemo(() => resolveRevolutionLines(revolutionLines), [revolutionLines]);
   const resolved = useMemo(() => resolveLyrics(lyrics), [lyrics]);
   const LINES = resolved.lines;
   const LYRICS_END = resolved.endsAt + 0.4;
@@ -341,9 +331,9 @@ export function ComingSoonExperience({
 
   useEffect(() => {
     if (phase !== 'loop') return;
-    const id = setInterval(() => setRevIndex((i) => (i + 1) % REVOLUTION_LINES.length), 4800);
+    const id = setInterval(() => setRevIndex((i) => (i + 1) % revolution.length), 4800);
     return () => clearInterval(id);
-  }, [phase]);
+  }, [phase, revolution.length]);
 
   const goToLoop = useCallback(() => {
     if (phaseRef.current === 'loop') return;
@@ -631,7 +621,7 @@ export function ComingSoonExperience({
                     transition={{ duration: 0.55, ease: 'easeOut' }}
                     className="cs-quote-text text-balance text-2xl leading-[1.5] sm:text-[2rem] sm:leading-[1.5]"
                   >
-                    {renderEmphasis(REVOLUTION_LINES[revIndex])}
+                    {renderEmphasis(revolution[revIndex] ?? '')}
                   </motion.p>
                 </AnimatePresence>
               </div>

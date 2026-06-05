@@ -45,36 +45,51 @@ export function QuestionTtsPlayer({
     [onPlayingChange]
   );
 
-  const playAudio = useCallback(async () => {
+  const playAudio = useCallback(async (): Promise<boolean> => {
     const a = audioRef.current;
-    if (!a || !audioUrl || muted) return;
-    a.currentTime = 0;
+    if (!a || !audioUrl || muted) return false;
     try {
+      a.currentTime = 0;
       await a.play();
       setNeedsGesture(false);
       setPlayingState(true);
+      return true;
     } catch {
       setNeedsGesture(true);
       setPlayingState(false);
+      return false;
     }
   }, [audioUrl, muted, setPlayingState]);
 
-  // Auto-play when question changes
+  // Auto-play when the question changes (or on explicit replay).
+  // אם ה-autoplay נחסם ע"י הדפדפן — מנסים שוב פעם אחת בלבד במחווה הבאה,
+  // ואז מסירים את ה-listener כדי שגלילה/נגיעה לא יפעילו את ההקראה שוב ושוב.
   useEffect(() => {
     if (!hydrated || !audioUrl || muted) {
       setPlayingState(false);
       return;
     }
-    void playAudio();
 
-    const onGesture = () => {
-      void playAudio();
-    };
-    window.addEventListener('pointerdown', onGesture, { passive: true });
-    window.addEventListener('keydown', onGesture);
+    let cancelled = false;
+    let detach: (() => void) | undefined;
+
+    void playAudio().then((ok) => {
+      if (cancelled || ok) return;
+      const onGesture = () => {
+        detach?.();
+        void playAudio();
+      };
+      window.addEventListener('pointerdown', onGesture, { once: true, passive: true });
+      window.addEventListener('keydown', onGesture, { once: true });
+      detach = () => {
+        window.removeEventListener('pointerdown', onGesture);
+        window.removeEventListener('keydown', onGesture);
+      };
+    });
+
     return () => {
-      window.removeEventListener('pointerdown', onGesture);
-      window.removeEventListener('keydown', onGesture);
+      cancelled = true;
+      detach?.();
     };
   }, [playbackKey, replayTick, audioUrl, hydrated, muted, playAudio, setPlayingState]);
 
@@ -124,7 +139,7 @@ export function QuestionTtsPlayer({
           type="button"
           onClick={toggleMute}
           aria-pressed={muted}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-white/50 bg-white/70 px-3 py-2 text-xs font-bold text-emerald-900 shadow-sm backdrop-blur-sm transition hover:bg-white/90"
+          className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/20 px-4 py-2 text-xs font-bold text-emerald-900 shadow-[0_6px_22px_rgba(6,78,59,0.18)] backdrop-blur-xl transition hover:bg-white/30 active:scale-95"
         >
           {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           {muted ? 'הפעל הקראה' : 'השתק הקראה'}
@@ -137,7 +152,7 @@ export function QuestionTtsPlayer({
           type="button"
           onClick={replay}
           disabled={muted}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200/80 bg-emerald-50/80 px-3 py-2 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-emerald-100/90 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/40 bg-emerald-400/15 px-4 py-2 text-xs font-bold text-emerald-800 shadow-[0_6px_22px_rgba(6,78,59,0.15)] backdrop-blur-xl transition hover:bg-emerald-400/25 active:scale-95 disabled:opacity-50"
         >
           <RotateCcw className="h-4 w-4" />
           השמע שוב

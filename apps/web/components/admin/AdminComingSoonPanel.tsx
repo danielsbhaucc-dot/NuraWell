@@ -6,16 +6,27 @@ import {
   CheckCircle2,
   ExternalLink,
   Loader2,
+  MessageSquareQuote,
   Music4,
   Pause,
   Play,
   ShieldCheck,
   Trash2,
+  type LucideIcon,
 } from 'lucide-react';
 import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
 import type { MediaAsset } from '@/components/media-manager/types';
 import { GlassConfirmDialog } from '@/components/media-manager/GlassConfirmDialog';
 import { AdminComingSoonLyricsEditor } from '@/components/admin/AdminComingSoonLyricsEditor';
+import { AdminComingSoonRevolutionEditor } from '@/components/admin/AdminComingSoonRevolutionEditor';
+import { cn } from '@/lib/cn';
+
+type ComingSoonSubTab = 'song' | 'messages';
+
+const SUB_TABS: { key: ComingSoonSubTab; label: string; icon: LucideIcon }[] = [
+  { key: 'song', label: 'שיר וסנכרון', icon: Music4 },
+  { key: 'messages', label: 'משפטי בלופ', icon: MessageSquareQuote },
+];
 
 function formatTime(sec: number): string {
   if (!Number.isFinite(sec) || sec < 0) return '0:00';
@@ -119,7 +130,7 @@ function GlassAudioPlayer({ src, title }: { src: string; title: string | null })
   );
 }
 
-export function AdminComingSoonPanel() {
+function AdminComingSoonSongSection() {
   const { open } = useMediaManager();
   const [songUrl, setSongUrl] = useState<string | null>(null);
   const [songTitle, setSongTitle] = useState<string | null>(null);
@@ -290,5 +301,44 @@ export function AdminComingSoonPanel() {
         onConfirm={() => void remove()}
       />
     </section>
+  );
+}
+
+export function AdminComingSoonPanel() {
+  const [subTab, setSubTab] = useState<ComingSoonSubTab>('song');
+
+  return (
+    <div className="space-y-4" dir="rtl">
+      <div
+        className="flex gap-1 overflow-x-auto rounded-xl border border-emerald-200/40 bg-emerald-50/30 p-1"
+        role="tablist"
+        aria-label="תת-טאבים — מסך בקרוב"
+      >
+        {SUB_TABS.map(({ key, label, icon: Icon }) => {
+          const active = subTab === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setSubTab(key)}
+              className={cn(
+                'inline-flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-bold transition-all',
+                active
+                  ? 'bg-white text-emerald-900 shadow-sm'
+                  : 'text-emerald-800/70 hover:bg-white/60 hover:text-emerald-900',
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" aria-hidden />
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {subTab === 'song' ? <AdminComingSoonSongSection /> : null}
+      {subTab === 'messages' ? <AdminComingSoonRevolutionEditor /> : null}
+    </div>
   );
 }
