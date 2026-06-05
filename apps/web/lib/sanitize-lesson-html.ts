@@ -1,6 +1,6 @@
 /**
  * סניטציה של HTML מהמסד (תוכן שיעור). ללא תלות חיצונית — מתאים גם כש־npm חסום (TLS).
- * אופציונלי: אחרי `npm install isomorphic-dompurify` אפשר להחליף ל־DOMPurify לשכבה נוספת.
+ * בשימוש בצד שרת (lessons page) ובצד לקוח (LessonPageClient) — הגנה לעומק.
  */
 export function sanitizeLessonHtml(html: string | null | undefined): string {
   if (!html) return '';
