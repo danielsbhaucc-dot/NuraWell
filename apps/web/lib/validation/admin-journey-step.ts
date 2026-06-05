@@ -2,12 +2,29 @@ import { z } from 'zod';
 
 const videoProviderSchema = z.enum(['heygen', 'bunny', 'youtube', 'vimeo', 'custom']).nullable();
 
+const questionTtsMetaSchema = z
+  .object({
+    content_hash: z.string().max(64),
+    object_key: z.string().max(500),
+    url: z.string().max(4000),
+    media_asset_id: z.string().uuid().optional(),
+    voice_id: z.string().max(80),
+    model_id: z.string().max(80),
+    size_bytes: z.number().int().min(0).optional(),
+    status: z.enum(['ready', 'error']),
+    error: z.string().max(2000).optional(),
+    generated_at: z.string().max(80).optional(),
+  })
+  .optional()
+  .nullable();
+
 const quizQuestionSchema = z.object({
   id: z.string().max(120),
   question: z.string().max(4000),
   options: z.array(z.string().max(2000)).max(12),
   correct_index: z.number().int().min(0),
   explanation: z.string().max(8000),
+  tts: questionTtsMetaSchema,
 });
 
 const gameItemSchema = z.object({
@@ -15,6 +32,7 @@ const gameItemSchema = z.object({
   statement: z.string().max(4000),
   is_true: z.boolean(),
   explanation: z.string().max(8000),
+  tts: questionTtsMetaSchema,
 });
 
 const commitmentSchema = z

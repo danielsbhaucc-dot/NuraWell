@@ -2,16 +2,42 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, Footprints, ImageIcon, LayoutDashboard, Route, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Activity, DollarSign, Footprints, ImageIcon, LayoutDashboard, Route, Sparkles } from 'lucide-react';
 
 type OpsHomeDashboardProps = {
   publishedCount: number;
   totalSteps: number;
 };
 
+function usd(n: number): string {
+  if (!Number.isFinite(n) || n === 0) return '$0';
+  if (n < 0.01) return `$${n.toFixed(4)}`;
+  if (n < 1) return `$${n.toFixed(3)}`;
+  return `$${n.toFixed(2)}`;
+}
+
 export function OpsHomeDashboard({ publishedCount, totalSteps }: OpsHomeDashboardProps) {
   const pathname = usePathname() ?? '';
   const opsBase = pathname.startsWith('/ops') ? '/ops' : '';
+
+  const [avgCost, setAvgCost] = useState<{ active: number; activeUsers: number } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void fetch('/api/v1/admin/costs?days=30', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return;
+        setAvgCost({
+          active: d.averagePerActiveUser?.totalUsd ?? 0,
+          activeUsers: d.activeUsers ?? 0,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -71,6 +97,28 @@ export function OpsHomeDashboard({ publishedCount, totalSteps }: OpsHomeDashboar
             </div>
           </div>
         </div>
+
+        <Link
+          href={opsBase ? `${opsBase}/costs` : '/costs'}
+          className="group block rounded-3xl border border-emerald-300/50 bg-gradient-to-br from-emerald-100/65 via-teal-50/45 to-cyan-50/45 p-4 shadow-[0_12px_40px_rgba(16,185,129,0.12)] backdrop-blur-xl transition-all active:scale-[0.99] sm:p-5 sm:hover:border-emerald-400/55 sm:hover:shadow-[0_14px_44px_rgba(16,185,129,0.18)]"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-sans text-sm font-semibold text-emerald-900/90">עלות ממוצעת למשתמש</p>
+              <p className="mt-1 font-display text-3xl font-black tabular-nums text-slate-900">
+                {avgCost ? usd(avgCost.active) : '—'}
+              </p>
+              <p className="mt-2 font-sans text-xs leading-relaxed text-emerald-950/75">
+                {avgCost
+                  ? `${avgCost.activeUsers} משתמשים פעילים · 30 יום · לחץ לפירוט`
+                  : 'טוען נתוני עלות...'}
+              </p>
+            </div>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/55 bg-white/50 text-emerald-700 shadow-sm backdrop-blur-md transition-transform group-hover:scale-105">
+              <DollarSign className="h-5 w-5" aria-hidden />
+            </div>
+          </div>
+        </Link>
 
         <Link
           href={opsBase ? `${opsBase}/almog` : '/almog'}

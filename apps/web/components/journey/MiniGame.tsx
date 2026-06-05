@@ -7,17 +7,19 @@ import type { GameItem } from '../../lib/types/journey';
 import { AlmogLessonFeedback } from './AlmogLessonFeedback';
 import { AlmogCompletionHero } from './AlmogPresence';
 import { JourneyResultsDrawer } from './JourneyResultsDrawer';
+import { QuestionTtsPlayer } from './QuestionTtsPlayer';
 
 interface MiniGameProps {
   items: GameItem[];
   existingAnswers: Record<string, boolean>;
   onComplete: (answers: Record<string, boolean>, score: number) => void;
   onResetGame?: () => void;
+  onTtsPlayingChange?: (playing: boolean) => void;
   stepId?: string;
   userId?: string;
 }
 
-export function MiniGame({ items, existingAnswers, onComplete, onResetGame, stepId }: MiniGameProps) {
+export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTtsPlayingChange, stepId }: MiniGameProps) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, boolean>>(existingAnswers);
   const [showResult, setShowResult] = useState(false);
@@ -154,6 +156,12 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, step
           <span className="text-sm font-bold text-amber-700">נכון או לא?</span>
         </div>
         <p className="text-sm text-gray-500">{currentIdx + 1} מתוך {items.length}</p>
+        <QuestionTtsPlayer
+          className="mt-3"
+          audioUrl={item?.tts?.status === 'ready' ? item.tts.url : null}
+          playbackKey={`${item?.id ?? currentIdx}-${currentIdx}`}
+          onPlayingChange={onTtsPlayingChange}
+        />
       </div>
 
       <div className="flex justify-center gap-2">

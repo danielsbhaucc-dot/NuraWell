@@ -38,8 +38,12 @@ async function saveJourneyProgress(
 
 export function StepLesson({ step, initialProgress, userId, audioTracks = [] }: StepLessonProps) {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isTtsPlaying, setIsTtsPlaying] = useState(false);
   const handleVideoPlaybackChange = useCallback((active: boolean) => {
     setIsVideoPlaying(active);
+  }, []);
+  const handleTtsPlayingChange = useCallback((active: boolean) => {
+    setIsTtsPlaying(active);
   }, []);
 
   const sections = useMemo<StepSection[]>(() => {
@@ -221,6 +225,25 @@ export function StepLesson({ step, initialProgress, userId, audioTracks = [] }: 
     updateProgress({ video_watched: true });
     goNext();
   }, [updateProgress, goNext]);
+
+  // 🎬 רישום אירוע צפייה לחישוב עלות Bunny (fire-and-forget, לא חוסם UI).
+  const handleVideoViewStart = useCallback(() => {
+    try {
+      void fetch('/api/v1/video-views', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({
+          step_id: step.id,
+          provider: step.video_provider,
+          external_id: step.video_external_id,
+          context: 'journey',
+        }),
+      }).catch(() => {});
+    } catch {
+      /* ignore — מעקב עלות לא קריטי ל-UX */
+    }
+  }, [step.id, step.video_provider, step.video_external_id]);
 
   const handleQuizComplete = useCallback((answers: Record<string, number>, score: number) => {
     updateProgress({ quiz_answers: answers, quiz_score: score });
@@ -438,6 +461,7 @@ export function StepLesson({ step, initialProgress, userId, audioTracks = [] }: 
                 videoResetNote="אם סיימת צפייה, האיפוס יתבצע דרך איפוס מלא של השיעור."
                 immersiveViewportTopPx={immersiveViewportTopPx}
                 onPlaybackChange={handleVideoPlaybackChange}
+                onViewStart={handleVideoViewStart}
               />
             )}
             {currentSection === 'quiz' && (
@@ -449,6 +473,7 @@ export function StepLesson({ step, initialProgress, userId, audioTracks = [] }: 
                 existingAnswers={progress.quiz_answers}
                 onComplete={handleQuizComplete}
                 onResetQuiz={resetQuizProgress}
+                onTtsPlayingChange={handleTtsPlayingChange}
               />
             )}
             {currentSection === 'game' && (
@@ -460,6 +485,7 @@ export function StepLesson({ step, initialProgress, userId, audioTracks = [] }: 
                 existingAnswers={progress.game_answers}
                 onComplete={handleGameComplete}
                 onResetGame={resetGameProgress}
+                onTtsPlayingChange={handleTtsPlayingChange}
               />
             )}
             {currentSection === 'commitment' && step.commitment && (
@@ -488,6 +514,9 @@ export function StepLesson({ step, initialProgress, userId, audioTracks = [] }: 
         <LessonAudioController
           tracks={audioTracks}
           videoActive={currentSection === 'video' && isVideoPlaying}
+          ttsActive={
+            isTtsPlaying && (currentSection === 'quiz' || currentSection === 'game')
+          }
           sectionKey={currentSection}
           anchorTopPx={immersiveViewportTopPx}
         />

@@ -13,6 +13,7 @@ import { APP_HOME_PATH } from './lib/navigation/app-home-path';
 
 const PUBLIC_ROUTES = [
   '/',
+  '/coming-soon',
   '/login',
   '/register',
   '/register/form',

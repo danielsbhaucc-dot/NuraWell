@@ -81,6 +81,14 @@ export function MediaAssetEditPanel({
           {asset.url}
         </p>
       ) : null}
+      {asset.kind === 'audio' && asset.folder?.startsWith('tts/') ? (
+        <p className="rounded-xl bg-violet-50/80 px-3 py-2 text-[11px] leading-relaxed text-violet-900 border border-violet-200/60">
+          הקראת שאלה (ElevenLabs · Liam · מנוי מסחרי). ליצירה מחדש — ערכו את הטקסט בעורך הצעד ושמרו.
+          {asset.credit?.license ? (
+            <span className="mt-1 block text-violet-800/90">רישיון: {asset.credit.license}</span>
+          ) : null}
+        </p>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         <button
           type="button"

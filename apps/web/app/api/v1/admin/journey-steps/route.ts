@@ -8,11 +8,114 @@ import {
 } from '@/lib/validation/admin-journey-step';
 import { jsonZodError } from '@/lib/validation/zod-http';
 import { syncStepResearchesToAlmogKnowledge } from '@/lib/admin/sync-research-knowledge';
-import type { Research } from '@/lib/types/journey';
+import { syncJourneyStepQuestionTts } from '@/lib/tts/sync-step-questions';
+import { deleteTtsFromR2 } from '@/lib/tts/r2-upload';
+import type { GameItem, QuizQuestion, Research } from '@/lib/types/journey';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
+
+async function syncQuestionTtsBestEffort(params: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any;
+  userId: string;
+  step: Record<string, unknown>;
+  previousQuiz?: QuizQuestion[];
+  previousGame?: GameItem[];
+}): Promise<Record<string, unknown>> {
+  const stepId = params.step.id as string;
+  const quiz = (params.step.quiz_questions as QuizQuestion[] | undefined) ?? [];
+  const game = (params.step.game_items as GameItem[] | undefined) ?? [];
+  const hasText =
+    quiz.some((q) => q.question?.trim()) || game.some((g) => g.statement?.trim());
+  if (!hasText) return params.step;
+
+  let stationTitle: string | null = null;
+  const station = params.step.journey_stations as { title?: string } | null | undefined;
+  if (station?.title) {
+    stationTitle = station.title;
+  } else if (params.step.station_id) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: st } = await (params.supabase as any)
+      .from('journey_stations')
+      .select('title')
+      .eq('id', params.step.station_id)
+      .maybeSingle();
+    stationTitle = (st?.title as string | undefined) ?? null;
+  }
+
+  try {
+    const result = await syncJourneyStepQuestionTts({
+      supabase: params.supabase,
+      userId: params.userId,
+      step: {
+        id: stepId,
+        title: (params.step.title as string | null) ?? null,
+        station_id: (params.step.station_id as string | null) ?? null,
+        step_number: Number(params.step.step_number ?? 1),
+        quiz_questions: quiz,
+        game_items: game,
+      },
+      stationTitle,
+      previousQuiz: params.previousQuiz,
+      previousGame: params.previousGame,
+    });
+
+    if (result.errors.length) {
+      console.warn('[admin/journey-steps] tts_sync_partial', {
+        step_id: stepId,
+        generated: result.generated,
+        skipped: result.skipped,
+        deleted: result.deleted,
+        errors: result.errors,
+      });
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: updated, error } = await (params.supabase as any)
+      .from('journey_steps')
+      .update({
+        quiz_questions: result.quiz_questions,
+        game_items: result.game_items,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', stepId)
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('[admin/journey-steps] tts_persist_failed', { step_id: stepId, error: error.message });
+      return {
+        ...params.step,
+        quiz_questions: result.quiz_questions,
+        game_items: result.game_items,
+        tts_sync: {
+          generated: result.generated,
+          skipped: result.skipped,
+          deleted: result.deleted,
+          errors: result.errors,
+        },
+      };
+    }
+
+    return {
+      ...(updated as Record<string, unknown>),
+      tts_sync: {
+        generated: result.generated,
+        skipped: result.skipped,
+        deleted: result.deleted,
+        errors: result.errors,
+      },
+    };
+  } catch (e) {
+    console.warn('[admin/journey-steps] tts_sync_failed', {
+      step_id: stepId,
+      error: e instanceof Error ? e.message : String(e),
+    });
+    return params.step;
+  }
+}
 
 async function syncResearchesBestEffort(params: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -98,10 +201,16 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const synced = await syncResearchesBestEffort({
+  const withTts = await syncQuestionTtsBestEffort({
     supabase,
     userId: auth.user.id,
     step: data as Record<string, unknown>,
+  });
+
+  const synced = await syncResearchesBestEffort({
+    supabase,
+    userId: auth.user.id,
+    step: withTts,
   });
   return NextResponse.json(synced);
 }
@@ -122,15 +231,31 @@ export async function PATCH(request: Request) {
   const { supabase } = auth;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: previous } = await (supabase as any)
+    .from('journey_steps')
+    .select('quiz_questions, game_items')
+    .eq('id', id)
+    .maybeSingle();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('journey_steps')
     .update({ ...cleaned, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .select()
+    .select('*, journey_stations(id, title, sort_order)')
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+
+  const withTts = await syncQuestionTtsBestEffort({
+    supabase,
+    userId: auth.user.id,
+    step: data as Record<string, unknown>,
+    previousQuiz: (previous?.quiz_questions as QuizQuestion[] | undefined) ?? [],
+    previousGame: (previous?.game_items as GameItem[] | undefined) ?? [],
+  });
+
+  return NextResponse.json(withTts);
 }
 
 export async function DELETE(request: Request) {
@@ -152,6 +277,32 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'id is required' }, { status: 400 });
   }
   const id = idParsed.data;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: stepRow } = await (supabase as any)
+    .from('journey_steps')
+    .select('quiz_questions, game_items')
+    .eq('id', id)
+    .maybeSingle();
+
+  const ttsKeys = [
+    ...((stepRow?.quiz_questions as QuizQuestion[] | undefined) ?? [])
+      .map((q) => q.tts?.object_key)
+      .filter(Boolean),
+    ...((stepRow?.game_items as GameItem[] | undefined) ?? [])
+      .map((g) => g.tts?.object_key)
+      .filter(Boolean),
+  ] as string[];
+
+  for (const objectKey of [...new Set(ttsKeys)]) {
+    try {
+      await deleteTtsFromR2(objectKey);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('media_assets').delete().eq('object_key', objectKey);
+    } catch (e) {
+      console.warn('[admin/journey-steps] tts_delete_on_step_remove', { objectKey, error: e });
+    }
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any).from('journey_steps').delete().eq('id', id);
