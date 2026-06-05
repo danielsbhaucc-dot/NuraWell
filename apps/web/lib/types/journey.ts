@@ -70,6 +70,22 @@ export interface Research {
   journal: string;
   finding: string;
   url: string | null;
+  /** טקסט מקור שהודבק ידנית או חולץ מהקישור לפני סריקת AI */
+  source_text?: string;
+  /** סיכום מדעי קצר בעברית שאלמוג יכול להשתמש בו */
+  ai_summary?: string;
+  /** ממצאים עיקריים שנשלפו מהמחקר */
+  key_findings?: string[];
+  /** איך המחקר מתחבר לשיעור/להרגל בנורהוול */
+  practical_takeaway?: string;
+  /** סייגים ומתודולוגיה שחשוב לא להפריז מעבר אליהם */
+  limitations?: string;
+  evidence_level?: 'low' | 'moderate' | 'high' | 'unknown';
+  /** קישור למסמך ב-almog_knowledge לאחר סנכרון ל-RAG */
+  rag_doc_id?: string;
+  last_scanned_at?: string;
+  scan_status?: 'idle' | 'scanning' | 'ready' | 'error';
+  scan_error?: string;
 }
 
 /**
