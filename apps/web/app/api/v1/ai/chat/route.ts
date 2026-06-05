@@ -209,6 +209,22 @@ const CHAT_SAFETY_NET_MODEL =
  */
 const CHAT_MODEL_IS_OPENAI = CHAT_MODEL.startsWith('openai/');
 const CHAT_MODEL_SUPPORTS_PROMPT_CACHE = CHAT_MODEL.startsWith('anthropic/');
+/**
+ * TTL ל-prompt cache. אנתרופיק: כתיבת cache ל-5 דק' עולה ×1.25, ל-1h עולה ×2,
+ * וקריאה ×0.1. בתנועה דלילה (תחילת דרך) רוב השיחות מתחילות "קר", ולכן ברירת
+ * המחדל היא '5m' — קנס הכתיבה הקרה נמוך פי ~2 מ-'1h', והקריאות בתוך אותה שיחה
+ * עדיין נתפסות (תורים בצ'אט בד"כ < 5 דק' זה מזה). כשהתנועה תגדל אפשר '1h'.
+ * Override: `AI_CHAT_PROMPT_CACHE_TTL` (לדוגמה '1h').
+ */
+const CHAT_PROMPT_CACHE_TTL = process.env.AI_CHAT_PROMPT_CACHE_TTL?.trim() || '5m';
+/**
+ * עוקף-כותב להודעות טריוויאליות: על אישור/תודה/דיווח-ביצוע חיובי קצר —
+ * Groq כותב את התשובה (כמעט $0) במקום קלוד, כי שם אין הבדל איכותי. סימון
+ * משימות/הרגלים/משקל קורה ב-onFinish על בסיס הודעת המשתמש — לכן הנכונות
+ * נשמרת. כל מה שדורש אמפתיה/ניואנס/שאלה נשאר בקלוד. כיבוי: `AI_CHAT_TRIVIAL_BYPASS=off`.
+ */
+const CHAT_TRIVIAL_BYPASS_ENABLED =
+  (process.env.AI_CHAT_TRIVIAL_BYPASS?.trim() || 'on').toLowerCase() !== 'off';
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 type StreamFinishPayload = {
@@ -273,7 +289,7 @@ function openRouterMessagesWithCachedSystem(
         {
           type: 'text',
           text: staticSystemPrompt,
-          cache_control: { type: 'ephemeral', ttl: '1h' },
+          cache_control: { type: 'ephemeral', ttl: CHAT_PROMPT_CACHE_TTL },
         },
       ]
     : staticSystemPrompt;
@@ -646,6 +662,33 @@ function isLowContextTurn(userMessage: string, signals: ReturnType<typeof detect
   return false;
 }
 
+/**
+ * זכאות לעוקף-כותב (Groq במקום קלוד). שמרני בכוונה — רק הודעות שהן *כולן*
+ * אישור/תודה/דיווח-ביצוע חיובי קצר. כל דבר שדורש את הטון של קלוד נשאר בקלוד:
+ *  - כישלון/קושי ("ניסיתי", "לא הצלחתי", "דילגתי") → לא עוקף (צריך אמפתיה).
+ *  - רגש/חסם/בקשת ריסון (signals) → לא עוקף.
+ *  - שאלה (?) → לא עוקף.
+ *  - יותר מ-24 תווי-אות → כנראה יש תוכן מהותי → לא עוקף.
+ * הנכונות (סימון משימות/הרגלים) לא נפגעת — היא קורית ב-onFinish מהודעת המשתמש,
+ * בלי תלות במי שכתב את התשובה. בנוסף — אם Groq נכשל, נופלים לקלוד (לא מאבדים תשובה).
+ */
+function isTrivialBypassEligible(
+  userMessage: string,
+  signals: ReturnType<typeof detectChatSignals>
+): boolean {
+  const t = normalizeLine(userMessage);
+  if (!t) return false;
+  if (signals.blocker_mentioned || signals.emotional_hint || signals.avoid_push_requested) {
+    return false;
+  }
+  if (/[?؟]/.test(t)) return false;
+  const letterOnly = t.replace(/[^\u0590-\u05FFa-zA-Z]/g, '');
+  if (letterOnly.length > 24) return false;
+  return /^(?:תודה(?:\s+רבה)?|סבבה|אוקיי|אוקי|מעולה|יאללה|מגניב|אחלה|וואו|כן|לא|בסדר|הבנתי|נכון|ברור|סגור|ok|okay|sure|fine|thanks?|thx|עשיתי|סימנתי|שתיתי|הלכתי|סיימתי|בוצע|הצלחתי)(?:\s+(?:את\s+)?(?:זה|המשימה|הכל|הכול))?[\s!.\u05F3\u05F4🙏👍💪🔥😊🙂❤️✅👏🤙]*$/iu.test(
+    t
+  );
+}
+
 const chatContextRouterSchema = z.object({
   heavy_context: z.boolean(),
   needs_user_memory_rag: z.boolean(),
@@ -780,7 +823,7 @@ function formatChatSummaryPromptBlock(summary: unknown): string | null {
   if (typeof summary !== 'string') return null;
   const clean = normalizeLine(summary).slice(0, 900);
   if (!clean) return null;
-  return `[סיכום שיחה קודם]\n${clean}\nהשתמש בזה כרצף שיחה בלבד; אם ההודעות האחרונות סותרות, הן עדכניות יותר.`;
+  return `[סיכום שיחה קודם]\n${clean}\nהשתמש בזה כרצף שיחה בלבד; אם ההודעות האחרונות סותרות, הן עדכניות יותר. שים לב לדפוסים חוזרים שמצוינים בסיכום (פעם שנייה/שלישית) — התייחס אליהם כמו שהיית מתייחס לדפוס שזיהית בעצמך בשיחה.`;
 }
 
 async function summarizeChatTurnWithGroq({
@@ -814,11 +857,14 @@ async function summarizeChatTurnWithGroq({
           {
             role: 'system',
             content:
-              'אתה מסכם רצף שיחה למנטור בריאות בעברית. החזר תקציר קצר בלבד, עד 900 תווים. שמור רק עובדות, רגשות, הבטחות, החלטות וטון שחשובים לתור הבא. בלי כותרת.',
+              'אתה מתחזק תקציר שיחה מתגלגל למנטור בריאות בעברית. החזר תקציר קצר בלבד, עד 900 תווים, בלי כותרת.\n' +
+              'שמור עובדות, רגשות, הבטחות, החלטות וטון שחשובים לתור הבא.\n' +
+              'הכי חשוב — עקוב אחרי דפוסים חוזרים: אם נושא/תלונה/פחד/בקשה כבר מופיע בתקציר הקודם והמשתמש מעלה אותו שוב, ציין זאת מפורש עם מונה. לדוגמה: "המשתמש העלה בפעם השלישית שהוא מפחד מ-X" או "שוב התלונן על Y (פעם 2)".\n' +
+              'אם דפוס נפתר/השתנה — עדכן זאת. אל תמחק ספירות חזרות קיימות; קדם אותן.',
           },
           {
             role: 'user',
-            content: `תקציר קודם:\n${previousSummary?.trim() || '(אין)'}\n\nהודעת משתמש אחרונה:\n${userMessage}\n\nתשובת אלמוג אחרונה:\n${assistantMessage.slice(0, 1600)}\n\nעדכן את התקציר.`,
+            content: `תקציר קודם (כולל ספירת חזרות אם יש):\n${previousSummary?.trim() || '(אין)'}\n\nהודעת משתמש אחרונה:\n${userMessage}\n\nתשובת אלמוג אחרונה:\n${assistantMessage.slice(0, 1600)}\n\nעדכן את התקציר ושמר/קדם מוני חזרות לדפוסים שחוזרים.`,
           },
         ],
       }),
@@ -1405,9 +1451,15 @@ export async function POST(request: Request) {
   }
   stage = 'message_ok';
   const earlySignals = detectChatSignals(lastUserText);
-  const contextDecision = isLowContextTurn(lastUserText, earlySignals)
-    ? lowContextDecision('deterministic_low_context')
-    : await routeChatContextWithGroq(lastUserText, earlySignals, debugId);
+  const trivialBypass =
+    CHAT_TRIVIAL_BYPASS_ENABLED &&
+    Boolean(process.env.GROQ_API_KEY?.trim()) &&
+    isTrivialBypassEligible(lastUserText, earlySignals);
+  const contextDecision = trivialBypass
+    ? lowContextDecision('trivial_bypass')
+    : isLowContextTurn(lastUserText, earlySignals)
+      ? lowContextDecision('deterministic_low_context')
+      : await routeChatContextWithGroq(lastUserText, earlySignals, debugId);
   const useHeavyContext = contextDecision.heavy_context;
 
   const sessionId = parsed.data.session_id ?? crypto.randomUUID();
@@ -1972,6 +2024,7 @@ export async function POST(request: Request) {
               edge: true,
               streamed: true,
               safety_net_used: safetyNetUsed,
+              trivial_bypass: trivialBypass,
               fallback_used: !t,
               output_tokens: outputTokens,
               cache_read_input_tokens: cacheReadInputTokens,
@@ -2235,9 +2288,12 @@ export async function POST(request: Request) {
       'Cache-Control': 'no-cache, no-transform',
     };
 
-    let upstream: Response;
-    try {
-      upstream = await createOpenRouterTextStreamResponse({
+    const groqKey = process.env.GROQ_API_KEY?.trim();
+
+    /** קריאת הכותב הראשי (קלוד). נעטף בפונקציה כדי לעשות בה שימוש חוזר גם
+     * כ-fallback אם העוקף הזול נכשל. */
+    const runClaudeWriter = () =>
+      createOpenRouterTextStreamResponse({
         apiKey: openrouterKey,
         referer: publicAppUrlForAiReferer(),
         model: CHAT_MODEL,
@@ -2279,31 +2335,72 @@ export async function POST(request: Request) {
         },
         onFinish: handleChatFinish,
       });
-    } catch (primaryErr) {
-      const groqKey = process.env.GROQ_API_KEY?.trim();
-      if (!groqKey) throw primaryErr;
-      console.warn('[ai/chat]', {
-        debug_id: debugId,
-        stage: 'primary_writer_failed_using_safety_net',
-        model: CHAT_MODEL,
-        safety_model: CHAT_SAFETY_NET_MODEL,
-        error: primaryErr instanceof Error ? primaryErr.message : String(primaryErr),
-      });
+
+    let upstream: Response;
+    if (trivialBypass && groqKey) {
+      /**
+       * עוקף-כותב: הודעה טריוויאלית (תודה/אישור/דיווח-ביצוע קצר). Groq כותב
+       * את התשובה במקום קלוד — חיסכון אדיר בלי פגיעה באיכות. אם Groq נכשל,
+       * נופלים *מעלה* לקלוד כדי שלעולם לא נאבד תשובה.
+       * חשוב: assistantModelName נקבע לפני ה-await כי onFinish רץ בתוך הקריאה.
+       */
       assistantModelName = CHAT_SAFETY_NET_MODEL;
-      safetyNetUsed = true;
-      upstream = await createGroqSafetyNetTextResponse({
-        apiKey: groqKey,
-        staticSystemPrompt: BASE_SYSTEM_PROMPT,
-        dynamicSystemPrompt,
-        recentMessages,
-        temperature: 0.75,
-        maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
-        headers: {
-          ...upstreamHeaders,
-          'x-ai-safety-net': 'groq',
-        },
-        onFinish: handleChatFinish,
-      });
+      try {
+        upstream = await createGroqSafetyNetTextResponse({
+          apiKey: groqKey,
+          staticSystemPrompt: BASE_SYSTEM_PROMPT,
+          dynamicSystemPrompt,
+          recentMessages,
+          temperature: 0.7,
+          maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 220),
+          headers: {
+            ...upstreamHeaders,
+            'x-ai-writer': 'groq-trivial',
+          },
+          onFinish: handleChatFinish,
+        });
+        console.info('[ai/chat]', {
+          debug_id: debugId,
+          stage: 'trivial_bypass_groq',
+          model: CHAT_SAFETY_NET_MODEL,
+        });
+      } catch (bypassErr) {
+        console.warn('[ai/chat]', {
+          debug_id: debugId,
+          stage: 'trivial_bypass_failed_using_claude',
+          error: bypassErr instanceof Error ? bypassErr.message : String(bypassErr),
+        });
+        assistantModelName = CHAT_MODEL;
+        upstream = await runClaudeWriter();
+      }
+    } else {
+      try {
+        upstream = await runClaudeWriter();
+      } catch (primaryErr) {
+        if (!groqKey) throw primaryErr;
+        console.warn('[ai/chat]', {
+          debug_id: debugId,
+          stage: 'primary_writer_failed_using_safety_net',
+          model: CHAT_MODEL,
+          safety_model: CHAT_SAFETY_NET_MODEL,
+          error: primaryErr instanceof Error ? primaryErr.message : String(primaryErr),
+        });
+        assistantModelName = CHAT_SAFETY_NET_MODEL;
+        safetyNetUsed = true;
+        upstream = await createGroqSafetyNetTextResponse({
+          apiKey: groqKey,
+          staticSystemPrompt: BASE_SYSTEM_PROMPT,
+          dynamicSystemPrompt,
+          recentMessages,
+          temperature: 0.75,
+          maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
+          headers: {
+            ...upstreamHeaders,
+            'x-ai-safety-net': 'groq',
+          },
+          onFinish: handleChatFinish,
+        });
+      }
     }
 
     /*
