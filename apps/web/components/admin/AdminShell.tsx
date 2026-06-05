@@ -60,6 +60,7 @@ export function AdminShell({
   const pathname = usePathname();
   const np = normalizeOpsPathname(pathname);
   const opsHref = (path: string) => (pathname.startsWith('/ops') ? `/ops${path}` : path);
+  const homeHref = pathname.startsWith('/ops') ? '/ops' : '/';
   const coursesHref = mainAppBase ? `${mainAppBase}/home` : '/home';
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -224,7 +225,7 @@ export function AdminShell({
 
           <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-0.5" aria-label="ניווט פאנל ניהול">
             <Link
-              href="/"
+              href={homeHref}
               onClick={() => setSidebarOpen(false)}
               className={navBtn(isHome, 'emerald')}
               title="ראשי"
@@ -237,7 +238,7 @@ export function AdminShell({
             </Link>
 
             <Link
-              href="/users"
+              href={opsHref('/users')}
               onClick={() => setSidebarOpen(false)}
               className={navBtn(isUsers, 'emerald')}
               title="משתמשים"
@@ -258,7 +259,7 @@ export function AdminShell({
 
             {sidebarCollapsed ? (
               <Link
-                href="/almog"
+                href={opsHref('/mentors')}
                 onClick={() => setSidebarOpen(false)}
                 className={navBtn(isAlmogNavSection, 'violet')}
                 title="אלמוג — הגדרות ואימון"
@@ -293,7 +294,7 @@ export function AdminShell({
                   <ul className="mr-2 mt-1 space-y-1 border-r border-violet-400/35 pr-3 pb-2">
                     <li>
                       <Link
-                        href="/mentors"
+                        href={opsHref('/mentors')}
                         onClick={() => setSidebarOpen(false)}
                         className={cn(
                           'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-violet-400/20 sm:text-[15px]',
@@ -308,7 +309,7 @@ export function AdminShell({
                     </li>
                     <li>
                       <Link
-                        href="/system-rag-ingest"
+                        href={opsHref('/system-rag-ingest')}
                         onClick={() => setSidebarOpen(false)}
                         className={cn(
                           'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-violet-400/20 sm:text-[15px]',
@@ -328,7 +329,7 @@ export function AdminShell({
 
             {sidebarCollapsed ? (
               <Link
-                href="/journey"
+                href={opsHref('/journey')}
                 onClick={() => setSidebarOpen(false)}
                 className={navBtn(isJourneyManage, 'amber')}
                 title="הגדרות מסע — ניהול"
@@ -363,7 +364,7 @@ export function AdminShell({
                   <ul className="mr-2 mt-1 space-y-1 border-r border-amber-400/40 pr-3 pb-2">
                     <li>
                       <Link
-                        href="/journey-hub"
+                        href={opsHref('/journey-hub')}
                         onClick={() => setSidebarOpen(false)}
                         className={cn(
                           'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-amber-400/25 sm:text-[15px]',
@@ -378,7 +379,7 @@ export function AdminShell({
                     </li>
                     <li>
                       <Link
-                        href="/journey"
+                        href={opsHref('/journey')}
                         onClick={() => setSidebarOpen(false)}
                         className={cn(
                           'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-amber-400/25 sm:text-[15px]',
@@ -393,7 +394,7 @@ export function AdminShell({
                     </li>
                     <li>
                       <Link
-                        href="/audio"
+                        href={opsHref('/audio')}
                         onClick={() => setSidebarOpen(false)}
                         className={cn(
                           'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-amber-400/25 sm:text-[15px]',
@@ -420,7 +421,7 @@ export function AdminShell({
               labelClassName={cn('truncate', !showNavLabels && 'lg:sr-only')}
             />
             <Link
-              href="/site-settings"
+              href={opsHref('/site-settings')}
               onClick={() => setSidebarOpen(false)}
               className={cn(
                 navBtn(isSiteSettings, 'sky'),
@@ -554,19 +555,23 @@ export function AdminShell({
         className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-white/55 bg-white/55 px-2 py-2 shadow-[0_-8px_32px_rgba(99,102,241,0.12)] backdrop-blur-2xl safe-area-bottom lg:hidden"
         aria-label="ניווט מהיר"
       >
-        <Link href="/" onClick={() => setSidebarOpen(false)} className={bottomNavClass(isHome)}>
+        <Link href={homeHref} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isHome)}>
           <LayoutDashboard className={cn('h-5 w-5', isHome ? 'text-emerald-600' : '')} />
           ראשי
         </Link>
-        <Link href="/almog" onClick={() => setSidebarOpen(false)} className={bottomNavClass(isAlmogSettings)}>
-          <UserCircle className={cn('h-5 w-5', isAlmogSettings ? 'text-violet-600' : '')} />
+        <Link href={opsHref('/users')} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isUsers)}>
+          <UserCircle className={cn('h-5 w-5', isUsers ? 'text-emerald-600' : '')} />
+          משתמשים
+        </Link>
+        <Link href={opsHref('/costs')} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isCosts)}>
+          <DollarSign className={cn('h-5 w-5', isCosts ? 'text-emerald-600' : '')} />
+          עלויות
+        </Link>
+        <Link href={opsHref('/mentors')} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isAlmogSettings)}>
+          <Sparkles className={cn('h-5 w-5', isAlmogSettings ? 'text-violet-600' : '')} />
           אלמוג
         </Link>
-        <Link href="/site-settings" onClick={() => setSidebarOpen(false)} className={bottomNavClass(isSiteSettings)}>
-          <Globe className={cn('h-5 w-5', isSiteSettings ? 'text-sky-600' : '')} />
-          אתר
-        </Link>
-        <Link href="/journey" onClick={() => setSidebarOpen(false)} className={bottomNavClass(isJourneyManage)}>
+        <Link href={opsHref('/journey')} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isJourneyManage)}>
           <Map className={cn('h-5 w-5', isJourneyManage ? 'text-amber-600' : '')} />
           מסע
         </Link>

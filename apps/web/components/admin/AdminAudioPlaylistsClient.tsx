@@ -1,13 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
   Disc3,
   Eye,
   EyeOff,
-  ListMusic,
   Loader2,
   MapPin,
   Music,
@@ -80,6 +79,8 @@ export function AdminAudioPlaylistsClient() {
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [creating, setCreating] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [playlistTab, setPlaylistTab] = useState<'tracks' | 'assign'>('tracks');
 
   const loadPlaylists = useCallback(async () => {
     setLoading(true);
@@ -116,8 +117,10 @@ export function AdminAudioPlaylistsClient() {
         const created = (await res.json()) as AudioPlaylistSummary;
         setNewTitle('');
         setNewDescription('');
+        setShowCreateForm(false);
         setPlaylists((p) => [created, ...p]);
         setSelectedId(created.id);
+        setPlaylistTab('tracks');
       }
     } finally {
       setCreating(false);
@@ -165,61 +168,59 @@ export function AdminAudioPlaylistsClient() {
     );
   }, []);
 
-  const selected = useMemo(
-    () => playlists.find((p) => p.id === selectedId) ?? null,
-    [playlists, selectedId]
-  );
-
   return (
     <div className="space-y-6">
-      {/* יצירת פלייליסט */}
-      <section className={cardClass} dir="rtl">
-        <OpsPanelHeader
-          icon={ListMusic}
-          title="פלייליסט חדש"
-          tone="emerald"
-          description="צרו פלייליסט קצר וברור, ואז הוסיפו אליו רצועות מהספרייה או מהעלאה."
-        />
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.4fr_auto] sm:items-end">
-          <label className="block">
-            <span className="mb-1 block text-xs font-bold text-slate-600">שם הפלייליסט</span>
-            <input
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="למשל: רגיעה עמוקה"
-              className={opsInputClass}
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-xs font-bold text-slate-600">תיאור (אופציונלי)</span>
-            <input
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="מוזיקה שקטה למדיטציה ולמעבר בין שלבים"
-              className={opsInputClass}
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => void createPlaylist()}
-            disabled={!newTitle.trim() || creating}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-500 px-5 py-3 font-bold text-white shadow-lg shadow-emerald-500/20 transition active:scale-[0.99] disabled:opacity-45"
-          >
-            {creating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
-            צור
-          </button>
-        </div>
-      </section>
-
       {/* רשימת פלייליסטים */}
       <section className={cardClass} dir="rtl">
         <OpsPanelHeader
           icon={Disc3}
           title="הפלייליסטים שלי"
           tone="violet"
-          description="במובייל כל פלייליסט הוא כרטיס פעולה נפרד, כדי שהניהול לא ירגיש כמו טבלה צפופה."
+          description="לחצו על פלייליסט לניהול רצועות ושיוך לצעדים."
           className="mb-4"
+          actions={
+            <button
+              type="button"
+              onClick={() => setShowCreateForm((v) => !v)}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-500 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-emerald-500/20 transition hover:brightness-105"
+            >
+              <Plus className="h-4 w-4" />
+              פלייליסט חדש
+            </button>
+          }
         />
+
+        {showCreateForm ? (
+          <div className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-emerald-200/60 bg-emerald-50/30 p-4 sm:grid-cols-[1fr_1.4fr_auto] sm:items-end">
+            <label className="block">
+              <span className="mb-1 block text-xs font-bold text-slate-600">שם הפלייליסט</span>
+              <input
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="למשל: רגיעה עמוקה"
+                className={opsInputClass}
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-bold text-slate-600">תיאור (אופציונלי)</span>
+              <input
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="מוזיקה שקטה למדיטציה"
+                className={opsInputClass}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => void createPlaylist()}
+              disabled={!newTitle.trim() || creating}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-500 px-5 py-3 font-bold text-white shadow-lg shadow-emerald-500/20 transition active:scale-[0.99] disabled:opacity-45"
+            >
+              {creating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
+              צור
+            </button>
+          </div>
+        ) : null}
 
         {loading ? (
           <div className="flex items-center gap-2 py-6 text-slate-500">
@@ -247,7 +248,14 @@ export function AdminAudioPlaylistsClient() {
                   >
                     <button
                       type="button"
-                      onClick={() => setSelectedId(active ? null : pl.id)}
+                      onClick={() => {
+                        if (active) {
+                          setSelectedId(null);
+                        } else {
+                          setSelectedId(pl.id);
+                          setPlaylistTab('tracks');
+                        }
+                      }}
                       className="flex min-w-0 flex-1 items-center gap-3 text-right"
                     >
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-700">
@@ -296,50 +304,46 @@ export function AdminAudioPlaylistsClient() {
                   </div>
 
                   {active && (
-                    <>
-                      <div
-                        className={[
-                          'mt-2 flex flex-col gap-2 rounded-2xl border px-3 py-3 sm:flex-row sm:items-center sm:justify-between',
-                          pl.is_published
-                            ? 'border-emerald-200/70 bg-emerald-50/70'
-                            : 'border-amber-200/80 bg-amber-50/80',
-                        ].join(' ')}
-                      >
-                        <div>
-                          <div className="text-sm font-black text-slate-800">
-                            {pl.is_published ? 'הפלייליסט פורסם למשתמשים' : 'הפלייליסט עדיין בטיוטה'}
-                          </div>
-                          <div className="text-[11px] text-slate-500">
-                            פרסום הוא ברמת פלייליסט: כל הרצועות שבו זמינות בצעדים ששויכו אליו.
-                          </div>
-                        </div>
+                    <div className="mt-2 rounded-2xl border border-white/60 bg-white/40 p-3 backdrop-blur-md sm:p-4">
+                      <div className="mb-3 flex gap-1.5 rounded-xl border border-white/50 bg-white/35 p-1">
                         <button
                           type="button"
-                          onClick={() => void togglePublish(pl)}
-                          disabled={publishingId === pl.id}
+                          onClick={() => setPlaylistTab('tracks')}
                           className={[
-                            'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-black text-white shadow-lg disabled:opacity-60',
-                            pl.is_published
-                              ? 'bg-gradient-to-l from-slate-600 to-slate-500 shadow-slate-500/20'
-                              : 'bg-gradient-to-l from-emerald-600 to-teal-500 shadow-emerald-500/25',
+                            'flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition-all',
+                            playlistTab === 'tracks'
+                              ? 'bg-gradient-to-l from-violet-500 to-fuchsia-600 text-white shadow-sm'
+                              : 'text-slate-600 hover:bg-white/55',
                           ].join(' ')}
                         >
-                          {publishingId === pl.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : pl.is_published ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                          {pl.is_published ? 'החזר לטיוטה' : 'פרסם עכשיו'}
+                          <Music className="h-3.5 w-3.5" />
+                          רצועות
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPlaylistTab('assign')}
+                          className={[
+                            'flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition-all',
+                            playlistTab === 'assign'
+                              ? 'bg-gradient-to-l from-sky-500 to-cyan-600 text-white shadow-sm'
+                              : 'text-slate-600 hover:bg-white/55',
+                          ].join(' ')}
+                        >
+                          <MapPin className="h-3.5 w-3.5" />
+                          שיוך לצעדים
                         </button>
                       </div>
-                      <PlaylistTrackManager
-                        playlistId={pl.id}
-                        onTrackAdded={() => adjustTrackCount(pl.id, 1)}
-                        onTrackRemoved={() => adjustTrackCount(pl.id, -1)}
-                      />
-                    </>
+                      {playlistTab === 'tracks' ? (
+                        <PlaylistTrackManager
+                          playlistId={pl.id}
+                          onTrackAdded={() => adjustTrackCount(pl.id, 1)}
+                          onTrackRemoved={() => adjustTrackCount(pl.id, -1)}
+                          showStepAssigner={false}
+                        />
+                      ) : (
+                        <PlaylistStepAssigner playlistId={pl.id} />
+                      )}
+                    </div>
                   )}
                 </li>
               );
@@ -347,12 +351,6 @@ export function AdminAudioPlaylistsClient() {
           </ul>
         )}
       </section>
-
-      {selected && !loading && (
-        <p className="px-1 text-xs text-slate-500">
-          טיפ: פתחו פלייליסט וגללו ל&quot;איפה זה מתנגן?&quot; כדי לשייך אותו לצעדים. אפשר גם דרך עורך הצעד.
-        </p>
-      )}
 
       <ConfirmDialog
         open={confirmDelete !== null}
@@ -379,9 +377,15 @@ interface PlaylistTrackManagerProps {
   playlistId: string;
   onTrackAdded: () => void;
   onTrackRemoved: () => void;
+  showStepAssigner?: boolean;
 }
 
-function PlaylistTrackManager({ playlistId, onTrackAdded, onTrackRemoved }: PlaylistTrackManagerProps) {
+function PlaylistTrackManager({
+  playlistId,
+  onTrackAdded,
+  onTrackRemoved,
+  showStepAssigner = true,
+}: PlaylistTrackManagerProps) {
   const [tracks, setTracks] = useState<TrackWithUrl[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -494,7 +498,7 @@ function PlaylistTrackManager({ playlistId, onTrackAdded, onTrackRemoved }: Play
         )}
       </div>
 
-      <PlaylistStepAssigner playlistId={playlistId} />
+      {showStepAssigner ? <PlaylistStepAssigner playlistId={playlistId} /> : null}
 
       <ConfirmDialog
         open={confirmTrack !== null}

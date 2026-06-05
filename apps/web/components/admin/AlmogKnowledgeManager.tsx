@@ -11,9 +11,13 @@ import {
   Save,
   FileText,
   FlaskConical,
+  Settings2,
+  X,
 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { OpsPanelHeader, opsGlassCardClass, opsInputClass } from '@/components/admin/OpsPanel';
+import { glassPanelStyle } from '@/components/media-manager/glass-styles';
+import { cn } from '@/lib/cn';
 
 type KnowledgeItem = {
   id: string;
@@ -119,6 +123,7 @@ export function AlmogKnowledgeManager() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [messageErr, setMessageErr] = useState(false);
+  const [editorTab, setEditorTab] = useState<'content' | 'meta'>('content');
 
   const effectiveCourseId = useMemo(() => {
     if (form.dataType !== 'course') return '';
@@ -227,9 +232,31 @@ export function AlmogKnowledgeManager() {
     if (selectedId && !isNew) void loadDetail(selectedId);
   }, [selectedId, isNew, loadDetail]);
 
+  const closeEditor = useCallback(() => {
+    setSelectedId(null);
+    setIsNew(false);
+    setForm(emptyForm);
+  }, []);
+
+  const editorOpen = isNew || selectedId != null;
+  useEffect(() => {
+    if (!editorOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !saving && !deleting && !deleteOpen) closeEditor();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [editorOpen, saving, deleting, deleteOpen, closeEditor]);
+
   const startNew = () => {
     setSelectedId(null);
     setIsNew(true);
+    setEditorTab('content');
     setForm({
       ...emptyForm,
       selectedStepId: journeySteps[0]?.id ?? '',
@@ -241,6 +268,7 @@ export function AlmogKnowledgeManager() {
   const selectItem = (id: string) => {
     setSelectedId(id);
     setIsNew(false);
+    setEditorTab('content');
     setMessage(null);
     setMessageErr(false);
   };
@@ -395,7 +423,6 @@ export function AlmogKnowledgeManager() {
     }
   };
 
-  const showEditor = isNew || selectedId != null;
   const canBackfill = total === 0 && !listLoading;
 
   return (
@@ -473,8 +500,8 @@ export function AlmogKnowledgeManager() {
         </p>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,300px)_1fr] items-start">
-        <section className="rounded-3xl border border-white/60 bg-white/55 backdrop-blur-md shadow-lg overflow-hidden flex flex-col lg:max-h-[72vh]">
+      <div>
+        <section className="rounded-3xl border border-white/60 bg-white/55 backdrop-blur-md shadow-lg overflow-hidden flex flex-col">
           <div className="p-3 border-b border-white/50">
             <div className="relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -557,165 +584,233 @@ export function AlmogKnowledgeManager() {
           )}
         </section>
 
-        <section className="min-h-[420px] rounded-3xl border border-white/60 bg-white/55 p-4 shadow-lg backdrop-blur-md sm:p-6">
-          {!showEditor ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-3">
-              <BookOpen className="w-10 h-10 text-emerald-600/50" />
-              <p className="text-sm">בחרו מסמך מהרשימה או לחצו &quot;הוספת ידע&quot;</p>
-            </div>
-          ) : detailLoading && !isNew ? (
-            <p className="flex justify-center py-20">
-              <Loader2 className="w-7 h-7 animate-spin text-emerald-600" />
-            </p>
-          ) : (
-            <div className="space-y-4">
-              <OpsPanelHeader
-                icon={FileText}
-                title={isNew ? 'מסמך חדש' : 'עריכת ידע'}
-                tone="emerald"
-                description="עריכה נקייה של כותרת, תוכן ושיוך. שמירה מפצלת ומטמיעה מחדש באינדקס."
-              />
+      </div>
 
-              <label className="block">
-                <span className="text-xs font-bold text-slate-700">כותרת (לניהול)</span>
-                <input
-                  value={form.title}
-                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                  className={`${opsInputClass} mt-1`}
-                  placeholder="למשל: טיפים לארוחת ערב"
-                />
-              </label>
+      {editorOpen ? (
+        <div
+          dir="rtl"
+          role="dialog"
+          aria-modal="true"
+          aria-label={isNew ? 'מסמך ידע חדש' : 'עריכת מסמך ידע'}
+          className="fixed inset-0 z-[55] flex items-end justify-center p-0 sm:items-center sm:p-4"
+        >
+          <button
+            type="button"
+            aria-label="סגור"
+            onClick={() => !saving && !deleting && closeEditor()}
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+          />
+          <div
+            className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl shadow-[0_24px_70px_-12px_rgba(76,29,149,0.5)] sm:rounded-3xl"
+            style={glassPanelStyle}
+          >
+            <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
 
-              <label className="block">
-                <span className="text-xs font-bold text-slate-700">תוכן לאימון</span>
-                <textarea
-                  value={form.body}
-                  onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-                  required
-                  rows={10}
-                  className={`${opsInputClass} mt-1 min-h-56 resize-y rounded-2xl px-4 py-3 text-[15px]`}
-                  placeholder="הדביקו כאן את החומר המלא..."
-                />
-              </label>
+            {/* כותרת + טאבים */}
+            <header className="relative shrink-0 border-b border-white/40 bg-gradient-to-l from-violet-100/50 via-white/30 to-fuchsia-100/40 px-4 pb-3 pt-4 sm:px-6">
+              <button
+                type="button"
+                onClick={() => !saving && !deleting && closeEditor()}
+                disabled={saving || deleting}
+                className="absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-white/45 text-slate-600 backdrop-blur-md transition hover:bg-white/70 disabled:opacity-50 sm:left-4 sm:top-4"
+                aria-label="סגור"
+              >
+                <X className="h-4 w-4" />
+              </button>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block">
-                  <span className="text-xs font-bold text-slate-700">שיוך</span>
-                  <select
-                    value={form.dataType}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, dataType: e.target.value as DataType }))
-                    }
-                    className={`${opsInputClass} mt-1`}
-                  >
-                    <option value="step">שלב במסע</option>
-                    <option value="course">קורס</option>
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="text-xs font-bold text-slate-700">גישה</span>
-                  <select
-                    value={form.accessLevel}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, accessLevel: e.target.value as AccessLevel }))
-                    }
-                    className={`${opsInputClass} mt-1`}
-                  >
-                    <option value="public">ציבורי (לפי התקדמות)</option>
-                    <option value="premium">פרימיום (לפי קורס)</option>
-                  </select>
-                </label>
+              <div className="flex items-center gap-3 pl-10">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-md ring-1 ring-white/50">
+                  <FileText className="h-5 w-5" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="truncate bg-gradient-to-l from-violet-700 via-fuchsia-600 to-purple-700 bg-clip-text font-display text-xl font-black text-transparent">
+                    {isNew ? 'מסמך ידע חדש' : form.title || 'עריכת ידע'}
+                  </h2>
+                  <p className="truncate text-xs text-slate-600">שמירה מפצלת ומטמיעה מחדש באינדקס של אלמוג</p>
+                </div>
               </div>
 
-              {form.dataType === 'step' ? (
-                <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-3">
-                  <label className="block text-xs font-bold text-emerald-950">שלב</label>
-                  {stepsLoading ? (
-                    <p className="text-sm mt-1">טוען...</p>
-                  ) : stepsError ? (
-                    <p className="text-sm text-red-700 mt-1">{stepsError}</p>
-                  ) : (
-                    <select
-                      value={form.selectedStepId}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, selectedStepId: e.target.value }))
-                      }
-                      className={`${opsInputClass} mt-1`}
-                    >
-                      {journeySteps.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {journeyStepOptionLabel(s)}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-amber-200/70 bg-amber-50/50 p-3 space-y-2">
-                  <span className="text-xs font-bold text-amber-950">קורס</span>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setForm((f) => ({ ...f, courseMode: 'preset' }))}
-                      className={`rounded-lg px-3 py-1 text-xs font-bold ${
-                        form.courseMode === 'preset'
-                          ? 'bg-amber-500 text-white'
-                          : 'bg-white/80 text-amber-900'
-                      }`}
-                    >
-                      מהרשימה
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setForm((f) => ({ ...f, courseMode: 'custom' }))}
-                      className={`rounded-lg px-3 py-1 text-xs font-bold ${
-                        form.courseMode === 'custom'
-                          ? 'bg-amber-500 text-white'
-                          : 'bg-white/80 text-amber-900'
-                      }`}
-                    >
-                      מזהה מותאם
-                    </button>
-                  </div>
-                  {form.courseMode === 'preset' ? (
-                    <select
-                      value={form.presetCourseId}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, presetCourseId: e.target.value }))
-                      }
-                      className={opsInputClass}
-                    >
-                      {PRESET_COURSES.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      value={form.customCourseId}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, customCourseId: e.target.value }))
-                      }
-                      className={opsInputClass}
-                      placeholder="מזהה קורס"
-                    />
-                  )}
-                </div>
-              )}
+              <div className="mt-4 flex gap-1.5 rounded-2xl border border-white/50 bg-white/35 p-1 backdrop-blur-md">
+                {(
+                  [
+                    { key: 'content', label: 'תוכן', icon: FileText },
+                    { key: 'meta', label: 'שיוך והגדרות', icon: Settings2 },
+                  ] as const
+                ).map(({ key, label, icon: Icon }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setEditorTab(key)}
+                    className={cn(
+                      'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-all sm:text-sm',
+                      editorTab === key
+                        ? 'bg-gradient-to-l from-violet-500 to-fuchsia-600 text-white shadow-md shadow-violet-500/25'
+                        : 'text-slate-600 hover:bg-white/55',
+                    )}
+                  >
+                    <Icon className="h-4 w-4" aria-hidden />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </header>
 
-              <div className="grid grid-cols-1 gap-2 pt-2 sm:flex sm:flex-wrap">
+            {/* גוף */}
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+              {detailLoading && !isNew ? (
+                <p className="flex justify-center py-20">
+                  <Loader2 className="w-7 h-7 animate-spin text-violet-600" />
+                </p>
+              ) : (
+                <>
+                  {editorTab === 'content' ? (
+                    <div className="space-y-4">
+                      <label className="block">
+                        <span className="text-xs font-bold text-slate-700">כותרת (לניהול)</span>
+                        <input
+                          value={form.title}
+                          onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                          className={`${opsInputClass} mt-1`}
+                          placeholder="למשל: טיפים לארוחת ערב"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-bold text-slate-700">תוכן לאימון</span>
+                        <textarea
+                          value={form.body}
+                          onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+                          required
+                          rows={12}
+                          className={`${opsInputClass} mt-1 min-h-72 resize-y rounded-2xl px-4 py-3 text-[15px]`}
+                          placeholder="הדביקו כאן את החומר המלא..."
+                        />
+                      </label>
+                    </div>
+                  ) : null}
+
+                  {editorTab === 'meta' ? (
+                    <div className="space-y-4">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="block">
+                          <span className="text-xs font-bold text-slate-700">שיוך</span>
+                          <select
+                            value={form.dataType}
+                            onChange={(e) =>
+                              setForm((f) => ({ ...f, dataType: e.target.value as DataType }))
+                            }
+                            className={`${opsInputClass} mt-1`}
+                          >
+                            <option value="step">שלב במסע</option>
+                            <option value="course">קורס</option>
+                          </select>
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-bold text-slate-700">גישה</span>
+                          <select
+                            value={form.accessLevel}
+                            onChange={(e) =>
+                              setForm((f) => ({ ...f, accessLevel: e.target.value as AccessLevel }))
+                            }
+                            className={`${opsInputClass} mt-1`}
+                          >
+                            <option value="public">ציבורי (לפי התקדמות)</option>
+                            <option value="premium">פרימיום (לפי קורס)</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      {form.dataType === 'step' ? (
+                        <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-3">
+                          <label className="block text-xs font-bold text-emerald-950">שלב</label>
+                          {stepsLoading ? (
+                            <p className="text-sm mt-1">טוען...</p>
+                          ) : stepsError ? (
+                            <p className="text-sm text-red-700 mt-1">{stepsError}</p>
+                          ) : (
+                            <select
+                              value={form.selectedStepId}
+                              onChange={(e) =>
+                                setForm((f) => ({ ...f, selectedStepId: e.target.value }))
+                              }
+                              className={`${opsInputClass} mt-1`}
+                            >
+                              {journeySteps.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                  {journeyStepOptionLabel(s)}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-amber-200/70 bg-amber-50/50 p-3 space-y-2">
+                          <span className="text-xs font-bold text-amber-950">קורס</span>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setForm((f) => ({ ...f, courseMode: 'preset' }))}
+                              className={`rounded-lg px-3 py-1 text-xs font-bold ${
+                                form.courseMode === 'preset'
+                                  ? 'bg-amber-500 text-white'
+                                  : 'bg-white/80 text-amber-900'
+                              }`}
+                            >
+                              מהרשימה
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setForm((f) => ({ ...f, courseMode: 'custom' }))}
+                              className={`rounded-lg px-3 py-1 text-xs font-bold ${
+                                form.courseMode === 'custom'
+                                  ? 'bg-amber-500 text-white'
+                                  : 'bg-white/80 text-amber-900'
+                              }`}
+                            >
+                              מזהה מותאם
+                            </button>
+                          </div>
+                          {form.courseMode === 'preset' ? (
+                            <select
+                              value={form.presetCourseId}
+                              onChange={(e) =>
+                                setForm((f) => ({ ...f, presetCourseId: e.target.value }))
+                              }
+                              className={opsInputClass}
+                            >
+                              {PRESET_COURSES.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.label}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              value={form.customCourseId}
+                              onChange={(e) =>
+                                setForm((f) => ({ ...f, customCourseId: e.target.value }))
+                              }
+                              className={opsInputClass}
+                              placeholder="מזהה קורס"
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </div>
+
+            {/* פעולות */}
+            <footer className="shrink-0 border-t border-white/40 bg-white/25 px-4 py-3 backdrop-blur-md sm:px-6">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => void save()}
                   disabled={saving || deleting}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-500 px-4 py-3 font-bold text-white shadow-lg shadow-emerald-500/20 hover:brightness-105 disabled:opacity-60"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/25 transition active:scale-[0.99] disabled:opacity-60"
                 >
-                  {saving ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   {saving ? 'שומר ומטמיע…' : 'שמירה והטמעה'}
                 </button>
                 {!isNew && selectedId ? (
@@ -723,21 +818,17 @@ export function AlmogKnowledgeManager() {
                     type="button"
                     onClick={() => setDeleteOpen(true)}
                     disabled={saving || deleting}
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-red-300 bg-red-50 px-4 py-3 font-bold text-red-800 hover:bg-red-100 disabled:opacity-60"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-300/70 bg-rose-50/70 px-4 py-3 text-sm font-bold text-rose-700 backdrop-blur-md transition hover:bg-rose-100/80 disabled:opacity-60"
                   >
-                    {deleting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                    מחיקה
+                    {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    <span className="hidden sm:inline">מחיקה</span>
                   </button>
                 ) : null}
               </div>
-            </div>
-          )}
-        </section>
-      </div>
+            </footer>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
