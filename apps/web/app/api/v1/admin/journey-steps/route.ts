@@ -7,8 +7,59 @@ import {
   journeyStepPatchSchema,
 } from '@/lib/validation/admin-journey-step';
 import { jsonZodError } from '@/lib/validation/zod-http';
+import { syncStepResearchesToAlmogKnowledge } from '@/lib/admin/sync-research-knowledge';
+import type { Research } from '@/lib/types/journey';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 120;
+
+async function syncResearchesBestEffort(params: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any;
+  userId: string;
+  step: Record<string, unknown>;
+}): Promise<Record<string, unknown>> {
+  const researches = (params.step.researches as Research[] | null | undefined) ?? [];
+  if (!Array.isArray(researches) || researches.length === 0) return params.step;
+
+  const hasReadyResearch = researches.some(
+    (r) =>
+      r.ai_summary?.trim() ||
+      r.key_findings?.some((x) => x.trim()) ||
+      r.practical_takeaway?.trim()
+  );
+  if (!hasReadyResearch) return params.step;
+
+  try {
+    const result = await syncStepResearchesToAlmogKnowledge({
+      supabase: params.supabase,
+      step: {
+        id: params.step.id as string,
+        title: (params.step.title as string | null) ?? null,
+        course_id: (params.step.course_id as string | null) ?? null,
+        researches,
+      },
+      createdBy: params.userId,
+      persistResearchUpdates: true,
+    });
+
+    if (result.errors.length) {
+      console.warn('[admin/journey-steps] research_auto_sync_partial', {
+        step_id: params.step.id,
+        errors: result.errors,
+      });
+    }
+
+    return { ...params.step, researches: result.researches };
+  } catch (e) {
+    console.warn('[admin/journey-steps] research_auto_sync_failed', {
+      step_id: params.step.id,
+      error: e instanceof Error ? e.message : String(e),
+    });
+    return params.step;
+  }
+}
 
 export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
@@ -46,7 +97,13 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+
+  const synced = await syncResearchesBestEffort({
+    supabase,
+    userId: auth.user.id,
+    step: data as Record<string, unknown>,
+  });
+  return NextResponse.json(synced);
 }
 
 export async function PATCH(request: Request) {

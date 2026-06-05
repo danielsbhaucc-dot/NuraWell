@@ -10,6 +10,7 @@ import {
   Download,
   Save,
   FileText,
+  FlaskConical,
 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 
@@ -113,6 +114,7 @@ export function AlmogKnowledgeManager() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
+  const [syncingResearch, setSyncingResearch] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [messageErr, setMessageErr] = useState(false);
@@ -361,6 +363,37 @@ export function AlmogKnowledgeManager() {
     }
   };
 
+  const syncAllResearch = async () => {
+    setSyncingResearch(true);
+    setMessage(null);
+    setMessageErr(false);
+    try {
+      const res = await fetch('/api/v1/admin/research/sync-all', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = (await res.json()) as {
+        researchesSynced?: number;
+        stepsSynced?: number;
+        stepsScanned?: number;
+        error?: string;
+        errors?: string[];
+      };
+      if (!res.ok) throw new Error(data.error ?? 'סנכרון נכשל');
+      const suffix = data.errors?.length ? ` שגיאות: ${data.errors.join(' | ')}` : '';
+      setMessage(
+        `סונכרנו ${data.researchesSynced ?? 0} מחקרים מתוך ${data.stepsScanned ?? 0} שלבים עם מחקרים מוכנים.${suffix}`
+      );
+      setMessageErr(Boolean(data.errors?.length));
+      void loadList(searchQ);
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'שגיאת סנכרון מחקרים');
+      setMessageErr(true);
+    } finally {
+      setSyncingResearch(false);
+    }
+  };
+
   const showEditor = isNew || selectedId != null;
   const canBackfill = total === 0 && !listLoading;
 
@@ -398,6 +431,19 @@ export function AlmogKnowledgeManager() {
               ייבוא ידע קיים
             </button>
           ) : null}
+          <button
+            type="button"
+            onClick={() => void syncAllResearch()}
+            disabled={syncingResearch}
+            className="inline-flex items-center gap-2 rounded-xl border border-violet-300/80 bg-violet-50/90 px-3 py-2 text-sm font-bold text-violet-950 hover:bg-violet-100 disabled:opacity-60"
+          >
+            {syncingResearch ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FlaskConical className="w-4 h-4" />
+            )}
+            סנכרן מחקרים מכל המסע
+          </button>
           <button
             type="button"
             onClick={startNew}

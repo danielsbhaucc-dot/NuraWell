@@ -65,6 +65,9 @@ export function StepEditor({ step }: StepEditorProps) {
   const journeyListPath = pathname.startsWith('/ops') ? '/ops/journey' : '/journey';
   const isNew = !step;
   const [saving, setSaving] = useState(false);
+  const [researchScanning, setResearchScanning] = useState<number | null>(null);
+  const [researchSyncing, setResearchSyncing] = useState<number | 'all' | null>(null);
+  const [researchMessage, setResearchMessage] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<EditorSectionId>('basic');
   const [expandedResearch, setExpandedResearch] = useState<number | null>(0);
   const [expandedTask, setExpandedTask] = useState<number | null>(0);
@@ -194,6 +197,108 @@ export function StepEditor({ step }: StepEditorProps) {
       alert('שגיאה: ' + (err.error || 'Unknown'));
     }
     setSaving(false);
+  };
+
+  const patchResearch = (index: number, patch: Partial<Research>) => {
+    setResearches((prev) => {
+      const arr = [...prev];
+      arr[index] = { ...arr[index], ...patch };
+      return arr;
+    });
+  };
+
+  const scanResearch = async (index: number) => {
+    const research = researches[index];
+    if (!research) return;
+    if (!research.url && !research.source_text?.trim()) {
+      alert('צריך קישור למחקר או טקסט/Abstract בשדה הטקסט לסריקה');
+      return;
+    }
+
+    setResearchScanning(index);
+    setResearchMessage(null);
+    patchResearch(index, { scan_status: 'scanning', scan_error: undefined });
+
+    try {
+      const res = await fetch('/api/v1/admin/research/scan', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: research.title,
+          authors: research.authors,
+          year: research.year,
+          journal: research.journal,
+          finding: research.finding,
+          url: research.url,
+          sourceText: research.source_text,
+        }),
+      });
+      const data = (await res.json()) as Partial<Research> & {
+        error?: string;
+        sourceText?: string;
+        provider?: string;
+        model?: string;
+      };
+      if (!res.ok) throw new Error(data.error ?? 'סריקה נכשלה');
+
+      patchResearch(index, {
+        source_text: data.sourceText ?? research.source_text,
+        ai_summary: data.ai_summary ?? '',
+        key_findings: data.key_findings ?? [],
+        practical_takeaway: data.practical_takeaway ?? '',
+        limitations: data.limitations ?? '',
+        evidence_level: data.evidence_level ?? 'unknown',
+        last_scanned_at: data.last_scanned_at ?? new Date().toISOString(),
+        scan_status: 'ready',
+        scan_error: undefined,
+      });
+      setResearchMessage(`המחקר נסרק בהצלחה (${data.provider ?? 'AI'}). שמור/י את הצעד כדי לסנכרן אוטומטית לאלמוג.`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'שגיאת סריקה';
+      patchResearch(index, { scan_status: 'error', scan_error: msg });
+      setResearchMessage(msg);
+    } finally {
+      setResearchScanning(null);
+    }
+  };
+
+  const syncResearchesToAlmog = async (index?: number) => {
+    if (isNew || !step?.id) {
+      alert('צריך לשמור את הצעד לפני סנכרון ידני לאלמוג');
+      return;
+    }
+
+    const research = typeof index === 'number' ? researches[index] : null;
+    setResearchSyncing(typeof index === 'number' ? index : 'all');
+    setResearchMessage(null);
+
+    try {
+      const res = await fetch('/api/v1/admin/research/sync', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stepId: step.id,
+          ...(research?.id ? { researchId: research.id } : {}),
+        }),
+      });
+      const data = (await res.json()) as {
+        researches?: Research[];
+        synced?: number;
+        skipped?: number;
+        error?: string;
+        errors?: string[];
+      };
+      if (!res.ok) throw new Error(data.error ?? 'סנכרון נכשל');
+      if (Array.isArray(data.researches)) setResearches(data.researches);
+      const suffix = data.errors?.length ? ` שגיאות: ${data.errors.join(' | ')}` : '';
+      setResearchMessage(`סונכרנו ${data.synced ?? 0} מחקרים לאלמוג.${suffix}`);
+    } catch (e) {
+      setResearchMessage(e instanceof Error ? e.message : 'שגיאת סנכרון');
+    } finally {
+      setResearchSyncing(null);
+    }
   };
 
   const sectionOrder: EditorSectionId[] = ['basic', 'video', 'quiz', 'game', 'commitment', 'research', 'tasks', 'habits', 'pdf'];
@@ -687,6 +792,25 @@ export function StepEditor({ step }: StepEditorProps) {
 
         {/* ═══ RESEARCHES ═══ */}
         <Section title={`מחקרים (${researches.length})`} icon={FileText} color="#8b5cf6" sectionNumber={6} isVisible={activeSection === 'research'}>
+          <div className="rounded-xl p-3 text-xs leading-relaxed" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.18)', color: '#4c1d95' }}>
+            הזינו קישור או הדביקו Abstract/טקסט מרכזי, לחצו &quot;סרוק בזול&quot;, ואז שמרו את הצעד. בשמירה המחקרים המסוכמים נכנסים אוטומטית ל-RAG של אלמוג. אפשר גם לסנכרן ידנית.
+          </div>
+          {researchMessage && (
+            <p className="rounded-xl px-3 py-2 text-xs font-semibold" style={{ background: 'rgba(99,102,241,0.10)', color: '#3730a3', border: '1px solid rgba(99,102,241,0.18)' }}>
+              {researchMessage}
+            </p>
+          )}
+          {researches.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void syncResearchesToAlmog()}
+              disabled={researchSyncing !== null || isNew}
+              className="rounded-xl px-3 py-2 text-sm font-bold disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)', color: 'white' }}
+            >
+              {researchSyncing === 'all' ? 'מסנכרן...' : 'סנכרן את כל המחקרים לאלמוג'}
+            </button>
+          )}
           {researches.map((r, ri) => (
             <div key={r.id || ri} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(139,92,246,0.18)', background: 'rgba(255,255,255,0.72)' }}>
               <button
@@ -714,7 +838,68 @@ export function StepEditor({ step }: StepEditorProps) {
                     className="input-field min-h-[60px]" placeholder="ממצא עיקרי (בעברית)" />
                   <input value={r.url || ''} onChange={e => { const arr = [...researches]; arr[ri] = { ...arr[ri], url: e.target.value || null }; setResearches(arr); }}
                     className="input-field" placeholder="קישור (אופציונלי)" dir="ltr" />
-                  <button onClick={() => setResearches(prev => prev.filter((_, i) => i !== ri))}
+                  <textarea
+                    value={r.source_text || ''}
+                    onChange={e => patchResearch(ri, { source_text: e.target.value })}
+                    className="input-field min-h-[90px]"
+                    placeholder="טקסט לסריקה (Abstract / קטעים חשובים / טקסט מלא קצר). אם הקישור חסום או PDF, הדביקו כאן."
+                  />
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void scanResearch(ri)}
+                      disabled={researchScanning === ri}
+                      className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold disabled:opacity-60"
+                      style={{ background: 'rgba(124,58,237,0.12)', color: '#5b21b6', border: '1px solid rgba(124,58,237,0.22)' }}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      {researchScanning === ri ? 'סורק...' : 'סרוק בזול'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void syncResearchesToAlmog(ri)}
+                      disabled={researchSyncing === ri || isNew || !(r.ai_summary || r.key_findings?.length)}
+                      className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold disabled:opacity-50"
+                      style={{ background: 'rgba(37,99,235,0.12)', color: '#1d4ed8', border: '1px solid rgba(37,99,235,0.22)' }}
+                    >
+                      <Brain className="w-4 h-4" />
+                      {researchSyncing === ri ? 'מסנכרן...' : 'סנכרן לאלמוג'}
+                    </button>
+                    {r.rag_doc_id && (
+                      <span className="rounded-lg bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
+                        מסונכרן ל-RAG
+                      </span>
+                    )}
+                    {r.scan_status === 'ready' && !r.rag_doc_id && (
+                      <span className="rounded-lg bg-amber-50 px-2 py-1 text-xs font-bold text-amber-800 border border-amber-200">
+                        נסרק, ממתין לשמירה/סנכרון
+                      </span>
+                    )}
+                  </div>
+
+                  {(r.ai_summary || r.key_findings?.length || r.practical_takeaway || r.limitations) && (
+                    <div className="rounded-xl p-3 space-y-2 text-sm" style={{ background: 'rgba(255,255,255,0.72)', border: '1px solid rgba(124,58,237,0.16)' }}>
+                      <p className="text-xs font-black text-violet-900">מה אלמוג יקבל מהמחקר</p>
+                      {r.ai_summary && <p className="leading-relaxed text-slate-700">{r.ai_summary}</p>}
+                      {r.key_findings?.length ? (
+                        <ul className="list-disc pr-5 text-slate-700 space-y-1">
+                          {r.key_findings.map((finding, idx) => <li key={`${r.id}-finding-${idx}`}>{finding}</li>)}
+                        </ul>
+                      ) : null}
+                      {r.practical_takeaway && <p className="text-slate-700"><strong>משמעות לשיעור:</strong> {r.practical_takeaway}</p>}
+                      {r.limitations && <p className="text-slate-600"><strong>סייגים:</strong> {r.limitations}</p>}
+                      <p className="text-xs text-slate-500">רמת ראיות: {r.evidence_level ?? 'unknown'}</p>
+                    </div>
+                  )}
+
+                  {r.scan_error && (
+                    <p className="rounded-lg bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 border border-red-200">
+                      {r.scan_error}
+                    </p>
+                  )}
+
+                  <button type="button" onClick={() => setResearches(prev => prev.filter((_, i) => i !== ri))}
                     className="text-red-500 hover:text-red-700 text-sm font-semibold">מחק מחקר</button>
                 </div>
               )}

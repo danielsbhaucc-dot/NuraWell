@@ -33,6 +33,16 @@ const researchSchema = z.object({
   journal: z.string().max(500),
   finding: z.string().max(8000),
   url: z.union([z.string().url().max(2000), z.literal(''), z.null()]),
+  source_text: z.string().max(120000).optional(),
+  ai_summary: z.string().max(12000).optional(),
+  key_findings: z.array(z.string().max(2000)).max(12).optional(),
+  practical_takeaway: z.string().max(8000).optional(),
+  limitations: z.string().max(8000).optional(),
+  evidence_level: z.enum(['low', 'moderate', 'high', 'unknown']).optional(),
+  rag_doc_id: z.string().uuid().optional(),
+  last_scanned_at: z.string().max(80).optional(),
+  scan_status: z.enum(['idle', 'scanning', 'ready', 'error']).optional(),
+  scan_error: z.string().max(2000).optional(),
 });
 
 const journeyTaskSchema = z.object({
