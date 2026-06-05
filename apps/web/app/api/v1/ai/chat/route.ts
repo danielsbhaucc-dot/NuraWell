@@ -197,10 +197,11 @@ const CHAT_OUTPUT_TOKENS_NEAR_CAP_RATIO = 0.92;
  * להחזרה: להגדיר `AI_CHAT_MODEL=openai/gpt-5-mini` או לשחזר את ברירת המחדל.
  */
 const CHAT_MODEL = process.env.AI_CHAT_MODEL?.trim() || 'anthropic/claude-sonnet-4.6';
-const CHAT_SAFETY_NET_MODEL =
+const CHAT_ROUTER_MODEL =
+  process.env.AI_CHAT_ROUTER_MODEL?.trim() ||
   process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() ||
-  process.env.GROQ_BACKGROUND_MODEL?.trim() ||
   'meta-llama/llama-4-scout-17b-16e-instruct';
+const CHAT_SAFETY_NET_MODEL = process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() || CHAT_ROUTER_MODEL;
 
 /**
  * `reasoningEffort` הוא פרמטר ספציפי ל-OpenAI. כשמריצים מודל לא-OpenAI
@@ -219,7 +220,7 @@ const CHAT_MODEL_SUPPORTS_PROMPT_CACHE = CHAT_MODEL.startsWith('anthropic/');
 const CHAT_PROMPT_CACHE_TTL = process.env.AI_CHAT_PROMPT_CACHE_TTL?.trim() || '5m';
 /**
  * עוקף-כותב להודעות טריוויאליות: על אישור/תודה/דיווח-ביצוע חיובי קצר —
- * Groq כותב את התשובה (כמעט $0) במקום קלוד, כי שם אין הבדל איכותי. סימון
+ * Llama דרך OpenRouter כותב את התשובה (כמעט $0) במקום קלוד, כי שם אין הבדל איכותי. סימון
  * משימות/הרגלים/משקל קורה ב-onFinish על בסיס הודעת המשתמש — לכן הנכונות
  * נשמרת. כל מה שדורש אמפתיה/ניואנס/שאלה נשאר בקלוד. כיבוי: `AI_CHAT_TRIVIAL_BYPASS=off`.
  */
@@ -453,7 +454,7 @@ async function createOpenRouterTextStreamResponse({
   });
 }
 
-async function createGroqSafetyNetTextResponse({
+async function createOpenRouterCheapTextResponse({
   apiKey,
   staticSystemPrompt,
   dynamicSystemPrompt,
@@ -472,11 +473,13 @@ async function createGroqSafetyNetTextResponse({
   headers: HeadersInit;
   onFinish: (payload: StreamFinishPayload) => Promise<void>;
 }): Promise<Response> {
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
+      'HTTP-Referer': publicAppUrlForAiReferer(),
+      'X-Title': 'NuraWell',
     },
     body: JSON.stringify({
       model: CHAT_SAFETY_NET_MODEL,
@@ -491,7 +494,7 @@ async function createGroqSafetyNetTextResponse({
   if (!response.ok) {
     const errorText = await response.text().catch(() => '');
     throw new Error(
-      `Groq safety net failed (${response.status}): ${errorText.slice(0, 500) || response.statusText}`
+      `OpenRouter cheap writer failed (${response.status}): ${errorText.slice(0, 500) || response.statusText}`
     );
   }
 
@@ -663,14 +666,14 @@ function isLowContextTurn(userMessage: string, signals: ReturnType<typeof detect
 }
 
 /**
- * זכאות לעוקף-כותב (Groq במקום קלוד). שמרני בכוונה — רק הודעות שהן *כולן*
+ * זכאות לעוקף-כותב (מודל זול דרך OpenRouter במקום קלוד). שמרני בכוונה — רק הודעות שהן *כולן*
  * אישור/תודה/דיווח-ביצוע חיובי קצר. כל דבר שדורש את הטון של קלוד נשאר בקלוד:
  *  - כישלון/קושי ("ניסיתי", "לא הצלחתי", "דילגתי") → לא עוקף (צריך אמפתיה).
  *  - רגש/חסם/בקשת ריסון (signals) → לא עוקף.
  *  - שאלה (?) → לא עוקף.
  *  - יותר מ-24 תווי-אות → כנראה יש תוכן מהותי → לא עוקף.
  * הנכונות (סימון משימות/הרגלים) לא נפגעת — היא קורית ב-onFinish מהודעת המשתמש,
- * בלי תלות במי שכתב את התשובה. בנוסף — אם Groq נכשל, נופלים לקלוד (לא מאבדים תשובה).
+ * בלי תלות במי שכתב את התשובה. בנוסף — אם המודל הזול נכשל, נופלים לקלוד (לא מאבדים תשובה).
  */
 function isTrivialBypassEligible(
   userMessage: string,
@@ -704,10 +707,10 @@ type ChatContextDecision = z.infer<typeof chatContextRouterSchema>;
 function fallbackContextDecision(reason: string): ChatContextDecision {
   return {
     heavy_context: true,
-    needs_user_memory_rag: true,
-    needs_system_knowledge_rag: true,
-    needs_full_progress_report: true,
-    needs_journey_knowledge: true,
+    needs_user_memory_rag: false,
+    needs_system_knowledge_rag: false,
+    needs_full_progress_report: false,
+    needs_journey_knowledge: false,
     reason,
   };
 }
@@ -756,27 +759,27 @@ function buildChatContextRouterPrompt(
 ${userMessage.slice(0, 1200)}`;
 }
 
-async function routeChatContextWithGroq(
+async function routeChatContextWithCheapModel(
   userMessage: string,
   signals: ReturnType<typeof detectChatSignals>,
   debugId: string
 ): Promise<ChatContextDecision> {
-  const groqKey = process.env.GROQ_API_KEY?.trim();
-  if (!groqKey) return fallbackContextDecision('groq_key_missing');
+  const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (!openrouterKey) return fallbackContextDecision('openrouter_key_missing');
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 1_200);
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${groqKey}`,
+        Authorization: `Bearer ${openrouterKey}`,
+        'HTTP-Referer': publicAppUrlForAiReferer(),
+        'X-Title': 'NuraWell',
       },
       body: JSON.stringify({
-        model:
-          process.env.GROQ_BACKGROUND_MODEL?.trim() ||
-          'meta-llama/llama-4-scout-17b-16e-instruct',
+        model: CHAT_ROUTER_MODEL,
         temperature: 0,
         max_tokens: 220,
         response_format: { type: 'json_object' },
@@ -797,15 +800,15 @@ async function routeChatContextWithGroq(
         stage: 'context_router_failed_status',
         status: response.status,
       });
-      return fallbackContextDecision(`groq_status_${response.status}`);
+      return fallbackContextDecision(`cheap_router_status_${response.status}`);
     }
     const data = (await response.json()) as {
       choices?: Array<{ message?: { content?: string | null } }>;
     };
     const raw = data.choices?.[0]?.message?.content?.trim();
-    if (!raw) return fallbackContextDecision('groq_empty');
+    if (!raw) return fallbackContextDecision('cheap_router_empty');
     const parsed = chatContextRouterSchema.safeParse(JSON.parse(raw.replace(/```json|```/g, '')));
-    if (!parsed.success) return fallbackContextDecision('groq_invalid_json');
+    if (!parsed.success) return fallbackContextDecision('cheap_router_invalid_json');
     return parsed.data;
   } catch (err) {
     console.warn('[ai/chat]', {
@@ -813,7 +816,7 @@ async function routeChatContextWithGroq(
       stage: 'context_router_failed',
       error: err instanceof Error ? err.message : String(err),
     });
-    return fallbackContextDecision('groq_exception');
+    return fallbackContextDecision('cheap_router_exception');
   } finally {
     clearTimeout(timer);
   }
@@ -826,7 +829,7 @@ function formatChatSummaryPromptBlock(summary: unknown): string | null {
   return `[סיכום שיחה קודם]\n${clean}\nהשתמש בזה כרצף שיחה בלבד; אם ההודעות האחרונות סותרות, הן עדכניות יותר. שים לב לדפוסים חוזרים שמצוינים בסיכום (פעם שנייה/שלישית) — התייחס אליהם כמו שהיית מתייחס לדפוס שזיהית בעצמך בשיחה.`;
 }
 
-async function summarizeChatTurnWithGroq({
+async function summarizeChatTurnWithCheapModel({
   previousSummary,
   userMessage,
   assistantMessage,
@@ -835,22 +838,22 @@ async function summarizeChatTurnWithGroq({
   userMessage: string;
   assistantMessage: string;
 }): Promise<string | null> {
-  const groqKey = process.env.GROQ_API_KEY?.trim();
-  if (!groqKey || !assistantMessage.trim()) return null;
+  const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (!openrouterKey || !assistantMessage.trim()) return null;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 2_000);
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${groqKey}`,
+        Authorization: `Bearer ${openrouterKey}`,
+        'HTTP-Referer': publicAppUrlForAiReferer(),
+        'X-Title': 'NuraWell',
       },
       body: JSON.stringify({
-        model:
-          process.env.GROQ_BACKGROUND_MODEL?.trim() ||
-          'meta-llama/llama-4-scout-17b-16e-instruct',
+        model: CHAT_ROUTER_MODEL,
         temperature: 0,
         max_tokens: 260,
         messages: [
@@ -1453,13 +1456,12 @@ export async function POST(request: Request) {
   const earlySignals = detectChatSignals(lastUserText);
   const trivialBypass =
     CHAT_TRIVIAL_BYPASS_ENABLED &&
-    Boolean(process.env.GROQ_API_KEY?.trim()) &&
     isTrivialBypassEligible(lastUserText, earlySignals);
   const contextDecision = trivialBypass
     ? lowContextDecision('trivial_bypass')
     : isLowContextTurn(lastUserText, earlySignals)
       ? lowContextDecision('deterministic_low_context')
-      : await routeChatContextWithGroq(lastUserText, earlySignals, debugId);
+      : await routeChatContextWithCheapModel(lastUserText, earlySignals, debugId);
   const useHeavyContext = contextDecision.heavy_context;
 
   const sessionId = parsed.data.session_id ?? crypto.randomUUID();
@@ -2049,7 +2051,7 @@ export async function POST(request: Request) {
 
         after(async () => {
           try {
-            const updatedSummary = await summarizeChatTurnWithGroq({
+            const updatedSummary = await summarizeChatTurnWithCheapModel({
               previousSummary: profileRow.ai_context.chat_summary,
               userMessage: lastUserText,
               assistantMessage: assistantText,
@@ -2294,7 +2296,7 @@ export async function POST(request: Request) {
       'Cache-Control': 'no-cache, no-transform',
     };
 
-    const groqKey = process.env.GROQ_API_KEY?.trim();
+    const cheapWriterKey = openrouterKey;
 
     /** קריאת הכותב הראשי (קלוד). נעטף בפונקציה כדי לעשות בה שימוש חוזר גם
      * כ-fallback אם העוקף הזול נכשל. */
@@ -2343,17 +2345,17 @@ export async function POST(request: Request) {
       });
 
     let upstream: Response;
-    if (trivialBypass && groqKey) {
+    if (trivialBypass) {
       /**
-       * עוקף-כותב: הודעה טריוויאלית (תודה/אישור/דיווח-ביצוע קצר). Groq כותב
-       * את התשובה במקום קלוד — חיסכון אדיר בלי פגיעה באיכות. אם Groq נכשל,
+       * עוקף-כותב: הודעה טריוויאלית (תודה/אישור/דיווח-ביצוע קצר). מודל זול
+       * דרך OpenRouter כותב במקום קלוד — חיסכון אדיר בלי פגיעה באיכות. אם הוא נכשל,
        * נופלים *מעלה* לקלוד כדי שלעולם לא נאבד תשובה.
        * חשוב: assistantModelName נקבע לפני ה-await כי onFinish רץ בתוך הקריאה.
        */
       assistantModelName = CHAT_SAFETY_NET_MODEL;
       try {
-        upstream = await createGroqSafetyNetTextResponse({
-          apiKey: groqKey,
+        upstream = await createOpenRouterCheapTextResponse({
+          apiKey: cheapWriterKey,
           staticSystemPrompt: BASE_SYSTEM_PROMPT,
           dynamicSystemPrompt,
           recentMessages,
@@ -2361,13 +2363,13 @@ export async function POST(request: Request) {
           maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 220),
           headers: {
             ...upstreamHeaders,
-            'x-ai-writer': 'groq-trivial',
+            'x-ai-writer': 'openrouter-cheap-trivial',
           },
           onFinish: handleChatFinish,
         });
         console.info('[ai/chat]', {
           debug_id: debugId,
-          stage: 'trivial_bypass_groq',
+          stage: 'trivial_bypass_openrouter_cheap',
           model: CHAT_SAFETY_NET_MODEL,
         });
       } catch (bypassErr) {
@@ -2383,7 +2385,6 @@ export async function POST(request: Request) {
       try {
         upstream = await runClaudeWriter();
       } catch (primaryErr) {
-        if (!groqKey) throw primaryErr;
         console.warn('[ai/chat]', {
           debug_id: debugId,
           stage: 'primary_writer_failed_using_safety_net',
@@ -2393,8 +2394,8 @@ export async function POST(request: Request) {
         });
         assistantModelName = CHAT_SAFETY_NET_MODEL;
         safetyNetUsed = true;
-        upstream = await createGroqSafetyNetTextResponse({
-          apiKey: groqKey,
+        upstream = await createOpenRouterCheapTextResponse({
+          apiKey: cheapWriterKey,
           staticSystemPrompt: BASE_SYSTEM_PROMPT,
           dynamicSystemPrompt,
           recentMessages,
@@ -2402,7 +2403,7 @@ export async function POST(request: Request) {
           maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
           headers: {
             ...upstreamHeaders,
-            'x-ai-safety-net': 'groq',
+            'x-ai-safety-net': 'openrouter-cheap',
           },
           onFinish: handleChatFinish,
         });
