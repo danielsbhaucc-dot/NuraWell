@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   Save, ArrowRight, Plus, Trash2, Video, HelpCircle,
-  Gamepad2, Heart, FileText, BookOpen, ListChecks, Sparkles, Brain, ChevronDown, Volume2
+  Gamepad2, Heart, FileText, BookOpen, ListChecks, Sparkles, Brain, ChevronDown, Volume2,
+  Loader2, Plug, AudioLines, UploadCloud, Check
 } from 'lucide-react';
 import type {
   JourneyStep, QuizQuestion, GameItem, CommitmentData,
@@ -58,6 +59,19 @@ const emptyAttentionStop: ImmersiveAttentionStop = {
 
 function genId() { return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`; }
 
+/** שלבי השמירה כשיש הקראות (TTS) — מוצגים עם אחוזים כדי שלא ייראה תקוע. */
+const SAVE_STAGES = [
+  { key: 'connect', label: 'מתחבר ל-ElevenLabs', icon: Plug, until: 12 },
+  { key: 'transcribe', label: 'ממיר טקסט לדיבור (Liam)', icon: AudioLines, until: 45 },
+  { key: 'audio', label: 'יוצר ודוחס אודיו', icon: Volume2, until: 80 },
+  { key: 'upload', label: 'מעלה ל-Cloudflare R2 ושומר', icon: UploadCloud, until: 100 },
+] as const;
+
+function activeSaveStageIndex(pct: number): number {
+  const idx = SAVE_STAGES.findIndex((s) => pct < s.until);
+  return idx === -1 ? SAVE_STAGES.length - 1 : idx;
+}
+
 function TtsStatusBadge({ text, tts }: { text: string; tts?: QuestionTtsMeta | null }) {
   const trimmed = text.trim();
   if (!trimmed) {
@@ -97,6 +111,10 @@ export function StepEditor({ step }: StepEditorProps) {
   const journeyListPath = pathname.startsWith('/ops') ? '/ops/journey' : '/journey';
   const isNew = !step;
   const [saving, setSaving] = useState(false);
+  const [saveProgress, setSaveProgress] = useState(0);
+  const [saveStageIndex, setSaveStageIndex] = useState(0);
+  const [saveHasTts, setSaveHasTts] = useState(false);
+  const saveTimerRef = useRef<number | null>(null);
   const [researchScanning, setResearchScanning] = useState<number | null>(null);
   const [researchSyncing, setResearchSyncing] = useState<number | 'all' | null>(null);
   const [researchMessage, setResearchMessage] = useState<string | null>(null);
@@ -167,6 +185,12 @@ export function StepEditor({ step }: StepEditorProps) {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) window.clearInterval(saveTimerRef.current);
+    };
+  }, []);
+
   // Video
   const [videoProvider, setVideoProvider] = useState<string>(step?.video_provider || 'heygen');
   const [videoExternalId, setVideoExternalId] = useState(step?.video_external_id || '');
@@ -190,8 +214,35 @@ export function StepEditor({ step }: StepEditorProps) {
 
   const handleSave = async () => {
     if (!title.trim()) { alert('חובה להזין כותרת'); return; }
+
+    const ttsCount =
+      quizQuestions.filter((q) => q.question.trim()).length +
+      gameItems.filter((g) => g.statement.trim()).length;
+    const hasTts = ttsCount > 0;
+
     setSaving(true);
     setTtsSaveMessage(null);
+    setSaveHasTts(hasTts);
+    setSaveProgress(hasTts ? 3 : 30);
+    setSaveStageIndex(0);
+
+    // הערכת משך לפי כמות פריטי ההקראה — מניע את האחוזים כדי שלא ייראה תקוע.
+    const estTotalMs = hasTts ? Math.max(7000, ttsCount * 6500) : 4000;
+    const startedAt = Date.now();
+    if (saveTimerRef.current) window.clearInterval(saveTimerRef.current);
+    saveTimerRef.current = window.setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const pct = Math.min(95, Math.round((elapsed / estTotalMs) * 100));
+      setSaveProgress((prev) => (pct > prev ? pct : prev));
+      setSaveStageIndex(activeSaveStageIndex(pct));
+    }, 200);
+
+    const finishProgress = () => {
+      if (saveTimerRef.current) {
+        window.clearInterval(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+    };
 
     const body: Record<string, unknown> = {
       title,
@@ -217,34 +268,44 @@ export function StepEditor({ step }: StepEditorProps) {
 
     if (!isNew) body.id = step!.id;
 
-    const res = await fetch('/api/v1/admin/journey-steps', {
-      method: isNew ? 'POST' : 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    try {
+      const res = await fetch('/api/v1/admin/journey-steps', {
+        method: isNew ? 'POST' : 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
 
-    if (res.ok) {
-      const saved = (await res.json()) as {
-        quiz_questions?: QuizQuestion[];
-        game_items?: GameItem[];
-        tts_sync?: { generated: number; skipped: number; deleted: number; errors?: string[] };
-      };
-      if (Array.isArray(saved.quiz_questions)) setQuizQuestions(saved.quiz_questions);
-      if (Array.isArray(saved.game_items)) setGameItems(saved.game_items);
-      if (saved.tts_sync) {
-        const { generated, skipped, deleted, errors } = saved.tts_sync;
-        const errSuffix = errors?.length ? ` (${errors.length} שגיאות)` : '';
-        setTtsSaveMessage(
-          `הקראות: ${generated} נוצרו, ${skipped} ללא שינוי, ${deleted} נמחקו${errSuffix}`
-        );
+      finishProgress();
+      setSaveStageIndex(SAVE_STAGES.length - 1);
+      setSaveProgress(100);
+
+      if (res.ok) {
+        const saved = (await res.json()) as {
+          quiz_questions?: QuizQuestion[];
+          game_items?: GameItem[];
+          tts_sync?: { generated: number; skipped: number; deleted: number; errors?: string[] };
+        };
+        if (Array.isArray(saved.quiz_questions)) setQuizQuestions(saved.quiz_questions);
+        if (Array.isArray(saved.game_items)) setGameItems(saved.game_items);
+        if (saved.tts_sync) {
+          const { generated, skipped, deleted, errors } = saved.tts_sync;
+          const errSuffix = errors?.length ? ` (${errors.length} שגיאות)` : '';
+          setTtsSaveMessage(
+            `הקראות: ${generated} נוצרו, ${skipped} ללא שינוי, ${deleted} נמחקו${errSuffix}`
+          );
+        }
+        router.push(journeyListPath);
+        router.refresh();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert('שגיאה: ' + (err.error || 'Unknown'));
+        setSaving(false);
       }
-      router.push(journeyListPath);
-      router.refresh();
-    } else {
-      const err = await res.json();
-      alert('שגיאה: ' + (err.error || 'Unknown'));
+    } catch (e) {
+      finishProgress();
+      alert('שגיאה בשמירה: ' + (e instanceof Error ? e.message : 'תקלת רשת'));
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const patchResearch = (index: number, patch: Partial<Research>) => {
@@ -1319,8 +1380,10 @@ export function StepEditor({ step }: StepEditorProps) {
         </div>
       </div>
 
-      {/* Floating save */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+      {/* Floating save — מוגבה בנייד כדי שיהיה נוח ללחיצה */}
+      <div
+        className="fixed left-1/2 z-40 -translate-x-1/2 bottom-[calc(env(safe-area-inset-bottom,0px)+5.5rem)] sm:bottom-6"
+      >
         <button onClick={handleSave} disabled={saving}
           className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-white shadow-2xl transition-all hover:scale-105 disabled:opacity-50"
           style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 8px 30px rgba(16,185,129,0.4)' }}>
@@ -1328,6 +1391,69 @@ export function StepEditor({ step }: StepEditorProps) {
           {saving ? 'שומר...' : 'שמור צעד'}
         </button>
       </div>
+
+      {/* Save progress overlay */}
+      {saving && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm px-4" dir="rtl">
+          <div
+            className="w-full max-w-sm rounded-3xl p-6 text-center"
+            style={{ background: 'rgba(255,255,255,0.97)', border: '1px solid rgba(255,255,255,0.9)', boxShadow: '0 24px 60px rgba(15,23,42,0.35)' }}
+          >
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}>
+              <Loader2 className="h-7 w-7 animate-spin text-white" />
+            </div>
+
+            <h3 className="text-lg font-black" style={{ color: '#1A1730' }}>
+              {saveHasTts ? 'שומר ויוצר הקראות' : 'שומר צעד'}
+            </h3>
+            <p className="mt-1 text-sm font-bold text-emerald-700">
+              {saveHasTts ? `${SAVE_STAGES[saveStageIndex]?.label}…` : 'שומר את הצעד…'}
+            </p>
+
+            {/* Progress bar */}
+            <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-emerald-100/70">
+              <div
+                className="h-full rounded-full transition-all duration-200"
+                style={{ width: `${saveProgress}%`, background: 'linear-gradient(90deg, #047857, #10b981, #34d399)' }}
+              />
+            </div>
+            <p className="mt-2 text-2xl font-black tabular-nums" style={{ color: '#047857' }}>
+              {saveProgress}%
+            </p>
+
+            {saveHasTts && (
+              <ul className="mt-4 space-y-2 text-right">
+                {SAVE_STAGES.map((stage, i) => {
+                  const done = i < saveStageIndex || saveProgress >= 100;
+                  const active = i === saveStageIndex && saveProgress < 100;
+                  const StageIcon = stage.icon;
+                  return (
+                    <li
+                      key={stage.key}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold transition-colors"
+                      style={{
+                        background: active ? 'rgba(16,185,129,0.12)' : done ? 'rgba(16,185,129,0.06)' : 'rgba(0,0,0,0.03)',
+                        color: done ? '#047857' : active ? '#065f46' : '#94a3b8',
+                      }}
+                    >
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg" style={{ background: done || active ? 'rgba(16,185,129,0.2)' : 'rgba(0,0,0,0.05)' }}>
+                        {done ? <Check className="h-3.5 w-3.5" /> : active ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <StageIcon className="h-3.5 w-3.5" />}
+                      </span>
+                      <span className="flex-1">{stage.label}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            <p className="mt-4 text-xs text-slate-500 leading-relaxed">
+              {saveHasTts
+                ? 'יצירת אודיו ב-ElevenLabs עשויה לקחת מספר שניות לכל שאלה. אל תסגור/י את החלון.'
+                : 'רק רגע, שומר את הצעד…'}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
