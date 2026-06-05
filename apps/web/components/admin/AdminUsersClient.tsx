@@ -4,12 +4,15 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import {
   Activity,
   AlertCircle,
+  Bell,
   Brain,
   CheckCircle2,
   Clock,
+  DollarSign,
   Loader2,
   Mail,
   MapPin,
+  MessageSquare,
   Save,
   Search,
   Target,
@@ -17,6 +20,7 @@ import {
   User,
   UserCircle,
   Users,
+  Video,
   X,
 } from 'lucide-react';
 import { AdminUserJourneyDetail } from '@/components/admin/AdminUserJourneyDetail';
@@ -44,7 +48,26 @@ type UserDetail = {
   journeyReport: AdminUserJourneyReport;
 };
 
-type TabKey = 'details' | 'journey' | 'memory';
+type TabKey = 'details' | 'journey' | 'memory' | 'costs';
+
+type CostBreakdown = { chatUsd: number; notificationsUsd: number; videoUsd: number; totalUsd: number };
+type UserCostResp = {
+  breakdown: CostBreakdown;
+  counts: {
+    chatMessages: number;
+    notifications: number;
+    notificationsEstimated: number;
+    videoViews: number;
+    videoSeconds: number;
+  };
+};
+
+function usdFmt(n: number): string {
+  if (!Number.isFinite(n) || n === 0) return '$0';
+  if (n < 0.01) return `$${n.toFixed(4)}`;
+  if (n < 1) return `$${n.toFixed(3)}`;
+  return `$${n.toFixed(2)}`;
+}
 
 const GENDER_OPTIONS = [
   { value: '', label: '— ללא —' },
@@ -134,6 +157,8 @@ export function AdminUsersClient() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [tab, setTab] = useState<TabKey>('details');
+  const [cost, setCost] = useState<UserCostResp | null>(null);
+  const [costLoading, setCostLoading] = useState(false);
 
   const [form, setForm] = useState({
     full_name: '',
@@ -203,17 +228,37 @@ export function AdminUsersClient() {
     return () => clearTimeout(t);
   }, [q, loadList]);
 
+  const loadCost = useCallback(async (userId: string) => {
+    setCostLoading(true);
+    try {
+      const res = await fetch(`/api/v1/admin/costs?userId=${userId}&days=30`, { cache: 'no-store' });
+      const data = (await res.json()) as UserCostResp & { error?: string };
+      if (!res.ok) throw new Error(data.error ?? 'שגיאה');
+      setCost(data);
+    } catch {
+      setCost(null);
+    } finally {
+      setCostLoading(false);
+    }
+  }, []);
+
   const openUser = useCallback((userId: string) => {
     setSelectedId(userId);
     setTab('details');
+    setCost(null);
     void loadDetail(userId);
   }, [loadDetail]);
 
   const closeUser = useCallback(() => {
     setSelectedId(null);
     setDetail(null);
+    setCost(null);
     setMessage(null);
   }, []);
+
+  useEffect(() => {
+    if (selectedId && tab === 'costs' && !cost && !costLoading) void loadCost(selectedId);
+  }, [selectedId, tab, cost, costLoading, loadCost]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -477,7 +522,8 @@ export function AdminUsersClient() {
                       [
                         { key: 'details', label: 'פרטים', icon: User },
                         { key: 'journey', label: 'מסע', icon: MapPin },
-                        { key: 'memory', label: 'זיכרון אלמוג', icon: Brain },
+                        { key: 'costs', label: 'עלויות', icon: DollarSign },
+                        { key: 'memory', label: 'זיכרון', icon: Brain },
                       ] as const
                     ).map(({ key, label, icon: Icon }) => (
                       <button
@@ -610,6 +656,56 @@ export function AdminUsersClient() {
                         <AdminUserJourneyDetail steps={detail.journeyReport.steps} />
                       </div>
                     </div>
+                  ) : null}
+
+                  {tab === 'costs' ? (
+                    costLoading ? (
+                      <div className="flex justify-center py-12">
+                        <Loader2 className="h-7 w-7 animate-spin text-emerald-600" />
+                      </div>
+                    ) : cost ? (
+                      <div className="space-y-4">
+                        <div className="rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-teal-50/60 p-4 text-center backdrop-blur-md">
+                          <p className="text-xs font-semibold text-emerald-800/85">סה״כ עלות · 30 יום</p>
+                          <p className="mt-1 font-display text-4xl font-black tabular-nums text-emerald-800">
+                            {usdFmt(cost.breakdown.totalUsd)}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                          <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/60 p-3">
+                            <p className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+                              <MessageSquare className="h-3.5 w-3.5" /> צ׳אט
+                            </p>
+                            <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
+                              {usdFmt(cost.breakdown.chatUsd)}
+                            </p>
+                            <p className="text-[11px] text-slate-500">{cost.counts.chatMessages} הודעות</p>
+                          </div>
+                          <div className="rounded-2xl border border-violet-200/70 bg-violet-50/60 p-3">
+                            <p className="flex items-center gap-1.5 text-xs font-bold text-violet-800">
+                              <Bell className="h-3.5 w-3.5" /> התראות
+                            </p>
+                            <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
+                              {usdFmt(cost.breakdown.notificationsUsd)}
+                            </p>
+                            <p className="text-[11px] text-slate-500">{cost.counts.notifications} התראות</p>
+                          </div>
+                          <div className="rounded-2xl border border-sky-200/70 bg-sky-50/60 p-3">
+                            <p className="flex items-center gap-1.5 text-xs font-bold text-sky-800">
+                              <Video className="h-3.5 w-3.5" /> וידאו
+                            </p>
+                            <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
+                              {usdFmt(cost.breakdown.videoUsd)}
+                            </p>
+                            <p className="text-[11px] text-slate-500">
+                              {cost.counts.videoViews} צפיות · {Math.round(cost.counts.videoSeconds / 60)} דק׳
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="py-12 text-center text-sm text-slate-500">לא נמצאו נתוני עלות למשתמש זה</p>
+                    )
                   ) : null}
 
                   {tab === 'memory' ? <AlmogMemoryPanel userId={selectedId} /> : null}

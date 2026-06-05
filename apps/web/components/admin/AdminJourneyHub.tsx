@@ -142,7 +142,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
           >
             <div className="flex flex-col gap-3 border-b border-white/50 bg-gradient-to-l from-violet-500/10 to-emerald-500/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/70 text-sm font-black text-violet-800 shadow-sm">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-sm font-black text-white shadow-md ring-1 ring-white/50">
                   {st.sort_order}
                 </span>
                 <div className="min-w-0">
@@ -202,7 +202,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                     </div>
                     <Link
                       href={`${opsBase}/steps/${s.id}`}
-                      className="inline-flex min-h-10 items-center justify-center gap-1 self-end rounded-xl border border-slate-200/80 bg-white/70 px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-white sm:self-center"
+                      className="inline-flex min-h-10 items-center justify-center gap-1.5 self-end rounded-xl border border-emerald-300/60 bg-emerald-500/15 px-4 py-2 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-emerald-500/25 sm:self-center"
                     >
                       <Edit3 className="h-3.5 w-3.5" />
                       עריכה
@@ -229,13 +229,17 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                   key={s.id}
                   className="flex flex-col gap-2 rounded-2xl border border-white/50 bg-white/60 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <span className="font-medium text-slate-800">
-                    <span className="font-black text-emerald-700">{s.step_number}.</span> {s.title}
+                  <span className="flex min-w-0 items-center gap-2 font-medium text-slate-800">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-xs font-black text-emerald-800">
+                      {s.step_number}
+                    </span>
+                    <span className="truncate">{s.title}</span>
                   </span>
                   <Link
                     href={`${opsBase}/steps/${s.id}`}
-                    className="inline-flex min-h-9 items-center gap-1 rounded-xl bg-slate-800/90 px-3 py-1.5 text-xs font-bold text-white"
+                    className="inline-flex min-h-10 items-center justify-center gap-1.5 self-end rounded-xl bg-gradient-to-l from-emerald-600 to-teal-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-500/20 sm:self-center"
                   >
+                    <Edit3 className="h-3.5 w-3.5" />
                     עריכה
                   </Link>
                 </li>
