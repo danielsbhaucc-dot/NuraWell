@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { sanitizeLessonHtml } from '../../lib/sanitize-lesson-html';
 import {
   Clock, BookOpen, CheckCircle2, ExternalLink as ExternalLinkIcon,
   Video, Headphones, FileText, Presentation, AlignLeft, Layers, Images
@@ -181,7 +182,7 @@ export function LessonPageClient({
             </div>
             <div
               className="lesson-content"
-              dangerouslySetInnerHTML={{ __html: lesson.text_content }}
+              dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(lesson.text_content) }}
             />
           </motion.article>
         )}
