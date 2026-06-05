@@ -1596,7 +1596,13 @@ export async function POST(request: Request) {
       return { role, content };
     })
     .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m))
-    .slice(chatSummaryBlock ? -4 : -chatHistoryWindow());
+    /**
+     * חלון היסטוריה גולמי. גם כשקיים סיכום מתגלגל — שומרים חלון מלא (ברירת
+     * מחדל 12 = ~6 סיבובים) כדי לא לאבד את החוט הרגשי/ההקשרי של השיחה. הסיכום
+     * הוא *תוספת* להקשר ישן מעבר לחלון, לא תחליף לחלון. (רגרסיה קודמת חתכה ל-4
+     * הודעות כשהיה סיכום, מה שגרם לקלוד "לשכוח" את מהלך השיחה.)
+     */
+    .slice(-chatHistoryWindow());
 
   const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
   if (!openrouterKey) {
