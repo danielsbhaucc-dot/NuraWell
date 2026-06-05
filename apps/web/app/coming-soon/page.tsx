@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { ComingSoonExperience } from '@/components/coming-soon/ComingSoonExperience';
+import { parseLyricsConfig, type ComingSoonLyrics } from '@/lib/coming-soon/lyrics';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,25 +19,30 @@ export const viewport: Viewport = {
   themeColor: '#05010f',
 };
 
-async function getSong(): Promise<{ url: string | null; title: string | null }> {
+async function getSong(): Promise<{
+  url: string | null;
+  title: string | null;
+  lyrics: ComingSoonLyrics | null;
+}> {
   try {
     const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
       .from('site_settings')
-      .select('coming_soon_song_url, coming_soon_song_title')
+      .select('coming_soon_song_url, coming_soon_song_title, coming_soon_lyrics')
       .eq('id', 1)
       .maybeSingle();
     return {
       url: (data?.coming_soon_song_url as string | null) ?? null,
       title: (data?.coming_soon_song_title as string | null) ?? null,
+      lyrics: parseLyricsConfig(data?.coming_soon_lyrics),
     };
   } catch {
-    return { url: null, title: null };
+    return { url: null, title: null, lyrics: null };
   }
 }
 
 export default async function ComingSoonPage() {
   const song = await getSong();
-  return <ComingSoonExperience songUrl={song.url} songTitle={song.title} />;
+  return <ComingSoonExperience songUrl={song.url} songTitle={song.title} lyrics={song.lyrics} />;
 }

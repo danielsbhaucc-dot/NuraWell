@@ -15,6 +15,7 @@ import {
 import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
 import type { MediaAsset } from '@/components/media-manager/types';
 import { GlassConfirmDialog } from '@/components/media-manager/GlassConfirmDialog';
+import { AdminComingSoonLyricsEditor } from '@/components/admin/AdminComingSoonLyricsEditor';
 
 function formatTime(sec: number): string {
   if (!Number.isFinite(sec) || sec < 0) return '0:00';
@@ -265,6 +266,8 @@ export function AdminComingSoonPanel() {
           </button>
         ) : null}
       </div>
+
+      {songUrl ? <AdminComingSoonLyricsEditor songUrl={songUrl} /> : null}
 
       {error ? (
         <p className="relative mt-3 flex items-center gap-2 text-sm text-red-800">
