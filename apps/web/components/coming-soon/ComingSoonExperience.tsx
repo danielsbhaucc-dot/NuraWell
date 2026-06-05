@@ -1,37 +1,9 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Brain, HeartPulse, Leaf, Play, Repeat, ShieldCheck, Sparkles, Volume2, VolumeX } from 'lucide-react';
-
-/* ============================================================
- * סנכרון מילים לשיר 30 השניות (נוצר ב-Gemini).
- * השיר מתחיל לשיר רק אחרי ~3 שניות (אינטרו שקט) → הזמנים מוחלטים.
- * SYNC_OFFSET מקדים מעט את ההדגשה כדי שתרגיש "על הביט" ולא באיחור.
- * ============================================================ */
-const SONG_LEAD_IN = 3;
-const SYNC_OFFSET = 0.18; // מקדים את ההדגשה (שניות) — להעלים תחושת דיליי
-
-type LyricKind = 'normal' | 'drop' | 'mega';
-type LyricLine = {
-  start: number;
-  end: number;
-  text: string;
-  kind?: LyricKind;
-  tag?: string;
-};
-
-const LYRICS: LyricLine[] = [
-  { start: SONG_LEAD_IN + 0.4, end: SONG_LEAD_IN + 4.3, text: 'הלילה נצבע באור חדש' },
-  { start: SONG_LEAD_IN + 4.3, end: SONG_LEAD_IN + 8.2, text: 'הלב נפתח, אין בו חשש' },
-  { start: SONG_LEAD_IN + 8.2, end: SONG_LEAD_IN + 12.1, text: 'לרקוד איתך עד אינסוף' },
-  { start: SONG_LEAD_IN + 12.1, end: SONG_LEAD_IN + 16.0, text: 'לגלות את כל היופי שוב' },
-  { start: SONG_LEAD_IN + 16.0, end: SONG_LEAD_IN + 18.6, text: 'NuraWell', kind: 'drop', tag: 'כן!' },
-  { start: SONG_LEAD_IN + 18.6, end: SONG_LEAD_IN + 21.0, text: 'NuraWell', kind: 'drop' },
-  { start: SONG_LEAD_IN + 21.0, end: SONG_LEAD_IN + 24.4, text: 'מרגיש הכי חזק שיש' },
-  { start: SONG_LEAD_IN + 24.4, end: SONG_LEAD_IN + 27.6, text: 'NuraWell!!!', kind: 'mega' },
-];
-const LYRICS_END = LYRICS[LYRICS.length - 1].end + 0.4;
+import { resolveLyrics, type ComingSoonLyrics } from '@/lib/coming-soon/lyrics';
 
 /* משפטי שיווק — *כוכביות* מסמנות מילים מודגשות (גרדיאנט) */
 const REVOLUTION_LINES = [
@@ -93,15 +65,21 @@ function renderEmphasis(text: string) {
 export function ComingSoonExperience({
   songUrl,
   songTitle,
+  lyrics,
 }: {
   songUrl: string | null;
   songTitle: string | null;
+  lyrics?: ComingSoonLyrics | null;
 }) {
   const [phase, setPhase] = useState<Phase>('intro');
   const [activeLine, setActiveLine] = useState(-1);
   const [activeWord, setActiveWord] = useState(-1);
   const [muted, setMuted] = useState(false);
   const [revIndex, setRevIndex] = useState(0);
+
+  const resolved = useMemo(() => resolveLyrics(lyrics), [lyrics]);
+  const LINES = resolved.lines;
+  const LYRICS_END = resolved.endsAt + 0.4;
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -115,6 +93,16 @@ export function ComingSoonExperience({
   const sparksRef = useRef<Spark[]>([]);
   const sizeRef = useRef({ w: 0, h: 0, dpr: 1 });
   const lastDropRef = useRef(-1);
+
+  // mirror resolved lyrics into refs for the RAF loop (stable deps)
+  const linesRef = useRef(resolved.lines);
+  const endsAtRef = useRef(LYRICS_END);
+  const syncOffsetRef = useRef(resolved.syncOffset);
+  useEffect(() => {
+    linesRef.current = resolved.lines;
+    endsAtRef.current = resolved.endsAt + 0.4;
+    syncOffsetRef.current = resolved.syncOffset;
+  }, [resolved]);
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -282,25 +270,27 @@ export function ComingSoonExperience({
 
       const audio = audioRef.current;
       if (phaseRef.current === 'lyrics' && audio) {
-        const ct = audio.currentTime + SYNC_OFFSET;
-        const dur = audio.duration && Number.isFinite(audio.duration) ? audio.duration : LYRICS_END;
+        const lines = linesRef.current;
+        const endsAt = endsAtRef.current;
+        const ct = audio.currentTime + syncOffsetRef.current;
+        const dur = audio.duration && Number.isFinite(audio.duration) ? audio.duration : endsAt;
         if (progressBarRef.current) {
           progressBarRef.current.style.width = `${(dur > 0 ? Math.min(1, audio.currentTime / dur) : 0) * 100}%`;
         }
 
         let idx = -1;
-        for (let i = 0; i < LYRICS.length; i++) {
-          if (ct >= LYRICS[i].start && ct < LYRICS[i].end) idx = i;
+        for (let i = 0; i < lines.length; i++) {
+          if (ct >= lines[i].start && ct < lines[i].end) idx = i;
         }
         if (idx === -1) {
-          for (let i = 0; i < LYRICS.length; i++) {
-            if (ct >= LYRICS[i].start) idx = i;
+          for (let i = 0; i < lines.length; i++) {
+            if (ct >= lines[i].start) idx = i;
           }
         }
         setActiveLine((prev) => (prev === idx ? prev : idx));
 
         if (idx >= 0) {
-          const line = LYRICS[idx];
+          const line = lines[idx];
           const words = splitWords(line.text);
           const frac = (ct - line.start) / Math.max(0.001, line.end - line.start);
           const wi = Math.max(0, Math.min(words.length - 1, Math.floor(frac * words.length)));
@@ -310,7 +300,7 @@ export function ComingSoonExperience({
           }
         }
 
-        if (audio.currentTime >= LYRICS_END - 0.05 || (audio.ended && phaseRef.current === 'lyrics')) {
+        if (audio.currentTime >= endsAt - 0.05 || (audio.ended && phaseRef.current === 'lyrics')) {
           goToLoop();
         }
       }
@@ -344,12 +334,12 @@ export function ComingSoonExperience({
 
   useEffect(() => {
     if (phase !== 'lyrics' || activeLine < 0) return;
-    const line = LYRICS[activeLine];
+    const line = LINES[activeLine];
     if ((line?.kind === 'drop' || line?.kind === 'mega') && lastDropRef.current !== activeLine) {
       lastDropRef.current = activeLine;
       spawnConfetti(line.kind === 'mega' ? 240 : 130, line.kind === 'mega' ? 1.5 : 1.1);
     }
-  }, [activeLine, phase, spawnConfetti]);
+  }, [activeLine, phase, spawnConfetti, LINES]);
 
   useEffect(() => {
     if (phase !== 'loop') return;
@@ -401,7 +391,7 @@ export function ComingSoonExperience({
     });
   }, []);
 
-  const current = activeLine >= 0 ? LYRICS[activeLine] : null;
+  const current = activeLine >= 0 && activeLine < LINES.length ? LINES[activeLine] : null;
   const currentWords = current ? splitWords(current.text) : [];
 
   return (
@@ -551,7 +541,9 @@ export function ComingSoonExperience({
                         >
                           <span
                             className={`cs-drop-text font-black leading-none ${
-                              current.kind === 'mega' ? 'text-[20vw] sm:text-[12rem]' : 'text-[16vw] sm:text-[9rem]'
+                              current.kind === 'mega'
+                                ? 'text-[17vw] sm:text-[12rem]'
+                                : 'text-[13vw] sm:text-[9rem]'
                             }`}
                           >
                             {current.text}
@@ -734,8 +726,19 @@ export function ComingSoonExperience({
         }
         .cs-ai-drop {
           font-size: 0.42em; vertical-align: super;
+          display: inline-block;
+          width: 0;
+          margin-inline-start: 0.04em;
+          transform: translateY(-0.08em) scale(0.62);
+          transform-origin: 0 0;
           background: linear-gradient(120deg, #a3e635, #5eead4);
           -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        @media (max-width: 640px) {
+          .cs-ai-drop {
+            transform: translateY(-0.12em) scale(0.5);
+            margin-inline-start: 0.02em;
+          }
         }
 
         /* ---- karaoke words ---- */
