@@ -15,7 +15,7 @@ export default function SystemRagIngestPage() {
         icon={BookOpen}
         eyebrow="אלמוג"
         title="ניהול ידע של אלמוג"
-        tone="violet"
+        tone="sky"
         description="צפייה, חיפוש, עריכה והוספה של כל מה שאלמוג יודע — לפי שלב במסע או קורס. כל שמירה מעדכנת את האינדקס לשיחות."
       />
       <AlmogKnowledgeManager />

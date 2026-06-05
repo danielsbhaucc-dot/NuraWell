@@ -388,6 +388,7 @@ function PlaylistTrackManager({
 }: PlaylistTrackManagerProps) {
   const [tracks, setTracks] = useState<TrackWithUrl[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showUploader, setShowUploader] = useState(false);
 
   const loadTracks = useCallback(async () => {
     setLoading(true);
@@ -432,17 +433,33 @@ function PlaylistTrackManager({
   }, []);
 
   return (
-    <div className="mt-2 rounded-2xl border border-emerald-200/60 bg-white/40 p-3 sm:p-4">
-      <TrackUploader
-        playlistId={playlistId}
-        onUploaded={(track) => {
-          setTracks((t) => [...t, track]);
-          onTrackAdded();
-        }}
-      />
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <h4 className="text-sm font-black text-slate-700">
+          רצועות {tracks.length > 0 ? `(${tracks.length})` : ''}
+        </h4>
+        <button
+          type="button"
+          onClick={() => setShowUploader((v) => !v)}
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/55 bg-white/30 px-3 py-1.5 text-xs font-bold text-slate-800 backdrop-blur-md transition hover:bg-white/50"
+        >
+          <Upload className="h-3.5 w-3.5" />
+          {showUploader ? 'סגור העלאה' : 'הוסף רצועה'}
+        </button>
+      </div>
 
-      <div className="mt-4">
-        <h4 className="mb-2 text-sm font-black text-slate-700">רצועות בפלייליסט</h4>
+      {showUploader ? (
+        <TrackUploader
+          playlistId={playlistId}
+          onUploaded={(track) => {
+            setTracks((t) => [...t, track]);
+            onTrackAdded();
+            setShowUploader(false);
+          }}
+        />
+      ) : null}
+
+      <div>
         {loading ? (
           <div className="flex items-center gap-2 py-3 text-sm text-slate-500">
             <Loader2 className="h-4 w-4 animate-spin" /> טוען רצועות…
@@ -489,7 +506,14 @@ function PlaylistTrackManager({
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                    {track.url && <GlassAudioPlayer src={track.url} />}
+                    {track.url ? (
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-[11px] font-bold text-emerald-700">האזנה</summary>
+                        <div className="mt-1.5">
+                          <GlassAudioPlayer src={track.url} />
+                        </div>
+                      </details>
+                    ) : null}
                   </>
                 )}
               </li>

@@ -15,7 +15,13 @@ import {
   X,
 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
-import { OpsPanelHeader, opsGlassCardClass, opsInputClass } from '@/components/admin/OpsPanel';
+import {
+  OpsPanelHeader,
+  opsGlassBtnClass,
+  opsGlassBtnPrimaryClass,
+  opsGlassCardClass,
+  opsInputClass,
+} from '@/components/admin/OpsPanel';
 import { glassPanelStyle } from '@/components/media-manager/glass-styles';
 import { cn } from '@/lib/cn';
 
@@ -443,7 +449,7 @@ export function AlmogKnowledgeManager() {
         <OpsPanelHeader
           icon={BookOpen}
           title="ספריית הידע"
-          tone="violet"
+          tone="sky"
           description={`${total} מסמכי ידע · כל שמירה מעדכנת את האינדקס שאלמוג משתמש בו בשיחות`}
           actions={
             <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-none sm:flex sm:flex-wrap">
@@ -452,7 +458,7 @@ export function AlmogKnowledgeManager() {
                   type="button"
                   onClick={() => void runBackfill()}
                   disabled={backfilling}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-300/80 bg-amber-50/90 px-3 py-2 text-sm font-bold text-amber-950 hover:bg-amber-100 disabled:opacity-60"
+                  className={`${opsGlassBtnClass} min-h-11 px-3 py-2 text-sm disabled:opacity-60`}
                 >
                   {backfilling ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -466,7 +472,7 @@ export function AlmogKnowledgeManager() {
                 type="button"
                 onClick={() => void syncAllResearch()}
                 disabled={syncingResearch}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-violet-300/80 bg-violet-50/90 px-3 py-2 text-sm font-bold text-violet-950 hover:bg-violet-100 disabled:opacity-60"
+                className={`${opsGlassBtnClass} min-h-11 px-3 py-2 text-sm disabled:opacity-60`}
               >
                 {syncingResearch ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -601,36 +607,41 @@ export function AlmogKnowledgeManager() {
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
           />
           <div
-            className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl shadow-[0_24px_70px_-12px_rgba(76,29,149,0.5)] sm:rounded-3xl"
+            className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[1.75rem] shadow-[0_28px_80px_-16px_rgba(14,116,144,0.45)] ring-1 ring-white/50 sm:rounded-[1.75rem]"
             style={glassPanelStyle}
           >
-            <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+            <div className="pointer-events-none absolute -left-16 -top-20 h-48 w-48 rounded-full bg-sky-400/25 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent" />
 
             {/* כותרת + טאבים */}
-            <header className="relative shrink-0 border-b border-white/40 bg-gradient-to-l from-violet-100/50 via-white/30 to-fuchsia-100/40 px-4 pb-3 pt-4 sm:px-6">
+            <header className="relative shrink-0 border-b border-white/40 bg-gradient-to-bl from-sky-100/55 via-white/25 to-emerald-100/45 px-4 pb-3 pt-4 sm:px-6">
               <button
                 type="button"
                 onClick={() => !saving && !deleting && closeEditor()}
                 disabled={saving || deleting}
-                className="absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-white/45 text-slate-600 backdrop-blur-md transition hover:bg-white/70 disabled:opacity-50 sm:left-4 sm:top-4"
+                className="absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-white/35 text-slate-600 backdrop-blur-md transition hover:bg-white/55 disabled:opacity-50 sm:left-4 sm:top-4"
                 aria-label="סגור"
               >
                 <X className="h-4 w-4" />
               </button>
 
               <div className="flex items-center gap-3 pl-10">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-md ring-1 ring-white/50">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shadow-lg shadow-sky-500/30 ring-1 ring-white/55">
                   <FileText className="h-5 w-5" aria-hidden />
                 </span>
                 <div className="min-w-0">
-                  <h2 className="truncate bg-gradient-to-l from-violet-700 via-fuchsia-600 to-purple-700 bg-clip-text font-display text-xl font-black text-transparent">
-                    {isNew ? 'מסמך ידע חדש' : form.title || 'עריכת ידע'}
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-sky-700/85">
+                    {isNew ? 'מסמך חדש' : 'עריכה'}
+                  </p>
+                  <h2 className="truncate bg-gradient-to-l from-sky-800 via-cyan-700 to-emerald-700 bg-clip-text font-display text-xl font-black text-transparent">
+                    {isNew ? 'הוספת ידע לאלמוג' : form.title || 'עריכת ידע'}
                   </h2>
-                  <p className="truncate text-xs text-slate-600">שמירה מפצלת ומטמיעה מחדש באינדקס של אלמוג</p>
+                  <p className="truncate text-xs text-slate-600">שמירה מפצלת ומטמיעה מחדש באינדקס</p>
                 </div>
               </div>
 
-              <div className="mt-4 flex gap-1.5 rounded-2xl border border-white/50 bg-white/35 p-1 backdrop-blur-md">
+              <div className="mt-4 flex gap-1.5 rounded-2xl border border-white/50 bg-white/30 p-1 backdrop-blur-md">
                 {(
                   [
                     { key: 'content', label: 'תוכן', icon: FileText },
@@ -644,8 +655,8 @@ export function AlmogKnowledgeManager() {
                     className={cn(
                       'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-all sm:text-sm',
                       editorTab === key
-                        ? 'bg-gradient-to-l from-violet-500 to-fuchsia-600 text-white shadow-md shadow-violet-500/25'
-                        : 'text-slate-600 hover:bg-white/55',
+                        ? 'bg-gradient-to-l from-sky-500 to-cyan-600 text-white shadow-md shadow-sky-500/25'
+                        : 'text-slate-600 hover:bg-white/50',
                     )}
                   >
                     <Icon className="h-4 w-4" aria-hidden />
@@ -659,7 +670,7 @@ export function AlmogKnowledgeManager() {
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
               {detailLoading && !isNew ? (
                 <p className="flex justify-center py-20">
-                  <Loader2 className="w-7 h-7 animate-spin text-violet-600" />
+                  <Loader2 className="w-7 h-7 animate-spin text-sky-600" />
                 </p>
               ) : (
                 <>
@@ -749,22 +760,22 @@ export function AlmogKnowledgeManager() {
                             <button
                               type="button"
                               onClick={() => setForm((f) => ({ ...f, courseMode: 'preset' }))}
-                              className={`rounded-lg px-3 py-1 text-xs font-bold ${
-                                form.courseMode === 'preset'
-                                  ? 'bg-amber-500 text-white'
-                                  : 'bg-white/80 text-amber-900'
-                              }`}
+                              className={cn(
+                                opsGlassBtnClass,
+                                'px-3 py-1',
+                                form.courseMode === 'preset' && 'border-amber-400/60 bg-amber-500/20 text-amber-900',
+                              )}
                             >
                               מהרשימה
                             </button>
                             <button
                               type="button"
                               onClick={() => setForm((f) => ({ ...f, courseMode: 'custom' }))}
-                              className={`rounded-lg px-3 py-1 text-xs font-bold ${
-                                form.courseMode === 'custom'
-                                  ? 'bg-amber-500 text-white'
-                                  : 'bg-white/80 text-amber-900'
-                              }`}
+                              className={cn(
+                                opsGlassBtnClass,
+                                'px-3 py-1',
+                                form.courseMode === 'custom' && 'border-amber-400/60 bg-amber-500/20 text-amber-900',
+                              )}
                             >
                               מזהה מותאם
                             </button>
@@ -808,7 +819,7 @@ export function AlmogKnowledgeManager() {
                   type="button"
                   onClick={() => void save()}
                   disabled={saving || deleting}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-violet-500/25 transition active:scale-[0.99] disabled:opacity-60"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-sky-600 to-cyan-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-sky-500/25 transition active:scale-[0.99] disabled:opacity-60"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   {saving ? 'שומר ומטמיע…' : 'שמירה והטמעה'}
