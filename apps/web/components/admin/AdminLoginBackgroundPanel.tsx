@@ -70,9 +70,16 @@ export function AdminLoginBackgroundPanel() {
   };
 
   return (
-    <section className="rounded-3xl border border-white/40 bg-white/40 p-5 backdrop-blur-xl" dir="rtl">
-      <h2 className="text-lg font-black text-slate-800">רקע דף התחברות</h2>
-      <p className="mt-1 text-sm text-slate-600">בחר תמונה ממנהל הקבצים (העלאה, Pixabay, Pexels).</p>
+    <section className="rounded-3xl border border-white/50 bg-white/45 p-4 backdrop-blur-xl sm:p-5" dir="rtl">
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shadow-md shadow-sky-600/25">
+          <ImageIcon className="h-5 w-5" aria-hidden />
+        </span>
+        <div>
+          <h2 className="font-display text-lg font-black text-slate-800">רקע דף התחברות</h2>
+          <p className="text-sm text-slate-600">בחר תמונה ממנהל הקבצים (העלאה, Pixabay, Pexels).</p>
+        </div>
+      </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <div className="h-20 w-32 overflow-hidden rounded-xl border border-white/60 bg-white/25">

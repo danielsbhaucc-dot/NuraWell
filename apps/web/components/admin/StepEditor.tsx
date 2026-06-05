@@ -365,7 +365,7 @@ export function StepEditor({ step }: StepEditorProps) {
   };
 
   return (
-    <div className="max-w-3xl mx-auto pb-24 relative">
+    <div className="relative mx-auto max-w-4xl pb-24">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 rounded-[32px]"
@@ -376,19 +376,21 @@ export function StepEditor({ step }: StepEditorProps) {
       />
       {/* Header */}
       <div
-        className="flex items-center gap-3 mb-5 rounded-2xl px-3 py-3 backdrop-blur-md"
+        className="mb-5 flex flex-col gap-3 rounded-3xl px-3 py-3 backdrop-blur-md sm:flex-row sm:items-center"
         style={{ background: 'rgba(255,255,255,0.62)', border: '1px solid rgba(255,255,255,0.65)', boxShadow: '0 10px 24px rgba(16,24,40,0.08)' }}
       >
+        <div className="flex min-w-0 items-center gap-3">
         <button onClick={() => router.push(journeyListPath)}
-          className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-sm"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm transition-colors"
           style={{ background: 'linear-gradient(135deg, #0f766e, #10b981)', border: '1px solid rgba(255,255,255,0.55)' }}>
           <ArrowRight className="w-5 h-5 text-white" />
         </button>
-        <h1 className="text-xl font-black flex-1" style={{ color: '#1A1730' }}>
+        <h1 className="min-w-0 flex-1 truncate text-lg font-black sm:text-xl" style={{ color: '#1A1730' }}>
           {isNew ? 'צעד חדש' : `עריכת: ${step!.title}`}
         </h1>
+        </div>
         <button onClick={handleSave} disabled={saving}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white transition-all hover:scale-105 disabled:opacity-50"
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-lg transition-all active:scale-[0.99] disabled:opacity-50 sm:mr-auto sm:w-auto sm:min-h-10 sm:py-2.5"
           style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}>
           <Save className="w-4 h-4" />
           {saving ? 'שומר...' : 'שמור'}
@@ -405,16 +407,16 @@ export function StepEditor({ step }: StepEditorProps) {
             boxShadow: '0 14px 32px rgba(15,23,42,0.12)',
           }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <h2
               className="text-sm font-black px-3 py-1.5 rounded-lg"
               style={{ color: '#1A1730', background: 'linear-gradient(135deg, rgba(16,185,129,0.18), rgba(59,130,246,0.18))' }}
             >
               מבנה הצעד
             </h2>
-            <span className="text-xs text-gray-600">לחיצה על שלב פותחת את הטופס שלו</span>
+            <span className="text-xs text-gray-600">החליקו הצידה במובייל ובחרו את החלק לעריכה</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0">
             <SectionTab
               number={1}
               label="פרטים בסיסיים"
@@ -1381,7 +1383,7 @@ function SectionTab({
     <button
       type="button"
       onClick={onClick}
-      className="w-full flex items-center gap-2 rounded-xl px-3 py-2.5 transition-all text-right"
+      className="flex min-w-[13.5rem] snap-start items-center gap-2 rounded-xl px-3 py-2.5 text-right transition-all sm:min-w-0 sm:w-full"
       style={{
         background: active ? 'rgba(255,255,255,0.98)' : 'rgba(248,250,252,0.84)',
         border: active ? `1px solid ${color}` : '1px solid rgba(0,0,0,0.08)',

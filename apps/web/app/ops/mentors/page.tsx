@@ -1,20 +1,23 @@
 'use client';
 
 import { useState } from 'react';
+import { UserCircle } from 'lucide-react';
 import { MENTOR_IDS, MENTORS, type MentorId } from '@/lib/mentors/registry';
 import { AdminMentorAvatarPanel } from '@/components/admin/AdminMentorAvatarPanel';
+import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
 
 export default function OpsMentorsPage() {
   const [selected, setSelected] = useState<MentorId>('dolev');
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <div>
-        <h1 className="mb-2 text-2xl font-black text-slate-900 sm:text-3xl">הגדרות מנטורים</h1>
-        <p className="text-sm text-slate-600 sm:text-base">
-          תמונות פרופיל ל-CDN (WebP, דחיסה בדפדפן, מחיקת קובץ ישן בהחלפה) — אלמוג במסע, דולב בהרשמה.
-        </p>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <OpsPageHeader
+        icon={UserCircle}
+        eyebrow="אלמוג"
+        title="הגדרות מנטורים"
+        tone="violet"
+        description="תמונות פרופיל ל-CDN (WebP, דחיסה בדפדפן, מחיקת קובץ ישן בהחלפה) — אלמוג במסע, דולב בהרשמה."
+      />
 
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="בחירת מנטור">
         {MENTOR_IDS.map((id) => {

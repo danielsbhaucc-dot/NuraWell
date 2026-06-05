@@ -12,6 +12,7 @@ import {
   Users,
   TrendingUp,
 } from 'lucide-react';
+import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
 
 type Breakdown = {
   chatUsd: number;
@@ -196,32 +197,32 @@ export function AdminCostsClient() {
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-black text-slate-900">
-            <DollarSign className="h-6 w-6 text-emerald-600" />
-            עלויות משתמשים
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">
-            עלות AI (צ׳אט + התראות) וצפיות וידאו (Bunny) פר-משתמש, לפי הנתונים שנרשמו ב-Supabase.
-          </p>
-        </div>
-        <div className="flex gap-1 rounded-xl border border-slate-200 bg-white/70 p-1">
-          {WINDOWS.map((w) => (
-            <button
-              key={w.days}
-              type="button"
-              onClick={() => setDays(w.days)}
-              className={[
-                'rounded-lg px-3 py-1.5 text-xs font-bold transition-colors',
-                days === w.days ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100',
-              ].join(' ')}
-            >
-              {w.label}
-            </button>
-          ))}
-        </div>
-      </header>
+      <OpsPageHeader
+        icon={DollarSign}
+        eyebrow="ניתוח נתונים"
+        title="עלויות משתמשים"
+        tone="emerald"
+        description="עלות AI (צ׳אט + התראות) וצפיות וידאו (Bunny) פר-משתמש, לפי הנתונים שנרשמו ב-Supabase."
+        actions={
+          <div className="flex gap-1 rounded-2xl border border-white/60 bg-white/55 p-1 backdrop-blur-md">
+            {WINDOWS.map((w) => (
+              <button
+                key={w.days}
+                type="button"
+                onClick={() => setDays(w.days)}
+                className={[
+                  'rounded-xl px-3 py-2 text-xs font-bold transition-colors',
+                  days === w.days
+                    ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-600/25'
+                    : 'text-slate-600 hover:bg-white/70',
+                ].join(' ')}
+              >
+                {w.label}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {error ? (
         <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">

@@ -115,16 +115,9 @@ export function AdminShell({
     };
   }, [sidebarOpen]);
 
-  const greeting =
-    adminFirstName.trim().length > 0 ? (
-      <>
-        שלום, {adminFirstName.trim()} <span aria-hidden>👋</span>
-      </>
-    ) : (
-      <>
-        שלום <span aria-hidden>👋</span>
-      </>
-    );
+  const greetingName = adminFirstName.trim();
+  const hour = new Date().getHours();
+  const dayPart = hour < 12 ? 'בוקר טוב' : hour < 17 ? 'צהריים טובים' : hour < 21 ? 'ערב טוב' : 'לילה טוב';
 
   const showNavLabels = !sidebarCollapsed;
   const mainPadLg = sidebarCollapsed ? 'lg:pr-[4.75rem]' : 'lg:pr-64';
@@ -471,7 +464,7 @@ export function AdminShell({
       >
         <header className="safe-area-top sticky top-0 z-20 border-b border-white/50 bg-gradient-to-l from-emerald-200/95 via-teal-100/90 to-cyan-100/85 shadow-[0_8px_28px_rgba(16,185,129,0.15)] backdrop-blur-xl">
           <div className="header-grid-pattern opacity-50" aria-hidden />
-          <div className="relative flex min-h-[3.5rem] items-center gap-2 px-3 py-2.5 sm:min-h-14 sm:gap-3 sm:px-4 sm:py-3">
+          <div className="relative flex min-h-[3.75rem] items-center gap-2.5 px-3 py-2.5 sm:min-h-16 sm:gap-3 sm:px-4 sm:py-3">
             <div className="flex shrink-0 items-center gap-2 sm:gap-2.5 lg:hidden">
               <button
                 type="button"
@@ -483,39 +476,67 @@ export function AdminShell({
               </button>
             </div>
 
-            <p className="min-w-0 flex-1 truncate text-right font-display text-[13px] font-bold tracking-tight text-emerald-950 sm:text-sm md:text-base">
-              {greeting}
-            </p>
+            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+              <span
+                className="hidden h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)] sm:block"
+                aria-hidden
+              />
+              <div className="min-w-0">
+                <p className="truncate text-[11px] font-semibold tracking-wide text-emerald-700/80 sm:text-xs">
+                  {dayPart} <span aria-hidden>·</span> פאנל ניהול NuraWell
+                </p>
+                <h2 className="flex min-w-0 items-center gap-1.5 truncate font-display text-base font-black leading-tight tracking-tight sm:text-lg md:text-xl">
+                  <span className="bg-gradient-to-l from-emerald-700 via-teal-600 to-cyan-700 bg-clip-text text-transparent">
+                    {greetingName ? `שלום, ${greetingName}` : 'שלום'}
+                  </span>
+                  <span className="onboarding-wave-hand shrink-0" aria-hidden>
+                    👋
+                  </span>
+                </h2>
+              </div>
+            </div>
 
-            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              <span className="hidden max-w-[12rem] truncate text-left text-sm font-semibold text-emerald-900/90 md:inline">
-                {adminDisplayName}
-              </span>
+            <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
               <button
                 type="button"
                 className="relative inline-flex min-h-10 min-w-10 items-center justify-center rounded-2xl border border-white/55 bg-white/45 text-emerald-900 shadow-sm backdrop-blur-md transition-colors hover:bg-white/70"
                 aria-label="התראות (בקרוב)"
               >
-                <Bell size={20} className="opacity-90" />
+                <Bell size={19} className="opacity-90" />
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-400 ring-2 ring-white/80" aria-hidden />
               </button>
-              <div
-                className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-white/80 bg-gradient-to-br from-violet-200 to-emerald-200 shadow-md ring-2 ring-white/90"
-                title={adminDisplayName}
-              >
-                {adminAvatarUrl && adminAvatarUrl.startsWith('http') ? (
-                  <Image
-                    src={adminAvatarUrl}
-                    alt={adminDisplayName}
-                    fill
-                    className="object-cover"
-                    sizes="40px"
-                    unoptimized
-                  />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center font-display text-sm font-bold text-emerald-900">
-                    {adminDisplayName.charAt(0)}
+
+              <div className="flex items-center gap-2.5 rounded-2xl border border-white/55 bg-white/45 py-1 pl-1 pr-2.5 shadow-sm backdrop-blur-md sm:pr-3">
+                <div className="hidden min-w-0 flex-col items-end leading-tight sm:flex">
+                  <span className="max-w-[10rem] truncate text-sm font-bold text-emerald-950">
+                    {adminDisplayName}
                   </span>
-                )}
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700/85">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+                    מנהל מערכת
+                  </span>
+                </div>
+                <div
+                  className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-violet-300 via-emerald-200 to-cyan-200 p-[2px] shadow-md ring-1 ring-white/70 sm:h-10 sm:w-10"
+                  title={adminDisplayName}
+                >
+                  <div className="relative h-full w-full overflow-hidden rounded-full bg-white">
+                    {adminAvatarUrl && adminAvatarUrl.startsWith('http') ? (
+                      <Image
+                        src={adminAvatarUrl}
+                        alt={adminDisplayName}
+                        fill
+                        className="object-cover"
+                        sizes="40px"
+                        unoptimized
+                      />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-100 to-violet-100 font-display text-sm font-black text-emerald-800">
+                        {adminDisplayName.charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
