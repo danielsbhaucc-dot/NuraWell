@@ -11,8 +11,10 @@ export type LyricKind = 'normal' | 'drop' | 'mega';
 
 export interface LyricLineConfig {
   text: string;
-  /** זמן התחלה (שניות) לתוך השיר */
+  /** זמן התחלה (שניות) לתוך השיר — שווה לזמן המילה הראשונה */
   start: number;
+  /** זמני התחלה לכל מילה (שניות מוחלטות), מיושר ל-splitWords(text). אופציונלי. */
+  wordStarts?: number[];
   kind?: LyricKind;
   /** תווית קטנה (למשל "כן!") שמופיעה ליד שורת drop */
   tag?: string;
@@ -30,6 +32,30 @@ export interface ResolvedLyricLine {
   end: number;
   kind: LyricKind;
   tag?: string;
+  /** זמני מילים מוחלטים (אם תוזמנו פר-מילה); אחרת undefined → פיזור שווה */
+  wordStarts?: number[];
+}
+
+/** ספליט מילים אחיד — חייב להיות זהה בכל מקום שמשתמש ב-wordStarts */
+export function splitLyricWords(text: string): string[] {
+  return text.split(/\s+/).filter(Boolean);
+}
+
+/** האינדקס של המילה הפעילה בשורה, לפי זמן נוכחי (שניות, כולל offset) */
+export function activeWordIndex(line: ResolvedLyricLine, ct: number): number {
+  const words = splitLyricWords(line.text);
+  if (words.length === 0) return -1;
+  const starts = line.wordStarts;
+  if (starts && starts.length === words.length) {
+    let idx = 0;
+    for (let i = 0; i < starts.length; i++) {
+      if (ct >= starts[i]) idx = i;
+    }
+    return idx;
+  }
+  // פיזור שווה לאורך משך השורה
+  const frac = (ct - line.start) / Math.max(0.001, line.end - line.start);
+  return Math.max(0, Math.min(words.length - 1, Math.floor(frac * words.length)));
 }
 
 export interface ResolvedLyrics {
@@ -58,6 +84,7 @@ export const DEFAULT_LYRICS: ComingSoonLyrics = {
 export const lyricLineSchema = z.object({
   text: z.string().trim().min(1).max(160),
   start: z.number().min(0).max(600),
+  wordStarts: z.array(z.number().min(0).max(600)).max(40).optional(),
   kind: z.enum(['normal', 'drop', 'mega']).optional(),
   tag: z.string().trim().max(40).optional(),
 });
@@ -82,6 +109,7 @@ export function resolveLyrics(
       start: Math.max(0, l.start),
       kind: (l.kind ?? 'normal') as LyricKind,
       tag: l.tag,
+      wordStarts: Array.isArray(l.wordStarts) ? l.wordStarts : undefined,
     }))
     .sort((a, b) => a.start - b.start);
 

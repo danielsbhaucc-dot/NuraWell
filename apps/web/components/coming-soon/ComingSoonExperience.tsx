@@ -3,7 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Brain, HeartPulse, Leaf, Play, Repeat, ShieldCheck, Sparkles, Volume2, VolumeX } from 'lucide-react';
-import { resolveLyrics, type ComingSoonLyrics } from '@/lib/coming-soon/lyrics';
+import { activeWordIndex, resolveLyrics, type ComingSoonLyrics } from '@/lib/coming-soon/lyrics';
 
 /* משפטי שיווק — *כוכביות* מסמנות מילים מודגשות (גרדיאנט) */
 const REVOLUTION_LINES = [
@@ -291,9 +291,7 @@ export function ComingSoonExperience({
 
         if (idx >= 0) {
           const line = lines[idx];
-          const words = splitWords(line.text);
-          const frac = (ct - line.start) / Math.max(0.001, line.end - line.start);
-          const wi = Math.max(0, Math.min(words.length - 1, Math.floor(frac * words.length)));
+          const wi = activeWordIndex(line, ct);
           setActiveWord((prev) => (prev === wi ? prev : wi));
           if (line.kind === 'drop' || line.kind === 'mega') {
             energy = Math.min(1.5, energy + 0.45 + env * 0.4);
