@@ -55,6 +55,8 @@ export interface AggregateCostReport {
   activeUsers: number;
   /** טופ-משתמשים יקרים, ממוין יורד. */
   topUsers: UserCostRow[];
+  /** כל המשתמשים עם עלות מחושבת בחלון הזמן, כולל 0$. */
+  users: UserCostRow[];
   windowDays: number;
 }
 
@@ -283,6 +285,25 @@ export async function buildAggregateCostReport(
     .sort((a, b) => b.breakdown.totalUsd - a.breakdown.totalUsd)
     .slice(0, 20);
 
+  const users = profiles
+    .map((p) => {
+      const existing = perUser.get(p.id);
+      if (existing) return existing;
+      return {
+        userId: p.id,
+        fullName: p.full_name,
+        breakdown: emptyBreakdown(),
+        counts: {
+          chatMessages: 0,
+          notifications: 0,
+          notificationsEstimated: 0,
+          videoViews: 0,
+          videoSeconds: 0,
+        },
+      };
+    })
+    .sort((a, b) => b.breakdown.totalUsd - a.breakdown.totalUsd);
+
   return {
     totalUsers,
     totals,
@@ -290,6 +311,7 @@ export async function buildAggregateCostReport(
     averagePerActiveUser,
     activeUsers,
     topUsers,
+    users,
     windowDays,
   };
 }

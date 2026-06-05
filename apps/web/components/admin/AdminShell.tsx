@@ -59,6 +59,7 @@ export function AdminShell({
 }: AdminShellProps) {
   const pathname = usePathname();
   const np = normalizeOpsPathname(pathname);
+  const opsHref = (path: string) => (pathname.startsWith('/ops') ? `/ops${path}` : path);
   const coursesHref = mainAppBase ? `${mainAppBase}/home` : '/home';
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -253,7 +254,7 @@ export function AdminShell({
             </Link>
 
             <Link
-              href="/costs"
+              href={opsHref('/costs')}
               onClick={() => setSidebarOpen(false)}
               className={navBtn(isCosts, 'emerald')}
               title="עלויות"
