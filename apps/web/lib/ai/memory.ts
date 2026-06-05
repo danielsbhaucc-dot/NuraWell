@@ -64,6 +64,8 @@ export interface AiUserContext {
   journey_follow_up?: JourneyFollowUp | null;
   /** חופשה / אשפוז / נסיעה — התאמת דחיפה וטון */
   life_context?: LifeContext | null;
+  /** סיכום שיחה מתגלגל קצר לצמצום חלון הודעות גולמיות בפרומפט */
+  chat_summary?: string;
   /** Web Push subscription (אופציונלי) */
   web_push?: {
     endpoint: string;
@@ -349,6 +351,7 @@ export async function updateAiContext(
     'work_arrival_time',
     'journey_follow_up',
     'life_context',
+    'chat_summary',
     'web_push',
     'current_goal',
     'current_focus',

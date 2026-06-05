@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { generateText, streamText } from 'ai';
+import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { after } from 'next/server';
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
@@ -15,6 +15,7 @@ import { buildCoachingStylePromptBlock } from '../../../../../lib/ai/almog-coach
 import { stitchModelTextUntilComplete } from '../../../../../lib/ai/almog-message-complete';
 import {
   formatAiWorkingMemoryPromptBlock,
+  updateAiContext,
   type AiUserContext,
 } from '../../../../../lib/ai/memory';
 import {
@@ -196,6 +197,10 @@ const CHAT_OUTPUT_TOKENS_NEAR_CAP_RATIO = 0.92;
  * להחזרה: להגדיר `AI_CHAT_MODEL=openai/gpt-5-mini` או לשחזר את ברירת המחדל.
  */
 const CHAT_MODEL = process.env.AI_CHAT_MODEL?.trim() || 'anthropic/claude-sonnet-4.6';
+const CHAT_SAFETY_NET_MODEL =
+  process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() ||
+  process.env.GROQ_BACKGROUND_MODEL?.trim() ||
+  'meta-llama/llama-4-scout-17b-16e-instruct';
 
 /**
  * `reasoningEffort` הוא פרמטר ספציפי ל-OpenAI. כשמריצים מודל לא-OpenAI
@@ -203,6 +208,292 @@ const CHAT_MODEL = process.env.AI_CHAT_MODEL?.trim() || 'anthropic/claude-sonnet
  * האם להזריק את providerOptions.openai בכלל.
  */
 const CHAT_MODEL_IS_OPENAI = CHAT_MODEL.startsWith('openai/');
+const CHAT_MODEL_SUPPORTS_PROMPT_CACHE = CHAT_MODEL.startsWith('anthropic/');
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+type StreamFinishPayload = {
+  text: string;
+  usage?: {
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+    cacheReadInputTokens?: number;
+    cacheCreationInputTokens?: number;
+  };
+  finishReason?: string;
+};
+
+type TextChatMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+function readTokenDetail(raw: unknown, keys: string[]): number | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const row = raw as Record<string, unknown>;
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+  }
+  return undefined;
+}
+
+function normalizeOpenRouterUsage(raw: unknown): StreamFinishPayload['usage'] {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const row = raw as Record<string, unknown>;
+  const promptTokens = typeof row.prompt_tokens === 'number' ? row.prompt_tokens : undefined;
+  const completionTokens =
+    typeof row.completion_tokens === 'number' ? row.completion_tokens : undefined;
+  const totalTokens = typeof row.total_tokens === 'number' ? row.total_tokens : undefined;
+  const details = row.prompt_tokens_details ?? row.input_token_details;
+
+  return {
+    inputTokens: promptTokens,
+    outputTokens: completionTokens,
+    totalTokens,
+    cacheReadInputTokens: readTokenDetail(details, [
+      'cached_tokens',
+      'cache_read',
+      'cache_read_input_tokens',
+    ]),
+    cacheCreationInputTokens: readTokenDetail(details, [
+      'cache_creation',
+      'cache_creation_input_tokens',
+    ]),
+  };
+}
+
+function openRouterMessagesWithCachedSystem(
+  staticSystemPrompt: string,
+  dynamicSystemPrompt: string,
+  recentMessages: TextChatMessage[]
+) {
+  const staticContent = CHAT_MODEL_SUPPORTS_PROMPT_CACHE
+    ? [
+        {
+          type: 'text',
+          text: staticSystemPrompt,
+          cache_control: { type: 'ephemeral', ttl: '1h' },
+        },
+      ]
+    : staticSystemPrompt;
+
+  return [
+    { role: 'system', content: staticContent },
+    { role: 'system', content: dynamicSystemPrompt },
+    ...recentMessages,
+  ];
+}
+
+async function createOpenRouterTextStreamResponse({
+  apiKey,
+  referer,
+  model,
+  staticSystemPrompt,
+  dynamicSystemPrompt,
+  recentMessages,
+  maxOutputTokens,
+  temperature,
+  headers,
+  onFinish,
+  onEmptyRetry,
+}: {
+  apiKey: string;
+  referer: string;
+  model: string;
+  staticSystemPrompt: string;
+  dynamicSystemPrompt: string;
+  recentMessages: TextChatMessage[];
+  maxOutputTokens: number;
+  temperature: number;
+  headers: HeadersInit;
+  onFinish: (payload: StreamFinishPayload) => Promise<void>;
+  onEmptyRetry?: () => Promise<string>;
+}): Promise<Response> {
+  const requestBody = JSON.stringify({
+    model,
+    temperature,
+    max_tokens: maxOutputTokens,
+    stream: true,
+    stream_options: { include_usage: true },
+    messages: openRouterMessagesWithCachedSystem(
+      staticSystemPrompt,
+      dynamicSystemPrompt,
+      recentMessages
+    ),
+  });
+
+  let upstream: Response | null = null;
+  let lastErrorText = '';
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    upstream = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        'HTTP-Referer': referer,
+        'X-Title': 'NuraWell',
+      },
+      body: requestBody,
+    });
+    if (upstream.ok) break;
+
+    lastErrorText = await upstream.text().catch(() => '');
+    const retriable = upstream.status === 429 || upstream.status >= 500;
+    if (!retriable || attempt === 2) break;
+    await sleep(300 * attempt);
+  }
+
+  if (!upstream?.ok) {
+    throw new Error(
+      `OpenRouter chat failed (${upstream?.status ?? 'no_response'}): ${lastErrorText.slice(0, 500) || upstream?.statusText || 'unknown'}`
+    );
+  }
+  if (!upstream.body) {
+    throw new Error('OpenRouter chat failed: empty response body');
+  }
+
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let buffer = '';
+  let accumulated = '';
+  let finishReason = 'stop';
+  let usage: StreamFinishPayload['usage'];
+
+  const processDataLine = (
+    data: string,
+    controller: ReadableStreamDefaultController<Uint8Array>
+  ) => {
+    if (!data || data === '[DONE]') return;
+    const parsed = JSON.parse(data) as {
+      choices?: Array<{
+        delta?: { content?: string };
+        finish_reason?: string | null;
+      }>;
+      usage?: unknown;
+    };
+    const choice = parsed.choices?.[0];
+    const content = choice?.delta?.content;
+    if (typeof content === 'string' && content.length > 0) {
+      accumulated += content;
+      controller.enqueue(encoder.encode(content));
+    }
+    if (typeof choice?.finish_reason === 'string') {
+      finishReason = choice.finish_reason;
+    }
+    if (parsed.usage) {
+      usage = normalizeOpenRouterUsage(parsed.usage);
+    }
+  };
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const reader = upstream.body!.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split(/\r?\n/);
+          buffer = lines.pop() ?? '';
+          for (const line of lines) {
+            if (!line.startsWith('data:')) continue;
+            processDataLine(line.slice(5).trim(), controller);
+          }
+        }
+
+        buffer += decoder.decode();
+        for (const line of buffer.split(/\r?\n/)) {
+          if (!line.startsWith('data:')) continue;
+          processDataLine(line.slice(5).trim(), controller);
+        }
+
+        if (!accumulated.trim() && onEmptyRetry) {
+          const retryText = (await onEmptyRetry()).trim();
+          if (retryText) {
+            accumulated = retryText;
+            finishReason = 'stop';
+            controller.enqueue(encoder.encode(retryText));
+          }
+        }
+
+        await onFinish({
+          text: accumulated,
+          usage,
+          finishReason,
+        });
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      } finally {
+        reader.releaseLock();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers,
+  });
+}
+
+async function createGroqSafetyNetTextResponse({
+  apiKey,
+  staticSystemPrompt,
+  dynamicSystemPrompt,
+  recentMessages,
+  maxOutputTokens,
+  temperature,
+  headers,
+  onFinish,
+}: {
+  apiKey: string;
+  staticSystemPrompt: string;
+  dynamicSystemPrompt: string;
+  recentMessages: TextChatMessage[];
+  maxOutputTokens: number;
+  temperature: number;
+  headers: HeadersInit;
+  onFinish: (payload: StreamFinishPayload) => Promise<void>;
+}): Promise<Response> {
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: CHAT_SAFETY_NET_MODEL,
+      temperature,
+      max_tokens: Math.min(maxOutputTokens, 600),
+      messages: [
+        { role: 'system', content: `${staticSystemPrompt}\n\n${dynamicSystemPrompt}` },
+        ...recentMessages,
+      ],
+    }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    throw new Error(
+      `Groq safety net failed (${response.status}): ${errorText.slice(0, 500) || response.statusText}`
+    );
+  }
+
+  const data = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string | null }; finish_reason?: string | null }>;
+    usage?: unknown;
+  };
+  const text = data.choices?.[0]?.message?.content?.trim() ?? '';
+  await onFinish({
+    text,
+    usage: normalizeOpenRouterUsage(data.usage),
+    finishReason: data.choices?.[0]?.finish_reason ?? 'stop',
+  });
+  return new Response(text || pickEmptyResponseFallback(), {
+    status: 200,
+    headers,
+  });
+}
 
 /**
  * חלון שיחה אחורה ל-LLM. slice(-20) = עד 10 סיבובי משתמש-עוזר; חלון של 5
@@ -327,6 +618,223 @@ function shouldAttemptMemorySync(userMessage: string): boolean {
   if (smallTalkPatterns.some((p) => p.test(t))) return false;
 
   return true;
+}
+
+function isLowContextTurn(userMessage: string, signals: ReturnType<typeof detectChatSignals>): boolean {
+  const t = normalizeLine(userMessage);
+  if (!t) return true;
+  if (isCasualGreeting(t)) return true;
+  if (signals.blocker_mentioned || signals.emotional_hint || signals.avoid_push_requested) {
+    return false;
+  }
+  if (/[?؟]/.test(t)) return false;
+  if (/\b(?:למה|איך|מה\s+(?:כדאי|אפשר|לעשות|המשימות|נשאר)|תסביר|עזרה|קשה|בעיה)\b/i.test(t)) {
+    return false;
+  }
+
+  // דיווחים קצרים וברורים לא צריכים RAG/דוח רב-יומי. הם כן יקבלו את
+  // activeJourney + pendingTasks בהמשך, כדי שהסימון/חיזוק יישאר מדויק.
+  if (
+    t.length <= 90 &&
+    /^(?:תודה|סבבה|אוקיי|מעולה|יאללה|כן|לא|עשיתי|סימנתי|שתיתי|הלכתי|סיימתי|בוצע|הצלחתי|ניסיתי|לא\s+הצלחתי|דילגתי)(?:[\s!.?]|$)/i.test(
+      t
+    )
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+const chatContextRouterSchema = z.object({
+  heavy_context: z.boolean(),
+  needs_user_memory_rag: z.boolean(),
+  needs_system_knowledge_rag: z.boolean(),
+  needs_full_progress_report: z.boolean(),
+  needs_journey_knowledge: z.boolean(),
+  reason: z.string().max(160).optional(),
+  summary: z.string().max(240).nullable().optional(),
+});
+
+type ChatContextDecision = z.infer<typeof chatContextRouterSchema>;
+
+function fallbackContextDecision(reason: string): ChatContextDecision {
+  return {
+    heavy_context: true,
+    needs_user_memory_rag: true,
+    needs_system_knowledge_rag: true,
+    needs_full_progress_report: true,
+    needs_journey_knowledge: true,
+    reason,
+  };
+}
+
+function lowContextDecision(reason: string): ChatContextDecision {
+  return {
+    heavy_context: false,
+    needs_user_memory_rag: false,
+    needs_system_knowledge_rag: false,
+    needs_full_progress_report: false,
+    needs_journey_knowledge: false,
+    reason,
+  };
+}
+
+function buildChatContextRouterPrompt(
+  userMessage: string,
+  signals: ReturnType<typeof detectChatSignals>
+): string {
+  const signalParts = [
+    signals.blocker_mentioned ? `blocker=${signals.main_blocker ?? 'yes'}` : '',
+    signals.emotional_hint ? `emotion=${signals.emotional_hint}` : '',
+    signals.avoid_push_requested ? 'avoid_push=true' : '',
+    signals.daily_availability_low_requested ? 'availability_low=true' : '',
+  ].filter(Boolean);
+
+  return `אתה נתב הקשר זול ומהיר לצ'אט מנטור בריאות בעברית.
+המטרה: לחסוך טוקנים בלי לפגוע באיכות. קלוד ינסח את התשובה הסופית.
+
+החלטה שמרנית:
+- אם יש קושי רגשי, חסם, שאלה משמעותית, חזרה אחרי היעדרות, התלבטות, או צורך להבין מסע/ידע/זיכרון -> heavy_context=true.
+- אם זו הודעה קצרה וברורה של ביצוע/תודה/אישור בלבד -> heavy_context=false.
+- אם אתה לא בטוח -> heavy_context=true.
+
+הגדר needs:
+- needs_user_memory_rag: צריך זיכרון אישי ארוך טווח.
+- needs_system_knowledge_rag: שאלה על תכני מסע/ידע מקצועי.
+- needs_full_progress_report: צריך דפוסים רב-יומיים/היסטוריית ביצועים.
+- needs_journey_knowledge: צריך להבין צעד/תחנה/גישה למסע.
+
+החזר JSON בלבד:
+{"heavy_context":true/false,"needs_user_memory_rag":true/false,"needs_system_knowledge_rag":true/false,"needs_full_progress_report":true/false,"needs_journey_knowledge":true/false,"reason":"קצר","summary":"סיכום קצר לקלוד או null"}
+
+אותות regex: ${signalParts.join(', ') || 'none'}
+הודעת משתמש:
+${userMessage.slice(0, 1200)}`;
+}
+
+async function routeChatContextWithGroq(
+  userMessage: string,
+  signals: ReturnType<typeof detectChatSignals>,
+  debugId: string
+): Promise<ChatContextDecision> {
+  const groqKey = process.env.GROQ_API_KEY?.trim();
+  if (!groqKey) return fallbackContextDecision('groq_key_missing');
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 1_200);
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${groqKey}`,
+      },
+      body: JSON.stringify({
+        model:
+          process.env.GROQ_BACKGROUND_MODEL?.trim() ||
+          'meta-llama/llama-4-scout-17b-16e-instruct',
+        temperature: 0,
+        max_tokens: 220,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content:
+              'אתה מחזיר JSON תקין בלבד. אתה נתב הקשר שמרני: בספק בוחר heavy_context=true.',
+          },
+          { role: 'user', content: buildChatContextRouterPrompt(userMessage, signals) },
+        ],
+      }),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      console.warn('[ai/chat]', {
+        debug_id: debugId,
+        stage: 'context_router_failed_status',
+        status: response.status,
+      });
+      return fallbackContextDecision(`groq_status_${response.status}`);
+    }
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string | null } }>;
+    };
+    const raw = data.choices?.[0]?.message?.content?.trim();
+    if (!raw) return fallbackContextDecision('groq_empty');
+    const parsed = chatContextRouterSchema.safeParse(JSON.parse(raw.replace(/```json|```/g, '')));
+    if (!parsed.success) return fallbackContextDecision('groq_invalid_json');
+    return parsed.data;
+  } catch (err) {
+    console.warn('[ai/chat]', {
+      debug_id: debugId,
+      stage: 'context_router_failed',
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return fallbackContextDecision('groq_exception');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function formatChatSummaryPromptBlock(summary: unknown): string | null {
+  if (typeof summary !== 'string') return null;
+  const clean = normalizeLine(summary).slice(0, 900);
+  if (!clean) return null;
+  return `[סיכום שיחה קודם]\n${clean}\nהשתמש בזה כרצף שיחה בלבד; אם ההודעות האחרונות סותרות, הן עדכניות יותר.`;
+}
+
+async function summarizeChatTurnWithGroq({
+  previousSummary,
+  userMessage,
+  assistantMessage,
+}: {
+  previousSummary?: string;
+  userMessage: string;
+  assistantMessage: string;
+}): Promise<string | null> {
+  const groqKey = process.env.GROQ_API_KEY?.trim();
+  if (!groqKey || !assistantMessage.trim()) return null;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 2_000);
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${groqKey}`,
+      },
+      body: JSON.stringify({
+        model:
+          process.env.GROQ_BACKGROUND_MODEL?.trim() ||
+          'meta-llama/llama-4-scout-17b-16e-instruct',
+        temperature: 0,
+        max_tokens: 260,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'אתה מסכם רצף שיחה למנטור בריאות בעברית. החזר תקציר קצר בלבד, עד 900 תווים. שמור רק עובדות, רגשות, הבטחות, החלטות וטון שחשובים לתור הבא. בלי כותרת.',
+          },
+          {
+            role: 'user',
+            content: `תקציר קודם:\n${previousSummary?.trim() || '(אין)'}\n\nהודעת משתמש אחרונה:\n${userMessage}\n\nתשובת אלמוג אחרונה:\n${assistantMessage.slice(0, 1600)}\n\nעדכן את התקציר.`,
+          },
+        ],
+      }),
+      signal: controller.signal,
+    });
+    if (!response.ok) return null;
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string | null } }>;
+    };
+    const summary = normalizeLine(data.choices?.[0]?.message?.content ?? '').slice(0, 900);
+    return summary || null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function extractFirstName(fullName: string | null | undefined): string | null {
@@ -896,6 +1404,11 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: 'Empty user message' }), { status: 400 });
   }
   stage = 'message_ok';
+  const earlySignals = detectChatSignals(lastUserText);
+  const contextDecision = isLowContextTurn(lastUserText, earlySignals)
+    ? lowContextDecision('deterministic_low_context')
+    : await routeChatContextWithGroq(lastUserText, earlySignals, debugId);
+  const useHeavyContext = contextDecision.heavy_context;
 
   const sessionId = parsed.data.session_id ?? crypto.randomUUID();
   const notificationId = parsed.data.notification_id;
@@ -910,23 +1423,29 @@ export async function POST(request: Request) {
     return null;
   });
 
-  const journeyCapPromise = fetchJourneyProgressCapForRag(supabase, user.id).catch((capErr) => {
-    console.warn('[ai/chat]', {
-      debug_id: debugId,
-      stage: 'journey_cap_read_failed',
-      error: capErr instanceof Error ? capErr.message : String(capErr),
-    });
-    return null;
-  });
+  const journeyCapPromise =
+    contextDecision.needs_journey_knowledge || contextDecision.needs_system_knowledge_rag
+    ? fetchJourneyProgressCapForRag(supabase, user.id).catch((capErr) => {
+        console.warn('[ai/chat]', {
+          debug_id: debugId,
+          stage: 'journey_cap_read_failed',
+          error: capErr instanceof Error ? capErr.message : String(capErr),
+        });
+        return null;
+      })
+    : Promise.resolve(null);
 
-  const enrolledPromise = fetchUserEnrolledCourseIds(supabase, user.id).catch((enrErr) => {
-    console.warn('[ai/chat]', {
-      debug_id: debugId,
-      stage: 'enrollments_read_failed',
-      error: enrErr instanceof Error ? enrErr.message : String(enrErr),
-    });
-    return [] as string[];
-  });
+  const enrolledPromise =
+    contextDecision.needs_journey_knowledge || contextDecision.needs_system_knowledge_rag
+    ? fetchUserEnrolledCourseIds(supabase, user.id).catch((enrErr) => {
+        console.warn('[ai/chat]', {
+          debug_id: debugId,
+          stage: 'enrollments_read_failed',
+          error: enrErr instanceof Error ? enrErr.message : String(enrErr),
+        });
+        return [] as string[];
+      })
+    : Promise.resolve([] as string[]);
 
   const dailyContextPromise: Promise<[TodayChatTurn[], TodayAlmogTouch[]]> = Promise.all([
     fetchTodayChatTurns(supabase, user.id).catch(() => [] as TodayChatTurn[]),
@@ -943,7 +1462,17 @@ export async function POST(request: Request) {
     role: 'user',
     content: lastUserText,
     model_name: CHAT_MODEL,
-    metadata: { edge: true },
+    metadata: {
+      edge: true,
+      heavy_context: useHeavyContext,
+      context_router: {
+        reason: contextDecision.reason ?? null,
+        needs_user_memory_rag: contextDecision.needs_user_memory_rag,
+        needs_system_knowledge_rag: contextDecision.needs_system_knowledge_rag,
+        needs_full_progress_report: contextDecision.needs_full_progress_report,
+        needs_journey_knowledge: contextDecision.needs_journey_knowledge,
+      },
+    },
   }).catch((persistErr) => {
     console.warn('[ai/chat]', {
       debug_id: debugId,
@@ -961,16 +1490,16 @@ export async function POST(request: Request) {
    * שקוף ל-AI כדי שיוכל לזהות דפוסים רב-יומיים (מעבר ל"היום בלבד").
    * RLS מבטיח שהמשתמש רואה רק את הנתונים שלו.
    */
-  const fullProgressReportPromise = buildAdminUserJourneyReport(supabase, user.id).catch(
-    (progErr) => {
-      console.warn('[ai/chat]', {
-        debug_id: debugId,
-        stage: 'full_progress_report_failed',
-        error: progErr instanceof Error ? progErr.message : String(progErr),
-      });
-      return null;
-    }
-  );
+  const fullProgressReportPromise = contextDecision.needs_full_progress_report
+    ? buildAdminUserJourneyReport(supabase, user.id).catch((progErr) => {
+        console.warn('[ai/chat]', {
+          debug_id: debugId,
+          stage: 'full_progress_report_failed',
+          error: progErr instanceof Error ? progErr.message : String(progErr),
+        });
+        return null;
+      })
+    : Promise.resolve(null);
 
   const [
     profileRow,
@@ -1004,6 +1533,7 @@ export async function POST(request: Request) {
   const profileGender = profileRow.gender;
   const profileMoodSignal = profileRow.mood_signal;
   const onboardingContextBlock = buildOnboardingChatContextBlock(profileRow.onboarding);
+  const chatSummaryBlock = formatChatSummaryPromptBlock(profileRow.ai_context.chat_summary);
 
   const recentMessages = messages
     .map((m) => {
@@ -1014,7 +1544,7 @@ export async function POST(request: Request) {
       return { role, content };
     })
     .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m))
-    .slice(-chatHistoryWindow());
+    .slice(chatSummaryBlock ? -4 : -chatHistoryWindow());
 
   const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
   if (!openrouterKey) {
@@ -1062,8 +1592,8 @@ export async function POST(request: Request) {
             enrolledCourseIds,
           })
         : null;
-    const needUserRag = isVectorRagRetrieveEnabled();
-    const needSystemRag = Boolean(skFilter);
+    const needUserRag = contextDecision.needs_user_memory_rag && isVectorRagRetrieveEnabled();
+    const needSystemRag = contextDecision.needs_system_knowledge_rag && Boolean(skFilter);
 
     if (needUserRag || needSystemRag) {
       try {
@@ -1112,7 +1642,7 @@ export async function POST(request: Request) {
       fetchHabitGapForChat(supabase, user.id).catch(() => null),
     ]);
 
-    const liveSignals = detectChatSignals(lastUserText);
+    const liveSignals = earlySignals;
     const liveHabitIntent = detectHabitIntent(lastUserText, journeyHabits);
     const liveTaskIntent = detectTaskIntent(lastUserText, pendingTasks);
     const parsedWeightKg = parseWeightKgFromMessage(lastUserText);
@@ -1205,6 +1735,12 @@ export async function POST(request: Request) {
      */
     const contextSections: string[] = [];
 
+    const routerSummary = contextDecision.summary?.trim();
+    if (routerSummary) {
+      contextSections.push(`[נתב-הקשר] ${routerSummary.slice(0, 240)}`);
+    }
+    if (chatSummaryBlock) contextSections.push(chatSummaryBlock);
+
     /**
      * עדיפות עליונה: כשהמשתמש מגיב להתראה — אלמוג חייב לדעת על מה הוא מגיב.
      * זה ראשון בהקשר כדי שהמודל יקרא את כל המידע האישי שאחר-כך דרך הפריזמה
@@ -1283,9 +1819,7 @@ export async function POST(request: Request) {
      *      לפני שהוא יוצר את התשובה. עם reasoningEffort=medium זה הסל-ביטחון
      *      הכי אפקטיבי לחוקים שעלולים להתפספס כשהפרומפט גדל.
      */
-    const systemPromptWithMemory = [
-      BASE_SYSTEM_PROMPT,
-      '',
+    const dynamicSystemPrompt = [
       '— הקשר לשיחה הזו —',
       ...contextSections,
       '',
@@ -1296,6 +1830,7 @@ export async function POST(request: Request) {
     ]
       .filter((s) => s !== null && s !== undefined)
       .join('\n');
+    const systemPromptWithMemory = `${BASE_SYSTEM_PROMPT}\n\n${dynamicSystemPrompt}`;
 
     stage = 'stream_init';
     /**
@@ -1314,6 +1849,13 @@ export async function POST(request: Request) {
         has_journey_state: Boolean(journeyStateLine),
         has_station_rules: Boolean(stationRules),
         has_habit_rules: Boolean(habitCheckpointRules),
+        heavy_context: useHeavyContext,
+        context_router_reason: contextDecision.reason,
+        needs_user_memory_rag: contextDecision.needs_user_memory_rag,
+        needs_system_knowledge_rag: contextDecision.needs_system_knowledge_rag,
+        needs_full_progress_report: contextDecision.needs_full_progress_report,
+        needs_journey_knowledge: contextDecision.needs_journey_knowledge,
+        prompt_cache_enabled: CHAT_MODEL_SUPPORTS_PROMPT_CACHE,
       });
     } else {
       console.info('[ai/chat]', {
@@ -1321,30 +1863,23 @@ export async function POST(request: Request) {
         stage: 'system_prompt_size',
         chars: systemPromptCharCount,
         history_msgs: recentMessages.length,
+        prompt_cache_enabled: CHAT_MODEL_SUPPORTS_PROMPT_CACHE,
+        heavy_context: useHeavyContext,
+        context_router_reason: contextDecision.reason,
+        needs_user_memory_rag: contextDecision.needs_user_memory_rag,
+        needs_system_knowledge_rag: contextDecision.needs_system_knowledge_rag,
+        needs_full_progress_report: contextDecision.needs_full_progress_report,
+        needs_journey_knowledge: contextDecision.needs_journey_knowledge,
       });
     }
 
-    const result = streamText({
-      model: openrouter.chat(CHAT_MODEL),
-      /**
-       * temperature 0.85 (v4) — מעלה שונות ומפחית טמפלייטיות.
-       * 0.75 גרם לתשובות "בטוחות" מדי. 0.85 קרוב לזרימה אנושית; מעל זה
-       * (≥0.95) מתחיל להזיק לעקביות עם נתוני המסע.
-       */
-      temperature: 0.85,
-      maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
-      /**
-       * reasoningEffort 'medium' (v4, OpenAI בלבד) — שינוי מ-'low'.
-       * 'low' היה אחראי לטון תסריטי-רובוטי. 'medium' מחזיר תשובות אנושיות
-       * יותר. למודלים לא-OpenAI (Claude) — לא שולחים providerOptions.openai.
-       */
-      providerOptions: CHAT_MODEL_IS_OPENAI ? { openai: { reasoningEffort: 'medium' } } : {},
-      system: systemPromptWithMemory,
-      messages: recentMessages,
-      onFinish: async ({ text, usage, finishReason }) => {
+    let assistantModelName = CHAT_MODEL;
+    let safetyNetUsed = false;
+
+    const handleChatFinish = async ({ text, usage, finishReason }: StreamFinishPayload) => {
         const finishStage = 'on_finish';
         let t = (text ?? '').trim();
-        let effectiveFinishReason = finishReason;
+        let effectiveFinishReason = finishReason ?? 'stop';
 
         if (finishReason === 'length' && t) {
           try {
@@ -1393,6 +1928,8 @@ export async function POST(request: Request) {
         const outputTokens = usage?.outputTokens;
         const inputTokens = usage?.inputTokens;
         const totalTokens = usage?.totalTokens;
+        const cacheReadInputTokens = usage?.cacheReadInputTokens;
+        const cacheCreationInputTokens = usage?.cacheCreationInputTokens;
         const nearCapTokens = Math.floor(CHAT_MAX_OUTPUT_TOKENS * CHAT_OUTPUT_TOKENS_NEAR_CAP_RATIO);
         const wasTruncatedByLength = finishReason === 'length';
         const wasNearCap = typeof outputTokens === 'number' && outputTokens >= nearCapTokens;
@@ -1403,6 +1940,8 @@ export async function POST(request: Request) {
             output_tokens: outputTokens,
             input_tokens: inputTokens,
             total_tokens: totalTokens,
+            cache_read_input_tokens: cacheReadInputTokens,
+            cache_creation_input_tokens: cacheCreationInputTokens,
             cap: CHAT_MAX_OUTPUT_TOKENS,
             finish_reason: finishReason,
             truncated_by_length: wasTruncatedByLength,
@@ -1414,6 +1953,8 @@ export async function POST(request: Request) {
             output_tokens: outputTokens,
             input_tokens: inputTokens,
             total_tokens: totalTokens,
+            cache_read_input_tokens: cacheReadInputTokens,
+            cache_creation_input_tokens: cacheCreationInputTokens,
             cap: CHAT_MAX_OUTPUT_TOKENS,
             finish_reason: finishReason,
           });
@@ -1425,13 +1966,16 @@ export async function POST(request: Request) {
             session_id: sessionId,
             role: 'assistant',
             content: assistantText,
-            model_name: CHAT_MODEL,
+            model_name: assistantModelName,
             tokens_used: totalTokens,
             metadata: {
               edge: true,
               streamed: true,
+              safety_net_used: safetyNetUsed,
               fallback_used: !t,
               output_tokens: outputTokens,
+              cache_read_input_tokens: cacheReadInputTokens,
+              cache_creation_input_tokens: cacheCreationInputTokens,
               finish_reason: effectiveFinishReason,
               continued_after_length: finishReason === 'length' && t !== (text ?? '').trim(),
             },
@@ -1443,6 +1987,31 @@ export async function POST(request: Request) {
             error: persistErr instanceof Error ? persistErr.message : String(persistErr),
           });
         }
+
+        after(async () => {
+          try {
+            const updatedSummary = await summarizeChatTurnWithGroq({
+              previousSummary: profileRow.ai_context.chat_summary,
+              userMessage: lastUserText,
+              assistantMessage: assistantText,
+            });
+            if (!updatedSummary) return;
+            await updateAiContext(createAdminClient(), user.id, {
+              chat_summary: updatedSummary,
+            });
+            console.info('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_chat_summary_updated`,
+              chars: updatedSummary.length,
+            });
+          } catch (summaryErr) {
+            console.warn('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_chat_summary_failed`,
+              error: summaryErr instanceof Error ? summaryErr.message : String(summaryErr),
+            });
+          }
+        });
 
         try {
           await applyChatSignalsFromUserMessage(supabase, user.id, lastUserText);
@@ -1647,8 +2216,7 @@ export async function POST(request: Request) {
             }
           });
         }
-      },
-    });
+      };
 
     stage = 'stream_response';
     console.info('[ai/chat]', {
@@ -1659,16 +2227,99 @@ export async function POST(request: Request) {
       model: CHAT_MODEL,
     });
 
-    const upstream = result.toTextStreamResponse({
+    const upstreamHeaders = {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'x-session-id': sessionId,
+      'x-debug-id': debugId,
+      'x-debug-stage': stage,
+      'Cache-Control': 'no-cache, no-transform',
+    };
+
+    let upstream: Response;
+    try {
+      upstream = await createOpenRouterTextStreamResponse({
+        apiKey: openrouterKey,
+        referer: publicAppUrlForAiReferer(),
+        model: CHAT_MODEL,
+        staticSystemPrompt: BASE_SYSTEM_PROMPT,
+        dynamicSystemPrompt,
+        recentMessages,
+        temperature: 0.85,
+        maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
+        headers: upstreamHeaders,
+        onEmptyRetry: async () => {
+          try {
+            const retry = await generateText({
+              model: openrouter.chat(CHAT_MODEL),
+              temperature: 0.65,
+              maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 360),
+              providerOptions: CHAT_MODEL_IS_OPENAI
+                ? { openai: { reasoningEffort: 'low' } }
+                : {},
+              system: systemPromptWithMemory,
+              messages: recentMessages,
+            });
+            const retryText = (retry.text ?? '').trim();
+            if (retryText) {
+              console.info('[ai/chat]', {
+                debug_id: debugId,
+                stage: 'stream_empty_retry_recovered',
+                finish_reason: retry.finishReason,
+              });
+            }
+            return retryText;
+          } catch (retryErr) {
+            console.warn('[ai/chat]', {
+              debug_id: debugId,
+              stage: 'stream_empty_retry_failed',
+              error: retryErr instanceof Error ? retryErr.message : String(retryErr),
+            });
+            return '';
+          }
+        },
+        onFinish: handleChatFinish,
+      });
+    } catch (primaryErr) {
+      const groqKey = process.env.GROQ_API_KEY?.trim();
+      if (!groqKey) throw primaryErr;
+      console.warn('[ai/chat]', {
+        debug_id: debugId,
+        stage: 'primary_writer_failed_using_safety_net',
+        model: CHAT_MODEL,
+        safety_model: CHAT_SAFETY_NET_MODEL,
+        error: primaryErr instanceof Error ? primaryErr.message : String(primaryErr),
+      });
+      assistantModelName = CHAT_SAFETY_NET_MODEL;
+      safetyNetUsed = true;
+      upstream = await createGroqSafetyNetTextResponse({
+        apiKey: groqKey,
+        staticSystemPrompt: BASE_SYSTEM_PROMPT,
+        dynamicSystemPrompt,
+        recentMessages,
+        temperature: 0.75,
+        maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
+        headers: {
+          ...upstreamHeaders,
+          'x-ai-safety-net': 'groq',
+        },
+        onFinish: handleChatFinish,
+      });
+    }
+
+    /*
+     * ה-response כבר מחזיר text/plain chunks בלבד, כמו `toTextStreamResponse`.
+     * עדיין משאירים את wrapper הקיים כדי לשמור על fallback לטקסט ריק ועל
+     * headers אחידים בלי לשנות את הלקוח.
+     */
+    const upstreamWithHeaders = new Response(upstream.body, {
+      status: upstream.status,
+      statusText: upstream.statusText,
       headers: {
-        'x-session-id': sessionId,
-        'x-debug-id': debugId,
-        'x-debug-stage': stage,
-        'Cache-Control': 'no-cache, no-transform',
+        ...upstreamHeaders,
       },
     });
 
-    if (!upstream.body) {
+    if (!upstreamWithHeaders.body) {
       return new Response(pickEmptyResponseFallback(), {
         status: 200,
         headers: {
@@ -1687,7 +2338,7 @@ export async function POST(request: Request) {
 
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
-        const reader = upstream.body!.getReader();
+        const reader = upstreamWithHeaders.body!.getReader();
         try {
           while (true) {
             const { done, value } = await reader.read();
@@ -1713,7 +2364,7 @@ export async function POST(request: Request) {
       },
     });
 
-    const headers = new Headers(upstream.headers);
+    const headers = new Headers(upstreamWithHeaders.headers);
     headers.set('x-session-id', sessionId);
     headers.set('x-debug-id', debugId);
     headers.set('x-debug-stage', stage);
@@ -1721,8 +2372,8 @@ export async function POST(request: Request) {
     if (!headers.get('Content-Type')) headers.set('Content-Type', 'text/plain; charset=utf-8');
 
     return new Response(stream, {
-      status: upstream.status,
-      statusText: upstream.statusText,
+      status: upstreamWithHeaders.status,
+      statusText: upstreamWithHeaders.statusText,
       headers,
     });
   } catch (err) {
