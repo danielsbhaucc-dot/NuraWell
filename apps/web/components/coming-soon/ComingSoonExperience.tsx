@@ -1,16 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Brain, HeartPulse, Leaf, Play, Repeat, ShieldCheck, Sparkles, Volume2, VolumeX } from 'lucide-react';
 
 /* ============================================================
  * סנכרון מילים לשיר 30 השניות (נוצר ב-Gemini).
- * חשוב: השיר מתחיל לשיר רק אחרי ~3 שניות (אינטרו שקט),
- * לכן הזמנים הם שניות מוחלטות לתוך קובץ האודיו (כולל ה-lead-in).
- * כל שורה מחולקת למילים → המילה שנשמעת כרגע מובלטת (קריוקי).
+ * השיר מתחיל לשיר רק אחרי ~3 שניות (אינטרו שקט) → הזמנים מוחלטים.
+ * SYNC_OFFSET מקדים מעט את ההדגשה כדי שתרגיש "על הביט" ולא באיחור.
  * ============================================================ */
-const SONG_LEAD_IN = 3; // שניות שקט בתחילת השיר
+const SONG_LEAD_IN = 3;
+const SYNC_OFFSET = 0.18; // מקדים את ההדגשה (שניות) — להעלים תחושת דיליי
 
 type LyricKind = 'normal' | 'drop' | 'mega';
 type LyricLine = {
@@ -33,41 +33,25 @@ const LYRICS: LyricLine[] = [
 ];
 const LYRICS_END = LYRICS[LYRICS.length - 1].end + 0.4;
 
-/* משפטי שיווק פסיכולוגיים — מתחלפים בלופ, בכרטיס זכוכית קריא */
+/* משפטי שיווק — *כוכביות* מסמנות מילים מודגשות (גרדיאנט) */
 const REVOLUTION_LINES = [
-  'השינוי האמיתי לא מתחיל בצלחת — הוא מתחיל במחשבה אחת שאתה מאמין בה.',
-  'אתה לא צריך עוד דיאטה. אתה צריך מערכת שמבינה אותך.',
-  'כל בחירה קטנה היום בונה את האדם שתהיה מחר.',
-  'NuraWell לא סופרת קלוריות — היא בונה מחדש את הביטחון שלך.',
-  'הגוף מקשיב לכל מילה שאתה אומר לעצמך. בוא נשנה את השיחה.',
-  'מנטור AI שלא שופט ולא לוחץ — רק מלווה אותך קדימה.',
-  'לא עוד "מחר אני מתחיל". המחר מתחיל עכשיו.',
-  'השלווה שחיפשת נמצאת בצד השני של ההרגלים החדשים.',
-  'אתה במרחק החלטה אחת מהגרסה הכי טובה של עצמך.',
-  'בריאות היא לא יעד — היא הדרך שבה אתה חי כל יום.',
+  'השינוי האמיתי לא מתחיל בצלחת — הוא מתחיל ב*מחשבה אחת* שאתה מאמין בה.',
+  'אתה לא צריך עוד דיאטה. אתה צריך *מערכת שמבינה אותך*.',
+  'כל בחירה קטנה היום בונה את *האדם שתהיה מחר*.',
+  '*NuraWell* לא סופרת קלוריות — היא בונה מחדש את *הביטחון שלך*.',
+  'הגוף מקשיב לכל מילה שאתה אומר לעצמך. *בוא נשנה את השיחה.*',
+  'מנטור AI שלא שופט ולא לוחץ — רק *מלווה אותך קדימה*.',
+  'לא עוד "מחר אני מתחיל". *המחר מתחיל עכשיו.*',
+  'השלווה שחיפשת נמצאת בצד השני של *ההרגלים החדשים*.',
+  'אתה במרחק *החלטה אחת* מהגרסה הכי טובה של עצמך.',
+  'בריאות היא לא יעד — היא *הדרך שבה אתה חי* כל יום.',
 ];
 
 const FEATURES = [
-  {
-    icon: Brain,
-    title: 'מנטור AI אישי',
-    desc: 'מלווה חכם שזוכר אותך, מבין אותך ומדבר בגובה העיניים — מתי שתצטרך.',
-  },
-  {
-    icon: Leaf,
-    title: 'בלי דיאטות קיצוניות',
-    desc: 'שינוי עדין ובר-קיימא. בלי הרעבה, בלי ספירת קלוריות, בלי אשמה.',
-  },
-  {
-    icon: HeartPulse,
-    title: 'הרגלים שנשארים',
-    desc: 'צעדים קטנים שמצטברים לשינוי אמיתי — כזה שמחזיק לאורך זמן.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'שקט וביטחון',
-    desc: 'פחות לחץ, יותר בהירות. בריאות נפש וגוף שמרגישים בכל יום.',
-  },
+  { icon: Brain, title: 'מנטור AI אישי', desc: 'מלווה חכם שזוכר אותך, מבין אותך ומדבר בגובה העיניים — מתי שתצטרך.' },
+  { icon: Leaf, title: 'בלי דיאטות קיצוניות', desc: 'שינוי עדין ובר-קיימא. בלי הרעבה, בלי ספירת קלוריות, בלי אשמה.' },
+  { icon: HeartPulse, title: 'הרגלים שנשארים', desc: 'צעדים קטנים שמצטברים לשינוי אמיתי — כזה שמחזיק לאורך זמן.' },
+  { icon: ShieldCheck, title: 'שקט וביטחון', desc: 'פחות לחץ, יותר בהירות. בריאות נפש וגוף שמרגישים בכל יום.' },
 ];
 
 const CONFETTI_COLORS = ['#34d399', '#10b981', '#a3e635', '#5eead4', '#bbf7d0', '#ffffff', '#22d3ee'];
@@ -87,18 +71,23 @@ type Confetti = {
   maxLife: number;
 };
 
-type Spark = {
-  x: number;
-  y: number;
-  r: number;
-  speed: number;
-  drift: number;
-  tw: number;
-  hue: number;
-};
+type Spark = { x: number; y: number; r: number; speed: number; drift: number; tw: number };
 
 function splitWords(text: string): string[] {
   return text.split(/\s+/).filter(Boolean);
+}
+
+/** מרנדר משפט עם הדגשות: טקסט עטוף ב-*...* מקבל גרדיאנט */
+function renderEmphasis(text: string) {
+  return text.split('*').map((part, i) =>
+    i % 2 === 1 ? (
+      <em key={i} className="cs-em">
+        {part}
+      </em>
+    ) : (
+      <Fragment key={i}>{part}</Fragment>
+    ),
+  );
 }
 
 export function ComingSoonExperience({
@@ -151,12 +140,12 @@ export function ComingSoonExperience({
         maxLife: 70 + Math.random() * 60,
       });
     }
-    if (confettiRef.current.length > 1400) {
-      confettiRef.current.splice(0, confettiRef.current.length - 1400);
+    if (confettiRef.current.length > 900) {
+      confettiRef.current.splice(0, confettiRef.current.length - 900);
     }
   }, []);
 
-  /* ---------- Canvas: ambient particles + radial visualizer + confetti ---------- */
+  /* ---------- Canvas: lightweight particles + visualizer + confetti ---------- */
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -166,7 +155,7 @@ export function ComingSoonExperience({
     let raf = 0;
 
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       const w = window.innerWidth;
       const h = window.innerHeight;
       sizeRef.current = { w, h, dpr };
@@ -176,15 +165,14 @@ export function ComingSoonExperience({
       canvas.style.height = `${h}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const count = Math.min(110, Math.floor((w * h) / 15000));
+      const count = Math.min(56, Math.floor((w * h) / 26000));
       sparksRef.current = Array.from({ length: count }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
-        r: 0.6 + Math.random() * 2.2,
-        speed: 0.12 + Math.random() * 0.6,
-        drift: (Math.random() - 0.5) * 0.35,
+        r: 0.6 + Math.random() * 1.8,
+        speed: 0.12 + Math.random() * 0.5,
+        drift: (Math.random() - 0.5) * 0.3,
         tw: Math.random() * Math.PI * 2,
-        hue: 140 + Math.random() * 50, // green → teal
       }));
     };
     resize();
@@ -195,62 +183,57 @@ export function ComingSoonExperience({
       const t = now / 1000;
       const energy = energyRef.current;
       ctx.clearRect(0, 0, w, h);
-
       ctx.globalCompositeOperation = 'lighter';
+
+      // ambient particles — no shadowBlur (cheap)
       for (const s of sparksRef.current) {
-        s.y -= s.speed * (0.6 + energy * 1.5);
-        s.x += s.drift + Math.sin(t + s.tw) * 0.3;
+        s.y -= s.speed * (0.6 + energy * 1.4);
+        s.x += s.drift + Math.sin(t + s.tw) * 0.28;
         if (s.y < -10) {
           s.y = h + 10;
           s.x = Math.random() * w;
         }
         const tw = 0.5 + 0.5 * Math.sin(t * 2 + s.tw);
-        const alpha = 0.16 + tw * 0.45 * (0.5 + energy);
         ctx.beginPath();
-        ctx.fillStyle = `hsla(${s.hue}, 85%, ${62 + tw * 22}%, ${alpha})`;
-        ctx.shadowBlur = 12;
-        ctx.shadowColor = `hsla(${s.hue}, 85%, 70%, ${alpha})`;
-        ctx.arc(s.x, s.y, s.r * (0.8 + energy * 0.8), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(110,231,183,${(0.1 + tw * 0.32 * (0.5 + energy)).toFixed(3)})`;
+        ctx.arc(s.x, s.y, s.r * (0.8 + energy * 0.7), 0, Math.PI * 2);
         ctx.fill();
       }
-      ctx.shadowBlur = 0;
 
+      // radial visualizer — strokes only, no shadow
       if (phaseRef.current !== 'intro') {
         const cx = w / 2;
-        const cy = h * (phaseRef.current === 'lyrics' ? 0.44 : 0.32);
-        const N = 88;
-        const baseR = Math.min(w, h) * (phaseRef.current === 'lyrics' ? 0.17 : 0.14);
+        const cy = h * (phaseRef.current === 'lyrics' ? 0.44 : 0.3);
+        const N = 56;
+        const baseR = Math.min(w, h) * (phaseRef.current === 'lyrics' ? 0.17 : 0.12);
+        ctx.lineWidth = 2.2;
         for (let i = 0; i < N; i++) {
           const a = (i / N) * Math.PI * 2;
-          const wobble = 0.5 + 0.5 * Math.sin(i * 0.6 + t * 3.2);
+          const wobble = 0.5 + 0.5 * Math.sin(i * 0.7 + t * 3.2);
           const len = baseR * (0.18 + energy * 0.9 * wobble);
-          const hue = 120 + ((t * 30 + i * 2.2) % 80); // green spectrum
+          const hue = 140 + ((t * 24 + i * 2.4) % 60);
           const x1 = cx + Math.cos(a) * baseR;
           const y1 = cy + Math.sin(a) * baseR;
           const x2 = cx + Math.cos(a) * (baseR + len);
           const y2 = cy + Math.sin(a) * (baseR + len);
           ctx.beginPath();
-          ctx.strokeStyle = `hsla(${hue}, 90%, ${58 + energy * 20}%, ${0.32 + energy * 0.42})`;
-          ctx.lineWidth = 2.4;
-          ctx.shadowBlur = 14;
-          ctx.shadowColor = `hsla(${hue}, 90%, 62%, 0.8)`;
+          ctx.strokeStyle = `hsla(${hue}, 88%, ${56 + energy * 18}%, ${(0.28 + energy * 0.4).toFixed(3)})`;
           ctx.moveTo(x1, y1);
           ctx.lineTo(x2, y2);
           ctx.stroke();
         }
-        ctx.shadowBlur = 0;
 
-        const coreR = baseR * (0.7 + energy * 0.5);
+        const coreR = baseR * (0.75 + energy * 0.5);
         const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
-        grad.addColorStop(0, `rgba(16,185,129,${0.16 + energy * 0.2})`);
-        grad.addColorStop(0.5, `rgba(45,212,191,${0.07 + energy * 0.1})`);
-        grad.addColorStop(1, 'rgba(2,15,12,0)');
+        grad.addColorStop(0, `rgba(16,185,129,${(0.12 + energy * 0.16).toFixed(3)})`);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
         ctx.fill();
       }
 
+      // confetti — no shadow
       const conf = confettiRef.current;
       for (let i = conf.length - 1; i >= 0; i--) {
         const c = conf[i];
@@ -270,14 +253,12 @@ export function ComingSoonExperience({
         ctx.translate(c.x, c.y);
         ctx.rotate(c.rot);
         ctx.fillStyle = c.color;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = c.color;
         ctx.fillRect(-c.size / 2, -c.size / 2, c.size, c.size * 0.6);
         ctx.restore();
       }
-      ctx.shadowBlur = 0;
-      ctx.globalCompositeOperation = 'source-over';
 
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
@@ -301,10 +282,10 @@ export function ComingSoonExperience({
 
       const audio = audioRef.current;
       if (phaseRef.current === 'lyrics' && audio) {
-        const ct = audio.currentTime;
+        const ct = audio.currentTime + SYNC_OFFSET;
         const dur = audio.duration && Number.isFinite(audio.duration) ? audio.duration : LYRICS_END;
         if (progressBarRef.current) {
-          progressBarRef.current.style.width = `${(dur > 0 ? Math.min(1, ct / dur) : 0) * 100}%`;
+          progressBarRef.current.style.width = `${(dur > 0 ? Math.min(1, audio.currentTime / dur) : 0) * 100}%`;
         }
 
         let idx = -1;
@@ -329,7 +310,7 @@ export function ComingSoonExperience({
           }
         }
 
-        if (ct >= LYRICS_END - 0.05 || (audio.ended && phaseRef.current === 'lyrics')) {
+        if (audio.currentTime >= LYRICS_END - 0.05 || (audio.ended && phaseRef.current === 'lyrics')) {
           goToLoop();
         }
       }
@@ -343,12 +324,30 @@ export function ComingSoonExperience({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /* ---------- Pause audio when tab/page is hidden, resume when back ---------- */
+  useEffect(() => {
+    const onVis = () => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      if (document.hidden) {
+        audio.pause();
+      } else if (phaseRef.current !== 'intro') {
+        void audio.play().catch(() => undefined);
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      audioRef.current?.pause();
+    };
+  }, []);
+
   useEffect(() => {
     if (phase !== 'lyrics' || activeLine < 0) return;
     const line = LYRICS[activeLine];
     if ((line?.kind === 'drop' || line?.kind === 'mega') && lastDropRef.current !== activeLine) {
       lastDropRef.current = activeLine;
-      spawnConfetti(line.kind === 'mega' ? 280 : 150, line.kind === 'mega' ? 1.5 : 1.1);
+      spawnConfetti(line.kind === 'mega' ? 240 : 130, line.kind === 'mega' ? 1.5 : 1.1);
     }
   }, [activeLine, phase, spawnConfetti]);
 
@@ -369,7 +368,7 @@ export function ComingSoonExperience({
       audio.loop = true;
       if (audio.paused) void audio.play().catch(() => undefined);
     }
-    spawnConfetti(220, 1.3);
+    spawnConfetti(200, 1.3);
   }, [spawnConfetti]);
 
   const startExperience = useCallback(() => {
@@ -408,25 +407,17 @@ export function ComingSoonExperience({
   return (
     <main
       dir="rtl"
-      className="fixed inset-0 z-0 overflow-hidden bg-[#02100c] text-white"
+      className="fixed inset-0 z-0 overflow-hidden bg-black text-white"
       style={{ fontFamily: 'Rubik, Heebo, system-ui, sans-serif' }}
     >
-      {/* aurora / calm background */}
-      <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div className="cs-aurora cs-aurora-1" />
-        <div className="cs-aurora cs-aurora-2" />
-        <div className="cs-aurora cs-aurora-3" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_30%,_rgba(2,16,12,0.88)_100%)]" />
-      </div>
+      {/* subtle dark vignette only — clean black canvas */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(8,20,16,0.6), #000 75%)' }}
+        aria-hidden
+      />
 
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-hidden />
-
-      {/* floating calm icons */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-        <Leaf className="cs-leaf cs-leaf-1 text-emerald-300/20" />
-        <Leaf className="cs-leaf cs-leaf-2 text-teal-300/15" />
-        <Sparkles className="cs-leaf cs-leaf-3 text-lime-300/15" />
-      </div>
 
       {songUrl ? <audio ref={audioRef} src={songUrl} preload="auto" playsInline /> : null}
 
@@ -436,7 +427,7 @@ export function ComingSoonExperience({
           <button
             type="button"
             onClick={toggleMute}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 backdrop-blur-md transition hover:bg-white/20"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 backdrop-blur-md transition hover:bg-white/15"
             aria-label={muted ? 'בטל השתקה' : 'השתק'}
           >
             {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
@@ -445,7 +436,7 @@ export function ComingSoonExperience({
             <button
               type="button"
               onClick={goToLoop}
-              className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white/80 backdrop-blur-md transition hover:bg-white/20"
+              className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/75 backdrop-blur-md transition hover:bg-white/15"
             >
               דלג ←
             </button>
@@ -463,7 +454,7 @@ export function ComingSoonExperience({
         </div>
       )}
 
-      {/* energy orb */}
+      {/* energy orb (subtle) */}
       <div
         ref={orbRef}
         className="pointer-events-none absolute inset-0"
@@ -473,7 +464,7 @@ export function ComingSoonExperience({
         <div className="cs-orb" />
       </div>
 
-      {/* ===================== INTRO / LYRICS (centered) ===================== */}
+      {/* ===================== INTRO / LYRICS ===================== */}
       {phase !== 'loop' && (
         <div className="relative z-20 flex h-full w-full items-center justify-center px-5">
           <AnimatePresence mode="wait">
@@ -483,21 +474,21 @@ export function ComingSoonExperience({
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 1.1, filter: 'blur(8px)' }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
+                transition={{ duration: 0.7, ease: 'easeOut' }}
                 className="relative z-20 flex flex-col items-center text-center"
               >
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.2, duration: 0.7 }}
-                  className="mb-6 flex h-24 w-24 items-center justify-center rounded-[2rem] bg-gradient-to-br from-emerald-400 via-teal-500 to-lime-400 text-5xl font-black text-[#04231a] shadow-[0_0_60px_rgba(52,211,153,0.75)] sm:h-28 sm:w-28"
+                  transition={{ delay: 0.2, duration: 0.6 }}
+                  className="mb-6 flex h-24 w-24 items-center justify-center rounded-[2rem] bg-gradient-to-br from-emerald-400 via-teal-500 to-lime-400 text-5xl font-black text-[#04231a] shadow-[0_0_60px_rgba(52,211,153,0.6)] sm:h-28 sm:w-28"
                 >
                   N
                 </motion.div>
                 <motion.h1
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.35, duration: 0.7 }}
+                  transition={{ delay: 0.32, duration: 0.6 }}
                   className="cs-gradient-text text-5xl font-black tracking-tight sm:text-7xl"
                 >
                   NuraWell<span className="cs-ai">.AI</span>
@@ -505,20 +496,20 @@ export function ComingSoonExperience({
                 <motion.p
                   initial={{ y: 16, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.5, duration: 0.7 }}
-                  className="mt-3 text-lg font-light tracking-[0.32em] text-emerald-100/70 sm:text-2xl"
+                  transition={{ delay: 0.46, duration: 0.6 }}
+                  className="mt-3 text-lg font-light tracking-[0.32em] text-emerald-100/60 sm:text-2xl"
                 >
                   ב ק ר ו ב
                 </motion.p>
 
                 <motion.button
-                  initial={{ scale: 0.8, opacity: 0 }}
+                  initial={{ scale: 0.85, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.8, duration: 0.6, type: 'spring' }}
+                  transition={{ delay: 0.7, duration: 0.5, type: 'spring' }}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={startExperience}
-                  className="cs-cta group mt-10 flex items-center gap-3 rounded-full bg-gradient-to-l from-emerald-500 via-teal-500 to-lime-400 px-9 py-4 text-lg font-black text-[#04231a] shadow-[0_0_40px_rgba(52,211,153,0.65)]"
+                  className="cs-cta group mt-10 flex items-center gap-3 rounded-full bg-gradient-to-l from-emerald-500 via-teal-500 to-lime-400 px-9 py-4 text-lg font-black text-[#04231a] shadow-[0_0_40px_rgba(52,211,153,0.55)]"
                 >
                   <Play className="h-6 w-6 fill-[#04231a]" />
                   {songUrl ? 'התחל את החוויה' : 'כניסה'}
@@ -526,8 +517,8 @@ export function ComingSoonExperience({
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 1.1, duration: 0.6 }}
-                  className="mt-5 text-sm text-emerald-100/50"
+                  transition={{ delay: 1, duration: 0.5 }}
+                  className="mt-5 text-sm text-emerald-100/45"
                 >
                   {songUrl ? 'מומלץ לחוות עם קול 🔊' : 'השיר טרם הוגדר בלוח הבקרה'}
                 </motion.p>
@@ -546,10 +537,10 @@ export function ComingSoonExperience({
                   {current && (
                     <motion.div
                       key={activeLine}
-                      initial={{ opacity: 0, y: 40, scale: 0.85, filter: 'blur(10px)' }}
+                      initial={{ opacity: 0, y: 36, scale: 0.86, filter: 'blur(8px)' }}
                       animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-                      exit={{ opacity: 0, y: -28, scale: 1.12, filter: 'blur(8px)' }}
-                      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                      exit={{ opacity: 0, y: -24, scale: 1.1, filter: 'blur(6px)' }}
+                      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
                       className="flex flex-col items-center"
                     >
                       {current.kind === 'drop' || current.kind === 'mega' ? (
@@ -578,14 +569,14 @@ export function ComingSoonExperience({
                           )}
                         </motion.div>
                       ) : (
-                        <div className="flex max-w-4xl flex-wrap items-center justify-center gap-x-4 gap-y-2 px-2">
+                        <div className="flex max-w-4xl flex-wrap items-center justify-center gap-x-3 gap-y-3 px-2">
                           {currentWords.map((word, i) => (
                             <span
                               key={`${activeLine}-${i}`}
                               className={
                                 i === activeWord
                                   ? 'cs-word cs-word-active text-4xl font-black leading-tight sm:text-7xl'
-                                  : 'cs-word text-4xl font-black leading-tight text-white/35 sm:text-7xl'
+                                  : 'cs-word cs-word-idle text-4xl font-black leading-tight sm:text-7xl'
                               }
                             >
                               {word}
@@ -606,36 +597,41 @@ export function ComingSoonExperience({
       {phase === 'loop' && (
         <div className="relative z-20 h-full w-full overflow-y-auto overflow-x-hidden">
           <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col items-center px-5 py-16 text-center sm:py-20">
+            {/* grand "המהפכה מתחילה" header */}
             <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.15, duration: 0.8 }}
-              className="mb-3 flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-4 py-1.5 text-xs font-bold tracking-[0.22em] text-emerald-100/80 backdrop-blur-md"
+              initial={{ y: 16, opacity: 0, scale: 0.9 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1, duration: 0.7, ease: 'easeOut' }}
+              className="cs-revolution-badge"
             >
-              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-              ה מ ה פ כ ה  מ ת ח י ל ה
+              <span className="cs-revolution-dot" />
+              <span className="cs-revolution-text">המהפכה מתחילה</span>
+              <Sparkles className="h-4 w-4 text-lime-300" />
             </motion.div>
 
             <motion.h1
-              initial={{ y: 30, opacity: 0 }}
+              initial={{ y: 28, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-              className="cs-gradient-text text-6xl font-black tracking-tight sm:text-8xl"
+              transition={{ delay: 0.28, duration: 0.7 }}
+              className="cs-gradient-text mt-6 text-6xl font-black tracking-tight sm:text-8xl"
             >
               NuraWell<span className="cs-ai">.AI</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.8 }}
-              className="mt-3 text-lg font-light tracking-[0.18em] text-emerald-100/70 sm:text-2xl"
+              transition={{ delay: 0.46, duration: 0.7 }}
+              className="mt-3 text-lg font-light tracking-[0.18em] text-emerald-100/65 sm:text-2xl"
             >
               הדרך החכמה לחיים בריאים
             </motion.p>
 
-            {/* rotating psychological line — readable glass card */}
+            {/* rotating psychological line — readable glass card, nicer type */}
             <div className="mt-10 w-full max-w-2xl">
-              <div className="cs-glass-card relative flex min-h-[8.5rem] items-center justify-center px-6 py-7 sm:min-h-[9rem] sm:px-9">
+              <div className="cs-glass-card relative flex min-h-[9.5rem] items-center justify-center px-6 py-8 sm:min-h-[10rem] sm:px-10">
+                <span className="cs-quote" aria-hidden>
+                  ”
+                </span>
                 <AnimatePresence mode="wait">
                   <motion.p
                     key={revIndex}
@@ -643,9 +639,9 @@ export function ComingSoonExperience({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -14 }}
                     transition={{ duration: 0.55, ease: 'easeOut' }}
-                    className="text-balance text-xl font-semibold leading-relaxed text-white sm:text-3xl sm:leading-relaxed"
+                    className="cs-quote-text text-balance text-2xl leading-[1.5] sm:text-[2rem] sm:leading-[1.5]"
                   >
-                    {REVOLUTION_LINES[revIndex]}
+                    {renderEmphasis(REVOLUTION_LINES[revIndex])}
                   </motion.p>
                 </AnimatePresence>
               </div>
@@ -661,10 +657,10 @@ export function ComingSoonExperience({
                     initial={{ opacity: 0, y: 24 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.4 }}
-                    transition={{ duration: 0.6, delay: 0.05 * i }}
+                    transition={{ duration: 0.55, delay: 0.05 * i }}
                     className="cs-glass-card flex flex-col items-center gap-3 px-5 py-6 text-center sm:items-start sm:text-right"
                   >
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400/90 to-teal-500/90 text-[#04231a] shadow-[0_0_24px_rgba(45,212,191,0.5)]">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400/90 to-teal-500/90 text-[#04231a] shadow-[0_0_24px_rgba(45,212,191,0.45)]">
                       <Icon className="h-6 w-6" />
                     </span>
                     <h3 className="text-lg font-black text-white sm:text-xl">{f.title}</h3>
@@ -674,19 +670,19 @@ export function ComingSoonExperience({
               })}
             </div>
 
-            {/* closing CTA / waitlist badge */}
+            {/* closing CTA */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.7 }}
+              transition={{ duration: 0.6 }}
               className="cs-glass-card mt-12 flex w-full max-w-2xl flex-col items-center gap-4 px-6 py-9 sm:mt-16"
             >
-              <span className="flex items-center gap-2 rounded-full bg-lime-300/90 px-4 py-1.5 text-sm font-black text-[#04231a] shadow-[0_0_28px_rgba(163,230,53,0.6)]">
+              <span className="flex items-center gap-2 rounded-full bg-lime-300/90 px-4 py-1.5 text-sm font-black text-[#04231a] shadow-[0_0_28px_rgba(163,230,53,0.55)]">
                 <Sparkles className="h-4 w-4" />
                 בקרוב מאוד
               </span>
-              <p className="text-balance text-2xl font-black leading-snug text-white sm:text-4xl">
+              <p className="cs-headline text-balance text-2xl leading-snug sm:text-4xl">
                 המסע שישנה לך את החיים — כבר ממש כאן.
               </p>
               <p className="max-w-md text-balance text-sm leading-relaxed text-emerald-50/70 sm:text-base">
@@ -697,7 +693,7 @@ export function ComingSoonExperience({
                 <button
                   type="button"
                   onClick={replay}
-                  className="mt-2 flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 text-sm font-bold text-white/85 backdrop-blur-md transition hover:bg-white/20"
+                  className="mt-2 flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-bold text-white/85 backdrop-blur-md transition hover:bg-white/15"
                 >
                   <Repeat className="h-4 w-4" />
                   צפה שוב בפתיח
@@ -711,47 +707,15 @@ export function ComingSoonExperience({
       )}
 
       <style>{`
-        .cs-aurora {
-          position: absolute;
-          border-radius: 9999px;
-          filter: blur(95px);
-          opacity: 0.55;
-          mix-blend-mode: screen;
-        }
-        .cs-aurora-1 {
-          width: 60vw; height: 60vw; top: -15vw; right: -10vw;
-          background: radial-gradient(circle, rgba(16,185,129,0.85), transparent 60%);
-          animation: csFloat1 16s ease-in-out infinite;
-        }
-        .cs-aurora-2 {
-          width: 55vw; height: 55vw; bottom: -18vw; left: -12vw;
-          background: radial-gradient(circle, rgba(45,212,191,0.7), transparent 60%);
-          animation: csFloat2 19s ease-in-out infinite;
-        }
-        .cs-aurora-3 {
-          width: 45vw; height: 45vw; top: 28%; left: 30%;
-          background: radial-gradient(circle, rgba(163,230,53,0.5), transparent 60%);
-          animation: csFloat3 22s ease-in-out infinite;
-        }
-        @keyframes csFloat1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-6vw,5vw) scale(1.15)} }
-        @keyframes csFloat2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(7vw,-4vw) scale(1.2)} }
-        @keyframes csFloat3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-5vw,-6vw) scale(0.85)} }
-
-        .cs-leaf { position: absolute; width: 42px; height: 42px; }
-        .cs-leaf-1 { top: 14%; left: 12%; animation: csDrift 14s ease-in-out infinite; }
-        .cs-leaf-2 { bottom: 18%; right: 14%; width: 56px; height: 56px; animation: csDrift 18s ease-in-out infinite reverse; }
-        .cs-leaf-3 { top: 22%; right: 22%; animation: csDrift 16s ease-in-out infinite; }
-        @keyframes csDrift { 0%,100%{transform:translate(0,0) rotate(0deg)} 50%{transform:translate(14px,-22px) rotate(18deg)} }
-
         .cs-orb {
           position: absolute;
           top: 44%; left: 50%;
-          width: 42vmin; height: 42vmin;
-          transform: translate(-50%, -50%) scale(calc(0.8 + var(--e) * 0.5));
+          width: 38vmin; height: 38vmin;
+          transform: translate(-50%, -50%) scale(calc(0.8 + var(--e) * 0.45));
           border-radius: 9999px;
-          background: radial-gradient(circle, rgba(16,185,129,calc(0.16 + var(--e) * 0.22)), transparent 65%);
-          filter: blur(22px);
-          transition: transform 0.06s linear;
+          background: radial-gradient(circle, rgba(16,185,129,calc(0.1 + var(--e) * 0.16)), transparent 65%);
+          filter: blur(26px);
+          transition: transform 0.08s linear;
         }
 
         .cs-gradient-text {
@@ -759,7 +723,7 @@ export function ComingSoonExperience({
           background-size: 300% 100%;
           -webkit-background-clip: text; background-clip: text; color: transparent;
           animation: csShimmer 6s linear infinite;
-          text-shadow: 0 0 60px rgba(52,211,153,0.4);
+          text-shadow: 0 0 50px rgba(52,211,153,0.35);
         }
         @keyframes csShimmer { to { background-position: 300% 0; } }
 
@@ -769,23 +733,24 @@ export function ComingSoonExperience({
           font-weight: 900;
         }
         .cs-ai-drop {
-          font-size: 0.42em;
-          vertical-align: super;
+          font-size: 0.42em; vertical-align: super;
           background: linear-gradient(120deg, #a3e635, #5eead4);
           -webkit-background-clip: text; background-clip: text; color: transparent;
         }
 
+        /* ---- karaoke words ---- */
         .cs-word {
           display: inline-block;
-          transition: transform 0.18s ease, color 0.18s ease, text-shadow 0.18s ease, opacity 0.18s ease;
-          background: linear-gradient(180deg, #ffffff, #d1fae5);
-          -webkit-background-clip: text; background-clip: text;
+          padding: 0.08em 0.34em;
+          border-radius: 0.55em;
+          transition: transform 0.16s cubic-bezier(0.22,1,0.36,1), color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
         }
+        .cs-word-idle { color: rgba(255,255,255,0.34); }
         .cs-word-active {
-          color: transparent;
-          transform: translateY(-6px) scale(1.12);
-          text-shadow: 0 0 42px rgba(110,231,183,0.85);
-          filter: drop-shadow(0 0 22px rgba(52,211,153,0.55));
+          color: #04231a;
+          background: linear-gradient(135deg, #a3e635, #34d399);
+          transform: translateY(-6px) scale(1.1);
+          box-shadow: 0 10px 36px rgba(52,211,153,0.55), 0 0 50px rgba(163,230,53,0.5);
         }
 
         .cs-drop-text {
@@ -793,34 +758,88 @@ export function ComingSoonExperience({
           background-size: 300% 100%;
           -webkit-background-clip: text; background-clip: text; color: transparent;
           animation: csShimmer 2.5s linear infinite;
-          filter: drop-shadow(0 0 40px rgba(52,211,153,0.7));
+          filter: drop-shadow(0 0 40px rgba(52,211,153,0.6));
           letter-spacing: -0.02em;
         }
 
         .cs-glass-card {
-          border-radius: 1.5rem;
-          border: 1px solid rgba(255,255,255,0.16);
-          background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(16,185,129,0.06));
-          box-shadow: 0 8px 40px rgba(4,35,26,0.45), inset 0 1px 0 rgba(255,255,255,0.18);
-          backdrop-filter: blur(22px) saturate(140%);
-          -webkit-backdrop-filter: blur(22px) saturate(140%);
+          border-radius: 1.6rem;
+          border: 1px solid rgba(255,255,255,0.14);
+          background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(16,185,129,0.05));
+          box-shadow: 0 10px 44px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.16);
+          backdrop-filter: blur(20px) saturate(135%);
+          -webkit-backdrop-filter: blur(20px) saturate(135%);
+        }
+
+        /* ---- revolution badge (grand) ---- */
+        .cs-revolution-badge {
+          position: relative;
+          display: inline-flex; align-items: center; gap: 0.6rem;
+          padding: 0.6rem 1.4rem;
+          border-radius: 9999px;
+          font-size: 0.8rem; font-weight: 800; letter-spacing: 0.18em;
+          color: #ecfdf5;
+          background: rgba(6,20,15,0.6);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+        }
+        .cs-revolution-badge::before {
+          content: ''; position: absolute; inset: 0;
+          border-radius: 9999px; padding: 1.5px;
+          background: linear-gradient(90deg, #a3e635, #34d399, #5eead4, #a3e635);
+          background-size: 200% 100%;
+          -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          -webkit-mask-composite: xor; mask-composite: exclude;
+          animation: csShimmer 3s linear infinite;
+        }
+        .cs-revolution-text {
+          background: linear-gradient(100deg, #d9f99d, #5eead4);
+          -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .cs-revolution-dot {
+          width: 0.55rem; height: 0.55rem; border-radius: 9999px;
+          background: #a3e635; box-shadow: 0 0 14px #a3e635;
+          animation: csPulse 1.6s ease-in-out infinite;
+        }
+        @keyframes csPulse { 0%,100%{opacity:1; transform:scale(1)} 50%{opacity:0.4; transform:scale(0.7)} }
+
+        /* ---- quote / sentences typography ---- */
+        .cs-quote {
+          position: absolute; top: -0.2rem; right: 1.1rem;
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 5rem; line-height: 1; color: rgba(163,230,53,0.35);
+          pointer-events: none; user-select: none;
+        }
+        .cs-quote-text {
+          font-weight: 700; color: #f0fdf4;
+          letter-spacing: 0.005em;
+          text-shadow: 0 2px 18px rgba(0,0,0,0.5);
+        }
+        .cs-em {
+          font-style: normal; font-weight: 900;
+          background: linear-gradient(120deg, #a3e635, #5eead4);
+          -webkit-background-clip: text; background-clip: text; color: transparent;
+          text-shadow: 0 0 24px rgba(163,230,53,0.25);
+        }
+        .cs-headline {
+          font-weight: 900; color: #ffffff;
+          letter-spacing: -0.01em;
+          text-shadow: 0 2px 22px rgba(0,0,0,0.5);
         }
 
         .cs-cta { position: relative; }
         .cs-cta::after {
-          content: '';
-          position: absolute; inset: -3px;
-          border-radius: 9999px;
+          content: ''; position: absolute; inset: -3px; border-radius: 9999px;
           background: linear-gradient(90deg, #a3e635, #5eead4, #a3e635);
           background-size: 200% 100%;
-          z-index: -1; filter: blur(14px); opacity: 0.65;
+          z-index: -1; filter: blur(14px); opacity: 0.6;
           animation: csShimmer 3s linear infinite;
         }
 
         .text-balance { text-wrap: balance; }
 
         @media (prefers-reduced-motion: reduce) {
-          .cs-aurora, .cs-gradient-text, .cs-drop-text, .cs-cta::after, .cs-leaf { animation: none !important; }
+          .cs-gradient-text, .cs-drop-text, .cs-cta::after, .cs-revolution-badge::before, .cs-revolution-dot { animation: none !important; }
         }
       `}</style>
     </main>
