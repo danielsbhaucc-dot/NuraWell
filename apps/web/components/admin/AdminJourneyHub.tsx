@@ -3,12 +3,19 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Edit3, GripVertical, Layers, Map, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, Edit3, Layers, Map, Plus, Trash2 } from 'lucide-react';
 import type { JourneyStep } from '@/lib/types/journey';
 import type { StationCoverCredit } from '@/lib/journey/group-journey-by-station';
 import { AdminStationCoverPanel } from '@/components/admin/AdminStationCoverPanel';
 import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
+import {
+  opsGlassBtnClass,
+  opsGlassBtnDangerClass,
+  opsGlassBtnPrimaryClass,
+  opsGlassCardClass,
+  opsInputClass,
+} from '@/components/admin/OpsPanel';
+import { cn } from '@/lib/cn';
 
 type StationRow = {
   id: string;
@@ -36,6 +43,9 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
   const [newTitle, setNewTitle] = useState('');
   const [newSort, setNewSort] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [orphansOpen, setOrphansOpen] = useState(false);
 
   async function addStation(e: React.FormEvent) {
     e.preventDefault();
@@ -51,11 +61,13 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
       const row = (await res.json()) as StationRow;
       setStations((prev) =>
         [...prev, { ...row, coverImageUrl: null }].sort(
-          (a, b) => a.sort_order - b.sort_order || a.title.localeCompare(b.title, 'he')
-        )
+          (a, b) => a.sort_order - b.sort_order || a.title.localeCompare(b.title, 'he'),
+        ),
       );
       setNewTitle('');
       setNewSort(0);
+      setShowAddForm(false);
+      setExpandedId(row.id);
       router.refresh();
     }
     setBusy(null);
@@ -72,6 +84,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
     });
     if (res.ok) {
       setStations((prev) => prev.filter((s) => s.id !== id));
+      if (expandedId === id) setExpandedId(null);
       router.refresh();
     }
     setBusy(null);
@@ -80,174 +93,200 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
   const stepsByStation = (sid: string | null) =>
     steps.filter((s) => (sid ? s.station_id === sid : !s.station_id));
 
+  const orphanSteps = stepsByStation(null);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <OpsPageHeader
         icon={Map}
         eyebrow="ניהול מסע"
         title="מסע ותחנות"
         tone="amber"
-        description="תחנה = קיבוץ לוגי של צעדים. אין הגבלה על מספר תחנות או צעדים לתחנה."
+        description="לחצו על תחנה לפתיחה. צעדים, תמונת רקע ועריכה — בתוך הכרטיס."
         actions={
-          <Link
-            href={`${opsBase}/steps/new`}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition hover:brightness-110"
-          >
-            <Plus className="h-4 w-4" />
-            צעד חדש
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setShowAddForm((v) => !v)}
+              className={opsGlassBtnClass}
+            >
+              <Layers className="h-4 w-4" />
+              תחנה חדשה
+            </button>
+            <Link href={`${opsBase}/steps/new`} className={opsGlassBtnPrimaryClass}>
+              <Plus className="h-4 w-4" />
+              צעד חדש
+            </Link>
+          </div>
         }
       />
 
-      <div className="rounded-3xl border border-white/50 bg-white/40 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-6">
-        <form onSubmit={addStation} className="flex flex-col gap-3 rounded-2xl border border-emerald-200/60 bg-emerald-50/30 p-4 sm:flex-row sm:items-end">
-          <div className="min-w-0 flex-1">
-            <label className="mb-1 block text-xs font-bold text-emerald-900">שם תחנה חדשה</label>
-            <input
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              className="w-full rounded-xl border border-white/80 bg-white/90 px-4 py-2.5 text-slate-900 shadow-inner outline-none focus:ring-2 focus:ring-emerald-400/50"
-              placeholder="למשל: יסודות שינה"
-            />
-          </div>
-          <div className="w-full sm:w-28">
-            <label className="mb-1 block text-xs font-bold text-emerald-900">סדר</label>
-            <input
-              type="number"
-              value={newSort}
-              onChange={(e) => setNewSort(Number(e.target.value))}
-              className="w-full rounded-xl border border-white/80 bg-white/90 px-4 py-2.5 text-slate-900 outline-none focus:ring-2 focus:ring-emerald-400/50"
-              min={0}
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={busy === 'add'}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-emerald-700 disabled:opacity-50"
-          >
-            <Layers className="h-4 w-4" />
-            הוסף תחנה
-          </button>
-        </form>
-      </div>
+      {showAddForm ? (
+        <div className={opsGlassCardClass}>
+          <form onSubmit={addStation} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="min-w-0 flex-1">
+              <label className="mb-1 block text-xs font-bold text-slate-700">שם תחנה</label>
+              <input
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                className={opsInputClass}
+                placeholder="למשל: יסודות שינה"
+              />
+            </div>
+            <div className="w-full sm:w-24">
+              <label className="mb-1 block text-xs font-bold text-slate-700">סדר</label>
+              <input
+                type="number"
+                value={newSort}
+                onChange={(e) => setNewSort(Number(e.target.value))}
+                className={opsInputClass}
+                min={0}
+              />
+            </div>
+            <button type="submit" disabled={busy === 'add'} className={opsGlassBtnPrimaryClass}>
+              <Layers className="h-4 w-4" />
+              הוסף
+            </button>
+          </form>
+        </div>
+      ) : null}
 
-      <div className="space-y-7">
-        {stations.map((st, idx) => (
-          <motion.section
-            key={st.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.04 }}
-            className="overflow-hidden rounded-3xl border border-white/45 bg-white/45 shadow-[0_10px_36px_rgba(99,102,241,0.1)] backdrop-blur-xl"
-          >
-            <div className="flex flex-col gap-3 border-b border-white/50 bg-gradient-to-l from-violet-500/10 to-emerald-500/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-sm font-black text-white shadow-md ring-1 ring-white/50">
-                  {st.sort_order}
-                </span>
-                <div className="min-w-0">
-                  <h2 className="truncate text-lg font-black text-slate-900">{st.title}</h2>
-                  {st.description ? (
-                    <p className="mt-0.5 line-clamp-2 text-xs text-slate-600">{st.description}</p>
-                  ) : null}
-                </div>
-              </div>
-              <div className="flex shrink-0 gap-2">
+      <div className="space-y-3">
+        {stations.map((st) => {
+          const open = expandedId === st.id;
+          const stepCount = stepsByStation(st.id).length;
+          return (
+            <section
+              key={st.id}
+              className="overflow-hidden rounded-2xl border border-white/50 bg-white/35 shadow-[0_8px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl"
+            >
+              <div className="flex items-center gap-2 px-3 py-3 sm:px-4">
                 <button
                   type="button"
-                  onClick={() => deleteStation(st.id)}
+                  onClick={() => setExpandedId(open ? null : st.id)}
+                  className="flex min-w-0 flex-1 items-center gap-3 text-right"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/80 to-orange-500/80 text-sm font-black text-white shadow-sm ring-1 ring-white/40">
+                    {st.sort_order}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-display text-base font-black text-slate-900">
+                      {st.title}
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      {stepCount} צעדים
+                      {st.coverImageUrl ? ' · יש תמונה' : ''}
+                    </span>
+                  </span>
+                  <ChevronDown
+                    className={cn('h-5 w-5 shrink-0 text-slate-400 transition-transform', open && '-rotate-180')}
+                    aria-hidden
+                  />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void deleteStation(st.id)}
                   disabled={busy === st.id}
-                  className="inline-flex min-h-10 items-center gap-1 rounded-xl border border-red-200/80 bg-red-50/80 px-3 py-2 text-xs font-bold text-red-800 transition hover:bg-red-100 disabled:opacity-50"
+                  className={cn(opsGlassBtnDangerClass, 'min-h-9 shrink-0')}
+                  aria-label="מחק תחנה"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  מחק
                 </button>
               </div>
-            </div>
-            <AdminStationCoverPanel
-              stationId={st.id}
-              stationTitle={st.title}
-              initialCover={{
-                coverImageKey: st.cover_image_key,
-                coverImageCredit: st.cover_image_credit,
-                coverImageUrl: st.coverImageUrl,
-              }}
-              onUpdated={(next) => {
-                setStations((prev) =>
-                  prev.map((row) =>
-                    row.id === st.id
-                      ? {
-                          ...row,
-                          cover_image_key: next.coverImageKey,
-                          cover_image_credit: next.coverImageCredit,
-                          coverImageUrl: next.coverImageUrl,
-                        }
-                      : row
-                  )
-                );
-              }}
-            />
-            <ul className="mt-1 divide-y divide-white/40 border-t border-white/35">
-              {stepsByStation(st.id).length === 0 ? (
-                <li className="px-4 py-6 text-center text-sm text-slate-500 sm:px-5">אין צעדים בתחנה זו</li>
-              ) : (
-                stepsByStation(st.id).map((s) => (
-                  <li key={s.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-4 sm:px-5">
-                    <div className="flex min-w-0 flex-1 items-center gap-2">
-                      <GripVertical className="hidden h-4 w-4 shrink-0 text-slate-300 sm:block" aria-hidden />
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-sm font-black text-emerald-800">
-                        {s.step_number}
-                      </span>
-                      <span className="min-w-0 truncate font-semibold text-slate-800">{s.title}</span>
-                    </div>
-                    <Link
-                      href={`${opsBase}/steps/${s.id}`}
-                      className="inline-flex min-h-10 items-center justify-center gap-1.5 self-end rounded-xl border border-emerald-300/60 bg-emerald-500/15 px-4 py-2 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-emerald-500/25 sm:self-center"
-                    >
-                      <Edit3 className="h-3.5 w-3.5" />
-                      עריכה
-                    </Link>
-                  </li>
-                ))
-              )}
-            </ul>
-          </motion.section>
-        ))}
 
-        <motion.section
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-3xl border border-dashed border-slate-300/80 bg-slate-50/50 p-5 backdrop-blur-md"
-        >
-          <h2 className="text-base font-black text-slate-700">צעדים ללא תחנה</h2>
-          <ul className="mt-3 space-y-2">
-            {stepsByStation(null).length === 0 ? (
-              <li className="text-sm text-slate-500">הכל משויך לתחנות</li>
-            ) : (
-              stepsByStation(null).map((s) => (
+              {open ? (
+                <div className="border-t border-white/40">
+                  <AdminStationCoverPanel
+                    stationId={st.id}
+                    stationTitle={st.title}
+                    initialCover={{
+                      coverImageKey: st.cover_image_key,
+                      coverImageCredit: st.cover_image_credit,
+                      coverImageUrl: st.coverImageUrl,
+                    }}
+                    onUpdated={(next) => {
+                      setStations((prev) =>
+                        prev.map((row) =>
+                          row.id === st.id
+                            ? {
+                                ...row,
+                                cover_image_key: next.coverImageKey,
+                                cover_image_credit: next.coverImageCredit,
+                                coverImageUrl: next.coverImageUrl,
+                              }
+                            : row,
+                        ),
+                      );
+                    }}
+                  />
+                  <ul className="divide-y divide-white/35">
+                    {stepCount === 0 ? (
+                      <li className="px-4 py-5 text-center text-sm text-slate-500">אין צעדים בתחנה זו</li>
+                    ) : (
+                      stepsByStation(st.id).map((s) => (
+                        <li
+                          key={s.id}
+                          className="flex items-center justify-between gap-3 px-3 py-2.5 sm:px-4"
+                        >
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-300/40 bg-emerald-500/10 text-xs font-black text-emerald-800 backdrop-blur-sm">
+                              {s.step_number}
+                            </span>
+                            <span className="truncate text-sm font-semibold text-slate-800">{s.title}</span>
+                          </span>
+                          <Link href={`${opsBase}/steps/${s.id}`} className={opsGlassBtnClass}>
+                            <Edit3 className="h-3.5 w-3.5" />
+                            עריכה
+                          </Link>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </div>
+              ) : null}
+            </section>
+          );
+        })}
+      </div>
+
+      {orphanSteps.length > 0 ? (
+        <section className="overflow-hidden rounded-2xl border border-dashed border-white/55 bg-white/25 backdrop-blur-xl">
+          <button
+            type="button"
+            onClick={() => setOrphansOpen((v) => !v)}
+            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-right"
+          >
+            <span>
+              <span className="block text-sm font-black text-slate-800">צעדים ללא תחנה</span>
+              <span className="text-[11px] text-slate-500">{orphanSteps.length} צעדים</span>
+            </span>
+            <ChevronDown
+              className={cn('h-5 w-5 shrink-0 text-slate-400 transition-transform', orphansOpen && '-rotate-180')}
+            />
+          </button>
+          {orphansOpen ? (
+            <ul className="space-y-1.5 border-t border-white/35 px-3 pb-3 pt-2">
+              {orphanSteps.map((s) => (
                 <li
                   key={s.id}
-                  className="flex flex-col gap-2 rounded-2xl border border-white/50 bg-white/60 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-white/45 bg-white/30 px-3 py-2 backdrop-blur-md"
                 >
-                  <span className="flex min-w-0 items-center gap-2 font-medium text-slate-800">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-xs font-black text-emerald-800">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-emerald-300/40 bg-emerald-500/10 text-xs font-black text-emerald-800">
                       {s.step_number}
                     </span>
-                    <span className="truncate">{s.title}</span>
+                    <span className="truncate text-sm font-medium text-slate-800">{s.title}</span>
                   </span>
-                  <Link
-                    href={`${opsBase}/steps/${s.id}`}
-                    className="inline-flex min-h-10 items-center justify-center gap-1.5 self-end rounded-xl bg-gradient-to-l from-emerald-600 to-teal-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-500/20 sm:self-center"
-                  >
+                  <Link href={`${opsBase}/steps/${s.id}`} className={opsGlassBtnClass}>
                     <Edit3 className="h-3.5 w-3.5" />
                     עריכה
                   </Link>
                 </li>
-              ))
-            )}
-          </ul>
-        </motion.section>
-      </div>
+              ))}
+            </ul>
+          ) : null}
+        </section>
+      ) : null}
     </div>
   );
 }

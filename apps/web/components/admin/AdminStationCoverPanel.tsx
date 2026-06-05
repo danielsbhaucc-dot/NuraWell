@@ -7,6 +7,7 @@ import { useMediaManager } from '@/components/media-manager/MediaManagerProvider
 import { applyStationCoverFromAsset } from '@/lib/media-manager/apply-asset';
 import type { MediaAsset } from '@/components/media-manager/types';
 import { GlassConfirmDialog } from '@/components/media-manager/GlassConfirmDialog';
+import { opsGlassBtnClass, opsGlassBtnDangerClass } from '@/components/admin/OpsPanel';
 
 type StationCoverState = {
   coverImageKey: string | null;
@@ -121,7 +122,7 @@ export function AdminStationCoverPanel({
       />
 
       {hasCover ? (
-        <div className="border-t border-white/45 bg-white/25 px-4 py-4 sm:px-5">
+        <div className="border-t border-white/40 bg-white/20 px-4 py-3 sm:px-5">
           <CoverPreview cover={cover} onRemove={() => setConfirmRemove(true)} removeBusy={removeBusy} />
         </div>
       ) : null}
@@ -165,10 +166,10 @@ function CoverSummaryRow({
   onOpen: () => void;
 }) {
   return (
-    <div className="border-t border-white/45 bg-white/25 px-4 py-4 sm:px-5">
+    <div className="border-t border-white/40 bg-white/20 px-4 py-3 sm:px-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/70 bg-white/30 shadow-sm backdrop-blur-sm">
+          <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/50 bg-white/25 shadow-sm backdrop-blur-md">
             {hasCover && coverUrl ? (
               <img src={coverUrl} alt="" className="h-full w-full object-cover" />
             ) : (
@@ -186,7 +187,7 @@ function CoverSummaryRow({
           type="button"
           onClick={onOpen}
           disabled={applyBusy}
-          className="inline-flex min-h-10 items-center justify-center gap-2 self-end rounded-xl border border-emerald-200/80 bg-white/30 px-4 py-2 text-sm font-bold text-emerald-900 shadow-sm backdrop-blur-sm transition hover:bg-white/45 sm:self-center disabled:opacity-50"
+          className={`${opsGlassBtnClass} min-h-10 self-end sm:self-center`}
         >
           {applyBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
           {hasCover ? 'החלפת תמונה' : 'העלאת תמונה'}
@@ -222,7 +223,7 @@ function CoverPreview({
             type="button"
             onClick={onRemove}
             disabled={removeBusy}
-            className="inline-flex items-center gap-1 rounded-lg bg-white/15 px-2.5 py-1.5 text-xs font-bold text-white backdrop-blur-sm disabled:opacity-50"
+            className={`${opsGlassBtnDangerClass} text-white border-white/30 bg-black/20 hover:bg-black/30`}
           >
             {removeBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
             הסר תמונה
