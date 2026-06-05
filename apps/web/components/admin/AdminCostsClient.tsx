@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Loader2,
   Search,
@@ -30,6 +30,8 @@ type Counts = {
 
 type Pricing = { bunnyMinutesPerView: number; bunnyUsdPerMinute: number };
 
+type CostUserRow = { userId: string; fullName: string | null; breakdown: Breakdown; counts: Counts };
+
 type AggregateResp = {
   scope: 'aggregate';
   days: number;
@@ -39,7 +41,8 @@ type AggregateResp = {
   totals: Breakdown;
   averagePerUser: Breakdown;
   averagePerActiveUser: Breakdown;
-  topUsers: Array<{ userId: string; fullName: string | null; breakdown: Breakdown; counts: Counts }>;
+  topUsers: CostUserRow[];
+  users: CostUserRow[];
 };
 
 type UserResp = {
@@ -50,8 +53,6 @@ type UserResp = {
   breakdown: Breakdown;
   counts: Counts;
 };
-
-type UserRow = { id: string; full_name: string | null; email: string | null };
 
 const WINDOWS = [
   { days: 7, label: '7 ימים' },
@@ -136,8 +137,6 @@ export function AdminCostsClient() {
   const [error, setError] = useState<string | null>(null);
 
   const [q, setQ] = useState('');
-  const [list, setList] = useState<UserRow[]>([]);
-  const [listLoading, setListLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedName, setSelectedName] = useState<string>('');
   const [userCost, setUserCost] = useState<UserResp | null>(null);
@@ -156,21 +155,6 @@ export function AdminCostsClient() {
       setAgg(null);
     } finally {
       setAggLoading(false);
-    }
-  }, []);
-
-  const loadList = useCallback(async (search: string) => {
-    setListLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (search.trim()) params.set('q', search.trim());
-      const res = await fetch(`/api/v1/admin/users?${params}`, { cache: 'no-store' });
-      const data = (await res.json()) as { users?: UserRow[] };
-      setList(data.users ?? []);
-    } catch {
-      setList([]);
-    } finally {
-      setListLoading(false);
     }
   }, []);
 
@@ -196,14 +180,19 @@ export function AdminCostsClient() {
   }, [days, loadAggregate]);
 
   useEffect(() => {
-    const t = setTimeout(() => void loadList(q), 280);
-    return () => clearTimeout(t);
-  }, [q, loadList]);
-
-  useEffect(() => {
     if (selectedId) void loadUserCost(selectedId, days);
     else setUserCost(null);
   }, [selectedId, days, loadUserCost]);
+
+  const filteredUsers = useMemo(() => {
+    const rows = agg?.users ?? [];
+    const term = q.trim().toLowerCase();
+    if (!term) return rows;
+    return rows.filter((u) => {
+      const name = (u.fullName ?? '').toLowerCase();
+      return name.includes(term) || u.userId.toLowerCase().includes(term);
+    });
+  }, [agg?.users, q]);
 
   return (
     <div className="space-y-5">
@@ -300,31 +289,43 @@ export function AdminCostsClient() {
               />
             </div>
           </div>
-          {listLoading ? (
+          {aggLoading ? (
             <p className="flex justify-center p-6">
               <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
             </p>
           ) : (
             <ul className="flex-1 divide-y divide-slate-100 overflow-y-auto">
-              {list.map((u) => (
-                <li key={u.id}>
+              {filteredUsers.map((u) => (
+                <li key={u.userId}>
                   <button
                     type="button"
                     onClick={() => {
-                      setSelectedId(u.id);
-                      setSelectedName(u.full_name || u.email || 'משתמש');
+                      setSelectedId(u.userId);
+                      setSelectedName(u.fullName || 'משתמש');
                     }}
                     className={[
                       'w-full px-4 py-3 text-right transition-colors hover:bg-emerald-50/80',
-                      selectedId === u.id ? 'bg-emerald-50' : '',
+                      selectedId === u.userId ? 'bg-emerald-50' : '',
                     ].join(' ')}
                   >
-                    <p className="text-sm font-bold text-slate-900">{u.full_name || 'ללא שם'}</p>
-                    <p className="truncate text-xs text-slate-500">{u.email ?? u.id}</p>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-slate-900">{u.fullName || 'ללא שם'}</p>
+                        <p className="truncate text-[11px] text-slate-500">{u.userId}</p>
+                      </div>
+                      <p className="shrink-0 font-display text-sm font-black tabular-nums text-emerald-700">
+                        {usd(u.breakdown.totalUsd)}
+                      </p>
+                    </div>
+                    <div className="mt-2 grid grid-cols-3 gap-1 text-[10px] text-slate-500">
+                      <span>צ׳אט {usd(u.breakdown.chatUsd)}</span>
+                      <span>התראות {usd(u.breakdown.notificationsUsd)}</span>
+                      <span>וידאו {usd(u.breakdown.videoUsd)}</span>
+                    </div>
                   </button>
                 </li>
               ))}
-              {list.length === 0 ? (
+              {filteredUsers.length === 0 ? (
                 <li className="p-6 text-center text-sm text-slate-500">לא נמצאו משתמשים</li>
               ) : null}
             </ul>
