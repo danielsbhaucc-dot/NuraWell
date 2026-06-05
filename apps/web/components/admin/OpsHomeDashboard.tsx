@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Activity, DollarSign, Footprints, ImageIcon, LayoutDashboard, Route, Sparkles } from 'lucide-react';
+import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
 
 type OpsHomeDashboardProps = {
   publishedCount: number;
@@ -40,18 +41,14 @@ export function OpsHomeDashboard({ publishedCount, totalSteps }: OpsHomeDashboar
   }, []);
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <section className="rounded-3xl border border-white/60 bg-white/50 p-5 shadow-[0_12px_40px_rgba(99,102,241,0.1)] backdrop-blur-xl sm:p-7">
-        <p className="font-sans text-sm font-semibold uppercase tracking-wide text-violet-700/90">לוח בקרה</p>
-        <h1 className="mt-2 flex flex-wrap items-center gap-2 font-display text-2xl font-black leading-tight text-slate-900 sm:text-3xl">
-          <LayoutDashboard className="h-7 w-7 shrink-0 text-emerald-600 sm:h-8 sm:w-8" aria-hidden />
-          ראשי
-        </h1>
-        <p className="mt-3 max-w-2xl font-sans text-sm leading-relaxed text-slate-600 sm:text-base">
-          סיכום מהיר של המסע וקיצורי דרך לניהול. להגדרות תמונת אלמוג ניתן לעבור מתפריט הצד, מהסרגל התחתון
-          במובייל או מהכרטיס למטה.
-        </p>
-      </section>
+    <div className="space-y-5 sm:space-y-6">
+      <OpsPageHeader
+        icon={LayoutDashboard}
+        eyebrow="לוח בקרה"
+        title="ראשי"
+        tone="emerald"
+        description="סיכום מהיר של המסע וקיצורי דרך לניהול. להגדרות תמונת אלמוג ניתן לעבור מתפריט הצד, מהסרגל התחתון במובייל או מהכרטיס למטה."
+      />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
         <div className="rounded-3xl border border-cyan-300/50 bg-gradient-to-br from-cyan-100/70 via-white/55 to-sky-100/50 p-4 shadow-[0_12px_40px_rgba(14,165,233,0.12)] backdrop-blur-xl transition-all active:scale-[0.99] sm:p-5 sm:hover:border-cyan-400/55 sm:hover:shadow-[0_14px_44px_rgba(14,165,233,0.18)]">

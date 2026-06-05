@@ -4,10 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Edit3, GripVertical, Layers, Plus, Trash2 } from 'lucide-react';
+import { Edit3, GripVertical, Layers, Map, Plus, Trash2 } from 'lucide-react';
 import type { JourneyStep } from '@/lib/types/journey';
 import type { StationCoverCredit } from '@/lib/journey/group-journey-by-station';
 import { AdminStationCoverPanel } from '@/components/admin/AdminStationCoverPanel';
+import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
 
 type StationRow = {
   id: string;
@@ -80,15 +81,14 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
     steps.filter((s) => (sid ? s.station_id === sid : !s.station_id));
 
   return (
-    <div className="space-y-8">
-      <div className="rounded-3xl border border-white/50 bg-white/40 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-7">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">מסע ותחנות</h1>
-            <p className="mt-1 text-sm text-slate-600 sm:text-base">
-              תחנה = קיבוץ לוגי של צעדים. אין הגבלה על מספר תחנות או צעדים לתחנה.
-            </p>
-          </div>
+    <div className="space-y-6">
+      <OpsPageHeader
+        icon={Map}
+        eyebrow="ניהול מסע"
+        title="מסע ותחנות"
+        tone="amber"
+        description="תחנה = קיבוץ לוגי של צעדים. אין הגבלה על מספר תחנות או צעדים לתחנה."
+        actions={
           <Link
             href={`${opsBase}/steps/new`}
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition hover:brightness-110"
@@ -96,9 +96,11 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             <Plus className="h-4 w-4" />
             צעד חדש
           </Link>
-        </div>
+        }
+      />
 
-        <form onSubmit={addStation} className="mt-6 flex flex-col gap-3 rounded-2xl border border-emerald-200/60 bg-emerald-50/30 p-4 sm:flex-row sm:items-end">
+      <div className="rounded-3xl border border-white/50 bg-white/40 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-6">
+        <form onSubmit={addStation} className="flex flex-col gap-3 rounded-2xl border border-emerald-200/60 bg-emerald-50/30 p-4 sm:flex-row sm:items-end">
           <div className="min-w-0 flex-1">
             <label className="mb-1 block text-xs font-bold text-emerald-900">שם תחנה חדשה</label>
             <input

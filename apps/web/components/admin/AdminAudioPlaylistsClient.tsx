@@ -27,6 +27,7 @@ import {
 } from '@/lib/audio/transcode-client';
 import { GlassAudioPlayer } from '@/components/audio/GlassAudioPlayer';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
+import { OpsPanelHeader, opsGlassCardClass, opsInputClass } from '@/components/admin/OpsPanel';
 import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
 import type { MediaAsset } from '@/components/media-manager/types';
 import type { AudioCredit, AudioTrack, AudioPlaylistSummary } from '@/lib/types/audio';
@@ -64,8 +65,7 @@ async function transcodeUnderLimit(
   return last as TranscodeResult;
 }
 
-const cardClass =
-  'relative overflow-hidden rounded-3xl border border-white/40 bg-white/45 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-2xl sm:p-6';
+const cardClass = opsGlassCardClass;
 
 export function AdminAudioPlaylistsClient() {
   const [playlists, setPlaylists] = useState<AudioPlaylistSummary[]>([]);
@@ -174,10 +174,12 @@ export function AdminAudioPlaylistsClient() {
     <div className="space-y-6">
       {/* יצירת פלייליסט */}
       <section className={cardClass} dir="rtl">
-        <h2 className="flex items-center gap-2 text-lg font-black text-slate-800">
-          <ListMusic className="h-5 w-5 text-emerald-500" />
-          פלייליסט חדש
-        </h2>
+        <OpsPanelHeader
+          icon={ListMusic}
+          title="פלייליסט חדש"
+          tone="emerald"
+          description="צרו פלייליסט קצר וברור, ואז הוסיפו אליו רצועות מהספרייה או מהעלאה."
+        />
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.4fr_auto] sm:items-end">
           <label className="block">
             <span className="mb-1 block text-xs font-bold text-slate-600">שם הפלייליסט</span>
@@ -185,7 +187,7 @@ export function AdminAudioPlaylistsClient() {
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder="למשל: רגיעה עמוקה"
-              className="w-full rounded-xl border border-white/60 bg-white/70 px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-emerald-400"
+              className={opsInputClass}
             />
           </label>
           <label className="block">
@@ -194,14 +196,14 @@ export function AdminAudioPlaylistsClient() {
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
               placeholder="מוזיקה שקטה למדיטציה ולמעבר בין שלבים"
-              className="w-full rounded-xl border border-white/60 bg-white/70 px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-emerald-400"
+              className={opsInputClass}
             />
           </label>
           <button
             type="button"
             onClick={() => void createPlaylist()}
             disabled={!newTitle.trim() || creating}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-500 px-5 py-2.5 font-bold text-white disabled:opacity-45"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-500 px-5 py-3 font-bold text-white shadow-lg shadow-emerald-500/20 transition active:scale-[0.99] disabled:opacity-45"
           >
             {creating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
             צור
@@ -211,10 +213,13 @@ export function AdminAudioPlaylistsClient() {
 
       {/* רשימת פלייליסטים */}
       <section className={cardClass} dir="rtl">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-black text-slate-800">
-          <Disc3 className="h-5 w-5 text-emerald-500" />
-          הפלייליסטים שלי
-        </h2>
+        <OpsPanelHeader
+          icon={Disc3}
+          title="הפלייליסטים שלי"
+          tone="violet"
+          description="במובייל כל פלייליסט הוא כרטיס פעולה נפרד, כדי שהניהול לא ירגיש כמו טבלה צפופה."
+          className="mb-4"
+        />
 
         {loading ? (
           <div className="flex items-center gap-2 py-6 text-slate-500">
@@ -234,9 +239,9 @@ export function AdminAudioPlaylistsClient() {
                 <li key={pl.id}>
                   <div
                     className={[
-                      'flex items-center gap-3 rounded-2xl border px-3 py-3 transition-colors',
+                      'flex flex-col gap-3 rounded-2xl border px-3 py-3 transition-colors sm:flex-row sm:items-center',
                       active
-                        ? 'border-emerald-400/70 bg-emerald-50/80'
+                        ? 'border-emerald-400/70 bg-emerald-50/80 shadow-[0_10px_28px_rgba(16,185,129,0.12)]'
                         : 'border-white/60 bg-white/55 hover:bg-white/75',
                     ].join(' ')}
                   >
@@ -257,37 +262,37 @@ export function AdminAudioPlaylistsClient() {
                       </span>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => void togglePublish(pl)}
-                      disabled={publishingId === pl.id}
-                      title={pl.is_published ? 'החזר לטיוטה' : 'פרסם פלייליסט'}
-                      className={[
-                        'inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-black transition-colors disabled:opacity-60',
-                        pl.is_published
-                          ? 'border-emerald-300/70 bg-emerald-100/80 text-emerald-800 hover:bg-emerald-200/80'
-                          : 'border-amber-300/70 bg-amber-50/90 text-amber-800 hover:bg-amber-100',
-                      ].join(' ')}
-                    >
-                      {publishingId === pl.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : pl.is_published ? (
-                        <Eye className="h-4 w-4" />
-                      ) : (
-                        <EyeOff className="h-4 w-4" />
-                      )}
-                      <span className="hidden sm:inline">
-                        {pl.is_published ? 'פורסם' : 'פרסם'}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmDelete(pl)}
-                      title="מחק פלייליסט"
-                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-200/70 bg-red-50/70 text-red-600 hover:bg-red-100"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="grid grid-cols-[1fr_auto] gap-2 sm:flex sm:shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => void togglePublish(pl)}
+                        disabled={publishingId === pl.id}
+                        title={pl.is_published ? 'החזר לטיוטה' : 'פרסם פלייליסט'}
+                        className={[
+                          'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-black transition-colors disabled:opacity-60',
+                          pl.is_published
+                            ? 'border-emerald-300/70 bg-emerald-100/80 text-emerald-800 hover:bg-emerald-200/80'
+                            : 'border-amber-300/70 bg-amber-50/90 text-amber-800 hover:bg-amber-100',
+                        ].join(' ')}
+                      >
+                        {publishingId === pl.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : pl.is_published ? (
+                          <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
+                        )}
+                        <span>{pl.is_published ? 'פורסם' : 'פרסם'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDelete(pl)}
+                        title="מחק פלייליסט"
+                        className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-red-200/70 bg-red-50/70 text-red-600 hover:bg-red-100"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
 
                   {active && (

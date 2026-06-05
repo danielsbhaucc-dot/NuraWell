@@ -13,6 +13,7 @@ import {
   FlaskConical,
 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
+import { OpsPanelHeader, opsGlassCardClass, opsInputClass } from '@/components/admin/OpsPanel';
 
 type KnowledgeItem = {
   id: string;
@@ -402,58 +403,63 @@ export function AlmogKnowledgeManager() {
       <ConfirmDialog
         open={deleteOpen}
         title="מחיקת ידע"
-        description="למחוק את המסמך ואת כל החלקים שהוטמעו באינדקס? לא ניתן לשחזר."
+        message="למחוק את המסמך ואת כל החלקים שהוטמעו באינדקס? לא ניתן לשחזר."
         confirmLabel="מחק"
         cancelLabel="ביטול"
-        variant="danger"
-        loading={deleting}
+        danger
+        busy={deleting}
         onConfirm={() => void remove()}
         onCancel={() => !deleting && setDeleteOpen(false)}
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-600">
-          {total} מסמכי ידע · כל שמירה מעדכנת את האינדקס שאלמוג משתמש בו בשיחות
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {canBackfill ? (
-            <button
-              type="button"
-              onClick={() => void runBackfill()}
-              disabled={backfilling}
-              className="inline-flex items-center gap-2 rounded-xl border border-amber-300/80 bg-amber-50/90 px-3 py-2 text-sm font-bold text-amber-950 hover:bg-amber-100 disabled:opacity-60"
-            >
-              {backfilling ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4" />
-              )}
-              ייבוא ידע קיים
-            </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => void syncAllResearch()}
-            disabled={syncingResearch}
-            className="inline-flex items-center gap-2 rounded-xl border border-violet-300/80 bg-violet-50/90 px-3 py-2 text-sm font-bold text-violet-950 hover:bg-violet-100 disabled:opacity-60"
-          >
-            {syncingResearch ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <FlaskConical className="w-4 h-4" />
-            )}
-            סנכרן מחקרים מכל המסע
-          </button>
-          <button
-            type="button"
-            onClick={startNew}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:brightness-105"
-          >
-            <Plus className="w-4 h-4" />
-            הוספת ידע
-          </button>
-        </div>
-      </div>
+      <section className={opsGlassCardClass}>
+        <OpsPanelHeader
+          icon={BookOpen}
+          title="ספריית הידע"
+          tone="violet"
+          description={`${total} מסמכי ידע · כל שמירה מעדכנת את האינדקס שאלמוג משתמש בו בשיחות`}
+          actions={
+            <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-none sm:flex sm:flex-wrap">
+              {canBackfill ? (
+                <button
+                  type="button"
+                  onClick={() => void runBackfill()}
+                  disabled={backfilling}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-300/80 bg-amber-50/90 px-3 py-2 text-sm font-bold text-amber-950 hover:bg-amber-100 disabled:opacity-60"
+                >
+                  {backfilling ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  ייבוא ידע קיים
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => void syncAllResearch()}
+                disabled={syncingResearch}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-violet-300/80 bg-violet-50/90 px-3 py-2 text-sm font-bold text-violet-950 hover:bg-violet-100 disabled:opacity-60"
+              >
+                {syncingResearch ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FlaskConical className="w-4 h-4" />
+                )}
+                סנכרן מחקרים מכל המסע
+              </button>
+              <button
+                type="button"
+                onClick={startNew}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:brightness-105"
+              >
+                <Plus className="w-4 h-4" />
+                הוספת ידע
+              </button>
+            </div>
+          }
+        />
+      </section>
 
       {message ? (
         <p
@@ -468,7 +474,7 @@ export function AlmogKnowledgeManager() {
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,300px)_1fr] items-start">
-        <section className="rounded-3xl border border-white/60 bg-white/55 backdrop-blur-md shadow-lg overflow-hidden flex flex-col max-h-[72vh]">
+        <section className="rounded-3xl border border-white/60 bg-white/55 backdrop-blur-md shadow-lg overflow-hidden flex flex-col lg:max-h-[72vh]">
           <div className="p-3 border-b border-white/50">
             <div className="relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -477,7 +483,7 @@ export function AlmogKnowledgeManager() {
                 value={searchQ}
                 onChange={(e) => setSearchQ(e.target.value)}
                 placeholder="חיפוש בכותרת או בתוכן..."
-                className="w-full pr-10 pl-3 py-2 rounded-xl border border-slate-200/80 bg-white/90 text-sm"
+                className={`${opsInputClass} pr-10`}
                 dir="rtl"
               />
             </div>
@@ -551,7 +557,7 @@ export function AlmogKnowledgeManager() {
           )}
         </section>
 
-        <section className="rounded-3xl border border-white/60 bg-white/55 backdrop-blur-md shadow-lg p-5 sm:p-6 min-h-[420px]">
+        <section className="min-h-[420px] rounded-3xl border border-white/60 bg-white/55 p-4 shadow-lg backdrop-blur-md sm:p-6">
           {!showEditor ? (
             <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-3">
               <BookOpen className="w-10 h-10 text-emerald-600/50" />
@@ -563,19 +569,19 @@ export function AlmogKnowledgeManager() {
             </p>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-emerald-600" />
-                <h2 className="text-lg font-black text-slate-900">
-                  {isNew ? 'מסמך חדש' : 'עריכת ידע'}
-                </h2>
-              </div>
+              <OpsPanelHeader
+                icon={FileText}
+                title={isNew ? 'מסמך חדש' : 'עריכת ידע'}
+                tone="emerald"
+                description="עריכה נקייה של כותרת, תוכן ושיוך. שמירה מפצלת ומטמיעה מחדש באינדקס."
+              />
 
               <label className="block">
                 <span className="text-xs font-bold text-slate-700">כותרת (לניהול)</span>
                 <input
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                  className="mt-1 w-full rounded-xl border border-slate-200/80 bg-white/90 px-3 py-2 text-sm"
+                  className={`${opsInputClass} mt-1`}
                   placeholder="למשל: טיפים לארוחת ערב"
                 />
               </label>
@@ -587,7 +593,7 @@ export function AlmogKnowledgeManager() {
                   onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
                   required
                   rows={10}
-                  className="mt-1 w-full resize-y rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] text-slate-900"
+                  className={`${opsInputClass} mt-1 min-h-56 resize-y rounded-2xl px-4 py-3 text-[15px]`}
                   placeholder="הדביקו כאן את החומר המלא..."
                 />
               </label>
@@ -600,7 +606,7 @@ export function AlmogKnowledgeManager() {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, dataType: e.target.value as DataType }))
                     }
-                    className="mt-1 w-full rounded-xl border border-slate-200/80 bg-white/90 px-3 py-2 text-sm"
+                    className={`${opsInputClass} mt-1`}
                   >
                     <option value="step">שלב במסע</option>
                     <option value="course">קורס</option>
@@ -613,7 +619,7 @@ export function AlmogKnowledgeManager() {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, accessLevel: e.target.value as AccessLevel }))
                     }
-                    className="mt-1 w-full rounded-xl border border-slate-200/80 bg-white/90 px-3 py-2 text-sm"
+                    className={`${opsInputClass} mt-1`}
                   >
                     <option value="public">ציבורי (לפי התקדמות)</option>
                     <option value="premium">פרימיום (לפי קורס)</option>
@@ -634,7 +640,7 @@ export function AlmogKnowledgeManager() {
                       onChange={(e) =>
                         setForm((f) => ({ ...f, selectedStepId: e.target.value }))
                       }
-                      className="mt-1 w-full rounded-xl border border-slate-200/80 bg-white/90 px-3 py-2 text-sm"
+                      className={`${opsInputClass} mt-1`}
                     >
                       {journeySteps.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -677,7 +683,7 @@ export function AlmogKnowledgeManager() {
                       onChange={(e) =>
                         setForm((f) => ({ ...f, presetCourseId: e.target.value }))
                       }
-                      className="w-full rounded-xl border border-slate-200/80 bg-white/90 px-3 py-2 text-sm"
+                      className={opsInputClass}
                     >
                       {PRESET_COURSES.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -691,19 +697,19 @@ export function AlmogKnowledgeManager() {
                       onChange={(e) =>
                         setForm((f) => ({ ...f, customCourseId: e.target.value }))
                       }
-                      className="w-full rounded-xl border border-slate-200/80 bg-white/90 px-3 py-2 text-sm"
+                      className={opsInputClass}
                       placeholder="מזהה קורס"
                     />
                   )}
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-2 pt-2">
+              <div className="grid grid-cols-1 gap-2 pt-2 sm:flex sm:flex-wrap">
                 <button
                   type="button"
                   onClick={() => void save()}
                   disabled={saving || deleting}
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 text-white font-bold px-4 py-2.5 hover:bg-emerald-700 disabled:opacity-60"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-500 px-4 py-3 font-bold text-white shadow-lg shadow-emerald-500/20 hover:brightness-105 disabled:opacity-60"
                 >
                   {saving ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -717,7 +723,7 @@ export function AlmogKnowledgeManager() {
                     type="button"
                     onClick={() => setDeleteOpen(true)}
                     disabled={saving || deleting}
-                    className="inline-flex items-center gap-2 rounded-xl border-2 border-red-300 bg-red-50 text-red-800 font-bold px-4 py-2.5 hover:bg-red-100 disabled:opacity-60"
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-red-300 bg-red-50 px-4 py-3 font-bold text-red-800 hover:bg-red-100 disabled:opacity-60"
                   >
                     {deleting ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

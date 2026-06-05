@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import { ListTree } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { AdminStepsList } from '@/components/admin/AdminStepsList';
+import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
 import type { JourneyStep } from '@/lib/types/journey';
 
 export const dynamic = 'force-dynamic';
@@ -15,20 +17,25 @@ export default async function OpsJourneyPage() {
     .order('step_number');
 
   return (
-    <div>
-      <div className="mb-6 rounded-3xl border border-white/35 bg-white/35 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.1)] backdrop-blur-xl sm:mb-8 sm:p-6">
-        <h1 className="text-2xl font-black leading-tight text-slate-900 sm:text-3xl">ניהול צעדי מסע</h1>
-        <p className="mt-1 text-sm leading-relaxed text-slate-600 sm:text-base">
-          עריכה, פרסום ומחיקה של צעדים. לניהול תחנות וקיבוץ —{' '}
-          <Link
-            href="/journey-hub"
-            className="font-bold text-emerald-700 underline decoration-emerald-400/50 underline-offset-2 hover:text-emerald-800"
-          >
-            מסע ותחנות
-          </Link>
-          .
-        </p>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <OpsPageHeader
+        icon={ListTree}
+        eyebrow="ניהול מסע"
+        title="ניהול צעדי מסע"
+        tone="amber"
+        description={
+          <>
+            עריכה, פרסום ומחיקה של צעדים. לניהול תחנות וקיבוץ —{' '}
+            <Link
+              href="/journey-hub"
+              className="font-bold text-emerald-700 underline decoration-emerald-400/50 underline-offset-2 hover:text-emerald-800"
+            >
+              מסע ותחנות
+            </Link>
+            .
+          </>
+        }
+      />
       <AdminStepsList steps={(steps as JourneyStep[]) || []} showIntro={false} />
     </div>
   );
