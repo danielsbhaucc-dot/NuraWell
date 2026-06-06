@@ -298,7 +298,7 @@ export function StepEditor({ step }: StepEditorProps) {
         provider?: string;
         model?: string;
         error?: string;
-        research_scan?: { scanned: number; errors: string[] };
+        research_scan?: { detected_links?: number; researches?: number; scanned: number; errors: string[] };
         step?: {
           title: string;
           description: string;
@@ -333,6 +333,7 @@ export function StepEditor({ step }: StepEditorProps) {
       setImmersiveAttentionStops(s.attention_stops ?? []);
 
       const scannedCount = data.research_scan?.scanned ?? 0;
+      const detectedLinks = data.research_scan?.detected_links ?? 0;
       const parts = [
         s.quiz_questions?.length ? `${s.quiz_questions.length} שאלות` : null,
         s.game_items?.length ? `${s.game_items.length} טענות משחק` : null,
@@ -344,8 +345,11 @@ export function StepEditor({ step }: StepEditorProps) {
         s.habits?.length ? `${s.habits.length} הרגלים` : null,
         s.attention_stops?.length ? `${s.attention_stops.length} נקודות קשב` : null,
       ].filter(Boolean);
+      const linksNote =
+        detectedLinks > 1 ? `זוהו ${detectedLinks} קישורי מחקר ונסרקו אוטומטית. ` : '';
       setAiMessage(
         `מולא אוטומטית (${data.provider ?? 'AI'}): ${parts.join(' · ') || 'כותרת וסיכום'}. ` +
+          linksNote +
           'עברו על הסעיפים, הוסיפו וידאו, ואז שמרו — סיכומי המחקרים המלאים יסונכרנו לזיכרון של אלמוג בשמירה.'
       );
       setAiPanelOpen(false);

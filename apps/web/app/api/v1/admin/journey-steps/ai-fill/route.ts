@@ -90,6 +90,91 @@ function genId(): string {
   return `ai-${Date.now().toString(36)}-${idCounter}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
+/** מנקה סימני פיסוק/סוגריים נלווים מקצה של URL שחולץ מטקסט חופשי. */
+function cleanUrl(url: string): string {
+  let u = url.trim();
+  // הסר פיסוק נפוץ בקצה
+  u = u.replace(/[)\]}.,;:'"<>»״]+$/u, '');
+  // אזן סוגריים: אם יש ')' עודף בלי '(' מקביל, חתוך אותו
+  if (u.endsWith(')') && !u.includes('(')) u = u.slice(0, -1);
+  return u;
+}
+
+/**
+ * חילוץ דטרמיניסטי של כל הקישורים מהטקסט (לא תלוי ב-LLM) — כך שגם
+ * רשימה של קישורים מזוהה במלואה, ולא רק קישור אחד.
+ */
+function extractUrls(text: string): string[] {
+  const re = /\bhttps?:\/\/[^\s<>"'`\u0590-\u05FF]+/gi;
+  const found = text.match(re) ?? [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of found) {
+    const u = cleanUrl(raw);
+    if (u.length < 10) continue;
+    const key = u.replace(/\/+$/, '').toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(u);
+  }
+  return out;
+}
+
+function normalizeUrlKey(url: string | null | undefined): string {
+  if (!url) return '';
+  return url.trim().replace(/\/+$/, '').toLowerCase();
+}
+
+function emptyResearchForUrl(url: string): AiFilledStep['researches'][number] {
+  return {
+    id: genId(),
+    title: '',
+    authors: '',
+    year: '',
+    journal: '',
+    finding: '',
+    url,
+    ai_summary: '',
+    key_findings: [],
+    practical_takeaway: '',
+    limitations: '',
+    evidence_level: 'unknown',
+  };
+}
+
+/**
+ * מאחד את המחקרים שה-LLM יצר עם רשימת הקישורים שחולצה מהטקסט:
+ * כל קישור שאין לו עדיין רשומת מחקר — מקבל רשומה חדשה (placeholder)
+ * שתיסרק בהמשך. כך רשימת קישורים שלמה הופכת לרשימת מחקרים מלאה.
+ */
+function mergeUrlsIntoResearches(
+  researches: AiFilledStep['researches'],
+  urls: string[]
+): AiFilledStep['researches'] {
+  const out = [...researches];
+  const known = new Set(out.map((r) => normalizeUrlKey(r.url)).filter(Boolean));
+  const assigned = new Set<number>();
+
+  for (const url of urls) {
+    const key = normalizeUrlKey(url);
+    if (known.has(key)) continue;
+
+    // שייך קישור למחקר קיים ללא URL (אם ה-LLM יצר מחקר אך השמיט את הקישור).
+    const orphanIdx = out.findIndex(
+      (r, i) => !r.url && (r.title || r.finding) && !assigned.has(i)
+    );
+    if (orphanIdx >= 0) {
+      out[orphanIdx] = { ...out[orphanIdx]!, url };
+      assigned.add(orphanIdx);
+    } else {
+      out.push(emptyResearchForUrl(url));
+    }
+    known.add(key);
+  }
+
+  return out;
+}
+
 function pickJsonObject(raw: string): string {
   const trimmed = raw.trim();
   if (trimmed.startsWith('{') && trimmed.endsWith('}')) return trimmed;
@@ -298,6 +383,7 @@ const SYSTEM_PROMPT = `אתה עורך תוכן מקצועי עבור "המסע 
 - כתוב הכול בעברית תקנית, חמה ומדויקת, בגוף פנייה למשתמש.
 - אל תמציא עובדות, מספרים, מחקרים או ציטוטים שלא מופיעים בטקסט המקור.
 - מחקרים (researches): הוסף רק אם הטקסט מזכיר במפורש מחקר/מחקרים אמיתיים עם פרטים. אם אין מחקרים מפורשים בטקסט — החזר מערך ריק []. אל תמציא שמות חוקרים, שנים או כתבי עת.
+- אם הטקסט מכיל רשימת קישורים (URLs) של מחקרים — צור פריט נפרד ב-researches לכל קישור, עם השדה url מלא בקישור המדויק. אל תאחד כמה קישורים לפריט אחד. את שאר שדות המחקר אפשר להשאיר ריקים — המערכת תיכנס לכל קישור ותשלים אותם אוטומטית.
 - אל תתייחס בכלל לווידאו — הוא נשאר באחריות המנהל.
 
 החזר אך ורק אובייקט JSON תקין במבנה הבא (ללא טקסט נוסף):
@@ -400,8 +486,8 @@ async function enrichResearchesFromLinks(
 ): Promise<{ researches: AiFilledStep['researches']; scanned: number; scanErrors: string[] }> {
   if (!researches.length) return { researches, scanned: 0, scanErrors: [] };
 
-  const MAX_SCANS = 6;
-  const CONCURRENCY = 3;
+  const MAX_SCANS = 15;
+  const CONCURRENCY = 4;
   const scanErrors: string[] = [];
   let scanned = 0;
 
@@ -436,6 +522,10 @@ async function enrichResearchesFromLinks(
         const s = res.value;
         out[i] = {
           ...r,
+          title: r.title || s.title || '',
+          authors: r.authors || s.authors || '',
+          year: r.year || s.year || '',
+          journal: r.journal || s.journal || '',
           ai_summary: s.ai_summary || r.ai_summary,
           key_findings: s.key_findings.length ? s.key_findings : r.key_findings,
           practical_takeaway: s.practical_takeaway || r.practical_takeaway,
@@ -492,11 +582,21 @@ export async function POST(request: Request) {
   try {
     const { result, model, provider } = await runFillLLM(sourceText);
 
+    // זיהוי דטרמיניסטי של כל הקישורים בטקסט — כך שרשימת קישורים שלמה
+    // הופכת לרשימת מחקרים מלאה (ולא רק הקישור שה-LLM הזכיר).
+    const urls = extractUrls(sourceText);
+    result.researches = mergeUrlsIntoResearches(result.researches, urls);
+
     if (!result.title) {
-      return NextResponse.json(
-        { error: 'ה-AI לא הצליח להפיק תוכן מהטקסט. נסה טקסט ארוך/ברור יותר.' },
-        { status: 502 }
-      );
+      // אם המקור הוא בעיקר רשימת קישורים, אל תיכשל — תן כותרת זמנית.
+      if (result.researches.length) {
+        result.title = 'מחקרים — לעריכה';
+      } else {
+        return NextResponse.json(
+          { error: 'ה-AI לא הצליח להפיק תוכן מהטקסט. נסה טקסט ארוך/ברור יותר.' },
+          { status: 502 }
+        );
+      }
     }
 
     const enriched = await enrichResearchesFromLinks(result.researches);
@@ -507,7 +607,12 @@ export async function POST(request: Request) {
       provider,
       model,
       step: result,
-      research_scan: { scanned: enriched.scanned, errors: enriched.scanErrors },
+      research_scan: {
+        detected_links: urls.length,
+        researches: result.researches.length,
+        scanned: enriched.scanned,
+        errors: enriched.scanErrors,
+      },
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'שגיאה במילוי אוטומטי';
