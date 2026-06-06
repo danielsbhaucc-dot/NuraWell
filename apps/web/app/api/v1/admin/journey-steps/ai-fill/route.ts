@@ -482,7 +482,8 @@ async function runFillLLM(sourceText: string): Promise<{
  * לזיכרון של אלמוג בשמירה. מחקרים ללא קישור שומרים את הסיכום מהטקסט המקורי.
  */
 async function enrichResearchesFromLinks(
-  researches: AiFilledStep['researches']
+  researches: AiFilledStep['researches'],
+  onProgress?: (processed: number, total: number) => void
 ): Promise<{ researches: AiFilledStep['researches']; scanned: number; scanErrors: string[] }> {
   if (!researches.length) return { researches, scanned: 0, scanErrors: [] };
 
@@ -490,12 +491,16 @@ async function enrichResearchesFromLinks(
   const CONCURRENCY = 4;
   const scanErrors: string[] = [];
   let scanned = 0;
+  let processed = 0;
 
   const out = [...researches];
   const toScan = out
     .map((r, i) => ({ r, i }))
     .filter(({ r }) => r.url && /^https?:\/\//i.test(r.url))
     .slice(0, MAX_SCANS);
+
+  const total = toScan.length;
+  onProgress?.(0, total);
 
   for (let start = 0; start < toScan.length; start += CONCURRENCY) {
     const batch = toScan.slice(start, start + CONCURRENCY);
@@ -514,6 +519,7 @@ async function enrichResearchesFromLinks(
 
     results.forEach((res, bi) => {
       const { r, i } = batch[bi]!;
+      processed += 1;
 
       let errMsg: string;
       if (res.status === 'rejected') {
@@ -549,6 +555,8 @@ async function enrichResearchesFromLinks(
       };
       scanErrors.push(`${r.title || 'מחקר'}: ${errMsg}`);
     });
+
+    onProgress?.(processed, total);
   }
 
   // מחקרים שלא נסרקו מקישור אך כבר יש להם סיכום מהטקסט — מסומנים מוכנים לזיכרון.
@@ -572,50 +580,88 @@ export async function POST(request: Request) {
   const parsed = aiFillSchema.safeParse(raw.value);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: 'צריך טקסט מקור (לפחות 40 תווים) למילוי אוטומטי', issues: parsed.error.flatten() },
+      { error: 'צריך טקסט מקור (לפחות 40 תווים) למילוי אוטומטי' },
       { status: 400 }
     );
   }
 
   const sourceText = parsed.data.sourceText.trim();
 
-  try {
-    const { result, model, provider } = await runFillLLM(sourceText);
+  // תגובת NDJSON זורמת — כל שורה היא אירוע מצב אמיתי (phase) שהקליינט מציג כפס התקדמות.
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (obj: unknown) => {
+        try {
+          controller.enqueue(encoder.encode(`${JSON.stringify(obj)}\n`));
+        } catch {
+          /* הזרם נסגר על ידי הלקוח */
+        }
+      };
 
-    // זיהוי דטרמיניסטי של כל הקישורים בטקסט — כך שרשימת קישורים שלמה
-    // הופכת לרשימת מחקרים מלאה (ולא רק הקישור שה-LLM הזכיר).
-    const urls = extractUrls(sourceText);
-    result.researches = mergeUrlsIntoResearches(result.researches, urls);
+      try {
+        send({ phase: 'analyze' });
 
-    if (!result.title) {
-      // אם המקור הוא בעיקר רשימת קישורים, אל תיכשל — תן כותרת זמנית.
-      if (result.researches.length) {
-        result.title = 'מחקרים — לעריכה';
-      } else {
-        return NextResponse.json(
-          { error: 'ה-AI לא הצליח להפיק תוכן מהטקסט. נסה טקסט ארוך/ברור יותר.' },
-          { status: 502 }
-        );
+        const { result, model, provider } = await runFillLLM(sourceText);
+
+        // זיהוי דטרמיניסטי של כל הקישורים בטקסט — כך שרשימת קישורים שלמה
+        // הופכת לרשימת מחקרים מלאה (ולא רק הקישור שה-LLM הזכיר).
+        const urls = extractUrls(sourceText);
+        result.researches = mergeUrlsIntoResearches(result.researches, urls);
+
+        if (!result.title) {
+          if (result.researches.length) {
+            result.title = 'מחקרים — לעריכה';
+          } else {
+            send({ phase: 'error', error: 'ה-AI לא הצליח להפיק תוכן מהטקסט. נסה טקסט ארוך/ברור יותר.' });
+            controller.close();
+            return;
+          }
+        }
+
+        const toScanCount = result.researches.filter(
+          (r) => r.url && /^https?:\/\//i.test(r.url)
+        ).length;
+
+        send({
+          phase: 'generated',
+          model,
+          provider,
+          detected_links: urls.length,
+          researches: result.researches.length,
+          research_to_scan: Math.min(toScanCount, 15),
+        });
+
+        const enriched = await enrichResearchesFromLinks(result.researches, (processed, total) => {
+          send({ phase: 'research', processed, total });
+        });
+        result.researches = enriched.researches;
+
+        send({
+          phase: 'done',
+          provider,
+          model,
+          step: result,
+          research_scan: {
+            detected_links: urls.length,
+            researches: result.researches.length,
+            scanned: enriched.scanned,
+            errors: enriched.scanErrors,
+          },
+        });
+        controller.close();
+      } catch (e) {
+        send({ phase: 'error', error: e instanceof Error ? e.message : 'שגיאה במילוי אוטומטי' });
+        controller.close();
       }
-    }
+    },
+  });
 
-    const enriched = await enrichResearchesFromLinks(result.researches);
-    result.researches = enriched.researches;
-
-    return NextResponse.json({
-      ok: true,
-      provider,
-      model,
-      step: result,
-      research_scan: {
-        detected_links: urls.length,
-        researches: result.researches.length,
-        scanned: enriched.scanned,
-        errors: enriched.scanErrors,
-      },
-    });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : 'שגיאה במילוי אוטומטי';
-    return NextResponse.json({ error: msg }, { status: 500 });
-  }
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'application/x-ndjson; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      'X-Accel-Buffering': 'no',
+    },
+  });
 }
