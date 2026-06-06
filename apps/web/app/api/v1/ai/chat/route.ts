@@ -175,6 +175,16 @@ function pickEmptyResponseFallback(): string {
 
 const MIN_STREAM_PREFIX_CHARS = 12;
 
+/**
+ * seed אקראי לכל בקשה. למה: חלק מספקי ה-Llama ב-OpenRouter דוגמים עם seed קבוע
+ * (ברירת מחדל) — מה שגורם לאותו קלט ("היי מה קורה") להחזיר *בדיוק* אותה תשובה
+ * בכל שיחה, גם בטמפרטורה גבוהה. seed אקראי שובר את הדטרמיניזם ומחזיר דינמיות.
+ * (seed משפיע רק על הדגימה, לא על מפתח ה-prompt-cache — אז אין פגיעה בקאש.)
+ */
+function randomSamplingSeed(): number {
+  return Math.floor(Math.random() * 2_000_000_000);
+}
+
 function isStubModelReply(text: string): boolean {
   const t = normalizeLine(text);
   if (!t) return false;
@@ -365,6 +375,8 @@ async function createOpenRouterTextStreamResponse({
   const requestBody = JSON.stringify({
     model,
     temperature,
+    top_p: 0.95,
+    seed: randomSamplingSeed(),
     max_tokens: maxOutputTokens,
     stream: true,
     stream_options: { include_usage: true },
@@ -385,6 +397,8 @@ async function createOpenRouterTextStreamResponse({
         Authorization: `Bearer ${apiKey}`,
         'HTTP-Referer': referer,
         'X-Title': 'NuraWell',
+        // מבטל response-cache ברמת OpenRouter — תמיד תשובה טרייה, לא משוחזרת.
+        'X-OpenRouter-Cache': 'false',
       },
       body: requestBody,
     });
@@ -549,10 +563,13 @@ async function createOpenRouterCheapTextResponse({
       Authorization: `Bearer ${apiKey}`,
       'HTTP-Referer': publicAppUrlForAiReferer(),
       'X-Title': 'NuraWell',
+      'X-OpenRouter-Cache': 'false',
     },
     body: JSON.stringify({
       model: CHAT_SAFETY_NET_MODEL,
       temperature,
+      top_p: 0.95,
+      seed: randomSamplingSeed(),
       max_tokens: Math.min(maxOutputTokens, 600),
       messages: [
         { role: 'system', content: `${staticSystemPrompt}\n\n${dynamicSystemPrompt}` },
