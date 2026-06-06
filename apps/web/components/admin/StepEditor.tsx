@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import {
   Save, ArrowRight, Plus, Trash2, Video, HelpCircle,
   Gamepad2, Heart, FileText, BookOpen, ListChecks, Sparkles, Brain, ChevronDown, Volume2,
-  Loader2, Plug, AudioLines, UploadCloud, Check
+  Loader2, Plug, AudioLines, UploadCloud, Check, Wand2, ChevronUp
 } from 'lucide-react';
 import type {
   JourneyStep, QuizQuestion, GameItem, CommitmentData,
@@ -126,6 +126,13 @@ export function StepEditor({ step }: StepEditorProps) {
   const [expandedQuiz, setExpandedQuiz] = useState<number | null>(null);
   const [expandedGame, setExpandedGame] = useState<number | null>(null);
 
+  // AI auto-fill (LLaMA 4 via Groq/OpenRouter)
+  const [aiPanelOpen, setAiPanelOpen] = useState(isNew);
+  const [aiSourceText, setAiSourceText] = useState('');
+  const [aiFilling, setAiFilling] = useState(false);
+  const [aiMessage, setAiMessage] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+
   // Basic fields
   const [title, setTitle] = useState(step?.title || '');
   const [description, setDescription] = useState(step?.description || '');
@@ -211,6 +218,101 @@ export function StepEditor({ step }: StepEditorProps) {
   // PDF
   const [pdfUrl, setPdfUrl] = useState(step?.pdf_url || '');
   const [pdfName, setPdfName] = useState(step?.pdf_name || '');
+
+  const handleAiFill = async () => {
+    const text = aiSourceText.trim();
+    if (text.length < 40) {
+      setAiError('הדבק טקסט ארוך יותר (לפחות 40 תווים) כדי ש-AI יוכל למלא את הצעד.');
+      return;
+    }
+
+    const hasExistingContent =
+      title.trim() ||
+      summaryText.trim() ||
+      description.trim() ||
+      quizQuestions.length > 0 ||
+      gameItems.length > 0 ||
+      tasks.length > 0 ||
+      habits.length > 0 ||
+      researches.length > 0 ||
+      immersiveAttentionStops.length > 0 ||
+      commitment;
+    if (
+      hasExistingContent &&
+      !window.confirm('המילוי האוטומטי יחליף את התוכן הקיים בכל הסעיפים (חוץ מהווידאו). להמשיך?')
+    ) {
+      return;
+    }
+
+    setAiFilling(true);
+    setAiError(null);
+    setAiMessage(null);
+
+    try {
+      const res = await fetch('/api/v1/admin/journey-steps/ai-fill', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceText: text, stepNumber }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        provider?: string;
+        model?: string;
+        error?: string;
+        research_scan?: { scanned: number; errors: string[] };
+        step?: {
+          title: string;
+          description: string;
+          summary_text: string;
+          duration_minutes: number;
+          quiz_questions: QuizQuestion[];
+          game_items: GameItem[];
+          commitment: CommitmentData | null;
+          researches: Research[];
+          tasks: JourneyTask[];
+          habits: JourneyHabit[];
+          attention_stops: ImmersiveAttentionStop[];
+        };
+      };
+      if (!res.ok || !data.step) throw new Error(data.error ?? 'המילוי האוטומטי נכשל');
+
+      const s = data.step;
+      if (s.title) setTitle(s.title);
+      if (s.description) setDescription(s.description);
+      if (s.summary_text) setSummaryText(s.summary_text);
+      if (s.duration_minutes) setDurationMinutes(s.duration_minutes);
+      setQuizQuestions(s.quiz_questions ?? []);
+      setGameItems(s.game_items ?? []);
+      setCommitment(s.commitment ?? null);
+      setResearches(s.researches ?? []);
+      setTasks(s.tasks ?? []);
+      setHabits(s.habits ?? []);
+      setImmersiveAttentionStops(s.attention_stops ?? []);
+
+      const scannedCount = data.research_scan?.scanned ?? 0;
+      const parts = [
+        s.quiz_questions?.length ? `${s.quiz_questions.length} שאלות` : null,
+        s.game_items?.length ? `${s.game_items.length} טענות משחק` : null,
+        s.commitment ? 'התחייבות' : null,
+        s.researches?.length
+          ? `${s.researches.length} מחקרים${scannedCount ? ` (${scannedCount} נקראו מהקישור)` : ''}`
+          : null,
+        s.tasks?.length ? `${s.tasks.length} משימות` : null,
+        s.habits?.length ? `${s.habits.length} הרגלים` : null,
+        s.attention_stops?.length ? `${s.attention_stops.length} נקודות קשב` : null,
+      ].filter(Boolean);
+      setAiMessage(
+        `מולא אוטומטית (${data.provider ?? 'AI'}): ${parts.join(' · ') || 'כותרת וסיכום'}. ` +
+          'עברו על הסעיפים, הוסיפו וידאו, ואז שמרו — סיכומי המחקרים המלאים יסונכרנו לזיכרון של אלמוג בשמירה.'
+      );
+      setAiPanelOpen(false);
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : 'שגיאה במילוי אוטומטי');
+    } finally {
+      setAiFilling(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!title.trim()) { alert('חובה להזין כותרת'); return; }
@@ -459,6 +561,71 @@ export function StepEditor({ step }: StepEditorProps) {
       </div>
 
       <div className="space-y-5">
+        {/* ═══ AI AUTO-FILL ═══ */}
+        <div
+          className="rounded-2xl p-4 space-y-3 backdrop-blur-md"
+          style={{
+            background: 'linear-gradient(135deg, rgba(124,58,237,0.10), rgba(37,99,235,0.10))',
+            border: '1px solid rgba(124,58,237,0.22)',
+            boxShadow: '0 12px 28px rgba(76,29,149,0.12)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setAiPanelOpen((v) => !v)}
+            className="flex w-full items-center justify-between gap-2 text-right"
+          >
+            <span className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)' }}>
+                <Wand2 className="h-4 w-4 text-white" />
+              </span>
+              <span className="flex flex-col">
+                <span className="text-sm font-black" style={{ color: '#3730a3' }}>מילוי אוטומטי עם AI (LLaMA 4)</span>
+                <span className="text-[11px] font-semibold text-violet-700/80">הדביקו טקסט ארוך — ה-AI ימלא את כל הסעיפים חוץ מהווידאו</span>
+              </span>
+            </span>
+            {aiPanelOpen ? <ChevronUp className="h-4 w-4 text-violet-700" /> : <ChevronDown className="h-4 w-4 text-violet-700" />}
+          </button>
+
+          {aiPanelOpen && (
+            <div className="space-y-3">
+              <textarea
+                value={aiSourceText}
+                onChange={(e) => setAiSourceText(e.target.value)}
+                disabled={aiFilling}
+                className="input-field min-h-[140px] leading-relaxed"
+                placeholder="הדביקו כאן את התוכן הגולמי של השיעור (תמלול / סיכום / טקסט מקצועי). ה-AI ייתן כותרת, סיכום, שאלות הבנה, משחק, התחייבות, מחקרים, משימות, הרגלים ונקודות קשב — ויסונכרן לזיכרון של אלמוג בשמירה."
+              />
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => void handleAiFill()}
+                  disabled={aiFilling || aiSourceText.trim().length < 40}
+                  className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)' }}
+                >
+                  {aiFilling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {aiFilling ? 'ה-AI ממלא את הצעד…' : 'מלא את כל הסעיפים אוטומטית'}
+                </button>
+                <span className="text-[11px] font-semibold text-violet-700/70">
+                  {aiSourceText.trim().length} תווים · הווידאו תמיד נשאר למילוי ידני
+                </span>
+              </div>
+              {aiError && (
+                <p className="rounded-xl px-3 py-2 text-xs font-semibold text-red-700" style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                  {aiError}
+                </p>
+              )}
+            </div>
+          )}
+
+          {aiMessage && (
+            <p className="rounded-xl px-3 py-2 text-xs font-semibold leading-relaxed" style={{ background: 'rgba(16,185,129,0.12)', color: '#065f46', border: '1px solid rgba(16,185,129,0.25)' }}>
+              {aiMessage}
+            </p>
+          )}
+        </div>
+
         {/* ═══ SECTION NAVIGATION ═══ */}
         <div
           className="rounded-2xl p-4 space-y-3 backdrop-blur-md"
