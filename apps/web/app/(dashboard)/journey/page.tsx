@@ -18,6 +18,11 @@ export const metadata: Metadata = {
   description: 'המסע שלך לבריאות טובה יותר — שלב אחר שלב',
 };
 
+const JOURNEY_LIST_STEP_SELECT =
+  'id, station_id, title, description, step_number, is_published, duration_minutes, journey_stations(id, title, description, sort_order)';
+const JOURNEY_PROGRESS_SELECT =
+  'step_id, user_id, created_at, updated_at, video_watched, quiz_answers, quiz_score, game_answers, game_score, commitment_accepted, tasks_completed, task_statuses, habits_progress, is_completed, completed_at, last_section';
+
 type RawStepRow = JourneyStep;
 
 type StationRow = Pick<
@@ -42,7 +47,7 @@ export default async function JourneyRoute() {
       .order('title', { ascending: true }),
     (supabase as any)
       .from('journey_steps')
-      .select('*, journey_stations(id, title, description, sort_order)')
+      .select(JOURNEY_LIST_STEP_SELECT)
       .eq('is_published', true)
       .order('step_number'),
     (supabase as any).from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
@@ -51,7 +56,7 @@ export default async function JourneyRoute() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawProgress } = await (supabase as any)
     .from('journey_progress')
-    .select('*')
+    .select(JOURNEY_PROGRESS_SELECT)
     .eq('user_id', user.id);
 
   const rows = (rawSteps as RawStepRow[]) || [];

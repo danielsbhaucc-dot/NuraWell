@@ -9,6 +9,9 @@ import { scheduleAlmogKickoff } from '../../../../lib/auth/schedule-almog-kickof
 import { journeyProgressUpsertSchema } from '../../../../lib/validation/journey-progress-upsert';
 import { jsonZodError } from '../../../../lib/validation/zod-http';
 
+const JOURNEY_PROGRESS_SELECT =
+  'step_id, user_id, created_at, updated_at, video_watched, quiz_answers, quiz_score, game_answers, game_score, commitment_accepted, tasks_completed, task_statuses, habits_progress, is_completed, completed_at, last_section';
+
 type TaskDecisionStatus = 'accepted' | 'rejected' | 'pending';
 
 function normalizeBooleanMap(value: unknown): Record<string, boolean> {
@@ -108,7 +111,7 @@ export async function GET(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('journey_progress')
-      .select('*')
+      .select(JOURNEY_PROGRESS_SELECT)
       .eq('user_id', user.id);
 
     if (error) {

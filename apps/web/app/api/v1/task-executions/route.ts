@@ -12,6 +12,9 @@ import { jerusalemDateKey } from '../../../../lib/journey/task-schedule';
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
+const TASK_EXECUTION_SELECT =
+  'id, user_id, step_id, task_id, date_key, slot, completed_at, source, outcome, note';
+
 /**
  * מחזיר ללקוח תגובת שגיאה. ב-production מחזירים רק "ידידותי + code"
  * (כדי לזהות table-missing) כדי לא להדליף schema/RLS hints. ב-development
@@ -94,7 +97,7 @@ export async function POST(request: Request) {
         onConflict: 'user_id,step_id,task_id,date_key,slot',
         ignoreDuplicates: false,
       })
-      .select()
+      .select(TASK_EXECUTION_SELECT)
       .maybeSingle();
 
     if (error) {
@@ -195,7 +198,7 @@ export async function GET(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase as any)
       .from('journey_task_executions')
-      .select('*')
+      .select(TASK_EXECUTION_SELECT)
       .eq('user_id', user.id)
       .gte('date_key', sinceKey)
       .order('date_key', { ascending: false })
