@@ -707,6 +707,50 @@ function isTrivialBypassEligible(
   );
 }
 
+/**
+ * זיהוי דטרמיניסטי של בקשת סיכום/ידע על שיעור או תוכן מהמסע.
+ *
+ * הבעיה שזה פותר: שליפת "חומר עזר מהמסע" (system-knowledge RAG) מותנית בדגל
+ * `needs_system_knowledge_rag` שנקבע ע"י נתב-הקשר זול (Llama scout, timeout 1.2s).
+ * בקשות סיכום בעברית ("תסכם לי את השיעור", "מה היה בצעד", "תזכיר לי מה למדנו")
+ * עלולות להחמיץ את הדגל — ואז אין חומר בכלל, והמודל "מסרב" / אומר שאין לו מידע.
+ *
+ * כאן אנו מזהים בוודאות בקשות כאלה ומאלצים heavy_context + שליפת RAG מסע.
+ * השליפה ממילא מסוננת לפי התקדמות המשתמש (`buildAlmogSystemKnowledgeFilter`),
+ * כך שאין סיכון ספוילרים — מחזירים רק חומר שהמשתמש כבר הגיע אליו.
+ */
+function isLessonKnowledgeRequest(userMessage: string): boolean {
+  const t = normalizeLine(userMessage);
+  if (!t) return false;
+
+  /**
+   * ⚠️ עברית ו-`\b`: ב-JavaScript regex האותיות העבריות אינן חלק מ-`\w`
+   * (`[A-Za-z0-9_]`), ולכן `\b` *לא* יוצר גבול-מילה תקין סביב מילה עברית —
+   * רגקסים כמו `סכם\b` או `\bשיעור\b` כמעט אף פעם לא מתאימים לקלט עברי אמיתי.
+   * בנוסף, עברית מצרפת תחיליות (ב/מ/ה/ל/ש/ו) — "בשיעור", "מהשיעור", "לסכם" —
+   * כך שגבול-מילה בצד שמאל היה מפספס את הניסוחים הכי נפוצים.
+   *
+   * הפתרון: זיהוי מבוסס-תת-מחרוזת (substring) ללא `\b`, מוטה ל-recall.
+   * החשש מ-false-positive זניח: שליפת RAG מיותרת ממילא מסוננת לפי התקדמות
+   * ומחזירה רק חומר שהמשתמש כבר הגיע אליו — לעולם לא ספוילר ולא תוכן זר.
+   */
+
+  /** בקשת סיכום/תזכורת מפורשת (כולל צורות עם תחיליות: לסכם/מסכם/הזכר…) */
+  if (/(סכם|סיכום|תמצת|תזכיר|הזכר|רענן|רענון|מה היה|מה למדנו|מה עבר)/u.test(t)) {
+    return true;
+  }
+
+  /** שאלה על תוכן של שיעור/צעד/תחנה/מסע ("מה היה ב...", "על מה דיברנו ב...") */
+  const mentionsLesson = /(שיעור|צעד|תחנה|מסע|החומר|התוכן|מודול|פרק|למדנו|למדתי)/u.test(t);
+  const asksAbout =
+    /(מה|איך|למה|הסבר|תסביר|אמרת|היה|דיבר|למד|עוסק|מדבר|כתוב|נאמר|מסביר|לימד|תוכן|ספר|פרט)/u.test(
+      t
+    );
+  if (mentionsLesson && asksAbout) return true;
+
+  return false;
+}
+
 const chatContextRouterSchema = z.object({
   heavy_context: z.boolean(),
   needs_user_memory_rag: z.boolean(),
@@ -1488,11 +1532,27 @@ export async function POST(request: Request) {
     // אחרת היינו משווים את Llama הזול ולא את המודל הנבחר.
     !experimentModelOverride &&
     isTrivialBypassEligible(lastUserText, earlySignals);
-  const contextDecision = trivialBypass
+  let contextDecision = trivialBypass
     ? lowContextDecision('trivial_bypass')
     : isLowContextTurn(lastUserText, earlySignals)
       ? lowContextDecision('deterministic_low_context')
       : await routeChatContextWithCheapModel(lastUserText, earlySignals, debugId);
+
+  /**
+   * עקיפה דטרמיניסטית: בקשת סיכום/ידע על שיעור — מאלצים שליפת חומר עזר מהמסע
+   * (system-knowledge RAG) גם אם הנתב הזול פספס. כך אלמוג מקבל את התוכן שהמשתמש
+   * כבר עבר ויכול לסכם, במקום "לסרב". לא חל על trivial bypass (תודה/אישור קצר).
+   */
+  if (!trivialBypass && isLessonKnowledgeRequest(lastUserText)) {
+    contextDecision = {
+      ...contextDecision,
+      heavy_context: true,
+      needs_system_knowledge_rag: true,
+      needs_journey_knowledge: true,
+      reason: `${contextDecision.reason ?? ''}+lesson_knowledge_request`.replace(/^\+/, ''),
+    };
+  }
+
   const useHeavyContext = contextDecision.heavy_context;
 
   const sessionId = parsed.data.session_id ?? crypto.randomUUID();
