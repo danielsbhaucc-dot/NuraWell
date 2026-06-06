@@ -13,6 +13,10 @@ import {
   FlaskConical,
   Settings2,
   X,
+  Pencil,
+  Layers,
+  List as ListIcon,
+  MapPin,
 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import {
@@ -97,6 +101,41 @@ function formatDate(iso: string): string {
   }
 }
 
+/** מזהה אם פריט ידע הוא מחקר מדעי (מסומן בכותרת או בתחילת ה-body על ידי הסנכרון). */
+function isResearchItem(item: KnowledgeItem): boolean {
+  return item.title.trim().startsWith('מחקר:') || item.body.includes('סוג ידע: מחקר מדעי');
+}
+
+/** שם המחקר הנקי (ללא הקידומת "מחקר:"). */
+function researchName(item: KnowledgeItem): string {
+  const t = item.title.trim().replace(/^מחקר:\s*/, '').trim();
+  return t || 'מחקר ללא כותרת';
+}
+
+/**
+ * מחלץ את "מה ידוע מהמחקר" מתוך ה-body שנבנה ב-sync-research-knowledge:
+ * מעדיף את הקטע שאחרי "סיכום לאלמוג:", ואם אין — את "ממצאים עיקריים:".
+ */
+function researchKnownSummary(item: KnowledgeItem): string {
+  const body = item.body ?? '';
+  const sectionAfter = (label: string): string | null => {
+    const idx = body.indexOf(label);
+    if (idx === -1) return null;
+    const rest = body.slice(idx + label.length);
+    // עד הכותרת הבאה (שורה שמסתיימת ב-':') או שתי שורות ריקות
+    const stop = rest.search(/\n\s*\n|\n[^\n:]{1,40}:\s*\n/);
+    const chunk = (stop === -1 ? rest : rest.slice(0, stop)).trim();
+    return chunk || null;
+  };
+
+  return (
+    sectionAfter('סיכום לאלמוג:') ||
+    sectionAfter('ממצאים עיקריים:') ||
+    sectionAfter('משמעות פרקטית לשיעור:') ||
+    body.replace(/\s+/g, ' ').trim().slice(0, 240)
+  );
+}
+
 const emptyForm = {
   title: '',
   body: '',
@@ -115,6 +154,8 @@ export function AlmogKnowledgeManager() {
   const [searchQ, setSearchQ] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'organized'>('organized');
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const [journeySteps, setJourneySteps] = useState<JourneyStepRow[]>([]);
   const [stepsLoading, setStepsLoading] = useState(true);
@@ -285,6 +326,69 @@ export function AlmogKnowledgeManager() {
     return { stepItems, courseItems };
   }, [items]);
 
+  /** קיבוץ היררכי לתצוגה מסודרת: תחנה → צעד → פריטי ידע (מחקרים ואחרים). */
+  const organizedStations = useMemo(() => {
+    type StepGroup = {
+      stepId: string | null;
+      stepNumber: number | null;
+      stepTitle: string;
+      items: KnowledgeItem[];
+    };
+    type StationGroup = {
+      stationKey: string;
+      stationTitle: string;
+      stationOrder: number;
+      steps: StepGroup[];
+    };
+
+    const stepItems = items.filter((i) => i.data_type === 'step');
+    const stationMap = new Map<string, StationGroup>();
+
+    for (const item of stepItems) {
+      const stationKey = item.station_id ?? (item.station_title ? `t:${item.station_title}` : 'none');
+      const stationTitle = item.station_title?.trim() || 'ללא תחנה';
+      const stationOrder = item.station_order ?? 9999;
+
+      let station = stationMap.get(stationKey);
+      if (!station) {
+        station = { stationKey, stationTitle, stationOrder, steps: [] };
+        stationMap.set(stationKey, station);
+      }
+
+      const stepKey = item.step_id ?? `n:${item.step_number ?? '?'}`;
+      let step = station.steps.find((s) => (s.stepId ?? `n:${s.stepNumber ?? '?'}`) === stepKey);
+      if (!step) {
+        step = {
+          stepId: item.step_id,
+          stepNumber: item.step_number,
+          stepTitle: '',
+          items: [],
+        };
+        station.steps.push(step);
+      }
+      step.items.push(item);
+    }
+
+    // השלמת כותרת הצעד מתוך רשימת הצעדים שנטענה
+    const stepTitleById = new Map(journeySteps.map((s) => [s.id, s.title]));
+    for (const station of stationMap.values()) {
+      for (const step of station.steps) {
+        if (step.stepId && stepTitleById.has(step.stepId)) {
+          step.stepTitle = stepTitleById.get(step.stepId) ?? '';
+        }
+        step.items.sort((a, b) => {
+          const ra = isResearchItem(a) ? 0 : 1;
+          const rb = isResearchItem(b) ? 0 : 1;
+          if (ra !== rb) return ra - rb;
+          return a.title.localeCompare(b.title, 'he');
+        });
+      }
+      station.steps.sort((a, b) => (a.stepNumber ?? 9999) - (b.stepNumber ?? 9999));
+    }
+
+    return [...stationMap.values()].sort((a, b) => a.stationOrder - b.stationOrder);
+  }, [items, journeySteps]);
+
   const save = async () => {
     if (!form.body.trim()) {
       setMessage('נדרש תוכן');
@@ -345,12 +449,13 @@ export function AlmogKnowledgeManager() {
   };
 
   const remove = async () => {
-    if (!selectedId || isNew) return;
+    const targetId = pendingDeleteId ?? selectedId;
+    if (!targetId) return;
     setDeleting(true);
     setDeleteOpen(false);
     setMessage(null);
     try {
-      const res = await fetch(`/api/v1/admin/almog-knowledge/${selectedId}`, {
+      const res = await fetch(`/api/v1/admin/almog-knowledge/${targetId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -358,15 +463,18 @@ export function AlmogKnowledgeManager() {
       if (!res.ok) throw new Error(data.error ?? 'מחיקה נכשלה');
       setMessage('נמחק');
       setMessageErr(false);
-      setSelectedId(null);
-      setIsNew(false);
-      setForm(emptyForm);
+      if (targetId === selectedId) {
+        setSelectedId(null);
+        setIsNew(false);
+        setForm(emptyForm);
+      }
       void loadList(searchQ);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'שגיאת מחיקה');
       setMessageErr(true);
     } finally {
       setDeleting(false);
+      setPendingDeleteId(null);
     }
   };
 
@@ -442,7 +550,11 @@ export function AlmogKnowledgeManager() {
         danger
         busy={deleting}
         onConfirm={() => void remove()}
-        onCancel={() => !deleting && setDeleteOpen(false)}
+        onCancel={() => {
+          if (deleting) return;
+          setDeleteOpen(false);
+          setPendingDeleteId(null);
+        }}
       />
 
       <section className={opsGlassCardClass}>
@@ -508,7 +620,7 @@ export function AlmogKnowledgeManager() {
 
       <div>
         <section className="rounded-3xl border border-white/60 bg-white/55 backdrop-blur-md shadow-lg overflow-hidden flex flex-col">
-          <div className="p-3 border-b border-white/50">
+          <div className="p-3 border-b border-white/50 space-y-3">
             <div className="relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
@@ -520,6 +632,29 @@ export function AlmogKnowledgeManager() {
                 dir="rtl"
               />
             </div>
+            <div className="flex gap-1.5 rounded-2xl border border-white/60 bg-white/40 p-1 backdrop-blur-md">
+              {(
+                [
+                  { key: 'organized', label: 'תצוגה מסודרת', icon: Layers },
+                  { key: 'list', label: 'רשימה', icon: ListIcon },
+                ] as const
+              ).map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setViewMode(key)}
+                  className={cn(
+                    'flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 text-xs font-bold transition-all sm:text-sm',
+                    viewMode === key
+                      ? 'bg-gradient-to-l from-sky-500 to-cyan-600 text-white shadow-md shadow-sky-500/25'
+                      : 'text-slate-600 hover:bg-white/55',
+                  )}
+                >
+                  <Icon className="h-4 w-4" aria-hidden />
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {listLoading ? (
@@ -530,6 +665,108 @@ export function AlmogKnowledgeManager() {
             <p className="p-6 text-center text-sm text-slate-500">
               אין עדיין ידע שמור. הוסיפו מסמך או ייבאו מהאינדקס הישן.
             </p>
+          ) : viewMode === 'organized' ? (
+            <div className="overflow-y-auto flex-1 p-2 sm:p-3 space-y-3">
+              {organizedStations.length === 0 ? (
+                <p className="p-6 text-center text-sm text-slate-500">
+                  אין ידע משויך לשלבים. עברו לתצוגת רשימה כדי לראות ידע לפי קורס.
+                </p>
+              ) : (
+                organizedStations.map((station) => (
+                  <div
+                    key={station.stationKey}
+                    className="rounded-2xl border border-white/70 bg-white/55 backdrop-blur-md overflow-hidden"
+                  >
+                    <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-l from-sky-100/70 to-emerald-100/50 border-b border-white/60">
+                      <MapPin className="h-4 w-4 text-sky-700" aria-hidden />
+                      <h3 className="text-sm font-black text-slate-800">{station.stationTitle}</h3>
+                      <span className="mr-auto text-[10px] font-bold text-slate-500">
+                        {station.steps.length} צעדים
+                      </span>
+                    </div>
+                    <div className="divide-y divide-slate-100/80">
+                      {station.steps.map((step) => (
+                        <div key={step.stepId ?? `n-${step.stepNumber}`} className="px-3 py-2">
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-emerald-600/90 px-1.5 text-[10px] font-black text-white">
+                              {step.stepNumber ?? '?'}
+                            </span>
+                            <p className="text-xs font-bold text-slate-700 truncate">
+                              {step.stepTitle || `שלב ${step.stepNumber ?? ''}`}
+                            </p>
+                          </div>
+                          <ul className="space-y-1.5">
+                            {step.items.map((item) => {
+                              const research = isResearchItem(item);
+                              return (
+                                <li
+                                  key={item.id}
+                                  className={cn(
+                                    'rounded-xl border px-3 py-2',
+                                    research
+                                      ? 'border-violet-200/80 bg-violet-50/50'
+                                      : 'border-slate-200/70 bg-white/60',
+                                  )}
+                                >
+                                  <div className="flex items-start gap-2">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-1.5">
+                                        {research ? (
+                                          <FlaskConical className="h-3.5 w-3.5 shrink-0 text-violet-600" aria-hidden />
+                                        ) : (
+                                          <FileText className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+                                        )}
+                                        <p className="truncate text-sm font-bold text-slate-900">
+                                          {research ? researchName(item) : item.title}
+                                        </p>
+                                      </div>
+                                      <p className="mt-1 text-xs leading-relaxed text-slate-600 line-clamp-3">
+                                        <span className="font-bold text-slate-500">
+                                          {research ? 'מה ידוע מהמחקר: ' : ''}
+                                        </span>
+                                        {research
+                                          ? researchKnownSummary(item)
+                                          : item.body.replace(/\s+/g, ' ').trim().slice(0, 200)}
+                                      </p>
+                                      <p className="mt-1 text-[10px] text-slate-400">
+                                        {item.chunk_count} חלקים · {formatDate(item.updated_at)}
+                                      </p>
+                                    </div>
+                                    <div className="flex shrink-0 flex-col gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => selectItem(item.id)}
+                                        title="דיוק / עריכה"
+                                        aria-label="דיוק / עריכה"
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-sky-200/80 bg-sky-50/80 text-sky-700 transition hover:bg-sky-100"
+                                      >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setPendingDeleteId(item.id);
+                                          setDeleteOpen(true);
+                                        }}
+                                        title="מחיקה"
+                                        aria-label="מחיקה"
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200/80 bg-rose-50/80 text-rose-600 transition hover:bg-rose-100"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           ) : (
             <ul className="overflow-y-auto flex-1 divide-y divide-slate-100/80">
               {groupedItems.stepItems.length > 0 ? (
@@ -827,7 +1064,10 @@ export function AlmogKnowledgeManager() {
                 {!isNew && selectedId ? (
                   <button
                     type="button"
-                    onClick={() => setDeleteOpen(true)}
+                    onClick={() => {
+                      setPendingDeleteId(selectedId);
+                      setDeleteOpen(true);
+                    }}
                     disabled={saving || deleting}
                     className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-300/70 bg-rose-50/70 px-4 py-3 text-sm font-bold text-rose-700 backdrop-blur-md transition hover:bg-rose-100/80 disabled:opacity-60"
                   >
