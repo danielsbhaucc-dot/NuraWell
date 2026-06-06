@@ -210,6 +210,18 @@ const CHAT_SAFETY_NET_MODEL = process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() || CH
  * האם להזריק את providerOptions.openai בכלל.
  */
 const CHAT_MODEL_IS_OPENAI = CHAT_MODEL.startsWith('openai/');
+/**
+ * prompt-cache ב-`cache_control` הוא מנגנון *ספציפי ל-Anthropic*. ל-Llama (וכל
+ * מודל לא-anthropic) ב-OpenRouter אסור/מיותר לשלוח אותו — OpenRouter פשוט מתעלם
+ * ממנו, ולספקי Llama שתומכים בקאש יש קאש *אוטומטי* ברמת הספק (sticky routing),
+ * בלי צורך בשדה. לכן עבור Llama אין כאן מה "להפעיל".
+ *
+ * 💰 על הטוקנים: Llama 4 Maverick עולה ~$0.15-0.17 ל-1M input — זול עד כדי כך
+ * ששליחת ה-system-prompt המלא בכל הודעה עולה שברירי-סנט. כלומר אפילו בלי
+ * prompt-cache מפורש, ה-input של Llama זול יותר מ-Claude *עם* קאש. החיסכון
+ * המשמעותי בלאו הכי מגיע מ-trivial-bypass (הודעות קצרות → מודל זול עוד יותר)
+ * ומחלון ההיסטוריה המוגבל (`AI_CHAT_HISTORY_WINDOW`).
+ */
 const CHAT_MODEL_SUPPORTS_PROMPT_CACHE = CHAT_MODEL.startsWith('anthropic/');
 /**
  * TTL ל-prompt cache. אנתרופיק: כתיבת cache ל-5 דק' עולה ×1.25, ל-1h עולה ×2,
