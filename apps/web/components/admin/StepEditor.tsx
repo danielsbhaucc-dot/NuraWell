@@ -81,9 +81,24 @@ const AIFILL_STAGES = [
   { key: 'finalize', label: 'מסדר ומשבץ בכל הסעיפים', icon: ListChecks, until: 100 },
 ] as const;
 
-function activeAifillStageIndex(pct: number): number {
-  const idx = AIFILL_STAGES.findIndex((s) => pct < s.until);
-  return idx === -1 ? AIFILL_STAGES.length - 1 : idx;
+/**
+ * מחלץ הודעת שגיאה קריאה מתגובת שרת — מטפל גם במקרה ש-error הוא אובייקט
+ * (למשל פירוט ולידציה) כדי שלא יוצג "[object Object]" למשתמש.
+ */
+function extractErrorMessage(data: unknown): string | null {
+  if (!data || typeof data !== 'object') return null;
+  const err = (data as { error?: unknown }).error;
+  if (typeof err === 'string') return err.trim() || null;
+  if (err && typeof err === 'object') {
+    const maybeMsg = (err as { message?: unknown }).message;
+    if (typeof maybeMsg === 'string' && maybeMsg.trim()) return maybeMsg.trim();
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return null;
+    }
+  }
+  return null;
 }
 
 function TtsStatusBadge({ text, tts }: { text: string; tts?: QuestionTtsMeta | null }) {
@@ -265,24 +280,94 @@ export function StepEditor({ step }: StepEditorProps) {
     setAiFilling(true);
     setAiError(null);
     setAiMessage(null);
-    setAiProgress(3);
+    setAiProgress(4);
     setAiStageIndex(0);
 
-    // הערכת משך לפי אורך הטקסט — סריקת קישורי המחקרים היא החלק האיטי.
-    const estTotalMs = Math.min(60000, Math.max(14000, Math.round(text.length / 8)));
-    const startedAt = Date.now();
-    if (aiTimerRef.current) window.clearInterval(aiTimerRef.current);
-    aiTimerRef.current = window.setInterval(() => {
-      const elapsed = Date.now() - startedAt;
-      const pct = Math.min(95, Math.round((elapsed / estTotalMs) * 100));
-      setAiProgress((prev) => (pct > prev ? pct : prev));
-      setAiStageIndex(activeAifillStageIndex(pct));
-    }, 200);
-
-    const finishAiProgress = () => {
+    // טיקר עדין רק לשלב ה-LLM (אין אירועי ביניים בזמן שהמודל מנסח) — נעצר בכל אירוע אמיתי.
+    const stopTicker = () => {
       if (aiTimerRef.current) {
         window.clearInterval(aiTimerRef.current);
         aiTimerRef.current = null;
+      }
+    };
+    const startLlmTicker = () => {
+      stopTicker();
+      const startedAt = Date.now();
+      aiTimerRef.current = window.setInterval(() => {
+        const elapsed = Date.now() - startedAt;
+        // זוחל לאט עד תקרה של 58% בזמן שהמודל עובד בפועל.
+        const pct = Math.min(58, 12 + Math.round((elapsed / 22000) * 46));
+        setAiProgress((prev) => (pct > prev ? pct : prev));
+      }, 250);
+    };
+
+    const fail = (msg: string) => {
+      stopTicker();
+      setAiError(msg);
+    };
+
+    type StreamStep = {
+      title: string;
+      description: string;
+      summary_text: string;
+      duration_minutes: number;
+      quiz_questions: QuizQuestion[];
+      game_items: GameItem[];
+      commitment: CommitmentData | null;
+      researches: Research[];
+      tasks: JourneyTask[];
+      habits: JourneyHabit[];
+      attention_stops: ImmersiveAttentionStop[];
+    };
+    type StreamEvent =
+      | { phase: 'analyze' }
+      | { phase: 'generated'; provider?: string; detected_links?: number; researches?: number; research_to_scan?: number }
+      | { phase: 'research'; processed: number; total: number }
+      | {
+          phase: 'done';
+          provider?: string;
+          step: StreamStep;
+          research_scan?: { detected_links?: number; researches?: number; scanned: number; errors: string[] };
+        }
+      | { phase: 'error'; error?: string };
+
+    let doneEvent: Extract<StreamEvent, { phase: 'done' }> | null = null;
+    let streamError: string | null = null;
+
+    const applyEvent = (evt: StreamEvent) => {
+      switch (evt.phase) {
+        case 'analyze':
+          setAiStageIndex(1);
+          setAiProgress((p) => Math.max(p, 12));
+          startLlmTicker();
+          break;
+        case 'generated': {
+          stopTicker();
+          setAiStageIndex(2);
+          setAiProgress((p) => Math.max(p, 62));
+          // אם אין מחקרים לסריקה — נתקדם לקראת הסיום ונחכה ל-done.
+          if (!evt.research_to_scan) {
+            setAiStageIndex(3);
+            setAiProgress((p) => Math.max(p, 90));
+          }
+          break;
+        }
+        case 'research': {
+          stopTicker();
+          setAiStageIndex(3);
+          const ratio = evt.total > 0 ? evt.processed / evt.total : 1;
+          setAiProgress((p) => Math.max(p, Math.min(94, 62 + Math.round(ratio * 30))));
+          break;
+        }
+        case 'done':
+          stopTicker();
+          doneEvent = evt;
+          setAiStageIndex(AIFILL_STAGES.length - 1);
+          setAiProgress(100);
+          break;
+        case 'error':
+          streamError = evt.error || 'המילוי האוטומטי נכשל';
+          break;
       }
     };
 
@@ -293,33 +378,54 @@ export function StepEditor({ step }: StepEditorProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sourceText: text, stepNumber }),
       });
-      const data = (await res.json()) as {
-        ok?: boolean;
-        provider?: string;
-        model?: string;
-        error?: string;
-        research_scan?: { detected_links?: number; researches?: number; scanned: number; errors: string[] };
-        step?: {
-          title: string;
-          description: string;
-          summary_text: string;
-          duration_minutes: number;
-          quiz_questions: QuizQuestion[];
-          game_items: GameItem[];
-          commitment: CommitmentData | null;
-          researches: Research[];
-          tasks: JourneyTask[];
-          habits: JourneyHabit[];
-          attention_stops: ImmersiveAttentionStop[];
-        };
+
+      // שגיאה לפני תחילת הזרם (validation/auth) — גוף JSON, נחלץ הודעה ברורה.
+      if (!res.ok || !res.body) {
+        const errData = (await res.json().catch(() => null)) as { error?: unknown } | null;
+        throw new Error(extractErrorMessage(errData) ?? `שגיאה ${res.status}`);
+      }
+
+      startLlmTicker();
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      const consumeLine = (line: string) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        let evt: StreamEvent | null = null;
+        try {
+          evt = JSON.parse(trimmed) as StreamEvent;
+        } catch {
+          return;
+        }
+        if (evt) applyEvent(evt);
       };
-      if (!res.ok || !data.step) throw new Error(data.error ?? 'המילוי האוטומטי נכשל');
 
-      finishAiProgress();
-      setAiStageIndex(AIFILL_STAGES.length - 1);
-      setAiProgress(100);
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) consumeLine(line);
+      }
+      if (buffer.trim()) consumeLine(buffer);
 
-      const s = data.step;
+      stopTicker();
+
+      if (streamError) {
+        fail(streamError);
+        return;
+      }
+      const done = doneEvent as Extract<StreamEvent, { phase: 'done' }> | null;
+      if (!done || !done.step) {
+        fail('המילוי האוטומטי לא הושלם. נסו שוב.');
+        return;
+      }
+
+      const s = done.step;
       if (s.title) setTitle(s.title);
       if (s.description) setDescription(s.description);
       if (s.summary_text) setSummaryText(s.summary_text);
@@ -332,8 +438,8 @@ export function StepEditor({ step }: StepEditorProps) {
       setHabits(s.habits ?? []);
       setImmersiveAttentionStops(s.attention_stops ?? []);
 
-      const scannedCount = data.research_scan?.scanned ?? 0;
-      const detectedLinks = data.research_scan?.detected_links ?? 0;
+      const scannedCount = done.research_scan?.scanned ?? 0;
+      const detectedLinks = done.research_scan?.detected_links ?? 0;
       const parts = [
         s.quiz_questions?.length ? `${s.quiz_questions.length} שאלות` : null,
         s.game_items?.length ? `${s.game_items.length} טענות משחק` : null,
@@ -348,16 +454,15 @@ export function StepEditor({ step }: StepEditorProps) {
       const linksNote =
         detectedLinks > 1 ? `זוהו ${detectedLinks} קישורי מחקר ונסרקו אוטומטית. ` : '';
       setAiMessage(
-        `מולא אוטומטית (${data.provider ?? 'AI'}): ${parts.join(' · ') || 'כותרת וסיכום'}. ` +
+        `מולא אוטומטית (${done.provider ?? 'AI'}): ${parts.join(' · ') || 'כותרת וסיכום'}. ` +
           linksNote +
           'עברו על הסעיפים, הוסיפו וידאו, ואז שמרו — סיכומי המחקרים המלאים יסונכרנו לזיכרון של אלמוג בשמירה.'
       );
       setAiPanelOpen(false);
     } catch (e) {
-      finishAiProgress();
-      setAiError(e instanceof Error ? e.message : 'שגיאה במילוי אוטומטי');
+      fail(e instanceof Error ? e.message : 'שגיאה במילוי אוטומטי');
     } finally {
-      finishAiProgress();
+      stopTicker();
       setAiFilling(false);
     }
   };
