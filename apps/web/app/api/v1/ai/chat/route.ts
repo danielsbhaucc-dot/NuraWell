@@ -198,10 +198,17 @@ const CHAT_OUTPUT_TOKENS_NEAR_CAP_RATIO = 0.92;
  * לחזרה ל-Claude: `AI_CHAT_MODEL=anthropic/claude-sonnet-4.6`.
  */
 const CHAT_MODEL = process.env.AI_CHAT_MODEL?.trim() || 'meta-llama/llama-4-maverick';
+/**
+ * מודל זול לראוטינג ול-trivial-bypass ול-safety-net: Llama 4 *Scout* (אח קטן
+ * של Maverick — 16 מומחים, מהיר וזול ~$0.08/M, מצוין לאישורים/תודות קצרים).
+ * ⚠️ slug ל-OpenRouter הוא `meta-llama/llama-4-scout` — לא הפורמט של Groq
+ * (`...-17b-16e-instruct`), שהיה גורם ל-400 ולנפילה ל-Maverick על כל הודעה
+ * קצרה (בזבוז). Maverick נשאר לכתיבה האמיתית כי הוא החזק לשיחה טבעית.
+ */
 const CHAT_ROUTER_MODEL =
   process.env.AI_CHAT_ROUTER_MODEL?.trim() ||
   process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() ||
-  'meta-llama/llama-4-scout-17b-16e-instruct';
+  'meta-llama/llama-4-scout';
 const CHAT_SAFETY_NET_MODEL = process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() || CHAT_ROUTER_MODEL;
 
 /**
