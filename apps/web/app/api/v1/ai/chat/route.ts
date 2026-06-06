@@ -173,6 +173,15 @@ function pickEmptyResponseFallback(): string {
   return EMPTY_RESPONSE_FALLBACKS[idx] ?? EMPTY_RESPONSE_FALLBACKS[0];
 }
 
+const MIN_STREAM_PREFIX_CHARS = 12;
+
+function isStubModelReply(text: string): boolean {
+  const t = normalizeLine(text);
+  if (!t) return false;
+  // תופס תקלות כמו "ווא" / "או" שהמודל עצר עליהן; תשובה אמיתית לא אמורה להיות כה קצרה.
+  return t.length <= 4 && !/[.!?؟…]$/.test(t);
+}
+
 /**
  * תקרת פלט מקסימלית.
  * 480 הסתבר כצר מדי. 768 גרם ל"לחץ קיצוץ" שכפה תשובות תסריטיות.
@@ -400,8 +409,36 @@ async function createOpenRouterTextStreamResponse({
   const encoder = new TextEncoder();
   let buffer = '';
   let accumulated = '';
+  let streamPrefixBuffer = '';
+  let streamStarted = false;
   let finishReason = 'stop';
   let usage: StreamFinishPayload['usage'];
+
+  const enqueueModelText = (
+    content: string,
+    controller: ReadableStreamDefaultController<Uint8Array>
+  ) => {
+    if (!content) return;
+    if (streamStarted) {
+      controller.enqueue(encoder.encode(content));
+      return;
+    }
+
+    streamPrefixBuffer += content;
+    if (normalizeLine(streamPrefixBuffer).length >= MIN_STREAM_PREFIX_CHARS) {
+      streamStarted = true;
+      controller.enqueue(encoder.encode(streamPrefixBuffer));
+      streamPrefixBuffer = '';
+    }
+  };
+
+  const flushModelText = (controller: ReadableStreamDefaultController<Uint8Array>) => {
+    if (streamPrefixBuffer) {
+      streamStarted = true;
+      controller.enqueue(encoder.encode(streamPrefixBuffer));
+      streamPrefixBuffer = '';
+    }
+  };
 
   const processDataLine = (
     data: string,
@@ -419,7 +456,7 @@ async function createOpenRouterTextStreamResponse({
     const content = choice?.delta?.content;
     if (typeof content === 'string' && content.length > 0) {
       accumulated += content;
-      controller.enqueue(encoder.encode(content));
+      enqueueModelText(content, controller);
     }
     if (typeof choice?.finish_reason === 'string') {
       finishReason = choice.finish_reason;
@@ -451,13 +488,19 @@ async function createOpenRouterTextStreamResponse({
           processDataLine(line.slice(5).trim(), controller);
         }
 
-        if (!accumulated.trim() && onEmptyRetry) {
-          const retryText = (await onEmptyRetry()).trim();
-          if (retryText) {
-            accumulated = retryText;
-            finishReason = 'stop';
-            controller.enqueue(encoder.encode(retryText));
-          }
+        const accumulatedTrimmed = accumulated.trim();
+        if (!accumulatedTrimmed || isStubModelReply(accumulatedTrimmed)) {
+          const retryText = onEmptyRetry ? (await onEmptyRetry()).trim() : '';
+          const recoveredText = retryText || pickEmptyResponseFallback();
+          accumulated = recoveredText;
+          finishReason = 'stop';
+          streamPrefixBuffer = '';
+          streamStarted = true;
+          controller.enqueue(encoder.encode(recoveredText));
+        }
+
+        if (!streamStarted) {
+          flushModelText(controller);
         }
 
         await onFinish({
@@ -529,12 +572,13 @@ async function createOpenRouterCheapTextResponse({
     usage?: unknown;
   };
   const text = data.choices?.[0]?.message?.content?.trim() ?? '';
+  const safeText = text && !isStubModelReply(text) ? text : pickEmptyResponseFallback();
   await onFinish({
-    text,
+    text: safeText,
     usage: normalizeOpenRouterUsage(data.usage),
     finishReason: data.choices?.[0]?.finish_reason ?? 'stop',
   });
-  return new Response(text || pickEmptyResponseFallback(), {
+  return new Response(safeText, {
     status: 200,
     headers,
   });
@@ -572,7 +616,7 @@ function buildCurrentIsraelTimeChatBlock(now = new Date()): string {
   const weekday = parts.find((p) => p.type === 'weekday')?.value ?? '';
   const minutes = Number.parseInt(hour, 10) * 60 + Number.parseInt(minute, 10);
   const daypart = currentIsraelDaypart(minutes);
-  return `[זמן עכשיו] ישראל ${weekday ? `${weekday} ` : ''}${hour}:${minute} · ${daypart}. עגן בעדינות אם רלוונטי; אם [יום] מראה מגע מוקדם ללא תשובה — המשך חברי, לא פתיחה חדשה ולא "למה לא ענית".`;
+  return `[זמן עכשיו] ישראל ${weekday ? `${weekday} ` : ''}${hour}:${minute} · ${daypart}. עגן בעדינות רק אם זה באמת מוסיף; בברכת פתיחה ("היי"/"מה קורה") אל תהפוך את השעה לנושא ואל תשאל "מה אתה/את עושה ער/ערה". אם המגדר לא ודאי — ניסוח ניטרלי בלבד ("לילה כזה, מה שלומך?"). אם [יום] מראה מגע מוקדם ללא תשובה — המשך חברי, לא פתיחה חדשה ולא "למה לא ענית".`;
 }
 
 /**
@@ -977,6 +1021,32 @@ function genderAddressingHint(gender: 'male' | 'female' | null | undefined): str
     'מגדר המשתמש לא ידוע. נסח *באמת* ניטרלי — אל תנחש מגדר ואל תשתמש בצורות מוטות מגדר ("ער/ערה", "אתה/את", "עשית"). אם אי אפשר לנסח ניטרלי, שאל בעדינות.' +
     correctionRule
   );
+}
+
+function detectGenderCorrectionFromText(text: string): 'male' | 'female' | null {
+  const t = normalizeLine(text).toLowerCase();
+  if (!t) return null;
+
+  // זיהוי מכוון-דיוק: רק הצהרות גוף ראשון ברורות, לא משפטים על אדם אחר.
+  if (/(?:^|\s)(?:אני|אני\s+דווקא)\s+(?:בן|גבר|זכר)(?:\s|$|[.!?؟,])/u.test(t)) {
+    return 'male';
+  }
+  if (/(?:^|\s)(?:אני|אני\s+דווקא)\s+(?:בת|אישה|נקבה)(?:\s|$|[.!?؟,])/u.test(t)) {
+    return 'female';
+  }
+
+  return null;
+}
+
+function detectGenderCorrectionFromRecentMessages(
+  messages: TextChatMessage[]
+): 'male' | 'female' | null {
+  for (const msg of [...messages].reverse()) {
+    if (msg.role !== 'user') continue;
+    const detected = detectGenderCorrectionFromText(msg.content);
+    if (detected) return detected;
+  }
+  return null;
 }
 
 /** תוצאת Cron על תמליל — השתמש רק כהנחיה רכה; השיחה הנוכחית גוברת */
@@ -1675,7 +1745,6 @@ export async function POST(request: Request) {
   ).catch(() => ({ daysSincePriorChat: null as number | null, unansweredTouchCount: 0 }));
 
   const profileFullName = profileRow.full_name;
-  const profileGender = profileRow.gender;
   const profileMoodSignal = profileRow.mood_signal;
   const onboardingContextBlock = buildOnboardingChatContextBlock(profileRow.onboarding);
   const chatSummaryBlock = formatChatSummaryPromptBlock(profileRow.ai_context.chat_summary);
@@ -1696,6 +1765,23 @@ export async function POST(request: Request) {
      * הודעות כשהיה סיכום, מה שגרם לקלוד "לשכוח" את מהלך השיחה.)
      */
     .slice(-chatHistoryWindow());
+
+  const genderCorrection = detectGenderCorrectionFromRecentMessages(recentMessages);
+  const profileGender = genderCorrection ?? profileRow.gender;
+  if (genderCorrection && genderCorrection !== profileRow.gender) {
+    after(async () => {
+      try {
+        // שומר תיקון מפורש ("אני בן/בת") כדי שגם השיחה הבאה לא תיפול לניחוש.
+        await supabase.from('profiles').update({ gender: genderCorrection }).eq('id', user.id);
+      } catch (genderErr) {
+        console.warn('[ai/chat]', {
+          debug_id: debugId,
+          stage: 'persist_gender_correction_failed',
+          error: genderErr instanceof Error ? genderErr.message : String(genderErr),
+        });
+      }
+    });
+  }
 
   const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
   if (!openrouterKey) {
