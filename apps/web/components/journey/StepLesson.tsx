@@ -20,6 +20,8 @@ interface StepLessonProps {
   step: JourneyStep;
   initialProgress: JourneyStepProgress;
   userId: string;
+  /** מגדר המשתמש מהפרופיל — לנוסח התחייבות מותאם */
+  userGender?: 'male' | 'female' | null;
   /** רצועות מוזיקת רקע (מהפלייליסט המשויך לצעד) — מנוגנות לאורך כל השלבים. */
   audioTracks?: LessonAudioTrack[];
 }
@@ -36,7 +38,7 @@ async function saveJourneyProgress(
   });
 }
 
-export function StepLesson({ step, initialProgress, userId, audioTracks = [] }: StepLessonProps) {
+export function StepLesson({ step, initialProgress, userId, userGender = null, audioTracks = [] }: StepLessonProps) {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isTtsPlaying, setIsTtsPlaying] = useState(false);
   const handleVideoPlaybackChange = useCallback((active: boolean) => {
@@ -492,6 +494,7 @@ export function StepLesson({ step, initialProgress, userId, audioTracks = [] }: 
               <CommitmentSection
                 stepId={step.id}
                 userId={userId}
+                gender={userGender}
                 commitment={step.commitment}
                 isAccepted={progress.commitment_accepted}
                 onAccept={handleCommitmentAccept}

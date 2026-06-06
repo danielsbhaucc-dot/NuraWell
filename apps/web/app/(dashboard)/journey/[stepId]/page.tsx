@@ -88,6 +88,16 @@ export default async function StepPage({ params }: { params: Promise<{ stepId: s
 
   const resolvedStepId = step.id;
 
+  // מגדר המשתמש — לנוסח התחייבות מותאם ("אני מתחייב/מתחייבת")
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profileRow } = await (supabase as any)
+    .from('profiles')
+    .select('gender')
+    .eq('id', user.id)
+    .maybeSingle();
+  const userGender: 'male' | 'female' | null =
+    profileRow?.gender === 'male' || profileRow?.gender === 'female' ? profileRow.gender : null;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: progress } = await (supabase as any)
     .from('journey_progress')
@@ -147,6 +157,7 @@ export default async function StepPage({ params }: { params: Promise<{ stepId: s
       step={step as JourneyStep}
       initialProgress={initialProgress}
       userId={user.id}
+      userGender={userGender}
       audioTracks={audioTracks}
     />
   );
