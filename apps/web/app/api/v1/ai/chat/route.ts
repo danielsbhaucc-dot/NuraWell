@@ -109,7 +109,6 @@ import {
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 import { publicAppUrlForAiReferer } from '../../../../../lib/public-app-url';
-import { resolveExperimentModelSlug } from '../../../../../lib/ai/experiment-models';
 
 /** Vercel Edge — סטרימינג צ׳אט ו-TTFB נמוך קרוב ל-POP הגלובלי */
 export const runtime = 'edge';
@@ -130,11 +129,6 @@ const chatBodySchema = z.object({
   user_id: z.string().uuid().optional(),
   /** מזהה התראה — מזריק הקשר כשהמשתמש עונה מהתראה */
   notification_id: z.string().uuid().optional(),
-  /**
-   * 🧪 ניסוי-טון: מזהה מודל קצר מהבורר בצ׳אט (claude / gpt-5.3 / ...).
-   * השרת ממיר ל-slug דרך allowlist; ערך לא מוכר → ברירת המחדל.
-   */
-  model: z.string().max(64).optional(),
 });
 
 /**
@@ -198,9 +192,9 @@ const CHAT_OUTPUT_TOKENS_NEAR_CAP_RATIO = 0.92;
  * מודל הצ'אט (אלמוג המנטור).
  * Override ב-env: `AI_CHAT_MODEL`.
  *
- * 🧪 ניסוי-טון: ברירת המחדל הוחלפה זמנית מ-`openai/gpt-5-mini`
- * ל-`anthropic/claude-sonnet-4.6` (דרך OpenRouter) כדי להשוות טון.
- * להחזרה: להגדיר `AI_CHAT_MODEL=openai/gpt-5-mini` או לשחזר את ברירת המחדל.
+ * ברירת המחדל היא `anthropic/claude-sonnet-4.6` (דרך OpenRouter) — נבחר אחרי
+ * ניסוי-טון מול GPT 5.3 / Gemini Flash 3.5 / Grok 4.3 / Llama 4 כמודל עם הטון
+ * האנושי והעקבי ביותר בעברית.
  */
 const CHAT_MODEL = process.env.AI_CHAT_MODEL?.trim() || 'anthropic/claude-sonnet-4.6';
 const CHAT_ROUTER_MODEL =
@@ -210,11 +204,12 @@ const CHAT_ROUTER_MODEL =
 const CHAT_SAFETY_NET_MODEL = process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() || CHAT_ROUTER_MODEL;
 
 /**
- * הערה: הדגלים `reasoningEffort` (OpenAI בלבד) ו-`prompt_cache` (Anthropic בלבד)
- * נגזרים כעת פר-בקשה מתוך המודל האפקטיבי (`effectiveModelIsOpenAI` /
- * `effectiveModelSupportsPromptCache`) בתוך ה-handler — כדי לתמוך בבורר המודלים
- * של ניסוי-הטון. ראה `lib/ai/experiment-models.ts`.
+ * `reasoningEffort` הוא פרמטר ספציפי ל-OpenAI. כשמריצים מודל לא-OpenAI
+ * (למשל Claude) דרך OpenRouter — אסור לשלוח אותו, אז ה-flag הזה מגדר
+ * האם להזריק את providerOptions.openai בכלל.
  */
+const CHAT_MODEL_IS_OPENAI = CHAT_MODEL.startsWith('openai/');
+const CHAT_MODEL_SUPPORTS_PROMPT_CACHE = CHAT_MODEL.startsWith('anthropic/');
 /**
  * TTL ל-prompt cache. אנתרופיק: כתיבת cache ל-5 דק' עולה ×1.25, ל-1h עולה ×2,
  * וקריאה ×0.1.
@@ -294,10 +289,9 @@ function normalizeOpenRouterUsage(raw: unknown): StreamFinishPayload['usage'] {
 function openRouterMessagesWithCachedSystem(
   staticSystemPrompt: string,
   dynamicSystemPrompt: string,
-  recentMessages: TextChatMessage[],
-  supportsPromptCache: boolean
+  recentMessages: TextChatMessage[]
 ) {
-  const staticContent = supportsPromptCache
+  const staticContent = CHAT_MODEL_SUPPORTS_PROMPT_CACHE
     ? [
         {
           type: 'text',
@@ -326,7 +320,6 @@ async function createOpenRouterTextStreamResponse({
   headers,
   onFinish,
   onEmptyRetry,
-  supportsPromptCache,
 }: {
   apiKey: string;
   referer: string;
@@ -339,7 +332,6 @@ async function createOpenRouterTextStreamResponse({
   headers: HeadersInit;
   onFinish: (payload: StreamFinishPayload) => Promise<void>;
   onEmptyRetry?: () => Promise<string>;
-  supportsPromptCache: boolean;
 }): Promise<Response> {
   const requestBody = JSON.stringify({
     model,
@@ -350,8 +342,7 @@ async function createOpenRouterTextStreamResponse({
     messages: openRouterMessagesWithCachedSystem(
       staticSystemPrompt,
       dynamicSystemPrompt,
-      recentMessages,
-      supportsPromptCache
+      recentMessages
     ),
   });
 
@@ -1498,19 +1489,6 @@ export async function POST(request: Request) {
   stage = 'body_ok';
 
   const { messages, user_id: bodyUserId } = parsed.data;
-
-  /**
-   * 🧪 ניסוי-טון: אם הצ׳אט שלח בחירת מודל מהבורר, מחליפים את הכותב הראשי
-   * למודל שנבחר (דרך allowlist בלבד). ערך לא מוכר נופל לברירת המחדל `CHAT_MODEL`.
-   * הדגלים נגזרים פר-בקשה כי הם תלויים-מודל (reasoningEffort של OpenAI,
-   * prompt-cache של Anthropic).
-   */
-  const overrideModelSlug = resolveExperimentModelSlug(parsed.data.model);
-  const effectiveChatModel = overrideModelSlug ?? CHAT_MODEL;
-  const effectiveModelIsOpenAI = effectiveChatModel.startsWith('openai/');
-  const effectiveModelSupportsPromptCache = effectiveChatModel.startsWith('anthropic/');
-  const experimentModelOverride = Boolean(overrideModelSlug);
-
   if (bodyUserId && bodyUserId !== user.id) {
     console.error('[ai/chat]', { debug_id: debugId, stage: 'user_mismatch', body_user_id: bodyUserId, session_user_id: user.id });
     return new Response(JSON.stringify({ error: 'Forbidden: user_id does not match session' }), { status: 403 });
@@ -1528,9 +1506,6 @@ export async function POST(request: Request) {
   const earlySignals = detectChatSignals(lastUserText);
   const trivialBypass =
     CHAT_TRIVIAL_BYPASS_ENABLED &&
-    // 🧪 בניסוי-טון: כל הודעה (גם "תודה"/"אוקיי") עוברת דרך המודל שנבחר,
-    // אחרת היינו משווים את Llama הזול ולא את המודל הנבחר.
-    !experimentModelOverride &&
     isTrivialBypassEligible(lastUserText, earlySignals);
   let contextDecision = trivialBypass
     ? lowContextDecision('trivial_bypass')
@@ -1606,7 +1581,7 @@ export async function POST(request: Request) {
     session_id: sessionId,
     role: 'user',
     content: lastUserText,
-    model_name: effectiveChatModel,
+    model_name: CHAT_MODEL,
     metadata: {
       edge: true,
       heavy_context: useHeavyContext,
@@ -2006,7 +1981,7 @@ export async function POST(request: Request) {
         needs_system_knowledge_rag: contextDecision.needs_system_knowledge_rag,
         needs_full_progress_report: contextDecision.needs_full_progress_report,
         needs_journey_knowledge: contextDecision.needs_journey_knowledge,
-        prompt_cache_enabled: effectiveModelSupportsPromptCache,
+        prompt_cache_enabled: CHAT_MODEL_SUPPORTS_PROMPT_CACHE,
       });
     } else {
       console.info('[ai/chat]', {
@@ -2014,7 +1989,7 @@ export async function POST(request: Request) {
         stage: 'system_prompt_size',
         chars: systemPromptCharCount,
         history_msgs: recentMessages.length,
-        prompt_cache_enabled: effectiveModelSupportsPromptCache,
+        prompt_cache_enabled: CHAT_MODEL_SUPPORTS_PROMPT_CACHE,
         heavy_context: useHeavyContext,
         context_router_reason: contextDecision.reason,
         needs_user_memory_rag: contextDecision.needs_user_memory_rag,
@@ -2024,7 +1999,7 @@ export async function POST(request: Request) {
       });
     }
 
-    let assistantModelName = effectiveChatModel;
+    let assistantModelName = CHAT_MODEL;
     let safetyNetUsed = false;
 
     const handleChatFinish = async ({ text, usage, finishReason }: StreamFinishPayload) => {
@@ -2036,10 +2011,10 @@ export async function POST(request: Request) {
           try {
             const runCont = async (partialAssistant: string) => {
               const out = await generateText({
-                model: openrouter.chat(effectiveChatModel),
+                model: openrouter.chat(CHAT_MODEL),
                 temperature: 0.65,
                 maxOutputTokens: 160,
-                providerOptions: effectiveModelIsOpenAI ? { openai: { reasoningEffort: 'low' } } : {},
+                providerOptions: CHAT_MODEL_IS_OPENAI ? { openai: { reasoningEffort: 'low' } } : {},
                 messages: [
                   {
                     role: 'user',
@@ -2376,8 +2351,7 @@ export async function POST(request: Request) {
       stage,
       elapsed_ms: Date.now() - startedAt,
       session_id: sessionId,
-      model: effectiveChatModel,
-      experiment_override: experimentModelOverride,
+      model: CHAT_MODEL,
     });
 
     const upstreamHeaders = {
@@ -2385,7 +2359,6 @@ export async function POST(request: Request) {
       'x-session-id': sessionId,
       'x-debug-id': debugId,
       'x-debug-stage': stage,
-      'x-ai-model': effectiveChatModel,
       'Cache-Control': 'no-cache, no-transform',
     };
 
@@ -2397,8 +2370,7 @@ export async function POST(request: Request) {
       createOpenRouterTextStreamResponse({
         apiKey: openrouterKey,
         referer: publicAppUrlForAiReferer(),
-        model: effectiveChatModel,
-        supportsPromptCache: effectiveModelSupportsPromptCache,
+        model: CHAT_MODEL,
         staticSystemPrompt: BASE_SYSTEM_PROMPT,
         dynamicSystemPrompt,
         recentMessages,
@@ -2408,10 +2380,10 @@ export async function POST(request: Request) {
         onEmptyRetry: async () => {
           try {
             const retry = await generateText({
-              model: openrouter.chat(effectiveChatModel),
+              model: openrouter.chat(CHAT_MODEL),
               temperature: 0.65,
               maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 360),
-              providerOptions: effectiveModelIsOpenAI
+              providerOptions: CHAT_MODEL_IS_OPENAI
                 ? { openai: { reasoningEffort: 'low' } }
                 : {},
               system: systemPromptWithMemory,
@@ -2472,7 +2444,7 @@ export async function POST(request: Request) {
           stage: 'trivial_bypass_failed_using_claude',
           error: bypassErr instanceof Error ? bypassErr.message : String(bypassErr),
         });
-        assistantModelName = effectiveChatModel;
+        assistantModelName = CHAT_MODEL;
         upstream = await runClaudeWriter();
       }
     } else {
@@ -2482,7 +2454,7 @@ export async function POST(request: Request) {
         console.warn('[ai/chat]', {
           debug_id: debugId,
           stage: 'primary_writer_failed_using_safety_net',
-          model: effectiveChatModel,
+          model: CHAT_MODEL,
           safety_model: CHAT_SAFETY_NET_MODEL,
           error: primaryErr instanceof Error ? primaryErr.message : String(primaryErr),
         });

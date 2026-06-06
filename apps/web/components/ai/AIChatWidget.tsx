@@ -12,16 +12,8 @@ import {
   OPEN_ALMOG_CHAT_EVENT,
   type OpenAlmogChatDetail,
 } from '../../lib/notifications/open-almog-chat';
-import {
-  DEFAULT_EXPERIMENT_MODEL_ID,
-  EXPERIMENT_MODELS,
-  isExperimentModelId,
-  type ExperimentModelId,
-} from '../../lib/ai/experiment-models';
 
 const SESSION_STORAGE_KEY = 'nurawell_almog_chat_session';
-/** 🧪 ניסוי-טון: זוכר את המודל האחרון שנבחר בבורר */
-const MODEL_STORAGE_KEY = 'nurawell_almog_chat_experiment_model';
 
 const MICRO_WIN_QUICK_STARTERS = [
   {
@@ -292,28 +284,13 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const [quotedReply, setQuotedReply] = useState<{ mentorMessage: string; userReply: string } | null>(
     null
   );
-  const [modelId, setModelId] = useState<ExperimentModelId>(DEFAULT_EXPERIMENT_MODEL_ID);
   const sessionIdRef = useRef<string | null>(null);
   const notificationIdRef = useRef<string | null>(null);
   const pendingInitialReplyRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  /** ref כדי ש-callback של ה-transport יקרא תמיד את המודל העדכני בלי לבנות אותו מחדש */
-  const modelIdRef = useRef<ExperimentModelId>(DEFAULT_EXPERIMENT_MODEL_ID);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(MODEL_STORAGE_KEY);
-      if (saved && isExperimentModelId(saved)) {
-        setModelId(saved);
-        modelIdRef.current = saved;
-      }
-    } catch {
-      /* */
-    }
   }, []);
 
   useEffect(() => {
@@ -397,7 +374,6 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
         user_id: userId,
         session_id: sessionIdRef.current ?? undefined,
         notification_id: notificationIdRef.current ?? undefined,
-        model: modelIdRef.current,
       }),
     }),
   });
@@ -538,34 +514,6 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              {/* 🧪 ניסוי-טון: בורר מודל ה-AI (כל המודלים דרך OpenRouter) */}
-              <div className="flex items-center justify-end gap-2 px-4 pb-3">
-                <span className="text-[11px] font-semibold text-white/55" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
-                  🧪 מודל ניסוי
-                </span>
-                <select
-                  aria-label="בחירת מודל AI לניסוי"
-                  value={modelId}
-                  onChange={(e) => {
-                    const next = e.target.value as ExperimentModelId;
-                    setModelId(next);
-                    modelIdRef.current = next;
-                    try {
-                      localStorage.setItem(MODEL_STORAGE_KEY, next);
-                    } catch {
-                      /* */
-                    }
-                  }}
-                  className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/90 outline-none transition hover:bg-white/15 focus:border-emerald-300/60"
-                  style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
-                >
-                  {EXPERIMENT_MODELS.map((m) => (
-                    <option key={m.id} value={m.id} className="bg-slate-900 text-white">
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
 
             <div
@@ -702,7 +650,6 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                             body: {
                               user_id: userId,
                               session_id: sessionIdRef.current ?? undefined,
-                              model: modelIdRef.current,
                             },
                           }
                         );
@@ -728,7 +675,6 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                           user_id: userId,
                           session_id: sessionIdRef.current ?? undefined,
                           notification_id: notificationIdRef.current ?? undefined,
-                          model: modelIdRef.current,
                         },
                       }
                     );
