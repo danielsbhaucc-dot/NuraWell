@@ -1117,7 +1117,11 @@ export function StepEditor({ step }: StepEditorProps) {
             <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 space-y-3">
               <Field label="טקסט ההתחייבות">
                 <input value={commitment.text} onChange={e => setCommitment({ ...commitment, text: e.target.value })}
-                  className="input-field" />
+                  className="input-field" placeholder="למשל: לשתות 2 כוסות מים לפני כל ארוחה" />
+                <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
+                  אל תכתבו &quot;אני מתחייב&quot; — המערכת מוסיפה אוטומטית פתיח מותאם מגדר
+                  (&quot;אני מתחייב&quot; / &quot;אני מתחייבת&quot;) לפי פרופיל המשתמש. כתבו רק את ההמשך.
+                </p>
               </Field>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <Field label="אימוג'י">

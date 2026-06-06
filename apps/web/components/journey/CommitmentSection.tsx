@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, CheckCircle2 } from 'lucide-react';
 import type { CommitmentData } from '../../lib/types/journey';
+import { commitmentCopy } from '../../lib/onboarding/gender-copy';
 import { AlmogLessonFeedback } from './AlmogLessonFeedback';
 
 interface CommitmentSectionProps {
@@ -13,6 +14,8 @@ interface CommitmentSectionProps {
   onChoose?: (accepted: boolean) => void;
   stepId?: string;
   userId?: string;
+  /** מגדר המשתמש מהפרופיל — לפתיח "אני מתחייב/מתחייבת" מותאם */
+  gender?: 'male' | 'female' | null;
 }
 
 export function CommitmentSection({
@@ -21,8 +24,10 @@ export function CommitmentSection({
   onAccept,
   onChoose,
   stepId,
+  gender,
 }: CommitmentSectionProps) {
   const [accepted, setAccepted] = useState(isAccepted);
+  const copy = commitmentCopy(gender);
 
   useEffect(() => {
     setAccepted(isAccepted);
@@ -76,6 +81,7 @@ export function CommitmentSection({
           style={{ background: 'linear-gradient(145deg, #047857, #059669, #10b981)' }}
         >
           <div className="text-5xl mb-3">{commitment.emoji}</div>
+          <p className="text-sm font-bold text-white/85 mb-1">{copy.prefix}:</p>
           <p className="text-lg font-black leading-relaxed text-white">{commitment.text}</p>
         </div>
         <div className="p-6 bg-white text-center">
@@ -119,7 +125,7 @@ export function CommitmentSection({
                 }}
               >
                 <Heart className="w-5 h-5" fill="white" />
-                <span>אני מתחייב/ת וממשיך/ה</span>
+                <span>{copy.button}</span>
               </button>
               <button
                 type="button"

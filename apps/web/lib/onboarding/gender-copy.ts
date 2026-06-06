@@ -32,6 +32,28 @@ export type GenderCopy = {
 /** תווית תפקיד דולב בהרשמה — לא «מנטור» (שייך לאלמוג) */
 export const DOLEV_REGISTRATION_ROLE = 'מנהל ההרשמה';
 
+export type CommitmentCopy = {
+  /** פתיח מותאם מגדר: "אני מתחייב" / "אני מתחייבת" / "אני מתחייב/ת" */
+  prefix: string;
+  /** טקסט כפתור הקבלה המותאם מגדר */
+  button: string;
+};
+
+/**
+ * נוסח התחייבות מותאם מגדר לפי הפרופיל. כשהמגדר לא ידוע — נוסח ניטרלי עם סלאשים.
+ */
+export function commitmentCopy(
+  gender: OnboardingGender | '' | null | undefined
+): CommitmentCopy {
+  if (gender === 'male') {
+    return { prefix: 'אני מתחייב', button: 'אני מתחייב וממשיך' };
+  }
+  if (gender === 'female') {
+    return { prefix: 'אני מתחייבת', button: 'אני מתחייבת וממשיכה' };
+  }
+  return { prefix: 'אני מתחייב/ת', button: 'אני מתחייב/ת וממשיך/ה' };
+}
+
 export function genderCopy(gender: OnboardingGender | ''): GenderCopy {
   if (gender === 'male') {
     return {
