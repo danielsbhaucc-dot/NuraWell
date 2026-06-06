@@ -192,11 +192,12 @@ const CHAT_OUTPUT_TOKENS_NEAR_CAP_RATIO = 0.92;
  * מודל הצ'אט (אלמוג המנטור).
  * Override ב-env: `AI_CHAT_MODEL`.
  *
- * ברירת המחדל היא `anthropic/claude-sonnet-4.6` (דרך OpenRouter) — נבחר אחרי
- * ניסוי-טון מול GPT 5.3 / Gemini Flash 3.5 / Grok 4.3 / Llama 4 כמודל עם הטון
- * האנושי והעקבי ביותר בעברית.
+ * ברירת המחדל היא `meta-llama/llama-4-maverick` (דרך OpenRouter) — זול בטירוף
+ * יחסית ל-Claude, והפער בטון מצומצם באמצעות הנחיות מפורשות בפרומפט (רציונל זהיר,
+ * מינוף פסיכולוגי, וחום/אמפתיה — ראה ALMOG_RATIONAL_AND_PSYCHOLOGY_RULES).
+ * לחזרה ל-Claude: `AI_CHAT_MODEL=anthropic/claude-sonnet-4.6`.
  */
-const CHAT_MODEL = process.env.AI_CHAT_MODEL?.trim() || 'anthropic/claude-sonnet-4.6';
+const CHAT_MODEL = process.env.AI_CHAT_MODEL?.trim() || 'meta-llama/llama-4-maverick';
 const CHAT_ROUTER_MODEL =
   process.env.AI_CHAT_ROUTER_MODEL?.trim() ||
   process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() ||
