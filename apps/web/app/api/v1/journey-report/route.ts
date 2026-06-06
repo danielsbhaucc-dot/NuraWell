@@ -5,6 +5,9 @@ import { jerusalemDateKey } from '../../../../lib/journey/task-schedule';
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
+const JOURNEY_PROGRESS_SELECT =
+  'step_id, user_id, created_at, updated_at, video_watched, quiz_answers, quiz_score, game_answers, game_score, commitment_accepted, tasks_completed, task_statuses, habits_progress, is_completed, completed_at, last_section';
+
 /**
  * תמצית מסע + התקדמות — למסך דיווח מהיר (בלי לוגיקת admin).
  *
@@ -32,7 +35,7 @@ export async function GET(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: rawProg, error: pErr } = await (supabase as any)
       .from('journey_progress')
-      .select('*')
+      .select(JOURNEY_PROGRESS_SELECT)
       .eq('user_id', user.id);
 
     if (pErr) {

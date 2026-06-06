@@ -9,6 +9,9 @@ import { isJourneyStepNumber, isJourneyStepUuid } from '../../../../lib/journey/
 
 export const dynamic = 'force-dynamic';
 
+const JOURNEY_PROGRESS_SELECT =
+  'step_id, user_id, created_at, updated_at, video_watched, quiz_answers, quiz_score, game_answers, game_score, commitment_accepted, tasks_completed, task_statuses, habits_progress, is_completed, completed_at, last_section';
+
 async function fetchJourneyStepByParam(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
@@ -37,11 +40,39 @@ async function fetchJourneyStepByParam(
   return null;
 }
 
+async function fetchJourneyStepTitleByParam(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  param: string
+): Promise<string | null> {
+  if (isJourneyStepUuid(param)) {
+    const { data } = await supabase
+      .from('journey_steps')
+      .select('title')
+      .eq('id', param)
+      .single();
+    return typeof data?.title === 'string' ? data.title : null;
+  }
+  if (isJourneyStepNumber(param)) {
+    const n = parseInt(param, 10);
+    const { data: rows } = await supabase
+      .from('journey_steps')
+      .select('title')
+      .eq('step_number', n)
+      .eq('is_published', true)
+      .order('created_at', { ascending: true })
+      .limit(1);
+    const row = rows?.[0];
+    return typeof row?.title === 'string' ? row.title : null;
+  }
+  return null;
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ stepId: string }> }): Promise<Metadata> {
   const { stepId } = await params;
   const supabase = await createClient();
-  const step = await fetchJourneyStepByParam(supabase, stepId);
-  return { title: step?.title || 'שיעור' };
+  const title = await fetchJourneyStepTitleByParam(supabase, stepId);
+  return { title: title || 'שיעור' };
 }
 
 export default async function StepPage({ params }: { params: Promise<{ stepId: string }> }) {
@@ -60,7 +91,7 @@ export default async function StepPage({ params }: { params: Promise<{ stepId: s
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: progress } = await (supabase as any)
     .from('journey_progress')
-    .select('*')
+    .select(JOURNEY_PROGRESS_SELECT)
     .eq('user_id', user.id)
     .eq('step_id', resolvedStepId)
     .single();

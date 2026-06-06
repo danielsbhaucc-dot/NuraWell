@@ -442,19 +442,35 @@ export function NotificationsProvider({
     };
   }, [enqueueToast]);
 
+  /**
+   * 🔄 רענון רקע חכם (חיסכון Egress) — Realtime הוא הערוץ הראשי לעדכונים
+   * חיים, ולכן אין צורך ב-polling אגרסיבי. הקוד הישן שלף 40 התראות + count
+   * כל 25 שניות *לכל משתמש מחובר* — מקור עיקרי ל-Egress גבוה ב-Supabase.
+   *
+   * האסטרטגיה החדשה (מינימום משאבים, מקסימום איכות):
+   *  • Realtime בריא (SUBSCRIBED) → סנכרון רקע איטי בלבד, אחת ל-5 דקות
+   *    (כדי לקלוט מצב read/archive שבוצע במכשיר אחר; התראות חדשות ממילא
+   *    מגיעות חי דרך ה-channel + toast).
+   *  • Realtime לא בריא → polling fallback כל 30ש' כדי לא לפספס עדכונים.
+   *  • רק כשהטאב גלוי. רענון מיידי בחזרה לטאב כבר מטופל ב-effect של Realtime
+   *    (visibilitychange שם קורא ל-loadInitial), כך שאין צורך בכפילות כאן.
+   *
+   * תוצאה: כש-Realtime תקין, השליפות יורדות מ-~144 לשעה לכל משתמש ל-~12 —
+   * חיסכון של מעל 90% ב-Egress, בלי לפגוע בחוויית הזמן-אמת.
+   */
+  const lastBgSyncRef = useRef(0);
   useEffect(() => {
-    const tick = () => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        void loadInitial({ silent: true });
-      }
-    };
-    const id = window.setInterval(tick, 25000);
-    const onVis = () => tick();
-    document.addEventListener('visibilitychange', onVis);
-    return () => {
-      window.clearInterval(id);
-      document.removeEventListener('visibilitychange', onVis);
-    };
+    const SLOW_SYNC_MS = 300_000; // 5 דק' — סנכרון רקע כש-Realtime בריא
+    const id = window.setInterval(() => {
+      if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
+      const healthy = channelStatusRef.current === 'SUBSCRIBED';
+      const elapsed = Date.now() - lastBgSyncRef.current;
+      // Realtime בריא ועדיין בתוך חלון הסנכרון האיטי → דלג, חוסך Egress.
+      if (healthy && elapsed < SLOW_SYNC_MS) return;
+      lastBgSyncRef.current = Date.now();
+      void loadInitial({ silent: true });
+    }, 30_000);
+    return () => window.clearInterval(id);
   }, [loadInitial]);
 
   useEffect(() => {
