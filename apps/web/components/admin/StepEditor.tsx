@@ -72,6 +72,20 @@ function activeSaveStageIndex(pct: number): number {
   return idx === -1 ? SAVE_STAGES.length - 1 : idx;
 }
 
+/** שלבי המילוי האוטומטי עם AI — מציג בדיוק מה ה-LLM עושה כרגע. */
+const AIFILL_STAGES = [
+  { key: 'connect', label: 'מתחבר ל-AI (LLaMA 4)', icon: Plug, until: 15 },
+  { key: 'analyze', label: 'קורא ומנתח את הטקסט', icon: Brain, until: 42 },
+  { key: 'generate', label: 'מנסח כותרת, סיכום, שאלות, משימות והרגלים', icon: Wand2, until: 68 },
+  { key: 'research', label: 'נכנס לקישורי המחקרים, קורא ומסכם לזיכרון', icon: FileText, until: 92 },
+  { key: 'finalize', label: 'מסדר ומשבץ בכל הסעיפים', icon: ListChecks, until: 100 },
+] as const;
+
+function activeAifillStageIndex(pct: number): number {
+  const idx = AIFILL_STAGES.findIndex((s) => pct < s.until);
+  return idx === -1 ? AIFILL_STAGES.length - 1 : idx;
+}
+
 function TtsStatusBadge({ text, tts }: { text: string; tts?: QuestionTtsMeta | null }) {
   const trimmed = text.trim();
   if (!trimmed) {
@@ -132,6 +146,9 @@ export function StepEditor({ step }: StepEditorProps) {
   const [aiFilling, setAiFilling] = useState(false);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [aiProgress, setAiProgress] = useState(0);
+  const [aiStageIndex, setAiStageIndex] = useState(0);
+  const aiTimerRef = useRef<number | null>(null);
 
   // Basic fields
   const [title, setTitle] = useState(step?.title || '');
@@ -195,6 +212,7 @@ export function StepEditor({ step }: StepEditorProps) {
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) window.clearInterval(saveTimerRef.current);
+      if (aiTimerRef.current) window.clearInterval(aiTimerRef.current);
     };
   }, []);
 
@@ -247,6 +265,26 @@ export function StepEditor({ step }: StepEditorProps) {
     setAiFilling(true);
     setAiError(null);
     setAiMessage(null);
+    setAiProgress(3);
+    setAiStageIndex(0);
+
+    // הערכת משך לפי אורך הטקסט — סריקת קישורי המחקרים היא החלק האיטי.
+    const estTotalMs = Math.min(60000, Math.max(14000, Math.round(text.length / 8)));
+    const startedAt = Date.now();
+    if (aiTimerRef.current) window.clearInterval(aiTimerRef.current);
+    aiTimerRef.current = window.setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const pct = Math.min(95, Math.round((elapsed / estTotalMs) * 100));
+      setAiProgress((prev) => (pct > prev ? pct : prev));
+      setAiStageIndex(activeAifillStageIndex(pct));
+    }, 200);
+
+    const finishAiProgress = () => {
+      if (aiTimerRef.current) {
+        window.clearInterval(aiTimerRef.current);
+        aiTimerRef.current = null;
+      }
+    };
 
     try {
       const res = await fetch('/api/v1/admin/journey-steps/ai-fill', {
@@ -276,6 +314,10 @@ export function StepEditor({ step }: StepEditorProps) {
         };
       };
       if (!res.ok || !data.step) throw new Error(data.error ?? 'המילוי האוטומטי נכשל');
+
+      finishAiProgress();
+      setAiStageIndex(AIFILL_STAGES.length - 1);
+      setAiProgress(100);
 
       const s = data.step;
       if (s.title) setTitle(s.title);
@@ -308,8 +350,10 @@ export function StepEditor({ step }: StepEditorProps) {
       );
       setAiPanelOpen(false);
     } catch (e) {
+      finishAiProgress();
       setAiError(e instanceof Error ? e.message : 'שגיאה במילוי אוטומטי');
     } finally {
+      finishAiProgress();
       setAiFilling(false);
     }
   };
@@ -1621,6 +1665,64 @@ export function StepEditor({ step }: StepEditorProps) {
           </div>
         </div>
       )}
+
+      {/* AI fill progress overlay */}
+      {aiFilling && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm px-4" dir="rtl">
+          <div
+            className="w-full max-w-sm rounded-3xl p-6 text-center"
+            style={{ background: 'rgba(255,255,255,0.97)', border: '1px solid rgba(255,255,255,0.9)', boxShadow: '0 24px 60px rgba(76,29,149,0.35)' }}
+          >
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)' }}>
+              <Loader2 className="h-7 w-7 animate-spin text-white" />
+            </div>
+
+            <h3 className="text-lg font-black" style={{ color: '#1A1730' }}>
+              מילוי אוטומטי עם AI
+            </h3>
+            <p className="mt-1 text-sm font-bold text-violet-700">
+              {AIFILL_STAGES[aiStageIndex]?.label}…
+            </p>
+
+            <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-violet-100/70">
+              <div
+                className="h-full rounded-full transition-all duration-200"
+                style={{ width: `${aiProgress}%`, background: 'linear-gradient(90deg, #7c3aed, #6366f1, #2563eb)' }}
+              />
+            </div>
+            <p className="mt-2 text-2xl font-black tabular-nums" style={{ color: '#5b21b6' }}>
+              {aiProgress}%
+            </p>
+
+            <ul className="mt-4 space-y-2 text-right">
+              {AIFILL_STAGES.map((stage, i) => {
+                const done = i < aiStageIndex || aiProgress >= 100;
+                const active = i === aiStageIndex && aiProgress < 100;
+                const StageIcon = stage.icon;
+                return (
+                  <li
+                    key={stage.key}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold transition-colors"
+                    style={{
+                      background: active ? 'rgba(124,58,237,0.12)' : done ? 'rgba(124,58,237,0.06)' : 'rgba(0,0,0,0.03)',
+                      color: done ? '#5b21b6' : active ? '#4c1d95' : '#94a3b8',
+                    }}
+                  >
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg" style={{ background: done || active ? 'rgba(124,58,237,0.2)' : 'rgba(0,0,0,0.05)' }}>
+                      {done ? <Check className="h-3.5 w-3.5" /> : active ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <StageIcon className="h-3.5 w-3.5" />}
+                    </span>
+                    <span className="flex-1">{stage.label}</span>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <p className="mt-4 text-xs text-slate-500 leading-relaxed">
+              סריקת קישורי המחקרים עשויה לקחת מספר שניות. אל תסגור/י את החלון.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1676,22 +1778,33 @@ function SectionTab({
     <button
       type="button"
       onClick={onClick}
-      className="flex min-w-[13.5rem] snap-start items-center gap-2 rounded-xl px-3 py-2.5 text-right transition-all sm:min-w-0 sm:w-full"
+      className="flex min-w-[13.5rem] snap-start items-center gap-2 rounded-xl px-3 py-2.5 text-right backdrop-blur-md transition-all sm:min-w-0 sm:w-full"
       style={{
-        background: active ? 'rgba(255,255,255,0.98)' : 'rgba(248,250,252,0.84)',
-        border: active ? `1px solid ${color}` : '1px solid rgba(0,0,0,0.08)',
-        boxShadow: active ? '0 4px 14px rgba(0,0,0,0.08)' : 'none',
+        background: active
+          ? `linear-gradient(135deg, ${color}18, rgba(255,255,255,0.55))`
+          : 'linear-gradient(135deg, rgba(255,255,255,0.42), rgba(255,255,255,0.18))',
+        border: active
+          ? `1px solid ${color}55`
+          : '1px solid rgba(255,255,255,0.55)',
+        boxShadow: active
+          ? `0 8px 24px ${color}22, inset 0 1px 0 rgba(255,255,255,0.65)`
+          : '0 2px 10px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.45)',
       }}
     >
-      <span className="w-6 h-6 rounded-full text-white text-[11px] font-black flex items-center justify-center" style={{ background: color }}>
+      <span
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white shadow-sm"
+        style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
+      >
         {number}
       </span>
       <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-        <span className="text-sm font-bold" style={{ color: active ? '#111827' : '#4b5563' }}>
+        <span className="text-sm font-bold" style={{ color: active ? '#0f172a' : '#475569' }}>
           {label}
         </span>
         {detail ? (
-          <span className="text-[11px] font-semibold leading-tight text-slate-500">{detail}</span>
+          <span className="text-[11px] font-semibold leading-tight" style={{ color: active ? '#64748b' : '#94a3b8' }}>
+            {detail}
+          </span>
         ) : null}
       </span>
     </button>
