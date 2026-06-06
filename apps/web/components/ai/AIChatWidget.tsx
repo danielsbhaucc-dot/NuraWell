@@ -132,24 +132,40 @@ function parseMessageBlocks(text: string): MessageBlock[] {
   return blocks;
 }
 
+/**
+ * הדגשות בתוך טקסט. אלמוג (וגם הפרומפט עצמו) מסמן הדגשה בכוכבית *בודדת*,
+ * לא רק בכפולה — אז מטפלים בשלושת הצורות: `**חזק**`, `__חזק__`, ו-`*הדגשה*`.
+ * העיצוב: "זכוכית" עדינה ומשולבת — שכבת לבן שקופה קלה עם blur ומסגרת רכה,
+ * כך שזה בולט בעדינות בלי לנגוד את צבע הבועה (במיוחד הבועה הירוקה של אלמוג).
+ * הכוכבית/הקו-תחתון עצמם אף פעם לא מוצגים למשתמש.
+ */
 function renderInlineStyledText(text: string): ReactNode[] {
-  const tokens = text.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
+  const tokens = text.split(/(\*\*[^*\n]+\*\*|__[^_\n]+__|\*[^*\n]+\*)/g);
   return tokens
     .filter(Boolean)
     .map((token, index) => {
-      const boldByStars = token.startsWith('**') && token.endsWith('**') && token.length > 4;
-      const boldByUnderscore = token.startsWith('__') && token.endsWith('__') && token.length > 4;
-      if (boldByStars || boldByUnderscore) {
-        const clean = token.slice(2, -2).trim();
+      const isStrong =
+        (token.startsWith('**') && token.endsWith('**') && token.length > 4) ||
+        (token.startsWith('__') && token.endsWith('__') && token.length > 4);
+      const isEmphasis =
+        !isStrong && token.startsWith('*') && token.endsWith('*') && token.length > 2;
+
+      if (isStrong || isEmphasis) {
+        const clean = token.replace(/^(\*\*|__|\*)/, '').replace(/(\*\*|__|\*)$/, '').trim();
+        if (!clean) return <Fragment key={`txt-${index}`}>{token}</Fragment>;
         return (
           <span
             key={`hl-${index}`}
-            className="mx-0.5 rounded-md px-1.5 py-0.5 font-bold"
+            className={`mx-0.5 rounded-md px-1.5 py-0.5 ${isStrong ? 'font-bold' : 'font-semibold'}`}
             style={{
-              background: 'linear-gradient(145deg, rgba(255,255,255,0.28), rgba(255,255,255,0.14))',
-              color: '#f8fafc',
-              border: '1px solid rgba(255,255,255,0.35)',
-              textShadow: '0 1px 1px rgba(2,6,23,0.25)',
+              background: isStrong
+                ? 'linear-gradient(145deg, rgba(255,255,255,0.20), rgba(255,255,255,0.10))'
+                : 'linear-gradient(145deg, rgba(255,255,255,0.13), rgba(255,255,255,0.06))',
+              color: '#ffffff',
+              border: '1px solid rgba(255,255,255,0.22)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)',
+              backdropFilter: 'blur(2px)',
+              WebkitBackdropFilter: 'blur(2px)',
             }}
           >
             {clean}
