@@ -9,6 +9,11 @@ export type ResearchScanResult = {
   practical_takeaway: string;
   limitations: string;
   evidence_level: 'low' | 'moderate' | 'high' | 'unknown';
+  /** ביבליוגרפיה שחולצה מהמקור (אופציונלי) — שימושי כשהמקור הוא קישור בלבד. */
+  title?: string;
+  authors?: string;
+  year?: string;
+  journal?: string;
 };
 
 export function stripHtml(html: string): string {
@@ -69,6 +74,7 @@ export function normalizeScanResult(value: unknown): ResearchScanResult {
     ? obj.key_findings.map((x) => String(x).trim()).filter(Boolean).slice(0, 7)
     : [];
   const evidence = obj.evidence_level;
+  const trimField = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max);
 
   return {
     ai_summary: String(obj.ai_summary ?? '').trim(),
@@ -79,6 +85,10 @@ export function normalizeScanResult(value: unknown): ResearchScanResult {
       evidence === 'low' || evidence === 'moderate' || evidence === 'high' || evidence === 'unknown'
         ? evidence
         : 'unknown',
+    title: trimField(obj.title, 500),
+    authors: trimField(obj.authors, 500),
+    year: trimField(obj.year, 32),
+    journal: trimField(obj.journal, 500),
   };
 }
 
@@ -88,8 +98,13 @@ export async function runScannerLLM(params: {
 }): Promise<{ result: ResearchScanResult; model: string; provider: 'openrouter' | 'groq' }> {
   const system = `אתה מסכם מחקרים מדעיים עבור מנטור בריאות בשם אלמוג.
 המשימה: להוציא מידע חיוני בלבד, בלי להמציא, בלי להפריז, ובלי המלצות רפואיות פרטניות.
+זהה גם את פרטי הביבליוגרפיה מתוך הטקסט (כותרת, מחברים, שנה, כתב עת) אם הם מופיעים; אם לא — השאר מחרוזת ריקה. אל תמציא.
 החזר JSON תקין בלבד:
 {
+  "title": "כותרת המחקר (באנגלית כפי שמופיעה) או ''",
+  "authors": "שמות החוקרים או ''",
+  "year": "שנת הפרסום או ''",
+  "journal": "כתב העת או ''",
   "ai_summary": "סיכום בעברית ב-3-5 משפטים",
   "key_findings": ["3-7 ממצאים קצרים בעברית"],
   "practical_takeaway": "איך זה מתחבר לשיעור או להרגל בנורהוול",
