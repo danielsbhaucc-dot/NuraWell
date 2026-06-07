@@ -27,6 +27,19 @@ describe('pii-shield', () => {
     expect(part1 + part2 + tail).toBe('שלום מיה!');
   });
 
+  it('detokenizes placeholders even with internal whitespace from small models', () => {
+    const shield = createPiiShield({ full_name: 'דני לוי' });
+    expect(shield.detokenizeText('היי [[ USER_FIRST_NAME ]]!')).toBe('היי דני!');
+  });
+
+  it('does not stall the stream when [[ appears without a closing ]]', () => {
+    const shield = createPiiShield({ full_name: 'מיה רוז' });
+    const detok = shield.createStreamDetokenizer();
+    const longTail = '[[ not a real placeholder, just markdown-ish text that keeps going and going';
+    const out = detok.push(longTail) + detok.flush();
+    expect(out).toBe(longTail);
+  });
+
   it('tokenizes email and phone in user message', () => {
     const shield = createPiiShield({ full_name: 'אבי' });
     const out = shield.tokenizeText('תתקשר אליי 050-9876543 או test@example.com');

@@ -579,6 +579,7 @@ async function createOpenRouterCheapTextResponse({
   temperature,
   headers,
   onFinish,
+  piiShield,
 }: {
   apiKey: string;
   staticSystemPrompt: string;
@@ -588,7 +589,17 @@ async function createOpenRouterCheapTextResponse({
   temperature: number;
   headers: HeadersInit;
   onFinish: (payload: StreamFinishPayload) => Promise<void>;
+  piiShield?: PiiShield | null;
 }): Promise<Response> {
+  /**
+   * הפרומפט המשותף כבר מכיל placeholders של PII (למשל [[USER_FIRST_NAME]]) כשמגן
+   * ה-PII פעיל. בלי detokenize כאן — המשתמש היה רואה את המשתנה במקום השם. לכן
+   * מטוקנים את הקלט ומפענחים את הפלט בדיוק כמו הנתיב הראשי.
+   */
+  const systemContent = `${staticSystemPrompt}\n\n${dynamicSystemPrompt}`;
+  const tokenizedSystem = piiShield ? piiShield.tokenizeText(systemContent) : systemContent;
+  const tokenizedMessages = piiShield ? piiShield.tokenizeMessages(recentMessages) : recentMessages;
+
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -605,8 +616,8 @@ async function createOpenRouterCheapTextResponse({
       seed: randomSamplingSeed(),
       max_tokens: Math.min(maxOutputTokens, 600),
       messages: [
-        { role: 'system', content: `${staticSystemPrompt}\n\n${dynamicSystemPrompt}` },
-        ...recentMessages,
+        { role: 'system', content: tokenizedSystem },
+        ...tokenizedMessages,
       ],
     }),
   });
@@ -621,7 +632,8 @@ async function createOpenRouterCheapTextResponse({
     choices?: Array<{ message?: { content?: string | null }; finish_reason?: string | null }>;
     usage?: unknown;
   };
-  const text = data.choices?.[0]?.message?.content?.trim() ?? '';
+  const rawText = data.choices?.[0]?.message?.content?.trim() ?? '';
+  const text = piiShield ? piiShield.detokenizeText(rawText) : rawText;
   const safeText = text && !isStubModelReply(text) ? text : pickEmptyResponseFallback();
   await onFinish({
     text: safeText,
@@ -1882,8 +1894,11 @@ export async function POST(request: Request) {
           email: user.email ?? null,
         })
       : null;
+    // כשהמגן פעיל מזריקים placeholder (ימופה חזרה לשם לפני שליחה ללקוח); אחרת
+    // מזריקים את השם האמיתי ישירות — אסור לשלוח placeholder בלי detokenize.
+    const nameToken = piiShield ? PII_PLACEHOLDERS.USER_FIRST_NAME : firstName;
     const personalNameInstruction = firstName
-      ? `השם הפרטי של המשתמש הוא ${PII_PLACEHOLDERS.USER_FIRST_NAME}. כאשר אתה פונה בשם — השתמש בדיוק ב-${PII_PLACEHOLDERS.USER_FIRST_NAME} (בלי שם משפחה).`
+      ? `השם הפרטי של המשתמש הוא ${nameToken}. כאשר אתה פונה בשם — השתמש בדיוק ב-${nameToken} (בלי שם משפחה).`
       : 'אין שם פרטי זמין בפרופיל כרגע.';
     let ragMemoryBlock = '';
     let systemKnowledgeBlock = '';
@@ -2642,6 +2657,7 @@ export async function POST(request: Request) {
             'x-ai-writer': 'openrouter-cheap-trivial',
           },
           onFinish: handleChatFinish,
+          piiShield,
         });
         console.info('[ai/chat]', {
           debug_id: debugId,
@@ -2682,6 +2698,7 @@ export async function POST(request: Request) {
             'x-ai-safety-net': 'openrouter-cheap',
           },
           onFinish: handleChatFinish,
+          piiShield,
         });
       }
     }
