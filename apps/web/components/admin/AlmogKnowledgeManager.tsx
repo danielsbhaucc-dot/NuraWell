@@ -112,28 +112,73 @@ function researchName(item: KnowledgeItem): string {
   return t || 'מחקר ללא כותרת';
 }
 
+/** מחלץ קטע רב-שורתי שאחרי כותרת מסוימת ב-body, עד הכותרת הבאה. */
+function sectionAfter(body: string, label: string): string | null {
+  const idx = body.indexOf(label);
+  if (idx === -1) return null;
+  const rest = body.slice(idx + label.length);
+  // עד הכותרת הבאה (שורה שמסתיימת ב-':') או שתי שורות ריקות
+  const stop = rest.search(/\n\s*\n|\n[^\n:]{1,40}:\s*\n/);
+  const chunk = (stop === -1 ? rest : rest.slice(0, stop)).trim();
+  return chunk || null;
+}
+
+/** מחלץ ערך של שדה חד-שורתי בתבנית "תווית: ערך". */
+function inlineField(body: string, label: string): string | null {
+  const re = new RegExp(`(?:^|\\n)${label}\\s*([^\\n]+)`);
+  const m = body.match(re);
+  return m?.[1]?.trim() || null;
+}
+
 /**
  * מחלץ את "מה ידוע מהמחקר" מתוך ה-body שנבנה ב-sync-research-knowledge:
  * מעדיף את הקטע שאחרי "סיכום לאלמוג:", ואם אין — את "ממצאים עיקריים:".
  */
 function researchKnownSummary(item: KnowledgeItem): string {
   const body = item.body ?? '';
-  const sectionAfter = (label: string): string | null => {
-    const idx = body.indexOf(label);
-    if (idx === -1) return null;
-    const rest = body.slice(idx + label.length);
-    // עד הכותרת הבאה (שורה שמסתיימת ב-':') או שתי שורות ריקות
-    const stop = rest.search(/\n\s*\n|\n[^\n:]{1,40}:\s*\n/);
-    const chunk = (stop === -1 ? rest : rest.slice(0, stop)).trim();
-    return chunk || null;
-  };
-
   return (
-    sectionAfter('סיכום לאלמוג:') ||
-    sectionAfter('ממצאים עיקריים:') ||
-    sectionAfter('משמעות פרקטית לשיעור:') ||
+    sectionAfter(body, 'סיכום לאלמוג:') ||
+    sectionAfter(body, 'ממצאים עיקריים:') ||
+    sectionAfter(body, 'משמעות פרקטית לשיעור:') ||
     body.replace(/\s+/g, ' ').trim().slice(0, 240)
   );
+}
+
+type ResearchMeta = {
+  authors: string | null;
+  year: string | null;
+  journal: string | null;
+  url: string | null;
+  evidenceLevel: string | null;
+  summary: string;
+  findings: string[];
+  practical: string | null;
+};
+
+/** מפענח את פרטי הציטוט והידע של מחקר מתוך ה-body המובנה. */
+function parseResearchMeta(item: KnowledgeItem): ResearchMeta {
+  const body = item.body ?? '';
+  const findingsBlock = sectionAfter(body, 'ממצאים עיקריים:') ?? '';
+  const findings = findingsBlock
+    .split('\n')
+    .map((l) => l.replace(/^\s*\d+[.)]\s*/, '').trim())
+    .filter(Boolean);
+
+  return {
+    authors: inlineField(body, 'חוקרים:'),
+    year: inlineField(body, 'שנה:'),
+    journal: inlineField(body, 'כתב עת:'),
+    url: inlineField(body, 'קישור:'),
+    evidenceLevel: inlineField(body, 'רמת ביטחון/ראיות:'),
+    summary: researchKnownSummary(item),
+    findings,
+    practical: sectionAfter(body, 'משמעות פרקטית לשיעור:'),
+  };
+}
+
+/** מרכיב שורת ציטוט קצרה: חוקרים · שנה · כתב עת. */
+function researchCitationLine(meta: ResearchMeta): string {
+  return [meta.authors, meta.year, meta.journal].filter(Boolean).join(' · ');
 }
 
 const emptyForm = {
@@ -154,7 +199,7 @@ export function AlmogKnowledgeManager() {
   const [searchQ, setSearchQ] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isNew, setIsNew] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'organized'>('organized');
+  const [viewMode, setViewMode] = useState<'list' | 'organized' | 'research'>('organized');
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const [journeySteps, setJourneySteps] = useState<JourneyStepRow[]>([]);
@@ -388,6 +433,61 @@ export function AlmogKnowledgeManager() {
 
     return [...stationMap.values()].sort((a, b) => a.stationOrder - b.stationOrder);
   }, [items, journeySteps]);
+
+  /** כל פריטי המחקר שהמודל מכיר. */
+  const researchItems = useMemo(() => items.filter(isResearchItem), [items]);
+
+  /** קיבוץ מחקרים לפי תחנה → צעד, לתצוגת "אילו מחקרים המודל יודע". */
+  const researchByStation = useMemo(() => {
+    type StationGroup = {
+      stationKey: string;
+      stationTitle: string;
+      stationOrder: number;
+      steps: Array<{
+        stepKey: string;
+        stepNumber: number | null;
+        stepTitle: string;
+        items: KnowledgeItem[];
+      }>;
+    };
+
+    const stepTitleById = new Map(journeySteps.map((s) => [s.id, s.title]));
+    const stationMap = new Map<string, StationGroup>();
+
+    for (const item of researchItems) {
+      const stationKey = item.station_id ?? (item.station_title ? `t:${item.station_title}` : 'none');
+      const stationTitle = item.station_title?.trim() || 'ללא תחנה';
+      const stationOrder = item.station_order ?? 9999;
+
+      let station = stationMap.get(stationKey);
+      if (!station) {
+        station = { stationKey, stationTitle, stationOrder, steps: [] };
+        stationMap.set(stationKey, station);
+      }
+
+      const stepKey = item.step_id ?? `n:${item.step_number ?? '?'}`;
+      let step = station.steps.find((s) => s.stepKey === stepKey);
+      if (!step) {
+        step = {
+          stepKey,
+          stepNumber: item.step_number,
+          stepTitle: (item.step_id && stepTitleById.get(item.step_id)) || '',
+          items: [],
+        };
+        station.steps.push(step);
+      }
+      step.items.push(item);
+    }
+
+    for (const station of stationMap.values()) {
+      for (const step of station.steps) {
+        step.items.sort((a, b) => researchName(a).localeCompare(researchName(b), 'he'));
+      }
+      station.steps.sort((a, b) => (a.stepNumber ?? 9999) - (b.stepNumber ?? 9999));
+    }
+
+    return [...stationMap.values()].sort((a, b) => a.stationOrder - b.stationOrder);
+  }, [researchItems, journeySteps]);
 
   const save = async () => {
     if (!form.body.trim()) {
@@ -636,6 +736,7 @@ export function AlmogKnowledgeManager() {
               {(
                 [
                   { key: 'organized', label: 'תצוגה מסודרת', icon: Layers },
+                  { key: 'research', label: 'מחקרים', icon: FlaskConical },
                   { key: 'list', label: 'רשימה', icon: ListIcon },
                 ] as const
               ).map(({ key, label, icon: Icon }) => (
@@ -730,6 +831,132 @@ export function AlmogKnowledgeManager() {
                                       </p>
                                       <p className="mt-1 text-[10px] text-slate-400">
                                         {item.chunk_count} חלקים · {formatDate(item.updated_at)}
+                                      </p>
+                                    </div>
+                                    <div className="flex shrink-0 flex-col gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => selectItem(item.id)}
+                                        title="דיוק / עריכה"
+                                        aria-label="דיוק / עריכה"
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-sky-200/80 bg-sky-50/80 text-sky-700 transition hover:bg-sky-100"
+                                      >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setPendingDeleteId(item.id);
+                                          setDeleteOpen(true);
+                                        }}
+                                        title="מחיקה"
+                                        aria-label="מחיקה"
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200/80 bg-rose-50/80 text-rose-600 transition hover:bg-rose-100"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : viewMode === 'research' ? (
+            <div className="overflow-y-auto flex-1 p-2 sm:p-3 space-y-3">
+              <div className="flex items-center gap-2 rounded-2xl border border-violet-200/80 bg-violet-50/60 px-3 py-2">
+                <FlaskConical className="h-4 w-4 shrink-0 text-violet-600" aria-hidden />
+                <p className="text-xs font-bold text-violet-900">
+                  אלמוג מכיר {researchItems.length} מחקרים
+                  {searchQ.trim() ? ' התואמים לחיפוש' : ''}. אלה המחקרים שהמודל יכול להישען עליהם בשיחות.
+                </p>
+              </div>
+              {researchItems.length === 0 ? (
+                <p className="p-6 text-center text-sm text-slate-500">
+                  אין עדיין מחקרים מסונכרנים. הוסיפו מחקרים לשלבי המסע וסנכרנו אותם לאלמוג.
+                </p>
+              ) : (
+                researchByStation.map((station) => (
+                  <div
+                    key={station.stationKey}
+                    className="rounded-2xl border border-white/70 bg-white/55 backdrop-blur-md overflow-hidden"
+                  >
+                    <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-l from-violet-100/70 to-sky-100/50 border-b border-white/60">
+                      <MapPin className="h-4 w-4 text-violet-700" aria-hidden />
+                      <h3 className="text-sm font-black text-slate-800">{station.stationTitle}</h3>
+                      <span className="mr-auto text-[10px] font-bold text-slate-500">
+                        {station.steps.reduce((n, s) => n + s.items.length, 0)} מחקרים
+                      </span>
+                    </div>
+                    <div className="divide-y divide-slate-100/80">
+                      {station.steps.map((step) => (
+                        <div key={step.stepKey} className="px-3 py-2">
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-violet-600/90 px-1.5 text-[10px] font-black text-white">
+                              {step.stepNumber ?? '?'}
+                            </span>
+                            <p className="text-xs font-bold text-slate-700 truncate">
+                              {step.stepTitle || `שלב ${step.stepNumber ?? ''}`}
+                            </p>
+                          </div>
+                          <ul className="space-y-2">
+                            {step.items.map((item) => {
+                              const meta = parseResearchMeta(item);
+                              const citation = researchCitationLine(meta);
+                              return (
+                                <li
+                                  key={item.id}
+                                  className="rounded-xl border border-violet-200/80 bg-violet-50/40 px-3 py-2.5"
+                                >
+                                  <div className="flex items-start gap-2">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-start gap-1.5">
+                                        <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-600" aria-hidden />
+                                        <p className="text-sm font-black text-slate-900">
+                                          {researchName(item)}
+                                        </p>
+                                      </div>
+                                      {citation ? (
+                                        <p className="mt-0.5 pr-5 text-[11px] font-medium text-violet-800/80">
+                                          {citation}
+                                        </p>
+                                      ) : null}
+                                      <div className="mt-1.5 flex flex-wrap gap-1.5 pr-5">
+                                        {meta.evidenceLevel ? (
+                                          <span className="inline-flex items-center rounded-full border border-emerald-300/70 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                                            ראיות: {meta.evidenceLevel}
+                                          </span>
+                                        ) : null}
+                                        {meta.url ? (
+                                          <a
+                                            href={meta.url}
+                                            target="_blank"
+                                            rel="noreferrer noopener"
+                                            className="inline-flex items-center rounded-full border border-sky-300/70 bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-800 hover:bg-sky-100"
+                                          >
+                                            מקור ↗
+                                          </a>
+                                        ) : null}
+                                      </div>
+                                      <p className="mt-1.5 pr-5 text-xs leading-relaxed text-slate-700">
+                                        <span className="font-bold text-slate-500">מה אלמוג יודע: </span>
+                                        {meta.summary}
+                                      </p>
+                                      {meta.findings.length ? (
+                                        <ul className="mt-1.5 list-disc space-y-0.5 pr-9 text-[11px] leading-relaxed text-slate-600">
+                                          {meta.findings.slice(0, 3).map((f, idx) => (
+                                            <li key={idx}>{f}</li>
+                                          ))}
+                                        </ul>
+                                      ) : null}
+                                      <p className="mt-1.5 pr-5 text-[10px] text-slate-400">
+                                        {item.chunk_count} חלקים · עודכן {formatDate(item.updated_at)}
                                       </p>
                                     </div>
                                     <div className="flex shrink-0 flex-col gap-1">
