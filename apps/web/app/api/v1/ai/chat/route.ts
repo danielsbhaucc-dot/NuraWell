@@ -849,11 +849,11 @@ function isTrivialBypassEligible(
     return false;
   }
   /**
-   * ברכה קצרה ("היי", "מה קורה") היא התור הכי טריוויאלי — מגיע לה מענה מהיר
-   * מהמודל הזול במקום קלוד/Qwen הכבד. בלי זה "היי" היה רץ על המודל הכבד וגורם
-   * להמתנה ארוכה. הברכה לא דורשת RAG/דוח, והקול נשמר דרך ה-system prompt.
+   * ברכת פתיחה ("היי", "מה קורה") נשארת low-context כדי לא למשוך RAG/דו"ח כבד,
+   * אבל לא עוברת לכותב הזול: שם מתקבלות תשובות גנריות ולעיתים ניחוש מגדר
+   * ("מה אתה עושה ערה"). את קול הפתיחה הדינמי צריך לכתוב המודל הראשי.
    */
-  if (isCasualGreeting(t)) return true;
+  if (isCasualGreeting(t)) return false;
   if (/[?؟]/.test(t)) return false;
   const letterOnly = t.replace(/[^\u0590-\u05FFa-zA-Z]/g, '');
   if (letterOnly.length > 24) return false;
@@ -2145,7 +2145,9 @@ export async function POST(request: Request) {
     if (journeyStateLine) contextSections.push(journeyStateLine.trim());
 
     if (journeyGuidanceBlock) contextSections.push(journeyGuidanceBlock);
-    const pendingTasksBlock = formatPendingAcceptedTasksPromptBlock(pendingTasks);
+    const pendingTasksBlock = formatPendingAcceptedTasksPromptBlock(pendingTasks, {
+      isGreeting: isGreetingTurn,
+    });
     if (pendingTasksBlock) contextSections.push(pendingTasksBlock);
 
     /**
