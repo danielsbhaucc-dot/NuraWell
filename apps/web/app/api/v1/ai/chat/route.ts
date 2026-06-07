@@ -32,6 +32,10 @@ import {
   queryUserMemoryVectors,
 } from '../../../../../lib/ai/upstash-vector-rest';
 import { ingestUserMessageIntoVectorMemory } from '../../../../../lib/ai/vector-memory-ingest';
+import { createPiiShield, PII_PLACEHOLDERS, type PiiShield } from '../../../../../lib/ai/privacy/pii-shield';
+import { fetchUserMemoryDossier } from '../../../../../lib/ai/memory-dossier/fetch-dossier';
+import { formatUserMemoryDossierPromptBlock } from '../../../../../lib/ai/memory-dossier/format-dossier-prompt';
+import { ingestChatTurnIntoMemoryDossier } from '../../../../../lib/ai/memory-dossier/ingest-chat-turn';
 import { applyChatSignalsFromUserMessage, detectChatSignals } from '../../../../../lib/ai/chat-signals';
 import {
   applyHabitIntentFromUserMessage,
@@ -211,12 +215,11 @@ const CHAT_OUTPUT_TOKENS_NEAR_CAP_RATIO = 0.92;
  * מודל הצ'אט (אלמוג המנטור).
  * Override ב-env: `AI_CHAT_MODEL`.
  *
- * ברירת המחדל היא `meta-llama/llama-4-maverick` (דרך OpenRouter) — זול בטירוף
- * יחסית ל-Claude, והפער בטון מצומצם באמצעות הנחיות מפורשות בפרומפט (רציונל זהיר,
- * מינוף פסיכולוגי, וחום/אמפתיה — ראה ALMOG_RATIONAL_AND_PSYCHOLOGY_RULES).
+ * ברירת המחדל: `qwen/qwen3.7-plus` (דרך OpenRouter) — מודל סיני עם מגן PII.
+ * לחזרה ל-Llama: `AI_CHAT_MODEL=meta-llama/llama-4-maverick`.
  * לחזרה ל-Claude: `AI_CHAT_MODEL=anthropic/claude-sonnet-4.6`.
  */
-const CHAT_MODEL = process.env.AI_CHAT_MODEL?.trim() || 'meta-llama/llama-4-maverick';
+const CHAT_MODEL = process.env.AI_CHAT_MODEL?.trim() || 'qwen/qwen3.7-plus';
 /**
  * מודל זול לראוטינג ול-trivial-bypass ול-safety-net: Llama 4 *Scout* (אח קטן
  * של Maverick — 16 מומחים, מהיר וזול ~$0.08/M, מצוין לאישורים/תודות קצרים).
@@ -236,6 +239,8 @@ const CHAT_SAFETY_NET_MODEL = process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() || CH
  * האם להזריק את providerOptions.openai בכלל.
  */
 const CHAT_MODEL_IS_OPENAI = CHAT_MODEL.startsWith('openai/');
+/** מודלים סיניים (Qwen) — חייבים PII Shield לפני שליחה */
+const CHAT_MODEL_REQUIRES_PII_SHIELD = CHAT_MODEL.startsWith('qwen/') || CHAT_MODEL.includes('qwen3');
 /**
  * prompt-cache ב-`cache_control` הוא מנגנון *ספציפי ל-Anthropic*. ל-Llama (וכל
  * מודל לא-anthropic) ב-OpenRouter אסור/מיותר לשלוח אותו — OpenRouter פשוט מתעלם
@@ -359,6 +364,7 @@ async function createOpenRouterTextStreamResponse({
   headers,
   onFinish,
   onEmptyRetry,
+  piiShield,
 }: {
   apiKey: string;
   referer: string;
@@ -371,7 +377,14 @@ async function createOpenRouterTextStreamResponse({
   headers: HeadersInit;
   onFinish: (payload: StreamFinishPayload) => Promise<void>;
   onEmptyRetry?: () => Promise<string>;
-}): Promise<Response> {
+  piiShield?: PiiShield | null;
+}) {
+  const tokenizedStatic = piiShield ? piiShield.tokenizeText(staticSystemPrompt) : staticSystemPrompt;
+  const tokenizedDynamic = piiShield ? piiShield.tokenizeText(dynamicSystemPrompt) : dynamicSystemPrompt;
+  const tokenizedMessages = piiShield
+    ? piiShield.tokenizeMessages(recentMessages)
+    : recentMessages;
+
   const requestBody = JSON.stringify({
     model,
     temperature,
@@ -381,11 +394,15 @@ async function createOpenRouterTextStreamResponse({
     stream: true,
     stream_options: { include_usage: true },
     messages: openRouterMessagesWithCachedSystem(
-      staticSystemPrompt,
-      dynamicSystemPrompt,
-      recentMessages
+      tokenizedStatic,
+      tokenizedDynamic,
+      tokenizedMessages
     ),
   });
+
+  if (piiShield) {
+    piiShield.assertNoRawPii(requestBody);
+  }
 
   let upstream: Response | null = null;
   let lastErrorText = '';
@@ -427,18 +444,21 @@ async function createOpenRouterTextStreamResponse({
   let streamStarted = false;
   let finishReason = 'stop';
   let usage: StreamFinishPayload['usage'];
+  const streamDetokenizer = piiShield?.createStreamDetokenizer();
 
   const enqueueModelText = (
     content: string,
     controller: ReadableStreamDefaultController<Uint8Array>
   ) => {
     if (!content) return;
+    const clientText = streamDetokenizer ? streamDetokenizer.push(content) : content;
+    if (!clientText) return;
     if (streamStarted) {
-      controller.enqueue(encoder.encode(content));
+      controller.enqueue(encoder.encode(clientText));
       return;
     }
 
-    streamPrefixBuffer += content;
+    streamPrefixBuffer += clientText;
     if (normalizeLine(streamPrefixBuffer).length >= MIN_STREAM_PREFIX_CHARS) {
       streamStarted = true;
       controller.enqueue(encoder.encode(streamPrefixBuffer));
@@ -504,7 +524,8 @@ async function createOpenRouterTextStreamResponse({
 
         const accumulatedTrimmed = accumulated.trim();
         if (!accumulatedTrimmed || isStubModelReply(accumulatedTrimmed)) {
-          const retryText = onEmptyRetry ? (await onEmptyRetry()).trim() : '';
+          let retryText = onEmptyRetry ? (await onEmptyRetry()).trim() : '';
+          if (retryText && piiShield) retryText = piiShield.detokenizeText(retryText);
           const recoveredText = retryText || pickEmptyResponseFallback();
           accumulated = recoveredText;
           finishReason = 'stop';
@@ -513,12 +534,24 @@ async function createOpenRouterTextStreamResponse({
           controller.enqueue(encoder.encode(recoveredText));
         }
 
+        if (streamDetokenizer) {
+          const tail = streamDetokenizer.flush();
+          if (tail) {
+            if (streamStarted) controller.enqueue(encoder.encode(tail));
+            else {
+              streamPrefixBuffer += tail;
+            }
+          }
+        }
+
         if (!streamStarted) {
           flushModelText(controller);
         }
 
+        const finalText = piiShield ? piiShield.detokenizeText(accumulated) : accumulated;
+
         await onFinish({
-          text: accumulated,
+          text: finalText,
           usage,
           finishReason,
         });
@@ -1261,6 +1294,7 @@ async function fetchChatProfileRow(
   userId: string
 ): Promise<{
   full_name: string | null;
+  phone: string | null;
   gender: 'male' | 'female' | null;
   mood_signal: string | undefined;
   ai_context: AiUserContext;
@@ -1289,7 +1323,7 @@ async function fetchChatProfileRow(
     const { data } = await (supabase as any)
       .from('profiles')
       .select(
-        `full_name, gender, ai_context, last_active_at,
+        `full_name, phone, gender, ai_context, last_active_at,
         main_goal, current_weight_kg, goal_weight_kg,
         weakest_time_of_day, main_obstacle, main_obstacle_detail,
         wake_up_time, sleep_time, dinner_time, meal_schedule, preferred_channel,
@@ -1299,6 +1333,7 @@ async function fetchChatProfileRow(
       .maybeSingle();
     const profile = (data ?? null) as {
       full_name?: string | null;
+      phone?: string | null;
       gender?: 'male' | 'female' | null;
       ai_context?: AiUserContext | null;
       last_active_at?: string | null;
@@ -1341,6 +1376,7 @@ async function fetchChatProfileRow(
 
     return {
       full_name: profile?.full_name ?? null,
+      phone: profile?.phone ?? null,
       gender: profile?.gender ?? null,
       mood_signal: profile?.ai_context?.current_mood_signal,
       ai_context: (profile?.ai_context ?? {}) as AiUserContext,
@@ -1372,6 +1408,7 @@ async function fetchChatProfileRow(
   } catch {
     return {
       full_name: null,
+      phone: null,
       gender: null,
       mood_signal: undefined,
       ai_context: {},
@@ -1733,6 +1770,8 @@ export async function POST(request: Request) {
       })
     : Promise.resolve(null);
 
+  const memoryDossierPromise = fetchUserMemoryDossier(supabase, user.id).catch(() => null);
+
   const [
     profileRow,
     activeJourneyContext,
@@ -1742,6 +1781,7 @@ export async function POST(request: Request) {
     _userTurnInserted,
     notificationContextBlock,
     fullProgressReport,
+    memoryDossier,
   ] = await Promise.all([
     fetchChatProfileRow(supabase, user.id),
     journeyPromise,
@@ -1751,6 +1791,7 @@ export async function POST(request: Request) {
     insertPromise,
     notificationContextPromise,
     fullProgressReportPromise,
+    memoryDossierPromise,
   ]);
 
   const [todayChatTurns, todayAlmogTouches] = dailyContextBundle;
@@ -1834,8 +1875,15 @@ export async function POST(request: Request) {
 
   try {
     const firstName = extractFirstName(profileFullName);
+    const piiShield = CHAT_MODEL_REQUIRES_PII_SHIELD
+      ? createPiiShield({
+          full_name: profileFullName,
+          phone: profileRow.phone,
+          email: user.email ?? null,
+        })
+      : null;
     const personalNameInstruction = firstName
-      ? `השם הפרטי של המשתמש הוא "${firstName}". אם טבעי ומתאים, פנה אליו/אליה בשם הפרטי בלבד (בלי שם משפחה).`
+      ? `השם הפרטי של המשתמש הוא ${PII_PLACEHOLDERS.USER_FIRST_NAME}. כאשר אתה פונה בשם — השתמש בדיוק ב-${PII_PLACEHOLDERS.USER_FIRST_NAME} (בלי שם משפחה).`
       : 'אין שם פרטי זמין בפרופיל כרגע.';
     let ragMemoryBlock = '';
     let systemKnowledgeBlock = '';
@@ -1916,6 +1964,7 @@ export async function POST(request: Request) {
 
     const moodFromProfile = moodCoachingHint(profileMoodSignal);
     const workingMemoryBlock = formatAiWorkingMemoryPromptBlock(profileRow.ai_context);
+    const memoryDossierBlock = formatUserMemoryDossierPromptBlock(memoryDossier);
     const coachingStyleBlock = buildCoachingStylePromptBlock(profileRow.ai_context);
     const journeyFollowUpBlock = formatJourneyFollowUpChatBlock(profileRow.ai_context);
     const lifeContextBlock = formatLifeContextChatBlock(profileRow.ai_context);
@@ -2004,6 +2053,7 @@ export async function POST(request: Request) {
 
     if (coachingStyleBlock) contextSections.push(coachingStyleBlock);
     if (workingMemoryBlock) contextSections.push(workingMemoryBlock);
+    if (memoryDossierBlock) contextSections.push(memoryDossierBlock);
     if (journeyFollowUpBlock) contextSections.push(journeyFollowUpBlock);
     if (lifeContextBlock) contextSections.push(lifeContextBlock);
     if (onboardingContextBlock) contextSections.push(onboardingContextBlock);
@@ -2471,6 +2521,33 @@ export async function POST(request: Request) {
             }
           });
         }
+
+        after(async () => {
+          try {
+            const admin = createAdminClient();
+            const dossierIng = await ingestChatTurnIntoMemoryDossier({
+              adminSupabase: admin,
+              userId: user.id,
+              userMessage: lastUserText,
+              assistantMessage: assistantText,
+              habitTitles: journeyHabits.map((h) => h.title),
+            });
+            if (dossierIng.dossier_updated || dossierIng.ai_context_patched) {
+              console.info('[ai/chat]', {
+                debug_id: debugId,
+                stage: 'memory_dossier_ingest_ok',
+                dossier_updated: dossierIng.dossier_updated,
+                ai_context_patched: dossierIng.ai_context_patched,
+              });
+            }
+          } catch (dossierErr) {
+            console.warn('[ai/chat]', {
+              debug_id: debugId,
+              stage: 'memory_dossier_ingest_failed',
+              error: dossierErr instanceof Error ? dossierErr.message : String(dossierErr),
+            });
+          }
+        });
       };
 
     stage = 'stream_response';
@@ -2505,6 +2582,7 @@ export async function POST(request: Request) {
         temperature: 0.85,
         maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
         headers: upstreamHeaders,
+        piiShield,
         onEmptyRetry: async () => {
           try {
             const retry = await generateText({
@@ -2514,8 +2592,12 @@ export async function POST(request: Request) {
               providerOptions: CHAT_MODEL_IS_OPENAI
                 ? { openai: { reasoningEffort: 'low' } }
                 : {},
-              system: systemPromptWithMemory,
-              messages: recentMessages,
+              system: piiShield
+                ? piiShield.tokenizeText(systemPromptWithMemory)
+                : systemPromptWithMemory,
+              messages: piiShield
+                ? piiShield.tokenizeMessages(recentMessages)
+                : recentMessages,
             });
             const retryText = (retry.text ?? '').trim();
             if (retryText) {
@@ -2525,7 +2607,7 @@ export async function POST(request: Request) {
                 finish_reason: retry.finishReason,
               });
             }
-            return retryText;
+            return piiShield ? piiShield.detokenizeText(retryText) : retryText;
           } catch (retryErr) {
             console.warn('[ai/chat]', {
               debug_id: debugId,

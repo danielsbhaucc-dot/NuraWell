@@ -9,7 +9,12 @@ export const UPSTASH_NAMESPACE_SYSTEM_KNOWLEDGE = 'system-knowledge';
 export const EMBEDDING_MODEL_OPENROUTER = 'openai/text-embedding-3-small';
 
 /** חילוץ עובדות אסינכרוני — Llama דרך OpenRouter (לא מענה למשתמש) */
-export const MEMORY_EXTRACTION_MODEL_OPENROUTER = 'meta-llama/llama-4-scout';
+export const MEMORY_EXTRACTION_MODEL_OPENROUTER =
+  process.env.MEMORY_EXTRACTION_MODEL?.trim() || 'meta-llama/llama-4-scout';
+
+/** חילוץ תיק זיכרון מובנה — Llama 4 דרך OpenRouter (רקע, לא צ'אט) */
+export const MEMORY_DOSSIER_MODEL_OPENROUTER =
+  process.env.MEMORY_DOSSIER_MODEL?.trim() || 'meta-llama/llama-4-scout';
 
 export const RAG_TOP_K = 3;
 
