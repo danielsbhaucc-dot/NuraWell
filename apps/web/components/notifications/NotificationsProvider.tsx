@@ -15,7 +15,12 @@ import { Drawer } from 'vaul';
 import { CheckCheck, ChevronDown, Loader2 } from 'lucide-react';
 import { NotificationCard } from './NotificationCard';
 import { LiveToastStack } from './LiveNotificationToast';
-import { extractExpectsReply, extractSource } from '../../lib/notifications/replyable';
+import {
+  extractExpectsReply,
+  extractSource,
+  extractSurvey,
+  type NotificationSurvey,
+} from '../../lib/notifications/replyable';
 import { createClient } from '../../lib/supabase/client';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { useMentorAvatarUrl } from '../../lib/client/useMentorAvatarUrl';
@@ -37,6 +42,8 @@ export type NotificationItem = {
   mentorId: MentorId;
   /** האם ניתן להגיב דרך הצ'אט (הודעות מאלמוג עם שאלה) */
   expectsReply?: boolean;
+  /** סקר Exit (מערכת הנטישה — מהלך breakup). null כשאין. */
+  survey?: NotificationSurvey | null;
 };
 
 type ViewMode = 'inbox' | 'archive';
@@ -71,6 +78,7 @@ function mapRealtimeRow(row: Record<string, unknown>): NotificationItem | null {
     source: extractSource(row.metadata),
     mentorId: extractMentor(row.metadata, typeof row.title === 'string' ? row.title : ''),
     expectsReply: extractExpectsReply(row.metadata),
+    survey: extractSurvey(row.metadata),
   };
 }
 
@@ -91,6 +99,7 @@ function mapApiRow(row: Record<string, unknown>): NotificationItem {
     source: extractSource(row.metadata),
     mentorId: extractMentor(row.metadata, title),
     expectsReply: extractExpectsReply(row.metadata),
+    survey: extractSurvey(row.metadata),
   };
 }
 

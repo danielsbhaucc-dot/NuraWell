@@ -36,6 +36,7 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 | `POST /api/v1/ai/cron/habit-checkpoints?slot=midday`  | יומי 13:00 ישראל | אותו קובץ |
 | `POST /api/v1/ai/cron/habit-checkpoints?slot=evening` | יומי 20:00 ישראל | אותו קובץ |
 | `POST /api/v1/ai/cron/onboarding-check-ins` | כל 30 דקות (מומלץ) | `apps/web/app/api/v1/ai/cron/onboarding-check-ins/route.ts` |
+| `POST /api/v1/ai/cron/passive-presence` | יומי 13:00 ישראל | `apps/web/app/api/v1/ai/cron/passive-presence/route.ts` |
 
 ה-Master cron מנתח אינטראקציות AI מ-24 השעות האחרונות + שולח נידג'ים למשתמשים לא־פעילים.
 ה-habit checkpoints מתזמן Workflows של בדיקת הרגלים לפי החלון (בוקר/צהריים/ערב) **וגם
@@ -107,12 +108,17 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 | `WORKFLOW_PUBLIC_BASE_URL` | אופציונלי | אם רוצים לאלץ דומיין ספציפי ל-Workflows |
 | `CRON_MAX_HABIT_CHECKPOINT_TRIGGERS` | אופציונלי | ברירת מחדל 350, מקסימום 800 |
 | `CRON_MAX_ONBOARDING_CHECK_IN_TRIGGERS` | אופציונלי | ברירת מחדל 200, מקסימום 500 |
+| `CHURN_REENGAGEMENT_ENABLED` | אופציונלי | `1` כדי להפעיל שכבת מהלכי re-engagement (ברירת מחדל כבוי) |
+| `CHURN_REENGAGEMENT_ROLLOUT_PERCENT` | אופציונלי | אחוז משתמשים בגלגול (hash userId). ברירת מחדל 100 |
+| `CHURN_PASSIVE_PRESENCE_ENABLED` | אופציונלי | `1` כדי להפעיל את cron ה-passive-presence (ברירת מחדל כבוי) |
+| `CHURN_PASSIVE_VALUE_LLM` | אופציונלי | `1` ל-value drops דרך LLM במקום templates (Phase 2) |
+| `CRON_MAX_PASSIVE_PRESENCE_SENDS` | אופציונלי | ברירת מחדל 200, מקסימום 500 |
 
 > **חובה Redeploy ל-Production אחרי הוספה / עדכון משתני סביבה**, אחרת השרת לא יראה אותם.
 
-### ב. יצירת 5 Schedules ב-Upstash Console
+### ב. יצירת 6 Schedules ב-Upstash Console
 
-נכנסים ל-**Upstash → QStash → Schedules → Create**. יוצרים 5 schedules:
+נכנסים ל-**Upstash → QStash → Schedules → Create**. יוצרים 6 schedules:
 
 #### Schedule 1 — Master Daily
 
@@ -164,6 +170,20 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 > **למה כל 30 דקות ולא פעם בשעה?** זמני הבדיקה נשמרים בדיוק (למשל 07:45). Cron שעתי ב-:00 עלול לפספס. `0,30 * * * *` = פעמיים בשעה, חלון ±30 דקות.
 
 בדיקה יבשה: `POST .../onboarding-check-ins?dryRun=1` עם `Authorization: Bearer <CRON_SECRET>`.
+
+#### Schedule 6 — Passive Presence (מערכת הנטישה — churned בלבד)
+
+| שדה | ערך |
+|---|---|
+| Destination URL | `https://nurawell.vercel.app/api/v1/ai/cron/passive-presence` |
+| Method | `POST` |
+| Cron | `0 13 * * *` |
+| Timezone | `Asia/Jerusalem` |
+
+> רץ רק כש-`CHURN_PASSIVE_PRESENCE_ENABLED=1`. שולח לכל היותר touch פסיבי אחד למשתמש
+> `engagement_status='churned'`, עם **קו אדום קשיח** של הודעה אחת ל-7 ימים (מאומת מול
+> טבלת `notifications`). בחירת הסוג (soft / value / trigger) לפי קצב + טריגרים
+> (ראש חודש / יום שני / אחרי חג). בדיקה יבשה: `?dryRun=1` מחזיר `sample_bodies` בלי לשלוח.
 
 ---
 
@@ -369,6 +389,7 @@ curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints/te
 - `apps/web/lib/api/authorize-cron.ts` — אימות חתימה / Bearer.
 - `apps/web/app/api/v1/ai/cron/master/route.ts` — cron מאסטר יומי.
 - `apps/web/app/api/v1/ai/cron/habit-checkpoints/route.ts` — תזמון 3× ביום.
+- `apps/web/app/api/v1/ai/cron/passive-presence/route.ts` — passive presence ל-churned (מערכת הנטישה).
 - `apps/web/app/api/v1/ai/cron/habit-checkpoints/test/route.ts` — endpoint דיבוג סינכרוני (`/test`).
 - `apps/web/app/api/v1/ai/cron/habit-checkpoints/diagnose/route.ts` — endpoint READ-ONLY (`/diagnose`).
 - `apps/web/app/api/workflows/almog-habit-checkpoint/route.ts` — ה-workflow הקצה שמטפל במשתמש בודד.

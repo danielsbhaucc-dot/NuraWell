@@ -22,6 +22,8 @@ import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
 import { buildProfileScheduleHints } from '../ai/profile-schedule-anchors';
 import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from '../ai/prompts';
 import type { AlmogHabitCheckpointPayload, HabitCheckpointSlot } from './almog-habit-checkpoint-payload';
+import { isActiveReengagementMove, churnSurveyOptions, type ReengagementMove } from '../churn/reengagement-moves';
+import { patchReengagementContext } from '../churn/patch-reengagement-context';
 
 const SLOT_HE: Record<HabitCheckpointSlot, string> = {
   morning: 'בוקר',
@@ -451,6 +453,18 @@ export async function sendAlmogHabitCheckpointNotification(
   const habitIds = payload.habits.map((h) => h.id);
   const pendingTaskIds = payload.pendingTasks.map((t) => t.id);
 
+  /**
+   * 🔄 churn / re-engagement — מטא למהלך התוכן. ביום 10 (breakup) מצרפים את
+   * ה-Exit Survey ל-metadata.survey, ומכבים expects_reply (התשובה דרך הכפתורים).
+   */
+  const move: ReengagementMove = payload.reengagementMove ?? 'none';
+  const isBreakup = move === 'breakup' && payload.breakupSurvey === true;
+  const expectsReply = isBreakup ? false : true;
+  const surveyMeta = isBreakup
+    ? { type: 'churn_exit' as const, options: churnSurveyOptions(), responded: false }
+    : undefined;
+  const notificationSource = isBreakup ? 'almog_churn_survey' : 'almog_habit_checkpoint';
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: inserted, error } = await (admin as any)
     .from('notifications')
@@ -465,8 +479,9 @@ export async function sendAlmogHabitCheckpointNotification(
       is_sent: false,
       send_at: new Date().toISOString(),
       metadata: {
-        source: 'almog_habit_checkpoint',
-        expects_reply: true,
+        source: notificationSource,
+        mentor: 'almog',
+        expects_reply: expectsReply,
         notify_mode: payload.notifyMode,
         reinforce_kind: payload.reinforceKind ?? null,
         slot: payload.slot,
@@ -484,6 +499,9 @@ export async function sendAlmogHabitCheckpointNotification(
         days_since_last_active: payload.daysSinceLastActive,
         completion_status: payload.completionStatus,
         recipient_first_name: firstName,
+        reengagement_move: move,
+        ...(payload.engagementStatus ? { engagement_status: payload.engagementStatus } : {}),
+        ...(surveyMeta ? { survey: surveyMeta } : {}),
       },
     })
     .select('id, user_id, type, title, archived_at, is_read, is_sent, created_at')
@@ -494,6 +512,14 @@ export async function sendAlmogHabitCheckpointNotification(
   /** אם אלמוג כבר הזכיר את ההמלצה — לנקות את הflag כדי לא לחזור עליו. */
   if (tuneBlock) {
     await clearHabitTuneFlag(admin, payload.userId);
+  }
+
+  /**
+   * 🔄 churn — אחרי insert מוצלח של מהלך re-engagement פעיל, מעדכנים את
+   * ai_context.reengagement (sent_moves + timestamps) כדי שלא יישלח שוב.
+   */
+  if (isActiveReengagementMove(move)) {
+    await patchReengagementContext(admin, payload.userId, move);
   }
 
   const { afterAlmogInAppNotification } = await import('../notifications/after-almog-insert');

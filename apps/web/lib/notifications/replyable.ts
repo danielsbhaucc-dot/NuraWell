@@ -37,3 +37,30 @@ export function extractExpectsReply(meta: unknown): boolean | undefined {
   if (er === false) return false;
   return undefined;
 }
+
+/** סקר ה-Exit מצורף ל-metadata.survey (מערכת הנטישה — מהלך breakup). */
+export type NotificationSurvey = {
+  type: 'churn_exit';
+  options: Array<{ id: string; label: string }>;
+  responded: boolean;
+  reason?: string | null;
+};
+
+export function extractSurvey(meta: unknown): NotificationSurvey | null {
+  if (!meta || typeof meta !== 'object') return null;
+  const s = (meta as { survey?: unknown }).survey;
+  if (!s || typeof s !== 'object') return null;
+  const obj = s as Record<string, unknown>;
+  if (obj.type !== 'churn_exit') return null;
+  const options = Array.isArray(obj.options)
+    ? (obj.options as Array<Record<string, unknown>>)
+        .filter((o) => typeof o?.id === 'string' && typeof o?.label === 'string')
+        .map((o) => ({ id: String(o.id), label: String(o.label) }))
+    : [];
+  return {
+    type: 'churn_exit',
+    options,
+    responded: obj.responded === true,
+    reason: typeof obj.reason === 'string' ? obj.reason : null,
+  };
+}

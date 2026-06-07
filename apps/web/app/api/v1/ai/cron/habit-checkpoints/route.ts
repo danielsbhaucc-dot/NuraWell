@@ -9,8 +9,17 @@ import {
   fetchTrueLastActiveByUser,
   planHabitCheckpointTriggersWithChat,
   type RecentExecutionsByUser,
+  type ReengagementInfoByUser,
+  type ReengagementUserInfo,
   type UserResponseInfo,
 } from '../../../../../../lib/workflows/habit-checkpoint-batch';
+import { isChurnReengagementEnabled } from '../../../../../../lib/churn/feature-flags';
+import { readReengagementContext } from '../../../../../../lib/churn/patch-reengagement-context';
+import { updateEngagementStatuses } from '../../../../../../lib/churn/update-engagement-status';
+import {
+  goalToHebrew,
+  obstacleToHebrew,
+} from '../../../../../../lib/churn/reengagement-prompt-blocks';
 import { jerusalemDateKey } from '../../../../../../lib/journey/task-schedule';
 import { workflowPublicBaseUrl } from '../../../../../../lib/workflows/resolve-workflow-public-url';
 
@@ -157,6 +166,12 @@ async function runHabitCheckpointCron(request: Request) {
     ai_check_in_times?: unknown;
     last_responded_at?: string | null;
     notification_count?: number | null;
+    main_goal?: string | null;
+    main_obstacle?: string | null;
+    main_obstacle_detail?: string | null;
+    streak_days?: number | null;
+    engagement_status?: string | null;
+    ai_system_prompt?: string | null;
   }> = [];
 
   if (progressUserIds.length > 0) {
@@ -164,12 +179,15 @@ async function runHabitCheckpointCron(request: Request) {
      * `last_responded_at` + `notification_count` נוספים ל-SELECT (migration
      * 000029). הם דרושים ל-(א) דילוג חכם אם המשתמש הגיב בשעות האחרונות,
      * (ב) הזרקת counter ל-LLM כדי להתאים טון למשתמש "ותיק".
+     *
+     * שדות churn (migration 000044): main_goal/main_obstacle/streak_days
+     * ל-Identity Reconnection, engagement_status ל-persistence.
      */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profiles, error: profErr } = await (admin as any)
       .from('profiles')
       .select(
-        'id, ai_context, onboarding_completed, ai_check_in_times, last_responded_at, notification_count'
+        'id, ai_context, onboarding_completed, ai_check_in_times, last_responded_at, notification_count, main_goal, main_obstacle, main_obstacle_detail, streak_days, engagement_status, ai_system_prompt'
       )
       .in('id', progressUserIds.slice(0, 2000));
 
@@ -207,6 +225,32 @@ async function runHabitCheckpointCron(request: Request) {
    */
   const lastActiveByUser = await fetchTrueLastActiveByUser(admin, progressUserIds, now);
 
+  /**
+   * 🔄 churn / re-engagement — בונים מפה פר משתמש: האם מופעל (feature flag +
+   * rollout), אילו מהלכים כבר נשלחו, ומתי breakup, וקונטקסט זהות מ-onboarding.
+   * כשהדגל כבוי — המפה ריקה והתנהגות זהה לקודם (תאימות לאחור מלאה).
+   */
+  const reengagementByUser = new Map<string, ReengagementUserInfo>();
+  for (const row of profileRows) {
+    const enabled = isChurnReengagementEnabled(row.id);
+    if (!enabled) continue;
+    const reCtx = readReengagementContext(row.ai_context);
+    const info: ReengagementUserInfo = {
+      enabled,
+      sentMoves: reCtx.sent_moves,
+      breakupSentAt: reCtx.breakup_sent_at ?? null,
+      identityContext: {
+        mainGoal: goalToHebrew(row.main_goal),
+        mainObstacle: obstacleToHebrew(row.main_obstacle, row.main_obstacle_detail),
+        mainObstacleDetail: row.main_obstacle_detail ?? null,
+        streakDays: typeof row.streak_days === 'number' ? row.streak_days : null,
+        userWords: row.ai_system_prompt ?? null,
+      },
+    };
+    reengagementByUser.set(row.id, info);
+  }
+  const reengagementInfo: ReengagementInfoByUser = reengagementByUser;
+
   const plan = await planHabitCheckpointTriggersWithChat(
     admin,
     progressRows ?? [],
@@ -215,8 +259,22 @@ async function runHabitCheckpointCron(request: Request) {
     todayExecutionsByUser,
     lastActiveByUser,
     userResponseInfo,
-    recentExecutionsByUser
+    recentExecutionsByUser,
+    reengagementInfo
   );
+
+  /**
+   * עדכון engagement_status persisted + reactivation reset (ספק 6.5).
+   * רץ רק כשיש משתמשים שעבורם churn מופעל — חוסך writes כשהדגל כבוי.
+   */
+  let engagementUpdate = { updated: 0, reactivated: 0, errors: [] as string[] };
+  if (!isDryRun && reengagementByUser.size > 0) {
+    engagementUpdate = await updateEngagementStatuses(admin, {
+      profileRows: profileRows.filter((r) => reengagementByUser.has(r.id)),
+      lastActiveByUser,
+      now,
+    });
+  }
 
   const userIds = [...new Set(plan.map((p) => p.userId))];
   const avoidIds = new Set<string>();
@@ -312,6 +370,7 @@ async function runHabitCheckpointCron(request: Request) {
       skipped_personalized_almog: personalizedScheduleIds.size,
       skipped_ghosted_weekly_cooldown: ghostedWeeklyCooldownIds.size,
       would_trigger: eligible.length,
+      churn_enabled_users: reengagementByUser.size,
       workflow_url: workflowUrl,
       sample_user_ids: eligible.slice(0, 5).map((e) => e.userId),
       hint_he:
@@ -352,6 +411,9 @@ async function runHabitCheckpointCron(request: Request) {
     eligible_after_avoid: eligible.length,
     errors_count: errors.length,
     workflow_url: workflowUrl,
+    churn_enabled_users: reengagementByUser.size,
+    engagement_status_updated: engagementUpdate.updated,
+    engagement_reactivated: engagementUpdate.reactivated,
   };
 
   /**
