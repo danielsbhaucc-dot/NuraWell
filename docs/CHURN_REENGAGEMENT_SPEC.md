@@ -721,15 +721,39 @@ function detectPassiveTrigger(now: Date, tz = 'Asia/Jerusalem'): PassiveTrigger 
 
 **חגים:** רשימה ב-`apps/web/lib/churn/israeli-holidays.ts` (פסח, ראש השנה, וכו').
 
-### 8.3 קו אדום — תדירות
+### 8.3 קו אדום — תדירות (hard limit גלובלי)
 
 ```text
-MAX 1 הודעה ב-7 ימים (כל סוג passive + habit checkpoint ghosted)
+MAX 1 הודעה ב-7 ימים (כל סוג passive + habit checkpoint ghosted) — קשיח, גלובלי ליוזר
 MAX 1 passive_value ב-30 ימים
 passive_trigger — לא יותר מ-1 ב-14 ימים (לא לצבור עם soft)
 ```
 
-**בדיקה:** query על `notifications` WHERE `metadata.source IN ('almog_passive_presence', 'almog_habit_checkpoint')` AND `created_at > now - 7d`.
+**אכיפה קשיחה (לא רק "המלצה"):** לפני כל insert בענף ה-passive presence,
+**חובה** לעבור gate שבודק את ההיסטוריה הגלובלית של היוזר. אם יש ולו הודעה
+אחת מ-7 הימים האחרונים — דילוג מוחלט, בלי קשר לטריגר:
+
+```typescript
+/** Gate קשיח: 1 הודעה / 7 ימים ליוזר churned. מחזיר false = אסור לשלוח. */
+async function passivePresenceAllowed(
+  admin: AdminDb,
+  userId: string,
+  now = new Date()
+): Promise<boolean> {
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { count } = await admin
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', weekAgo)
+    .in('metadata->>source', ['almog_passive_presence', 'almog_habit_checkpoint']);
+  return (count ?? 0) === 0;
+}
+```
+
+> מקור האמת לתדירות הוא טבלת `notifications` (לא Redis). אם בעתיד נרצה layer
+> מהיר יותר, אפשר לשכפל את ה-gate ל-Upstash Redis עם TTL של 7 ימים, אבל
+> בדיקת ה-DB היא ה-source of truth כדי שלא ניצור spam גם אם ה-cache נופל.
 
 ### 8.4 Value Drop — מקור תוכן
 
@@ -803,7 +827,7 @@ CHURN_PASSIVE_VALUE_LLM=0
 | **0 — Spec** | — | מסמך זה | אישור מוצר |
 | **1 — Content layer** | 10% users | `computeReengagementMove` + prompt blocks, **בלי** DB migration | אין regression ב-open rate |
 | **2 — Persistence** | 50% | migration 000043, engagement_status updates | analytics עובד |
-| **3 — Exit Survey** | 100% re-engagement | API + UI buttons | response rate >10% |
+| **3 — Exit Survey** | 100% re-engagement | API + UI buttons, רכוב על breakup (יום 10) | response rate >10% |
 | **4 — Passive Presence** | churned only | cron + triggers | ≤1 complaint/week על spam |
 | **5 — Deprecate master re-engage** | 100% | כיבוי duplicate logic | — |
 
@@ -851,33 +875,41 @@ re_engage / crisis_reconnect / micro_win למשתמשים עם `enrollments.is_a
 
 ## נספח ב — רשימת קבצים ליישום (checklist)
 
-- [ ] `docs/CHURN_REENGAGEMENT_SPEC.md` (מסמך זה)
-- [ ] `supabase/migrations/000043_churn_reengagement.sql`
-- [ ] `apps/web/lib/churn/reengagement-moves.ts`
-- [ ] `apps/web/lib/churn/reengagement-prompt-blocks.ts`
-- [ ] `apps/web/lib/churn/patch-reengagement-context.ts`
-- [ ] `apps/web/lib/churn/passive-presence-batch.ts`
-- [ ] `apps/web/lib/churn/israeli-holidays.ts`
-- [ ] `apps/web/lib/workflows/almog-habit-checkpoint-payload.ts` (extend)
-- [ ] `apps/web/lib/workflows/habit-checkpoint-batch.ts` (integrate)
-- [ ] `apps/web/lib/ai/habit-checkpoint-llm.ts` (integrate)
-- [ ] `apps/web/lib/workflows/send-almog-habit-checkpoint.ts` (integrate)
-- [ ] `apps/web/app/api/v1/churn-feedback/route.ts`
-- [ ] `apps/web/app/api/v1/ai/cron/passive-presence/route.ts`
-- [ ] `apps/web/components/notifications/ChurnSurveyButtons.tsx`
-- [ ] `apps/web/components/notifications/NotificationCard.tsx` (wire survey)
-- [ ] `apps/web/tests/reengagement-moves.test.ts`
-- [ ] `docs/CRON_SCHEDULES_SETUP.md` (הוספת passive-presence schedule)
+- [x] `docs/CHURN_REENGAGEMENT_SPEC.md` (מסמך זה)
+- [x] `supabase/migrations/000044_churn_reengagement.sql` *(מספור בפועל — 000043 כבר תפוס)*
+- [x] `apps/web/lib/churn/reengagement-moves.ts`
+- [x] `apps/web/lib/churn/reengagement-prompt-blocks.ts`
+- [x] `apps/web/lib/churn/patch-reengagement-context.ts`
+- [x] `apps/web/lib/churn/passive-presence-batch.ts`
+- [x] `apps/web/lib/churn/israeli-holidays.ts`
+- [x] `apps/web/lib/churn/feature-flags.ts` *(נוסף — דגלי גלגול)*
+- [x] `apps/web/lib/churn/update-engagement-status.ts` *(נוסף — עדכון status + reactivation reset)*
+- [x] `apps/web/lib/workflows/almog-habit-checkpoint-payload.ts` (extend)
+- [x] `apps/web/lib/workflows/habit-checkpoint-batch.ts` (integrate)
+- [x] `apps/web/lib/ai/habit-checkpoint-llm.ts` (integrate)
+- [x] `apps/web/lib/workflows/send-almog-habit-checkpoint.ts` (integrate)
+- [x] `apps/web/app/api/v1/ai/cron/habit-checkpoints/route.ts` (integrate + engagement status)
+- [x] `apps/web/app/api/v1/churn-feedback/route.ts`
+- [x] `apps/web/app/api/v1/ai/cron/passive-presence/route.ts`
+- [x] `apps/web/components/notifications/ChurnSurveyButtons.tsx`
+- [x] `apps/web/components/notifications/NotificationCard.tsx` (wire survey)
+- [x] `apps/web/components/notifications/NotificationsProvider.tsx` (map survey)
+- [x] `apps/web/lib/notifications/replyable.ts` (extractSurvey + NotificationSurvey)
+- [x] `apps/web/tests/reengagement-moves.test.ts`
+- [x] `apps/web/tests/engagement-status.test.ts`
+- [x] `apps/web/tests/passive-presence-batch.test.ts`
+- [x] `apps/web/tests/churn-feedback-api.test.ts`
+- [x] `docs/CRON_SCHEDULES_SETUP.md` (הוספת passive-presence schedule)
 
 ---
 
-## נספח ג — דוגמת metadata מלאה (exit_survey)
+## נספח ג — דוגמת metadata מלאה (breakup + exit_survey, יום 10)
 
 ```json
 {
   "source": "almog_churn_survey",
   "mentor": "almog",
-  "reengagement_move": "exit_survey",
+  "reengagement_move": "breakup",
   "expects_reply": false,
   "survey": {
     "type": "churn_exit",
@@ -891,8 +923,8 @@ re_engage / crisis_reconnect / micro_win למשתמשים עם `enrollments.is_a
     "responded": false
   },
   "slot": "morning",
-  "days_since_last_active": 6,
-  "engagement_status": "at_risk"
+  "days_since_last_active": 10,
+  "engagement_status": "dormant"
 }
 ```
 

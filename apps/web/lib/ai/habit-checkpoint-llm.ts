@@ -7,6 +7,12 @@ import type {
   HabitCheckpointUrgencyLevel,
 } from '../workflows/almog-habit-checkpoint-payload';
 import type { TodayAlmogTouch } from './almog-notify-day-context';
+import {
+  reengagementMoveBlock,
+  identityContextBlock,
+  type IdentityContext,
+} from '../churn/reengagement-prompt-blocks';
+import { isActiveReengagementMove, type ReengagementMove } from '../churn/reengagement-moves';
 
 /**
  * 🎚️ Style hints פר-`HabitCheckpointUrgencyLevel` — מועתק מהמסמך המקורי
@@ -569,6 +575,36 @@ export function buildHabitCheckpointSystemPrompt(input: HabitCheckpointPromptInp
     ? `\n\n🌙 התקדמות ערב (chosen tier: ${longingTier}):\n${eveningLongingBlock(longingTier, input.firstName)}`
     : '';
 
+  /**
+   * 🔄 שכבת churn / re-engagement — אם יש מהלך פעיל (open_door … breakup) הוא
+   * **גובר** על ה-behavioralRule הרגיל, חוץ ממצב full/partial completion
+   * (רגע יזום של המשתמש מנצח תמיד). ספק 6.2.
+   */
+  const move: ReengagementMove = payload.reengagementMove ?? 'none';
+  const completion = behavioralContext.completionStatus;
+  const moveOverridesBehavior =
+    isActiveReengagementMove(move) && completion !== 'full' && completion !== 'partial';
+
+  const identityCtx: IdentityContext | null =
+    move === 'identity' && payload.identityContext
+      ? {
+          mainGoal: payload.identityContext.mainGoal,
+          mainObstacle: payload.identityContext.mainObstacle,
+          mainObstacleDetail: payload.identityContext.mainObstacleDetail,
+          streakDays: payload.identityContext.streakDays,
+          userWords: payload.identityContext.userWords ?? null,
+          stepTitle: payload.identityContext.stepTitle ?? payload.stepTitle ?? null,
+        }
+      : null;
+
+  const moveBlockText = moveOverridesBehavior ? reengagementMoveBlock(move, { firstName: input.firstName, identity: identityCtx }) : null;
+  const identityBlockText = identityCtx ? identityContextBlock(identityCtx) : null;
+
+  const ruleBlock = moveBlockText
+    ? `🎯 מהלך re-engagement (גובר על השגרה — זה הכלל המחייב כעת):
+${moveBlockText}${identityBlockText ? `\n\n${identityBlockText}` : ''}`
+    : behavioralRule(behavioralContext);
+
   return `אתה אלמוג — חבר אמיתי שמלווה את [${input.firstName}] בוואטסאפ, לא בוט ולא מאמן רשמי. כתוב הודעת נוטיפיקציה אחת בעברית, כמו שחבר היה כותב לחבר.
 
 איך אתה נשמע:
@@ -618,7 +654,7 @@ ${HABIT_CHECKPOINT_FEWSHOT}
   }
 
 כלל מצב מחייב (השתמש בדוגמאות הטון מכאן, אבל החלף [שם] ב-"${input.firstName}" ו-[Task] בשם המשימה האמיתית):
-${behavioralRule(behavioralContext)}
+${ruleBlock}
 
 ${ssotBlock(payload)}
 

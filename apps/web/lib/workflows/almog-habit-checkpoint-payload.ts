@@ -96,6 +96,47 @@ export type HabitCheckpointUrgencyLevel = z.infer<
 >;
 
 /**
+ * מהלך re-engagement (churn) — שכבת אסטרטגיית תוכן מעל ה-cadence.
+ * נקבע ב-cron מ-`computeReengagementMove` ומועבר ל-LLM כדי לגבור על
+ * ה-behavioralRule הרגיל. ראה docs/CHURN_REENGAGEMENT_SPEC.md.
+ * חייב להישאר זהה ל-`ReengagementMove` ב-`lib/churn/reengagement-moves.ts` (נבדק ב-tests).
+ */
+export const reengagementMoveSchema = z.enum([
+  'none',
+  'open_door',
+  'mini_task',
+  'fresh_start',
+  'identity',
+  'withdrawing',
+  'quiet_presence',
+  'breakup',
+  'passive_soft',
+  'passive_value',
+  'passive_trigger',
+]);
+
+export type ReengagementMovePayload = z.infer<typeof reengagementMoveSchema>;
+
+/** מצב מעורבות persisted (analytics). */
+export const engagementStatusSchema = z.enum([
+  'active',
+  'slipping',
+  'at_risk',
+  'dormant',
+  'churned',
+]);
+
+/** קונטקסט זהות מ-onboarding ל-Identity Reconnection (יום 7). */
+export const identityContextSchema = z.object({
+  mainGoal: z.string().max(120).nullable(),
+  mainObstacle: z.string().max(120).nullable(),
+  mainObstacleDetail: z.string().max(2000).nullable(),
+  streakDays: z.number().int().min(0).max(100000).nullable(),
+  userWords: z.string().max(4000).nullable().optional(),
+  stepTitle: z.string().max(500).nullable().optional(),
+});
+
+/**
  * Payload לטריגר Workflow של habit checkpoint.
  *
  * remind — יש הרגל/משימה שלא סומנו בוצעו ב-DB.
@@ -149,6 +190,16 @@ export const almogHabitCheckpointPayloadSchema = z
         successStreakDays: z.number().int().min(0).max(365),
       })
       .optional(),
+
+    /**
+     * 🔄 שכבת churn / re-engagement (אופציונלי — ברירת מחדל 'none' לתאימות
+     * לאחור). נקבעים ב-cron כשה-feature flag דולק.
+     */
+    reengagementMove: reengagementMoveSchema.optional(),
+    identityContext: identityContextSchema.optional(),
+    engagementStatus: engagementStatusSchema.optional(),
+    /** מטא ל-Exit Survey — מצורף רק כש-reengagementMove === 'breakup'. */
+    breakupSurvey: z.boolean().optional(),
   })
   .refine(
     (v) => {

@@ -8,6 +8,7 @@ import { MENTORS } from '../../lib/mentors/registry';
 import { formatHebrewRelativeTime } from '../../lib/time/hebrew-relative';
 import { isNotificationReplyable } from '../../lib/notifications/replyable';
 import { dispatchOpenAlmogReply } from '../../lib/notifications/open-almog-reply';
+import { ChurnSurveyButtons } from './ChurnSurveyButtons';
 import { cn } from '../../lib/cn';
 import type { NotificationItem } from './NotificationsProvider';
 
@@ -166,6 +167,10 @@ export function NotificationCard({
             <p className="text-[14px] leading-relaxed text-emerald-950/85 [overflow-wrap:anywhere]">
               {n.body}
             </p>
+
+            {n.survey && (
+              <ChurnSurveyButtons notificationId={n.id} survey={n.survey} />
+            )}
 
             {(canReply || n.action_url) && (
               <div className="flex flex-wrap items-center justify-end gap-2 pt-2">

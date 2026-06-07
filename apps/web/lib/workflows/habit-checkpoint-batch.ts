@@ -34,6 +34,14 @@ import {
   computeTaskLevelProgressSnapshot,
   recommendTaskLevelAdjustment,
 } from '../journey/task-level-progress';
+import {
+  computeEngagementStatus,
+  computeReengagementMove,
+  isActiveReengagementMove,
+  shouldSilenceForReengagement,
+  type ReengagementMove,
+} from '../churn/reengagement-moves';
+import type { IdentityContext } from '../churn/reengagement-prompt-blocks';
 
 /**
  * שדות לקריאה מ-journey_progress + מ-journey_steps לחישוב התראות.
@@ -683,6 +691,24 @@ export type RecentExecutionsByUser = Map<
   Array<{ task_id: string; date_key: string; slot: string; outcome?: string | null }>
 >;
 
+/**
+ * מידע churn / re-engagement פר משתמש — מוזרק מה-cron route (שיודע על
+ * ה-feature flag וקורא את `ai_context.reengagement`). ה-planner משתמש בזה
+ * כדי לחשב מהלך תוכן ייעודי שגובר על שערי ה-cadence הרגילים.
+ */
+export type ReengagementUserInfo = {
+  /** האם churn re-engagement מופעל למשתמש זה (feature flag + rollout). */
+  enabled: boolean;
+  /** מהלכים שכבר נשלחו (dedup). */
+  sentMoves: ReengagementMove[];
+  /** ISO של breakup — אם קיים, מפסיקים מגעים יומיים (רק passive presence). */
+  breakupSentAt: string | null;
+  /** קונטקסט זהות מ-onboarding (ל-Identity Reconnection, יום 7). */
+  identityContext?: IdentityContext;
+};
+
+export type ReengagementInfoByUser = ReadonlyMap<string, ReengagementUserInfo>;
+
 function mergeTaskLevelMetaFromRows(rows: ProgressRow[]): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const row of rows) {
@@ -752,7 +778,8 @@ export function planHabitCheckpointTriggers(
   todayExecutionsByUser: TodayExecutionsByUser = new Map(),
   lastActiveByUser: ReadonlyMap<string, string | null> = new Map(),
   userResponseInfo: ReadonlyMap<string, UserResponseInfo> = new Map(),
-  recentExecutionsByUser: RecentExecutionsByUser = new Map()
+  recentExecutionsByUser: RecentExecutionsByUser = new Map(),
+  reengagementByUser: ReengagementInfoByUser = new Map()
 ): HabitCheckpointPlanItem[] {
   const { dateKey, weekday } = jerusalemCalendarParts(now);
   const byUser = new Map<string, ProgressRow[]>();
@@ -806,6 +833,47 @@ export function planHabitCheckpointTriggers(
     const hasRemindWork = due.length > 0 || pendingTasks.length > 0;
 
     /**
+     * 🔄 שכבת churn / re-engagement — מהלך תוכן ייעודי לפי יום (ספק פרק 4).
+     * מחושב רק אם ה-feature flag מופעל למשתמש. אחרי breakup מפסיקים מגעים
+     * יומיים (רק passive presence דרך cron נפרד).
+     */
+    const reInfo = reengagementByUser.get(userId);
+    let reengagementMove: ReengagementMove = 'none';
+    const breakupDone = Boolean(reInfo?.breakupSentAt);
+    if (reInfo?.enabled && !breakupDone) {
+      reengagementMove = computeReengagementMove({
+        daysSinceLastActive,
+        slot,
+        sentMoves: reInfo.sentMoves,
+        cadenceStage,
+        breakupSentAt: reInfo.breakupSentAt,
+      });
+    }
+    const hasActiveMove = isActiveReengagementMove(reengagementMove);
+
+    /**
+     * 🔇 השהיה מכוונת של churn (ספק 4.4 + 8.5):
+     *   - אחרי breakup (יום 10+) — מפסיקים את ערוץ ה-habit-checkpoint לגמרי;
+     *     רק passive-presence cron מדבר מכאן והלאה (כולל עצירת תזכורות יומיות).
+     *   - יום 6 בוקר/צהריים — "ספייס" מכוון; רק נוכחות ערב רכה נשארת.
+     * חל רק כשאין משימה פתוחה אמיתית (hasRemindWork) — חוץ מאחרי breakup, שם
+     * עוצרים גם תזכורות. שומר על מהלך ה-Identity של יום 7.
+     */
+    if (reInfo?.enabled) {
+      if (breakupDone) continue;
+      if (
+        !hasRemindWork &&
+        shouldSilenceForReengagement({
+          daysSinceLastActive,
+          slot,
+          breakupSentAt: reInfo.breakupSentAt ?? null,
+        })
+      ) {
+        continue;
+      }
+    }
+
+    /**
      * דרישת מוצר:
      *   1) משימה לא בוצעת → 3 תזכורות ביום (כל ה-slots, גם dormant).
      *   2) משימה בוצעה חלקית → התראה מותאמת אישית AI (מטופל ב-pendingSlotLabels).
@@ -814,13 +882,21 @@ export function planHabitCheckpointTriggers(
      * מגע נוכחות שקט למשתמשים דורמנטיים: רק אם cadenceStage != 'active'
      * וה-slot מותר לפי allowedSlotsForCadenceStage. ל-active users — אם הכל בוצע,
      * המערכת שותקת לחלוטין.
+     *
+     * אחרי breakup — אין מגעי נוכחות יומיים (passive presence מטפל).
      */
     const hasDormancyTouch =
       !hasRemindWork &&
+      !breakupDone &&
       cadenceStage !== 'active' &&
       isSlotAllowedForCadenceStage(slot, cadenceStage);
 
-    if (!hasRemindWork && !hasDormancyTouch) continue;
+    /**
+     * מהלך re-engagement פעיל גובר על שערי ה-slot של ה-cadence: למשל breakup
+     * ביום 10 חייב לצאת בבוקר אף ש-extended_absence מתיר רק צהריים. ה-slot כבר
+     * נאכף בתוך computeReengagementMove, אז אם move != none — ה-slot נכון.
+     */
+    if (!hasRemindWork && !hasDormancyTouch && !hasActiveMove) continue;
 
     const display = pickDisplayRow(rows);
     const stepTitle = display?.journey_steps?.title?.trim() ?? null;
@@ -887,6 +963,12 @@ export function planHabitCheckpointTriggers(
           ? { hoursSinceLastResponse: hoursSinceResp }
           : {}),
         ...(taskLevelTune ? { taskLevelTune } : {}),
+        reengagementMove,
+        ...(reengagementMove === 'identity' && reInfo?.identityContext
+          ? { identityContext: reInfo.identityContext }
+          : {}),
+        ...(reengagementMove === 'breakup' ? { breakupSurvey: true } : {}),
+        engagementStatus: computeEngagementStatus(daysSinceLastActive),
       },
     });
   }
@@ -931,7 +1013,8 @@ export async function planHabitCheckpointTriggersWithChat(
   todayExecutionsByUser: TodayExecutionsByUser = new Map(),
   lastActiveByUser: ReadonlyMap<string, string | null> = new Map(),
   userResponseInfo: ReadonlyMap<string, UserResponseInfo> = new Map(),
-  recentExecutionsByUser: RecentExecutionsByUser = new Map()
+  recentExecutionsByUser: RecentExecutionsByUser = new Map(),
+  reengagementByUser: ReengagementInfoByUser = new Map()
 ): Promise<HabitCheckpointPlanItem[]> {
   const base = planHabitCheckpointTriggers(
     progressRows,
@@ -940,7 +1023,8 @@ export async function planHabitCheckpointTriggersWithChat(
     todayExecutionsByUser,
     lastActiveByUser,
     userResponseInfo,
-    recentExecutionsByUser
+    recentExecutionsByUser,
+    reengagementByUser
   );
   const chatIds = await fetchUserIdsWithChatToday(admin, now);
   return appendPresenceReinforceFromChat(
