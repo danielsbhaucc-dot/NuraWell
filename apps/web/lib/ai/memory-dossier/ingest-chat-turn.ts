@@ -1,4 +1,6 @@
 import { updateAiContext, type AiUserContext } from '../memory';
+import { ingestUserMessageIntoVectorMemory } from '../vector-memory-ingest';
+import type { ExtractedMemoryFact } from '../extract-memory-facts';
 import { extractMemoryDossierPatch } from './extract-dossier';
 import { fetchUserMemoryDossier, upsertUserMemoryDossier } from './fetch-dossier';
 import { mergeDossierPatch } from './merge-dossier';
@@ -7,6 +9,7 @@ import type { UserMemoryDossier } from './types';
 export type IngestChatTurnResult = {
   dossier_updated: boolean;
   ai_context_patched: boolean;
+  vector_facts: number;
 };
 
 function buildTaskContextBlock(
@@ -32,10 +35,13 @@ export async function ingestChatTurnIntoMemoryDossier(params: {
     date_key: string;
   }>;
   habitTitles?: string[];
+  /** האם לכתוב vector facts ל-Upstash (ברירת מחדל: true) */
+  enableVectorWrites?: boolean;
 }): Promise<IngestChatTurnResult> {
   const result: IngestChatTurnResult = {
     dossier_updated: false,
     ai_context_patched: false,
+    vector_facts: 0,
   };
 
   const existing = await fetchUserMemoryDossier(params.adminSupabase, params.userId);
@@ -89,6 +95,28 @@ export async function ingestChatTurnIntoMemoryDossier(params: {
         await updateAiContext(params.adminSupabase, params.userId, filtered);
         result.ai_context_patched = true;
       }
+    }
+  }
+
+  /**
+   * Vector memory — שימוש חוזר בעובדות שכבר חולצו ב-patch (ללא קריאת LLM נוספת).
+   * כך תור צ'אט מבצע קריאת חילוץ אחת בלבד במקום שתיים.
+   */
+  const preFacts: ExtractedMemoryFact[] = (patch.vector_facts ?? []).map((f) => ({
+    category: f.category,
+    text: f.text,
+    level: f.level,
+  }));
+  if (preFacts.length > 0 && params.enableVectorWrites !== false) {
+    try {
+      const vec = await ingestUserMessageIntoVectorMemory({
+        userId: params.userId,
+        userMessage: params.userMessage,
+        preExtractedFacts: preFacts,
+      });
+      result.vector_facts = vec.facts_extracted;
+    } catch {
+      /* vector optional */
     }
   }
 

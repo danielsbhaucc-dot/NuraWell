@@ -44,19 +44,26 @@ function hitMetaMemoryLevel(hit: { metadata?: unknown }): 2 | 3 | 4 {
 export async function ingestUserMessageIntoVectorMemory(params: {
   userId: string;
   userMessage: string;
+  /**
+   * עובדות מוכנות מראש — כשמסופקות, מדלגים על קריאת LLM נוספת (חיסכון טוקנים).
+   * משמש את מנוע ה-dossier כדי לאחד את החילוץ לקריאה אחת בלבד.
+   */
+  preExtractedFacts?: ExtractedMemoryFact[];
 }): Promise<IngestVectorMemoryResult> {
   if (!isUpstashVectorConfigured()) {
     return { facts_extracted: 0, upserts: [], skipped_reason: 'upstash_not_configured' };
   }
 
-  const extraction = await extractMemoryFactsFromUserMessage(params.userMessage);
-  if (!extraction.facts.length) {
+  const facts =
+    params.preExtractedFacts ??
+    (await extractMemoryFactsFromUserMessage(params.userMessage)).facts;
+  if (!facts.length) {
     return { facts_extracted: 0, upserts: [] };
   }
 
   const upserts: IngestVectorMemoryResult['upserts'] = [];
 
-  for (const fact of extraction.facts) {
+  for (const fact of facts) {
     const vec = await embedTextForRag(fact.text);
     const normFact = normalizeFactTextForDedupe(fact.text);
 
@@ -159,7 +166,7 @@ export async function ingestUserMessageIntoVectorMemory(params: {
     upserts.push({ id, action: 'inserted', text: fact.text.trim() });
   }
 
-  return { facts_extracted: extraction.facts.length, upserts };
+  return { facts_extracted: facts.length, upserts };
 }
 
 export type VectorMemoryPreviewResult = {
