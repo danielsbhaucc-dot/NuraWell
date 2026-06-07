@@ -402,17 +402,19 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     const text = pendingInitialReplyRef.current;
     if (!open || !text || status === 'submitted' || status === 'streaming') return;
     pendingInitialReplyRef.current = null;
+    const replyNotificationId = notificationIdRef.current;
     sendMessage(
       { text },
       {
         body: {
           user_id: userId,
           session_id: sessionIdRef.current ?? undefined,
-          notification_id: notificationIdRef.current ?? undefined,
+          notification_id: replyNotificationId ?? undefined,
         },
       }
     );
     setNotificationContext(null);
+    notificationIdRef.current = null;
   }, [open, sendMessage, status, userId]);
 
   const isLoading = status === 'submitted' || status === 'streaming';
@@ -684,19 +686,21 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                     e.preventDefault();
                     const text = input.trim();
                     if (!text || isLoading) return;
+                    const replyNotificationId = notificationIdRef.current;
                     sendMessage(
                       { text },
                       {
                         body: {
                           user_id: userId,
                           session_id: sessionIdRef.current ?? undefined,
-                          notification_id: notificationIdRef.current ?? undefined,
+                          notification_id: replyNotificationId ?? undefined,
                         },
                       }
                     );
                     setInput('');
-                    if (notificationIdRef.current && !quotedReply) {
+                    if (replyNotificationId) {
                       setNotificationContext(null);
+                      notificationIdRef.current = null;
                     }
                   }}
                 >
