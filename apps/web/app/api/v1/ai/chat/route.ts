@@ -815,6 +815,12 @@ function isTrivialBypassEligible(
   if (signals.blocker_mentioned || signals.emotional_hint || signals.avoid_push_requested) {
     return false;
   }
+  /**
+   * ברכה קצרה ("היי", "מה קורה") היא התור הכי טריוויאלי — מגיע לה מענה מהיר
+   * מהמודל הזול במקום קלוד/Qwen הכבד. בלי זה "היי" היה רץ על המודל הכבד וגורם
+   * להמתנה ארוכה. הברכה לא דורשת RAG/דוח, והקול נשמר דרך ה-system prompt.
+   */
+  if (isCasualGreeting(t)) return true;
   if (/[?؟]/.test(t)) return false;
   const letterOnly = t.replace(/[^\u0590-\u05FFa-zA-Z]/g, '');
   if (letterOnly.length > 24) return false;
@@ -1813,11 +1819,16 @@ export async function POST(request: Request) {
 
   const [todayChatTurns, todayAlmogTouches] = dailyContextBundle;
 
-  const returnSignalsPromise = fetchReturnVisitSignalsForChat(
-    supabase,
-    user.id,
-    profileRow.last_active_at
-  ).catch(() => ({ daysSincePriorChat: null as number | null, unansweredTouchCount: 0 }));
+  /**
+   * לברכה סתמית ("היי") לא מזריקים מסגור חזרה/ריסט, אז אין טעם לשלם על שאילתות
+   * ה-return-visit (ימים מאז שיחה אחרונה + מגעים ללא מענה). חוסך השהיה.
+   */
+  const returnSignalsPromise = isCasualGreeting(lastUserText)
+    ? Promise.resolve({ daysSincePriorChat: null as number | null, unansweredTouchCount: 0 })
+    : fetchReturnVisitSignalsForChat(supabase, user.id, profileRow.last_active_at).catch(() => ({
+        daysSincePriorChat: null as number | null,
+        unansweredTouchCount: 0,
+      }));
 
   const profileFullName = profileRow.full_name;
   const profileMoodSignal = profileRow.mood_signal;
@@ -2000,8 +2011,15 @@ export async function POST(request: Request) {
       aiContext: profileRow.ai_context,
       unansweredTouchCount: returnSignals.unansweredTouchCount,
     });
+    /**
+     * באג "היי" → "שמח שאתה מתחיל מחדש": כשהמשתמש לא דיבר 2+ ימים, כל הודעה —
+     * כולל ברכה ריקה — קיבלה בלוק [מצב:התחלה-מחדש]/חזרה והמנטור הניח ריסט שהמשתמש
+     * לא ביקש, וזה חזר בלופ. ברכה סתמית מקבלת מענה חם ורגיל; מסגור "חזרה/ריסט"
+     * שמור לתוכן אמיתי (נפילה/קושי/שאלה), לא ל"היי".
+     */
+    const isGreetingTurn = isCasualGreeting(lastUserText);
     const rollerCoasterBlock = buildRollerCoasterChatPromptBlock({
-      returnVisitCtx,
+      returnVisitCtx: isGreetingTurn ? { ...returnVisitCtx, mode: 'none' } : returnVisitCtx,
       firstName: firstName ?? 'שם',
       relapseDetected: detectRelapseInMessage(lastUserText),
     });
@@ -2032,7 +2050,7 @@ export async function POST(request: Request) {
     const habitGapBlock = formatHabitGapChatBlock(habitGapForPrompt);
     const journeyGuidanceBlock = formatJourneyChatGuidanceBlock({
       journeyData: journeyDataBlock,
-      isGreeting: isCasualGreeting(lastUserText),
+      isGreeting: isGreetingTurn,
     });
     const turnWeightBlock =
       parsedWeightKg != null ? formatWeightLoggedPromptBlock(parsedWeightKg) : null;
