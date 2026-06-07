@@ -7,6 +7,7 @@ import {
   Play, BookOpen, Clock, CheckCircle2, Lock,
   ChevronLeft, Award, Zap, Video, Headphones, FileText, Presentation, AlignLeft, Layers, Crown
 } from 'lucide-react';
+import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import { cn } from '../../lib/cn';
 
 interface LessonItem {
@@ -146,6 +147,16 @@ export function CourseDetailClient({
                 </div>
               </div>
             )}
+
+            <div className="mb-5">
+              <AlmogScreenCoach
+                title="אלמוג על הקורס הזה"
+                body="אפשר לעצור רגע לפני שממשיכים: מה חשוב לקחת מהקורס הזה, איפה להתחיל, ואיך לחבר אותו להרגלים שלך."
+                prompt={`אלמוג, תעזור לי להבין איך להמשיך בקורס "${course.title}" ומה השיעור הכי נכון לי עכשיו.`}
+                cta="דבר איתי על הקורס"
+                tone="violet"
+              />
+            </div>
 
             {/* CTA Button */}
             {isEnrolled ? (

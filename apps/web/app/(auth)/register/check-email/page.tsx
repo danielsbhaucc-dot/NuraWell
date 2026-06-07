@@ -1,4 +1,5 @@
 import { CheckEmailClient } from '@/components/onboarding/CheckEmailClient';
+import { PublicAiPresence } from '@/components/ai/PublicAiPresence';
 import { createClient } from '@/lib/supabase/server';
 import { firstNameFromFull } from '@/lib/onboarding/profile-summary-rows';
 import type { OnboardingGender } from '@/lib/onboarding/types';
@@ -48,6 +49,9 @@ export default async function RegisterCheckEmailPage({
         firstName={firstName}
         gender={gender}
       />
+      <div className="mt-5 w-full px-2">
+        <PublicAiPresence compact />
+      </div>
     </main>
   );
 }

@@ -8,10 +8,13 @@ import {
   Footprints,
   ImageIcon,
   Layers,
+  Loader2,
   Map,
   Plus,
   Search,
+  Sparkles,
   Trash2,
+  Wand2,
   X,
 } from 'lucide-react';
 import type { JourneyStep } from '@/lib/types/journey';
@@ -61,6 +64,50 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
   const [newTitle, setNewTitle] = useState('');
   const [newSort, setNewSort] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
+
+  // מצב סוכן — יצירת מסע שלם ב-AI
+  const [showAiPopup, setShowAiPopup] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiStations, setAiStations] = useState<number | ''>('');
+  const [aiStepsPer, setAiStepsPer] = useState<number | ''>('');
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiResult, setAiResult] = useState<{ stations: number; steps: number } | null>(null);
+
+  async function generateJourneyWithAi(e: React.FormEvent) {
+    e.preventDefault();
+    if (aiPrompt.trim().length < 10 || aiBusy) return;
+    setAiBusy(true);
+    setAiError(null);
+    setAiResult(null);
+    try {
+      const res = await fetch('/api/v1/admin/journey/ai-generate', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: aiPrompt.trim(),
+          stations: aiStations === '' ? undefined : aiStations,
+          stepsPerStation: aiStepsPer === '' ? undefined : aiStepsPer,
+          persist: true,
+        }),
+      });
+      const json = (await res.json()) as {
+        created?: { stations: number; steps: number };
+        error?: string;
+      };
+      if (!res.ok || !json.created) {
+        setAiError(json.error ?? 'יצירת המסע נכשלה. נסו לנסח אחרת.');
+        return;
+      }
+      setAiResult(json.created);
+      router.refresh();
+    } catch {
+      setAiError('שגיאת רשת. נסו שוב.');
+    } finally {
+      setAiBusy(false);
+    }
+  }
 
   const stepsByStation = useCallback(
     (sid: string | null) => steps.filter((s) => (sid ? s.station_id === sid : !s.station_id)),
@@ -169,11 +216,23 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
         description="חיפוש, לחיצה על תחנה לפופאפ עם טאבים — צעדים ותמונת רקע."
         actions={
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAiPopup(true);
+                setAiError(null);
+                setAiResult(null);
+              }}
+              className={opsGlassBtnPrimaryClass}
+            >
+              <Wand2 className="h-4 w-4" />
+              צור מסע ב-AI
+            </button>
             <button type="button" onClick={() => setShowAddPopup(true)} className={opsGlassBtnClass}>
               <Layers className="h-4 w-4" />
               תחנה חדשה
             </button>
-            <Link href={`${opsBase}/steps/new`} className={opsGlassBtnPrimaryClass}>
+            <Link href={`${opsBase}/steps/new`} className={opsGlassBtnClass}>
               <Plus className="h-4 w-4" />
               צעד חדש
             </Link>
@@ -484,6 +543,116 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                 הוסף תחנה
               </button>
             </form>
+          </div>
+        </div>
+      ) : null}
+
+      {/* פופאפ מצב סוכן — יצירת מסע שלם ב-AI */}
+      {showAiPopup ? (
+        <div
+          dir="rtl"
+          role="dialog"
+          aria-modal="true"
+          aria-label="צור מסע ב-AI"
+          className="fixed inset-0 z-[57] flex items-end justify-center p-0 sm:items-center sm:p-4"
+        >
+          <button
+            type="button"
+            aria-label="סגור"
+            onClick={() => !aiBusy && setShowAiPopup(false)}
+            className="absolute inset-0 bg-indigo-950/35 backdrop-blur-[5px]"
+          />
+          <div
+            className="relative w-full max-w-lg overflow-hidden rounded-t-3xl p-5 shadow-[0_24px_60px_-12px_rgba(79,70,229,0.4)] ring-1 ring-white/50 sm:rounded-3xl"
+            style={glassPanelStyle}
+          >
+            <button
+              type="button"
+              onClick={() => !aiBusy && setShowAiPopup(false)}
+              className="absolute left-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/55 bg-white/30 text-slate-600 backdrop-blur-md hover:bg-white/50"
+              aria-label="סגור"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="mb-1 flex items-center gap-2 pr-8">
+              <Sparkles className="h-5 w-5 text-indigo-500" />
+              <h3 className="font-display text-lg font-black text-slate-900">מצב סוכן — צור מסע ב-AI</h3>
+            </div>
+            <p className="mb-4 pr-8 text-xs text-slate-600">
+              תארו את המסע הרצוי ואלמוג יבנה תחנות וצעדים כטיוטה (לא מפורסם). אחר כך אפשר ללטש כל צעד עם המילוי החכם.
+            </p>
+
+            {aiResult ? (
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-900">
+                  ✦ נוצרו {aiResult.stations} תחנות ו-{aiResult.steps} צעדים כטיוטה. הם מופיעים ברשימה — לחצו על צעד כדי ללטש עם AI-fill.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAiPopup(false);
+                    setAiPrompt('');
+                    setAiResult(null);
+                  }}
+                  className={cn(opsGlassBtnPrimaryClass, 'w-full min-h-11')}
+                >
+                  סיום
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={generateJourneyWithAi} className="space-y-3">
+                <label className="block">
+                  <span className="mb-1 block text-xs font-bold text-slate-700">תיאור המסע</span>
+                  <textarea
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    className={cn(opsInputClass, 'min-h-28 resize-y')}
+                    placeholder="למשל: מסע 30 יום לשיפור איכות השינה — מהבנת מחזורי שינה ועד בניית שגרת ערב יציבה, לקהל מתחילים."
+                    autoFocus
+                  />
+                </label>
+                <div className="flex gap-3">
+                  <label className="flex-1">
+                    <span className="mb-1 block text-xs font-bold text-slate-700">מס׳ תחנות (אופציונלי)</span>
+                    <input
+                      type="number"
+                      value={aiStations}
+                      onChange={(e) => setAiStations(e.target.value === '' ? '' : Number(e.target.value))}
+                      className={opsInputClass}
+                      min={1}
+                      max={12}
+                      placeholder="אוטו"
+                    />
+                  </label>
+                  <label className="flex-1">
+                    <span className="mb-1 block text-xs font-bold text-slate-700">צעדים לתחנה (אופציונלי)</span>
+                    <input
+                      type="number"
+                      value={aiStepsPer}
+                      onChange={(e) => setAiStepsPer(e.target.value === '' ? '' : Number(e.target.value))}
+                      className={opsInputClass}
+                      min={1}
+                      max={12}
+                      placeholder="אוטו"
+                    />
+                  </label>
+                </div>
+                {aiError ? (
+                  <p className="rounded-xl border border-red-300/50 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-800">
+                    {aiError}
+                  </p>
+                ) : null}
+                <button
+                  type="submit"
+                  disabled={aiBusy || aiPrompt.trim().length < 10}
+                  className={cn(opsGlassBtnPrimaryClass, 'w-full min-h-11')}
+                >
+                  {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                  {aiBusy ? 'אלמוג בונה את המסע…' : 'צור מסע'}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       ) : null}

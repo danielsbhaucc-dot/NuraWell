@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Loader2, UserX, ArrowRight } from 'lucide-react';
+import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import {
   listDeclinedTasksFromReport,
   type DeclinedTaskRow,
@@ -93,6 +94,14 @@ export function DeclinedTasksPageClient() {
 
   return (
     <div className="max-w-lg mx-auto w-full min-w-0 px-4 py-4 space-y-4 pb-8">
+      <AlmogScreenCoach
+        title="לא לקחת משימה? זה מידע, לא כישלון"
+        body="אלמוג יכול לעזור להבין למה משימה נדחתה ולהציע גרסה קטנה וריאלית יותר, בלי לחץ ובלי אשמה."
+        prompt="אלמוג, תעזור לי להבין את המשימות שסימנתי לא מקובל. איך אפשר להקטין אותן או למצוא חלופה שמתאימה לי?"
+        cta="מצא איתי חלופה"
+        tone="amber"
+      />
+
       <p className="text-xs font-semibold text-emerald-900/75 text-right leading-relaxed">
         רשימה דינמית לפי מה שסימנתם במסע. לחיצה על צעד פותחת את השיעור לעדכון.
       </p>

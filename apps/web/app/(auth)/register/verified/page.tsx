@@ -1,4 +1,5 @@
 import { RegisterVerifiedClient } from '@/components/onboarding/RegisterVerifiedClient';
+import { PublicAiPresence } from '@/components/ai/PublicAiPresence';
 import { createClient } from '@/lib/supabase/server';
 import type { OnboardingGender } from '@/lib/onboarding/types';
 
@@ -25,5 +26,12 @@ export default async function RegisterVerifiedPage() {
     gender = (profile?.gender as OnboardingGender) ?? '';
   }
 
-  return <RegisterVerifiedClient gender={gender} />;
+  return (
+    <>
+      <RegisterVerifiedClient gender={gender} />
+      <div className="fixed inset-x-0 bottom-6 z-20 px-4">
+        <PublicAiPresence compact />
+      </div>
+    </>
+  );
 }

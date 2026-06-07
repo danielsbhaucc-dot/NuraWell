@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { OpsSessionGuard } from './OpsSessionGuard';
+import { AdminAiAssistantCard } from './AdminAiAssistantCard';
 import { MediaManagerProvider } from '@/components/media-manager/MediaManagerProvider';
 import { AdminMediaManagerLauncher } from '@/components/media-manager/AdminMediaManagerLauncher';
 
@@ -547,6 +548,7 @@ export function AdminShell({
           id="main-content"
           className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-3 py-5 sm:space-y-8 sm:px-4 sm:py-6 md:px-6 md:py-8 safe-area-bottom"
         >
+          <AdminAiAssistantCard opsHref={opsHref} />
           {children}
         </div>
       </main>

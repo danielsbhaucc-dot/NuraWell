@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { buildUserContext } from '../../../../../lib/ai/memory';
+import { buildCoachingStylePromptBlock } from '../../../../../lib/ai/almog-coaching-style';
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
 import { LESSON_FEEDBACK_PROMPT } from '../../../../../lib/ai/prompts';
 import { readJsonBody } from '../../../../../lib/api/json-request';
@@ -82,8 +83,11 @@ export async function POST(request: Request) {
     const sessionId = crypto.randomUUID();
     const contextId = payload.step_id ?? payload.lesson_id;
 
-    const { contextString } = await buildUserContext(supabase, user.id);
-    const systemPrompt = `${LESSON_FEEDBACK_PROMPT}\n\n${contextString}`;
+    const { contextString, raw: userCtx } = await buildUserContext(supabase, user.id);
+    const coachingBlock = buildCoachingStylePromptBlock(userCtx.aiContext);
+    const systemPrompt = [LESSON_FEEDBACK_PROMPT, coachingBlock, contextString]
+      .filter(Boolean)
+      .join('\n\n');
 
     const userEventText = [
       `סוג אינטראקציה: ${payload.interaction_type}`,
