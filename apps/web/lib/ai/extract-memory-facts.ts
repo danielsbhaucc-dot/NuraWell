@@ -1,7 +1,10 @@
 import { openrouter } from './client';
 import { dedupeExtractedFacts } from './memory-fact-dedupe';
 import { MEMORY_EXTRACTION_MODEL_OPENROUTER } from './rag-config';
-import type { MemoryVectorCategory } from './upstash-vector-rest';
+import { MEMORY_FACT_CATEGORIES, type MemoryFactCategory } from './memory-dossier/types';
+
+/** @deprecated use MemoryFactCategory from memory-dossier/types */
+export type MemoryVectorCategory = MemoryFactCategory;
 
 /** רמת שמירה ל-Upstash — רק 2+ נכנסות לאינדקס */
 export type MemoryInsightLevel = 2 | 3 | 4;
@@ -92,7 +95,7 @@ function normalizeFactsFromParsed(parsed: unknown): ExtractedMemoryFact[] {
     return [];
   }
 
-  const allowed: MemoryVectorCategory[] = ['strength', 'weakness', 'success', 'failure', 'schedule'];
+  const allowed: MemoryFactCategory[] = [...MEMORY_FACT_CATEGORIES];
   const facts: ExtractedMemoryFact[] = [];
 
   for (const item of factsRaw) {
@@ -101,7 +104,7 @@ function normalizeFactsFromParsed(parsed: unknown): ExtractedMemoryFact[] {
     const category = row.category;
     const text = row.text;
     const levelRaw = row.level;
-    if (typeof category !== 'string' || !allowed.includes(category as MemoryVectorCategory)) continue;
+    if (typeof category !== 'string' || !allowed.includes(category as MemoryFactCategory)) continue;
     if (typeof text !== 'string') continue;
     const lv =
       typeof levelRaw === 'number' && [2, 3, 4].includes(levelRaw)
@@ -112,7 +115,7 @@ function normalizeFactsFromParsed(parsed: unknown): ExtractedMemoryFact[] {
     if (lv === null || lv < 2) continue;
     const clean = text.replace(/\s+/g, ' ').trim();
     if (clean.length < 4 || clean.length > 600) continue;
-    facts.push({ category: category as MemoryVectorCategory, text: clean, level: lv });
+    facts.push({ category: category as MemoryFactCategory, text: clean, level: lv });
   }
 
   return dedupeExtractedFacts(facts);
@@ -158,7 +161,7 @@ async function extractMemoryFactsFromUserMessageInner(msg: string): Promise<Memo
 {"facts":[]}
 
 סכימת כל פריט:
-{ "category": "strength" | "weakness" | "success" | "failure" | "schedule", "text": "מחרוזת קצרה בעברית", "level": 2 | 3 | 4 }
+{ "category": "strength" | "weakness" | "success" | "failure" | "schedule" | "goal" | "task_completed" | "task_missed" | "task_partial" | "habit" | "trigger" | "motivation" | "resistance" | "personal" | "health" | "psychology" | "coaching" | "risk" | "preference" | "timeline" | "insight" | "breakthrough", "text": "מחרוזת קצרה בעברית", "level": 2 | 3 | 4 }
 
 חוקי תוכן (קפדניים):
 - אם אין דפוס חוזר, טריגר רגשי משמעותי, או תובנה שתשנה את גישת המנטור — החזר {"facts":[]}.

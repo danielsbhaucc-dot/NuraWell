@@ -5,21 +5,51 @@ import { Brain, Loader2, Trash2, Sparkles } from 'lucide-react';
 import { glassCardStyle, glassPanelStyle } from '@/components/media-manager/glass-styles';
 import type { MemoryVectorCategory, UserMemoryListItem } from '@/lib/ai/upstash-vector-rest';
 
-const CATEGORY_LABELS: Record<MemoryVectorCategory, string> = {
+const CATEGORY_LABELS: Partial<Record<MemoryVectorCategory, string>> = {
   strength: 'חוזק',
   weakness: 'אתגר',
   success: 'הצלחה',
   failure: 'כשלון',
   schedule: 'לוח זמנים',
+  goal: 'יעד',
+  task_completed: 'משימה בוצעה',
+  task_missed: 'משימה נפספסה',
+  task_partial: 'משימה חלקית',
+  habit: 'הרגל',
+  trigger: 'טריגר',
+  motivation: 'מוטיבציה',
+  resistance: 'התנגדות',
+  personal: 'אישי',
+  health: 'בריאות',
+  psychology: 'פסיכולוגיה',
+  coaching: 'ליווי',
+  risk: 'סיכון',
+  preference: 'העדפה',
+  timeline: 'ציר זמן',
+  insight: 'תובנה',
+  breakthrough: 'פריצת דרך',
 };
 
-const CATEGORY_STYLES: Record<MemoryVectorCategory, string> = {
+const CATEGORY_STYLES: Partial<Record<MemoryVectorCategory, string>> = {
   strength: 'bg-emerald-100/90 text-emerald-900 border-emerald-200/80',
   weakness: 'bg-amber-100/90 text-amber-950 border-amber-200/80',
   success: 'bg-sky-100/90 text-sky-900 border-sky-200/80',
   failure: 'bg-rose-100/90 text-rose-900 border-rose-200/80',
   schedule: 'bg-violet-100/90 text-violet-900 border-violet-200/80',
+  goal: 'bg-indigo-100/90 text-indigo-900 border-indigo-200/80',
+  insight: 'bg-teal-100/90 text-teal-900 border-teal-200/80',
+  breakthrough: 'bg-fuchsia-100/90 text-fuchsia-900 border-fuchsia-200/80',
 };
+
+const DEFAULT_CATEGORY_STYLE = 'bg-slate-100/90 text-slate-800 border-slate-200/80';
+
+function categoryLabel(cat: MemoryVectorCategory): string {
+  return CATEGORY_LABELS[cat] ?? cat;
+}
+
+function categoryStyle(cat: MemoryVectorCategory): string {
+  return CATEGORY_STYLES[cat] ?? DEFAULT_CATEGORY_STYLE;
+}
 
 const CATEGORY_ORDER: MemoryVectorCategory[] = [
   'strength',
@@ -27,6 +57,23 @@ const CATEGORY_ORDER: MemoryVectorCategory[] = [
   'success',
   'failure',
   'schedule',
+  'goal',
+  'task_completed',
+  'task_missed',
+  'task_partial',
+  'habit',
+  'trigger',
+  'motivation',
+  'resistance',
+  'personal',
+  'health',
+  'psychology',
+  'coaching',
+  'risk',
+  'preference',
+  'timeline',
+  'insight',
+  'breakthrough',
 ];
 
 function formatMemoryDate(iso: string): string {
@@ -163,7 +210,7 @@ export function AlmogMemoryPanel({ userId }: Props) {
             {grouped.map(({ category, entries }) => (
               <div key={category}>
                 <p className="text-[10px] font-black uppercase tracking-wide text-slate-500 mb-2">
-                  {CATEGORY_LABELS[category]}
+                  {categoryLabel(category)}
                 </p>
                 <ul className="space-y-2">
                   {entries.map((item) => (
@@ -175,9 +222,9 @@ export function AlmogMemoryPanel({ userId }: Props) {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5 mb-1">
                           <span
-                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${CATEGORY_STYLES[category]}`}
+                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${categoryStyle(category)}`}
                           >
-                            {CATEGORY_LABELS[category]}
+                            {categoryLabel(category)}
                           </span>
                           {item.isInsight ? (
                             <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-violet-800">

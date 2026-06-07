@@ -1,6 +1,9 @@
 import { UPSTASH_NAMESPACE_USER_MEMORY } from './rag-config';
 
-export type MemoryVectorCategory = 'strength' | 'weakness' | 'success' | 'failure' | 'schedule';
+import type { MemoryFactCategory } from './memory-dossier/types';
+
+/** קטגוריות זיכרון וקטורי — alias לסכימה המורחבת */
+export type MemoryVectorCategory = MemoryFactCategory;
 
 export type UserMemoryVectorMetadata = {
   userId: string;
