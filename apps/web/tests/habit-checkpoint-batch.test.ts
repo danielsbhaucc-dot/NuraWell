@@ -652,4 +652,102 @@ describe('planHabitCheckpointTriggers', () => {
       'ערב',
     ]);
   });
+
+  it('multi_daily 2/day → reminders only morning + evening, NOT midday', () => {
+    const progress: ProgressRow[] = [
+      row({
+        user_id: 'u-2x',
+        task_statuses: {
+          t_2x: { status: 'accepted', execution_done: false },
+        },
+        journey_steps: {
+          title: 'צעד',
+          habits: [],
+          tasks: [
+            {
+              id: 't_2x',
+              title: 'תרגול נשימה',
+              schedule: 'multi_daily',
+              times_per_day: 2,
+            },
+          ],
+          journey_stations: null,
+        },
+      }),
+    ];
+    const active = activeLastActive('u-2x');
+
+    const morning = planHabitCheckpointTriggers(
+      progress,
+      'morning',
+      new Date('2026-05-19T08:00:00+03:00'),
+      new Map(),
+      active
+    );
+    const midday = planHabitCheckpointTriggers(
+      progress,
+      'midday',
+      new Date('2026-05-19T13:00:00+03:00'),
+      new Map(),
+      active
+    );
+    const evening = planHabitCheckpointTriggers(
+      progress,
+      'evening',
+      new Date('2026-05-19T20:00:00+03:00'),
+      new Map(),
+      active
+    );
+
+    /** times_per_day=2 → בדיוק 2 תזכורות: בוקר + ערב, ללא צהריים. */
+    expect(morning).toHaveLength(1);
+    expect(midday).toHaveLength(0);
+    expect(evening).toHaveLength(1);
+  });
+
+  it('multi_daily 2/day → no reminder once both morning + evening done', () => {
+    const progress: ProgressRow[] = [
+      row({
+        user_id: 'u-2x-done',
+        task_statuses: {
+          t_2x: { status: 'accepted', execution_done: false },
+        },
+        journey_steps: {
+          title: 'צעד',
+          habits: [],
+          tasks: [
+            {
+              id: 't_2x',
+              title: 'תרגול נשימה',
+              schedule: 'multi_daily',
+              times_per_day: 2,
+            },
+          ],
+          journey_stations: null,
+        },
+      }),
+    ];
+
+    /** בוקר בוצע אך ערב לא — בערב עדיין נשלחת תזכורת. */
+    const eveningDoneMorning = planHabitCheckpointTriggers(
+      progress,
+      'evening',
+      new Date('2026-05-19T20:00:00+03:00'),
+      new Map([['u-2x-done', new Map([['t_2x', new Set(['morning'])]])]]),
+      activeLastActive('u-2x-done')
+    );
+    expect(eveningDoneMorning).toHaveLength(1);
+
+    /** שני הסלוטים בוצעו — אין תזכורת בערב. */
+    const eveningAllDone = planHabitCheckpointTriggers(
+      progress,
+      'evening',
+      new Date('2026-05-19T20:00:00+03:00'),
+      new Map([
+        ['u-2x-done', new Map([['t_2x', new Set(['morning', 'evening'])]])],
+      ]),
+      activeLastActive('u-2x-done')
+    );
+    expect(eveningAllDone).toHaveLength(0);
+  });
 });
