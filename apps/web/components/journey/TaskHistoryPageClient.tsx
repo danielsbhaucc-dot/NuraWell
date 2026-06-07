@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, History, Loader2, Sparkles, CalendarDays } from 'lucide-react';
 
+import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import type { JourneyTaskExecution, JourneyTaskSlot } from '../../lib/types/journey';
 import { slotEmoji, slotLabel } from '../../lib/journey/task-schedule';
 import { emojiFromWellnessText } from '../../lib/emoji-from-text';
@@ -213,6 +214,13 @@ export function TaskHistoryPageClient() {
 
   return (
     <div dir="rtl" className="max-w-lg mx-auto w-full min-w-0 px-4 py-4 space-y-5 pb-8">
+      <AlmogScreenCoach
+        title="אלמוג מחפש דפוסים"
+        body="ההיסטוריה הזאת יכולה להפוך לתובנה: מה עובד, מה מתפספס, ואיזה שינוי קטן יעזור לך להמשיך בלי לחץ."
+        prompt="אלמוג, תעזור לי להבין את היסטוריית הביצועים שלי במסע. מה הדפוס הכי חשוב ומה כדאי לשנות?"
+        cta="נתח איתי"
+      />
+
       {/* ───── Summary cards — זכוכית iOS אמיתית, שקופה ונייטרלית ───── */}
       <div className="grid grid-cols-2 gap-2.5">
         <div className="glass-surface relative overflow-hidden rounded-2xl p-3 text-right">

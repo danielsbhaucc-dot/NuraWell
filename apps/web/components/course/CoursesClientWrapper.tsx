@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { GraduationCap } from 'lucide-react';
+import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import { CourseCard } from '../shared/CourseCard';
 import type { CourseWithProgress, UserStats } from '../../lib/types/course';
 
@@ -102,6 +103,16 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
             </div>
           </motion.div>
         )}
+
+        <div className="mb-4">
+          <AlmogScreenCoach
+            title="אלמוג קורא איתך את הקורסים"
+            body="לא בטוח במה להמשיך? אלמוג יכול להסתכל על ההתקדמות שלך ולעזור לבחור את השיעור שהכי מתאים לרגע הזה."
+            prompt="אלמוג, תעזור לי לבחור באיזה קורס או שיעור להמשיך עכשיו לפי ההתקדמות שלי."
+            cta="בחר איתי המשך"
+            tone="amber"
+          />
+        </div>
 
         {enrolledCourses.length > 0 && (
           <motion.div

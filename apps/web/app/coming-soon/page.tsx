@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { createClient } from '@/lib/supabase/server';
+import { PublicAiPresence } from '@/components/ai/PublicAiPresence';
 import { ComingSoonExperience } from '@/components/coming-soon/ComingSoonExperience';
 import { parseLyricsConfig, type ComingSoonLyrics } from '@/lib/coming-soon/lyrics';
 import { parseRevolutionLines } from '@/lib/coming-soon/revolution-lines';
@@ -50,11 +51,18 @@ async function getComingSoonConfig(): Promise<{
 export default async function ComingSoonPage() {
   const config = await getComingSoonConfig();
   return (
-    <ComingSoonExperience
-      songUrl={config.url}
-      songTitle={config.title}
-      lyrics={config.lyrics}
-      revolutionLines={config.revolutionLines}
-    />
+    <>
+      <ComingSoonExperience
+        songUrl={config.url}
+        songTitle={config.title}
+        lyrics={config.lyrics}
+        revolutionLines={config.revolutionLines}
+      />
+      <div className="fixed inset-x-0 bottom-5 z-30 px-4 pointer-events-none">
+        <div className="pointer-events-auto">
+          <PublicAiPresence compact />
+        </div>
+      </div>
+    </>
   );
 }

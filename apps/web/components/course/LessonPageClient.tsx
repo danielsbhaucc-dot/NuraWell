@@ -14,6 +14,7 @@ import { ImageGallery } from './ImageGallery';
 import { TaskChecklist } from './TaskChecklist';
 import { HabitTracker } from './HabitTracker';
 import { LessonNav } from './LessonNav';
+import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import type { LessonDetail, LessonProgressData, MediaFile } from '../../lib/types/course';
 
 interface NavLesson { id: string; title: string; }
@@ -128,6 +129,14 @@ export function LessonPageClient({
             <span className="text-primary-300">{lesson.course.title}</span>
           </div>
         </motion.div>
+
+        <AlmogScreenCoach
+          title="אלמוג איתך בשיעור"
+          body="אפשר לשאול על התוכן, לבקש סיכום פשוט, או להפוך את השיעור לצעד קטן שמתאים להיום."
+          prompt={`אלמוג, תעזור לי עם השיעור "${lesson.title}" מהקורס "${lesson.course.title}". מה הכי חשוב לקחת ממנו ואיך ליישם את זה היום?`}
+          cta="שאל את אלמוג על השיעור"
+          tone="violet"
+        />
 
         {/* Video Content */}
         {videoFiles.length > 0 && (

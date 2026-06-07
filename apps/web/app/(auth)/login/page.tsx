@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 import { createClient } from '../../../lib/supabase/client';
 import { NuraWellLogo } from '../../../components/shared/NuraWellLogo';
+import { PublicAiPresence } from '../../../components/ai/PublicAiPresence';
 import { useToast, ToastContainer } from '../../../components/shared/Toast';
 import { APP_HOME_PATH } from '../../../lib/navigation/app-home-path';
 
@@ -197,6 +198,10 @@ function LoginFormContent() {
                 }}
               />
             </div>
+          </div>
+
+          <div className="mb-5">
+            <PublicAiPresence compact />
           </div>
 
           <div

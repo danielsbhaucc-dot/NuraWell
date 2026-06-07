@@ -25,6 +25,7 @@ import type {
   TaskHistoryReport,
 } from '../../lib/journey/build-task-history';
 import type { JourneyTaskSlot } from '../../lib/types/journey';
+import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import { DayDetailPopup, type DayExecRow } from '../tasks/DayDetailPopup';
 
 /* ── Design tokens — no #FFF anywhere ───────────────────────────── */
@@ -746,6 +747,13 @@ export function TaskHistoryClient({
       </div>
 
       <div className="container-mobile -mt-3 space-y-4 relative z-[1]">
+        <AlmogScreenCoach
+          title="אלמוג קורא את ההיסטוריה"
+          body="המספרים כאן לא נועדו לשפוט. אפשר לבקש מאלמוג לזהות דפוס, להבין איפה זה נשבר, ולהציע שינוי קטן למשימה."
+          prompt="אלמוג, תסתכל איתי על היסטוריית המשימות שלי. איזה דפוס אתה רואה ומה שינוי קטן שכדאי לעשות?"
+          cta="נתח איתי את הדפוס"
+        />
+
         {/* Period tabs */}
         <div className="rounded-[22px] p-2" style={glassCard}>
           <div className="flex gap-1 overflow-x-auto pb-0.5 scrollbar-hide">
