@@ -16,13 +16,24 @@ import { readReengagementContext, type ReengagementContext } from './patch-reeng
 /**
  * מאפס מצב re-engagement אחרי reactivation — מנקה sent_moves ושומר היסטוריה
  * ב-sent_moves_archive (ספק 3.4 §3). מוגדר מקומית כדי לא להיות תלוי בליבה.
+ *
+ * 🔑 קריטי: בונים אובייקט חדש ולכן מנקים גם את כל ה-*_sent_at — בעיקר את
+ * `breakup_sent_at`. ב-planner יש `if (breakupDone) continue` שמשתיק את ערוץ
+ * ה-habit-checkpoint לצמיתות כל עוד `breakup_sent_at` קיים. בלי לנקות אותו,
+ * משתמש שחזר להיות פעיל לא היה חוזר לדרבון לעולם. שומרים רק את
+ * `exit_survey_answered_at` לאנליטיקס.
  */
 function resetReengagementContext(prev: ReengagementContext): Record<string, unknown> {
   const prevArchive = Array.isArray((prev as Record<string, unknown>).sent_moves_archive)
     ? ((prev as Record<string, unknown>).sent_moves_archive as string[])
     : [];
   const archive = [...prevArchive, ...(prev.sent_moves ?? [])].slice(-50);
-  return { sent_moves: [], sent_moves_archive: archive };
+  const next: Record<string, unknown> = { sent_moves: [], sent_moves_archive: archive };
+  const surveyAnsweredAt = (prev as Record<string, unknown>).exit_survey_answered_at;
+  if (typeof surveyAnsweredAt === 'string') {
+    next.exit_survey_answered_at = surveyAnsweredAt;
+  }
+  return next;
 }
 
 export type EngagementProfileRow = {
@@ -69,7 +80,12 @@ export async function updateEngagementStatuses(
 
     const reCtx = readReengagementContext(row.ai_context);
     const hasSentMoves = (reCtx.sent_moves?.length ?? 0) > 0;
-    const shouldReactivate = status === 'active' && hasSentMoves;
+    /**
+     * גם אם sent_moves כבר התרוקן אך נשאר `breakup_sent_at` — חייבים לאפס,
+     * אחרת ה-planner ימשיך להשתיק את הערוץ (`if (breakupDone) continue`).
+     */
+    const hasBreakup = Boolean((reCtx as Record<string, unknown>).breakup_sent_at);
+    const shouldReactivate = status === 'active' && (hasSentMoves || hasBreakup);
 
     if (status === prevStatus && !shouldReactivate) continue;
 

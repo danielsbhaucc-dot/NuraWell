@@ -127,10 +127,47 @@ function perMealSlotForCronSlot(slot: HabitCheckpointSlot): JourneyTaskSlot {
 }
 
 /**
+ * עבור משימת multi_daily — אילו מהסלוטים הצפויים שייכים לחלון ה-cron הנוכחי.
+ *
+ * דרישת מוצר: מספר התזכורות ביום = times_per_day, וכל תזכורת נשלחת בחלון
+ * המתאים לה (ולא תזכורת בכל חלון כל עוד לא הכל בוצע).
+ *   - 1 (full_day):              רק בוקר → תזכורת אחת ביום.
+ *   - 2 (morning,evening):       בוקר→morning, ערב→evening, צהריים→אין.
+ *   - 3 (morning,noon,evening):  בוקר→morning, צהריים→noon, ערב→evening.
+ *   - 4+ (slot_1..slot_n):       מחולקים לשלישים בין שלושת החלונות (cap ל-3).
+ */
+function multiDailySlotsForCronWindow(
+  expected: JourneyTaskSlot[],
+  cronSlot: HabitCheckpointSlot
+): JourneyTaskSlot[] {
+  if (expected.length === 0) return [];
+  if (expected.length === 1) {
+    /** full_day / times_per_day<=1 → תזכורת אחת ביום, בבוקר בלבד. */
+    return cronSlot === 'morning' ? [expected[0]!] : [];
+  }
+  if (expected.length === 2) {
+    if (cronSlot === 'morning') return [expected[0]!];
+    if (cronSlot === 'evening') return [expected[1]!];
+    return [];
+  }
+  if (expected.length === 3) {
+    if (cronSlot === 'morning') return [expected[0]!];
+    if (cronSlot === 'midday') return [expected[1]!];
+    return [expected[2]!];
+  }
+  /** 4+ סלוטים — מחולקים לשלישים בין בוקר/צהריים/ערב (יש רק 3 חלונות cron). */
+  const n = expected.length;
+  const windowIndex = cronSlot === 'morning' ? 0 : cronSlot === 'midday' ? 1 : 2;
+  return expected.filter((_, i) => Math.floor((i * 3) / n) === windowIndex);
+}
+
+/**
  * האם משימה חוזרת "סגורה" לחלון הזמן הנוכחי?
  *  - per_meal: הסלוט המתאים לחלון בוצע היום.
  *  - daily/weekly: הסלוט היחיד full_day בוצע היום.
- *  - multi_daily: כל הסלוטים של היום בוצעו.
+ *  - multi_daily: התזכורת נשלחת רק בחלון שממופה לסלוט של המשימה (לפי
+ *    times_per_day), והסלוט הזה עדיין לא בוצע. חלון שלא ממופה לאף סלוט →
+ *    "סגור" (אין תזכורת), כדי שמספר התזכורות יהיה בדיוק times_per_day.
  */
 function isRecurringTaskClosedForSlot(
   task: ParsedTask,
@@ -150,9 +187,11 @@ function isRecurringTaskClosedForSlot(
     const target = perMealSlotForCronSlot(cronSlot);
     return doneSlots.has(target);
   }
-  /** multi_daily */
+  /** multi_daily — רק הסלוט(ים) שממופים לחלון ה-cron הנוכחי. */
   const expected = slotsForSchedule(task.schedule, task.times_per_day);
-  return expected.every((s) => doneSlots.has(s));
+  const windowSlots = multiDailySlotsForCronWindow(expected, cronSlot);
+  if (windowSlots.length === 0) return true; /** החלון לא רלוונטי למשימה הזו. */
+  return windowSlots.every((s) => doneSlots.has(s));
 }
 
 /** אם משימה חוזרת — מחזיר אילו סלוטים עוד פתוחים היום (לרמז ב-pendingTasks). */
