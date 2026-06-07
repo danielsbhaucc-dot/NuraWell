@@ -3,33 +3,40 @@ import { describe, expect, it } from 'vitest';
 import { createPiiShield, PII_PLACEHOLDERS, modelRequiresPiiShield } from '../lib/ai/privacy/pii-shield';
 
 describe('pii-shield', () => {
-  it('tokenizes first name and full name from profile', () => {
+  it('replaces first name and full name with a natural Hebrew pseudonym', () => {
     const shield = createPiiShield({ full_name: 'שרון כהן', phone: '050-1234567' });
+    const pseudonym = shield.firstNamePlaceholder;
     const out = shield.tokenizeText('שלום שרון, איך הולך? שרון כהן מדברת.');
-    expect(out).toContain(PII_PLACEHOLDERS.USER_FIRST_NAME);
-    expect(out).toContain(PII_PLACEHOLDERS.USER_FULL_NAME);
+    expect(pseudonym).toBeTruthy();
+    expect(pseudonym).not.toBe('שרון');
+    // הפסיאודונים הוא שם עברי טבעי — לא טוקן ברקטים לטיני.
+    expect(pseudonym).not.toMatch(/\[\[/);
+    expect(out).toContain(pseudonym!);
     expect(out).not.toContain('שרון');
     expect(out).not.toContain('שרון כהן');
   });
 
-  it('detokenizes model output back to real name for client', () => {
+  it('detokenizes model output (pseudonym) back to the real name for the client', () => {
     const shield = createPiiShield({ full_name: 'דני לוי' });
-    const modelReply = `היי ${PII_PLACEHOLDERS.USER_FIRST_NAME}, מה שלומך?`;
+    const pseudonym = shield.firstNamePlaceholder!;
+    const modelReply = `היי ${pseudonym}, מה שלומך?`;
     expect(shield.detokenizeText(modelReply)).toBe('היי דני, מה שלומך?');
   });
 
-  it('handles placeholder split across stream chunks', () => {
+  it('handles a pseudonym split across stream chunks', () => {
     const shield = createPiiShield({ full_name: 'מיה רוז' });
+    const pseudonym = shield.firstNamePlaceholder!;
     const detok = shield.createStreamDetokenizer();
-    const part1 = detok.push(`שלום ${PII_PLACEHOLDERS.USER_FIRST_NAME.slice(0, 8)}`);
-    const part2 = detok.push(`${PII_PLACEHOLDERS.USER_FIRST_NAME.slice(8)}!`);
+    const mid = Math.max(1, Math.floor(pseudonym.length / 2));
+    const part1 = detok.push(`שלום ${pseudonym.slice(0, mid)}`);
+    const part2 = detok.push(`${pseudonym.slice(mid)}!`);
     const tail = detok.flush();
     expect(part1 + part2 + tail).toBe('שלום מיה!');
   });
 
-  it('detokenizes placeholders even with internal whitespace from small models', () => {
-    const shield = createPiiShield({ full_name: 'דני לוי' });
-    expect(shield.detokenizeText('היי [[ USER_FIRST_NAME ]]!')).toBe('היי דני!');
+  it('detokenizes bracket placeholders even with internal whitespace from small models', () => {
+    const shield = createPiiShield({ phone: '050-1234567' });
+    expect(shield.detokenizeText('חייג [[ USER_PHONE ]] עכשיו')).toBe('חייג 050-1234567 עכשיו');
   });
 
   it('does not stall the stream when [[ appears without a closing ]]', () => {

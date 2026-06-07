@@ -26,6 +26,7 @@ import {
 import { TaskHistoryStrip } from '../tasks/TaskHistoryStrip';
 import { TaskHistoryCalendar } from '../tasks/TaskHistoryCalendar';
 import { DayDetailPopup, type DayExecRow } from '../tasks/DayDetailPopup';
+import { WeightTrendInsightCard } from './WeightTrendInsightCard';
 
 interface CourseStatItem {
   id: string;
@@ -227,6 +228,9 @@ export function ProgressPageClient({
             </motion.div>
           ))}
         </motion.div>
+
+        {/* תובנת משקל יזומה מאלמוג — שכבת AI ליד הגרפים */}
+        <WeightTrendInsightCard />
 
         {/* מסע */}
         <motion.section
