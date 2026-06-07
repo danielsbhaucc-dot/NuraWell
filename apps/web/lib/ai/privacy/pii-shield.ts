@@ -26,6 +26,16 @@ const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 const PHONE_REGEX = /(?:\+972[\-\s]?|0)(?:5[0-9]|[23489])[\-\s]?\d{3}[\-\s]?\d{4,5}/g;
 const ISRAELI_ID_REGEX = /\b\d{9}\b/g;
 
+/**
+ * אורך מרבי של placeholder (כולל סוגריים ורווחים). משמש את ה-stream detokenizer
+ * כדי לא להחזיק טקסט לנצח כש-`[[` מופיע בלי `]]` סוגר (היה גורם ל"תקיעה"/איטיות).
+ */
+const MAX_PLACEHOLDER_LEN = 48;
+
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function extractFirstName(fullName: string): string | null {
   const trimmed = fullName.trim();
   if (!trimmed) return null;
@@ -98,13 +108,24 @@ export class PiiShield {
     return messages.map((m) => ({ ...m, content: this.tokenizeText(m.content) }));
   }
 
-  /** משחזר placeholders לערכים אמיתיים — רק בשרת, לפני שליחה ללקוח */
+  /**
+   * משחזר placeholders לערכים אמיתיים — רק בשרת, לפני שליחה ללקוח.
+   * סובלני לווריאציות שמודלים קטנים מייצרים: רווחים פנימיים (`[[ USER_FIRST_NAME ]]`).
+   */
   detokenizeText(text: string): string {
     if (!text) return text;
     let out = text;
     for (const { value, placeholder } of this.replacements) {
       if (out.includes(placeholder)) {
         out = out.split(placeholder).join(value);
+      }
+    }
+    // מעבר נוסף: placeholders עם רווחים פנימיים שהמודל הוסיף.
+    if (out.includes('[[')) {
+      for (const { value, placeholder } of this.replacements) {
+        const inner = placeholder.replace(/^\[\[/, '').replace(/\]\]$/, '');
+        const re = new RegExp(`\\[\\[\\s*${escapeRegExp(inner)}\\s*\\]\\]`, 'g');
+        out = out.replace(re, value);
       }
     }
     return out;
@@ -125,6 +146,13 @@ export class PiiShield {
         }
         const tail = buffer.slice(lastOpen);
         if (tail.includes(']]')) {
+          const out = self.detokenizeText(buffer);
+          buffer = '';
+          return out;
+        }
+        // `[[` בלי `]]` שכבר ארוך מ-placeholder אפשרי — לא placeholder, אל תחזיק
+        // (היה גורם להחזקת כל שאר התשובה ולתחושת איטיות).
+        if (tail.length > MAX_PLACEHOLDER_LEN) {
           const out = self.detokenizeText(buffer);
           buffer = '';
           return out;
