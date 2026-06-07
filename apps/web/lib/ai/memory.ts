@@ -66,6 +66,16 @@ export interface AiUserContext {
   life_context?: LifeContext | null;
   /** סיכום שיחה מתגלגל קצר לצמצום חלון הודעות גולמיות בפרומפט */
   chat_summary?: string;
+  /**
+   * מטמון יומי של "התקציר החי" בראש הדשבורד (שלב 1 — AI-First).
+   * `date` ב-YYYY-MM-DD בלוח ירושלים; אם לא היום — נוצר מחדש.
+   */
+  dashboard_brief?: {
+    date: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    brief: any;
+    model: string | null;
+  } | null;
   /** Web Push subscription (אופציונלי) */
   web_push?: {
     endpoint: string;
@@ -352,6 +362,7 @@ export async function updateAiContext(
     'journey_follow_up',
     'life_context',
     'chat_summary',
+    'dashboard_brief',
     'web_push',
     'current_goal',
     'current_focus',

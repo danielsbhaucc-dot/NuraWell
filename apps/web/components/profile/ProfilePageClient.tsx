@@ -3,11 +3,12 @@
 import { useState, useTransition } from 'react';
 import { motion } from 'framer-motion';
 import {
-  User, Award, BookOpen, Flame, LogOut, ChevronLeft, Shield, Settings, Save, X, Bell
+  User, Award, BookOpen, Flame, LogOut, ChevronLeft, Shield, Settings, Save, X, Bell, Sparkles
 } from 'lucide-react';
 import { signOutClient } from '../../lib/auth/sign-out-client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { OnboardingChat } from './OnboardingChat';
 
 interface ProfileData {
   id: string;
@@ -49,6 +50,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
   const [nameInput, setNameInput] = useState(profile?.full_name ?? '');
   const [genderInput, setGenderInput] = useState<'male' | 'female' | ''>(profile?.gender ?? '');
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const handleSignOut = async () => {
     setSignOutError(null);
@@ -139,15 +141,33 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
             <h1 className="text-2xl font-black text-slate-900 mb-1">הפרופיל שלי 👤</h1>
             <p className="text-slate-600 text-sm">נהל את הפרופיל האישי שלך</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsEditOpen(true)}
-            className="glass-pill relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-emerald-700 transition hover:scale-105 active:scale-95"
-            aria-label="עריכת פרופיל"
-          >
-            <Settings className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsChatOpen(true)}
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-bold text-white transition hover:scale-105 active:scale-95"
+              style={{ background: 'linear-gradient(145deg, #047857, #10b981)' }}
+              aria-label="עדכון פרופיל בשיחה עם אלמוג"
+            >
+              <Sparkles className="h-4 w-4" />
+              עדכן בשיחה
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsEditOpen(true)}
+              className="glass-pill relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-emerald-700 transition hover:scale-105 active:scale-95"
+              aria-label="עריכת פרופיל"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+          </div>
         </motion.div>
+
+        <OnboardingChat
+          open={isChatOpen}
+          onOpenChange={setIsChatOpen}
+          onSaved={() => router.refresh()}
+        />
 
         <motion.div
           dir="rtl"

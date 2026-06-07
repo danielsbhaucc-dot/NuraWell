@@ -31,7 +31,7 @@ import {
   isUpstashVectorConfigured,
   queryUserMemoryVectors,
 } from '../../../../../lib/ai/upstash-vector-rest';
-import { createPiiShield, PII_PLACEHOLDERS, type PiiShield } from '../../../../../lib/ai/privacy/pii-shield';
+import { createPiiShield, type PiiShield } from '../../../../../lib/ai/privacy/pii-shield';
 import { fetchUserMemoryDossier } from '../../../../../lib/ai/memory-dossier/fetch-dossier';
 import { formatUserMemoryDossierPromptBlock } from '../../../../../lib/ai/memory-dossier/format-dossier-prompt';
 import { ingestChatTurnIntoMemoryDossier } from '../../../../../lib/ai/memory-dossier/ingest-chat-turn';
@@ -241,6 +241,36 @@ const CHAT_MODEL_IS_OPENAI = CHAT_MODEL.startsWith('openai/');
 /** מודלים סיניים (Qwen) — חייבים PII Shield לפני שליחה */
 const CHAT_MODEL_REQUIRES_PII_SHIELD = CHAT_MODEL.startsWith('qwen/') || CHAT_MODEL.includes('qwen3');
 /**
+ * Qwen3.x הוא מודל *hybrid-thinking*: ברירת המחדל שלו (כשמשתמשים בו ישירות)
+ * כוללת מצב חשיבה, אבל דרך OpenRouter חייבים להפעיל אותו מפורשות עם השדה
+ * `reasoning` — אחרת המודל רץ במצב לא-חושב והאיכות צונחת משמעותית. זה בדיוק
+ * הפער ש"מדהים אצל המקור, חלש בפרויקט". מפעילים רק ל-Qwen (Llama 4 אינו מודל
+ * חושב). כיבוי: `AI_CHAT_REASONING=off`.
+ */
+const CHAT_MODEL_IS_QWEN = CHAT_MODEL.toLowerCase().includes('qwen');
+const CHAT_REASONING_ENABLED =
+  (process.env.AI_CHAT_REASONING?.trim() || 'on').toLowerCase() !== 'off';
+const CHAT_USE_REASONING = CHAT_REASONING_ENABLED && CHAT_MODEL_IS_QWEN;
+/**
+ * תקציב טוקני חשיבה. ב-OpenRouter טוקני ה-reasoning נספרים *בנפרד* מהתשובה,
+ * אבל כדי לא להסתכן בקיצוץ נותנים ל-`reasoning.max_tokens` תקציב משלו ומרחיבים
+ * את `max_tokens` הכולל בהתאם. ניתן לכוון דרך `AI_CHAT_REASONING_MAX_TOKENS`.
+ */
+const CHAT_REASONING_MAX_TOKENS = (() => {
+  const raw = process.env.AI_CHAT_REASONING_MAX_TOKENS?.trim();
+  const n = raw ? Number(raw) : NaN;
+  return Number.isFinite(n) && n >= 256 && n <= 8192 ? Math.floor(n) : 2048;
+})();
+/**
+ * בונה את שדה `reasoning` של OpenRouter (או null אם כבוי/לא רלוונטי).
+ * `exclude: true` → המודל חושב פנימית אך לא מחזיר את טוקני החשיבה — אנחנו
+ * ממילא לא מציגים אותם, וזה חוסך רוחב-פס ומונע הדלפת "מחשבות" ללקוח.
+ */
+function buildReasoningParam(): { max_tokens: number; exclude: boolean } | null {
+  if (!CHAT_USE_REASONING) return null;
+  return { max_tokens: CHAT_REASONING_MAX_TOKENS, exclude: true };
+}
+/**
  * prompt-cache ב-`cache_control` הוא מנגנון *ספציפי ל-Anthropic*. ל-Llama (וכל
  * מודל לא-anthropic) ב-OpenRouter אסור/מיותר לשלוח אותו — OpenRouter פשוט מתעלם
  * ממנו, ולספקי Llama שתומכים בקאש יש קאש *אוטומטי* ברמת הספק (sticky routing),
@@ -384,12 +414,15 @@ async function createOpenRouterTextStreamResponse({
     ? piiShield.tokenizeMessages(recentMessages)
     : recentMessages;
 
+  const reasoning = buildReasoningParam();
   const requestBody = JSON.stringify({
     model,
     temperature,
     top_p: 0.95,
     seed: randomSamplingSeed(),
-    max_tokens: maxOutputTokens,
+    // כשהחשיבה פעילה — מרחיבים את התקרה כדי שטוקני התשובה לא ייקצצו על-ידי החשיבה.
+    max_tokens: reasoning ? maxOutputTokens + reasoning.max_tokens : maxOutputTokens,
+    ...(reasoning ? { reasoning } : {}),
     stream: true,
     stream_options: { include_usage: true },
     messages: openRouterMessagesWithCachedSystem(
@@ -1910,9 +1943,10 @@ export async function POST(request: Request) {
           email: user.email ?? null,
         })
       : null;
-    // כשהמגן פעיל מזריקים placeholder (ימופה חזרה לשם לפני שליחה ללקוח); אחרת
-    // מזריקים את השם האמיתי ישירות — אסור לשלוח placeholder בלי detokenize.
-    const nameToken = piiShield ? PII_PLACEHOLDERS.USER_FIRST_NAME : firstName;
+    // כשהמגן פעיל מזריקים פסיאודונים עברי טבעי (ימופה חזרה לשם האמיתי לפני
+    // שליחה ללקוח); אחרת מזריקים את השם האמיתי ישירות. שימוש בפסיאודונים עברי
+    // במקום טוקן לטיני שומר על עברית שוטפת ועל איכות התשובה של Qwen.
+    const nameToken = piiShield ? piiShield.firstNamePlaceholder ?? firstName : firstName;
     const personalNameInstruction = firstName
       ? `השם הפרטי של המשתמש הוא ${nameToken}. כאשר אתה פונה בשם — השתמש בדיוק ב-${nameToken} (בלי שם משפחה).`
       : 'אין שם פרטי זמין בפרופיל כרגע.';

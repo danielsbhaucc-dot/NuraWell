@@ -352,6 +352,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
         setQuotedReply(null);
         notificationIdRef.current = null;
         pendingInitialReplyRef.current = null;
+        const prefill = detail?.prefillText?.trim();
+        if (prefill) setInput(prefill);
       }
     };
     window.addEventListener(OPEN_ALMOG_CHAT_EVENT, onOpenChat);

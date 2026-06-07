@@ -24,6 +24,7 @@ import {
 import type { JourneyStepWithProgress } from '../../lib/types/journey';
 import type { JourneyStationGroup } from '../../lib/journey/group-journey-by-station';
 import { JourneyStationCard } from './JourneyStationCard';
+import { JourneyNextStepCard } from './JourneyNextStepCard';
 import { AlmogAvatarChip } from './AlmogPresence';
 
 interface JourneyPageProps {
@@ -209,6 +210,9 @@ function GalleryView({
           <EmptyState firstName={firstName} />
         ) : (
           <>
+            {/* שכבת AI — הצעד הבא האדפטיבי, מותאם לקצב ולקשיים של המשתמש */}
+            <JourneyNextStepCard />
+
             <SectionHeader
               count={groups.length}
               completed={overall.stationsDone}

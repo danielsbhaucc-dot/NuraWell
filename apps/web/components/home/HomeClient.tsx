@@ -13,6 +13,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { AlmogHeroHeader } from './DolevHeroHeader';
+import { DashboardBriefCard } from './DashboardBriefCard';
 import {
   countAcceptedTaskExecutionToday,
   type JourneyReportStepShape,
@@ -161,6 +162,11 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
         }}
       >
         <motion.div variants={container} initial="hidden" animate="show" className="space-y-3.5">
+          {/* תקציר חי מאלמוג — שכבת AI בראש הדשבורד */}
+          <motion.div variants={item}>
+            <DashboardBriefCard onOpenTasks={() => actionHub.open()} />
+          </motion.div>
+
           {/* משימות */}
           <motion.div variants={item}>
             <button
