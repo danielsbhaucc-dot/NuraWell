@@ -28,7 +28,12 @@ import {
 import type {
   JourneyTaskSchedule,
   JourneyTaskSlot,
+  JourneyTask,
 } from '../types/journey';
+import {
+  computeTaskLevelProgressSnapshot,
+  recommendTaskLevelAdjustment,
+} from '../journey/task-level-progress';
 
 /**
  * שדות לקריאה מ-journey_progress + מ-journey_steps לחישוב התראות.
@@ -40,6 +45,7 @@ export type ProgressRow = {
   is_completed: boolean | null;
   task_statuses: unknown;
   habits_progress: unknown;
+  task_level_meta?: unknown;
   journey_steps: {
     title: string | null;
     habits: unknown;
@@ -672,13 +678,81 @@ export interface UserResponseInfo {
   notificationCount: number;
 }
 
+export type RecentExecutionsByUser = Map<
+  string,
+  Array<{ task_id: string; date_key: string; slot: string; outcome?: string | null }>
+>;
+
+function mergeTaskLevelMetaFromRows(rows: ProgressRow[]): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const row of rows) {
+    const meta = row.task_level_meta;
+    if (meta && typeof meta === 'object' && !Array.isArray(meta)) {
+      Object.assign(out, meta as Record<string, unknown>);
+    }
+  }
+  return out;
+}
+
+function pickTaskLevelTune(
+  rows: ProgressRow[],
+  userExecutions: Array<{ task_id: string; date_key: string; slot: string; outcome?: string | null }>
+): NonNullable<AlmogHabitCheckpointPayload['taskLevelTune']> | undefined {
+  const taskLevelMeta = mergeTaskLevelMetaFromRows(rows);
+
+  for (const row of rows) {
+    const tasks = parseJourneyTasksFull(row.journey_steps?.tasks);
+      const statuses = asStatusMap(row.task_statuses);
+    for (const task of tasks) {
+      if (!task.leveling?.levels?.length) continue;
+      if (statuses[task.id]?.status !== 'accepted') continue;
+
+      const taskExecs = userExecutions
+        .filter((e) => e.task_id === task.id)
+        .map((e) => ({
+          task_id: e.task_id,
+          date_key: e.date_key,
+          slot: e.slot as JourneyTaskSlot,
+          outcome: e.outcome,
+        }));
+      const snapshot = computeTaskLevelProgressSnapshot({
+        task,
+        executions: taskExecs,
+        taskLevelMeta,
+      });
+
+      if (!snapshot.shouldSuggestLevelUp && !snapshot.shouldSuggestDowngrade) continue;
+
+      const adjustment = recommendTaskLevelAdjustment(snapshot, task);
+      if (adjustment.kind === 'none' || !adjustment.nextLevelId) continue;
+
+      const nextLabel =
+        adjustment.kind === 'level_up'
+          ? snapshot.nextLevelLabel
+          : task.leveling.levels.find((l) => l.id === adjustment.nextLevelId)?.label ?? null;
+
+      return {
+        taskId: task.id,
+        taskTitle: task.title,
+        currentLevelLabel: snapshot.currentLevelLabel ?? 'רמה נוכחית',
+        nextLevelLabel: nextLabel,
+        kind: adjustment.kind,
+        reason: adjustment.reason,
+        successStreakDays: snapshot.successStreakCurrentLevel,
+      };
+    }
+  }
+  return undefined;
+}
+
 export function planHabitCheckpointTriggers(
   progressRows: ProgressRow[],
   slot: HabitCheckpointSlot,
   now: Date,
   todayExecutionsByUser: TodayExecutionsByUser = new Map(),
   lastActiveByUser: ReadonlyMap<string, string | null> = new Map(),
-  userResponseInfo: ReadonlyMap<string, UserResponseInfo> = new Map()
+  userResponseInfo: ReadonlyMap<string, UserResponseInfo> = new Map(),
+  recentExecutionsByUser: RecentExecutionsByUser = new Map()
 ): HabitCheckpointPlanItem[] {
   const { dateKey, weekday } = jerusalemCalendarParts(now);
   const byUser = new Map<string, ProgressRow[]>();
@@ -774,6 +848,9 @@ export function planHabitCheckpointTriggers(
       ? undefined
       : 'presence';
 
+    const userRecentExecs = recentExecutionsByUser.get(userId) ?? [];
+    const taskLevelTune = pickTaskLevelTune(rows, userRecentExecs);
+
     out.push({
       userId,
       payload: {
@@ -809,6 +886,7 @@ export function planHabitCheckpointTriggers(
         ...(typeof hoursSinceResp === 'number'
           ? { hoursSinceLastResponse: hoursSinceResp }
           : {}),
+        ...(taskLevelTune ? { taskLevelTune } : {}),
       },
     });
   }
@@ -852,7 +930,8 @@ export async function planHabitCheckpointTriggersWithChat(
   now: Date,
   todayExecutionsByUser: TodayExecutionsByUser = new Map(),
   lastActiveByUser: ReadonlyMap<string, string | null> = new Map(),
-  userResponseInfo: ReadonlyMap<string, UserResponseInfo> = new Map()
+  userResponseInfo: ReadonlyMap<string, UserResponseInfo> = new Map(),
+  recentExecutionsByUser: RecentExecutionsByUser = new Map()
 ): Promise<HabitCheckpointPlanItem[]> {
   const base = planHabitCheckpointTriggers(
     progressRows,
@@ -860,7 +939,8 @@ export async function planHabitCheckpointTriggersWithChat(
     now,
     todayExecutionsByUser,
     lastActiveByUser,
-    userResponseInfo
+    userResponseInfo,
+    recentExecutionsByUser
   );
   const chatIds = await fetchUserIdsWithChatToday(admin, now);
   return appendPresenceReinforceFromChat(

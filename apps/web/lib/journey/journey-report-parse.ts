@@ -41,6 +41,10 @@ export function parseJourneyTasksFull(raw: unknown): JourneyTask[] {
       weekly_day: typeof row.weekly_day === 'number' ? row.weekly_day : null,
       meal_timing: row.meal_timing as JourneyTask['meal_timing'],
       meal_target: row.meal_target as JourneyTask['meal_target'],
+      leveling:
+        row.leveling && typeof row.leveling === 'object' && !Array.isArray(row.leveling)
+          ? (row.leveling as JourneyTask['leveling'])
+          : null,
     });
   }
   return out;

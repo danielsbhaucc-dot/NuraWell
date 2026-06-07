@@ -63,6 +63,47 @@ const researchSchema = z.object({
   scan_error: z.string().max(2000).optional(),
 });
 
+const taskDifficultyMetricSchema = z
+  .object({
+    kind: z.enum([
+      'quantity',
+      'time_before_event',
+      'time_after_event',
+      'time_of_day',
+      'frequency',
+      'duration',
+      'custom',
+    ]),
+    value: z.union([z.number(), z.string(), z.null()]).optional(),
+    unit: z.enum(['cups', 'minutes', 'hours', 'times', 'days', 'custom']).optional(),
+    direction: z.enum(['higher_is_harder', 'lower_is_harder', 'custom']).optional(),
+  })
+  .optional();
+
+const taskDifficultyLevelSchema = z.object({
+  id: z.string().max(120),
+  label: z.string().max(500),
+  description: z.string().max(2000),
+  emoji: z.string().max(32).optional(),
+  order: z.number().int().min(0).max(99),
+  is_recommended: z.boolean().optional(),
+  is_minimum_viable: z.boolean().optional(),
+  metric: taskDifficultyMetricSchema,
+});
+
+const taskLevelingSchema = z
+  .object({
+    levels: z.array(taskDifficultyLevelSchema).min(2).max(12),
+    start_level_id: z.string().max(120).nullable(),
+    recommended_level_id: z.string().max(120).nullable(),
+    level_up_after_success_days: z.number().int().min(1).max(90),
+    allow_user_downgrade: z.boolean(),
+    allow_user_upgrade: z.boolean(),
+    ai_rationale: z.string().max(4000).nullable().optional(),
+  })
+  .nullable()
+  .optional();
+
 const journeyTaskSchema = z.object({
   id: z.string().max(120),
   title: z.string().max(500),
@@ -75,6 +116,7 @@ const journeyTaskSchema = z.object({
   weekly_day: z.number().int().min(0).max(6).nullable().optional(),
   meal_timing: z.enum(['before', 'after']).nullable().optional(),
   meal_target: z.enum(['fixed', 'all']).nullable().optional(),
+  leveling: taskLevelingSchema,
 });
 
 const journeyHabitSchema = z.object({

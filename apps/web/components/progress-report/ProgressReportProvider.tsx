@@ -20,7 +20,10 @@ import {
 } from '../../lib/journey/task-schedule';
 import { TaskDailySlots } from '../journey/TaskDailySlots';
 import { HabitProgressCard } from '../journey/HabitProgressCard';
+import { TaskLevelProgressCard } from '../journey/TaskLevelProgressCard';
 import { computeHabitProgressSnapshot } from '../../lib/journey/habit-progress';
+import { computeTaskLevelProgressSnapshot } from '../../lib/journey/task-level-progress';
+import { parseJourneyTasksFull } from '../../lib/journey/journey-report-parse';
 import type { JourneyHabit } from '../../lib/types/journey';
 
 type TaskStatus = 'accepted' | 'rejected' | 'pending';
@@ -29,6 +32,7 @@ type ReportProgress = {
   task_statuses?: Record<string, { status: TaskStatus; decided_at?: string | null; execution_done?: boolean }>;
   habits_progress?: Record<string, boolean[]>;
   habit_meta?: unknown;
+  task_level_meta?: unknown;
 };
 
 type ReportStep = {
@@ -43,7 +47,7 @@ type ReportStep = {
 type TodayExecutionRow = Pick<
   JourneyTaskExecution,
   'step_id' | 'task_id' | 'slot' | 'date_key' | 'completed_at' | 'source'
->;
+> & { outcome?: string | null };
 
 type JourneyReportResponse = {
   steps: ReportStep[];
@@ -499,6 +503,31 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                                     />
                                   );
                                 })}
+                                {parseJourneyTasksFull(step.tasks)
+                                  .filter((t) => t.leveling?.levels?.length)
+                                  .map((t) => {
+                                    const statuses = (prog?.task_statuses ?? {}) as Record<
+                                      string,
+                                      { status: TaskStatus }
+                                    >;
+                                    if (statuses[t.id]?.status !== 'accepted') return null;
+                                    const snapshot = computeTaskLevelProgressSnapshot({
+                                      task: t,
+                                      executions: stepExecs,
+                                      taskLevelMeta: prog?.task_level_meta,
+                                      todayKey: data.today_date_key,
+                                    });
+                                    return (
+                                      <TaskLevelProgressCard
+                                        key={`level-${t.id}`}
+                                        taskTitle={t.title}
+                                        emoji={t.emoji || '✅'}
+                                        stepId={step.id}
+                                        snapshot={snapshot}
+                                        levels={t.leveling?.levels}
+                                      />
+                                    );
+                                  })}
                             </div>
                           </div>
                         );
