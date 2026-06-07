@@ -47,7 +47,7 @@ const CLARIFICATION_SYSTEM_PROMPT = `אתה עוזר למנהל תוכן ב-Nura
   ]
 }
 
-אם יש מספיק מידע לכל שלושת השלבים (או שהמנהל ענה על כל השאלות), החזר:
+החזר status "ready" *רק* אחרי שהמנהל כבר ענה על שאלות חידוד (כשמופיע בהודעה "תשובות המנהל"):
 {
   "status": "ready",
   "summary_so_far": "סיכום מלא של ההבנה",
@@ -55,11 +55,11 @@ const CLARIFICATION_SYSTEM_PROMPT = `אתה עוזר למנהל תוכן ב-Nura
 }
 
 חוקים:
-- שאל 1-4 שאלות ממוקדות בלבד, לא יותר.
+- בהדבקה ראשונה (כשעדיין אין "תשובות המנהל" בהודעה) — *חובה* להחזיר status "needs_clarification" עם 2-4 שאלות חידוד ממוקדות שיחדדו את הצעד (מגבלות המחקר, היעד ההתנהגותי, סולם הקושי, או מה שחסר). אל תחזיר "ready" בהדבקה ראשונה גם אם הטקסט נראה מלא — תמיד שווה לחדד עם המנהל לפחות פעם אחת.
+- שאל 2-4 שאלות ממוקדות, לא יותר.
 - כתוב בעברית.
 - אל תמציא עובדות.
-- input_type: textarea / text / select בלבד.
-- אם הטקסט כבר מכיל תמלול מלא + יעד התנהגותי + מחקרים — החזר status ready מיד.`;
+- input_type: textarea / text / select בלבד.`;
 
 function pickJsonObject(raw: string): string {
   const trimmed = raw.trim();
@@ -205,31 +205,38 @@ export async function POST(request: Request) {
 
     try {
       const result = await runClarificationLLM({ sourceText: sourceText.trim() });
-      if (result.status === 'ready') {
-        return NextResponse.json({
-          ok: true,
-          status: 'ready',
-          sessionId,
-          summary_so_far: result.summary_so_far,
-          phase: result.phase,
-        });
-      }
+      /**
+       * בהדבקה ראשונה תמיד מציגים שאלות חידוד למנהל — גם אם המודל החזיר
+       * "ready". כך זרימת ה-AI אינטראקטיבית ולא קופצת ישר למילוי הצעד.
+       * אם המודל לא סיפק שאלות (כי חשב שהטקסט מלא) — נופלים לשאלות ברירת מחדל.
+       */
+      const fallbackQuestions = [
+        {
+          id: 'behavioral-goal',
+          label: 'מה היעד ההתנהגותי המרכזי של הצעד? (המשימה/ההרגל שהמשתמש ייקח)',
+          input_type: 'textarea' as const,
+          required: true,
+        },
+        {
+          id: 'difficulty',
+          label: 'איך נראה סולם הקושי? (גרסה קלה / רגילה / מאתגרת)',
+          input_type: 'textarea' as const,
+          required: false,
+        },
+        {
+          id: 'research-limits',
+          label: 'יש מגבלות/אזהרות מהמחקר שחשוב לא להפריז בהן?',
+          input_type: 'textarea' as const,
+          required: false,
+        },
+      ];
       return NextResponse.json({
         ok: true,
         status: 'needs_clarification',
         sessionId,
         phase: result.phase,
         summary_so_far: result.summary_so_far,
-        questions: result.questions.length
-          ? result.questions
-          : [
-              {
-                id: 'missing-info',
-                label: 'מה חסר כדי להשלים את הצעד? (תמלול, יעד, מחקר)',
-                input_type: 'textarea' as const,
-                required: true,
-              },
-            ],
+        questions: result.questions.length ? result.questions : fallbackQuestions,
         model: result.model,
         provider: result.provider,
       });
