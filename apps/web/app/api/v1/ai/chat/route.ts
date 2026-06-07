@@ -31,7 +31,6 @@ import {
   isUpstashVectorConfigured,
   queryUserMemoryVectors,
 } from '../../../../../lib/ai/upstash-vector-rest';
-import { ingestUserMessageIntoVectorMemory } from '../../../../../lib/ai/vector-memory-ingest';
 import { createPiiShield, PII_PLACEHOLDERS, type PiiShield } from '../../../../../lib/ai/privacy/pii-shield';
 import { fetchUserMemoryDossier } from '../../../../../lib/ai/memory-dossier/fetch-dossier';
 import { formatUserMemoryDossierPromptBlock } from '../../../../../lib/ai/memory-dossier/format-dossier-prompt';
@@ -1782,7 +1781,13 @@ export async function POST(request: Request) {
       })
     : Promise.resolve(null);
 
-  const memoryDossierPromise = fetchUserMemoryDossier(supabase, user.id).catch(() => null);
+  /**
+   * שליפת ה-dossier לקונטקסט הפרומפט — מדלגים בתורי trivial-bypass
+   * ("תודה"/"היי") כדי לא להוסיף קריאת DB לנתיב החוסם של Qwen (TTFB מהיר יותר).
+   */
+  const memoryDossierPromise = trivialBypass
+    ? Promise.resolve(null)
+    : fetchUserMemoryDossier(supabase, user.id).catch(() => null);
 
   const [
     profileRow,
@@ -2512,57 +2517,45 @@ export async function POST(request: Request) {
           });
         }
 
-        if (isVectorIngestEnabled() && shouldAttemptMemorySync(lastUserText)) {
+        /**
+         * חילוץ זיכרון מאוחד (Llama 4) — *רקע מלא* דרך after(), לא חוסם את Qwen.
+         * קריאת חילוץ אחת בלבד לתור: בונה את ה-dossier + ai_context + vector facts.
+         * Gating: מדלגים על small-talk ("תודה"/"היי") כדי לא לבזבז טוקנים.
+         */
+        if (shouldAttemptMemorySync(lastUserText)) {
           after(async () => {
             try {
-              const ing = await ingestUserMessageIntoVectorMemory({
+              const admin = createAdminClient();
+              const dossierIng = await ingestChatTurnIntoMemoryDossier({
+                adminSupabase: admin,
                 userId: user.id,
                 userMessage: lastUserText,
+                assistantMessage: assistantText,
+                habitTitles: journeyHabits.map((h) => h.title),
+                enableVectorWrites: isVectorIngestEnabled(),
               });
-              if (ing.upserts.length) {
+              if (
+                dossierIng.dossier_updated ||
+                dossierIng.ai_context_patched ||
+                dossierIng.vector_facts > 0
+              ) {
                 console.info('[ai/chat]', {
                   debug_id: debugId,
-                  stage: 'vector_ingest_ok',
-                  facts_extracted: ing.facts_extracted,
-                  upsert_count: ing.upserts.length,
+                  stage: 'memory_ingest_ok',
+                  dossier_updated: dossierIng.dossier_updated,
+                  ai_context_patched: dossierIng.ai_context_patched,
+                  vector_facts: dossierIng.vector_facts,
                 });
               }
-            } catch (vecErr) {
-              console.error('[ai/chat]', {
+            } catch (dossierErr) {
+              console.warn('[ai/chat]', {
                 debug_id: debugId,
-                stage: 'vector_ingest_failed',
-                error: vecErr instanceof Error ? vecErr.message : String(vecErr),
+                stage: 'memory_ingest_failed',
+                error: dossierErr instanceof Error ? dossierErr.message : String(dossierErr),
               });
             }
           });
         }
-
-        after(async () => {
-          try {
-            const admin = createAdminClient();
-            const dossierIng = await ingestChatTurnIntoMemoryDossier({
-              adminSupabase: admin,
-              userId: user.id,
-              userMessage: lastUserText,
-              assistantMessage: assistantText,
-              habitTitles: journeyHabits.map((h) => h.title),
-            });
-            if (dossierIng.dossier_updated || dossierIng.ai_context_patched) {
-              console.info('[ai/chat]', {
-                debug_id: debugId,
-                stage: 'memory_dossier_ingest_ok',
-                dossier_updated: dossierIng.dossier_updated,
-                ai_context_patched: dossierIng.ai_context_patched,
-              });
-            }
-          } catch (dossierErr) {
-            console.warn('[ai/chat]', {
-              debug_id: debugId,
-              stage: 'memory_dossier_ingest_failed',
-              error: dossierErr instanceof Error ? dossierErr.message : String(dossierErr),
-            });
-          }
-        });
       };
 
     stage = 'stream_response';
