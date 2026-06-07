@@ -189,7 +189,8 @@ function scheduleLabelHe(task: PendingAcceptedTask): string {
 }
 
 export function formatPendingAcceptedTasksPromptBlock(
-  tasks: readonly PendingAcceptedTask[]
+  tasks: readonly PendingAcceptedTask[],
+  opts?: { isGreeting?: boolean }
 ): string | null {
   if (tasks.length === 0) return null;
   const shown = tasks.slice(0, 6);
@@ -201,6 +202,11 @@ export function formatPendingAcceptedTasksPromptBlock(
     }),
     'אם המשתמש שואל "מה המשימות שלי" או "מה נשאר" — ענה לפי הרשימה הזו. אם הוא מדווח ביצוע — חזק בקצרה ואל תמשיך לבקש אותה.',
   ];
+  if (opts?.isGreeting) {
+    lines.push(
+      'פתיחה/ברכה: אל תישאר ב"מה נשמע" גנרי. אחרי ברכה קצרה, בחר משימה פתוחה אחת מהרשימה והזמן לצעד קטן עכשיו/היום ("בא נסגור 10 דקות הליכה?", "מתאים לסמן את זה עכשיו?"). לא רשימת משימות, לא אשמה, לא שאלה כללית.'
+    );
+  }
   return lines.join('\n');
 }
 

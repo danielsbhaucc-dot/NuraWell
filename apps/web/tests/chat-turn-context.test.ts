@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatJourneyChatGuidanceBlock,
+  formatPendingAcceptedTasksPromptBlock,
   isCasualGreeting,
 } from '../lib/ai/chat-turn-context';
 
@@ -23,5 +24,27 @@ describe('formatJourneyChatGuidanceBlock', () => {
     });
     expect(block).toContain('✓');
     expect(block).toContain('פתיחה');
+  });
+});
+
+describe('formatPendingAcceptedTasksPromptBlock', () => {
+  it('nudges one concrete accepted task on greeting turns', () => {
+    const block = formatPendingAcceptedTasksPromptBlock(
+      [
+        {
+          id: 'task-1',
+          title: 'הליכה 10 דקות',
+          stepId: 'step-1',
+          stepTitle: 'תנועה קלה',
+          schedule: 'daily',
+          times_per_day: 1,
+        },
+      ],
+      { isGreeting: true }
+    );
+
+    expect(block).toContain('הליכה 10 דקות');
+    expect(block).toContain('פתיחה/ברכה');
+    expect(block).toContain('צעד קטן');
   });
 });
