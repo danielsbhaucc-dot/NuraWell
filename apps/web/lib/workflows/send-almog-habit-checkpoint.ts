@@ -215,6 +215,25 @@ async function fetchProfileScheduleHints(admin: SupabaseClient, userId: string) 
  * D4 — תזכורת לאלמוג: יש המלצת הארכה/קיצור פתוחה. נכלל ב-prompt ואחרי
  * שליחה ננקה את הdflag כדי לא לחזור על זה.
  */
+/**
+ * הצעת העלאת/הורדת רמת קושי למשימה — ניסוח תומך, לא שיפוטי.
+ */
+function formatTaskLevelTuneBlock(payload: AlmogHabitCheckpointPayload): string | null {
+  const tune = payload.taskLevelTune;
+  if (!tune) return null;
+  if (tune.kind === 'level_up') {
+    return (
+      `התאמת רמת קושי: המשתמש יציב ${tune.successStreakDays} ימים ברמה "${tune.currentLevelLabel}" במשימה "${tune.taskTitle}". ` +
+      `אפשר להציע בעדינות לעבור ל"${tune.nextLevelLabel ?? 'רמה הבאה'}" — בלי לחץ, רק הזמנה. ` +
+      `אל תשפוט אם לא מוכן. ${tune.reason}`
+    );
+  }
+  return (
+    `התאמת רמת קושי: נראה שקשה ברמה "${tune.currentLevelLabel}" במשימה "${tune.taskTitle}". ` +
+    `אפשר להציע לרדת ל"${tune.nextLevelLabel ?? 'רמה קלה יותר'}" ליומיים ולבנות מומנטום — בלי "נכשלת".`
+  );
+}
+
 function formatHabitTuneBlock(aiContext: unknown): string | null {
   if (!aiContext || typeof aiContext !== 'object') return null;
   const ctx = aiContext as Record<string, unknown>;
@@ -334,6 +353,8 @@ export async function sendAlmogHabitCheckpointNotification(
   }
   const tuneBlock = formatHabitTuneBlock(scheduleHints.aiContext);
   if (!isCompassionOnly && tuneBlock) contextParts.push(tuneBlock);
+  const taskLevelBlock = formatTaskLevelTuneBlock(payload);
+  if (!isCompassionOnly && taskLevelBlock) contextParts.push(taskLevelBlock);
   if (dailyBlock) contextParts.push(dailyBlock);
   const unansweredBlock = !isReinforce && !isCompassionOnly
     ? formatUnansweredTouchesBlock(todayTouches, payload.slot)

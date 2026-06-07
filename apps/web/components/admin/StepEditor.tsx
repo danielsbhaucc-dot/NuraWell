@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 import type {
   JourneyStep, QuizQuestion, GameItem, CommitmentData,
-  Research, JourneyTask, JourneyHabit, QuestionTtsMeta
+  Research, JourneyTask, JourneyHabit, QuestionTtsMeta,
+  JourneyTaskLevelingConfig,
 } from '../../lib/types/journey';
 import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
 import type { MediaAsset } from '@/components/media-manager/types';
@@ -58,6 +59,48 @@ const emptyAttentionStop: ImmersiveAttentionStop = {
 };
 
 function genId() { return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`; }
+
+type AiFillMode = 'initial' | 'clarifying' | 'generating' | 'done';
+
+type AiClarificationQuestion = {
+  id: string;
+  label: string;
+  help_text?: string;
+  input_type: 'textarea' | 'text' | 'select';
+  required: boolean;
+};
+
+function createDefaultLeveling(): JourneyTaskLevelingConfig {
+  const easy = genId();
+  const start = genId();
+  const target = genId();
+  return {
+    levels: [
+      { id: easy, label: 'רמה קלה', description: '', order: 0, is_minimum_viable: true },
+      { id: start, label: 'רמת התחלה', description: '', order: 1 },
+      { id: target, label: 'יעד מומלץ', description: '', order: 2, is_recommended: true },
+    ],
+    start_level_id: start,
+    recommended_level_id: target,
+    level_up_after_success_days: 7,
+    allow_user_downgrade: true,
+    allow_user_upgrade: true,
+    ai_rationale: null,
+  };
+}
+
+function updateTaskLeveling(
+  tasks: JourneyTask[],
+  taskIndex: number,
+  updater: (prev: JourneyTaskLevelingConfig) => JourneyTaskLevelingConfig
+): JourneyTask[] {
+  const arr = [...tasks];
+  const task = arr[taskIndex];
+  if (!task) return tasks;
+  const prev = task.leveling ?? createDefaultLeveling();
+  arr[taskIndex] = { ...task, leveling: updater(prev) };
+  return arr;
+}
 
 /** שלבי השמירה כשיש הקראות (TTS) — מוצגים עם אחוזים כדי שלא ייראה תקוע. */
 const SAVE_STAGES = [
@@ -164,6 +207,14 @@ export function StepEditor({ step }: StepEditorProps) {
   const [aiProgress, setAiProgress] = useState(0);
   const [aiStageIndex, setAiStageIndex] = useState(0);
   const aiTimerRef = useRef<number | null>(null);
+  const [aiFillMode, setAiFillMode] = useState<AiFillMode>('initial');
+  const [aiSessionId, setAiSessionId] = useState<string | null>(null);
+  const [aiClarificationPhase, setAiClarificationPhase] = useState<
+    'research' | 'lesson_transcript' | 'user_goal'
+  >('research');
+  const [aiSummarySoFar, setAiSummarySoFar] = useState('');
+  const [aiClarificationQuestions, setAiClarificationQuestions] = useState<AiClarificationQuestion[]>([]);
+  const [aiClarificationAnswers, setAiClarificationAnswers] = useState<Record<string, string>>({});
 
   // Basic fields
   const [title, setTitle] = useState(step?.title || '');
@@ -252,38 +303,17 @@ export function StepEditor({ step }: StepEditorProps) {
   const [pdfUrl, setPdfUrl] = useState(step?.pdf_url || '');
   const [pdfName, setPdfName] = useState(step?.pdf_name || '');
 
-  const handleAiFill = async () => {
-    const text = aiSourceText.trim();
-    if (text.length < 40) {
-      setAiError('הדבק טקסט ארוך יותר (לפחות 40 תווים) כדי ש-AI יוכל למלא את הצעד.');
-      return;
-    }
-
-    const hasExistingContent =
-      title.trim() ||
-      summaryText.trim() ||
-      description.trim() ||
-      quizQuestions.length > 0 ||
-      gameItems.length > 0 ||
-      tasks.length > 0 ||
-      habits.length > 0 ||
-      researches.length > 0 ||
-      immersiveAttentionStops.length > 0 ||
-      commitment;
-    if (
-      hasExistingContent &&
-      !window.confirm('המילוי האוטומטי יחליף את התוכן הקיים בכל הסעיפים (חוץ מהווידאו). להמשיך?')
-    ) {
-      return;
-    }
-
+  const runAiGeneration = async (
+    text: string,
+    options?: { clarificationAnswers?: Record<string, string>; analysisSummary?: string }
+  ) => {
+    setAiFillMode('generating');
     setAiFilling(true);
     setAiError(null);
     setAiMessage(null);
     setAiProgress(4);
     setAiStageIndex(0);
 
-    // טיקר עדין רק לשלב ה-LLM (אין אירועי ביניים בזמן שהמודל מנסח) — נעצר בכל אירוע אמיתי.
     const stopTicker = () => {
       if (aiTimerRef.current) {
         window.clearInterval(aiTimerRef.current);
@@ -295,7 +325,6 @@ export function StepEditor({ step }: StepEditorProps) {
       const startedAt = Date.now();
       aiTimerRef.current = window.setInterval(() => {
         const elapsed = Date.now() - startedAt;
-        // זוחל לאט עד תקרה של 58% בזמן שהמודל עובד בפועל.
         const pct = Math.min(58, 12 + Math.round((elapsed / 22000) * 46));
         setAiProgress((prev) => (pct > prev ? pct : prev));
       }, 250);
@@ -304,6 +333,7 @@ export function StepEditor({ step }: StepEditorProps) {
     const fail = (msg: string) => {
       stopTicker();
       setAiError(msg);
+      setAiFillMode('initial');
     };
 
     type StreamStep = {
@@ -345,7 +375,6 @@ export function StepEditor({ step }: StepEditorProps) {
           stopTicker();
           setAiStageIndex(2);
           setAiProgress((p) => Math.max(p, 62));
-          // אם אין מחקרים לסריקה — נתקדם לקראת הסיום ונחכה ל-done.
           if (!evt.research_to_scan) {
             setAiStageIndex(3);
             setAiProgress((p) => Math.max(p, 90));
@@ -376,10 +405,14 @@ export function StepEditor({ step }: StepEditorProps) {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceText: text, stepNumber }),
+        body: JSON.stringify({
+          sourceText: text,
+          stepNumber,
+          clarificationAnswers: options?.clarificationAnswers,
+          analysisSummary: options?.analysisSummary,
+        }),
       });
 
-      // שגיאה לפני תחילת הזרם (validation/auth) — גוף JSON, נחלץ הודעה ברורה.
       if (!res.ok || !res.body) {
         const errData = (await res.json().catch(() => null)) as { error?: unknown } | null;
         throw new Error(extractErrorMessage(errData) ?? `שגיאה ${res.status}`);
@@ -458,11 +491,139 @@ export function StepEditor({ step }: StepEditorProps) {
           linksNote +
           'עברו על הסעיפים, הוסיפו וידאו, ואז שמרו — סיכומי המחקרים המלאים יסונכרנו לזיכרון של אלמוג בשמירה.'
       );
+      setAiFillMode('done');
       setAiPanelOpen(false);
     } catch (e) {
       fail(e instanceof Error ? e.message : 'שגיאה במילוי אוטומטי');
     } finally {
       stopTicker();
+      setAiFilling(false);
+    }
+  };
+
+  const handleAiClarificationSubmit = async () => {
+    const text = aiSourceText.trim();
+    for (const q of aiClarificationQuestions) {
+      if (q.required && !aiClarificationAnswers[q.id]?.trim()) {
+        setAiError(`נא לענות על: ${q.label}`);
+        return;
+      }
+    }
+    setAiError(null);
+    setAiFilling(true);
+    try {
+      const res = await fetch('/api/v1/admin/journey-steps/ai-fill/session', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'answer',
+          sourceText: text,
+          sessionId: aiSessionId,
+          phase: aiClarificationPhase,
+          summarySoFar: aiSummarySoFar,
+          answers: aiClarificationAnswers,
+        }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        status?: string;
+        error?: string;
+        sessionId?: string;
+        phase?: 'research' | 'lesson_transcript' | 'user_goal';
+        summary_so_far?: string;
+        questions?: AiClarificationQuestion[];
+      };
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'שגיאה בשליחת תשובות');
+      }
+      if (data.sessionId) setAiSessionId(data.sessionId);
+      if (data.summary_so_far) setAiSummarySoFar(data.summary_so_far);
+      if (data.status === 'ready') {
+        await runAiGeneration(text, {
+          clarificationAnswers: aiClarificationAnswers,
+          analysisSummary: data.summary_so_far ?? aiSummarySoFar,
+        });
+        return;
+      }
+      setAiClarificationPhase(data.phase ?? 'user_goal');
+      setAiClarificationQuestions(data.questions ?? []);
+      setAiClarificationAnswers({});
+      setAiFillMode('clarifying');
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : 'שגיאה בשיחת חידוד');
+    } finally {
+      setAiFilling(false);
+    }
+  };
+
+  const handleAiFill = async () => {
+    const text = aiSourceText.trim();
+    if (text.length < 40) {
+      setAiError('הדבק טקסט ארוך יותר (לפחות 40 תווים) כדי ש-AI יוכל למלא את הצעד.');
+      return;
+    }
+
+    const hasExistingContent =
+      title.trim() ||
+      summaryText.trim() ||
+      description.trim() ||
+      quizQuestions.length > 0 ||
+      gameItems.length > 0 ||
+      tasks.length > 0 ||
+      habits.length > 0 ||
+      researches.length > 0 ||
+      immersiveAttentionStops.length > 0 ||
+      commitment;
+    if (
+      hasExistingContent &&
+      !window.confirm('המילוי האוטומטי יחליף את התוכן הקיים בכל הסעיפים (חוץ מהווידאו). להמשיך?')
+    ) {
+      return;
+    }
+
+    setAiError(null);
+    setAiMessage(null);
+    setAiFillMode('initial');
+    setAiClarificationAnswers({});
+    setAiClarificationQuestions([]);
+    setAiSummarySoFar('');
+    setAiSessionId(null);
+
+    setAiFilling(true);
+    try {
+      const res = await fetch('/api/v1/admin/journey-steps/ai-fill/session', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start', sourceText: text }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        status?: string;
+        error?: string;
+        sessionId?: string;
+        phase?: 'research' | 'lesson_transcript' | 'user_goal';
+        summary_so_far?: string;
+        questions?: AiClarificationQuestion[];
+      };
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'שגיאה בהתחלת session חידוד');
+      }
+      if (data.sessionId) setAiSessionId(data.sessionId);
+      if (data.summary_so_far) setAiSummarySoFar(data.summary_so_far);
+
+      if (data.status === 'ready') {
+        await runAiGeneration(text, { analysisSummary: data.summary_so_far ?? '' });
+        return;
+      }
+
+      setAiClarificationPhase(data.phase ?? 'research');
+      setAiClarificationQuestions(data.questions ?? []);
+      setAiFillMode('clarifying');
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : 'שגיאה במילוי אוטומטי');
+    } finally {
       setAiFilling(false);
     }
   };
@@ -750,20 +911,74 @@ export function StepEditor({ step }: StepEditorProps) {
                 placeholder="הדביקו כאן את התוכן הגולמי של השיעור (תמלול / סיכום / טקסט מקצועי). ה-AI ייתן כותרת, סיכום, שאלות הבנה, משחק, התחייבות, מחקרים, משימות, הרגלים ונקודות קשב — ויסונכרן לזיכרון של אלמוג בשמירה."
               />
               <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => void handleAiFill()}
-                  disabled={aiFilling || aiSourceText.trim().length < 40}
-                  className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)' }}
-                >
-                  {aiFilling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  {aiFilling ? 'ה-AI ממלא את הצעד…' : 'מלא את כל הסעיפים אוטומטית'}
-                </button>
+                {aiFillMode !== 'clarifying' ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleAiFill()}
+                    disabled={aiFilling || aiSourceText.trim().length < 40}
+                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)' }}
+                  >
+                    {aiFilling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {aiFilling ? 'ה-AI מנתח…' : 'התחל מילוי חכם'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void handleAiClarificationSubmit()}
+                    disabled={aiFilling}
+                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)' }}
+                  >
+                    {aiFilling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {aiFilling ? 'שולח תשובות…' : 'שלח תשובות והמשך'}
+                  </button>
+                )}
                 <span className="text-[11px] font-semibold text-violet-700/70">
                   {aiSourceText.trim().length} תווים · הווידאו תמיד נשאר למילוי ידני
                 </span>
               </div>
+
+              {aiFillMode === 'clarifying' && aiClarificationQuestions.length > 0 && (
+                <div className="space-y-3 rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(124,58,237,0.2)' }}>
+                  <p className="text-xs font-bold text-violet-900">
+                    שלב חידוד:{' '}
+                    {aiClarificationPhase === 'research'
+                      ? 'מחקר'
+                      : aiClarificationPhase === 'lesson_transcript'
+                        ? 'תמלול שיעור'
+                        : 'יעד משתמש'}
+                  </p>
+                  {aiSummarySoFar ? (
+                    <p className="text-[11px] leading-relaxed text-violet-800/80">{aiSummarySoFar}</p>
+                  ) : null}
+                  {aiClarificationQuestions.map((q) => (
+                    <Field key={q.id} label={q.label}>
+                      {q.input_type === 'textarea' ? (
+                        <textarea
+                          value={aiClarificationAnswers[q.id] ?? ''}
+                          onChange={(e) =>
+                            setAiClarificationAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
+                          }
+                          disabled={aiFilling}
+                          className="input-field min-h-[80px]"
+                          placeholder={q.help_text ?? ''}
+                        />
+                      ) : (
+                        <input
+                          value={aiClarificationAnswers[q.id] ?? ''}
+                          onChange={(e) =>
+                            setAiClarificationAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
+                          }
+                          disabled={aiFilling}
+                          className="input-field"
+                          placeholder={q.help_text ?? ''}
+                        />
+                      )}
+                    </Field>
+                  ))}
+                </div>
+              )}
               {aiError && (
                 <p className="rounded-xl px-3 py-2 text-xs font-semibold text-red-700" style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.25)' }}>
                   {aiError}
@@ -1536,6 +1751,172 @@ export function StepEditor({ step }: StepEditorProps) {
                       </select>
                     </Field>
                   ) : null}
+
+                  {/* ── שכבות קושי ── */}
+                  <div className="rounded-lg p-3 space-y-2" style={{ background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.15)' }}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-orange-900">סולם רמות קושי</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const arr = [...tasks];
+                          if (arr[ti]?.leveling) {
+                            arr[ti] = { ...arr[ti]!, leveling: null };
+                          } else {
+                            arr[ti] = { ...arr[ti]!, leveling: createDefaultLeveling() };
+                          }
+                          setTasks(arr);
+                        }}
+                        className="text-[11px] font-semibold text-orange-700 hover:text-orange-900"
+                      >
+                        {t.leveling ? 'הסר סולם' : 'הוסף סולם'}
+                      </button>
+                    </div>
+                    {t.leveling ? (
+                      <div className="space-y-2">
+                        <Field label="ימים להצעת העלאת רמה">
+                          <input
+                            type="number"
+                            min={1}
+                            max={90}
+                            value={t.leveling.level_up_after_success_days}
+                            onChange={(e) => {
+                              setTasks(
+                                updateTaskLeveling(tasks, ti, (lv) => ({
+                                  ...lv,
+                                  level_up_after_success_days: Math.min(
+                                    90,
+                                    Math.max(1, Number(e.target.value) || 7)
+                                  ),
+                                }))
+                              );
+                            }}
+                            className="input-field w-24"
+                          />
+                        </Field>
+                        {(t.leveling.levels ?? []).map((lvl, li) => (
+                          <div
+                            key={lvl.id || li}
+                            className="rounded-lg p-2 space-y-1"
+                            style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(249,115,22,0.12)' }}
+                          >
+                            <div className="flex flex-wrap items-center gap-2">
+                              <input
+                                value={lvl.label}
+                                onChange={(e) => {
+                                  setTasks(
+                                    updateTaskLeveling(tasks, ti, (lv) => {
+                                      const levels = [...lv.levels];
+                                      levels[li] = { ...levels[li]!, label: e.target.value };
+                                      return { ...lv, levels };
+                                    })
+                                  );
+                                }}
+                                className="input-field flex-1 min-w-[120px]"
+                                placeholder="שם הרמה"
+                              />
+                              <label className="flex items-center gap-1 text-[10px] font-semibold text-orange-800">
+                                <input
+                                  type="radio"
+                                  name={`start-${t.id}`}
+                                  checked={t.leveling?.start_level_id === lvl.id}
+                                  onChange={() => {
+                                    setTasks(
+                                      updateTaskLeveling(tasks, ti, (lv) => ({
+                                        ...lv,
+                                        start_level_id: lvl.id,
+                                      }))
+                                    );
+                                  }}
+                                />
+                                התחלה
+                              </label>
+                              <label className="flex items-center gap-1 text-[10px] font-semibold text-orange-800">
+                                <input
+                                  type="radio"
+                                  name={`rec-${t.id}`}
+                                  checked={t.leveling?.recommended_level_id === lvl.id}
+                                  onChange={() => {
+                                    setTasks(
+                                      updateTaskLeveling(tasks, ti, (lv) => ({
+                                        ...lv,
+                                        recommended_level_id: lvl.id,
+                                      }))
+                                    );
+                                  }}
+                                />
+                                יעד
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setTasks(
+                                    updateTaskLeveling(tasks, ti, (lv) => {
+                                      const levels = lv.levels.filter((_, i) => i !== li);
+                                      if (levels.length < 2) return lv;
+                                      return {
+                                        ...lv,
+                                        levels: levels.map((l, i) => ({ ...l, order: i })),
+                                        start_level_id: lv.start_level_id === lvl.id ? levels[0]!.id : lv.start_level_id,
+                                        recommended_level_id:
+                                          lv.recommended_level_id === lvl.id
+                                            ? levels[levels.length - 1]!.id
+                                            : lv.recommended_level_id,
+                                      };
+                                    })
+                                  );
+                                }}
+                                className="text-red-500 text-[10px] font-semibold"
+                              >
+                                מחק
+                              </button>
+                            </div>
+                            <input
+                              value={lvl.description}
+                              onChange={(e) => {
+                                setTasks(
+                                  updateTaskLeveling(tasks, ti, (lv) => {
+                                    const levels = [...lv.levels];
+                                    levels[li] = { ...levels[li]!, description: e.target.value };
+                                    return { ...lv, levels };
+                                  })
+                                );
+                              }}
+                              className="input-field text-xs"
+                              placeholder="תיאור הרמה"
+                            />
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTasks(
+                              updateTaskLeveling(tasks, ti, (lv) => {
+                                const newId = genId();
+                                return {
+                                  ...lv,
+                                  levels: [
+                                    ...lv.levels,
+                                    {
+                                      id: newId,
+                                      label: 'רמה חדשה',
+                                      description: '',
+                                      order: lv.levels.length,
+                                    },
+                                  ],
+                                };
+                              })
+                            );
+                          }}
+                          className="text-[11px] font-semibold text-orange-700"
+                        >
+                          + הוסף רמה
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-orange-800/70">ללא סולם — המשימה תוצג ברמה אחת בלבד.</p>
+                    )}
+                  </div>
 
                   <button onClick={() => setTasks(prev => prev.filter((_, i) => i !== ti))}
                     className="text-red-500 hover:text-red-700 text-sm font-semibold">מחק משימה</button>

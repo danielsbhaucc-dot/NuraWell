@@ -6,7 +6,7 @@ export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 const JOURNEY_PROGRESS_SELECT =
-  'step_id, user_id, created_at, updated_at, video_watched, quiz_answers, quiz_score, game_answers, game_score, commitment_accepted, tasks_completed, task_statuses, habits_progress, is_completed, completed_at, last_section';
+  'step_id, user_id, created_at, updated_at, video_watched, quiz_answers, quiz_score, game_answers, game_score, commitment_accepted, tasks_completed, task_statuses, habits_progress, habit_meta, task_level_meta, is_completed, completed_at, last_section';
 
 /**
  * תמצית מסע + התקדמות — למסך דיווח מהיר (בלי לוגיקת admin).
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: rawExec } = await (supabase as any)
       .from('journey_task_executions')
-      .select('step_id, task_id, slot, completed_at, date_key, source')
+      .select('step_id, task_id, slot, completed_at, date_key, source, outcome')
       .eq('user_id', user.id)
       .eq('date_key', todayKey)
       .limit(500);
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: rawExecRecent } = await (supabase as any)
       .from('journey_task_executions')
-      .select('step_id, task_id, slot, completed_at, date_key, source')
+      .select('step_id, task_id, slot, completed_at, date_key, source, outcome')
       .eq('user_id', user.id)
       .gte('date_key', sinceKey)
       .order('date_key', { ascending: false })

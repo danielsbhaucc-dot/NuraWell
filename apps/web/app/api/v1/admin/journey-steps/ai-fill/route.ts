@@ -4,6 +4,8 @@ import { AI_MODELS, groq, openrouter } from '@/lib/ai/client';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import { scanResearchSource } from '@/lib/admin/research-scan';
+import { normalizeTaskLeveling } from '@/lib/admin/ai-fill-leveling';
+import type { JourneyTaskLevelingConfig } from '@/lib/types/journey';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,6 +16,10 @@ const MAX_SOURCE_CHARS = 60_000;
 const aiFillSchema = z.object({
   sourceText: z.string().min(40).max(MAX_SOURCE_CHARS),
   stepNumber: z.number().int().min(1).max(9999).optional(),
+  /** תשובות חידוד מה-session (אופציונלי) */
+  clarificationAnswers: z.record(z.string(), z.string().max(12000)).optional(),
+  /** סיכום מצטבר מה-session (אופציונלי) */
+  analysisSummary: z.string().max(20000).optional(),
 });
 
 /** מבנה הצעד שמוחזר ל-StepEditor (ללא שדות וידאו — נשארים למנהל). */
@@ -64,6 +70,7 @@ type AiFilledStep = {
     weekly_day: number | null;
     meal_timing: 'before' | 'after' | null;
     meal_target: 'fixed' | 'all' | null;
+    leveling: JourneyTaskLevelingConfig | null;
   }>;
   habits: Array<{
     id: string;
@@ -301,6 +308,7 @@ function normalizeFilledStep(value: unknown): AiFilledStep {
       ) as AiFilledStep['tasks'][number]['schedule'];
       const mealTiming = str(row.meal_timing, 16) === 'after' ? 'after' : 'before';
       const mealTarget = str(row.meal_target, 16) === 'all' ? 'all' : 'fixed';
+      const leveling = normalizeTaskLeveling(row.leveling, genId);
       return {
         id: genId(),
         title,
@@ -314,6 +322,7 @@ function normalizeFilledStep(value: unknown): AiFilledStep {
         weekly_day: schedule === 'weekly' ? clampInt(row.weekly_day, 0, 6, 0) : 0,
         meal_timing: schedule === 'per_meal' ? mealTiming : null,
         meal_target: schedule === 'per_meal' ? mealTarget : null,
+        leveling,
       } as AiFilledStep['tasks'][number];
     })
     .filter((x): x is AiFilledStep['tasks'][number] => Boolean(x));
@@ -403,7 +412,7 @@ const SYSTEM_PROMPT = `אתה עורך תוכן מקצועי עבור "המסע 
     { "title": "שם המחקר באנגלית", "authors": "חוקרים", "year": "2020", "journal": "כתב עת", "finding": "ממצא עיקרי בעברית", "url": null, "ai_summary": "סיכום מדעי קצר בעברית", "key_findings": ["ממצא 1","ממצא 2"], "practical_takeaway": "איך זה מתחבר לשיעור", "limitations": "סייגים או 'לא צוין'", "evidence_level": "moderate" }
   ],
   "tasks": [
-    { "title": "משימה ברורה לביצוע", "description": "פירוט קצר (או null)", "emoji": "✅", "schedule": "daily", "times_per_day": 1, "weekly_day": 0, "meal_timing": "before", "meal_target": "fixed" }
+    { "title": "משימה ברורה לביצוע", "description": "פירוט קצר (או null)", "emoji": "✅", "schedule": "daily", "times_per_day": 1, "weekly_day": 0, "meal_timing": "before", "meal_target": "fixed", "leveling": { "start_level_id": "level-1", "recommended_level_id": "level-2", "level_up_after_success_days": 7, "allow_user_downgrade": true, "allow_user_upgrade": true, "ai_rationale": "הסבר קצר", "levels": [ { "id": "level-0", "label": "רמה קלה", "description": "...", "order": 0, "is_minimum_viable": true, "metric": { "kind": "quantity", "value": 1, "unit": "cups", "direction": "higher_is_harder" } }, { "id": "level-1", "label": "רמת התחלה", "description": "...", "order": 1 }, { "id": "level-2", "label": "יעד מומלץ", "description": "...", "order": 2, "is_recommended": true } ] } }
   ],
   "habits": [
     { "title": "שם ההרגל", "description": "איך לבצע בפועל (או null)", "emoji": "💪", "frequency": "daily", "weekly_day": 0, "target_days": 14, "meal_timing": "before" }
@@ -417,15 +426,34 @@ const SYSTEM_PROMPT = `אתה עורך תוכן מקצועי עבור "המסע 
 - title: חובה. תמיד תן כותרת עניינית גם אם הטקסט גולמי.
 - שדה schedule במשימה: 'one_time' (חד-פעמי), 'daily' (יומי), 'multi_daily' (כמה פעמים ביום), 'weekly' (שבועי), 'per_meal' (לפני/אחרי כל ארוחה).
 - frequency בהרגל: 'daily' / 'weekly' / 'per_meal'.
+- לכל משימה שאתה יוצר, בנה leveling עם לפחות 2 רמות קונקרטיות ומדידות:
+  - levels מהקל לקשה (order 0 = הכי קל).
+  - start_level_id: רמת התחלה מומלצת לפי החיכוך הצפוי (אופציה B — לא בהכרח הכי קל).
+  - recommended_level_id: היעד הרצוי לפי המחקר/השיעור.
+  - level_up_after_success_days: ברירת מחדל 7.
+  - metric חייב להיות מדיד (כמות, זמן, תדירות וכו').
+  - אם אין בסיס לסולם אמין — leveling: null.
 - צור 3-5 שאלות הבנה, 3-5 טענות משחק, 1-3 משימות, 1-2 הרגלים, ו-2-4 נקודות קשב — בהתאם לעושר הטקסט. אם חלק לא רלוונטי, החזר מערך ריק.
 - אם אין בטקסט בסיס להתחייבות, החזר commitment: null.`;
 
-async function runFillLLM(sourceText: string): Promise<{
+async function runFillLLM(
+  sourceText: string,
+  options?: { clarificationAnswers?: Record<string, string>; analysisSummary?: string }
+): Promise<{
   result: AiFilledStep;
   model: string;
   provider: 'openrouter' | 'groq';
 }> {
-  const user = `טקסט המקור של הצעד:\n\n${sourceText.slice(0, MAX_SOURCE_CHARS)}`;
+  let userContent = `טקסט המקור של הצעד:\n\n${sourceText.slice(0, MAX_SOURCE_CHARS)}`;
+  if (options?.analysisSummary?.trim()) {
+    userContent += `\n\n---\nסיכום ניתוח מהשיחה:\n${options.analysisSummary.trim()}`;
+  }
+  if (options?.clarificationAnswers && Object.keys(options.clarificationAnswers).length > 0) {
+    userContent += `\n\n---\nתשובות חידוד מהמנהל:\n${Object.entries(options.clarificationAnswers)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join('\n')}`;
+  }
+  const user = userContent;
 
   const openrouterModel = process.env.STEP_AIFILL_MODEL?.trim() || 'meta-llama/llama-4-maverick';
   const groqModel = process.env.STEP_AIFILL_GROQ_MODEL?.trim() || AI_MODELS.background_groq;
@@ -586,6 +614,8 @@ export async function POST(request: Request) {
   }
 
   const sourceText = parsed.data.sourceText.trim();
+  const clarificationAnswers = parsed.data.clarificationAnswers;
+  const analysisSummary = parsed.data.analysisSummary;
 
   // תגובת NDJSON זורמת — כל שורה היא אירוע מצב אמיתי (phase) שהקליינט מציג כפס התקדמות.
   const encoder = new TextEncoder();
@@ -602,7 +632,10 @@ export async function POST(request: Request) {
       try {
         send({ phase: 'analyze' });
 
-        const { result, model, provider } = await runFillLLM(sourceText);
+        const { result, model, provider } = await runFillLLM(sourceText, {
+          clarificationAnswers,
+          analysisSummary,
+        });
 
         // זיהוי דטרמיניסטי של כל הקישורים בטקסט — כך שרשימת קישורים שלמה
         // הופכת לרשימת מחקרים מלאה (ולא רק הקישור שה-LLM הזכיר).

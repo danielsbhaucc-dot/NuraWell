@@ -137,6 +137,18 @@ export const almogHabitCheckpointPayloadSchema = z
     notificationCount: z.number().int().min(0).max(100000).default(0),
     /** שעות מאז שהמשתמש פעיל לאחרונה (כתב בצ'אט/סימן משימה). undefined כשאין. */
     hoursSinceLastResponse: z.number().int().min(0).max(100000).optional(),
+    /** הצעת העלאת/הורדת רמת קושי למשימה (אופציונלי) */
+    taskLevelTune: z
+      .object({
+        taskId: z.string().max(120),
+        taskTitle: z.string().max(500),
+        currentLevelLabel: z.string().max(500),
+        nextLevelLabel: z.string().max(500).nullable().optional(),
+        kind: z.enum(['level_up', 'downgrade']),
+        reason: z.string().max(2000),
+        successStreakDays: z.number().int().min(0).max(365),
+      })
+      .optional(),
   })
   .refine(
     (v) => {

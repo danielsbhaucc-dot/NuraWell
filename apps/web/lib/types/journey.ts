@@ -156,6 +156,65 @@ export type JourneyTaskSlot =
   | 'meal_snack_evening'
   | `slot_${number}`;
 
+export type TaskDifficultyFeedback = 'too_easy' | 'ok' | 'too_hard';
+
+export type TaskLevelFeedbackAction =
+  | TaskDifficultyFeedback
+  | 'accept_level_up'
+  | 'decline_level_up'
+  | 'downgrade';
+
+export interface JourneyTaskDifficultyLevel {
+  id: string;
+  label: string;
+  description: string;
+  emoji?: string;
+  order: number;
+  is_recommended?: boolean;
+  is_minimum_viable?: boolean;
+  metric?: {
+    kind:
+      | 'quantity'
+      | 'time_before_event'
+      | 'time_after_event'
+      | 'time_of_day'
+      | 'frequency'
+      | 'duration'
+      | 'custom';
+    value?: number | string | null;
+    unit?: 'cups' | 'minutes' | 'hours' | 'times' | 'days' | 'custom';
+    direction?: 'higher_is_harder' | 'lower_is_harder' | 'custom';
+  };
+}
+
+export interface JourneyTaskLevelingConfig {
+  levels: JourneyTaskDifficultyLevel[];
+  start_level_id: string | null;
+  recommended_level_id: string | null;
+  level_up_after_success_days: number;
+  allow_user_downgrade: boolean;
+  allow_user_upgrade: boolean;
+  ai_rationale?: string | null;
+}
+
+/** state פר משתמש לרמת קושי של משימה (נשמר ב-journey_progress.task_level_meta) */
+export interface JourneyTaskLevelMeta {
+  current_level_id: string;
+  recommended_level_id: string | null;
+  started_level_id: string | null;
+  current_level_started_at: string;
+  last_feedback: TaskDifficultyFeedback | null;
+  last_feedback_at: string | null;
+  success_streak_current_level: number;
+  success_days_current_level: number;
+  best_level_id: string | null;
+  reached_recommended_at: string | null;
+  recommended_streak_current: number;
+  recommended_streak_best: number;
+  level_up_suggested_at: string | null;
+  level_up_declined_at: string | null;
+}
+
 export interface JourneyTask {
   id: string;
   title: string;
@@ -171,6 +230,8 @@ export interface JourneyTask {
   meal_timing?: MealTiming | null;
   /** רלוונטי ל-per_meal; ברירת מחדל 'fixed' לתאימות לאחור */
   meal_target?: MealTarget | null;
+  /** סולם רמות קושי הדרגתי — אופציונלי */
+  leveling?: JourneyTaskLevelingConfig | null;
 }
 
 export interface JourneyHabit {
@@ -217,6 +278,8 @@ export interface JourneyStepProgress {
   tasks_completed: Record<string, boolean>;
   task_statuses: Record<string, JourneyTaskDecision>;
   habits_progress: Record<string, boolean[]>;
+  /** meta פר משתמש לרמות קושי של משימות (taskId → JourneyTaskLevelMeta) */
+  task_level_meta?: Record<string, JourneyTaskLevelMeta>;
   is_completed: boolean;
   completed_at: string | null;
   last_section: StepSection;

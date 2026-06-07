@@ -8,8 +8,10 @@ import { habitCheckpointSlotSchema } from '../../../../../../lib/workflows/almog
 import {
   fetchTrueLastActiveByUser,
   planHabitCheckpointTriggersWithChat,
+  type RecentExecutionsByUser,
   type UserResponseInfo,
 } from '../../../../../../lib/workflows/habit-checkpoint-batch';
+import { jerusalemDateKey } from '../../../../../../lib/journey/task-schedule';
 import { workflowPublicBaseUrl } from '../../../../../../lib/workflows/resolve-workflow-public-url';
 
 export const runtime = 'nodejs';
@@ -56,6 +58,7 @@ async function runHabitCheckpointCron(request: Request) {
       is_completed,
       task_statuses,
       habits_progress,
+      task_level_meta,
       journey_steps (
         title,
         habits,
@@ -113,6 +116,37 @@ async function runHabitCheckpointCron(request: Request) {
         byTask.set(tid, slots);
       }
       slots.add(sl);
+    }
+  }
+
+  /** ביצועים אחרונים (21 יום) לחישוב רמות קושי */
+  const sinceKey = jerusalemDateKey(new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: recentExecRows } = await (admin as any)
+    .from('journey_task_executions')
+    .select('user_id, task_id, date_key, slot, outcome')
+    .gte('date_key', sinceKey)
+    .limit(50000);
+
+  const recentExecutionsByUser: RecentExecutionsByUser = new Map();
+  if (Array.isArray(recentExecRows)) {
+    for (const row of recentExecRows as Array<{
+      user_id?: string;
+      task_id?: string;
+      date_key?: string;
+      slot?: string;
+      outcome?: string | null;
+    }>) {
+      const uid = typeof row.user_id === 'string' ? row.user_id : '';
+      if (!uid || typeof row.task_id !== 'string' || typeof row.date_key !== 'string') continue;
+      const list = recentExecutionsByUser.get(uid) ?? [];
+      list.push({
+        task_id: row.task_id,
+        date_key: row.date_key,
+        slot: typeof row.slot === 'string' ? row.slot : 'full_day',
+        outcome: row.outcome ?? null,
+      });
+      recentExecutionsByUser.set(uid, list);
     }
   }
 
@@ -180,7 +214,8 @@ async function runHabitCheckpointCron(request: Request) {
     now,
     todayExecutionsByUser,
     lastActiveByUser,
-    userResponseInfo
+    userResponseInfo,
+    recentExecutionsByUser
   );
 
   const userIds = [...new Set(plan.map((p) => p.userId))];
