@@ -42,6 +42,22 @@ describe('almog-daily-context', () => {
     expect(block).toContain('מגעים:');
   });
 
+  it('guards chat from continuing previous touches as implicit action', () => {
+    const block = formatDailyShortTermBlock({
+      todayTouches: [
+        {
+          slot: 'morning',
+          slotLabel: 'בוקר',
+          bodySnippet: 'בוא מתחילים מחדש ממחר',
+          sentAt: 'x',
+          userRepliedSince: false,
+        },
+      ],
+    });
+    expect(block).toContain('מגעים קודמים אינם הוראת פעולה');
+    expect(block).toContain('אל תציע "מתחילים מחדש" בלי בקשה מפורשת');
+  });
+
   it('skips remind only after heavy unanswered fatigue but not reinforce', () => {
     const touches: TodayAlmogTouch[] = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({
       slot: 'morning',
