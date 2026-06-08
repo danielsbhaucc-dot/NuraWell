@@ -272,6 +272,21 @@ function typingEllipsis(step: number): string {
   return frames[step % frames.length] ?? '.';
 }
 
+/**
+ * סטטוסים טבעיים ואנושיים שאלמוג "חושב/קורא/מנסח" — מתקדמים לפי זמן ההמתנה
+ * כדי שהמשתמש לא ישתעמם בזמן שהמודל חושב (reasoning מוסיף השהיה לפני התו הראשון).
+ * נשמע כמו חבר אמיתי, לא כמו ספינר טכני.
+ */
+const ALMOG_STATUS_PHRASES: readonly string[] = [
+  'אלמוג קורא מה שכתבת',
+  'אלמוג חושב על זה',
+  'אלמוג מנסח לך משהו',
+  'רגע, אלמוג רוצה לדייק בשבילך',
+];
+
+/** ספי הזמן (ms) למעבר בין הסטטוסים. */
+const ALMOG_STATUS_THRESHOLDS_MS: readonly number[] = [1500, 4000, 8000];
+
 /** ציטוט ווטסאפ בתוך בועת הודעה */
 function WhatsAppQuote({ author, text }: { author: string; text: string }) {
   return (
@@ -296,6 +311,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const [online, setOnline] = useState(true);
   const [input, setInput] = useState('');
   const [typingStep, setTypingStep] = useState(0);
+  const [statusIdx, setStatusIdx] = useState(0);
   const [notificationContext, setNotificationContext] = useState<OpenAlmogChatDetail | null>(null);
   const [quotedReply, setQuotedReply] = useState<{ mentorMessage: string; userReply: string } | null>(
     null
@@ -420,6 +436,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   }, [open, sendMessage, status, userId]);
 
   const isLoading = status === 'submitted' || status === 'streaming';
+  // "thinking" = ממתינים לתו הראשון מהמודל (כולל זמן ה-reasoning).
+  const isThinking = status === 'submitted';
   useEffect(() => {
     if (!isLoading) {
       setTypingStep(0);
@@ -430,6 +448,18 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     }, 420);
     return () => window.clearInterval(id);
   }, [isLoading]);
+  // התקדמות הסטטוסים הטבעיים לפי זמן ההמתנה.
+  useEffect(() => {
+    if (!isThinking) {
+      setStatusIdx(0);
+      return;
+    }
+    const timers = ALMOG_STATUS_THRESHOLDS_MS.map((ms, i) =>
+      window.setTimeout(() => setStatusIdx(i + 1), ms)
+    );
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [isThinking]);
+  const almogStatusText = ALMOG_STATUS_PHRASES[statusIdx] ?? ALMOG_STATUS_PHRASES[0];
   const firstMessageDate = messages.length > 0 ? getMessageCreatedAt(messages[0]) : undefined;
 
   if (!mounted) return null;
@@ -506,7 +536,9 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                       {isLoading ? (
                         <>
                           <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-200" />
-                          {`אלמוג מקליד${typingEllipsis(typingStep)}`}
+                          {isThinking
+                            ? `${almogStatusText}${typingEllipsis(typingStep)}`
+                            : `אלמוג מקליד${typingEllipsis(typingStep)}`}
                         </>
                       ) : online ? (
                         <>
@@ -642,8 +674,13 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                       color: '#f8fafc',
                     }}
                   >
-                    <div className="inline-flex items-center gap-1.5">
+                    <div className="inline-flex items-center gap-2">
                       <AlmogChatTypingDots />
+                      {isThinking && (
+                        <span className="text-[13px] text-white/75" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
+                          {almogStatusText}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
