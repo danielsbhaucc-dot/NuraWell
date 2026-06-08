@@ -131,12 +131,12 @@ export function CourseDetailClient({
                 <span>{totalLessons} פרקים</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-primary-400" />
+                <Clock className="w-4 h-4 text-emerald-300" />
                 <span>~{totalMinutes} דקות</span>
               </div>
               {isEnrolled && (
                 <div className="flex items-center gap-1.5">
-                  <Award className="w-4 h-4 text-secondary-400" />
+                  <Award className="w-4 h-4 text-teal-200" />
                   <span>{completedCount}/{totalLessons} הושלמו</span>
                 </div>
               )}
@@ -147,7 +147,7 @@ export function CourseDetailClient({
               <div className="mb-5">
                 <div className="flex justify-between text-xs text-white/70 mb-1.5">
                   <span>התקדמות</span>
-                  <span className="font-bold text-primary-400">{progress}%</span>
+                  <span className="font-bold text-emerald-200">{progress}%</span>
                 </div>
                 <div className="progress-bar-lg">
                   <motion.div
@@ -182,14 +182,14 @@ export function CourseDetailClient({
                   {progress === 0 ? 'התחל ללמוד' : 'המשך ללמוד'}
                 </Link>
               ) : (
-                <div className="w-full text-center py-4 rounded-2xl font-bold text-secondary-300 mb-6 flex items-center justify-center gap-2"
+                <div className="w-full text-center py-4 rounded-2xl font-bold text-emerald-100 mb-6 flex items-center justify-center gap-2"
                   style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', boxShadow: '0 0 20px rgba(16,185,129,0.1)' }}>
                   <Award className="w-5 h-5" />
                   כל הכבוד! סיימת את המדריך!
                 </div>
               )
             ) : (
-              <div className="w-full text-center py-4 rounded-2xl font-bold text-slate-400 mb-6 flex items-center justify-center gap-2"
+              <div className="w-full text-center py-4 rounded-2xl font-bold text-white/75 mb-6 flex items-center justify-center gap-2"
                 style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <Lock className="w-4 h-4" />
                 גישה תיפתח על ידי המנהל
@@ -266,7 +266,7 @@ function LessonCardContent({
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className={cn('text-sm font-semibold line-clamp-1', isDone ? 'text-white/50 line-through' : 'text-white')}>
+        <p className={cn('text-sm font-semibold line-clamp-1', isDone ? 'text-white/65 line-through' : 'text-white')}>
           {lesson.title}
         </p>
         <div className="flex items-center gap-2 mt-0.5">
@@ -275,8 +275,8 @@ function LessonCardContent({
           </span>
           {lesson.duration_minutes && (
             <>
-              <span className="text-white/40 text-xs">·</span>
-              <span className="text-xs text-white/60">{lesson.duration_minutes} דק'</span>
+              <span className="text-white/55 text-xs">·</span>
+              <span className="text-xs text-white/72">{lesson.duration_minutes} דק'</span>
             </>
           )}
         </div>
@@ -284,11 +284,11 @@ function LessonCardContent({
 
       {/* Right icon */}
       {isLocked ? (
-        <Lock className="w-4 h-4 text-white/40 flex-shrink-0" />
+        <Lock className="w-4 h-4 text-white/60 flex-shrink-0" />
       ) : isDone ? (
         <CheckCircle2 className="w-4 h-4 text-emerald-300 flex-shrink-0" />
       ) : (
-        <ChevronLeft className="w-4 h-4 text-white/50 flex-shrink-0" />
+        <ChevronLeft className="w-4 h-4 text-white/70 flex-shrink-0" />
       )}
     </>
   );

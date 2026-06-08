@@ -3374,6 +3374,38 @@ html {
     color: #a7f3d0;
   }
 
+  .guide-glass-card .lesson-content {
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  .guide-glass-card .lesson-content h1,
+  .guide-glass-card .lesson-content h2 {
+    color: #ffffff;
+    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.22);
+  }
+
+  .guide-glass-card .lesson-content h3,
+  .guide-glass-card .lesson-content strong {
+    color: #d1fae5;
+  }
+
+  .guide-glass-card .lesson-content em,
+  .guide-glass-card .lesson-content a {
+    color: #99f6e4;
+  }
+
+  .guide-glass-card .lesson-content blockquote {
+    background: rgba(255, 255, 255, 0.08);
+    border-inline-start-color: rgba(94, 234, 212, 0.55);
+    color: rgba(255, 255, 255, 0.86);
+  }
+
+  .guide-glass-card .lesson-content code {
+    background: rgba(6, 78, 59, 0.55);
+    color: #ccfbf1;
+    border: 1px solid rgba(153, 246, 228, 0.18);
+  }
+
   /* Glow Utilities — subtle for light theme */
   .glow-primary { box-shadow: 0 4px 16px rgba(16, 185, 129, 0.12); }
   .glow-secondary { box-shadow: 0 4px 16px rgba(20, 184, 166, 0.10); }
