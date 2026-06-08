@@ -73,10 +73,10 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
                   fontFamily: "'Rubik','Heebo',sans-serif",
                 }}
               >
-                {stats.activeCoursesCount} קורסים פעילים
+                {stats.activeCoursesCount} מדריכים פעילים
               </p>
               <p style={{ fontSize: '12px', color: '#9896B8', margin: '2px 0 8px' }}>
-                {stats.totalLessonsCompleted} שיעורים הושלמו ✦
+                {stats.totalLessonsCompleted} פרקים הושלמו ✦
               </p>
               <div className="flex gap-1">
                 {Array.from({ length: totalSegments }).map((_, i) => {
@@ -106,9 +106,9 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
 
         <div className="mb-4">
           <AlmogScreenCoach
-            title="אלמוג קורא איתך את הקורסים"
-            body="לא בטוח במה להמשיך? אלמוג יכול להסתכל על ההתקדמות שלך ולעזור לבחור את השיעור שהכי מתאים לרגע הזה."
-            prompt="אלמוג, תעזור לי לבחור באיזה קורס או שיעור להמשיך עכשיו לפי ההתקדמות שלי."
+            title="אלמוג קורא איתך את המדריכים"
+            body="לא בטוח במה להמשיך? אלמוג יכול להסתכל על ההתקדמות שלך ולעזור לבחור את הפרק שהכי מתאים לרגע הזה."
+            prompt="אלמוג, תעזור לי לבחור באיזה מדריך או פרק להמשיך עכשיו לפי ההתקדמות שלי."
             cta="בחר איתי המשך"
             tone="amber"
           />
@@ -140,7 +140,7 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
               <span style={{ fontSize: '20px', fontWeight: 900, color: 'white', lineHeight: 1 }}>
                 {enrolledCourses.length}
               </span>
-              <span style={{ fontSize: '8px', color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>קורסים</span>
+              <span style={{ fontSize: '8px', color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>מדריכים</span>
             </div>
             <div>
               <p
@@ -153,7 +153,7 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
               >
                 ⚡ המשיכו ללמוד!
               </p>
-              <p style={{ fontSize: '12px', color: '#B45309', marginTop: '2px' }}>יש שיעורים שמחכים לכם</p>
+              <p style={{ fontSize: '12px', color: '#B45309', marginTop: '2px' }}>יש פרקים שמחכים לכם</p>
             </div>
           </motion.div>
         )}
@@ -194,7 +194,7 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
                 margin: '18px 0 12px 2px',
               }}
             >
-              קורסים זמינים
+              מדריכים זמינים
             </div>
             <motion.div variants={container} initial="hidden" animate="show" className="space-y-3.5">
               {availableCourses.map((course) => (
@@ -229,10 +229,10 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
               className="text-2xl font-black mb-2"
               style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
             >
-              אין קורסים עדיין
+              אין מדריכים עדיין
             </h3>
             <p className="text-sm max-w-[220px] mx-auto leading-relaxed" style={{ color: '#9896B8' }}>
-              המנהל יפתח עבורך גישה לקורסים בקרוב
+              המנהל יפתח עבורך גישה למדריכים בקרוב
             </p>
           </motion.div>
         )}

@@ -26,6 +26,7 @@ interface CourseDetailClientProps {
     title: string;
     description: string | null;
     thumbnail_url: string | null;
+    background_image_url?: string | null;
     is_premium: boolean;
     lessons: LessonItem[];
   };
@@ -60,14 +61,26 @@ export function CourseDetailClient({
   const totalMinutes = course.lessons.reduce((s, l) => s + (l.duration_minutes || 15), 0);
   const typeConfig = lessonTypeConfig;
 
+  const bgUrl = course.background_image_url || course.thumbnail_url;
+
   return (
-    <div className="min-h-screen bg-mesh-subtle">
+    <div className="min-h-screen guide-page-bg relative">
+      {/* Full-page background image */}
+      {bgUrl ? (
+        <div className="guide-page-bg-image" aria-hidden>
+          <Image src={bgUrl} alt="" fill className="object-cover" priority />
+        </div>
+      ) : (
+        <div className="guide-page-bg-fallback" aria-hidden />
+      )}
+      <div className="guide-page-overlay" aria-hidden />
+
       {/* Hero */}
-      <div className="relative">
+      <div className="relative z-10">
         <div className="relative h-48 md:h-64 overflow-hidden">
-          {course.thumbnail_url ? (
+          {bgUrl ? (
             <Image
-              src={course.thumbnail_url}
+              src={bgUrl}
               alt={course.title}
               fill
               className="object-cover"
@@ -76,10 +89,10 @@ export function CourseDetailClient({
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-primary-800 via-primary-700 to-secondary-700" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+          <div className="absolute inset-0 guide-hero-overlay" />
         </div>
 
-        {/* Course info over hero */}
+        {/* Guide info over hero */}
         <div className="container-mobile relative -mt-16 pb-0 px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -106,16 +119,16 @@ export function CourseDetailClient({
                 </span>
               )}
             </div>
-            <h1 className="text-3xl font-black text-white mb-2 leading-tight">{course.title}</h1>
+            <h1 className="text-3xl font-black text-white mb-2 leading-tight drop-shadow-sm">{course.title}</h1>
             {course.description && (
-              <p className="text-slate-400 text-sm leading-relaxed mb-4">{course.description}</p>
+              <p className="text-white/80 text-sm leading-relaxed mb-4">{course.description}</p>
             )}
 
             {/* Stats */}
-            <div className="flex items-center gap-4 text-sm text-slate-400 mb-5">
+            <div className="flex items-center gap-4 text-sm text-white/75 mb-5">
               <div className="flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-primary-400" />
-                <span>{totalLessons} שיעורים</span>
+                <BookOpen className="w-4 h-4 text-emerald-300" />
+                <span>{totalLessons} פרקים</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-primary-400" />
@@ -132,7 +145,7 @@ export function CourseDetailClient({
             {/* Progress */}
             {isEnrolled && progress > 0 && (
               <div className="mb-5">
-                <div className="flex justify-between text-xs text-slate-400 mb-1.5">
+                <div className="flex justify-between text-xs text-white/70 mb-1.5">
                   <span>התקדמות</span>
                   <span className="font-bold text-primary-400">{progress}%</span>
                 </div>
@@ -150,10 +163,10 @@ export function CourseDetailClient({
 
             <div className="mb-5">
               <AlmogScreenCoach
-                title="אלמוג על הקורס הזה"
-                body="אפשר לעצור רגע לפני שממשיכים: מה חשוב לקחת מהקורס הזה, איפה להתחיל, ואיך לחבר אותו להרגלים שלך."
-                prompt={`אלמוג, תעזור לי להבין איך להמשיך בקורס "${course.title}" ומה השיעור הכי נכון לי עכשיו.`}
-                cta="דבר איתי על הקורס"
+                title="אלמוג על המדריך הזה"
+                body="אפשר לעצור רגע לפני שממשיכים: מה חשוב לקחת מהמדריך הזה, איפה להתחיל, ואיך לחבר אותו להרגלים שלך."
+                prompt={`אלמוג, תעזור לי להבין איך להמשיך במדריך "${course.title}" ומה הפרק הכי נכון לי עכשיו.`}
+                cta="דבר איתי על המדריך"
                 tone="violet"
               />
             </div>
@@ -172,7 +185,7 @@ export function CourseDetailClient({
                 <div className="w-full text-center py-4 rounded-2xl font-bold text-secondary-300 mb-6 flex items-center justify-center gap-2"
                   style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', boxShadow: '0 0 20px rgba(16,185,129,0.1)' }}>
                   <Award className="w-5 h-5" />
-                  כל הכבוד! סיימת את הקורס!
+                  כל הכבוד! סיימת את המדריך!
                 </div>
               )
             ) : (
@@ -186,15 +199,14 @@ export function CourseDetailClient({
         </div>
       </div>
 
-      {/* Lessons List */}
-      <div className="container-mobile px-4 pb-8">
+      {/* Chapters List */}
+      <div className="container-mobile px-4 pb-8 relative z-10">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-1.5 h-7 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(to bottom, #14FFEC, #10b981)' }} />
-          <Zap className="w-4.5 h-4.5 text-primary-400" />
-          <h2 className="text-lg font-black text-white">תוכן הקורס</h2>
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full mr-auto"
-            style={{ background: 'rgba(20,184,166,0.15)', border: '1px solid rgba(20,184,166,0.25)', color: '#5eead4' }}>
-            {course.lessons.length} שיעורים
+          <Zap className="w-4.5 h-4.5 text-emerald-300" />
+          <h2 className="text-lg font-black text-white drop-shadow-sm">תוכן המדריך</h2>
+          <span className="guide-glass-badge mr-auto">
+            {course.lessons.length} פרקים
           </span>
         </div>
 
@@ -211,14 +223,14 @@ export function CourseDetailClient({
                   <Link
                     href={`/lessons/${lesson.id}`}
                     className={cn(
-                      'card-lesson flex items-center gap-3 p-4',
+                      'guide-glass-card flex items-center gap-3 p-4',
                       isDone && 'completed'
                     )}
                   >
                     <LessonCardContent lesson={lesson} idx={idx} config={config} isDone={isDone} isLocked={false} />
                   </Link>
                 ) : (
-                  <div className="card-lesson flex items-center gap-3 p-4 opacity-60 cursor-not-allowed">
+                  <div className="guide-glass-card flex items-center gap-3 p-4 opacity-60 cursor-not-allowed">
                     <LessonCardContent lesson={lesson} idx={idx} config={config} isDone={false} isLocked={true} />
                   </div>
                 )}
@@ -254,7 +266,7 @@ function LessonCardContent({
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className={cn('text-sm font-semibold line-clamp-1', isDone ? 'text-slate-400 line-through' : 'text-white')}>
+        <p className={cn('text-sm font-semibold line-clamp-1', isDone ? 'text-white/50 line-through' : 'text-white')}>
           {lesson.title}
         </p>
         <div className="flex items-center gap-2 mt-0.5">
@@ -263,8 +275,8 @@ function LessonCardContent({
           </span>
           {lesson.duration_minutes && (
             <>
-              <span className="text-slate-600 text-xs">·</span>
-              <span className="text-xs text-slate-500">{lesson.duration_minutes} דק'</span>
+              <span className="text-white/40 text-xs">·</span>
+              <span className="text-xs text-white/60">{lesson.duration_minutes} דק'</span>
             </>
           )}
         </div>
@@ -272,11 +284,11 @@ function LessonCardContent({
 
       {/* Right icon */}
       {isLocked ? (
-        <Lock className="w-4 h-4 text-slate-600 flex-shrink-0" />
+        <Lock className="w-4 h-4 text-white/40 flex-shrink-0" />
       ) : isDone ? (
-        <CheckCircle2 className="w-4 h-4 text-secondary-400 flex-shrink-0" />
+        <CheckCircle2 className="w-4 h-4 text-emerald-300 flex-shrink-0" />
       ) : (
-        <ChevronLeft className="w-4 h-4 text-slate-600 flex-shrink-0" />
+        <ChevronLeft className="w-4 h-4 text-white/50 flex-shrink-0" />
       )}
     </>
   );

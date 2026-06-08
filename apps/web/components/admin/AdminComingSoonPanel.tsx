@@ -218,7 +218,7 @@ function AdminComingSoonSongSection() {
         <div>
           <h2 className="text-lg font-black text-slate-800">שיר עמוד "בקרוב"</h2>
           <p className="text-sm text-slate-600">
-            בחר את שיר ה-30 שניות (מספריית המדיה → אודיו). הוא ינוגן בעמוד עם מילות שיר מסונכרנות.
+            בחר את שיר ה־30 שניות (מספריית המדיה → אודיו). הוא ינוגן בעמוד עם מילות שיר מסונכרנות.
           </p>
         </div>
       </div>

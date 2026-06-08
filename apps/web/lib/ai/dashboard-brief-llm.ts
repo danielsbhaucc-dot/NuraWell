@@ -1,11 +1,19 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { openrouter } from './client';
-import { buildUserContext } from './memory';
+import { buildUserContext, israelDateKeyForAiContext } from './memory';
 import { fetchTodayChatTurns } from './almog-daily-context';
 import { buildCoachingStylePromptBlock } from './almog-coaching-style';
 import { formatUserProgressForAi } from './format-user-progress-for-ai';
 import { buildAdminUserJourneyReport } from '../admin/build-user-journey-report';
+import {
+  HEBREW_DASH_PROMPT_RULE,
+  MOMENTUM_PSYCHOLOGY_PROMPT_BLOCK,
+  partOfDayInIsrael,
+  pickMomentumSpark,
+  type PartOfDay,
+} from './momentum-psychology';
+import { normalizeHebrewDashes } from '../text/hebrew-dashes';
 
 /** פעולות שה-CTA האדפטיבי יכול להפעיל בקליינט. */
 export type DashboardBriefCtaAction =
@@ -49,29 +57,34 @@ const VALID_ACTIONS: DashboardBriefCtaAction[] = [
 ];
 const VALID_MOODS: DashboardBriefMood[] = ['celebrate', 'encourage', 'gentle', 'neutral'];
 
-const BRIEF_SYSTEM_PROMPT = `אתה אלמוג — מנטור הליווי האישי של NuraWell. גבר, חבר אמיתי, עברית יומיומית וחמה, לא בוט ולא מערכת.
-המשימה שלך כאן: לכתוב "תקציר חי" קצר שמופיע בראש מסך הבית של המשתמש בכל כניסה. זה לא צ'אט — זו הצצה אישית של אלמוג למה שחשוב למשתמש *עכשיו*, על סמך הנתונים שתקבל.
+const BRIEF_SYSTEM_PROMPT = `אתה אלמוג, מנטור הליווי האישי של NuraWell. גבר, חבר אמיתי, עברית יומיומית וחמה, לא בוט ולא מערכת.
+המשימה שלך כאן: לכתוב "תקציר חי" קצר שמופיע בראש מסך הבית של המשתמש בכל כניסה. זו לא שיחה, זו הצצה אישית שלך למה שחשוב למשתמש *עכשיו*, על סמך הנתונים שתקבל.
+
+${MOMENTUM_PSYCHOLOGY_PROMPT_BLOCK}
 
 החזר JSON בלבד (בלי markdown, בלי טקסט מסביב) בפורמט הבא:
 {
-  "headline": "שורת פתיחה אישית קצרה מאוד — עד 5 מילים, בלי שם פרטי בסוף משפט מאולץ",
-  "body": "2-3 משפטים אישיים, חמים וספציפיים בעברית. מבוססים אך ורק על הנתונים. משקפים מה קורה איתו ומדגישים מה הכי חשוב עכשיו. בלי שפת מערכת.",
-  "cta_label": "טקסט כפתור קצר — 2-4 מילים, פעולה מזמינה",
+  "headline": "שורת פתיחה אישית קצרה מאוד, עד 5 מילים. רגש או תנועה, לא תיאור יבש",
+  "body": "2-3 משפטים אישיים, חמים וספציפיים בעברית. מבוססים אך ורק על הנתונים. משקפים מה קורה איתו, מדגישים את הצעד/הניצחון הקטן ומסתיימים בתחושת תנועה קדימה. שזור עיקרון מוטיבציה אחד שמתאים למצב, בלי לצטט אותו.",
+  "cta_label": "טקסט כפתור קצר, 2-4 מילים, פעולה מזמינה ולא פקודה",
   "cta_action": "open_chat | open_journey | open_tasks | open_progress | open_courses",
-  "cta_prompt": "אם cta_action=open_chat — משפט פתיחה לשיחה שייכתב *מנקודת מבט המשתמש* (גוף ראשון), טבעי וקצר. אחרת null",
+  "cta_prompt": "אם cta_action=open_chat, משפט פתיחה לשיחה שייכתב *מנקודת מבט המשתמש* (גוף ראשון), טבעי וקצר. אחרת null",
   "mood": "celebrate | encourage | gentle | neutral"
 }
 
 כללי תוכן (קריטי):
-- ספציפי לנתונים, לא גנרי. אם יש רצף — חגוג אותו בשם; אם יש נפילה/היעדרות — חזור בעדינות בלי אשמה ובלי "ראיתי שלא".
+- ספציפי לנתונים, לא גנרי. אם יש רצף, חגוג אותו עם המספר ותן לו ערך. אם יש היעדרות, חזור בעדינות עם חמלה, בלי אשמה ובלי "ראיתי שלא".
 - בלי שפת מערכת: לא "המערכת", לא "סימנתי", לא "השלמת משימה", לא "ראיתי שלא".
-- בלי הטפה ובלי רשימות. חם, אנושי, כמו הודעת וואטסאפ מחבר.
-- אם המשתמש לא היה פעיל כמה ימים → mood=gentle, cta_action=open_chat, CTA רכה ("בוא נחזור בעדינות").
-- אם יש מומנטום/רצף חזק → mood=celebrate, אפשר cta_action=open_journey ("שמור על המומנטום").
-- אם יש משימות פתוחות להיום → אפשר cta_action=open_tasks או open_chat.
-- אם אין נתונים בכלל (משתמש חדש) → mood=neutral, פתיחה מזמינה למסע, cta_action=open_journey.
+- בלי הטפה ובלי רשימות. חם, אנושי, כמו הודעת וואטסאפ מחבר אמיתי.
+- גיוון: אל תיפול לאותה תבנית. הטקסט צריך להרגיש כתוב היום, במיוחד לאדם הזה.
+- התאם את חלק היום (בוקר/צהריים/ערב/לילה) לאנרגיה: בוקר = פתיחה והזמנה, ערב/לילה = סיכום עדין ורוגע.
+- אם המשתמש לא היה פעיל כמה ימים: mood=gentle, cta_action=open_chat, CTA רכה ("בוא נחזור בעדינות").
+- אם יש מומנטום/רצף חזק: mood=celebrate, אפשר cta_action=open_journey ("שמור על המומנטום").
+- אם יש משימות פתוחות להיום: אפשר cta_action=open_tasks או open_chat.
+- אם אין נתונים בכלל (משתמש חדש): mood=neutral, פתיחה מזמינה למסע, cta_action=open_journey.
 - התאם את הטון לסגנון הליווי המבוקש אם צוין.
-- אל תמציא נתונים שלא מופיעים. אל תזכיר שזה "תקציר" או "נתונים".`;
+- אל תמציא נתונים שלא מופיעים. אל תזכיר שזה "תקציר" או "נתונים".
+- ${HEBREW_DASH_PROMPT_RULE}`;
 
 function clampText(value: unknown, max: number): string {
   if (typeof value !== 'string') return '';
@@ -92,15 +105,21 @@ function coerceMood(value: unknown): DashboardBriefMood {
 }
 
 /**
- * תקציר דטרמיניסטי — נכנס כש-LLM נכשל או חסר מפתח. עדיין אישי על בסיס האותות.
+ * תקציר דטרמיניסטי — נכנס כש-LLM נכשל או חסר מפתח. עדיין אישי, מגוון ולא גנרי:
+ * המשפטים נבחרים יומית לפי seed (תאריך + שם), כך שלא חוזר אותו דבר כל יום,
+ * והם מבוססים על עקרונות שינוי-התנהגות (ניצחון קטן, שמירת רצף, חמלה, התחלה חדשה).
  */
 function buildFallbackBrief(signals: BriefSignals, firstName: string): DashboardBrief {
   const name = firstName && firstName !== 'משתמש' ? firstName : '';
+  const seed = `${signals.dateKey}:${name || 'x'}`;
+  const greet = name ? `${name}, ` : '';
 
+  // חזרה אחרי היעדרות — חמלה עצמית והתחלה חדשה.
   if (signals.daysSinceLastActive !== null && signals.daysSinceLastActive >= 3) {
+    const spark = pickMomentumSpark('comeback', seed);
     return {
-      headline: name ? `טוב לראות אותך${name ? `, ${name}` : ''}` : 'טוב לראות אותך',
-      body: 'עבר קצת זמן — וזה ממש בסדר. בלי להתחיל הכל מחדש, רק לחזור בעדינות לקצב שלך. מה שלומך עכשיו?',
+      headline: name ? `טוב לראות אותך, ${name}` : 'טוב לראות אותך',
+      body: normalizeHebrewDashes(`עבר קצת זמן, וזה ממש בסדר. ${spark} מה שלומך עכשיו?`),
       cta_label: 'בוא נדבר רגע',
       cta_action: 'open_chat',
       cta_prompt: 'היי אלמוג, עבר קצת זמן. בוא נחזור בעדינות.',
@@ -108,21 +127,31 @@ function buildFallbackBrief(signals: BriefSignals, firstName: string): Dashboard
     };
   }
 
-  if (signals.activeDaysLast7 >= 4) {
+  // רצף חזק — חגיגה ושמירת מומנטום.
+  if (signals.currentStreak >= 3 || signals.activeDaysLast7 >= 4) {
+    const spark = pickMomentumSpark('streak', seed);
+    const streakLine =
+      signals.currentStreak >= 3
+        ? `${signals.currentStreak} ימים ברצף`
+        : `${signals.activeDaysLast7} מתוך 7 הימים האחרונים היית בתנועה`;
     return {
       headline: 'יש לך מומנטום 🔥',
-      body: `${signals.activeDaysLast7} מתוך 7 הימים האחרונים היית בפעולה — זה בדיוק מה שמזיז את המחט. בוא נשמור על הקצב היפה הזה.`,
-      cta_label: 'המשך במסע',
+      body: normalizeHebrewDashes(`${streakLine}. ${spark} בוא נשמור על הקצב היפה הזה.`),
+      cta_label: 'שמור על המומנטום',
       cta_action: 'open_journey',
       cta_prompt: null,
       mood: 'celebrate',
     };
   }
 
+  // משהו קטן פתוח להיום — צעד זעיר.
   if (signals.openTasksToday > 0) {
+    const spark = pickMomentumSpark('smallStep', seed);
+    const count =
+      signals.openTasksToday === 1 ? 'צעד אחד קטן' : `${signals.openTasksToday} צעדים קטנים`;
     return {
-      headline: 'יש משהו קטן להיום',
-      body: `נשארו לך ${signals.openTasksToday} צעדים קטנים להיום. לא חייבים הכל — אפילו אחד מזיז קדימה. ספר לי כשעשית.`,
+      headline: signals.partOfDay === 'evening' || signals.partOfDay === 'night' ? 'עוד יש זמן להיום' : 'יש משהו קטן להיום',
+      body: normalizeHebrewDashes(`נשאר לך ${count} להיום. ${spark} ספר לי כשעשית.`),
       cta_label: 'עדכון משימות',
       cta_action: 'open_tasks',
       cta_prompt: null,
@@ -130,20 +159,24 @@ function buildFallbackBrief(signals: BriefSignals, firstName: string): Dashboard
     };
   }
 
+  // משתמש חדש — התחלה מזמינה.
   if (!signals.hasAnyProgress) {
+    const spark = pickMomentumSpark('fresh', seed);
     return {
       headline: 'מתחילים את המסע',
-      body: 'כיף שאתה כאן 🌿 בוא נצא לצעד הראשון — קטן וברור, בלי לחץ. אני איתך לאורך כל הדרך.',
-      cta_label: 'למסע שלי',
+      body: normalizeHebrewDashes(`כיף שאתה כאן 🌿 ${spark} אני איתך לאורך כל הדרך.`),
+      cta_label: 'לצעד הראשון',
       cta_action: 'open_journey',
       cta_prompt: null,
       mood: 'neutral',
     };
   }
 
+  // יש התקדמות אבל אין משימה פתוחה היום — בחירה אישית של מה חשוב.
+  const spark = pickMomentumSpark('smallStep', seed);
   return {
-    headline: name ? `${name}, אני כאן` : 'אני כאן איתך',
-    body: 'יום חדש, הזדמנות נקייה. בוא נבחר דבר אחד קטן שמרגיש לך נכון עכשיו ונתחיל ממנו.',
+    headline: name ? `${greet}אני כאן` : 'אני כאן איתך',
+    body: normalizeHebrewDashes(`יום חדש, דף נקי. ${spark} מה מרגיש לך הכי נכון עכשיו?`),
     cta_label: 'מה הכי חשוב היום?',
     cta_action: 'open_chat',
     cta_prompt: 'היי אלמוג, מה הכי כדאי לי להתמקד בו היום?',
@@ -157,6 +190,16 @@ type BriefSignals = {
   activeDaysLast7: number;
   openTasksToday: number;
   hasAnyProgress: boolean;
+  /** הרצף הנוכחי הגבוה ביותר בין ההרגלים — לשמירת מומנטום */
+  currentStreak: number;
+  /** שיא הרצף ההיסטורי — להזכרת יכולת מוכחת */
+  bestStreak: number;
+  /** ימים פעילים ב-30 האחרונים */
+  activeDaysLast30: number;
+  /** חלק היום בישראל — לטון מותאם */
+  partOfDay: PartOfDay;
+  /** מפתח תאריך — seed לבחירה יומית יציבה */
+  dateKey: string;
 };
 
 /**
@@ -186,6 +229,8 @@ export async function buildDashboardBrief(params: {
   let activeDaysLast7 = 0;
   let openTasksToday = 0;
   let hasAnyProgress = false;
+  let currentStreak = 0;
+  let bestStreak = 0;
   if (report) {
     hasAnyProgress =
       report.stats.journey_steps_tracked > 0 || report.stats.tasks_accepted > 0;
@@ -196,6 +241,10 @@ export async function buildDashboardBrief(params: {
         }
         if (task.status === 'accepted' && !task.execution_done) openTasksToday += 1;
       }
+      for (const habit of step.habits) {
+        if (habit.streak_current > currentStreak) currentStreak = habit.streak_current;
+        if (habit.streak_best > bestStreak) bestStreak = habit.streak_best;
+      }
     }
   }
 
@@ -205,6 +254,11 @@ export async function buildDashboardBrief(params: {
     activeDaysLast7,
     openTasksToday,
     hasAnyProgress,
+    currentStreak,
+    bestStreak,
+    activeDaysLast30: report?.stats.active_days_last_30 ?? 0,
+    partOfDay: partOfDayInIsrael(),
+    dateKey: israelDateKeyForAiContext(),
   };
 
   const progressText = report ? formatUserProgressForAi(report) : '';
@@ -214,9 +268,26 @@ export async function buildDashboardBrief(params: {
       ? chatTurns.map((t) => `${t.role === 'user' ? 'המשתמש' : 'אלמוג'}: "${t.snippet}"`).join('\n')
       : 'אין שיחה היום.';
 
+  const partOfDayLabel: Record<PartOfDay, string> = {
+    morning: 'בוקר',
+    noon: 'צהריים',
+    evening: 'ערב',
+    night: 'לילה',
+  };
+  const momentumLine = [
+    `חלק היום: ${partOfDayLabel[signals.partOfDay]}`,
+    `רצף נוכחי גבוה ביותר: ${signals.currentStreak} ימים`,
+    signals.bestStreak > 0 ? `שיא רצף היסטורי: ${signals.bestStreak} ימים` : null,
+    `ימים פעילים: ${signals.activeDaysLast7}/7, ${signals.activeDaysLast30}/30`,
+    `משימות פתוחות להיום: ${signals.openTasksToday}`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   const userContent = [
     `שם פרטי: ${firstName}`,
     daysSinceLastActive !== null ? `ימים מאז כניסה אחרונה: ${daysSinceLastActive}` : null,
+    `--- אותות מומנטום ---\n${momentumLine}`,
     contextResult ? contextResult.contextString : null,
     coachingBlock || null,
     progressText || null,
@@ -254,11 +325,11 @@ export async function buildDashboardBrief(params: {
     const ctaPromptRaw = clampText(parsed.cta_prompt, 200);
 
     const brief: DashboardBrief = {
-      headline,
-      body,
-      cta_label: clampText(parsed.cta_label, 28) || 'בוא נדבר',
+      headline: normalizeHebrewDashes(headline),
+      body: normalizeHebrewDashes(body),
+      cta_label: normalizeHebrewDashes(clampText(parsed.cta_label, 28)) || 'בוא נדבר',
       cta_action: action,
-      cta_prompt: action === 'open_chat' ? ctaPromptRaw || null : null,
+      cta_prompt: action === 'open_chat' ? normalizeHebrewDashes(ctaPromptRaw) || null : null,
       mood: coerceMood(parsed.mood),
     };
 

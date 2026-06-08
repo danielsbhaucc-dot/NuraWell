@@ -76,6 +76,7 @@ export function AdminShell({
   const isAlmogNavSection = isAlmogSettings || isSystemRagIngest;
   const isJourneyHub = np === '/ops/journey-hub';
   const isAudio = np === '/ops/audio' || np.startsWith('/ops/audio/');
+  const isGuides = np === '/ops/guides' || np.startsWith('/ops/guides/');
   const isJourneyManage =
     np.startsWith('/ops/journey') || np.startsWith('/ops/steps') || isJourneyHub || isAudio;
 
@@ -256,6 +257,16 @@ export function AdminShell({
             >
               <DollarSign size={20} className={cn('shrink-0', isCosts && 'text-emerald-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>עלויות</span>
+            </Link>
+
+            <Link
+              href={opsHref('/guides')}
+              onClick={() => setSidebarOpen(false)}
+              className={navBtn(isGuides, 'emerald')}
+              title="מדריכים"
+            >
+              <BookOpen size={20} className={cn('shrink-0', isGuides && 'text-emerald-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>מדריכים</span>
             </Link>
 
             {sidebarCollapsed ? (

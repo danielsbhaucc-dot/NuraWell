@@ -16,6 +16,9 @@ export interface CourseWithProgress {
   lessons: LessonMeta[];
   progress: number;
   isEnrolled: boolean;
+  currentChapterTitle?: string | null;
+  completedChapters?: number;
+  totalChapters?: number;
 }
 
 export interface LessonTask {

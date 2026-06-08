@@ -163,14 +163,14 @@ export function ProgressPageClient({
 
   const stats = [
     {
-      label: 'שיעורים הושלמו',
+      label: 'פרקים הושלמו',
       value: totalCompleted,
       icon: CheckCircle2,
       accent: 'text-emerald-700',
       iconBg: 'bg-emerald-100',
     },
     {
-      label: 'קורסים פעילים',
+      label: 'מדריכים פעילים',
       value: totalEnrolled,
       icon: BookOpen,
       accent: 'text-teal-700',
@@ -204,7 +204,7 @@ export function ProgressPageClient({
             ההתקדמות שלי
           </h1>
           <p className="text-white/85 text-sm max-w-md leading-relaxed">
-            קורסים, מסע והרגלים — תמונה מלאה במקום אחד
+            מדריכים, מסע והרגלים — תמונה מלאה במקום אחד
           </p>
         </motion.div>
       </div>
@@ -467,7 +467,7 @@ export function ProgressPageClient({
           <section>
             <div className="flex items-center gap-2 mb-3 px-0.5">
               <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-teal-400 to-emerald-700" />
-              <h2 className="text-base font-black text-[#1A1730]">קורסים</h2>
+              <h2 className="text-base font-black text-[#1A1730]">מדריכים</h2>
             </div>
             <motion.div variants={container} initial="hidden" animate="show" className="space-y-3">
               {courseStats.map((course) => (
@@ -505,7 +505,7 @@ export function ProgressPageClient({
                       </div>
                       <div className="flex items-center justify-between text-[11px] text-gray-600 font-semibold">
                         <span>
-                          {course.completed}/{course.total} שיעורים
+                          {course.completed}/{course.total} פרקים
                         </span>
                         <span className="text-emerald-800">{course.progress}%</span>
                       </div>
@@ -561,7 +561,7 @@ export function ProgressPageClient({
             <div className="text-5xl mb-3">🌱</div>
             <h3 className="text-lg font-black text-[#1A1730] mb-2">המסע מתחיל כאן</h3>
             <p className="text-gray-600 text-sm mb-6 leading-relaxed">
-              התחילו משיעור או מהמסע — ההתקדמות תופיע אוטומטית
+              התחילו מפרק או מהמסע — ההתקדמות תופיע אוטומטית
             </p>
             <Link
               href="/home"
@@ -571,7 +571,7 @@ export function ProgressPageClient({
                 boxShadow: '0 8px 24px rgba(16,185,129,0.3)',
               }}
             >
-              לקורסים
+              למדריכים
             </Link>
           </motion.div>
         )}

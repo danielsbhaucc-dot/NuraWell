@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '../../../../lib/supabase/server';
 import { CourseDetailClient } from '../../../../components/course/CourseDetailClient';
+import { canAccessGuide, type GuideCourseRow, type GuideEnrollmentRow } from '../../../../lib/guides/access';
+import { resolveGuideBackgroundUrl } from '../../../../lib/guides/resolve-background';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -22,13 +24,19 @@ interface RawCourse {
   title: string;
   description: string | null;
   thumbnail_url: string | null;
+  background_image_key: string | null;
   is_premium: boolean;
+  is_published: boolean | null;
+  unlock_at: string | null;
+  visibility: string | null;
   lessons: RawLesson[];
 }
 
 interface RawEnrollment {
   id: string;
   is_active: boolean;
+  access_type?: string | null;
+  trial_ends_at?: string | null;
 }
 
 interface RawProgress {
@@ -45,7 +53,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .eq('id', id)
     .single();
   const course = data as { title: string; description: string | null } | null;
-  if (!course) return { title: 'קורס לא נמצא' };
+  if (!course) return { title: 'מדריך לא נמצא' };
   return { title: course.title, description: course.description ?? undefined };
 }
 
@@ -57,7 +65,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
   const { data: rawCourse } = await supabase
     .from('courses')
-    .select('id, title, description, thumbnail_url, is_premium, lessons(id, title, description, lesson_type, sort_order, duration_minutes, is_published)')
+    .select('id, title, description, thumbnail_url, background_image_key, is_premium, is_published, unlock_at, visibility, lessons(id, title, description, lesson_type, sort_order, duration_minutes, is_published)')
     .eq('id', id)
     .eq('is_published', true)
     .single();
@@ -67,20 +75,22 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
   const { data: rawEnrollment } = await supabase
     .from('enrollments')
-    .select('id, is_active')
+    .select('id, is_active, access_type, trial_ends_at')
     .eq('user_id', user.id)
     .eq('course_id', id)
     .maybeSingle();
 
   const enrollment = rawEnrollment as RawEnrollment | null;
-  const isEnrolled = !!(enrollment?.is_active);
+  const courseRow = course as GuideCourseRow;
+  const enrollmentRow = enrollment as GuideEnrollmentRow | null;
+  const isEnrolled = canAccessGuide(courseRow, enrollmentRow);
 
-  const { data: rawProgress } = isEnrolled
-    ? await supabase
-        .from('lesson_progress')
-        .select('lesson_id, is_completed')
-        .eq('user_id', user.id)
-    : { data: [] as RawProgress[] };
+  if (!isEnrolled) notFound();
+
+  const { data: rawProgress } = await supabase
+    .from('lesson_progress')
+    .select('lesson_id, is_completed')
+    .eq('user_id', user.id);
 
   const completedLessonIds = new Set(
     ((rawProgress as RawProgress[]) || [])
@@ -96,13 +106,13 @@ export default async function CourseDetailPage({ params }: PageProps) {
   const totalLessons = publishedLessons.length;
   const completedCount = publishedLessons.filter(l => l.is_completed).length;
   const progress = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
-  const firstIncompleteLesson = isEnrolled
-    ? (publishedLessons.find(l => !l.is_completed) ?? publishedLessons[0])
-    : null;
+  const firstIncompleteLesson = publishedLessons.find(l => !l.is_completed) ?? publishedLessons[0] ?? null;
+
+  const background_image_url = resolveGuideBackgroundUrl(course.background_image_key);
 
   return (
     <CourseDetailClient
-      course={{ ...course, lessons: publishedLessons }}
+      course={{ ...course, lessons: publishedLessons, background_image_url }}
       isEnrolled={isEnrolled}
       progress={progress}
       completedCount={completedCount}

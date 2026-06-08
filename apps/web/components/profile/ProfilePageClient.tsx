@@ -72,8 +72,8 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
   const firstName = (profile?.full_name || email.split('@')[0] || 'משתמש').trim().split(/\s+/)[0] || 'משתמש';
 
   const stats = [
-    { label: 'שיעורים הושלמו', value: totalCompleted, icon: Award,    color: '#10b981' },
-    { label: 'קורסים פעילים',  value: enrolledCount,  icon: BookOpen, color: '#14b8a6' },
+    { label: 'פרקים הושלמו', value: totalCompleted, icon: Award,    color: '#10b981' },
+    { label: 'מדריכים פעילים',  value: enrolledCount,  icon: BookOpen, color: '#14b8a6' },
     { label: 'רצף ימים',       value: profile?.streak_days ?? 0, icon: Flame, color: '#f97316' },
   ];
 
@@ -85,7 +85,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
     { label: 'התראות מאלמוג', href: '/settings/almog', icon: Bell, emoji: '🔔' },
     { label: 'בית', href: '/home', icon: BookOpen, emoji: '🏠' },
     { label: 'ההתקדמות שלי', href: '/progress', icon: Award, emoji: '📊' },
-    { label: 'הקורסים שלי', href: '/courses', icon: BookOpen, emoji: '📚' },
+    { label: 'המדריכים שלי', href: '/courses', icon: BookOpen, emoji: '📚' },
   ];
 
   const saveProfile = async () => {

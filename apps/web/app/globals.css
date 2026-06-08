@@ -3288,6 +3288,92 @@ html {
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   }
 
+  /* ---- GUIDE PAGES (מדריכים) — dark glass on image background ---- */
+  .guide-page-bg {
+    position: relative;
+    background: #064e3b;
+    min-height: 100vh;
+  }
+
+  .guide-page-bg-image {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .guide-page-bg-fallback {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(16, 185, 129, 0.25) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 70%, rgba(20, 184, 166, 0.18) 0%, transparent 50%),
+      linear-gradient(165deg, #064e3b 0%, #047857 45%, #065f46 100%);
+  }
+
+  .guide-page-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgba(6, 78, 59, 0.55) 0%,
+      rgba(4, 47, 46, 0.72) 40%,
+      rgba(6, 78, 59, 0.88) 100%
+    );
+  }
+
+  .guide-hero-overlay {
+    background: linear-gradient(
+      to top,
+      rgba(6, 78, 59, 0.95) 0%,
+      rgba(4, 120, 87, 0.55) 50%,
+      rgba(6, 78, 59, 0.25) 100%
+    );
+  }
+
+  .guide-glass-card {
+    background: linear-gradient(
+      150deg,
+      rgba(255, 255, 255, 0.14) 0%,
+      rgba(255, 255, 255, 0.06) 100%
+    );
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 1rem;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    transition: all 0.2s ease;
+  }
+
+  .guide-glass-card:hover {
+    border-color: rgba(255, 255, 255, 0.28);
+    box-shadow:
+      0 12px 40px rgba(0, 0, 0, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  }
+
+  .guide-glass-card.completed {
+    opacity: 0.75;
+  }
+
+  .guide-glass-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    background: rgba(20, 184, 166, 0.22);
+    border: 1px solid rgba(94, 234, 212, 0.35);
+    color: #a7f3d0;
+  }
+
   /* Glow Utilities — subtle for light theme */
   .glow-primary { box-shadow: 0 4px 16px rgba(16, 185, 129, 0.12); }
   .glow-secondary { box-shadow: 0 4px 16px rgba(20, 184, 166, 0.10); }

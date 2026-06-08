@@ -3,14 +3,14 @@ import { createClient } from '../../../lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { CoursesClientWrapper } from '../../../components/course/CoursesClientWrapper';
 import type { CourseWithProgress } from '../../../lib/types/course';
-// Note: Supabase client returns 'never' types without generated DB types.
-// Using (supabase as any) with explicit interfaces is intentional until DB types are generated.
+import { canAccessGuide, type GuideCourseRow, type GuideEnrollmentRow } from '../../../lib/guides/access';
+import { computeGuideProgress } from '../../../lib/guides/progress';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'הקורסים שלי',
-  description: 'כל הקורסים שלך ב-NuraWell - התחל ללמוד ולהתקדם',
+  title: 'המדריכים שלי',
+  description: 'כל המדריכים שלך ב-NuraWell - התחל ללמוד ולהתקדם',
 };
 
 export default async function CoursesPage() {
@@ -21,6 +21,9 @@ export default async function CoursesPage() {
 
   interface RawEnrollmentRow {
     course_id: string;
+    is_active: boolean;
+    access_type?: string | null;
+    trial_ends_at?: string | null;
     course: RawCourseRow | RawCourseRow[] | null;
   }
   interface RawCourseRow {
@@ -29,7 +32,10 @@ export default async function CoursesPage() {
     description: string | null;
     thumbnail_url: string | null;
     is_premium: boolean;
-    lessons: { id: string }[];
+    is_published?: boolean | null;
+    unlock_at?: string | null;
+    visibility?: string | null;
+    lessons: { id: string; title?: string; sort_order?: number }[];
   }
   interface RawProgressRow {
     lesson_id: string;
@@ -39,16 +45,9 @@ export default async function CoursesPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawEnrollments } = await (supabase as any)
     .from('enrollments')
-    .select('course_id, course:courses(id, title, description, thumbnail_url, is_premium, lessons(id))')
+    .select('course_id, is_active, access_type, trial_ends_at, course:courses(id, title, description, thumbnail_url, is_premium, is_published, unlock_at, visibility, lessons(id, title, sort_order))')
     .eq('user_id', user.id)
     .eq('is_active', true);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rawAllCourses } = await (supabase as any)
-    .from('courses')
-    .select('id, title, description, thumbnail_url, is_premium, lessons(id)')
-    .eq('is_published', true)
-    .order('sort_order');
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawProgressRows } = await (supabase as any)
@@ -57,21 +56,28 @@ export default async function CoursesPage() {
     .eq('user_id', user.id);
 
   const enrollments = (rawEnrollments as RawEnrollmentRow[]) || [];
-  const allCourses = (rawAllCourses as RawCourseRow[]) || [];
   const progressRows = (rawProgressRows as RawProgressRow[]) || [];
-  const enrolledCourseIds = new Set(enrollments.map(e => e.course_id));
   const completedLessonIds = new Set(
     progressRows.filter(p => p.is_completed).map(p => p.lesson_id)
   );
-
 
   const enrolledCourses: CourseWithProgress[] = enrollments
     .map(e => {
       const course = Array.isArray(e.course) ? e.course[0] : e.course;
       if (!course) return null;
+
+      const courseRow = course as GuideCourseRow;
+      const enrollment = e as GuideEnrollmentRow;
+      if (!canAccessGuide(courseRow, enrollment)) return null;
+
       const lessons = course.lessons || [];
-      const total = lessons.length || 1;
-      const done = lessons.filter(l => completedLessonIds.has(l.id)).length;
+      const summary = computeGuideProgress(
+        { id: course.id, title: course.title, description: course.description },
+        lessons.map((l) => ({ id: l.id, title: l.title ?? '', sort_order: l.sort_order ?? 0 })),
+        progressRows,
+        e
+      );
+
       return {
         id: course.id,
         title: course.title,
@@ -79,24 +85,14 @@ export default async function CoursesPage() {
         thumbnail_url: course.thumbnail_url,
         is_premium: course.is_premium,
         lessons,
-        progress: Math.round((done / total) * 100),
+        progress: summary.progressPct,
         isEnrolled: true,
+        currentChapterTitle: summary.currentChapterTitle,
+        completedChapters: summary.completedChapters,
+        totalChapters: summary.totalChapters,
       } as CourseWithProgress;
     })
     .filter((c): c is CourseWithProgress => c !== null);
-
-  const availableCourses: CourseWithProgress[] = allCourses
-    .filter(c => !enrolledCourseIds.has(c.id))
-    .map(c => ({
-      id: c.id,
-      title: c.title,
-      description: c.description,
-      thumbnail_url: c.thumbnail_url,
-      is_premium: c.is_premium,
-      lessons: c.lessons || [],
-      progress: 0,
-      isEnrolled: false,
-    }));
 
   const totalLessonsCompleted = completedLessonIds.size;
   const activeCoursesCount = enrolledCourses.length;
@@ -107,7 +103,7 @@ export default async function CoursesPage() {
   return (
     <CoursesClientWrapper
       enrolledCourses={enrolledCourses}
-      availableCourses={availableCourses}
+      availableCourses={[]}
       stats={{ totalLessonsCompleted, activeCoursesCount, avgProgress }}
     />
   );

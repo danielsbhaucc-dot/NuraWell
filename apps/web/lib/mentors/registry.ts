@@ -16,7 +16,7 @@ export const MENTORS: Record<MentorId, MentorDefinition> = {
     id: 'almog',
     name: 'אלמוג',
     title: 'מנטור AI במסע',
-    description: 'מלווה בקורסים, משימות והרגלים בתוך האפליקציה.',
+    description: 'מלווה במדריכים, משימות והרגלים בתוך האפליקציה.',
     objectKey: 'almog/avatar.webp',
     fallbackInitial: 'א',
   },

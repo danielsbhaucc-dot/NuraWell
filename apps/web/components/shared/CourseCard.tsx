@@ -13,6 +13,9 @@ interface CourseCardProps {
     thumbnail_url: string | null;
     lessons: { id: string }[];
     is_premium: boolean;
+    currentChapterTitle?: string | null;
+    completedChapters?: number;
+    totalChapters?: number;
   };
   progress: number;
   isEnrolled: boolean;
@@ -78,7 +81,7 @@ export function CourseCard({ course, progress, isEnrolled }: CourseCardProps) {
           {/* Info */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: '0.5px', marginBottom: '4px' }}>
-              {lessonCount} שיעורים · ~{lessonCount * 15} דקות
+              {lessonCount} פרקים · ~{lessonCount * 15} דקות
             </div>
             <div className="line-clamp-1" style={{ fontSize: '16px', fontWeight: 800, color: '#fff', fontFamily: "'Rubik','Heebo',sans-serif", lineHeight: 1.3 }}>
               {course.title}
@@ -131,12 +134,17 @@ export function CourseCard({ course, progress, isEnrolled }: CourseCardProps) {
               {course.description}
             </p>
           )}
+          {isEnrolled && course.currentChapterTitle && !isCompleted && (
+            <p className="line-clamp-1" style={{ fontSize: '12px', color: '#0d9488', marginBottom: '6px', fontWeight: 600 }}>
+              פרק נוכחי: {course.currentChapterTitle}
+            </p>
+          )}
 
           {/* Meta + status row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1" style={{ fontSize: '12px', color: '#9896B8' }}>
               <Clock className="w-3.5 h-3.5" style={{ color: '#9896B8' }} />
-              <span><strong style={{ color: '#047857' }}>{lessonCount}</strong> שיעורים</span>
+              <span><strong style={{ color: '#047857' }}>{lessonCount}</strong> פרקים</span>
             </div>
             {isEnrolled && !isCompleted && (
               <div style={{
