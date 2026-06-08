@@ -610,6 +610,89 @@ describe('planHabitCheckpointTriggers', () => {
     expect(evening[0]!.payload.notifyMode).toBe('remind');
   });
 
+  /**
+   * רגרסיה (54b0b2b "response-based dormancy"): דילוג "responded recently"
+   * חסם בטעות גם תזכורות משימה. דרישת מוצר: משימה פתוחה → 3 תזכורות ביום
+   * תמיד, גם אם המשתמש כתב בצ'אט לפני שעה.
+   */
+  it('responded recently does NOT suppress a pending-task reminder', () => {
+    const progress: ProgressRow[] = [
+      row({
+        user_id: 'u-resp',
+        task_statuses: {
+          t1: { status: 'accepted', execution_done: false },
+        },
+        journey_steps: {
+          title: 'צעד',
+          habits: [],
+          tasks: [{ id: 't1', title: 'להגיש דוח' }],
+          journey_stations: null,
+        },
+      }),
+    ];
+    const now = new Date('2026-05-19T13:00:00+03:00');
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+    const respInfo = new Map([
+      ['u-resp', { lastRespondedAt: oneHourAgo, notificationCount: 3 }],
+    ]);
+
+    const plan = planHabitCheckpointTriggers(
+      progress,
+      'midday',
+      now,
+      new Map(),
+      activeLastActive('u-resp'),
+      respInfo
+    );
+    expect(plan).toHaveLength(1);
+    expect(plan[0]!.payload.notifyMode).toBe('remind');
+  });
+
+  /** מגע נוכחות (אין משימה פתוחה) *כן* נחסם אם המשתמש הגיב ב-6 השעות האחרונות. */
+  it('responded recently suppresses a presence touch when no open work', () => {
+    const progress: ProgressRow[] = [
+      row({
+        user_id: 'u-pres',
+        habits_progress: { h1: [true] },
+        journey_steps: {
+          title: 'צעד',
+          habits: [{ id: 'h1', title: 'מים', frequency: 'daily' }],
+          tasks: [],
+          journey_stations: null,
+        },
+      }),
+    ];
+    const now = new Date('2026-05-19T08:00:00.000Z');
+    const fiveDaysAgo = new Date(now.getTime() - 5 * DAY_MS).toISOString();
+    const lastActive = new Map<string, string | null>([['u-pres', fiveDaysAgo]]);
+
+    /** ללא "responded recently" — dormant_early מקבל מגע נוכחות בבוקר. */
+    const baseline = planHabitCheckpointTriggers(
+      progress,
+      'morning',
+      now,
+      new Map(),
+      lastActive
+    );
+    expect(baseline).toHaveLength(1);
+    expect(baseline[0]!.payload.notifyMode).toBe('reinforce');
+
+    /** עם תגובה לפני שעה — המגע (נוכחות בלבד) מדולג. */
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+    const respInfo = new Map([
+      ['u-pres', { lastRespondedAt: oneHourAgo, notificationCount: 0 }],
+    ]);
+    const suppressed = planHabitCheckpointTriggers(
+      progress,
+      'morning',
+      now,
+      new Map(),
+      lastActive,
+      respInfo
+    );
+    expect(suppressed).toHaveLength(0);
+  });
+
   it('partially-done multi_daily task → still remind with pending slots in payload', () => {
     const progress: ProgressRow[] = [
       row({

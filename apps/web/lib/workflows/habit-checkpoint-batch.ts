@@ -841,13 +841,11 @@ export function planHabitCheckpointTriggers(
     const cadenceStage = computeCadenceStage(daysSinceLastActive);
 
     /**
-     * 🔇 דילוג חכם לפי המסמך המקורי: אם המשתמש כתב לצ'אט / סימן משימה
-     * ב-6 השעות האחרונות — דלג על ה-slot הזה.
-     * עדיף לא להציף משתמש שכבר בלולאה.
+     * 🔇 "responded recently" — נחשב כאן, אך *לא* חוסם עדיין. הדילוג מוחל
+     * בהמשך רק על מגעי נוכחות (כשאין משימה פתוחה), לא על תזכורות משימה.
      */
     const respInfo = userResponseInfo.get(userId);
     const hoursSinceResp = hoursSinceLastResponse(respInfo?.lastRespondedAt ?? null, now);
-    if (isUserRespondedRecently(hoursSinceResp)) continue;
 
     const userTodayDone = todayExecutionsByUser.get(userId) ?? new Map<string, Set<string>>();
     const habits = collectUserJourneyHabits(rows);
@@ -870,6 +868,14 @@ export function planHabitCheckpointTriggers(
     });
 
     const hasRemindWork = due.length > 0 || pendingTasks.length > 0;
+
+    /**
+     * 🔇 דילוג "responded recently" (6h) — חל *רק* כשאין משימה פתוחה.
+     * דרישת מוצר: משימה לא בוצעת → 3 תזכורות ביום *תמיד*, גם אם המשתמש
+     * דיבר בצ'אט לפני שעה. הדילוג נועד למנוע הצפת נידג'י נוכחות למשתמש
+     * שכבר בלולאה — ולא לחסום תזכורת על משימה פתוחה.
+     */
+    if (!hasRemindWork && isUserRespondedRecently(hoursSinceResp)) continue;
 
     /**
      * 🔄 שכבת churn / re-engagement — מהלך תוכן ייעודי לפי יום (ספק פרק 4).

@@ -319,8 +319,15 @@ async function runHabitCheckpointCron(request: Request) {
    * תדירות דרך allowedSlotsForCadenceStage כבר ב-planHabitCheckpointTriggers —
    * אין צורך ב-cooldown נוסף כי כל שלב מסנן slots לתדירות הנכונה.
    */
+  /**
+   * ה-cooldown חל *רק* על מגעי נוכחות (`notifyMode==='reinforce'`). משתמש עם
+   * משימה/הרגל פתוח שלא בוצע מקבל 3 תזכורות ביום *תמיד* (דרישת מוצר), גם אם
+   * סווג ghosted — למשל מי שגולש באפליקציה אבל לא מדבר בצ'אט ולא מסמן ביצוע,
+   * כך ש-fetchTrueLastActiveByUser רואה אותו דורמנטי. בלי הסינון הזה משתמש
+   * כזה היה מקבל תזכורת אחת בשבוע בלבד על משימה פתוחה.
+   */
   const ghostedIds = plan
-    .filter((p) => p.payload.cadenceStage === 'ghosted')
+    .filter((p) => p.payload.cadenceStage === 'ghosted' && p.payload.notifyMode === 'reinforce')
     .map((p) => p.userId);
   const ghostedWeeklyCooldownIds = new Set<string>();
 
