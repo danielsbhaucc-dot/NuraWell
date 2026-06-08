@@ -70,6 +70,14 @@ type AiClarificationQuestion = {
   required: boolean;
 };
 
+type AiChatEntry = { id: string; role: 'ai' | 'user'; text: string };
+
+const CLARIFICATION_PHASE_LABEL: Record<'research' | 'lesson_transcript' | 'user_goal', string> = {
+  research: 'מחקר',
+  lesson_transcript: 'תמלול שיעור',
+  user_goal: 'יעד משתמש',
+};
+
 function createDefaultLeveling(): JourneyTaskLevelingConfig {
   const easy = genId();
   const start = genId();
@@ -215,6 +223,18 @@ export function StepEditor({ step }: StepEditorProps) {
   const [aiSummarySoFar, setAiSummarySoFar] = useState('');
   const [aiClarificationQuestions, setAiClarificationQuestions] = useState<AiClarificationQuestion[]>([]);
   const [aiClarificationAnswers, setAiClarificationAnswers] = useState<Record<string, string>>({});
+  const [aiChatLog, setAiChatLog] = useState<AiChatEntry[]>([]);
+  const aiChatEndRef = useRef<HTMLDivElement | null>(null);
+
+  const pushChat = (role: 'ai' | 'user', text: string) => {
+    const clean = text.trim();
+    if (!clean) return;
+    setAiChatLog((prev) => [...prev, { id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, role, text: clean }]);
+  };
+
+  useEffect(() => {
+    aiChatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [aiChatLog.length, aiClarificationQuestions.length]);
 
   // Basic fields
   const [title, setTitle] = useState(step?.title || '');
@@ -510,6 +530,15 @@ export function StepEditor({ step }: StepEditorProps) {
       }
     }
     setAiError(null);
+
+    const answeredQuestions = aiClarificationQuestions;
+    const answersSnapshot = aiClarificationAnswers;
+    const userReply = answeredQuestions
+      .map((q) => answersSnapshot[q.id]?.trim())
+      .filter(Boolean)
+      .join('\n');
+    if (userReply) pushChat('user', userReply);
+
     setAiFilling(true);
     try {
       const res = await fetch('/api/v1/admin/journey-steps/ai-fill/session', {
@@ -522,7 +551,7 @@ export function StepEditor({ step }: StepEditorProps) {
           sessionId: aiSessionId,
           phase: aiClarificationPhase,
           summarySoFar: aiSummarySoFar,
-          answers: aiClarificationAnswers,
+          answers: answersSnapshot,
         }),
       });
       const data = (await res.json()) as {
@@ -540,12 +569,19 @@ export function StepEditor({ step }: StepEditorProps) {
       if (data.sessionId) setAiSessionId(data.sessionId);
       if (data.summary_so_far) setAiSummarySoFar(data.summary_so_far);
       if (data.status === 'ready') {
+        pushChat('ai', 'מצוין, יש לי את כל מה שצריך. בונה עכשיו את הצעד 🚀');
         await runAiGeneration(text, {
-          clarificationAnswers: aiClarificationAnswers,
+          clarificationAnswers: answersSnapshot,
           analysisSummary: data.summary_so_far ?? aiSummarySoFar,
         });
         return;
       }
+      pushChat(
+        'ai',
+        data.summary_so_far?.trim()
+          ? `תודה! עדכנתי את ההבנה:\n${data.summary_so_far.trim()}\n\nעוד כמה שאלות:`
+          : 'תודה! עוד כמה שאלות שיחדדו את הצעד:'
+      );
       setAiClarificationPhase(data.phase ?? 'user_goal');
       setAiClarificationQuestions(data.questions ?? []);
       setAiClarificationAnswers({});
@@ -589,6 +625,13 @@ export function StepEditor({ step }: StepEditorProps) {
     setAiClarificationQuestions([]);
     setAiSummarySoFar('');
     setAiSessionId(null);
+    setAiChatLog([
+      {
+        id: `${Date.now()}-start`,
+        role: 'user',
+        text: 'הדבקתי את תוכן השיעור — בוא נבנה ממנו צעד מדויק.',
+      },
+    ]);
 
     setAiFilling(true);
     try {
@@ -614,10 +657,17 @@ export function StepEditor({ step }: StepEditorProps) {
       if (data.summary_so_far) setAiSummarySoFar(data.summary_so_far);
 
       if (data.status === 'ready') {
+        pushChat('ai', 'קראתי את החומר ויש לי מספיק מידע. מתחיל לבנות את הצעד 🚀');
         await runAiGeneration(text, { analysisSummary: data.summary_so_far ?? '' });
         return;
       }
 
+      pushChat(
+        'ai',
+        data.summary_so_far?.trim()
+          ? `קראתי את החומר. הנה מה שהבנתי עד כה:\n${data.summary_so_far.trim()}\n\nכמה שאלות שיעזרו לי לבנות צעד מדויק:`
+          : 'קראתי את החומר. כדי לבנות צעד מדויק, יש לי כמה שאלות חידוד:'
+      );
       setAiClarificationPhase(data.phase ?? 'research');
       setAiClarificationQuestions(data.questions ?? []);
       setAiFillMode('clarifying');
@@ -903,13 +953,91 @@ export function StepEditor({ step }: StepEditorProps) {
 
           {aiPanelOpen && (
             <div className="space-y-3">
-              <textarea
-                value={aiSourceText}
-                onChange={(e) => setAiSourceText(e.target.value)}
-                disabled={aiFilling}
-                className="input-field min-h-[140px] leading-relaxed"
-                placeholder="הדביקו כאן את התוכן הגולמי של השיעור (תמלול / סיכום / טקסט מקצועי). ה-AI ייתן כותרת, סיכום, שאלות הבנה, משחק, התחייבות, מחקרים, משימות, הרגלים ונקודות קשב — ויסונכרן לזיכרון של אלמוג בשמירה."
-              />
+              {aiFillMode !== 'clarifying' && (
+                <textarea
+                  value={aiSourceText}
+                  onChange={(e) => setAiSourceText(e.target.value)}
+                  disabled={aiFilling}
+                  className="input-field min-h-[140px] leading-relaxed"
+                  placeholder="הדביקו כאן את התוכן הגולמי של השיעור (תמלול / סיכום / טקסט מקצועי). ה-AI ייתן כותרת, סיכום, שאלות הבנה, משחק, התחייבות, מחקרים, משימות, הרגלים ונקודות קשב — ויסונכרן לזיכרון של אלמוג בשמירה."
+                />
+              )}
+
+              {/* ═══ שיחת חידוד בסגנון צ'אט ═══ */}
+              {(aiChatLog.length > 0 || aiFillMode === 'clarifying') && (
+                <div
+                  className="space-y-3 rounded-2xl p-3"
+                  style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(124,58,237,0.2)' }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-violet-900">שיחת חידוד עם ה-AI</span>
+                    {aiFillMode === 'clarifying' && (
+                      <span className="rounded-full px-2 py-0.5 text-[10px] font-bold text-violet-700" style={{ background: 'rgba(124,58,237,0.12)' }}>
+                        {CLARIFICATION_PHASE_LABEL[aiClarificationPhase]}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                    {aiChatLog.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className="max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-[12px] leading-relaxed shadow-sm"
+                          style={
+                            entry.role === 'user'
+                              ? { background: 'linear-gradient(135deg, #7c3aed, #2563eb)', color: '#fff', borderBottomRightRadius: 4 }
+                              : { background: 'rgba(241,245,249,0.95)', color: '#1e1b4b', borderBottomLeftRadius: 4 }
+                          }
+                        >
+                          {entry.text}
+                        </div>
+                      </div>
+                    ))}
+                    {aiFilling && aiFillMode === 'clarifying' && (
+                      <div className="flex justify-start">
+                        <div className="flex items-center gap-1.5 rounded-2xl px-3 py-2 text-[12px] text-violet-700" style={{ background: 'rgba(241,245,249,0.95)' }}>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> חושב…
+                        </div>
+                      </div>
+                    )}
+                    <div ref={aiChatEndRef} />
+                  </div>
+
+                  {aiFillMode === 'clarifying' && aiClarificationQuestions.length > 0 && (
+                    <div className="space-y-3 rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(124,58,237,0.18)' }}>
+                      {aiClarificationQuestions.map((q) => (
+                        <Field key={q.id} label={q.label}>
+                          {q.input_type === 'textarea' ? (
+                            <textarea
+                              value={aiClarificationAnswers[q.id] ?? ''}
+                              onChange={(e) =>
+                                setAiClarificationAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
+                              }
+                              disabled={aiFilling}
+                              className="input-field min-h-[72px]"
+                              placeholder={q.help_text ?? 'הקלד תשובה…'}
+                            />
+                          ) : (
+                            <input
+                              value={aiClarificationAnswers[q.id] ?? ''}
+                              onChange={(e) =>
+                                setAiClarificationAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
+                              }
+                              disabled={aiFilling}
+                              className="input-field"
+                              placeholder={q.help_text ?? 'הקלד תשובה…'}
+                            />
+                          )}
+                        </Field>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center gap-3">
                 {aiFillMode !== 'clarifying' ? (
                   <button
@@ -939,46 +1067,6 @@ export function StepEditor({ step }: StepEditorProps) {
                 </span>
               </div>
 
-              {aiFillMode === 'clarifying' && aiClarificationQuestions.length > 0 && (
-                <div className="space-y-3 rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(124,58,237,0.2)' }}>
-                  <p className="text-xs font-bold text-violet-900">
-                    שלב חידוד:{' '}
-                    {aiClarificationPhase === 'research'
-                      ? 'מחקר'
-                      : aiClarificationPhase === 'lesson_transcript'
-                        ? 'תמלול שיעור'
-                        : 'יעד משתמש'}
-                  </p>
-                  {aiSummarySoFar ? (
-                    <p className="text-[11px] leading-relaxed text-violet-800/80">{aiSummarySoFar}</p>
-                  ) : null}
-                  {aiClarificationQuestions.map((q) => (
-                    <Field key={q.id} label={q.label}>
-                      {q.input_type === 'textarea' ? (
-                        <textarea
-                          value={aiClarificationAnswers[q.id] ?? ''}
-                          onChange={(e) =>
-                            setAiClarificationAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
-                          }
-                          disabled={aiFilling}
-                          className="input-field min-h-[80px]"
-                          placeholder={q.help_text ?? ''}
-                        />
-                      ) : (
-                        <input
-                          value={aiClarificationAnswers[q.id] ?? ''}
-                          onChange={(e) =>
-                            setAiClarificationAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
-                          }
-                          disabled={aiFilling}
-                          className="input-field"
-                          placeholder={q.help_text ?? ''}
-                        />
-                      )}
-                    </Field>
-                  ))}
-                </div>
-              )}
               {aiError && (
                 <p className="rounded-xl px-3 py-2 text-xs font-semibold text-red-700" style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.25)' }}>
                   {aiError}
@@ -1258,7 +1346,7 @@ export function StepEditor({ step }: StepEditorProps) {
                     />
                   </Field>
                 </div>
-                <Field label="שאלה (מוצגת עם כן / לא)">
+                <Field label="שאלה (בסגנון צ'אט)">
                   <input
                     value={stop.question}
                     onChange={e => {
@@ -1269,7 +1357,82 @@ export function StepEditor({ step }: StepEditorProps) {
                     className="input-field"
                   />
                 </Field>
-                <Field label="משוב מקצועי אחרי בחירה">
+                <Field label="אפשרויות תשובה (ריק = כן / לא)">
+                  <div className="space-y-1.5">
+                    {(stop.options ?? []).map((opt, oi) => (
+                      <div key={oi} className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          title="סמן כתשובה הנכונה"
+                          onClick={() => {
+                            const arr = [...immersiveAttentionStops];
+                            arr[si] = { ...arr[si], correct_option_index: oi };
+                            setImmersiveAttentionStops(arr);
+                          }}
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold ${
+                            stop.correct_option_index === oi
+                              ? 'border-emerald-500 bg-emerald-500 text-white'
+                              : 'border-gray-300 text-gray-400'
+                          }`}
+                        >
+                          {stop.correct_option_index === oi ? '✓' : oi + 1}
+                        </button>
+                        <input
+                          value={opt}
+                          onChange={e => {
+                            const arr = [...immersiveAttentionStops];
+                            const options = [...(arr[si].options ?? [])];
+                            options[oi] = e.target.value;
+                            arr[si] = { ...arr[si], options };
+                            setImmersiveAttentionStops(arr);
+                          }}
+                          className="input-field flex-1"
+                          placeholder={`אפשרות ${oi + 1}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const arr = [...immersiveAttentionStops];
+                            const options = (arr[si].options ?? []).filter((_, i) => i !== oi);
+                            const prevCorrect = arr[si].correct_option_index ?? null;
+                            const correct_option_index =
+                              prevCorrect == null
+                                ? null
+                                : oi === prevCorrect
+                                  ? null
+                                  : oi < prevCorrect
+                                    ? prevCorrect - 1
+                                    : prevCorrect;
+                            arr[si] = {
+                              ...arr[si],
+                              options: options.length ? options : undefined,
+                              correct_option_index,
+                            };
+                            setImmersiveAttentionStops(arr);
+                          }}
+                          className="text-red-400 hover:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                    {(stop.options ?? []).length < 4 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const arr = [...immersiveAttentionStops];
+                          const options = [...(arr[si].options ?? []), ''];
+                          arr[si] = { ...arr[si], options };
+                          setImmersiveAttentionStops(arr);
+                        }}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800"
+                      >
+                        <Plus className="h-3.5 w-3.5" /> הוסף אפשרות
+                      </button>
+                    )}
+                  </div>
+                </Field>
+                <Field label="משוב כללי אחרי בחירה">
                   <textarea
                     value={stop.feedback}
                     onChange={e => {
@@ -1277,9 +1440,33 @@ export function StepEditor({ step }: StepEditorProps) {
                       arr[si] = { ...arr[si], feedback: e.target.value };
                       setImmersiveAttentionStops(arr);
                     }}
-                    className="input-field min-h-[80px]"
+                    className="input-field min-h-[70px]"
                   />
                 </Field>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <Field label="משוב לתשובה נכונה (אופציונלי)">
+                    <textarea
+                      value={stop.feedback_correct ?? ''}
+                      onChange={e => {
+                        const arr = [...immersiveAttentionStops];
+                        arr[si] = { ...arr[si], feedback_correct: e.target.value || null };
+                        setImmersiveAttentionStops(arr);
+                      }}
+                      className="input-field min-h-[60px]"
+                    />
+                  </Field>
+                  <Field label="משוב לתשובה שגויה (אופציונלי)">
+                    <textarea
+                      value={stop.feedback_incorrect ?? ''}
+                      onChange={e => {
+                        const arr = [...immersiveAttentionStops];
+                        arr[si] = { ...arr[si], feedback_incorrect: e.target.value || null };
+                        setImmersiveAttentionStops(arr);
+                      }}
+                      className="input-field min-h-[60px]"
+                    />
+                  </Field>
+                </div>
               </div>
             ))}
             <AddButton
