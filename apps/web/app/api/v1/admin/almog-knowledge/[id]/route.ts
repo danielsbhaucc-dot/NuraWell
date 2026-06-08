@@ -23,7 +23,7 @@ const patchBodySchema = z
   .object({
     title: z.string().max(300).optional(),
     body: z.string().min(1).max(MAX_BODY_CHARS).optional(),
-    dataType: z.enum(['step', 'course']).optional(),
+    dataType: z.enum(['step', 'course', 'principle']).optional(),
     accessLevel: z.enum(['public', 'premium']).optional(),
     courseId: z.string().min(1).max(200).nullable().optional(),
     stepId: z.string().uuid().nullable().optional(),
@@ -109,7 +109,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     stationTitle = stepMeta.meta.stationTitle ?? null;
     stationOrder = stepMeta.meta.stationOrder ?? null;
     if (stepMeta.meta.stepCourseId) courseId = stepMeta.meta.stepCourseId;
-  } else {
+  } else if (dataType === 'course') {
     stepId = null;
     stepNumber = null;
     stationId = null;
@@ -118,6 +118,14 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!courseId?.trim()) {
       return NextResponse.json({ error: 'courseId נדרש לשיוך קורס' }, { status: 400 });
     }
+  } else {
+    // principle: עיקרון גלובלי — ללא שיוך לצעד/קורס
+    stepId = null;
+    courseId = null;
+    stepNumber = null;
+    stationId = null;
+    stationTitle = null;
+    stationOrder = null;
   }
 
   const updatePayload: Record<string, unknown> = {

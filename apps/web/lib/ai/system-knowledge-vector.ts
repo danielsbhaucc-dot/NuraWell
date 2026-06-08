@@ -6,7 +6,7 @@ import { UPSTASH_NAMESPACE_SYSTEM_KNOWLEDGE } from './rag-config';
  */
 
 export type SystemKnowledgeVectorMetadata = {
-  dataType: 'step' | 'course';
+  dataType: 'step' | 'course' | 'principle';
   accessLevel: 'public' | 'premium';
   chunkId: string;
   text: string;

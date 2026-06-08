@@ -9,7 +9,7 @@ export type AlmogKnowledgeRow = {
   id: string;
   title: string;
   body: string;
-  data_type: 'step' | 'course';
+  data_type: 'step' | 'course' | 'principle';
   access_level: 'public' | 'premium';
   step_id: string | null;
   course_id: string | null;

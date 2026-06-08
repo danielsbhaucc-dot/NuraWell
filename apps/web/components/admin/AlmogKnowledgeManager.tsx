@@ -17,6 +17,7 @@ import {
   Layers,
   List as ListIcon,
   MapPin,
+  ScrollText,
 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import {
@@ -33,7 +34,7 @@ type KnowledgeItem = {
   id: string;
   title: string;
   body: string;
-  data_type: 'step' | 'course';
+  data_type: 'step' | 'course' | 'principle';
   access_level: 'public' | 'premium';
   step_id: string | null;
   course_id: string | null;
@@ -53,7 +54,7 @@ type JourneyStepRow = {
   journey_stations?: { title?: string | null } | { title?: string | null }[] | null;
 };
 
-type DataType = 'step' | 'course';
+type DataType = 'step' | 'course' | 'principle';
 type AccessLevel = 'public' | 'premium';
 
 const PRESET_COURSES: Array<{ id: string; label: string }> = [
@@ -79,6 +80,7 @@ function journeyStepOptionLabel(s: JourneyStepRow): string {
 }
 
 function itemListLabel(item: KnowledgeItem): string {
+  if (item.data_type === 'principle') return 'עיקרון · חוק תוכנית';
   if (item.data_type === 'step' && item.step_number != null) {
     const st = item.station_title;
     return st ? `שלב ${item.step_number} · ${st}` : `שלב ${item.step_number}`;
@@ -199,7 +201,9 @@ export function AlmogKnowledgeManager() {
   const [searchQ, setSearchQ] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isNew, setIsNew] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'organized' | 'research'>('organized');
+  const [viewMode, setViewMode] = useState<'list' | 'organized' | 'research' | 'principles'>(
+    'organized'
+  );
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const [journeySteps, setJourneySteps] = useState<JourneyStepRow[]>([]);
@@ -368,8 +372,14 @@ export function AlmogKnowledgeManager() {
   const groupedItems = useMemo(() => {
     const stepItems = items.filter((i) => i.data_type === 'step');
     const courseItems = items.filter((i) => i.data_type === 'course');
-    return { stepItems, courseItems };
+    const principleItems = items.filter((i) => i.data_type === 'principle');
+    return { stepItems, courseItems, principleItems };
   }, [items]);
+
+  const principleItems = useMemo(
+    () => items.filter((i) => i.data_type === 'principle'),
+    [items]
+  );
 
   /** קיבוץ היררכי לתצוגה מסודרת: תחנה → צעד → פריטי ידע (מחקרים ואחרים). */
   const organizedStations = useMemo(() => {
@@ -515,7 +525,11 @@ export function AlmogKnowledgeManager() {
       body: form.body,
       dataType: form.dataType,
       accessLevel: form.accessLevel,
-      ...(form.dataType === 'step' ? { stepId: form.selectedStepId } : { courseId: effectiveCourseId }),
+      ...(form.dataType === 'step'
+        ? { stepId: form.selectedStepId }
+        : form.dataType === 'course'
+          ? { courseId: effectiveCourseId }
+          : {}),
     };
 
     try {
@@ -736,6 +750,7 @@ export function AlmogKnowledgeManager() {
               {(
                 [
                   { key: 'organized', label: 'תצוגה מסודרת', icon: Layers },
+                  { key: 'principles', label: 'עקרונות', icon: ScrollText },
                   { key: 'research', label: 'מחקרים', icon: FlaskConical },
                   { key: 'list', label: 'רשימה', icon: ListIcon },
                 ] as const
@@ -994,6 +1009,73 @@ export function AlmogKnowledgeManager() {
                 ))
               )}
             </div>
+          ) : viewMode === 'principles' ? (
+            <div className="overflow-y-auto flex-1 p-2 sm:p-3 space-y-3">
+              <div className="flex items-start gap-2 rounded-2xl border border-indigo-200/80 bg-indigo-50/60 px-3 py-2">
+                <ScrollText className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" aria-hidden />
+                <p className="text-xs font-bold text-indigo-900">
+                  עקרונות וחוקי תוכנית שאלמוג שולף מהשיחה לפי הצורך. כתבו בשפה טבעית
+                  (חוקי התוכנית, איך להתמודד עם מצבים) — כל שמירה מעדכנת את האינדקס.
+                </p>
+              </div>
+              {principleItems.length === 0 ? (
+                <p className="p-6 text-center text-sm text-slate-500">
+                  אין עדיין עקרונות. הוסיפו ידע ובחרו שיוך &quot;עיקרון / חוק תוכנית&quot;.
+                </p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {principleItems.map((item) => (
+                    <li
+                      key={item.id}
+                      className="rounded-xl border border-indigo-200/70 bg-white/65 px-3 py-2"
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <ScrollText className="h-3.5 w-3.5 shrink-0 text-indigo-500" aria-hidden />
+                            <p className="truncate text-sm font-bold text-slate-900">{item.title}</p>
+                            {item.access_level === 'premium' ? (
+                              <span className="inline-flex items-center rounded-full border border-amber-300/70 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                                פרימיום
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-1 text-xs leading-relaxed text-slate-600 line-clamp-3">
+                            {item.body.replace(/\s+/g, ' ').trim().slice(0, 240)}
+                          </p>
+                          <p className="mt-1 text-[10px] text-slate-400">
+                            {item.chunk_count} חלקים · {formatDate(item.updated_at)}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 flex-col gap-1">
+                          <button
+                            type="button"
+                            onClick={() => selectItem(item.id)}
+                            title="דיוק / עריכה"
+                            aria-label="דיוק / עריכה"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-sky-200/80 bg-sky-50/80 text-sky-700 transition hover:bg-sky-100"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPendingDeleteId(item.id);
+                              setDeleteOpen(true);
+                            }}
+                            title="מחיקה"
+                            aria-label="מחיקה"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200/80 bg-rose-50/80 text-rose-600 transition hover:bg-rose-100"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           ) : (
             <ul className="overflow-y-auto flex-1 divide-y divide-slate-100/80">
               {groupedItems.stepItems.length > 0 ? (
@@ -1037,6 +1119,33 @@ export function AlmogKnowledgeManager() {
                           className={[
                             'w-full text-right px-3 py-2.5 hover:bg-amber-50/80 transition-colors',
                             selectedId === item.id && !isNew ? 'bg-amber-50' : '',
+                          ].join(' ')}
+                        >
+                          <p className="font-bold text-sm text-slate-900 truncate">{item.title}</p>
+                          <p className="text-xs text-slate-500">{itemListLabel(item)}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {item.chunk_count} חלקים · {formatDate(item.updated_at)}
+                          </p>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ) : null}
+              {groupedItems.principleItems.length > 0 ? (
+                <li>
+                  <p className="px-3 py-2 text-[10px] font-black uppercase tracking-wide text-indigo-900/70 bg-indigo-50/50">
+                    עקרונות וחוקי תוכנית
+                  </p>
+                  <ul>
+                    {groupedItems.principleItems.map((item) => (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          onClick={() => selectItem(item.id)}
+                          className={[
+                            'w-full text-right px-3 py-2.5 hover:bg-indigo-50/80 transition-colors',
+                            selectedId === item.id && !isNew ? 'bg-indigo-50' : '',
                           ].join(' ')}
                         >
                           <p className="font-bold text-sm text-slate-900 truncate">{item.title}</p>
@@ -1177,6 +1286,7 @@ export function AlmogKnowledgeManager() {
                           >
                             <option value="step">שלב במסע</option>
                             <option value="course">קורס</option>
+                            <option value="principle">עיקרון / חוק תוכנית</option>
                           </select>
                         </label>
                         <label className="block">
@@ -1194,7 +1304,16 @@ export function AlmogKnowledgeManager() {
                         </label>
                       </div>
 
-                      {form.dataType === 'step' ? (
+                      {form.dataType === 'principle' ? (
+                        <div className="rounded-2xl border border-indigo-200/80 bg-indigo-50/50 p-3">
+                          <p className="text-xs font-bold text-indigo-950">עיקרון / חוק תוכנית</p>
+                          <p className="mt-1 text-xs leading-relaxed text-indigo-900/80">
+                            כתבו בשפה טבעית חוק או הנחיה — למשל &quot;חוקי התוכנית&quot; או &quot;איך
+                            להתמודד עם X&quot;. העיקרון גלובלי (לא משויך לשלב/קורס) ואלמוג שולף אותו
+                            מהשיחה לפי הרלוונטיות. גישה &quot;פרימיום&quot; תוצג רק למשתמשים רשומים לקורס.
+                          </p>
+                        </div>
+                      ) : form.dataType === 'step' ? (
                         <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-3">
                           <label className="block text-xs font-bold text-emerald-950">שלב</label>
                           {stepsLoading ? (

@@ -18,7 +18,7 @@ const MAX_BODY_CHARS = 400_000;
 
 const listQuerySchema = z.object({
   q: z.string().max(200).optional(),
-  dataType: z.enum(['step', 'course']).optional(),
+  dataType: z.enum(['step', 'course', 'principle']).optional(),
   stepId: z.string().uuid().optional(),
   courseId: z.string().max(200).optional(),
   page: z.coerce.number().int().min(1).default(1),
@@ -29,7 +29,7 @@ const createBodySchema = z
   .object({
     title: z.string().max(300).default(''),
     body: z.string().min(1).max(MAX_BODY_CHARS),
-    dataType: z.enum(['step', 'course']),
+    dataType: z.enum(['step', 'course', 'principle']),
     accessLevel: z.enum(['public', 'premium']),
     courseId: z.string().min(1).max(200).optional(),
     stepId: z.string().uuid().optional(),
