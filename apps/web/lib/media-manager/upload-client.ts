@@ -183,7 +183,7 @@ export async function importStockImageAsAsset(params: {
   credit: MediaCredit;
   onProgress: (p: UploadProgress) => void;
 }): Promise<Record<string, unknown>> {
-  onProgress({ phase: 'transcoding', percent: 5, message: 'מוריד תמונה…' });
+  params.onProgress({ phase: 'transcoding', percent: 5, message: 'מוריד תמונה…' });
   const proxyRes = await fetch(
     `/api/v1/admin/stock-images/proxy?url=${encodeURIComponent(params.downloadUrl)}`,
     { credentials: 'include' }
