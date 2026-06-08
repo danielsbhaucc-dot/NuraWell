@@ -134,6 +134,11 @@ const chatBodySchema = z.object({
   user_id: z.string().uuid().optional(),
   /** מזהה התראה — מזריק הקשר כשהמשתמש עונה מהתראה */
   notification_id: z.string().uuid().optional(),
+  /**
+   * בורר מודל להשוואה (אופציונלי). ברירת מחדל: אלמוג (Qwen). מאפשר למשתמש
+   * לבחור מודל אחר *לאותה בקשה* בלבד כדי להשוות איכות — הכל דרך OpenRouter.
+   */
+  model: z.enum(['almog', 'llama4', 'gpt', 'claude']).optional(),
 });
 
 /**
@@ -244,13 +249,11 @@ const CHAT_ROUTER_MODEL =
 const CHAT_SAFETY_NET_MODEL = process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() || CHAT_ROUTER_MODEL;
 
 /**
- * `reasoningEffort` הוא פרמטר ספציפי ל-OpenAI. כשמריצים מודל לא-OpenAI
- * (למשל Claude) דרך OpenRouter — אסור לשלוח אותו, אז ה-flag הזה מגדר
- * האם להזריק את providerOptions.openai בכלל.
+ * הערה: דגלים כמו isOpenAI / requiresPiiShield / isQwen / supportsPromptCache /
+ * useReasoning / useLeanPrompt נגזרים *פר-בקשה* ב-`resolveChatModelRuntime`,
+ * כי בורר ההשוואה יכול להריץ מודלים שונים לכל הודעה. כאן נשארים רק הדגלים
+ * הגלובליים (env) שמשותפים לכל המודלים.
  */
-const CHAT_MODEL_IS_OPENAI = CHAT_MODEL.startsWith('openai/');
-/** מודלים סיניים (Qwen) — חייבים PII Shield לפני שליחה */
-const CHAT_MODEL_REQUIRES_PII_SHIELD = CHAT_MODEL.startsWith('qwen/') || CHAT_MODEL.includes('qwen3');
 /**
  * Qwen3.x הוא מודל *hybrid-thinking*: ברירת המחדל שלו (כשמשתמשים בו ישירות)
  * כוללת מצב חשיבה, אבל דרך OpenRouter חייבים להפעיל אותו מפורשות עם השדה
@@ -258,39 +261,23 @@ const CHAT_MODEL_REQUIRES_PII_SHIELD = CHAT_MODEL.startsWith('qwen/') || CHAT_MO
  * הפער ש"מדהים אצל המקור, חלש בפרויקט". מפעילים רק ל-Qwen (Llama 4 אינו מודל
  * חושב). כיבוי: `AI_CHAT_REASONING=off`.
  */
-const CHAT_MODEL_IS_QWEN = CHAT_MODEL.toLowerCase().includes('qwen');
 /**
- * reasoning *פעיל* כברירת מחדל ל-Qwen: Qwen3.x הוא hybrid-thinking ובמקור
+ * reasoning *פעיל* כברירת מחדל (ל-Qwen): Qwen3.x הוא hybrid-thinking ובמקור
  * (אפליקציות Qwen/GPT) הוא חושב לפני שעונה — זה מקור האיכות והאינטליגנציה
  * הרגשית. בלי זה האיכות צונחת ("מדהים במקור, חלש בפרויקט"). העלות: TTFB ארוך
  * יותר — לכן יש אינדיקטור סטטוס חי בצ'אט שממלא את ההמתנה. כיבוי: `AI_CHAT_REASONING=off`.
+ * הדגל הסופי `useReasoning` נגזר פר-מודל ב-`resolveChatModelRuntime`.
  */
 const CHAT_REASONING_ENABLED =
   (process.env.AI_CHAT_REASONING?.trim() || 'on').toLowerCase() === 'on';
-const CHAT_USE_REASONING = CHAT_REASONING_ENABLED && CHAT_MODEL_IS_QWEN;
 /**
  * פרומפט רזה לכותב הראשי כש-Qwen פעיל: הפרומפט המלא נבנה לאלף מודלים זולים
  * (Llama) ומשטח דווקא את Qwen (רובוטי/מועתק/גנרי). הרזה שומר קול + חוקים
- * קריטיים בלבד. ברירת מחדל: on ל-Qwen. כיבוי: `AI_CHAT_LEAN_PROMPT=off`.
+ * קריטיים בלבד. ברירת מחדל: on. כיבוי: `AI_CHAT_LEAN_PROMPT=off`.
+ * הדגל הסופי `useLeanPrompt` נגזר פר-מודל ב-`resolveChatModelRuntime`.
  */
 const CHAT_LEAN_PROMPT_ENABLED =
   (process.env.AI_CHAT_LEAN_PROMPT?.trim() || 'on').toLowerCase() !== 'off';
-const CHAT_USE_LEAN_PROMPT = CHAT_LEAN_PROMPT_ENABLED && CHAT_MODEL_IS_QWEN;
-/**
- * הפרומפט הסטטי לכותב הראשי. Llama/קלוד (fallback וכותב זול) ממשיכים לקבל
- * את הפרומפט המלא — הם זקוקים לחוקים הקונקרטיים. רק Qwen מקבל את הרזה.
- */
-const MAIN_WRITER_SYSTEM_PROMPT = CHAT_USE_LEAN_PROMPT
-  ? NURAWELL_CHAT_SYSTEM_PROMPT_LEAN
-  : BASE_SYSTEM_PROMPT;
-/**
- * Guardrail סוגר: Qwen (מצב רזה) מקבל גרסה רכה של שורה אחת במקום הצ'קליסט
- * הכבד — הצ'קליסט המלא נבנה לאלף Llama, ועל Qwen הוא משטח את הקול לרובוטי.
- * Llama/קלוד ממשיכים לקבל את המלא.
- */
-const FINAL_GUARDRAILS_FOR_WRITER = CHAT_USE_LEAN_PROMPT
-  ? ALMOG_CHAT_FINAL_GUARDRAILS_LEAN
-  : ALMOG_CHAT_FINAL_GUARDRAILS;
 /**
  * תקציב טוקני חשיבה. ב-OpenRouter טוקני ה-reasoning נספרים *בנפרד* מהתשובה,
  * אבל כדי לא להסתכן בקיצוץ נותנים ל-`reasoning.max_tokens` תקציב משלו ומרחיבים
@@ -306,9 +293,10 @@ const CHAT_REASONING_MAX_TOKENS = (() => {
  * בונה את שדה `reasoning` של OpenRouter (או null אם כבוי/לא רלוונטי).
  * `exclude: true` → המודל חושב פנימית אך לא מחזיר את טוקני החשיבה — אנחנו
  * ממילא לא מציגים אותם, וזה חוסך רוחב-פס ומונע הדלפת "מחשבות" ללקוח.
+ * מקבל `useReasoning` פר-מודל (הבורר יכול להריץ מודל חושב או לא-חושב).
  */
-function buildReasoningParam(): { max_tokens: number; exclude: boolean } | null {
-  if (!CHAT_USE_REASONING) return null;
+function buildReasoningParam(useReasoning: boolean): { max_tokens: number; exclude: boolean } | null {
+  if (!useReasoning) return null;
   return { max_tokens: CHAT_REASONING_MAX_TOKENS, exclude: true };
 }
 /**
@@ -322,8 +310,8 @@ function buildReasoningParam(): { max_tokens: number; exclude: boolean } | null 
  * prompt-cache מפורש, ה-input של Llama זול יותר מ-Claude *עם* קאש. החיסכון
  * המשמעותי בלאו הכי מגיע מ-trivial-bypass (הודעות קצרות → מודל זול עוד יותר)
  * ומחלון ההיסטוריה המוגבל (`AI_CHAT_HISTORY_WINDOW`).
+ * הדגל הסופי `supportsPromptCache` נגזר פר-מודל ב-`resolveChatModelRuntime`.
  */
-const CHAT_MODEL_SUPPORTS_PROMPT_CACHE = CHAT_MODEL.startsWith('anthropic/');
 /**
  * TTL ל-prompt cache. אנתרופיק: כתיבת cache ל-5 דק' עולה ×1.25, ל-1h עולה ×2,
  * וקריאה ×0.1.
@@ -346,6 +334,69 @@ const CHAT_PROMPT_CACHE_TTL = process.env.AI_CHAT_PROMPT_CACHE_TTL?.trim() || '1
  */
 const CHAT_TRIVIAL_BYPASS_ENABLED =
   (process.env.AI_CHAT_TRIVIAL_BYPASS?.trim() || 'on').toLowerCase() !== 'off';
+
+/**
+ * בורר מודלים להשוואה. כל המודלים רצים דרך OpenRouter (מפתח אחד).
+ * 'almog' = ברירת המחדל (Qwen, או מה שהוגדר ב-AI_CHAT_MODEL). השאר —
+ * אופציות השוואה שהמשתמש בוחר ידנית מהצ'אט. ה-slugs ניתנים לכוונון ב-env.
+ */
+type ChatModelKey = 'almog' | 'llama4' | 'gpt' | 'claude';
+
+const CHAT_MODEL_REGISTRY: Record<ChatModelKey, { slug: string; label: string }> = {
+  almog: { slug: CHAT_MODEL, label: 'אלמוג' },
+  llama4: {
+    slug: process.env.AI_CHAT_COMPARE_LLAMA?.trim() || 'meta-llama/llama-4-maverick',
+    label: 'Llama 4',
+  },
+  gpt: {
+    slug: process.env.AI_CHAT_COMPARE_GPT?.trim() || 'openai/gpt-5.3-chat',
+    label: 'GPT-5.3',
+  },
+  claude: {
+    slug: process.env.AI_CHAT_COMPARE_CLAUDE?.trim() || 'anthropic/claude-sonnet-4.6',
+    label: 'Claude 4.6',
+  },
+};
+
+/**
+ * Config פר-מודל שנגזר מה-slug. מאפשר לבורר ההשוואה להריץ כל מודל עם
+ * ההגדרות הנכונות לו (reasoning ל-Qwen, PII-shield ל-Qwen, prompt-cache
+ * ל-Claude, פרומפט מלא vs רזה) בלי קבועים גלובליים שמניחים מודל יחיד.
+ */
+type ChatModelRuntime = {
+  slug: string;
+  isOpenAI: boolean;
+  isQwen: boolean;
+  requiresPiiShield: boolean;
+  supportsPromptCache: boolean;
+  useReasoning: boolean;
+  useLeanPrompt: boolean;
+  mainWriterSystemPrompt: string;
+  finalGuardrails: string;
+};
+
+function resolveChatModelRuntime(modelKey: ChatModelKey | undefined): ChatModelRuntime {
+  const slug = CHAT_MODEL_REGISTRY[modelKey ?? 'almog']?.slug ?? CHAT_MODEL;
+  const isOpenAI = slug.startsWith('openai/');
+  const isQwen = slug.toLowerCase().includes('qwen');
+  const requiresPiiShield = slug.startsWith('qwen/') || slug.includes('qwen3');
+  const supportsPromptCache = slug.startsWith('anthropic/');
+  // reasoning + פרומפט רזה רלוונטיים ל-Qwen בלבד (התנהגות קיימת).
+  const useReasoning = CHAT_REASONING_ENABLED && isQwen;
+  const useLeanPrompt = CHAT_LEAN_PROMPT_ENABLED && isQwen;
+  return {
+    slug,
+    isOpenAI,
+    isQwen,
+    requiresPiiShield,
+    supportsPromptCache,
+    useReasoning,
+    useLeanPrompt,
+    mainWriterSystemPrompt: useLeanPrompt ? NURAWELL_CHAT_SYSTEM_PROMPT_LEAN : BASE_SYSTEM_PROMPT,
+    finalGuardrails: useLeanPrompt ? ALMOG_CHAT_FINAL_GUARDRAILS_LEAN : ALMOG_CHAT_FINAL_GUARDRAILS,
+  };
+}
+
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 type StreamFinishPayload = {
@@ -403,9 +454,10 @@ function normalizeOpenRouterUsage(raw: unknown): StreamFinishPayload['usage'] {
 function openRouterMessagesWithCachedSystem(
   staticSystemPrompt: string,
   dynamicSystemPrompt: string,
-  recentMessages: TextChatMessage[]
+  recentMessages: TextChatMessage[],
+  supportsPromptCache: boolean
 ) {
-  const staticContent = CHAT_MODEL_SUPPORTS_PROMPT_CACHE
+  const staticContent = supportsPromptCache
     ? [
         {
           type: 'text',
@@ -435,6 +487,8 @@ async function createOpenRouterTextStreamResponse({
   onFinish,
   onEmptyRetry,
   piiShield,
+  reasoning,
+  supportsPromptCache,
 }: {
   apiKey: string;
   referer: string;
@@ -448,6 +502,8 @@ async function createOpenRouterTextStreamResponse({
   onFinish: (payload: StreamFinishPayload) => Promise<void>;
   onEmptyRetry?: () => Promise<string>;
   piiShield?: PiiShield | null;
+  reasoning: { max_tokens: number; exclude: boolean } | null;
+  supportsPromptCache: boolean;
 }) {
   const tokenizedStatic = piiShield ? piiShield.tokenizeText(staticSystemPrompt) : staticSystemPrompt;
   const tokenizedDynamic = piiShield ? piiShield.tokenizeText(dynamicSystemPrompt) : dynamicSystemPrompt;
@@ -455,7 +511,6 @@ async function createOpenRouterTextStreamResponse({
     ? piiShield.tokenizeMessages(recentMessages)
     : recentMessages;
 
-  const reasoning = buildReasoningParam();
   const requestBody = JSON.stringify({
     model,
     temperature,
@@ -469,7 +524,8 @@ async function createOpenRouterTextStreamResponse({
     messages: openRouterMessagesWithCachedSystem(
       tokenizedStatic,
       tokenizedDynamic,
-      tokenizedMessages
+      tokenizedMessages,
+      supportsPromptCache
     ),
   });
 
@@ -653,6 +709,7 @@ async function createOpenRouterCheapTextResponse({
   headers,
   onFinish,
   piiShield,
+  model,
 }: {
   apiKey: string;
   staticSystemPrompt: string;
@@ -663,6 +720,7 @@ async function createOpenRouterCheapTextResponse({
   headers: HeadersInit;
   onFinish: (payload: StreamFinishPayload) => Promise<void>;
   piiShield?: PiiShield | null;
+  model?: string;
 }): Promise<Response> {
   /**
    * הפרומפט המשותף כבר מכיל placeholders של PII (למשל [[USER_FIRST_NAME]]) כשמגן
@@ -683,7 +741,7 @@ async function createOpenRouterCheapTextResponse({
       'X-OpenRouter-Cache': 'false',
     },
     body: JSON.stringify({
-      model: CHAT_SAFETY_NET_MODEL,
+      model: model ?? CHAT_SAFETY_NET_MODEL,
       temperature,
       top_p: 0.95,
       seed: randomSamplingSeed(),
@@ -852,7 +910,9 @@ function isLowContextTurn(userMessage: string, signals: ReturnType<typeof detect
     return false;
   }
   if (/[?؟]/.test(t)) return false;
-  if (/\b(?:למה|איך|מה\s+(?:כדאי|אפשר|לעשות|המשימות|נשאר)|תסביר|עזרה|קשה|בעיה)\b/i.test(t)) {
+  // ⚠️ עברית: `\b` של JS לא יוצר גבול-מילה סביב אותיות עבריות, ולכן זיהוי
+  // substring (ללא `\b`) — אחרת שאלות ידע ("למה", "איך") נופלות בטעות ל-low-context.
+  if (/(?:למה|מדוע|איך|כיצד|תסביר|הסבר|עזרה|בעיה|מה\s+(?:כדאי|אפשר|לעשות|המשימות|נשאר|זה))/u.test(t)) {
     return false;
   }
 
@@ -959,17 +1019,6 @@ const chatContextRouterSchema = z.object({
 
 type ChatContextDecision = z.infer<typeof chatContextRouterSchema>;
 
-function fallbackContextDecision(reason: string): ChatContextDecision {
-  return {
-    heavy_context: true,
-    needs_user_memory_rag: false,
-    needs_system_knowledge_rag: false,
-    needs_full_progress_report: false,
-    needs_journey_knowledge: false,
-    reason,
-  };
-}
-
 function lowContextDecision(reason: string): ChatContextDecision {
   return {
     heavy_context: false,
@@ -981,9 +1030,94 @@ function lowContextDecision(reason: string): ChatContextDecision {
   };
 }
 
+/**
+ * זיהוי דטרמיניסטי בעברית של תור "שאלה" ו"בקשת ידע". משמש לשתי מטרות:
+ *  1. fallback כשהנתב הזול נכשל/חרג מ-timeout — במקום להחזיר "בלי RAG" (שגרם
+ *     לתשובות גנריות על שאלות ידע כמו "למה לשתות מים"), מזהים את כוונת השאלה
+ *     ומפעילים RAG בהתאם.
+ *  2. augmentation של החלטת הנתב — גם אם הנתב ענה אבל פספס דגל RAG, ה-OR-merge
+ *     מבטיח שלא נאבד שליפת ידע/זיכרון על שאלה ברורה.
+ *
+ * ⚠️ עברית ו-`\b`: גבול-מילה של JS לא עובד על עברית, ולכן הזיהוי כאן מבוסס
+ * substring (ללא `\b`) ומכסה תחיliות (ה/ב/ל/מ/ש/ו) של מילות שאלה נפוצות.
+ */
+const ROUTER_QUESTION_RE =
+  /[?？؟]|(?:^|\s|ו)(?:למה|מדוע|איך|כיצד|האם|מה\s|מהו|מהי|מהם|כדאי|עדיף|מתי|כמה|איזה|איזו|מאיפה|מניין)/u;
+const ROUTER_KNOWLEDGE_RE =
+  /(?:למה|מדוע|איך|כיצד|מהו|מהי|כדאי|עדיף|חשוב|מומלץ|משפיע|השפעה|מועיל|בריא|מזיק|תסביר|הסבר|הבדל|יתרון|חיסרון|תפקיד|למה\s+ש)/u;
+
+function heuristicContextDecision(
+  userMessage: string,
+  signals: ReturnType<typeof detectChatSignals>,
+  reason: string,
+  opts?: { forceHeavy?: boolean }
+): ChatContextDecision {
+  const t = normalizeLine(userMessage);
+  const isQuestion = ROUTER_QUESTION_RE.test(t);
+  const knowledge = ROUTER_KNOWLEDGE_RE.test(t);
+  return {
+    heavy_context:
+      Boolean(opts?.forceHeavy) ||
+      isQuestion ||
+      knowledge ||
+      signals.blocker_mentioned ||
+      Boolean(signals.emotional_hint),
+    needs_user_memory_rag: isQuestion || knowledge,
+    needs_system_knowledge_rag: knowledge,
+    needs_full_progress_report: false,
+    needs_journey_knowledge: knowledge,
+    reason,
+  };
+}
+
+function mergeContextDecisions(
+  base: ChatContextDecision,
+  extra: ChatContextDecision
+): ChatContextDecision {
+  return {
+    heavy_context: base.heavy_context || extra.heavy_context,
+    needs_user_memory_rag: base.needs_user_memory_rag || extra.needs_user_memory_rag,
+    needs_system_knowledge_rag:
+      base.needs_system_knowledge_rag || extra.needs_system_knowledge_rag,
+    needs_full_progress_report:
+      base.needs_full_progress_report || extra.needs_full_progress_report,
+    needs_journey_knowledge: base.needs_journey_knowledge || extra.needs_journey_knowledge,
+    reason: base.reason,
+    summary: base.summary,
+  };
+}
+
+/**
+ * תקציר 2 התורים האחרונים (לפני ההודעה הנוכחית) לנתב ההקשר. בלי זה הנתב
+ * "עיוור" להמשכי שיחה: "איך נתקדם בתוכנית?" אחרי שהמשתמש פירט יום עמוס נראה
+ * כמו פתיחה חדשה, והנתב מפספס שצריך הקשר מסע/זיכרון. עם תקציר קצר הוא מבין
+ * שזו שאלת-המשך וקובע heavy_context + RAG נכון.
+ */
+function buildRouterHistorySnippet(messages: unknown[]): string {
+  const turns: string[] = [];
+  for (let i = messages.length - 2; i >= 0 && turns.length < 4; i -= 1) {
+    const m = messages[i];
+    const role = uiMessageRole(m);
+    if (role !== 'user' && role !== 'assistant') continue;
+    const text = normalizeLine(uiMessageText(m)).slice(0, 220);
+    if (!text) continue;
+    turns.unshift(`${role === 'user' ? 'משתמש' : 'אלמוג'}: ${text}`);
+  }
+  return turns.join('\n');
+}
+
+const CHAT_ROUTER_TIMEOUT_MS = (() => {
+  const raw = process.env.AI_CHAT_ROUTER_TIMEOUT_MS?.trim();
+  const n = raw ? Number(raw) : NaN;
+  // 2000ms: 1200 היה צר מדי ל-Llama scout ונפל ל-fallback תכופות (תשובות
+  // גנריות בלי RAG). 2s נותן מרווח אמין, וה-heuristic מכסה גם אם בכל זאת ייפול.
+  return Number.isFinite(n) && n >= 600 && n <= 6000 ? Math.floor(n) : 2000;
+})();
+
 function buildChatContextRouterPrompt(
   userMessage: string,
-  signals: ReturnType<typeof detectChatSignals>
+  signals: ReturnType<typeof detectChatSignals>,
+  historySnippet: string
 ): string {
   const signalParts = [
     signals.blocker_mentioned ? `blocker=${signals.main_blocker ?? 'yes'}` : '',
@@ -992,25 +1126,31 @@ function buildChatContextRouterPrompt(
     signals.daily_availability_low_requested ? 'availability_low=true' : '',
   ].filter(Boolean);
 
+  const historyBlock = historySnippet
+    ? `\nשיחה קודמת (הקשר — ההודעה החדשה היא לרוב המשך שלה):\n${historySnippet}\n`
+    : '';
+
   return `אתה נתב הקשר זול ומהיר לצ'אט מנטור בריאות בעברית.
-המטרה: לחסוך טוקנים בלי לפגוע באיכות. המודל הראשי ינסח את התשובה הסופית.
+המטרה: להחליט איזה הקשר באמת צריך כדי שהמודל הראשי ייתן תשובה מצוינת. איכות לפני חיסכון.
 
-החלטה שמרנית:
-- אם יש קושי רגשי, חסם, שאלה משמעותית, חזרה אחרי היעדרות, התלבטות, או צורך להבין מסע/ידע/זיכרון -> heavy_context=true.
-- אם זו הודעה קצרה וברורה של ביצוע/תודה/אישור בלבד -> heavy_context=false.
-- אם אתה לא בטוח -> heavy_context=true.
+⚠️ קרא את ההודעה ביחס לשיחה הקודמת. הודעות קצרות הן לרוב *המשך* ("איך נתקדם?", "ולמה זה?", "שאלתי על X") — פענח את הכוונה האמיתית מההקשר, לא רק מהמילים.
 
-הגדר needs:
-- needs_user_memory_rag: צריך זיכרון אישי ארוך טווח.
-- needs_system_knowledge_rag: שאלה על תכני מסע/ידע מקצועי.
-- needs_full_progress_report: צריך דפוסים רב-יומיים/היסטוריית ביצועים.
-- needs_journey_knowledge: צריך להבין צעד/תחנה/גישה למסע.
+החלטה:
+- שאלה כלשהי (גם קצרה/המשך), קושי רגשי, חסם, התלבטות, חזרה אחרי היעדרות, או צורך בידע/מסע/זיכרון -> heavy_context=true.
+- הודעה קצרה וברורה של ביצוע/תודה/אישור בלבד -> heavy_context=false.
+- בספק -> heavy_context=true.
+
+הגדר needs (היה נדיב כשזו שאלה אמיתית — עדיף לשלוף מדי מאשר לענות גנרי):
+- needs_user_memory_rag: שאלה אישית/"מה אתה יודע עליי"/רגש/דפוס אישי.
+- needs_system_knowledge_rag: שאלת ידע/"למה"/"איך"/"כדאי" על בריאות/תזונה/הרגלים/תוכן מהמסע. (למשל "למה לשתות מים לפני האוכל" -> true)
+- needs_full_progress_report: דפוסים רב-יומיים/היסטוריית ביצועים.
+- needs_journey_knowledge: להבין צעד/תחנה/גישה/תוכנית מהמסע. (למשל "איך נתקדם בתוכנית" -> true)
 
 החזר JSON בלבד:
 {"heavy_context":true/false,"needs_user_memory_rag":true/false,"needs_system_knowledge_rag":true/false,"needs_full_progress_report":true/false,"needs_journey_knowledge":true/false,"reason":"קצר","summary":"סיכום קצר לקלוד או null"}
 
-אותות regex: ${signalParts.join(', ') || 'none'}
-הודעת משתמש:
+אותות regex: ${signalParts.join(', ') || 'none'}${historyBlock}
+הודעת משתמש (חדשה):
 ${userMessage.slice(0, 1200)}`;
 }
 
@@ -1026,6 +1166,7 @@ async function attemptContextRoute(opts: {
   timeoutMs: number;
   userMessage: string;
   signals: ReturnType<typeof detectChatSignals>;
+  historySnippet: string;
   debugId: string;
   provider: 'openrouter';
 }): Promise<ChatContextDecision | null> {
@@ -1050,7 +1191,14 @@ async function attemptContextRoute(opts: {
             content:
               'אתה מחזיר JSON תקין בלבד. אתה נתב הקשר שמרני: בספק בוחר heavy_context=true.',
           },
-          { role: 'user', content: buildChatContextRouterPrompt(opts.userMessage, opts.signals) },
+          {
+            role: 'user',
+            content: buildChatContextRouterPrompt(
+              opts.userMessage,
+              opts.signals,
+              opts.historySnippet
+            ),
+          },
         ],
       }),
       signal: controller.signal,
@@ -1088,23 +1236,41 @@ async function attemptContextRoute(opts: {
 async function routeChatContextWithCheapModel(
   userMessage: string,
   signals: ReturnType<typeof detectChatSignals>,
-  debugId: string
+  debugId: string,
+  historySnippet: string
 ): Promise<ChatContextDecision> {
   const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
-  if (!openrouterKey) return fallbackContextDecision('openrouter_key_missing');
+  if (!openrouterKey) {
+    // בלי מפתח אין נתב — אבל עדיין מזהים שאלות/ידע דטרמיניסטית כדי לא לאבד RAG.
+    return heuristicContextDecision(userMessage, signals, 'openrouter_key_missing_heuristic', {
+      forceHeavy: true,
+    });
+  }
 
   const orDecision = await attemptContextRoute({
     endpoint: 'https://openrouter.ai/api/v1/chat/completions',
     apiKey: openrouterKey,
     model: CHAT_ROUTER_MODEL,
     extraHeaders: { 'HTTP-Referer': publicAppUrlForAiReferer(), 'X-Title': 'NuraWell' },
-    timeoutMs: 1_200,
+    timeoutMs: CHAT_ROUTER_TIMEOUT_MS,
     userMessage,
     signals,
+    historySnippet,
     debugId,
     provider: 'openrouter',
   });
-  return orDecision ?? fallbackContextDecision('cheap_router_all_providers_failed');
+  // נכשל/timeout: במקום "בלי RAG" (שגרם לתשובות גנריות) — fallback היוריסטי
+  // שמזהה שאלות/ידע ומפעיל שליפה בהתאם.
+  if (!orDecision) {
+    return heuristicContextDecision(userMessage, signals, 'cheap_router_failed_heuristic', {
+      forceHeavy: true,
+    });
+  }
+  // הצליח: OR-merge עם ההיוריסטיקה כדי לא לאבד שליפה על שאלה ברורה שהנתב פספס.
+  return mergeContextDecisions(
+    orDecision,
+    heuristicContextDecision(userMessage, signals, orDecision.reason ?? 'router')
+  );
 }
 
 function formatChatSummaryPromptBlock(summary: unknown): string | null {
@@ -1759,6 +1925,17 @@ export async function POST(request: Request) {
   stage = 'body_ok';
 
   const { messages, user_id: bodyUserId } = parsed.data;
+
+  /**
+   * בורר מודלים: ברירת מחדל = אלמוג (Qwen). אם המשתמש בחר מודל אחר להשוואה,
+   * מריצים אותו *לבקשה הזו בלבד* עם ה-config הנכון לו (reasoning/PII/cache/פרומפט).
+   */
+  const mcfg = resolveChatModelRuntime(parsed.data.model);
+  const effectiveModel = mcfg.slug;
+  // כשנבחר מודל השוואה מפורש — לא עוקפים לכותב הזול, כדי שהמודל הנבחר באמת יכתוב.
+  const explicitCompareModel = Boolean(parsed.data.model && parsed.data.model !== 'almog');
+  const reasoningParam = buildReasoningParam(mcfg.useReasoning);
+
   if (bodyUserId && bodyUserId !== user.id) {
     console.error('[ai/chat]', { debug_id: debugId, stage: 'user_mismatch', body_user_id: bodyUserId, session_user_id: user.id });
     return new Response(JSON.stringify({ error: 'Forbidden: user_id does not match session' }), { status: 403 });
@@ -1776,12 +1953,19 @@ export async function POST(request: Request) {
   const earlySignals = detectChatSignals(lastUserText);
   const trivialBypass =
     CHAT_TRIVIAL_BYPASS_ENABLED &&
+    !explicitCompareModel &&
     isTrivialBypassEligible(lastUserText, earlySignals);
+  const routerHistorySnippet = buildRouterHistorySnippet(messages);
   let contextDecision = trivialBypass
     ? lowContextDecision('trivial_bypass')
     : isLowContextTurn(lastUserText, earlySignals)
       ? lowContextDecision('deterministic_low_context')
-      : await routeChatContextWithCheapModel(lastUserText, earlySignals, debugId);
+      : await routeChatContextWithCheapModel(
+          lastUserText,
+          earlySignals,
+          debugId,
+          routerHistorySnippet
+        );
 
   /**
    * עקיפה דטרמיניסטית: בקשת סיכום/ידע על שיעור — מאלצים שליפת חומר עזר מהמסע
@@ -1851,7 +2035,7 @@ export async function POST(request: Request) {
     session_id: sessionId,
     role: 'user',
     content: lastUserText,
-    model_name: CHAT_MODEL,
+    model_name: effectiveModel,
     metadata: {
       edge: true,
       heavy_context: useHeavyContext,
@@ -2007,7 +2191,7 @@ export async function POST(request: Request) {
 
   try {
     const firstName = extractFirstName(profileFullName);
-    const piiShield = CHAT_MODEL_REQUIRES_PII_SHIELD
+    const piiShield = mcfg.requiresPiiShield
       ? createPiiShield({
           full_name: profileFullName,
           phone: profileRow.phone,
@@ -2187,7 +2371,7 @@ export async function POST(request: Request) {
      * - מדלגים על חוקי-קצב נוטיפיקציה (habit checkpoint) שלא רלוונטיים לצ'אט חי.
      * Llama/קלוד (לא רזה) ממשיכים לקבל את הכל.
      */
-    const leanContext = CHAT_USE_LEAN_PROMPT;
+    const leanContext = mcfg.useLeanPrompt;
     /**
      * ניתוב חכם: בתור "קל" (הנתב הזול קבע heavy_context=false) במצב רזה —
      * שולחים לספק רק את ההכרחי. מדלגים על שכבות זיכרון/פרופיל כבדות וכפולות
@@ -2299,12 +2483,12 @@ export async function POST(request: Request) {
       '— פנייה אישית —',
       addressingFooter,
       '',
-      FINAL_GUARDRAILS_FOR_WRITER,
+      mcfg.finalGuardrails,
     ]
       .filter((s) => s !== null && s !== undefined)
       .join('\n');
-    // הכותב הראשי (Qwen) מקבל את הפרומפט הרזה; משמש גם ל-empty-retry שלו.
-    const systemPromptWithMemory = `${MAIN_WRITER_SYSTEM_PROMPT}\n\n${dynamicSystemPrompt}`;
+    // הכותב הראשי מקבל את הפרומפט המתאים למודל; משמש גם ל-empty-retry שלו.
+    const systemPromptWithMemory = `${mcfg.mainWriterSystemPrompt}\n\n${dynamicSystemPrompt}`;
 
     stage = 'stream_init';
     /**
@@ -2329,7 +2513,7 @@ export async function POST(request: Request) {
         needs_system_knowledge_rag: contextDecision.needs_system_knowledge_rag,
         needs_full_progress_report: contextDecision.needs_full_progress_report,
         needs_journey_knowledge: contextDecision.needs_journey_knowledge,
-        prompt_cache_enabled: CHAT_MODEL_SUPPORTS_PROMPT_CACHE,
+        prompt_cache_enabled: mcfg.supportsPromptCache,
       });
     } else {
       console.info('[ai/chat]', {
@@ -2337,7 +2521,7 @@ export async function POST(request: Request) {
         stage: 'system_prompt_size',
         chars: systemPromptCharCount,
         history_msgs: recentMessages.length,
-        prompt_cache_enabled: CHAT_MODEL_SUPPORTS_PROMPT_CACHE,
+        prompt_cache_enabled: mcfg.supportsPromptCache,
         heavy_context: useHeavyContext,
         context_router_reason: contextDecision.reason,
         needs_user_memory_rag: contextDecision.needs_user_memory_rag,
@@ -2347,7 +2531,7 @@ export async function POST(request: Request) {
       });
     }
 
-    let assistantModelName = CHAT_MODEL;
+    let assistantModelName = effectiveModel;
     let safetyNetUsed = false;
 
     const handleChatFinish = async ({ text, usage, finishReason }: StreamFinishPayload) => {
@@ -2359,10 +2543,10 @@ export async function POST(request: Request) {
           try {
             const runCont = async (partialAssistant: string) => {
               const out = await generateText({
-                model: openrouter.chat(CHAT_MODEL),
+                model: openrouter.chat(effectiveModel),
                 temperature: 0.65,
                 maxOutputTokens: 160,
-                providerOptions: CHAT_MODEL_IS_OPENAI ? { openai: { reasoningEffort: 'low' } } : {},
+                providerOptions: mcfg.isOpenAI ? { openai: { reasoningEffort: 'low' } } : {},
                 messages: [
                   {
                     role: 'user',
@@ -2714,7 +2898,7 @@ export async function POST(request: Request) {
       stage,
       elapsed_ms: Date.now() - startedAt,
       session_id: sessionId,
-      model: CHAT_MODEL,
+      model: effectiveModel,
     });
 
     const upstreamHeaders = {
@@ -2733,21 +2917,23 @@ export async function POST(request: Request) {
       createOpenRouterTextStreamResponse({
         apiKey: openrouterKey,
         referer: publicAppUrlForAiReferer(),
-        model: CHAT_MODEL,
-        staticSystemPrompt: MAIN_WRITER_SYSTEM_PROMPT,
+        model: effectiveModel,
+        staticSystemPrompt: mcfg.mainWriterSystemPrompt,
         dynamicSystemPrompt,
         recentMessages,
         temperature: CHAT_TEMPERATURE,
         maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
         headers: upstreamHeaders,
         piiShield,
+        reasoning: reasoningParam,
+        supportsPromptCache: mcfg.supportsPromptCache,
         onEmptyRetry: async () => {
           try {
             const retry = await generateText({
-              model: openrouter.chat(CHAT_MODEL),
+              model: openrouter.chat(effectiveModel),
               temperature: Math.max(0.75, CHAT_TEMPERATURE - 0.1),
               maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 360),
-              providerOptions: CHAT_MODEL_IS_OPENAI
+              providerOptions: mcfg.isOpenAI
                 ? { openai: { reasoningEffort: 'low' } }
                 : {},
               system: piiShield
@@ -2791,7 +2977,7 @@ export async function POST(request: Request) {
         upstream = await createOpenRouterCheapTextResponse({
           apiKey: cheapWriterKey,
           // קול עקבי גם בעוקף-הזול (תודה/אישור קצר).
-          staticSystemPrompt: MAIN_WRITER_SYSTEM_PROMPT,
+          staticSystemPrompt: mcfg.mainWriterSystemPrompt,
           dynamicSystemPrompt,
           recentMessages,
           temperature: Math.max(0.75, CHAT_TEMPERATURE - 0.1),
@@ -2814,7 +3000,7 @@ export async function POST(request: Request) {
           stage: 'trivial_bypass_failed_using_claude',
           error: bypassErr instanceof Error ? bypassErr.message : String(bypassErr),
         });
-        assistantModelName = CHAT_MODEL;
+        assistantModelName = effectiveModel;
         upstream = await runClaudeWriter();
       }
     } else {
@@ -2824,7 +3010,7 @@ export async function POST(request: Request) {
         console.warn('[ai/chat]', {
           debug_id: debugId,
           stage: 'primary_writer_failed_using_safety_net',
-          model: CHAT_MODEL,
+          model: effectiveModel,
           safety_model: CHAT_SAFETY_NET_MODEL,
           error: primaryErr instanceof Error ? primaryErr.message : String(primaryErr),
         });
@@ -2834,7 +3020,7 @@ export async function POST(request: Request) {
           apiKey: cheapWriterKey,
           // קול עקבי: גם הגיבוי מדבר בקול הרזה של אלמוג, לא בפרומפט הכבד
           // שגורם ל"גיבוי גנרי ממודל אחר" שמרגיש שונה לגמרי.
-          staticSystemPrompt: MAIN_WRITER_SYSTEM_PROMPT,
+          staticSystemPrompt: mcfg.mainWriterSystemPrompt,
           dynamicSystemPrompt,
           recentMessages,
           temperature: Math.max(0.8, CHAT_TEMPERATURE - 0.05),

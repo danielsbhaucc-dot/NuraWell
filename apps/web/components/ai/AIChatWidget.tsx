@@ -14,6 +14,19 @@ import {
 } from '../../lib/notifications/open-almog-chat';
 
 const SESSION_STORAGE_KEY = 'nurawell_almog_chat_session';
+const MODEL_STORAGE_KEY = 'nurawell_almog_chat_model';
+
+/**
+ * בורר מודלים להשוואה. 'almog' = ברירת המחדל (Qwen, הקול של אלמוג). השאר —
+ * אופציות השוואה שרצות דרך OpenRouter, לאותה שיחה, כדי לבדוק איכות.
+ */
+type ChatModelKey = 'almog' | 'llama4' | 'gpt' | 'claude';
+const CHAT_MODEL_OPTIONS: ReadonlyArray<{ key: ChatModelKey; label: string }> = [
+  { key: 'almog', label: 'אלמוג' },
+  { key: 'llama4', label: 'Llama 4' },
+  { key: 'gpt', label: 'GPT-5.3' },
+  { key: 'claude', label: 'Claude 4.6' },
+];
 
 const MICRO_WIN_QUICK_STARTERS = [
   {
@@ -153,19 +166,34 @@ function renderInlineStyledText(text: string): ReactNode[] {
       if (isStrong || isEmphasis) {
         const clean = token.replace(/^(\*\*|__|\*)/, '').replace(/(\*\*|__|\*)$/, '').trim();
         if (!clean) return <Fragment key={`txt-${index}`}>{token}</Fragment>;
+        if (isStrong) {
+          // הדגשה חזקה: "מרקר" עדין עם קו-תחתון מואר וזוהר רך — בולט נקי בלי קופסה כבדה.
+          return (
+            <span
+              key={`hl-${index}`}
+              className="mx-[1px] rounded-[5px] px-1 font-extrabold"
+              style={{
+                color: '#ffffff',
+                background:
+                  'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.16) 55%, rgba(255,255,255,0.04) 100%)',
+                boxShadow:
+                  'inset 0 -0.5em 0 rgba(255,255,255,0.14), 0 1px 0 rgba(255,255,255,0.25)',
+                textShadow: '0 1px 2px rgba(2,6,23,0.25)',
+              }}
+            >
+              {clean}
+            </span>
+          );
+        }
+        // הדגשה רכה: משקל בינוני + קו-תחתון דק כמו סימון עט, בלי רקע.
         return (
           <span
             key={`hl-${index}`}
-            className={`mx-0.5 rounded-md px-1.5 py-0.5 ${isStrong ? 'font-bold' : 'font-semibold'}`}
+            className="font-semibold"
             style={{
-              background: isStrong
-                ? 'linear-gradient(145deg, rgba(255,255,255,0.20), rgba(255,255,255,0.10))'
-                : 'linear-gradient(145deg, rgba(255,255,255,0.13), rgba(255,255,255,0.06))',
               color: '#ffffff',
-              border: '1px solid rgba(255,255,255,0.22)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)',
-              backdropFilter: 'blur(2px)',
-              WebkitBackdropFilter: 'blur(2px)',
+              borderBottom: '1.5px solid rgba(255,255,255,0.4)',
+              paddingBottom: '0.5px',
             }}
           >
             {clean}
@@ -312,6 +340,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const [input, setInput] = useState('');
   const [typingStep, setTypingStep] = useState(0);
   const [statusIdx, setStatusIdx] = useState(0);
+  const [selectedModel, setSelectedModel] = useState<ChatModelKey>('almog');
+  const selectedModelRef = useRef<ChatModelKey>('almog');
   const [notificationContext, setNotificationContext] = useState<OpenAlmogChatDetail | null>(null);
   const [quotedReply, setQuotedReply] = useState<{ mentorMessage: string; userReply: string } | null>(
     null
@@ -329,6 +359,18 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     try {
       const s = sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (s) sessionIdRef.current = s;
+    } catch {
+      /* */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const m = localStorage.getItem(MODEL_STORAGE_KEY) as ChatModelKey | null;
+      if (m && CHAT_MODEL_OPTIONS.some((o) => o.key === m)) {
+        setSelectedModel(m);
+        selectedModelRef.current = m;
+      }
     } catch {
       /* */
     }
@@ -416,6 +458,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
         user_id: userId,
         session_id: sessionIdRef.current ?? undefined,
         notification_id: notificationIdRef.current ?? undefined,
+        model: selectedModelRef.current,
       }),
     }),
   });
@@ -436,6 +479,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
           user_id: userId,
           session_id: sessionIdRef.current ?? undefined,
           notification_id: replyNotificationId ?? undefined,
+          model: selectedModelRef.current,
         },
       }
     );
@@ -573,6 +617,50 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 >
                   <X className="h-5 w-5" />
                 </button>
+              </div>
+            </div>
+
+            <div className="shrink-0 border-b border-white/10 bg-slate-900/60 px-3 py-2 backdrop-blur-xl">
+              <div className="flex items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                <span className="shrink-0 text-[10px] font-semibold text-white/40">מודל</span>
+                {CHAT_MODEL_OPTIONS.map((opt) => {
+                  const active = selectedModel === opt.key;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      disabled={isLoading}
+                      onClick={() => {
+                        setSelectedModel(opt.key);
+                        selectedModelRef.current = opt.key;
+                        try {
+                          localStorage.setItem(MODEL_STORAGE_KEY, opt.key);
+                        } catch {
+                          /* */
+                        }
+                      }}
+                      className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold transition disabled:opacity-50 ${
+                        active
+                          ? 'text-white shadow-sm'
+                          : 'text-white/55 hover:text-white/80'
+                      }`}
+                      style={
+                        active
+                          ? {
+                              background: 'linear-gradient(135deg, #047857, #10b981)',
+                              border: '1px solid rgba(16,185,129,0.5)',
+                              boxShadow: '0 4px 12px rgba(16,185,129,0.3)',
+                            }
+                          : {
+                              background: 'rgba(255,255,255,0.05)',
+                              border: '1px solid rgba(255,255,255,0.1)',
+                            }
+                      }
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -715,6 +803,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                             body: {
                               user_id: userId,
                               session_id: sessionIdRef.current ?? undefined,
+                              model: selectedModelRef.current,
                             },
                           }
                         );
@@ -741,6 +830,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                           user_id: userId,
                           session_id: sessionIdRef.current ?? undefined,
                           notification_id: replyNotificationId ?? undefined,
+                          model: selectedModelRef.current,
                         },
                       }
                     );
