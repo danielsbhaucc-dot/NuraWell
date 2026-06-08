@@ -87,9 +87,21 @@ type AiFilledStep = {
     time_seconds: number;
     question: string;
     feedback: string;
+    options?: string[];
+    correct_option_index?: number | null;
+    feedback_correct?: string | null;
+    feedback_incorrect?: string | null;
     auto_resume_seconds: number;
   }>;
 };
+
+/** מינימום פריטים שכל צעד חייב לכלול — נאכף בקוד (לא רק בפרומפט). */
+const MIN_QUIZ_QUESTIONS = 3;
+const MIN_GAME_ITEMS = 3;
+const MIN_ATTENTION_STOPS = 4;
+const MAX_QUIZ_QUESTIONS = 12;
+const MAX_GAME_ITEMS = 12;
+const MAX_ATTENTION_STOPS = 8;
 
 let idCounter = 0;
 function genId(): string {
@@ -358,15 +370,26 @@ function normalizeFilledStep(value: unknown): AiFilledStep {
     .map((s) => {
       const row = s && typeof s === 'object' ? (s as Record<string, unknown>) : {};
       const question = str(row.question, 2000);
-      const feedback = str(row.feedback, 4000);
-      if (!question || !feedback) return null;
+      const feedbackCorrect = str(row.feedback_correct, 4000);
+      const feedbackIncorrect = str(row.feedback_incorrect, 4000);
+      const feedback = str(row.feedback, 4000) || feedbackCorrect;
+      if (!question || (!feedback && !feedbackCorrect && !feedbackIncorrect)) return null;
+      const options = strArray(row.options, 4, 400);
+      const hasOptions = options.length >= 2;
+      const correctIndex = hasOptions
+        ? clampInt(row.correct_option_index, 0, options.length - 1, 0)
+        : null;
       return {
         id: genId(),
         time_seconds: clampInt(row.time_seconds, 0, 24 * 3600, 90),
         question,
         feedback,
+        options: hasOptions ? options : undefined,
+        correct_option_index: correctIndex,
+        feedback_correct: feedbackCorrect || null,
+        feedback_incorrect: feedbackIncorrect || null,
         auto_resume_seconds: clampInt(row.auto_resume_seconds, 3, 120, 10),
-      };
+      } as AiFilledStep['attention_stops'][number];
     })
     .filter((x): x is AiFilledStep['attention_stops'][number] => Boolean(x));
 
@@ -390,6 +413,7 @@ const SYSTEM_PROMPT = `אתה עורך תוכן מקצועי עבור "המסע 
 
 חוקים קריטיים:
 - כתוב הכול בעברית תקנית, חמה ומדויקת, בגוף פנייה למשתמש.
+- סגנון צ'אט: נסח את כל השאלות (הבנה, משחק ונקודות קשב) כאילו מנטור אישי משוחח עם המשתמש — קצר, אישי, חם וזורם, כמו הודעה בצ'אט. הימנע מנוסח "מבחני" יבש.
 - אל תמציא עובדות, מספרים, מחקרים או ציטוטים שלא מופיעים בטקסט המקור.
 - מחקרים (researches): הוסף רק אם הטקסט מזכיר במפורש מחקר/מחקרים אמיתיים עם פרטים. אם אין מחקרים מפורשים בטקסט — החזר מערך ריק []. אל תמציא שמות חוקרים, שנים או כתבי עת.
 - אם הטקסט מכיל רשימת קישורים (URLs) של מחקרים — צור פריט נפרד ב-researches לכל קישור, עם השדה url מלא בקישור המדויק. אל תאחד כמה קישורים לפריט אחד. את שאר שדות המחקר אפשר להשאיר ריקים — המערכת תיכנס לכל קישור ותשלים אותם אוטומטית.
@@ -418,7 +442,7 @@ const SYSTEM_PROMPT = `אתה עורך תוכן מקצועי עבור "המסע 
     { "title": "שם ההרגל", "description": "איך לבצע בפועל (או null)", "emoji": "💪", "frequency": "daily", "weekly_day": 0, "target_days": 14, "meal_timing": "before" }
   ],
   "attention_stops": [
-    { "time_seconds": 90, "question": "שאלת כן/לא קצרה לעצירה במהלך הסרטון", "feedback": "משוב מקצועי קצר אחרי הבחירה", "auto_resume_seconds": 10 }
+    { "time_seconds": 90, "question": "שאלה קצרה בסגנון צ'אט לעצירה במהלך הסרטון", "options": ["אפשרות 1","אפשרות 2","אפשרות 3"], "correct_option_index": 0, "feedback_correct": "משוב חם אחרי תשובה נכונה", "feedback_incorrect": "משוב מעודד ומסביר אחרי תשובה שגויה", "feedback": "משוב כללי קצר", "auto_resume_seconds": 10 }
   ]
 }
 
@@ -433,28 +457,23 @@ const SYSTEM_PROMPT = `אתה עורך תוכן מקצועי עבור "המסע 
   - level_up_after_success_days: ברירת מחדל 7.
   - metric חייב להיות מדיד (כמות, זמן, תדירות וכו').
   - אם אין בסיס לסולם אמין — leveling: null.
-- צור 3-5 שאלות הבנה, 3-5 טענות משחק, 1-3 משימות, 1-2 הרגלים, ו-2-4 נקודות קשב — בהתאם לעושר הטקסט. אם חלק לא רלוונטי, החזר מערך ריק.
+- כמויות חובה (מינימום קשיח — אל תרד מתחת לזה גם אם הטקסט קצר; פרק רעיונות לתת-נקודות כדי להגיע למינימום):
+  - quiz_questions: לפחות 3 שאלות הבנה (רצוי 4-6). לכל שאלה 4 אפשרויות, correct_index והסבר.
+  - game_items: לפחות 3 טענות נכון/לא-נכון (רצוי 4-6), כל אחת עם הסבר.
+  - attention_stops: לפחות 4 נקודות קשב (רצוי 4-6) לאורך הסרטון. לכל נקודה שאלה קצרה בסגנון צ'אט עם 2-4 אפשרויות, correct_option_index, ומשוב מותאם (feedback_correct + feedback_incorrect). פזר את time_seconds לאורך הסרטון (למשל 45, 120, 210, 300...).
+  - tasks: 1-3 משימות. habits: 1-2 הרגלים.
+- ודא ששאלות ההבנה, טענות המשחק ונקודות הקשב אינן חופפות זו לזו — כל אחת בודקת זווית/רעיון אחר מהתוכן.
 - אם אין בטקסט בסיס להתחייבות, החזר commitment: null.`;
 
-async function runFillLLM(
-  sourceText: string,
-  options?: { clarificationAnswers?: Record<string, string>; analysisSummary?: string }
-): Promise<{
-  result: AiFilledStep;
-  model: string;
-  provider: 'openrouter' | 'groq';
-}> {
-  let userContent = `טקסט המקור של הצעד:\n\n${sourceText.slice(0, MAX_SOURCE_CHARS)}`;
-  if (options?.analysisSummary?.trim()) {
-    userContent += `\n\n---\nסיכום ניתוח מהשיחה:\n${options.analysisSummary.trim()}`;
-  }
-  if (options?.clarificationAnswers && Object.keys(options.clarificationAnswers).length > 0) {
-    userContent += `\n\n---\nתשובות חידוד מהמנהל:\n${Object.entries(options.clarificationAnswers)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join('\n')}`;
-  }
-  const user = userContent;
-
+/**
+ * קריאת JSON גנרית למודל עם fallback אוטומטי מ-OpenRouter ל-Groq.
+ * מרכזת את בחירת המודל וה-API כדי לשמש גם את המילוי הראשי וגם את מעבר ההשלמה.
+ */
+async function chatJson(
+  system: string,
+  user: string,
+  opts: { maxTokens: number; temperature: number }
+): Promise<{ content: string; model: string; provider: 'openrouter' | 'groq' }> {
   const openrouterModel = process.env.STEP_AIFILL_MODEL?.trim() || 'meta-llama/llama-4-maverick';
   const groqModel = process.env.STEP_AIFILL_GROQ_MODEL?.trim() || AI_MODELS.background_groq;
   const groqEnabled = Boolean(process.env.GROQ_API_KEY?.trim());
@@ -463,17 +482,16 @@ async function runFillLLM(
     try {
       const completion = await openrouter.chat.completions.create({
         model: openrouterModel,
-        temperature: 0.3,
-        max_tokens: 8000,
+        temperature: opts.temperature,
+        max_tokens: opts.maxTokens,
         response_format: { type: 'json_object' },
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: system },
           { role: 'user', content: user },
         ],
       });
-      const content = completion.choices[0]?.message?.content ?? '{}';
       return {
-        result: normalizeFilledStep(JSON.parse(pickJsonObject(content))),
+        content: completion.choices[0]?.message?.content ?? '{}',
         model: openrouterModel,
         provider: 'openrouter',
       };
@@ -488,20 +506,158 @@ async function runFillLLM(
 
   const completion = await groq.chat.completions.create({
     model: groqModel,
-    temperature: 0.3,
-    max_tokens: 8000,
+    temperature: opts.temperature,
+    max_tokens: opts.maxTokens,
     response_format: { type: 'json_object' },
     messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: system },
       { role: 'user', content: user },
     ],
   });
-  const content = completion.choices[0]?.message?.content ?? '{}';
   return {
-    result: normalizeFilledStep(JSON.parse(pickJsonObject(content))),
+    content: completion.choices[0]?.message?.content ?? '{}',
     model: groqModel,
     provider: 'groq',
   };
+}
+
+function buildSourceUserContent(
+  sourceText: string,
+  options?: { clarificationAnswers?: Record<string, string>; analysisSummary?: string }
+): string {
+  let userContent = `טקסט המקור של הצעד:\n\n${sourceText.slice(0, MAX_SOURCE_CHARS)}`;
+  if (options?.analysisSummary?.trim()) {
+    userContent += `\n\n---\nסיכום ניתוח מהשיחה:\n${options.analysisSummary.trim()}`;
+  }
+  if (options?.clarificationAnswers && Object.keys(options.clarificationAnswers).length > 0) {
+    userContent += `\n\n---\nתשובות חידוד מהמנהל:\n${Object.entries(options.clarificationAnswers)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join('\n')}`;
+  }
+  return userContent;
+}
+
+async function runFillLLM(
+  sourceText: string,
+  options?: { clarificationAnswers?: Record<string, string>; analysisSummary?: string }
+): Promise<{
+  result: AiFilledStep;
+  model: string;
+  provider: 'openrouter' | 'groq';
+}> {
+  const user = buildSourceUserContent(sourceText, options);
+  const { content, model, provider } = await chatJson(SYSTEM_PROMPT, user, {
+    maxTokens: 11000,
+    temperature: 0.3,
+  });
+  return {
+    result: normalizeFilledStep(JSON.parse(pickJsonObject(content))),
+    model,
+    provider,
+  };
+}
+
+const AUGMENT_SYSTEM_PROMPT = `אתה עורך תוכן עבור "המסע שלי" ב-NuraWell. כבר נוצר תוכן ראשוני לצעד, אך חסרים פריטים כדי להגיע למינימום הנדרש.
+המשימה שלך: לייצר *רק* את הפריטים הנוספים החסרים, באיכות גבוהה, מבוססים על טקסט המקור בלבד.
+
+חוקים:
+- כתוב בעברית, בסגנון צ'אט — כאילו מנטור אישי משוחח עם המשתמש: קצר, חם וזורם.
+- אל תמציא עובדות שלא מופיעות בטקסט המקור.
+- אל תחזור על שאלות/טענות/נקודות קשב קיימות (תינתן לך רשימה) — צור חדשות, שונות וזוויות אחרות.
+- כל שאלת הבנה (quiz_questions): 4 אפשרויות, correct_index (0-מבוסס), והסבר קצר.
+- כל טענת משחק (game_items): statement, is_true (true/false), והסבר קצר.
+- כל נקודת קשב (attention_stops): time_seconds, שאלה קצרה בסגנון צ'אט, 2-4 options, correct_option_index, feedback_correct ו-feedback_incorrect, ו-auto_resume_seconds.
+
+החזר אך ורק אובייקט JSON תקין במבנה (ללא טקסט נוסף):
+{
+  "quiz_questions": [ { "question": "...", "options": ["...","...","...","..."], "correct_index": 0, "explanation": "..." } ],
+  "game_items": [ { "statement": "...", "is_true": true, "explanation": "..." } ],
+  "attention_stops": [ { "time_seconds": 120, "question": "...", "options": ["...","..."], "correct_option_index": 0, "feedback_correct": "...", "feedback_incorrect": "...", "auto_resume_seconds": 10 } ]
+}
+החזר רק את הכמויות שהתבקשת. לכל סוג שהתבקשת בו 0 — החזר מערך ריק [].`;
+
+/**
+ * מעבר השלמה ממוקד: אם המילוי הראשי החזיר פחות מהמינימום בשאלות הבנה / משחק /
+ * נקודות קשב — קריאה אחת ממוקדת שמייצרת בדיוק את החסר, בלי לחזור על מה שכבר קיים.
+ */
+async function augmentMissingItems(
+  sourceText: string,
+  step: AiFilledStep,
+  need: { quiz: number; game: number; stops: number },
+  options?: { clarificationAnswers?: Record<string, string>; analysisSummary?: string }
+): Promise<Pick<AiFilledStep, 'quiz_questions' | 'game_items' | 'attention_stops'>> {
+  const existing = {
+    quiz_questions: step.quiz_questions.map((q) => q.question),
+    game_items: step.game_items.map((g) => g.statement),
+    attention_stops: step.attention_stops.map((s) => s.question),
+  };
+
+  let user = buildSourceUserContent(sourceText, options);
+  user += `\n\n---\nצור בדיוק: ${need.quiz} שאלות הבנה, ${need.game} טענות משחק, ${need.stops} נקודות קשב.`;
+  user += `\n\nפריטים שכבר קיימים (אל תחזור עליהם, צור שונים):\n${JSON.stringify(existing)}`;
+
+  const { content } = await chatJson(AUGMENT_SYSTEM_PROMPT, user, {
+    maxTokens: 6000,
+    temperature: 0.45,
+  });
+  const normalized = normalizeFilledStep(JSON.parse(pickJsonObject(content)));
+  return {
+    quiz_questions: normalized.quiz_questions,
+    game_items: normalized.game_items,
+    attention_stops: normalized.attention_stops,
+  };
+}
+
+function normKey(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function dedupBy<T>(items: T[], key: (item: T) => string, max: number): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const item of items) {
+    const k = key(item);
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    out.push(item);
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+/** משלים את הצעד למינימום הנדרש של שאלות/משחק/נקודות קשב (best-effort). */
+async function ensureMinimums(
+  sourceText: string,
+  result: AiFilledStep,
+  options?: { clarificationAnswers?: Record<string, string>; analysisSummary?: string }
+): Promise<void> {
+  const need = {
+    quiz: Math.max(0, MIN_QUIZ_QUESTIONS - result.quiz_questions.length),
+    game: Math.max(0, MIN_GAME_ITEMS - result.game_items.length),
+    stops: Math.max(0, MIN_ATTENTION_STOPS - result.attention_stops.length),
+  };
+  if (!need.quiz && !need.game && !need.stops) return;
+
+  try {
+    const extra = await augmentMissingItems(sourceText, result, need, options);
+    result.quiz_questions = dedupBy(
+      [...result.quiz_questions, ...extra.quiz_questions],
+      (q) => normKey(q.question),
+      MAX_QUIZ_QUESTIONS
+    );
+    result.game_items = dedupBy(
+      [...result.game_items, ...extra.game_items],
+      (g) => normKey(g.statement),
+      MAX_GAME_ITEMS
+    );
+    result.attention_stops = dedupBy(
+      [...result.attention_stops, ...extra.attention_stops],
+      (s) => normKey(s.question),
+      MAX_ATTENTION_STOPS
+    ).sort((a, b) => a.time_seconds - b.time_seconds);
+  } catch {
+    /* מעבר ההשלמה הוא best-effort — אם נכשל, נשמרים הפריטים שכבר נוצרו */
+  }
 }
 
 /**
@@ -636,6 +792,10 @@ export async function POST(request: Request) {
           clarificationAnswers,
           analysisSummary,
         });
+
+        // השלמה ליעדי המינימום (3 שאלות הבנה, 3 טענות משחק, 4 נקודות קשב) —
+        // מעבר ממוקד אחד שמייצר רק את החסר, כדי שהצעד תמיד יהיה עשיר.
+        await ensureMinimums(sourceText, result, { clarificationAnswers, analysisSummary });
 
         // זיהוי דטרמיניסטי של כל הקישורים בטקסט — כך שרשימת קישורים שלמה
         // הופכת לרשימת מחקרים מלאה (ולא רק הקישור שה-LLM הזכיר).
