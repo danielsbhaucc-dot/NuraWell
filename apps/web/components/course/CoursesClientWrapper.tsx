@@ -29,8 +29,12 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
     <motion.div className="pt-2">
       <div
         style={{
-          background: '#EDF5F0',
-          padding: '8px 16px 20px',
+          background:
+            'radial-gradient(circle at 0% 0%, rgba(99,102,241,0.10) 0%, transparent 42%),' +
+            'radial-gradient(circle at 100% 8%, rgba(20,184,166,0.12) 0%, transparent 40%),' +
+            'radial-gradient(circle at 50% 100%, rgba(245,166,35,0.10) 0%, transparent 45%),' +
+            'linear-gradient(180deg, #F5F7FB 0%, #EEF3F2 100%)',
+          padding: '8px 16px 28px',
           minHeight: '55vh',
         }}
       >
@@ -160,22 +164,11 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
 
         {enrolledCourses.length > 0 && (
           <section className="mb-6">
-            <div
-              style={{
-                fontSize: '10px',
-                fontWeight: 700,
-                color: '#9896B8',
-                letterSpacing: '1.2px',
-                textTransform: 'uppercase',
-                margin: '18px 0 12px 2px',
-              }}
-            >
-              בלמידה
-            </div>
+            <SectionLabel text="בלמידה" gradient="linear-gradient(90deg, #4f46e5, #14b8a6)" />
             <motion.div variants={container} initial="hidden" animate="show" className="space-y-3.5">
-              {enrolledCourses.map((course) => (
+              {enrolledCourses.map((course, i) => (
                 <motion.div key={course.id} variants={item}>
-                  <CourseCard course={course} progress={course.progress} isEnrolled={true} />
+                  <CourseCard course={course} progress={course.progress} isEnrolled={true} accentIndex={i} />
                 </motion.div>
               ))}
             </motion.div>
@@ -184,22 +177,11 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
 
         {availableCourses.length > 0 && (
           <section>
-            <div
-              style={{
-                fontSize: '10px',
-                fontWeight: 700,
-                color: '#9896B8',
-                letterSpacing: '1.2px',
-                textTransform: 'uppercase',
-                margin: '18px 0 12px 2px',
-              }}
-            >
-              מדריכים זמינים
-            </div>
+            <SectionLabel text="מדריכים זמינים" gradient="linear-gradient(90deg, #f97316, #f5a623)" />
             <motion.div variants={container} initial="hidden" animate="show" className="space-y-3.5">
-              {availableCourses.map((course) => (
+              {availableCourses.map((course, i) => (
                 <motion.div key={course.id} variants={item}>
-                  <CourseCard course={course} progress={0} isEnrolled={false} />
+                  <CourseCard course={course} progress={0} isEnrolled={false} accentIndex={enrolledCourses.length + i} />
                 </motion.div>
               ))}
             </motion.div>
@@ -238,5 +220,32 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
         )}
       </div>
     </motion.div>
+  );
+}
+
+function SectionLabel({ text, gradient }: { text: string; gradient: string }) {
+  return (
+    <div className="flex items-center gap-2.5" style={{ margin: '18px 0 12px 2px' }}>
+      <span
+        style={{
+          width: '4px',
+          height: '16px',
+          borderRadius: '10px',
+          background: gradient,
+          flexShrink: 0,
+        }}
+      />
+      <span
+        style={{
+          fontSize: '11px',
+          fontWeight: 800,
+          color: '#6B6890',
+          letterSpacing: '1px',
+        }}
+      >
+        {text}
+      </span>
+      <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(0,0,0,0.08), transparent)' }} />
+    </div>
   );
 }

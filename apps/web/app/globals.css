@@ -3406,6 +3406,79 @@ html {
     border: 1px solid rgba(153, 246, 228, 0.18);
   }
 
+  /* ---- GUIDE chips (high-contrast on dark glass) ---- */
+  .guide-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    white-space: nowrap;
+  }
+  .guide-chip-amber {
+    background: rgba(249, 115, 22, 0.25);
+    border: 1px solid rgba(253, 186, 116, 0.45);
+    color: #fed7aa;
+  }
+  .guide-chip-emerald {
+    background: rgba(16, 185, 129, 0.25);
+    border: 1px solid rgba(110, 231, 183, 0.45);
+    color: #a7f3d0;
+  }
+  .guide-chip-sky {
+    background: rgba(14, 165, 233, 0.25);
+    border: 1px solid rgba(125, 211, 252, 0.45);
+    color: #bae6fd;
+  }
+
+  /* ---- GUIDE task rows ---- */
+  .guide-task-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.8rem 0.85rem;
+    border-radius: 1rem;
+    text-align: right;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: all 0.2s ease;
+  }
+  .guide-task-row:hover {
+    background: rgba(255, 255, 255, 0.11);
+    border-color: rgba(255, 255, 255, 0.22);
+  }
+  .guide-task-row.done {
+    background: rgba(16, 185, 129, 0.14);
+    border-color: rgba(16, 185, 129, 0.32);
+  }
+
+  /* ---- GUIDE habit day ring ---- */
+  .guide-day-ring {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1.5px solid rgba(255, 255, 255, 0.14);
+    transition: all 0.18s ease;
+    cursor: pointer;
+  }
+  .guide-day-ring.done {
+    background: linear-gradient(145deg, #f59e0b, #f97316);
+    border-color: rgba(253, 186, 116, 0.65);
+    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
+  }
+  .guide-day-ring.today {
+    border-color: rgba(94, 234, 212, 0.7);
+    box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.25);
+  }
+
   /* Glow Utilities — subtle for light theme */
   .glow-primary { box-shadow: 0 4px 16px rgba(16, 185, 129, 0.12); }
   .glow-secondary { box-shadow: 0 4px 16px rgba(20, 184, 166, 0.10); }
