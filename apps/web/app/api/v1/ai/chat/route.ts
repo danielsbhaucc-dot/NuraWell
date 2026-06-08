@@ -234,28 +234,14 @@ const CHAT_TEMPERATURE = (() => {
 /**
  * מודל זול לראוטינג ול-trivial-bypass ול-safety-net: Llama 4 *Scout* (אח קטן
  * של Maverick — 16 מומחים, מהיר וזול ~$0.08/M, מצוין לאישורים/תודות קצרים).
- * ⚠️ slug ל-OpenRouter הוא `meta-llama/llama-4-scout` — לא הפורמט של Groq
- * (`...-17b-16e-instruct`), שהיה גורם ל-400 ולנפילה ל-Maverick על כל הודעה
- * קצרה (בזבוז). Maverick נשאר לכתיבה האמיתית כי הוא החזק לשיחה טבעית.
+ * ⚠️ משתמשים ב-slug של OpenRouter בלבד, כדי שכל הצ'אט יעבוד דרך ספק אחד
+ * (`OPENROUTER_API_KEY`) בלי צורך במפתחות נוספים.
  */
 const CHAT_ROUTER_MODEL =
   process.env.AI_CHAT_ROUTER_MODEL?.trim() ||
   process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() ||
   'meta-llama/llama-4-scout';
 const CHAT_SAFETY_NET_MODEL = process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() || CHAT_ROUTER_MODEL;
-
-/**
- * נתב-הקשר דרך **Groq** (Llama 4 Scout) — דרמטית מהיר יותר מ-OpenRouter
- * (לרוב <300ms מול ~1.2s), אז ה-pre-step החוסם לפני Qwen כמעט נעלם וה-TTFB
- * הכולל יורד. אם אין מפתח Groq או הקריאה נכשלת — נופלים חזרה לנתב OpenRouter.
- * כיבוי: `AI_CHAT_ROUTER_USE_GROQ=off`.
- */
-const GROQ_API_KEY = process.env.GROQ_API_KEY?.trim();
-const GROQ_ROUTER_MODEL =
-  process.env.GROQ_BACKGROUND_MODEL?.trim() || 'meta-llama/llama-4-scout-17b-16e-instruct';
-const CHAT_ROUTER_USE_GROQ =
-  (process.env.AI_CHAT_ROUTER_USE_GROQ?.trim() || 'on').toLowerCase() !== 'off' &&
-  Boolean(GROQ_API_KEY);
 
 /**
  * `reasoningEffort` הוא פרמטר ספציפי ל-OpenAI. כשמריצים מודל לא-OpenAI
@@ -313,8 +299,8 @@ const FINAL_GUARDRAILS_FOR_WRITER = CHAT_USE_LEAN_PROMPT
 const CHAT_REASONING_MAX_TOKENS = (() => {
   const raw = process.env.AI_CHAT_REASONING_MAX_TOKENS?.trim();
   const n = raw ? Number(raw) : NaN;
-  // 1024: מספיק חשיבה לעומק רגשי, בלי להאריך TTFB מדי ובלי לדחוק את הפלט.
-  return Number.isFinite(n) && n >= 256 && n <= 8192 ? Math.floor(n) : 1024;
+  // 1536: יותר מקום לחשיבה רגשית/ניואנס, עדיין לא "הון תועפות" כמו 4K-8K.
+  return Number.isFinite(n) && n >= 256 && n <= 8192 ? Math.floor(n) : 1536;
 })();
 /**
  * בונה את שדה `reasoning` של OpenRouter (או null אם כבוי/לא רלוונטי).
@@ -1007,7 +993,7 @@ function buildChatContextRouterPrompt(
   ].filter(Boolean);
 
   return `אתה נתב הקשר זול ומהיר לצ'אט מנטור בריאות בעברית.
-המטרה: לחסוך טוקנים בלי לפגוע באיכות. קלוד ינסח את התשובה הסופית.
+המטרה: לחסוך טוקנים בלי לפגוע באיכות. המודל הראשי ינסח את התשובה הסופית.
 
 החלטה שמרנית:
 - אם יש קושי רגשי, חסם, שאלה משמעותית, חזרה אחרי היעדרות, התלבטות, או צורך להבין מסע/ידע/זיכרון -> heavy_context=true.
@@ -1029,8 +1015,8 @@ ${userMessage.slice(0, 1200)}`;
 }
 
 /**
- * ניסיון נתב יחיד מול ספק נתון (Groq או OpenRouter). מחזיר החלטה מפורסרת,
- * או null אם נכשל (כדי שהקורא יוכל ליפול לספק הבא).
+ * ניסיון נתב יחיד דרך OpenRouter. מחזיר החלטה מפורסרת, או null אם נכשל.
+ * גם נתב-ההקשר וגם ה-safety-net משתמשים ב-OpenRouter.
  */
 async function attemptContextRoute(opts: {
   endpoint: string;
@@ -1041,7 +1027,7 @@ async function attemptContextRoute(opts: {
   userMessage: string;
   signals: ReturnType<typeof detectChatSignals>;
   debugId: string;
-  provider: 'groq' | 'openrouter';
+  provider: 'openrouter';
 }): Promise<ChatContextDecision | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
@@ -1104,22 +1090,6 @@ async function routeChatContextWithCheapModel(
   signals: ReturnType<typeof detectChatSignals>,
   debugId: string
 ): Promise<ChatContextDecision> {
-  // ניסיון ראשון — Groq (מהיר מאוד). timeout צמוד כי Groq עונה ב-<300ms.
-  if (CHAT_ROUTER_USE_GROQ && GROQ_API_KEY) {
-    const groqDecision = await attemptContextRoute({
-      endpoint: 'https://api.groq.com/openai/v1/chat/completions',
-      apiKey: GROQ_API_KEY,
-      model: GROQ_ROUTER_MODEL,
-      timeoutMs: 900,
-      userMessage,
-      signals,
-      debugId,
-      provider: 'groq',
-    });
-    if (groqDecision) return groqDecision;
-  }
-
-  // נפילה ל-OpenRouter (או ברירת מחדל אם אין Groq).
   const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
   if (!openrouterKey) return fallbackContextDecision('openrouter_key_missing');
 
@@ -2941,6 +2911,8 @@ export async function POST(request: Request) {
     headers.set('x-session-id', sessionId);
     headers.set('x-debug-id', debugId);
     headers.set('x-debug-stage', stage);
+    headers.set('x-ai-writer', safetyNetUsed ? 'safety-net' : trivialBypass ? 'cheap-trivial' : 'primary');
+    headers.set('x-ai-model', assistantModelName);
     headers.set('Cache-Control', 'no-cache, no-transform');
     if (!headers.get('Content-Type')) headers.set('Content-Type', 'text/plain; charset=utf-8');
 

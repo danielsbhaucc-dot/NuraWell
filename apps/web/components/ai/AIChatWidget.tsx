@@ -381,6 +381,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       const res = await fetch(url, init);
       const sid = res.headers.get('x-session-id');
       const dbg = res.headers.get('x-debug-id');
+      const writer = res.headers.get('x-ai-writer');
+      const model = res.headers.get('x-ai-model');
       if (sid) {
         sessionIdRef.current = sid;
         try {
@@ -394,6 +396,12 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
           status: res.status,
           debug_id: dbg,
           debug_stage: res.headers.get('x-debug-stage'),
+        });
+      } else if (writer && writer !== 'primary') {
+        console.info('[ai/chat client] non-primary writer used', {
+          writer,
+          model,
+          debug_id: dbg,
         });
       }
       return res;
