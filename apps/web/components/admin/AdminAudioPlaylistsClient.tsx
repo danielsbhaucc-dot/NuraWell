@@ -1071,7 +1071,7 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
           }),
         }
       );
-      const data = (await res.json()) as AudioTrack & { error?: string };
+      const data = (await res.json()) as AudioTrack & { url?: string | null; error?: string };
       if (!res.ok) {
         setResult({ error: data.error || 'הוספה מהספרייה נכשלה' });
         return;
@@ -1080,7 +1080,7 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
       setTitle('');
       setCredit(emptyCredit);
       setDraftRestored(false);
-      onUploaded(data);
+      onUploaded({ ...data, url: data.url ?? null });
       setResult({ ok: true });
     } catch {
       setResult({ error: 'שגיאת רשת' });
