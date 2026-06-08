@@ -120,6 +120,42 @@ export function buildAlmogSystemKnowledgeFilter(params: {
   return `${scope} AND ${accessClause}`;
 }
 
+/**
+ * מסנן Upstash לעקרונות אלמוג (`dataType = 'principle'`).
+ * עקרונות הם גלובליים — לא תלויים בהתקדמות המסע (בניגוד לידע step/course),
+ * כך שהם נשלפים גם למשתמש חדש לגמרי. premium מותר רק למי שרשום לקורס כלשהו.
+ */
+export function buildAlmogPrinciplesFilter(params: {
+  enrolledCourseIds: string[];
+}): string {
+  const hasPremiumAccess = params.enrolledCourseIds.length > 0;
+  const access = hasPremiumAccess
+    ? `(accessLevel = 'public' OR accessLevel = 'premium')`
+    : `accessLevel = 'public'`;
+  return `dataType = 'principle' AND ${access}`;
+}
+
+/**
+ * בלוק העקרונות לפרומפט — חוקי תוכנית + הנחיות "איך להתמודד עם X".
+ * נשלף סמנטית לפי ההודעה הנוכחית; קו מנחה מחייב להתנהלות של אלמוג.
+ */
+export function formatAlmogPrinciplesBlock(
+  hits: Array<{ metadata?: Record<string, unknown> }>,
+  topK: number
+): string {
+  const lines: string[] = [];
+  let i = 1;
+  for (const h of hits.slice(0, topK)) {
+    const text = h.metadata?.text;
+    if (typeof text === 'string' && text.trim()) {
+      lines.push(`${i}. ${text.trim()}`);
+      i += 1;
+    }
+  }
+  if (!lines.length) return '';
+  return `עקרונות והנחיות של אלמוג (חוקי התוכנית + איך להתמודד עם מצבים — קו מנחה מחייב, נשלף לפי הרלוונטיות לשיחה):\n${lines.join('\n')}`;
+}
+
 export function formatSystemKnowledgeContextBlock(
   hits: Array<{ metadata?: Record<string, unknown> }>,
   topK: number

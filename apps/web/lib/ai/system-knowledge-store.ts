@@ -14,7 +14,7 @@ const EMBED_CONCURRENCY = 8;
 export type AlmogKnowledgeDocInput = {
   docId: string;
   body: string;
-  dataType: 'step' | 'course';
+  dataType: 'step' | 'course' | 'principle';
   accessLevel: 'public' | 'premium';
   stepId?: string | null;
   courseId?: string | null;

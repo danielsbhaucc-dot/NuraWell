@@ -255,7 +255,13 @@ export async function PATCH(request: Request) {
     previousGame: (previous?.game_items as GameItem[] | undefined) ?? [],
   });
 
-  return NextResponse.json(withTts);
+  const synced = await syncResearchesBestEffort({
+    supabase,
+    userId: auth.user.id,
+    step: withTts,
+  });
+
+  return NextResponse.json(synced);
 }
 
 export async function DELETE(request: Request) {
