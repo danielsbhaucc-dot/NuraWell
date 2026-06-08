@@ -37,12 +37,12 @@ interface CourseDetailClientProps {
 }
 
 const lessonTypeConfig: Record<LessonItem['lesson_type'], { icon: React.ElementType; label: string; color: string }> = {
-  video:        { icon: Video,                    label: 'וידאו',     color: '#6366f1' },
-  audio:        { icon: Headphones,               label: 'אודיו',     color: '#f97316' },
-  text:         { icon: AlignLeft,                label: 'טקסט',      color: '#14b8a6' },
-  pdf:          { icon: FileText,                 label: 'PDF',        color: '#ef4444' },
-  presentation: { icon: Presentation,            label: 'מצגת',      color: '#a855f7' },
-  mixed:        { icon: Layers,                   label: 'מגוון',     color: '#10b981' },
+  video:        { icon: Video,                    label: 'וידאו',     color: '#a5b4fc' },
+  audio:        { icon: Headphones,               label: 'אודיו',     color: '#fdba74' },
+  text:         { icon: AlignLeft,                label: 'טקסט',      color: '#5eead4' },
+  pdf:          { icon: FileText,                 label: 'PDF',        color: '#fca5a5' },
+  presentation: { icon: Presentation,            label: 'מצגת',      color: '#d8b4fe' },
+  mixed:        { icon: Layers,                   label: 'מגוון',     color: '#6ee7b7' },
 };
 
 const container = {
@@ -176,7 +176,11 @@ export function CourseDetailClient({
               firstIncompleteLessonId ? (
                 <Link
                   href={`/lessons/${firstIncompleteLessonId}`}
-                  className="btn-primary w-full justify-center mb-6 text-base py-4"
+                  className="w-full justify-center mb-6 text-base py-4 inline-flex items-center gap-2 rounded-2xl font-black text-white transition active:scale-[0.99]"
+                  style={{
+                    background: 'linear-gradient(135deg, #6366f1 0%, #14b8a6 60%, #2dd4bf 100%)',
+                    boxShadow: '0 10px 30px rgba(20,184,166,0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
+                  }}
                 >
                   <Play className="w-5 h-5" fill="white" />
                   {progress === 0 ? 'התחל ללמוד' : 'המשך ללמוד'}
@@ -213,7 +217,6 @@ export function CourseDetailClient({
         <motion.div variants={container} initial="hidden" animate="show" className="space-y-2">
           {course.lessons.map((lesson, idx) => {
             const config = typeConfig[lesson.lesson_type];
-            const IconComp = config.icon;
             const isLocked = !isEnrolled;
             const isDone = lesson.is_completed;
 
@@ -269,15 +272,16 @@ function LessonCardContent({
         <p className={cn('text-sm font-semibold line-clamp-1', isDone ? 'text-white/65 line-through' : 'text-white')}>
           {lesson.title}
         </p>
-        <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-xs font-medium" style={{ color: config.color }}>
+        <div className="flex items-center gap-2 mt-1">
+          <span
+            className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
+            style={{ color: config.color, background: `${config.color}22`, border: `1px solid ${config.color}3a` }}
+          >
+            <IconComp className="w-3 h-3" />
             {config.label}
           </span>
           {lesson.duration_minutes && (
-            <>
-              <span className="text-white/55 text-xs">·</span>
-              <span className="text-xs text-white/72">{lesson.duration_minutes} דק'</span>
-            </>
+            <span className="text-xs text-white/72">{lesson.duration_minutes} דק'</span>
           )}
         </div>
       </div>

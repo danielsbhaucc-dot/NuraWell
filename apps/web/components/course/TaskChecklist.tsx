@@ -38,33 +38,35 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
     });
   };
 
+  const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
   return (
     <div className="guide-glass-card p-5">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-            style={{ background: 'rgba(249,115,22,0.2)', border: '1px solid rgba(249,115,22,0.3)' }}>
-            <ClipboardList className="w-4 h-4 text-energy-500" />
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+            style={{ background: 'linear-gradient(145deg, #f59e0b, #f97316)', boxShadow: '0 4px 12px rgba(249,115,22,0.35)' }}>
+            <ClipboardList className="w-4.5 h-4.5 text-white" />
           </div>
-          <h3 className="font-bold text-white text-base">משימות הפרק</h3>
+          <div>
+            <h3 className="font-black text-white text-base leading-tight">משימות הפרק</h3>
+            <p className="text-xs text-white/65">{completedCount} מתוך {totalCount} הושלמו</p>
+          </div>
         </div>
-        <span className={cn(
-          'text-xs font-bold px-2.5 py-1 rounded-full',
-          allDone ? 'badge-success' : 'badge-energy'
-        )}>
-          {completedCount}/{totalCount} {allDone ? '✅' : '⏳'}
+        <span className={cn('guide-chip', allDone ? 'guide-chip-emerald' : 'guide-chip-amber')}>
+          {pct}% {allDone ? '✅' : '⏳'}
         </span>
       </div>
 
       {/* Progress Bar */}
-      <div className="progress-bar mb-4">
+      <div className="relative h-2.5 rounded-full overflow-hidden mb-4" style={{ background: 'rgba(255,255,255,0.1)' }}>
         <motion.div
-          className="progress-bar-fill"
+          className="absolute inset-y-0 right-0 rounded-full"
           initial={{ width: 0 }}
-          animate={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }}
+          animate={{ width: `${pct}%` }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
-          style={{ background: 'linear-gradient(90deg, #f97316, #fb923c)' }}
+          style={{ background: 'linear-gradient(90deg, #f59e0b, #fb923c)', boxShadow: '0 0 10px rgba(249,115,22,0.5)' }}
         />
       </div>
 
@@ -79,10 +81,7 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.05 }}
               onClick={() => handleToggle(task.id)}
-              className={cn(
-                'task-item w-full text-right',
-                isDone && 'completed'
-              )}
+              className={cn('guide-task-row', isDone && 'done')}
               aria-pressed={isDone}
               aria-label={`משימה: ${task.title}`}
             >
@@ -90,28 +89,28 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
                 <AnimatePresence mode="wait" initial={false}>
                   {isDone ? (
                     <motion.div key="done" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={{ type: 'spring', stiffness: 500, damping: 25 }}>
-                      <CheckCircle2 className="w-5 h-5 text-secondary-400" />
+                      <CheckCircle2 className="w-5 h-5 text-emerald-300" />
                     </motion.div>
                   ) : (
                     <motion.div key="empty" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                      <Circle className="w-5 h-5 text-white/55" />
+                      <Circle className="w-5 h-5 text-white/45" />
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
               <div className="flex-1 min-w-0">
                 <p className={cn(
-                  'text-sm font-medium leading-snug text-right',
+                  'text-sm font-semibold leading-snug text-right',
                   isDone ? 'line-through text-white/55' : 'text-white'
                 )}>
                   {task.title}
                 </p>
                 {task.description && !isDone && (
-                  <p className="text-xs text-white/68 mt-0.5 text-right">{task.description}</p>
+                  <p className="text-xs text-white/68 mt-0.5 text-right leading-relaxed">{task.description}</p>
                 )}
               </div>
               {task.is_required && !isDone && (
-                <span className="flex-shrink-0 text-xs badge-energy">חובה</span>
+                <span className="flex-shrink-0 guide-chip guide-chip-amber">חובה</span>
               )}
             </motion.button>
           );
@@ -134,9 +133,9 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             className="mt-4 text-center py-3 rounded-2xl"
-            style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)' }}
+            style={{ background: 'rgba(16,185,129,0.16)', border: '1px solid rgba(16,185,129,0.32)' }}
           >
-            <p className="text-secondary-400 font-bold text-sm">🎉 כל המשימות הושלמו! כל הכבוד!</p>
+            <p className="text-emerald-200 font-bold text-sm">🎉 כל המשימות הושלמו! כל הכבוד!</p>
           </motion.div>
         )}
       </AnimatePresence>

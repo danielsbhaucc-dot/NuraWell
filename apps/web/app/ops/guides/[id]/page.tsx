@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, Loader2, Save, ImageIcon } from 'lucide-react';
+import { ArrowRight, Loader2, Save, ImagePlus, Trash2 } from 'lucide-react';
 import { resolveGuideBackgroundUrl } from '@/lib/guides/resolve-background';
+import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
+import type { MediaAsset } from '@/components/media-manager/types';
 
 interface LessonRow {
   id: string;
@@ -34,12 +36,24 @@ interface GuideDetail {
 export default function OpsGuideDetailPage() {
   const params = useParams();
   const pathname = usePathname();
+  const { open: openMediaManager } = useMediaManager();
   const id = params.id as string;
   const guidesListHref = pathname.startsWith('/ops') ? '/ops/guides' : '/guides';
   const [guide, setGuide] = useState<GuideDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [bgKey, setBgKey] = useState('');
+
+  const pickBackground = () => {
+    openMediaManager({
+      kind: 'image',
+      mode: 'pick',
+      title: 'תמונת רקע למדריך',
+      onSelect: (asset: MediaAsset) => {
+        if (asset.object_key) setBgKey(asset.object_key);
+      },
+    });
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -164,21 +178,45 @@ export default function OpsGuideDetailPage() {
           </select>
         </div>
         <div>
-          <label className="text-xs font-bold text-slate-600 flex items-center gap-1">
-            <ImageIcon className="w-3.5 h-3.5" />
-            מפתח רקע R2 (ממנהל המדיה)
+          <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-2">
+            <ImagePlus className="w-3.5 h-3.5" />
+            תמונת רקע למדריך
           </label>
-          <input
-            className="w-full mt-1 rounded-lg border px-3 py-2 text-sm font-mono"
-            value={bgKey}
-            onChange={(e) => setBgKey(e.target.value)}
-            placeholder="media/images/..."
-          />
-          {bgUrl && (
-            <div
-              className="mt-2 h-24 rounded-xl bg-cover bg-center border"
-              style={{ backgroundImage: `url(${bgUrl})` }}
-            />
+          {bgUrl ? (
+            <div className="relative overflow-hidden rounded-2xl border border-slate-200">
+              <div
+                className="h-32 bg-cover bg-center"
+                style={{ backgroundImage: `url(${bgUrl})` }}
+              />
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-slate-900/70 to-transparent p-2.5">
+                <button
+                  type="button"
+                  onClick={pickBackground}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-bold text-slate-800 shadow hover:bg-white"
+                >
+                  <ImagePlus className="w-3.5 h-3.5" />
+                  החלפת תמונה
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBgKey('')}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-rose-500/90 px-3 py-1.5 text-xs font-bold text-white shadow hover:bg-rose-500"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  הסר
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={pickBackground}
+              className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/60 py-7 text-slate-500 transition hover:border-emerald-400 hover:bg-emerald-50/50 hover:text-emerald-700"
+            >
+              <ImagePlus className="w-6 h-6" />
+              <span className="text-sm font-bold">בחר תמונה ממנהל הקבצים</span>
+              <span className="text-xs text-slate-400">תמונת הרקע תוצג מאחורי המדריך</span>
+            </button>
           )}
         </div>
         <div>
