@@ -169,7 +169,7 @@ export function OpsHomeDashboard({ publishedCount, totalSteps }: OpsHomeDashboar
           icon={Users}
           label="משתמשים פעילים"
           value={avgCost ? String(avgCost.activeUsers) : '—'}
-          sub="ב-30 הימים האחרונים"
+          sub="ב־30 הימים האחרונים"
           tone="violet"
         />
       </div>

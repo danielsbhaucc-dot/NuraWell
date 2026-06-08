@@ -96,7 +96,7 @@ export function AlmogHeroHeader({ firstName, bubbleContent, taskBadge }: AlmogHe
       >
         <button
           type="button"
-          className="relative flex-shrink-0"
+          className="relative flex-shrink-0 -translate-y-2.5 sm:translate-y-0"
           onClick={() => window.dispatchEvent(new Event('open-almog-chat'))}
           aria-label="פתח צ׳אט עם אלמוג"
         >
@@ -191,7 +191,7 @@ export function AlmogHeroHeader({ firstName, bubbleContent, taskBadge }: AlmogHe
               marginBottom: '4px',
             }}
           >
-            ✦ ד״ר לב — המנטור שלך
+            ✦ אלמוג · המנטור שלך
           </div>
           <div
             style={{
@@ -254,7 +254,7 @@ function TaskBadgeRow({
             letterSpacing: '0.2px',
           }}
         >
-          המסע שלך מחכה — בלחיצה אתה שם
+          המסע שלך מחכה, בלחיצה אתה שם
         </span>
       </div>
     );
@@ -287,7 +287,7 @@ function TaskBadgeRow({
             letterSpacing: '0.2px',
           }}
         >
-          סגרת היום הכל — {done} מתוך {accepted}
+          סגרת היום הכל, {done} מתוך {accepted}
         </span>
       </div>
     );

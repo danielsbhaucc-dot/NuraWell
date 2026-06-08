@@ -84,15 +84,17 @@ export function LessonPageClient({
   const imageFiles = lesson.media_files.filter(m => m.file_type === 'image');
 
   return (
-    <div className="min-h-screen bg-mesh-subtle">
-      <div className="container-mobile py-4 pb-8 space-y-5">
+    <div className="min-h-screen guide-page-bg relative">
+      <div className="guide-page-bg-fallback" aria-hidden />
+      <div className="guide-page-overlay" aria-hidden />
+      <div className="container-mobile py-4 pb-8 space-y-5 relative z-10">
 
-        {/* Lesson Header */}
+        {/* Chapter Header */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="glass-card p-4"
+          className="guide-glass-card p-4"
         >
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
@@ -115,26 +117,26 @@ export function LessonPageClient({
                   </span>
                 )}
               </div>
-              <h1 className="text-xl font-black text-white leading-snug">{lesson.title}</h1>
+              <h1 className="text-xl font-black text-white leading-snug drop-shadow-sm">{lesson.title}</h1>
               {lesson.description && (
-                <p className="text-sm text-slate-400 mt-1 leading-relaxed">{lesson.description}</p>
+                <p className="text-sm text-white/75 mt-1 leading-relaxed">{lesson.description}</p>
               )}
             </div>
           </div>
 
           <div className="divider-gradient mt-3 mb-3" />
 
-          <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <BookOpen className="w-3.5 h-3.5 text-primary-400" />
-            <span className="text-primary-300">{lesson.course.title}</span>
+          <div className="flex items-center gap-1.5 text-xs text-white/60">
+            <BookOpen className="w-3.5 h-3.5 text-emerald-300" />
+            <span className="text-emerald-200">{lesson.course.title}</span>
           </div>
         </motion.div>
 
         <AlmogScreenCoach
-          title="אלמוג איתך בשיעור"
-          body="אפשר לשאול על התוכן, לבקש סיכום פשוט, או להפוך את השיעור לצעד קטן שמתאים להיום."
-          prompt={`אלמוג, תעזור לי עם השיעור "${lesson.title}" מהקורס "${lesson.course.title}". מה הכי חשוב לקחת ממנו ואיך ליישם את זה היום?`}
-          cta="שאל את אלמוג על השיעור"
+          title="אלמוג איתך בפרק"
+          body="אפשר לשאול על התוכן, לבקש סיכום פשוט, או להפוך את הפרק לצעד קטן שמתאים להיום."
+          prompt={`אלמוג, תעזור לי עם הפרק "${lesson.title}" מהמדריך "${lesson.course.title}". מה הכי חשוב לקחת ממנו ואיך ליישם את זה היום?`}
+          cta="שאל את אלמוג על הפרק"
           tone="violet"
         />
 
@@ -182,12 +184,12 @@ export function LessonPageClient({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.18 }}
-            className="glass-card p-5"
+            className="guide-glass-card p-5"
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-1.5 h-6 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(to bottom, #14b8a6, #10b981)' }} />
-              <AlignLeft className="w-4 h-4 text-primary-400" />
-              <h2 className="font-black text-white text-base">תוכן השיעור</h2>
+              <AlignLeft className="w-4 h-4 text-emerald-300" />
+              <h2 className="font-black text-white text-base drop-shadow-sm">תוכן הפרק</h2>
             </div>
             <div
               className="lesson-content"
@@ -238,7 +240,7 @@ export function LessonPageClient({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
-            className="glass-card p-4"
+            className="guide-glass-card p-4"
           >
             <div className="flex items-center gap-3 mb-3">
               <div className="w-1.5 h-6 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(to bottom, #3b82f6, #60a5fa)' }} />

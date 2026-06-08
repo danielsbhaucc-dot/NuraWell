@@ -21,8 +21,10 @@ import {
   type AiUserContext,
 } from '../../../../../lib/ai/memory';
 import {
+  buildAlmogPrinciplesFilter,
   buildAlmogSystemKnowledgeFilter,
   fetchJourneyProgressCapForRag,
+  formatAlmogPrinciplesBlock,
   formatSystemKnowledgeContextBlock,
   queryAlmogSystemKnowledgeForUser,
 } from '../../../../../lib/ai/almog-system-rag';
@@ -88,6 +90,9 @@ import {
   formatJourneyFollowUpChatBlock,
 } from '../../../../../lib/ai/journey-follow-up-promise';
 import { sendTaskCompletionCelebration } from '../../../../../lib/ai/send-task-completion-celebration';
+import { applyGuideAccessFromSignals } from '../../../../../lib/ai/chat-guide-access';
+import { fetchUserGuideSummaries } from '../../../../../lib/guides/fetch-user-guides';
+import { formatGuidesStateForAi } from '../../../../../lib/guides/progress';
 import { createAdminClient } from '../../../../../lib/supabase/admin';
 import {
   fetchTodayChatTurns,
@@ -1013,6 +1018,9 @@ const chatContextRouterSchema = z.object({
   needs_system_knowledge_rag: z.boolean(),
   needs_full_progress_report: z.boolean(),
   needs_journey_knowledge: z.boolean(),
+  // עקרונות/חוקי תוכנית + "איך להתמודד עם X" — נשלפים סמנטית מהצ'אט לפי הצורך.
+  // ⚠️ אופציונלי עם default=false: נתב ישן/מודל שלא מחזיר את השדה לא ישבור את הפרסור.
+  needs_principles: z.boolean().optional().default(false),
   reason: z.string().max(160).optional(),
   summary: z.string().max(240).nullable().optional(),
 });
@@ -1026,6 +1034,7 @@ function lowContextDecision(reason: string): ChatContextDecision {
     needs_system_knowledge_rag: false,
     needs_full_progress_report: false,
     needs_journey_knowledge: false,
+    needs_principles: false,
     reason,
   };
 }
@@ -1045,6 +1054,14 @@ const ROUTER_QUESTION_RE =
   /[?？؟]|(?:^|\s|ו)(?:למה|מדוע|איך|כיצד|האם|מה\s|מהו|מהי|מהם|כדאי|עדיף|מתי|כמה|איזה|איזו|מאיפה|מניין)/u;
 const ROUTER_KNOWLEDGE_RE =
   /(?:למה|מדוע|איך|כיצד|מהו|מהי|כדאי|עדיף|חשוב|מומלץ|משפיע|השפעה|מועיל|בריא|מזיק|תסביר|הסבר|הבדל|יתרון|חיסרון|תפקיד|למה\s+ש)/u;
+/**
+ * זיהוי דטרמיניסטי של תורים שבהם עקרונות אלמוג (חוקי תוכנית + "איך להתמודד עם X")
+ * רלוונטיים: התלבטות, חסם, "מותר/אסור", "מה לעשות אם", חוקי/כללי התוכנית, נפילה.
+ * ⚠️ עברית: זיהוי substring ללא `\b` (גבול-מילה לא עובד על עברית), מוטה ל-recall —
+ * שליפת עקרונות מיותרת זולה (טופ-K קטן) ומסוננת סמנטית, אז אין סיכון אמיתי.
+ */
+const ROUTER_PRINCIPLES_RE =
+  /(?:מותר|אסור|חוק|כלל|כללי|עיקרון|עקרונ|מה לעשות|מה עושים|איך מתמוד|להתמודד|התמודד|נכשל|נפל|נפיל|פיתוי|להחליק|פרינציפ|מה הדרך|לפי התוכנית|בתוכנית הזו|מה המדיניות)/u;
 
 function heuristicContextDecision(
   userMessage: string,
@@ -1055,17 +1072,29 @@ function heuristicContextDecision(
   const t = normalizeLine(userMessage);
   const isQuestion = ROUTER_QUESTION_RE.test(t);
   const knowledge = ROUTER_KNOWLEDGE_RE.test(t);
+  const principlesHint = ROUTER_PRINCIPLES_RE.test(t);
   return {
     heavy_context:
       Boolean(opts?.forceHeavy) ||
       isQuestion ||
       knowledge ||
+      principlesHint ||
       signals.blocker_mentioned ||
       Boolean(signals.emotional_hint),
     needs_user_memory_rag: isQuestion || knowledge,
     needs_system_knowledge_rag: knowledge,
     needs_full_progress_report: false,
     needs_journey_knowledge: knowledge,
+    // עקרונות נשלפים בנדיבות: כל תור "כבד" אמיתי (שאלה/חסם/רגש/התלבטות) או
+    // ניסוח שמרמז על חוקי תוכנית / "איך להתמודד". זול וסמנטי, אז עדיף לשלוף.
+    needs_principles:
+      Boolean(opts?.forceHeavy) ||
+      isQuestion ||
+      knowledge ||
+      principlesHint ||
+      signals.blocker_mentioned ||
+      Boolean(signals.emotional_hint) ||
+      Boolean(signals.avoid_push_requested),
     reason,
   };
 }
@@ -1082,6 +1111,7 @@ function mergeContextDecisions(
     needs_full_progress_report:
       base.needs_full_progress_report || extra.needs_full_progress_report,
     needs_journey_knowledge: base.needs_journey_knowledge || extra.needs_journey_knowledge,
+    needs_principles: Boolean(base.needs_principles) || Boolean(extra.needs_principles),
     reason: base.reason,
     summary: base.summary,
   };
@@ -1145,9 +1175,10 @@ function buildChatContextRouterPrompt(
 - needs_system_knowledge_rag: שאלת ידע/"למה"/"איך"/"כדאי" על בריאות/תזונה/הרגלים/תוכן מהמסע. (למשל "למה לשתות מים לפני האוכל" -> true)
 - needs_full_progress_report: דפוסים רב-יומיים/היסטוריית ביצועים.
 - needs_journey_knowledge: להבין צעד/תחנה/גישה/תוכנית מהמסע. (למשל "איך נתקדם בתוכנית" -> true)
+- needs_principles: עקרונות/חוקי התוכנית או "איך להתמודד עם X" — התלבטות, חסם, נפילה/פיתוי, רגש, "מותר/אסור", "מה לעשות אם", שאלת גבולות/מדיניות, או בקשת הכוונה התנהגותית. בספק כשזו לא הודעת אישור קצרה -> true.
 
 החזר JSON בלבד:
-{"heavy_context":true/false,"needs_user_memory_rag":true/false,"needs_system_knowledge_rag":true/false,"needs_full_progress_report":true/false,"needs_journey_knowledge":true/false,"reason":"קצר","summary":"סיכום קצר לקלוד או null"}
+{"heavy_context":true/false,"needs_user_memory_rag":true/false,"needs_system_knowledge_rag":true/false,"needs_full_progress_report":true/false,"needs_journey_knowledge":true/false,"needs_principles":true/false,"reason":"קצר","summary":"סיכום קצר לקלוד או null"}
 
 אותות regex: ${signalParts.join(', ') || 'none'}${historyBlock}
 הודעת משתמש (חדשה):
@@ -2010,7 +2041,9 @@ export async function POST(request: Request) {
     : Promise.resolve(null);
 
   const enrolledPromise =
-    contextDecision.needs_journey_knowledge || contextDecision.needs_system_knowledge_rag
+    contextDecision.needs_journey_knowledge ||
+    contextDecision.needs_system_knowledge_rag ||
+    contextDecision.needs_principles
     ? fetchUserEnrolledCourseIds(supabase, user.id).catch((enrErr) => {
         console.warn('[ai/chat]', {
           debug_id: debugId,
@@ -2045,6 +2078,7 @@ export async function POST(request: Request) {
         needs_system_knowledge_rag: contextDecision.needs_system_knowledge_rag,
         needs_full_progress_report: contextDecision.needs_full_progress_report,
         needs_journey_knowledge: contextDecision.needs_journey_knowledge,
+        needs_principles: contextDecision.needs_principles,
       },
     },
   }).catch((persistErr) => {
@@ -2083,6 +2117,10 @@ export async function POST(request: Request) {
     ? Promise.resolve(null)
     : fetchUserMemoryDossier(supabase, user.id).catch(() => null);
 
+  const guideSummariesPromise = trivialBypass
+    ? Promise.resolve([])
+    : fetchUserGuideSummaries(supabase, user.id).catch(() => []);
+
   const [
     profileRow,
     activeJourneyContext,
@@ -2093,6 +2131,7 @@ export async function POST(request: Request) {
     notificationContextBlock,
     fullProgressReport,
     memoryDossier,
+    guideSummaries,
   ] = await Promise.all([
     fetchChatProfileRow(supabase, user.id),
     journeyPromise,
@@ -2103,6 +2142,7 @@ export async function POST(request: Request) {
     notificationContextPromise,
     fullProgressReportPromise,
     memoryDossierPromise,
+    guideSummariesPromise,
   ]);
 
   const [todayChatTurns, todayAlmogTouches] = dailyContextBundle;
@@ -2207,6 +2247,7 @@ export async function POST(request: Request) {
       : 'אין שם פרטי זמין בפרופיל כרגע.';
     let ragMemoryBlock = '';
     let systemKnowledgeBlock = '';
+    let principlesBlock = '';
     const skFilter =
       journeyCap && isSystemKnowledgeVectorConfigured()
         ? buildAlmogSystemKnowledgeFilter({
@@ -2214,10 +2255,18 @@ export async function POST(request: Request) {
             enrolledCourseIds,
           })
         : null;
+    /**
+     * סינון עקרונות גלובלי — לא תלוי ב-journeyCap (עקרונות חלים גם על משתמש חדש).
+     * תלוי רק בהגדרת אינדקס הידע. נשלף סמנטית מול ההודעה הנוכחית (אותו embedding).
+     */
+    const principlesFilter = isSystemKnowledgeVectorConfigured()
+      ? buildAlmogPrinciplesFilter({ enrolledCourseIds })
+      : null;
     const needUserRag = contextDecision.needs_user_memory_rag && isVectorRagRetrieveEnabled();
     const needSystemRag = contextDecision.needs_system_knowledge_rag && Boolean(skFilter);
+    const needPrinciples = contextDecision.needs_principles && Boolean(principlesFilter);
 
-    if (needUserRag || needSystemRag) {
+    if (needUserRag || needSystemRag || needPrinciples) {
       try {
         const qv = await embedTextForRag(lastUserText);
         if (needUserRag) {
@@ -2235,6 +2284,14 @@ export async function POST(request: Request) {
             topK: 5,
           });
           systemKnowledgeBlock = formatSystemKnowledgeContextBlock(skHits, 5);
+        }
+        if (needPrinciples && principlesFilter) {
+          const principleHits = await queryAlmogSystemKnowledgeForUser({
+            questionEmbedding: qv,
+            filter: principlesFilter,
+            topK: 4,
+          });
+          principlesBlock = formatAlmogPrinciplesBlock(principleHits, 4);
         }
       } catch (ragErr) {
         console.warn('[ai/chat]', {
@@ -2341,6 +2398,7 @@ export async function POST(request: Request) {
       journeyData: journeyDataBlock,
       isGreeting: isGreetingTurn,
     });
+    const guidesStateBlock = formatGuidesStateForAi(guideSummaries);
     const turnWeightBlock =
       parsedWeightKg != null ? formatWeightLoggedPromptBlock(parsedWeightKg) : null;
 
@@ -2396,6 +2454,12 @@ export async function POST(request: Request) {
 
     // coaching style + dossier + onboarding כפולים לזיכרון העבודה — רק בתור כבד.
     if (coachingStyleBlock && !leanLightTurn) contextSections.push(coachingStyleBlock);
+    /**
+     * עקרונות אלמוג (חוקי תוכנית + "איך להתמודד עם X") — קו מנחה התנהגותי מחייב.
+     * גבוה בעדיפות (מיד אחרי סגנון האימון) כדי שיעצב את התשובה, ולא ייקבר תחת RAG.
+     * נשלף סמנטית לפי התור (needs_principles) — נכנס רק כשרלוונטי.
+     */
+    if (principlesBlock) contextSections.push(principlesBlock);
     if (workingMemoryBlock) contextSections.push(workingMemoryBlock);
     if (memoryDossierBlock && !leanLightTurn) contextSections.push(memoryDossierBlock);
     if (journeyFollowUpBlock) contextSections.push(journeyFollowUpBlock);
@@ -2504,6 +2568,7 @@ export async function POST(request: Request) {
         warn_threshold: SYSTEM_PROMPT_LENGTH_WARN_CHARS,
         has_rag_user_block: Boolean(ragMemoryBlock),
         has_system_knowledge_block: Boolean(systemKnowledgeBlock),
+        has_principles_block: Boolean(principlesBlock),
         has_journey_state: Boolean(journeyStateLine),
         has_station_rules: Boolean(stationRules),
         has_habit_rules: Boolean(habitCheckpointRules),
@@ -2513,6 +2578,7 @@ export async function POST(request: Request) {
         needs_system_knowledge_rag: contextDecision.needs_system_knowledge_rag,
         needs_full_progress_report: contextDecision.needs_full_progress_report,
         needs_journey_knowledge: contextDecision.needs_journey_knowledge,
+        needs_principles: contextDecision.needs_principles,
         prompt_cache_enabled: mcfg.supportsPromptCache,
       });
     } else {
@@ -2528,6 +2594,7 @@ export async function POST(request: Request) {
         needs_system_knowledge_rag: contextDecision.needs_system_knowledge_rag,
         needs_full_progress_report: contextDecision.needs_full_progress_report,
         needs_journey_knowledge: contextDecision.needs_journey_knowledge,
+        needs_principles: contextDecision.needs_principles,
       });
     }
 
@@ -2848,6 +2915,26 @@ export async function POST(request: Request) {
             debug_id: debugId,
             stage: `${finishStage}_journey_follow_up`,
             error: followUpErr instanceof Error ? followUpErr.message : String(followUpErr),
+          });
+        }
+
+        try {
+          const admin = createAdminClient();
+          const guideAccess = await applyGuideAccessFromSignals(admin, user.id, lastUserText);
+          if (guideAccess.granted) {
+            console.info('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_guide_access`,
+              guide: guideAccess.guideTitle,
+              signal: guideAccess.signal,
+              message: guideAccess.message,
+            });
+          }
+        } catch (guideAccessErr) {
+          console.warn('[ai/chat]', {
+            debug_id: debugId,
+            stage: `${finishStage}_guide_access`,
+            error: guideAccessErr instanceof Error ? guideAccessErr.message : String(guideAccessErr),
           });
         }
 

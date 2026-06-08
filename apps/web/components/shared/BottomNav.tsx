@@ -14,7 +14,7 @@ const leftItems = [
   { href: '/journey',    label: 'המסע שלי', icon: Route      },
 ];
 const rightItems = [
-  { href: '/courses', label: 'קורסים', icon: BookOpen },
+  { href: '/courses', label: 'מדריכים', icon: BookOpen },
   { href: '/profile', label: 'פרופיל', icon: UserCircle },
 ];
 

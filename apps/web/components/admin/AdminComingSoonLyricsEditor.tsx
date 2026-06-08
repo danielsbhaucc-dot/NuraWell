@@ -304,7 +304,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
           className="flex h-10 items-center gap-1.5 rounded-xl bg-gradient-to-l from-lime-400 to-emerald-400 px-4 text-sm font-black text-[#04231a] transition hover:brightness-105"
         >
           <RotateCcw className="h-4 w-4" />
-          התחל סנכרון מ-0
+          התחל סנכרון מ־0
         </button>
         <button
           type="button"

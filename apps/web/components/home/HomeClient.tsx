@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { AlmogHeroHeader } from './DolevHeroHeader';
 import { DashboardBriefCard } from './DashboardBriefCard';
+import { buildAlmogGreeting, type GreetingTaskState } from '../../lib/ai/almog-greeting';
 import {
   countAcceptedTaskExecutionToday,
   type JourneyReportStepShape,
@@ -82,36 +83,29 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
   }, [refreshTasks]);
 
   const bubbleContent = useMemo(() => {
-    if (taskLoading) {
-      return <>רגע, אני מסתכל על המסע שלך…</>;
+    const taskState: GreetingTaskState = taskLoading
+      ? 'loading'
+      : taskCounts.dueToday === 0 && taskCounts.accepted === 0
+        ? 'fresh'
+        : taskCounts.pending > 0
+          ? 'pending'
+          : 'done';
+
+    const greeting = buildAlmogGreeting({
+      firstName,
+      taskState,
+      pendingCount: taskCounts.pending,
+    });
+
+    if (!greeting.highlight) {
+      return <>{greeting.lead}</>;
     }
-    if (taskCounts.dueToday === 0 && taskCounts.accepted === 0) {
-      return (
-        <>
-          {firstName ? `${firstName}, ` : ''}שמח שאתה כאן 🌿
-          <br />
-          <strong style={{ color: '#FFD97D', fontWeight: 700 }}>
-            כשנוח — תכתוב לי במשפט מה הכי חשוב היום.
-          </strong>
-        </>
-      );
-    }
-    if (taskCounts.pending > 0) {
-      return (
-        <>
-          יש לך {taskCounts.pending} משימות שקיבלת ועדיין לא סגרת.
-          <br />
-          <strong style={{ color: '#FFD97D', fontWeight: 700 }}>
-            ספר לי בצ&apos;אט כשעשית — בלי לחפש כפתורים.
-          </strong>
-        </>
-      );
-    }
+
     return (
       <>
-        יופי — סגרת את מה שהתחייבת אליו היום ✦
+        {greeting.lead}
         <br />
-        <strong style={{ color: '#FFD97D', fontWeight: 700 }}>מה הכי מרגיש לך עכשיו?</strong>
+        <strong style={{ color: '#FFD97D', fontWeight: 700 }}>{greeting.highlight}</strong>
       </>
     );
   }, [taskCounts, taskLoading, firstName]);
@@ -202,7 +196,7 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
                     {taskLoading ? '…' : taskCounts.done}
                   </span>
                   <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.75)', fontWeight: 600 }}>
-                    מתוך {taskLoading ? '…' : taskCounts.dueToday || taskCounts.accepted || '—'}
+                    מתוך {taskLoading ? '…' : taskCounts.dueToday || taskCounts.accepted || '·'}
                   </span>
                 </div>
                 <div className="relative text-right" style={{ flex: 1 }}>
@@ -220,12 +214,12 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
                     {taskLoading
                       ? 'טוען…'
                       : taskCounts.accepted === 0
-                        ? 'עדיין לא לקחתם משימות במסע — בואו נתחיל'
+                        ? 'עדיין לא לקחתם משימות במסע, בואו נתחיל'
                         : taskCounts.dueToday === 0
-                          ? 'אין משימות פעילות להיום — מחר נמשיך'
+                          ? 'אין משימות פעילות להיום, מחר נמשיך'
                           : taskCounts.pending > 0
                             ? `${taskCounts.pending} משימות ממתינות לסימון היום`
-                            : 'כל משימות היום — בוצעו! ✦'}
+                            : 'כל משימות היום בוצעו! ✦'}
                   </p>
                   {(taskCounts.dueToday > 0 || taskCounts.accepted > 0) && (
                     <div className="flex gap-1">
@@ -253,7 +247,7 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
             </button>
           </motion.div>
 
-          {/* קורסים */}
+          {/* מדריכים */}
           {stats.activeCoursesCount > 0 && (
             <motion.div variants={item}>
               <Link href="/courses" prefetch className="block">
@@ -289,10 +283,10 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
                         fontFamily: "'Rubik','Heebo',sans-serif",
                       }}
                     >
-                      {stats.activeCoursesCount} קורסים פעילים
+                      {stats.activeCoursesCount} מדריכים פעילים
                     </p>
                     <p style={{ fontSize: '12px', color: '#B45309', marginTop: '2px' }}>
-                      {stats.totalLessonsCompleted} שיעורים הושלמו — המשיכו ללמוד
+                      {stats.totalLessonsCompleted} פרקים הושלמו, המשיכו ללמוד
                     </p>
                   </div>
                   <ChevronLeft className="w-5 h-5 text-amber-800/35 shrink-0 mr-auto" aria-hidden />
@@ -316,7 +310,7 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
             </p>
             <div className="grid grid-cols-2 gap-3">
               <QuickLink href="/journey" icon={Route} label="המסע שלי" accent="#10b981" />
-              <QuickLink href="/courses" icon={BookOpen} label="הקורסים" accent="#14b8a6" />
+              <QuickLink href="/courses" icon={BookOpen} label="המדריכים" accent="#14b8a6" />
               <QuickLink
                 href="#"
                 icon={ClipboardCheck}
@@ -352,7 +346,7 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
                 מתחילים את המסע
               </h3>
               <p className="text-sm max-w-[240px] mx-auto leading-relaxed mb-4" style={{ color: '#9896B8' }}>
-                עברו למסע שלכם או לקורסים כשהם ייפתחו עבורכם
+                עברו למסע שלכם או למדריכים כשהם ייפתחו עבורכם
               </p>
               <Link
                 href="/journey"

@@ -59,7 +59,7 @@ export default function NotFoundPage() {
             style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 6px 20px rgba(16,185,129,0.25)' }}
           >
             <Home className="w-5 h-5" />
-            <span>חזרה לקורסים</span>
+            <span>חזרה למדריכים</span>
           </Link>
 
           <div className="flex gap-3">
