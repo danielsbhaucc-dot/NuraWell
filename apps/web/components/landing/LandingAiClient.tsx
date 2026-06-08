@@ -34,7 +34,6 @@ import {
   Infinity as InfinityIcon,
   Leaf,
   MessageCircle,
-  Mic,
   Moon,
   PlayCircle,
   Radar,
@@ -159,6 +158,196 @@ function TiltCard({
     >
       <div className={styles.tiltInner}>{children}</div>
     </div>
+  );
+}
+
+type ChatMsg = { role: 'user' | 'assistant'; content: string };
+
+const DEMO_SUGGESTIONS = [
+  'אני עייף כל היום 😴',
+  'מה ההבדל מדיאטה?',
+  'איך מתחילים?',
+];
+
+const DEMO_GREETING =
+  'היי 👋 אני אלמוג, מנטור ה-AI של NuraWell. ספרו לי איך אתם מרגישים היום — ואראה לכם בדיוק איך זה עובד.';
+
+/* Live AI demo chat — calls the public, rate-limited cheap-model endpoint and streams the reply */
+function AiDemoChat() {
+  const [messages, setMessages] = useState<ChatMsg[]>([
+    { role: 'assistant', content: DEMO_GREETING },
+  ]);
+  const [input, setInput] = useState('');
+  const [streaming, setStreaming] = useState(false);
+  const [waiting, setWaiting] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, waiting]);
+
+  const send = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || streaming) return;
+
+    const next: ChatMsg[] = [...messages, { role: 'user', content: trimmed }];
+    setMessages(next);
+    setInput('');
+    setStreaming(true);
+    setWaiting(true);
+
+    try {
+      const res = await fetch('/api/v1/public/landing-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: next.slice(-8) }),
+      });
+
+      if (!res.ok || !res.body) {
+        let msg = 'משהו השתבש 🙈 אבל אפשר פשוט להתחיל חינם — וזה יעבוד מצוין.';
+        try {
+          const data = (await res.json()) as { error?: string };
+          if (data?.error) msg = data.error;
+        } catch {
+          /* keep default */
+        }
+        setMessages((m) => [...m, { role: 'assistant', content: msg }]);
+        return;
+      }
+
+      setMessages((m) => [...m, { role: 'assistant', content: '' }]);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let acc = '';
+      let first = true;
+
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        acc += decoder.decode(value, { stream: true });
+        if (first) {
+          setWaiting(false);
+          first = false;
+        }
+        setMessages((m) => {
+          const copy = [...m];
+          copy[copy.length - 1] = { role: 'assistant', content: acc };
+          return copy;
+        });
+      }
+    } catch {
+      setMessages((m) => [
+        ...m,
+        { role: 'assistant', content: 'אין חיבור כרגע 🙏 נסו שוב — או התחילו ישר את המסע החינמי.' },
+      ]);
+    } finally {
+      setStreaming(false);
+      setWaiting(false);
+    }
+  };
+
+  const showSuggestions = messages.length <= 1 && !streaming;
+
+  return (
+    <Glass strong className={`relative overflow-hidden rounded-[2rem] p-4 sm:p-5 ${styles.ring} ${styles.sheen}`}>
+      {/* header */}
+      <div className="flex items-center gap-3 border-b border-white/10 pb-3">
+        <span className={`relative flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300/30 to-emerald-400/20 text-cyan-200 ring-1 ring-white/25 ${styles.orb}`}>
+          <BrainCircuit className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="text-right">
+          <p className="text-sm font-black text-white">אלמוג · מנטור AI</p>
+          <p className="flex items-center gap-1.5 text-[11px] text-emerald-200/80">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+            {streaming ? 'חושב…' : 'מחובר · דמו חי'}
+          </p>
+        </div>
+        <span className="ms-auto inline-flex items-center gap-1 rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-black text-emerald-100">
+          <Sparkles className="h-3 w-3" aria-hidden />
+          חי
+        </span>
+      </div>
+
+      {/* messages */}
+      <div
+        ref={scrollRef}
+        className="my-3 max-h-[260px] min-h-[180px] space-y-3 overflow-y-auto pe-1 text-sm sm:max-h-[300px]"
+      >
+        {messages.map((m, i) =>
+          m.role === 'user' ? (
+            <div
+              key={i}
+              className="ms-auto max-w-[82%] whitespace-pre-wrap break-words rounded-2xl rounded-tl-md bg-white/12 px-3.5 py-2.5 text-emerald-50"
+            >
+              {m.content}
+            </div>
+          ) : (
+            <div
+              key={i}
+              className="me-auto max-w-[90%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-md border border-cyan-300/25 bg-gradient-to-br from-cyan-400/15 to-emerald-400/10 px-3.5 py-2.5 text-white"
+            >
+              {m.content}
+            </div>
+          ),
+        )}
+        {waiting ? (
+          <div className="me-auto inline-flex items-center gap-1 rounded-2xl rounded-tr-md border border-white/10 bg-white/8 px-3.5 py-3">
+            <span className={styles.typing}>
+              <span />
+              <span />
+              <span />
+            </span>
+          </div>
+        ) : null}
+      </div>
+
+      {/* suggestions */}
+      {showSuggestions ? (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {DEMO_SUGGESTIONS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => send(s)}
+              className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {/* input */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          send(input);
+        }}
+        className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/8 px-3 py-2"
+      >
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          maxLength={500}
+          disabled={streaming}
+          placeholder="כתבו לאלמוג…"
+          aria-label="הודעה לאלמוג"
+          className="flex-1 bg-transparent text-right text-sm text-white outline-none placeholder:text-white/40 disabled:opacity-60"
+        />
+        <button
+          type="submit"
+          disabled={streaming || !input.trim()}
+          aria-label="שליחה"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 to-emerald-300 text-emerald-950 transition active:scale-90 disabled:opacity-50"
+        >
+          <Send className="h-4 w-4" aria-hidden />
+        </button>
+      </form>
+      <p className="mt-2 text-center text-[10px] text-white/35">
+        דמו חי · מופעל ב-AI · אחרי הרשמה אלמוג זוכר אתכם ובונה מסע אישי
+      </p>
+    </Glass>
   );
 }
 
@@ -320,52 +509,7 @@ export function LandingAiClient() {
             className="relative mx-auto w-full max-w-md"
           >
             <div className={`${styles.floatSlow}`}>
-              <Glass strong className={`relative overflow-hidden rounded-[2rem] p-4 sm:p-5 ${styles.ring} ${styles.sheen}`}>
-                {/* chat header */}
-                <div className="flex items-center gap-3 border-b border-white/10 pb-3">
-                  <span className={`relative flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300/30 to-emerald-400/20 text-cyan-200 ring-1 ring-white/25 ${styles.orb}`}>
-                    <BrainCircuit className="h-5 w-5" aria-hidden />
-                  </span>
-                  <div className="text-right">
-                    <p className="text-sm font-black text-white">אלמוג · מנטור AI</p>
-                    <p className="flex items-center gap-1.5 text-[11px] text-emerald-200/80">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-                      מקליד עכשיו…
-                    </p>
-                  </div>
-                  <Mic className="ms-auto h-4 w-4 text-white/40" aria-hidden />
-                </div>
-
-                {/* messages */}
-                <div className="space-y-3 py-4 text-sm">
-                  <div className="ms-auto max-w-[80%] rounded-2xl rounded-tl-md bg-white/12 px-3.5 py-2.5 text-emerald-50">
-                    בקושי ישנתי ואין לי כוח לבשל היום 😣
-                  </div>
-                  <div className="me-auto max-w-[88%] rounded-2xl rounded-tr-md border border-cyan-300/25 bg-gradient-to-br from-cyan-400/15 to-emerald-400/10 px-3.5 py-2.5 text-white">
-                    הבנתי. כשהשינה נמוכה הגוף מבקש קלוריות מהירות — זה לא חולשה, זו ביולוגיה. 💚
-                    <br />
-                    הכנתי לך משהו ב-7 דקות מחומרים שיש לך בבית. רוצה?
-                  </div>
-                  <div className="me-auto inline-flex items-center gap-1 rounded-2xl rounded-tr-md border border-white/10 bg-white/8 px-3.5 py-3">
-                    <span className={styles.typing}>
-                      <span />
-                      <span />
-                      <span />
-                    </span>
-                  </div>
-                </div>
-
-                {/* "thinking" scan bar */}
-                <div className={`mb-3 h-1 overflow-hidden rounded-full bg-white/10 ${styles.scan}`} aria-hidden />
-
-                {/* fake input */}
-                <div className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/8 px-3 py-2">
-                  <span className="flex-1 text-right text-xs text-white/40">כתבו לאלמוג…</span>
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 to-emerald-300 text-emerald-950">
-                    <Send className="h-4 w-4" aria-hidden />
-                  </span>
-                </div>
-              </Glass>
+              <AiDemoChat />
             </div>
 
             {/* floating mini stat chips */}
