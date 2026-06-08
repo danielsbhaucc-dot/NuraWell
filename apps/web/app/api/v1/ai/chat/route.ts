@@ -264,12 +264,13 @@ const CHAT_MODEL_REQUIRES_PII_SHIELD = CHAT_MODEL.startsWith('qwen/') || CHAT_MO
  */
 const CHAT_MODEL_IS_QWEN = CHAT_MODEL.toLowerCase().includes('qwen');
 /**
- * reasoning *כבוי* כברירת מחדל: למרות שהוא משפר משימות לוגיות, על פרסונה קלילה
- * כמו אלמוג ("חבר בוואטסאפ") הוא דווקא פוגע — התשובה יוצאת מחושבת/נוקשה ואיטית
- * (טוקני חשיבה לפני התו הראשון = TTFB ארוך). להחזרה: `AI_CHAT_REASONING=on`.
+ * reasoning *פעיל* כברירת מחדל ל-Qwen: Qwen3.x הוא hybrid-thinking ובמקור
+ * (אפליקציות Qwen/GPT) הוא חושב לפני שעונה — זה מקור האיכות והאינטליגנציה
+ * הרגשית. בלי זה האיכות צונחת ("מדהים במקור, חלש בפרויקט"). העלות: TTFB ארוך
+ * יותר — לכן יש אינדיקטור סטטוס חי בצ'אט שממלא את ההמתנה. כיבוי: `AI_CHAT_REASONING=off`.
  */
 const CHAT_REASONING_ENABLED =
-  (process.env.AI_CHAT_REASONING?.trim() || 'off').toLowerCase() === 'on';
+  (process.env.AI_CHAT_REASONING?.trim() || 'on').toLowerCase() === 'on';
 const CHAT_USE_REASONING = CHAT_REASONING_ENABLED && CHAT_MODEL_IS_QWEN;
 /**
  * פרומפט רזה לכותב הראשי כש-Qwen פעיל: הפרומפט המלא נבנה לאלף מודלים זולים
@@ -302,7 +303,8 @@ const FINAL_GUARDRAILS_FOR_WRITER = CHAT_USE_LEAN_PROMPT
 const CHAT_REASONING_MAX_TOKENS = (() => {
   const raw = process.env.AI_CHAT_REASONING_MAX_TOKENS?.trim();
   const n = raw ? Number(raw) : NaN;
-  return Number.isFinite(n) && n >= 256 && n <= 8192 ? Math.floor(n) : 2048;
+  // 1024: מספיק חשיבה לעומק רגשי, בלי להאריך TTFB מדי ובלי לדחוק את הפלט.
+  return Number.isFinite(n) && n >= 256 && n <= 8192 ? Math.floor(n) : 1024;
 })();
 /**
  * בונה את שדה `reasoning` של OpenRouter (או null אם כבוי/לא רלוונטי).
@@ -2206,12 +2208,20 @@ export async function POST(request: Request) {
      * Llama/קלוד (לא רזה) ממשיכים לקבל את הכל.
      */
     const leanContext = CHAT_USE_LEAN_PROMPT;
+    /**
+     * ניתוב חכם: בתור "קל" (הנתב הזול קבע heavy_context=false) במצב רזה —
+     * שולחים לספק רק את ההכרחי. מדלגים על שכבות זיכרון/פרופיל כבדות וכפולות
+     * (dossier, onboarding, coaching style, סיכום מתגלגל, mood כפול) ששמורות
+     * לתורים שבאמת צריכים אותן. חוסך טוקנים, מאיץ TTFB, ומקטין סיכוי לקריסה.
+     * הקשר חי (הודעות אחרונות + מה שקרה היום + אותות התור) תמיד נשלח.
+     */
+    const leanLightTurn = leanContext && !useHeavyContext;
 
     const routerSummary = contextDecision.summary?.trim();
     if (routerSummary) {
       contextSections.push(`[נתב-הקשר] ${routerSummary.slice(0, 240)}`);
     }
-    if (chatSummaryBlock) contextSections.push(chatSummaryBlock);
+    if (chatSummaryBlock && !leanLightTurn) contextSections.push(chatSummaryBlock);
 
     /**
      * עדיפות עליונה: כשהמשתמש מגיב להתראה — אלמוג חייב לדעת על מה הוא מגיב.
@@ -2220,12 +2230,13 @@ export async function POST(request: Request) {
      */
     if (notificationContextBlock) contextSections.push(notificationContextBlock);
 
-    if (coachingStyleBlock) contextSections.push(coachingStyleBlock);
+    // coaching style + dossier + onboarding כפולים לזיכרון העבודה — רק בתור כבד.
+    if (coachingStyleBlock && !leanLightTurn) contextSections.push(coachingStyleBlock);
     if (workingMemoryBlock) contextSections.push(workingMemoryBlock);
-    if (memoryDossierBlock) contextSections.push(memoryDossierBlock);
+    if (memoryDossierBlock && !leanLightTurn) contextSections.push(memoryDossierBlock);
     if (journeyFollowUpBlock) contextSections.push(journeyFollowUpBlock);
     if (lifeContextBlock) contextSections.push(lifeContextBlock);
-    if (onboardingContextBlock) contextSections.push(onboardingContextBlock);
+    if (onboardingContextBlock && !leanLightTurn) contextSections.push(onboardingContextBlock);
 
     if (turnSignalsBlock) contextSections.push(turnSignalsBlock);
     if (turnHabitBlock) contextSections.push(turnHabitBlock);
@@ -2284,7 +2295,9 @@ export async function POST(request: Request) {
 
     if (systemKnowledgeBlock) contextSections.push(systemKnowledgeBlock);
     if (ragMemoryBlock) contextSections.push(ragMemoryBlock);
-    if (moodFromProfile) contextSections.push(moodFromProfile);
+    // מצב רוח מהפרופיל כפול לזיכרון העבודה — מדלגים אם הזיכרון כבר נשלח.
+    if (moodFromProfile && !(leanContext && workingMemoryBlock))
+      contextSections.push(moodFromProfile);
 
     const addressingFooter = [personalNameInstruction, genderAddressingHint(profileGender)]
       .filter(Boolean)
