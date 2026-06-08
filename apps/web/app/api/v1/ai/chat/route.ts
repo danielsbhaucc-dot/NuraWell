@@ -7,9 +7,11 @@ import { embedTextForRag } from '../../../../../lib/ai/openrouter-embeddings';
 import { formatRagMemoryContextBlock } from '../../../../../lib/ai/format-rag-context';
 import {
   ALMOG_CHAT_FINAL_GUARDRAILS,
+  ALMOG_CHAT_FINAL_GUARDRAILS_LEAN,
   ALMOG_HABIT_CHECKPOINT_RULES,
   ALMOG_STATION_PROGRESSIVE_RULES,
   NURAWELL_CHAT_SYSTEM_PROMPT,
+  NURAWELL_CHAT_SYSTEM_PROMPT_LEAN,
 } from '../../../../../lib/ai/prompts';
 import { buildCoachingStylePromptBlock } from '../../../../../lib/ai/almog-coaching-style';
 import { stitchModelTextUntilComplete } from '../../../../../lib/ai/almog-message-complete';
@@ -233,6 +235,19 @@ const CHAT_ROUTER_MODEL =
 const CHAT_SAFETY_NET_MODEL = process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() || CHAT_ROUTER_MODEL;
 
 /**
+ * נתב-הקשר דרך **Groq** (Llama 4 Scout) — דרמטית מהיר יותר מ-OpenRouter
+ * (לרוב <300ms מול ~1.2s), אז ה-pre-step החוסם לפני Qwen כמעט נעלם וה-TTFB
+ * הכולל יורד. אם אין מפתח Groq או הקריאה נכשלת — נופלים חזרה לנתב OpenRouter.
+ * כיבוי: `AI_CHAT_ROUTER_USE_GROQ=off`.
+ */
+const GROQ_API_KEY = process.env.GROQ_API_KEY?.trim();
+const GROQ_ROUTER_MODEL =
+  process.env.GROQ_BACKGROUND_MODEL?.trim() || 'meta-llama/llama-4-scout-17b-16e-instruct';
+const CHAT_ROUTER_USE_GROQ =
+  (process.env.AI_CHAT_ROUTER_USE_GROQ?.trim() || 'on').toLowerCase() !== 'off' &&
+  Boolean(GROQ_API_KEY);
+
+/**
  * `reasoningEffort` הוא פרמטר ספציפי ל-OpenAI. כשמריצים מודל לא-OpenAI
  * (למשל Claude) דרך OpenRouter — אסור לשלוח אותו, אז ה-flag הזה מגדר
  * האם להזריק את providerOptions.openai בכלל.
@@ -248,9 +263,37 @@ const CHAT_MODEL_REQUIRES_PII_SHIELD = CHAT_MODEL.startsWith('qwen/') || CHAT_MO
  * חושב). כיבוי: `AI_CHAT_REASONING=off`.
  */
 const CHAT_MODEL_IS_QWEN = CHAT_MODEL.toLowerCase().includes('qwen');
+/**
+ * reasoning *כבוי* כברירת מחדל: למרות שהוא משפר משימות לוגיות, על פרסונה קלילה
+ * כמו אלמוג ("חבר בוואטסאפ") הוא דווקא פוגע — התשובה יוצאת מחושבת/נוקשה ואיטית
+ * (טוקני חשיבה לפני התו הראשון = TTFB ארוך). להחזרה: `AI_CHAT_REASONING=on`.
+ */
 const CHAT_REASONING_ENABLED =
-  (process.env.AI_CHAT_REASONING?.trim() || 'on').toLowerCase() !== 'off';
+  (process.env.AI_CHAT_REASONING?.trim() || 'off').toLowerCase() === 'on';
 const CHAT_USE_REASONING = CHAT_REASONING_ENABLED && CHAT_MODEL_IS_QWEN;
+/**
+ * פרומפט רזה לכותב הראשי כש-Qwen פעיל: הפרומפט המלא נבנה לאלף מודלים זולים
+ * (Llama) ומשטח דווקא את Qwen (רובוטי/מועתק/גנרי). הרזה שומר קול + חוקים
+ * קריטיים בלבד. ברירת מחדל: on ל-Qwen. כיבוי: `AI_CHAT_LEAN_PROMPT=off`.
+ */
+const CHAT_LEAN_PROMPT_ENABLED =
+  (process.env.AI_CHAT_LEAN_PROMPT?.trim() || 'on').toLowerCase() !== 'off';
+const CHAT_USE_LEAN_PROMPT = CHAT_LEAN_PROMPT_ENABLED && CHAT_MODEL_IS_QWEN;
+/**
+ * הפרומפט הסטטי לכותב הראשי. Llama/קלוד (fallback וכותב זול) ממשיכים לקבל
+ * את הפרומפט המלא — הם זקוקים לחוקים הקונקרטיים. רק Qwen מקבל את הרזה.
+ */
+const MAIN_WRITER_SYSTEM_PROMPT = CHAT_USE_LEAN_PROMPT
+  ? NURAWELL_CHAT_SYSTEM_PROMPT_LEAN
+  : BASE_SYSTEM_PROMPT;
+/**
+ * Guardrail סוגר: Qwen (מצב רזה) מקבל גרסה רכה של שורה אחת במקום הצ'קליסט
+ * הכבד — הצ'קליסט המלא נבנה לאלף Llama, ועל Qwen הוא משטח את הקול לרובוטי.
+ * Llama/קלוד ממשיכים לקבל את המלא.
+ */
+const FINAL_GUARDRAILS_FOR_WRITER = CHAT_USE_LEAN_PROMPT
+  ? ALMOG_CHAT_FINAL_GUARDRAILS_LEAN
+  : ALMOG_CHAT_FINAL_GUARDRAILS;
 /**
  * תקציב טוקני חשיבה. ב-OpenRouter טוקני ה-reasoning נספרים *בנפרד* מהתשובה,
  * אבל כדי לא להסתכן בקיצוץ נותנים ל-`reasoning.max_tokens` תקציב משלו ומרחיבים
@@ -973,27 +1016,33 @@ function buildChatContextRouterPrompt(
 ${userMessage.slice(0, 1200)}`;
 }
 
-async function routeChatContextWithCheapModel(
-  userMessage: string,
-  signals: ReturnType<typeof detectChatSignals>,
-  debugId: string
-): Promise<ChatContextDecision> {
-  const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
-  if (!openrouterKey) return fallbackContextDecision('openrouter_key_missing');
-
+/**
+ * ניסיון נתב יחיד מול ספק נתון (Groq או OpenRouter). מחזיר החלטה מפורסרת,
+ * או null אם נכשל (כדי שהקורא יוכל ליפול לספק הבא).
+ */
+async function attemptContextRoute(opts: {
+  endpoint: string;
+  apiKey: string;
+  model: string;
+  extraHeaders?: Record<string, string>;
+  timeoutMs: number;
+  userMessage: string;
+  signals: ReturnType<typeof detectChatSignals>;
+  debugId: string;
+  provider: 'groq' | 'openrouter';
+}): Promise<ChatContextDecision | null> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 1_200);
+  const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch(opts.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${openrouterKey}`,
-        'HTTP-Referer': publicAppUrlForAiReferer(),
-        'X-Title': 'NuraWell',
+        Authorization: `Bearer ${opts.apiKey}`,
+        ...(opts.extraHeaders ?? {}),
       },
       body: JSON.stringify({
-        model: CHAT_ROUTER_MODEL,
+        model: opts.model,
         temperature: 0,
         max_tokens: 220,
         response_format: { type: 'json_object' },
@@ -1003,37 +1052,77 @@ async function routeChatContextWithCheapModel(
             content:
               'אתה מחזיר JSON תקין בלבד. אתה נתב הקשר שמרני: בספק בוחר heavy_context=true.',
           },
-          { role: 'user', content: buildChatContextRouterPrompt(userMessage, signals) },
+          { role: 'user', content: buildChatContextRouterPrompt(opts.userMessage, opts.signals) },
         ],
       }),
       signal: controller.signal,
     });
     if (!response.ok) {
       console.warn('[ai/chat]', {
-        debug_id: debugId,
+        debug_id: opts.debugId,
         stage: 'context_router_failed_status',
+        provider: opts.provider,
         status: response.status,
       });
-      return fallbackContextDecision(`cheap_router_status_${response.status}`);
+      return null;
     }
     const data = (await response.json()) as {
       choices?: Array<{ message?: { content?: string | null } }>;
     };
     const raw = data.choices?.[0]?.message?.content?.trim();
-    if (!raw) return fallbackContextDecision('cheap_router_empty');
+    if (!raw) return null;
     const parsed = chatContextRouterSchema.safeParse(JSON.parse(raw.replace(/```json|```/g, '')));
-    if (!parsed.success) return fallbackContextDecision('cheap_router_invalid_json');
+    if (!parsed.success) return null;
     return parsed.data;
   } catch (err) {
     console.warn('[ai/chat]', {
-      debug_id: debugId,
+      debug_id: opts.debugId,
       stage: 'context_router_failed',
+      provider: opts.provider,
       error: err instanceof Error ? err.message : String(err),
     });
-    return fallbackContextDecision('cheap_router_exception');
+    return null;
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function routeChatContextWithCheapModel(
+  userMessage: string,
+  signals: ReturnType<typeof detectChatSignals>,
+  debugId: string
+): Promise<ChatContextDecision> {
+  // ניסיון ראשון — Groq (מהיר מאוד). timeout צמוד כי Groq עונה ב-<300ms.
+  if (CHAT_ROUTER_USE_GROQ && GROQ_API_KEY) {
+    const groqDecision = await attemptContextRoute({
+      endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+      apiKey: GROQ_API_KEY,
+      model: GROQ_ROUTER_MODEL,
+      timeoutMs: 900,
+      userMessage,
+      signals,
+      debugId,
+      provider: 'groq',
+    });
+    if (groqDecision) return groqDecision;
+  }
+
+  // נפילה ל-OpenRouter (או ברירת מחדל אם אין Groq).
+  const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (!openrouterKey) return fallbackContextDecision('openrouter_key_missing');
+
+  const orDecision = await attemptContextRoute({
+    endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+    apiKey: openrouterKey,
+    model: CHAT_ROUTER_MODEL,
+    extraHeaders: { 'HTTP-Referer': publicAppUrlForAiReferer(), 'X-Title': 'NuraWell' },
+    timeoutMs: 1_200,
+    userMessage,
+    signals,
+    debugId,
+    provider: 'openrouter',
+  });
+  return orDecision ?? fallbackContextDecision('cheap_router_all_providers_failed');
 }
 
 function formatChatSummaryPromptBlock(summary: unknown): string | null {
@@ -2110,6 +2199,14 @@ export async function POST(request: Request) {
      */
     const contextSections: string[] = [];
 
+    /**
+     * מצב רזה (Qwen): מצמצמים ערימת הקשר כדי לא להכביד את המודל ולהאיץ TTFB.
+     * - מדלגים על בלוקים כפולים (נתוני מסע מופיעים פעמיים: guidance + טקסט עברי).
+     * - מדלגים על חוקי-קצב נוטיפיקציה (habit checkpoint) שלא רלוונטיים לצ'אט חי.
+     * Llama/קלוד (לא רזה) ממשיכים לקבל את הכל.
+     */
+    const leanContext = CHAT_USE_LEAN_PROMPT;
+
     const routerSummary = contextDecision.summary?.trim();
     if (routerSummary) {
       contextSections.push(`[נתב-הקשר] ${routerSummary.slice(0, 240)}`);
@@ -2141,7 +2238,8 @@ export async function POST(request: Request) {
     if (dailyShortTermBlock) contextSections.push(dailyShortTermBlock);
 
     if (stationRules) contextSections.push(stationRules.trim());
-    if (habitCheckpointRules) contextSections.push(habitCheckpointRules.trim());
+    // חוקי קצב-נוטיפיקציה לא רלוונטיים לצ'אט חי — מדלגים במצב רזה (חיסכון).
+    if (habitCheckpointRules && !leanContext) contextSections.push(habitCheckpointRules.trim());
     if (journeyStateLine) contextSections.push(journeyStateLine.trim());
 
     if (journeyGuidanceBlock) contextSections.push(journeyGuidanceBlock);
@@ -2154,7 +2252,11 @@ export async function POST(request: Request) {
      * נתוני המסע כטקסט עברי טבעי — לא JSON.
      * מודלי mini "מעכלים" טקסט הרבה יותר טוב מ-JSON בתוך פרומפט.
      */
-    if (activeJourneyContext) {
+    /**
+     * נתוני המסע כטקסט עברי טבעי. במצב רזה זה כפילות של journeyGuidanceBlock
+     * (שכבר נושא את ✓/○ + כללי הדרבון) — מדלגים כדי לא לשלוח את אותו מידע פעמיים.
+     */
+    if (activeJourneyContext && !leanContext) {
       const journeyTextBlock = formatJourneyContextAsHebrewText({
         stepTitle: activeJourneyContext.stepTitle,
         tasks: aiTasks,
@@ -2204,11 +2306,12 @@ export async function POST(request: Request) {
       '— פנייה אישית —',
       addressingFooter,
       '',
-      ALMOG_CHAT_FINAL_GUARDRAILS,
+      FINAL_GUARDRAILS_FOR_WRITER,
     ]
       .filter((s) => s !== null && s !== undefined)
       .join('\n');
-    const systemPromptWithMemory = `${BASE_SYSTEM_PROMPT}\n\n${dynamicSystemPrompt}`;
+    // הכותב הראשי (Qwen) מקבל את הפרומפט הרזה; משמש גם ל-empty-retry שלו.
+    const systemPromptWithMemory = `${MAIN_WRITER_SYSTEM_PROMPT}\n\n${dynamicSystemPrompt}`;
 
     stage = 'stream_init';
     /**
@@ -2638,7 +2741,7 @@ export async function POST(request: Request) {
         apiKey: openrouterKey,
         referer: publicAppUrlForAiReferer(),
         model: CHAT_MODEL,
-        staticSystemPrompt: BASE_SYSTEM_PROMPT,
+        staticSystemPrompt: MAIN_WRITER_SYSTEM_PROMPT,
         dynamicSystemPrompt,
         recentMessages,
         temperature: 0.85,
@@ -2694,7 +2797,8 @@ export async function POST(request: Request) {
       try {
         upstream = await createOpenRouterCheapTextResponse({
           apiKey: cheapWriterKey,
-          staticSystemPrompt: BASE_SYSTEM_PROMPT,
+          // קול עקבי גם בעוקף-הזול (תודה/אישור קצר).
+          staticSystemPrompt: MAIN_WRITER_SYSTEM_PROMPT,
           dynamicSystemPrompt,
           recentMessages,
           temperature: 0.7,
@@ -2735,7 +2839,9 @@ export async function POST(request: Request) {
         safetyNetUsed = true;
         upstream = await createOpenRouterCheapTextResponse({
           apiKey: cheapWriterKey,
-          staticSystemPrompt: BASE_SYSTEM_PROMPT,
+          // קול עקבי: גם הגיבוי מדבר בקול הרזה של אלמוג, לא בפרומפט הכבד
+          // שגורם ל"גיבוי גנרי ממודל אחר" שמרגיש שונה לגמרי.
+          staticSystemPrompt: MAIN_WRITER_SYSTEM_PROMPT,
           dynamicSystemPrompt,
           recentMessages,
           temperature: 0.75,
