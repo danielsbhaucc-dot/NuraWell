@@ -1,0 +1,292 @@
+/* ============================================================
+   NuraWell · AI-First Glass Landing (v2)
+   Self-contained module — does NOT touch the existing landing.
+   Mobile-first. Glassmorphism. "Wow" ambient motion.
+   ============================================================ */
+
+.page {
+  position: relative;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  color: #eafff8;
+  font-family: 'Heebo', 'Rubik', sans-serif;
+  background:
+    radial-gradient(120% 90% at 12% -10%, rgba(20, 255, 236, 0.18), transparent 55%),
+    radial-gradient(110% 80% at 110% 10%, rgba(56, 189, 248, 0.16), transparent 55%),
+    radial-gradient(120% 120% at 50% 120%, rgba(16, 185, 129, 0.22), transparent 60%),
+    linear-gradient(165deg, #02110f 0%, #03201c 38%, #042a26 70%, #021a18 100%);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Ambient aurora background ---------- */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  opacity: 0.55;
+  will-change: transform;
+}
+
+.blob1 {
+  width: 60vw;
+  height: 60vw;
+  top: -18vw;
+  right: -10vw;
+  background: radial-gradient(circle at 30% 30%, rgba(20, 255, 236, 0.55), transparent 65%);
+  animation: drift1 22s ease-in-out infinite;
+}
+
+.blob2 {
+  width: 55vw;
+  height: 55vw;
+  bottom: -20vw;
+  left: -12vw;
+  background: radial-gradient(circle at 60% 40%, rgba(45, 212, 191, 0.5), transparent 65%);
+  animation: drift2 26s ease-in-out infinite;
+}
+
+.blob3 {
+  width: 42vw;
+  height: 42vw;
+  top: 38%;
+  left: 30%;
+  background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.4), transparent 65%);
+  animation: drift3 30s ease-in-out infinite;
+}
+
+@keyframes drift1 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-6vw, 6vh, 0) scale(1.12); }
+}
+
+@keyframes drift2 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(7vw, -5vh, 0) scale(1.15); }
+}
+
+@keyframes drift3 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.35; }
+  50% { transform: translate3d(-8vw, -7vh, 0) scale(0.85); opacity: 0.55; }
+}
+
+/* subtle grid overlay for depth */
+.grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, #000 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, #000 30%, transparent 80%);
+}
+
+/* noise/grain via tiny conic dots — adds premium texture */
+.noise {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.9) 0.5px, transparent 0.5px);
+  background-size: 3px 3px;
+}
+
+/* ---------- Glass primitives ---------- */
+.glass {
+  position: relative;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+}
+
+.glassStrong {
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* animated conic border ring for the "wow" hero card */
+.ring::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from 0deg,
+    rgba(20, 255, 236, 0),
+    rgba(20, 255, 236, 0.9),
+    rgba(56, 189, 248, 0.6),
+    rgba(20, 255, 236, 0),
+    rgba(20, 255, 236, 0)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: spin 6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* glossy sheen sweeping across glass */
+.sheen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.16) 48%, transparent 60%);
+  background-size: 250% 100%;
+  animation: sheen 5.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes sheen {
+  0% { background-position: 200% 0; }
+  60%, 100% { background-position: -120% 0; }
+}
+
+/* ---------- Text effects ---------- */
+.shimmer {
+  background: linear-gradient(100deg, #eafff8 0%, #14ffec 25%, #7dd3fc 50%, #14ffec 75%, #eafff8 100%);
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmerMove 6s linear infinite;
+}
+
+@keyframes shimmerMove {
+  to { background-position: 220% center; }
+}
+
+.gradientText {
+  background: linear-gradient(120deg, #14ffec, #2dd4bf 45%, #7dd3fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------- Floating animation (decorative) ---------- */
+.floatSlow { animation: floatY 7s ease-in-out infinite; }
+.floatMed { animation: floatY 5s ease-in-out infinite; }
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+/* ---------- AI chat preview: typing dots & scan ---------- */
+.typing span {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 0 2px;
+  border-radius: 9999px;
+  background: #14ffec;
+  animation: typing 1.3s ease-in-out infinite;
+}
+.typing span:nth-child(2) { animation-delay: 0.18s; }
+.typing span:nth-child(3) { animation-delay: 0.36s; }
+
+@keyframes typing {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-4px); }
+}
+
+/* AI orb pulse rings */
+.orb {
+  position: relative;
+}
+.orb::before,
+.orb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1px solid rgba(20, 255, 236, 0.55);
+  animation: pulseRing 2.8s ease-out infinite;
+}
+.orb::after { animation-delay: 1.4s; }
+
+@keyframes pulseRing {
+  0% { transform: scale(1); opacity: 0.7; }
+  100% { transform: scale(2.1); opacity: 0; }
+}
+
+/* live "thinking" bar */
+.scan {
+  position: relative;
+  overflow: hidden;
+}
+.scan::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(20, 255, 236, 0.5), transparent);
+  transform: translateX(-100%);
+  animation: scan 2.2s ease-in-out infinite;
+}
+
+@keyframes scan {
+  to { transform: translateX(100%); }
+}
+
+/* ---------- Scroll cue ---------- */
+.scrollDot {
+  animation: scrollDot 1.8s ease-in-out infinite;
+}
+@keyframes scrollDot {
+  0% { transform: translateY(0); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateY(14px); opacity: 0; }
+}
+
+/* ---------- Marquee for AI capability ticker ---------- */
+.marquee {
+  display: flex;
+  gap: 14px;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+}
+.marqueeWrap:hover .marquee { animation-play-state: paused; }
+
+@keyframes marquee {
+  to { transform: translateX(50%); }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .blob1, .blob2, .blob3,
+  .ring::before, .sheen::after, .shimmer,
+  .floatSlow, .floatMed, .typing span,
+  .orb::before, .orb::after, .scan::after,
+  .scrollDot, .marquee {
+    animation: none !important;
+  }
+}
