@@ -280,13 +280,146 @@
   to { transform: translateX(50%); }
 }
 
+/* ---------- Cursor spotlight (desktop wow) ---------- */
+.spotlight {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    340px circle at var(--mx, 50%) var(--my, 0%),
+    rgba(20, 255, 236, 0.12),
+    transparent 60%
+  );
+  transition: background 0.1s linear;
+}
+
+/* ---------- 3D tilt card ---------- */
+.tilt {
+  transform-style: preserve-3d;
+  transition: transform 0.18s ease-out, box-shadow 0.25s ease;
+  will-change: transform;
+}
+.tiltInner {
+  transform: translateZ(34px);
+}
+
+/* glowing reactive halo that follows the pointer inside a card */
+.cardGlow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(
+    220px circle at var(--cx, 50%) var(--cy, 50%),
+    rgba(20, 255, 236, 0.22),
+    transparent 65%
+  );
+  pointer-events: none;
+}
+.cardGlow:hover::before { opacity: 1; }
+
+/* ---------- Timeline glowing spine ---------- */
+.spine {
+  position: absolute;
+  background: linear-gradient(180deg, transparent, rgba(20, 255, 236, 0.6), rgba(56, 189, 248, 0.4), transparent);
+  box-shadow: 0 0 18px rgba(20, 255, 236, 0.5);
+}
+.spinePulse {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: #14ffec;
+  box-shadow: 0 0 18px 4px rgba(20, 255, 236, 0.7);
+  animation: spineTravel 6s ease-in-out infinite;
+}
+@keyframes spineTravel {
+  0%, 100% { top: 0; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* ---------- Story section dramatic rings ---------- */
+.storyGlow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(50% 40% at 50% 45%, rgba(20, 255, 236, 0.18), transparent 70%);
+}
+.storyRing {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 9999px;
+  border: 1px solid rgba(20, 255, 236, 0.18);
+  transform: translate(-50%, -50%);
+  animation: ringExpand 5s ease-out infinite;
+}
+.storyRing2 { animation-delay: 1.6s; }
+.storyRing3 { animation-delay: 3.2s; }
+@keyframes ringExpand {
+  0% { width: 120px; height: 120px; opacity: 0.6; }
+  100% { width: 760px; height: 760px; opacity: 0; }
+}
+
+/* big glowing story word */
+.storyWord {
+  text-shadow: 0 0 28px rgba(20, 255, 236, 0.35);
+}
+.storyWordGlow {
+  background: linear-gradient(120deg, #14ffec, #7dd3fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 22px rgba(20, 255, 236, 0.55));
+}
+
+/* strike-through line for "this is not a diet" */
+.strike {
+  position: relative;
+  color: rgba(234, 255, 248, 0.45);
+}
+.strike::after {
+  content: '';
+  position: absolute;
+  left: -2%;
+  right: -2%;
+  top: 52%;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #f87171, #fb7185);
+  transform: scaleX(0);
+  transform-origin: right;
+  animation: strikeIn 0.7s 0.3s ease forwards;
+}
+@keyframes strikeIn {
+  to { transform: scaleX(1); }
+}
+
+/* FAQ chevron rotate handled inline; AI insight pulse */
+.insight {
+  animation: insightPulse 3s ease-in-out infinite;
+}
+@keyframes insightPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(20, 255, 236, 0); }
+  50% { box-shadow: 0 0 0 6px rgba(20, 255, 236, 0.08); }
+}
+
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   .blob1, .blob2, .blob3,
   .ring::before, .sheen::after, .shimmer,
   .floatSlow, .floatMed, .typing span,
   .orb::before, .orb::after, .scan::after,
-  .scrollDot, .marquee {
+  .scrollDot, .marquee,
+  .spinePulse, .storyRing, .strike::after, .insight {
     animation: none !important;
   }
+  .strike::after { transform: scaleX(1); }
+  .tilt { transition: none; }
 }
