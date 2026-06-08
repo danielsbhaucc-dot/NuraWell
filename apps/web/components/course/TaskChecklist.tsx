@@ -39,7 +39,7 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
   };
 
   return (
-    <div className="glass-card p-5">
+    <div className="guide-glass-card p-5">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
@@ -47,7 +47,7 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
             style={{ background: 'rgba(249,115,22,0.2)', border: '1px solid rgba(249,115,22,0.3)' }}>
             <ClipboardList className="w-4 h-4 text-energy-500" />
           </div>
-          <h3 className="font-bold text-white text-base">משימות השיעור</h3>
+          <h3 className="font-bold text-white text-base">משימות הפרק</h3>
         </div>
         <span className={cn(
           'text-xs font-bold px-2.5 py-1 rounded-full',
@@ -94,7 +94,7 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
                     </motion.div>
                   ) : (
                     <motion.div key="empty" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                      <Circle className="w-5 h-5 text-slate-600" />
+                      <Circle className="w-5 h-5 text-white/55" />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -102,12 +102,12 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
               <div className="flex-1 min-w-0">
                 <p className={cn(
                   'text-sm font-medium leading-snug text-right',
-                  isDone ? 'line-through text-slate-500' : 'text-slate-200'
+                  isDone ? 'line-through text-white/55' : 'text-white'
                 )}>
                   {task.title}
                 </p>
                 {task.description && !isDone && (
-                  <p className="text-xs text-slate-500 mt-0.5 text-right">{task.description}</p>
+                  <p className="text-xs text-white/68 mt-0.5 text-right">{task.description}</p>
                 )}
               </div>
               {task.is_required && !isDone && (

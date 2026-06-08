@@ -109,6 +109,7 @@ export function isOpsPanelBrowserPath(pathname: string): boolean {
   if (p === '/' || p === '') return true;
   if (p === '/auth/ops-ingest') return true;
   const prefixes = [
+    '/guides',
     '/journey',
     '/journey-hub',
     '/almog',

@@ -57,11 +57,7 @@ type JourneyStepRow = {
 type DataType = 'step' | 'course' | 'principle';
 type AccessLevel = 'public' | 'premium';
 
-const PRESET_COURSES: Array<{ id: string; label: string }> = [
-  { id: 'course-intro', label: 'מבוא ופתיחה' },
-  { id: 'course-nutrition', label: 'תזונה והרגלים' },
-  { id: 'course-movement', label: 'תנועה וכושר' },
-];
+type GuideOption = { id: string; title: string };
 
 function stationTitleFromStepRow(s: JourneyStepRow): string {
   const j = s.journey_stations;
@@ -79,13 +75,16 @@ function journeyStepOptionLabel(s: JourneyStepRow): string {
   return `${stationTitleFromStepRow(s)} · שלב ${s.step_number}: ${s.title}`;
 }
 
-function itemListLabel(item: KnowledgeItem): string {
+function itemListLabel(item: KnowledgeItem, guideTitleById?: Map<string, string>): string {
   if (item.data_type === 'principle') return 'עיקרון · חוק תוכנית';
   if (item.data_type === 'step' && item.step_number != null) {
     const st = item.station_title;
     return st ? `שלב ${item.step_number} · ${st}` : `שלב ${item.step_number}`;
   }
-  if (item.course_id) return `קורס · ${item.course_id}`;
+  if (item.course_id) {
+    const title = guideTitleById?.get(item.course_id);
+    return title ? `מדריך · ${title}` : `מדריך · ${item.course_id}`;
+  }
   return item.title || 'ללא כותרת';
 }
 
@@ -189,8 +188,8 @@ const emptyForm = {
   dataType: 'step' as DataType,
   accessLevel: 'public' as AccessLevel,
   selectedStepId: '',
-  courseMode: 'preset' as 'preset' | 'custom',
-  presetCourseId: PRESET_COURSES[0]?.id ?? '',
+  courseMode: 'guide' as 'guide' | 'custom',
+  guideCourseId: '',
   customCourseId: '',
 };
 
@@ -210,6 +209,13 @@ export function AlmogKnowledgeManager() {
   const [stepsLoading, setStepsLoading] = useState(true);
   const [stepsError, setStepsError] = useState<string | null>(null);
 
+  const [guides, setGuides] = useState<GuideOption[]>([]);
+  const [guidesLoading, setGuidesLoading] = useState(true);
+  const guideTitleById = useMemo(
+    () => new Map(guides.map((g) => [g.id, g.title])),
+    [guides]
+  );
+
   const [form, setForm] = useState(emptyForm);
   const [detailLoading, setDetailLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -223,8 +229,8 @@ export function AlmogKnowledgeManager() {
 
   const effectiveCourseId = useMemo(() => {
     if (form.dataType !== 'course') return '';
-    return (form.courseMode === 'preset' ? form.presetCourseId : form.customCourseId).trim();
-  }, [form.courseMode, form.customCourseId, form.dataType, form.presetCourseId]);
+    return (form.courseMode === 'guide' ? form.guideCourseId : form.customCourseId).trim();
+  }, [form.courseMode, form.customCourseId, form.dataType, form.guideCourseId]);
 
   const loadList = useCallback(async (q: string) => {
     setListLoading(true);
@@ -267,16 +273,18 @@ export function AlmogKnowledgeManager() {
       const item = data.item;
       if (!item) throw new Error('לא נמצא');
 
-      const preset = PRESET_COURSES.find((c) => c.id === item.course_id);
+      const matchedGuide = item.course_id
+        ? guides.find((g) => g.id === item.course_id)
+        : undefined;
       setForm({
         title: item.title,
         body: item.body,
         dataType: item.data_type,
         accessLevel: item.access_level,
         selectedStepId: item.step_id ?? '',
-        courseMode: preset ? 'preset' : 'custom',
-        presetCourseId: preset?.id ?? PRESET_COURSES[0]?.id ?? '',
-        customCourseId: preset ? '' : (item.course_id ?? ''),
+        courseMode: matchedGuide ? 'guide' : item.course_id ? 'custom' : 'guide',
+        guideCourseId: matchedGuide?.id ?? '',
+        customCourseId: matchedGuide ? '' : (item.course_id ?? ''),
       });
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'שגיאת טעינה');
@@ -284,12 +292,35 @@ export function AlmogKnowledgeManager() {
     } finally {
       setDetailLoading(false);
     }
-  }, []);
+  }, [guides]);
 
   useEffect(() => {
     const t = setTimeout(() => void loadList(searchQ), 280);
     return () => clearTimeout(t);
   }, [searchQ, loadList]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setGuidesLoading(true);
+      try {
+        const res = await fetch('/api/v1/admin/guides', { credentials: 'include' });
+        const data = (await res.json().catch(() => null)) as
+          | { guides?: Array<{ id: string; title: string }> }
+          | null;
+        if (!cancelled && data?.guides) {
+          setGuides(data.guides.map((g) => ({ id: g.id, title: g.title })));
+        }
+      } catch {
+        /* ignore — custom id fallback remains available */
+      } finally {
+        if (!cancelled) setGuidesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -356,6 +387,7 @@ export function AlmogKnowledgeManager() {
     setForm({
       ...emptyForm,
       selectedStepId: journeySteps[0]?.id ?? '',
+      guideCourseId: guides[0]?.id ?? '',
     });
     setMessage(null);
     setMessageErr(false);
@@ -511,7 +543,7 @@ export function AlmogKnowledgeManager() {
       return;
     }
     if (form.dataType === 'course' && !effectiveCourseId) {
-      setMessage('בחרו קורס');
+      setMessage('בחרו מדריך');
       setMessageErr(true);
       return;
     }
@@ -1095,7 +1127,7 @@ export function AlmogKnowledgeManager() {
                           ].join(' ')}
                         >
                           <p className="font-bold text-sm text-slate-900 truncate">{item.title}</p>
-                          <p className="text-xs text-slate-500">{itemListLabel(item)}</p>
+                          <p className="text-xs text-slate-500">{itemListLabel(item, guideTitleById)}</p>
                           <p className="text-[10px] text-slate-400 mt-0.5">
                             {item.chunk_count} חלקים · {formatDate(item.updated_at)}
                           </p>
@@ -1108,7 +1140,7 @@ export function AlmogKnowledgeManager() {
               {groupedItems.courseItems.length > 0 ? (
                 <li>
                   <p className="px-3 py-2 text-[10px] font-black uppercase tracking-wide text-amber-900/70 bg-amber-50/50">
-                    לפי קורס
+                    לפי מדריך
                   </p>
                   <ul>
                     {groupedItems.courseItems.map((item) => (
@@ -1122,7 +1154,7 @@ export function AlmogKnowledgeManager() {
                           ].join(' ')}
                         >
                           <p className="font-bold text-sm text-slate-900 truncate">{item.title}</p>
-                          <p className="text-xs text-slate-500">{itemListLabel(item)}</p>
+                          <p className="text-xs text-slate-500">{itemListLabel(item, guideTitleById)}</p>
                           <p className="text-[10px] text-slate-400 mt-0.5">
                             {item.chunk_count} חלקים · {formatDate(item.updated_at)}
                           </p>
@@ -1149,7 +1181,7 @@ export function AlmogKnowledgeManager() {
                           ].join(' ')}
                         >
                           <p className="font-bold text-sm text-slate-900 truncate">{item.title}</p>
-                          <p className="text-xs text-slate-500">{itemListLabel(item)}</p>
+                          <p className="text-xs text-slate-500">{itemListLabel(item, guideTitleById)}</p>
                           <p className="text-[10px] text-slate-400 mt-0.5">
                             {item.chunk_count} חלקים · {formatDate(item.updated_at)}
                           </p>
@@ -1285,7 +1317,7 @@ export function AlmogKnowledgeManager() {
                             className={`${opsInputClass} mt-1`}
                           >
                             <option value="step">שלב במסע</option>
-                            <option value="course">קורס</option>
+                            <option value="course">מדריך</option>
                             <option value="principle">עיקרון / חוק תוכנית</option>
                           </select>
                         </label>
@@ -1299,7 +1331,7 @@ export function AlmogKnowledgeManager() {
                             className={`${opsInputClass} mt-1`}
                           >
                             <option value="public">ציבורי (לפי התקדמות)</option>
-                            <option value="premium">פרימיום (לפי קורס)</option>
+                            <option value="premium">פרימיום (לפי מדריך)</option>
                           </select>
                         </label>
                       </div>
@@ -1338,15 +1370,15 @@ export function AlmogKnowledgeManager() {
                         </div>
                       ) : (
                         <div className="rounded-2xl border border-amber-200/70 bg-amber-50/50 p-3 space-y-2">
-                          <span className="text-xs font-bold text-amber-950">קורס</span>
+                          <span className="text-xs font-bold text-amber-950">מדריך</span>
                           <div className="flex flex-wrap gap-2">
                             <button
                               type="button"
-                              onClick={() => setForm((f) => ({ ...f, courseMode: 'preset' }))}
+                              onClick={() => setForm((f) => ({ ...f, courseMode: 'guide' }))}
                               className={cn(
                                 opsGlassBtnClass,
                                 'px-3 py-1',
-                                form.courseMode === 'preset' && 'border-amber-400/60 bg-amber-500/20 text-amber-900',
+                                form.courseMode === 'guide' && 'border-amber-400/60 bg-amber-500/20 text-amber-900',
                               )}
                             >
                               מהרשימה
@@ -1363,20 +1395,29 @@ export function AlmogKnowledgeManager() {
                               מזהה מותאם
                             </button>
                           </div>
-                          {form.courseMode === 'preset' ? (
-                            <select
-                              value={form.presetCourseId}
-                              onChange={(e) =>
-                                setForm((f) => ({ ...f, presetCourseId: e.target.value }))
-                              }
-                              className={opsInputClass}
-                            >
-                              {PRESET_COURSES.map((c) => (
-                                <option key={c.id} value={c.id}>
-                                  {c.label}
-                                </option>
-                              ))}
-                            </select>
+                          {form.courseMode === 'guide' ? (
+                            guidesLoading ? (
+                              <p className="text-sm">טוען מדריכים…</p>
+                            ) : guides.length === 0 ? (
+                              <p className="text-xs text-amber-900/80">
+                                אין מדריכים עדיין. צרו מדריך במסך &quot;מדריכים&quot;, או השתמשו במזהה מותאם.
+                              </p>
+                            ) : (
+                              <select
+                                value={form.guideCourseId}
+                                onChange={(e) =>
+                                  setForm((f) => ({ ...f, guideCourseId: e.target.value }))
+                                }
+                                className={opsInputClass}
+                              >
+                                <option value="">בחרו מדריך…</option>
+                                {guides.map((g) => (
+                                  <option key={g.id} value={g.id}>
+                                    {g.title}
+                                  </option>
+                                ))}
+                              </select>
+                            )
                           ) : (
                             <input
                               value={form.customCourseId}
@@ -1384,7 +1425,7 @@ export function AlmogKnowledgeManager() {
                                 setForm((f) => ({ ...f, customCourseId: e.target.value }))
                               }
                               className={opsInputClass}
-                              placeholder="מזהה קורס"
+                              placeholder="מזהה מדריך"
                             />
                           )}
                         </div>

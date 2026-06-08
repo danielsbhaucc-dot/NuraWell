@@ -42,7 +42,7 @@ export function HabitTracker({ habits, habitProgress, lessonId, onHabitToggle }:
   };
 
   return (
-    <div className="glass-card p-5">
+    <div className="guide-glass-card p-5">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <div className="w-8 h-8 rounded-xl flex items-center justify-center"
@@ -58,7 +58,7 @@ export function HabitTracker({ habits, habitProgress, lessonId, onHabitToggle }:
         {DAY_LABELS.map((d, i) => (
           <div key={i} className={cn(
             'text-center text-xs font-bold py-1 rounded-lg',
-            i === todayIndex ? 'text-primary-400' : 'text-slate-600'
+            i === todayIndex ? 'text-emerald-200' : 'text-white/65'
           )}>
             {d}
             {i === todayIndex && (
@@ -140,12 +140,12 @@ export function HabitTracker({ habits, habitProgress, lessonId, onHabitToggle }:
           const streak = calculateStreak(days, todayIndex);
           return (
             <div key={`label-${habit.id}`} className="flex items-center justify-between px-1">
-              <span className="text-slate-300 text-xs font-medium">{habit.title}</span>
+              <span className="text-white text-xs font-semibold">{habit.title}</span>
               <div className="flex items-center gap-2">
                 {streak > 1 && (
                   <span className="text-xs badge-energy">🔥 {streak} ימים</span>
                 )}
-                <span className="text-xs text-slate-500">{completedThisWeek}/7</span>
+                <span className="text-xs text-white/65">{completedThisWeek}/7</span>
               </div>
             </div>
           );

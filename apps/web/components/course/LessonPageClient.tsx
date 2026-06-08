@@ -105,7 +105,7 @@ export function LessonPageClient({
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <span className="text-xs font-semibold" style={{ color: config.color }}>{config.label}</span>
                 {lesson.duration_minutes && (
-                  <div className="flex items-center gap-1 text-xs text-slate-500">
+                  <div className="flex items-center gap-1 text-xs text-white/70">
                     <Clock className="w-3 h-3" />
                     <span>{lesson.duration_minutes} דקות</span>
                   </div>
@@ -226,7 +226,7 @@ export function LessonPageClient({
             <div className="flex items-center gap-3 mb-3">
               <div className="w-1.5 h-6 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(to bottom, #f97316, #fb923c)' }} />
               <Images className="w-4 h-4 text-orange-400" />
-              <span className="text-base font-black text-white">תמונות</span>
+              <span className="text-base font-black text-white drop-shadow-sm">תמונות</span>
             </div>
             <ImageGallery
               images={imageFiles.map(f => ({ url: f.uploadthing_url!, name: f.uploadthing_name ?? undefined }))}
@@ -245,7 +245,7 @@ export function LessonPageClient({
             <div className="flex items-center gap-3 mb-3">
               <div className="w-1.5 h-6 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(to bottom, #3b82f6, #60a5fa)' }} />
               <ExternalLinkIcon className="w-4 h-4 text-blue-400" />
-              <h3 className="font-black text-white text-base">קישורים נוספים</h3>
+              <h3 className="font-black text-white text-base drop-shadow-sm">קישורים נוספים</h3>
             </div>
             <div className="space-y-2">
               {lesson.external_links.map((link) => (
@@ -262,7 +262,7 @@ export function LessonPageClient({
                     <ExternalLinkIcon className="w-3.5 h-3.5 text-blue-400" />
                   </div>
                   <span className="text-sm text-slate-200 hover:text-white font-semibold flex-1">{link.label}</span>
-                  <ExternalLinkIcon className="w-3 h-3 text-slate-600" />
+                  <ExternalLinkIcon className="w-3 h-3 text-white/55" />
                 </a>
               ))}
             </div>
