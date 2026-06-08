@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { BookOpen, Loader2, Plus, Sparkles, Wand2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { resolveGuideBackgroundUrl } from '@/lib/guides/resolve-background';
@@ -25,7 +26,10 @@ type AiPhase =
   | { phase: 'done'; guide_id: string | null }
   | { phase: 'error'; message: string };
 
-export function GuidesManager({ opsHref }: { opsHref: (p: string) => string }) {
+export function GuidesManager() {
+  const pathname = usePathname();
+  const opsHref = (path: string) => (pathname.startsWith('/ops') ? `/ops${path}` : path);
+
   const [guides, setGuides] = useState<GuideRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [sourceText, setSourceText] = useState('');

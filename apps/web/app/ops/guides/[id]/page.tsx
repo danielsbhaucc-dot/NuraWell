@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Loader2, Save, ImageIcon } from 'lucide-react';
 import { resolveGuideBackgroundUrl } from '@/lib/guides/resolve-background';
@@ -33,7 +33,9 @@ interface GuideDetail {
 
 export default function OpsGuideDetailPage() {
   const params = useParams();
+  const pathname = usePathname();
   const id = params.id as string;
+  const guidesListHref = pathname.startsWith('/ops') ? '/ops/guides' : '/guides';
   const [guide, setGuide] = useState<GuideDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -100,7 +102,7 @@ export default function OpsGuideDetailPage() {
 
   return (
     <div className="space-y-6 max-w-3xl" dir="rtl">
-      <Link href="/ops/guides" className="inline-flex items-center gap-1 text-sm text-slate-600">
+      <Link href={guidesListHref} className="inline-flex items-center gap-1 text-sm text-slate-600">
         <ArrowRight className="w-4 h-4" />
         חזרה לרשימה
       </Link>
