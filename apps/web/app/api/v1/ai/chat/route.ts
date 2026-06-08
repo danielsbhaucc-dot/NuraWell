@@ -222,6 +222,16 @@ const CHAT_OUTPUT_TOKENS_NEAR_CAP_RATIO = 0.92;
  */
 const CHAT_MODEL = process.env.AI_CHAT_MODEL?.trim() || 'qwen/qwen3.7-plus';
 /**
+ * טמפרטורת הכתיבה של אלמוג. Qwen מרוויח מטמפרטורה גבוהה יחסית: יותר שיחה
+ * טבעית, דימויים, וריאציה ואינטליגנציה רגשית. לא עולים ל-1.2+ כברירת מחדל
+ * כדי לא להפוך את המנטור לפטפטן/לא יציב. Override: `AI_CHAT_TEMPERATURE`.
+ */
+const CHAT_TEMPERATURE = (() => {
+  const raw = process.env.AI_CHAT_TEMPERATURE?.trim();
+  const n = raw ? Number(raw) : NaN;
+  return Number.isFinite(n) && n >= 0.2 && n <= 1.3 ? n : 0.95;
+})();
+/**
  * מודל זול לראוטינג ול-trivial-bypass ול-safety-net: Llama 4 *Scout* (אח קטן
  * של Maverick — 16 מומחים, מהיר וזול ~$0.08/M, מצוין לאישורים/תודות קצרים).
  * ⚠️ slug ל-OpenRouter הוא `meta-llama/llama-4-scout` — לא הפורמט של Groq
@@ -2757,7 +2767,7 @@ export async function POST(request: Request) {
         staticSystemPrompt: MAIN_WRITER_SYSTEM_PROMPT,
         dynamicSystemPrompt,
         recentMessages,
-        temperature: 0.85,
+        temperature: CHAT_TEMPERATURE,
         maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
         headers: upstreamHeaders,
         piiShield,
@@ -2765,7 +2775,7 @@ export async function POST(request: Request) {
           try {
             const retry = await generateText({
               model: openrouter.chat(CHAT_MODEL),
-              temperature: 0.65,
+              temperature: Math.max(0.75, CHAT_TEMPERATURE - 0.1),
               maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 360),
               providerOptions: CHAT_MODEL_IS_OPENAI
                 ? { openai: { reasoningEffort: 'low' } }
@@ -2814,7 +2824,7 @@ export async function POST(request: Request) {
           staticSystemPrompt: MAIN_WRITER_SYSTEM_PROMPT,
           dynamicSystemPrompt,
           recentMessages,
-          temperature: 0.7,
+          temperature: Math.max(0.75, CHAT_TEMPERATURE - 0.1),
           maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 220),
           headers: {
             ...upstreamHeaders,
@@ -2857,7 +2867,7 @@ export async function POST(request: Request) {
           staticSystemPrompt: MAIN_WRITER_SYSTEM_PROMPT,
           dynamicSystemPrompt,
           recentMessages,
-          temperature: 0.75,
+          temperature: Math.max(0.8, CHAT_TEMPERATURE - 0.05),
           maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
           headers: {
             ...upstreamHeaders,
