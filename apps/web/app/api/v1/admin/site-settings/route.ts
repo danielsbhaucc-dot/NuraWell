@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
   const { supabase } = auth;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('site_settings')
     .select('public_app_url, updated_at')
     .eq('id', 1)
@@ -53,7 +53,7 @@ export async function PATCH(request: Request) {
 
   const { supabase } = auth;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('site_settings')
     .update({
       public_app_url: origin,

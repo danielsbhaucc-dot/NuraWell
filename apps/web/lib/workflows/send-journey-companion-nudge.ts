@@ -108,7 +108,7 @@ async function fetchJourneyMotivationProfile(
   userId: string
 ): Promise<{ userGoal: string }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (admin as any)
+  const { data } = await admin
     .from('profiles')
     .select('ai_context, main_goal, main_obstacle, main_obstacle_detail')
     .eq('id', userId)
@@ -185,7 +185,7 @@ export async function sendJourneyCompanionNudge(
   const actionUrl = `/journey/${stepPath}`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: inserted, error } = await (admin as any)
+  const { data: inserted, error } = await admin
     .from('notifications')
     .insert({
       user_id: userId,

@@ -37,8 +37,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const admin = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from('audio_tracks')
     .update(update)
     .eq('id', trackId)
@@ -58,8 +57,7 @@ export async function DELETE(request: Request, context: RouteContext) {
 
   const admin = createAdminClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: track, error: readErr } = await (admin as any)
+  const { data: track, error: readErr } = await admin
     .from('audio_tracks')
     .select('id, object_key')
     .eq('id', trackId)
@@ -79,8 +77,7 @@ export async function DELETE(request: Request, context: RouteContext) {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (admin as any).from('audio_tracks').delete().eq('id', trackId);
+  const { error } = await admin.from('audio_tracks').delete().eq('id', trackId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ ok: true });

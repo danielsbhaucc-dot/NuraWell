@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (admin as any)
+  let query = admin
     .from('media_assets')
     .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })

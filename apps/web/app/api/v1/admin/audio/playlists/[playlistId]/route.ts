@@ -28,8 +28,7 @@ export async function GET(request: Request, context: RouteContext) {
 
   const admin = createAdminClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: playlist, error: pErr } = await (admin as any)
+  const { data: playlist, error: pErr } = await admin
     .from('audio_playlists')
     .select('id, title, description, is_published, created_at, updated_at')
     .eq('id', playlistId)
@@ -38,8 +37,7 @@ export async function GET(request: Request, context: RouteContext) {
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 });
   if (!playlist) return NextResponse.json({ error: 'פלייליסט לא נמצא' }, { status: 404 });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: tracks, error: tErr } = await (admin as any)
+  const { data: tracks, error: tErr } = await admin
     .from('audio_tracks')
     .select('id, playlist_id, title, object_key, mime_type, duration_seconds, size_bytes, sort_order, credit, created_at')
     .eq('playlist_id', playlistId)
@@ -48,10 +46,9 @@ export async function GET(request: Request, context: RouteContext) {
 
   if (tErr) return NextResponse.json({ error: tErr.message }, { status: 500 });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const withUrls = (tracks ?? []).map((t: any) => ({
+  const withUrls = (tracks ?? []).map((t: { object_key?: string; [k: string]: unknown }) => ({
     ...t,
-    url: getPublicCdnAudioUrl(t.object_key),
+    url: getPublicCdnAudioUrl(t.object_key ?? ''),
   }));
 
   return NextResponse.json({ playlist, tracks: withUrls });
@@ -75,8 +72,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const admin = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from('audio_playlists')
     .update({ ...update, updated_at: new Date().toISOString() })
     .eq('id', playlistId)
@@ -96,8 +92,7 @@ export async function DELETE(request: Request, context: RouteContext) {
 
   const admin = createAdminClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: tracks, error: tErr } = await (admin as any)
+  const { data: tracks, error: tErr } = await admin
     .from('audio_tracks')
     .select('object_key')
     .eq('playlist_id', playlistId);
@@ -106,8 +101,7 @@ export async function DELETE(request: Request, context: RouteContext) {
 
   // מחיקת כל קבצי האודיו מ-R2 לפני מחיקת הפלייליסט (cascade ימחק את הרצועות ב-DB)
   const bucket = r2AudioBucketName();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const keys = (tracks ?? []).map((t: any) => t.object_key as string).filter(Boolean);
+  const keys = (tracks ?? []).map((t: { object_key?: string }) => t.object_key as string).filter(Boolean);
   if (bucket && keys.length > 0) {
     try {
       const s3 = getR2Client();
@@ -124,8 +118,7 @@ export async function DELETE(request: Request, context: RouteContext) {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (admin as any).from('audio_playlists').delete().eq('id', playlistId);
+  const { error } = await admin.from('audio_playlists').delete().eq('id', playlistId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ ok: true });

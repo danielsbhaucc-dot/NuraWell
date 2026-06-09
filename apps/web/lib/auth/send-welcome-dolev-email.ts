@@ -20,7 +20,7 @@ export async function sendWelcomeDolevEmail(userId: string): Promise<SendWelcome
   const admin = createAdminClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (admin as any)
+  const { data: profile } = await admin
     .from('profiles')
     .select(
       `full_name, gender, main_goal, current_weight_kg, goal_weight_kg,
@@ -50,7 +50,7 @@ export async function sendWelcomeDolevEmail(userId: string): Promise<SendWelcome
   const firstName = (profile.full_name as string)?.trim().split(/\s+/)[0] || 'חבר/ה';
   const appOrigin = publicAppOriginSync();
 
-  const html = buildWelcomeDolevEmailHtml(firstName, profile as OnboardingProfileForChat, appOrigin);
+  const html = buildWelcomeDolevEmailHtml(firstName, profile as unknown as OnboardingProfileForChat, appOrigin);
   const text = buildWelcomeDolevEmailText(firstName, gender, appOrigin);
 
   const emailResult = await sendResendEmail({
@@ -67,7 +67,7 @@ export async function sendWelcomeDolevEmail(userId: string): Promise<SendWelcome
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (admin as any)
+  await admin
     .from('profiles')
     .update({ welcome_email_sent_at: new Date().toISOString() })
     .eq('id', userId);
@@ -80,7 +80,7 @@ export async function sendWelcomeDolevEmail(userId: string): Promise<SendWelcome
         : `שמחתי לאשר את האימייל שלך! קיבלתי את כל מה שמילאת — מכאן אלמוג איתך בקצב שלך. נתראה באפליקציה 🌿`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (admin as any).from('notifications').insert({
+  await admin.from('notifications').insert({
     user_id: userId,
     type: 'ai_message',
     title: `היי ${firstName} · מדולב`,

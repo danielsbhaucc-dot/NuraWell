@@ -64,8 +64,7 @@ export async function POST(request: Request, context: RouteContext) {
 
   const admin = createAdminClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: playlist, error: pErr } = await (admin as any)
+  const { data: playlist, error: pErr } = await admin
     .from('audio_playlists')
     .select('id')
     .eq('id', playlistId)
@@ -73,8 +72,7 @@ export async function POST(request: Request, context: RouteContext) {
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 });
   if (!playlist) return NextResponse.json({ error: 'פלייליסט לא נמצא' }, { status: 404 });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: lastRows } = await (admin as any)
+  const { data: lastRows } = await admin
     .from('audio_tracks')
     .select('sort_order')
     .eq('playlist_id', playlistId)
@@ -82,8 +80,7 @@ export async function POST(request: Request, context: RouteContext) {
     .limit(1);
   const nextSort = lastRows?.[0]?.sort_order != null ? Number(lastRows[0].sort_order) + 1 : 0;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: track, error: insErr } = await (admin as any)
+  const { data: track, error: insErr } = await admin
     .from('audio_tracks')
     .insert({
       id: parsed.data.track_id,

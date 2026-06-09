@@ -36,7 +36,7 @@ export async function GET(request: Request) {
 
   const { supabase } = auth;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from('site_settings')
     .select('login_background_key, login_background_credit, updated_at')
     .eq('id', 1)
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
           destObjectKey: LOGIN_BACKGROUND_OBJECT_KEY,
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('site_settings')
           .update({
             login_background_key: LOGIN_BACKGROUND_OBJECT_KEY,
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: settings } = await (supabase as any)
+    const { data: settings } = await supabase
       .from('site_settings')
       .select('login_background_key')
       .eq('id', 1)
@@ -158,7 +158,7 @@ export async function POST(request: Request) {
     );
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('site_settings')
       .update({
         login_background_key: LOGIN_BACKGROUND_OBJECT_KEY,
@@ -203,7 +203,7 @@ export async function DELETE(request: Request) {
 
   const { supabase } = auth;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any)
+  await supabase
     .from('site_settings')
     .update({
       login_background_key: null,

@@ -67,7 +67,7 @@ async function completeUpload(
   const admin = createAdminClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: row, error } = await (admin as any)
+  const { data: row, error } = await admin
     .from('media_assets')
     .insert({
       id: data.asset_id,
@@ -111,7 +111,7 @@ async function completeVideo(
 
   const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: row, error } = await (admin as any)
+  const { data: row, error } = await admin
     .from('media_assets')
     .insert({
       kind: 'video',

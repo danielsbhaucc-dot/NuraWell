@@ -45,7 +45,7 @@ export async function grantGuideAccess(
   const trialEndsAt = accessType === 'trial' && trialDays ? addDays(trialDays) : null;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: existing } = await (supabase as any)
+  const { data: existing } = await supabase
     .from('enrollments')
     .select('id, is_active, access_type, trial_ends_at')
     .eq('user_id', userId)
@@ -75,7 +75,7 @@ export async function grantGuideAccess(
 
   if (existing?.id) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: updated, error } = await (supabase as any)
+    const { data: updated, error } = await supabase
       .from('enrollments')
       .update(payload)
       .eq('id', existing.id)
@@ -87,7 +87,7 @@ export async function grantGuideAccess(
     enrollmentId = updated.id;
   } else {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: inserted, error } = await (supabase as any)
+    const { data: inserted, error } = await supabase
       .from('enrollments')
       .insert(payload)
       .select('id')
@@ -99,7 +99,7 @@ export async function grantGuideAccess(
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any).from('guide_access_grants').insert({
+  await supabase.from('guide_access_grants').insert({
     user_id: userId,
     course_id: courseId,
     access_type: accessType,

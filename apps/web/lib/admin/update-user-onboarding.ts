@@ -27,7 +27,7 @@ export async function applyAdminProfilePatch(
   patch: AdminProfilePatch
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: existing, error: readErr } = await (admin as any)
+  const { data: existing, error: readErr } = await admin
     .from('profiles')
     .select(
       `full_name, gender, main_goal, current_weight_kg, goal_weight_kg, height_cm,
@@ -91,7 +91,7 @@ export async function applyAdminProfilePatch(
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: upErr } = await (admin as any)
+  const { error: upErr } = await admin
     .from('profiles')
     .update({
       full_name: merged.full_name,

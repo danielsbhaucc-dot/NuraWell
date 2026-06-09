@@ -40,27 +40,27 @@ export default async function JourneyRoute() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [{ data: stationRows }, { data: rawSteps }, { data: profileRow }] = await Promise.all([
-    (supabase as any)
+    supabase
       .from('journey_stations')
       .select('id, title, description, sort_order, cover_image_key, cover_image_credit')
       .order('sort_order', { ascending: true })
       .order('title', { ascending: true }),
-    (supabase as any)
+    supabase
       .from('journey_steps')
       .select(JOURNEY_LIST_STEP_SELECT)
       .eq('is_published', true)
       .order('step_number'),
-    (supabase as any).from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
+    supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
   ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rawProgress } = await (supabase as any)
+  const { data: rawProgress } = await supabase
     .from('journey_progress')
     .select(JOURNEY_PROGRESS_SELECT)
     .eq('user_id', user.id);
 
-  const rows = (rawSteps as RawStepRow[]) || [];
-  const progressList = (rawProgress as JourneyStepProgress[]) || [];
+  const rows = (rawSteps as unknown as RawStepRow[]) || [];
+  const progressList = (rawProgress as unknown as JourneyStepProgress[]) || [];
   const progressMap = new Map(progressList.map((p) => [p.step_id, p]));
 
   const stepsWithProgress = rows.map((row) => ({

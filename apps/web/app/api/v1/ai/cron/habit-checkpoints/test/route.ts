@@ -91,7 +91,7 @@ async function fetchUserProgressRows(
   userId: string
 ): Promise<ProgressRow[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from('journey_progress')
     .select(
       `
@@ -111,7 +111,7 @@ async function fetchUserProgressRows(
     .eq('user_id', userId);
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as ProgressRow[];
+  return (data ?? []) as unknown as ProgressRow[];
 }
 
 function stationTitleFromJoin(raw: unknown): string | null {
@@ -245,7 +245,7 @@ export async function POST(request: Request) {
   /** טוען ביצועי-סלוטים של היום עבור המשתמש — כדי שמשימה חוזרת שכבר סומנה לא תיכלל. */
   const todayDoneByTask = new Map<string, Set<string>>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: todayExecRows } = await (admin as any)
+  const { data: todayExecRows } = await admin
     .from('journey_task_executions')
     .select('task_id, slot')
     .eq('user_id', targetUserId)
@@ -350,7 +350,7 @@ export async function POST(request: Request) {
      * אם כאן רואים את הרשומה אבל ב-UI לא — הבעיה ב-RLS / Frontend / Session.
      */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: recentRows } = await (admin as any)
+    const { data: recentRows } = await admin
       .from('notifications')
       .select('id, type, title, archived_at, is_read, is_sent, created_at, metadata')
       .eq('user_id', targetUserId)

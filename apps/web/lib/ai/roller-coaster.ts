@@ -141,7 +141,7 @@ export async function countUnansweredAlmogTouches(
   const sinceIso = new Date(Date.now() - lookbackDays * DAY_MS).toISOString();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: notifRows } = await (admin as any)
+  const { data: notifRows } = await admin
     .from('notifications')
     .select('metadata, created_at')
     .eq('user_id', userId)
@@ -163,7 +163,7 @@ export async function countUnansweredAlmogTouches(
   if (touchTimes.length === 0) return 0;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: userMsgs } = await (admin as any)
+  const { data: userMsgs } = await admin
     .from('ai_interactions')
     .select('created_at')
     .eq('user_id', userId)
@@ -198,7 +198,7 @@ export async function fetchGhostingSignals(
 
   const progressPromise = needHabitGap
     ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (admin as any)
+      admin
         .from('journey_progress')
         .select('updated_at, habits_progress, journey_steps ( habits )')
         .eq('user_id', userId)
@@ -231,7 +231,7 @@ export async function fetchDaysSincePriorUserChat(
   userId: string
 ): Promise<number | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('ai_interactions')
     .select('created_at')
     .eq('user_id', userId)
@@ -314,7 +314,7 @@ export async function fetchHabitGapForChat(
   userId: string
 ): Promise<HabitGapSignal | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('journey_progress')
     .select('updated_at, habits_progress, journey_steps ( habits )')
     .eq('user_id', userId)

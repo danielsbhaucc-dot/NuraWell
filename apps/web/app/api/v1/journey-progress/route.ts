@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('journey_progress')
       .upsert(row, { onConflict: 'user_id,step_id' });
 
@@ -116,7 +116,7 @@ export async function GET(request: Request) {
     const { supabase, user } = auth;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('journey_progress')
       .select(JOURNEY_PROGRESS_SELECT)
       .eq('user_id', user.id);

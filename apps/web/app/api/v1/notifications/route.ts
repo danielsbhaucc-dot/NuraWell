@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     const p = parseInboxSearchParams(url.searchParams);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let q = (supabase as any)
+    let q = supabase
       .from('notifications')
       .select(
         'id, title, body, icon_emoji, action_url, is_read, created_at, type, archived_at, metadata'
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
 
     const countPromise = includeUnreadTotal
       ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
+        supabase
           .from('notifications')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user.id)
@@ -155,7 +155,7 @@ export async function PATCH(request: Request) {
     const now = new Date().toISOString();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tbl = () => (supabase as any).from('notifications');
+    const tbl = () => supabase.from('notifications');
 
     /** עוטף תגובת שגיאה גנרית עם לוג פנימי, בלי לחשוף message ל-prod. */
     const errorResponse = (tag: string, err: unknown, status = 500) => {

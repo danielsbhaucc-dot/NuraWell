@@ -41,7 +41,7 @@ export async function fetchTodayChatTurns(
   const dayStartIso = jerusalemDayStartIso(now);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('ai_interactions')
     .select('role, content, created_at')
     .eq('user_id', userId)
@@ -146,7 +146,7 @@ export async function fetchUserIdsWithChatToday(
 ): Promise<Set<string>> {
   const dayStartIso = jerusalemDayStartIso(now);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('ai_interactions')
     .select('user_id')
     .eq('role', 'user')

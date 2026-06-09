@@ -44,7 +44,7 @@ async function runPassivePresenceCron(request: Request) {
 
   /** churned בלבד (14+ ימים). אינדקס idx_profiles_engagement_status תומך בשאילתה. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rows, error } = await (admin as any)
+  const { data: rows, error } = await admin
     .from('profiles')
     .select('id, ai_context')
     .eq('engagement_status', 'churned')

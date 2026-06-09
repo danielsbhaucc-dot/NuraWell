@@ -77,7 +77,7 @@ async function fetchUserProgressRows(
   userId: string
 ): Promise<ProgressRow[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from('journey_progress')
     .select(
       `
@@ -97,12 +97,12 @@ async function fetchUserProgressRows(
     .eq('user_id', userId);
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as ProgressRow[];
+  return (data ?? []) as unknown as ProgressRow[];
 }
 
 async function fetchProfile(admin: AdminClient, userId: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from('profiles')
     .select(
       'id, full_name, ai_context, ai_check_in_times, ai_system_prompt, onboarding_completed, last_active_at'
@@ -128,7 +128,7 @@ async function fetchTodayExecutionsByTask(
   dateKey: string
 ): Promise<Map<string, Set<string>>> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (admin as any)
+  const { data } = await admin
     .from('journey_task_executions')
     .select('task_id, slot')
     .eq('user_id', userId)
@@ -159,7 +159,7 @@ async function fetchAlreadySentThisSlot(
   slot: HabitCheckpointSlot
 ): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (admin as any)
+  const { data } = await admin
     .from('notifications')
     .select('metadata')
     .eq('user_id', userId)
@@ -185,7 +185,7 @@ async function fetchGhostedCooldownActive(
 ): Promise<boolean> {
   const weekAgoIso = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (admin as any)
+  const { data } = await admin
     .from('notifications')
     .select('metadata')
     .eq('user_id', userId)

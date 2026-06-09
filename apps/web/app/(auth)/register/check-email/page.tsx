@@ -28,14 +28,15 @@ export default async function RegisterCheckEmailPage({
 
   if (user) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profile } = await (supabase as any)
+    const { data: profile } = await supabase
       .from('profiles')
       .select('full_name, gender')
       .eq('id', user.id)
       .maybeSingle();
 
-    firstName = firstNameFromFull(profile?.full_name ?? null);
-    gender = (profile?.gender as OnboardingGender) ?? '';
+    const profileRow = profile as { full_name?: string | null; gender?: OnboardingGender | null } | null;
+    firstName = firstNameFromFull(profileRow?.full_name ?? null);
+    gender = profileRow?.gender ?? '';
   }
 
   return (

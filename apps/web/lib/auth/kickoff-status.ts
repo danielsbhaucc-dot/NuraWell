@@ -52,7 +52,7 @@ export async function markKickoffScheduled(
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (admin as any)
+    const { data: existing } = await admin
       .from('almog_kickoff_status')
       .select('state, attempts')
       .eq('user_id', userId)
@@ -65,7 +65,7 @@ export async function markKickoffScheduled(
 
     if (result.ok) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (admin as any).from('almog_kickoff_status').upsert(
+      await admin.from('almog_kickoff_status').upsert(
         {
           ...base,
           state: 'scheduled',
@@ -78,7 +78,7 @@ export async function markKickoffScheduled(
       );
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (admin as any).from('almog_kickoff_status').upsert(
+      await admin.from('almog_kickoff_status').upsert(
         {
           ...base,
           state: 'pending',
@@ -107,14 +107,14 @@ export async function markKickoffAttempt(
   try {
     const nowIso = new Date().toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (admin as any)
+    const { data: existing } = await admin
       .from('almog_kickoff_status')
       .select('attempts, state')
       .eq('user_id', userId)
       .maybeSingle();
     if (existing?.state === 'sent') return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any).from('almog_kickoff_status').upsert(
+    await admin.from('almog_kickoff_status').upsert(
       {
         user_id: userId,
         last_attempt_at: nowIso,
@@ -137,7 +137,7 @@ export async function markKickoffSent(
   try {
     const nowIso = new Date().toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any).from('almog_kickoff_status').upsert(
+    await admin.from('almog_kickoff_status').upsert(
       {
         user_id: userId,
         state: 'sent',
@@ -160,7 +160,7 @@ export async function markKickoffSkipped(
 ): Promise<void> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any).from('almog_kickoff_status').upsert(
+    await admin.from('almog_kickoff_status').upsert(
       {
         user_id: userId,
         state: 'skipped',
@@ -183,13 +183,13 @@ export async function markKickoffFailed(
   try {
     const nowIso = new Date().toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (admin as any)
+    const { data: existing } = await admin
       .from('almog_kickoff_status')
       .select('attempts')
       .eq('user_id', userId)
       .maybeSingle();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any).from('almog_kickoff_status').upsert(
+    await admin.from('almog_kickoff_status').upsert(
       {
         user_id: userId,
         state: 'failed',
@@ -241,7 +241,7 @@ export async function fetchKickoffWatchdogCandidates(
    */
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: candidates } = await (admin as any)
+  const { data: candidates } = await admin
     .from('almog_kickoff_status')
     .select('user_id, state, attempts, last_attempt_at')
     .in('state', ['pending', 'failed'])
@@ -254,7 +254,7 @@ export async function fetchKickoffWatchdogCandidates(
   );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: orphanProfiles } = await (admin as any)
+  const { data: orphanProfiles } = await admin
     .from('profiles')
     .select('id, created_at')
     .eq('onboarding_completed', true)
@@ -265,7 +265,7 @@ export async function fetchKickoffWatchdogCandidates(
   const statusByUser = new Set<string>();
   if (orphanProfileIds.length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existingStatuses } = await (admin as any)
+    const { data: existingStatuses } = await admin
       .from('almog_kickoff_status')
       .select('user_id')
       .in('user_id', orphanProfileIds);

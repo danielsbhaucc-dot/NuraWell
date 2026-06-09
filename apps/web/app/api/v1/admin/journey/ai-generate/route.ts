@@ -179,14 +179,14 @@ async function persistBlueprint(blueprint: JourneyBlueprint): Promise<{
 
   // נקודת התחלה ל-sort_order ו-step_number כדי לא להתנגש בקיים.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: lastStation } = await (admin as any)
+  const { data: lastStation } = await admin
     .from('journey_stations')
     .select('sort_order')
     .order('sort_order', { ascending: false })
     .limit(1)
     .maybeSingle();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: lastStep } = await (admin as any)
+  const { data: lastStep } = await admin
     .from('journey_steps')
     .select('step_number')
     .order('step_number', { ascending: false })
@@ -198,7 +198,7 @@ async function persistBlueprint(blueprint: JourneyBlueprint): Promise<{
 
   for (const station of blueprint.stations) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: stationRow, error: stationErr } = await (admin as any)
+    const { data: stationRow, error: stationErr } = await admin
       .from('journey_stations')
       .insert({
         title: station.title,
@@ -214,7 +214,7 @@ async function persistBlueprint(blueprint: JourneyBlueprint): Promise<{
 
     for (const step of station.steps) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: stepRow, error: stepErr } = await (admin as any)
+      const { data: stepRow, error: stepErr } = await admin
         .from('journey_steps')
         .insert({
           station_id: stationRow.id,

@@ -48,8 +48,7 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const admin = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: playlist, error } = await (admin as any)
+  const { data: playlist, error } = await admin
     .from('audio_playlists')
     .select('id')
     .eq('id', playlistId)

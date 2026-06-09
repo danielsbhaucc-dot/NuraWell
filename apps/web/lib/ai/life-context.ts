@@ -424,7 +424,7 @@ export async function sendLifeContextTouch(
   const emoji = lc.profile === 'pause' ? '💙' : '🌴';
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: inserted, error } = await (admin as any)
+  const { data: inserted, error } = await admin
     .from('notifications')
     .insert({
       user_id: userId,

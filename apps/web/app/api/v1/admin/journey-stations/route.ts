@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const { supabase } = auth;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('journey_stations')
     .select('*')
     .order('sort_order', { ascending: true })
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   const { supabase } = auth;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('journey_stations')
     .insert(parsed.data)
     .select()
@@ -63,7 +63,7 @@ export async function PATCH(request: Request) {
   const { supabase } = auth;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('journey_stations')
     .update({ ...cleaned, updated_at: new Date().toISOString() })
     .eq('id', id)
@@ -95,7 +95,7 @@ export async function DELETE(request: Request) {
   const id = idParsed.data;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).from('journey_stations').delete().eq('id', id);
+  const { error } = await supabase.from('journey_stations').delete().eq('id', id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });

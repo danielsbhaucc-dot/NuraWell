@@ -104,7 +104,7 @@ async function recentCelebrationExists(
 ): Promise<boolean> {
   const since = new Date(Date.now() - windowMs).toISOString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from('notifications')
     .select('id, metadata, created_at')
     .eq('user_id', userId)
@@ -168,7 +168,7 @@ export async function sendTaskCompletionCelebration(
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: stepRow } = await (admin as any)
+  const { data: stepRow } = await admin
     .from('journey_steps')
     .select('title, step_number, tasks, journey_stations(title)')
     .eq('id', stepId)
@@ -277,7 +277,7 @@ export async function sendTaskCompletionCelebration(
   const title = `${titlePrefix} · מאלמוג ${titleEmoji}`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (admin as any).from('notifications').insert({
+  const { error } = await admin.from('notifications').insert({
     user_id: userId,
     type: 'ai_message',
     title,

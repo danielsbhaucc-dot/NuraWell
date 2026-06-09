@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   const { supabase } = auth;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('journey_steps')
     .select('id, title, course_id, researches')
     .order('step_number');

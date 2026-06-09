@@ -17,13 +17,14 @@ export default async function RegisterVerifiedPage() {
 
   if (user) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profile } = await (supabase as any)
+    const { data: profile } = await supabase
       .from('profiles')
       .select('gender')
       .eq('id', user.id)
       .maybeSingle();
 
-    gender = (profile?.gender as OnboardingGender) ?? '';
+    const profileRow = profile as { gender?: OnboardingGender | null } | null;
+    gender = profileRow?.gender ?? '';
   }
 
   return (

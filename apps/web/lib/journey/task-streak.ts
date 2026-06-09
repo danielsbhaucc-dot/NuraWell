@@ -55,7 +55,7 @@ async function fetchExecutionsForStreak(
   sinceKey: string
 ): Promise<ExecutionRow[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let { data, error } = await (supabase as any)
+  let { data, error } = await supabase
     .from('journey_task_executions')
     .select('date_key, slot, outcome')
     .eq('user_id', userId)
@@ -68,7 +68,7 @@ async function fetchExecutionsForStreak(
   /** fallback: אם העמודה outcome עדיין לא קיימת ב-DB → סלקט בלי outcome. */
   if (error && (error.code === '42703' || /outcome/i.test(error.message ?? ''))) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const retry = await (supabase as any)
+    const retry = await supabase
       .from('journey_task_executions')
       .select('date_key, slot')
       .eq('user_id', userId)
@@ -77,7 +77,7 @@ async function fetchExecutionsForStreak(
       .gte('date_key', sinceKey)
       .order('date_key', { ascending: false })
       .limit(500);
-    data = retry.data;
+    data = retry.data?.map((row) => ({ ...row, outcome: null })) ?? null;
     error = retry.error;
   }
 

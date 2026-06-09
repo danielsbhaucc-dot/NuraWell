@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { count: existingCount } = await (admin as any)
+  const { count: existingCount } = await admin
     .from('almog_knowledge')
     .select('*', { count: 'exact', head: true });
 
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: inserted, error: insertErr } = await (admin as any)
+    const { data: inserted, error: insertErr } = await admin
       .from('almog_knowledge')
       .insert(rowPayload)
       .select('*')
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
     try {
       const { chunkCount } = await syncKnowledgeVectorsForRow(row, 0);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (admin as any)
+      await admin
         .from('almog_knowledge')
         .update({ chunk_count: chunkCount })
         .eq('id', row.id);
@@ -143,7 +143,7 @@ export async function POST(request: Request) {
       imported += 1;
     } catch (e) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (admin as any).from('almog_knowledge').delete().eq('id', row.id);
+      await admin.from('almog_knowledge').delete().eq('id', row.id);
       errors.push(e instanceof Error ? e.message : batch.batchId);
       skipped += 1;
     }

@@ -269,7 +269,7 @@ export function LandingPageClient() {
           </div>
 
           <p className="landing-hero-lead">
-            לא עוד תכנית. לא עוד "משבוע הבא". NuraWell בונה איתכם אורח חיים שמרגיש נכון מהרגע הראשון —
+            לא עוד תכנית. לא עוד &quot;משבוע הבא&quot;. NuraWell בונה איתכם אורח חיים שמרגיש נכון מהרגע הראשון —
             גוף שקשוב לעצמו, אנרגיה אמיתית לאורך היום, וראש שקט באמת.
             <strong> השינוי שאתם מחפשים מתחיל מבפנים — חינם להתחיל.</strong>
           </p>
@@ -449,7 +449,7 @@ export function LandingPageClient() {
                   השפה החדשה שלכם
                 </span>
                 <p className="landing-manifesto-identity-text">
-                  אתם לא <em>"בדיאטה"</em>.
+                  אתם לא <em>&quot;בדיאטה&quot;</em>.
                   <br />
                   אתם הופכים לאדם <strong>שטוב לו בגוף שלו.</strong>
                 </p>

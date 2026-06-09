@@ -30,7 +30,7 @@ async function getComingSoonConfig(): Promise<{
   try {
     const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from('site_settings')
       .select(
         'coming_soon_song_url, coming_soon_song_title, coming_soon_lyrics, coming_soon_revolution_lines',

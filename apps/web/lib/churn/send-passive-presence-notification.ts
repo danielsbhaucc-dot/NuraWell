@@ -41,7 +41,7 @@ async function fetchRecentPassiveBodies(
 ): Promise<string[]> {
   const sinceIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (admin as any)
+  const { data } = await admin
     .from('notifications')
     .select('body, metadata')
     .eq('user_id', userId)
@@ -73,7 +73,7 @@ async function fetchPassiveUserContext(
   stationTitle: string | null;
 }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (admin as any)
+  const { data: profile } = await admin
     .from('profiles')
     .select('main_goal, main_obstacle, main_obstacle_detail')
     .eq('id', userId)
@@ -86,7 +86,7 @@ async function fetchPassiveUserContext(
   } | null;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: progressRows } = await (admin as any)
+  const { data: progressRows } = await admin
     .from('journey_progress')
     .select(
       `
@@ -219,7 +219,7 @@ export async function sendPassivePresenceNotification(
   const title = `${firstName} 🌿`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: inserted, error } = await (admin as any)
+  const { data: inserted, error } = await admin
     .from('notifications')
     .insert({
       user_id: userId,

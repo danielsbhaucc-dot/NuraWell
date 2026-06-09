@@ -1638,7 +1638,7 @@ async function fetchChatProfileRow(
   };
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from('profiles')
       .select(
         `full_name, phone, gender, ai_context, last_active_at,
@@ -1741,7 +1741,7 @@ async function getActiveJourneyContext(
   userId: string
 ): Promise<ActiveJourneyContext> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: progressData } = await (supabase as any)
+  const { data: progressData } = await supabase
     .from('journey_progress')
     .select('step_id, commitment_accepted, task_statuses, habits_progress, updated_at')
     .eq('user_id', userId)
@@ -1760,7 +1760,7 @@ async function getActiveJourneyContext(
   if (!stepId) return null;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: stepData } = await (supabase as any)
+  const { data: stepData } = await supabase
     .from('journey_steps')
     .select('id, title, step_number, tasks, habits, journey_stations(title)')
     .eq('id', stepId)
@@ -1805,7 +1805,7 @@ async function getActiveJourneyContext(
   const todayTaskProgress = new Map<string, TodayTaskSlotProgress>();
   if (tasks.length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: execRows } = await (supabase as any)
+    const { data: execRows } = await supabase
       .from('journey_task_executions')
       .select('task_id, slot')
       .eq('user_id', userId)
@@ -1856,7 +1856,7 @@ async function fetchNotificationContextBlock(
 ): Promise<string | null> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('notifications')
       .select('title, body, metadata, created_at')
       .eq('id', notificationId)

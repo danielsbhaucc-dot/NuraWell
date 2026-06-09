@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from('audio_playlists')
     .select('id, title, description, is_published, created_at, updated_at, audio_tracks(count)')
     .order('created_at', { ascending: false });
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from('audio_playlists')
     .insert({
       title: parsed.data.title,

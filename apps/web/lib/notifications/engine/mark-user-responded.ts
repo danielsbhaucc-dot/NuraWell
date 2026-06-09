@@ -33,14 +33,14 @@ export async function markUserResponded(
   try {
     // עדיפות 1: RPC אטומי (מוגדר ב-migration 000029).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: rpcError } = await (admin as any).rpc(
+    const { error: rpcError } = await admin.rpc(
       'touch_last_responded_at',
       { p_user_id: userId }
     );
     if (rpcError) {
       // אם ה-RPC לא קיים (deploy מאחור), fallback ל-UPDATE רגיל.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: updateError } = await (admin as any)
+      const { error: updateError } = await admin
         .from('profiles')
         .update({ last_responded_at: new Date().toISOString() })
         .eq('id', userId);

@@ -8,7 +8,7 @@ export default async function OpsHomePage() {
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: steps } = await (supabase as any)
+  const { data: steps } = await supabase
     .from('journey_steps')
     .select('id,is_published')
     .order('step_number');

@@ -21,7 +21,7 @@ export async function sendWelcomeAlmogEmail(userId: string): Promise<SendWelcome
   const admin = createAdminClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (admin as any)
+  const { data: profile } = await admin
     .from('profiles')
     .select(
       `full_name, gender, main_goal, current_weight_kg, goal_weight_kg,
@@ -53,7 +53,7 @@ export async function sendWelcomeAlmogEmail(userId: string): Promise<SendWelcome
   const html = buildWelcomeAlmogEmailHtml(
     firstName,
     gender,
-    profile as OnboardingProfileForChat
+    profile as unknown as OnboardingProfileForChat
   );
   const text = buildWelcomeAlmogEmailText(firstName);
 
@@ -71,7 +71,7 @@ export async function sendWelcomeAlmogEmail(userId: string): Promise<SendWelcome
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (admin as any)
+  await admin
     .from('profiles')
     .update({ almog_intro_email_sent_at: new Date().toISOString() })
     .eq('id', userId);
@@ -80,7 +80,7 @@ export async function sendWelcomeAlmogEmail(userId: string): Promise<SendWelcome
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const title = `${firstName} · מאלמוג`;
-  await (admin as any).from('notifications').insert({
+  await admin.from('notifications').insert({
     user_id: userId,
     type: 'ai_message',
     title,

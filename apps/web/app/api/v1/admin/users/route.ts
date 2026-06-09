@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -9,6 +10,12 @@ export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
+
   const url = new URL(request.url);
   const q = url.searchParams.get('q')?.trim().toLowerCase() ?? '';
   const limit = Math.min(100, Math.max(1, Number.parseInt(url.searchParams.get('limit') ?? '40', 10) || 40));
@@ -16,7 +23,7 @@ export async function GET(request: Request) {
   const admin = createAdminClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profiles, error } = await (admin as any)
+  const { data: profiles, error } = await admin
     .from('profiles')
     .select(
       `id, full_name, role, gender, main_goal, onboarding_completed, created_at, last_active_at,

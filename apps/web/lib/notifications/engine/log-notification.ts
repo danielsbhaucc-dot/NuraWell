@@ -33,7 +33,7 @@ export async function logNotification(
   input: LogNotificationInput
 ): Promise<LogNotificationResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from('notification_logs')
     .insert({
       user_id: input.userId,
@@ -63,7 +63,7 @@ export async function logNotification(
   // *לא* מבטלת את ההתראה אם נכשלת — נרשם warning בלבד.
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: rpcError } = await (admin as any).rpc(
+    const { error: rpcError } = await admin.rpc(
       'increment_notification_count',
       { p_user_id: input.userId }
     );

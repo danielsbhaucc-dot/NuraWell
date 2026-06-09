@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     const { supabase, user } = auth;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rawSteps, error: sErr } = await (supabase as any)
+    const { data: rawSteps, error: sErr } = await supabase
       .from('journey_steps')
       .select('id, title, step_number, tasks, habits')
       .eq('is_published', true)
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rawProg, error: pErr } = await (supabase as any)
+    const { data: rawProg, error: pErr } = await supabase
       .from('journey_progress')
       .select(JOURNEY_PROGRESS_SELECT)
       .eq('user_id', user.id);
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     const sinceKey = jerusalemDateKey(since);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rawExec } = await (supabase as any)
+    const { data: rawExec } = await supabase
       .from('journey_task_executions')
       .select('step_id, task_id, slot, completed_at, date_key, source, outcome')
       .eq('user_id', user.id)
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
       .limit(500);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rawExecRecent } = await (supabase as any)
+    const { data: rawExecRecent } = await supabase
       .from('journey_task_executions')
       .select('step_id, task_id, slot, completed_at, date_key, source, outcome')
       .eq('user_id', user.id)

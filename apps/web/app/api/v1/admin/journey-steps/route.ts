@@ -37,7 +37,7 @@ async function syncQuestionTtsBestEffort(params: {
     stationTitle = station.title;
   } else if (params.step.station_id) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: st } = await (params.supabase as any)
+    const { data: st } = await params.supabase
       .from('journey_stations')
       .select('title')
       .eq('id', params.step.station_id)
@@ -73,7 +73,7 @@ async function syncQuestionTtsBestEffort(params: {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: updated, error } = await (params.supabase as any)
+    const { data: updated, error } = await params.supabase
       .from('journey_steps')
       .update({
         quiz_questions: result.quiz_questions,
@@ -171,7 +171,7 @@ export async function GET(request: Request) {
   const { supabase } = auth;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('journey_steps')
     .select('*, journey_stations(id, title, sort_order), course:courses(id, title)')
     .order('step_number');
@@ -193,7 +193,7 @@ export async function POST(request: Request) {
   const { supabase } = auth;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('journey_steps')
     .insert(parsed.data)
     .select()
@@ -231,14 +231,14 @@ export async function PATCH(request: Request) {
   const { supabase } = auth;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: previous } = await (supabase as any)
+  const { data: previous } = await supabase
     .from('journey_steps')
     .select('quiz_questions, game_items')
     .eq('id', id)
     .maybeSingle();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('journey_steps')
     .update({ ...cleaned, updated_at: new Date().toISOString() })
     .eq('id', id)
@@ -285,7 +285,7 @@ export async function DELETE(request: Request) {
   const id = idParsed.data;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: stepRow } = await (supabase as any)
+  const { data: stepRow } = await supabase
     .from('journey_steps')
     .select('quiz_questions, game_items')
     .eq('id', id)
@@ -304,14 +304,14 @@ export async function DELETE(request: Request) {
     try {
       await deleteTtsFromR2(objectKey);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('media_assets').delete().eq('object_key', objectKey);
+      await supabase.from('media_assets').delete().eq('object_key', objectKey);
     } catch (e) {
       console.warn('[admin/journey-steps] tts_delete_on_step_remove', { objectKey, error: e });
     }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).from('journey_steps').delete().eq('id', id);
+  const { error } = await supabase.from('journey_steps').delete().eq('id', id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });

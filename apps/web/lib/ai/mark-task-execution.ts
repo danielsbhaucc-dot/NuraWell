@@ -124,7 +124,7 @@ async function fetchTodayCompletedSlots(
   dateKey: string
 ): Promise<Set<string>> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('journey_task_executions')
     .select('slot, outcome')
     .eq('user_id', userId)
@@ -136,7 +136,7 @@ async function fetchTodayCompletedSlots(
   // fallback אם העמודה outcome עדיין לא קיימת ב-DB
   if (error && (error.code === '42703' || /outcome/i.test(error.message ?? ''))) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: legacy } = await (supabase as any)
+    const { data: legacy } = await supabase
       .from('journey_task_executions')
       .select('slot')
       .eq('user_id', userId)
@@ -167,7 +167,7 @@ export async function fetchPendingAcceptedTasksForUser(
   userId: string
 ): Promise<PendingAcceptedTask[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('journey_progress')
     .select(JOURNEY_PROGRESS_SELECT)
     .eq('user_id', userId)
@@ -285,7 +285,7 @@ async function markRecurringSlot(
    * שומרים על העברה מפורשת כדי שאם בעתיד הקלסיפיקטור יוסיף ערכים, נדע פה.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: execErr } = await (supabase as any).from('journey_task_executions').upsert(
+  const { error: execErr } = await supabase.from('journey_task_executions').upsert(
     {
       user_id: userId,
       step_id: pick.stepId,
@@ -310,7 +310,7 @@ async function markRecurringSlot(
     const msg = execErr.message ?? '';
     if (execErr.code === '42703' || /outcome/i.test(msg)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: legacyErr } = await (supabase as any).from('journey_task_executions').upsert(
+      const { error: legacyErr } = await supabase.from('journey_task_executions').upsert(
         {
           user_id: userId,
           step_id: pick.stepId,
@@ -328,7 +328,7 @@ async function markRecurringSlot(
       }
     } else if (/check.*outcome/i.test(msg) && (outcome === 'partial' || outcome === 'skipped')) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: legacyErr } = await (supabase as any).from('journey_task_executions').upsert(
+      const { error: legacyErr } = await supabase.from('journey_task_executions').upsert(
         {
           user_id: userId,
           step_id: pick.stepId,
@@ -362,7 +362,7 @@ async function markRecurringSlot(
   // רק `outcome='completed'` סוגר את ה-task. partial/failed/skipped משאירים פתוח.
   if (doneSlots.size >= total && outcome === 'completed') {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: prog } = await (supabase as any)
+    const { data: prog } = await supabase
       .from('journey_progress')
       .select('task_statuses')
       .eq('user_id', userId)
@@ -380,7 +380,7 @@ async function markRecurringSlot(
         [pick.id]: { ...existing, execution_done: true },
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('journey_progress').upsert(
+      await supabase.from('journey_progress').upsert(
         {
           user_id: userId,
           step_id: pick.stepId,
@@ -463,7 +463,7 @@ export async function markTaskExecutionForUser(
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: prog, error: progErr } = await (supabase as any)
+  const { data: prog, error: progErr } = await supabase
     .from('journey_progress')
     .select('task_statuses')
     .eq('user_id', userId)
@@ -525,7 +525,7 @@ export async function markTaskExecutionForUser(
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: upErr } = await (supabase as any).from('journey_progress').upsert(
+  const { error: upErr } = await supabase.from('journey_progress').upsert(
     {
       user_id: userId,
       step_id: pick.stepId,

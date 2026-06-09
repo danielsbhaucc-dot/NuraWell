@@ -93,7 +93,7 @@ export async function POST(request: Request) {
 
   if (dataType === 'step' && stepId) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: stepRow, error: stepErr } = await (supabase as any)
+    const { data: stepRow, error: stepErr } = await supabase
       .from('journey_steps')
       .select('id, step_number, course_id, station_id, journey_stations(id, title, sort_order)')
       .eq('id', stepId)

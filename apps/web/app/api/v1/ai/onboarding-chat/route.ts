@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       const patch = extractedToProfilePatch(result.extracted);
       if (Object.keys(patch).length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('profiles')
           .update(patch)
           .eq('id', user.id);

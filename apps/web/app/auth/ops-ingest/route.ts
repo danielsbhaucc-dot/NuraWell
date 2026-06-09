@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
   const admin = createServiceSupabaseAdmin(url, serviceKey);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any).rpc('claim_ops_auth_ticket', { p_id: ticketId });
+  const { data, error } = await admin.rpc('claim_ops_auth_ticket', { p_id: ticketId });
 
   if (error || data === null || typeof data !== 'object' || Array.isArray(data)) {
     return NextResponse.redirect(new URL('/', request.url));

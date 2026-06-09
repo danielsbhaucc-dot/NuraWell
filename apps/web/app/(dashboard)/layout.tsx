@@ -23,7 +23,7 @@ export default async function DashboardLayout({
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (supabase as any)
+  const { data: profile } = await supabase
     .from('profiles')
     .select(
       `full_name, gender, main_goal, current_weight_kg, goal_weight_kg,

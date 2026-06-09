@@ -43,14 +43,14 @@ export default async function CoursesPage() {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rawEnrollments } = await (supabase as any)
+  const { data: rawEnrollments } = await supabase
     .from('enrollments')
     .select('course_id, is_active, access_type, trial_ends_at, course:courses(id, title, description, thumbnail_url, is_premium, is_published, unlock_at, visibility, lessons(id, title, sort_order))')
     .eq('user_id', user.id)
     .eq('is_active', true);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rawProgressRows } = await (supabase as any)
+  const { data: rawProgressRows } = await supabase
     .from('lesson_progress')
     .select('lesson_id, is_completed')
     .eq('user_id', user.id);
