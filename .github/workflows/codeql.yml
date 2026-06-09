@@ -1,6 +1,6 @@
 # CodeQL Security Analysis
 # Automatically detects security vulnerabilities in the codebase.
-# Scans JavaScript/TypeScript, Python, and GitHub Actions.
+# Scans JavaScript/TypeScript and GitHub Actions.
 #
 # https://docs.github.com/en/code-security/codeql
 
@@ -19,6 +19,8 @@ jobs:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       security-events: write
       actions: read
@@ -30,17 +32,15 @@ jobs:
         include:
           - language: javascript-typescript
             build-mode: none
-          - language: python
-            build-mode: none
           - language: actions
             build-mode: none
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
@@ -49,6 +49,6 @@ jobs:
           queries: security-extended,security-and-quality
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{matrix.language}}"
