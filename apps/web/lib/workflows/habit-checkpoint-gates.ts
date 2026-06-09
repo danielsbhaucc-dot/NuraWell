@@ -17,8 +17,7 @@ export async function gateAlmogHabitCheckpoint(
   slot: HabitCheckpointSlot,
   notifyMode: NotifyMode = 'remind'
 ): Promise<HabitCheckpointGate> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile, error: pErr } = await (admin as any)
+    await admin
     .from('profiles')
     .select('ai_context')
     .eq('id', userId)
@@ -30,8 +29,7 @@ export async function gateAlmogHabitCheckpoint(
     return { ok: false, reason: 'avoid_push' };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: recent, error: nErr } = await (admin as any)
+    await admin
     .from('notifications')
     .select('metadata')
     .eq('user_id', userId)

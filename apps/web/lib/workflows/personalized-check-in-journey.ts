@@ -47,8 +47,7 @@ export async function fetchPersonalizedCheckInJourneyContext(
   checkInTime: string,
   now = new Date()
 ): Promise<PersonalizedJourneyContext | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
+    await admin
     .from('journey_progress')
     .select(JOURNEY_PROGRESS_SELECT)
     .eq('user_id', userId);
@@ -63,8 +62,7 @@ export async function fetchPersonalizedCheckInJourneyContext(
 
   /** טוען ביצועי סלוטים של היום עבור משימות חוזרות — כדי לא לתזכר אחרי שכבר בוצע. */
   const todayDoneByTask = new Map<string, Set<string>>();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: execRows } = await (admin as any)
+    await admin
     .from('journey_task_executions')
     .select('task_id, slot')
     .eq('user_id', userId)

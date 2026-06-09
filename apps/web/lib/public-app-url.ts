@@ -1,3 +1,5 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+
 /**
  * כתובת האפליקציה הציבורית (דף הבית / לוגין).
  * סדר עדיפות: DB (site_settings) → NEXT_PUBLIC_APP_URL → ברירת מחדל Vercel.
@@ -78,9 +80,15 @@ export async function resolvePublicAppOriginForOpsRedirect(): Promise<string> {
   return publicAppOriginFromEnv() ?? PUBLIC_APP_URL_DEFAULT;
 }
 
-export async function resolvePublicAppOriginFromSupabaseClient(supabase: unknown): Promise<string> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+// Generic parameters accept any SupabaseClient variant.
+// `SupabaseClient<any, any, any>` is sufficient because we only use
+// `.from()`, `.select()`, `.eq()`, `.maybeSingle()` — all return `any`
+// when the Database generic is `any`, which is exactly what we need
+// for this dynamic-key utility.
+export async function resolvePublicAppOriginFromSupabaseClient(
+  supabase: SupabaseClient<any, any, any>,
+): Promise<string> {
+  const { data, error } = await supabase
     .from('site_settings')
     .select('public_app_url')
     .eq('id', 1)
@@ -92,7 +100,9 @@ export async function resolvePublicAppOriginFromSupabaseClient(supabase: unknown
   return normalizeToOrigin((data as { public_app_url: string }).public_app_url) ?? (publicAppOriginFromEnv() ?? PUBLIC_APP_URL_DEFAULT);
 }
 
-export async function publicAppBaseNoSlashFromServer(supabase: unknown): Promise<string> {
+export async function publicAppBaseNoSlashFromServer(
+  supabase: SupabaseClient<any, any, any>,
+): Promise<string> {
   const origin = await resolvePublicAppOriginFromSupabaseClient(supabase);
   return origin.replace(/\/$/, '');
 }
