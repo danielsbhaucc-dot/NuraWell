@@ -1,11 +1,17 @@
-import { createClient as createBearerClient } from '@supabase/supabase-js';
+import { createClient as createBearerClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { AuthError, User } from '@supabase/supabase-js';
 import { createClient as createCookieClient } from './server';
 
-/** Intentionally loose: cookie client uses local `Database`; bearer client is untyped. */
+/**
+ * Two code paths (cookie SSR vs bearer) — both return a valid SupabaseClient
+ * with proper method signatures. Row-level typing varies between clients,
+ * so we relax the generic params to allow both typed and untyped clients.
+ * This still provides method-name safety (no unknown method calls) while
+ * keeping row types flexible.
+ */
 export type ApiRouteSupabaseResult = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any;
+  supabase: SupabaseClient<any, any, any, any, any>;
   user: User | null;
   authError: AuthError | null;
 };

@@ -121,45 +121,40 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
 
   return (
     <div className="min-h-full">
-      {/*
-       * pt:
-       *  • מובייל — pt-6 (24px) מספיק כי main כבר נותן pt-16 (64px) וההדר באמת בגובה 64px.
-       *  • דסקטופ — בלייאאוט הדאשבורד ההדר מקובע ב-top:48px של ה-viewport ולא ב-0,
-       *    כך שצריך עוד ~48px כדי שכותרת "הפרופיל שלי" לא תיסתר מאחוריו (ראה globals.css).
-       */}
-      <div className="container-mobile py-6 pt-6 md:pt-16 pb-10 space-y-6">
+      <div className="container-mobile py-6 pt-6 md:pt-16 pb-10 space-y-5">
 
-        {/* Header */}
+        {/* Crystal header */}
         <motion.div
           dir="rtl"
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="flex items-start justify-between gap-3"
+          className="crystal-header rounded-2xl px-4 py-4"
         >
-          <div className="text-right">
-            <h1 className="text-2xl font-black text-slate-900 mb-1">הפרופיל שלי 👤</h1>
-            <p className="text-slate-600 text-sm">נהל את הפרופיל האישי שלך</p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => setIsChatOpen(true)}
-              className="inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-bold text-white transition hover:scale-105 active:scale-95"
-              style={{ background: 'linear-gradient(145deg, #047857, #10b981)' }}
-              aria-label="עדכון פרופיל בשיחה עם אלמוג"
-            >
-              <Sparkles className="h-4 w-4" />
-              עדכן בשיחה
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsEditOpen(true)}
-              className="glass-pill relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-emerald-700 transition hover:scale-105 active:scale-95"
-              aria-label="עריכת פרופיל"
-            >
-              <Settings className="h-4 w-4" />
-            </button>
+          <div className="flex items-start justify-between gap-3">
+            <div className="text-right">
+              <h1 className="text-2xl font-black text-white">הפרופיל שלי</h1>
+              <p className="text-white/80 text-sm mt-0.5">שלום, {firstName}</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsChatOpen(true)}
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-bold text-emerald-900 transition hover:scale-105 active:scale-95 bg-white/90"
+                aria-label="עדכון פרופיל בשיחה עם אלמוג"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                עדכן בשיחה
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsEditOpen(true)}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white transition hover:scale-105 active:scale-95 bg-white/20 border border-white/30"
+                aria-label="עריכת פרופיל"
+              >
+                <Settings className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </motion.div>
 
@@ -169,55 +164,35 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           onSaved={() => router.refresh()}
         />
 
-        <motion.div
-          dir="rtl"
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.03 }}
-          className="glass-surface relative overflow-hidden rounded-2xl px-4 py-3"
-        >
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-3 top-px h-px"
-            style={{
-              background:
-                'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
-            }}
-          />
-          <p className="text-sm font-bold text-emerald-900 text-right">שלום, {firstName}</p>
-        </motion.div>
-
         {/* Avatar + Name Card */}
         <motion.div
           dir="rtl"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="glass-surface relative overflow-hidden rounded-3xl p-5"
+          className="crystal-surface rounded-2xl p-5"
         >
           <div className="flex items-center gap-4">
-            {/* Avatar */}
             <div
               className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black text-white flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #14b8a6, #10b981)', boxShadow: '0 8px 24px rgba(20,184,166,0.4)' }}
+              style={{ background: 'linear-gradient(135deg, #14b8a6, #10b981)', boxShadow: '0 8px 24px rgba(20,184,166,0.35)' }}
             >
               {initials}
             </div>
-            {/* Info */}
             <div className="flex-1 min-w-0">
               <p className="text-lg font-black text-slate-900 line-clamp-1">
                 {profile?.full_name || 'משתמש NuraWell'}
               </p>
               <p className="text-sm text-slate-500 line-clamp-1">{email}</p>
-              <div className="flex items-center gap-2 mt-1.5">
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 {profile?.role === 'admin' && (
-                  <span className="badge-accent text-xs">
-                    <Shield className="w-3 h-3 inline-block ml-0.5" /> מנהל
+                  <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 border border-violet-200">
+                    <Shield className="w-3 h-3" /> מנהל
                   </span>
                 )}
                 <span className="text-xs text-slate-500">
                   חבר מאז {memberSince}
-                  {profile?.gender === 'male' ? ' • זכר' : profile?.gender === 'female' ? ' • נקבה' : ''}
+                  {profile?.gender === 'male' ? ' · זכר' : profile?.gender === 'female' ? ' · נקבה' : ''}
                 </span>
               </div>
             </div>
@@ -229,23 +204,21 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="grid grid-cols-3 gap-4"
+          className="grid grid-cols-3 gap-3"
         >
           {stats.map((s) => (
-            <div
-              key={s.label}
-              className="glass-surface relative overflow-hidden rounded-2xl p-3 text-center"
-            >
-              <div className="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center"
+            <div key={s.label} className="crystal-stat rounded-2xl p-3 text-center">
+              <div
+                className="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center"
                 style={{
-                  background: `linear-gradient(135deg, ${s.color}33, ${s.color}1a)`,
-                  border: `1px solid ${s.color}55`,
-                  boxShadow: `inset 0 1px 0 rgba(255,255,255,0.5)`,
-                }}>
+                  background: `linear-gradient(135deg, ${s.color}22, ${s.color}11)`,
+                  border: `1px solid ${s.color}44`,
+                }}
+              >
                 <s.icon className="w-4 h-4" style={{ color: s.color }} strokeWidth={2.4} />
               </div>
               <p className="text-xl font-black text-slate-900 tabular-nums">{s.value}</p>
-              <p className="text-xs text-slate-500 mt-0.5 leading-tight">{s.label}</p>
+              <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">{s.label}</p>
             </div>
           ))}
         </motion.div>
@@ -257,13 +230,16 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="glass-surface relative overflow-hidden rounded-3xl p-5"
+            className="crystal-surface rounded-2xl overflow-hidden"
           >
-            <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <User className="w-4 h-4 text-primary-400" />
-              פרטים אישיים
-            </h3>
-            <div className="space-y-3">
+            <div className="px-5 pt-4 pb-2">
+              <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                <User className="w-4 h-4 text-emerald-600" />
+                פרטים אישיים
+              </h3>
+            </div>
+            <div className="crystal-divider mx-5" />
+            <div className="px-5 py-3 space-y-3">
               {profile?.current_weight_kg && (
                 <InfoRow label="משקל נוכחי" value={`${profile.current_weight_kg} ק"ג`} />
               )}
@@ -286,22 +262,25 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="glass-surface relative overflow-hidden rounded-3xl"
-          style={{ padding: 0 }}
+          className="crystal-surface rounded-2xl overflow-hidden"
         >
+          <div className="px-5 pt-4 pb-2">
+            <h3 className="font-bold text-slate-900">ניווט מהיר</h3>
+          </div>
+          <div className="crystal-divider mx-5" />
           {profileMenuItems.map((item, idx, arr) => (
             <Link
               key={`${item.href}-${item.label}`}
               href={item.href}
               prefetch
-              className="flex items-center gap-3 p-4 transition-colors hover:bg-emerald-100/40"
-              style={idx < arr.length - 1 ? { borderBottom: '1px solid rgba(6,78,59,0.10)' } : {}}
+              className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-emerald-50/60"
+              style={idx < arr.length - 1 ? { borderBottom: '1px solid rgba(6,78,59,0.06)' } : {}}
             >
-              <div className="glass-pill w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
+              <div className="crystal-pill w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
                 {item.emoji}
               </div>
               <span className="flex-1 text-sm font-semibold text-slate-700 text-right">{item.label}</span>
-              <ChevronLeft className="w-4 h-4 text-slate-600" />
+              <ChevronLeft className="w-4 h-4 text-slate-400" />
             </Link>
           ))}
         </motion.div>
@@ -317,9 +296,9 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
             disabled={isSigningOut}
             className="w-full flex items-center justify-center gap-2 rounded-2xl p-4 font-bold text-red-700 transition-all active:scale-98"
             style={{
-              background: 'linear-gradient(135deg, rgba(254,226,226,0.92), rgba(254,202,202,0.85))',
-              border: '1px solid rgba(248,113,113,0.45)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
+              background: 'linear-gradient(135deg, rgba(254,226,226,0.95), rgba(254,202,202,0.88))',
+              border: '1px solid rgba(248,113,113,0.35)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)',
             }}
           >
             {isSigningOut ? (
@@ -341,15 +320,9 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           className="fixed inset-0 z-[280] flex items-start justify-center bg-slate-900/45 p-3 pt-20 sm:items-center sm:pt-3"
           style={{ paddingTop: 'max(5rem, env(safe-area-inset-top))' }}
         >
-          <div
-            dir="rtl"
-            className="glass-surface w-full max-w-md overflow-hidden rounded-3xl shadow-2xl"
-          >
-            <div
-              className="flex items-center justify-between px-4 py-3 text-white"
-              style={{ background: 'linear-gradient(145deg, #047857, #10b981)' }}
-            >
-              <h3 className="text-lg font-black">עריכת פרופיל</h3>
+          <div dir="rtl" className="crystal-surface w-full max-w-md overflow-hidden rounded-2xl shadow-2xl">
+            <div className="crystal-header flex items-center justify-between px-4 py-3">
+              <h3 className="text-lg font-black text-white">עריכת פרופיל</h3>
               <button
                 type="button"
                 onClick={() => setIsEditOpen(false)}
@@ -367,7 +340,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
                   <input
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
-                    className="glass-pill w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-400"
+                    className="crystal-pill w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-none transition focus:ring-2 focus:ring-emerald-400/40"
                     placeholder="הכנס שם מלא"
                     dir="rtl"
                   />
@@ -378,7 +351,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
                   <select
                     value={genderInput}
                     onChange={(e) => setGenderInput((e.target.value as 'male' | 'female' | '') ?? '')}
-                    className="glass-pill w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-400"
+                    className="crystal-pill w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-none transition focus:ring-2 focus:ring-emerald-400/40"
                   >
                     <option value="">ללא בחירה</option>
                     <option value="male">זכר</option>
@@ -413,7 +386,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-1">
-      <span className="text-sm text-slate-400">{label}</span>
+      <span className="text-sm text-slate-500">{label}</span>
       <span className="text-sm font-semibold text-slate-800">{value}</span>
     </div>
   );

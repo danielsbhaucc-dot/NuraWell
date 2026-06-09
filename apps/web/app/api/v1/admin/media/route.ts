@@ -24,6 +24,8 @@ export async function GET(request: Request) {
   const parsed = mediaAssetListQuerySchema.safeParse({
     kind: url.searchParams.get('kind') ?? undefined,
     file_subtype: url.searchParams.get('file_subtype') ?? undefined,
+    folder: url.searchParams.get('folder') ?? undefined,
+    folder_prefix: url.searchParams.get('folder_prefix') ?? undefined,
     q: url.searchParams.get('q') ?? undefined,
     page: url.searchParams.get('page') ?? undefined,
     per_page: url.searchParams.get('per_page') ?? undefined,
@@ -33,7 +35,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'פרמטרים לא תקינים' }, { status: 400 });
   }
 
-  const { kind, file_subtype, q, page, per_page } = parsed.data;
+  const { kind, file_subtype, folder, folder_prefix, q, page, per_page } = parsed.data;
   const from = (page - 1) * per_page;
   const to = from + per_page - 1;
 
@@ -47,6 +49,8 @@ export async function GET(request: Request) {
 
   if (kind) query = query.eq('kind', kind);
   if (file_subtype) query = query.eq('file_subtype', file_subtype);
+  if (folder) query = query.eq('folder', folder);
+  if (folder_prefix) query = query.ilike('folder', `${folder_prefix}%`);
   if (q) {
     query = query.or(
       `title.ilike.%${q}%,original_filename.ilike.%${q}%,alt_text.ilike.%${q}%,folder.ilike.%${q}%`

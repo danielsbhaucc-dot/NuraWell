@@ -125,23 +125,16 @@ export function GuidesManager() {
 
   return (
     <div className="space-y-6" dir="rtl">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-            <BookOpen className="w-7 h-7 text-emerald-600" />
-            מדריכים
-          </h1>
-          <p className="text-sm text-slate-600 mt-1">יצירה, עריכה ומחולל AI למדריכים</p>
-        </div>
+      <div className="crystal-header rounded-2xl px-5 py-4">
+        <h1 className="text-2xl font-black text-white flex items-center gap-2">
+          <BookOpen className="w-7 h-7" />
+          מדריכים
+        </h1>
+        <p className="text-sm text-white/80 mt-1">יצירה, עריכה ומחולל AI למדריכים</p>
       </div>
 
       {/* AI Generator */}
-      <section
-        className="rounded-2xl p-5 border border-violet-200/60"
-        style={{
-          background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(16,185,129,0.06))',
-        }}
-      >
+      <section className="crystal-surface rounded-2xl p-5 border border-violet-200/40">
         <h2 className="font-bold text-slate-900 flex items-center gap-2 mb-3">
           <Sparkles className="w-5 h-5 text-violet-600" />
           מחולל מדריך AI
@@ -240,7 +233,7 @@ export function GuidesManager() {
               <Link
                 key={g.id}
                 href={opsHref(`/guides/${g.id}`)}
-                className="flex items-center gap-4 p-4 rounded-2xl border border-slate-200/80 bg-white/90 hover:shadow-md transition"
+                className="crystal-surface flex items-center gap-4 p-4 rounded-2xl hover:shadow-lg transition"
               >
                 <div
                   className="w-14 h-14 rounded-xl flex-shrink-0 bg-emerald-100 overflow-hidden"

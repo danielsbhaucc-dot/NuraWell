@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, Loader2, Save, ImagePlus, Trash2 } from 'lucide-react';
+import { ArrowRight, Loader2, Save, ImagePlus, Trash2, CheckCircle2 } from 'lucide-react';
 import { resolveGuideBackgroundUrl } from '@/lib/guides/resolve-background';
 import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
 import type { MediaAsset } from '@/components/media-manager/types';
@@ -43,6 +43,35 @@ export default function OpsGuideDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [bgKey, setBgKey] = useState('');
+  const [saveMsg, setSaveMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+  const saveBackground = async (key: string) => {
+    setSaving(true);
+    setSaveMsg(null);
+    try {
+      const res = await fetch(`/api/v1/admin/guides/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ background_image_key: key || null }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? 'שגיאת שמירה');
+      }
+      const data = await res.json();
+      setGuide(data.guide ?? guide);
+      setBgKey(data.guide?.background_image_key ?? key);
+      setSaveMsg({ type: 'ok', text: 'תמונת הרקע נשמרה' });
+      setTimeout(() => setSaveMsg(null), 3000);
+    } catch (err) {
+      setSaveMsg({
+        type: 'err',
+        text: err instanceof Error ? err.message : 'שגיאה בשמירת התמונה',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const pickBackground = () => {
     openMediaManager({
@@ -50,7 +79,13 @@ export default function OpsGuideDetailPage() {
       mode: 'pick',
       title: 'תמונת רקע למדריך',
       onSelect: (asset: MediaAsset) => {
-        if (asset.object_key) setBgKey(asset.object_key);
+        const key = asset.object_key?.trim();
+        if (!key) {
+          setSaveMsg({ type: 'err', text: 'לתמונה שנבחרה אין מפתח אחסון — העלה מחדש' });
+          return;
+        }
+        setBgKey(key);
+        void saveBackground(key);
       },
     });
   };
@@ -116,25 +151,25 @@ export default function OpsGuideDetailPage() {
 
   return (
     <div className="space-y-6 max-w-3xl" dir="rtl">
-      <Link href={guidesListHref} className="inline-flex items-center gap-1 text-sm text-slate-600">
+      <Link href={guidesListHref} className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-emerald-700">
         <ArrowRight className="w-4 h-4" />
         חזרה לרשימה
       </Link>
 
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-black text-slate-900">עריכת מדריך</h1>
+      <div className="crystal-header rounded-2xl px-5 py-3 flex items-center justify-between gap-3">
+        <h1 className="text-xl font-black text-white">עריכת מדריך</h1>
         <button
           type="button"
           onClick={() => void saveGuide()}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/90 text-emerald-800 text-sm font-bold hover:bg-white"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           שמור
         </button>
       </div>
 
-      <div className="space-y-4 p-5 rounded-2xl border border-slate-200 bg-white/90">
+      <div className="crystal-surface space-y-4 p-5 rounded-2xl">
         <div>
           <label className="text-xs font-bold text-slate-600">כותרת</label>
           <input
@@ -199,7 +234,10 @@ export default function OpsGuideDetailPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setBgKey('')}
+                  onClick={() => {
+                    setBgKey('');
+                    void saveBackground('');
+                  }}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-rose-500/90 px-3 py-1.5 text-xs font-bold text-white shadow hover:bg-rose-500"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -218,6 +256,22 @@ export default function OpsGuideDetailPage() {
               <span className="text-xs text-slate-400">תמונת הרקע תוצג מאחורי המדריך</span>
             </button>
           )}
+          {saveMsg && (
+            <p
+              className={`mt-2 flex items-center gap-1.5 text-xs font-bold ${
+                saveMsg.type === 'ok' ? 'text-emerald-700' : 'text-red-600'
+              }`}
+            >
+              {saveMsg.type === 'ok' && <CheckCircle2 className="w-3.5 h-3.5" />}
+              {saveMsg.text}
+            </p>
+          )}
+          {saving && (
+            <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-slate-500">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              שומר תמונה…
+            </p>
+          )}
         </div>
         <div>
           <label className="text-xs font-bold text-slate-600">פתיחה מתוזמנת (unlock_at)</label>
@@ -235,8 +289,8 @@ export default function OpsGuideDetailPage() {
         </div>
       </div>
 
-      <section>
-        <div className="flex items-center justify-between mb-3">
+      <section className="crystal-surface rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-3 pb-3 border-b border-emerald-100">
           <h2 className="font-bold text-slate-900">פרקים ({guide.lessons?.length ?? 0})</h2>
           <button
             type="button"
@@ -252,7 +306,7 @@ export default function OpsGuideDetailPage() {
             .map((l, i) => (
               <div
                 key={l.id}
-                className="p-3 rounded-xl border border-slate-200 bg-white flex items-center gap-3"
+                className="crystal-pill p-3 rounded-xl flex items-center gap-3"
               >
                 <span className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 text-sm font-bold flex items-center justify-center">
                   {i + 1}

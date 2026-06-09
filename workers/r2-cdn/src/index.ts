@@ -13,6 +13,13 @@ export interface Env {
   MAIN_BUCKET: R2Bucket;
   FILES_BUCKET: R2Bucket;
   AUDIO_BUCKET: R2Bucket;
+  /**
+   * אופציונלי: סוד לגישה לנתיב /files/*.
+   * אם מוגדר, כל בקשה ל-/files/* חייבת לכלול ?key=<FILES_ACCESS_KEY>
+   * (למעט OPTIONS/HEAD ללא גוף).
+   * אם לא מוגדר — התנהגות קיימת (ציבורי).
+   */
+  FILES_ACCESS_KEY?: string;
 }
 
 type RouteLabel = 'images' | 'files' | 'audio';
@@ -429,6 +436,15 @@ export default {
       }
 
       if (pathname.startsWith('/files/')) {
+        // אימות אופציונלי: אם FILES_ACCESS_KEY מוגדר, דורש ?key=<secret>
+        const filesAccessKey = env.FILES_ACCESS_KEY?.trim();
+        if (filesAccessKey) {
+          const queryKey = url.searchParams.get('key');
+          if (!queryKey || queryKey !== filesAccessKey) {
+            return new Response('Forbidden', { status: 403 });
+          }
+        }
+
         const key = keyFromPath('/files/', pathname);
         if (!key) {
           return new Response('Object Not Found', { status: 404 });

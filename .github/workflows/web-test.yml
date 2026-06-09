@@ -21,6 +21,10 @@ jobs:
       - name: Install dependencies
         run: npm install
         working-directory: ${{ github.workspace }}
+      - name: npm audit (catch vulnerable dependencies)
+        run: npm audit --audit-level=high
+        working-directory: ${{ github.workspace }}
+        continue-on-error: true
       - name: Run unit tests
         run: npm run test
         working-directory: ${{ github.workspace }}/apps/web

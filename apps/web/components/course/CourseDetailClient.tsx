@@ -205,10 +205,10 @@ export function CourseDetailClient({
 
       {/* Chapters List */}
       <div className="container-mobile px-4 pb-8 relative z-10">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-1.5 h-7 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(to bottom, #14FFEC, #10b981)' }} />
-          <Zap className="w-4.5 h-4.5 text-emerald-300" />
-          <h2 className="text-lg font-black text-white drop-shadow-sm">תוכן המדריך</h2>
+        <div className="guide-section-header">
+          <span className="guide-section-bar" aria-hidden />
+          <Zap className="w-4 h-4 text-emerald-300" />
+          <h2>תוכן המדריך</h2>
           <span className="guide-glass-badge mr-auto">
             {course.lessons.length} פרקים
           </span>
