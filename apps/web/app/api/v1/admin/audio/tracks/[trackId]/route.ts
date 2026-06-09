@@ -8,6 +8,7 @@ import { audioTrackUpdateSchema } from '@/lib/validation/admin-audio';
 import { jsonZodError } from '@/lib/validation/zod-http';
 import { getR2Client, r2AudioBucketName } from '@/lib/storage/r2-almog';
 import { getPublicCdnAudioUrl } from '@/lib/cdn/public-audio';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -22,6 +23,12 @@ async function resolveTrackId(context: RouteContext): Promise<string | null> {
 export async function PATCH(request: Request, context: RouteContext) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const trackId = await resolveTrackId(context);
   if (!trackId) return NextResponse.json({ error: 'מזהה רצועה לא תקין' }, { status: 400 });
@@ -51,6 +58,12 @@ export async function PATCH(request: Request, context: RouteContext) {
 export async function DELETE(request: Request, context: RouteContext) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const trackId = await resolveTrackId(context);
   if (!trackId) return NextResponse.json({ error: 'מזהה רצועה לא תקין' }, { status: 400 });

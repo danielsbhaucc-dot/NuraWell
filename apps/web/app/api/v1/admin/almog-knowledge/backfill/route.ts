@@ -8,6 +8,7 @@ import {
 } from '@/lib/ai/system-knowledge-vector';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -47,6 +48,12 @@ function titleFromBatch(batch: LegacyBatch): string {
 export async function POST(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   if (!isSystemKnowledgeVectorConfigured()) {
     return NextResponse.json({ error: 'משתני אינדקס ידע מערכת חסרים' }, { status: 500 });

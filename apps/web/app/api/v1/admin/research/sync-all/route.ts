@@ -3,6 +3,7 @@ import { syncStepResearchesToAlmogKnowledge } from '@/lib/admin/sync-research-kn
 import { isSystemKnowledgeVectorConfigured } from '@/lib/ai/system-knowledge-vector';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import type { Research } from '@/lib/types/journey';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,6 +29,12 @@ function stepHasReadyResearch(researches: Research[] | null): boolean {
 export async function POST(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   if (!process.env.OPENROUTER_API_KEY?.trim()) {
     return NextResponse.json({ error: 'OPENROUTER_API_KEY חסר ליצירת embeddings' }, { status: 500 });

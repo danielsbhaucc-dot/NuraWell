@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { readJsonBody } from '@/lib/api/json-request';
 import { syncGuideToAlmogKnowledge } from '@/lib/guides/sync-knowledge';
 
@@ -21,6 +22,12 @@ export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (auth.supabase as any)
     .from('courses')
@@ -35,8 +42,15 @@ export async function POST(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
+
   const body = await readJsonBody(request);
-  const parsed = createGuideSchema.safeParse(body);
+  if (!body.ok) return body.response;
+  const parsed = createGuideSchema.safeParse(body.value);
   if (!parsed.success) return NextResponse.json({ error: 'נתונים לא תקינים' }, { status: 400 });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

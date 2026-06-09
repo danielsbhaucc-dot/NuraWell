@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { readJsonBody } from '@/lib/api/json-request';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,9 +26,16 @@ export async function POST(request: Request, ctx: RouteCtx) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
+
   const { id: courseId } = await ctx.params;
   const body = await readJsonBody(request);
-  const parsed = lessonSchema.safeParse(body);
+  if (!body.ok) return body.response;
+  const parsed = lessonSchema.safeParse(body.value);
   if (!parsed.success) return NextResponse.json({ error: 'נתונים לא תקינים' }, { status: 400 });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

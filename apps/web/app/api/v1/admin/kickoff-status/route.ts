@@ -6,6 +6,7 @@ import {
   markKickoffFailed,
   markKickoffSent,
 } from '../../../../../lib/auth/kickoff-status';
+import { consumeMultiRateLimits, rateLimitResponse } from '../../../../../lib/api/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,6 +22,12 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   const auth = await requireApiSession(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -84,6 +91,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await requireApiSession(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

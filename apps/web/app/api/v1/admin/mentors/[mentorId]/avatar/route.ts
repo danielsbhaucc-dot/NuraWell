@@ -9,6 +9,7 @@ import {
 } from '@/lib/storage/apply-source-image';
 import { isMentorId, MENTORS, mentorLegacyKeys } from '@/lib/mentors/registry';
 import { getMentorAvatarUrl } from '@/lib/mentors/avatar-url';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -25,6 +26,12 @@ function isWebpBuffer(buf: Buffer): boolean {
 export async function GET(request: Request, context: RouteContext) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const { mentorId } = await context.params;
   if (!isMentorId(mentorId)) {
@@ -50,6 +57,12 @@ export async function GET(request: Request, context: RouteContext) {
 export async function POST(request: Request, context: RouteContext) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const { mentorId } = await context.params;
   if (!isMentorId(mentorId)) {

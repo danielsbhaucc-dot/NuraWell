@@ -8,6 +8,7 @@ import {
 import { isSystemKnowledgeVectorConfigured } from '@/lib/ai/system-knowledge-vector';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { readJsonBody } from '@/lib/api/json-request';
 
 export const runtime = 'nodejs';
@@ -54,6 +55,12 @@ const createBodySchema = z
 export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const url = new URL(request.url);
   const parsed = listQuerySchema.safeParse({
@@ -103,6 +110,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   if (!process.env.OPENROUTER_API_KEY?.trim()) {
     return NextResponse.json({ error: 'OPENROUTER_API_KEY חסר' }, { status: 500 });

@@ -11,6 +11,7 @@ import {
   mediaCompleteVideoSchema,
 } from '@/lib/validation/media-asset';
 import { getR2Client, r2BucketNameForMediaBucket } from '@/lib/storage/r2-almog';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -18,6 +19,12 @@ export const maxDuration = 30;
 export async function POST(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const raw = await readJsonBody(request);
   if (!raw.ok) return raw.response;
