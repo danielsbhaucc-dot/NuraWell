@@ -50,8 +50,8 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
             <ClipboardList className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
-            <h3 className="font-black text-white text-base leading-tight">משימות הפרק</h3>
-            <p className="text-xs text-white/65">{completedCount} מתוך {totalCount} הושלמו</p>
+            <h3 className="font-black text-base leading-tight" style={{ color: '#1A1730' }}>משימות הפרק</h3>
+            <p className="text-xs" style={{ color: '#9896B8' }}>{completedCount} מתוך {totalCount} הושלמו</p>
           </div>
         </div>
         <span className={cn('guide-chip', allDone ? 'guide-chip-emerald' : 'guide-chip-amber')}>
@@ -60,7 +60,7 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
       </div>
 
       {/* Progress Bar */}
-      <div className="relative h-2.5 rounded-full overflow-hidden mb-4" style={{ background: 'rgba(255,255,255,0.1)' }}>
+      <div className="relative h-2.5 rounded-full overflow-hidden mb-4" style={{ background: 'rgba(245,166,35,0.12)' }}>
         <motion.div
           className="absolute inset-y-0 right-0 rounded-full"
           initial={{ width: 0 }}
@@ -89,24 +89,22 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
                 <AnimatePresence mode="wait" initial={false}>
                   {isDone ? (
                     <motion.div key="done" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={{ type: 'spring', stiffness: 500, damping: 25 }}>
-                      <CheckCircle2 className="w-5 h-5 text-emerald-300" />
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                     </motion.div>
                   ) : (
                     <motion.div key="empty" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                      <Circle className="w-5 h-5 text-white/45" />
+                      <Circle className="w-5 h-5" style={{ color: '#C7C5DC' }} />
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
               <div className="flex-1 min-w-0">
-                <p className={cn(
-                  'text-sm font-semibold leading-snug text-right',
-                  isDone ? 'line-through text-white/55' : 'text-white'
-                )}>
+                <p className={cn('text-sm font-semibold leading-snug text-right', isDone && 'line-through')}
+                  style={{ color: isDone ? '#9896B8' : '#1A1730' }}>
                   {task.title}
                 </p>
                 {task.description && !isDone && (
-                  <p className="text-xs text-white/68 mt-0.5 text-right leading-relaxed">{task.description}</p>
+                  <p className="text-xs mt-0.5 text-right leading-relaxed" style={{ color: '#6B6890' }}>{task.description}</p>
                 )}
               </div>
               {task.is_required && !isDone && (
@@ -119,7 +117,7 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
 
       {/* Error */}
       {error && (
-        <div className="flex items-center gap-2 mt-3 text-red-400 text-xs">
+        <div className="flex items-center gap-2 mt-3 text-red-500 text-xs">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
         </div>
@@ -133,9 +131,9 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             className="mt-4 text-center py-3 rounded-2xl"
-            style={{ background: 'rgba(16,185,129,0.16)', border: '1px solid rgba(16,185,129,0.32)' }}
+            style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.32)' }}
           >
-            <p className="text-emerald-200 font-bold text-sm">🎉 כל המשימות הושלמו! כל הכבוד!</p>
+            <p className="font-bold text-sm" style={{ color: '#047857' }}>🎉 כל המשימות הושלמו! כל הכבוד!</p>
           </motion.div>
         )}
       </AnimatePresence>

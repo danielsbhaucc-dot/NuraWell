@@ -85,8 +85,6 @@ export function LessonPageClient({
 
   return (
     <div className="min-h-screen guide-page-bg relative">
-      <div className="guide-page-bg-fallback" aria-hidden />
-      <div className="guide-page-overlay" aria-hidden />
       <div className="container-mobile py-4 pb-8 space-y-5 relative z-10">
 
         {/* Chapter Header */}
@@ -103,32 +101,32 @@ export function LessonPageClient({
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="text-xs font-semibold" style={{ color: config.color }}>{config.label}</span>
+                <span className="text-xs font-bold" style={{ color: config.color }}>{config.label}</span>
                 {lesson.duration_minutes && (
-                  <div className="flex items-center gap-1 text-xs text-white/70">
+                  <div className="flex items-center gap-1 text-xs" style={{ color: '#9896B8' }}>
                     <Clock className="w-3 h-3" />
                     <span>{lesson.duration_minutes} דקות</span>
                   </div>
                 )}
                 {progress.is_completed && (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
-                    style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', color: '#a7f3d0' }}>
+                    style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.4)', color: '#047857' }}>
                     <CheckCircle2 className="w-3 h-3" /> הושלם
                   </span>
                 )}
               </div>
-              <h1 className="text-xl font-black text-white leading-snug drop-shadow-sm">{lesson.title}</h1>
+              <h1 className="text-xl font-black leading-snug" style={{ color: '#1A1730' }}>{lesson.title}</h1>
               {lesson.description && (
-                <p className="text-sm text-white/75 mt-1 leading-relaxed">{lesson.description}</p>
+                <p className="text-sm mt-1 leading-relaxed" style={{ color: '#3A3654' }}>{lesson.description}</p>
               )}
             </div>
           </div>
 
           <div className="divider-gradient mt-3 mb-3" />
 
-          <div className="flex items-center gap-1.5 text-xs text-white/60">
-            <BookOpen className="w-3.5 h-3.5 text-emerald-300" />
-            <span className="text-emerald-200">{lesson.course.title}</span>
+          <div className="flex items-center gap-1.5 text-xs">
+            <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="font-semibold" style={{ color: '#047857' }}>{lesson.course.title}</span>
           </div>
         </motion.div>
 
@@ -188,8 +186,8 @@ export function LessonPageClient({
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-1.5 h-6 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(to bottom, #14b8a6, #10b981)' }} />
-              <AlignLeft className="w-4 h-4 text-emerald-300" />
-              <h2 className="font-black text-white text-base drop-shadow-sm">תוכן הפרק</h2>
+              <AlignLeft className="w-4 h-4 text-emerald-600" />
+              <h2 className="font-black text-base" style={{ color: '#1A1730' }}>תוכן הפרק</h2>
             </div>
             <div
               className="lesson-content"
@@ -225,8 +223,8 @@ export function LessonPageClient({
           >
             <div className="flex items-center gap-3 mb-3">
               <div className="w-1.5 h-6 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(to bottom, #f97316, #fb923c)' }} />
-              <Images className="w-4 h-4 text-orange-400" />
-              <span className="text-base font-black text-white drop-shadow-sm">תמונות</span>
+              <Images className="w-4 h-4 text-orange-500" />
+              <span className="text-base font-black" style={{ color: '#1A1730' }}>תמונות</span>
             </div>
             <ImageGallery
               images={imageFiles.map(f => ({ url: f.uploadthing_url!, name: f.uploadthing_name ?? undefined }))}
@@ -244,8 +242,8 @@ export function LessonPageClient({
           >
             <div className="flex items-center gap-3 mb-3">
               <div className="w-1.5 h-6 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(to bottom, #3b82f6, #60a5fa)' }} />
-              <ExternalLinkIcon className="w-4 h-4 text-blue-400" />
-              <h3 className="font-black text-white text-base drop-shadow-sm">קישורים נוספים</h3>
+              <ExternalLinkIcon className="w-4 h-4 text-blue-500" />
+              <h3 className="font-black text-base" style={{ color: '#1A1730' }}>קישורים נוספים</h3>
             </div>
             <div className="space-y-2">
               {lesson.external_links.map((link) => (
@@ -254,15 +252,15 @@ export function LessonPageClient({
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 p-3 rounded-xl transition-all hover:bg-white/8"
-                  style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+                  className="flex items-center gap-2 p-3 rounded-xl transition-all hover:bg-blue-50"
+                  style={{ border: '1px solid rgba(59,130,246,0.18)' }}
                 >
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.25)' }}>
-                    <ExternalLinkIcon className="w-3.5 h-3.5 text-blue-400" />
+                    style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)' }}>
+                    <ExternalLinkIcon className="w-3.5 h-3.5 text-blue-500" />
                   </div>
-                  <span className="text-sm text-slate-200 hover:text-white font-semibold flex-1">{link.label}</span>
-                  <ExternalLinkIcon className="w-3 h-3 text-white/55" />
+                  <span className="text-sm font-semibold flex-1" style={{ color: '#1A1730' }}>{link.label}</span>
+                  <ExternalLinkIcon className="w-3 h-3" style={{ color: '#9896B8' }} />
                 </a>
               ))}
             </div>
