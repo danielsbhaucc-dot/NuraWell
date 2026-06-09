@@ -107,7 +107,8 @@ async function fetchJourneyMotivationProfile(
   admin: SupabaseClient,
   userId: string
 ): Promise<{ userGoal: string }> {
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (admin as any)
     .from('profiles')
     .select('ai_context, main_goal, main_obstacle, main_obstacle_detail')
     .eq('id', userId)
@@ -183,7 +184,8 @@ export async function sendJourneyCompanionNudge(
     companion.stepNumber != null ? String(companion.stepNumber) : companion.stepId;
   const actionUrl = `/journey/${stepPath}`;
 
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: inserted, error } = await (admin as any)
     .from('notifications')
     .insert({
       user_id: userId,

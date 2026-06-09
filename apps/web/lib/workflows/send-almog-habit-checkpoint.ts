@@ -168,7 +168,8 @@ async function fetchRecentAlmogBodies(
   limit = 2
 ): Promise<string[]> {
   const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (admin as any)
     .from('notifications')
     .select('body, metadata, created_at')
     .eq('user_id', userId)
@@ -195,7 +196,8 @@ async function fetchRecentAlmogBodies(
 }
 
 async function fetchProfileScheduleHints(admin: SupabaseClient, userId: string) {
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (admin as any)
     .from('profiles')
     .select('wake_up_time, sleep_time, dinner_time, meal_schedule, ai_context')
     .eq('id', userId)
@@ -259,7 +261,8 @@ function formatHabitTuneBlock(aiContext: unknown): string | null {
 
 async function clearHabitTuneFlag(admin: SupabaseClient, userId: string): Promise<void> {
   try {
-        await admin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (admin as any)
       .from('profiles')
       .select('ai_context')
       .eq('id', userId)
@@ -268,7 +271,8 @@ async function clearHabitTuneFlag(admin: SupabaseClient, userId: string): Promis
     if (!ctx.almog_habit_tune) return;
     const next = { ...ctx };
     delete next.almog_habit_tune;
-  await admin.from('profiles').update({ ai_context: next }).eq('id', userId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from('profiles').update({ ai_context: next }).eq('id', userId);
   } catch (e) {
     console.warn('[habit-tune] clear flag failed', e);
   }
@@ -461,7 +465,8 @@ export async function sendAlmogHabitCheckpointNotification(
     : undefined;
   const notificationSource = isBreakup ? 'almog_churn_survey' : 'almog_habit_checkpoint';
 
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: inserted, error } = await (admin as any)
     .from('notifications')
     .insert({
       user_id: payload.userId,

@@ -93,7 +93,8 @@ ${cooldownBlock ?? ''}
 
   const title = `${firstName} · מאלמוג`;
 
-    await admin.from('notifications').insert({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (admin as any).from('notifications').insert({
     user_id: userId,
     type: 'ai_message',
     title,
@@ -121,7 +122,8 @@ ${cooldownBlock ?? ''}
 }
 
 async function fetchCoachingStyle(admin: SupabaseClient, userId: string): Promise<string> {
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (admin as any)
     .from('profiles')
     .select('ai_context')
     .eq('id', userId)

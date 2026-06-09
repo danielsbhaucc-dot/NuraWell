@@ -1,0 +1,39 @@
+# TruffleHog secret scanning — complements Gitleaks.
+# TruffleHog verifies found secrets against live services (lower false positives)
+# and catches credential patterns Gitleaks may miss.
+#
+# https://github.com/trufflesecurity/trufflehog
+
+name: TruffleHog secret scan
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  schedule:
+    - cron: '0 5 * * 1'  # Weekly, Monday 05:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  trufflehog:
+    name: Scan for verified secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Full history so diff scans can compare commits.
+          fetch-depth: 0
+
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          # On PRs scan only the diff; on push/schedule scan the whole repo.
+          base: ${{ github.event.pull_request.base.sha || '' }}
+          head: ${{ github.event.pull_request.head.sha || github.sha }}
+          # Fail the build only on verified (live) secrets to avoid noise.
+          extra_args: --only-verified
