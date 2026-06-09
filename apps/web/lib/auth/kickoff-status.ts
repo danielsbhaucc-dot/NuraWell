@@ -36,7 +36,6 @@ export type KickoffStatusRow = {
  *  - אם השורה כבר קיימת ובסטטוס 'sent' — לא נדרוס.
  */
 export async function markKickoffScheduled(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: SupabaseClient<any, any, any>,
   userId: string,
   result:
@@ -51,8 +50,7 @@ export async function markKickoffScheduled(
   };
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (admin as any)
+    const { data: existing } = await admin
       .from('almog_kickoff_status')
       .select('state, attempts')
       .eq('user_id', userId)
@@ -64,8 +62,7 @@ export async function markKickoffScheduled(
     const attempts = (existing?.attempts ?? 0) + 1;
 
     if (result.ok) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (admin as any).from('almog_kickoff_status').upsert(
+      await admin.from('almog_kickoff_status').upsert(
         {
           ...base,
           state: 'scheduled',
@@ -77,8 +74,7 @@ export async function markKickoffScheduled(
         { onConflict: 'user_id' }
       );
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (admin as any).from('almog_kickoff_status').upsert(
+      await admin.from('almog_kickoff_status').upsert(
         {
           ...base,
           state: 'pending',
@@ -99,22 +95,19 @@ export async function markKickoffScheduled(
 
 /** מסמן ניסיון שליחה ישיר (לא דרך QStash) — לפני שמנסים בפועל. */
 export async function markKickoffAttempt(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: SupabaseClient<any, any, any>,
   userId: string,
   source: string
 ): Promise<void> {
   try {
     const nowIso = new Date().toISOString();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (admin as any)
+    const { data: existing } = await admin
       .from('almog_kickoff_status')
       .select('attempts, state')
       .eq('user_id', userId)
       .maybeSingle();
     if (existing?.state === 'sent') return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any).from('almog_kickoff_status').upsert(
+    await admin.from('almog_kickoff_status').upsert(
       {
         user_id: userId,
         last_attempt_at: nowIso,
@@ -130,14 +123,12 @@ export async function markKickoffAttempt(
 
 /** מסמן שהתראה ראשונה נשלחה בהצלחה. */
 export async function markKickoffSent(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: SupabaseClient<any, any, any>,
   userId: string
 ): Promise<void> {
   try {
     const nowIso = new Date().toISOString();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any).from('almog_kickoff_status').upsert(
+    await admin.from('almog_kickoff_status').upsert(
       {
         user_id: userId,
         state: 'sent',
@@ -153,14 +144,12 @@ export async function markKickoffSent(
 
 /** מסמן דילוג מסיבה לגיטימית (לא ניסיון נוסף). */
 export async function markKickoffSkipped(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: SupabaseClient<any, any, any>,
   userId: string,
   reason: string
 ): Promise<void> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any).from('almog_kickoff_status').upsert(
+    await admin.from('almog_kickoff_status').upsert(
       {
         user_id: userId,
         state: 'skipped',
@@ -175,21 +164,18 @@ export async function markKickoffSkipped(
 
 /** מסמן כישלון מתמשך — לא יוגדר כ-sent ולא ידלג. cron ינסה שוב. */
 export async function markKickoffFailed(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: SupabaseClient<any, any, any>,
   userId: string,
   error: string
 ): Promise<void> {
   try {
     const nowIso = new Date().toISOString();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (admin as any)
+    const { data: existing } = await admin
       .from('almog_kickoff_status')
       .select('attempts')
       .eq('user_id', userId)
       .maybeSingle();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any).from('almog_kickoff_status').upsert(
+    await admin.from('almog_kickoff_status').upsert(
       {
         user_id: userId,
         state: 'failed',
@@ -213,7 +199,6 @@ export async function markKickoffFailed(
  *    שמוסיף שורה כש-`onboarding_completed` ובלי שורה.
  */
 export async function fetchKickoffWatchdogCandidates(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: SupabaseClient<any, any, any>,
   options?: {
     minMinutesSinceOnboarding?: number;
@@ -240,8 +225,7 @@ export async function fetchKickoffWatchdogCandidates(
    *   2) משתמשים עם שורה בסטטוס 'pending'/'failed' ועברו X דקות מהניסיון.
    */
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: candidates } = await (admin as any)
+  const { data: candidates } = await admin
     .from('almog_kickoff_status')
     .select('user_id, state, attempts, last_attempt_at')
     .in('state', ['pending', 'failed'])
@@ -253,8 +237,7 @@ export async function fetchKickoffWatchdogCandidates(
     (candidates ?? []).map((r: { user_id: string }) => r.user_id)
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: orphanProfiles } = await (admin as any)
+  const { data: orphanProfiles } = await admin
     .from('profiles')
     .select('id, created_at')
     .eq('onboarding_completed', true)
@@ -264,8 +247,7 @@ export async function fetchKickoffWatchdogCandidates(
   const orphanProfileIds = ((orphanProfiles ?? []) as Array<{ id: string }>).map((r) => r.id);
   const statusByUser = new Set<string>();
   if (orphanProfileIds.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existingStatuses } = await (admin as any)
+    const { data: existingStatuses } = await admin
       .from('almog_kickoff_status')
       .select('user_id')
       .in('user_id', orphanProfileIds);

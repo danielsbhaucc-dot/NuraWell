@@ -81,8 +81,7 @@ export async function fetchAlmogFollowupUserState(
   userId: string,
   taskId: string
 ): Promise<AlmogFollowupUserState> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: progressRows, error: progErr } = await (admin as any)
+    await admin
     .from('journey_progress')
     .select(
       `
@@ -177,8 +176,7 @@ export async function fetchAlmogFollowupUserState(
    */
   let taskExecutionReported = rawTs?.execution_done === true;
   if (!taskExecutionReported && taskSchedule !== 'one_time') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: anyExec } = await (admin as any)
+        await admin
       .from('journey_task_executions')
       .select('id')
       .eq('user_id', userId)
