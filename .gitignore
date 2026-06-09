@@ -20,6 +20,7 @@ build/
 
 # Cache
 .cache/
+.turbo/
 *.tsbuildinfo
 
 # IDE
@@ -42,4 +43,8 @@ logs/
 # Misc
 *.tmp
 *.temp
+*.zip
+*.exe
+/26.1.2
+/python
 .vercel
