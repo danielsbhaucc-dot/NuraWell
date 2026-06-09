@@ -3320,12 +3320,53 @@ html {
   .guide-hero-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      to top,
-      rgba(6, 78, 59, 0.92) 0%,
-      rgba(4, 120, 87, 0.45) 55%,
-      rgba(6, 78, 59, 0.10) 100%
-    );
+    background:
+      linear-gradient(
+        to top,
+        rgba(6, 78, 59, 0.94) 0%,
+        rgba(4, 120, 87, 0.42) 48%,
+        rgba(6, 78, 59, 0.16) 78%,
+        rgba(6, 78, 59, 0.30) 100%
+      );
+  }
+
+  /* Soft colourful glow that makes the hero feel premium */
+  .guide-hero-glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(60% 50% at 12% 8%, rgba(45, 212, 191, 0.35) 0%, transparent 70%),
+      radial-gradient(55% 45% at 92% 0%, rgba(99, 102, 241, 0.30) 0%, transparent 70%);
+    mix-blend-mode: screen;
+  }
+
+  /* Frosted-glass stats strip inside the hero */
+  .guide-hero-stats {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.7rem 1.1rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      0 10px 28px rgba(6, 78, 59, 0.28);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+  }
+  .guide-hero-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.92);
+  }
+  .guide-hero-stat-sep {
+    width: 1px;
+    height: 1.1rem;
+    background: rgba(255, 255, 255, 0.28);
   }
 
   .guide-glass-card {

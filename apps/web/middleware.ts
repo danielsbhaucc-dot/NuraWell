@@ -159,7 +159,7 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next({ request: { headers: requestHeaders } }));
   }
 
-  /** דומיין Ops משרת רק את הפאנל; /login, /courses וכו׳ → דף הבית של הפאנל */
+  /** דומיין Ops משרת רק את הפאנל; /login, /guides וכו׳ → דף הבית של הפאנל */
   if (effectiveOpsHost) {
     const skipPanelGate =
       pathname.startsWith('/api') || pathname.startsWith('/_next');

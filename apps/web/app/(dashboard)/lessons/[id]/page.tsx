@@ -87,7 +87,7 @@ export default async function LessonPage({ params }: PageProps) {
     .eq('is_active', true)
     .maybeSingle();
 
-  if (!enrollment) redirect(`/courses/${lesson.course_id}`);
+  if (!enrollment) redirect(`/guides/${lesson.course_id}`);
 
   const { data: rawProgress } = await supabase
     .from('lesson_progress')

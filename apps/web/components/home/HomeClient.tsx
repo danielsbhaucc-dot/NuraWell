@@ -250,7 +250,7 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
           {/* מדריכים */}
           {stats.activeCoursesCount > 0 && (
             <motion.div variants={item}>
-              <Link href="/courses" prefetch className="block">
+              <Link href="/guides" prefetch className="block">
                 <div
                   className="glass-surface flex gap-3.5 items-center p-4"
                   style={{
@@ -310,7 +310,7 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
             </p>
             <div className="grid grid-cols-2 gap-3">
               <QuickLink href="/journey" icon={Route} label="המסע שלי" accent="#10b981" />
-              <QuickLink href="/courses" icon={BookOpen} label="המדריכים" accent="#14b8a6" />
+              <QuickLink href="/guides" icon={BookOpen} label="המדריכים" accent="#14b8a6" />
               <QuickLink
                 href="#"
                 icon={ClipboardCheck}

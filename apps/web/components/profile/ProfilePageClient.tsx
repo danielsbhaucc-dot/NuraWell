@@ -85,7 +85,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
     { label: 'התראות מאלמוג', href: '/settings/almog', icon: Bell, emoji: '🔔' },
     { label: 'בית', href: '/home', icon: BookOpen, emoji: '🏠' },
     { label: 'ההתקדמות שלי', href: '/progress', icon: Award, emoji: '📊' },
-    { label: 'המדריכים שלי', href: '/courses', icon: BookOpen, emoji: '📚' },
+    { label: 'המדריכים שלי', href: '/guides', icon: BookOpen, emoji: '📚' },
   ];
 
   const saveProfile = async () => {
