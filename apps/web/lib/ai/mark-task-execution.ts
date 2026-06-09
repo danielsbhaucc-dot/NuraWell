@@ -386,6 +386,8 @@ async function markRecurringSlot(
           step_id: pick.stepId,
           task_statuses,
           updated_at: nowIso,
+          /** אות פעילות-משתמש אמיתי ל-dormancy engine (migration 000047). */
+          last_engaged_at: nowIso,
         },
         { onConflict: 'user_id,step_id' }
       );
@@ -529,6 +531,8 @@ export async function markTaskExecutionForUser(
       step_id: pick.stepId,
       task_statuses,
       updated_at: nowIso,
+      /** אות פעילות-משתמש אמיתי ל-dormancy engine (migration 000047). */
+      last_engaged_at: nowIso,
     },
     { onConflict: 'user_id,step_id' }
   );

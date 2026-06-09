@@ -269,6 +269,8 @@ export interface JourneyStepProgress {
   user_id: string;
   created_at?: string;
   updated_at?: string;
+  /** פעולת-משתמש אמיתית אחרונה (migration 000047) — מקור האמת ל-dormancy. */
+  last_engaged_at?: string | null;
   video_watched: boolean;
   quiz_answers: Record<string, number>; // questionId -> selectedIndex
   quiz_score: number | null;

@@ -97,12 +97,15 @@ export async function POST(request: Request) {
     let mergedMeta = applyTaskLevelMetaPatch(taskLevelMeta, task_id, adjustment.metaPatch);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nowIso = new Date().toISOString();
     const { error: upsertErr } = await (supabase as any).from('journey_progress').upsert(
       {
         user_id: user.id,
         step_id,
         task_level_meta: mergedMeta,
-        updated_at: new Date().toISOString(),
+        updated_at: nowIso,
+        /** אות פעילות-משתמש אמיתי ל-dormancy engine (migration 000047). */
+        last_engaged_at: nowIso,
       },
       { onConflict: 'user_id,step_id' }
     );
