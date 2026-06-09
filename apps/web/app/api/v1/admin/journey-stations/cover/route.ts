@@ -8,6 +8,7 @@ import { getR2Client, r2ImageBucketName } from '@/lib/storage/r2-almog';
 import { copyImageSourceToKey } from '@/lib/storage/apply-source-image';
 import { stationCoverCreditSchema } from '@/lib/validation/admin-journey-station';
 import { readJsonBody } from '@/lib/api/json-request';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -32,6 +33,12 @@ const applyFromLibrarySchema = z
 export async function POST(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   try {
     const bucket = r2ImageBucketName();
@@ -176,6 +183,12 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const raw = await request.json().catch(() => null);
   const parsed = deleteBodySchema.safeParse(raw);

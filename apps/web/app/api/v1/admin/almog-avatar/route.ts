@@ -17,6 +17,7 @@ import {
   copyImageSourceToKey,
   parseSourceObjectKeyFromRequest,
 } from '@/lib/storage/apply-source-image';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 /** Client sends pre-compressed WebP; keep margin under Vercel ~4.5MB body limit. */
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
@@ -32,6 +33,12 @@ function isWebpBuffer(buf: Buffer): boolean {
 export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const cdnBase = resolveAlmogPublicBaseUrl();
   const avatar_url = cdnBase ? getAlmogAvatarUrl() : null;
@@ -50,6 +57,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   try {
     const bucket = r2ImageBucketName();

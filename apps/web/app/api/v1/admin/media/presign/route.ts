@@ -10,6 +10,7 @@ import {
 import { inferFileSubtype } from '@/lib/media/file-subtype';
 import { r2BucketNameForMediaBucket } from '@/lib/storage/r2-almog';
 import { createR2PutPresignedUrl } from '@/lib/storage/r2-presign';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';
 
@@ -22,6 +23,12 @@ const MAX_BYTES: Record<string, number> = {
 export async function POST(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const raw = await readJsonBody(request);
   if (!raw.ok) return raw.response;

@@ -6,12 +6,19 @@ import {
   DEFAULT_REVOLUTION_LINES,
   parseRevolutionLines,
 } from '@/lib/coming-soon/revolution-lines';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const { supabase } = auth;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -33,6 +40,12 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const raw = await readJsonBody(request);
   if (!raw.ok) return raw.response;
@@ -63,6 +76,12 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const { supabase } = auth;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

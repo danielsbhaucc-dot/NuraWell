@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { normalizeToOrigin, PUBLIC_APP_URL_DEFAULT } from '@/lib/public-app-url';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'edge';
 
@@ -17,6 +18,12 @@ const patchSchema = z.object({
 export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const { supabase } = auth;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,6 +44,12 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const raw = await readJsonBody(request);
   if (!raw.ok) return raw.response;

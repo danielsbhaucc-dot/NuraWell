@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { resolvePublicUrlForAsset } from '@/lib/cdn/public-media';
 import { mediaAssetListQuerySchema } from '@/lib/validation/media-asset';
 
@@ -19,6 +20,12 @@ function enrichRow(row: Record<string, unknown>) {
 export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const url = new URL(request.url);
   const parsed = mediaAssetListQuerySchema.safeParse({

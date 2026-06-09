@@ -7,6 +7,7 @@ import { audioTrackMetaSchema } from '@/lib/validation/admin-audio';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { audioTrackObjectKey, getPublicCdnAudioUrl } from '@/lib/cdn/public-audio';
 import { getR2Client, r2AudioBucketName } from '@/lib/storage/r2-almog';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -22,6 +23,12 @@ type RouteContext = { params: Promise<{ playlistId: string }> };
 export async function POST(request: Request, context: RouteContext) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const { playlistId } = await context.params;
   if (!z.string().uuid().safeParse(playlistId).success) {

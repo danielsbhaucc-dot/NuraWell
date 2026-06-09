@@ -2,12 +2,19 @@ import { NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { searchStockImages, stockImageSearchQuerySchema } from '@/lib/media/stock-images';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const url = new URL(request.url);
   const parsed = stockImageSearchQuerySchema.safeParse({
