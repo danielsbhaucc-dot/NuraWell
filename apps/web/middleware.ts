@@ -22,7 +22,7 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
   // Next.js inline bootstrap scripts are covered by the nonce;
   // 'unsafe-eval' is kept for Next.js dev HMR and third-party libs.
   'script-src': ["'self'", "'unsafe-eval'", 'https://va.vercel-scripts.com'],
-  'style-src': ["'self'", "'unsafe-inline'"],
+  'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
   'img-src': [
     "'self'",
     'blob:',
@@ -41,7 +41,7 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
     'https://cdn.nurawell.ai',
     'https://images.unsplash.com',
   ],
-  'font-src': ["'self'", 'data:'],
+  'font-src': ["'self'", 'data:', 'https://fonts.gstatic.com'],
   'connect-src': [
     "'self'",
     'https://*.supabase.co',
