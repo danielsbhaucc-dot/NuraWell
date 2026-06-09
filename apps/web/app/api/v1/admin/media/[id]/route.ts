@@ -29,8 +29,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const admin = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from('media_assets')
     .update(parsed.data)
     .eq('id', id)
@@ -54,8 +53,7 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
 
   const admin = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: row, error: fetchErr } = await (admin as any)
+  const { data: row, error: fetchErr } = await admin
     .from('media_assets')
     .select('*')
     .eq('id', id)
@@ -82,8 +80,7 @@ export async function DELETE(request: Request, context: RouteContext) {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: delErr } = await (admin as any).from('media_assets').delete().eq('id', id);
+  const { error: delErr } = await admin.from('media_assets').delete().eq('id', id);
   if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
 
   return NextResponse.json({ ok: true, id });

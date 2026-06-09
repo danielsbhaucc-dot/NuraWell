@@ -39,7 +39,7 @@ async function loadActiveStepHabits(
   | { ok: false; error: MicroWinHabitError; message: string }
 > {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: progress, error: progErr } = await (supabase as any)
+  const { data: progress, error: progErr } = await supabase
     .from('journey_progress')
     .select('step_id, habits_progress')
     .eq('user_id', userId)
@@ -57,7 +57,7 @@ async function loadActiveStepHabits(
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: step, error: stepErr } = await (supabase as any)
+  const { data: step, error: stepErr } = await supabase
     .from('journey_steps')
     .select('habits')
     .eq('id', stepId)
@@ -104,7 +104,7 @@ export async function markHabitForUser(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const nowIso = new Date().toISOString();
-  const { error: upErr } = await (supabase as any).from('journey_progress').upsert(
+  const { error: upErr } = await supabase.from('journey_progress').upsert(
     {
       user_id: userId,
       step_id: loaded.stepId,
@@ -162,7 +162,7 @@ export async function optOutHabitForUser(
   habitId: string
 ): Promise<OptOutHabitResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: progress, error: progErr } = await (supabase as any)
+  const { data: progress, error: progErr } = await supabase
     .from('journey_progress')
     .select('step_id, habit_meta')
     .eq('user_id', userId)
@@ -196,7 +196,7 @@ export async function optOutHabitForUser(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const optOutNowIso = new Date().toISOString();
-  const { error: upErr } = await (supabase as any).from('journey_progress').upsert(
+  const { error: upErr } = await supabase.from('journey_progress').upsert(
     {
       user_id: userId,
       step_id: stepId,
@@ -226,7 +226,7 @@ export async function isHabitOptedOut(
 ): Promise<boolean> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from('journey_progress')
       .select('habit_meta')
       .eq('user_id', userId)

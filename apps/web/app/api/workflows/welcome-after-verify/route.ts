@@ -18,7 +18,7 @@ export const { POST } = serve<Body>(async (context) => {
   const gate = await context.run('gate', async () => {
     const admin = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profile } = await (admin as any)
+    const { data: profile } = await admin
       .from('profiles')
       .select(
         `full_name, gender, main_goal, current_weight_kg, goal_weight_kg,
@@ -48,7 +48,7 @@ export const { POST } = serve<Body>(async (context) => {
       ok: true as const,
       email,
       firstName: (profile.full_name as string)?.trim().split(/\s+/)[0] || 'חבר/ה',
-      profile: profile as OnboardingProfileForChat,
+      profile: profile as unknown as OnboardingProfileForChat,
     };
   });
 

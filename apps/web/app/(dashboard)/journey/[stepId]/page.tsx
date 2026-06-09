@@ -89,8 +89,7 @@ export default async function StepPage({ params }: { params: Promise<{ stepId: s
   const resolvedStepId = step.id;
 
   // מגדר המשתמש — לנוסח התחייבות מותאם ("אני מתחייב/מתחייבת")
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profileRow } = await (supabase as any)
+  const { data: profileRow } = await supabase
     .from('profiles')
     .select('gender')
     .eq('id', user.id)
@@ -98,8 +97,7 @@ export default async function StepPage({ params }: { params: Promise<{ stepId: s
   const userGender: 'male' | 'female' | null =
     profileRow?.gender === 'male' || profileRow?.gender === 'female' ? profileRow.gender : null;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: progress } = await (supabase as any)
+  const { data: progress } = await supabase
     .from('journey_progress')
     .select(JOURNEY_PROGRESS_SELECT)
     .eq('user_id', user.id)
@@ -126,8 +124,7 @@ export default async function StepPage({ params }: { params: Promise<{ stepId: s
   let audioTracks: LessonAudioTrack[] = [];
   if (step.audio_playlist_id) {
     // RLS מחזיר רצועות רק אם הפלייליסט מפורסם (אחרת — אין מוזיקה, וזה תקין).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: trackRows } = await (supabase as any)
+    const { data: trackRows } = await supabase
       .from('audio_tracks')
       .select('id, title, object_key, credit')
       .eq('playlist_id', step.audio_playlist_id)
@@ -136,9 +133,8 @@ export default async function StepPage({ params }: { params: Promise<{ stepId: s
 
     if (Array.isArray(trackRows)) {
       audioTracks = trackRows
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((t: any) => {
-          const url = getPublicCdnAudioUrl(t.object_key);
+        .map((t: { id: string; object_key?: string | null; title?: string; credit?: string | null }) => {
+          const url = t.object_key ? getPublicCdnAudioUrl(t.object_key) : null;
           return url
             ? {
                 id: t.id as string,

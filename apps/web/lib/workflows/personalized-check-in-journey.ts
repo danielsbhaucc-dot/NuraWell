@@ -48,14 +48,14 @@ export async function fetchPersonalizedCheckInJourneyContext(
   now = new Date()
 ): Promise<PersonalizedJourneyContext | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from('journey_progress')
     .select(JOURNEY_PROGRESS_SELECT)
     .eq('user_id', userId);
 
   if (error || !data?.length) return null;
 
-  const rows = data as ProgressRow[];
+  const rows = data as unknown as ProgressRow[];
   const slot = habitSlotFromCheckInTime(checkInTime);
   const { dateKey: todayKey, weekday } = jerusalemCalendarParts(now);
   const habits = collectUserJourneyHabits(rows);
@@ -64,7 +64,7 @@ export async function fetchPersonalizedCheckInJourneyContext(
   /** טוען ביצועי סלוטים של היום עבור משימות חוזרות — כדי לא לתזכר אחרי שכבר בוצע. */
   const todayDoneByTask = new Map<string, Set<string>>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: execRows } = await (admin as any)
+  const { data: execRows } = await admin
     .from('journey_task_executions')
     .select('task_id, slot')
     .eq('user_id', userId)

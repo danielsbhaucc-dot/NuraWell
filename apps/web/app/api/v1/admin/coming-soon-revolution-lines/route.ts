@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
   const { supabase } = auth;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('site_settings')
     .select('coming_soon_revolution_lines')
     .eq('id', 1)
@@ -48,7 +48,7 @@ export async function PATCH(request: Request) {
 
   const { supabase } = auth;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('site_settings')
     .update({
       coming_soon_revolution_lines: parsed.data,
@@ -66,7 +66,7 @@ export async function DELETE(request: Request) {
 
   const { supabase } = auth;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('site_settings')
     .update({
       coming_soon_revolution_lines: null,

@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: roleRow } = await (admin as any)
+  const { data: roleRow } = await admin
     .from('profiles')
     .select('role')
     .eq('id', auth.user.id)
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
   const limit = Math.min(500, Math.max(10, Number(url.searchParams.get('limit')) || 100));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (admin as any)
+  let query = admin
     .from('almog_kickoff_status')
     .select(
       `
@@ -68,7 +68,7 @@ export async function GET(request: Request) {
 
   /** סטטיסטיקות גלובליות */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: counts } = await (admin as any).rpc('almog_kickoff_state_counts').single();
+  const { data: counts } = await admin.rpc('almog_kickoff_state_counts').single();
 
   return NextResponse.json({
     ok: true,
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: roleRow } = await (admin as any)
+  const { data: roleRow } = await admin
     .from('profiles')
     .select('role')
     .eq('id', auth.user.id)

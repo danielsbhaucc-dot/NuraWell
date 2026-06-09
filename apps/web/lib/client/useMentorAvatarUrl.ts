@@ -61,7 +61,7 @@ export function useMentorAvatarUrl(mentorId: MentorId, refreshToken = 0): Mentor
     } finally {
       setReady(true);
     }
-  }, [mentorId, fallback]);
+  }, [mentorId, mentor, fallback]);
 
   useEffect(() => {
     void refresh();

@@ -263,7 +263,7 @@ export async function fetchDaysSinceLastJourneyCompanionNudge(
   userId: string
 ): Promise<number | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (admin as any)
+  const { data } = await admin
     .from('notifications')
     .select('created_at, metadata')
     .eq('user_id', userId)
@@ -294,7 +294,7 @@ export async function gateJourneyCompanionNotify(
   if (opts?.promiseDue) {
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (admin as any)
+    const { data, error } = await admin
       .from('notifications')
       .select('id, metadata')
       .eq('user_id', userId)
@@ -327,19 +327,19 @@ export async function fetchJourneyCompanionContext(
   const [profileRes, stepsRes, progressRes, daysSinceLastNudge, unansweredTouches] =
     await Promise.all([
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (admin as any)
+      admin
         .from('profiles')
         .select('created_at, onboarding_completed, ai_context')
         .eq('id', userId)
         .maybeSingle(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (admin as any)
+      admin
         .from('journey_steps')
         .select('id, title, step_number, journey_stations ( title )')
         .eq('is_published', true)
         .order('step_number', { ascending: true }),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (admin as any)
+      admin
         .from('journey_progress')
         .select(JOURNEY_PROGRESS_FULL_SELECT)
         .eq('user_id', userId),
@@ -353,7 +353,7 @@ export async function fetchJourneyCompanionContext(
   const published = (stepsRes.data ?? []) as StepRow[];
   if (published.length === 0) return null;
 
-  const progressRows = (progressRes.data ?? []) as ProgressRowLite[];
+  const progressRows = (progressRes.data ?? []) as unknown as ProgressRowLite[];
 
   /** טוען ביצועי משימות חוזרות של היום — לסינון "כבר בוצע היום". */
   const todayKey = new Intl.DateTimeFormat('sv-SE', {
@@ -364,7 +364,7 @@ export async function fetchJourneyCompanionContext(
   }).format(new Date());
   const todayDoneByTask = new Map<string, Set<string>>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: execRows } = await (admin as any)
+  const { data: execRows } = await admin
     .from('journey_task_executions')
     .select('task_id, slot')
     .eq('user_id', userId)

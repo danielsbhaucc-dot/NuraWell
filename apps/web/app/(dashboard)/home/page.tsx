@@ -30,13 +30,13 @@ export default async function HomePage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [{ data: rawEnrollments }, { data: rawProgressRows }, { data: profileRow }] = await Promise.all([
-    (supabase as any)
+    supabase
       .from('enrollments')
       .select('course_id, course:courses(lessons(id))')
       .eq('user_id', user.id)
       .eq('is_active', true),
-    (supabase as any).from('lesson_progress').select('lesson_id, is_completed').eq('user_id', user.id),
-    (supabase as any).from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
+    supabase.from('lesson_progress').select('lesson_id, is_completed').eq('user_id', user.id),
+    supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
   ]);
 
   const enrollments = (rawEnrollments as RawEnrollmentRow[]) || [];

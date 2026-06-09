@@ -56,7 +56,7 @@ export async function POST(request: Request) {
         });
         const { supabase } = auth;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from('journey_stations')
           .update({
             cover_image_key: objectKey,
@@ -137,7 +137,7 @@ export async function POST(request: Request) {
 
     const { supabase } = auth;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('journey_stations')
       .update({
         cover_image_key: objectKey,
@@ -187,7 +187,7 @@ export async function DELETE(request: Request) {
   const { supabase } = auth;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: station, error: readError } = await (supabase as any)
+  const { data: station, error: readError } = await supabase
     .from('journey_stations')
     .select('id, cover_image_key')
     .eq('id', stationId)
@@ -212,7 +212,7 @@ export async function DELETE(request: Request) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('journey_stations')
     .update({
       cover_image_key: null,

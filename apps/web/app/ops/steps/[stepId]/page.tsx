@@ -9,8 +9,7 @@ export default async function EditStepPage({ params }: { params: Promise<{ stepI
   const { stepId } = await params;
   const supabase = await createClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: step } = await (supabase as any).from('journey_steps').select('*').eq('id', stepId).single();
+  const { data: step } = await supabase.from('journey_steps').select('*').eq('id', stepId).single();
 
   if (!step) notFound();
 

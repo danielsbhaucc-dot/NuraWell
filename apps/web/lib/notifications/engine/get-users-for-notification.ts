@@ -117,7 +117,7 @@ export async function getUsersForNotification(
   // השדות `last_responded_at` ו-`notification_count` נוספו ב-migration 000029
   // ומאפשרים: (א) סינון של משתמשים שהגיבו לאחרונה, (ב) הזרקת counter ל-LLM.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const profilesQuery = (admin as any)
+  const profilesQuery = admin
     .from('profiles')
     .select('id, full_name, daily_task, last_responded_at, notification_count')
     .eq('is_active', true)
@@ -140,7 +140,7 @@ export async function getUsersForNotification(
 
   // 2. כל ה-task_logs ב-LOOKBACK_DAYS האחרונים לקבוצת המשתמשים.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const logsQuery = (admin as any)
+  const logsQuery = admin
     .from('task_logs')
     .select('user_id, date_key')
     .in('user_id', userIds)
@@ -169,7 +169,7 @@ export async function getUsersForNotification(
 
   // 3b. כמה התראות כבר נשלחו היום לכל משתמש (לפני ה-slot הנוכחי).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const notifLogsQuery = (admin as any)
+  const notifLogsQuery = admin
     .from('notification_logs')
     .select('user_id')
     .in('user_id', userIds)

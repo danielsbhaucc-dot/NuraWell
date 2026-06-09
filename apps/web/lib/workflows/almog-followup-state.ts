@@ -1,5 +1,4 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../types/database';
 import { normalizeTaskSchedule } from '../journey/task-schedule';
 import type { JourneyTaskSchedule } from '../types/journey';
 
@@ -77,12 +76,12 @@ function stationTitleFromJoin(raw: unknown): string | null {
  * שליפת מצב משתמש ל-workflow Almog (רק מתוך context.run עם service role).
  */
 export async function fetchAlmogFollowupUserState(
-  admin: SupabaseClient<Database>,
+  admin: SupabaseClient,
   userId: string,
   taskId: string
 ): Promise<AlmogFollowupUserState> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: progressRows, error: progErr } = await (admin as any)
+  const { data: progressRows, error: progErr } = await admin
     .from('journey_progress')
     .select(
       `
@@ -107,7 +106,7 @@ export async function fetchAlmogFollowupUserState(
     throw new Error(progErr.message);
   }
 
-  const rows = (progressRows ?? []) as {
+  const rows = (progressRows ?? []) as unknown as {
     step_id: string;
     tasks_completed: Record<string, boolean> | null;
     task_statuses: Record<string, TaskStatusRow> | null;
@@ -178,7 +177,7 @@ export async function fetchAlmogFollowupUserState(
   let taskExecutionReported = rawTs?.execution_done === true;
   if (!taskExecutionReported && taskSchedule !== 'one_time') {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: anyExec } = await (admin as any)
+    const { data: anyExec } = await admin
       .from('journey_task_executions')
       .select('id')
       .eq('user_id', userId)

@@ -281,7 +281,7 @@ function LessonCardContent({
             {config.label}
           </span>
           {lesson.duration_minutes && (
-            <span className="text-xs text-white/72">{lesson.duration_minutes} דק'</span>
+            <span className="text-xs text-white/72">{lesson.duration_minutes} דק&apos;</span>
           )}
         </div>
       </div>

@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     const { supabase, user } = auth;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: stepRow, error: stepErr } = await (supabase as any)
+    const { data: stepRow, error: stepErr } = await supabase
       .from('journey_steps')
       .select('id, tasks')
       .eq('id', step_id)
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: progressRow } = await (supabase as any)
+    const { data: progressRow } = await supabase
       .from('journey_progress')
       .select('task_level_meta')
       .eq('user_id', user.id)
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     const taskLevelMeta = progressRow?.task_level_meta ?? {};
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: execRows } = await (supabase as any)
+    const { data: execRows } = await supabase
       .from('journey_task_executions')
       .select('task_id, date_key, slot, outcome')
       .eq('user_id', user.id)
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nowIso = new Date().toISOString();
-    const { error: upsertErr } = await (supabase as any).from('journey_progress').upsert(
+    const { error: upsertErr } = await supabase.from('journey_progress').upsert(
       {
         user_id: user.id,
         step_id,

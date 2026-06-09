@@ -80,7 +80,7 @@ async function runHabitTargetTune(request: Request) {
   const sinceIso = new Date(Date.now() - 30 * DAY_MS).toISOString();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rows, error } = await (admin as any)
+  const { data: rows, error } = await admin
     .from('journey_progress')
     .select(
       `
@@ -100,14 +100,15 @@ async function runHabitTargetTune(request: Request) {
   }
 
   /** טוען executions של 21 הימים האחרונים — לכל המשתמשים בבת אחת. */
-  const userIds = Array.from(new Set((rows ?? []).map((r: ProgressRow) => r.user_id)));
+  const progressRows = (rows ?? []) as unknown as ProgressRow[];
+  const userIds = Array.from(new Set(progressRows.map((r) => r.user_id)));
   if (userIds.length === 0) {
     return NextResponse.json({ ok: true, processed: 0, adjusted: 0 });
   }
 
   const since21 = new Date(Date.now() - 22 * DAY_MS).toISOString().slice(0, 10);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: execRows } = await (admin as any)
+  const { data: execRows } = await admin
     .from('journey_task_executions')
     .select('user_id, task_id, date_key, slot')
     .in('user_id', userIds)
@@ -139,7 +140,7 @@ async function runHabitTargetTune(request: Request) {
     newTargetDays: number;
   }> = [];
 
-  for (const row of (rows ?? []) as ProgressRow[]) {
+  for (const row of progressRows) {
     if (row.is_completed) continue;
     const habits = parseHabitsArr(row.journey_steps?.habits);
     const tasks: JourneyTask[] = parseJourneyTasksFull(row.journey_steps?.tasks);
@@ -183,7 +184,7 @@ async function runHabitTargetTune(request: Request) {
 
     if (!isDryRun && didChange) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: upErr } = await (admin as any)
+      const { error: upErr } = await admin
         .from('journey_progress')
         .update({ habit_meta: metaForRow })
         .eq('user_id', row.user_id)
@@ -212,7 +213,7 @@ async function runHabitTargetTune(request: Request) {
 
     for (const [userId, arr] of byUser) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: profile } = await (admin as any)
+      const { data: profile } = await admin
         .from('profiles')
         .select('ai_context')
         .eq('id', userId)
@@ -231,7 +232,7 @@ async function runHabitTargetTune(request: Request) {
         },
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (admin as any).from('profiles').update({ ai_context: merged }).eq('id', userId);
+      await admin.from('profiles').update({ ai_context: merged }).eq('id', userId);
     }
   }
 

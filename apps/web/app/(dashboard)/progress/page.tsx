@@ -104,14 +104,14 @@ export default async function ProgressPage() {
   const currentStreak = streakDays.findIndex(d => !d);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rawJourneySteps } = await (supabase as any)
+  const { data: rawJourneySteps } = await supabase
     .from('journey_steps')
     .select('id, step_number, title, tasks, habits')
     .eq('is_published', true)
     .order('step_number');
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rawJourneyProg } = await (supabase as any)
+  const { data: rawJourneyProg } = await supabase
     .from('journey_progress')
     .select('step_id, is_completed, task_statuses, habits_progress, updated_at')
     .eq('user_id', user.id);
@@ -157,7 +157,7 @@ export default async function ProgressPage() {
   const untilKey = jerusalemDateKey(today);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let { data: rawExecutions } = await (supabase as any)
+  let { data: rawExecutions } = await supabase
     .from('journey_task_executions')
     .select('date_key, task_id, step_id, slot, completed_at, source, outcome')
     .eq('user_id', user.id)
@@ -169,7 +169,7 @@ export default async function ProgressPage() {
   /** fallback: אם העמודה outcome עדיין לא קיימת ב-DB — סלקט בלעדיה. */
   if (!Array.isArray(rawExecutions)) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const retry = await (supabase as any)
+    const retry = await supabase
       .from('journey_task_executions')
       .select('date_key, task_id, step_id, slot, completed_at, source')
       .eq('user_id', user.id)
@@ -177,7 +177,7 @@ export default async function ProgressPage() {
       .lte('date_key', untilKey)
       .order('completed_at', { ascending: true })
       .limit(600);
-    rawExecutions = retry.data;
+    rawExecutions = retry.data?.map((row) => ({ ...row, outcome: null })) ?? null;
   }
 
   /** taskId → metadata כדי להציג טקסט יפה ב-Popup ב-/progress */

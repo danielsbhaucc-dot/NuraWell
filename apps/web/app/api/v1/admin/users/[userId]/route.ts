@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
+import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import { buildAdminUserJourneyReport } from '@/lib/admin/build-user-journey-report';
@@ -18,11 +19,16 @@ export async function GET(request: Request, context: RouteContext) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
+
   const { userId } = await context.params;
   const admin = createAdminClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile, error } = await (admin as any)
+  const { data: profile, error } = await admin
     .from('profiles')
     .select('*')
     .eq('id', userId)
@@ -68,6 +74,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
+
   const { userId } = await context.params;
   const raw = await readJsonBody(request);
   if (!raw.ok) return raw.response;
@@ -104,6 +116,12 @@ export async function PATCH(request: Request, context: RouteContext) {
 export async function DELETE(request: Request, context: RouteContext) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   const { userId } = await context.params;
   if (!userId) {

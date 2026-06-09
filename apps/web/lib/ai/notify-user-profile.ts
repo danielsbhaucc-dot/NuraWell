@@ -13,7 +13,7 @@ export async function fetchNotifyUserProfile(
   userId: string
 ): Promise<NotifyUserProfile> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (admin as any)
+  const { data } = await admin
     .from('profiles')
     .select('full_name, gender')
     .eq('id', userId)

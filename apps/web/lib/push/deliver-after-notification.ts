@@ -17,7 +17,7 @@ export async function deliverWebPushAfterAlmogNotification(
 
   const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (admin as any)
+  const { data: profile } = await admin
     .from('profiles')
     .select('ai_context')
     .eq('id', userId)
@@ -38,6 +38,6 @@ export async function deliverWebPushAfterAlmogNotification(
     const next = { ...ctx };
     delete next.web_push;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any).from('profiles').update({ ai_context: next }).eq('id', userId);
+    await admin.from('profiles').update({ ai_context: next }).eq('id', userId);
   }
 }

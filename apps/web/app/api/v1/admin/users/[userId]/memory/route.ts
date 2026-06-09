@@ -17,6 +17,12 @@ export async function GET(request: Request, context: RouteContext) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
+
   const { userId } = await context.params;
 
   if (!isUpstashVectorConfigured()) {
@@ -43,6 +49,12 @@ const deleteBodySchema = z.object({
 export async function DELETE(request: Request, context: RouteContext) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+
+  const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
+    { limit: 120, windowSeconds: 60 },
+    { limit: 1000, windowSeconds: 3600 },
+  ]);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   if (!isUpstashVectorConfigured()) {
     return NextResponse.json({ error: 'אינדקס זיכרון לא מוגדר' }, { status: 500 });

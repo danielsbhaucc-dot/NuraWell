@@ -11,7 +11,7 @@ export default async function OpsJourneyPage() {
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: steps } = await (supabase as any)
+  const { data: steps } = await supabase
     .from('journey_steps')
     .select('*, journey_stations(id,title,sort_order)')
     .order('step_number');

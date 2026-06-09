@@ -13,6 +13,7 @@ import {
   reengagementSentAtKey,
   type ReengagementMove,
 } from './reengagement-moves';
+import { reportError } from '../monitoring/report-error';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Db = any;
@@ -93,11 +94,11 @@ export async function patchReengagementContext(
       .update({ ai_context: { ...ctx, reengagement: nextReng } })
       .eq('id', userId);
   } catch (e) {
-    console.warn('[reengagement] patch context failed', {
+    await reportError(e, {
+      source: 'reengagement.patch-context',
       userId,
-      move,
-      error: e instanceof Error ? e.message : String(e),
-    });
+      tags: { move },
+    }, 'warning');
   }
 }
 
@@ -139,10 +140,10 @@ export async function markExitSurveyAnswered(
       .update({ ai_context: { ...ctx, reengagement: nextReng } })
       .eq('id', userId);
   } catch (e) {
-    console.warn('[reengagement] mark exit survey answered failed', {
+    await reportError(e, {
+      source: 'reengagement.mark-exit-survey-answered',
       userId,
-      error: e instanceof Error ? e.message : String(e),
-    });
+    }, 'warning');
   }
 }
 
@@ -176,10 +177,10 @@ export async function patchPassiveTouch(
       .update({ ai_context: { ...ctx, reengagement: nextReng } })
       .eq('id', userId);
   } catch (e) {
-    console.warn('[reengagement] patch passive touch failed', {
+    await reportError(e, {
+      source: 'reengagement.patch-passive-touch',
       userId,
-      kind,
-      error: e instanceof Error ? e.message : String(e),
-    });
+      tags: { kind },
+    }, 'warning');
   }
 }

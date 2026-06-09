@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 
   const { supabase } = auth;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('site_settings')
     .select('coming_soon_song_url, coming_soon_song_title, updated_at')
     .eq('id', 1)
@@ -55,7 +55,7 @@ export async function PATCH(request: Request) {
 
   const { supabase } = auth;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('site_settings')
     .update({
       coming_soon_song_url: parsed.data.song_url,
@@ -86,7 +86,7 @@ export async function DELETE(request: Request) {
 
   const { supabase } = auth;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('site_settings')
     .update({
       coming_soon_song_url: null,

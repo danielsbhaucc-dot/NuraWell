@@ -47,7 +47,7 @@ async function runOnboardingCheckInsCron(request: Request) {
   const checkpointDate = israelDateKey(now);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rows, error } = await (admin as any)
+  const { data: rows, error } = await admin
     .from('profiles')
     .select('id, ai_check_in_times, ai_system_prompt, ai_context')
     .eq('onboarding_completed', true)

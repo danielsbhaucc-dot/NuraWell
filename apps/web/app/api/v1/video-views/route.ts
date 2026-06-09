@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).from('video_view_events').insert({
+    const { error } = await supabase.from('video_view_events').insert({
       user_id: user.id,
       step_id: stepId,
       provider,

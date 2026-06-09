@@ -8,7 +8,7 @@ export async function fetchUserGuideSummaries(
   userId: string
 ): Promise<GuideProgressSummary[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: enrollments } = await (supabase as any)
+  const { data: enrollments } = await supabase
     .from('enrollments')
     .select(
       'course_id, is_active, access_type, trial_ends_at, course:courses(id, title, description, is_published, unlock_at, lessons(id, title, sort_order, duration_minutes))'
@@ -19,7 +19,7 @@ export async function fetchUserGuideSummaries(
   if (!enrollments?.length) return [];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: progressRows } = await (supabase as any)
+  const { data: progressRows } = await supabase
     .from('lesson_progress')
     .select('lesson_id, is_completed, completed_at')
     .eq('user_id', userId);

@@ -17,6 +17,6 @@ export async function insertAiInteraction(
   payload: AiInteractionInsert
 ): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).from('ai_interactions').insert(payload);
+  const { error } = await supabase.from('ai_interactions').insert(payload);
   if (error) throw error;
 }

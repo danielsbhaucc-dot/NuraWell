@@ -37,8 +37,7 @@ export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const admin = createAdminClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from('almog_knowledge')
     .select('*')
     .eq('id', id)
@@ -75,8 +74,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const admin = createAdminClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: existing, error: loadErr } = await (admin as any)
+  const { data: existing, error: loadErr } = await admin
     .from('almog_knowledge')
     .select('*')
     .eq('id', id)
@@ -142,8 +140,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (patch.body !== undefined) updatePayload.body = patch.body;
   if (patch.accessLevel !== undefined) updatePayload.access_level = patch.accessLevel;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: updated, error: updErr } = await (admin as any)
+  const { data: updated, error: updErr } = await admin
     .from('almog_knowledge')
     .update(updatePayload)
     .eq('id', id)
@@ -168,8 +165,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   try {
     const { chunkCount } = await syncKnowledgeVectorsForRow(row, prev.chunk_count);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: finalRow, error: cntErr } = await (admin as any)
+    const { data: finalRow, error: cntErr } = await admin
       .from('almog_knowledge')
       .update({ chunk_count: chunkCount })
       .eq('id', id)
@@ -194,8 +190,7 @@ export async function DELETE(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const admin = createAdminClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: existing, error: loadErr } = await (admin as any)
+  const { data: existing, error: loadErr } = await admin
     .from('almog_knowledge')
     .select('id, chunk_count')
     .eq('id', id)
@@ -211,8 +206,7 @@ export async function DELETE(request: Request, context: RouteContext) {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: delErr } = await (admin as any).from('almog_knowledge').delete().eq('id', id);
+  const { error: delErr } = await admin.from('almog_knowledge').delete().eq('id', id);
   if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
 
   return NextResponse.json({ ok: true });

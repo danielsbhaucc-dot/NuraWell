@@ -53,7 +53,7 @@ export default async function SummariesPage() {
   if (!user) redirect('/login');
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rawSummaries } = await (supabase as any)
+  const { data: rawSummaries } = await supabase
     .from('periodic_summaries')
     .select('id, type, period_key, metrics, ai_insight, ai_model, created_at')
     .eq('user_id', user.id)

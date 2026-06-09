@@ -42,7 +42,7 @@ export async function applyWeightFromUserMessage(
   const measuredAt = new Date().toISOString().slice(0, 10);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).from('user_measurements').insert({
+  const { error } = await supabase.from('user_measurements').insert({
     user_id: userId,
     measured_at: measuredAt,
     weight_kg: weightKg,
@@ -54,7 +54,7 @@ export async function applyWeightFromUserMessage(
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any)
+  await supabase
     .from('profiles')
     .update({ current_weight_kg: weightKg })
     .eq('id', userId);

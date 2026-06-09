@@ -85,7 +85,7 @@ export async function fetchTodayAlmogTouches(
   const dayStartIso = jerusalemTodayStartIso(now);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: notifRows } = await (admin as any)
+  const { data: notifRows } = await admin
     .from('notifications')
     .select('body, metadata, created_at')
     .eq('user_id', userId)
@@ -115,7 +115,7 @@ export async function fetchTodayAlmogTouches(
   if (touches.length === 0) return [];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: userMsgs } = await (admin as any)
+  const { data: userMsgs } = await admin
     .from('ai_interactions')
     .select('created_at')
     .eq('user_id', userId)

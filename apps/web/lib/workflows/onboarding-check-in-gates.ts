@@ -20,7 +20,7 @@ export async function gateOnboardingCheckIn(
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from('notifications')
     .select('id, metadata, created_at')
     .eq('user_id', userId)

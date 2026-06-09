@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   const admin = createServiceSupabaseAdmin(url, serviceKey);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any).rpc('insert_ops_auth_ticket', {
+  const { data, error } = await admin.rpc('insert_ops_auth_ticket', {
     p_access_token: session.access_token,
     p_refresh_token: session.refresh_token,
     p_expires_at: expires_at,

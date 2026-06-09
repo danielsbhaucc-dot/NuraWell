@@ -24,6 +24,7 @@ import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from '../ai/prompts';
 import type { AlmogHabitCheckpointPayload, HabitCheckpointSlot } from './almog-habit-checkpoint-payload';
 import { isActiveReengagementMove, churnSurveyOptions, type ReengagementMove } from '../churn/reengagement-moves';
 import { patchReengagementContext } from '../churn/patch-reengagement-context';
+import { reportError } from '../monitoring/report-error';
 
 const SLOT_HE: Record<HabitCheckpointSlot, string> = {
   morning: 'בוקר',
@@ -169,7 +170,7 @@ async function fetchRecentAlmogBodies(
 ): Promise<string[]> {
   const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (admin as any)
+  const { data } = await admin
     .from('notifications')
     .select('body, metadata, created_at')
     .eq('user_id', userId)
@@ -197,7 +198,7 @@ async function fetchRecentAlmogBodies(
 
 async function fetchProfileScheduleHints(admin: SupabaseClient, userId: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (admin as any)
+  const { data } = await admin
     .from('profiles')
     .select('wake_up_time, sleep_time, dinner_time, meal_schedule, ai_context')
     .eq('id', userId)
@@ -262,7 +263,7 @@ function formatHabitTuneBlock(aiContext: unknown): string | null {
 async function clearHabitTuneFlag(admin: SupabaseClient, userId: string): Promise<void> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (admin as any)
+    const { data } = await admin
       .from('profiles')
       .select('ai_context')
       .eq('id', userId)
@@ -272,9 +273,12 @@ async function clearHabitTuneFlag(admin: SupabaseClient, userId: string): Promis
     const next = { ...ctx };
     delete next.almog_habit_tune;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any).from('profiles').update({ ai_context: next }).eq('id', userId);
+    await admin.from('profiles').update({ ai_context: next }).eq('id', userId);
   } catch (e) {
-    console.warn('[habit-tune] clear flag failed', e);
+    await reportError(e, {
+      source: 'habit-checkpoint.clear-habit-tune-flag',
+      userId,
+    }, 'warning');
   }
 }
 
@@ -466,7 +470,7 @@ export async function sendAlmogHabitCheckpointNotification(
   const notificationSource = isBreakup ? 'almog_churn_survey' : 'almog_habit_checkpoint';
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: inserted, error } = await (admin as any)
+  const { data: inserted, error } = await admin
     .from('notifications')
     .insert({
       user_id: payload.userId,

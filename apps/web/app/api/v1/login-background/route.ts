@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 export async function GET() {
   const supabase = await createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from('site_settings')
     .select('login_background_key, login_background_credit')
     .eq('id', 1)

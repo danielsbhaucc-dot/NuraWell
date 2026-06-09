@@ -8,6 +8,7 @@ import { habitCheckpointSlotSchema } from '../../../../../../lib/workflows/almog
 import {
   fetchTrueLastActiveByUser,
   planHabitCheckpointTriggersWithChat,
+  type ProgressRow,
   type RecentExecutionsByUser,
   type ReengagementInfoByUser,
   type ReengagementUserInfo,
@@ -60,7 +61,7 @@ async function runHabitCheckpointCron(request: Request) {
   const admin = createAdminClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: progressRows, error: progErr } = await (admin as any).from('journey_progress').select(
+  const { data: progressRows, error: progErr } = await admin.from('journey_progress').select(
     `
       user_id,
       updated_at,
@@ -101,7 +102,7 @@ async function runHabitCheckpointCron(request: Request) {
     day: '2-digit',
   }).format(now);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: execRows } = await (admin as any)
+  const { data: execRows } = await admin
     .from('journey_task_executions')
     .select('user_id, task_id, slot')
     .eq('date_key', todayKey)
@@ -131,7 +132,7 @@ async function runHabitCheckpointCron(request: Request) {
   /** ביצועים אחרונים (21 יום) לחישוב רמות קושי */
   const sinceKey = jerusalemDateKey(new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: recentExecRows } = await (admin as any)
+  const { data: recentExecRows } = await admin
     .from('journey_task_executions')
     .select('user_id, task_id, date_key, slot, outcome')
     .gte('date_key', sinceKey)
@@ -184,7 +185,7 @@ async function runHabitCheckpointCron(request: Request) {
      * ל-Identity Reconnection, engagement_status ל-persistence.
      */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profiles, error: profErr } = await (admin as any)
+    const { data: profiles, error: profErr } = await admin
       .from('profiles')
       .select(
         'id, ai_context, onboarding_completed, ai_check_in_times, last_responded_at, notification_count, main_goal, main_obstacle, main_obstacle_detail, streak_days, engagement_status, ai_system_prompt'
@@ -253,7 +254,7 @@ async function runHabitCheckpointCron(request: Request) {
 
   const plan = await planHabitCheckpointTriggersWithChat(
     admin,
-    progressRows ?? [],
+    (progressRows ?? []) as unknown as ProgressRow[],
     slot,
     now,
     todayExecutionsByUser,
@@ -334,7 +335,7 @@ async function runHabitCheckpointCron(request: Request) {
   if (ghostedIds.length > 0) {
     const weekAgoIso = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: recentGhostedNotifications } = await (admin as any)
+    const { data: recentGhostedNotifications } = await admin
       .from('notifications')
       .select('user_id, metadata, created_at')
       .in('user_id', ghostedIds.slice(0, 2000))

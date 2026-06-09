@@ -75,7 +75,7 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (admin as any)
+  let query = admin
     .from('almog_knowledge')
     .select('*', { count: 'exact' })
     .order('updated_at', { ascending: false })
@@ -150,7 +150,7 @@ export async function POST(request: Request) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: inserted, error: insertErr } = await (admin as any)
+  const { data: inserted, error: insertErr } = await admin
     .from('almog_knowledge')
     .insert({
       title: title.trim() || 'ללא כותרת',
@@ -178,7 +178,7 @@ export async function POST(request: Request) {
   try {
     const { chunkCount } = await syncKnowledgeVectorsForRow(row, 0);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: updated, error: updErr } = await (admin as any)
+    const { data: updated, error: updErr } = await admin
       .from('almog_knowledge')
       .update({ chunk_count: chunkCount })
       .eq('id', row.id)
@@ -192,7 +192,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ item: updated as AlmogKnowledgeRow });
   } catch (e) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any).from('almog_knowledge').delete().eq('id', row.id);
+    await admin.from('almog_knowledge').delete().eq('id', row.id);
     const msg = e instanceof Error ? e.message : 'שגיאת הטמעה';
     return NextResponse.json({ error: msg }, { status: 500 });
   }

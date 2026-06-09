@@ -28,7 +28,7 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
   let adminAvatarUrl: string | null = null;
   if (user) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profile } = await (supabase as any)
+    const { data: profile } = await supabase
       .from('profiles')
       .select('full_name, avatar_url')
       .eq('id', user.id)
