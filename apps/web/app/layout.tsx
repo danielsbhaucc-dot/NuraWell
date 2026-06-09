@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
 import './globals.css';
 
 /** Same-origin metadata (manifest, OG URLs) — avoids manifest fetch getting HTML from the wrong host on Vercel. */
@@ -84,11 +85,12 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   const siteOrigin = metadataBaseUrl().origin;
   return (
     <html lang="he" dir="rtl" translate="no" className="notranslate" suppressHydrationWarning>
@@ -101,6 +103,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
         <script
+          nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
