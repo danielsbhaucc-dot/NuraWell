@@ -7,6 +7,7 @@ import { synthesizeQuestionSpeech } from './elevenlabs';
 import { buildJourneyTtsFolder, buildJourneyTtsObjectKey, type JourneyTtsKind } from './keys';
 import { deleteTtsFromR2, uploadTtsMp3ToR2 } from './r2-upload';
 import { computeTtsContentHash, normalizeTtsText } from './text';
+import { reportError } from '@/lib/monitoring/report-error';
 
 type SupabaseAdmin = {
   from: (table: string) => {
@@ -241,7 +242,10 @@ async function purgeOrphanTts(params: {
       await deleteMediaAssetByObjectKey(params.supabase, objectKey);
       deleted += 1;
     } catch (e) {
-      console.warn('[tts sync] orphan delete failed', { objectKey, error: e });
+      await reportError(e, {
+        source: 'tts.sync-step-questions.purge-orphan',
+        tags: { objectKey },
+      }, 'warning');
     }
   }
   return deleted;
