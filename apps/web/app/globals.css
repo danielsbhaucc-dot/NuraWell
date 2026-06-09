@@ -3288,91 +3288,87 @@ html {
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   }
 
-  /* ---- GUIDE PAGES (מדריכים) — dark glass on image background ---- */
+  /* ---- GUIDE PAGES (מדריכים) — light, airy, colorful frosted glass ---- */
   .guide-page-bg {
     position: relative;
-    background: #064e3b;
     min-height: 100vh;
-  }
-
-  .guide-page-bg-image {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-  }
-
-  .guide-page-bg-fallback {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
     background:
-      radial-gradient(ellipse at 20% 30%, rgba(16, 185, 129, 0.25) 0%, transparent 55%),
-      radial-gradient(ellipse at 80% 70%, rgba(20, 184, 166, 0.18) 0%, transparent 50%),
-      linear-gradient(165deg, #064e3b 0%, #047857 45%, #065f46 100%);
+      radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.10) 0%, transparent 42%),
+      radial-gradient(circle at 100% 6%, rgba(20, 184, 166, 0.12) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(245, 166, 35, 0.10) 0%, transparent 45%),
+      linear-gradient(180deg, #F5F7FB 0%, #EEF3F2 100%);
   }
 
-  .guide-page-overlay {
-    position: fixed;
+  /* Header image is confined to the hero only (never the whole page) */
+  .guide-hero {
+    position: relative;
+    overflow: hidden;
+    border-bottom-left-radius: 1.75rem;
+    border-bottom-right-radius: 1.75rem;
+    box-shadow: 0 18px 42px rgba(6, 78, 59, 0.18);
+  }
+
+  .guide-hero-fallback {
+    position: absolute;
     inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    background: linear-gradient(
-      180deg,
-      rgba(6, 78, 59, 0.55) 0%,
-      rgba(4, 47, 46, 0.72) 40%,
-      rgba(6, 78, 59, 0.88) 100%
-    );
+    background:
+      radial-gradient(ellipse at 18% 18%, rgba(45, 212, 191, 0.55) 0%, transparent 60%),
+      radial-gradient(ellipse at 88% 72%, rgba(99, 102, 241, 0.45) 0%, transparent 55%),
+      linear-gradient(135deg, #047857 0%, #10b981 50%, #14b8a6 100%);
   }
 
   .guide-hero-overlay {
+    position: absolute;
+    inset: 0;
     background: linear-gradient(
       to top,
-      rgba(6, 78, 59, 0.95) 0%,
-      rgba(4, 120, 87, 0.55) 50%,
-      rgba(6, 78, 59, 0.25) 100%
+      rgba(6, 78, 59, 0.92) 0%,
+      rgba(4, 120, 87, 0.45) 55%,
+      rgba(6, 78, 59, 0.10) 100%
     );
   }
 
   .guide-glass-card {
     background: linear-gradient(
-      155deg,
-      rgba(255, 255, 255, 0.22) 0%,
-      rgba(255, 255, 255, 0.10) 55%,
-      rgba(240, 253, 250, 0.14) 100%
+      168deg,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(240, 253, 250, 0.85) 52%,
+      rgba(255, 255, 255, 0.92) 100%
     );
-    border: 1px solid rgba(255, 255, 255, 0.38);
+    border: 1px solid rgba(255, 255, 255, 0.85);
     border-radius: 1.125rem;
+    color: #1A1730;
     box-shadow:
-      0 6px 24px rgba(6, 78, 59, 0.14),
-      inset 0 1px 0 rgba(255, 255, 255, 0.55),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+      inset 0 1px 0 rgba(255, 255, 255, 1),
+      inset 0 -1px 0 rgba(6, 78, 59, 0.04),
+      0 8px 28px rgba(6, 78, 59, 0.08),
+      0 2px 6px rgba(15, 23, 42, 0.04);
     transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
   }
 
   .guide-glass-card:hover {
-    border-color: rgba(167, 243, 208, 0.55);
+    border-color: rgba(16, 185, 129, 0.4);
     box-shadow:
-      0 10px 32px rgba(6, 78, 59, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.65);
+      inset 0 1px 0 rgba(255, 255, 255, 1),
+      0 14px 36px rgba(6, 78, 59, 0.14),
+      0 3px 8px rgba(15, 23, 42, 0.05);
     transform: translateY(-1px);
   }
 
   .guide-glass-card.completed {
-    opacity: 0.75;
+    opacity: 0.72;
   }
 
   .guide-glass-badge {
     display: inline-flex;
     align-items: center;
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: 800;
     padding: 0.25rem 0.625rem;
     border-radius: 9999px;
-    background: rgba(20, 184, 166, 0.22);
-    border: 1px solid rgba(94, 234, 212, 0.35);
-    color: #a7f3d0;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(20, 184, 166, 0.14));
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #047857;
   }
 
   .guide-section-header {
@@ -3381,7 +3377,7 @@ html {
     gap: 0.75rem;
     padding: 0.75rem 0;
     margin-bottom: 0.75rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    border-bottom: 1px solid rgba(6, 78, 59, 0.1);
   }
 
   .guide-section-header .guide-section-bar {
@@ -3395,43 +3391,41 @@ html {
   .guide-section-header h2 {
     font-size: 1.05rem;
     font-weight: 900;
-    color: #ffffff;
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.15);
+    color: #1A1730;
   }
 
   .guide-glass-card .lesson-content {
-    color: rgba(255, 255, 255, 0.88);
+    color: #3A3654;
   }
 
   .guide-glass-card .lesson-content h1,
   .guide-glass-card .lesson-content h2 {
-    color: #ffffff;
-    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.22);
+    color: #1A1730;
   }
 
   .guide-glass-card .lesson-content h3,
   .guide-glass-card .lesson-content strong {
-    color: #d1fae5;
+    color: #047857;
   }
 
   .guide-glass-card .lesson-content em,
   .guide-glass-card .lesson-content a {
-    color: #99f6e4;
+    color: #0d9488;
   }
 
   .guide-glass-card .lesson-content blockquote {
-    background: rgba(255, 255, 255, 0.08);
-    border-inline-start-color: rgba(94, 234, 212, 0.55);
-    color: rgba(255, 255, 255, 0.86);
+    background: rgba(16, 185, 129, 0.06);
+    border-inline-start-color: rgba(16, 185, 129, 0.5);
+    color: #3A3654;
   }
 
   .guide-glass-card .lesson-content code {
-    background: rgba(6, 78, 59, 0.55);
-    color: #ccfbf1;
-    border: 1px solid rgba(153, 246, 228, 0.18);
+    background: rgba(6, 78, 59, 0.06);
+    color: #047857;
+    border: 1px solid rgba(16, 185, 129, 0.18);
   }
 
-  /* ---- GUIDE chips (high-contrast on dark glass) ---- */
+  /* ---- GUIDE chips (high-contrast on light glass) ---- */
   .guide-chip {
     display: inline-flex;
     align-items: center;
@@ -3443,19 +3437,19 @@ html {
     white-space: nowrap;
   }
   .guide-chip-amber {
-    background: rgba(249, 115, 22, 0.25);
-    border: 1px solid rgba(253, 186, 116, 0.45);
-    color: #fed7aa;
+    background: rgba(245, 166, 35, 0.14);
+    border: 1px solid rgba(245, 166, 35, 0.4);
+    color: #B45309;
   }
   .guide-chip-emerald {
-    background: rgba(16, 185, 129, 0.25);
-    border: 1px solid rgba(110, 231, 183, 0.45);
-    color: #a7f3d0;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #047857;
   }
   .guide-chip-sky {
-    background: rgba(14, 165, 233, 0.25);
-    border: 1px solid rgba(125, 211, 252, 0.45);
-    color: #bae6fd;
+    background: rgba(14, 165, 233, 0.14);
+    border: 1px solid rgba(14, 165, 233, 0.4);
+    color: #0369a1;
   }
 
   /* ---- GUIDE task rows ---- */
@@ -3467,16 +3461,16 @@ html {
     padding: 0.8rem 0.85rem;
     border-radius: 1rem;
     text-align: right;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(6, 78, 59, 0.1);
     transition: all 0.2s ease;
   }
   .guide-task-row:hover {
-    background: rgba(255, 255, 255, 0.11);
-    border-color: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(16, 185, 129, 0.3);
   }
   .guide-task-row.done {
-    background: rgba(16, 185, 129, 0.14);
+    background: rgba(16, 185, 129, 0.1);
     border-color: rgba(16, 185, 129, 0.32);
   }
 
@@ -3489,8 +3483,8 @@ html {
     aspect-ratio: 1 / 1;
     width: 100%;
     border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1.5px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.72);
+    border: 1.5px solid rgba(6, 78, 59, 0.12);
     transition: all 0.18s ease;
     cursor: pointer;
   }
@@ -3500,8 +3494,8 @@ html {
     box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
   }
   .guide-day-ring.today {
-    border-color: rgba(94, 234, 212, 0.7);
-    box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.25);
+    border-color: rgba(20, 184, 166, 0.7);
+    box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2);
   }
 
   /* Glow Utilities — subtle for light theme */
