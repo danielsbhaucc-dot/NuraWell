@@ -103,12 +103,15 @@ export async function markHabitForUser(
   const habits_progress = { ...loaded.prevHp, [habit.id]: [true] };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const nowIso = new Date().toISOString();
   const { error: upErr } = await (supabase as any).from('journey_progress').upsert(
     {
       user_id: userId,
       step_id: loaded.stepId,
       habits_progress,
-      updated_at: new Date().toISOString(),
+      updated_at: nowIso,
+      /** אות פעילות-משתמש אמיתי ל-dormancy engine (migration 000047). */
+      last_engaged_at: nowIso,
     },
     { onConflict: 'user_id,step_id' }
   );
@@ -192,12 +195,15 @@ export async function optOutHabitForUser(
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const optOutNowIso = new Date().toISOString();
   const { error: upErr } = await (supabase as any).from('journey_progress').upsert(
     {
       user_id: userId,
       step_id: stepId,
       habit_meta,
-      updated_at: new Date().toISOString(),
+      updated_at: optOutNowIso,
+      /** אות פעילות-משתמש אמיתי ל-dormancy engine (migration 000047). */
+      last_engaged_at: optOutNowIso,
     },
     { onConflict: 'user_id,step_id' }
   );

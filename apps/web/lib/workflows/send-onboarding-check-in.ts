@@ -150,16 +150,23 @@ export async function sendOnboardingCheckInNotification(
    * אם נשאר משהו פתוח — נשתמש במטריקס ההתנהגותי החכם של habit-checkpoints
    * כדי להפיק שאלה אנושית-טבעית כמו "דניאלל איך הולך עם המים?".
    */
-  const journeyExecutionContext =
-    journeyCtx && (journeyCtx.habits.length > 0 || journeyCtx.pendingTasks.length > 0)
-      ? await loadJourneyExecutionContextForUser(
-          admin,
-          payload.userId,
-          journeyCtx,
-          slot,
-          new Date()
-        )
-      : null;
+  /**
+   * טוענים הקשר ביצוע תמיד כשיש מסע — גם בלי משימות פתוחות, כדי שה-LLM
+   * יקבל dormancy/cadence ולא ייפול לפרומפט הגנרי "איך הולך?".
+   */
+  const journeyExecutionContext = journeyCtx
+    ? await loadJourneyExecutionContextForUser(
+        admin,
+        payload.userId,
+        journeyCtx,
+        slot,
+        new Date()
+      )
+    : null;
+
+  const hasRemindWork = Boolean(
+    (journeyCtx?.pendingTasks.length ?? 0) > 0 || (journeyCtx?.habits.length ?? 0) > 0
+  );
 
   /**
    * "FULL" בצהריים/ערב = שקט. בבוקר עדיין נאפשר חגיגה רכה (פתיחת יום).
@@ -217,16 +224,11 @@ export async function sendOnboardingCheckInNotification(
 
   /**
    * שני מסלולי פרומפט:
-   *  A) יש עבודה פתוחה היום (משימות/הרגלים) ולא kickoff → מטריקס התנהגותי חכם
-   *     מ-habit-checkpoint-llm. שואל "איך הולך עם המים?" / "יום עמוס היום?" /
-   *     "נעלמת לי" בצורה דינמית לפי FULL/PARTIAL/INTRADAY/INTERDAY/DORMANCY.
-   *  B) אין משימות פתוחות (או kickoff) → הפרומפט הפרסונלי הגנרי הקיים.
+   *  A) יש הקשר מסע + לא kickoff → מטריקס התנהגותי חכם מ-habit-checkpoint-llm.
+   *     כולל dormancy/cadence גם בלי משימות פתוחות (נוכחות מותאמת במקום גנרי).
+   *  B) אין מסע / kickoff → פרומפט פרסונלי מינימלי (רק כ-fallback אחרון).
    */
-  const useBehavioralMatrix = Boolean(
-    journeyExecutionContext &&
-      !isKickoffNeeded &&
-      (journeyCtx?.pendingTasks.length || journeyCtx?.habits.length)
-  );
+  const useBehavioralMatrix = Boolean(journeyExecutionContext && !isKickoffNeeded);
 
   const ilFormatter = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Jerusalem',
@@ -280,19 +282,23 @@ export async function sendOnboardingCheckInNotification(
       userId: payload.userId,
       slot,
       checkpointDate: payload.checkpointDate,
-      notifyMode: 'remind',
-      habits: journeyCtx?.habits.map((h) => ({
+      notifyMode: hasRemindWork ? 'remind' : 'reinforce',
+      reinforceKind: hasRemindWork ? undefined : 'presence',
+      habits: hasRemindWork
+        ? (journeyCtx?.habits.map((h) => ({
         id: h.id,
         title: h.title,
         frequency:
           h.frequency === 'weekly' || h.frequency === 'per_meal' ? h.frequency : 'daily',
-      })) ?? [],
-      pendingTasks:
-        journeyCtx?.pendingTasks.map((t) => ({
-          id: t.id,
-          title: t.title,
-          stepTitle: t.stepTitle,
-        })) ?? [],
+      })) ?? [])
+        : [],
+      pendingTasks: hasRemindWork
+        ? (journeyCtx?.pendingTasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        stepTitle: t.stepTitle,
+      })) ?? [])
+        : [],
       completedTodayHabits: journeyExecutionContext.completedTodayHabits,
       completedTodayTasks: journeyExecutionContext.completedTodayTasks,
       stepTitle: journeyCtx?.stepTitle ?? null,
@@ -365,7 +371,11 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
       {
         role: 'user',
         content: useBehavioralMatrix
-          ? `שם המשתמש: ${firstName}\nהזמן כרגע: ${weekdayName}, ${timeHHMM}, חלון ${slot}.\nסוג המגע: ליווי משימה/הרגל שעדיין פתוחים להיום בזמן בדיקה אישי שנקבע ב-${payload.checkInTime}.`
+          ? `שם המשתמש: ${firstName}\nהזמן כרגע: ${weekdayName}, ${timeHHMM}, חלון ${slot}.\nסוג המגע: ${
+              hasRemindWork
+                ? `ליווי משימה/הרגל שעדיין פתוחים להיום בזמן בדיקה אישי שנקבע ב-${payload.checkInTime}.`
+                : `נוכחות חברית מותאמת (dormancy/cadence) בזמן בדיקה אישי שנקבע ב-${payload.checkInTime} — בלי משימות פתוחות, רק חיבור אנושי.`
+            }`
           : `${firstName} · ${genderInstruction} · מגע חברי עם אימוג'י, 2–3 משפטים, שאלה פתוחה.${journeyHint}`,
       },
     ],

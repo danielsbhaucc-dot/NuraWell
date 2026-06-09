@@ -587,14 +587,30 @@ export function isUserRespondedRecently(
 }
 
 /**
- * True last-*responded* per user = MAX של שני אותות תגובה אמיתיים:
+ * True last-*responded* per user = MAX של שלושה אותות תגובה אמיתיים:
  *  1. ai_interactions.created_at where role='user' — כתיבה אמיתית בצ'אט.
- *  2. journey_task_executions.completed_at — סימון משימה/הרגל ב-DB.
+ *  2. journey_task_executions.completed_at — סימון ביצוע משימה/הרגל ב-DB.
+ *  3. journey_progress.last_engaged_at — *עדכון פרוגרס אמיתי*: קבלת/דחיית
+ *     משימה, סימון הרגל, צפייה/חידון/התחייבות, פידבק רמה (POST
+ *     /api/v1/journey-progress, mark-task-execution, micro-win-habit,
+ *     task-level-feedback).
+ *
+ * ⚠️ *קריטי* — למה last_engaged_at ולא updated_at: על journey_progress יש
+ *    trigger `update_journey_progress_updated_at` שמרים את updated_at ל-NOW()
+ *    בכל UPDATE, כולל ה-cron הרקעי `habit-target-tune` (התאמת יעד אוטומטית
+ *    שכותבת habit_meta). שימוש ב-updated_at היה מאפס dormancy בטעות למשתמש
+ *    דורמנטי שקיבל התאמה אוטומטית. last_engaged_at נכתבת *רק* ע"י פעולות
+ *    משתמש אמיתיות (migration 000047), וה-trigger לא נוגע בה → אות נקי.
+ *
+ * 🔑 אות (3) מתקן באג reset: משתמש שחזר "לעדכן" (קיבל משימה / סימן הרגל)
+ *    בלי לכתוב בצ'אט ובלי לסגור execution מלא — לא היה מאפס את ה-dormancy,
+ *    נשאר ב-cadence מדוכא (withdrawing/ghosted) ואחרי breakup אף הושתק
+ *    לצמיתות. עכשיו עדכון פרוגרס מאפס כמו צ'אט/ביצוע.
  *
  * 🚫 *לא* משתמשים יותר ב-profiles.last_active_at: הוא מטריא ב-middleware
  *    בכל בקשת דף (כולל Service Worker pings), כך ש"פתיחת אפליקציה" הייתה
  *    מנפחת אותו ל-"עכשיו" וכל המשתמשים נראו תמיד active. דרישת המוצר:
- *    "פעיל" = *ענה* (צ'אט/משימה), לא "פתח את האפליקציה".
+ *    "פעיל" = *ענה* (צ'אט/משימה/עדכון פרוגרס), לא "פתח את האפליקציה".
  *
  * רצפה: profiles.created_at. אם למשתמש אין שום אות תגובה בחלון, ה-dormancy
  * נמדד מרגע ההצטרפות — כך משתמש חדש שעוד לא ענה לא ייחשב מיידית Ghosted
@@ -618,7 +634,7 @@ export async function fetchTrueLastActiveByUser(
     now.getTime() - TRUE_ACTIVE_WINDOW_DAYS * MS_PER_DAY
   ).toISOString();
 
-  const [profileRes, chatRes, execRes] = await Promise.all([
+  const [profileRes, chatRes, execRes, progressRes] = await Promise.all([
     admin
       .from('profiles')
       .select('id, created_at')
@@ -637,6 +653,17 @@ export async function fetchTrueLastActiveByUser(
       .in('user_id', cappedIds)
       .gte('completed_at', windowIso)
       .order('completed_at', { ascending: false })
+      .limit(8000),
+    /**
+     * אות (3): עדכון פרוגרס אמיתי דרך last_engaged_at (נקי מ-trigger ומ-cron
+     * הרקעי — ראה doc-comment למעלה). מאפס dormancy גם בלי צ'אט/execution.
+     */
+    admin
+      .from('journey_progress')
+      .select('user_id, last_engaged_at')
+      .in('user_id', cappedIds)
+      .gte('last_engaged_at', windowIso)
+      .order('last_engaged_at', { ascending: false })
       .limit(8000),
   ]);
 
@@ -672,6 +699,12 @@ export async function fetchTrueLastActiveByUser(
   if (Array.isArray(execRes?.data)) {
     for (const row of execRes.data as Array<{ user_id?: string; completed_at?: string | null }>) {
       if (typeof row.user_id === 'string') upsertMax(row.user_id, row.completed_at);
+    }
+  }
+
+  if (Array.isArray(progressRes?.data)) {
+    for (const row of progressRes.data as Array<{ user_id?: string; last_engaged_at?: string | null }>) {
+      if (typeof row.user_id === 'string') upsertMax(row.user_id, row.last_engaged_at);
     }
   }
 
@@ -884,7 +917,16 @@ export function planHabitCheckpointTriggers(
      */
     const reInfo = reengagementByUser.get(userId);
     let reengagementMove: ReengagementMove = 'none';
-    const breakupDone = Boolean(reInfo?.breakupSentAt);
+    /**
+     * 🔑 reactivation: משתמש שחזר להיות פעיל (daysSinceLastActive<=1, תואם
+     * computeEngagementStatus('active')) — flag ה-breakup הישן כבר לא רלוונטי
+     * ובאותה ריצת cron updateEngagementStatuses ינקה אותו. בלי הסעיף הזה
+     * ה-planner היה משתיק אותו מחזור נוסף (`if (breakupDone) continue`) למרות
+     * שהוא חזר וגם יש לו משימה פתוחה. נתייחס אליו כלא-breakup.
+     */
+    const isReactivatedFromBreakup =
+      Number.isFinite(daysSinceLastActive) && daysSinceLastActive <= 1;
+    const breakupDone = Boolean(reInfo?.breakupSentAt) && !isReactivatedFromBreakup;
     if (reInfo?.enabled && !breakupDone) {
       reengagementMove = computeReengagementMove({
         daysSinceLastActive,

@@ -4,12 +4,11 @@ import { createAdminClient } from '../../../../../../lib/supabase/admin';
 import { isAvoidPushActive } from '../../../../../../lib/ai/avoid-push';
 import { isPassivePresenceEnabled } from '../../../../../../lib/churn/feature-flags';
 import {
-  buildPassiveBody,
   passivePresenceAllowed,
   planPassiveTouchForUser,
 } from '../../../../../../lib/churn/passive-presence-batch';
 import { patchPassiveTouch } from '../../../../../../lib/churn/patch-reengagement-context';
-import { fetchNotifyUserProfile } from '../../../../../../lib/ai/notify-user-profile';
+import { sendPassivePresenceNotification } from '../../../../../../lib/churn/send-passive-presence-notification';
 import { afterAlmogInAppNotification } from '../../../../../../lib/notifications/after-almog-insert';
 
 export const runtime = 'nodejs';
@@ -84,44 +83,28 @@ async function runPassivePresenceCron(request: Request) {
       const plan = planPassiveTouchForUser({ now, aiContext: profile.ai_context });
       if (!plan) continue;
 
-      const body = buildPassiveBody({ kind: plan.kind, trigger: plan.trigger, now });
-
       if (isDryRun) {
-        if (sampleBodies.length < 5) sampleBodies.push(`${plan.kind}: ${body}`);
+        if (sampleBodies.length < 5) {
+          sampleBodies.push(`${plan.kind}${plan.trigger ? `/${plan.trigger}` : ''}: [LLM — dry run]`);
+        }
         sent++;
         continue;
       }
 
-      const { firstName } = await fetchNotifyUserProfile(admin, userId);
-      const title = `${firstName} 🌿`;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: insErr } = await (admin as any).from('notifications').insert({
-        user_id: userId,
-        type: 'ai_message',
-        title,
-        body,
-        icon_emoji: '🌿',
-        action_url: '/journey',
-        is_read: false,
-        is_sent: false,
-        send_at: now.toISOString(),
-        metadata: {
-          source: 'almog_passive_presence',
-          expects_reply: false,
-          passive_kind: plan.kind,
-          passive_trigger: plan.trigger ?? null,
-          template: true,
-          recipient_first_name: firstName,
-        },
+      const { body, inserted } = await sendPassivePresenceNotification(admin, {
+        userId,
+        kind: plan.kind,
+        trigger: plan.trigger,
+        now,
       });
 
-      if (insErr) {
-        errors.push(`${userId}: ${insErr.message}`);
+      if (!inserted) {
+        errors.push(`${userId}: insert returned null`);
         continue;
       }
 
       await patchPassiveTouch(admin, userId, plan.kind, now);
+      const title = typeof inserted.title === 'string' ? inserted.title : `${userId} 🌿`;
       afterAlmogInAppNotification(userId, title, body);
       sent++;
     } catch (e) {

@@ -56,11 +56,18 @@ export async function POST(request: Request) {
     const { step_id, tasks_completed, task_statuses, ...rest } = parsed.data;
     const { supabase, user } = auth;
 
+    const nowIso = new Date().toISOString();
     const row: Record<string, unknown> = {
       user_id: user.id,
       step_id,
       ...rest,
-      updated_at: new Date().toISOString(),
+      updated_at: nowIso,
+      /**
+       * אות פעילות-משתמש אמיתי ל-dormancy engine (migration 000047). נכתב
+       * כאן כי זו פעולת משתמש (קבלת/דחיית משימה, צפייה, חידון, התחייבות,
+       * סימון). בניגוד ל-updated_at — לא מזוהם ע"י cron habit-target-tune.
+       */
+      last_engaged_at: nowIso,
     };
     if (tasks_completed !== undefined) {
       row.tasks_completed = normalizeBooleanMap(tasks_completed);
