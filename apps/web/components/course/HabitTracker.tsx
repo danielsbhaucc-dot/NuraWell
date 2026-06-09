@@ -50,8 +50,8 @@ export function HabitTracker({ habits, habitProgress, lessonId, onHabitToggle }:
           <Flame className="w-4.5 h-4.5 text-white" />
         </div>
         <div>
-          <h3 className="font-black text-white text-base leading-tight">מעקב הרגלים</h3>
-          <p className="text-xs text-white/65">סמנו כל יום שעמדתם בו</p>
+          <h3 className="font-black text-base leading-tight" style={{ color: '#1A1730' }}>מעקב הרגלים</h3>
+          <p className="text-xs" style={{ color: '#9896B8' }}>סמנו כל יום שעמדתם בו</p>
         </div>
       </div>
 
@@ -59,10 +59,8 @@ export function HabitTracker({ habits, habitProgress, lessonId, onHabitToggle }:
       <div className="grid grid-cols-8 gap-1.5 mb-2.5">
         <div /> {/* Habit name column */}
         {DAY_LABELS.map((d, i) => (
-          <div key={i} className={cn(
-            'text-center text-xs font-black py-1 rounded-lg',
-            i === todayIndex ? 'text-teal-200' : 'text-white/55'
-          )}>
+          <div key={i} className="text-center text-xs font-black py-1 rounded-lg"
+            style={{ color: i === todayIndex ? '#0d9488' : '#9896B8' }}>
             {d}
           </div>
         ))}
@@ -121,7 +119,7 @@ export function HabitTracker({ habits, habitProgress, lessonId, onHabitToggle }:
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
                             className="w-1.5 h-1.5 rounded-full"
-                            style={{ background: isToday ? 'rgba(94,234,212,0.8)' : 'rgba(255,255,255,0.25)' }}
+                            style={{ background: isToday ? 'rgba(13,148,136,0.8)' : 'rgba(107,104,144,0.3)' }}
                           />
                         )}
                       </AnimatePresence>
@@ -132,7 +130,7 @@ export function HabitTracker({ habits, habitProgress, lessonId, onHabitToggle }:
 
               {/* Label row */}
               <div className="flex items-center justify-between px-1 mt-1.5">
-                <span className="text-white text-sm font-bold">{habit.title}</span>
+                <span className="text-sm font-bold" style={{ color: '#1A1730' }}>{habit.title}</span>
                 <div className="flex items-center gap-1.5">
                   {streak > 1 && (
                     <span className="guide-chip guide-chip-amber">🔥 {streak} ימים</span>
