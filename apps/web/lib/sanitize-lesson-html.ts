@@ -1,6 +1,9 @@
 /**
  * סניטציה של HTML מהמסד (תוכן שיעור). ללא תלות חיצונית — מתאים גם כש־npm חסום (TLS).
  * בשימוש בצד שרת (lessons page) ובצד לקוח (LessonPageClient) — הגנה לעומק.
+ *
+ * הערה: סניטציה מבוססת regex היא שכבת הגנה ראשונה בלבד.
+ * התוכן מגיע מה-DB (נכתב ע"י מנהלים) — איום XSS נמוך.
  */
 export function sanitizeLessonHtml(html: string | null | undefined): string {
   if (!html) return '';
@@ -17,9 +20,15 @@ export function sanitizeLessonHtml(html: string | null | undefined): string {
 
   s = s.replace(/<\/?(?:script|iframe|object|embed|applet|meta|link|base)\b[^>]*>/gi, '');
 
+  // הסרת אירועי JS (onclick, onload וכו') + formaction
   s = s.replace(/\s(?:on[a-z]{3,}|formaction)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, ' ');
-  s = s.replace(/\s(?:href|src|xlink:href)\s*=\s*(?:"|'|\s)*(?:javascript:|vbscript:)/gi, ' ');
-  s = s.replace(/\s(?:href|src)\s*=\s*(?:"|'|\s)*data:/gi, ' ');
+  // חסימת javascript: / vbscript: ב-href/src/xlink:href (כולל entities בסיסיות)
+  s = s.replace(
+    /\s(?:href|src|xlink:href)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*?)(?:javascript:|vbscript:)/gi,
+    ' ',
+  );
+  // חסימת data: ב-href/src (למניעת data URI XSS)
+  s = s.replace(/\s(?:href|src)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*?)data:/gi, ' ');
 
   return s;
 }

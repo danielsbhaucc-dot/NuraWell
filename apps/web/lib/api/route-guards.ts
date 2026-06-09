@@ -30,8 +30,7 @@ export async function requireApiAdmin(request: Request): Promise<SessionOk | Gua
   if (!session.ok) return session;
 
   const { supabase, user } = session;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile, error } = await (supabase as any)
+  const { data: profile, error } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)

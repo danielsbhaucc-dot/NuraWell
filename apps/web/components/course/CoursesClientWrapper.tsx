@@ -38,20 +38,23 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
           minHeight: '55vh',
         }}
       >
+        {/* Page header */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="crystal-header rounded-2xl px-4 py-3.5 mb-4"
+        >
+          <h1 className="text-xl font-black text-white">המדריכים שלי</h1>
+          <p className="text-sm text-white/80 mt-0.5">המשך ללמוד ולהתקדם</p>
+        </motion.div>
+
         {enrolledCourses.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.05 }}
-            className="flex gap-3.5 items-center mb-3.5 p-4"
-            style={{
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(240,253,250,0.9) 100%)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255,255,255,0.8)',
-              borderRadius: '22px',
-              boxShadow:
-                '0 4px 24px rgba(6,78,59,0.10), 0 1px 4px rgba(6,78,59,0.06), inset 0 1px 0 rgba(255,255,255,1)',
-            }}
+            className="crystal-surface flex gap-3.5 items-center mb-3.5 p-4 rounded-2xl"
           >
             <div
               className="flex-shrink-0 flex flex-col items-center justify-center"
@@ -123,11 +126,10 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="flex items-center gap-3.5 mb-4 p-3.5 px-4"
+            className="flex items-center gap-3.5 mb-4 p-3.5 px-4 rounded-2xl"
             style={{
               background: 'linear-gradient(135deg, #FFF8E7 0%, #FFFBF0 100%)',
               border: '1.5px solid rgba(245,166,35,0.35)',
-              borderRadius: '20px',
               boxShadow: '0 4px 20px rgba(245,166,35,0.12), inset 0 1px 0 rgba(255,255,255,0.9)',
             }}
           >

@@ -17,3 +17,7 @@ bucket_name = "REPLACE_ME_FILES_BUCKET"
 [[r2_buckets]]
 binding = "AUDIO_BUCKET"
 bucket_name = "nurawell-audio"
+
+# משתנה אופציונלי: אם מוגדר, /files/* ידרוש ?key=<FILES_ACCESS_KEY>.
+# יש להגדיר ב-Cloudflare Dashboard → Workers → nurawell-r2-cdn → Variables.
+# vars = { FILES_ACCESS_KEY = "" }

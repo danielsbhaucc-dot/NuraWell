@@ -54,10 +54,9 @@ export async function ensureOpsAdminServer(): Promise<void> {
     redirect(app ? `${app}/login` : '/login');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (supabase as any)
+  const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select<'role', { role: 'user' | 'admin' }>('role')
     .eq('id', user.id)
     .single();
 

@@ -37,6 +37,8 @@ export type MediaCredit = z.infer<typeof mediaCreditSchema>;
 export const mediaAssetListQuerySchema = z.object({
   kind: z.enum(MEDIA_KINDS).optional(),
   file_subtype: z.enum(FILE_SUBTYPES).optional(),
+  folder: z.string().trim().max(200).optional(),
+  folder_prefix: z.string().trim().max(200).optional(),
   q: z.string().trim().max(200).optional(),
   page: z.coerce.number().int().min(1).optional().default(1),
   per_page: z.coerce.number().int().min(6).max(60).optional().default(24),

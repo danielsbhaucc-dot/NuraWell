@@ -11,6 +11,82 @@ import {
 import { resolvePublicAppOriginForOpsRedirect } from './lib/public-app-url';
 import { APP_HOME_PATH } from './lib/navigation/app-home-path';
 
+// ── CSP nonce ──────────────────────────────────────────────────────────────
+// Each request gets a unique cryptographic nonce, replacing 'unsafe-inline'
+// for script-src.  Next.js reads the 'x-nonce' response header automatically
+// and applies it to its bootstrap inline scripts.
+// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy
+
+const CSP_DIRECTIVES: Record<string, string[]> = {
+  'default-src': ["'self'"],
+  // Next.js inline bootstrap scripts are covered by the nonce;
+  // 'unsafe-eval' is kept for Next.js dev HMR and third-party libs.
+  'script-src': ["'self'", "'unsafe-eval'", 'https://va.vercel-scripts.com'],
+  'style-src': ["'self'", "'unsafe-inline'"],
+  'img-src': [
+    "'self'",
+    'blob:',
+    'data:',
+    'https://*.supabase.co',
+    'https://uploadthing.com',
+    'https://*.uploadthing.com',
+    'https://*.utfs.io',
+    'https://*.bunnycdn.com',
+    'https://*.b-cdn.net',
+    'https://video.nurawell.ai',
+    'https://img.youtube.com',
+    'https://i.vimeocdn.com',
+    'https://*.r2.dev',
+    'https://*.r2.cloudflarestorage.com',
+    'https://cdn.nurawell.ai',
+    'https://images.unsplash.com',
+  ],
+  'font-src': ["'self'", 'data:'],
+  'connect-src': [
+    "'self'",
+    'https://*.supabase.co',
+    'https://openrouter.ai',
+    'https://api.openrouter.ai',
+    'https://*.upstash.io',
+  ],
+  'media-src': [
+    "'self'",
+    'https://*.bunnycdn.com',
+    'https://*.b-cdn.net',
+    'https://video.nurawell.ai',
+    'https://*.r2.dev',
+    'https://cdn.nurawell.ai',
+    'https://*.supabase.co',
+  ],
+  'frame-src': [
+    "'self'",
+    'https://iframe.mediadelivery.net',
+    'https://www.youtube.com',
+    'https://player.vimeo.com',
+    'https://*.bunnycdn.com',
+  ],
+  'worker-src': ["'self'", 'blob:'],
+  'form-action': ["'self'"],
+  'base-uri': ["'self'"],
+};
+
+function buildCspWithNonce(nonce: string): string {
+  return Object.entries(CSP_DIRECTIVES)
+    .map(([key, sources]) => {
+      if (key === 'script-src') {
+        return `${key} 'nonce-${nonce}' ${sources.join(' ')}`;
+      }
+      return `${key} ${sources.join(' ')}`;
+    })
+    .join('; ');
+}
+
+function generateNonce(): string {
+  // crypto.randomUUID() is available in Edge Runtime (Web Crypto API)
+  return crypto.randomUUID();
+}
+// ──────────────────────────────────────────────────────────────────────────
+
 const PUBLIC_ROUTES = [
   '/',
   '/coming-soon',
@@ -58,12 +134,22 @@ export async function middleware(request: NextRequest) {
   const effectiveOpsHost = isOpsHost || isPreviewOpsHost;
   const isLocal = incomingHost === 'localhost' || incomingHost === '127.0.0.1';
 
+  // ── CSP nonce ──────────────────────────────────────────────────────
+  // Generate once per request; attach to every response.
+  const nonce = generateNonce();
+  const cspHeader = buildCspWithNonce(nonce);
+  function applySecurityHeaders(res: NextResponse): NextResponse {
+    res.headers.set('Content-Security-Policy', cspHeader);
+    res.headers.set('x-nonce', nonce);
+    return res;
+  }
+
   if (!supabaseUrl || !supabaseKey) {
     if (process.env.NODE_ENV === 'development') {
       // eslint-disable-next-line no-console
       console.warn('[middleware] Missing NEXT_PUBLIC_SUPABASE_* — skipping auth.');
     }
-    return NextResponse.next({ request: { headers: requestHeaders } });
+    return applySecurityHeaders(NextResponse.next({ request: { headers: requestHeaders } }));
   }
 
   /** דומיין Ops משרת רק את הפאנל; /login, /courses וכו׳ → דף הבית של הפאנל */
@@ -71,7 +157,7 @@ export async function middleware(request: NextRequest) {
     const skipPanelGate =
       pathname.startsWith('/api') || pathname.startsWith('/_next');
     if (!skipPanelGate && !isOpsPanelBrowserPath(pathname)) {
-      return NextResponse.redirect(new URL('/', request.url));
+      return applySecurityHeaders(NextResponse.redirect(new URL('/', request.url)));
     }
   }
 
@@ -117,7 +203,7 @@ export async function middleware(request: NextRequest) {
   const canUseOpsPathPrefix =
     (isLocal && process.env.NODE_ENV === 'development') || effectiveOpsHost;
   if (pathname.startsWith('/ops') && !canUseOpsPathPrefix) {
-    return NextResponse.redirect(new URL(APP_HOME_PATH, request.url));
+    return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
   }
 
   const devOpsPath = Boolean(isLocal && process.env.NODE_ENV === 'development' && pathname.startsWith('/ops'));
@@ -140,13 +226,13 @@ export async function middleware(request: NextRequest) {
         ? new URL(pathname, request.nextUrl.origin).href
         : new URL('/', request.nextUrl.origin).href;
       loginUrl.searchParams.set('redirect', opsReturnUrl);
-      return NextResponse.redirect(loginUrl);
+      return applySecurityHeaders(NextResponse.redirect(loginUrl));
     }
 
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
 
     if (!profile || profile.role !== 'admin') {
-      return NextResponse.redirect(new URL(APP_HOME_PATH, mainOrigin));
+      return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, mainOrigin)));
     }
   }
 
@@ -167,7 +253,7 @@ export async function middleware(request: NextRequest) {
     });
     copyCookies(response, rewriteRes);
     rewriteRes.headers.set('X-Robots-Tag', 'noindex, nofollow');
-    return rewriteRes;
+    return applySecurityHeaders(rewriteRes);
   }
 
   const isPublicRoute =
@@ -188,13 +274,13 @@ export async function middleware(request: NextRequest) {
     const cb = new URL('/auth/callback', request.url);
     cb.searchParams.set('code', authCode);
     cb.searchParams.set('next', '/register/verified');
-    return NextResponse.redirect(cb);
+    return applySecurityHeaders(NextResponse.redirect(cb));
   }
 
   if (!user && !isPublicRoute) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+    return applySecurityHeaders(NextResponse.redirect(loginUrl));
   }
 
   if (user && !user.email_confirmed_at && isPageRequest) {
@@ -202,12 +288,12 @@ export async function middleware(request: NextRequest) {
       (r) => pathname === r || pathname.startsWith(`${r}/`)
     );
     if (!exempt && !pathname.startsWith('/api/')) {
-      return NextResponse.redirect(new URL('/register/check-email', request.url));
+      return applySecurityHeaders(NextResponse.redirect(new URL('/register/check-email', request.url)));
     }
   }
 
   if (pathname === '/dashboard') {
-    return NextResponse.redirect(new URL(APP_HOME_PATH, request.url));
+    return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
   }
 
   if (user && pathname === '/login') {
@@ -215,36 +301,36 @@ export async function middleware(request: NextRequest) {
     if (rawRedirect && isOpsLoginRedirectUrl(rawRedirect)) {
       const bridge = new URL('/auth/bridge-to-ops', request.nextUrl.origin);
       bridge.searchParams.set('next', rawRedirect);
-      return NextResponse.redirect(bridge);
+      return applySecurityHeaders(NextResponse.redirect(bridge));
     }
-    return NextResponse.redirect(new URL(APP_HOME_PATH, request.url));
+    return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
   }
 
   if (user && pathname === '/register') {
     if (user.email_confirmed_at) {
-      return NextResponse.redirect(new URL('/register/verified', request.url));
+      return applySecurityHeaders(NextResponse.redirect(new URL('/register/verified', request.url)));
     }
-    return NextResponse.redirect(new URL('/register/form', request.url));
+    return applySecurityHeaders(NextResponse.redirect(new URL('/register/form', request.url)));
   }
 
   if (user && user.email_confirmed_at && pathname === '/register/check-email') {
-    return NextResponse.redirect(new URL('/register/verified', request.url));
+    return applySecurityHeaders(NextResponse.redirect(new URL('/register/verified', request.url)));
   }
 
   if (user && isPageRequest) {
-    void (async () => {
-      try {
-        await supabase
-          .from('profiles')
-          .update({ last_active_at: new Date().toISOString() })
-          .eq('id', user.id);
-      } catch {
-        /* ignore */
-      }
-    })();
+    supabase
+      .from('profiles')
+      .update({ last_active_at: new Date().toISOString() })
+      .eq('id', user.id)
+      .then(
+        () => {},
+        () => {
+          /* last_active_at update is best-effort — failure should not block navigation */
+        },
+      );
   }
 
-  return response;
+  return applySecurityHeaders(response);
 }
 
 export const config = {

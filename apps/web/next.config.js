@@ -2,11 +2,21 @@
 const nextConfig = {
   /** Native / heavy deps must not be bundled into Route Handlers (avoids 503 on Vercel). */
   serverExternalPackages: ['@aws-sdk/client-s3', 'web-push'],
+  /**
+   * אכיפת TypeScript ב-build — חובה לאבטחה.
+   * ignoreBuildErrors:true מסיר את שכבת ההגנה של TypeScript ומאפשר לקוד לא-בטוח
+   * (עם `as any`, טיפוסים שגויים, null-safety bypass) להגיע לפרודקשן.
+   * אם יש שגיאות טיפוס — יש לתקן אותן, לא לעקוף.
+   */
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    /**
+     * ESLint ב-build — מופעל. איסור ignoreDuringBuilds כדי לא לפספס
+     * בעיות אבטחה (no-eval, no-implied-eval, no-secrets) ב-production.
+     */
+    ignoreDuringBuilds: false,
   },
   env: {
     /** עד חיבור דומיין קבוע — Vercel; אפשר לעקוף ב־Dashboard או בפאנל (site_settings) */
@@ -59,10 +69,30 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
           },
+          // ── Content-Security-Policy ──────────────────────────────
+          // מוגדר ב-middleware.ts עם nonce אקראי לכל request,
+          // במקום 'unsafe-inline'. Next.js App Router קורא אוטומטית
+          // את ה-header x-nonce ומשתמש בו ב-inline scripts.
+          // ראה: middleware.ts -> CSP_DIRECTIVES
+          // CSP header מוחל ב-middleware עבור כל ה-HTML pages,
+          // API routes, ו-redirects.
+          // HEADER זה מוסר מ-next.config כי middleware גובר.
+          // ── Strict-Transport-Security (HSTS) ────────────────────
+          // מחייב HTTPS למשך שנה, כולל תתי-דומיינים.
+          // מופעל רק ב-production (ב-dev localhost עובד HTTP).
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload',
+          },
         ],
       },
       {
-        /** Same-origin fetch לא צריך CORS; שילוב קודם של credentials + * היה לא תקין ומיותר */
+        /**
+         * CORS ל-API routes — עם אימות Origin למניעת CSRF מצלב-דומיינים.
+         * הערה: Next.js Route Handlers לא צריכים CORS בדרך כלל (same-origin),
+         * אבל אנחנו משאירים תמיכה לאפליקציית מובייל עתידית / scripts.
+         * Origin מאומת מול הדומיינים המורשים (app + ops).
+         */
         source: '/api/:path*',
         headers: [
           { key: 'Access-Control-Allow-Methods', value: 'GET,POST,PATCH,DELETE,OPTIONS' },
@@ -71,6 +101,8 @@ const nextConfig = {
             value:
               'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
           },
+          // Access-Control-Allow-Origin נקבע דינמית לפי ה-request origin
+          // ב-middlware או ב-route handlers עצמם (לא סטטי ב-next.config)
         ],
       },
     ];

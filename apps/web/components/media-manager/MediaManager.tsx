@@ -30,6 +30,10 @@ import {
   type MediaManagerMode,
   type OpenMediaManagerOptions,
 } from './types';
+import {
+  SMART_FOLDER_CATEGORIES,
+  groupBySubfolder,
+} from '@/lib/media-manager/smart-folders';
 
 type MediaManagerProps = {
   open: boolean;
@@ -73,6 +77,8 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
   const [panel, setPanel] = useState<'library' | 'upload' | 'stock'>('library');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [smartFolder, setSmartFolder] = useState<string | null>(null);
+  const [subfolder, setSubfolder] = useState<string | null>(null);
 
   const mode: MediaManagerMode = options?.mode ?? 'browse';
 
@@ -82,6 +88,8 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
     setPanel('library');
     setSelected(null);
     setSearchQ('');
+    setSmartFolder(null);
+    setSubfolder(null);
   }, [open, allowedKinds]);
 
   const load = useCallback(async () => {
@@ -174,6 +182,36 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
   const [videoId, setVideoId] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [videoBusy, setVideoBusy] = useState(false);
+
+  const filteredItems = useMemo(() => {
+    let list = items;
+    if (smartFolder) {
+      const cat = SMART_FOLDER_CATEGORIES.find((c) => c.id === smartFolder);
+      if (cat) list = list.filter((a) => cat.match(a));
+    }
+    if (subfolder) {
+      const groups = groupBySubfolder(list, smartFolder ?? 'general');
+      const group = groups.find((g) => g.subfolder === subfolder);
+      list = group?.items ?? list;
+    }
+    return list;
+  }, [items, smartFolder, subfolder]);
+
+  const subfolderGroups = useMemo(() => {
+    if (!smartFolder) return [];
+    const cat = SMART_FOLDER_CATEGORIES.find((c) => c.id === smartFolder);
+    if (!cat) return [];
+    const matched = items.filter((a) => cat.match(a));
+    return groupBySubfolder(matched, smartFolder);
+  }, [items, smartFolder]);
+
+  const folderCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const cat of SMART_FOLDER_CATEGORIES) {
+      counts[cat.id] = items.filter((a) => cat.match(a)).length;
+    }
+    return counts;
+  }, [items]);
 
   if (!open) return null;
 
@@ -315,6 +353,74 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
               ) : null}
             </div>
 
+            {/* Smart folder bar */}
+            {panel === 'library' ? (
+              <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-white/30 px-3 py-2">
+                <button
+                  type="button"
+                  onClick={() => { setSmartFolder(null); setSubfolder(null); }}
+                  className={cn(
+                    'rounded-lg px-2.5 py-1 text-xs font-bold whitespace-nowrap transition',
+                    !smartFolder ? 'bg-emerald-800/80 text-white' : 'text-slate-600 hover:bg-white/25'
+                  )}
+                >
+                  הכל ({items.length})
+                </button>
+                {SMART_FOLDER_CATEGORIES.filter((c) => {
+                  if (activeKind === 'image') return ['tts', 'guides', 'journey', 'almog', 'images'].includes(c.id);
+                  if (activeKind === 'audio') return ['tts', 'audio'].includes(c.id);
+                  if (activeKind === 'file') return ['files'].includes(c.id);
+                  if (activeKind === 'video') return ['video'].includes(c.id);
+                  return true;
+                }).map((cat) => {
+                  const count = folderCounts[cat.id] ?? 0;
+                  if (count === 0 && smartFolder !== cat.id) return null;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => { setSmartFolder(cat.id); setSubfolder(null); }}
+                      className={cn(
+                        'rounded-lg px-2.5 py-1 text-xs font-bold whitespace-nowrap transition',
+                        smartFolder === cat.id ? 'bg-emerald-800/80 text-white' : 'text-slate-600 hover:bg-white/25'
+                      )}
+                    >
+                      {cat.label} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+
+            {/* Subfolder bar */}
+            {panel === 'library' && smartFolder && subfolderGroups.length > 1 ? (
+              <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-white/20 px-3 py-1.5">
+                <button
+                  type="button"
+                  onClick={() => setSubfolder(null)}
+                  className={cn(
+                    'rounded-md px-2 py-0.5 text-[11px] font-bold whitespace-nowrap',
+                    !subfolder ? 'bg-teal-800/70 text-white' : 'text-slate-500'
+                  )}
+                >
+                  כל התיקייה
+                </button>
+                {subfolderGroups.map((g) => (
+                  <button
+                    key={g.subfolder}
+                    type="button"
+                    onClick={() => setSubfolder(g.subfolder)}
+                    className={cn(
+                      'rounded-md px-2 py-0.5 text-[11px] font-bold whitespace-nowrap',
+                      subfolder === g.subfolder ? 'bg-teal-800/70 text-white' : 'text-slate-500'
+                    )}
+                  >
+                    {g.label} ({g.items.length})
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
               {panel === 'library' ? (
                 <>
@@ -355,7 +461,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                      {items.map((item) => (
+                      {filteredItems.map((item) => (
                         <div
                           key={item.id}
                           className={cn(
@@ -383,7 +489,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                       ))}
                     </div>
                   )}
-                  {!loading && !loadError && items.length === 0 ? (
+                  {!loading && !loadError && filteredItems.length === 0 ? (
                     <div className="flex flex-col items-center gap-2 py-12 text-center">
                       <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/45 bg-white/15 backdrop-blur-sm">
                         <FolderOpen className="h-7 w-7 text-slate-500" />
