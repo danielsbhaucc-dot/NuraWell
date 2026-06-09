@@ -45,6 +45,7 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
   'connect-src': [
     "'self'",
     'https://*.supabase.co',
+    'wss://*.supabase.co',
     'https://openrouter.ai',
     'https://api.openrouter.ai',
     'https://*.upstash.io',
