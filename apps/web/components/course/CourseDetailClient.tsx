@@ -65,65 +65,95 @@ export function CourseDetailClient({
 
   return (
     <div className="min-h-screen guide-page-bg relative">
-      {/* Hero header — the background image lives ONLY here */}
-      <div className="guide-hero relative h-52 md:h-72">
+      {/* HERO header — large & premium; the background image lives ONLY here */}
+      <div className="guide-hero relative h-[20rem] md:h-[28rem]">
         {bgUrl ? (
-          <Image
-            src={bgUrl}
-            alt={course.title}
-            fill
-            className="object-cover"
-            priority
-          />
+          <motion.div
+            className="absolute inset-0"
+            initial={{ scale: 1.14 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 1.4, ease: 'easeOut' }}
+          >
+            <Image
+              src={bgUrl}
+              alt={course.title}
+              fill
+              className="object-cover"
+              priority
+            />
+          </motion.div>
         ) : (
           <div className="guide-hero-fallback" aria-hidden />
         )}
         <div className="guide-hero-overlay" aria-hidden />
+        <div className="guide-hero-glow" aria-hidden />
 
-        {/* Title + meta over the hero image */}
-        <div className="container-mobile absolute inset-x-0 bottom-0 px-4 pb-5">
+        {/* Top pills row */}
+        <div className="container-mobile absolute inset-x-0 top-0 px-4 pt-5">
           <motion.div
-            initial={{ opacity: 0, y: 18 }}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
+            className="flex items-center gap-2 flex-wrap"
           >
-            <div className="flex items-center gap-2 mb-3 flex-wrap">
-              {course.is_premium && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold backdrop-blur-sm"
-                  style={{ background: 'rgba(168,85,247,0.3)', border: '1px solid rgba(216,180,254,0.5)', color: '#f3e8ff' }}>
-                  <Crown className="w-3 h-3" /> פרימיום
-                </span>
-              )}
-              {isEnrolled && progress === 100 && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold backdrop-blur-sm"
-                  style={{ background: 'rgba(16,185,129,0.32)', border: '1px solid rgba(167,243,208,0.5)', color: '#d1fae5' }}>
-                  <CheckCircle2 className="w-3 h-3" /> הושלם
-                </span>
-              )}
-              {isEnrolled && progress > 0 && progress < 100 && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold backdrop-blur-sm"
-                  style={{ background: 'rgba(20,184,166,0.3)', border: '1px solid rgba(94,234,212,0.5)', color: '#ccfbf1' }}>
-                  <BookOpen className="w-3 h-3" /> בלמידה
-                </span>
-              )}
-            </div>
-            <h1 className="text-3xl font-black text-white mb-2 leading-tight drop-shadow-md">{course.title}</h1>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md"
+              style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.35)', color: '#fff' }}>
+              <BookOpen className="w-3.5 h-3.5" /> מדריך
+            </span>
+            {course.is_premium && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md"
+                style={{ background: 'rgba(168,85,247,0.32)', border: '1px solid rgba(216,180,254,0.55)', color: '#f3e8ff' }}>
+                <Crown className="w-3.5 h-3.5" /> פרימיום
+              </span>
+            )}
+            {isEnrolled && progress === 100 && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md"
+                style={{ background: 'rgba(16,185,129,0.34)', border: '1px solid rgba(167,243,208,0.55)', color: '#d1fae5' }}>
+                <CheckCircle2 className="w-3.5 h-3.5" /> הושלם
+              </span>
+            )}
+            {isEnrolled && progress > 0 && progress < 100 && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md"
+                style={{ background: 'rgba(20,184,166,0.32)', border: '1px solid rgba(94,234,212,0.55)', color: '#ccfbf1' }}>
+                <BookOpen className="w-3.5 h-3.5" /> בלמידה
+              </span>
+            )}
+          </motion.div>
+        </div>
 
-            {/* Stats over hero */}
-            <div className="flex items-center gap-4 text-sm text-white/90">
-              <div className="flex items-center gap-1.5">
+        {/* Title + glass stats strip at the bottom */}
+        <div className="container-mobile absolute inset-x-0 bottom-0 px-4 pb-7">
+          <motion.div
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.1 }}
+          >
+            <h1 className="text-4xl md:text-5xl font-black text-white mb-4 leading-[1.1] tracking-tight"
+              style={{ textShadow: '0 4px 24px rgba(0,0,0,0.45)' }}>
+              {course.title}
+            </h1>
+
+            <div className="guide-hero-stats">
+              <div className="guide-hero-stat">
                 <BookOpen className="w-4 h-4 text-emerald-200" />
-                <span>{totalLessons} פרקים</span>
+                <span className="font-bold text-white">{totalLessons}</span>
+                <span className="text-white/70 text-xs">פרקים</span>
               </div>
-              <div className="flex items-center gap-1.5">
+              <span className="guide-hero-stat-sep" aria-hidden />
+              <div className="guide-hero-stat">
                 <Clock className="w-4 h-4 text-emerald-200" />
-                <span>~{totalMinutes} דקות</span>
+                <span className="font-bold text-white">~{totalMinutes}</span>
+                <span className="text-white/70 text-xs">דקות</span>
               </div>
               {isEnrolled && (
-                <div className="flex items-center gap-1.5">
-                  <Award className="w-4 h-4 text-teal-100" />
-                  <span>{completedCount}/{totalLessons} הושלמו</span>
-                </div>
+                <>
+                  <span className="guide-hero-stat-sep" aria-hidden />
+                  <div className="guide-hero-stat">
+                    <Award className="w-4 h-4 text-teal-100" />
+                    <span className="font-bold text-white">{completedCount}/{totalLessons}</span>
+                    <span className="text-white/70 text-xs">הושלמו</span>
+                  </div>
+                </>
               )}
             </div>
           </motion.div>
@@ -131,7 +161,7 @@ export function CourseDetailClient({
       </div>
 
       {/* Light body */}
-      <div className="container-mobile relative px-4 -mt-5">
+      <div className="container-mobile relative px-4 -mt-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

@@ -95,7 +95,7 @@ export function CourseCard({ course, progress, isEnrolled, accentIndex = 0 }: Co
       transition={{ type: 'spring', stiffness: 380, damping: 26 }}
     >
       <Link
-        href={`/courses/${course.id}`}
+        href={`/guides/${course.id}`}
         className="block overflow-hidden no-tap-highlight relative"
         style={{
           borderRadius: '22px',

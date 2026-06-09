@@ -89,7 +89,7 @@ export function DashboardBriefCard({ onOpenTasks }: DashboardBriefCardProps) {
         router.push('/progress');
         break;
       case 'open_courses':
-        router.push('/courses');
+        router.push('/guides');
         break;
     }
   }, [brief, onOpenTasks, router]);

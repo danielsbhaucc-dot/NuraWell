@@ -14,7 +14,7 @@ const leftItems = [
   { href: '/journey',    label: 'המסע שלי', icon: Route      },
 ];
 const rightItems = [
-  { href: '/courses', label: 'מדריכים', icon: BookOpen },
+  { href: '/guides', label: 'מדריכים', icon: BookOpen },
   { href: '/profile', label: 'פרופיל', icon: UserCircle },
 ];
 
@@ -24,7 +24,7 @@ export function BottomNav() {
   const actionHub = useActionHub();
 
   useEffect(() => {
-    const fastRoutes = [APP_HOME_PATH, '/courses', '/journey', '/journey/declined', '/progress', '/progress/history', '/profile', '/settings/almog'];
+    const fastRoutes = [APP_HOME_PATH, '/guides', '/journey', '/journey/declined', '/progress', '/progress/history', '/profile', '/settings/almog'];
     fastRoutes.forEach((href) => router.prefetch(href));
   }, [router]);
 

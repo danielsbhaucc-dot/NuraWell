@@ -37,7 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const courseRows = courses as { id: string; updated_at: string | null }[] | null;
     const courseRoutes: MetadataRoute.Sitemap = (courseRows || []).map(course => ({
-      url: `${baseUrl}/courses/${course.id}`,
+      url: `${baseUrl}/guides/${course.id}`,
       lastModified: course.updated_at ? new Date(course.updated_at) : new Date(),
       changeFrequency: 'weekly' as const,
       priority: 0.8,

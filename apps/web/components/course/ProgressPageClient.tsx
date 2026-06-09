@@ -472,7 +472,7 @@ export function ProgressPageClient({
             <motion.div variants={container} initial="hidden" animate="show" className="space-y-3">
               {courseStats.map((course) => (
                 <motion.div key={course.id} variants={item}>
-                  <Link href={`/courses/${course.id}`} style={glassCardStyle}
+                  <Link href={`/guides/${course.id}`} style={glassCardStyle}
             className="flex items-center gap-3 p-3.5 block"
           >
                     <div
