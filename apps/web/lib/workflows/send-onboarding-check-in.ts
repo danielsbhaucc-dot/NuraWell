@@ -393,7 +393,8 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
   const title = `${firstName} ${isKickoffNeeded ? '🚀' : '💬'}`;
   const iconEmoji = isKickoffNeeded ? '🚀' : '🌿';
 
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: inserted, error } = await (admin as any)
     .from('notifications')
     .insert({
       user_id: payload.userId,
@@ -514,7 +515,8 @@ async function loadJourneyExecutionContextForUser(
   }).format(now);
 
   /** ביצועי משימות חוזרות היום — לזיהוי "סלוט בוצע". */
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: execRows } = await (admin as any)
     .from('journey_task_executions')
     .select('task_id, slot, status')
     .eq('user_id', userId)
@@ -532,7 +534,8 @@ async function loadJourneyExecutionContextForUser(
   }
 
   /** task_statuses לבדיקת execution_done — לזיהוי one_time שנגמרה. */
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: progressRowsForExec } = await (admin as any)
     .from('journey_progress')
     .select('task_statuses')
     .eq('user_id', userId)
@@ -599,7 +602,8 @@ async function fetchProfileCheckInTimes(
   admin: SupabaseClient,
   userId: string
 ): Promise<string[]> {
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (admin as any)
     .from('profiles')
     .select('ai_check_in_times')
     .eq('id', userId)
@@ -608,7 +612,8 @@ async function fetchProfileCheckInTimes(
 }
 
 async function fetchProfileScheduleForCheckIn(admin: SupabaseClient, userId: string) {
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (admin as any)
     .from('profiles')
     .select('wake_up_time, sleep_time, dinner_time, meal_schedule, ai_context')
     .eq('id', userId)

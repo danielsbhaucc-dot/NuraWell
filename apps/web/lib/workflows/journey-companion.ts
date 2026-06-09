@@ -262,7 +262,8 @@ export async function fetchDaysSinceLastJourneyCompanionNudge(
   admin: SupabaseClient,
   userId: string
 ): Promise<number | null> {
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (admin as any)
     .from('notifications')
     .select('created_at, metadata')
     .eq('user_id', userId)
@@ -292,7 +293,8 @@ export async function gateJourneyCompanionNotify(
 
   if (opts?.promiseDue) {
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-        await admin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (admin as any)
       .from('notifications')
       .select('id, metadata')
       .eq('user_id', userId)
@@ -324,15 +326,21 @@ export async function fetchJourneyCompanionContext(
 ): Promise<JourneyCompanionContext | null> {
   const [profileRes, stepsRes, progressRes, daysSinceLastNudge, unansweredTouches] =
     await Promise.all([
-      admin .from('profiles')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (admin as any)
+        .from('profiles')
         .select('created_at, onboarding_completed, ai_context')
         .eq('id', userId)
         .maybeSingle(),
-      admin .from('journey_steps')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (admin as any)
+        .from('journey_steps')
         .select('id, title, step_number, journey_stations ( title )')
         .eq('is_published', true)
         .order('step_number', { ascending: true }),
-      admin .from('journey_progress')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (admin as any)
+        .from('journey_progress')
         .select(JOURNEY_PROGRESS_FULL_SELECT)
         .eq('user_id', userId),
       fetchDaysSinceLastJourneyCompanionNudge(admin, userId),
@@ -355,7 +363,8 @@ export async function fetchJourneyCompanionContext(
     day: '2-digit',
   }).format(new Date());
   const todayDoneByTask = new Map<string, Set<string>>();
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: execRows } = await (admin as any)
     .from('journey_task_executions')
     .select('task_id, slot')
     .eq('user_id', userId)

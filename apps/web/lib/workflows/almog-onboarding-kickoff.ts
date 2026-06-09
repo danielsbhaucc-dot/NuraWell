@@ -99,7 +99,8 @@ export async function checkKickoffEligibility(
   admin: SupabaseClient<any, any, any>,
   userId: string
 ): Promise<KickoffEligibility> {
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profile, error: profErr } = await (admin as any)
     .from('profiles')
     .select('id, onboarding_completed, created_at, ai_context')
     .eq('id', userId)
@@ -141,7 +142,8 @@ export async function checkKickoffEligibility(
    * זה מכסה גם מגעים מה-cron היומי וגם מה-workflow הישיר.
    */
   const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: recentNotifs } = await (admin as any)
     .from('notifications')
     .select('id, metadata')
     .eq('user_id', userId)

@@ -19,7 +19,8 @@ export async function gateOnboardingCheckIn(
     return { ok: false, reason: 'checkpoint_date_not_today' };
   }
 
-    await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (admin as any)
     .from('notifications')
     .select('id, metadata, created_at')
     .eq('user_id', userId)

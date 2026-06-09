@@ -311,25 +311,32 @@ NuraWell is an AI-powered weight-loss coaching platform built with:
 | 11 | Missing Dependabot config | `.github/` | ✅ Created `.github/dependabot.yml` — npm + GitHub Actions |
 | 12 | `eslint.ignoreDuringBuilds: true` | `next.config.js` | ✅ Fixed → `false` |
 
-### 🔍 Deep Scan — Additional Findings (Not Yet Fixed)
+### 🔍 Deep Scan — Additional Findings
 
 | # | Severity | Finding | Location | Notes |
 |---|----------|---------|----------|-------|
-| A | 🟠 **Medium** | **273 `as any` casts** across ~80+ files | Codebase-wide | Systemic TypeScript safety gap — needs architectural decision |
-| B | 🟠 **Medium** | CSP uses `'unsafe-inline'` instead of nonces | `next.config.js:78` | Needs middleware nonce generation refactor |
-| C | 🟡 **Low** | No automated secret scanning beyond Gitleaks | CI pipeline | Add CodeQL or trufflehog |
+| A | 🟠 **Medium** | **273 `as any` casts** across ~80+ files | Codebase-wide | ⏳ Decision taken (pragmatic): `no-explicit-any` set to `warn` so builds stay green; security-critical auth/guard files verified cast-free; remaining data-access casts (`(admin as any).from(...)`) tracked as tech-debt. Root cause = incomplete `lib/types/database.ts`; full fix = regenerate Supabase types and adopt typed clients. |
+| B | 🟠 **Medium** | CSP uses `'unsafe-inline'` instead of nonces | `middleware.ts` | ✅ Fixed — per-request nonce now propagated to **request** headers (`x-nonce` + `Content-Security-Policy`) so Next.js stamps its inline bootstrap scripts. `script-src` is nonce-based; `style-src` keeps `'unsafe-inline'` (style nonces deferred). |
+| C | 🟡 **Low** | No automated secret scanning beyond Gitleaks | CI pipeline | ✅ Fixed — added CodeQL (`codeql.yml`) + TruffleHog (`trufflehog.yml`, `--only-verified`). |
 | D | ⚪ Info | `NEXT_PUBLIC_SUPABASE_ANON_KEY` in middleware | `middleware.ts:46` | ✅ Verified — anon key is public by design |
 | E | ⚪ Info | Cookie subdomain sharing (`cookie-options.ts`) | Auth infra | ✅ Verified — proper `.` prefix normalization |
 
-### Audit Phases Remaining for Future Work
+### Audit Phases — Status
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 3 | RLS penetration testing | ❌ Not started |
-| 4 | Secret scanning automation (gitleaks in CI enhancement) | ❌ Not started |
-| 5 | Manual penetration testing | ❌ Not started |
-| 6 | Authentication flow audit | ❌ Not started |
-| 7 | Monitoring & alerting | ❌ Not started |
+| 3 | RLS penetration testing | ✅ Test suite shipped — `supabase/tests/rls-pentest.sql` (7 assertions: cross-user read/write, self-escalation, site_settings, RLS coverage, SECURITY DEFINER search_path). 🔬 Must be **run** against staging. |
+| 4 | Secret scanning automation | ✅ CodeQL + TruffleHog workflows added (complement Gitleaks). |
+| 5 | Manual penetration testing | 📋 Test matrix documented in `plans/auth-flow-audit.md` §6. ❌ Execution requires a live staging deploy (human/DAST). |
+| 6 | Authentication flow audit | ✅ Documented — `plans/auth-flow-audit.md` (cookies, middleware, open-redirect, guards, service-role, recommendations). |
+| 7 | Monitoring & alerting | ✅ Code scaffold shipped — `apps/web/lib/monitoring/report-error.ts` + `plans/monitoring-alerting.md`. ⏳ Provider wiring requires external account/secret (Sentry/webhook). |
+
+### Items that cannot be completed in-repo (require live env / accounts)
+
+- **Run** the RLS pentest SQL against a staging Supabase DB.
+- **Execute** manual/DAST penetration tests (OWASP ZAP) against a deployed staging URL.
+- **Wire** a monitoring provider (`MONITORING_WEBHOOK_URL` or `SENTRY_DSN`) in Vercel env.
+- **Full `as any` elimination** — needs `supabase gen types` against the live schema, then incremental typed-client migration with a green `next build` to verify.
 
 ## Recommended Tooling
 

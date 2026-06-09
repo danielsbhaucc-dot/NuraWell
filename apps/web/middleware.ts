@@ -135,9 +135,15 @@ export async function middleware(request: NextRequest) {
   const isLocal = incomingHost === 'localhost' || incomingHost === '127.0.0.1';
 
   // ── CSP nonce ──────────────────────────────────────────────────────
-  // Generate once per request; attach to every response.
+  // Generate once per request; attach to every response AND to the
+  // forwarded request headers. Next.js reads the nonce from the request's
+  // `Content-Security-Policy`/`x-nonce` headers to stamp its own inline
+  // bootstrap scripts — without this, those scripts are blocked by CSP.
+  // See: https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy
   const nonce = generateNonce();
   const cspHeader = buildCspWithNonce(nonce);
+  requestHeaders.set('x-nonce', nonce);
+  requestHeaders.set('Content-Security-Policy', cspHeader);
   function applySecurityHeaders(res: NextResponse): NextResponse {
     res.headers.set('Content-Security-Policy', cspHeader);
     res.headers.set('x-nonce', nonce);
