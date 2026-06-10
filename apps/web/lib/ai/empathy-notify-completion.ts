@@ -31,6 +31,14 @@ import { publicAppUrlForAiReferer } from '../public-app-url';
 const MIN_NOTIFY_BODY_CHARS = 6;
 const MAX_BODY_CHARS = 320;
 
+/** ספקי override אפשריים לכלי הבדיקה (admin). אינם משנים את הזרימה הרגילה. */
+export type EmpathyModelProvider = 'openrouter' | 'groq' | 'deepseek';
+
+export type EmpathyModelOverride = {
+  provider: EmpathyModelProvider;
+  model: string;
+};
+
 type EmpathyNotifyCompletionOptions = {
   messages: ModelMessage[];
   maxTokens?: number;
@@ -38,6 +46,12 @@ type EmpathyNotifyCompletionOptions = {
   presencePenalty?: number;
   frequencyPenalty?: number;
   label?: string;
+  /**
+   * 🧪 override מודל יחיד (כלי בדיקה admin בלבד). כשמסופק — משתמשים *רק*
+   * בספק/מודל הזה, בלי שרשרת ה-fallback הרגילה. ברירת מחדל undefined →
+   * התנהגות זהה לחלוטין לזרימה העובדת.
+   */
+  modelOverride?: EmpathyModelOverride;
 };
 
 const openrouterAi = createOpenAI({
@@ -53,6 +67,31 @@ const groqAi = createOpenAI({
   apiKey: process.env.GROQ_API_KEY ?? '',
   baseURL: 'https://api.groq.com/openai/v1',
 });
+
+const deepseekAi = createOpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY ?? '',
+  baseURL: 'https://api.deepseek.com/v1',
+});
+
+/**
+ * בונה ספק יחיד מ-override (כלי בדיקה admin). מחזיר provider chain בן פריט
+ * אחד עם 2 ניסיונות — בלי ה-fallback הרגיל, כדי שהבדיקה תשקף את המודל הנבחר.
+ */
+function providerFromOverride(override: EmpathyModelOverride): NotifyProvider {
+  const chat =
+    override.provider === 'groq'
+      ? groqAi
+      : override.provider === 'deepseek'
+        ? deepseekAi
+        : openrouterAi;
+  return {
+    label: `override:${override.provider}`,
+    model: override.model,
+    chat,
+    attempts: 2,
+    isReasoningModel: override.model.includes('gpt-5'),
+  };
+}
 
 type NotifyProvider = {
   label: string;
@@ -146,7 +185,9 @@ export async function completeEmpathyNotifyBody(
   const temperature = options.temperature ?? 0.85;
   const requestedMaxTokens = options.maxTokens ?? ALMOG_NOTIFY_MAX_OUTPUT_TOKENS;
 
-  const providers = notifyProviders();
+  const providers = options.modelOverride
+    ? [providerFromOverride(options.modelOverride)]
+    : notifyProviders();
   if (providers.length === 0) {
     throw new Error(
       '[empathy-notify] no LLM providers configured (missing OPENROUTER_API_KEY and GROQ_API_KEY)'
