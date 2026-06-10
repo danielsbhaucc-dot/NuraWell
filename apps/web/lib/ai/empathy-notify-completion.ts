@@ -13,9 +13,9 @@ import { publicAppUrlForAiReferer } from '../public-app-url';
  * רשומה ל-DB (וה-user לא יקבל push). עדיף שקט מהודעה רובוטית.
  *
  * ⚙️ Provider chain (לפי סדר אמינות לנוטיפיקציות אנושיות):
- *   1. `openai/gpt-4o-mini`    — דרך OpenRouter. *מודל ראשי*. אין reasoning
- *                                tokens שאוכלים את ה-output budget; חוזר
- *                                מהר עם טקסט מלא. עברית טבעית מצוינת.
+ *   1. `meta-llama/llama-4-scout` — דרך OpenRouter. *מודל ראשי*. מהיר, זול,
+ *                                עברית טבעית, בלי reasoning tokens שאוכלים
+ *                                את ה-output budget.
  *   2. `openai/gpt-5-mini`     — דרך OpenRouter. backup; משתמש ב-reasoning
  *                                ולכן דורש budget גדול יותר.
  *   3. `meta-llama/llama-4-scout` דרך Groq — ספק שונה לחלוטין; backup
@@ -31,14 +31,6 @@ import { publicAppUrlForAiReferer } from '../public-app-url';
 const MIN_NOTIFY_BODY_CHARS = 6;
 const MAX_BODY_CHARS = 320;
 
-/** ספקי override אפשריים לכלי הבדיקה (admin). אינם משנים את הזרימה הרגילה. */
-export type EmpathyModelProvider = 'openrouter' | 'groq' | 'deepseek';
-
-export type EmpathyModelOverride = {
-  provider: EmpathyModelProvider;
-  model: string;
-};
-
 type EmpathyNotifyCompletionOptions = {
   messages: ModelMessage[];
   maxTokens?: number;
@@ -51,12 +43,6 @@ type EmpathyNotifyCompletionOptions = {
    * שוב בשם נראה כפול בכרטיס ההתראה.
    */
   recipientFirstName?: string;
-  /**
-   * 🧪 override מודל יחיד (כלי בדיקה admin בלבד). כשמסופק — משתמשים *רק*
-   * בספק/מודל הזה, בלי שרשרת ה-fallback הרגילה. ברירת מחדל undefined →
-   * התנהגות זהה לחלוטין לזרימה העובדת.
-   */
-  modelOverride?: EmpathyModelOverride;
 };
 
 const openrouterAi = createOpenAI({
@@ -73,31 +59,6 @@ const groqAi = createOpenAI({
   baseURL: 'https://api.groq.com/openai/v1',
 });
 
-const deepseekAi = createOpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY ?? '',
-  baseURL: 'https://api.deepseek.com/v1',
-});
-
-/**
- * בונה ספק יחיד מ-override (כלי בדיקה admin). מחזיר provider chain בן פריט
- * אחד עם 2 ניסיונות — בלי ה-fallback הרגיל, כדי שהבדיקה תשקף את המודל הנבחר.
- */
-function providerFromOverride(override: EmpathyModelOverride): NotifyProvider {
-  const chat =
-    override.provider === 'groq'
-      ? groqAi
-      : override.provider === 'deepseek'
-        ? deepseekAi
-        : openrouterAi;
-  return {
-    label: `override:${override.provider}`,
-    model: override.model,
-    chat,
-    attempts: 2,
-    isReasoningModel: override.model.includes('gpt-5'),
-  };
-}
-
 type NotifyProvider = {
   label: string;
   model: string;
@@ -112,7 +73,7 @@ type NotifyProvider = {
 };
 
 const NOTIFICATION_PRIMARY_MODEL =
-  process.env.NOTIFICATION_EMPATHY_MODEL?.trim() || 'openai/gpt-4o-mini';
+  process.env.NOTIFICATION_EMPATHY_MODEL?.trim() || 'meta-llama/llama-4-scout';
 
 function notifyProviders(): NotifyProvider[] {
   const providers: NotifyProvider[] = [];
@@ -208,9 +169,7 @@ export async function completeEmpathyNotifyBody(
   const temperature = options.temperature ?? 0.85;
   const requestedMaxTokens = options.maxTokens ?? ALMOG_NOTIFY_MAX_OUTPUT_TOKENS;
 
-  const providers = options.modelOverride
-    ? [providerFromOverride(options.modelOverride)]
-    : notifyProviders();
+  const providers = notifyProviders();
   if (providers.length === 0) {
     throw new Error(
       '[empathy-notify] no LLM providers configured (missing OPENROUTER_API_KEY and GROQ_API_KEY)'
