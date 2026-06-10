@@ -5,6 +5,7 @@
 import 'server-only';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isAvoidPushActive } from '@/lib/ai/avoid-push';
 import type { WebPushStored } from './types';
 
 export async function deliverWebPushAfterAlmogNotification(
@@ -24,6 +25,9 @@ export async function deliverWebPushAfterAlmogNotification(
     .maybeSingle();
 
   const ctx = (profile?.ai_context ?? {}) as Record<string, unknown>;
+  /** avoid_push חוסם רק Web Push למכשיר — לא התראות in-app בפעמון. */
+  if (isAvoidPushActive(ctx)) return;
+
   const sub = ctx.web_push as WebPushStored | undefined;
   if (!sub?.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) return;
 

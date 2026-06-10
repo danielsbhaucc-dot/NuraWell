@@ -1,5 +1,8 @@
 /**
  * העדפת "פחות דחיפה" — קבועה (avoid_push) או השהייה זמנית אחרי משבר (avoid_push_until).
+ *
+ * חוסם *רק* Web Push למכשיר (דפדפן). התראות in-app בפעמון וה-cron של
+ * habit-checkpoints ממשיכים לעבוד — המשתמש עדיין מקבל תזכורות על משימות.
  */
 
 import type { AiUserContext } from './memory';
