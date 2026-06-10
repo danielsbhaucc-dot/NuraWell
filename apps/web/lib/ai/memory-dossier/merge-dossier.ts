@@ -1,8 +1,24 @@
 import type { DossierExtractionPatch, UserMemoryDossier } from './types';
 import { EMPTY_DOSSIER } from './types';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const INSIGHT_KEEP_LIMIT = 24;
+const INSIGHT_HALF_LIFE_DAYS = 90;
+
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return Boolean(v) && typeof v === 'object' && !Array.isArray(v);
+}
+
+function normalizeInsightText(text: string): string {
+  return text.normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function insightScore(item: UserMemoryDossier['inferred_insights'][number], now: Date): number {
+  const confidence = typeof item.confidence === 'number' ? Math.max(0, Math.min(1, item.confidence)) : 0.7;
+  const t = item.created_at ? new Date(item.created_at).getTime() : NaN;
+  const ageDays = Number.isFinite(t) ? Math.max(0, (now.getTime() - t) / DAY_MS) : 30;
+  const recency = Math.pow(0.5, ageDays / INSIGHT_HALF_LIFE_DAYS);
+  return confidence * 0.7 + recency * 0.3;
 }
 
 function mergeObjectSection(
@@ -45,9 +61,11 @@ function mergeInsights(
   for (const item of incoming) {
     if (!item?.text?.trim()) continue;
     const text = item.text.replace(/\s+/g, ' ').trim();
-    if (out.some((x) => x.text === text)) continue;
+    const key = normalizeInsightText(text);
+    if (out.some((x) => normalizeInsightText(x.text) === key)) continue;
     if (item.supersedes) {
-      const idx = out.findIndex((x) => x.text === item.supersedes);
+      const supersedesKey = normalizeInsightText(item.supersedes);
+      const idx = out.findIndex((x) => normalizeInsightText(x.text) === supersedesKey);
       if (idx >= 0) out.splice(idx, 1);
     }
     out.push({
@@ -56,7 +74,15 @@ function mergeInsights(
       created_at: item.created_at ?? new Date().toISOString(),
     });
   }
-  return out.slice(-30);
+  const now = new Date();
+  return out
+    .sort((a, b) => insightScore(b, now) - insightScore(a, now))
+    .slice(0, INSIGHT_KEEP_LIMIT)
+    .sort((a, b) => {
+      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return ta - tb;
+    });
 }
 
 export function mergeDossierPatch(

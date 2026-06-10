@@ -62,4 +62,62 @@ describe('memory-dossier', () => {
     expect(block).toContain('להפסיק לנשנש בערב');
     expect(block).not.toContain('"user_id"');
   });
+
+  it('formatUserMemoryDossierPromptBlock ranks lines by the current query', () => {
+    const block = formatUserMemoryDossierPromptBlock(
+      {
+        user_id: 'u1',
+        tags: [],
+        essentials: {},
+        goals: { primary: 'להוריד במשקל' },
+        task_memory: { completed_recent: ['שתיית מים בבוקר'] },
+        habit_memory: { triggers: ['טלוויזיה בערב'], weak_times: ['אחרי עבודה'] },
+        schedule_memory: {},
+        personal_context: {},
+        health_context: {},
+        psychology: { motivation: 'להרגיש קליל יותר', resistance: 'עייפות בערב' },
+        coaching_profile: { tone_works: 'warm_friend' },
+        risk_signals: {},
+        inferred_insights: [{ text: 'הקושי המרכזי מופיע מול טלוויזיה בערב', confidence: 0.9 }],
+        source_stats: {},
+      },
+      { query: 'בערב מול הטלוויזיה קשה לי לא לנשנש', maxLines: 3, now: new Date('2026-06-10T00:00:00Z') }
+    );
+
+    expect(block).toContain('טלוויזיה בערב');
+    expect(block).toContain('הקושי המרכזי');
+    expect(block).not.toContain('שתיית מים בבוקר');
+  });
+
+  it('mergeDossierPatch supersedes insights using normalized text', () => {
+    const existing: UserMemoryDossier = {
+      user_id: 'u1',
+      tags: [],
+      essentials: {},
+      goals: {},
+      task_memory: {},
+      habit_memory: {},
+      schedule_memory: {},
+      personal_context: {},
+      health_context: {},
+      psychology: {},
+      coaching_profile: {},
+      risk_signals: {},
+      inferred_insights: [{ text: 'קושי קשור לעייפות אחרי עבודה', confidence: 0.6 }],
+      source_stats: {},
+    };
+
+    const merged = mergeDossierPatch(existing, 'u1', {
+      inferred_insights: [
+        {
+          text: 'הקושי בערב קשור לעייפות אחרי עבודה ולא לרעב',
+          supersedes: '  קושי   קשור לעייפות אחרי עבודה ',
+          confidence: 0.9,
+        },
+      ],
+    });
+
+    expect(merged.inferred_insights).toHaveLength(1);
+    expect(merged.inferred_insights[0].text).toBe('הקושי בערב קשור לעייפות אחרי עבודה ולא לרעב');
+  });
 });

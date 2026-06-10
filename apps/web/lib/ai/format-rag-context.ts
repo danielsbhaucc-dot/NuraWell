@@ -1,14 +1,5 @@
-import type { QueryHit, UserMemoryVectorMetadata } from './upstash-vector-rest';
-
-function isMemoryMeta(m: unknown): m is UserMemoryVectorMetadata {
-  if (!m || typeof m !== 'object' || Array.isArray(m)) return false;
-  const o = m as Record<string, unknown>;
-  return typeof o.text === 'string' && typeof o.userId === 'string';
-}
-
-function metaLevel(meta: UserMemoryVectorMetadata): number {
-  return meta.memoryLevel ?? 2;
-}
+import { rankUserMemoryQueryHits, type RankMemoryOptions } from './memory-ranking';
+import type { QueryHit } from './upstash-vector-rest';
 
 const CATEGORY_LABEL: Record<string, string> = {
   strength: 'חוזק',
@@ -16,10 +7,34 @@ const CATEGORY_LABEL: Record<string, string> = {
   success: 'הצלחה',
   failure: 'כשל',
   schedule: 'לו״ז / התחייבות',
+  goal: 'יעד',
+  task_completed: 'משימה שהושלמה',
+  task_missed: 'משימה שפוספסה',
+  task_partial: 'משימה חלקית',
+  habit: 'הרגל',
+  trigger: 'טריגר',
+  motivation: 'מוטיבציה',
+  resistance: 'התנגדות',
+  personal: 'הקשר אישי',
+  health: 'בריאות',
+  psychology: 'פסיכולוגיה',
+  coaching: 'סגנון ליווי',
+  risk: 'סיכון',
+  preference: 'העדפה',
+  timeline: 'ציר זמן',
+  insight: 'תובנה',
+  breakthrough: 'שבירה',
 };
 
 /** קטגוריות שמתאימות יותר ל"דפוסים" מאשר לאירוע חד-פעמי */
-const PATTERN_CATEGORIES = new Set<string>(['weakness', 'failure']);
+const PATTERN_CATEGORIES = new Set<string>([
+  'weakness',
+  'failure',
+  'task_missed',
+  'trigger',
+  'resistance',
+  'risk',
+]);
 
 function formatUpdatedHint(iso: string | undefined): string {
   if (!iso || typeof iso !== 'string') return '';
@@ -33,44 +48,39 @@ function formatUpdatedHint(iso: string | undefined): string {
 }
 
 /**
- * טקסט להזרקה ל-system prompt — עד k פריטים.
- * מפריד בין דפוסים (חולשה/כשל) לבין עדכני (חוזק/הצלחה/לו״ז) כדי לתת "משקל" ברור יותר למנטור.
+ * טקסט להזרקה ל-system prompt.
+ *
+ * הבחירה נעשית ע"י מנוע הדירוג החכם (`rankUserMemoryQueryHits`): רלוונטיות
+ * סמנטית + עומק התובנה + טריות, עם סף רעש ופיזור קטגוריות. רק אחרי שנבחרו
+ * הפריטים הרלוונטיים באמת — מקבצים אותם לתצוגה (תובנות / מוקד עדכני / דפוסים).
  */
-export function formatRagMemoryContextBlock(hits: QueryHit[], maxItems = 3): string {
+export function formatRagMemoryContextBlock(
+  hits: QueryHit[],
+  maxItems = 3,
+  opts: Omit<RankMemoryOptions, 'maxItems'> = {}
+): string {
+  const ranked = rankUserMemoryQueryHits(hits, { ...opts, maxItems });
+  if (!ranked.length) return '';
+
   const patternLines: string[] = [];
   const recentLines: string[] = [];
   const insightLines: string[] = [];
 
-  const sorted = [...hits].sort((a, b) => {
-    const ma = a.metadata && isMemoryMeta(a.metadata) ? metaLevel(a.metadata) : 2;
-    const mb = b.metadata && isMemoryMeta(b.metadata) ? metaLevel(b.metadata) : 2;
-    return mb - ma;
-  });
-
-  let n = 0;
-  for (const h of sorted) {
-    if (n >= maxItems) break;
-    const meta = h.metadata;
-    if (!isMemoryMeta(meta)) continue;
-    const label = CATEGORY_LABEL[meta.category] ?? meta.category;
-    const hint = formatUpdatedHint(meta.updatedAt);
+  for (const m of ranked) {
+    const label = CATEGORY_LABEL[m.category] ?? m.category;
+    const hint = formatUpdatedHint(m.lastSeenAt ?? m.updatedAt);
     const suffix = hint ? ` (עודכן ${hint})` : '';
-    const insightTag = meta.isInsight || meta.memoryLevel === 4 ? 'תובנה' : label;
-    const line =
-      meta.memoryLevel && meta.memoryLevel >= 3
-        ? `- (${insightTag}) ${meta.text}${suffix}`
-        : `- (${label}) ${meta.text}${suffix}`;
-    if (meta.memoryLevel && meta.memoryLevel >= 3) {
+    const isInsight = m.isInsight || m.memoryLevel >= 3;
+    const tag = isInsight ? 'תובנה' : label;
+    const line = `- (${tag}) ${m.text}${suffix}`;
+    if (isInsight) {
       insightLines.push(line);
-    } else if (PATTERN_CATEGORIES.has(meta.category)) {
+    } else if (PATTERN_CATEGORIES.has(m.category)) {
       patternLines.push(line);
     } else {
       recentLines.push(line);
     }
-    n += 1;
   }
-
-  if (!patternLines.length && !recentLines.length && !insightLines.length) return '';
 
   const chunks: string[] = [];
   chunks.push(

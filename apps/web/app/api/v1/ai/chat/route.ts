@@ -30,7 +30,7 @@ import {
 } from '../../../../../lib/ai/almog-system-rag';
 import { isSystemKnowledgeVectorConfigured } from '../../../../../lib/ai/system-knowledge-vector';
 import { fetchUserEnrolledCourseIds } from '../../../../../lib/api/rag-chat-access';
-import { RAG_TOP_K } from '../../../../../lib/ai/rag-config';
+import { RAG_CANDIDATE_TOP_K, RAG_TOP_K } from '../../../../../lib/ai/rag-config';
 import {
   isUpstashVectorConfigured,
   queryUserMemoryVectors,
@@ -2273,7 +2273,7 @@ export async function POST(request: Request) {
           const hits = await queryUserMemoryVectors({
             userId: user.id,
             vector: qv,
-            topK: RAG_TOP_K,
+            topK: RAG_CANDIDATE_TOP_K,
           });
           ragMemoryBlock = formatRagMemoryContextBlock(hits, RAG_TOP_K);
         }
@@ -2341,7 +2341,9 @@ export async function POST(request: Request) {
 
     const moodFromProfile = moodCoachingHint(profileMoodSignal);
     const workingMemoryBlock = formatAiWorkingMemoryPromptBlock(profileRow.ai_context);
-    const memoryDossierBlock = formatUserMemoryDossierPromptBlock(memoryDossier);
+    const memoryDossierBlock = formatUserMemoryDossierPromptBlock(memoryDossier, {
+      query: lastUserText,
+    });
     const coachingStyleBlock = buildCoachingStylePromptBlock(profileRow.ai_context);
     const journeyFollowUpBlock = formatJourneyFollowUpChatBlock(profileRow.ai_context);
     const lifeContextBlock = formatLifeContextChatBlock(profileRow.ai_context);

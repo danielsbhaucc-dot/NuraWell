@@ -16,7 +16,14 @@ export const MEMORY_EXTRACTION_MODEL_OPENROUTER =
 export const MEMORY_DOSSIER_MODEL_OPENROUTER =
   process.env.MEMORY_DOSSIER_MODEL?.trim() || 'meta-llama/llama-4-scout';
 
+/** כמה זיכרונות מוזרקים בפועל לפרומפט אחרי דירוג חכם */
 export const RAG_TOP_K = 3;
+
+/**
+ * כמה מועמדים לשלוף מ-Upstash לפני דירוג. שולפים רחב (recall) ומדרגים צר
+ * (precision): מנוע הדירוג בוחר את ה-RAG_TOP_K הטובים לפי רלוונטיות+עומק+טריות.
+ */
+export const RAG_CANDIDATE_TOP_K = 10;
 
 /** כמה מועמדים לבדוק לאיחוד כפילויות */
 export const DEDUP_QUERY_TOP_K = 12;
