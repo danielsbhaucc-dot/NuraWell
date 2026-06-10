@@ -75,8 +75,12 @@ export const groq = new OpenAI({
  * is a one-line change.
  */
 export const AI_MODELS = {
-  /** Default user-facing model: empathetic, fast, cheap. */
-  empathy: 'openai/gpt-5-mini',
+  /**
+   * Default user-facing model: empathetic, fast, cheap. מנסח את ההתראות
+   * וההודעות של אלמוג. ניתן לדריסה ב-env `EMPATHY_MODEL` כדי לנסות מודלים
+   * אחרים בלי שינוי קוד (ניסוי Qwen נוכחי: qwen/qwen3.7-plus).
+   */
+  empathy: process.env.EMPATHY_MODEL?.trim() || 'qwen/qwen3.7-plus',
   /** Reserved for high-stakes moments (re-engagement after long absence). */
   critical: 'openai/gpt-5',
   /** Legacy DeepSeek background id; cron uses `getDeepseekAnalysisModel()` (same default, env override). */
