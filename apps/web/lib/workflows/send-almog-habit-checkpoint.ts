@@ -319,13 +319,7 @@ async function clearHabitTuneFlag(admin: SupabaseClient, userId: string): Promis
 
 export async function sendAlmogHabitCheckpointNotification(
   admin: SupabaseClient,
-  payload: AlmogHabitCheckpointPayload,
-  opts?: {
-    /**
-     * 🧪 override מודל LLM יחיד (כלי בדיקה admin בלבד). undefined → זרימה רגילה.
-     */
-    modelOverride?: import('../ai/empathy-notify-completion').EmpathyModelOverride;
-  }
+  payload: AlmogHabitCheckpointPayload
 ): Promise<{ body: string; inserted: Record<string, unknown> | null }> {
   const [{ firstName, genderInstruction }, scheduleHints, todayTouches, todayChat] =
     await Promise.all([
@@ -477,7 +471,6 @@ export async function sendAlmogHabitCheckpointNotification(
     frequencyPenalty: 0.55,
     maxTokens: ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
     recipientFirstName: firstName,
-    ...(opts?.modelOverride ? { modelOverride: opts.modelOverride } : {}),
     messages: [
       { role: 'system', content: systemPrompt },
       {
@@ -535,7 +528,7 @@ export async function sendAlmogHabitCheckpointNotification(
         checkpoint_date: payload.checkpointDate,
         habit_ids: habitIds,
         pending_task_ids: pendingTaskIds,
-        model: opts?.modelOverride?.model ?? AI_MODELS.empathy,
+        model: AI_MODELS.empathy,
         template: false,
         compassion_only: isCompassionOnly,
         daily_availability_low: dailyAvailabilityLow,
