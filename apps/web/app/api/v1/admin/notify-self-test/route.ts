@@ -51,7 +51,7 @@ function deriveSlotFromJerusalemHour(now: Date): 'morning' | 'midday' | 'evening
  * ישירות (בלי Upstash Workflow), ומדווח בדיוק היכן השרשרת נשברת:
  *   1. כמה משימות פתוחות יש (planning).
  *   2. האם ה-planner מייצר התראה ל-slot הזה.
- *   3. האם ה-gate חוסם (avoid_push / already_sent / touch_fatigue).
+ *   3. האם ה-gate חוסם (already_sent / touch_fatigue).
  *   4. עם send=1 — שולח התראת אמת inline ומחזיר את ה-id (כדי לראות בפעמון).
  *
  * הרשאה: admin בלבד (profiles.role).
@@ -220,9 +220,7 @@ export async function GET(request: Request) {
       hint_he:
         gate.reason === 'already_sent_this_slot'
           ? 'כבר נשלחה התראה ל-slot+תאריך הזה. נסה slot אחר או יום אחר, או מחק את ההתראה הקיימת.'
-          : gate.reason === 'avoid_push'
-            ? 'avoid_push פעיל ב-ai_context — המשתמש ביקש פחות דחיפה. הסר אותו כדי לקבל התראות.'
-            : 'touch_fatigue — כבר היו יותר מדי מגעים היום.',
+          : 'touch_fatigue — כבר היו יותר מדי מגעים היום.',
       ...diagnostics,
       payload_preview: {
         notify_mode: myItem.payload.notifyMode,
