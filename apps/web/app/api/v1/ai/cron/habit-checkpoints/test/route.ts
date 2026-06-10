@@ -330,8 +330,8 @@ export async function POST(request: Request) {
           error: 'blocked_by_gate',
           reason: gate.reason,
           hint_he:
-            gate.reason === 'avoid_push'
-              ? 'המשתמש סימן avoid_push=true בהגדרות אלמוג. שנה ב-/settings/almog או שלח bypassGate=true.'
+            gate.reason === 'touch_fatigue'
+              ? 'כבר היו יותר מדי מגעים היום. שלח bypassGate=true כדי לבדוק בכל זאת.'
               : 'התראה לאותו slot/יום כבר נשלחה. שלח bypassGate=true (ברירת מחדל) כדי לדרוס.',
           slot,
           checkpoint_date: dateKey,
