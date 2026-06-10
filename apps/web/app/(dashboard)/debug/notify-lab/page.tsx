@@ -14,7 +14,7 @@ const MODELS: Array<{ key: string; label: string }> = [
   { key: 'gpt5mini', label: 'GPT-5 mini' },
   { key: 'qwen', label: 'Qwen 3.7 Plus' },
   { key: 'deepseek', label: 'DeepSeek' },
-  { key: 'llama_groq', label: 'LLaMA 4 (Groq)' },
+  { key: 'llama_groq', label: 'LLaMA 4 Scout (Groq via OpenRouter)' },
 ];
 
 const SLOTS: Array<{ key: string; label: string }> = [

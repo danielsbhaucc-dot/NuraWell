@@ -53,8 +53,8 @@ const MODEL_MAP: Record<string, { label: string; override: EmpathyModelOverride 
   qwen: { label: 'Qwen 3.7 Plus', override: { provider: 'openrouter', model: 'qwen/qwen3.7-plus' } },
   deepseek: { label: 'DeepSeek', override: { provider: 'deepseek', model: 'deepseek-chat' } },
   llama_groq: {
-    label: 'LLaMA 4 (Groq)',
-    override: { provider: 'groq', model: 'meta-llama/llama-4-scout-17b-16e-instruct' },
+    label: 'LLaMA 4 Scout (Groq via OpenRouter)',
+    override: { provider: 'openrouter', model: 'meta-llama/llama-4-scout' },
   },
 };
 
