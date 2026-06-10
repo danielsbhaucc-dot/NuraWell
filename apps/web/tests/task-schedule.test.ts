@@ -19,6 +19,17 @@ describe('task-schedule', () => {
     expect(slots).toEqual(['meal_breakfast', 'meal_lunch', 'meal_dinner']);
   });
 
+  it('per_meal with 5 times includes snack meal slots', () => {
+    const slots = slotsForSchedule('per_meal', 5);
+    expect(slots).toEqual([
+      'meal_breakfast',
+      'meal_snack_morning',
+      'meal_lunch',
+      'meal_snack_evening',
+      'meal_dinner',
+    ]);
+  });
+
   it('tracks slot completion per day', () => {
     const execs = [
       { task_id: 't1', date_key: '2026-05-20', slot: 'morning' as const },

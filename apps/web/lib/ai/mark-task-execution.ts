@@ -263,9 +263,9 @@ async function markRecurringSlot(
   pick: PendingAcceptedTask,
   slot: JourneyTaskSlot,
   userMessage: string,
-  outcome: TaskExecutionOutcomeFromCategory
+  outcome: TaskExecutionOutcomeFromCategory,
+  dateKey = jerusalemDateKey()
 ): Promise<TaskExecutionResult> {
-  const dateKey = jerusalemDateKey();
   const nowIso = new Date().toISOString();
 
   // האם הסלוט הזה כבר היה מסומן לפני הקריאה? — מאפשר ל-AI לדעת אם הצליח לחדש,
@@ -423,6 +423,7 @@ export async function markTaskExecutionForUser(
     userMessage: string;
     pending?: PendingAcceptedTask[];
     outcome?: TaskExecutionOutcomeFromCategory;
+    dateKey?: string;
   }
 ): Promise<TaskExecutionResult> {
   const pending = opts.pending ?? (await fetchPendingAcceptedTasksForUser(supabase, userId));
@@ -459,7 +460,7 @@ export async function markTaskExecutionForUser(
 
   if (pick.schedule !== 'one_time') {
     const slot = inferSlotFromUserMessage(msg, pick.schedule, pick.times_per_day);
-    return markRecurringSlot(supabase, userId, pick, slot, msg, outcome);
+    return markRecurringSlot(supabase, userId, pick, slot, msg, outcome, opts.dateKey);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -24,6 +24,7 @@ import {
   scheduleLabel as scheduleLabelHe,
   slotLabel as slotLabelHe,
   slotsForSchedule,
+  type UserMealProfile,
 } from '../journey/task-schedule';
 import type {
   JourneyTaskSchedule,
@@ -38,6 +39,7 @@ import {
   computeEngagementStatus,
   computeReengagementMove,
   isActiveReengagementMove,
+  isReturnFromAbsence,
   shouldSilenceForReengagement,
   type ReengagementMove,
 } from '../churn/reengagement-moves';
@@ -83,7 +85,10 @@ type TaskStatusEntry = {
   execution_done?: unknown;
 };
 
-function parseJourneyTasksJson(raw: unknown): ParsedTask[] {
+function parseJourneyTasksJson(
+  raw: unknown,
+  userMealProfile?: UserMealProfile | null
+): ParsedTask[] {
   if (!Array.isArray(raw)) return [];
   const out: ParsedTask[] = [];
   for (const item of raw) {
@@ -94,15 +99,18 @@ function parseJourneyTasksJson(raw: unknown): ParsedTask[] {
     if (!id || !title) continue;
     const tpdRaw = row.times_per_day;
     const wdRaw = row.weekly_day;
-    const resolved = resolveTaskSchedule({
-      schedule: normalizeTaskSchedule(row.schedule),
-      times_per_day:
-        typeof tpdRaw === 'number' && tpdRaw >= 1 && tpdRaw <= 6 ? tpdRaw : null,
-      weekly_day:
-        typeof wdRaw === 'number' && wdRaw >= 0 && wdRaw <= 6 ? wdRaw : null,
-      meal_timing: row.meal_timing === 'after' ? 'after' : 'before',
-      meal_target: row.meal_target === 'all' ? 'all' : 'fixed',
-    });
+    const resolved = resolveTaskSchedule(
+      {
+        schedule: normalizeTaskSchedule(row.schedule),
+        times_per_day:
+          typeof tpdRaw === 'number' && tpdRaw >= 1 && tpdRaw <= 6 ? tpdRaw : null,
+        weekly_day:
+          typeof wdRaw === 'number' && wdRaw >= 0 && wdRaw <= 6 ? wdRaw : null,
+        meal_timing: row.meal_timing === 'after' ? 'after' : 'before',
+        meal_target: row.meal_target === 'all' ? 'all' : 'fixed',
+      },
+      userMealProfile
+    );
     out.push({
       id,
       title,
@@ -184,8 +192,13 @@ function isRecurringTaskClosedForSlot(
     return doneSlots.has('full_day');
   }
   if (task.schedule === 'per_meal') {
-    const target = perMealSlotForCronSlot(cronSlot);
-    return doneSlots.has(target);
+    const expected = slotsForSchedule(task.schedule, task.times_per_day);
+    const windowSlots =
+      expected.length <= 3
+        ? [perMealSlotForCronSlot(cronSlot)]
+        : multiDailySlotsForCronWindow(expected, cronSlot);
+    if (windowSlots.length === 0) return true;
+    return windowSlots.every((s) => doneSlots.has(s));
   }
   /** multi_daily — רק הסלוט(ים) שממופים לחלון ה-cron הנוכחי. */
   const expected = slotsForSchedule(task.schedule, task.times_per_day);
@@ -247,12 +260,15 @@ function asStatusMap(raw: unknown): Record<string, TaskStatusEntry> {
  *    (כל הסלוטים הנדרשים בוצעו → לא pending; אחרת — pending עם רמז על
  *    הסלוטים שעוד פתוחים).
  */
+export type MealProfileByUser = ReadonlyMap<string, UserMealProfile>;
+
 export function collectPendingAcceptedTasks(
   rows: ProgressRow[],
   options: {
     todayDoneByTask?: ReadonlyMap<string, ReadonlySet<string>>;
     cronSlot?: HabitCheckpointSlot;
     jerusalemWeekday?: number;
+    userMealProfile?: UserMealProfile | null;
   } = {}
 ): Array<{
   id: string;
@@ -285,7 +301,7 @@ export function collectPendingAcceptedTasks(
 
   for (const r of sortedByRecent) {
     if (!r.journey_steps) continue;
-    const tasks = parseJourneyTasksJson(r.journey_steps.tasks);
+    const tasks = parseJourneyTasksJson(r.journey_steps.tasks, options.userMealProfile);
     if (tasks.length === 0) continue;
     const statuses = asStatusMap(r.task_statuses);
     const stepTitle = r.journey_steps.title?.trim() ?? null;
@@ -341,6 +357,7 @@ export function collectCompletedAcceptedTasks(
   options: {
     todayDoneByTask?: ReadonlyMap<string, ReadonlySet<string>>;
     jerusalemWeekday?: number;
+    userMealProfile?: UserMealProfile | null;
   } = {}
 ): Array<{ id: string; title: string }> {
   const seen = new Set<string>();
@@ -354,7 +371,7 @@ export function collectCompletedAcceptedTasks(
 
   for (const r of sortedByRecent) {
     if (!r.journey_steps) continue;
-    const tasks = parseJourneyTasksJson(r.journey_steps.tasks);
+    const tasks = parseJourneyTasksJson(r.journey_steps.tasks, options.userMealProfile);
     if (tasks.length === 0) continue;
     const statuses = asStatusMap(r.task_statuses);
     for (const t of tasks) {
@@ -777,6 +794,14 @@ export type ReengagementUserInfo = {
   breakupSentAt: string | null;
   /** קונטקסט זהות מ-onboarding (ל-Identity Reconnection, יום 7). */
   identityContext?: IdentityContext;
+  /**
+   * מצב המעורבות ה-persisted מהריצה הקודמת (profiles.engagement_status).
+   * משמש לזיהוי חזרה מהיעדרות (welcome_back): אם היה at_risk/dormant/churned
+   * ועכשיו פעיל שוב — מגיע מהלך "כיף שחזרת".
+   */
+  previousEngagementStatus?: string | null;
+  /** סיבת העזיבה האחרונה מ-Exit Survey (churn_feedback.reason) — ל-welcome_back. */
+  lastChurnReason?: string | null;
 };
 
 export type ReengagementInfoByUser = ReadonlyMap<string, ReengagementUserInfo>;
@@ -851,7 +876,8 @@ export function planHabitCheckpointTriggers(
   lastActiveByUser: ReadonlyMap<string, string | null> = new Map(),
   userResponseInfo: ReadonlyMap<string, UserResponseInfo> = new Map(),
   recentExecutionsByUser: RecentExecutionsByUser = new Map(),
-  reengagementByUser: ReengagementInfoByUser = new Map()
+  reengagementByUser: ReengagementInfoByUser = new Map(),
+  mealProfileByUser: MealProfileByUser = new Map()
 ): HabitCheckpointPlanItem[] {
   const { dateKey, weekday } = jerusalemCalendarParts(now);
   const byUser = new Map<string, ProgressRow[]>();
@@ -890,14 +916,17 @@ export function planHabitCheckpointTriggers(
     const completedTodayHabits = habits
       .filter((h) => habitsDoneToday.has(h.id))
       .map((h) => ({ id: h.id, title: h.title }));
+    const userMealProfile = mealProfileByUser.get(userId) ?? null;
     const pendingTasks = collectPendingAcceptedTasks(rows, {
       todayDoneByTask: userTodayDone,
       cronSlot: slot,
       jerusalemWeekday: weekday,
+      userMealProfile,
     });
     const completedTodayTasks = collectCompletedAcceptedTasks(rows, {
       todayDoneByTask: userTodayDone,
       jerusalemWeekday: weekday,
+      userMealProfile,
     });
 
     const hasRemindWork = due.length > 0 || pendingTasks.length > 0;
@@ -936,6 +965,24 @@ export function planHabitCheckpointTriggers(
         breakupSentAt: reInfo.breakupSentAt,
       });
     }
+
+    /**
+     * 🎉 WELCOME BACK — המשתמש חזר אחרי היעדרות (היה at_risk/dormant/churned
+     * וכעת פעיל שוב). מהלך זה גובר על השגרה: בבוקר אלמוג פותח ב"כיף שחזרת",
+     * מתייחס פסיכולוגית להיעדרות וזוכר את הקושי שבגללו עזב (lastChurnReason /
+     * המכשול). נשלח פעם אחת — בריצת ה-cron הבאה updateEngagementStatuses כבר
+     * יחזיר את הסטטוס ל-active וה-previousEngagementStatus לא יזהה היעדרות.
+     */
+    if (
+      reInfo?.enabled &&
+      slot === 'morning' &&
+      isReturnFromAbsence({
+        previousEngagementStatus: reInfo.previousEngagementStatus ?? null,
+        daysSinceLastActive,
+      })
+    ) {
+      reengagementMove = 'welcome_back';
+    }
     const hasActiveMove = isActiveReengagementMove(reengagementMove);
 
     /**
@@ -948,7 +995,12 @@ export function planHabitCheckpointTriggers(
      */
     if (reInfo?.enabled) {
       if (breakupDone) continue;
+      /**
+       * welcome_back הוא מגע יזום של חזרה — לא משתיקים אותו גם אם נשאר
+       * breakup_sent_at ישן (הוא ינוקה ב-updateEngagementStatuses באותה ריצה).
+       */
       if (
+        reengagementMove !== 'welcome_back' &&
         !hasRemindWork &&
         shouldSilenceForReengagement({
           daysSinceLastActive,
@@ -1051,8 +1103,12 @@ export function planHabitCheckpointTriggers(
           : {}),
         ...(taskLevelTune ? { taskLevelTune } : {}),
         reengagementMove,
-        ...(reengagementMove === 'identity' && reInfo?.identityContext
+        ...((reengagementMove === 'identity' || reengagementMove === 'welcome_back') &&
+        reInfo?.identityContext
           ? { identityContext: reInfo.identityContext }
+          : {}),
+        ...(reengagementMove === 'welcome_back' && reInfo?.lastChurnReason
+          ? { churnReason: reInfo.lastChurnReason as AlmogHabitCheckpointPayload['churnReason'] }
           : {}),
         ...(reengagementMove === 'breakup' ? { breakupSurvey: true } : {}),
         engagementStatus: computeEngagementStatus(daysSinceLastActive),
@@ -1101,7 +1157,8 @@ export async function planHabitCheckpointTriggersWithChat(
   lastActiveByUser: ReadonlyMap<string, string | null> = new Map(),
   userResponseInfo: ReadonlyMap<string, UserResponseInfo> = new Map(),
   recentExecutionsByUser: RecentExecutionsByUser = new Map(),
-  reengagementByUser: ReengagementInfoByUser = new Map()
+  reengagementByUser: ReengagementInfoByUser = new Map(),
+  mealProfileByUser: MealProfileByUser = new Map()
 ): Promise<HabitCheckpointPlanItem[]> {
   const base = planHabitCheckpointTriggers(
     progressRows,
@@ -1111,7 +1168,8 @@ export async function planHabitCheckpointTriggersWithChat(
     lastActiveByUser,
     userResponseInfo,
     recentExecutionsByUser,
-    reengagementByUser
+    reengagementByUser,
+    mealProfileByUser
   );
   const chatIds = await fetchUserIdsWithChatToday(admin, now);
   return appendPresenceReinforceFromChat(

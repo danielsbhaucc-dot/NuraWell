@@ -260,6 +260,41 @@ function formatHabitTuneBlock(aiContext: unknown): string | null {
   }
 }
 
+function pickNotificationTitle(payload: AlmogHabitCheckpointPayload, firstName: string): string {
+  const task = payload.pendingTasks[0]?.title?.trim();
+  const habit = payload.habits[0]?.title?.trim();
+  /** מהלך "כיף שחזרת" — כותרת חמה שמכירה בחזרה, בלי תוכחה. */
+  if (payload.reengagementMove === 'welcome_back') {
+    const welcomeVariants = [
+      `${firstName}, כיף שחזרת 🙏`,
+      `${firstName}, איזה כיף לראות אותך`,
+      `${firstName}, חזרת! התגעגעתי`,
+      `${firstName}, טוב שאתה כאן`,
+    ];
+    const s = `${payload.userId}:${payload.checkpointDate}`;
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return welcomeVariants[h % welcomeVariants.length]!;
+  }
+  const variants =
+    payload.notifyMode === 'reinforce'
+      ? [
+          `${firstName}, רגע קטן לבדוק אותך`,
+          `${firstName}, אני כאן איתך`,
+          `${firstName}, שומר איתך על קשר`,
+        ]
+      : [
+          task ? `${firstName}, המשימה מחכה לרגע הנכון` : `${firstName}, תזכורת קטנה להיום`,
+          task ? `${firstName}, איך הולך עם ${task.slice(0, 24)}?` : `${firstName}, בדיקה קצרה`,
+          habit ? `${firstName}, מקום קטן ל-${habit.slice(0, 24)}` : `${firstName}, נזכרים בעדינות`,
+          `${firstName}, רגע לפני שזה בורח מהיום`,
+        ];
+  const seed = `${payload.userId}:${payload.checkpointDate}:${payload.slot}:${task ?? habit ?? ''}`;
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  return variants[hash % variants.length]!;
+}
+
 async function clearHabitTuneFlag(admin: SupabaseClient, userId: string): Promise<void> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -452,7 +487,7 @@ export async function sendAlmogHabitCheckpointNotification(
     ],
   });
 
-  const title = isReinforce ? `${firstName} 💬` : `${firstName} 🌿`;
+  const title = pickNotificationTitle(payload, firstName);
 
   const habitIds = payload.habits.map((h) => h.id);
   const pendingTaskIds = payload.pendingTasks.map((t) => t.id);
@@ -512,6 +547,13 @@ export async function sendAlmogHabitCheckpointNotification(
     .single();
 
   if (error) throw new Error(error.message);
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await admin.rpc('increment_notification_count', { p_user_id: payload.userId });
+  } catch {
+    /** לא מבטלים את ההתראה אם ה-RPC נכשל. */
+  }
 
   /** אם אלמוג כבר הזכיר את ההמלצה — לנקות את הflag כדי לא לחזור עליו. */
   if (tuneBlock) {

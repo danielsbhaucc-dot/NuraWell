@@ -585,8 +585,12 @@ export function buildHabitCheckpointSystemPrompt(input: HabitCheckpointPromptInp
   const moveOverridesBehavior =
     isActiveReengagementMove(move) && completion !== 'full' && completion !== 'partial';
 
+  /**
+   * identityCtx נדרש גם ל-identity (יום 7) וגם ל-welcome_back (חזרה מהיעדרות) —
+   * בשניהם אלמוג צריך לזכור את המכשול/המטרה כדי לחבר אישית.
+   */
   const identityCtx: IdentityContext | null =
-    move === 'identity' && payload.identityContext
+    (move === 'identity' || move === 'welcome_back') && payload.identityContext
       ? {
           mainGoal: payload.identityContext.mainGoal,
           mainObstacle: payload.identityContext.mainObstacle,
@@ -597,8 +601,20 @@ export function buildHabitCheckpointSystemPrompt(input: HabitCheckpointPromptInp
         }
       : null;
 
-  const moveBlockText = moveOverridesBehavior ? reengagementMoveBlock(move, { firstName: input.firstName, identity: identityCtx }) : null;
-  const identityBlockText = identityCtx ? identityContextBlock(identityCtx) : null;
+  const moveBlockText = moveOverridesBehavior
+    ? reengagementMoveBlock(move, {
+        firstName: input.firstName,
+        identity: identityCtx,
+        daysAway: behavioralContext.daysSinceLastActive,
+        churnReason: payload.churnReason ?? null,
+      })
+    : null;
+  /**
+   * בלוק קונטקסט המוטיבציה המפורט מוזרק רק ל-identity. ל-welcome_back כבר יש
+   * התייחסות למכשול בתוך הבלוק עצמו — אין צורך בכפילות.
+   */
+  const identityBlockText =
+    identityCtx && move === 'identity' ? identityContextBlock(identityCtx) : null;
 
   const ruleBlock = moveBlockText
     ? `🎯 מהלך re-engagement (גובר על השגרה — זה הכלל המחייב כעת):

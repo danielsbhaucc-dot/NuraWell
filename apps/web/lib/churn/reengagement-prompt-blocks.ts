@@ -89,12 +89,72 @@ ${lines.join('\n')}`;
  * הנחיית התוכן למהלך הנתון. גובר על ה-behavioralRule הרגיל (חוץ
  * מ-full/partial completion). מחזיר null עבור 'none' (אין override).
  */
+/** תווית עברית קצרה לסיבת נטישה שנשמרה ב-Exit Survey. */
+const CHURN_REASON_HINT_HE: Record<string, string> = {
+  too_busy: 'אמר שהוא עמוס מדי',
+  too_hard: 'אמר שזה קשה מדי',
+  no_results: 'אמר שלא ראה תוצאות',
+  personal: 'ציין סיבות אישיות',
+  other: 'ציין סיבה אחרת',
+};
+
+/**
+ * מהלך WELCOME BACK — המשתמש חזר אחרי היעדרות. "כיף שחזרת" + התייחסות
+ * פסיכולוגית להיעדרות, ואם ידועה סיבת העזיבה — חיבור עדין אליה (בלי להאשים).
+ */
+function welcomeBackBlock(opts: {
+  firstName: string;
+  daysAway?: number | null;
+  churnReason?: string | null;
+  identity?: IdentityContext | null;
+}): string {
+  const { firstName } = opts;
+  const daysAway =
+    typeof opts.daysAway === 'number' && opts.daysAway > 0 ? opts.daysAway : null;
+  const reasonHint = opts.churnReason ? CHURN_REASON_HINT_HE[opts.churnReason] ?? null : null;
+  const obstacle = opts.identity?.mainObstacle?.trim() || null;
+
+  const lines: string[] = [
+    `מהלך RE-ENGAGEMENT — WELCOME BACK (המשתמש חזר אחרי היעדרות):`,
+    `- ${firstName} חזר אחרי תקופה של שקט. הרגע הזה רגיש — חבר אמיתי שמח שחזר, *בלי* שמץ של תוכחה או "איפה היית".`,
+    `- *חובה* לפתוח בשמחה כנה על החזרה ("כיף שחזרת", "איזה כיף לראות אותך", "וואלה חזרת!") — מקורי ודינמי, לא תבנית.`,
+    `- ואז התייחסות אנושית קצרה לזה שנעלם: שזה לגיטימי, שהחיים קורים, שאין אשמה. בלי דרמה.`,
+    `- לסיים בהזמנה רכה אחת להמשיך — צעד קטן, לא "חזרה לכל התוכנית".`,
+    `- *אסור*: "נעלמת", "למה לא עדכנת", רשימת מה פספס, האשמה, או התעלמות מההיעדרות (גם זה לא טבעי).`,
+  ];
+  if (daysAway) {
+    lines.push(`- היה בשקט בערך ${daysAway} ימים — אפשר להתייחס לכך בעדינות ("אחרי כמה ימים"), בלי לספור לו במדויק.`);
+  }
+  if (reasonHint || obstacle) {
+    const known = reasonHint ?? `המכשול שזיהה: ${obstacle}`;
+    lines.push(
+      `- *זוכר למה היה לו קשה*: כשעזב ${known}. חבר אותו לזה ברגישות — "אני זוכר שהיה לך עומס, בוא ניקח את זה לאט" — בלי לשפוט, רק להראות שאתה זוכר ומבין את הקושי האמיתי שלו.`
+    );
+  }
+  lines.push(
+    `- דוגמת רוח (לא להעתיק): "${firstName}!! איזה כיף שחזרת 🙏 חשבתי עליך. אין שום לחץ — בוא ניקח צעד אחד קטן היום, מה אומר?"`
+  );
+  return lines.join('\n');
+}
+
 export function reengagementMoveBlock(
   move: ReengagementMove,
-  opts: { firstName: string; identity?: IdentityContext | null }
+  opts: {
+    firstName: string;
+    identity?: IdentityContext | null;
+    daysAway?: number | null;
+    churnReason?: string | null;
+  }
 ): string | null {
   const firstName = opts.firstName;
   switch (move) {
+    case 'welcome_back':
+      return welcomeBackBlock({
+        firstName,
+        daysAway: opts.daysAway,
+        churnReason: opts.churnReason,
+        identity: opts.identity,
+      });
     case 'open_door':
       return `מהלך RE-ENGAGEMENT — OPEN DOOR (יום 3):
 - 3 ימים בלי תגובה. ${firstName} מרגיש אשמה ומצפה להאשמה — שובר את הציפייה.

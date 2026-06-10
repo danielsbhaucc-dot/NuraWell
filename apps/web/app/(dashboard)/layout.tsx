@@ -28,7 +28,7 @@ export default async function DashboardLayout({
     .select(
       `full_name, gender, main_goal, current_weight_kg, goal_weight_kg,
       weakest_time_of_day, main_obstacle, main_obstacle_detail,
-      wake_up_time, sleep_time, meal_schedule, dolev_welcome_seen_at, almog_welcome_seen_at,
+      wake_up_time, sleep_time, meal_count, meal_schedule, dolev_welcome_seen_at, almog_welcome_seen_at,
       onboarding_completed`
     )
     .eq('id', user.id)
@@ -61,7 +61,13 @@ export default async function DashboardLayout({
 
   return (
     <NotificationsProvider userId={user.id} user={user}>
-      <ProgressReportProvider userId={user.id}>
+      <ProgressReportProvider
+        userId={user.id}
+        userMealProfile={{
+          meal_count: typeof profile?.meal_count === 'number' ? profile.meal_count : null,
+          meal_schedule: Array.isArray(profile?.meal_schedule) ? profile.meal_schedule : null,
+        }}
+      >
         <ActionHubProvider>
           <div className="min-h-screen bg-dashboard">
             <DolevFirstLoginHost show={Boolean(showDolevWelcome)} profile={profileForDrawer} />

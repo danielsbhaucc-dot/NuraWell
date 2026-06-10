@@ -17,6 +17,7 @@ import type { JourneyTask, JourneyTaskSlot, JourneyTaskExecution } from '../../l
 import {
   resolveTaskSchedule,
   scheduleLabel,
+  type UserMealProfile,
 } from '../../lib/journey/task-schedule';
 import { TaskDailySlots } from '../journey/TaskDailySlots';
 import { HabitProgressCard } from '../journey/HabitProgressCard';
@@ -138,7 +139,15 @@ export function useProgressReport(): ProgressReportContextValue {
   return ctx;
 }
 
-export function ProgressReportProvider({ userId: _userId, children }: { userId: string; children: ReactNode }) {
+export function ProgressReportProvider({
+  userId: _userId,
+  userMealProfile = null,
+  children,
+}: {
+  userId: string;
+  userMealProfile?: UserMealProfile | null;
+  children: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ProgressReportTabId>('task_execution');
   const [loading, setLoading] = useState(false);
@@ -185,7 +194,11 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
             },
           }),
         });
-        if (res.ok && done) {
+        if (!res.ok) {
+          const json = (await res.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(json?.error || 'שמירת ביצוע נכשלה');
+        }
+        if (done) {
           void fetch('/api/v1/almog-task-celebration', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -193,6 +206,8 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
           }).catch(() => {});
         }
         await load();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'שגיאה בשמירה');
       } finally {
         setSaving(null);
       }
@@ -350,7 +365,7 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                               <p className="text-[11px] font-bold text-emerald-800/85 text-right">משימות שקיבלת</p>
                                 {acceptedTasks.map((t) => {
                                   const { schedule, times_per_day, weekly_day, meal_timing, meal_target } =
-                                    resolveTaskSchedule(t);
+                                    resolveTaskSchedule(t, userMealProfile);
                                   const isRecurring = schedule !== 'one_time';
                                   const done = prog?.task_statuses?.[t.id]?.execution_done === true;
                                   const busy = saving === t.id;
@@ -385,6 +400,7 @@ export function ProgressReportProvider({ userId: _userId, children }: { userId: 
                                           task={t}
                                           stepId={step.id}
                                           todayExecutions={taskExecs}
+                                          userMealProfile={userMealProfile}
                                           onExecutionsChanged={() => void load()}
                                         />
                                       </div>
