@@ -48,6 +48,8 @@ interface TaskHistoryDay {
   d: string;
   c: number;
   t: number;
+  /** דיווחי "ניסיתי ונכשלתי" באותו יום — לצביעה בסגול */
+  a?: number;
 }
 
 interface ProgressPageClientProps {
@@ -413,7 +415,13 @@ export function ProgressPageClient({
                 />
               </div>
 
-              <div className="flex flex-wrap items-center gap-2.5 pt-2 text-[10px] font-semibold text-emerald-900/75">
+              <div
+                className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-1 text-[10px] font-semibold text-emerald-900/75 rounded-2xl px-3 py-2.5"
+                style={{
+                  background: 'rgba(236,253,245,0.5)',
+                  border: '1px solid rgba(167,243,208,0.4)',
+                }}
+              >
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
                   הושלם
@@ -421,6 +429,10 @@ export function ProgressPageClient({
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
                   חלקי
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-violet-500" />
+                  ניסיתי
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full bg-sky-300" />
