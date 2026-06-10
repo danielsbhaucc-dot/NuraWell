@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, MapPin, Sparkles, Sunrise, X } from 'lucide-react';
 import { slotLabel } from '../../lib/journey/task-schedule';
@@ -66,6 +67,12 @@ const sourceLabel: Record<DayExecRow['source'], string> = {
  *  - אם אין רשומות + זה בעבר → טקסט עדין "לא תועד ביצוע" — לא דרמטי.
  */
 export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props) {
+  /**
+   * `mounted` מבטיח שה-Portal נוצר רק בצד הלקוח (document זמין).
+   */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -85,13 +92,21 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
     a.completed_at.localeCompare(b.completed_at)
   );
 
-  return (
+  if (!mounted) return null;
+
+  /**
+   * רינדור דרך Portal ל-document.body — קריטי: עוטף ה-<main> מקבל
+   * `transform` קבוע (animation fadeInUp עם fill=both), מה שהופך אותו
+   * ל-containing-block של position:fixed וגורם ל-popup "להיצמד" ל-main
+   * הנגלל/הנחתך במקום ל-viewport. ה-Portal מוציא אותו החוצה ל-body.
+   */
+  return createPortal(
     <AnimatePresence>
       {open && dateKey ? (
         <motion.div
           key="day-popup"
           dir="rtl"
-          className="fixed inset-0 z-[60] flex items-center justify-center px-4"
+          className="fixed inset-0 z-[280] flex items-center justify-center px-4"
           /**
            * padding מעל ל-MobileHeader (~64px) ומעל ל-BottomNav (~80px + safe-area).
            * המטרה: לרכז את ה-popup בתוך האזור הגלוי באמת, לא בתוך כל ה-viewport,
@@ -112,8 +127,9 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
             className="absolute inset-0"
             style={{
               background:
-                'linear-gradient(180deg, rgba(6,78,59,0.55) 0%, rgba(6,40,32,0.7) 100%)',
-              backdropFilter: 'blur(6px)',
+                'radial-gradient(120% 90% at 50% 0%, rgba(6,78,59,0.5) 0%, rgba(6,40,32,0.72) 100%)',
+              backdropFilter: 'blur(10px) saturate(1.1)',
+              WebkitBackdropFilter: 'blur(10px) saturate(1.1)',
             }}
           />
           <motion.div
@@ -126,12 +142,12 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
             style={{
               maxHeight: '100%',
               background:
-                'linear-gradient(170deg, rgba(236,253,245,0.92) 0%, rgba(220,252,231,0.85) 50%, rgba(254,252,232,0.85) 100%)',
-              border: '1px solid rgba(167,243,208,0.6)',
+                'linear-gradient(168deg, rgba(236,253,245,0.9) 0%, rgba(220,252,231,0.82) 48%, rgba(254,252,232,0.82) 100%)',
+              border: '1px solid rgba(255,255,255,0.55)',
               boxShadow:
-                '0 30px 70px rgba(6,78,59,0.32), 0 0 0 1px rgba(255,255,255,0.4) inset, inset 0 1px 1px rgba(236,253,245,0.95)',
-              backdropFilter: 'blur(28px) saturate(1.3)',
-              WebkitBackdropFilter: 'blur(28px) saturate(1.3)',
+                '0 36px 90px rgba(6,78,59,0.4), 0 0 0 1px rgba(167,243,208,0.45), inset 0 1px 1px rgba(255,255,255,0.95)',
+              backdropFilter: 'blur(36px) saturate(1.45)',
+              WebkitBackdropFilter: 'blur(36px) saturate(1.45)',
             }}
           >
             <button
@@ -303,6 +319,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
           </motion.div>
         </motion.div>
       ) : null}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
