@@ -28,21 +28,102 @@ export const runtime = 'nodejs';
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
+const PROGRESS_SELECTS = [
+  `
+      user_id,
+      updated_at,
+      is_completed,
+      task_statuses,
+      habits_progress,
+      task_level_meta,
+      journey_steps (
+        title,
+        habits,
+        tasks,
+        journey_stations ( title )
+      )
+    `,
+  `
+      user_id,
+      updated_at,
+      is_completed,
+      task_statuses,
+      habits_progress,
+      journey_steps (
+        title,
+        habits,
+        tasks,
+        journey_stations ( title )
+      )
+    `,
+];
+
+const PROFILE_SELECTS = [
+  'id, ai_context, onboarding_completed, ai_check_in_times, last_responded_at, notification_count, main_goal, main_obstacle, main_obstacle_detail, streak_days, engagement_status, ai_system_prompt, meal_count, meal_schedule',
+  'id, ai_context, onboarding_completed, ai_check_in_times, last_responded_at, notification_count, meal_count, meal_schedule',
+  'id, ai_context, onboarding_completed, ai_check_in_times, last_responded_at, notification_count',
+  'id, ai_context, onboarding_completed, ai_check_in_times',
+  'id, ai_context, onboarding_completed',
+  'id',
+];
+
+function isMissingColumnError(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return error.code === '42703' || error.code === 'PGRST204' || /column .* does not exist/i.test(error.message ?? '');
+}
+
+async function selectWithFallbacks(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  queryFactory: (select: string) => any,
+  selects: string[]
+) {
+  let lastError: { code?: string; message?: string } | null = null;
+  for (const select of selects) {
+    const { data, error } = await queryFactory(select);
+    if (!error) return { data, error: null };
+    lastError = error;
+    if (!isMissingColumnError(error)) break;
+  }
+  return { data: null, error: lastError };
+}
+
+/**
+ * גוזר slot משעת ישראל כש-?slot= חסר ב-URL. כך תזכורות נשלחות גם אם ה-Upstash
+ * Schedule לא הוגדר עם הפרמטר (אחרת היה מחזיר 400 ולא נשלח כלום).
+ *   בוקר   05:00–11:59
+ *   צהריים 12:00–16:59
+ *   ערב    17:00–04:59
+ */
+function deriveSlotFromJerusalemHour(now: Date): 'morning' | 'midday' | 'evening' {
+  const hourStr = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jerusalem',
+    hour: '2-digit',
+    hour12: false,
+  }).format(now);
+  const hour = Number(hourStr);
+  if (Number.isFinite(hour) && hour >= 12 && hour < 17) return 'midday';
+  if (Number.isFinite(hour) && (hour >= 17 || hour < 5)) return 'evening';
+  return 'morning';
+}
+
 async function runHabitCheckpointCron(request: Request) {
   const url = new URL(request.url);
   const slotRaw = url.searchParams.get('slot');
-  if (!slotRaw) {
-    return NextResponse.json(
-      { error: 'חסר query ?slot=morning|midday|evening — קראו 3 פעמים ביום עם ערך מתאים' },
-      { status: 400 }
-    );
-  }
 
-  const slotParsed = habitCheckpointSlotSchema.safeParse(slotRaw);
-  if (!slotParsed.success) {
-    return NextResponse.json({ error: 'slot לא תקין (morning|midday|evening)' }, { status: 400 });
+  /**
+   * slot מפורש מנצח; אם חסר — גוזרים משעת ישראל (עמידות ל-Schedule בלי הפרמטר).
+   * ערך לא תקין (לא ריק) עדיין מחזיר 400 כדי לחשוף טעות הגדרה.
+   */
+  let slot: 'morning' | 'midday' | 'evening';
+  if (!slotRaw) {
+    slot = deriveSlotFromJerusalemHour(new Date());
+  } else {
+    const slotParsed = habitCheckpointSlotSchema.safeParse(slotRaw);
+    if (!slotParsed.success) {
+      return NextResponse.json({ error: 'slot לא תקין (morning|midday|evening)' }, { status: 400 });
+    }
+    slot = slotParsed.data;
   }
-  const slot = slotParsed.data;
 
   /** dryRun=1 — מאפשר לבדוק תזמון מיד, מחזיר את התכנון בלי לטרגר Workflow אמיתי */
   const dryRunRaw = url.searchParams.get('dryRun') ?? url.searchParams.get('dry_run');
@@ -60,22 +141,9 @@ async function runHabitCheckpointCron(request: Request) {
 
   const admin = createAdminClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: progressRows, error: progErr } = await admin.from('journey_progress').select(
-    `
-      user_id,
-      updated_at,
-      is_completed,
-      task_statuses,
-      habits_progress,
-      task_level_meta,
-      journey_steps (
-        title,
-        habits,
-        tasks,
-        journey_stations ( title )
-      )
-    `
+  const { data: progressRows, error: progErr } = await selectWithFallbacks(
+    (select) => admin.from('journey_progress').select(select),
+    PROGRESS_SELECTS
   );
 
   if (progErr) {
@@ -104,16 +172,23 @@ async function runHabitCheckpointCron(request: Request) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: execRows } = await admin
     .from('journey_task_executions')
-    .select('user_id, task_id, slot')
+    .select('user_id, task_id, slot, outcome')
     .eq('date_key', todayKey)
     .limit(20000);
 
   const todayExecutionsByUser = new Map<string, Map<string, Set<string>>>();
   if (Array.isArray(execRows)) {
-    for (const row of execRows as Array<{ user_id?: string; task_id?: string; slot?: string }>) {
+    for (const row of execRows as Array<{
+      user_id?: string;
+      task_id?: string;
+      slot?: string;
+      outcome?: string | null;
+    }>) {
       const uid = typeof row.user_id === 'string' ? row.user_id : '';
       const tid = typeof row.task_id === 'string' ? row.task_id : '';
       const sl = typeof row.slot === 'string' ? row.slot : '';
+      /** רק ביצוע מלא סוגר סלוט לתזכורת — partial/failed/skipped לא. */
+      if (row.outcome && row.outcome !== 'completed') continue;
       if (!uid || !tid || !sl) continue;
       let byTask = todayExecutionsByUser.get(uid);
       if (!byTask) {
@@ -173,6 +248,8 @@ async function runHabitCheckpointCron(request: Request) {
     streak_days?: number | null;
     engagement_status?: string | null;
     ai_system_prompt?: string | null;
+    meal_count?: number | null;
+    meal_schedule?: Array<{ time?: string | null; label?: string | null }> | null;
   }> = [];
 
   if (progressUserIds.length > 0) {
@@ -184,13 +261,10 @@ async function runHabitCheckpointCron(request: Request) {
      * שדות churn (migration 000044): main_goal/main_obstacle/streak_days
      * ל-Identity Reconnection, engagement_status ל-persistence.
      */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profiles, error: profErr } = await admin
-      .from('profiles')
-      .select(
-        'id, ai_context, onboarding_completed, ai_check_in_times, last_responded_at, notification_count, main_goal, main_obstacle, main_obstacle_detail, streak_days, engagement_status, ai_system_prompt'
-      )
-      .in('id', progressUserIds.slice(0, 2000));
+    const { data: profiles, error: profErr } = await selectWithFallbacks(
+      (select) => admin.from('profiles').select(select).in('id', progressUserIds.slice(0, 2000)),
+      PROFILE_SELECTS
+    );
 
     if (profErr) {
       return NextResponse.json({ error: profErr.message }, { status: 500 });
@@ -231,6 +305,36 @@ async function runHabitCheckpointCron(request: Request) {
    * rollout), אילו מהלכים כבר נשלחו, ומתי breakup, וקונטקסט זהות מ-onboarding.
    * כשהדגל כבוי — המפה ריקה והתנהגות זהה לקודם (תאימות לאחור מלאה).
    */
+  const enabledReengagementIds = profileRows
+    .filter((row) => isChurnReengagementEnabled(row.id))
+    .map((row) => row.id);
+
+  /**
+   * 🧠 סיבת העזיבה האחרונה (Exit Survey) לכל משתמש מופעל — מוזרקת למהלך
+   * welcome_back כדי שאלמוג "יזכור" למה היה קשה. מוגן: אם הטבלה לא קיימת
+   * בסביבה מסוימת — ממשיכים בלי הסיבה (degradation עדין).
+   */
+  const lastChurnReasonByUser = new Map<string, string>();
+  if (enabledReengagementIds.length > 0) {
+    try {
+      const { data: churnRows } = await admin
+        .from('churn_feedback')
+        .select('user_id, reason, created_at')
+        .in('user_id', enabledReengagementIds.slice(0, 2000))
+        .order('created_at', { ascending: false });
+      for (const cr of (churnRows ?? []) as Array<{
+        user_id: string;
+        reason: string | null;
+      }>) {
+        if (cr.reason && !lastChurnReasonByUser.has(cr.user_id)) {
+          lastChurnReasonByUser.set(cr.user_id, cr.reason);
+        }
+      }
+    } catch {
+      /* churn_feedback לא קיים בסביבה זו — welcome_back יעבוד בלי סיבה ספציפית */
+    }
+  }
+
   const reengagementByUser = new Map<string, ReengagementUserInfo>();
   for (const row of profileRows) {
     const enabled = isChurnReengagementEnabled(row.id);
@@ -240,6 +344,12 @@ async function runHabitCheckpointCron(request: Request) {
       enabled,
       sentMoves: reCtx.sent_moves,
       breakupSentAt: reCtx.breakup_sent_at ?? null,
+      /**
+       * engagement_status מהריצה הקודמת — מזהה חזרה מהיעדרות (welcome_back).
+       * נקרא *לפני* updateEngagementStatuses, ולכן עדיין משקף את המצב הקודם.
+       */
+      previousEngagementStatus: row.engagement_status ?? null,
+      lastChurnReason: lastChurnReasonByUser.get(row.id) ?? null,
       identityContext: {
         mainGoal: goalToHebrew(row.main_goal),
         mainObstacle: obstacleToHebrew(row.main_obstacle, row.main_obstacle_detail),
@@ -252,6 +362,17 @@ async function runHabitCheckpointCron(request: Request) {
   }
   const reengagementInfo: ReengagementInfoByUser = reengagementByUser;
 
+  const mealProfileByUser = new Map<
+    string,
+    { meal_count: number | null; meal_schedule?: Array<{ time?: string | null; label?: string | null }> | null }
+  >();
+  for (const row of profileRows) {
+    mealProfileByUser.set(row.id, {
+      meal_count: typeof row.meal_count === 'number' ? row.meal_count : null,
+      meal_schedule: Array.isArray(row.meal_schedule) ? row.meal_schedule : null,
+    });
+  }
+
   const plan = await planHabitCheckpointTriggersWithChat(
     admin,
     (progressRows ?? []) as unknown as ProgressRow[],
@@ -261,7 +382,8 @@ async function runHabitCheckpointCron(request: Request) {
     lastActiveByUser,
     userResponseInfo,
     recentExecutionsByUser,
-    reengagementInfo
+    reengagementInfo,
+    mealProfileByUser
   );
 
   /**
@@ -441,14 +563,14 @@ async function runHabitCheckpointCron(request: Request) {
 }
 
 /**
- * POST בלבד. GET נסגר כדי למנוע טריגר לא-מכוון מ-prefetch/CDN/monitoring שמטרגר
- * אלפי Workflows ועלות. הסקיידולים ב-Upstash QStash משתמשים ב-POST.
+ * Upstash Schedules קיימים במערכת מוגדרים כקריאת URL רגילה (GET). לכן GET
+ * חייב להריץ את אותו cron, עם אותה שכבת auth, אחרת "Last run" נראה תקין אבל
+ * לא נוצר אף Workflow של תזכורת.
  */
-export async function GET() {
-  return NextResponse.json(
-    { error: 'Method Not Allowed — POST only' },
-    { status: 405, headers: { Allow: 'POST' } }
-  );
+export async function GET(request: Request) {
+  const denied = await authorizeCronRequest(request);
+  if (denied) return denied;
+  return runHabitCheckpointCron(request);
 }
 
 export async function POST(request: Request) {

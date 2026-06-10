@@ -110,6 +110,7 @@ export const reengagementMoveSchema = z.enum([
   'withdrawing',
   'quiet_presence',
   'breakup',
+  'welcome_back',
   'passive_soft',
   'passive_value',
   'passive_trigger',
@@ -200,6 +201,13 @@ export const almogHabitCheckpointPayloadSchema = z
     engagementStatus: engagementStatusSchema.optional(),
     /** מטא ל-Exit Survey — מצורף רק כש-reengagementMove === 'breakup'. */
     breakupSurvey: z.boolean().optional(),
+    /**
+     * סיבת העזיבה האחרונה מ-Exit Survey (churn_feedback.reason) — מצורף
+     * למהלך welcome_back כדי שאלמוג "יזכור" למה היה קשה ויחבר אליו ברגישות.
+     */
+    churnReason: z
+      .enum(['too_busy', 'too_hard', 'no_results', 'personal', 'other'])
+      .optional(),
   })
   .refine(
     (v) => {

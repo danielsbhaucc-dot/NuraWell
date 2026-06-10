@@ -51,6 +51,33 @@ function supabaseErrorPayload(
 }
 
 /**
+ * רושם אות פעילות-משתמש אמיתי על ה-step (journey_progress.last_engaged_at).
+ *
+ * 🔑 קריטי ל-dormancy: כל אינטראקציה עם סלוט — *סימון או ביטול* — היא הוכחה
+ * שהמשתמש פעיל עכשיו. בלי זה, ביטול סימון (DELETE) מוחק את שורת הביצוע ואיתה
+ * את `completed_at` שמנוע הדורמנסי קורא, וכך mark→unmark מאבד לגמרי את אות
+ * הפעילות והמערכת חושבת שהמשתמש "נעלם". כתיבת last_engaged_at מנתקת את אות
+ * הפעילות מקיום שורת הביצוע. no-op בשקט אם אין שורת progress לצעד.
+ */
+async function touchStepEngagement(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  userId: string,
+  stepId: string,
+  nowIso: string
+): Promise<void> {
+  try {
+    await supabase
+      .from('journey_progress')
+      .update({ last_engaged_at: nowIso })
+      .eq('user_id', userId)
+      .eq('step_id', stepId);
+  } catch {
+    /* אות פעילות בלבד — לא מפילים את הבקשה אם נכשל */
+  }
+}
+
+/**
  * POST /api/v1/task-executions
  *   תיעוד ביצוע סלוט יומי של משימה (journey_task_executions).
  *   UNIQUE(user_id, step_id, task_id, date_key, slot) — אם המשתמש לוחץ שוב באותו slot,
@@ -111,6 +138,8 @@ export async function POST(request: Request) {
       return NextResponse.json(supabaseErrorPayload(error), { status: 500 });
     }
 
+    await touchStepEngagement(supabase, user.id, step_id, nowIso);
+
     return NextResponse.json({ success: true, execution: data });
   } catch (err) {
     console.error('task-executions POST exception:', err);
@@ -160,6 +189,12 @@ export async function DELETE(request: Request) {
       console.error('task-executions DELETE error:', error);
       return NextResponse.json(supabaseErrorPayload(error), { status: 500 });
     }
+
+    /**
+     * ביטול סימון = אינטראקציה פעילה. רושמים אות פעילות כדי שמחיקת שורת
+     * הביצוע לא תגרום למערכת לחשוב שהמשתמש "נעלם" / נכשל.
+     */
+    await touchStepEngagement(supabase, user.id, step_id, new Date().toISOString());
 
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -25,6 +25,7 @@ export type ReengagementMove =
   | 'withdrawing' // יום 8
   | 'quiet_presence' // יום 9–13
   | 'breakup' // יום 10 (פעם אחת) — נושא בתוכו את ה-Exit Survey
+  | 'welcome_back' // המשתמש חזר אחרי היעדרות — "כיף שחזרת" + התייחסות לקושי
   | 'passive_soft' // 14+ שבועי
   | 'passive_value' // 14+ חודשי
   | 'passive_trigger'; // 14+ אירוע מיוחד
@@ -38,6 +39,7 @@ export const REENGAGEMENT_MOVES: readonly ReengagementMove[] = [
   'withdrawing',
   'quiet_presence',
   'breakup',
+  'welcome_back',
   'passive_soft',
   'passive_value',
   'passive_trigger',
@@ -94,7 +96,35 @@ const ACTIVE_HABIT_MOVES: ReadonlySet<ReengagementMove> = new Set<ReengagementMo
   'withdrawing',
   'quiet_presence',
   'breakup',
+  'welcome_back',
 ]);
+
+/**
+ * מצב מעורבות שנחשב "היעדרות" — אם המשתמש היה כך ופתאום חזר ל-active, מגיע
+ * לו מהלך welcome_back ("כיף שחזרת"). slipping (יום-יומיים) לא נחשב היעדרות
+ * אמיתית; מתחילים מ-at_risk (3+ ימים).
+ */
+const ABSENT_STATUSES: ReadonlySet<EngagementStatus> = new Set<EngagementStatus>([
+  'at_risk',
+  'dormant',
+  'churned',
+]);
+
+/**
+ * האם זו חזרה מהיעדרות? המשתמש היה במצב היעדרות (3+ ימים) ועכשיו פעיל שוב
+ * (0–1 ימים). משמש את ה-planner כדי לבחור מהלך welcome_back בבוקר.
+ */
+export function isReturnFromAbsence(params: {
+  previousEngagementStatus: string | null | undefined;
+  daysSinceLastActive: number;
+}): boolean {
+  const prev = params.previousEngagementStatus;
+  if (!prev || !ABSENT_STATUSES.has(prev as EngagementStatus)) return false;
+  const d = Number.isFinite(params.daysSinceLastActive)
+    ? Math.max(0, params.daysSinceLastActive)
+    : 999;
+  return d <= 1;
+}
 
 export function isActiveReengagementMove(move: ReengagementMove): boolean {
   return ACTIVE_HABIT_MOVES.has(move);

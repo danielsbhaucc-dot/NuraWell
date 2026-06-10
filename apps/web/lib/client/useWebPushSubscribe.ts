@@ -10,16 +10,41 @@ export function useWebPushSubscribe() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setSupported(
+    const isSupported =
       typeof window !== 'undefined' &&
-        'serviceWorker' in navigator &&
-        'PushManager' in window &&
-        'Notification' in window
-    );
+      'serviceWorker' in navigator &&
+      'PushManager' in window &&
+      'Notification' in window;
+    setSupported(isSupported);
     void fetch('/api/v1/push/subscribe')
       .then((r) => r.json())
       .then((d: { configured?: boolean }) => setConfigured(Boolean(d.configured)))
       .catch(() => setConfigured(false));
+
+    /**
+     * סנכרון מצב אמיתי: בודקים אם כבר קיים מנוי פעיל בדפדפן ואם ההרשאה
+     * אושרה. בלי זה ה-UI תמיד מציג "אפשר דחיפה" גם למשתמש רשום, והמנוי
+     * המאוחסן בשרת לא מתרענן אם הוא פג/הוחלף.
+     */
+    if (!isSupported) return;
+    void (async () => {
+      try {
+        if (Notification.permission !== 'granted') return;
+        const reg = await navigator.serviceWorker.getRegistration();
+        const existing = await reg?.pushManager.getSubscription();
+        if (existing) {
+          setSubscribed(true);
+          /** רענון שקט של המנוי בשרת — מטפל ב-endpoint שהתחלף. */
+          void fetch('/api/v1/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(existing.toJSON()),
+          }).catch(() => {});
+        }
+      } catch {
+        /** ignore — לא חוסם את ה-UI */
+      }
+    })();
   }, []);
 
   const subscribe = useCallback(async () => {

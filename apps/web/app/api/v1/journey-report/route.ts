@@ -8,6 +8,38 @@ export const dynamic = 'force-dynamic';
 const JOURNEY_PROGRESS_SELECT =
   'step_id, user_id, created_at, updated_at, video_watched, quiz_answers, quiz_score, game_answers, game_score, commitment_accepted, tasks_completed, task_statuses, habits_progress, habit_meta, task_level_meta, is_completed, completed_at, last_section';
 
+const JOURNEY_PROGRESS_SELECT_FALLBACKS = [
+  JOURNEY_PROGRESS_SELECT,
+  'step_id, user_id, created_at, updated_at, video_watched, quiz_answers, quiz_score, game_answers, game_score, commitment_accepted, tasks_completed, task_statuses, habits_progress, habit_meta, is_completed, completed_at, last_section',
+  'step_id, user_id, created_at, updated_at, video_watched, quiz_answers, quiz_score, game_answers, game_score, commitment_accepted, tasks_completed, task_statuses, habits_progress, is_completed, completed_at, last_section',
+  'step_id, user_id, created_at, updated_at, video_watched, quiz_answers, quiz_score, game_answers, game_score, commitment_accepted, tasks_completed, task_statuses, habits_progress, is_completed, completed_at',
+];
+
+function isMissingColumnError(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return error.code === '42703' || error.code === 'PGRST204' || /column .* does not exist/i.test(error.message ?? '');
+}
+
+async function fetchJourneyProgressWithFallbacks(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  userId: string
+) {
+  let lastError: { code?: string; message?: string } | null = null;
+  for (const select of JOURNEY_PROGRESS_SELECT_FALLBACKS) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await supabase
+      .from('journey_progress')
+      .select(select)
+      .eq('user_id', userId);
+
+    if (!error) return { data, error: null };
+    lastError = error;
+    if (!isMissingColumnError(error)) break;
+  }
+  return { data: null, error: lastError };
+}
+
 /**
  * תמצית מסע + התקדמות — למסך דיווח מהיר (בלי לוגיקת admin).
  *
@@ -32,11 +64,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed to load steps' }, { status: 500 });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rawProg, error: pErr } = await supabase
-      .from('journey_progress')
-      .select(JOURNEY_PROGRESS_SELECT)
-      .eq('user_id', user.id);
+    const { data: rawProg, error: pErr } = await fetchJourneyProgressWithFallbacks(
+      supabase,
+      user.id
+    );
 
     if (pErr) {
       return NextResponse.json({ error: 'Failed to load progress' }, { status: 500 });

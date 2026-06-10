@@ -306,4 +306,5 @@ export interface JourneyTaskExecution {
   completed_at: string;
   source: 'manual' | 'chat' | 'reminder';
   note?: string | null;
+  outcome?: 'completed' | 'attempt_failed' | 'partial' | 'skipped' | null;
 }

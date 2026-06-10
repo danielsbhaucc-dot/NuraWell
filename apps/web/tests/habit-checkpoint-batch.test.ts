@@ -834,3 +834,138 @@ describe('planHabitCheckpointTriggers', () => {
     expect(eveningAllDone).toHaveLength(0);
   });
 });
+
+describe('welcome_back — חזרה מהיעדרות', () => {
+  function reengRow(): ProgressRow {
+    return row({
+      user_id: 'u-back',
+      task_statuses: { t1: { status: 'accepted', execution_done: false } },
+      journey_steps: {
+        title: 'צעד',
+        habits: [],
+        tasks: [{ id: 't1', title: 'שתיית מים', schedule: 'daily' }],
+        journey_stations: null,
+      },
+    });
+  }
+
+  it('משתמש שהיה dormant וחזר היום → מהלך welcome_back בבוקר עם סיבת נטישה', () => {
+    const reeng = new Map([
+      [
+        'u-back',
+        {
+          enabled: true,
+          sentMoves: [],
+          breakupSentAt: null,
+          previousEngagementStatus: 'dormant',
+          lastChurnReason: 'too_busy',
+          identityContext: {
+            mainGoal: 'ירידה במשקל',
+            mainObstacle: 'אין זמן',
+            mainObstacleDetail: null,
+            streakDays: 4,
+          },
+        },
+      ],
+    ]);
+
+    const plan = planHabitCheckpointTriggers(
+      [reengRow()],
+      'morning',
+      new Date('2026-05-19T08:00:00+03:00'),
+      new Map(),
+      activeLastActive('u-back'),
+      new Map(),
+      new Map(),
+      reeng
+    );
+
+    expect(plan).toHaveLength(1);
+    expect(plan[0]!.payload.reengagementMove).toBe('welcome_back');
+    expect(plan[0]!.payload.churnReason).toBe('too_busy');
+    expect(plan[0]!.payload.identityContext?.mainObstacle).toBe('אין זמן');
+  });
+
+  it('חזרה מזוהה רק בבוקר — בצהריים לא welcome_back', () => {
+    const reeng = new Map([
+      [
+        'u-back',
+        {
+          enabled: true,
+          sentMoves: [],
+          breakupSentAt: null,
+          previousEngagementStatus: 'dormant',
+          lastChurnReason: null,
+        },
+      ],
+    ]);
+
+    const midday = planHabitCheckpointTriggers(
+      [reengRow()],
+      'midday',
+      new Date('2026-05-19T13:00:00+03:00'),
+      new Map(),
+      activeLastActive('u-back'),
+      new Map(),
+      new Map(),
+      reeng
+    );
+    expect(midday[0]!.payload.reengagementMove).not.toBe('welcome_back');
+  });
+
+  it('משתמש שלא נעלם (active) → אין welcome_back', () => {
+    const reeng = new Map([
+      [
+        'u-back',
+        {
+          enabled: true,
+          sentMoves: [],
+          breakupSentAt: null,
+          previousEngagementStatus: 'active',
+          lastChurnReason: null,
+        },
+      ],
+    ]);
+
+    const plan = planHabitCheckpointTriggers(
+      [reengRow()],
+      'morning',
+      new Date('2026-05-19T08:00:00+03:00'),
+      new Map(),
+      activeLastActive('u-back'),
+      new Map(),
+      new Map(),
+      reeng
+    );
+    expect(plan[0]!.payload.reengagementMove).not.toBe('welcome_back');
+  });
+
+  it('חזרה אחרי breakup (churned) → welcome_back נשלח ולא מושתק', () => {
+    const reeng = new Map([
+      [
+        'u-back',
+        {
+          enabled: true,
+          sentMoves: ['breakup' as const],
+          breakupSentAt: '2026-05-05T08:00:00.000Z',
+          previousEngagementStatus: 'churned',
+          lastChurnReason: 'too_hard',
+        },
+      ],
+    ]);
+
+    const plan = planHabitCheckpointTriggers(
+      [reengRow()],
+      'morning',
+      new Date('2026-05-19T08:00:00+03:00'),
+      new Map(),
+      activeLastActive('u-back'),
+      new Map(),
+      new Map(),
+      reeng
+    );
+    expect(plan).toHaveLength(1);
+    expect(plan[0]!.payload.reengagementMove).toBe('welcome_back');
+    expect(plan[0]!.payload.churnReason).toBe('too_hard');
+  });
+});

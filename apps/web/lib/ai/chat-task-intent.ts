@@ -24,6 +24,7 @@ import {
   markTaskExecutionForUser,
   type PendingAcceptedTask,
 } from './mark-task-execution';
+import { jerusalemDateKey } from '../journey/task-schedule';
 
 /** טיפוס לתאימות לאחור עם קוד שמשתמש ב-TaskIntentKind. */
 export type TaskIntentKind = 'done' | 'none';
@@ -56,6 +57,32 @@ function messageReferencesTask(msg: string, title: string): boolean {
     .map((w) => w.trim())
     .filter((w) => w.length >= 2);
   return kws.some((kw) => msg.includes(kw));
+}
+
+function dateKeyDaysAgo(days: number): string {
+  return jerusalemDateKey(new Date(Date.now() - days * 24 * 60 * 60 * 1000));
+}
+
+function looksLikeYesterdayCorrection(msg: string): boolean {
+  return (
+    /(?:טעיתי|סליחה|התבלבלתי|בעצם|התכוונתי)/i.test(msg) &&
+    /אתמול/i.test(msg) &&
+    /(?:שתיתי|שתינו|שתית|עשיתי|ביצעתי|סימנתי|סיימתי|הצלחתי|אכלתי|הלכתי)/i.test(msg)
+  );
+}
+
+function negatesTodayInCorrection(msg: string): boolean {
+  return /(?:היום[^.?!\n]{0,40}\bלא\b|\bלא\b[^.?!\n]{0,40}היום)/i.test(msg);
+}
+
+function pickTaskForCorrection(
+  msg: string,
+  pendingTasks: readonly PendingAcceptedTask[]
+): PendingAcceptedTask | undefined {
+  for (const task of pendingTasks) {
+    if (messageReferencesTask(msg, task.title)) return task;
+  }
+  return pendingTasks.length === 1 ? pendingTasks[0] : undefined;
 }
 
 /** ממפה את 7 הקטגוריות ל-2 הישנות לצורך תאימות לאחור. */
@@ -180,6 +207,57 @@ export async function applyTaskIntentFromUserMessage(
   pending?: PendingAcceptedTask[]
 ): Promise<ApplyTaskIntentResult> {
   const list = pending ?? (await fetchPendingAcceptedTasksForUser(supabase, userId));
+  const normalizedMessage = normalizeMsg(userMessage);
+
+  if (looksLikeYesterdayCorrection(normalizedMessage)) {
+    const correctedTask = pickTaskForCorrection(normalizedMessage, list);
+    if (correctedTask) {
+      const intent: TaskIntentDetection = {
+        kind: 'done',
+        category: 'done',
+        confidence: 'high',
+        source: 'regex',
+        taskId: correctedTask.id,
+        taskTitle: correctedTask.title,
+        extractedNote: 'תיקון תאריך: הביצוע שייך לאתמול',
+      };
+      const yesterdayResult = await markTaskExecutionForUser(supabase, userId, {
+        taskId: correctedTask.id,
+        userMessage,
+        pending: list,
+        outcome: 'completed',
+        dateKey: dateKeyDaysAgo(1),
+      });
+
+      if (negatesTodayInCorrection(normalizedMessage)) {
+        await markTaskExecutionForUser(supabase, userId, {
+          taskId: correctedTask.id,
+          userMessage,
+          pending: list,
+          outcome: 'skipped',
+          dateKey: jerusalemDateKey(),
+        });
+      }
+
+      if (yesterdayResult.ok) {
+        return {
+          marked: true,
+          stepId: yesterdayResult.stepId,
+          taskId: yesterdayResult.taskId,
+          taskTitle: yesterdayResult.taskTitle,
+          intent,
+          category: 'done',
+          schedule: yesterdayResult.schedule,
+          ...(yesterdayResult.slot ? { slot: yesterdayResult.slot } : {}),
+          totalSlotsToday: yesterdayResult.totalSlotsToday,
+          slotsCompletedToday: yesterdayResult.slotsCompletedToday,
+          slotsRemainingToday: yesterdayResult.slotsRemainingToday,
+          wasAlreadyDone: yesterdayResult.wasAlreadyDone,
+        };
+      }
+    }
+  }
+
   const intent = detectTaskIntent(userMessage, list);
 
   const outcome = outcomeFromCategory(intent.category);

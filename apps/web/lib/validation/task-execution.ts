@@ -4,7 +4,7 @@ const slotSchema = z
   .string()
   .max(40)
   .regex(
-    /^(?:full_day|morning|noon|evening|meal_breakfast|meal_lunch|meal_dinner|slot_[1-6])$/,
+    /^(?:full_day|morning|noon|evening|meal_breakfast|meal_snack_morning|meal_lunch|meal_snack_evening|meal_dinner|slot_[1-6])$/,
     'slot לא תקין'
   );
 
