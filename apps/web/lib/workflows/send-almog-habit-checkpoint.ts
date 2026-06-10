@@ -476,6 +476,7 @@ export async function sendAlmogHabitCheckpointNotification(
     presencePenalty: 0.5,
     frequencyPenalty: 0.55,
     maxTokens: ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
+    recipientFirstName: firstName,
     ...(opts?.modelOverride ? { modelOverride: opts.modelOverride } : {}),
     messages: [
       { role: 'system', content: systemPrompt },

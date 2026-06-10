@@ -47,6 +47,11 @@ type EmpathyNotifyCompletionOptions = {
   frequencyPenalty?: number;
   label?: string;
   /**
+   * שם פרטי לניקוי פתיחת גוף ההודעה. הכותרת כבר פונה בשם, לכן גוף שמתחיל
+   * שוב בשם נראה כפול בכרטיס ההתראה.
+   */
+  recipientFirstName?: string;
+  /**
    * 🧪 override מודל יחיד (כלי בדיקה admin בלבד). כשמסופק — משתמשים *רק*
    * בספק/מודל הזה, בלי שרשרת ה-fallback הרגילה. ברירת מחדל undefined →
    * התנהגות זהה לחלוטין לזרימה העובדת.
@@ -160,13 +165,31 @@ function resolveMaxOutputTokens(
   return Math.max(requested, 220);
 }
 
-function postProcessBody(raw: string): string {
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function hasUnresolvedPlaceholder(value: string): boolean {
+  return /\[(?:PERSON_NAME|USER_FIRST_NAME|FIRST_NAME|שם|Task|TASK|task|משימה)\]/i.test(value);
+}
+
+function stripLeadingRecipientName(value: string, firstName?: string): string {
+  const name = firstName?.trim();
+  if (!name) return value;
+  const escapedName = escapeRegExp(name);
+  return value
+    .replace(new RegExp(`^(?:אחי\\s+)?${escapedName}ל{0,4}[!！.,،:;\\-–—\\s]*`, 'u'), '')
+    .trim();
+}
+
+function postProcessBody(raw: string, firstName?: string): string {
   let cleaned = raw.trim();
   if (!cleaned) return '';
   // הסרת גרשיים פותחים/סוגרים שהמודל לפעמים מוסיף
   cleaned = cleaned.replace(/^["'״׳`]+|["'״׳`]+$/g, '').trim();
   // איחוד שורות מרובות לרווח אחד (push notification = שורה אחת)
   cleaned = cleaned.replace(/\s*\n+\s*/g, ' ').trim();
+  cleaned = stripLeadingRecipientName(cleaned, firstName);
   if (cleaned.length > MAX_BODY_CHARS) {
     cleaned = `${cleaned.slice(0, MAX_BODY_CHARS - 1).trimEnd()}…`;
   }
@@ -236,13 +259,15 @@ export async function completeEmpathyNotifyBody(
         });
 
         lastFinishReason = out.finishReason;
-        const body = postProcessBody(out.text ?? '');
+        const body = postProcessBody(out.text ?? '', options.recipientFirstName);
 
-        if (body.length >= MIN_NOTIFY_BODY_CHARS) {
+        if (body.length >= MIN_NOTIFY_BODY_CHARS && !hasUnresolvedPlaceholder(body)) {
           return body;
         }
 
-        const reason = `empty/short text (finishReason=${out.finishReason}, len=${body.length})`;
+        const reason = hasUnresolvedPlaceholder(body)
+          ? `unresolved placeholder (finishReason=${out.finishReason}, body=${body.slice(0, 80)})`
+          : `empty/short text (finishReason=${out.finishReason}, len=${body.length})`;
         errors.push(`${provider.label}#${attempt}: ${reason}`);
         // eslint-disable-next-line no-console
         console.warn('[empathy-notify] empty completion', {
