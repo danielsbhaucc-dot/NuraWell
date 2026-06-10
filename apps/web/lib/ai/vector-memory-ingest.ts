@@ -30,12 +30,25 @@ function hitMetaText(hit: { metadata?: unknown }): string | null {
   return typeof t === 'string' && t.trim() ? t.trim() : null;
 }
 
+function hitMemoryMeta(hit: { metadata?: unknown }): UserMemoryVectorMetadata | null {
+  const m = hit.metadata;
+  if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
+  const meta = m as UserMemoryVectorMetadata;
+  return typeof meta.text === 'string' && typeof meta.userId === 'string' ? meta : null;
+}
+
 function hitMetaMemoryLevel(hit: { metadata?: unknown }): 2 | 3 | 4 {
   const m = hit.metadata;
   if (!m || typeof m !== 'object') return 2;
   const lv = (m as { memoryLevel?: unknown }).memoryLevel;
   if (lv === 2 || lv === 3 || lv === 4) return lv;
   return 2;
+}
+
+function nextSeenCount(meta: UserMemoryVectorMetadata | null): number {
+  return typeof meta?.seenCount === 'number' && Number.isFinite(meta.seenCount)
+    ? Math.max(1, Math.floor(meta.seenCount)) + 1
+    : 2;
 }
 
 /**
@@ -81,11 +94,15 @@ export async function ingestUserMessageIntoVectorMemory(params: {
       return t != null && normalizeFactTextForDedupe(t) === normFact;
     });
     if (exactHit) {
+      const prevMeta = hitMemoryMeta(exactHit);
       const meta: UserMemoryVectorMetadata = {
         userId: params.userId,
         text: fact.text.trim(),
         category: fact.category,
         updatedAt: now,
+        firstSeenAt: prevMeta?.firstSeenAt ?? prevMeta?.updatedAt ?? now,
+        lastSeenAt: now,
+        seenCount: nextSeenCount(prevMeta),
         memoryLevel: fact.level,
         isInsight: fact.level >= 3,
       };
@@ -109,6 +126,7 @@ export async function ingestUserMessageIntoVectorMemory(params: {
     const best = candidates.find((h) => h.score >= SIMILARITY_MERGE_THRESHOLD && hitMetaText(h));
 
     if (best && hitMetaText(best)) {
+      const prevMeta = hitMemoryMeta(best);
       const prevText = hitMetaText(best)!;
       const mergedText = await mergeTwoUserMemoryLines(prevText, fact.text);
       const mergedVec = await embedTextForRag(mergedText);
@@ -119,6 +137,10 @@ export async function ingestUserMessageIntoVectorMemory(params: {
         text: mergedText,
         category: fact.category,
         updatedAt: now,
+        firstSeenAt: prevMeta?.firstSeenAt ?? prevMeta?.updatedAt ?? now,
+        lastSeenAt: now,
+        seenCount: nextSeenCount(prevMeta),
+        supersedes: prevMeta?.supersedes?.slice(-10),
         memoryLevel: mergedLevel,
         isInsight: mergedLevel >= 3,
       };
@@ -146,6 +168,9 @@ export async function ingestUserMessageIntoVectorMemory(params: {
       text: fact.text.trim(),
       category: fact.category,
       updatedAt: now,
+      firstSeenAt: now,
+      lastSeenAt: now,
+      seenCount: 1,
       memoryLevel: fact.level,
       isInsight: fact.level >= 3,
     };

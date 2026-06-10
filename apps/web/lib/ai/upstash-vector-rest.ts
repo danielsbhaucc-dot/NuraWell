@@ -1,6 +1,8 @@
 import { UPSTASH_NAMESPACE_USER_MEMORY } from './rag-config';
 
-import type { MemoryFactCategory } from './memory-dossier/types';
+import { MEMORY_FACT_CATEGORIES, type MemoryFactCategory } from './memory-dossier/types';
+
+const MEMORY_FACT_CATEGORY_SET = new Set<string>(MEMORY_FACT_CATEGORIES);
 
 /** קטגוריות זיכרון וקטורי — alias לסכימה המורחבת */
 export type MemoryVectorCategory = MemoryFactCategory;
@@ -11,6 +13,14 @@ export type UserMemoryVectorMetadata = {
   text: string;
   category: MemoryVectorCategory;
   updatedAt: string;
+  /** מתי הזיכרון נוצר לראשונה */
+  firstSeenAt?: string;
+  /** מתי אותו דפוס/זיכרון נראה שוב לאחרונה */
+  lastSeenAt?: string;
+  /** כמה פעמים הזיכרון חוזק דרך exact refresh או merge סמנטי */
+  seenCount?: number;
+  /** מזהי זיכרונות שנבלעו לתוך השורה הזו בעת מיזוג/החלפה */
+  supersedes?: string[];
   /** גרסת סכימה — לעתיד */
   schema?: string;
   /** רמת תובנה — 2 דפוס, 3 תובנה, 4 שבירה */
@@ -136,6 +146,9 @@ export type UserMemoryListItem = {
   memoryLevel?: 2 | 3 | 4;
   isInsight?: boolean;
   updatedAt: string;
+  firstSeenAt?: string;
+  lastSeenAt?: string;
+  seenCount?: number;
 };
 
 function parseUserMemoryMetadata(
@@ -146,13 +159,7 @@ function parseUserMemoryMetadata(
   const text = typeof m.text === 'string' ? m.text.trim() : '';
   if (!text) return null;
   const category = m.category;
-  if (
-    category !== 'strength' &&
-    category !== 'weakness' &&
-    category !== 'success' &&
-    category !== 'failure' &&
-    category !== 'schedule'
-  ) {
+  if (typeof category !== 'string' || !MEMORY_FACT_CATEGORY_SET.has(category)) {
     return null;
   }
   return {
@@ -162,6 +169,9 @@ function parseUserMemoryMetadata(
     memoryLevel: m.memoryLevel,
     isInsight: m.isInsight,
     updatedAt: typeof m.updatedAt === 'string' ? m.updatedAt : '',
+    firstSeenAt: typeof m.firstSeenAt === 'string' ? m.firstSeenAt : undefined,
+    lastSeenAt: typeof m.lastSeenAt === 'string' ? m.lastSeenAt : undefined,
+    seenCount: typeof m.seenCount === 'number' ? m.seenCount : undefined,
   };
 }
 
