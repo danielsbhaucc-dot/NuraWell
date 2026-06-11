@@ -27,6 +27,16 @@ interface FocusView {
   ends_at: string | null;
 }
 
+interface CompletedView {
+  id: string;
+  title: string;
+  reason: string | null;
+  schedule: 'one_time' | 'daily' | 'weekly';
+  given_at: string;
+  last_done_at: string | null;
+  done_count: number;
+}
+
 const SCHEDULE_LABEL: Record<AssignmentView['schedule'], string> = {
   one_time: 'חד-פעמי',
   daily: 'כל יום',
@@ -47,6 +57,7 @@ function formatDay(iso: string | null): string | null {
 export function AlmogAssignmentsSection() {
   const [assignments, setAssignments] = useState<AssignmentView[]>([]);
   const [focus, setFocus] = useState<FocusView | null>(null);
+  const [completed, setCompleted] = useState<CompletedView[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -54,9 +65,14 @@ export function AlmogAssignmentsSection() {
     try {
       const res = await fetch('/api/v1/almog-assignments', { credentials: 'include' });
       if (!res.ok) return;
-      const json = (await res.json()) as { assignments: AssignmentView[]; focus: FocusView | null };
+      const json = (await res.json()) as {
+        assignments: AssignmentView[];
+        focus: FocusView | null;
+        completed?: CompletedView[];
+      };
       setAssignments(Array.isArray(json.assignments) ? json.assignments : []);
       setFocus(json.focus ?? null);
+      setCompleted(Array.isArray(json.completed) ? json.completed : []);
     } catch {
       /* שקט — לא שוברים את עמוד המסע */
     } finally {
@@ -89,7 +105,7 @@ export function AlmogAssignmentsSection() {
   );
 
   const visible = assignments.filter((a) => a.status === 'active' || a.status === 'frozen');
-  if (loaded && visible.length === 0 && !focus) return null;
+  if (loaded && visible.length === 0 && !focus && completed.length === 0) return null;
   if (!loaded) return null;
 
   return (
@@ -144,7 +160,51 @@ export function AlmogAssignmentsSection() {
           ))}
         </AnimatePresence>
       </div>
+
+      {/* הושלמו — תיעוד גלוי של משימות אישיות שסיימת */}
+      {completed.length > 0 ? <CompletedList items={completed} /> : null}
     </motion.section>
+  );
+}
+
+function CompletedList({ items }: { items: CompletedView[] }) {
+  return (
+    <div className="mt-3.5">
+      <p className="mb-2 px-1 text-[11px] font-black uppercase tracking-[0.12em] text-emerald-800/65">
+        הושלמו
+      </p>
+      <ul className="space-y-1.5">
+        {items.map((c) => {
+          const when = formatDay(c.last_done_at) ?? formatDay(c.given_at);
+          return (
+            <li
+              key={c.id}
+              dir="rtl"
+              className="flex items-center gap-2.5 rounded-2xl px-3 py-2.5"
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(236,253,245,0.62) 0%, rgba(209,250,229,0.38) 100%)',
+                backdropFilter: 'blur(10px) saturate(140%)',
+                WebkitBackdropFilter: 'blur(10px) saturate(140%)',
+                border: '1px solid rgba(110,231,183,0.32)',
+              }}
+            >
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+              <div className="min-w-0 flex-1 text-right">
+                <p className="truncate text-[13px] font-bold text-emerald-900/85 line-through decoration-emerald-700/40">
+                  {c.title}
+                </p>
+              </div>
+              {when ? (
+                <span className="shrink-0 text-[10.5px] font-semibold text-emerald-800/60">
+                  {when}
+                </span>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
