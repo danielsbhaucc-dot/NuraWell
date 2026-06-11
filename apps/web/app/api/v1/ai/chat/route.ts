@@ -300,8 +300,30 @@ const CHAT_LEAN_PROMPT_ENABLED =
 const CHAT_REASONING_MAX_TOKENS = (() => {
   const raw = process.env.AI_CHAT_REASONING_MAX_TOKENS?.trim();
   const n = raw ? Number(raw) : NaN;
-  // 1536: יותר מקום לחשיבה רגשית/ניואנס, עדיין לא "הון תועפות" כמו 4K-8K.
-  return Number.isFinite(n) && n >= 256 && n <= 8192 ? Math.floor(n) : 1536;
+  // 1024: איזון מהירות/איכות — חשיבה רגשית מספקת ל-Qwen בלי TTFB מנופח.
+  // (היה 1536; הורד כי החשיבה היא רכיב ה-TTFB הדומיננטי). Override ב-env.
+  return Number.isFinite(n) && n >= 256 && n <= 8192 ? Math.floor(n) : 1024;
+})();
+/**
+ * היקף החשיבה (reasoning) — איזה תורים מקבלים חשיבה לפני התשובה:
+ *   'heavy'  (ברירת מחדל) — רק תורים כבדים (שאלה/רגש/חסם/התלבטות). תורים קלים
+ *            (ברכה/אישור/דיווח קצר) עונים מיידית בלי TTFB של חשיבה — מהירות דרמטית.
+ *   'always' — חשיבה בכל תור (ההתנהגות הישנה, איטית יותר).
+ *   'off'    — בלי חשיבה כלל (מהיר ביותר, אבל פוגע באיכות העומק — לא מומלץ).
+ * Override: `AI_CHAT_REASONING_SCOPE`.
+ */
+const CHAT_REASONING_SCOPE = (() => {
+  const raw = (process.env.AI_CHAT_REASONING_SCOPE?.trim() || 'heavy').toLowerCase();
+  return raw === 'always' || raw === 'off' ? raw : 'heavy';
+})();
+/**
+ * העדפת ניתוב ספק ב-OpenRouter (אופציונלי) — 'throughput' בוחר את הספק המהיר
+ * ביותר עבור המודל, מה שמקצר TTFB בלי לשנות את המודל עצמו. ברירת מחדל: לא מוגדר
+ * (התנהגות OpenRouter הרגילה). הגדרה: `AI_CHAT_PROVIDER_SORT=throughput`.
+ */
+const CHAT_PROVIDER_SORT = (() => {
+  const raw = process.env.AI_CHAT_PROVIDER_SORT?.trim().toLowerCase();
+  return raw === 'throughput' || raw === 'latency' || raw === 'price' ? raw : null;
 })();
 /**
  * בונה את שדה `reasoning` של OpenRouter (או null אם כבוי/לא רלוונטי).
@@ -533,6 +555,8 @@ async function createOpenRouterTextStreamResponse({
     // כשהחשיבה פעילה — מרחיבים את התקרה כדי שטוקני התשובה לא ייקצצו על-ידי החשיבה.
     max_tokens: reasoning ? maxOutputTokens + reasoning.max_tokens : maxOutputTokens,
     ...(reasoning ? { reasoning } : {}),
+    // ניתוב ספק לפי מהירות (אופציונלי, env) — מקצר TTFB בלי לשנות את המודל.
+    ...(CHAT_PROVIDER_SORT ? { provider: { sort: CHAT_PROVIDER_SORT } } : {}),
     stream: true,
     stream_options: { include_usage: true },
     messages: openRouterMessagesWithCachedSystem(
@@ -1999,7 +2023,6 @@ export async function POST(request: Request) {
   const effectiveModel = mcfg.slug;
   // כשנבחר מודל השוואה מפורש — לא עוקפים לכותב הזול, כדי שהמודל הנבחר באמת יכתוב.
   const explicitCompareModel = Boolean(parsed.data.model && parsed.data.model !== 'almog');
-  const reasoningParam = buildReasoningParam(mcfg.useReasoning);
 
   if (bodyUserId && bodyUserId !== user.id) {
     console.error('[ai/chat]', { debug_id: debugId, stage: 'user_mismatch', body_user_id: bodyUserId, session_user_id: user.id });
@@ -2048,6 +2071,18 @@ export async function POST(request: Request) {
   }
 
   const useHeavyContext = contextDecision.heavy_context;
+
+  /**
+   * חשיבה (reasoning) מותנית-תור — רכיב ה-TTFB הדומיננטי של Qwen. מפעילים אותה
+   * רק כשבאמת צריך עומק (תור כבד: שאלה/רגש/חסם/התלבטות). תורים קלים (ברכה/אישור/
+   * דיווח קצר) עונים מיידית בלי המתנה לחשיבה — האצה דרמטית במקרה הנפוץ, בלי לפגוע
+   * באיכות בתורים העמוקים (שם הנתב קובע heavy_context, ובספק תמיד כבד).
+   */
+  const useReasoningForTurn =
+    mcfg.useReasoning &&
+    CHAT_REASONING_SCOPE !== 'off' &&
+    (CHAT_REASONING_SCOPE === 'always' || useHeavyContext);
+  const reasoningParam = buildReasoningParam(useReasoningForTurn);
 
   const sessionId = parsed.data.session_id ?? crypto.randomUUID();
   const notificationId = parsed.data.notification_id;
