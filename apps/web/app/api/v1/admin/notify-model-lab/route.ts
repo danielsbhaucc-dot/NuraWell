@@ -179,16 +179,14 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    deepinfra_configured: Boolean(
-      process.env.DEEPINFRA_API_KEY?.trim() || process.env.DEEPINFRA_TOKEN?.trim()
-    ),
-    env_hint: 'הגדר DEEPINFRA_API_KEY (או DEEPINFRA_TOKEN) ב-.env / Vercel.',
+    openrouter_configured: Boolean(process.env.OPENROUTER_API_KEY?.trim()),
+    routing: 'OpenRouter → provider order ["deepinfra"] (allow_fallbacks=true)',
+    env_hint: 'משתמש ב-OPENROUTER_API_KEY הקיים — לא צריך מפתח DeepInfra נפרד.',
     models: MODEL_LAB_REGISTRY.map((m) => ({
       key: m.key,
       label: m.label,
       provider: m.provider,
       model: m.model,
-      verified: m.verified ?? false,
     })),
     usage: {
       send_one: { method: 'POST', body: { model: 'kimi-k2.6', slot: 'morning' } },
@@ -200,7 +198,7 @@ export async function GET(request: Request) {
     notes_he: [
       'dryRun=true → מנסח בלי לכתוב ל-DB ובלי push (השוואה מהירה בין מודלים).',
       'בלי dryRun → שולח התראת אמת שתופיע בפעמון/push, בלתי מוגבל (אין gate/dedupe).',
-      'מודלים עם verified=false — אם מקבלים 404, עדכן את ה-slug ב-lib/ai/notify-model-lab.ts או שלח model גולמי.',
+      'הכול דרך OpenRouter עם ניתוב מועדף ל-DeepInfra. לבדיקת model אחר: שלח model גולמי (למשל "deepseek/deepseek-v4-pro").',
     ],
   });
 }
@@ -273,8 +271,7 @@ export async function POST(request: Request) {
       {
         ok: false,
         error: 'no_provider_configured',
-        hint_he:
-          'אף ספק לא מוגדר עבור המודלים שנבחרו. ודא DEEPINFRA_API_KEY (או DEEPINFRA_TOKEN) ב-env.',
+        hint_he: 'אף ספק לא מוגדר עבור המודלים שנבחרו. ודא OPENROUTER_API_KEY ב-env.',
         missing_providers: [...new Set(unconfigured.map((m) => m.provider))],
       },
       { status: 400 }
