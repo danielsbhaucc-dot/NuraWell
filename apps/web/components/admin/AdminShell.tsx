@@ -9,7 +9,6 @@ import {
   Bell,
   ChevronDown,
   DollarSign,
-  FlaskConical,
   Globe,
   LayoutDashboard,
   BookOpen,
@@ -74,8 +73,7 @@ export function AdminShell({
   const isAlmogSettings = np === '/ops/almog' || np === '/ops/mentors';
   const isSiteSettings = np === '/ops/site-settings';
   const isSystemRagIngest = np === '/ops/system-rag-ingest';
-  const isNotifyModelLab = np === '/ops/notify-model-lab';
-  const isAlmogNavSection = isAlmogSettings || isSystemRagIngest || isNotifyModelLab;
+  const isAlmogNavSection = isAlmogSettings || isSystemRagIngest;
   const isJourneyHub = np === '/ops/journey-hub';
   const isAudio = np === '/ops/audio' || np.startsWith('/ops/audio/');
   const isGuides = np === '/ops/guides' || np.startsWith('/ops/guides/');

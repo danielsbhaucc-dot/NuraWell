@@ -54,6 +54,42 @@ const openrouterAi = createOpenAI({
   },
 });
 
+/**
+ * מזריק את שדה ה-`provider` של OpenRouter כדי לנתב את מודל הנוטיפיקציות הראשי
+ * (DeepSeek V4 Flash) דרך **DeepInfra** — הספק שנבחר לניסוח ההתראות.
+ * `allow_fallbacks: true` כדי שלעולם לא ניפול לשקט אם DeepInfra לא זמין רגעית.
+ */
+const routePrimaryToDeepInfra: typeof fetch = async (input, init) => {
+  if (init && typeof init.body === 'string') {
+    try {
+      const json = JSON.parse(init.body) as Record<string, unknown>;
+      json.provider = { order: ['deepinfra'], allow_fallbacks: true };
+      init = { ...init, body: JSON.stringify(json) };
+    } catch {
+      /* גוף שאינו JSON — משאירים כמו שהוא */
+    }
+  }
+  return fetch(input, init);
+};
+
+/** OpenRouter עם ניתוב מועדף ל-DeepInfra — רק למודל הנוטיפיקציות הראשי. */
+const openrouterPrimaryAi = createOpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY ?? '',
+  baseURL: 'https://openrouter.ai/api/v1',
+  headers: {
+    'HTTP-Referer': publicAppUrlForAiReferer(),
+    'X-Title': 'NuraWell',
+  },
+  fetch: routePrimaryToDeepInfra,
+});
+
+/** זיהוי מודלי reasoning — דורשים budget גדול יותר ל-text הסופי. */
+function looksLikeReasoningModel(model: string): boolean {
+  return /gpt-5|deepseek-v4|deepseek-r|deepseek-reasoner|nemotron|glm-4\.\d|minimax-m\d|kimi-k2|mimo|reasoning|thinking|o1|o3|o4/i.test(
+    model
+  );
+}
+
 const groqAi = createOpenAI({
   apiKey: process.env.GROQ_API_KEY ?? '',
   baseURL: 'https://api.groq.com/openai/v1',
@@ -73,7 +109,7 @@ type NotifyProvider = {
 };
 
 const NOTIFICATION_PRIMARY_MODEL =
-  process.env.NOTIFICATION_EMPATHY_MODEL?.trim() || 'meta-llama/llama-4-scout';
+  process.env.NOTIFICATION_EMPATHY_MODEL?.trim() || 'deepseek/deepseek-v4-flash';
 
 function notifyProviders(): NotifyProvider[] {
   const providers: NotifyProvider[] = [];
@@ -82,18 +118,20 @@ function notifyProviders(): NotifyProvider[] {
     providers.push({
       label: 'openrouter-primary',
       model: NOTIFICATION_PRIMARY_MODEL,
-      chat: openrouterAi,
+      // המודל הראשי מנותב דרך DeepInfra (ראה openrouterPrimaryAi).
+      chat: openrouterPrimaryAi,
       attempts: 2,
-      isReasoningModel: NOTIFICATION_PRIMARY_MODEL.includes('gpt-5'),
+      isReasoningModel: looksLikeReasoningModel(NOTIFICATION_PRIMARY_MODEL),
     });
 
     if (AI_MODELS.empathy !== NOTIFICATION_PRIMARY_MODEL) {
       providers.push({
         label: 'openrouter-secondary',
         model: AI_MODELS.empathy,
+        // ה-fallback (gpt-5-mini) נשאר בניתוב רגיל של OpenRouter — DeepInfra לא מארח אותו.
         chat: openrouterAi,
         attempts: 1,
-        isReasoningModel: AI_MODELS.empathy.includes('gpt-5'),
+        isReasoningModel: looksLikeReasoningModel(AI_MODELS.empathy),
       });
     }
   }
@@ -117,9 +155,10 @@ function resolveMaxOutputTokens(
   isReasoningModel: boolean
 ): number {
   if (isReasoningModel) {
-    // GPT-5 mini מקצה reasoning פנימי — צריך budget גדול דיו ש-text הסופי
-    // לא ייצא ריק (זה השורש של "Empty empathy model output").
-    return Math.max(requested, 800);
+    // מודלי reasoning (DeepSeek V4 Flash, GPT-5 mini) מקצים טוקנים פנימיים
+    // ל-reasoning — צריך budget גדול דיו ש-text הסופי לא ייצא ריק
+    // (זה השורש של "Empty empathy model output"). עם reasoningEffort=minimal זה בטוח.
+    return Math.max(requested, 1500);
   }
   // gpt-4o-mini / Llama / etc — אין reasoning, output מגיע מיד.
   // 250 תווים בעברית ≈ 120-150 טוקנים. נשאיר רוחב כדי לא להיחתך.
