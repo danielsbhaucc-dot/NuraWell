@@ -1,15 +1,18 @@
 /**
  * 🧪 מעבדת מודלים להתראות (Notification Model Lab).
  *
- * מטרה: לבדוק *רק את מודל ניסוח התשובה* של התראות אלמוג מול מספר ספקים/מודלים,
+ * מטרה: לבדוק *רק את מודל ניסוח התשובה* של התראות אלמוג מול מספר מודלים,
  * בלי לגעת בזרם ההתראות החי (`completeEmpathyNotifyBody` נשאר בדיוק כמו שהוא).
  *
- * הקובץ הזה עומד בפני עצמו:
- *   - מגדיר client ל-DeepInfra (OpenAI-compatible) ולספקים נוספים.
- *   - מחזיק רישום מודלים לבדיקה (`MODEL_LAB_REGISTRY`).
- *   - מספק `makeLabBodyCompleter(modelKey)` שמחזיר פונקציה תואמת-חתימה ל-
- *     `completeEmpathyNotifyBody`, כך שאפשר להזריק אותה ל-
- *     `sendAlmogHabitCheckpointNotification` בלי לשנות את ההתנהגות הרגילה.
+ * 🛣️ הכול דרך OpenRouter (אותו `OPENROUTER_API_KEY` של הפרודקשן) — *לא* צריך
+ * מפתח DeepInfra נפרד. הבקשות מנותבות בעדיפות ל-DeepInfra דרך שדה ה-`provider`
+ * של OpenRouter (`order: ['deepinfra']`), עם fallback מותר כדי שבדיקה לא תיפול.
+ *
+ * הקובץ עומד בפני עצמו:
+ *   - createOpenAI ייעודי ל-OpenRouter עם הזרקת ניתוב DeepInfra (fetch wrapper).
+ *   - רישום מודלים לבדיקה (`MODEL_LAB_REGISTRY`) — כל ה-slugs אומתו מול קטלוג OR.
+ *   - `makeLabBodyCompleter(resolved)` שמחזיר פונקציה תואמת-חתימה ל-
+ *     `completeEmpathyNotifyBody`, להזרקה ל-`sendAlmogHabitCheckpointNotification`.
  *
  * ⚠️ אין fallback סטטי (כמו בפרודקשן): אם המודל מחזיר ריק → זורק שגיאה.
  */
@@ -20,19 +23,28 @@ import { generateText, type ModelMessage } from 'ai';
 import { publicAppUrlForAiReferer } from '../public-app-url';
 
 /* ============================================================
- * Providers (OpenAI-compatible)
+ * Provider (OpenRouter → DeepInfra)
  * ============================================================ */
 
-/** DeepInfra — https://api.deepinfra.com/v1/openai . מפתח: DEEPINFRA_API_KEY (או DEEPINFRA_TOKEN). */
-const deepinfraAi = createOpenAI({
-  apiKey:
-    process.env.DEEPINFRA_API_KEY?.trim() ||
-    process.env.DEEPINFRA_TOKEN?.trim() ||
-    '',
-  baseURL: 'https://api.deepinfra.com/v1/openai',
-});
+/**
+ * מזריק את שדה ה-`provider` של OpenRouter לכל בקשה של המעבדה, כך שהניתוב
+ * יעדיף את DeepInfra. מבודד לחלוטין ללקוח של המעבדה — לא משפיע על ה-client
+ * של הפרודקשן ב-lib/ai/client.ts או ב-empathy-notify-completion.ts.
+ */
+const routeToDeepInfraFetch: typeof fetch = async (input, init) => {
+  if (init && typeof init.body === 'string') {
+    try {
+      const json = JSON.parse(init.body) as Record<string, unknown>;
+      json.provider = { order: ['deepinfra'], allow_fallbacks: true };
+      init = { ...init, body: JSON.stringify(json) };
+    } catch {
+      /* לא JSON — משאירים כמו שהוא */
+    }
+  }
+  return fetch(input, init);
+};
 
-/** OpenRouter — נשען על אותו מפתח כמו הפרודקשן. */
+/** OpenRouter (מפתח הפרודקשן) עם העדפת ניתוב ל-DeepInfra. */
 const openrouterAi = createOpenAI({
   apiKey: process.env.OPENROUTER_API_KEY?.trim() || '',
   baseURL: 'https://openrouter.ai/api/v1',
@@ -40,32 +52,29 @@ const openrouterAi = createOpenAI({
     'HTTP-Referer': publicAppUrlForAiReferer(),
     'X-Title': 'NuraWell',
   },
+  fetch: routeToDeepInfraFetch,
 });
 
-/** Groq — נשען על אותו מפתח כמו הפרודקשן. */
+/** Groq — אופציונלי, רק אם רוצים להשוות מול ספק שונה לגמרי. */
 const groqAi = createOpenAI({
   apiKey: process.env.GROQ_API_KEY?.trim() || '',
   baseURL: 'https://api.groq.com/openai/v1',
 });
 
-export type LabProvider = 'deepinfra' | 'openrouter' | 'groq';
+export type LabProvider = 'openrouter' | 'groq';
 
 function clientFor(provider: LabProvider): ReturnType<typeof createOpenAI> {
-  if (provider === 'openrouter') return openrouterAi;
   if (provider === 'groq') return groqAi;
-  return deepinfraAi;
+  return openrouterAi;
 }
 
 function isProviderConfigured(provider: LabProvider): boolean {
-  if (provider === 'openrouter') return Boolean(process.env.OPENROUTER_API_KEY?.trim());
   if (provider === 'groq') return Boolean(process.env.GROQ_API_KEY?.trim());
-  return Boolean(
-    process.env.DEEPINFRA_API_KEY?.trim() || process.env.DEEPINFRA_TOKEN?.trim()
-  );
+  return Boolean(process.env.OPENROUTER_API_KEY?.trim());
 }
 
 /* ============================================================
- * Model registry
+ * Model registry — כל ה-slugs אומתו מול קטלוג OpenRouter (יוני 2026)
  * ============================================================ */
 
 export type LabModelEntry = {
@@ -74,96 +83,80 @@ export type LabModelEntry = {
   /** שם תצוגה לבני אדם. */
   label: string;
   provider: LabProvider;
-  /** מזהה המודל המדויק אצל הספק. */
+  /** מזהה המודל אצל OpenRouter. */
   model: string;
-  /**
-   * האם המודל משתמש ב-reasoning tokens — אם כן, מקצים budget גדול יותר כדי
-   * שה-text הסופי לא ייצא ריק.
-   */
+  /** האם המודל reasoning — אם כן, מקצים budget גדול יותר ל-text הסופי. */
   reasoning?: boolean;
-  /**
-   * verified=false → ה-slot נגזר מקונבנציית שמות של DeepInfra ולא אומת מול
-   * הקטלוג. אם השליחה מחזירה 404/Unknown model — עדכן את ה-`model` כאן.
-   */
-  verified?: boolean;
 };
 
-/**
- * המודלים לבדיקה (כל אלה דרך DeepInfra אלא אם צוין אחרת).
- * אם slot כלשהו לא קיים בקטלוג — אפשר לשלוח `model` חופשי ב-body של ה-route.
- */
 export const MODEL_LAB_REGISTRY: LabModelEntry[] = [
   {
     key: 'nemotron-3-ultra',
     label: 'NVIDIA · Nemotron 3 Ultra',
-    provider: 'deepinfra',
-    model: 'nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B',
+    provider: 'openrouter',
+    model: 'nvidia/nemotron-3-ultra-550b-a55b',
     reasoning: true,
-    verified: true,
   },
   {
     key: 'deepseek-v4-pro',
     label: 'DeepSeek · V4 Pro',
-    provider: 'deepinfra',
-    model: 'deepseek-ai/DeepSeek-V4-Pro',
+    provider: 'openrouter',
+    model: 'deepseek/deepseek-v4-pro',
     reasoning: true,
-    verified: true,
   },
   {
     key: 'deepseek-v4-flash',
     label: 'DeepSeek · V4 Flash',
-    provider: 'deepinfra',
-    model: 'deepseek-ai/DeepSeek-V4-Flash',
-    verified: true,
+    provider: 'openrouter',
+    model: 'deepseek/deepseek-v4-flash',
+    reasoning: true,
   },
   {
     key: 'mimo-v2.5-pro',
     label: 'Xiaomi · MiMo-V2.5-Pro',
-    provider: 'deepinfra',
-    model: 'XiaomiMiMo/MiMo-V2.5-Pro',
-    verified: false,
+    provider: 'openrouter',
+    model: 'xiaomi/mimo-v2.5-pro',
+    reasoning: true,
   },
   {
     key: 'kimi-k2.6',
     label: 'Moonshot · Kimi K2.6',
-    provider: 'deepinfra',
-    model: 'moonshotai/Kimi-K2.6',
-    verified: true,
+    provider: 'openrouter',
+    model: 'moonshotai/kimi-k2.6',
+    reasoning: true,
   },
   {
     key: 'minimax-m2.7',
     label: 'MiniMax · M2.7',
-    provider: 'deepinfra',
-    model: 'MiniMaxAI/MiniMax-M2.7',
-    verified: false,
+    provider: 'openrouter',
+    model: 'minimax/minimax-m2.7',
+    reasoning: true,
   },
   {
     key: 'glm-4.7',
     label: 'Z-AI · GLM 4.7',
-    provider: 'deepinfra',
-    model: 'zai-org/GLM-4.7',
-    verified: false,
+    provider: 'openrouter',
+    model: 'z-ai/glm-4.7',
+    reasoning: true,
   },
   {
     key: 'glm-4.7-flash',
     label: 'Z-AI · GLM 4.7 Flash',
-    provider: 'deepinfra',
-    model: 'zai-org/GLM-4.7-Flash',
-    verified: false,
+    provider: 'openrouter',
+    model: 'z-ai/glm-4.7-flash',
+    reasoning: true,
   },
   {
     key: 'llama-4',
     label: 'Meta · Llama 4 Maverick',
-    provider: 'deepinfra',
-    model: 'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8',
-    verified: false,
+    provider: 'openrouter',
+    model: 'meta-llama/llama-4-maverick',
   },
   {
     key: 'phi-4',
     label: 'Microsoft · Phi 4',
-    provider: 'deepinfra',
+    provider: 'openrouter',
     model: 'microsoft/phi-4',
-    verified: true,
   },
 ];
 
@@ -197,13 +190,13 @@ export function resolveLabModel(input: string): ResolvedLabModel {
     };
   }
 
-  /** תחביר חופשי: "deepinfra:org/model" / "openrouter:..." / "groq:..." */
-  let provider: LabProvider = 'deepinfra';
+  /** תחביר חופשי: "openrouter:vendor/model" / "groq:..." (ברירת מחדל openrouter). */
+  let provider: LabProvider = 'openrouter';
   let model = trimmed;
   const sep = trimmed.indexOf(':');
   if (sep > 0) {
-    const maybeProvider = trimmed.slice(0, sep) as LabProvider;
-    if (maybeProvider === 'deepinfra' || maybeProvider === 'openrouter' || maybeProvider === 'groq') {
+    const maybeProvider = trimmed.slice(0, sep);
+    if (maybeProvider === 'openrouter' || maybeProvider === 'groq') {
       provider = maybeProvider;
       model = trimmed.slice(sep + 1);
     }
