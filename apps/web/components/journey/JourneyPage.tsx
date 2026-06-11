@@ -26,6 +26,7 @@ import type { JourneyStationGroup } from '../../lib/journey/group-journey-by-sta
 import { JourneyStationCard } from './JourneyStationCard';
 import { JourneyNextStepCard } from './JourneyNextStepCard';
 import { AlmogAvatarChip } from './AlmogPresence';
+import { AlmogAssignmentsSection } from './AlmogAssignmentsSection';
 
 interface JourneyPageProps {
   groups: JourneyStationGroup[];
@@ -212,6 +213,9 @@ function GalleryView({
           <>
             {/* שכבת AI — הצעד הבא האדפטיבי, מותאם לקצב ולקשיים של המשתמש */}
             <JourneyNextStepCard />
+
+            {/* משימות אישיות מאלמוג + מצב פוקוס — מה שאלמוג סיכם איתך בצ'אט */}
+            <AlmogAssignmentsSection />
 
             <SectionHeader
               count={groups.length}

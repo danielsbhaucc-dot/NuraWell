@@ -36,7 +36,14 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 | `POST /api/v1/ai/cron/habit-checkpoints?slot=midday`  | יומי 13:00 ישראל | אותו קובץ |
 | `POST /api/v1/ai/cron/habit-checkpoints?slot=evening` | יומי 20:00 ישראל | אותו קובץ |
 | `POST /api/v1/ai/cron/onboarding-check-ins` | כל 30 דקות (מומלץ) | `apps/web/app/api/v1/ai/cron/onboarding-check-ins/route.ts` |
+| `POST /api/v1/ai/cron/almog-reminders` | כל 30 דקות (`0,30 * * * *`) | `apps/web/app/api/v1/ai/cron/almog-reminders/route.ts` |
 | `POST /api/v1/ai/cron/passive-presence` | יומי 13:00 ישראל | `apps/web/app/api/v1/ai/cron/passive-presence/route.ts` |
+
+**`almog-reminders`** — אלמוג מקיים את ההבטחות שלו. מרוקן את טבלת `scheduled_reminders`
+(תזכורות/מעקבים/בדיקות-חסם שאלמוג *התחייב* אליהם בצ'אט, נרשמו ברקע ע"י Llama 4) לתוך
+`notifications` + Web Push, ומסיים אוטומטית תקופות פוקוס שהגיעו ל-`ends_at`. מומלץ להגדיר
+ב-Upstash schedule עם cron `0,30 * * * *` באזור `Asia/Jerusalem`, ו-header `Upstash-Method: POST`
+(בדיוק כמו `onboarding-check-ins`).
 
 ה-Master cron מנתח אינטראקציות AI מ-24 השעות האחרונות + שולח נידג'ים למשתמשים לא־פעילים.
 ה-habit checkpoints מתזמן Workflows של בדיקת הרגלים לפי החלון (בוקר/צהריים/ערב) **וגם
