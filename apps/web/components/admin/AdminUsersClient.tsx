@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Save,
   Search,
+  Sparkles,
   Target,
   Trash2,
   User,
@@ -24,6 +25,7 @@ import {
   X,
 } from 'lucide-react';
 import { AdminUserJourneyDetail } from '@/components/admin/AdminUserJourneyDetail';
+import { AlmogCommitmentsPanel } from '@/components/admin/AlmogCommitmentsPanel';
 import { AlmogMemoryPanel } from '@/components/admin/AlmogMemoryPanel';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
@@ -48,7 +50,7 @@ type UserDetail = {
   journeyReport: AdminUserJourneyReport;
 };
 
-type TabKey = 'details' | 'journey' | 'memory' | 'costs';
+type TabKey = 'details' | 'journey' | 'almog' | 'memory' | 'costs';
 
 type CostBreakdown = { chatUsd: number; notificationsUsd: number; videoUsd: number; totalUsd: number };
 type UserCostResp = {
@@ -522,6 +524,7 @@ export function AdminUsersClient() {
                       [
                         { key: 'details', label: 'פרטים', icon: User },
                         { key: 'journey', label: 'מסע', icon: MapPin },
+                        { key: 'almog', label: 'אלמוג', icon: Sparkles },
                         { key: 'costs', label: 'עלויות', icon: DollarSign },
                         { key: 'memory', label: 'זיכרון', icon: Brain },
                       ] as const
@@ -707,6 +710,8 @@ export function AdminUsersClient() {
                       <p className="py-12 text-center text-sm text-slate-500">לא נמצאו נתוני עלות למשתמש זה</p>
                     )
                   ) : null}
+
+                  {tab === 'almog' ? <AlmogCommitmentsPanel userId={selectedId} /> : null}
 
                   {tab === 'memory' ? <AlmogMemoryPanel userId={selectedId} /> : null}
                 </div>
