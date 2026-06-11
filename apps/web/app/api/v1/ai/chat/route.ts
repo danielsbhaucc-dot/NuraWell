@@ -307,15 +307,16 @@ const CHAT_REASONING_MAX_TOKENS = (() => {
 })();
 /**
  * היקף החשיבה (reasoning) — איזה תורים מקבלים חשיבה לפני התשובה:
- *   'heavy'  (ברירת מחדל) — רק תורים כבדים (שאלה/רגש/חסם/התלבטות). תורים קלים
- *            (ברכה/אישור/דיווח קצר) עונים מיידית בלי TTFB של חשיבה — מהירות דרמטית.
- *   'always' — חשיבה בכל תור (ההתנהגות הישנה, איטית יותר).
- *   'off'    — בלי חשיבה כלל (מהיר ביותר, אבל פוגע באיכות העומק — לא מומלץ).
+ *   'always' (ברירת מחדל) — חשיבה בכל תור. *חובה* ל-Qwen: זהו מודל hybrid-thinking,
+ *            ובלי reasoning דרך OpenRouter התשובות יוצאות שבורות/נחתכות ובאיכות נמוכה.
+ *   'heavy'  — חשיבה רק בתורים כבדים. מהיר יותר אך *פוגע באיכות Qwen* בתורים הקלים
+ *            (התשובות נשברות) — לא מומלץ ל-Qwen.
+ *   'off'    — בלי חשיבה כלל — לא מומלץ.
  * Override: `AI_CHAT_REASONING_SCOPE`.
  */
 const CHAT_REASONING_SCOPE = (() => {
-  const raw = (process.env.AI_CHAT_REASONING_SCOPE?.trim() || 'heavy').toLowerCase();
-  return raw === 'always' || raw === 'off' ? raw : 'heavy';
+  const raw = (process.env.AI_CHAT_REASONING_SCOPE?.trim() || 'always').toLowerCase();
+  return raw === 'heavy' || raw === 'off' ? raw : 'always';
 })();
 /**
  * העדפת ניתוב ספק ב-OpenRouter (אופציונלי) — 'throughput' בוחר את הספק המהיר
