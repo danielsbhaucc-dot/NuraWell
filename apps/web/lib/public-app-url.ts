@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from './types/database';
 
 /**
  * כתובת האפליקציה הציבורית (דף הבית / לוגין).
@@ -81,7 +82,7 @@ export async function resolvePublicAppOriginForOpsRedirect(): Promise<string> {
 }
 
 export async function resolvePublicAppOriginFromSupabaseClient(
-  supabase: SupabaseClient<any, any, any>
+  supabase: SupabaseClient<Database>
 ): Promise<string> {
   const { data, error } = await supabase
     .from('site_settings')
@@ -96,7 +97,7 @@ export async function resolvePublicAppOriginFromSupabaseClient(
 }
 
 export async function publicAppBaseNoSlashFromServer(
-  supabase: SupabaseClient<any, any, any>
+  supabase: SupabaseClient<Database>
 ): Promise<string> {
   const origin = await resolvePublicAppOriginFromSupabaseClient(supabase);
   return origin.replace(/\/$/, '');
