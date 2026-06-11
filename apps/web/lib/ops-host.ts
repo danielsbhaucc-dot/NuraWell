@@ -118,6 +118,7 @@ export function isOpsPanelBrowserPath(pathname: string): boolean {
     '/steps',
     '/site-settings',
     '/system-rag-ingest',
+    '/notify-model-lab',
     '/users',
     '/audio',
     '/ops',
