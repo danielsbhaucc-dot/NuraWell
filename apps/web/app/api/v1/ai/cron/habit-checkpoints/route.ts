@@ -428,6 +428,24 @@ async function runHabitCheckpointCron(request: Request) {
   }
 
   /**
+   * מצב פוקוס פעיל — אלמוג שם בצד את המשימות הרגילות זמנית כדי שהמשתמש יתמקד
+   * במשימה אישית. מכבדים זאת: לא שולחים תזכורות habit-checkpoint רגילות
+   * למשתמשים האלה (התזכורות של המשימה האישית עצמה נשלחות דרך cron almog-reminders).
+   * ההרגלים *לא* נמחקים והמעקב ממשיך — רק התזכורת הרגילה מושתקת.
+   */
+  const focusActiveIds = new Set<string>();
+  if (userIds.length > 0) {
+    const { data: focusRows } = await admin
+      .from('almog_focus_periods')
+      .select('user_id')
+      .eq('status', 'active')
+      .in('user_id', userIds);
+    for (const row of (focusRows ?? []) as { user_id: string }[]) {
+      focusActiveIds.add(row.user_id);
+    }
+  }
+
+  /**
    * Ghosted back-off (cadenceStage === 'ghosted', 14+ ימים): פעם אחת בשבוע.
    *
    * הלוגיקה אינה תלויה ב-slot: מספיק שנשלחה למשתמש Ghosted **כל** הודעה
@@ -479,7 +497,8 @@ async function runHabitCheckpointCron(request: Request) {
     .filter(
       (p) =>
         !personalizedScheduleIds.has(p.userId) &&
-        !ghostedWeeklyCooldownIds.has(p.userId)
+        !ghostedWeeklyCooldownIds.has(p.userId) &&
+        !focusActiveIds.has(p.userId)
     )
     .slice(0, maxTriggers);
   const workflowBase = workflowPublicBaseUrl();

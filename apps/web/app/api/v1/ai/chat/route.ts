@@ -39,6 +39,15 @@ import { createPiiShield, type PiiShield } from '../../../../../lib/ai/privacy/p
 import { fetchUserMemoryDossier } from '../../../../../lib/ai/memory-dossier/fetch-dossier';
 import { formatUserMemoryDossierPromptBlock } from '../../../../../lib/ai/memory-dossier/format-dossier-prompt';
 import { ingestChatTurnIntoMemoryDossier } from '../../../../../lib/ai/memory-dossier/ingest-chat-turn';
+import {
+  fetchAlmogCommitmentContext,
+  formatAlmogCommitmentBlocks,
+} from '../../../../../lib/ai/almog-commitments/chat-context';
+import {
+  extractAlmogCommitments,
+  shouldAttemptCommitmentExtraction,
+} from '../../../../../lib/ai/almog-commitments/extract-commitments';
+import { persistCommitmentExtraction } from '../../../../../lib/ai/almog-commitments/persist';
 import { applyChatSignalsFromUserMessage, detectChatSignals } from '../../../../../lib/ai/chat-signals';
 import {
   applyHabitIntentFromUserMessage,
@@ -1021,6 +1030,11 @@ const chatContextRouterSchema = z.object({
   // עקרונות/חוקי תוכנית + "איך להתמודד עם X" — נשלפים סמנטית מהצ'אט לפי הצורך.
   // ⚠️ אופציונלי עם default=false: נתב ישן/מודל שלא מחזיר את השדה לא ישבור את הפרסור.
   needs_principles: z.boolean().optional().default(false),
+  // משימות אישיות שאלמוג נתן (almog_assignments) — נטען רק כשהמשתמש מדבר על
+  // משימות/הבטחות/דיווח ביצוע, כדי לא להציף את הפרומפט בכל תור.
+  needs_assignments: z.boolean().optional().default(false),
+  // חסמים שאלמוג מזהה ובמעקב (almog_blockers) — נטען על קושי/חסם/רגש.
+  needs_blockers: z.boolean().optional().default(false),
   reason: z.string().max(160).optional(),
   summary: z.string().max(240).nullable().optional(),
 });
@@ -1035,6 +1049,8 @@ function lowContextDecision(reason: string): ChatContextDecision {
     needs_full_progress_report: false,
     needs_journey_knowledge: false,
     needs_principles: false,
+    needs_assignments: false,
+    needs_blockers: false,
     reason,
   };
 }
@@ -1062,6 +1078,13 @@ const ROUTER_KNOWLEDGE_RE =
  */
 const ROUTER_PRINCIPLES_RE =
   /(?:מותר|אסור|חוק|כלל|כללי|עיקרון|עקרונ|מה לעשות|מה עושים|איך מתמוד|להתמודד|התמודד|נכשל|נפל|נפיל|פיתוי|להחליק|פרינציפ|מה הדרך|לפי התוכנית|בתוכנית הזו|מה המדיניות)/u;
+/**
+ * רמז דטרמיניסטי שהמשתמש מדבר על משימה אישית/הבטחה שאלמוג נתן (almog_assignments)
+ * — דיווח ביצוע, "המשימה שנתת", "עשיתי/לא עשיתי", "מה ביקשת שאעשה". נטען רזה כדי
+ * שאלמוג יהיה עקבי עם מה שכבר נתן, בלי להמציא.
+ */
+const ROUTER_ASSIGNMENTS_RE =
+  /(?:משימה|המשימה|שנתת|ביקשת|אמרת לי לעשות|התרגיל|עשיתי|לא עשיתי|ביצעתי|הספקתי|לא הספקתי|הבטחתי|מה אני אמור|מה היה עליי)/u;
 
 function heuristicContextDecision(
   userMessage: string,
@@ -1073,6 +1096,8 @@ function heuristicContextDecision(
   const isQuestion = ROUTER_QUESTION_RE.test(t);
   const knowledge = ROUTER_KNOWLEDGE_RE.test(t);
   const principlesHint = ROUTER_PRINCIPLES_RE.test(t);
+  const assignmentsHint = ROUTER_ASSIGNMENTS_RE.test(t);
+  const blockerHint = principlesHint || signals.blocker_mentioned || Boolean(signals.emotional_hint);
   return {
     heavy_context:
       Boolean(opts?.forceHeavy) ||
@@ -1095,6 +1120,10 @@ function heuristicContextDecision(
       signals.blocker_mentioned ||
       Boolean(signals.emotional_hint) ||
       Boolean(signals.avoid_push_requested),
+    // משימות אישיות: רק כשמדברים על משימה/דיווח/הבטחה (לא בכל תור — שומר רזה).
+    needs_assignments: Boolean(opts?.forceHeavy) || assignmentsHint,
+    // חסמים: על קושי/חסם/רגש/התלבטות.
+    needs_blockers: Boolean(opts?.forceHeavy) || blockerHint,
     reason,
   };
 }
@@ -1112,6 +1141,8 @@ function mergeContextDecisions(
       base.needs_full_progress_report || extra.needs_full_progress_report,
     needs_journey_knowledge: base.needs_journey_knowledge || extra.needs_journey_knowledge,
     needs_principles: Boolean(base.needs_principles) || Boolean(extra.needs_principles),
+    needs_assignments: Boolean(base.needs_assignments) || Boolean(extra.needs_assignments),
+    needs_blockers: Boolean(base.needs_blockers) || Boolean(extra.needs_blockers),
     reason: base.reason,
     summary: base.summary,
   };
@@ -1176,9 +1207,11 @@ function buildChatContextRouterPrompt(
 - needs_full_progress_report: דפוסים רב-יומיים/היסטוריית ביצועים.
 - needs_journey_knowledge: להבין צעד/תחנה/גישה/תוכנית מהמסע. (למשל "איך נתקדם בתוכנית" -> true)
 - needs_principles: עקרונות/חוקי התוכנית או "איך להתמודד עם X" — התלבטות, חסם, נפילה/פיתוי, רגש, "מותר/אסור", "מה לעשות אם", שאלת גבולות/מדיניות, או בקשת הכוונה התנהגותית. בספק כשזו לא הודעת אישור קצרה -> true.
+- needs_assignments: המשתמש מדבר על משימה אישית שאלמוג נתן / מדווח ביצוע / "מה ביקשת" / "המשימה שנתת" / הבטחה אישית. (דיווח "עשיתי X" -> true)
+- needs_blockers: המשתמש מתאר קושי/חסם/מה שמעכב אותו, או חוזר לנושא מתסכל. (קושי/תקיעות -> true)
 
 החזר JSON בלבד:
-{"heavy_context":true/false,"needs_user_memory_rag":true/false,"needs_system_knowledge_rag":true/false,"needs_full_progress_report":true/false,"needs_journey_knowledge":true/false,"needs_principles":true/false,"reason":"קצר","summary":"סיכום קצר לקלוד או null"}
+{"heavy_context":true/false,"needs_user_memory_rag":true/false,"needs_system_knowledge_rag":true/false,"needs_full_progress_report":true/false,"needs_journey_knowledge":true/false,"needs_principles":true/false,"needs_assignments":true/false,"needs_blockers":true/false,"reason":"קצר","summary":"סיכום קצר לקלוד או null"}
 
 אותות regex: ${signalParts.join(', ') || 'none'}${historyBlock}
 הודעת משתמש (חדשה):
@@ -1344,6 +1377,7 @@ async function summarizeChatTurnWithCheapModel({
             content:
               'אתה מתחזק תקציר שיחה מתגלגל למנטור בריאות בעברית. החזר תקציר קצר בלבד, עד 900 תווים, בלי כותרת.\n' +
               'שמור עובדות, רגשות, הבטחות, החלטות וטון שחשובים לתור הבא.\n' +
+              'שמור במפורש *התחייבויות פתוחות* שאלמוג נתן: משימה אישית שניתנה, תזכורת שהובטחה, מצב פוקוס/הקפאה שסוכם, וחסם שבמעקב — כולל מה הסטטוס שלהם (ניתן / בוצע / טרם). כך אלמוג זוכר מה הוא סיכם ולא שוכח לעקוב.\n' +
               'הכי חשוב — עקוב אחרי דפוסים חוזרים: אם נושא/תלונה/פחד/בקשה כבר מופיע בתקציר הקודם והמשתמש מעלה אותו שוב, ציין זאת מפורש עם מונה. לדוגמה: "המשתמש העלה בפעם השלישית שהוא מפחד מ-X" או "שוב התלונן על Y (פעם 2)".\n' +
               'אם דפוס נפתר/השתנה — עדכן זאת. אל תמחק ספירות חזרות קיימות; קדם אותן.',
           },
@@ -2315,11 +2349,16 @@ export async function POST(request: Request) {
 
     const journeyHabits = activeJourneyContext?.habits.slice(0, 8) ?? [];
 
-    const [returnSignals, pendingTasks, habitGap] = await Promise.all([
+    const [returnSignals, pendingTasks, habitGap, commitmentContext] = await Promise.all([
       returnSignalsPromise,
       fetchPendingAcceptedTasksForUser(supabase, user.id).catch(() => []),
       fetchHabitGapForChat(supabase, user.id).catch(() => null),
+      fetchAlmogCommitmentContext(supabase, user.id, {
+        needsAssignments: Boolean(contextDecision.needs_assignments),
+        needsBlockers: Boolean(contextDecision.needs_blockers),
+      }).catch(() => ({ activeAssignments: [], openBlockers: [], activeFocus: null })),
     ]);
+    const commitmentBlocks = formatAlmogCommitmentBlocks(commitmentContext);
 
     const liveSignals = earlySignals;
     const liveHabitIntent = detectHabitIntent(lastUserText, journeyHabits);
@@ -2464,6 +2503,12 @@ export async function POST(request: Request) {
     if (principlesBlock) contextSections.push(principlesBlock);
     if (workingMemoryBlock) contextSections.push(workingMemoryBlock);
     if (memoryDossierBlock && !leanLightTurn) contextSections.push(memoryDossierBlock);
+    /**
+     * התחייבויות אלמוג — באנר פוקוס (אם פעיל) + משימות אישיות + חסמים במעקב.
+     * הבלוקים קטנים בכוונה ונטענים מותנה (חוץ מבאנר פוקוס שתמיד נשלף), כדי לא
+     * להציף את אלמוג. גם בתור רזה — אם יש פוקוס פעיל אלמוג חייב לדעת.
+     */
+    for (const block of commitmentBlocks) contextSections.push(block);
     if (journeyFollowUpBlock) contextSections.push(journeyFollowUpBlock);
     if (lifeContextBlock) contextSections.push(lifeContextBlock);
     if (onboardingContextBlock && !leanLightTurn) contextSections.push(onboardingContextBlock);
@@ -2975,6 +3020,53 @@ export async function POST(request: Request) {
                 debug_id: debugId,
                 stage: 'memory_ingest_failed',
                 error: dossierErr instanceof Error ? dossierErr.message : String(dossierErr),
+              });
+            }
+          });
+        }
+
+        /**
+         * חילוץ התחייבויות אלמוג (Llama 4 — רקע מלא, לא חוסם את Qwen).
+         * הופך את מה שאלמוג *אמר* (תזכורת/משימה/פוקוס/חסם) לרשומות מובנות
+         * שמתבצעות בפועל. כלל ברזל בתוך החילוץ: רק מה שנאמר מפורשות — לא ממציא.
+         * Gating: רק אם תשובת אלמוג מכילה רמז להתחייבות (חוסך קריאת LLM).
+         */
+        if (shouldAttemptCommitmentExtraction(assistantText)) {
+          after(async () => {
+            try {
+              const extraction = await extractAlmogCommitments({
+                userMessage: lastUserText,
+                assistantMessage: assistantText,
+                rollingSummary: profileRow.ai_context.chat_summary,
+                habitTitles: journeyHabits.map((h) => h.title),
+              });
+              const habitTitleToId = new Map(journeyHabits.map((h) => [h.title, h.id]));
+              const persistResult = await persistCommitmentExtraction({
+                admin: createAdminClient(),
+                userId: user.id,
+                sessionId,
+                extraction,
+                habitTitleToId,
+                relatedStepId: activeJourneyContext?.stepId ?? null,
+                sourceExcerpt: lastUserText.slice(0, 280),
+              });
+              if (
+                persistResult.assignments_created ||
+                persistResult.reminders_created ||
+                persistResult.blockers_upserted ||
+                persistResult.focus_action !== 'none'
+              ) {
+                console.info('[ai/chat]', {
+                  debug_id: debugId,
+                  stage: 'almog_commitments_persisted',
+                  ...persistResult,
+                });
+              }
+            } catch (commitErr) {
+              console.warn('[ai/chat]', {
+                debug_id: debugId,
+                stage: 'almog_commitments_failed',
+                error: commitErr instanceof Error ? commitErr.message : String(commitErr),
               });
             }
           });
