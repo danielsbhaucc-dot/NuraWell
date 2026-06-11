@@ -317,9 +317,27 @@ async function clearHabitTuneFlag(admin: SupabaseClient, userId: string): Promis
   }
 }
 
+/**
+ * 🧪 overrides — *לבדיקות מודלים בלבד*. כל השדות אופציונליים; כשאף אחד
+ * לא מועבר, ההתנהגות זהה לחלוטין לקוד הפרודקשן הקיים (אפס שינוי).
+ * משמש את `/api/v1/admin/notify-model-lab` כדי לבדוק מודלים שונים על
+ * אותו prompt אמיתי, בלי לגעת בזרם ההתראות החי.
+ */
+export type SendAlmogCheckpointOverrides = {
+  /** מחליף את ה-LLM שמנסח את גוף ההתראה. ברירת מחדל: completeEmpathyNotifyBody. */
+  completeBody?: typeof completeEmpathyNotifyBody;
+  /** תיוג metadata.model — איזה מודל ניסח בפועל. ברירת מחדל: AI_MODELS.empathy. */
+  modelTag?: string;
+  /** דריסת metadata.source — מבדיל מהזרם החי וגם עוקף את אינדקס ה-dedupe. */
+  source?: string;
+  /** אם true — בונה prompt ומנסח גוף, אבל לא כותב ל-DB ולא שולח push. */
+  dryRun?: boolean;
+};
+
 export async function sendAlmogHabitCheckpointNotification(
   admin: SupabaseClient,
-  payload: AlmogHabitCheckpointPayload
+  payload: AlmogHabitCheckpointPayload,
+  overrides?: SendAlmogCheckpointOverrides
 ): Promise<{ body: string; inserted: Record<string, unknown> | null }> {
   const [{ firstName, genderInstruction }, scheduleHints, todayTouches, todayChat] =
     await Promise.all([
@@ -464,7 +482,8 @@ export async function sendAlmogHabitCheckpointNotification(
    * שתפס את כל הכשלים וירד ל-template סטטי `buildHabitCheckpointFallbackBody`.
    * הסרנו אותו כדי לאלץ ריצה אמינה מקצה לקצה.
    */
-  const body = await completeEmpathyNotifyBody({
+  const completeBody = overrides?.completeBody ?? completeEmpathyNotifyBody;
+  const body = await completeBody({
     label: 'habit_checkpoint',
     temperature: 0.85,
     presencePenalty: 0.5,
@@ -488,6 +507,11 @@ export async function sendAlmogHabitCheckpointNotification(
     ],
   });
 
+  /** 🧪 dry-run: מחזירים רק את הגוף שנוסח, בלי כתיבה ל-DB ובלי push. */
+  if (overrides?.dryRun) {
+    return { body, inserted: null };
+  }
+
   const title = pickNotificationTitle(payload, firstName);
 
   const habitIds = payload.habits.map((h) => h.id);
@@ -503,7 +527,8 @@ export async function sendAlmogHabitCheckpointNotification(
   const surveyMeta = isBreakup
     ? { type: 'churn_exit' as const, options: churnSurveyOptions(), responded: false }
     : undefined;
-  const notificationSource = isBreakup ? 'almog_churn_survey' : 'almog_habit_checkpoint';
+  const notificationSource =
+    overrides?.source ?? (isBreakup ? 'almog_churn_survey' : 'almog_habit_checkpoint');
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: inserted, error } = await admin
@@ -528,7 +553,7 @@ export async function sendAlmogHabitCheckpointNotification(
         checkpoint_date: payload.checkpointDate,
         habit_ids: habitIds,
         pending_task_ids: pendingTaskIds,
-        model: AI_MODELS.empathy,
+        model: overrides?.modelTag ?? AI_MODELS.empathy,
         template: false,
         compassion_only: isCompassionOnly,
         daily_availability_low: dailyAvailabilityLow,
