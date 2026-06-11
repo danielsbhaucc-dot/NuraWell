@@ -16,8 +16,11 @@ export interface PersistResult {
   assignments_created: number;
   reminders_created: number;
   blockers_upserted: number;
+  blockers_updated: number;
   focus_action: 'none' | 'proposed' | 'activated' | 'updated';
 }
+
+type BlockerHistoryEntry = { at: string; status: string; note?: string };
 
 /** מנרמל טקסט עברי/אנגלי למפתח dedupe יציב. */
 function dedupeKey(text: string): string {
@@ -81,6 +84,7 @@ export async function persistCommitmentExtraction(params: {
   sessionId?: string | null;
   extraction: CommitmentExtraction;
   habitTitleToId?: Map<string, string>;
+  blockerTagToId?: Map<string, string>;
   relatedStepId?: string | null;
   sourceExcerpt?: string | null;
   now?: Date;
@@ -92,6 +96,7 @@ export async function persistCommitmentExtraction(params: {
     assignments_created: 0,
     reminders_created: 0,
     blockers_upserted: 0,
+    blockers_updated: 0,
     focus_action: 'none',
   };
 
@@ -222,6 +227,49 @@ export async function persistCommitmentExtraction(params: {
           },
           { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true }
         );
+      }
+    }
+  }
+
+  // ── עדכוני התקדמות על חסמים קיימים (סגירת לולאת המעקב) ──────────
+  if (extraction.blocker_updates.length && params.blockerTagToId?.size) {
+    for (const upd of extraction.blocker_updates) {
+      const blockerId = params.blockerTagToId.get(upd.tag.trim());
+      if (!blockerId) continue;
+      const { data: existing } = await admin
+        .from('almog_blockers')
+        .select('id, history, status')
+        .eq('id', blockerId)
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (!existing) continue;
+      const row = existing as { id: string; history: BlockerHistoryEntry[] | null; status: string };
+      if (row.status === 'resolved') continue; // כבר סגור — לא נוגעים
+      const hist = Array.isArray(row.history) ? row.history : [];
+      await admin
+        .from('almog_blockers')
+        .update({
+          status: upd.status,
+          last_checked_at: now.toISOString(),
+          ...(upd.status === 'resolved' ? { next_check_at: null } : {}),
+          history: [
+            ...hist,
+            { at: now.toISOString(), status: upd.status, ...(upd.note ? { note: upd.note } : {}) },
+          ].slice(-50),
+        })
+        .eq('id', row.id)
+        .eq('user_id', userId);
+      result.blockers_updated += 1;
+
+      // חסם שנפתר — מבטלים בדיקות התקדמות ממתינות כדי שאלמוג לא ינדנד עליו שוב.
+      if (upd.status === 'resolved') {
+        await admin
+          .from('scheduled_reminders')
+          .update({ status: 'cancelled' })
+          .eq('user_id', userId)
+          .eq('blocker_id', row.id)
+          .eq('kind', 'check_progress')
+          .eq('status', 'pending');
       }
     }
   }

@@ -3068,19 +3068,41 @@ export async function POST(request: Request) {
         if (shouldAttemptCommitmentExtraction(assistantText)) {
           after(async () => {
             try {
+              const admin = createAdminClient();
+              /**
+               * חסמים פתוחים במעקב — מספקים ל-Llama כדי שיוכל לזהות שהמשתמש
+               * התקדם/התגבר על אחד מהם ולסגור את הלולאה (status improving/resolved).
+               */
+              const { data: openBlockerRows } = await admin
+                .from('almog_blockers')
+                .select('id, description')
+                .eq('user_id', user.id)
+                .in('status', ['open', 'improving'])
+                .order('identified_at', { ascending: false })
+                .limit(6);
+              const blockerTagToId = new Map<string, string>();
+              const openBlockers = ((openBlockerRows ?? []) as { id: string; description: string }[]).map(
+                (b, i) => {
+                  const tag = `B${i + 1}`;
+                  blockerTagToId.set(tag, b.id);
+                  return { tag, description: b.description };
+                }
+              );
               const extraction = await extractAlmogCommitments({
                 userMessage: lastUserText,
                 assistantMessage: assistantText,
                 rollingSummary: profileRow.ai_context.chat_summary,
                 habitTitles: journeyHabits.map((h) => h.title),
+                openBlockers,
               });
               const habitTitleToId = new Map(journeyHabits.map((h) => [h.title, h.id]));
               const persistResult = await persistCommitmentExtraction({
-                admin: createAdminClient(),
+                admin,
                 userId: user.id,
                 sessionId,
                 extraction,
                 habitTitleToId,
+                blockerTagToId,
                 relatedStepId: activeJourneyContext?.stepId ?? null,
                 sourceExcerpt: lastUserText.slice(0, 280),
               });
@@ -3088,6 +3110,7 @@ export async function POST(request: Request) {
                 persistResult.assignments_created ||
                 persistResult.reminders_created ||
                 persistResult.blockers_upserted ||
+                persistResult.blockers_updated ||
                 persistResult.focus_action !== 'none'
               ) {
                 console.info('[ai/chat]', {

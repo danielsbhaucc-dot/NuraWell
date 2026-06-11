@@ -54,12 +54,21 @@ export interface ExtractedFollowUp {
   confidence: number;
 }
 
+/** עדכון התקדמות על חסם *קיים* (סגירת לולאת המעקב — דרישה 4). */
+export interface ExtractedBlockerUpdate {
+  tag: string;
+  status: 'improving' | 'resolved';
+  note: string | null;
+  confidence: number;
+}
+
 export interface CommitmentExtraction {
   reminders: ExtractedReminder[];
   tasks: ExtractedTask[];
   focus: ExtractedFocus | null;
   blockers: ExtractedBlocker[];
   followups: ExtractedFollowUp[];
+  blocker_updates: ExtractedBlockerUpdate[];
 }
 
 const EMPTY: CommitmentExtraction = {
@@ -68,6 +77,7 @@ const EMPTY: CommitmentExtraction = {
   focus: null,
   blockers: [],
   followups: [],
+  blocker_updates: [],
 };
 
 function stripFences(text: string): string {
@@ -142,7 +152,8 @@ const SYSTEM = `אתה מנוע חילוץ "התחייבויות מנטור" ל-
   "tasks": [{ "title": "המשימה בקצרה", "reason": "למה אלמוג נתן אותה (או null)", "detail": "מידע נוסף או null", "schedule": "one_time|daily|weekly", "due_at_iso": "ISO8601 UTC או null", "related_habit": "שם הרגל קיים שקשור או null", "confidence": 0.0-1.0 }],
   "focus": { "proposed": true/false, "user_agreed": true/false, "reason": "למה להקפיא משימות אחרות", "ends_at_iso": "ISO8601 UTC או null", "scope": "reminders|reminders_and_dim", "confidence": 0.0-1.0 } או null,
   "blockers": [{ "description": "החסם שזוהה", "strategy": "מה אלמוג הציע להתגבר (או null)", "confidence": 0.0-1.0 }],
-  "followups": [{ "what": "על מה לבדוק התקדמות", "fire_at_iso": "ISO8601 UTC או null", "confidence": 0.0-1.0 }]
+  "followups": [{ "what": "על מה לבדוק התקדמות", "fire_at_iso": "ISO8601 UTC או null", "confidence": 0.0-1.0 }],
+  "blocker_updates": [{ "tag": "מזהה חסם קיים שדווח עליו (B1/B2...)", "status": "improving|resolved", "note": "מה השתנה או null", "confidence": 0.0-1.0 }]
 }
 
 הנחיות זמן:
@@ -151,10 +162,21 @@ const SYSTEM = `אתה מנוע חילוץ "התחייבויות מנטור" ל-
 - focus.proposed=true רק אם אלמוג הציע לשים בצד/להקפיא משימות אחרות. user_agreed=true רק אם המשתמש כבר אישר בתור הזה.
 - scope='reminders_and_dim' רק אם זו נפילה אמיתית והמשתמש הסכים להתמקד; אחרת 'reminders'.
 
+עדכון חסמים קיימים (blocker_updates):
+- אם סופקה רשימת "חסמים קיימים במעקב" ומהשיחה עולה שהמשתמש התקדם או התגבר על אחד מהם — החזר אותו עם ה-tag המתאים.
+- status='resolved' אם נפתר לגמרי; 'improving' אם יש שיפור חלקי. אל תמציא — רק אם זה באמת עולה מהשיחה הנוכחית.
+
 אם אין שום דבר לחלץ — החזר את כל המערכים ריקים ו-focus=null.`;
 
 function normalize(parsed: Record<string, unknown>, now: Date): CommitmentExtraction {
-  const out: CommitmentExtraction = { reminders: [], tasks: [], focus: null, blockers: [], followups: [] };
+  const out: CommitmentExtraction = {
+    reminders: [],
+    tasks: [],
+    focus: null,
+    blockers: [],
+    followups: [],
+    blocker_updates: [],
+  };
 
   if (Array.isArray(parsed.reminders)) {
     out.reminders = (parsed.reminders as unknown[])
@@ -230,6 +252,20 @@ function normalize(parsed: Record<string, unknown>, now: Date): CommitmentExtrac
       .slice(0, 3);
   }
 
+  if (Array.isArray(parsed.blocker_updates)) {
+    out.blocker_updates = (parsed.blocker_updates as unknown[])
+      .map((x): ExtractedBlockerUpdate | null => {
+        const o = (x ?? {}) as Record<string, unknown>;
+        const tag = str(o.tag, 12);
+        if (!tag) return null;
+        const status = o.status === 'resolved' ? 'resolved' : o.status === 'improving' ? 'improving' : null;
+        if (!status) return null;
+        return { tag, status, note: str(o.note, 240), confidence: num(o.confidence) };
+      })
+      .filter((x): x is ExtractedBlockerUpdate => x !== null && x.confidence >= MIN_CONFIDENCE)
+      .slice(0, 4);
+  }
+
   return out;
 }
 
@@ -239,6 +275,7 @@ export function hasAnyCommitment(x: CommitmentExtraction): boolean {
     x.tasks.length > 0 ||
     x.blockers.length > 0 ||
     x.followups.length > 0 ||
+    x.blocker_updates.length > 0 ||
     x.focus !== null
   );
 }
@@ -248,7 +285,7 @@ export function hasAnyCommitment(x: CommitmentExtraction): boolean {
  * LLM על רוב התורים (שיחה רגילה/אמפתיה) ושומר על מהירות.
  */
 const COMMITMENT_HINT_RE =
-  /(אזכיר|אתזכר|נתזכר|תזכורת|להזכיר|נתראה ב|נדבר ב|משימה|תרגיל|אני רוצה שתעשה|בוא תעשה|תנסה ל|המשימה שלך|נשים בצד|נקפיא|להתמקד|פוקוס|נתרכז|נבדוק (?:מחר|בעוד|ב)|אעקוב|במעקב|חסם|מעכב|קשה לך)/u;
+  /(אזכיר|אתזכר|נתזכר|תזכורת|להזכיר|נתראה ב|נדבר ב|משימה|תרגיל|אני רוצה שתעשה|בוא תעשה|תנסה ל|המשימה שלך|נשים בצד|נקפיא|להתמקד|פוקוס|נתרכז|נבדוק (?:מחר|בעוד|ב)|אעקוב|במעקב|חסם|מעכב|קשה לך|התגבר|הצלחת|השתפר|נפתר|כבר לא מפריע|התקדמת)/u;
 
 export function shouldAttemptCommitmentExtraction(assistantMessage: string): boolean {
   return COMMITMENT_HINT_RE.test(assistantMessage);
@@ -259,6 +296,7 @@ export async function extractAlmogCommitments(params: {
   assistantMessage: string;
   rollingSummary?: string | null;
   habitTitles?: string[];
+  openBlockers?: { tag: string; description: string }[];
   now?: Date;
 }): Promise<CommitmentExtraction> {
   const now = params.now ?? new Date();
@@ -269,6 +307,13 @@ export async function extractAlmogCommitments(params: {
     ? `הרגלים פעילים של המשתמש (לשיוך related_habit):\n${params.habitTitles.slice(0, 10).join(' · ')}`
     : null;
 
+  const blockersLine = params.openBlockers?.length
+    ? `חסמים קיימים במעקב (לעדכון blocker_updates לפי tag):\n${params.openBlockers
+        .slice(0, 6)
+        .map((b) => `${b.tag}: ${b.description}`)
+        .join('\n')}`
+    : null;
+
   const userContent = [
     `שעון ישראל עכשיו: ${israelNowDescriptor(now)}`,
     params.rollingSummary?.trim()
@@ -277,6 +322,7 @@ export async function extractAlmogCommitments(params: {
     `הודעת המשתמש:\n${params.userMessage.slice(0, 1200)}`,
     `תשובת אלמוג (חלץ רק מתוכה):\n${params.assistantMessage.replace(/\s+/g, ' ').trim().slice(0, 1600)}`,
     habitsLine,
+    blockersLine,
   ]
     .filter(Boolean)
     .join('\n\n');
