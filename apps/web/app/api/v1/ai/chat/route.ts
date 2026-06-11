@@ -2045,6 +2045,32 @@ export async function POST(request: Request) {
     !explicitCompareModel &&
     isTrivialBypassEligible(lastUserText, earlySignals);
   const routerHistorySnippet = buildRouterHistorySnippet(messages);
+
+  /**
+   * שליפות DB שאינן תלויות בהחלטת הנתב — מתחילות *לפני* ה-await של הנתב כדי לרוץ
+   * במקביל לקריאת ה-LLM שלו (בתור כבד). כך זמן הנתב (~1ש') "מוסתר" מאחורי שליפות
+   * ה-DB במקום להצטבר עליהן. trivialBypass כבר ידוע כאן — אין שינוי תוצאה, רק תזמון.
+   */
+  const profilePromise = fetchChatProfileRow(supabase, user.id);
+  const journeyPromise = getActiveJourneyContext(supabase, user.id).catch((journeyCtxErr) => {
+    console.warn('[ai/chat]', {
+      debug_id: debugId,
+      stage: 'journey_context_read_failed',
+      error: journeyCtxErr instanceof Error ? journeyCtxErr.message : String(journeyCtxErr),
+    });
+    return null;
+  });
+  const dailyContextPromise: Promise<[TodayChatTurn[], TodayAlmogTouch[]]> = Promise.all([
+    fetchTodayChatTurns(supabase, user.id).catch(() => [] as TodayChatTurn[]),
+    fetchTodayAlmogTouches(supabase, user.id).catch(() => [] as TodayAlmogTouch[]),
+  ]).catch(() => [[], []]);
+  const memoryDossierPromise = trivialBypass
+    ? Promise.resolve(null)
+    : fetchUserMemoryDossier(supabase, user.id).catch(() => null);
+  const guideSummariesPromise = trivialBypass
+    ? Promise.resolve([])
+    : fetchUserGuideSummaries(supabase, user.id).catch(() => []);
+
   let contextDecision = trivialBypass
     ? lowContextDecision('trivial_bypass')
     : isLowContextTurn(lastUserText, earlySignals)
@@ -2088,16 +2114,6 @@ export async function POST(request: Request) {
   const sessionId = parsed.data.session_id ?? crypto.randomUUID();
   const notificationId = parsed.data.notification_id;
 
-  /** פרופיל + journey + רישום user בקריאות מקבילות — פחות זמן עד streamText */
-  const journeyPromise = getActiveJourneyContext(supabase, user.id).catch((journeyCtxErr) => {
-    console.warn('[ai/chat]', {
-      debug_id: debugId,
-      stage: 'journey_context_read_failed',
-      error: journeyCtxErr instanceof Error ? journeyCtxErr.message : String(journeyCtxErr),
-    });
-    return null;
-  });
-
   const journeyCapPromise =
     contextDecision.needs_journey_knowledge || contextDecision.needs_system_knowledge_rag
     ? fetchJourneyProgressCapForRag(supabase, user.id).catch((capErr) => {
@@ -2123,11 +2139,6 @@ export async function POST(request: Request) {
         return [] as string[];
       })
     : Promise.resolve([] as string[]);
-
-  const dailyContextPromise: Promise<[TodayChatTurn[], TodayAlmogTouch[]]> = Promise.all([
-    fetchTodayChatTurns(supabase, user.id).catch(() => [] as TodayChatTurn[]),
-    fetchTodayAlmogTouches(supabase, user.id).catch(() => [] as TodayAlmogTouch[]),
-  ]).catch(() => [[], []]);
 
   const notificationContextPromise = notificationId
     ? fetchNotificationContextBlock(supabase, user.id, notificationId)
@@ -2179,18 +2190,6 @@ export async function POST(request: Request) {
       })
     : Promise.resolve(null);
 
-  /**
-   * שליפת ה-dossier לקונטקסט הפרומפט — מדלגים בתורי trivial-bypass
-   * ("תודה"/"היי") כדי לא להוסיף קריאת DB לנתיב החוסם של Qwen (TTFB מהיר יותר).
-   */
-  const memoryDossierPromise = trivialBypass
-    ? Promise.resolve(null)
-    : fetchUserMemoryDossier(supabase, user.id).catch(() => null);
-
-  const guideSummariesPromise = trivialBypass
-    ? Promise.resolve([])
-    : fetchUserGuideSummaries(supabase, user.id).catch(() => []);
-
   const [
     profileRow,
     activeJourneyContext,
@@ -2203,7 +2202,7 @@ export async function POST(request: Request) {
     memoryDossier,
     guideSummaries,
   ] = await Promise.all([
-    fetchChatProfileRow(supabase, user.id),
+    profilePromise,
     journeyPromise,
     journeyCapPromise,
     enrolledPromise,
