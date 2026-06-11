@@ -300,9 +300,10 @@ const CHAT_LEAN_PROMPT_ENABLED =
 const CHAT_REASONING_MAX_TOKENS = (() => {
   const raw = process.env.AI_CHAT_REASONING_MAX_TOKENS?.trim();
   const n = raw ? Number(raw) : NaN;
-  // 1024: איזון מהירות/איכות — חשיבה רגשית מספקת ל-Qwen בלי TTFB מנופח.
-  // (היה 1536; הורד כי החשיבה היא רכיב ה-TTFB הדומיננטי). Override ב-env.
-  return Number.isFinite(n) && n >= 256 && n <= 8192 ? Math.floor(n) : 1024;
+  // 1536: max_tokens של חשיבה הוא *תקרה*, לא עלות קבועה — המודל עוצר לבד הרבה
+  // לפניה ברוב התורים. שומרים תקרה גבוהה כדי לא לקטוע חשיבה בתורים הרגשיים
+  // המורכבים ביותר. ההאצה מגיעה מהפעלת-חשיבה-מותנית-תור, לא מהורדת התקרה.
+  return Number.isFinite(n) && n >= 256 && n <= 8192 ? Math.floor(n) : 1536;
 })();
 /**
  * היקף החשיבה (reasoning) — איזה תורים מקבלים חשיבה לפני התשובה:
