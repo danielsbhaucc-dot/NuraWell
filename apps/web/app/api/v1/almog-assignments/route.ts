@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
   const { supabase, user } = auth;
 
-  const [{ data: assignments }, { data: focus }] = await Promise.all([
+  const [{ data: assignments }, { data: focus }, { data: completed }] = await Promise.all([
     supabase
       .from('almog_assignments')
       .select(
@@ -50,11 +50,20 @@ export async function GET(request: Request) {
       .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    // משימות שהושלמו (חד-פעמיות) — מוצגות כ"הושלמו" כדי שיהיה תיעוד גלוי למשתמש.
+    supabase
+      .from('almog_assignments')
+      .select('id, title, reason, schedule, given_at, last_done_at, done_count')
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+      .order('last_done_at', { ascending: false, nullsFirst: false })
+      .limit(8),
   ]);
 
   return NextResponse.json({
     assignments: assignments ?? [],
     focus: focus ?? null,
+    completed: completed ?? [],
   });
 }
 

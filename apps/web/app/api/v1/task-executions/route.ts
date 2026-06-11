@@ -249,7 +249,55 @@ export async function GET(request: Request) {
       return NextResponse.json(supabaseErrorPayload(error), { status: 500 });
     }
 
-    return NextResponse.json({ executions: data ?? [] });
+    /**
+     * משימות אישיות שאלמוג נתן — מאחדים את אירועי ה"בוצע" שלהן (history jsonb)
+     * להיסטוריה, כדי שיתנהגו כמו משימה רגילה. רק כשאין סינון task/step ספציפי
+     * (מסך ההיסטוריה הכללי). נכשל בשקט אם הטבלה עדיין לא קיימת ב-DB.
+     */
+    const almogCompletions: Array<{
+      id: string;
+      title: string;
+      reason: string | null;
+      completed_at: string;
+      date_key: string;
+    }> = [];
+    if (!taskId && !stepId) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: aRows } = await supabase
+          .from('almog_assignments')
+          .select('id, title, reason, history')
+          .eq('user_id', user.id)
+          .limit(50);
+        const sinceMs = since.getTime();
+        for (const a of (aRows ?? []) as Array<{
+          id: string;
+          title: string;
+          reason: string | null;
+          history: unknown;
+        }>) {
+          const hist = Array.isArray(a.history) ? a.history : [];
+          for (const h of hist) {
+            if (!h || typeof h !== 'object') continue;
+            const entry = h as { at?: unknown; action?: unknown };
+            if (entry.action !== 'done' || typeof entry.at !== 'string') continue;
+            const t = new Date(entry.at).getTime();
+            if (!Number.isFinite(t) || t < sinceMs) continue;
+            almogCompletions.push({
+              id: `${a.id}::${entry.at}`,
+              title: a.title,
+              reason: a.reason ?? null,
+              completed_at: entry.at,
+              date_key: jerusalemDateKey(new Date(t)),
+            });
+          }
+        }
+      } catch {
+        /* שקט — לא שוברים את מסך ההיסטוריה אם טבלת almog_assignments חסרה */
+      }
+    }
+
+    return NextResponse.json({ executions: data ?? [], almogCompletions });
   } catch (err) {
     console.error('task-executions GET exception:', err);
     return NextResponse.json(

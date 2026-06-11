@@ -25,15 +25,24 @@ type TaskMeta = {
   stepNumber: number;
 };
 
+type AlmogCompletion = {
+  id: string;
+  title: string;
+  reason: string | null;
+  completed_at: string;
+  date_key: string;
+};
+
+type HistoryItem =
+  | { kind: 'task'; sortAt: number; execution: JourneyTaskExecution; meta: TaskMeta | null }
+  | { kind: 'almog'; sortAt: number; almog: AlmogCompletion };
+
 type GroupedDay = {
   dateKey: string;
   dateLabel: string;
   weekday: string;
   total: number;
-  items: Array<{
-    execution: JourneyTaskExecution;
-    meta: TaskMeta | null;
-  }>;
+  items: HistoryItem[];
 };
 
 const HEBREW_WEEKDAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
@@ -55,6 +64,7 @@ function formatHebrewDate(dateKey: string): { label: string; weekday: string } {
 
 export function TaskHistoryPageClient() {
   const [executions, setExecutions] = useState<JourneyTaskExecution[]>([]);
+  const [almogCompletions, setAlmogCompletions] = useState<AlmogCompletion[]>([]);
   const [steps, setSteps] = useState<StepShape[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,8 +78,12 @@ export function TaskHistoryPageClient() {
         fetch('/api/v1/journey-report', { cache: 'no-store', credentials: 'include' }),
       ]);
       if (!execRes.ok) throw new Error('שגיאה בטעינת היסטוריה');
-      const execJson = (await execRes.json()) as { executions: JourneyTaskExecution[] };
+      const execJson = (await execRes.json()) as {
+        executions: JourneyTaskExecution[];
+        almogCompletions?: AlmogCompletion[];
+      };
       setExecutions(execJson.executions ?? []);
+      setAlmogCompletions(Array.isArray(execJson.almogCompletions) ? execJson.almogCompletions : []);
       if (repRes.ok) {
         const repJson = (await repRes.json()) as { steps: StepShape[] };
         setSteps(repJson.steps ?? []);
@@ -111,26 +125,45 @@ export function TaskHistoryPageClient() {
 
   const groups = useMemo<GroupedDay[]>(() => {
     const buckets = new Map<string, GroupedDay>();
-    for (const e of executions) {
-      if (!buckets.has(e.date_key)) {
-        const fd = formatHebrewDate(e.date_key);
-        buckets.set(e.date_key, {
-          dateKey: e.date_key,
+    const ensureBucket = (dateKey: string): GroupedDay => {
+      let bucket = buckets.get(dateKey);
+      if (!bucket) {
+        const fd = formatHebrewDate(dateKey);
+        bucket = {
+          dateKey,
           dateLabel: fd.label,
           weekday: fd.weekday,
           total: 0,
           items: [],
-        });
+        };
+        buckets.set(dateKey, bucket);
       }
-      const bucket = buckets.get(e.date_key)!;
+      return bucket;
+    };
+    for (const e of executions) {
+      const bucket = ensureBucket(e.date_key);
       bucket.items.push({
+        kind: 'task',
+        sortAt: new Date(e.completed_at).getTime() || 0,
         execution: e,
         meta: taskMetaMap.get(`${e.step_id}::${e.task_id}`) ?? null,
       });
       bucket.total += 1;
     }
+    for (const a of almogCompletions) {
+      const bucket = ensureBucket(a.date_key);
+      bucket.items.push({
+        kind: 'almog',
+        sortAt: new Date(a.completed_at).getTime() || 0,
+        almog: a,
+      });
+      bucket.total += 1;
+    }
+    for (const bucket of buckets.values()) {
+      bucket.items.sort((a, b) => b.sortAt - a.sortAt);
+    }
     return [...buckets.values()].sort((a, b) => (a.dateKey < b.dateKey ? 1 : -1));
-  }, [executions, taskMetaMap]);
+  }, [executions, almogCompletions, taskMetaMap]);
 
   /** סיכומים לתצוגה עליונה */
   const summary = useMemo(() => {
@@ -150,12 +183,18 @@ export function TaskHistoryPageClient() {
       cur.count += 1;
       perTask.set(key, cur);
     }
+    for (const a of almogCompletions) {
+      total += 1;
+      if (a.date_key >= cutoff) {
+        last7.set(a.date_key, (last7.get(a.date_key) ?? 0) + 1);
+      }
+    }
     const top = [...perTask.entries()]
       .sort((a, b) => b[1].count - a[1].count)
       .slice(0, 5)
       .map(([, v]) => v);
     return { total, daysActive: last7.size, top };
-  }, [executions, taskMetaMap]);
+  }, [executions, almogCompletions, taskMetaMap]);
 
   if (loading) {
     return (
@@ -331,11 +370,50 @@ export function TaskHistoryPageClient() {
             </div>
             <ul className="relative space-y-1.5">
               {g.items.map((item) => {
-                const time = new Date(item.execution.completed_at).toLocaleTimeString('he-IL', {
+                const completedAt =
+                  item.kind === 'task' ? item.execution.completed_at : item.almog.completed_at;
+                const time = new Date(completedAt).toLocaleTimeString('he-IL', {
                   timeZone: 'Asia/Jerusalem',
                   hour: '2-digit',
                   minute: '2-digit',
                 });
+
+                if (item.kind === 'almog') {
+                  return (
+                    <li
+                      key={item.almog.id}
+                      dir="rtl"
+                      className="glass-inset flex items-center gap-2.5 rounded-xl px-2.5 py-2"
+                      style={{ border: '1px solid rgba(16,185,129,0.22)' }}
+                    >
+                      <span className="text-base shrink-0" aria-hidden>
+                        ✨
+                      </span>
+                      <div className="min-w-0 flex-1 text-right">
+                        <p className="text-[13px] font-bold text-emerald-950 truncate">
+                          {item.almog.title}
+                        </p>
+                        {item.almog.reason ? (
+                          <p className="text-[10px] font-semibold text-emerald-800/75 truncate">
+                            {item.almog.reason}
+                          </p>
+                        ) : null}
+                      </div>
+                      <span
+                        className="text-[10px] font-bold tracking-wide rounded-full px-2.5 py-1 flex items-center gap-1 shrink-0"
+                        style={{ background: 'rgba(16,185,129,0.16)', color: '#047857' }}
+                        title="משימה אישית מאלמוג"
+                      >
+                        <Sparkles className="h-3 w-3" />
+                        <span>מאלמוג</span>
+                      </span>
+                      <span className="text-[10px] font-semibold text-emerald-900/65 tabular-nums shrink-0">
+                        {time}
+                      </span>
+                    </li>
+                  );
+                }
+
                 return (
                   <li
                     key={item.execution.id}
