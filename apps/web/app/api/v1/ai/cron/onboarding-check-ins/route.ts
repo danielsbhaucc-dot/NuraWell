@@ -9,6 +9,10 @@ import {
 } from '../../../../../../lib/ai/onboarding-check-in-time';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 import { workflowPublicBaseUrl } from '../../../../../../lib/workflows/resolve-workflow-public-url';
+import {
+  drainAlmogReminders,
+  type DrainRemindersResult,
+} from '../../../../../../lib/ai/almog-commitments/drain-reminders';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -34,9 +38,25 @@ async function runOnboardingCheckInsCron(request: Request) {
   const dryRunRaw = url.searchParams.get('dryRun') ?? url.searchParams.get('dry_run');
   const isDryRun = dryRunRaw === '1' || dryRunRaw === 'true';
 
+  /**
+   * 🔗 איחוד תזמונים: ה-cron הזה כבר רץ כל חצי שעה, אז כאן גם מרוקנים את תור
+   * התזכורות של אלמוג (`scheduled_reminders`) — בלי schedule נפרד ב-Upstash.
+   * רץ *לפני* בדיקת QSTASH_TOKEN ובתוך try, כדי שהתזכורות יישלחו תמיד, גם אם
+   * חלק ה-onboarding (שתלוי ב-QStash Workflows) נכשל/לא מוגדר.
+   */
+  let almogReminders: DrainRemindersResult | { error: string } | null = null;
+  try {
+    almogReminders = await drainAlmogReminders(createAdminClient(), { dryRun: isDryRun });
+  } catch (e) {
+    almogReminders = { error: e instanceof Error ? e.message : String(e) };
+  }
+
   const token = process.env.QSTASH_TOKEN?.trim();
   if (!token && !isDryRun) {
-    return NextResponse.json({ error: 'חסר QSTASH_TOKEN' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'חסר QSTASH_TOKEN', almog_reminders: almogReminders },
+      { status: 500 }
+    );
   }
 
   const windowRaw = url.searchParams.get('window_minutes');
@@ -105,8 +125,9 @@ async function runOnboardingCheckInsCron(request: Request) {
         time: e.checkInTime,
         index: e.checkInIndex,
       })),
+      almog_reminders: almogReminders,
       hint_he:
-        'אלמוג — זמנים אישיים מההרשמה. הגדר ב-Upstash: POST כל 30 דקות (0,30 * * * *).',
+        'אלמוג — זמנים אישיים מההרשמה + תזכורות אלמוג מאוחדות. הגדר ב-Upstash: POST כל 30 דקות (0,30 * * * *).',
     });
   }
 
@@ -146,6 +167,7 @@ async function runOnboardingCheckInsCron(request: Request) {
   return NextResponse.json({
     ok: true,
     ...summary,
+    almog_reminders: almogReminders,
     errors: errors.length ? errors : undefined,
   });
 }
