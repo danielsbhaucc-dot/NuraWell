@@ -334,21 +334,6 @@ export function AdminShell({
                         ניהול ידע
                       </Link>
                     </li>
-                    <li>
-                      <Link
-                        href={opsHref('/notify-model-lab')}
-                        onClick={() => setSidebarOpen(false)}
-                        className={cn(
-                          'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-violet-400/20 sm:text-[15px]',
-                          isNotifyModelLab
-                            ? 'bg-violet-400/20 font-bold text-violet-950'
-                            : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
-                        )}
-                      >
-                        <FlaskConical size={17} className="shrink-0 opacity-90" />
-                        מעבדת מודלים
-                      </Link>
-                    </li>
                   </ul>
                 )}
               </div>
