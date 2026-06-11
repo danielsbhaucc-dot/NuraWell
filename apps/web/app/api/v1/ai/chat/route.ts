@@ -2339,28 +2339,26 @@ export async function POST(request: Request) {
     if (needUserRag || needSystemRag || needPrinciples) {
       try {
         const qv = await embedTextForRag(lastUserText);
-        if (needUserRag) {
-          const hits = await queryUserMemoryVectors({
-            userId: user.id,
-            vector: qv,
-            topK: RAG_CANDIDATE_TOP_K,
-          });
-          ragMemoryBlock = formatRagMemoryContextBlock(hits, RAG_TOP_K);
+        // שלוש השאילתות עצמאיות וחולקות את אותו embedding — מריצים במקביל
+        // (במקום בטור) כדי לקצר את ההמתנה לפני streamText, בלי לשנות תוצאות.
+        const [userHits, skHits, principleHits] = await Promise.all([
+          needUserRag
+            ? queryUserMemoryVectors({ userId: user.id, vector: qv, topK: RAG_CANDIDATE_TOP_K })
+            : Promise.resolve(null),
+          needSystemRag && skFilter
+            ? queryAlmogSystemKnowledgeForUser({ questionEmbedding: qv, filter: skFilter, topK: 5 })
+            : Promise.resolve(null),
+          needPrinciples && principlesFilter
+            ? queryAlmogSystemKnowledgeForUser({ questionEmbedding: qv, filter: principlesFilter, topK: 4 })
+            : Promise.resolve(null),
+        ]);
+        if (userHits) {
+          ragMemoryBlock = formatRagMemoryContextBlock(userHits, RAG_TOP_K);
         }
-        if (needSystemRag && skFilter) {
-          const skHits = await queryAlmogSystemKnowledgeForUser({
-            questionEmbedding: qv,
-            filter: skFilter,
-            topK: 5,
-          });
+        if (skHits) {
           systemKnowledgeBlock = formatSystemKnowledgeContextBlock(skHits, 5);
         }
-        if (needPrinciples && principlesFilter) {
-          const principleHits = await queryAlmogSystemKnowledgeForUser({
-            questionEmbedding: qv,
-            filter: principlesFilter,
-            topK: 4,
-          });
+        if (principleHits) {
           principlesBlock = formatAlmogPrinciplesBlock(principleHits, 4);
         }
       } catch (ragErr) {
