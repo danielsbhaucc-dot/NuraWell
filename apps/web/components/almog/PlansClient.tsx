@@ -254,17 +254,17 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
     <div dir="rtl" className="relative min-h-[calc(100vh-9rem)] overflow-hidden">
       <SoftBackground />
 
-      <div className="container-mobile relative z-10 space-y-4 pb-10">
-        {/* ── HERO ── */}
-        <Hero
-          name={name}
-          live={live}
-          pulsing={justUpdated}
-          active={activeCount}
-          reminders={reminderCount}
-          blockers={blockerCount}
-        />
+      {/* ── HERO ברוחב מלא (full-bleed) ── */}
+      <Hero
+        name={name}
+        live={live}
+        pulsing={justUpdated}
+        active={activeCount}
+        reminders={reminderCount}
+        blockers={blockerCount}
+      />
 
+      <div className="container-mobile relative z-10 space-y-4 pb-10 pt-5">
         {loading ? (
           <div className="flex justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
@@ -417,29 +417,75 @@ const ALMOG_NUDGES: readonly string[] = [
   'צמחים גדלים לכיוון האור — גם אחרי נסיגה קטנה הם ממשיכים למעלה. ככה גם אתה. 🌱',
   'לא צריך מושלם, צריך עקבי. צעד קטן היום שווה יותר מקפיצה גדולה שלא קורית.',
   'כל פעם שאתה מסמן משהו פה — אתה מוכיח לעצמך שאתה שומר מילה. זה בונה אמון עצמי.',
-  'אני לא סופר כמה נפלת, אני סופר כמה קמת. ואתה קם שוב ושוב.',
+  'אני לא סופר כמה נפלת, אני סופר כמה קמת. ואתה קם שוב ושוב. 💪',
+  'התקדמות אמיתית היא לא קו ישר. ימים טובים, ימים פחות — שניהם חלק מהדרך.',
+  'אתה לא צריך למצוא מוטיבציה כל בוקר. אתה צריך רק להתחיל, והמוטיבציה תבוא תוך כדי.',
+  'הצעד הכי חשוב הוא הבא. לא זה שפספסת אתמול. 🌿',
+  'גם אם היום עשית 1% — זה 1% שלא היה לך אתמול. זה מצטבר, אני מבטיח.',
+  'תהיה עדין עם עצמך. אתה עושה משהו קשה, ואתה עושה אותו בכל זאת.',
+  'הרגלים נבנים בשקט, יום אחרי יום. אתה כבר באמצע הבנייה — אל תעצור עכשיו.',
+  'אני כאן כל הדרך, לא רק כשהכול מושלם. במיוחד כשקשה. 💙',
+  'הגרסה שלך מחר תודה לך על הצעד הקטן שתעשה היום.',
+  'אל תשווה את ההתחלה שלך לאמצע של מישהו אחר. הקצב שלך הוא הקצב הנכון.',
+  'נפילה היא לא סוף. היא רק חלק מהסיפור שבו אתה קם. ואתה תמיד קם.',
+  'מספיק לעשות מעט, אבל לעשות את זה הרבה פעמים. ככה משתנים באמת.',
 ];
 
 function EncouragementCard({ name }: { name: string }) {
-  // ניואנס יומי יציב (לא קופץ בכל רינדור).
-  const idx = new Date().getDate() % ALMOG_NUDGES.length;
+  // מתחיל מניואנס יומי יציב, ואז מתחלף בעדינות כדי שהדף ירגיש חי.
+  const [idx, setIdx] = useState(() => new Date().getDate() % ALMOG_NUDGES.length);
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setIdx((i) => (i + 1) % ALMOG_NUDGES.length);
+    }, 9000);
+    return () => window.clearInterval(id);
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.3 }}
-      className="rounded-3xl p-4"
+      className="relative overflow-hidden rounded-3xl p-4"
       style={{
-        background: 'linear-gradient(160deg, rgba(236,253,245,0.95), rgba(240,253,250,0.8))',
-        border: '1px solid rgba(16,185,129,0.20)',
-        boxShadow: '0 8px 26px rgba(16,185,129,0.08)',
+        background: 'linear-gradient(160deg, #ffffff 0%, rgba(236,253,245,0.85) 100%)',
+        border: '1px solid rgba(16,185,129,0.22)',
+        boxShadow: '0 12px 28px rgba(16,185,129,0.10), inset 0 1px 0 rgba(255,255,255,0.95)',
       }}
     >
-      <div className="mb-1 flex items-center gap-1.5 text-emerald-700">
-        <Sparkles className="h-4 w-4" />
-        <span className="text-[12px] font-black">מילה ממני{name ? `, ${name}` : ''}</span>
+      <div className="mb-2 flex items-center gap-2">
+        <span className="rounded-full ring-2 ring-emerald-100">
+          <AlmogAvatarChip size={28} />
+        </span>
+        <span className="text-[12px] font-black text-emerald-700">מילה ממני{name ? `, ${name}` : ''}</span>
       </div>
-      <p className="text-[13px] leading-relaxed text-slate-600">{ALMOG_NUDGES[idx]}</p>
+      <div className="relative min-h-[42px]">
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={idx}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.4 }}
+            className="text-[13.5px] leading-relaxed text-slate-600"
+          >
+            {ALMOG_NUDGES[idx]}
+          </motion.p>
+        </AnimatePresence>
+      </div>
+      {/* נקודות התקדמות עדינות */}
+      <div className="mt-3 flex justify-center gap-1" aria-hidden>
+        {ALMOG_NUDGES.slice(0, 6).map((_, i) => (
+          <span
+            key={i}
+            className="h-1 rounded-full transition-all duration-300"
+            style={{
+              width: i === idx % 6 ? '14px' : '5px',
+              background: i === idx % 6 ? '#10b981' : 'rgba(16,185,129,0.25)',
+            }}
+          />
+        ))}
+      </div>
     </motion.div>
   );
 }
@@ -491,97 +537,91 @@ function Hero({
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="relative overflow-hidden rounded-[34px] px-6 pb-6 pt-7"
+      className="relative z-10 w-full overflow-hidden rounded-b-[36px] pb-8 pt-8"
       style={{
         background:
           'linear-gradient(155deg, #064e3b 0%, #047857 38%, #0d9488 72%, #10b981 100%)',
-        boxShadow:
-          '0 26px 60px rgba(6,78,59,0.40), 0 2px 0 rgba(255,255,255,0.10) inset, 0 -40px 80px rgba(8,145,178,0.20) inset',
+        boxShadow: '0 22px 50px rgba(6,78,59,0.35)',
       }}
     >
       {/* זוהר אור פינתי */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-14 -top-16 h-52 w-52 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.30), transparent 68%)', filter: 'blur(10px)' }}
+        className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 68%)' }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-20 -left-12 h-56 w-56 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.45), transparent 70%)', filter: 'blur(20px)' }}
+        className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.40), transparent 70%)' }}
       />
-      {/* טבעת זכוכית דקורטיבית */}
+      {/* טבעת דקורטיבית */}
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute -left-16 -top-10 h-44 w-44 rounded-full border"
-        style={{ borderColor: 'rgba(255,255,255,0.16)' }}
+        className="pointer-events-none absolute -left-20 top-2 h-48 w-48 rounded-full border"
+        style={{ borderColor: 'rgba(255,255,255,0.14)' }}
         animate={{ rotate: 360 }}
-        transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
+        transition={{ duration: 70, repeat: Infinity, ease: 'linear' }}
       />
-      {/* עלים מרחפים — בהשראת עמוד ה-404 */}
+      {/* עלה מרחף */}
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute right-5 top-5 text-2xl"
+        className="pointer-events-none absolute right-6 top-6 text-2xl"
         animate={{ rotate: [0, -12, 12, 0], y: [0, -4, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       >
         🍃
       </motion.div>
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute bottom-20 left-8 text-lg opacity-70"
-        animate={{ rotate: [0, 14, -10, 0] }}
-        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
-      >
-        🌿
-      </motion.div>
 
-      <div className="relative flex items-center gap-4">
-        <motion.div
-          className="relative shrink-0 rounded-full p-1"
-          style={{
-            background: 'linear-gradient(140deg, rgba(255,255,255,0.55), rgba(255,255,255,0.12))',
-            boxShadow: '0 8px 22px rgba(0,0,0,0.18)',
-          }}
-          animate={{ y: [0, -4, 0] }}
-          transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <div className="rounded-full ring-2 ring-white/50">
-            <AlmogAvatarChip size={68} />
-          </div>
-          <span
-            aria-hidden
-            className="absolute -bottom-0.5 -left-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px]"
-            style={{ background: '#ecfdf5', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}
+      {/* תוכן מיושר לרוחב התוכן של הדף */}
+      <div className="container-mobile relative">
+        <div className="flex items-center gap-4">
+          <motion.div
+            className="relative shrink-0 rounded-full p-1"
+            style={{
+              background: 'linear-gradient(140deg, rgba(255,255,255,0.55), rgba(255,255,255,0.12))',
+              boxShadow: '0 8px 22px rgba(0,0,0,0.18)',
+            }}
+            animate={{ y: [0, -4, 0] }}
+            transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
           >
-            🌱
-          </span>
-        </motion.div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
+            <div className="rounded-full ring-2 ring-white/50">
+              <AlmogAvatarChip size={68} />
+            </div>
             <span
-              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold text-white"
-              style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)' }}
+              aria-hidden
+              className="absolute -bottom-0.5 -left-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px]"
+              style={{ background: '#ecfdf5', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}
             >
-              <Sparkles className="h-3 w-3" />
-              {greeting()}{name ? `, ${name}` : ''}
+              🌱
             </span>
-            <LivePill live={live} pulsing={pulsing} />
+          </motion.div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold text-white"
+                style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)' }}
+              >
+                <Sparkles className="h-3 w-3" />
+                {greeting()}{name ? `, ${name}` : ''}
+              </span>
+              <LivePill live={live} pulsing={pulsing} />
+            </div>
+            <h1 className="mt-2 text-[26px] font-black leading-[1.1] text-white drop-shadow-sm">
+              התוכנית שלנו
+            </h1>
           </div>
-          <h1 className="mt-2 text-[26px] font-black leading-[1.1] text-white drop-shadow-sm">
-            התוכנית שלנו
-          </h1>
         </div>
-      </div>
 
-      <p className="relative mt-3 text-[13.5px] leading-relaxed text-emerald-50/90">
-        ריכזתי כאן כל מה שסיכמנו — צעד קטן בכל פעם, ואני איתך בכל אחד מהם. 🌱
-      </p>
+        <p className="mt-3 text-[13.5px] leading-relaxed text-emerald-50/90">
+          ריכזתי כאן כל מה שסיכמנו — צעד קטן בכל פעם, ואני איתך בכל אחד מהם. 🌱
+        </p>
 
-      <div className="relative mt-5 grid grid-cols-3 gap-2.5">
-        <HeroStat icon={Sparkles} value={active} label="צעדים פעילים" />
-        <HeroStat icon={Bell} value={reminders} label="תזכורות" />
-        <HeroStat icon={AlertTriangle} value={blockers} label="במעקב" />
+        <div className="mt-5 grid grid-cols-3 gap-2.5">
+          <HeroStat icon={Sparkles} value={active} label="צעדים פעילים" />
+          <HeroStat icon={Bell} value={reminders} label="תזכורות" />
+          <HeroStat icon={AlertTriangle} value={blockers} label="במעקב" />
+        </div>
       </div>
     </motion.section>
   );
@@ -590,16 +630,14 @@ function Hero({
 function HeroStat({ icon: Icon, value, label }: { icon: typeof Sparkles; value: number; label: string }) {
   return (
     <div
-      className="rounded-3xl px-2 py-3 text-center"
+      className="rounded-2xl px-2 py-3 text-center"
       style={{
-        background: 'rgba(255,255,255,0.16)',
-        border: '1px solid rgba(255,255,255,0.30)',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
+        background: 'rgba(255,255,255,0.20)',
+        border: '1px solid rgba(255,255,255,0.34)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 6px 16px rgba(0,0,0,0.10)',
       }}
     >
-      <Icon className="mx-auto mb-1 h-4 w-4 text-emerald-50/80" aria-hidden />
+      <Icon className="mx-auto mb-1 h-4 w-4 text-emerald-50/85" aria-hidden />
       <p className="text-[24px] font-black leading-none text-white">{value}</p>
       <p className="mt-1 text-[10px] font-semibold text-emerald-50/85">{label}</p>
     </div>
@@ -618,14 +656,16 @@ const TINT: Record<Tint, { rgb: string; soft: string; text: string }> = {
   indigo: { rgb: '99,102,241', soft: '238,242,255', text: '#4338ca' },
 };
 
+/**
+ * זכוכית נקייה בסגנון אייפון — לבן מתכתי כמעט-אטום עם גוון עדין, מסגרת צבעונית
+ * דקה, ברק עליון (sheen) וצל נקי. בלי backdrop-blur מטושטש שיוצר מראה עכור.
+ */
 function glassStyle(tint: Tint): React.CSSProperties {
   const t = TINT[tint];
   return {
-    background: `linear-gradient(160deg, rgba(${t.soft},0.92) 0%, rgba(255,255,255,0.72) 100%)`,
-    border: '1px solid rgba(255,255,255,0.85)',
-    backdropFilter: 'blur(20px) saturate(150%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(150%)',
-    boxShadow: `0 10px 30px rgba(15,23,42,0.07), 0 1px 0 rgba(255,255,255,0.9) inset`,
+    background: `linear-gradient(170deg, #ffffff 0%, rgba(${t.soft},0.78) 100%)`,
+    border: `1px solid rgba(${t.rgb},0.20)`,
+    boxShadow: `0 12px 28px rgba(15,23,42,0.08), 0 2px 6px rgba(15,23,42,0.04), inset 0 1px 0 rgba(255,255,255,0.95)`,
   };
 }
 
@@ -694,15 +734,13 @@ function Section({
   return (
     <section className="space-y-3">
       <SectionDivider tint={tint} />
-      {/* כותרת בתיבת זכוכית צבעונית */}
+      {/* כותרת בתיבת זכוכית צבעונית נקייה */}
       <div
         className="flex items-center gap-2.5 rounded-2xl px-3 py-2.5"
         style={{
-          background: `linear-gradient(135deg, rgba(${t.rgb},0.16) 0%, rgba(${t.soft},0.55) 100%)`,
-          border: `1px solid rgba(${t.rgb},0.28)`,
-          backdropFilter: 'blur(14px) saturate(150%)',
-          WebkitBackdropFilter: 'blur(14px) saturate(150%)',
-          boxShadow: `0 6px 18px rgba(${t.rgb},0.12), inset 0 1px 0 rgba(255,255,255,0.7)`,
+          background: `linear-gradient(135deg, #ffffff 0%, rgba(${t.soft},0.82) 100%)`,
+          border: `1px solid rgba(${t.rgb},0.24)`,
+          boxShadow: `0 8px 20px rgba(${t.rgb},0.10), inset 0 1px 0 rgba(255,255,255,0.95)`,
         }}
       >
         <span
