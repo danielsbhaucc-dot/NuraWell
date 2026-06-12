@@ -10,12 +10,12 @@ import { useEffect } from 'react';
 import { useActionHub } from '../action-hub/ActionHubProvider';
 
 const leftItems = [
-  { href: APP_HOME_PATH, label: 'בית',       icon: Home       },
-  { href: '/journey',    label: 'המסע שלי', icon: Route      },
+  { href: APP_HOME_PATH, label: 'בית',    icon: Home  },
+  { href: '/journey',    label: 'המסע',  icon: Route },
 ];
 const rightItems = [
   { href: '/guides', label: 'מדריכים', icon: BookOpen },
-  { href: '/plans', label: 'התוכנית שלי', icon: ClipboardCheck },
+  { href: '/plans', label: 'התוכנית', icon: ClipboardCheck },
 ];
 
 export function BottomNav() {
@@ -50,7 +50,7 @@ export function BottomNav() {
           </button>
         </div>
 
-        <div className="flex items-center justify-around py-1.5 px-1">
+        <div className="flex items-stretch justify-around gap-1 py-2 px-2">
           {/* Left items */}
           {leftItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -58,7 +58,7 @@ export function BottomNav() {
           })}
 
           {/* Center spacer */}
-          <div className="w-16 flex-shrink-0" />
+          <div className="w-14 flex-shrink-0" />
 
           {/* Right items */}
           {rightItems.map((item) => {
@@ -78,26 +78,35 @@ function NavItem({ item, isActive }: { item: { href: string; label: string; icon
         href={item.href}
         prefetch
         className={cn(
-          'relative flex flex-col items-center gap-0.5 px-2 py-2 rounded-2xl transition-all duration-200 no-tap-highlight touch-manipulation',
+          'relative flex flex-col items-center justify-center gap-1 px-1 py-1.5 rounded-2xl transition-all duration-200 no-tap-highlight touch-manipulation min-w-0 w-full',
           isActive ? 'text-[#047857]' : 'text-[#9896B8] hover:text-[#5A5880]'
         )}
       >
         {isActive && (
           <motion.div
             layoutId="nav-indicator"
-            className="absolute inset-0 rounded-2xl"
-            style={{ background: 'rgba(16,185,129,0.10)', border: '1px solid rgba(16,185,129,0.22)' }}
+            className="absolute inset-x-1 inset-y-0 rounded-2xl"
+            style={{
+              background: 'linear-gradient(165deg, rgba(16,185,129,0.16), rgba(16,185,129,0.06))',
+              border: '1px solid rgba(16,185,129,0.24)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)',
+            }}
             transition={{ type: 'spring', stiffness: 380, damping: 30 }}
           />
         )}
         <motion.div
-          animate={{ scale: isActive ? 1.15 : 1, y: isActive ? -1 : 0 }}
+          animate={{ scale: isActive ? 1.12 : 1, y: isActive ? -1 : 0 }}
           transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           className="relative z-10"
         >
-          <item.icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 1.8} />
+          <item.icon className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.4 : 1.8} />
         </motion.div>
-        <span className={cn('text-[10px] font-semibold relative z-10 transition-all', isActive ? 'text-[#047857]' : 'text-[#9896B8]')}>
+        <span
+          className={cn(
+            'text-[10.5px] leading-none font-bold relative z-10 whitespace-nowrap transition-all',
+            isActive ? 'text-[#047857]' : 'text-[#9896B8]'
+          )}
+        >
           {item.label}
         </span>
       </Link>
