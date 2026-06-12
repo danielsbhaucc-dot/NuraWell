@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, CheckCircle2, Clock, Repeat, Sparkles, Snowflake, X } from 'lucide-react';
@@ -132,6 +133,17 @@ export function AlmogAssignmentsSection() {
               : `${visible.length} ${visible.length === 1 ? 'משימה' : 'משימות'} פעיל${visible.length === 1 ? 'ה' : 'ות'}`}
           </p>
         </div>
+        <Link
+          href="/plans"
+          prefetch
+          className="shrink-0 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-emerald-800 no-tap-highlight"
+          style={{
+            background: 'rgba(255,255,255,0.55)',
+            border: '1px solid rgba(110,231,183,0.45)',
+          }}
+        >
+          לכל התוכנית
+        </Link>
       </div>
 
       {/* באנר פוקוס */}
@@ -142,6 +154,7 @@ export function AlmogAssignmentsSection() {
             busy={busyId === `focus-${focus.id}`}
             onConfirm={() => act({ action: 'confirm_focus', focus_id: focus.id }, `focus-${focus.id}`)}
             onDecline={() => act({ action: 'decline_focus', focus_id: focus.id }, `focus-${focus.id}`)}
+            onEnd={() => act({ action: 'end_focus', focus_id: focus.id }, `focus-${focus.id}`)}
           />
         ) : null}
       </AnimatePresence>
@@ -213,11 +226,13 @@ function FocusBanner({
   busy,
   onConfirm,
   onDecline,
+  onEnd,
 }: {
   focus: FocusView;
   busy: boolean;
   onConfirm: () => void;
   onDecline: () => void;
+  onEnd: () => void;
 }) {
   const until = formatDay(focus.ends_at);
   const isProposed = focus.status === 'proposed';
@@ -293,7 +308,19 @@ function FocusBanner({
               לא עכשיו
             </button>
           </div>
-        ) : null}
+        ) : (
+          <div className="mt-3.5">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onEnd}
+              className="w-full rounded-xl px-3 py-2.5 text-[13px] font-bold text-emerald-50 transition-transform active:scale-95 disabled:opacity-60"
+              style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)' }}
+            >
+              חזרתי לשגרה
+            </button>
+          </div>
+        )}
       </div>
     </motion.div>
   );
