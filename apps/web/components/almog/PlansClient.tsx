@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
+  MessageCircle,
   Repeat,
   Snowflake,
   Sparkles,
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 import { AlmogAvatarChip } from '@/components/journey/AlmogPresence';
 import { createClient } from '@/lib/supabase/client';
+import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog-chat';
 
 type Assignment = {
   id: string;
@@ -114,6 +116,28 @@ function greeting(): string {
   if (h < 17) return 'צהריים טובים';
   if (h < 21) return 'ערב טוב';
   return 'לילה טוב';
+}
+
+/** פותח את הצ'אט עם אלמוג ומכין הודעת פתיחה בהקשר — "לדבר עכשיו". */
+function talkToAlmog(prefill: string) {
+  dispatchOpenAlmogChatWithPrefill(prefill);
+}
+
+function TalkNowButton({ prefill, label = 'דבר עם אלמוג' }: { prefill: string; label?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={() => talkToAlmog(prefill)}
+      className="inline-flex items-center gap-1.5 rounded-2xl px-3 py-2 text-[12px] font-black text-white transition active:scale-95"
+      style={{
+        background: 'linear-gradient(135deg, #6366f1, #818cf8)',
+        boxShadow: '0 4px 12px rgba(99,102,241,0.32)',
+      }}
+    >
+      <MessageCircle className="h-3.5 w-3.5" />
+      {label}
+    </button>
+  );
 }
 
 async function postAction(body: Record<string, string>) {
@@ -848,10 +872,36 @@ function BlockerCard({
       </div>
 
       <p className="text-[14.5px] font-black leading-snug text-slate-900">{blocker.description}</p>
-      <p className="mt-1 text-[12.5px] leading-relaxed text-slate-600">
-        <span className="font-bold text-rose-600">מה ננסה: </span>
-        {blocker.strategy ? blocker.strategy : 'עוד לא סיכמנו דרך — נדבר על זה בצ׳אט ונבנה צעד קטן יחד.'}
-      </p>
+      {blocker.strategy ? (
+        <p className="mt-1 text-[12.5px] leading-relaxed text-slate-600">
+          <span className="font-bold text-rose-600">מה ננסה: </span>
+          {blocker.strategy}
+        </p>
+      ) : (
+        <div
+          className="mt-2 rounded-2xl p-2.5"
+          style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.18)' }}
+        >
+          <p className="text-[12.5px] leading-relaxed text-slate-600">
+            עוד לא סיכמנו דרך מדויקת. רוצה שנבנה עכשיו צעד קטן ביחד? לחיצה אחת ואני כאן 👇
+          </p>
+          <div className="mt-2">
+            <TalkNowButton
+              prefill={`אלמוג, בוא נדבר על מה שמעכב אותי: "${blocker.description}". איזה צעד קטן נתחיל בו?`}
+              label="בוא נבנה צעד עכשיו"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* מתי אלמוג יוזם בעצמו */}
+      {blocker.status !== 'resolved' ? (
+        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+          {blocker.next_check_at
+            ? `אני אחזור אליך מעצמי ב-${fmtDay(blocker.next_check_at)} לראות איך הולך — לא תצטרך לזכור.`
+            : 'אני שומר על זה במעקב ואחזור אליך לבדוק.'}
+        </p>
+      ) : null}
 
       {history.length > 0 ? (
         <div className="mt-3 border-r-2 border-rose-100 pr-3">
@@ -904,6 +954,11 @@ function BlockerCard({
             <CheckCircle2 className="h-3.5 w-3.5" />
             נפתר
           </button>
+          {blocker.strategy ? (
+            <TalkNowButton
+              prefill={`אלמוג, לגבי "${blocker.description}" — רציתי לדבר על זה עכשיו.`}
+            />
+          ) : null}
         </div>
       ) : null}
     </motion.li>

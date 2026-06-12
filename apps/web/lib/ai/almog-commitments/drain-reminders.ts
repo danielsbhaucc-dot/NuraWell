@@ -47,21 +47,23 @@ export interface DrainRemindersResult {
 
 export async function drainAlmogReminders(
   admin: Admin,
-  opts?: { dryRun?: boolean; maxBatch?: number; now?: Date }
+  opts?: { dryRun?: boolean; maxBatch?: number; now?: Date; userId?: string }
 ): Promise<DrainRemindersResult> {
   const isDryRun = Boolean(opts?.dryRun);
   const now = opts?.now ?? new Date();
   const nowIso = now.toISOString();
+  const scopeUserId = opts?.userId?.trim() || null;
 
   // תקופות פוקוס שהגיעו ל-ends_at — מסיימים אוטומטית, וההרגלים הרגילים חוזרים.
   let focusEnded = 0;
   if (!isDryRun) {
-    const { data: endedRows } = await admin
+    let endedQuery = admin
       .from('almog_focus_periods')
       .update({ status: 'ended' })
       .eq('status', 'active')
-      .lte('ends_at', nowIso)
-      .select('id');
+      .lte('ends_at', nowIso);
+    if (scopeUserId) endedQuery = endedQuery.eq('user_id', scopeUserId);
+    const { data: endedRows } = await endedQuery.select('id');
     focusEnded = Array.isArray(endedRows) ? endedRows.length : 0;
   }
 
@@ -70,13 +72,16 @@ export async function drainAlmogReminders(
     Math.max(1, opts?.maxBatch || Number(process.env.CRON_MAX_ALMOG_REMINDERS) || 300)
   );
 
-  const { data: dueRows, error } = await admin
+  let dueQuery = admin
     .from('scheduled_reminders')
     .select('id, user_id, fire_at, kind, title, body, assignment_id, blocker_id')
     .eq('status', 'pending')
     .lte('fire_at', nowIso)
     .order('fire_at', { ascending: true })
     .limit(maxBatch);
+  if (scopeUserId) dueQuery = dueQuery.eq('user_id', scopeUserId);
+
+  const { data: dueRows, error } = await dueQuery;
 
   if (error) {
     return { now: nowIso, due_count: 0, sent: 0, skipped: 0, focus_ended: focusEnded, errors_count: 1, errors: [error.message] };
