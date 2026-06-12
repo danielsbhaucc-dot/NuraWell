@@ -727,6 +727,13 @@ const BLOCKER_STATUS: Record<Blocker['status'], { label: string; bg: string; fg:
   resolved: { label: 'נפתר', bg: 'bg-emerald-100', fg: 'text-emerald-700' },
 };
 
+/** תרגום סטטוס היסטוריה לעברית (כשאין note מפורש). */
+const STATUS_HE: Record<string, string> = {
+  open: 'זוהה',
+  improving: 'יש שיפור',
+  resolved: 'נפתר',
+};
+
 function BlockerCard({
   blocker,
   busy,
@@ -756,12 +763,10 @@ function BlockerCard({
       </div>
 
       <p className="text-[14.5px] font-black leading-snug text-slate-900">{blocker.description}</p>
-      {blocker.strategy ? (
-        <p className="mt-1 text-[12.5px] leading-relaxed text-slate-600">
-          <span className="font-bold text-rose-600">מה ננסה: </span>
-          {blocker.strategy}
-        </p>
-      ) : null}
+      <p className="mt-1 text-[12.5px] leading-relaxed text-slate-600">
+        <span className="font-bold text-rose-600">מה ננסה: </span>
+        {blocker.strategy ? blocker.strategy : 'עוד לא סיכמנו דרך — נדבר על זה בצ׳אט ונבנה צעד קטן יחד.'}
+      </p>
 
       {history.length > 0 ? (
         <div className="mt-3 border-r-2 border-rose-100 pr-3">
@@ -775,7 +780,7 @@ function BlockerCard({
                   style={{ background: notHelped ? '#fb7185' : helped ? '#34d399' : '#cbd5e1' }}
                 />
                 <div className="min-w-0">
-                  <p className="text-[12px] text-slate-700">{h.note ?? h.status}</p>
+                  <p className="text-[12px] text-slate-700">{h.note ?? STATUS_HE[h.status] ?? h.status}</p>
                   <p className="text-[10px] text-slate-400">{fmtDay(h.at)}</p>
                 </div>
               </div>
