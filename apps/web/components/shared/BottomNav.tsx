@@ -29,25 +29,56 @@ export function BottomNav() {
   }, [router]);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom nav-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom">
+      {/* שכבת זכוכית */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.92) 100%)',
+          backdropFilter: 'blur(22px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(22px) saturate(180%)',
+          borderTop: '1px solid rgba(255,255,255,0.85)',
+          boxShadow: '0 -10px 34px rgba(6,78,59,0.10)',
+        }}
+      />
+      {/* קו הדגשה עליון בגרדיאנט */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-px"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(16,185,129,0.55), transparent)' }}
+      />
       <div className="container-mobile relative">
         {/* Center raised button */}
-        <div className="absolute left-1/2 -translate-x-1/2 -top-5 z-20">
-          <button
+        <div className="absolute left-1/2 -translate-x-1/2 -top-6 z-20">
+          {/* טבעת זוהר נושמת */}
+          <motion.span
+            aria-hidden
+            className="absolute inset-0 rounded-[22px]"
+            style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.45), transparent 70%)', filter: 'blur(8px)' }}
+            animate={{ scale: [1, 1.18, 1], opacity: [0.55, 0.9, 0.55] }}
+            transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <motion.button
             type="button"
             aria-label="דיווח התקדמות למנטור — משימות והרגלים"
             onClick={() => actionHub.open()}
-            className="flex items-center justify-center no-tap-highlight touch-manipulation transition-transform hover:scale-105 active:scale-95"
+            whileTap={{ scale: 0.92 }}
+            className="relative flex items-center justify-center no-tap-highlight touch-manipulation"
             style={{
-              width: '58px', height: '58px',
-              background: 'linear-gradient(145deg, #064e3b, #10b981)',
-              borderRadius: '20px',
-              boxShadow: '0 8px 24px rgba(6,78,59,0.45), inset 0 1px 0 rgba(255,255,255,0.2)',
-              border: '1.5px solid rgba(255,255,255,0.15)',
+              width: '60px', height: '60px',
+              background: 'linear-gradient(150deg, #064e3b 0%, #059669 55%, #34d399 100%)',
+              borderRadius: '22px',
+              boxShadow: '0 10px 28px rgba(6,78,59,0.45), inset 0 1px 0 rgba(255,255,255,0.35)',
+              border: '1.5px solid rgba(255,255,255,0.45)',
             }}
           >
-            <Sparkles className="w-6 h-6 text-white" strokeWidth={2} />
-          </button>
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-x-2 top-1 h-3 rounded-full"
+              style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.5), transparent)' }}
+            />
+            <Sparkles className="h-6 w-6 text-white drop-shadow" strokeWidth={2.2} />
+          </motion.button>
         </div>
 
         <div className="flex items-stretch justify-around gap-1 py-2 px-2">
