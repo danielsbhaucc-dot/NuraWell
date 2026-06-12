@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookOpen, UserCircle, Sparkles, Route, Home } from 'lucide-react';
+import { BookOpen, Sparkles, Route, Home, ClipboardCheck } from 'lucide-react';
 import { APP_HOME_PATH } from '../../lib/navigation/app-home-path';
 import { cn } from '../../lib/cn';
 import { motion } from 'framer-motion';
@@ -15,7 +15,7 @@ const leftItems = [
 ];
 const rightItems = [
   { href: '/guides', label: 'מדריכים', icon: BookOpen },
-  { href: '/profile', label: 'פרופיל', icon: UserCircle },
+  { href: '/plans', label: 'התוכנית שלי', icon: ClipboardCheck },
 ];
 
 export function BottomNav() {

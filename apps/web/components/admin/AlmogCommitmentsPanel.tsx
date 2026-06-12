@@ -56,6 +56,7 @@ type Blocker = {
   identified_at: string;
   last_checked_at: string | null;
   next_check_at: string | null;
+  history: { at: string; status: string; note?: string }[] | null;
 };
 
 type Payload = {
@@ -288,6 +289,20 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
                     <p className="text-sm font-bold text-slate-900 leading-relaxed">{b.description}</p>
                     {b.strategy ? (
                       <p className="text-xs text-slate-600 mt-0.5">דרך להתגבר: {b.strategy}</p>
+                    ) : null}
+                    {Array.isArray(b.history) && b.history.length > 0 ? (
+                      <ul className="mt-2 space-y-1 border-r-2 border-rose-200/70 pr-2">
+                        {b.history
+                          .filter((h) => h && (h.note || h.status))
+                          .slice(-5)
+                          .reverse()
+                          .map((h, i) => (
+                            <li key={i} className="text-[11px] text-slate-600">
+                              <span className="text-slate-400">{fmt(h.at)}: </span>
+                              {h.note ?? h.status}
+                            </li>
+                          ))}
+                      </ul>
                     ) : null}
                     <p className="text-[10px] text-slate-400 mt-1">
                       זוהה {fmt(b.identified_at)}

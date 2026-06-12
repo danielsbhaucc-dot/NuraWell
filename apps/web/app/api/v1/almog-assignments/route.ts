@@ -26,7 +26,12 @@ const actionSchema = z.union([
     focus_id: z.string().uuid(),
   }),
   z.object({
-    action: z.enum(['improve_blocker', 'resolve_blocker']),
+    action: z.enum([
+      'improve_blocker',
+      'resolve_blocker',
+      'blocker_helped',
+      'blocker_not_helped',
+    ]),
     blocker_id: z.string().uuid(),
   }),
 ]);
@@ -150,8 +155,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  if (data.action === 'improve_blocker' || data.action === 'resolve_blocker') {
-    const nextStatus = data.action === 'resolve_blocker' ? 'resolved' : 'improving';
+  if (
+    data.action === 'improve_blocker' ||
+    data.action === 'resolve_blocker' ||
+    data.action === 'blocker_helped' ||
+    data.action === 'blocker_not_helped'
+  ) {
     const { data: blocker } = await admin
       .from('almog_blockers')
       .select('id, history, status')
@@ -166,13 +175,32 @@ export async function POST(request: Request) {
       status: string;
     };
     const history = Array.isArray(row.history) ? row.history : [];
+
+    // status חדש לפי הפעולה. "עזר" מקדם ל-improving; "לא עזר" משאיר את הסטטוס
+    // הנוכחי אבל מתעד שצריך גישה אחרת — מידע יקר לאלמוג.
+    const nextStatus =
+      data.action === 'resolve_blocker'
+        ? 'resolved'
+        : data.action === 'improve_blocker' || data.action === 'blocker_helped'
+          ? 'improving'
+          : row.status;
+
+    const note =
+      data.action === 'resolve_blocker'
+        ? 'נפתר'
+        : data.action === 'blocker_helped'
+          ? 'עזר לי'
+          : data.action === 'blocker_not_helped'
+            ? 'לא עזר — צריך גישה אחרת'
+            : 'יש שיפור';
+
     await admin
       .from('almog_blockers')
       .update({
         status: nextStatus,
         last_checked_at: nowIso,
         ...(nextStatus === 'resolved' ? { next_check_at: null } : {}),
-        history: [...history, { at: nowIso, status: nextStatus, note: 'דווח מתוך עמוד התוכנית' }].slice(-50),
+        history: [...history, { at: nowIso, status: nextStatus, note }].slice(-50),
       })
       .eq('id', row.id)
       .eq('user_id', user.id);

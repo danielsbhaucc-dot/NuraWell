@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertTriangle,
   Bell,
@@ -10,8 +11,11 @@ import {
   Repeat,
   Snowflake,
   Sparkles,
+  ThumbsDown,
+  ThumbsUp,
 } from 'lucide-react';
-import { glassCardStyle, glassPanelStyle } from '@/components/media-manager/glass-styles';
+import { AlmogAvatarChip } from '@/components/journey/AlmogPresence';
+import { createClient } from '@/lib/supabase/client';
 
 type Assignment = {
   id: string;
@@ -47,6 +51,8 @@ type Focus = {
   user_confirmed: boolean;
 };
 
+type BlockerHistory = { at: string; status: string; note?: string };
+
 type Blocker = {
   id: string;
   description: string;
@@ -55,6 +61,7 @@ type Blocker = {
   identified_at: string;
   last_checked_at: string | null;
   next_check_at: string | null;
+  history: BlockerHistory[] | null;
 };
 
 type Payload = {
@@ -68,14 +75,14 @@ type Payload = {
 
 const SCHEDULE_LABEL: Record<Assignment['schedule'], string> = {
   one_time: 'חד-פעמי',
-  daily: 'יומי',
+  daily: 'כל יום',
   weekly: 'שבועי',
 };
 
 const REMINDER_KIND: Record<Reminder['kind'], string> = {
   reminder: 'תזכורת',
-  followup: 'בדיקה',
-  check_progress: 'מעקב חסם',
+  followup: 'בדיקה קטנה',
+  check_progress: 'מעקב',
 };
 
 function fmt(iso: string | null): string {
@@ -87,6 +94,15 @@ function fmt(iso: string | null): string {
       hour: '2-digit',
       minute: '2-digit',
     });
+  } catch {
+    return iso;
+  }
+}
+
+function fmtDay(iso: string | null): string {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' });
   } catch {
     return iso;
   }
@@ -105,14 +121,17 @@ async function postAction(body: Record<string, string>) {
   }
 }
 
-export function PlansClient() {
+export function PlansClient({ userId, firstName }: { userId: string; firstName?: string }) {
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [live, setLive] = useState(false);
+  const [justUpdated, setJustUpdated] = useState(false);
+  const firstLoad = useRef(true);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const res = await fetch('/api/v1/almog-assignments', {
@@ -122,11 +141,15 @@ export function PlansClient() {
       const json = (await res.json()) as Payload & { error?: string };
       if (!res.ok) throw new Error(json.error ?? 'שגיאה בטעינה');
       setData(json);
+      if (!firstLoad.current && silent) {
+        setJustUpdated(true);
+        window.setTimeout(() => setJustUpdated(false), 1800);
+      }
+      firstLoad.current = false;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'שגיאת טעינה');
-      setData(null);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -134,12 +157,54 @@ export function PlansClient() {
     void load();
   }, [load]);
 
+  // ── עדכון לייב: Supabase realtime על טבלאות אלמוג + פולבק פולינג ──
+  useEffect(() => {
+    if (!userId) return;
+    const supabase = createClient();
+    let debounce: ReturnType<typeof setTimeout> | null = null;
+    const ping = () => {
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(() => void load(true), 350);
+    };
+
+    const channel = supabase.channel(`plans-live-${userId}-${Date.now()}`);
+    for (const table of [
+      'almog_assignments',
+      'scheduled_reminders',
+      'almog_blockers',
+      'almog_focus_periods',
+    ]) {
+      channel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table, filter: `user_id=eq.${userId}` },
+        ping
+      );
+    }
+    channel.subscribe((status) => {
+      setLive(status === 'SUBSCRIBED');
+    });
+
+    // פולבק: רענון שקט כל 45 שניות (גם אם realtime לא זמין).
+    const poll = window.setInterval(() => void load(true), 45_000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void load(true);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      if (debounce) clearTimeout(debounce);
+      window.clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+      void supabase.removeChannel(channel);
+    };
+  }, [userId, load]);
+
   const run = async (id: string, action: () => Promise<void>) => {
     setBusyId(id);
     setError(null);
     try {
       await action();
-      await load();
+      await load(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'הפעולה נכשלה');
     } finally {
@@ -149,64 +214,83 @@ export function PlansClient() {
 
   const pendingReminders = (data?.reminders ?? []).filter((r) => r.status === 'pending');
   const sentReminders = (data?.reminders ?? []).filter((r) => r.status === 'sent');
+  const activeCount = data?.assignments.length ?? 0;
+  const hello = firstName ? `${firstName}, ` : '';
 
   return (
-    <div className="container-mobile space-y-4 pb-8">
-      <section className="rounded-3xl overflow-hidden" style={glassPanelStyle}>
-        <div className="px-4 py-5 border-b border-white/40">
-          <div className="flex items-center gap-3">
-            <div
-              className="flex h-11 w-11 items-center justify-center rounded-2xl text-emerald-700"
-              style={glassCardStyle}
-            >
-              <Sparkles className="w-5 h-5" aria-hidden />
-            </div>
-            <div>
-              <h1 className="text-lg font-black text-slate-900">התוכנית שלי</h1>
-              <p className="text-xs text-slate-600/90 leading-relaxed">
-                משימות, תזכורות ומעקב שאלמוג סיכם איתך — עם דיווח ביצוע אמיתי
-              </p>
-            </div>
-          </div>
-        </div>
+    <div dir="rtl" className="relative min-h-[calc(100vh-9rem)]">
+      <AuroraBackground />
 
-        <div className="p-4">
-          {loading ? (
-            <p className="flex justify-center py-10">
-              <Loader2 className="w-7 h-7 animate-spin text-emerald-600" />
+      <div className="container-mobile relative z-10 space-y-5 pb-10 pt-2">
+        {/* ── כותרת: אלמוג מדבר ── */}
+        <header className="flex items-start gap-3 px-1 pt-2">
+          <AlmogAvatarChip size={52} />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-[19px] font-black text-white drop-shadow">התוכנית שלנו</h1>
+              <LivePill live={live} pulsing={justUpdated} />
+            </div>
+            <p className="mt-1 text-[13px] leading-relaxed text-emerald-100/85">
+              {hello}ריכזתי כאן הכל מה שסיכמנו יחד. צעד קטן בכל פעם — אני איתך בכל אחד מהם. 🌱
             </p>
-          ) : error ? (
-            <p className="text-sm text-red-700 text-center py-8">{error}</p>
-          ) : !data?.tables_ready ? (
-            <p className="text-sm text-slate-600 text-center py-8">
-              מערכת התוכניות עדיין לא מוכנה בשרת. נסה שוב מאוחר יותר.
+          </div>
+        </header>
+
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-emerald-300" />
+          </div>
+        ) : error && !data ? (
+          <GlassCard glow="rose">
+            <p className="py-6 text-center text-sm text-rose-100">{error}</p>
+          </GlassCard>
+        ) : !data?.tables_ready ? (
+          <GlassCard glow="emerald">
+            <p className="py-6 text-center text-sm text-emerald-100/90">
+              עוד רגע מתארגנים. ברגע שנסכם משהו בצ׳אט — הוא יופיע כאן.
             </p>
-          ) : (
-            <div className="space-y-5">
+          </GlassCard>
+        ) : (
+          <>
+            {error ? (
+              <p className="rounded-2xl bg-rose-500/20 px-3 py-2 text-center text-xs font-semibold text-rose-100">
+                {error}
+              </p>
+            ) : null}
+
+            {/* ── מצב פוקוס ── */}
+            <AnimatePresence initial={false}>
               {data.focus ? (
                 <FocusCard
+                  key={data.focus.id}
                   focus={data.focus}
                   busy={busyId === data.focus.id}
                   onConfirm={() =>
-                    run(data.focus!.id, () =>
-                      postAction({ action: 'confirm_focus', focus_id: data.focus!.id })
-                    )
+                    run(data.focus!.id, () => postAction({ action: 'confirm_focus', focus_id: data.focus!.id }))
                   }
                   onDecline={() =>
-                    run(data.focus!.id, () =>
-                      postAction({ action: 'decline_focus', focus_id: data.focus!.id })
-                    )
+                    run(data.focus!.id, () => postAction({ action: 'decline_focus', focus_id: data.focus!.id }))
                   }
                   onEnd={() =>
-                    run(data.focus!.id, () =>
-                      postAction({ action: 'end_focus', focus_id: data.focus!.id })
-                    )
+                    run(data.focus!.id, () => postAction({ action: 'end_focus', focus_id: data.focus!.id }))
                   }
                 />
               ) : null}
+            </AnimatePresence>
 
-              {data.assignments.length > 0 ? (
-                <Section title="משימות פעילות" icon={Sparkles} tint="text-emerald-700">
+            {/* ── משימות פעילות ── */}
+            <Section
+              icon={Sparkles}
+              title="הצעדים שלך"
+              glow="emerald"
+              note={
+                activeCount > 0
+                  ? 'אלה הדברים שביקשתי שתנסה. כל סימון פה זה ניצחון אמיתי — גם הקטן.'
+                  : undefined
+              }
+            >
+              {activeCount > 0 ? (
+                <AnimatePresence initial={false}>
                   {data.assignments.map((a) => (
                     <AssignmentCard
                       key={a.id}
@@ -216,128 +300,213 @@ export function PlansClient() {
                       onDrop={() => run(a.id, () => postAction({ action: 'drop', assignment_id: a.id }))}
                     />
                   ))}
-                </Section>
+                </AnimatePresence>
               ) : (
-                <EmptyHint text="אין כרגע משימות פעילות מאלמוג. כשתסכימו על משהו בצ׳אט — הוא יופיע כאן." />
+                <p className="px-1 py-3 text-sm text-emerald-100/70">
+                  אין כרגע צעד פתוח. כשנסכם משהו בשיחה — אני אשים אותו פה בשבילך.
+                </p>
               )}
+            </Section>
 
-              {pendingReminders.length > 0 ? (
-                <Section title="תזכורות קרובות" icon={Bell} tint="text-amber-700">
-                  {pendingReminders.map((r) => (
-                    <li key={r.id} className="rounded-2xl px-3 py-3" style={glassCardStyle}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-bold text-amber-800">{REMINDER_KIND[r.kind]}</span>
-                        <span className="inline-flex items-center gap-1 text-[10px] text-slate-500">
-                          <Clock className="w-3 h-3" />
-                          {fmt(r.fire_at)}
-                        </span>
-                      </div>
-                      <p className="text-sm text-slate-900 leading-relaxed">{r.body}</p>
+            {/* ── תזכורות קרובות ── */}
+            {pendingReminders.length > 0 ? (
+              <Section
+                icon={Bell}
+                title="אני אזכיר לך"
+                glow="amber"
+                note="שמתי לעצמי תזכורת אמיתית. לא תצטרך לזכור לבד."
+              >
+                {pendingReminders.map((r) => (
+                  <ReminderRow key={r.id} reminder={r} />
+                ))}
+              </Section>
+            ) : null}
+
+            {/* ── חסמים במעקב ── */}
+            {data.blockers.length > 0 ? (
+              <Section
+                icon={AlertTriangle}
+                title="מה שמקשה עליך — ואיך נתגבר"
+                glow="rose"
+                note="זיהיתי את אלה ביחד איתך. נעבוד עליהם בעדינות, צעד-צעד, ואני עוקב."
+              >
+                {data.blockers.map((b) => (
+                  <BlockerCard
+                    key={b.id}
+                    blocker={b}
+                    busy={busyId?.startsWith(b.id) ?? false}
+                    onHelped={() =>
+                      run(`${b.id}-h`, () => postAction({ action: 'blocker_helped', blocker_id: b.id }))
+                    }
+                    onNotHelped={() =>
+                      run(`${b.id}-n`, () => postAction({ action: 'blocker_not_helped', blocker_id: b.id }))
+                    }
+                    onResolve={() =>
+                      run(`${b.id}-r`, () => postAction({ action: 'resolve_blocker', blocker_id: b.id }))
+                    }
+                  />
+                ))}
+              </Section>
+            ) : null}
+
+            {/* ── הושלמו ── */}
+            {data.completed.length > 0 ? (
+              <Section icon={CheckCircle2} title="כבר עשית את זה" glow="teal" note="להסתכל אחורה זה דלק. כל הכבוד.">
+                {data.completed.map((a) => (
+                  <li
+                    key={a.id}
+                    className="flex items-center gap-2.5 rounded-2xl px-3 py-2.5"
+                    style={cardStyle('teal')}
+                  >
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-300" />
+                    <p className="min-w-0 flex-1 truncate text-[13px] font-bold text-teal-50/90 line-through decoration-teal-300/40">
+                      {a.title}
+                    </p>
+                    <span className="shrink-0 text-[10px] font-semibold text-teal-200/70">
+                      {fmtDay(a.last_done_at)}
+                    </span>
+                  </li>
+                ))}
+              </Section>
+            ) : null}
+
+            {/* ── תזכורות שנשלחו (מצומצם) ── */}
+            {sentReminders.length > 0 ? (
+              <details className="group">
+                <summary className="cursor-pointer list-none px-1 text-[11px] font-bold uppercase tracking-wide text-white/50">
+                  תזכורות שכבר שלחתי ({sentReminders.length})
+                </summary>
+                <ul className="mt-2 space-y-2">
+                  {sentReminders.slice(0, 8).map((r) => (
+                    <li key={r.id} className="rounded-2xl px-3 py-2.5 opacity-80" style={cardStyle('slate')}>
+                      <p className="text-[13px] text-white/85">{r.body}</p>
+                      <p className="mt-1 text-[10px] text-white/45">נשלחה {fmt(r.sent_at)}</p>
                     </li>
                   ))}
-                </Section>
-              ) : null}
-
-              {data.blockers.length > 0 ? (
-                <Section title="חסמים במעקב" icon={AlertTriangle} tint="text-rose-700">
-                  {data.blockers.map((b) => (
-                    <li key={b.id} className="rounded-2xl px-3 py-3" style={glassCardStyle}>
-                      <p className="text-sm font-bold text-slate-900 leading-relaxed">{b.description}</p>
-                      {b.strategy ? (
-                        <p className="text-xs text-slate-600 mt-1">דרך להתגבר: {b.strategy}</p>
-                      ) : null}
-                      <p className="text-[10px] text-slate-400 mt-1">
-                        זוהה {fmt(b.identified_at)}
-                        {b.next_check_at ? ` · בדיקה הבאה ${fmt(b.next_check_at)}` : ''}
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <ActionButton
-                          label="יש שיפור"
-                          variant="soft"
-                          busy={busyId === `${b.id}-improve`}
-                          onClick={() =>
-                            run(`${b.id}-improve`, () =>
-                              postAction({ action: 'improve_blocker', blocker_id: b.id })
-                            )
-                          }
-                        />
-                        <ActionButton
-                          label="נפתר"
-                          variant="primary"
-                          busy={busyId === `${b.id}-resolve`}
-                          onClick={() =>
-                            run(`${b.id}-resolve`, () =>
-                              postAction({ action: 'resolve_blocker', blocker_id: b.id })
-                            )
-                          }
-                        />
-                      </div>
-                    </li>
-                  ))}
-                </Section>
-              ) : null}
-
-              {data.completed.length > 0 ? (
-                <Section title="הושלמו לאחרונה" icon={CheckCircle2} tint="text-teal-700">
-                  {data.completed.map((a) => (
-                    <li key={a.id} className="rounded-2xl px-3 py-3" style={glassCardStyle}>
-                      <p className="text-sm font-bold text-slate-900">{a.title}</p>
-                      {a.reason ? <p className="text-xs text-slate-600 mt-0.5">למה: {a.reason}</p> : null}
-                      <p className="text-[10px] text-slate-400 mt-1">
-                        בוצע {fmt(a.last_done_at)} · {a.done_count}×
-                      </p>
-                    </li>
-                  ))}
-                </Section>
-              ) : null}
-
-              {sentReminders.length > 0 ? (
-                <Section title="תזכורות שנשלחו" icon={Bell} tint="text-slate-600">
-                  {sentReminders.slice(0, 6).map((r) => (
-                    <li key={r.id} className="rounded-2xl px-3 py-3 opacity-90" style={glassCardStyle}>
-                      <p className="text-sm text-slate-800">{r.body}</p>
-                      <p className="text-[10px] text-slate-400 mt-1">נשלחה {fmt(r.sent_at)}</p>
-                    </li>
-                  ))}
-                </Section>
-              ) : null}
-            </div>
-          )}
-        </div>
-      </section>
+                </ul>
+              </details>
+            ) : null}
+          </>
+        )}
+      </div>
     </div>
+  );
+}
+
+/* ───────────────────────── רקע אורה ───────────────────────── */
+
+function AuroraBackground() {
+  return (
+    <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div className="absolute inset-0" style={{ background: 'radial-gradient(120% 90% at 50% -10%, #10243f 0%, #0a1020 55%, #070a14 100%)' }} />
+      <motion.div
+        className="absolute -right-24 -top-16 h-72 w-72 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.45), transparent 70%)', filter: 'blur(40px)' }}
+        animate={{ y: [0, 22, 0], opacity: [0.55, 0.8, 0.55] }}
+        transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute -left-24 top-32 h-80 w-80 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.4), transparent 70%)', filter: 'blur(46px)' }}
+        animate={{ y: [0, -26, 0], opacity: [0.45, 0.75, 0.45] }}
+        transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute bottom-0 right-10 h-72 w-72 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(217,70,239,0.32), transparent 70%)', filter: 'blur(50px)' }}
+        animate={{ y: [0, 18, 0], opacity: [0.4, 0.65, 0.4] }}
+        transition={{ duration: 13, repeat: Infinity, ease: 'easeInOut' }}
+      />
+    </div>
+  );
+}
+
+/* ───────────────────────── פרימיטיבים ───────────────────────── */
+
+type Glow = 'emerald' | 'amber' | 'rose' | 'teal' | 'sky' | 'slate' | 'indigo';
+
+const GLOW_RGB: Record<Glow, string> = {
+  emerald: '16,185,129',
+  amber: '245,158,11',
+  rose: '244,63,94',
+  teal: '20,184,166',
+  sky: '56,189,248',
+  slate: '148,163,184',
+  indigo: '129,140,248',
+};
+
+function cardStyle(glow: Glow): React.CSSProperties {
+  const rgb = GLOW_RGB[glow];
+  return {
+    background: `linear-gradient(150deg, rgba(${rgb},0.16) 0%, rgba(255,255,255,0.05) 60%, rgba(255,255,255,0.03) 100%)`,
+    border: `1px solid rgba(${rgb},0.30)`,
+    backdropFilter: 'blur(16px) saturate(140%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+    boxShadow: `0 10px 30px rgba(0,0,0,0.35), 0 0 22px rgba(${rgb},0.10), inset 0 1px 0 rgba(255,255,255,0.12)`,
+  };
+}
+
+function GlassCard({ glow, children }: { glow: Glow; children: React.ReactNode }) {
+  return (
+    <div className="rounded-3xl p-4" style={cardStyle(glow)}>
+      {children}
+    </div>
+  );
+}
+
+function LivePill({ live, pulsing }: { live: boolean; pulsing: boolean }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black"
+      style={{
+        background: live ? 'rgba(16,185,129,0.18)' : 'rgba(148,163,184,0.18)',
+        border: `1px solid rgba(${live ? '16,185,129' : '148,163,184'},0.4)`,
+        color: live ? '#a7f3d0' : '#cbd5e1',
+      }}
+    >
+      <motion.span
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ background: live ? '#34d399' : '#94a3b8' }}
+        animate={pulsing || live ? { scale: [1, 1.6, 1], opacity: [1, 0.5, 1] } : {}}
+        transition={{ duration: 1.4, repeat: Infinity }}
+      />
+      {live ? 'חי' : 'מתחבר'}
+    </span>
   );
 }
 
 function Section({
-  title,
   icon: Icon,
-  tint,
+  title,
+  glow,
+  note,
   children,
 }: {
-  title: string;
   icon: typeof Sparkles;
-  tint: string;
+  title: string;
+  glow: Glow;
+  note?: string;
   children: React.ReactNode;
 }) {
+  const rgb = GLOW_RGB[glow];
   return (
-    <div>
-      <p className="mb-2 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500">
-        <Icon className={`w-3.5 h-3.5 ${tint}`} aria-hidden />
-        {title}
-      </p>
-      <ul className="space-y-2">{children}</ul>
-    </div>
+    <section>
+      <div className="mb-2 flex items-center gap-2 px-1">
+        <span
+          className="flex h-7 w-7 items-center justify-center rounded-xl"
+          style={{ background: `rgba(${rgb},0.18)`, border: `1px solid rgba(${rgb},0.4)` }}
+        >
+          <Icon className="h-4 w-4" style={{ color: `rgb(${rgb})` }} aria-hidden />
+        </span>
+        <h2 className="text-[15px] font-black text-white">{title}</h2>
+      </div>
+      {note ? <p className="mb-2.5 px-1 text-[12px] leading-relaxed text-white/55">{note}</p> : null}
+      <ul className="space-y-2.5">{children}</ul>
+    </section>
   );
 }
 
-function EmptyHint({ text }: { text: string }) {
-  return (
-    <div className="rounded-2xl px-4 py-5 text-center text-sm text-slate-500" style={glassCardStyle}>
-      {text}
-    </div>
-  );
-}
+/* ───────────────────────── כרטיסים ───────────────────────── */
 
 function AssignmentCard({
   assignment,
@@ -350,38 +519,191 @@ function AssignmentCard({
   onDone: () => void;
   onDrop: () => void;
 }) {
+  const isRecurring = assignment.schedule !== 'one_time';
+  const doneToday =
+    Boolean(assignment.last_done_at) && fmtDay(assignment.last_done_at) === fmtDay(new Date().toISOString());
+
   return (
-    <li className="rounded-2xl px-3 py-3" style={glassCardStyle}>
-      <div className="flex flex-wrap items-center gap-1.5 mb-1">
-        <span className="text-[10px] font-bold text-emerald-800">
-          {assignment.schedule === 'one_time' ? (
-            <span className="inline-flex items-center gap-0.5">
-              <Sparkles className="w-3 h-3" />
-              {SCHEDULE_LABEL[assignment.schedule]}
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-0.5">
-              <Repeat className="w-3 h-3" />
-              {SCHEDULE_LABEL[assignment.schedule]}
-            </span>
-          )}
+    <motion.li
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      className="rounded-2xl p-3.5"
+      style={cardStyle('emerald')}
+    >
+      <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
+          {isRecurring ? <Repeat className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
+          {SCHEDULE_LABEL[assignment.schedule]}
         </span>
         {assignment.done_count > 0 ? (
-          <span className="text-[10px] font-bold text-emerald-700">בוצע {assignment.done_count}×</span>
+          <span className="text-[10px] font-bold text-emerald-300">בוצע {assignment.done_count}×</span>
         ) : null}
       </div>
-      <p className="text-sm font-black text-slate-900 leading-relaxed">{assignment.title}</p>
-      {assignment.reason ? <p className="text-xs text-slate-600 mt-1">למה: {assignment.reason}</p> : null}
-      {assignment.detail ? <p className="text-xs text-slate-500 mt-0.5">{assignment.detail}</p> : null}
-      <p className="text-[10px] text-slate-400 mt-1">
-        ניתנה {fmt(assignment.given_at)}
-        {assignment.last_done_at ? ` · בוצע לאחרונה ${fmt(assignment.last_done_at)}` : ''}
-      </p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <ActionButton label="עשיתי" variant="primary" busy={busy} onClick={onDone} />
-        <ActionButton label="לא מתאים לי" variant="soft" busy={busy} onClick={onDrop} />
+      <p className="text-[15px] font-black leading-snug text-white">{assignment.title}</p>
+      {assignment.reason ? (
+        <p className="mt-1 text-[12.5px] leading-relaxed text-emerald-100/75">
+          <span className="font-bold text-emerald-200">למה: </span>
+          {assignment.reason}
+        </p>
+      ) : null}
+      {assignment.detail ? (
+        <p className="mt-0.5 text-[12px] leading-relaxed text-white/55">{assignment.detail}</p>
+      ) : null}
+
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          disabled={busy || doneToday}
+          onClick={onDone}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-[13.5px] font-black text-white transition active:scale-95 disabled:opacity-60"
+          style={{
+            background: doneToday
+              ? 'linear-gradient(135deg, #34d399, #059669)'
+              : 'linear-gradient(135deg, #059669, #10b981)',
+            boxShadow: '0 6px 18px rgba(16,185,129,0.35)',
+          }}
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+          {doneToday ? 'בוצע היום ✨' : isRecurring ? 'עשיתי היום' : 'סיימתי'}
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onDrop}
+          className="rounded-xl px-3 py-2.5 text-[12px] font-bold text-white/70 transition active:scale-95 disabled:opacity-50"
+          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.14)' }}
+        >
+          לא מתאים
+        </button>
       </div>
+    </motion.li>
+  );
+}
+
+function ReminderRow({ reminder }: { reminder: Reminder }) {
+  return (
+    <li className="rounded-2xl p-3" style={cardStyle('amber')}>
+      <div className="mb-1 flex items-center gap-2">
+        <span className="rounded-md bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-200">
+          {REMINDER_KIND[reminder.kind]}
+        </span>
+        <span className="inline-flex items-center gap-1 text-[10px] text-amber-100/70">
+          <Clock className="h-3 w-3" />
+          {fmt(reminder.fire_at)}
+        </span>
+      </div>
+      <p className="text-[13.5px] leading-relaxed text-white/90">{reminder.body}</p>
     </li>
+  );
+}
+
+const BLOCKER_STATUS: Record<Blocker['status'], { label: string; rgb: string }> = {
+  open: { label: 'במעקב', rgb: '244,63,94' },
+  improving: { label: 'משתפר', rgb: '245,158,11' },
+  resolved: { label: 'נפתר', rgb: '16,185,129' },
+};
+
+function BlockerCard({
+  blocker,
+  busy,
+  onHelped,
+  onNotHelped,
+  onResolve,
+}: {
+  blocker: Blocker;
+  busy: boolean;
+  onHelped: () => void;
+  onNotHelped: () => void;
+  onResolve: () => void;
+}) {
+  const st = BLOCKER_STATUS[blocker.status];
+  const history = (Array.isArray(blocker.history) ? blocker.history : []).slice(-6).reverse();
+
+  return (
+    <motion.li layout className="rounded-2xl p-3.5" style={cardStyle('rose')}>
+      <div className="mb-1 flex items-center gap-2">
+        <span
+          className="rounded-md px-1.5 py-0.5 text-[10px] font-black"
+          style={{ background: `rgba(${st.rgb},0.18)`, color: `rgb(${st.rgb})`, border: `1px solid rgba(${st.rgb},0.4)` }}
+        >
+          {st.label}
+        </span>
+        {blocker.next_check_at ? (
+          <span className="inline-flex items-center gap-1 text-[10px] text-white/55">
+            <Clock className="h-3 w-3" />
+            נבדוק יחד {fmtDay(blocker.next_check_at)}
+          </span>
+        ) : null}
+      </div>
+
+      <p className="text-[14.5px] font-black leading-snug text-white">{blocker.description}</p>
+      {blocker.strategy ? (
+        <p className="mt-1 text-[12.5px] leading-relaxed text-rose-100/80">
+          <span className="font-bold text-rose-200">מה ננסה: </span>
+          {blocker.strategy}
+        </p>
+      ) : null}
+
+      {/* טיים-ליין היסטוריה: מה עזר / מה לא עזר */}
+      {history.length > 0 ? (
+        <div className="mt-3 border-r border-white/10 pr-3">
+          {history.map((h, i) => {
+            const rgb = BLOCKER_STATUS[(h.status as Blocker['status']) in BLOCKER_STATUS ? (h.status as Blocker['status']) : 'open'].rgb;
+            const helped = h.note?.includes('עזר') && !h.note?.includes('לא עזר');
+            const notHelped = h.note?.includes('לא עזר');
+            return (
+              <div key={i} className="relative flex items-start gap-2 pb-2 last:pb-0">
+                <span
+                  className="mt-1 h-2 w-2 shrink-0 rounded-full"
+                  style={{ background: notHelped ? '#fb7185' : helped ? '#34d399' : `rgb(${rgb})` }}
+                />
+                <div className="min-w-0">
+                  <p className="text-[12px] text-white/80">{h.note ?? h.status}</p>
+                  <p className="text-[10px] text-white/40">{fmtDay(h.at)}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {blocker.status !== 'resolved' ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onHelped}
+            className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-[12px] font-bold text-emerald-100 transition active:scale-95 disabled:opacity-60"
+            style={{ background: 'rgba(16,185,129,0.16)', border: '1px solid rgba(16,185,129,0.4)' }}
+          >
+            <ThumbsUp className="h-3.5 w-3.5" />
+            עזר לי
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onNotHelped}
+            className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-[12px] font-bold text-rose-100 transition active:scale-95 disabled:opacity-60"
+            style={{ background: 'rgba(244,63,94,0.16)', border: '1px solid rgba(244,63,94,0.4)' }}
+          >
+            <ThumbsDown className="h-3.5 w-3.5" />
+            לא עזר
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onResolve}
+            className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-[12px] font-black text-white transition active:scale-95 disabled:opacity-60"
+            style={{ background: 'linear-gradient(135deg,#059669,#10b981)', boxShadow: '0 4px 14px rgba(16,185,129,0.3)' }}
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            נפתר
+          </button>
+        </div>
+      ) : null}
+    </motion.li>
   );
 }
 
@@ -398,54 +720,61 @@ function FocusCard({
   onDecline: () => void;
   onEnd: () => void;
 }) {
+  const isProposed = focus.status === 'proposed';
   return (
-    <div className="rounded-2xl px-3 py-3 border border-sky-200/70" style={glassCardStyle}>
-      <div className="flex items-center gap-2 mb-1">
-        <Snowflake className="w-4 h-4 text-sky-700" />
-        <p className="text-sm font-black text-slate-900">מצב פוקוס מאלמוג</p>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, height: 0 }}
+      className="rounded-3xl p-4"
+      style={cardStyle('indigo')}
+    >
+      <div className="mb-1 flex items-center gap-2">
+        <Snowflake className="h-5 w-5 text-indigo-200" />
+        <p className="text-[15px] font-black text-white">
+          {isProposed ? 'בוא ניקח אוויר ביחד' : 'מצב פוקוס פעיל'}
+        </p>
       </div>
-      {focus.reason ? <p className="text-sm text-slate-700 leading-relaxed">{focus.reason}</p> : null}
-      <p className="text-[10px] text-slate-400 mt-1">
-        {focus.status === 'proposed' ? 'ממתין לאישור שלך' : 'פעיל'}
-        {focus.ends_at ? ` · עד ${fmt(focus.ends_at)}` : ''}
+      <p className="text-[13px] leading-relaxed text-indigo-50/85">
+        {isProposed
+          ? `שמתי לב שעכשיו קצת כבד. בוא נשים בצד את שאר המשימות${focus.reason ? ` ונתמקד ב${focus.reason}` : ''} — ההתקדמות שלך נשמרת, אנחנו רק לוקחים נשימה.`
+          : `שמנו בצד את השאר${focus.ends_at ? ` עד ${fmtDay(focus.ends_at)}` : ''}${focus.reason ? ` כדי להתמקד ב${focus.reason}` : ''}. אני שומר עליך מהצד.`}
       </p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {focus.status === 'proposed' ? (
+      <div className="mt-3 flex gap-2">
+        {isProposed ? (
           <>
-            <ActionButton label="מאשר" variant="primary" busy={busy} onClick={onConfirm} />
-            <ActionButton label="לא עכשיו" variant="soft" busy={busy} onClick={onDecline} />
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onConfirm}
+              className="flex-1 rounded-xl px-3 py-2.5 text-[13px] font-black text-white transition active:scale-95 disabled:opacity-60"
+              style={{ background: 'linear-gradient(135deg,#6366f1,#818cf8)', boxShadow: '0 6px 18px rgba(99,102,241,0.4)' }}
+            >
+              בוא נתמקד
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onDecline}
+              className="rounded-xl px-4 py-2.5 text-[12px] font-bold text-white/75 transition active:scale-95 disabled:opacity-60"
+              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.14)' }}
+            >
+              לא עכשיו
+            </button>
           </>
         ) : (
-          <ActionButton label="חזרתי לשגרה" variant="primary" busy={busy} onClick={onEnd} />
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onEnd}
+            className="w-full rounded-xl px-3 py-2.5 text-[13px] font-bold text-white transition active:scale-95 disabled:opacity-60"
+            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.18)' }}
+          >
+            חזרתי לשגרה 💪
+          </button>
         )}
       </div>
-    </div>
-  );
-}
-
-function ActionButton({
-  label,
-  variant,
-  busy,
-  onClick,
-}: {
-  label: string;
-  variant: 'primary' | 'soft';
-  busy: boolean;
-  onClick: () => void;
-}) {
-  const cls =
-    variant === 'primary'
-      ? 'bg-emerald-600 text-white border-emerald-500/40'
-      : 'bg-white/45 text-slate-700 border-white/60';
-  return (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={onClick}
-      className={`rounded-xl px-3 py-2 text-xs font-bold border backdrop-blur-md transition disabled:opacity-60 ${cls}`}
-    >
-      {busy ? 'שומר...' : label}
-    </button>
+    </motion.div>
   );
 }
