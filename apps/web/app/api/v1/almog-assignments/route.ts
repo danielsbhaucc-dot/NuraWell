@@ -22,21 +22,31 @@ const actionSchema = z.union([
     assignment_id: z.string().uuid(),
   }),
   z.object({
-    action: z.enum(['confirm_focus', 'decline_focus']),
+    action: z.enum(['confirm_focus', 'decline_focus', 'end_focus']),
     focus_id: z.string().uuid(),
   }),
+  z.object({
+    action: z.enum(['improve_blocker', 'resolve_blocker']),
+    blocker_id: z.string().uuid(),
+  }),
 ]);
+
+type SupabaseResult = { error: { code?: string } | null };
+
+function hasMissingTable(...results: SupabaseResult[]): boolean {
+  return results.some((r) => r.error?.code === '42P01');
+}
 
 export async function GET(request: Request) {
   const auth = await requireApiSession(request);
   if (!auth.ok) return auth.response;
   const { supabase, user } = auth;
 
-  const [{ data: assignments }, { data: focus }, { data: completed }] = await Promise.all([
+  const [assignmentsRes, focusRes, completedRes, remindersRes, blockersRes] = await Promise.all([
     supabase
       .from('almog_assignments')
       .select(
-        'id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id'
+        'id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id, source_excerpt'
       )
       .eq('user_id', user.id)
       .in('status', ['active', 'frozen'])
@@ -44,7 +54,7 @@ export async function GET(request: Request) {
       .limit(20),
     supabase
       .from('almog_focus_periods')
-      .select('id, status, reason, paused_scope, ends_at, assignment_ids')
+      .select('id, status, reason, paused_scope, started_at, ends_at, user_confirmed, assignment_ids')
       .eq('user_id', user.id)
       .in('status', ['proposed', 'active'])
       .order('updated_at', { ascending: false })
@@ -53,17 +63,34 @@ export async function GET(request: Request) {
     // משימות שהושלמו (חד-פעמיות) — מוצגות כ"הושלמו" כדי שיהיה תיעוד גלוי למשתמש.
     supabase
       .from('almog_assignments')
-      .select('id, title, reason, schedule, given_at, last_done_at, done_count')
+      .select('id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id, source_excerpt')
       .eq('user_id', user.id)
       .eq('status', 'completed')
       .order('last_done_at', { ascending: false, nullsFirst: false })
       .limit(8),
+    supabase
+      .from('scheduled_reminders')
+      .select('id, kind, title, body, status, fire_at, sent_at, assignment_id, blocker_id')
+      .eq('user_id', user.id)
+      .in('status', ['pending', 'sent'])
+      .order('fire_at', { ascending: true })
+      .limit(20),
+    supabase
+      .from('almog_blockers')
+      .select('id, description, strategy, status, identified_at, last_checked_at, next_check_at, history')
+      .eq('user_id', user.id)
+      .in('status', ['open', 'improving'])
+      .order('identified_at', { ascending: false })
+      .limit(12),
   ]);
 
   return NextResponse.json({
-    assignments: assignments ?? [],
-    focus: focus ?? null,
-    completed: completed ?? [],
+    tables_ready: !hasMissingTable(assignmentsRes, focusRes, completedRes, remindersRes, blockersRes),
+    assignments: assignmentsRes.data ?? [],
+    focus: focusRes.data ?? null,
+    completed: completedRes.data ?? [],
+    reminders: remindersRes.data ?? [],
+    blockers: blockersRes.data ?? [],
   });
 }
 
@@ -88,7 +115,11 @@ export async function POST(request: Request) {
   const nowIso = new Date().toISOString();
   const data = parsed.data;
 
-  if (data.action === 'confirm_focus' || data.action === 'decline_focus') {
+  if (
+    data.action === 'confirm_focus' ||
+    data.action === 'decline_focus' ||
+    data.action === 'end_focus'
+  ) {
     const { data: row } = await admin
       .from('almog_focus_periods')
       .select('id, status')
@@ -103,13 +134,59 @@ export async function POST(request: Request) {
         .update({ status: 'active', user_confirmed: true, started_at: nowIso })
         .eq('id', data.focus_id)
         .eq('user_id', user.id);
-    } else {
+    } else if (data.action === 'decline_focus') {
       await admin
         .from('almog_focus_periods')
         .update({ status: 'declined' })
         .eq('id', data.focus_id)
         .eq('user_id', user.id);
+    } else {
+      await admin
+        .from('almog_focus_periods')
+        .update({ status: 'ended', ends_at: nowIso })
+        .eq('id', data.focus_id)
+        .eq('user_id', user.id);
     }
+    return NextResponse.json({ ok: true });
+  }
+
+  if (data.action === 'improve_blocker' || data.action === 'resolve_blocker') {
+    const nextStatus = data.action === 'resolve_blocker' ? 'resolved' : 'improving';
+    const { data: blocker } = await admin
+      .from('almog_blockers')
+      .select('id, history, status')
+      .eq('id', data.blocker_id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!blocker) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    const row = blocker as {
+      id: string;
+      history: { at: string; status: string; note?: string }[] | null;
+      status: string;
+    };
+    const history = Array.isArray(row.history) ? row.history : [];
+    await admin
+      .from('almog_blockers')
+      .update({
+        status: nextStatus,
+        last_checked_at: nowIso,
+        ...(nextStatus === 'resolved' ? { next_check_at: null } : {}),
+        history: [...history, { at: nowIso, status: nextStatus, note: 'דווח מתוך עמוד התוכנית' }].slice(-50),
+      })
+      .eq('id', row.id)
+      .eq('user_id', user.id);
+
+    if (nextStatus === 'resolved') {
+      await admin
+        .from('scheduled_reminders')
+        .update({ status: 'cancelled' })
+        .eq('user_id', user.id)
+        .eq('blocker_id', row.id)
+        .eq('kind', 'check_progress')
+        .eq('status', 'pending');
+    }
+
     return NextResponse.json({ ok: true });
   }
 
@@ -149,6 +226,15 @@ export async function POST(request: Request) {
       })
       .eq('id', row.id)
       .eq('user_id', user.id);
+
+    if (nextStatus === 'completed') {
+      await admin
+        .from('scheduled_reminders')
+        .update({ status: 'cancelled' })
+        .eq('user_id', user.id)
+        .eq('assignment_id', row.id)
+        .eq('status', 'pending');
+    }
   } else if (data.action === 'drop') {
     await admin
       .from('almog_assignments')

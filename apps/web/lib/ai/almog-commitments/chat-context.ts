@@ -18,6 +18,7 @@ export async function fetchAlmogCommitmentContext(
   const ctx: AlmogCommitmentContext = {
     activeAssignments: [],
     openBlockers: [],
+    nextReminders: [],
     activeFocus: null,
   };
 
@@ -50,6 +51,18 @@ export async function fetchAlmogCommitmentContext(
         .then(({ data }: { data: unknown }) => {
           if (Array.isArray(data))
             ctx.activeAssignments = data as AlmogCommitmentContext['activeAssignments'];
+        })
+    );
+    tasks.push(
+      supabase
+        .from('scheduled_reminders')
+        .select('id, kind, title, body, fire_at')
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+        .order('fire_at', { ascending: true })
+        .limit(3)
+        .then(({ data }: { data: unknown }) => {
+          if (Array.isArray(data)) ctx.nextReminders = data as AlmogCommitmentContext['nextReminders'];
         })
     );
   }
@@ -128,6 +141,14 @@ export function formatAlmogCommitmentBlocks(ctx: AlmogCommitmentContext): string
     blocks.push(
       `[משימות אישיות שנתת למשתמש]\n${lines.join('\n')}\n` +
         `אלה משימות שאתה נתת. אם המשתמש מדווח עליהן — התייחס בהתאם. אל תמציא משימות חדשות שלא נתת בפועל.`
+    );
+  }
+
+  // ── תזכורת קרובה ──
+  if (ctx.nextReminders.length > 0) {
+    const r = ctx.nextReminders[0];
+    blocks.push(
+      `[תזכורת מתוזמנת קרובה] ${r.title}: ${r.body} (${israelDayLabel(r.fire_at) ?? 'בקרוב'}). אל תבטיח שוב; אם המשתמש שואל, אמור שהיא כבר רשומה.`
     );
   }
 

@@ -64,8 +64,26 @@ export async function GET(request: Request, context: RouteContext) {
     blockersRes.error?.code === '42P01'
   );
 
+  const pendingReminders = (remindersRes.data ?? []).filter(
+    (r: { status: string }) => r.status === 'pending'
+  ).length;
+
   return NextResponse.json({
     tables_ready: tablesReady,
+    cron_hint:
+      'ודא ש-POST ל-/api/v1/ai/cron/onboarding-check-ins רץ כל 30 דקות (0,30 * * * *) כדי לרוקן scheduled_reminders.',
+    summary: {
+      active_assignments: (assignmentsRes.data ?? []).filter(
+        (a: { status: string }) => a.status === 'active' || a.status === 'frozen'
+      ).length,
+      pending_reminders: pendingReminders,
+      open_blockers: (blockersRes.data ?? []).filter(
+        (b: { status: string }) => b.status === 'open' || b.status === 'improving'
+      ).length,
+      live_focus: (focusRes.data ?? []).filter(
+        (f: { status: string }) => f.status === 'proposed' || f.status === 'active'
+      ).length,
+    },
     assignments: assignmentsRes.data ?? [],
     reminders: remindersRes.data ?? [],
     focus: focusRes.data ?? [],

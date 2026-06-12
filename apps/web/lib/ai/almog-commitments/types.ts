@@ -115,6 +115,7 @@ export interface AlmogCommitmentContext {
     'id' | 'title' | 'reason' | 'schedule' | 'status' | 'given_at' | 'last_done_at' | 'related_habit_id'
   >[];
   openBlockers: Pick<AlmogBlocker, 'id' | 'description' | 'strategy' | 'status'>[];
+  nextReminders: Pick<ScheduledReminder, 'id' | 'kind' | 'title' | 'body' | 'fire_at'>[];
   activeFocus: Pick<
     AlmogFocusPeriod,
     'id' | 'status' | 'reason' | 'paused_scope' | 'ends_at' | 'assignment_ids'

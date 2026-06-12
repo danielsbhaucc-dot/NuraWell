@@ -133,7 +133,7 @@ export async function drainAlmogReminders(
           title: r.title,
           body: r.body,
           icon_emoji: ICON_BY_KIND[r.kind] ?? '🌿',
-          action_url: '/journey',
+          action_url: '/plans',
           is_read: false,
           is_sent: false,
           send_at: nowIso,

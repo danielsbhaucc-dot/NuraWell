@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
-import { BookOpen, TrendingUp, UserCircle, X, Menu, Bell, Home, LogOut } from 'lucide-react';
+import { BookOpen, TrendingUp, UserCircle, X, Menu, Bell, Home, LogOut, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { signOutClient } from '../../lib/auth/sign-out-client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,6 +16,7 @@ interface MobileHeaderProps {
 
 const menuItems = [
   { href: APP_HOME_PATH, label: 'בית',           icon: Home,        color: '#047857' },
+  { href: '/plans',      label: 'התוכנית שלי',   icon: Sparkles,    color: '#059669' },
   { href: '/guides',    label: 'המדריכים שלי',  icon: BookOpen,    color: '#10b981' },
   { href: '/progress',   label: 'התקדמות שלי', icon: TrendingUp,  color: '#14b8a6' },
   { href: '/profile',    label: 'הפרופיל שלי',  icon: UserCircle, color: '#f59e0b' },

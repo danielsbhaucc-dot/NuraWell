@@ -60,6 +60,13 @@ type Blocker = {
 
 type Payload = {
   tables_ready: boolean;
+  cron_hint?: string;
+  summary?: {
+    active_assignments: number;
+    pending_reminders: number;
+    open_blockers: number;
+    live_focus: number;
+  };
   assignments: Assignment[];
   reminders: Reminder[];
   focus: Focus[];
@@ -192,15 +199,25 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
         ) : error ? (
           <p className="text-sm text-red-700 text-center py-6">{error}</p>
         ) : !data?.tables_ready ? (
-          <p className="text-sm text-slate-600 text-center py-6">
-            טבלאות ההתחייבויות עדיין לא קיימות ב-DB (הרץ את מיגרציה 000048).
-          </p>
+          <div className="text-sm text-slate-600 text-center py-6 space-y-2">
+            <p>טבלאות ההתחייבויות עדיין לא קיימות ב-DB (הרץ את מיגרציה 000048).</p>
+            {data?.cron_hint ? <p className="text-xs text-slate-500">{data.cron_hint}</p> : null}
+          </div>
         ) : total === 0 ? (
           <p className="text-sm text-slate-500 text-center py-6">
             אלמוג עדיין לא סיכם עם המשתמש משימות, תזכורות או חסמים.
           </p>
         ) : (
           <div className="space-y-5">
+            {data.summary ? (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <SummaryPill label="משימות פעילות" value={data.summary.active_assignments} />
+                <SummaryPill label="תזכורות ממתינות" value={data.summary.pending_reminders} />
+                <SummaryPill label="חסמים פתוחים" value={data.summary.open_blockers} />
+                <SummaryPill label="פוקוס חי" value={data.summary.live_focus} />
+              </div>
+            ) : null}
+
             {/* מצב פוקוס */}
             {data.focus.length > 0 ? (
               <Group icon={Snowflake} title="מצבי פוקוס" tint="text-sky-700">
@@ -309,6 +326,15 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
         )}
       </div>
     </section>
+  );
+}
+
+function SummaryPill({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl px-2.5 py-2 text-center" style={glassCardStyle}>
+      <p className="text-lg font-black text-slate-900">{value}</p>
+      <p className="text-[10px] font-bold text-slate-500">{label}</p>
+    </div>
   );
 }
 
