@@ -378,10 +378,43 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                 </ul>
               </details>
             ) : null}
+
+            <EncouragementCard name={name} />
           </>
         )}
       </div>
     </div>
+  );
+}
+
+const ALMOG_NUDGES: readonly string[] = [
+  'צמחים גדלים לכיוון האור — גם אחרי נסיגה קטנה הם ממשיכים למעלה. ככה גם אתה. 🌱',
+  'לא צריך מושלם, צריך עקבי. צעד קטן היום שווה יותר מקפיצה גדולה שלא קורית.',
+  'כל פעם שאתה מסמן משהו פה — אתה מוכיח לעצמך שאתה שומר מילה. זה בונה אמון עצמי.',
+  'אני לא סופר כמה נפלת, אני סופר כמה קמת. ואתה קם שוב ושוב.',
+];
+
+function EncouragementCard({ name }: { name: string }) {
+  // ניואנס יומי יציב (לא קופץ בכל רינדור).
+  const idx = new Date().getDate() % ALMOG_NUDGES.length;
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.3 }}
+      className="rounded-3xl p-4"
+      style={{
+        background: 'linear-gradient(160deg, rgba(236,253,245,0.95), rgba(240,253,250,0.8))',
+        border: '1px solid rgba(16,185,129,0.20)',
+        boxShadow: '0 8px 26px rgba(16,185,129,0.08)',
+      }}
+    >
+      <div className="mb-1 flex items-center gap-1.5 text-emerald-700">
+        <Sparkles className="h-4 w-4" />
+        <span className="text-[12px] font-black">מילה ממני{name ? `, ${name}` : ''}</span>
+      </div>
+      <p className="text-[13px] leading-relaxed text-slate-600">{ALMOG_NUDGES[idx]}</p>
+    </motion.div>
   );
 }
 
@@ -444,6 +477,23 @@ function Hero({
         className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 70%)', filter: 'blur(8px)' }}
       />
+      {/* עלים מרחפים — בהשראת עמוד ה-404 */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute left-3 top-3 text-2xl"
+        animate={{ rotate: [0, -12, 12, 0], y: [0, -3, 0] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        🍃
+      </motion.div>
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute bottom-3 left-10 text-lg opacity-80"
+        animate={{ rotate: [0, 14, -10, 0] }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
+      >
+        🌿
+      </motion.div>
       <div className="relative flex items-center gap-3.5">
         <div className="rounded-full ring-2 ring-white/40">
           <AlmogAvatarChip size={56} />
