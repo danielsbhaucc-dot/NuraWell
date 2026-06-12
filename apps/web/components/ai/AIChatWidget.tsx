@@ -2,7 +2,7 @@
 
 import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { MessageCircle, Send, Loader2, X, Paperclip, Smile } from 'lucide-react';
+import { BellRing, MessageCircle, Send, Loader2, X, Paperclip, Smile } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useChat } from '@ai-sdk/react';
 import { TextStreamChatTransport } from 'ai';
@@ -294,13 +294,14 @@ function typingEllipsis(step: number): string {
  */
 const ALMOG_STATUS_PHRASES: readonly string[] = [
   'אלמוג קורא מה שכתבת',
-  'אלמוג חושב על זה',
-  'אלמוג מנסח לך משהו',
-  'רגע, אלמוג רוצה לדייק בשבילך',
+  'הוא רגע מחבר את זה אליך',
+  'אלמוג מנסח לך תשובה מדויקת',
+  'זה לוקח עוד רגע כי הוא לא רוצה לזרוק תשובה סתם',
+  'אלמוג עדיין איתך — הוא מסדר את זה לצעד שאפשר לעשות',
 ];
 
 /** ספי הזמן (ms) למעבר בין הסטטוסים. */
-const ALMOG_STATUS_THRESHOLDS_MS: readonly number[] = [1500, 4000, 8000];
+const ALMOG_STATUS_THRESHOLDS_MS: readonly number[] = [1500, 4500, 9000, 15000];
 
 /** ציטוט ווטסאפ בתוך בועת הודעה */
 function WhatsAppQuote({ author, text }: { author: string; text: string }) {
@@ -327,6 +328,10 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const [input, setInput] = useState('');
   const [typingStep, setTypingStep] = useState(0);
   const [statusIdx, setStatusIdx] = useState(0);
+  const [waitSeconds, setWaitSeconds] = useState(0);
+  const [notifyWhenReady, setNotifyWhenReady] = useState(false);
+  const [answerReadyToast, setAnswerReadyToast] = useState(false);
+  const [hasBackgroundAnswer, setHasBackgroundAnswer] = useState(false);
   const [notificationContext, setNotificationContext] = useState<OpenAlmogChatDetail | null>(null);
   const [quotedReply, setQuotedReply] = useState<{ mentorMessage: string; userReply: string } | null>(
     null
@@ -335,6 +340,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const notificationIdRef = useRef<string | null>(null);
   const pendingInitialReplyRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const wasLoadingRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -461,6 +467,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const isLoading = status === 'submitted' || status === 'streaming';
   // "thinking" = ממתינים לתו הראשון מהמודל (כולל זמן ה-reasoning).
   const isThinking = status === 'submitted';
+  const isLongWait = isThinking && waitSeconds >= 10;
   useEffect(() => {
     if (!isLoading) {
       setTypingStep(0);
@@ -469,6 +476,18 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     const id = window.setInterval(() => {
       setTypingStep((s) => (s + 1) % 3);
     }, 420);
+    return () => window.clearInterval(id);
+  }, [isLoading]);
+  useEffect(() => {
+    if (!isLoading) {
+      setWaitSeconds(0);
+      return;
+    }
+    setWaitSeconds(0);
+    const startedAt = Date.now();
+    const id = window.setInterval(() => {
+      setWaitSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
+    }, 1000);
     return () => window.clearInterval(id);
   }, [isLoading]);
   // התקדמות הסטטוסים הטבעיים לפי זמן ההמתנה.
@@ -485,6 +504,41 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const almogStatusText = ALMOG_STATUS_PHRASES[statusIdx] ?? ALMOG_STATUS_PHRASES[0];
   const firstMessageDate = messages.length > 0 ? getMessageCreatedAt(messages[0]) : undefined;
 
+  useEffect(() => {
+    if (wasLoadingRef.current && !isLoading) {
+      if (notifyWhenReady) {
+        setHasBackgroundAnswer(true);
+        setAnswerReadyToast(true);
+        window.setTimeout(() => setAnswerReadyToast(false), 3200);
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          try {
+            new Notification('אלמוג סיים לענות', {
+              body: 'התשובה שלך מוכנה בצ׳אט.',
+              tag: 'almog-chat-ready',
+            });
+          } catch {
+            /* התראה מקומית בלבד — לא שוברים את הצ׳אט אם הדפדפן חסם */
+          }
+        }
+      }
+      setNotifyWhenReady(false);
+    }
+    wasLoadingRef.current = isLoading;
+  }, [isLoading, notifyWhenReady]);
+
+  const continueInBackground = async () => {
+    setNotifyWhenReady(true);
+    setHasBackgroundAnswer(false);
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      try {
+        await Notification.requestPermission();
+      } catch {
+        /* הרשאה אופציונלית בלבד */
+      }
+    }
+    setOpen(false);
+  };
+
   if (!mounted) return null;
 
   return (
@@ -492,6 +546,10 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
+        if (next) {
+          setHasBackgroundAnswer(false);
+          setAnswerReadyToast(false);
+        }
         if (!next) {
           setNotificationContext(null);
           notificationIdRef.current = null;
@@ -514,6 +572,14 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
           whileTap={{ scale: 0.94 }}
         >
           <MessageCircle className="h-7 w-7 md:h-8 md:w-8" strokeWidth={2} />
+          {hasBackgroundAnswer ? (
+            <span
+              className="absolute -top-1 -left-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-white/70 bg-amber-300 px-1 text-[10px] font-black text-emerald-950 shadow-lg"
+              aria-label="תשובה חדשה מאלמוג"
+            >
+              1
+            </span>
+          ) : null}
         </motion.button>
       </Drawer.Trigger>
 
@@ -581,7 +647,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                   type="button"
                   aria-label="סגור"
                   onClick={() => {
-                    stop();
+                    if (!notifyWhenReady) stop();
                     setOpen(false);
                   }}
                   className="shrink-0 rounded-xl p-2 hover:bg-white/10"
@@ -636,6 +702,13 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                   role="alert"
                 >
                   הייתה בעיה בקבלת תשובה מאלמוג כרגע. נסה שוב בעוד כמה שניות.
+                </div>
+              )}
+              {answerReadyToast && (
+                <div className="flex justify-center">
+                  <div className="rounded-full border border-emerald-300/40 bg-emerald-500/20 px-3 py-1.5 text-[12px] font-bold text-emerald-50 shadow-lg">
+                    אלמוג סיים לענות — זה מחכה לך כאן
+                  </div>
                 </div>
               )}
 
@@ -705,6 +778,29 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                         </span>
                       )}
                     </div>
+                    {isLongWait ? (
+                      <div className="mt-3 rounded-2xl border border-amber-200/25 bg-amber-300/10 px-3 py-2 text-[12px] leading-relaxed text-amber-50/85">
+                        <p>
+                          לפעמים תשובה טובה לוקחת עוד קצת. אפשר להשאיר אותי עובד ברקע —
+                          אעדכן אותך כשהתשובה מוכנה.
+                        </p>
+                        {!notifyWhenReady ? (
+                          <button
+                            type="button"
+                            onClick={continueInBackground}
+                            className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-amber-200/35 bg-amber-300/15 px-3 py-1.5 text-[12px] font-black text-amber-50 transition hover:bg-amber-300/25"
+                          >
+                            <BellRing className="h-3.5 w-3.5" />
+                            תעדכן אותי כשהתשובה מוכנה
+                          </button>
+                        ) : (
+                          <p className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold text-emerald-100">
+                            <BellRing className="h-3.5 w-3.5" />
+                            סגור, אני אעדכן אותך.
+                          </p>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               )}
@@ -798,9 +894,20 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                     <Smile className="h-[18px] w-[18px]" />
                   </button>
                   {isLoading && (
-                    <button type="button" onClick={stop} className="shrink-0 rounded-xl px-2 py-2 text-xs font-bold text-white/80 hover:bg-white/10">
-                      עצור
-                    </button>
+                    <>
+                      {isLongWait ? (
+                        <button
+                          type="button"
+                          onClick={continueInBackground}
+                          className="shrink-0 rounded-xl px-2 py-2 text-xs font-bold text-amber-100 hover:bg-amber-300/10"
+                        >
+                          רקע
+                        </button>
+                      ) : null}
+                      <button type="button" onClick={stop} className="shrink-0 rounded-xl px-2 py-2 text-xs font-bold text-white/80 hover:bg-white/10">
+                        עצור
+                      </button>
+                    </>
                   )}
                   <button
                     type="submit"
