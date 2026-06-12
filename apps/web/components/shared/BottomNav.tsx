@@ -34,50 +34,51 @@ export function BottomNav() {
       <div
         className="absolute inset-0"
         style={{
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.92) 100%)',
-          backdropFilter: 'blur(22px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(22px) saturate(180%)',
-          borderTop: '1px solid rgba(255,255,255,0.85)',
-          boxShadow: '0 -10px 34px rgba(6,78,59,0.10)',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.66) 0%, rgba(255,255,255,0.94) 100%)',
+          backdropFilter: 'blur(26px) saturate(190%)',
+          WebkitBackdropFilter: 'blur(26px) saturate(190%)',
+          borderTop: '1px solid rgba(255,255,255,0.9)',
+          boxShadow: '0 -12px 40px rgba(6,78,59,0.12)',
         }}
       />
       {/* קו הדגשה עליון בגרדיאנט */}
       <div
         aria-hidden
         className="absolute inset-x-0 top-0 h-px"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(16,185,129,0.55), transparent)' }}
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(16,185,129,0.6), transparent)' }}
       />
       <div className="container-mobile relative">
         {/* Center raised button */}
-        <div className="absolute left-1/2 -translate-x-1/2 -top-6 z-20">
+        <div className="absolute left-1/2 -translate-x-1/2 -top-7 z-20">
           {/* טבעת זוהר נושמת */}
           <motion.span
             aria-hidden
-            className="absolute inset-0 rounded-[22px]"
-            style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.45), transparent 70%)', filter: 'blur(8px)' }}
-            animate={{ scale: [1, 1.18, 1], opacity: [0.55, 0.9, 0.55] }}
-            transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute -inset-1 rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.45), transparent 70%)', filter: 'blur(10px)' }}
+            animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.85, 0.5] }}
+            transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
           />
           <motion.button
             type="button"
             aria-label="דיווח התקדמות למנטור — משימות והרגלים"
             onClick={() => actionHub.open()}
-            whileTap={{ scale: 0.92 }}
-            className="relative flex items-center justify-center no-tap-highlight touch-manipulation"
+            whileTap={{ scale: 0.9 }}
+            className="relative flex items-center justify-center overflow-hidden no-tap-highlight touch-manipulation"
             style={{
-              width: '60px', height: '60px',
-              background: 'linear-gradient(150deg, #064e3b 0%, #059669 55%, #34d399 100%)',
-              borderRadius: '22px',
-              boxShadow: '0 10px 28px rgba(6,78,59,0.45), inset 0 1px 0 rgba(255,255,255,0.35)',
-              border: '1.5px solid rgba(255,255,255,0.45)',
+              width: '62px', height: '62px',
+              background: 'linear-gradient(155deg, #047857 0%, #059669 50%, #34d399 100%)',
+              borderRadius: '50%',
+              boxShadow: '0 12px 30px rgba(6,78,59,0.42), inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -6px 12px rgba(6,78,59,0.35)',
+              border: '2px solid rgba(255,255,255,0.55)',
             }}
           >
+            {/* ברק עליון רך (gloss) — לא קו מגירה */}
             <span
               aria-hidden
-              className="pointer-events-none absolute inset-x-2 top-1 h-3 rounded-full"
-              style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.5), transparent)' }}
+              className="pointer-events-none absolute inset-x-0 top-0 h-1/2"
+              style={{ background: 'radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,0.45), transparent 60%)' }}
             />
-            <Sparkles className="h-6 w-6 text-white drop-shadow" strokeWidth={2.2} />
+            <Sparkles className="relative h-6 w-6 text-white drop-shadow" strokeWidth={2.2} />
           </motion.button>
         </div>
 
@@ -89,7 +90,7 @@ export function BottomNav() {
           })}
 
           {/* Center spacer */}
-          <div className="w-14 flex-shrink-0" />
+          <div className="w-16 flex-shrink-0" />
 
           {/* Right items */}
           {rightItems.map((item) => {

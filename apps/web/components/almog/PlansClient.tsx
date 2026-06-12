@@ -287,6 +287,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
               icon={Sparkles}
               title="הצעדים שלך"
               tint="emerald"
+              count={activeCount}
               note={activeCount > 0 ? 'כל סימון כאן הוא ניצחון אמיתי — גם הקטן.' : undefined}
             >
               {activeCount > 0 ? (
@@ -308,7 +309,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
 
             {/* ── תזכורות ── */}
             {pendingReminders.length > 0 ? (
-              <Section icon={Bell} title="אזכיר לך" tint="amber" note="שמתי לעצמי תזכורת אמיתית — לא תצטרך לזכור לבד.">
+              <Section icon={Bell} title="אזכיר לך" tint="amber" count={pendingReminders.length} note="שמתי לעצמי תזכורת אמיתית — לא תצטרך לזכור לבד.">
                 {pendingReminders.map((r) => (
                   <ReminderRow key={r.id} reminder={r} />
                 ))}
@@ -321,6 +322,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                 icon={AlertTriangle}
                 title="מה שמקשה — ואיך נתגבר"
                 tint="rose"
+                count={data.blockers.length}
                 note="אני עוקב אחרי אלה בעצמי ואשאל אותך כשצריך. תוכל גם לסמן כאן מה עוזר."
               >
                 {data.blockers.map((b) => (
@@ -344,7 +346,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
 
             {/* ── הושלמו ── */}
             {data.completed.length > 0 ? (
-              <Section icon={CheckCircle2} title="כבר עשית את זה" tint="teal" note="להסתכל אחורה זה דלק. כל הכבוד.">
+              <Section icon={CheckCircle2} title="כבר עשית את זה" tint="teal" count={data.completed.length} note="להסתכל אחורה זה דלק. כל הכבוד.">
                 {data.completed.map((a) => (
                   <li
                     key={a.id}
@@ -462,77 +464,119 @@ function Hero({
 }) {
   return (
     <motion.section
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="relative overflow-hidden rounded-[28px] p-5"
+      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      className="relative overflow-hidden rounded-[34px] px-6 pb-6 pt-7"
       style={{
-        background: 'linear-gradient(150deg, #065f46 0%, #047857 42%, #10b981 100%)',
-        boxShadow: '0 18px 44px rgba(6,95,70,0.32), inset 0 1px 0 rgba(255,255,255,0.22)',
+        background:
+          'linear-gradient(155deg, #064e3b 0%, #047857 38%, #0d9488 72%, #10b981 100%)',
+        boxShadow:
+          '0 26px 60px rgba(6,78,59,0.40), 0 2px 0 rgba(255,255,255,0.10) inset, 0 -40px 80px rgba(8,145,178,0.20) inset',
       }}
     >
-      {/* highlight glow */}
+      {/* זוהר אור פינתי */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 70%)', filter: 'blur(8px)' }}
+        className="pointer-events-none absolute -right-14 -top-16 h-52 w-52 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.30), transparent 68%)', filter: 'blur(10px)' }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-20 -left-12 h-56 w-56 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.45), transparent 70%)', filter: 'blur(20px)' }}
+      />
+      {/* טבעת זכוכית דקורטיבית */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute -left-16 -top-10 h-44 w-44 rounded-full border"
+        style={{ borderColor: 'rgba(255,255,255,0.16)' }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
       />
       {/* עלים מרחפים — בהשראת עמוד ה-404 */}
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute left-3 top-3 text-2xl"
-        animate={{ rotate: [0, -12, 12, 0], y: [0, -3, 0] }}
+        className="pointer-events-none absolute right-5 top-5 text-2xl"
+        animate={{ rotate: [0, -12, 12, 0], y: [0, -4, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       >
         🍃
       </motion.div>
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute bottom-3 left-10 text-lg opacity-80"
+        className="pointer-events-none absolute bottom-20 left-8 text-lg opacity-70"
         animate={{ rotate: [0, 14, -10, 0] }}
         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
       >
         🌿
       </motion.div>
-      <div className="relative flex items-center gap-3.5">
-        <div className="rounded-full ring-2 ring-white/40">
-          <AlmogAvatarChip size={56} />
-        </div>
+
+      <div className="relative flex items-center gap-4">
+        <motion.div
+          className="relative shrink-0 rounded-full p-1"
+          style={{
+            background: 'linear-gradient(140deg, rgba(255,255,255,0.55), rgba(255,255,255,0.12))',
+            boxShadow: '0 8px 22px rgba(0,0,0,0.18)',
+          }}
+          animate={{ y: [0, -4, 0] }}
+          transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <div className="rounded-full ring-2 ring-white/50">
+            <AlmogAvatarChip size={68} />
+          </div>
+          <span
+            aria-hidden
+            className="absolute -bottom-0.5 -left-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px]"
+            style={{ background: '#ecfdf5', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}
+          >
+            🌱
+          </span>
+        </motion.div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="text-[12px] font-semibold text-emerald-50/85">{greeting()}{name ? `, ${name}` : ''}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold text-white"
+              style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)' }}
+            >
+              <Sparkles className="h-3 w-3" />
+              {greeting()}{name ? `, ${name}` : ''}
+            </span>
             <LivePill live={live} pulsing={pulsing} />
           </div>
-          <h1 className="mt-0.5 text-[20px] font-black leading-tight text-white drop-shadow-sm">
+          <h1 className="mt-2 text-[26px] font-black leading-[1.1] text-white drop-shadow-sm">
             התוכנית שלנו
           </h1>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-emerald-50/85">
-            ריכזתי כאן כל מה שסיכמנו. צעד קטן בכל פעם — ואני איתך בכל אחד מהם. 🌱
-          </p>
         </div>
       </div>
 
-      <div className="relative mt-4 grid grid-cols-3 gap-2">
-        <HeroStat value={active} label="צעדים פעילים" />
-        <HeroStat value={reminders} label="תזכורות" />
-        <HeroStat value={blockers} label="במעקב" />
+      <p className="relative mt-3 text-[13.5px] leading-relaxed text-emerald-50/90">
+        ריכזתי כאן כל מה שסיכמנו — צעד קטן בכל פעם, ואני איתך בכל אחד מהם. 🌱
+      </p>
+
+      <div className="relative mt-5 grid grid-cols-3 gap-2.5">
+        <HeroStat icon={Sparkles} value={active} label="צעדים פעילים" />
+        <HeroStat icon={Bell} value={reminders} label="תזכורות" />
+        <HeroStat icon={AlertTriangle} value={blockers} label="במעקב" />
       </div>
     </motion.section>
   );
 }
 
-function HeroStat({ value, label }: { value: number; label: string }) {
+function HeroStat({ icon: Icon, value, label }: { icon: typeof Sparkles; value: number; label: string }) {
   return (
     <div
-      className="rounded-2xl px-2 py-2.5 text-center"
+      className="rounded-3xl px-2 py-3 text-center"
       style={{
         background: 'rgba(255,255,255,0.16)',
-        border: '1px solid rgba(255,255,255,0.28)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
+        border: '1px solid rgba(255,255,255,0.30)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
       }}
     >
-      <p className="text-[20px] font-black leading-none text-white">{value}</p>
+      <Icon className="mx-auto mb-1 h-4 w-4 text-emerald-50/80" aria-hidden />
+      <p className="text-[24px] font-black leading-none text-white">{value}</p>
       <p className="mt-1 text-[10px] font-semibold text-emerald-50/85">{label}</p>
     </div>
   );
@@ -590,32 +634,73 @@ function LivePill({ live, pulsing }: { live: boolean; pulsing: boolean }) {
   );
 }
 
+function SectionDivider({ tint }: { tint: Tint }) {
+  const t = TINT[tint];
+  return (
+    <div className="flex items-center gap-2 px-3 py-1" aria-hidden>
+      <span
+        className="h-px flex-1 rounded-full"
+        style={{ background: `linear-gradient(90deg, transparent, rgba(${t.rgb},0.35))` }}
+      />
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: `rgba(${t.rgb},0.5)` }} />
+      <span
+        className="h-px flex-1 rounded-full"
+        style={{ background: `linear-gradient(90deg, rgba(${t.rgb},0.35), transparent)` }}
+      />
+    </div>
+  );
+}
+
 function Section({
   icon: Icon,
   title,
   tint,
   note,
+  count,
   children,
 }: {
   icon: typeof Sparkles;
   title: string;
   tint: Tint;
   note?: string;
+  count?: number;
   children: React.ReactNode;
 }) {
   const t = TINT[tint];
   return (
-    <section>
-      <div className="mb-2.5 flex items-center gap-2 px-1">
+    <section className="space-y-3">
+      <SectionDivider tint={tint} />
+      {/* כותרת בתיבת זכוכית צבעונית */}
+      <div
+        className="flex items-center gap-2.5 rounded-2xl px-3 py-2.5"
+        style={{
+          background: `linear-gradient(135deg, rgba(${t.rgb},0.16) 0%, rgba(${t.soft},0.55) 100%)`,
+          border: `1px solid rgba(${t.rgb},0.28)`,
+          backdropFilter: 'blur(14px) saturate(150%)',
+          WebkitBackdropFilter: 'blur(14px) saturate(150%)',
+          boxShadow: `0 6px 18px rgba(${t.rgb},0.12), inset 0 1px 0 rgba(255,255,255,0.7)`,
+        }}
+      >
         <span
-          className="flex h-8 w-8 items-center justify-center rounded-2xl"
-          style={{ background: `rgba(${t.rgb},0.14)`, border: `1px solid rgba(${t.rgb},0.28)` }}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+          style={{
+            background: `linear-gradient(140deg, rgba(${t.rgb},0.95), rgba(${t.rgb},0.7))`,
+            boxShadow: `0 4px 12px rgba(${t.rgb},0.4), inset 0 1px 0 rgba(255,255,255,0.4)`,
+          }}
         >
-          <Icon className="h-4 w-4" style={{ color: t.text }} aria-hidden />
+          <Icon className="h-[18px] w-[18px] text-white" aria-hidden />
         </span>
-        <h2 className="text-[15px] font-black text-slate-900">{title}</h2>
+        <h2 className="flex-1 text-[16px] font-black text-slate-900">{title}</h2>
+        {typeof count === 'number' && count > 0 ? (
+          <span
+            className="flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[12px] font-black text-white"
+            style={{ background: `rgba(${t.rgb},0.85)` }}
+          >
+            {count}
+          </span>
+        ) : null}
       </div>
-      {note ? <p className="mb-2.5 px-1 text-[12px] leading-relaxed text-slate-500">{note}</p> : null}
+      {note ? <p className="px-1 text-[12px] leading-relaxed text-slate-500">{note}</p> : null}
       <ul className="space-y-2.5">{children}</ul>
     </section>
   );
