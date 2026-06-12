@@ -37,6 +37,7 @@ export interface DrainRemindersResult {
   due_count: number;
   sent: number;
   skipped: number;
+  deferred?: number;
   focus_ended: number;
   errors_count: number;
   errors?: string[];
@@ -111,7 +112,19 @@ export async function drainAlmogReminders(
 
   let sent = 0;
   let skipped = 0;
+  let deferred = 0;
   const errors: string[] = [];
+
+  /**
+   * אנטי-הצפה: לא שולחים יותר מ-X תזכורות לאותו משתמש באותה ריצה. השאר נשארות
+   * pending ויישלחו בריצות הבאות (ה-CRON רץ כל 30 דק'), כך שהן מתפזרות לאורך
+   * היום במקום להגיע כמבול. ברירת מחדל: 2 לכל משתמש לכל ריצה.
+   */
+  const maxPerUserPerRun = Math.max(
+    1,
+    Number(process.env.CRON_MAX_ALMOG_REMINDERS_PER_USER) || 2
+  );
+  const sentByUser = new Map<string, number>();
 
   for (const r of due) {
     try {
@@ -122,6 +135,12 @@ export async function drainAlmogReminders(
           .update({ status: 'skipped', metadata: { skipped_reason: 'avoid_push' } })
           .eq('id', r.id);
         skipped += 1;
+        continue;
+      }
+
+      // הגענו לתקרה היומית-לריצה למשתמש הזה — משאירים pending לריצה הבאה.
+      if ((sentByUser.get(r.user_id) ?? 0) >= maxPerUserPerRun) {
+        deferred += 1;
         continue;
       }
 
@@ -172,6 +191,7 @@ export async function drainAlmogReminders(
       const { afterAlmogInAppNotification } = await import('../../notifications/after-almog-insert');
       afterAlmogInAppNotification(r.user_id, r.title, r.body);
 
+      sentByUser.set(r.user_id, (sentByUser.get(r.user_id) ?? 0) + 1);
       sent += 1;
     } catch (e) {
       errors.push(`${r.id}: ${e instanceof Error ? e.message : String(e)}`);
@@ -183,6 +203,7 @@ export async function drainAlmogReminders(
     due_count: due.length,
     sent,
     skipped,
+    deferred,
     focus_ended: focusEnded,
     errors_count: errors.length,
     errors: errors.length ? errors : undefined,

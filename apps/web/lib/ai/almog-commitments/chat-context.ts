@@ -71,7 +71,7 @@ export async function fetchAlmogCommitmentContext(
     tasks.push(
       supabase
         .from('almog_blockers')
-        .select('id, description, strategy, status')
+        .select('id, description, strategy, status, history')
         .eq('user_id', userId)
         .in('status', ['open', 'improving'])
         .order('identified_at', { ascending: false })
@@ -156,11 +156,15 @@ export function formatAlmogCommitmentBlocks(ctx: AlmogCommitmentContext): string
   if (ctx.openBlockers.length > 0) {
     const lines = ctx.openBlockers.slice(0, 4).map((b) => {
       const strat = b.strategy ? ` — דרך להתגבר: ${b.strategy}` : '';
-      return `- ${b.description}${strat} (סטטוס: ${b.status})`;
+      // השורה האחרונה בהיסטוריה: מה עזר / מה לא עזר — מידע יקר להמשך.
+      const hist = Array.isArray(b.history) ? b.history : [];
+      const lastNote = [...hist].reverse().find((h) => h && typeof h.note === 'string' && h.note.trim());
+      const note = lastNote?.note ? ` · לאחרונה: ${lastNote.note}` : '';
+      return `- ${b.description}${strat} (סטטוס: ${b.status})${note}`;
     });
     blocks.push(
       `[חסמים שזיהית ובמעקב]\n${lines.join('\n')}\n` +
-        `אם רלוונטי, בדוק בעדינות אם יש התקדמות. אל תחזור על זה בכל הודעה.`
+        `אם משהו "לא עזר" — הצע גישה אחרת, אל תחזור על אותו פתרון. אם "עזר" — חזק את זה. אל תחזור על זה בכל הודעה.`
     );
   }
 

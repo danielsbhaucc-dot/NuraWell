@@ -213,13 +213,16 @@ export async function persistCommitmentExtraction(params: {
       if (inserted) {
         result.blockers_upserted += 1;
         // בדיקת התקדמות מתוזמנת — אלמוג יחזור לוודא שהחסם נפתר.
+        const checkBody = blocker.strategy
+          ? `רציתי לבדוק איתך — הצלחת לנסות "${blocker.strategy}"? איך הלך עם ${blocker.description}?`
+          : `רציתי לבדוק איתך מה קורה עם ${blocker.description}. הצלחת להתקדם קצת?`;
         await admin.from('scheduled_reminders').upsert(
           {
             user_id: userId,
             fire_at: nextCheck,
             kind: 'check_progress',
-            title: 'בדיקת התקדמות מאלמוג',
-            body: blocker.description,
+            title: 'אלמוג חושב עליך 🧭',
+            body: checkBody,
             blocker_id: (inserted as { id: string }).id,
             status: 'pending',
             dedupe_key: `blk|${key}`,
