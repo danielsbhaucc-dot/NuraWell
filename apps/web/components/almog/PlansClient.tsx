@@ -108,6 +108,14 @@ function fmtDay(iso: string | null): string {
   }
 }
 
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 11) return 'בוקר טוב';
+  if (h < 17) return 'צהריים טובים';
+  if (h < 21) return 'ערב טוב';
+  return 'לילה טוב';
+}
+
 async function postAction(body: Record<string, string>) {
   const res = await fetch('/api/v1/almog-assignments', {
     method: 'POST',
@@ -184,7 +192,6 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
       setLive(status === 'SUBSCRIBED');
     });
 
-    // פולבק: רענון שקט כל 45 שניות (גם אם realtime לא זמין).
     const poll = window.setInterval(() => void load(true), 45_000);
     const onVisible = () => {
       if (document.visibilityState === 'visible') void load(true);
@@ -215,50 +222,47 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
   const pendingReminders = (data?.reminders ?? []).filter((r) => r.status === 'pending');
   const sentReminders = (data?.reminders ?? []).filter((r) => r.status === 'sent');
   const activeCount = data?.assignments.length ?? 0;
-  const hello = firstName ? `${firstName}, ` : '';
+  const blockerCount = data?.blockers.length ?? 0;
+  const reminderCount = pendingReminders.length;
+  const name = firstName?.trim() || '';
 
   return (
-    <div dir="rtl" className="relative min-h-[calc(100vh-9rem)]">
-      <AuroraBackground />
+    <div dir="rtl" className="relative min-h-[calc(100vh-9rem)] overflow-hidden">
+      <SoftBackground />
 
-      <div className="container-mobile relative z-10 space-y-5 pb-10 pt-2">
-        {/* ── כותרת: אלמוג מדבר ── */}
-        <header className="flex items-start gap-3 px-1 pt-2">
-          <AlmogAvatarChip size={52} />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-[19px] font-black text-white drop-shadow">התוכנית שלנו</h1>
-              <LivePill live={live} pulsing={justUpdated} />
-            </div>
-            <p className="mt-1 text-[13px] leading-relaxed text-emerald-100/85">
-              {hello}ריכזתי כאן הכל מה שסיכמנו יחד. צעד קטן בכל פעם — אני איתך בכל אחד מהם. 🌱
-            </p>
-          </div>
-        </header>
+      <div className="container-mobile relative z-10 space-y-4 pb-10">
+        {/* ── HERO ── */}
+        <Hero
+          name={name}
+          live={live}
+          pulsing={justUpdated}
+          active={activeCount}
+          reminders={reminderCount}
+          blockers={blockerCount}
+        />
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-emerald-300" />
+            <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
           </div>
         ) : error && !data ? (
-          <GlassCard glow="rose">
-            <p className="py-6 text-center text-sm text-rose-100">{error}</p>
-          </GlassCard>
+          <Card tint="rose">
+            <p className="py-5 text-center text-sm text-rose-700">{error}</p>
+          </Card>
         ) : !data?.tables_ready ? (
-          <GlassCard glow="emerald">
-            <p className="py-6 text-center text-sm text-emerald-100/90">
+          <Card tint="emerald">
+            <p className="py-5 text-center text-sm text-emerald-800/90">
               עוד רגע מתארגנים. ברגע שנסכם משהו בצ׳אט — הוא יופיע כאן.
             </p>
-          </GlassCard>
+          </Card>
         ) : (
           <>
             {error ? (
-              <p className="rounded-2xl bg-rose-500/20 px-3 py-2 text-center text-xs font-semibold text-rose-100">
+              <p className="rounded-2xl bg-rose-100 px-3 py-2 text-center text-xs font-semibold text-rose-700">
                 {error}
               </p>
             ) : null}
 
-            {/* ── מצב פוקוס ── */}
             <AnimatePresence initial={false}>
               {data.focus ? (
                 <FocusCard
@@ -282,12 +286,8 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
             <Section
               icon={Sparkles}
               title="הצעדים שלך"
-              glow="emerald"
-              note={
-                activeCount > 0
-                  ? 'אלה הדברים שביקשתי שתנסה. כל סימון פה זה ניצחון אמיתי — גם הקטן.'
-                  : undefined
-              }
+              tint="emerald"
+              note={activeCount > 0 ? 'כל סימון כאן הוא ניצחון אמיתי — גם הקטן.' : undefined}
             >
               {activeCount > 0 ? (
                 <AnimatePresence initial={false}>
@@ -302,33 +302,26 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                   ))}
                 </AnimatePresence>
               ) : (
-                <p className="px-1 py-3 text-sm text-emerald-100/70">
-                  אין כרגע צעד פתוח. כשנסכם משהו בשיחה — אני אשים אותו פה בשבילך.
-                </p>
+                <EmptyHint text="אין כרגע צעד פתוח. כשנסכם משהו בשיחה — אשים אותו פה בשבילך." />
               )}
             </Section>
 
-            {/* ── תזכורות קרובות ── */}
+            {/* ── תזכורות ── */}
             {pendingReminders.length > 0 ? (
-              <Section
-                icon={Bell}
-                title="אני אזכיר לך"
-                glow="amber"
-                note="שמתי לעצמי תזכורת אמיתית. לא תצטרך לזכור לבד."
-              >
+              <Section icon={Bell} title="אזכיר לך" tint="amber" note="שמתי לעצמי תזכורת אמיתית — לא תצטרך לזכור לבד.">
                 {pendingReminders.map((r) => (
                   <ReminderRow key={r.id} reminder={r} />
                 ))}
               </Section>
             ) : null}
 
-            {/* ── חסמים במעקב ── */}
+            {/* ── חסמים ── */}
             {data.blockers.length > 0 ? (
               <Section
                 icon={AlertTriangle}
-                title="מה שמקשה עליך — ואיך נתגבר"
-                glow="rose"
-                note="זיהיתי את אלה ביחד איתך. נעבוד עליהם בעדינות, צעד-צעד, ואני עוקב."
+                title="מה שמקשה — ואיך נתגבר"
+                tint="rose"
+                note="אני עוקב אחרי אלה בעצמי ואשאל אותך כשצריך. תוכל גם לסמן כאן מה עוזר."
               >
                 {data.blockers.map((b) => (
                   <BlockerCard
@@ -351,18 +344,17 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
 
             {/* ── הושלמו ── */}
             {data.completed.length > 0 ? (
-              <Section icon={CheckCircle2} title="כבר עשית את זה" glow="teal" note="להסתכל אחורה זה דלק. כל הכבוד.">
+              <Section icon={CheckCircle2} title="כבר עשית את זה" tint="teal" note="להסתכל אחורה זה דלק. כל הכבוד.">
                 {data.completed.map((a) => (
                   <li
                     key={a.id}
-                    className="flex items-center gap-2.5 rounded-2xl px-3 py-2.5"
-                    style={cardStyle('teal')}
+                    className="flex items-center gap-2.5 rounded-2xl border border-teal-100 bg-teal-50/70 px-3 py-2.5"
                   >
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-300" />
-                    <p className="min-w-0 flex-1 truncate text-[13px] font-bold text-teal-50/90 line-through decoration-teal-300/40">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-500" />
+                    <p className="min-w-0 flex-1 truncate text-[13px] font-bold text-teal-900/80 line-through decoration-teal-400/50">
                       {a.title}
                     </p>
-                    <span className="shrink-0 text-[10px] font-semibold text-teal-200/70">
+                    <span className="shrink-0 text-[10px] font-semibold text-teal-600/70">
                       {fmtDay(a.last_done_at)}
                     </span>
                   </li>
@@ -370,17 +362,17 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
               </Section>
             ) : null}
 
-            {/* ── תזכורות שנשלחו (מצומצם) ── */}
+            {/* ── תזכורות שנשלחו ── */}
             {sentReminders.length > 0 ? (
-              <details className="group">
-                <summary className="cursor-pointer list-none px-1 text-[11px] font-bold uppercase tracking-wide text-white/50">
+              <details className="group px-1">
+                <summary className="cursor-pointer list-none text-[11px] font-bold uppercase tracking-wide text-slate-400">
                   תזכורות שכבר שלחתי ({sentReminders.length})
                 </summary>
                 <ul className="mt-2 space-y-2">
                   {sentReminders.slice(0, 8).map((r) => (
-                    <li key={r.id} className="rounded-2xl px-3 py-2.5 opacity-80" style={cardStyle('slate')}>
-                      <p className="text-[13px] text-white/85">{r.body}</p>
-                      <p className="mt-1 text-[10px] text-white/45">נשלחה {fmt(r.sent_at)}</p>
+                    <li key={r.id} className="rounded-2xl border border-slate-200/70 bg-white/60 px-3 py-2.5">
+                      <p className="text-[13px] text-slate-700">{r.body}</p>
+                      <p className="mt-1 text-[10px] text-slate-400">נשלחה {fmt(r.sent_at)}</p>
                     </li>
                   ))}
                 </ul>
@@ -393,62 +385,135 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
   );
 }
 
-/* ───────────────────────── רקע אורה ───────────────────────── */
+/* ───────────────────────── רקע רך ───────────────────────── */
 
-function AuroraBackground() {
+function SoftBackground() {
   return (
     <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-      <div className="absolute inset-0" style={{ background: 'radial-gradient(120% 90% at 50% -10%, #10243f 0%, #0a1020 55%, #070a14 100%)' }} />
-      <motion.div
-        className="absolute -right-24 -top-16 h-72 w-72 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.45), transparent 70%)', filter: 'blur(40px)' }}
-        animate={{ y: [0, 22, 0], opacity: [0.55, 0.8, 0.55] }}
-        transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+      <div
+        className="absolute inset-0"
+        style={{ background: 'linear-gradient(180deg, #f0fdf9 0%, #f6fbff 45%, #ffffff 100%)' }}
       />
-      <motion.div
-        className="absolute -left-24 top-32 h-80 w-80 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.4), transparent 70%)', filter: 'blur(46px)' }}
-        animate={{ y: [0, -26, 0], opacity: [0.45, 0.75, 0.45] }}
-        transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut' }}
+      <div
+        className="absolute -right-20 -top-16 h-64 w-64 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.18), transparent 70%)', filter: 'blur(36px)' }}
       />
-      <motion.div
-        className="absolute bottom-0 right-10 h-72 w-72 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(217,70,239,0.32), transparent 70%)', filter: 'blur(50px)' }}
-        animate={{ y: [0, 18, 0], opacity: [0.4, 0.65, 0.4] }}
-        transition={{ duration: 13, repeat: Infinity, ease: 'easeInOut' }}
+      <div
+        className="absolute -left-24 top-44 h-72 w-72 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(56,189,248,0.16), transparent 70%)', filter: 'blur(44px)' }}
+      />
+      <div
+        className="absolute bottom-10 right-0 h-60 w-60 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.12), transparent 70%)', filter: 'blur(44px)' }}
       />
     </div>
   );
 }
 
-/* ───────────────────────── פרימיטיבים ───────────────────────── */
+/* ───────────────────────── HERO ───────────────────────── */
 
-type Glow = 'emerald' | 'amber' | 'rose' | 'teal' | 'sky' | 'slate' | 'indigo';
+function Hero({
+  name,
+  live,
+  pulsing,
+  active,
+  reminders,
+  blockers,
+}: {
+  name: string;
+  live: boolean;
+  pulsing: boolean;
+  active: number;
+  reminders: number;
+  blockers: number;
+}) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="relative overflow-hidden rounded-[28px] p-5"
+      style={{
+        background: 'linear-gradient(150deg, #065f46 0%, #047857 42%, #10b981 100%)',
+        boxShadow: '0 18px 44px rgba(6,95,70,0.32), inset 0 1px 0 rgba(255,255,255,0.22)',
+      }}
+    >
+      {/* highlight glow */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 70%)', filter: 'blur(8px)' }}
+      />
+      <div className="relative flex items-center gap-3.5">
+        <div className="rounded-full ring-2 ring-white/40">
+          <AlmogAvatarChip size={56} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="text-[12px] font-semibold text-emerald-50/85">{greeting()}{name ? `, ${name}` : ''}</p>
+            <LivePill live={live} pulsing={pulsing} />
+          </div>
+          <h1 className="mt-0.5 text-[20px] font-black leading-tight text-white drop-shadow-sm">
+            התוכנית שלנו
+          </h1>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-emerald-50/85">
+            ריכזתי כאן כל מה שסיכמנו. צעד קטן בכל פעם — ואני איתך בכל אחד מהם. 🌱
+          </p>
+        </div>
+      </div>
 
-const GLOW_RGB: Record<Glow, string> = {
-  emerald: '16,185,129',
-  amber: '245,158,11',
-  rose: '244,63,94',
-  teal: '20,184,166',
-  sky: '56,189,248',
-  slate: '148,163,184',
-  indigo: '129,140,248',
+      <div className="relative mt-4 grid grid-cols-3 gap-2">
+        <HeroStat value={active} label="צעדים פעילים" />
+        <HeroStat value={reminders} label="תזכורות" />
+        <HeroStat value={blockers} label="במעקב" />
+      </div>
+    </motion.section>
+  );
+}
+
+function HeroStat({ value, label }: { value: number; label: string }) {
+  return (
+    <div
+      className="rounded-2xl px-2 py-2.5 text-center"
+      style={{
+        background: 'rgba(255,255,255,0.16)',
+        border: '1px solid rgba(255,255,255,0.28)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+      }}
+    >
+      <p className="text-[20px] font-black leading-none text-white">{value}</p>
+      <p className="mt-1 text-[10px] font-semibold text-emerald-50/85">{label}</p>
+    </div>
+  );
+}
+
+/* ───────────────────────── פרימיטיבים (זכוכית בהירה) ───────────────────────── */
+
+type Tint = 'emerald' | 'amber' | 'rose' | 'teal' | 'indigo';
+
+const TINT: Record<Tint, { rgb: string; soft: string; text: string }> = {
+  emerald: { rgb: '16,185,129', soft: '236,253,245', text: '#047857' },
+  amber: { rgb: '245,158,11', soft: '255,251,235', text: '#b45309' },
+  rose: { rgb: '244,63,94', soft: '255,241,242', text: '#be123c' },
+  teal: { rgb: '20,184,166', soft: '240,253,250', text: '#0f766e' },
+  indigo: { rgb: '99,102,241', soft: '238,242,255', text: '#4338ca' },
 };
 
-function cardStyle(glow: Glow): React.CSSProperties {
-  const rgb = GLOW_RGB[glow];
+function glassStyle(tint: Tint): React.CSSProperties {
+  const t = TINT[tint];
   return {
-    background: `linear-gradient(150deg, rgba(${rgb},0.16) 0%, rgba(255,255,255,0.05) 60%, rgba(255,255,255,0.03) 100%)`,
-    border: `1px solid rgba(${rgb},0.30)`,
-    backdropFilter: 'blur(16px) saturate(140%)',
-    WebkitBackdropFilter: 'blur(16px) saturate(140%)',
-    boxShadow: `0 10px 30px rgba(0,0,0,0.35), 0 0 22px rgba(${rgb},0.10), inset 0 1px 0 rgba(255,255,255,0.12)`,
+    background: `linear-gradient(160deg, rgba(${t.soft},0.92) 0%, rgba(255,255,255,0.72) 100%)`,
+    border: '1px solid rgba(255,255,255,0.85)',
+    backdropFilter: 'blur(20px) saturate(150%)',
+    WebkitBackdropFilter: 'blur(20px) saturate(150%)',
+    boxShadow: `0 10px 30px rgba(15,23,42,0.07), 0 1px 0 rgba(255,255,255,0.9) inset`,
   };
 }
 
-function GlassCard({ glow, children }: { glow: Glow; children: React.ReactNode }) {
+function Card({ tint, children }: { tint: Tint; children: React.ReactNode }) {
   return (
-    <div className="rounded-3xl p-4" style={cardStyle(glow)}>
+    <div className="rounded-3xl p-4" style={glassStyle(tint)}>
       {children}
     </div>
   );
@@ -459,14 +524,14 @@ function LivePill({ live, pulsing }: { live: boolean; pulsing: boolean }) {
     <span
       className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black"
       style={{
-        background: live ? 'rgba(16,185,129,0.18)' : 'rgba(148,163,184,0.18)',
-        border: `1px solid rgba(${live ? '16,185,129' : '148,163,184'},0.4)`,
-        color: live ? '#a7f3d0' : '#cbd5e1',
+        background: 'rgba(255,255,255,0.18)',
+        border: '1px solid rgba(255,255,255,0.35)',
+        color: '#ecfdf5',
       }}
     >
       <motion.span
         className="h-1.5 w-1.5 rounded-full"
-        style={{ background: live ? '#34d399' : '#94a3b8' }}
+        style={{ background: live ? '#bbf7d0' : '#fde68a' }}
         animate={pulsing || live ? { scale: [1, 1.6, 1], opacity: [1, 0.5, 1] } : {}}
         transition={{ duration: 1.4, repeat: Infinity }}
       />
@@ -478,31 +543,39 @@ function LivePill({ live, pulsing }: { live: boolean; pulsing: boolean }) {
 function Section({
   icon: Icon,
   title,
-  glow,
+  tint,
   note,
   children,
 }: {
   icon: typeof Sparkles;
   title: string;
-  glow: Glow;
+  tint: Tint;
   note?: string;
   children: React.ReactNode;
 }) {
-  const rgb = GLOW_RGB[glow];
+  const t = TINT[tint];
   return (
     <section>
-      <div className="mb-2 flex items-center gap-2 px-1">
+      <div className="mb-2.5 flex items-center gap-2 px-1">
         <span
-          className="flex h-7 w-7 items-center justify-center rounded-xl"
-          style={{ background: `rgba(${rgb},0.18)`, border: `1px solid rgba(${rgb},0.4)` }}
+          className="flex h-8 w-8 items-center justify-center rounded-2xl"
+          style={{ background: `rgba(${t.rgb},0.14)`, border: `1px solid rgba(${t.rgb},0.28)` }}
         >
-          <Icon className="h-4 w-4" style={{ color: `rgb(${rgb})` }} aria-hidden />
+          <Icon className="h-4 w-4" style={{ color: t.text }} aria-hidden />
         </span>
-        <h2 className="text-[15px] font-black text-white">{title}</h2>
+        <h2 className="text-[15px] font-black text-slate-900">{title}</h2>
       </div>
-      {note ? <p className="mb-2.5 px-1 text-[12px] leading-relaxed text-white/55">{note}</p> : null}
+      {note ? <p className="mb-2.5 px-1 text-[12px] leading-relaxed text-slate-500">{note}</p> : null}
       <ul className="space-y-2.5">{children}</ul>
     </section>
+  );
+}
+
+function EmptyHint({ text }: { text: string }) {
+  return (
+    <li className="rounded-2xl border border-slate-200/70 bg-white/60 px-4 py-5 text-center text-sm text-slate-500">
+      {text}
+    </li>
   );
 }
 
@@ -529,27 +602,27 @@ function AssignmentCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
-      className="rounded-2xl p-3.5"
-      style={cardStyle('emerald')}
+      className="rounded-3xl p-3.5"
+      style={glassStyle('emerald')}
     >
       <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
           {isRecurring ? <Repeat className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
           {SCHEDULE_LABEL[assignment.schedule]}
         </span>
         {assignment.done_count > 0 ? (
-          <span className="text-[10px] font-bold text-emerald-300">בוצע {assignment.done_count}×</span>
+          <span className="text-[10px] font-bold text-emerald-600">בוצע {assignment.done_count}×</span>
         ) : null}
       </div>
-      <p className="text-[15px] font-black leading-snug text-white">{assignment.title}</p>
+      <p className="text-[15px] font-black leading-snug text-slate-900">{assignment.title}</p>
       {assignment.reason ? (
-        <p className="mt-1 text-[12.5px] leading-relaxed text-emerald-100/75">
-          <span className="font-bold text-emerald-200">למה: </span>
+        <p className="mt-1 text-[12.5px] leading-relaxed text-slate-600">
+          <span className="font-bold text-emerald-700">למה: </span>
           {assignment.reason}
         </p>
       ) : null}
       {assignment.detail ? (
-        <p className="mt-0.5 text-[12px] leading-relaxed text-white/55">{assignment.detail}</p>
+        <p className="mt-0.5 text-[12px] leading-relaxed text-slate-500">{assignment.detail}</p>
       ) : null}
 
       <div className="mt-3 flex items-center gap-2">
@@ -557,12 +630,12 @@ function AssignmentCard({
           type="button"
           disabled={busy || doneToday}
           onClick={onDone}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-[13.5px] font-black text-white transition active:scale-95 disabled:opacity-60"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl px-3 py-2.5 text-[13.5px] font-black text-white transition active:scale-95 disabled:opacity-60"
           style={{
             background: doneToday
               ? 'linear-gradient(135deg, #34d399, #059669)'
               : 'linear-gradient(135deg, #059669, #10b981)',
-            boxShadow: '0 6px 18px rgba(16,185,129,0.35)',
+            boxShadow: '0 6px 16px rgba(16,185,129,0.32)',
           }}
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
@@ -572,8 +645,7 @@ function AssignmentCard({
           type="button"
           disabled={busy}
           onClick={onDrop}
-          className="rounded-xl px-3 py-2.5 text-[12px] font-bold text-white/70 transition active:scale-95 disabled:opacity-50"
-          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.14)' }}
+          className="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2.5 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-50"
         >
           לא מתאים
         </button>
@@ -584,25 +656,25 @@ function AssignmentCard({
 
 function ReminderRow({ reminder }: { reminder: Reminder }) {
   return (
-    <li className="rounded-2xl p-3" style={cardStyle('amber')}>
+    <li className="rounded-3xl p-3.5" style={glassStyle('amber')}>
       <div className="mb-1 flex items-center gap-2">
-        <span className="rounded-md bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-200">
+        <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
           {REMINDER_KIND[reminder.kind]}
         </span>
-        <span className="inline-flex items-center gap-1 text-[10px] text-amber-100/70">
+        <span className="inline-flex items-center gap-1 text-[10px] text-amber-700/70">
           <Clock className="h-3 w-3" />
           {fmt(reminder.fire_at)}
         </span>
       </div>
-      <p className="text-[13.5px] leading-relaxed text-white/90">{reminder.body}</p>
+      <p className="text-[13.5px] leading-relaxed text-slate-800">{reminder.body}</p>
     </li>
   );
 }
 
-const BLOCKER_STATUS: Record<Blocker['status'], { label: string; rgb: string }> = {
-  open: { label: 'במעקב', rgb: '244,63,94' },
-  improving: { label: 'משתפר', rgb: '245,158,11' },
-  resolved: { label: 'נפתר', rgb: '16,185,129' },
+const BLOCKER_STATUS: Record<Blocker['status'], { label: string; bg: string; fg: string }> = {
+  open: { label: 'במעקב', bg: 'bg-rose-100', fg: 'text-rose-700' },
+  improving: { label: 'משתפר', bg: 'bg-amber-100', fg: 'text-amber-700' },
+  resolved: { label: 'נפתר', bg: 'bg-emerald-100', fg: 'text-emerald-700' },
 };
 
 function BlockerCard({
@@ -622,46 +694,39 @@ function BlockerCard({
   const history = (Array.isArray(blocker.history) ? blocker.history : []).slice(-6).reverse();
 
   return (
-    <motion.li layout className="rounded-2xl p-3.5" style={cardStyle('rose')}>
+    <motion.li layout className="rounded-3xl p-3.5" style={glassStyle('rose')}>
       <div className="mb-1 flex items-center gap-2">
-        <span
-          className="rounded-md px-1.5 py-0.5 text-[10px] font-black"
-          style={{ background: `rgba(${st.rgb},0.18)`, color: `rgb(${st.rgb})`, border: `1px solid rgba(${st.rgb},0.4)` }}
-        >
-          {st.label}
-        </span>
+        <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${st.bg} ${st.fg}`}>{st.label}</span>
         {blocker.next_check_at ? (
-          <span className="inline-flex items-center gap-1 text-[10px] text-white/55">
+          <span className="inline-flex items-center gap-1 text-[10px] text-slate-500">
             <Clock className="h-3 w-3" />
             נבדוק יחד {fmtDay(blocker.next_check_at)}
           </span>
         ) : null}
       </div>
 
-      <p className="text-[14.5px] font-black leading-snug text-white">{blocker.description}</p>
+      <p className="text-[14.5px] font-black leading-snug text-slate-900">{blocker.description}</p>
       {blocker.strategy ? (
-        <p className="mt-1 text-[12.5px] leading-relaxed text-rose-100/80">
-          <span className="font-bold text-rose-200">מה ננסה: </span>
+        <p className="mt-1 text-[12.5px] leading-relaxed text-slate-600">
+          <span className="font-bold text-rose-600">מה ננסה: </span>
           {blocker.strategy}
         </p>
       ) : null}
 
-      {/* טיים-ליין היסטוריה: מה עזר / מה לא עזר */}
       {history.length > 0 ? (
-        <div className="mt-3 border-r border-white/10 pr-3">
+        <div className="mt-3 border-r-2 border-rose-100 pr-3">
           {history.map((h, i) => {
-            const rgb = BLOCKER_STATUS[(h.status as Blocker['status']) in BLOCKER_STATUS ? (h.status as Blocker['status']) : 'open'].rgb;
             const helped = h.note?.includes('עזר') && !h.note?.includes('לא עזר');
             const notHelped = h.note?.includes('לא עזר');
             return (
               <div key={i} className="relative flex items-start gap-2 pb-2 last:pb-0">
                 <span
                   className="mt-1 h-2 w-2 shrink-0 rounded-full"
-                  style={{ background: notHelped ? '#fb7185' : helped ? '#34d399' : `rgb(${rgb})` }}
+                  style={{ background: notHelped ? '#fb7185' : helped ? '#34d399' : '#cbd5e1' }}
                 />
                 <div className="min-w-0">
-                  <p className="text-[12px] text-white/80">{h.note ?? h.status}</p>
-                  <p className="text-[10px] text-white/40">{fmtDay(h.at)}</p>
+                  <p className="text-[12px] text-slate-700">{h.note ?? h.status}</p>
+                  <p className="text-[10px] text-slate-400">{fmtDay(h.at)}</p>
                 </div>
               </div>
             );
@@ -675,8 +740,7 @@ function BlockerCard({
             type="button"
             disabled={busy}
             onClick={onHelped}
-            className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-[12px] font-bold text-emerald-100 transition active:scale-95 disabled:opacity-60"
-            style={{ background: 'rgba(16,185,129,0.16)', border: '1px solid rgba(16,185,129,0.4)' }}
+            className="inline-flex items-center gap-1 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] font-bold text-emerald-700 transition active:scale-95 disabled:opacity-60"
           >
             <ThumbsUp className="h-3.5 w-3.5" />
             עזר לי
@@ -685,8 +749,7 @@ function BlockerCard({
             type="button"
             disabled={busy}
             onClick={onNotHelped}
-            className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-[12px] font-bold text-rose-100 transition active:scale-95 disabled:opacity-60"
-            style={{ background: 'rgba(244,63,94,0.16)', border: '1px solid rgba(244,63,94,0.4)' }}
+            className="inline-flex items-center gap-1 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] font-bold text-rose-700 transition active:scale-95 disabled:opacity-60"
           >
             <ThumbsDown className="h-3.5 w-3.5" />
             לא עזר
@@ -695,8 +758,8 @@ function BlockerCard({
             type="button"
             disabled={busy}
             onClick={onResolve}
-            className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-[12px] font-black text-white transition active:scale-95 disabled:opacity-60"
-            style={{ background: 'linear-gradient(135deg,#059669,#10b981)', boxShadow: '0 4px 14px rgba(16,185,129,0.3)' }}
+            className="inline-flex items-center gap-1 rounded-2xl px-3 py-2 text-[12px] font-black text-white transition active:scale-95 disabled:opacity-60"
+            style={{ background: 'linear-gradient(135deg,#059669,#10b981)', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}
           >
             <CheckCircle2 className="h-3.5 w-3.5" />
             נפתר
@@ -728,15 +791,17 @@ function FocusCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, height: 0 }}
       className="rounded-3xl p-4"
-      style={cardStyle('indigo')}
+      style={glassStyle('indigo')}
     >
       <div className="mb-1 flex items-center gap-2">
-        <Snowflake className="h-5 w-5 text-indigo-200" />
-        <p className="text-[15px] font-black text-white">
+        <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-indigo-100">
+          <Snowflake className="h-4 w-4 text-indigo-600" />
+        </span>
+        <p className="text-[15px] font-black text-slate-900">
           {isProposed ? 'בוא ניקח אוויר ביחד' : 'מצב פוקוס פעיל'}
         </p>
       </div>
-      <p className="text-[13px] leading-relaxed text-indigo-50/85">
+      <p className="text-[13px] leading-relaxed text-slate-600">
         {isProposed
           ? `שמתי לב שעכשיו קצת כבד. בוא נשים בצד את שאר המשימות${focus.reason ? ` ונתמקד ב${focus.reason}` : ''} — ההתקדמות שלך נשמרת, אנחנו רק לוקחים נשימה.`
           : `שמנו בצד את השאר${focus.ends_at ? ` עד ${fmtDay(focus.ends_at)}` : ''}${focus.reason ? ` כדי להתמקד ב${focus.reason}` : ''}. אני שומר עליך מהצד.`}
@@ -748,8 +813,8 @@ function FocusCard({
               type="button"
               disabled={busy}
               onClick={onConfirm}
-              className="flex-1 rounded-xl px-3 py-2.5 text-[13px] font-black text-white transition active:scale-95 disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg,#6366f1,#818cf8)', boxShadow: '0 6px 18px rgba(99,102,241,0.4)' }}
+              className="flex-1 rounded-2xl px-3 py-2.5 text-[13px] font-black text-white transition active:scale-95 disabled:opacity-60"
+              style={{ background: 'linear-gradient(135deg,#6366f1,#818cf8)', boxShadow: '0 6px 16px rgba(99,102,241,0.35)' }}
             >
               בוא נתמקד
             </button>
@@ -757,8 +822,7 @@ function FocusCard({
               type="button"
               disabled={busy}
               onClick={onDecline}
-              className="rounded-xl px-4 py-2.5 text-[12px] font-bold text-white/75 transition active:scale-95 disabled:opacity-60"
-              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.14)' }}
+              className="rounded-2xl border border-slate-200 bg-white/70 px-4 py-2.5 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
             >
               לא עכשיו
             </button>
@@ -768,8 +832,7 @@ function FocusCard({
             type="button"
             disabled={busy}
             onClick={onEnd}
-            className="w-full rounded-xl px-3 py-2.5 text-[13px] font-bold text-white transition active:scale-95 disabled:opacity-60"
-            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.18)' }}
+            className="w-full rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-[13px] font-bold text-indigo-700 transition active:scale-95 disabled:opacity-60"
           >
             חזרתי לשגרה 💪
           </button>
