@@ -61,9 +61,33 @@ function israelWallClockToUtcIso(
   return new Date(guessUtc.getTime() - offsetMs).toISOString();
 }
 
-/** ברירת מחדל לזמן תזכורת אם המודל לא נתן: מחר 08:00 ישראל. */
+/** שעת ישראל הנוכחית (0–23) כמספר — לחישוב ברירת מחדל "קרובה" לתזכורת. */
+function israelHour(now: Date): number {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jerusalem',
+    hour: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  return Number(parts.find((p) => p.type === 'hour')?.value ?? '0') % 24;
+}
+
+/**
+ * ברירת מחדל לזמן תזכורת כשהמודל לא נתן זמן מפורש.
+ *
+ * תיקון באג "אלמוג הבטיח להזכיר אבל לא הופיעה תזכורת": קודם ברירת המחדל הייתה
+ * מחר 08:00, כך שגם אם ה-CRON רץ כל 30 דק' — לא היה מה לשלוח עד למחרת בבוקר,
+ * והמשתמש לא ראה כלום. עכשיו, אם אלמוג מבטיח להזכיר בלי לציין מתי, התזכורת
+ * נקבעת לזמן קרוב *באותו יום* (בעוד ~90 דק', בתוך שעות הערות), כך שה-CRON
+ * מוסר אותה תוך הסיבוב-שניים הקרובים. מאוחר בלילה/מוקדם בבוקר — נדחה לבוקר 09:00.
+ */
 function defaultReminderIso(now: Date): string {
-  return israelWallClockToUtcIso(now, 1, 8, 0);
+  const hour = israelHour(now);
+  // לפנות בוקר (00:00–07:59) — להזכיר היום בבוקר ב-09:00.
+  if (hour < 8) return israelWallClockToUtcIso(now, 0, 9, 0);
+  // שעות ערות (08:00–20:59) — בעוד ~90 דקות, באותו יום.
+  if (hour < 21) return new Date(now.getTime() + 90 * 60_000).toISOString();
+  // לילה (21:00–23:59) — להזכיר מחר בבוקר ב-09:00.
+  return israelWallClockToUtcIso(now, 1, 9, 0);
 }
 /** ברירת מחדל ל-follow-up: בעוד יומיים 18:00 ישראל. */
 function defaultFollowUpIso(now: Date): string {

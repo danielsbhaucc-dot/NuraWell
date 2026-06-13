@@ -13,6 +13,10 @@ import {
   drainAlmogReminders,
   type DrainRemindersResult,
 } from '../../../../../../lib/ai/almog-commitments/drain-reminders';
+import {
+  sweepStaleAssignments,
+  type SweepAssignmentsResult,
+} from '../../../../../../lib/ai/almog-commitments/sweep-assignments';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -44,6 +48,18 @@ async function runOnboardingCheckInsCron(request: Request) {
    * רץ *לפני* בדיקת QSTASH_TOKEN ובתוך try, כדי שהתזכורות יישלחו תמיד, גם אם
    * חלק ה-onboarding (שתלוי ב-QStash Workflows) נכשל/לא מוגדר.
    */
+  /**
+   * 🔗 מעקב אוטומטי אחרי צעדים תקועים — רץ *לפני* ה-drain כדי שנדנודים שנוצרו
+   * עם fire_at=now יישלחו כבר באותה ריצה. בלי קריאת LLM (טקסט קבוע), אז לא
+   * שותה טוקנים.
+   */
+  let assignmentSweep: SweepAssignmentsResult | { error: string } | null = null;
+  try {
+    assignmentSweep = await sweepStaleAssignments(createAdminClient(), { dryRun: isDryRun });
+  } catch (e) {
+    assignmentSweep = { error: e instanceof Error ? e.message : String(e) };
+  }
+
   let almogReminders: DrainRemindersResult | { error: string } | null = null;
   try {
     almogReminders = await drainAlmogReminders(createAdminClient(), { dryRun: isDryRun });
@@ -126,6 +142,7 @@ async function runOnboardingCheckInsCron(request: Request) {
         index: e.checkInIndex,
       })),
       almog_reminders: almogReminders,
+      assignment_sweep: assignmentSweep,
       hint_he:
         'אלמוג — זמנים אישיים מההרשמה + תזכורות אלמוג מאוחדות. הגדר ב-Upstash: POST כל 30 דקות (0,30 * * * *).',
     });
@@ -168,6 +185,7 @@ async function runOnboardingCheckInsCron(request: Request) {
     ok: true,
     ...summary,
     almog_reminders: almogReminders,
+    assignment_sweep: assignmentSweep,
     errors: errors.length ? errors : undefined,
   });
 }
