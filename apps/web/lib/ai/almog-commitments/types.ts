@@ -82,11 +82,23 @@ export interface AlmogFocusPeriod {
 
 export type BlockerStatus = 'open' | 'improving' | 'resolved';
 
+export type InterventionOutcome = 'pending' | 'helped' | 'not_helped' | 'resolved';
+
+export interface BlockerOption {
+  id: 'A' | 'B';
+  label: string;
+  strategy_type: string;
+  micro_step: string;
+}
+
 export interface AlmogBlocker {
   id: string;
   user_id: string;
   description: string;
   strategy: string | null;
+  category: string | null;
+  attempt_count: number;
+  current_options: BlockerOption[];
   status: BlockerStatus;
   identified_at: string;
   last_checked_at: string | null;
@@ -97,6 +109,20 @@ export interface AlmogBlocker {
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+}
+
+export interface AlmogIntervention {
+  id: string;
+  user_id: string;
+  blocker_id: string;
+  barrier_type: string;
+  strategy: string;
+  strategy_type: string;
+  outcome: InterventionOutcome;
+  assignment_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  resolved_at: string | null;
 }
 
 export interface BlockerHistoryEntry {
@@ -114,7 +140,14 @@ export interface AlmogCommitmentContext {
     AlmogAssignment,
     'id' | 'title' | 'reason' | 'schedule' | 'status' | 'given_at' | 'last_done_at' | 'related_habit_id'
   >[];
-  openBlockers: Pick<AlmogBlocker, 'id' | 'description' | 'strategy' | 'status' | 'history'>[];
+  openBlockers: Pick<
+    AlmogBlocker,
+    'id' | 'description' | 'strategy' | 'category' | 'status' | 'history'
+  >[];
+  recentInterventions: Pick<
+    AlmogIntervention,
+    'barrier_type' | 'strategy' | 'strategy_type' | 'outcome'
+  >[];
   nextReminders: Pick<ScheduledReminder, 'id' | 'kind' | 'title' | 'body' | 'fire_at'>[];
   activeFocus: Pick<
     AlmogFocusPeriod,

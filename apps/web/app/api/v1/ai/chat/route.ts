@@ -2390,7 +2390,7 @@ export async function POST(request: Request) {
       fetchAlmogCommitmentContext(supabase, user.id, {
         needsAssignments: Boolean(contextDecision.needs_assignments),
         needsBlockers: Boolean(contextDecision.needs_blockers),
-      }).catch(() => ({ activeAssignments: [], openBlockers: [], nextReminders: [], activeFocus: null })),
+      }).catch(() => ({ activeAssignments: [], openBlockers: [], recentInterventions: [], nextReminders: [], activeFocus: null })),
     ]);
     const commitmentBlocks = formatAlmogCommitmentBlocks(commitmentContext);
 

@@ -10,6 +10,7 @@
  */
 
 import { openrouter } from '../client';
+import { normalizeFrictionCategory } from './friction';
 
 /** מודל העבודה השחורה: Llama 4 Scout דרך OpenRouter (Meta — לא סין). */
 export const ALMOG_COMMITMENTS_MODEL =
@@ -47,6 +48,8 @@ export interface ExtractedFocus {
 export interface ExtractedBlocker {
   description: string;
   strategy: string | null;
+  /** logistical|physiological|cognitive|emotional|social|knowledge|motivational */
+  category: string | null;
   confidence: number;
 }
 
@@ -157,7 +160,7 @@ task מול reminder (חשוב מאוד — אל תבלבל):
   "reminders": [{ "what": "מה להזכיר, קצר", "fire_at_iso": "ISO8601 UTC או null", "confidence": 0.0-1.0 }],
   "tasks": [{ "title": "המשימה בקצרה", "reason": "למה אלמוג נתן אותה (או null)", "detail": "מידע נוסף או null", "schedule": "one_time|daily|weekly", "due_at_iso": "ISO8601 UTC או null", "related_habit": "שם הרגל קיים שקשור או null", "confidence": 0.0-1.0 }],
   "focus": { "proposed": true/false, "user_agreed": true/false, "reason": "למה להקפיא משימות אחרות", "ends_at_iso": "ISO8601 UTC או null", "scope": "reminders|reminders_and_dim", "confidence": 0.0-1.0 } או null,
-  "blockers": [{ "description": "החסם שזוהה", "strategy": "מה אלמוג הציע להתגבר (או null)", "confidence": 0.0-1.0 }],
+  "blockers": [{ "description": "החסם שזוהה", "strategy": "מה אלמוג הציע להתגבר (או null)", "category": "logistical|physiological|cognitive|emotional|social|knowledge|motivational", "confidence": 0.0-1.0 }],
   "followups": [{ "what": "על מה לבדוק התקדמות", "fire_at_iso": "ISO8601 UTC או null", "confidence": 0.0-1.0 }],
   "blocker_updates": [{ "tag": "מזהה חסם קיים שדווח עליו (B1/B2...)", "status": "improving|resolved", "note": "מה השתנה או null", "confidence": 0.0-1.0 }]
 }
@@ -175,6 +178,16 @@ task מול reminder (חשוב מאוד — אל תבלבל):
 חיבור חסם->משימה (סגירת לולאת הביצוע):
 - אם אלמוג והמשתמש סיכמו דרך *קונקרטית* להתגבר על חסם (לא "תנוח" סתם, אלא "תכבה מסך ב-22:00") — החזר את אותה דרך גם כ-task (עם reason שמסביר שזה כדי להתגבר על החסם), וגם כ-blocker עם strategy. כך נוצר צעד מעשי למעקב.
 - אם הדרך עמומה ("פשוט תנוח יותר") — אל תהפוך אותה למשימה; השאר רק כ-blocker. משימה = פעולה ברורה שאפשר לבדוק אם בוצעה.
+
+סיווג חסם (category):
+- logistical: שוכח, על אוטומט, סביבה לא מסודרת.
+- physiological: כובד/בחילה/גוף לא מסתגל.
+- cognitive: overwhelm, "גדול עליי", אין כוח להתחיל.
+- emotional: לחץ, רגש, אכילה רגשית.
+- social: משפחה/חברים/לחץ חברתי.
+- knowledge: לא יודע איך.
+- motivational: חוסר משמעות/מוטיבציה.
+בספק — cognitive.
 
 אם אין שום דבר לחלץ — החזר את כל המערכים ריקים ו-focus=null.`;
 
@@ -244,7 +257,12 @@ function normalize(parsed: Record<string, unknown>, now: Date): CommitmentExtrac
         const o = (x ?? {}) as Record<string, unknown>;
         const description = str(o.description, 300);
         if (!description) return null;
-        return { description, strategy: str(o.strategy, 400), confidence: num(o.confidence) };
+        return {
+          description,
+          strategy: str(o.strategy, 400),
+          category: normalizeFrictionCategory(str(o.category, 40)),
+          confidence: num(o.confidence),
+        };
       })
       .filter((x): x is ExtractedBlocker => x !== null && x.confidence >= MIN_CONFIDENCE)
       .slice(0, 3);

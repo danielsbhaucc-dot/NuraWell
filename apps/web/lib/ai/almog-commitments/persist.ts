@@ -9,6 +9,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CommitmentExtraction } from './extract-commitments';
+import { normalizeFrictionCategory } from './friction';
 
 type Admin = SupabaseClient;
 
@@ -186,11 +187,14 @@ export async function persistCommitmentExtraction(params: {
       .eq('dedupe_key', key)
       .maybeSingle();
 
+    const category = normalizeFrictionCategory(blocker.category);
+
     if (existing) {
       await admin
         .from('almog_blockers')
         .update({
           strategy: blocker.strategy,
+          category,
           next_check_at: nextCheck,
         })
         .eq('id', (existing as { id: string }).id);
@@ -202,6 +206,7 @@ export async function persistCommitmentExtraction(params: {
           user_id: userId,
           description: blocker.description,
           strategy: blocker.strategy,
+          category,
           status: 'open',
           identified_at: now.toISOString(),
           next_check_at: nextCheck,

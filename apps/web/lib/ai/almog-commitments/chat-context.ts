@@ -7,6 +7,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AlmogCommitmentContext } from './types';
+import { frictionCategoryLabel } from './friction';
 
 type Supa = SupabaseClient;
 
@@ -18,6 +19,7 @@ export async function fetchAlmogCommitmentContext(
   const ctx: AlmogCommitmentContext = {
     activeAssignments: [],
     openBlockers: [],
+    recentInterventions: [],
     nextReminders: [],
     activeFocus: null,
   };
@@ -71,13 +73,26 @@ export async function fetchAlmogCommitmentContext(
     tasks.push(
       supabase
         .from('almog_blockers')
-        .select('id, description, strategy, status, history')
+        .select('id, description, strategy, category, status, history')
         .eq('user_id', userId)
         .in('status', ['open', 'improving'])
         .order('identified_at', { ascending: false })
         .limit(4)
         .then(({ data }: { data: unknown }) => {
           if (Array.isArray(data)) ctx.openBlockers = data as AlmogCommitmentContext['openBlockers'];
+        })
+    );
+    tasks.push(
+      supabase
+        .from('almog_interventions')
+        .select('barrier_type, strategy, strategy_type, outcome')
+        .eq('user_id', userId)
+        .in('outcome', ['helped', 'not_helped', 'resolved'])
+        .order('created_at', { ascending: false })
+        .limit(4)
+        .then(({ data }: { data: unknown }) => {
+          if (Array.isArray(data))
+            ctx.recentInterventions = data as AlmogCommitmentContext['recentInterventions'];
         })
     );
   }
@@ -155,16 +170,32 @@ export function formatAlmogCommitmentBlocks(ctx: AlmogCommitmentContext): string
   // ── חסמים במעקב ──
   if (ctx.openBlockers.length > 0) {
     const lines = ctx.openBlockers.slice(0, 4).map((b) => {
+      const cat = b.category ? frictionCategoryLabel(b.category) : '';
       const strat = b.strategy ? ` — דרך להתגבר: ${b.strategy}` : '';
-      // השורה האחרונה בהיסטוריה: מה עזר / מה לא עזר — מידע יקר להמשך.
       const hist = Array.isArray(b.history) ? b.history : [];
       const lastNote = [...hist].reverse().find((h) => h && typeof h.note === 'string' && h.note.trim());
       const note = lastNote?.note ? ` · לאחרונה: ${lastNote.note}` : '';
-      return `- ${b.description}${strat} (סטטוס: ${b.status})${note}`;
+      const catPart = cat ? ` [${cat}]` : '';
+      return `- ${b.description}${catPart}${strat} (סטטוס: ${b.status})${note}`;
     });
+
+    const memLines =
+      ctx.recentInterventions.length > 0
+        ? ctx.recentInterventions
+            .slice(0, 3)
+            .map((m) => {
+              const out =
+                m.outcome === 'helped' || m.outcome === 'resolved' ? 'עזר' : 'לא עזר';
+              return `  · ${m.barrier_type}: "${m.strategy}" → ${out}`;
+            })
+            .join('\n')
+        : '';
+
     blocks.push(
-      `[חסמים שזיהית ובמעקב]\n${lines.join('\n')}\n` +
-        `אם משהו "לא עזר" — הצע גישה אחרת, אל תחזור על אותו פתרון. אם "עזר" — חזק את זה. אל תחזור על זה בכל הודעה.`
+      `[חסמים שזיהית ובמעקב]\n${lines.join('\n')}` +
+        (memLines ? `\n[מה עבד/לא עבד בעבר]\n${memLines}` : '') +
+        `\n[הנחיית friction — קומפקטית]
+סווג חסם, הצע 2 אופציות A/B קטנות, ואם "לא עזר" עבור לסוג אסטרטגיה אחר. לא טיפולי; מדע שינוי התנהגות + אמפתיה.`
     );
   }
 
