@@ -19,6 +19,8 @@ export interface AlmogAssignment {
   schedule: AlmogAssignmentSchedule;
   given_at: string;
   due_at: string | null;
+  parent_assignment_id: string | null;
+  relation: AssignmentRelation;
   related_habit_id: string | null;
   related_step_id: string | null;
   source_session_id: string | null;
@@ -84,11 +86,15 @@ export type BlockerStatus = 'open' | 'improving' | 'resolved';
 
 export type InterventionOutcome = 'pending' | 'helped' | 'not_helped' | 'resolved';
 
+export type AssignmentRelation = 'standalone' | 'replaces' | 'eases' | 'supports';
+
 export interface BlockerOption {
   id: 'A' | 'B';
   label: string;
   strategy_type: string;
   micro_step: string;
+  /** יחס הצעד למשימה המקורית (כשהחסם קשור למשימה) */
+  relation: AssignmentRelation;
 }
 
 export interface AlmogBlocker {
