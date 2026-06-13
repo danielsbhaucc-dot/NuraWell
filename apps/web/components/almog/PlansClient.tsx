@@ -19,6 +19,8 @@ import { createClient } from '@/lib/supabase/client';
 import { frictionCategoryLabel, normalizeFrictionCategory } from '@/lib/ai/almog-commitments/friction';
 import type { BlockerOption } from '@/lib/ai/almog-commitments/types';
 
+type AssignmentRelation = 'standalone' | 'replaces' | 'eases' | 'supports';
+
 type Assignment = {
   id: string;
   title: string;
@@ -31,6 +33,8 @@ type Assignment = {
   last_done_at: string | null;
   done_count: number;
   source_excerpt: string | null;
+  relation: AssignmentRelation | null;
+  parent_assignment_id: string | null;
 };
 
 type Reminder = {
@@ -873,6 +877,15 @@ function EmptyHint({ text }: { text: string }) {
 
 /* ───────────────────────── כרטיסים ───────────────────────── */
 
+const RELATION_META: Record<
+  Exclude<AssignmentRelation, 'standalone'>,
+  { label: string; emoji: string }
+> = {
+  replaces: { label: 'מחליף משימה', emoji: '🔄' },
+  eases: { label: 'גרסה מוקלת', emoji: '🪶' },
+  supports: { label: 'צעד עזר', emoji: '🤝' },
+};
+
 function AssignmentCard({
   assignment,
   busy,
@@ -887,6 +900,11 @@ function AssignmentCard({
   const isRecurring = assignment.schedule !== 'one_time';
   const doneToday =
     Boolean(assignment.last_done_at) && fmtDay(assignment.last_done_at) === fmtDay(new Date().toISOString());
+  const relationMeta =
+    assignment.relation && assignment.relation !== 'standalone'
+      ? RELATION_META[assignment.relation]
+      : null;
+  const isEasedOriginal = assignment.status === 'frozen';
 
   return (
     <motion.li
@@ -896,7 +914,7 @@ function AssignmentCard({
       exit={{ opacity: 0, scale: 0.97 }}
       whileTap={{ scale: 0.992 }}
       className="relative overflow-hidden rounded-[24px] p-3.5"
-      style={glassStyle('emerald')}
+      style={{ ...glassStyle('emerald'), ...(isEasedOriginal ? { opacity: 0.82 } : {}) }}
     >
       <GlassSheen />
       <div className="relative z-[1]">
@@ -905,6 +923,11 @@ function AssignmentCard({
           {isRecurring ? <Repeat className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
           {SCHEDULE_LABEL[assignment.schedule]}
         </span>
+        {relationMeta ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
+            {relationMeta.emoji} {relationMeta.label}
+          </span>
+        ) : null}
         {assignment.done_count > 0 ? (
           <span className="text-[10px] font-bold text-emerald-600">בוצע {assignment.done_count}×</span>
         ) : null}
@@ -920,31 +943,40 @@ function AssignmentCard({
         <p className="mt-0.5 text-[12px] leading-relaxed text-slate-500">{assignment.detail}</p>
       ) : null}
 
-      <div className="mt-3 flex items-center gap-2">
-        <button
-          type="button"
-          disabled={busy || doneToday}
-          onClick={onDone}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl px-3 py-2.5 text-[13.5px] font-black text-white transition active:scale-95 disabled:opacity-60"
-          style={{
-            background: doneToday
-              ? 'linear-gradient(135deg, #34d399, #059669)'
-              : 'linear-gradient(135deg, #059669, #10b981)',
-            boxShadow: '0 6px 16px rgba(16,185,129,0.32)',
-          }}
+      {isEasedOriginal ? (
+        <div
+          className="mt-3 rounded-2xl px-3 py-2.5 text-[12px] font-semibold leading-relaxed text-slate-500"
+          style={{ background: 'rgba(148,163,184,0.12)', border: '1px solid rgba(148,163,184,0.22)' }}
         >
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-          {doneToday ? 'בוצע היום ✨' : isRecurring ? 'עשיתי היום' : 'סיימתי'}
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={onDrop}
-          className="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2.5 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-50"
-        >
-          לא מתאים
-        </button>
-      </div>
+          הקלנו על זה זמנית — מתמקדים בצעד קטן יותר. ברגע שתסמן אותו, נחזיר את זה בהדרגה. 🪶
+        </div>
+      ) : (
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            type="button"
+            disabled={busy || doneToday}
+            onClick={onDone}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl px-3 py-2.5 text-[13.5px] font-black text-white transition active:scale-95 disabled:opacity-60"
+            style={{
+              background: doneToday
+                ? 'linear-gradient(135deg, #34d399, #059669)'
+                : 'linear-gradient(135deg, #059669, #10b981)',
+              boxShadow: '0 6px 16px rgba(16,185,129,0.32)',
+            }}
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            {doneToday ? 'בוצע היום ✨' : isRecurring ? 'עשיתי היום' : 'סיימתי'}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onDrop}
+            className="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2.5 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-50"
+          >
+            לא מתאים
+          </button>
+        </div>
+      )}
       </div>
     </motion.li>
   );
@@ -1078,6 +1110,11 @@ function BlockerCard({
                 </span>
                 <p className="text-[12px] font-black text-indigo-900">{opt.label}</p>
                 <p className="mt-1 text-[11.5px] leading-relaxed text-slate-600">{opt.micro_step}</p>
+                {opt.relation && opt.relation !== 'standalone' && opt.relation !== 'supports' ? (
+                  <span className="mt-1.5 inline-block rounded-full bg-indigo-100 px-2 py-0.5 text-[9px] font-bold text-indigo-600">
+                    {opt.relation === 'replaces' ? '🔄 מחליף את המשימה' : '🪶 גרסה מוקלת'}
+                  </span>
+                ) : null}
               </button>
             ))}
           </div>

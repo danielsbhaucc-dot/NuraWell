@@ -108,6 +108,25 @@ async function getFailedStrategyTypes(
   );
 }
 
+/** משימות פעילות מקוריות שאפשר לקשר אליהן (לא צעדים שנוצרו מחסמים). */
+async function getLinkableActiveTasks(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string
+): Promise<{ id: string; title: string }[]> {
+  const { data } = await admin
+    .from('almog_assignments')
+    .select('id, title, relation')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .order('given_at', { ascending: false })
+    .limit(8);
+  return ((data ?? []) as { id: string; title: string; relation: string | null }[])
+    // לא מקשרים צעד-עזר לצעד-עזר אחר — רק למשימות עצמאיות/מקוריות.
+    .filter((a) => !a.relation || a.relation === 'standalone')
+    .slice(0, 6)
+    .map((a) => ({ id: a.id, title: a.title }));
+}
+
 export async function POST(request: Request) {
   const auth = await requireApiSession(request);
   if (!auth.ok) return auth.response;
@@ -149,6 +168,9 @@ export async function POST(request: Request) {
 
     const memory = await fetchInterventionMemory(admin, user.id);
     const failedTypes = await getFailedStrategyTypes(admin, user.id, blocker.id);
+    const linkable = await getLinkableActiveTasks(admin, user.id);
+    const taskByRef = new Map(linkable.map((t, i) => [`T${i + 1}`, t.id]));
+    const activeTasks = linkable.map((t, i) => ({ ref: `T${i + 1}`, title: t.title }));
 
     const generated = await generateBlockerOptions({
       description: blocker.description,
@@ -156,14 +178,18 @@ export async function POST(request: Request) {
       currentStrategy: blocker.strategy,
       attemptCount: blocker.attempt_count ?? 0,
       memory,
+      activeTasks,
       failedStrategyTypes: failedTypes,
     });
+
+    const relatedId = generated.relatesToRef ? taskByRef.get(generated.relatesToRef) ?? null : null;
 
     await admin
       .from('almog_blockers')
       .update({
         category: generated.category,
         current_options: generated.options,
+        ...(relatedId ? { related_assignment_id: relatedId } : {}),
       })
       .eq('id', blocker.id)
       .eq('user_id', user.id);
@@ -186,6 +212,10 @@ export async function POST(request: Request) {
     const category = normalizeFrictionCategory(blocker.category);
     const taskKey = dedupeKey(`blk|${blocker.id}|${picked.micro_step}`);
 
+    // יחס למשימה המקורית: relation תקף רק אם החסם קשור למשימה.
+    const originalId = blocker.related_assignment_id;
+    const relation = originalId ? picked.relation : 'standalone';
+
     const { data: assignment, error: assignErr } = await admin
       .from('almog_assignments')
       .upsert(
@@ -197,12 +227,15 @@ export async function POST(request: Request) {
           status: 'active',
           schedule: 'one_time',
           given_at: nowIso,
+          parent_assignment_id: originalId ?? null,
+          relation,
           dedupe_key: taskKey,
           created_by: 'almog',
           metadata: {
             source: 'blocker_intervention',
             blocker_id: blocker.id,
             strategy_type: picked.strategy_type,
+            relation,
           },
         },
         { onConflict: 'user_id,dedupe_key', ignoreDuplicates: false }
@@ -215,6 +248,41 @@ export async function POST(request: Request) {
     }
 
     const assignmentId = (assignment as { id: string }).id;
+
+    // טיפול במשימה המקורית לפי היחס:
+    //  • replaces — המקורית יורדת (הוחלפה בצעד דומה ומתאים יותר).
+    //  • eases    — המקורית מוקפאת זמנית; נחזיר אותה כשהצעד המקל יבוצע.
+    if (originalId && (relation === 'replaces' || relation === 'eases')) {
+      const { data: orig } = await admin
+        .from('almog_assignments')
+        .select('id, history')
+        .eq('id', originalId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (orig) {
+        const origHist = Array.isArray((orig as { history?: unknown }).history)
+          ? ((orig as { history: Record<string, unknown>[] }).history)
+          : [];
+        await admin
+          .from('almog_assignments')
+          .update({
+            status: relation === 'replaces' ? 'dropped' : 'frozen',
+            history: [
+              ...origHist,
+              {
+                at: nowIso,
+                action: relation === 'replaces' ? 'dropped' : 'frozen',
+                note:
+                  relation === 'replaces'
+                    ? `הוחלפה בצעד שמתאים לך יותר: ${picked.micro_step}`
+                    : `הוקלה זמנית — נתחיל מ: ${picked.micro_step}`,
+              },
+            ].slice(-50),
+          })
+          .eq('id', originalId)
+          .eq('user_id', user.id);
+      }
+    }
 
     const { data: intervention } = await admin
       .from('almog_interventions')
@@ -289,6 +357,9 @@ export async function POST(request: Request) {
 
     const memory = await fetchInterventionMemory(admin, user.id);
     const attemptCount = (blocker.attempt_count ?? 0) + 1;
+    const linkable = await getLinkableActiveTasks(admin, user.id);
+    const taskByRef = new Map(linkable.map((t, i) => [`T${i + 1}`, t.id]));
+    const activeTasks = linkable.map((t, i) => ({ ref: `T${i + 1}`, title: t.title }));
 
     const generated = await generateBlockerOptions({
       description: blocker.description,
@@ -296,9 +367,12 @@ export async function POST(request: Request) {
       currentStrategy: blocker.strategy,
       attemptCount,
       memory,
+      activeTasks,
       failedStrategyTypes: [...new Set(failedTypes)],
       pivotFromStrategy: pending?.strategy ?? blocker.strategy,
     });
+
+    const relatedId = generated.relatesToRef ? taskByRef.get(generated.relatesToRef) ?? null : null;
 
     await admin
       .from('almog_blockers')
@@ -306,6 +380,7 @@ export async function POST(request: Request) {
         attempt_count: attemptCount,
         category: generated.category,
         current_options: generated.options,
+        ...(relatedId ? { related_assignment_id: relatedId } : {}),
         last_checked_at: nowIso,
         history: [
           ...history,

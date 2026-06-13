@@ -51,7 +51,7 @@ export async function GET(request: Request) {
     supabase
       .from('almog_assignments')
       .select(
-        'id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id, source_excerpt'
+        'id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id, source_excerpt, relation, parent_assignment_id'
       )
       .eq('user_id', user.id)
       .in('status', ['active', 'frozen'])
@@ -225,7 +225,7 @@ export async function POST(request: Request) {
   const assignmentId = data.assignment_id;
   const { data: assignment } = await admin
     .from('almog_assignments')
-    .select('id, status, done_count, history, schedule')
+    .select('id, status, done_count, history, schedule, relation, parent_assignment_id')
     .eq('id', assignmentId)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -238,6 +238,8 @@ export async function POST(request: Request) {
     done_count: number;
     history: AssignmentHistoryEntry[] | null;
     schedule: string;
+    relation: string | null;
+    parent_assignment_id: string | null;
   };
   const history = Array.isArray(row.history) ? row.history : [];
 
@@ -262,6 +264,37 @@ export async function POST(request: Request) {
         .eq('user_id', user.id)
         .eq('assignment_id', row.id)
         .eq('status', 'pending');
+    }
+
+    /**
+     * חזרה הדרגתית: אם הצעד שבוצע היה גרסה *מקלה* (relation='eases') של משימה
+     * מקורית שהוקפאה — מחזירים את המקורית לפעילה. כך אחרי שהמשתמש הצליח בקטן,
+     * אלמוג מעלה אותו בהדרגה בחזרה למשימה המלאה (בלי LLM — רק לוגיקה).
+     */
+    if (row.relation === 'eases' && row.parent_assignment_id) {
+      const { data: parent } = await admin
+        .from('almog_assignments')
+        .select('id, status, history')
+        .eq('id', row.parent_assignment_id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (parent && (parent as { status: string }).status === 'frozen') {
+        const pHist = Array.isArray((parent as { history?: unknown }).history)
+          ? ((parent as { history: AssignmentHistoryEntry[] }).history)
+          : [];
+        await admin
+          .from('almog_assignments')
+          .update({
+            status: 'active',
+            given_at: nowIso,
+            history: [
+              ...pHist,
+              { at: nowIso, action: 'reactivated', note: 'חזרה הדרגתית אחרי שהצעד המקל הצליח' },
+            ].slice(-50),
+          })
+          .eq('id', row.parent_assignment_id)
+          .eq('user_id', user.id);
+      }
     }
   } else if (data.action === 'drop') {
     await admin

@@ -4,7 +4,7 @@
  */
 
 import { groq, AI_MODELS } from '../client';
-import type { BlockerOption } from './types';
+import type { AssignmentRelation, BlockerOption } from './types';
 import {
   FRICTION_META,
   STRATEGY_LABELS_HE,
@@ -22,12 +22,20 @@ export interface InterventionMemoryRow {
   outcome: string;
 }
 
+/** משימה פעילה שהחסם עשוי לנגוע בה (ref קצר במקום uuid — חוסך טוקנים) */
+export interface ActiveTaskRef {
+  ref: string;
+  title: string;
+}
+
 export interface GenerateOptionsParams {
   description: string;
   category: string | null;
   currentStrategy: string | null;
   attemptCount: number;
   memory: InterventionMemoryRow[];
+  /** משימות פעילות שאפשר לקשר אליהן (להחלפה/הקלה) */
+  activeTasks?: ActiveTaskRef[];
   /** pivot mode — אסטרטגיות שכבר נכשלו */
   failedStrategyTypes?: StrategyType[];
   pivotFromStrategy?: string | null;
@@ -36,6 +44,14 @@ export interface GenerateOptionsParams {
 export interface GeneratedOptionsResult {
   category: FrictionCategory;
   options: BlockerOption[];
+  /** ref של המשימה הפעילה שהחסם נוגע בה (או null) */
+  relatesToRef: string | null;
+}
+
+function normalizeRelation(raw: unknown): AssignmentRelation {
+  const s = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+  if (s === 'replaces' || s === 'eases' || s === 'supports') return s;
+  return 'supports';
 }
 
 function stripFences(text: string): string {
@@ -77,7 +93,8 @@ function formatMemoryForPrompt(memory: InterventionMemoryRow[]): string {
 function fallbackOptions(
   category: FrictionCategory,
   description: string,
-  strategyTypes: StrategyType[]
+  strategyTypes: StrategyType[],
+  hasOriginal = false
 ): BlockerOption[] {
   const types = strategyTypes.length >= 2 ? strategyTypes.slice(0, 2) : nextStrategyTypesForPivot(category, []);
 
@@ -94,18 +111,23 @@ function fallbackOptions(
     reward_system: `פרס קטן אחרי שעשיתי — משהו שאני אוהב`,
   };
 
+  // ברירת מחדל בטוחה ללא LLM: "eases" אם יש משימה מקורית (הקלה), אחרת "supports".
+  const relation: AssignmentRelation = hasOriginal ? 'eases' : 'supports';
+
   return [
     {
       id: 'A',
       label: STRATEGY_LABELS_HE[types[0] ?? 'micro_habit'],
       strategy_type: types[0] ?? 'micro_habit',
       micro_step: templates[types[0] ?? 'micro_habit'],
+      relation,
     },
     {
       id: 'B',
       label: STRATEGY_LABELS_HE[types[1] ?? 'habit_stacking'],
       strategy_type: types[1] ?? 'habit_stacking',
       micro_step: templates[types[1] ?? 'habit_stacking'],
+      relation,
     },
   ];
 }
@@ -120,12 +142,21 @@ const SYSTEM = `אתה מנוע "התערבות התנהגותית" ל-NuraWell 
 - טון: אמפתי, מעשי, לא טיפולי. עברית טבעית.
 - micro_step בר-ביצוע היום (עד 15 דקות / פעולה אחת).
 
+קשר למשימה מקורית (אם סופקה רשימת "משימות פעילות"):
+- relates_to = ה-ref של המשימה שהחסם נוגע בה, או null אם לא קשור לאף אחת.
+- relation לכל אופציה:
+  • "replaces" — הצעד דומה מאוד למשימה המקורית ויכול להחליף אותה (אותה כוונה, ניסוח קליל יותר).
+  • "eases" — גרסה קטנה/קלה יותר של המשימה המקורית (למשל חצי מהכמות), זמנית עד שחוזרים למקורית.
+  • "supports" — צעד עזר נפרד שלא מחליף ולא מקל, אלא מסייע מהצד.
+- אם אין משימה מקורית קשורה — relation="supports".
+
 החזר JSON בלבד:
 {
   "category": "logistical|physiological|cognitive|emotional|social|knowledge|motivational",
+  "relates_to": "ref של משימה פעילה או null",
   "options": [
-    { "id": "A", "label": "שם קצר ל-A", "strategy_type": "...", "micro_step": "..." },
-    { "id": "B", "label": "שם קצר ל-B", "strategy_type": "...", "micro_step": "..." }
+    { "id": "A", "label": "שם קצר ל-A", "strategy_type": "...", "micro_step": "...", "relation": "replaces|eases|supports" },
+    { "id": "B", "label": "שם קצר ל-B", "strategy_type": "...", "micro_step": "...", "relation": "replaces|eases|supports" }
   ]
 }`;
 
@@ -140,6 +171,9 @@ export async function generateBlockerOptions(
       ? nextStrategyTypesForPivot(category, triedTypes)
       : meta.preferredStrategies;
 
+  const activeTasks = (params.activeTasks ?? []).slice(0, 6);
+  const hasOriginal = activeTasks.length > 0;
+
   const maxAiAttempts = Math.max(0, Number(process.env.ALMOG_INTERVENTION_MAX_AI_ATTEMPTS) || 3);
   const aiDisabled =
     process.env.ALMOG_INTERVENTION_AI_ENABLED === '0' ||
@@ -147,12 +181,22 @@ export async function generateBlockerOptions(
     params.attemptCount >= maxAiAttempts;
 
   if (aiDisabled) {
-    return { category, options: fallbackOptions(category, params.description, allowedTypes) };
+    return {
+      category,
+      options: fallbackOptions(category, params.description, allowedTypes, hasOriginal),
+      relatesToRef: null,
+    };
   }
 
   const pivotNote = params.pivotFromStrategy
     ? `\nPIVOT: האסטרטגיה "${params.pivotFromStrategy}" לא עזרה. הצע 2 חלופות מסוג שונה.`
     : '';
+
+  const tasksLine = hasOriginal
+    ? `משימות פעילות (לקישור relates_to/relation):\n${activeTasks
+        .map((t) => `${t.ref}: ${t.title.slice(0, 80)}`)
+        .join('\n')}`
+    : null;
 
   const userContent = [
     `חסם: ${params.description.slice(0, 220)}`,
@@ -160,6 +204,7 @@ export async function generateBlockerOptions(
     params.currentStrategy ? `אסטרטגיה נוכחית: ${params.currentStrategy.slice(0, 180)}` : null,
     `ניסיון מספר: ${params.attemptCount + 1}`,
     `סוגי אסטרטגיה מומלצים: ${allowedTypes.join(', ')}`,
+    tasksLine,
     `היסטוריית התערבויות:\n${formatMemoryForPrompt(params.memory)}`,
     pivotNote,
   ]
@@ -181,12 +226,20 @@ export async function generateBlockerOptions(
     const raw = completion.choices[0]?.message?.content ?? '';
     const parsed = parseJsonObject(raw);
     if (!parsed || !Array.isArray(parsed.options)) {
-      return { category, options: fallbackOptions(category, params.description, allowedTypes) };
+      return {
+        category,
+        options: fallbackOptions(category, params.description, allowedTypes, hasOriginal),
+        relatesToRef: null,
+      };
     }
 
     const outCategory = normalizeFrictionCategory(
       typeof parsed.category === 'string' ? parsed.category : category
     );
+
+    const validRefs = new Set(activeTasks.map((t) => t.ref));
+    const rawRef = typeof parsed.relates_to === 'string' ? parsed.relates_to.trim() : '';
+    const relatesToRef = validRefs.has(rawRef) ? rawRef : null;
 
     const options = (parsed.options as unknown[])
       .slice(0, 2)
@@ -195,6 +248,8 @@ export async function generateBlockerOptions(
         const micro = typeof o.micro_step === 'string' ? o.micro_step.trim().slice(0, 200) : '';
         if (!micro) return null;
         const id = i === 0 ? 'A' : 'B';
+        // relation תקף רק אם יש משימה מקורית; אחרת תמיד supports.
+        const relation = relatesToRef ? normalizeRelation(o.relation) : 'supports';
         return {
           id,
           label:
@@ -203,6 +258,7 @@ export async function generateBlockerOptions(
               : STRATEGY_LABELS_HE[normalizeStrategyType(String(o.strategy_type))],
           strategy_type: normalizeStrategyType(String(o.strategy_type)),
           micro_step: micro,
+          relation,
         };
       })
       .filter((x): x is BlockerOption => x !== null);
@@ -210,13 +266,18 @@ export async function generateBlockerOptions(
     if (options.length < 2) {
       return {
         category: outCategory,
-        options: fallbackOptions(outCategory, params.description, allowedTypes),
+        options: fallbackOptions(outCategory, params.description, allowedTypes, hasOriginal),
+        relatesToRef,
       };
     }
 
-    return { category: outCategory, options: options as [BlockerOption, BlockerOption] };
+    return { category: outCategory, options, relatesToRef };
   } catch {
-    return { category, options: fallbackOptions(category, params.description, allowedTypes) };
+    return {
+      category,
+      options: fallbackOptions(category, params.description, allowedTypes, hasOriginal),
+      relatesToRef: null,
+    };
   }
 }
 
