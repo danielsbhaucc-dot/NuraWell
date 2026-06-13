@@ -506,28 +506,50 @@ function SoftBackground() {
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(165deg, #ecfdf5 0%, #f0f9ff 35%, #faf5ff 65%, #ffffff 100%)',
+            'linear-gradient(170deg, #ecfdf5 0%, #f0fdfa 28%, #eff6ff 52%, #faf5ff 76%, #ffffff 100%)',
         }}
       />
-      <div
-        className="absolute -right-24 -top-20 h-80 w-80 rounded-full opacity-70"
+      {/* מארג ברי-זוהר עדין בסגנון Apple — כתמי צבע רכים שצפים ברקע */}
+      <motion.div
+        className="absolute -right-28 -top-24 h-[22rem] w-[22rem] rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgba(16,185,129,0.22), transparent 68%)',
-          filter: 'blur(48px)',
+          background: 'radial-gradient(circle, rgba(16,185,129,0.26), transparent 68%)',
+          filter: 'blur(56px)',
         }}
+        animate={{ y: [0, 18, 0], x: [0, -10, 0] }}
+        transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute -left-32 top-1/3 h-[26rem] w-[26rem] rounded-full"
+        style={{
+          background: 'radial-gradient(circle, rgba(99,102,241,0.16), transparent 70%)',
+          filter: 'blur(64px)',
+        }}
+        animate={{ y: [0, -22, 0], x: [0, 14, 0] }}
+        transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute bottom-0 right-1/4 h-72 w-72 rounded-full"
+        style={{
+          background: 'radial-gradient(circle, rgba(45,212,191,0.18), transparent 70%)',
+          filter: 'blur(56px)',
+        }}
+        animate={{ y: [0, -14, 0] }}
+        transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
       />
       <div
-        className="absolute -left-28 top-1/3 h-96 w-96 rounded-full opacity-60"
+        className="absolute bottom-1/4 left-1/3 h-64 w-64 rounded-full opacity-60"
         style={{
-          background: 'radial-gradient(circle, rgba(99,102,241,0.14), transparent 70%)',
+          background: 'radial-gradient(circle, rgba(251,191,36,0.12), transparent 70%)',
           filter: 'blur(52px)',
         }}
       />
+      {/* גרעיניות עדינה (noise) — נותנת עומק ומונעת באנדינג בגרדיאנט */}
       <div
-        className="absolute bottom-0 right-1/4 h-72 w-72 rounded-full opacity-50"
+        className="absolute inset-0 opacity-[0.035] mix-blend-overlay"
         style={{
-          background: 'radial-gradient(circle, rgba(251,191,36,0.14), transparent 70%)',
-          filter: 'blur(48px)',
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
         }}
       />
     </div>
@@ -556,13 +578,28 @@ function Hero({
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="relative z-10 w-full overflow-hidden rounded-b-[36px] pb-8 pt-8"
+      className="relative z-10 w-full overflow-hidden rounded-b-[40px] pb-8 pt-8"
       style={{
         background:
           'linear-gradient(155deg, #064e3b 0%, #047857 38%, #0d9488 72%, #10b981 100%)',
-        boxShadow: '0 22px 50px rgba(6,78,59,0.35)',
+        boxShadow: '0 26px 60px rgba(6,78,59,0.40), inset 0 1px 0 rgba(255,255,255,0.18)',
       }}
     >
+      {/* שכבת ברק עליונה — מדמה השתקפות זכוכית על ה-hero */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-2/3"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 100%)',
+        }}
+      />
+      {/* קו זוהר תחתון עדין */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-6 bottom-0 h-px rounded-full"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)' }}
+      />
       {/* זוהר אור פינתי */}
       <div
         aria-hidden
@@ -648,18 +685,26 @@ function Hero({
 
 function HeroStat({ icon: Icon, value, label }: { icon: typeof Sparkles; value: number; label: string }) {
   return (
-    <div
-      className="rounded-2xl px-2 py-3 text-center backdrop-blur-md"
+    <motion.div
+      whileTap={{ scale: 0.96 }}
+      className="relative overflow-hidden rounded-2xl px-2 py-3 text-center"
       style={{
-        background: 'rgba(255,255,255,0.16)',
-        border: '1px solid rgba(255,255,255,0.38)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.45), 0 8px 24px rgba(0,0,0,0.12)',
+        background: 'linear-gradient(165deg, rgba(255,255,255,0.28), rgba(255,255,255,0.10))',
+        backdropFilter: 'blur(14px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(14px) saturate(160%)',
+        border: '1px solid rgba(255,255,255,0.45)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), 0 10px 28px rgba(0,0,0,0.14)',
       }}
     >
-      <Icon className="mx-auto mb-1 h-4 w-4 text-emerald-50/90" aria-hidden />
-      <p className="text-[24px] font-black leading-none text-white">{value}</p>
-      <p className="mt-1 text-[10px] font-semibold text-emerald-50/85">{label}</p>
-    </div>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-1/2"
+        style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.35), transparent)' }}
+      />
+      <Icon className="relative mx-auto mb-1 h-4 w-4 text-emerald-50/95" aria-hidden />
+      <p className="relative text-[25px] font-black leading-none text-white drop-shadow-sm">{value}</p>
+      <p className="relative mt-1 text-[10px] font-semibold text-emerald-50/90">{label}</p>
+    </motion.div>
   );
 }
 
@@ -676,23 +721,46 @@ const TINT: Record<Tint, { rgb: string; soft: string; text: string }> = {
 };
 
 /**
- * זכוכית iOS — שקיפות + blur + sheen עליון.
+ * זכוכית iOS 26 ("Liquid Glass") — שקיפות עמוקה, blur חזק עם saturation,
+ * גבול דק כפול (אור למעלה/צל למטה), וזוהר פנימי עליון שמדמה משטח זכוכית אמיתי.
  */
 function glassStyle(tint: Tint): React.CSSProperties {
   const t = TINT[tint];
   return {
-    background: `linear-gradient(165deg, rgba(255,255,255,0.78) 0%, rgba(${t.soft},0.42) 100%)`,
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    border: `1px solid rgba(${t.rgb},0.22)`,
-    boxShadow: `0 8px 32px rgba(15,23,42,0.07), 0 2px 8px rgba(15,23,42,0.04), inset 0 1px 0 rgba(255,255,255,0.72)`,
+    background: `linear-gradient(160deg, rgba(255,255,255,0.86) 0%, rgba(255,255,255,0.64) 42%, rgba(${t.soft},0.5) 100%)`,
+    backdropFilter: 'blur(28px) saturate(190%)',
+    WebkitBackdropFilter: 'blur(28px) saturate(190%)',
+    border: `1px solid rgba(255,255,255,0.65)`,
+    boxShadow: [
+      `0 14px 40px rgba(15,23,42,0.10)`,
+      `0 4px 12px rgba(15,23,42,0.05)`,
+      `0 1px 0 rgba(${t.rgb},0.10)`,
+      `inset 0 1px 0 rgba(255,255,255,0.92)`,
+      `inset 0 -1px 0 rgba(${t.rgb},0.07)`,
+    ].join(', '),
   };
+}
+
+/** שכבת "ברק" עליונה (specular highlight) לכרטיסי זכוכית — נותנת תחושת משטח מלוטש. */
+function GlassSheen() {
+  return (
+    <span
+      aria-hidden
+      className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-[inherit]"
+      style={{
+        background:
+          'linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 100%)',
+        opacity: 0.6,
+      }}
+    />
+  );
 }
 
 function Card({ tint, children }: { tint: Tint; children: React.ReactNode }) {
   return (
-    <div className="rounded-3xl p-4" style={glassStyle(tint)}>
-      {children}
+    <div className="relative overflow-hidden rounded-3xl p-4" style={glassStyle(tint)}>
+      <GlassSheen />
+      <div className="relative">{children}</div>
     </div>
   );
 }
@@ -756,27 +824,34 @@ function Section({
       <SectionDivider tint={tint} />
       {/* כותרת בתיבת זכוכית צבעונית נקייה */}
       <div
-        className="flex items-center gap-2.5 rounded-2xl px-3 py-2.5"
+        className="relative flex items-center gap-2.5 overflow-hidden rounded-2xl px-3 py-2.5"
         style={{
-          background: `linear-gradient(135deg, #ffffff 0%, rgba(${t.soft},0.82) 100%)`,
-          border: `1px solid rgba(${t.rgb},0.24)`,
-          boxShadow: `0 8px 20px rgba(${t.rgb},0.10), inset 0 1px 0 rgba(255,255,255,0.95)`,
+          background: `linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(${t.soft},0.78) 100%)`,
+          backdropFilter: 'blur(18px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(18px) saturate(180%)',
+          border: `1px solid rgba(255,255,255,0.7)`,
+          boxShadow: `0 10px 24px rgba(${t.rgb},0.12), inset 0 1px 0 rgba(255,255,255,0.95)`,
         }}
       >
         <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-1/2"
+          style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.4), transparent)' }}
+        />
+        <span
+          className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
           style={{
-            background: `linear-gradient(140deg, rgba(${t.rgb},0.95), rgba(${t.rgb},0.7))`,
-            boxShadow: `0 4px 12px rgba(${t.rgb},0.4), inset 0 1px 0 rgba(255,255,255,0.4)`,
+            background: `linear-gradient(140deg, rgba(${t.rgb},0.98), rgba(${t.rgb},0.66))`,
+            boxShadow: `0 6px 16px rgba(${t.rgb},0.42), inset 0 1px 0 rgba(255,255,255,0.5)`,
           }}
         >
           <Icon className="h-[18px] w-[18px] text-white" aria-hidden />
         </span>
-        <h2 className="flex-1 text-[16px] font-black text-slate-900">{title}</h2>
+        <h2 className="relative flex-1 text-[16px] font-black text-slate-900">{title}</h2>
         {typeof count === 'number' && count > 0 ? (
           <span
-            className="flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[12px] font-black text-white"
-            style={{ background: `rgba(${t.rgb},0.85)` }}
+            className="relative flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[12px] font-black text-white"
+            style={{ background: `rgba(${t.rgb},0.9)`, boxShadow: `0 3px 8px rgba(${t.rgb},0.35)` }}
           >
             {count}
           </span>
@@ -819,9 +894,12 @@ function AssignmentCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
-      className="rounded-[22px] p-3.5 backdrop-blur-sm"
+      whileTap={{ scale: 0.992 }}
+      className="relative overflow-hidden rounded-[24px] p-3.5"
       style={glassStyle('emerald')}
     >
+      <GlassSheen />
+      <div className="relative z-[1]">
       <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
           {isRecurring ? <Repeat className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
@@ -867,13 +945,16 @@ function AssignmentCard({
           לא מתאים
         </button>
       </div>
+      </div>
     </motion.li>
   );
 }
 
 function ReminderRow({ reminder }: { reminder: Reminder }) {
   return (
-    <li className="rounded-3xl p-3.5" style={glassStyle('amber')}>
+    <li className="relative overflow-hidden rounded-3xl p-3.5" style={glassStyle('amber')}>
+      <GlassSheen />
+      <div className="relative z-[1]">
       <div className="mb-1 flex items-center gap-2">
         <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
           {REMINDER_KIND[reminder.kind]}
@@ -884,6 +965,7 @@ function ReminderRow({ reminder }: { reminder: Reminder }) {
         </span>
       </div>
       <p className="text-[13.5px] leading-relaxed text-slate-800">{reminder.body}</p>
+      </div>
     </li>
   );
 }
@@ -929,7 +1011,7 @@ function BlockerCard({
     : frictionCategoryLabel(normalizeFrictionCategory(null));
 
   return (
-    <motion.li layout className="relative rounded-[22px] p-4" style={glassStyle('rose')}>
+    <motion.li layout className="relative rounded-[24px] p-4" style={glassStyle('rose')}>
       {/* מספר מעוצב */}
       <span
         className="absolute -right-1 -top-1 flex h-8 w-8 items-center justify-center rounded-2xl text-[13px] font-black text-white shadow-lg"
@@ -1122,9 +1204,11 @@ function FocusCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, height: 0 }}
-      className="rounded-3xl p-4"
+      className="relative overflow-hidden rounded-3xl p-4"
       style={glassStyle('indigo')}
     >
+      <GlassSheen />
+      <div className="relative z-[1]">
       <div className="mb-1 flex items-center gap-2">
         <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-indigo-100">
           <Snowflake className="h-4 w-4 text-indigo-600" />
@@ -1169,6 +1253,7 @@ function FocusCard({
             חזרתי לשגרה 💪
           </button>
         )}
+      </div>
       </div>
     </motion.div>
   );
