@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
-  MessageCircle,
   Repeat,
   Snowflake,
   Sparkles,
@@ -17,7 +16,8 @@ import {
 } from 'lucide-react';
 import { AlmogAvatarChip } from '@/components/journey/AlmogPresence';
 import { createClient } from '@/lib/supabase/client';
-import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog-chat';
+import { frictionCategoryLabel, normalizeFrictionCategory } from '@/lib/ai/almog-commitments/friction';
+import type { BlockerOption } from '@/lib/ai/almog-commitments/types';
 
 type Assignment = {
   id: string;
@@ -59,6 +59,9 @@ type Blocker = {
   id: string;
   description: string;
   strategy: string | null;
+  category: string | null;
+  attempt_count: number;
+  current_options: BlockerOption[] | null;
   status: 'open' | 'improving' | 'resolved';
   identified_at: string;
   last_checked_at: string | null;
@@ -118,26 +121,19 @@ function greeting(): string {
   return 'לילה טוב';
 }
 
-/** פותח את הצ'אט עם אלמוג ומכין הודעת פתיחה בהקשר — "לדבר עכשיו". */
-function talkToAlmog(prefill: string) {
-  dispatchOpenAlmogChatWithPrefill(prefill);
-}
 
-function TalkNowButton({ prefill, label = 'דבר עם אלמוג' }: { prefill: string; label?: string }) {
-  return (
-    <button
-      type="button"
-      onClick={() => talkToAlmog(prefill)}
-      className="inline-flex items-center gap-1.5 rounded-2xl px-3 py-2 text-[12px] font-black text-white transition active:scale-95"
-      style={{
-        background: 'linear-gradient(135deg, #6366f1, #818cf8)',
-        boxShadow: '0 4px 12px rgba(99,102,241,0.32)',
-      }}
-    >
-      <MessageCircle className="h-3.5 w-3.5" />
-      {label}
-    </button>
-  );
+async function postBlockerAction(body: Record<string, string>): Promise<void> {
+  const res = await fetch('/api/v1/almog-blockers', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(json.error ?? 'הפעולה נכשלה');
+  }
+  await res.json();
 }
 
 async function postAction(body: Record<string, string>) {
@@ -204,6 +200,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
       'almog_assignments',
       'scheduled_reminders',
       'almog_blockers',
+      'almog_interventions',
       'almog_focus_periods',
     ]) {
       channel.on(
@@ -349,19 +346,30 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                 count={data.blockers.length}
                 note="אני עוקב אחרי אלה בעצמי ואשאל אותך כשצריך. תוכל גם לסמן כאן מה עוזר."
               >
-                {data.blockers.map((b) => (
+                {data.blockers.map((b, idx) => (
                   <BlockerCard
                     key={b.id}
+                    index={idx + 1}
                     blocker={b}
                     busy={busyId?.startsWith(b.id) ?? false}
+                    onGenerate={() =>
+                      run(`${b.id}-g`, () =>
+                        postBlockerAction({ action: 'generate_options', blocker_id: b.id })
+                      )
+                    }
+                    onPick={(optionId) =>
+                      run(`${b.id}-p`, () =>
+                        postBlockerAction({ action: 'pick', blocker_id: b.id, option_id: optionId })
+                      )
+                    }
                     onHelped={() =>
-                      run(`${b.id}-h`, () => postAction({ action: 'blocker_helped', blocker_id: b.id }))
+                      run(`${b.id}-h`, () => postBlockerAction({ action: 'helped', blocker_id: b.id }))
                     }
                     onNotHelped={() =>
-                      run(`${b.id}-n`, () => postAction({ action: 'blocker_not_helped', blocker_id: b.id }))
+                      run(`${b.id}-n`, () => postBlockerAction({ action: 'not_helped', blocker_id: b.id }))
                     }
                     onResolve={() =>
-                      run(`${b.id}-r`, () => postAction({ action: 'resolve_blocker', blocker_id: b.id }))
+                      run(`${b.id}-r`, () => postBlockerAction({ action: 'resolve', blocker_id: b.id }))
                     }
                   />
                 ))}
@@ -446,11 +454,10 @@ function EncouragementCard({ name }: { name: string }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.3 }}
-      className="relative overflow-hidden rounded-3xl p-4"
+      className="relative overflow-hidden rounded-[22px] p-4 backdrop-blur-md"
       style={{
-        background: 'linear-gradient(160deg, #ffffff 0%, rgba(236,253,245,0.85) 100%)',
-        border: '1px solid rgba(16,185,129,0.22)',
-        boxShadow: '0 12px 28px rgba(16,185,129,0.10), inset 0 1px 0 rgba(255,255,255,0.95)',
+        ...glassStyle('emerald'),
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.82) 0%, rgba(236,253,245,0.55) 100%)',
       }}
     >
       <div className="mb-2 flex items-center gap-2">
@@ -497,19 +504,31 @@ function SoftBackground() {
     <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
       <div
         className="absolute inset-0"
-        style={{ background: 'linear-gradient(180deg, #f0fdf9 0%, #f6fbff 45%, #ffffff 100%)' }}
+        style={{
+          background:
+            'linear-gradient(165deg, #ecfdf5 0%, #f0f9ff 35%, #faf5ff 65%, #ffffff 100%)',
+        }}
       />
       <div
-        className="absolute -right-20 -top-16 h-64 w-64 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.18), transparent 70%)', filter: 'blur(36px)' }}
+        className="absolute -right-24 -top-20 h-80 w-80 rounded-full opacity-70"
+        style={{
+          background: 'radial-gradient(circle, rgba(16,185,129,0.22), transparent 68%)',
+          filter: 'blur(48px)',
+        }}
       />
       <div
-        className="absolute -left-24 top-44 h-72 w-72 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(56,189,248,0.16), transparent 70%)', filter: 'blur(44px)' }}
+        className="absolute -left-28 top-1/3 h-96 w-96 rounded-full opacity-60"
+        style={{
+          background: 'radial-gradient(circle, rgba(99,102,241,0.14), transparent 70%)',
+          filter: 'blur(52px)',
+        }}
       />
       <div
-        className="absolute bottom-10 right-0 h-60 w-60 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.12), transparent 70%)', filter: 'blur(44px)' }}
+        className="absolute bottom-0 right-1/4 h-72 w-72 rounded-full opacity-50"
+        style={{
+          background: 'radial-gradient(circle, rgba(251,191,36,0.14), transparent 70%)',
+          filter: 'blur(48px)',
+        }}
       />
     </div>
   );
@@ -630,14 +649,14 @@ function Hero({
 function HeroStat({ icon: Icon, value, label }: { icon: typeof Sparkles; value: number; label: string }) {
   return (
     <div
-      className="rounded-2xl px-2 py-3 text-center"
+      className="rounded-2xl px-2 py-3 text-center backdrop-blur-md"
       style={{
-        background: 'rgba(255,255,255,0.20)',
-        border: '1px solid rgba(255,255,255,0.34)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 6px 16px rgba(0,0,0,0.10)',
+        background: 'rgba(255,255,255,0.16)',
+        border: '1px solid rgba(255,255,255,0.38)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.45), 0 8px 24px rgba(0,0,0,0.12)',
       }}
     >
-      <Icon className="mx-auto mb-1 h-4 w-4 text-emerald-50/85" aria-hidden />
+      <Icon className="mx-auto mb-1 h-4 w-4 text-emerald-50/90" aria-hidden />
       <p className="text-[24px] font-black leading-none text-white">{value}</p>
       <p className="mt-1 text-[10px] font-semibold text-emerald-50/85">{label}</p>
     </div>
@@ -657,15 +676,16 @@ const TINT: Record<Tint, { rgb: string; soft: string; text: string }> = {
 };
 
 /**
- * זכוכית נקייה בסגנון אייפון — לבן מתכתי כמעט-אטום עם גוון עדין, מסגרת צבעונית
- * דקה, ברק עליון (sheen) וצל נקי. בלי backdrop-blur מטושטש שיוצר מראה עכור.
+ * זכוכית iOS — שקיפות + blur + sheen עליון.
  */
 function glassStyle(tint: Tint): React.CSSProperties {
   const t = TINT[tint];
   return {
-    background: `linear-gradient(170deg, #ffffff 0%, rgba(${t.soft},0.78) 100%)`,
-    border: `1px solid rgba(${t.rgb},0.20)`,
-    boxShadow: `0 12px 28px rgba(15,23,42,0.08), 0 2px 6px rgba(15,23,42,0.04), inset 0 1px 0 rgba(255,255,255,0.95)`,
+    background: `linear-gradient(165deg, rgba(255,255,255,0.78) 0%, rgba(${t.soft},0.42) 100%)`,
+    backdropFilter: 'blur(20px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+    border: `1px solid rgba(${t.rgb},0.22)`,
+    boxShadow: `0 8px 32px rgba(15,23,42,0.07), 0 2px 8px rgba(15,23,42,0.04), inset 0 1px 0 rgba(255,255,255,0.72)`,
   };
 }
 
@@ -799,7 +819,7 @@ function AssignmentCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
-      className="rounded-3xl p-3.5"
+      className="rounded-[22px] p-3.5 backdrop-blur-sm"
       style={glassStyle('emerald')}
     >
       <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
@@ -882,67 +902,147 @@ const STATUS_HE: Record<string, string> = {
 };
 
 function BlockerCard({
+  index,
   blocker,
   busy,
+  onGenerate,
+  onPick,
   onHelped,
   onNotHelped,
   onResolve,
 }: {
+  index: number;
   blocker: Blocker;
   busy: boolean;
+  onGenerate: () => void;
+  onPick: (optionId: 'A' | 'B') => void;
   onHelped: () => void;
   onNotHelped: () => void;
   onResolve: () => void;
 }) {
   const st = BLOCKER_STATUS[blocker.status];
   const history = (Array.isArray(blocker.history) ? blocker.history : []).slice(-6).reverse();
+  const options = Array.isArray(blocker.current_options) ? blocker.current_options : [];
+  const hasOptions = options.length >= 2;
+  const categoryLabel = blocker.category
+    ? frictionCategoryLabel(blocker.category)
+    : frictionCategoryLabel(normalizeFrictionCategory(null));
 
   return (
-    <motion.li layout className="rounded-3xl p-3.5" style={glassStyle('rose')}>
-      <div className="mb-1 flex items-center gap-2">
-        <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${st.bg} ${st.fg}`}>{st.label}</span>
+    <motion.li layout className="relative rounded-[22px] p-4" style={glassStyle('rose')}>
+      {/* מספר מעוצב */}
+      <span
+        className="absolute -right-1 -top-1 flex h-8 w-8 items-center justify-center rounded-2xl text-[13px] font-black text-white shadow-lg"
+        style={{
+          background: 'linear-gradient(135deg, #fb7185, #e11d48)',
+          boxShadow: '0 4px 14px rgba(225,29,72,0.35)',
+        }}
+        aria-label={`קושי מספר ${index}`}
+      >
+        {index}
+      </span>
+
+      <div className="mb-2 flex flex-wrap items-center gap-2 pr-6">
+        <span className={`rounded-lg px-2 py-0.5 text-[10px] font-black ${st.bg} ${st.fg}`}>{st.label}</span>
+        <span
+          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-rose-800/80"
+          style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(244,63,94,0.18)' }}
+        >
+          {categoryLabel}
+        </span>
+        {blocker.attempt_count > 0 ? (
+          <span className="text-[10px] font-semibold text-slate-400">ניסיון {blocker.attempt_count + 1}</span>
+        ) : null}
         {blocker.next_check_at ? (
           <span className="inline-flex items-center gap-1 text-[10px] text-slate-500">
             <Clock className="h-3 w-3" />
-            נבדוק יחד {fmtDay(blocker.next_check_at)}
+            אחזור {fmtDay(blocker.next_check_at)}
           </span>
         ) : null}
       </div>
 
-      <p className="text-[14.5px] font-black leading-snug text-slate-900">{blocker.description}</p>
+      <p className="text-[15px] font-black leading-snug text-slate-900">{blocker.description}</p>
+
       {blocker.strategy ? (
-        <p className="mt-1 text-[12.5px] leading-relaxed text-slate-600">
-          <span className="font-bold text-rose-600">מה ננסה: </span>
+        <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-600">
+          <span className="font-bold text-rose-600">מה ננסה עכשיו: </span>
           {blocker.strategy}
         </p>
-      ) : (
-        <div
-          className="mt-2 rounded-2xl p-2.5"
-          style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.18)' }}
-        >
-          <p className="text-[12.5px] leading-relaxed text-slate-600">
-            עוד לא סיכמנו דרך מדויקת. רוצה שנבנה עכשיו צעד קטן ביחד? לחיצה אחת ואני כאן 👇
-          </p>
-          <div className="mt-2">
-            <TalkNowButton
-              prefill={`אלמוג, בוא נדבר על מה שמעכב אותי: "${blocker.description}". איזה צעד קטן נתחיל בו?`}
-              label="בוא נבנה צעד עכשיו"
-            />
+      ) : null}
+
+      {/* אופציות A/B */}
+      {hasOptions ? (
+        <div className="mt-3 space-y-2">
+          <p className="text-[11px] font-bold text-slate-500">בחר מה מתאים לך — זה הופך לצעד קטן:</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {options.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                disabled={busy}
+                onClick={() => onPick(opt.id)}
+                className="group rounded-2xl p-3 text-right transition active:scale-[0.98] disabled:opacity-60"
+                style={{
+                  background: 'rgba(255,255,255,0.65)',
+                  border: '1px solid rgba(99,102,241,0.22)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)',
+                }}
+              >
+                <span
+                  className="mb-1.5 inline-flex h-6 w-6 items-center justify-center rounded-lg text-[11px] font-black text-white"
+                  style={{ background: opt.id === 'A' ? '#6366f1' : '#8b5cf6' }}
+                >
+                  {opt.id}
+                </span>
+                <p className="text-[12px] font-black text-indigo-900">{opt.label}</p>
+                <p className="mt-1 text-[11.5px] leading-relaxed text-slate-600">{opt.micro_step}</p>
+              </button>
+            ))}
           </div>
         </div>
-      )}
+      ) : blocker.status !== 'resolved' && !blocker.strategy ? (
+        <div
+          className="mt-3 rounded-2xl p-3 backdrop-blur-sm"
+          style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.18)' }}
+        >
+          <p className="text-[12.5px] leading-relaxed text-slate-600">
+            עוד לא סיכמנו דרך מדויקת. בוא נבנה 2 אופציות קטנות — ואתה תבחר מה מתאים.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onGenerate}
+            className="mt-2 inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-[12.5px] font-black text-white transition active:scale-95 disabled:opacity-60"
+            style={{
+              background: 'linear-gradient(135deg, #6366f1, #818cf8)',
+              boxShadow: '0 4px 14px rgba(99,102,241,0.32)',
+            }}
+          >
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            בוא נבנה צעד עכשיו
+          </button>
+        </div>
+      ) : blocker.status !== 'resolved' && blocker.strategy && !hasOptions ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onGenerate}
+          className="mt-2 text-[11px] font-bold text-indigo-600 underline-offset-2 hover:underline disabled:opacity-50"
+        >
+          רוצה לנסות גישה אחרת? הצע 2 אופציות חדשות
+        </button>
+      ) : null}
 
-      {/* מתי אלמוג יוזם בעצמו */}
-      {blocker.status !== 'resolved' ? (
+      {blocker.status !== 'resolved' && blocker.strategy ? (
         <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
           {blocker.next_check_at
-            ? `אני אחזור אליך מעצמי ב-${fmtDay(blocker.next_check_at)} לראות איך הולך — לא תצטרך לזכור.`
-            : 'אני שומר על זה במעקב ואחזור אליך לבדוק.'}
+            ? `אזכיר לך מעצמי ב-${fmtDay(blocker.next_check_at)} — לא תצטרך לזכור.`
+            : 'אני שומר על זה במעקב ואחזור אליך.'}
         </p>
       ) : null}
 
       {history.length > 0 ? (
-        <div className="mt-3 border-r-2 border-rose-100 pr-3">
+        <div className="mt-3 border-r-2 border-rose-100/80 pr-3">
           {history.map((h, i) => {
             const helped = h.note?.includes('עזר') && !h.note?.includes('לא עזר');
             const notHelped = h.note?.includes('לא עזר');
@@ -964,24 +1064,28 @@ function BlockerCard({
 
       {blocker.status !== 'resolved' ? (
         <div className="mt-3 flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onHelped}
-            className="inline-flex items-center gap-1 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] font-bold text-emerald-700 transition active:scale-95 disabled:opacity-60"
-          >
-            <ThumbsUp className="h-3.5 w-3.5" />
-            עזר לי
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onNotHelped}
-            className="inline-flex items-center gap-1 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] font-bold text-rose-700 transition active:scale-95 disabled:opacity-60"
-          >
-            <ThumbsDown className="h-3.5 w-3.5" />
-            לא עזר
-          </button>
+          {blocker.strategy ? (
+            <>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onHelped}
+                className="inline-flex items-center gap-1 rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-3 py-2 text-[12px] font-bold text-emerald-700 backdrop-blur-sm transition active:scale-95 disabled:opacity-60"
+              >
+                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ThumbsUp className="h-3.5 w-3.5" />}
+                עזר לי
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onNotHelped}
+                className="inline-flex items-center gap-1 rounded-2xl border border-rose-200/80 bg-rose-50/80 px-3 py-2 text-[12px] font-bold text-rose-700 backdrop-blur-sm transition active:scale-95 disabled:opacity-60"
+              >
+                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ThumbsDown className="h-3.5 w-3.5" />}
+                לא עזר — ננסה אחרת
+              </button>
+            </>
+          ) : null}
           <button
             type="button"
             disabled={busy}
@@ -992,11 +1096,6 @@ function BlockerCard({
             <CheckCircle2 className="h-3.5 w-3.5" />
             נפתר
           </button>
-          {blocker.strategy ? (
-            <TalkNowButton
-              prefill={`אלמוג, לגבי "${blocker.description}" — רציתי לדבר על זה עכשיו.`}
-            />
-          ) : null}
         </div>
       ) : null}
     </motion.li>
