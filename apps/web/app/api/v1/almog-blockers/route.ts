@@ -216,10 +216,27 @@ export async function POST(request: Request) {
     const originalId = blocker.related_assignment_id;
     const relation = originalId ? picked.relation : 'standalone';
 
-    const { data: assignment, error: assignErr } = await admin
+    // יצירת הצעד — select-first ואז insert (האינדקס הייחודי חלקי, אז אי-אפשר
+    // להשתמש ב-ON CONFLICT/upsert). אם הצעד כבר קיים (בחירה חוזרת) — מפעילים מחדש.
+    let assignmentId: string;
+    const { data: existingAssign } = await admin
       .from('almog_assignments')
-      .upsert(
-        {
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('dedupe_key', taskKey)
+      .maybeSingle();
+
+    if (existingAssign) {
+      assignmentId = (existingAssign as { id: string }).id;
+      await admin
+        .from('almog_assignments')
+        .update({ status: 'active', parent_assignment_id: originalId ?? null, relation })
+        .eq('id', assignmentId)
+        .eq('user_id', user.id);
+    } else {
+      const { data: inserted, error: assignErr } = await admin
+        .from('almog_assignments')
+        .insert({
           user_id: user.id,
           title: picked.micro_step,
           reason: `כדי להתגבר על: ${blocker.description}`,
@@ -237,17 +254,26 @@ export async function POST(request: Request) {
             strategy_type: picked.strategy_type,
             relation,
           },
-        },
-        { onConflict: 'user_id,dedupe_key', ignoreDuplicates: false }
-      )
-      .select('id')
-      .maybeSingle();
+        })
+        .select('id')
+        .maybeSingle();
 
-    if (assignErr || !assignment) {
-      return NextResponse.json({ error: assignErr?.message ?? 'Failed to create assignment' }, { status: 500 });
+      if (assignErr || !inserted) {
+        // אם נכשל עקב כפילות (race) — מנסים לשלוף שוב.
+        const { data: retry } = await admin
+          .from('almog_assignments')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('dedupe_key', taskKey)
+          .maybeSingle();
+        if (!retry) {
+          return NextResponse.json({ error: assignErr?.message ?? 'Failed to create assignment' }, { status: 500 });
+        }
+        assignmentId = (retry as { id: string }).id;
+      } else {
+        assignmentId = (inserted as { id: string }).id;
+      }
     }
-
-    const assignmentId = (assignment as { id: string }).id;
 
     // טיפול במשימה המקורית לפי היחס:
     //  • replaces — המקורית יורדת (הוחלפה בצעד דומה ומתאים יותר).
@@ -301,21 +327,27 @@ export async function POST(request: Request) {
     const fireAt = defaultInterventionReminderIso(now);
     const remKey = `int|${blocker.id}|${taskKey.slice(0, 40)}|${fireAt.slice(0, 10)}`;
 
-    await admin.from('scheduled_reminders').upsert(
-      {
+    // תזכורת מעקב — select-first/insert (אינדקס ייחודי חלקי, בלי ON CONFLICT).
+    const { data: existingRem } = await admin
+      .from('scheduled_reminders')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('dedupe_key', remKey)
+      .maybeSingle();
+    if (!existingRem) {
+      await admin.from('scheduled_reminders').insert({
         user_id: user.id,
         fire_at: fireAt,
         kind: 'followup',
         title: 'אלמוג חושב עליך 🌿',
-        body: `רציתי לבדוק — הצלחת לנסות "${picked.micro_step}"? איך הלך?`,
+        body: `רק בודק איתך — איך הלך עם "${picked.micro_step}"? גם אם לא יצא, בא נדבר על זה.`,
         assignment_id: assignmentId,
         blocker_id: blocker.id,
         status: 'pending',
         dedupe_key: remKey,
         metadata: { source: 'blocker_pick', intervention_id: (intervention as { id: string } | null)?.id },
-      },
-      { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true }
-    );
+      });
+    }
 
     await admin
       .from('almog_blockers')

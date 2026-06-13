@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
+  MessageCircle,
   Repeat,
   Snowflake,
   Sparkles,
@@ -17,6 +18,7 @@ import {
 import { AlmogAvatarChip } from '@/components/journey/AlmogPresence';
 import { createClient } from '@/lib/supabase/client';
 import { frictionCategoryLabel, normalizeFrictionCategory } from '@/lib/ai/almog-commitments/friction';
+import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog-chat';
 import type { BlockerOption } from '@/lib/ai/almog-commitments/types';
 
 type AssignmentRelation = 'standalone' | 'replaces' | 'eases' | 'supports';
@@ -375,6 +377,12 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                     onResolve={() =>
                       run(`${b.id}-r`, () => postBlockerAction({ action: 'resolve', blocker_id: b.id }))
                     }
+                    onAsk={() => {
+                      const step = b.strategy ? ` ניסינו "${b.strategy}".` : '';
+                      dispatchOpenAlmogChatWithPrefill(
+                        `אלמוג, לגבי "${b.description}" —${step} לא בטוח שהבנתי, אפשר שתסביר לי שוב בפשטות?`
+                      );
+                    }}
                   />
                 ))}
               </Section>
@@ -1024,6 +1032,7 @@ function BlockerCard({
   onHelped,
   onNotHelped,
   onResolve,
+  onAsk,
 }: {
   index: number;
   blocker: Blocker;
@@ -1033,6 +1042,7 @@ function BlockerCard({
   onHelped: () => void;
   onNotHelped: () => void;
   onResolve: () => void;
+  onAsk: () => void;
 }) {
   const st = BLOCKER_STATUS[blocker.status];
   const history = (Array.isArray(blocker.history) ? blocker.history : []).slice(-6).reverse();
@@ -1084,40 +1094,73 @@ function BlockerCard({
         </p>
       ) : null}
 
-      {/* אופציות A/B */}
+      {/* אופציות — שתי דרכים קטנות לבחור מתוכן */}
       {hasOptions ? (
-        <div className="mt-3 space-y-2">
-          <p className="text-[11px] font-bold text-slate-500">בחר מה מתאים לך — זה הופך לצעד קטן:</p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {options.map((opt) => (
+        <div
+          className="mt-3 rounded-[20px] p-3.5"
+          style={{
+            background: 'linear-gradient(180deg, rgba(238,242,255,0.85), rgba(245,243,255,0.7))',
+            border: '1px solid rgba(99,102,241,0.16)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9)',
+          }}
+        >
+          <div className="mb-2.5 flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100">
+              <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
+            </span>
+            <p className="text-[12px] font-bold leading-snug text-slate-600">
+              חשבתי על שתי דרכים קטנות. מה מרגיש לך נכון יותר עכשיו?
+            </p>
+          </div>
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            {options.map((opt, oi) => (
               <button
                 key={opt.id}
                 type="button"
                 disabled={busy}
                 onClick={() => onPick(opt.id)}
-                className="group rounded-2xl p-3 text-right transition active:scale-[0.98] disabled:opacity-60"
+                className="group relative flex h-full flex-col rounded-2xl p-3.5 text-right transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] disabled:opacity-60"
                 style={{
-                  background: 'rgba(255,255,255,0.65)',
-                  border: '1px solid rgba(99,102,241,0.22)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)',
+                  background: 'rgba(255,255,255,0.92)',
+                  border: '1px solid rgba(99,102,241,0.2)',
+                  boxShadow: '0 2px 10px rgba(99,102,241,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
                 }}
               >
-                <span
-                  className="mb-1.5 inline-flex h-6 w-6 items-center justify-center rounded-lg text-[11px] font-black text-white"
-                  style={{ background: opt.id === 'A' ? '#6366f1' : '#8b5cf6' }}
-                >
-                  {opt.id}
-                </span>
-                <p className="text-[12px] font-black text-indigo-900">{opt.label}</p>
-                <p className="mt-1 text-[11.5px] leading-relaxed text-slate-600">{opt.micro_step}</p>
+                <div className="mb-1.5 flex items-center gap-2">
+                  <span
+                    className="flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-black text-white shadow-sm"
+                    style={{
+                      background:
+                        oi === 0
+                          ? 'linear-gradient(135deg,#6366f1,#818cf8)'
+                          : 'linear-gradient(135deg,#8b5cf6,#a78bfa)',
+                    }}
+                  >
+                    {oi === 0 ? 'א' : 'ב'}
+                  </span>
+                  <p className="text-[12.5px] font-black leading-tight text-indigo-900">{opt.label}</p>
+                </div>
+                <p className="text-[12px] leading-relaxed text-slate-600">{opt.micro_step}</p>
                 {opt.relation && opt.relation !== 'standalone' && opt.relation !== 'supports' ? (
-                  <span className="mt-1.5 inline-block rounded-full bg-indigo-100 px-2 py-0.5 text-[9px] font-bold text-indigo-600">
+                  <span className="mt-2 inline-flex w-fit items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[9.5px] font-bold text-indigo-600">
                     {opt.relation === 'replaces' ? '🔄 מחליף את המשימה' : '🪶 גרסה מוקלת'}
                   </span>
                 ) : null}
+                <span className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-bold text-indigo-500 opacity-0 transition group-hover:opacity-100">
+                  בוא נתחיל מזה
+                </span>
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onAsk}
+            className="mt-2.5 inline-flex items-center gap-1.5 text-[11.5px] font-bold text-indigo-500 transition hover:text-indigo-700 disabled:opacity-50"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            לא הבנתי משהו — בוא נדבר
+          </button>
         </div>
       ) : blocker.status !== 'resolved' && !blocker.strategy ? (
         <div
@@ -1205,6 +1248,15 @@ function BlockerCard({
               </button>
             </>
           ) : null}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onAsk}
+            className="inline-flex items-center gap-1 rounded-2xl border border-indigo-200/80 bg-indigo-50/70 px-3 py-2 text-[12px] font-bold text-indigo-700 backdrop-blur-sm transition active:scale-95 disabled:opacity-60"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            יש לי שאלה
+          </button>
           <button
             type="button"
             disabled={busy}

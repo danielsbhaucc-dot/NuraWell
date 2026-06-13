@@ -98,37 +98,58 @@ function fallbackOptions(
 ): BlockerOption[] {
   const types = strategyTypes.length >= 2 ? strategyTypes.slice(0, 2) : nextStrategyTypesForPivot(category, []);
 
-  const templates: Record<StrategyType, string> = {
-    environment_design: `לשים תזכיר גלוי ליד ${description.slice(0, 30)}`,
-    physiological_adjustment: `להתחיל בגרסה קטנה יותר — חצי מהכמות הרגילה`,
-    micro_habit: `צעד של 2 דקות בלבד: ${description.slice(0, 40)}`,
-    habit_stacking: `מיד אחרי הרגל קיים (למשל אחרי צחצוח שיניים) — ${description.slice(0, 30)}`,
-    emotional_regulation: `לעצור 3 נשימות לפני — ואז לנסות שוב`,
-    social_accountability: `לספר לחבר/בן זוג שאני מנסה — בקשת תמיכה קטנה`,
-    how_to: `ללמוד צעד-אחר-צעד איך לעשות את זה נכון`,
-    value_linking: `לזכור למה זה חשוב לי — משפט אחד לפני שמתחילים`,
-    reminder_system: `תזכורת בטלפון בשעה קבועה`,
-    reward_system: `פרס קטן אחרי שעשיתי — משהו שאני אוהב`,
+  // ניסוחים טבעיים ומלאים בקולו של אלמוג — בלי לשרבב את תיאור החסם הקטוע.
+  const templates: Record<StrategyType, { label: string; step: string }> = {
+    environment_design: {
+      label: 'נסדר את הסביבה',
+      step: 'בוא נשים תזכורת גלויה במקום שאי-אפשר לפספס — ככה זה יקפוץ לך לעיניים בדיוק בזמן.',
+    },
+    physiological_adjustment: {
+      label: 'נתחיל בקטן',
+      step: 'בוא נתחיל מחצי מהכמות, או בגרסה שיותר נעימה לך — לא חייבים הכל בבת אחת.',
+    },
+    micro_habit: {
+      label: 'צעד של דקה',
+      step: 'בוא נעשה רק 2 דקות מזה היום. ממש קטן, רק כדי להתחיל לזוז.',
+    },
+    habit_stacking: {
+      label: 'נצמיד להרגל קיים',
+      step: 'בוא נחבר את זה למשהו שאתה כבר עושה — למשל מיד אחרי שאתה מצחצח שיניים.',
+    },
+    emotional_regulation: {
+      label: 'רגע של אוויר',
+      step: 'בוא ניקח 3 נשימות עמוקות לפני, ואז ננסה. בלי לחץ, רק להתרכך קצת.',
+    },
+    social_accountability: {
+      label: 'נשתף מישהו',
+      step: 'בוא תספר למישהו קרוב שאתה מנסה את זה — קצת תמיכה עושה הבדל גדול.',
+    },
+    how_to: {
+      label: 'נבין יחד איך',
+      step: 'בוא נפרק את זה לצעד-אחר-צעד פשוט, ככה שיהיה ברור בדיוק מה לעשות.',
+    },
+    value_linking: {
+      label: 'נזכור למה',
+      step: 'בוא נזכיר לעצמנו במשפט אחד למה זה חשוב לך — זה מה שמחזיק כשקשה.',
+    },
+    reminder_system: {
+      label: 'תזכורת חכמה',
+      step: 'בוא נקבע תזכורת בשעה קבועה שמתאימה לך — ואני אזכיר לך בעדינות.',
+    },
+    reward_system: {
+      label: 'פרס קטן',
+      step: 'בוא נחליט על פרס קטן שתיתן לעצמך אחרי — משהו שאתה אוהב.',
+    },
   };
 
   // ברירת מחדל בטוחה ללא LLM: "eases" אם יש משימה מקורית (הקלה), אחרת "supports".
   const relation: AssignmentRelation = hasOriginal ? 'eases' : 'supports';
+  const tA = types[0] ?? 'micro_habit';
+  const tB = types[1] ?? 'habit_stacking';
 
   return [
-    {
-      id: 'A',
-      label: STRATEGY_LABELS_HE[types[0] ?? 'micro_habit'],
-      strategy_type: types[0] ?? 'micro_habit',
-      micro_step: templates[types[0] ?? 'micro_habit'],
-      relation,
-    },
-    {
-      id: 'B',
-      label: STRATEGY_LABELS_HE[types[1] ?? 'habit_stacking'],
-      strategy_type: types[1] ?? 'habit_stacking',
-      micro_step: templates[types[1] ?? 'habit_stacking'],
-      relation,
-    },
+    { id: 'A', label: templates[tA].label, strategy_type: tA, micro_step: templates[tA].step, relation },
+    { id: 'B', label: templates[tB].label, strategy_type: tB, micro_step: templates[tB].step, relation },
   ];
 }
 
@@ -139,8 +160,10 @@ const SYSTEM = `אתה מנוע "התערבות התנהגותית" ל-NuraWell 
 - כל אופציה = strategy_type מתוך הרשימה + micro_step ספציפי (פעולה אחת קטנה, לא עצה כללית).
 - אל תחזור על אסטרטגיות שסומנו "לא עזר" בהיסטוריה.
 - ב-pivot: בחר סוג אסטרטגיה שונה מהקודם.
-- טון: אמפתי, מעשי, לא טיפולי. עברית טבעית.
 - micro_step בר-ביצוע היום (עד 15 דקות / פעולה אחת).
+- שפה: כתוב כאילו אלמוג מדבר אל המשתמש בגוף ראשון, חם ואישי. למשל "בוא נתחיל מ...", "אולי ננסה...". בלי ז'רגון, בלי מילים כמו "אסטרטגיה" או "micro_step" בטקסט עצמו.
+- label = 2-4 מילים בעברית, רך וברור (כמו כותרת קטנה לרעיון). לא שם טכני.
+- micro_step = משפט אחד וחצי לכל היותר, טבעי וזורם, שלא נחתך באמצע.
 
 קשר למשימה מקורית (אם סופקה רשימת "משימות פעילות"):
 - relates_to = ה-ref של המשימה שהחסם נוגע בה, או null אם לא קשור לאף אחת.
