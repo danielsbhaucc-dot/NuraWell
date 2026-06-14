@@ -157,6 +157,7 @@ export async function persistCommitmentExtraction(params: {
       .select('id')
       .maybeSingle();
     if (!error && data) result.assignments_created += 1;
+    else if (error) console.warn('[almog/persist] assignment upsert failed', error.message);
   }
 
   // ── תזכורות ────────────────────────────────────────────────────
@@ -177,6 +178,7 @@ export async function persistCommitmentExtraction(params: {
       { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true }
     );
     if (!error) result.reminders_created += 1;
+    else console.warn('[almog/persist] reminder upsert failed', error.message);
   }
 
   // ── follow-ups (מעקב אחרי משימה שניתנה) ────────────────────────
@@ -197,6 +199,7 @@ export async function persistCommitmentExtraction(params: {
       { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true }
     );
     if (!error) result.reminders_created += 1;
+    else console.warn('[almog/persist] followup upsert failed', error.message);
   }
 
   // ── חסמים ──────────────────────────────────────────────────────
