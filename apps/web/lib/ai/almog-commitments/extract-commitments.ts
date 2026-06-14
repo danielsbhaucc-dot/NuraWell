@@ -320,6 +320,33 @@ export function shouldAttemptCommitmentExtraction(assistantMessage: string): boo
   return COMMITMENT_HINT_RE.test(assistantMessage);
 }
 
+/**
+ * זיהוי *מפורש* של הבטחת תזכורת מצד אלמוג (צר יותר מ-COMMITMENT_HINT_RE).
+ * משמש כרשת ביטחון: אם אלמוג אמר במילים שלו "אזכיר לך" אבל מנוע החילוץ
+ * (Llama) לא רץ / נכשל / החזיר confidence נמוך — אנחנו עדיין יוצרים תזכורת,
+ * כדי שהבטחה מפורשת לא תיעלם בשקט. זו הסיבה המרכזית ל"אלמוג הבטיח אבל לא נרשם".
+ */
+const EXPLICIT_REMINDER_RE =
+  /(אזכיר לך|אני אזכיר|אזכיר|אתזכר|נתזכר|נזכיר לך|אשלח לך תזכורת|אשלח לך הודעה|שלח לך תזכורת|אעדכן אותך|תזכורת)/u;
+
+export function detectExplicitReminderPromise(assistantMessage: string): boolean {
+  return EXPLICIT_REMINDER_RE.test(assistantMessage);
+}
+
+/**
+ * בונה תיאור "מה להזכיר" עבור תזכורת הגיבוי, מתוך המשפט שבו אלמוג הבטיח את
+ * התזכורת. אם לא נמצא משפט מתאים — נופלים חזרה להודעת המשתמש או לטקסט גנרי.
+ */
+function fallbackReminderWhat(assistantMessage: string, userMessage?: string): string {
+  const clean = assistantMessage.replace(/\s+/g, ' ').trim();
+  const sentences = clean.split(/(?<=[.!?\n])\s+/u);
+  const hit = sentences.find((s) => EXPLICIT_REMINDER_RE.test(s));
+  const base = (hit ?? clean).trim();
+  if (base) return base.slice(0, 200);
+  const u = (userMessage ?? '').replace(/\s+/g, ' ').trim();
+  return u ? `להזכיר לך: ${u.slice(0, 160)}` : 'תזכורת שאלמוג הבטיח לך';
+}
+
 export async function extractAlmogCommitments(params: {
   userMessage: string;
   assistantMessage: string;
@@ -329,8 +356,20 @@ export async function extractAlmogCommitments(params: {
   now?: Date;
 }): Promise<CommitmentExtraction> {
   const now = params.now ?? new Date();
-  if (!process.env.OPENROUTER_API_KEY?.trim()) return EMPTY;
   if (!params.assistantMessage.trim()) return EMPTY;
+
+  /**
+   * תוצאת ברירת מחדל ריקה (אובייקט חדש — לא לגעת ב-EMPTY המשותף). מנוע ה-LLM
+   * ימלא אותה אם הוא זמין ומצליח; אחרת היא נשארת ריקה ורשת הביטחון בסוף תפעל.
+   */
+  let extraction: CommitmentExtraction = {
+    reminders: [],
+    tasks: [],
+    focus: null,
+    blockers: [],
+    followups: [],
+    blocker_updates: [],
+  };
 
   const habitsLine = params.habitTitles?.length
     ? `הרגלים פעילים של המשתמש (לשיוך related_habit):\n${params.habitTitles.slice(0, 10).join(' · ')}`
@@ -356,23 +395,41 @@ export async function extractAlmogCommitments(params: {
     .filter(Boolean)
     .join('\n\n');
 
-  try {
-    const completion = await openrouter.chat.completions.create({
-      model: ALMOG_COMMITMENTS_MODEL,
-      temperature: 0.1,
-      max_tokens: 900,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: SYSTEM },
-        { role: 'user', content: userContent },
-      ],
-    });
-    const raw = completion.choices[0]?.message?.content ?? '';
-    if (!raw.trim()) return EMPTY;
-    const parsed = parseJsonObject(raw);
-    if (!parsed) return EMPTY;
-    return normalize(parsed, now);
-  } catch {
-    return EMPTY;
+  if (process.env.OPENROUTER_API_KEY?.trim()) {
+    try {
+      const completion = await openrouter.chat.completions.create({
+        model: ALMOG_COMMITMENTS_MODEL,
+        temperature: 0.1,
+        max_tokens: 900,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: SYSTEM },
+          { role: 'user', content: userContent },
+        ],
+      });
+      const raw = completion.choices[0]?.message?.content ?? '';
+      const parsed = raw.trim() ? parseJsonObject(raw) : null;
+      if (parsed) extraction = normalize(parsed, now);
+    } catch {
+      // נכשל החילוץ — נשארים עם extraction ריק, ורשת הביטחון למטה תכסה.
+    }
   }
+
+  /**
+   * רשת ביטחון דטרמיניסטית: אם אלמוג הבטיח *במפורש* להזכיר, אבל מנוע החילוץ לא
+   * החזיר אף תזכורת (מפתח OpenRouter חסר, JSON לא תקין, שגיאה, או confidence
+   * נמוך מהסף) — יוצרים תזכורת בכל זאת. כך הבטחה מפורשת לא נעלמת לעולם.
+   */
+  if (
+    extraction.reminders.length === 0 &&
+    detectExplicitReminderPromise(params.assistantMessage)
+  ) {
+    extraction.reminders.push({
+      what: fallbackReminderWhat(params.assistantMessage, params.userMessage),
+      fire_at_iso: null,
+      confidence: 0.9,
+    });
+  }
+
+  return extraction;
 }
