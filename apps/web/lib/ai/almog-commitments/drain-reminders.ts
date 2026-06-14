@@ -11,7 +11,6 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { isAvoidPushActive } from '../avoid-push';
 
 type Admin = SupabaseClient;
 
@@ -89,25 +88,12 @@ export async function drainAlmogReminders(
 
   const due = (dueRows ?? []) as ReminderRow[];
 
-  // טוענים ai_context פעם אחת לכל המשתמשים הרלוונטיים (avoid_push gate).
-  const userIds = [...new Set(due.map((r) => r.user_id))];
-  const avoidPushByUser = new Map<string, boolean>();
-  if (userIds.length > 0) {
-    const { data: profileRows } = await admin
-      .from('profiles')
-      .select('id, ai_context')
-      .in('id', userIds);
-    for (const p of (profileRows ?? []) as { id: string; ai_context: Record<string, unknown> | null }[]) {
-      avoidPushByUser.set(p.id, isAvoidPushActive(p.ai_context));
-    }
-  }
-
   if (isDryRun) {
     return {
       mode: 'dry_run',
       now: nowIso,
       due_count: due.length,
-      would_send: due.filter((r) => !avoidPushByUser.get(r.user_id)).length,
+      would_send: due.length,
       sent: 0,
       skipped: 0,
       focus_ended: focusEnded,
@@ -116,7 +102,7 @@ export async function drainAlmogReminders(
   }
 
   let sent = 0;
-  let skipped = 0;
+  const skipped = 0;
   let deferred = 0;
   const errors: string[] = [];
 
@@ -133,16 +119,6 @@ export async function drainAlmogReminders(
 
   for (const r of due) {
     try {
-      // המשתמש ביקש להפחית דחיפה — מדלגים בעדינות (לא שולחים, מסמנים skipped).
-      if (avoidPushByUser.get(r.user_id)) {
-        await admin
-          .from('scheduled_reminders')
-          .update({ status: 'skipped', metadata: { skipped_reason: 'avoid_push' } })
-          .eq('id', r.id);
-        skipped += 1;
-        continue;
-      }
-
       // הגענו לתקרה היומית-לריצה למשתמש הזה — משאירים pending לריצה הבאה.
       if ((sentByUser.get(r.user_id) ?? 0) >= maxPerUserPerRun) {
         deferred += 1;
