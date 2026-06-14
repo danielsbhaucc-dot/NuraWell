@@ -137,20 +137,33 @@ export async function sweepStaleAssignments(
       continue;
     }
     try {
-      const { error: upErr } = await admin.from('scheduled_reminders').upsert(
-        {
-          user_id: a.user_id,
-          fire_at: nowIso,
-          kind: 'followup',
-          title: 'אלמוג חושב עליך 🌿',
-          body: pickBody(a.id, a.title),
-          assignment_id: a.id,
-          status: 'pending',
-          dedupe_key: `staletrack|${a.id}|${dateKey}`,
-          metadata: { source: 'assignment_sweep' },
-        },
-        { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true }
-      );
+      /**
+       * select-first ואז insert — האינדקס הייחודי `uq_scheduled_reminders_dedupe`
+       * חלקי (`WHERE dedupe_key IS NOT NULL`), ולכן `.upsert({ onConflict })` נכשל
+       * ב-42P10. בלי זה הנדנודים לא נשמרו כלל (השגיאה נבלעה).
+       */
+      const remKey = `staletrack|${a.id}|${dateKey}`;
+      const { data: existingRem } = await admin
+        .from('scheduled_reminders')
+        .select('id')
+        .eq('user_id', a.user_id)
+        .eq('dedupe_key', remKey)
+        .maybeSingle();
+      if (existingRem) {
+        skippedExisting += 1;
+        continue;
+      }
+      const { error: upErr } = await admin.from('scheduled_reminders').insert({
+        user_id: a.user_id,
+        fire_at: nowIso,
+        kind: 'followup',
+        title: 'אלמוג חושב עליך 🌿',
+        body: pickBody(a.id, a.title),
+        assignment_id: a.id,
+        status: 'pending',
+        dedupe_key: remKey,
+        metadata: { source: 'assignment_sweep' },
+      });
       if (upErr) throw new Error(upErr.message);
       nudgesCreated += 1;
     } catch (e) {
