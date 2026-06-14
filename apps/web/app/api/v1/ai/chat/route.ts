@@ -46,6 +46,7 @@ import {
 import {
   extractAlmogCommitments,
   shouldAttemptCommitmentExtraction,
+  detectExplicitReminderPromise,
 } from '../../../../../lib/ai/almog-commitments/extract-commitments';
 import { persistCommitmentExtraction } from '../../../../../lib/ai/almog-commitments/persist';
 import { applyChatSignalsFromUserMessage, detectChatSignals } from '../../../../../lib/ai/chat-signals';
@@ -3065,7 +3066,10 @@ export async function POST(request: Request) {
          * שמתבצעות בפועל. כלל ברזל בתוך החילוץ: רק מה שנאמר מפורשות — לא ממציא.
          * Gating: רק אם תשובת אלמוג מכילה רמז להתחייבות (חוסך קריאת LLM).
          */
-        if (shouldAttemptCommitmentExtraction(assistantText)) {
+        if (
+          shouldAttemptCommitmentExtraction(assistantText) ||
+          detectExplicitReminderPromise(assistantText)
+        ) {
           after(async () => {
             try {
               const admin = createAdminClient();
