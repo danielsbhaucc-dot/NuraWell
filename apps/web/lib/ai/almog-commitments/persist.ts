@@ -23,6 +23,35 @@ export interface PersistResult {
 
 type BlockerHistoryEntry = { at: string; status: string; note?: string };
 
+/**
+ * הכנסה עם מניעת כפילויות — select-first ואז insert.
+ *
+ * ⚠️ קריטי: האינדקסים הייחודיים של הטבלאות האלה הם *חלקיים*
+ * (`UNIQUE ... WHERE dedupe_key IS NOT NULL`, ראה 000048). Postgres לא יכול
+ * להשתמש באינדקס חלקי כ-arbiter של `ON CONFLICT (user_id, dedupe_key)` בלי
+ * ה-predicate, ולכן `.upsert({ onConflict })` נכשל בשגיאה 42P10
+ * ("no unique or exclusion constraint matching the ON CONFLICT specification").
+ * בעבר השגיאה נבלעה (`if (!error)`) — ולכן תזכורות/משימות מהצ'אט *לא נשמרו כלל*,
+ * והעמוד "התוכנית שלי" נשאר ריק. זה הדפוס הבטוח (כמו ב-almog-blockers/route.ts).
+ */
+async function insertDeduped(
+  admin: Admin,
+  table: string,
+  userId: string,
+  key: string,
+  payload: Record<string, unknown>
+): Promise<'inserted' | 'exists' | 'error'> {
+  const { data: existing } = await admin
+    .from(table)
+    .select('id')
+    .eq('user_id', userId)
+    .eq('dedupe_key', key)
+    .maybeSingle();
+  if (existing) return 'exists';
+  const { error } = await admin.from(table).insert(payload);
+  return error ? 'error' : 'inserted';
+}
+
 /** מנרמל טקסט עברי/אנגלי למפתח dedupe יציב. */
 function dedupeKey(text: string): string {
   return text
@@ -132,71 +161,58 @@ export async function persistCommitmentExtraction(params: {
     const relatedHabitId = task.related_habit
       ? params.habitTitleToId?.get(task.related_habit.trim()) ?? null
       : null;
-    const { data, error } = await admin
-      .from('almog_assignments')
-      .upsert(
-        {
-          user_id: userId,
-          title: task.title,
-          reason: task.reason,
-          detail: task.detail,
-          status: 'active',
-          schedule: task.schedule,
-          given_at: now.toISOString(),
-          due_at: task.due_at_iso,
-          related_habit_id: relatedHabitId,
-          related_step_id: params.relatedStepId ?? null,
-          source_session_id: sessionId,
-          source_excerpt: params.sourceExcerpt ?? null,
-          dedupe_key: key,
-          created_by: 'almog',
-          metadata: task.related_habit ? { related_habit_title: task.related_habit } : {},
-        },
-        { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true }
-      )
-      .select('id')
-      .maybeSingle();
-    if (!error && data) result.assignments_created += 1;
+    const outcome = await insertDeduped(admin, 'almog_assignments', userId, key, {
+      user_id: userId,
+      title: task.title,
+      reason: task.reason,
+      detail: task.detail,
+      status: 'active',
+      schedule: task.schedule,
+      given_at: now.toISOString(),
+      due_at: task.due_at_iso,
+      related_habit_id: relatedHabitId,
+      related_step_id: params.relatedStepId ?? null,
+      source_session_id: sessionId,
+      source_excerpt: params.sourceExcerpt ?? null,
+      dedupe_key: key,
+      created_by: 'almog',
+      metadata: task.related_habit ? { related_habit_title: task.related_habit } : {},
+    });
+    if (outcome === 'inserted') result.assignments_created += 1;
   }
 
   // ── תזכורות ────────────────────────────────────────────────────
   for (const rem of extraction.reminders) {
     const fireAt = rem.fire_at_iso ?? defaultReminderIso(now);
     const key = reminderDedupeKey(rem.what, fireAt);
-    const { error } = await admin.from('scheduled_reminders').upsert(
-      {
-        user_id: userId,
-        fire_at: fireAt,
-        kind: 'reminder',
-        title: 'תזכורת מאלמוג',
-        body: rem.what,
-        status: 'pending',
-        dedupe_key: key,
-        source_session_id: sessionId,
-      },
-      { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true }
-    );
-    if (!error) result.reminders_created += 1;
+    const outcome = await insertDeduped(admin, 'scheduled_reminders', userId, key, {
+      user_id: userId,
+      fire_at: fireAt,
+      kind: 'reminder',
+      title: 'תזכורת מאלמוג',
+      body: rem.what,
+      status: 'pending',
+      dedupe_key: key,
+      source_session_id: sessionId,
+    });
+    if (outcome === 'inserted') result.reminders_created += 1;
   }
 
   // ── follow-ups (מעקב אחרי משימה שניתנה) ────────────────────────
   for (const fu of extraction.followups) {
     const fireAt = fu.fire_at_iso ?? defaultFollowUpIso(now);
     const key = `fu|${reminderDedupeKey(fu.what, fireAt)}`;
-    const { error } = await admin.from('scheduled_reminders').upsert(
-      {
-        user_id: userId,
-        fire_at: fireAt,
-        kind: 'followup',
-        title: 'בדיקה קצרה מאלמוג',
-        body: fu.what,
-        status: 'pending',
-        dedupe_key: key,
-        source_session_id: sessionId,
-      },
-      { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true }
-    );
-    if (!error) result.reminders_created += 1;
+    const outcome = await insertDeduped(admin, 'scheduled_reminders', userId, key, {
+      user_id: userId,
+      fire_at: fireAt,
+      kind: 'followup',
+      title: 'בדיקה קצרה מאלמוג',
+      body: fu.what,
+      status: 'pending',
+      dedupe_key: key,
+      source_session_id: sessionId,
+    });
+    if (outcome === 'inserted') result.reminders_created += 1;
   }
 
   // ── חסמים ──────────────────────────────────────────────────────
@@ -245,20 +261,17 @@ export async function persistCommitmentExtraction(params: {
         const checkBody = blocker.strategy
           ? `רציתי לבדוק איתך — הצלחת לנסות "${blocker.strategy}"? איך הלך עם ${blocker.description}?`
           : `רציתי לבדוק איתך מה קורה עם ${blocker.description}. הצלחת להתקדם קצת?`;
-        await admin.from('scheduled_reminders').upsert(
-          {
-            user_id: userId,
-            fire_at: nextCheck,
-            kind: 'check_progress',
-            title: 'אלמוג חושב עליך 🧭',
-            body: checkBody,
-            blocker_id: (inserted as { id: string }).id,
-            status: 'pending',
-            dedupe_key: `blk|${key}`,
-            source_session_id: sessionId,
-          },
-          { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true }
-        );
+        await insertDeduped(admin, 'scheduled_reminders', userId, `blk|${key}`, {
+          user_id: userId,
+          fire_at: nextCheck,
+          kind: 'check_progress',
+          title: 'אלמוג חושב עליך 🧭',
+          body: checkBody,
+          blocker_id: (inserted as { id: string }).id,
+          status: 'pending',
+          dedupe_key: `blk|${key}`,
+          source_session_id: sessionId,
+        });
       }
     }
   }
