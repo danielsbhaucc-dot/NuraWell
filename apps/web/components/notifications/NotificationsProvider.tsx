@@ -736,8 +736,8 @@ export function NotificationsProvider({
                   </p>
                   <p className="text-xs text-emerald-900/65 mt-2 leading-relaxed max-w-xs mx-auto font-medium">
                     {viewMode === 'archive'
-                      ? 'התראות שתעבירו לארכיון יופיעו כאן.'
-                      : 'נסו לשנות את הסינון או לחזור מאוחר יותר.'}
+                      ? 'התראות שתעביר לארכיון יופיעו כאן.'
+                      : 'תנסה לשנות את הסינון, או תחזור לכאן קצת אחר כך.'}
                   </p>
                 </div>
               )}

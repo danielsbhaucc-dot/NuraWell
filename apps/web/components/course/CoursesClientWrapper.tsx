@@ -157,9 +157,9 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
                   fontFamily: "'Rubik','Heebo',sans-serif",
                 }}
               >
-                ⚡ המשיכו ללמוד!
+                ⚡ בוא נמשיך ללמוד!
               </p>
-              <p style={{ fontSize: '12px', color: '#B45309', marginTop: '2px' }}>יש פרקים שמחכים לכם</p>
+              <p style={{ fontSize: '12px', color: '#B45309', marginTop: '2px' }}>יש פרקים שמחכים לך</p>
             </div>
           </motion.div>
         )}

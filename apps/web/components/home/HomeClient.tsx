@@ -222,14 +222,14 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
                   </p>
                   <p style={{ fontSize: '12px', color: '#065f46', margin: '2px 0 8px', opacity: 0.85 }}>
                     {taskLoading
-                      ? 'טוען…'
+                      ? 'רגע, טוען…'
                       : taskCounts.accepted === 0
-                        ? 'עדיין לא לקחתם משימות במסע, בואו נתחיל'
+                        ? 'עוד לא לקחנו משימות במסע — בוא נתחיל ביחד'
                         : taskCounts.dueToday === 0
-                          ? 'אין משימות פעילות להיום, מחר נמשיך'
+                          ? 'אין משימה פתוחה להיום — מחר נמשיך 🌱'
                           : taskCounts.pending > 0
-                            ? `${taskCounts.pending} משימות ממתינות לסימון היום`
-                            : 'כל משימות היום בוצעו! ✦'}
+                            ? `${taskCounts.pending} משימות מחכות לך היום`
+                            : 'סיימת את כל מה שלהיום! גאה בך ✦'}
                   </p>
                   {(taskCounts.dueToday > 0 || taskCounts.accepted > 0) && (
                     <div className="flex gap-1">
@@ -296,7 +296,7 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
                       {stats.activeCoursesCount} מדריכים פעילים
                     </p>
                     <p style={{ fontSize: '12px', color: '#B45309', marginTop: '2px' }}>
-                      {stats.totalLessonsCompleted} פרקים הושלמו, המשיכו ללמוד
+                      כבר סיימת {stats.totalLessonsCompleted} פרקים — בוא נמשיך
                     </p>
                   </div>
                   <ChevronLeft className="w-5 h-5 text-amber-800/35 shrink-0 mr-auto" aria-hidden />
@@ -353,10 +353,10 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
                 className="text-xl font-black mb-2"
                 style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
               >
-                מתחילים את המסע
+                בוא נתחיל את המסע
               </h3>
               <p className="text-sm max-w-[240px] mx-auto leading-relaxed mb-4" style={{ color: '#9896B8' }}>
-                עברו למסע שלכם או למדריכים כשהם ייפתחו עבורכם
+                תקפוץ למסע שלך, ואני אפתח לך את המדריכים ברגע שהם מוכנים בשבילך
               </p>
               <Link
                 href="/journey"

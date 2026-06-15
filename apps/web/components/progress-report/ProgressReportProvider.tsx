@@ -280,7 +280,7 @@ export function ProgressReportProvider({
                     דיווח מהיר
                   </p>
                   <p className="text-xs font-semibold text-emerald-900/70">
-                    בחרו כרטיסייה — עדכון משימות או מעקב הרגלים
+                    תבחר כרטיסייה — עדכון משימות או מעקב הרגלים
                   </p>
                 </div>
               </div>
@@ -441,7 +441,7 @@ export function ProgressReportProvider({
                         return accepted.length === 0;
                       }) && (
                         <p className="text-center text-sm text-emerald-900/70 py-12 px-4 leading-relaxed">
-                          אין משימות שסימנתם כמקובלות. בסיכום השיעור לחצו &quot;מקובל עליי&quot; — ואז תוכלו לדווח כאן על ביצוע.
+                          עוד אין משימות שסימנת כמקובלות. בסיכום השיעור תלחץ &quot;מקובל עליי&quot; — ואז תוכל לדווח לי כאן על הביצוע.
                         </p>
                       )}
                     </>

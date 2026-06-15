@@ -7,7 +7,7 @@ import type { AiUserContext } from '../../../../lib/ai/memory';
 
 export const metadata: Metadata = {
   title: 'התראות מאלמוג',
-  description: 'בחרו איך אלמוג נוגע בכם מחוץ לצ׳אט — תזכורות עדינות ועדכוני משקל.',
+  description: 'תבחר איך אלמוג נוגע בך מחוץ לצ׳אט — תזכורות עדינות ועדכוני משקל.',
 };
 
 export default async function AlmogNudgeSettingsPage() {

@@ -206,7 +206,7 @@ export function ProgressPageClient({
             ההתקדמות שלי
           </h1>
           <p className="text-white/85 text-sm max-w-md leading-relaxed">
-            מדריכים, מסע והרגלים — תמונה מלאה במקום אחד
+            כל מה שעשית עד עכשיו במקום אחד — בוא נראה כמה התקדמת 🌱
           </p>
         </motion.div>
       </div>
@@ -470,7 +470,7 @@ export function ProgressPageClient({
             <span className="text-3xl">🔥</span>
             <div className="text-right min-w-0">
               <p className="font-black text-[#1A1730]">רצף של {currentStreak} ימים</p>
-              <p className="text-xs text-orange-800/90 font-medium">המשך כך — זה בונה הרגל למידה</p>
+              <p className="text-xs text-orange-800/90 font-medium">אתה בתנופה — ככה בונים הרגל, גאה בך 🔥</p>
             </div>
           </motion.div>
         )}
@@ -571,9 +571,9 @@ export function ProgressPageClient({
             className="text-center py-14 px-4"
           >
             <div className="text-5xl mb-3">🌱</div>
-            <h3 className="text-lg font-black text-[#1A1730] mb-2">המסע מתחיל כאן</h3>
+            <h3 className="text-lg font-black text-[#1A1730] mb-2">כאן יתחיל המסע שלך</h3>
             <p className="text-gray-600 text-sm mb-6 leading-relaxed">
-              התחילו מפרק או מהמסע — ההתקדמות תופיע אוטומטית
+              תתחיל מפרק או מהמסע — וההתקדמות שלך תופיע פה לבד
             </p>
             <Link
               href="/home"

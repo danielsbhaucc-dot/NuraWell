@@ -51,7 +51,7 @@ export function HabitTracker({ habits, habitProgress, lessonId, onHabitToggle }:
         </div>
         <div>
           <h3 className="font-black text-base leading-tight" style={{ color: '#1A1730' }}>מעקב הרגלים</h3>
-          <p className="text-xs" style={{ color: '#9896B8' }}>סמנו כל יום שעמדתם בו</p>
+          <p className="text-xs" style={{ color: '#9896B8' }}>סמן כל יום שעמדת בו</p>
         </div>
       </div>
 

@@ -152,10 +152,10 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
                     <p className="font-black text-[15px] text-[#1A1730] leading-snug">עדכון משימות</p>
                     <p className="text-[12px] text-emerald-900/75 font-semibold mt-1 leading-relaxed">
                       {loading
-                        ? 'טוען…'
+                        ? 'רגע, טוען…'
                         : acceptedCount > 0
-                          ? `${acceptedCount} משימות מקובלות — סמנו ביצוע`
-                          : 'סמנו ביצוע למשימות שקיבלתם במסע'}
+                          ? `${acceptedCount} משימות שלקחת — בוא נסמן מה שעשית`
+                          : 'פה תסמן לי מה שעשית מהמשימות שלקחנו במסע'}
                     </p>
                   </div>
                   <ChevronLeft className="h-5 w-5 text-emerald-800/35 shrink-0" aria-hidden />

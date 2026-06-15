@@ -214,7 +214,7 @@ export function TaskHistoryPageClient() {
           onClick={() => void load()}
           className="mt-4 text-sm font-bold text-emerald-700 underline"
         >
-          נסו שוב
+          ננסה שוב
         </button>
       </div>
     );
@@ -234,7 +234,7 @@ export function TaskHistoryPageClient() {
         </div>
         <p className="text-[15px] font-black text-[#1A1730]">אין עדיין היסטוריה לסמן</p>
         <p className="text-sm text-gray-600 leading-relaxed">
-          ברגע שתסמנו ביצוע של משימה יומית/חוזרת — היא תופיע כאן עם תאריך ושעה.
+          ברגע שתסמן ביצוע של משימה יומית או חוזרת — היא תופיע כאן עם תאריך ושעה.
         </p>
         <Link
           href="/journey"

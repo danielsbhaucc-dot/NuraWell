@@ -1695,7 +1695,7 @@ function StepsTimeline({
                           }}
                         >
                           <Play className="h-3.5 w-3.5" fill="white" />
-                          <span>בואו נתחיל!</span>
+                          <span>בוא נתחיל!</span>
                         </div>
                       </div>
                     ) : null}
