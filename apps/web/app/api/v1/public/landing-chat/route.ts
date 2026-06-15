@@ -41,9 +41,14 @@ const SYSTEM_PROMPT = `אתה "אלמוג" — מנטור AI חם, אנושי ו
 - אל תמציא נתונים אישיים על המשתמש. אתה לא זוכר שיחות קודמות בדמו הזה.`;
 
 function clientIp(req: Request): string {
+  // עדיפות ל-`x-real-ip` שאותו מגדירה הפלטפורמה (Vercel) ולא ניתן לזיוף ע"י הלקוח.
+  // `x-forwarded-for` הוא fallback בלבד; הערך השמאלי בו נשלט ע"י הלקוח ולכן ניתן
+  // לזיוף — לקיחתו הראשית אפשרה עקיפת ה-rate-limit ע"י סבב כתובות מזויפות.
+  const realIp = req.headers.get('x-real-ip')?.trim();
+  if (realIp) return realIp;
   const xff = req.headers.get('x-forwarded-for');
   if (xff) return xff.split(',')[0]!.trim();
-  return req.headers.get('x-real-ip')?.trim() || 'anon';
+  return 'anon';
 }
 
 export async function POST(req: Request): Promise<Response> {

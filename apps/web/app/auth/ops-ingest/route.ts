@@ -62,6 +62,10 @@ export async function GET(request: NextRequest) {
   }
 
   let response = NextResponse.redirect(new URL('/', request.url));
+  // מזהה הטיקט מועבר ב-query string — מונעים דליפתו ל-Referer וצד-שלישי
+  // וכן caching של תגובה שמכילה עוגיות סשן.
+  response.headers.set('Cache-Control', 'no-store, max-age=0');
+  response.headers.set('Referrer-Policy', 'no-referrer');
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -1,4 +1,5 @@
 import { serve } from '@upstash/workflow/nextjs';
+import { requireQstashConfigured } from '../../../../lib/workflows/require-qstash-configured';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import {
   checkKickoffEligibility,
@@ -28,7 +29,7 @@ const NEXT_STEP_CHECK_DELAY = '24h';
  *   4. שליחת nudge דרך ה-pipeline הקיים של companion (טון חברי, אנושי).
  *   5. ממשיך לבדוק פעם ביום: אם המשתמש עבר לצעד הבא אך לא השלים אותו — אלמוג ממשיך ללוות.
  */
-export const { POST } = serve<AlmogOnboardingKickoffPayload>(async (context) => {
+const { POST: workflowPost } = serve<AlmogOnboardingKickoffPayload>(async (context) => {
   const payload = parseAlmogOnboardingKickoffPayload(context.requestPayload);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Upstash מקבל Duration כמחרוזת
@@ -137,3 +138,5 @@ export const { POST } = serve<AlmogOnboardingKickoffPayload>(async (context) => 
 
   return { ok: true as const, sent, stopped: lastReason ?? 'max_attempts_reached' };
 });
+
+export const POST = requireQstashConfigured(workflowPost);

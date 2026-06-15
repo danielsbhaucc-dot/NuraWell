@@ -1,4 +1,5 @@
 import { serve } from '@upstash/workflow/nextjs';
+import { requireQstashConfigured } from '../../../../lib/workflows/require-qstash-configured';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import { parseAlmogFollowupPayload, type AlmogFollowupPayload } from '../../../../lib/workflows/almog-followup-payload';
 import { fetchAlmogFollowupUserState } from '../../../../lib/workflows/almog-followup-state';
@@ -12,7 +13,7 @@ export const dynamic = 'force-dynamic';
  * Workflow: המתנה → בדיקת מצב ב-Supabase → אם המשימה עדיין לא דווחה כבוצעה — נוטיפיקציה מאלמוג.
  * payload: AlmogFollowupPayload (נשלח ב-trigger כ-JSON).
  */
-export const { POST } = serve<AlmogFollowupPayload>(async (context) => {
+const { POST: workflowPost } = serve<AlmogFollowupPayload>(async (context) => {
   const payload = parseAlmogFollowupPayload(context.requestPayload);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Duration מחרוזת כמו 24h
@@ -40,3 +41,5 @@ export const { POST } = serve<AlmogFollowupPayload>(async (context) => {
 
   return { ok: true as const, reminded: true as const };
 });
+
+export const POST = requireQstashConfigured(workflowPost);

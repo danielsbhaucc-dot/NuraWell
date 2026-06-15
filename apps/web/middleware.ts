@@ -17,11 +17,18 @@ import { APP_HOME_PATH } from './lib/navigation/app-home-path';
 // and applies it to its bootstrap inline scripts.
 // See: https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy
 
+const IS_DEV = process.env.NODE_ENV === 'development';
+
 const CSP_DIRECTIVES: Record<string, string[]> = {
   'default-src': ["'self'"],
-  // Next.js inline bootstrap scripts are covered by the nonce;
-  // 'unsafe-eval' is kept for Next.js dev HMR and third-party libs.
-  'script-src': ["'self'", "'unsafe-eval'", 'https://va.vercel-scripts.com'],
+  // Next.js inline bootstrap scripts are covered by the nonce.
+  // 'unsafe-eval' נדרש רק ל-HMR בפיתוח — בפרודקשן מורידים אותו כדי להקשיח
+  // את ההגנה מפני XSS (eval-based).
+  'script-src': [
+    "'self'",
+    ...(IS_DEV ? ["'unsafe-eval'"] : []),
+    'https://va.vercel-scripts.com',
+  ],
   'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
   'img-src': [
     "'self'",

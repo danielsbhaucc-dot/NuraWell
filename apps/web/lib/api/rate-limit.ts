@@ -145,10 +145,21 @@ function checkMemory(input: RateLimitInput, now: number): RateLimitResult {
   };
 }
 
+let warnedMissingUpstashInProd = false;
+
 export async function consumeRateLimit(input: RateLimitInput): Promise<RateLimitResult> {
   const now = Date.now();
   if (isUpstashRedisConfigured()) {
     return checkUpstashRedis(input, now);
+  }
+  // בפרודקשן ה-fallback לזיכרון הוא per-instance ולכן ניתן לעקיפה בין instances.
+  // לא חוסמים (כדי לא לשבור פריסות ללא Redis), אבל מתריעים פעם אחת בלוג כדי
+  // לחשוף את הצורך להגדיר UPSTASH_REDIS_REST_URL/TOKEN לאכיפה מבוזרת.
+  if (process.env.NODE_ENV === 'production' && !warnedMissingUpstashInProd) {
+    warnedMissingUpstashInProd = true;
+    console.warn(
+      '[rate-limit] Upstash Redis not configured in production — falling back to per-instance in-memory limiting, which is bypassable across serverless instances. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.'
+    );
   }
   return checkMemory(input, now);
 }
