@@ -59,7 +59,7 @@ sample size ופיזור תאריכים.
 
 | משתנה | ברירת מחדל | משמעות |
 |---|---:|---|
-| `GUARDIAN_SOS_ENABLED` | `0` | דגל מוצר לשכבת SOS (ה-route קיים; UI יכול להיחסם עתידית לפי הדגל) |
+| (שכבת SOS) | פעיל | יוזם-משתמש, פעיל כברירת מחדל ללא דגל סביבה. נכבה רק ע"י `GUARDIAN_KILL_SWITCH` |
 | `GUARDIAN_FINGERPRINT_ENABLED` | `0` | מפעיל חישוב ושמירת `risk_signals` בבוקר |
 | `GUARDIAN_PROACTIVE_ENABLED` | `0` | מפעיל תזמון QStash delayed ל-trigger היזום |
 | `GUARDIAN_KILL_SWITCH` | `0` | `1` עוצר מגע יזום וגם SOS route מחזיר disabled |
