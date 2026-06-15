@@ -22,6 +22,12 @@ import {
 } from '../../../../../../lib/churn/reengagement-prompt-blocks';
 import { jerusalemDateKey } from '../../../../../../lib/journey/task-schedule';
 import { workflowPublicBaseUrl } from '../../../../../../lib/workflows/resolve-workflow-public-url';
+import {
+  computeRiskFingerprintForUser,
+  persistRiskFingerprint,
+} from '../../../../../../lib/ai/risk-fingerprint-llm';
+import { guardianSchedulesForToday } from '../../../../../../lib/ai/risk-window';
+import { scheduleGuardianTrigger } from '../../../../../../lib/ai/guardian/qstash-scheduler';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -65,6 +71,18 @@ const PROFILE_SELECTS = [
   'id, ai_context, onboarding_completed',
   'id',
 ];
+
+function guardianFlagEnabled(name: 'GUARDIAN_FINGERPRINT_ENABLED' | 'GUARDIAN_PROACTIVE_ENABLED'): boolean {
+  return process.env[name]?.trim() === '1';
+}
+
+function guardianOptedIn(aiContext: Record<string, unknown> | null | undefined): boolean {
+  const guardian = aiContext?.guardian;
+  if (guardian && typeof guardian === 'object' && !Array.isArray(guardian)) {
+    return (guardian as Record<string, unknown>).opted_in === true;
+  }
+  return aiContext?.guardian_opted_in === true;
+}
 
 function isMissingColumnError(error: { code?: string; message?: string } | null): boolean {
   if (!error) return false;
@@ -372,6 +390,64 @@ async function runHabitCheckpointCron(request: Request) {
     });
   }
 
+  let guardianFingerprintsComputed = 0;
+  let guardianFingerprintsSkipped = 0;
+  let guardianSchedulesPlanned = 0;
+  let guardianSchedulesTriggered = 0;
+  const guardianErrors: string[] = [];
+
+  if (slot === 'morning' && guardianFlagEnabled('GUARDIAN_FINGERPRINT_ENABLED')) {
+    const guardianLimit = Math.min(
+      200,
+      Math.max(1, Number(process.env.CRON_MAX_GUARDIAN_FINGERPRINT_USERS) || 40)
+    );
+    const leadMin = Math.min(
+      90,
+      Math.max(10, Number(process.env.GUARDIAN_PROACTIVE_LEAD_MIN) || 30)
+    );
+    const proactiveEnabled =
+      guardianFlagEnabled('GUARDIAN_PROACTIVE_ENABLED') &&
+      process.env.GUARDIAN_KILL_SWITCH !== '1';
+
+    const guardianCandidates = profileRows
+      .filter((row) => row.onboarding_completed === true && row.engagement_status !== 'churned')
+      .slice(0, guardianLimit);
+
+    for (const row of guardianCandidates) {
+      try {
+        const fingerprint = await computeRiskFingerprintForUser(admin, row.id, now);
+        await persistRiskFingerprint(admin, row.id, fingerprint);
+        guardianFingerprintsComputed++;
+
+        const schedules = guardianSchedulesForToday(fingerprint, now, leadMin).slice(0, 1);
+        guardianSchedulesPlanned += schedules.length;
+
+        if (!proactiveEnabled || isDryRun || !guardianOptedIn(row.ai_context ?? null)) {
+          if (schedules.length === 0) guardianFingerprintsSkipped++;
+          continue;
+        }
+
+        for (const schedule of schedules) {
+          const result = await scheduleGuardianTrigger({
+            userId: row.id,
+            window: schedule.window,
+            windowStartIso: schedule.windowStart.toISOString(),
+            triggerAtIso: schedule.triggerAt.toISOString(),
+            leadMin: schedule.leadMin,
+            source: 'habit_checkpoints_morning',
+          });
+          if (result.ok) {
+            guardianSchedulesTriggered++;
+          } else {
+            guardianErrors.push(`${row.id}: ${result.reason}`);
+          }
+        }
+      } catch (e) {
+        guardianErrors.push(`${row.id}: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+  }
+
   const plan = await planHabitCheckpointTriggersWithChat(
     admin,
     (progressRows ?? []) as unknown as ProgressRow[],
@@ -514,6 +590,10 @@ async function runHabitCheckpointCron(request: Request) {
       skipped_ghosted_weekly_cooldown: ghostedWeeklyCooldownIds.size,
       would_trigger: eligible.length,
       churn_enabled_users: reengagementByUser.size,
+      guardian_fingerprints_computed: guardianFingerprintsComputed,
+      guardian_schedules_planned: guardianSchedulesPlanned,
+      guardian_schedules_triggered: guardianSchedulesTriggered,
+      guardian_errors: guardianErrors.length ? guardianErrors.slice(0, 10) : undefined,
       workflow_url: workflowUrl,
       sample_user_ids: eligible.slice(0, 5).map((e) => e.userId),
       hint_he:
@@ -556,6 +636,10 @@ async function runHabitCheckpointCron(request: Request) {
     churn_enabled_users: reengagementByUser.size,
     engagement_status_updated: engagementUpdate.updated,
     engagement_reactivated: engagementUpdate.reactivated,
+    guardian_fingerprints_computed: guardianFingerprintsComputed,
+    guardian_fingerprints_skipped: guardianFingerprintsSkipped,
+    guardian_schedules_planned: guardianSchedulesPlanned,
+    guardian_schedules_triggered: guardianSchedulesTriggered,
   };
 
   /**
@@ -570,7 +654,7 @@ async function runHabitCheckpointCron(request: Request) {
   return NextResponse.json({
     ok: true,
     ...summary,
-    errors: errors.length ? errors : undefined,
+    errors: [...errors, ...guardianErrors].length ? [...errors, ...guardianErrors] : undefined,
   });
 }
 
