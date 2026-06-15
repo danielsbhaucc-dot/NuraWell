@@ -6,30 +6,17 @@ import { almogCdnHostname, resolveCdnImagesPrefix } from '@/lib/ai/almog-avatar'
 import { getR2Client, r2ImageBucketName } from '@/lib/storage/r2-almog';
 import { copyImageSourceToKey } from '@/lib/storage/apply-source-image';
 import { readJsonBody } from '@/lib/api/json-request';
-import { z } from 'zod';
 import {
   LOGIN_BACKGROUND_LEGACY_KEYS,
   LOGIN_BACKGROUND_OBJECT_KEY,
 } from '@/lib/storage/login-background';
 import { stationCoverCreditSchema } from '@/lib/validation/admin-journey-station';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
+import { isWebpBuffer, MAX_UPLOAD_BYTES } from '@/lib/validation/webp';
+import { applyFromLibrarySchema } from '@/lib/validation/admin-image-upload';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
-
-const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
-
-const applyFromLibrarySchema = z
-  .object({
-    source_object_key: z.string().min(1).max(1000),
-    credit: stationCoverCreditSchema.optional(),
-  })
-  .strict();
-
-function isWebpBuffer(buf: Buffer): boolean {
-  if (buf.length < 12) return false;
-  return buf.subarray(0, 4).toString('ascii') === 'RIFF' && buf.subarray(8, 12).toString('ascii') === 'WEBP';
-}
 
 export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
