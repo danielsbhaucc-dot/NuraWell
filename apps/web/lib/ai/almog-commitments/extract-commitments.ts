@@ -11,6 +11,7 @@
 
 import { openrouter } from '../client';
 import { normalizeFrictionCategory } from './friction';
+import { israelLocalToUtcIso, israelParts } from './time';
 
 /** מודל העבודה השחורה: Llama 4 Scout דרך OpenRouter (Meta — לא סין). */
 export const ALMOG_COMMITMENTS_MODEL =
@@ -22,6 +23,8 @@ const MIN_TASK_CONFIDENCE = 0.45;
 
 export interface ExtractedReminder {
   what: string;
+  /** טקסט התזכורת הטבעי למשתמש (נוסח ע"י המודל, חם ואישי). null → משתמשים ב-what. */
+  notify_text: string | null;
   fire_at_iso: string | null;
   confidence: number;
 }
@@ -55,6 +58,8 @@ export interface ExtractedBlocker {
 
 export interface ExtractedFollowUp {
   what: string;
+  /** טקסט הבדיקה הטבעי למשתמש. null → משתמשים ב-what. */
+  notify_text: string | null;
   fire_at_iso: string | null;
   confidence: number;
 }
@@ -115,16 +120,34 @@ function num(v: unknown): number {
   return typeof v === 'number' && Number.isFinite(v) ? v : 0;
 }
 
-/** מאמת ISO עתידי וסביר (עד 90 יום קדימה). מחזיר ISO מנורמל או null. */
-function validFutureIso(v: unknown, now: Date): string | null {
-  const s = str(v, 40);
-  if (!s) return null;
-  const t = new Date(s).getTime();
+/** מאמת ש-ISO עתידי וסביר (עד 90 יום קדימה). מחזיר ISO מנורמל או null. */
+function validFutureIso(iso: string | null, now: Date): string | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
   if (!Number.isFinite(t)) return null;
   const min = now.getTime() - 5 * 60_000; // סובלנות 5 דק' אחורה
   const max = now.getTime() + 90 * 24 * 60 * 60_000;
   if (t < min || t > max) return null;
   return new Date(t).toISOString();
+}
+
+/**
+ * ממיר שעון-קיר ישראלי שהמודל החזיר ("YYYY-MM-DD HH:MM") ל-UTC ISO עתידי
+ * ותקין, כולל תיקון "אחרי חצות". המרת אזורי-הזמן נעשית כאן בקוד
+ * (לא במודל), כדי למנוע טעויות מסוג "00:30 → 03:30".
+ */
+function resolveLocalToValidIso(v: unknown, now: Date): string | null {
+  const local = str(v, 40);
+  if (!local) return null;
+  return validFutureIso(israelLocalToUtcIso(local, now), now);
+}
+
+/**
+ * זמן ירייה לתזכורת/follow-up. מעדיף את `fire_local` החדש (שעון-קיר ישראלי),
+ * ונופל אחורה ל-`fire_at_iso` הישן אם המודל עדיין מחזיר ISO — כך אין רגרסיה.
+ */
+function resolveFireTime(o: Record<string, unknown>, now: Date): string | null {
+  return resolveLocalToValidIso(o.fire_local, now) ?? validFutureIso(str(o.fire_at_iso, 40), now);
 }
 
 /** שעון ירושלים כטקסט קריא למודל — בסיס לכל חישובי הזמן. */
@@ -139,7 +162,9 @@ function israelNowDescriptor(now: Date): string {
     minute: '2-digit',
     hour12: false,
   });
-  return fmt.format(now);
+  const p = israelParts(now);
+  const iso = `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
+  return `${fmt.format(now)} (תאריך היום: ${iso})`;
 }
 
 const SYSTEM = `אתה מנוע חילוץ "התחייבויות מנטור" ל-NuraWell (Llama 4 — רקע, לא צ'אט).
@@ -154,21 +179,31 @@ task מול reminder (חשוב מאוד — אל תבלבל):
 - reminder = רק עצם ההזכרה ("אני אזכיר לך בערב"). reminder לבד, בלי task, מתאים רק כשאין פעולה מתמשכת לעקוב אחריה.
 - אם סוכמה פעולה + גם תזכורת עליה — החזר גם task וגם reminder (התזכורת תפנה למשימה).
 - בספק אם זו פעולה שאפשר לעקוב/לדווח — צור task.
-- חשוב: אם אלמוג אמר במפורש שהוא *יזכיר* ("אזכיר לך", "אתזכר", "אשלח לך תזכורת", "נזכיר לך") — תמיד החזר reminder עם confidence גבוה (≥0.8), גם אם לא צוין זמן (אז fire_at_iso=null). אסור שהבטחת תזכורת מפורשת תיעלם.
+- חשוב: אם אלמוג אמר במפורש שהוא *יזכיר* ("אזכיר לך", "אתזכר", "אשלח לך תזכורת", "נזכיר לך") — תמיד החזר reminder עם confidence גבוה (≥0.8), גם אם לא צוין זמן (אז fire_local=null). אסור שהבטחת תזכורת מפורשת תיעלם.
 
 החזר JSON יחיד בלבד (בלי markdown):
 {
-  "reminders": [{ "what": "מה להזכיר, קצר", "fire_at_iso": "ISO8601 UTC או null", "confidence": 0.0-1.0 }],
-  "tasks": [{ "title": "המשימה בקצרה", "reason": "למה אלמוג נתן אותה (או null)", "detail": "מידע נוסף או null", "schedule": "one_time|daily|weekly", "due_at_iso": "ISO8601 UTC או null", "related_habit": "שם הרגל קיים שקשור או null", "confidence": 0.0-1.0 }],
-  "focus": { "proposed": true/false, "user_agreed": true/false, "reason": "למה להקפיא משימות אחרות", "ends_at_iso": "ISO8601 UTC או null", "scope": "reminders|reminders_and_dim", "confidence": 0.0-1.0 } או null,
+  "reminders": [{ "what": "מה להזכיר, קצר (לשימוש פנימי)", "notify_text": "טקסט התזכורת הטבעי שיישלח למשתמש", "fire_local": "YYYY-MM-DD HH:MM שעון ישראל או null", "confidence": 0.0-1.0 }],
+  "tasks": [{ "title": "המשימה בקצרה", "reason": "למה אלמוג נתן אותה (או null)", "detail": "מידע נוסף או null", "schedule": "one_time|daily|weekly", "due_local": "YYYY-MM-DD HH:MM שעון ישראל או null", "related_habit": "שם הרגל קיים שקשור או null", "confidence": 0.0-1.0 }],
+  "focus": { "proposed": true/false, "user_agreed": true/false, "reason": "למה להקפיא משימות אחרות", "ends_local": "YYYY-MM-DD HH:MM שעון ישראל או null", "scope": "reminders|reminders_and_dim", "confidence": 0.0-1.0 } או null,
   "blockers": [{ "description": "החסם שזוהה", "strategy": "מה אלמוג הציע להתגבר (או null)", "category": "logistical|physiological|cognitive|emotional|social|knowledge|motivational", "confidence": 0.0-1.0 }],
-  "followups": [{ "what": "על מה לבדוק התקדמות", "fire_at_iso": "ISO8601 UTC או null", "confidence": 0.0-1.0 }],
+  "followups": [{ "what": "על מה לבדוק התקדמות (פנימי)", "notify_text": "טקסט הבדיקה הטבעי שיישלח למשתמש", "fire_local": "YYYY-MM-DD HH:MM שעון ישראל או null", "confidence": 0.0-1.0 }],
   "blocker_updates": [{ "tag": "מזהה חסם קיים שדווח עליו (B1/B2...)", "status": "improving|resolved", "note": "מה השתנה או null", "confidence": 0.0-1.0 }]
 }
 
-הנחיות זמן:
-- חשב fire_at_iso ביחס לשעון ישראל שיינתן לך, והחזר תמיד ב-UTC (ISO8601).
-- "מחר בבוקר" ≈ 08:00 ישראל למחרת. "בערב" ≈ 20:00 ישראל היום. אם אין רמז זמן ברור — null.
+הנחיות זמן (קריטי — קרא בעיון):
+- ❌ *אל תחשב UTC לעולם*. מודלים טועים בהמרת אזורי-זמן. החזר תמיד שעון-קיר *ישראלי* כפשוטו בפורמט "YYYY-MM-DD HH:MM" (24 שעות), בדיוק כמו שהיית אומר למשתמש. ההמרה ל-UTC נעשית אוטומטית בקוד.
+- בסס הכול על "שעון ישראל עכשיו" שניתן לך (כולל תאריך היום). "מחר" = תאריך היום + 1. "בעוד שעה" = עכשיו + 60 דק' (אותו תאריך, ואם חוצים חצות — התאריך הבא).
+- ברירות מחדל לשעה: "בבוקר"/"מחר בבוקר" ≈ 08:00 · "בצהריים" ≈ 13:00 · "אחה\"צ" ≈ 16:00 · "בערב" ≈ 20:00 · "בלילה" ≈ 22:00.
+- ⚠️ חריג "אחרי חצות": אם השעה עכשיו בין 00:00 ל-04:59 והמשתמש ביקש שעת *בוקר* ("בבוקר", "מחר ב-7", "מחר בבוקר") — הוא מתכוון לבוקר *הקרוב*, כלומר ל*תאריך של עכשיו*, לא ליום שאחרי. דוגמה: עכשיו 15/06 00:30, "תזכיר לי מחר ב-7" → fire_local="2026-06-15 07:00".
+- דיוק לחצי שעה: התזכורות נשלחות בחלונות של חצי שעה, אז דייק עד רמת השעה/חצי-השעה (למשל 07:00 או 07:30). אל תמציא דקות מדויקות שלא נאמרו.
+- אם אין רמז זמן ברור — fire_local=null.
+
+ניסוח notify_text (קריטי לאיכות — דרישה 1):
+- זה הטקסט המדויק שיישלח למשתמש כשהתזכורת תצא. כתוב אותו כמו הודעת וואטסאפ מחבר: חם, אישי, קצר, בגוף ראשון של אלמוג, מותאם *בדיוק* למה שסוכם בשיחה. לא רובוטי.
+- אל תכתוב "תזכורת:" ואל תעתיק מילה-במילה את משפט ההבטחה של אלמוג. נסח מחדש כפנייה ישירה ורכה. אימוג'י אחד מתאים — מותר, לא חובה.
+- דוגמאות *לרוח בלבד* (אסור להעתיק): "היי 🙂 רק רציתי להזכיר לך — בא לך לשתות עוד כוס מים עכשיו?" · "אהלן, איך הלך עם ההליכה שתכננו לערב?".
+- אם אין מספיק מידע לנסח — notify_text=null (אז ייעשה ניסוח ברירת מחדל).
 - focus.proposed=true רק אם אלמוג הציע לשים בצד/להקפיא משימות אחרות. user_agreed=true רק אם המשתמש כבר אישר בתור הזה.
 - scope='reminders_and_dim' רק אם זו נפילה אמיתית והמשתמש הסכים להתמקד; אחרת 'reminders'.
 
@@ -208,7 +243,12 @@ function normalize(parsed: Record<string, unknown>, now: Date): CommitmentExtrac
         const o = (x ?? {}) as Record<string, unknown>;
         const what = str(o.what, 200);
         if (!what) return null;
-        return { what, fire_at_iso: validFutureIso(o.fire_at_iso, now), confidence: num(o.confidence) };
+        return {
+          what,
+          notify_text: str(o.notify_text, 280),
+          fire_at_iso: resolveFireTime(o, now),
+          confidence: num(o.confidence),
+        };
       })
       .filter((x): x is ExtractedReminder => x !== null && x.confidence >= MIN_CONFIDENCE)
       .slice(0, 5);
@@ -227,7 +267,7 @@ function normalize(parsed: Record<string, unknown>, now: Date): CommitmentExtrac
           reason: str(o.reason, 400),
           detail: str(o.detail, 600),
           schedule,
-          due_at_iso: validFutureIso(o.due_at_iso, now),
+          due_at_iso: resolveLocalToValidIso(o.due_local, now) ?? validFutureIso(str(o.due_at_iso, 40), now),
           related_habit: str(o.related_habit, 120),
           confidence: num(o.confidence),
         };
@@ -245,7 +285,7 @@ function normalize(parsed: Record<string, unknown>, now: Date): CommitmentExtrac
         proposed: true,
         user_agreed: o.user_agreed === true,
         reason: str(o.reason, 300),
-        ends_at_iso: validFutureIso(o.ends_at_iso, now),
+        ends_at_iso: resolveLocalToValidIso(o.ends_local, now) ?? validFutureIso(str(o.ends_at_iso, 40), now),
         scope: o.scope === 'reminders_and_dim' ? 'reminders_and_dim' : 'reminders',
         confidence,
       };
@@ -275,7 +315,12 @@ function normalize(parsed: Record<string, unknown>, now: Date): CommitmentExtrac
         const o = (x ?? {}) as Record<string, unknown>;
         const what = str(o.what, 200);
         if (!what) return null;
-        return { what, fire_at_iso: validFutureIso(o.fire_at_iso, now), confidence: num(o.confidence) };
+        return {
+          what,
+          notify_text: str(o.notify_text, 280),
+          fire_at_iso: resolveFireTime(o, now),
+          confidence: num(o.confidence),
+        };
       })
       .filter((x): x is ExtractedFollowUp => x !== null && x.confidence >= MIN_CONFIDENCE)
       .slice(0, 3);
@@ -345,6 +390,36 @@ function fallbackReminderWhat(assistantMessage: string, userMessage?: string): s
   if (base) return base.slice(0, 200);
   const u = (userMessage ?? '').replace(/\s+/g, ' ').trim();
   return u ? `להזכיר לך: ${u.slice(0, 160)}` : 'תזכורת שאלמוג הבטיח לך';
+}
+
+/**
+ * מסיר את "עטיפת ההבטחה" ("אזכיר לך", "אשלח לך תזכורת"...) ממשפט של אלמוג, כדי
+ * להשאיר רק את *מה* שצריך להזכיר. למשל "אזכיר לך לשתות מים בערב" → "לשתות מים בערב".
+ */
+function stripReminderPromisePrefix(sentence: string): string {
+  return sentence
+    .replace(/^[^\u05d0-\u05ea]*/u, '') // תווים מקדימים שאינם עברית
+    .replace(/(?:אני\s+)?(?:אזכיר|אתזכר|נתזכר|נזכיר)\s*(?:לך)?\s*/u, '')
+    .replace(/אשלח לך (?:תזכורת|הודעה)\s*(?:ש)?\s*/u, '')
+    .replace(/אעדכן אותך\s*/u, '')
+    .replace(/^תזכורת[:\-\s]*/u, '')
+    .trim();
+}
+
+/**
+ * ניסוח טבעי לתזכורת הגיבוי (כשמנוע ה-LLM לא הצליח לנסח notify_text). הופך את
+ * משפט ההבטחה של אלמוג לפנייה רכה, כדי שגם רשת הביטחון לא תישמע רובוטית (דרישה 1).
+ */
+function fallbackNotifyText(assistantMessage: string, userMessage?: string): string {
+  const topic = stripReminderPromisePrefix(
+    fallbackReminderWhat(assistantMessage, userMessage)
+  );
+  if (!topic) return 'היי 🙂 רק רציתי להזכיר לך מה שדיברנו עליו';
+  const isInfinitive = /^ל[\u05d0-\u05ea]/u.test(topic);
+  const body = isInfinitive
+    ? `היי 🙂 רק מזכיר לך ${topic}`
+    : `היי 🙂 רק רציתי להזכיר לך — ${topic}`;
+  return body.slice(0, 280);
 }
 
 export async function extractAlmogCommitments(params: {
@@ -426,6 +501,7 @@ export async function extractAlmogCommitments(params: {
   ) {
     extraction.reminders.push({
       what: fallbackReminderWhat(params.assistantMessage, params.userMessage),
+      notify_text: fallbackNotifyText(params.assistantMessage, params.userMessage),
       fire_at_iso: null,
       confidence: 0.9,
     });
