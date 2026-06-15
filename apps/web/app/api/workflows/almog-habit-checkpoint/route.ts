@@ -1,4 +1,5 @@
 import { serve } from '@upstash/workflow/nextjs';
+import { requireQstashConfigured } from '../../../../lib/workflows/require-qstash-configured';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import {
   parseAlmogHabitCheckpointPayload,
@@ -15,7 +16,7 @@ export const dynamic = 'force-dynamic';
  * Workflow: בדיקת הרגלים (אחרי טריגר מקורון) — שערים → AI אחד לכל חלון → נוטיפיקציה.
  * ללא sleep; תזמון 3× ביום חיצוני (Cron) לפי slot.
  */
-export const { POST } = serve<AlmogHabitCheckpointPayload>(async (context) => {
+const { POST: workflowPost } = serve<AlmogHabitCheckpointPayload>(async (context) => {
   const payload = parseAlmogHabitCheckpointPayload(context.requestPayload);
 
   const gate = await context.run('gate', async () => {
@@ -40,3 +41,5 @@ export const { POST } = serve<AlmogHabitCheckpointPayload>(async (context) => {
 
   return { ok: true as const, reminded: true as const };
 });
+
+export const POST = requireQstashConfigured(workflowPost);

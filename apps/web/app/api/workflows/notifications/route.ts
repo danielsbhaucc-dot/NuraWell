@@ -20,6 +20,7 @@
  */
 
 import { serve } from '@upstash/workflow/nextjs';
+import { requireQstashConfigured } from '../../../../lib/workflows/require-qstash-configured';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import { israelDateKey } from '../../../../lib/ai/onboarding-check-in-time';
 import { getUsersForNotification } from '../../../../lib/notifications/engine/get-users-for-notification';
@@ -39,7 +40,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
-export const { POST } = serve<NotificationsEnginePayload>(async (context) => {
+const { POST: workflowPost } = serve<NotificationsEnginePayload>(async (context) => {
   const payload = parseNotificationsEnginePayload(context.requestPayload);
   const today = payload.todayOverride ?? israelDateKey();
 
@@ -211,3 +212,5 @@ async function dispatchOne(
     };
   }
 }
+
+export const POST = requireQstashConfigured(workflowPost);

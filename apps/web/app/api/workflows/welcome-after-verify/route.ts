@@ -1,5 +1,6 @@
 import { serve } from '@upstash/workflow/nextjs';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { requireQstashConfigured } from '@/lib/workflows/require-qstash-configured';
 import { sendWelcomeDolevEmail } from '@/lib/auth/send-welcome-dolev-email';
 import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context';
 
@@ -9,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 type Body = { userId: string };
 
-export const { POST } = serve<Body>(async (context) => {
+const { POST: workflowPost } = serve<Body>(async (context) => {
   const { userId } = context.requestPayload;
   if (!userId || typeof userId !== 'string') {
     return { skipped: true as const, reason: 'invalid_user' };
@@ -62,3 +63,5 @@ export const { POST } = serve<Body>(async (context) => {
 
   return { ok: true as const };
 });
+
+export const POST = requireQstashConfigured(workflowPost);
