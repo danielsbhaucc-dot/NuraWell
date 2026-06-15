@@ -17,6 +17,7 @@ import {
   writePendingProposal,
   writeProgramState,
 } from '../../../../../../lib/ai/orchestrator/program-store';
+import { applyPivotOverride } from '../../../../../../lib/ai/orchestrator/daily-action-instances';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -81,6 +82,15 @@ export async function POST(request: Request) {
       await writeProgramState(admin, auth.user.id, 'maintaining').catch((err) =>
         console.error('[program/proposal] state write failed', err)
       );
+    }
+
+    if (decision === 'accept' && proposal.kind === 'pivot' && proposal.next_step?.title) {
+      // 🔁 The Override Mutation — צעד-המיקרו הופך ל"משימה של היום" עם מחזור-חיים.
+      await applyPivotOverride(admin, auth.user.id, {
+        displayTitle: proposal.next_step.title,
+        originalTitle: proposal.next_step.restore_to ?? null,
+        proposalId: proposal.id,
+      }).catch((err) => console.error('[program/proposal] pivot override failed', err));
     }
 
     return NextResponse.json({ ok: true, decision, kind: proposal.kind });

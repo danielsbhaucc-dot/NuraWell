@@ -97,7 +97,13 @@ function fallbackProposalText(input: BuildProposalInput): {
       return {
         headline: 'בא ניקח את זה קטן יותר 💙',
         body: `${name}, אם ${focus} מרגיש כבד עכשיו — זה לגמרי בסדר. בוא נוריד הילוך לגרסה זעירה שאי-אפשר להיכשל בה, רק כדי להישאר בתנועה.`,
-        nextStep: null,
+        nextStep: {
+          title: `גרסה זעירה של ${focus} — דקה-שתיים, רק כדי להישאר בתנועה`,
+          detail: 'צעד שאי-אפשר להיכשל בו. נטפס משם בחזרה בקצב שלך.',
+          next_step_id: null,
+          habit_hint: null,
+          restore_to: focus,
+        },
       };
   }
 }
@@ -152,7 +158,12 @@ export async function buildProgramProposal(
   let model: string | null = null;
 
   if (process.env.GROQ_API_KEY?.trim()) {
-    const wantsNextStep = input.decision.proposalKind === 'level_up';
+    const kind = input.decision.proposalKind;
+    const wantsNextStep = kind === 'level_up' || kind === 'pivot';
+    const restoreTo =
+      kind === 'pivot'
+        ? input.aiCtx.current_focus || input.companion?.stepTitle || 'ההרגל הנוכחי'
+        : null;
     const system = `${SAFETY_BLOCK}
 
 ${stateInstruction(input)}
@@ -197,8 +208,10 @@ ${stateInstruction(input)}
             ? {
                 title,
                 detail: detail ?? null,
-                next_step_id: input.companion?.stepId ?? null,
+                // ב-pivot אין קישור לצעד מסע פורמלי; ב-level_up מקשרים לצעד הנוכחי.
+                next_step_id: kind === 'level_up' ? input.companion?.stepId ?? null : null,
                 habit_hint: null,
+                restore_to: restoreTo,
               }
             : fallback.nextStep;
         }

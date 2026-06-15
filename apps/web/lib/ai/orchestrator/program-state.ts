@@ -28,6 +28,11 @@ export type ProgramProposalNextStep = {
   next_step_id?: string | null;
   /** רמז להרגל המיקרו החדש (אופציונלי). */
   habit_hint?: string | null;
+  /**
+   * ב-pivot: היעד המקורי שאליו "מטפסים בחזרה" אחרי שהמיקרו-צעד יצליח.
+   * משמש את daily_action_instances.original_title למסלול ההתקדמות.
+   */
+  restore_to?: string | null;
 };
 
 /**
