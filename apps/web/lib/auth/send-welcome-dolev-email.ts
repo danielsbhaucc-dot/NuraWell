@@ -72,12 +72,7 @@ export async function sendWelcomeDolevEmail(userId: string): Promise<SendWelcome
     .update({ welcome_email_sent_at: new Date().toISOString() })
     .eq('id', userId);
 
-  const notifyBody =
-    gender === 'male'
-      ? `שמחתי לאשר את האימייל שלך! קיבלתי את כל מה שמילאת — מכאן אלמוג איתך בקצב שלך. נתראה באפליקציה 🌿`
-      : gender === 'female'
-        ? `שמחתי לאשר את האימייל שלך! קיבלתי את כל מה שמילאת — מכאן אלמוג איתך בקצב שלך. נתראה באפליקציה 🌿`
-        : `שמחתי לאשר את האימייל שלך! קיבלתי את כל מה שמילאת — מכאן אלמוג איתך בקצב שלך. נתראה באפליקציה 🌿`;
+  const notifyBody = `שמחתי לאשר את האימייל שלך! קיבלתי את כל מה שמילאת — מכאן אלמוג איתך בקצב שלך. נתראה באפליקציה 🌿`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await admin.from('notifications').insert({
