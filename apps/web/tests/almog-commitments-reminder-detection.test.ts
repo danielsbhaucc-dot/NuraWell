@@ -33,6 +33,9 @@ describe('detectExplicitReminderPromise', () => {
     ).toBe(false);
     expect(detectExplicitReminderPromise('מתי אתה רוצה שאזכיר לך?')).toBe(false);
     expect(detectExplicitReminderPromise('רוצה שאזכיר לך על זה מחר?')).toBe(false);
+    // ש-prefixed verb forms (subordinate clauses) are not commitments
+    expect(detectExplicitReminderPromise('אמרתי שאזכיר לך אבל עוד לא בטוח')).toBe(false);
+    expect(detectExplicitReminderPromise('הוא ביקש שאשלח לך הודעה')).toBe(false);
   });
 
   it('לא מזהה שלילה', () => {
