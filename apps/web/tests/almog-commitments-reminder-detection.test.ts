@@ -33,11 +33,27 @@ describe('detectExplicitReminderPromise', () => {
     ).toBe(false);
     expect(detectExplicitReminderPromise('מתי אתה רוצה שאזכיר לך?')).toBe(false);
     expect(detectExplicitReminderPromise('רוצה שאזכיר לך על זה מחר?')).toBe(false);
+    // ש-prefixed verb forms (subordinate clauses) are not commitments
+    expect(detectExplicitReminderPromise('אמרתי שאזכיר לך אבל עוד לא בטוח')).toBe(false);
+    expect(detectExplicitReminderPromise('הוא ביקש שאשלח לך הודעה')).toBe(false);
   });
 
   it('לא מזהה שלילה', () => {
     expect(detectExplicitReminderPromise('אל תדאג, לא אזכיר לך על זה שוב')).toBe(false);
     expect(detectExplicitReminderPromise('נמשיך בלי תזכורת הפעם')).toBe(false);
+  });
+
+  it('מזהה "אל תדאג" + התחייבות כהבטחת תזכורת (לא כשלילה)', () => {
+    expect(detectExplicitReminderPromise('אל תדאג, אזכיר לך מחר בבוקר')).toBe(true);
+    expect(detectExplicitReminderPromise('אל תדאג אני אזכיר לך בערב 🙂')).toBe(true);
+  });
+
+  it('מזהה התחייבות במשפט נפרד גם אם יש שאלה במשפט אחר', () => {
+    expect(
+      detectExplicitReminderPromise(
+        'רוצה שאזכיר לך מחר? סבבה, אזכיר לך מחר ב-8 בבוקר.'
+      )
+    ).toBe(true);
   });
 
   it('לא מזהה שיחה רגילה ללא הבטחה', () => {
