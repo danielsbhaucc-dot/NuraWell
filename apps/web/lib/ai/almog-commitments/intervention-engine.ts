@@ -4,7 +4,7 @@
  */
 
 import { groq, AI_MODELS } from '../client';
-import type { AssignmentRelation, BlockerOption } from './types';
+import type { AssignmentRelation, BlockerOption, BlockerProposal } from './types';
 import {
   FRICTION_META,
   STRATEGY_LABELS_HE,
@@ -90,57 +90,72 @@ function formatMemoryForPrompt(memory: InterventionMemoryRow[]): string {
     .join('\n');
 }
 
+/**
+ * ניסוחים טבעיים ומלאים בקולו של אלמוג לכל סוג אסטרטגיה — בלי לשרבב את תיאור
+ * החסם הקטוע, ובלי לחשוף ז'רגון פסיכולוגי. משמשים גם ל-A/B (legacy) וגם
+ * להצעת ה-Pivot היחידה ("המאמן הבלתי-נראה").
+ */
+const STRATEGY_TEMPLATES: Record<StrategyType, { label: string; step: string }> = {
+  environment_design: {
+    label: 'נסדר את הסביבה',
+    step: 'בוא נשים תזכורת גלויה במקום שאי-אפשר לפספס — ככה זה יקפוץ לך לעיניים בדיוק בזמן.',
+  },
+  physiological_adjustment: {
+    label: 'נתחיל בקטן',
+    step: 'בוא נתחיל מחצי מהכמות, או בגרסה שיותר נעימה לך — לא חייבים הכל בבת אחת.',
+  },
+  micro_habit: {
+    label: 'צעד של דקה',
+    step: 'בוא נעשה רק 2 דקות מזה היום. ממש קטן, רק כדי להתחיל לזוז.',
+  },
+  habit_stacking: {
+    label: 'נצמיד להרגל קיים',
+    step: 'בוא נחבר את זה למשהו שאתה כבר עושה — למשל מיד אחרי שאתה מצחצח שיניים.',
+  },
+  emotional_regulation: {
+    label: 'רגע של אוויר',
+    step: 'בוא ניקח 3 נשימות עמוקות לפני, ואז ננסה. בלי לחץ, רק להתרכך קצת.',
+  },
+  social_accountability: {
+    label: 'נשתף מישהו',
+    step: 'בוא תספר למישהו קרוב שאתה מנסה את זה — קצת תמיכה עושה הבדל גדול.',
+  },
+  how_to: {
+    label: 'נבין יחד איך',
+    step: 'בוא נפרק את זה לצעד-אחר-צעד פשוט, ככה שיהיה ברור בדיוק מה לעשות.',
+  },
+  value_linking: {
+    label: 'נזכור למה',
+    step: 'בוא נזכיר לעצמנו במשפט אחד למה זה חשוב לך — זה מה שמחזיק כשקשה.',
+  },
+  reminder_system: {
+    label: 'תזכורת חכמה',
+    step: 'בוא נקבע תזכורת בשעה קבועה שמתאימה לך — ואני אזכיר לך בעדינות.',
+  },
+  reward_system: {
+    label: 'פרס קטן',
+    step: 'בוא נחליט על פרס קטן שתיתן לעצמך אחרי — משהו שאתה אוהב.',
+  },
+};
+
+/** הודעות אמפתיה כלליות (fallback ללא LLM) — מנרמלות בלי לשפוט ובלי ז'רגון. */
+const EMPATHY_FALLBACKS: Record<FrictionCategory, string> = {
+  logistical: 'לגמרי מובן — כשהחיים עמוסים, דברים נופלים בין הכיסאות. זה לא אתה, זו פשוט הסביבה.',
+  physiological: 'זה באמת לא פשוט כשהגוף לא משתף פעולה. הקושי הזה אמיתי, ואנחנו לא נילחם בו — נעקוף אותו בעדינות.',
+  cognitive: 'הגיוני לגמרי שזה מרגיש גדול. כשאין כוח לראש, הדבר הכי נכון הוא להקטין — וזה בדיוק מה שנעשה.',
+  emotional: 'אני שומע אותך. יש ימים שהרגש לוקח את ההגה, וזה אנושי לגמרי. בוא נהיה עדינים עם זה.',
+  social: 'זה מאתגר כשהסביבה סביבך לא תמיד מיישרת קו. אתה לא לבד בזה.',
+  knowledge: 'ברור שזה תקוע כשלא לגמרי ברור איך לגשת. זה לא חוסר רצון — רק חסר חלק קטן בפאזל.',
+  motivational: 'טבעי שלפעמים קשה לראות את הטעם. גם אני מרגיש ככה לפעמים — ובדיוק אז עוזר צעד ממש קטן.',
+};
+
 function fallbackOptions(
   category: FrictionCategory,
-  description: string,
+  _description: string,
   strategyTypes: StrategyType[],
   hasOriginal = false
 ): BlockerOption[] {
   const types = strategyTypes.length >= 2 ? strategyTypes.slice(0, 2) : nextStrategyTypesForPivot(category, []);
-
-  // ניסוחים טבעיים ומלאים בקולו של אלמוג — בלי לשרבב את תיאור החסם הקטוע.
-  const templates: Record<StrategyType, { label: string; step: string }> = {
-    environment_design: {
-      label: 'נסדר את הסביבה',
-      step: 'בוא נשים תזכורת גלויה במקום שאי-אפשר לפספס — ככה זה יקפוץ לך לעיניים בדיוק בזמן.',
-    },
-    physiological_adjustment: {
-      label: 'נתחיל בקטן',
-      step: 'בוא נתחיל מחצי מהכמות, או בגרסה שיותר נעימה לך — לא חייבים הכל בבת אחת.',
-    },
-    micro_habit: {
-      label: 'צעד של דקה',
-      step: 'בוא נעשה רק 2 דקות מזה היום. ממש קטן, רק כדי להתחיל לזוז.',
-    },
-    habit_stacking: {
-      label: 'נצמיד להרגל קיים',
-      step: 'בוא נחבר את זה למשהו שאתה כבר עושה — למשל מיד אחרי שאתה מצחצח שיניים.',
-    },
-    emotional_regulation: {
-      label: 'רגע של אוויר',
-      step: 'בוא ניקח 3 נשימות עמוקות לפני, ואז ננסה. בלי לחץ, רק להתרכך קצת.',
-    },
-    social_accountability: {
-      label: 'נשתף מישהו',
-      step: 'בוא תספר למישהו קרוב שאתה מנסה את זה — קצת תמיכה עושה הבדל גדול.',
-    },
-    how_to: {
-      label: 'נבין יחד איך',
-      step: 'בוא נפרק את זה לצעד-אחר-צעד פשוט, ככה שיהיה ברור בדיוק מה לעשות.',
-    },
-    value_linking: {
-      label: 'נזכור למה',
-      step: 'בוא נזכיר לעצמנו במשפט אחד למה זה חשוב לך — זה מה שמחזיק כשקשה.',
-    },
-    reminder_system: {
-      label: 'תזכורת חכמה',
-      step: 'בוא נקבע תזכורת בשעה קבועה שמתאימה לך — ואני אזכיר לך בעדינות.',
-    },
-    reward_system: {
-      label: 'פרס קטן',
-      step: 'בוא נחליט על פרס קטן שתיתן לעצמך אחרי — משהו שאתה אוהב.',
-    },
-  };
 
   // ברירת מחדל בטוחה ללא LLM: "eases" אם יש משימה מקורית (הקלה), אחרת "supports".
   const relation: AssignmentRelation = hasOriginal ? 'eases' : 'supports';
@@ -148,9 +163,28 @@ function fallbackOptions(
   const tB = types[1] ?? 'habit_stacking';
 
   return [
-    { id: 'A', label: templates[tA].label, strategy_type: tA, micro_step: templates[tA].step, relation },
-    { id: 'B', label: templates[tB].label, strategy_type: tB, micro_step: templates[tB].step, relation },
+    { id: 'A', label: STRATEGY_TEMPLATES[tA].label, strategy_type: tA, micro_step: STRATEGY_TEMPLATES[tA].step, relation },
+    { id: 'B', label: STRATEGY_TEMPLATES[tB].label, strategy_type: tB, micro_step: STRATEGY_TEMPLATES[tB].step, relation },
   ];
+}
+
+/** Pivot יחיד ללא LLM — אמפתיה לפי קטגוריה + צעד יחיד מסוג שעוד לא נוסה. */
+function fallbackPivot(
+  category: FrictionCategory,
+  strategyTypes: StrategyType[],
+  hasOriginal: boolean
+): { empathy: string; proposal: BlockerProposal } {
+  const type = strategyTypes[0] ?? nextStrategyTypesForPivot(category, [])[0] ?? 'micro_habit';
+  const relation: AssignmentRelation = hasOriginal ? 'eases' : 'supports';
+  return {
+    empathy: EMPATHY_FALLBACKS[category],
+    proposal: {
+      label: STRATEGY_TEMPLATES[type].label,
+      strategy_type: type,
+      micro_step: STRATEGY_TEMPLATES[type].step,
+      relation,
+    },
+  };
 }
 
 const SYSTEM = `אתה מנוע "התערבות התנהגותית" ל-NuraWell (רקע, לא צ'אט).
@@ -357,4 +391,170 @@ export async function fetchInterventionMemory(
     .limit(limit);
 
   return (data ?? []) as InterventionMemoryRow[];
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * "המאמן הבלתי-נראה" — Pivot יחיד (אמפתיה + הצעה אחת)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+export interface GeneratePivotParams {
+  description: string;
+  category: string | null;
+  currentStrategy: string | null;
+  attemptCount: number;
+  memory: InterventionMemoryRow[];
+  activeTasks?: ActiveTaskRef[];
+  failedStrategyTypes?: StrategyType[];
+  pivotFromStrategy?: string | null;
+  /** כותרת המשימה המקורית שהמשתמש נכשל בה (אם יש) */
+  originalTaskTitle?: string | null;
+}
+
+export interface GeneratedPivotResult {
+  category: FrictionCategory;
+  empathy: string;
+  proposal: BlockerProposal;
+  /** ref של המשימה הפעילה שהחסם נוגע בה (או null) */
+  relatesToRef: string | null;
+}
+
+const COACH_SYSTEM = `אתה "אלמוג" — מאמן הרגלים אמפתי ב-NuraWell. המשתמש נתקל בקושי עם הרגל.
+אתה מדבר בגוף ראשון, חם, קצר, בלי ז'רגון פסיכולוגי ובלי להסביר תיאוריות.
+
+המשימה שלך: להחזיר JSON בלבד עם שני חלקים:
+1. empathy — משפט אחד-שניים שמנרמלים את הקושי (לא שופטים, לא מנחים).
+2. proposal — הצעת Pivot אחת בלבד, מבוססת B=MAP (Fogg):
+   • micro_step = פעולה אחת קטנה, בר-ביצוע היום (עד 15 דקות).
+   • label = 2-4 מילים בעברית, רך (כמו כותרת קטנה).
+   • strategy_type = סוג אסטרטגיה פנימי (לא מוצג למשתמש).
+   • relation = יחס למשימה מקורית (אם יש): "replaces"|"eases"|"supports".
+
+כללים:
+- אל תחזור על אסטרטגיות שסומנו "לא עזר".
+- ב-pivot: בחר סוג אסטרטגיה שונה מהקודם.
+- אל תציע יותר מאופציה אחת. אל תסביר למה בחרת.
+- שפה: "בוא ננסה...", "אולי...", "מה דעתך על..." — לא "אסטרטגיה", לא "micro_step".
+- empathy לא מזכירה שמות של מודלים פסיכולוגיים.
+
+החזר JSON בלבד:
+{
+  "category": "logistical|physiological|cognitive|emotional|social|knowledge|motivational",
+  "relates_to": "ref של משימה פעילה או null",
+  "empathy": "משפט אמפתי קצר",
+  "proposal": {
+    "label": "שם קצר",
+    "strategy_type": "...",
+    "micro_step": "פעולה אחת קטנה",
+    "relation": "replaces|eases|supports"
+  }
+}`;
+
+/**
+ * מנוע ה-Pivot החדש: אמפתיה + הצעה אחת (במקום A/B).
+ * Pre-LLM: הקשר נארז בצד השרת (memory, failed types, active tasks).
+ * Post-LLM: category + strategy_type נשמרים נסתר ב-DB.
+ */
+export async function generateBlockerPivot(
+  params: GeneratePivotParams
+): Promise<GeneratedPivotResult> {
+  const category = normalizeFrictionCategory(params.category);
+  const meta = FRICTION_META[category];
+  const triedTypes = (params.failedStrategyTypes ?? []).map(normalizeStrategyType);
+  const allowedTypes =
+    triedTypes.length > 0
+      ? nextStrategyTypesForPivot(category, triedTypes)
+      : meta.preferredStrategies;
+
+  const activeTasks = (params.activeTasks ?? []).slice(0, 6);
+  const hasOriginal = activeTasks.length > 0;
+
+  const maxAiAttempts = Math.max(0, Number(process.env.ALMOG_INTERVENTION_MAX_AI_ATTEMPTS) || 3);
+  const aiDisabled =
+    process.env.ALMOG_INTERVENTION_AI_ENABLED === '0' ||
+    !process.env.GROQ_API_KEY?.trim() ||
+    params.attemptCount >= maxAiAttempts;
+
+  if (aiDisabled) {
+    const fb = fallbackPivot(category, allowedTypes, hasOriginal);
+    return { category, ...fb, relatesToRef: null };
+  }
+
+  const pivotNote = params.pivotFromStrategy
+    ? `\nPIVOT: האסטרטגיה "${params.pivotFromStrategy}" לא עזרה. הצע חלופה מסוג שונה.`
+    : '';
+
+  const tasksLine = hasOriginal
+    ? `משימות פעילות (לקישור relates_to/relation):\n${activeTasks
+        .map((t) => `${t.ref}: ${t.title.slice(0, 80)}`)
+        .join('\n')}`
+    : null;
+
+  const userContent = [
+    `קושי: ${params.description.slice(0, 220)}`,
+    params.originalTaskTitle ? `המשימה המקורית: ${params.originalTaskTitle.slice(0, 100)}` : null,
+    `קטגוריה (הערכה פנימית): ${category}`,
+    params.currentStrategy ? `אסטרטגיה נוכחית: ${params.currentStrategy.slice(0, 180)}` : null,
+    `ניסיון מספר: ${params.attemptCount + 1}`,
+    `סוגי אסטרטגיה מומלצים: ${allowedTypes.join(', ')}`,
+    tasksLine,
+    `היסטוריית התערבויות:\n${formatMemoryForPrompt(params.memory)}`,
+    pivotNote,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: AI_MODELS.background_groq,
+      temperature: 0.4,
+      max_tokens: 380,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: COACH_SYSTEM },
+        { role: 'user', content: userContent },
+      ],
+    });
+
+    const raw = completion.choices[0]?.message?.content ?? '';
+    const parsed = parseJsonObject(raw);
+    if (!parsed || typeof parsed.empathy !== 'string' || !parsed.proposal) {
+      const fb = fallbackPivot(category, allowedTypes, hasOriginal);
+      return { category, ...fb, relatesToRef: null };
+    }
+
+    const outCategory = normalizeFrictionCategory(
+      typeof parsed.category === 'string' ? parsed.category : category
+    );
+
+    const validRefs = new Set(activeTasks.map((t) => t.ref));
+    const rawRef = typeof parsed.relates_to === 'string' ? parsed.relates_to.trim() : '';
+    const relatesToRef = validRefs.has(rawRef) ? rawRef : null;
+
+    const p = (parsed.proposal ?? {}) as Record<string, unknown>;
+    const micro = typeof p.micro_step === 'string' ? p.micro_step.trim().slice(0, 200) : '';
+    if (!micro) {
+      const fb = fallbackPivot(outCategory, allowedTypes, hasOriginal);
+      return { category: outCategory, ...fb, relatesToRef };
+    }
+
+    const relation = relatesToRef ? normalizeRelation(p.relation) : 'supports';
+
+    return {
+      category: outCategory,
+      empathy: (parsed.empathy as string).trim().slice(0, 300),
+      proposal: {
+        label:
+          typeof p.label === 'string' && p.label.trim()
+            ? p.label.trim().slice(0, 60)
+            : STRATEGY_LABELS_HE[normalizeStrategyType(String(p.strategy_type))],
+        strategy_type: normalizeStrategyType(String(p.strategy_type)),
+        micro_step: micro,
+        relation,
+      },
+      relatesToRef,
+    };
+  } catch {
+    const fb = fallbackPivot(category, allowedTypes, hasOriginal);
+    return { category, ...fb, relatesToRef: null };
+  }
 }

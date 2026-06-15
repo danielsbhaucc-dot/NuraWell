@@ -82,7 +82,7 @@ export async function GET(request: Request) {
       .limit(20),
     supabase
       .from('almog_blockers')
-      .select('id, description, strategy, category, attempt_count, current_options, status, identified_at, last_checked_at, next_check_at, history')
+      .select('id, description, strategy, category, attempt_count, current_options, status, identified_at, last_checked_at, next_check_at, history, metadata')
       .eq('user_id', user.id)
       .in('status', ['open', 'improving'])
       .order('identified_at', { ascending: false })
