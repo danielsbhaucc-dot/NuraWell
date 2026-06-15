@@ -27,6 +27,7 @@ import { gatherProgramSignals } from './gather-program-signals';
 import { evaluateProgramState, type ProgramProposalKind, type ProgramState } from './program-state';
 import { buildProgramProposal } from './build-program-proposal';
 import { writePendingProposal, writeProgramState } from './program-store';
+import { advancePivotProgression, type PivotProgressionResult } from './daily-action-instances';
 
 const PROPOSAL_ICON: Record<ProgramProposalKind, string> = {
   level_up: '🚀',
@@ -45,6 +46,8 @@ export type OrchestrateUserResult = {
   kind?: ProgramProposalKind;
   /** סיבת דילוג על שליחת ההצעה (אם לא נשלחה). */
   skippedReason?: string;
+  /** תוצאת הערכת ה-pivot של היום (Successful Intervention Cluster / progression). */
+  pivotProgression?: PivotProgressionResult;
 };
 
 type ProfileForOrchestration = {
@@ -95,6 +98,20 @@ export async function orchestrateProgramForUser(
   const dryRun = opts.dryRun ?? false;
   const aiCtx = (profile.ai_context ?? {}) as AiUserContext;
 
+  /**
+   * 🫀 Requirement 3 — הערכת ה-pivot של היום בכל heartbeat. רץ תמיד (לא תלוי
+   * בשערי שליחת ההצעה): pivot שהושלם נרשם כ-cluster ומקדם את מסלול הטיפוס.
+   * ב-dryRun לא משנים DB.
+   */
+  let pivotProgression: PivotProgressionResult | undefined;
+  if (!dryRun) {
+    pivotProgression = await advancePivotProgression(admin, profile.id, now).catch((err) => {
+      // eslint-disable-next-line no-console
+      console.warn('[program-orchestrator] advancePivotProgression failed', profile.id, err);
+      return { advanced: false, reason: 'error' } as PivotProgressionResult;
+    });
+  }
+
   const { signals, companion, doneTodayCount } = await gatherProgramSignals(
     admin,
     profile.id,
@@ -118,6 +135,7 @@ export async function orchestrateProgramForUser(
     reason: decision.reason,
     emitted: false,
     kind: decision.proposalKind,
+    ...(pivotProgression ? { pivotProgression } : {}),
   };
 
   // ── שערי שליחת הצעה ──────────────────────────────────────────────
