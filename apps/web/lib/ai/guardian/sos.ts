@@ -1,6 +1,7 @@
 import {
   FRICTION_META,
   normalizeFrictionCategory,
+  normalizeStrategyType,
   type FrictionCategory,
   type StrategyType,
 } from '../almog-commitments/friction';
@@ -101,7 +102,7 @@ export function buildSosInterventionFromPivot(pivot: GeneratedPivotResult): SosI
   return {
     category,
     used_fallback: false,
-    strategy_type: pivot.proposal.strategy_type,
+    strategy_type: normalizeStrategyType(pivot.proposal.strategy_type),
     label: pivot.proposal.label?.trim() || FRICTION_META[category].labelHe,
     message: `${empathy}\n\n${microStep}`,
     micro_step: microStep,
