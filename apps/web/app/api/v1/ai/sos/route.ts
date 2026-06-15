@@ -89,9 +89,6 @@ export async function POST(request: Request) {
     if (process.env.GUARDIAN_KILL_SWITCH === '1') {
       return NextResponse.json({ ok: false, error: 'Guardian is disabled' }, { status: 503 });
     }
-    if (process.env.GUARDIAN_SOS_ENABLED !== '1') {
-      return NextResponse.json({ ok: false, error: 'Guardian SOS is disabled' }, { status: 503 });
-    }
 
     const auth = await requireApiSession(request);
     if (!auth.ok) return auth.response;
