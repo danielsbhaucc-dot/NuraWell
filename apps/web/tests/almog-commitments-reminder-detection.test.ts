@@ -40,6 +40,19 @@ describe('detectExplicitReminderPromise', () => {
     expect(detectExplicitReminderPromise('נמשיך בלי תזכורת הפעם')).toBe(false);
   });
 
+  it('מזהה "אל תדאג" + התחייבות כהבטחת תזכורת (לא כשלילה)', () => {
+    expect(detectExplicitReminderPromise('אל תדאג, אזכיר לך מחר בבוקר')).toBe(true);
+    expect(detectExplicitReminderPromise('אל תדאג אני אזכיר לך בערב 🙂')).toBe(true);
+  });
+
+  it('מזהה התחייבות במשפט נפרד גם אם יש שאלה במשפט אחר', () => {
+    expect(
+      detectExplicitReminderPromise(
+        'רוצה שאזכיר לך מחר? סבבה, אזכיר לך מחר ב-8 בבוקר.'
+      )
+    ).toBe(true);
+  });
+
   it('לא מזהה שיחה רגילה ללא הבטחה', () => {
     expect(detectExplicitReminderPromise('מה שלומך היום? ספר לי איך הלך')).toBe(false);
     expect(detectExplicitReminderPromise('כל הכבוד על ההתמדה!')).toBe(false);
