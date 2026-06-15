@@ -71,6 +71,7 @@ export default async function HomePage() {
   return (
     <HomeClient
       firstName={firstName}
+      guardianSosEnabled={process.env.GUARDIAN_SOS_ENABLED === '1'}
       stats={{
         activeCoursesCount,
         avgProgress: activeCoursesCount ? Math.round(progressSum / activeCoursesCount) : 0,

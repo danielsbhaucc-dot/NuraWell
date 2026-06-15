@@ -39,6 +39,7 @@ export type HomeStats = {
 interface HomeClientProps {
   firstName: string;
   stats: HomeStats;
+  guardianSosEnabled?: boolean;
 }
 
 const container = {
@@ -50,7 +51,7 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
 };
 
-export function HomeClient({ firstName, stats }: HomeClientProps) {
+export function HomeClient({ firstName, stats, guardianSosEnabled = false }: HomeClientProps) {
   const progressReport = useProgressReport();
   const actionHub = useActionHub();
   const [taskLoading, setTaskLoading] = useState(true);
@@ -162,10 +163,11 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
             <DashboardBriefCard onOpenTasks={() => actionHub.open()} />
           </motion.div>
 
-          {/* רגע לפני — כפתור SOS עדין */}
-          <motion.div variants={item}>
-            <SosButton />
-          </motion.div>
+          {guardianSosEnabled && (
+            <motion.div variants={item}>
+              <SosButton />
+            </motion.div>
+          )}
 
           {/* משימות */}
           <motion.div variants={item}>
