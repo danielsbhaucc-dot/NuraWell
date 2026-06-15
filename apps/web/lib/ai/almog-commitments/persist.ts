@@ -20,6 +20,8 @@ export interface PersistResult {
   blockers_upserted: number;
   blockers_updated: number;
   focus_action: 'none' | 'proposed' | 'activated' | 'updated';
+  /** מספר כשלי כתיבה (insert/select) שנבלעו בעבר — עכשיו נספרים כדי שיוצפו ללוג. */
+  write_errors: number;
 }
 
 type BlockerHistoryEntry = { at: string; status: string; note?: string };
@@ -42,15 +44,34 @@ async function insertDeduped(
   key: string,
   payload: Record<string, unknown>
 ): Promise<'inserted' | 'exists' | 'error'> {
-  const { data: existing } = await admin
+  const { data: existing, error: selectError } = await admin
     .from(table)
     .select('id')
     .eq('user_id', userId)
     .eq('dedupe_key', key)
     .maybeSingle();
+  if (selectError) {
+    // ⚠️ קריטי: בעבר שגיאות פה (וב-insert) נבלעו, ותזכורות/משימות פשוט "נעלמו"
+    // בלי שום עקבה. כשל נפוץ בפרודקשן: SUPABASE_SERVICE_ROLE_KEY חסר/שגוי → ה-admin
+    // נופל ל-anon ו-RLS חוסם (יש רק policy ל-SELECT, אין INSERT). מציפים ללוג.
+    console.warn('[almog-commitments] select failed', {
+      table,
+      code: selectError.code,
+      error: selectError.message,
+    });
+    return 'error';
+  }
   if (existing) return 'exists';
   const { error } = await admin.from(table).insert(payload);
-  return error ? 'error' : 'inserted';
+  if (error) {
+    console.warn('[almog-commitments] insert failed', {
+      table,
+      code: error.code,
+      error: error.message,
+    });
+    return 'error';
+  }
+  return 'inserted';
 }
 
 /** מנרמל טקסט עברי/אנגלי למפתח dedupe יציב. */
@@ -115,6 +136,7 @@ export async function persistCommitmentExtraction(params: {
     blockers_upserted: 0,
     blockers_updated: 0,
     focus_action: 'none',
+    write_errors: 0,
   };
 
   // ── משימות אישיות ──────────────────────────────────────────────
@@ -142,6 +164,7 @@ export async function persistCommitmentExtraction(params: {
       metadata: task.related_habit ? { related_habit_title: task.related_habit } : {},
     });
     if (outcome === 'inserted') result.assignments_created += 1;
+    else if (outcome === 'error') result.write_errors += 1;
   }
 
   // ── תזכורות ────────────────────────────────────────────────────
@@ -159,6 +182,7 @@ export async function persistCommitmentExtraction(params: {
       source_session_id: sessionId,
     });
     if (outcome === 'inserted') result.reminders_created += 1;
+    else if (outcome === 'error') result.write_errors += 1;
   }
 
   // ── follow-ups (מעקב אחרי משימה שניתנה) ────────────────────────
@@ -176,6 +200,7 @@ export async function persistCommitmentExtraction(params: {
       source_session_id: sessionId,
     });
     if (outcome === 'inserted') result.reminders_created += 1;
+    else if (outcome === 'error') result.write_errors += 1;
   }
 
   // ── חסמים ──────────────────────────────────────────────────────
