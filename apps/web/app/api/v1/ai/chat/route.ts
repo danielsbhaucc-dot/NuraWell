@@ -48,6 +48,7 @@ import {
   shouldAttemptCommitmentExtraction,
   detectExplicitReminderPromise,
   detectUserReminderRequest,
+  buildSafetyNetReminder,
 } from '../../../../../lib/ai/almog-commitments/extract-commitments';
 import { persistCommitmentExtraction } from '../../../../../lib/ai/almog-commitments/persist';
 import { applyChatSignalsFromUserMessage, detectChatSignals } from '../../../../../lib/ai/chat-signals';
@@ -2797,6 +2798,57 @@ export async function POST(request: Request) {
           });
         }
 
+        /**
+         * שמירת תזכורת-ביטחון *סינכרונית* (בלי LLM) — לפני כל ה-after().
+         *
+         * למה: ב-edge runtime ל-after() יש תקציב זמן מוגבל, וקריאת ה-LLM הכבדה
+         * בחילוץ ההתחייבויות עלולה לגרום לכך שהפונקציה נקטעת *לפני* שהתזכורת
+         * נשמרת — ואז הבטחת אלמוג "נעלמת". כאן אנחנו מזהים דטרמיניסטית (regex)
+         * הבטחה מפורשת / בקשת משתמש ושומרים את התזכורת מיד, מובטח. החילוץ המלא
+         * (משימות/חסמים/תזמון מדויק) ממשיך ב-after(); הוא ידלג על תזכורות אם כבר
+         * שמרנו אחת כאן, כדי לא לכפול.
+         */
+        let syncReminderPersisted = false;
+        try {
+          const safetyReminder = buildSafetyNetReminder(lastUserText, assistantText);
+          if (safetyReminder) {
+            const syncPersist = await persistCommitmentExtraction({
+              admin: createAdminClient(),
+              userId: user.id,
+              sessionId,
+              extraction: {
+                reminders: [safetyReminder],
+                tasks: [],
+                focus: null,
+                blockers: [],
+                followups: [],
+                blocker_updates: [],
+              },
+              sourceExcerpt: lastUserText.slice(0, 280),
+            });
+            syncReminderPersisted = syncPersist.reminders_created > 0;
+            console.info('[ai/chat]', {
+              debug_id: debugId,
+              stage: 'almog_reminder_sync',
+              reminders_created: syncPersist.reminders_created,
+              write_errors: syncPersist.write_errors,
+            });
+            if (syncPersist.write_errors > 0) {
+              console.error('[ai/chat]', {
+                debug_id: debugId,
+                stage: 'almog_reminder_sync_write_error',
+                write_errors: syncPersist.write_errors,
+              });
+            }
+          }
+        } catch (syncRemErr) {
+          console.error('[ai/chat]', {
+            debug_id: debugId,
+            stage: 'almog_reminder_sync_failed',
+            error: syncRemErr instanceof Error ? syncRemErr.message : String(syncRemErr),
+          });
+        }
+
         after(async () => {
           try {
             const updatedSummary = await summarizeChatTurnWithCheapModel({
@@ -3101,6 +3153,14 @@ export async function POST(request: Request) {
                 habitTitles: journeyHabits.map((h) => h.title),
                 openBlockers,
               });
+              /**
+               * אם כבר שמרנו תזכורת-ביטחון סינכרונית — מסירים תזכורות מהחילוץ
+               * המלא כדי לא לכפול (הטקסט שונה → dedupe_key שונה → היו נוצרות שתיים).
+               * המשימות/החסמים/הפוקוס מהחילוץ המלא עדיין נשמרים כרגיל.
+               */
+              if (syncReminderPersisted) {
+                extraction.reminders = [];
+              }
               const habitTitleToId = new Map(journeyHabits.map((h) => [h.title, h.id]));
               const persistResult = await persistCommitmentExtraction({
                 admin,

@@ -447,6 +447,36 @@ function userRequestNotifyText(userMessage: string): string {
 }
 
 /**
+ * רשת ביטחון *דטרמיניסטית* לתזכורת (בלי LLM) — מחזירה תזכורת אם אלמוג הבטיח
+ * במפורש, או אם המשתמש ביקש מפורשות ואלמוג לא דחה/סירב. אחרת null.
+ *
+ * מופרד לפונקציה כדי שאפשר יהיה לשמור אותה *סינכרונית* בצ'אט (לפני ה-after()
+ * האיטי שכולל קריאת LLM), כך שהבטחת תזכורת לא תאבד גם אם הרקע ב-edge נקטע.
+ */
+export function buildSafetyNetReminder(
+  userMessage: string,
+  assistantMessage: string
+): ExtractedReminder | null {
+  if (detectExplicitReminderPromise(assistantMessage)) {
+    return {
+      what: fallbackReminderWhat(assistantMessage, userMessage),
+      notify_text: fallbackNotifyText(assistantMessage, userMessage),
+      fire_at_iso: null,
+      confidence: 0.9,
+    };
+  }
+  if (detectUserReminderRequest(userMessage) && !almogDefersReminder(assistantMessage)) {
+    return {
+      what: stripUserReminderPrefix(userMessage) || userMessage.slice(0, 160),
+      notify_text: userRequestNotifyText(userMessage),
+      fire_at_iso: null,
+      confidence: 0.75,
+    };
+  }
+  return null;
+}
+
+/**
  * בונה תיאור "מה להזכיר" עבור תזכורת הגיבוי, מתוך המשפט שבו אלמוג הבטיח את
  * התזכורת. אם לא נמצא משפט מתאים — נופלים חזרה להודעת המשתמש או לטקסט גנרי.
  */
@@ -559,39 +589,13 @@ export async function extractAlmogCommitments(params: {
   }
 
   /**
-   * רשת ביטחון דטרמיניסטית: אם אלמוג הבטיח *במפורש* להזכיר, אבל מנוע החילוץ לא
-   * החזיר אף תזכורת (מפתח OpenRouter חסר, JSON לא תקין, שגיאה, או confidence
-   * נמוך מהסף) — יוצרים תזכורת בכל זאת. כך הבטחה מפורשת לא נעלמת לעולם.
+   * רשת ביטחון דטרמיניסטית (בלי LLM): אם אלמוג הבטיח במפורש, או שהמשתמש ביקש
+   * מפורשות ואלמוג לא דחה — יוצרים תזכורת בכל זאת. כך הבטחה לא נעלמת גם אם מנוע
+   * החילוץ לא רץ/נכשל/החזיר confidence נמוך.
    */
-  if (
-    extraction.reminders.length === 0 &&
-    detectExplicitReminderPromise(params.assistantMessage)
-  ) {
-    extraction.reminders.push({
-      what: fallbackReminderWhat(params.assistantMessage, params.userMessage),
-      notify_text: fallbackNotifyText(params.assistantMessage, params.userMessage),
-      fire_at_iso: null,
-      confidence: 0.9,
-    });
-  }
-
-  /**
-   * רשת ביטחון שנייה — מבוססת *בקשת המשתמש*: המשתמש ביקש מפורשות "תזכיר לי...",
-   * ואלמוג לא דחה/שאל מתי/סירב. זה מכסה את המקרה הנפוץ שבו אלמוג מאשר במילים
-   * שלו ("בטח, סגור! 😊") בלי הפועל "אזכיר", כך שלא הגלאי ולא ה-LLM תפסו תזכורת.
-   * עדיף ליצור תזכורת בזמן ברירת-מחדל מאשר לאבד את הבקשה לגמרי.
-   */
-  if (
-    extraction.reminders.length === 0 &&
-    detectUserReminderRequest(params.userMessage) &&
-    !almogDefersReminder(params.assistantMessage)
-  ) {
-    extraction.reminders.push({
-      what: stripUserReminderPrefix(params.userMessage) || params.userMessage.slice(0, 160),
-      notify_text: userRequestNotifyText(params.userMessage),
-      fire_at_iso: null,
-      confidence: 0.75,
-    });
+  if (extraction.reminders.length === 0) {
+    const safety = buildSafetyNetReminder(params.userMessage, params.assistantMessage);
+    if (safety) extraction.reminders.push(safety);
   }
 
   return extraction;
