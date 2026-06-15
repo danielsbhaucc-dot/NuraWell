@@ -17,6 +17,10 @@ import {
   sweepStaleAssignments,
   type SweepAssignmentsResult,
 } from '../../../../../../lib/ai/almog-commitments/sweep-assignments';
+import {
+  runProgramOrchestrator,
+  type RunOrchestratorResult,
+} from '../../../../../../lib/ai/orchestrator/run-program-orchestrator';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -65,6 +69,19 @@ async function runOnboardingCheckInsCron(request: Request) {
     almogReminders = await drainAlmogReminders(createAdminClient(), { dryRun: isDryRun });
   } catch (e) {
     almogReminders = { error: e instanceof Error ? e.message : String(e) };
+  }
+
+  /**
+   * 🫀 Program Orchestrator — "לב הפעימה". רץ כפאזה עצמאית בכל tick: מעריך את
+   * מצב המשתמש (ready_to_advance | maintaining | struggling), שומר program_state,
+   * ומנסח הצעה יזומה כשעובר את שערי הבטיחות/התדירות. עטוף ב-try כדי שלא יפיל את
+   * שאר ה-cron, ומכבד dryRun.
+   */
+  let orchestrator: RunOrchestratorResult | { error: string } | null = null;
+  try {
+    orchestrator = await runProgramOrchestrator(createAdminClient(), { dryRun: isDryRun });
+  } catch (e) {
+    orchestrator = { error: e instanceof Error ? e.message : String(e) };
   }
 
   const token = process.env.QSTASH_TOKEN?.trim();
@@ -143,6 +160,7 @@ async function runOnboardingCheckInsCron(request: Request) {
       })),
       almog_reminders: almogReminders,
       assignment_sweep: assignmentSweep,
+      orchestrator,
       hint_he:
         'אלמוג — זמנים אישיים מההרשמה + תזכורות אלמוג מאוחדות. הגדר ב-Upstash: POST כל 30 דקות (0,30 * * * *).',
     });
@@ -186,6 +204,7 @@ async function runOnboardingCheckInsCron(request: Request) {
     ...summary,
     almog_reminders: almogReminders,
     assignment_sweep: assignmentSweep,
+    orchestrator,
     errors: errors.length ? errors : undefined,
   });
 }

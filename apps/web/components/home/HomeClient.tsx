@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { AlmogHeroHeader } from './DolevHeroHeader';
 import { DashboardBriefCard } from './DashboardBriefCard';
+import { ProgramOrchestratorGate } from './ProgramOrchestratorGate';
 import { SosButton } from '../ai/SosButton';
 import { buildAlmogGreeting, type GreetingTaskState } from '../../lib/ai/almog-greeting';
 import {
@@ -157,6 +158,10 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
         }}
       >
         <motion.div variants={container} initial="hidden" animate="show" className="space-y-3.5">
+          {/* 🎛️ Program Orchestrator — מנהל את "Level Up"/kickoff/pivot.
+              Dumb UI: מצייר את מה שה-AI הכתיב, ונועל את הבית במצב Level Up. */}
+          <ProgramOrchestratorGate />
+
           {/* תקציר חי מאלמוג — שכבת AI בראש הדשבורד */}
           <motion.div variants={item}>
             <DashboardBriefCard onOpenTasks={() => actionHub.open()} />
