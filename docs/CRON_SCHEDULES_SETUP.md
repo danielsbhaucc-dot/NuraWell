@@ -39,6 +39,56 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 | `POST /api/v1/ai/cron/almog-reminders` | אופציונלי (מאוחד ל-onboarding) | `apps/web/app/api/v1/ai/cron/almog-reminders/route.ts` |
 | `POST /api/v1/ai/cron/passive-presence` | יומי 13:00 ישראל | `apps/web/app/api/v1/ai/cron/passive-presence/route.ts` |
 
+### Pre-Lapse Guardian ("רגע לפני") — בלי cron כל 30 דקות
+
+ה-Guardian לא מקבל Schedule עצמאי מסוג `risk-window-guardian`.
+
+במקום זה, ה-Schedule הקיים של `habit-checkpoints?slot=morning` עושה שני דברים נוספים כשהדגלים
+פעילים:
+
+1. מחשב `risk_signals` יומי ושומר אותם ב-`user_memory_dossier`.
+2. אם יש היום חלון סיכון תקף, מתזמן QStash delayed message עם `Upstash-Not-Before`
+   אל `POST /api/v1/ai/guardian/trigger`, בדיוק `GUARDIAN_PROACTIVE_LEAD_MIN` דקות לפני
+   תחילת החלון.
+
+ה-endpoint `/api/v1/ai/guardian/trigger` עדיין עובר את כל שערי הבטיחות בזמן אמת:
+opt-in, `avoid_push`, life pause, דגל אדום, churned, תדירות, פעילות אחרונה, confidence,
+sample size ופיזור תאריכים.
+
+משתני הפעלה:
+
+| משתנה | ברירת מחדל | משמעות |
+|---|---:|---|
+| `GUARDIAN_SOS_ENABLED` | `0` | דגל מוצר לשכבת SOS (ה-route קיים; UI יכול להיחסם עתידית לפי הדגל) |
+| `GUARDIAN_FINGERPRINT_ENABLED` | `0` | מפעיל חישוב ושמירת `risk_signals` בבוקר |
+| `GUARDIAN_PROACTIVE_ENABLED` | `0` | מפעיל תזמון QStash delayed ל-trigger היזום |
+| `GUARDIAN_KILL_SWITCH` | `0` | `1` עוצר מגע יזום וגם SOS route מחזיר disabled |
+| `GUARDIAN_PROACTIVE_LEAD_MIN` | `30` | כמה דקות לפני החלון לתזמן את ה-trigger |
+| `GUARDIAN_MIN_DISTINCT_DATES` | `2` | מינימום תאריכים נבדלים לדפוס תקף (`sample_size>=3` לבד לא מספיק) |
+| `CRON_MAX_GUARDIAN_FINGERPRINT_USERS` | `40` | limit יומי לחישוב fingerprints בקרון הבוקר |
+
+בדיקת dry-run:
+
+```bash
+curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints?slot=morning&dryRun=1" \
+  -H "Authorization: Bearer <CRON_SECRET>" \
+  -H "Content-Length: 0"
+```
+
+בשדות התגובה חפשו:
+
+```json
+{
+  "guardian_fingerprints_computed": 12,
+  "guardian_schedules_planned": 3,
+  "guardian_schedules_triggered": 0
+}
+```
+
+ב-`dryRun=1` לא מתזמנים QStash בפועל. כדי לתזמן בפועל נדרשים:
+`GUARDIAN_FINGERPRINT_ENABLED=1`, `GUARDIAN_PROACTIVE_ENABLED=1`, `QSTASH_TOKEN`, opt-in למשתמש,
+ו-`GUARDIAN_KILL_SWITCH` שאינו `1`.
+
 ### תזכורות אלמוג — מאוחדות עם `onboarding-check-ins`
 
 אלמוג מקיים את ההבטחות שלו דרך טבלת `scheduled_reminders` (תזכורות/מעקבים/בדיקות-חסם
