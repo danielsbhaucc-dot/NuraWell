@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell,
   CheckCircle2,
+  ChevronDown,
   Clock,
   Loader2,
   MessageCircle,
@@ -282,6 +283,8 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
               </p>
             ) : null}
 
+            <AlmogIntro name={name} />
+
             <AnimatePresence initial={false}>
               {data.focus ? (
                 <FocusCard
@@ -307,7 +310,8 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
               title="הצעדים שלך"
               tint="emerald"
               count={activeCount}
-              note={activeCount > 0 ? 'כל סימון כאן הוא ניצחון אמיתי — גם הקטן.' : undefined}
+              defaultOpen
+              explain="אלה הדברים שסיכמנו לעשות עכשיו. אחד בכל פעם, בלי לחץ — וכל סימון פה הוא ניצחון אמיתי, גם הקטן. 🌱"
             >
               {activeCount > 0 ? (
                 <AnimatePresence initial={false}>
@@ -328,7 +332,13 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
 
             {/* ── תזכורות ── */}
             {pendingReminders.length > 0 ? (
-              <Section icon={Bell} title="אזכיר לך" tint="amber" count={pendingReminders.length} note="שמתי לעצמי תזכורת אמיתית — לא תצטרך לזכור לבד.">
+              <Section
+                icon={Bell}
+                title="אזכיר לך"
+                tint="amber"
+                count={pendingReminders.length}
+                explain="פה אני שומר את התזכורות שלקחתי על עצמי. לא תצטרך לזכור לבד — אני אדאג להזכיר בזמן."
+              >
                 {pendingReminders.map((r) => (
                   <ReminderRow key={r.id} reminder={r} />
                 ))}
@@ -342,6 +352,8 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                 title="אלמוג כאן בשבילך"
                 tint="rose"
                 count={data.blockers.length}
+                defaultOpen
+                explain="כשמשהו תקוע, פה אנחנו פותרים את זה ביחד. בלי שיפוט — צעד אחד קטן בכל פעם."
               >
                 {data.blockers.map((b) => (
                   <BlockerCoachCard
@@ -380,7 +392,13 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
 
             {/* ── הושלמו ── */}
             {data.completed.length > 0 ? (
-              <Section icon={CheckCircle2} title="כבר עשית את זה" tint="teal" count={data.completed.length} note="להסתכל אחורה זה דלק. כל הכבוד.">
+              <Section
+                icon={CheckCircle2}
+                title="כבר עשית את זה"
+                tint="teal"
+                count={data.completed.length}
+                explain="כל מה שכבר סימנת. שווה להציץ אחורה מדי פעם — זה דלק להמשך, ואני גאה בכל אחד מהם. 💪"
+              >
                 {data.completed.map((a) => (
                   <li
                     key={a.id}
@@ -580,11 +598,11 @@ function Hero({
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="relative z-10 w-full overflow-hidden rounded-b-[40px] pb-8 pt-8"
+      className="relative z-10 w-full overflow-hidden rounded-b-[36px] pb-7 pt-7"
       style={{
         background:
-          'linear-gradient(155deg, #064e3b 0%, #047857 38%, #0d9488 72%, #10b981 100%)',
-        boxShadow: '0 26px 60px rgba(6,78,59,0.40), inset 0 1px 0 rgba(255,255,255,0.18)',
+          'linear-gradient(155deg, #059669 0%, #0d9488 45%, #10b981 78%, #34d399 100%)',
+        boxShadow: '0 16px 40px rgba(6,78,59,0.26), inset 0 1px 0 rgba(255,255,255,0.22)',
       }}
     >
       {/* שכבת ברק עליונה — מדמה השתקפות זכוכית על ה-hero */}
@@ -612,14 +630,6 @@ function Hero({
         aria-hidden
         className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full"
         style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.40), transparent 70%)' }}
-      />
-      {/* טבעת דקורטיבית */}
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute -left-20 top-2 h-48 w-48 rounded-full border"
-        style={{ borderColor: 'rgba(255,255,255,0.14)' }}
-        animate={{ rotate: 360 }}
-        transition={{ duration: 70, repeat: Infinity, ease: 'linear' }}
       />
       {/* עלה מרחף */}
       <motion.div
@@ -788,80 +798,127 @@ function LivePill({ live, pulsing }: { live: boolean; pulsing: boolean }) {
   );
 }
 
-function SectionDivider({ tint }: { tint: Tint }) {
-  const t = TINT[tint];
-  return (
-    <div className="flex items-center gap-2 px-3 py-1" aria-hidden>
-      <span
-        className="h-px flex-1 rounded-full"
-        style={{ background: `linear-gradient(90deg, transparent, rgba(${t.rgb},0.35))` }}
-      />
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: `rgba(${t.rgb},0.5)` }} />
-      <span
-        className="h-px flex-1 rounded-full"
-        style={{ background: `linear-gradient(90deg, rgba(${t.rgb},0.35), transparent)` }}
-      />
-    </div>
-  );
-}
-
+/**
+ * סקציה מתקפלת (אקורדיון) — מקלה על העומס בדף. כברירת מחדל סגורה,
+ * אלא אם defaultOpen. כשפתוחה — מופיע הסבר קצר בקול של אלמוג ואז התוכן.
+ */
 function Section({
   icon: Icon,
   title,
   tint,
-  note,
+  explain,
   count,
+  defaultOpen = false,
   children,
 }: {
   icon: typeof Sparkles;
   title: string;
   tint: Tint;
-  note?: string;
+  explain?: string;
   count?: number;
+  defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
   const t = TINT[tint];
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="space-y-3">
-      <SectionDivider tint={tint} />
-      {/* כותרת בתיבת זכוכית צבעונית נקייה */}
-      <div
-        className="relative flex items-center gap-2.5 overflow-hidden rounded-2xl px-3 py-2.5"
+    <section>
+      {/* כותרת לחיצה — שורה נקייה ושטוחה שמכווצת את הדף */}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="relative flex w-full items-center gap-2.5 overflow-hidden rounded-2xl px-3 py-2.5 text-right transition active:scale-[0.99]"
         style={{
-          background: `linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(${t.soft},0.78) 100%)`,
-          backdropFilter: 'blur(18px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(18px) saturate(180%)',
-          border: `1px solid rgba(255,255,255,0.7)`,
-          boxShadow: `0 10px 24px rgba(${t.rgb},0.12), inset 0 1px 0 rgba(255,255,255,0.95)`,
+          background: open
+            ? `linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(${t.soft},0.7) 100%)`
+            : 'rgba(255,255,255,0.6)',
+          border: `1px solid rgba(${t.rgb},${open ? 0.18 : 0.1})`,
+          boxShadow: open
+            ? `0 8px 20px rgba(${t.rgb},0.1)`
+            : '0 2px 8px rgba(15,23,42,0.04)',
+          backdropFilter: 'blur(14px) saturate(160%)',
+          WebkitBackdropFilter: 'blur(14px) saturate(160%)',
         }}
       >
         <span
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-1/2"
-          style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.4), transparent)' }}
-        />
-        <span
-          className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+          className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
           style={{
-            background: `linear-gradient(140deg, rgba(${t.rgb},0.98), rgba(${t.rgb},0.66))`,
-            boxShadow: `0 6px 16px rgba(${t.rgb},0.42), inset 0 1px 0 rgba(255,255,255,0.5)`,
+            background: `linear-gradient(140deg, rgba(${t.rgb},0.95), rgba(${t.rgb},0.62))`,
+            boxShadow: `0 4px 12px rgba(${t.rgb},0.35)`,
           }}
         >
-          <Icon className="h-[18px] w-[18px] text-white" aria-hidden />
+          <Icon className="h-4 w-4 text-white" aria-hidden />
         </span>
-        <h2 className="relative flex-1 text-[16px] font-black text-slate-900">{title}</h2>
+        <h2 className="flex-1 text-[15px] font-black text-slate-900">{title}</h2>
         {typeof count === 'number' && count > 0 ? (
           <span
-            className="relative flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[12px] font-black text-white"
-            style={{ background: `rgba(${t.rgb},0.9)`, boxShadow: `0 3px 8px rgba(${t.rgb},0.35)` }}
+            className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1.5 text-[11px] font-black text-white"
+            style={{ background: `rgba(${t.rgb},0.9)` }}
           >
             {count}
           </span>
         ) : null}
-      </div>
-      {note ? <p className="px-1 text-[12px] leading-relaxed text-slate-500">{note}</p> : null}
-      <ul className="space-y-2.5">{children}</ul>
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.25 }} className="shrink-0">
+          <ChevronDown className="h-4 w-4" style={{ color: t.text }} aria-hidden />
+        </motion.span>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open ? (
+          <motion.div
+            key="body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="space-y-2.5 pt-2.5">
+              {explain ? <AlmogLine text={explain} /> : null}
+              <ul className="space-y-2.5">{children}</ul>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </section>
+  );
+}
+
+/** שורת הסבר קצרה בקול של אלמוג — בועה רכה עם הצ'יפ שלו. */
+function AlmogLine({ text }: { text: string }) {
+  return (
+    <div className="flex items-start gap-2 px-0.5">
+      <span className="mt-0.5 shrink-0 rounded-full ring-2 ring-emerald-100/70">
+        <AlmogAvatarChip size={24} />
+      </span>
+      <p className="text-[12.5px] leading-relaxed text-slate-500">{text}</p>
+    </div>
+  );
+}
+
+/** אינטרו קצר לעמוד — אלמוג מסביר מה זה המקום הזה, בטון של חבר. */
+function AlmogIntro({ name }: { name: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="flex items-start gap-2.5 rounded-3xl px-3.5 py-3"
+      style={{
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.85), rgba(236,253,245,0.55))',
+        border: '1px solid rgba(16,185,129,0.16)',
+        boxShadow: '0 6px 18px rgba(16,185,129,0.08)',
+      }}
+    >
+      <span className="mt-0.5 shrink-0 rounded-full ring-2 ring-emerald-100">
+        <AlmogAvatarChip size={32} />
+      </span>
+      <p className="text-[13px] leading-relaxed text-slate-600">
+        {name ? `${name}, ` : ''}זה המקום שבו אני שומר כל מה שסיכמנו ביחד — צעדים, תזכורות וגם הדברים
+        התקועים. פתחתי לך את מה שחשוב עכשיו; שאר הקטעים מקופלים, פשוט הקש על אחד כדי לפתוח. 🌿
+      </p>
+    </motion.div>
   );
 }
 

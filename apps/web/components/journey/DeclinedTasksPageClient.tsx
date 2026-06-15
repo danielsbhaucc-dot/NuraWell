@@ -55,7 +55,7 @@ export function DeclinedTasksPageClient() {
           onClick={() => void load()}
           className="mt-4 text-sm font-bold text-emerald-700 underline"
         >
-          נסו שוב
+          ננסה שוב
         </button>
       </div>
     );

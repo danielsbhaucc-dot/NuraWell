@@ -100,7 +100,7 @@ export function AlmogNudgeSettingsClient({
       setSavedAt(Date.now());
       router.refresh();
     } catch {
-      setError('לא הצלחנו לשמור. נסו שוב בעוד רגע.');
+      setError('לא הצלחנו לשמור — תנסה שוב בעוד רגע.');
     } finally {
       setSaving(false);
     }
@@ -480,7 +480,7 @@ export function AlmogNudgeSettingsClient({
             <div>
               <h2 className="font-bold text-slate-900">תזכורות לעדכון משקל</h2>
               <p className="mt-1 text-sm text-slate-600 leading-relaxed">
-                לפעמים אלמוג מזכיר בעדינות לעדכן משקל אחרי כמה ימים בלי דיווח — רק אם זה רלוונטי למסע שלכם.
+                לפעמים אלמוג מזכיר בעדינות לעדכן משקל אחרי כמה ימים בלי דיווח — רק אם זה רלוונטי למסע שלך.
               </p>
             </div>
           </div>
@@ -548,7 +548,7 @@ export function AlmogNudgeSettingsClient({
         </motion.div>
 
         <p className="text-xs leading-relaxed text-slate-500 px-1">
-          שינויים נכנסים לתוקף בתזמון הריצה היומית של המערכת ובהתאם לפעילות האחרונה שלכם.
+          שינויים נכנסים לתוקף בתזמון הריצה היומית של המערכת ובהתאם לפעילות האחרונה שלך.
           אין להתראות האלה השפעה על שיעורים, מסע או צ׳אט ישיר עם אלמוג.
         </p>
       </div>
