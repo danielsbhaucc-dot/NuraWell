@@ -10,6 +10,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CommitmentExtraction } from './extract-commitments';
 import { normalizeFrictionCategory } from './friction';
+import {
+  PRECISE_REMINDER_WINDOW_MIN,
+  schedulePreciseReminderDelivery,
+} from './schedule-precise-reminder';
 import { israelDayOffsetToUtcIso, israelHour } from './time';
 
 type Admin = SupabaseClient;
@@ -167,6 +171,10 @@ export async function persistCommitmentExtraction(params: {
     else if (outcome === 'error') result.write_errors += 1;
   }
 
+  // תזכורות קרובות שנוצרו זה עתה — נתזמן להן מסירה *מדויקת* דרך QStash אחרי
+  // הלולאות (ה-cron רץ רק כל 30 דק', וזה מאחר תזכורות "בעוד 5 דקות").
+  const freshFireAts: string[] = [];
+
   // ── תזכורות ────────────────────────────────────────────────────
   for (const rem of extraction.reminders) {
     const fireAt = rem.fire_at_iso ?? defaultReminderIso(now);
@@ -181,8 +189,10 @@ export async function persistCommitmentExtraction(params: {
       dedupe_key: key,
       source_session_id: sessionId,
     });
-    if (outcome === 'inserted') result.reminders_created += 1;
-    else if (outcome === 'error') result.write_errors += 1;
+    if (outcome === 'inserted') {
+      result.reminders_created += 1;
+      freshFireAts.push(fireAt);
+    } else if (outcome === 'error') result.write_errors += 1;
   }
 
   // ── follow-ups (מעקב אחרי משימה שניתנה) ────────────────────────
@@ -199,8 +209,10 @@ export async function persistCommitmentExtraction(params: {
       dedupe_key: key,
       source_session_id: sessionId,
     });
-    if (outcome === 'inserted') result.reminders_created += 1;
-    else if (outcome === 'error') result.write_errors += 1;
+    if (outcome === 'inserted') {
+      result.reminders_created += 1;
+      freshFireAts.push(fireAt);
+    } else if (outcome === 'error') result.write_errors += 1;
   }
 
   // ── חסמים ──────────────────────────────────────────────────────
@@ -341,6 +353,32 @@ export async function persistCommitmentExtraction(params: {
     } else {
       await admin.from('almog_focus_periods').insert(payload);
       result.focus_action = willActivate ? 'activated' : 'proposed';
+    }
+  }
+
+  // ── תזמון מסירה מדויק לתזכורות קרובות (QStash delayed) ──────────
+  // רק לתזכורות בטווח הקרוב; רחוקות יותר נשלחות ע"י ה-cron הרגיל. נכשל בשקט אם
+  // QStash לא מוגדר — ה-cron עדיין יתפוס אותן (רק עם איחור של עד ~30 דק').
+  if (freshFireAts.length) {
+    const nowMs = now.getTime();
+    const windowMs = PRECISE_REMINDER_WINDOW_MIN * 60_000;
+    const nearUnique = [
+      ...new Set(
+        freshFireAts.filter((iso) => {
+          const ms = new Date(iso).getTime();
+          return Number.isFinite(ms) && ms > nowMs && ms <= nowMs + windowMs;
+        })
+      ),
+    ];
+    if (nearUnique.length) {
+      const results = await Promise.allSettled(
+        nearUnique.map((iso) => schedulePreciseReminderDelivery({ userId, fireAtIso: iso, now }))
+      );
+      for (const r of results) {
+        if (r.status === 'fulfilled' && !r.value.ok && r.value.reason !== 'qstash_token_missing') {
+          console.warn('[almog-commitments] precise reminder schedule failed', { reason: r.value.reason });
+        }
+      }
     }
   }
 
