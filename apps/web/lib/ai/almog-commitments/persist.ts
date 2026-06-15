@@ -10,6 +10,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CommitmentExtraction } from './extract-commitments';
 import { normalizeFrictionCategory } from './friction';
+import { israelDayOffsetToUtcIso, israelHour } from './time';
 
 type Admin = SupabaseClient;
 
@@ -63,44 +64,6 @@ function dedupeKey(text: string): string {
 }
 
 /**
- * ממיר שעון-קיר ישראלי (יום/שעה/דקה) ל-UTC ISO, עם תמיכת DST.
- * הטריק: מחשבים את היסט ישראל לאותו רגע ומחסירים אותו.
- */
-function israelWallClockToUtcIso(
-  now: Date,
-  addDays: number,
-  hour: number,
-  minute: number
-): string {
-  const target = new Date(now.getTime() + addDays * 86_400_000);
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Jerusalem',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(target);
-  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? '0');
-  const y = get('year');
-  const m = get('month');
-  const d = get('day');
-  const guessUtc = new Date(Date.UTC(y, m - 1, d, hour, minute, 0));
-  const israelShown = new Date(guessUtc.toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
-  const utcShown = new Date(guessUtc.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const offsetMs = israelShown.getTime() - utcShown.getTime();
-  return new Date(guessUtc.getTime() - offsetMs).toISOString();
-}
-
-/** שעת ישראל הנוכחית (0–23) כמספר — לחישוב ברירת מחדל "קרובה" לתזכורת. */
-function israelHour(now: Date): number {
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Asia/Jerusalem',
-    hour: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(now);
-  return Number(parts.find((p) => p.type === 'hour')?.value ?? '0') % 24;
-}
-
-/**
  * ברירת מחדל לזמן תזכורת כשהמודל לא נתן זמן מפורש.
  *
  * תיקון באג "אלמוג הבטיח להזכיר אבל לא הופיעה תזכורת": קודם ברירת המחדל הייתה
@@ -112,19 +75,19 @@ function israelHour(now: Date): number {
 function defaultReminderIso(now: Date): string {
   const hour = israelHour(now);
   // לפנות בוקר (00:00–07:59) — להזכיר היום בבוקר ב-09:00.
-  if (hour < 8) return israelWallClockToUtcIso(now, 0, 9, 0);
+  if (hour < 8) return israelDayOffsetToUtcIso(now, 0, 9, 0);
   // שעות ערות (08:00–20:59) — בעוד ~90 דקות, באותו יום.
   if (hour < 21) return new Date(now.getTime() + 90 * 60_000).toISOString();
   // לילה (21:00–23:59) — להזכיר מחר בבוקר ב-09:00.
-  return israelWallClockToUtcIso(now, 1, 9, 0);
+  return israelDayOffsetToUtcIso(now, 1, 9, 0);
 }
 /** ברירת מחדל ל-follow-up: בעוד יומיים 18:00 ישראל. */
 function defaultFollowUpIso(now: Date): string {
-  return israelWallClockToUtcIso(now, 2, 18, 0);
+  return israelDayOffsetToUtcIso(now, 2, 18, 0);
 }
 /** ברירת מחדל לבדיקת חסם: בעוד 3 ימים 18:00 ישראל. */
 function defaultBlockerCheckIso(now: Date): string {
-  return israelWallClockToUtcIso(now, 3, 18, 0);
+  return israelDayOffsetToUtcIso(now, 3, 18, 0);
 }
 
 /** מפתח dedupe יומי לתזכורת — אותה תזכורת באותו יום לא נכפלת. */
@@ -190,7 +153,7 @@ export async function persistCommitmentExtraction(params: {
       fire_at: fireAt,
       kind: 'reminder',
       title: 'תזכורת מאלמוג',
-      body: rem.what,
+      body: rem.notify_text ?? rem.what,
       status: 'pending',
       dedupe_key: key,
       source_session_id: sessionId,
@@ -207,7 +170,7 @@ export async function persistCommitmentExtraction(params: {
       fire_at: fireAt,
       kind: 'followup',
       title: 'בדיקה קצרה מאלמוג',
-      body: fu.what,
+      body: fu.notify_text ?? fu.what,
       status: 'pending',
       dedupe_key: key,
       source_session_id: sessionId,
@@ -322,7 +285,7 @@ export async function persistCommitmentExtraction(params: {
   // ── מצב פוקוס ───────────────────────────────────────────────────
   if (extraction.focus?.proposed) {
     const f = extraction.focus;
-    const endsAt = f.ends_at_iso ?? israelWallClockToUtcIso(now, 3, 20, 0);
+    const endsAt = f.ends_at_iso ?? israelDayOffsetToUtcIso(now, 3, 20, 0);
     const { data: live } = await admin
       .from('almog_focus_periods')
       .select('id, status')
