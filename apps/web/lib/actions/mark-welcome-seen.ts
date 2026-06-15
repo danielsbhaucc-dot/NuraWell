@@ -2,13 +2,22 @@
 
 import { createClient } from '@/lib/supabase/server';
 
+type WelcomeColumn = 'almog_welcome_seen_at' | 'dolev_welcome_seen_at';
+
+const ALLOWED_COLUMNS: ReadonlySet<string> = new Set<WelcomeColumn>([
+  'almog_welcome_seen_at',
+  'dolev_welcome_seen_at',
+]);
+
 /**
  * Generic helper: sets a `*_welcome_seen_at` timestamp on the current user's profile.
  * Returns `{ ok, userId }` so callers can trigger follow-up side-effects (e.g. email).
  */
 export async function markWelcomeSeen(
-  column: string
+  column: WelcomeColumn
 ): Promise<{ ok: true; userId: string } | { ok: false }> {
+  if (!ALLOWED_COLUMNS.has(column)) return { ok: false };
+
   const supabase = await createClient();
   const {
     data: { user },
