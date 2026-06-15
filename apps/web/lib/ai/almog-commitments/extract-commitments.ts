@@ -399,6 +399,54 @@ export function detectExplicitReminderPromise(assistantMessage: string): boolean
 }
 
 /**
+ * בקשת תזכורת *מפורשת מצד המשתמש* ("תזכיר לי...", "אל תיתן לי לשכוח", "שלח לי
+ * תזכורת"). זו חוליה קריטית: כל המנגנון מאזין למה ש*אלמוג* אומר, אבל אם המשתמש
+ * ביקש להזכיר ואלמוג אישר במילים שלו ("בטח, סגור!") בלי הפועל "אזכיר" — שום
+ * תזכורת לא נוצרה. הגלאי הזה מאפשר ליצור אותה מתוך בקשת המשתמש (רשת ביטחון).
+ */
+const USER_REMINDER_REQUEST_RE =
+  /תזכיר(?:י)?\s+לי|תזכר(?:י)?\s+לי|הזכר(?:י)?\s+לי|תוכל(?:י)?\s+להזכיר\s+לי|אפשר\s+(?:ש)?(?:תזכיר|להזכיר)\s+לי|תשלח(?:י)?\s+לי\s+תזכורת|שלח(?:י)?\s+לי\s+תזכורת|אל\s+ת(?:יתן|תן|תני)\s+לי\s+לשכוח|תדאג(?:י)?\s+שלא\s+אשכח|רוצה\s+תזכורת|תעדכן(?:י)?\s+אותי\s+ב/u;
+
+export function detectUserReminderRequest(userMessage: string): boolean {
+  return USER_REMINDER_REQUEST_RE.test(userMessage);
+}
+
+/**
+ * שולל יצירת תזכורת מבקשת-משתמש אם אלמוג עדיין *לא התחייב* — דחה, שאל מתי, או
+ * סירב. במצב כזה לא יוצרים תזכורת אוטומטית (מחכים שהמשתמש יבהיר/יאשר).
+ */
+function almogDefersReminder(assistantMessage: string): boolean {
+  return (
+    REMINDER_PROMISE_NEGATOR_RE.test(assistantMessage) ||
+    /אין\s+לי\s+(?:אפשרות|יכולת|כלי)|לא\s+(?:יכול|אוכל)\s+להזכיר/u.test(assistantMessage)
+  );
+}
+
+/** מסיר את עטיפת הבקשה ("תזכיר לי", "אל תיתן לי לשכוח") מהודעת המשתמש. */
+function stripUserReminderPrefix(userMessage: string): string {
+  return userMessage
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(
+      /^.*?(?:תזכיר(?:י)?\s+לי|תזכר(?:י)?\s+לי|הזכר(?:י)?\s+לי|תוכל(?:י)?\s+להזכיר\s+לי|אפשר\s+(?:ש)?(?:תזכיר|להזכיר)\s+לי|תשלח(?:י)?\s+לי\s+תזכורת|שלח(?:י)?\s+לי\s+תזכורת|אל\s+ת(?:יתן|תן|תני)\s+לי\s+לשכוח|תעדכן(?:י)?\s+אותי\s+ב)\s*/u,
+      ''
+    )
+    .replace(/^ש(?=[\u05d0-\u05ea])/u, '') // מחבר "ש" מקדים ("שאקח" → "אקח")
+    .trim();
+}
+
+/** ניסוח תזכורת גיבוי מתוך בקשת המשתמש (כשאלמוג אישר בלי לומר "אזכיר לך"). */
+function userRequestNotifyText(userMessage: string): string {
+  const topic = stripUserReminderPrefix(userMessage).slice(0, 200);
+  if (!topic) return 'היי 🙂 רק רציתי להזכיר לך מה שביקשת';
+  const isInfinitive = /^ל[\u05d0-\u05ea]/u.test(topic);
+  const body = isInfinitive
+    ? `היי 🙂 רק מזכיר לך ${topic}`
+    : `היי 🙂 רק רציתי להזכיר לך — ${topic}`;
+  return body.slice(0, 280);
+}
+
+/**
  * בונה תיאור "מה להזכיר" עבור תזכורת הגיבוי, מתוך המשפט שבו אלמוג הבטיח את
  * התזכורת. אם לא נמצא משפט מתאים — נופלים חזרה להודעת המשתמש או לטקסט גנרי.
  */
@@ -524,6 +572,25 @@ export async function extractAlmogCommitments(params: {
       notify_text: fallbackNotifyText(params.assistantMessage, params.userMessage),
       fire_at_iso: null,
       confidence: 0.9,
+    });
+  }
+
+  /**
+   * רשת ביטחון שנייה — מבוססת *בקשת המשתמש*: המשתמש ביקש מפורשות "תזכיר לי...",
+   * ואלמוג לא דחה/שאל מתי/סירב. זה מכסה את המקרה הנפוץ שבו אלמוג מאשר במילים
+   * שלו ("בטח, סגור! 😊") בלי הפועל "אזכיר", כך שלא הגלאי ולא ה-LLM תפסו תזכורת.
+   * עדיף ליצור תזכורת בזמן ברירת-מחדל מאשר לאבד את הבקשה לגמרי.
+   */
+  if (
+    extraction.reminders.length === 0 &&
+    detectUserReminderRequest(params.userMessage) &&
+    !almogDefersReminder(params.assistantMessage)
+  ) {
+    extraction.reminders.push({
+      what: stripUserReminderPrefix(params.userMessage) || params.userMessage.slice(0, 160),
+      notify_text: userRequestNotifyText(params.userMessage),
+      fire_at_iso: null,
+      confidence: 0.75,
     });
   }
 

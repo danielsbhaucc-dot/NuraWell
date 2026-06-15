@@ -47,6 +47,7 @@ import {
   extractAlmogCommitments,
   shouldAttemptCommitmentExtraction,
   detectExplicitReminderPromise,
+  detectUserReminderRequest,
 } from '../../../../../lib/ai/almog-commitments/extract-commitments';
 import { persistCommitmentExtraction } from '../../../../../lib/ai/almog-commitments/persist';
 import { applyChatSignalsFromUserMessage, detectChatSignals } from '../../../../../lib/ai/chat-signals';
@@ -3068,7 +3069,8 @@ export async function POST(request: Request) {
          */
         if (
           shouldAttemptCommitmentExtraction(assistantText) ||
-          detectExplicitReminderPromise(assistantText)
+          detectExplicitReminderPromise(assistantText) ||
+          detectUserReminderRequest(lastUserText)
         ) {
           after(async () => {
             try {
