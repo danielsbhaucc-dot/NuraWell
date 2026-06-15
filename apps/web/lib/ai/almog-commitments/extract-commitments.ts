@@ -123,12 +123,12 @@ function num(v: unknown): number {
 /** מאמת ש-ISO עתידי וסביר (עד 90 יום קדימה). מחזיר ISO מנורמל או null. */
 function validFutureIso(iso: string | null, now: Date): string | null {
   if (!iso) return null;
-  const t = new Date(iso).getTime();
-  if (!Number.isFinite(t)) return null;
+  const ms = new Date(iso).getTime();
+  if (!Number.isFinite(ms)) return null;
   const min = now.getTime() - 5 * 60_000; // סובלנות 5 דק' אחורה
   const max = now.getTime() + 90 * 24 * 60 * 60_000;
-  if (t < min || t > max) return null;
-  return new Date(t).toISOString();
+  if (ms < min || ms > max) return null;
+  return new Date(ms).toISOString();
 }
 
 /**
@@ -136,8 +136,8 @@ function validFutureIso(iso: string | null, now: Date): string | null {
  * ותקין, כולל תיקון "אחרי חצות". המרת אזורי-הזמן נעשית כאן בקוד
  * (לא במודל), כדי למנוע טעויות מסוג "00:30 → 03:30".
  */
-function resolveLocalToValidIso(v: unknown, now: Date): string | null {
-  const local = str(v, 40);
+function resolveLocalToValidIso(value: unknown, now: Date): string | null {
+  const local = str(value, 40);
   if (!local) return null;
   return validFutureIso(israelLocalToUtcIso(local, now), now);
 }
@@ -146,8 +146,8 @@ function resolveLocalToValidIso(v: unknown, now: Date): string | null {
  * זמן ירייה לתזכורת/follow-up. מעדיף את `fire_local` החדש (שעון-קיר ישראלי),
  * ונופל אחורה ל-`fire_at_iso` הישן אם המודל עדיין מחזיר ISO — כך אין רגרסיה.
  */
-function resolveFireTime(o: Record<string, unknown>, now: Date): string | null {
-  return resolveLocalToValidIso(o.fire_local, now) ?? validFutureIso(str(o.fire_at_iso, 40), now);
+function resolveFireTime(obj: Record<string, unknown>, now: Date): string | null {
+  return resolveLocalToValidIso(obj.fire_local, now) ?? validFutureIso(str(obj.fire_at_iso, 40), now);
 }
 
 /** שעון ירושלים כטקסט קריא למודל — בסיס לכל חישובי הזמן. */
@@ -162,8 +162,8 @@ function israelNowDescriptor(now: Date): string {
     minute: '2-digit',
     hour12: false,
   });
-  const p = israelParts(now);
-  const iso = `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
+  const parts = israelParts(now);
+  const iso = `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
   return `${fmt.format(now)} (תאריך היום: ${iso})`;
 }
 
