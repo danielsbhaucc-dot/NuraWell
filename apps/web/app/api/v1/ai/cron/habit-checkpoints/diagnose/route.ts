@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { readJsonBody } from '../../../../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../../../../lib/api/route-guards';
+import { timingSafeEqualStr } from '../../../../../../../lib/api/timing-safe-equal';
 import { isAvoidPushActive } from '../../../../../../../lib/ai/avoid-push';
 import { fetchTodayAlmogTouches } from '../../../../../../../lib/ai/almog-notify-day-context';
 import { normalizeCheckInTimes } from '../../../../../../../lib/ai/onboarding-check-in-time';
@@ -210,7 +211,9 @@ export async function GET() {
 export async function POST(request: Request) {
   const secret = process.env.CRON_SECRET?.trim();
   const authHeader = request.headers.get('authorization');
-  const hasCronBearer = Boolean(secret && authHeader === `Bearer ${secret}`);
+  const hasCronBearer = Boolean(
+    secret && authHeader && timingSafeEqualStr(authHeader, `Bearer ${secret}`)
+  );
 
   const raw = await readJsonBody(request);
   if (!raw.ok) return raw.response;

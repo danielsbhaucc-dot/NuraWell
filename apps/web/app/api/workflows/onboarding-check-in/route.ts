@@ -1,4 +1,5 @@
 import { serve } from '@upstash/workflow/nextjs';
+import { requireQstashConfigured } from '../../../../lib/workflows/require-qstash-configured';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import { gateOnboardingCheckIn } from '../../../../lib/workflows/onboarding-check-in-gates';
 import {
@@ -13,7 +14,7 @@ export const dynamic = 'force-dynamic';
 
 type WorkflowBody = OnboardingCheckInPayload & { aiSystemPrompt: string };
 
-export const { POST } = serve<WorkflowBody>(async (context) => {
+const { POST: workflowPost } = serve<WorkflowBody>(async (context) => {
   const raw = context.requestPayload;
   const payload = parseOnboardingCheckInPayload(raw);
   const aiSystemPrompt =
@@ -46,3 +47,5 @@ export const { POST } = serve<WorkflowBody>(async (context) => {
 
   return { ok: true as const, reminded: true as const };
 });
+
+export const POST = requireQstashConfigured(workflowPost);

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { readJsonBody } from '../../../../../../../lib/api/json-request';
 import { consumeRateLimit, rateLimitResponse } from '../../../../../../../lib/api/rate-limit';
 import { requireApiSession } from '../../../../../../../lib/api/route-guards';
+import { timingSafeEqualStr } from '../../../../../../../lib/api/timing-safe-equal';
 import { createAdminClient } from '../../../../../../../lib/supabase/admin';
 import { jsonZodError } from '../../../../../../../lib/validation/zod-http';
 import {
@@ -156,7 +157,9 @@ export async function POST(request: Request) {
   /** אימות חלופי: Bearer CRON_SECRET — מאפשר curl/ops עם userId מפורש */
   const secret = process.env.CRON_SECRET?.trim();
   const authHeader = request.headers.get('authorization');
-  const hasCronBearer = Boolean(secret && authHeader === `Bearer ${secret}`);
+  const hasCronBearer = Boolean(
+    secret && authHeader && timingSafeEqualStr(authHeader, `Bearer ${secret}`)
+  );
 
   const raw = await readJsonBody(request);
   if (!raw.ok) return raw.response;
