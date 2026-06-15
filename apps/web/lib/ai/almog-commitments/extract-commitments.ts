@@ -251,9 +251,11 @@ function normalize(parsed: Record<string, unknown>, now: Date): CommitmentExtrac
         const o = (x ?? {}) as Record<string, unknown>;
         const what = str(o.what, 200);
         if (!what) return null;
+        const notify = str(o.notify_text, 280);
         return {
-          what,
-          notify_text: str(o.notify_text, 280),
+          what: stripReminderLabel(what),
+          // מנקים תווית "תזכורת:" מקדימה אם Llama הוסיף אותה (בניגוד להנחיה).
+          notify_text: notify ? stripReminderLabel(notify) : null,
           fire_at_iso: resolveFireTime(o, now),
           confidence: num(o.confidence),
         };
@@ -428,17 +430,41 @@ function almogDefersReminder(assistantMessage: string): boolean {
   );
 }
 
-/** מסיר את עטיפת הבקשה ("תזכיר לי", "אל תיתן לי לשכוח") מהודעת המשתמש. */
+/**
+ * מסיר *ביטויי זמן* מטקסט תזכורת ("בעוד 5 דקות", "מחר בבוקר", "ב-20:00", "הערב").
+ * הזמן כבר נשמר ב-fire_at, ואין טעם שיופיע *בגוף* ההתראה — כשהיא מגיעה, "בעוד 5
+ * דקות" כבר שגוי ולא טבעי. נשארים רק עם *הפעולה* שהמשתמש רצה ("לשתות מים").
+ */
+function stripTimeExpressions(text: string): string {
+  return text
+    .replace(/בעוד\s+(?:כ-?\s*)?(?:\d{1,3}\s*)?(?:דק(?:ות|ה)?|שע(?:ות|ה)?|שעתיים|חצי\s+שעה)/gu, '')
+    .replace(/\bעוד\s+\d{1,3}\s*(?:דק(?:ות|ה)?|שע(?:ות|ה)?)/gu, '')
+    .replace(/\b(?:היום|מחר|מחרתיים|הלילה|הערב|הבוקר|הצהריים)\b/gu, '')
+    .replace(/\bב(?:בוקר|צהריים|ערב|לילה)\b/gu, '')
+    .replace(/\bבשעה\s*\d{1,2}(?::\d{2})?/gu, '')
+    .replace(/\bב-?\d{1,2}:\d{2}\b/gu, '')
+    .replace(/\bב-?\d{1,2}\b/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[\s,.\u05be–-]+|[\s,.\u05be–-]+$/gu, '')
+    .trim();
+}
+
+/** מסיר תווית "תזכורת"/"תזכורת:" מקדימה (מנקה פלט LLM שלא תמיד מציית). */
+function stripReminderLabel(text: string): string {
+  return text.replace(/^\s*תזכורת\s*[:\-–]?\s*/u, '').trim();
+}
+
+/** מסיר את עטיפת הבקשה ("תזכיר לי", "אל תיתן לי לשכוח") *וגם* את ביטויי הזמן. */
 function stripUserReminderPrefix(userMessage: string): string {
-  return userMessage
+  const withoutPrefix = userMessage
     .replace(/\s+/g, ' ')
     .trim()
     .replace(
       /^.*?(?:תזכיר(?:י)?\s+לי|תזכר(?:י)?\s+לי|הזכר(?:י)?\s+לי|תוכל(?:י)?\s+להזכיר\s+לי|אפשר\s+(?:ש)?(?:תזכיר|להזכיר)\s+לי|תשלח(?:י)?\s+לי\s+תזכורת|שלח(?:י)?\s+לי\s+תזכורת|אל\s+ת(?:יתן|תן|תני)\s+לי\s+לשכוח|תעדכן(?:י)?\s+אותי\s+ב)\s*/u,
       ''
     )
-    .replace(/^ש(?=[\u05d0-\u05ea])/u, '') // מחבר "ש" מקדים ("שאקח" → "אקח")
-    .trim();
+    .replace(/^ש(?=[\u05d0-\u05ea])/u, ''); // מחבר "ש" מקדים ("שאקח" → "אקח")
+  return stripTimeExpressions(withoutPrefix).trim();
 }
 
 /** ניסוח תזכורת גיבוי מתוך בקשת המשתמש (כשאלמוג אישר בלי לומר "אזכיר לך"). */
