@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { detectExplicitReminderPromise } from '../lib/ai/almog-commitments/extract-commitments';
+import {
+  detectExplicitReminderPromise,
+  detectUserReminderRequest,
+} from '../lib/ai/almog-commitments/extract-commitments';
 
 /**
  * רשת הביטחון יוצרת תזכורת רק כשאלמוג *התחייב בעצמו* להזכיר. הבדיקות כאן נועדו
@@ -59,5 +62,26 @@ describe('detectExplicitReminderPromise', () => {
   it('לא מזהה שיחה רגילה ללא הבטחה', () => {
     expect(detectExplicitReminderPromise('מה שלומך היום? ספר לי איך הלך')).toBe(false);
     expect(detectExplicitReminderPromise('כל הכבוד על ההתמדה!')).toBe(false);
+  });
+});
+
+/**
+ * רשת ביטחון מבוססת *בקשת המשתמש*: גם אם אלמוג מאשר במילים שלו ("בטח, סגור!")
+ * בלי הפועל "אזכיר", בקשה מפורשת של המשתמש להזכיר חייבת ליצור תזכורת.
+ */
+describe('detectUserReminderRequest', () => {
+  it('מזהה בקשת תזכורת מפורשת מהמשתמש', () => {
+    expect(detectUserReminderRequest('תזכיר לי לקחת תרופה ב-8')).toBe(true);
+    expect(detectUserReminderRequest('תזכירי לי לשתות מים מחר בבוקר')).toBe(true);
+    expect(detectUserReminderRequest('אפשר שתזכיר לי על הפגישה?')).toBe(true);
+    expect(detectUserReminderRequest('שלח לי תזכורת בערב')).toBe(true);
+    expect(detectUserReminderRequest('אל תיתן לי לשכוח להתקשר לאמא')).toBe(true);
+    expect(detectUserReminderRequest('רוצה תזכורת על האימון')).toBe(true);
+  });
+
+  it('לא מזהה שיחה רגילה ללא בקשת תזכורת', () => {
+    expect(detectUserReminderRequest('מה שלומך? איך היה היום?')).toBe(false);
+    expect(detectUserReminderRequest('שתיתי כבר 3 כוסות מים היום')).toBe(false);
+    expect(detectUserReminderRequest('תודה רבה, עזרת לי מאוד')).toBe(false);
   });
 });
