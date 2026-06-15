@@ -6,6 +6,7 @@ import {
   Bell,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
   Clock,
   Loader2,
   MessageCircle,
@@ -246,6 +247,40 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
   const reminderCount = pendingReminders.length;
   const name = firstName?.trim() || '';
 
+  // גלילה חלקה לפריט + הבהוב קצר שמסמן בדיוק מה דורש תשומת לב.
+  const jumpTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const prev = el.style.boxShadow;
+    el.style.transition = 'box-shadow 0.35s ease';
+    el.style.boxShadow = '0 0 0 3px rgba(244,63,94,0.5), 0 10px 30px rgba(244,63,94,0.18)';
+    window.setTimeout(() => {
+      el.style.boxShadow = prev;
+    }, 1500);
+  };
+
+  // הדברים שדורשים תשובה/פעולה מהמשתמש — לשורת הסיכום שבראש.
+  const actionItems: { id: string; label: string; tint: Tint }[] = [];
+  if (data?.focus?.status === 'proposed') {
+    actionItems.push({ id: 'plan-focus', label: 'אלמוג מציע לקחת רגע פוקוס', tint: 'indigo' });
+  }
+  for (const b of data?.blockers ?? []) {
+    if (b.strategy && b.status === 'improving') {
+      actionItems.push({
+        id: `plan-blocker-${b.id}`,
+        label: `איך הלך עם: ${b.strategy.slice(0, 40)}`,
+        tint: 'rose',
+      });
+    } else if (b.status !== 'resolved') {
+      actionItems.push({
+        id: `plan-blocker-${b.id}`,
+        label: `צעד קטן מחכה לתשובה שלך — ${b.description.slice(0, 32)}`,
+        tint: 'rose',
+      });
+    }
+  }
+
   return (
     <div dir="rtl" className="relative min-h-[calc(100vh-9rem)] overflow-hidden">
       <SoftBackground />
@@ -284,6 +319,10 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
             ) : null}
 
             <AlmogIntro name={name} />
+
+            {actionItems.length > 0 ? (
+              <ActionNeeded items={actionItems} onJump={jumpTo} />
+            ) : null}
 
             <AnimatePresence initial={false}>
               {data.focus ? (
@@ -917,7 +956,7 @@ function Section({
           >
             <div className="space-y-3 pt-3">
               {explain ? <AlmogLine text={explain} /> : null}
-              <ul className="space-y-3">{children}</ul>
+              <ul className="space-y-4 pb-1">{children}</ul>
             </div>
           </motion.div>
         ) : null}
@@ -926,15 +965,12 @@ function Section({
   );
 }
 
-/** שורת הסבר קצרה בקול של אלמוג — בועה רכה עם הצ'יפ שלו. */
+/** שורת הסבר קצרה בקול של אלמוג — טקסט עדין ושקט, בלי עומס ויזואלי. */
 function AlmogLine({ text }: { text: string }) {
   return (
-    <div className="flex items-start gap-2 px-0.5">
-      <span className="mt-0.5 shrink-0 rounded-full ring-2 ring-emerald-100/70">
-        <AlmogAvatarChip size={24} />
-      </span>
-      <p className="text-[12.5px] leading-relaxed text-slate-500">{text}</p>
-    </div>
+    <p className="border-r-2 border-slate-200/70 pr-2.5 text-[12.5px] leading-relaxed text-slate-500">
+      {text}
+    </p>
   );
 }
 
@@ -961,6 +997,68 @@ function AlmogIntro({ name }: { name: string }) {
         {name ? `${name}, ` : ''}זה המקום שבו אני שומר כל מה שסיכמנו ביחד — צעדים, תזכורות וגם הדברים
         התקועים. פתחתי לך את מה שחשוב עכשיו; שאר הקטעים מקופלים, פשוט הקש על אחד כדי לפתוח. 🌿
       </p>
+    </motion.div>
+  );
+}
+
+/**
+ * שורת סיכום "דורש את תשומת ליבך" — מבליטה את מה שהמשתמש צריך לעדכן
+ * (למשל "איך הלך עם הצעד הקטן"). לחיצה גוללת אל הפריט עצמו ומדגישה אותו.
+ */
+function ActionNeeded({
+  items,
+  onJump,
+}: {
+  items: { id: string; label: string; tint: Tint }[];
+  onJump: (id: string) => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="overflow-hidden rounded-3xl p-3.5"
+      style={{
+        background: 'linear-gradient(160deg, rgba(255,247,237,0.7), rgba(255,237,213,0.45))',
+        border: '1px solid rgba(244,114,182,0.22)',
+        boxShadow: '0 8px 22px rgba(244,63,94,0.1)',
+        backdropFilter: 'blur(20px) saturate(170%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(170%)',
+      }}
+    >
+      <div className="mb-2 flex items-center gap-2 px-0.5">
+        <span
+          className="flex h-7 w-7 items-center justify-center rounded-xl"
+          style={{
+            background: 'linear-gradient(140deg, #fb7185, #f43f5e)',
+            boxShadow: '0 4px 12px rgba(244,63,94,0.32)',
+          }}
+        >
+          <Bell className="h-3.5 w-3.5 text-white" />
+        </span>
+        <h2 className="flex-1 text-[13.5px] font-black text-slate-800">דורש את תשומת ליבך</h2>
+        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[11px] font-black text-white">
+          {items.length}
+        </span>
+      </div>
+      <div className="space-y-2">
+        {items.map((it) => {
+          const t = TINT[it.tint];
+          return (
+            <button
+              key={it.id}
+              type="button"
+              onClick={() => onJump(it.id)}
+              className="flex w-full items-center gap-2.5 rounded-2xl px-3 py-2.5 text-right transition active:scale-[0.99]"
+              style={{ background: 'rgba(255,255,255,0.55)', border: `1px solid rgba(${t.rgb},0.16)` }}
+            >
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: `rgba(${t.rgb},0.9)` }} />
+              <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-slate-700">{it.label}</span>
+              <ChevronLeft className="h-4 w-4 shrink-0 text-slate-400" />
+            </button>
+          );
+        })}
+      </div>
     </motion.div>
   );
 }
@@ -1189,7 +1287,12 @@ function BlockerCoachCard({
   // ── מצב: ניסוי פעיל (אחרי accept) — מינימלי, בלי תגיות קליניות ──
   if (hasActiveExperiment) {
     return (
-      <motion.li layout className="relative overflow-hidden rounded-[24px] p-4" style={glassStyle('rose')}>
+      <motion.li
+        id={`plan-blocker-${blocker.id}`}
+        layout
+        className="relative overflow-hidden rounded-[24px] p-4"
+        style={glassStyle('rose')}
+      >
         <GlassSheen />
         <div className="relative z-[1]">
           <div className="flex items-center gap-2.5">
@@ -1240,7 +1343,12 @@ function BlockerCoachCard({
 
   // ── מצב: שיחת מאמן — מסודר: כותרת → אמפתיה → חוצץ → הצעה → כפתורים ──
   return (
-    <motion.li layout className="relative overflow-hidden rounded-[24px] p-4" style={glassStyle('rose')}>
+    <motion.li
+      id={`plan-blocker-${blocker.id}`}
+      layout
+      className="relative overflow-hidden rounded-[24px] p-4"
+      style={glassStyle('rose')}
+    >
       <GlassSheen />
       <div className="relative z-[1]">
         {accepted ? (
@@ -1370,6 +1478,7 @@ function FocusCard({
   const isProposed = focus.status === 'proposed';
   return (
     <motion.div
+      id="plan-focus"
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
