@@ -429,7 +429,12 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                   {sentReminders.slice(0, 8).map((r, i) => (
                     <li
                       key={r.id}
-                      className="flex items-start gap-2.5 rounded-2xl border border-slate-200/70 bg-white/60 px-3 py-2.5"
+                      className="flex items-start gap-2.5 rounded-2xl border border-white/40 px-3 py-2.5"
+                      style={{
+                        background: 'rgba(255,255,255,0.3)',
+                        backdropFilter: 'blur(12px) saturate(150%)',
+                        WebkitBackdropFilter: 'blur(12px) saturate(150%)',
+                      }}
                     >
                       <NumBadge n={i + 1} rgb="148,163,184" />
                       <div className="min-w-0 flex-1">
@@ -748,15 +753,13 @@ const TINT: Record<Tint, { rgb: string; soft: string; text: string }> = {
 function glassStyle(tint: Tint): React.CSSProperties {
   const t = TINT[tint];
   return {
-    background: `linear-gradient(160deg, rgba(255,255,255,0.86) 0%, rgba(255,255,255,0.64) 42%, rgba(${t.soft},0.5) 100%)`,
-    backdropFilter: 'blur(28px) saturate(190%)',
-    WebkitBackdropFilter: 'blur(28px) saturate(190%)',
-    border: `1px solid rgba(255,255,255,0.65)`,
-    boxShadow: [
-      `0 14px 40px rgba(15,23,42,0.10)`,
-      `0 4px 12px rgba(15,23,42,0.05)`,
-      `inset 0 1px 0 rgba(255,255,255,0.9)`,
-    ].join(', '),
+    // זכוכית iOS שקופה — רואים את הרקע הגרדיאנטי דרך הכרטיס, לא תיבה לבנה אטומה.
+    background: `linear-gradient(160deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.32) 48%, rgba(${t.soft},0.28) 100%)`,
+    backdropFilter: 'blur(22px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(22px) saturate(180%)',
+    border: `1px solid rgba(255,255,255,0.5)`,
+    // צל בודד, רך וצמוד — מונע את ה"שבירה" של צל בין כרטיסי זכוכית בנייד.
+    boxShadow: `0 6px 18px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.55)`,
   };
 }
 
@@ -765,11 +768,11 @@ function GlassSheen() {
   return (
     <span
       aria-hidden
-      className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-[inherit]"
+      className="pointer-events-none absolute inset-x-0 top-0 h-10 rounded-t-[inherit]"
       style={{
         background:
-          'linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 100%)',
-        opacity: 0.6,
+          'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%)',
+        opacity: 0.7,
       }}
     />
   );
@@ -869,8 +872,8 @@ function Section({
         className="relative flex w-full items-center gap-2.5 overflow-hidden rounded-2xl px-3 py-2.5 text-right transition active:scale-[0.99]"
         style={{
           background: open
-            ? `linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(${t.soft},0.7) 100%)`
-            : 'rgba(255,255,255,0.6)',
+            ? `linear-gradient(135deg, rgba(255,255,255,0.62) 0%, rgba(${t.soft},0.5) 100%)`
+            : 'rgba(255,255,255,0.38)',
           border: `1px solid rgba(${t.rgb},${open ? 0.18 : 0.1})`,
           boxShadow: open
             ? `0 8px 20px rgba(${t.rgb},0.1)`
@@ -944,9 +947,11 @@ function AlmogIntro({ name }: { name: string }) {
       transition={{ duration: 0.4 }}
       className="flex items-start gap-2.5 rounded-3xl px-3.5 py-3"
       style={{
-        background: 'linear-gradient(160deg, rgba(255,255,255,0.85), rgba(236,253,245,0.55))',
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.5), rgba(236,253,245,0.34))',
         border: '1px solid rgba(16,185,129,0.16)',
         boxShadow: '0 6px 18px rgba(16,185,129,0.08)',
+        backdropFilter: 'blur(20px) saturate(170%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(170%)',
       }}
     >
       <span className="mt-0.5 shrink-0 rounded-full ring-2 ring-emerald-100">
@@ -962,7 +967,14 @@ function AlmogIntro({ name }: { name: string }) {
 
 function EmptyHint({ text }: { text: string }) {
   return (
-    <li className="rounded-2xl border border-slate-200/70 bg-white/60 px-4 py-5 text-center text-sm text-slate-500">
+    <li
+      className="rounded-2xl border border-white/40 px-4 py-5 text-center text-sm text-slate-500"
+      style={{
+        background: 'rgba(255,255,255,0.32)',
+        backdropFilter: 'blur(14px) saturate(150%)',
+        WebkitBackdropFilter: 'blur(14px) saturate(150%)',
+      }}
+    >
       {text}
     </li>
   );
@@ -1135,7 +1147,6 @@ function BlockerCoachCard({
   const coachFetched = useRef(false);
 
   const hasActiveExperiment = Boolean(blocker.strategy) && blocker.status === 'improving';
-  const showCoachChat = !hasActiveExperiment && !accepted;
 
   // אוטו-הפעלה: כשהכרטיס נטען בלי ניסוי פעיל — מבקשים coach מיד
   useEffect(() => {
@@ -1180,17 +1191,20 @@ function BlockerCoachCard({
     return (
       <motion.li layout className="relative overflow-hidden rounded-[24px] p-4" style={glassStyle('rose')}>
         <GlassSheen />
-        <div className="absolute left-3 top-3 z-[2]">
-          <NumBadge n={index} rgb={TINT.rose.rgb} />
-        </div>
-        <div className="relative z-[1] flex items-start gap-3">
-          <AlmogAvatarChip size={36} />
-          <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-bold leading-snug text-slate-800">
+        <div className="relative z-[1]">
+          <div className="flex items-center gap-2.5">
+            <span className="shrink-0 rounded-full ring-2 ring-rose-100/70">
+              <AlmogAvatarChip size={34} />
+            </span>
+            <p className="min-w-0 flex-1 text-[14px] font-black leading-snug text-slate-800">
               איך הלך עם הצעד הקטן?
             </p>
-            <p className="mt-1 text-[13px] leading-relaxed text-slate-600">{blocker.strategy}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <NumBadge n={index} rgb={TINT.rose.rgb} />
+          </div>
+          <div className="mt-2.5 rounded-2xl border border-rose-100/70 bg-white/40 px-3.5 py-2.5">
+            <p className="text-[13px] leading-relaxed text-slate-700">{blocker.strategy}</p>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
                 disabled={busy}
@@ -1219,110 +1233,16 @@ function BlockerCoachCard({
                 בוא נדבר
               </button>
             </div>
-          </div>
         </div>
       </motion.li>
     );
   }
 
-  // ── מצב: שיחת מאמן (2-3 הודעות) ──
+  // ── מצב: שיחת מאמן — מסודר: כותרת → אמפתיה → חוצץ → הצעה → כפתורים ──
   return (
     <motion.li layout className="relative overflow-hidden rounded-[24px] p-4" style={glassStyle('rose')}>
       <GlassSheen />
-      <div className="absolute left-3 top-3 z-[2]">
-        <NumBadge n={index} rgb={TINT.rose.rgb} />
-      </div>
-      <div className="relative z-[1] space-y-3">
-        {/* בועת אמפתיה */}
-        {showCoachChat && (empathy || coachLoading) ? (
-          <div className="flex items-start gap-2.5">
-            <AlmogAvatarChip size={32} />
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="max-w-[85%] rounded-2xl rounded-tr-sm px-3.5 py-2.5"
-              style={{
-                background: 'rgba(255,255,255,0.88)',
-                border: '1px solid rgba(244,63,94,0.12)',
-                boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
-              }}
-            >
-              {coachLoading && !empathy ? (
-                <div className="flex items-center gap-1.5 py-1">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-rose-300" style={{ animationDelay: '0ms' }} />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-rose-300" style={{ animationDelay: '150ms' }} />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-rose-300" style={{ animationDelay: '300ms' }} />
-                </div>
-              ) : (
-                <p className="text-[13.5px] leading-relaxed text-slate-700">{empathy}</p>
-              )}
-            </motion.div>
-          </div>
-        ) : null}
-
-        {/* בועת הצעה (Pivot יחיד) */}
-        {showCoachChat && proposal && !coachLoading ? (
-          <div className="flex items-start gap-2.5">
-            <AlmogAvatarChip size={32} />
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="max-w-[90%] rounded-2xl rounded-tr-sm px-3.5 py-3"
-              style={{
-                background: 'linear-gradient(160deg, rgba(255,255,255,0.95), rgba(236,253,245,0.7))',
-                border: '1px solid rgba(16,185,129,0.18)',
-                boxShadow: '0 4px 14px rgba(16,185,129,0.1)',
-              }}
-            >
-              <p className="text-[14px] font-bold leading-snug text-slate-800">{proposal.micro_step}</p>
-            </motion.div>
-          </div>
-        ) : null}
-
-        {/* כפתורי פעולה */}
-        {showCoachChat && proposal && !coachLoading ? (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45 }}
-            className="flex flex-col gap-2 pr-10"
-          >
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void handleAccept()}
-              className="flex w-full items-center justify-center gap-1.5 rounded-2xl px-4 py-3 text-[14px] font-black text-white transition active:scale-[0.98] disabled:opacity-60"
-              style={{
-                background: 'linear-gradient(135deg, #059669, #10b981)',
-                boxShadow: '0 6px 18px rgba(16,185,129,0.32)',
-              }}
-            >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              בוא ננסה ל-24 שעות
-            </button>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void handlePivot()}
-                className="flex-1 rounded-2xl border border-slate-200/80 bg-white/60 px-3 py-2 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
-              >
-                לא מתאים לי
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={onAsk}
-                className="flex-1 rounded-2xl border border-indigo-200/60 bg-indigo-50/50 px-3 py-2 text-[12px] font-bold text-indigo-600 transition active:scale-95 disabled:opacity-60"
-              >
-                בוא נדבר
-              </button>
-            </div>
-          </motion.div>
-        ) : null}
-
-        {/* אחרי accept — הודעת מעבר */}
+      <div className="relative z-[1]">
         {accepted ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -1332,7 +1252,103 @@ function BlockerCoachCard({
             <CheckCircle2 className="h-4 w-4 shrink-0" />
             מעולה! הצעד החדש מחכה לך למעלה 🌿
           </motion.div>
-        ) : null}
+        ) : (
+          <>
+            {/* כותרת — אלמוג + הקושי שעליו מדברים, פעם אחת */}
+            <div className="flex items-center gap-2.5">
+              <span className="shrink-0 rounded-full ring-2 ring-rose-100/70">
+                <AlmogAvatarChip size={34} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[13px] font-black text-slate-800">אלמוג</span>
+                  <span className="rounded-full bg-rose-100/80 px-1.5 py-0.5 text-[9px] font-bold text-rose-600">
+                    כאן בשבילך
+                  </span>
+                </div>
+                <p className="mt-0.5 truncate text-[11px] text-slate-400">לגבי: {blocker.description}</p>
+              </div>
+              <NumBadge n={index} rgb={TINT.rose.rgb} />
+            </div>
+
+            {/* אמפתיה — נורמליזציה של הקושי */}
+            {empathy || coachLoading ? (
+              <div className="mt-3">
+                {coachLoading && !empathy ? (
+                  <div className="flex items-center gap-1.5 py-1">
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-rose-300" style={{ animationDelay: '0ms' }} />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-rose-300" style={{ animationDelay: '150ms' }} />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-rose-300" style={{ animationDelay: '300ms' }} />
+                  </div>
+                ) : (
+                  <p className="text-[13.5px] leading-relaxed text-slate-700">{empathy}</p>
+                )}
+              </div>
+            ) : null}
+
+            {/* הצעה — צעד אחד, בקופסה מוגדרת עם חוצץ מעליה */}
+            {proposal && !coachLoading ? (
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
+                <div className="mb-3 h-px w-full rounded-full bg-gradient-to-l from-transparent via-rose-200/70 to-transparent" />
+                <div
+                  className="rounded-2xl px-3.5 py-3"
+                  style={{
+                    background: 'linear-gradient(160deg, rgba(255,255,255,0.6), rgba(236,253,245,0.4))',
+                    border: '1px solid rgba(16,185,129,0.2)',
+                  }}
+                >
+                  <p className="mb-1 flex items-center gap-1 text-[10px] font-black uppercase tracking-wide text-emerald-600/80">
+                    <Sparkles className="h-3 w-3" />
+                    צעד קטן שיחזיר אותך למשימה
+                  </p>
+                  <p className="text-[14px] font-bold leading-snug text-slate-800">{proposal.micro_step}</p>
+                </div>
+              </motion.div>
+            ) : null}
+
+            {/* כפתורי פעולה */}
+            {proposal && !coachLoading ? (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="mt-3 flex flex-col gap-2"
+              >
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void handleAccept()}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-2xl px-4 py-3 text-[14px] font-black text-white transition active:scale-[0.98] disabled:opacity-60"
+                  style={{
+                    background: 'linear-gradient(135deg, #059669, #10b981)',
+                    boxShadow: '0 6px 18px rgba(16,185,129,0.32)',
+                  }}
+                >
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  יאללה, ננסה ל-24 שעות
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void handlePivot()}
+                    className="flex-1 rounded-2xl border border-slate-200/80 bg-white/50 px-3 py-2 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
+                  >
+                    קשה לי דווקא זה
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={onAsk}
+                    className="flex-1 rounded-2xl border border-indigo-200/60 bg-indigo-50/40 px-3 py-2 text-[12px] font-bold text-indigo-600 transition active:scale-95 disabled:opacity-60"
+                  >
+                    בוא נדבר
+                  </button>
+                </div>
+              </motion.div>
+            ) : null}
+          </>
+        )}
       </div>
     </motion.li>
   );

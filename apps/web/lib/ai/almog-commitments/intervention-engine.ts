@@ -74,6 +74,24 @@ function parseJsonObject(raw: string): Record<string, unknown> | null {
   }
 }
 
+/**
+ * קטגוריות של "דחף/דחיינות/חוסר חשק" — שם תזכורת או "לספר למישהו" לא עוזרים,
+ * וצריך לדחוף להתחלה זעירה ומיידית של המשימה המקורית.
+ */
+const URGE_CATEGORIES: readonly FrictionCategory[] = ['emotional', 'motivational'];
+/** סוגי צעד שלא רלוונטיים לדחף — לא להציע תזכורות/התראות כשהבעיה היא דחף. */
+const REMINDERY_TYPES: readonly StrategyType[] = ['reminder_system'];
+/** ברירת מחדל מעודדת לדחף: התחלה זעירה של המשימה עצמה. */
+const URGE_PREFERRED_TYPES: StrategyType[] = ['micro_habit', 'emotional_regulation', 'value_linking'];
+
+/** מסנן סוגי צעד שלא מתאימים לדחף (תזכורות) ומבטיח חלופות שמקדמות ביצוע. */
+function biasTypesForUrge(category: FrictionCategory, types: StrategyType[]): StrategyType[] {
+  if (!URGE_CATEGORIES.includes(category)) return types;
+  const filtered = types.filter((t) => !REMINDERY_TYPES.includes(t));
+  const merged = [...new Set([...filtered, ...URGE_PREFERRED_TYPES])];
+  return merged.length > 0 ? merged : URGE_PREFERRED_TYPES;
+}
+
 function formatMemoryForPrompt(memory: InterventionMemoryRow[]): string {
   if (!memory.length) return 'אין היסטוריה קודמת.';
   return memory
@@ -223,10 +241,12 @@ export async function generateBlockerOptions(
   const category = normalizeFrictionCategory(params.category);
   const meta = FRICTION_META[category];
   const triedTypes = (params.failedStrategyTypes ?? []).map(normalizeStrategyType);
-  const allowedTypes =
+  const allowedTypes = biasTypesForUrge(
+    category,
     triedTypes.length > 0
       ? nextStrategyTypesForPivot(category, triedTypes)
-      : meta.preferredStrategies;
+      : meta.preferredStrategies
+  );
 
   const activeTasks = (params.activeTasks ?? []).slice(0, 6);
   const hasOriginal = activeTasks.length > 0;
@@ -418,33 +438,35 @@ export interface GeneratedPivotResult {
   relatesToRef: string | null;
 }
 
-const COACH_SYSTEM = `אתה "אלמוג" — מאמן הרגלים אמפתי ב-NuraWell. המשתמש נתקל בקושי עם הרגל.
+const COACH_SYSTEM = `אתה "אלמוג" — מאמן הרגלים אמפתי ב-NuraWell. המשתמש נתקל בקושי עם משימה/הרגל.
 אתה מדבר בגוף ראשון, חם, קצר, בלי ז'רגון פסיכולוגי ובלי להסביר תיאוריות.
 
-המשימה שלך: להחזיר JSON בלבד עם שני חלקים:
-1. empathy — משפט אחד-שניים שמנרמלים את הקושי (לא שופטים, לא מנחים).
-2. proposal — הצעת Pivot אחת בלבד, מבוססת B=MAP (Fogg):
-   • micro_step = פעולה אחת קטנה, בר-ביצוע היום (עד 15 דקות).
-   • label = 2-4 מילים בעברית, רך (כמו כותרת קטנה).
-   • strategy_type = סוג אסטרטגיה פנימי (לא מוצג למשתמש).
-   • relation = יחס למשימה מקורית (אם יש): "replaces"|"eases"|"supports".
+המטרה העליונה: לעזור למשתמש *לבצע את המשימה המקורית* — לא להחליף אותה במשהו צדדי, ולא לתת לו לברוח ממנה.
 
-כללים:
-- אל תחזור על אסטרטגיות שסומנו "לא עזר".
-- ב-pivot: בחר סוג אסטרטגיה שונה מהקודם.
-- אל תציע יותר מאופציה אחת. אל תסביר למה בחרת.
-- שפה: "בוא ננסה...", "אולי...", "מה דעתך על..." — לא "אסטרטגיה", לא "micro_step".
-- empathy לא מזכירה שמות של מודלים פסיכולוגיים.
+החזר JSON בלבד עם שני חלקים:
+1. empathy — משפט אחד קצר, אישי וספציפי לקושי שהמשתמש תיאר. השתמש במילים שלו ובמשימה המקורית; אל תיתן נחמה גנרית. מנרמל בלי לשפוט.
+2. proposal — צעד אחד בלבד (B=MAP, Fogg) שמקרב אותו לביצוע המשימה המקורית *עכשיו*:
+   • micro_step = פעולה זעירה אחת, בר-ביצוע מיד (2-5 דקות) — התחלה קטנה של המשימה עצמה, לא משימה אחרת.
+   • label = 2-4 מילים בעברית, רך (כמו כותרת קטנה).
+   • strategy_type = סוג פנימי (לא מוצג למשתמש).
+   • relation = יחס למשימה מקורית: "replaces" (אותה כוונה בניסוח קליל) | "eases" (גרסה קטנה יותר של המשימה המקורית) | "supports" (רק אם אין שום משימה מקורית).
+
+כללים נוקשים:
+- אם הקושי הוא דחף / חשק / דחיינות / "אין כוח" / "אין חשק" — אסור להציע תזכורת, "להזכיר לך", "לספר למישהו" או לקבוע התראה. אלה לא עוזרים לדחף. במקום זה הצע התחלה זעירה ומיידית של המשימה המקורית + עידוד קצר ("רק 2 דקות ונראה איך זה מרגיש").
+- כשיש משימה מקורית — העדף "eases" או "replaces" על פני "supports". אל תמציא משימה צדדית חדשה במקום המקורית.
+- ב-pivot: בחר סוג צעד שונה מזה שכבר נכשל, אבל תמיד שמור על קשר ישיר למשימה המקורית.
+- אל תחזור על אסטרטגיות שסומנו "לא עזר". אל תציע יותר מצעד אחד. אל תסביר למה בחרת.
+- שפה: "בוא נתחיל מ...", "רק 2 דקות...", "ננסה ביחד..." — בלי המילים "אסטרטגיה"/"micro_step".
 
 החזר JSON בלבד:
 {
   "category": "logistical|physiological|cognitive|emotional|social|knowledge|motivational",
   "relates_to": "ref של משימה פעילה או null",
-  "empathy": "משפט אמפתי קצר",
+  "empathy": "משפט אמפתי קצר וספציפי",
   "proposal": {
     "label": "שם קצר",
     "strategy_type": "...",
-    "micro_step": "פעולה אחת קטנה",
+    "micro_step": "התחלה זעירה של המשימה המקורית",
     "relation": "replaces|eases|supports"
   }
 }`;
@@ -460,10 +482,12 @@ export async function generateBlockerPivot(
   const category = normalizeFrictionCategory(params.category);
   const meta = FRICTION_META[category];
   const triedTypes = (params.failedStrategyTypes ?? []).map(normalizeStrategyType);
-  const allowedTypes =
+  const allowedTypes = biasTypesForUrge(
+    category,
     triedTypes.length > 0
       ? nextStrategyTypesForPivot(category, triedTypes)
-      : meta.preferredStrategies;
+      : meta.preferredStrategies
+  );
 
   const activeTasks = (params.activeTasks ?? []).slice(0, 6);
   const hasOriginal = activeTasks.length > 0;
@@ -538,6 +562,22 @@ export async function generateBlockerPivot(
     }
 
     const relation = relatesToRef ? normalizeRelation(p.relation) : 'supports';
+    const proposedType = normalizeStrategyType(String(p.strategy_type));
+
+    // הגנה אחרונה: בדחף/דחיינות אסור להציע תזכורת — מחליפים להתחלה זעירה מיידית.
+    if (URGE_CATEGORIES.includes(outCategory) && REMINDERY_TYPES.includes(proposedType)) {
+      return {
+        category: outCategory,
+        empathy: (parsed.empathy as string).trim().slice(0, 300),
+        proposal: {
+          label: STRATEGY_TEMPLATES.micro_habit.label,
+          strategy_type: 'micro_habit',
+          micro_step: STRATEGY_TEMPLATES.micro_habit.step,
+          relation: hasOriginal ? 'eases' : 'supports',
+        },
+        relatesToRef,
+      };
+    }
 
     return {
       category: outCategory,
@@ -546,8 +586,8 @@ export async function generateBlockerPivot(
         label:
           typeof p.label === 'string' && p.label.trim()
             ? p.label.trim().slice(0, 60)
-            : STRATEGY_LABELS_HE[normalizeStrategyType(String(p.strategy_type))],
-        strategy_type: normalizeStrategyType(String(p.strategy_type)),
+            : STRATEGY_LABELS_HE[proposedType],
+        strategy_type: proposedType,
         micro_step: micro,
         relation,
       },
