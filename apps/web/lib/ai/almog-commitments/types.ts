@@ -97,6 +97,31 @@ export interface BlockerOption {
   relation: AssignmentRelation;
 }
 
+/**
+ * הצעת "Pivot" יחידה במודל "המאמן הבלתי-נראה" — צעד אחד חסר-חיכוך (B=MAP).
+ * `strategy_type` נשאר נסתר מהמשתמש (לוגיקה/זיכרון בלבד) — ה-UI מציג רק
+ * `label` + `micro_step` בקולו האנושי של אלמוג.
+ */
+export interface BlockerProposal {
+  label: string;
+  /** סיווג פנימי — לא מוצג למשתמש */
+  strategy_type: string;
+  micro_step: string;
+  relation: AssignmentRelation;
+}
+
+/**
+ * מצב ה"מאמן" השמור על החסם (ב-`almog_blockers.metadata.coach`). זהו הפלט
+ * המובנה של ה-LLM: הודעת אמפתיה אחת + הצעה אחת. נשמר כדי לשרוד רענון/realtime
+ * ולמנוע קריאת LLM חוזרת.
+ */
+export interface BlockerCoachState {
+  empathy: string;
+  proposal: BlockerProposal;
+  /** מתי נוצר (לתפוגה/רענון עדין) */
+  generated_at: string;
+}
+
 export interface AlmogBlocker {
   id: string;
   user_id: string;

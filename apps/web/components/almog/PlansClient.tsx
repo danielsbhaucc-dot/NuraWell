@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  AlertTriangle,
   Bell,
   CheckCircle2,
   Clock,
@@ -17,9 +16,8 @@ import {
 } from 'lucide-react';
 import { AlmogAvatarChip } from '@/components/journey/AlmogPresence';
 import { createClient } from '@/lib/supabase/client';
-import { frictionCategoryLabel, normalizeFrictionCategory } from '@/lib/ai/almog-commitments/friction';
 import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog-chat';
-import type { BlockerOption } from '@/lib/ai/almog-commitments/types';
+import type { BlockerCoachState, BlockerProposal } from '@/lib/ai/almog-commitments/types';
 
 type AssignmentRelation = 'standalone' | 'replaces' | 'eases' | 'supports';
 
@@ -59,20 +57,12 @@ type Focus = {
   user_confirmed: boolean;
 };
 
-type BlockerHistory = { at: string; status: string; note?: string };
-
 type Blocker = {
   id: string;
   description: string;
   strategy: string | null;
-  category: string | null;
-  attempt_count: number;
-  current_options: BlockerOption[] | null;
   status: 'open' | 'improving' | 'resolved';
-  identified_at: string;
-  last_checked_at: string | null;
-  next_check_at: string | null;
-  history: BlockerHistory[] | null;
+  metadata: Record<string, unknown> | null;
 };
 
 type Payload = {
@@ -128,7 +118,7 @@ function greeting(): string {
 }
 
 
-async function postBlockerAction(body: Record<string, string>): Promise<void> {
+async function postBlockerAction(body: Record<string, string>): Promise<Record<string, unknown>> {
   const res = await fetch('/api/v1/almog-blockers', {
     method: 'POST',
     credentials: 'include',
@@ -139,7 +129,7 @@ async function postBlockerAction(body: Record<string, string>): Promise<void> {
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(json.error ?? 'הפעולה נכשלה');
   }
-  await res.json();
+  return (await res.json()) as Record<string, unknown>;
 }
 
 async function postAction(body: Record<string, string>) {
@@ -233,14 +223,16 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
     };
   }, [userId, load]);
 
-  const run = async (id: string, action: () => Promise<void>) => {
+  const run = async (id: string, action: () => Promise<unknown>) => {
     setBusyId(id);
     setError(null);
     try {
-      await action();
+      const result = await action();
       await load(true);
+      return result;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'הפעולה נכשלה');
+      throw e;
     } finally {
       setBusyId(null);
     }
@@ -343,44 +335,42 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
               </Section>
             ) : null}
 
-            {/* ── חסמים ── */}
+            {/* ── שיחת מאמן (חסמים) ── */}
             {data.blockers.length > 0 ? (
               <Section
-                icon={AlertTriangle}
-                title="מה שמקשה — ואיך נתגבר"
+                icon={MessageCircle}
+                title="אלמוג כאן בשבילך"
                 tint="rose"
                 count={data.blockers.length}
-                note="אני עוקב אחרי אלה בעצמי ואשאל אותך כשצריך. תוכל גם לסמן כאן מה עוזר."
               >
-                {data.blockers.map((b, idx) => (
-                  <BlockerCard
+                {data.blockers.map((b) => (
+                  <BlockerCoachCard
                     key={b.id}
-                    index={idx + 1}
                     blocker={b}
                     busy={busyId?.startsWith(b.id) ?? false}
-                    onGenerate={() =>
-                      run(`${b.id}-g`, () =>
-                        postBlockerAction({ action: 'generate_options', blocker_id: b.id })
-                      )
+                    onCoach={() =>
+                      run(`${b.id}-c`, () =>
+                        postBlockerAction({ action: 'coach', blocker_id: b.id })
+                      ) as Promise<Record<string, unknown>>
                     }
-                    onPick={(optionId) =>
+                    onAccept={() =>
+                      run(`${b.id}-a`, () =>
+                        postBlockerAction({ action: 'accept', blocker_id: b.id })
+                      ) as Promise<Record<string, unknown>>
+                    }
+                    onPivot={() =>
                       run(`${b.id}-p`, () =>
-                        postBlockerAction({ action: 'pick', blocker_id: b.id, option_id: optionId })
-                      )
+                        postBlockerAction({ action: 'coach_pivot', blocker_id: b.id })
+                      ) as Promise<Record<string, unknown>>
                     }
                     onHelped={() =>
-                      run(`${b.id}-h`, () => postBlockerAction({ action: 'helped', blocker_id: b.id }))
-                    }
-                    onNotHelped={() =>
-                      run(`${b.id}-n`, () => postBlockerAction({ action: 'not_helped', blocker_id: b.id }))
-                    }
-                    onResolve={() =>
-                      run(`${b.id}-r`, () => postBlockerAction({ action: 'resolve', blocker_id: b.id }))
+                      run(`${b.id}-h`, () =>
+                        postBlockerAction({ action: 'helped', blocker_id: b.id })
+                      ) as Promise<Record<string, unknown>>
                     }
                     onAsk={() => {
-                      const step = b.strategy ? ` ניסינו "${b.strategy}".` : '';
                       dispatchOpenAlmogChatWithPrefill(
-                        `אלמוג, לגבי "${b.description}" —${step} לא בטוח שהבנתי, אפשר שתסביר לי שוב בפשטות?`
+                        `אלמוג, לגבי "${b.description}" — אפשר שנדבר על זה?`
                       );
                     }}
                   />
@@ -688,7 +678,7 @@ function Hero({
         <div className="mt-5 grid grid-cols-3 gap-2.5">
           <HeroStat icon={Sparkles} value={active} label="צעדים פעילים" />
           <HeroStat icon={Bell} value={reminders} label="תזכורות" />
-          <HeroStat icon={AlertTriangle} value={blockers} label="במעקב" />
+          <HeroStat icon={MessageCircle} value={blockers} label="בשיחה" />
         </div>
       </div>
     </motion.section>
@@ -1010,229 +1000,98 @@ function ReminderRow({ reminder }: { reminder: Reminder }) {
   );
 }
 
-const BLOCKER_STATUS: Record<Blocker['status'], { label: string; bg: string; fg: string }> = {
-  open: { label: 'במעקב', bg: 'bg-rose-100', fg: 'text-rose-700' },
-  improving: { label: 'משתפר', bg: 'bg-amber-100', fg: 'text-amber-700' },
-  resolved: { label: 'נפתר', bg: 'bg-emerald-100', fg: 'text-emerald-700' },
-};
+/* ───────────────────────── שיחת מאמן (חסמים) ───────────────────────── */
 
-/** תרגום סטטוס היסטוריה לעברית (כשאין note מפורש). */
-const STATUS_HE: Record<string, string> = {
-  open: 'זוהה',
-  improving: 'יש שיפור',
-  resolved: 'נפתר',
-};
+function readCoachFromMetadata(metadata: Record<string, unknown> | null): BlockerCoachState | null {
+  if (!metadata || typeof metadata.coach !== 'object' || !metadata.coach) return null;
+  const c = metadata.coach as BlockerCoachState;
+  if (!c.empathy || !c.proposal?.micro_step) return null;
+  return c;
+}
 
-function BlockerCard({
-  index,
+function BlockerCoachCard({
   blocker,
   busy,
-  onGenerate,
-  onPick,
+  onCoach,
+  onAccept,
+  onPivot,
   onHelped,
-  onNotHelped,
-  onResolve,
   onAsk,
 }: {
-  index: number;
   blocker: Blocker;
   busy: boolean;
-  onGenerate: () => void;
-  onPick: (optionId: 'A' | 'B') => void;
-  onHelped: () => void;
-  onNotHelped: () => void;
-  onResolve: () => void;
+  onCoach: () => Promise<Record<string, unknown>>;
+  onAccept: () => Promise<Record<string, unknown>>;
+  onPivot: () => Promise<Record<string, unknown>>;
+  onHelped: () => Promise<Record<string, unknown>>;
   onAsk: () => void;
 }) {
-  const st = BLOCKER_STATUS[blocker.status];
-  const history = (Array.isArray(blocker.history) ? blocker.history : []).slice(-6).reverse();
-  const options = Array.isArray(blocker.current_options) ? blocker.current_options : [];
-  const hasOptions = options.length >= 2;
-  const categoryLabel = blocker.category
-    ? frictionCategoryLabel(blocker.category)
-    : frictionCategoryLabel(normalizeFrictionCategory(null));
+  const cached = readCoachFromMetadata(blocker.metadata);
+  const [empathy, setEmpathy] = useState(cached?.empathy ?? '');
+  const [proposal, setProposal] = useState<BlockerProposal | null>(cached?.proposal ?? null);
+  const [coachLoading, setCoachLoading] = useState(false);
+  const [accepted, setAccepted] = useState(false);
+  const coachFetched = useRef(false);
 
-  return (
-    <motion.li layout className="relative rounded-[24px] p-4" style={glassStyle('rose')}>
-      {/* מספר מעוצב */}
-      <span
-        className="absolute -right-1 -top-1 flex h-8 w-8 items-center justify-center rounded-2xl text-[13px] font-black text-white shadow-lg"
-        style={{
-          background: 'linear-gradient(135deg, #fb7185, #e11d48)',
-          boxShadow: '0 4px 14px rgba(225,29,72,0.35)',
-        }}
-        aria-label={`קושי מספר ${index}`}
-      >
-        {index}
-      </span>
+  const hasActiveExperiment = Boolean(blocker.strategy) && blocker.status === 'improving';
+  const showCoachChat = !hasActiveExperiment && !accepted;
 
-      <div className="mb-2 flex flex-wrap items-center gap-2 pr-6">
-        <span className={`rounded-lg px-2 py-0.5 text-[10px] font-black ${st.bg} ${st.fg}`}>{st.label}</span>
-        <span
-          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-rose-800/80"
-          style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(244,63,94,0.18)' }}
-        >
-          {categoryLabel}
-        </span>
-        {blocker.attempt_count > 0 ? (
-          <span className="text-[10px] font-semibold text-slate-400">ניסיון {blocker.attempt_count + 1}</span>
-        ) : null}
-        {blocker.next_check_at ? (
-          <span className="inline-flex items-center gap-1 text-[10px] text-slate-500">
-            <Clock className="h-3 w-3" />
-            אחזור {fmtDay(blocker.next_check_at)}
-          </span>
-        ) : null}
-      </div>
+  // אוטו-הפעלה: כשהכרטיס נטען בלי ניסוי פעיל — מבקשים coach מיד
+  useEffect(() => {
+    if (coachFetched.current || hasActiveExperiment || cached) return;
+    coachFetched.current = true;
+    setCoachLoading(true);
+    void onCoach()
+      .then((res) => {
+        if (typeof res.empathy === 'string') setEmpathy(res.empathy);
+        if (res.proposal && typeof res.proposal === 'object') {
+          setProposal(res.proposal as BlockerProposal);
+        }
+      })
+      .catch(() => {
+        setEmpathy('אני שומע אותך. בוא נמצא דרך קטנה שתרגיש נכון.');
+      })
+      .finally(() => setCoachLoading(false));
+  }, [hasActiveExperiment, cached, onCoach]);
 
-      <p className="text-[15px] font-black leading-snug text-slate-900">{blocker.description}</p>
+  const handleAccept = async () => {
+    await onAccept();
+    setAccepted(true);
+    setProposal(null);
+    setEmpathy('');
+  };
 
-      {blocker.strategy ? (
-        <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-600">
-          <span className="font-bold text-rose-600">מה ננסה עכשיו: </span>
-          {blocker.strategy}
-        </p>
-      ) : null}
+  const handlePivot = async () => {
+    setCoachLoading(true);
+    try {
+      const res = await onPivot();
+      if (typeof res.empathy === 'string') setEmpathy(res.empathy);
+      if (res.proposal && typeof res.proposal === 'object') {
+        setProposal(res.proposal as BlockerProposal);
+      }
+    } finally {
+      setCoachLoading(false);
+    }
+  };
 
-      {/* אופציות — שתי דרכים קטנות לבחור מתוכן */}
-      {hasOptions ? (
-        <div
-          className="mt-3 rounded-[20px] p-3.5"
-          style={{
-            background: 'linear-gradient(180deg, rgba(238,242,255,0.85), rgba(245,243,255,0.7))',
-            border: '1px solid rgba(99,102,241,0.16)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9)',
-          }}
-        >
-          <div className="mb-2.5 flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100">
-              <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
-            </span>
-            <p className="text-[12px] font-bold leading-snug text-slate-600">
-              חשבתי על שתי דרכים קטנות. מה מרגיש לך נכון יותר עכשיו?
+  // ── מצב: ניסוי פעיל (אחרי accept) — מינימלי, בלי תגיות קליניות ──
+  if (hasActiveExperiment) {
+    return (
+      <motion.li layout className="relative overflow-hidden rounded-[24px] p-4" style={glassStyle('rose')}>
+        <GlassSheen />
+        <div className="relative z-[1] flex items-start gap-3">
+          <AlmogAvatarChip size={36} />
+          <div className="min-w-0 flex-1">
+            <p className="text-[14px] font-bold leading-snug text-slate-800">
+              איך הלך עם הצעד הקטן?
             </p>
-          </div>
-          <div className="grid gap-2.5 sm:grid-cols-2">
-            {options.map((opt, oi) => (
-              <button
-                key={opt.id}
-                type="button"
-                disabled={busy}
-                onClick={() => onPick(opt.id)}
-                className="group relative flex h-full flex-col rounded-2xl p-3.5 text-right transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] disabled:opacity-60"
-                style={{
-                  background: 'rgba(255,255,255,0.92)',
-                  border: '1px solid rgba(99,102,241,0.2)',
-                  boxShadow: '0 2px 10px rgba(99,102,241,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
-                }}
-              >
-                <div className="mb-1.5 flex items-center gap-2">
-                  <span
-                    className="flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-black text-white shadow-sm"
-                    style={{
-                      background:
-                        oi === 0
-                          ? 'linear-gradient(135deg,#6366f1,#818cf8)'
-                          : 'linear-gradient(135deg,#8b5cf6,#a78bfa)',
-                    }}
-                  >
-                    {oi === 0 ? 'א' : 'ב'}
-                  </span>
-                  <p className="text-[12.5px] font-black leading-tight text-indigo-900">{opt.label}</p>
-                </div>
-                <p className="text-[12px] leading-relaxed text-slate-600">{opt.micro_step}</p>
-                {opt.relation && opt.relation !== 'standalone' && opt.relation !== 'supports' ? (
-                  <span className="mt-2 inline-flex w-fit items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[9.5px] font-bold text-indigo-600">
-                    {opt.relation === 'replaces' ? '🔄 מחליף את המשימה' : '🪶 גרסה מוקלת'}
-                  </span>
-                ) : null}
-                <span className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-bold text-indigo-500 opacity-0 transition group-hover:opacity-100">
-                  בוא נתחיל מזה
-                </span>
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onAsk}
-            className="mt-2.5 inline-flex items-center gap-1.5 text-[11.5px] font-bold text-indigo-500 transition hover:text-indigo-700 disabled:opacity-50"
-          >
-            <MessageCircle className="h-3.5 w-3.5" />
-            לא הבנתי משהו — בוא נדבר
-          </button>
-        </div>
-      ) : blocker.status !== 'resolved' && !blocker.strategy ? (
-        <div
-          className="mt-3 rounded-2xl p-3 backdrop-blur-sm"
-          style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.18)' }}
-        >
-          <p className="text-[12.5px] leading-relaxed text-slate-600">
-            עוד לא סיכמנו דרך מדויקת. בוא נבנה 2 אופציות קטנות — ואתה תבחר מה מתאים.
-          </p>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onGenerate}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2.5 text-[12.5px] font-black text-white transition active:scale-95 disabled:opacity-60"
-            style={{
-              background: 'linear-gradient(135deg, #6366f1, #818cf8)',
-              boxShadow: '0 4px 14px rgba(99,102,241,0.32)',
-            }}
-          >
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            בוא נבנה צעד עכשיו
-          </button>
-        </div>
-      ) : blocker.status !== 'resolved' && blocker.strategy && !hasOptions ? (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={onGenerate}
-          className="mt-2 text-[11px] font-bold text-indigo-600 underline-offset-2 hover:underline disabled:opacity-50"
-        >
-          רוצה לנסות גישה אחרת? הצע 2 אופציות חדשות
-        </button>
-      ) : null}
-
-      {blocker.status !== 'resolved' && blocker.strategy ? (
-        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
-          {blocker.next_check_at
-            ? `אזכיר לך מעצמי ב-${fmtDay(blocker.next_check_at)} — לא תצטרך לזכור.`
-            : 'אני שומר על זה במעקב ואחזור אליך.'}
-        </p>
-      ) : null}
-
-      {history.length > 0 ? (
-        <div className="mt-3 border-r-2 border-rose-100/80 pr-3">
-          {history.map((h, i) => {
-            const helped = h.note?.includes('עזר') && !h.note?.includes('לא עזר');
-            const notHelped = h.note?.includes('לא עזר');
-            return (
-              <div key={i} className="relative flex items-start gap-2 pb-2 last:pb-0">
-                <span
-                  className="mt-1 h-2 w-2 shrink-0 rounded-full"
-                  style={{ background: notHelped ? '#fb7185' : helped ? '#34d399' : '#cbd5e1' }}
-                />
-                <div className="min-w-0">
-                  <p className="text-[12px] text-slate-700">{h.note ?? STATUS_HE[h.status] ?? h.status}</p>
-                  <p className="text-[10px] text-slate-400">{fmtDay(h.at)}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
-
-      {blocker.status !== 'resolved' ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {blocker.strategy ? (
-            <>
+            <p className="mt-1 text-[13px] leading-relaxed text-slate-600">{blocker.strategy}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
                 disabled={busy}
-                onClick={onHelped}
-                className="inline-flex items-center gap-1 rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-3 py-2 text-[12px] font-bold text-emerald-700 backdrop-blur-sm transition active:scale-95 disabled:opacity-60"
+                onClick={() => void onHelped()}
+                className="inline-flex items-center gap-1 rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-3 py-2 text-[12px] font-bold text-emerald-700 transition active:scale-95 disabled:opacity-60"
               >
                 {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ThumbsUp className="h-3.5 w-3.5" />}
                 עזר לי
@@ -1240,35 +1099,134 @@ function BlockerCard({
               <button
                 type="button"
                 disabled={busy}
-                onClick={onNotHelped}
-                className="inline-flex items-center gap-1 rounded-2xl border border-rose-200/80 bg-rose-50/80 px-3 py-2 text-[12px] font-bold text-rose-700 backdrop-blur-sm transition active:scale-95 disabled:opacity-60"
+                onClick={() => void handlePivot()}
+                className="inline-flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-white/70 px-3 py-2 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
               >
                 {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ThumbsDown className="h-3.5 w-3.5" />}
-                לא עזר — ננסה אחרת
+                לא מתאים — בוא ננסה אחרת
               </button>
-            </>
-          ) : null}
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onAsk}
-            className="inline-flex items-center gap-1 rounded-2xl border border-indigo-200/80 bg-indigo-50/70 px-3 py-2 text-[12px] font-bold text-indigo-700 backdrop-blur-sm transition active:scale-95 disabled:opacity-60"
-          >
-            <MessageCircle className="h-3.5 w-3.5" />
-            יש לי שאלה
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onResolve}
-            className="inline-flex items-center gap-1 rounded-2xl px-3 py-2 text-[12px] font-black text-white transition active:scale-95 disabled:opacity-60"
-            style={{ background: 'linear-gradient(135deg,#059669,#10b981)', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}
-          >
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            נפתר
-          </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onAsk}
+                className="inline-flex items-center gap-1 rounded-2xl px-3 py-2 text-[12px] font-bold text-indigo-600 transition hover:text-indigo-800 disabled:opacity-60"
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+                בוא נדבר
+              </button>
+            </div>
+          </div>
         </div>
-      ) : null}
+      </motion.li>
+    );
+  }
+
+  // ── מצב: שיחת מאמן (2-3 הודעות) ──
+  return (
+    <motion.li layout className="relative overflow-hidden rounded-[24px] p-4" style={glassStyle('rose')}>
+      <GlassSheen />
+      <div className="relative z-[1] space-y-3">
+        {/* בועת אמפתיה */}
+        {showCoachChat && (empathy || coachLoading) ? (
+          <div className="flex items-start gap-2.5">
+            <AlmogAvatarChip size={32} />
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-[85%] rounded-2xl rounded-tr-sm px-3.5 py-2.5"
+              style={{
+                background: 'rgba(255,255,255,0.88)',
+                border: '1px solid rgba(244,63,94,0.12)',
+                boxShadow: '0 2px 8px rgba(15,23,42,0.06)',
+              }}
+            >
+              {coachLoading && !empathy ? (
+                <div className="flex items-center gap-1.5 py-1">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-rose-300" style={{ animationDelay: '0ms' }} />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-rose-300" style={{ animationDelay: '150ms' }} />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-rose-300" style={{ animationDelay: '300ms' }} />
+                </div>
+              ) : (
+                <p className="text-[13.5px] leading-relaxed text-slate-700">{empathy}</p>
+              )}
+            </motion.div>
+          </div>
+        ) : null}
+
+        {/* בועת הצעה (Pivot יחיד) */}
+        {showCoachChat && proposal && !coachLoading ? (
+          <div className="flex items-start gap-2.5">
+            <AlmogAvatarChip size={32} />
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="max-w-[90%] rounded-2xl rounded-tr-sm px-3.5 py-3"
+              style={{
+                background: 'linear-gradient(160deg, rgba(255,255,255,0.95), rgba(236,253,245,0.7))',
+                border: '1px solid rgba(16,185,129,0.18)',
+                boxShadow: '0 4px 14px rgba(16,185,129,0.1)',
+              }}
+            >
+              <p className="text-[14px] font-bold leading-snug text-slate-800">{proposal.micro_step}</p>
+            </motion.div>
+          </div>
+        ) : null}
+
+        {/* כפתורי פעולה */}
+        {showCoachChat && proposal && !coachLoading ? (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+            className="flex flex-col gap-2 pr-10"
+          >
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void handleAccept()}
+              className="flex w-full items-center justify-center gap-1.5 rounded-2xl px-4 py-3 text-[14px] font-black text-white transition active:scale-[0.98] disabled:opacity-60"
+              style={{
+                background: 'linear-gradient(135deg, #059669, #10b981)',
+                boxShadow: '0 6px 18px rgba(16,185,129,0.32)',
+              }}
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              בוא ננסה ל-24 שעות
+            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handlePivot()}
+                className="flex-1 rounded-2xl border border-slate-200/80 bg-white/60 px-3 py-2 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
+              >
+                לא מתאים לי
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onAsk}
+                className="flex-1 rounded-2xl border border-indigo-200/60 bg-indigo-50/50 px-3 py-2 text-[12px] font-bold text-indigo-600 transition active:scale-95 disabled:opacity-60"
+              >
+                בוא נדבר
+              </button>
+            </div>
+          </motion.div>
+        ) : null}
+
+        {/* אחרי accept — הודעת מעבר */}
+        {accepted ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-2 rounded-2xl bg-emerald-50/80 px-3 py-2.5 text-[13px] font-bold text-emerald-700"
+          >
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            מעולה! הצעד החדש מחכה לך למעלה 🌿
+          </motion.div>
+        ) : null}
+      </div>
     </motion.li>
   );
 }
