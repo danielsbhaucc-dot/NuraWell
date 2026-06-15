@@ -147,8 +147,9 @@ flowchart TD
     A1["risk-fingerprint-llm.ts<br/>מנתח היסטוריה → דפוס סיכון"]
     A1 --> A2["risk_signals ב-memory-dossier<br/>(שעה/יום/טריגר/ביטחון)"]
   end
-  subgraph L2["שכבה 2 · מגע יזום (cron, לפני החלון)"]
-    B1["cron/risk-window-guardian<br/>מי נכנס לחלון ב-30 דק'?"]
+  subgraph L2["שכבה 2 · מגע יזום (QStash delayed, לפני החלון)"]
+    B0["morning habit-checkpoints cron<br/>מחשב דפוסים ומתזמן QStash"]
+    B0 --> B1["/api/v1/ai/guardian/trigger<br/>נפתח 30 דק' לפני חלון תקף"]
     B1 --> B2{"גייטים בטיחות:<br/>opt-in? avoid_push?<br/>life pause? תדירות?"}
     B2 -->|עובר| B3["מגע חם קצר<br/>(intervention-engine)"]
     B2 -->|נחסם| B4["דילוג שקט"]
@@ -158,7 +159,7 @@ flowchart TD
     C1 --> C2["api/v1/ai/sos<br/>ולידציה → A/B → טיימר 60ש'"]
     C2 --> C3["מזין חזרה את שכבה 1"]
   end
-  A2 --> B1
+  A2 --> B0
   C3 --> A2
 ```
 
@@ -199,6 +200,8 @@ type RiskFingerprint = {
     confidence: number;
     /** כמה אירועים תומכים בדפוס (שקיפות + סף מינימלי) */
     sample_size: number;
+    /** על כמה תאריכים נבדלים האירועים מפוזרים — מונע דפוס מזויף מיום בודד */
+    distinct_dates: number;
   }>;
   /** מה כבר עזר היסטורית — להזנת ה-SOS */
   helped_strategies: StrategyType[];
@@ -216,15 +219,18 @@ type RiskFingerprint = {
 - **דטרמיניסטי קודם, LLM רק לחידוד:** ספירת תדירויות לפי שעה/יום נעשית בקוד
   (זול, יציב). LLM (Groq/Llama — `AI_MODELS.background_groq`) רק כדי לתייג
   טריגר ולנסח, בדומה ל-`intervention-engine`.
-- **סף מינימלי:** חלון נכנס רק עם `sample_size >= 3` ו-`confidence >= 0.6`.
-  אין מספיק דאטה → אין חלון → אין מגע יזום (failsafe ל-false positives).
+- **סף מינימלי:** חלון נכנס רק עם `sample_size >= 3`, `confidence >= 0.6`,
+  וגם פיזור על לפחות `GUARDIAN_MIN_DISTINCT_DATES` תאריכים נבדלים (ברירת מחדל 2).
+  `sample_size` לבד אינו מספיק. אין מספיק דאטה → אין חלון → אין מגע יזום
+  (failsafe ל-false positives).
 - **ניקוי דגלים:** אם זוהה `ed_caution`/`red_flag` — לא מייצרים חלונות מגע
   התנהגותי כלל (פרק 2.2/2.3).
 
 ### 4.5 קבצים
 - חדש: `apps/web/lib/ai/risk-fingerprint-llm.ts` — חילוץ + תיוג.
-- חדש: `apps/web/lib/ai/risk-window.ts` — טיפוסים + `isInRiskWindowSoon()`.
-- חדש: `apps/web/app/api/v1/ai/cron/risk-fingerprint/route.ts` — ה-cron היומי.
+- חדש: `apps/web/lib/ai/risk-window.ts` — טיפוסים + חישוב trigger הבא לחלון תקף.
+- הרחבה: `apps/web/app/api/v1/ai/cron/habit-checkpoints/route.ts` — ה-cron היומי הקיים
+  מחשב fingerprints ומתזמן QStash delayed triggers. אין cron חדש כל 30 דקות.
 - שימוש קיים: `memory-dossier/*`, `roller-coaster.ts`, `friction.ts`,
   `intervention-engine.ts` (`fetchInterventionMemory`).
 
@@ -236,9 +242,11 @@ type RiskFingerprint = {
 להגיע ~20–40 דקות לפני חלון סיכון מובהק, עם מגע **קצר, חברי, לא-משימתי**.
 
 ### 5.2 זרימה
-1. cron רץ כל ~30 דקות (QStash), שולף משתמשים עם `risk_signals.windows`.
-2. לכל משתמש: `isInRiskWindowSoon(now, windows, leadMin=30)`.
-3. **שרשרת גייטים (כולן חייבות לעבור):**
+1. ה-morning `habit-checkpoints` cron מחשב/מעדכן `risk_signals.windows`.
+2. לכל משתמש opt-in עם חלון תקף: מחשבים trigger חד-פעמי להיום,
+   `leadMin=30` לפני תחילת החלון, ומתזמנים QStash delayed POST.
+3. QStash קורא ל-`/api/v1/ai/guardian/trigger` רק כשהגיע הזמן.
+4. **שרשרת גייטים (כולן חייבות לעבור):**
 
 ```typescript
 function guardianTouchAllowed(ctx): GuardianGateResult {
@@ -254,9 +262,9 @@ function guardianTouchAllowed(ctx): GuardianGateResult {
 }
 ```
 
-4. עובר → בונים מגע: `intervention-engine` מספק רעיון A/B לפי `window.trigger`
+5. עובר → בונים מגע: `intervention-engine` מספק רעיון A/B לפי `window.trigger`
    ו-`helped_strategies`; הטון לפי `almog-coaching-style` + `momentum-psychology`.
-5. Insert ל-`notifications` עם `metadata.source = 'almog_pre_lapse_guardian'`,
+6. Insert ל-`notifications` עם `metadata.source = 'almog_pre_lapse_guardian'`,
    `expects_reply: true`.
 
 ### 5.3 דוגמת מגע (לרוח — ה-LLM מנסח מקורי)
@@ -266,7 +274,8 @@ function guardianTouchAllowed(ctx): GuardianGateResult {
 **אסור** (פרק 2): "אל תאכל", "תיזהר מהמקרר", "אתה עומד לדפוק את הדיאטה".
 
 ### 5.4 קבצים
-- חדש: `apps/web/app/api/v1/ai/cron/risk-window-guardian/route.ts`
+- חדש: `apps/web/app/api/v1/ai/guardian/trigger/route.ts` — endpoint ש-QStash מזמן.
+- חדש: `apps/web/lib/ai/guardian/qstash-scheduler.ts` — תזמון delayed POST ללא polling.
 - חדש: `apps/web/lib/ai/guardian/guardian-gates.ts` — שרשרת הגייטים (5.2).
 - חדש: `apps/web/lib/ai/guardian/build-guardian-touch.ts` — בניית ההודעה.
 - שימוש קיים: `avoid-push.ts`, `life-context.ts`, `intervention-engine.ts`,
@@ -298,7 +307,8 @@ function guardianTouchAllowed(ctx): GuardianGateResult {
 - כל לחיצת SOS = אירוע למידה לשכבה 1 (חומר זהב לדיוק הניבוי).
 
 ### 6.3 קבצים
-- חדש: `apps/web/app/api/v1/ai/sos/route.ts` — runtime edge, streaming.
+- חדש: `apps/web/app/api/v1/ai/sos/route.ts` — runtime edge, timeout קשיח ל-LLM
+  ו-fallback דטרמיניסטי מיידי.
 - חדש: `apps/web/components/ai/SosButton.tsx` + `SosDialog.tsx`.
 - חדש: `apps/web/lib/safety/crisis-detector.ts` — זיהוי דגל אדום (regex +
   סיווג, edge-safe).
@@ -326,14 +336,15 @@ CREATE TABLE IF NOT EXISTS public.guardian_sos_events (
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   trigger TEXT,                 -- FrictionCategory מזוהה
   strategy_offered TEXT,        -- StrategyType שהוצע
-  outcome TEXT,                 -- 'passed' | 'fell' | 'unknown' | 'escalated'
+  outcome TEXT NOT NULL DEFAULT 'unknown'
+    CHECK (outcome IN ('passed', 'fell', 'unknown', 'escalated')),
   red_flag BOOLEAN NOT NULL DEFAULT FALSE,
-  date_key TEXT NOT NULL,       -- YYYY-MM-DD לפי ירושלים (anti-obsession count)
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_guardian_sos_user_date
-  ON public.guardian_sos_events (user_id, date_key);
+CREATE INDEX IF NOT EXISTS idx_guardian_sos_user_created_at
+  ON public.guardian_sos_events (user_id, created_at DESC);
 
 ALTER TABLE public.guardian_sos_events ENABLE ROW LEVEL SECURITY;
 
@@ -342,6 +353,14 @@ CREATE POLICY guardian_sos_insert_own ON public.guardian_sos_events
 CREATE POLICY guardian_sos_select_own ON public.guardian_sos_events
   FOR SELECT TO authenticated USING (auth.uid() = user_id);
 ```
+
+ספירת anti-obsession יומית נגזרת ב-SQL מתוך `created_at`, למשל:
+
+```sql
+(created_at AT TIME ZONE 'Asia/Jerusalem')::date = (NOW() AT TIME ZONE 'Asia/Jerusalem')::date
+```
+
+אין לשמור `date_key TEXT`; `TIMESTAMPTZ` הוא מקור האמת.
 
 ### 7.3 `ai_context` — הרחבה (בלי מיגרציה)
 
@@ -409,8 +428,8 @@ SOS (שכבה 3):       יוזם המשתמש — ללא חסם כניסה, אב
 | `lib/ai/risk-fingerprint-llm.ts` | לימוד טביעת הסיכון (שכבה 1) |
 | `lib/ai/guardian/guardian-gates.ts` | שרשרת גייטי הבטיחות (5.2) |
 | `lib/ai/guardian/build-guardian-touch.ts` | בניית המגע היזום |
-| `app/api/v1/ai/cron/risk-fingerprint/route.ts` | cron יומי (שכבה 1) |
-| `app/api/v1/ai/cron/risk-window-guardian/route.ts` | cron ~30ד' (שכבה 2) |
+| `lib/ai/guardian/qstash-scheduler.ts` | תזמון QStash delayed trigger מתוך cron הבוקר |
+| `app/api/v1/ai/guardian/trigger/route.ts` | endpoint שמקבל את ה-QStash webhook לפני חלון סיכון |
 | `app/api/v1/ai/sos/route.ts` | route ל-SOS (שכבה 3) |
 | `components/ai/SosButton.tsx`, `SosDialog.tsx` | UI ה-SOS |
 | `components/settings/GuardianOptInToggle.tsx` | opt-in + כיבוי (2.4) |
@@ -422,7 +441,8 @@ SOS (שכבה 3):       יוזם המשתמש — ללא חסם כניסה, אב
 | `lib/ai/memory.ts` (`AiUserContext`) | הוספת `GuardianContext` ל-`ai_context` |
 | `lib/ai/avoid-push.ts` | שימוש חוזר ב-`isAvoidPushActive` בגייט (אין שינוי לוגי) |
 | `app/api/v1/ai/chat/route.ts` | חיווט פקודת כיבוי טבעית ("אל תשלח לי כאלה") |
-| `docs/CRON_SCHEDULES_SETUP.md` | הוספת שני ה-crons החדשים |
+| `app/api/v1/ai/cron/habit-checkpoints/route.ts` | הרחבת cron הבוקר ללימוד ותזמון Guardian; אין cron 30 דקות |
+| `docs/CRON_SCHEDULES_SETUP.md` | תיעוד זרימת QStash delayed מתוך cron הבוקר |
 
 ---
 
@@ -445,11 +465,10 @@ SOS (שכבה 3):       יוזם המשתמש — ללא חסם כניסה, אב
 ## 11. Feature Flags ושלבי גלגול
 
 ```bash
-GUARDIAN_SOS_ENABLED=0            # שכבה 3 — מתחילים מכאן
-GUARDIAN_FINGERPRINT_ENABLED=0   # שכבה 1
-GUARDIAN_PROACTIVE_ENABLED=0     # שכבה 2 — אחרון, הכי רגיש
-GUARDIAN_ROLLOUT_PERCENT=0       # gradual rollout לפי hash(userId)
-GUARDIAN_KILL_SWITCH=0           # עצירת חירום של כל מגע יזום (8.5)
+# שכבת SOS פעילה כברירת מחדל — יוזם-משתמש, ללא דגל סביבה.
+GUARDIAN_FINGERPRINT_ENABLED=0   # שכבה 1 — לימוד בבוקר
+GUARDIAN_PROACTIVE_ENABLED=0     # שכבה 2 — QStash delayed trigger, אחרון והכי רגיש
+GUARDIAN_KILL_SWITCH=0           # עצירת חירום של כל Guardian, כולל SOS
 ```
 
 ### סדר גלגול מומלץ (מהבטוח לרגיש)
@@ -457,14 +476,14 @@ GUARDIAN_KILL_SWITCH=0           # עצירת חירום של כל מגע יזו
 |-----|----|--------------| 
 | **0 — Spec** | מסמך זה + אישור | אישור מוצר + סבב בטיחות |
 | **1 — Safety core** | `crisis-detector` + `crisis-resources` + escalation, **לבד** | זיהוי דגל אדום עובד ב-100% מהבדיקות |
-| **2 — SOS** | שכבה 3, opt-in, 10% | `sos_completion` חיובי, אפס באג בטיחות |
+| **2 — SOS** | שכבה 3, פעילה כברירת מחדל כי היא יוזם-משתמש | `sos_completion` חיובי, אפס באג בטיחות |
 | **3 — Fingerprint** | שכבה 1 (לומד בלבד, לא שולח) | טביעות נראות סבירות בבדיקה ידנית |
 | **4 — Proactive** | שכבה 2, 10% → 50% → 100% | complaint rate < סף, save rate חיובי |
 | **5 — Optimize** | כיול ספים, A/B על ניסוחים | — |
 
 ### Rollback
-- `GUARDIAN_KILL_SWITCH=1` → עוצר כל מגע יזום + SOS מיידית.
-- כל הדגלים default `0` — אין סיכון בפריסת הקוד עצמו.
+- `GUARDIAN_KILL_SWITCH=1` → עוצר כל Guardian, כולל SOS, מיידית.
+- הדגלים הפרואקטיביים default `0` — אין סיכון בשליחת מגע יזום מפריסת הקוד עצמו.
 - אין breaking change ל-DB (טבלה חדשה + JSONB אופציונלי).
 
 ---
