@@ -9,16 +9,10 @@ import { copyImageSourceToKey } from '@/lib/storage/apply-source-image';
 import { stationCoverCreditSchema } from '@/lib/validation/admin-journey-station';
 import { readJsonBody } from '@/lib/api/json-request';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
+import { isWebpBuffer, MAX_UPLOAD_BYTES } from '@/lib/validation/webp';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
-
-const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
-
-function isWebpBuffer(buf: Buffer): boolean {
-  if (buf.length < 12) return false;
-  return buf.subarray(0, 4).toString('ascii') === 'RIFF' && buf.subarray(8, 12).toString('ascii') === 'WEBP';
-}
 
 const deleteBodySchema = z.object({ station_id: z.string().uuid() }).strict();
 
