@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play, BookOpen, Clock, CheckCircle2, Lock,
-  ChevronLeft, Award, Zap, Video, Headphones, FileText, Presentation, AlignLeft, Layers, Crown
+  ChevronLeft, Award, Zap, Video, Headphones, FileText, Presentation, AlignLeft, Layers, Crown,
+  ArrowDown,
 } from 'lucide-react';
 import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import { cn } from '../../lib/cn';
@@ -63,7 +65,42 @@ export function CourseDetailClient({
 
   const bgUrl = course.background_image_url || course.thumbnail_url;
 
+  // מסך כניסה מלא-מסך לפני שהמדריך "נופל" ונפתח — בלי רענון, רק מעבר חלק.
+  const [entered, setEntered] = useState(false);
+
+  // נעילת גלילה כל עוד מסך הכניסה פתוח, כדי שהוא ירגיש כמו שער אמיתי.
+  useEffect(() => {
+    if (entered) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [entered]);
+
   return (
+    <>
+      <AnimatePresence>
+        {!entered ? (
+          <GuideCover
+            key="cover"
+            title={course.title}
+            bgUrl={bgUrl}
+            totalLessons={totalLessons}
+            totalMinutes={totalMinutes}
+            isPremium={course.is_premium}
+            progress={progress}
+            isEnrolled={isEnrolled}
+            onEnter={() => setEntered(true)}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <motion.div
+        initial={{ opacity: 0, y: -36 }}
+        animate={entered ? { opacity: 1, y: 0 } : { opacity: 0, y: -36 }}
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      >
     <div className="min-h-screen guide-page-bg relative">
       {/* HERO header — large & premium; the background image lives ONLY here */}
       <div className="guide-hero relative h-[20rem] md:h-[28rem]">
@@ -273,6 +310,186 @@ export function CourseDetailClient({
         </motion.div>
       </div>
     </div>
+      </motion.div>
+    </>
+  );
+}
+
+/**
+ * GuideCover — שער כניסה מלא-מסך (100vh/100vw): תמונת רקע עם שכבה כהה,
+ * שם המדריך בפונט מרהיב, מידע טכני, וכפתור כניסה. בלחיצה הוא "נופל"
+ * החוצה והעמוד נפתח מתחתיו בלי רענון.
+ */
+function GuideCover({
+  title,
+  bgUrl,
+  totalLessons,
+  totalMinutes,
+  isPremium,
+  progress,
+  isEnrolled,
+  onEnter,
+}: {
+  title: string;
+  bgUrl: string | null;
+  totalLessons: number;
+  totalMinutes: number;
+  isPremium: boolean;
+  progress: number;
+  isEnrolled: boolean;
+  onEnter: () => void;
+}) {
+  return (
+    <motion.div
+      className="fixed inset-0 z-[70] flex flex-col overflow-hidden"
+      style={{ width: '100vw', height: '100vh' }}
+      initial={{ opacity: 1 }}
+      exit={{ y: '108%', opacity: 1, transition: { duration: 0.7, ease: [0.7, 0, 0.84, 0] } }}
+    >
+      {/* תמונת רקע */}
+      {bgUrl ? (
+        <motion.div
+          className="absolute inset-0"
+          initial={{ scale: 1.16 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 6, ease: 'easeOut' }}
+        >
+          <Image src={bgUrl} alt={title} fill className="object-cover" priority />
+        </motion.div>
+      ) : (
+        <div
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(160deg, #064e3b, #0f766e, #1f2937)' }}
+          aria-hidden
+        />
+      )}
+
+      {/* שכבה כהה (שחור/אפור כהה) מעל התמונה */}
+      <div
+        className="absolute inset-0"
+        aria-hidden
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(17,24,39,0.55) 0%, rgba(0,0,0,0.45) 45%, rgba(0,0,0,0.82) 100%)',
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        aria-hidden
+        style={{ background: 'rgba(10,12,16,0.32)' }}
+      />
+
+      {/* תוכן השער */}
+      <div className="relative z-10 flex flex-1 flex-col px-6 pb-10 pt-[max(2rem,env(safe-area-inset-top))]">
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="flex items-center gap-2"
+        >
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-extrabold backdrop-blur-md"
+            style={{ background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff' }}
+          >
+            <BookOpen className="h-3.5 w-3.5" /> מדריך
+          </span>
+          {isPremium ? (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-extrabold backdrop-blur-md"
+              style={{ background: 'rgba(168,85,247,0.3)', border: '1px solid rgba(216,180,254,0.5)', color: '#f3e8ff' }}
+            >
+              <Crown className="h-3.5 w-3.5" /> פרימיום
+            </span>
+          ) : null}
+        </motion.div>
+
+        {/* מרכז: שם המדריך בפונט מרהיב */}
+        <div className="flex flex-1 flex-col items-center justify-center text-center">
+          <motion.h1
+            initial={{ opacity: 0, y: 24, letterSpacing: '0.06em' }}
+            animate={{ opacity: 1, y: 0, letterSpacing: '-0.01em' }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+            className="max-w-[18ch] text-[44px] leading-[1.04] text-white sm:text-6xl"
+            style={{
+              fontFamily: "'Rubik','Heebo',sans-serif",
+              fontWeight: 900,
+              textShadow: '0 6px 40px rgba(0,0,0,0.6), 0 2px 10px rgba(0,0,0,0.5)',
+            }}
+          >
+            {title}
+          </motion.h1>
+          <motion.span
+            initial={{ opacity: 0, scaleX: 0 }}
+            animate={{ opacity: 1, scaleX: 1 }}
+            transition={{ duration: 0.6, delay: 0.55 }}
+            className="mt-5 h-1 w-20 rounded-full"
+            style={{ background: 'linear-gradient(90deg, #10b981, #2dd4bf)' }}
+          />
+
+          {/* מידע טכני */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.65 }}
+            className="mt-6 flex flex-wrap items-center justify-center gap-2.5"
+          >
+            <CoverStat icon={BookOpen} value={`${totalLessons}`} label="פרקים" />
+            <CoverStat icon={Clock} value={`~${totalMinutes}`} label="דקות" />
+            {isEnrolled && progress > 0 ? (
+              <CoverStat icon={Award} value={`${progress}%`} label="הושלם" />
+            ) : null}
+          </motion.div>
+        </div>
+
+        {/* כפתור כניסה */}
+        <motion.button
+          type="button"
+          onClick={onEnter}
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+          whileTap={{ scale: 0.98 }}
+          className="mx-auto flex w-full max-w-sm items-center justify-center gap-2 rounded-2xl py-4 text-base font-black text-white"
+          style={{
+            background: 'linear-gradient(135deg, #6366f1 0%, #14b8a6 60%, #2dd4bf 100%)',
+            boxShadow: '0 14px 38px rgba(20,184,166,0.4), inset 0 1px 0 rgba(255,255,255,0.25)',
+          }}
+        >
+          <Play className="h-5 w-5" fill="white" />
+          בוא נצלול פנימה
+        </motion.button>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.1 }}
+          className="mt-3 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-white/55"
+        >
+          <ArrowDown className="h-3.5 w-3.5" />
+          הקש כדי לפתוח את המדריך
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+}
+
+function CoverStat({
+  icon: Icon,
+  value,
+  label,
+}: {
+  icon: React.ElementType;
+  value: string;
+  label: string;
+}) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm backdrop-blur-md"
+      style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)' }}
+    >
+      <Icon className="h-4 w-4 text-emerald-200" />
+      <span className="font-bold text-white">{value}</span>
+      <span className="text-xs text-white/65">{label}</span>
+    </span>
   );
 }
 

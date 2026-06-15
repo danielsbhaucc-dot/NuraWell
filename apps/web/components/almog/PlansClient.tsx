@@ -260,7 +260,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
         blockers={blockerCount}
       />
 
-      <div className="container-mobile relative z-10 space-y-4 pb-10 pt-5">
+      <div className="container-mobile relative z-10 space-y-6 pb-12 pt-6">
         {loading ? (
           <div className="flex justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
@@ -315,10 +315,11 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
             >
               {activeCount > 0 ? (
                 <AnimatePresence initial={false}>
-                  {data.assignments.map((a) => (
+                  {data.assignments.map((a, i) => (
                     <AssignmentCard
                       key={a.id}
                       assignment={a}
+                      index={i + 1}
                       busy={busyId === a.id}
                       onDone={() => run(a.id, () => postAction({ action: 'done', assignment_id: a.id }))}
                       onDrop={() => run(a.id, () => postAction({ action: 'drop', assignment_id: a.id }))}
@@ -339,8 +340,8 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                 count={pendingReminders.length}
                 explain="פה אני שומר את התזכורות שלקחתי על עצמי. לא תצטרך לזכור לבד — אני אדאג להזכיר בזמן."
               >
-                {pendingReminders.map((r) => (
-                  <ReminderRow key={r.id} reminder={r} />
+                {pendingReminders.map((r, i) => (
+                  <ReminderRow key={r.id} reminder={r} index={i + 1} />
                 ))}
               </Section>
             ) : null}
@@ -355,10 +356,11 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                 defaultOpen
                 explain="כשמשהו תקוע, פה אנחנו פותרים את זה ביחד. בלי שיפוט — צעד אחד קטן בכל פעם."
               >
-                {data.blockers.map((b) => (
+                {data.blockers.map((b, i) => (
                   <BlockerCoachCard
                     key={b.id}
                     blocker={b}
+                    index={i + 1}
                     busy={busyId?.startsWith(b.id) ?? false}
                     onCoach={() =>
                       run(`${b.id}-c`, () =>
@@ -399,11 +401,12 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                 count={data.completed.length}
                 explain="כל מה שכבר סימנת. שווה להציץ אחורה מדי פעם — זה דלק להמשך, ואני גאה בכל אחד מהם. 💪"
               >
-                {data.completed.map((a) => (
+                {data.completed.map((a, i) => (
                   <li
                     key={a.id}
                     className="flex items-center gap-2.5 rounded-2xl border border-teal-100 bg-teal-50/70 px-3 py-2.5"
                   >
+                    <NumBadge n={i + 1} rgb={TINT.teal.rgb} />
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-500" />
                     <p className="min-w-0 flex-1 truncate text-[13px] font-bold text-teal-900/80 line-through decoration-teal-400/50">
                       {a.title}
@@ -423,10 +426,16 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                   תזכורות שכבר שלחתי ({sentReminders.length})
                 </summary>
                 <ul className="mt-2 space-y-2">
-                  {sentReminders.slice(0, 8).map((r) => (
-                    <li key={r.id} className="rounded-2xl border border-slate-200/70 bg-white/60 px-3 py-2.5">
-                      <p className="text-[13px] text-slate-700">{r.body}</p>
-                      <p className="mt-1 text-[10px] text-slate-400">נשלחה {fmt(r.sent_at)}</p>
+                  {sentReminders.slice(0, 8).map((r, i) => (
+                    <li
+                      key={r.id}
+                      className="flex items-start gap-2.5 rounded-2xl border border-slate-200/70 bg-white/60 px-3 py-2.5"
+                    >
+                      <NumBadge n={i + 1} rgb="148,163,184" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] text-slate-700">{r.body}</p>
+                        <p className="mt-1 text-[10px] text-slate-400">נשלחה {fmt(r.sent_at)}</p>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -746,9 +755,7 @@ function glassStyle(tint: Tint): React.CSSProperties {
     boxShadow: [
       `0 14px 40px rgba(15,23,42,0.10)`,
       `0 4px 12px rgba(15,23,42,0.05)`,
-      `0 1px 0 rgba(${t.rgb},0.10)`,
-      `inset 0 1px 0 rgba(255,255,255,0.92)`,
-      `inset 0 -1px 0 rgba(${t.rgb},0.07)`,
+      `inset 0 1px 0 rgba(255,255,255,0.9)`,
     ].join(', '),
   };
 }
@@ -765,6 +772,18 @@ function GlassSheen() {
         opacity: 0.6,
       }}
     />
+  );
+}
+
+/** עיגול מספור קטן לפריט ברשימה — מספר רץ בכל סקציה. */
+function NumBadge({ n, rgb }: { n: number; rgb: string }) {
+  return (
+    <span
+      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white"
+      style={{ background: `rgba(${rgb},0.92)`, boxShadow: `0 2px 6px rgba(${rgb},0.32)` }}
+    >
+      {n}
+    </span>
   );
 }
 
@@ -798,6 +817,24 @@ function LivePill({ live, pulsing }: { live: boolean; pulsing: boolean }) {
   );
 }
 
+/** מפריד צבעוני עדין בין הסקציות — מחזיר אוויר ונותן לכל אזור גוון משלו. */
+function SectionDivider({ tint }: { tint: Tint }) {
+  const t = TINT[tint];
+  return (
+    <div className="flex items-center gap-2 px-3 pb-1" aria-hidden>
+      <span
+        className="h-px flex-1 rounded-full"
+        style={{ background: `linear-gradient(90deg, transparent, rgba(${t.rgb},0.4))` }}
+      />
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: `rgba(${t.rgb},0.6)` }} />
+      <span
+        className="h-px flex-1 rounded-full"
+        style={{ background: `linear-gradient(90deg, rgba(${t.rgb},0.4), transparent)` }}
+      />
+    </div>
+  );
+}
+
 /**
  * סקציה מתקפלת (אקורדיון) — מקלה על העומס בדף. כברירת מחדל סגורה,
  * אלא אם defaultOpen. כשפתוחה — מופיע הסבר קצר בקול של אלמוג ואז התוכן.
@@ -822,7 +859,8 @@ function Section({
   const t = TINT[tint];
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section>
+    <section className="space-y-2.5">
+      <SectionDivider tint={tint} />
       {/* כותרת לחיצה — שורה נקייה ושטוחה שמכווצת את הדף */}
       <button
         type="button"
@@ -874,9 +912,9 @@ function Section({
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className="space-y-2.5 pt-2.5">
+            <div className="space-y-3 pt-3">
               {explain ? <AlmogLine text={explain} /> : null}
-              <ul className="space-y-2.5">{children}</ul>
+              <ul className="space-y-3">{children}</ul>
             </div>
           </motion.div>
         ) : null}
@@ -943,11 +981,13 @@ const RELATION_META: Record<
 
 function AssignmentCard({
   assignment,
+  index,
   busy,
   onDone,
   onDrop,
 }: {
   assignment: Assignment;
+  index: number;
   busy: boolean;
   onDone: () => void;
   onDrop: () => void;
@@ -974,6 +1014,7 @@ function AssignmentCard({
       <GlassSheen />
       <div className="relative z-[1]">
       <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+        <NumBadge n={index} rgb={TINT.emerald.rgb} />
         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
           {isRecurring ? <Repeat className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
           {SCHEDULE_LABEL[assignment.schedule]}
@@ -1037,12 +1078,13 @@ function AssignmentCard({
   );
 }
 
-function ReminderRow({ reminder }: { reminder: Reminder }) {
+function ReminderRow({ reminder, index }: { reminder: Reminder; index: number }) {
   return (
     <li className="relative overflow-hidden rounded-3xl p-3.5" style={glassStyle('amber')}>
       <GlassSheen />
       <div className="relative z-[1]">
       <div className="mb-1 flex items-center gap-2">
+        <NumBadge n={index} rgb={TINT.amber.rgb} />
         <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
           {REMINDER_KIND[reminder.kind]}
         </span>
@@ -1068,6 +1110,7 @@ function readCoachFromMetadata(metadata: Record<string, unknown> | null): Blocke
 
 function BlockerCoachCard({
   blocker,
+  index,
   busy,
   onCoach,
   onAccept,
@@ -1076,6 +1119,7 @@ function BlockerCoachCard({
   onAsk,
 }: {
   blocker: Blocker;
+  index: number;
   busy: boolean;
   onCoach: () => Promise<Record<string, unknown>>;
   onAccept: () => Promise<Record<string, unknown>>;
@@ -1136,6 +1180,9 @@ function BlockerCoachCard({
     return (
       <motion.li layout className="relative overflow-hidden rounded-[24px] p-4" style={glassStyle('rose')}>
         <GlassSheen />
+        <div className="absolute left-3 top-3 z-[2]">
+          <NumBadge n={index} rgb={TINT.rose.rgb} />
+        </div>
         <div className="relative z-[1] flex items-start gap-3">
           <AlmogAvatarChip size={36} />
           <div className="min-w-0 flex-1">
@@ -1182,6 +1229,9 @@ function BlockerCoachCard({
   return (
     <motion.li layout className="relative overflow-hidden rounded-[24px] p-4" style={glassStyle('rose')}>
       <GlassSheen />
+      <div className="absolute left-3 top-3 z-[2]">
+        <NumBadge n={index} rgb={TINT.rose.rgb} />
+      </div>
       <div className="relative z-[1] space-y-3">
         {/* בועת אמפתיה */}
         {showCoachChat && (empathy || coachLoading) ? (
