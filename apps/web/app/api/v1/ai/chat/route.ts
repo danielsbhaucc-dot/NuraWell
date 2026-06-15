@@ -3123,6 +3123,19 @@ export async function POST(request: Request) {
                   ...persistResult,
                 });
               }
+              /**
+               * הצפה ייעודית של כשלי כתיבה: אלמוג חילץ התחייבות אבל היא לא נשמרה
+               * (לרוב service-role/RLS). בלי הלוג הזה התזכורת "נעלמת" בלי עקבה.
+               */
+              if (persistResult.write_errors > 0) {
+                console.error('[ai/chat]', {
+                  debug_id: debugId,
+                  stage: 'almog_commitments_write_errors',
+                  write_errors: persistResult.write_errors,
+                  extracted_reminders: extraction.reminders.length,
+                  extracted_tasks: extraction.tasks.length,
+                });
+              }
             } catch (commitErr) {
               console.warn('[ai/chat]', {
                 debug_id: debugId,
