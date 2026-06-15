@@ -105,10 +105,14 @@ describe('buildSafetyNetReminder — time + topic', () => {
     expect(r!.fire_at_iso).toBe(new Date(now.getTime() + 3_600_000).toISOString());
   });
 
-  it('הנושא והניסוח כוללים את מה שהמשתמש ביקש (מים)', () => {
+  it('הנושא והניסוח כוללים את מה שהמשתמש ביקש (מים), בלי ביטוי הזמן', () => {
     const r = buildSafetyNetReminder('תזכיר לי לשתות מים בעוד 5 דקות', 'בטח דניאל, ממש בקרוב 💧', now);
     expect(r!.what).toContain('מים');
     expect(r!.notify_text).toContain('מים');
+    // הזמן נשמר ב-fire_at — אסור שיופיע *בגוף* ההתראה ("בעוד 5 דקות").
+    expect(r!.what).not.toMatch(/דקות/);
+    expect(r!.notify_text).not.toMatch(/דקות/);
+    expect(r!.notify_text).not.toMatch(/תזכורת/);
   });
 
   it('לא יוצר תזכורת אם אלמוג שאל מתי / דחה', () => {
