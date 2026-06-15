@@ -35,17 +35,23 @@ function decodeHtmlEntities(input: string): string {
  * ומסיר רווחים/תווי בקרה (שדפדפנים מתעלמים מהם בתוך הסכימה).
  */
 function isDangerousUrlValue(rawValue: string): boolean {
-  let v = rawValue.trim();
+  let value = rawValue.trim();
   if (
-    (v.startsWith('"') && v.endsWith('"')) ||
-    (v.startsWith("'") && v.endsWith("'"))
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
   ) {
-    v = v.slice(1, -1);
+    value = value.slice(1, -1);
   }
-  v = decodeHtmlEntities(v);
+  value = decodeHtmlEntities(value);
   // הסרת כל הרווחים ותווי הבקרה (כולל \t \n \r ו-NBSP) — דפדפנים מתעלמים מהם בסכימה.
-  v = v.replace(/[\u0000-\u0020\u00a0]+/g, '');
-  return DANGEROUS_SCHEME.test(v);
+  // משתמשים בסינון לפי קוד תו (ולא regex עם תווי בקרה ספרותיים) כדי לא לפגוע בקריאוּת/לינטינג.
+  value = Array.from(value)
+    .filter((ch) => {
+      const code = ch.codePointAt(0) ?? 0;
+      return code > 0x20 && code !== 0xa0;
+    })
+    .join('');
+  return DANGEROUS_SCHEME.test(value);
 }
 
 export function sanitizeLessonHtml(html: string | null | undefined): string {
