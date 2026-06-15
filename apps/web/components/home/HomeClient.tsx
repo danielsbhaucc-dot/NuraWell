@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { AlmogHeroHeader } from './DolevHeroHeader';
 import { DashboardBriefCard } from './DashboardBriefCard';
+import { SosButton } from '../ai/SosButton';
 import { buildAlmogGreeting, type GreetingTaskState } from '../../lib/ai/almog-greeting';
 import {
   countAcceptedTaskExecutionToday,
@@ -159,6 +160,11 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
           {/* תקציר חי מאלמוג — שכבת AI בראש הדשבורד */}
           <motion.div variants={item}>
             <DashboardBriefCard onOpenTasks={() => actionHub.open()} />
+          </motion.div>
+
+          {/* רגע לפני — כפתור SOS עדין */}
+          <motion.div variants={item}>
+            <SosButton />
           </motion.div>
 
           {/* משימות */}
