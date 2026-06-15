@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Receiver } from '@upstash/qstash';
 import { workflowPublicBaseUrl } from '../workflows/resolve-workflow-public-url';
+import { timingSafeEqualStr } from './timing-safe-equal';
 
 /**
  * אימות אחיד לכל ה-cron routes. שתי שיטות נתמכות:
@@ -97,7 +98,7 @@ export async function authorizeCronRequest(request: Request): Promise<NextRespon
 
   /** הפעלה ידנית — Authorization: Bearer <CRON_SECRET> */
   const auth = request.headers.get('authorization');
-  if (secret && auth === `Bearer ${secret}`) {
+  if (secret && auth && timingSafeEqualStr(auth, `Bearer ${secret}`)) {
     return null;
   }
 

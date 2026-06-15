@@ -2,9 +2,52 @@
  * סניטציה של HTML מהמסד (תוכן שיעור). ללא תלות חיצונית — מתאים גם כש־npm חסום (TLS).
  * בשימוש בצד שרת (lessons page) ובצד לקוח (LessonPageClient) — הגנה לעומק.
  *
- * הערה: סניטציה מבוססת regex היא שכבת הגנה ראשונה בלבד.
- * התוכן מגיע מה-DB (נכתב ע"י מנהלים) — איום XSS נמוך.
+ * הערה: סניטציה מבוססת regex היא שכבת הגנה — התוכן מגיע מה-DB (נכתב ע"י מנהלים),
+ * וה-CSP (nonce, ללא 'unsafe-inline') הוא שכבת הגנה נוספת. עדיין מקשיחים כאן
+ * אגרסיבית: מסירים תגיות מסוכנות, מאפייני אירוע (on*), וכל href/src/xlink:href
+ * שערכו — אחרי פענוח entities והסרת רווחים/בקרה — מצביע לסכימה מסוכנת
+ * (javascript:/vbscript:/data:). כך נסגרות עקיפות נפוצות כמו `&#106;avascript:`,
+ * טאב/רווח בתוך הסכימה, ומפריד `/` במקום רווח לפני שם המאפיין.
  */
+
+const DANGEROUS_SCHEME = /^(?:javascript|vbscript|data):/i;
+
+/** פענוח entities מספריות (&#106; / &#x6a;) + entities נפוצות הרלוונטיות לעקיפות. */
+function decodeHtmlEntities(input: string): string {
+  return input
+    .replace(/&#x([0-9a-f]+);?/gi, (_m, hex: string) => {
+      const code = Number.parseInt(hex, 16);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : '';
+    })
+    .replace(/&#(\d+);?/g, (_m, dec: string) => {
+      const code = Number.parseInt(dec, 10);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : '';
+    })
+    .replace(/&tab;/gi, '\t')
+    .replace(/&newline;/gi, '\n')
+    .replace(/&colon;/gi, ':')
+    .replace(/&amp;/gi, '&');
+}
+
+/**
+ * האם ערך URL (של href/src/xlink:href) מצביע לסכימה מסוכנת?
+ * מנרמל בדיוק כמו שדפדפן עושה: מסיר מרכאות עוטפות, מפענח entities,
+ * ומסיר רווחים/תווי בקרה (שדפדפנים מתעלמים מהם בתוך הסכימה).
+ */
+function isDangerousUrlValue(rawValue: string): boolean {
+  let v = rawValue.trim();
+  if (
+    (v.startsWith('"') && v.endsWith('"')) ||
+    (v.startsWith("'") && v.endsWith("'"))
+  ) {
+    v = v.slice(1, -1);
+  }
+  v = decodeHtmlEntities(v);
+  // הסרת כל הרווחים ותווי הבקרה (כולל \t \n \r ו-NBSP) — דפדפנים מתעלמים מהם בסכימה.
+  v = v.replace(/[\u0000-\u0020\u00a0]+/g, '');
+  return DANGEROUS_SCHEME.test(v);
+}
+
 export function sanitizeLessonHtml(html: string | null | undefined): string {
   if (!html) return '';
 
@@ -20,15 +63,20 @@ export function sanitizeLessonHtml(html: string | null | undefined): string {
 
   s = s.replace(/<\/?(?:script|iframe|object|embed|applet|meta|link|base)\b[^>]*>/gi, '');
 
-  // הסרת אירועי JS (onclick, onload וכו') + formaction
-  s = s.replace(/\s(?:on[a-z]{3,}|formaction)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, ' ');
-  // חסימת javascript: / vbscript: ב-href/src/xlink:href (כולל entities בסיסיות)
+  // הסרת מאפייני אירוע (onclick, onload, ontoggle וכו') + formaction.
+  // המפריד לפני שם המאפיין יכול להיות רווח *או* '/' (כמו `<a/onclick=...>`).
   s = s.replace(
-    /\s(?:href|src|xlink:href)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*?)(?:javascript:|vbscript:)/gi,
+    /[\s/](?:on[a-z]{2,}|formaction)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi,
     ' ',
   );
-  // חסימת data: ב-href/src (למניעת data URI XSS)
-  s = s.replace(/\s(?:href|src)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*?)data:/gi, ' ');
+
+  // נטרול href/src/xlink:href/action/formaction עם סכימה מסוכנת —
+  // אחרי פענוח entities והסרת רווחים/בקרה (סוגר עקיפות encoding/whitespace).
+  s = s.replace(
+    /([\s/])(href|src|xlink:href|action|formaction)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi,
+    (match, sep: string, _attr: string, value: string) =>
+      isDangerousUrlValue(value) ? sep : match,
+  );
 
   return s;
 }
