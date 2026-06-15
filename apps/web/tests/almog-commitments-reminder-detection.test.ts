@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildSafetyNetReminder,
   detectExplicitReminderPromise,
   detectUserReminderRequest,
 } from '../lib/ai/almog-commitments/extract-commitments';
@@ -83,5 +84,36 @@ describe('detectUserReminderRequest', () => {
     expect(detectUserReminderRequest('מה שלומך? איך היה היום?')).toBe(false);
     expect(detectUserReminderRequest('שתיתי כבר 3 כוסות מים היום')).toBe(false);
     expect(detectUserReminderRequest('תודה רבה, עזרת לי מאוד')).toBe(false);
+  });
+});
+
+/**
+ * רשת הביטחון הדטרמיניסטית חייבת לשמר גם את הזמן היחסי שהמשתמש ביקש וגם את
+ * הנושא שלו — כדי שלא נחזור לבאג "בעוד 5 דקות → מחר ב-9" ו"בלי לשתות מים".
+ */
+describe('buildSafetyNetReminder — time + topic', () => {
+  const now = new Date('2026-06-15T18:00:00.000Z'); // 21:00 שעון ישראל
+
+  it('משמר זמן יחסי "בעוד 5 דקות" (לא ברירת מחדל)', () => {
+    const r = buildSafetyNetReminder('תזכיר לי לשתות מים בעוד 5 דקות', 'בטח, אזכיר לך 💧', now);
+    expect(r).not.toBeNull();
+    expect(r!.fire_at_iso).toBe(new Date(now.getTime() + 5 * 60_000).toISOString());
+  });
+
+  it('משמר זמן יחסי "בעוד שעה"', () => {
+    const r = buildSafetyNetReminder('תזכיר לי להתקשר לאמא בעוד שעה', 'סגור!', now);
+    expect(r!.fire_at_iso).toBe(new Date(now.getTime() + 3_600_000).toISOString());
+  });
+
+  it('הנושא והניסוח כוללים את מה שהמשתמש ביקש (מים)', () => {
+    const r = buildSafetyNetReminder('תזכיר לי לשתות מים בעוד 5 דקות', 'בטח דניאל, ממש בקרוב 💧', now);
+    expect(r!.what).toContain('מים');
+    expect(r!.notify_text).toContain('מים');
+  });
+
+  it('לא יוצר תזכורת אם אלמוג שאל מתי / דחה', () => {
+    expect(
+      buildSafetyNetReminder('תזכיר לי לשתות מים', 'מתי אתה רוצה שאזכיר לך?', now)
+    ).toBeNull();
   });
 });

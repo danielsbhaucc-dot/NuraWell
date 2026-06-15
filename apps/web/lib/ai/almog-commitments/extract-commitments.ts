@@ -11,7 +11,13 @@
 
 import { openrouter } from '../client';
 import { normalizeFrictionCategory } from './friction';
-import { israelLocalToUtcIso, israelParts } from './time';
+import {
+  correctLateNightMorning,
+  israelDayOffsetToUtcIso,
+  israelLocalToUtcIso,
+  israelParts,
+  israelWallClockToUtcIso,
+} from './time';
 
 /** מודל העבודה השחורה: Llama 4 Scout דרך OpenRouter (Meta — לא סין). */
 export const ALMOG_COMMITMENTS_MODEL =
@@ -446,31 +452,77 @@ function userRequestNotifyText(userMessage: string): string {
   return body.slice(0, 280);
 }
 
+const DAYPART_HOUR: Record<string, number> = { בוקר: 8, צהריים: 13, ערב: 20, לילה: 22 };
+
 /**
- * רשת ביטחון *דטרמיניסטית* לתזכורת (בלי LLM) — מחזירה תזכורת אם אלמוג הבטיח
- * במפורש, או אם המשתמש ביקש מפורשות ואלמוג לא דחה/סירב. אחרת null.
+ * פרסור זמן דטרמיניסטי (בלי LLM) לביטויים נפוצים בעברית — רשת ביטחון לתזמון אם
+ * ה-LLM לא רץ/החזיר null. מכסה את המקרים שהמשתמש הזכיר במפורש זמן יחסי או חלק-יום
+ * ("בעוד 5 דקות", "בעוד שעה", "מחר בבוקר", "בערב"). מחזיר UTC ISO או null.
+ * שעון מדויק (HH:MM) מושאר ל-LLM כדי לא לפרש שגוי ("ב-5 כוסות").
+ */
+function parseHebrewReminderTime(text: string, now: Date): string | null {
+  const t = text.replace(/\s+/g, ' ').trim();
+
+  // ── זמן יחסי ──
+  const mins = t.match(/בעוד\s+(?:כ-?\s*)?(\d{1,3})\s*דק(?:ות|ה)?/u);
+  if (mins) return new Date(now.getTime() + Math.min(Number(mins[1]), 1440) * 60_000).toISOString();
+  if (/בעוד\s+(?:כ-?\s*)?דקה/u.test(t)) return new Date(now.getTime() + 60_000).toISOString();
+  if (/בעוד\s+(?:כ-?\s*)?חצי\s+שעה/u.test(t)) return new Date(now.getTime() + 30 * 60_000).toISOString();
+  if (/בעוד\s+(?:כ-?\s*)?שעתיים/u.test(t)) return new Date(now.getTime() + 2 * 3_600_000).toISOString();
+  const hrs = t.match(/בעוד\s+(?:כ-?\s*)?(\d{1,2})\s*שע(?:ות|ה)?/u);
+  if (hrs) return new Date(now.getTime() + Math.min(Number(hrs[1]), 48) * 3_600_000).toISOString();
+  if (/בעוד\s+(?:כ-?\s*)?שעה/u.test(t)) return new Date(now.getTime() + 3_600_000).toISOString();
+
+  // ── חלק-יום (אופציונלי עם "מחר") ──
+  const isTomorrow = /\bמחר\b/u.test(t);
+  for (const [word, hour] of Object.entries(DAYPART_HOUR)) {
+    if (!new RegExp(`ב?${word}`, 'u').test(t)) continue;
+    if (isTomorrow) {
+      // "מחר בבוקר" — כולל תיקון אחרי-חצות (00:00–04:59 → הבוקר הקרוב, היום).
+      const tParts = israelParts(new Date(now.getTime() + 86_400_000));
+      const c = correctLateNightMorning({ ...tParts, hour, minute: 0 }, now);
+      return israelWallClockToUtcIso(c.year, c.month, c.day, c.hour, c.minute);
+    }
+    const todayIso = israelDayOffsetToUtcIso(now, 0, hour, 0);
+    // אם השעה כבר עברה היום — נדחה למחר.
+    return new Date(todayIso).getTime() <= now.getTime() + 60_000
+      ? israelDayOffsetToUtcIso(now, 1, hour, 0)
+      : todayIso;
+  }
+  if (isTomorrow) return israelDayOffsetToUtcIso(now, 1, 9, 0);
+  return null;
+}
+
+/**
+ * רשת ביטחון *דטרמיניסטית* לתזכורת (בלי LLM) — מחזירה תזכורת אם המשתמש ביקש
+ * מפורשות ואלמוג לא דחה/סירב, או אם אלמוג הבטיח במפורש. אחרת null.
  *
- * מופרד לפונקציה כדי שאפשר יהיה לשמור אותה *סינכרונית* בצ'אט (לפני ה-after()
- * האיטי שכולל קריאת LLM), כך שהבטחת תזכורת לא תאבד גם אם הרקע ב-edge נקטע.
+ * מעדיפה את *נושא בקשת המשתמש* (שם יש את הנושא האמיתי, "לשתות מים"), ומפרסרת
+ * זמן יחסי מההודעה. מופרד לפונקציה כדי לשמור סינכרונית בצ'אט אם צריך.
  */
 export function buildSafetyNetReminder(
   userMessage: string,
-  assistantMessage: string
+  assistantMessage: string,
+  now: Date = new Date()
 ): ExtractedReminder | null {
-  if (detectExplicitReminderPromise(assistantMessage)) {
-    return {
-      what: fallbackReminderWhat(assistantMessage, userMessage),
-      notify_text: fallbackNotifyText(assistantMessage, userMessage),
-      fire_at_iso: null,
-      confidence: 0.9,
-    };
-  }
+  const fireAt =
+    parseHebrewReminderTime(userMessage, now) ?? parseHebrewReminderTime(assistantMessage, now);
+
+  // עדיפות לבקשת המשתמש — שם יש את הנושא הברור ("תזכיר לי לשתות מים").
   if (detectUserReminderRequest(userMessage) && !almogDefersReminder(assistantMessage)) {
     return {
       what: stripUserReminderPrefix(userMessage) || userMessage.slice(0, 160),
       notify_text: userRequestNotifyText(userMessage),
-      fire_at_iso: null,
-      confidence: 0.75,
+      fire_at_iso: fireAt,
+      confidence: 0.78,
+    };
+  }
+  if (detectExplicitReminderPromise(assistantMessage)) {
+    return {
+      what: fallbackReminderWhat(assistantMessage, userMessage),
+      notify_text: fallbackNotifyText(assistantMessage, userMessage),
+      fire_at_iso: fireAt,
+      confidence: 0.9,
     };
   }
   return null;
@@ -594,7 +646,7 @@ export async function extractAlmogCommitments(params: {
    * החילוץ לא רץ/נכשל/החזיר confidence נמוך.
    */
   if (extraction.reminders.length === 0) {
-    const safety = buildSafetyNetReminder(params.userMessage, params.assistantMessage);
+    const safety = buildSafetyNetReminder(params.userMessage, params.assistantMessage, now);
     if (safety) extraction.reminders.push(safety);
   }
 
