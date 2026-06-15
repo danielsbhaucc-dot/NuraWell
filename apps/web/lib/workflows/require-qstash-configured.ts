@@ -22,6 +22,6 @@ export function requireQstashConfigured(post: WorkflowPost): WorkflowPost {
         { status: 500 },
       );
     }
-    return post(request);
+    return await post(request);
   };
 }
