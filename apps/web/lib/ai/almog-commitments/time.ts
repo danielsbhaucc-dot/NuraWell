@@ -10,9 +10,9 @@ const IL_TZ = 'Asia/Jerusalem';
 
 /** ההיסט (ms) של שעון ישראל ביחס ל-UTC ברגע נתון — מודע ל-DST. */
 function israelOffsetMs(at: Date): number {
-  const il = new Date(at.toLocaleString('en-US', { timeZone: IL_TZ }));
-  const utc = new Date(at.toLocaleString('en-US', { timeZone: 'UTC' }));
-  return il.getTime() - utc.getTime();
+  const ilLocal = new Date(at.toLocaleString('en-US', { timeZone: IL_TZ }));
+  const utcLocal = new Date(at.toLocaleString('en-US', { timeZone: 'UTC' }));
+  return ilLocal.getTime() - utcLocal.getTime();
 }
 
 /** רכיבי התאריך/שעה בישראל ברגע נתון. */
@@ -35,7 +35,7 @@ export function israelParts(at: Date): IsraelParts {
     minute: '2-digit',
     hourCycle: 'h23',
   }).formatToParts(at);
-  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? '0');
+  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? '0');
   return {
     year: get('year'),
     month: get('month'),
@@ -74,8 +74,8 @@ export function israelDayOffsetToUtcIso(
   minute: number
 ): string {
   const target = new Date(now.getTime() + addDays * 86_400_000);
-  const p = israelParts(target);
-  return israelWallClockToUtcIso(p.year, p.month, p.day, hour, minute);
+  const parts = israelParts(target);
+  return israelWallClockToUtcIso(parts.year, parts.month, parts.day, hour, minute);
 }
 
 const LOCAL_RE = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/;
@@ -85,13 +85,13 @@ const LOCAL_RE = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/;
  * null אם הפורמט לא תקין/לא הגיוני.
  */
 export function parseIsraelLocal(local: string): IsraelParts | null {
-  const m = LOCAL_RE.exec(local.trim());
-  if (!m) return null;
-  const year = Number(m[1]);
-  const month = Number(m[2]);
-  const day = Number(m[3]);
-  const hour = Number(m[4]);
-  const minute = Number(m[5]);
+  const match = LOCAL_RE.exec(local.trim());
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
   if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59) {
     return null;
   }
