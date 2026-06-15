@@ -382,13 +382,20 @@ const EXPLICIT_REMINDER_RE =
  * ("מתי אתה רוצה שאזכיר", "אם תרצה שנזכיר", "תגיד לי מתי"), שלילה ("לא אזכיר",
  * "בלי תזכורת"), או הצעה שטרם אושרה ("רוצה שאזכיר לך?"). במצבים האלה אלמוג עדיין
  * לא התחייב — אסור ליצור תזכורת אוטומטית.
+ *
+ * הערה: "אל תדאג" הוסר מכאן — זו מילת הרגעה שנפוצה לפני התחייבות ("אל תדאג,
+ * אזכיר לך") ואינה שלילה של היכולת. מקרה כמו "אל תדאג, לא אזכיר" מכוסה ע"י
+ * "לא אזכיר" בנפרד.
  */
 const REMINDER_PROMISE_NEGATOR_RE =
-  /(רוצה|תרצה|מעוניין|תעדיף|אשמח אם|אם)\s+ש(?:אני\s+)?(?:אזכיר|נזכיר|תזכיר|אשלח)|תגיד לי (?:בדיוק )?מתי|(?:מתי|אימתי)\s+(?:אתה|את)\s+(?:רוצה|תרצה|מעדיף|מעוניין)|האם\s+(?:אתה|את)\s+(?:רוצה|תרצה)|לא אזכיר|לא אשלח|אל תדאג|בלי תזכורת|בלי להזכיר/u;
+  /(רוצה|תרצה|מעוניין|תעדיף|אשמח אם|אם)\s+ש(?:אני\s+)?(?:אזכיר|נזכיר|תזכיר|אשלח)|תגיד לי (?:בדיוק )?מתי|(?:מתי|אימתי)\s+(?:אתה|את)\s+(?:רוצה|תרצה|מעדיף|מעוניין)|האם\s+(?:אתה|את)\s+(?:רוצה|תרצה)|לא אזכיר|לא אשלח|בלי תזכורת|בלי להזכיר/u;
 
 export function detectExplicitReminderPromise(assistantMessage: string): boolean {
-  if (REMINDER_PROMISE_NEGATOR_RE.test(assistantMessage)) return false;
-  return EXPLICIT_REMINDER_RE.test(assistantMessage);
+  const sentences = assistantMessage.split(/(?<=[.!?\n])\s+/u);
+  return sentences.some((sentence) => {
+    if (REMINDER_PROMISE_NEGATOR_RE.test(sentence)) return false;
+    return EXPLICIT_REMINDER_RE.test(sentence);
+  });
 }
 
 /**
