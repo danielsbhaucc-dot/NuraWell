@@ -47,7 +47,7 @@ import {
   extractAlmogCommitments,
   shouldAttemptCommitmentExtraction,
   detectExplicitReminderPromise,
-  detectUserReminderRequest,
+  mentionsReminderKeyword,
 } from '../../../../../lib/ai/almog-commitments/extract-commitments';
 import { persistCommitmentExtraction } from '../../../../../lib/ai/almog-commitments/persist';
 import { applyChatSignalsFromUserMessage, detectChatSignals } from '../../../../../lib/ai/chat-signals';
@@ -3068,12 +3068,15 @@ export async function POST(request: Request) {
          * הרצה סינכרונית מבטיחה שגם הזמן נפרס נכון וגם ה-notify_text נכתב דינמית
          * ע"י Llama, באמינות מלאה. ה-LLM גם פותר זמנים ("בעוד 5 דקות"/"מחר בבוקר",
          * כולל תיקון אחרי-חצות). אם ה-LLM נכשל — רשת הביטחון הדטרמיניסטית מכסה.
-         * Gating: רק אם תשובת אלמוג מכילה רמז, או שהמשתמש ביקש תזכורת מפורשות.
+         * Gating (recall-oriented): מריצים את ה-LLM כשיש *רמז כלשהו* — אלמוג רמז
+         * להתחייבות, או שמופיעה מילת-תזכורת בהודעת המשתמש/אלמוג. ההכרעה אם זו באמת
+         * בקשת תזכורת (ולא אזכור אגבי "המורה הזכירה לי") נעשית ע"י ההבנה של ה-LLM.
          */
         if (
           shouldAttemptCommitmentExtraction(assistantText) ||
           detectExplicitReminderPromise(assistantText) ||
-          detectUserReminderRequest(lastUserText)
+          mentionsReminderKeyword(lastUserText) ||
+          mentionsReminderKeyword(assistantText)
         ) {
           await (async () => {
             try {
