@@ -47,6 +47,7 @@ import {
   formatChatTurnForPendingLog,
 } from '../../../../../lib/ai/memory-consolidation/enqueue-pending-log';
 import { getActiveContext } from '../../../../../lib/ai/mentorship/get-active-context';
+import { getMentorContext } from '../../../../../lib/ai/insights/get-mentor-context';
 import {
   fetchAlmogCommitmentContext,
   formatAlmogCommitmentBlocks,
@@ -2078,9 +2079,19 @@ export async function POST(request: Request) {
   const memoryDossierPromise = trivialBypass
     ? Promise.resolve(null)
     : fetchUserMemoryDossier(supabase, user.id).catch(() => null);
-  const mentorInsightsPromise = trivialBypass
-    ? Promise.resolve(null)
-    : getActiveContext(supabase, user.id).catch(() => null);
+  const mentorStrategyPromise = trivialBypass
+    ? Promise.resolve('')
+    : getActiveContext(supabase, user.id).catch(() => '');
+  const mentorUserContextPromise = trivialBypass
+    ? Promise.resolve('')
+    : getMentorContext(supabase, user.id).catch((mentorCtxErr) => {
+        console.warn('[ai/chat]', {
+          debug_id: debugId,
+          stage: 'mentor_user_context_failed',
+          error: mentorCtxErr instanceof Error ? mentorCtxErr.message : String(mentorCtxErr),
+        });
+        return '';
+      });
   const guideSummariesPromise = trivialBypass
     ? Promise.resolve([])
     : fetchUserGuideSummaries(supabase, user.id).catch(() => []);
@@ -2252,7 +2263,8 @@ export async function POST(request: Request) {
     notificationContextBlock,
     fullProgressReport,
     memoryDossier,
-    mentorInsightsBlock,
+    mentorStrategyBlock,
+    mentorUserContextBlock,
     guideSummaries,
   ] = await Promise.all([
     profilePromise,
@@ -2264,7 +2276,8 @@ export async function POST(request: Request) {
     notificationContextPromise,
     fullProgressReportPromise,
     memoryDossierPromise,
-    mentorInsightsPromise,
+    mentorStrategyPromise,
+    mentorUserContextPromise,
     guideSummariesPromise,
   ]);
 
@@ -2590,7 +2603,8 @@ export async function POST(request: Request) {
     if (principlesBlock) contextSections.push(principlesBlock);
     if (workingMemoryBlock) contextSections.push(workingMemoryBlock);
     if (memoryDossierBlock && !leanLightTurn) contextSections.push(memoryDossierBlock);
-    if (mentorInsightsBlock && !leanLightTurn) contextSections.push(mentorInsightsBlock);
+    if (mentorStrategyBlock && !leanLightTurn) contextSections.push(mentorStrategyBlock);
+    if (mentorUserContextBlock && !leanLightTurn) contextSections.push(mentorUserContextBlock);
     /**
      * התחייבויות אלמוג — באנר פוקוס (אם פעיל) + משימות אישיות + חסמים במעקב.
      * הבלוקים קטנים בכוונה ונטענים מותנה (חוץ מבאנר פוקוס שתמיד נשלף), כדי לא

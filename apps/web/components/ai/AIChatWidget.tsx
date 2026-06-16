@@ -2,7 +2,7 @@
 
 import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BellRing, MessageCircle, Send, Loader2, X, Paperclip, Smile, RotateCcw, PlusCircle, LogOut } from 'lucide-react';
+import { BellRing, MessageCircle, Send, Loader2, X, Paperclip, Smile, RotateCcw, PlusCircle, LogOut, ChevronRight, Inbox } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useChat } from '@ai-sdk/react';
 import { MemorySearchIndicator } from './MemorySearchIndicator';
@@ -18,14 +18,19 @@ import {
   OPEN_ALMOG_CHAT_EVENT,
   type OpenAlmogChatDetail,
 } from '../../lib/notifications/open-almog-chat';
+import { ChatSessionInbox } from './ChatSessionInbox';
 import {
   autoCloseStaleChatSessionsApi,
   closeChatSessionApi,
   createNewChatSession,
   fetchChatSession,
+  fetchChatSessionMessages,
+  fetchChatSessionsList,
   reopenChatSessionApi,
   type ChatSessionClientState,
+  type ChatSessionListItemClient,
 } from '../../lib/client/chat-session-api';
+import { transcriptTurnsToUiMessages } from '../../lib/client/chat-session-messages';
 
 const SESSION_STORAGE_KEY = 'nurawell_almog_chat_session';
 
@@ -374,6 +379,10 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const [chatSession, setChatSession] = useState<ChatSessionClientState | null>(null);
   const [sessionActionLoading, setSessionActionLoading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [panelView, setPanelView] = useState<'inbox' | 'thread'>('inbox');
+  const [sessionList, setSessionList] = useState<ChatSessionListItemClient[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [loadingThread, setLoadingThread] = useState(false);
   const notificationIdRef = useRef<string | null>(null);
   const pendingInitialReplyRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -392,6 +401,19 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     }
   }, []);
 
+  const refreshSessionList = async () => {
+    setSessionsLoading(true);
+    try {
+      await autoCloseStaleChatSessionsApi().catch(() => ({ closedSessionIds: [] }));
+      const sessions = await fetchChatSessionsList();
+      setSessionList(sessions);
+    } catch {
+      setSessionList([]);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
   const refreshChatSession = async (sessionId: string | null) => {
     if (!sessionId) {
       setChatSession(null);
@@ -406,11 +428,6 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     }
   };
 
-  useEffect(() => {
-    if (!open) return;
-    void refreshChatSession(sessionIdRef.current);
-  }, [open]);
-
   const applySessionId = (sessionId: string) => {
     sessionIdRef.current = sessionId;
     try {
@@ -419,6 +436,14 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       /* */
     }
   };
+
+  useEffect(() => {
+    if (!open) return;
+    void refreshSessionList();
+    if (panelView === 'thread') {
+      void refreshChatSession(sessionIdRef.current);
+    }
+  }, [open, panelView]);
 
   const isSessionClosed = chatSession?.status === 'closed';
 
@@ -439,6 +464,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       setOpen(true);
       const detail = (e as CustomEvent<OpenAlmogChatDetail>).detail;
       if (detail?.notificationId && detail.mentorMessage) {
+        setPanelView('thread');
         setNotificationContext(detail);
         notificationIdRef.current = detail.notificationId;
         if (detail.initialReply?.trim()) {
@@ -457,7 +483,10 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
         notificationIdRef.current = null;
         pendingInitialReplyRef.current = null;
         const prefill = detail?.prefillText?.trim();
-        if (prefill) setInput(prefill);
+        if (prefill) {
+          setPanelView('thread');
+          setInput(prefill);
+        }
       }
     };
     window.addEventListener(OPEN_ALMOG_CHAT_EVENT, onOpenChat);
@@ -514,6 +543,39 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     }),
   });
 
+  const openSessionThread = async (session: ChatSessionListItemClient) => {
+    setLoadingThread(true);
+    setPanelView('thread');
+    try {
+      applySessionId(session.id);
+      const { session: row, messages: turns } = await fetchChatSessionMessages(session.id);
+      setChatSession(row);
+      setMessages(
+        transcriptTurnsToUiMessages(
+          turns.map((t) => ({
+            role: t.role,
+            content: t.content,
+            created_at: t.created_at,
+          }))
+        )
+      );
+    } catch {
+      setChatSession({
+        id: session.id,
+        status: session.status,
+        summary: session.summary,
+      });
+    } finally {
+      setLoadingThread(false);
+    }
+  };
+
+  const goToInbox = () => {
+    if (!notifyWhenReady) stop();
+    setPanelView('inbox');
+    void refreshSessionList();
+  };
+
   const startNewChatSession = async () => {
     setSessionActionLoading(true);
     try {
@@ -525,6 +587,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       setQuotedReply(null);
       setNotificationContext(null);
       notificationIdRef.current = null;
+      setPanelView('thread');
+      void refreshSessionList();
     } finally {
       setSessionActionLoading(false);
     }
@@ -538,6 +602,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     try {
       const result = await closeChatSessionApi(sid);
       setChatSession(result.session);
+      void refreshSessionList();
     } finally {
       setIsClosing(false);
       setSessionActionLoading(false);
@@ -679,6 +744,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
         if (next) {
           setHasBackgroundAnswer(false);
           setAnswerReadyToast(false);
+          setPanelView('inbox');
         }
         if (!next) {
           setNotificationContext(null);
@@ -738,7 +804,21 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 <div className="w-10 h-1 rounded-full bg-white/40" />
               </div>
               <div className="flex items-center justify-between gap-2 px-3 pb-2.5">
-                <div className="flex min-w-0 items-center gap-2.5">
+                {panelView === 'thread' ? (
+                  <button
+                    type="button"
+                    aria-label="חזרה לרשימת שיחות"
+                    onClick={goToInbox}
+                    className="shrink-0 rounded-lg p-1.5 hover:bg-white/10"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                ) : (
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                    <Inbox className="h-4 w-4 text-white/90" />
+                  </span>
+                )}
+                <div className="flex min-w-0 flex-1 items-center gap-2.5">
                   <img
                     src={avatarSrc}
                     alt="אלמוג"
@@ -750,10 +830,15 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                   />
                   <div className="min-w-0 text-right">
                     <p className="text-lg font-bold leading-tight tracking-tight" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
-                      אלמוג
+                      {panelView === 'inbox' ? 'שיחות עם אלמוג' : 'אלמוג'}
                     </p>
                     <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-white/85" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
-                      {isLoading ? (
+                      {panelView === 'inbox' ? (
+                        <>
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-200" />
+                          היסטוריית שיחות חכמה
+                        </>
+                      ) : isLoading ? (
                         <>
                           <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-200" />
                           {isThinking
@@ -786,7 +871,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              {!isSessionClosed && messages.length > 0 && (
+              {!isSessionClosed && panelView === 'thread' && messages.length > 0 && (
                 <div className="flex justify-end px-3 pb-2">
                   <button
                     type="button"
@@ -805,10 +890,25 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
               )}
             </div>
 
+            {panelView === 'inbox' ? (
+              <ChatSessionInbox
+                sessions={sessionList}
+                loading={sessionsLoading}
+                activeSessionId={sessionIdRef.current}
+                onSelectSession={(s) => void openSessionThread(s)}
+                onStartNewChat={() => void startNewChatSession()}
+                startingNew={sessionActionLoading}
+              />
+            ) : (
             <div
               className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-[#0f172a] via-[#111827] to-[#0b1220] px-3 py-4 text-right [box-shadow:inset_0_1px_0_rgba(255,255,255,0.06)]"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
+              {loadingThread && (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-emerald-300/80" />
+                </div>
+              )}
               {notificationContext && !quotedReply && (
                 <div className="flex justify-end">
                   <div className="max-w-[92%] rounded-3xl border border-emerald-400/30 bg-emerald-500/20 px-4 py-3 text-[15px] leading-relaxed text-emerald-50 shadow-sm">
