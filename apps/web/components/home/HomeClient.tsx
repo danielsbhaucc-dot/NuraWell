@@ -16,6 +16,7 @@ import { AlmogHeroHeader } from './DolevHeroHeader';
 import { DashboardBriefCard } from './DashboardBriefCard';
 import { ProgramOrchestratorGate } from './ProgramOrchestratorGate';
 import { SosButton } from '../ai/SosButton';
+import { DynamicMentorWidgetClient } from '../mentorship/DynamicMentorWidgetClient';
 import { buildAlmogGreeting, type GreetingTaskState } from '../../lib/ai/almog-greeting';
 import {
   countAcceptedTaskExecutionToday,
@@ -40,6 +41,8 @@ export type HomeStats = {
 interface HomeClientProps {
   firstName: string;
   stats: HomeStats;
+  simplifiedDashboard?: boolean;
+  nextBestAction?: string | null;
 }
 
 const container = {
@@ -51,7 +54,12 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
 };
 
-export function HomeClient({ firstName, stats }: HomeClientProps) {
+export function HomeClient({
+  firstName,
+  stats,
+  simplifiedDashboard = false,
+  nextBestAction,
+}: HomeClientProps) {
   const progressReport = useProgressReport();
   const actionHub = useActionHub();
   const [taskLoading, setTaskLoading] = useState(true);
@@ -162,10 +170,20 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
               Dumb UI: מצייר את מה שה-AI הכתיב, ונועל את הבית במצב Level Up. */}
           <ProgramOrchestratorGate />
 
-          {/* תקציר חי מאלמוג — שכבת AI בראש הדשבורד */}
-          <motion.div variants={item}>
-            <DashboardBriefCard onOpenTasks={() => actionHub.open()} />
-          </motion.div>
+          {nextBestAction?.trim() ? (
+            <motion.div variants={item}>
+              <DynamicMentorWidgetClient
+                nextBestAction={nextBestAction.trim()}
+                isSensitiveState={simplifiedDashboard}
+              />
+            </motion.div>
+          ) : null}
+
+          {!simplifiedDashboard && (
+            <motion.div variants={item}>
+              <DashboardBriefCard onOpenTasks={() => actionHub.open()} />
+            </motion.div>
+          )}
 
           <motion.div variants={item}>
             <SosButton />
@@ -257,8 +275,8 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
             </button>
           </motion.div>
 
-          {/* מדריכים */}
-          {stats.activeCoursesCount > 0 && (
+          {/* מדריכים — מוסתר במצב רגשי רגיש (מטריקות מורכבות) */}
+          {!simplifiedDashboard && stats.activeCoursesCount > 0 && (
             <motion.div variants={item}>
               <Link href="/guides" prefetch className="block">
                 <div
@@ -318,9 +336,11 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
             >
               המשך מהר
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className={`grid gap-3 ${simplifiedDashboard ? 'grid-cols-1' : 'grid-cols-2'}`}>
               <QuickLink href="/journey" icon={Route} label="המסע שלי" accent="#10b981" />
-              <QuickLink href="/guides" icon={BookOpen} label="המדריכים" accent="#14b8a6" />
+              {!simplifiedDashboard && (
+                <QuickLink href="/guides" icon={BookOpen} label="המדריכים" accent="#14b8a6" />
+              )}
               <QuickLink
                 href="#"
                 icon={ClipboardCheck}
@@ -331,7 +351,9 @@ export function HomeClient({ firstName, stats }: HomeClientProps) {
                   actionHub.open();
                 }}
               />
-              <QuickLink href="/progress" icon={TrendingUp} label="התקדמות" accent="#f59e0b" />
+              {!simplifiedDashboard && (
+                <QuickLink href="/progress" icon={TrendingUp} label="התקדמות" accent="#f59e0b" />
+              )}
             </div>
           </motion.div>
 

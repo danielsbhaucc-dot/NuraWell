@@ -3,7 +3,7 @@
  *
  * מקבל תמלול של תור-שיחה אחרון + התובנות הקיימות של המשתמש, ומחזיר מערך תובנות
  * מובנה ומאומת (Zod). משתמש ב-AI SDK `generateObject` כדי לקבל פלט מבני אמין,
- * מול מודל *זול וחכם* דרך OpenRouter (ברירת מחדל: gemini-2.5-flash).
+ * מול GPT-5 mini דרך OpenRouter (AI_MODELS.empathy).
  *
  * פרטיות: הקובץ הזה הוא server-only. אסור לייבא אותו מקוד client — קריאת ה-LLM
  * חייבת לרוץ בשרת בלבד (המפתח וה-PII לא נחשפים לדפדפן).
@@ -13,15 +13,9 @@ import 'server-only';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 
+import { AI_MODELS } from '../client';
 import { publicAppUrlForAiReferer } from '../../public-app-url';
 import { EMPTY_EXTRACTION, InsightExtractionResult, type ExtractedInsight } from './schema';
-
-/**
- * מודל החילוץ — זול, חכם, ומצוין ב-structured output. Override ב-env:
- * `INSIGHTS_EXTRACTION_MODEL` (כל מזהה זמין ב-OpenRouter).
- */
-export const INSIGHTS_EXTRACTION_MODEL =
-  process.env.INSIGHTS_EXTRACTION_MODEL?.trim() || 'google/gemini-2.5-flash';
 
 /** סף ביטחון מינימלי — תובנות חלשות מזה נזרקות (מניעת רעש). */
 const MIN_CONFIDENCE = 0.55;
@@ -96,7 +90,7 @@ export async function extractInsights(
     const { object } = await generateObject({
       // `.chat(...)` מכריח את Chat Completions API (מה ש-OpenRouter תומך בו),
       // בדיוק כמו שאר המסלולים בקוד. קריאה ישירה עלולה לפנות ל-Responses API.
-      model: openrouterProvider.chat(INSIGHTS_EXTRACTION_MODEL),
+      model: openrouterProvider.chat(AI_MODELS.empathy),
       schema: InsightExtractionResult,
       schemaName: 'UserInsights',
       schemaDescription: 'תובנות אישיות ובנות-פעולה שחולצו משיחת המשתמש.',

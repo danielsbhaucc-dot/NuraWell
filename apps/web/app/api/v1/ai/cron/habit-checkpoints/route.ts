@@ -28,6 +28,7 @@ import {
 } from '../../../../../../lib/ai/risk-fingerprint-llm';
 import { guardianSchedulesForToday } from '../../../../../../lib/ai/risk-window';
 import { scheduleGuardianTrigger } from '../../../../../../lib/ai/guardian/qstash-scheduler';
+import { runMentorshipSynthesisBatch } from '../../../../../../lib/ai/mentorship/run-synthesis-batch';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -581,6 +582,17 @@ async function runHabitCheckpointCron(request: Request) {
   const workflowUrl = `${workflowBase}/api/workflows/almog-habit-checkpoint`;
 
   if (isDryRun) {
+    let mentorshipSynthesis = null;
+    if (slot === 'evening') {
+      try {
+        mentorshipSynthesis = await runMentorshipSynthesisBatch(admin, { dryRun: true, now });
+      } catch (e) {
+        mentorshipSynthesis = {
+          error: e instanceof Error ? e.message : String(e),
+        };
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       mode: 'dry_run',
@@ -594,6 +606,7 @@ async function runHabitCheckpointCron(request: Request) {
       guardian_schedules_planned: guardianSchedulesPlanned,
       guardian_schedules_triggered: guardianSchedulesTriggered,
       guardian_errors: guardianErrors.length ? guardianErrors.slice(0, 10) : undefined,
+      mentorship_synthesis: mentorshipSynthesis,
       workflow_url: workflowUrl,
       sample_user_ids: eligible.slice(0, 5).map((e) => e.userId),
       hint_he:
@@ -624,6 +637,17 @@ async function runHabitCheckpointCron(request: Request) {
     }
   }
 
+  let mentorshipSynthesis = null;
+  if (slot === 'evening') {
+    try {
+      mentorshipSynthesis = await runMentorshipSynthesisBatch(admin, { dryRun: false, now });
+    } catch (e) {
+      mentorshipSynthesis = {
+        error: e instanceof Error ? e.message : String(e),
+      };
+    }
+  }
+
   const summary = {
     slot,
     planned_users: plan.length,
@@ -640,6 +664,7 @@ async function runHabitCheckpointCron(request: Request) {
     guardian_fingerprints_skipped: guardianFingerprintsSkipped,
     guardian_schedules_planned: guardianSchedulesPlanned,
     guardian_schedules_triggered: guardianSchedulesTriggered,
+    mentorship_synthesis: mentorshipSynthesis,
   };
 
   /**
