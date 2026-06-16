@@ -73,6 +73,11 @@ export async function schedulePreciseReminderDelivery(params: {
     }
 
     const json = (await res.json().catch(() => null)) as { messageId?: string } | null;
+    console.info('[almog-commitments] precise reminder scheduled', {
+      messageId: json?.messageId ?? null,
+      fire_at: params.fireAtIso,
+      destination,
+    });
     return { ok: true, messageId: json?.messageId ?? null, fireAtIso: params.fireAtIso };
   } catch (e) {
     return { ok: false, reason: `qstash_publish_error:${e instanceof Error ? e.message : String(e)}` };
