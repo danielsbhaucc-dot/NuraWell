@@ -891,6 +891,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
             </div>
 
             {panelView === 'inbox' ? (
+              <div className="min-h-0 flex-1 overflow-hidden bg-gradient-to-b from-[#0f172a] via-[#111827] to-[#0b1220]">
               <ChatSessionInbox
                 sessions={sessionList}
                 loading={sessionsLoading}
@@ -899,6 +900,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 onStartNewChat={() => void startNewChatSession()}
                 startingNew={sessionActionLoading}
               />
+              </div>
             ) : (
             <div
               className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-[#0f172a] via-[#111827] to-[#0b1220] px-3 py-4 text-right [box-shadow:inset_0_1px_0_rgba(255,255,255,0.06)]"
@@ -909,7 +911,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                   <Loader2 className="h-6 w-6 animate-spin text-emerald-300/80" />
                 </div>
               )}
-              {notificationContext && !quotedReply && (
+              {!loadingThread && notificationContext && !quotedReply && (
                 <div className="flex justify-end">
                   <div className="max-w-[92%] rounded-3xl border border-emerald-400/30 bg-emerald-500/20 px-4 py-3 text-[15px] leading-relaxed text-emerald-50 shadow-sm">
                     <p className="mb-1 text-[11px] font-bold text-emerald-200/90">מאלמוג · התראה</p>
@@ -1058,7 +1060,9 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
 
               <div ref={bottomRef} />
             </div>
+            )}
 
+            {panelView === 'thread' && (
             <div className="shrink-0 border-t border-white/10 bg-slate-900/70 p-2.5 backdrop-blur-2xl" style={{ paddingBottom: 'max(0.65rem, env(safe-area-inset-bottom))' }}>
               {isSessionClosed && (
                 <div className="mb-2 space-y-2">
@@ -1209,6 +1213,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 </form>
               </div>
             </div>
+            )}
           </div>
         </Drawer.Content>
       </Drawer.Portal>
