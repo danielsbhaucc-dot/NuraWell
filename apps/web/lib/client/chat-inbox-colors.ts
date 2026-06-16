@@ -35,6 +35,17 @@ export function glassPanelStyle(accent?: string): CSSProperties {
   };
 }
 
+export function greenGlassButtonStyle(): CSSProperties {
+  const main = '#22c55e';
+  const deep = '#059669';
+  return {
+    background: `linear-gradient(145deg, ${glassTint(main, 0.32)} 0%, ${glassTint(deep, 0.22)} 55%, rgba(255,255,255,0.08) 100%)`,
+    border: `1px solid ${glassTint(main, 0.5)}`,
+    boxShadow:
+      'inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.06), 0 10px 24px rgba(16,185,129,0.22)',
+  };
+}
+
 export function chipStyle(selected: boolean, main: string, soft: string, border: string): CSSProperties | undefined {
   if (!selected) {
     return {
