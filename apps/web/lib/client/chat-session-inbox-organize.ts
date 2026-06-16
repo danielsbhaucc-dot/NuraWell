@@ -177,7 +177,7 @@ export function groupInboxSessions(
       label: 'פעילות עכשיו',
       sessions: openSessions,
       kind: 'time',
-      accent: '#10b981',
+      accent: '#22c55e',
     });
   }
 

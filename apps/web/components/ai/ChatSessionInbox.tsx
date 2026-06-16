@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ChevronLeft,
   Droplets,
@@ -24,9 +24,16 @@ import {
   isTimeFolder,
   type InboxFolderId,
   type InboxSession,
+  type InboxTimeFolderId,
 } from '../../lib/client/chat-session-inbox-organize';
 import type { ChatTopicId } from '../../lib/client/chat-session-topics';
 import type { ChatSessionListItemClient } from '../../lib/client/chat-session-api';
+import {
+  chipStyle,
+  glassPanelStyle,
+  glassTint,
+  INBOX_TIME_COLORS,
+} from '../../lib/client/chat-inbox-colors';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { useLoginBackground } from '../../lib/client/useLoginBackground';
@@ -39,17 +46,6 @@ type ChatSessionInboxProps = {
   onStartNewChat: () => void;
   startingNew: boolean;
 };
-
-const GLASS_PANEL: CSSProperties = {
-  background:
-    'linear-gradient(145deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.04) 42%, rgba(255,255,255,0.07) 100%)',
-  border: '1px solid rgba(255,255,255,0.16)',
-  boxShadow:
-    'inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -1px 0 rgba(0,0,0,0.12), 0 18px 44px rgba(8,6,4,0.38)',
-};
-
-const GLASS_CHIP_IDLE =
-  'border border-white/10 bg-white/[0.04] text-slate-200 hover:border-amber-200/20 hover:bg-white/[0.07]';
 
 function titleForSession(session: InboxSession): string {
   return buildChatSessionListTitle(session);
@@ -65,11 +61,18 @@ function topicIcon(topicId: string) {
   return Sparkles;
 }
 
+function timeColorFor(id: InboxFolderId) {
+  if (id in INBOX_TIME_COLORS) {
+    return INBOX_TIME_COLORS[id as InboxTimeFolderId];
+  }
+  return INBOX_TIME_COLORS.all;
+}
+
 function SessionRow({
   session,
   isActive,
   onSelect,
-  accent,
+  accent = '#22c55e',
 }: {
   session: InboxSession;
   isActive: boolean;
@@ -86,61 +89,45 @@ function SessionRow({
           ? `${session.message_count} הודעות`
           : 'שיחה ריקה';
   const isOpen = session.status === 'open';
-  const accentColor = accent ?? '#10b981';
 
   return (
     <button
       type="button"
       onClick={onSelect}
-      className="w-full rounded-2xl px-3 py-3 text-right transition duration-200"
-      style={
-        isActive
-          ? {
-              ...GLASS_PANEL,
-              border: `1px solid ${accentColor}55`,
-              background: `linear-gradient(145deg, ${accentColor}22 0%, rgba(255,255,255,0.06) 100%)`,
-            }
-          : GLASS_PANEL
-      }
+      className="relative w-full overflow-hidden rounded-2xl px-3 py-3 pr-3.5 text-right transition duration-200 hover:brightness-105"
+      style={{
+        ...glassPanelStyle(isActive || isOpen ? accent : undefined),
+        borderRight: `3px solid ${isOpen || isActive ? accent : glassTint(accent, 0.35)}`,
+      }}
     >
       <div className="flex items-start gap-2.5">
         <span
-          className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+          className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
           style={{
-            background: isOpen ? accentColor : 'rgba(148,163,184,0.55)',
-            boxShadow: isOpen ? `0 0 10px ${accentColor}88` : undefined,
+            background: isOpen ? accent : '#94a3b8',
+            boxShadow: isOpen ? `0 0 12px ${accent}` : undefined,
           }}
           aria-hidden
         />
         <span className="min-w-0 flex-1">
           <span className="flex items-start justify-between gap-2">
-            <span className="line-clamp-2 text-sm font-semibold text-slate-50">{title}</span>
-            <span className="shrink-0 text-[10px] text-slate-400">
-              {formatSessionRelativeTime(session.updated_at)}
-            </span>
+            <span className="line-clamp-2 text-sm font-semibold text-white">{title}</span>
+            <span className="shrink-0 text-[10px] text-slate-300">{formatSessionRelativeTime(session.updated_at)}</span>
           </span>
-          <span className="mt-1 line-clamp-1 text-xs text-slate-400">{subtitle}</span>
+          <span className="mt-1 line-clamp-1 text-xs text-slate-300/90">{subtitle}</span>
           <span className="mt-1.5 inline-flex items-center gap-1.5">
             <span
-              className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+              className="rounded-full px-2 py-0.5 text-[10px] font-bold"
               style={
                 isOpen
-                  ? {
-                      border: `1px solid ${accentColor}66`,
-                      background: `${accentColor}22`,
-                      color: '#f8fafc',
-                    }
-                  : {
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      background: 'rgba(255,255,255,0.05)',
-                      color: '#94a3b8',
-                    }
+                  ? { background: accent, color: '#fff', boxShadow: `0 4px 14px ${glassTint(accent, 0.45)}` }
+                  : { background: 'rgba(148,163,184,0.2)', color: '#cbd5e1', border: '1px solid rgba(148,163,184,0.35)' }
               }
             >
               {isOpen ? 'פעילה' : 'נסגרה'}
             </span>
             {session.summary && session.status === 'closed' ? (
-              <span className="text-[10px] text-amber-200/75">יש סיכום</span>
+              <span className="text-[10px] font-semibold text-amber-300">★ סיכום</span>
             ) : null}
           </span>
         </span>
@@ -158,7 +145,7 @@ export function ChatSessionInbox({
   startingNew,
 }: ChatSessionInboxProps) {
   const { avatarUrl: avatarSrc } = useAlmogAvatarUrl();
-  const { url: bgUrl, hasPhoto, ready: bgReady } = useLoginBackground();
+  const { url: bgUrl, hasPhoto } = useLoginBackground();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFolder, setActiveFolder] = useState<InboxFolderId>('all');
 
@@ -193,46 +180,41 @@ export function ChatSessionInbox({
       <div className="shrink-0 px-3 pb-2 pt-1">
         <div
           className="relative overflow-hidden rounded-[28px]"
-          style={{
-            border: '1px solid rgba(255,255,255,0.14)',
-            boxShadow: '0 22px 56px rgba(6,4,2,0.45)',
-          }}
+          style={{ border: '1px solid rgba(255,255,255,0.22)', boxShadow: '0 20px 50px rgba(2,6,23,0.35)' }}
         >
           {hasPhoto && bgUrl ? (
-            <img
-              src={bgUrl}
-              alt=""
+            <img src={bgUrl} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-105 object-cover" />
+          ) : (
+            <div
+              className="absolute inset-0"
+              style={{
+                background: 'linear-gradient(135deg, #312e81 0%, #065f46 40%, #0e7490 100%)',
+              }}
               aria-hidden
-              className="absolute inset-0 h-full w-full object-cover"
             />
-          ) : null}
+          )}
 
           <div
             className="absolute inset-0"
-            style={{
-              background: hasPhoto
-                ? 'linear-gradient(165deg, rgba(28,16,8,0.88) 0%, rgba(12,18,14,0.92) 48%, rgba(8,10,16,0.94) 100%)'
-                : 'linear-gradient(165deg, #1c1208 0%, #0f1712 45%, #0a0e14 100%)',
-            }}
+            style={{ background: 'linear-gradient(180deg, rgba(15,23,42,0.55) 0%, rgba(15,23,42,0.82) 100%)' }}
             aria-hidden
           />
           <div
-            className="pointer-events-none absolute inset-0 opacity-80"
+            className="pointer-events-none absolute inset-0"
             style={{
               background:
-                'radial-gradient(ellipse 80% 60% at 100% 0%, rgba(217,119,6,0.22) 0%, transparent 55%), radial-gradient(ellipse 70% 50% at 0% 100%, rgba(5,150,105,0.16) 0%, transparent 50%)',
+                'radial-gradient(circle at 92% 8%, rgba(34,197,94,0.45) 0%, transparent 42%), radial-gradient(circle at 8% 88%, rgba(99,102,241,0.42) 0%, transparent 40%), radial-gradient(circle at 50% 50%, rgba(244,63,94,0.18) 0%, transparent 55%)',
             }}
             aria-hidden
           />
 
           <div className="relative p-4">
-            <div className="rounded-[22px] p-3.5" style={GLASS_PANEL}>
+            <div className="rounded-[22px] p-3.5" style={glassPanelStyle('#6366f1')}>
               <div className="flex items-start gap-3">
                 <div
                   className="relative shrink-0 rounded-2xl p-[2px]"
                   style={{
-                    background:
-                      'linear-gradient(145deg, rgba(251,191,36,0.65), rgba(16,185,129,0.45))',
+                    background: 'linear-gradient(135deg, #22c55e, #06b6d4, #6366f1, #f43f5e)',
                   }}
                 >
                   <img
@@ -247,44 +229,35 @@ export function ChatSessionInbox({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p
-                    className="text-[1.05rem] font-black leading-tight tracking-tight text-amber-50"
+                    className="bg-gradient-to-l from-emerald-200 via-cyan-200 to-indigo-200 bg-clip-text text-[1.08rem] font-black leading-tight text-transparent"
                     style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                   >
                     שיחות עם אלמוג
                   </p>
-                  <p className="mt-1 text-[11px] leading-relaxed text-amber-100/75">
-                    זכוכית חכמה · תיקיות לפי נושא · המשך בכל רגע
+                  <p className="mt-1 text-[11px] leading-relaxed text-white/80">
+                    צבעים לפי נושא · חיפוש · המשך מכל מקום
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <span
-                      className="rounded-full px-2 py-0.5 text-[10px] font-bold text-amber-50"
-                      style={{
-                        border: '1px solid rgba(251,191,36,0.35)',
-                        background: 'rgba(120,53,15,0.35)',
-                      }}
+                      className="rounded-full px-2 py-0.5 text-[10px] font-bold text-white"
+                      style={{ background: '#6366f1', boxShadow: '0 4px 12px rgba(99,102,241,0.45)' }}
                     >
                       {stats.total} שיחות
                     </span>
                     {stats.open > 0 ? (
                       <span
-                        className="rounded-full px-2 py-0.5 text-[10px] font-bold text-emerald-50"
-                        style={{
-                          border: '1px solid rgba(52,211,153,0.35)',
-                          background: 'rgba(6,78,59,0.45)',
-                        }}
+                        className="rounded-full px-2 py-0.5 text-[10px] font-bold text-white"
+                        style={{ background: '#22c55e', boxShadow: '0 4px 12px rgba(34,197,94,0.45)' }}
                       >
                         {stats.open} פעילות
                       </span>
                     ) : null}
-                    {topicChips.length > 0 ? (
+                    {stats.withSummary > 0 ? (
                       <span
-                        className="rounded-full px-2 py-0.5 text-[10px] font-bold text-orange-100/90"
-                        style={{
-                          border: '1px solid rgba(251,146,60,0.3)',
-                          background: 'rgba(124,45,18,0.35)',
-                        }}
+                        className="rounded-full px-2 py-0.5 text-[10px] font-bold text-slate-900"
+                        style={{ background: '#facc15', boxShadow: '0 4px 12px rgba(250,204,21,0.4)' }}
                       >
-                        {topicChips.length} נושאים
+                        {stats.withSummary} סיכומים
                       </span>
                     ) : null}
                   </div>
@@ -296,61 +269,45 @@ export function ChatSessionInbox({
               type="button"
               disabled={startingNew}
               onClick={onStartNewChat}
-              className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-right transition duration-200 hover:brightness-110 disabled:opacity-60"
-              style={GLASS_PANEL}
+              className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-right transition hover:brightness-110 disabled:opacity-60"
+              style={{
+                background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #6366f1 100%)',
+                border: '1px solid rgba(255,255,255,0.35)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 12px 28px rgba(6,182,212,0.35)',
+              }}
             >
-              <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-amber-50"
-                style={{
-                  background: 'linear-gradient(145deg, rgba(217,119,6,0.45), rgba(5,150,105,0.35))',
-                  border: '1px solid rgba(255,255,255,0.18)',
-                }}
-              >
-                {startingNew ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <MessageSquarePlus className="h-4 w-4" />
-                )}
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white">
+                {startingNew ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquarePlus className="h-4 w-4" />}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-bold text-amber-50">שיחה חדשה</span>
-                <span className="mt-0.5 block text-[11px] text-amber-100/70">
-                  שאל, שתף, בנה צעד קטן להיום
-                </span>
+                <span className="block text-sm font-bold text-white">שיחה חדשה</span>
+                <span className="mt-0.5 block text-[11px] text-white/85">שאל, שתף, בנה צעד קטן להיום</span>
               </span>
-              <ChevronLeft className="h-4 w-4 shrink-0 text-amber-100/80" />
+              <ChevronLeft className="h-4 w-4 shrink-0 text-white/90" />
             </button>
 
             <div className="relative mt-3">
-              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amber-100/55" />
+              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-200" />
               <input
                 type="search"
                 dir="rtl"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="חיפוש לפי נושא, סיכום או הודעה..."
-                className="w-full rounded-xl py-2.5 pl-9 pr-10 text-sm text-amber-50 outline-none placeholder:text-amber-100/45"
-                style={{
-                  ...GLASS_PANEL,
-                  background:
-                    'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)',
-                }}
+                className="w-full rounded-xl py-2.5 pl-9 pr-10 text-sm text-white outline-none placeholder:text-white/50"
+                style={glassPanelStyle('#06b6d4')}
               />
               {searchQuery ? (
                 <button
                   type="button"
                   aria-label="נקה חיפוש"
                   onClick={() => setSearchQuery('')}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-lg p-1 text-amber-100/75 hover:bg-white/10"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-lg p-1 text-white/80 hover:bg-white/15"
                 >
                   <X className="h-4 w-4" />
                 </button>
               ) : null}
             </div>
-
-            {!bgReady ? (
-              <p className="mt-2 text-center text-[10px] text-amber-100/40">טוען רקע...</p>
-            ) : null}
           </div>
         </div>
 
@@ -358,27 +315,17 @@ export function ChatSessionInbox({
           <div className="flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {timeChips.map((chip) => {
               const selected = activeFolder === chip.id;
+              const palette = timeColorFor(chip.id);
               return (
                 <button
                   key={chip.id}
                   type="button"
                   onClick={() => setActiveFolder(chip.id)}
-                  className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
-                    selected ? 'text-amber-50' : GLASS_CHIP_IDLE
-                  }`}
-                  style={
-                    selected
-                      ? {
-                          border: '1px solid rgba(251,191,36,0.45)',
-                          background:
-                            'linear-gradient(145deg, rgba(120,53,15,0.55), rgba(6,78,59,0.35))',
-                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15)',
-                        }
-                      : undefined
-                  }
+                  className="shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold transition"
+                  style={chipStyle(selected, palette.main, palette.soft, palette.border)}
                 >
                   {chip.label}
-                  <span className="mr-1 opacity-70">({chip.count})</span>
+                  <span className="mr-1 opacity-80">({chip.count})</span>
                 </button>
               );
             })}
@@ -386,33 +333,26 @@ export function ChatSessionInbox({
 
           {topicChips.length > 0 ? (
             <div>
-              <p className="mb-1.5 px-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-200/45">
-                לפי נושא
-              </p>
+              <p className="mb-1.5 px-0.5 text-[10px] font-bold tracking-wide text-cyan-300/80">לפי נושא</p>
               <div className="flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {topicChips.map((chip) => {
                   const selected = activeFolder === chip.id;
-                  const accent = chip.accent ?? '#d97706';
+                  const main = chip.accent ?? '#6366f1';
                   return (
                     <button
                       key={chip.id}
                       type="button"
                       onClick={() => setActiveFolder(chip.id as ChatTopicId)}
-                      className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
-                        selected ? 'text-white' : GLASS_CHIP_IDLE
-                      }`}
-                      style={
-                        selected
-                          ? {
-                              border: `1px solid ${accent}88`,
-                              background: `linear-gradient(145deg, ${accent}44, rgba(255,255,255,0.06))`,
-                              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)',
-                            }
-                          : undefined
-                      }
+                      className="shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold transition"
+                      style={chipStyle(
+                        selected,
+                        main,
+                        glassTint(main, 0.2),
+                        glassTint(main, 0.55)
+                      )}
                     >
                       {chip.label}
-                      <span className="mr-1 opacity-70">({chip.count})</span>
+                      <span className="mr-1 opacity-80">({chip.count})</span>
                     </button>
                   );
                 })}
@@ -425,10 +365,10 @@ export function ChatSessionInbox({
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3" style={{ WebkitOverflowScrolling: 'touch' }}>
         {loading ? (
           <div className="flex justify-center py-10">
-            <Loader2 className="h-6 w-6 animate-spin text-amber-300/80" />
+            <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
           </div>
         ) : sessions.length === 0 ? (
-          <div className="rounded-2xl px-4 py-6 text-center text-sm text-slate-300/90" style={GLASS_PANEL}>
+          <div className="rounded-2xl px-4 py-6 text-center text-sm text-slate-200" style={glassPanelStyle('#6366f1')}>
             עדיין אין שיחות שמורות.
             <br />
             לחץ למעלה כדי להתחיל את הראשונה.
@@ -437,20 +377,23 @@ export function ChatSessionInbox({
           <div className="space-y-4">
             {groupedSections.map((section) => {
               const Icon = topicIcon(section.id);
+              const accent = section.accent ?? '#22c55e';
               return (
                 <section key={section.id}>
-                  <div className="mb-2 flex items-center gap-2 px-0.5">
+                  <div
+                    className="mb-2 flex items-center gap-2 rounded-xl px-2 py-1.5"
+                    style={{ background: glassTint(accent, 0.12), border: `1px solid ${glassTint(accent, 0.28)}` }}
+                  >
                     <span
-                      className="flex h-6 w-6 items-center justify-center rounded-lg"
-                      style={{
-                        border: `1px solid ${section.accent ?? '#d97706'}44`,
-                        background: `${section.accent ?? '#d97706'}18`,
-                      }}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg"
+                      style={{ background: accent, boxShadow: `0 4px 12px ${glassTint(accent, 0.5)}` }}
                     >
-                      <Icon className="h-3.5 w-3.5" style={{ color: section.accent ?? '#fbbf24' }} />
+                      <Icon className="h-3.5 w-3.5 text-white" />
                     </span>
-                    <h3 className="text-xs font-bold text-amber-100/85">{section.label}</h3>
-                    <span className="text-[10px] text-slate-500">({section.sessions.length})</span>
+                    <h3 className="text-xs font-bold text-white">{section.label}</h3>
+                    <span className="rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white" style={{ background: accent }}>
+                      {section.sessions.length}
+                    </span>
                   </div>
                   <ul className="space-y-2">
                     {section.sessions.map((session) => (
@@ -458,7 +401,7 @@ export function ChatSessionInbox({
                         <SessionRow
                           session={session}
                           isActive={session.id === activeSessionId}
-                          accent={section.accent}
+                          accent={accent}
                           onSelect={() => onSelectSession(session as ChatSessionListItemClient)}
                         />
                       </li>
@@ -469,26 +412,36 @@ export function ChatSessionInbox({
             })}
           </div>
         ) : flatSessions.length === 0 ? (
-          <div className="rounded-2xl px-4 py-6 text-center text-sm text-slate-300/90" style={GLASS_PANEL}>
+          <div className="rounded-2xl px-4 py-6 text-center text-sm text-slate-200" style={glassPanelStyle('#f43f5e')}>
             לא נמצאו שיחות לחיפוש או לתיקייה הזו.
           </div>
         ) : (
           <ul className="space-y-2">
-            {trimmedSearch ? (
-              <li className="mb-1 px-0.5 text-xs font-bold text-amber-200/55">
-                תוצאות חיפוש ({flatSessions.length})
+            {(trimmedSearch || !isTimeFolder(activeFolder)) && (
+              <li
+                className="mb-1 rounded-lg px-2 py-1 text-xs font-bold text-white"
+                style={{
+                  background: glassTint(
+                    folderChips.find((c) => c.id === activeFolder)?.accent ??
+                      timeColorFor(activeFolder).main,
+                    0.25
+                  ),
+                }}
+              >
+                {trimmedSearch
+                  ? `תוצאות חיפוש (${flatSessions.length})`
+                  : folderChips.find((c) => c.id === activeFolder)?.label}
               </li>
-            ) : !isTimeFolder(activeFolder) ? (
-              <li className="mb-1 px-0.5 text-xs font-bold text-amber-200/55">
-                {folderChips.find((c) => c.id === activeFolder)?.label}
-              </li>
-            ) : null}
+            )}
             {flatSessions.map((session) => (
               <li key={session.id}>
                 <SessionRow
                   session={session}
                   isActive={session.id === activeSessionId}
-                  accent={folderChips.find((c) => c.id === activeFolder)?.accent}
+                  accent={
+                    folderChips.find((c) => c.id === activeFolder)?.accent ??
+                    timeColorFor(activeFolder).main
+                  }
                   onSelect={() => onSelectSession(session as ChatSessionListItemClient)}
                 />
               </li>

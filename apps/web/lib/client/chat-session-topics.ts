@@ -15,11 +15,11 @@ export type ChatTopicMeta = {
 };
 
 export const CHAT_TOPIC_ORDER: ChatTopicMeta[] = [
-  { id: 'habits', label: 'הרגלים וצעדים', accent: '#d97706' },
-  { id: 'emotions', label: 'רגש ותמיכה', accent: '#c2410c' },
-  { id: 'nutrition', label: 'אכילה ותזונה', accent: '#b45309' },
-  { id: 'sleep', label: 'שינה ומנוחה', accent: '#7c3aed' },
-  { id: 'journey', label: 'מסע ולימוד', accent: '#059669' },
+  { id: 'habits', label: 'הרגלים וצעדים', accent: '#0ea5e9' },
+  { id: 'emotions', label: 'רגש ותמיכה', accent: '#f43f5e' },
+  { id: 'nutrition', label: 'אכילה ותזונה', accent: '#f97316' },
+  { id: 'sleep', label: 'שינה ומנוחה', accent: '#8b5cf6' },
+  { id: 'journey', label: 'מסע ולימוד', accent: '#10b981' },
   { id: 'general', label: 'שיחות כלליות', accent: '#64748b' },
 ];
 
