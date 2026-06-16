@@ -5,7 +5,9 @@ import { motion } from 'framer-motion';
 import { BellRing, MessageCircle, Send, Loader2, X, Paperclip, Smile } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useChat } from '@ai-sdk/react';
-import { TextStreamChatTransport } from 'ai';
+import { MemorySearchIndicator } from './MemorySearchIndicator';
+import { messagesHavePendingRecallTool } from '../../lib/ai/memory-recall/detect-pending-recall';
+import { NuraWellChatTransport } from '../../lib/client/nurawell-chat-transport';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import {
@@ -397,6 +399,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     return () => window.removeEventListener(OPEN_ALMOG_CHAT_EVENT, onOpenChat);
   }, []);
 
+  const [memoryRecallWriterActive, setMemoryRecallWriterActive] = useState(false);
+
   const fetchWithSession = useMemo(() => {
     return async (url: RequestInfo | URL, init?: RequestInit) => {
       const res = await fetch(url, init);
@@ -404,6 +408,9 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       const dbg = res.headers.get('x-debug-id');
       const writer = res.headers.get('x-ai-writer');
       const model = res.headers.get('x-ai-model');
+      if (writer === 'memory-recall-tools') {
+        setMemoryRecallWriterActive(true);
+      }
       if (sid) {
         sessionIdRef.current = sid;
         try {
@@ -430,7 +437,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   }, []);
 
   const { messages, sendMessage, status, stop, error } = useChat({
-    transport: new TextStreamChatTransport({
+    transport: new NuraWellChatTransport({
       api: '/api/v1/ai/chat',
       fetch: fetchWithSession,
       body: () => ({
@@ -465,6 +472,15 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   }, [open, sendMessage, status, userId]);
 
   const isLoading = status === 'submitted' || status === 'streaming';
+  const pendingRecallTool = useMemo(
+    () => messagesHavePendingRecallTool(messages),
+    [messages]
+  );
+  const showMemorySearch =
+    isLoading && (pendingRecallTool || memoryRecallWriterActive);
+  useEffect(() => {
+    if (!isLoading) setMemoryRecallWriterActive(false);
+  }, [isLoading]);
   // "thinking" = ממתינים לתו הראשון מהמודל (כולל זמן ה-reasoning).
   const isThinking = status === 'submitted';
   const isLongWait = isThinking && waitSeconds >= 10;
@@ -760,7 +776,9 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 );
               })}
 
-              {isLoading && (
+              <MemorySearchIndicator visible={showMemorySearch} />
+
+              {isLoading && !showMemorySearch && (
                 <div className="flex justify-end">
                   <div
                     className="max-w-[88%] rounded-3xl px-4 py-3 text-[16px] leading-relaxed shadow-[0_4px_16px_rgba(15,23,42,0.07)]"

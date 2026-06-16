@@ -86,7 +86,7 @@ async function markLogsProcessed(
     .in('id', logIds);
 
   if (error) {
-    console.warn('[memory-consolidation] mark processed failed', error.message);
+    throw new Error(`markLogsProcessed failed: ${error.message}`);
   }
 }
 
@@ -179,14 +179,27 @@ export async function runMemoryConsolidationBatch(
           now,
         });
 
+        if (exec.errors > 0) {
+          throw new Error(
+            `Memory operations commit failed (${exec.errors} error(s); added=${exec.added} updated=${exec.updated})`
+          );
+        }
+
         const applied =
           exec.added + exec.updated + exec.deprecated + exec.verify;
         operationsApplied += applied;
 
         const needsStrategyRefresh = exec.added > 0 || exec.updated > 0;
         if (needsStrategyRefresh && process.env.OPENROUTER_API_KEY?.trim()) {
-          await synthesizeUserStrategy(admin, userId, { now });
-          synthesisTriggered += 1;
+          try {
+            await synthesizeUserStrategy(admin, userId, { now });
+            synthesisTriggered += 1;
+          } catch (synErr) {
+            console.warn('[memory-consolidation] strategy synthesis failed (insights committed)', {
+              userId,
+              error: synErr instanceof Error ? synErr.message : String(synErr),
+            });
+          }
         }
       }
 
