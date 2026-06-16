@@ -83,7 +83,10 @@ export async function getMentorContext(
     lines.push('');
     lines.push('<InsightsNeedingVerification>');
     lines.push(
-      'שאל בעדינות לאמת את הנקודות הבאות — אל תניח שהמידע הישן עדיין נכון:'
+      'CRITICAL BEHAVIORAL RULE: You have access to items that need verification. You MUST ONLY ask ONE clarifying question per chat session. Never interrogate the user. Weave this single question naturally into a supportive response, and ignore the other pending verifications for now.'
+    );
+    lines.push(
+      'בחר את הנקודה *החשובה ביותר* מתוך הרשימה — שאל רק אותה, בעדינות:'
     );
     for (const row of verifyRows) {
       const prompt =

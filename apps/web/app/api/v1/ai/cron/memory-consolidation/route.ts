@@ -10,8 +10,8 @@ import { createAdminClient } from '../../../../../../lib/supabase/admin';
  * Autonomous Memory Manager — עיבוד אצווה יומי:
  * pending_chat_logs → LLM (OpenRouter) → ADD/UPDATE/DEPRECATE/VERIFY → user_insights
  *
- * הפעלה: Upstash QStash Schedule או Authorization: Bearer CRON_SECRET
- * dryRun=1 — מדווח כמה משתמשים/לוגים ממתינים בלי LLM.
+ * Standalone route — העדיפות: master cron ב-06:00 (POST /api/v1/ai/cron/master).
+ * נשאר לבדיקות ידניות / dryRun.
  */
 export const runtime = 'nodejs';
 export const maxDuration = 300;

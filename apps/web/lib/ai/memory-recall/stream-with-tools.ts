@@ -9,8 +9,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PiiShield } from '../privacy/pii-shield';
 import { buildRecallPastMemoryTools } from './recall-tool';
 import { MEMORY_RECALL_TOOL_PROMPT } from './prompt';
+import { createRecallToolTelemetry } from './recall-telemetry';
 
 const MIN_STREAM_PREFIX_CHARS = 12;
+const RECALL_TOOL_NAME = 'recall_past_memory';
 
 export type MemoryRecallStreamFinishPayload = {
   text: string;
@@ -43,6 +45,7 @@ export async function createMemoryRecallStreamResponse(params: {
   headers: HeadersInit;
   piiShield?: PiiShield | null;
   providerOptions?: Record<string, Record<string, string>>;
+  debugId?: string;
   onFinish: (payload: MemoryRecallStreamFinishPayload) => Promise<void>;
   onEmptyRetry?: () => Promise<string>;
 }): Promise<Response> {
@@ -59,9 +62,11 @@ export async function createMemoryRecallStreamResponse(params: {
     ? params.piiShield.tokenizeMessages(params.recentMessages)
     : params.recentMessages;
 
+  const telemetry = createRecallToolTelemetry();
   const tools = buildRecallPastMemoryTools({
     supabase: params.supabase,
     userId: params.userId,
+    telemetry,
   });
 
   const result = streamText({
@@ -70,11 +75,38 @@ export async function createMemoryRecallStreamResponse(params: {
     messages: tokenizedMessages,
     tools,
     toolChoice: 'auto',
-    /** כלי → תשובה בלבד (2 צעדים מקסימום). */
     stopWhen: stepCountIs(2),
     temperature: params.temperature,
     maxOutputTokens: params.maxOutputTokens,
     providerOptions: params.providerOptions,
+    onStepFinish: (step) => {
+      const recallCalls = (step.toolCalls ?? []).filter(
+        (tc) => tc.toolName === RECALL_TOOL_NAME
+      );
+      if (!recallCalls.length) return;
+
+      const executions = telemetry.peek();
+      for (let i = 0; i < recallCalls.length; i += 1) {
+        const tc = recallCalls[i]!;
+        const matchedResult = step.toolResults?.find((tr) => tr.toolCallId === tc.toolCallId);
+        const output = matchedResult?.output as
+          | { found: boolean; memories?: unknown[] }
+          | undefined;
+        const resultCount = output?.found ? (output.memories?.length ?? 0) : 0;
+        const exec = executions[i];
+
+        console.info('[ai/chat]', {
+          debug_id: params.debugId,
+          stage: 'memory_recall_tool',
+          stepType: step.finishReason ?? 'tool-step',
+          toolName: RECALL_TOOL_NAME,
+          arguments: tc.input ?? exec?.arguments,
+          resultCount: exec?.resultCount ?? resultCount,
+          searchMode: exec?.searchMode,
+        });
+      }
+      telemetry.drain();
+    },
   });
 
   const encoder = new TextEncoder();

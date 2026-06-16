@@ -21,11 +21,12 @@ import {
 import { type AiUserContext } from '../../../../../../lib/ai/memory';
 import { ANALYSIS_PROMPT } from '../../../../../../lib/ai/prompts';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
+import { runMemoryConsolidationBatch } from '../../../../../../lib/ai/memory-consolidation/run-batch';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 
-/** Batch ארוך + קריאות מודלים מרובות — Node לזמן הרצה ארוך יותר מבשרת Vercel Edge */
+/** Batch ארוך + memory consolidation — Node לזמן הרצה ארוך יותר מבשרת Vercel Edge */
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 /** Service-role Supabase client; tables like `ai_interactions` may be absent from generated `Database` types. */
@@ -730,6 +731,27 @@ async function runMasterCron() {
     }
   }
 
+  // --- Memory consolidation (06:00 master cron) — pending_chat_logs → user_insights
+  let memoryConsolidation: Awaited<ReturnType<typeof runMemoryConsolidationBatch>> | null = null;
+  if (process.env.MEMORY_CONSOLIDATION_IN_MASTER?.trim() !== '0') {
+    try {
+      memoryConsolidation = await runMemoryConsolidationBatch(admin, { now: new Date() });
+      console.log(
+        '[cron/master] memory_consolidation',
+        JSON.stringify({
+          users: memoryConsolidation.users_processed,
+          logs: memoryConsolidation.logs_processed,
+          operations: memoryConsolidation.operations_applied,
+          failed_users: memoryConsolidation.failed_users,
+        })
+      );
+    } catch (e) {
+      errors.push(
+        `memory_consolidation: ${e instanceof Error ? e.message : String(e)}`
+      );
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     window_hours: 24,
@@ -742,6 +764,7 @@ async function runMasterCron() {
       skipped: kickoffWatchdogSkipped,
       failed: kickoffWatchdogFailed,
     },
+    memory_consolidation: memoryConsolidation,
     notifications_sent:
       celebrated + churnNotificationsSent + journeyCompanionSent + kickoffWatchdogSent,
     action_counts: actionCounts,

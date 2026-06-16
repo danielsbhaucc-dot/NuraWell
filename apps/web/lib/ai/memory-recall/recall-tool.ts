@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import { MemoryRecallCategory } from './categories';
 import { searchUserMemory } from './search-user-memory';
+import type { RecallToolTelemetry } from './recall-telemetry';
 
 const recallParamsSchema = z.object({
   topic: z
@@ -24,6 +25,7 @@ const recallParamsSchema = z.object({
 export function buildRecallPastMemoryTools(params: {
   supabase: SupabaseClient;
   userId: string;
+  telemetry?: RecallToolTelemetry;
 }) {
   return {
     recall_past_memory: tool({
@@ -32,8 +34,16 @@ export function buildRecallPastMemoryTools(params: {
       inputSchema: recallParamsSchema,
       execute: async ({ topic, category }) => {
         const result = await searchUserMemory(params.supabase, params.userId, topic, category);
+        const resultCount = result.found_count;
 
-        if (result.found_count === 0) {
+        params.telemetry?.record({
+          toolName: 'recall_past_memory',
+          arguments: { topic, category },
+          resultCount,
+          searchMode: result.search_mode,
+        });
+
+        if (resultCount === 0) {
           return { found: false as const };
         }
 
