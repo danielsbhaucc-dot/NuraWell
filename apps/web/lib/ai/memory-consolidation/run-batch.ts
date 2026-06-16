@@ -18,8 +18,13 @@ import type {
   PendingChatLogRow,
 } from './types';
 
-const MAX_LOGS_PER_RUN = 400;
-const MAX_USERS_PER_RUN = 24;
+const MAX_LOGS_PER_RUN = 300;
+const MAX_USERS_PER_RUN = (() => {
+  const raw = process.env.MEMORY_CONSOLIDATION_MAX_USERS?.trim();
+  const n = raw ? Number(raw) : NaN;
+  return Number.isFinite(n) && n >= 1 ? Math.min(32, Math.floor(n)) : 16;
+})();
+const MIN_LOG_CHARS_FOR_LLM = 80;
 const MAX_INSIGHTS_PER_USER = 50;
 
 const INSIGHT_SELECT =
@@ -29,12 +34,14 @@ const LOG_SELECT = 'id, user_id, raw_chat_text, source_session_id, created_at' a
 
 async function fetchUnprocessedLogs(
   admin: SupabaseClient,
-  limit: number
+  limit: number,
+  beforeIso: string
 ): Promise<PendingChatLogRow[]> {
   const { data, error } = await admin
     .from('pending_chat_logs')
     .select(LOG_SELECT)
     .eq('processed', false)
+    .lte('created_at', beforeIso)
     .order('created_at', { ascending: true })
     .limit(limit);
 
@@ -101,7 +108,7 @@ export async function runMemoryConsolidationBatch(
   const now = options?.now ?? new Date();
   const maxUsers = Math.min(MAX_USERS_PER_RUN, Math.max(1, options?.maxUsers ?? MAX_USERS_PER_RUN));
 
-  const pendingLogs = await fetchUnprocessedLogs(admin, MAX_LOGS_PER_RUN);
+  const pendingLogs = await fetchUnprocessedLogs(admin, MAX_LOGS_PER_RUN, now.toISOString());
   if (!pendingLogs.length) {
     return {
       users_processed: 0,
@@ -150,6 +157,13 @@ export async function runMemoryConsolidationBatch(
 
     try {
       const insights = await fetchInsightsForUser(admin, userId);
+      const logsCharCount = userLogs.reduce((n, l) => n + l.raw_chat_text.length, 0);
+
+      if (logsCharCount < MIN_LOG_CHARS_FOR_LLM) {
+        await markLogsProcessed(admin, logIds, now);
+        continue;
+      }
+
       const llmResult = await consolidateMemoryWithLlm({
         insights,
         pendingLogs: userLogs,
@@ -169,7 +183,8 @@ export async function runMemoryConsolidationBatch(
           exec.added + exec.updated + exec.deprecated + exec.verify;
         operationsApplied += applied;
 
-        if (applied > 0 && process.env.OPENROUTER_API_KEY?.trim()) {
+        const needsStrategyRefresh = exec.added > 0 || exec.updated > 0;
+        if (needsStrategyRefresh && process.env.OPENROUTER_API_KEY?.trim()) {
           await synthesizeUserStrategy(admin, userId, { now });
           synthesisTriggered += 1;
         }

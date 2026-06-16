@@ -24,9 +24,11 @@ export function shouldAttemptMemoryRecall(
   const letters = t.replace(/[^\u0590-\u05FFa-zA-Z]/g, '');
   if (letters.length < MIN_LETTERS) return false;
 
-  if (hints?.blocker || hints?.emotional) return true;
+  if (hints?.blocker || hints?.emotional) {
+    return RECALL_WORTHY.test(t);
+  }
   if (hints?.heavyContext && RECALL_WORTHY.test(t)) return true;
-  if (RECALL_WORTHY.test(t)) return true;
+  if (RECALL_WORTHY.test(t) && letters.length >= 40) return true;
 
   return false;
 }

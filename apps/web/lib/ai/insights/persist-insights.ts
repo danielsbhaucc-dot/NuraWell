@@ -11,6 +11,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ExtractedInsight, InsightExtractionResult } from './schema';
+import { embedInsightText, isInsightEmbeddingEnabled } from './embed-insight';
 import { INSIGHT_STATUS } from './status';
 
 export interface PersistInsightsResult {
@@ -77,18 +78,21 @@ export async function persistInsights(params: {
 
     if (existing) {
       const row = existing as ExistingRow;
+      const embedding =
+        isInsightEmbeddingEnabled() && insight.insight_text.trim() !== row.insight_text.trim()
+          ? await embedInsightText(insight.insight_text)
+          : null;
       const { error: updateErr } = await admin
         .from('user_insights')
         .update({
-          // מחדדים לניסוח החדש (המודל הונחה להחזיר את המעודכן ביותר).
           insight_text: insight.insight_text,
-          // לא מורידים actionability שכבר נצבר — לוקחים את הגבוה.
           actionability_score: Math.max(row.actionability_score, insight.actionability_score),
           confidence: insight.confidence,
           status: INSIGHT_STATUS.ACTIVE,
           is_active: true,
           mention_count: row.mention_count + 1,
           last_seen_at: nowIso,
+          ...(embedding ? { embedding } : {}),
           metadata: buildMetadata(insight),
         })
         .eq('id', row.id);
@@ -101,6 +105,7 @@ export async function persistInsights(params: {
       continue;
     }
 
+    const embedding = isInsightEmbeddingEnabled() ? await embedInsightText(insight.insight_text) : null;
     const { error: insertErr } = await admin.from('user_insights').insert({
       user_id: userId,
       category: insight.category,
@@ -113,6 +118,7 @@ export async function persistInsights(params: {
       mention_count: 1,
       last_seen_at: nowIso,
       source_session_id: params.sessionId ?? null,
+      ...(embedding ? { embedding } : {}),
       metadata: buildMetadata(insight),
     });
     if (insertErr) {

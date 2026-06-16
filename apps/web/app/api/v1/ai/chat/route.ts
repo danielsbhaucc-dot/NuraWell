@@ -3281,6 +3281,7 @@ export async function POST(request: Request) {
           headers: upstreamHeaders,
           piiShield,
           providerOptions: mcfg.isOpenAI ? { openai: { reasoningEffort: 'low' } } : {},
+          debugId,
           onEmptyRetry: emptyRetryHandler,
           onFinish: handleChatFinish,
         });

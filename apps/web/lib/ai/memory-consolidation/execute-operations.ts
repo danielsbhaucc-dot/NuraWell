@@ -6,6 +6,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { insightDedupeKey } from '../insights/persist-insights';
+import { embedInsightText, isInsightEmbeddingEnabled } from '../insights/embed-insight';
 import { INSIGHT_STATUS } from '../insights/status';
 import type { MemoryOperation } from './schema';
 import type { ExecuteMemoryOperationsResult, InsightForConsolidation } from './types';
@@ -38,6 +39,11 @@ export async function executeMemoryOperations(params: {
 
   const byId = new Map(existingInsights.map((row) => [row.id, row]));
 
+  async function embeddingFor(text: string, skip?: boolean): Promise<number[] | null> {
+    if (skip || !isInsightEmbeddingEnabled()) return null;
+    return embedInsightText(text);
+  }
+
   for (const op of operations) {
     try {
       if (op.op === 'ADD') {
@@ -54,6 +60,7 @@ export async function executeMemoryOperations(params: {
         );
 
         if (duplicate) {
+          const embedding = await embeddingFor(op.insight_text);
           const { error } = await admin
             .from('user_insights')
             .update({
@@ -63,6 +70,7 @@ export async function executeMemoryOperations(params: {
               status: INSIGHT_STATUS.ACTIVE,
               mention_count: duplicate.mention_count + 1,
               last_seen_at: nowIso,
+              ...(embedding ? { embedding } : {}),
               metadata: mergeMetadata(duplicate.metadata, {
                 evidence: op.evidence,
                 consolidation_reason: 'dedupe_merge_on_add',
@@ -76,6 +84,7 @@ export async function executeMemoryOperations(params: {
           continue;
         }
 
+        const embedding = await embeddingFor(op.insight_text);
         const { error } = await admin.from('user_insights').insert({
           user_id: userId,
           category: op.category,
@@ -88,6 +97,7 @@ export async function executeMemoryOperations(params: {
           mention_count: 1,
           last_seen_at: nowIso,
           source_session_id: params.sessionId ?? null,
+          ...(embedding ? { embedding } : {}),
           metadata: op.evidence ? { evidence: op.evidence } : {},
         });
 
@@ -106,6 +116,9 @@ export async function executeMemoryOperations(params: {
         const category = op.category ?? existing.category;
         const key = insightDedupeKey(category, op.insight_text);
 
+        const textChanged = op.insight_text.trim() !== existing.insight_text.trim();
+        const embedding = await embeddingFor(op.insight_text, !textChanged);
+
         const { error } = await admin
           .from('user_insights')
           .update({
@@ -117,6 +130,7 @@ export async function executeMemoryOperations(params: {
             status: INSIGHT_STATUS.ACTIVE,
             mention_count: existing.mention_count + 1,
             last_seen_at: nowIso,
+            ...(embedding ? { embedding } : {}),
             metadata: mergeMetadata(existing.metadata, {
               consolidation_reason: op.reason,
             }),
