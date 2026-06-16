@@ -1314,6 +1314,15 @@ export function LandingPageClient() {
       </main>
 
       <footer className="landing-footer">
+        <nav className="landing-footer-links" aria-label="מסמכים משפטיים">
+          <Link href="/terms">תנאי שימוש</Link>
+          <span aria-hidden>·</span>
+          <Link href="/privacy">מדיניות פרטיות</Link>
+          <span aria-hidden>·</span>
+          <Link href="/safety">בטיחות</Link>
+          <span aria-hidden>·</span>
+          <Link href="/accessibility">נגישות וזכויות יוצרים</Link>
+        </nav>
         <p>© {new Date().getFullYear()} NuraWell — הדרך החכמה לחיים בריאים</p>
       </footer>
 
