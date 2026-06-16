@@ -1,8 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { closeChatSession } from './close-session';
 
-/** סשן ללא פעילות 12 שעות נסגר אוטומטית (חילוץ זיכרון + סיכום). */
-export const STALE_CHAT_SESSION_MS = 12 * 60 * 60 * 1000;
+/** סשן נסגר אוטומטית אם המשתמש לא הגיב תוך 2 שעות מתשובת אלמוג האחרונה. */
+export const STALE_CHAT_SESSION_MS = 2 * 60 * 60 * 1000;
 
 export function isChatSessionStale(lastActivityAt: string | Date, nowMs = Date.now()): boolean {
   const ts =
@@ -28,24 +28,50 @@ export function resolveSessionLastActivity(params: {
   return new Date(maxTs).toISOString();
 }
 
+/**
+ * האם לסגור סשן פתוח אוטומטית.
+ * לא סוגרים כשההודעה האחרונה מהמשתמש (ממתינים לתשובת אלמוג).
+ * סוגרים רק כשאלמוג כבר ענה והמשתמש לא חזר לשיחה.
+ */
+export function shouldAutoCloseOpenSession(params: {
+  lastTurnRole: 'user' | 'assistant' | null;
+  lastTurnAt: string | null;
+  sessionUpdatedAt: string;
+  nowMs?: number;
+}): boolean {
+  if (params.lastTurnRole === 'user') return false;
+
+  const lastActivity = resolveSessionLastActivity({
+    sessionUpdatedAt: params.sessionUpdatedAt,
+    lastInteractionAt: params.lastTurnAt,
+  });
+  return isChatSessionStale(lastActivity, params.nowMs);
+}
+
 type OpenSessionRow = {
   id: string;
   updated_at: string;
 };
 
-async function fetchLastInteractionBySession(
+type LastTurnInfo = {
+  role: 'user' | 'assistant';
+  created_at: string;
+};
+
+async function fetchLastTurnBySession(
   supabase: SupabaseClient,
   userId: string,
   sessionIds: string[]
-): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
+): Promise<Map<string, LastTurnInfo>> {
+  const map = new Map<string, LastTurnInfo>();
   if (!sessionIds.length) return map;
 
   const { data, error } = await supabase
     .from('ai_interactions')
-    .select('session_id, created_at')
+    .select('session_id, role, created_at')
     .eq('user_id', userId)
     .in('session_id', sessionIds)
+    .in('role', ['user', 'assistant'])
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -53,14 +79,17 @@ async function fetchLastInteractionBySession(
   for (const row of data ?? []) {
     const sid = row.session_id as string;
     if (!map.has(sid)) {
-      map.set(sid, row.created_at as string);
+      map.set(sid, {
+        role: row.role as LastTurnInfo['role'],
+        created_at: row.created_at as string,
+      });
     }
   }
   return map;
 }
 
 /**
- * סוגר סשנים פתוחים של משתמש שלא היו פעילים 12+ שעות.
+ * סוגר סשנים פתוחים של משתמש שהמשתמש לא הגיב בהם זמן מה.
  * נקרא בטעינת הצ'אט וב-cron רקע.
  */
 export async function autoCloseStaleSessionsForUser(
@@ -77,7 +106,7 @@ export async function autoCloseStaleSessionsForUser(
   const sessions = (openSessions ?? []) as OpenSessionRow[];
   if (!sessions.length) return { closedSessionIds: [] };
 
-  const lastBySession = await fetchLastInteractionBySession(
+  const lastBySession = await fetchLastTurnBySession(
     supabase,
     userId,
     sessions.map((s) => s.id)
@@ -87,12 +116,18 @@ export async function autoCloseStaleSessionsForUser(
   const nowMs = Date.now();
 
   for (const session of sessions) {
-    const lastActivity = resolveSessionLastActivity({
-      sessionUpdatedAt: session.updated_at,
-      lastInteractionAt: lastBySession.get(session.id) ?? null,
-    });
+    const lastTurn = lastBySession.get(session.id) ?? null;
 
-    if (!isChatSessionStale(lastActivity, nowMs)) continue;
+    if (
+      !shouldAutoCloseOpenSession({
+        lastTurnRole: lastTurn?.role ?? null,
+        lastTurnAt: lastTurn?.created_at ?? null,
+        sessionUpdatedAt: session.updated_at,
+        nowMs,
+      })
+    ) {
+      continue;
+    }
 
     try {
       await closeChatSession(supabase, { sessionId: session.id, userId });

@@ -2,7 +2,7 @@
 
 import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BellRing, MessageCircle, Send, Loader2, X, Paperclip, Smile, RotateCcw, PlusCircle, LogOut, ChevronRight, Inbox } from 'lucide-react';
+import { BellRing, MessageCircle, Send, Loader2, X, Paperclip, Smile, RotateCcw, PlusCircle, LogOut, ChevronRight, ChevronDown, ChevronUp, Inbox } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useChat } from '@ai-sdk/react';
 import { MemorySearchIndicator } from './MemorySearchIndicator';
@@ -31,8 +31,27 @@ import {
   type ChatSessionListItemClient,
 } from '../../lib/client/chat-session-api';
 import { transcriptTurnsToUiMessages } from '../../lib/client/chat-session-messages';
+import {
+  AWAITING_ASSISTANT_POLL_MS,
+  AWAITING_ASSISTANT_RESUME_MS,
+  clearPendingChatReply,
+  isAwaitingAssistantResponse,
+  readPendingChatReply,
+  writePendingChatReply,
+} from '../../lib/client/chat-awaiting-assistant';
+import {
+  clearChatInputDraft,
+  migrateChatInputDraft,
+  readChatInputDraft,
+  writeChatInputDraft,
+} from '../../lib/client/chat-input-draft';
 
 const SESSION_STORAGE_KEY = 'nurawell_almog_chat_session';
+
+function markChatSendStarted(sessionId: string | null) {
+  if (!sessionId) return;
+  writePendingChatReply(sessionId);
+}
 
 const MICRO_WIN_QUICK_STARTERS = [
   {
@@ -383,6 +402,9 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const [sessionList, setSessionList] = useState<ChatSessionListItemClient[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [loadingThread, setLoadingThread] = useState(false);
+  const [awaitingAssistantRecovery, setAwaitingAssistantRecovery] = useState(false);
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
+  const resumeAssistantAttemptedRef = useRef(false);
   const notificationIdRef = useRef<string | null>(null);
   const pendingInitialReplyRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -396,6 +418,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     try {
       const s = sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (s) sessionIdRef.current = s;
+      setInput(readChatInputDraft(sessionIdRef.current));
     } catch {
       /* */
     }
@@ -445,6 +468,44 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     }
   }, [open, panelView]);
 
+  useEffect(() => {
+    if (!open) return;
+    const tick = () => {
+      void refreshSessionList();
+      if (panelView === 'thread' && sessionIdRef.current) {
+        void refreshChatSession(sessionIdRef.current);
+      }
+    };
+    const id = window.setInterval(tick, 5 * 60_000);
+    return () => window.clearInterval(id);
+  }, [open, panelView]);
+
+  useEffect(() => {
+    if (!open) return;
+    const pending = readPendingChatReply();
+    if (!pending?.sessionId) return;
+    if (panelView === 'thread' && sessionIdRef.current === pending.sessionId) return;
+
+    applySessionId(pending.sessionId);
+    setPanelView('thread');
+    setLoadingThread(true);
+    void fetchChatSessionMessages(pending.sessionId)
+      .then(({ session, messages: turns, awaiting_assistant }) => {
+        setChatSession(session);
+        setMessages(transcriptTurnsToUiMessages(turns));
+        if (awaiting_assistant ?? isAwaitingAssistantResponse(turns)) {
+          setAwaitingAssistantRecovery(true);
+        }
+        setInput(readChatInputDraft(pending.sessionId));
+      })
+      .catch(() => {
+        /* */
+      })
+      .finally(() => {
+        setLoadingThread(false);
+      });
+  }, [open]);
+
   const isSessionClosed = chatSession?.status === 'closed';
 
   useEffect(() => {
@@ -486,6 +547,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
         if (prefill) {
           setPanelView('thread');
           setInput(prefill);
+          writeChatInputDraft(sessionIdRef.current, prefill);
         }
       }
     };
@@ -506,6 +568,10 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
         setMemoryRecallWriterActive(true);
       }
       if (sid) {
+        const previousSessionId = sessionIdRef.current;
+        if (previousSessionId !== sid) {
+          migrateChatInputDraft(previousSessionId, sid);
+        }
         sessionIdRef.current = sid;
         try {
           sessionStorage.setItem(SESSION_STORAGE_KEY, sid);
@@ -546,9 +612,12 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const openSessionThread = async (session: ChatSessionListItemClient) => {
     setLoadingThread(true);
     setPanelView('thread');
+    setSummaryExpanded(false);
+    resumeAssistantAttemptedRef.current = false;
     try {
       applySessionId(session.id);
-      const { session: row, messages: turns } = await fetchChatSessionMessages(session.id);
+      const { session: row, messages: turns, awaiting_assistant } =
+        await fetchChatSessionMessages(session.id);
       setChatSession(row);
       setMessages(
         transcriptTurnsToUiMessages(
@@ -559,12 +628,17 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
           }))
         )
       );
+      setAwaitingAssistantRecovery(
+        awaiting_assistant ?? isAwaitingAssistantResponse(turns)
+      );
+      setInput(readChatInputDraft(session.id));
     } catch {
       setChatSession({
         id: session.id,
         status: session.status,
         summary: session.summary,
       });
+      setAwaitingAssistantRecovery(false);
     } finally {
       setLoadingThread(false);
     }
@@ -583,6 +657,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       applySessionId(created.id);
       setChatSession(created);
       setMessages([]);
+      clearChatInputDraft(created.id);
       setInput('');
       setQuotedReply(null);
       setNotificationContext(null);
@@ -630,6 +705,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     if (!open || !text || status === 'submitted' || status === 'streaming') return;
     pendingInitialReplyRef.current = null;
     const replyNotificationId = notificationIdRef.current;
+    markChatSendStarted(sessionIdRef.current);
     sendMessage(
       { text },
       {
@@ -645,7 +721,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   }, [open, sendMessage, status, userId]);
 
   const isLoading = status === 'submitted' || status === 'streaming';
-  const isThinking = status === 'submitted';
+  const showLoading = isLoading || awaitingAssistantRecovery;
+  const isThinking = status === 'submitted' || (awaitingAssistantRecovery && !isLoading);
   const pendingRecallTool = useMemo(
     () => messagesHavePendingRecallTool(messages),
     [messages]
@@ -662,9 +739,80 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   useEffect(() => {
     if (!isLoading) setMemoryRecallWriterActive(false);
   }, [isLoading]);
+
+  useEffect(() => {
+    if (!awaitingAssistantRecovery) return;
+    if (isLoading) {
+      setAwaitingAssistantRecovery(false);
+    }
+  }, [awaitingAssistantRecovery, isLoading]);
+
+  useEffect(() => {
+    if (!isLoading && !awaitingAssistantRecovery) {
+      clearPendingChatReply();
+      resumeAssistantAttemptedRef.current = false;
+    }
+  }, [isLoading, awaitingAssistantRecovery]);
+
+  useEffect(() => {
+    if (!awaitingAssistantRecovery || isLoading || panelView !== 'thread') return;
+    const sid = sessionIdRef.current;
+    if (!sid) return;
+
+    let cancelled = false;
+    const pending = readPendingChatReply();
+    const startedAt = pending?.startedAt
+      ? new Date(pending.startedAt).getTime()
+      : Date.now();
+
+    const poll = async () => {
+      if (cancelled) return;
+      try {
+        const { session, messages: turns, awaiting_assistant } =
+          await fetchChatSessionMessages(sid);
+        if (cancelled) return;
+        setChatSession(session);
+        if (!(awaiting_assistant ?? isAwaitingAssistantResponse(turns))) {
+          setMessages(transcriptTurnsToUiMessages(turns));
+          setAwaitingAssistantRecovery(false);
+          clearPendingChatReply();
+          return;
+        }
+        const elapsed = Date.now() - startedAt;
+        if (
+          elapsed >= AWAITING_ASSISTANT_RESUME_MS &&
+          !resumeAssistantAttemptedRef.current
+        ) {
+          resumeAssistantAttemptedRef.current = true;
+          const lastUser = [...turns].reverse().find((t) => t.role === 'user');
+          if (lastUser?.content.trim()) {
+            sendMessage(
+              { text: lastUser.content },
+              {
+                body: {
+                  user_id: userId,
+                  session_id: sid,
+                  resume_assistant: true,
+                },
+              }
+            );
+          }
+        }
+      } catch {
+        /* */
+      }
+    };
+
+    void poll();
+    const id = window.setInterval(() => void poll(), AWAITING_ASSISTANT_POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [awaitingAssistantRecovery, isLoading, panelView, sendMessage, userId]);
   const isLongWait = isThinking && waitSeconds >= 10;
   useEffect(() => {
-    if (!isLoading) {
+    if (!showLoading) {
       setTypingStep(0);
       return;
     }
@@ -672,9 +820,9 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       setTypingStep((s) => (s + 1) % 3);
     }, 420);
     return () => window.clearInterval(id);
-  }, [isLoading]);
+  }, [showLoading]);
   useEffect(() => {
-    if (!isLoading) {
+    if (!showLoading) {
       setWaitSeconds(0);
       return;
     }
@@ -684,7 +832,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       setWaitSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)));
     }, 1000);
     return () => window.clearInterval(id);
-  }, [isLoading]);
+  }, [showLoading]);
   // התקדמות הסטטוסים הטבעיים לפי זמן ההמתנה.
   useEffect(() => {
     if (!isThinking) {
@@ -700,7 +848,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const firstMessageDate = messages.length > 0 ? getMessageCreatedAt(messages[0]) : undefined;
 
   useEffect(() => {
-    if (wasLoadingRef.current && !isLoading) {
+    if (wasLoadingRef.current && !showLoading) {
       if (notifyWhenReady) {
         setHasBackgroundAnswer(true);
         setAnswerReadyToast(true);
@@ -718,8 +866,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       }
       setNotifyWhenReady(false);
     }
-    wasLoadingRef.current = isLoading;
-  }, [isLoading, notifyWhenReady]);
+    wasLoadingRef.current = showLoading;
+  }, [showLoading, notifyWhenReady]);
 
   const continueInBackground = async () => {
     setNotifyWhenReady(true);
@@ -838,7 +986,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-200" />
                           היסטוריית שיחות חכמה
                         </>
-                      ) : isLoading ? (
+                      ) : showLoading ? (
                         <>
                           <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-200" />
                           {isThinking
@@ -875,7 +1023,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 <div className="flex justify-end px-3 pb-2">
                   <button
                     type="button"
-                    disabled={sessionActionLoading || isLoading || isClosing}
+                    disabled={sessionActionLoading || showLoading || isClosing}
                     onClick={() => void handleEndChatSession()}
                     className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-sm transition hover:bg-white/15 disabled:opacity-50"
                   >
@@ -1014,7 +1162,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
 
               <MemorySearchIndicator visible={showMemorySearch} />
 
-              {isLoading && !showMemorySearch && (
+              {showLoading && !showMemorySearch && (
                 <div className="flex justify-end">
                   <div
                     className="max-w-[88%] rounded-3xl px-4 py-3 text-[16px] leading-relaxed shadow-[0_4px_16px_rgba(15,23,42,0.07)]"
@@ -1062,18 +1210,31 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
               <div ref={bottomRef} />
             </div>
 
-            <div className="shrink-0 border-t border-white/10 bg-slate-900/70 p-2.5 backdrop-blur-2xl" style={{ paddingBottom: 'max(0.65rem, env(safe-area-inset-bottom))' }}>
+            <div className="shrink-0 border-t border-white/10 bg-slate-900/70 p-2 backdrop-blur-2xl" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
               {isSessionClosed && (
                 <div className="mb-2 space-y-2">
-                  <div
-                    className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-3 py-2.5 text-[13px] leading-relaxed text-emerald-50/95 backdrop-blur-md"
+                  <button
+                    type="button"
+                    onClick={() => setSummaryExpanded((value) => !value)}
+                    className="flex w-full items-center justify-between gap-2 rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-3 py-2 text-[12px] font-semibold text-emerald-50/95 backdrop-blur-md transition hover:bg-emerald-500/15"
                     style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)' }}
+                    aria-expanded={summaryExpanded}
                   >
-                    <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-emerald-200/80">
-                      סיכום השיחה
-                    </p>
-                    <p className="whitespace-pre-wrap">{chatSession?.summary ?? 'אין סיכום זמין.'}</p>
-                  </div>
+                    <span>סיכום השיחה</span>
+                    {summaryExpanded ? (
+                      <ChevronUp className="h-4 w-4 shrink-0 text-emerald-200/80" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 shrink-0 text-emerald-200/80" />
+                    )}
+                  </button>
+                  {summaryExpanded && (
+                    <div
+                      className="rounded-xl border border-emerald-400/20 bg-emerald-500/8 px-3 py-2.5 text-[13px] leading-relaxed text-emerald-50/95 backdrop-blur-md"
+                      style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}
+                    >
+                      <p className="whitespace-pre-wrap">{chatSession?.summary ?? 'אין סיכום זמין.'}</p>
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -1102,11 +1263,12 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                     <button
                       key={chip.label}
                       type="button"
-                      disabled={isLoading || isSessionClosed || isClosing}
+                      disabled={showLoading || isSessionClosed || isClosing}
                       onClick={async () => {
                         if (chip.markWaterHabit) {
                           await postMicroWinHabit();
                         }
+                        markChatSendStarted(sessionIdRef.current);
                         sendMessage(
                           { text: chip.text },
                           {
@@ -1124,14 +1286,15 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                   ))}
                 </div>
               )}
-              <div className="rounded-2xl border border-white/15 bg-white/5 p-2 shadow-[0_-2px_16px_rgba(2,6,23,0.4)]">
+              <div className="rounded-2xl border border-white/15 bg-white/5 p-1.5 shadow-[0_-2px_16px_rgba(2,6,23,0.4)]">
                 <form
-                  className="flex items-end gap-2"
+                  className="flex items-end gap-1.5"
                   onSubmit={(e) => {
                     e.preventDefault();
                     const text = input.trim();
-                    if (!text || isLoading || isSessionClosed || isClosing) return;
+                    if (!text || showLoading || isSessionClosed || isClosing) return;
                     const replyNotificationId = notificationIdRef.current;
+                    markChatSendStarted(sessionIdRef.current);
                     sendMessage(
                       { text },
                       {
@@ -1143,6 +1306,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                       }
                     );
                     setInput('');
+                    clearChatInputDraft(sessionIdRef.current);
                     if (replyNotificationId) {
                       setNotificationContext(null);
                       notificationIdRef.current = null;
@@ -1151,23 +1315,27 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 >
                   <button
                     type="button"
-                    className="shrink-0 rounded-xl p-2 text-white/50 transition hover:bg-white/10 hover:text-white/90"
+                    className="hidden shrink-0 rounded-lg p-1.5 text-white/50 transition hover:bg-white/10 hover:text-white/90 sm:inline-flex"
                     aria-label="צרף"
                   >
-                    <Paperclip className="h-[18px] w-[18px]" />
+                    <Paperclip className="h-4 w-4" />
                   </button>
                   <textarea
                     dir="rtl"
                     rows={1}
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setInput(next);
+                      writeChatInputDraft(sessionIdRef.current, next);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
                         (e.currentTarget.form as HTMLFormElement | null)?.requestSubmit();
                       }
                     }}
-                    disabled={isLoading || isSessionClosed || isClosing}
+                    disabled={showLoading || isSessionClosed || isClosing}
                     placeholder={
                       isSessionClosed
                         ? 'השיחה נסגרה — פתח מחדש או התחל שיחה חדשה'
@@ -1175,14 +1343,14 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                           ? 'ענה לאלמוג על מה ששאל...'
                           : 'כתוב לי מה עובר עליך...'
                     }
-                    className="max-h-24 min-h-[40px] flex-1 resize-none rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[14px] text-right text-white shadow-inner outline-none placeholder:text-white/35 disabled:opacity-60"
+                    className="max-h-20 min-h-[32px] flex-1 resize-none rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[13px] leading-snug text-right text-white shadow-inner outline-none placeholder:text-white/35 disabled:opacity-60"
                   />
                   <button
                     type="button"
-                    className="shrink-0 rounded-xl p-2 text-white/50 transition hover:bg-white/10 hover:text-white/90"
+                    className="hidden shrink-0 rounded-lg p-1.5 text-white/50 transition hover:bg-white/10 hover:text-white/90 sm:inline-flex"
                     aria-label="אימוג׳י"
                   >
-                    <Smile className="h-[18px] w-[18px]" />
+                    <Smile className="h-4 w-4" />
                   </button>
                   {isLoading && (
                     <>
@@ -1202,12 +1370,12 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                   )}
                   <button
                     type="submit"
-                    disabled={isLoading || isSessionClosed || isClosing || !input.trim()}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-md disabled:opacity-40"
+                    disabled={showLoading || isSessionClosed || isClosing || !input.trim()}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white shadow-md disabled:opacity-40"
                     style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
                     aria-label="שלח"
                   >
-                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                    {showLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </button>
                 </form>
               </div>

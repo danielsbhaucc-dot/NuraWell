@@ -1,4 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { ensureChatSession } from './ensure-session';
+import { buildChatSessionListTitle } from './session-list-title';
+
+export { buildChatSessionListTitle };
 
 export type ChatSessionListItem = {
   id: string;
@@ -11,29 +15,30 @@ export type ChatSessionListItem = {
   message_count: number;
 };
 
-function truncatePreview(text: string, max = 88): string {
-  const t = text.replace(/\s+/g, ' ').trim();
-  if (t.length <= max) return t;
-  return `${t.slice(0, max - 1)}…`;
-}
+/** מוודא שורות chat_sessions לסשנים ישנים שיש להם ai_interactions בלבד */
+async function backfillLegacySessionsFromInteractions(
+  supabase: SupabaseClient,
+  userId: string,
+  maxSessions = 40
+): Promise<void> {
+  const { data, error } = await supabase
+    .from('ai_interactions')
+    .select('session_id, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(250);
 
-/** כותרת לרשימת שיחות — טהור, ניתן לבדיקה */
-export function buildChatSessionListTitle(item: {
-  summary: string | null;
-  preview_text: string | null;
-  created_at: string;
-}): string {
-  if (item.summary?.trim()) return truncatePreview(item.summary, 72);
-  if (item.preview_text?.trim()) return truncatePreview(item.preview_text, 72);
-  try {
-    const d = new Date(item.created_at);
-    const label = new Intl.DateTimeFormat('he-IL', {
-      day: 'numeric',
-      month: 'short',
-    }).format(d);
-    return `שיחה מ-${label}`;
-  } catch {
-    return 'שיחה עם אלמוג';
+  if (error) throw error;
+
+  const seen = new Set<string>();
+  for (const row of data ?? []) {
+    const sessionId = row.session_id as string;
+    if (!sessionId || seen.has(sessionId)) continue;
+    seen.add(sessionId);
+    await ensureChatSession(supabase, { sessionId, userId }).catch(() => {
+      /* לא שוברים רשימה אם שורה בודדת נכשלה */
+    });
+    if (seen.size >= maxSessions) break;
   }
 }
 
@@ -42,6 +47,8 @@ export async function listChatSessionsForUser(
   userId: string,
   limit = 40
 ): Promise<ChatSessionListItem[]> {
+  await backfillLegacySessionsFromInteractions(supabase, userId, limit);
+
   const { data: sessions, error } = await supabase
     .from('chat_sessions')
     .select('id, status, summary, created_at, updated_at, closed_at')
@@ -51,16 +58,22 @@ export async function listChatSessionsForUser(
 
   if (error) throw error;
   const rows = sessions ?? [];
-  if (!rows.length) return [];
 
-  const sessionIds = rows.map((r) => r.id as string);
-  const { data: interactions, error: intErr } = await supabase
-    .from('ai_interactions')
-    .select('session_id, role, content, created_at')
-    .eq('user_id', userId)
-    .in('session_id', sessionIds)
-    .in('role', ['user', 'assistant'])
-    .order('created_at', { ascending: false });
+  const sessionIds =
+    rows.length > 0
+      ? rows.map((r) => r.id as string)
+      : [];
+
+  const { data: interactions, error: intErr } =
+    sessionIds.length > 0
+      ? await supabase
+          .from('ai_interactions')
+          .select('session_id, role, content, created_at')
+          .eq('user_id', userId)
+          .in('session_id', sessionIds)
+          .in('role', ['user', 'assistant'])
+          .order('created_at', { ascending: false })
+      : { data: [], error: null };
 
   if (intErr) throw intErr;
 

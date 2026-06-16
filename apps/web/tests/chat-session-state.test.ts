@@ -3,20 +3,43 @@ import { describe, expect, it } from 'vitest';
 import {
   isChatSessionStale,
   resolveSessionLastActivity,
+  shouldAutoCloseOpenSession,
   STALE_CHAT_SESSION_MS,
 } from '../lib/ai/chat-sessions/auto-close-stale-sessions';
 
 describe('chat session stale detection', () => {
   const now = new Date('2026-06-16T12:00:00.000Z');
 
-  it('marks session stale after 12 hours of inactivity', () => {
+  it('marks session stale after 2 hours of inactivity', () => {
     const last = new Date(now.getTime() - STALE_CHAT_SESSION_MS - 1_000).toISOString();
     expect(isChatSessionStale(last, now.getTime())).toBe(true);
   });
 
-  it('keeps active session open under 12 hours', () => {
+  it('keeps active session open under 2 hours', () => {
     const last = new Date(now.getTime() - STALE_CHAT_SESSION_MS + 60_000).toISOString();
     expect(isChatSessionStale(last, now.getTime())).toBe(false);
+  });
+
+  it('does not auto-close while awaiting assistant reply', () => {
+    expect(
+      shouldAutoCloseOpenSession({
+        lastTurnRole: 'user',
+        lastTurnAt: new Date(now.getTime() - STALE_CHAT_SESSION_MS - 1_000).toISOString(),
+        sessionUpdatedAt: '2026-06-16T08:00:00.000Z',
+        nowMs: now.getTime(),
+      })
+    ).toBe(false);
+  });
+
+  it('auto-closes when assistant replied and user is silent', () => {
+    expect(
+      shouldAutoCloseOpenSession({
+        lastTurnRole: 'assistant',
+        lastTurnAt: new Date(now.getTime() - STALE_CHAT_SESSION_MS - 1_000).toISOString(),
+        sessionUpdatedAt: '2026-06-16T08:00:00.000Z',
+        nowMs: now.getTime(),
+      })
+    ).toBe(true);
   });
 
   it('uses latest of session update and last interaction', () => {

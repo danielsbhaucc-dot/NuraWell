@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/v1/ai/chat-sessions/auto-close-stale
- * נקרא בטעינת הצ'אט — סוגר סשנים פתוחים ללא פעילות 12+ שעות.
+ * נקרא בטעינת הצ'אט — סוגר סשנים פתוחים שהמשתמש לא הגיב בהם 2+ שעות.
  */
 export async function POST(request: Request) {
   const auth = await requireApiSession(request);

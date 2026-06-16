@@ -3,9 +3,10 @@ import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { after } from 'next/server';
 import { ensureChatSession, touchChatSessionActivity } from '../../../../../lib/ai/chat-sessions/ensure-session';
+import { fetchChatSessionTranscript } from '../../../../../lib/ai/chat-sessions/fetch-transcript';
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
 import { embedTextForRag } from '../../../../../lib/ai/openrouter-embeddings';
-import { formatRagMemoryContextBlock } from '../../../../../lib/ai/format-rag-context';
+import { buildRelevantMemoriesPromptBlock } from '../../../../../lib/ai/user-memories/retrieve-relevant-memories';
 import {
   ALMOG_CHAT_FINAL_GUARDRAILS,
   ALMOG_CHAT_FINAL_GUARDRAILS_LEAN,
@@ -31,11 +32,7 @@ import {
 } from '../../../../../lib/ai/almog-system-rag';
 import { isSystemKnowledgeVectorConfigured } from '../../../../../lib/ai/system-knowledge-vector';
 import { fetchUserEnrolledCourseIds } from '../../../../../lib/api/rag-chat-access';
-import { RAG_CANDIDATE_TOP_K, RAG_TOP_K } from '../../../../../lib/ai/rag-config';
-import {
-  isUpstashVectorConfigured,
-  queryUserMemoryVectors,
-} from '../../../../../lib/ai/upstash-vector-rest';
+import { isUpstashVectorConfigured } from '../../../../../lib/ai/upstash-vector-rest';
 import { createPiiShield, type PiiShield } from '../../../../../lib/ai/privacy/pii-shield';
 import { fetchUserMemoryDossier } from '../../../../../lib/ai/memory-dossier/fetch-dossier';
 import { formatUserMemoryDossierPromptBlock } from '../../../../../lib/ai/memory-dossier/format-dossier-prompt';
@@ -159,6 +156,8 @@ const chatBodySchema = z.object({
   user_id: z.string().uuid().optional(),
   /** מזהה התראה — מזריק הקשר כשהמשתמש עונה מהתראה */
   notification_id: z.string().uuid().optional(),
+  /** המשך יצירת תשובה אחרי רענון — בלי שכפול הודעת משתמש ב-DB */
+  resume_assistant: z.boolean().optional(),
   /**
    * בורר מודל להשוואה (אופציונלי). ברירת מחדל: אלמוג (Qwen). מאפשר למשתמש
    * לבחור מודל אחר *לאותה בקשה* בלבד כדי להשוות איכות — הכל דרך OpenRouter.
@@ -2207,7 +2206,29 @@ export async function POST(request: Request) {
     ? fetchNotificationContextBlock(supabase, user.id, notificationId)
     : Promise.resolve(null);
 
-  const insertPromise = insertAiInteraction(supabase, {
+  let skipUserPersist = false;
+  if (parsed.data.resume_assistant) {
+    try {
+      const turns = await fetchChatSessionTranscript(supabase, {
+        sessionId,
+        userId: user.id,
+      });
+      const lastTurn = turns[turns.length - 1];
+      if (lastTurn?.role === 'user' && lastTurn.content.trim() === lastUserText) {
+        skipUserPersist = true;
+      }
+    } catch (resumeErr) {
+      console.warn('[ai/chat]', {
+        debug_id: debugId,
+        stage: 'resume_assistant_check_failed',
+        error: resumeErr instanceof Error ? resumeErr.message : String(resumeErr),
+      });
+    }
+  }
+
+  const insertPromise = skipUserPersist
+    ? Promise.resolve()
+    : insertAiInteraction(supabase, {
     user_id: user.id,
     session_id: sessionId,
     role: 'user',
@@ -2407,10 +2428,14 @@ export async function POST(request: Request) {
         const qv = await embedTextForRag(lastUserText);
         // שלוש השאילתות עצמאיות וחולקות את אותו embedding — מריצים במקביל
         // (במקום בטור) כדי לקצר את ההמתנה לפני streamText, בלי לשנות תוצאות.
-        const [userHits, skHits, principleHits] = await Promise.all([
+        const [userMemoryBlock, skHits, principleHits] = await Promise.all([
           needUserRag
-            ? queryUserMemoryVectors({ userId: user.id, vector: qv, topK: RAG_CANDIDATE_TOP_K })
-            : Promise.resolve(null),
+            ? buildRelevantMemoriesPromptBlock({
+                userId: user.id,
+                queryText: lastUserText,
+                queryVector: qv,
+              })
+            : Promise.resolve(''),
           needSystemRag && skFilter
             ? queryAlmogSystemKnowledgeForUser({ questionEmbedding: qv, filter: skFilter, topK: 5 })
             : Promise.resolve(null),
@@ -2418,8 +2443,8 @@ export async function POST(request: Request) {
             ? queryAlmogSystemKnowledgeForUser({ questionEmbedding: qv, filter: principlesFilter, topK: 4 })
             : Promise.resolve(null),
         ]);
-        if (userHits) {
-          ragMemoryBlock = formatRagMemoryContextBlock(userHits, RAG_TOP_K);
+        if (userMemoryBlock) {
+          ragMemoryBlock = userMemoryBlock;
         }
         if (skHits) {
           systemKnowledgeBlock = formatSystemKnowledgeContextBlock(skHits, 5);
