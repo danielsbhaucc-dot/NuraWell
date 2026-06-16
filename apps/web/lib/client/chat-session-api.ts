@@ -39,12 +39,14 @@ export async function fetchChatSession(sessionId: string): Promise<ChatSessionCl
 export async function fetchChatSessionMessages(sessionId: string): Promise<{
   session: ChatSessionClientState;
   messages: Array<{ role: 'user' | 'assistant'; content: string; created_at: string }>;
+  awaiting_assistant?: boolean;
 }> {
   const res = await fetch(`/api/v1/ai/chat-sessions/${sessionId}/messages`, { method: 'GET' });
   if (!res.ok) throw new Error('fetch_messages_failed');
   return (await res.json()) as {
     session: ChatSessionClientState;
     messages: Array<{ role: 'user' | 'assistant'; content: string; created_at: string }>;
+    awaiting_assistant?: boolean;
   };
 }
 

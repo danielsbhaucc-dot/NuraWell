@@ -47,13 +47,15 @@ export async function retrieveRelevantUserMemories(params: {
 export async function buildRelevantMemoriesPromptBlock(params: {
   userId: string;
   queryText: string;
+  /** כשכבר חושב embedding לשאילתה — חוסך קריאה כפולה בצ'אט */
+  queryVector?: number[];
   maxItems?: number;
 }): Promise<string> {
   const q = params.queryText.replace(/\s+/g, ' ').trim();
   if (!q || !isUpstashVectorConfigured()) return '';
 
   const maxItems = params.maxItems ?? RAG_TOP_K;
-  const queryVector = await embedTextForRag(q);
+  const queryVector = params.queryVector ?? (await embedTextForRag(q));
   const hits = await queryUserMemoryVectors({
     userId: params.userId,
     vector: queryVector,

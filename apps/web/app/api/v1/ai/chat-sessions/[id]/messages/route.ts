@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fetchChatSessionTranscript } from '@/lib/ai/chat-sessions/fetch-transcript';
+import { isAwaitingAssistantResponse } from '@/lib/client/chat-awaiting-assistant';
 import { requireApiSession } from '@/lib/api/route-guards';
 
 export const runtime = 'edge';
@@ -39,6 +40,7 @@ export async function GET(request: Request, context: RouteContext) {
         summary: session.summary,
       },
       messages: turns,
+      awaiting_assistant: isAwaitingAssistantResponse(turns),
     });
   } catch (err) {
     console.error('[chat-sessions/messages]', err);
