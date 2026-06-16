@@ -39,8 +39,8 @@ import { createPiiShield, type PiiShield } from '../../../../../lib/ai/privacy/p
 import { fetchUserMemoryDossier } from '../../../../../lib/ai/memory-dossier/fetch-dossier';
 import { formatUserMemoryDossierPromptBlock } from '../../../../../lib/ai/memory-dossier/format-dossier-prompt';
 import { ingestChatTurnIntoMemoryDossier } from '../../../../../lib/ai/memory-dossier/ingest-chat-turn';
-import { getMentorContext } from '../../../../../lib/ai/insights/get-mentor-context';
 import { runInsightExtraction } from '../../../../../lib/ai/insights/run-insight-extraction';
+import { getActiveContext } from '../../../../../lib/ai/mentorship/get-active-context';
 import {
   fetchAlmogCommitmentContext,
   formatAlmogCommitmentBlocks,
@@ -2074,7 +2074,7 @@ export async function POST(request: Request) {
     : fetchUserMemoryDossier(supabase, user.id).catch(() => null);
   const mentorInsightsPromise = trivialBypass
     ? Promise.resolve(null)
-    : getMentorContext(supabase, user.id).catch(() => null);
+    : getActiveContext(supabase, user.id).catch(() => null);
   const guideSummariesPromise = trivialBypass
     ? Promise.resolve([])
     : fetchUserGuideSummaries(supabase, user.id).catch(() => []);
@@ -3099,6 +3099,11 @@ export async function POST(request: Request) {
                   errors: insightRun.errors,
                 });
               }
+
+              /**
+               * סינתזת אסטרטגיה — *לא* כאן (חיסכון בטוקנים).
+               * רצה ב-cron ערב (habit-checkpoints?slot=evening) למי שמיושן.
+               */
             } catch (insightErr) {
               console.warn('[ai/chat]', {
                 debug_id: debugId,
