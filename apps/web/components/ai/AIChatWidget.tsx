@@ -744,9 +744,9 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
         if (next) {
           setHasBackgroundAnswer(false);
           setAnswerReadyToast(false);
-          setPanelView('inbox');
         }
         if (!next) {
+          setPanelView('inbox');
           setNotificationContext(null);
           notificationIdRef.current = null;
         }
@@ -902,6 +902,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
               />
               </div>
             ) : (
+            <>
             <div
               className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-[#0f172a] via-[#111827] to-[#0b1220] px-3 py-4 text-right [box-shadow:inset_0_1px_0_rgba(255,255,255,0.06)]"
               style={{ WebkitOverflowScrolling: 'touch' }}
@@ -1060,9 +1061,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
 
               <div ref={bottomRef} />
             </div>
-            )}
 
-            {panelView === 'thread' && (
             <div className="shrink-0 border-t border-white/10 bg-slate-900/70 p-2.5 backdrop-blur-2xl" style={{ paddingBottom: 'max(0.65rem, env(safe-area-inset-bottom))' }}>
               {isSessionClosed && (
                 <div className="mb-2 space-y-2">
@@ -1213,6 +1212,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 </form>
               </div>
             </div>
+            </>
             )}
           </div>
         </Drawer.Content>
