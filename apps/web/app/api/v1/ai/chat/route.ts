@@ -39,6 +39,8 @@ import { createPiiShield, type PiiShield } from '../../../../../lib/ai/privacy/p
 import { fetchUserMemoryDossier } from '../../../../../lib/ai/memory-dossier/fetch-dossier';
 import { formatUserMemoryDossierPromptBlock } from '../../../../../lib/ai/memory-dossier/format-dossier-prompt';
 import { ingestChatTurnIntoMemoryDossier } from '../../../../../lib/ai/memory-dossier/ingest-chat-turn';
+import { getMentorContext } from '../../../../../lib/ai/insights/get-mentor-context';
+import { runInsightExtraction } from '../../../../../lib/ai/insights/run-insight-extraction';
 import {
   fetchAlmogCommitmentContext,
   formatAlmogCommitmentBlocks,
@@ -2070,6 +2072,9 @@ export async function POST(request: Request) {
   const memoryDossierPromise = trivialBypass
     ? Promise.resolve(null)
     : fetchUserMemoryDossier(supabase, user.id).catch(() => null);
+  const mentorInsightsPromise = trivialBypass
+    ? Promise.resolve(null)
+    : getMentorContext(supabase, user.id).catch(() => null);
   const guideSummariesPromise = trivialBypass
     ? Promise.resolve([])
     : fetchUserGuideSummaries(supabase, user.id).catch(() => []);
@@ -2203,6 +2208,7 @@ export async function POST(request: Request) {
     notificationContextBlock,
     fullProgressReport,
     memoryDossier,
+    mentorInsightsBlock,
     guideSummaries,
   ] = await Promise.all([
     profilePromise,
@@ -2214,6 +2220,7 @@ export async function POST(request: Request) {
     notificationContextPromise,
     fullProgressReportPromise,
     memoryDossierPromise,
+    mentorInsightsPromise,
     guideSummariesPromise,
   ]);
 
@@ -2539,6 +2546,7 @@ export async function POST(request: Request) {
     if (principlesBlock) contextSections.push(principlesBlock);
     if (workingMemoryBlock) contextSections.push(workingMemoryBlock);
     if (memoryDossierBlock && !leanLightTurn) contextSections.push(memoryDossierBlock);
+    if (mentorInsightsBlock && !leanLightTurn) contextSections.push(mentorInsightsBlock);
     /**
      * התחייבויות אלמוג — באנר פוקוס (אם פעיל) + משימות אישיות + חסמים במעקב.
      * הבלוקים קטנים בכוונה ונטענים מותנה (חוץ מבאנר פוקוס שתמיד נשלף), כדי לא
@@ -3056,6 +3064,46 @@ export async function POST(request: Request) {
                 debug_id: debugId,
                 stage: 'memory_ingest_failed',
                 error: dossierErr instanceof Error ? dossierErr.message : String(dossierErr),
+              });
+            }
+          });
+
+          /**
+           * חילוץ תובנות עומק (Insight Extraction Engine) — רץ ברקע בלבד.
+           * משתמש באותו gating של memory sync: רק הודעות עם תוכן מהותי ולא small-talk.
+           * אם המשתמש חוזר על אותו דפוס, `user_insights.dedupe_key` ממזג ומרענן
+           * את התובנה במקום לשמור כפילות.
+           */
+          after(async () => {
+            try {
+              if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) return;
+              const insightRun = await runInsightExtraction({
+                admin: createAdminClient(),
+                userId: user.id,
+                sessionId,
+                messageLimit: 24,
+              });
+              if (
+                insightRun.insights_extracted > 0 ||
+                insightRun.inserted > 0 ||
+                insightRun.merged > 0 ||
+                insightRun.errors > 0
+              ) {
+                console.info('[ai/chat]', {
+                  debug_id: debugId,
+                  stage: 'insights_extraction_ok',
+                  messages_analyzed: insightRun.messages_analyzed,
+                  insights_extracted: insightRun.insights_extracted,
+                  inserted: insightRun.inserted,
+                  merged: insightRun.merged,
+                  errors: insightRun.errors,
+                });
+              }
+            } catch (insightErr) {
+              console.warn('[ai/chat]', {
+                debug_id: debugId,
+                stage: 'insights_extraction_failed',
+                error: insightErr instanceof Error ? insightErr.message : String(insightErr),
               });
             }
           });
