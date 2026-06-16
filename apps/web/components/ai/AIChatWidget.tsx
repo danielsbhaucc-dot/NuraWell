@@ -2,7 +2,7 @@
 
 import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BellRing, MessageCircle, Send, Loader2, X, Paperclip, Smile, RotateCcw, PlusCircle, LogOut, ChevronRight, ChevronDown, ChevronUp, Inbox } from 'lucide-react';
+import { BellRing, MessageCircle, Send, Loader2, X, RotateCcw, PlusCircle, LogOut, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useChat } from '@ai-sdk/react';
 import { MemorySearchIndicator } from './MemorySearchIndicator';
@@ -278,16 +278,6 @@ function renderAlmogMessage(text: string): ReactNode {
       })}
     </div>
   );
-}
-
-function formatHebrewDate(dateLike: Date | string | undefined): string {
-  const date = dateLike ? new Date(dateLike) : new Date();
-  return new Intl.DateTimeFormat('he-IL', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(date);
 }
 
 function formatHebrewTime(dateLike: Date | string | undefined): string {
@@ -810,7 +800,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
       window.clearInterval(id);
     };
   }, [awaitingAssistantRecovery, isLoading, panelView, sendMessage, userId]);
-  const isLongWait = isThinking && waitSeconds >= 10;
+  const isLongWait = isThinking && waitSeconds >= 15;
   useEffect(() => {
     if (!showLoading) {
       setTypingStep(0);
@@ -845,7 +835,6 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
     return () => timers.forEach((t) => window.clearTimeout(t));
   }, [isThinking]);
   const almogStatusText = ALMOG_STATUS_PHRASES[statusIdx] ?? ALMOG_STATUS_PHRASES[0];
-  const firstMessageDate = messages.length > 0 ? getMessageCreatedAt(messages[0]) : undefined;
 
   useEffect(() => {
     if (wasLoadingRef.current && !showLoading) {
@@ -945,101 +934,111 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
           <div className="relative h-full flex flex-col overflow-hidden rounded-t-[28px] bg-transparent backdrop-blur-2xl">
             <ChatSessionClosingOverlay visible={isClosing} />
             <div
-              className="shrink-0 rounded-t-[28px] text-white shadow-[0_4px_24px_rgba(6,78,59,0.35)]"
-              style={{ background: 'linear-gradient(160deg, #064e3b 0%, #047857 45%, #10b981 100%)' }}
+              className={`shrink-0 rounded-t-[28px] text-white ${
+                panelView === 'inbox' ? 'border-b border-white/10 bg-[#0f172a]/95' : 'shadow-[0_4px_24px_rgba(6,78,59,0.35)]'
+              }`}
+              style={
+                panelView === 'thread'
+                  ? { background: 'linear-gradient(160deg, #064e3b 0%, #047857 45%, #10b981 100%)' }
+                  : undefined
+              }
             >
               <div className="pt-2 pb-1 flex justify-center">
                 <div className="w-10 h-1 rounded-full bg-white/40" />
               </div>
-              <div className="flex items-center justify-between gap-2 px-3 pb-2.5">
-                {panelView === 'thread' ? (
+              {panelView === 'inbox' ? (
+                <div className="flex items-center justify-between px-3 pb-2">
+                  <span className="w-8" aria-hidden />
+                  <p className="text-sm font-bold text-white/95">שיחות עם אלמוג</p>
                   <button
                     type="button"
-                    aria-label="חזרה לרשימת שיחות"
-                    onClick={goToInbox}
-                    className="shrink-0 rounded-lg p-1.5 hover:bg-white/10"
+                    aria-label="סגור"
+                    onClick={() => setOpen(false)}
+                    className="rounded-lg p-1.5 hover:bg-white/10"
                   >
-                    <ChevronRight className="h-5 w-5" />
+                    <X className="h-4 w-4" />
                   </button>
-                ) : (
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
-                    <Inbox className="h-4 w-4 text-white/90" />
-                  </span>
-                )}
-                <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                  <img
-                    src={avatarSrc}
-                    alt="אלמוג"
-                    className="h-10 w-10 shrink-0 rounded-xl object-cover border border-white/40 shadow-sm"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
-                    }}
-                  />
-                  <div className="min-w-0 text-right">
-                    <p className="text-lg font-bold leading-tight tracking-tight" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
-                      {panelView === 'inbox' ? 'שיחות עם אלמוג' : 'אלמוג'}
-                    </p>
-                    <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-white/85" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
-                      {panelView === 'inbox' ? (
-                        <>
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-200" />
-                          היסטוריית שיחות חכמה
-                        </>
-                      ) : showLoading ? (
-                        <>
-                          <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-200" />
-                          {isThinking
-                            ? `${almogStatusText}${typingEllipsis(typingStep)}`
-                            : `אלמוג מקליד${typingEllipsis(typingStep)}`}
-                        </>
-                      ) : online ? (
-                        <>
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-200" />
-                          {isSessionClosed ? 'שיחה נסגרה' : 'מחובר וזמין'}
-                        </>
-                      ) : (
-                        <>
-                          <span className="h-2 w-2 rounded-full bg-red-300" />
-                          כרגע בלי חיבור
-                        </>
-                      )}
-                    </p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between gap-2 px-3 pb-2">
+                    <button
+                      type="button"
+                      aria-label="חזרה לרשימת שיחות"
+                      onClick={goToInbox}
+                      className="shrink-0 rounded-lg p-1.5 hover:bg-white/10"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                      <img
+                        src={avatarSrc}
+                        alt="אלמוג"
+                        className="h-9 w-9 shrink-0 rounded-lg object-cover border border-white/35"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                        }}
+                      />
+                      <div className="min-w-0 text-right">
+                        <p className="text-base font-bold leading-tight">אלמוג</p>
+                        <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-white/85">
+                          {showLoading ? (
+                            <>
+                              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-200" />
+                              {isThinking
+                                ? `${almogStatusText}${typingEllipsis(typingStep)}`
+                                : `מקליד${typingEllipsis(typingStep)}`}
+                            </>
+                          ) : online ? (
+                            <>
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-200" />
+                              {isSessionClosed ? 'שיחה נסגרה' : 'זמין'}
+                            </>
+                          ) : (
+                            <>
+                              <span className="h-1.5 w-1.5 rounded-full bg-red-300" />
+                              בלי חיבור
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      {!isSessionClosed && messages.length > 0 ? (
+                        <button
+                          type="button"
+                          aria-label="סיום שיחה"
+                          disabled={sessionActionLoading || showLoading || isClosing}
+                          onClick={() => void handleEndChatSession()}
+                          className="rounded-lg p-1.5 hover:bg-white/10 disabled:opacity-50"
+                        >
+                          {isClosing ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <LogOut className="h-4 w-4" />
+                          )}
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        aria-label="סגור"
+                        onClick={() => {
+                          if (!notifyWhenReady) stop();
+                          setOpen(false);
+                        }}
+                        className="rounded-lg p-1.5 hover:bg-white/10"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <button
-                  type="button"
-                  aria-label="סגור"
-                  onClick={() => {
-                    if (!notifyWhenReady) stop();
-                    setOpen(false);
-                  }}
-                  className="shrink-0 rounded-lg p-1.5 hover:bg-white/10"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              {!isSessionClosed && panelView === 'thread' && messages.length > 0 && (
-                <div className="flex justify-end px-3 pb-2">
-                  <button
-                    type="button"
-                    disabled={sessionActionLoading || showLoading || isClosing}
-                    onClick={() => void handleEndChatSession()}
-                    className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-sm transition hover:bg-white/15 disabled:opacity-50"
-                  >
-                    {isClosing ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <LogOut className="h-3 w-3" />
-                    )}
-                    {isClosing ? 'סוגר...' : 'סיום שיחה'}
-                  </button>
-                </div>
+                </>
               )}
             </div>
 
             {panelView === 'inbox' ? (
-              <div className="min-h-0 flex-1 overflow-hidden bg-gradient-to-b from-[#0f172a] via-[#111827] to-[#0b1220]">
+              <div className="min-h-0 flex-1 overflow-hidden bg-[#0f172a]">
               <ChatSessionInbox
                 sessions={sessionList}
                 loading={sessionsLoading}
@@ -1052,7 +1051,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
             ) : (
             <>
             <div
-              className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-[#0f172a] via-[#111827] to-[#0b1220] px-3 py-4 text-right [box-shadow:inset_0_1px_0_rgba(255,255,255,0.06)]"
+              className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-[#0f172a] px-3 py-3 text-right"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               {loadingThread && (
@@ -1069,46 +1068,21 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 </div>
               )}
               {messages.length === 0 && !notificationContext && (
-                <div
-                  className="rounded-2xl border border-white/20 bg-white/10 p-4 text-sm leading-relaxed text-slate-100 shadow-sm"
-                  style={{ boxShadow: '0 8px 28px rgba(2,6,23,0.35)' }}
-                >
-                  אפשר לכתוב לי מה עובר עליך עכשיו, ואבנה איתך צעד קטן ומדויק להיום.
-                </div>
+                <p className="px-1 py-2 text-[13px] leading-relaxed text-slate-400">
+                  כתוב מה עובר עליך — ונבנה יחד צעד קטן להיום.
+                </p>
               )}
               {messages.length === 0 && notificationContext && (
                 <p className="text-center text-xs text-slate-400">כתוב את תשובתך למטה — אלמוג ימשיך משם</p>
               )}
 
-              {messages.length > 0 && (
-                <div className="flex justify-center">
-                  <div
-                    className="rounded-full border px-3 py-1 text-[11px] font-semibold text-white/70"
-                    style={{
-                      background: 'linear-gradient(145deg, rgba(255,255,255,0.12), rgba(148,163,184,0.08))',
-                      borderColor: 'rgba(255,255,255,0.18)',
-                      boxShadow: '0 6px 20px rgba(2,6,23,0.35)',
-                    }}
-                  >
-                    {`תחילת שיחה • ${formatHebrewDate(firstMessageDate)}`}
-                  </div>
-                </div>
-              )}
-
               {error && (
-                <div
-                  className="rounded-2xl border border-red-300/35 bg-red-500/10 p-3 text-sm leading-relaxed text-red-100 shadow-sm"
-                  role="alert"
-                >
-                  הייתה בעיה בקבלת תשובה מאלמוג כרגע. נסה שוב בעוד כמה שניות.
+                <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-[13px] text-red-100" role="alert">
+                  בעיה בקבלת תשובה. נסה שוב בעוד כמה שניות.
                 </div>
               )}
               {answerReadyToast && (
-                <div className="flex justify-center">
-                  <div className="rounded-full border border-emerald-300/40 bg-emerald-500/20 px-3 py-1.5 text-[12px] font-bold text-emerald-50 shadow-lg">
-                    אלמוג סיים לענות — זה מחכה לך כאן
-                  </div>
-                </div>
+                <p className="text-center text-[11px] font-semibold text-emerald-300/90">התשובה מוכנה</p>
               )}
 
               {messages.map((msg, i) => {
@@ -1124,23 +1098,11 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 return (
                   <div key={msg.id ?? `${i}-${text.slice(0, 16)}`} className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}>
                     <div
-                      className="max-w-[85%] rounded-2xl px-3 py-2 text-[14px] leading-relaxed shadow-[0_6px_20px_rgba(15,23,42,0.08)]"
-                      style={
+                      className={`max-w-[85%] rounded-2xl px-3 py-2 text-[14px] leading-relaxed ${
                         isUser
-                          ? {
-                              background: 'linear-gradient(165deg, rgba(51,65,85,0.62), rgba(30,41,59,0.48))',
-                              border: '1px solid rgba(255,255,255,0.2)',
-                              color: '#e2e8f0',
-                              backdropFilter: 'blur(8px)',
-                              boxShadow: '0 8px 24px rgba(2,6,23,0.35), inset 0 1px 0 rgba(255,255,255,0.18)',
-                            }
-                          : {
-                              background: 'linear-gradient(165deg, rgba(16,185,129,0.92), rgba(5,150,105,0.88))',
-                              border: '1px solid rgba(16,185,129,0.3)',
-                              color: '#f8fafc',
-                              boxShadow: '0 10px 30px rgba(16,185,129,0.25), inset 0 1px 0 rgba(255,255,255,0.25)',
-                            }
-                      }
+                          ? 'border border-white/12 bg-slate-800/70 text-slate-100'
+                          : 'border border-emerald-500/25 bg-emerald-600/90 text-white'
+                      }`}
                     >
                       {isUser ? (
                         <>
@@ -1164,41 +1126,29 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
 
               {showLoading && !showMemorySearch && (
                 <div className="flex justify-end">
-                  <div
-                    className="max-w-[88%] rounded-3xl px-4 py-3 text-[16px] leading-relaxed shadow-[0_4px_16px_rgba(15,23,42,0.07)]"
-                    style={{
-                      background: 'linear-gradient(165deg, rgba(30,41,59,0.95), rgba(51,65,85,0.9))',
-                      border: '1px solid rgba(255,255,255,0.18)',
-                      color: '#f8fafc',
-                    }}
-                  >
+                  <div className="max-w-[80%] rounded-2xl border border-white/10 bg-slate-800/80 px-3 py-2 text-[14px] text-slate-100">
                     <div className="inline-flex items-center gap-2">
                       <AlmogChatTypingDots />
-                      {isThinking && (
-                        <span className="text-[13px] text-white/75" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
-                          {almogStatusText}
-                        </span>
-                      )}
+                      {isThinking ? (
+                        <span className="text-[12px] text-white/70">{almogStatusText}</span>
+                      ) : null}
                     </div>
                     {isLongWait ? (
-                      <div className="mt-3 rounded-2xl border border-amber-200/25 bg-amber-300/10 px-3 py-2 text-[12px] leading-relaxed text-amber-50/85">
-                        <p>
-                          לפעמים תשובה טובה לוקחת עוד קצת. אפשר להשאיר אותי עובד ברקע —
-                          אעדכן אותך כשהתשובה מוכנה.
-                        </p>
+                      <div className="mt-2 border-t border-white/10 pt-2 text-[11px] leading-relaxed text-slate-300">
+                        <p>לפעמים תשובה טובה לוקחת עוד קצת.</p>
                         {!notifyWhenReady ? (
                           <button
                             type="button"
                             onClick={continueInBackground}
-                            className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-amber-200/35 bg-amber-300/15 px-3 py-1.5 text-[12px] font-black text-amber-50 transition hover:bg-amber-300/25"
+                            className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-200 hover:text-emerald-100"
                           >
-                            <BellRing className="h-3.5 w-3.5" />
-                            תעדכן אותי כשהתשובה מוכנה
+                            <BellRing className="h-3 w-3" />
+                            עדכן אותי כשמוכן
                           </button>
                         ) : (
-                          <p className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold text-emerald-100">
-                            <BellRing className="h-3.5 w-3.5" />
-                            סגור, אני אעדכן אותך.
+                          <p className="mt-1.5 inline-flex items-center gap-1 text-emerald-200">
+                            <BellRing className="h-3 w-3" />
+                            אעדכן כשמוכן
                           </p>
                         )}
                       </div>
@@ -1210,7 +1160,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
               <div ref={bottomRef} />
             </div>
 
-            <div className="shrink-0 border-t border-white/10 bg-slate-900/70 p-2 backdrop-blur-2xl" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+            <div className="shrink-0 border-t border-white/10 bg-[#0f172a] p-2" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
               {isSessionClosed && (
                 <div className="mb-2 space-y-2">
                   <button
@@ -1258,7 +1208,7 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 </div>
               )}
               {messages.length === 0 && !notificationContext && !isSessionClosed && (
-                <div className="mb-2 flex flex-wrap justify-end gap-2">
+                <div className="mb-2 flex flex-wrap justify-end gap-1.5">
                   {MICRO_WIN_QUICK_STARTERS.map((chip) => (
                     <button
                       key={chip.label}
@@ -1279,16 +1229,15 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                           }
                         );
                       }}
-                      className="rounded-full border border-emerald-400/35 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-100 shadow-sm transition hover:bg-emerald-500/25 disabled:opacity-50"
+                      className="rounded-lg border border-white/10 px-2.5 py-1 text-[11px] text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
                     >
                       {chip.label}
                     </button>
                   ))}
                 </div>
               )}
-              <div className="rounded-2xl border border-white/15 bg-white/5 p-1.5 shadow-[0_-2px_16px_rgba(2,6,23,0.4)]">
-                <form
-                  className="flex items-end gap-1.5"
+              <form
+                className="flex items-end gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] p-1.5"
                   onSubmit={(e) => {
                     e.preventDefault();
                     const text = input.trim();
@@ -1313,13 +1262,6 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                     }
                   }}
                 >
-                  <button
-                    type="button"
-                    className="hidden shrink-0 rounded-lg p-1.5 text-white/50 transition hover:bg-white/10 hover:text-white/90 sm:inline-flex"
-                    aria-label="צרף"
-                  >
-                    <Paperclip className="h-4 w-4" />
-                  </button>
                   <textarea
                     dir="rtl"
                     rows={1}
@@ -1343,15 +1285,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                           ? 'ענה לאלמוג על מה ששאל...'
                           : 'כתוב לי מה עובר עליך...'
                     }
-                    className="max-h-20 min-h-[32px] flex-1 resize-none rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[13px] leading-snug text-right text-white shadow-inner outline-none placeholder:text-white/35 disabled:opacity-60"
+                    className="max-h-20 min-h-[32px] flex-1 resize-none rounded-lg border-0 bg-transparent px-2 py-1.5 text-[13px] leading-snug text-right text-white outline-none placeholder:text-white/35 disabled:opacity-60"
                   />
-                  <button
-                    type="button"
-                    className="hidden shrink-0 rounded-lg p-1.5 text-white/50 transition hover:bg-white/10 hover:text-white/90 sm:inline-flex"
-                    aria-label="אימוג׳י"
-                  >
-                    <Smile className="h-4 w-4" />
-                  </button>
                   {isLoading && (
                     <>
                       {isLongWait ? (
@@ -1378,7 +1313,6 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                     {showLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </button>
                 </form>
-              </div>
             </div>
             </>
             )}
