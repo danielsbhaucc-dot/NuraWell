@@ -1,5 +1,5 @@
 /**
- * אורקסטרטור Memory Consolidation — אצווה יומית.
+ * אורקסטרטור Memory Consolidation — אצווה יומית (05:00 IL, master cron).
  */
 
 import 'server-only';

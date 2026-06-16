@@ -10,7 +10,7 @@ import { createAdminClient } from '../../../../../../lib/supabase/admin';
  * Autonomous Memory Manager — עיבוד אצווה יומי:
  * pending_chat_logs → LLM (OpenRouter) → ADD/UPDATE/DEPRECATE/VERIFY → user_insights
  *
- * Standalone route — העדיפות: master cron ב-06:00 (POST /api/v1/ai/cron/master).
+ * Standalone route — העדיפות: master cron ב-05:00 (POST /api/v1/ai/cron/master).
  * נשאר לבדיקות ידניות / dryRun.
  */
 export const runtime = 'nodejs';

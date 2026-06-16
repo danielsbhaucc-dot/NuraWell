@@ -31,7 +31,7 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 
 | נתיב | תדירות | קובץ |
 |---|---|---|
-| `POST /api/v1/ai/cron/master` | 1× ביום | `apps/web/app/api/v1/ai/cron/master/route.ts` |
+| `POST /api/v1/ai/cron/master` | 1× ביום, 05:00 ישראל | `apps/web/app/api/v1/ai/cron/master/route.ts` |
 | `POST /api/v1/ai/cron/habit-checkpoints?slot=morning` | יומי 08:00 ישראל | `apps/web/app/api/v1/ai/cron/habit-checkpoints/route.ts` |
 | `POST /api/v1/ai/cron/habit-checkpoints?slot=midday`  | יומי 13:00 ישראל | אותו קובץ |
 | `POST /api/v1/ai/cron/habit-checkpoints?slot=evening` | יומי 20:00 ישראל | אותו קובץ |
@@ -104,7 +104,8 @@ Push, וסגירה אוטומטית של תקופות פוקוס שהגיעו ל
 הנתיב הייעודי `POST /api/v1/ai/cron/almog-reminders` נשאר זמין להפעלה ידנית/בדיקות
 (`?dryRun=1`) וכגיבוי — אבל אופציונלי לתזמן אותו בנפרד.
 
-ה-Master cron מנתח אינטראקציות AI מ-24 השעות האחרונות + שולח נידג'ים למשתמשים לא־פעילים.
+ה-Master cron (05:00 ישראל) מנתח אינטראקציות AI מ-24 השעות האחרונות + שולח נידג'ים למשתמשים לא־פעילים,
+ומריץ Memory Consolidation (`pending_chat_logs` → `user_insights`) כש-`MEMORY_CONSOLIDATION_IN_MASTER` לא `0`.
 ה-habit checkpoints מתזמן Workflows של בדיקת הרגלים לפי החלון (בוקר/צהריים/ערב) **וגם
 מזהה משימות שהמשתמש קיבל אבל לא ביצע** — מי שאין לו לא הרגלים תואמי slot ולא משימות
 פתוחות, מדולג אוטומטית כדי לא להציף עם תזכורות מיותרות.
@@ -186,14 +187,14 @@ Push, וסגירה אוטומטית של תקופות פוקוס שהגיעו ל
 
 נכנסים ל-**Upstash → QStash → Schedules → Create**. יוצרים 6 schedules:
 
-#### Schedule 1 — Master Daily
+#### Schedule 1 — Master Daily (05:00 ישראל)
 
 | שדה | ערך |
 |---|---|
 | Destination URL | `https://nurawell.vercel.app/api/v1/ai/cron/master` |
 | Method | `POST` |
-| Cron | `0 6 * * *` |
-| Timezone | `Asia/Jerusalem` |
+| Cron | `0 5 * * *` |
+| Timezone | `Asia/Jerusalem` (05:00) |
 | Body | ריק |
 | Headers | ריק (QStash מצרף `Upstash-Signature` לבד) |
 

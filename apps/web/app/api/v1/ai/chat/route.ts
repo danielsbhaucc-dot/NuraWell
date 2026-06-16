@@ -3075,8 +3075,8 @@ export async function POST(request: Request) {
 
           /**
            * Autonomous Memory Manager — אגירה פסיבית בלבד (ללא LLM).
-           * העיבוד (ADD/UPDATE/DEPRECATE/VERIFY) רץ באצווה יומית:
-           * POST /api/v1/ai/cron/memory-consolidation
+           * העיבוד (ADD/UPDATE/DEPRECATE/VERIFY) רץ באצווה יומית ב-05:00 (master cron):
+           * POST /api/v1/ai/cron/master · גיבוי: /api/v1/ai/cron/memory-consolidation
            */
           after(async () => {
             try {
