@@ -1,3 +1,14 @@
+export type ChatSessionListItemClient = {
+  id: string;
+  status: 'open' | 'closed';
+  summary: string | null;
+  created_at: string;
+  updated_at: string;
+  closed_at: string | null;
+  preview_text: string | null;
+  message_count: number;
+};
+
 export type ChatSessionClientState = {
   id: string;
   status: 'open' | 'closed';
@@ -11,11 +22,30 @@ export async function autoCloseStaleChatSessionsApi(): Promise<{ closedSessionId
   return { closedSessionIds: data.closedSessionIds ?? [] };
 }
 
+export async function fetchChatSessionsList(): Promise<ChatSessionListItemClient[]> {
+  const res = await fetch('/api/v1/ai/chat-sessions', { method: 'GET' });
+  if (!res.ok) throw new Error('list_sessions_failed');
+  const data = (await res.json()) as { sessions?: ChatSessionListItemClient[] };
+  return data.sessions ?? [];
+}
+
 export async function fetchChatSession(sessionId: string): Promise<ChatSessionClientState | null> {
   const res = await fetch(`/api/v1/ai/chat-sessions/${sessionId}`, { method: 'GET' });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('fetch_session_failed');
   return (await res.json()) as ChatSessionClientState;
+}
+
+export async function fetchChatSessionMessages(sessionId: string): Promise<{
+  session: ChatSessionClientState;
+  messages: Array<{ role: 'user' | 'assistant'; content: string; created_at: string }>;
+}> {
+  const res = await fetch(`/api/v1/ai/chat-sessions/${sessionId}/messages`, { method: 'GET' });
+  if (!res.ok) throw new Error('fetch_messages_failed');
+  return (await res.json()) as {
+    session: ChatSessionClientState;
+    messages: Array<{ role: 'user' | 'assistant'; content: string; created_at: string }>;
+  };
 }
 
 export async function createNewChatSession(): Promise<ChatSessionClientState> {
