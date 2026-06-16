@@ -9,6 +9,7 @@ import { signOutClient } from '../../lib/auth/sign-out-client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { OnboardingChat } from './OnboardingChat';
+import { LegalLinksRow } from '../legal/LegalLinksRow';
 
 interface ProfileData {
   id: string;
@@ -312,6 +313,8 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
             <p className="mt-2 text-center text-sm font-semibold text-red-600">{signOutError}</p>
           )}
         </motion.div>
+
+        <LegalLinksRow tone="light" className="pt-2 pb-1" />
 
       </div>
 

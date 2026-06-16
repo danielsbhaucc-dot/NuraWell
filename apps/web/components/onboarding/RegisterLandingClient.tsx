@@ -147,6 +147,20 @@ export function RegisterLandingClient() {
                 כניסה
               </Link>
             </p>
+
+            <p
+              className={`text-center text-xs leading-relaxed ${hasPhotoBg ? 'text-emerald-100/70' : 'text-slate-500'}`}
+            >
+              בהמשך ההרשמה את/ה מאשר/ת את{' '}
+              <Link href="/terms" className={`font-semibold underline underline-offset-2 ${hasPhotoBg ? 'text-emerald-200' : 'text-emerald-700'}`}>
+                תנאי השימוש
+              </Link>{' '}
+              ואת{' '}
+              <Link href="/privacy" className={`font-semibold underline underline-offset-2 ${hasPhotoBg ? 'text-emerald-200' : 'text-emerald-700'}`}>
+                מדיניות הפרטיות
+              </Link>
+              .
+            </p>
           </div>
         </div>
       </main>
