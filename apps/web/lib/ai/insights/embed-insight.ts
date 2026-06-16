@@ -1,5 +1,6 @@
 /**
  * יצירת embedding לתובנות — text-embedding-3-small (1536) דרך OpenRouter + AI SDK.
+ * משמש לסנכרון Upstash (לא נשמר ב-Supabase).
  */
 
 import 'server-only';
@@ -11,7 +12,7 @@ import { EMBEDDING_MODEL_OPENROUTER } from '../rag-config';
 
 export const INSIGHT_EMBEDDING_DIMENSION = 1536;
 
-/** כיבוי גלובלי ל-embeddings (חוסך עלות; recall ייפול ל-ilike). */
+/** כיבוי גלובלי לסנכרון וקטורי תובנות ל-Upstash (recall ייפול ל-ilike). */
 export function isInsightEmbeddingEnabled(): boolean {
   return process.env.INSIGHT_EMBEDDING_ENABLED?.trim() !== '0';
 }

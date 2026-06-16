@@ -12,6 +12,10 @@ export type UserMemoryVectorMetadata = {
   /** טקסט קצר בעברית להזרקה לפרומפט */
   text: string;
   category: MemoryVectorCategory;
+  /** קטגוריית user_insights (fitness, mental, …) — רק כש-isInsight */
+  insightCategory?: string;
+  /** סטטוס user_insights — Active / Deprecated / NeedsVerification */
+  insightStatus?: string;
   updatedAt: string;
   /** מתי הזיכרון נוצר לראשונה */
   firstSeenAt?: string;
@@ -96,10 +100,12 @@ export async function queryUserMemoryVectors(params: {
   userId: string;
   vector: number[];
   topK: number;
+  /** מסנן מטא-דאטה מלא; ברירת מחדל — userId בלבד */
+  filter?: string;
 }): Promise<QueryHit[]> {
   const namespace = params.namespace ?? UPSTASH_NAMESPACE_USER_MEMORY;
   const uid = params.userId.replace(/'/g, "''");
-  const filter = `userId = '${uid}'`;
+  const filter = params.filter ?? `userId = '${uid}'`;
 
   const json = await postJson<{ result?: QueryHit[] }>(
     nsPath(namespace, 'query'),

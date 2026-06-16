@@ -1,13 +1,21 @@
 /**
- * חיפוש סמנטי דרך match_user_insights (pgvector).
+ * חיפוש סמנטי דרך Upstash Vector (namespace user-memory, isInsight = true).
  */
 
 import 'server-only';
-import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { embedInsightText, isInsightEmbeddingEnabled } from '../insights/embed-insight';
 import type { InsightCategory } from '../insights/schema';
 import { INSIGHT_STATUS } from '../insights/status';
+import {
+  buildInsightRecallFilter,
+  insightIdFromVectorId,
+} from '../insights/sync-insight-vector';
+import {
+  isUpstashVectorConfigured,
+  queryUserMemoryVectors,
+  type UserMemoryVectorMetadata,
+} from '../upstash-vector-rest';
 import { formatMemoryTimestamp } from './format-timestamp';
 import type { UserMemoryHit } from './search-user-memory-types';
 
@@ -19,56 +27,62 @@ const DEFAULT_MATCH_THRESHOLD = (() => {
   return Number.isFinite(n) && n > 0 && n < 1 ? n : 0.72;
 })();
 
-type RpcRow = {
-  id: string;
-  insight_text: string;
-  status: string;
-  category: string;
-  created_at: string;
-  updated_at: string;
-  similarity: number;
-};
-
-function statusToLabel(status: string): UserMemoryHit['status'] {
+function statusToLabel(status: string | undefined): UserMemoryHit['status'] {
   if (status === INSIGHT_STATUS.DEPRECATED) return 'Deprecated';
   if (status === INSIGHT_STATUS.NEEDS_VERIFICATION) return 'NeedsVerification';
   return 'Active';
 }
 
+function hitToMemory(row: UserMemoryVectorMetadata, vectorId: string, score: number): UserMemoryHit | null {
+  const text = row.text?.trim();
+  if (!text || row.insightStatus === INSIGHT_STATUS.DEPRECATED) return null;
+  if (score < DEFAULT_MATCH_THRESHOLD) return null;
+
+  const createdAt = row.firstSeenAt ?? row.updatedAt ?? new Date().toISOString();
+  const updatedAt = row.updatedAt ?? createdAt;
+
+  return {
+    id: insightIdFromVectorId(vectorId),
+    fact: text,
+    status: statusToLabel(row.insightStatus),
+    category: row.insightCategory ?? row.category,
+    created_at: createdAt,
+    updated_at: updatedAt,
+    occurred_at_label: formatMemoryTimestamp(createdAt),
+  };
+}
+
 export async function searchUserMemorySemantic(
-  supabase: SupabaseClient,
   userId: string,
   topic: string,
   dbCategories?: InsightCategory[]
 ): Promise<UserMemoryHit[] | null> {
-  if (!isInsightEmbeddingEnabled()) return null;
+  if (!isInsightEmbeddingEnabled() || !isUpstashVectorConfigured()) return null;
 
   const embedding = await embedInsightText(topic);
   if (!embedding) return null;
 
-  const { data, error } = await supabase.rpc('match_user_insights', {
-    query_embedding: embedding,
-    match_threshold: DEFAULT_MATCH_THRESHOLD,
-    match_count: MAX_RESULTS,
-    p_user_id: userId,
-    p_categories: dbCategories?.length ? dbCategories : null,
-  });
+  try {
+    const hits = await queryUserMemoryVectors({
+      userId,
+      vector: embedding,
+      topK: MAX_RESULTS * 2,
+      filter: buildInsightRecallFilter(userId, dbCategories),
+    });
 
-  if (error) {
-    console.warn('[memory-recall] semantic rpc failed', { code: error.code, message: error.message });
+    const memories: UserMemoryHit[] = [];
+    for (const hit of hits) {
+      const meta = hit.metadata as UserMemoryVectorMetadata | undefined;
+      if (!meta?.isInsight) continue;
+      const mapped = hitToMemory(meta, hit.id, hit.score);
+      if (mapped) memories.push(mapped);
+    }
+
+    return memories.slice(0, MAX_RESULTS);
+  } catch (err) {
+    console.warn('[memory-recall] upstash semantic failed', {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return null;
   }
-
-  const rows = (data ?? []) as RpcRow[];
-  if (!rows.length) return [];
-
-  return rows.map((row) => ({
-    id: row.id,
-    fact: row.insight_text,
-    status: statusToLabel(row.status),
-    category: row.category,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    occurred_at_label: formatMemoryTimestamp(row.created_at),
-  }));
 }

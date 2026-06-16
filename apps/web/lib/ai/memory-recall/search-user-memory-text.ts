@@ -1,5 +1,5 @@
 /**
- * חיפוש טקסטואלי (ilike) — fallback כש-embedding או RPC נכשלים.
+ * חיפוש טקסטואלי (ilike) — fallback כש-Upstash או embedding נכשלים.
  */
 
 import 'server-only';

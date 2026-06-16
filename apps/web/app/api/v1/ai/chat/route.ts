@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { after } from 'next/server';
+import { ensureChatSession, touchChatSessionActivity } from '../../../../../lib/ai/chat-sessions/ensure-session';
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
 import { embedTextForRag } from '../../../../../lib/ai/openrouter-embeddings';
 import { formatRagMemoryContextBlock } from '../../../../../lib/ai/format-rag-context';
@@ -2126,6 +2127,44 @@ export async function POST(request: Request) {
 
   const sessionId = parsed.data.session_id ?? crypto.randomUUID();
   const notificationId = parsed.data.notification_id;
+
+  const chatSession = await ensureChatSession(supabase, { sessionId, userId: user.id }).catch(
+    (sessionErr) => {
+      console.warn('[ai/chat]', {
+        debug_id: debugId,
+        stage: 'ensure_chat_session_failed',
+        error: sessionErr instanceof Error ? sessionErr.message : String(sessionErr),
+      });
+      return null;
+    }
+  );
+
+  if (chatSession?.status === 'closed') {
+    return new Response(
+      JSON.stringify({
+        error: 'session_closed',
+        message: 'השיחה נסגרה. אפשר לפתוח מחדש או להתחיל שיחה חדשה.',
+        session_id: sessionId,
+        summary: chatSession.summary,
+      }),
+      {
+        status: 409,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-session-id': sessionId,
+          'x-session-status': 'closed',
+        },
+      }
+    );
+  }
+
+  void touchChatSessionActivity(supabase, { sessionId, userId: user.id }).catch((touchErr) => {
+    console.warn('[ai/chat]', {
+      debug_id: debugId,
+      stage: 'touch_chat_session_failed',
+      error: touchErr instanceof Error ? touchErr.message : String(touchErr),
+    });
+  });
 
   const journeyCapPromise =
     contextDecision.needs_journey_knowledge || contextDecision.needs_system_knowledge_rag
