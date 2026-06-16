@@ -7,6 +7,10 @@ import { Drawer } from 'vaul';
 import { useChat } from '@ai-sdk/react';
 import { MemorySearchIndicator } from './MemorySearchIndicator';
 import { messagesHavePendingRecallTool } from '../../lib/ai/memory-recall/detect-pending-recall';
+import {
+  extractDisplayTextFromChatMessage,
+  type ChatDisplayMessage,
+} from '../../lib/client/chat-message-display';
 import { NuraWellChatTransport } from '../../lib/client/nurawell-chat-transport';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
@@ -44,15 +48,8 @@ async function postMicroWinHabit(): Promise<{ ok: boolean; habitTitle?: string }
   }
 }
 
-function getMessageText(msg: { parts?: Array<{ type: string; text?: string }>; content?: string | null }): string {
-  if (typeof msg.content === 'string' && msg.content.trim()) {
-    return msg.content.trim();
-  }
-  const parts = Array.isArray(msg.parts) ? msg.parts : [];
-  return parts
-    .map((p) => (p.type === 'text' && typeof p.text === 'string' ? p.text : ''))
-    .join('')
-    .trim();
+function getMessageText(msg: ChatDisplayMessage): string {
+  return extractDisplayTextFromChatMessage(msg);
 }
 
 function getMessageCreatedAt(msg: unknown): Date {
@@ -472,17 +469,23 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
   }, [open, sendMessage, status, userId]);
 
   const isLoading = status === 'submitted' || status === 'streaming';
+  const isThinking = status === 'submitted';
   const pendingRecallTool = useMemo(
     () => messagesHavePendingRecallTool(messages),
     [messages]
   );
+  const streamingAssistantText = useMemo(() => {
+    const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+    if (!lastAssistant) return '';
+    return extractDisplayTextFromChatMessage(lastAssistant as ChatDisplayMessage);
+  }, [messages]);
   const showMemorySearch =
-    isLoading && (pendingRecallTool || memoryRecallWriterActive);
+    isLoading &&
+    streamingAssistantText.length === 0 &&
+    (pendingRecallTool || (memoryRecallWriterActive && isThinking));
   useEffect(() => {
     if (!isLoading) setMemoryRecallWriterActive(false);
   }, [isLoading]);
-  // "thinking" = ממתינים לתו הראשון מהמודל (כולל זמן ה-reasoning).
-  const isThinking = status === 'submitted';
   const isLongWait = isThinking && waitSeconds >= 10;
   useEffect(() => {
     if (!isLoading) {
@@ -730,7 +733,8 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
 
               {messages.map((msg, i) => {
                 const isUser = msg.role === 'user';
-                const text = getMessageText(msg as { parts?: Array<{ type: string; text?: string }>; content?: string | null });
+                const displayMsg = msg as ChatDisplayMessage;
+                const text = getMessageText(displayMsg);
                 if (!isUser && !text) return null;
                 const showQuote =
                   isUser &&
