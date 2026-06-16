@@ -9,7 +9,7 @@ ALTER TABLE public.user_insights
   ADD COLUMN IF NOT EXISTS embedding vector(1536);
 
 COMMENT ON COLUMN public.user_insights.embedding IS
-  'Embedding של insight_text (text-embedding-3-small, 1536) לחיפוש סמנטי ב-recall_past_memory.';
+  'Embedding של insight_text (text-embedding-3-small, 1536) לחיפוש סמנטי ב-recall_past_memory. שורות קיימות: הרץ scripts/backfill-insight-embeddings.mjs אחרי המיגרציה.';
 
 CREATE INDEX IF NOT EXISTS idx_user_insights_embedding_hnsw
   ON public.user_insights

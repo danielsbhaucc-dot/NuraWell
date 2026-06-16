@@ -1,5 +1,5 @@
 /**
- * אגירה פסיבית של צ'אטים — ללא LLM. נשמר ב-pending_chat_logs לעיבוד אצווה יומי.
+ * אגירה פסיבית של צ'אטים — ללא LLM. נשמר ב-pending_chat_logs לעיבוד אצווה יומי (05:00 IL, master cron).
  */
 
 import 'server-only';

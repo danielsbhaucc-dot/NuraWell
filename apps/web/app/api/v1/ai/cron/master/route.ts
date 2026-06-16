@@ -731,7 +731,7 @@ async function runMasterCron() {
     }
   }
 
-  // --- Memory consolidation (06:00 master cron) — pending_chat_logs → user_insights
+  // --- Memory consolidation (05:00 master cron) — pending_chat_logs → user_insights
   let memoryConsolidation: Awaited<ReturnType<typeof runMemoryConsolidationBatch>> | null = null;
   if (process.env.MEMORY_CONSOLIDATION_IN_MASTER?.trim() !== '0') {
     try {
