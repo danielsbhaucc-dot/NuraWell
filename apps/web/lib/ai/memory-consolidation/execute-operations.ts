@@ -1,12 +1,13 @@
 /**
  * ביצוע פעולות זיכרון ב-Supabase — יעיל, עם ולידציה מקדימה של insight_id.
+ * וקטורי recall סמנטי מסונכרנים ל-Upstash (לא נשמרים ב-Supabase).
  */
 
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { insightDedupeKey } from '../insights/persist-insights';
-import { embedInsightText, isInsightEmbeddingEnabled } from '../insights/embed-insight';
+import { removeInsightVectorFromUpstash, syncInsightVectorToUpstash } from '../insights/sync-insight-vector';
 import { INSIGHT_STATUS } from '../insights/status';
 import type { MemoryOperation } from './schema';
 import type { ExecuteMemoryOperationsResult, InsightForConsolidation } from './types';
@@ -39,11 +40,6 @@ export async function executeMemoryOperations(params: {
 
   const byId = new Map(existingInsights.map((row) => [row.id, row]));
 
-  async function embeddingFor(text: string, skip?: boolean): Promise<number[] | null> {
-    if (skip || !isInsightEmbeddingEnabled()) return null;
-    return embedInsightText(text);
-  }
-
   for (const op of operations) {
     try {
       if (op.op === 'ADD') {
@@ -60,7 +56,7 @@ export async function executeMemoryOperations(params: {
         );
 
         if (duplicate) {
-          const embedding = await embeddingFor(op.insight_text);
+          const textChanged = op.insight_text.trim() !== duplicate.insight_text.trim();
           const { error } = await admin
             .from('user_insights')
             .update({
@@ -70,7 +66,6 @@ export async function executeMemoryOperations(params: {
               status: INSIGHT_STATUS.ACTIVE,
               mention_count: duplicate.mention_count + 1,
               last_seen_at: nowIso,
-              ...(embedding ? { embedding } : {}),
               metadata: mergeMetadata(duplicate.metadata, {
                 evidence: op.evidence,
                 consolidation_reason: 'dedupe_merge_on_add',
@@ -80,29 +75,55 @@ export async function executeMemoryOperations(params: {
             .eq('user_id', userId);
 
           if (error) result.errors += 1;
-          else result.updated += 1;
+          else {
+            result.updated += 1;
+            if (textChanged) {
+              void syncInsightVectorToUpstash({
+                userId,
+                insightId: duplicate.id,
+                insightText: op.insight_text,
+                insightCategory: op.category,
+                status: INSIGHT_STATUS.ACTIVE,
+                createdAt: duplicate.created_at,
+                updatedAt: nowIso,
+              });
+            }
+          }
           continue;
         }
 
-        const embedding = await embeddingFor(op.insight_text);
-        const { error } = await admin.from('user_insights').insert({
-          user_id: userId,
-          category: op.category,
-          insight_text: op.insight_text,
-          actionability_score: op.actionability_score,
-          confidence: op.confidence,
-          status: INSIGHT_STATUS.ACTIVE,
-          is_active: true,
-          dedupe_key: key,
-          mention_count: 1,
-          last_seen_at: nowIso,
-          source_session_id: params.sessionId ?? null,
-          ...(embedding ? { embedding } : {}),
-          metadata: op.evidence ? { evidence: op.evidence } : {},
-        });
+        const { data: inserted, error } = await admin
+          .from('user_insights')
+          .insert({
+            user_id: userId,
+            category: op.category,
+            insight_text: op.insight_text,
+            actionability_score: op.actionability_score,
+            confidence: op.confidence,
+            status: INSIGHT_STATUS.ACTIVE,
+            is_active: true,
+            dedupe_key: key,
+            mention_count: 1,
+            last_seen_at: nowIso,
+            source_session_id: params.sessionId ?? null,
+            metadata: op.evidence ? { evidence: op.evidence } : {},
+          })
+          .select('id, created_at, updated_at')
+          .single();
 
         if (error) result.errors += 1;
-        else result.added += 1;
+        else if (inserted) {
+          result.added += 1;
+          void syncInsightVectorToUpstash({
+            userId,
+            insightId: inserted.id,
+            insightText: op.insight_text,
+            insightCategory: op.category,
+            status: INSIGHT_STATUS.ACTIVE,
+            createdAt: inserted.created_at,
+            updatedAt: inserted.updated_at ?? nowIso,
+          });
+        }
         continue;
       }
 
@@ -115,9 +136,7 @@ export async function executeMemoryOperations(params: {
       if (op.op === 'UPDATE') {
         const category = op.category ?? existing.category;
         const key = insightDedupeKey(category, op.insight_text);
-
         const textChanged = op.insight_text.trim() !== existing.insight_text.trim();
-        const embedding = await embeddingFor(op.insight_text, !textChanged);
 
         const { error } = await admin
           .from('user_insights')
@@ -130,7 +149,6 @@ export async function executeMemoryOperations(params: {
             status: INSIGHT_STATUS.ACTIVE,
             mention_count: existing.mention_count + 1,
             last_seen_at: nowIso,
-            ...(embedding ? { embedding } : {}),
             metadata: mergeMetadata(existing.metadata, {
               consolidation_reason: op.reason,
             }),
@@ -139,7 +157,20 @@ export async function executeMemoryOperations(params: {
           .eq('user_id', userId);
 
         if (error) result.errors += 1;
-        else result.updated += 1;
+        else {
+          result.updated += 1;
+          if (textChanged) {
+            void syncInsightVectorToUpstash({
+              userId,
+              insightId: op.insight_id,
+              insightText: op.insight_text,
+              insightCategory: category,
+              status: INSIGHT_STATUS.ACTIVE,
+              createdAt: existing.created_at,
+              updatedAt: nowIso,
+            });
+          }
+        }
         continue;
       }
 
@@ -157,7 +188,10 @@ export async function executeMemoryOperations(params: {
           .eq('user_id', userId);
 
         if (error) result.errors += 1;
-        else result.deprecated += 1;
+        else {
+          result.deprecated += 1;
+          void removeInsightVectorFromUpstash(op.insight_id);
+        }
         continue;
       }
 
@@ -176,7 +210,18 @@ export async function executeMemoryOperations(params: {
           .eq('user_id', userId);
 
         if (error) result.errors += 1;
-        else result.verify += 1;
+        else {
+          result.verify += 1;
+          void syncInsightVectorToUpstash({
+            userId,
+            insightId: op.insight_id,
+            insightText: existing.insight_text,
+            insightCategory: existing.category,
+            status: INSIGHT_STATUS.NEEDS_VERIFICATION,
+            createdAt: existing.created_at,
+            updatedAt: nowIso,
+          });
+        }
       }
     } catch (e) {
       console.warn('[memory-consolidation] operation failed', {

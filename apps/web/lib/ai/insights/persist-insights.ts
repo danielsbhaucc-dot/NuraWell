@@ -6,12 +6,13 @@
  * מפתח למשתמש — *מעדכנים* אותה (מחדדים ניסוח, לוקחים את ה-actionability הגבוה,
  * מגדילים mention_count, מרעננים last_seen_at) במקום ליצור כפילות.
  *
- * כל הכתיבות עוברות דרך service-role (admin) — בצד שרת בלבד.
+ * וקטורי recall סמנטי נשמרים ב-Upstash (לא ב-Supabase). כל הכתיבות ל-DB עוברות
+ * דרך service-role (admin) — בצד שרת בלבד.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ExtractedInsight, InsightExtractionResult } from './schema';
-import { embedInsightText, isInsightEmbeddingEnabled } from './embed-insight';
+import { syncInsightVectorToUpstash } from './sync-insight-vector';
 import { INSIGHT_STATUS } from './status';
 
 export interface PersistInsightsResult {
@@ -39,8 +40,11 @@ export function insightDedupeKey(category: string, insightText: string): string 
 type ExistingRow = {
   id: string;
   insight_text: string;
+  category: string;
   actionability_score: number;
   mention_count: number;
+  created_at: string;
+  updated_at: string;
 };
 
 export async function persistInsights(params: {
@@ -62,10 +66,9 @@ export async function persistInsights(params: {
       continue;
     }
 
-    // select-first ואז insert/update — דפוס בטוח (כמו ב-almog-commitments/persist).
     const { data: existing, error: selectErr } = await admin
       .from('user_insights')
-      .select('id, insight_text, actionability_score, mention_count')
+      .select('id, insight_text, category, actionability_score, mention_count, created_at, updated_at')
       .eq('user_id', userId)
       .eq('dedupe_key', key)
       .maybeSingle();
@@ -78,10 +81,7 @@ export async function persistInsights(params: {
 
     if (existing) {
       const row = existing as ExistingRow;
-      const embedding =
-        isInsightEmbeddingEnabled() && insight.insight_text.trim() !== row.insight_text.trim()
-          ? await embedInsightText(insight.insight_text)
-          : null;
+      const textChanged = insight.insight_text.trim() !== row.insight_text.trim();
       const { error: updateErr } = await admin
         .from('user_insights')
         .update({
@@ -92,7 +92,6 @@ export async function persistInsights(params: {
           is_active: true,
           mention_count: row.mention_count + 1,
           last_seen_at: nowIso,
-          ...(embedding ? { embedding } : {}),
           metadata: buildMetadata(insight),
         })
         .eq('id', row.id);
@@ -101,31 +100,54 @@ export async function persistInsights(params: {
         result.errors += 1;
       } else {
         result.merged += 1;
+        if (textChanged) {
+          void syncInsightVectorToUpstash({
+            userId,
+            insightId: row.id,
+            insightText: insight.insight_text,
+            insightCategory: insight.category,
+            status: INSIGHT_STATUS.ACTIVE,
+            createdAt: row.created_at,
+            updatedAt: nowIso,
+          });
+        }
       }
       continue;
     }
 
-    const embedding = isInsightEmbeddingEnabled() ? await embedInsightText(insight.insight_text) : null;
-    const { error: insertErr } = await admin.from('user_insights').insert({
-      user_id: userId,
-      category: insight.category,
-      insight_text: insight.insight_text,
-      actionability_score: insight.actionability_score,
-      confidence: insight.confidence,
-      status: INSIGHT_STATUS.ACTIVE,
-      is_active: true,
-      dedupe_key: key,
-      mention_count: 1,
-      last_seen_at: nowIso,
-      source_session_id: params.sessionId ?? null,
-      ...(embedding ? { embedding } : {}),
-      metadata: buildMetadata(insight),
-    });
+    const { data: inserted, error: insertErr } = await admin
+      .from('user_insights')
+      .insert({
+        user_id: userId,
+        category: insight.category,
+        insight_text: insight.insight_text,
+        actionability_score: insight.actionability_score,
+        confidence: insight.confidence,
+        status: INSIGHT_STATUS.ACTIVE,
+        is_active: true,
+        dedupe_key: key,
+        mention_count: 1,
+        last_seen_at: nowIso,
+        source_session_id: params.sessionId ?? null,
+        metadata: buildMetadata(insight),
+      })
+      .select('id, created_at, updated_at')
+      .single();
+
     if (insertErr) {
       console.warn('[insights] insert failed', { code: insertErr.code, error: insertErr.message });
       result.errors += 1;
-    } else {
+    } else if (inserted) {
       result.inserted += 1;
+      void syncInsightVectorToUpstash({
+        userId,
+        insightId: inserted.id,
+        insightText: insight.insight_text,
+        insightCategory: insight.category,
+        status: INSIGHT_STATUS.ACTIVE,
+        createdAt: inserted.created_at,
+        updatedAt: inserted.updated_at ?? nowIso,
+      });
     }
   }
 

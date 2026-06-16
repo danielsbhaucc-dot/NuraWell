@@ -1,5 +1,5 @@
 /**
- * חיפוש זיכרון משתמש — סמנטי (pgvector) עם fallback ל-ilike.
+ * חיפוש זיכרון משתמש — סמנטי (Upstash) עם fallback ל-ilike ב-Supabase.
  */
 
 import 'server-only';
@@ -23,8 +23,8 @@ const MIN_TOPIC_LEN = 2;
 
 /**
  * מחפש תובנות עבר ב-user_insights לפי נושא (ולאופציונלי קטגוריה).
- * 1) embed + match_user_insights RPC
- * 2) fallback ilike אם embedding/RPC נכשלו
+ * 1) embed + Upstash query (insight vectors)
+ * 2) fallback ilike ב-user_insights אם Upstash/embedding נכשלו
  */
 export async function searchUserMemory(
   supabase: SupabaseClient,
@@ -45,7 +45,7 @@ export async function searchUserMemory(
 
   const dbCategories = insightCategoriesForRecall(category);
 
-  const semanticHits = await searchUserMemorySemantic(supabase, userId, topic, dbCategories);
+  const semanticHits = await searchUserMemorySemantic(userId, topic, dbCategories);
   if (semanticHits !== null) {
     return {
       query: topic,
