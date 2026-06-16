@@ -8,7 +8,8 @@ import { fetchUserMentorshipStrategy } from './persist-strategy';
 import type { MentorshipStrategy } from './schema';
 
 const MEDICAL_SAFETY_RULE =
-  'medical_red_flags: no medical/nutritional advice — redirect to doctor/dietitian; behavioral support only.';
+  'אם קיימים medical_red_flags — אסור לתת ייעוץ רפואי, תזונתי, תרופתי או אבחון. ' +
+  'הפנה בעדינות לרופא/דיאטנית. התמקד אך ורק בתמיכה התנהגותית ונפשית — ללא המלצות על סוכר, כולסטרול, כאב או תרופות.';
 
 export function formatCurrentUserStrategy(strategy: MentorshipStrategy): string {
   const lines: string[] = ['<CURRENT_USER_STRATEGY>'];

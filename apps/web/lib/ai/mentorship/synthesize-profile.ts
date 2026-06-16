@@ -19,11 +19,24 @@ const openrouterProvider = createOpenAI({
   },
 });
 
-const SYNTHESIS_SYSTEM = `Clinical Supervisor ב-NuraWell. סכם תובנות גולמיות ל-JSON קצר בעברית.
-שדות: psychological_approach (משפט-שניים), active_blockers (עד 3), current_focus (עד 2),
-medical_red_flags (חובה: סוכר/כולסטרול/כאב גופני/תרופות — גם מקטגוריות אחרות),
-next_best_action (מיקרו-משימה אחת למשתמש, לא למנטור).
-אל תמציא. דחוס כפילויות. קצר.`;
+const SYNTHESIS_SYSTEM = `אתה Clinical Supervisor ב-NuraWell. נתח תובנות גולמיות וסכם למצב נפשי/פיזי מאוחד — JSON קצר בעברית בלבד.
+
+שדות:
+- psychological_approach: משפט–שניים — טון והתנהגות למנטור.
+- active_blockers: עד 3 חסמים פעילים מרכזיים.
+- current_focus: עד 2 הרגלים/מיקודים מיידיים (לא רפואיים).
+- medical_red_flags: דגלים רפואיים בלבד.
+- next_best_action: מיקרו-משימה אחת, ברורה, למשתמש (לא למנטור).
+
+כלל קריטי — medical_red_flags (חובה מוחלטת):
+כל אזכור, ישיר או עקיף, של אחד מאלה חייב להיכנס ל-medical_red_flags — גם אם מופיע תחת mental/blocker/nutrition/fitness:
+• סוכר גבוה / סוכרת / רמות סוכר / HbA1c / אינסולין
+• כולסטרול / ליפידים / טריגליצרידים
+• כאב גופני / כאב כרוני / פציעה / תסמינים גופניים
+• תרופות, מחלות כרוניות, אבחנות רפואיות, המלצות רופא/דיאטנית
+
+אסור להשאיר נושאים אלה ב-active_blockers או current_focus — רק ב-medical_red_flags.
+אל תמציא נתונים. דחוס כפילויות. היה קצר ומדויק.`;
 
 export class MentorshipSynthesisError extends Error {
   constructor(

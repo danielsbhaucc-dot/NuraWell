@@ -5,6 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { InsightCategory } from '../insights/schema';
+import { INSIGHT_STATUS } from '../insights/status';
 
 /** תקרה קשיחה — מספיק לסינתזה בלי לנפח טוקנים ל-LLM. */
 export const SYNTHESIS_INSIGHT_LIMIT = 20;
@@ -47,7 +48,7 @@ export async function fetchInsightsForSynthesis(
     .from('user_insights')
     .select(INSIGHT_SELECT)
     .eq('user_id', userId)
-    .eq('is_active', true)
+    .eq('status', INSIGHT_STATUS.ACTIVE)
     .gte('confidence', SYNTHESIS_MIN_CONFIDENCE)
     .gte('last_seen_at', cutoff.toISOString())
     .order('actionability_score', { ascending: false })

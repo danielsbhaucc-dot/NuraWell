@@ -39,7 +39,10 @@ import { createPiiShield, type PiiShield } from '../../../../../lib/ai/privacy/p
 import { fetchUserMemoryDossier } from '../../../../../lib/ai/memory-dossier/fetch-dossier';
 import { formatUserMemoryDossierPromptBlock } from '../../../../../lib/ai/memory-dossier/format-dossier-prompt';
 import { ingestChatTurnIntoMemoryDossier } from '../../../../../lib/ai/memory-dossier/ingest-chat-turn';
-import { runInsightExtraction } from '../../../../../lib/ai/insights/run-insight-extraction';
+import {
+  enqueuePendingChatLog,
+  formatChatTurnForPendingLog,
+} from '../../../../../lib/ai/memory-consolidation/enqueue-pending-log';
 import { getActiveContext } from '../../../../../lib/ai/mentorship/get-active-context';
 import {
   fetchAlmogCommitmentContext,
@@ -3069,46 +3072,38 @@ export async function POST(request: Request) {
           });
 
           /**
-           * חילוץ תובנות עומק (Insight Extraction Engine) — רץ ברקע בלבד.
-           * משתמש באותו gating של memory sync: רק הודעות עם תוכן מהותי ולא small-talk.
-           * אם המשתמש חוזר על אותו דפוס, `user_insights.dedupe_key` ממזג ומרענן
-           * את התובנה במקום לשמור כפילות.
+           * Autonomous Memory Manager — אגירה פסיבית בלבד (ללא LLM).
+           * העיבוד (ADD/UPDATE/DEPRECATE/VERIFY) רץ באצווה יומית:
+           * POST /api/v1/ai/cron/memory-consolidation
            */
           after(async () => {
             try {
               if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) return;
-              const insightRun = await runInsightExtraction({
-                admin: createAdminClient(),
-                userId: user.id,
-                sessionId,
-                messageLimit: 24,
+              const admin = createAdminClient();
+              const rawChatText = formatChatTurnForPendingLog({
+                userMessage: lastUserText,
+                assistantMessage: assistantText,
               });
-              if (
-                insightRun.insights_extracted > 0 ||
-                insightRun.inserted > 0 ||
-                insightRun.merged > 0 ||
-                insightRun.errors > 0
-              ) {
+              const enqueue = await enqueuePendingChatLog({
+                admin,
+                userId: user.id,
+                rawChatText,
+                sessionId,
+              });
+              if (enqueue.enqueued) {
                 console.info('[ai/chat]', {
                   debug_id: debugId,
-                  stage: 'insights_extraction_ok',
-                  messages_analyzed: insightRun.messages_analyzed,
-                  insights_extracted: insightRun.insights_extracted,
-                  inserted: insightRun.inserted,
-                  merged: insightRun.merged,
-                  errors: insightRun.errors,
+                  stage: 'pending_chat_log_enqueued',
                 });
               }
-
-              /**
-               * סינתזת אסטרטגיה — *לא* כאן (חיסכון בטוקנים).
-               * רצה ב-cron ערב (habit-checkpoints?slot=evening) למי שמיושן.
-               */
-            } catch (insightErr) {
+            } catch (memoryEnqueueErr) {
               console.warn('[ai/chat]', {
                 debug_id: debugId,
-                stage: 'insights_extraction_failed',
-                error: insightErr instanceof Error ? insightErr.message : String(insightErr),
+                stage: 'pending_chat_log_failed',
+                error:
+                  memoryEnqueueErr instanceof Error
+                    ? memoryEnqueueErr.message
+                    : String(memoryEnqueueErr),
               });
             }
           });

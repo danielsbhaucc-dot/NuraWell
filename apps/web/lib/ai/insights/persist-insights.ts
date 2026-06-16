@@ -11,6 +11,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ExtractedInsight, InsightExtractionResult } from './schema';
+import { INSIGHT_STATUS } from './status';
 
 export interface PersistInsightsResult {
   inserted: number;
@@ -84,6 +85,7 @@ export async function persistInsights(params: {
           // לא מורידים actionability שכבר נצבר — לוקחים את הגבוה.
           actionability_score: Math.max(row.actionability_score, insight.actionability_score),
           confidence: insight.confidence,
+          status: INSIGHT_STATUS.ACTIVE,
           is_active: true,
           mention_count: row.mention_count + 1,
           last_seen_at: nowIso,
@@ -105,6 +107,7 @@ export async function persistInsights(params: {
       insight_text: insight.insight_text,
       actionability_score: insight.actionability_score,
       confidence: insight.confidence,
+      status: INSIGHT_STATUS.ACTIVE,
       is_active: true,
       dedupe_key: key,
       mention_count: 1,
