@@ -11,6 +11,7 @@ import {
   mentionsReminderKeyword,
 } from '../../../../../lib/ai/almog-commitments/extract-commitments';
 import { persistCommitmentExtraction } from '../../../../../lib/ai/almog-commitments/persist';
+import { workflowPublicBaseUrl } from '../../../../../lib/workflows/resolve-workflow-public-url';
 
 /**
  * /api/v1/ai/diagnose-commitment
@@ -66,6 +67,16 @@ export async function POST(request: Request) {
   const serviceRolePresent = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim());
   const openrouterPresent = Boolean(process.env.OPENROUTER_API_KEY?.trim());
 
+  /**
+   * תצורת המסירה המדויקת (QStash). אם משהו כאן חסר — ה-precise נופל בשקט ל-cron,
+   * וזו בדיוק התלונה "התראה מדויקת לא עובדת". הדיווח כאן מאתר את הסיבה מיד.
+   */
+  const precise_delivery = {
+    qstash_token_present: Boolean(process.env.QSTASH_TOKEN?.trim()),
+    qstash_signing_key_present: Boolean(process.env.QSTASH_CURRENT_SIGNING_KEY?.trim()),
+    destination: `${workflowPublicBaseUrl().replace(/\/$/, '')}/api/v1/ai/cron/almog-reminders/deliver`,
+  };
+
   let extraction;
   try {
     extraction = await extractAlmogCommitments({ userMessage, assistantMessage });
@@ -102,6 +113,7 @@ export async function POST(request: Request) {
     would_run_extraction,
     service_role_present: serviceRolePresent,
     openrouter_present: openrouterPresent,
+    precise_delivery,
     extracted: {
       reminders: extraction.reminders,
       tasks: extraction.tasks,
@@ -113,9 +125,15 @@ export async function POST(request: Request) {
       ? 'SUPABASE_SERVICE_ROLE_KEY חסר — לכן הכתיבה לא רצה. הגדר אותו ב-Vercel ו-Redeploy.'
       : persist && persist.write_errors > 0
         ? 'הכתיבה נכשלה (write_errors>0) — בדוק את הלוג [almog-commitments] insert failed לקוד השגיאה (42501 = RLS/מפתח anon).'
-        : persist && persist.reminders_created > 0
-          ? 'התזכורת נשמרה! אם בצ׳אט עצמו זה לא קורה — הבעיה היא ש-after() לא רץ ב-edge.'
-          : 'לא חולצה תזכורת — בדוק gating/extracted.',
+        : !precise_delivery.qstash_token_present
+          ? 'QSTASH_TOKEN חסר — לכן ההתראה המדויקת לא מתוזמנת ונופלת ל-cron (עד 30 דק׳ איחור). הגדר ב-Vercel ו-Redeploy.'
+          : persist && persist.precise_attempts > 0 && persist.precise_scheduled === 0
+            ? `תזמון מדויק נכשל: ${persist.precise_reasons.join(', ')} — בדוק destination/חתימת QStash.`
+            : persist && persist.precise_scheduled > 0
+              ? `התראה מדויקת תוזמנה ב-QStash (${persist.precise_scheduled}). אמורה להגיע בזמן ה-fire_at המדויק.`
+              : persist && persist.reminders_created > 0
+                ? 'התזכורת נשמרה (אך לא בטווח ה-25 דק׳ לתזמון מדויק) — תישלח ע״י ה-cron.'
+                : 'לא חולצה תזכורת — בדוק gating/extracted.',
   });
 }
 

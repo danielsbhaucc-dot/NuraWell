@@ -26,6 +26,12 @@ export interface PersistResult {
   focus_action: 'none' | 'proposed' | 'activated' | 'updated';
   /** מספר כשלי כתיבה (insert/select) שנבלעו בעבר — עכשיו נספרים כדי שיוצפו ללוג. */
   write_errors: number;
+  /** כמה תזכורות קרובות ניסינו לתזמן מסירה מדויקת (QStash) עבורן. */
+  precise_attempts: number;
+  /** כמה מהן תוזמנו בהצלחה ב-QStash. */
+  precise_scheduled: number;
+  /** סיבות כשל לתזמון המדויק (qstash_token_missing, publish_failed...) — לאבחון. */
+  precise_reasons: string[];
 }
 
 type BlockerHistoryEntry = { at: string; status: string; note?: string };
@@ -115,9 +121,16 @@ function defaultBlockerCheckIso(now: Date): string {
   return israelDayOffsetToUtcIso(now, 3, 18, 0);
 }
 
-/** מפתח dedupe יומי לתזכורת — אותה תזכורת באותו יום לא נכפלת. */
-function reminderDedupeKey(text: string, fireAtIso: string): string {
-  return `${dedupeKey(text).slice(0, 50)}|${fireAtIso.slice(0, 10)}`;
+/**
+ * מפתח dedupe לתזכורת לפי דקת-יעד, לא לפי יום.
+ *
+ * בעבר המפתח היה `what|YYYY-MM-DD`, ולכן תזכורת שנייה באותו יום לאותו נושא
+ * ("תזכיר לי לשתות מים עוד שעה" אחרי שכבר ביקשת "עוד 5 דקות") נחשבה כפילות
+ * ונבלעה. אנחנו עדיין רוצים למנוע retry/כפל של אותו turn בדיוק, אבל לא לחסום
+ * בקשה חדשה לזמן אחר — לכן משתמשים ב-fire_at עד רמת הדקה.
+ */
+export function reminderDedupeKey(text: string, fireAtIso: string): string {
+  return `${dedupeKey(text).slice(0, 50)}|${fireAtIso.slice(0, 16)}`;
 }
 
 export async function persistCommitmentExtraction(params: {
@@ -141,6 +154,9 @@ export async function persistCommitmentExtraction(params: {
     blockers_updated: 0,
     focus_action: 'none',
     write_errors: 0,
+    precise_attempts: 0,
+    precise_scheduled: 0,
+    precise_reasons: [],
   };
 
   // ── משימות אישיות ──────────────────────────────────────────────
@@ -371,12 +387,22 @@ export async function persistCommitmentExtraction(params: {
       ),
     ];
     if (nearUnique.length) {
+      result.precise_attempts = nearUnique.length;
       const results = await Promise.allSettled(
         nearUnique.map((iso) => schedulePreciseReminderDelivery({ userId, fireAtIso: iso, now }))
       );
       for (const r of results) {
-        if (r.status === 'fulfilled' && !r.value.ok && r.value.reason !== 'qstash_token_missing') {
-          console.warn('[almog-commitments] precise reminder schedule failed', { reason: r.value.reason });
+        if (r.status === 'rejected') {
+          result.precise_reasons.push(`threw:${String(r.reason).slice(0, 80)}`);
+          continue;
+        }
+        if (r.value.ok) {
+          result.precise_scheduled += 1;
+        } else {
+          result.precise_reasons.push(r.value.reason);
+          if (r.value.reason !== 'qstash_token_missing') {
+            console.warn('[almog-commitments] precise reminder schedule failed', { reason: r.value.reason });
+          }
         }
       }
     }
