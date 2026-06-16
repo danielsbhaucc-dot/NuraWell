@@ -4,6 +4,7 @@ import {
   buildSafetyNetReminder,
   detectExplicitReminderPromise,
   detectUserReminderRequest,
+  mentionsReminderKeyword,
 } from '../lib/ai/almog-commitments/extract-commitments';
 
 /**
@@ -78,12 +79,40 @@ describe('detectUserReminderRequest', () => {
     expect(detectUserReminderRequest('שלח לי תזכורת בערב')).toBe(true);
     expect(detectUserReminderRequest('אל תיתן לי לשכוח להתקשר לאמא')).toBe(true);
     expect(detectUserReminderRequest('רוצה תזכורת על האימון')).toBe(true);
+    expect(detectUserReminderRequest('שים לי תזכורת לשתות מים עוד 5 דקות')).toBe(true);
+    expect(detectUserReminderRequest('תזכורת לעוד 5 דקות לשתות מים')).toBe(true);
+    expect(detectUserReminderRequest('אני צריך תזכורת לקחת תרופה בערב')).toBe(true);
   });
 
   it('לא מזהה שיחה רגילה ללא בקשת תזכורת', () => {
     expect(detectUserReminderRequest('מה שלומך? איך היה היום?')).toBe(false);
     expect(detectUserReminderRequest('שתיתי כבר 3 כוסות מים היום')).toBe(false);
     expect(detectUserReminderRequest('תודה רבה, עזרת לי מאוד')).toBe(false);
+  });
+
+  it('אזכור אגבי של תזכורת אינו בקשה — רשת הביטחון לא יוצרת תזכורת', () => {
+    // המודל הוא המכריע; גם הגיבוי הדטרמיניסטי לא ייפול בפח של אזכור אגבי.
+    expect(buildSafetyNetReminder('היי, המורה הזכירה לי לשתות מים', 'יפה, כל הכבוד 🙂')).toBeNull();
+    expect(buildSafetyNetReminder('קיבלתי תזכורת מהאפליקציה לקחת תרופה', 'מגניב')).toBeNull();
+  });
+});
+
+/**
+ * גייטינג רחב (recall): כל אזכור של תזכורת מריץ את ה-LLM שיכריע בהבנה. נועד
+ * ל-recall גבוה — לא להחמיץ בקשה בגלל ניסוח לא צפוי — בלי ליצור תזכורת בעצמו.
+ */
+describe('mentionsReminderKeyword (gating)', () => {
+  it('מזהה כל ניסוח שמזכיר תזכורת', () => {
+    expect(mentionsReminderKeyword('תזכיר לי לשתות מים')).toBe(true);
+    expect(mentionsReminderKeyword('שים לי תזכורת לעוד 5 דקות')).toBe(true);
+    expect(mentionsReminderKeyword('תוכל להזכיר לי על הפגישה?')).toBe(true);
+    expect(mentionsReminderKeyword('אל תיתן לי לשכוח להתקשר')).toBe(true);
+    expect(mentionsReminderKeyword('אזכיר לך בערב 🙂')).toBe(true); // גם מצד אלמוג
+  });
+
+  it('לא מזהה שיחה רגילה ללא אזכור תזכורת', () => {
+    expect(mentionsReminderKeyword('מה שלומך? איך היה היום?')).toBe(false);
+    expect(mentionsReminderKeyword('אכלתי בורקס והרגשתי שהרסתי הכל')).toBe(false);
   });
 });
 
@@ -103,6 +132,22 @@ describe('buildSafetyNetReminder — time + topic', () => {
   it('משמר זמן יחסי "בעוד שעה"', () => {
     const r = buildSafetyNetReminder('תזכיר לי להתקשר לאמא בעוד שעה', 'סגור!', now);
     expect(r!.fire_at_iso).toBe(new Date(now.getTime() + 3_600_000).toISOString());
+  });
+
+  it('יוצר תזכורת גם מניסוח שם-עצם ("תזכורת לעוד 5 דקות")', () => {
+    const r = buildSafetyNetReminder('תזכורת לעוד 5 דקות לשתות מים', 'בטח, סגור 💧', now);
+    expect(r).not.toBeNull();
+    expect(r!.fire_at_iso).toBe(new Date(now.getTime() + 5 * 60_000).toISOString());
+    expect(r!.what).toContain('לשתות מים');
+    expect(r!.notify_text).toContain('לשתות מים');
+    expect(r!.notify_text).not.toMatch(/דקות|תזכורת/);
+  });
+
+  it('יוצר תזכורת גם מ"שים לי תזכורת"', () => {
+    const r = buildSafetyNetReminder('שים לי תזכורת לשתות מים עוד 5 דקות', 'ברור, סגור', now);
+    expect(r).not.toBeNull();
+    expect(r!.fire_at_iso).toBe(new Date(now.getTime() + 5 * 60_000).toISOString());
+    expect(r!.what).toContain('לשתות מים');
   });
 
   it('הנושא והניסוח כוללים את מה שהמשתמש ביקש (מים), בלי ביטוי הזמן', () => {

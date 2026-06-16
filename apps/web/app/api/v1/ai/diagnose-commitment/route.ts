@@ -8,6 +8,7 @@ import {
   shouldAttemptCommitmentExtraction,
   detectExplicitReminderPromise,
   detectUserReminderRequest,
+  mentionsReminderKeyword,
 } from '../../../../../lib/ai/almog-commitments/extract-commitments';
 import { persistCommitmentExtraction } from '../../../../../lib/ai/almog-commitments/persist';
 
@@ -57,9 +58,10 @@ export async function POST(request: Request) {
     should_attempt: shouldAttemptCommitmentExtraction(assistantMessage),
     explicit_almog_promise: detectExplicitReminderPromise(assistantMessage),
     explicit_user_request: detectUserReminderRequest(userMessage),
+    reminder_keyword: mentionsReminderKeyword(userMessage) || mentionsReminderKeyword(assistantMessage),
   };
   const would_run_extraction =
-    gating.should_attempt || gating.explicit_almog_promise || gating.explicit_user_request;
+    gating.should_attempt || gating.explicit_almog_promise || gating.reminder_keyword;
 
   const serviceRolePresent = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim());
   const openrouterPresent = Boolean(process.env.OPENROUTER_API_KEY?.trim());
