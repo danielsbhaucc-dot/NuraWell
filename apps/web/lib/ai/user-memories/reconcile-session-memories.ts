@@ -1,6 +1,5 @@
 import type { ExtractedMemoryFact } from '../extract-memory-facts';
 import { normalizeFactTextForDedupe, stableMemoryVectorId } from '../memory-fact-dedupe';
-import { mergeTwoUserMemoryLines } from '../merge-memory-lines';
 import { embedTextForRag } from '../openrouter-embeddings';
 import { DEDUP_QUERY_TOP_K, SIMILARITY_MERGE_THRESHOLD, UPSTASH_NAMESPACE_USER_MEMORY } from '../rag-config';
 import {
@@ -13,10 +12,8 @@ import {
 import { createAdminClient } from '../../supabase/admin';
 import { deleteUserMemoryRecord } from './invalidate-memory';
 import {
-  decideMemoryReconcileAction,
-  heuristicMemoryRelationship,
+  resolveMemoryReconcileAction,
   type MemoryCandidate,
-  type MemoryRelationship,
 } from './memory-reconcile-decision';
 
 export type ReconcileSessionMemoriesResult = {
@@ -177,18 +174,9 @@ export async function reconcileSessionMemories(params: {
       );
       const candidates = toCandidates(hits, rowIds);
 
-      const relationshipByTargetId = new Map<string, MemoryRelationship>();
-      for (const c of candidates) {
-        relationshipByTargetId.set(
-          c.upstashVectorId,
-          heuristicMemoryRelationship(c.text, text)
-        );
-      }
-
-      const action = decideMemoryReconcileAction({
+      const action = await resolveMemoryReconcileAction({
         newText: text,
         candidates,
-        relationshipByTargetId,
         mergeThreshold: SIMILARITY_MERGE_THRESHOLD,
       });
 
@@ -211,7 +199,7 @@ export async function reconcileSessionMemories(params: {
       }
 
       if (action.type === 'merge') {
-        const mergedText = await mergeTwoUserMemoryLines(action.target.text, text);
+        const mergedText = action.mergedText;
         const mergedVec = await embedTextForRag(mergedText);
         const prevMeta = hits.find((h) => h.id === action.target.upstashVectorId)?.metadata as
           | UserMemoryVectorMetadata
@@ -239,18 +227,20 @@ export async function reconcileSessionMemories(params: {
         }
         result.superseded += action.targets.length;
 
+        const supersedeText = action.updatedText;
+        const supersedeVec = await embedTextForRag(supersedeText);
         const vectorId = await stableMemoryVectorId(
           params.userId,
-          normalizeFactTextForDedupe(text)
+          normalizeFactTextForDedupe(supersedeText)
         );
         await upsertMemoryRow({
           userId: params.userId,
-          memoryText: text,
+          memoryText: supersedeText,
           category: fact.category,
           upstashVectorId: vectorId,
           sourceSessionId: params.sourceSessionId,
           memoryLevel: fact.level,
-          vector: vec,
+          vector: supersedeVec,
         });
         result.inserted += 1;
         continue;
