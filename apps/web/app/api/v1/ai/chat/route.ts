@@ -39,6 +39,8 @@ import { createPiiShield, type PiiShield } from '../../../../../lib/ai/privacy/p
 import { fetchUserMemoryDossier } from '../../../../../lib/ai/memory-dossier/fetch-dossier';
 import { formatUserMemoryDossierPromptBlock } from '../../../../../lib/ai/memory-dossier/format-dossier-prompt';
 import { ingestChatTurnIntoMemoryDossier } from '../../../../../lib/ai/memory-dossier/ingest-chat-turn';
+import { createMemoryRecallStreamResponse } from '../../../../../lib/ai/memory-recall/stream-with-tools';
+import { shouldAttemptMemoryRecall } from '../../../../../lib/ai/memory-recall/eligibility';
 import {
   enqueuePendingChatLog,
   formatChatTurnForPendingLog,
@@ -3222,10 +3224,69 @@ export async function POST(request: Request) {
 
     const cheapWriterKey = openrouterKey;
 
-    /** קריאת הכותב הראשי (קלוד). נעטף בפונקציה כדי לעשות בה שימוש חוזר גם
-     * כ-fallback אם העוקף הזול נכשל. */
-    const runClaudeWriter = () =>
-      createOpenRouterTextStreamResponse({
+    const emptyRetryHandler = async () => {
+      try {
+        const retry = await generateText({
+          model: openrouter.chat(effectiveModel),
+          temperature: Math.max(0.75, CHAT_TEMPERATURE - 0.1),
+          maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 360),
+          providerOptions: mcfg.isOpenAI ? { openai: { reasoningEffort: 'low' } } : {},
+          system: piiShield
+            ? piiShield.tokenizeText(systemPromptWithMemory)
+            : systemPromptWithMemory,
+          messages: piiShield
+            ? piiShield.tokenizeMessages(recentMessages)
+            : recentMessages,
+        });
+        const retryText = (retry.text ?? '').trim();
+        if (retryText) {
+          console.info('[ai/chat]', {
+            debug_id: debugId,
+            stage: 'stream_empty_retry_recovered',
+            finish_reason: retry.finishReason,
+          });
+        }
+        return piiShield ? piiShield.detokenizeText(retryText) : retryText;
+      } catch (retryErr) {
+        console.warn('[ai/chat]', {
+          debug_id: debugId,
+          stage: 'stream_empty_retry_failed',
+          error: retryErr instanceof Error ? retryErr.message : String(retryErr),
+        });
+        return '';
+      }
+    };
+
+    /** Contextual Recall — כלי recall רק בתור עמוק/רגשי (חוסך טוקנים). */
+    const useMemoryRecallTools =
+      !trivialBypass &&
+      shouldAttemptMemoryRecall(lastUserText, {
+        emotional: Boolean(earlySignals.emotional_hint),
+        blocker: earlySignals.blocker_mentioned,
+        heavyContext: useHeavyContext,
+      });
+
+    /** קריאת הכותב הראשי — עם כלי זיכרון (streamText) או נתיב סטרימינג קלאסי. */
+    const runClaudeWriter = () => {
+      if (useMemoryRecallTools) {
+        return createMemoryRecallStreamResponse({
+          model: openrouter.chat(effectiveModel),
+          staticSystemPrompt: mcfg.mainWriterSystemPrompt,
+          dynamicSystemPrompt,
+          recentMessages,
+          userId: user.id,
+          supabase,
+          temperature: CHAT_TEMPERATURE,
+          maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
+          headers: upstreamHeaders,
+          piiShield,
+          providerOptions: mcfg.isOpenAI ? { openai: { reasoningEffort: 'low' } } : {},
+          onEmptyRetry: emptyRetryHandler,
+          onFinish: handleChatFinish,
+        });
+      }
+
+      return createOpenRouterTextStreamResponse({
         apiKey: openrouterKey,
         referer: publicAppUrlForAiReferer(),
         model: effectiveModel,
@@ -3238,42 +3299,10 @@ export async function POST(request: Request) {
         piiShield,
         reasoning: reasoningParam,
         supportsPromptCache: mcfg.supportsPromptCache,
-        onEmptyRetry: async () => {
-          try {
-            const retry = await generateText({
-              model: openrouter.chat(effectiveModel),
-              temperature: Math.max(0.75, CHAT_TEMPERATURE - 0.1),
-              maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 360),
-              providerOptions: mcfg.isOpenAI
-                ? { openai: { reasoningEffort: 'low' } }
-                : {},
-              system: piiShield
-                ? piiShield.tokenizeText(systemPromptWithMemory)
-                : systemPromptWithMemory,
-              messages: piiShield
-                ? piiShield.tokenizeMessages(recentMessages)
-                : recentMessages,
-            });
-            const retryText = (retry.text ?? '').trim();
-            if (retryText) {
-              console.info('[ai/chat]', {
-                debug_id: debugId,
-                stage: 'stream_empty_retry_recovered',
-                finish_reason: retry.finishReason,
-              });
-            }
-            return piiShield ? piiShield.detokenizeText(retryText) : retryText;
-          } catch (retryErr) {
-            console.warn('[ai/chat]', {
-              debug_id: debugId,
-              stage: 'stream_empty_retry_failed',
-              error: retryErr instanceof Error ? retryErr.message : String(retryErr),
-            });
-            return '';
-          }
-        },
+        onEmptyRetry: emptyRetryHandler,
         onFinish: handleChatFinish,
       });
+    };
 
     let upstream: Response;
     if (trivialBypass) {
