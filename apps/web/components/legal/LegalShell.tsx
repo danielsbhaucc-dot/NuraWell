@@ -5,15 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ArrowRight, ArrowUp, Leaf } from 'lucide-react';
-
-export type LegalNavItem = { href: string; label: string };
-
-export const LEGAL_NAV: LegalNavItem[] = [
-  { href: '/terms', label: 'תנאי שימוש' },
-  { href: '/privacy', label: 'מדיניות פרטיות' },
-  { href: '/safety', label: 'בטיחות' },
-  { href: '/accessibility', label: 'נגישות וזכויות יוצרים' },
-];
+import { LEGAL_NAV } from './legal-nav';
 
 const ease = [0.22, 1, 0.36, 1] as const;
 

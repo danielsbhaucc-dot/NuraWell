@@ -8,6 +8,7 @@ import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 import { createClient } from '../../../lib/supabase/client';
 import { NuraWellLogo } from '../../../components/shared/NuraWellLogo';
 import { PublicAiPresence } from '../../../components/ai/PublicAiPresence';
+import { LegalLinksRow } from '../../../components/legal/LegalLinksRow';
 import { useToast, ToastContainer } from '../../../components/shared/Toast';
 import { APP_HOME_PATH } from '../../../lib/navigation/app-home-path';
 
@@ -339,6 +340,8 @@ function LoginFormContent() {
               </p>
             </div>
           </div>
+
+          <LegalLinksRow tone={isDarkUi ? 'dark' : 'light'} className="mt-6" />
         </motion.div>
       </main>
     </>
