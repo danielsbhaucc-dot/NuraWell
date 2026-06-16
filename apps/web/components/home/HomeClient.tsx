@@ -16,7 +16,6 @@ import { AlmogHeroHeader } from './DolevHeroHeader';
 import { DashboardBriefCard } from './DashboardBriefCard';
 import { ProgramOrchestratorGate } from './ProgramOrchestratorGate';
 import { SosButton } from '../ai/SosButton';
-import { DynamicMentorWidgetClient } from '../mentorship/DynamicMentorWidgetClient';
 import { buildAlmogGreeting, type GreetingTaskState } from '../../lib/ai/almog-greeting';
 import {
   countAcceptedTaskExecutionToday,
@@ -42,7 +41,8 @@ interface HomeClientProps {
   firstName: string;
   stats: HomeStats;
   simplifiedDashboard?: boolean;
-  nextBestAction?: string | null;
+  /** RSC — DynamicMentorWidget מוזרק מ-home/page (שליפה יחידה). */
+  mentorWidget?: React.ReactNode;
 }
 
 const container = {
@@ -58,7 +58,7 @@ export function HomeClient({
   firstName,
   stats,
   simplifiedDashboard = false,
-  nextBestAction,
+  mentorWidget,
 }: HomeClientProps) {
   const progressReport = useProgressReport();
   const actionHub = useActionHub();
@@ -170,14 +170,7 @@ export function HomeClient({
               Dumb UI: מצייר את מה שה-AI הכתיב, ונועל את הבית במצב Level Up. */}
           <ProgramOrchestratorGate />
 
-          {nextBestAction?.trim() ? (
-            <motion.div variants={item}>
-              <DynamicMentorWidgetClient
-                nextBestAction={nextBestAction.trim()}
-                isSensitiveState={simplifiedDashboard}
-              />
-            </motion.div>
-          ) : null}
+          {mentorWidget ? <motion.div variants={item}>{mentorWidget}</motion.div> : null}
 
           {!simplifiedDashboard && (
             <motion.div variants={item}>

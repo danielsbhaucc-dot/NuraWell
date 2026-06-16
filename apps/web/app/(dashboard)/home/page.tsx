@@ -2,8 +2,10 @@ import type { Metadata } from 'next';
 import { createClient } from '../../../lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { HomeClient } from '../../../components/home/HomeClient';
-import { fetchUserMentorshipStrategy } from '../../../lib/ai/mentorship/persist-strategy';
-import { isSensitiveMentalState } from '../../../lib/ai/mentorship/is-sensitive-state';
+import {
+  DynamicMentorWidget,
+  loadMentorshipHomeContext,
+} from '../../../components/mentorship/DynamicMentorWidget';
 import { firstNameFromFull } from '../../../lib/onboarding/profile-summary-rows';
 
 export const dynamic = 'force-dynamic';
@@ -70,8 +72,10 @@ export default async function HomePage() {
     'משתמש';
   const firstName = firstNameFromFull(fullName) || 'משתמש';
 
-  const mentorshipStrategy = await fetchUserMentorshipStrategy(supabase, user.id);
-  const simplifiedDashboard = isSensitiveMentalState(mentorshipStrategy);
+  const { strategy: mentorshipStrategy, simplifiedDashboard } = await loadMentorshipHomeContext(
+    supabase,
+    user.id
+  );
 
   return (
     <HomeClient
@@ -82,7 +86,9 @@ export default async function HomePage() {
         totalLessonsCompleted: completedLessonIds.size,
       }}
       simplifiedDashboard={simplifiedDashboard}
-      nextBestAction={mentorshipStrategy.next_best_action}
+      mentorWidget={
+        <DynamicMentorWidget userId={user.id} strategy={mentorshipStrategy} />
+      }
     />
   );
 }

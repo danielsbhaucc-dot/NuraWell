@@ -9,6 +9,8 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { INSIGHT_STATUS } from './status';
+
 import { extractInsights } from './extract-insights';
 import { persistInsights, type PersistInsightsResult } from './persist-insights';
 
@@ -77,7 +79,7 @@ export async function runInsightExtraction(params: {
     .from('user_insights')
     .select('category, insight_text')
     .eq('user_id', userId)
-    .eq('is_active', true)
+    .eq('status', INSIGHT_STATUS.ACTIVE)
     .order('actionability_score', { ascending: false })
     .limit(30);
 

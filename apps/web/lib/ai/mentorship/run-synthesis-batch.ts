@@ -6,6 +6,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { synthesizeUserStrategy } from './synthesize-user-strategy';
+import { INSIGHT_STATUS } from '../insights/status';
 
 /** כמה משתמשים לסנתז בכל ריצת ערב — חסכון בעלות LLM. */
 const EVENING_SYNTHESIS_BATCH_LIMIT = 12;
@@ -45,7 +46,7 @@ async function listUsersNeedingSynthesis(
   const { data: insightRows, error } = await admin
     .from('user_insights')
     .select('user_id, last_seen_at, updated_at')
-    .eq('is_active', true)
+    .eq('status', INSIGHT_STATUS.ACTIVE)
     .order('last_seen_at', { ascending: false })
     .limit(250);
 
