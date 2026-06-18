@@ -397,7 +397,6 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                 title="בדרך חזרה"
                 tint="amber"
                 count={recoveryPlans.length}
-                defaultOpen
                 explain="אנחנו עובדים בצעדים קטנים כדי לחזור להרגל המקורי. סמן כל צעד כשתעשה אותו — ואני אעדכן את התוכנית."
               >
                 <AnimatePresence initial={false}>
@@ -481,7 +480,6 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                 title="אלמוג כאן בשבילך"
                 tint="rose"
                 count={openBlockers.length}
-                defaultOpen
                 explain="כשמשהו תקוע, פה אנחנו פותרים את זה ביחד. בלי שיפוט — צעד אחד קטן בכל פעם."
               >
                 {openBlockers.map((b, i) => (
@@ -755,11 +753,11 @@ function Hero({
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="relative z-10 w-full overflow-hidden rounded-b-[36px] pb-7 pt-7"
+      className="relative z-10 w-full overflow-hidden rounded-b-[40px] pb-14 pt-14"
       style={{
         background:
-          'linear-gradient(155deg, #059669 0%, #0d9488 45%, #10b981 78%, #34d399 100%)',
-        boxShadow: '0 16px 40px rgba(6,78,59,0.26), inset 0 1px 0 rgba(255,255,255,0.22)',
+          'linear-gradient(155deg, #034d3a 0%, #059669 35%, #0d9488 65%, #10b981 85%, #34d399 100%)',
+        boxShadow: '0 20px 60px rgba(6,78,59,0.36), inset 0 1px 0 rgba(255,255,255,0.22)',
       }}
     >
       {/* שכבת ברק עליונה — מדמה השתקפות זכוכית על ה-hero */}
@@ -768,55 +766,71 @@ function Hero({
         className="pointer-events-none absolute inset-x-0 top-0 h-2/3"
         style={{
           background:
-            'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 100%)',
+            'linear-gradient(180deg, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0) 100%)',
         }}
       />
-      {/* קו זוהר תחתון עדין */}
+      {/* קו זוהר תחתון */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-x-6 bottom-0 h-px rounded-full"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)' }}
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-1"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)' }}
       />
-      {/* זוהר אור פינתי */}
+      {/* זוהר אור פינתי ימין */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 68%)' }}
+        className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.32), transparent 68%)' }}
       />
+      {/* זוהר אור שמאל */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.40), transparent 70%)' }}
+        className="pointer-events-none absolute -bottom-28 -left-20 h-80 w-80 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.50), transparent 70%)' }}
+      />
+      {/* זוהר מרכזי */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(52,211,153,0.18), transparent 65%)' }}
       />
       {/* עלה מרחף */}
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute right-6 top-6 text-2xl"
-        animate={{ rotate: [0, -12, 12, 0], y: [0, -4, 0] }}
+        className="pointer-events-none absolute right-6 top-8 text-3xl"
+        animate={{ rotate: [0, -12, 12, 0], y: [0, -6, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       >
         🍃
       </motion.div>
+      {/* ניצוץ ימני תחתון */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute bottom-10 left-8 text-xl opacity-70"
+        animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.8, 0.5] }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 1.2 }}
+      >
+        ✦
+      </motion.div>
 
       {/* תוכן מיושר לרוחב התוכן של הדף */}
       <div className="container-mobile relative">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-5">
           <motion.div
-            className="relative shrink-0 rounded-full p-1"
+            className="relative shrink-0 rounded-full p-1.5"
             style={{
-              background: 'linear-gradient(140deg, rgba(255,255,255,0.55), rgba(255,255,255,0.12))',
-              boxShadow: '0 8px 22px rgba(0,0,0,0.18)',
+              background: 'linear-gradient(140deg, rgba(255,255,255,0.6), rgba(255,255,255,0.15))',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.22)',
             }}
-            animate={{ y: [0, -4, 0] }}
+            animate={{ y: [0, -5, 0] }}
             transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <div className="rounded-full ring-2 ring-white/50">
-              <AlmogAvatarChip size={68} />
+            <div className="rounded-full ring-2 ring-white/60">
+              <AlmogAvatarChip size={80} />
             </div>
             <span
               aria-hidden
-              className="absolute -bottom-0.5 -left-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px]"
-              style={{ background: '#ecfdf5', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}
+              className="absolute -bottom-0.5 -left-0.5 flex h-6 w-6 items-center justify-center rounded-full text-sm"
+              style={{ background: '#ecfdf5', boxShadow: '0 2px 8px rgba(0,0,0,0.22)' }}
             >
               🌱
             </span>
@@ -824,25 +838,25 @@ function Hero({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <span
-                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold text-white"
+                className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-bold text-white"
                 style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)' }}
               >
-                <Sparkles className="h-3 w-3" />
+                <Sparkles className="h-3.5 w-3.5" />
                 {greeting()}{name ? `, ${name}` : ''}
               </span>
               <LivePill live={live} pulsing={pulsing} />
             </div>
-            <h1 className="mt-2 text-[26px] font-black leading-[1.1] text-white drop-shadow-sm">
+            <h1 className="mt-3 text-[40px] font-black leading-[1.0] text-white drop-shadow-md">
               התוכנית שלנו
             </h1>
           </div>
         </div>
 
-        <p className="mt-3 text-[13.5px] leading-relaxed text-emerald-50/90">
+        <p className="mt-5 text-base leading-relaxed text-emerald-50/95 font-medium">
           ריכזתי כאן כל מה שסיכמנו — צעד קטן בכל פעם, ואני איתך בכל אחד מהם. 🌱
         </p>
 
-        <div className="mt-5 grid grid-cols-3 gap-2.5">
+        <div className="mt-8 grid grid-cols-3 gap-3">
           <HeroStat icon={Sparkles} value={active} label="דברים לעשות" />
           <HeroStat icon={Bell} value={reminders} label="תזכורות" />
           <HeroStat icon={MessageCircle} value={blockers} label="תקועים?" />
@@ -856,23 +870,23 @@ function HeroStat({ icon: Icon, value, label }: { icon: typeof Sparkles; value: 
   return (
     <motion.div
       whileTap={{ scale: 0.96 }}
-      className="relative overflow-hidden rounded-2xl px-2 py-3 text-center"
+      className="relative overflow-hidden rounded-2xl px-2 py-4 text-center"
       style={{
-        background: 'linear-gradient(165deg, rgba(255,255,255,0.28), rgba(255,255,255,0.10))',
-        backdropFilter: 'blur(14px) saturate(160%)',
-        WebkitBackdropFilter: 'blur(14px) saturate(160%)',
-        border: '1px solid rgba(255,255,255,0.45)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), 0 10px 28px rgba(0,0,0,0.14)',
+        background: 'linear-gradient(165deg, rgba(255,255,255,0.32), rgba(255,255,255,0.12))',
+        backdropFilter: 'blur(16px) saturate(170%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(170%)',
+        border: '1px solid rgba(255,255,255,0.5)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6), 0 12px 32px rgba(0,0,0,0.16)',
       }}
     >
       <span
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-1/2"
-        style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.35), transparent)' }}
+        style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.38), transparent)' }}
       />
-      <Icon className="relative mx-auto mb-1 h-4 w-4 text-emerald-50/95" aria-hidden />
-      <p className="relative text-[25px] font-black leading-none text-white drop-shadow-sm">{value}</p>
-      <p className="relative mt-1 text-[10px] font-semibold text-emerald-50/90">{label}</p>
+      <Icon className="relative mx-auto mb-1.5 h-5 w-5 text-emerald-50/95" aria-hidden />
+      <p className="relative text-[30px] font-black leading-none text-white drop-shadow-md">{value}</p>
+      <p className="relative mt-1.5 text-[11px] font-semibold text-emerald-50/90">{label}</p>
     </motion.div>
   );
 }
@@ -1012,39 +1026,39 @@ function Section({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="relative flex w-full items-center gap-2.5 overflow-hidden rounded-2xl px-3 py-2.5 text-right transition active:scale-[0.99]"
+        className="relative flex w-full items-center gap-3 overflow-hidden rounded-2xl px-4 py-3.5 text-right transition active:scale-[0.99]"
         style={{
           background: open
-            ? `linear-gradient(135deg, rgba(255,255,255,0.62) 0%, rgba(${t.soft},0.5) 100%)`
-            : 'rgba(255,255,255,0.38)',
-          border: `1px solid rgba(${t.rgb},${open ? 0.18 : 0.1})`,
+            ? `linear-gradient(135deg, rgba(${t.rgb},0.2) 0%, rgba(${t.soft},0.75) 100%)`
+            : `linear-gradient(135deg, rgba(${t.rgb},0.1) 0%, rgba(${t.soft},0.55) 100%)`,
+          border: `1.5px solid rgba(${t.rgb},${open ? 0.38 : 0.22})`,
           boxShadow: open
-            ? `0 8px 20px rgba(${t.rgb},0.1)`
-            : '0 2px 8px rgba(15,23,42,0.04)',
+            ? `0 8px 24px rgba(${t.rgb},0.18), inset 0 1px 0 rgba(255,255,255,0.7)`
+            : `0 3px 12px rgba(${t.rgb},0.1), inset 0 1px 0 rgba(255,255,255,0.6)`,
           backdropFilter: 'blur(14px) saturate(160%)',
           WebkitBackdropFilter: 'blur(14px) saturate(160%)',
         }}
       >
         <span
-          className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
+          className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
           style={{
-            background: `linear-gradient(140deg, rgba(${t.rgb},0.95), rgba(${t.rgb},0.62))`,
-            boxShadow: `0 4px 12px rgba(${t.rgb},0.35)`,
+            background: `linear-gradient(140deg, rgba(${t.rgb},0.95), rgba(${t.rgb},0.65))`,
+            boxShadow: `0 4px 14px rgba(${t.rgb},0.4)`,
           }}
         >
-          <Icon className="h-4 w-4 text-white" aria-hidden />
+          <Icon className="h-5 w-5 text-white" aria-hidden />
         </span>
-        <h2 className="flex-1 text-[15px] font-black text-slate-900">{title}</h2>
+        <h2 className="flex-1 text-[18px] font-black" style={{ color: t.text }}>{title}</h2>
         {typeof count === 'number' && count > 0 ? (
           <span
-            className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1.5 text-[11px] font-black text-white"
+            className="flex h-[24px] min-w-[24px] items-center justify-center rounded-full px-1.5 text-[12px] font-black text-white"
             style={{ background: `rgba(${t.rgb},0.9)` }}
           >
             {count}
           </span>
         ) : null}
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.25 }} className="shrink-0">
-          <ChevronDown className="h-4 w-4" style={{ color: t.text }} aria-hidden />
+          <ChevronDown className="h-5 w-5" style={{ color: t.text }} aria-hidden />
         </motion.span>
       </button>
 
