@@ -161,6 +161,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState(false);
   const [justUpdated, setJustUpdated] = useState(false);
+  const [showAllStandalone, setShowAllStandalone] = useState(false);
   const firstLoad = useRef(true);
 
   const load = useCallback(async (silent = false) => {
@@ -271,6 +272,8 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
   const standaloneTasks = (data?.assignments ?? []).filter(
     (a) => a.status === 'active' && !recoveryStepIds.has(a.id)
   );
+  const visibleStandaloneTasks = showAllStandalone ? standaloneTasks : standaloneTasks.slice(0, 4);
+  const hiddenStandaloneCount = Math.max(0, standaloneTasks.length - visibleStandaloneTasks.length);
 
   // חסמים פתוחים שטרם קיבלו אסטרטגיה (מצב coach)
   const openBlockers = (data?.blockers ?? []).filter((b) => b.status === 'open');
@@ -381,9 +384,10 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                         )
                       }
                       onPivot={() =>
-                        run(`${rp.blocker.id}-p`, () =>
-                          postBlockerAction({ action: 'coach_pivot', blocker_id: rp.blocker.id })
-                        ) as Promise<void>
+                        run(`${rp.blocker.id}-p`, async () => {
+                          await postBlockerAction({ action: 'coach_pivot', blocker_id: rp.blocker.id });
+                          await postBlockerAction({ action: 'accept', blocker_id: rp.blocker.id });
+                        }) as Promise<void>
                       }
                       onAsk={() =>
                         dispatchOpenAlmogChatWithPrefill(
@@ -407,7 +411,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
             >
               {standaloneTasks.length > 0 ? (
                 <AnimatePresence initial={false}>
-                  {standaloneTasks.map((a, i) => (
+                  {visibleStandaloneTasks.map((a, i) => (
                     <AssignmentCard
                       key={a.id}
                       assignment={a}
@@ -418,11 +422,27 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                     />
                   ))}
                 </AnimatePresence>
-              ) : recoveryPlans.length > 0 ? (
-                <EmptyHint text="כרגע כל המאמץ מוכוון לתוכנית החזרה שלמעלה. 🌿" />
-              ) : (
-                <EmptyHint text="אין כרגע צעד פתוח. כשנסכם משהו בשיחה — אשים אותו פה בשבילך." />
-              )}
+              ) : null}
+              {hiddenStandaloneCount > 0 ? (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => setShowAllStandalone((v) => !v)}
+                    className="w-full rounded-2xl border border-emerald-200/70 bg-white/55 px-3 py-2.5 text-[12.5px] font-bold text-emerald-700 transition active:scale-[0.99]"
+                  >
+                    {showAllStandalone
+                      ? 'הצג פחות צעדים'
+                      : `יש עוד ${hiddenStandaloneCount} צעדים — הצג הכול`}
+                  </button>
+                </li>
+              ) : null}
+              {standaloneTasks.length === 0 ? (
+                recoveryPlans.length > 0 ? (
+                  <EmptyHint text="כרגע כל המאמץ מוכוון לתוכנית החזרה שלמעלה. 🌿" />
+                ) : (
+                  <EmptyHint text="אין כרגע צעד פתוח. כשנסכם משהו בשיחה — אשים אותו פה בשבילך." />
+                )
+              ) : null}
             </Section>
 
             {/* ── שיחת מאמן — חסמים פתוחים (SECONDARY) ── */}
@@ -1241,6 +1261,7 @@ function RecoveryPlanCard({
   const doneToday =
     Boolean(microStep.last_done_at) &&
     fmtDay(microStep.last_done_at) === fmtDay(new Date().toISOString());
+  const recoveryProgressDays = Math.min(microStep.done_count, 3);
 
   return (
     <motion.li
@@ -1302,7 +1323,7 @@ function RecoveryPlanCard({
           ) : null}
           {microStep.done_count > 0 ? (
             <p className="mt-1 text-[10px] font-bold text-emerald-600">
-              בוצע {microStep.done_count}× 🌱
+              {recoveryProgressDays}/3 ימים טובים בדרך חזרה 🌱
             </p>
           ) : null}
         </div>
@@ -1331,7 +1352,7 @@ function RecoveryPlanCard({
             className="flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-white/60 px-3 py-2.5 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
           >
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ThumbsDown className="h-3.5 w-3.5" />}
-            לא עובד
+            לא עובד — נחליף עכשיו
           </button>
           <button
             type="button"
