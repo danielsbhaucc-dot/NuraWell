@@ -1021,44 +1021,53 @@ function Section({
   return (
     <section className="space-y-2.5">
       <SectionDivider tint={tint} />
-      {/* כותרת לחיצה — שורה נקייה ושטוחה שמכווצת את הדף */}
+      {/* כותרת לחיצה — זכוכית כהה בסגנון iOS */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="relative flex w-full items-center gap-3 overflow-hidden rounded-2xl px-4 py-3.5 text-right transition active:scale-[0.99]"
+        className="relative flex w-full items-center gap-3 overflow-hidden rounded-2xl px-4 py-3.5 text-right transition active:scale-[0.98]"
         style={{
           background: open
-            ? `linear-gradient(135deg, rgba(${t.rgb},0.2) 0%, rgba(${t.soft},0.75) 100%)`
-            : `linear-gradient(135deg, rgba(${t.rgb},0.1) 0%, rgba(${t.soft},0.55) 100%)`,
-          border: `1.5px solid rgba(${t.rgb},${open ? 0.38 : 0.22})`,
+            ? `linear-gradient(145deg, rgba(15,23,42,0.82) 0%, rgba(${t.rgb},0.28) 100%)`
+            : `linear-gradient(145deg, rgba(15,23,42,0.72) 0%, rgba(${t.rgb},0.18) 100%)`,
+          border: `1px solid rgba(${t.rgb},${open ? 0.55 : 0.32})`,
           boxShadow: open
-            ? `0 8px 24px rgba(${t.rgb},0.18), inset 0 1px 0 rgba(255,255,255,0.7)`
-            : `0 3px 12px rgba(${t.rgb},0.1), inset 0 1px 0 rgba(255,255,255,0.6)`,
-          backdropFilter: 'blur(14px) saturate(160%)',
-          WebkitBackdropFilter: 'blur(14px) saturate(160%)',
+            ? `0 10px 32px rgba(${t.rgb},0.22), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.18)`
+            : `0 4px 18px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.10)`,
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         }}
       >
+        {/* specular highlight — מדמה משטח זכוכית על הכפתור */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-2xl"
+          style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 100%)' }}
+        />
         <span
           className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
           style={{
-            background: `linear-gradient(140deg, rgba(${t.rgb},0.95), rgba(${t.rgb},0.65))`,
-            boxShadow: `0 4px 14px rgba(${t.rgb},0.4)`,
+            background: `linear-gradient(140deg, rgba(${t.rgb},1), rgba(${t.rgb},0.72))`,
+            boxShadow: `0 4px 16px rgba(${t.rgb},0.5), inset 0 1px 0 rgba(255,255,255,0.35)`,
           }}
         >
           <Icon className="h-5 w-5 text-white" aria-hidden />
         </span>
-        <h2 className="flex-1 text-[18px] font-black" style={{ color: t.text }}>{title}</h2>
+        <h2 className="flex-1 text-[18px] font-black text-white drop-shadow-sm">{title}</h2>
         {typeof count === 'number' && count > 0 ? (
           <span
             className="flex h-[24px] min-w-[24px] items-center justify-center rounded-full px-1.5 text-[12px] font-black text-white"
-            style={{ background: `rgba(${t.rgb},0.9)` }}
+            style={{
+              background: `rgba(${t.rgb},0.9)`,
+              boxShadow: `0 2px 8px rgba(${t.rgb},0.4)`,
+            }}
           >
             {count}
           </span>
         ) : null}
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.25 }} className="shrink-0">
-          <ChevronDown className="h-5 w-5" style={{ color: t.text }} aria-hidden />
+          <ChevronDown className="h-5 w-5 text-white/70" aria-hidden />
         </motion.span>
       </button>
 
@@ -1193,6 +1202,7 @@ function AssignmentCard({
   onDone: () => void;
   onDrop: () => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const isRecurring = assignment.schedule !== 'one_time';
   const doneToday =
     Boolean(assignment.last_done_at) && fmtDay(assignment.last_done_at) === fmtDay(new Date().toISOString());
@@ -1209,71 +1219,106 @@ function AssignmentCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
       whileTap={{ scale: 0.992 }}
-      className="relative overflow-hidden rounded-[24px] p-3.5"
+      className="relative overflow-hidden rounded-[24px] p-3"
       style={{ ...glassStyle('emerald'), ...(isEasedOriginal ? { opacity: 0.82 } : {}) }}
     >
       <GlassSheen />
       <div className="relative z-[1]">
-      <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-        <NumBadge n={index} rgb={TINT.emerald.rgb} />
-        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-          {isRecurring ? <Repeat className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
-          {SCHEDULE_LABEL[assignment.schedule]}
-        </span>
-        {relationMeta ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
-            {relationMeta.emoji} {relationMeta.label}
-          </span>
-        ) : null}
-        {assignment.done_count > 0 ? (
-          <span className="text-[10px] font-bold text-emerald-600">בוצע {assignment.done_count}×</span>
-        ) : null}
-      </div>
-      <p className="text-[15px] font-black leading-snug text-slate-900">{assignment.title}</p>
-      {assignment.reason ? (
-        <p className="mt-1 text-[12.5px] leading-relaxed text-slate-600">
-          <span className="font-bold text-emerald-700">למה: </span>
-          {assignment.reason}
-        </p>
-      ) : null}
-      {assignment.detail ? (
-        <p className="mt-0.5 text-[12px] leading-relaxed text-slate-500">{assignment.detail}</p>
-      ) : null}
+        {/* שורה ראשית — קומפקטית */}
+        <div className="flex items-center gap-2.5">
+          <NumBadge n={index} rgb={TINT.emerald.rgb} />
+          <div className="min-w-0 flex-1">
+            <p className="text-[14px] font-black leading-snug text-slate-900">{assignment.title}</p>
+            <div className="mt-0.5 flex flex-wrap items-center gap-1">
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-1.5 py-px text-[9px] font-bold text-emerald-700">
+                {isRecurring ? <Repeat className="h-2.5 w-2.5" /> : <Sparkles className="h-2.5 w-2.5" />}
+                {SCHEDULE_LABEL[assignment.schedule]}
+              </span>
+              {relationMeta ? (
+                <span className="rounded-full bg-indigo-100 px-1.5 py-px text-[9px] font-bold text-indigo-700">
+                  {relationMeta.emoji} {relationMeta.label}
+                </span>
+              ) : null}
+              {assignment.done_count > 0 ? (
+                <span className="text-[9px] font-bold text-emerald-600/80">✓{assignment.done_count}</span>
+              ) : null}
+            </div>
+          </div>
+          {/* כפתור פתיחה לפרטים — חץ קטן */}
+          {(assignment.reason || assignment.detail) && !isEasedOriginal ? (
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              className="shrink-0 rounded-xl p-1 text-emerald-500 transition"
+              aria-label={expanded ? 'סגור פרטים' : 'פרטים נוספים'}
+            >
+              <motion.span animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }} className="block">
+                <ChevronDown className="h-4 w-4" />
+              </motion.span>
+            </button>
+          ) : null}
+        </div>
 
-      {isEasedOriginal ? (
-        <div
-          className="mt-3 rounded-2xl px-3 py-2.5 text-[12px] font-semibold leading-relaxed text-slate-500"
-          style={{ background: 'rgba(148,163,184,0.12)', border: '1px solid rgba(148,163,184,0.22)' }}
-        >
-          הקלנו על זה זמנית — מתמקדים בצעד קטן יותר. ברגע שתסמן אותו, נחזיר את זה בהדרגה. 🪶
-        </div>
-      ) : (
-        <div className="mt-3 flex items-center gap-2">
-          <button
-            type="button"
-            disabled={busy || doneToday}
-            onClick={onDone}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl px-3 py-2.5 text-[13.5px] font-black text-white transition active:scale-95 disabled:opacity-60"
-            style={{
-              background: doneToday
-                ? 'linear-gradient(135deg, #34d399, #059669)'
-                : 'linear-gradient(135deg, #059669, #10b981)',
-              boxShadow: '0 6px 16px rgba(16,185,129,0.32)',
-            }}
+        {/* פרטים מורחבים — מתקפלים */}
+        <AnimatePresence initial={false}>
+          {expanded && (assignment.reason || assignment.detail) ? (
+            <motion.div
+              key="details"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="mt-2 space-y-1 border-t border-emerald-100/60 pt-2">
+                {assignment.reason ? (
+                  <p className="text-[12px] leading-relaxed text-slate-600">
+                    <span className="font-bold text-emerald-700">למה: </span>
+                    {assignment.reason}
+                  </p>
+                ) : null}
+                {assignment.detail ? (
+                  <p className="text-[11.5px] leading-relaxed text-slate-500">{assignment.detail}</p>
+                ) : null}
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+
+        {isEasedOriginal ? (
+          <div
+            className="mt-2.5 rounded-2xl px-3 py-2 text-[11.5px] font-semibold leading-relaxed text-slate-500"
+            style={{ background: 'rgba(148,163,184,0.12)', border: '1px solid rgba(148,163,184,0.22)' }}
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-            {doneToday ? 'בוצע היום ✨' : isRecurring ? 'עשיתי היום' : 'סיימתי'}
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onDrop}
-            className="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2.5 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-50"
-          >
-            לא מתאים
-          </button>
-        </div>
-      )}
+            הקלנו על זה זמנית — מתמקדים בצעד קטן יותר. ברגע שתסמן אותו, נחזיר את זה בהדרגה. 🪶
+          </div>
+        ) : (
+          <div className="mt-2.5 flex items-center gap-2">
+            <button
+              type="button"
+              disabled={busy || doneToday}
+              onClick={onDone}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl px-3 py-2 text-[13px] font-black text-white transition active:scale-95 disabled:opacity-60"
+              style={{
+                background: doneToday
+                  ? 'linear-gradient(135deg, #34d399, #059669)'
+                  : 'linear-gradient(135deg, #059669, #10b981)',
+                boxShadow: '0 6px 16px rgba(16,185,129,0.32)',
+              }}
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              {doneToday ? 'בוצע היום ✨' : isRecurring ? 'עשיתי היום' : 'סיימתי'}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onDrop}
+              className="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-[11.5px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-50"
+            >
+              לא מתאים
+            </button>
+          </div>
+        )}
       </div>
     </motion.li>
   );
