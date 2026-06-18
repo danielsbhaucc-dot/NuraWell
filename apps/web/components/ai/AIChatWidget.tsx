@@ -457,7 +457,7 @@ function ThreadHeaderIconButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/28 bg-white/14 text-white shadow-[0_2px_10px_rgba(0,0,0,0.18)] backdrop-blur-sm transition hover:bg-white/22 active:scale-95 disabled:opacity-50"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-white backdrop-blur-md transition hover:border-white/18 hover:bg-white/[0.12] active:scale-95 disabled:opacity-50"
     >
       {children}
     </button>
