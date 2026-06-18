@@ -1147,23 +1147,8 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                     <ChevronRight className="h-5 w-5" />
                   </ThreadHeaderIconButton>
 
-                  <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <div className="min-w-0 flex-1 text-right">
-                      <p className="text-[16px] font-black leading-tight text-white">אלמוג</p>
-                      <div className="mt-1 flex justify-end">
-                        {(() => {
-                          const { status, label } = threadStatusLabel(
-                            showLoading,
-                            isThinking,
-                            online,
-                            isSessionClosed,
-                            almogStatusText,
-                            typingStep
-                          );
-                          return <ThreadStatusPill status={status}>{label}</ThreadStatusPill>;
-                        })()}
-                      </div>
-                    </div>
+                  {/* RTL: אווטאר ראשון = ימין; שם + תגית צמודים משמאלו */}
+                  <div className="flex shrink-0 items-center gap-2.5">
                     <div
                       className="shrink-0 rounded-full p-0.5"
                       style={{
@@ -1181,7 +1166,23 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                         }}
                       />
                     </div>
+                    <div className="flex flex-col items-start gap-1">
+                      <p className="text-[16px] font-black leading-none text-white">אלמוג</p>
+                      {(() => {
+                        const { status, label } = threadStatusLabel(
+                          showLoading,
+                          isThinking,
+                          online,
+                          isSessionClosed,
+                          almogStatusText,
+                          typingStep
+                        );
+                        return <ThreadStatusPill status={status}>{label}</ThreadStatusPill>;
+                      })()}
+                    </div>
                   </div>
+
+                  <div className="min-w-0 flex-1" aria-hidden />
 
                   <div className="flex shrink-0 items-center gap-1.5">
                     {!isSessionClosed && messages.length > 0 ? (
