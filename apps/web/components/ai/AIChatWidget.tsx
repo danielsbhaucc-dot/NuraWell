@@ -14,6 +14,7 @@ import {
 import { NuraWellChatTransport } from '../../lib/client/nurawell-chat-transport';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
+import { useLoginBackground } from '../../lib/client/useLoginBackground';
 import {
   OPEN_ALMOG_CHAT_EVENT,
   type OpenAlmogChatDetail,
@@ -370,6 +371,7 @@ export interface AIChatWidgetProps {
 
 export function AIChatWidget({ userId }: AIChatWidgetProps) {
   const { avatarUrl: avatarSrc } = useAlmogAvatarUrl();
+  const { url: bgUrl, hasPhoto } = useLoginBackground();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [online, setOnline] = useState(true);
@@ -935,7 +937,9 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
             <ChatSessionClosingOverlay visible={isClosing} />
             <div
               className={`shrink-0 rounded-t-[28px] text-white ${
-                panelView === 'inbox' ? 'border-b border-white/10 bg-[#0f172a]/95' : 'shadow-[0_4px_24px_rgba(6,78,59,0.35)]'
+                panelView === 'inbox'
+                  ? 'relative overflow-hidden border-b border-white/10'
+                  : 'shadow-[0_4px_24px_rgba(6,78,59,0.35)]'
               }`}
               style={
                 panelView === 'thread'
@@ -943,13 +947,32 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                   : undefined
               }
             >
-              <div className="pt-2 pb-1 flex justify-center">
+              {panelView === 'inbox' && (
+                <>
+                  {hasPhoto && bgUrl ? (
+                    <img src={bgUrl} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
+                  ) : null}
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: hasPhoto && bgUrl
+                        ? 'linear-gradient(180deg, rgba(2,6,23,0.58) 0%, rgba(2,6,23,0.88) 100%)'
+                        : 'linear-gradient(160deg, #064e3b 0%, #047857 45%, #10b981 100%)',
+                    }}
+                    aria-hidden
+                  />
+                </>
+              )}
+              <div className="relative pt-2 pb-1 flex justify-center">
                 <div className="w-10 h-1 rounded-full bg-white/40" />
               </div>
               {panelView === 'inbox' ? (
-                <div className="flex items-center justify-between px-3 pb-2">
+                <div className="relative flex items-center justify-between px-4 pb-4 pt-1">
                   <span className="w-8" aria-hidden />
-                  <p className="text-sm font-bold text-white/95">שיחות עם אלמוג</p>
+                  <div className="text-center">
+                    <p className="text-[17px] font-bold tracking-tight text-white drop-shadow-sm">שיחות עם אלמוג</p>
+                    <p className="mt-0.5 text-[11px] text-white/60">המנטור האישי שלך</p>
+                  </div>
                   <button
                     type="button"
                     aria-label="סגור"
