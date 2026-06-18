@@ -344,7 +344,14 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
         blockers={blockerCount}
       />
 
-      <div className="container-mobile relative z-10 space-y-6 pb-12 pt-6">
+      <div
+        className="relative z-10 -mt-8 rounded-t-[32px] border-t border-white/55 px-4 pb-12 pt-7"
+        style={{
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(236,253,245,0.78) 100%)',
+          boxShadow: '0 -16px 48px rgba(6,78,59,0.14)',
+        }}
+      >
+      <div className="container-mobile space-y-6">
         {loading ? (
           <div className="flex justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
@@ -592,6 +599,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
           </>
         )}
       </div>
+      </div>
     </div>
   );
 }
@@ -753,7 +761,7 @@ function Hero({
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="relative z-10 w-full overflow-hidden rounded-b-[40px] pb-16 pt-16"
+      className="relative z-10 w-full overflow-hidden rounded-b-[32px] pb-10 pt-14"
       style={{
         background:
           'linear-gradient(155deg, #034d3a 0%, #059669 35%, #0d9488 65%, #10b981 85%, #34d399 100%)',
@@ -812,58 +820,56 @@ function Hero({
         ✦
       </motion.div>
 
-      {/* תוכן מיושר לרוחב התוכן של הדף */}
-      <div className="container-mobile relative">
-        <div className="flex items-center gap-5">
-          <motion.div
-            className="relative shrink-0 rounded-full p-1.5"
-            style={{
-              background: 'linear-gradient(140deg, rgba(255,255,255,0.6), rgba(255,255,255,0.15))',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.22)',
-            }}
-            animate={{ y: [0, -5, 0] }}
-            transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            <div className="rounded-full ring-2 ring-white/60">
-              <AlmogAvatarChip size={80} />
-            </div>
-            <span
-              aria-hidden
-              className="absolute -bottom-0.5 -left-0.5 flex h-6 w-6 items-center justify-center rounded-full text-sm"
-              style={{ background: '#ecfdf5', boxShadow: '0 2px 8px rgba(0,0,0,0.22)' }}
-            >
-              🌱
-            </span>
-          </motion.div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-bold text-white"
-                style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)' }}
-              >
-                {name ? (
-                  <>
-                    שלום {name} <span aria-hidden>👋</span>
-                  </>
-                ) : (
-                  <>
-                    {greeting()} <span aria-hidden>👋</span>
-                  </>
-                )}
-              </span>
-              <LivePill live={live} pulsing={pulsing} />
-            </div>
-            <h1 className="mt-3 text-[40px] font-black leading-[1.0] text-white drop-shadow-md">
-              התוכנית שלי
-            </h1>
+      {/* תוכן ממורכז — mobile-first */}
+      <div className="container-mobile relative text-center">
+        <motion.div
+          className="relative mx-auto inline-block rounded-full p-1.5"
+          style={{
+            background: 'linear-gradient(140deg, rgba(255,255,255,0.6), rgba(255,255,255,0.15))',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.22)',
+          }}
+          animate={{ y: [0, -5, 0] }}
+          transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <div className="rounded-full ring-2 ring-white/60">
+            <AlmogAvatarChip size={88} />
           </div>
+          <span
+            aria-hidden
+            className="absolute -bottom-0.5 -left-0.5 flex h-6 w-6 items-center justify-center rounded-full text-sm"
+            style={{ background: '#ecfdf5', boxShadow: '0 2px 8px rgba(0,0,0,0.22)' }}
+          >
+            🌱
+          </span>
+        </motion.div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          <span
+            className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[13px] font-bold text-white"
+            style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)' }}
+          >
+            {name ? (
+              <>
+                שלום {name} <span aria-hidden>👋</span>
+              </>
+            ) : (
+              <>
+                {greeting()} <span aria-hidden>👋</span>
+              </>
+            )}
+          </span>
+          <LivePill live={live} pulsing={pulsing} />
         </div>
 
-        <p className="mt-5 text-base leading-relaxed text-emerald-50/95 font-medium">
+        <h1 className="mt-3 text-[2.125rem] font-black leading-[1.0] text-white drop-shadow-md">
+          התוכנית שלי
+        </h1>
+
+        <p className="mx-auto mt-3 max-w-[18rem] text-[14px] leading-relaxed font-medium text-emerald-50/95">
           ריכזתי כאן כל מה שסיכמנו — צעד קטן בכל פעם, ואני איתך בכל אחד מהם. 🌱
         </p>
 
-        <div className="mt-8 grid grid-cols-3 gap-3">
+        <div className="mt-7 grid grid-cols-3 gap-2.5">
           <HeroStat icon={Sparkles} value={active} label="דברים לעשות" tint="emerald" />
           <HeroStat icon={Bell} value={reminders} label="תזכורות" tint="amber" />
           <HeroStat icon={MessageCircle} value={blockers} label="תקועים?" tint="rose" />
@@ -995,11 +1001,11 @@ function LivePill({ live, pulsing }: { live: boolean; pulsing: boolean }) {
   );
 }
 
-/** מפריד צבעוני עדין בין הסקציות — מחזיר אוויר ונותן לכל אזור גוון משלו. */
+/** מפריד צבעוני עדין בין הסקציות */
 function SectionDivider({ tint }: { tint: Tint }) {
   const t = TINT[tint];
   return (
-    <div className="flex items-center gap-2 px-3 pb-1" aria-hidden>
+    <div className="flex items-center gap-2 px-1 pb-0.5" aria-hidden>
       <span
         className="h-px flex-1 rounded-full"
         style={{ background: `linear-gradient(90deg, transparent, rgba(${t.rgb},0.4))` }}
