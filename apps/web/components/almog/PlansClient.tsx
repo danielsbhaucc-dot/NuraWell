@@ -1249,7 +1249,7 @@ function AssignmentCard({
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
-              className="shrink-0 rounded-xl p-1 text-emerald-500 transition"
+              className="shrink-0 rounded-xl p-1 text-emerald-500 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
               aria-label={expanded ? 'סגור פרטים' : 'פרטים נוספים'}
             >
               <motion.span animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }} className="block">
