@@ -36,24 +36,25 @@ export function AlmogHeroHeader({ firstName, bubbleContent, taskBadge }: AlmogHe
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className="mb-3 rounded-2xl px-4 py-2.5"
+        className="mb-3 rounded-2xl px-4 py-3"
         style={{
-          background: 'rgba(255,255,255,0.16)',
-          border: '1px solid rgba(255,255,255,0.28)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
+          background: 'rgba(255,255,255,0.18)',
+          border: '1px solid rgba(255,255,255,0.32)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
         }}
       >
         <div
           style={{
-            fontSize: '19px',
+            fontSize: '20px',
             color: '#fff',
             fontWeight: 900,
             fontFamily: "'Rubik','Heebo',sans-serif",
             lineHeight: 1.15,
           }}
         >
-          {greeting.timeGreeting} {firstName}
+          {greeting.timeGreeting} {firstName} <span aria-hidden>👋</span>
         </div>
         {greeting.occasionGreeting ? (
           <div

@@ -123,24 +123,31 @@ export function HomeClient({
   return (
     <div>
       <div
-        className="-mt-16 pt-16 relative overflow-hidden"
+        className="-mt-16 relative overflow-hidden pt-16"
         style={{
-          background: 'linear-gradient(160deg, #047857 0%, #059669 50%, #10b981 80%, #34d399 100%)',
+          background:
+            'linear-gradient(155deg, #034d3a 0%, #059669 35%, #0d9488 65%, #10b981 85%, #34d399 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
         }}
       >
-        <div
-          className="absolute pointer-events-none"
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-2/3"
           style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(245,166,35,0.3) 0%, transparent 70%)',
-            bottom: '20px',
-            left: '50%',
-            filter: 'blur(12px)',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 100%)',
           }}
         />
-        <div className="relative z-10" style={{ padding: '12px 20px 40px' }}>
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -right-16 -top-12 h-48 w-48 rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 68%)' }}
+        />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -bottom-10 -left-16 h-56 w-56 rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.45), transparent 70%)' }}
+        />
+        <div className="relative z-10 px-5 pb-12 pt-3">
           <AlmogHeroHeader
             firstName={firstName}
             bubbleContent={bubbleContent}
@@ -155,17 +162,13 @@ export function HomeClient({
       </div>
 
       <div
+        className="relative z-[3] -mt-7 min-h-[55vh] rounded-t-[28px] border-t border-white/50 px-4 pb-6 pt-6"
         style={{
-          background: '#EDF5F0',
-          borderRadius: '26px 26px 0 0',
-          marginTop: '-18px',
-          padding: '22px 16px 20px',
-          position: 'relative',
-          zIndex: 3,
-          minHeight: '55vh',
+          background: 'linear-gradient(180deg, #f8fdfb 0%, #edf5f0 45%, #e8f2ec 100%)',
+          boxShadow: '0 -16px 48px rgba(6,78,59,0.12)',
         }}
       >
-        <motion.div variants={container} initial="hidden" animate="show" className="space-y-3.5">
+        <motion.div variants={container} initial="hidden" animate="show" className="mx-auto max-w-lg space-y-4">
           {/* 🎛️ Program Orchestrator — מנהל את "Level Up"/kickoff/pivot.
               Dumb UI: מצייר את מה שה-AI הכתיב, ונועל את הבית במצב Level Up. */}
           <ProgramOrchestratorGate />
@@ -330,6 +333,7 @@ export function HomeClient({
               המשך מהר
             </p>
             <div className={`grid gap-3 ${simplifiedDashboard ? 'grid-cols-1' : 'grid-cols-2'}`}>
+              <QuickLink href="/plans" icon={Sparkles} label="התוכנית שלי" accent="#059669" />
               <QuickLink href="/journey" icon={Route} label="המסע שלי" accent="#10b981" />
               {!simplifiedDashboard && (
                 <QuickLink href="/guides" icon={BookOpen} label="המדריכים" accent="#14b8a6" />
@@ -403,27 +407,30 @@ function QuickLink({
   onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }) {
   const inner = (
-    <div className="glass-surface relative flex flex-col items-center gap-2 p-4 rounded-[20px] transition overflow-hidden active:scale-[0.98]">
-      {/* ✦ קו אור עליון */}
+    <div
+      className="glass-surface relative flex flex-col items-center gap-2.5 overflow-hidden rounded-[20px] p-4 transition active:scale-[0.98]"
+      style={{
+        boxShadow: '0 8px 24px rgba(6,78,59,0.08), inset 0 1px 0 rgba(255,255,255,0.7)',
+      }}
+    >
       <span
         aria-hidden
         className="pointer-events-none absolute inset-x-3 top-px h-px"
         style={{
-          background:
-            'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)',
         }}
       />
       <div
-        className="w-11 h-11 rounded-2xl flex items-center justify-center"
+        className="flex h-12 w-12 items-center justify-center rounded-2xl"
         style={{
-          background: `linear-gradient(135deg, ${accent}33, ${accent}14)`,
-          border: `1px solid ${accent}55`,
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55)',
+          background: `linear-gradient(145deg, ${accent}, ${accent}cc)`,
+          border: `1px solid ${accent}66`,
+          boxShadow: `0 8px 20px ${accent}40, inset 0 1px 0 rgba(255,255,255,0.35)`,
         }}
       >
-        <Icon className="w-5 h-5" style={{ color: accent }} strokeWidth={2.4} />
+        <Icon className="h-5 w-5 text-white" strokeWidth={2.4} />
       </div>
-      <span className="text-[12px] font-bold text-emerald-950">{label}</span>
+      <span className="text-[12px] font-black text-emerald-950">{label}</span>
     </div>
   );
 
