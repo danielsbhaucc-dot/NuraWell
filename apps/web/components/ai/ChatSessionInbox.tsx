@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { ChevronDown, Loader2, MessageSquarePlus, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { buildChatSessionListTitle } from '../../lib/ai/chat-sessions/session-list-title';
@@ -120,39 +120,19 @@ function AccordionSection({
         aria-expanded={open}
         className="mb-2 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-right transition active:scale-[0.98]"
         style={{
-          background: open
-            ? accent
-              ? `linear-gradient(145deg, ${accent}28 0%, ${accent}14 100%)`
-              : 'rgba(255,255,255,0.08)'
-            : accent
-              ? `linear-gradient(145deg, ${accent}18 0%, transparent 100%)`
-              : 'rgba(255,255,255,0.03)',
-          border: `1px solid ${accent ? `${accent}${open ? '66' : '33'}` : open ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.06)'}`,
-          boxShadow: open && accent ? `0 4px 16px ${accent}22, inset 0 1px 0 rgba(255,255,255,0.07)` : undefined,
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
+          background: open ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
+          border: `1px solid ${open ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.06)'}`,
         }}
       >
         {emoji ? (
-          <span className="text-[18px] leading-none" aria-hidden>{emoji}</span>
+          <span className="text-[16px] leading-none" aria-hidden>{emoji}</span>
         ) : null}
-        <span
-          className="flex-1 text-[15px] font-black"
-          style={{ color: accent ?? '#94a3b8' }}
-        >
-          {label}
-        </span>
-        <span
-          className="rounded-full px-2 py-px text-[11px] font-bold"
-          style={{
-            background: accent ? `${accent}33` : 'rgba(255,255,255,0.08)',
-            color: accent ?? '#64748b',
-          }}
-        >
+        <span className="flex-1 text-[14px] font-bold text-slate-200">{label}</span>
+        <span className="rounded-full bg-white/10 px-2 py-px text-[10px] font-bold text-slate-400">
           {sessions.length}
         </span>
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.22 }} className="shrink-0">
-          <ChevronDown className="h-4 w-4" style={{ color: accent ?? '#64748b' }} aria-hidden />
+          <ChevronDown className="h-4 w-4 text-slate-500" aria-hidden />
         </motion.span>
       </button>
 
@@ -184,6 +164,18 @@ function AccordionSection({
   );
 }
 
+/** שורת גלילה אופקית — mobile-first, לא חוסמת גלילה אנכית */
+function HorizontalChipRow({ children }: { children: ReactNode }) {
+  return (
+    <div
+      className="-mx-3 overflow-x-auto px-3 pb-0.5"
+      style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+    >
+      <div className="flex w-max min-w-full gap-1.5">{children}</div>
+    </div>
+  );
+}
+
 export function ChatSessionInbox({
   sessions,
   loading,
@@ -194,6 +186,7 @@ export function ChatSessionInbox({
 }: ChatSessionInboxProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFolder, setActiveFolder] = useState<InboxFolderId>('all');
+  const [topicsOpen, setTopicsOpen] = useState(false);
 
   const inboxSessions = sessions as InboxSession[];
   const folderChips = useMemo(
@@ -212,6 +205,8 @@ export function ChatSessionInbox({
     [folderChips]
   );
 
+  const activeTopicChip = topicChips.find((c) => c.id === activeFolder);
+
   const groupedSections = useMemo(
     () =>
       activeFolder === 'all' && !trimmedSearch
@@ -229,13 +224,16 @@ export function ChatSessionInbox({
   );
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 space-y-3 px-3 pb-2 pt-1">
+    <div
+      className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-y-contain px-3 pb-3"
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
+      <div className="space-y-2.5 pb-3 pt-2">
         <button
           type="button"
           disabled={startingNew}
           onClick={onStartNewChat}
-          className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold text-emerald-50 transition hover:brightness-[1.03] disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-bold text-emerald-50 transition active:scale-[0.99] disabled:opacity-60"
           style={greenGlassButtonStyle()}
         >
           {startingNew ? (
@@ -254,7 +252,7 @@ export function ChatSessionInbox({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="חיפוש..."
-            className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-2 pl-8 pr-9 text-[13px] text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/35"
+            className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-2.5 pl-8 pr-9 text-[13px] text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/35"
           />
           {searchQuery ? (
             <button
@@ -268,9 +266,8 @@ export function ChatSessionInbox({
           ) : null}
         </div>
 
-        {/* פילטרי זמן — צבעוניים */}
         {!trimmedSearch && timeChips.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
+          <HorizontalChipRow>
             {timeChips.map((chip) => {
               const selected = activeFolder === chip.id;
               const colors =
@@ -281,7 +278,7 @@ export function ChatSessionInbox({
                   key={chip.id}
                   type="button"
                   onClick={() => setActiveFolder(chip.id)}
-                  className="rounded-xl px-3 py-1.5 text-[11px] font-bold transition active:scale-[0.97]"
+                  className="shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition active:scale-[0.97]"
                   style={chipStyle(selected, colors.main, colors.soft, colors.border)}
                 >
                   {chip.label}
@@ -289,70 +286,82 @@ export function ChatSessionInbox({
                 </button>
               );
             })}
-          </div>
+          </HorizontalChipRow>
         ) : null}
 
-        {/* כפתורי נושא — צבעוניים וגדולים */}
         {!trimmedSearch && topicChips.length > 0 ? (
-          <div className="grid grid-cols-3 gap-2.5">
-            {topicChips.map((chip) => {
-              const selected = activeFolder === chip.id;
-              const accent = chip.accent ?? '#6366f1';
-              return (
-                <button
-                  key={chip.id}
-                  type="button"
-                  onClick={() => setActiveFolder(chip.id === activeFolder ? 'all' : chip.id)}
-                  className="relative flex flex-col items-center gap-1.5 overflow-hidden rounded-2xl px-2 py-3.5 text-center transition active:scale-[0.96]"
-                  style={
-                    selected
-                      ? {
-                          background: `linear-gradient(155deg, ${accent} 0%, ${accent}cc 45%, ${accent}99 100%)`,
-                          border: `1.5px solid rgba(255,255,255,0.45)`,
-                          boxShadow: `0 10px 28px ${accent}55, inset 0 1px 0 rgba(255,255,255,0.35)`,
-                        }
-                      : {
-                          background: `linear-gradient(155deg, ${accent}35 0%, ${accent}18 55%, rgba(255,255,255,0.04) 100%)`,
-                          border: `1px solid ${accent}55`,
-                          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.12)`,
-                          backdropFilter: 'blur(14px)',
-                          WebkitBackdropFilter: 'blur(14px)',
-                        }
-                  }
+          <div className="rounded-xl border border-white/8 bg-white/[0.02]">
+            <button
+              type="button"
+              aria-expanded={topicsOpen}
+              onClick={() => setTopicsOpen((v) => !v)}
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-right"
+            >
+              <span className="flex-1 text-[12px] font-bold text-slate-400">
+                לפי נושא
+                {activeTopicChip ? (
+                  <span className="mr-1.5 text-emerald-300/90">
+                    · {TOPIC_EMOJIS[activeTopicChip.id] ?? '💬'} {activeTopicChip.label}
+                  </span>
+                ) : null}
+              </span>
+              <motion.span animate={{ rotate: topicsOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                <ChevronDown className="h-4 w-4 text-slate-500" aria-hidden />
+              </motion.span>
+            </button>
+            <AnimatePresence initial={false}>
+              {topicsOpen ? (
+                <motion.div
+                  key="topics"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden border-t border-white/6"
                 >
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-x-0 top-0 h-1/2 opacity-60"
-                    style={{
-                      background: 'linear-gradient(180deg, rgba(255,255,255,0.22), transparent)',
-                    }}
-                  />
-                  <span className="relative text-[26px] leading-none" aria-hidden>
-                    {TOPIC_EMOJIS[chip.id] ?? '💬'}
-                  </span>
-                  <span
-                    className="relative text-[11px] font-black leading-tight"
-                    style={{ color: selected ? '#fff' : accent }}
-                  >
-                    {chip.label}
-                  </span>
-                  <span
-                    className="relative rounded-full px-2 py-0.5 text-[9px] font-black"
-                    style={{
-                      background: selected ? 'rgba(255,255,255,0.28)' : `${accent}33`,
-                      color: selected ? '#fff' : accent,
-                    }}
-                  >
-                    {chip.count}
-                  </span>
-                </button>
-              );
-            })}
+                  <div className="px-1 py-2">
+                    <HorizontalChipRow>
+                      {topicChips.map((chip) => {
+                        const selected = activeFolder === chip.id;
+                        const accent = chip.accent ?? '#6366f1';
+                        return (
+                          <button
+                            key={chip.id}
+                            type="button"
+                            onClick={() =>
+                              setActiveFolder(chip.id === activeFolder ? 'all' : chip.id)
+                            }
+                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition active:scale-[0.97]"
+                            style={
+                              selected
+                                ? {
+                                    background: `${accent}33`,
+                                    border: `1px solid ${accent}88`,
+                                    color: '#fff',
+                                  }
+                                : {
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    color: accent,
+                                  }
+                            }
+                          >
+                            <span aria-hidden>{TOPIC_EMOJIS[chip.id] ?? '💬'}</span>
+                            {chip.label}
+                            <span className="opacity-70">{chip.count}</span>
+                          </button>
+                        );
+                      })}
+                    </HorizontalChipRow>
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </div>
         ) : null}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="min-h-0 flex-1">
         {loading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-5 w-5 animate-spin text-emerald-400/80" />
