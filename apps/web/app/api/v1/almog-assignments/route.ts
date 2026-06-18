@@ -49,7 +49,6 @@ function countConsecutiveDoneDays(history: AssignmentHistoryEntry[], nowIso: str
     if (entry?.action !== 'done' || !entry.at) continue;
     doneDates.add(entry.at.slice(0, 10));
   }
-  doneDates.add(nowIso.slice(0, 10));
 
   let streak = 0;
   const cursor = new Date(nowIso);
@@ -71,7 +70,7 @@ export async function GET(request: Request) {
     supabase
       .from('almog_assignments')
       .select(
-        'id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id, source_excerpt, relation, parent_assignment_id'
+        'id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id, source_excerpt, relation, parent_assignment_id, history'
       )
       .eq('user_id', user.id)
       .in('status', ['active', 'frozen'])

@@ -22,6 +22,11 @@ import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog
 import type { BlockerCoachState, BlockerProposal } from '@/lib/ai/almog-commitments/types';
 
 type AssignmentRelation = 'standalone' | 'replaces' | 'eases' | 'supports';
+type AssignmentHistoryEntry = {
+  at: string;
+  action: 'done' | 'frozen' | 'dropped' | 'reactivated';
+  note?: string;
+};
 
 type Assignment = {
   id: string;
@@ -37,6 +42,7 @@ type Assignment = {
   source_excerpt: string | null;
   relation: AssignmentRelation | null;
   parent_assignment_id: string | null;
+  history?: AssignmentHistoryEntry[] | null;
 };
 
 type Reminder = {
@@ -94,6 +100,7 @@ const REMINDER_KIND: Record<Reminder['kind'], string> = {
   followup: 'בדיקה קטנה',
   check_progress: 'מעקב',
 };
+const RECOVERY_GOOD_DAYS_TARGET = 3;
 
 function fmt(iso: string | null): string {
   if (!iso) return '—';
@@ -116,6 +123,28 @@ function fmtDay(iso: string | null): string {
   } catch {
     return iso;
   }
+}
+
+function consecutiveDoneDays(assignment: Assignment): number {
+  const entries = Array.isArray(assignment.history) ? assignment.history : [];
+  if (!entries.length) return 0;
+  const doneDates = new Set(
+    entries.filter((e) => e.action === 'done' && e.at).map((e) => e.at.slice(0, 10))
+  );
+  if (!doneDates.size) return 0;
+  if (assignment.last_done_at) doneDates.add(assignment.last_done_at.slice(0, 10));
+  const startIso = assignment.last_done_at ?? null;
+  if (!startIso) return 0;
+
+  let streak = 0;
+  const cursor = new Date(startIso);
+  while (true) {
+    const key = cursor.toISOString().slice(0, 10);
+    if (!doneDates.has(key)) break;
+    streak += 1;
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+  return streak;
 }
 
 function greeting(): string {
@@ -387,7 +416,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                         run(`${rp.blocker.id}-p`, async () => {
                           await postBlockerAction({ action: 'coach_pivot', blocker_id: rp.blocker.id });
                           await postBlockerAction({ action: 'accept', blocker_id: rp.blocker.id });
-                        }) as Promise<void>
+                        })
                       }
                       onAsk={() =>
                         dispatchOpenAlmogChatWithPrefill(
@@ -1254,14 +1283,14 @@ function RecoveryPlanCard({
   index: number;
   busy: boolean;
   onDoneStep: () => void;
-  onPivot: () => Promise<void>;
+  onPivot: () => Promise<unknown>;
   onAsk: () => void;
 }) {
   const { blocker, microStep, original } = plan;
   const doneToday =
     Boolean(microStep.last_done_at) &&
     fmtDay(microStep.last_done_at) === fmtDay(new Date().toISOString());
-  const recoveryProgressDays = Math.min(microStep.done_count, 3);
+  const recoveryProgressDays = Math.min(consecutiveDoneDays(microStep), RECOVERY_GOOD_DAYS_TARGET);
 
   return (
     <motion.li
@@ -1323,7 +1352,7 @@ function RecoveryPlanCard({
           ) : null}
           {microStep.done_count > 0 ? (
             <p className="mt-1 text-[10px] font-bold text-emerald-600">
-              {recoveryProgressDays}/3 ימים טובים בדרך חזרה 🌱
+              {recoveryProgressDays}/{RECOVERY_GOOD_DAYS_TARGET} ימים טובים בדרך חזרה 🌱
             </p>
           ) : null}
         </div>
