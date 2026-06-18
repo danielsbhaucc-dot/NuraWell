@@ -646,7 +646,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     void refreshSessionList();
   };
 
-  const startNewChatSession = async () => {
+  const startNewChatSession = async (prefill?: string) => {
     setSessionActionLoading(true);
     try {
       const created = await createNewChatSession();
@@ -654,7 +654,10 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
       setChatSession(created);
       setMessages([]);
       clearChatInputDraft(created.id);
-      setInput('');
+      setInput(prefill ?? '');
+      if (prefill?.trim()) {
+        writeChatInputDraft(created.id, prefill);
+      }
       setQuotedReply(null);
       setNotificationContext(null);
       notificationIdRef.current = null;
@@ -942,7 +945,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
             <div
               className={`shrink-0 rounded-t-[28px] text-white ${
                 panelView === 'inbox'
-                  ? 'relative overflow-hidden border-b border-white/10'
+                  ? 'relative overflow-hidden'
                   : 'shadow-[0_4px_24px_rgba(6,78,59,0.35)]'
               }`}
               style={
@@ -978,13 +981,20 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                     className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full"
                     style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 68%)' }}
                   />
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-8"
+                    style={{
+                      background: 'linear-gradient(180deg, transparent, #0f172a)',
+                    }}
+                  />
                 </>
               )}
               <div className="relative pt-2 pb-1 flex justify-center">
                 <div className="w-10 h-1 rounded-full bg-white/40" />
               </div>
               {panelView === 'inbox' ? (
-                <div className="relative min-h-[11.5rem] px-4 pb-9 pt-3 sm:min-h-[12.5rem]">
+                <div className="relative min-h-[11.5rem] px-4 pb-6 pt-3 sm:min-h-[12.5rem]">
                   <button
                     type="button"
                     aria-label="סגור"
@@ -1109,14 +1119,16 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
             </div>
 
             {panelView === 'inbox' ? (
-              <div className="min-h-0 flex-1 overflow-hidden bg-[#0f172a]">
+              <div className="min-h-0 flex-1 overflow-hidden">
               <ChatSessionInbox
                 sessions={sessionList}
                 loading={sessionsLoading}
                 activeSessionId={sessionIdRef.current}
                 onSelectSession={(s) => void openSessionThread(s)}
                 onStartNewChat={() => void startNewChatSession()}
+                onStartNewChatWithPrefill={(text) => void startNewChatSession(text)}
                 startingNew={sessionActionLoading}
+                firstName={displayName}
               />
               </div>
             ) : (
