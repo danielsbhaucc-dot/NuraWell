@@ -6,6 +6,7 @@ import { AlmogReplyModal } from '../notifications/AlmogReplyModal';
 
 type AIOverlaysClientProps = {
   userId: string;
+  firstName?: string;
 };
 
 const SYNC_THROTTLE_MS = 10 * 60 * 1000;
@@ -44,11 +45,11 @@ function useReminderSelfHeal() {
   }, []);
 }
 
-export function AIOverlaysClient({ userId }: AIOverlaysClientProps) {
+export function AIOverlaysClient({ userId, firstName }: AIOverlaysClientProps) {
   useReminderSelfHeal();
   return (
     <>
-      <AIChatWidget userId={userId} />
+      <AIChatWidget userId={userId} firstName={firstName} />
       <AlmogReplyModal />
     </>
   );

@@ -13,7 +13,7 @@ import {
   type InboxSession,
   type InboxTimeFolderId,
 } from '../../lib/client/chat-session-inbox-organize';
-import { greenGlassButtonStyle } from '../../lib/client/chat-inbox-colors';
+import { greenGlassButtonStyle, chipStyle, INBOX_TIME_COLORS } from '../../lib/client/chat-inbox-colors';
 import type { ChatSessionListItemClient } from '../../lib/client/chat-session-api';
 
 const TOPIC_EMOJIS: Record<string, string> = {
@@ -268,21 +268,21 @@ export function ChatSessionInbox({
           ) : null}
         </div>
 
-        {/* פילטרי זמן — כפתורים קטנים */}
+        {/* פילטרי זמן — צבעוניים */}
         {!trimmedSearch && timeChips.length > 0 ? (
-          <div className="flex gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {timeChips.map((chip) => {
               const selected = activeFolder === chip.id;
+              const colors =
+                INBOX_TIME_COLORS[chip.id as keyof typeof INBOX_TIME_COLORS] ??
+                INBOX_TIME_COLORS.all;
               return (
                 <button
                   key={chip.id}
                   type="button"
                   onClick={() => setActiveFolder(chip.id)}
-                  className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
-                    selected
-                      ? 'bg-emerald-500/20 text-emerald-100 ring-1 ring-emerald-400/40'
-                      : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
-                  }`}
+                  className="rounded-xl px-3 py-1.5 text-[11px] font-bold transition active:scale-[0.97]"
+                  style={chipStyle(selected, colors.main, colors.soft, colors.border)}
                 >
                   {chip.label}
                   {chip.count > 0 ? ` · ${chip.count}` : ''}
@@ -294,7 +294,7 @@ export function ChatSessionInbox({
 
         {/* כפתורי נושא — צבעוניים וגדולים */}
         {!trimmedSearch && topicChips.length > 0 ? (
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2.5">
             {topicChips.map((chip) => {
               const selected = activeFolder === chip.id;
               const accent = chip.accent ?? '#6366f1';
@@ -303,37 +303,43 @@ export function ChatSessionInbox({
                   key={chip.id}
                   type="button"
                   onClick={() => setActiveFolder(chip.id === activeFolder ? 'all' : chip.id)}
-                  className="flex flex-col items-center gap-1 rounded-2xl px-2 py-3 text-center transition active:scale-[0.97]"
+                  className="relative flex flex-col items-center gap-1.5 overflow-hidden rounded-2xl px-2 py-3.5 text-center transition active:scale-[0.96]"
                   style={
                     selected
                       ? {
-                          background: `linear-gradient(145deg, ${accent}40, ${accent}22)`,
-                          border: `1.5px solid ${accent}88`,
-                          boxShadow: `0 6px 20px ${accent}30, inset 0 1px 0 rgba(255,255,255,0.12)`,
-                          backdropFilter: 'blur(12px)',
-                          WebkitBackdropFilter: 'blur(12px)',
+                          background: `linear-gradient(155deg, ${accent} 0%, ${accent}cc 45%, ${accent}99 100%)`,
+                          border: `1.5px solid rgba(255,255,255,0.45)`,
+                          boxShadow: `0 10px 28px ${accent}55, inset 0 1px 0 rgba(255,255,255,0.35)`,
                         }
                       : {
-                          background: `linear-gradient(145deg, ${accent}18, ${accent}08)`,
-                          border: `1px solid ${accent}30`,
-                          backdropFilter: 'blur(12px)',
-                          WebkitBackdropFilter: 'blur(12px)',
+                          background: `linear-gradient(155deg, ${accent}35 0%, ${accent}18 55%, rgba(255,255,255,0.04) 100%)`,
+                          border: `1px solid ${accent}55`,
+                          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.12)`,
+                          backdropFilter: 'blur(14px)',
+                          WebkitBackdropFilter: 'blur(14px)',
                         }
                   }
                 >
-                  <span className="text-[22px] leading-none" aria-hidden>
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 top-0 h-1/2 opacity-60"
+                    style={{
+                      background: 'linear-gradient(180deg, rgba(255,255,255,0.22), transparent)',
+                    }}
+                  />
+                  <span className="relative text-[26px] leading-none" aria-hidden>
                     {TOPIC_EMOJIS[chip.id] ?? '💬'}
                   </span>
                   <span
-                    className="text-[11px] font-bold leading-tight"
+                    className="relative text-[11px] font-black leading-tight"
                     style={{ color: selected ? '#fff' : accent }}
                   >
                     {chip.label}
                   </span>
                   <span
-                    className="rounded-full px-1.5 py-px text-[9px] font-black"
+                    className="relative rounded-full px-2 py-0.5 text-[9px] font-black"
                     style={{
-                      background: selected ? `${accent}55` : `${accent}22`,
+                      background: selected ? 'rgba(255,255,255,0.28)' : `${accent}33`,
                       color: selected ? '#fff' : accent,
                     }}
                   >

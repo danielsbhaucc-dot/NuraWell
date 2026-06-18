@@ -59,6 +59,9 @@ export default async function DashboardLayout({
     meal_schedule: profile?.meal_schedule ?? null,
   };
 
+  const fullName = (profile?.full_name ?? user.user_metadata?.full_name ?? '') as string;
+  const firstName = fullName.trim().split(/\s+/)[0] || '';
+
   return (
     <NotificationsProvider userId={user.id} user={user}>
       <ProgressReportProvider
@@ -77,7 +80,7 @@ export default async function DashboardLayout({
               {children}
             </main>
             <BottomNav />
-            <AIOverlaysClient userId={user.id} />
+            <AIOverlaysClient userId={user.id} firstName={firstName} />
           </div>
         </ActionHubProvider>
       </ProgressReportProvider>
