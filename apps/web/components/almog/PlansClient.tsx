@@ -753,7 +753,7 @@ function Hero({
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="relative z-10 w-full overflow-hidden rounded-b-[40px] pb-14 pt-14"
+      className="relative z-10 w-full overflow-hidden rounded-b-[40px] pb-16 pt-16"
       style={{
         background:
           'linear-gradient(155deg, #034d3a 0%, #059669 35%, #0d9488 65%, #10b981 85%, #34d399 100%)',
@@ -841,13 +841,20 @@ function Hero({
                 className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-bold text-white"
                 style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)' }}
               >
-                <Sparkles className="h-3.5 w-3.5" />
-                {greeting()}{name ? `, ${name}` : ''}
+                {name ? (
+                  <>
+                    שלום {name} <span aria-hidden>👋</span>
+                  </>
+                ) : (
+                  <>
+                    {greeting()} <span aria-hidden>👋</span>
+                  </>
+                )}
               </span>
               <LivePill live={live} pulsing={pulsing} />
             </div>
             <h1 className="mt-3 text-[40px] font-black leading-[1.0] text-white drop-shadow-md">
-              התוכנית שלנו
+              התוכנית שלי
             </h1>
           </div>
         </div>
@@ -857,26 +864,37 @@ function Hero({
         </p>
 
         <div className="mt-8 grid grid-cols-3 gap-3">
-          <HeroStat icon={Sparkles} value={active} label="דברים לעשות" />
-          <HeroStat icon={Bell} value={reminders} label="תזכורות" />
-          <HeroStat icon={MessageCircle} value={blockers} label="תקועים?" />
+          <HeroStat icon={Sparkles} value={active} label="דברים לעשות" tint="emerald" />
+          <HeroStat icon={Bell} value={reminders} label="תזכורות" tint="amber" />
+          <HeroStat icon={MessageCircle} value={blockers} label="תקועים?" tint="rose" />
         </div>
       </div>
     </motion.section>
   );
 }
 
-function HeroStat({ icon: Icon, value, label }: { icon: typeof Sparkles; value: number; label: string }) {
+function HeroStat({
+  icon: Icon,
+  value,
+  label,
+  tint,
+}: {
+  icon: typeof Sparkles;
+  value: number;
+  label: string;
+  tint: Tint;
+}) {
+  const t = TINT[tint];
   return (
     <motion.div
       whileTap={{ scale: 0.96 }}
       className="relative overflow-hidden rounded-2xl px-2 py-4 text-center"
       style={{
-        background: 'linear-gradient(165deg, rgba(255,255,255,0.32), rgba(255,255,255,0.12))',
+        background: `linear-gradient(165deg, rgba(${t.rgb},0.42) 0%, rgba(${t.rgb},0.22) 55%, rgba(255,255,255,0.14) 100%)`,
         backdropFilter: 'blur(16px) saturate(170%)',
         WebkitBackdropFilter: 'blur(16px) saturate(170%)',
-        border: '1px solid rgba(255,255,255,0.5)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6), 0 12px 32px rgba(0,0,0,0.16)',
+        border: `1px solid rgba(${t.rgb},0.55)`,
+        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.55), 0 12px 32px rgba(${t.rgb},0.28)`,
       }}
     >
       <span
@@ -884,9 +902,9 @@ function HeroStat({ icon: Icon, value, label }: { icon: typeof Sparkles; value: 
         className="pointer-events-none absolute inset-x-0 top-0 h-1/2"
         style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.38), transparent)' }}
       />
-      <Icon className="relative mx-auto mb-1.5 h-5 w-5 text-emerald-50/95" aria-hidden />
+      <Icon className="relative mx-auto mb-1.5 h-5 w-5 text-white/95" aria-hidden />
       <p className="relative text-[30px] font-black leading-none text-white drop-shadow-md">{value}</p>
-      <p className="relative mt-1.5 text-[11px] font-semibold text-emerald-50/90">{label}</p>
+      <p className="relative mt-1.5 text-[11px] font-semibold text-white/90">{label}</p>
     </motion.div>
   );
 }
@@ -1021,7 +1039,7 @@ function Section({
   return (
     <section className="space-y-2.5">
       <SectionDivider tint={tint} />
-      {/* כותרת לחיצה — זכוכית כהה בסגנון iOS */}
+      {/* כותרת לחיצה — זכוכית בהירה שמשתלבת עם הרקע */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -1029,45 +1047,44 @@ function Section({
         className="relative flex w-full items-center gap-3 overflow-hidden rounded-2xl px-4 py-3.5 text-right transition active:scale-[0.98]"
         style={{
           background: open
-            ? `linear-gradient(145deg, rgba(15,23,42,0.82) 0%, rgba(${t.rgb},0.28) 100%)`
-            : `linear-gradient(145deg, rgba(15,23,42,0.72) 0%, rgba(${t.rgb},0.18) 100%)`,
-          border: `1px solid rgba(${t.rgb},${open ? 0.55 : 0.32})`,
+            ? `linear-gradient(145deg, rgba(255,255,255,0.88) 0%, rgba(${t.rgb},0.12) 100%)`
+            : `linear-gradient(145deg, rgba(255,255,255,0.72) 0%, rgba(${t.rgb},0.08) 100%)`,
+          border: `1px solid rgba(${t.rgb},${open ? 0.35 : 0.22})`,
           boxShadow: open
-            ? `0 10px 32px rgba(${t.rgb},0.22), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.18)`
-            : `0 4px 18px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.10)`,
+            ? `0 8px 28px rgba(${t.rgb},0.14), inset 0 1px 0 rgba(255,255,255,0.85)`
+            : `0 4px 16px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.75)`,
           backdropFilter: 'blur(20px) saturate(180%)',
           WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         }}
       >
-        {/* specular highlight — מדמה משטח זכוכית על הכפתור */}
         <span
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-2xl"
-          style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 100%)' }}
+          style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 100%)' }}
         />
         <span
           className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
           style={{
             background: `linear-gradient(140deg, rgba(${t.rgb},1), rgba(${t.rgb},0.72))`,
-            boxShadow: `0 4px 16px rgba(${t.rgb},0.5), inset 0 1px 0 rgba(255,255,255,0.35)`,
+            boxShadow: `0 4px 16px rgba(${t.rgb},0.4), inset 0 1px 0 rgba(255,255,255,0.35)`,
           }}
         >
           <Icon className="h-5 w-5 text-white" aria-hidden />
         </span>
-        <h2 className="flex-1 text-[18px] font-black text-white drop-shadow-sm">{title}</h2>
+        <h2 className="relative flex-1 text-[18px] font-black text-slate-800">{title}</h2>
         {typeof count === 'number' && count > 0 ? (
           <span
-            className="flex h-[24px] min-w-[24px] items-center justify-center rounded-full px-1.5 text-[12px] font-black text-white"
+            className="relative flex h-[24px] min-w-[24px] items-center justify-center rounded-full px-1.5 text-[12px] font-black text-white"
             style={{
-              background: `rgba(${t.rgb},0.9)`,
-              boxShadow: `0 2px 8px rgba(${t.rgb},0.4)`,
+              background: `rgba(${t.rgb},0.92)`,
+              boxShadow: `0 2px 8px rgba(${t.rgb},0.35)`,
             }}
           >
             {count}
           </span>
         ) : null}
-        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.25 }} className="shrink-0">
-          <ChevronDown className="h-5 w-5 text-white/70" aria-hidden />
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.25 }} className="relative shrink-0">
+          <ChevronDown className="h-5 w-5 text-slate-500" aria-hidden />
         </motion.span>
       </button>
 
@@ -1219,32 +1236,48 @@ function AssignmentCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
       whileTap={{ scale: 0.992 }}
-      className="relative overflow-hidden rounded-[24px] p-3"
-      style={{ ...glassStyle('emerald'), ...(isEasedOriginal ? { opacity: 0.82 } : {}) }}
+      className="relative overflow-hidden rounded-[22px]"
+      style={{
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(236,253,245,0.55) 100%)',
+        border: '1px solid rgba(16,185,129,0.18)',
+        boxShadow: '0 8px 24px rgba(16,185,129,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+        ...(isEasedOriginal ? { opacity: 0.82 } : {}),
+      }}
     >
-      <GlassSheen />
-      <div className="relative z-[1]">
+      <span
+        aria-hidden
+        className="absolute inset-y-0 right-0 w-1 rounded-r-[22px]"
+        style={{ background: `linear-gradient(180deg, rgba(${TINT.emerald.rgb},0.9), rgba(${TINT.emerald.rgb},0.45))` }}
+      />
+      <div className="relative z-[1] p-3.5 pr-4">
         {/* שורה ראשית — קומפקטית */}
-        <div className="flex items-center gap-2.5">
-          <NumBadge n={index} rgb={TINT.emerald.rgb} />
+        <div className="flex items-start gap-3">
+          <span
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[13px] font-black text-white"
+            style={{
+              background: `linear-gradient(145deg, rgba(${TINT.emerald.rgb},1), rgba(${TINT.emerald.rgb},0.75))`,
+              boxShadow: `0 4px 12px rgba(${TINT.emerald.rgb},0.32)`,
+            }}
+          >
+            {index}
+          </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-black leading-snug text-slate-900">{assignment.title}</p>
-            <div className="mt-0.5 flex flex-wrap items-center gap-1">
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-1.5 py-px text-[9px] font-bold text-emerald-700">
+            <p className="text-[15px] font-black leading-snug text-slate-800">{assignment.title}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-100/90 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
                 {isRecurring ? <Repeat className="h-2.5 w-2.5" /> : <Sparkles className="h-2.5 w-2.5" />}
                 {SCHEDULE_LABEL[assignment.schedule]}
               </span>
               {relationMeta ? (
-                <span className="rounded-full bg-indigo-100 px-1.5 py-px text-[9px] font-bold text-indigo-700">
+                <span className="rounded-full bg-indigo-100/90 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
                   {relationMeta.emoji} {relationMeta.label}
                 </span>
               ) : null}
               {assignment.done_count > 0 ? (
-                <span className="text-[9px] font-bold text-emerald-600/80">✓{assignment.done_count}</span>
+                <span className="text-[10px] font-bold text-emerald-600/80">✓{assignment.done_count}</span>
               ) : null}
             </div>
           </div>
-          {/* כפתור פתיחה לפרטים — חץ קטן */}
           {(assignment.reason || assignment.detail) && !isEasedOriginal ? (
             <button
               type="button"
@@ -1293,17 +1326,17 @@ function AssignmentCard({
             הקלנו על זה זמנית — מתמקדים בצעד קטן יותר. ברגע שתסמן אותו, נחזיר את זה בהדרגה. 🪶
           </div>
         ) : (
-          <div className="mt-2.5 flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-2">
             <button
               type="button"
               disabled={busy || doneToday}
               onClick={onDone}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl px-3 py-2 text-[13px] font-black text-white transition active:scale-95 disabled:opacity-60"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-[13px] font-black text-white transition active:scale-95 disabled:opacity-60"
               style={{
                 background: doneToday
                   ? 'linear-gradient(135deg, #34d399, #059669)'
                   : 'linear-gradient(135deg, #059669, #10b981)',
-                boxShadow: '0 6px 16px rgba(16,185,129,0.32)',
+                boxShadow: '0 6px 16px rgba(16,185,129,0.28)',
               }}
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
@@ -1313,7 +1346,7 @@ function AssignmentCard({
               type="button"
               disabled={busy}
               onClick={onDrop}
-              className="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-[11.5px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-50"
+              className="rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2.5 text-[11.5px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-50"
             >
               לא מתאים
             </button>

@@ -14,7 +14,8 @@ import {
 import { NuraWellChatTransport } from '../../lib/client/nurawell-chat-transport';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
-import { useLoginBackground } from '../../lib/client/useLoginBackground';
+import { useChatBackground } from '../../lib/client/useChatBackground';
+import { getPersonalGreeting } from '../../lib/time/greeting';
 import {
   OPEN_ALMOG_CHAT_EVENT,
   type OpenAlmogChatDetail,
@@ -367,11 +368,14 @@ function ChatSessionClosingOverlay({ visible }: { visible: boolean }) {
 
 export interface AIChatWidgetProps {
   userId: string;
+  firstName?: string;
 }
 
-export function AIChatWidget({ userId }: AIChatWidgetProps) {
+export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const { avatarUrl: avatarSrc } = useAlmogAvatarUrl();
-  const { url: bgUrl, hasPhoto } = useLoginBackground();
+  const { url: bgUrl, hasPhoto } = useChatBackground();
+  const greeting = getPersonalGreeting();
+  const displayName = firstName?.trim() || '';
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [online, setOnline] = useState(true);
@@ -956,10 +960,23 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                     className="absolute inset-0"
                     style={{
                       background: hasPhoto && bgUrl
-                        ? 'linear-gradient(180deg, rgba(2,6,23,0.58) 0%, rgba(2,6,23,0.88) 100%)'
-                        : 'linear-gradient(160deg, #064e3b 0%, #047857 45%, #10b981 100%)',
+                        ? 'linear-gradient(180deg, rgba(2,6,23,0.42) 0%, rgba(2,6,23,0.78) 55%, rgba(2,6,23,0.92) 100%)'
+                        : 'linear-gradient(155deg, #034d3a 0%, #059669 35%, #0d9488 65%, #10b981 85%, #34d399 100%)',
                     }}
                     aria-hidden
+                  />
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 top-0 h-2/3"
+                    style={{
+                      background:
+                        'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 100%)',
+                    }}
+                  />
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full"
+                    style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 68%)' }}
                   />
                 </>
               )}
@@ -967,20 +984,57 @@ export function AIChatWidget({ userId }: AIChatWidgetProps) {
                 <div className="w-10 h-1 rounded-full bg-white/40" />
               </div>
               {panelView === 'inbox' ? (
-                <div className="relative flex items-center justify-between px-4 pb-4 pt-1">
-                  <span className="w-8" aria-hidden />
-                  <div className="text-center">
-                    <p className="text-[17px] font-bold tracking-tight text-white drop-shadow-sm">שיחות עם אלמוג</p>
-                    <p className="mt-0.5 text-[11px] text-white/60">המנטור האישי שלך</p>
+                <div className="relative px-4 pb-7 pt-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[15px] font-bold text-emerald-50/90">
+                        {displayName ? (
+                          <>
+                            שלום {displayName} <span aria-hidden>👋</span>
+                          </>
+                        ) : (
+                          <>
+                            שלום <span aria-hidden>👋</span>
+                          </>
+                        )}
+                      </p>
+                      <h2 className="mt-2 text-[28px] font-black leading-[1.05] tracking-tight text-white drop-shadow-md">
+                        שיחות עם אלמוג
+                      </h2>
+                      <p className="mt-2 max-w-[18rem] text-[13px] leading-relaxed text-emerald-50/85">
+                        {greeting.occasionGreeting
+                          ? `${greeting.occasionGreeting} · המנטור האישי שלך`
+                          : 'המנטור האישי שלך — כאן לכל שאלה, צעד קטן, או רגע שצריך מישהו.'}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-center gap-2">
+                      <button
+                        type="button"
+                        aria-label="סגור"
+                        onClick={() => setOpen(false)}
+                        className="rounded-lg p-1.5 hover:bg-white/10"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                      <div
+                        className="rounded-full p-1"
+                        style={{
+                          background: 'linear-gradient(140deg, rgba(255,255,255,0.55), rgba(255,255,255,0.12))',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.22)',
+                        }}
+                      >
+                        <img
+                          src={avatarSrc}
+                          alt="אלמוג"
+                          className="h-16 w-16 rounded-full object-cover ring-2 ring-white/50"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                          }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    aria-label="סגור"
-                    onClick={() => setOpen(false)}
-                    className="rounded-lg p-1.5 hover:bg-white/10"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
                 </div>
               ) : (
                 <>

@@ -1,21 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, Globe, LogIn, Sparkles, UserPlus, type LucideIcon } from 'lucide-react';
+import { ChevronDown, Globe, LogIn, MessageCircle, Sparkles, UserPlus, type LucideIcon } from 'lucide-react';
 import { SiteSettingsForm } from '@/components/admin/SiteSettingsForm';
 import { AdminRegisterBackgroundPanel } from '@/components/admin/AdminRegisterBackgroundPanel';
 import { AdminLoginBackgroundPanel } from '@/components/admin/AdminLoginBackgroundPanel';
+import { AdminChatBackgroundPanel } from '@/components/admin/AdminChatBackgroundPanel';
 import { AdminComingSoonPanel } from '@/components/admin/AdminComingSoonPanel';
 import { opsGlassBtnClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
 
-type TabKey = 'general' | 'coming-soon' | 'register' | 'login';
+type TabKey = 'general' | 'coming-soon' | 'register' | 'login' | 'chat';
 
 const TABS: { key: TabKey; label: string; icon: LucideIcon; hint: string }[] = [
   { key: 'general', label: 'כללי', icon: Globe, hint: 'כתובת האפליקציה הציבורית' },
   { key: 'coming-soon', label: 'מסך בקרוב', icon: Sparkles, hint: 'שיר, מילים ותצוגה' },
   { key: 'register', label: 'רקע הרשמה', icon: UserPlus, hint: 'תמונת רקע לדף ההרשמה' },
   { key: 'login', label: 'רקע התחברות', icon: LogIn, hint: 'תמונת רקע לדף ההתחברות' },
+  { key: 'chat', label: 'רקע צ׳אט', icon: MessageCircle, hint: 'תמונת רקע ב-HERO של צ׳אט אלמוג' },
 ];
 
 export function SiteSettingsTabs() {
@@ -79,6 +81,7 @@ export function SiteSettingsTabs() {
             {tab === 'coming-soon' ? <AdminComingSoonPanel /> : null}
             {tab === 'register' ? <AdminRegisterBackgroundPanel /> : null}
             {tab === 'login' ? <AdminLoginBackgroundPanel /> : null}
+            {tab === 'chat' ? <AdminChatBackgroundPanel /> : null}
           </div>
         ) : null}
       </div>

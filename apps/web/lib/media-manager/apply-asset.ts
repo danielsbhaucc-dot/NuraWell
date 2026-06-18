@@ -73,3 +73,12 @@ export async function applyRegisterBackgroundFromAsset(asset: MediaAsset): Promi
     body: JSON.stringify({ source_object_key: asset.object_key, credit: asset.credit }),
   });
 }
+
+export async function applyChatBackgroundFromAsset(asset: MediaAsset): Promise<Response> {
+  return fetch('/api/v1/admin/chat-background', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source_object_key: asset.object_key, credit: asset.credit }),
+  });
+}
