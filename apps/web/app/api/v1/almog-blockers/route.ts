@@ -4,6 +4,7 @@ import { requireApiSession } from '../../../../lib/api/route-guards';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import {
   defaultInterventionReminderIso,
+  israelMorningIso,
   fetchInterventionMemory,
   generateBlockerOptions,
   generateBlockerPivot,
@@ -136,6 +137,7 @@ async function createFromProposal(
   const taskKey = dedupeKey(`blk|${blocker.id}|${proposal.micro_step}`);
   const originalId = relatesToAssignmentId ?? blocker.related_assignment_id;
   const relation = originalId ? proposal.relation : 'standalone';
+  const schedule = relation === 'eases' ? 'daily' : 'one_time';
 
   let assignmentId: string;
   const { data: existingAssign } = await admin
@@ -149,7 +151,7 @@ async function createFromProposal(
     assignmentId = (existingAssign as { id: string }).id;
     await admin
       .from('almog_assignments')
-      .update({ status: 'active', parent_assignment_id: originalId ?? null, relation })
+      .update({ status: 'active', parent_assignment_id: originalId ?? null, relation, schedule })
       .eq('id', assignmentId)
       .eq('user_id', userId);
   } else {
@@ -161,7 +163,7 @@ async function createFromProposal(
         reason: null,
         detail: proposal.label,
         status: 'active',
-        schedule: 'one_time',
+        schedule,
         given_at: nowIso,
         parent_assignment_id: originalId ?? null,
         relation,
@@ -382,6 +384,31 @@ export async function POST(request: Request) {
         })
         .eq('id', blocker.id)
         .eq('user_id', user.id);
+
+      // תזכורת מעקב שנייה ב-+48 שעות (check_progress) — אלמוג בודק ביוזמתו
+      // שהתוכנית החדשה עובדת, בנוסף על ה-followup שנוצר בתוך createFromProposal.
+      const fire48h = israelMorningIso(now, 2);
+      const remKey48h = `blk-cp48|${blocker.id}|${fire48h.slice(0, 10)}`;
+      const { data: existing48h } = await admin
+        .from('scheduled_reminders')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('dedupe_key', remKey48h)
+        .maybeSingle();
+      if (!existing48h) {
+        await admin.from('scheduled_reminders').insert({
+          user_id: user.id,
+          fire_at: fire48h,
+          kind: 'check_progress',
+          title: 'מעקב קצר מאלמוג 🧭',
+          body: `כבר יומיים מאז שסיכמנו על "${proposal.micro_step.length > 60 ? proposal.micro_step.slice(0, 60) + '…' : proposal.micro_step}" — מה השתנה? גם התקדמות קטנה נחשבת.`,
+          blocker_id: blocker.id,
+          assignment_id: result.assignment_id,
+          status: 'pending',
+          dedupe_key: remKey48h,
+          metadata: { source: 'coach_accept_followup_48h', experiment_hours: 48 },
+        });
+      }
 
       return NextResponse.json({
         ok: true,
