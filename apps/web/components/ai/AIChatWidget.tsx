@@ -246,7 +246,7 @@ function renderAlmogMessage(text: string): ReactNode {
         return (
           <div
             key={`l-${blockIndex}`}
-            className="rounded-2xl border border-white/25 bg-slate-900/30 px-3 py-2"
+            className="rounded-xl border border-white/20 bg-white/10 px-3 py-2"
             style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)' }}
           >
             <ul className="m-0 list-none space-y-2 p-0">
@@ -330,11 +330,11 @@ const ALMOG_STATUS_THRESHOLDS_MS: readonly number[] = [1500, 4500, 9000, 15000];
 function WhatsAppQuote({ author, text }: { author: string; text: string }) {
   return (
     <div
-      className="mb-2 rounded-xl bg-black/25 px-2.5 py-2 text-[13px] leading-snug"
-      style={{ borderInlineStart: '3px solid rgba(52,211,153,0.75)' }}
+      className="mb-2 rounded-xl bg-black/20 px-2.5 py-2 text-[13px] leading-snug backdrop-blur-sm"
+      style={{ borderInlineStart: '3px solid rgba(52,211,153,0.85)' }}
     >
-      <p className="text-[10px] font-bold text-emerald-200/90">{author}</p>
-      <p className="line-clamp-4 whitespace-pre-wrap text-emerald-50/90">{text}</p>
+      <p className="text-[10px] font-bold text-emerald-200">{author}</p>
+      <p className="line-clamp-4 whitespace-pre-wrap text-slate-200/95">{text}</p>
     </div>
   );
 }
@@ -946,13 +946,8 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
               className={`shrink-0 rounded-t-[28px] text-white ${
                 panelView === 'inbox'
                   ? 'relative overflow-hidden'
-                  : 'shadow-[0_4px_24px_rgba(6,78,59,0.35)]'
+                  : 'relative overflow-hidden'
               }`}
-              style={
-                panelView === 'thread'
-                  ? { background: 'linear-gradient(160deg, #064e3b 0%, #047857 45%, #10b981 100%)' }
-                  : undefined
-              }
             >
               {panelView === 'inbox' && (
                 <>
@@ -1042,76 +1037,105 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center justify-between gap-2 px-3 pb-2">
-                    <button
-                      type="button"
-                      aria-label="חזרה לרשימת שיחות"
-                      onClick={goToInbox}
-                      className="shrink-0 rounded-lg p-1.5 hover:bg-white/10"
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </button>
-                    <div className="flex min-w-0 flex-1 items-center gap-2">
-                      <img
-                        src={avatarSrc}
-                        alt="אלמוג"
-                        className="h-9 w-9 shrink-0 rounded-lg object-cover border border-white/35"
-                        onError={(e) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
-                        }}
-                      />
-                      <div className="min-w-0 text-right">
-                        <p className="text-base font-bold leading-tight">אלמוג</p>
-                        <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-white/85">
-                          {showLoading ? (
-                            <>
-                              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-200" />
-                              {isThinking
-                                ? `${almogStatusText}${typingEllipsis(typingStep)}`
-                                : `מקליד${typingEllipsis(typingStep)}`}
-                            </>
-                          ) : online ? (
-                            <>
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-200" />
-                              {isSessionClosed ? 'שיחה נסגרה' : 'זמין'}
-                            </>
-                          ) : (
-                            <>
-                              <span className="h-1.5 w-1.5 rounded-full bg-red-300" />
-                              בלי חיבור
-                            </>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-0.5">
-                      {!isSessionClosed && messages.length > 0 ? (
-                        <button
-                          type="button"
-                          aria-label="סיום שיחה"
-                          disabled={sessionActionLoading || showLoading || isClosing}
-                          onClick={() => void handleEndChatSession()}
-                          className="rounded-lg p-1.5 hover:bg-white/10 disabled:opacity-50"
-                        >
-                          {isClosing ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <LogOut className="h-4 w-4" />
-                          )}
-                        </button>
-                      ) : null}
+                  <div
+                    className="relative overflow-hidden px-3 pb-3 pt-1"
+                    style={{
+                      background:
+                        'linear-gradient(155deg, #034d3a 0%, #059669 40%, #0d9488 70%, #10b981 100%)',
+                    }}
+                  >
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-x-0 top-0 h-2/3"
+                      style={{
+                        background:
+                          'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%)',
+                      }}
+                    />
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-x-0 bottom-0 h-6"
+                      style={{ background: 'linear-gradient(180deg, transparent, #0f172a)' }}
+                    />
+                    <div className="relative flex items-center gap-2">
                       <button
                         type="button"
-                        aria-label="סגור"
-                        onClick={() => {
-                          if (!notifyWhenReady) stop();
-                          setOpen(false);
-                        }}
-                        className="rounded-lg p-1.5 hover:bg-white/10"
+                        aria-label="חזרה לרשימת שיחות"
+                        onClick={goToInbox}
+                        className="shrink-0 rounded-xl p-2 hover:bg-white/10 active:scale-95"
                       >
-                        <X className="h-4 w-4" />
+                        <ChevronRight className="h-5 w-5" />
                       </button>
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <div
+                          className="shrink-0 rounded-full p-0.5"
+                          style={{
+                            background: 'linear-gradient(140deg, rgba(255,255,255,0.55), rgba(255,255,255,0.15))',
+                            boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+                          }}
+                        >
+                          <img
+                            src={avatarSrc}
+                            alt="אלמוג"
+                            className="h-11 w-11 rounded-full object-cover ring-2 ring-white/45"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                            }}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1 text-right">
+                          <p className="text-[17px] font-black leading-tight text-white drop-shadow-sm">אלמוג</p>
+                          <p className="mt-0.5 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-50">
+                            {showLoading ? (
+                              <>
+                                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-200" />
+                                {isThinking
+                                  ? `${almogStatusText}${typingEllipsis(typingStep)}`
+                                  : `מקליד${typingEllipsis(typingStep)}`}
+                              </>
+                            ) : online ? (
+                              <>
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-200 shadow-[0_0_6px_rgba(167,243,208,0.8)]" />
+                                {isSessionClosed ? 'שיחה נסגרה' : 'זמין עכשיו'}
+                              </>
+                            ) : (
+                              <>
+                                <span className="h-1.5 w-1.5 rounded-full bg-red-300" />
+                                בלי חיבור
+                              </>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        {!isSessionClosed && messages.length > 0 ? (
+                          <button
+                            type="button"
+                            aria-label="סיום שיחה"
+                            disabled={sessionActionLoading || showLoading || isClosing}
+                            onClick={() => void handleEndChatSession()}
+                            className="rounded-xl p-2 hover:bg-white/10 active:scale-95 disabled:opacity-50"
+                          >
+                            {isClosing ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <LogOut className="h-4 w-4" />
+                            )}
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          aria-label="סגור"
+                          onClick={() => {
+                            if (!notifyWhenReady) stop();
+                            setOpen(false);
+                          }}
+                          className="rounded-xl p-2 hover:bg-white/10 active:scale-95"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </>
@@ -1134,26 +1158,71 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
             ) : (
             <>
             <div
-              className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-[#0f172a] px-3 py-3 text-right"
-              style={{ WebkitOverflowScrolling: 'touch' }}
+              className="relative min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-4 text-right"
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                background:
+                  'linear-gradient(180deg, #0f172a 0%, #111827 45%, #0c1222 100%)',
+              }}
             >
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 opacity-[0.04]"
+                style={{
+                  backgroundImage:
+                    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='2' cy='2' r='1' fill='%23fff'/%3E%3C/svg%3E\")",
+                }}
+              />
+              <div className="relative space-y-3">
               {loadingThread && (
-                <div className="flex justify-center py-8">
+                <div className="flex justify-center py-10">
                   <Loader2 className="h-6 w-6 animate-spin text-emerald-300/80" />
                 </div>
               )}
               {!loadingThread && notificationContext && !quotedReply && (
-                <div className="flex justify-end">
-                  <div className="max-w-[92%] rounded-3xl border border-emerald-400/30 bg-emerald-500/20 px-4 py-3 text-[15px] leading-relaxed text-emerald-50 shadow-sm">
-                    <p className="mb-1 text-[11px] font-bold text-emerald-200/90">מאלמוג · התראה</p>
+                <div className="flex justify-end items-end gap-2">
+                  <div
+                    className="max-w-[88%] rounded-[20px] rounded-bl-md px-4 py-3 text-[15px] leading-relaxed text-white shadow-lg"
+                    style={{
+                      background: 'linear-gradient(145deg, #059669 0%, #10b981 100%)',
+                      border: '1px solid rgba(255,255,255,0.22)',
+                      boxShadow: '0 8px 24px rgba(16,185,129,0.28)',
+                    }}
+                  >
+                    <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-100/90">
+                      מאלמוג · התראה
+                    </p>
                     <p className="whitespace-pre-wrap">{notificationContext.mentorMessage}</p>
                   </div>
+                  <img
+                    src={avatarSrc}
+                    alt=""
+                    aria-hidden
+                    className="h-7 w-7 shrink-0 rounded-full object-cover ring-2 ring-emerald-400/40"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                    }}
+                  />
                 </div>
               )}
-              {messages.length === 0 && !notificationContext && (
-                <p className="px-1 py-2 text-[13px] leading-relaxed text-slate-400">
-                  כתוב מה עובר עליך — ונבנה יחד צעד קטן להיום.
-                </p>
+              {messages.length === 0 && !notificationContext && !loadingThread && (
+                <div className="flex flex-col items-center px-4 py-8 text-center">
+                  <img
+                    src={avatarSrc}
+                    alt=""
+                    aria-hidden
+                    className="h-16 w-16 rounded-full object-cover ring-2 ring-emerald-400/35"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                    }}
+                  />
+                  <p className="mt-4 text-[15px] font-bold text-slate-200">אני כאן איתך</p>
+                  <p className="mt-1.5 max-w-[16rem] text-[13px] leading-relaxed text-slate-400">
+                    כתוב מה עובר עליך — ונבנה יחד צעד קטן, בקצב שלך.
+                  </p>
+                </div>
               )}
               {messages.length === 0 && notificationContext && (
                 <p className="text-center text-xs text-slate-400">כתוב את תשובתך למטה — אלמוג ימשיך משם</p>
@@ -1179,28 +1248,54 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                   quotedReply != null &&
                   text.trim() === quotedReply.userReply.trim();
                 return (
-                  <div key={msg.id ?? `${i}-${text.slice(0, 16)}`} className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}>
-                    <div
-                      className={`max-w-[85%] rounded-2xl px-3 py-2 text-[14px] leading-relaxed ${
-                        isUser
-                          ? 'border border-white/12 bg-slate-800/70 text-slate-100'
-                          : 'border border-emerald-500/25 bg-emerald-600/90 text-white'
-                      }`}
-                    >
-                      {isUser ? (
-                        <>
-                          {showQuote && quotedReply && (
-                            <WhatsAppQuote author="אלמוג" text={quotedReply.mentorMessage} />
-                          )}
-                          <p className="whitespace-pre-wrap">{text}</p>
-                        </>
-                      ) : (
-                        renderAlmogMessage(text)
-                      )}
-                      <div className={`mt-1 text-[10px] ${isUser ? 'text-slate-300/75' : 'text-emerald-50/80'}`}>
-                        {formatHebrewTime(getMessageCreatedAt(msg))}
+                  <div
+                    key={msg.id ?? `${i}-${text.slice(0, 16)}`}
+                    className={`flex ${isUser ? 'justify-start' : 'justify-end items-end gap-2'}`}
+                  >
+                    {isUser ? (
+                      <div
+                        className="max-w-[82%] rounded-[20px] rounded-tr-md px-3.5 py-2.5 text-[14px] leading-relaxed text-slate-100"
+                        style={{
+                          background: 'linear-gradient(145deg, rgba(51,65,85,0.92), rgba(30,41,59,0.88))',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+                        }}
+                      >
+                        {showQuote && quotedReply && (
+                          <WhatsAppQuote author="אלמוג" text={quotedReply.mentorMessage} />
+                        )}
+                        <p className="whitespace-pre-wrap">{text}</p>
+                        <div className="mt-1.5 text-[10px] text-slate-400">
+                          {formatHebrewTime(getMessageCreatedAt(msg))}
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div
+                          className="max-w-[82%] rounded-[20px] rounded-bl-md px-3.5 py-2.5 text-[14px] leading-relaxed text-white"
+                          style={{
+                            background: 'linear-gradient(145deg, #047857 0%, #059669 55%, #10b981 100%)',
+                            border: '1px solid rgba(255,255,255,0.22)',
+                            boxShadow: '0 8px 22px rgba(16,185,129,0.28)',
+                          }}
+                        >
+                          {renderAlmogMessage(text)}
+                          <div className="mt-1.5 text-[10px] text-emerald-50/75">
+                            {formatHebrewTime(getMessageCreatedAt(msg))}
+                          </div>
+                        </div>
+                        <img
+                          src={avatarSrc}
+                          alt=""
+                          aria-hidden
+                          className="mb-0.5 h-7 w-7 shrink-0 rounded-full object-cover ring-2 ring-emerald-500/35"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                          }}
+                        />
+                      </>
+                    )}
                   </div>
                 );
               })}
@@ -1208,8 +1303,14 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
               <MemorySearchIndicator visible={showMemorySearch} />
 
               {showLoading && !showMemorySearch && (
-                <div className="flex justify-end">
-                  <div className="max-w-[80%] rounded-2xl border border-white/10 bg-slate-800/80 px-3 py-2 text-[14px] text-slate-100">
+                <div className="flex justify-end items-end gap-2">
+                  <div
+                    className="max-w-[80%] rounded-[20px] rounded-bl-md px-3.5 py-2.5 text-[14px] text-white"
+                    style={{
+                      background: 'linear-gradient(145deg, rgba(51,65,85,0.85), rgba(30,41,59,0.8))',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                    }}
+                  >
                     <div className="inline-flex items-center gap-2">
                       <AlmogChatTypingDots />
                       {isThinking ? (
@@ -1237,13 +1338,27 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                       </div>
                     ) : null}
                   </div>
+                  <img
+                    src={avatarSrc}
+                    alt=""
+                    aria-hidden
+                    className="mb-0.5 h-7 w-7 shrink-0 rounded-full object-cover ring-2 ring-emerald-500/35"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                    }}
+                  />
                 </div>
               )}
 
               <div ref={bottomRef} />
+              </div>
             </div>
 
-            <div className="shrink-0 border-t border-white/10 bg-[#0f172a] p-2" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+            <div
+              className="shrink-0 border-t border-white/8 bg-[#0c1222]/95 px-3 pt-2 backdrop-blur-md"
+              style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))' }}
+            >
               {isSessionClosed && (
                 <div className="mb-2 space-y-2">
                   <button
@@ -1291,7 +1406,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                 </div>
               )}
               {messages.length === 0 && !notificationContext && !isSessionClosed && (
-                <div className="mb-2 flex flex-wrap justify-end gap-1.5">
+                <div className="mb-2.5 flex flex-wrap justify-end gap-2">
                   {MICRO_WIN_QUICK_STARTERS.map((chip) => (
                     <button
                       key={chip.label}
@@ -1312,7 +1427,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                           }
                         );
                       }}
-                      className="rounded-lg border border-white/10 px-2.5 py-1 text-[11px] text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
+                      className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-semibold text-emerald-100 transition active:scale-[0.97] hover:bg-emerald-500/18 disabled:opacity-50"
                     >
                       {chip.label}
                     </button>
@@ -1320,7 +1435,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                 </div>
               )}
               <form
-                className="flex items-end gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] p-1.5"
+                className="flex items-end gap-2 rounded-2xl border border-white/12 bg-white/[0.06] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
                   onSubmit={(e) => {
                     e.preventDefault();
                     const text = input.trim();
@@ -1368,7 +1483,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                           ? 'ענה לאלמוג על מה ששאל...'
                           : 'כתוב לי מה עובר עליך...'
                     }
-                    className="max-h-20 min-h-[32px] flex-1 resize-none rounded-lg border-0 bg-transparent px-2 py-1.5 text-[13px] leading-snug text-right text-white outline-none placeholder:text-white/35 disabled:opacity-60"
+                    className="max-h-24 min-h-[40px] flex-1 resize-none rounded-xl border-0 bg-transparent px-3 py-2 text-[14px] leading-snug text-right text-white outline-none placeholder:text-white/35 disabled:opacity-60"
                   />
                   {isLoading && (
                     <>
@@ -1376,12 +1491,12 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                         <button
                           type="button"
                           onClick={continueInBackground}
-                          className="shrink-0 rounded-xl px-2 py-2 text-xs font-bold text-amber-100 hover:bg-amber-300/10"
+                          className="shrink-0 rounded-xl px-2.5 py-2 text-[11px] font-bold text-amber-100 hover:bg-amber-300/10"
                         >
                           רקע
                         </button>
                       ) : null}
-                      <button type="button" onClick={stop} className="shrink-0 rounded-xl px-2 py-2 text-xs font-bold text-white/80 hover:bg-white/10">
+                      <button type="button" onClick={stop} className="shrink-0 rounded-xl px-2.5 py-2 text-[11px] font-bold text-white/80 hover:bg-white/10">
                         עצור
                       </button>
                     </>
@@ -1389,8 +1504,11 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                   <button
                     type="submit"
                     disabled={showLoading || isSessionClosed || isClosing || !input.trim()}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white shadow-md disabled:opacity-40"
-                    style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg transition active:scale-95 disabled:opacity-40"
+                    style={{
+                      background: 'linear-gradient(145deg, #047857, #10b981)',
+                      boxShadow: '0 6px 18px rgba(16,185,129,0.35)',
+                    }}
                     aria-label="שלח"
                   >
                     {showLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
