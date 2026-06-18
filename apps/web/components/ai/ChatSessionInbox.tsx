@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Loader2, MessageSquarePlus, Search, X } from 'lucide-react';
+import { ChevronDown, Loader2, MessageSquarePlus, Search, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { buildChatSessionListTitle } from '../../lib/ai/chat-sessions/session-list-title';
 import { formatSessionRelativeTime } from '../../lib/client/chat-session-messages';
 import {
@@ -88,6 +89,101 @@ function SessionRow({
   );
 }
 
+/** סקציה מתקפלת לקטגוריית שיחות — לחיצה על הכותרת פותחת/סוגרת */
+function AccordionSection({
+  id,
+  label,
+  accent,
+  kind,
+  sessions,
+  activeSessionId,
+  onSelectSession,
+  defaultOpen = false,
+}: {
+  id: string;
+  label: string;
+  accent?: string;
+  kind: 'time' | 'topic';
+  sessions: InboxSession[];
+  activeSessionId: string | null;
+  onSelectSession: (s: ChatSessionListItemClient) => void;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const emoji = kind === 'topic' ? (TOPIC_EMOJIS[id] ?? '💬') : null;
+
+  return (
+    <section>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="mb-2 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-right transition active:scale-[0.98]"
+        style={{
+          background: open
+            ? accent
+              ? `linear-gradient(145deg, ${accent}28 0%, ${accent}14 100%)`
+              : 'rgba(255,255,255,0.08)'
+            : accent
+              ? `linear-gradient(145deg, ${accent}18 0%, transparent 100%)`
+              : 'rgba(255,255,255,0.03)',
+          border: `1px solid ${accent ? `${accent}${open ? '66' : '33'}` : open ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.06)'}`,
+          boxShadow: open && accent ? `0 4px 16px ${accent}22, inset 0 1px 0 rgba(255,255,255,0.07)` : undefined,
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+        }}
+      >
+        {emoji ? (
+          <span className="text-[18px] leading-none" aria-hidden>{emoji}</span>
+        ) : null}
+        <span
+          className="flex-1 text-[15px] font-black"
+          style={{ color: accent ?? '#94a3b8' }}
+        >
+          {label}
+        </span>
+        <span
+          className="rounded-full px-2 py-px text-[11px] font-bold"
+          style={{
+            background: accent ? `${accent}33` : 'rgba(255,255,255,0.08)',
+            color: accent ?? '#64748b',
+          }}
+        >
+          {sessions.length}
+        </span>
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.22 }} className="shrink-0">
+          <ChevronDown className="h-4 w-4" style={{ color: accent ?? '#64748b' }} aria-hidden />
+        </motion.span>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open ? (
+          <motion.div
+            key="body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <ul className="mb-3 space-y-1.5 pl-1">
+              {sessions.map((session) => (
+                <li key={session.id}>
+                  <SessionRow
+                    session={session}
+                    isActive={session.id === activeSessionId}
+                    onSelect={() => onSelectSession(session as ChatSessionListItemClient)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </section>
+  );
+}
+
 export function ChatSessionInbox({
   sessions,
   loading,
@@ -134,7 +230,7 @@ export function ChatSessionInbox({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 space-y-2 px-3 pb-2 pt-1">
+      <div className="shrink-0 space-y-3 px-3 pb-2 pt-1">
         <button
           type="button"
           disabled={startingNew}
@@ -172,6 +268,7 @@ export function ChatSessionInbox({
           ) : null}
         </div>
 
+        {/* פילטרי זמן — כפתורים קטנים */}
         {!trimmedSearch && timeChips.length > 0 ? (
           <div className="flex gap-1.5">
             {timeChips.map((chip) => {
@@ -195,45 +292,49 @@ export function ChatSessionInbox({
           </div>
         ) : null}
 
+        {/* כפתורי נושא — צבעוניים וגדולים */}
         {!trimmedSearch && topicChips.length > 0 ? (
-          <div
-            className="flex gap-1.5 overflow-x-auto pb-0.5"
-            style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
-          >
+          <div className="grid grid-cols-3 gap-2">
             {topicChips.map((chip) => {
               const selected = activeFolder === chip.id;
+              const accent = chip.accent ?? '#6366f1';
               return (
                 <button
                   key={chip.id}
                   type="button"
                   onClick={() => setActiveFolder(chip.id === activeFolder ? 'all' : chip.id)}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold transition ${
-                    selected ? 'text-white' : 'text-slate-400 hover:text-slate-200'
-                  }`}
+                  className="flex flex-col items-center gap-1 rounded-2xl px-2 py-3 text-center transition active:scale-[0.97]"
                   style={
                     selected
                       ? {
-                          background: chip.accent
-                            ? `linear-gradient(145deg, ${chip.accent}33, ${chip.accent}1a)`
-                            : 'rgba(255,255,255,0.1)',
-                          border: `1px solid ${chip.accent ?? 'rgba(255,255,255,0.2)'}66`,
-                          boxShadow: `0 2px 12px ${chip.accent ?? 'rgba(255,255,255,0.1)'}33`,
+                          background: `linear-gradient(145deg, ${accent}40, ${accent}22)`,
+                          border: `1.5px solid ${accent}88`,
+                          boxShadow: `0 6px 20px ${accent}30, inset 0 1px 0 rgba(255,255,255,0.12)`,
+                          backdropFilter: 'blur(12px)',
+                          WebkitBackdropFilter: 'blur(12px)',
                         }
                       : {
-                          background: 'rgba(255,255,255,0.04)',
-                          border: '1px solid rgba(255,255,255,0.08)',
+                          background: `linear-gradient(145deg, ${accent}18, ${accent}08)`,
+                          border: `1px solid ${accent}30`,
+                          backdropFilter: 'blur(12px)',
+                          WebkitBackdropFilter: 'blur(12px)',
                         }
                   }
                 >
-                  <span aria-hidden>{TOPIC_EMOJIS[chip.id] ?? '💬'}</span>
-                  <span>{chip.label}</span>
+                  <span className="text-[22px] leading-none" aria-hidden>
+                    {TOPIC_EMOJIS[chip.id] ?? '💬'}
+                  </span>
                   <span
-                    className="rounded-full px-1 py-px text-[10px]"
+                    className="text-[11px] font-bold leading-tight"
+                    style={{ color: selected ? '#fff' : accent }}
+                  >
+                    {chip.label}
+                  </span>
+                  <span
+                    className="rounded-full px-1.5 py-px text-[9px] font-black"
                     style={{
-                      background: selected
-                        ? `${chip.accent ?? '#6366f1'}44`
-                        : 'rgba(255,255,255,0.08)',
-                      color: selected ? (chip.accent ?? '#a5b4fc') : '#64748b',
+                      background: selected ? `${accent}55` : `${accent}22`,
+                      color: selected ? '#fff' : accent,
                     }}
                   >
                     {chip.count}
@@ -253,51 +354,19 @@ export function ChatSessionInbox({
         ) : sessions.length === 0 ? (
           <p className="py-8 text-center text-[13px] text-slate-400">עדיין אין שיחות. התחל שיחה חדשה למעלה.</p>
         ) : groupedSections.length > 0 ? (
-          <div className="space-y-4">
-            {groupedSections.map((section) => (
-              <section key={section.id}>
-                <div
-                  className="mb-2 flex items-center gap-2 rounded-lg px-2 py-1.5"
-                  style={{
-                    background: section.accent
-                      ? `linear-gradient(90deg, ${section.accent}22 0%, transparent 80%)`
-                      : 'transparent',
-                    borderRight: section.accent ? `3px solid ${section.accent}99` : '3px solid rgba(255,255,255,0.12)',
-                  }}
-                >
-                  {section.kind === 'topic' ? (
-                    <span className="text-base leading-none" aria-hidden>
-                      {TOPIC_EMOJIS[section.id] ?? '💬'}
-                    </span>
-                  ) : null}
-                  <span
-                    className="text-[12px] font-bold"
-                    style={{ color: section.accent ?? '#94a3b8' }}
-                  >
-                    {section.label}
-                  </span>
-                  <span
-                    className="mr-auto rounded-full px-1.5 py-px text-[10px] font-semibold"
-                    style={{
-                      background: section.accent ? `${section.accent}33` : 'rgba(255,255,255,0.08)',
-                      color: section.accent ?? '#64748b',
-                    }}
-                  >
-                    {section.sessions.length}
-                  </span>
-                </div>
-                <ul className="space-y-1.5">
-                  {section.sessions.map((session) => (
-                    <li key={session.id}>
-                      <SessionRow
-                        session={session}
-                        isActive={session.id === activeSessionId}
-                        onSelect={() => onSelectSession(session as ChatSessionListItemClient)}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </section>
+          <div className="space-y-1">
+            {groupedSections.map((section, idx) => (
+              <AccordionSection
+                key={section.id}
+                id={section.id}
+                label={section.label}
+                accent={section.accent}
+                kind={section.kind}
+                sessions={section.sessions}
+                activeSessionId={activeSessionId}
+                onSelectSession={onSelectSession}
+                defaultOpen={idx === 0}
+              />
             ))}
           </div>
         ) : flatSessions.length === 0 ? (
