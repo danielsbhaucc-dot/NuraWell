@@ -65,6 +65,13 @@ type Blocker = {
   strategy: string | null;
   status: 'open' | 'improving' | 'resolved';
   metadata: Record<string, unknown> | null;
+  related_assignment_id: string | null;
+};
+
+type RecoveryPlan = {
+  blocker: Blocker;
+  microStep: Assignment;
+  original: Assignment | null;
 };
 
 type Payload = {
@@ -242,10 +249,35 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
 
   const pendingReminders = (data?.reminders ?? []).filter((r) => r.status === 'pending');
   const sentReminders = (data?.reminders ?? []).filter((r) => r.status === 'sent');
-  const activeCount = data?.assignments.length ?? 0;
-  const blockerCount = data?.blockers.length ?? 0;
-  const reminderCount = pendingReminders.length;
   const name = firstName?.trim() || '';
+
+  // ── Recovery-plan grouping ──────────────────────────────────────────
+  // כל blocker ב-improving שיש לו related_assignment_id → קיבוץ עם המיקרו-סטפ
+  // ועם ה-assignment המקורי המוקפא (parent_assignment_id).
+  const recoveryPlans: RecoveryPlan[] = (data?.blockers ?? [])
+    .filter((b) => b.status === 'improving' && b.related_assignment_id)
+    .map((b) => {
+      const microStep = (data?.assignments ?? []).find((a) => a.id === b.related_assignment_id) ?? null;
+      const original = microStep?.parent_assignment_id
+        ? (data?.assignments ?? []).find((a) => a.id === microStep.parent_assignment_id) ?? null
+        : null;
+      return microStep ? ({ blocker: b, microStep, original } as RecoveryPlan) : null;
+    })
+    .filter((rp): rp is RecoveryPlan => rp !== null);
+
+  const recoveryStepIds = new Set(recoveryPlans.map((rp) => rp.microStep.id));
+
+  // משימות פעילות שאינן חלק מתוכנית החזרה
+  const standaloneTasks = (data?.assignments ?? []).filter(
+    (a) => a.status === 'active' && !recoveryStepIds.has(a.id)
+  );
+
+  // חסמים פתוחים שטרם קיבלו אסטרטגיה (מצב coach)
+  const openBlockers = (data?.blockers ?? []).filter((b) => b.status === 'open');
+
+  const activeCount = standaloneTasks.length + recoveryPlans.length;
+  const blockerCount = openBlockers.length;
+  const reminderCount = pendingReminders.length;
 
   // גלילה חלקה לפריט + הבהוב קצר שמסמן בדיוק מה דורש תשומת לב.
   const jumpTo = (id: string) => {
@@ -260,25 +292,10 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
     }, 1500);
   };
 
-  // הדברים שדורשים תשובה/פעולה מהמשתמש — לשורת הסיכום שבראש.
+  // פריטים דחופים שדורשים תשובה — לשורת הסיכום שבראש.
   const actionItems: { id: string; label: string; tint: Tint }[] = [];
   if (data?.focus?.status === 'proposed') {
     actionItems.push({ id: 'plan-focus', label: 'אלמוג מציע לקחת רגע פוקוס', tint: 'indigo' });
-  }
-  for (const b of data?.blockers ?? []) {
-    if (b.strategy && b.status === 'improving') {
-      actionItems.push({
-        id: `plan-blocker-${b.id}`,
-        label: `איך הלך עם: ${b.strategy.slice(0, 40)}`,
-        tint: 'rose',
-      });
-    } else if (b.status !== 'resolved') {
-      actionItems.push({
-        id: `plan-blocker-${b.id}`,
-        label: `צעד קטן מחכה לתשובה שלך — ${b.description.slice(0, 32)}`,
-        tint: 'rose',
-      });
-    }
   }
 
   return (
@@ -318,8 +335,6 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
               </p>
             ) : null}
 
-            <AlmogIntro name={name} />
-
             {actionItems.length > 0 ? (
               <ActionNeeded items={actionItems} onJump={jumpTo} />
             ) : null}
@@ -343,18 +358,56 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
               ) : null}
             </AnimatePresence>
 
-            {/* ── משימות פעילות ── */}
+            {/* ── תוכניות חזרה (PRIMARY) ── */}
+            {recoveryPlans.length > 0 ? (
+              <Section
+                icon={Repeat}
+                title="בדרך חזרה"
+                tint="amber"
+                count={recoveryPlans.length}
+                defaultOpen
+                explain="אנחנו עובדים בצעדים קטנים כדי לחזור להרגל המקורי. סמן כל צעד כשתעשה אותו — ואני אעדכן את התוכנית."
+              >
+                <AnimatePresence initial={false}>
+                  {recoveryPlans.map((rp, i) => (
+                    <RecoveryPlanCard
+                      key={rp.blocker.id}
+                      plan={rp}
+                      index={i + 1}
+                      busy={(busyId?.startsWith(rp.blocker.id) ?? false) || busyId === rp.microStep.id}
+                      onDoneStep={() =>
+                        run(rp.microStep.id, () =>
+                          postAction({ action: 'done', assignment_id: rp.microStep.id })
+                        )
+                      }
+                      onPivot={() =>
+                        run(`${rp.blocker.id}-p`, () =>
+                          postBlockerAction({ action: 'coach_pivot', blocker_id: rp.blocker.id })
+                        ) as Promise<void>
+                      }
+                      onAsk={() =>
+                        dispatchOpenAlmogChatWithPrefill(
+                          `אלמוג, לגבי "${rp.blocker.description}" — אפשר שנדבר על זה?`
+                        )
+                      }
+                    />
+                  ))}
+                </AnimatePresence>
+              </Section>
+            ) : null}
+
+            {/* ── משימות עצמאיות (PRIMARY) ── */}
             <Section
               icon={Sparkles}
               title="הצעדים שלך"
               tint="emerald"
-              count={activeCount}
+              count={standaloneTasks.length}
               defaultOpen
-              explain="אלה הדברים שסיכמנו לעשות עכשיו. אחד בכל פעם, בלי לחץ — וכל סימון פה הוא ניצחון אמיתי, גם הקטן. 🌱"
+              explain="אלה הדברים שסיכמנו לעשות עכשיו. אחד בכל פעם, בלי לחץ — וכל סימון פה הוא ניצחון אמיתי. 🌱"
             >
-              {activeCount > 0 ? (
+              {standaloneTasks.length > 0 ? (
                 <AnimatePresence initial={false}>
-                  {data.assignments.map((a, i) => (
+                  {standaloneTasks.map((a, i) => (
                     <AssignmentCard
                       key={a.id}
                       assignment={a}
@@ -365,37 +418,24 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                     />
                   ))}
                 </AnimatePresence>
+              ) : recoveryPlans.length > 0 ? (
+                <EmptyHint text="כרגע כל המאמץ מוכוון לתוכנית החזרה שלמעלה. 🌿" />
               ) : (
                 <EmptyHint text="אין כרגע צעד פתוח. כשנסכם משהו בשיחה — אשים אותו פה בשבילך." />
               )}
             </Section>
 
-            {/* ── תזכורות ── */}
-            {pendingReminders.length > 0 ? (
-              <Section
-                icon={Bell}
-                title="אזכיר לך"
-                tint="amber"
-                count={pendingReminders.length}
-                explain="פה אני שומר את התזכורות שלקחתי על עצמי. לא תצטרך לזכור לבד — אני אדאג להזכיר בזמן."
-              >
-                {pendingReminders.map((r, i) => (
-                  <ReminderRow key={r.id} reminder={r} index={i + 1} />
-                ))}
-              </Section>
-            ) : null}
-
-            {/* ── שיחת מאמן (חסמים) ── */}
-            {data.blockers.length > 0 ? (
+            {/* ── שיחת מאמן — חסמים פתוחים (SECONDARY) ── */}
+            {openBlockers.length > 0 ? (
               <Section
                 icon={MessageCircle}
                 title="אלמוג כאן בשבילך"
                 tint="rose"
-                count={data.blockers.length}
+                count={openBlockers.length}
                 defaultOpen
                 explain="כשמשהו תקוע, פה אנחנו פותרים את זה ביחד. בלי שיפוט — צעד אחד קטן בכל פעם."
               >
-                {data.blockers.map((b, i) => (
+                {openBlockers.map((b, i) => (
                   <BlockerCoachCard
                     key={b.id}
                     blocker={b}
@@ -431,7 +471,22 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
               </Section>
             ) : null}
 
-            {/* ── הושלמו ── */}
+            {/* ── תזכורות (SECONDARY) ── */}
+            {pendingReminders.length > 0 ? (
+              <Section
+                icon={Bell}
+                title="אזכיר לך"
+                tint="amber"
+                count={pendingReminders.length}
+                explain="פה אני שומר את התזכורות שלקחתי על עצמי. לא תצטרך לזכור לבד — אני אדאג להזכיר בזמן."
+              >
+                {pendingReminders.map((r, i) => (
+                  <ReminderRow key={r.id} reminder={r} index={i + 1} />
+                ))}
+              </Section>
+            ) : null}
+
+            {/* ── הושלמו (SECONDARY) ── */}
             {data.completed.length > 0 ? (
               <Section
                 icon={CheckCircle2}
@@ -458,7 +513,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
               </Section>
             ) : null}
 
-            {/* ── תזכורות שנשלחו ── */}
+            {/* ── תזכורות שנשלחו (טריוויה) ── */}
             {sentReminders.length > 0 ? (
               <details className="group px-1">
                 <summary className="cursor-pointer list-none text-[11px] font-bold uppercase tracking-wide text-slate-400">
@@ -739,9 +794,9 @@ function Hero({
         </p>
 
         <div className="mt-5 grid grid-cols-3 gap-2.5">
-          <HeroStat icon={Sparkles} value={active} label="צעדים פעילים" />
+          <HeroStat icon={Sparkles} value={active} label="דברים לעשות" />
           <HeroStat icon={Bell} value={reminders} label="תזכורות" />
-          <HeroStat icon={MessageCircle} value={blockers} label="בשיחה" />
+          <HeroStat icon={MessageCircle} value={blockers} label="תקועים?" />
         </div>
       </div>
     </motion.section>
@@ -974,33 +1029,6 @@ function AlmogLine({ text }: { text: string }) {
   );
 }
 
-/** אינטרו קצר לעמוד — אלמוג מסביר מה זה המקום הזה, בטון של חבר. */
-function AlmogIntro({ name }: { name: string }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="flex items-start gap-2.5 rounded-3xl px-3.5 py-3"
-      style={{
-        background: 'linear-gradient(160deg, rgba(255,255,255,0.5), rgba(236,253,245,0.34))',
-        border: '1px solid rgba(16,185,129,0.16)',
-        boxShadow: '0 6px 18px rgba(16,185,129,0.08)',
-        backdropFilter: 'blur(20px) saturate(170%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(170%)',
-      }}
-    >
-      <span className="mt-0.5 shrink-0 rounded-full ring-2 ring-emerald-100">
-        <AlmogAvatarChip size={32} />
-      </span>
-      <p className="text-[13px] leading-relaxed text-slate-600">
-        {name ? `${name}, ` : ''}זה המקום שבו אני שומר כל מה שסיכמנו ביחד — צעדים, תזכורות וגם הדברים
-        התקועים. פתחתי לך את מה שחשוב עכשיו; שאר הקטעים מקופלים, פשוט הקש על אחד כדי לפתוח. 🌿
-      </p>
-    </motion.div>
-  );
-}
-
 /**
  * שורת סיכום "דורש את תשומת ליבך" — מבליטה את מה שהמשתמש צריך לעדכן
  * (למשל "איך הלך עם הצעד הקטן"). לחיצה גוללת אל הפריט עצמו ומדגישה אותו.
@@ -1183,6 +1211,138 @@ function AssignmentCard({
           </button>
         </div>
       )}
+      </div>
+    </motion.li>
+  );
+}
+
+/* ───────────────────────── כרטיס תוכנית חזרה ───────────────────────── */
+
+/**
+ * כרטיס "בדרך חזרה" — מציג את ההרגל המוקפא (המטרה) + הצעד הקטן הנוכחי +
+ * כפתורי check-in. מחליף את הצורך לחפש את הקשר בין שלושה סקציות נפרדות.
+ */
+function RecoveryPlanCard({
+  plan,
+  index,
+  busy,
+  onDoneStep,
+  onPivot,
+  onAsk,
+}: {
+  plan: RecoveryPlan;
+  index: number;
+  busy: boolean;
+  onDoneStep: () => void;
+  onPivot: () => Promise<void>;
+  onAsk: () => void;
+}) {
+  const { blocker, microStep, original } = plan;
+  const doneToday =
+    Boolean(microStep.last_done_at) &&
+    fmtDay(microStep.last_done_at) === fmtDay(new Date().toISOString());
+
+  return (
+    <motion.li
+      id={`plan-blocker-${blocker.id}`}
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      className="relative overflow-hidden rounded-[24px] p-4"
+      style={glassStyle('amber')}
+    >
+      <GlassSheen />
+      <div className="relative z-[1] space-y-3">
+
+        {/* ── הרגל מקורי מוקפא ── */}
+        {original ? (
+          <div
+            className="flex items-center gap-2 rounded-2xl px-3 py-2.5"
+            style={{
+              background: 'rgba(148,163,184,0.10)',
+              border: '1px solid rgba(148,163,184,0.20)',
+            }}
+          >
+            <Snowflake className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                בדרך חזרה ל:
+              </p>
+              <p className="mt-0.5 text-[13px] font-bold text-slate-500">{original.title}</p>
+            </div>
+            <NumBadge n={index} rgb={TINT.amber.rgb} />
+          </div>
+        ) : null}
+
+        {/* ── חץ חיבור ── */}
+        {original ? (
+          <div className="flex items-center gap-2 px-3">
+            <span className="h-px flex-1 rounded-full bg-gradient-to-l from-transparent via-amber-300/60 to-transparent" />
+            <span className="text-[10px] font-bold text-amber-500">↓ צעד קטן</span>
+            <span className="h-px flex-1 rounded-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent" />
+          </div>
+        ) : null}
+
+        {/* ── צעד נוכחי (הצעד הקטן האקטיבי) ── */}
+        <div
+          className="rounded-2xl px-3.5 py-3"
+          style={{
+            background: 'linear-gradient(160deg, rgba(255,255,255,0.6), rgba(236,253,245,0.4))',
+            border: '1px solid rgba(16,185,129,0.22)',
+          }}
+        >
+          <p className="mb-1 flex items-center gap-1 text-[10px] font-black uppercase tracking-wide text-emerald-600/80">
+            <Sparkles className="h-3 w-3" />
+            הצעד שלך עכשיו
+          </p>
+          <p className="text-[15px] font-black leading-snug text-slate-800">{microStep.title}</p>
+          {microStep.detail ? (
+            <p className="mt-1 text-[12px] leading-relaxed text-slate-500">{microStep.detail}</p>
+          ) : null}
+          {microStep.done_count > 0 ? (
+            <p className="mt-1 text-[10px] font-bold text-emerald-600">
+              בוצע {microStep.done_count}× 🌱
+            </p>
+          ) : null}
+        </div>
+
+        {/* ── כפתורי פעולה ── */}
+        <div className="flex flex-wrap gap-2 pt-0.5">
+          <button
+            type="button"
+            disabled={busy || doneToday}
+            onClick={onDoneStep}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl px-3 py-2.5 text-[13.5px] font-black text-white transition active:scale-95 disabled:opacity-60"
+            style={{
+              background: doneToday
+                ? 'linear-gradient(135deg, #34d399, #059669)'
+                : 'linear-gradient(135deg, #059669, #10b981)',
+              boxShadow: '0 6px 16px rgba(16,185,129,0.32)',
+            }}
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            {doneToday ? 'בוצע היום ✨' : 'עשיתי את זה!'}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void onPivot()}
+            className="flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-white/60 px-3 py-2.5 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
+          >
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ThumbsDown className="h-3.5 w-3.5" />}
+            לא עובד
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onAsk}
+            className="flex items-center gap-1 rounded-2xl border border-indigo-200/60 bg-indigo-50/40 px-3 py-2.5 text-[12px] font-bold text-indigo-600 transition active:scale-95 disabled:opacity-60"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            נדבר
+          </button>
+        </div>
       </div>
     </motion.li>
   );
