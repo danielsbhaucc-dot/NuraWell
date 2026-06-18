@@ -440,6 +440,30 @@ function threadStatusLabel(
   return { status: 'online', label: 'זמין עכשיו' };
 }
 
+function ThreadHeaderIconButton({
+  label,
+  onClick,
+  disabled,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/28 bg-white/14 text-white shadow-[0_2px_10px_rgba(0,0,0,0.18)] backdrop-blur-sm transition hover:bg-white/22 active:scale-95 disabled:opacity-50"
+    >
+      {children}
+    </button>
+  );
+}
+
 export interface AIChatWidgetProps {
   userId: string;
   firstName?: string;
@@ -1113,76 +1137,75 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                 </div>
               ) : (
                 <div
-                  className="relative flex items-center gap-2 px-3 pb-2.5 pt-0.5"
+                  className="relative flex items-center gap-2.5 px-3 pb-3.5 pt-2"
                   style={{
                     background: 'linear-gradient(160deg, #064e3b 0%, #047857 45%, #10b981 100%)',
                     boxShadow: '0 4px 20px rgba(6,78,59,0.28)',
                   }}
                 >
-                  <button
-                    type="button"
-                    aria-label="חזרה לרשימת שיחות"
-                    onClick={goToInbox}
-                    className="shrink-0 rounded-lg p-1.5 hover:bg-white/10 active:scale-95"
-                  >
+                  <ThreadHeaderIconButton label="חזרה לרשימת שיחות" onClick={goToInbox}>
                     <ChevronRight className="h-5 w-5" />
-                  </button>
-                  <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                    <img
-                      src={avatarSrc}
-                      alt="אלמוג"
-                      className="h-9 w-9 shrink-0 rounded-xl object-cover border border-white/35 shadow-sm"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
-                      }}
-                    />
+                  </ThreadHeaderIconButton>
+
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
                     <div className="min-w-0 flex-1 text-right">
-                      <p className="text-[15px] font-bold leading-tight text-white">אלמוג</p>
-                      {(() => {
-                        const { status, label } = threadStatusLabel(
-                          showLoading,
-                          isThinking,
-                          online,
-                          isSessionClosed,
-                          almogStatusText,
-                          typingStep
-                        );
-                        return (
-                          <div className="mt-0.5">
-                            <ThreadStatusPill status={status}>{label}</ThreadStatusPill>
-                          </div>
-                        );
-                      })()}
+                      <p className="text-[16px] font-black leading-tight text-white">אלמוג</p>
+                      <div className="mt-1 flex justify-end">
+                        {(() => {
+                          const { status, label } = threadStatusLabel(
+                            showLoading,
+                            isThinking,
+                            online,
+                            isSessionClosed,
+                            almogStatusText,
+                            typingStep
+                          );
+                          return <ThreadStatusPill status={status}>{label}</ThreadStatusPill>;
+                        })()}
+                      </div>
+                    </div>
+                    <div
+                      className="shrink-0 rounded-full p-0.5"
+                      style={{
+                        background: 'linear-gradient(140deg, rgba(255,255,255,0.5), rgba(255,255,255,0.12))',
+                        boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+                      }}
+                    >
+                      <img
+                        src={avatarSrc}
+                        alt="אלמוג"
+                        className="h-10 w-10 rounded-full object-cover ring-2 ring-white/40"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                        }}
+                      />
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-0.5">
+
+                  <div className="flex shrink-0 items-center gap-1.5">
                     {!isSessionClosed && messages.length > 0 ? (
-                      <button
-                        type="button"
-                        aria-label="סיום שיחה"
+                      <ThreadHeaderIconButton
+                        label="סיום שיחה"
                         disabled={sessionActionLoading || showLoading || isClosing}
                         onClick={() => void handleEndChatSession()}
-                        className="rounded-lg p-1.5 hover:bg-white/10 disabled:opacity-50"
                       >
                         {isClosing ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <LogOut className="h-4 w-4" />
                         )}
-                      </button>
+                      </ThreadHeaderIconButton>
                     ) : null}
-                    <button
-                      type="button"
-                      aria-label="סגור"
+                    <ThreadHeaderIconButton
+                      label="סגור"
                       onClick={() => {
                         if (!notifyWhenReady) stop();
                         setOpen(false);
                       }}
-                      className="rounded-lg p-1.5 hover:bg-white/10"
                     >
-                      <X className="h-4 w-4" />
-                    </button>
+                      <X className="h-4 w-4" strokeWidth={2.5} />
+                    </ThreadHeaderIconButton>
                   </div>
                 </div>
               )}
