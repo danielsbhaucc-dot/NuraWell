@@ -358,9 +358,9 @@ export async function generateBlockerOptions(
   }
 }
 
-/** ברירת מחדל ל-fire_at של תזכורת מעקב: מחר 09:00 ישראל */
-export function defaultInterventionReminderIso(now: Date): string {
-  const target = new Date(now.getTime() + 86_400_000);
+/** +N ימים מ-now, בשעה hourUtcApprox בישראל */
+function israelDayIso(now: Date, plusDays: number, hour: number): string {
+  const target = new Date(now.getTime() + plusDays * 86_400_000);
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Jerusalem',
     year: 'numeric',
@@ -371,31 +371,21 @@ export function defaultInterventionReminderIso(now: Date): string {
   const y = get('year');
   const m = get('month');
   const d = get('day');
-  const guessUtc = new Date(Date.UTC(y, m - 1, d, 9, 0, 0));
+  const guessUtc = new Date(Date.UTC(y, m - 1, d, hour, 0, 0));
   const israelShown = new Date(guessUtc.toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
   const utcShown = new Date(guessUtc.toLocaleString('en-US', { timeZone: 'UTC' }));
   const offsetMs = israelShown.getTime() - utcShown.getTime();
   return new Date(guessUtc.getTime() - offsetMs).toISOString();
 }
 
+/** ברירת מחדל ל-fire_at של תזכורת מעקב: מחר 09:00 ישראל */
+export function defaultInterventionReminderIso(now: Date): string {
+  return israelDayIso(now, 1, 9);
+}
+
 /** +N ימים מ-now, 09:00 ישראל */
 export function israelMorningIso(now: Date, plusDays: number): string {
-  const target = new Date(now.getTime() + plusDays * 86_400_000);
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Jerusalem',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(target);
-  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? '0');
-  const y = get('year');
-  const mn = get('month');
-  const d = get('day');
-  const guessUtc = new Date(Date.UTC(y, mn - 1, d, 9, 0, 0));
-  const israelShown = new Date(guessUtc.toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
-  const utcShown = new Date(guessUtc.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const offsetMs = israelShown.getTime() - utcShown.getTime();
-  return new Date(guessUtc.getTime() - offsetMs).toISOString();
+  return israelDayIso(now, plusDays, 9);
 }
 
 /** ברירת מחדל ל-check_progress על חסם: בעוד 2 ימים 18:00 ישראל */

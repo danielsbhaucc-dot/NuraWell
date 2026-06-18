@@ -400,7 +400,7 @@ export async function POST(request: Request) {
           fire_at: fire48h,
           kind: 'check_progress',
           title: 'מעקב קצר מאלמוג 🧭',
-          body: `כבר יומיים מאז שסיכמנו על "${proposal.micro_step.slice(0, 60)}" — מה השתנה? גם התקדמות קטנה נחשבת.`,
+          body: `כבר יומיים מאז שסיכמנו על "${proposal.micro_step.length > 60 ? proposal.micro_step.slice(0, 60) + '…' : proposal.micro_step}" — מה השתנה? גם התקדמות קטנה נחשבת.`,
           blocker_id: blocker.id,
           assignment_id: result.assignment_id,
           status: 'pending',
