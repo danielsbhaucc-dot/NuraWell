@@ -931,7 +931,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
             border: '1px solid rgba(255,255,255,0.18)',
             background: 'linear-gradient(180deg, rgba(15,23,42,0.96), rgba(2,6,23,0.96))',
             boxShadow: '0 -24px 60px rgba(2,6,23,0.45)',
-            height: 'min(92dvh, 680px)',
+            height: 'min(94dvh, 720px)',
           }}
         >
           <Drawer.Title className="sr-only">שיחה עם אלמוג</Drawer.Title>
@@ -984,56 +984,50 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                 <div className="w-10 h-1 rounded-full bg-white/40" />
               </div>
               {panelView === 'inbox' ? (
-                <div className="relative px-4 pb-7 pt-2">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[15px] font-bold text-emerald-50/90">
-                        {displayName ? (
-                          <>
-                            שלום {displayName} <span aria-hidden>👋</span>
-                          </>
-                        ) : (
-                          <>
-                            שלום <span aria-hidden>👋</span>
-                          </>
-                        )}
-                      </p>
-                      <h2 className="mt-2 text-[28px] font-black leading-[1.05] tracking-tight text-white drop-shadow-md">
-                        שיחות עם אלמוג
-                      </h2>
-                      <p className="mt-2 max-w-[18rem] text-[13px] leading-relaxed text-emerald-50/85">
-                        {greeting.occasionGreeting
-                          ? `${greeting.occasionGreeting} · המנטור האישי שלך`
-                          : 'המנטור האישי שלך — כאן לכל שאלה, צעד קטן, או רגע שצריך מישהו.'}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-center gap-2">
-                      <button
-                        type="button"
-                        aria-label="סגור"
-                        onClick={() => setOpen(false)}
-                        className="rounded-lg p-1.5 hover:bg-white/10"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                      <div
-                        className="rounded-full p-1"
-                        style={{
-                          background: 'linear-gradient(140deg, rgba(255,255,255,0.55), rgba(255,255,255,0.12))',
-                          boxShadow: '0 8px 24px rgba(0,0,0,0.22)',
+                <div className="relative min-h-[11.5rem] px-4 pb-9 pt-3 sm:min-h-[12.5rem]">
+                  <button
+                    type="button"
+                    aria-label="סגור"
+                    onClick={() => setOpen(false)}
+                    className="absolute left-3 top-2 z-10 rounded-lg p-2 hover:bg-white/10"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                  <div className="flex flex-col items-center text-center">
+                    <div
+                      className="rounded-full p-1.5"
+                      style={{
+                        background: 'linear-gradient(140deg, rgba(255,255,255,0.55), rgba(255,255,255,0.12))',
+                        boxShadow: '0 10px 32px rgba(0,0,0,0.24)',
+                      }}
+                    >
+                      <img
+                        src={avatarSrc}
+                        alt="אלמוג"
+                        className="h-[5.5rem] w-[5.5rem] rounded-full object-cover ring-2 ring-white/55 sm:h-24 sm:w-24"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
                         }}
-                      >
-                        <img
-                          src={avatarSrc}
-                          alt="אלמוג"
-                          className="h-16 w-16 rounded-full object-cover ring-2 ring-white/50"
-                          onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
-                          }}
-                        />
-                      </div>
+                      />
                     </div>
+                    <p className="mt-4 text-lg font-bold text-emerald-50/95">
+                      {displayName ? (
+                        <>
+                          שלום {displayName} <span aria-hidden>👋</span>
+                        </>
+                      ) : (
+                        <>
+                          שלום <span aria-hidden>👋</span>
+                        </>
+                      )}
+                    </p>
+                    <h2 className="mt-1.5 text-[2rem] font-black leading-[1.05] tracking-tight text-white drop-shadow-md sm:text-[2.125rem]">
+                      שיחות עם אלמוג
+                    </h2>
+                    <p className="mt-2 text-[13px] text-emerald-50/80">
+                      {greeting.occasionGreeting ?? 'המנטור האישי שלך'}
+                    </p>
                   </div>
                 </div>
               ) : (
