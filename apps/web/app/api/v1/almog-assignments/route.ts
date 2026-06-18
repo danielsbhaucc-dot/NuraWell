@@ -266,7 +266,8 @@ export async function POST(request: Request) {
   if (data.action === 'done') {
     // גרסה מוקלת ("eases") נשארת פעילה לכמה ימים טובים לפני שמחזירים את ההרגל המקורי.
     const nextStatus = row.schedule === 'one_time' && row.relation !== 'eases' ? 'completed' : 'active';
-    const doneHistory = [...history, { at: nowIso, action: 'done' }].slice(-50);
+    const doneEntry: AssignmentHistoryEntry = { at: nowIso, action: 'done' };
+    const doneHistory = [...history, doneEntry].slice(-50);
     await admin
       .from('almog_assignments')
       .update({
