@@ -137,6 +137,7 @@ async function createFromProposal(
   const taskKey = dedupeKey(`blk|${blocker.id}|${proposal.micro_step}`);
   const originalId = relatesToAssignmentId ?? blocker.related_assignment_id;
   const relation = originalId ? proposal.relation : 'standalone';
+  const schedule = relation === 'eases' ? 'daily' : 'one_time';
 
   let assignmentId: string;
   const { data: existingAssign } = await admin
@@ -150,7 +151,7 @@ async function createFromProposal(
     assignmentId = (existingAssign as { id: string }).id;
     await admin
       .from('almog_assignments')
-      .update({ status: 'active', parent_assignment_id: originalId ?? null, relation })
+      .update({ status: 'active', parent_assignment_id: originalId ?? null, relation, schedule })
       .eq('id', assignmentId)
       .eq('user_id', userId);
   } else {
@@ -162,7 +163,7 @@ async function createFromProposal(
         reason: null,
         detail: proposal.label,
         status: 'active',
-        schedule: 'one_time',
+        schedule,
         given_at: nowIso,
         parent_assignment_id: originalId ?? null,
         relation,
