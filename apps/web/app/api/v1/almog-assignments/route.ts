@@ -37,9 +37,28 @@ const actionSchema = z.union([
 ]);
 
 type SupabaseResult = { error: { code?: string } | null };
+const EASED_REACTIVATION_DAYS = 3;
 
 function hasMissingTable(...results: SupabaseResult[]): boolean {
   return results.some((r) => r.error?.code === '42P01');
+}
+
+function countConsecutiveDoneDays(history: AssignmentHistoryEntry[], nowIso: string): number {
+  const doneDates = new Set<string>();
+  for (const entry of history) {
+    if (entry?.action !== 'done' || !entry.at) continue;
+    doneDates.add(entry.at.slice(0, 10));
+  }
+
+  let streak = 0;
+  const cursor = new Date(nowIso);
+  while (true) {
+    const key = cursor.toISOString().slice(0, 10);
+    if (!doneDates.has(key)) break;
+    streak += 1;
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+  return streak;
 }
 
 export async function GET(request: Request) {
@@ -51,7 +70,7 @@ export async function GET(request: Request) {
     supabase
       .from('almog_assignments')
       .select(
-        'id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id, source_excerpt, relation, parent_assignment_id'
+        'id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id, source_excerpt, relation, parent_assignment_id, history'
       )
       .eq('user_id', user.id)
       .in('status', ['active', 'frozen'])
@@ -82,7 +101,7 @@ export async function GET(request: Request) {
       .limit(20),
     supabase
       .from('almog_blockers')
-      .select('id, description, strategy, category, attempt_count, current_options, status, identified_at, last_checked_at, next_check_at, history, metadata')
+      .select('id, description, strategy, category, attempt_count, current_options, status, identified_at, last_checked_at, next_check_at, history, metadata, related_assignment_id')
       .eq('user_id', user.id)
       .in('status', ['open', 'improving'])
       .order('identified_at', { ascending: false })
@@ -244,15 +263,17 @@ export async function POST(request: Request) {
   const history = Array.isArray(row.history) ? row.history : [];
 
   if (data.action === 'done') {
-    // משימה חוזרת (יומי/שבועי) נשארת פעילה; חד-פעמית עוברת ל-completed.
-    const nextStatus = row.schedule === 'one_time' ? 'completed' : 'active';
+    // גרסה מוקלת ("eases") נשארת פעילה לכמה ימים טובים לפני שמחזירים את ההרגל המקורי.
+    const nextStatus = row.schedule === 'one_time' && row.relation !== 'eases' ? 'completed' : 'active';
+    const doneEntry: AssignmentHistoryEntry = { at: nowIso, action: 'done' };
+    const doneHistory = [...history, doneEntry].slice(-50);
     await admin
       .from('almog_assignments')
       .update({
         status: nextStatus,
         last_done_at: nowIso,
         done_count: (row.done_count ?? 0) + 1,
-        history: [...history, { at: nowIso, action: 'done' }].slice(-50),
+        history: doneHistory,
       })
       .eq('id', row.id)
       .eq('user_id', user.id);
@@ -278,7 +299,12 @@ export async function POST(request: Request) {
         .eq('id', row.parent_assignment_id)
         .eq('user_id', user.id)
         .maybeSingle();
-      if (parent && (parent as { status: string }).status === 'frozen') {
+      const recoveryStreak = countConsecutiveDoneDays(doneHistory, nowIso);
+      if (
+        parent &&
+        (parent as { status: string }).status === 'frozen' &&
+        recoveryStreak >= EASED_REACTIVATION_DAYS
+      ) {
         const pHist = Array.isArray((parent as { history?: unknown }).history)
           ? ((parent as { history: AssignmentHistoryEntry[] }).history)
           : [];
