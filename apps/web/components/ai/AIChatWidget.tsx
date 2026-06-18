@@ -366,6 +366,80 @@ function ChatSessionClosingOverlay({ visible }: { visible: boolean }) {
   );
 }
 
+function ThreadStatusPill({
+  status,
+  children,
+}: {
+  status: 'online' | 'typing' | 'thinking' | 'closed' | 'offline';
+  children: ReactNode;
+}) {
+  const palette = {
+    online: {
+      bg: 'linear-gradient(135deg, rgba(16,185,129,0.45), rgba(52,211,153,0.28))',
+      border: 'rgba(110,231,183,0.55)',
+      dot: '#6ee7b7',
+      text: '#ecfdf5',
+    },
+    typing: {
+      bg: 'linear-gradient(135deg, rgba(6,182,212,0.42), rgba(34,211,238,0.22))',
+      border: 'rgba(34,211,238,0.5)',
+      dot: '#67e8f9',
+      text: '#ecfeff',
+    },
+    thinking: {
+      bg: 'linear-gradient(135deg, rgba(245,158,11,0.42), rgba(251,191,36,0.22))',
+      border: 'rgba(251,191,36,0.52)',
+      dot: '#fcd34d',
+      text: '#fffbeb',
+    },
+    closed: {
+      bg: 'linear-gradient(135deg, rgba(100,116,139,0.42), rgba(148,163,184,0.22))',
+      border: 'rgba(148,163,184,0.48)',
+      dot: '#94a3b8',
+      text: '#f8fafc',
+    },
+    offline: {
+      bg: 'linear-gradient(135deg, rgba(244,63,94,0.38), rgba(251,113,133,0.2))',
+      border: 'rgba(251,113,133,0.48)',
+      dot: '#fb7185',
+      text: '#fff1f2',
+    },
+  } as const;
+  const s = palette[status];
+  const pulsing = status === 'typing' || status === 'thinking';
+
+  return (
+    <span
+      className="inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold"
+      style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.text }}
+    >
+      <span
+        className={`h-1.5 w-1.5 shrink-0 rounded-full ${pulsing ? 'animate-pulse' : ''}`}
+        style={{ background: s.dot, boxShadow: pulsing ? `0 0 6px ${s.dot}` : undefined }}
+      />
+      <span className="truncate">{children}</span>
+    </span>
+  );
+}
+
+function threadStatusLabel(
+  showLoading: boolean,
+  isThinking: boolean,
+  online: boolean,
+  isSessionClosed: boolean,
+  almogStatusText: string,
+  typingStep: number
+): { status: 'online' | 'typing' | 'thinking' | 'closed' | 'offline'; label: string } {
+  if (showLoading) {
+    return isThinking
+      ? { status: 'thinking', label: `${almogStatusText}${typingEllipsis(typingStep)}` }
+      : { status: 'typing', label: `מקליד${typingEllipsis(typingStep)}` };
+  }
+  if (!online) return { status: 'offline', label: 'בלי חיבור' };
+  if (isSessionClosed) return { status: 'closed', label: 'שיחה נסגרה' };
+  return { status: 'online', label: 'זמין עכשיו' };
+}
+
 export interface AIChatWidgetProps {
   userId: string;
   firstName?: string;
@@ -985,9 +1059,11 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                   />
                 </>
               )}
-              <div className="relative pt-2 pb-1 flex justify-center">
-                <div className="w-10 h-1 rounded-full bg-white/40" />
-              </div>
+              {panelView === 'inbox' ? (
+                <div className="relative pt-2 pb-1 flex justify-center">
+                  <div className="w-10 h-1 rounded-full bg-white/40" />
+                </div>
+              ) : null}
               {panelView === 'inbox' ? (
                 <div className="relative min-h-[11.5rem] px-4 pb-6 pt-3 sm:min-h-[12.5rem]">
                   <button
@@ -1036,109 +1112,79 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                   </div>
                 </div>
               ) : (
-                <>
-                  <div
-                    className="relative overflow-hidden px-3 pb-3 pt-1"
-                    style={{
-                      background:
-                        'linear-gradient(155deg, #034d3a 0%, #059669 40%, #0d9488 70%, #10b981 100%)',
-                    }}
+                <div
+                  className="relative flex items-center gap-2 px-3 pb-2.5 pt-0.5"
+                  style={{
+                    background: 'linear-gradient(160deg, #064e3b 0%, #047857 45%, #10b981 100%)',
+                    boxShadow: '0 4px 20px rgba(6,78,59,0.28)',
+                  }}
+                >
+                  <button
+                    type="button"
+                    aria-label="חזרה לרשימת שיחות"
+                    onClick={goToInbox}
+                    className="shrink-0 rounded-lg p-1.5 hover:bg-white/10 active:scale-95"
                   >
-                    <span
-                      aria-hidden
-                      className="pointer-events-none absolute inset-x-0 top-0 h-2/3"
-                      style={{
-                        background:
-                          'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%)',
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                  <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                    <img
+                      src={avatarSrc}
+                      alt="אלמוג"
+                      className="h-9 w-9 shrink-0 rounded-xl object-cover border border-white/35 shadow-sm"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
                       }}
                     />
-                    <span
-                      aria-hidden
-                      className="pointer-events-none absolute inset-x-0 bottom-0 h-6"
-                      style={{ background: 'linear-gradient(180deg, transparent, #0f172a)' }}
-                    />
-                    <div className="relative flex items-center gap-2">
-                      <button
-                        type="button"
-                        aria-label="חזרה לרשימת שיחות"
-                        onClick={goToInbox}
-                        className="shrink-0 rounded-xl p-2 hover:bg-white/10 active:scale-95"
-                      >
-                        <ChevronRight className="h-5 w-5" />
-                      </button>
-                      <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <div
-                          className="shrink-0 rounded-full p-0.5"
-                          style={{
-                            background: 'linear-gradient(140deg, rgba(255,255,255,0.55), rgba(255,255,255,0.15))',
-                            boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-                          }}
-                        >
-                          <img
-                            src={avatarSrc}
-                            alt="אלמוג"
-                            className="h-11 w-11 rounded-full object-cover ring-2 ring-white/45"
-                            onError={(e) => {
-                              e.currentTarget.onerror = null;
-                              e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
-                            }}
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1 text-right">
-                          <p className="text-[17px] font-black leading-tight text-white drop-shadow-sm">אלמוג</p>
-                          <p className="mt-0.5 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-50">
-                            {showLoading ? (
-                              <>
-                                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-200" />
-                                {isThinking
-                                  ? `${almogStatusText}${typingEllipsis(typingStep)}`
-                                  : `מקליד${typingEllipsis(typingStep)}`}
-                              </>
-                            ) : online ? (
-                              <>
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-200 shadow-[0_0_6px_rgba(167,243,208,0.8)]" />
-                                {isSessionClosed ? 'שיחה נסגרה' : 'זמין עכשיו'}
-                              </>
-                            ) : (
-                              <>
-                                <span className="h-1.5 w-1.5 rounded-full bg-red-300" />
-                                בלי חיבור
-                              </>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-0.5">
-                        {!isSessionClosed && messages.length > 0 ? (
-                          <button
-                            type="button"
-                            aria-label="סיום שיחה"
-                            disabled={sessionActionLoading || showLoading || isClosing}
-                            onClick={() => void handleEndChatSession()}
-                            className="rounded-xl p-2 hover:bg-white/10 active:scale-95 disabled:opacity-50"
-                          >
-                            {isClosing ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <LogOut className="h-4 w-4" />
-                            )}
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          aria-label="סגור"
-                          onClick={() => {
-                            if (!notifyWhenReady) stop();
-                            setOpen(false);
-                          }}
-                          className="rounded-xl p-2 hover:bg-white/10 active:scale-95"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
+                    <div className="min-w-0 flex-1 text-right">
+                      <p className="text-[15px] font-bold leading-tight text-white">אלמוג</p>
+                      {(() => {
+                        const { status, label } = threadStatusLabel(
+                          showLoading,
+                          isThinking,
+                          online,
+                          isSessionClosed,
+                          almogStatusText,
+                          typingStep
+                        );
+                        return (
+                          <div className="mt-0.5">
+                            <ThreadStatusPill status={status}>{label}</ThreadStatusPill>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
-                </>
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    {!isSessionClosed && messages.length > 0 ? (
+                      <button
+                        type="button"
+                        aria-label="סיום שיחה"
+                        disabled={sessionActionLoading || showLoading || isClosing}
+                        onClick={() => void handleEndChatSession()}
+                        className="rounded-lg p-1.5 hover:bg-white/10 disabled:opacity-50"
+                      >
+                        {isClosing ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <LogOut className="h-4 w-4" />
+                        )}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      aria-label="סגור"
+                      onClick={() => {
+                        if (!notifyWhenReady) stop();
+                        setOpen(false);
+                      }}
+                      className="rounded-lg p-1.5 hover:bg-white/10"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
 
