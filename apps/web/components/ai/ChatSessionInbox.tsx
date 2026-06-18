@@ -14,7 +14,15 @@ import {
 } from '../../lib/client/chat-session-inbox-organize';
 import { greenGlassButtonStyle } from '../../lib/client/chat-inbox-colors';
 import type { ChatSessionListItemClient } from '../../lib/client/chat-session-api';
-import { useLoginBackground } from '../../lib/client/useLoginBackground';
+
+const TOPIC_EMOJIS: Record<string, string> = {
+  habits: '🎯',
+  emotions: '💙',
+  nutrition: '🥗',
+  sleep: '🌙',
+  journey: '📚',
+  general: '💬',
+};
 
 type ChatSessionInboxProps = {
   sessions: ChatSessionListItemClient[];
@@ -25,7 +33,7 @@ type ChatSessionInboxProps = {
   startingNew: boolean;
 };
 
-const VISIBLE_FILTERS = new Set<InboxTimeFolderId>(['all', 'open', 'summary']);
+const VISIBLE_TIME_FILTERS = new Set<InboxTimeFolderId>(['all', 'open', 'summary']);
 
 function titleForSession(session: InboxSession): string {
   return buildChatSessionListTitle(session);
@@ -88,7 +96,6 @@ export function ChatSessionInbox({
   onStartNewChat,
   startingNew,
 }: ChatSessionInboxProps) {
-  const { url: bgUrl, hasPhoto } = useLoginBackground();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFolder, setActiveFolder] = useState<InboxFolderId>('all');
 
@@ -99,8 +106,13 @@ export function ChatSessionInbox({
   );
   const trimmedSearch = searchQuery.trim();
 
-  const filterChips = useMemo(
-    () => folderChips.filter((c) => c.kind === 'time' && VISIBLE_FILTERS.has(c.id as InboxTimeFolderId)),
+  const timeChips = useMemo(
+    () => folderChips.filter((c) => c.kind === 'time' && VISIBLE_TIME_FILTERS.has(c.id as InboxTimeFolderId)),
+    [folderChips]
+  );
+
+  const topicChips = useMemo(
+    () => folderChips.filter((c) => c.kind === 'topic' && c.count > 0),
     [folderChips]
   );
 
@@ -122,17 +134,7 @@ export function ChatSessionInbox({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 space-y-2.5 px-3 pb-2 pt-1">
-        {hasPhoto && bgUrl ? (
-          <div className="relative h-[72px] overflow-hidden rounded-xl border border-white/10">
-            <img src={bgUrl} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
-            <div
-              className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/80 via-[#0f172a]/25 to-transparent"
-              aria-hidden
-            />
-          </div>
-        ) : null}
-
+      <div className="shrink-0 space-y-2 px-3 pb-2 pt-1">
         <button
           type="button"
           disabled={startingNew}
@@ -170,9 +172,9 @@ export function ChatSessionInbox({
           ) : null}
         </div>
 
-        {!trimmedSearch && filterChips.length > 0 ? (
+        {!trimmedSearch && timeChips.length > 0 ? (
           <div className="flex gap-1.5">
-            {filterChips.map((chip) => {
+            {timeChips.map((chip) => {
               const selected = activeFolder === chip.id;
               return (
                 <button
@@ -192,6 +194,55 @@ export function ChatSessionInbox({
             })}
           </div>
         ) : null}
+
+        {!trimmedSearch && topicChips.length > 0 ? (
+          <div
+            className="flex gap-1.5 overflow-x-auto pb-0.5"
+            style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+          >
+            {topicChips.map((chip) => {
+              const selected = activeFolder === chip.id;
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  onClick={() => setActiveFolder(chip.id === activeFolder ? 'all' : chip.id)}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold transition ${
+                    selected ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                  style={
+                    selected
+                      ? {
+                          background: chip.accent
+                            ? `linear-gradient(145deg, ${chip.accent}33, ${chip.accent}1a)`
+                            : 'rgba(255,255,255,0.1)',
+                          border: `1px solid ${chip.accent ?? 'rgba(255,255,255,0.2)'}66`,
+                          boxShadow: `0 2px 12px ${chip.accent ?? 'rgba(255,255,255,0.1)'}33`,
+                        }
+                      : {
+                          background: 'rgba(255,255,255,0.04)',
+                          border: '1px solid rgba(255,255,255,0.08)',
+                        }
+                  }
+                >
+                  <span aria-hidden>{TOPIC_EMOJIS[chip.id] ?? '💬'}</span>
+                  <span>{chip.label}</span>
+                  <span
+                    className="rounded-full px-1 py-px text-[10px]"
+                    style={{
+                      background: selected
+                        ? `${chip.accent ?? '#6366f1'}44`
+                        : 'rgba(255,255,255,0.08)',
+                      color: selected ? (chip.accent ?? '#a5b4fc') : '#64748b',
+                    }}
+                  >
+                    {chip.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -202,13 +253,39 @@ export function ChatSessionInbox({
         ) : sessions.length === 0 ? (
           <p className="py-8 text-center text-[13px] text-slate-400">עדיין אין שיחות. התחל שיחה חדשה למעלה.</p>
         ) : groupedSections.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {groupedSections.map((section) => (
               <section key={section.id}>
-                <h3 className="mb-1.5 px-0.5 text-[11px] font-semibold text-slate-500">
-                  {section.label}
-                  <span className="mr-1 text-slate-600">({section.sessions.length})</span>
-                </h3>
+                <div
+                  className="mb-2 flex items-center gap-2 rounded-lg px-2 py-1.5"
+                  style={{
+                    background: section.accent
+                      ? `linear-gradient(90deg, ${section.accent}22 0%, transparent 80%)`
+                      : 'transparent',
+                    borderRight: section.accent ? `3px solid ${section.accent}99` : '3px solid rgba(255,255,255,0.12)',
+                  }}
+                >
+                  {section.kind === 'topic' ? (
+                    <span className="text-base leading-none" aria-hidden>
+                      {TOPIC_EMOJIS[section.id] ?? '💬'}
+                    </span>
+                  ) : null}
+                  <span
+                    className="text-[12px] font-bold"
+                    style={{ color: section.accent ?? '#94a3b8' }}
+                  >
+                    {section.label}
+                  </span>
+                  <span
+                    className="mr-auto rounded-full px-1.5 py-px text-[10px] font-semibold"
+                    style={{
+                      background: section.accent ? `${section.accent}33` : 'rgba(255,255,255,0.08)',
+                      color: section.accent ?? '#64748b',
+                    }}
+                  >
+                    {section.sessions.length}
+                  </span>
+                </div>
                 <ul className="space-y-1.5">
                   {section.sessions.map((session) => (
                     <li key={session.id}>
