@@ -8,6 +8,7 @@ export function afterAlmogInAppNotification(
     const { deliverWebPushAfterAlmogNotification } = await import('../push/deliver-after-notification');
     await deliverWebPushAfterAlmogNotification(userId, title, body);
   })().catch((e) => {
+    // eslint-disable-next-line no-console
     console.warn('[after-almog-insert] push:', e);
   });
 }

@@ -51,7 +51,7 @@ async function loadUserProgressRows(
     .eq('user_id', userId)
     .eq('is_completed', false);
 
-  return (data ?? []) as ProgressRow[];
+  return (data ?? []) as unknown as ProgressRow[];
 }
 
 type ExecutionRow = {
