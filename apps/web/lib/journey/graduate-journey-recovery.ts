@@ -34,13 +34,15 @@ export async function tryGraduateJourneyRecovery(
     .eq('user_id', userId)
     .eq('is_completed', false);
 
-  const progressRows = (rows ?? []) as Array<{
+  type ProgressGraduationRow = {
     step_id: string;
     task_statuses: unknown;
     task_level_meta: unknown;
     is_completed: boolean;
     journey_steps: { tasks: unknown } | null;
-  }>;
+  };
+
+  const progressRows = (rows ?? []) as unknown as ProgressGraduationRow[];
 
   if (!progressRows.length) return results;
 
@@ -53,14 +55,16 @@ export async function tryGraduateJourneyRecovery(
     .in('step_id', stepIds)
     .limit(2000);
 
-  const execByStep = new Map<string, typeof allExecRows>();
-  for (const row of (allExecRows ?? []) as Array<{
+  type ExecRow = {
     step_id: string;
     task_id: string;
     date_key: string;
     slot: string;
     outcome?: string | null;
-  }>) {
+  };
+
+  const execByStep = new Map<string, ExecRow[]>();
+  for (const row of (allExecRows ?? []) as unknown as ExecRow[]) {
     const list = execByStep.get(row.step_id) ?? [];
     list.push(row);
     execByStep.set(row.step_id, list);
