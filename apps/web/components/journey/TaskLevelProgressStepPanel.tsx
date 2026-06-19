@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import type { JourneyTask } from '../../lib/types/journey';
-import { computeTaskLevelProgressSnapshot } from '../../lib/journey/task-level-progress';
+import { computeTaskLevelProgressSnapshot, coerceTaskExecutionsFromApi } from '../../lib/journey/task-level-progress';
 import { jerusalemDateKey } from '../../lib/journey/task-schedule';
 import { TaskLevelProgressCard } from './TaskLevelProgressCard';
 
@@ -79,7 +79,7 @@ export function TaskLevelProgressStepPanel({
         const taskExecs = executions.filter((e) => e.task_id === task.id);
         const snapshot = computeTaskLevelProgressSnapshot({
           task,
-          executions: taskExecs as Parameters<typeof computeTaskLevelProgressSnapshot>[0]['executions'],
+          executions: coerceTaskExecutionsFromApi(taskExecs),
           taskLevelMeta,
           todayKey,
         });
