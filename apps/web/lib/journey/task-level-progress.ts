@@ -59,6 +59,20 @@ export type TaskLevelAdjustment = {
 
 type ExecutionWithOutcome = TaskExecutionLike & { outcome?: string | null };
 
+/** שורות ביצוע כפי שחוזרות מ-API — slot כ-string לפני המרה ל-JourneyTaskSlot */
+export type ApiTaskExecutionRow = {
+  task_id: string;
+  date_key: string;
+  slot: string;
+  outcome?: string | null;
+};
+
+export function coerceTaskExecutionsFromApi(
+  executions: ReadonlyArray<ApiTaskExecutionRow>
+): ReadonlyArray<ExecutionWithOutcome> {
+  return executions as ReadonlyArray<ExecutionWithOutcome>;
+}
+
 const LEVEL_UP_DECLINE_COOLDOWN_DAYS = 3;
 const DOWNGRADE_FAILURE_DAYS = 3;
 

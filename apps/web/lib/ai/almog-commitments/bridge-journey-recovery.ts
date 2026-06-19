@@ -11,6 +11,7 @@ import { normalizeFrictionCategory } from './friction';
 import { getPreviousLevelId } from '../../journey/task-level-meta';
 import {
   computeTaskLevelProgressSnapshot,
+  coerceTaskExecutionsFromApi,
   recommendTaskLevelAdjustment,
 } from '../../journey/task-level-progress';
 import { applyTaskLevelMetaPatch } from '../../journey/task-level-meta';
@@ -44,7 +45,7 @@ export async function bridgeJourneyDifficultyToRecoveryPlan(params: {
 
   const snapshot = computeTaskLevelProgressSnapshot({
     task: params.task,
-    executions: params.executions as Parameters<typeof computeTaskLevelProgressSnapshot>[0]['executions'],
+    executions: coerceTaskExecutionsFromApi(params.executions),
     taskLevelMeta: params.taskLevelMeta,
   });
 

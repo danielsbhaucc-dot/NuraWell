@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { JourneyTask } from '../../lib/types/journey';
-import { computeTaskLevelProgressSnapshot } from '../../lib/journey/task-level-progress';
+import { computeTaskLevelProgressSnapshot, coerceTaskExecutionsFromApi } from '../../lib/journey/task-level-progress';
 import { jerusalemDateKey } from '../../lib/journey/task-schedule';
 import { TaskLevelProgressCard } from './TaskLevelProgressCard';
 
@@ -57,7 +57,7 @@ export function TaskLevelProgressSection({
 
   const snapshot = computeTaskLevelProgressSnapshot({
     task,
-    executions,
+    executions: coerceTaskExecutionsFromApi(executions),
     taskLevelMeta,
     todayKey: jerusalemDateKey(),
   });
