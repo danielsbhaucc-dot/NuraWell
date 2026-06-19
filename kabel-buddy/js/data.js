@@ -148,87 +148,166 @@ export const IZ_TABLES = {
 };
 
 /**
- * שיטות התקנה — תוספת שלישית
- * tableKey: מפתח לטבלת Iz (70.x / 90.x לפי בידוד)
+ * שיטות התקנה — בחירה פשוטה למשתמש, מיפוי פנימי לתקן
  */
 export const INSTALLATION_OPTIONS = [
   {
     id: 'pipe-wall',
     emoji: '🧱',
-    title: 'בצינור בתוך קיר',
-    hint: 'כמו שקוע בטיח או בבטון, עם בידוד תרמי בקיר',
-    methods: [
-      { id: 'alef', code: "א'", label: 'מוליך בודד / כבל חד-גידי', table: '70.1', core: 'single' },
-      { id: 'bet', code: "ב'", label: 'כבל רב-גידי', table: '70.2', core: 'multi' },
-      { id: 'kaf-chet', code: 'כ"ח', label: 'בצינור בתוך קיר (בודד)', table: '70.3', core: 'single' },
-      { id: 'kaf-tet', code: 'כ"ט', label: 'בצינור בתוך קיר (רב-גידי)', table: '70.4', core: 'multi' },
+    title: 'בתוך קיר (צינור שקוע)',
+    hint: 'הכי נפוץ בדירות — בטיח, גבס או בטון',
+    isUnderground: false,
+    choices: [
+      {
+        id: 'pw-multi',
+        emoji: '🔗',
+        title: 'כבל שלם בצינור',
+        subtitle: 'NYM, N2XY ודומים — הכבל כולו נכנס לצינור',
+        method: { id: 'bet', code: "ב'", label: 'כבל רב-גידי בצינור בקיר', table: '70.2' },
+      },
+      {
+        id: 'pw-single',
+        emoji: '🧵',
+        title: 'נושאים בודדים בצינור',
+        subtitle: 'כל חוט בנפרד — מוליכים מבודדים',
+        method: { id: 'alef', code: "א'", label: 'נושאים בודדים בצינור בקיר', table: '70.1' },
+      },
     ],
   },
   {
     id: 'trunking',
     emoji: '📦',
     title: 'בתעלה על הקיר',
-    hint: 'תעלת כבלים גלויה, על הקיר או תלויה',
-    methods: [
-      { id: 'gimel', code: "ג'", label: 'מוליך בודד / חד-גידי — על הקיר', table: '70.3', core: 'single' },
-      { id: 'dalet', code: "ד'", label: 'כבל רב-גידי — על הקיר', table: '70.4', core: 'multi' },
-      { id: 'he', code: "ה'", label: 'בודד — בתעלה על הקיר', table: '70.3', core: 'single' },
-      { id: 'vav', code: "ו'", label: 'רב-גידי — בתעלה על הקיר', table: '70.4', core: 'multi' },
-      { id: 'zayin', code: "ז'", label: 'בודד — בתעלה תלויה', table: '70.3', core: 'single' },
-      { id: 'chet', code: "ח'", label: 'רב-גידי — בתעלה תלויה', table: '70.4', core: 'multi' },
-      { id: 'tet', code: "ט'", label: 'בודד — תעלה משותפת לשירותים', table: '70.3', core: 'single' },
-      { id: 'yod', code: "י'", label: 'רב-גידי — תעלה משותפת', table: '70.4', core: 'multi' },
+    hint: 'תעלת כבלים גלויה — על הקיר או תלויה מהתקרה',
+    isUnderground: false,
+    choices: [
+      {
+        id: 'tr-multi-wall',
+        emoji: '↔️',
+        title: 'כבל שלם — תעלה על הקיר',
+        subtitle: 'כבל אחד (רב-גידי) בתעלה צמודה לקיר',
+        method: { id: 'vav', code: "ו'", label: 'כבל רב-גידי בתעלה על הקיר', table: '70.4' },
+      },
+      {
+        id: 'tr-multi-hang',
+        emoji: '⬇️',
+        title: 'כבל שלם — תעלה תלויה',
+        subtitle: 'תעלה תלויה מהתקרה',
+        method: { id: 'chet', code: "ח'", label: 'כבל רב-גידי בתעלה תלויה', table: '70.4' },
+      },
+      {
+        id: 'tr-single',
+        emoji: '🧵',
+        title: 'נושאים בודדים בתעלה',
+        subtitle: 'חוטים נפרדים — לא כבל שלם',
+        method: { id: 'he', code: "ה'", label: 'נושאים בודדים בתעלה על הקיר', table: '70.3' },
+      },
     ],
   },
   {
     id: 'surface',
     emoji: '🔩',
     title: 'צמוד לקיר או תקרה',
-    hint: 'כבל על הקיר, על התקרה, או על מגש לא מחורר',
-    methods: [
-      { id: 'yud-bet', code: 'י"ב', label: 'צמוד לקיר / תקרה', table: '70.5', core: 'any' },
-      { id: 'yud-gimel', code: 'י"ג', label: 'על מגש לא מחורר', table: '70.5', core: 'any' },
-      { id: 'yud-alef', code: 'י"א', label: 'במשקוף דלת / חלון', table: '70.1', core: 'any' },
+    hint: 'כבל גלוי — על הקיר, על התקרה, או על מגש',
+    isUnderground: false,
+    choices: [
+      {
+        id: 'sf-wall',
+        emoji: '📎',
+        title: 'צמוד לקיר או לתקרה',
+        subtitle: 'עם ספליטים / קליפסים — הכי שכיח',
+        method: { id: 'yud-bet', code: 'י"ב', label: 'כבל צמוד לקיר או תקרה', table: '70.5' },
+      },
+      {
+        id: 'sf-tray',
+        emoji: '🛤️',
+        title: 'על מגש תיקון (לא מחורר)',
+        subtitle: 'מגש מתכת חלק שעליו מונח הכבל',
+        method: { id: 'yud-gimel', code: 'י"ג', label: 'כבל על מגש לא מחורר', table: '70.5' },
+      },
+      {
+        id: 'sf-door',
+        emoji: '🚪',
+        title: 'דרך משקוף דלת או חלון',
+        subtitle: 'מעבר בין חדרים דרך המשקוף',
+        method: { id: 'yud-alef', code: 'י"א', label: 'כבל במשקוף דלת/חלון', table: '70.1' },
+      },
     ],
   },
   {
     id: 'ladder',
     emoji: '🪜',
-    title: 'סולם / מגש מחורר',
-    hint: 'התקנה באוויר פתוח — אוורור טוב',
-    methods: [
-      { id: 'yud-dalet', code: 'י"ד', label: 'רב-גידי על מגש מחורר / רשת', table: '70.7', core: 'multi' },
-      { id: 'tet-vav', code: 'ט"ו', label: 'חד-גידי על מגש מחורר', table: '70.8', core: 'single' },
-      { id: 'tet-zayin', code: 'ט"ז', label: 'רב-גידי על סולם כבלים', table: '70.7', core: 'multi' },
-      { id: 'yud-zayin', code: 'י"ז', label: 'חד-גידי על סולם כבלים', table: '70.8', core: 'single' },
+    title: 'סולם או מגש מחורר',
+    hint: 'באוויר פתוח — חדר מכונות, תעשייה, אוורור מעולה',
+    isUnderground: false,
+    choices: [
+      {
+        id: 'ld-multi',
+        emoji: '🔗',
+        title: 'כבל שלם (רב-גידי)',
+        subtitle: 'על סולם כבלים או מגש מחורר',
+        method: { id: 'tet-zayin', code: 'ט"ז', label: 'כבל רב-גידי על סולם', table: '70.7' },
+      },
+      {
+        id: 'ld-single',
+        emoji: '🧵',
+        title: 'נושא חד-גידי',
+        subtitle: 'חוט בודד על סולם / מגש מחורר',
+        method: { id: 'yud-zayin', code: 'י"ז', label: 'חד-גידי על סולם', table: '70.8' },
+      },
     ],
   },
   {
     id: 'underground',
     emoji: '🌍',
     title: 'באדמה',
-    hint: 'צינור באדמה, או כבל טמון ישירות',
+    hint: 'חיצוני — גינה, חצר, מעבר תחתי',
     isUnderground: true,
-    methods: [
-      { id: 'lamed', code: "ל'", label: 'בצינור או תעלה באדמה', table: '70.6', core: 'any' },
-      { id: 'lamed-alef', code: 'ל"א', label: 'טמון ישירות באדמה', table: '70.6', core: 'any' },
+    choices: [
+      {
+        id: 'ug-pipe',
+        emoji: '🟤',
+        title: 'בתוך צינור באדמה',
+        subtitle: 'הכבל מוגן בתוך צינור שחפור',
+        method: { id: 'lamed', code: "ל'", label: 'כבל בצינור באדמה', table: '70.6' },
+      },
+      {
+        id: 'ug-direct',
+        emoji: '⛏️',
+        title: 'ישירות באדמה',
+        subtitle: 'טמון במישרין, עם או בלי מגן',
+        method: { id: 'lamed-alef', code: 'ל"א', label: 'כבל טמון ישירות באדמה', table: '70.6' },
+      },
     ],
   },
   {
     id: 'built-in',
     emoji: '🏠',
-    title: 'שקוע ברצפה / בתקרה / בחלל',
-    hint: 'תעלה בשכבה, חלל בנוי, או רצפה כפולה',
-    methods: [
-      { id: 'kaf', code: "כ'", label: 'בתעלה משוקעת ברצפה', table: '70.3', core: 'single' },
-      { id: 'kaf-alef', code: 'כ"א', label: 'רב-גידי — תעלה ברצפה', table: '70.4', core: 'multi' },
-      { id: 'kaf-bet', code: 'כ"ב', label: 'חד-גידי — תעלה בקיר', table: '70.3', core: 'single' },
-      { id: 'kaf-gimel', code: 'כ"ג', label: 'רב-גידי — תעלה בקיר', table: '70.4', core: 'multi' },
-      { id: 'kaf-hey', code: 'כ"ה', label: 'בודד — תעלת רצפה מאווררת', table: '70.3', core: 'single' },
-      { id: 'kaf-vav', code: 'כ"ו', label: 'רב-גידי — תעלת רצפה מאווררת', table: '70.4', core: 'multi' },
-      { id: 'kaf-zayin', code: 'כ"ז', label: 'תעלה אופקית/אנכית מאווררת', table: '70.3', core: 'any' },
-      { id: 'yud-chet', code: 'י"ח', label: 'בחלל בנוי (קטן)', table: '70.4', core: 'any', sub: 'small' },
-      { id: 'yud-tet', code: 'י"ט', label: 'בחלל בנוי (גדול)', table: '70.3', core: 'any', sub: 'large' },
+    title: 'שקוע ברצפה או בתקרה',
+    hint: 'תעלה חבויה, רצפה כפולה, או חלל בנוי',
+    isUnderground: false,
+    choices: [
+      {
+        id: 'bi-floor',
+        emoji: '🪵',
+        title: 'שקוע ברצפה',
+        subtitle: 'תעלה מתחת לריצוף / פרקט',
+        method: { id: 'kaf-alef', code: 'כ"א', label: 'כבל בתעלה משוקעת ברצפה', table: '70.4' },
+      },
+      {
+        id: 'bi-wall',
+        emoji: '🧱',
+        title: 'שקוע בקיר',
+        subtitle: 'תעלה חבויה בתוך הקיר',
+        method: { id: 'kaf-gimel', code: 'כ"ג', label: 'כבל בתעלה משוקעת בקיר', table: '70.4' },
+      },
+      {
+        id: 'bi-void',
+        emoji: '🕳️',
+        title: 'בחלל בנוי / תקרה כפולה',
+        subtitle: 'מרחב אוויר בין תקרה לתקרה',
+        method: { id: 'yud-tet', code: 'י"ט', label: 'כבל בחלל בנוי', table: '70.3' },
+      },
     ],
   },
 ];
