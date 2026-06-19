@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/sync-kabel-buddy.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
