@@ -3,6 +3,13 @@ import { z } from 'zod';
 import { requireApiSession } from '../../../../lib/api/route-guards';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import type { AssignmentHistoryEntry } from '../../../../lib/ai/almog-commitments/types';
+import {
+  evaluateRecoveryGraduation,
+  MICRO_SUCCESS_DAYS_BEFORE_REACTIVATE,
+  scheduleRecoveryEncouragement,
+  type StepDifficultyRating,
+} from '../../../../lib/ai/almog-commitments/recovery-plan-engine';
+import { persistRecoveryInsight } from '../../../../lib/ai/almog-commitments/persist-recovery-insight';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,6 +29,12 @@ const actionSchema = z.union([
     assignment_id: z.string().uuid(),
   }),
   z.object({
+    action: z.literal('rate_difficulty'),
+    assignment_id: z.string().uuid(),
+    rating: z.enum(['easy', 'ok', 'hard']),
+    blocker_id: z.string().uuid().optional(),
+  }),
+  z.object({
     action: z.enum(['confirm_focus', 'decline_focus', 'end_focus']),
     focus_id: z.string().uuid(),
   }),
@@ -37,29 +50,23 @@ const actionSchema = z.union([
 ]);
 
 type SupabaseResult = { error: { code?: string } | null };
-const EASED_REACTIVATION_DAYS = 3;
 
 function hasMissingTable(...results: SupabaseResult[]): boolean {
   return results.some((r) => r.error?.code === '42P01');
 }
 
-function countConsecutiveDoneDays(history: AssignmentHistoryEntry[], nowIso: string): number {
-  const doneDates = new Set<string>();
-  for (const entry of history) {
-    if (entry?.action !== 'done' || !entry.at) continue;
-    doneDates.add(entry.at.slice(0, 10));
-  }
-
-  let streak = 0;
-  const cursor = new Date(nowIso);
-  while (true) {
-    const key = cursor.toISOString().slice(0, 10);
-    if (!doneDates.has(key)) break;
-    streak += 1;
-    cursor.setUTCDate(cursor.getUTCDate() - 1);
-  }
-  return streak;
-}
+type AssignmentRow = {
+  id: string;
+  user_id: string;
+  title: string;
+  schedule: 'one_time' | 'daily' | 'weekly';
+  relation: string | null;
+  parent_assignment_id: string | null;
+  related_step_id: string | null;
+  metadata: Record<string, unknown> | null;
+  history: AssignmentHistoryEntry[] | null;
+  done_count: number;
+};
 
 export async function GET(request: Request) {
   const auth = await requireApiSession(request);
@@ -70,7 +77,7 @@ export async function GET(request: Request) {
     supabase
       .from('almog_assignments')
       .select(
-        'id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id, source_excerpt, relation, parent_assignment_id, history'
+        'id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id, source_excerpt, relation, parent_assignment_id, history, metadata'
       )
       .eq('user_id', user.id)
       .in('status', ['active', 'frozen'])
@@ -136,7 +143,8 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  const nowIso = new Date().toISOString();
+  const now = new Date();
+  const nowIso = now.toISOString();
   const data = parsed.data;
 
   if (
@@ -238,13 +246,74 @@ export async function POST(request: Request) {
   }
 
   // ── פעולות על משימה אישית ──
+  if (data.action === 'rate_difficulty') {
+    const { data: rated } = await admin
+      .from('almog_assignments')
+      .select(
+        'id, user_id, title, schedule, relation, parent_assignment_id, related_step_id, metadata, history, done_count'
+      )
+      .eq('id', data.assignment_id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!rated) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    const assignment = rated as AssignmentRow;
+    const rating = data.rating as StepDifficultyRating;
+
+    if (rating === 'hard') {
+      return NextResponse.json({
+        ok: true,
+        pivot: true,
+        message: 'בוא ננסה משהו קל יותר — פתח את כרטיס הקושי או לחץ "לא עובד".',
+      });
+    }
+
+    const encouragement = await scheduleRecoveryEncouragement({
+      admin,
+      userId: user.id,
+      assignment,
+      rating,
+      blockerId: data.blocker_id ?? null,
+      now,
+    });
+
+    const graduation = await evaluateRecoveryGraduation({
+      admin,
+      userId: user.id,
+      assignment,
+      nowIso,
+    });
+
+    const meta = (assignment.metadata ?? {}) as Record<string, unknown>;
+    await persistRecoveryInsight(admin, {
+      userId: user.id,
+      taskTitle: assignment.title,
+      journeyTaskId: typeof meta.journey_task_id === 'string' ? meta.journey_task_id : null,
+      stepId: assignment.related_step_id,
+      kind: rating === 'easy' ? 'easy' : 'ok',
+      strategy: assignment.title,
+      outcome: 'helped',
+      note: `דירוג קושי אחרי ביצוע: ${rating}`,
+      blockerId: data.blocker_id ?? null,
+    }).catch(() => null);
+
+    return NextResponse.json({
+      ok: true,
+      encouragement,
+      graduation,
+    });
+  }
+
   if (data.action !== 'done' && data.action !== 'drop' && data.action !== 'reactivate') {
     return NextResponse.json({ ok: true });
   }
   const assignmentId = data.assignment_id;
   const { data: assignment } = await admin
     .from('almog_assignments')
-    .select('id, status, done_count, history, schedule, relation, parent_assignment_id')
+    .select(
+      'id, status, done_count, history, schedule, relation, parent_assignment_id, title, metadata, related_step_id'
+    )
     .eq('id', assignmentId)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -259,6 +328,9 @@ export async function POST(request: Request) {
     schedule: string;
     relation: string | null;
     parent_assignment_id: string | null;
+    title: string;
+    metadata: Record<string, unknown> | null;
+    related_step_id: string | null;
   };
   const history = Array.isArray(row.history) ? row.history : [];
 
@@ -288,40 +360,34 @@ export async function POST(request: Request) {
     }
 
     /**
-     * חזרה הדרגתית: אם הצעד שבוצע היה גרסה *מקלה* (relation='eases') של משימה
-     * מקורית שהוקפאה — מחזירים את המקורית לפעילה. כך אחרי שהמשתמש הצליח בקטן,
-     * אלמוג מעלה אותו בהדרגה בחזרה למשימה המלאה (בלי LLM — רק לוגיקה).
+     * חזרה הדרגתית: אם הצעד שבוצע היה גרסה *מקלה* — בודקים רצף הצלחות
+     * ומחזירים את המשימה המקורית כשמוכנים.
      */
-    if (row.relation === 'eases' && row.parent_assignment_id) {
-      const { data: parent } = await admin
-        .from('almog_assignments')
-        .select('id, status, history')
-        .eq('id', row.parent_assignment_id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-      const recoveryStreak = countConsecutiveDoneDays(doneHistory, nowIso);
-      if (
-        parent &&
-        (parent as { status: string }).status === 'frozen' &&
-        recoveryStreak >= EASED_REACTIVATION_DAYS
-      ) {
-        const pHist = Array.isArray((parent as { history?: unknown }).history)
-          ? ((parent as { history: AssignmentHistoryEntry[] }).history)
-          : [];
-        await admin
-          .from('almog_assignments')
-          .update({
-            status: 'active',
-            given_at: nowIso,
-            history: [
-              ...pHist,
-              { at: nowIso, action: 'reactivated', note: 'חזרה הדרגתית אחרי שהצעד המקל הצליח' },
-            ].slice(-50),
-          })
-          .eq('id', row.parent_assignment_id)
-          .eq('user_id', user.id);
-      }
-    }
+    const graduation = await evaluateRecoveryGraduation({
+      admin,
+      userId: user.id,
+      assignment: {
+        id: row.id,
+        user_id: user.id,
+        title: row.title,
+        schedule: row.schedule as 'one_time' | 'daily' | 'weekly',
+        relation: row.relation,
+        parent_assignment_id: row.parent_assignment_id,
+        related_step_id: row.related_step_id,
+        metadata: row.metadata,
+        history: doneHistory,
+        done_count: (row.done_count ?? 0) + 1,
+      },
+      nowIso,
+    });
+
+    const needsRating = row.relation === 'eases' || row.parent_assignment_id !== null;
+
+    return NextResponse.json({
+      ok: true,
+      needs_rating: needsRating,
+      graduation,
+    });
   } else if (data.action === 'drop') {
     await admin
       .from('almog_assignments')

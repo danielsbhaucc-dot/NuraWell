@@ -29,6 +29,7 @@ import {
 import { guardianSchedulesForToday } from '../../../../../../lib/ai/risk-window';
 import { scheduleGuardianTrigger } from '../../../../../../lib/ai/guardian/qstash-scheduler';
 import { runMentorshipSynthesisBatch } from '../../../../../../lib/ai/mentorship/run-synthesis-batch';
+import { fetchRecoveryStatesForUsers } from '../../../../../../lib/ai/almog-commitments/recovery-state';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -37,6 +38,7 @@ export const dynamic = 'force-dynamic';
 const PROGRESS_SELECTS = [
   `
       user_id,
+      step_id,
       updated_at,
       is_completed,
       task_statuses,
@@ -55,6 +57,7 @@ const PROGRESS_SELECTS = [
       is_completed,
       task_statuses,
       habits_progress,
+      task_level_meta,
       journey_steps (
         title,
         habits,
@@ -449,6 +452,8 @@ async function runHabitCheckpointCron(request: Request) {
     }
   }
 
+  const recoveryStateByUser = await fetchRecoveryStatesForUsers(admin, progressUserIds);
+
   const plan = await planHabitCheckpointTriggersWithChat(
     admin,
     (progressRows ?? []) as unknown as ProgressRow[],
@@ -459,7 +464,8 @@ async function runHabitCheckpointCron(request: Request) {
     userResponseInfo,
     recentExecutionsByUser,
     reengagementInfo,
-    mealProfileByUser
+    mealProfileByUser,
+    recoveryStateByUser
   );
 
   /**

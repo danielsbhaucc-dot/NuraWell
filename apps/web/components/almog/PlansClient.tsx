@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell,
@@ -20,6 +20,8 @@ import { AlmogAvatarChip } from '@/components/journey/AlmogPresence';
 import { createClient } from '@/lib/supabase/client';
 import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog-chat';
 import type { BlockerCoachState, BlockerProposal } from '@/lib/ai/almog-commitments/types';
+import { consecutiveJerusalemDoneDays } from '@/lib/journey/recovery-streak';
+import { buildStepStory, storyFromAssignment, type StepStory } from '@/lib/almog/step-story';
 
 type AssignmentRelation = 'standalone' | 'replaces' | 'eases' | 'supports';
 type AssignmentHistoryEntry = {
@@ -42,6 +44,7 @@ type Assignment = {
   source_excerpt: string | null;
   relation: AssignmentRelation | null;
   parent_assignment_id: string | null;
+  metadata?: Record<string, unknown> | null;
   history?: AssignmentHistoryEntry[] | null;
 };
 
@@ -78,7 +81,44 @@ type RecoveryPlan = {
   blocker: Blocker;
   microStep: Assignment;
   original: Assignment | null;
+  syntheticBlocker?: boolean;
 };
+
+function buildRecoveryPlans(assignments: Assignment[], blockers: Blocker[]): RecoveryPlan[] {
+  const byId = new Map(assignments.map((a) => [a.id, a]));
+  const usedEase = new Set<string>();
+  const plans: RecoveryPlan[] = [];
+
+  for (const b of blockers) {
+    if (b.status !== 'improving' || !b.related_assignment_id) continue;
+    const micro = byId.get(b.related_assignment_id);
+    if (!micro || micro.status !== 'active') continue;
+    usedEase.add(micro.id);
+    const original = micro.parent_assignment_id
+      ? (byId.get(micro.parent_assignment_id) ?? null)
+      : null;
+    plans.push({ blocker: b, microStep: micro, original });
+  }
+
+  for (const a of assignments) {
+    if (a.status !== 'active' || a.relation !== 'eases' || usedEase.has(a.id)) continue;
+    const original = a.parent_assignment_id ? (byId.get(a.parent_assignment_id) ?? null) : null;
+    const synthetic: Blocker = {
+      id: `ease-${a.id}`,
+      description: original
+        ? `בדרך חזרה ל"${original.title}"`
+        : (a.reason ?? a.title),
+      strategy: a.detail,
+      status: 'improving',
+      metadata: null,
+      related_assignment_id: a.id,
+    };
+    plans.push({ blocker: synthetic, microStep: a, original, syntheticBlocker: true });
+    usedEase.add(a.id);
+  }
+
+  return plans;
+}
 
 type Payload = {
   tables_ready: boolean;
@@ -101,6 +141,8 @@ const REMINDER_KIND: Record<Reminder['kind'], string> = {
   check_progress: 'מעקב',
 };
 const RECOVERY_GOOD_DAYS_TARGET = 3;
+const SUCCESS_WEEK_DAYS = 7;
+type DifficultyRating = 'easy' | 'ok' | 'hard';
 
 function fmt(iso: string | null): string {
   if (!iso) return '—';
@@ -127,24 +169,7 @@ function fmtDay(iso: string | null): string {
 
 function consecutiveDoneDays(assignment: Assignment): number {
   const entries = Array.isArray(assignment.history) ? assignment.history : [];
-  if (!entries.length) return 0;
-  const doneDates = new Set(
-    entries.filter((e) => e.action === 'done' && e.at).map((e) => e.at.slice(0, 10))
-  );
-  if (!doneDates.size) return 0;
-  if (assignment.last_done_at) doneDates.add(assignment.last_done_at.slice(0, 10));
-  const startIso = assignment.last_done_at ?? null;
-  if (!startIso) return 0;
-
-  let streak = 0;
-  const cursor = new Date(startIso);
-  while (true) {
-    const key = cursor.toISOString().slice(0, 10);
-    if (!doneDates.has(key)) break;
-    streak += 1;
-    cursor.setUTCDate(cursor.getUTCDate() - 1);
-  }
-  return streak;
+  return consecutiveJerusalemDoneDays(entries);
 }
 
 function greeting(): string {
@@ -181,6 +206,7 @@ async function postAction(body: Record<string, string>) {
     const json = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(json.error ?? 'הפעולה נכשלה');
   }
+  return (await res.json()) as { needs_rating?: boolean };
 }
 
 export function PlansClient({ userId, firstName }: { userId: string; firstName?: string }) {
@@ -190,7 +216,10 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState(false);
   const [justUpdated, setJustUpdated] = useState(false);
-  const [showAllStandalone, setShowAllStandalone] = useState(false);
+  const [showSecondary, setShowSecondary] = useState(false);
+  const [ratingFor, setRatingFor] = useState<{ assignmentId: string; blockerId?: string } | null>(
+    null
+  );
   const firstLoad = useRef(true);
 
   const load = useCallback(async (silent = false) => {
@@ -262,7 +291,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
     };
   }, [userId, load]);
 
-  const run = async (id: string, action: () => Promise<unknown>) => {
+  const run = async <T,>(id: string, action: () => Promise<T>): Promise<T> => {
     setBusyId(id);
     setError(null);
     try {
@@ -284,32 +313,32 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
   // ── Recovery-plan grouping ──────────────────────────────────────────
   // כל blocker ב-improving שיש לו related_assignment_id → קיבוץ עם המיקרו-סטפ
   // ועם ה-assignment המקורי המוקפא (parent_assignment_id).
-  const recoveryPlans: RecoveryPlan[] = (data?.blockers ?? [])
-    .filter((b) => b.status === 'improving' && b.related_assignment_id)
-    .map((b) => {
-      const microStep = (data?.assignments ?? []).find((a) => a.id === b.related_assignment_id) ?? null;
-      const original = microStep?.parent_assignment_id
-        ? (data?.assignments ?? []).find((a) => a.id === microStep.parent_assignment_id) ?? null
-        : null;
-      return microStep ? ({ blocker: b, microStep, original } as RecoveryPlan) : null;
-    })
-    .filter((rp): rp is RecoveryPlan => rp !== null);
+  const recoveryPlans: RecoveryPlan[] = buildRecoveryPlans(
+    data?.assignments ?? [],
+    data?.blockers ?? []
+  );
 
   const recoveryStepIds = new Set(recoveryPlans.map((rp) => rp.microStep.id));
+
+  const openBlockers = (data?.blockers ?? []).filter((b) => b.status === 'open');
 
   // משימות פעילות שאינן חלק מתוכנית החזרה
   const standaloneTasks = (data?.assignments ?? []).filter(
     (a) => a.status === 'active' && !recoveryStepIds.has(a.id)
   );
-  const visibleStandaloneTasks = showAllStandalone ? standaloneTasks : standaloneTasks.slice(0, 4);
-  const hiddenStandaloneCount = Math.max(0, standaloneTasks.length - visibleStandaloneTasks.length);
 
-  // חסמים פתוחים שטרם קיבלו אסטרטגיה (מצב coach)
-  const openBlockers = (data?.blockers ?? []).filter((b) => b.status === 'open');
-
-  const activeCount = standaloneTasks.length + recoveryPlans.length;
-  const blockerCount = openBlockers.length;
-  const reminderCount = pendingReminders.length;
+  const primaryRecovery = recoveryPlans[0] ?? null;
+  const extraRecovery = recoveryPlans.slice(1);
+  const primaryStandalone = primaryRecovery ? null : (standaloneTasks[0] ?? null);
+  const extraStandalone = primaryRecovery
+    ? standaloneTasks
+    : standaloneTasks.slice(1);
+  const secondaryCount =
+    extraRecovery.length +
+    extraStandalone.length +
+    openBlockers.length +
+    pendingReminders.length +
+    (data?.completed.length ?? 0);
 
   // גלילה חלקה לפריט + הבהוב קצר שמסמן בדיוק מה דורש תשומת לב.
   const jumpTo = (id: string) => {
@@ -329,6 +358,40 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
   if (data?.focus?.status === 'proposed') {
     actionItems.push({ id: 'plan-focus', label: 'אלמוג מציע לקחת רגע פוקוס', tint: 'indigo' });
   }
+  if (ratingFor) {
+    actionItems.push({
+      id: `plan-rating-${ratingFor.assignmentId}`,
+      label: 'איך היה הצעד? ספר/י לנו',
+      tint: 'amber',
+    });
+  }
+  if (openBlockers.length > 0 && !primaryRecovery) {
+    actionItems.push({
+      id: `plan-blocker-${openBlockers[0]!.id}`,
+      label: 'יש נקודה שדורשת תשומת לב',
+      tint: 'rose',
+    });
+  }
+
+  const primaryStory: StepStory | null = primaryRecovery
+    ? storyFromAssignment(primaryRecovery.microStep, {
+        blocker: primaryRecovery.syntheticBlocker ? null : primaryRecovery.blocker,
+        originalTitle: primaryRecovery.original?.title ?? null,
+      })
+    : primaryStandalone
+      ? storyFromAssignment(primaryStandalone)
+      : openBlockers[0] && !primaryRecovery
+        ? buildStepStory({
+            title: openBlockers[0].description,
+            blockerDescription: openBlockers[0].description,
+            blockerSource:
+              typeof openBlockers[0].metadata?.source === 'string'
+                ? openBlockers[0].metadata.source
+                : null,
+          })
+        : null;
+
+  const hasPrimaryWork = Boolean(primaryRecovery || primaryStandalone || (openBlockers.length > 0 && !primaryRecovery));
 
   return (
     <div dir="rtl" className="relative min-h-[calc(100vh-9rem)] overflow-hidden">
@@ -339,9 +402,9 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
         name={name}
         live={live}
         pulsing={justUpdated}
-        active={activeCount}
-        reminders={reminderCount}
-        blockers={blockerCount}
+        nowLabel={primaryStory?.headline ?? null}
+        moreCount={secondaryCount}
+        needsYou={actionItems.length > 0}
       />
 
       <div
@@ -378,117 +441,88 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
               <ActionNeeded items={actionItems} onJump={jumpTo} />
             ) : null}
 
-            <AnimatePresence initial={false}>
-              {data.focus ? (
-                <FocusCard
-                  key={data.focus.id}
-                  focus={data.focus}
-                  busy={busyId === data.focus.id}
-                  onConfirm={() =>
-                    run(data.focus!.id, () => postAction({ action: 'confirm_focus', focus_id: data.focus!.id }))
-                  }
-                  onDecline={() =>
-                    run(data.focus!.id, () => postAction({ action: 'decline_focus', focus_id: data.focus!.id }))
-                  }
-                  onEnd={() =>
-                    run(data.focus!.id, () => postAction({ action: 'end_focus', focus_id: data.focus!.id }))
-                  }
-                />
-              ) : null}
-            </AnimatePresence>
-
-            {/* ── תוכניות חזרה (PRIMARY) ── */}
-            {recoveryPlans.length > 0 ? (
-              <Section
-                icon={Repeat}
-                title="בדרך חזרה"
-                tint="amber"
-                count={recoveryPlans.length}
-                explain="אנחנו עובדים בצעדים קטנים כדי לחזור להרגל המקורי. סמן כל צעד כשתעשה אותו — ואני אעדכן את התוכנית."
-              >
-                <AnimatePresence initial={false}>
-                  {recoveryPlans.map((rp, i) => (
-                    <RecoveryPlanCard
-                      key={rp.blocker.id}
-                      plan={rp}
-                      index={i + 1}
-                      busy={(busyId?.startsWith(rp.blocker.id) ?? false) || busyId === rp.microStep.id}
-                      onDoneStep={() =>
-                        run(rp.microStep.id, () =>
-                          postAction({ action: 'done', assignment_id: rp.microStep.id })
-                        )
-                      }
-                      onPivot={() =>
-                        run(`${rp.blocker.id}-p`, async () => {
-                          await postBlockerAction({ action: 'coach_pivot', blocker_id: rp.blocker.id });
-                          await postBlockerAction({ action: 'accept', blocker_id: rp.blocker.id });
-                        })
-                      }
-                      onAsk={() =>
-                        dispatchOpenAlmogChatWithPrefill(
-                          `אלמוג, לגבי "${rp.blocker.description}" — אפשר שנדבר על זה?`
-                        )
-                      }
-                    />
-                  ))}
-                </AnimatePresence>
-              </Section>
+            {hasPrimaryWork && primaryStory ? (
+              <TodayOverview story={primaryStory} moreCount={secondaryCount} />
             ) : null}
 
-            {/* ── משימות עצמאיות (PRIMARY) ── */}
-            <Section
-              icon={Sparkles}
-              title="הצעדים שלך"
-              tint="emerald"
-              count={standaloneTasks.length}
-              defaultOpen
-              explain="אלה הדברים שסיכמנו לעשות עכשיו. אחד בכל פעם, בלי לחץ — וכל סימון פה הוא ניצחון אמיתי. 🌱"
-            >
-              {standaloneTasks.length > 0 ? (
-                <AnimatePresence initial={false}>
-                  {visibleStandaloneTasks.map((a, i) => (
-                    <AssignmentCard
-                      key={a.id}
-                      assignment={a}
-                      index={i + 1}
-                      busy={busyId === a.id}
-                      onDone={() => run(a.id, () => postAction({ action: 'done', assignment_id: a.id }))}
-                      onDrop={() => run(a.id, () => postAction({ action: 'drop', assignment_id: a.id }))}
-                    />
-                  ))}
-                </AnimatePresence>
-              ) : null}
-              {hiddenStandaloneCount > 0 ? (
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => setShowAllStandalone((v) => !v)}
-                    className="w-full rounded-2xl border border-emerald-200/70 bg-white/55 px-3 py-2.5 text-[12.5px] font-bold text-emerald-700 transition active:scale-[0.99]"
-                  >
-                    {showAllStandalone
-                      ? 'הצג פחות צעדים'
-                      : `יש עוד ${hiddenStandaloneCount} צעדים — הצג הכול`}
-                  </button>
-                </li>
-              ) : null}
-              {standaloneTasks.length === 0 ? (
-                recoveryPlans.length > 0 ? (
-                  <EmptyHint text="כרגע כל המאמץ מוכוון לתוכנית החזרה שלמעלה. 🌿" />
-                ) : (
-                  <EmptyHint text="אין כרגע צעד פתוח. כשנסכם משהו בשיחה — אשים אותו פה בשבילך." />
-                )
-              ) : null}
-            </Section>
-
-            {/* ── שיחת מאמן — חסמים פתוחים (SECONDARY) ── */}
-            {openBlockers.length > 0 ? (
-              <Section
-                icon={MessageCircle}
-                title="אלמוג כאן בשבילך"
-                tint="rose"
-                count={openBlockers.length}
-                explain="כשמשהו תקוע, פה אנחנו פותרים את זה ביחד. בלי שיפוט — צעד אחד קטן בכל פעם."
-              >
+            {/* ── מיקוד: צעד אחד בלבד (תמיד גלוי כשיש) ── */}
+            {primaryRecovery ? (
+              <div className="space-y-3">
+                <StepStoryPanel story={primaryStory!} pinned />
+                <RecoveryPlanCard
+                  key={primaryRecovery.blocker.id}
+                  plan={primaryRecovery}
+                  index={1}
+                  variant="primary"
+                  busy={
+                    (busyId?.startsWith(primaryRecovery.blocker.id) ?? false) ||
+                    busyId === primaryRecovery.microStep.id
+                  }
+                  ratingOpen={ratingFor?.assignmentId === primaryRecovery.microStep.id}
+                  onDoneStep={async () => {
+                    const result = await run(primaryRecovery.microStep.id, () =>
+                      postAction({ action: 'done', assignment_id: primaryRecovery.microStep.id })
+                    );
+                    if (result?.needs_rating) {
+                      setRatingFor({
+                        assignmentId: primaryRecovery.microStep.id,
+                        blockerId: primaryRecovery.blocker.id,
+                      });
+                    }
+                  }}
+                  onRate={async (rating) => {
+                    if (rating === 'hard') {
+                      await run(`${primaryRecovery.blocker.id}-p`, async () => {
+                        await postBlockerAction({
+                          action: 'coach_pivot',
+                          blocker_id: primaryRecovery.blocker.id,
+                        });
+                        await postBlockerAction({
+                          action: 'accept',
+                          blocker_id: primaryRecovery.blocker.id,
+                        });
+                      });
+                    } else {
+                      await run(primaryRecovery.microStep.id, () =>
+                        postAction({
+                          action: 'rate_difficulty',
+                          assignment_id: primaryRecovery.microStep.id,
+                          rating,
+                          blocker_id: primaryRecovery.blocker.id,
+                        })
+                      );
+                    }
+                    setRatingFor(null);
+                  }}
+                  onPivot={() =>
+                    run(`${primaryRecovery.blocker.id}-p`, async () => {
+                      await postBlockerAction({ action: 'coach_pivot', blocker_id: primaryRecovery.blocker.id });
+                      await postBlockerAction({ action: 'accept', blocker_id: primaryRecovery.blocker.id });
+                    })
+                  }
+                  onAsk={() =>
+                    dispatchOpenAlmogChatWithPrefill(
+                      `אלמוג, לגבי "${primaryRecovery.blocker.description}" — אפשר שנדבר על זה?`
+                    )
+                  }
+                />
+              </div>
+            ) : primaryStandalone ? (
+              <div className="space-y-3">
+                <StepStoryPanel story={primaryStory!} pinned />
+                <AssignmentCard
+                  key={primaryStandalone.id}
+                  assignment={primaryStandalone}
+                  index={1}
+                  variant="primary"
+                  busy={busyId === primaryStandalone.id}
+                  onDone={() => run(primaryStandalone.id, () => postAction({ action: 'done', assignment_id: primaryStandalone.id }))}
+                  onDrop={() => run(primaryStandalone.id, () => postAction({ action: 'drop', assignment_id: primaryStandalone.id }))}
+                />
+              </div>
+            ) : openBlockers.length > 0 ? (
+              <div className="space-y-3">
+                {primaryStory ? <StepStoryPanel story={primaryStory} pinned /> : null}
                 {openBlockers.map((b, i) => (
                   <BlockerCoachCard
                     key={b.id}
@@ -522,49 +556,189 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                     }}
                   />
                 ))}
-              </Section>
-            ) : null}
+              </div>
+            ) : (
+              <QuietState
+                moreCount={secondaryCount}
+                onExpand={() => setShowSecondary(true)}
+              />
+            )}
 
-            {/* ── תזכורות (SECONDARY) ── */}
-            {pendingReminders.length > 0 ? (
-              <Section
-                icon={Bell}
-                title="אזכיר לך"
-                tint="amber"
-                count={pendingReminders.length}
-                explain="פה אני שומר את התזכורות שלקחתי על עצמי. לא תצטרך לזכור לבד — אני אדאג להזכיר בזמן."
-              >
-                {pendingReminders.map((r, i) => (
-                  <ReminderRow key={r.id} reminder={r} index={i + 1} />
-                ))}
-              </Section>
-            ) : null}
+            <AnimatePresence initial={false}>
+              {data.focus ? (
+                <FocusShell openByDefault={data.focus.status === 'proposed'}>
+                  <FocusCard
+                    key={data.focus.id}
+                    focus={data.focus}
+                    busy={busyId === data.focus.id}
+                    onConfirm={() =>
+                      run(data.focus!.id, () => postAction({ action: 'confirm_focus', focus_id: data.focus!.id }))
+                    }
+                    onDecline={() =>
+                      run(data.focus!.id, () => postAction({ action: 'decline_focus', focus_id: data.focus!.id }))
+                    }
+                    onEnd={() =>
+                      run(data.focus!.id, () => postAction({ action: 'end_focus', focus_id: data.focus!.id }))
+                    }
+                  />
+                </FocusShell>
+              ) : null}
+            </AnimatePresence>
 
-            {/* ── הושלמו (SECONDARY) ── */}
-            {data.completed.length > 0 ? (
-              <Section
-                icon={CheckCircle2}
-                title="כבר עשית את זה"
-                tint="teal"
-                count={data.completed.length}
-                explain="כל מה שכבר סימנת. שווה להציץ אחורה מדי פעם — זה דלק להמשך, ואני גאה בכל אחד מהם. 💪"
+            {secondaryCount > 0 ? (
+              <details
+                className="group overflow-hidden rounded-3xl"
+                style={glassStyle('emerald')}
+                open={showSecondary}
+                onToggle={(e) => setShowSecondary((e.target as HTMLDetailsElement).open)}
               >
-                {data.completed.map((a, i) => (
-                  <li
-                    key={a.id}
-                    className="flex items-center gap-2.5 rounded-2xl border border-teal-100 bg-teal-50/70 px-3 py-2.5"
-                  >
-                    <NumBadge n={i + 1} rgb={TINT.teal.rgb} />
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-500" />
-                    <p className="min-w-0 flex-1 truncate text-[13px] font-bold text-teal-900/80 line-through decoration-teal-400/50">
-                      {a.title}
-                    </p>
-                    <span className="shrink-0 text-[10px] font-semibold text-teal-600/70">
-                      {fmtDay(a.last_done_at)}
-                    </span>
-                  </li>
-                ))}
-              </Section>
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3.5">
+                  <span className="text-[14px] font-black text-slate-700">
+                    {showSecondary ? 'שאר התוכנית' : `עוד בתוכנית (${secondaryCount})`}
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    {showSecondary ? 'לחץ לסגירה' : 'לחץ לפתיחה'}
+                  </span>
+                </summary>
+                <div className="space-y-4 border-t border-white/40 px-4 pb-4 pt-3">
+                  {extraRecovery.length > 0 ? (
+                    <Section icon={Repeat} title="עוד בדרך חזרה" tint="amber" count={extraRecovery.length}>
+                      {extraRecovery.map((rp, i) => (
+                        <CompactRecoveryRow
+                          key={rp.microStep.id}
+                          plan={rp}
+                          index={i + 2}
+                          busy={(busyId?.startsWith(rp.blocker.id) ?? false) || busyId === rp.microStep.id}
+                          ratingOpen={ratingFor?.assignmentId === rp.microStep.id}
+                          onDoneStep={async () => {
+                            const result = await run(rp.microStep.id, () =>
+                              postAction({ action: 'done', assignment_id: rp.microStep.id })
+                            );
+                            if (result?.needs_rating) {
+                              setRatingFor({
+                                assignmentId: rp.microStep.id,
+                                blockerId: rp.syntheticBlocker ? undefined : rp.blocker.id,
+                              });
+                            }
+                          }}
+                          onRate={async (rating) => {
+                            if (rating === 'hard' && !rp.syntheticBlocker) {
+                              await run(`${rp.blocker.id}-p`, async () => {
+                                await postBlockerAction({ action: 'coach_pivot', blocker_id: rp.blocker.id });
+                                await postBlockerAction({ action: 'accept', blocker_id: rp.blocker.id });
+                              });
+                            } else if (rating !== 'hard') {
+                              await run(rp.microStep.id, () =>
+                                postAction({
+                                  action: 'rate_difficulty',
+                                  assignment_id: rp.microStep.id,
+                                  rating,
+                                  ...(rp.syntheticBlocker ? {} : { blocker_id: rp.blocker.id }),
+                                })
+                              );
+                            }
+                            setRatingFor(null);
+                          }}
+                          onPivot={() =>
+                            rp.syntheticBlocker
+                              ? Promise.resolve()
+                              : run(`${rp.blocker.id}-p`, async () => {
+                                  await postBlockerAction({ action: 'coach_pivot', blocker_id: rp.blocker.id });
+                                  await postBlockerAction({ action: 'accept', blocker_id: rp.blocker.id });
+                                })
+                          }
+                          onAsk={() =>
+                            dispatchOpenAlmogChatWithPrefill(
+                              `אלמוג, לגבי "${rp.blocker.description}" — אפשר שנדבר על זה?`
+                            )
+                          }
+                        />
+                      ))}
+                    </Section>
+                  ) : null}
+
+                  {extraStandalone.length > 0 ? (
+                    <Section icon={Sparkles} title="עוד צעדים" tint="emerald" count={extraStandalone.length}>
+                      {extraStandalone.map((a, i) => (
+                        <CompactAssignmentRow
+                          key={a.id}
+                          assignment={a}
+                          index={i + 2}
+                          busy={busyId === a.id}
+                          onDone={() => run(a.id, () => postAction({ action: 'done', assignment_id: a.id }))}
+                          onDrop={() => run(a.id, () => postAction({ action: 'drop', assignment_id: a.id }))}
+                        />
+                      ))}
+                    </Section>
+                  ) : null}
+
+                  {openBlockers.length > 0 && primaryRecovery ? (
+                    <Section icon={MessageCircle} title="אלמוג כאן בשבילך" tint="rose" count={openBlockers.length}>
+                      {openBlockers.map((b, i) => (
+                        <BlockerCoachCard
+                          key={b.id}
+                          blocker={b}
+                          index={i + 1}
+                          busy={busyId?.startsWith(b.id) ?? false}
+                          onCoach={() =>
+                            run(`${b.id}-c`, () =>
+                              postBlockerAction({ action: 'coach', blocker_id: b.id })
+                            ) as Promise<Record<string, unknown>>
+                          }
+                          onAccept={() =>
+                            run(`${b.id}-a`, () =>
+                              postBlockerAction({ action: 'accept', blocker_id: b.id })
+                            ) as Promise<Record<string, unknown>>
+                          }
+                          onPivot={() =>
+                            run(`${b.id}-p`, () =>
+                              postBlockerAction({ action: 'coach_pivot', blocker_id: b.id })
+                            ) as Promise<Record<string, unknown>>
+                          }
+                          onHelped={() =>
+                            run(`${b.id}-h`, () =>
+                              postBlockerAction({ action: 'helped', blocker_id: b.id })
+                            ) as Promise<Record<string, unknown>>
+                          }
+                          onAsk={() =>
+                            dispatchOpenAlmogChatWithPrefill(
+                              `אלמוג, לגבי "${b.description}" — אפשר שנדבר על זה?`
+                            )
+                          }
+                        />
+                      ))}
+                    </Section>
+                  ) : null}
+
+                  {pendingReminders.length > 0 ? (
+                    <Section icon={Bell} title="אזכיר לך" tint="amber" count={pendingReminders.length}>
+                      {pendingReminders.map((r, i) => (
+                        <ReminderRow key={r.id} reminder={r} index={i + 1} />
+                      ))}
+                    </Section>
+                  ) : null}
+
+                  {data.completed.length > 0 ? (
+                    <Section icon={CheckCircle2} title="כבר עשית את זה" tint="teal" count={data.completed.length}>
+                      {data.completed.map((a, i) => (
+                        <li
+                          key={a.id}
+                          className="flex items-center gap-2.5 rounded-2xl border border-teal-100 bg-teal-50/70 px-3 py-2.5"
+                        >
+                          <NumBadge n={i + 1} rgb={TINT.teal.rgb} />
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-500" />
+                          <p className="min-w-0 flex-1 truncate text-[13px] font-bold text-teal-900/80 line-through decoration-teal-400/50">
+                            {a.title}
+                          </p>
+                          <span className="shrink-0 text-[10px] font-semibold text-teal-600/70">
+                            {fmtDay(a.last_done_at)}
+                          </span>
+                        </li>
+                      ))}
+                    </Section>
+                  ) : null}
+                </div>
+              </details>
             ) : null}
 
             {/* ── תזכורות שנשלחו (טריוויה) ── */}
@@ -745,16 +919,16 @@ function Hero({
   name,
   live,
   pulsing,
-  active,
-  reminders,
-  blockers,
+  nowLabel,
+  moreCount,
+  needsYou,
 }: {
   name: string;
   live: boolean;
   pulsing: boolean;
-  active: number;
-  reminders: number;
-  blockers: number;
+  nowLabel: string | null;
+  moreCount: number;
+  needsYou: boolean;
 }) {
   return (
     <motion.section
@@ -865,53 +1039,18 @@ function Hero({
           התוכנית שלי
         </h1>
 
-        <p className="mx-auto mt-3 max-w-[18rem] text-[14px] leading-relaxed font-medium text-emerald-50/95">
-          ריכזתי כאן כל מה שסיכמנו — צעד קטן בכל פעם, ואני איתך בכל אחד מהם. 🌱
+        <p className="mx-auto mt-3 max-w-[20rem] text-[14px] leading-relaxed font-medium text-emerald-50/95">
+          {nowLabel
+            ? `עכשיו: ${nowLabel}`
+            : 'אין כרגע צעד דחוץ — הכול רגוע'}
+          {moreCount > 0 ? ` · ועוד ${moreCount} ברקע` : ''}
         </p>
 
-        <div className="mt-7 grid grid-cols-3 gap-2.5">
-          <HeroStat icon={Sparkles} value={active} label="דברים לעשות" tint="emerald" />
-          <HeroStat icon={Bell} value={reminders} label="תזכורות" tint="amber" />
-          <HeroStat icon={MessageCircle} value={blockers} label="תקועים?" tint="rose" />
-        </div>
+        {needsYou ? (
+          <p className="mt-3 text-[12px] font-bold text-amber-100/95">יש משהו שמחכה לתשובה שלך למטה ↓</p>
+        ) : null}
       </div>
     </motion.section>
-  );
-}
-
-function HeroStat({
-  icon: Icon,
-  value,
-  label,
-  tint,
-}: {
-  icon: typeof Sparkles;
-  value: number;
-  label: string;
-  tint: Tint;
-}) {
-  const t = TINT[tint];
-  return (
-    <motion.div
-      whileTap={{ scale: 0.96 }}
-      className="relative overflow-hidden rounded-2xl px-2 py-4 text-center"
-      style={{
-        background: `linear-gradient(165deg, rgba(${t.rgb},0.42) 0%, rgba(${t.rgb},0.22) 55%, rgba(255,255,255,0.14) 100%)`,
-        backdropFilter: 'blur(16px) saturate(170%)',
-        WebkitBackdropFilter: 'blur(16px) saturate(170%)',
-        border: `1px solid rgba(${t.rgb},0.55)`,
-        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.55), 0 12px 32px rgba(${t.rgb},0.28)`,
-      }}
-    >
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-1/2"
-        style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.38), transparent)' }}
-      />
-      <Icon className="relative mx-auto mb-1.5 h-5 w-5 text-white/95" aria-hidden />
-      <p className="relative text-[30px] font-black leading-none text-white drop-shadow-md">{value}</p>
-      <p className="relative mt-1.5 text-[11px] font-semibold text-white/90">{label}</p>
-    </motion.div>
   );
 }
 
@@ -998,6 +1137,230 @@ function LivePill({ live, pulsing }: { live: boolean; pulsing: boolean }) {
       />
       {live ? 'חי' : 'מתחבר'}
     </span>
+  );
+}
+
+/** סיכום קצר מתחת ל-hero — מה רואים עכשיו */
+function TodayOverview({ story, moreCount }: { story: StepStory; moreCount: number }) {
+  return (
+    <div
+      className="rounded-3xl px-4 py-3.5"
+      style={{
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.88), rgba(236,253,245,0.55))',
+        border: '1px solid rgba(16,185,129,0.2)',
+        boxShadow: '0 6px 20px rgba(16,185,129,0.08)',
+      }}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black text-emerald-800">
+          {story.tag}
+        </span>
+        {moreCount > 0 ? (
+          <span className="text-[10px] font-semibold text-slate-500">+{moreCount} נוספים ברקע</span>
+        ) : null}
+      </div>
+      <p className="mt-2 text-[15px] font-black leading-snug text-slate-800">{story.headline}</p>
+      <p className="mt-1 text-[12px] leading-relaxed text-slate-500 line-clamp-2">{story.why}</p>
+    </div>
+  );
+}
+
+/** למה / מה שמתי לב / איך עוזר — תמיד גלוי בצעד הראשי */
+function StepStoryPanel({ story, pinned = false }: { story: StepStory; pinned?: boolean }) {
+  const [open, setOpen] = useState(pinned);
+
+  if (!open && !pinned) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex w-full items-center gap-2 rounded-2xl border border-slate-200/70 bg-white/60 px-3 py-2.5 text-right transition active:scale-[0.99]"
+      >
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+          {story.tag}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[12px] text-slate-600">{story.why}</span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
+      </button>
+    );
+  }
+
+  return (
+    <div
+      className="rounded-2xl border border-emerald-100/80 px-3.5 py-3"
+      style={{ background: 'rgba(255,255,255,0.65)' }}
+    >
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-black text-emerald-700">
+          למה הצעד הזה?
+        </span>
+        {!pinned ? (
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="text-[10px] font-bold text-slate-400"
+          >
+            סגור
+          </button>
+        ) : null}
+      </div>
+      <dl className="space-y-2.5 text-[12px] leading-relaxed">
+        <div>
+          <dt className="font-black text-slate-700">למה נוצר</dt>
+          <dd className="mt-0.5 text-slate-600">{story.why}</dd>
+        </div>
+        <div>
+          <dt className="font-black text-slate-700">מה שמתי לב</dt>
+          <dd className="mt-0.5 text-slate-600">{story.observed}</dd>
+        </div>
+        <div>
+          <dt className="font-black text-slate-700">איך זה עוזר</dt>
+          <dd className="mt-0.5 text-slate-600">{story.helps}</dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
+function QuietState({ moreCount, onExpand }: { moreCount: number; onExpand: () => void }) {
+  return (
+    <div
+      className="rounded-3xl px-4 py-6 text-center"
+      style={{
+        background: 'rgba(255,255,255,0.55)',
+        border: '1px solid rgba(16,185,129,0.15)',
+      }}
+    >
+      <p className="text-[14px] font-bold text-slate-700">אין כרגע צעד שדורש ממך משהו</p>
+      <p className="mt-1 text-[12px] text-slate-500">כשנסכם משהו בשיחה — יופיע כאן בצורה ברורה</p>
+      {moreCount > 0 ? (
+        <button
+          type="button"
+          onClick={onExpand}
+          className="mt-4 rounded-2xl bg-emerald-600 px-4 py-2.5 text-[13px] font-black text-white transition active:scale-95"
+        >
+          פתח את שאר התוכנית ({moreCount})
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function FocusShell({ openByDefault, children }: { openByDefault: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(openByDefault);
+  if (openByDefault) return <>{children}</>;
+  return (
+    <details
+      className="overflow-hidden rounded-3xl"
+      style={glassStyle('indigo')}
+      open={open}
+      onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
+    >
+      <summary className="cursor-pointer list-none px-4 py-3 text-[13px] font-bold text-slate-600">
+        מצב פוקוס פעיל — לחץ לפרטים
+      </summary>
+      <div className="border-t border-white/40 px-1 pb-1">{children}</div>
+    </details>
+  );
+}
+
+function CompactRecoveryRow(props: ComponentProps<typeof RecoveryPlanCard>) {
+  const [open, setOpen] = useState(false);
+  const story = storyFromAssignment(props.plan.microStep, {
+    blocker: props.plan.syntheticBlocker ? null : props.plan.blocker,
+    originalTitle: props.plan.original?.title ?? null,
+  });
+
+  return (
+    <li className="list-none">
+      {!open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex w-full items-center gap-2.5 rounded-2xl border border-amber-100/80 bg-white/50 px-3 py-2.5 text-right transition active:scale-[0.99]"
+        >
+          <NumBadge n={props.index} rgb={TINT.amber.rgb} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-bold text-slate-800">{props.plan.microStep.title}</p>
+            <p className="truncate text-[11px] text-slate-500">{story.why}</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-bold text-amber-700">
+            {story.tag}
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
+        </button>
+      ) : (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="text-[10px] font-bold text-slate-400"
+          >
+            ↑ סגור
+          </button>
+          <StepStoryPanel story={story} />
+          <RecoveryPlanCard {...props} variant="secondary" />
+        </div>
+      )}
+    </li>
+  );
+}
+
+function CompactAssignmentRow({
+  assignment,
+  index,
+  busy,
+  onDone,
+  onDrop,
+}: {
+  assignment: Assignment;
+  index: number;
+  busy: boolean;
+  onDone: () => void;
+  onDrop: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const story = storyFromAssignment(assignment);
+
+  return (
+    <li className="list-none">
+      {!open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex w-full items-center gap-2.5 rounded-2xl border border-emerald-100/80 bg-white/50 px-3 py-2.5 text-right transition active:scale-[0.99]"
+        >
+          <NumBadge n={index} rgb={TINT.emerald.rgb} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-bold text-slate-800">{assignment.title}</p>
+            <p className="truncate text-[11px] text-slate-500">{story.why}</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700">
+            {story.tag}
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
+        </button>
+      ) : (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="text-[10px] font-bold text-slate-400"
+          >
+            ↑ סגור
+          </button>
+          <StepStoryPanel story={story} />
+          <AssignmentCard
+            assignment={assignment}
+            index={index}
+            variant="secondary"
+            busy={busy}
+            onDone={onDone}
+            onDrop={onDrop}
+          />
+        </div>
+      )}
+    </li>
   );
 }
 
@@ -1218,12 +1581,14 @@ function AssignmentCard({
   busy,
   onDone,
   onDrop,
+  variant = 'primary',
 }: {
   assignment: Assignment;
   index: number;
   busy: boolean;
   onDone: () => void;
   onDrop: () => void;
+  variant?: 'primary' | 'secondary';
 }) {
   const [expanded, setExpanded] = useState(false);
   const isRecurring = assignment.schedule !== 'one_time';
@@ -1234,6 +1599,7 @@ function AssignmentCard({
       ? RELATION_META[assignment.relation]
       : null;
   const isEasedOriginal = assignment.status === 'frozen';
+  const compact = variant === 'secondary';
 
   return (
     <motion.li
@@ -1244,9 +1610,11 @@ function AssignmentCard({
       whileTap={{ scale: 0.992 }}
       className="relative overflow-hidden rounded-[22px]"
       style={{
-        background: 'linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(236,253,245,0.55) 100%)',
+        background: compact
+          ? 'rgba(255,255,255,0.72)'
+          : 'linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(236,253,245,0.55) 100%)',
         border: '1px solid rgba(16,185,129,0.18)',
-        boxShadow: '0 8px 24px rgba(16,185,129,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+        boxShadow: compact ? 'none' : '0 8px 24px rgba(16,185,129,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
         ...(isEasedOriginal ? { opacity: 0.82 } : {}),
       }}
     >
@@ -1284,7 +1652,7 @@ function AssignmentCard({
               ) : null}
             </div>
           </div>
-          {(assignment.reason || assignment.detail) && !isEasedOriginal ? (
+          {(assignment.reason || assignment.detail) && !isEasedOriginal && variant === 'primary' ? (
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
@@ -1376,86 +1744,84 @@ function RecoveryPlanCard({
   onDoneStep,
   onPivot,
   onAsk,
+  ratingOpen = false,
+  onRate,
+  variant = 'primary',
 }: {
   plan: RecoveryPlan;
   index: number;
   busy: boolean;
-  onDoneStep: () => void;
+  onDoneStep: () => void | Promise<unknown>;
   onPivot: () => Promise<unknown>;
   onAsk: () => void;
+  ratingOpen?: boolean;
+  onRate?: (rating: DifficultyRating) => void | Promise<unknown>;
+  variant?: 'primary' | 'secondary';
 }) {
   const { blocker, microStep, original } = plan;
+  const compact = variant === 'secondary';
   const doneToday =
     Boolean(microStep.last_done_at) &&
     fmtDay(microStep.last_done_at) === fmtDay(new Date().toISOString());
   const recoveryProgressDays = Math.min(consecutiveDoneDays(microStep), RECOVERY_GOOD_DAYS_TARGET);
 
   return (
-    <motion.li
+    <motion.div
       id={`plan-blocker-${blocker.id}`}
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
       className="relative overflow-hidden rounded-[24px] p-4"
-      style={glassStyle('amber')}
+      style={compact ? { background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(245,158,11,0.2)' } : glassStyle('amber')}
     >
-      <GlassSheen />
+      {!compact ? <GlassSheen /> : null}
       <div className="relative z-[1] space-y-3">
 
-        {/* ── הרגל מקורי מוקפא ── */}
-        {original ? (
+        {original && !compact ? (
           <div
-            className="flex items-center gap-2 rounded-2xl px-3 py-2.5"
+            className="flex items-center gap-2 rounded-2xl px-3 py-2"
             style={{
               background: 'rgba(148,163,184,0.10)',
               border: '1px solid rgba(148,163,184,0.20)',
             }}
           >
             <Snowflake className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                בדרך חזרה ל:
-              </p>
-              <p className="mt-0.5 text-[13px] font-bold text-slate-500">{original.title}</p>
-            </div>
-            <NumBadge n={index} rgb={TINT.amber.rgb} />
+            <p className="min-w-0 flex-1 text-[12px] text-slate-500">
+              <span className="font-bold">בדרך חזרה ל: </span>
+              {original.title}
+            </p>
           </div>
         ) : null}
 
-        {/* ── חץ חיבור ── */}
-        {original ? (
-          <div className="flex items-center gap-2 px-3">
-            <span className="h-px flex-1 rounded-full bg-gradient-to-l from-transparent via-amber-300/60 to-transparent" />
-            <span className="text-[10px] font-bold text-amber-500">↓ צעד קטן</span>
-            <span className="h-px flex-1 rounded-full bg-gradient-to-r from-transparent via-amber-300/60 to-transparent" />
-          </div>
-        ) : null}
-
-        {/* ── צעד נוכחי (הצעד הקטן האקטיבי) ── */}
-        <div
-          className="rounded-2xl px-3.5 py-3"
-          style={{
+        <div className={compact ? '' : 'rounded-2xl px-3.5 py-3'} style={compact ? undefined : {
             background: 'linear-gradient(160deg, rgba(255,255,255,0.6), rgba(236,253,245,0.4))',
             border: '1px solid rgba(16,185,129,0.22)',
-          }}
-        >
-          <p className="mb-1 flex items-center gap-1 text-[10px] font-black uppercase tracking-wide text-emerald-600/80">
-            <Sparkles className="h-3 w-3" />
-            הצעד שלך עכשיו
-          </p>
+          }}>
+          {!compact ? (
+            <p className="mb-1 flex items-center gap-1 text-[10px] font-black uppercase tracking-wide text-emerald-600/80">
+              <Sparkles className="h-3 w-3" />
+              הצעד שלך עכשיו
+            </p>
+          ) : null}
           <p className="text-[15px] font-black leading-snug text-slate-800">{microStep.title}</p>
           {microStep.detail ? (
             <p className="mt-1 text-[12px] leading-relaxed text-slate-500">{microStep.detail}</p>
           ) : null}
           {microStep.done_count > 0 ? (
             <p className="mt-1 text-[10px] font-bold text-emerald-600">
-              {recoveryProgressDays}/{RECOVERY_GOOD_DAYS_TARGET} ימים טובים בדרך חזרה 🌱
+              {recoveryProgressDays}/{RECOVERY_GOOD_DAYS_TARGET} ימים טובים בדרך חזרה
+              {original ? ` · יעד סופי: ${SUCCESS_WEEK_DAYS} ימים ברצף` : ''} 🌱
             </p>
           ) : null}
         </div>
 
+        {ratingOpen && onRate ? (
+          <DifficultyRatingBar busy={busy} onRate={onRate} />
+        ) : null}
+
         {/* ── כפתורי פעולה ── */}
+        {!ratingOpen ? (
         <div className="flex flex-wrap gap-2 pt-0.5">
           <button
             type="button"
@@ -1472,15 +1838,17 @@ function RecoveryPlanCard({
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             {doneToday ? 'בוצע היום ✨' : 'עשיתי את זה!'}
           </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void onPivot()}
-            className="flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-white/60 px-3 py-2.5 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
-          >
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ThumbsDown className="h-3.5 w-3.5" />}
-            לא עובד — נחליף עכשיו
-          </button>
+          {!plan.syntheticBlocker ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void onPivot()}
+              className="flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-white/60 px-3 py-2.5 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
+            >
+              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ThumbsDown className="h-3.5 w-3.5" />}
+              לא עובד — נחליף עכשיו
+            </button>
+          ) : null}
           <button
             type="button"
             disabled={busy}
@@ -1491,28 +1859,92 @@ function RecoveryPlanCard({
             נדבר
           </button>
         </div>
+        ) : null}
       </div>
-    </motion.li>
+    </motion.div>
+  );
+}
+
+function DifficultyRatingBar({
+  busy,
+  onRate,
+}: {
+  busy: boolean;
+  onRate: (rating: DifficultyRating) => void | Promise<unknown>;
+}) {
+  return (
+    <div
+      className="rounded-2xl px-3 py-3"
+      style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(16,185,129,0.2)' }}
+    >
+      <p className="mb-2 text-center text-[13px] font-bold text-slate-700">איך זה היה?</p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void onRate('easy')}
+          className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-emerald-50 px-2 py-2.5 text-[12px] font-bold text-emerald-700 disabled:opacity-60"
+        >
+          <ThumbsUp className="h-3.5 w-3.5" />
+          קל
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void onRate('ok')}
+          className="flex flex-1 items-center justify-center rounded-xl bg-slate-50 px-2 py-2.5 text-[12px] font-bold text-slate-600 disabled:opacity-60"
+        >
+          בסדר
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void onRate('hard')}
+          className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-rose-50 px-2 py-2.5 text-[12px] font-bold text-rose-600 disabled:opacity-60"
+        >
+          <ThumbsDown className="h-3.5 w-3.5" />
+          קשה
+        </button>
+      </div>
+      <p className="mt-2 text-center text-[10px] text-slate-400">
+        קל או בסדר → אזכיר לך מתי לנסות שוב. קשה → נביא משהו קל יותר.
+      </p>
+    </div>
   );
 }
 
 function ReminderRow({ reminder, index }: { reminder: Reminder; index: number }) {
+  const [open, setOpen] = useState(false);
   return (
-    <li className="relative overflow-hidden rounded-3xl p-3.5" style={glassStyle('amber')}>
-      <GlassSheen />
-      <div className="relative z-[1]">
-      <div className="mb-1 flex items-center gap-2">
-        <NumBadge n={index} rgb={TINT.amber.rgb} />
-        <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
-          {REMINDER_KIND[reminder.kind]}
-        </span>
-        <span className="inline-flex items-center gap-1 text-[10px] text-amber-700/70">
-          <Clock className="h-3 w-3" />
-          {fmt(reminder.fire_at)}
-        </span>
-      </div>
-      <p className="text-[13.5px] leading-relaxed text-slate-800">{reminder.body}</p>
-      </div>
+    <li className="list-none">
+      {!open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex w-full items-center gap-2 rounded-2xl border border-amber-100/70 bg-white/45 px-3 py-2 text-right"
+        >
+          <NumBadge n={index} rgb={TINT.amber.rgb} />
+          <span className="min-w-0 flex-1 truncate text-[12px] text-slate-700">{reminder.title}</span>
+          <span className="shrink-0 text-[10px] text-amber-700/70">{fmtDay(reminder.fire_at)}</span>
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+        </button>
+      ) : (
+        <div className="relative overflow-hidden rounded-2xl p-3" style={glassStyle('amber')}>
+          <button type="button" onClick={() => setOpen(false)} className="mb-2 text-[10px] font-bold text-slate-400">
+            ↑ סגור
+          </button>
+          <div className="mb-1 flex items-center gap-2">
+            <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+              {REMINDER_KIND[reminder.kind]}
+            </span>
+            <span className="inline-flex items-center gap-1 text-[10px] text-amber-700/70">
+              <Clock className="h-3 w-3" />
+              {fmt(reminder.fire_at)}
+            </span>
+          </div>
+          <p className="text-[13px] leading-relaxed text-slate-800">{reminder.body}</p>
+        </div>
+      )}
     </li>
   );
 }

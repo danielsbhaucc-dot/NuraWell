@@ -21,6 +21,7 @@ import {
   runProgramOrchestrator,
   type RunOrchestratorResult,
 } from '../../../../../../lib/ai/orchestrator/run-program-orchestrator';
+import { runRecoveryOrchestrationBatch } from '../../../../../../lib/ai/almog-commitments/recovery-orchestrator';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -82,6 +83,17 @@ async function runOnboardingCheckInsCron(request: Request) {
     orchestrator = await runProgramOrchestrator(createAdminClient(), { dryRun: isDryRun });
   } catch (e) {
     orchestrator = { error: e instanceof Error ? e.message : String(e) };
+  }
+
+  let recoveryOrchestration: Awaited<ReturnType<typeof runRecoveryOrchestrationBatch>> | {
+    error: string;
+  } | null = null;
+  try {
+    recoveryOrchestration = await runRecoveryOrchestrationBatch(createAdminClient(), {
+      dryRun: isDryRun,
+    });
+  } catch (e) {
+    recoveryOrchestration = { error: e instanceof Error ? e.message : String(e) };
   }
 
   const token = process.env.QSTASH_TOKEN?.trim();
@@ -161,6 +173,7 @@ async function runOnboardingCheckInsCron(request: Request) {
       almog_reminders: almogReminders,
       assignment_sweep: assignmentSweep,
       orchestrator,
+      recovery_orchestration: recoveryOrchestration,
       hint_he:
         'אלמוג — זמנים אישיים מההרשמה + תזכורות אלמוג מאוחדות. הגדר ב-Upstash: POST כל 30 דקות (0,30 * * * *).',
     });
@@ -205,6 +218,7 @@ async function runOnboardingCheckInsCron(request: Request) {
     almog_reminders: almogReminders,
     assignment_sweep: assignmentSweep,
     orchestrator,
+    recovery_orchestration: recoveryOrchestration,
     errors: errors.length ? errors : undefined,
   });
 }

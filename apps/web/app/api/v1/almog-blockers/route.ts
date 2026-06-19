@@ -10,6 +10,10 @@ import {
   generateBlockerPivot,
 } from '../../../../lib/ai/almog-commitments/intervention-engine';
 import { packCoachContext } from '../../../../lib/ai/almog-commitments/coach-context';
+import {
+  evaluateRecoveryGraduation,
+  scheduleRecoveryEncouragement,
+} from '../../../../lib/ai/almog-commitments/recovery-plan-engine';
 import { normalizeFrictionCategory, normalizeStrategyType } from '../../../../lib/ai/almog-commitments/friction';
 import type {
   BlockerHistoryEntry,
@@ -676,6 +680,35 @@ export async function POST(request: Request) {
       })
       .eq('id', blocker.id)
       .eq('user_id', user.id);
+
+    const assignmentId = blocker.related_assignment_id;
+    if (assignmentId) {
+      const { data: assignRow } = await admin
+        .from('almog_assignments')
+        .select(
+          'id, user_id, title, schedule, relation, parent_assignment_id, related_step_id, metadata, history, done_count'
+        )
+        .eq('id', assignmentId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (assignRow) {
+        await scheduleRecoveryEncouragement({
+          admin,
+          userId: user.id,
+          assignment: assignRow as Parameters<typeof scheduleRecoveryEncouragement>[0]['assignment'],
+          rating: 'ok',
+          blockerId: blocker.id,
+          now,
+        });
+        await evaluateRecoveryGraduation({
+          admin,
+          userId: user.id,
+          assignment: assignRow as Parameters<typeof evaluateRecoveryGraduation>[0]['assignment'],
+          nowIso,
+        });
+      }
+    }
 
     return NextResponse.json({ ok: true });
   }
