@@ -60,6 +60,7 @@ const nextConfig = {
     return [
       { source: '/courses', destination: '/guides', permanent: true },
       { source: '/courses/:id', destination: '/guides/:id', permanent: true },
+      { source: '/kabel-buddy', destination: '/kabel-buddy/index.html', permanent: false },
     ];
   },
   async headers() {
