@@ -44,6 +44,10 @@ import {
   type ReengagementMove,
 } from '../churn/reengagement-moves';
 import type { IdentityContext } from '../churn/reengagement-prompt-blocks';
+import {
+  resolveCheckpointTaskTitle,
+  type UserRecoveryState,
+} from '../ai/almog-commitments/recovery-state';
 
 /**
  * שדות לקריאה מ-journey_progress + מ-journey_steps לחישוב התראות.
@@ -51,6 +55,7 @@ import type { IdentityContext } from '../churn/reengagement-prompt-blocks';
  */
 export type ProgressRow = {
   user_id: string;
+  step_id?: string;
   updated_at: string;
   is_completed: boolean | null;
   task_statuses: unknown;
@@ -262,6 +267,8 @@ function asStatusMap(raw: unknown): Record<string, TaskStatusEntry> {
  */
 export type MealProfileByUser = ReadonlyMap<string, UserMealProfile>;
 
+export type RecoveryStateByUser = ReadonlyMap<string, UserRecoveryState>;
+
 export function collectPendingAcceptedTasks(
   rows: ProgressRow[],
   options: {
@@ -269,6 +276,7 @@ export function collectPendingAcceptedTasks(
     cronSlot?: HabitCheckpointSlot;
     jerusalemWeekday?: number;
     userMealProfile?: UserMealProfile | null;
+    recoveryState?: UserRecoveryState | null;
   } = {}
 ): Array<{
   id: string;
@@ -313,7 +321,10 @@ export function collectPendingAcceptedTasks(
       if (s.execution_done === true) continue;
       if (t.schedule === 'one_time') {
         seen.add(t.id);
-        out.push({ id: t.id, title: t.title, stepTitle });
+        const title = options.recoveryState
+          ? resolveCheckpointTaskTitle(t.id, t.title, options.recoveryState).title
+          : t.title;
+        out.push({ id: t.id, title, stepTitle });
         continue;
       }
       /** משימה חוזרת — בודק את הסלוטים שבוצעו היום. */
@@ -322,9 +333,12 @@ export function collectPendingAcceptedTasks(
       if (closed) continue;
       const pending = pendingSlotLabelsForToday(t, doneSlots, weekday);
       seen.add(t.id);
+      const title = options.recoveryState
+        ? resolveCheckpointTaskTitle(t.id, t.title, options.recoveryState).title
+        : t.title;
       out.push({
         id: t.id,
-        title: t.title,
+        title,
         stepTitle,
         pendingSlots: pending.length > 0 ? pending : undefined,
         pendingSlotLabels:
@@ -819,7 +833,8 @@ function mergeTaskLevelMetaFromRows(rows: ProgressRow[]): Record<string, unknown
 
 function pickTaskLevelTune(
   rows: ProgressRow[],
-  userExecutions: Array<{ task_id: string; date_key: string; slot: string; outcome?: string | null }>
+  userExecutions: Array<{ task_id: string; date_key: string; slot: string; outcome?: string | null }>,
+  recoveryState?: UserRecoveryState | null
 ): NonNullable<AlmogHabitCheckpointPayload['taskLevelTune']> | undefined {
   const taskLevelMeta = mergeTaskLevelMetaFromRows(rows);
 
@@ -856,7 +871,9 @@ function pickTaskLevelTune(
 
       return {
         taskId: task.id,
-        taskTitle: task.title,
+        taskTitle: recoveryState
+          ? resolveCheckpointTaskTitle(task.id, task.title, recoveryState).title
+          : task.title,
         currentLevelLabel: snapshot.currentLevelLabel ?? 'רמה נוכחית',
         nextLevelLabel: nextLabel,
         kind: adjustment.kind,
@@ -877,7 +894,8 @@ export function planHabitCheckpointTriggers(
   userResponseInfo: ReadonlyMap<string, UserResponseInfo> = new Map(),
   recentExecutionsByUser: RecentExecutionsByUser = new Map(),
   reengagementByUser: ReengagementInfoByUser = new Map(),
-  mealProfileByUser: MealProfileByUser = new Map()
+  mealProfileByUser: MealProfileByUser = new Map(),
+  recoveryStateByUser: RecoveryStateByUser = new Map()
 ): HabitCheckpointPlanItem[] {
   const { dateKey, weekday } = jerusalemCalendarParts(now);
   const byUser = new Map<string, ProgressRow[]>();
@@ -917,11 +935,13 @@ export function planHabitCheckpointTriggers(
       .filter((h) => habitsDoneToday.has(h.id))
       .map((h) => ({ id: h.id, title: h.title }));
     const userMealProfile = mealProfileByUser.get(userId) ?? null;
+    const userRecovery = recoveryStateByUser.get(userId) ?? null;
     const pendingTasks = collectPendingAcceptedTasks(rows, {
       todayDoneByTask: userTodayDone,
       cronSlot: slot,
       jerusalemWeekday: weekday,
       userMealProfile,
+      recoveryState: userRecovery,
     });
     const completedTodayTasks = collectCompletedAcceptedTasks(rows, {
       todayDoneByTask: userTodayDone,
@@ -1064,7 +1084,7 @@ export function planHabitCheckpointTriggers(
       : 'presence';
 
     const userRecentExecs = recentExecutionsByUser.get(userId) ?? [];
-    const taskLevelTune = pickTaskLevelTune(rows, userRecentExecs);
+    const taskLevelTune = pickTaskLevelTune(rows, userRecentExecs, userRecovery);
 
     out.push({
       userId,
@@ -1158,7 +1178,8 @@ export async function planHabitCheckpointTriggersWithChat(
   userResponseInfo: ReadonlyMap<string, UserResponseInfo> = new Map(),
   recentExecutionsByUser: RecentExecutionsByUser = new Map(),
   reengagementByUser: ReengagementInfoByUser = new Map(),
-  mealProfileByUser: MealProfileByUser = new Map()
+  mealProfileByUser: MealProfileByUser = new Map(),
+  recoveryStateByUser: RecoveryStateByUser = new Map()
 ): Promise<HabitCheckpointPlanItem[]> {
   const base = planHabitCheckpointTriggers(
     progressRows,
@@ -1169,7 +1190,8 @@ export async function planHabitCheckpointTriggersWithChat(
     userResponseInfo,
     recentExecutionsByUser,
     reengagementByUser,
-    mealProfileByUser
+    mealProfileByUser,
+    recoveryStateByUser
   );
   const chatIds = await fetchUserIdsWithChatToday(admin, now);
   return appendPresenceReinforceFromChat(

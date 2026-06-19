@@ -3,6 +3,9 @@ import { z } from 'zod';
 
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireApiSession } from '@/lib/api/route-guards';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { bridgeJourneyDifficultyToRecoveryPlan } from '@/lib/ai/almog-commitments/bridge-journey-recovery';
+import { persistRecoveryInsight } from '@/lib/ai/almog-commitments/persist-recovery-insight';
 import {
   computeTaskLevelProgressSnapshot,
   recommendTaskLevelAdjustment,
@@ -121,6 +124,44 @@ export async function POST(request: Request) {
       taskLevelMeta: mergedMeta,
     });
 
+    let recoveryBridge: Awaited<ReturnType<typeof bridgeJourneyDifficultyToRecoveryPlan>> | null =
+      null;
+    if (feedback === 'too_hard') {
+      const admin = createAdminClient();
+      recoveryBridge = await bridgeJourneyDifficultyToRecoveryPlan({
+        admin,
+        userId: user.id,
+        stepId: step_id,
+        task,
+        taskLevelMeta: mergedMeta,
+        executions: Array.isArray(execRows) ? execRows : [],
+      });
+
+      if (recoveryBridge?.assignment_id) {
+        await persistRecoveryInsight(admin, {
+          userId: user.id,
+          taskTitle: task.title,
+          journeyTaskId: task.id,
+          stepId: step_id,
+          kind: 'plan_created',
+          strategy: recoveryBridge.assignment_id,
+          outcome: 'pending',
+          note: 'משתמש דיווח קשה — נוצרה תוכנית מותאמת',
+          blockerId: recoveryBridge.blocker_id ?? null,
+        }).catch(() => null);
+      }
+    } else if (feedback === 'too_easy' || feedback === 'ok') {
+      const admin = createAdminClient();
+      await persistRecoveryInsight(admin, {
+        userId: user.id,
+        taskTitle: task.title,
+        journeyTaskId: task.id,
+        stepId: step_id,
+        kind: feedback === 'too_easy' ? 'easy' : 'ok',
+        note: feedback === 'too_easy' ? 'דיווח קל מדי' : 'דיווח בסדר',
+      }).catch(() => null);
+    }
+
     return NextResponse.json({
       ok: true,
       adjustment: {
@@ -129,6 +170,7 @@ export async function POST(request: Request) {
         next_level_id: adjustment.nextLevelId,
       },
       snapshot,
+      recovery_plan: recoveryBridge,
     });
   } catch (err) {
     console.error('[task-level-feedback]', err);

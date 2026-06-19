@@ -19,6 +19,7 @@ import { isCommitmentGateResolved } from '../../lib/journey/commitment-gate';
 import { emojiFromWellnessText } from '../../lib/emoji-from-text';
 import { useProgressReport } from '../progress-report/ProgressReportProvider';
 import { TaskDailySlots } from './TaskDailySlots';
+import { TaskLevelProgressStepPanel } from './TaskLevelProgressStepPanel';
 import { resolveTaskSchedule, scheduleLabel } from '../../lib/journey/task-schedule';
 
 interface SummarySectionProps {
@@ -433,6 +434,17 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                             <div className="px-3 pb-3">
                               <TaskDailySlots task={task} stepId={step.id} />
                             </div>
+                          ) : null}
+
+                          {status === 'accepted' &&
+                          step.tasks.some((t) => t.leveling?.levels?.length) ? (
+                            <TaskLevelProgressStepPanel
+                              stepId={step.id}
+                              tasks={step.tasks.filter(
+                                (t) => progress.task_statuses?.[t.id]?.status === 'accepted'
+                              )}
+                              taskLevelMeta={progress.task_level_meta}
+                            />
                           ) : null}
                     </div>
                   </div>

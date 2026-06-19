@@ -8,6 +8,19 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AlmogCommitmentContext } from './types';
 import { frictionCategoryLabel } from './friction';
+import {
+  fetchUserRecoveryState,
+  formatRecoveryStateForChat,
+} from './recovery-state';
+import {
+  detectJourneyStruggles,
+  formatStruggleSignalsForChat,
+} from './struggle-detection';
+import type { StruggleSignal } from './struggle-detection';
+import {
+  detectUnansweredRecoverySignals,
+  formatUnansweredRecoveryForChat,
+} from './recovery-response-detection';
 
 type Supa = SupabaseClient;
 
@@ -22,6 +35,9 @@ export async function fetchAlmogCommitmentContext(
     recentInterventions: [],
     nextReminders: [],
     activeFocus: null,
+    recoveryState: null,
+    unansweredRecovery: [],
+    activeStruggles: [],
   };
 
   const tasks: PromiseLike<unknown>[] = [];
@@ -41,7 +57,32 @@ export async function fetchAlmogCommitmentContext(
       })
   );
 
-  if (opts.needsAssignments) {
+  // מצב recovery — תמיד נטען כדי שאלמוג יידע על משימה מוקפאת + צעד מקל.
+  tasks.push(
+    fetchUserRecoveryState(supabase, userId)
+      .then(async (state) => {
+        ctx.recoveryState = state.hasActiveRecovery ? state : null;
+        const activeRecovery = new Set(state.tracks.map((t) => t.journeyTaskId));
+        const signals = await detectUnansweredRecoverySignals(supabase, userId, undefined, {
+          activeRecoveryTaskIds: activeRecovery,
+        });
+        ctx.unansweredRecovery = signals.filter((s) => s.severity !== 'awareness');
+      })
+      .catch(() => null)
+  );
+
+  tasks.push(
+    loadActiveStrugglesForChat(supabase, userId)
+      .then((signals) => {
+        ctx.activeStruggles = signals;
+      })
+      .catch(() => null)
+  );
+
+  const loadAssignments = opts.needsAssignments;
+  const loadBlockers = opts.needsBlockers;
+
+  if (loadAssignments) {
     tasks.push(
       supabase
         .from('almog_assignments')
@@ -69,7 +110,7 @@ export async function fetchAlmogCommitmentContext(
     );
   }
 
-  if (opts.needsBlockers) {
+  if (loadBlockers) {
     tasks.push(
       supabase
         .from('almog_blockers')
@@ -98,7 +139,84 @@ export async function fetchAlmogCommitmentContext(
   }
 
   await Promise.all(tasks.map((p) => Promise.resolve(p).catch(() => null)));
+
+  const needsRecoveryExtras =
+    ctx.recoveryState?.hasActiveRecovery ||
+    ctx.unansweredRecovery.length > 0 ||
+    ctx.activeStruggles.length > 0;
+
+  if (needsRecoveryExtras) {
+    const extra: PromiseLike<unknown>[] = [];
+    if (!loadAssignments) {
+      extra.push(
+        supabase
+          .from('almog_assignments')
+          .select('id, title, reason, schedule, status, given_at, last_done_at, related_habit_id')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .order('given_at', { ascending: false })
+          .limit(6)
+          .then(({ data }: { data: unknown }) => {
+            if (Array.isArray(data))
+              ctx.activeAssignments = data as AlmogCommitmentContext['activeAssignments'];
+          })
+      );
+    }
+    if (!loadBlockers) {
+      extra.push(
+        supabase
+          .from('almog_blockers')
+          .select('id, description, strategy, category, status, history')
+          .eq('user_id', userId)
+          .in('status', ['open', 'improving'])
+          .order('identified_at', { ascending: false })
+          .limit(4)
+          .then(({ data }: { data: unknown }) => {
+            if (Array.isArray(data)) ctx.openBlockers = data as AlmogCommitmentContext['openBlockers'];
+          })
+      );
+    }
+    await Promise.all(extra.map((p) => Promise.resolve(p).catch(() => null)));
+  }
+
   return ctx;
+}
+
+async function loadActiveStrugglesForChat(
+  supabase: Supa,
+  userId: string
+): Promise<StruggleSignal[]> {
+  const since = new Date(Date.now() - 14 * 86_400_000).toISOString();
+  const [progressRes, execRes, recoveryState] = await Promise.all([
+    supabase
+      .from('journey_progress')
+      .select(
+        'user_id, step_id, updated_at, is_completed, task_statuses, task_level_meta, habits_progress, journey_steps ( title, habits, tasks, journey_stations ( title ) )'
+      )
+      .eq('user_id', userId)
+      .eq('is_completed', false)
+      .limit(8),
+    supabase
+      .from('journey_task_executions')
+      .select('task_id, date_key, slot, outcome, step_id')
+      .eq('user_id', userId)
+      .gte('completed_at', since)
+      .limit(500),
+    fetchUserRecoveryState(supabase, userId),
+  ]);
+
+  const rows = (progressRes.data ?? []) as unknown as import('../../workflows/habit-checkpoint-batch').ProgressRow[];
+  if (!rows.length) return [];
+
+  const executions = Array.isArray(execRes.data) ? execRes.data : [];
+  const activeRecovery = new Set(recoveryState.tracks.map((t) => t.journeyTaskId));
+
+  return detectJourneyStruggles({
+    userId,
+    progressRows: rows,
+    executions,
+    activeRecoveryTaskIds: activeRecovery,
+  });
 }
 
 function israelDayLabel(iso: string | null): string | null {
@@ -124,6 +242,19 @@ const SCHEDULE_LABEL: Record<string, string> = {
  */
 export function formatAlmogCommitmentBlocks(ctx: AlmogCommitmentContext): string[] {
   const blocks: string[] = [];
+
+  // ── חוסר תגובה לשאילתות / צעדים מותאמים ──
+  const noReplyBlock = formatUnansweredRecoveryForChat(ctx.unansweredRecovery);
+  if (noReplyBlock) blocks.push(noReplyBlock);
+
+  const struggleBlock = formatStruggleSignalsForChat(ctx.activeStruggles);
+  if (struggleBlock) blocks.push(struggleBlock);
+
+  // ── תוכנית recovery (משימה מקורית מוקפאת + צעד מותאם) ──
+  if (ctx.recoveryState?.hasActiveRecovery) {
+    const block = formatRecoveryStateForChat(ctx.recoveryState);
+    if (block) blocks.push(block);
+  }
 
   // ── באנר פוקוס (תמיד אם קיים) ──
   if (ctx.activeFocus) {

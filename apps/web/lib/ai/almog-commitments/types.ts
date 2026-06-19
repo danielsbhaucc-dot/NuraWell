@@ -1,7 +1,5 @@
 /**
  * טיפוסים למערכת ההתחייבויות של אלמוג (Almog Actionable Commitments).
- *
- * מקור האמת ב-DB: supabase/migrations/000048_almog_commitments.sql.
  * הקבצים כאן הם שכבת רקע בלבד — אלמוג (Qwen) לא משתנה; כל החילוץ/הביצוע
  * רץ ב-after() על Llama 4 ובטבלאות הייעודיות.
  */
@@ -184,4 +182,9 @@ export interface AlmogCommitmentContext {
     AlmogFocusPeriod,
     'id' | 'status' | 'reason' | 'paused_scope' | 'ends_at' | 'assignment_ids'
   > | null;
+  /** מסלול recovery פעיל — משימה מקורית מוקפאת, מעקב על צעד מקל */
+  recoveryState: import('./recovery-state').UserRecoveryState | null;
+  /** שאילתות recovery / צעדים מותאמים שלא נענו */
+  unansweredRecovery: import('./recovery-response-detection').UnansweredRecoverySignal[];
+  activeStruggles: import('./struggle-detection').StruggleSignal[];
 }

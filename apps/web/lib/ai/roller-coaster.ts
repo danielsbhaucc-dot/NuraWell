@@ -121,6 +121,7 @@ const ALMOG_TOUCH_SOURCES = new Set([
   'almog_followup_workflow',
   'almog_journey_companion',
   'almog_life_context',
+  'almog_scheduled_reminder',
   'cron_ops',
 ]);
 

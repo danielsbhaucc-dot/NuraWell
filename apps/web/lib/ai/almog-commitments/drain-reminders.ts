@@ -23,6 +23,7 @@ type ReminderRow = {
   body: string;
   assignment_id: string | null;
   blocker_id: string | null;
+  metadata: Record<string, unknown> | null;
 };
 
 const ICON_BY_KIND: Record<ReminderRow['kind'], string> = {
@@ -73,7 +74,9 @@ export async function drainAlmogReminders(
 
   let dueQuery = admin
     .from('scheduled_reminders')
-    .select('id, user_id, fire_at, kind, title, body, assignment_id, blocker_id')
+    .select(
+      'id, user_id, fire_at, kind, title, body, assignment_id, blocker_id, metadata'
+    )
     .eq('status', 'pending')
     .lte('fire_at', nowIso)
     .order('fire_at', { ascending: true })
@@ -144,6 +147,8 @@ export async function drainAlmogReminders(
             reminder_kind: r.kind,
             assignment_id: r.assignment_id,
             blocker_id: r.blocker_id,
+            scheduled_reminder_id: r.id,
+            ...(r.metadata && typeof r.metadata === 'object' ? r.metadata : {}),
           },
         })
         .select('id')

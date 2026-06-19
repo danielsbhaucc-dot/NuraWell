@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { ArrowUp, Check, Flame, Target } from 'lucide-react';
 import type { TaskLevelProgressSnapshot } from '../../lib/journey/task-level-progress';
@@ -24,6 +25,7 @@ export function TaskLevelProgressCard({
 }: TaskLevelProgressCardProps) {
   const [submitting, setSubmitting] = useState(false);
   const [localMsg, setLocalMsg] = useState<string | null>(null);
+  const [recoveryPlanId, setRecoveryPlanId] = useState<string | null>(null);
 
   const sortedLevels = [...levels].sort((a, b) => a.order - b.order);
   const maxOrder = sortedLevels.length ? Math.max(...sortedLevels.map((l) => l.order)) : 1;
@@ -43,15 +45,24 @@ export function TaskLevelProgressCard({
           feedback,
         }),
       });
-      const data = (await res.json()) as { ok?: boolean; error?: string };
+      const data = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        recovery_plan?: { assignment_id?: string };
+      };
       if (!res.ok || !data.ok) {
         throw new Error(data.error || 'שגיאה');
+      }
+      if (feedback === 'too_hard' && data.recovery_plan?.assignment_id) {
+        setRecoveryPlanId(data.recovery_plan.assignment_id);
       }
       setLocalMsg(
         feedback === 'too_easy'
           ? 'תודה! נזכור שזה קל לך.'
           : feedback === 'too_hard'
-            ? 'תודה! נתאים את הרמה.'
+            ? data.recovery_plan?.assignment_id
+              ? 'הכנתי לך צעד מותאם ב"התוכנית שלי".'
+              : 'תודה! נתאים את הרמה.'
             : 'מעולה, נמשיך ברמה הזו.'
       );
       onFeedback?.(feedback);
@@ -190,6 +201,16 @@ export function TaskLevelProgressCard({
           <Check className="w-3 h-3" />
           {localMsg}
         </p>
+      ) : null}
+      {recoveryPlanId ? (
+        <div className="flex justify-end">
+          <Link
+            href="/plans"
+            className="text-[11px] font-bold text-emerald-700 underline underline-offset-2"
+          >
+            לצעד המותאם בהתוכנית שלי →
+          </Link>
+        </div>
       ) : null}
     </div>
   );

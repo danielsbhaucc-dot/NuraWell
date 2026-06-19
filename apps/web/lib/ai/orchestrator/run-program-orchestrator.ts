@@ -28,6 +28,7 @@ import { evaluateProgramState, type ProgramProposalKind, type ProgramState } fro
 import { buildProgramProposal } from './build-program-proposal';
 import { writePendingProposal, writeProgramState } from './program-store';
 import { advancePivotProgression, type PivotProgressionResult } from './daily-action-instances';
+import { runRecoveryOrchestrationForUser } from '../almog-commitments/recovery-orchestrator';
 
 const PROPOSAL_ICON: Record<ProgramProposalKind, string> = {
   level_up: '🚀',
@@ -127,6 +128,15 @@ export async function orchestrateProgramForUser(
       // eslint-disable-next-line no-console
       console.warn('[program-orchestrator] writeProgramState failed', profile.id, err);
     });
+
+    if (decision.state === 'struggling') {
+      await runRecoveryOrchestrationForUser(admin, profile.id, { now, dryRun: false }).catch(
+        (err) => {
+          // eslint-disable-next-line no-console
+          console.warn('[program-orchestrator] recovery orchestration failed', profile.id, err);
+        }
+      );
+    }
   }
 
   const base: OrchestrateUserResult = {

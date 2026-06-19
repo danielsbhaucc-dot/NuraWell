@@ -18,6 +18,8 @@ import {
   writeProgramState,
 } from '../../../../../../lib/ai/orchestrator/program-store';
 import { applyPivotOverride } from '../../../../../../lib/ai/orchestrator/daily-action-instances';
+import { bridgeOrchestratorPivotToAlmog } from '../../../../../../lib/ai/almog-commitments/bridge-journey-recovery';
+import { persistRecoveryInsight } from '../../../../../../lib/ai/almog-commitments/persist-recovery-insight';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -91,6 +93,28 @@ export async function POST(request: Request) {
         originalTitle: proposal.next_step.restore_to ?? null,
         proposalId: proposal.id,
       }).catch((err) => console.error('[program/proposal] pivot override failed', err));
+
+      const bridge = await bridgeOrchestratorPivotToAlmog({
+        admin,
+        userId: auth.user.id,
+        microTitle: proposal.next_step.title,
+        originalTitle: proposal.next_step.restore_to ?? null,
+        proposalId: proposal.id,
+      }).catch((err) => {
+        console.error('[program/proposal] pivot almog bridge failed', err);
+        return {} as { assignment_id?: string };
+      });
+
+      if (bridge.assignment_id) {
+        await persistRecoveryInsight(admin, {
+          userId: auth.user.id,
+          taskTitle: proposal.next_step.restore_to ?? proposal.next_step.title,
+          kind: 'pivot',
+          strategy: proposal.next_step.title,
+          outcome: 'pending',
+          note: 'המשתמש קיבל pivot מהאורקסטרטור',
+        }).catch(() => null);
+      }
     }
 
     return NextResponse.json({ ok: true, decision, kind: proposal.kind });
