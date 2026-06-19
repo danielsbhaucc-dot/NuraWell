@@ -5,7 +5,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fetchUserMemoryDossier, upsertUserMemoryDossier } from '../memory-dossier/fetch-dossier';
 import { mergeDossierPatch } from '../memory-dossier/merge-dossier';
-import { EMPTY_DOSSIER } from '../memory-dossier/types';
 
 export type RecoveryInsightInput = {
   userId: string;
@@ -42,10 +41,7 @@ export async function persistRecoveryInsight(
     });
   }
 
-  const existing = await fetchUserMemoryDossier(admin, input.userId).catch(() => ({
-    ...EMPTY_DOSSIER,
-    user_id: input.userId,
-  }));
+  const existing = await fetchUserMemoryDossier(admin, input.userId);
 
   const insightText = `${input.taskTitle}: ${input.note}`.slice(0, 220);
   const taskMemoryPatch: Record<string, unknown> = {};
