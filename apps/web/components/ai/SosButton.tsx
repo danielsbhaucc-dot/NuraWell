@@ -5,8 +5,20 @@ import { HeartPulse } from 'lucide-react';
 
 import { SosDialog } from './SosDialog';
 
-export function SosButton() {
+type SosFocusTask = {
+  id: string;
+  title: string;
+  emoji?: string;
+  stepTitle?: string;
+};
+
+type SosButtonProps = {
+  focusTasks?: SosFocusTask[];
+};
+
+export function SosButton({ focusTasks = [] }: SosButtonProps) {
   const [open, setOpen] = useState(false);
+  const pendingCount = focusTasks.length;
 
   return (
     <>
@@ -41,7 +53,9 @@ export function SosButton() {
         <span className="min-w-0 flex-1">
           <span className="block text-[15px] font-black text-emerald-950">רגע, קשה לי עכשיו</span>
           <span className="mt-1 block text-xs font-semibold leading-5 text-emerald-800/70">
-            סיוע קצר של אלמוג לפני שהרגע בורח.
+            {pendingCount > 0
+              ? `סיוע קצר של אלמוג — ${pendingCount} משימות פתוחות על הראש`
+              : 'סיוע קצר של אלמוג לפני שהרגע בורח.'}
           </span>
         </span>
       </button>
