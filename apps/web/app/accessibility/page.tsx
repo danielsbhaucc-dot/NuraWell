@@ -99,7 +99,7 @@ export default function AccessibilityPage() {
             <li><strong>כיבוד העדפת תנועה מופחתת</strong> (prefers-reduced-motion) — אנימציות מתעדנות אוטומטית, ובנוסף אפשרות ידנית בתפריט הנגישות.</li>
             <li><strong>הגדלת תצוגה</strong> — תמיכה ב-zoom עד 500% (WCAG 1.4.4).</li>
             <li><strong>עיצוב רספונסיבי</strong> המותאם לנייד, טאבלט ומחשב.</li>
-            <li><strong>Modals ו-lightbox</strong> — focus trap, <code>role="dialog"</code>, סגירה ב-Escape (SOS, משימות היום, גלריית תמונות).</li>
+            <li><strong>Modals ו-lightbox</strong> — focus trap, <code>role=&quot;dialog&quot;</code>, סגירה ב-Escape (SOS, משימות היום, גלריית תמונות).</li>
             <li><strong>סריקת alt</strong> — תיקון תמונות במסע, מדיה, התראות ו-stock; רקעים דקораטיביים מסומנים ב-<code>aria-hidden</code>.</li>
             <li><strong>כלי ניהול</strong> — ביקורת alt ויצירה אוטומטית ב-<Link href="/ops/accessibility">לוח הבקרה</Link>.</li>
             <li><SlidersHorizontal className="inline w-4 h-4 align-middle text-emerald-600" aria-hidden /> <strong>שמירת העדפות נגישות</strong> ב-localStorage בדפדפן.</li>
