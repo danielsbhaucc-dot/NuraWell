@@ -113,8 +113,11 @@ export default function RagDebugPage() {
 
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-neutral-700">טקסט לבדיקה</label>
+          <label htmlFor="rag-test-message" className="mb-1 block text-sm font-medium text-neutral-700">
+            טקסט לבדיקה
+          </label>
           <textarea
+            id="rag-test-message"
             className="min-h-[120px] w-full rounded-lg border border-neutral-300 bg-white p-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -123,10 +126,11 @@ export default function RagDebugPage() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-neutral-700">
+          <label htmlFor="rag-prod-secret" className="mb-1 block text-sm font-medium text-neutral-700">
             סוד בדיקה ב-production (אופציונלי)
           </label>
           <input
+            id="rag-prod-secret"
             type="password"
             className="w-full rounded-lg border border-neutral-300 bg-white p-2 text-sm text-neutral-900 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
             value={prodSecret}

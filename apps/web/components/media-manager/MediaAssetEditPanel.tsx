@@ -86,8 +86,15 @@ export function MediaAssetEditPanel({
     <div className="space-y-3">
       <p className="text-xs font-bold text-slate-700">עריכה מתקדמת</p>
       <div>
-        <label className="mb-1 block text-xs text-slate-600">כותרת</label>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} className={glassInputClass} />
+        <label htmlFor={`media-edit-title-${asset.id}`} className="mb-1 block text-xs text-slate-600">
+          כותרת
+        </label>
+        <input
+          id={`media-edit-title-${asset.id}`}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className={glassInputClass}
+        />
       </div>
       <div>
         <label className="mb-1 block text-xs text-slate-600" htmlFor={`alt-text-${asset.id}`}>
@@ -123,8 +130,15 @@ export function MediaAssetEditPanel({
         ) : null}
       </div>
       <div>
-        <label className="mb-1 block text-xs text-slate-600">תיקייה</label>
-        <input value={folder} onChange={(e) => setFolder(e.target.value)} className={glassInputClass} />
+        <label htmlFor={`media-edit-folder-${asset.id}`} className="mb-1 block text-xs text-slate-600">
+          תיקייה
+        </label>
+        <input
+          id={`media-edit-folder-${asset.id}`}
+          value={folder}
+          onChange={(e) => setFolder(e.target.value)}
+          className={glassInputClass}
+        />
       </div>
       {asset.url ? (
         <p className="break-all text-[10px] text-slate-500" dir="ltr">
