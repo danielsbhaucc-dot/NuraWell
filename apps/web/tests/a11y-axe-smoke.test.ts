@@ -1,24 +1,24 @@
-/**
- * @vitest-environment jsdom
- */
 import { describe, expect, it } from 'vitest';
 import { JSDOM } from 'jsdom';
 import axe from 'axe-core';
 import { applyAccessibilityPreferencesToElement } from '@/lib/a11y/apply-preferences';
 import { DEFAULT_ACCESSIBILITY_PREFERENCES } from '@/lib/a11y/types';
 
-function runAxe(html: string) {
-  const dom = new JSDOM(html);
-  const { window } = dom;
-  const document = window.document;
-  (globalThis as typeof globalThis & { window: Window }).window = window as unknown as Window;
-  (globalThis as typeof globalThis & { document: Document }).document = document;
+type AxeWindow = Window & typeof globalThis & { axe: typeof axe };
 
-  return new Promise<axe.AxeResults>((resolve, reject) => {
-    axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag22aa'] } }, (err, results) => {
-      if (err) reject(err);
-      else resolve(results!);
-    });
+function injectAxeIntoWindow(window: Window & typeof globalThis): typeof axe {
+  const script = window.document.createElement('script');
+  script.textContent = axe.source;
+  window.document.head.appendChild(script);
+  return (window as AxeWindow).axe;
+}
+
+async function runAxe(html: string) {
+  const dom = new JSDOM(html, { url: 'https://nurawell.test/' });
+  const axeInstance = injectAxeIntoWindow(dom.window as unknown as Window & typeof globalThis);
+
+  return axeInstance.run(dom.window.document, {
+    runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag22aa'] },
   });
 }
 
