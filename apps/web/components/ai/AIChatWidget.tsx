@@ -577,32 +577,6 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     return () => window.clearInterval(id);
   }, [open, panelView]);
 
-  useEffect(() => {
-    if (!open) return;
-    const pending = readPendingChatReply();
-    if (!pending?.sessionId) return;
-    if (panelView === 'thread' && sessionIdRef.current === pending.sessionId) return;
-
-    applySessionId(pending.sessionId);
-    setPanelView('thread');
-    setLoadingThread(true);
-    void fetchChatSessionMessages(pending.sessionId)
-      .then(({ session, messages: turns, awaiting_assistant }) => {
-        setChatSession(session);
-        setMessages(transcriptTurnsToUiMessages(turns));
-        if (awaiting_assistant ?? isAwaitingAssistantResponse(turns)) {
-          setAwaitingAssistantRecovery(true);
-        }
-        setInput(readChatInputDraft(pending.sessionId));
-      })
-      .catch(() => {
-        /* */
-      })
-      .finally(() => {
-        setLoadingThread(false);
-      });
-  }, [open, panelView, setMessages]);
-
   const isSessionClosed = chatSession?.status === 'closed';
 
   useEffect(() => {
@@ -717,6 +691,32 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
       body: () => buildOutgoingChatBody(),
     }),
   });
+
+  useEffect(() => {
+    if (!open) return;
+    const pending = readPendingChatReply();
+    if (!pending?.sessionId) return;
+    if (panelView === 'thread' && sessionIdRef.current === pending.sessionId) return;
+
+    applySessionId(pending.sessionId);
+    setPanelView('thread');
+    setLoadingThread(true);
+    void fetchChatSessionMessages(pending.sessionId)
+      .then(({ session, messages: turns, awaiting_assistant }) => {
+        setChatSession(session);
+        setMessages(transcriptTurnsToUiMessages(turns));
+        if (awaiting_assistant ?? isAwaitingAssistantResponse(turns)) {
+          setAwaitingAssistantRecovery(true);
+        }
+        setInput(readChatInputDraft(pending.sessionId));
+      })
+      .catch(() => {
+        /* */
+      })
+      .finally(() => {
+        setLoadingThread(false);
+      });
+  }, [open, panelView, setMessages]);
 
   const openSessionThread = async (session: ChatSessionListItemClient) => {
     setLoadingThread(true);

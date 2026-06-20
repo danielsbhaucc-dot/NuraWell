@@ -9,7 +9,6 @@ import {
   FileText,
   Focus,
   Heading,
-  Link2,
   Map,
   Minus,
   MousePointer2,
@@ -133,7 +132,7 @@ function ScalePicker<T extends string>({
 
 export function AccessibilityWidget() {
   const panelId = useId();
-  const { preferences, setFontScale, setLineSpacing, setSaturation, toggle, hideWidget, resetPreferences } =
+  const { preferences, setFontScale, setLineSpacing, setSaturation, toggle, hideWidget, resetPreferences, updatePreferences } =
     useAccessibility();
 
   const [open, setOpen] = useState(false);
@@ -223,23 +222,34 @@ export function AccessibilityWidget() {
                 <FeatureTile
                   label="מונוכרום"
                   pressed={preferences.monochrome}
-                  onToggle={() => toggle('monochrome')}
+                  onToggle={() => {
+                    if (!preferences.monochrome) setSaturation('normal');
+                    toggle('monochrome');
+                  }}
                   icon={<Palette className="h-4 w-4" />}
                 />
                 <FeatureTile
                   label="רוויה נמוכה"
                   pressed={preferences.saturation === 'low'}
-                  onToggle={() =>
-                    setSaturation(preferences.saturation === 'low' ? 'normal' : 'low')
-                  }
+                  onToggle={() => {
+                    if (preferences.saturation !== 'low') {
+                      updatePreferences({ monochrome: false, saturation: 'low' });
+                    } else {
+                      setSaturation('normal');
+                    }
+                  }}
                   icon={<Eye className="h-4 w-4" />}
                 />
                 <FeatureTile
                   label="רוויה גבוהה"
                   pressed={preferences.saturation === 'high'}
-                  onToggle={() =>
-                    setSaturation(preferences.saturation === 'high' ? 'normal' : 'high')
-                  }
+                  onToggle={() => {
+                    if (preferences.saturation !== 'high') {
+                      updatePreferences({ monochrome: false, saturation: 'high' });
+                    } else {
+                      setSaturation('normal');
+                    }
+                  }}
                   icon={<ZoomIn className="h-4 w-4" />}
                 />
                 <FeatureTile

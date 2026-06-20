@@ -15,9 +15,12 @@ export function applyAccessibilityPreferencesToElement(
   if (preferences.lineSpacing === 'xl') root.classList.add(A11Y_CLASS.lineXl);
   if (preferences.letterSpacing) root.classList.add(A11Y_CLASS.letterSpacing);
   if (preferences.highContrast) root.classList.add(A11Y_CLASS.highContrast);
-  if (preferences.monochrome) root.classList.add(A11Y_CLASS.monochrome);
-  if (preferences.saturation === 'low') root.classList.add(A11Y_CLASS.satLow);
-  if (preferences.saturation === 'high') root.classList.add(A11Y_CLASS.satHigh);
+  if (preferences.monochrome) {
+    root.classList.add(A11Y_CLASS.monochrome);
+  } else {
+    if (preferences.saturation === 'low') root.classList.add(A11Y_CLASS.satLow);
+    if (preferences.saturation === 'high') root.classList.add(A11Y_CLASS.satHigh);
+  }
   if (preferences.enhancedFocus) root.classList.add(A11Y_CLASS.enhancedFocus);
   if (preferences.underlineLinks) root.classList.add(A11Y_CLASS.underlineLinks);
   if (preferences.highlightHeadings) root.classList.add(A11Y_CLASS.highlightHeadings);

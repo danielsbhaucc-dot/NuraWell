@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Archive, ArchiveRestore, Check, MessageCircle, Zap } from 'lucide-react';
 import { ALMOG_AVATAR_ALT } from '@/lib/a11y/alt-text';
+import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { getMentorAvatarFallback } from '../../lib/mentors/avatar-url';
 import { MENTORS } from '../../lib/mentors/registry';
 import { formatHebrewRelativeTime } from '../../lib/time/hebrew-relative';
