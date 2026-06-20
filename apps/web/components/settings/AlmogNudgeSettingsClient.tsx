@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, ChevronRight, Loader2, MessageCircle, Scale, Send, Sparkles } from 'lucide-react';
+import { Bell, ChevronRight, Loader2, MessageCircle, Scale, Send, Shield, Sparkles } from 'lucide-react';
 import type { AlmogCoachingStyle } from '../../lib/ai/almog-coaching-style';
 import { cn } from '../../lib/cn';
 
@@ -19,6 +19,7 @@ type Props = {
   initialWeightReminders: boolean;
   initialCoachingStyle: AlmogCoachingStyle;
   initialWorkArrivalTime: string;
+  initialGuardianOptedIn: boolean;
 };
 
 type RecentNotif = {
@@ -52,12 +53,16 @@ export function AlmogNudgeSettingsClient({
   initialWeightReminders,
   initialCoachingStyle,
   initialWorkArrivalTime,
+  initialGuardianOptedIn,
 }: Props) {
   const router = useRouter();
   const [avoidPush, setAvoidPush] = useState(initialAvoidPush);
   const [weightReminders, setWeightReminders] = useState(initialWeightReminders);
   const [coachingStyle, setCoachingStyle] = useState<AlmogCoachingStyle>(initialCoachingStyle);
   const [workArrivalTime, setWorkArrivalTime] = useState(initialWorkArrivalTime);
+  const [guardianOptedIn, setGuardianOptedIn] = useState(initialGuardianOptedIn);
+  const [guardianSaving, setGuardianSaving] = useState(false);
+  const [guardianError, setGuardianError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
@@ -81,6 +86,27 @@ export function AlmogNudgeSettingsClient({
     weightReminders !== initialWeightReminders ||
     coachingStyle !== initialCoachingStyle ||
     workArrivalTime !== initialWorkArrivalTime;
+
+  async function saveGuardianOptIn(next: boolean) {
+    setGuardianSaving(true);
+    setGuardianError(null);
+    const prev = guardianOptedIn;
+    setGuardianOptedIn(next);
+    try {
+      const res = await fetch('/api/v1/profile/guardian-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ opted_in: next }),
+      });
+      if (!res.ok) throw new Error('save_failed');
+      router.refresh();
+    } catch {
+      setGuardianOptedIn(prev);
+      setGuardianError('לא הצלחנו לשמור — תנסה שוב.');
+    } finally {
+      setGuardianSaving(false);
+    }
+  }
 
   async function save() {
     setSaving(true);
@@ -520,6 +546,69 @@ export function AlmogNudgeSettingsClient({
               כש&quot;פחות הודעות&quot; דלוק — כל סוגי ההתראות האלה כבויות, כולל משקל.
             </p>
           ) : null}
+        </motion.section>
+
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          className="rounded-3xl border border-emerald-100 bg-white p-5 shadow-[0_10px_30px_rgba(16,185,129,0.06)] space-y-4"
+        >
+          <div className="flex gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-800">
+              <Shield className="h-5 w-5" aria-hidden />
+            </div>
+            <div>
+              <h2 className="font-bold text-slate-900">רגע לפני — מגע עדין מראש</h2>
+              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                אלמוג יכול לשלוח הודעה קטנה <strong>לפני</strong> חלונות שקשה לך — לא במקום SOS,
+                אלא כדי לעזור לעצור רגע לפני ש&quot;בורחים&quot;. רק אם אתה מאשר, ובלי יותר מ-3 בשבוע.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            role="switch"
+            aria-checked={guardianOptedIn}
+            disabled={guardianSaving}
+            onClick={() => void saveGuardianOptIn(!guardianOptedIn)}
+            className={cn(
+              'flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-right transition-colors',
+              guardianOptedIn
+                ? 'border-emerald-300 bg-emerald-50/80'
+                : 'border-slate-200 bg-slate-50/80 hover:bg-slate-50',
+              guardianSaving && 'opacity-70'
+            )}
+          >
+            <span className="text-sm font-semibold text-slate-800">
+              {guardianSaving ? 'שומר…' : 'לאפשר מגע &quot;רגע לפני&quot;'}
+            </span>
+            <span
+              className={cn(
+                'relative h-8 w-14 shrink-0 rounded-full transition-colors',
+                guardianOptedIn ? 'bg-emerald-500' : 'bg-slate-300'
+              )}
+            >
+              <span
+                className={cn(
+                  'absolute top-1 h-6 w-6 rounded-full bg-white shadow-md transition-[inset-inline-start]',
+                  guardianOptedIn ? 'start-1' : 'end-1'
+                )}
+              />
+            </span>
+          </button>
+
+          {guardianError ? (
+            <p className="text-xs font-medium text-red-600" role="alert">
+              {guardianError}
+            </p>
+          ) : null}
+
+          <p className="text-xs text-slate-500 leading-relaxed">
+            SOS (&quot;רגע… קשה לי&quot;) תמיד זמין — גם כשהמגע היזום כבוי. אפשר גם להפעיל אחרי SOS ראשון
+            מהפופאפ.
+          </p>
         </motion.section>
 
         <motion.div

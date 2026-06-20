@@ -1,9 +1,10 @@
 /**
  * מנוע התערבויות — יצירת אופציות A/B ו-pivot לחסמים.
- * רץ על Groq/Llama (רקע, לא צ'אט אלמוג).
+ * רץ על Llama 4 Scout דרך OpenRouter (רקע, לא צ'אט אלמוג).
  */
 
-import { groq, AI_MODELS } from '../client';
+import { openrouter } from '../client';
+import { MEMORY_EXTRACTION_MODEL_OPENROUTER } from '../rag-config';
 import type { AssignmentRelation, BlockerOption, BlockerProposal } from './types';
 import {
   FRICTION_META,
@@ -254,7 +255,7 @@ export async function generateBlockerOptions(
   const maxAiAttempts = Math.max(0, Number(process.env.ALMOG_INTERVENTION_MAX_AI_ATTEMPTS) || 3);
   const aiDisabled =
     process.env.ALMOG_INTERVENTION_AI_ENABLED === '0' ||
-    !process.env.GROQ_API_KEY?.trim() ||
+    !process.env.OPENROUTER_API_KEY?.trim() ||
     params.attemptCount >= maxAiAttempts;
 
   if (aiDisabled) {
@@ -289,8 +290,8 @@ export async function generateBlockerOptions(
     .join('\n\n');
 
   try {
-    const completion = await groq.chat.completions.create({
-      model: AI_MODELS.background_groq,
+    const completion = await openrouter.chat.completions.create({
+      model: MEMORY_EXTRACTION_MODEL_OPENROUTER,
       temperature: 0.35,
       max_tokens: 420,
       response_format: { type: 'json_object' },
@@ -505,7 +506,7 @@ export async function generateBlockerPivot(
   const maxAiAttempts = Math.max(0, Number(process.env.ALMOG_INTERVENTION_MAX_AI_ATTEMPTS) || 3);
   const aiDisabled =
     process.env.ALMOG_INTERVENTION_AI_ENABLED === '0' ||
-    !process.env.GROQ_API_KEY?.trim() ||
+    !process.env.OPENROUTER_API_KEY?.trim() ||
     params.attemptCount >= maxAiAttempts;
 
   if (aiDisabled) {
@@ -538,8 +539,8 @@ export async function generateBlockerPivot(
     .join('\n\n');
 
   try {
-    const completion = await groq.chat.completions.create({
-      model: AI_MODELS.background_groq,
+    const completion = await openrouter.chat.completions.create({
+      model: MEMORY_EXTRACTION_MODEL_OPENROUTER,
       temperature: 0.4,
       max_tokens: 380,
       response_format: { type: 'json_object' },

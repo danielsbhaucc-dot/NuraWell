@@ -424,6 +424,8 @@ export async function markTaskExecutionForUser(
     pending?: PendingAcceptedTask[];
     outcome?: TaskExecutionOutcomeFromCategory;
     dateKey?: string;
+    /** סלוט מפורש — מ-hint מובנה, חוסך infer מהודעה */
+    slot?: JourneyTaskSlot;
   }
 ): Promise<TaskExecutionResult> {
   const pending = opts.pending ?? (await fetchPendingAcceptedTasksForUser(supabase, userId));
@@ -459,7 +461,10 @@ export async function markTaskExecutionForUser(
   }
 
   if (pick.schedule !== 'one_time') {
-    const slot = inferSlotFromUserMessage(msg, pick.schedule, pick.times_per_day);
+    const allowed = slotsForSchedule(pick.schedule, pick.times_per_day);
+    const explicit =
+      opts.slot && allowed.includes(opts.slot) ? opts.slot : undefined;
+    const slot = explicit ?? inferSlotFromUserMessage(msg, pick.schedule, pick.times_per_day);
     return markRecurringSlot(supabase, userId, pick, slot, msg, outcome, opts.dateKey);
   }
 

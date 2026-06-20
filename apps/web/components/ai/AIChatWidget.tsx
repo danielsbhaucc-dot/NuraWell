@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BellRing, MessageCircle, Send, Loader2, X, RotateCcw, PlusCircle, LogOut, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { Drawer } from 'vaul';
@@ -20,6 +20,7 @@ import {
   OPEN_ALMOG_CHAT_EVENT,
   type OpenAlmogChatDetail,
 } from '../../lib/notifications/open-almog-chat';
+import { taskReportHintToPayload, type TaskReportHint } from '../../lib/ai/task-report-hint';
 import { ChatSessionInbox } from './ChatSessionInbox';
 import {
   autoCloseStaleChatSessionsApi,
@@ -500,6 +501,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const [summaryExpanded, setSummaryExpanded] = useState(false);
   const resumeAssistantAttemptedRef = useRef(false);
   const notificationIdRef = useRef<string | null>(null);
+  const taskReportHintRef = useRef<TaskReportHint | null>(null);
   const pendingInitialReplyRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const wasLoadingRef = useRef(false);
@@ -598,7 +600,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
       .finally(() => {
         setLoadingThread(false);
       });
-  }, [open]);
+  }, [open, panelView, setMessages]);
 
   const isSessionClosed = chatSession?.status === 'closed';
 
@@ -622,6 +624,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
         setPanelView('thread');
         setNotificationContext(detail);
         notificationIdRef.current = detail.notificationId;
+        taskReportHintRef.current = null;
         if (detail.initialReply?.trim()) {
           pendingInitialReplyRef.current = detail.initialReply.trim();
           setQuotedReply({
@@ -637,6 +640,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
         setQuotedReply(null);
         notificationIdRef.current = null;
         pendingInitialReplyRef.current = null;
+        taskReportHintRef.current = detail?.taskReportHint ?? null;
         const prefill = detail?.prefillText?.trim();
         if (prefill) {
           setPanelView('thread');
@@ -648,6 +652,20 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     window.addEventListener(OPEN_ALMOG_CHAT_EVENT, onOpenChat);
     return () => window.removeEventListener(OPEN_ALMOG_CHAT_EVENT, onOpenChat);
   }, []);
+
+  const buildOutgoingChatBody = useCallback(() => {
+    const hint = taskReportHintRef.current;
+    return {
+      user_id: userId,
+      session_id: sessionIdRef.current ?? undefined,
+      notification_id: notificationIdRef.current ?? undefined,
+      ...(hint ? { task_report_hint: taskReportHintToPayload(hint) } : {}),
+    };
+  }, [userId]);
+
+  const clearTaskReportHintAfterSend = () => {
+    taskReportHintRef.current = null;
+  };
 
   const [memoryRecallWriterActive, setMemoryRecallWriterActive] = useState(false);
 
@@ -695,11 +713,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     transport: new NuraWellChatTransport({
       api: '/api/v1/ai/chat',
       fetch: fetchWithSession,
-      body: () => ({
-        user_id: userId,
-        session_id: sessionIdRef.current ?? undefined,
-        notification_id: notificationIdRef.current ?? undefined,
-      }),
+      body: () => buildOutgoingChatBody(),
     }),
   });
 
@@ -806,16 +820,13 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     sendMessage(
       { text },
       {
-        body: {
-          user_id: userId,
-          session_id: sessionIdRef.current ?? undefined,
-          notification_id: replyNotificationId ?? undefined,
-        },
+        body: buildOutgoingChatBody(),
       }
     );
+    clearTaskReportHintAfterSend();
     setNotificationContext(null);
     notificationIdRef.current = null;
-  }, [open, sendMessage, status, userId]);
+  }, [open, sendMessage, status, userId, buildOutgoingChatBody]);
 
   const isLoading = status === 'submitted' || status === 'streaming';
   const showLoading = isLoading || awaitingAssistantRecovery;
@@ -906,7 +917,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [awaitingAssistantRecovery, isLoading, panelView, sendMessage, userId]);
+  }, [awaitingAssistantRecovery, isLoading, panelView, sendMessage, setMessages, userId]);
   const isLongWait = isThinking && waitSeconds >= 15;
   useEffect(() => {
     if (!showLoading) {
@@ -1515,13 +1526,10 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                     sendMessage(
                       { text },
                       {
-                        body: {
-                          user_id: userId,
-                          session_id: sessionIdRef.current ?? undefined,
-                          notification_id: replyNotificationId ?? undefined,
-                        },
+                        body: buildOutgoingChatBody(),
                       }
                     );
+                    clearTaskReportHintAfterSend();
                     setInput('');
                     clearChatInputDraft(sessionIdRef.current);
                     if (replyNotificationId) {

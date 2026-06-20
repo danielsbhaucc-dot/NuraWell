@@ -25,6 +25,11 @@ import {
   type PendingAcceptedTask,
 } from './mark-task-execution';
 import { jerusalemDateKey } from '../journey/task-schedule';
+import {
+  parseHintSlot,
+  resolveTaskIntentWithHint,
+  type TaskReportHintPayload,
+} from './task-report-hint';
 
 /** טיפוס לתאימות לאחור עם קוד שמשתמש ב-TaskIntentKind. */
 export type TaskIntentKind = 'done' | 'none';
@@ -204,7 +209,8 @@ export async function applyTaskIntentFromUserMessage(
   supabase: SupabaseClient,
   userId: string,
   userMessage: string,
-  pending?: PendingAcceptedTask[]
+  pending?: PendingAcceptedTask[],
+  hint?: TaskReportHintPayload
 ): Promise<ApplyTaskIntentResult> {
   const list = pending ?? (await fetchPendingAcceptedTasksForUser(supabase, userId));
   const normalizedMessage = normalizeMsg(userMessage);
@@ -258,18 +264,25 @@ export async function applyTaskIntentFromUserMessage(
     }
   }
 
-  const intent = detectTaskIntent(userMessage, list);
+  const intent = resolveTaskIntentWithHint(
+    userMessage,
+    list,
+    hint,
+    detectTaskIntent(userMessage, list)
+  );
 
   const outcome = outcomeFromCategory(intent.category);
   if (!outcome || !intent.taskId) {
     return { marked: false, intent, category: intent.category };
   }
 
+  const hintedTask = list.find((t) => t.id === intent.taskId);
   const result = await markTaskExecutionForUser(supabase, userId, {
     taskId: intent.taskId,
     userMessage,
     pending: list,
     outcome,
+    slot: parseHintSlot(hint?.slot, hintedTask),
   });
 
   if (!result.ok) {

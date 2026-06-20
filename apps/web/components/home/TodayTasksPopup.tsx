@@ -13,6 +13,12 @@ import {
   Zap,
 } from 'lucide-react';
 import { buildTaskDoneChatPrefill } from '../../lib/ai/almog-greeting';
+import {
+  buildTaskReportHintFromPendingRow,
+  type TaskReportHint,
+} from '../../lib/ai/task-report-hint';
+import { slotLabel } from '../../lib/journey/task-schedule';
+import type { JourneyTaskSlot } from '../../lib/types/journey';
 import type { PendingTaskTodayRow } from '../../lib/journey/journey-report-parse';
 
 interface TodayTasksPopupProps {
@@ -22,7 +28,7 @@ interface TodayTasksPopupProps {
   pendingCount: number;
   onClose: () => void;
   onMarkDone: () => void;
-  onOpenChat: (prefill: string) => void;
+  onOpenChat: (prefill: string, hint?: TaskReportHint) => void;
 }
 
 export function TodayTasksPopup({
@@ -55,15 +61,26 @@ export function TodayTasksPopup({
   const firstPending = pendingTasks[0];
 
   const openChatForTask = (task: PendingTaskTodayRow) => {
-    const slot = task.pendingSlots.find((s) => s !== 'once') ?? null;
+    const slotKey = task.pendingSlots.find((s) => s !== 'once');
+    const slotLabelHe =
+      slotKey && slotKey !== 'once' ? slotLabel(slotKey as JourneyTaskSlot) : null;
     onClose();
-    onOpenChat(buildTaskDoneChatPrefill(task.title, slot));
+    onOpenChat(
+      buildTaskDoneChatPrefill(task.title, slotLabelHe),
+      buildTaskReportHintFromPendingRow(task, 'home_tasks_popup')
+    );
   };
 
   const openChatGeneral = () => {
     onClose();
     if (firstPending) {
-      onOpenChat(buildTaskDoneChatPrefill(firstPending.title));
+      const slotKey = firstPending.pendingSlots.find((s) => s !== 'once');
+      const slotLabelHe =
+        slotKey && slotKey !== 'once' ? slotLabel(slotKey as JourneyTaskSlot) : null;
+      onOpenChat(
+        buildTaskDoneChatPrefill(firstPending.title, slotLabelHe),
+        buildTaskReportHintFromPendingRow(firstPending, 'home_tasks_popup')
+      );
       return;
     }
     onOpenChat('בוא נדבר על המשימות שלי להיום');
@@ -220,9 +237,9 @@ export function TodayTasksPopup({
                       </p>
                       {task.pendingSlots.length > 0 && task.pendingSlots[0] !== 'once' ? (
                         <div className="flex flex-wrap gap-1.5 justify-end mt-2">
-                          {task.pendingSlots.map((slot) => (
+                          {task.pendingSlots.map((slotKey) => (
                             <span
-                              key={`${task.id}-${slot}`}
+                              key={`${task.id}-${slotKey}`}
                               className="text-[10px] font-bold px-2 py-0.5 rounded-full text-amber-900 inline-flex items-center gap-1"
                               style={{
                                 background: 'rgba(254,240,138,0.65)',
@@ -230,7 +247,9 @@ export function TodayTasksPopup({
                               }}
                             >
                               <Zap className="w-3 h-3" />
-                              {slot}
+                              {slotKey === 'once'
+                                ? 'להיום'
+                                : slotLabel(slotKey as JourneyTaskSlot)}
                             </span>
                           ))}
                         </div>

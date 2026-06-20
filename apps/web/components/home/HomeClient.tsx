@@ -14,6 +14,7 @@ import { ProgramOrchestratorGate } from './ProgramOrchestratorGate';
 import { QuickAccessGrid } from './QuickAccessGrid';
 import { TodayTasksPopup } from './TodayTasksPopup';
 import { SosButton } from '../ai/SosButton';
+import { SosMemoryCard } from '../ai/SosMemoryCard';
 import { buildAlmogGreeting, type GreetingTaskState } from '../../lib/ai/almog-greeting';
 import {
   countAcceptedTaskExecutionToday,
@@ -22,7 +23,8 @@ import {
   type PendingTaskTodayRow,
   type TodayExecutionRow,
 } from '../../lib/journey/journey-report-parse';
-import { dispatchOpenAlmogChatWithPrefill } from '../../lib/notifications/open-almog-chat';
+import { dispatchOpenAlmogChatWithPrefill, dispatchOpenAlmogChatWithTaskReport } from '../../lib/notifications/open-almog-chat';
+import { buildTaskReportHintFromPendingRow } from '../../lib/ai/task-report-hint';
 import { useActionHub } from '../action-hub/ActionHubProvider';
 
 type JourneyReportResponse = {
@@ -132,8 +134,15 @@ export function HomeClient({
 
   const chatCta = useMemo(() => {
     if (!greeting.chatPrefill || !greeting.chatCtaLabel) return undefined;
-    return { label: greeting.chatCtaLabel, prefill: greeting.chatPrefill };
-  }, [greeting]);
+    const firstPending = todayTasks.find((t) => !t.done);
+    return {
+      label: greeting.chatCtaLabel,
+      prefill: greeting.chatPrefill,
+      hint: firstPending
+        ? buildTaskReportHintFromPendingRow(firstPending, 'home_hero')
+        : undefined,
+    };
+  }, [greeting, todayTasks]);
 
   const taskProgress = useMemo(() => {
     if (!greeting.showProgress || !greeting.progressTotal) return undefined;
@@ -224,8 +233,14 @@ export function HomeClient({
                   title: t.title,
                   emoji: t.emoji,
                   stepTitle: t.stepTitle,
+                  stepId: t.stepId,
+                  pendingSlots: t.pendingSlots,
                 }))}
             />
+          </motion.div>
+
+          <motion.div variants={item}>
+            <SosMemoryCard />
           </motion.div>
 
           {/* משימות */}
@@ -412,7 +427,10 @@ export function HomeClient({
         pendingCount={taskCounts.pending}
         onClose={() => setTasksPopupOpen(false)}
         onMarkDone={() => actionHub.open()}
-        onOpenChat={(prefill) => dispatchOpenAlmogChatWithPrefill(prefill)}
+        onOpenChat={(prefill, hint) => {
+          if (hint) dispatchOpenAlmogChatWithTaskReport(prefill, hint);
+          else dispatchOpenAlmogChatWithPrefill(prefill);
+        }}
       />
     </div>
   );

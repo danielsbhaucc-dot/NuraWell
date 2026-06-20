@@ -1,7 +1,6 @@
 import {
   isTaskActiveToday,
   resolveTaskSchedule,
-  slotLabel,
   slotsForSchedule,
 } from './task-schedule';
 import type { JourneyTask, JourneyTaskSlot } from '../types/journey';
@@ -156,11 +155,12 @@ export function countAcceptedTaskExecutionToday(
 
 export type PendingTaskTodayRow = {
   id: string;
+  stepId: string;
   title: string;
   emoji: string;
   stepTitle: string;
   stepNumber: number;
-  /** סלוטים שעדיין לא סומנו היום (למשימות חוזרות). */
+  /** מפתחי סלוט (JourneyTaskSlot) — לא labels עבריים */
   pendingSlots: string[];
   done: boolean;
 };
@@ -192,6 +192,7 @@ export function listPendingTasksToday(
         const done = entry.execution_done === true;
         out.push({
           id: t.id,
+          stepId: step.id,
           title: t.title,
           emoji: t.emoji ?? '✅',
           stepTitle: step.title,
@@ -206,13 +207,12 @@ export function listPendingTasksToday(
 
       const expected = slotsForSchedule(schedule, times_per_day);
       const doneSlots = doneSlotsByTask.get(t.id) ?? new Set<string>();
-      const pendingSlots = expected
-        .filter((sl) => !doneSlots.has(sl))
-        .map((sl) => slotLabel(sl, t.meal_timing ?? undefined));
+      const pendingSlots = expected.filter((sl) => !doneSlots.has(sl));
       const done = pendingSlots.length === 0;
 
       out.push({
         id: t.id,
+        stepId: step.id,
         title: t.title,
         emoji: t.emoji ?? '✅',
         stepTitle: step.title,

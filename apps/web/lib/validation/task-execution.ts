@@ -39,7 +39,7 @@ export const taskExecutionInsertSchema = z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/)
       .optional(),
-    source: z.enum(['manual', 'chat', 'reminder']).optional(),
+    source: z.enum(['manual', 'chat', 'reminder', 'sos']).optional(),
     note: z.string().max(2000).optional(),
     outcome: taskExecutionOutcomeSchema.optional(),
   })
