@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
+import { fontVariables } from './fonts';
 import './globals.css';
 
 /** Same-origin metadata (manifest, OG URLs) — avoids manifest fetch getting HTML from the wrong host on Vercel. */
@@ -93,15 +94,9 @@ export default async function RootLayout({
   const nonce = (await headers()).get('x-nonce') ?? undefined;
   const siteOrigin = metadataBaseUrl().origin;
   return (
-    <html lang="he" dir="rtl" translate="no" className="notranslate" suppressHydrationWarning>
+    <html lang="he" dir="rtl" translate="no" className={`notranslate ${fontVariables}`} suppressHydrationWarning>
       <head>
         <meta name="google" content="notranslate" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=Rubik:wght@400;500;600;700;800;900&family=Cormorant+Garamond:wght@300;600&family=DM+Sans:wght@300&display=swap"
-          rel="stylesheet"
-        />
         <script
           nonce={nonce}
           type="application/ld+json"

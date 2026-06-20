@@ -150,7 +150,7 @@ export function MediaUploadZone({
         if (fileRef.current) fileRef.current.value = '';
       }
     },
-    [author, busy, kind, license, onError, onUploaded, source, title]
+    [author, busy, kind, license, link, onError, onUploaded, source, title]
   );
 
   return (

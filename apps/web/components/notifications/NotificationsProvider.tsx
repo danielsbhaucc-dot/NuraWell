@@ -560,7 +560,11 @@ export function NotificationsProvider({
     [liveToasts, markOne]
   );
 
-  const nowMs = useMemo(() => Date.now(), [timeTick, open]);
+  const nowMs = useMemo(() => {
+    void timeTick;
+    void open;
+    return Date.now();
+  }, [timeTick, open]);
 
   const showMarkAll = viewMode === 'inbox' && items.some((n) => !n.is_read);
 

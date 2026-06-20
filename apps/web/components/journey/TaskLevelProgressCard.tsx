@@ -170,13 +170,16 @@ export function TaskLevelProgressCard({
       </div>
 
       <div className="flex flex-wrap gap-2 justify-end">
+        <p className="w-full text-[10px] font-semibold text-orange-900/60 text-right mb-1">
+          משוב על <strong>רמת הקושי</strong> — לא על רגע קשה עכשיו (לזה יש &quot;רגע… קשה לי&quot; בבית)
+        </p>
         <button
           type="button"
           disabled={submitting}
           onClick={() => void handleFeedback('too_hard')}
           className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-red-50 text-red-800 border border-red-200/80 disabled:opacity-50"
         >
-          קשה לי
+          הרמה קשה לי
         </button>
         <button
           type="button"

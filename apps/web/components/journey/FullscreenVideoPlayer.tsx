@@ -94,57 +94,6 @@ export function FullscreenVideoPlayer({
     answeredAttentionIdsRef.current.clear();
   }, [attentionStops, bunnyEmbedId]);
 
-  useEffect(() => {
-    if (useHlsImmersive) return;
-    const handler = (e: MessageEvent) => {
-      if (!mountedRef.current) return;
-      if (!e.origin.includes('mediadelivery.net')) return;
-      let data: Record<string, unknown>;
-      try {
-        data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-      } catch {
-        return;
-      }
-
-      const event = (data.event as string)?.toLowerCase();
-      if (event === 'ended') {
-        onEndedRef.current();
-      } else if (event === 'play') {
-        if (mountedRef.current) setIsPlaying(true);
-      } else if (event === 'pause') {
-        if (mountedRef.current) setIsPlaying(false);
-      } else if (event === 'timeupdate') {
-        const seconds = Number(data.seconds ?? 0);
-        const duration = Number(data.duration ?? 0);
-        onTimeUpdateRef.current?.(seconds, duration);
-        handleAttentionCheck(seconds);
-      }
-    };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
-  }, [useHlsImmersive]);
-
-  useEffect(() => {
-    if (!useHlsImmersive) return;
-    const v = hlsVideoRef.current;
-    if (!v) return;
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
-    const onTimeUpdateEv = () => {
-      onTimeUpdateRef.current?.(v.currentTime, v.duration || 0);
-      handleAttentionCheck(v.currentTime);
-    };
-    v.addEventListener('play', onPlay);
-    v.addEventListener('pause', onPause);
-    v.addEventListener('timeupdate', onTimeUpdateEv);
-    setIsPlaying(!v.paused);
-    return () => {
-      v.removeEventListener('play', onPlay);
-      v.removeEventListener('pause', onPause);
-      v.removeEventListener('timeupdate', onTimeUpdateEv);
-    };
-  }, [useHlsImmersive, pullZoneHlsSrc, hlsListenKey]);
-
   const sendToPlayer = useCallback((event: string, extra?: Record<string, unknown>) => {
     const iframe = iframeRef.current;
     if (!iframe?.contentWindow) return;
@@ -186,6 +135,57 @@ export function FullscreenVideoPlayer({
     setAttentionFeedbackText('');
     setAutoResumeSecondsLeft(null);
   }, [attentionStops, activeAttentionStop, exitConfirmOpen, pausePlayback]);
+
+  useEffect(() => {
+    if (useHlsImmersive) return;
+    const handler = (e: MessageEvent) => {
+      if (!mountedRef.current) return;
+      if (!e.origin.includes('mediadelivery.net')) return;
+      let data: Record<string, unknown>;
+      try {
+        data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+      } catch {
+        return;
+      }
+
+      const event = (data.event as string)?.toLowerCase();
+      if (event === 'ended') {
+        onEndedRef.current();
+      } else if (event === 'play') {
+        if (mountedRef.current) setIsPlaying(true);
+      } else if (event === 'pause') {
+        if (mountedRef.current) setIsPlaying(false);
+      } else if (event === 'timeupdate') {
+        const seconds = Number(data.seconds ?? 0);
+        const duration = Number(data.duration ?? 0);
+        onTimeUpdateRef.current?.(seconds, duration);
+        handleAttentionCheck(seconds);
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [handleAttentionCheck, useHlsImmersive]);
+
+  useEffect(() => {
+    if (!useHlsImmersive) return;
+    const v = hlsVideoRef.current;
+    if (!v) return;
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onTimeUpdateEv = () => {
+      onTimeUpdateRef.current?.(v.currentTime, v.duration || 0);
+      handleAttentionCheck(v.currentTime);
+    };
+    v.addEventListener('play', onPlay);
+    v.addEventListener('pause', onPause);
+    v.addEventListener('timeupdate', onTimeUpdateEv);
+    setIsPlaying(!v.paused);
+    return () => {
+      v.removeEventListener('play', onPlay);
+      v.removeEventListener('pause', onPause);
+      v.removeEventListener('timeupdate', onTimeUpdateEv);
+    };
+  }, [handleAttentionCheck, hlsListenKey, pullZoneHlsSrc, useHlsImmersive]);
 
   const finishAttentionStop = useCallback(() => {
     if (!activeAttentionStop) return;

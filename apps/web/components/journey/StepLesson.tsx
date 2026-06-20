@@ -108,7 +108,7 @@ export function StepLesson({ step, initialProgress, userId, userGender = null, a
     }
     xDrag.set(0);
     return undefined;
-  }, [currentSection]);
+  }, [currentSection, xDrag]);
 
   useEffect(() => {
     if (isCommitmentGateResolved(Boolean(step.commitment), progress)) {
