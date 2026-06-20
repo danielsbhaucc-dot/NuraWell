@@ -3,7 +3,7 @@
  * -----------------
  * מחולל בועת הברכה של אלמוג בראש מסך הבית. צד-לקוח, מיידי (בלי קריאת AI),
  * אבל חכם ולא גנרי: הניסוח מתחלף יומית לפי seed (תאריך + שם + מצב), מותאם
- * לחלק היום ומבוסס על אותם עקרונות פסיכולוגיים של מנוע המומנטום.
+ * לחלק היום, לשמות משימות ולמגמת התקדמות.
  */
 
 import { normalizeHebrewDashes } from '../text/hebrew-dashes';
@@ -11,11 +11,26 @@ import { partOfDayInIsrael, pickDaily, type PartOfDay } from './momentum-psychol
 
 export type GreetingTaskState = 'loading' | 'fresh' | 'pending' | 'done';
 
+export type AlmogGreetingTaskPreview = {
+  title: string;
+  emoji?: string;
+};
+
 export type AlmogGreeting = {
   /** טקסט פתיחה רגיל */
   lead: string;
   /** החלק המודגש (זהב) — ההזמנה/השאלה */
   highlight: string;
+  /** כותרת משנה קצרה מתחת ל"✦ אלמוג" — משתנה לפי מצב */
+  mentorTag?: string;
+  /** טקסט פתיחה לצ'אט — ממולא בשדה הקלט */
+  chatPrefill?: string;
+  /** תווית לכפתור צ'אט בבועה */
+  chatCtaLabel?: string;
+  /** האם להציג פס התקדמות */
+  showProgress?: boolean;
+  progressDone?: number;
+  progressTotal?: number;
 };
 
 /** מפתח תאריך בלוח ירושלים — seed יומי יציב. */
@@ -26,6 +41,12 @@ function israelDateKey(now: Date): string {
     month: '2-digit',
     day: '2-digit',
   }).format(now);
+}
+
+function truncateTitle(title: string, max = 28): string {
+  const t = title.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1)}…`;
 }
 
 /** פתיחות חמות לפי חלק היום — תחושת נוכחות אנושית. */
@@ -60,6 +81,156 @@ const HIGHLIGHT_PENDING: readonly string[] = [
   'בקצב שלך. ספר לי בצ׳אט כשסימנת אחת.',
 ];
 
+const MENTOR_TAG_FRESH: readonly string[] = [
+  'כאן בשבילך',
+  'מקשיב',
+  'בקצב שלך',
+];
+
+const MENTOR_TAG_PENDING: readonly string[] = [
+  'מחכה לעדכון ממך',
+  'עוד קצת וסוגרים',
+  'אני איתך',
+];
+
+const MENTOR_TAG_DONE: readonly string[] = [
+  'יום חזק ✦',
+  'גאה בך',
+  'המשך ככה',
+];
+
+const HIGHLIGHT_ALMOST_DONE: readonly string[] = [
+  'עוד אחת קטנה וסוגרים את היום. ספר לי בצ׳אט.',
+  'כמעט שם. ספר לי כשסגרת את האחרונה.',
+  'הסוף קרוב, בוא נסגור יחד בצ׳אט.',
+];
+
+const HIGHLIGHT_MANY_PENDING: readonly string[] = [
+  'לא חייבים הכל, בחר/י אחת קטנה וספר/י לי.',
+  'גם משימה אחת היום שווה. ספר לי מה עשית.',
+  'בקצב שלך. התחל/י מאחת וספר/י לי בצ׳אט.',
+];
+
+/** טקסט פתיחה לצ'אט כשמדווחים על משימה ספציפית. */
+export function buildTaskDoneChatPrefill(title: string, slotLabel?: string | null): string {
+  const t = title.trim();
+  if (!t) return 'סיימתי משימה';
+  if (slotLabel && slotLabel !== 'once') {
+    return `סיימתי את «${t}» (${slotLabel})`;
+  }
+  return `סיימתי את «${t}»`;
+}
+
+function buildSmartHighlight(params: {
+  taskState: GreetingTaskState;
+  pendingCount: number;
+  doneCount: number;
+  dueToday: number;
+  part: PartOfDay;
+  seed: string;
+}): string {
+  const { taskState, pendingCount, doneCount, dueToday, part, seed } = params;
+
+  if (taskState === 'pending') {
+    if (pendingCount === 1 && doneCount > 0) {
+      return normalizeHebrewDashes(pickDaily(HIGHLIGHT_ALMOST_DONE, `${seed}:almost`));
+    }
+    if (pendingCount >= 3) {
+      return normalizeHebrewDashes(pickDaily(HIGHLIGHT_MANY_PENDING, `${seed}:many`));
+    }
+    if (part === 'evening' || part === 'night') {
+      const evening = [
+        'לפני שהערב נגמר, ספר לי מה הספקת.',
+        'ערב שקט, גם משימה אחת מספיקה. ספר לי בצ׳אט.',
+      ];
+      return normalizeHebrewDashes(pickDaily(evening, `${seed}:eve`));
+    }
+    if (part === 'morning' && doneCount === 0) {
+      const morning = [
+        'בוקר טוב לצעד ראשון. ספר לי בצ׳אט כשעשית.',
+        'יום חדש, משימה אחת קטנה מספיקה. ספר לי כשסימנת.',
+      ];
+      return normalizeHebrewDashes(pickDaily(morning, `${seed}:am`));
+    }
+    return normalizeHebrewDashes(pickDaily(HIGHLIGHT_PENDING, seed));
+  }
+
+  if (taskState === 'done') {
+    return normalizeHebrewDashes(pickDaily(HIGHLIGHT_DONE, seed));
+  }
+
+  return normalizeHebrewDashes(pickDaily(HIGHLIGHT_FRESH, seed));
+}
+
+function buildChatPrefill(params: {
+  taskState: GreetingTaskState;
+  pendingTasks: readonly AlmogGreetingTaskPreview[];
+  pendingCount: number;
+}): { prefill: string; label: string } {
+  const { taskState, pendingTasks, pendingCount } = params;
+  const first = pendingTasks[0];
+
+  if (taskState === 'pending' && first?.title) {
+    const prefill = buildTaskDoneChatPrefill(first.title);
+    if (pendingCount === 1) {
+      return { prefill, label: 'ספר שסיימת בצ׳אט' };
+    }
+    return { prefill, label: 'דווח על משימה בצ׳אט' };
+  }
+
+  if (taskState === 'done') {
+    return { prefill: 'סגרתי את כל המשימות להיום ✦', label: 'ספר לאלמוג איך מרגיש' };
+  }
+
+  return { prefill: 'מה הכי חשוב לי היום?', label: 'פתח צ׳אט' };
+}
+
+function buildPendingLead(params: {
+  firstName: string;
+  pendingCount: number;
+  doneCount: number;
+  dueToday: number;
+  pendingTasks: readonly AlmogGreetingTaskPreview[];
+  seed: string;
+}): string {
+  const { firstName, pendingCount, doneCount, dueToday, pendingTasks, seed } = params;
+  const name = firstName?.trim() ? `${firstName.trim()}, ` : '';
+  const first = pendingTasks[0];
+  const firstTitle = first ? truncateTitle(first.title) : null;
+
+  if (pendingCount === 1 && firstTitle) {
+    const variants = [
+      `${name}נשארה לך רק «${firstTitle}» להיום.`,
+      `${name}«${firstTitle}» עדיין פתוחה, וזה בסדר.`,
+      `${name}עוד משימה אחת: «${firstTitle}».`,
+    ];
+    return normalizeHebrewDashes(pickDaily(variants, `${seed}:one`));
+  }
+
+  if (doneCount > 0 && dueToday > 0) {
+    const variants = [
+      `${name}כבר סגרת ${doneCount} מתוך ${dueToday}, נשארו ${pendingCount}.`,
+      `${name}${doneCount} בוצעו, עוד ${pendingCount} מחכות.`,
+      `${name}התקדמת יפה, ${doneCount}/${dueToday} כבר בסל.`,
+    ];
+    return normalizeHebrewDashes(pickDaily(variants, `${seed}:progress`));
+  }
+
+  if (firstTitle && pendingCount > 1) {
+    const others = pendingCount - 1;
+    const variants = [
+      `${name}«${firstTitle}» ועוד ${others} מחכות לך.`,
+      `${name}יש ${pendingCount} משימות פתוחות, מתחילים מ«${firstTitle}»?`,
+      `${name}${pendingCount} משימות על היום, הראשונה: «${firstTitle}».`,
+    ];
+    return normalizeHebrewDashes(pickDaily(variants, `${seed}:multi`));
+  }
+
+  const count =
+    pendingCount === 1 ? 'משימה אחת שקיבלת' : `${pendingCount} משימות שקיבלת`;
+  return normalizeHebrewDashes(`${name}יש לך ${count} ועדיין לא סגרת.`);
+}
+
 /**
  * בונה את הברכה היומית. דטרמיניסטי לאורך היום (לא מרצד) אך מגוון בין הימים.
  */
@@ -67,37 +238,106 @@ export function buildAlmogGreeting(params: {
   firstName: string;
   taskState: GreetingTaskState;
   pendingCount?: number;
+  doneCount?: number;
+  dueToday?: number;
+  pendingTasks?: readonly AlmogGreetingTaskPreview[];
   now?: Date;
 }): AlmogGreeting {
-  const { firstName, taskState, pendingCount = 0 } = params;
+  const {
+    firstName,
+    taskState,
+    pendingCount = 0,
+    doneCount = 0,
+    dueToday = 0,
+    pendingTasks = [],
+  } = params;
   const now = params.now ?? new Date();
   const part = partOfDayInIsrael(now);
   const name = firstName?.trim() ? `${firstName.trim()}, ` : '';
   const seed = `${israelDateKey(now)}:${firstName || 'x'}:${taskState}`;
 
   if (taskState === 'loading') {
-    return { lead: 'רגע, אני מסתכל על המסע שלך…', highlight: '' };
+    return {
+      lead: 'רגע, אני מסתכל על המסע שלך…',
+      highlight: '',
+      mentorTag: 'טוען…',
+    };
   }
 
+  const chat = buildChatPrefill({ taskState, pendingTasks, pendingCount });
+
   if (taskState === 'pending') {
-    const count =
-      pendingCount === 1 ? 'משימה אחת שקיבלת' : `${pendingCount} משימות שקיבלת`;
     return {
-      lead: normalizeHebrewDashes(`${name}יש לך ${count} ועדיין לא סגרת.`),
-      highlight: normalizeHebrewDashes(pickDaily(HIGHLIGHT_PENDING, seed)),
+      lead: buildPendingLead({
+        firstName,
+        pendingCount,
+        doneCount,
+        dueToday,
+        pendingTasks,
+        seed,
+      }),
+      highlight: buildSmartHighlight({
+        taskState,
+        pendingCount,
+        doneCount,
+        dueToday,
+        part,
+        seed,
+      }),
+      mentorTag: normalizeHebrewDashes(
+        pickDaily(
+          pendingCount === 1 && doneCount > 0
+            ? (['עוד אחת וסוגרים', 'כמעט שם ✦', 'הסוף קרוב'] as const)
+            : MENTOR_TAG_PENDING,
+          seed
+        )
+      ),
+      chatPrefill: chat.prefill,
+      chatCtaLabel: chat.label,
+      showProgress: dueToday > 0,
+      progressDone: doneCount,
+      progressTotal: dueToday,
     };
   }
 
   if (taskState === 'done') {
+    const doneVariants = [
+      `${name}סגרת את מה שהתחייבת אליו היום ✦`,
+      `${name}היום נסגר יפה, ${doneCount} משימות בוצעו ✦`,
+      `${name}עשית את שלך להיום, וזה מרגיש ✦`,
+    ];
     return {
-      lead: normalizeHebrewDashes(`${name}סגרת את מה שהתחייבת אליו היום ✦`),
-      highlight: normalizeHebrewDashes(pickDaily(HIGHLIGHT_DONE, seed)),
+      lead: normalizeHebrewDashes(pickDaily(doneVariants, seed)),
+      highlight: buildSmartHighlight({
+        taskState,
+        pendingCount,
+        doneCount,
+        dueToday,
+        part,
+        seed,
+      }),
+      mentorTag: normalizeHebrewDashes(pickDaily(MENTOR_TAG_DONE, seed)),
+      chatPrefill: chat.prefill,
+      chatCtaLabel: chat.label,
+      showProgress: dueToday > 0,
+      progressDone: doneCount,
+      progressTotal: dueToday || doneCount,
     };
   }
 
   // fresh — משתמש בלי משימות פעילות היום
   return {
     lead: normalizeHebrewDashes(`${name}${pickDaily(LEAD_FRESH[part], seed)}`),
-    highlight: normalizeHebrewDashes(pickDaily(HIGHLIGHT_FRESH, seed)),
+    highlight: buildSmartHighlight({
+      taskState,
+      pendingCount,
+      doneCount,
+      dueToday,
+      part,
+      seed,
+    }),
+    mentorTag: normalizeHebrewDashes(pickDaily(MENTOR_TAG_FRESH, seed)),
+    chatPrefill: chat.prefill,
+    chatCtaLabel: chat.label,
   };
 }

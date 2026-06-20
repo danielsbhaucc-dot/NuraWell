@@ -1,6 +1,7 @@
 import {
   isTaskActiveToday,
   resolveTaskSchedule,
+  slotLabel,
   slotsForSchedule,
 } from './task-schedule';
 import type { JourneyTask, JourneyTaskSlot } from '../types/journey';
@@ -151,6 +152,83 @@ export function countAcceptedTaskExecutionToday(
 
   const pending = Math.max(0, dueToday - done);
   return { accepted, done, pending, dueToday };
+}
+
+export type PendingTaskTodayRow = {
+  id: string;
+  title: string;
+  emoji: string;
+  stepTitle: string;
+  stepNumber: number;
+  /** סלוטים שעדיין לא סומנו היום (למשימות חוזרות). */
+  pendingSlots: string[];
+  done: boolean;
+};
+
+/** רשימת משימות פתוחות/סגורות להיום — לתצוגה בבית ובפופאפ. */
+export function listPendingTasksToday(
+  steps: JourneyReportStepShape[],
+  todayExecutions: ReadonlyArray<TodayExecutionRow> = [],
+  todayDateKey?: string
+): PendingTaskTodayRow[] {
+  const doneSlotsByTask = new Map<string, Set<string>>();
+  for (const e of todayExecutions) {
+    if (todayDateKey && e.date_key !== todayDateKey) continue;
+    if (!doneSlotsByTask.has(e.task_id)) doneSlotsByTask.set(e.task_id, new Set());
+    doneSlotsByTask.get(e.task_id)!.add(e.slot);
+  }
+
+  const out: PendingTaskTodayRow[] = [];
+
+  for (const step of steps) {
+    const tasks = parseJourneyTasksFull(step.tasks);
+    const ts = (step.progress?.task_statuses ?? {}) as Record<string, TaskStatusEntry>;
+    for (const t of tasks) {
+      const entry = ts[t.id];
+      if (entry?.status !== 'accepted') continue;
+
+      const { schedule, times_per_day } = resolveTaskSchedule(t);
+      if (schedule === 'one_time') {
+        const done = entry.execution_done === true;
+        out.push({
+          id: t.id,
+          title: t.title,
+          emoji: t.emoji ?? '✅',
+          stepTitle: step.title,
+          stepNumber: step.step_number,
+          pendingSlots: done ? [] : ['once'],
+          done,
+        });
+        continue;
+      }
+
+      if (!isTaskActiveToday(t)) continue;
+
+      const expected = slotsForSchedule(schedule, times_per_day);
+      const doneSlots = doneSlotsByTask.get(t.id) ?? new Set<string>();
+      const pendingSlots = expected
+        .filter((sl) => !doneSlots.has(sl))
+        .map((sl) => slotLabel(sl, t.meal_timing ?? undefined));
+      const done = pendingSlots.length === 0;
+
+      out.push({
+        id: t.id,
+        title: t.title,
+        emoji: t.emoji ?? '✅',
+        stepTitle: step.title,
+        stepNumber: step.step_number,
+        pendingSlots,
+        done,
+      });
+    }
+  }
+
+  return out.sort(
+    (a, b) =>
+      Number(a.done) - Number(b.done) ||
+      a.stepNumber - b.stepNumber ||
+      a.title.localeCompare(b.title, 'he')
+  );
 }
 
 export type DeclinedTaskRow = {

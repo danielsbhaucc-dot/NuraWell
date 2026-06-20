@@ -4,25 +4,25 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  BookOpen,
   ChevronLeft,
-  ClipboardCheck,
   GraduationCap,
-  Route,
   Sparkles,
-  TrendingUp,
 } from 'lucide-react';
 import { AlmogHeroHeader } from './DolevHeroHeader';
 import { DashboardBriefCard } from './DashboardBriefCard';
 import { ProgramOrchestratorGate } from './ProgramOrchestratorGate';
+import { QuickAccessGrid } from './QuickAccessGrid';
+import { TodayTasksPopup } from './TodayTasksPopup';
 import { SosButton } from '../ai/SosButton';
 import { buildAlmogGreeting, type GreetingTaskState } from '../../lib/ai/almog-greeting';
 import {
   countAcceptedTaskExecutionToday,
+  listPendingTasksToday,
   type JourneyReportStepShape,
+  type PendingTaskTodayRow,
   type TodayExecutionRow,
 } from '../../lib/journey/journey-report-parse';
-import { useProgressReport } from '../progress-report/ProgressReportProvider';
+import { dispatchOpenAlmogChatWithPrefill } from '../../lib/notifications/open-almog-chat';
 import { useActionHub } from '../action-hub/ActionHubProvider';
 
 type JourneyReportResponse = {
@@ -60,9 +60,10 @@ export function HomeClient({
   simplifiedDashboard = false,
   mentorWidget,
 }: HomeClientProps) {
-  const progressReport = useProgressReport();
   const actionHub = useActionHub();
   const [taskLoading, setTaskLoading] = useState(true);
+  const [tasksPopupOpen, setTasksPopupOpen] = useState(false);
+  const [todayTasks, setTodayTasks] = useState<PendingTaskTodayRow[]>([]);
   const [taskCounts, setTaskCounts] = useState({
     accepted: 0,
     done: 0,
@@ -76,13 +77,13 @@ export function HomeClient({
       const res = await fetch('/api/v1/journey-report', { cache: 'no-store' });
       const json = (await res.json()) as JourneyReportResponse & { error?: string };
       if (!res.ok) return;
+      const steps = json.steps ?? [];
+      const todayExecutions = json.today_executions ?? [];
+      const todayDateKey = json.today_date_key;
       setTaskCounts(
-        countAcceptedTaskExecutionToday(
-          json.steps ?? [],
-          json.today_executions ?? [],
-          json.today_date_key
-        )
+        countAcceptedTaskExecutionToday(steps, todayExecutions, todayDateKey)
       );
+      setTodayTasks(listPendingTasksToday(steps, todayExecutions, todayDateKey));
     } finally {
       setTaskLoading(false);
     }
@@ -92,7 +93,7 @@ export function HomeClient({
     void refreshTasks();
   }, [refreshTasks]);
 
-  const bubbleContent = useMemo(() => {
+  const greeting = useMemo(() => {
     const taskState: GreetingTaskState = taskLoading
       ? 'loading'
       : taskCounts.dueToday === 0 && taskCounts.accepted === 0
@@ -101,12 +102,21 @@ export function HomeClient({
           ? 'pending'
           : 'done';
 
-    const greeting = buildAlmogGreeting({
+    const pendingTasks = todayTasks
+      .filter((t) => !t.done)
+      .map((t) => ({ title: t.title, emoji: t.emoji }));
+
+    return buildAlmogGreeting({
       firstName,
       taskState,
       pendingCount: taskCounts.pending,
+      doneCount: taskCounts.done,
+      dueToday: taskCounts.dueToday,
+      pendingTasks,
     });
+  }, [taskCounts, taskLoading, firstName, todayTasks]);
 
+  const bubbleContent = useMemo(() => {
     if (!greeting.highlight) {
       return <>{greeting.lead}</>;
     }
@@ -118,7 +128,25 @@ export function HomeClient({
         <strong style={{ color: '#FFD97D', fontWeight: 700 }}>{greeting.highlight}</strong>
       </>
     );
-  }, [taskCounts, taskLoading, firstName]);
+  }, [greeting]);
+
+  const chatCta = useMemo(() => {
+    if (!greeting.chatPrefill || !greeting.chatCtaLabel) return undefined;
+    return { label: greeting.chatCtaLabel, prefill: greeting.chatPrefill };
+  }, [greeting]);
+
+  const taskProgress = useMemo(() => {
+    if (!greeting.showProgress || !greeting.progressTotal) return undefined;
+    return {
+      done: greeting.progressDone ?? 0,
+      total: greeting.progressTotal,
+    };
+  }, [greeting]);
+
+  const firstPendingTitle = useMemo(
+    () => todayTasks.find((t) => !t.done)?.title ?? null,
+    [todayTasks]
+  );
 
   return (
     <div>
@@ -151,12 +179,18 @@ export function HomeClient({
           <AlmogHeroHeader
             firstName={firstName}
             bubbleContent={bubbleContent}
+            mentorTag={greeting.mentorTag}
+            chatCta={chatCta}
+            taskProgress={taskProgress}
             taskBadge={{
               pending: taskCounts.pending,
               done: taskCounts.done,
               accepted: taskCounts.accepted,
+              dueToday: taskCounts.dueToday,
+              previewTitle: firstPendingTitle,
               loading: taskLoading,
             }}
+            onTaskBadgeClick={() => setTasksPopupOpen(true)}
           />
         </div>
       </div>
@@ -182,14 +216,23 @@ export function HomeClient({
           )}
 
           <motion.div variants={item}>
-            <SosButton />
+            <SosButton
+              focusTasks={todayTasks
+                .filter((t) => !t.done)
+                .map((t) => ({
+                  id: t.id,
+                  title: t.title,
+                  emoji: t.emoji,
+                  stepTitle: t.stepTitle,
+                }))}
+            />
           </motion.div>
 
           {/* משימות */}
           <motion.div variants={item}>
             <button
               type="button"
-              onClick={() => progressReport.open('task_execution')}
+              onClick={() => setTasksPopupOpen(true)}
               className="w-full text-right"
             >
               <motion.div
@@ -320,38 +363,10 @@ export function HomeClient({
           )}
 
           <motion.div variants={item}>
-            <p
-              style={{
-                fontSize: '10px',
-                fontWeight: 700,
-                color: '#9896B8',
-                letterSpacing: '1.2px',
-                textTransform: 'uppercase',
-                margin: '8px 0 10px 2px',
-              }}
-            >
-              המשך מהר
-            </p>
-            <div className={`grid gap-3 ${simplifiedDashboard ? 'grid-cols-1' : 'grid-cols-2'}`}>
-              <QuickLink href="/plans" icon={Sparkles} label="התוכנית שלי" accent="#059669" />
-              <QuickLink href="/journey" icon={Route} label="המסע שלי" accent="#10b981" />
-              {!simplifiedDashboard && (
-                <QuickLink href="/guides" icon={BookOpen} label="המדריכים" accent="#14b8a6" />
-              )}
-              <QuickLink
-                href="#"
-                icon={ClipboardCheck}
-                label="עדכון משימות"
-                accent="#047857"
-                onClick={(e) => {
-                  e.preventDefault();
-                  actionHub.open();
-                }}
-              />
-              {!simplifiedDashboard && (
-                <QuickLink href="/progress" icon={TrendingUp} label="התקדמות" accent="#f59e0b" />
-              )}
-            </div>
+            <QuickAccessGrid
+              simplifiedDashboard={simplifiedDashboard}
+              onOpenTasks={() => actionHub.open()}
+            />
           </motion.div>
 
           {stats.activeCoursesCount === 0 && (
@@ -389,62 +404,16 @@ export function HomeClient({
           )}
         </motion.div>
       </div>
-    </div>
-  );
-}
 
-function QuickLink({
-  href,
-  icon: Icon,
-  label,
-  accent,
-  onClick,
-}: {
-  href: string;
-  icon: React.ElementType;
-  label: string;
-  accent: string;
-  onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
-}) {
-  const inner = (
-    <div
-      className="glass-surface relative flex flex-col items-center gap-2.5 overflow-hidden rounded-[20px] p-4 transition active:scale-[0.98]"
-      style={{
-        boxShadow: '0 8px 24px rgba(6,78,59,0.08), inset 0 1px 0 rgba(255,255,255,0.7)',
-      }}
-    >
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-x-3 top-px h-px"
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)',
-        }}
+      <TodayTasksPopup
+        open={tasksPopupOpen}
+        tasks={todayTasks}
+        doneCount={taskCounts.done}
+        pendingCount={taskCounts.pending}
+        onClose={() => setTasksPopupOpen(false)}
+        onMarkDone={() => actionHub.open()}
+        onOpenChat={(prefill) => dispatchOpenAlmogChatWithPrefill(prefill)}
       />
-      <div
-        className="flex h-12 w-12 items-center justify-center rounded-2xl"
-        style={{
-          background: `linear-gradient(145deg, ${accent}, ${accent}cc)`,
-          border: `1px solid ${accent}66`,
-          boxShadow: `0 8px 20px ${accent}40, inset 0 1px 0 rgba(255,255,255,0.35)`,
-        }}
-      >
-        <Icon className="h-5 w-5 text-white" strokeWidth={2.4} />
-      </div>
-      <span className="text-[12px] font-black text-emerald-950">{label}</span>
     </div>
-  );
-
-  if (onClick) {
-    return (
-      <a href={href} onClick={onClick} className="block no-tap-highlight">
-        {inner}
-      </a>
-    );
-  }
-
-  return (
-    <Link href={href} prefetch className="block no-tap-highlight">
-      {inner}
-    </Link>
   );
 }
