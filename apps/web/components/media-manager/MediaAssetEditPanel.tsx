@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, Save, Trash2 } from 'lucide-react';
+import { Loader2, Save, Sparkles, Trash2, Wand2 } from 'lucide-react';
 import type { MediaAsset } from './types';
 import { glassInputClass } from './glass-styles';
 
@@ -24,6 +24,7 @@ export function MediaAssetEditPanel({
   const [altText, setAltText] = useState('');
   const [folder, setFolder] = useState('');
   const [busy, setBusy] = useState(false);
+  const [altBusy, setAltBusy] = useState(false);
 
   useEffect(() => {
     if (!asset) return;
@@ -37,6 +38,26 @@ export function MediaAssetEditPanel({
       <p className="text-sm text-slate-600">בחר פריט מהרשימה לעריכה או מחיקה.</p>
     );
   }
+
+  const generateAlt = async () => {
+    if (asset.kind !== 'image') return;
+    setAltBusy(true);
+    try {
+      const res = await fetch('/api/v1/admin/accessibility/generate-alt', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assetId: asset.id, save: false }),
+      });
+      const data = (await res.json()) as { alt_text?: string; error?: string };
+      if (!res.ok) throw new Error(data.error || 'יצירת alt נכשלה');
+      if (data.alt_text) setAltText(data.alt_text);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAltBusy(false);
+    }
+  };
 
   const save = async () => {
     setBusy(true);
@@ -69,8 +90,37 @@ export function MediaAssetEditPanel({
         <input value={title} onChange={(e) => setTitle(e.target.value)} className={glassInputClass} />
       </div>
       <div>
-        <label className="mb-1 block text-xs text-slate-600">טקסט חלופי</label>
-        <input value={altText} onChange={(e) => setAltText(e.target.value)} className={glassInputClass} />
+        <label className="mb-1 block text-xs text-slate-600" htmlFor={`alt-text-${asset.id}`}>
+          טקסט חלופי
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <input
+            id={`alt-text-${asset.id}`}
+            value={altText}
+            onChange={(e) => setAltText(e.target.value)}
+            className={glassInputClass}
+          />
+          {asset.kind === 'image' ? (
+            <button
+              type="button"
+              onClick={() => void generateAlt()}
+              disabled={altBusy || busy}
+              className="inline-flex items-center gap-1 rounded-xl border border-violet-300/70 bg-violet-500/10 px-3 py-2 text-xs font-bold text-violet-900 disabled:opacity-50"
+            >
+              {altBusy ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              ) : (
+                <Wand2 className="h-3.5 w-3.5" aria-hidden />
+              )}
+              צור alt
+            </button>
+          ) : null}
+        </div>
+        {asset.kind === 'image' ? (
+          <p className="mt-1 text-[10px] text-slate-500">
+            <Sparkles className="inline h-3 w-3 align-middle" aria-hidden /> ניתן ליצור alt אוטומטי בעברית — מומלץ לערוך לפני שמירה.
+          </p>
+        ) : null}
       </div>
       <div>
         <label className="mb-1 block text-xs text-slate-600">תיקייה</label>

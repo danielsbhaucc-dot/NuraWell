@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { Loader2, Search } from 'lucide-react';
 import { buildStationCoverCredit } from '@/lib/media/stock-image-attribution';
 import { StockImageSearchAttribution } from '@/components/media/StockImageAttribution';
+import { stockPreviewAlt } from '@/lib/a11y/alt-text';
 import { glassInputClass } from './glass-styles';
 import { importStockImageAsAsset } from '@/lib/media-manager/upload-client';
 import type { MediaAsset } from './types';
@@ -139,10 +140,15 @@ export function MediaStockSearch({ onImported, onError }: MediaStockSearchProps)
                 type="button"
                 disabled={applyBusy}
                 onClick={() => void applyHit(hit)}
+                aria-label={`ייבא תמונה: ${stockPreviewAlt(hit.alt, hit.photographer)}`}
                 className="group relative overflow-hidden rounded-xl border border-white/50 text-right disabled:opacity-60"
                 style={{ background: 'rgba(255,255,255,0.18)' }}
               >
-                <img src={hit.preview_url} alt="" className="aspect-[4/3] w-full object-cover" />
+                <img
+                  src={hit.preview_url}
+                  alt={stockPreviewAlt(hit.alt, hit.photographer)}
+                  className="aspect-[4/3] w-full object-cover"
+                />
               </button>
             ))}
           </div>

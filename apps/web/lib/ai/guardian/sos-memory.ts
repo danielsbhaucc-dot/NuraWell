@@ -348,6 +348,44 @@ export async function recordSosOutcome(params: {
     }
   }
 
+  const { data: eventRow } = await params.admin
+    .from('guardian_sos_events')
+    .select('metadata')
+    .eq('id', params.eventId)
+    .eq('user_id', params.userId)
+    .maybeSingle();
+
+  const meta = ((eventRow as { metadata?: Record<string, unknown> } | null)?.metadata ?? {}) as Record<
+    string,
+    unknown
+  >;
+  const focusTask: SosFocusTask | null =
+    typeof meta.focus_task_title === 'string' && meta.focus_task_title
+      ? {
+          id: typeof meta.focus_task_id === 'string' ? meta.focus_task_id : meta.focus_task_title,
+          title: meta.focus_task_title,
+          stepId: typeof meta.step_id === 'string' ? meta.step_id : undefined,
+        }
+      : null;
+  const blockerId = typeof meta.blocker_id === 'string' ? meta.blocker_id : null;
+  const pivotAttempt = typeof meta.pivot_attempt === 'number' ? meta.pivot_attempt : 0;
+
+  try {
+    const { handleSosOutcomeCare } = await import('./sos-care-loop');
+    await handleSosOutcomeCare({
+      admin: params.admin,
+      userId: params.userId,
+      eventId: params.eventId,
+      focusTask,
+      blockerId,
+      guardianOutcome: params.guardianOutcome,
+      helped: params.helped,
+      pivotExhausted: params.guardianOutcome === 'fell' && pivotAttempt >= 2,
+    });
+  } catch (e) {
+    console.error('[sos] outcome care loop failed', e);
+  }
+
   return true;
 }
 
@@ -460,7 +498,7 @@ export async function executeSosFlow(params: {
   return { intervention, memoryHint, interventionId, blockerId, usedFallback };
 }
 
-/** תזכורת follow-up ~60 דקות — נשלחת דרך onboarding-check-ins cron. */
+/** @deprecated — השתמש ב-scheduleSosFollowUpChain מ-sos-care-loop */
 export async function scheduleSosFollowUp(params: {
   admin: SupabaseClient;
   userId: string;
@@ -469,44 +507,17 @@ export async function scheduleSosFollowUp(params: {
   blockerId: string | null;
   now?: Date;
 }): Promise<{ scheduled: boolean }> {
-  const now = params.now ?? new Date();
-  const fireAt = new Date(now.getTime() + 60 * 60_000).toISOString();
-  const remKey = `sos-followup|${params.eventId ?? 'x'}|${fireAt.slice(0, 13)}`;
-
-  const { data: existing } = await params.admin
-    .from('scheduled_reminders')
-    .select('id')
-    .eq('user_id', params.userId)
-    .eq('dedupe_key', remKey)
-    .maybeSingle();
-  if (existing) return { scheduled: false };
-
-  const taskLabel = params.focusTask?.title
-    ? `"${params.focusTask.title.slice(0, 48)}"`
-    : 'הרגע הקשה';
-
-  const { error } = await params.admin.from('scheduled_reminders').insert({
-    user_id: params.userId,
-    fire_at: fireAt,
-    kind: 'followup',
-    title: 'איך היה אחרי הרגע? 🌿',
-    body: `לפני שעה בערך לחצת "רגע… קשה לי" על ${taskLabel}. עבר? עדיין קשה? אני פה.`,
-    blocker_id: params.blockerId,
-    status: 'pending',
-    dedupe_key: remKey,
-    metadata: {
-      source: 'sos_followup',
-      event_id: params.eventId,
-      focus_task_id: params.focusTask?.id ?? null,
-      focus_task_title: params.focusTask?.title ?? null,
-    },
+  const { scheduleSosFollowUpChain } = await import('./sos-care-loop');
+  const result = await scheduleSosFollowUpChain({
+    admin: params.admin,
+    userId: params.userId,
+    focusTask: params.focusTask,
+    eventId: params.eventId,
+    blockerId: params.blockerId,
+    urgency: 'normal',
+    now: params.now,
   });
-
-  if (error) {
-    console.error('[sos] follow-up schedule failed', error);
-    return { scheduled: false };
-  }
-  return { scheduled: true };
+  return { scheduled: result.scheduled };
 }
 
 /** מקשר משוב "הרמה קשה לי" במסע לזיכרון SOS/חסם משותף. */

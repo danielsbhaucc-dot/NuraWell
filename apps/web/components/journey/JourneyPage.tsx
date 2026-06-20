@@ -27,6 +27,7 @@ import { JourneyStationCard } from './JourneyStationCard';
 import { JourneyNextStepCard } from './JourneyNextStepCard';
 import { AlmogAvatarChip } from './AlmogPresence';
 import { AlmogAssignmentsSection } from './AlmogAssignmentsSection';
+import { stationCoverAlt } from '../../lib/a11y/alt-text';
 
 interface JourneyPageProps {
   groups: JourneyStationGroup[];
@@ -1488,7 +1489,7 @@ function StationHeader({
         {group.coverImageUrl ? (
           <img
             src={group.coverImageUrl}
-            alt=""
+            alt={stationCoverAlt(group.title)}
             className="absolute inset-0 h-full w-full object-cover"
             style={{ transform: `translate3d(0, ${parallax}px, 0) scale(1.08)` }}
             loading="eager"

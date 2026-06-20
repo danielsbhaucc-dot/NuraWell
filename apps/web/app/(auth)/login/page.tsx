@@ -143,7 +143,7 @@ function LoginFormContent() {
           <>
             <div className="onboarding-photo-bg" aria-hidden>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={bgUrl!} alt="" fetchPriority="high" decoding="async" />
+              <img src={bgUrl!} alt="" aria-hidden fetchPriority="high" decoding="async" />
             </div>
             <div className="onboarding-photo-overlay" aria-hidden />
           </>

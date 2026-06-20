@@ -4519,3 +4519,160 @@ body.overflow-hidden { overflow: hidden; }
   .legal-aurora-orb { animation: none !important; }
 }
 
+/* =============================================
+   ACCESSIBILITY TOOLBAR (WCAG 2.2)
+   ============================================= */
+html.a11y-font-lg {
+  font-size: 112.5%;
+}
+
+html.a11y-font-xl {
+  font-size: 125%;
+}
+
+html.a11y-readable-font,
+html.a11y-readable-font body,
+html.a11y-readable-font input,
+html.a11y-readable-font textarea,
+html.a11y-readable-font select,
+html.a11y-readable-font button {
+  font-family: Arial, "Segoe UI", Tahoma, sans-serif !important;
+}
+
+html.a11y-reduce-motion .a11y-widget-fab,
+html.a11y-reduce-motion .a11y-feature-tile,
+html.a11y-reduce-motion .a11y-widget-panel {
+  transition: none !important;
+}
+
+html.a11y-line-lg body {
+  line-height: 1.75 !important;
+}
+
+html.a11y-line-xl body {
+  line-height: 2 !important;
+}
+
+html.a11y-letter-spacing body {
+  letter-spacing: 0.04em;
+}
+
+html.a11y-monochrome body {
+  filter: grayscale(1);
+}
+
+html.a11y-sat-low body {
+  filter: saturate(0.45);
+}
+
+html.a11y-sat-high body {
+  filter: saturate(1.45);
+}
+
+html.a11y-monochrome.a11y-sat-low body,
+html.a11y-monochrome.a11y-sat-high body {
+  filter: grayscale(1) saturate(0.45);
+}
+
+html.a11y-highlight-headings h1,
+html.a11y-highlight-headings h2,
+html.a11y-highlight-headings h3,
+html.a11y-highlight-headings h4,
+html.a11y-highlight-headings h5,
+html.a11y-highlight-headings h6 {
+  outline: 2px dashed #047857;
+  outline-offset: 3px;
+  background: rgba(16, 185, 129, 0.08);
+}
+
+html.a11y-highlight-elements a,
+html.a11y-highlight-elements button,
+html.a11y-highlight-elements input,
+html.a11y-highlight-elements select,
+html.a11y-highlight-elements textarea,
+html.a11y-highlight-elements [role="button"],
+html.a11y-highlight-elements [tabindex]:not([tabindex="-1"]) {
+  outline: 1px solid rgba(4, 120, 87, 0.55);
+  outline-offset: 2px;
+}
+
+html.a11y-show-landmarks header,
+html.a11y-show-landmarks nav,
+html.a11y-show-landmarks main,
+html.a11y-show-landmarks footer,
+html.a11y-show-landmarks [role="banner"],
+html.a11y-show-landmarks [role="navigation"],
+html.a11y-show-landmarks [role="main"],
+html.a11y-show-landmarks [role="contentinfo"] {
+  outline: 2px dotted #0f766e;
+  outline-offset: 4px;
+}
+
+html.a11y-large-cursor,
+html.a11y-large-cursor * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath fill='%23047857' stroke='%23fff' stroke-width='1.5' d='M4 4 L4 24 L10 18 L14 28 L18 26 L14 16 L22 16 Z'/%3E%3C/svg%3E") 4 4, auto !important;
+}
+
+.a11y-widget-header {
+  background: linear-gradient(135deg, #047857 0%, #059669 45%, #10b981 100%);
+}
+
+html.a11y-underline-links a:not([class*="no-underline"]) {
+  background: rgba(16, 185, 129, 0.12);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+html.a11y-high-contrast {
+  --text-primary: #0a0a0a;
+  --background: #ffffff;
+}
+
+html.a11y-high-contrast body {
+  color: #0a0a0a;
+  background: #ffffff;
+}
+
+html.a11y-high-contrast .glass-card,
+html.a11y-high-contrast .glass-card-strong {
+  background: #ffffff;
+  border-color: #111827;
+  box-shadow: none;
+}
+
+html.a11y-high-contrast a {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+html.a11y-enhanced-focus :focus-visible {
+  outline: 3px solid #047857 !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.35);
+}
+
+html.a11y-reduce-motion *,
+html.a11y-reduce-motion *::before,
+html.a11y-reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+.a11y-widget-panel {
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 253, 250, 0.88) 100%);
+}
+
+.a11y-widget-fab {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+html.a11y-reduce-motion .a11y-widget-fab,
+html.a11y-reduce-motion .a11y-widget-toggle,
+html.a11y-reduce-motion .a11y-widget-panel {
+  transition: none !important;
+}
+

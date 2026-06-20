@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
 import { Check, Loader2, Send, Sparkles, X } from 'lucide-react';
+import { AiChatPrivacyNotice } from '@/components/ai/AiChatPrivacyNotice';
 
 type Turn = { role: 'user' | 'assistant'; content: string };
 
@@ -105,6 +106,8 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[60] bg-black/40" />
         <Drawer.Content className="fixed inset-x-0 bottom-0 z-[61] mt-24 flex h-[88vh] flex-col rounded-t-3xl bg-[#EDF5F0] outline-none">
+          <Drawer.Title className="sr-only">היכרות עם אלמוג</Drawer.Title>
+          <Drawer.Description className="sr-only">שיחת היכרות קצרה עם המנטור האישי</Drawer.Description>
           <div
             dir="rtl"
             className="flex items-center justify-between px-4 py-3 text-white rounded-t-3xl"
@@ -189,6 +192,10 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
               </p>
             </div>
           ) : null}
+
+          <div dir="rtl" className="px-4 pb-2">
+            <AiChatPrivacyNotice variant="light" />
+          </div>
 
           <div dir="rtl" className="flex items-center gap-2 px-4 py-3 border-t border-emerald-200/50">
             <input

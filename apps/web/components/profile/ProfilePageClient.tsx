@@ -83,6 +83,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
     ...(profile?.role === 'admin' && opsUrl
       ? [{ label: 'פאנל ניהול', href: `${opsUrl}/`, icon: Shield, emoji: '🛠️' }]
       : []),
+    { label: 'פרטיות ונתונים', href: '/settings/privacy', icon: Shield, emoji: '🔒' },
     { label: 'התראות מאלמוג', href: '/settings/almog', icon: Bell, emoji: '🔔' },
     { label: 'בית', href: '/home', icon: BookOpen, emoji: '🏠' },
     { label: 'ההתקדמות שלי', href: '/progress', icon: Award, emoji: '📊' },

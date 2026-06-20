@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { mediaAltText } from '@/lib/a11y/alt-text';
 import type { FileSubtype, MediaKind } from '@/lib/validation/media-asset';
 import { ToastContainer, useToast } from '@/components/shared/Toast';
 import { GlassConfirmDialog } from './GlassConfirmDialog';
@@ -654,7 +655,16 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
 function AssetThumb({ asset }: { asset: MediaAsset }) {
   const url = asset.url ?? asset.public_url ?? asset.external_url;
   if (asset.kind === 'image' && url) {
-    return <img src={url} alt="" className="aspect-square w-full object-cover" />;
+    return (
+      <img
+        src={url}
+        alt={mediaAltText({
+          title: asset.alt_text ?? asset.title,
+          fallback: 'תמונת מדיה',
+        })}
+        className="aspect-square w-full object-cover"
+      />
+    );
   }
   if (asset.kind === 'audio') {
     return (

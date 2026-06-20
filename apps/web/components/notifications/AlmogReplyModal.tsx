@@ -108,6 +108,7 @@ export function AlmogReplyModal() {
                   <img
                     src={avatarUrl}
                     alt=""
+                    aria-hidden
                     className="h-11 w-11 rounded-full object-cover ring-2 ring-white/40 shadow-md"
                     onError={(e) => {
                       e.currentTarget.onerror = null;

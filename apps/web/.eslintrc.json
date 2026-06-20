@@ -6,7 +6,13 @@
     "@next/next/no-img-element": "off",
     "no-eval": "error",
     "no-implied-eval": "error",
-    "no-console": ["warn", { "allow": ["warn", "error", "info"] }]
+    "no-console": ["warn", { "allow": ["warn", "error", "info"] }],
+    "jsx-a11y/alt-text": "warn",
+    "jsx-a11y/anchor-is-valid": "warn",
+    "jsx-a11y/aria-props": "warn",
+    "jsx-a11y/aria-proptypes": "warn",
+    "jsx-a11y/role-has-required-aria-props": "warn",
+    "jsx-a11y/label-has-associated-control": "warn"
   },
   "overrides": [
     {

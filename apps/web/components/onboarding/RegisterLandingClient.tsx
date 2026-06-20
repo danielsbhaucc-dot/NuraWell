@@ -39,7 +39,7 @@ export function RegisterLandingClient() {
           <>
             <div className="onboarding-photo-bg" aria-hidden>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={bgUrl!} alt="" fetchPriority="high" />
+              <img src={bgUrl!} alt="" aria-hidden fetchPriority="high" />
             </div>
             <div className="onboarding-photo-overlay" aria-hidden />
           </>
@@ -151,7 +151,7 @@ export function RegisterLandingClient() {
             <p
               className={`text-center text-xs leading-relaxed ${hasPhotoBg ? 'text-emerald-100/70' : 'text-slate-500'}`}
             >
-              בהמשך ההרשמה את/ה מאשר/ת את{' '}
+              בהרשמה תתבקש/י לאשר במפורש את{' '}
               <Link href="/terms" className={`font-semibold underline underline-offset-2 ${hasPhotoBg ? 'text-emerald-200' : 'text-emerald-700'}`}>
                 תנאי השימוש
               </Link>{' '}
@@ -159,7 +159,7 @@ export function RegisterLandingClient() {
               <Link href="/privacy" className={`font-semibold underline underline-offset-2 ${hasPhotoBg ? 'text-emerald-200' : 'text-emerald-700'}`}>
                 מדיניות הפרטיות
               </Link>
-              .
+              , כולל הסכמה למידע בריאותי.
             </p>
           </div>
         </div>

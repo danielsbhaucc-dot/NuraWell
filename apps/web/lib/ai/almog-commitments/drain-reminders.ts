@@ -12,6 +12,8 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { skipSosFollowUpIfResolved } from '../guardian/sos-care-loop';
+
 type Admin = SupabaseClient;
 
 type ReminderRow = {
@@ -105,7 +107,7 @@ export async function drainAlmogReminders(
   }
 
   let sent = 0;
-  const skipped = 0;
+  let skipped = 0;
   let deferred = 0;
   const errors: string[] = [];
 
@@ -122,6 +124,14 @@ export async function drainAlmogReminders(
 
   for (const r of due) {
     try {
+      if (r.metadata?.source === 'sos_followup') {
+        const ok = await skipSosFollowUpIfResolved(admin, r.user_id, r.id, r.metadata);
+        if (!ok) {
+          skipped += 1;
+          continue;
+        }
+      }
+
       // הגענו לתקרה היומית-לריצה למשתמש הזה — משאירים pending לריצה הבאה.
       if ((sentByUser.get(r.user_id) ?? 0) >= maxPerUserPerRun) {
         deferred += 1;

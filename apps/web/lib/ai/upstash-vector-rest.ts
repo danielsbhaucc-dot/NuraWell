@@ -241,3 +241,18 @@ export async function deleteUserMemoryVectorById(id: string): Promise<void> {
   const path = nsPath(UPSTASH_NAMESPACE_USER_MEMORY, 'delete');
   await deleteJson(path, { ids: [id] });
 }
+
+/** מוחק את כל וקטורי הזיכרון של משתמש (למשל בעת מחיקת חשבון). */
+export async function deleteAllUserMemoryVectors(userId: string): Promise<number> {
+  if (!isUpstashVectorConfigured()) return 0;
+  const items = await listUserMemoryVectors(userId);
+  if (items.length === 0) return 0;
+
+  const path = nsPath(UPSTASH_NAMESPACE_USER_MEMORY, 'delete');
+  const batchSize = 100;
+  for (let i = 0; i < items.length; i += batchSize) {
+    const ids = items.slice(i, i + batchSize).map((item) => item.id);
+    await deleteJson(path, { ids });
+  }
+  return items.length;
+}
