@@ -6,9 +6,9 @@ import {
   fetchSosContext,
   markInterventionNotHelped,
   recordSosOutcome,
-  scheduleSosFollowUp,
   type SosFocusTask,
 } from '../../../../../lib/ai/guardian/sos-memory';
+import { beginSosCareAfterSos } from '../../../../../lib/ai/guardian/sos-care-loop';
 import {
   buildDeterministicSosFallback,
   buildSosSlowDownMessage,
@@ -43,6 +43,7 @@ type SosResponse = {
   };
   memory_hint: string | null;
   follow_up_scheduled: boolean;
+  care_focus_active: boolean;
   pivot_attempt: number;
 };
 
@@ -253,6 +254,16 @@ export async function POST(request: Request) {
         },
       });
 
+      const care = eventId
+        ? await beginSosCareAfterSos({
+            admin,
+            userId: auth.user.id,
+            focusTask,
+            eventId,
+            blockerId: flow.blockerId,
+          })
+        : { focus: false, followUp: false };
+
       return NextResponse.json({
         ok: true,
         mode: 'pivot',
@@ -263,7 +274,8 @@ export async function POST(request: Request) {
         blocker_id: flow.blockerId,
         context: contextPayload,
         memory_hint: flow.memoryHint,
-        follow_up_scheduled: false,
+        follow_up_scheduled: care.followUp,
+        care_focus_active: care.focus,
         pivot_attempt: pivotAttempt + 1,
       } satisfies SosResponse);
     }
@@ -302,6 +314,7 @@ export async function POST(request: Request) {
         context: contextPayload,
         memory_hint: null,
         follow_up_scheduled: false,
+        care_focus_active: false,
         pivot_attempt: 0,
       } satisfies SosResponse);
     }
@@ -333,6 +346,7 @@ export async function POST(request: Request) {
         context: contextPayload,
         memory_hint: null,
         follow_up_scheduled: false,
+        care_focus_active: false,
         pivot_attempt: 0,
       } satisfies SosResponse);
     }
@@ -363,13 +377,15 @@ export async function POST(request: Request) {
       },
     });
 
-    const followUp = await scheduleSosFollowUp({
-      admin,
-      userId: auth.user.id,
-      focusTask,
-      eventId,
-      blockerId: flow.blockerId,
-    });
+    const care = eventId
+      ? await beginSosCareAfterSos({
+          admin,
+          userId: auth.user.id,
+          focusTask,
+          eventId,
+          blockerId: flow.blockerId,
+        })
+      : { focus: false, followUp: false };
 
     return NextResponse.json({
       ok: true,
@@ -381,7 +397,8 @@ export async function POST(request: Request) {
       blocker_id: flow.blockerId,
       context: contextPayload,
       memory_hint: flow.memoryHint,
-      follow_up_scheduled: followUp.scheduled,
+      follow_up_scheduled: care.followUp,
+      care_focus_active: care.focus,
       pivot_attempt: 0,
     } satisfies SosResponse);
   } catch (error) {

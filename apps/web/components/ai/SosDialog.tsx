@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Loader2, MessageCircle, Sparkles, X } from 'lucide-react';
+
+import { useDialogA11y } from '@/lib/a11y/use-dialog-a11y';
 
 import type { FrictionCategory, StrategyType } from '../../lib/ai/almog-commitments/friction';
 import { FRICTION_META } from '../../lib/ai/almog-commitments/friction';
@@ -45,6 +47,7 @@ type SosResponse = {
   };
   memory_hint: string | null;
   follow_up_scheduled?: boolean;
+  care_focus_active?: boolean;
   pivot_attempt?: number;
 };
 
@@ -223,6 +226,31 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
     }
     return 'בלי שיפוט, בלי החלטות גדולות — רק דקה אחת.';
   }, [response, selectedTask, outcomeSaved]);
+
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const subtitleId = useId();
+
+  const resetAndClose = useCallback(() => {
+    setNote('');
+    setSelectedTask(null);
+    setResponse(null);
+    setError(null);
+    setLoadingTrigger(null);
+    setOutcomeSaved(null);
+    setActiveTrigger(null);
+    setPivoting(false);
+    setTaskMarking(false);
+    setTaskMarked(false);
+    setGuardianSaved(false);
+    onClose();
+  }, [onClose]);
+
+  useDialogA11y({
+    open,
+    onClose: resetAndClose,
+    containerRef: dialogRef,
+  });
 
   if (!open) return null;
 
@@ -410,21 +438,6 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
     }
   }
 
-  function resetAndClose() {
-    setNote('');
-    setSelectedTask(null);
-    setResponse(null);
-    setError(null);
-    setLoadingTrigger(null);
-    setOutcomeSaved(null);
-    setActiveTrigger(null);
-    setPivoting(false);
-    setTaskMarking(false);
-    setTaskMarked(false);
-    setGuardianSaved(false);
-    onClose();
-  }
-
   const helpedMemory = memory.filter((m) => m.outcome === 'helped' || m.outcome === 'resolved').slice(0, 2);
   const failedMemory = memory.filter((m) => m.outcome === 'not_helped').slice(0, 2);
 
@@ -441,7 +454,12 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
       />
 
       <div
+        ref={dialogRef}
         dir="rtl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={subtitleId}
         className="relative z-10 flex max-h-[min(88vh,680px)] w-full max-w-md flex-col overflow-hidden rounded-[28px] text-right shadow-2xl"
         style={{
           border: '1px solid rgba(255,255,255,0.45)',
@@ -461,8 +479,8 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
           >
             <X className="h-4 w-4" />
           </button>
-          <p className="text-lg font-black text-white">{title}</p>
-          <p className="mt-1 text-xs font-semibold leading-5 text-emerald-50/90">{subtitle}</p>
+          <p id={titleId} className="text-lg font-black text-white">{title}</p>
+          <p id={subtitleId} className="mt-1 text-xs font-semibold leading-5 text-emerald-50/90">{subtitle}</p>
         </div>
 
         {/* Body — iOS glass */}
@@ -734,7 +752,13 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
 
               {response.follow_up_scheduled ? (
                 <p className="text-[11px] font-semibold text-emerald-800/70">
-                  אשלח לך בעוד ~שעה הודעה קטנה — איך היה אחרי הרגע.
+                  אשמור עליך — אבדוק בעדינות איך היה (לא כל שעה, רק כשזה מתאים).
+                </p>
+              ) : null}
+
+              {response.care_focus_active ? (
+                <p className="text-[11px] font-semibold leading-5 text-teal-900/80">
+                  הורדתי זמנית את שאר התזכורות על משימות — כדי שתוכל להתרכז רק ברגע הזה.
                 </p>
               ) : null}
 

@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import { buildAdminUserJourneyReport } from '@/lib/admin/build-user-journey-report';
 import { applyAdminProfilePatch } from '@/lib/admin/update-user-onboarding';
-import { deleteUserCompletely } from '@/lib/admin/delete-user-completely';
+import { deleteUserAccountCompletely } from '@/lib/privacy/delete-user-account';
 import { buildMealSchedule } from '@/lib/onboarding/meal-schedule';
 import { GENDERS, MAIN_GOALS, MAIN_OBSTACLES, WEAKEST_TIMES } from '@/lib/onboarding/types';
 
@@ -133,7 +133,7 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
 
   const admin = createAdminClient();
-  const result = await deleteUserCompletely(admin, userId);
+  const result = await deleteUserAccountCompletely(admin, userId);
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 500 });

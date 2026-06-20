@@ -9,6 +9,8 @@ import { ingestOnboardingIntoVectorMemory } from '@/lib/ai/ingest-onboarding-vec
 import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context';
 import { buildMealSchedule, type MealScheduleEntry } from '@/lib/onboarding/meal-schedule';
 import { BODY_METRICS } from '@/lib/onboarding/body-metrics';
+import { validateBirthDate } from '@/lib/privacy/age-validation';
+import { recordRegistrationConsents } from '@/lib/privacy/record-consent';
 import {
   GENDERS,
   MAIN_GOALS,
@@ -49,6 +51,14 @@ const onboardingSchema = z.object({
   preferred_channel: z.enum(PREFERRED_CHANNELS).default('in_app'),
   email: z.string().email('אימייל לא תקין'),
   password: z.string().min(6, 'סיסמה קצרה מדי — לפחות 6 תווים'),
+  date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'תאריך לידה לא תקין'),
+  health_data_consent: z.literal('true', {
+    errorMap: () => ({ message: 'נדרשת הסכמה למידע בריאותי' }),
+  }),
+  legal_consent: z.literal('true', {
+    errorMap: () => ({ message: 'נדרש אישור תנאי שימוש ומדיניות פרטיות' }),
+  }),
+  parental_consent: z.enum(['true', 'false']).optional(),
 });
 
 export type OnboardingActionState =
@@ -75,6 +85,10 @@ export async function completeOnboarding(
     preferred_channel: formData.get('preferred_channel') || 'in_app',
     email: formData.get('email'),
     password: formData.get('password'),
+    date_of_birth: formData.get('date_of_birth'),
+    health_data_consent: formData.get('health_data_consent'),
+    legal_consent: formData.get('legal_consent'),
+    parental_consent: formData.get('parental_consent') || 'false',
   };
 
   const parsed = onboardingSchema.safeParse(raw);
@@ -88,6 +102,22 @@ export async function completeOnboarding(
   }
 
   const data = parsed.data;
+
+  const ageCheck = validateBirthDate(data.date_of_birth);
+  if (!ageCheck.ok) {
+    const msg =
+      ageCheck.code === 'too_young'
+        ? 'השירות מיועד לגיל 16 ומעלה'
+        : ageCheck.code === 'future_date'
+          ? 'תאריך לידה לא יכול להיות בעתיד'
+          : 'תאריך לידה לא תקין';
+    return { ok: false, error: msg };
+  }
+
+  if (ageCheck.requiresParentalConsent && data.parental_consent !== 'true') {
+    return { ok: false, error: 'נדרשת הסכמת הורה לשימוש בגיל 16–17' };
+  }
+
   const supabase = await createClient();
   const clientOrigin = formData.get('app_origin')?.toString().trim();
   const appOrigin =
@@ -175,6 +205,8 @@ export async function completeOnboarding(
     .update({
       full_name: data.full_name,
       gender: data.gender,
+      date_of_birth: data.date_of_birth,
+      birth_date: data.date_of_birth,
       main_goal: data.main_goal,
       current_weight_kg: data.current_weight,
       goal_weight_kg: data.target_weight,
@@ -203,6 +235,18 @@ export async function completeOnboarding(
 
   if (profileError) {
     return { ok: false, error: 'החשבון נוצר אך שמירת הפרופיל נכשלה. פנו לתמיכה.' };
+  }
+
+  const consentResult = await recordRegistrationConsents(admin, {
+    userId,
+    source: 'onboarding_form',
+    healthData: true,
+    parentalGuardian: ageCheck.requiresParentalConsent,
+    birthDate: data.date_of_birth,
+    age: ageCheck.age,
+  });
+  if (!consentResult.ok) {
+    console.warn('[complete-onboarding] consent record failed', consentResult.error);
   }
 
   const vectorProfile: OnboardingProfileForChat = {

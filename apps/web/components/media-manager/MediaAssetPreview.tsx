@@ -13,7 +13,7 @@ export function MediaAssetPreview({ asset }: { asset: MediaAsset }) {
     return (
       <div className="relative rounded-xl border border-white/45">
         <div className="overflow-hidden rounded-xl">
-          <img src={url} alt={asset.alt_text ?? ''} className="max-h-48 w-full object-contain" />
+          <img src={url} alt={asset.alt_text?.trim() || asset.title?.trim() || 'תמונת מדיה'} className="max-h-48 w-full object-contain" />
         </div>
         <div className="absolute top-1 left-1 z-10">
           <CreditBadge asset={asset} />

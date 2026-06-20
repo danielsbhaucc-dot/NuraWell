@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -12,6 +12,7 @@ import {
   X,
   Zap,
 } from 'lucide-react';
+import { useDialogA11y } from '@/lib/a11y/use-dialog-a11y';
 import { buildTaskDoneChatPrefill } from '../../lib/ai/almog-greeting';
 import {
   buildTaskReportHintFromPendingRow,
@@ -41,20 +42,15 @@ export function TodayTasksPopup({
   onOpenChat,
 }: TodayTasksPopupProps) {
   const [mounted, setMounted] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
   useEffect(() => setMounted(true), []);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
-    };
-  }, [open, onClose]);
+  useDialogA11y({
+    open,
+    onClose,
+    containerRef: dialogRef,
+  });
 
   const pendingTasks = tasks.filter((t) => !t.done);
   const doneTasks = tasks.filter((t) => t.done);
@@ -116,7 +112,11 @@ export function TodayTasksPopup({
             }}
           />
           <motion.div
+            ref={dialogRef}
             dir="rtl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
             className="relative w-full max-w-sm rounded-[26px] overflow-hidden flex flex-col"
             initial={{ y: 16, opacity: 0, scale: 0.94 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
@@ -156,6 +156,7 @@ export function TodayTasksPopup({
             >
               <p className="text-[11px] font-bold text-emerald-900/75 mb-0.5">משימות היום</p>
               <h2
+                id={titleId}
                 className="text-lg font-black text-emerald-950"
                 style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
               >

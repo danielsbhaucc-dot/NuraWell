@@ -29,7 +29,7 @@ export function BottomNav() {
   }, [router]);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom" aria-label="ניווט ראשי">
       {/* שכבת זכוכית */}
       <div
         className="absolute inset-0"
@@ -109,6 +109,7 @@ function NavItem({ item, isActive }: { item: { href: string; label: string; icon
       <Link
         href={item.href}
         prefetch
+        aria-current={isActive ? 'page' : undefined}
         className={cn(
           'relative flex flex-col items-center justify-center gap-1 px-1 py-1.5 rounded-2xl transition-all duration-200 no-tap-highlight touch-manipulation min-w-0 w-full',
           isActive ? 'text-[#047857]' : 'text-[#9896B8] hover:text-[#5A5880]'

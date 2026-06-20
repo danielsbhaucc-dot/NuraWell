@@ -119,7 +119,7 @@ export function AdminMentorAvatarPanel({ mentorId }: AdminMentorAvatarPanelProps
         <div className="flex shrink-0 justify-center sm:justify-end">
           <div className="relative h-20 w-20 overflow-hidden rounded-2xl ring-2 ring-emerald-200/80">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={preview} alt="" className="h-full w-full object-cover" />
+            <img src={preview} alt="תצוגה מקדימה של אוatar מנטור" className="h-full w-full object-cover" />
           </div>
         </div>
       </div>

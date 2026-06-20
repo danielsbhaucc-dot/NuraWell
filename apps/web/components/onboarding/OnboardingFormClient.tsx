@@ -14,6 +14,12 @@ import { classifyMealSlot, mealSlotLabel } from '@/lib/onboarding/meal-schedule'
 import { BODY_METRICS, validateBodyMetrics } from '@/lib/onboarding/body-metrics';
 import { genderCopy } from '@/lib/onboarding/gender-copy';
 import { OnboardingSummaryStep } from './OnboardingSummaryStep';
+import {
+  HealthDataConsentBlock,
+  LegalConsentCheckbox,
+  ParentalConsentCheckbox,
+} from '@/components/legal/PrivacyConsentFields';
+import { validateBirthDate } from '@/lib/privacy/age-validation';
 
 const TOTAL_STEPS = 6;
 
@@ -48,6 +54,15 @@ export function OnboardingFormClient() {
   const [mealTimes, setMealTimes] = useState<string[]>([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [healthConsent, setHealthConsent] = useState(false);
+  const [parentalConsent, setParentalConsent] = useState(false);
+  const [legalConsent, setLegalConsent] = useState(false);
+
+  const ageInfo = useMemo(() => {
+    if (!birthDate.trim()) return null;
+    return validateBirthDate(birthDate);
+  }, [birthDate]);
 
   const name = address('', fullName);
   const gc = useMemo(() => genderCopy(gender), [gender]);
@@ -91,6 +106,28 @@ export function OnboardingFormClient() {
       }
       if (!mainGoal) {
         toast.warning('מטרה', `מה המטרה העיקרית של ${gc.you}?`);
+        return;
+      }
+      if (!birthDate.trim()) {
+        toast.warning('תאריך לידה', `${gc.enter} תאריך לידה`);
+        return;
+      }
+      const ageResult = validateBirthDate(birthDate);
+      if (!ageResult.ok) {
+        toast.warning(
+          'גיל',
+          ageResult.code === 'too_young'
+            ? 'השירות מיועד לגיל 16 ומעלה'
+            : 'תאריך לידה לא תקין'
+        );
+        return;
+      }
+      if (ageResult.requiresParentalConsent && !parentalConsent) {
+        toast.warning('הסכמת הורה', 'נדרשת הסכמת הורה לשימוש בגיל 16–17');
+        return;
+      }
+      if (!healthConsent) {
+        toast.warning('הסכמה', 'נדרשת הסכמה לאיסוף מידע בריאותי/גוף');
         return;
       }
       const metricsErr = validateBodyMetrics({ currentWeight, targetWeight, height });
@@ -170,6 +207,10 @@ export function OnboardingFormClient() {
   );
 
   const submit = () => {
+    if (!legalConsent) {
+      toast.warning('אישור משפטי', 'יש לאשר את תנאי השימוש ומדיניות הפרטיות');
+      return;
+    }
     if (!email.trim() || !password || password.length < 6) {
       toast.warning('חשבון', `${gc.fill} אימייל וסיסמה (לפחות 6 תווים)`);
       return;
@@ -199,6 +240,12 @@ export function OnboardingFormClient() {
     fd.set('preferred_channel', 'in_app');
     fd.set('email', email.trim());
     fd.set('password', password);
+    fd.set('date_of_birth', birthDate);
+    fd.set('health_data_consent', 'true');
+    fd.set('legal_consent', 'true');
+    if (ageInfo?.ok && ageInfo.requiresParentalConsent) {
+      fd.set('parental_consent', parentalConsent ? 'true' : 'false');
+    }
     if (typeof window !== 'undefined') {
       fd.set('app_origin', window.location.origin);
     }
@@ -329,7 +376,30 @@ export function OnboardingFormClient() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-end">
+                  <label className="block mt-4">
+                    <span className="text-xs font-bold text-emerald-100/85">תאריך לידה</span>
+                    <input
+                      type="date"
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                      className="onboarding-input-dark w-full mt-1"
+                      dir="ltr"
+                      max={new Date().toISOString().slice(0, 10)}
+                      required
+                    />
+                  </label>
+
+                  {ageInfo?.ok && ageInfo.requiresParentalConsent ? (
+                    <ParentalConsentCheckbox
+                      checked={parentalConsent}
+                      onChange={setParentalConsent}
+                    />
+                  ) : null}
+
+                  <HealthDataConsentBlock checked={healthConsent} onChange={setHealthConsent} />
+
+                  <div className={healthConsent ? '' : 'opacity-50 pointer-events-none'}>
+                  <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-end mt-4">
                     <label>
                       <span className="text-xs font-bold text-emerald-100/85">משקל נוכחי (ק״ג)</span>
                       <input
@@ -378,6 +448,7 @@ export function OnboardingFormClient() {
                       dir="ltr"
                     />
                   </label>
+                  </div>
                 </>
               )}
 
@@ -586,6 +657,12 @@ export function OnboardingFormClient() {
                         required
                       />
                     </label>
+                    <LegalConsentCheckbox
+                      id="onboarding-legal-consent"
+                      checked={legalConsent}
+                      onChange={setLegalConsent}
+                      disabled={pending}
+                    />
                   </div>
                 </>
               )}

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { MapPin, ArrowLeft, CheckCircle2, Sparkles } from 'lucide-react';
 import type { JourneyStationGroup } from '../../lib/journey/group-journey-by-station';
+import { stationCoverAlt } from '../../lib/a11y/alt-text';
 import { cn } from '../../lib/cn';
 
 type JourneyStationCardProps = {
@@ -55,7 +56,8 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
         {hasCover ? (
           <img
             src={group.coverImageUrl!}
-            alt=""
+            alt={stationCoverAlt(group.title, index)}
+            aria-hidden
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
             loading="lazy"
           />

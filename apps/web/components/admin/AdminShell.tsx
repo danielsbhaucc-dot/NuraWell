@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
+  Accessibility,
   ArrowLeft,
   Bell,
   ChevronDown,
@@ -72,6 +73,7 @@ export function AdminShell({
   const isCosts = np === '/ops/costs';
   const isAlmogSettings = np === '/ops/almog' || np === '/ops/mentors';
   const isSiteSettings = np === '/ops/site-settings';
+  const isAccessibility = np === '/ops/accessibility';
   const isSystemRagIngest = np === '/ops/system-rag-ingest';
   const isAlmogNavSection = isAlmogSettings || isSystemRagIngest;
   const isJourneyHub = np === '/ops/journey-hub';
@@ -443,6 +445,18 @@ export function AdminShell({
             >
               <Globe size={20} className={cn('shrink-0', isSiteSettings && 'text-sky-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>הגדרות אתר</span>
+            </Link>
+            <Link
+              href={opsHref('/accessibility')}
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                navBtn(isAccessibility, 'emerald'),
+                'border border-white/40 bg-white/30 shadow-sm',
+              )}
+              title="כלי נגישות"
+            >
+              <Accessibility size={20} className={cn('shrink-0', isAccessibility && 'text-emerald-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>נגישות</span>
             </Link>
             <Link
               href={coursesHref}

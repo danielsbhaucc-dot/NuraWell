@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
+import { AccessibilityToolbarClient } from '@/components/a11y/AccessibilityToolbarClient';
+import { accessibilityBootstrapScript } from '@/lib/a11y/apply-preferences';
 import { fontVariables } from './fonts';
 import './globals.css';
 
@@ -77,8 +79,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
   viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#14b8a6' },
@@ -97,6 +99,10 @@ export default async function RootLayout({
     <html lang="he" dir="rtl" translate="no" className={`notranslate ${fontVariables}`} suppressHydrationWarning>
       <head>
         <meta name="google" content="notranslate" />
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: accessibilityBootstrapScript() }}
+        />
         <script
           nonce={nonce}
           type="application/ld+json"
@@ -119,7 +125,7 @@ export default async function RootLayout({
         >
           דלג לתוכן הראשי
         </a>
-        {children}
+        <AccessibilityToolbarClient>{children}</AccessibilityToolbarClient>
       </body>
     </html>
   );

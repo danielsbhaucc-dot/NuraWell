@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Archive, ArchiveRestore, Check, MessageCircle, Zap } from 'lucide-react';
-import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
+import { ALMOG_AVATAR_ALT } from '@/lib/a11y/alt-text';
 import { getMentorAvatarFallback } from '../../lib/mentors/avatar-url';
 import { MENTORS } from '../../lib/mentors/registry';
 import { formatHebrewRelativeTime } from '../../lib/time/hebrew-relative';
@@ -206,7 +206,7 @@ export function NotificationCard({
               <div className="relative">
                 <img
                   src={aiAvatar}
-                  alt=""
+                  alt={ALMOG_AVATAR_ALT}
                   className="h-11 w-11 rounded-full object-cover ring-2 ring-emerald-200/80 shadow-md"
                   onError={(e) => {
                     e.currentTarget.onerror = null;

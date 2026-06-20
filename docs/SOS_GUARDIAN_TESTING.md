@@ -164,20 +164,35 @@ Body:
 
 ---
 
-## 5. CRON — follow-up SOS (~60 דק)
+## 5. CRON — מעקב אחרי SOS (לולאת דאגה)
 
-**לא צריך Schedule חדש.** Follow-up נשלח דרך:
+**לא מעקב רציף** — שלוש נקודות מגע מתוזמנות, שמתבטלות ברגע שיש משוב "עבר".
 
+| שלב | מתי (בערך) | הודעה |
+|-----|------------|--------|
+| 1 | +60 דק | "איך היה אחרי הרגע?" |
+| 2 | +8 שעות | "חושב עליך — הכל בסדר?" |
+| 3 | למחרת 10:00 | "אני כאן אם תרצה" |
+
+**אם עדיין קשה** (אחרי pivots) — שלב 1 מוזז ל-+2 ש', שלב 2 ל-+6 ש'.
+
+**הקפאת רעש:** אחרי SOS — `almog_focus_periods` פעיל 24 ש' (48 אם עדיין קשה).  
+תזכורות habit-checkpoint **לא** נשלחות — רק מגעי SOS/follow-up.
+
+### בדיקות
+1. SOS → בדוק `almog_focus_periods` status=active, metadata.source=sos_moment
+2. SOS → `scheduled_reminders` — 3 שורות `sos_followup` p1/p2/p3
+3. "עבר — תודה" → follow-ups cancelled + focus ended
+4. "עדיין קשה" (אחרי 2 pivots) → focus מוארך + follow-ups still_hard
+5. CRON 30 דק → שלב 1 נשלח רק אם outcome unknown/fell
+6. אחרי "עבר" → שלב 2/3 **לא** נשלחים (skip ב-drain)
+
+```sql
+SELECT id, fire_at, metadata->>'phase', status
+FROM scheduled_reminders
+WHERE metadata->>'source' = 'sos_followup'
+ORDER BY fire_at;
 ```
-POST /api/v1/ai/cron/onboarding-check-ins  (כל 30 דק — QStash)
-  └─ drain-reminders → scheduled_reminders (source: sos_followup)
-```
-
-### בדיקה מהירה
-1. בצע SOS
-2. ב-Supabase: `scheduled_reminders` WHERE `metadata->>'source' = 'sos_followup'`
-3. [ ] `fire_at` בעוד ~60 דקות
-4. (אופציונלי) עדכן `fire_at` ל-`now()` ובדוק שהתזכורת נשלחת ב-cron הבא
 
 ---
 
@@ -311,8 +326,9 @@ ORDER BY completed_at DESC LIMIT 5;
 | `lib/ai/guardian/guardian-feature-flags.ts` | דגלי env (ברירת מחדל ON) |
 | `lib/ai/guardian/guardian-user-settings.ts` | opt-in ב-ai_context |
 | `app/api/v1/profile/guardian-settings/route.ts` | API opt-in |
-| `lib/ai/guardian/sos-memory.ts` | זיכרון, pivot, follow-up |
-| `app/api/v1/ai/sos/route.ts` | API SOS + limits |
+| `lib/ai/guardian/sos-care-loop.ts` | פוקוס + מעקב 3 שלבים |
+| `lib/ai/guardian/sos-memory.ts` | זיכרון, pivot, outcome |
+| `lib/ai/almog-commitments/drain-reminders.ts` | שליחת follow-ups + skip אם עבר |
 | `app/api/v1/task-executions/route.ts` | סימון משימה (`source: sos`) |
 | `lib/ai/almog-commitments/chat-context.ts` | SOS → צ'אט |
 | `docs/CRON_SCHEDULES_SETUP.md` | תזמונים QStash |

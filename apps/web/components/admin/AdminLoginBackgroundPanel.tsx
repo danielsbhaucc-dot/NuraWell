@@ -84,7 +84,7 @@ export function AdminLoginBackgroundPanel() {
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <div className="h-20 w-32 overflow-hidden rounded-xl border border-white/60 bg-white/25">
           {coverUrl ? (
-            <img src={coverUrl} alt="" className="h-full w-full object-cover" />
+            <img src={coverUrl} alt="" aria-hidden className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full items-center justify-center">
               <ImageIcon className="h-6 w-6 text-slate-400" />

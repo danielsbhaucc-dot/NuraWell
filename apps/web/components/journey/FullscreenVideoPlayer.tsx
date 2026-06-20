@@ -469,6 +469,7 @@ export function FullscreenVideoPlayer({
                       <img
                         src={almogAvatarSrc}
                         alt=""
+                        aria-hidden
                         className="h-14 w-14 shrink-0 rounded-2xl object-cover ring-2 ring-white/80 shadow-md"
                         onError={(e) => {
                           e.currentTarget.onerror = null;

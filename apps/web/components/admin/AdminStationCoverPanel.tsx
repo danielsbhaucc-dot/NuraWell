@@ -183,7 +183,7 @@ function CoverSummaryRow({
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/50 bg-white/25 shadow-sm backdrop-blur-md">
             {hasCover && coverUrl ? (
-              <img src={coverUrl} alt="" className="h-full w-full object-cover" />
+              <img src={coverUrl} alt="" aria-hidden className="h-full w-full object-cover" />
             ) : (
               <ImageIcon className="h-5 w-5 text-slate-400" aria-hidden />
             )}
@@ -222,7 +222,7 @@ function CoverPreview({
     <div className="overflow-hidden rounded-2xl border border-white/45 bg-white/15 backdrop-blur-md">
       <div className="relative min-h-[120px]">
         {cover.coverImageUrl ? (
-          <img src={cover.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <img src={cover.coverImageUrl} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
         ) : null}
         <div
           className="absolute inset-0"

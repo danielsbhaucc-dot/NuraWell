@@ -4,15 +4,22 @@ interface NuraWellLogoProps {
   size?: 'sm' | 'md' | 'lg';
   showTagline?: boolean;
   animate?: boolean;
+  /** טקסט נגיש ללוגו — ברירת מחדל NuraWell */
+  accessibleLabel?: string;
 }
 
-export function NuraWellLogo({ size = 'sm', showTagline = false, animate = true }: NuraWellLogoProps) {
+export function NuraWellLogo({
+  size = 'sm',
+  showTagline = false,
+  animate = true,
+  accessibleLabel = 'NuraWell',
+}: NuraWellLogoProps) {
   const iconSize = size === 'sm' ? 32 : size === 'md' ? 44 : 60;
   const fontSizeMain = size === 'sm' ? 24 : size === 'md' ? 34 : 46;
   const fontSizeAi = size === 'sm' ? 10 : size === 'md' ? 12 : 14;
 
   return (
-    <div className="flex items-center gap-2.5 select-none" dir="ltr">
+    <div className="flex items-center gap-2.5 select-none" dir="ltr" aria-label={accessibleLabel} role="img">
       {/* Heart + Heartbeat Icon */}
       <div className="relative flex-shrink-0" style={{ width: iconSize, height: Math.round(iconSize * 0.85) }}>
         {/* Glow */}

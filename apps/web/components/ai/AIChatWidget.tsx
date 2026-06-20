@@ -22,6 +22,7 @@ import {
 } from '../../lib/notifications/open-almog-chat';
 import { taskReportHintToPayload, type TaskReportHint } from '../../lib/ai/task-report-hint';
 import { ChatSessionInbox } from './ChatSessionInbox';
+import { AiChatPrivacyNotice } from './AiChatPrivacyNotice';
 import {
   autoCloseStaleChatSessionsApi,
   closeChatSessionApi,
@@ -1515,6 +1516,9 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                   ))}
                 </div>
               )}
+              {!isSessionClosed && !isClosing ? (
+                <AiChatPrivacyNotice variant="dark" className="mb-2 px-0.5" />
+              ) : null}
               <form
                 className="flex items-end gap-2 rounded-2xl border border-white/12 bg-white/[0.06] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
                   onSubmit={(e) => {
