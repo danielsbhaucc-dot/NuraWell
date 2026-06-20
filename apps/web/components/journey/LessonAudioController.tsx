@@ -186,8 +186,9 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
   }, [sectionKey, muted, hydrated]);
 
   useEffect(() => {
+    const ctx = cueCtxRef.current;
     return () => {
-      cueCtxRef.current?.close().catch(() => {});
+      ctx?.close().catch(() => {});
     };
   }, []);
 

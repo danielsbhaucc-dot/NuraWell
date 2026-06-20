@@ -304,6 +304,7 @@ export function ComingSoonExperience({
 
   /* ---------- Pause audio when tab/page is hidden, resume when back ---------- */
   useEffect(() => {
+    const audioAtMount = audioRef.current;
     const onVis = () => {
       const audio = audioRef.current;
       if (!audio) return;
@@ -316,7 +317,7 @@ export function ComingSoonExperience({
     document.addEventListener('visibilitychange', onVis);
     return () => {
       document.removeEventListener('visibilitychange', onVis);
-      audioRef.current?.pause();
+      audioAtMount?.pause();
     };
   }, []);
 
@@ -797,7 +798,7 @@ export function ComingSoonExperience({
         /* ---- quote / sentences typography ---- */
         .cs-quote {
           position: absolute; top: -0.2rem; right: 1.1rem;
-          font-family: 'Cormorant Garamond', serif;
+          font-family: var(--font-cormorant), serif;
           font-size: 5rem; line-height: 1; color: rgba(163,230,53,0.35);
           pointer-events: none; user-select: none;
         }

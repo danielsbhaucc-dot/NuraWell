@@ -86,8 +86,10 @@ const config: Config = {
         '4xl': '2.5rem',
       },
       fontFamily: {
-        sans: ['Heebo', 'Rubik', 'system-ui', 'sans-serif'],
-        display: ['Rubik', 'Heebo', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-heebo)', 'var(--font-rubik)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-rubik)', 'var(--font-heebo)', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-cormorant)', 'serif'],
+        logo: ['var(--font-dm-sans)', 'var(--font-heebo)', 'sans-serif'],
       },
       backdropBlur: {
         xs: '2px',

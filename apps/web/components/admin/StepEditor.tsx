@@ -254,7 +254,7 @@ export function StepEditor({ step }: StepEditorProps) {
       return;
     }
     setImmersiveAttentionStops(parseImmersiveAttentionStops(step.text_content));
-  }, [step?.id, step?.text_content]);
+  }, [step]);
 
   useEffect(() => {
     let cancelled = false;

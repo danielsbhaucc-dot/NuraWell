@@ -97,7 +97,7 @@ export function NuraWellLogo({ size = 'sm', showTagline = false, animate = true 
           </span>
           <span
             style={{
-              fontFamily: "'DM Sans', 'Heebo', sans-serif",
+              fontFamily: 'var(--font-dm-sans), var(--font-heebo), sans-serif',
               fontWeight: 300,
               fontSize: fontSizeAi,
               color: 'rgba(20,255,236,0.45)',
@@ -112,7 +112,7 @@ export function NuraWellLogo({ size = 'sm', showTagline = false, animate = true 
         {showTagline && (
           <span
             style={{
-              fontFamily: "'DM Sans', 'Heebo', sans-serif",
+              fontFamily: 'var(--font-dm-sans), var(--font-heebo), sans-serif',
               fontWeight: 300,
               fontSize: 9,
               letterSpacing: '3px',

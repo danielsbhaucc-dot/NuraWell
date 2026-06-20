@@ -9,7 +9,7 @@
 /* RTL + Hebrew Font */
 html {
   direction: rtl;
-  font-family: 'Heebo', 'Rubik', sans-serif;
+  font-family: var(--font-heebo), var(--font-rubik), sans-serif;
   scroll-behavior: smooth;
 }
 
@@ -35,12 +35,12 @@ html {
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Rubik', 'Heebo', sans-serif;
+    font-family: var(--font-rubik), var(--font-heebo), sans-serif;
     @apply font-bold;
   }
 
   input, textarea, select, button {
-    font-family: 'Heebo', sans-serif;
+    font-family: var(--font-heebo), sans-serif;
   }
 
   :focus-visible {
