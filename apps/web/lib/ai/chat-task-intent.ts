@@ -18,7 +18,7 @@ import {
   outcomeFromCategory,
   type ResponseCategory,
   type ResponseClassification,
-} from './response-classifier';
+} from './response-classifier-fast';
 import {
   fetchPendingAcceptedTasksForUser,
   markTaskExecutionForUser,

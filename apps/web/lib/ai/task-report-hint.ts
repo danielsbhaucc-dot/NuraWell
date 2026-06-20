@@ -6,7 +6,7 @@
  */
 
 import type { TaskIntentDetection } from './chat-task-intent';
-import { classifyResponseFast } from './response-classifier';
+import { classifyResponseFast } from './response-classifier-fast';
 import type { PendingTaskTodayRow } from '../journey/journey-report-parse';
 import type { JourneyTaskSlot } from '../types/journey';
 import { slotsForSchedule } from '../journey/task-schedule';
