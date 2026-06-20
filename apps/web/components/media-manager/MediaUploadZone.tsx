@@ -44,6 +44,11 @@ export function MediaUploadZone({
   onError,
 }: MediaUploadZoneProps) {
   const inputId = useId();
+  const titleFieldId = `${inputId}-title`;
+  const sourceFieldId = `${inputId}-source`;
+  const authorFieldId = `${inputId}-author`;
+  const licenseFieldId = `${inputId}-license`;
+  const linkFieldId = `${inputId}-link`;
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -172,16 +177,26 @@ export function MediaUploadZone({
       ) : null}
 
       <div>
-        <label className="mb-1 block text-xs font-bold text-slate-700">כותרת (אופציונלי)</label>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} className={glassInputClass} />
+        <label htmlFor={titleFieldId} className="mb-1 block text-xs font-bold text-slate-700">
+          כותרת (אופציונלי)
+        </label>
+        <input
+          id={titleFieldId}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className={glassInputClass}
+        />
       </div>
 
       <div className="rounded-2xl border border-white/40 p-3" style={{ background: 'rgba(255,255,255,0.1)' }}>
         <p className="mb-2 text-xs font-black text-slate-700">מקור וקרדיט</p>
         <div className="grid gap-2 sm:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-bold text-slate-700">מקור</label>
+            <label htmlFor={sourceFieldId} className="mb-1 block text-xs font-bold text-slate-700">
+              מקור
+            </label>
             <select
+              id={sourceFieldId}
               value={source}
               onChange={(e) => setSource(e.target.value as MediaSource)}
               className={glassInputClass}
@@ -194,19 +209,34 @@ export function MediaUploadZone({
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-bold text-slate-700">יוצר / אמן</label>
-            <input value={author} onChange={(e) => setAuthor(e.target.value)} className={glassInputClass} />
+            <label htmlFor={authorFieldId} className="mb-1 block text-xs font-bold text-slate-700">
+              יוצר / אמן
+            </label>
+            <input
+              id={authorFieldId}
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
+              className={glassInputClass}
+            />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-bold text-slate-700">רישיון</label>
-            <input value={license} onChange={(e) => setLicense(e.target.value)} className={glassInputClass} />
+            <label htmlFor={licenseFieldId} className="mb-1 block text-xs font-bold text-slate-700">
+              רישיון
+            </label>
+            <input
+              id={licenseFieldId}
+              value={license}
+              onChange={(e) => setLicense(e.target.value)}
+              className={glassInputClass}
+            />
           </div>
         </div>
         <div className="mt-2">
-          <label className="mb-1 block text-xs font-bold text-slate-700">
+          <label htmlFor={linkFieldId} className="mb-1 block text-xs font-bold text-slate-700">
             קישור למקור (לא חובה)
           </label>
           <input
+            id={linkFieldId}
             value={link}
             onChange={(e) => setLink(e.target.value)}
             className={glassInputClass}

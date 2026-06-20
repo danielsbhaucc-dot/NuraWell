@@ -241,6 +241,7 @@ function LoginFormContent() {
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div>
                 <label
+                  htmlFor="login-email"
                   className={[
                     'flex items-center gap-1.5 text-sm font-bold mb-2',
                     isDarkUi ? 'text-emerald-50' : 'text-gray-700',
@@ -251,6 +252,7 @@ function LoginFormContent() {
                 </label>
                 <div className="relative">
                   <input
+                    id="login-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -264,6 +266,7 @@ function LoginFormContent() {
 
               <div>
                 <label
+                  htmlFor="login-password"
                   className={[
                     'flex items-center gap-1.5 text-sm font-bold mb-2',
                     isDarkUi ? 'text-emerald-50' : 'text-gray-700',
@@ -274,6 +277,7 @@ function LoginFormContent() {
                 </label>
                 <div className="relative">
                   <input
+                    id="login-password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

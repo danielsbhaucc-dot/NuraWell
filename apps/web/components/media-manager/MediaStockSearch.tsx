@@ -96,8 +96,11 @@ export function MediaStockSearch({ onImported, onError }: MediaStockSearchProps)
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <div className="min-w-0 flex-1">
-          <label className="mb-1 block text-xs font-bold text-slate-700">חיפוש Pixabay / Pexels</label>
+          <label htmlFor="media-stock-search-query" className="mb-1 block text-xs font-bold text-slate-700">
+            חיפוש Pixabay / Pexels
+          </label>
           <input
+            id="media-stock-search-query"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className={glassInputClass}

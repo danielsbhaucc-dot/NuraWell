@@ -171,16 +171,22 @@ export default function OpsGuideDetailPage() {
 
       <div className="crystal-surface space-y-4 p-5 rounded-2xl">
         <div>
-          <label className="text-xs font-bold text-slate-600">כותרת</label>
+          <label htmlFor="guide-edit-title" className="text-xs font-bold text-slate-600">
+            כותרת
+          </label>
           <input
+            id="guide-edit-title"
             className="w-full mt-1 rounded-lg border px-3 py-2"
             value={guide.title}
             onChange={(e) => setGuide({ ...guide, title: e.target.value })}
           />
         </div>
         <div>
-          <label className="text-xs font-bold text-slate-600">תיאור</label>
+          <label htmlFor="guide-edit-description" className="text-xs font-bold text-slate-600">
+            תיאור
+          </label>
           <textarea
+            id="guide-edit-description"
             className="w-full mt-1 rounded-lg border px-3 py-2 min-h-[80px]"
             value={guide.description ?? ''}
             onChange={(e) => setGuide({ ...guide, description: e.target.value })}
@@ -213,10 +219,10 @@ export default function OpsGuideDetailPage() {
           </select>
         </div>
         <div>
-          <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-2">
-            <ImagePlus className="w-3.5 h-3.5" />
+          <p className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-2">
+            <ImagePlus className="w-3.5 h-3.5" aria-hidden />
             תמונת רקע למדריך
-          </label>
+          </p>
           {bgUrl ? (
             <div className="relative overflow-hidden rounded-2xl border border-slate-200">
               <div
@@ -274,8 +280,11 @@ export default function OpsGuideDetailPage() {
           )}
         </div>
         <div>
-          <label className="text-xs font-bold text-slate-600">פתיחה מתוזמנת (unlock_at)</label>
+          <label htmlFor="guide-edit-unlock-at" className="text-xs font-bold text-slate-600">
+            פתיחה מתוזמנת (unlock_at)
+          </label>
           <input
+            id="guide-edit-unlock-at"
             type="datetime-local"
             className="w-full mt-1 rounded-lg border px-3 py-2 text-sm"
             value={guide.unlock_at ? guide.unlock_at.slice(0, 16) : ''}

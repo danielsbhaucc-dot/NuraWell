@@ -1347,13 +1347,16 @@ export function AlmogKnowledgeManager() {
                         </div>
                       ) : form.dataType === 'step' ? (
                         <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-3">
-                          <label className="block text-xs font-bold text-emerald-950">שלב</label>
+                          <label htmlFor="almog-knowledge-step" className="block text-xs font-bold text-emerald-950">
+                            שלב
+                          </label>
                           {stepsLoading ? (
                             <p className="text-sm mt-1">טוען...</p>
                           ) : stepsError ? (
                             <p className="text-sm text-red-700 mt-1">{stepsError}</p>
                           ) : (
                             <select
+                              id="almog-knowledge-step"
                               value={form.selectedStepId}
                               onChange={(e) =>
                                 setForm((f) => ({ ...f, selectedStepId: e.target.value }))

@@ -340,8 +340,11 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
             <div className="p-5">
               <div className="space-y-3">
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700 text-right">שם מלא</label>
+                  <label htmlFor="profile-edit-name" className="mb-1 block text-sm font-semibold text-slate-700 text-right">
+                    שם מלא
+                  </label>
                   <input
+                    id="profile-edit-name"
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
                     className="crystal-pill w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-none transition focus:ring-2 focus:ring-emerald-400/40"
@@ -351,8 +354,11 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-slate-700 text-right">מגדר</label>
+                  <label htmlFor="profile-edit-gender" className="mb-1 block text-sm font-semibold text-slate-700 text-right">
+                    מגדר
+                  </label>
                   <select
+                    id="profile-edit-gender"
                     value={genderInput}
                     onChange={(e) => setGenderInput((e.target.value as 'male' | 'female' | '') ?? '')}
                     className="crystal-pill w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-none transition focus:ring-2 focus:ring-emerald-400/40"
