@@ -8,6 +8,8 @@
  * All clients are created once per server runtime (singleton modules).
  */
 
+import 'server-only';
+
 import OpenAI from 'openai';
 import { publicAppUrlForAiReferer } from '../public-app-url';
 

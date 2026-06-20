@@ -19,7 +19,7 @@ import {
   classifyResponseFast,
   type ResponseCategory,
   type ResponseClassification,
-} from './response-classifier';
+} from './response-classifier-fast';
 import { markHabitForUser, optOutHabitForUser } from './micro-win-habit';
 
 /** טיפוס לתאימות לאחור עם קוד שמשתמש ב-HabitIntentKind. */

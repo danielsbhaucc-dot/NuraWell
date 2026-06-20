@@ -1,235 +1,36 @@
 /**
  * 🎯 קלסיפיקטור תגובות משתמש — מסע NuraWell
  *
- * הבעיה שהקובץ הזה פותר:
- *   "שתיתי", "שתיתי קצת", "לא הספקתי אבל ניסיתי" — 3 מצבים שונים לחלוטין
- *   שהמערכת הקודמת (regex done/miss/none) לא ידעה להבחין ביניהם.
- *
- * הפתרון: סיווג היברידי ל-7 קטגוריות.
- *   1. `done`       — בוצע מלא ("שתיתי", "עשיתי", "סיימתי 3/3").
- *   2. `partial`    — בוצע חלקית ("שתיתי קצת", "רק כוס אחת", "1 מתוך 3").
- *   3. `failed`     — ניסה ולא הצליח / שכח ("ניסיתי אבל לא הצלחתי", "שכחתי").
- *   4. `skipped`    — דילוג מודע ("לא היום", "מוותר היום").
- *   5. `opted_out`  — סירוב גורף להרגל ("אני לא רוצה את ההרגל הזה", "תוריד את זה").
- *   6. `question`   — שאלה ולא דיווח ("איך עושים?", "למה זה חשוב?").
- *   7. `unknown`    — לא ברור — האחריות חוזרת לאלמוג לשאול בעדינות.
- *
- * הזרימה:
- *   1. `classifyResponseFast` — regex מקיף שמכסה ~90% מהמקרים בלי קריאה לרשת.
- *      רץ ראשון, סינכרוני, מצליח → סיימנו.
- *   2. `classifyResponseWithLlm` — fallback לסיווג LLM זול ומהיר (Groq + LLaMA 4 Scout)
- *      כשה-regex לא הצליח לקבוע בודאות. עוטף את הקריאה עם timeout כדי שלא יתקע
- *      את `onFinish` של הצ'אט.
- *
- * עקרונות שמירת עלות:
- *   - regex *לפני* LLM. ב-90% מהמקרים לא צריך לקרוא לרשת.
- *   - LLM עם `temperature=0`, max_tokens=80, מודל זול (LLaMA 4 Scout דרך Groq).
- *   - timeout של 4 שניות — שיחה לא מחכה ל-classifier "תקוע".
- *
- * עקרונות שמירת איכות:
- *   - הסדר ב-regex: opted_out → skipped → failed → partial → question → done.
- *     זה מכוון: "שתיתי קצת" יזוהה כ-partial *לפני* שהיה נתפס כ-done סתם.
- *   - LLM מקבל את כותרת ההרגל/משימה — כך הוא יודע אם "ניסיתי" התייחס למים
- *     או להליכה (זה משנה ל-context טוב).
+ * Regex layer lives in `response-classifier-fast.ts` (client-safe).
+ * This module adds LLM fallback via Groq — server-only.
  */
+
+import 'server-only';
 
 import { z } from 'zod';
 
 import { getClientForModel, AI_MODELS } from './client';
+import {
+  classifyResponseFast,
+  type ResponseCategory,
+  type ResponseClassification,
+  type ResponseClassifierContext,
+  type ResponseConfidence,
+  type TaskExecutionOutcomeFromCategory,
+  isReportingCategory,
+  outcomeFromCategory,
+} from './response-classifier-fast';
 
-export type ResponseCategory =
-  | 'done'
-  | 'partial'
-  | 'failed'
-  | 'skipped'
-  | 'opted_out'
-  | 'question'
-  | 'unknown';
-
-export type ResponseConfidence = 'high' | 'medium' | 'low';
-
-export type ResponseClassification = {
-  category: ResponseCategory;
-  confidence: ResponseConfidence;
-  /** איפה הוחלט: regex (מהיר, חינם) או LLM (אמביגוויטי). */
-  source: 'regex' | 'llm' | 'fallback';
-  /**
-   * פרט חשוב שחולץ מההודעה — לדוגמה כמות ("2 כוסות"), זמן ("בבוקר בלבד"),
-   * סיבה ("היה לחוץ"). מועבר לאלמוג ככדי שיגיב ספציפית, לא בקלישאה.
-   */
-  extractedNote?: string;
-};
-
-/**
- * הקשר רך לקלסיפיקטור — מסייע ב-disambiguation וב-LLM prompt.
- * `itemKind` חשוב במיוחד: "ניסיתי" על הרגל מים אומר משהו אחר מאשר על הליכה.
- */
-export type ResponseClassifierContext = {
-  /** כותרת ההרגל/משימה ממנה צריך להבחין הסטטוס (לדוגמה: "שתיית מים"). */
-  itemTitle: string;
-  /** האם זה הרגל יומי או משימת מסע — משנה אובייקטים בהקשר. */
-  itemKind: 'habit' | 'task';
-  /** תדירות (לדוגמה "יומי", "3 פעמים ביום") — להבין מה זה "חלקי" עבורו. */
-  frequencyLabel?: string;
-};
-
-/* ============================================================
- * Regex layer — מהיר, חינם, מכסה ~90% מהמקרים.
- * הסדר חשוב: כל regex רץ עד מציאה ראשונה (early return).
- * ============================================================ */
-
-const NORMALIZE_RE = /\s+/g;
-function normalize(t: string): string {
-  return t.replace(NORMALIZE_RE, ' ').trim();
-}
-
-/**
- * opted_out — סירוב גורף *להרגל / משימה עצמה*, לא דילוג חד-יומי.
- *
- * דוגמאות חיוביות:
- *   ✓ "אני לא רוצה את ההרגל הזה"
- *   ✓ "תוריד לי את המשימה הזו"
- *   ✓ "זה לא מתאים לי בכלל"
- *   ✓ "לא רלוונטי לי"
- *   ✓ "מוותר על ההרגל הזה לגמרי"
- *
- * דוגמאות שליליות (לא opted_out — אלה skipped):
- *   ✗ "לא היום" → skipped
- *   ✗ "מדלג היום" → skipped
- */
-const OPTED_OUT_RE =
-  /(?:אני\s+לא\s+רוצה\s+(?:את\s+)?(?:ההרגל|המשימה|זה)\s+(?:הזה|הזאת)?|תוריד(?:י|ו)?\s+(?:לי\s+)?(?:את\s+)?(?:ההרגל|המשימה|זה)|זה\s+לא\s+מתאים\s+לי(?:\s+בכלל)?|לא\s+רלוונטי\s+לי|מוותר(?:ת)?\s+על\s+(?:ההרגל|המשימה)\s+(?:הזה|הזאת|לגמרי)|אני\s+פורש\s+מ(?:ההרגל|המשימה)|תפסיק(?:י|ו)?\s+(?:לבקש|להזכיר)\s+(?:לי\s+)?(?:את\s+)?(?:ההרגל|המשימה|זה))/i;
-
-/**
- * skipped — דילוג חד-יומי מודע. "היום מדלג, מחר נראה".
- */
-const SKIPPED_RE =
-  /(?:לא\s+היום|מדלג(?:ת|ים)?\s+(?:היום|על\s+זה\s+היום)|מוותר(?:ת)?\s+על\s+(?:זה\s+)?היום|בוא\s+נדלג\s+היום|אקח\s+הפסקה\s+היום|פסיכי\s+לי\s+היום|לא\s+(?:אעשה|אשתה)\s+(?:את\s+זה\s+)?היום|day\s*off)/i;
-
-/**
- * failed — ניסה ולא הצליח / שכח / נקטע. *מאמץ* יש, ביצוע אין.
- *
- * הניואנס: "לא הספקתי" לחוד הוא בעיקר אילוץ זמן — אם מצורף "אבל ניסיתי"
- * זה failed; בלי "ניסיתי" זה יכול להיות סתם miss רגיל. כאן אנחנו מתפסים
- * את שני המקרים כ-failed כדי לתת תגובה תומכת.
- */
-const FAILED_RE =
-  /(?:ניסיתי(?:\s+אבל)?\s+(?:לא\s+(?:הצלחתי|הספקתי)|לא\s+יצא)|השתדלתי(?:\s+אבל)?\s+לא|כמעט\s+הצלחתי\s+אבל|התחלתי\s+אבל\s+(?:לא\s+(?:סיימתי|יכולתי|הגעתי|הצלחתי)|נשבר)|שכחתי\s+(?:לשתות|לעשות|לבצע|את\s+ה)|לא\s+הספקתי\s+אבל\s+ניסיתי|לא\s+הצלחתי\s+(?:להגיע|לעשות|לבצע)|נשבר\s+לי|פאשלתי|כשלון|רציתי\s+אבל\s+לא\s+(?:יצא|הצלחתי)|נפלתי\s+אבל)/i;
-
-/**
- * שלילת פעולה מפורשת — חייבת לרוץ לפני DONE_ACTION_RE.
- *
- * בלי זה משפט כמו "לא שתיתי כי הייתי בנסיעות" כולל את המילה "שתיתי"
- * ונופל בטעות ל-done. מבחינה חווייתית זה הרגע הכי רגיש: המשתמש מדווח
- * קושי, לא ניצחון.
- */
-const NEGATED_ACTION_RE =
-  /(?:לא\s+(?:שתיתי|שתינו|שתית|עשיתי|ביצעתי|סימנתי|סיימתי|הצלחתי|אכלתי|הלכתי)(?:\s+עדיין)?|עדיין\s+לא\s+(?:שתיתי|עשיתי|ביצעתי|סימנתי|סיימתי))/i;
-
-/** כוונה עתידית או אמירה כללית — לא דיווח ביצוע/כישלון. */
-const FUTURE_OR_ADVICE_RE =
-  /(?:^(?:אשתה|אעשה|אבצע)\s+מחר|צריך\s+(?:לשתות|לעשות|לבצע)\s+יותר)/i;
-
-/**
- * partial — בוצע חלקית. יש פעולה אמיתית, אבל לא מלאה.
- *
- * דוגמאות:
- *   ✓ "שתיתי קצת"
- *   ✓ "שתיתי רק כוס אחת"
- *   ✓ "עשיתי 1 מתוך 3"
- *   ✓ "הצלחתי חצי"
- *   ✓ "התחלתי אבל לא הגעתי לסוף"
- *
- * החשוב: הביטוי *מצורף* לפעולה. "קצת" לחוד הוא לא partial — אבל
- * "שתיתי קצת" כן. לכן ה-regex דורש *הופעה משולבת*.
- */
-const PARTIAL_QUANTIFIERS_RE =
-  /(?:קצת|מעט|חצי|רק\s+(?:פעם\s+אחת|אחת|פעמיים|כוס\s+אחת|אחד|שתיים)|חלקית|לא\s+הכל|חלק|רק\s+\d+(?:\s+מתוך\s+\d+)?|\d+\s+מתוך\s+\d+|לא\s+במלואו|לא\s+לגמרי)/i;
-
-const PARTIAL_ACTIONS_RE =
-  /(?:שתיתי|שתינו|שתית|עשיתי|ביצעתי|סיימתי|הצלחתי|אכלתי|הלכתי|התחלתי|זרמתי)/i;
-
-/**
- * question — שאלה ברורה ולא דיווח.
- *
- * תפסים:
- *   ✓ "איך עושים את זה?"
- *   ✓ "למה זה חשוב?"
- *   ✓ "מה ההמלצה?"
- *   ✓ "מתי כדאי?"
- *   ✓ "האם זה חייב להיות בבוקר?"
- *
- * לא תופס דיווח שמסתיים בסימן שאלה רטורי ("שתיתי כבר?").
- */
-const QUESTION_OPENER_RE =
-  /^\s*(?:איך|למה|מה(?:\s+ה|\s+זה|\s+כדאי|\s+ההמלצה|\s+ההבדל)|מתי(?:\s+כדאי|\s+אני)?|האם|למי|מי|איפה|כמה(?:\s+פעמים|\s+מים)?|לאיזה)/i;
-
-/**
- * done — בוצע מלא. *אחרון בסדר* כדי שלא יבלע "שתיתי קצת" (partial).
- *
- * המגבלה: `done` רק כשאין אחריו quantifier של חלקיות. ה-negative lookahead
- * `(?!\s+(?:קצת|מעט|חצי|רק))` הוא מה שמבדיל "שתיתי" מ-"שתיתי קצת".
- */
-const DONE_ACTION_RE =
-  /(?:^|[\s.,!])(?:שתיתי|שתינו|שתית|עשיתי|ביצעתי|סימנתי|סיימתי|הצלחתי|סגרתי|בוצע|כבר\s+עשיתי|כן\s+עשיתי|נעשה|אכלתי|הלכתי)(?!\s+(?:קצת|מעט|חצי|רק|חלק|חלקית|\d))/i;
-
-const SHORT_AFFIRMATIVE_RE = /^(?:כן|✅|✓|נעשה|done|בוצע|סגור|אלוף)\s*[!.?]*\s*$/i;
-
-/**
- * מסווג מהיר, סינכרוני, בלי רשת. החזרת `null` = לא בטוח, צריך לעבור ל-LLM.
- */
-export function classifyResponseFast(userMessage: string): ResponseClassification | null {
-  const t = normalize(userMessage);
-  // אורך מינימלי 1 כדי לתפוס אימוג'ים בודדים כמו "✅".
-  if (t.length < 1) return null;
-
-  if (OPTED_OUT_RE.test(t)) {
-    return { category: 'opted_out', confidence: 'high', source: 'regex' };
-  }
-
-  if (SKIPPED_RE.test(t)) {
-    return { category: 'skipped', confidence: 'high', source: 'regex' };
-  }
-
-  if (FAILED_RE.test(t)) {
-    return { category: 'failed', confidence: 'high', source: 'regex' };
-  }
-
-  if (NEGATED_ACTION_RE.test(t)) {
-    return { category: 'failed', confidence: 'high', source: 'regex' };
-  }
-
-  if (FUTURE_OR_ADVICE_RE.test(t)) {
-    return null;
-  }
-
-  if (PARTIAL_QUANTIFIERS_RE.test(t) && PARTIAL_ACTIONS_RE.test(t)) {
-    const quantMatch = t.match(PARTIAL_QUANTIFIERS_RE);
-    const note = quantMatch?.[0]?.trim();
-    return {
-      category: 'partial',
-      confidence: 'high',
-      source: 'regex',
-      ...(note ? { extractedNote: note } : {}),
-    };
-  }
-
-  if (QUESTION_OPENER_RE.test(t) || /\?\s*$/.test(t)) {
-    if (!PARTIAL_ACTIONS_RE.test(t) || /\?\s*$/.test(t)) {
-      return { category: 'question', confidence: 'medium', source: 'regex' };
-    }
-  }
-
-  if (SHORT_AFFIRMATIVE_RE.test(t) || DONE_ACTION_RE.test(t)) {
-    return { category: 'done', confidence: 'high', source: 'regex' };
-  }
-
-  return null;
-}
-
-/* ============================================================
- * LLM layer — fallback לאמביגוויטי. Groq + LLaMA 4 Scout.
- * ============================================================ */
+export {
+  classifyResponseFast,
+  isReportingCategory,
+  outcomeFromCategory,
+  type ResponseCategory,
+  type ResponseClassification,
+  type ResponseClassifierContext,
+  type ResponseConfidence,
+  type TaskExecutionOutcomeFromCategory,
+} from './response-classifier-fast';
 
 const llmClassificationSchema = z.object({
   category: z.enum(['done', 'partial', 'failed', 'skipped', 'opted_out', 'question', 'unknown']),
@@ -261,11 +62,6 @@ function buildLlmPrompt(userMessage: string, ctx: ResponseClassifierContext): st
 {"category":"<קטגוריה>","confidence":"<high|medium|low>","extracted_note":"<פרט קצר אם רלוונטי, אחרת null>"}`;
 }
 
-/**
- * LLM fallback. תמיד מחזיר תוצאה — גם אם יש שגיאת רשת — כדי שהצ'אט
- * לא ייתקע. במצב כשל החזרת `unknown` עם source='fallback' מאפשרת לזרימה
- * הראשית להתאושש בלי לדגום DB.
- */
 export async function classifyResponseWithLlm(
   userMessage: string,
   ctx: ResponseClassifierContext
@@ -324,28 +120,10 @@ export async function classifyResponseWithLlm(
   }
 }
 
-/* ============================================================
- * Public API — `classifyResponse` הוא הפונקציה הראשית שכל הצ'אט יקרא לה.
- * ============================================================ */
-
 export type ClassifyResponseOptions = {
-  /**
-   * אם `true`, ידלג על ה-LLM ויחזיר את תוצאת ה-regex או `unknown`.
-   * שימושי בנתיב הביצוע הסינכרוני שלפני הזרמת התשובה לצ'אט (כדי שהפרומפט
-   * ייבנה מיד, בלי לחכות לרשת חיצונית).
-   */
   skipLlm?: boolean;
 };
 
-/**
- * המנגנון הראשי. *תמיד* מחזיר תוצאה (גם בכשל). לא יזרוק שגיאות —
- * זו חלק מהזרימה הקריטית של הצ'אט.
- *
- * זרימה:
- *   1. regex (סינכרוני, חינם, ~90% של המקרים) → אם high confidence, סיימנו.
- *   2. אם skipLlm → החזרת `unknown` עם source='regex' (נופל יפה ל-AI).
- *   3. LLM (Groq, ~200-500ms, אגורות) → סיווג סופי.
- */
 export async function classifyResponse(
   userMessage: string,
   ctx: ResponseClassifierContext,
@@ -359,48 +137,4 @@ export async function classifyResponse(
   }
 
   return classifyResponseWithLlm(userMessage, ctx);
-}
-
-/**
- * דאוטה-מאפינג מהקטגוריה ל-`outcome` ב-`journey_task_executions`.
- *  - done       → completed
- *  - partial    → partial            (חדש; דורש מיגרציה להרחיב CHECK)
- *  - failed     → attempt_failed     (קיים כבר ב-DB)
- *  - skipped    → skipped            (חדש; דורש מיגרציה להרחיב CHECK)
- *  - opted_out  → לא נכתב לטבלת executions; מטופל ב-habit_meta בנפרד.
- *  - question   → לא נכתב.
- *  - unknown    → לא נכתב.
- */
-export type TaskExecutionOutcomeFromCategory =
-  | 'completed'
-  | 'partial'
-  | 'attempt_failed'
-  | 'skipped';
-
-export function outcomeFromCategory(
-  category: ResponseCategory
-): TaskExecutionOutcomeFromCategory | null {
-  switch (category) {
-    case 'done':
-      return 'completed';
-    case 'partial':
-      return 'partial';
-    case 'failed':
-      return 'attempt_failed';
-    case 'skipped':
-      return 'skipped';
-    default:
-      return null;
-  }
-}
-
-/** האם הקטגוריה מהווה דיווח שמשנה את ה-DB? */
-export function isReportingCategory(category: ResponseCategory): boolean {
-  return (
-    category === 'done' ||
-    category === 'partial' ||
-    category === 'failed' ||
-    category === 'skipped' ||
-    category === 'opted_out'
-  );
 }
