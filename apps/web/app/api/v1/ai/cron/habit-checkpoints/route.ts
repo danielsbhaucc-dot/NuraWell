@@ -26,7 +26,12 @@ import {
   computeRiskFingerprintForUser,
   persistRiskFingerprint,
 } from '../../../../../../lib/ai/risk-fingerprint-llm';
+import {
+  isGuardianFingerprintEnabled,
+  isGuardianProactiveEnabled,
+} from '../../../../../../lib/ai/guardian/guardian-feature-flags';
 import { guardianSchedulesForToday } from '../../../../../../lib/ai/risk-window';
+import { guardianOptedIn } from '../../../../../../lib/ai/guardian/guardian-gates';
 import { scheduleGuardianTrigger } from '../../../../../../lib/ai/guardian/qstash-scheduler';
 import { runMentorshipSynthesisBatch } from '../../../../../../lib/ai/mentorship/run-synthesis-batch';
 import { fetchRecoveryStatesForUsers } from '../../../../../../lib/ai/almog-commitments/recovery-state';
@@ -75,18 +80,6 @@ const PROFILE_SELECTS = [
   'id, ai_context, onboarding_completed',
   'id',
 ];
-
-function guardianFlagEnabled(name: 'GUARDIAN_FINGERPRINT_ENABLED' | 'GUARDIAN_PROACTIVE_ENABLED'): boolean {
-  return process.env[name]?.trim() === '1';
-}
-
-function guardianOptedIn(aiContext: Record<string, unknown> | null | undefined): boolean {
-  const guardian = aiContext?.guardian;
-  if (guardian && typeof guardian === 'object' && !Array.isArray(guardian)) {
-    return (guardian as Record<string, unknown>).opted_in === true;
-  }
-  return aiContext?.guardian_opted_in === true;
-}
 
 function isMissingColumnError(error: { code?: string; message?: string } | null): boolean {
   if (!error) return false;
@@ -400,7 +393,7 @@ async function runHabitCheckpointCron(request: Request) {
   let guardianSchedulesTriggered = 0;
   const guardianErrors: string[] = [];
 
-  if (slot === 'morning' && guardianFlagEnabled('GUARDIAN_FINGERPRINT_ENABLED')) {
+  if (slot === 'morning' && isGuardianFingerprintEnabled()) {
     const guardianLimit = Math.min(
       200,
       Math.max(1, Number(process.env.CRON_MAX_GUARDIAN_FINGERPRINT_USERS) || 40)
@@ -409,9 +402,7 @@ async function runHabitCheckpointCron(request: Request) {
       90,
       Math.max(10, Number(process.env.GUARDIAN_PROACTIVE_LEAD_MIN) || 30)
     );
-    const proactiveEnabled =
-      guardianFlagEnabled('GUARDIAN_PROACTIVE_ENABLED') &&
-      process.env.GUARDIAN_KILL_SWITCH !== '1';
+    const proactiveEnabled = isGuardianProactiveEnabled();
 
     const guardianCandidates = profileRows
       .filter((row) => row.onboarding_completed === true && row.engagement_status !== 'churned')

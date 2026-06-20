@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
-import { dispatchOpenAlmogChatWithPrefill } from '../../lib/notifications/open-almog-chat';
+import { dispatchOpenAlmogChatWithPrefill, dispatchOpenAlmogChatWithTaskReport } from '../../lib/notifications/open-almog-chat';
+import type { TaskReportHint } from '../../lib/ai/task-report-hint';
 import { getPersonalGreeting } from '../../lib/time/greeting';
 
 interface AlmogHeroHeaderProps {
@@ -13,7 +14,7 @@ interface AlmogHeroHeaderProps {
   /** כותרת משנה דינמית מתחת ל"✦ אלמוג" */
   mentorTag?: string;
   /** CTA לצ'אט מתוך הבועה */
-  chatCta?: { label: string; prefill: string };
+  chatCta?: { label: string; prefill: string; hint?: TaskReportHint };
   /** פס התקדמות יומי */
   taskProgress?: { done: number; total: number };
   /** סטטוס משימות פתוחות לתצוגה צבעונית מתחת לברכה ("יש לך X משימות לביצוע"). */
@@ -286,7 +287,13 @@ export function AlmogHeroHeader({
           {chatCta ? (
             <button
               type="button"
-              onClick={() => dispatchOpenAlmogChatWithPrefill(chatCta.prefill)}
+              onClick={() => {
+                if (chatCta.hint) {
+                  dispatchOpenAlmogChatWithTaskReport(chatCta.prefill, chatCta.hint);
+                } else {
+                  dispatchOpenAlmogChatWithPrefill(chatCta.prefill);
+                }
+              }}
               style={{
                 marginTop: '10px',
                 width: '100%',

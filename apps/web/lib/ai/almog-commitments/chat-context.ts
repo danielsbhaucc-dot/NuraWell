@@ -21,6 +21,10 @@ import {
   detectUnansweredRecoverySignals,
   formatUnansweredRecoveryForChat,
 } from './recovery-response-detection';
+import {
+  fetchRecentSosForChat,
+  formatRecentSosForChat,
+} from '../guardian/sos-memory';
 
 type Supa = SupabaseClient;
 
@@ -38,6 +42,7 @@ export async function fetchAlmogCommitmentContext(
     recoveryState: null,
     unansweredRecovery: [],
     activeStruggles: [],
+    recentSosMoments: [],
   };
 
   const tasks: PromiseLike<unknown>[] = [];
@@ -75,6 +80,14 @@ export async function fetchAlmogCommitmentContext(
     loadActiveStrugglesForChat(supabase, userId)
       .then((signals) => {
         ctx.activeStruggles = signals;
+      })
+      .catch(() => null)
+  );
+
+  tasks.push(
+    fetchRecentSosForChat(supabase, userId, 48)
+      .then((events) => {
+        ctx.recentSosMoments = events;
       })
       .catch(() => null)
   );
@@ -249,6 +262,9 @@ export function formatAlmogCommitmentBlocks(ctx: AlmogCommitmentContext): string
 
   const struggleBlock = formatStruggleSignalsForChat(ctx.activeStruggles);
   if (struggleBlock) blocks.push(struggleBlock);
+
+  const sosBlock = formatRecentSosForChat(ctx.recentSosMoments);
+  if (sosBlock) blocks.push(sosBlock);
 
   // ── תוכנית recovery (משימה מקורית מוקפאת + צעד מותאם) ──
   if (ctx.recoveryState?.hasActiveRecovery) {

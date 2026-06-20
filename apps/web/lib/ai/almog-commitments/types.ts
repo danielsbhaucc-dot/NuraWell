@@ -187,4 +187,6 @@ export interface AlmogCommitmentContext {
   /** שאילתות recovery / צעדים מותאמים שלא נענו */
   unansweredRecovery: import('./recovery-response-detection').UnansweredRecoverySignal[];
   activeStruggles: import('./struggle-detection').StruggleSignal[];
+  /** SOS אחרונים — רגעים קשים מהבית */
+  recentSosMoments: import('../guardian/sos-memory').RecentSosForChat[];
 }

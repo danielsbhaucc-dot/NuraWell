@@ -5,6 +5,7 @@ import { readJsonBody } from '@/lib/api/json-request';
 import { requireApiSession } from '@/lib/api/route-guards';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { bridgeJourneyDifficultyToRecoveryPlan } from '@/lib/ai/almog-commitments/bridge-journey-recovery';
+import { linkJourneyLevelHardToSosMemory } from '@/lib/ai/guardian/sos-memory';
 import { persistRecoveryInsight } from '@/lib/ai/almog-commitments/persist-recovery-insight';
 import {
   computeTaskLevelProgressSnapshot,
@@ -146,10 +147,20 @@ export async function POST(request: Request) {
           kind: 'plan_created',
           strategy: recoveryBridge.assignment_id,
           outcome: 'pending',
-          note: 'משתמש דיווח קשה — נוצרה תוכנית מותאמת',
+          note: 'משתמש דיווח שהרמה קשה — נוצרה תוכנית מותאמת',
           blockerId: recoveryBridge.blocker_id ?? null,
         }).catch(() => null);
       }
+
+      await linkJourneyLevelHardToSosMemory({
+        admin,
+        userId: user.id,
+        taskId: task.id,
+        taskTitle: task.title,
+        stepId: step_id,
+        blockerId: recoveryBridge?.blocker_id ?? null,
+        nowIso,
+      }).catch(() => null);
     } else if (feedback === 'too_easy' || feedback === 'ok') {
       const admin = createAdminClient();
       await persistRecoveryInsight(admin, {

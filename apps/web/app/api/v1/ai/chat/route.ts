@@ -84,6 +84,7 @@ import {
   applyTaskIntentFromUserMessage,
   detectTaskIntent,
 } from '../../../../../lib/ai/chat-task-intent';
+import { resolveTaskIntentWithHint } from '../../../../../lib/ai/task-report-hint';
 import { fetchPendingAcceptedTasksForUser } from '../../../../../lib/ai/mark-task-execution';
 import {
   applyWeightFromUserMessage,
@@ -163,6 +164,17 @@ const chatBodySchema = z.object({
    * לבחור מודל אחר *לאותה בקשה* בלבד כדי להשוות איכות — הכל דרך OpenRouter.
    */
   model: z.enum(['almog', 'llama4', 'gpt', 'claude']).optional(),
+  /** הקשר מובנה ממסך הבית — task_id + slot, בלי להסתמך על ניחוש מהטקסט */
+  task_report_hint: z
+    .object({
+      task_id: z.string().min(1).max(120),
+      task_title: z.string().min(1).max(200),
+      step_id: z.string().uuid().optional(),
+      slot: z.string().max(32).optional(),
+      source: z.enum(['home_tasks_popup', 'home_hero']),
+      category: z.enum(['done']).optional(),
+    })
+    .optional(),
 });
 
 /**
@@ -2137,6 +2149,7 @@ export async function POST(request: Request) {
 
   const sessionId = parsed.data.session_id ?? crypto.randomUUID();
   const notificationId = parsed.data.notification_id;
+  const taskReportHint = parsed.data.task_report_hint;
 
   const chatSession = await ensureChatSession(supabase, { sessionId, userId: user.id }).catch(
     (sessionErr) => {
@@ -2487,7 +2500,12 @@ export async function POST(request: Request) {
 
     const liveSignals = earlySignals;
     const liveHabitIntent = detectHabitIntent(lastUserText, journeyHabits);
-    const liveTaskIntent = detectTaskIntent(lastUserText, pendingTasks);
+    const liveTaskIntent = resolveTaskIntentWithHint(
+      lastUserText,
+      pendingTasks,
+      taskReportHint,
+      detectTaskIntent(lastUserText, pendingTasks)
+    );
     const parsedWeightKg = parseWeightKgFromMessage(lastUserText);
 
     const aiTasks = activeJourneyContext ? buildTasksForAiContext(activeJourneyContext) : [];
@@ -2992,7 +3010,8 @@ export async function POST(request: Request) {
             supabase,
             user.id,
             lastUserText,
-            pendingTasks
+            pendingTasks,
+            taskReportHint
           );
           if (taskIntent.marked && taskIntent.stepId && taskIntent.taskId) {
             console.info('[ai/chat]', {

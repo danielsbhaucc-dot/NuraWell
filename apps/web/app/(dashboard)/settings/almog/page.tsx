@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '../../../../lib/supabase/server';
 import { AlmogNudgeSettingsClient } from '../../../../components/settings/AlmogNudgeSettingsClient';
 import { coachingStyleFromContext, type AlmogCoachingStyle } from '../../../../lib/ai/almog-coaching-style';
+import { readGuardianUserSettings } from '../../../../lib/ai/guardian/guardian-user-settings';
 import type { AiUserContext } from '../../../../lib/ai/memory';
 
 export const metadata: Metadata = {
@@ -30,6 +31,7 @@ export default async function AlmogNudgeSettingsPage() {
   const coachingStyle: AlmogCoachingStyle = coachingStyleFromContext(ctx);
   const workArrival =
     typeof ctx?.work_arrival_time === 'string' ? ctx.work_arrival_time.slice(0, 5) : '';
+  const guardianOptedIn = readGuardianUserSettings(ctx).opted_in;
 
   return (
     <AlmogNudgeSettingsClient
@@ -37,6 +39,7 @@ export default async function AlmogNudgeSettingsPage() {
       initialWeightReminders={weightReminders}
       initialCoachingStyle={coachingStyle}
       initialWorkArrivalTime={workArrival}
+      initialGuardianOptedIn={guardianOptedIn}
     />
   );
 }
