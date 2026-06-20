@@ -4,11 +4,18 @@ import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
+import { dispatchOpenAlmogChatWithPrefill } from '../../lib/notifications/open-almog-chat';
 import { getPersonalGreeting } from '../../lib/time/greeting';
 
 interface AlmogHeroHeaderProps {
   firstName: string;
   bubbleContent: ReactNode;
+  /** כותרת משנה דינמית מתחת ל"✦ אלמוג" */
+  mentorTag?: string;
+  /** CTA לצ'אט מתוך הבועה */
+  chatCta?: { label: string; prefill: string };
+  /** פס התקדמות יומי */
+  taskProgress?: { done: number; total: number };
   /** סטטוס משימות פתוחות לתצוגה צבעונית מתחת לברכה ("יש לך X משימות לביצוע"). */
   taskBadge?: {
     /** כמה משימות פתוחות שלא בוצעו עדיין היום */
@@ -17,13 +24,26 @@ interface AlmogHeroHeaderProps {
     done: number;
     /** סה"כ משימות שהמשתמש לקח על עצמו */
     accepted: number;
+    /** כמה משימות פעילות להיום */
+    dueToday?: number;
+    /** תצוגה מקדימה של משימה ראשונה פתוחה */
+    previewTitle?: string | null;
     /** האם הנתונים עוד בטעינה */
     loading?: boolean;
   };
+  onTaskBadgeClick?: () => void;
 }
 
 /** כותרת בית עם אלמוג — שיקוף ברכה אישית + סטטוס משימות היום. */
-export function AlmogHeroHeader({ firstName, bubbleContent, taskBadge }: AlmogHeroHeaderProps) {
+export function AlmogHeroHeader({
+  firstName,
+  bubbleContent,
+  mentorTag,
+  chatCta,
+  taskProgress,
+  taskBadge,
+  onTaskBadgeClick,
+}: AlmogHeroHeaderProps) {
   const { avatarUrl } = useAlmogAvatarUrl();
   const greeting = getPersonalGreeting(new Date());
 
@@ -86,7 +106,9 @@ export function AlmogHeroHeader({ firstName, bubbleContent, taskBadge }: AlmogHe
             <span>{greeting.occasionGreeting}</span>
           </div>
         ) : null}
-        {showTaskBadge ? <TaskBadgeRow {...taskBadge!} /> : null}
+        {showTaskBadge ? (
+          <TaskBadgeRow {...taskBadge!} onClick={onTaskBadgeClick} />
+        ) : null}
       </motion.div>
 
       <motion.div
@@ -190,9 +212,27 @@ export function AlmogHeroHeader({ firstName, bubbleContent, taskBadge }: AlmogHe
               fontWeight: 700,
               letterSpacing: '0.5px',
               marginBottom: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
             }}
           >
-            ✦ אלמוג · המנטור שלך
+            <span>✦ אלמוג · המנטור שלך</span>
+            {mentorTag ? (
+              <span
+                style={{
+                  fontSize: '9px',
+                  fontWeight: 800,
+                  color: 'rgba(255,255,255,0.88)',
+                  background: 'rgba(255,255,255,0.14)',
+                  border: '1px solid rgba(255,255,255,0.22)',
+                  borderRadius: '999px',
+                  padding: '2px 7px',
+                }}
+              >
+                {mentorTag}
+              </span>
+            ) : null}
           </div>
           <div
             style={{
@@ -205,6 +245,65 @@ export function AlmogHeroHeader({ firstName, bubbleContent, taskBadge }: AlmogHe
           >
             {bubbleContent}
           </div>
+          {taskProgress && taskProgress.total > 0 ? (
+            <div style={{ marginTop: '10px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: '9px',
+                  fontWeight: 700,
+                  color: 'rgba(255,255,255,0.72)',
+                  marginBottom: '4px',
+                }}
+              >
+                <span>
+                  {taskProgress.done}/{taskProgress.total}
+                </span>
+                <span>היום</span>
+              </div>
+              <div
+                style={{
+                  height: '5px',
+                  borderRadius: '999px',
+                  background: 'rgba(255,255,255,0.16)',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    height: '100%',
+                    width: `${Math.min(100, Math.round((taskProgress.done / taskProgress.total) * 100))}%`,
+                    borderRadius: '999px',
+                    background: 'linear-gradient(90deg, #FFD97D, #FBBF24)',
+                    boxShadow: '0 0 8px rgba(251,191,36,0.45)',
+                    transition: 'width 0.4s ease',
+                  }}
+                />
+              </div>
+            </div>
+          ) : null}
+          {chatCta ? (
+            <button
+              type="button"
+              onClick={() => dispatchOpenAlmogChatWithPrefill(chatCta.prefill)}
+              style={{
+                marginTop: '10px',
+                width: '100%',
+                border: '1px solid rgba(255,217,125,0.45)',
+                background: 'rgba(255,217,125,0.16)',
+                borderRadius: '12px',
+                padding: '7px 10px',
+                fontSize: '11px',
+                fontWeight: 800,
+                color: '#FFD97D',
+                fontFamily: "'Rubik','Heebo',sans-serif",
+                cursor: 'pointer',
+              }}
+            >
+              {chatCta.label} ←
+            </button>
+          ) : null}
         </motion.div>
       </motion.div>
     </>
@@ -224,14 +323,34 @@ function TaskBadgeRow({
   pending,
   done,
   accepted,
+  dueToday = 0,
+  previewTitle,
+  onClick,
 }: {
   pending: number;
   done: number;
   accepted: number;
+  dueToday?: number;
+  previewTitle?: string | null;
+  onClick?: () => void;
 }) {
+  const Wrapper = onClick ? 'button' : 'div';
+  const wrapperProps = onClick
+    ? {
+        type: 'button' as const,
+        onClick,
+        className: 'w-full text-right',
+        'aria-label': 'פתח רשימת משימות היום',
+      }
+    : {};
+
+  const truncate = (title: string, max = 24) =>
+    title.length <= max ? title : `${title.slice(0, max - 1)}…`;
+
   if (accepted === 0) {
     return (
-      <div
+      <Wrapper
+        {...wrapperProps}
         style={{
           marginTop: '8px',
           display: 'flex',
@@ -253,16 +372,23 @@ function TaskBadgeRow({
             fontWeight: 700,
             color: '#ECFDF5',
             letterSpacing: '0.2px',
+            flex: 1,
           }}
         >
           המסע שלך מחכה, בלחיצה אתה שם
         </span>
-      </div>
+        {onClick ? (
+          <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>
+            פתיחה ›
+          </span>
+        ) : null}
+      </Wrapper>
     );
   }
   if (pending === 0) {
     return (
-      <div
+      <Wrapper
+        {...wrapperProps}
         style={{
           marginTop: '8px',
           display: 'flex',
@@ -286,15 +412,22 @@ function TaskBadgeRow({
             fontWeight: 800,
             color: '#FFFFFF',
             letterSpacing: '0.2px',
+            flex: 1,
           }}
         >
-          סגרת היום הכל, {done} מתוך {accepted}
+          סגרת היום הכל, {done} מתוך {dueToday || accepted}
         </span>
-      </div>
+        {onClick ? (
+          <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>
+            פירוט ›
+          </span>
+        ) : null}
+      </Wrapper>
     );
   }
   return (
-    <div
+    <Wrapper
+      {...wrapperProps}
       style={{
         marginTop: '8px',
         display: 'flex',
@@ -318,14 +451,36 @@ function TaskBadgeRow({
           fontWeight: 800,
           color: '#FEF3C7',
           letterSpacing: '0.2px',
+          flex: 1,
+          lineHeight: 1.35,
         }}
       >
-        יש לך{' '}
-        <span style={{ color: '#FFFFFF', fontWeight: 900, fontSize: '14px' }}>
-          {pending}
-        </span>{' '}
-        {pending === 1 ? 'משימה' : 'משימות'} לביצוע היום
+        {done > 0 && dueToday > 0 ? (
+          <>
+            {done}/{dueToday} בוצעו · עוד{' '}
+            <span style={{ color: '#FFFFFF', fontWeight: 900, fontSize: '14px' }}>{pending}</span>
+          </>
+        ) : (
+          <>
+            יש לך{' '}
+            <span style={{ color: '#FFFFFF', fontWeight: 900, fontSize: '14px' }}>{pending}</span>{' '}
+            {pending === 1 ? 'משימה' : 'משימות'} לביצוע היום
+          </>
+        )}
+        {previewTitle ? (
+          <>
+            <br />
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.92)' }}>
+              הבאה: {truncate(previewTitle)}
+            </span>
+          </>
+        ) : null}
       </span>
-    </div>
+      {onClick ? (
+        <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.85)', fontWeight: 800, flexShrink: 0 }}>
+          רשימה ›
+        </span>
+      ) : null}
+    </Wrapper>
   );
 }
