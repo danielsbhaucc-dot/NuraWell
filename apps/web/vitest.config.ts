@@ -9,6 +9,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    environmentMatchGlobs: [['tests/a11y-axe-smoke.test.ts', 'jsdom']],
     include: ['tests/**/*.test.ts'],
     globals: false,
   },

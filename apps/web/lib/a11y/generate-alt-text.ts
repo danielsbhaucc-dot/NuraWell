@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { openrouter } from '@/lib/ai/client';
 
 const ALT_MODEL = process.env.AI_ALT_TEXT_MODEL?.trim() || 'openai/gpt-4o-mini';
