@@ -52,7 +52,7 @@
     "@types/react-dom": "^19.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "axe-core": "^4.10.3",
-    "eslint": "^8.0.0",
+    "eslint": "^10.5.0",
     "eslint-config-next": "15.5.16",
     "jsdom": "^25.0.1",
     "vitest": "^3.0.0"
