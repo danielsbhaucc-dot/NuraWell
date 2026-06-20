@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "npx vitest run",
+    "test:a11y": "npx vitest run tests/a11y-preferences.test.ts tests/a11y-alt-text.test.ts tests/a11y-count-active.test.ts tests/a11y-axe-smoke.test.ts",
     "test:watch": "vitest",
     "backfill:insight-vectors": "node --env-file=.env.local scripts/backfill-insight-vectors-upstash.mjs"
   },
@@ -46,8 +47,10 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "axe-core": "^4.10.3",
     "eslint": "^8.0.0",
     "eslint-config-next": "15.5.16",
+    "jsdom": "^26.1.0",
     "vitest": "^3.0.0"
   }
 }

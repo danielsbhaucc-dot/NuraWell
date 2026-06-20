@@ -47,6 +47,7 @@ import { getActiveContext } from '../../../../../lib/ai/mentorship/get-active-co
 import { getMentorContext } from '../../../../../lib/ai/insights/get-mentor-context';
 import {
   fetchAlmogCommitmentContext,
+  EMPTY_ALMOG_COMMITMENT_CONTEXT,
   formatAlmogCommitmentBlocks,
 } from '../../../../../lib/ai/almog-commitments/chat-context';
 import {
@@ -2494,7 +2495,7 @@ export async function POST(request: Request) {
       fetchAlmogCommitmentContext(supabase, user.id, {
         needsAssignments: Boolean(contextDecision.needs_assignments),
         needsBlockers: Boolean(contextDecision.needs_blockers),
-      }).catch(() => ({ activeAssignments: [], openBlockers: [], recentInterventions: [], nextReminders: [], activeFocus: null, recoveryState: null, unansweredRecovery: [], activeStruggles: [] })),
+      }).catch(() => EMPTY_ALMOG_COMMITMENT_CONTEXT),
     ]);
     const commitmentBlocks = formatAlmogCommitmentBlocks(commitmentContext);
 

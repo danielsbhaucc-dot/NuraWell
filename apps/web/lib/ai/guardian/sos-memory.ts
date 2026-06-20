@@ -577,8 +577,6 @@ export async function linkJourneyLevelHardToSosMemory(params: {
       source: 'journey_too_hard',
       focus_task_id: params.taskId,
       focus_task_title: params.taskTitle,
-      journey_step_id: params.stepId,
-      journey_blocker_id: params.blockerId ?? null,
       ...metaPatch,
     },
     history: [{ at: params.nowIso, status: 'open', note: 'הרמה קשה לי — מהמסע' }],

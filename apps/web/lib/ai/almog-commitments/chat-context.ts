@@ -28,6 +28,18 @@ import {
 
 type Supa = SupabaseClient;
 
+export const EMPTY_ALMOG_COMMITMENT_CONTEXT: AlmogCommitmentContext = {
+  activeAssignments: [],
+  openBlockers: [],
+  recentInterventions: [],
+  nextReminders: [],
+  activeFocus: null,
+  recoveryState: null,
+  unansweredRecovery: [],
+  activeStruggles: [],
+  recentSosMoments: [],
+};
+
 export async function fetchAlmogCommitmentContext(
   supabase: Supa,
   userId: string,
