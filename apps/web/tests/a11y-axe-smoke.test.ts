@@ -7,10 +7,17 @@ import { DEFAULT_ACCESSIBILITY_PREFERENCES } from '@/lib/a11y/types';
 type AxeWindow = Window & typeof globalThis & { axe: typeof axe };
 
 function injectAxeIntoWindow(window: Window & typeof globalThis): typeof axe {
-  const script = window.document.createElement('script');
-  script.textContent = axe.source;
-  window.document.head.appendChild(script);
-  return (window as AxeWindow).axe;
+  const bootstrapAxe = new Function('window', 'document', axe.source) as (
+    w: Window & typeof globalThis,
+    d: Document,
+  ) => void;
+  bootstrapAxe(window, window.document);
+
+  const axeInstance = (window as AxeWindow).axe;
+  if (!axeInstance?.run) {
+    throw new Error('axe-core failed to initialize in JSDOM');
+  }
+  return axeInstance;
 }
 
 async function runAxe(html: string) {
@@ -25,7 +32,7 @@ async function runAxe(html: string) {
 describe('axe smoke — HTML fixtures', () => {
   it('skip link + main landmark has no serious violations', async () => {
     const results = await runAxe(`
-      <!DOCTYPE html><html lang="he" dir="rtl"><body>
+      <!DOCTYPE html><html lang="he" dir="rtl"><head><title>בית</title></head><body>
         <a href="#main-content">דלג לתוכן</a>
         <main id="main-content" tabindex="-1"><h1>בית</h1><p>תוכן</p></main>
       </body></html>
