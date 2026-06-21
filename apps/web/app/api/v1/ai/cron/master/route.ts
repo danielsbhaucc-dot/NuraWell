@@ -21,6 +21,7 @@ import {
 import { type AiUserContext } from '../../../../../../lib/ai/memory';
 import { ANALYSIS_PROMPT } from '../../../../../../lib/ai/prompts';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
+import { maybeReturnCronIdleSkip } from '../../../../../../lib/api/cron-idle-guard';
 import { runMemoryConsolidationBatch } from '../../../../../../lib/ai/memory-consolidation/run-batch';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 
@@ -789,5 +790,9 @@ export async function GET() {
 export async function POST(request: Request) {
   const denied = await authorizeCronRequest(request);
   if (denied) return denied;
+
+  const idleSkip = await maybeReturnCronIdleSkip(request, createAdminClient(), 'master');
+  if (idleSkip) return idleSkip;
+
   return runMasterCron();
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { Client as WorkflowClient } from '@upstash/workflow';
 import { isAvoidPushActive } from '../../../../../../lib/ai/avoid-push';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
+import { maybeReturnCronIdleSkip } from '../../../../../../lib/api/cron-idle-guard';
 import {
   isCheckInDueNow,
   israelDateKey,
@@ -230,5 +231,13 @@ export async function GET() {
 export async function POST(request: Request) {
   const denied = await authorizeCronRequest(request);
   if (denied) return denied;
+
+  const idleSkip = await maybeReturnCronIdleSkip(
+    request,
+    createAdminClient(),
+    'onboarding-check-ins'
+  );
+  if (idleSkip) return idleSkip;
+
   return runOnboardingCheckInsCron(request);
 }

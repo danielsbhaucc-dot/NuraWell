@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
+import { maybeReturnCronIdleSkip } from '../../../../../../lib/api/cron-idle-guard';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 import {
   applyHabitMetaPatch,
@@ -262,5 +263,13 @@ export async function GET() {
 export async function POST(request: Request) {
   const denied = await authorizeCronRequest(request);
   if (denied) return denied;
+
+  const idleSkip = await maybeReturnCronIdleSkip(
+    request,
+    createAdminClient(),
+    'habit-target-tune'
+  );
+  if (idleSkip) return idleSkip;
+
   return runHabitTargetTune(request);
 }
