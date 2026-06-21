@@ -4557,20 +4557,21 @@ html.a11y-letter-spacing body {
   letter-spacing: 0.04em;
 }
 
-html.a11y-monochrome body {
+/* Filters on #main-content only — filter on body breaks position:fixed overlays (chat, a11y FAB, nav). */
+html.a11y-monochrome #main-content {
   filter: grayscale(1);
 }
 
-html.a11y-sat-low body {
+html.a11y-sat-low #main-content {
   filter: saturate(0.45);
 }
 
-html.a11y-sat-high body {
+html.a11y-sat-high #main-content {
   filter: saturate(1.45);
 }
 
-html.a11y-monochrome.a11y-sat-low body,
-html.a11y-monochrome.a11y-sat-high body {
+html.a11y-monochrome.a11y-sat-low #main-content,
+html.a11y-monochrome.a11y-sat-high #main-content {
   filter: grayscale(1) saturate(0.45);
 }
 

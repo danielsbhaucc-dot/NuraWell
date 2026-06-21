@@ -385,6 +385,7 @@ export function ComingSoonExperience({
 
   return (
     <main
+      id="main-content"
       dir="rtl"
       className="fixed inset-0 z-0 overflow-hidden bg-black text-white"
       style={{ fontFamily: 'Rubik, Heebo, system-ui, sans-serif' }}
