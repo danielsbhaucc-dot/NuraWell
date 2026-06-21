@@ -27,15 +27,19 @@ export type CronIdleSkipPayload = {
   hint_he: string;
 };
 
-type CountQuery = ReturnType<SupabaseClient['from']>;
+type CountQuery = ReturnType<ReturnType<SupabaseClient['from']>['select']>;
+
+function isIdleWhenEmpty(...values: number[]): boolean {
+  return values.every((n) => n !== -1 && n === 0);
+}
 
 async function countExact(
   admin: SupabaseClient,
   table: string,
   filters?: (query: CountQuery) => CountQuery
 ): Promise<number> {
-  let query = admin.from(table).select('*', { count: 'exact', head: true });
-  if (filters) query = filters(query);
+  const baseQuery = admin.from(table).select('*', { count: 'exact', head: true });
+  const query = filters ? filters(baseQuery) : baseQuery;
   const { count, error } = await query;
   if (error) {
     console.warn(`[cron-idle-guard] count ${table} failed`, error.message);
@@ -78,23 +82,13 @@ export async function evaluateCronIdleSkip(
         q.eq('status', 'pending')
       );
       counts.pending_reminders = pendingReminders;
-      const idle =
-        onboarded === 0 &&
-        pendingReminders === 0 &&
-        onboarded !== -1 &&
-        pendingReminders !== -1;
-      return { idle, counts };
+      return { idle: isIdleWhenEmpty(onboarded, pendingReminders), counts };
     }
 
     case 'habit-checkpoints': {
       const progress = await countExact(admin, 'journey_progress');
       counts.journey_progress = progress;
-      const idle =
-        onboarded === 0 &&
-        progress === 0 &&
-        onboarded !== -1 &&
-        progress !== -1;
-      return { idle, counts };
+      return { idle: isIdleWhenEmpty(onboarded, progress), counts };
     }
 
     case 'master': {
@@ -104,12 +98,7 @@ export async function evaluateCronIdleSkip(
         q.eq('processed', false)
       );
       counts.pending_chat_logs = pendingLogs;
-      const idle =
-        totalProfiles === 0 &&
-        pendingLogs === 0 &&
-        totalProfiles !== -1 &&
-        pendingLogs !== -1;
-      return { idle, counts };
+      return { idle: isIdleWhenEmpty(totalProfiles, pendingLogs), counts };
     }
 
     case 'memory-consolidation': {
@@ -117,7 +106,7 @@ export async function evaluateCronIdleSkip(
         q.eq('processed', false)
       );
       counts.pending_chat_logs = pendingLogs;
-      return { idle: pendingLogs === 0 && pendingLogs !== -1, counts };
+      return { idle: isIdleWhenEmpty(pendingLogs), counts };
     }
 
     case 'auto-close-chat-sessions': {
@@ -125,18 +114,18 @@ export async function evaluateCronIdleSkip(
         q.eq('status', 'open')
       );
       counts.open_chat_sessions = openSessions;
-      return { idle: openSessions === 0 && openSessions !== -1, counts };
+      return { idle: isIdleWhenEmpty(openSessions), counts };
     }
 
     case 'habit-target-tune':
-      return { idle: onboarded === 0 && onboarded !== -1, counts };
+      return { idle: isIdleWhenEmpty(onboarded), counts };
 
     case 'passive-presence': {
       const churned = await countExact(admin, 'profiles', (q) =>
         q.eq('engagement_status', 'churned')
       );
       counts.churned_profiles = churned;
-      return { idle: churned === 0 && churned !== -1, counts };
+      return { idle: isIdleWhenEmpty(churned), counts };
     }
 
     default:
