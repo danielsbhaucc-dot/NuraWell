@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Client as WorkflowClient } from '@upstash/workflow';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
+import { maybeReturnCronIdleSkip } from '../../../../../../lib/api/cron-idle-guard';
 import { normalizeCheckInTimes } from '../../../../../../lib/ai/onboarding-check-in-time';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 import { habitCheckpointSlotSchema } from '../../../../../../lib/workflows/almog-habit-checkpoint-payload';
@@ -688,11 +689,27 @@ async function runHabitCheckpointCron(request: Request) {
 export async function GET(request: Request) {
   const denied = await authorizeCronRequest(request);
   if (denied) return denied;
+
+  const idleSkip = await maybeReturnCronIdleSkip(
+    request,
+    createAdminClient(),
+    'habit-checkpoints'
+  );
+  if (idleSkip) return idleSkip;
+
   return runHabitCheckpointCron(request);
 }
 
 export async function POST(request: Request) {
   const denied = await authorizeCronRequest(request);
   if (denied) return denied;
+
+  const idleSkip = await maybeReturnCronIdleSkip(
+    request,
+    createAdminClient(),
+    'habit-checkpoints'
+  );
+  if (idleSkip) return idleSkip;
+
   return runHabitCheckpointCron(request);
 }

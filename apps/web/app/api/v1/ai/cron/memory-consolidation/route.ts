@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
+import { maybeReturnCronIdleSkip } from '../../../../../../lib/api/cron-idle-guard';
 import { runMemoryConsolidationBatch } from '../../../../../../lib/ai/memory-consolidation/run-batch';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 
@@ -32,8 +33,12 @@ export async function POST(request: Request) {
     );
   }
 
+  const admin = createAdminClient();
+  const idleSkip = await maybeReturnCronIdleSkip(request, admin, 'memory-consolidation');
+  if (idleSkip) return idleSkip;
+
   try {
-    const result = await runMemoryConsolidationBatch(createAdminClient(), {
+    const result = await runMemoryConsolidationBatch(admin, {
       dryRun: isDryRun,
     });
     return NextResponse.json({ ok: true, ...result });

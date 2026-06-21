@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
+import { maybeReturnCronIdleSkip } from '../../../../../../lib/api/cron-idle-guard';
 import { createAdminClient } from '../../../../../../lib/supabase/admin';
 import { drainAlmogReminders } from '../../../../../../lib/ai/almog-commitments/drain-reminders';
 import { sweepStaleAssignments } from '../../../../../../lib/ai/almog-commitments/sweep-assignments';
@@ -49,5 +50,13 @@ export async function GET() {
 export async function POST(request: Request) {
   const denied = await authorizeCronRequest(request);
   if (denied) return denied;
+
+  const idleSkip = await maybeReturnCronIdleSkip(
+    request,
+    createAdminClient(),
+    'almog-reminders'
+  );
+  if (idleSkip) return idleSkip;
+
   return runAlmogRemindersCron(request);
 }
