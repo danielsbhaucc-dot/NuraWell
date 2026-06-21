@@ -52,8 +52,12 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
     applyAccessibilityPreferencesToElement(document.documentElement, preferences);
     writeAccessibilityPreferences(preferences);
+    // Font/filter reflow can shift the viewport — restore reading position.
+    window.scrollTo(scrollX, scrollY);
   }, [preferences, hydrated]);
 
   useEffect(() => {

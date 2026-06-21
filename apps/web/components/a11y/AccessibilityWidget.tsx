@@ -166,7 +166,10 @@ export function AccessibilityWidget() {
   if (preferences.widgetHidden) return null;
 
   return (
-    <div className="a11y-widget-root fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] start-3 z-[70] sm:bottom-6 sm:start-4">
+    <div
+      className="a11y-widget-root fixed end-3 z-[80] sm:end-4"
+      style={{ bottom: 'calc(6.75rem + env(safe-area-inset-bottom, 0px))' }}
+    >
       {open ? (
         <div
           ref={panelRef}
@@ -223,8 +226,11 @@ export function AccessibilityWidget() {
                   label="מונוכרום"
                   pressed={preferences.monochrome}
                   onToggle={() => {
-                    if (!preferences.monochrome) setSaturation('normal');
-                    toggle('monochrome');
+                    if (preferences.monochrome) {
+                      toggle('monochrome');
+                    } else {
+                      updatePreferences({ monochrome: true, saturation: 'normal' });
+                    }
                   }}
                   icon={<Palette className="h-4 w-4" />}
                 />
