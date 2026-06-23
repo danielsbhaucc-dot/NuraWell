@@ -98,7 +98,7 @@ export function DashboardBriefCard({ onOpenTasks }: DashboardBriefCardProps) {
     return (
       <div
         dir="rtl"
-        className="glass-surface relative overflow-hidden p-4"
+        className="glass-surface-home relative overflow-hidden p-4"
         style={{ borderRadius: '22px' }}
       >
         <div className="flex items-center gap-2 mb-3">
@@ -123,13 +123,8 @@ export function DashboardBriefCard({ onOpenTasks }: DashboardBriefCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
       dir="rtl"
-      className="glass-surface relative overflow-hidden p-4"
-      style={{
-        borderRadius: '22px',
-        border: '1px solid rgba(16,185,129,0.28)',
-        boxShadow:
-          '0 10px 28px rgba(4,120,87,0.14), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(255,255,255,0.10)',
-      }}
+      className="glass-surface-home relative overflow-hidden p-4"
+      style={{ borderRadius: '22px' }}
     >
       <div
         aria-hidden

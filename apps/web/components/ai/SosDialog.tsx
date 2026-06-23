@@ -2,16 +2,15 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, Loader2, MessageCircle, Sparkles, X } from 'lucide-react';
+import { Check, Loader2, MessageCircle, Snowflake, Sparkles, Volume2, X } from 'lucide-react';
 
 import { useDialogA11y } from '@/lib/a11y/use-dialog-a11y';
+import { AlmogAvatarChip } from '../journey/AlmogPresence';
 
 import type { FrictionCategory, StrategyType } from '../../lib/ai/almog-commitments/friction';
 import { FRICTION_META } from '../../lib/ai/almog-commitments/friction';
 import type {
   SosFocusTask,
-  SosMemorySnippet,
-  SosRecentEvent,
 } from '../../lib/ai/guardian/sos-memory';
 import { jerusalemDateKey } from '../../lib/journey/task-schedule';
 import {
@@ -53,8 +52,6 @@ type SosResponse = {
 
 type SosContextResponse = {
   ok: true;
-  memory: SosMemorySnippet[];
-  recent_events: SosRecentEvent[];
 };
 
 const QUICK_TRIGGERS: Array<{ id: FrictionCategory; label: string; helper: string; emoji: string }> = [
@@ -63,23 +60,6 @@ const QUICK_TRIGGERS: Array<{ id: FrictionCategory; label: string; helper: strin
   { id: 'physiological', label: 'מתחשק / רעב', helper: 'חשק, עייפות, רעב', emoji: '🍽️' },
 ];
 
-function formatRelativeTime(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diffMs / 60_000);
-  if (mins < 1) return 'עכשיו';
-  if (mins < 60) return `לפני ${mins} דק׳`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `לפני ${hours} ש׳`;
-  const days = Math.floor(hours / 24);
-  return `לפני ${days} ימים`;
-}
-
-function outcomeBadge(outcome: string): { label: string; tone: string } {
-  if (outcome === 'passed') return { label: 'עבר', tone: 'text-emerald-700 bg-emerald-50' };
-  if (outcome === 'fell') return { label: 'עדיין קשה', tone: 'text-amber-800 bg-amber-50' };
-  if (outcome === 'escalated') return { label: 'הופנה לעזרה', tone: 'text-rose-800 bg-rose-50' };
-  return { label: 'במעקב', tone: 'text-slate-600 bg-slate-100' };
-}
 
 async function fetchSosContext(): Promise<SosContextResponse | null> {
   const res = await fetch('/api/v1/ai/sos', { cache: 'no-store' });
@@ -168,9 +148,6 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
   const [loadingTrigger, setLoadingTrigger] = useState<FrictionCategory | null>(null);
   const [response, setResponse] = useState<SosResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [contextLoading, setContextLoading] = useState(false);
-  const [memory, setMemory] = useState<SosMemorySnippet[]>([]);
-  const [recentEvents, setRecentEvents] = useState<SosRecentEvent[]>([]);
   const [outcomeSaving, setOutcomeSaving] = useState(false);
   const [outcomeSaved, setOutcomeSaved] = useState<string | null>(null);
   const [activeTrigger, setActiveTrigger] = useState<FrictionCategory | null>(null);
@@ -180,18 +157,12 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
   const [guardianOptedIn, setGuardianOptedIn] = useState<boolean | null>(null);
   const [guardianSaving, setGuardianSaving] = useState(false);
   const [guardianSaved, setGuardianSaved] = useState(false);
+  const [taskHardConfirmed, setTaskHardConfirmed] = useState<boolean | null>(null);
+  const [easeCreating, setEaseCreating] = useState(false);
+  const [easeCreated, setEaseCreated] = useState(false);
 
   const loadContext = useCallback(async () => {
-    setContextLoading(true);
-    try {
-      const ctx = await fetchSosContext();
-      if (ctx) {
-        setMemory(ctx.memory);
-        setRecentEvents(ctx.recent_events);
-      }
-    } finally {
-      setContextLoading(false);
-    }
+    await fetchSosContext();
   }, []);
 
   useEffect(() => {
@@ -200,6 +171,8 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
     setOutcomeSaved(null);
     setTaskMarked(false);
     setGuardianSaved(false);
+    setTaskHardConfirmed(null);
+    setEaseCreated(false);
     void loadContext();
     void fetch('/api/v1/profile/guardian-settings', { cache: 'no-store' })
       .then((res) => res.json())
@@ -243,6 +216,9 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
     setTaskMarking(false);
     setTaskMarked(false);
     setGuardianSaved(false);
+    setTaskHardConfirmed(null);
+    setEaseCreating(false);
+    setEaseCreated(false);
     onClose();
   }, [onClose]);
 
@@ -366,6 +342,16 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
     void markTaskDoneFromSos();
   }
 
+  function speakTaskTitle() {
+    const title = selectedTask?.title ?? response?.context.focus_task_title;
+    if (!title || typeof window === 'undefined' || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(title);
+    utterance.lang = 'he-IL';
+    utterance.rate = 0.92;
+    window.speechSynthesis.speak(utterance);
+  }
+
   async function markTaskDoneFromSos() {
     const task =
       selectedTask ??
@@ -420,6 +406,40 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
     }
   }
 
+  async function createEaseTaskFromSos() {
+    if (!response?.blocker_id || !response.intervention) return;
+    setEaseCreating(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/v1/ai/sos/ease', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          blocker_id: response.blocker_id,
+          intervention: response.intervention,
+          focus_task: selectedTask,
+        }),
+      });
+      const json = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || !json.ok) throw new Error(json.error ?? 'ease_failed');
+      setEaseCreated(true);
+      router.refresh();
+    } catch {
+      setError('לא הצלחנו להוסיף את הצעד למשימות — אפשר לדבר עם אלמוג.');
+    } finally {
+      setEaseCreating(false);
+    }
+  }
+
+  function openUnfreezeChat() {
+    const original = selectedTask?.title ?? response?.context.focus_task_title;
+    const prefill = original
+      ? `אני מרגיש/ה שאולי הגיע הזמן לחזור למשימה "${original}". בוא נוודא יחד שזה הזמן הנכון.`
+      : 'אני מרגיש/ה שאולי הגיע הזמן לחזור למשימה המקורית. בוא נוודא יחד שזה הזמן הנכון.';
+    resetAndClose();
+    dispatchOpenAlmogChatWithPrefill(prefill);
+  }
+
   async function enableGuardianProactive() {
     setGuardianSaving(true);
     try {
@@ -438,8 +458,8 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
     }
   }
 
-  const helpedMemory = memory.filter((m) => m.outcome === 'helped' || m.outcome === 'resolved').slice(0, 2);
-  const failedMemory = memory.filter((m) => m.outcome === 'not_helped').slice(0, 2);
+  const showTaskHardnessGate =
+    !response && selectedTask?.title && taskHardConfirmed === null && focusTasks.length > 0;
 
   return (
     <div
@@ -462,7 +482,6 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
         aria-describedby={subtitleId}
         className="relative z-10 flex max-h-[min(88vh,680px)] w-full max-w-md flex-col overflow-hidden rounded-[28px] text-right shadow-2xl"
         style={{
-          border: '1px solid rgba(255,255,255,0.45)',
           boxShadow: '0 24px 70px rgba(2,44,34,0.28)',
         }}
       >
@@ -479,15 +498,20 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
           >
             <X className="h-4 w-4" />
           </button>
-          <p id={titleId} className="text-lg font-black text-white">{title}</p>
-          <p id={subtitleId} className="mt-1 text-xs font-semibold leading-5 text-emerald-50/90">{subtitle}</p>
+          <div className="flex items-start gap-3">
+            <AlmogAvatarChip size={44} />
+            <div className="min-w-0 flex-1">
+              <p id={titleId} className="text-lg font-black text-white">{title}</p>
+              <p id={subtitleId} className="mt-1 text-xs font-semibold leading-5 text-emerald-50/90">{subtitle}</p>
+            </div>
+          </div>
         </div>
 
         {/* Body — iOS glass */}
         <div
           className="min-h-0 flex-1 overflow-y-auto px-5 py-4"
           style={{
-            background: 'rgba(248,255,251,0.78)',
+            background: 'linear-gradient(180deg, rgba(236,253,245,0.72) 0%, rgba(209,250,229,0.55) 100%)',
             backdropFilter: 'blur(32px) saturate(180%)',
             WebkitBackdropFilter: 'blur(32px) saturate(180%)',
           }}
@@ -549,13 +573,51 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
             </div>
           ) : !response ? (
             <div className="space-y-4">
-              <div
-                className="rounded-2xl px-4 py-3 text-sm leading-7 text-emerald-950"
-                style={{
-                  background: 'rgba(255,255,255,0.55)',
-                  border: '1px solid rgba(16,185,129,0.14)',
-                }}
-              >
+              {showTaskHardnessGate ? (
+                <div className="glass-inset-home space-y-3 rounded-2xl px-4 py-4">
+                  <p className="text-xs font-bold text-emerald-900/70">לפני שנמשיך</p>
+                  <div className="rounded-2xl bg-emerald-900/5 px-3 py-3">
+                    <p className="text-[11px] font-semibold text-emerald-800/60">המשימה הנוכחית שלך</p>
+                    <div className="mt-1 flex items-start justify-between gap-2">
+                      <p className="text-base font-black leading-snug text-emerald-950">
+                        {selectedTask?.emoji ? `${selectedTask.emoji} ` : ''}
+                        {selectedTask?.title}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={speakTaskTitle}
+                        className="shrink-0 rounded-xl p-2 text-emerald-800 glass-inset-home"
+                        aria-label="הקרא את המשימה"
+                      >
+                        <Volume2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-sm font-bold text-emerald-950">קשה לך לבצע אותה עכשיו?</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => setTaskHardConfirmed(true)}
+                      className="rounded-2xl px-4 py-3 text-sm font-black text-white"
+                      style={{
+                        background: 'linear-gradient(135deg, #047857, #10b981)',
+                        boxShadow: '0 6px 16px rgba(16,185,129,0.22)',
+                      }}
+                    >
+                      כן — קשה לי
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTaskHardConfirmed(false)}
+                      className="glass-inset-home rounded-2xl px-4 py-3 text-sm font-bold text-emerald-900"
+                    >
+                      לא, משהו אחר
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+              <div className="glass-inset-home rounded-2xl px-4 py-3 text-sm leading-7 text-emerald-950">
                 קודם — על <strong>מה</strong> קשה לך עכשיו? ככה אלמוג ידע להתאים את הצעד.
               </div>
 
@@ -569,16 +631,13 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                         <button
                           key={task.id}
                           type="button"
-                          onClick={() => setSelectedTask(task)}
-                          className="flex items-center justify-between rounded-2xl px-4 py-3 text-right transition active:scale-[0.99]"
-                          style={{
-                            background: active
-                              ? 'rgba(16,185,129,0.18)'
-                              : 'rgba(255,255,255,0.55)',
-                            border: active
-                              ? '1px solid rgba(5,150,105,0.35)'
-                              : '1px solid rgba(16,185,129,0.12)',
+                          onClick={() => {
+                            setSelectedTask(task);
+                            setTaskHardConfirmed(null);
                           }}
+                          className={`flex items-center justify-between rounded-2xl px-4 py-3 text-right transition active:scale-[0.99] ${
+                            active ? 'glass-inset-home ring-1 ring-emerald-500/25' : 'glass-inset-home'
+                          }`}
                         >
                           <span className="text-[11px] font-semibold text-emerald-800/60">
                             {task.stepTitle ?? 'מהמסע'}
@@ -593,7 +652,10 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                     })}
                     <button
                       type="button"
-                      onClick={() => setSelectedTask(null)}
+                      onClick={() => {
+                        setSelectedTask(null);
+                        setTaskHardConfirmed(null);
+                      }}
                       className="rounded-2xl px-4 py-2.5 text-xs font-bold text-emerald-800/70"
                       style={{
                         background: !selectedTask ? 'rgba(16,185,129,0.12)' : 'transparent',
@@ -614,12 +676,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                     type="button"
                     onClick={() => void handleTrigger(trigger.id)}
                     disabled={loadingTrigger !== null}
-                    className="flex items-center justify-between rounded-2xl px-4 py-3 text-right transition active:scale-[0.99] disabled:opacity-70"
-                    style={{
-                      background: 'rgba(255,255,255,0.58)',
-                      border: '1px solid rgba(16,185,129,0.12)',
-                      boxShadow: '0 2px 8px rgba(6,78,59,0.04)',
-                    }}
+                    className="glass-inset-home flex items-center justify-between rounded-2xl px-4 py-3 text-right transition active:scale-[0.99] disabled:opacity-70"
                   >
                     <span className="text-xs font-semibold text-emerald-800/60">{trigger.helper}</span>
                     <span className="flex items-center gap-2 text-sm font-black text-emerald-950">
@@ -638,11 +695,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                   onChange={(e) => setNote(e.target.value)}
                   maxLength={240}
                   rows={2}
-                  className="w-full resize-none rounded-2xl px-3 py-2 text-sm text-emerald-950 outline-none focus:border-emerald-500"
-                  style={{
-                    background: 'rgba(255,255,255,0.65)',
-                    border: '1px solid rgba(16,185,129,0.15)',
-                  }}
+                  className="glass-inset-home w-full resize-none rounded-2xl px-3 py-2.5 text-sm text-emerald-950 outline-none focus:ring-2 focus:ring-emerald-500/25"
                   placeholder={
                     selectedTask?.title
                       ? `למשל: קשה לי עם "${selectedTask.title}" אחרי יום עמוס`
@@ -650,50 +703,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                   }
                 />
               </label>
-
-              {(helpedMemory.length > 0 || failedMemory.length > 0 || recentEvents.length > 0) && (
-                <div
-                  className="rounded-2xl px-4 py-3 text-xs leading-6"
-                  style={{
-                    background: 'rgba(16,185,129,0.08)',
-                    border: '1px solid rgba(16,185,129,0.15)',
-                  }}
-                >
-                  <p className="mb-2 flex items-center gap-1 font-black text-emerald-800">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    מה אלמוג זוכר
-                  </p>
-                  {contextLoading ? (
-                    <p className="text-emerald-800/70">טוען היסטוריה…</p>
-                  ) : (
-                    <ul className="space-y-1.5">
-                      {helpedMemory.map((m, i) => (
-                        <li key={`h-${i}`} className="text-emerald-900">
-                          ✓ {m.task_title ? `"${m.task_title}" — ` : ''}
-                          {m.strategy} עזר
-                        </li>
-                      ))}
-                      {failedMemory.map((m, i) => (
-                        <li key={`f-${i}`} className="text-amber-900/85">
-                          · {m.task_title ? `"${m.task_title}" — ` : ''}
-                          {m.strategy} פחות התאים
-                        </li>
-                      ))}
-                      {recentEvents.slice(0, 2).map((ev) => {
-                        const badge = outcomeBadge(ev.outcome);
-                        return (
-                          <li key={ev.id} className="flex flex-wrap items-center gap-1 text-emerald-900/80">
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${badge.tone}`}>
-                              {badge.label}
-                            </span>
-                            {formatRelativeTime(ev.created_at)}
-                            {ev.task_title ? ` · ${ev.task_title}` : ''}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
+                </>
               )}
             </div>
           ) : (
@@ -723,30 +733,64 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
               ) : null}
 
               <div
-                className="rounded-3xl px-4 py-4 text-white shadow-lg"
+                className="relative overflow-hidden rounded-3xl p-4 text-white shadow-lg"
                 style={{
                   background: 'linear-gradient(145deg, #047857, #059669, #10b981)',
                   boxShadow: '0 8px 24px rgba(4,120,87,0.22)',
                 }}
               >
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-4 top-px h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                />
                 <p className="whitespace-pre-wrap text-sm font-semibold leading-7">{response.intervention.message}</p>
               </div>
 
-              <div
-                className="rounded-2xl p-4"
-                style={{
-                  background: 'rgba(255,255,255,0.58)',
-                  border: '1px solid rgba(16,185,129,0.12)',
-                }}
-              >
-                <p className="text-xs font-bold text-emerald-800/60">הצעד הבא</p>
-                <p className="mt-1 text-base font-black text-emerald-950">{response.intervention.label}</p>
+              <div className="glass-inset-home relative overflow-hidden rounded-2xl p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-emerald-600" />
+                  <p className="text-xs font-bold text-emerald-800/70">המשימה שלך עכשיו</p>
+                </div>
+                <p className="text-base font-black text-emerald-950">{response.intervention.label}</p>
                 <p className="mt-2 text-sm leading-7 text-emerald-900">{response.intervention.micro_step}</p>
                 <p className="mt-2 text-[10px] font-semibold text-emerald-800/50">
                   {FRICTION_META[response.intervention.category].emoji}{' '}
                   {FRICTION_META[response.intervention.category].labelHe}
+                  {taskHardConfirmed ? ' · המשימה המקורית מוקפאת זמנית' : ''}
                 </p>
               </div>
+
+              {taskHardConfirmed && response.blocker_id && !easeCreated ? (
+                <button
+                  type="button"
+                  disabled={easeCreating}
+                  onClick={() => void createEaseTaskFromSos()}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black text-white disabled:opacity-70"
+                  style={{
+                    background: 'linear-gradient(135deg, #0d9488, #14b8a6)',
+                    boxShadow: '0 6px 18px rgba(13,148,136,0.25)',
+                  }}
+                >
+                  {easeCreating ? 'מוסיף למשימות…' : 'הוסף למשימות שלי והקפא את המקורית'}
+                </button>
+              ) : null}
+
+              {easeCreated ? (
+                <div className="glass-inset-home rounded-2xl px-4 py-3 text-xs leading-6 text-emerald-900">
+                  <p className="font-black">נוסף למשימות שלך ✓</p>
+                  <p className="mt-1 text-emerald-900/75">
+                    המשימה המקורית מוקפאת. כשתסיים את הצעד הקל — נחזיר אותה בהדרגה.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={openUnfreezeChat}
+                    className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800"
+                  >
+                    <Snowflake className="h-3.5 w-3.5" />
+                    מוכן/ה לחזור למשימה המקורית?
+                  </button>
+                </div>
+              ) : null}
 
               {error ? <p className="text-xs font-semibold text-amber-700">{error}</p> : null}
 
