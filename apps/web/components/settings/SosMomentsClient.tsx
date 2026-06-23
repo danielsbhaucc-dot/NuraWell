@@ -112,6 +112,35 @@ function strategyLabelHe(raw: string | null): string | null {
   return STRATEGY_LABELS_HE[type] ?? null;
 }
 
+const DIVIDER_COLORS = [
+  ['#10b981', '#2dd4bf'],
+  ['#0d9488', '#5eead4'],
+  ['#059669', '#34d399'],
+  ['#0e7490', '#22d3ee'],
+  ['#b45309', '#fbbf24'],
+  ['#4d7c0f', '#84cc16'],
+] as const;
+
+function MomentsColorDivider({ index }: { index: number }) {
+  const [from, to] = DIVIDER_COLORS[index % DIVIDER_COLORS.length];
+  return (
+    <div className="flex items-center gap-2 py-0.5" aria-hidden>
+      <div
+        className="h-px flex-1"
+        style={{ background: `linear-gradient(90deg, transparent, ${from}88, ${to}aa)` }}
+      />
+      <div
+        className="h-2 w-2 shrink-0 rounded-full"
+        style={{ background: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 0 6px ${from}55` }}
+      />
+      <div
+        className="h-px flex-1"
+        style={{ background: `linear-gradient(270deg, transparent, ${to}88, ${from}aa)` }}
+      />
+    </div>
+  );
+}
+
 function StatPill({
   value,
   label,
@@ -313,27 +342,27 @@ export function SosMomentsClient() {
                 {helpedMemory.length > 0 ? (
                   <div>
                     <p className="mb-2 text-center text-xs font-bold text-emerald-800/70">מה עזר</p>
-                    <ul className="space-y-2">
+                    <ul className="space-y-0">
                       {helpedMemory.map((m, i) => (
-                        <li
-                          key={`h-${i}`}
-                          className="glass-inset-emerald flex items-start gap-3 rounded-2xl px-4 py-3 text-sm text-emerald-900"
-                        >
-                          <span
-                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-emerald-50"
-                            style={{
-                              background: ACCENT_GRADIENTS[i % ACCENT_GRADIENTS.length],
-                              boxShadow: '0 3px 10px rgba(4,120,87,0.18)',
-                            }}
-                          >
-                            {i + 1}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <span className="font-bold">{m.strategy}</span>
-                            {m.task_title ? ` · ${m.task_title}` : ''}
-                            <span className="mt-1 block text-xs text-emerald-800/60">
-                              {memoryOutcomeLabel(m.outcome)} · {formatRelative(m.created_at)}
+                        <li key={`h-${i}`}>
+                          {i > 0 ? <MomentsColorDivider index={i} /> : null}
+                          <div className="glass-inset-emerald flex items-start gap-3 rounded-2xl px-4 py-3 text-sm text-emerald-900">
+                            <span
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-emerald-50"
+                              style={{
+                                background: ACCENT_GRADIENTS[i % ACCENT_GRADIENTS.length],
+                                boxShadow: '0 3px 10px rgba(4,120,87,0.18)',
+                              }}
+                            >
+                              {i + 1}
                             </span>
+                            <div className="min-w-0 flex-1">
+                              <span className="font-bold">{m.strategy}</span>
+                              {m.task_title ? ` · ${m.task_title}` : ''}
+                              <span className="mt-1 block text-xs text-emerald-800/60">
+                                {memoryOutcomeLabel(m.outcome)} · {formatRelative(m.created_at)}
+                              </span>
+                            </div>
                           </div>
                         </li>
                       ))}
@@ -341,34 +370,40 @@ export function SosMomentsClient() {
                   </div>
                 ) : null}
 
+                {helpedMemory.length > 0 && failedMemory.length > 0 ? (
+                  <MomentsColorDivider index={helpedMemory.length} />
+                ) : null}
+
                 {failedMemory.length > 0 ? (
                   <div>
                     <p className="mb-2 text-center text-xs font-bold text-amber-900/70">פחות התאים</p>
-                    <ul className="space-y-2">
+                    <ul className="space-y-0">
                       {failedMemory.map((m, i) => (
-                        <li
-                          key={`f-${i}`}
-                          className="flex items-start gap-3 rounded-2xl px-4 py-3 text-sm text-amber-950"
-                          style={{
-                            background: 'linear-gradient(135deg, rgba(254,243,199,0.75), rgba(253,230,138,0.45))',
-                            border: '1px solid rgba(245,158,11,0.25)',
-                          }}
-                        >
-                          <span
-                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-amber-50"
+                        <li key={`f-${i}`}>
+                          {i > 0 ? <MomentsColorDivider index={helpedMemory.length + i} /> : null}
+                          <div
+                            className="flex items-start gap-3 rounded-2xl px-4 py-3 text-sm text-amber-950"
                             style={{
-                              background: 'linear-gradient(145deg, #b45309, #f59e0b)',
-                              boxShadow: '0 3px 10px rgba(180,83,9,0.2)',
+                              background: 'linear-gradient(135deg, rgba(254,243,199,0.75), rgba(253,230,138,0.45))',
+                              border: '1px solid rgba(245,158,11,0.25)',
                             }}
                           >
-                            {i + 1}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <span className="font-bold">{m.strategy}</span>
-                            {m.task_title ? ` · ${m.task_title}` : ''}
-                            <span className="mt-1 block text-xs text-amber-900/60">
-                              {formatRelative(m.created_at)}
+                            <span
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-amber-50"
+                              style={{
+                                background: 'linear-gradient(145deg, #b45309, #f59e0b)',
+                                boxShadow: '0 3px 10px rgba(180,83,9,0.2)',
+                              }}
+                            >
+                              {i + 1}
                             </span>
+                            <div className="min-w-0 flex-1">
+                              <span className="font-bold">{m.strategy}</span>
+                              {m.task_title ? ` · ${m.task_title}` : ''}
+                              <span className="mt-1 block text-xs text-amber-900/60">
+                                {formatRelative(m.created_at)}
+                              </span>
+                            </div>
                           </div>
                         </li>
                       ))}
@@ -378,6 +413,10 @@ export function SosMomentsClient() {
               </section>
             )}
 
+            {(helpedMemory.length > 0 || failedMemory.length > 0) && groupedEvents.length > 0 ? (
+              <MomentsColorDivider index={0} />
+            ) : null}
+
             {groupedEvents.length > 0 ? (
               <section dir="rtl" className="space-y-4">
                 <div className="flex items-center justify-center gap-2 px-1">
@@ -386,8 +425,9 @@ export function SosMomentsClient() {
                 </div>
 
                 {numberedGroups.map(({ day, groupIdx, events: dayEvents }) => (
-                  <div key={day} className="relative space-y-2">
-                    <div className="flex items-center justify-center gap-2 px-1">
+                  <div key={day} className="relative space-y-0">
+                    {groupIdx > 0 ? <MomentsColorDivider index={groupIdx + 2} /> : null}
+                    <div className="flex items-center justify-center gap-2 px-1 py-1">
                       <span
                         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black text-emerald-50"
                         style={{
@@ -409,14 +449,13 @@ export function SosMomentsClient() {
                       </span>
                     </div>
 
-                    {dayEvents.map(({ ev, itemNum }) => {
+                    {dayEvents.map(({ ev, itemNum }, evIdx) => {
                       const badge = outcomeBadge(ev.outcome);
                       const strategyHe = strategyLabelHe(ev.strategy_offered);
                       return (
-                        <article
-                          key={ev.id}
-                          className="glass-surface-home flex items-start gap-3 rounded-2xl px-4 py-3"
-                        >
+                        <div key={ev.id}>
+                          {evIdx > 0 ? <MomentsColorDivider index={itemNum} /> : null}
+                          <article className="glass-surface-home flex items-start gap-3 rounded-2xl px-4 py-3">
                           <span
                             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-emerald-50"
                             style={{
@@ -454,6 +493,7 @@ export function SosMomentsClient() {
                             ) : null}
                           </div>
                         </article>
+                        </div>
                       );
                     })}
                   </div>
