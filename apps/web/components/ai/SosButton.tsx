@@ -28,8 +28,15 @@ export function SosButton({ focusTasks = [] }: SosButtonProps) {
         type="button"
         onClick={() => setOpen(true)}
         dir="rtl"
-        className="glass-surface-home relative flex w-full items-center gap-3.5 p-4 text-right transition active:scale-[0.99]"
-        style={{ borderRadius: '22px' }}
+        className="relative flex w-full items-center gap-3.5 p-4 text-right transition active:scale-[0.99] outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+        style={{
+          borderRadius: '22px',
+          background:
+            'linear-gradient(165deg, rgba(209,250,229,0.82) 0%, rgba(167,243,208,0.58) 55%, rgba(110,231,183,0.42) 100%)',
+          border: '1px solid rgba(5, 150, 105, 0.22)',
+          boxShadow:
+            'inset 0 1px 0 rgba(110, 231, 183, 0.35), 0 8px 24px rgba(6, 78, 59, 0.08)',
+        }}
       >
         <span
           className="flex h-[52px] w-[52px] flex-shrink-0 items-center justify-center rounded-2xl"

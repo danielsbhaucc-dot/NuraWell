@@ -463,13 +463,12 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:px-4 sm:py-6"
-      style={{ paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}
+      className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center sm:px-4 sm:py-6"
     >
       <button
         type="button"
         aria-label="סגירה"
-        className="absolute inset-0 bg-slate-950/45"
+        className="absolute inset-0 bg-slate-950/50"
         onClick={resetAndClose}
       />
 
@@ -480,10 +479,10 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={subtitleId}
-        className="relative z-10 flex w-full max-w-md flex-col overflow-hidden rounded-t-[28px] sm:rounded-[28px] text-right shadow-2xl"
+        className="relative z-10 mb-[max(5.25rem,calc(4.75rem+env(safe-area-inset-bottom)))] flex w-full max-w-md flex-col overflow-hidden rounded-t-[28px] border border-emerald-500/25 border-b-0 text-right shadow-2xl sm:mb-0 sm:rounded-[28px] sm:border-b"
         style={{
-          maxHeight: 'min(92dvh, 680px)',
-          boxShadow: '0 24px 70px rgba(2,44,34,0.28)',
+          maxHeight: 'min(88dvh, 680px)',
+          boxShadow: '0 -8px 40px rgba(2,44,34,0.22), 0 24px 70px rgba(2,44,34,0.18)',
         }}
       >
         {/* Header — solid green like 404 */}
