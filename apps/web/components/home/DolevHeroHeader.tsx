@@ -140,21 +140,20 @@ export function AlmogHeroHeader({
         transition={{ duration: 0.5, delay: 0.1 }}
         className="pb-1"
       >
-        <div className="relative">
+        <div className="relative" dir="rtl">
           <motion.div
             initial={{ opacity: 0, y: 8, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
             className="min-w-0"
             style={{
-              paddingInlineStart: '94px',
+              paddingTop: '58px',
+              paddingInline: '14px',
+              paddingBottom: '11px',
               background:
                 'linear-gradient(145deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.12) 100%)',
               border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: '18px 18px 6px 18px',
-              paddingTop: '11px',
-              paddingBottom: '11px',
-              paddingInlineEnd: '14px',
+              borderRadius: '18px 6px 18px 18px',
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 4px 20px rgba(0,0,0,0.1)',
               isolation: 'isolate',
             }}
@@ -205,9 +204,8 @@ export function AlmogHeroHeader({
             type="button"
             className="absolute z-10"
             style={{
-              top: '50%',
-              insetInlineStart: '10px',
-              transform: 'translateY(-50%)',
+              top: '-6px',
+              right: '8px',
             }}
             onClick={() => window.dispatchEvent(new Event('open-almog-chat'))}
             aria-label="פתח צ׳אט עם אלמוג"
@@ -224,8 +222,8 @@ export function AlmogHeroHeader({
           />
           <div
             style={{
-              width: '82px',
-              height: '82px',
+              width: '76px',
+              height: '76px',
               borderRadius: '50%',
               background: 'conic-gradient(from 0deg, #14b8a6 0%, #10b981 30%, #f59e0b 55%, #10b981 75%, #14b8a6 100%)',
               display: 'flex',
@@ -236,8 +234,8 @@ export function AlmogHeroHeader({
           >
             <div
               style={{
-                width: '74px',
-                height: '74px',
+                width: '68px',
+                height: '68px',
                 borderRadius: '50%',
                 background: 'white',
                 display: 'flex',
@@ -262,8 +260,8 @@ export function AlmogHeroHeader({
           <div
             style={{
               position: 'absolute',
-              bottom: '0px',
-              left: '-2px',
+              bottom: '2px',
+              right: '4px',
               background: '#14b8a6',
               border: '2px solid white',
               borderRadius: '20px',

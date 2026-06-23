@@ -262,26 +262,30 @@ export function HomeClient({
           boxShadow: '0 -16px 48px rgba(6,78,59,0.12)',
         }}
       >
-        <motion.div variants={container} initial="hidden" animate="show" className="mx-auto max-w-lg space-y-3 safe-chat-fab">
+        <motion.div variants={container} initial="hidden" animate="show" className="mx-auto max-w-lg space-y-3">
           <ProgramOrchestratorGate />
 
           {mentorWidget ? (
-            <>
-              <motion.div variants={item}>{mentorWidget}</motion.div>
-              <HomeSectionDivider />
-            </>
+            <motion.div variants={item}>
+              <HomeSectionDivider
+                title="צעד קטן להיום"
+                subtitle="מה הכי נכון לך עכשיו — בלי לחץ"
+              />
+              {mentorWidget}
+            </motion.div>
           ) : null}
 
           {!simplifiedDashboard && (
-            <>
-              <motion.div variants={item}>
-                <DashboardBriefCard onOpenTasks={() => actionHub.open()} firstName={firstName} />
-              </motion.div>
-              <HomeSectionDivider />
-            </>
+            <motion.div variants={item}>
+              <DashboardBriefCard onOpenTasks={() => actionHub.open()} firstName={firstName} />
+            </motion.div>
           )}
 
           <motion.div variants={item}>
+            <HomeSectionDivider
+              title="רגע, קשה לי עכשיו"
+              subtitle="סיוע קצר של אלמוג — בלי שיפוט"
+            />
             <SosButton
               focusTasks={todayTasks
                 .filter((t) => !t.done)
@@ -296,13 +300,15 @@ export function HomeClient({
             />
           </motion.div>
 
-          <HomeSectionDivider />
-
           <motion.div variants={item}>
+            <HomeSectionDivider
+              title="מה עזר לך לאחרונה"
+              subtitle="מסלול קצר ממה שעבד — לא רשימה עמוסה"
+            />
             <SosMemoryCard />
           </motion.div>
 
-          <HomeSectionDivider label="היום שלך" />
+          <HomeSectionDivider title="היום שלך" subtitle="משימות ומה שמחכה לך היום" />
 
           {/* משימות */}
           <motion.div variants={item}>
@@ -429,7 +435,7 @@ export function HomeClient({
             </motion.div>
           )}
 
-          <HomeSectionDivider label="ניווט מהיר" />
+          <HomeSectionDivider title="ניווט מהיר" subtitle="קיצורי דרך לעמודים חשובים" />
 
           <motion.div variants={item}>
             <QuickAccessGrid

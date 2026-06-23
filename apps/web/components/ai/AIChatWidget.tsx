@@ -1014,11 +1014,10 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
         <motion.button
           type="button"
           aria-label="שיחה עם אלמוג"
-          className="fixed z-[190] flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg md:h-[3.75rem] md:w-[3.75rem]"
+          className="fixed z-[190] flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-full text-white shadow-lg md:h-[3.5rem] md:w-[3.5rem]"
           style={{
-            bottom: 'calc(6.75rem + env(safe-area-inset-bottom, 0px))',
-            left: 'calc(1rem + env(safe-area-inset-left, 0px))',
-            right: 'auto',
+            bottom: 'calc(7.25rem + env(safe-area-inset-bottom, 0px))',
+            right: 'calc(1rem + env(safe-area-inset-right, 0px))',
             background: 'linear-gradient(145deg, #047857, #10b981)',
             boxShadow: '0 10px 28px rgba(16,185,129,0.35)',
           }}
