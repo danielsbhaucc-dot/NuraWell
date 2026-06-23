@@ -119,11 +119,11 @@ export function AlmogHeroHeader({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="flex items-end gap-3"
+        className="flex items-start gap-3"
       >
         <button
           type="button"
-          className="relative flex-shrink-0"
+          className="relative flex-shrink-0 mt-0.5"
           onClick={() => window.dispatchEvent(new Event('open-almog-chat'))}
           aria-label="פתח צ׳אט עם אלמוג"
         >
@@ -194,63 +194,69 @@ export function AlmogHeroHeader({
           </div>
         </button>
 
-        <motion.div
-          initial={{ opacity: 0, y: 8, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
-          style={{
-            flex: 1,
-            background:
-              'linear-gradient(145deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.12) 100%)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            borderRadius: '18px 18px 18px 6px',
-            padding: '11px 14px',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 4px 20px rgba(0,0,0,0.1)',
-            isolation: 'isolate',
-          }}
-        >
-          <div
+        <div className="min-w-0 flex-1 flex flex-col gap-2">
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
             style={{
-              fontSize: '10px',
-              color: '#A7F3D0',
-              fontWeight: 700,
-              letterSpacing: '0.5px',
-              marginBottom: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
+              background:
+                'linear-gradient(145deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.12) 100%)',
+              border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: '18px 18px 18px 6px',
+              padding: '11px 14px',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 4px 20px rgba(0,0,0,0.1)',
+              isolation: 'isolate',
             }}
           >
-            <span>✦ אלמוג · המנטור שלך</span>
-            {mentorTag ? (
-              <span
-                style={{
-                  fontSize: '9px',
-                  fontWeight: 800,
-                  color: 'rgba(255,255,255,0.88)',
-                  background: 'rgba(255,255,255,0.14)',
-                  border: '1px solid rgba(255,255,255,0.22)',
-                  borderRadius: '999px',
-                  padding: '2px 7px',
-                }}
-              >
-                {mentorTag}
-              </span>
-            ) : null}
-          </div>
-          <div
-            style={{
-              fontSize: '14px',
-              color: 'rgba(255,255,255,0.92)',
-              lineHeight: 1.55,
-              fontWeight: 400,
-              fontFamily: "'Heebo',sans-serif",
-            }}
-          >
-            {bubbleContent}
-          </div>
+            <div
+              style={{
+                fontSize: '10px',
+                color: '#A7F3D0',
+                fontWeight: 700,
+                letterSpacing: '0.5px',
+                marginBottom: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <span>✦ אלמוג · המנטור שלך</span>
+              {mentorTag ? (
+                <span
+                  style={{
+                    fontSize: '9px',
+                    fontWeight: 800,
+                    color: 'rgba(255,255,255,0.88)',
+                    background: 'rgba(255,255,255,0.14)',
+                    border: '1px solid rgba(255,255,255,0.22)',
+                    borderRadius: '999px',
+                    padding: '2px 7px',
+                  }}
+                >
+                  {mentorTag}
+                </span>
+              ) : null}
+            </div>
+            <div
+              style={{
+                fontSize: '14px',
+                color: 'rgba(255,255,255,0.92)',
+                lineHeight: 1.55,
+                fontWeight: 400,
+                fontFamily: "'Heebo',sans-serif",
+              }}
+            >
+              {bubbleContent}
+            </div>
+          </motion.div>
+
           {taskProgress && taskProgress.total > 0 ? (
-            <div style={{ marginTop: '10px' }}>
+            <div
+              style={{
+                padding: '0 2px',
+              }}
+            >
               <div
                 style={{
                   display: 'flex',
@@ -298,7 +304,6 @@ export function AlmogHeroHeader({
                 }
               }}
               style={{
-                marginTop: '10px',
                 width: '100%',
                 border: '1px solid rgba(255,217,125,0.45)',
                 background: 'rgba(255,217,125,0.16)',
@@ -314,7 +319,7 @@ export function AlmogHeroHeader({
               {chatCta.label}
             </button>
           ) : null}
-        </motion.div>
+        </div>
       </motion.div>
     </>
   );
