@@ -11,13 +11,18 @@ import {
   X,
 } from 'lucide-react';
 import { useDialogA11y } from '@/lib/a11y/use-dialog-a11y';
+import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { buildTaskDoneChatPrefill } from '../../lib/ai/almog-greeting';
 import {
   buildTaskReportHintFromPendingRow,
   type TaskReportHint,
 } from '../../lib/ai/task-report-hint';
+import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { slotLabel } from '../../lib/journey/task-schedule';
-import { pickNextTaskForNow } from '../../lib/journey/pick-next-task-for-now';
+import {
+  buildTaskTimeHint,
+  pickNextTaskForNow,
+} from '../../lib/journey/pick-next-task-for-now';
 import type { JourneyTaskSlot } from '../../lib/types/journey';
 import type { PendingTaskTodayRow } from '../../lib/journey/journey-report-parse';
 import type { UserScheduleProfile } from '../../lib/journey/pick-next-task-for-now';
@@ -34,6 +39,18 @@ interface TodayTasksPopupProps {
   onOpenChat: (prefill: string, hint?: TaskReportHint) => void;
 }
 
+function taskTimeHintForRow(
+  task: PendingTaskTodayRow,
+  profile: UserScheduleProfile,
+  now: Date
+): string | null {
+  const slotKey = task.pendingSlots.find((s) => s !== 'once') ?? task.pendingSlots[0];
+  if (!slotKey) return null;
+  const slotLabelHe =
+    slotKey === 'once' ? 'היום' : slotLabel(slotKey as JourneyTaskSlot, task.meal_timing);
+  return buildTaskTimeHint(slotKey, slotLabelHe, task, profile, now);
+}
+
 export function TodayTasksPopup({
   open,
   firstName = '',
@@ -48,6 +65,8 @@ export function TodayTasksPopup({
   const [mounted, setMounted] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const { avatarUrl } = useAlmogAvatarUrl();
+  const schedule = userSchedule ?? {};
   useEffect(() => setMounted(true), []);
 
   useDialogA11y({
@@ -56,20 +75,28 @@ export function TodayTasksPopup({
     containerRef: dialogRef,
   });
 
+  const nextTask = useMemo(
+    () => pickNextTaskForNow(tasks, schedule),
+    [tasks, schedule]
+  );
+
   const pendingTasks = useMemo(() => {
-    const open = tasks.filter((t) => !t.done);
-    const next = pickNextTaskForNow(open, userSchedule ?? {});
-    if (!next) return open;
-    return [...open].sort((a, b) => {
-      if (a.id === next.taskId) return -1;
-      if (b.id === next.taskId) return 1;
+    const openTasks = tasks.filter((t) => !t.done);
+    if (!nextTask) return openTasks;
+    return [...openTasks].sort((a, b) => {
+      if (a.id === nextTask.taskId) return -1;
+      if (b.id === nextTask.taskId) return 1;
       return a.stepNumber - b.stepNumber;
     });
-  }, [tasks, userSchedule]);
+  }, [tasks, nextTask]);
 
   const doneTasks = tasks.filter((t) => t.done);
   const firstPending = pendingTasks[0];
   const name = firstName.trim();
+  const progressPct =
+    pendingCount + doneCount > 0
+      ? Math.round((doneCount / (pendingCount + doneCount)) * 100)
+      : 0;
 
   const openChatForTask = (task: PendingTaskTodayRow) => {
     const slotKey = task.pendingSlots.find((s) => s !== 'once');
@@ -99,14 +126,23 @@ export function TodayTasksPopup({
 
   if (!mounted) return null;
 
-  const headerSubtitle =
+  const headerTitle =
     pendingCount > 0
       ? name
         ? `${name}, בוא נסגור את מה שפתוח`
         : 'בוא נסגור את מה שפתוח'
       : name
-        ? `${name}, יפה מאוד היום ✦`
-        : 'יפה מאוד היום ✦';
+        ? `${name}, יפה מאוד היום`
+        : 'יפה מאוד היום';
+
+  const headerMeta =
+    pendingCount > 0
+      ? pendingCount === 1
+        ? 'משימה אחת פתוחה'
+        : `${pendingCount} משימות פתוחות`
+      : doneCount > 0
+        ? `${doneCount} ${doneCount === 1 ? 'משימה בוצעה' : 'משימות בוצעו'} היום`
+        : 'אין משימות פעילות להיום';
 
   return createPortal(
     <AnimatePresence>
@@ -128,9 +164,7 @@ export function TodayTasksPopup({
             aria-label="סגירה"
             onClick={onClose}
             className="absolute inset-0"
-            style={{
-              background: 'rgba(6,40,32,0.55)',
-            }}
+            style={{ background: 'rgba(4,47,36,0.62)' }}
           />
           <motion.div
             ref={dialogRef}
@@ -145,23 +179,18 @@ export function TodayTasksPopup({
             transition={{ type: 'spring', stiffness: 340, damping: 30 }}
             style={{
               maxHeight: '100%',
-              background:
-                'linear-gradient(168deg, rgba(255,255,255,0.72) 0%, rgba(236,253,245,0.58) 55%, rgba(255,255,255,0.65) 100%)',
-              border: '1px solid rgba(255,255,255,0.72)',
-              boxShadow:
-                '0 32px 80px rgba(6,78,59,0.28), inset 0 1px 1px rgba(255,255,255,0.95)',
-              backdropFilter: 'blur(40px) saturate(1.6)',
-              WebkitBackdropFilter: 'blur(40px) saturate(1.6)',
+              background: '#f0fdf8',
+              border: '1px solid rgba(255,255,255,0.9)',
+              boxShadow: '0 32px 80px rgba(4,47,36,0.35), 0 0 0 1px rgba(16,185,129,0.08)',
             }}
           >
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-3.5 left-3.5 z-10 flex h-8 w-8 items-center justify-center rounded-full text-emerald-900/70 hover:text-emerald-950 transition-colors"
+              className="absolute top-3.5 left-3.5 z-20 flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:text-white transition-colors"
               style={{
-                background: 'rgba(255,255,255,0.55)',
-                border: '1px solid rgba(255,255,255,0.8)',
-                boxShadow: '0 2px 8px rgba(6,78,59,0.08)',
+                background: 'rgba(255,255,255,0.18)',
+                border: '1px solid rgba(255,255,255,0.28)',
               }}
               aria-label="סגירה"
             >
@@ -169,52 +198,92 @@ export function TodayTasksPopup({
             </button>
 
             <div
-              className="px-5 pt-6 pb-4 shrink-0 text-right"
+              className="relative shrink-0 px-5 pt-5 pb-4 text-right overflow-hidden"
               style={{
                 background:
-                  'linear-gradient(150deg, rgba(255,255,255,0.45) 0%, rgba(167,243,208,0.28) 100%)',
-                borderBottom: '1px solid rgba(255,255,255,0.55)',
+                  'linear-gradient(145deg, #034d3a 0%, #047857 42%, #0d9488 100%)',
               }}
             >
-              <p className="text-[10px] font-bold tracking-wide text-emerald-800/65 mb-1">
-                המשימות שלך להיום
-              </p>
-              <h2
-                id={titleId}
-                className="text-xl font-black text-emerald-950 leading-tight"
-                style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
-              >
-                {headerSubtitle}
-              </h2>
-              {pendingCount > 0 ? (
-                <p className="text-xs text-emerald-900/75 font-semibold mt-1.5 leading-relaxed">
-                  {pendingCount === 1
-                    ? 'משימה אחת פתוחה'
-                    : `${pendingCount} משימות פתוחות`}
-                  {doneCount > 0 ? ` · ${doneCount} כבר בוצעו` : ''}
-                </p>
-              ) : doneCount > 0 ? (
-                <p className="text-xs text-emerald-900/75 font-semibold mt-1.5">
-                  {doneCount} {doneCount === 1 ? 'משימה בוצעה' : 'משימות בוצעו'} היום
-                </p>
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -left-10 -top-8 h-32 w-32 rounded-full"
+                style={{
+                  background: 'radial-gradient(circle, rgba(255,255,255,0.22), transparent 68%)',
+                }}
+              />
+              <div className="relative flex items-center gap-3">
+                <div
+                  className="shrink-0 rounded-full p-[2px]"
+                  style={{
+                    background: 'linear-gradient(145deg, #FFD97D, #10b981)',
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    className="h-12 w-12 rounded-full object-cover bg-white"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                    }}
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-bold tracking-wide text-emerald-100/85">
+                    אלמוג · המנטור שלך
+                  </p>
+                  <h2
+                    id={titleId}
+                    className="text-lg font-black text-white leading-tight mt-0.5"
+                    style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+                  >
+                    {headerTitle}
+                  </h2>
+                  <p className="text-xs font-semibold text-emerald-50/90 mt-1">{headerMeta}</p>
+                </div>
+              </div>
+
+              {pendingCount + doneCount > 0 ? (
+                <div className="relative mt-3.5">
+                  <div className="flex justify-between text-[10px] font-bold text-emerald-50/85 mb-1.5">
+                    <span>התקדמות היום</span>
+                    <span>
+                      {doneCount}/{pendingCount + doneCount}
+                    </span>
+                  </div>
+                  <div
+                    className="h-2 rounded-full overflow-hidden"
+                    style={{ background: 'rgba(255,255,255,0.2)' }}
+                  >
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${progressPct}%`,
+                        background: 'linear-gradient(90deg, #FFD97D, #FBBF24)',
+                        boxShadow: '0 0 10px rgba(251,191,36,0.5)',
+                      }}
+                    />
+                  </div>
+                </div>
               ) : null}
             </div>
 
-            <div className="p-4 space-y-2.5 overflow-y-auto flex-1 min-h-0">
+            <div className="p-4 space-y-2.5 overflow-y-auto flex-1 min-h-0 bg-gradient-to-b from-white to-emerald-50/40">
               {pendingTasks.length === 0 && doneTasks.length === 0 ? (
                 <div
                   className="rounded-2xl p-4 text-right"
                   style={{
-                    background: 'rgba(255,255,255,0.5)',
-                    border: '1px solid rgba(255,255,255,0.75)',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9)',
+                    background: '#ffffff',
+                    border: '1px solid rgba(167,243,208,0.55)',
+                    boxShadow: '0 6px 20px rgba(6,78,59,0.06)',
                   }}
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
                     <p className="text-sm font-black text-emerald-900">המסע מחכה לך</p>
                   </div>
-                  <p className="text-xs text-emerald-900/80 leading-relaxed mb-3">
+                  <p className="text-xs text-emerald-800/85 leading-relaxed mb-3">
                     {name
                       ? `${name}, עוד לא לקחנו משימות במסע. בוא נתחיל ביחד כשמתאים לך.`
                       : 'עוד לא לקחנו משימות במסע. בוא נתחיל ביחד כשמתאים לך.'}
@@ -234,113 +303,113 @@ export function TodayTasksPopup({
                 </div>
               ) : null}
 
-              {pendingTasks.map((task, index) => (
-                <button
-                  key={task.id}
-                  type="button"
-                  onClick={() => openChatForTask(task)}
-                  className="w-full text-right rounded-2xl p-3.5 transition active:scale-[0.98]"
-                  style={{
-                    background:
-                      index === 0
-                        ? 'linear-gradient(170deg, rgba(255,255,255,0.72) 0%, rgba(254,249,195,0.55) 100%)'
-                        : 'rgba(255,255,255,0.52)',
-                    border:
-                      index === 0
-                        ? '1px solid rgba(253,224,71,0.5)'
-                        : '1px solid rgba(255,255,255,0.75)',
-                    boxShadow:
-                      index === 0
-                        ? '0 8px 22px rgba(245,158,11,0.1), inset 0 1px 0 rgba(255,255,255,0.9)'
-                        : 'inset 0 1px 0 rgba(255,255,255,0.85)',
-                  }}
-                  aria-label={`ספר לאלמוג שסיימת את ${task.title}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl"
-                      style={{
-                        background:
-                          index === 0
-                            ? 'linear-gradient(145deg, rgba(254,240,138,0.9), rgba(253,224,71,0.7))'
-                            : 'rgba(236,253,245,0.85)',
-                        border:
-                          index === 0
-                            ? '1px solid rgba(245,158,11,0.3)'
-                            : '1px solid rgba(167,243,208,0.45)',
-                      }}
-                    >
-                      {task.emoji}
+              {pendingTasks.map((task, index) => {
+                const timeHint =
+                  index === 0 && nextTask?.taskId === task.id
+                    ? nextTask.timeHint
+                    : taskTimeHintForRow(task, schedule);
+                const isFeatured = index === 0 && pendingCount > 0;
+
+                return (
+                  <button
+                    key={task.id}
+                    type="button"
+                    onClick={() => openChatForTask(task)}
+                    className="w-full text-right rounded-2xl p-3.5 transition active:scale-[0.98]"
+                    style={{
+                      background: isFeatured
+                        ? 'linear-gradient(170deg, #ffffff 0%, #fffbeb 100%)'
+                        : '#ffffff',
+                      border: isFeatured
+                        ? '1.5px solid rgba(245,158,11,0.45)'
+                        : '1px solid rgba(167,243,208,0.45)',
+                      boxShadow: isFeatured
+                        ? '0 10px 24px rgba(245,158,11,0.12)'
+                        : '0 4px 14px rgba(6,78,59,0.05)',
+                    }}
+                    aria-label={`ספר לאלמוג שסיימת את ${task.title}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl"
+                        style={{
+                          background: isFeatured
+                            ? 'linear-gradient(145deg, #fef3c7, #fde68a)'
+                            : 'rgba(236,253,245,0.95)',
+                          border: isFeatured
+                            ? '1px solid rgba(245,158,11,0.35)'
+                            : '1px solid rgba(110,231,183,0.4)',
+                        }}
+                      >
+                        {task.emoji}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        {isFeatured ? (
+                          <span
+                            className="inline-block text-[9px] font-bold text-amber-900 mb-1 px-2 py-0.5 rounded-full"
+                            style={{
+                              background: 'rgba(254,240,138,0.85)',
+                              border: '1px solid rgba(245,158,11,0.3)',
+                            }}
+                          >
+                            מומלץ עכשיו
+                          </span>
+                        ) : null}
+                        <p className="text-sm font-black text-emerald-950 leading-snug">
+                          {task.title}
+                        </p>
+                        <p className="text-[10px] font-medium text-emerald-800/70 mt-0.5">
+                          {task.stepTitle} · צעד {task.stepNumber}
+                        </p>
+                        {timeHint ? (
+                          <span
+                            className="inline-block text-[10px] font-bold mt-2 px-2.5 py-0.5 rounded-full text-emerald-900"
+                            style={{
+                              background: isFeatured
+                                ? 'rgba(254,240,138,0.55)'
+                                : 'rgba(167,243,208,0.45)',
+                              border: '1px solid rgba(110,231,183,0.35)',
+                            }}
+                          >
+                            {timeHint}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      {index === 0 && pendingCount > 0 ? (
-                        <span
-                          className="inline-block text-[9px] font-bold text-amber-900 mb-1 px-2 py-0.5 rounded-full"
-                          style={{
-                            background: 'rgba(254,240,138,0.65)',
-                            border: '1px solid rgba(245,158,11,0.25)',
-                          }}
-                        >
-                          מומלץ עכשיו
-                        </span>
-                      ) : null}
-                      <p className="text-sm font-black text-emerald-950 leading-snug">
-                        {task.title}
-                      </p>
-                      <p className="text-[10px] font-medium text-emerald-900/65 mt-0.5">
-                        {task.stepTitle} · צעד {task.stepNumber}
-                      </p>
-                      {task.pendingSlots.length > 0 && task.pendingSlots[0] !== 'once' ? (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {task.pendingSlots.map((slotKey) => (
-                            <span
-                              key={`${task.id}-${slotKey}`}
-                              className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-emerald-900"
-                              style={{
-                                background: 'rgba(167,243,208,0.45)',
-                                border: '1px solid rgba(110,231,183,0.35)',
-                              }}
-                            >
-                              {slotKey === 'once'
-                                ? 'להיום'
-                                : slotLabel(slotKey as JourneyTaskSlot)}
-                            </span>
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
 
               {doneTasks.length > 0 ? (
                 <>
-                  <p className="text-[10px] font-bold text-emerald-900/55 px-1 pt-1">כבר סגרת היום</p>
+                  <p className="text-[10px] font-bold text-emerald-800/50 px-1 pt-1">
+                    כבר סגרת היום
+                  </p>
                   {doneTasks.map((task) => (
                     <article
                       key={`done-${task.id}`}
-                      className="rounded-2xl p-3.5 opacity-85"
+                      className="rounded-2xl p-3.5"
                       style={{
-                        background: 'rgba(255,255,255,0.45)',
-                        border: '1px solid rgba(255,255,255,0.7)',
+                        background: 'rgba(255,255,255,0.85)',
+                        border: '1px solid rgba(167,243,208,0.4)',
                       }}
                     >
                       <div className="flex items-start gap-3">
                         <div
-                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl"
+                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl opacity-80"
                           style={{
-                            background: 'rgba(236,253,245,0.85)',
+                            background: 'rgba(236,253,245,0.9)',
                             border: '1px solid rgba(167,243,208,0.5)',
                           }}
                         >
                           {task.emoji}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-black text-emerald-950 leading-snug line-through decoration-emerald-700/35">
+                          <p className="text-sm font-black text-emerald-900/75 leading-snug line-through decoration-emerald-600/30">
                             {task.title}
                           </p>
                           <span
-                            className="text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-900 inline-flex items-center gap-1 mt-1"
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-800 inline-flex items-center gap-1 mt-1"
                             style={{
                               background: 'rgba(167,243,208,0.5)',
                               border: '1px solid rgba(110,231,183,0.4)',
@@ -360,9 +429,8 @@ export function TodayTasksPopup({
             <div
               className="px-4 py-3.5 shrink-0 space-y-2.5"
               style={{
-                background:
-                  'linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(236,253,245,0.45) 100%)',
-                borderTop: '1px solid rgba(255,255,255,0.6)',
+                background: '#ffffff',
+                borderTop: '1px solid rgba(167,243,208,0.45)',
               }}
             >
               {pendingCount > 0 ? (
@@ -406,7 +474,7 @@ export function TodayTasksPopup({
                   ספר לאלמוג איך מרגיש
                 </button>
               )}
-              <p className="text-center text-[11px] font-medium text-emerald-900/70 leading-relaxed">
+              <p className="text-center text-[11px] font-medium text-emerald-800/65 leading-relaxed">
                 {pendingCount > 0
                   ? 'לחיצה על משימה פותחת צ׳אט עם טקסט מוכן — אלמוג יסמן בשבילך'
                   : 'יום מצוין. מחר נמשיך 🌱'}

@@ -230,7 +230,7 @@ export function HomeClient({
           className="pointer-events-none absolute -bottom-10 -left-16 h-56 w-56 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.45), transparent 70%)' }}
         />
-        <div className="relative z-10 px-5 pb-12 pt-3">
+        <div className="relative z-10 px-5 pb-8 pt-3">
           <AlmogHeroHeader
             firstName={firstName}
             bubbleContent={bubbleContent}

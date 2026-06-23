@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { pickNextTaskForNow } from '../lib/journey/pick-next-task-for-now';
+import { buildTaskTimeHint, pickNextTaskForNow } from '../lib/journey/pick-next-task-for-now';
 import type { PendingTaskTodayRow } from '../lib/journey/journey-report-parse';
 
 function row(
@@ -67,5 +67,30 @@ describe('pickNextTaskForNow', () => {
     );
     expect(pick?.taskId).toBe('meal');
     expect(pick?.slot).toBe('meal_lunch');
+  });
+
+  it('uses clear time hints instead of ambiguous הבאה', () => {
+    const morning = new Date('2026-06-23T05:30:00+03:00');
+    const task = row({ id: 'a', title: 'בוקר', pendingSlots: ['morning'] });
+    const nowHint = buildTaskTimeHint('morning', 'בוקר', task, { wake_up_time: '06:30' }, morning);
+    expect(nowHint).toContain('עכשיו');
+
+    const evening = new Date('2026-06-23T20:30:00+03:00');
+    const eveningTask = row({
+      id: 'b',
+      title: 'ערב',
+      pendingSlots: ['evening'],
+      schedule: 'multi_daily',
+      times_per_day: 2,
+    });
+    const futureHint = buildTaskTimeHint(
+      'evening',
+      'ערב',
+      eveningTask,
+      { wake_up_time: '06:30', sleep_time: '22:30' },
+      morning
+    );
+    expect(futureHint).toContain('מועד הבא');
+    expect(futureHint).not.toContain('הבאה');
   });
 });
