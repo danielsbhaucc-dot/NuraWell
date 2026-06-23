@@ -13,6 +13,15 @@ import {
 import type { SosMemorySnippet, SosRecentEvent } from '../../lib/ai/guardian/sos-memory';
 import { filterRelevantSosEvents } from '../../lib/ai/guardian/sos-ease-shared';
 
+const ACCENT_GRADIENTS = [
+  'linear-gradient(145deg, #047857, #10b981)',
+  'linear-gradient(145deg, #0d9488, #2dd4bf)',
+  'linear-gradient(145deg, #0f766e, #14b8a6)',
+  'linear-gradient(145deg, #059669, #34d399)',
+  'linear-gradient(145deg, #0e7490, #22d3ee)',
+  'linear-gradient(145deg, #4d7c0f, #84cc16)',
+] as const;
+
 function formatRelative(iso: string): string {
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
   if (mins < 1) return 'עכשיו';
@@ -79,7 +88,7 @@ function outcomeBadge(outcome: string): OutcomeBadge {
   }
   return {
     label: 'נסגר',
-    bg: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)',
+    bg: 'linear-gradient(135deg, #ecfdf5, #d1fae5)',
     text: '#475569',
     border: 'rgba(100,116,139,0.25)',
   };
@@ -101,6 +110,29 @@ function strategyLabelHe(raw: string | null): string | null {
   if (!raw?.trim()) return null;
   const type = normalizeStrategyType(raw);
   return STRATEGY_LABELS_HE[type] ?? null;
+}
+
+function StatPill({
+  value,
+  label,
+  gradient,
+}: {
+  value: number;
+  label: string;
+  gradient: string;
+}) {
+  return (
+    <div
+      className="flex min-w-[5.5rem] flex-col items-center rounded-2xl px-3 py-2.5"
+      style={{
+        background: gradient,
+        boxShadow: '0 4px 14px rgba(6,78,59,0.14)',
+      }}
+    >
+      <span className="text-xl font-black leading-none text-emerald-50">{value}</span>
+      <span className="mt-1 text-[10px] font-bold text-emerald-50/85">{label}</span>
+    </div>
+  );
 }
 
 export function SosMomentsClient() {
@@ -145,6 +177,18 @@ export function SosMomentsClient() {
     return Array.from(groups.entries());
   }, [events]);
 
+  const numberedGroups = useMemo(() => {
+    let counter = 0;
+    return groupedEvents.map(([day, dayEvents], groupIdx) => ({
+      day,
+      groupIdx,
+      events: dayEvents.map((ev) => {
+        counter += 1;
+        return { ev, itemNum: counter };
+      }),
+    }));
+  }, [groupedEvents]);
+
   const helpedMemory = memory.filter((m) => m.outcome === 'helped' || m.outcome === 'resolved');
   const failedMemory = memory.filter((m) => m.outcome === 'not_helped');
 
@@ -161,40 +205,68 @@ export function SosMomentsClient() {
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 h-2/3"
           style={{
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 100%)',
+            background: 'linear-gradient(180deg, rgba(167,243,208,0.22) 0%, transparent 100%)',
           }}
         />
-        <div className="container-mobile relative">
-          <div className="mb-4 flex items-center gap-2 text-sm">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1 font-semibold text-emerald-50/90 hover:text-white"
-            >
-              בית
-              <ArrowRight className="h-4 w-4 rotate-180" aria-hidden />
-            </Link>
-          </div>
-          <div className="flex items-start gap-3">
+
+        <Link
+          href="/"
+          className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95"
+          style={{
+            background: 'rgba(167, 243, 208, 0.18)',
+            border: '1px solid rgba(167, 243, 208, 0.38)',
+            boxShadow: 'inset 0 1px 0 rgba(167, 243, 208, 0.45), 0 4px 16px rgba(6,78,59,0.12)',
+          }}
+          aria-label="חזרה לבית"
+        >
+          <ArrowRight className="h-5 w-5 text-emerald-50" aria-hidden />
+        </Link>
+
+        <div className="relative mx-auto max-w-lg">
+          <div className="flex flex-col items-center pt-10 text-center">
             <div
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
               style={{
-                background: 'rgba(255,255,255,0.18)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35)',
+                background: 'rgba(167, 243, 208, 0.2)',
+                boxShadow: 'inset 0 1px 0 rgba(167, 243, 208, 0.4)',
               }}
             >
-              <MapPin className="h-6 w-6 text-white" />
+              <MapPin className="h-7 w-7 text-emerald-50" />
             </div>
-            <div>
-              <h1 className="text-2xl font-black text-white">מסע הרגעים הקשים</h1>
-              <p className="mt-2 max-w-md text-sm leading-relaxed text-emerald-50/90">
-                כל פעם שלחצת &quot;רגע… קשה לי&quot; — מה עזר, מה פחות, ואיך אלמוג לומד איתך.
-              </p>
-            </div>
+            <h1 className="mt-4 text-2xl font-black text-emerald-50">מסע הרגעים הקשים</h1>
+            <p className="mt-2 max-w-sm text-sm leading-relaxed text-emerald-50/90">
+              כל פעם שלחצת &quot;רגע… קשה לי&quot; — מה עזר, מה פחות, ואיך אלמוג לומד איתך.
+            </p>
+
+            {!loading && !error && (events.length > 0 || memory.length > 0) ? (
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <StatPill
+                  value={events.length}
+                  label="רגעים"
+                  gradient="linear-gradient(145deg, #047857, #10b981)"
+                />
+                <StatPill
+                  value={helpedMemory.length}
+                  label="מה עזר"
+                  gradient="linear-gradient(145deg, #0d9488, #2dd4bf)"
+                />
+                <StatPill
+                  value={failedMemory.length}
+                  label="פחות התאים"
+                  gradient="linear-gradient(145deg, #b45309, #f59e0b)"
+                />
+                <StatPill
+                  value={groupedEvents.length}
+                  label="ימים"
+                  gradient="linear-gradient(145deg, #0e7490, #22d3ee)"
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
 
-      <div className="container-mobile relative z-[2] -mt-5 space-y-5 px-4 pb-32 safe-chat-fab">
+      <div className="relative z-[2] mx-auto max-w-lg space-y-5 px-4 pb-28 -mt-5">
         {loading ? (
           <div className="glass-surface-home flex items-center justify-center gap-2 rounded-[22px] py-16 text-emerald-800">
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -220,7 +292,11 @@ export function SosMomentsClient() {
             </p>
             <Link
               href="/"
-              className="mt-5 inline-flex rounded-2xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white"
+              className="mt-5 inline-flex rounded-2xl px-5 py-2.5 text-sm font-bold text-emerald-50"
+              style={{
+                background: 'linear-gradient(135deg, #047857, #10b981)',
+                boxShadow: '0 6px 18px rgba(4,120,87,0.22)',
+              }}
             >
               חזרה לבית
             </Link>
@@ -229,22 +305,36 @@ export function SosMomentsClient() {
           <>
             {(helpedMemory.length > 0 || failedMemory.length > 0) && (
               <section dir="rtl" className="glass-surface-home space-y-4 rounded-[22px] p-5">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <Sparkles className="h-5 w-5 text-emerald-700" />
                   <h2 className="text-lg font-black text-emerald-950">מה אלמוג למד ממך</h2>
                 </div>
 
                 {helpedMemory.length > 0 ? (
                   <div>
-                    <p className="mb-2 text-xs font-bold text-emerald-800/70">מה עזר</p>
+                    <p className="mb-2 text-center text-xs font-bold text-emerald-800/70">מה עזר</p>
                     <ul className="space-y-2">
                       {helpedMemory.map((m, i) => (
-                        <li key={`h-${i}`} className="glass-inset-home rounded-2xl px-4 py-3 text-sm text-emerald-900">
-                          <span className="font-bold">{m.strategy}</span>
-                          {m.task_title ? ` · ${m.task_title}` : ''}
-                          <span className="mt-1 block text-xs text-emerald-800/60">
-                            {memoryOutcomeLabel(m.outcome)} · {formatRelative(m.created_at)}
+                        <li
+                          key={`h-${i}`}
+                          className="glass-inset-emerald flex items-start gap-3 rounded-2xl px-4 py-3 text-sm text-emerald-900"
+                        >
+                          <span
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-emerald-50"
+                            style={{
+                              background: ACCENT_GRADIENTS[i % ACCENT_GRADIENTS.length],
+                              boxShadow: '0 3px 10px rgba(4,120,87,0.18)',
+                            }}
+                          >
+                            {i + 1}
                           </span>
+                          <div className="min-w-0 flex-1">
+                            <span className="font-bold">{m.strategy}</span>
+                            {m.task_title ? ` · ${m.task_title}` : ''}
+                            <span className="mt-1 block text-xs text-emerald-800/60">
+                              {memoryOutcomeLabel(m.outcome)} · {formatRelative(m.created_at)}
+                            </span>
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -253,15 +343,33 @@ export function SosMomentsClient() {
 
                 {failedMemory.length > 0 ? (
                   <div>
-                    <p className="mb-2 text-xs font-bold text-amber-900/70">פחות התאים</p>
+                    <p className="mb-2 text-center text-xs font-bold text-amber-900/70">פחות התאים</p>
                     <ul className="space-y-2">
                       {failedMemory.map((m, i) => (
-                        <li key={`f-${i}`} className="glass-inset-home rounded-2xl px-4 py-3 text-sm text-amber-950">
-                          <span className="font-bold">{m.strategy}</span>
-                          {m.task_title ? ` · ${m.task_title}` : ''}
-                          <span className="mt-1 block text-xs text-amber-900/60">
-                            {formatRelative(m.created_at)}
+                        <li
+                          key={`f-${i}`}
+                          className="flex items-start gap-3 rounded-2xl px-4 py-3 text-sm text-amber-950"
+                          style={{
+                            background: 'linear-gradient(135deg, rgba(254,243,199,0.75), rgba(253,230,138,0.45))',
+                            border: '1px solid rgba(245,158,11,0.25)',
+                          }}
+                        >
+                          <span
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-amber-50"
+                            style={{
+                              background: 'linear-gradient(145deg, #b45309, #f59e0b)',
+                              boxShadow: '0 3px 10px rgba(180,83,9,0.2)',
+                            }}
+                          >
+                            {i + 1}
                           </span>
+                          <div className="min-w-0 flex-1">
+                            <span className="font-bold">{m.strategy}</span>
+                            {m.task_title ? ` · ${m.task_title}` : ''}
+                            <span className="mt-1 block text-xs text-amber-900/60">
+                              {formatRelative(m.created_at)}
+                            </span>
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -272,56 +380,79 @@ export function SosMomentsClient() {
 
             {groupedEvents.length > 0 ? (
               <section dir="rtl" className="space-y-4">
-                <div className="flex items-center gap-2 px-1">
+                <div className="flex items-center justify-center gap-2 px-1">
                   <History className="h-5 w-5 text-emerald-700" />
                   <h2 className="text-lg font-black text-emerald-950">רגעים לפי תאריך</h2>
                 </div>
 
-                {groupedEvents.map(([day, dayEvents], groupIdx) => (
-                  <div key={day} className="relative space-y-2 pl-1">
-                    <div className="flex items-center gap-2 px-1">
+                {numberedGroups.map(({ day, groupIdx, events: dayEvents }) => (
+                  <div key={day} className="relative space-y-2">
+                    <div className="flex items-center justify-center gap-2 px-1">
                       <span
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black text-emerald-50"
                         style={{
-                          background: 'linear-gradient(145deg, #047857, #10b981)',
+                          background: ACCENT_GRADIENTS[groupIdx % ACCENT_GRADIENTS.length],
                           boxShadow: '0 4px 12px rgba(4,120,87,0.2)',
                         }}
                       >
                         {groupIdx + 1}
                       </span>
-                      <p className="text-sm font-bold text-emerald-900/75">{day}</p>
+                      <p className="text-sm font-bold text-emerald-900/80">{day}</p>
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[10px] font-bold text-emerald-800"
+                        style={{
+                          background: 'rgba(167, 243, 208, 0.35)',
+                          border: '1px solid rgba(16,185,129,0.2)',
+                        }}
+                      >
+                        {dayEvents.length} רגעים
+                      </span>
                     </div>
 
-                    {dayEvents.map((ev) => {
+                    {dayEvents.map(({ ev, itemNum }) => {
                       const badge = outcomeBadge(ev.outcome);
                       const strategyHe = strategyLabelHe(ev.strategy_offered);
                       return (
-                        <article key={ev.id} className="glass-surface-home mr-2 rounded-2xl px-4 py-3">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span
-                              className="rounded-full border px-2.5 py-0.5 text-[11px] font-bold"
-                              style={{
-                                background: badge.bg,
-                                color: badge.text,
-                                borderColor: badge.border,
-                              }}
-                            >
-                              {badge.label}
-                            </span>
-                            <span className="text-xs text-emerald-800/55">{formatRelative(ev.created_at)}</span>
-                            <span className="text-xs font-semibold text-emerald-800/70">
-                              {triggerLabel(ev.trigger)}
-                            </span>
+                        <article
+                          key={ev.id}
+                          className="glass-surface-home flex items-start gap-3 rounded-2xl px-4 py-3"
+                        >
+                          <span
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-emerald-50"
+                            style={{
+                              background: ACCENT_GRADIENTS[(itemNum - 1) % ACCENT_GRADIENTS.length],
+                              boxShadow: '0 3px 10px rgba(4,120,87,0.16)',
+                            }}
+                          >
+                            {itemNum}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span
+                                className="rounded-full border px-2.5 py-0.5 text-[11px] font-bold"
+                                style={{
+                                  background: badge.bg,
+                                  color: badge.text,
+                                  borderColor: badge.border,
+                                }}
+                              >
+                                {badge.label}
+                              </span>
+                              <span className="text-xs text-emerald-800/55">{formatRelative(ev.created_at)}</span>
+                              <span className="text-xs font-semibold text-emerald-800/70">
+                                {triggerLabel(ev.trigger)}
+                              </span>
+                            </div>
+                            {ev.task_title ? (
+                              <p className="mt-2 text-sm font-bold text-emerald-950">{ev.task_title}</p>
+                            ) : null}
+                            {strategyHe ? (
+                              <p className="mt-1 text-xs text-emerald-900/75">
+                                <span className="font-bold text-emerald-800">מה ניסינו: </span>
+                                {strategyHe}
+                              </p>
+                            ) : null}
                           </div>
-                          {ev.task_title ? (
-                            <p className="mt-2 text-sm font-bold text-emerald-950">{ev.task_title}</p>
-                          ) : null}
-                          {strategyHe ? (
-                            <p className="mt-1 text-xs text-emerald-900/75">
-                              <span className="font-bold text-emerald-800">מה ניסינו: </span>
-                              {strategyHe}
-                            </p>
-                          ) : null}
                         </article>
                       );
                     })}

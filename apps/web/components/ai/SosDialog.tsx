@@ -524,13 +524,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                   : outcomeSaved}
               </p>
               {guardianOptedIn === false && !guardianSaved ? (
-                <div
-                  className="rounded-2xl px-4 py-3 text-right text-xs leading-6 text-emerald-900"
-                  style={{
-                    background: 'rgba(255,255,255,0.65)',
-                    border: '1px solid rgba(16,185,129,0.2)',
-                  }}
-                >
+                  <div className="glass-inset-emerald rounded-2xl px-4 py-3 text-right text-xs leading-6 text-emerald-900">
                   <p className="font-black">רוצה שאלמוג יגיע לפני הרגע הבא?</p>
                   <p className="mt-1 text-emerald-900/75">
                     מגע עדין לפני חלונות שקשה לך — רק כשאתה מאשר, ובלי לחץ.
@@ -550,11 +544,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
               <button
                 type="button"
                 onClick={openChatFromSos}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-emerald-900"
-                style={{
-                  background: 'rgba(255,255,255,0.65)',
-                  border: '1.5px solid rgba(16,185,129,0.2)',
-                }}
+                className="glass-inset-emerald flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-emerald-900"
               >
                 <MessageCircle className="h-4 w-4" />
                 לדבר עם אלמוג
@@ -574,9 +564,9 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
           ) : !response ? (
             <div className="space-y-4">
               {showTaskHardnessGate ? (
-                <div className="glass-inset-home space-y-3 rounded-2xl px-4 py-4">
+                <div className="glass-inset-emerald space-y-3 rounded-2xl px-4 py-4">
                   <p className="text-xs font-bold text-emerald-900/70">לפני שנמשיך</p>
-                  <div className="rounded-2xl bg-emerald-900/5 px-3 py-3">
+                  <div className="glass-inset-emerald rounded-2xl px-3 py-3">
                     <p className="text-[11px] font-semibold text-emerald-800/60">המשימה הנוכחית שלך</p>
                     <div className="mt-1 flex items-start justify-between gap-2">
                       <p className="text-base font-black leading-snug text-emerald-950">
@@ -586,7 +576,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                       <button
                         type="button"
                         onClick={speakTaskTitle}
-                        className="shrink-0 rounded-xl p-2 text-emerald-800 glass-inset-home"
+                        className="shrink-0 rounded-xl p-2 text-emerald-800 glass-inset-emerald"
                         aria-label="הקרא את המשימה"
                       >
                         <Volume2 className="h-4 w-4" />
@@ -609,7 +599,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                     <button
                       type="button"
                       onClick={() => setTaskHardConfirmed(false)}
-                      className="glass-inset-home rounded-2xl px-4 py-3 text-sm font-bold text-emerald-900"
+                      className="glass-inset-emerald rounded-2xl px-4 py-3 text-sm font-bold text-emerald-900"
                     >
                       לא, משהו אחר
                     </button>
@@ -617,7 +607,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                 </div>
               ) : (
                 <>
-              <div className="glass-inset-home rounded-2xl px-4 py-3 text-sm leading-7 text-emerald-950">
+              <div className="glass-inset-emerald rounded-2xl px-4 py-3 text-sm leading-7 text-emerald-950">
                 קודם — על <strong>מה</strong> קשה לך עכשיו? ככה אלמוג ידע להתאים את הצעד.
               </div>
 
@@ -636,7 +626,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                             setTaskHardConfirmed(null);
                           }}
                           className={`flex items-center justify-between rounded-2xl px-4 py-3 text-right transition active:scale-[0.99] ${
-                            active ? 'glass-inset-home ring-1 ring-emerald-500/25' : 'glass-inset-home'
+                            active ? 'glass-inset-emerald ring-1 ring-emerald-500/25' : 'glass-inset-emerald'
                           }`}
                         >
                           <span className="text-[11px] font-semibold text-emerald-800/60">
@@ -676,7 +666,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                     type="button"
                     onClick={() => void handleTrigger(trigger.id)}
                     disabled={loadingTrigger !== null}
-                    className="glass-inset-home flex items-center justify-between rounded-2xl px-4 py-3 text-right transition active:scale-[0.99] disabled:opacity-70"
+                    className="glass-inset-emerald flex items-center justify-between rounded-2xl px-4 py-3 text-right transition active:scale-[0.99] disabled:opacity-70"
                   >
                     <span className="text-xs font-semibold text-emerald-800/60">{trigger.helper}</span>
                     <span className="flex items-center gap-2 text-sm font-black text-emerald-950">
@@ -695,7 +685,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                   onChange={(e) => setNote(e.target.value)}
                   maxLength={240}
                   rows={2}
-                  className="glass-inset-home w-full resize-none rounded-2xl px-3 py-2.5 text-sm text-emerald-950 outline-none focus:ring-2 focus:ring-emerald-500/25"
+                  className="glass-inset-emerald w-full resize-none rounded-2xl px-3 py-2.5 text-sm text-emerald-950 outline-none focus:ring-2 focus:ring-emerald-500/25"
                   placeholder={
                     selectedTask?.title
                       ? `למשל: קשה לי עם "${selectedTask.title}" אחרי יום עמוס`
@@ -709,13 +699,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
           ) : (
             <div className="space-y-4">
               {response.context.focus_task_title ? (
-                <div
-                  className="rounded-2xl px-4 py-3 text-xs font-bold text-emerald-900"
-                  style={{
-                    background: 'rgba(255,255,255,0.55)',
-                    border: '1px solid rgba(16,185,129,0.14)',
-                  }}
-                >
+                <div className="glass-inset-emerald rounded-2xl px-4 py-3 text-xs font-bold text-emerald-900">
                   ההצעה הבאה מותאמת ל{' '}
                   <span className="text-sm">
                     {response.context.focus_task_emoji ?? '✅'} {response.context.focus_task_title}
@@ -746,7 +730,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                 <p className="whitespace-pre-wrap text-sm font-semibold leading-7">{response.intervention.message}</p>
               </div>
 
-              <div className="glass-inset-home relative overflow-hidden rounded-2xl p-4">
+              <div className="glass-inset-emerald relative overflow-hidden rounded-2xl p-4">
                 <div className="mb-2 flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-emerald-600" />
                   <p className="text-xs font-bold text-emerald-800/70">המשימה שלך עכשיו</p>
@@ -776,7 +760,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
               ) : null}
 
               {easeCreated ? (
-                <div className="glass-inset-home rounded-2xl px-4 py-3 text-xs leading-6 text-emerald-900">
+                <div className="glass-inset-emerald rounded-2xl px-4 py-3 text-xs leading-6 text-emerald-900">
                   <p className="font-black">נוסף למשימות שלך ✓</p>
                   <p className="mt-1 text-emerald-900/75">
                     המשימה המקורית מוקפאת. כשתסיים את הצעד הקל — נחזיר אותה בהדרגה.
@@ -824,11 +808,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                   type="button"
                   disabled={outcomeSaving || pivoting}
                   onClick={() => void handleOutcome(false)}
-                  className="rounded-2xl px-4 py-3 text-sm font-bold text-emerald-900 disabled:opacity-70"
-                  style={{
-                    background: 'rgba(255,255,255,0.65)',
-                    border: '1.5px solid rgba(16,185,129,0.2)',
-                  }}
+                  className="glass-inset-emerald rounded-2xl px-4 py-3 text-sm font-bold text-emerald-900 disabled:opacity-70"
                 >
                   {pivoting ? 'מציע גישה אחרת…' : 'עדיין קשה — ננסה אחרת'}
                 </button>
@@ -838,11 +818,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                 <button
                   type="button"
                   onClick={openChatFromSos}
-                  className="flex items-center justify-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-bold text-emerald-900"
-                  style={{
-                    background: 'rgba(255,255,255,0.55)',
-                    border: '1px solid rgba(16,185,129,0.12)',
-                  }}
+                  className="glass-inset-emerald flex items-center justify-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-bold text-emerald-900"
                 >
                   <MessageCircle className="h-3.5 w-3.5" />
                   לדבר עם אלמוג
@@ -852,11 +828,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                     type="button"
                     disabled={taskMarking}
                     onClick={openTaskDoneFromSos}
-                    className="rounded-2xl px-3 py-2.5 text-xs font-bold text-emerald-900 disabled:opacity-70"
-                    style={{
-                      background: 'rgba(255,255,255,0.55)',
-                      border: '1px solid rgba(16,185,129,0.12)',
-                    }}
+                    className="glass-inset-emerald rounded-2xl px-3 py-2.5 text-xs font-bold text-emerald-900 disabled:opacity-70"
                   >
                     {taskMarking ? 'מסמן…' : 'סימנתי — עשיתי 🎯'}
                   </button>
