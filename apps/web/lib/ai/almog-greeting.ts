@@ -262,9 +262,9 @@ export function buildAlmogGreeting(params: {
 
   if (taskState === 'loading') {
     return {
-      lead: 'רגע, אני מסתכל על המסע שלך…',
+      lead: '',
       highlight: '',
-      mentorTag: 'טוען…',
+      mentorTag: undefined,
     };
   }
 

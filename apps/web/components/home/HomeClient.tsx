@@ -158,6 +158,7 @@ export function HomeClient({
               style={{
                 display: 'inline-block',
                 marginTop: greeting.featuredTask ? '6px' : '0',
+                marginBottom: '4px',
                 fontSize: '13px',
                 fontWeight: 600,
                 color: 'rgba(255,255,255,0.88)',
@@ -235,6 +236,7 @@ export function HomeClient({
             firstName={firstName}
             bubbleContent={bubbleContent}
             mentorTag={greeting.mentorTag}
+            contentLoading={taskLoading}
             chatCta={chatCta}
             taskProgress={taskProgress}
             taskBadge={{
@@ -300,7 +302,7 @@ export function HomeClient({
             >
               <motion.div
                 dir="rtl"
-                className="glass-surface relative flex flex-row-reverse gap-3.5 items-center p-4 overflow-hidden"
+                className="glass-surface-home relative flex flex-row-reverse gap-3.5 items-center p-4 overflow-hidden"
                 style={{ borderRadius: '22px' }}
               >
                 {/* ✦ קו אור עליון — specular highlight */}
