@@ -204,7 +204,11 @@ export function AlmogHeroHeader({
           <button
             type="button"
             className="absolute z-10"
-            style={{ top: '8px', insetInlineStart: '10px' }}
+            style={{
+              top: '50%',
+              insetInlineStart: '10px',
+              transform: 'translateY(-50%)',
+            }}
             onClick={() => window.dispatchEvent(new Event('open-almog-chat'))}
             aria-label="פתח צ׳אט עם אלמוג"
           >
