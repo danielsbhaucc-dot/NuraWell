@@ -35,7 +35,25 @@ interface AlmogHeroHeaderProps {
     /** האם הנתונים עוד בטעינה */
     loading?: boolean;
   };
+  /** האם תוכן הבועה עדיין בטעינה */
+  contentLoading?: boolean;
   onTaskBadgeClick?: () => void;
+}
+
+/** שלד טעינה רך — בלי תחושת בוט */
+function BubbleLoadingSkeleton() {
+  return (
+    <div className="space-y-2.5" aria-busy="true" aria-label="טוען את המשימות שלך">
+      <div
+        className="h-3.5 rounded-full animate-pulse"
+        style={{ width: '88%', background: 'rgba(255,255,255,0.22)' }}
+      />
+      <div
+        className="h-3.5 rounded-full animate-pulse"
+        style={{ width: '62%', background: 'rgba(255,255,255,0.16)', animationDelay: '120ms' }}
+      />
+    </div>
+  );
 }
 
 /** כותרת בית עם אלמוג — שיקוף ברכה אישית + סטטוס משימות היום. */
@@ -46,6 +64,7 @@ export function AlmogHeroHeader({
   chatCta,
   taskProgress,
   taskBadge,
+  contentLoading = false,
   onTaskBadgeClick,
 }: AlmogHeroHeaderProps) {
   const { avatarUrl } = useAlmogAvatarUrl();
@@ -119,6 +138,7 @@ export function AlmogHeroHeader({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
+        className="pb-1"
       >
         <div className="relative">
           <motion.div
@@ -152,7 +172,7 @@ export function AlmogHeroHeader({
               }}
             >
               <span>✦ אלמוג · המנטור שלך</span>
-              {mentorTag ? (
+              {mentorTag && !contentLoading ? (
                 <span
                   style={{
                     fontSize: '9px',
@@ -177,14 +197,14 @@ export function AlmogHeroHeader({
                 fontFamily: "'Heebo',sans-serif",
               }}
             >
-              {bubbleContent}
+              {contentLoading ? <BubbleLoadingSkeleton /> : bubbleContent}
             </div>
           </motion.div>
 
           <button
             type="button"
-            className="absolute top-0 z-10"
-            style={{ insetInlineStart: 0 }}
+            className="absolute z-10"
+            style={{ top: '8px', insetInlineStart: '10px' }}
             onClick={() => window.dispatchEvent(new Event('open-almog-chat'))}
             aria-label="פתח צ׳אט עם אלמוג"
           >
@@ -234,6 +254,7 @@ export function AlmogHeroHeader({
               />
             </div>
           </div>
+          {!contentLoading ? (
           <div
             style={{
               position: 'absolute',
@@ -253,6 +274,7 @@ export function AlmogHeroHeader({
             <span style={{ width: '3px', height: '3px', background: 'white', borderRadius: '50%', display: 'inline-block' }} />
             <span style={{ width: '3px', height: '3px', background: 'white', borderRadius: '50%', display: 'inline-block' }} />
           </div>
+          ) : null}
         </button>
         </div>
 
@@ -294,7 +316,7 @@ export function AlmogHeroHeader({
             </div>
           </div>
         ) : null}
-        {chatCta ? (
+        {chatCta && !contentLoading ? (
           <button
             type="button"
             onClick={() => {
@@ -305,7 +327,8 @@ export function AlmogHeroHeader({
               }
             }}
             style={{
-              marginTop: taskProgress && taskProgress.total > 0 ? '8px' : '10px',
+              marginTop: taskProgress && taskProgress.total > 0 ? '10px' : '12px',
+              marginBottom: '6px',
               width: '100%',
               border: '1px solid rgba(255,217,125,0.45)',
               background: 'rgba(255,217,125,0.16)',
