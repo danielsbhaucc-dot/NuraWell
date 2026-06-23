@@ -42,7 +42,7 @@ interface TodayTasksPopupProps {
 function taskTimeHintForRow(
   task: PendingTaskTodayRow,
   profile: UserScheduleProfile,
-  now: Date
+  now: Date = new Date()
 ): string | null {
   const slotKey = task.pendingSlots.find((s) => s !== 'once') ?? task.pendingSlots[0];
   if (!slotKey) return null;
