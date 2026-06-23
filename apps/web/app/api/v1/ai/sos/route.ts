@@ -9,10 +9,8 @@ import {
   type SosFocusTask,
 } from '../../../../../lib/ai/guardian/sos-memory';
 import { beginSosCareAfterSos } from '../../../../../lib/ai/guardian/sos-care-loop';
-import {
-  filterRelevantSosEvents,
-  saveSosCoachOnBlocker,
-} from '../../../../../lib/ai/guardian/sos-ease-assignment';
+import { saveSosCoachOnBlocker } from '../../../../../lib/ai/guardian/sos-ease-assignment';
+import { filterRelevantSosEvents } from '../../../../../lib/ai/guardian/sos-ease-shared';
 import {
   buildDeterministicSosFallback,
   buildSosSlowDownMessage,
