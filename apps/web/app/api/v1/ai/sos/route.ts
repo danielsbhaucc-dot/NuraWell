@@ -10,6 +10,10 @@ import {
 } from '../../../../../lib/ai/guardian/sos-memory';
 import { beginSosCareAfterSos } from '../../../../../lib/ai/guardian/sos-care-loop';
 import {
+  filterRelevantSosEvents,
+  saveSosCoachOnBlocker,
+} from '../../../../../lib/ai/guardian/sos-ease-assignment';
+import {
   buildDeterministicSosFallback,
   buildSosSlowDownMessage,
   normalizeSosTrigger,
@@ -152,7 +156,11 @@ export async function GET(request: Request) {
       ...(Number.isFinite(memoryLimit) && memoryLimit > 0 ? { memoryLimit } : {}),
       ...(Number.isFinite(eventsLimit) && eventsLimit > 0 ? { eventsLimit } : {}),
     });
-    return NextResponse.json({ ok: true, ...ctx });
+    return NextResponse.json({
+      ok: true,
+      ...ctx,
+      recent_events: filterRelevantSosEvents(ctx.recent_events),
+    });
   } catch (error) {
     console.error('[API /v1/ai/sos GET]', error);
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
@@ -359,6 +367,17 @@ export async function POST(request: Request) {
       note,
       nowIso,
     });
+
+    if (flow.blockerId) {
+      await saveSosCoachOnBlocker({
+        admin,
+        userId: auth.user.id,
+        blockerId: flow.blockerId,
+        intervention: flow.intervention,
+        focusTask,
+        nowIso,
+      }).catch((err) => console.error('[sos] coach save failed', err));
+    }
 
     const eventId = await insertSosEvent(admin, {
       userId: auth.user.id,

@@ -10,6 +10,8 @@ type SosFocusTask = {
   title: string;
   emoji?: string;
   stepTitle?: string;
+  stepId?: string;
+  pendingSlots?: string[];
 };
 
 type SosButtonProps = {
@@ -26,33 +28,28 @@ export function SosButton({ focusTasks = [] }: SosButtonProps) {
         type="button"
         onClick={() => setOpen(true)}
         dir="rtl"
-        className="glass-surface relative flex w-full items-center gap-3.5 overflow-hidden p-4 text-right transition active:scale-[0.99]"
-        style={{
-          borderRadius: '22px',
-          border: '1px solid rgba(16,185,129,0.28)',
-          boxShadow:
-            '0 10px 28px rgba(4,120,87,0.12), inset 0 1px 0 rgba(255,255,255,0.55)',
-        }}
+        className="glass-surface-home relative flex w-full items-center gap-3.5 overflow-hidden p-4 text-right transition active:scale-[0.99]"
+        style={{ borderRadius: '22px' }}
       >
         <span
           aria-hidden
           className="pointer-events-none absolute inset-x-4 top-px h-px"
           style={{
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
           }}
         />
         <span
           className="flex h-[52px] w-[52px] flex-shrink-0 items-center justify-center rounded-2xl"
           style={{
-            background: 'linear-gradient(145deg, #0f766e, #14b8a6)',
-            boxShadow: '0 6px 18px rgba(15,118,110,0.28)',
+            background: 'linear-gradient(145deg, rgba(15,118,110,0.92), rgba(20,184,166,0.88))',
+            boxShadow: '0 6px 18px rgba(15,118,110,0.28), inset 0 1px 0 rgba(255,255,255,0.22)',
           }}
         >
           <HeartPulse className="h-6 w-6 text-white" strokeWidth={2.4} />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-[15px] font-black text-emerald-950">רגע, קשה לי עכשיו</span>
-          <span className="mt-1 block text-xs font-semibold leading-5 text-emerald-800/70">
+          <span className="mt-1 block text-xs font-semibold leading-5 text-emerald-900/65">
             {pendingCount > 0
               ? `סיוע קצר של אלמוג — ${pendingCount} משימות פתוחות על הראש`
               : 'סיוע קצר של אלמוג לפני שהרגע בורח.'}
@@ -60,7 +57,7 @@ export function SosButton({ focusTasks = [] }: SosButtonProps) {
         </span>
       </button>
 
-      <SosDialog open={open} onClose={() => setOpen(false)} />
+      <SosDialog open={open} onClose={() => setOpen(false)} focusTasks={focusTasks} />
     </>
   );
 }
