@@ -87,7 +87,7 @@ export default async function HomePage() {
       }}
       simplifiedDashboard={simplifiedDashboard}
       mentorWidget={
-        <DynamicMentorWidget userId={user.id} strategy={mentorshipStrategy} />
+        <DynamicMentorWidget userId={user.id} firstName={firstName} strategy={mentorshipStrategy} />
       }
     />
   );

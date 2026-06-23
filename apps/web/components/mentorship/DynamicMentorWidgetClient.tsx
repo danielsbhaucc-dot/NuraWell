@@ -28,11 +28,13 @@ type DashboardBrief = {
 };
 
 type DynamicMentorWidgetClientProps = {
+  firstName: string;
   nextBestAction: string;
   isSensitiveState: boolean;
 };
 
 export function DynamicMentorWidgetClient({
+  firstName,
   nextBestAction,
   isSensitiveState,
 }: DynamicMentorWidgetClientProps) {
@@ -76,10 +78,18 @@ export function DynamicMentorWidgetClient({
     void loadContext();
   }, [loadContext]);
 
+  const name = firstName && firstName !== 'משתמש' ? firstName : null;
+
   const { title, subtitle, detail } = useMemo(() => {
+    const friendlyLead = name ? `${name}, ` : '';
+
     if (nextTask?.title) {
       const timeHint = nextTask.pendingSlots?.length
-        ? `מתאים ${nextTask.pendingSlots[0] === 'morning' ? 'לבוקר' : nextTask.pendingSlots[0] === 'evening' ? 'לערב' : 'להיום'}`
+        ? nextTask.pendingSlots[0] === 'morning'
+          ? 'לבוקר'
+          : nextTask.pendingSlots[0] === 'evening'
+            ? 'לערב'
+            : 'להיום'
         : null;
       return {
         title: isSensitiveState
@@ -87,9 +97,8 @@ export function DynamicMentorWidgetClient({
           : nextTask.title,
         subtitle: isSensitiveState ? 'צעד קטן להיום' : 'הפעולה הבאה שלך',
         detail: timeHint
-          ? `${timeHint} — בלי לחץ, רק צעד אחד.`
-          : brief?.body?.split('.').slice(0, 1).join('.').trim() ||
-            'בלי לחץ — רק צעד אחד קטן. אני כאן איתך.',
+          ? `${friendlyLead}נראה לי ש${timeHint} זה הזמן הכי נוח — בלי לחץ, רק צעד אחד.`
+          : `${friendlyLead}בוא ניקח רגע אחד קטן. אני איתך.`,
       };
     }
 
@@ -97,16 +106,20 @@ export function DynamicMentorWidgetClient({
       return {
         title: brief.headline,
         subtitle: isSensitiveState ? 'צעד קטן להיום' : 'הפעולה הבאה שלך',
-        detail: brief.body.split('.').slice(0, 2).join('.').trim() || nextBestAction,
+        detail:
+          brief.body.split('.').slice(0, 2).join('.').trim() ||
+          `${friendlyLead}${nextBestAction}`,
       };
     }
 
     return {
       title: nextBestAction,
       subtitle: isSensitiveState ? 'צעד קטן להיום' : 'הפעולה הבאה שלך',
-      detail: isSensitiveState ? 'בלי לחץ — רק צעד אחד קטן. אני כאן איתך.' : null,
+      detail: name
+        ? `${name}, אני כאן — בוא ניקח רגע אחד קטן, בקצב שלך.`
+        : 'אני כאן — בוא ניקח רגע אחד קטן, בקצב שלך.',
     };
-  }, [nextTask, brief, nextBestAction, isSensitiveState]);
+  }, [nextTask, brief, nextBestAction, isSensitiveState, name]);
 
   return (
     <motion.div
@@ -114,25 +127,9 @@ export function DynamicMentorWidgetClient({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: 'easeOut' }}
       dir="rtl"
-      className="glass-surface-home relative overflow-hidden rounded-[22px] p-4"
+      className="glass-surface-home rounded-[22px] p-4"
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-4 top-px h-px"
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent)',
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-8 -top-8 h-24 w-24 rounded-full opacity-50"
-        style={{
-          background: 'radial-gradient(circle, rgba(52,211,153,0.28) 0%, transparent 70%)',
-          filter: 'blur(10px)',
-        }}
-      />
-
-      <div className="relative flex items-start gap-3">
+      <div className="flex items-start gap-3">
         <div
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
           style={{

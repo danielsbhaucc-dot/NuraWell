@@ -118,22 +118,13 @@ export function LiveNotificationToast({
       }}
       tabIndex={0}
       className={cn(
-        'pointer-events-auto group relative w-full overflow-hidden rounded-2xl',
-        'cursor-pointer select-none border text-right backdrop-blur-2xl',
-        'border-white/55 bg-gradient-to-br from-emerald-50/95 via-white/85 to-teal-50/85',
-        'shadow-[0_14px_40px_rgba(6,78,59,0.22),0_0_0_1px_rgba(255,255,255,0.5)_inset]',
+        'pointer-events-auto group relative w-full rounded-2xl',
+        'cursor-pointer select-none border text-right',
+        'border-emerald-200/60 bg-gradient-to-br from-emerald-50 via-white to-teal-50',
+        'shadow-[0_10px_28px_rgba(6,78,59,0.14)]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60'
       )}
-      style={{
-        WebkitBackdropFilter: 'blur(24px) saturate(1.35)',
-      }}
     >
-      {/* ה-glow העדין למעלה — מסמן "התראה חדשה!" */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-l from-transparent via-emerald-400/70 to-transparent"
-        aria-hidden
-      />
-
       <div className="flex items-start gap-3 px-3.5 py-3 sm:px-4">
         {/* Avatar */}
         <div className="relative shrink-0">

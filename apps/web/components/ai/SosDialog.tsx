@@ -463,13 +463,13 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 sm:py-10"
-      style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:px-4 sm:py-6"
+      style={{ paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}
     >
       <button
         type="button"
         aria-label="סגירה"
-        className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-slate-950/45"
         onClick={resetAndClose}
       />
 
@@ -480,8 +480,9 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={subtitleId}
-        className="relative z-10 flex max-h-[min(88vh,680px)] w-full max-w-md flex-col overflow-hidden rounded-[28px] text-right shadow-2xl"
+        className="relative z-10 flex w-full max-w-md flex-col overflow-hidden rounded-t-[28px] sm:rounded-[28px] text-right shadow-2xl"
         style={{
+          maxHeight: 'min(92dvh, 680px)',
           boxShadow: '0 24px 70px rgba(2,44,34,0.28)',
         }}
       >
@@ -509,11 +510,10 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
 
         {/* Body — iOS glass */}
         <div
-          className="min-h-0 flex-1 overflow-y-auto px-5 py-4"
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4"
           style={{
-            background: 'linear-gradient(180deg, rgba(236,253,245,0.72) 0%, rgba(209,250,229,0.55) 100%)',
-            backdropFilter: 'blur(32px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(32px) saturate(180%)',
+            background: 'linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%)',
+            WebkitOverflowScrolling: 'touch',
           }}
         >
           {outcomeSaved || taskMarked ? (
