@@ -3,7 +3,7 @@ import {
   resolveTaskSchedule,
   slotsForSchedule,
 } from './task-schedule';
-import type { JourneyTask, JourneyTaskSlot } from '../types/journey';
+import type { JourneyTask, JourneyTaskSchedule, JourneyTaskSlot, MealTarget, MealTiming } from '../types/journey';
 
 /** פריטי משימה/הרגל מתוך שדה JSON ב-journey_steps — שימוש חוזר בדיווח ובתפריט פעולות */
 
@@ -39,6 +39,7 @@ export function parseJourneyTasksFull(raw: unknown): JourneyTask[] {
       schedule: row.schedule as JourneyTask['schedule'],
       times_per_day: typeof row.times_per_day === 'number' ? row.times_per_day : null,
       weekly_day: typeof row.weekly_day === 'number' ? row.weekly_day : null,
+      monthly_day: typeof row.monthly_day === 'number' ? row.monthly_day : null,
       meal_timing: row.meal_timing as JourneyTask['meal_timing'],
       meal_target: row.meal_target as JourneyTask['meal_target'],
       leveling:
@@ -163,6 +164,12 @@ export type PendingTaskTodayRow = {
   /** מפתחי סלוט (JourneyTaskSlot) — לא labels עבריים */
   pendingSlots: string[];
   done: boolean;
+  schedule: JourneyTaskSchedule;
+  times_per_day: number;
+  weekly_day: number;
+  monthly_day: number;
+  meal_timing: MealTiming;
+  meal_target: MealTarget;
 };
 
 /** רשימת משימות פתוחות/סגורות להיום — לתצוגה בבית ובפופאפ. */
@@ -187,7 +194,8 @@ export function listPendingTasksToday(
       const entry = ts[t.id];
       if (entry?.status !== 'accepted') continue;
 
-      const { schedule, times_per_day } = resolveTaskSchedule(t);
+      const { schedule, times_per_day, weekly_day, monthly_day, meal_timing, meal_target } =
+        resolveTaskSchedule(t);
       if (schedule === 'one_time') {
         const done = entry.execution_done === true;
         out.push({
@@ -199,6 +207,12 @@ export function listPendingTasksToday(
           stepNumber: step.step_number,
           pendingSlots: done ? [] : ['once'],
           done,
+          schedule,
+          times_per_day,
+          weekly_day,
+          monthly_day,
+          meal_timing,
+          meal_target,
         });
         continue;
       }
@@ -219,6 +233,12 @@ export function listPendingTasksToday(
         stepNumber: step.step_number,
         pendingSlots,
         done,
+        schedule,
+        times_per_day,
+        weekly_day,
+        monthly_day,
+        meal_timing,
+        meal_target,
       });
     }
   }

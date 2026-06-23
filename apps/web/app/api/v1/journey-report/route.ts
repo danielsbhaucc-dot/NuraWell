@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireApiSession } from '../../../../lib/api/route-guards';
 import { jerusalemDateKey } from '../../../../lib/journey/task-schedule';
+import { parseDailyRhythm } from '../../../../lib/journey/daily-rhythm';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -78,6 +79,13 @@ export async function GET(request: Request) {
     const sinceKey = jerusalemDateKey(since);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: profileRow } = await supabase
+      .from('profiles')
+      .select('wake_up_time, sleep_time, meal_count, meal_schedule, daily_rhythm')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: rawExec } = await supabase
       .from('journey_task_executions')
       .select('step_id, task_id, slot, completed_at, date_key, source, outcome')
@@ -98,6 +106,13 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       today_date_key: todayKey,
+      user_schedule: {
+        wake_up_time: profileRow?.wake_up_time ?? null,
+        sleep_time: profileRow?.sleep_time ?? null,
+        meal_count: typeof profileRow?.meal_count === 'number' ? profileRow.meal_count : null,
+        meal_schedule: Array.isArray(profileRow?.meal_schedule) ? profileRow.meal_schedule : null,
+        daily_rhythm: parseDailyRhythm(profileRow?.daily_rhythm),
+      },
       steps: (rawSteps ?? []).map((s: { id: string }) => ({
         ...s,
         progress: progByStep.get(s.id) ?? null,

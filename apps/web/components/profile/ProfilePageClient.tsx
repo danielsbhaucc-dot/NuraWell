@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { motion } from 'framer-motion';
 import {
-  User, Award, BookOpen, Flame, LogOut, ChevronLeft, Shield, Settings, Save, X, Bell, Sparkles
+  User, Award, BookOpen, Flame, LogOut, ChevronLeft, Shield, Settings, Save, X, Bell, Sparkles, Clock
 } from 'lucide-react';
 import { signOutClient } from '../../lib/auth/sign-out-client';
 import { useRouter } from 'next/navigation';
@@ -83,6 +83,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
     ...(profile?.role === 'admin' && opsUrl
       ? [{ label: 'פאנל ניהול', href: `${opsUrl}/`, icon: Shield, emoji: '🛠️' }]
       : []),
+    { label: 'לוח הזמנים שלי', href: '/settings/schedule', icon: Clock, emoji: '⏰' },
     { label: 'פרטיות ונתונים', href: '/settings/privacy', icon: Shield, emoji: '🔒' },
     { label: 'התראות מאלמוג', href: '/settings/almog', icon: Bell, emoji: '🔔' },
     { label: 'בית', href: '/home', icon: BookOpen, emoji: '🏠' },

@@ -114,7 +114,8 @@ export interface Research {
  *  - multi_daily   = X פעמים ביום. times_per_day קובע את מספר הסלוטים (2..6).
  *                    סלוטים גנריים: morning / noon / evening (2-3) או slot_1..slot_n (4+).
  *  - weekly        = שבועי. תיבת סימון אחת ביום שנקבע (weekly_day, 0=ראשון..6=שבת).
- *  - per_meal      = משימה הקשורה לארוחה. `meal_timing` קובע אם זה לפני או אחרי,
+ *  - monthly       = חודשי. תיבת סימון ביום בחודש שנקבע (monthly_day, 1..31).
+ *  - per_meal      = משימה הקשורה לארוחה. `meal_timing` קובע אם זה לפני / בזמן / אחרי,
  *                    ו-`meal_target` קובע אם מספר הארוחות מוגדר ידנית (`fixed`) או
  *                    נגזר מ-`profile.meal_count` (`all`). סלוטים: meal_breakfast /
  *                    meal_lunch / meal_dinner (וכן meal_snack_morning / meal_snack_evening
@@ -125,15 +126,17 @@ export type JourneyTaskSchedule =
   | 'daily'
   | 'multi_daily'
   | 'weekly'
+  | 'monthly'
   | 'per_meal';
 
 /**
  * האם המשימה מבוצעת לפני או אחרי הארוחה.
- *  - before = "לפני כל ארוחה" — תזכורת לפני המקום שהמשתמש חושב לאכול.
- *  - after  = "אחרי כל ארוחה" — תזכורת/חיזוק לאחר ארוחה.
+ *  - before = "לפני כל ארוחה"
+ *  - during = "בזמן הארוחה"
+ *  - after  = "אחרי כל ארוחה"
  *  ברירת מחדל כשחסר: 'before' (תאימות לאחור לקוד שדידע רק per_meal).
  */
-export type MealTiming = 'before' | 'after';
+export type MealTiming = 'before' | 'during' | 'after';
 
 /**
  * איך לקבוע כמה סלוטי-ארוחה יש במשימת per_meal:
@@ -226,6 +229,8 @@ export interface JourneyTask {
   times_per_day?: number | null;
   /** רלוונטי ל-weekly (0..6) */
   weekly_day?: number | null;
+  /** רלוונטי ל-monthly (1..31) */
+  monthly_day?: number | null;
   /** רלוונטי ל-per_meal; ברירת מחדל 'before' לתאימות לאחור */
   meal_timing?: MealTiming | null;
   /** רלוונטי ל-per_meal; ברירת מחדל 'fixed' לתאימות לאחור */

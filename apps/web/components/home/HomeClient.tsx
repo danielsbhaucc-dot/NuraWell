@@ -25,12 +25,18 @@ import {
 } from '../../lib/journey/journey-report-parse';
 import { dispatchOpenAlmogChatWithPrefill, dispatchOpenAlmogChatWithTaskReport } from '../../lib/notifications/open-almog-chat';
 import { buildTaskReportHintFromPendingRow } from '../../lib/ai/task-report-hint';
+import { useProgressReport } from '../progress-report/ProgressReportProvider';
 import { useActionHub } from '../action-hub/ActionHubProvider';
+import {
+  pickNextTaskForNow,
+  type UserScheduleProfile,
+} from '../../lib/journey/pick-next-task-for-now';
 
 type JourneyReportResponse = {
   steps: JourneyReportStepShape[];
   today_executions?: TodayExecutionRow[];
   today_date_key?: string;
+  user_schedule?: UserScheduleProfile;
 };
 
 export type HomeStats = {
@@ -62,10 +68,12 @@ export function HomeClient({
   simplifiedDashboard = false,
   mentorWidget,
 }: HomeClientProps) {
+  const progressReport = useProgressReport();
   const actionHub = useActionHub();
   const [taskLoading, setTaskLoading] = useState(true);
   const [tasksPopupOpen, setTasksPopupOpen] = useState(false);
   const [todayTasks, setTodayTasks] = useState<PendingTaskTodayRow[]>([]);
+  const [userSchedule, setUserSchedule] = useState<UserScheduleProfile | undefined>(undefined);
   const [taskCounts, setTaskCounts] = useState({
     accepted: 0,
     done: 0,
@@ -86,6 +94,7 @@ export function HomeClient({
         countAcceptedTaskExecutionToday(steps, todayExecutions, todayDateKey)
       );
       setTodayTasks(listPendingTasksToday(steps, todayExecutions, todayDateKey));
+      setUserSchedule(json.user_schedule ?? {});
     } finally {
       setTaskLoading(false);
     }
@@ -94,6 +103,11 @@ export function HomeClient({
   useEffect(() => {
     void refreshTasks();
   }, [refreshTasks]);
+
+  const nextTask = useMemo(
+    () => pickNextTaskForNow(todayTasks, userSchedule ?? {}),
+    [todayTasks, userSchedule]
+  );
 
   const greeting = useMemo(() => {
     const taskState: GreetingTaskState = taskLoading
@@ -104,9 +118,17 @@ export function HomeClient({
           ? 'pending'
           : 'done';
 
-    const pendingTasks = todayTasks
-      .filter((t) => !t.done)
-      .map((t) => ({ title: t.title, emoji: t.emoji }));
+    const pendingTasks = nextTask
+      ? [
+          {
+            title: nextTask.title,
+            emoji: nextTask.emoji,
+            slotLabel: nextTask.timeHint,
+          },
+        ]
+      : todayTasks
+          .filter((t) => !t.done)
+          .map((t) => ({ title: t.title, emoji: t.emoji }));
 
     return buildAlmogGreeting({
       firstName,
@@ -116,25 +138,45 @@ export function HomeClient({
       dueToday: taskCounts.dueToday,
       pendingTasks,
     });
-  }, [taskCounts, taskLoading, firstName, todayTasks]);
+  }, [taskCounts, taskLoading, firstName, todayTasks, nextTask]);
 
   const bubbleContent = useMemo(() => {
-    if (!greeting.highlight) {
-      return <>{greeting.lead}</>;
-    }
-
     return (
       <>
         {greeting.lead}
-        <br />
-        <strong style={{ color: '#FFD97D', fontWeight: 700 }}>{greeting.highlight}</strong>
+        {greeting.featuredTask ? (
+          <FeaturedTaskChip
+            title={greeting.featuredTask.title}
+            emoji={greeting.featuredTask.emoji}
+            slotLabel={greeting.featuredTask.slotLabel}
+          />
+        ) : null}
+        {greeting.highlight ? (
+          <>
+            <br />
+            <span
+              style={{
+                display: 'inline-block',
+                marginTop: greeting.featuredTask ? '6px' : '0',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'rgba(255,255,255,0.88)',
+                lineHeight: 1.5,
+              }}
+            >
+              {greeting.highlight}
+            </span>
+          </>
+        ) : null}
       </>
     );
   }, [greeting]);
 
   const chatCta = useMemo(() => {
     if (!greeting.chatPrefill || !greeting.chatCtaLabel) return undefined;
-    const firstPending = todayTasks.find((t) => !t.done);
+    const firstPending = nextTask
+      ? todayTasks.find((t) => t.id === nextTask.taskId && !t.done)
+      : todayTasks.find((t) => !t.done);
     return {
       label: greeting.chatCtaLabel,
       prefill: greeting.chatPrefill,
@@ -142,7 +184,7 @@ export function HomeClient({
         ? buildTaskReportHintFromPendingRow(firstPending, 'home_hero')
         : undefined,
     };
-  }, [greeting, todayTasks]);
+  }, [greeting, todayTasks, nextTask]);
 
   const taskProgress = useMemo(() => {
     if (!greeting.showProgress || !greeting.progressTotal) return undefined;
@@ -152,9 +194,12 @@ export function HomeClient({
     };
   }, [greeting]);
 
-  const firstPendingTitle = useMemo(
-    () => todayTasks.find((t) => !t.done)?.title ?? null,
-    [todayTasks]
+  const taskPreview = useMemo(
+    () =>
+      nextTask
+        ? { title: nextTask.title, hint: nextTask.timeHint, emoji: nextTask.emoji }
+        : null,
+    [nextTask]
   );
 
   return (
@@ -165,6 +210,7 @@ export function HomeClient({
           background:
             'linear-gradient(155deg, #034d3a 0%, #059669 35%, #0d9488 65%, #10b981 85%, #34d399 100%)',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
+          isolation: 'isolate',
         }}
       >
         <span
@@ -196,7 +242,9 @@ export function HomeClient({
               done: taskCounts.done,
               accepted: taskCounts.accepted,
               dueToday: taskCounts.dueToday,
-              previewTitle: firstPendingTitle,
+              previewTitle: taskPreview?.title ?? null,
+              previewHint: taskPreview?.hint ?? null,
+              previewEmoji: taskPreview?.emoji ?? null,
               loading: taskLoading,
             }}
             onTaskBadgeClick={() => setTasksPopupOpen(true)}
@@ -422,16 +470,84 @@ export function HomeClient({
 
       <TodayTasksPopup
         open={tasksPopupOpen}
+        firstName={firstName}
         tasks={todayTasks}
         doneCount={taskCounts.done}
         pendingCount={taskCounts.pending}
+        userSchedule={userSchedule}
         onClose={() => setTasksPopupOpen(false)}
-        onMarkDone={() => actionHub.open()}
+        onMarkDone={() => {
+          setTasksPopupOpen(false);
+          progressReport.open('task_execution');
+        }}
         onOpenChat={(prefill, hint) => {
           if (hint) dispatchOpenAlmogChatWithTaskReport(prefill, hint);
           else dispatchOpenAlmogChatWithPrefill(prefill);
         }}
       />
     </div>
+  );
+}
+
+/** תגית משימה מודרנית בתוך בועת אלמוג */
+export function FeaturedTaskChip({
+  title,
+  emoji,
+  slotLabel,
+}: {
+  title: string;
+  emoji?: string;
+  slotLabel?: string;
+}) {
+  return (
+    <span
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '8px',
+        marginTop: '8px',
+        padding: '8px 10px',
+        borderRadius: '12px',
+        background: 'linear-gradient(135deg, rgba(255,217,125,0.22), rgba(255,255,255,0.1))',
+        border: '1px solid rgba(255,217,125,0.35)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
+      }}
+    >
+      {emoji ? (
+        <span style={{ fontSize: '16px', lineHeight: 1.2, flexShrink: 0 }} aria-hidden>
+          {emoji}
+        </span>
+      ) : null}
+      <span style={{ minWidth: 0, flex: 1 }}>
+        <span
+          style={{
+            display: 'block',
+            fontSize: '13px',
+            fontWeight: 800,
+            color: '#FFF7ED',
+            lineHeight: 1.4,
+            wordBreak: 'break-word',
+          }}
+        >
+          {title}
+        </span>
+        {slotLabel ? (
+          <span
+            style={{
+              display: 'inline-block',
+              marginTop: '3px',
+              fontSize: '10px',
+              fontWeight: 700,
+              color: 'rgba(255,255,255,0.78)',
+              background: 'rgba(255,255,255,0.12)',
+              borderRadius: '999px',
+              padding: '2px 8px',
+            }}
+          >
+            {slotLabel}
+          </span>
+        ) : null}
+      </span>
+    </span>
   );
 }
