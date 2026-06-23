@@ -71,15 +71,23 @@ export function jerusalemMinutesIntoDay(date: Date = new Date()): number {
 
 /** מחזיר schedule בטוח לערך גולמי (ברירת מחדל: one_time). */
 export function normalizeTaskSchedule(value: unknown): JourneyTaskSchedule {
-  if (value === 'daily' || value === 'multi_daily' || value === 'weekly' || value === 'per_meal') {
+  if (
+    value === 'daily' ||
+    value === 'multi_daily' ||
+    value === 'weekly' ||
+    value === 'monthly' ||
+    value === 'per_meal'
+  ) {
     return value;
   }
   return 'one_time';
 }
 
-/** ברירת מחדל לטיימינג ארוחה (לפני / אחרי). */
+/** ברירת מחדל לטיימינג ארוחה (לפני / בזמן / אחרי). */
 export function normalizeMealTiming(value: unknown): MealTiming {
-  return value === 'after' ? 'after' : 'before';
+  if (value === 'after') return 'after';
+  if (value === 'during') return 'during';
+  return 'before';
 }
 
 /** ברירת מחדל למטרת ארוחה (fixed / all). */
@@ -96,13 +104,14 @@ export function normalizeMealTarget(value: unknown): MealTarget {
 export function resolveTaskSchedule(
   task: Pick<
     JourneyTask,
-    'schedule' | 'times_per_day' | 'weekly_day' | 'meal_timing' | 'meal_target'
+    'schedule' | 'times_per_day' | 'weekly_day' | 'monthly_day' | 'meal_timing' | 'meal_target'
   >,
   userProfile?: UserMealProfile | null
 ): {
   schedule: JourneyTaskSchedule;
   times_per_day: number;
   weekly_day: number;
+  monthly_day: number;
   meal_timing: MealTiming;
   meal_target: MealTarget;
 } {
@@ -132,16 +141,23 @@ export function resolveTaskSchedule(
     }
   }
 
-  if (schedule === 'one_time' || schedule === 'daily' || schedule === 'weekly') tpd = 1;
+  if (schedule === 'one_time' || schedule === 'daily' || schedule === 'weekly' || schedule === 'monthly') {
+    tpd = 1;
+  }
 
   const wd =
     typeof task.weekly_day === 'number' && task.weekly_day >= 0 && task.weekly_day <= 6
       ? task.weekly_day
       : 0;
+  const md =
+    typeof task.monthly_day === 'number' && task.monthly_day >= 1 && task.monthly_day <= 31
+      ? task.monthly_day
+      : 1;
   return {
     schedule,
     times_per_day: tpd,
     weekly_day: wd,
+    monthly_day: md,
     meal_timing: mealTiming,
     meal_target: mealTarget,
   };
@@ -166,7 +182,7 @@ export function slotsForSchedule(
   timesPerDay: number
 ): JourneyTaskSlot[] {
   if (schedule === 'one_time') return ['full_day'];
-  if (schedule === 'daily' || schedule === 'weekly') return ['full_day'];
+  if (schedule === 'daily' || schedule === 'weekly' || schedule === 'monthly') return ['full_day'];
   if (schedule === 'per_meal') {
     if (timesPerDay >= 5) {
       return [
@@ -202,7 +218,8 @@ export function slotsForSchedule(
  * לפני שם הארוחה. בלי הפרמטר, מציג את שם הארוחה בלבד (תאימות לאחור).
  */
 export function slotLabel(slot: JourneyTaskSlot, mealTiming?: MealTiming): string {
-  const prefix = mealTiming === 'after' ? 'אחרי' : mealTiming === 'before' ? 'לפני' : '';
+  const prefix =
+    mealTiming === 'after' ? 'אחרי' : mealTiming === 'during' ? 'בזמן' : mealTiming === 'before' ? 'לפני' : '';
   const wrap = (mealLabel: string) => (prefix ? `${prefix} ${mealLabel}` : mealLabel);
   switch (slot) {
     case 'full_day':
@@ -328,14 +345,44 @@ export function pendingSlotsForToday(
   return slots.filter((s) => !isSlotCompleted(executions, taskId, dateKey, s));
 }
 
+/** יום בחודש (1..31) לפי לוח ירושלים */
+export function jerusalemDayOfMonth(date: Date = new Date()): number {
+  const d = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Jerusalem',
+    day: 'numeric',
+  }).format(date);
+  return Number.parseInt(d, 10) || 1;
+}
+
+/** יום אחרון בחודש הנוכחי (ירושלים) */
+export function jerusalemLastDayOfMonth(date: Date = new Date()): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: 'numeric',
+  }).formatToParts(date);
+  const year = Number.parseInt(parts.find((p) => p.type === 'year')?.value ?? '2026', 10);
+  const month = Number.parseInt(parts.find((p) => p.type === 'month')?.value ?? '1', 10);
+  return new Date(year, month, 0).getDate();
+}
+
+/** האם היום בחודש תואם ליום חודשי שנקבע (31 בפברואר → יום אחרון). */
+export function isMonthlyDayActive(monthlyDay: number, date: Date = new Date()): boolean {
+  const dom = jerusalemDayOfMonth(date);
+  const last = jerusalemLastDayOfMonth(date);
+  const target = Math.min(Math.max(1, monthlyDay), 31);
+  return dom === Math.min(target, last);
+}
+
 /** האם משימה חוזרת היום (כלומר, יש מה לסמן היום)? */
 export function isTaskActiveToday(
-  task: Pick<JourneyTask, 'schedule' | 'times_per_day' | 'weekly_day'>,
+  task: Pick<JourneyTask, 'schedule' | 'times_per_day' | 'weekly_day' | 'monthly_day'>,
   date: Date = new Date()
 ): boolean {
-  const { schedule, weekly_day } = resolveTaskSchedule(task);
+  const { schedule, weekly_day, monthly_day } = resolveTaskSchedule(task);
   if (schedule === 'one_time') return false;
   if (schedule === 'weekly') return jerusalemWeekday(date) === weekly_day;
+  if (schedule === 'monthly') return isMonthlyDayActive(monthly_day, date);
   return true;
 }
 
@@ -350,7 +397,8 @@ export function scheduleLabel(
   timesPerDay: number,
   weeklyDay: number,
   mealTiming: MealTiming = 'before',
-  mealTarget: MealTarget = 'fixed'
+  mealTarget: MealTarget = 'fixed',
+  monthlyDay = 1
 ): string {
   const WEEKDAY = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
   switch (schedule) {
@@ -362,8 +410,11 @@ export function scheduleLabel(
       return `${timesPerDay} פעמים ביום`;
     case 'weekly':
       return `שבועי · יום ${WEEKDAY[weeklyDay] ?? '?'}`;
+    case 'monthly':
+      return `חודשי · יום ${monthlyDay} בחודש`;
     case 'per_meal': {
-      const prefix = mealTiming === 'after' ? 'אחרי' : 'לפני';
+      const prefix =
+        mealTiming === 'after' ? 'אחרי' : mealTiming === 'during' ? 'בזמן' : 'לפני';
       if (mealTarget === 'all') return `${prefix} כל הארוחות שלי`;
       if (timesPerDay >= 3) return `${prefix} כל ארוחה`;
       return `${prefix} ${timesPerDay} ארוחות`;

@@ -17,6 +17,7 @@ import type { JourneyTask, JourneyTaskSlot, JourneyTaskExecution } from '../../l
 import {
   resolveTaskSchedule,
   scheduleLabel,
+  normalizeMealTiming,
   type UserMealProfile,
 } from '../../lib/journey/task-schedule';
 import { TaskDailySlots } from '../journey/TaskDailySlots';
@@ -25,7 +26,6 @@ import { TaskLevelProgressCard } from '../journey/TaskLevelProgressCard';
 import { computeHabitProgressSnapshot } from '../../lib/journey/habit-progress';
 import { computeTaskLevelProgressSnapshot } from '../../lib/journey/task-level-progress';
 import { parseJourneyTasksFull } from '../../lib/journey/journey-report-parse';
-import type { JourneyHabit } from '../../lib/types/journey';
 
 type TaskStatus = 'accepted' | 'rejected' | 'pending';
 
@@ -75,7 +75,7 @@ function parseHabitItems(raw: unknown): JourneyHabit[] {
       frequency:
         freq === 'weekly' || freq === 'per_meal' ? (freq as 'weekly' | 'per_meal') : 'daily',
       weekly_day: typeof row.weekly_day === 'number' ? row.weekly_day : null,
-      meal_timing: row.meal_timing === 'after' ? 'after' : 'before',
+      meal_timing: normalizeMealTiming(row.meal_timing),
       meal_target: row.meal_target === 'all' ? 'all' : 'fixed',
       target_days:
         typeof row.target_days === 'number' && row.target_days >= 3 ? row.target_days : null,

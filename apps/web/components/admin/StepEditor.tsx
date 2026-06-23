@@ -1792,7 +1792,8 @@ export function StepEditor({ step }: StepEditorProps) {
               typeof t.weekly_day === 'number' && t.weekly_day >= 0 && t.weekly_day <= 6
                 ? t.weekly_day
                 : 0;
-            const mealTiming: 'before' | 'after' = t.meal_timing === 'after' ? 'after' : 'before';
+            const mealTiming: 'before' | 'during' | 'after' =
+              t.meal_timing === 'after' ? 'after' : t.meal_timing === 'during' ? 'during' : 'before';
             const mealTarget: 'fixed' | 'all' = t.meal_target === 'all' ? 'all' : 'fixed';
             return (
             <div key={t.id || ti} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(249,115,22,0.2)', background: 'rgba(255,255,255,0.75)' }}>
@@ -1841,26 +1842,28 @@ export function StepEditor({ step }: StepEditorProps) {
                       <option value="daily">יומי (איפוס בכל בוקר)</option>
                       <option value="multi_daily">כמה פעמים ביום</option>
                       <option value="weekly">שבועי (יום קבוע)</option>
-                      <option value="per_meal">לפני כל ארוחה</option>
+                      <option value="monthly">חודשי (יום בחודש)</option>
+                      <option value="per_meal">לפני/בזמן/אחרי ארוחה</option>
                     </select>
                   </Field>
 
                   {schedule === 'per_meal' ? (
                     <>
-                      <Field label="לפני או אחרי הארוחה">
+                      <Field label="מתי ביחס לארוחה">
                         <select
                           value={mealTiming}
                           onChange={(e) => {
                             const arr = [...tasks];
                             arr[ti] = {
                               ...arr[ti],
-                              meal_timing: e.target.value as 'before' | 'after',
+                              meal_timing: e.target.value as 'before' | 'during' | 'after',
                             };
                             setTasks(arr);
                           }}
                           className="input-field"
                         >
                           <option value="before">לפני הארוחה</option>
+                          <option value="during">בזמן הארוחה</option>
                           <option value="after">אחרי הארוחה</option>
                         </select>
                       </Field>
@@ -1936,6 +1939,30 @@ export function StepEditor({ step }: StepEditorProps) {
                         <option value={5}>שישי</option>
                         <option value={6}>שבת</option>
                       </select>
+                    </Field>
+                  ) : null}
+
+                  {schedule === 'monthly' ? (
+                    <Field label="יום בחודש (1–31)">
+                      <input
+                        type="number"
+                        min={1}
+                        max={31}
+                        value={
+                          typeof t.monthly_day === 'number' && t.monthly_day >= 1
+                            ? t.monthly_day
+                            : 1
+                        }
+                        onChange={(e) => {
+                          const arr = [...tasks];
+                          arr[ti] = {
+                            ...arr[ti],
+                            monthly_day: Math.min(31, Math.max(1, Number(e.target.value) || 1)),
+                          };
+                          setTasks(arr);
+                        }}
+                        className="input-field"
+                      />
                     </Field>
                   ) : null}
 

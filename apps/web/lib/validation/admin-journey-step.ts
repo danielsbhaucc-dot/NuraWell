@@ -110,11 +110,12 @@ const journeyTaskSchema = z.object({
   description: z.string().max(2000).nullable(),
   emoji: z.string().max(32),
   schedule: z
-    .enum(['one_time', 'daily', 'multi_daily', 'weekly', 'per_meal'])
+    .enum(['one_time', 'daily', 'multi_daily', 'weekly', 'monthly', 'per_meal'])
     .optional(),
   times_per_day: z.number().int().min(1).max(6).nullable().optional(),
   weekly_day: z.number().int().min(0).max(6).nullable().optional(),
-  meal_timing: z.enum(['before', 'after']).nullable().optional(),
+  monthly_day: z.number().int().min(1).max(31).nullable().optional(),
+  meal_timing: z.enum(['before', 'during', 'after']).nullable().optional(),
   meal_target: z.enum(['fixed', 'all']).nullable().optional(),
   leveling: taskLevelingSchema,
 });
@@ -126,7 +127,7 @@ const journeyHabitSchema = z.object({
   emoji: z.string().max(32),
   frequency: z.enum(['daily', 'weekly', 'per_meal']),
   weekly_day: z.number().int().min(0).max(6).nullable().optional(),
-  meal_timing: z.enum(['before', 'after']).nullable().optional(),
+  meal_timing: z.enum(['before', 'during', 'after']).nullable().optional(),
   meal_target: z.enum(['fixed', 'all']).nullable().optional(),
   target_days: z.number().int().min(1).max(365).nullable().optional(),
 });

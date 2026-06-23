@@ -14,11 +14,14 @@ export type GreetingTaskState = 'loading' | 'fresh' | 'pending' | 'done';
 export type AlmogGreetingTaskPreview = {
   title: string;
   emoji?: string;
+  slotLabel?: string;
 };
 
 export type AlmogGreeting = {
   /** טקסט פתיחה רגיל */
   lead: string;
+  /** משימה מודגשת — מוצגת בנפרד עם עיצוב מודרני (בלי « ») */
+  featuredTask?: AlmogGreetingTaskPreview;
   /** החלק המודגש (זהב) — ההזמנה/השאלה */
   highlight: string;
   /** כותרת משנה קצרה מתחת ל"✦ אלמוג" — משתנה לפי מצב */
@@ -43,11 +46,6 @@ function israelDateKey(now: Date): string {
   }).format(now);
 }
 
-function truncateTitle(title: string, max = 28): string {
-  const t = title.trim();
-  if (t.length <= max) return t;
-  return `${t.slice(0, max - 1)}…`;
-}
 
 /** פתיחות חמות לפי חלק היום — תחושת נוכחות אנושית. */
 const LEAD_FRESH: Record<PartOfDay, readonly string[]> = {
@@ -192,19 +190,22 @@ function buildPendingLead(params: {
   dueToday: number;
   pendingTasks: readonly AlmogGreetingTaskPreview[];
   seed: string;
-}): string {
+}): { lead: string; featuredTask?: AlmogGreetingTaskPreview } {
   const { firstName, pendingCount, doneCount, dueToday, pendingTasks, seed } = params;
   const name = firstName?.trim() ? `${firstName.trim()}, ` : '';
   const first = pendingTasks[0];
-  const firstTitle = first ? truncateTitle(first.title) : null;
+  const firstTitle = first?.title.trim() || null;
 
   if (pendingCount === 1 && firstTitle) {
     const variants = [
-      `${name}נשארה לך רק «${firstTitle}» להיום.`,
-      `${name}«${firstTitle}» עדיין פתוחה, וזה בסדר.`,
-      `${name}עוד משימה אחת: «${firstTitle}».`,
+      `${name}נשארה לך רק אחת להיום`,
+      `${name}עוד משימה אחת וסוגרים`,
+      `${name}האחרונה מחכה לך`,
     ];
-    return normalizeHebrewDashes(pickDaily(variants, `${seed}:one`));
+    return {
+      lead: normalizeHebrewDashes(pickDaily(variants, `${seed}:one`)),
+      featuredTask: first,
+    };
   }
 
   if (doneCount > 0 && dueToday > 0) {
@@ -213,22 +214,25 @@ function buildPendingLead(params: {
       `${name}${doneCount} בוצעו, עוד ${pendingCount} מחכות.`,
       `${name}התקדמת יפה, ${doneCount}/${dueToday} כבר בסל.`,
     ];
-    return normalizeHebrewDashes(pickDaily(variants, `${seed}:progress`));
+    return { lead: normalizeHebrewDashes(pickDaily(variants, `${seed}:progress`)) };
   }
 
   if (firstTitle && pendingCount > 1) {
     const others = pendingCount - 1;
     const variants = [
-      `${name}«${firstTitle}» ועוד ${others} מחכות לך.`,
-      `${name}יש ${pendingCount} משימות פתוחות, מתחילים מ«${firstTitle}»?`,
-      `${name}${pendingCount} משימות על היום, הראשונה: «${firstTitle}».`,
+      `${name}עוד ${others} מחכות, אבל קודם זו`,
+      `${name}${pendingCount} על היום — נתחיל מזו`,
+      `${name}יש ${pendingCount} פתוחות, הראשונה ברשימה`,
     ];
-    return normalizeHebrewDashes(pickDaily(variants, `${seed}:multi`));
+    return {
+      lead: normalizeHebrewDashes(pickDaily(variants, `${seed}:multi`)),
+      featuredTask: first,
+    };
   }
 
   const count =
     pendingCount === 1 ? 'משימה אחת שקיבלת' : `${pendingCount} משימות שקיבלת`;
-  return normalizeHebrewDashes(`${name}יש לך ${count} ועדיין לא סגרת.`);
+  return { lead: normalizeHebrewDashes(`${name}יש לך ${count} ועדיין לא סגרת.`) };
 }
 
 /**
@@ -267,15 +271,17 @@ export function buildAlmogGreeting(params: {
   const chat = buildChatPrefill({ taskState, pendingTasks, pendingCount });
 
   if (taskState === 'pending') {
+    const pendingLead = buildPendingLead({
+      firstName,
+      pendingCount,
+      doneCount,
+      dueToday,
+      pendingTasks,
+      seed,
+    });
     return {
-      lead: buildPendingLead({
-        firstName,
-        pendingCount,
-        doneCount,
-        dueToday,
-        pendingTasks,
-        seed,
-      }),
+      lead: pendingLead.lead,
+      featuredTask: pendingLead.featuredTask,
       highlight: buildSmartHighlight({
         taskState,
         pendingCount,

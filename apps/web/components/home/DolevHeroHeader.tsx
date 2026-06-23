@@ -29,6 +29,9 @@ interface AlmogHeroHeaderProps {
     dueToday?: number;
     /** תצוגה מקדימה של משימה ראשונה פתוחה */
     previewTitle?: string | null;
+    /** תווית זמן חכמה — למשל "עכשיו · בוקר" */
+    previewHint?: string | null;
+    previewEmoji?: string | null;
     /** האם הנתונים עוד בטעינה */
     loading?: boolean;
   };
@@ -59,11 +62,11 @@ export function AlmogHeroHeader({
         transition={{ duration: 0.35 }}
         className="mb-3 rounded-2xl px-4 py-3"
         style={{
-          background: 'rgba(255,255,255,0.18)',
-          border: '1px solid rgba(255,255,255,0.32)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
+          background:
+            'linear-gradient(145deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.16) 100%)',
+          border: '1px solid rgba(255,255,255,0.35)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 12px rgba(0,0,0,0.06)',
+          isolation: 'isolate',
         }}
       >
         <div
@@ -116,11 +119,11 @@ export function AlmogHeroHeader({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="flex items-end gap-3.5"
+        className="flex items-start gap-3"
       >
         <button
           type="button"
-          className="relative flex-shrink-0 -translate-y-2.5 sm:translate-y-0"
+          className="relative flex-shrink-0 self-start"
           onClick={() => window.dispatchEvent(new Event('open-almog-chat'))}
           aria-label="פתח צ׳אט עם אלמוג"
         >
@@ -197,13 +200,13 @@ export function AlmogHeroHeader({
           transition={{ duration: 0.5, delay: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
           style={{
             flex: 1,
-            background: 'rgba(255,255,255,0.14)',
-            backdropFilter: 'blur(18px)',
-            WebkitBackdropFilter: 'blur(18px)',
-            border: '1px solid rgba(255,255,255,0.28)',
+            background:
+              'linear-gradient(145deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.12) 100%)',
+            border: '1px solid rgba(255,255,255,0.3)',
             borderRadius: '18px 18px 18px 6px',
             padding: '11px 14px',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 20px rgba(0,0,0,0.15)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 4px 20px rgba(0,0,0,0.1)',
+            isolation: 'isolate',
           }}
         >
           <div
@@ -308,7 +311,7 @@ export function AlmogHeroHeader({
                 cursor: 'pointer',
               }}
             >
-              {chatCta.label} ←
+              {chatCta.label}
             </button>
           ) : null}
         </motion.div>
@@ -332,6 +335,8 @@ function TaskBadgeRow({
   accepted,
   dueToday = 0,
   previewTitle,
+  previewHint,
+  previewEmoji,
   onClick,
 }: {
   pending: number;
@@ -339,6 +344,8 @@ function TaskBadgeRow({
   accepted: number;
   dueToday?: number;
   previewTitle?: string | null;
+  previewHint?: string | null;
+  previewEmoji?: string | null;
   onClick?: () => void;
 }) {
   const Wrapper = onClick ? 'button' : 'div';
@@ -350,9 +357,6 @@ function TaskBadgeRow({
         'aria-label': 'פתח רשימת משימות היום',
       }
     : {};
-
-  const truncate = (title: string, max = 24) =>
-    title.length <= max ? title : `${title.slice(0, max - 1)}…`;
 
   if (accepted === 0) {
     return (
@@ -438,9 +442,9 @@ function TaskBadgeRow({
       style={{
         marginTop: '8px',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'stretch',
         gap: '8px',
-        padding: '7px 10px',
+        padding: '8px 10px',
         borderRadius: '12px',
         background:
           'linear-gradient(135deg, rgba(245,158,11,0.42), rgba(251,191,36,0.32))',
@@ -449,7 +453,7 @@ function TaskBadgeRow({
         fontFamily: "'Rubik','Heebo',sans-serif",
       }}
     >
-      <span style={{ fontSize: '14px' }} aria-hidden>
+      <span style={{ fontSize: '14px', alignSelf: 'center' }} aria-hidden>
         ⚡
       </span>
       <span
@@ -460,6 +464,7 @@ function TaskBadgeRow({
           letterSpacing: '0.2px',
           flex: 1,
           lineHeight: 1.35,
+          minWidth: 0,
         }}
       >
         {done > 0 && dueToday > 0 ? (
@@ -475,17 +480,77 @@ function TaskBadgeRow({
           </>
         )}
         {previewTitle ? (
-          <>
-            <br />
-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.92)' }}>
-              הבאה: {truncate(previewTitle)}
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '6px',
+              marginTop: '6px',
+              padding: '6px 8px',
+              borderRadius: '10px',
+              background: 'rgba(255,255,255,0.14)',
+              border: '1px solid rgba(255,255,255,0.22)',
+            }}
+          >
+            {previewEmoji ? (
+              <span style={{ fontSize: '14px', flexShrink: 0 }} aria-hidden>
+                {previewEmoji}
+              </span>
+            ) : null}
+            <span style={{ minWidth: 0, flex: 1 }}>
+              <span
+                style={{
+                  display: 'block',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  color: '#FFFFFF',
+                  lineHeight: 1.35,
+                  wordBreak: 'break-word',
+                }}
+              >
+                {previewTitle}
+              </span>
+              {previewHint ? (
+                <span
+                  style={{
+                    display: 'inline-block',
+                    marginTop: '2px',
+                    fontSize: '9px',
+                    fontWeight: 700,
+                    color: 'rgba(255,255,255,0.82)',
+                    background: 'rgba(0,0,0,0.12)',
+                    borderRadius: '999px',
+                    padding: '1px 7px',
+                  }}
+                >
+                  {previewHint}
+                </span>
+              ) : null}
             </span>
-          </>
+          </span>
         ) : null}
       </span>
       {onClick ? (
-        <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.85)', fontWeight: 800, flexShrink: 0 }}>
-          רשימה ›
+        <span
+          style={{
+            alignSelf: 'center',
+            flexShrink: 0,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '28px',
+            height: '28px',
+            borderRadius: '999px',
+            background: 'rgba(255,255,255,0.2)',
+            border: '1px solid rgba(255,255,255,0.35)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
+            fontSize: '14px',
+            color: '#FFFFFF',
+            fontWeight: 900,
+          }}
+          aria-hidden
+        >
+          ‹
         </span>
       ) : null}
     </Wrapper>
