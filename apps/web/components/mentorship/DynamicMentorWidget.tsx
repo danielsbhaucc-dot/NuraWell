@@ -11,6 +11,7 @@ import { DynamicMentorWidgetClient } from './DynamicMentorWidgetClient';
 
 type DynamicMentorWidgetProps = {
   userId: string;
+  firstName?: string;
   /** כשמועבר — מדלג על שליפה נוספת מ-Supabase (למשל מ-home/page). */
   strategy?: MentorshipStrategy | MentorshipStrategyRow;
 };
@@ -36,7 +37,11 @@ export async function loadMentorshipHomeContext(
  * וידג'ט מנטור אדפטיבי — שולף אסטרטגיה מ-Supabase ומציג רק את next_best_action.
  * במצב רגשי רגיש, ה-UI המקיף (HomeClient) מסתיר מטריקות מורכבות.
  */
-export async function DynamicMentorWidget({ userId, strategy: strategyProp }: DynamicMentorWidgetProps) {
+export async function DynamicMentorWidget({
+  userId,
+  firstName = 'משתמש',
+  strategy: strategyProp,
+}: DynamicMentorWidgetProps) {
   const strategy =
     strategyProp ??
     (await fetchUserMentorshipStrategy(await createClient(), userId));
@@ -46,6 +51,7 @@ export async function DynamicMentorWidget({ userId, strategy: strategyProp }: Dy
 
   return (
     <DynamicMentorWidgetClient
+      firstName={firstName}
       nextBestAction={strategy.next_best_action}
       isSensitiveState={isSensitiveState}
     />

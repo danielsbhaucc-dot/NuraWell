@@ -60,16 +60,30 @@ export function SosMemoryCard() {
   const previewCount = helped.length + failed.length + events.length;
   const showAccordion = previewCount > 2;
 
-  return (
-    <div dir="rtl" className="glass-surface-home relative overflow-hidden rounded-[22px] p-4 text-right">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-4 top-px h-px"
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
-        }}
-      />
+  const toggleExpanded = () => {
+    if (showAccordion) setExpanded((v) => !v);
+  };
 
+  return (
+    <div
+      dir="rtl"
+      role={showAccordion ? 'button' : undefined}
+      tabIndex={showAccordion ? 0 : undefined}
+      onClick={showAccordion ? toggleExpanded : undefined}
+      onKeyDown={
+        showAccordion
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleExpanded();
+              }
+            }
+          : undefined
+      }
+      className={`glass-surface-home rounded-[22px] p-4 text-right ${
+        showAccordion ? 'cursor-pointer transition active:scale-[0.995]' : ''
+      }`}
+    >
       <div className="relative mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div
@@ -83,18 +97,22 @@ export function SosMemoryCard() {
           </div>
           <div>
             <p className="text-sm font-black text-emerald-950">מה עזר לך לאחרונה</p>
-            <p className="text-[10px] font-semibold text-emerald-800/55">מסלול קצר — לא רשימה עמוסה</p>
+            <p className="text-[10px] font-semibold text-emerald-800/55">
+              {showAccordion ? 'לחץ לפתיחה / סגירה' : 'מסלול קצר'}
+            </p>
           </div>
         </div>
         {showAccordion ? (
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold text-emerald-800/70 glass-inset-home"
+          <span
+            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold text-emerald-50"
+            style={{
+              background: 'linear-gradient(145deg, #047857, #10b981)',
+              boxShadow: '0 4px 12px rgba(4,120,87,0.2)',
+            }}
           >
             {expanded ? 'סגור' : 'פתח'}
             <ChevronDown className={`h-3.5 w-3.5 transition ${expanded ? 'rotate-180' : ''}`} />
-          </button>
+          </span>
         ) : null}
       </div>
 
@@ -146,6 +164,7 @@ export function SosMemoryCard() {
 
       <Link
         href="/settings/sos-moments"
+        onClick={(e) => e.stopPropagation()}
         className="relative mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-800 hover:text-emerald-950"
       >
         ראה הכל

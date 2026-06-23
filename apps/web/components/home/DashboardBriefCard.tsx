@@ -39,9 +39,10 @@ const MOOD_STYLE: Record<
 
 interface DashboardBriefCardProps {
   onOpenTasks: () => void;
+  firstName?: string;
 }
 
-export function DashboardBriefCard({ onOpenTasks }: DashboardBriefCardProps) {
+export function DashboardBriefCard({ onOpenTasks, firstName }: DashboardBriefCardProps) {
   const router = useRouter();
   const [brief, setBrief] = useState<DashboardBrief | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,8 +99,7 @@ export function DashboardBriefCard({ onOpenTasks }: DashboardBriefCardProps) {
     return (
       <div
         dir="rtl"
-        className="glass-surface-home relative overflow-hidden p-4"
-        style={{ borderRadius: '22px' }}
+        className="glass-surface-home rounded-[22px] p-4"
       >
         <div className="flex items-center gap-2 mb-3">
           <div className="w-7 h-7 rounded-full bg-emerald-200/60 animate-pulse" />
@@ -123,16 +123,22 @@ export function DashboardBriefCard({ onOpenTasks }: DashboardBriefCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
       dir="rtl"
-      className="glass-surface-home relative overflow-hidden p-4"
+      className="glass-surface-home relative rounded-[22px] p-4"
       style={{ borderRadius: '22px' }}
     >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-4 top-px h-px"
         style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent)',
         }}
       />
+
+      {firstName && firstName !== 'משתמש' ? (
+        <p className="mb-2 text-[11px] font-semibold text-emerald-800/55">
+          היי {firstName} — קצר ואישי מהבית
+        </p>
+      ) : null}
 
       <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-2">

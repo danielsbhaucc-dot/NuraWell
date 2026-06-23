@@ -28,16 +28,9 @@ export function SosButton({ focusTasks = [] }: SosButtonProps) {
         type="button"
         onClick={() => setOpen(true)}
         dir="rtl"
-        className="glass-surface-home relative flex w-full items-center gap-3.5 overflow-hidden p-4 text-right transition active:scale-[0.99]"
+        className="glass-surface-home relative flex w-full items-center gap-3.5 p-4 text-right transition active:scale-[0.99]"
         style={{ borderRadius: '22px' }}
       >
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-x-4 top-px h-px"
-          style={{
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
-          }}
-        />
         <span
           className="flex h-[52px] w-[52px] flex-shrink-0 items-center justify-center rounded-2xl"
           style={{

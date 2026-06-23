@@ -12,6 +12,7 @@ import { AlmogHeroHeader } from './DolevHeroHeader';
 import { DashboardBriefCard } from './DashboardBriefCard';
 import { ProgramOrchestratorGate } from './ProgramOrchestratorGate';
 import { QuickAccessGrid } from './QuickAccessGrid';
+import { HomeSectionDivider } from './HomeSectionDivider';
 import { TodayTasksPopup } from './TodayTasksPopup';
 import { SosButton } from '../ai/SosButton';
 import { SosMemoryCard } from '../ai/SosMemoryCard';
@@ -261,17 +262,23 @@ export function HomeClient({
           boxShadow: '0 -16px 48px rgba(6,78,59,0.12)',
         }}
       >
-        <motion.div variants={container} initial="hidden" animate="show" className="mx-auto max-w-lg space-y-4">
-          {/* 🎛️ Program Orchestrator — מנהל את "Level Up"/kickoff/pivot.
-              Dumb UI: מצייר את מה שה-AI הכתיב, ונועל את הבית במצב Level Up. */}
+        <motion.div variants={container} initial="hidden" animate="show" className="mx-auto max-w-lg space-y-3 safe-chat-fab">
           <ProgramOrchestratorGate />
 
-          {mentorWidget ? <motion.div variants={item}>{mentorWidget}</motion.div> : null}
+          {mentorWidget ? (
+            <>
+              <motion.div variants={item}>{mentorWidget}</motion.div>
+              <HomeSectionDivider />
+            </>
+          ) : null}
 
           {!simplifiedDashboard && (
-            <motion.div variants={item}>
-              <DashboardBriefCard onOpenTasks={() => actionHub.open()} />
-            </motion.div>
+            <>
+              <motion.div variants={item}>
+                <DashboardBriefCard onOpenTasks={() => actionHub.open()} firstName={firstName} />
+              </motion.div>
+              <HomeSectionDivider />
+            </>
           )}
 
           <motion.div variants={item}>
@@ -289,9 +296,13 @@ export function HomeClient({
             />
           </motion.div>
 
+          <HomeSectionDivider />
+
           <motion.div variants={item}>
             <SosMemoryCard />
           </motion.div>
+
+          <HomeSectionDivider label="היום שלך" />
 
           {/* משימות */}
           <motion.div variants={item}>
@@ -302,18 +313,9 @@ export function HomeClient({
             >
               <motion.div
                 dir="rtl"
-                className="glass-surface-home relative flex flex-row-reverse gap-3.5 items-center p-4 overflow-hidden"
+                className="glass-surface-home relative flex flex-row-reverse gap-3.5 items-center p-4"
                 style={{ borderRadius: '22px' }}
               >
-                {/* ✦ קו אור עליון — specular highlight */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-x-4 top-px h-px"
-                  style={{
-                    background:
-                      'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)',
-                  }}
-                />
                 <div
                   className="flex-shrink-0 flex flex-col items-center justify-center"
                   style={{
@@ -426,6 +428,8 @@ export function HomeClient({
               </Link>
             </motion.div>
           )}
+
+          <HomeSectionDivider label="ניווט מהיר" />
 
           <motion.div variants={item}>
             <QuickAccessGrid
