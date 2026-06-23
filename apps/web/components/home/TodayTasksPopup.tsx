@@ -179,9 +179,12 @@ export function TodayTasksPopup({
             transition={{ type: 'spring', stiffness: 340, damping: 30 }}
             style={{
               maxHeight: '100%',
-              background: '#f0fdf8',
-              border: '1px solid rgba(255,255,255,0.9)',
-              boxShadow: '0 32px 80px rgba(4,47,36,0.35), 0 0 0 1px rgba(16,185,129,0.08)',
+              background:
+                'linear-gradient(168deg, rgba(255,255,255,0.78) 0%, rgba(236,253,245,0.62) 52%, rgba(255,255,255,0.72) 100%)',
+              border: '1px solid rgba(167,243,208,0.35)',
+              boxShadow: '0 32px 80px rgba(4,47,36,0.32), inset 0 1px 0 rgba(255,255,255,0.85)',
+              backdropFilter: 'blur(28px) saturate(1.5)',
+              WebkitBackdropFilter: 'blur(28px) saturate(1.5)',
             }}
           >
             <button
@@ -201,7 +204,9 @@ export function TodayTasksPopup({
               className="relative shrink-0 px-5 pt-5 pb-4 text-right overflow-hidden"
               style={{
                 background:
-                  'linear-gradient(145deg, #034d3a 0%, #047857 42%, #0d9488 100%)',
+                  'linear-gradient(145deg, rgba(3,77,58,0.92) 0%, rgba(4,120,87,0.88) 42%, rgba(13,148,136,0.85) 100%)',
+                borderBottom: '1px solid rgba(255,255,255,0.12)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)',
               }}
             >
               <span
@@ -215,14 +220,15 @@ export function TodayTasksPopup({
                 <div
                   className="shrink-0 rounded-full p-[2px]"
                   style={{
-                    background: 'linear-gradient(145deg, #FFD97D, #10b981)',
+                    background: 'linear-gradient(145deg, rgba(255,217,125,0.95), rgba(16,185,129,0.9))',
                     boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
                   }}
                 >
                   <img
                     src={avatarUrl}
                     alt=""
-                    className="h-12 w-12 rounded-full object-cover bg-white"
+                    className="h-12 w-12 rounded-full object-cover"
+                    style={{ background: 'rgba(255,255,255,0.15)' }}
                     onError={(e) => {
                       e.currentTarget.onerror = null;
                       e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
@@ -269,7 +275,13 @@ export function TodayTasksPopup({
               ) : null}
             </div>
 
-            <div className="p-4 space-y-2.5 overflow-y-auto flex-1 min-h-0 bg-gradient-to-b from-white to-emerald-50/40">
+            <div
+              className="p-4 space-y-2.5 overflow-y-auto flex-1 min-h-0"
+              style={{
+                background:
+                  'linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(236,253,245,0.28) 100%)',
+              }}
+            >
               {pendingTasks.length === 0 && doneTasks.length === 0 ? (
                 <div
                   className="rounded-2xl p-4 text-right"
@@ -318,14 +330,16 @@ export function TodayTasksPopup({
                     className="w-full text-right rounded-2xl p-3.5 transition active:scale-[0.98]"
                     style={{
                       background: isFeatured
-                        ? 'linear-gradient(170deg, #ffffff 0%, #fffbeb 100%)'
-                        : '#ffffff',
+                        ? 'linear-gradient(170deg, rgba(255,255,255,0.72) 0%, rgba(255,251,235,0.58) 100%)'
+                        : 'rgba(255,255,255,0.55)',
                       border: isFeatured
-                        ? '1.5px solid rgba(245,158,11,0.45)'
-                        : '1px solid rgba(167,243,208,0.45)',
+                        ? '1px solid rgba(245,158,11,0.38)'
+                        : '1px solid rgba(167,243,208,0.4)',
                       boxShadow: isFeatured
-                        ? '0 10px 24px rgba(245,158,11,0.12)'
-                        : '0 4px 14px rgba(6,78,59,0.05)',
+                        ? '0 10px 24px rgba(245,158,11,0.1), inset 0 1px 0 rgba(255,255,255,0.75)'
+                        : '0 4px 14px rgba(6,78,59,0.05), inset 0 1px 0 rgba(255,255,255,0.65)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
                     }}
                     aria-label={`ספר לאלמוג שסיימת את ${task.title}`}
                   >
@@ -429,8 +443,10 @@ export function TodayTasksPopup({
             <div
               className="px-4 py-3.5 shrink-0 space-y-2.5"
               style={{
-                background: '#ffffff',
-                borderTop: '1px solid rgba(167,243,208,0.45)',
+                background: 'rgba(255,255,255,0.38)',
+                borderTop: '1px solid rgba(167,243,208,0.32)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
               }}
             >
               {pendingCount > 0 ? (
