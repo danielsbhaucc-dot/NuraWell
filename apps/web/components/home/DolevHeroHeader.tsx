@@ -140,20 +140,94 @@ export function AlmogHeroHeader({
         transition={{ duration: 0.5, delay: 0.1 }}
         className="pb-1"
       >
-        <div className="relative" dir="rtl">
+        <div className="flex items-start gap-2.5" dir="rtl">
+          <button
+            type="button"
+            className="relative z-10 shrink-0"
+            style={{ marginTop: '2px' }}
+            onClick={() => window.dispatchEvent(new Event('open-almog-chat'))}
+            aria-label="פתח צ׳אט עם אלמוג"
+          >
+            <motion.div
+              className="absolute rounded-full"
+              style={{
+                inset: '-6px',
+                background: 'conic-gradient(from 0deg, #14b8a6, #10b981, #f59e0b, #10b981, #14b8a6)',
+                filter: 'blur(12px)',
+                opacity: 0.5,
+                zIndex: -1,
+              }}
+            />
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background: 'conic-gradient(from 0deg, #14b8a6 0%, #10b981 30%, #f59e0b 55%, #10b981 75%, #14b8a6 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 14px rgba(16,185,129,0.22)',
+              }}
+            >
+              <div
+                style={{
+                  width: '58px',
+                  height: '58px',
+                  borderRadius: '50%',
+                  background: 'rgba(236,253,245,0.95)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '2px',
+                  overflow: 'hidden',
+                }}
+              >
+                <img
+                  src={avatarUrl}
+                  alt="אלמוג"
+                  style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                  }}
+                />
+              </div>
+            </div>
+            {!contentLoading ? (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '0',
+                  right: '2px',
+                  background: '#14b8a6',
+                  border: '2px solid rgba(236,253,245,0.95)',
+                  borderRadius: '20px',
+                  padding: '3px 7px',
+                  display: 'flex',
+                  gap: '2px',
+                  alignItems: 'center',
+                  boxShadow: '0 2px 8px rgba(20,184,166,0.4)',
+                }}
+              >
+                <span style={{ width: '3px', height: '3px', background: 'rgba(236,253,245,0.95)', borderRadius: '50%', display: 'inline-block' }} />
+                <span style={{ width: '3px', height: '3px', background: 'rgba(236,253,245,0.95)', borderRadius: '50%', display: 'inline-block' }} />
+                <span style={{ width: '3px', height: '3px', background: 'rgba(236,253,245,0.95)', borderRadius: '50%', display: 'inline-block' }} />
+              </div>
+            ) : null}
+          </button>
+
           <motion.div
             initial={{ opacity: 0, y: 8, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
-            className="min-w-0"
+            className="min-w-0 flex-1"
             style={{
-              paddingTop: '58px',
-              paddingInline: '14px',
-              paddingBottom: '11px',
+              padding: '11px 14px',
               background:
                 'linear-gradient(145deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.12) 100%)',
               border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: '18px 6px 18px 18px',
+              borderRadius: '6px 18px 18px 18px',
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 4px 20px rgba(0,0,0,0.1)',
               isolation: 'isolate',
             }}
@@ -199,85 +273,6 @@ export function AlmogHeroHeader({
               {contentLoading ? <BubbleLoadingSkeleton /> : bubbleContent}
             </div>
           </motion.div>
-
-          <button
-            type="button"
-            className="absolute z-10"
-            style={{
-              top: '-6px',
-              right: '8px',
-            }}
-            onClick={() => window.dispatchEvent(new Event('open-almog-chat'))}
-            aria-label="פתח צ׳אט עם אלמוג"
-          >
-          <motion.div
-            className="absolute rounded-full"
-            style={{
-              inset: '-8px',
-              background: 'conic-gradient(from 0deg, #14b8a6, #10b981, #f59e0b, #10b981, #14b8a6)',
-              filter: 'blur(14px)',
-              opacity: 0.55,
-              zIndex: -1,
-            }}
-          />
-          <div
-            style={{
-              width: '76px',
-              height: '76px',
-              borderRadius: '50%',
-              background: 'conic-gradient(from 0deg, #14b8a6 0%, #10b981 30%, #f59e0b 55%, #10b981 75%, #14b8a6 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 16px rgba(16,185,129,0.2)',
-            }}
-          >
-            <div
-              style={{
-                width: '68px',
-                height: '68px',
-                borderRadius: '50%',
-                background: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '3px',
-                overflow: 'hidden',
-              }}
-            >
-              <img
-                src={avatarUrl}
-                alt="אלמוג"
-                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
-                }}
-              />
-            </div>
-          </div>
-          {!contentLoading ? (
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '2px',
-              right: '4px',
-              background: '#14b8a6',
-              border: '2px solid white',
-              borderRadius: '20px',
-              padding: '3px 7px',
-              display: 'flex',
-              gap: '2px',
-              alignItems: 'center',
-              boxShadow: '0 2px 8px rgba(20,184,166,0.4)',
-            }}
-          >
-            <span style={{ width: '3px', height: '3px', background: 'white', borderRadius: '50%', display: 'inline-block' }} />
-            <span style={{ width: '3px', height: '3px', background: 'white', borderRadius: '50%', display: 'inline-block' }} />
-            <span style={{ width: '3px', height: '3px', background: 'white', borderRadius: '50%', display: 'inline-block' }} />
-          </div>
-          ) : null}
-        </button>
         </div>
 
         {taskProgress && taskProgress.total > 0 ? (
