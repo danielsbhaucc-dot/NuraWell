@@ -6,10 +6,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AssignmentRelation, BlockerProposal } from '../almog-commitments/types';
 import { normalizeFrictionCategory } from '../almog-commitments/friction';
 import { defaultInterventionReminderIso } from '../almog-commitments/intervention-engine';
+import { SOS_EASE_STALE_DAYS } from './sos-ease-shared';
 import type { SosFocusTask } from './sos-memory';
 import type { SosIntervention } from './sos';
 
-const STALE_DAYS = 2;
+const STALE_DAYS = SOS_EASE_STALE_DAYS;
 
 function dedupeKey(text: string): string {
   return text
@@ -288,16 +289,4 @@ export async function createSosEaseAssignment(params: {
     assignment_id: assignmentId,
     frozen_journey_task: Boolean(parentAssignmentId),
   };
-}
-
-/** מסנן אירועי SOS ישנים שלא קיבלו משוב — אחרי יומיים כבר לא רלוונטיים. */
-export function filterRelevantSosEvents<T extends { created_at: string; outcome: string }>(
-  events: T[],
-  staleDays = STALE_DAYS
-): T[] {
-  const cutoff = Date.now() - staleDays * 24 * 60 * 60_000;
-  return events.filter((ev) => {
-    if (ev.outcome !== 'unknown') return true;
-    return new Date(ev.created_at).getTime() >= cutoff;
-  });
 }
