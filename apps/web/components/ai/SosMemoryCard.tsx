@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronDown, ChevronLeft, MapPin, Sparkles } from 'lucide-react';
 
 import type { SosMemorySnippet, SosRecentEvent } from '../../lib/ai/guardian/sos-memory';
-import { filterRelevantSosEvents } from '../../lib/ai/guardian/sos-events-filter';
+import { filterRelevantSosEvents } from '../../lib/ai/guardian/sos-ease-shared';
 
 function formatRelative(iso: string): string {
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
