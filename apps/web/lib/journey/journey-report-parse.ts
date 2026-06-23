@@ -40,6 +40,9 @@ export function parseJourneyTasksFull(raw: unknown): JourneyTask[] {
       times_per_day: typeof row.times_per_day === 'number' ? row.times_per_day : null,
       weekly_day: typeof row.weekly_day === 'number' ? row.weekly_day : null,
       monthly_day: typeof row.monthly_day === 'number' ? row.monthly_day : null,
+      interval_days: typeof row.interval_days === 'number' ? row.interval_days : null,
+      meal_offset_minutes:
+        typeof row.meal_offset_minutes === 'number' ? row.meal_offset_minutes : null,
       meal_timing: row.meal_timing as JourneyTask['meal_timing'],
       meal_target: row.meal_target as JourneyTask['meal_target'],
       leveling:
@@ -168,6 +171,8 @@ export type PendingTaskTodayRow = {
   times_per_day: number;
   weekly_day: number;
   monthly_day: number;
+  interval_days: number;
+  meal_offset_minutes: number | null;
   meal_timing: MealTiming;
   meal_target: MealTarget;
 };
@@ -194,8 +199,16 @@ export function listPendingTasksToday(
       const entry = ts[t.id];
       if (entry?.status !== 'accepted') continue;
 
-      const { schedule, times_per_day, weekly_day, monthly_day, meal_timing, meal_target } =
-        resolveTaskSchedule(t);
+      const {
+        schedule,
+        times_per_day,
+        weekly_day,
+        monthly_day,
+        interval_days,
+        meal_timing,
+        meal_target,
+        meal_offset_minutes,
+      } = resolveTaskSchedule(t);
       if (schedule === 'one_time') {
         const done = entry.execution_done === true;
         out.push({
@@ -211,6 +224,8 @@ export function listPendingTasksToday(
           times_per_day,
           weekly_day,
           monthly_day,
+          interval_days,
+          meal_offset_minutes,
           meal_timing,
           meal_target,
         });
@@ -237,6 +252,8 @@ export function listPendingTasksToday(
         times_per_day,
         weekly_day,
         monthly_day,
+        interval_days,
+        meal_offset_minutes,
         meal_timing,
         meal_target,
       });

@@ -13,7 +13,7 @@ import { Drawer } from 'vaul';
 import { ClipboardCheck, Leaf, Loader2, Sparkles } from 'lucide-react';
 import { emojiFromWellnessText } from '../../lib/emoji-from-text';
 import { parseJourneyReportItems } from '../../lib/journey/journey-report-parse';
-import type { JourneyTask, JourneyTaskSlot, JourneyTaskExecution } from '../../lib/types/journey';
+import type { JourneyHabit, JourneyTask, JourneyTaskSlot, JourneyTaskExecution } from '../../lib/types/journey';
 import {
   resolveTaskSchedule,
   scheduleLabel,
@@ -108,6 +108,10 @@ function parseTaskItems(raw: unknown): JourneyTask[] {
         row.schedule === 'daily' ||
         row.schedule === 'multi_daily' ||
         row.schedule === 'weekly' ||
+        row.schedule === 'monthly' ||
+        row.schedule === 'quarterly' ||
+        row.schedule === 'semi_annual' ||
+        row.schedule === 'custom' ||
         row.schedule === 'per_meal'
           ? row.schedule
           : 'one_time',

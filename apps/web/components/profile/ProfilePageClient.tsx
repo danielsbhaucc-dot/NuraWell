@@ -3,8 +3,9 @@
 import { useState, useTransition } from 'react';
 import { motion } from 'framer-motion';
 import {
-  User, Award, BookOpen, Flame, LogOut, ChevronLeft, Shield, Settings, Save, X, Bell, Sparkles, Clock
+  User, Award, BookOpen, Flame, LogOut, ChevronLeft, Shield, Settings, Save, X, Bell, Sparkles
 } from 'lucide-react';
+import { ProfileRhythmCard, type ProfileRhythmInitial } from './ProfileRhythmCard';
 import { signOutClient } from '../../lib/auth/sign-out-client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -31,6 +32,7 @@ interface ProfilePageClientProps {
   email: string;
   totalCompleted: number;
   enrolledCount: number;
+  rhythm: ProfileRhythmInitial;
 }
 
 const activityLabels: Record<string, string> = {
@@ -41,7 +43,7 @@ const activityLabels: Record<string, string> = {
   very_active: 'פעיל מאוד',
 };
 
-export function ProfilePageClient({ profile, email, totalCompleted, enrolledCount }: ProfilePageClientProps) {
+export function ProfilePageClient({ profile, email, totalCompleted, enrolledCount, rhythm }: ProfilePageClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -83,7 +85,6 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
     ...(profile?.role === 'admin' && opsUrl
       ? [{ label: 'פאנל ניהול', href: `${opsUrl}/`, icon: Shield, emoji: '🛠️' }]
       : []),
-    { label: 'לוח הזמנים שלי', href: '/settings/schedule', icon: Clock, emoji: '⏰' },
     { label: 'פרטיות ונתונים', href: '/settings/privacy', icon: Shield, emoji: '🔒' },
     { label: 'התראות מאלמוג', href: '/settings/almog', icon: Bell, emoji: '🔔' },
     { label: 'בית', href: '/home', icon: BookOpen, emoji: '🏠' },
@@ -225,6 +226,11 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
             </div>
           ))}
         </motion.div>
+
+        <ProfileRhythmCard
+          initial={rhythm}
+          onSaved={() => startTransition(() => router.refresh())}
+        />
 
         {/* Personal Info */}
         {(profile?.current_weight_kg || profile?.goal_weight_kg || profile?.height_cm) && (

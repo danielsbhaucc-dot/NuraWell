@@ -20,6 +20,7 @@ import {
 } from './habit-checkpoint-eligibility';
 import {
   normalizeTaskSchedule,
+  normalizeMealTiming,
   resolveTaskSchedule,
   scheduleLabel as scheduleLabelHe,
   slotLabel as slotLabelHe,
@@ -27,9 +28,10 @@ import {
   type UserMealProfile,
 } from '../journey/task-schedule';
 import type {
+  JourneyTask,
   JourneyTaskSchedule,
   JourneyTaskSlot,
-  JourneyTask,
+  MealTiming,
 } from '../types/journey';
 import {
   computeTaskLevelProgressSnapshot,
@@ -81,7 +83,7 @@ type ParsedTask = {
   schedule: JourneyTaskSchedule;
   times_per_day: number;
   weekly_day: number;
-  meal_timing: 'before' | 'after';
+  meal_timing: MealTiming;
   meal_target: 'fixed' | 'all';
 };
 
@@ -111,7 +113,7 @@ function parseJourneyTasksJson(
           typeof tpdRaw === 'number' && tpdRaw >= 1 && tpdRaw <= 6 ? tpdRaw : null,
         weekly_day:
           typeof wdRaw === 'number' && wdRaw >= 0 && wdRaw <= 6 ? wdRaw : null,
-        meal_timing: row.meal_timing === 'after' ? 'after' : 'before',
+        meal_timing: normalizeMealTiming(row.meal_timing),
         meal_target: row.meal_target === 'all' ? 'all' : 'fixed',
       },
       userMealProfile

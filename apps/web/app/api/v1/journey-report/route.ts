@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireApiSession } from '../../../../lib/api/route-guards';
 import { jerusalemDateKey } from '../../../../lib/journey/task-schedule';
-import { parseDailyRhythm } from '../../../../lib/journey/daily-rhythm';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -81,7 +80,7 @@ export async function GET(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profileRow } = await supabase
       .from('profiles')
-      .select('wake_up_time, sleep_time, meal_count, meal_schedule, daily_rhythm')
+      .select('wake_up_time, sleep_time, meal_count, meal_schedule')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -111,7 +110,6 @@ export async function GET(request: Request) {
         sleep_time: profileRow?.sleep_time ?? null,
         meal_count: typeof profileRow?.meal_count === 'number' ? profileRow.meal_count : null,
         meal_schedule: Array.isArray(profileRow?.meal_schedule) ? profileRow.meal_schedule : null,
-        daily_rhythm: parseDailyRhythm(profileRow?.daily_rhythm),
       },
       steps: (rawSteps ?? []).map((s: { id: string }) => ({
         ...s,

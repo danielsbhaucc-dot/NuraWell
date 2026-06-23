@@ -17,6 +17,8 @@ function row(
     times_per_day: 3,
     weekly_day: 0,
     monthly_day: 1,
+    interval_days: 7,
+    meal_offset_minutes: null,
     meal_timing: 'before',
     meal_target: 'fixed',
     ...partial,

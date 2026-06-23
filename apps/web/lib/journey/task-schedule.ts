@@ -76,6 +76,9 @@ export function normalizeTaskSchedule(value: unknown): JourneyTaskSchedule {
     value === 'multi_daily' ||
     value === 'weekly' ||
     value === 'monthly' ||
+    value === 'quarterly' ||
+    value === 'semi_annual' ||
+    value === 'custom' ||
     value === 'per_meal'
   ) {
     return value;
@@ -104,7 +107,14 @@ export function normalizeMealTarget(value: unknown): MealTarget {
 export function resolveTaskSchedule(
   task: Pick<
     JourneyTask,
-    'schedule' | 'times_per_day' | 'weekly_day' | 'monthly_day' | 'meal_timing' | 'meal_target'
+    | 'schedule'
+    | 'times_per_day'
+    | 'weekly_day'
+    | 'monthly_day'
+    | 'interval_days'
+    | 'meal_timing'
+    | 'meal_target'
+    | 'meal_offset_minutes'
   >,
   userProfile?: UserMealProfile | null
 ): {
@@ -112,8 +122,10 @@ export function resolveTaskSchedule(
   times_per_day: number;
   weekly_day: number;
   monthly_day: number;
+  interval_days: number;
   meal_timing: MealTiming;
   meal_target: MealTarget;
+  meal_offset_minutes: number | null;
 } {
   const schedule = normalizeTaskSchedule(task.schedule);
   const mealTiming = normalizeMealTiming(task.meal_timing);
@@ -141,7 +153,15 @@ export function resolveTaskSchedule(
     }
   }
 
-  if (schedule === 'one_time' || schedule === 'daily' || schedule === 'weekly' || schedule === 'monthly') {
+  if (
+    schedule === 'one_time' ||
+    schedule === 'daily' ||
+    schedule === 'weekly' ||
+    schedule === 'monthly' ||
+    schedule === 'quarterly' ||
+    schedule === 'semi_annual' ||
+    schedule === 'custom'
+  ) {
     tpd = 1;
   }
 
@@ -153,13 +173,25 @@ export function resolveTaskSchedule(
     typeof task.monthly_day === 'number' && task.monthly_day >= 1 && task.monthly_day <= 31
       ? task.monthly_day
       : 1;
+  const intervalDays =
+    typeof task.interval_days === 'number' &&
+    task.interval_days >= 2 &&
+    task.interval_days <= 365
+      ? Math.floor(task.interval_days)
+      : 7;
+  const mealOffset =
+    typeof task.meal_offset_minutes === 'number' && Number.isFinite(task.meal_offset_minutes)
+      ? Math.round(task.meal_offset_minutes)
+      : null;
   return {
     schedule,
     times_per_day: tpd,
     weekly_day: wd,
     monthly_day: md,
+    interval_days: intervalDays,
     meal_timing: mealTiming,
     meal_target: mealTarget,
+    meal_offset_minutes: mealOffset,
   };
 }
 
@@ -182,7 +214,16 @@ export function slotsForSchedule(
   timesPerDay: number
 ): JourneyTaskSlot[] {
   if (schedule === 'one_time') return ['full_day'];
-  if (schedule === 'daily' || schedule === 'weekly' || schedule === 'monthly') return ['full_day'];
+  if (
+    schedule === 'daily' ||
+    schedule === 'weekly' ||
+    schedule === 'monthly' ||
+    schedule === 'quarterly' ||
+    schedule === 'semi_annual' ||
+    schedule === 'custom'
+  ) {
+    return ['full_day'];
+  }
   if (schedule === 'per_meal') {
     if (timesPerDay >= 5) {
       return [
@@ -374,15 +415,46 @@ export function isMonthlyDayActive(monthlyDay: number, date: Date = new Date()):
   return dom === Math.min(target, last);
 }
 
+/** חודש בלוח ירושלים (1..12) */
+export function jerusalemMonth(date: Date = new Date()): number {
+  const m = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Jerusalem',
+    month: 'numeric',
+  }).format(date);
+  return Number.parseInt(m, 10) || 1;
+}
+
+function daysSinceAnchor(date: Date = new Date()): number {
+  const key = jerusalemDateKey(date);
+  const [y, mo, d] = key.split('-').map((x) => Number.parseInt(x, 10));
+  const ms = Date.UTC(y, mo - 1, d);
+  return Math.floor((ms - Date.UTC(2020, 0, 1)) / 86_400_000);
+}
+
 /** האם משימה חוזרת היום (כלומר, יש מה לסמן היום)? */
 export function isTaskActiveToday(
-  task: Pick<JourneyTask, 'schedule' | 'times_per_day' | 'weekly_day' | 'monthly_day'>,
+  task: Pick<
+    JourneyTask,
+    'schedule' | 'times_per_day' | 'weekly_day' | 'monthly_day' | 'interval_days'
+  >,
   date: Date = new Date()
 ): boolean {
-  const { schedule, weekly_day, monthly_day } = resolveTaskSchedule(task);
+  const { schedule, weekly_day, monthly_day, interval_days } = resolveTaskSchedule(task);
   if (schedule === 'one_time') return false;
   if (schedule === 'weekly') return jerusalemWeekday(date) === weekly_day;
   if (schedule === 'monthly') return isMonthlyDayActive(monthly_day, date);
+  if (schedule === 'quarterly') {
+    const month = jerusalemMonth(date);
+    return isMonthlyDayActive(monthly_day, date) && [1, 4, 7, 10].includes(month);
+  }
+  if (schedule === 'semi_annual') {
+    const month = jerusalemMonth(date);
+    return isMonthlyDayActive(monthly_day, date) && [1, 7].includes(month);
+  }
+  if (schedule === 'custom') {
+    const days = daysSinceAnchor(date);
+    return days % interval_days === 0;
+  }
   return true;
 }
 
@@ -398,7 +470,8 @@ export function scheduleLabel(
   weeklyDay: number,
   mealTiming: MealTiming = 'before',
   mealTarget: MealTarget = 'fixed',
-  monthlyDay = 1
+  monthlyDay = 1,
+  intervalDays = 7
 ): string {
   const WEEKDAY = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
   switch (schedule) {
@@ -412,6 +485,12 @@ export function scheduleLabel(
       return `שבועי · יום ${WEEKDAY[weeklyDay] ?? '?'}`;
     case 'monthly':
       return `חודשי · יום ${monthlyDay} בחודש`;
+    case 'quarterly':
+      return `רבעוני · יום ${monthlyDay} (ינואר/אפריל/יולי/אוקטובר)`;
+    case 'semi_annual':
+      return `חצי שנתי · יום ${monthlyDay} (ינואר/יולי)`;
+    case 'custom':
+      return `כל ${intervalDays} ימים`;
     case 'per_meal': {
       const prefix =
         mealTiming === 'after' ? 'אחרי' : mealTiming === 'during' ? 'בזמן' : 'לפני';
