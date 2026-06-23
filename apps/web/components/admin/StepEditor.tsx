@@ -1843,6 +1843,9 @@ export function StepEditor({ step }: StepEditorProps) {
                       <option value="multi_daily">כמה פעמים ביום</option>
                       <option value="weekly">שבועי (יום קבוע)</option>
                       <option value="monthly">חודשי (יום בחודש)</option>
+                      <option value="quarterly">רבעוני</option>
+                      <option value="semi_annual">חצי שנתי</option>
+                      <option value="custom">מותאם (כל X ימים)</option>
                       <option value="per_meal">לפני/בזמן/אחרי ארוחה</option>
                     </select>
                   </Field>
@@ -1866,6 +1869,34 @@ export function StepEditor({ step }: StepEditorProps) {
                           <option value="during">בזמן הארוחה</option>
                           <option value="after">אחרי הארוחה</option>
                         </select>
+                      </Field>
+                      <Field label="דקות לפני/אחרי/בזמן הארוחה (אופציונלי)">
+                        <input
+                          type="number"
+                          min={-180}
+                          max={180}
+                          value={
+                            typeof t.meal_offset_minutes === 'number'
+                              ? t.meal_offset_minutes
+                              : mealTiming === 'before'
+                                ? -20
+                                : mealTiming === 'during'
+                                  ? 0
+                                  : 30
+                          }
+                          onChange={(e) => {
+                            const arr = [...tasks];
+                            arr[ti] = {
+                              ...arr[ti],
+                              meal_offset_minutes: Number(e.target.value),
+                            };
+                            setTasks(arr);
+                          }}
+                          className="input-field"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1">
+                          שלילי = לפני, 0 = בזמן, חיובי = אחרי. מסתנכרן עם שעות הארוחות מהפרופיל של המשתמש.
+                        </p>
                       </Field>
                       <Field label="לכמה ארוחות זה רלוונטי">
                         <select
@@ -1942,8 +1973,16 @@ export function StepEditor({ step }: StepEditorProps) {
                     </Field>
                   ) : null}
 
-                  {schedule === 'monthly' ? (
-                    <Field label="יום בחודש (1–31)">
+                  {schedule === 'monthly' || schedule === 'quarterly' || schedule === 'semi_annual' ? (
+                    <Field
+                      label={
+                        schedule === 'monthly'
+                          ? 'יום בחודש (1–31)'
+                          : schedule === 'quarterly'
+                            ? 'יום בחודש (ינואר/אפריל/יולי/אוקטובר)'
+                            : 'יום בחודש (ינואר/יולי)'
+                      }
+                    >
                       <input
                         type="number"
                         min={1}
@@ -1958,6 +1997,30 @@ export function StepEditor({ step }: StepEditorProps) {
                           arr[ti] = {
                             ...arr[ti],
                             monthly_day: Math.min(31, Math.max(1, Number(e.target.value) || 1)),
+                          };
+                          setTasks(arr);
+                        }}
+                        className="input-field"
+                      />
+                    </Field>
+                  ) : null}
+
+                  {schedule === 'custom' ? (
+                    <Field label="כל כמה ימים (2–365)">
+                      <input
+                        type="number"
+                        min={2}
+                        max={365}
+                        value={
+                          typeof t.interval_days === 'number' && t.interval_days >= 2
+                            ? t.interval_days
+                            : 7
+                        }
+                        onChange={(e) => {
+                          const arr = [...tasks];
+                          arr[ti] = {
+                            ...arr[ti],
+                            interval_days: Math.min(365, Math.max(2, Number(e.target.value) || 7)),
                           };
                           setTasks(arr);
                         }}

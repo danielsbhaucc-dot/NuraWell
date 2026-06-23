@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   buildCronIdleSkipResponse,
+  countDueCheckInsFromProfiles,
   evaluateCronIdleSkip,
   isCronIdleSkipEnabled,
   shouldBypassCronIdleSkip,
@@ -18,6 +19,8 @@ function mockAdminSimple(counts: Record<string, number>) {
     const chain = {
       eq: (column: string, value: unknown) =>
         makeQuery(table, [...filters, `${column}=${String(value)}`]),
+      lte: (column: string, value: unknown) =>
+        makeQuery(table, [...filters, `${column}<=${String(value)}`]),
       select: (_cols: string, opts?: { head?: boolean }) => {
         if (!opts?.head) throw new Error('expected head count');
         return chain;
@@ -29,6 +32,49 @@ function mockAdminSimple(counts: Record<string, number>) {
 
   return {
     from: (table: string) => makeQuery(table),
+  } as unknown as import('@supabase/supabase-js').SupabaseClient;
+}
+
+function mockAdminOnboardingIdle(opts: {
+  profiles?: Array<{ ai_check_in_times: unknown }>;
+  dueReminders?: number;
+}) {
+  const dueReminders = opts.dueReminders ?? 0;
+  return {
+    from: (table: string) => {
+      if (table === 'profiles') {
+        const chain = {
+          eq: () => chain,
+          not: () => chain,
+          limit: () => chain,
+          select: (cols: string, selectOpts?: { head?: boolean }) => {
+            if (selectOpts?.head) {
+              const countResult = Promise.resolve({
+                count: opts.profiles?.length ?? 0,
+                error: null as null,
+              });
+              const countChain = {
+                eq: () => countChain,
+                select: () => countChain,
+                then: countResult.then.bind(countResult),
+              };
+              return countChain;
+            }
+            if (cols === 'ai_check_in_times') {
+              return Promise.resolve({ data: opts.profiles ?? [], error: null });
+            }
+            throw new Error(`unexpected profiles select: ${cols}`);
+          },
+        };
+        return chain;
+      }
+      if (table === 'scheduled_reminders') {
+        return mockAdminSimple({
+          'scheduled_reminders:status=pending': dueReminders,
+        }).from('scheduled_reminders');
+      }
+      return mockAdminSimple({ [table]: 0 }).from(table);
+    },
   } as unknown as import('@supabase/supabase-js').SupabaseClient;
 }
 
@@ -72,23 +118,67 @@ describe('isCronIdleSkipEnabled', () => {
   });
 });
 
-describe('evaluateCronIdleSkip', () => {
-  it('onboarding-check-ins idle when no onboarded users and no reminders', async () => {
-    const admin = mockAdminSimple({
-      'profiles:onboarding_completed=true': 0,
-      'scheduled_reminders:status=pending': 0,
-    });
-    const result = await evaluateCronIdleSkip(admin, 'onboarding-check-ins');
-    expect(result.idle).toBe(true);
+describe('countDueCheckInsFromProfiles', () => {
+  const at0830 = new Date('2026-06-23T05:30:00.000Z'); // 08:30 Israel (IDT)
+
+  it('counts user with check-in due in ±30 min window', () => {
+    expect(
+      countDueCheckInsFromProfiles([{ ai_check_in_times: ['08:45'] }], at0830, 30)
+    ).toBe(1);
   });
 
-  it('onboarding-check-ins active when onboarded users exist', async () => {
+  it('ignores user whose check-in is outside the window', () => {
+    expect(
+      countDueCheckInsFromProfiles([{ ai_check_in_times: ['14:00'] }], at0830, 30)
+    ).toBe(0);
+  });
+});
+
+describe('evaluateCronIdleSkip', () => {
+  const at0830 = new Date('2026-06-23T05:30:00.000Z');
+
+  it('onboarding-check-ins idle when no due check-ins and no due reminders', async () => {
+    const admin = mockAdminOnboardingIdle({
+      profiles: [{ ai_check_in_times: ['14:00'] }],
+      dueReminders: 0,
+    });
+    const result = await evaluateCronIdleSkip(admin, 'onboarding-check-ins', {
+      now: at0830,
+    });
+    expect(result.idle).toBe(true);
+    expect(result.counts.due_check_ins_now).toBe(0);
+  });
+
+  it('onboarding-check-ins active when onboarded user has check-in due now', async () => {
+    const admin = mockAdminOnboardingIdle({
+      profiles: [{ ai_check_in_times: ['08:45'] }],
+      dueReminders: 0,
+    });
+    const result = await evaluateCronIdleSkip(admin, 'onboarding-check-ins', {
+      now: at0830,
+    });
+    expect(result.idle).toBe(false);
+    expect(result.counts.due_check_ins_now).toBe(1);
+  });
+
+  it('onboarding-check-ins active when due reminders exist even without check-ins', async () => {
+    const admin = mockAdminOnboardingIdle({
+      profiles: [{ ai_check_in_times: ['22:00'] }],
+      dueReminders: 2,
+    });
+    const result = await evaluateCronIdleSkip(admin, 'onboarding-check-ins', {
+      now: at0830,
+    });
+    expect(result.idle).toBe(false);
+    expect(result.counts.due_reminders).toBe(2);
+  });
+
+  it('almog-reminders idle when no due reminders', async () => {
     const admin = mockAdminSimple({
-      'profiles:onboarding_completed=true': 1,
       'scheduled_reminders:status=pending': 0,
     });
-    const result = await evaluateCronIdleSkip(admin, 'onboarding-check-ins');
-    expect(result.idle).toBe(false);
+    const result = await evaluateCronIdleSkip(admin, 'almog-reminders');
+    expect(result.idle).toBe(true);
   });
 
   it('memory-consolidation idle when no pending logs', async () => {

@@ -23,6 +23,7 @@ import {
   isTaskActiveToday,
   jerusalemDateKey,
   resolveTaskSchedule,
+  scheduleLabel,
   slotsForSchedule,
 } from './task-schedule';
 import { parseJourneyTasksFull } from './journey-report-parse';
@@ -295,24 +296,24 @@ export function resolveTaskHistoryRange(
  * ============================================================ */
 
 function buildScheduleLabel(task: JourneyTask): string {
-  const { schedule, times_per_day, weekly_day, meal_timing, meal_target } = resolveTaskSchedule(task);
-  const WEEKDAY = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-  switch (schedule) {
-    case 'one_time':
-      return 'חד-פעמי';
-    case 'daily':
-      return 'פעם ביום';
-    case 'multi_daily':
-      return `${times_per_day} פעמים ביום`;
-    case 'weekly':
-      return `שבועי · יום ${WEEKDAY[weekly_day] ?? '?'}`;
-    case 'per_meal': {
-      const prefix = meal_timing === 'after' ? 'אחרי' : 'לפני';
-      if (meal_target === 'all') return `${prefix} כל הארוחות`;
-      if (times_per_day >= 3) return `${prefix} כל ארוחה`;
-      return `${prefix} ${times_per_day} ארוחות`;
-    }
-  }
+  const {
+    schedule,
+    times_per_day,
+    weekly_day,
+    monthly_day,
+    interval_days,
+    meal_timing,
+    meal_target,
+  } = resolveTaskSchedule(task);
+  return scheduleLabel(
+    schedule,
+    times_per_day,
+    weekly_day,
+    meal_timing,
+    meal_target,
+    monthly_day,
+    interval_days
+  );
 }
 
 /* ============================================================

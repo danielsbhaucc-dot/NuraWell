@@ -523,12 +523,17 @@ export function OnboardingFormClient() {
                   <MentorBubble mentorId="dolev">
                     <p>
                       {gender ? `${name}, ` : ''}
-                      {gc.come} נסדר את הקצב של היום. כמה ארוחות עיקריות {gc.have}?
-                      {gc.recommend} בחום על 2–3 — כך אלמוג יידע מתי לגעת לפני ואחרי. אפשר גם לדלג.
+                      {gc.come} נסדר את הקצב של היום. כמה <strong>ארוחות עיקריות וגדולות</strong> {gc.have}?
+                      {gc.recommend} בחום על 2–3 — כך אלמוג יידע מתי לגעת לפני, בזמן ואחרי. אפשר גם לדלג.
                     </p>
                   </MentorBubble>
 
-                  <p className="text-sm font-bold text-emerald-100/90 mt-4 mb-2">כמה ארוחות עיקריות ביום?</p>
+                  <p className="text-sm font-bold text-emerald-100/90 mt-4 mb-1">
+                    כמה ארוחות עיקריות וגדולות ביום?
+                  </p>
+                  <p className="text-xs text-emerald-200/75 mb-2 leading-relaxed">
+                    ארוחות מלאות — לא נשנושים קטנים. המשימות במסע יסתנכרנו לפי הזמנים האלה.
+                  </p>
                   <div className="grid grid-cols-2 gap-2 mb-4">
                     {(
                       [
@@ -561,7 +566,7 @@ export function OnboardingFormClient() {
                         return (
                           <label key={i}>
                             <span className="text-xs font-bold text-emerald-100/85">
-                              שעת ארוחה {i + 1}
+                              שעת ארוחה עיקרית {i + 1}
                               {slot ? (
                                 <span className="text-emerald-300/80 font-normal mr-1">
                                   · זוהה: {mealSlotLabel(slot)}

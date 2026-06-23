@@ -1,21 +1,18 @@
 /**
- * בחירת המשימה/סלוט הרלוונטי ביותר לרגע הנוכחי — לפי תזמון המשימה,
- * daily_rhythm מותאם אישית ועוגני זמן מהפרופיל.
+ * בחירת המשימה/סלוט הרלוונטי ביותר לרגע הנוכחי — לפי תזמון המשימה
+ * ופרופיל המשתמש (השכמה, ארוחות, שינה).
  */
 
 import type { JourneyTaskSlot } from '../types/journey';
 import type { PendingTaskTodayRow } from './journey-report-parse';
-import {
-  resolveSlotTargetMinutes,
-  type UserScheduleProfile,
-} from './daily-rhythm';
+import { resolveSlotTargetMinutes, type UserScheduleProfile } from './profile-schedule';
 import {
   currentSlotForSchedule,
   jerusalemMinutesIntoDay,
   slotLabel,
 } from './task-schedule';
 
-export type { UserScheduleProfile } from './daily-rhythm';
+export type { UserScheduleProfile } from './profile-schedule';
 
 export type NextTaskPreview = {
   taskId: string;
@@ -55,7 +52,8 @@ export function pickNextTaskForNow(
               task.schedule,
               task.times_per_day,
               task.meal_timing,
-              profile
+              profile,
+              task.meal_offset_minutes
             );
       const score = slotRelevanceScore(targetMin, nowMin);
       if (!best || score < best.score || (score === best.score && task.stepNumber < best.task.stepNumber)) {

@@ -127,6 +127,9 @@ export type JourneyTaskSchedule =
   | 'multi_daily'
   | 'weekly'
   | 'monthly'
+  | 'quarterly'
+  | 'semi_annual'
+  | 'custom'
   | 'per_meal';
 
 /**
@@ -229,8 +232,12 @@ export interface JourneyTask {
   times_per_day?: number | null;
   /** רלוונטי ל-weekly (0..6) */
   weekly_day?: number | null;
-  /** רלוונטי ל-monthly (1..31) */
+  /** רלוונטי ל-monthly/quarterly/semi_annual (1..31) */
   monthly_day?: number | null;
+  /** רלוונטי ל-custom — כל כמה ימים (2..365) */
+  interval_days?: number | null;
+  /** רלוונטי ל-per_meal — דקות לפני/אחרי/בזמן הארוחה (שלילי=לפני, 0=בזמן, חיובי=אחרי) */
+  meal_offset_minutes?: number | null;
   /** רלוונטי ל-per_meal; ברירת מחדל 'before' לתאימות לאחור */
   meal_timing?: MealTiming | null;
   /** רלוונטי ל-per_meal; ברירת מחדל 'fixed' לתאימות לאחור */

@@ -15,7 +15,9 @@ export default async function ProfilePage() {
 
   const { data: rawProfile } = await supabase
     .from('profiles')
-    .select('id, full_name, role, avatar_url, created_at, streak_days, onboarding_completed, goal_weight_kg, current_weight_kg, height_cm, activity_level, gender')
+    .select(
+      'id, full_name, role, avatar_url, created_at, streak_days, onboarding_completed, goal_weight_kg, current_weight_kg, height_cm, activity_level, gender, wake_up_time, sleep_time, meal_count, meal_schedule'
+    )
     .eq('id', user.id)
     .single();
 
@@ -32,7 +34,15 @@ export default async function ProfilePage() {
     height_cm: number | null;
     activity_level: string | null;
     gender: 'male' | 'female' | null;
+    wake_up_time: string | null;
+    sleep_time: string | null;
+    meal_count: number | null;
+    meal_schedule: Array<{ time?: string }> | null;
   } | null;
+
+  const mealTimes = Array.isArray(profile?.meal_schedule)
+    ? profile.meal_schedule.map((m) => String(m.time ?? '').slice(0, 5)).filter(Boolean)
+    : [];
 
   const { data: rawStats } = await supabase
     .from('lesson_progress')
@@ -56,6 +66,12 @@ export default async function ProfilePage() {
       email={user.email ?? ''}
       totalCompleted={totalCompleted}
       enrolledCount={enrolledCount}
+      rhythm={{
+        wake_up_time: profile?.wake_up_time ? String(profile.wake_up_time).slice(0, 5) : null,
+        sleep_time: profile?.sleep_time ? String(profile.sleep_time).slice(0, 5) : null,
+        meal_count: typeof profile?.meal_count === 'number' ? profile.meal_count : mealTimes.length,
+        meal_times: mealTimes,
+      }}
     />
   );
 }
