@@ -43,35 +43,56 @@ function mockAdminOnboardingIdle(opts: {
   return {
     from: (table: string) => {
       if (table === 'profiles') {
-        const chain = {
-          eq: () => chain,
-          not: () => chain,
-          limit: () => chain,
-          select: (cols: string, selectOpts?: { head?: boolean }) => {
-            if (selectOpts?.head) {
-              const countResult = Promise.resolve({
-                count: opts.profiles?.length ?? 0,
-                error: null as null,
-              });
-              const countChain = {
-                eq: () => countChain,
-                select: () => countChain,
-                then: countResult.then.bind(countResult),
-              };
-              return countChain;
-            }
-            if (cols === 'ai_check_in_times') {
-              return Promise.resolve({ data: opts.profiles ?? [], error: null });
-            }
-            throw new Error(`unexpected profiles select: ${cols}`);
-          },
+        const dataResult = Promise.resolve({ data: opts.profiles ?? [], error: null as null });
+        const makeDataChain = () => {
+          const chain = {
+            select: (cols: string, selectOpts?: { head?: boolean }) => {
+              if (selectOpts?.head) {
+                const countResult = Promise.resolve({
+                  count: opts.profiles?.length ?? 0,
+                  error: null as null,
+                });
+                const countChain = {
+                  eq: () => countChain,
+                  select: () => countChain,
+                  then: countResult.then.bind(countResult),
+                };
+                return countChain;
+              }
+              if (cols !== 'ai_check_in_times') {
+                throw new Error(`unexpected profiles select: ${cols}`);
+              }
+              return chain;
+            },
+            eq: () => chain,
+            not: () => chain,
+            limit: () => chain,
+            then: dataResult.then.bind(dataResult),
+          };
+          return chain;
         };
-        return chain;
+        return makeDataChain();
       }
       if (table === 'scheduled_reminders') {
-        return mockAdminSimple({
-          'scheduled_reminders:status=pending': dueReminders,
-        }).from('scheduled_reminders');
+        const makeReminderQuery = (filters: string[] = []) => {
+          const result = Promise.resolve({
+            count: dueReminders,
+            error: null as null,
+          });
+          const chain = {
+            eq: (column: string, value: unknown) =>
+              makeReminderQuery([...filters, `${column}=${String(value)}`]),
+            lte: (column: string, value: unknown) =>
+              makeReminderQuery([...filters, `${column}<=${String(value)}`]),
+            select: (_cols: string, opts?: { head?: boolean }) => {
+              if (!opts?.head) throw new Error('expected head count');
+              return chain;
+            },
+            then: result.then.bind(result),
+          };
+          return chain;
+        };
+        return makeReminderQuery();
       }
       return mockAdminSimple({ [table]: 0 }).from(table);
     },
