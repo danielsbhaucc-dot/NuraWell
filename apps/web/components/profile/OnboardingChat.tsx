@@ -9,7 +9,13 @@ import {
   FUN_AVATAR_RING,
   FUN_CHAT_BG,
   FUN_HEADER_BG,
+  FUN_SEND_BUTTON,
   FUN_USER_BUBBLE,
+  QUICK_ASSISTANT_BUBBLE,
+  QUICK_CHAT_BG,
+  QUICK_HEADER_BG,
+  QUICK_SEND_BUTTON,
+  QUICK_USER_BUBBLE,
   FunConfettiBurst,
   FunFloatingAmbience,
   FunPathSelectHero,
@@ -111,7 +117,7 @@ function AlmogAvatar({
           className="absolute -inset-1 rounded-full"
           style={{ background: FUN_AVATAR_RING }}
           animate={{ rotate: 360 }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
           aria-hidden
         />
       ) : null}
@@ -122,7 +128,7 @@ function AlmogAvatar({
         width={size}
         height={size}
         className={`relative rounded-full object-cover object-top border-2 ${
-          fun ? 'border-white/50' : 'border-emerald-400/40'
+          fun ? 'border-white/35' : 'border-emerald-300/25'
         } ${className}`}
         style={{ width: size, height: size }}
         onError={(e) => {
@@ -145,14 +151,7 @@ function AlmogTypingIndicator({ fun = false }: { fun?: boolean }) {
         )}
         <div
           className="rounded-[20px] rounded-bl-md px-4 py-3"
-          style={
-            fun
-              ? FUN_ASSISTANT_BUBBLE
-              : {
-                  background: 'linear-gradient(145deg, rgba(4,120,87,0.92), rgba(16,185,129,0.85))',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                }
-          }
+          style={fun ? FUN_ASSISTANT_BUBBLE : QUICK_ASSISTANT_BUBBLE}
         >
           <span className="inline-flex items-center gap-1.5" aria-hidden>
             {[0, 1, 2].map((i) => (
@@ -206,8 +205,8 @@ function ChatHeader({
         background: isFun
           ? FUN_HEADER_BG
           : isPathSelect
-            ? 'linear-gradient(180deg, rgba(15,23,42,0.97) 0%, rgba(15,23,42,0.88) 100%)'
-            : 'linear-gradient(160deg, #064e3b 0%, #047857 50%, #0c1222 100%)',
+            ? 'linear-gradient(180deg, rgba(7,20,31,0.97) 0%, rgba(10,20,28,0.9) 100%)'
+            : QUICK_HEADER_BG,
         paddingTop: 'max(10px, env(safe-area-inset-top, 0px))',
         backdropFilter: 'blur(12px)',
       }}
@@ -314,7 +313,7 @@ function ProfileUpdateIntentScreen({
           type="button"
           onClick={onConfirm}
           className="w-full rounded-2xl px-4 py-3.5 text-sm font-black text-white active:scale-[0.98]"
-          style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.95), rgba(5,150,105,0.9))' }}
+          style={{ background: 'linear-gradient(135deg, #1f453c, #2d5a4a)' }}
         >
           כן, לעדכן פרטים
         </button>
@@ -675,8 +674,8 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                 background: path
                   ? isFun
                     ? FUN_CHAT_BG
-                    : 'linear-gradient(180deg, rgba(4,120,87,0.3) 0%, rgba(12,18,34,0.95) 40%, #0c1222 100%)'
-                  : 'linear-gradient(180deg, rgba(15,23,42,0.55) 0%, rgba(2,6,23,0.82) 55%, rgba(2,6,23,0.94) 100%)',
+                    : QUICK_CHAT_BG
+                  : 'linear-gradient(180deg, rgba(7,20,31,0.55) 0%, rgba(2,6,23,0.88) 55%, rgba(2,6,23,0.94) 100%)',
               }}
             />
             {isFun ? <FunFloatingAmbience /> : null}
@@ -768,16 +767,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                           className={`max-w-[82%] px-3.5 py-2.5 text-[14px] leading-relaxed ${
                             isFun ? 'rounded-[24px] rounded-bl-lg' : 'rounded-[20px] rounded-bl-md'
                           }`}
-                          style={
-                            isFun
-                              ? FUN_ASSISTANT_BUBBLE
-                              : {
-                                  background: 'linear-gradient(145deg, #047857 0%, #059669 55%, #10b981 100%)',
-                                  color: '#fff',
-                                  border: '1px solid rgba(255,255,255,0.18)',
-                                  boxShadow: '0 6px 20px rgba(16,185,129,0.22)',
-                                }
-                          }
+                          style={isFun ? FUN_ASSISTANT_BUBBLE : QUICK_ASSISTANT_BUBBLE}
                         >
                           {m.secret ? (
                             <span className="flex items-center gap-1.5 text-amber-200 text-[13px]">
@@ -793,15 +783,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                           className={`max-w-[82%] px-3.5 py-2.5 text-[14px] leading-relaxed ${
                             isFun ? 'rounded-[24px] rounded-tr-lg' : 'rounded-[20px] rounded-tr-md'
                           }`}
-                          style={
-                            isFun
-                              ? FUN_USER_BUBBLE
-                              : {
-                                  background: 'rgba(255,255,255,0.1)',
-                                  color: '#f1f5f9',
-                                  border: '1px solid rgba(255,255,255,0.1)',
-                                }
-                          }
+                          style={isFun ? FUN_USER_BUBBLE : QUICK_USER_BUBBLE}
                         >
                           {m.secret ? (
                             <span className="flex items-center gap-1.5 text-amber-200 text-[13px]">
@@ -832,7 +814,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                   dir="rtl"
                   className="shrink-0 border-t border-white/8 relative z-20"
                   style={{
-                    background: isFun ? 'rgba(8,28,24,0.98)' : '#0c1222',
+                    background: isFun ? 'rgba(10,24,22,0.98)' : '#07141f',
                     paddingBottom: drawerLayout?.keyboardOpen
                       ? '0.35rem'
                       : 'max(0.5rem, env(safe-area-inset-bottom, 0px))',
@@ -944,8 +926,8 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                         style={{
                           background: isFun ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)',
                           border: isFun
-                            ? '1px solid rgba(251,191,36,0.25)'
-                            : '1px solid rgba(255,255,255,0.1)',
+                            ? '1px solid rgba(201,169,98,0.2)'
+                            : '1px solid rgba(100,116,139,0.18)',
                         }}
                       />
                       <button
@@ -954,9 +936,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                         disabled={loading || !input.trim()}
                         className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white disabled:opacity-40"
                         style={{
-                          background: isFun
-                            ? 'linear-gradient(145deg, #0d9488, #f59e0b)'
-                            : 'linear-gradient(145deg, #047857, #10b981)',
+                          background: isFun ? FUN_SEND_BUTTON : QUICK_SEND_BUTTON,
                         }}
                         aria-label="שליחה"
                       >

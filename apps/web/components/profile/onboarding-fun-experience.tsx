@@ -14,7 +14,70 @@ export const FUN_TYPING_LINES = [
 
 const FLOAT_EMOJIS = ['✨', '🎉', '😅', '🍕', '💫', '🎭', '🔥', '🌈'] as const;
 
-const CONFETTI_COLORS = ['#fbbf24', '#34d399', '#fb923c', '#38bdf8', '#f472b6', '#a3e635'];
+const CONFETTI_COLORS = ['#c9a962', '#5a9a8a', '#8fb5a8', '#a8c4b8', '#d4c4a0', '#6b9080'];
+
+type BubbleStyle = {
+  background: string;
+  color: string;
+  border: string;
+  boxShadow?: string;
+};
+
+/** מסלול מהיר — יער עמוק, זכוכית מט, מקצועי */
+export const QUICK_CHAT_BG =
+  'linear-gradient(180deg, rgba(7,20,31,0.5) 0%, rgba(15,35,30,0.72) 48%, #07141f 100%)';
+
+export const QUICK_HEADER_BG =
+  'linear-gradient(165deg, #0c1f1a 0%, #152e28 48%, #0a141c 100%)';
+
+export const QUICK_PATH_SELECT_BORDER =
+  'linear-gradient(135deg, rgba(100,149,137,0.42), rgba(45,212,191,0.22))';
+
+export const QUICK_PATH_SELECT_FILL =
+  'linear-gradient(148deg, #0f1f1b 0%, #1a332c 55%, #142820 100%)';
+
+export const QUICK_ASSISTANT_BUBBLE: BubbleStyle = {
+  background: 'linear-gradient(152deg, #152e28 0%, #1f453c 52%, #285a4d 100%)',
+  color: '#ecfdf5',
+  border: '1px solid rgba(167, 243, 208, 0.16)',
+  boxShadow: '0 8px 24px rgba(4, 44, 34, 0.4), inset 0 1px 0 rgba(255,255,255,0.07)',
+};
+
+export const QUICK_USER_BUBBLE: BubbleStyle = {
+  background: 'rgba(15, 23, 42, 0.58)',
+  color: '#e2e8f0',
+  border: '1px solid rgba(100, 116, 139, 0.22)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+};
+
+export const QUICK_SEND_BUTTON =
+  'linear-gradient(145deg, #1f453c 0%, #2d5a4a 100%)';
+
+/** מסלול כייפי — ירקן-עמוק עם נגיעת שמפניה, לא קשת */
+export const FUN_CHAT_BG =
+  'linear-gradient(180deg, rgba(26,64,57,0.32) 0%, rgba(10,16,24,0.94) 68%, #0a1018 100%)';
+
+export const FUN_HEADER_BG =
+  'linear-gradient(160deg, #1a4039 0%, #265a50 46%, #2a3830 100%)';
+
+export const FUN_ASSISTANT_BUBBLE: BubbleStyle = {
+  background: 'linear-gradient(152deg, #1a4039 0%, #265a50 50%, #2f6759 100%)',
+  color: '#f7fdfb',
+  border: '1px solid rgba(201, 169, 98, 0.22)',
+  boxShadow: '0 10px 28px rgba(26, 64, 57, 0.38), inset 0 1px 0 rgba(255, 248, 235, 0.09)',
+};
+
+export const FUN_USER_BUBBLE: BubbleStyle = {
+  background: 'rgba(255, 248, 235, 0.07)',
+  color: '#f1f5f9',
+  border: '1px solid rgba(201, 169, 98, 0.16)',
+};
+
+export const FUN_SEND_BUTTON =
+  'linear-gradient(145deg, #265a50 0%, #3d7266 100%)';
+
+export const FUN_AVATAR_RING =
+  'linear-gradient(135deg, rgba(201,169,98,0.55), rgba(45,212,191,0.35), rgba(201,169,98,0.55))';
 
 type Particle = { id: number; x: number; y: number; emoji: string; delay: number; duration: number };
 
@@ -70,13 +133,13 @@ export function FunFloatingAmbience() {
       ))}
       <motion.div
         className="absolute -top-24 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.32) 0%, transparent 70%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(201,169,98,0.14) 0%, transparent 70%)' }}
         animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.75, 0.5] }}
         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
         className="absolute -bottom-16 -right-10 h-48 w-48 rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(20,184,166,0.28) 0%, transparent 70%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.12) 0%, transparent 70%)' }}
         animate={{ scale: [1.1, 0.95, 1.1], opacity: [0.4, 0.65, 0.4] }}
         transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
       />
@@ -132,19 +195,16 @@ export function FunPathSelectHero({ onSelect }: { onSelect: () => void }) {
       whileTap={{ scale: 0.98 }}
     >
       <motion.div
-        className="absolute -inset-[2px] rounded-[32px]"
-        style={{
-          background:
-            'conic-gradient(from 0deg, #fbbf24, #34d399, #fb923c, #38bdf8, #fbbf24)',
-        }}
-        animate={{ rotate: 360 }}
-        transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
+        className="absolute -inset-[1.5px] rounded-[32px]"
+        style={{ background: 'linear-gradient(135deg, rgba(201,169,98,0.45), rgba(45,212,191,0.28))' }}
+        animate={{ opacity: [0.75, 1, 0.75] }}
+        transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
       />
       <div
-        className="relative m-[2px] overflow-hidden rounded-[30px] px-5 py-5"
+        className="relative m-[1.5px] overflow-hidden rounded-[30.5px] px-5 py-5"
         style={{
-          background:
-            'linear-gradient(145deg, rgba(13,148,136,0.96) 0%, rgba(5,150,105,0.94) 42%, rgba(234,88,12,0.9) 100%)',
+          background: 'linear-gradient(155deg, #1a4039 0%, #265a50 55%, #223830 100%)',
+          boxShadow: '0 16px 40px rgba(26, 64, 57, 0.35)',
         }}
       >
         <FunFloatingAmbience />
@@ -166,7 +226,7 @@ export function FunPathSelectHero({ onSelect }: { onSelect: () => void }) {
           <p className="mt-1.5 text-[13px] font-semibold leading-relaxed text-white/90">
             אלמוג בלי פילטרים (כמעט) — בדיחות, פאנץ&apos; ושאלות שלא ציפית להן
           </p>
-          <p className="mt-3 text-[11px] font-bold text-amber-100/90">
+          <p className="mt-3 text-[11px] font-bold text-stone-200/80">
             לחץ ותקבל קונפטי. ברצינות.
           </p>
         </div>
@@ -188,21 +248,19 @@ export function QuickPathSelectCard({ onSelect }: { onSelect: () => void }) {
     >
       <div
         className="absolute -inset-[1px] rounded-[28px] opacity-90"
-        style={{
-          background: 'linear-gradient(135deg, rgba(56,189,248,0.7), rgba(16,185,129,0.75))',
-        }}
+        style={{ background: QUICK_PATH_SELECT_BORDER }}
       />
       <div
         className="relative m-[1px] flex items-center gap-3 rounded-[27px] px-4 py-4"
         style={{
-          background: 'linear-gradient(135deg, rgba(8,145,178,0.95) 0%, rgba(5,150,105,0.92) 100%)',
-          boxShadow: '0 10px 28px rgba(14,165,233,0.22)',
+          background: QUICK_PATH_SELECT_FILL,
+          boxShadow: '0 12px 32px rgba(7, 20, 31, 0.45)',
         }}
       >
-        <Zap className="h-6 w-6 text-sky-100 shrink-0" />
+        <Zap className="h-6 w-6 text-emerald-200/90 shrink-0" />
         <span className="text-right">
           <span className="block text-white font-black text-sm">מסלול מהיר</span>
-          <span className="block text-emerald-100/90 text-xs mt-0.5">ישיר, רציני, בלי בדיחות</span>
+          <span className="block text-slate-300/90 text-xs mt-0.5">ישיר, רציני, בלי בדיחות</span>
         </span>
       </div>
     </motion.button>
@@ -227,7 +285,7 @@ export function FunTypingLine() {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -4 }}
         transition={{ duration: 0.25 }}
-        className="text-[11px] font-bold text-amber-100/90 px-0.5"
+        className="text-[11px] font-bold text-stone-200/85 px-0.5"
       >
         {FUN_TYPING_LINES[idx]}
       </motion.span>
@@ -235,24 +293,3 @@ export function FunTypingLine() {
   );
 }
 
-export const FUN_CHAT_BG =
-  'linear-gradient(180deg, rgba(13,148,136,0.38) 0%, rgba(234,88,12,0.18) 38%, rgba(12,18,34,0.96) 72%, #0c1222 100%)';
-
-export const FUN_HEADER_BG =
-  'linear-gradient(160deg, #0f766e 0%, #059669 45%, #ea580c 100%)';
-
-export const FUN_ASSISTANT_BUBBLE = {
-  background: 'linear-gradient(145deg, #0d9488 0%, #14b8a6 42%, #f59e0b 100%)',
-  color: '#fff',
-  border: '1px solid rgba(255,255,255,0.22)',
-  boxShadow: '0 8px 28px rgba(20,184,166,0.32)',
-};
-
-export const FUN_USER_BUBBLE = {
-  background: 'rgba(255,255,255,0.13)',
-  color: '#f0fdfa',
-  border: '1px solid rgba(52,211,153,0.28)',
-};
-
-export const FUN_AVATAR_RING =
-  'conic-gradient(from 0deg, #34d399, #fbbf24, #fb923c, #38bdf8, #34d399)';
