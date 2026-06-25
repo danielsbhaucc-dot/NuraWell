@@ -11,6 +11,7 @@ import { AlmogAvatarChip } from '../journey/AlmogPresence';
 import type { FrictionCategory, StrategyType } from '../../lib/ai/almog-commitments/friction';
 import { FRICTION_META } from '../../lib/ai/almog-commitments/friction';
 import {
+  SOS_ALMOG_BUBBLE,
   SOS_BODY_BG,
   SOS_LABEL,
   SOS_MUTED,
@@ -19,6 +20,8 @@ import {
   sosSurface,
   TRIGGER_SURFACE,
 } from '../../lib/ai/sos-dialog-surfaces';
+import type { OnboardingGender } from '../../lib/onboarding/types';
+import { useSosTts } from './useSosTts';
 import type {
   SosFocusTask,
 } from '../../lib/ai/guardian/sos-memory';
@@ -149,9 +152,18 @@ type SosDialogProps = {
   open: boolean;
   onClose: () => void;
   focusTasks?: SosFocusTask[];
+  firstName?: string;
+  gender?: OnboardingGender | '';
 };
 
-export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
+export function SosDialog({
+  open,
+  onClose,
+  focusTasks = [],
+  firstName = '',
+  gender = '',
+}: SosDialogProps) {
+  const { play: playSosTts, isLoading: isSosTtsLoading } = useSosTts();
   const router = useRouter();
   const [note, setNote] = useState('');
   const [selectedTask, setSelectedTask] = useState<SosFocusTask | null>(null);
@@ -177,7 +189,10 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
 
   useEffect(() => {
     if (!open) return;
-    setSelectedTask(focusTasks[0] ?? null);
+    setSelectedTask((prev) => {
+      if (prev && focusTasks.some((t) => t.id === prev.id)) return prev;
+      return focusTasks[0] ?? null;
+    });
     setOutcomeSaved(null);
     setTaskMarked(false);
     setGuardianSaved(false);
@@ -190,25 +205,39 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
       .catch(() => setGuardianOptedIn(null));
   }, [open, focusTasks, loadContext]);
 
+  const gateTask = selectedTask ?? focusTasks[0] ?? null;
+  const showTaskHardnessGate =
+    !response && focusTasks.length > 0 && taskHardConfirmed === null;
+
   const title = useMemo(() => {
-    if (outcomeSaved) return 'תודה ששיתפת 🌱';
-    if (!response) return 'רגע, אני איתך';
+    if (outcomeSaved) return firstName ? `תודה, ${firstName} 🌱` : 'תודה ששיתפת 🌱';
+    if (showTaskHardnessGate) {
+      return firstName ? `היי ${firstName}` : 'רגע לפני שממשיכים';
+    }
+    if (!response) return firstName ? `רגע, ${firstName} — אני איתך` : 'רגע, אני איתך';
     if (response.mode === 'escalation') return 'לא נשארים עם זה לבד';
     if (response.mode === 'slow_down') return 'מורידים הילוך';
     if (response.mode === 'pivot') return 'בוא ננסה גישה אחרת';
     return 'הנה מה שיכול לעזור עכשיו';
-  }, [response, outcomeSaved]);
+  }, [response, outcomeSaved, showTaskHardnessGate, firstName]);
 
   const subtitle = useMemo(() => {
     if (outcomeSaved) return 'שמרתי — בפעם הבאה אדע מה עזר ומה פחות.';
+    if (showTaskHardnessGate) {
+      return gateTask?.title
+        ? `נתחיל מהמשימה שעל הראש — "${gateTask.title}"`
+        : 'קודם נבין על מה מדובר';
+    }
     if (response?.context.focus_task_title) {
       return `בקשר ל: ${response.context.focus_task_emoji ?? '✅'} ${response.context.focus_task_title}`;
     }
     if (selectedTask?.title) {
       return `נתמקד ב: ${selectedTask.emoji ?? '✅'} ${selectedTask.title}`;
     }
-    return 'בלי שיפוט, בלי החלטות גדולות — רק דקה אחת.';
-  }, [response, selectedTask, outcomeSaved]);
+    return firstName
+      ? `${firstName}, ספר לי מה עולה — נמצא צעד קטן יחד.`
+      : 'ספר לי מה עולה — נמצא צעד קטן יחד.';
+  }, [response, selectedTask, outcomeSaved, showTaskHardnessGate, gateTask, firstName]);
 
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -351,13 +380,15 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
   }
 
   function speakTaskTitle() {
-    const title = selectedTask?.title ?? response?.context.focus_task_title;
-    if (!title || typeof window === 'undefined' || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(title);
-    utterance.lang = 'he-IL';
-    utterance.rate = 0.92;
-    window.speechSynthesis.speak(utterance);
+    const title = gateTask?.title ?? selectedTask?.title ?? response?.context.focus_task_title;
+    if (!title) return;
+    void playSosTts(title, 'task_title');
+  }
+
+  function speakInterventionMessage() {
+    const message = response?.intervention.message;
+    if (!message) return;
+    void playSosTts(message, 'intervention_message');
   }
 
   async function markTaskDoneFromSos() {
@@ -441,9 +472,11 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
 
   function openUnfreezeChat() {
     const original = selectedTask?.title ?? response?.context.focus_task_title;
+    const feel =
+      gender === 'male' ? 'מרגיש' : gender === 'female' ? 'מרגישה' : 'מרגיש/ה';
     const prefill = original
-      ? `אני מרגיש/ה שאולי הגיע הזמן לחזור למשימה "${original}". בוא נוודא יחד שזה הזמן הנכון.`
-      : 'אני מרגיש/ה שאולי הגיע הזמן לחזור למשימה המקורית. בוא נוודא יחד שזה הזמן הנכון.';
+      ? `אני ${feel} שאולי הגיע הזמן לחזור למשימה "${original}". בוא נוודא יחד שזה הזמן הנכון.`
+      : `אני ${feel} שאולי הגיע הזמן לחזור למשימה המקורית. בוא נוודא יחד שזה הזמן הנכון.`;
     resetAndClose();
     dispatchOpenAlmogChatWithPrefill(prefill);
   }
@@ -466,8 +499,10 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
     }
   }
 
-  const showTaskHardnessGate =
-    !response && selectedTask?.title && taskHardConfirmed === null && focusTasks.length > 0;
+  const taskTitleTtsLoading = isSosTtsLoading(
+    gateTask?.title ?? selectedTask?.title ?? response?.context.focus_task_title ?? '',
+    'task_title'
+  );
 
   return (
     <AnimatedDialog
@@ -563,21 +598,54 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
             <div className="space-y-4">
               {showTaskHardnessGate ? (
                 <div className={`${sosSurface('amber')} space-y-3 px-4 py-4`}>
-                  <p className={SOS_LABEL}>רגע לפני שממשיכים</p>
+                  {focusTasks.length > 1 ? (
+                    <div className="space-y-2">
+                      <p className={SOS_LABEL}>על איזו משימה מדובר?</p>
+                      <div className="grid gap-2">
+                        {focusTasks.map((task) => {
+                          const active = gateTask?.id === task.id;
+                          return (
+                            <button
+                              key={task.id}
+                              type="button"
+                              onClick={() => setSelectedTask(task)}
+                              className={`flex items-center justify-between px-3 py-2.5 text-right transition active:scale-[0.99] ${sosSurface(
+                                active ? 'sky' : 'white',
+                                active ? 'ring-2 ring-sky-400/40' : ''
+                              )}`}
+                            >
+                              <span className={SOS_MUTED}>{task.stepTitle ?? 'מהמסע'}</span>
+                              <span className="flex items-center gap-2 text-sm font-black text-slate-900">
+                                {active ? <Check className="h-4 w-4 text-sky-600" /> : null}
+                                <span>{task.emoji ?? '✅'}</span>
+                                {task.title}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
+
                   <div className={`${sosSurface('white')} px-3 py-3`}>
                     <p className={SOS_MUTED}>המשימה שעל הראש עכשיו</p>
                     <div className="mt-1 flex items-start justify-between gap-2">
                       <p className="text-base font-black leading-snug text-slate-900">
-                        {selectedTask?.emoji ? `${selectedTask.emoji} ` : ''}
-                        {selectedTask?.title}
+                        {gateTask?.emoji ? `${gateTask.emoji} ` : ''}
+                        {gateTask?.title ?? '…'}
                       </p>
                       <button
                         type="button"
                         onClick={speakTaskTitle}
-                        className={`shrink-0 rounded-xl p-2 text-violet-700 ${sosSurface('lavender')}`}
+                        disabled={!gateTask?.title || taskTitleTtsLoading}
+                        className={`shrink-0 rounded-xl p-2 text-violet-800 ${sosSurface('lavender')} disabled:opacity-60`}
                         aria-label="הקרא את המשימה"
                       >
-                        <Volume2 className="h-4 w-4" />
+                        {taskTitleTtsLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Volume2 className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -596,7 +664,10 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setTaskHardConfirmed(false)}
+                      onClick={() => {
+                        setTaskHardConfirmed(false);
+                        setSelectedTask(null);
+                      }}
                       className={`${sosSurface('slate')} px-4 py-3 text-sm font-bold text-slate-800`}
                     >
                       לא, משהו אחר
@@ -605,8 +676,9 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                 </div>
               ) : (
                 <>
-              <div className={`${sosSurface('lavender')} px-4 py-3 ${SOS_TEXT} leading-7`}>
-                קודם — על <strong className="text-slate-900">מה</strong> קשה לך עכשיו? ככה אלמוג יידע מה להציע.
+              <div className={SOS_ALMOG_BUBBLE}>
+                {firstName ? `היי ${firstName}, ` : ''}
+                מה הכי קשה לך עכשיו? נתחיל ממקום אחד קטן — ונתקדם משם ביחד.
               </div>
 
               {focusTasks.length > 0 ? (
@@ -725,7 +797,24 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
                   aria-hidden
                   className="pointer-events-none absolute inset-x-4 top-px h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"
                 />
-                <p className="whitespace-pre-wrap text-sm font-semibold leading-7">{response.intervention.message}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm font-semibold leading-7">
+                    {response.intervention.message}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={speakInterventionMessage}
+                    disabled={isSosTtsLoading(response.intervention.message, 'intervention_message')}
+                    className="shrink-0 rounded-xl bg-white/15 p-2 text-white/90 transition hover:bg-white/25 disabled:opacity-60"
+                    aria-label="הקרא את ההודעה"
+                  >
+                    {isSosTtsLoading(response.intervention.message, 'intervention_message') ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Volume2 className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div className={`${sosSurface('amber')} relative overflow-hidden p-4`}>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
-import { ArrowRight, CircleHelp } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, CircleHelp } from 'lucide-react';
 
 import { normalizeFrictionCategory } from '../../lib/ai/almog-commitments/friction';
 import type { SosMemorySnippet, SosRecentEvent } from '../../lib/ai/guardian/sos-memory';
@@ -14,6 +14,21 @@ import { MomentsHeroAvatar } from '../journey/AlmogPresence';
 const HEBREW_HEAD: CSSProperties = {
   fontFamily: 'Rubik, Heebo, Arial, sans-serif',
 };
+
+const HEADER_GRADIENT =
+  'linear-gradient(155deg, #4c1d95 0%, #6d28d9 32%, #0f766e 68%, #0d9488 100%)';
+
+const HEADER_TEXT = {
+  greeting: '#e9d5ff',
+  title: '#f5f3ff',
+  body: '#c4b5fd',
+  accent: '#99f6e4',
+} as const;
+
+const MEMORY_PAGE_SIZE = 5;
+const FAILED_PAGE_SIZE = 5;
+const EVENT_DAYS_PAGE_SIZE = 4;
+const EVENTS_PER_DAY_LIMIT = 8;
 
 const TRIGGER_HUMAN: Record<string, string> = {
   emotional: 'הרגשת עמוס או לחוץ',
@@ -44,6 +59,12 @@ const EVENT_CARD_STYLES = [
   'border-rose-200/55 bg-gradient-to-br from-rose-50/90 to-pink-50/40',
   'border-amber-200/55 bg-gradient-to-br from-amber-50/90 to-orange-50/40',
 ] as const;
+
+function whenYouPress(gender: OnboardingGender | ''): string {
+  if (gender === 'male') return 'שתלחץ';
+  if (gender === 'female') return 'שתלחצי';
+  return 'שתלחץ/י';
+}
 
 function formatRelative(iso: string): string {
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
@@ -77,7 +98,9 @@ type OutcomeBadge = {
   border: string;
 };
 
-function outcomeBadge(outcome: string, press: string): OutcomeBadge {
+function outcomeBadge(outcome: string, gender: OnboardingGender | ''): OutcomeBadge {
+  const pressHint = whenYouPress(gender);
+
   if (outcome === 'passed') {
     return {
       label: 'עזר לך',
@@ -105,7 +128,7 @@ function outcomeBadge(outcome: string, press: string): OutcomeBadge {
   if (outcome === 'unknown') {
     return {
       label: 'מחכה שתספר',
-      hint: `אחרי רגע קשה אני שואל אם הצעה עזרה. אם לא ענית — זה נשאר פתוח. בפעם הבאה ש${press} על "רגע, קשה לי" אפשר לספר לי איך היה.`,
+      hint: `אחרי רגע קשה אני שואל אם הצעה עזרה. אם לא ענית — זה נשאר פתוח. בפעם הבאה ${pressHint} על "רגע, קשה לי" אפשר לספר לי איך היה.`,
       bg: 'linear-gradient(135deg, #e0e7ff, #c7d2fe)',
       text: '#3730a3',
       border: 'rgba(99,102,241,0.35)',
@@ -125,10 +148,19 @@ function triggerHuman(trigger: string | null): string | null {
   return TRIGGER_HUMAN[cat] ?? null;
 }
 
+function paginate<T>(items: T[], page: number, pageSize: number): T[] {
+  const start = page * pageSize;
+  return items.slice(start, start + pageSize);
+}
+
+function totalPages(count: number, pageSize: number): number {
+  return Math.max(1, Math.ceil(count / pageSize));
+}
+
 function MomentsColorDivider({ index }: { index: number }) {
   const [from, to] = DIVIDER_COLORS[index % DIVIDER_COLORS.length];
   return (
-    <div className="flex items-center gap-2 py-0.5" aria-hidden>
+    <div className="my-2 flex items-center gap-2 py-2" aria-hidden>
       <div
         className="h-px flex-1"
         style={{ background: `linear-gradient(90deg, transparent, ${from}88, ${to}aa)` }}
@@ -145,9 +177,73 @@ function MomentsColorDivider({ index }: { index: number }) {
   );
 }
 
-function OutcomeStatus({ outcome, press }: { outcome: string; press: string }) {
+function ListPagination({
+  page,
+  total,
+  onPageChange,
+  label,
+}: {
+  page: number;
+  total: number;
+  onPageChange: (page: number) => void;
+  label: string;
+}) {
+  if (total <= 1) return null;
+
+  return (
+    <nav
+      className="flex items-center justify-between gap-2 rounded-2xl border border-slate-200/70 bg-white/70 px-3 py-2.5"
+      aria-label={label}
+    >
+      <button
+        type="button"
+        disabled={page === 0}
+        onClick={() => onPageChange(page - 1)}
+        className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold text-violet-800 transition disabled:opacity-40"
+        style={{ background: page === 0 ? 'transparent' : 'rgba(139,92,246,0.1)' }}
+      >
+        <ChevronRight className="h-3.5 w-3.5" />
+        הקודם
+      </button>
+      <span className="text-xs font-semibold text-slate-600">
+        עמוד {page + 1} מתוך {total}
+      </span>
+      <button
+        type="button"
+        disabled={page >= total - 1}
+        onClick={() => onPageChange(page + 1)}
+        className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold text-violet-800 transition disabled:opacity-40"
+        style={{ background: page >= total - 1 ? 'transparent' : 'rgba(139,92,246,0.1)' }}
+      >
+        הבא
+        <ChevronLeft className="h-3.5 w-3.5" />
+      </button>
+    </nav>
+  );
+}
+
+function DayHeading({ day }: { day: string }) {
+  return (
+    <div className="py-1.5">
+      <p
+        className="mx-auto max-w-sm rounded-2xl px-4 py-2 text-center text-[15px] font-black tracking-wide"
+        style={{
+          ...HEBREW_HEAD,
+          color: '#5b21b6',
+          background: 'linear-gradient(135deg, rgba(237,233,254,0.95), rgba(224,231,255,0.85))',
+          border: '1px solid rgba(139,92,246,0.22)',
+          boxShadow: '0 4px 14px rgba(139,92,246,0.08)',
+        }}
+      >
+        {day}
+      </p>
+    </div>
+  );
+}
+
+function OutcomeStatus({ outcome, gender }: { outcome: string; gender: OnboardingGender | '' }) {
   const [showHint, setShowHint] = useState(false);
-  const badge = outcomeBadge(outcome, press);
+  const badge = outcomeBadge(outcome, gender);
 
   return (
     <div className="min-w-0">
@@ -208,8 +304,8 @@ function SummaryLine({
 
   return (
     <p
-      className="mt-4 max-w-sm text-[15px] font-bold leading-relaxed text-white"
-      style={HEBREW_HEAD}
+      className="mt-4 max-w-sm text-[15px] font-bold leading-relaxed"
+      style={{ ...HEBREW_HEAD, color: HEADER_TEXT.accent }}
     >
       {firstName}, {parts.join(' ')}. אני שומר את זה כדי שבפעם הבאה אדע מה מתאים לך.
     </p>
@@ -262,6 +358,10 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
   const [events, setEvents] = useState<SosRecentEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [helpedPage, setHelpedPage] = useState(0);
+  const [failedPage, setFailedPage] = useState(0);
+  const [eventsPage, setEventsPage] = useState(0);
+  const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -277,6 +377,10 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
       if (!res.ok || !json.ok) throw new Error(json.error ?? 'load_failed');
       setMemory(json.memory ?? []);
       setEvents(filterRelevantSosEvents(json.recent_events ?? []));
+      setHelpedPage(0);
+      setFailedPage(0);
+      setEventsPage(0);
+      setExpandedDays({});
     } catch {
       setError('לא הצלחתי לזכור עכשיו — אפשר לנסות שוב בעוד רגע.');
     } finally {
@@ -302,19 +406,25 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
   const helpedMemory = memory.filter((m) => m.outcome === 'helped' || m.outcome === 'resolved');
   const failedMemory = memory.filter((m) => m.outcome === 'not_helped');
 
+  const helpedPages = totalPages(helpedMemory.length, MEMORY_PAGE_SIZE);
+  const failedPages = totalPages(failedMemory.length, FAILED_PAGE_SIZE);
+  const eventsDayPages = totalPages(groupedEvents.length, EVENT_DAYS_PAGE_SIZE);
+
+  const visibleHelped = paginate(helpedMemory, helpedPage, MEMORY_PAGE_SIZE);
+  const visibleFailed = paginate(failedMemory, failedPage, FAILED_PAGE_SIZE);
+  const visibleEventDays = paginate(groupedEvents, eventsPage, EVENT_DAYS_PAGE_SIZE);
+
   return (
     <div className="touch-manipulation min-h-screen bg-gradient-to-b from-[#f5f3ff] via-[#faf8f5] to-[#f8fafc]">
       <div
         className="relative overflow-hidden px-4 pb-10 pt-4"
-        style={{
-          background: 'linear-gradient(155deg, #034d3a 0%, #059669 45%, #10b981 85%)',
-        }}
+        style={{ background: HEADER_GRADIENT }}
       >
         <span
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 h-2/3"
           style={{
-            background: 'linear-gradient(180deg, rgba(167,243,208,0.22) 0%, transparent 100%)',
+            background: 'linear-gradient(180deg, rgba(196,181,253,0.18) 0%, transparent 100%)',
           }}
         />
 
@@ -322,30 +432,33 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
           href="/"
           className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95"
           style={{
-            background: 'rgba(167, 243, 208, 0.18)',
-            border: '1px solid rgba(167, 243, 208, 0.38)',
-            boxShadow: 'inset 0 1px 0 rgba(167, 243, 208, 0.45), 0 4px 16px rgba(6,78,59,0.12)',
+            background: 'rgba(196, 181, 253, 0.2)',
+            border: '1px solid rgba(233, 213, 255, 0.35)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 16px rgba(76,29,149,0.15)',
           }}
           aria-label="חזרה לבית"
         >
-          <ArrowRight className="h-5 w-5 text-white" aria-hidden />
+          <ArrowRight className="h-5 w-5" style={{ color: HEADER_TEXT.title }} aria-hidden />
         </Link>
 
         <div className="relative mx-auto max-w-lg">
           <div className="flex flex-col items-center pt-8 text-center">
-            <MomentsHeroAvatar size={88} />
-            <p className="mt-2 text-base font-bold text-white" style={HEBREW_HEAD}>
+            <MomentsHeroAvatar size={96} />
+            <p
+              className="mt-2 text-base font-bold"
+              style={{ ...HEBREW_HEAD, color: HEADER_TEXT.greeting }}
+            >
               היי {firstName},
             </p>
             <h1
-              className="mt-1 text-[1.85rem] font-black leading-tight text-white"
-              style={HEBREW_HEAD}
+              className="mt-1 text-[1.85rem] font-black leading-tight"
+              style={{ ...HEBREW_HEAD, color: HEADER_TEXT.title }}
             >
               הרגעים שלך
             </h1>
             <p
-              className="mt-3 max-w-sm text-[15px] font-bold leading-relaxed text-white"
-              style={HEBREW_HEAD}
+              className="mt-3 max-w-sm text-[15px] font-bold leading-relaxed"
+              style={{ ...HEBREW_HEAD, color: HEADER_TEXT.body }}
             >
               כל פעם שעצרת כשהיה קשה — אני זוכר מה עזר ומה פחות, כדי שבפעם הבאה אדע מה מתאים לך.
             </p>
@@ -358,8 +471,8 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
               />
             ) : loading ? (
               <div className="mt-5 w-full max-w-xs space-y-2 animate-pulse" aria-hidden>
-                <div className="mx-auto h-3 w-40 rounded-md bg-white/20" />
-                <div className="mx-auto h-3 w-56 rounded-md bg-white/15" />
+                <div className="mx-auto h-3 w-40 rounded-md bg-violet-200/25" />
+                <div className="mx-auto h-3 w-56 rounded-md bg-violet-200/18" />
               </div>
             ) : null}
           </div>
@@ -382,7 +495,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
           </div>
         ) : events.length === 0 && memory.length === 0 ? (
           <div dir="rtl" className="glass-surface-home rounded-[22px] px-5 py-10 text-center">
-            <MomentsHeroAvatar size={72} />
+            <MomentsHeroAvatar size={80} />
             <p className="mt-2 text-base font-bold text-slate-900" style={HEBREW_HEAD}>
               {firstName}, עדיין אין כאן רגעים שמורים
             </p>
@@ -412,22 +525,33 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                 </div>
 
                 {helpedMemory.length > 0 ? (
-                  <ul className="space-y-0">
-                    {helpedMemory.map((m, i) => (
-                      <li key={`h-${i}`}>
-                        {i > 0 ? <MomentsColorDivider index={i} /> : null}
-                        <div
-                          className={`rounded-2xl border px-4 py-3 text-sm text-slate-800 ${MEMORY_CARD_STYLES[i % MEMORY_CARD_STYLES.length]}`}
-                        >
-                          <p className="font-bold leading-snug">{m.strategy}</p>
-                          {m.task_title ? (
-                            <p className="mt-1 text-xs text-slate-600">בקשר ל: {m.task_title}</p>
-                          ) : null}
-                          <p className="mt-1.5 text-[11px] text-slate-500">{formatRelative(m.created_at)}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <ul className="space-y-0">
+                      {visibleHelped.map((m, i) => {
+                        const globalIndex = helpedPage * MEMORY_PAGE_SIZE + i;
+                        return (
+                          <li key={`h-${globalIndex}`}>
+                            {i > 0 ? <MomentsColorDivider index={globalIndex} /> : null}
+                            <div
+                              className={`rounded-2xl border px-4 py-3 text-sm text-slate-800 ${MEMORY_CARD_STYLES[globalIndex % MEMORY_CARD_STYLES.length]}`}
+                            >
+                              <p className="font-bold leading-snug">{m.strategy}</p>
+                              {m.task_title ? (
+                                <p className="mt-1 text-xs text-slate-600">בקשר ל: {m.task_title}</p>
+                              ) : null}
+                              <p className="mt-1.5 text-[11px] text-slate-500">{formatRelative(m.created_at)}</p>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <ListPagination
+                      page={helpedPage}
+                      total={helpedPages}
+                      onPageChange={setHelpedPage}
+                      label="עימוד — מה עזר לך"
+                    />
+                  </>
                 ) : null}
 
                 {helpedMemory.length > 0 && failedMemory.length > 0 ? (
@@ -436,28 +560,44 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
 
                 {failedMemory.length > 0 ? (
                   <div>
-                    <p className="mb-2 text-center text-xs font-bold text-amber-900/80">
+                    <p className="mb-3 text-center text-xs font-bold text-amber-900/80">
                       מה שפחות התאים הפעם
                     </p>
                     <ul className="space-y-0">
-                      {failedMemory.map((m, i) => (
-                        <li key={`f-${i}`}>
-                          {i > 0 ? <MomentsColorDivider index={helpedMemory.length + i} /> : null}
-                          <div
-                            className="rounded-2xl border border-amber-200/50 px-4 py-3 text-sm text-amber-950"
-                            style={{
-                              background: 'linear-gradient(135deg, rgba(254,243,199,0.85), rgba(253,230,138,0.5))',
-                            }}
-                          >
-                            <p className="font-bold leading-snug">{m.strategy}</p>
-                            {m.task_title ? (
-                              <p className="mt-1 text-xs text-amber-900/70">בקשר ל: {m.task_title}</p>
+                      {visibleFailed.map((m, i) => {
+                        const globalIndex = failedPage * FAILED_PAGE_SIZE + i;
+                        return (
+                          <li key={`f-${globalIndex}`}>
+                            {i > 0 ? (
+                              <MomentsColorDivider index={helpedMemory.length + globalIndex} />
                             ) : null}
-                            <p className="mt-1.5 text-[11px] text-amber-900/55">{formatRelative(m.created_at)}</p>
-                          </div>
-                        </li>
-                      ))}
+                            <div
+                              className="rounded-2xl border border-amber-200/50 px-4 py-3 text-sm text-amber-950"
+                              style={{
+                                background:
+                                  'linear-gradient(135deg, rgba(254,243,199,0.85), rgba(253,230,138,0.5))',
+                              }}
+                            >
+                              <p className="font-bold leading-snug">{m.strategy}</p>
+                              {m.task_title ? (
+                                <p className="mt-1 text-xs text-amber-900/70">בקשר ל: {m.task_title}</p>
+                              ) : null}
+                              <p className="mt-1.5 text-[11px] text-amber-900/55">
+                                {formatRelative(m.created_at)}
+                              </p>
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ul>
+                    <div className="mt-3">
+                      <ListPagination
+                        page={failedPage}
+                        total={failedPages}
+                        onPageChange={setFailedPage}
+                        label="עימוד — מה שפחות התאים"
+                      />
+                    </div>
                   </div>
                 ) : null}
               </section>
@@ -468,46 +608,79 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
             ) : null}
 
             {groupedEvents.length > 0 ? (
-              <section dir="rtl" className="space-y-4">
+              <section dir="rtl" className="glass-surface-home space-y-4 rounded-[22px] p-5">
                 <div className="px-1 text-center">
                   <h2 className="text-lg font-black text-slate-900" style={HEBREW_HEAD}>
                     מתי זה קרה
                   </h2>
-                  <p className="mt-1 text-xs text-slate-600">יום אחרי יום, כמו שזה היה</p>
+                  <p className="mt-1 text-xs text-slate-600">
+                    {groupedEvents.length} ימים · {events.length} רגעים
+                  </p>
                 </div>
 
-                {groupedEvents.map(([day, dayEvents], groupIdx) => (
-                  <div key={day} className="relative space-y-2">
-                    {groupIdx > 0 ? <MomentsColorDivider index={groupIdx + 1} /> : null}
-                    <p className="px-1 text-center text-sm font-bold text-slate-800">{day}</p>
+                {visibleEventDays.map(([day, dayEvents], groupIdx) => {
+                  const globalGroupIdx = eventsPage * EVENT_DAYS_PAGE_SIZE + groupIdx;
+                  const expanded = expandedDays[day] ?? false;
+                  const visibleDayEvents = expanded
+                    ? dayEvents
+                    : dayEvents.slice(0, EVENTS_PER_DAY_LIMIT);
+                  const hiddenInDay = dayEvents.length - visibleDayEvents.length;
 
-                    {dayEvents.map((ev, evIdx) => {
-                      const humanTrigger = triggerHuman(ev.trigger);
-                      const cardStyle = EVENT_CARD_STYLES[(groupIdx + evIdx) % EVENT_CARD_STYLES.length];
-                      return (
-                        <div key={ev.id}>
-                          {evIdx > 0 ? <MomentsColorDivider index={groupIdx + evIdx + 2} /> : null}
-                          <article className={`rounded-2xl border px-4 py-3 ${cardStyle}`}>
-                            <div className="flex flex-wrap items-start justify-between gap-2">
-                              <OutcomeStatus outcome={ev.outcome} press={gc.press} />
-                              <span className="shrink-0 text-xs text-slate-500">
-                                {formatRelative(ev.created_at)}
-                              </span>
-                            </div>
-                            {ev.task_title ? (
-                              <p className="mt-2 text-sm font-bold leading-snug text-slate-900">
-                                {ev.task_title}
-                              </p>
+                  return (
+                    <div key={day} className="relative space-y-2">
+                      {groupIdx > 0 ? <MomentsColorDivider index={globalGroupIdx + 1} /> : null}
+                      <DayHeading day={day} />
+
+                      {visibleDayEvents.map((ev, evIdx) => {
+                        const humanTrigger = triggerHuman(ev.trigger);
+                        const cardStyle =
+                          EVENT_CARD_STYLES[(globalGroupIdx + evIdx) % EVENT_CARD_STYLES.length];
+                        return (
+                          <div key={ev.id}>
+                            {evIdx > 0 ? (
+                              <MomentsColorDivider index={globalGroupIdx + evIdx + 2} />
                             ) : null}
-                            {humanTrigger ? (
-                              <p className="mt-1.5 text-xs leading-5 text-slate-600">{humanTrigger}</p>
-                            ) : null}
-                          </article>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
+                            <article className={`rounded-2xl border px-4 py-3 ${cardStyle}`}>
+                              <div className="flex flex-wrap items-start justify-between gap-2">
+                                <OutcomeStatus outcome={ev.outcome} gender={gender} />
+                                <span className="shrink-0 text-xs font-semibold text-violet-700/80">
+                                  {formatRelative(ev.created_at)}
+                                </span>
+                              </div>
+                              {ev.task_title ? (
+                                <p className="mt-2 text-sm font-bold leading-snug text-slate-900">
+                                  {ev.task_title}
+                                </p>
+                              ) : null}
+                              {humanTrigger ? (
+                                <p className="mt-1.5 text-xs leading-5 text-slate-600">{humanTrigger}</p>
+                              ) : null}
+                            </article>
+                          </div>
+                        );
+                      })}
+
+                      {!expanded && hiddenInDay > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedDays((prev) => ({ ...prev, [day]: true }))
+                          }
+                          className="w-full rounded-xl border border-violet-200/60 bg-violet-50/70 px-3 py-2 text-xs font-bold text-violet-800"
+                        >
+                          עוד {hiddenInDay} רגעים באותו יום
+                        </button>
+                      ) : null}
+                    </div>
+                  );
+                })}
+
+                <ListPagination
+                  page={eventsPage}
+                  total={eventsDayPages}
+                  onPageChange={setEventsPage}
+                  label="עימוד — מתי זה קרה"
+                />
               </section>
             ) : null}
           </>

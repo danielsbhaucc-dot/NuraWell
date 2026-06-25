@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { HandHeart } from 'lucide-react';
 
+import type { OnboardingGender } from '../../lib/onboarding/types';
 import { SosDialog } from './SosDialog';
 
 type SosFocusTask = {
@@ -16,9 +17,11 @@ type SosFocusTask = {
 
 type SosButtonProps = {
   focusTasks?: SosFocusTask[];
+  firstName?: string;
+  gender?: OnboardingGender | '';
 };
 
-export function SosButton({ focusTasks = [] }: SosButtonProps) {
+export function SosButton({ focusTasks = [], firstName = '', gender = '' }: SosButtonProps) {
   const [open, setOpen] = useState(false);
   const pendingCount = focusTasks.length;
 
@@ -56,7 +59,13 @@ export function SosButton({ focusTasks = [] }: SosButtonProps) {
         </span>
       </button>
 
-      <SosDialog open={open} onClose={() => setOpen(false)} focusTasks={focusTasks} />
+      <SosDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        focusTasks={focusTasks}
+        firstName={firstName}
+        gender={gender}
+      />
     </>
   );
 }
