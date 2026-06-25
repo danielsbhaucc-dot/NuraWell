@@ -194,43 +194,43 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
               background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.35) 0%, transparent 55%)',
             }}
           />
-          <div className="relative flex items-start justify-between gap-3">
-            <div className="text-right">
-              <h1 className="text-2xl font-black text-white tracking-tight">הפרופיל שלי</h1>
-              <p className="text-white/85 text-sm mt-1 leading-relaxed max-w-[240px]">
-                {profileSubtitle(profile?.gender ?? null, firstName)}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsChatOpen(true)}
-                className="inline-flex h-10 items-center gap-1.5 rounded-2xl px-3.5 text-xs font-bold text-white transition hover:scale-[1.03] active:scale-95"
-                style={{
-                  background: 'rgba(255,255,255,0.14)',
-                  border: '1px solid rgba(255,255,255,0.28)',
-                  backdropFilter: 'blur(12px)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
-                }}
-                aria-label="עדכון פרופיל בשיחה עם אלמוג"
-              >
-                <MessageCircle className="h-4 w-4" />
-                {profileChatCta(profile?.gender ?? null)}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsSettingsOpen(true)}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-white transition hover:scale-[1.03] active:scale-95"
-                style={{
-                  background: 'rgba(255,255,255,0.12)',
-                  border: '1px solid rgba(255,255,255,0.25)',
-                  backdropFilter: 'blur(10px)',
-                }}
-                aria-label="הגדרות"
-              >
-                <Settings className="h-4 w-4" />
-              </button>
-            </div>
+
+          <button
+            type="button"
+            onClick={() => setIsSettingsOpen(true)}
+            className="absolute left-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-2xl text-white transition hover:scale-[1.03] active:scale-95"
+            style={{
+              background: 'rgba(255,255,255,0.12)',
+              border: '1px solid rgba(255,255,255,0.25)',
+              backdropFilter: 'blur(10px)',
+            }}
+            aria-label="הגדרות"
+          >
+            <Settings className="h-4 w-4" />
+          </button>
+
+          <div className="relative w-full pe-12">
+            <h1 className="text-2xl font-black text-white tracking-tight text-right w-full">
+              הפרופיל שלי
+            </h1>
+            <p className="mt-2 text-[15px] font-semibold leading-relaxed text-white/95 text-right w-full">
+              {profileSubtitle(profile?.gender ?? null, firstName)}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setIsChatOpen(true)}
+              className="mt-4 inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-sm font-bold text-white transition hover:scale-[1.01] active:scale-[0.99]"
+              style={{
+                background: 'rgba(255,255,255,0.14)',
+                border: '1px solid rgba(255,255,255,0.28)',
+                backdropFilter: 'blur(12px)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
+              }}
+              aria-label="עדכון פרופיל בשיחה עם אלמוג"
+            >
+              {profileChatCta(profile?.gender ?? null)}
+            </button>
           </div>
         </motion.div>
 

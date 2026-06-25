@@ -1,6 +1,10 @@
 import { groq, openrouter, AI_MODELS } from './client';
 import { ALMOG_VOICE_DNA } from './prompts';
 import type { DiscreteFieldKey } from './onboarding-discrete-fields';
+import {
+  buildLlmKnownContext,
+  type ProfileFieldFlags,
+} from '../profile/extracted-field-flags';
 
 export type OnboardingChatTurn = { role: 'user' | 'assistant'; content: string };
 
@@ -35,23 +39,52 @@ const ONBOARDING_MODEL_OPENROUTER = 'meta-llama/llama-4-scout';
 
 const TIME_RE = /^([01]?\d|2[0-3]):[0-5]\d$/;
 
-function buildSystemPrompt(path: OnboardingPath | null, known: OnboardingExtracted): string {
+/** מסיר ערכים רגישים שעלולים לדלוף מתשובת המודל */
+function stripSensitiveFromLlmExtracted(raw: OnboardingExtracted): OnboardingExtracted {
+  const out = { ...raw };
+  delete out.full_name;
+  delete out.current_weight_kg;
+  delete out.goal_weight_kg;
+  delete out.wake_up_time;
+  delete out.sleep_time;
+  return out;
+}
+
+/** חוסם שליחת שם/משקל/שעות בטקסט חופשי של המשתמש ל-LLM */
+function scrubUserMessageForLlm(text: string): string {
+  let t = text;
+  t = t.replace(/\b\d{2,3}(?:[.,]\d)?\s*(?:ק"?ג|קילו|kg)\b/gi, '[משקל הוסר]');
+  t = t.replace(/\b(?:0?[0-9]|1[0-9]|2[0-3]):[0-5]\d\b/g, '[שעה הוסרה]');
+  t = t.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[אימייל הוסר]');
+  t = t.replace(/\b0\d{1,2}[-.\s]?\d{7}\b/g, '[טלפון הוסר]');
+  return t;
+}
+
+function buildSystemPrompt(
+  path: OnboardingPath | null,
+  known: OnboardingExtracted,
+  flags: ProfileFieldFlags
+): string {
   const pathNote =
     path === 'fun'
-      ? 'מסלול כייפי: יותר הומור, הפתעות קטנות, אנלוגיות מצחיקות, שאלות יצירתיות — אבל עדיין שאלה אחת בכל פעם.'
+      ? `מסלול כייפי — זה הזמן להיות אלמוג האמיתי:
+- הומור עצמי ופדיחות מחמיאה ("אוקיי איזו בושה, שכחתי לשאול איך קוראים לך — אבל לא כאן בצ'אט, יש כפתור סודי 🔐")
+- אנלוגיות מצחיקות ומפתיעות (כמו חבר שמספר סיפור בוואטסאפ)
+- שאלות יצירתיות ולא צפויות — "אם היית סופרגיבורית, מה הכוח שלך ביום רגיל?"
+- אימוג'י במידה, בלי להפוך לקרקס
+- יותר תורות מהמסלול המהיר — אבל עדיין שאלה אחת בכל הודעה`
       : path === 'quick'
         ? 'מסלול מהיר: שאלות ישירות ונחמדות, פחות סטנדאפ — עדיין חם ואנושי.'
         : 'עדיין לא נבחר מסלול — פתח בחום ובקלילות, והצע לבחור מסלול.';
 
-  const knownBlock =
-    Object.keys(known).length > 0
-      ? `\nמה כבר יודעים (אל תשאל שוב): ${JSON.stringify(known)}`
-      : '';
+  const knownBlock = `\nמה כבר יודעים (דגלים בלבד — בלי ערכים): ${JSON.stringify(buildLlmKnownContext(known, flags))}`;
 
   return `${ALMOG_VOICE_DNA}
 
-עכשיו אתה בשיחת עדכון פרופיל עם משתמש קיים. ${pathNote}
-המטרה: להכיר/לעדכן בשיחה חופשית וחמה — לא טופס.
+עכשיו אתה בשיחת עדכון פרופיל בלבד (לא צ'אט כללי). ${pathNote}
+המטרה: לעדכן פרטי פרופיל — קצר וממוקד. אל תבזבז טוקנים על שיחת חולין.
+
+אם המשתמש שואל משהו שלא קשור לפרופיל (בריאות כללית, מדריכים, טריקים) — ענה במשפט אחד שכאן מעדכנים פרופיל, ושבצ'אט הרגיל אפשר לדבר על הכל. אל תפתח נושאים ארוכים.
 
 חוק פרטיות קריטי:
 - שם, משקלים ושעות שינה/השכמה — *אסור* לבקש שהמשתמש יכתוב בצ'אט החופשי.
@@ -125,7 +158,7 @@ function parseDiscreteField(raw: unknown): DiscreteFieldKey | null {
 
 function openingReply(path: OnboardingPath | null): string {
   if (path === 'fun') {
-    return 'היי! 👋 איזו פדיחות... אני אלמוג ואני לא סגור איך קוראים לך עדיין 😅 בוא נתקן את זה — אבל קודם: מה הכי דחוף לך לעדכן אצלי? (ואל תדאג, פרטים רגישים נכנסים ל"קובץ סודי", לא לצ\'אט הפתוח)';
+    return 'היי! 👋 איזו פדיחות מביכה — אני אלמוג ואני לא סגור בכלל איך קוראים לך 😅 (אל תכתוב את זה כאן! יש כפתור סודי למטה — כמו קובץ מצורף שרק אני רואה). בינתיים ספר לי — מה הכי דחוף לך לעדכן אצלי? ואם אין — נתחיל בסיפור מצחיק על למה שכחתי לשאול שם...';
   }
   if (path === 'quick') {
     return 'היי! כיף שבאת לעדכן ✦ נעבור על כמה דברים ביחד — קליל ומהיר. נתחיל: מה המטרה העיקרית שלך כרגע?';
@@ -139,7 +172,10 @@ async function callLlm(
 ): Promise<{ content: string; model: string } | null> {
   const chatMessages = [
     { role: 'system' as const, content: system },
-    ...messages.map((m) => ({ role: m.role, content: m.content })),
+    ...messages.map((m) => ({
+      role: m.role,
+      content: m.role === 'user' ? scrubUserMessageForLlm(m.content) : m.content,
+    })),
   ];
 
   if (process.env.GROQ_API_KEY?.trim()) {
@@ -181,16 +217,28 @@ export async function runOnboardingChatTurn(params: {
   messages: OnboardingChatTurn[];
   path?: OnboardingPath | null;
   knownExtracted?: OnboardingExtracted;
+  fieldFlags?: ProfileFieldFlags;
   isOpening?: boolean;
 }): Promise<OnboardingChatResult> {
-  const { messages, path = null, knownExtracted = {}, isOpening = false } = params;
+  const { messages, path = null, knownExtracted = {}, fieldFlags, isOpening = false } = params;
+  const flags: ProfileFieldFlags = fieldFlags ?? {
+    has_full_name: Boolean(knownExtracted.full_name),
+    has_gender: knownExtracted.gender === 'male' || knownExtracted.gender === 'female',
+    has_main_goal: Boolean(knownExtracted.main_goal),
+    has_current_weight: typeof knownExtracted.current_weight_kg === 'number',
+    has_goal_weight: typeof knownExtracted.goal_weight_kg === 'number',
+    has_weakest_time: Boolean(knownExtracted.weakest_time_of_day),
+    has_main_obstacle: Boolean(knownExtracted.main_obstacle),
+    has_wake_time: Boolean(knownExtracted.wake_up_time),
+    has_sleep_time: Boolean(knownExtracted.sleep_time),
+  };
   const trimmed = messages.slice(-14);
 
   if (isOpening && trimmed.length <= 1) {
     return {
       reply: openingReply(path),
       extracted: {},
-      request_discrete_field: path ? 'full_name' : null,
+      request_discrete_field: null,
       ready_for_summary: false,
       summary: null,
       used_fallback: true,
@@ -198,7 +246,7 @@ export async function runOnboardingChatTurn(params: {
     };
   }
 
-  const llm = await callLlm(buildSystemPrompt(path, knownExtracted), trimmed);
+  const llm = await callLlm(buildSystemPrompt(path, knownExtracted, flags), trimmed);
   if (!llm) {
     return {
       reply: openingReply(path ?? 'quick'),
@@ -214,7 +262,7 @@ export async function runOnboardingChatTurn(params: {
   try {
     const parsed = JSON.parse(llm.content) as Record<string, unknown>;
     const reply = typeof parsed.reply === 'string' ? parsed.reply.trim() : '';
-    const llmExtracted = sanitizeExtracted(parsed.extracted);
+    const llmExtracted = stripSensitiveFromLlmExtracted(sanitizeExtracted(parsed.extracted));
 
     return {
       reply: reply || 'ספר לי עוד קצת — אני איתך',

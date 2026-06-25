@@ -7,12 +7,12 @@ export function firstNameFrom(fullName: string | null, fallback = 'חבר'): str
 /** כותרת משנה בפרופיל — שפה קלילה לפי מגדר */
 export function profileSubtitle(gender: ProfileGender, firstName: string): string {
   if (gender === 'female') {
-    return `היי ${firstName} — הנה מה שאלמוג יודע עלייך עד עכשיו ✦`;
+    return `היי ${firstName}, זה המקום שלך - פה רואים מה אלמוג יודע עלייך, ואפשר לעדכן מתי שבא לך.`;
   }
   if (gender === 'male') {
-    return `היי ${firstName} — הנה מה שאלמוג יודע עליך עד עכשיו ✦`;
+    return `היי ${firstName}, זה המקום שלך - פה רואים מה אלמוג יודע עליך, ואפשר לעדכן מתי שבא לך.`;
   }
-  return `היי ${firstName} — ככה נראה הפרופיל שלך כרגע ✦`;
+  return `היי ${firstName}, זה הפרופיל שלך - כל מה שחשוב לנו לדעת נמצא פה, ואפשר לעדכן בקלות.`;
 }
 
 export function profileChatCta(gender: ProfileGender): string {

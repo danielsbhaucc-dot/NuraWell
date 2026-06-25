@@ -1,5 +1,14 @@
 export const OPEN_ALMOG_CHAT_EVENT = 'open-almog-chat';
 
+/** מסתיר את בועת הצ'אט הצפה כשמגירת עדכון פרופיל פתוחה */
+export const PROFILE_ONBOARDING_CHAT_VISIBILITY_EVENT = 'profile-onboarding-chat-visibility';
+
+export function setProfileOnboardingChatVisible(open: boolean): void {
+  window.dispatchEvent(
+    new CustomEvent(PROFILE_ONBOARDING_CHAT_VISIBILITY_EVENT, { detail: { open } })
+  );
+}
+
 import type { TaskReportHint } from '../ai/task-report-hint';
 
 export type OpenAlmogChatDetail = {

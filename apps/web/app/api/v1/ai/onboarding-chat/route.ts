@@ -9,21 +9,28 @@ import {
   type OnboardingExtracted,
   type OnboardingPath,
 } from '../../../../../lib/ai/onboarding-chat-llm';
-import {
-  applyDiscreteField,
-  discreteFieldAck,
-  type DiscreteFieldKey,
-} from '../../../../../lib/ai/onboarding-discrete-fields';
 import { buildPrivacySafeProfileSummary } from '../../../../../lib/ai/onboarding-privacy-summary';
 import { createProfileUpdateSession } from '../../../../../lib/ai/chat-sessions/create-profile-update-session';
+import {
+  buildFieldFlags,
+  redactExtractedForClient,
+  type ProfileFieldFlags,
+} from '../../../../../lib/profile/extracted-field-flags';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-const discreteFieldSchema = z.object({
-  key: z.enum(['full_name', 'current_weight_kg', 'goal_weight_kg', 'wake_up_time', 'sleep_time']),
-  value: z.string().min(1).max(200),
+const fieldFlagsSchema = z.object({
+  has_full_name: z.boolean().optional(),
+  has_gender: z.boolean().optional(),
+  has_main_goal: z.boolean().optional(),
+  has_current_weight: z.boolean().optional(),
+  has_goal_weight: z.boolean().optional(),
+  has_weakest_time: z.boolean().optional(),
+  has_main_obstacle: z.boolean().optional(),
+  has_wake_time: z.boolean().optional(),
+  has_sleep_time: z.boolean().optional(),
 });
 
 const bodySchema = z.object({
@@ -39,8 +46,8 @@ const bodySchema = z.object({
     .optional(),
   path: z.enum(['quick', 'fun']).optional(),
   is_opening: z.boolean().optional(),
-  extracted: z.record(z.unknown()).optional(),
-  discrete_field: discreteFieldSchema.optional(),
+  extracted_public: z.record(z.unknown()).optional(),
+  field_flags: fieldFlagsSchema.optional(),
   persist: z.boolean().optional(),
 });
 
@@ -51,18 +58,13 @@ function mergeExtracted(
   return { ...base, ...patch };
 }
 
-function extractedToProfilePatch(e: OnboardingExtracted): Record<string, unknown> {
+function publicExtractedToProfilePatch(e: OnboardingExtracted): Record<string, unknown> {
   const patch: Record<string, unknown> = {};
-  if (e.full_name) patch.full_name = e.full_name;
   if (e.gender) patch.gender = e.gender;
   if (e.main_goal) patch.main_goal = e.main_goal;
-  if (typeof e.current_weight_kg === 'number') patch.current_weight_kg = e.current_weight_kg;
-  if (typeof e.goal_weight_kg === 'number') patch.goal_weight_kg = e.goal_weight_kg;
   if (e.weakest_time_of_day) patch.weakest_time_of_day = e.weakest_time_of_day;
   if (e.main_obstacle) patch.main_obstacle = e.main_obstacle;
   if (e.main_obstacle_detail) patch.main_obstacle_detail = e.main_obstacle_detail;
-  if (e.wake_up_time) patch.wake_up_time = e.wake_up_time;
-  if (e.sleep_time) patch.sleep_time = e.sleep_time;
   return patch;
 }
 
@@ -87,57 +89,85 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    let extracted = (parsed.data.extracted ?? {}) as OnboardingExtracted;
+    const publicExtracted = (parsed.data.extracted_public ?? {}) as OnboardingExtracted;
+    const fieldFlags = (parsed.data.field_flags ?? {}) as ProfileFieldFlags;
     const path = (parsed.data.path ?? null) as OnboardingPath | null;
-    const gender = extracted.gender ?? null;
 
-    if (parsed.data.discrete_field) {
-      const { key, value } = parsed.data.discrete_field;
-      const applied = applyDiscreteField(extracted, key as DiscreteFieldKey, value);
-      if (!applied.ok) {
-        return NextResponse.json({ error: applied.error }, { status: 400 });
-      }
-      extracted = applied.extracted;
+    const { data: profileRow } = await supabase
+      .from('profiles')
+      .select('gender, full_name, current_weight_kg, goal_weight_kg, wake_up_time, sleep_time')
+      .eq('id', user.id)
+      .maybeSingle();
 
-      return NextResponse.json({
-        reply: discreteFieldAck(key as DiscreteFieldKey, gender),
-        extracted,
-        request_discrete_field: null,
-        ready_for_summary: false,
-        summary: null,
-        persisted: false,
-        discrete_ack: true,
-        used_fallback: false,
-        model: null,
-      });
-    }
+    const gender =
+      profileRow?.gender === 'male' || profileRow?.gender === 'female'
+        ? profileRow.gender
+        : publicExtracted.gender ?? null;
+
+    const resolvedFlags: ProfileFieldFlags = {
+      has_full_name: fieldFlags.has_full_name ?? Boolean(profileRow?.full_name),
+      has_gender: fieldFlags.has_gender ?? Boolean(gender),
+      has_main_goal: fieldFlags.has_main_goal ?? Boolean(publicExtracted.main_goal),
+      has_current_weight:
+        fieldFlags.has_current_weight ?? profileRow?.current_weight_kg != null,
+      has_goal_weight: fieldFlags.has_goal_weight ?? profileRow?.goal_weight_kg != null,
+      has_weakest_time:
+        fieldFlags.has_weakest_time ?? Boolean(publicExtracted.weakest_time_of_day),
+      has_main_obstacle:
+        fieldFlags.has_main_obstacle ?? Boolean(publicExtracted.main_obstacle),
+      has_wake_time: fieldFlags.has_wake_time ?? Boolean(profileRow?.wake_up_time),
+      has_sleep_time: fieldFlags.has_sleep_time ?? Boolean(profileRow?.sleep_time),
+    };
 
     const messages = (parsed.data.messages ?? []) as OnboardingChatTurn[];
-    if (!parsed.data.is_opening && messages.length === 0) {
+    if (!parsed.data.is_opening && messages.length === 0 && !parsed.data.persist) {
       return NextResponse.json({ error: 'messages required' }, { status: 400 });
     }
 
-    const result = await runOnboardingChatTurn({
-      messages,
-      path,
-      knownExtracted: extracted,
-      isOpening: parsed.data.is_opening,
-    });
+    let result = {
+      reply: '',
+      extracted: {} as OnboardingExtracted,
+      request_discrete_field: null as import('../../../../../lib/ai/onboarding-discrete-fields').DiscreteFieldKey | null,
+      ready_for_summary: false,
+      summary: null as string | null,
+      used_fallback: false,
+      model: null as string | null,
+    };
 
-    extracted = mergeExtracted(extracted, result.extracted);
+    if (!parsed.data.persist) {
+      result = await runOnboardingChatTurn({
+        messages,
+        path,
+        knownExtracted: publicExtracted,
+        fieldFlags: resolvedFlags,
+        isOpening: parsed.data.is_opening,
+      });
+    }
+
+    const mergedPublic = mergeExtracted(publicExtracted, result.extracted);
 
     let persisted = false;
     let profile_session_id: string | null = null;
 
     if (parsed.data.persist) {
-      const patch = extractedToProfilePatch(extracted);
+      const patch = publicExtractedToProfilePatch(mergedPublic);
       if (Object.keys(patch).length > 0) {
         const { error } = await supabase.from('profiles').update(patch).eq('id', user.id);
         persisted = !error;
+      } else {
+        persisted = true;
       }
 
       if (persisted) {
-        const summary = buildPrivacySafeProfileSummary(extracted, gender);
+        const summaryExtracted: OnboardingExtracted = {
+          ...mergedPublic,
+          full_name: profileRow?.full_name ?? undefined,
+          current_weight_kg: profileRow?.current_weight_kg ?? undefined,
+          goal_weight_kg: profileRow?.goal_weight_kg ?? undefined,
+          wake_up_time: profileRow?.wake_up_time?.slice(0, 5) ?? undefined,
+          sleep_time: profileRow?.sleep_time?.slice(0, 5) ?? undefined,
+        };
+        const summary = buildPrivacySafeProfileSummary(summaryExtracted, gender);
         const session = await createProfileUpdateSession(supabase, {
           userId: user.id,
           summary,
@@ -146,11 +176,28 @@ export async function POST(request: Request) {
       }
     }
 
+    const responseFlags = buildFieldFlags({
+      ...mergedPublic,
+      full_name: profileRow?.full_name ?? undefined,
+      current_weight_kg: profileRow?.current_weight_kg ?? undefined,
+      goal_weight_kg: profileRow?.goal_weight_kg ?? undefined,
+      wake_up_time: profileRow?.wake_up_time?.slice(0, 5) ?? undefined,
+      sleep_time: profileRow?.sleep_time?.slice(0, 5) ?? undefined,
+    });
+
     return NextResponse.json({
-      reply: result.reply,
-      extracted,
+      reply: parsed.data.persist
+        ? '✦ נשמר! תיעוד סגור נוסף להיסטוריה — בלי פרטים אישיים.'
+        : result.reply,
+      extracted_public: redactExtractedForClient(mergedPublic),
+      field_flags: responseFlags,
       request_discrete_field: result.request_discrete_field,
-      ready_for_summary: result.ready_for_summary,
+      ready_for_summary: parsed.data.persist
+        ? false
+        : result.ready_for_summary ||
+          (responseFlags.has_full_name &&
+            responseFlags.has_main_goal &&
+            (responseFlags.has_main_obstacle || responseFlags.has_weakest_time)),
       summary: result.summary,
       persisted,
       profile_session_id,
