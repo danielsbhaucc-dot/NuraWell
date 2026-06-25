@@ -68,7 +68,7 @@ function buildSystemPrompt(
   const pathNote =
     path === 'fun'
       ? `מסלול כייפי — זה הזמן להיות אלמוג האמיתי:
-- הומור עצמי ופדיחות מחמיאה ("אוקיי איזו בושה, שכחתי לשאול איך קוראים לך — אבל לא כאן בצ'אט, יש כפתור סודי 🔐")
+- הומור עצמי ופדיחות מחמיאה — רק כשמבקשים שדה רגיש דרך request_discrete_field, הפנה לכפתור 🔐 שמופיע אוטומטית למטה (אל תמציא כפתור שלא קיים)
 - אנלוגיות מצחיקות ומפתיעות (כמו חבר שמספר סיפור בוואטסאפ)
 - שאלות יצירתיות ולא צפויות — "אם היית סופרגיבורית, מה הכוח שלך ביום רגיל?"
 - אימוג'י במידה, בלי להפוך לקרקס
@@ -84,11 +84,17 @@ function buildSystemPrompt(
 עכשיו אתה בשיחת עדכון פרופיל בלבד (לא צ'אט כללי). ${pathNote}
 המטרה: לעדכן פרטי פרופיל — קצר וממוקד. אל תבזבז טוקנים על שיחת חולין.
 
-אם המשתמש שואל משהו שלא קשור לפרופיל (בריאות כללית, מדריכים, טריקים) — ענה במשפט אחד שכאן מעדכנים פרופיל, ושבצ'אט הרגיל אפשר לדבר על הכל. אל תפתח נושאים ארוכים.
+אם המשתמש שואל משהו שלא קשור לפרופיל (בריאות, טיפים, מדריכים, שיחת חולין) — אל תענה על התוכן. משפט אחד: כאן רק מעדכנים פרופיל. הפנה לצ'אט הרגיל (כפתור "המשך בצ'אט הרגיל" למטה או בועת הצ'את). חזור מיד לשאלת עדכון הבאה.
+
+שאלות על הממשק (איפה הכפתור, למה לא רואים, מה זה ערוץ מאובטח):
+- אל תחליף נושא ואל תפתח שיחה כללית.
+- הסבר בקצרה: כפתור 🔐 "שלח בערוץ מאובטח" מופיע באזור התחתון, מעל שדה הטקסט (אם request_discrete_field פעיל).
+- שמור request_discrete_field אם עדיין חסר שדה רגיש.
+- חזור מיד לשאלת עדכון פרופיל הבאה — שאלה אחת.
 
 חוק פרטיות קריטי:
 - שם, משקלים ושעות שינה/השכמה — *אסור* לבקש שהמשתמש יכתוב בצ'אט החופשי.
-- כשצריך שדה רגיש — הגדר request_discrete_field (full_name | current_weight_kg | goal_weight_kg | wake_up_time | sleep_time) ובקש בקולך: "רגע, אל תשלח לי את זה כאן בצ'אט! זה מסוכן. בוא תשלח בצורה דיסקרטית" — עם הומור קל.
+- כשצריך שדה רגיש — חובה להגדיר request_discrete_field (full_name | current_weight_kg | goal_weight_kg | wake_up_time | sleep_time). אז בקש בקולך שלא לכתוב בצ'אט, והפנה לכפתור 🔐 למטה. בלי request_discrete_field — אל תזכיר כפתור סודי.
 - מטרה, מכשול, זמן חלש ביום — אפשר לשאול בצ'אט רגיל.
 
 סגנון:
@@ -156,14 +162,52 @@ function parseDiscreteField(raw: unknown): DiscreteFieldKey | null {
   return keys.includes(raw as DiscreteFieldKey) ? (raw as DiscreteFieldKey) : null;
 }
 
-function openingReply(path: OnboardingPath | null): string {
+function openingDiscreteField(flags: ProfileFieldFlags): DiscreteFieldKey | null {
+  if (!flags.has_full_name) return 'full_name';
+  return null;
+}
+
+function nextMissingDiscreteField(flags: ProfileFieldFlags): DiscreteFieldKey | null {
+  if (!flags.has_full_name) return 'full_name';
+  if (!flags.has_current_weight) return 'current_weight_kg';
+  if (!flags.has_goal_weight) return 'goal_weight_kg';
+  if (!flags.has_wake_time) return 'wake_up_time';
+  if (!flags.has_sleep_time) return 'sleep_time';
+  return null;
+}
+
+const META_UI_QUESTION_RE =
+  /איפה הכפתור|לא רואה|אין כפתור|איפה הכפתור הסודי|מה זה ערוץ|איך שולח|למה לא רואה|איפה זה|איפה ללחוץ/i;
+
+function isMetaUiQuestion(text: string): boolean {
+  return META_UI_QUESTION_RE.test(text);
+}
+
+function metaUiReply(field: DiscreteFieldKey | null): string {
+  if (field === 'full_name') {
+    return 'הכפתור 🔐 "שלח בערוץ מאובטח" נמצא למטה, מעל שדה הטקסט — שם שולחים שם בפרטיות. כאן אנחנו רק מעדכנים פרופיל; לשיחה חופשית יש כפתור "המשך בצ\'אט הרגיל". בינתיים — מה המטרה העיקרית שלך כרגע?';
+  }
+  if (field) {
+    return 'הכפתור 🔐 למטה פותח ערוץ מאובטח לפרטים רגישים — מעל שדה הטקסט. נשארים כאן לעדכון פרופיל בלבד. נמשיך?';
+  }
+  return 'אנחנו כאן רק לעדכון פרופיל. לשיחה חופשית — "המשך בצ\'אט הרגיל" למטה. מה עוד חשוב לך לעדכן?';
+}
+
+function openingReply(path: OnboardingPath | null, flags: ProfileFieldFlags): string {
+  const needsName = !flags.has_full_name;
   if (path === 'fun') {
-    return 'היי! 👋 איזו פדיחות מביכה — אני אלמוג ואני לא סגור בכלל איך קוראים לך 😅 (אל תכתוב את זה כאן! יש כפתור סודי למטה — כמו קובץ מצורף שרק אני רואה). בינתיים ספר לי — מה הכי דחוף לך לעדכן אצלי? ואם אין — נתחיל בסיפור מצחיק על למה שכחתי לשאול שם...';
+    if (needsName) {
+      return 'היי! 👋 איזו פדיחות מביכה — אני אלמוג ואני לא סגור בכלל איך קוראים לך 😅 אל תכתוב את זה כאן בצ\'אט — למטה יש כפתור 🔐 לערוץ מאובטח. בינתיים: מה הכי דחוף לך לעדכן?';
+    }
+    return 'היי! 👋 אלמוג כאן — בוא נעדכן את הפרופיל בכיף. מה הכי דחוף לך לעדכן אצלי?';
   }
   if (path === 'quick') {
-    return 'היי! כיף שבאת לעדכן ✦ נעבור על כמה דברים ביחד — קליל ומהיר. נתחיל: מה המטרה העיקרית שלך כרגע?';
+    if (needsName) {
+      return 'היי! כיף שבאת לעדכן ✨ נעבור על כמה דברים ביחד — קליל ומהיר. קודם כל: איך קוראים לך? (יש כפתור 🔐 למטה — לא כאן בצ\'אט)';
+    }
+    return 'היי! כיף שבאת לעדכן ✨ נעבור על כמה דברים ביחד — קליל ומהיר. נתחיל: מה המטרה העיקרית שלך כרגע?';
   }
-  return 'היי! אלמוג כאן ✦ בוא נעדכן את הפרופיל שלך בשיחה — לא טופס משעמם. איך בא לך לעבור?';
+  return 'היי! אלמוג כאן ✨ בוא נעדכן את הפרופיל שלך בשיחה — לא טופס משעמם. איך בא לך לעבור?';
 }
 
 async function callLlm(
@@ -235,10 +279,11 @@ export async function runOnboardingChatTurn(params: {
   const trimmed = messages.slice(-14);
 
   if (isOpening && trimmed.length <= 1) {
+    const request_discrete_field = openingDiscreteField(flags);
     return {
-      reply: openingReply(path),
+      reply: openingReply(path, flags),
       extracted: {},
-      request_discrete_field: null,
+      request_discrete_field,
       ready_for_summary: false,
       summary: null,
       used_fallback: true,
@@ -249,9 +294,9 @@ export async function runOnboardingChatTurn(params: {
   const llm = await callLlm(buildSystemPrompt(path, knownExtracted, flags), trimmed);
   if (!llm) {
     return {
-      reply: openingReply(path ?? 'quick'),
+      reply: openingReply(path ?? 'quick', flags),
       extracted: {},
-      request_discrete_field: null,
+      request_discrete_field: openingDiscreteField(flags),
       ready_for_summary: false,
       summary: null,
       used_fallback: true,
@@ -263,11 +308,29 @@ export async function runOnboardingChatTurn(params: {
     const parsed = JSON.parse(llm.content) as Record<string, unknown>;
     const reply = typeof parsed.reply === 'string' ? parsed.reply.trim() : '';
     const llmExtracted = stripSensitiveFromLlmExtracted(sanitizeExtracted(parsed.extracted));
+    const llmDiscrete = parseDiscreteField(parsed.request_discrete_field);
+    const lastUser = [...trimmed].reverse().find((m) => m.role === 'user');
+
+    if (lastUser && isMetaUiQuestion(lastUser.content)) {
+      const field = llmDiscrete ?? nextMissingDiscreteField(flags);
+      return {
+        reply: metaUiReply(field),
+        extracted: llmExtracted,
+        request_discrete_field: field,
+        ready_for_summary: parsed.ready_for_summary === true,
+        summary:
+          typeof parsed.summary === 'string' && parsed.summary.trim()
+            ? parsed.summary.trim().slice(0, 600)
+            : null,
+        used_fallback: false,
+        model: llm.model,
+      };
+    }
 
     return {
       reply: reply || 'ספר לי עוד קצת — אני איתך',
       extracted: llmExtracted,
-      request_discrete_field: parseDiscreteField(parsed.request_discrete_field),
+      request_discrete_field: llmDiscrete,
       ready_for_summary: parsed.ready_for_summary === true,
       summary:
         typeof parsed.summary === 'string' && parsed.summary.trim()

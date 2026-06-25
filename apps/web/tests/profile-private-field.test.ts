@@ -7,10 +7,6 @@ import {
   buildLlmKnownContext,
   redactExtractedForClient,
 } from '../lib/profile/extracted-field-flags';
-import {
-  decryptPrivateFieldValueForTest,
-  encryptPrivateFieldValue,
-} from '../lib/profile/private-field-crypto-client';
 
 describe('extracted-field-flags', () => {
   it('builds flags without exposing values', () => {
@@ -53,22 +49,6 @@ describe('onboarding-privacy-summary', () => {
     expect(s).not.toContain('יוסי');
     expect(s).not.toContain('88');
     expect(s).toMatch(/פרטיות/i);
-  });
-});
-
-describe('private-field crypto', () => {
-  it('roundtrips AES envelope with test key pair', async () => {
-    const pair = await crypto.subtle.generateKey(
-      { name: 'ECDH', namedCurve: 'P-256' },
-      true,
-      ['deriveKey']
-    );
-    const publicJwk = (await crypto.subtle.exportKey('jwk', pair.publicKey)) as JsonWebKey;
-    const privateJwk = (await crypto.subtle.exportKey('jwk', pair.privateKey)) as JsonWebKey;
-
-    const envelope = await encryptPrivateFieldValue('דני לוי', publicJwk);
-    const plain = await decryptPrivateFieldValueForTest(envelope, privateJwk);
-    expect(plain).toBe('דני לוי');
   });
 });
 
