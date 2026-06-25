@@ -7,17 +7,9 @@ import { Check, Loader2, MessageCircle, Snowflake, Sparkles, Volume2, X } from '
 import { useDialogA11y } from '@/lib/a11y/use-dialog-a11y';
 import { AnimatedDialog } from '../shared/AnimatedDialog';
 import { AlmogAvatarChip } from '../journey/AlmogPresence';
-import {
-  SOS_BODY_STYLE,
-  SOS_HEADER_STYLE,
-  SOS_INSET_CLASS,
-  SOS_MESSAGE_CARD_STYLE,
-  SOS_PANEL_STYLE,
-  SOS_PRIMARY_BTN_STYLE,
-  SOS_SECONDARY_BTN_CLASS,
-} from './sos-ui-styles';
 
 import type { FrictionCategory, StrategyType } from '../../lib/ai/almog-commitments/friction';
+import { FRICTION_META } from '../../lib/ai/almog-commitments/friction';
 import type {
   SosFocusTask,
 } from '../../lib/ai/guardian/sos-memory';
@@ -206,7 +198,7 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
     if (selectedTask?.title) {
       return `נתמקד ב: ${selectedTask.emoji ?? '✅'} ${selectedTask.title}`;
     }
-    return 'רק דקה אחת. אני איתך.';
+    return 'בלי שיפוט, בלי החלטות גדולות — רק דקה אחת.';
   }, [response, selectedTask, outcomeSaved]);
 
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -468,8 +460,6 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
   const showTaskHardnessGate =
     !response && selectedTask?.title && taskHardConfirmed === null && focusTasks.length > 0;
 
-  const inset = SOS_INSET_CLASS;
-
   return (
     <AnimatedDialog
       open={open}
@@ -478,317 +468,364 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
       zIndex={200}
       aria-labelledby={titleId}
       aria-describedby={subtitleId}
-      backdropClassName="absolute inset-0 bg-black/55 backdrop-blur-sm"
-      panelClassName="max-w-md flex flex-col overflow-hidden rounded-[28px] text-right shadow-2xl"
-      panelStyle={SOS_PANEL_STYLE}
+      backdropClassName="absolute inset-0 bg-slate-950/50"
+      panelClassName="max-w-md flex flex-col overflow-hidden rounded-[28px] border border-emerald-500/25 text-right shadow-2xl"
+      panelStyle={{
+        maxHeight: '100%',
+        boxShadow: '0 -8px 40px rgba(2,44,34,0.22), 0 24px 70px rgba(2,44,34,0.18)',
+      }}
     >
-      <div className="relative shrink-0 px-5 pb-4 pt-5" style={SOS_HEADER_STYLE}>
-        <button
-          type="button"
-          onClick={resetAndClose}
-          className="absolute left-4 top-4 rounded-full border border-white/12 bg-white/10 p-2 text-white/85 transition hover:bg-white/18"
-          aria-label="סגירה"
+        {/* Header — solid green like 404 */}
+        <div
+          className="relative shrink-0 px-5 pb-4 pt-5"
+          style={{ background: 'linear-gradient(145deg, #047857, #059669, #10b981)' }}
         >
-          <X className="h-4 w-4" />
-        </button>
-        <div className="flex items-start gap-3">
-          <AlmogAvatarChip size={44} />
-          <div className="min-w-0 flex-1">
-            <p id={titleId} className="text-lg font-black text-[#f5f5f7]">{title}</p>
-            <p id={subtitleId} className="mt-1 text-xs font-semibold leading-5 text-white/62">{subtitle}</p>
+          <button
+            type="button"
+            onClick={resetAndClose}
+            className="absolute left-4 top-4 rounded-full bg-white/15 p-2 text-white/90 transition hover:bg-white/25"
+            aria-label="סגירה"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <div className="flex items-start gap-3">
+            <AlmogAvatarChip size={44} />
+            <div className="min-w-0 flex-1">
+              <p id={titleId} className="text-lg font-black text-white">{title}</p>
+              <p id={subtitleId} className="mt-1 text-xs font-semibold leading-5 text-emerald-50/90">{subtitle}</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4" style={SOS_BODY_STYLE}>
-        {outcomeSaved || taskMarked ? (
-          <div className="space-y-3 py-2 text-center">
-            <p className="text-sm font-bold leading-7 text-[#f5f5f7]">
-              {taskMarked ? `סימנתי את המשימה ✓ — כל הכבוד!` : outcomeSaved}
-            </p>
-            {guardianOptedIn === false && !guardianSaved ? (
-              <div className={`${inset} px-4 py-3 text-right text-xs leading-6 text-white/82`}>
-                <p className="font-black">רוצה שאגיע לפני הרגע הבא?</p>
-                <p className="mt-1 text-white/58">מגע עדין לפני חלונות שקשים לך — רק אם זה נוח לך.</p>
-                <button
-                  type="button"
-                  disabled={guardianSaving}
-                  onClick={() => void enableGuardianProactive()}
-                  className="mt-3 w-full rounded-xl px-3 py-2.5 text-sm font-bold disabled:opacity-70"
-                  style={SOS_PRIMARY_BTN_STYLE}
-                >
-                  {guardianSaving ? 'שומר…' : 'כן, תזכיר לי בעדינות'}
-                </button>
-              </div>
-            ) : guardianSaved ? (
-              <p className="text-xs font-semibold text-white/58">הפעלנו — אפשר לכבות בהגדרות מאלמוג.</p>
-            ) : null}
-            <button
-              type="button"
-              onClick={openChatFromSos}
-              className={`${inset} flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-white/90`}
-            >
-              <MessageCircle className="h-4 w-4" />
-              לדבר עם אלמוג
-            </button>
-            <button
-              type="button"
-              onClick={resetAndClose}
-              className="w-full rounded-2xl px-4 py-3 text-sm font-black"
-              style={SOS_PRIMARY_BTN_STYLE}
-            >
-              סגור
-            </button>
-          </div>
-        ) : !response ? (
-          <div className="space-y-4">
-            {showTaskHardnessGate ? (
-              <div className={`${inset} space-y-3 px-4 py-4`}>
-                <p className="text-xs font-bold text-white/55">לפני שנמשיך</p>
-                <div className={`${inset} px-3 py-3`}>
-                  <p className="text-[11px] font-semibold text-white/48">המשימה שלך עכשיו</p>
-                  <div className="mt-1 flex items-start justify-between gap-2">
-                    <p className="text-base font-black leading-snug text-[#f5f5f7]">
-                      {selectedTask?.emoji ? `${selectedTask.emoji} ` : ''}
-                      {selectedTask?.title}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={speakTaskTitle}
-                      className={`shrink-0 rounded-xl p-2 text-white/75 ${inset}`}
-                      aria-label="הקרא את המשימה"
-                    >
-                      <Volume2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-                <p className="text-sm font-bold text-[#f5f5f7]">קשה לך לבצע אותה עכשיו?</p>
-                <div className="grid gap-2 sm:grid-cols-2">
+        {/* Body — iOS glass */}
+        <div
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4"
+          style={{
+            background: 'linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%)',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          {outcomeSaved || taskMarked ? (
+            <div className="space-y-3 py-2 text-center">
+              <p className="text-sm font-bold leading-7 text-emerald-900">
+                {taskMarked
+                  ? `סימנתי את המשימה ✓ — כל הכבוד!`
+                  : outcomeSaved}
+              </p>
+              {guardianOptedIn === false && !guardianSaved ? (
+                  <div className="glass-inset-emerald rounded-2xl px-4 py-3 text-right text-xs leading-6 text-emerald-900">
+                  <p className="font-black">רוצה שאלמוג יגיע לפני הרגע הבא?</p>
+                  <p className="mt-1 text-emerald-900/75">
+                    מגע עדין לפני חלונות שקשה לך — רק כשאתה מאשר, ובלי לחץ.
+                  </p>
                   <button
                     type="button"
-                    onClick={() => setTaskHardConfirmed(true)}
-                    className="rounded-2xl px-4 py-3 text-sm font-black"
-                    style={SOS_PRIMARY_BTN_STYLE}
+                    disabled={guardianSaving}
+                    onClick={() => void enableGuardianProactive()}
+                    className="mt-3 w-full rounded-xl bg-emerald-600 px-3 py-2.5 text-sm font-bold text-white disabled:opacity-70"
                   >
-                    כן — קשה לי
-                  </button>
-                  <button type="button" onClick={() => setTaskHardConfirmed(false)} className={SOS_SECONDARY_BTN_CLASS}>
-                    לא, משהו אחר
+                    {guardianSaving ? 'שומר…' : 'כן, תזכיר לי בעדינות'}
                   </button>
                 </div>
-              </div>
-            ) : (
-              <>
-                <div className={`${inset} px-4 py-3 text-sm leading-7 text-white/88`}>
-                  על מה קשה לך עכשיו? ככה אדע מה להציע.
-                </div>
-
-                {focusTasks.length > 0 ? (
-                  <div className="space-y-2">
-                    <p className="text-xs font-bold text-white/55">משימות פתוחות היום</p>
-                    <div className="grid gap-2">
-                      {focusTasks.map((task) => {
-                        const active = selectedTask?.id === task.id;
-                        return (
-                          <button
-                            key={task.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedTask(task);
-                              setTaskHardConfirmed(null);
-                            }}
-                            className={`flex items-center justify-between rounded-2xl px-4 py-3 text-right transition active:scale-[0.99] ${inset} ${
-                              active ? 'ring-1 ring-white/25' : ''
-                            }`}
-                          >
-                            <span className="text-[11px] font-semibold text-white/48">
-                              {task.stepTitle ?? 'מהמסע'}
-                            </span>
-                            <span className="flex items-center gap-2 text-sm font-black text-[#f5f5f7]">
-                              {active ? <Check className="h-4 w-4 text-white/75" /> : null}
-                              <span>{task.emoji ?? '✅'}</span>
-                              {task.title}
-                            </span>
-                          </button>
-                        );
-                      })}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedTask(null);
-                          setTaskHardConfirmed(null);
-                        }}
-                        className="rounded-2xl border border-dashed border-white/18 px-4 py-2.5 text-xs font-bold text-white/55"
-                        style={{ background: !selectedTask ? 'rgba(255,255,255,0.06)' : 'transparent' }}
-                      >
-                        לא קשור למשימה ספציפית
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-
-                <p className="text-xs font-bold text-white/55">מה הכי קרוב לרגע הזה?</p>
-                <div className="grid gap-2.5">
-                  {QUICK_TRIGGERS.map((trigger) => (
-                    <button
-                      key={trigger.id}
-                      type="button"
-                      onClick={() => void handleTrigger(trigger.id)}
-                      disabled={loadingTrigger !== null}
-                      className={`${inset} flex items-center justify-between px-4 py-3 text-right transition active:scale-[0.99] disabled:opacity-70`}
-                    >
-                      <span className="text-xs font-semibold text-white/48">{trigger.helper}</span>
-                      <span className="flex items-center gap-2 text-sm font-black text-[#f5f5f7]">
-                        {loadingTrigger === trigger.id && <Loader2 className="h-4 w-4 animate-spin" />}
-                        <span>{trigger.emoji}</span>
-                        {trigger.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                <label className="block">
-                  <span className="mb-1 block text-xs font-bold text-white/52">רוצה להוסיף מילה?</span>
-                  <textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    maxLength={240}
-                    rows={2}
-                    className={`${inset} w-full resize-none px-3 py-2.5 text-sm text-[#f5f5f7] outline-none focus:ring-2 focus:ring-white/20`}
-                    placeholder={
-                      selectedTask?.title
-                        ? `למשל: קשה לי עם "${selectedTask.title}" אחרי יום עמוס`
-                        : 'למשל: היה יום עמוס ואני מול המקרר'
-                    }
-                  />
-                </label>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {response.context.focus_task_title ? (
-              <div className={`${inset} px-4 py-3 text-xs font-bold text-white/82`}>
-                זה מותאם ל{' '}
-                <span className="text-sm text-[#f5f5f7]">
-                  {response.context.focus_task_emoji ?? '✅'} {response.context.focus_task_title}
-                </span>
-                {response.context.step_title ? (
-                  <span className="mt-1 block font-semibold text-white/48">מתוך {response.context.step_title}</span>
-                ) : null}
-              </div>
-            ) : null}
-
-            {response.memory_hint ? (
-              <p className="text-xs font-semibold leading-6 text-white/62">{response.memory_hint}</p>
-            ) : null}
-
-            <div className="relative overflow-hidden rounded-3xl p-4" style={SOS_MESSAGE_CARD_STYLE}>
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-x-4 top-px h-px bg-gradient-to-r from-transparent via-white/35 to-transparent"
-              />
-              <p className="whitespace-pre-wrap text-sm font-semibold leading-7 text-[#f5f5f7]">
-                {response.intervention.message}
-              </p>
-            </div>
-
-            <div className={`${inset} relative overflow-hidden p-4`}>
-              <div className="mb-2 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-white/45" />
-                <p className="text-xs font-bold text-white/55">הצעד שלך עכשיו</p>
-              </div>
-              <p className="text-base font-black text-[#f5f5f7]">{response.intervention.label}</p>
-              <p className="mt-2 text-sm leading-7 text-white/78">{response.intervention.micro_step}</p>
-            </div>
-
-            {taskHardConfirmed && response.blocker_id && !easeCreated ? (
-              <button
-                type="button"
-                disabled={easeCreating}
-                onClick={() => void createEaseTaskFromSos()}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black disabled:opacity-70"
-                style={SOS_PRIMARY_BTN_STYLE}
-              >
-                {easeCreating ? 'מוסיף למשימות…' : 'הוסף למשימות שלי והקפא את המקורית'}
-              </button>
-            ) : null}
-
-            {easeCreated ? (
-              <div className={`${inset} px-4 py-3 text-xs leading-6 text-white/82`}>
-                <p className="font-black">נוסף למשימות שלך ✓</p>
-                <p className="mt-1 text-white/58">
-                  המשימה המקורית מוקפאת. כשתסיים את הצעד הקל — נחזיר אותה בהדרגה.
-                </p>
-                <button
-                  type="button"
-                  onClick={openUnfreezeChat}
-                  className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-white/72"
-                >
-                  <Snowflake className="h-3.5 w-3.5" />
-                  מוכן/ה לחזור למשימה המקורית?
-                </button>
-              </div>
-            ) : null}
-
-            {error ? <p className="text-xs font-semibold text-amber-300/90">{error}</p> : null}
-
-            {response.follow_up_scheduled ? (
-              <p className="text-[11px] font-semibold text-white/52">
-                אשמור עליך — אבדוק בעדינות איך היה.
-              </p>
-            ) : null}
-
-            {response.care_focus_active ? (
-              <p className="text-[11px] font-semibold leading-5 text-white/52">
-                הורדתי זמנית תזכורות אחרות — כדי שתוכל להתרכז ברגע הזה.
-              </p>
-            ) : null}
-
-            <p className="text-xs font-bold text-white/55">איך היה?</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <button
-                type="button"
-                disabled={outcomeSaving || pivoting}
-                onClick={() => void handleOutcome(true)}
-                className="rounded-2xl px-4 py-3 text-sm font-black disabled:opacity-70"
-                style={SOS_PRIMARY_BTN_STYLE}
-              >
-                {outcomeSaving ? 'שומר…' : 'עבר — תודה 🌱'}
-              </button>
-              <button
-                type="button"
-                disabled={outcomeSaving || pivoting}
-                onClick={() => void handleOutcome(false)}
-                className={`${SOS_SECONDARY_BTN_CLASS} disabled:opacity-70`}
-              >
-                {pivoting ? 'מציע גישה אחרת…' : 'עדיין קשה — ננסה אחרת'}
-              </button>
-            </div>
-
-            <div className="grid gap-2 sm:grid-cols-2">
+              ) : guardianSaved ? (
+                <p className="text-xs font-semibold text-emerald-800/80">הפעלנו — תוכל לכבות בהגדרות מאלמוג.</p>
+              ) : null}
               <button
                 type="button"
                 onClick={openChatFromSos}
-                className={`${inset} flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold text-white/88`}
+                className="glass-inset-emerald flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-emerald-900"
               >
-                <MessageCircle className="h-3.5 w-3.5" />
+                <MessageCircle className="h-4 w-4" />
                 לדבר עם אלמוג
               </button>
-              {(selectedTask?.id || response.context.focus_task_id) ? (
+              <button
+                type="button"
+                onClick={resetAndClose}
+                className="w-full rounded-2xl px-4 py-3 text-sm font-black text-white shadow-lg"
+                style={{
+                  background: 'linear-gradient(135deg, #047857, #10b981)',
+                  boxShadow: '0 6px 20px rgba(16,185,129,0.25)',
+                }}
+              >
+                סגור
+              </button>
+            </div>
+          ) : !response ? (
+            <div className="space-y-4">
+              {showTaskHardnessGate ? (
+                <div className="glass-inset-emerald space-y-3 rounded-2xl px-4 py-4">
+                  <p className="text-xs font-bold text-emerald-900/70">לפני שנמשיך</p>
+                  <div className="glass-inset-emerald rounded-2xl px-3 py-3">
+                    <p className="text-[11px] font-semibold text-emerald-800/60">המשימה הנוכחית שלך</p>
+                    <div className="mt-1 flex items-start justify-between gap-2">
+                      <p className="text-base font-black leading-snug text-emerald-950">
+                        {selectedTask?.emoji ? `${selectedTask.emoji} ` : ''}
+                        {selectedTask?.title}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={speakTaskTitle}
+                        className="shrink-0 rounded-xl p-2 text-emerald-800 glass-inset-emerald"
+                        aria-label="הקרא את המשימה"
+                      >
+                        <Volume2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-sm font-bold text-emerald-950">קשה לך לבצע אותה עכשיו?</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => setTaskHardConfirmed(true)}
+                      className="rounded-2xl px-4 py-3 text-sm font-black text-white"
+                      style={{
+                        background: 'linear-gradient(135deg, #047857, #10b981)',
+                        boxShadow: '0 6px 16px rgba(16,185,129,0.22)',
+                      }}
+                    >
+                      כן — קשה לי
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTaskHardConfirmed(false)}
+                      className="glass-inset-emerald rounded-2xl px-4 py-3 text-sm font-bold text-emerald-900"
+                    >
+                      לא, משהו אחר
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+              <div className="glass-inset-emerald rounded-2xl px-4 py-3 text-sm leading-7 text-emerald-950">
+                קודם — על <strong>מה</strong> קשה לך עכשיו? ככה אלמוג ידע להתאים את הצעד.
+              </div>
+
+              {focusTasks.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-emerald-900/70">משימות פתוחות היום</p>
+                  <div className="grid gap-2">
+                    {focusTasks.map((task) => {
+                      const active = selectedTask?.id === task.id;
+                      return (
+                        <button
+                          key={task.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedTask(task);
+                            setTaskHardConfirmed(null);
+                          }}
+                          className={`flex items-center justify-between rounded-2xl px-4 py-3 text-right transition active:scale-[0.99] ${
+                            active ? 'glass-inset-emerald ring-1 ring-emerald-500/25' : 'glass-inset-emerald'
+                          }`}
+                        >
+                          <span className="text-[11px] font-semibold text-emerald-800/60">
+                            {task.stepTitle ?? 'מהמסע'}
+                          </span>
+                          <span className="flex items-center gap-2 text-sm font-black text-emerald-950">
+                            {active ? <Check className="h-4 w-4 text-emerald-600" /> : null}
+                            <span>{task.emoji ?? '✅'}</span>
+                            {task.title}
+                          </span>
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTask(null);
+                        setTaskHardConfirmed(null);
+                      }}
+                      className="rounded-2xl px-4 py-2.5 text-xs font-bold text-emerald-800/70"
+                      style={{
+                        background: !selectedTask ? 'rgba(16,185,129,0.12)' : 'transparent',
+                        border: '1px dashed rgba(16,185,129,0.25)',
+                      }}
+                    >
+                      לא קשור למשימה ספציפית
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              <p className="text-xs font-bold text-emerald-900/70">מה הכי קרוב לרגע הזה?</p>
+              <div className="grid gap-2.5">
+                {QUICK_TRIGGERS.map((trigger) => (
+                  <button
+                    key={trigger.id}
+                    type="button"
+                    onClick={() => void handleTrigger(trigger.id)}
+                    disabled={loadingTrigger !== null}
+                    className="glass-inset-emerald flex items-center justify-between rounded-2xl px-4 py-3 text-right transition active:scale-[0.99] disabled:opacity-70"
+                  >
+                    <span className="text-xs font-semibold text-emerald-800/60">{trigger.helper}</span>
+                    <span className="flex items-center gap-2 text-sm font-black text-emerald-950">
+                      {loadingTrigger === trigger.id && <Loader2 className="h-4 w-4 animate-spin" />}
+                      <span>{trigger.emoji}</span>
+                      {trigger.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <label className="block">
+                <span className="mb-1 block text-xs font-bold text-emerald-900/65">רוצה להוסיף מילה?</span>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  maxLength={240}
+                  rows={2}
+                  className="glass-inset-emerald w-full resize-none rounded-2xl px-3 py-2.5 text-sm text-emerald-950 outline-none focus:ring-2 focus:ring-emerald-500/25"
+                  placeholder={
+                    selectedTask?.title
+                      ? `למשל: קשה לי עם "${selectedTask.title}" אחרי יום עמוס`
+                      : 'למשל: היה יום עמוס ואני מול המקרר'
+                  }
+                />
+              </label>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {response.context.focus_task_title ? (
+                <div className="glass-inset-emerald rounded-2xl px-4 py-3 text-xs font-bold text-emerald-900">
+                  ההצעה הבאה מותאמת ל{' '}
+                  <span className="text-sm">
+                    {response.context.focus_task_emoji ?? '✅'} {response.context.focus_task_title}
+                  </span>
+                  {response.context.step_title ? (
+                    <span className="mt-1 block font-semibold text-emerald-800/65">
+                      מתוך {response.context.step_title}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {response.memory_hint ? (
+                <p className="text-xs font-semibold leading-6 text-emerald-800/80">{response.memory_hint}</p>
+              ) : null}
+
+              <div
+                className="relative overflow-hidden rounded-3xl p-4 text-white shadow-lg"
+                style={{
+                  background: 'linear-gradient(145deg, #047857, #059669, #10b981)',
+                  boxShadow: '0 8px 24px rgba(4,120,87,0.22)',
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-4 top-px h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                />
+                <p className="whitespace-pre-wrap text-sm font-semibold leading-7">{response.intervention.message}</p>
+              </div>
+
+              <div className="glass-inset-emerald relative overflow-hidden rounded-2xl p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-emerald-600" />
+                  <p className="text-xs font-bold text-emerald-800/70">המשימה שלך עכשיו</p>
+                </div>
+                <p className="text-base font-black text-emerald-950">{response.intervention.label}</p>
+                <p className="mt-2 text-sm leading-7 text-emerald-900">{response.intervention.micro_step}</p>
+                <p className="mt-2 text-[10px] font-semibold text-emerald-800/50">
+                  {FRICTION_META[response.intervention.category].emoji}{' '}
+                  {FRICTION_META[response.intervention.category].labelHe}
+                  {taskHardConfirmed ? ' · המשימה המקורית מוקפאת זמנית' : ''}
+                </p>
+              </div>
+
+              {taskHardConfirmed && response.blocker_id && !easeCreated ? (
                 <button
                   type="button"
-                  disabled={taskMarking}
-                  onClick={openTaskDoneFromSos}
-                  className={`${inset} px-3 py-2.5 text-xs font-bold text-white/88 disabled:opacity-70`}
+                  disabled={easeCreating}
+                  onClick={() => void createEaseTaskFromSos()}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black text-white disabled:opacity-70"
+                  style={{
+                    background: 'linear-gradient(135deg, #0d9488, #14b8a6)',
+                    boxShadow: '0 6px 18px rgba(13,148,136,0.25)',
+                  }}
                 >
-                  {taskMarking ? 'מסמן…' : 'סימנתי — עשיתי 🎯'}
+                  {easeCreating ? 'מוסיף למשימות…' : 'הוסף למשימות שלי והקפא את המקורית'}
                 </button>
               ) : null}
+
+              {easeCreated ? (
+                <div className="glass-inset-emerald rounded-2xl px-4 py-3 text-xs leading-6 text-emerald-900">
+                  <p className="font-black">נוסף למשימות שלך ✓</p>
+                  <p className="mt-1 text-emerald-900/75">
+                    המשימה המקורית מוקפאת. כשתסיים את הצעד הקל — נחזיר אותה בהדרגה.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={openUnfreezeChat}
+                    className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800"
+                  >
+                    <Snowflake className="h-3.5 w-3.5" />
+                    מוכן/ה לחזור למשימה המקורית?
+                  </button>
+                </div>
+              ) : null}
+
+              {error ? <p className="text-xs font-semibold text-amber-700">{error}</p> : null}
+
+              {response.follow_up_scheduled ? (
+                <p className="text-[11px] font-semibold text-emerald-800/70">
+                  אשמור עליך — אבדוק בעדינות איך היה (לא כל שעה, רק כשזה מתאים).
+                </p>
+              ) : null}
+
+              {response.care_focus_active ? (
+                <p className="text-[11px] font-semibold leading-5 text-teal-900/80">
+                  הורדתי זמנית את שאר התזכורות על משימות — כדי שתוכל להתרכז רק ברגע הזה.
+                </p>
+              ) : null}
+
+              <p className="text-xs font-bold text-emerald-900/70">איך היה?</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  disabled={outcomeSaving || pivoting}
+                  onClick={() => void handleOutcome(true)}
+                  className="rounded-2xl px-4 py-3 text-sm font-black text-white shadow-lg disabled:opacity-70"
+                  style={{
+                    background: 'linear-gradient(135deg, #047857, #10b981)',
+                    boxShadow: '0 6px 20px rgba(16,185,129,0.22)',
+                  }}
+                >
+                  {outcomeSaving ? 'שומר…' : 'עבר — תודה 🌱'}
+                </button>
+                <button
+                  type="button"
+                  disabled={outcomeSaving || pivoting}
+                  onClick={() => void handleOutcome(false)}
+                  className="glass-inset-emerald rounded-2xl px-4 py-3 text-sm font-bold text-emerald-900 disabled:opacity-70"
+                >
+                  {pivoting ? 'מציע גישה אחרת…' : 'עדיין קשה — ננסה אחרת'}
+                </button>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={openChatFromSos}
+                  className="glass-inset-emerald flex items-center justify-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-bold text-emerald-900"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  לדבר עם אלמוג
+                </button>
+                {(selectedTask?.id || response.context.focus_task_id) ? (
+                  <button
+                    type="button"
+                    disabled={taskMarking}
+                    onClick={openTaskDoneFromSos}
+                    className="glass-inset-emerald rounded-2xl px-3 py-2.5 text-xs font-bold text-emerald-900 disabled:opacity-70"
+                  >
+                    {taskMarking ? 'מסמן…' : 'סימנתי — עשיתי 🎯'}
+                  </button>
+                ) : null}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
     </AnimatedDialog>
   );
 }
