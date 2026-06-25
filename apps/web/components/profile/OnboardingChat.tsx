@@ -3,7 +3,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
 import { motion } from 'framer-motion';
-import { Check, ChevronRight, FileLock2, MessageCircle, Send, X, Zap, PartyPopper } from 'lucide-react';
+import { Check, ChevronRight, FileLock2, MessageCircle, Send, X, Zap } from 'lucide-react';
+import {
+  FUN_ASSISTANT_BUBBLE,
+  FUN_CHAT_BG,
+  FUN_HEADER_BG,
+  FUN_USER_BUBBLE,
+  FunConfettiBurst,
+  FunFloatingAmbience,
+  FunPathSelectHero,
+  FunTypingLine,
+} from '@/components/profile/onboarding-fun-experience';
 import { ALMOG_AVATAR_FALLBACK } from '@/lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '@/lib/client/useAlmogAvatarUrl';
 import { useChatBackground } from '@/lib/client/useChatBackground';
@@ -76,42 +86,73 @@ const PATH_LABEL: Record<OnboardingPath, string> = {
   fun: 'מסלול כייפי',
 };
 
-function AlmogAvatar({ size = 40, className = '' }: { size?: number; className?: string }) {
+function AlmogAvatar({
+  size = 40,
+  className = '',
+  fun = false,
+}: {
+  size?: number;
+  className?: string;
+  fun?: boolean;
+}) {
   const { avatarUrl } = useAlmogAvatarUrl();
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={avatarUrl}
-      alt="אלמוג"
-      width={size}
-      height={size}
-      className={`rounded-full object-cover object-top border-2 border-emerald-400/40 ${className}`}
-      style={{ width: size, height: size }}
-      onError={(e) => {
-        e.currentTarget.onerror = null;
-        e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
-      }}
-    />
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      {fun ? (
+        <motion.div
+          className="absolute -inset-1 rounded-full"
+          style={{
+            background: 'conic-gradient(from 0deg, #f472b6, #fbbf24, #a78bfa, #f472b6)',
+          }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+          aria-hidden
+        />
+      ) : null}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={avatarUrl}
+        alt="אלמוג"
+        width={size}
+        height={size}
+        className={`relative rounded-full object-cover object-top border-2 ${
+          fun ? 'border-white/50' : 'border-emerald-400/40'
+        } ${className}`}
+        style={{ width: size, height: size }}
+        onError={(e) => {
+          e.currentTarget.onerror = null;
+          e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+        }}
+      />
+    </div>
   );
 }
 
-function AlmogTypingIndicator() {
+function AlmogTypingIndicator({ fun = false }: { fun?: boolean }) {
   return (
     <div className="flex justify-end items-end gap-2">
       <div className="flex flex-col items-end gap-1">
-        <span className="text-[11px] font-semibold text-emerald-200/85 px-0.5">אלמוג מקליד…</span>
+        {fun ? (
+          <FunTypingLine />
+        ) : (
+          <span className="text-[11px] font-semibold text-emerald-200/85 px-0.5">אלמוג מקליד…</span>
+        )}
         <div
           className="rounded-[20px] rounded-bl-md px-4 py-3"
-          style={{
-            background: 'linear-gradient(145deg, rgba(4,120,87,0.92), rgba(16,185,129,0.85))',
-            border: '1px solid rgba(255,255,255,0.15)',
-          }}
+          style={
+            fun
+              ? FUN_ASSISTANT_BUBBLE
+              : {
+                  background: 'linear-gradient(145deg, rgba(4,120,87,0.92), rgba(16,185,129,0.85))',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                }
+          }
         >
           <span className="inline-flex items-center gap-1.5" aria-hidden>
             {[0, 1, 2].map((i) => (
               <motion.span
                 key={i}
-                className="h-2 w-2 rounded-full bg-white/90"
+                className={`h-2 w-2 rounded-full ${fun ? 'bg-white' : 'bg-white/90'}`}
                 animate={{ y: [0, -4, 0], opacity: [0.4, 1, 0.4] }}
                 transition={{ duration: 0.7, repeat: Infinity, ease: 'easeInOut', delay: i * 0.12 }}
               />
@@ -119,7 +160,7 @@ function AlmogTypingIndicator() {
           </span>
         </div>
       </div>
-      <AlmogAvatar size={32} className="mb-0.5 shrink-0" />
+      <AlmogAvatar size={32} className="mb-0.5 shrink-0" fun={fun} />
     </div>
   );
 }
@@ -136,15 +177,18 @@ function ChatHeader({
   onClose: () => void;
 }) {
   const isPathSelect = variant === 'path-select';
+  const isFun = path === 'fun';
 
   return (
     <div
       dir="rtl"
       className="shrink-0 rounded-t-[28px] border-b border-white/10"
       style={{
-        background: isPathSelect
-          ? 'linear-gradient(180deg, rgba(15,23,42,0.97) 0%, rgba(15,23,42,0.88) 100%)'
-          : 'linear-gradient(160deg, #064e3b 0%, #047857 50%, #0c1222 100%)',
+        background: isFun
+          ? FUN_HEADER_BG
+          : isPathSelect
+            ? 'linear-gradient(180deg, rgba(15,23,42,0.97) 0%, rgba(15,23,42,0.88) 100%)'
+            : 'linear-gradient(160deg, #064e3b 0%, #047857 50%, #0c1222 100%)',
         paddingTop: 'max(10px, env(safe-area-inset-top, 0px))',
         backdropFilter: 'blur(12px)',
       }}
@@ -158,7 +202,7 @@ function ChatHeader({
               background: 'linear-gradient(140deg, rgba(255,255,255,0.45), rgba(255,255,255,0.1))',
             }}
           >
-            <AlmogAvatar size={40} className="border-white/30" />
+            <AlmogAvatar size={40} className="border-white/30" fun={isFun} />
           </div>
           <div className="text-right">
             <p className="text-[16px] font-black leading-none text-white">אלמוג</p>
@@ -204,6 +248,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
       ? profileSnapshot.gender
       : null;
   const [path, setPath] = useState<OnboardingPath | null>(null);
+  const [funBurst, setFunBurst] = useState(false);
   const [messages, setMessages] = useState<Turn[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -236,6 +281,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
   useEffect(() => {
     if (!open) {
       setPath(null);
+      setFunBurst(false);
       setMessages([]);
       setExtractedPublic({});
       setFieldFlags({
@@ -294,6 +340,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
   }
 
   async function startPath(selected: OnboardingPath) {
+    if (selected === 'fun') setFunBurst(true);
     setPath(selected);
     setLoading(true);
     const json = await apiCall({ is_opening: true, path: selected, messages: [] });
@@ -310,6 +357,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
   }
 
   function goBack() {
+    setFunBurst(false);
     setPath(null);
     setMessages([]);
     setPendingDiscrete(null);
@@ -347,6 +395,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
           key,
           envelope: { mode: 'tls-v1', value },
           field_flags: fieldFlags,
+          path,
         }),
       });
       if (!res.ok) return;
@@ -410,6 +459,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
     .filter(([, v]) => v)
     .map(([k]) => k);
   const collectedPublicKeys = Object.keys(extractedPublic).filter((k) => EXTRACTED_LABELS[k]);
+  const isFun = path === 'fun';
 
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} direction="bottom" shouldScaleBackground={false}>
@@ -450,11 +500,16 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
               className="absolute inset-0"
               style={{
                 background: path
-                  ? 'linear-gradient(180deg, rgba(4,120,87,0.3) 0%, rgba(12,18,34,0.95) 40%, #0c1222 100%)'
+                  ? isFun
+                    ? FUN_CHAT_BG
+                    : 'linear-gradient(180deg, rgba(4,120,87,0.3) 0%, rgba(12,18,34,0.95) 40%, #0c1222 100%)'
                   : 'linear-gradient(180deg, rgba(15,23,42,0.55) 0%, rgba(2,6,23,0.82) 55%, rgba(2,6,23,0.94) 100%)',
               }}
             />
+            {isFun ? <FunFloatingAmbience /> : null}
           </div>
+
+          <FunConfettiBurst active={funBurst} />
 
           <div className="relative z-10 flex min-h-0 flex-1 flex-col">
             <ChatHeader
@@ -465,50 +520,39 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
             />
 
             {!path ? (
-              <div dir="rtl" className="relative min-h-0 flex-1 overflow-y-auto px-6 py-6">
-                <div className="flex flex-col items-center gap-5">
-                  <div
+              <div dir="rtl" className="relative min-h-0 flex-1 overflow-y-auto px-5 py-5">
+                <div className="flex flex-col items-center gap-4">
+                  <motion.div
                     className="shrink-0 rounded-full p-1"
                     style={{
                       background: 'linear-gradient(140deg, rgba(255,255,255,0.5), rgba(255,255,255,0.12))',
                       boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
                     }}
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                   >
-                    <AlmogAvatar size={80} className="border-white/40" />
+                    <AlmogAvatar size={72} className="border-white/40" />
+                  </motion.div>
+                  <div className="text-center">
+                    <p className="text-white text-[17px] font-black leading-tight">איך בא לך לעדכן?</p>
+                    <p className="mt-1 text-white/70 text-[12px] font-medium">
+                      בחר מסלול — אחד מהם עם קונפטי 🎊
+                    </p>
                   </div>
-                  <p className="text-center text-white/90 text-[15px] font-semibold leading-relaxed">
-                    איך בא לך לעדכן את הפרופיל?
-                  </p>
-                  <div className="w-full space-y-3">
-                    <button
-                      type="button"
-                      onClick={() => void startPath('quick')}
-                      className="w-full flex items-center gap-3 rounded-2xl px-4 py-4 text-right active:scale-[0.98]"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(16,185,129,0.9), rgba(5,150,105,0.85))',
-                      }}
-                    >
-                      <Zap className="h-6 w-6 text-white shrink-0" />
-                      <span>
-                        <span className="block text-white font-black text-sm">מסלול מהיר</span>
-                        <span className="block text-emerald-100 text-xs mt-0.5">ישיר ונחמד</span>
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void startPath('fun')}
-                      className="w-full flex items-center gap-3 rounded-2xl px-4 py-4 text-right active:scale-[0.98]"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(245,158,11,0.92), rgba(236,72,153,0.85))',
-                      }}
-                    >
-                      <PartyPopper className="h-6 w-6 text-white shrink-0" />
-                      <span>
-                        <span className="block text-white font-black text-sm">מסלול כייפי</span>
-                        <span className="block text-amber-100 text-xs mt-0.5">יותר הומור ושאלות</span>
-                      </span>
-                    </button>
-                  </div>
+
+                  <FunPathSelectHero onSelect={() => void startPath('fun')} />
+
+                  <button
+                    type="button"
+                    onClick={() => void startPath('quick')}
+                    className="w-full flex items-center gap-3 rounded-2xl border border-white/15 bg-white/8 px-4 py-3.5 text-right active:scale-[0.98] backdrop-blur-sm"
+                  >
+                    <Zap className="h-5 w-5 text-emerald-300 shrink-0" />
+                    <span>
+                      <span className="block text-white font-bold text-sm">מסלול מהיר</span>
+                      <span className="block text-slate-300 text-xs mt-0.5">ישיר, רציני, בלי בדיחות</span>
+                    </span>
+                  </button>
                 </div>
               </div>
             ) : (
@@ -540,19 +584,26 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
 
                 <div dir="rtl" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3">
                   {messages.map((m, i) => (
-                    <div
+                    <motion.div
                       key={i}
+                      initial={isFun ? { opacity: 0, y: 10, scale: 0.97 } : false}
+                      animate={isFun ? { opacity: 1, y: 0, scale: 1 } : undefined}
+                      transition={isFun ? { type: 'spring', stiffness: 380, damping: 28 } : undefined}
                       className={`flex ${m.role === 'user' ? 'justify-start' : 'justify-end items-end gap-2'}`}
                     >
                       {m.role === 'assistant' ? (
                         <div
                           className="max-w-[82%] rounded-[20px] rounded-bl-md px-3.5 py-2.5 text-[14px] leading-relaxed"
-                          style={{
-                            background: 'linear-gradient(145deg, #047857 0%, #059669 55%, #10b981 100%)',
-                            color: '#fff',
-                            border: '1px solid rgba(255,255,255,0.18)',
-                            boxShadow: '0 6px 20px rgba(16,185,129,0.22)',
-                          }}
+                          style={
+                            isFun
+                              ? FUN_ASSISTANT_BUBBLE
+                              : {
+                                  background: 'linear-gradient(145deg, #047857 0%, #059669 55%, #10b981 100%)',
+                                  color: '#fff',
+                                  border: '1px solid rgba(255,255,255,0.18)',
+                                  boxShadow: '0 6px 20px rgba(16,185,129,0.22)',
+                                }
+                          }
                         >
                           {m.secret ? (
                             <span className="flex items-center gap-1.5 text-amber-200 text-[13px]">
@@ -566,11 +617,15 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                       ) : (
                         <div
                           className="max-w-[82%] rounded-[20px] rounded-tr-md px-3.5 py-2.5 text-[14px] leading-relaxed"
-                          style={{
-                            background: 'rgba(255,255,255,0.1)',
-                            color: '#f1f5f9',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                          }}
+                          style={
+                            isFun
+                              ? FUN_USER_BUBBLE
+                              : {
+                                  background: 'rgba(255,255,255,0.1)',
+                                  color: '#f1f5f9',
+                                  border: '1px solid rgba(255,255,255,0.1)',
+                                }
+                          }
                         >
                           {m.secret ? (
                             <span className="flex items-center gap-1.5 text-amber-200 text-[13px]">
@@ -583,12 +638,16 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                         </div>
                       )}
                       {m.role === 'assistant' ? (
-                        <AlmogAvatar size={28} className="mb-0.5 shrink-0 border-emerald-500/30" />
+                        <AlmogAvatar
+                          size={28}
+                          className={`mb-0.5 shrink-0 ${isFun ? 'border-white/40' : 'border-emerald-500/30'}`}
+                          fun={isFun}
+                        />
                       ) : null}
-                    </div>
+                    </motion.div>
                   ))}
 
-                  {loading ? <AlmogTypingIndicator /> : null}
+                  {loading ? <AlmogTypingIndicator fun={isFun} /> : null}
                   <div ref={bottomRef} className="h-px shrink-0" />
                 </div>
 
@@ -596,7 +655,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                   dir="rtl"
                   className="shrink-0 border-t border-white/8"
                   style={{
-                    background: '#0c1222',
+                    background: isFun ? 'rgba(15,8,28,0.98)' : '#0c1222',
                     paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))',
                   }}
                 >
@@ -701,8 +760,10 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                         placeholder="כתוב לאלמוג…"
                         className="min-w-0 flex-1 rounded-2xl px-4 py-2.5 text-base text-slate-100 outline-none placeholder:text-slate-500"
                         style={{
-                          background: 'rgba(255,255,255,0.07)',
-                          border: '1px solid rgba(255,255,255,0.1)',
+                          background: isFun ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)',
+                          border: isFun
+                            ? '1px solid rgba(251,191,36,0.25)'
+                            : '1px solid rgba(255,255,255,0.1)',
                         }}
                       />
                       <button
@@ -710,7 +771,11 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                         onClick={() => void handleSend()}
                         disabled={loading || !input.trim()}
                         className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white disabled:opacity-40"
-                        style={{ background: 'linear-gradient(145deg, #047857, #10b981)' }}
+                        style={{
+                          background: isFun
+                            ? 'linear-gradient(145deg, #a21caf, #f59e0b)'
+                            : 'linear-gradient(145deg, #047857, #10b981)',
+                        }}
                         aria-label="שליחה"
                       >
                         <Send className="h-4 w-4" />

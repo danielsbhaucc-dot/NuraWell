@@ -84,3 +84,17 @@ export function discreteFieldAck(key: DiscreteFieldKey, gender: 'male' | 'female
   };
   return labels[key];
 }
+
+export function funDiscreteFieldAck(key: DiscreteFieldKey, gender: 'male' | 'female' | null): string {
+  const labels: Record<DiscreteFieldKey, string> = {
+    full_name:
+      gender === 'female'
+        ? 'יש! השם בכספת 🔐 מעכשיו אקרא לך בכבוד — לא "יואו".'
+        : 'יש! השם בכספת 🔐 מעכשיו אקרא לך בכבוד — לא "חבר".',
+    current_weight_kg: 'המשקל נכנס לכספת — אני לא מדבר על זה בקול רם 😌',
+    goal_weight_kg: 'יעד המשקל נרשם — נגיע לשם, אבל בלי דרמה מיותרת 🎯',
+    wake_up_time: 'שעת ההשכמה נקלטה — אני לא שופט אם זה 11:00 ☕',
+    sleep_time: 'שעת השינה נקלטה — חלומות מתוקים (או לפחות לא סנור) 😴',
+  };
+  return labels[key];
+}
