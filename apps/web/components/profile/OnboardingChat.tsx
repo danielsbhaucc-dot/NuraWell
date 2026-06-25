@@ -26,8 +26,12 @@ import {
   discreteFieldPrivacyIntro,
 } from '@/lib/ai/onboarding-discrete-fields';
 import { type ProfileFieldFlags } from '@/lib/profile/extracted-field-flags';
-import { buildProfileChatBootstrap } from '@/lib/profile/profile-chat-bootstrap';
-import type { ProfileRowForChat } from '@/lib/profile/profile-chat-bootstrap';
+import {
+  buildProfileChatBootstrap,
+  shouldClarifyProfileUpdateIntent,
+  type ProfileRowForChat,
+} from '@/lib/profile/profile-chat-bootstrap';
+import { firstNameFrom } from '@/lib/profile/personalized-copy';
 import {
   dispatchOpenAlmogChat,
   setProfileOnboardingChatVisible,
@@ -165,19 +169,30 @@ function AlmogTypingIndicator({ fun = false }: { fun?: boolean }) {
   );
 }
 
+type DrawerPhase = 'intent' | 'paths' | 'chat';
+
 function ChatHeader({
   path,
-  variant,
+  phase,
   onBack,
   onClose,
 }: {
   path: OnboardingPath | null;
-  variant: 'path-select' | 'chat';
+  phase: DrawerPhase;
   onBack: () => void;
   onClose: () => void;
 }) {
-  const isPathSelect = variant === 'path-select';
+  const isPathSelect = phase === 'paths';
   const isFun = path === 'fun';
+
+  const subtitle =
+    phase === 'chat' && path
+      ? PATH_LABEL[path]
+      : phase === 'intent'
+        ? 'עדכון פרופיל · בירור'
+        : 'עדכון פרופיל · בחר מסלול';
+
+  const showBack = phase === 'chat' || phase === 'paths';
 
   return (
     <div
@@ -206,20 +221,18 @@ function ChatHeader({
           </div>
           <div className="text-right">
             <p className="text-[16px] font-black leading-none text-white">אלמוג</p>
-            <p className="mt-1 text-[11px] font-medium text-white/75">
-              {path ? PATH_LABEL[path] : 'עדכון פרופיל · בחר מסלול'}
-            </p>
+            <p className="mt-1 text-[11px] font-medium text-white/75">{subtitle}</p>
           </div>
         </div>
 
         <div className="min-w-0 flex-1" aria-hidden />
 
-        {path ? (
+        {showBack ? (
           <button
             type="button"
             onClick={onBack}
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white border border-white/15"
-            aria-label="חזרה לבחירת מסלול"
+            aria-label={phase === 'chat' ? 'חזרה לבחירת מסלול' : 'חזרה'}
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -238,6 +251,75 @@ function ChatHeader({
   );
 }
 
+function ProfileUpdateIntentScreen({
+  firstName,
+  savedLabels,
+  gender,
+  onConfirm,
+  onDismiss,
+}: {
+  firstName: string;
+  savedLabels: string[];
+  gender: 'male' | 'female' | null;
+  onConfirm: () => void;
+  onDismiss: () => void;
+}) {
+  const prompt =
+    gender === 'female'
+      ? `${firstName}, נראה שכבר השלמת את הפרופיל`
+      : gender === 'male'
+        ? `${firstName}, נראה שכבר השלמת את הפרופיל`
+        : 'נראה שכבר השלמת את הפרופיל';
+
+  return (
+    <div dir="rtl" className="relative min-h-0 flex-1 overflow-y-auto px-5 py-5">
+      <div className="flex flex-col items-center gap-4">
+        <AlmogAvatar size={72} className="border-white/40" />
+        <div className="text-center">
+          <p className="text-white text-[17px] font-black leading-tight">{prompt} ✓</p>
+          <p className="mt-2 text-white/75 text-[13px] leading-relaxed">
+            רוצה לעדכן פרטים שכבר שמורים, או שהגעת בטעות?
+          </p>
+        </div>
+
+        {savedLabels.length > 0 ? (
+          <div className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 backdrop-blur-sm">
+            <p className="text-[11px] font-bold text-emerald-200/90 mb-2">מה שכבר שמור אצלי:</p>
+            <div className="flex flex-wrap gap-1.5">
+              {savedLabels.map((label) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-emerald-100"
+                  style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(52,211,153,0.3)' }}
+                >
+                  <Check className="h-3 w-3" strokeWidth={3} />
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="w-full rounded-2xl px-4 py-3.5 text-sm font-black text-white active:scale-[0.98]"
+          style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.95), rgba(5,150,105,0.9))' }}
+        >
+          כן, לעדכן פרטים
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="w-full rounded-2xl border border-white/15 bg-white/8 px-4 py-3 text-sm font-semibold text-slate-200 active:scale-[0.98]"
+        >
+          לא עכשיו
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }: OnboardingChatProps) {
   const initialBootstrap = useMemo(
     () => buildProfileChatBootstrap(profileSnapshot),
@@ -247,6 +329,24 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
     profileSnapshot?.gender === 'male' || profileSnapshot?.gender === 'female'
       ? profileSnapshot.gender
       : null;
+  const needsIntentClarify = useMemo(
+    () =>
+      shouldClarifyProfileUpdateIntent(
+        initialBootstrap.fieldFlags,
+        profileSnapshot?.onboarding_completed
+      ),
+    [initialBootstrap.fieldFlags, profileSnapshot?.onboarding_completed]
+  );
+  const savedFieldLabels = useMemo(
+    () =>
+      Object.entries(initialBootstrap.fieldFlags)
+        .filter(([, v]) => v)
+        .map(([k]) => FLAG_TO_LABEL[k] ?? k),
+    [initialBootstrap.fieldFlags]
+  );
+  const chatFirstName = firstNameFrom(profileSnapshot?.full_name ?? null);
+  const [phase, setPhase] = useState<DrawerPhase>('paths');
+  const [updateMode, setUpdateMode] = useState(false);
   const [path, setPath] = useState<OnboardingPath | null>(null);
   const [funBurst, setFunBurst] = useState(false);
   const [messages, setMessages] = useState<Turn[]>([]);
@@ -280,6 +380,8 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
 
   useEffect(() => {
     if (!open) {
+      setPhase('paths');
+      setUpdateMode(false);
       setPath(null);
       setFunBurst(false);
       setMessages([]);
@@ -303,9 +405,11 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
       setInput('');
       return;
     }
+    setPhase(needsIntentClarify ? 'intent' : 'paths');
+    setUpdateMode(false);
     setFieldFlags(initialBootstrap.fieldFlags);
     setExtractedPublic(initialBootstrap.extractedPublic);
-  }, [open, initialBootstrap]);
+  }, [open, initialBootstrap, needsIntentClarify]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -319,6 +423,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
         ...body,
         extracted_public: extractedPublic,
         field_flags: fieldFlags,
+        update_mode: updateMode || undefined,
       }),
     });
     if (!res.ok) return null;
@@ -342,6 +447,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
   async function startPath(selected: OnboardingPath) {
     if (selected === 'fun') setFunBurst(true);
     setPath(selected);
+    setPhase('chat');
     setLoading(true);
     const json = await apiCall({ is_opening: true, path: selected, messages: [] });
     setLoading(false);
@@ -356,9 +462,26 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
     setPendingDiscrete(null);
   }
 
-  function goBack() {
+  function confirmIntent() {
+    setUpdateMode(true);
+    setPhase('paths');
+  }
+
+  function handleHeaderBack() {
+    if (phase === 'chat') {
+      goBackToPaths();
+      return;
+    }
+    if (phase === 'paths' && needsIntentClarify) {
+      setPhase('intent');
+      setUpdateMode(false);
+    }
+  }
+
+  function goBackToPaths() {
     setFunBurst(false);
     setPath(null);
+    setPhase('paths');
     setMessages([]);
     setPendingDiscrete(null);
     setDiscreteField(null);
@@ -460,6 +583,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
     .map(([k]) => k);
   const collectedPublicKeys = Object.keys(extractedPublic).filter((k) => EXTRACTED_LABELS[k]);
   const isFun = path === 'fun';
+  const drawerPhase: DrawerPhase = path ? 'chat' : phase;
 
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} direction="bottom" shouldScaleBackground={false}>
@@ -514,12 +638,20 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
           <div className="relative z-10 flex min-h-0 flex-1 flex-col">
             <ChatHeader
               path={path}
-              variant={path ? 'chat' : 'path-select'}
-              onBack={goBack}
+              phase={drawerPhase}
+              onBack={handleHeaderBack}
               onClose={() => onOpenChange(false)}
             />
 
-            {!path ? (
+            {phase === 'intent' && !path ? (
+              <ProfileUpdateIntentScreen
+                firstName={chatFirstName}
+                savedLabels={savedFieldLabels}
+                gender={profileGender}
+                onConfirm={confirmIntent}
+                onDismiss={() => onOpenChange(false)}
+              />
+            ) : !path ? (
               <div dir="rtl" className="relative min-h-0 flex-1 overflow-y-auto px-5 py-5">
                 <div className="flex flex-col items-center gap-4">
                   <motion.div

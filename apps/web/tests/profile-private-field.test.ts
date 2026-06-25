@@ -114,4 +114,20 @@ describe('profile-chat-bootstrap', () => {
     expect(hint).not.toContain('88');
     expect(hint).toMatch(/שם שמור/);
   });
+
+  it('asks intent clarification when onboarding is complete or basics are filled', async () => {
+    const { shouldClarifyProfileUpdateIntent, buildFlagsFromProfileRow } = await import(
+      '../lib/profile/profile-chat-bootstrap'
+    );
+    const empty = buildFlagsFromProfileRow(null);
+    expect(shouldClarifyProfileUpdateIntent(empty, false)).toBe(false);
+    expect(shouldClarifyProfileUpdateIntent(empty, true)).toBe(true);
+
+    const complete = buildFlagsFromProfileRow({
+      full_name: 'דנה',
+      main_goal: 'weight_loss',
+      main_obstacle: 'no_time',
+    });
+    expect(shouldClarifyProfileUpdateIntent(complete, false)).toBe(true);
+  });
 });

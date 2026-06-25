@@ -55,6 +55,7 @@ const bodySchema = z.object({
   extracted_public: z.record(z.unknown()).optional(),
   field_flags: fieldFlagsSchema.optional(),
   persist: z.boolean().optional(),
+  update_mode: z.boolean().optional(),
 });
 
 function mergeExtracted(
@@ -142,6 +143,7 @@ export async function POST(request: Request) {
         isOpening: parsed.data.is_opening,
         firstNameHint: firstNameFrom(profileRow?.full_name ?? null, ''),
         profileGender: gender,
+        updateMode: parsed.data.update_mode === true,
       });
     }
 
