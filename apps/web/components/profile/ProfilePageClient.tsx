@@ -79,8 +79,8 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
   const [isAvatarOpen, setIsAvatarOpen] = useState(false);
   const [avatarRefreshKey, setAvatarRefreshKey] = useState(0);
 
-  const { avatarUrl, refresh: refreshAvatar } = useProfileAvatarUrl(
-    profile?.avatar_url ?? null,
+  const { avatarUrl, refresh: refreshAvatar, applyUploadedUrl } = useProfileAvatarUrl(
+    profile?.id,
     avatarRefreshKey
   );
 
@@ -174,6 +174,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
   };
 
   const onAvatarUploaded = (url: string | null) => {
+    applyUploadedUrl(url);
     setAvatarRefreshKey((k) => k + 1);
     void refreshAvatar();
     startTransition(() => router.refresh());
@@ -248,6 +249,8 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           open={isAvatarOpen}
           onClose={() => setIsAvatarOpen(false)}
           currentInitials={initials}
+          firstName={firstName}
+          gender={profile?.gender ?? null}
           onUploaded={onAvatarUploaded}
         />
 
@@ -272,6 +275,9 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
                   alt={profile?.full_name ?? 'פרופיל'}
                   className="w-[72px] h-[72px] rounded-2xl object-cover shadow-lg"
                   style={{ boxShadow: '0 8px 24px rgba(20,184,166,0.35)' }}
+                  onError={() => {
+                    void refreshAvatar();
+                  }}
                 />
               ) : (
                 <div

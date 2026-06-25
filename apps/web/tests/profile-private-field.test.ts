@@ -130,4 +130,11 @@ describe('profile-chat-bootstrap', () => {
     });
     expect(shouldClarifyProfileUpdateIntent(complete, false)).toBe(true);
   });
+
+  it('normalizes relative avatar paths to cdn.nurawell.ai', async () => {
+    const { normalizeStoredAvatarUrl } = await import('../lib/storage/user-avatar');
+    const userId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+    const normalized = normalizeStoredAvatarUrl('/images/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890/avatar.webp', userId, '1');
+    expect(normalized).toMatch(/^https:\/\/cdn\.nurawell\.ai\/images\/users\//);
+  });
 });
