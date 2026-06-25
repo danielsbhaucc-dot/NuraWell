@@ -18,6 +18,7 @@ import { useChatBackground } from '../../lib/client/useChatBackground';
 import { getPersonalGreeting } from '../../lib/time/greeting';
 import {
   OPEN_ALMOG_CHAT_EVENT,
+  PROFILE_ONBOARDING_CHAT_VISIBILITY_EVENT,
   type OpenAlmogChatDetail,
 } from '../../lib/notifications/open-almog-chat';
 import { taskReportHintToPayload, type TaskReportHint } from '../../lib/ai/task-report-hint';
@@ -478,6 +479,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const displayName = firstName?.trim() || '';
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
+  const [profileOnboardingOpen, setProfileOnboardingOpen] = useState(false);
   const [online, setOnline] = useState(true);
   const [input, setInput] = useState('');
   const [typingStep, setTypingStep] = useState(0);
@@ -626,6 +628,16 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     };
     window.addEventListener(OPEN_ALMOG_CHAT_EVENT, onOpenChat);
     return () => window.removeEventListener(OPEN_ALMOG_CHAT_EVENT, onOpenChat);
+  }, []);
+
+  useEffect(() => {
+    const onVisibility = (e: Event) => {
+      const detail = (e as CustomEvent<{ open: boolean }>).detail;
+      setProfileOnboardingOpen(Boolean(detail?.open));
+    };
+    window.addEventListener(PROFILE_ONBOARDING_CHAT_VISIBILITY_EVENT, onVisibility);
+    return () =>
+      window.removeEventListener(PROFILE_ONBOARDING_CHAT_VISIBILITY_EVENT, onVisibility);
   }, []);
 
   const buildOutgoingChatBody = useCallback(() => {
@@ -1011,30 +1023,32 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
       direction="bottom"
       shouldScaleBackground
     >
-      <Drawer.Trigger asChild>
-        <motion.button
-          type="button"
-          aria-label="שיחה עם אלמוג"
-          className="fixed z-[190] flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-full text-white shadow-lg md:h-[3.5rem] md:w-[3.5rem]"
-          style={{
-            bottom: 'calc(7.25rem + env(safe-area-inset-bottom, 0px))',
-            right: 'calc(1rem + env(safe-area-inset-right, 0px))',
-            background: 'linear-gradient(145deg, #047857, #10b981)',
-            boxShadow: '0 10px 28px rgba(16,185,129,0.35)',
-          }}
-          whileTap={{ scale: 0.94 }}
-        >
-          <MessageCircle className="h-7 w-7 md:h-8 md:w-8" strokeWidth={2} />
-          {hasBackgroundAnswer ? (
-            <span
-              className="absolute -top-1 -left-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-white/70 bg-amber-300 px-1 text-[10px] font-black text-emerald-950 shadow-lg"
-              aria-label="תשובה חדשה מאלמוג"
-            >
-              1
-            </span>
-          ) : null}
-        </motion.button>
-      </Drawer.Trigger>
+      {!profileOnboardingOpen ? (
+        <Drawer.Trigger asChild>
+          <motion.button
+            type="button"
+            aria-label="שיחה עם אלמוג"
+            className="fixed z-[190] flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-full text-white shadow-lg md:h-[3.5rem] md:w-[3.5rem]"
+            style={{
+              bottom: 'calc(7.25rem + env(safe-area-inset-bottom, 0px))',
+              right: 'calc(1rem + env(safe-area-inset-right, 0px))',
+              background: 'linear-gradient(145deg, #047857, #10b981)',
+              boxShadow: '0 10px 28px rgba(16,185,129,0.35)',
+            }}
+            whileTap={{ scale: 0.94 }}
+          >
+            <MessageCircle className="h-7 w-7 md:h-8 md:w-8" strokeWidth={2} />
+            {hasBackgroundAnswer ? (
+              <span
+                className="absolute -top-1 -left-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-white/70 bg-amber-300 px-1 text-[10px] font-black text-emerald-950 shadow-lg"
+                aria-label="תשובה חדשה מאלמוג"
+              >
+                1
+              </span>
+            ) : null}
+          </motion.button>
+        </Drawer.Trigger>
+      ) : null}
 
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-[200] bg-slate-900/55" />
