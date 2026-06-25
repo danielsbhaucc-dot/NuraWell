@@ -125,7 +125,9 @@ ${updateNote}
 - מיד אחר כך — השאלה הבאה לעדכון (השדה החסר).
 
 חוק פרטיות קריטי:
-- שם, משקלים ושעות שינה/השכמה — *אסור* לבקש שהמשתמש יכתוב בצ'אט החופשי.
+- שם, משקלים ושעות שינה/השכמה — *אסור לבקש שהמשתמש יכתוב בצ'אט החופשי*.
+- *אסור לחלץ שם ל-extracted* — גם אם המשתמש כתב משהו שנשמע כמו שם, שאלה, או משפט רגיל. שם נשמר *רק* בערוץ 🔐.
+- *אסור להניח* שתוכן ההודעה הוא שם. שאלות ("מה", "איך", "למה") הן לא שם. בקשות "להתחיל מחדש" אינן שם.
 - כשצריך שדה רגיש — חובה להגדיר request_discrete_field (full_name | current_weight_kg | goal_weight_kg | wake_up_time | sleep_time). אז בקש בקולך שלא לכתוב בצ'אט, והפנה לכפתור 🔐 למטה. בלי request_discrete_field — אל תזכיר כפתור סודי.
 - אחרי שדה רגיש נשמר בערוץ 🔐 — מיד המשך לשדה הבא. אל תפתח שיחת חולין.
 - מטרה, מכשול, זמן חלש, מגדר — אפשר לשאול בצ'אט רגיל.
@@ -138,7 +140,7 @@ ${knownBlock}
 החזר JSON בלבד:
 {
   "reply": "תגובת אלמוג",
-  "extracted": { /* רק שדות לא-רגישים שהמשתמש אמר בבירור בצ'אט */ },
+  "extracted": { /* רק שדות לא-רגישים: gender, main_goal, weakest_time, main_obstacle — לעולם לא full_name/משקל/שעות */ },
   "request_discrete_field": "full_name|current_weight_kg|goal_weight_kg|wake_up_time|sleep_time|null",
   "ready_for_summary": true/false,
   "summary": "אם ready — סיכום לאישור בלי לחזור על מספרים/שם"
@@ -152,9 +154,6 @@ function sanitizeExtracted(raw: unknown): OnboardingExtracted {
   const r = raw as Record<string, unknown>;
   const out: OnboardingExtracted = {};
 
-  if (typeof r.full_name === 'string' && r.full_name.trim()) {
-    out.full_name = r.full_name.trim().slice(0, 80);
-  }
   if (r.gender === 'male' || r.gender === 'female') out.gender = r.gender;
   if (
     r.main_goal === 'weight_loss' ||
@@ -163,10 +162,6 @@ function sanitizeExtracted(raw: unknown): OnboardingExtracted {
   ) {
     out.main_goal = r.main_goal;
   }
-  const cw = Number(r.current_weight_kg);
-  if (Number.isFinite(cw) && cw >= 35 && cw <= 250) out.current_weight_kg = Math.round(cw * 10) / 10;
-  const gw = Number(r.goal_weight_kg);
-  if (Number.isFinite(gw) && gw >= 35 && gw <= 250) out.goal_weight_kg = Math.round(gw * 10) / 10;
   if (['morning', 'noon', 'afternoon', 'evening_night'].includes(r.weakest_time_of_day as string)) {
     out.weakest_time_of_day = r.weakest_time_of_day as OnboardingExtracted['weakest_time_of_day'];
   }
@@ -179,12 +174,6 @@ function sanitizeExtracted(raw: unknown): OnboardingExtracted {
   }
   if (typeof r.main_obstacle_detail === 'string' && r.main_obstacle_detail.trim()) {
     out.main_obstacle_detail = r.main_obstacle_detail.trim().slice(0, 300);
-  }
-  if (typeof r.wake_up_time === 'string' && TIME_RE.test(r.wake_up_time.trim())) {
-    out.wake_up_time = r.wake_up_time.trim();
-  }
-  if (typeof r.sleep_time === 'string' && TIME_RE.test(r.sleep_time.trim())) {
-    out.sleep_time = r.sleep_time.trim();
   }
   return out;
 }
@@ -218,9 +207,13 @@ const CONTEXT_LOSS_RE =
 const OFF_TOPIC_RE =
   /איך לרדוץ|מה לאכול|טיפים|תפריט|מתכון|המלצה|ספר לי על|מה דעתך|איך להתחיל דיאטה|למה אני|מה לעשות כש|אימון|כושר|בחיים|יום שלי|איך אתה מרגיש|ספר לי על עצמך/i;
 
-type UserDiversion = 'meta_ui' | 'context_loss' | 'off_topic';
+const RESTART_RE =
+  /התחל(?:י)?\s*(?:מחדש|מההתחלה)|מחדש|בלי פרטים|אין עליי?\s+פרטים|מחק(?:י)?\s+(?:את\s+)?(?:הפרטים|הכל)|כאילו אין|אפס(?:י)?\s+את|נקה(?:י)?\s+את הפרופיל/i;
+
+type UserDiversion = 'meta_ui' | 'context_loss' | 'off_topic' | 'restart';
 
 function classifyUserDiversion(text: string): UserDiversion | null {
+  if (RESTART_RE.test(text)) return 'restart';
   if (META_UI_QUESTION_RE.test(text)) return 'meta_ui';
   if (CONTEXT_LOSS_RE.test(text)) return 'context_loss';
   if (OFF_TOPIC_RE.test(text)) return 'off_topic';
@@ -297,6 +290,12 @@ function redirectToProfileMission(
   }
   if (kind === 'meta_ui' && field) {
     return `הכפתור 🔐 למטה פותח ערוץ מאובטח. נשארים בעדכון פרופיל. ${next}`;
+  }
+  if (kind === 'restart') {
+    const nameNote = !flags.has_full_name
+      ? ` שם נשמר רק בערוץ 🔐 — לא בצ'אט הפתוח.`
+      : '';
+    return `בסדר — נמשיך לעדכן פרופיל מהנקודה הנוכחית, בלי לנחש פרטים מהודעות.${nameNote} ${next}`;
   }
   const prefix =
     kind === 'context_loss'

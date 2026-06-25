@@ -180,4 +180,56 @@ describe('onboarding-sensitive-leak', () => {
     expect(result.request_discrete_field).toBe('full_name');
     expect(result.reply).toMatch(/ערוץ מאובטח/);
   });
+
+  it('does not treat questions or casual text as a name leak', async () => {
+    const { detectSensitiveLeak } = await import('../lib/ai/onboarding-sensitive-leak');
+    expect(detectSensitiveLeak('מה קורה איתך עכשיו?', emptyFlags)).toBeNull();
+    expect(detectSensitiveLeak('איך אתה מרגיש היום', emptyFlags)).toBeNull();
+    expect(detectSensitiveLeak('בוא נתחיל מחדש כאילו אין פרטים', emptyFlags)).toBeNull();
+    expect(detectSensitiveLeak('דני כהן', emptyFlags)).toBeNull();
+  });
+
+  it('restart request redirects without treating message as name', async () => {
+    const { runOnboardingChatTurn } = await import('../lib/ai/onboarding-chat-llm');
+    const result = await runOnboardingChatTurn({
+      messages: [
+        { role: 'assistant', content: 'מה המטרה?' },
+        { role: 'user', content: 'בוא נתחיל מחדש בלי פרטים' },
+      ],
+      path: 'quick',
+      fieldFlags: emptyFlags,
+    });
+    expect(result.blocked_sensitive_leak).not.toBe(true);
+    expect(result.reply).toMatch(/ערוץ 🔐|בלי לנחש/);
+    expect(result.extracted.full_name).toBeUndefined();
+  });
+});
+
+describe('mergeProfileFlags sensitive fields', () => {
+  it('never trusts client for has_full_name', async () => {
+    const { mergeProfileFlags, buildOnboardingResponseFlags } = await import(
+      '../lib/profile/profile-chat-bootstrap'
+    );
+    const server = {
+      has_full_name: false,
+      has_gender: false,
+      has_main_goal: false,
+      has_current_weight: false,
+      has_goal_weight: false,
+      has_weakest_time: false,
+      has_main_obstacle: false,
+      has_wake_time: false,
+      has_sleep_time: false,
+    };
+    const merged = mergeProfileFlags({ has_full_name: true, has_main_goal: true }, server);
+    expect(merged.has_full_name).toBe(false);
+    expect(merged.has_main_goal).toBe(true);
+
+    const responseFlags = buildOnboardingResponseFlags(
+      { full_name: 'ניחוש שגוי', main_goal: 'weight_loss' },
+      server
+    );
+    expect(responseFlags.has_full_name).toBe(false);
+    expect(responseFlags.has_main_goal).toBe(true);
+  });
 });

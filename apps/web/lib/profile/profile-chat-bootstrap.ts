@@ -162,16 +162,39 @@ export function mergeProfileFlags(
   client: Partial<ProfileFieldFlags>,
   server: ProfileFieldFlags
 ): ProfileFieldFlags {
+  /** שדות רגישים — רק מה ששמור בשרת (ערוץ 🔐), לא מהלקוח ולא מחילוץ LLM */
+  const sensitiveFromServer = {
+    has_full_name: server.has_full_name,
+    has_current_weight: server.has_current_weight,
+    has_goal_weight: server.has_goal_weight,
+    has_wake_time: server.has_wake_time,
+    has_sleep_time: server.has_sleep_time,
+  };
   return {
-    has_full_name: client.has_full_name ?? server.has_full_name,
+    ...sensitiveFromServer,
     has_gender: client.has_gender ?? server.has_gender,
     has_main_goal: client.has_main_goal ?? server.has_main_goal,
-    has_current_weight: client.has_current_weight ?? server.has_current_weight,
-    has_goal_weight: client.has_goal_weight ?? server.has_goal_weight,
     has_weakest_time: client.has_weakest_time ?? server.has_weakest_time,
     has_main_obstacle: client.has_main_obstacle ?? server.has_main_obstacle,
-    has_wake_time: client.has_wake_time ?? server.has_wake_time,
-    has_sleep_time: client.has_sleep_time ?? server.has_sleep_time,
+  };
+}
+
+/** דגלים לתשובת API — רגישים רק מ-DB, ציבוריים מהשיחה הנוכחית */
+export function buildOnboardingResponseFlags(
+  mergedPublic: OnboardingExtracted,
+  dbFlags: ProfileFieldFlags
+): ProfileFieldFlags {
+  const session = buildFieldFlags(redactExtractedForClient(mergedPublic));
+  return {
+    has_full_name: dbFlags.has_full_name,
+    has_current_weight: dbFlags.has_current_weight,
+    has_goal_weight: dbFlags.has_goal_weight,
+    has_wake_time: dbFlags.has_wake_time,
+    has_sleep_time: dbFlags.has_sleep_time,
+    has_gender: session.has_gender || dbFlags.has_gender,
+    has_main_goal: session.has_main_goal || dbFlags.has_main_goal,
+    has_weakest_time: session.has_weakest_time || dbFlags.has_weakest_time,
+    has_main_obstacle: session.has_main_obstacle || dbFlags.has_main_obstacle,
   };
 }
 
