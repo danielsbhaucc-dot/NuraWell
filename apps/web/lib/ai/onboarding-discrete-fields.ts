@@ -1,4 +1,5 @@
 import type { OnboardingExtracted } from './onboarding-chat-llm';
+import { imperativeDontWrite, type ProfileGender } from '../profile/personalized-copy';
 
 /** שדות רגישים — נאספים בערוץ דיסקרטי, לא בטקסט חופשי בצ'אט. */
 export const DISCRETE_FIELD_KEYS = [
@@ -62,9 +63,14 @@ export function applyDiscreteField(
 }
 
 /** הסבר פרטיות לפני שליחה דיסקרטית — ללא קריאת LLM */
-export function discreteFieldPrivacyIntro(key: DiscreteFieldKey): string {
+export function discreteFieldPrivacyIntro(
+  key: DiscreteFieldKey,
+  gender: ProfileGender = null
+): string {
   const label = DISCRETE_FIELD_LABELS[key];
-  return `רגע — ${label} זה פרט רגיש. אל תכתוב/י את זה כאן בצ'אט הפתוח, כי זה עובר דרך מודל שפה בינלאומי. יש ערוץ מוצפן נפרד: רק השרת שלנו רואה, לא נשמר בטקסט השיחה, ולא נחשף בהיסטוריה. רוצה לשלוח שם?`;
+  const dontWrite = imperativeDontWrite(gender);
+  const sendPrompt = key === 'full_name' ? 'רוצה לשלוח את השם?' : 'מוכן/ה לשלוח?';
+  return `רגע — ${label} זה פרט רגיש. ${dontWrite} את זה כאן בצ'אט הפתוח, כי זה עובר דרך מודל שפה בינלאומי. יש ערוץ מוצפן נפרד: רק השרת שלנו רואה, לא נשמר בטקסט השיחה, ולא נחשף בהיסטוריה. ${sendPrompt}`;
 }
 
 /** אישור דיסקרטי בלי לחשוף את הערך בצ'אט */

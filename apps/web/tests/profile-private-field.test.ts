@@ -61,3 +61,36 @@ describe('applyDiscreteField', () => {
     if (ok.ok) expect(ok.extracted.current_weight_kg).toBe(78.5);
   });
 });
+
+describe('discrete-field privacy intro', () => {
+  it('uses gendered imperative in warning', async () => {
+    const { discreteFieldPrivacyIntro } = await import('../lib/ai/onboarding-discrete-fields');
+    expect(discreteFieldPrivacyIntro('full_name', 'female')).toContain('אל תכתבי');
+    expect(discreteFieldPrivacyIntro('full_name', 'male')).toContain('אל תכתוב');
+  });
+});
+
+describe('profile-chat-bootstrap', () => {
+  it('builds flags from DB row without exposing sensitive values to public extracted', async () => {
+    const { buildProfileChatBootstrap, describeKnownProfileForLlm } = await import(
+      '../lib/profile/profile-chat-bootstrap'
+    );
+    const boot = buildProfileChatBootstrap({
+      full_name: 'דני כהן',
+      gender: 'male',
+      main_goal: 'weight_loss',
+      current_weight_kg: 88,
+      goal_weight_kg: 75,
+      wake_up_time: '07:00:00',
+    });
+    expect(boot.fieldFlags.has_full_name).toBe(true);
+    expect(boot.fieldFlags.has_current_weight).toBe(true);
+    expect(boot.extractedPublic.full_name).toBeUndefined();
+    expect(boot.extractedPublic.current_weight_kg).toBeUndefined();
+    expect(boot.extractedPublic.main_goal).toBe('weight_loss');
+    const hint = describeKnownProfileForLlm(boot.fieldFlags, boot.extractedPublic);
+    expect(hint).not.toContain('דני');
+    expect(hint).not.toContain('88');
+    expect(hint).toMatch(/שם שמור/);
+  });
+});

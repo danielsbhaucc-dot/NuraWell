@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
 import { Check, ChevronRight, FileLock2, Loader2, MessageCircle, Send, X, Zap, PartyPopper } from 'lucide-react';
 import { useChatBackground } from '@/lib/client/useChatBackground';
@@ -13,6 +13,8 @@ import {
   discreteFieldPrivacyIntro,
 } from '@/lib/ai/onboarding-discrete-fields';
 import { type ProfileFieldFlags } from '@/lib/profile/extracted-field-flags';
+import { buildProfileChatBootstrap } from '@/lib/profile/profile-chat-bootstrap';
+import type { ProfileRowForChat } from '@/lib/profile/profile-chat-bootstrap';
 import {
   dispatchOpenAlmogChat,
   setProfileOnboardingChatVisible,
@@ -37,6 +39,8 @@ interface OnboardingChatProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved?: () => void;
+  /** נתוני פרופיל קיימים — דגלים ושדות ציבוריים בלבד */
+  profileSnapshot?: ProfileRowForChat | null;
 }
 
 const EXTRACTED_LABELS: Record<string, string> = {
@@ -125,7 +129,15 @@ function ChatHeader({
   );
 }
 
-export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatProps) {
+export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }: OnboardingChatProps) {
+  const initialBootstrap = useMemo(
+    () => buildProfileChatBootstrap(profileSnapshot),
+    [profileSnapshot]
+  );
+  const profileGender =
+    profileSnapshot?.gender === 'male' || profileSnapshot?.gender === 'female'
+      ? profileSnapshot.gender
+      : null;
   const [path, setPath] = useState<OnboardingPath | null>(null);
   const [messages, setMessages] = useState<Turn[]>([]);
   const [input, setInput] = useState('');
@@ -178,8 +190,11 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
       setReadyForSummary(false);
       setSaved(false);
       setInput('');
+      return;
     }
-  }, [open]);
+    setFieldFlags(initialBootstrap.fieldFlags);
+    setExtractedPublic(initialBootstrap.extractedPublic);
+  }, [open, initialBootstrap]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -238,6 +253,8 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
     setReadyForSummary(false);
     setSaved(false);
     setInput('');
+    setFieldFlags(initialBootstrap.fieldFlags);
+    setExtractedPublic(initialBootstrap.extractedPublic);
   }
 
   function goToMainChat() {
@@ -497,7 +514,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
                         ערוץ פרטי — {DISCRETE_FIELD_LABELS[pendingDiscrete]}
                       </p>
                       <p className="text-[13px] leading-relaxed text-amber-100/95">
-                        {discreteFieldPrivacyIntro(pendingDiscrete)}
+                        {discreteFieldPrivacyIntro(pendingDiscrete, profileGender)}
                       </p>
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <button
