@@ -16,13 +16,19 @@ import {
   SOS_BODY_BG,
   SOS_INTAKE_TASK_ACTIVE,
   SOS_INTAKE_TASK_IDLE,
+  SOS_INTAKE_SECTION,
+  SOS_INTAKE_TASK_ACTIVE,
+  SOS_INTAKE_TASK_IDLE,
   SOS_LABEL,
   SOS_MUTED,
+  SOS_NOTE_FIELD,
   SOS_TASK_CARD,
   SOS_TEXT,
   SOS_TEXT_STRONG,
+  SOS_TRIGGER_CARD,
+  SOS_TRIGGER_HELPER,
+  SOS_TRIGGER_LABEL,
   sosSurface,
-  TRIGGER_SURFACE,
 } from '../../lib/ai/sos-dialog-surfaces';
 import type { OnboardingGender } from '../../lib/onboarding/types';
 import { useSosTts } from './useSosTts';
@@ -571,11 +577,13 @@ export function SosDialog({
       aria-labelledby={titleId}
       aria-describedby={subtitleId}
       backdropClassName="absolute inset-0 bg-slate-950/55 backdrop-blur-md"
-      panelClassName="touch-manipulation max-w-md flex flex-col overflow-hidden rounded-t-[28px] sm:rounded-[28px] border border-emerald-500/25 text-right shadow-2xl"
+      panelClassName="touch-manipulation w-full max-w-md flex flex-col overflow-hidden rounded-t-[28px] sm:rounded-[28px] border border-emerald-500/25 text-right shadow-2xl max-h-[min(72dvh,560px)]"
       panelStyle={{
-        maxHeight: '100%',
+        maxHeight: 'min(72dvh, 560px)',
+        height: 'auto',
         boxShadow: '0 -8px 40px rgba(2,44,34,0.22), 0 24px 70px rgba(2,44,34,0.18)',
       }}
+      mobileChromePadding
     >
         {/* Header — solid green like 404 */}
         <div
@@ -612,10 +620,11 @@ export function SosDialog({
 
         {/* Body — warm colorful panels */}
         <div
-          className="touch-manipulation min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4"
+          className="touch-manipulation overflow-y-auto overscroll-contain px-5 py-4"
           style={{
             background: SOS_BODY_BG,
             WebkitOverflowScrolling: 'touch',
+            maxHeight: 'calc(min(72dvh, 560px) - 6.5rem)',
           }}
         >
           <AnimatePresence mode="wait" initial={false}>
@@ -634,7 +643,7 @@ export function SosDialog({
                   : outcomeSaved}
               </p>
               {guardianOptedIn === false && !guardianSaved ? (
-                  <div className={`${sosSurface('lavender')} px-4 py-3 text-right text-xs leading-6 text-slate-800`}>
+                  <div className={`${sosSurface('white')} px-4 py-3 text-right text-xs leading-6 text-slate-800`}>
                   <p className="font-black">רוצה שאלמוג יגיע לפני הרגע הבא?</p>
                   <p className="mt-1 text-slate-600">
                     תזכורת עדינה לפני חלונות שקשים לך — רק אם תרצה, בלי לחץ.
@@ -674,7 +683,7 @@ export function SosDialog({
           ) : !response ? (
             <div className="space-y-4">
               {showTaskHardnessGate ? (
-                <div className={`${sosSurface('amber')} space-y-3 px-4 py-4`}>
+                <div className={`${sosSurface('white')} space-y-3 px-4 py-4`}>
                   <div className={SOS_ALMOG_BUBBLE}>{gateGreeting}</div>
 
                   {focusTasks.length > 1 ? (
@@ -716,7 +725,7 @@ export function SosDialog({
                         type="button"
                         onClick={speakTaskTitle}
                         disabled={!gateTask?.title || taskTitleTtsLoading}
-                        className={`shrink-0 rounded-xl p-2 text-violet-800 ${sosSurface('lavender')} disabled:opacity-60`}
+                        className="shrink-0 rounded-xl border border-emerald-200 bg-emerald-50 p-2 text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-60"
                         aria-label="הקרא את המשימה"
                       >
                         {taskTitleTtsLoading ? (
@@ -752,13 +761,13 @@ export function SosDialog({
                   </div>
                 </div>
               ) : showIntake ? (
-                <>
+                <div className="space-y-4">
               <div className={SOS_ALMOG_BUBBLE}>{intakeGreeting}</div>
 
               {focusTasks.length > 0 ? (
-                <div className={`${sosSurface('sky')} space-y-2 px-3 py-3`}>
-                  <p className="text-xs font-black text-sky-900/80">
-                    {firstName ? `${firstName}, יש לך משימות פתוחות היום` : 'משימות פתוחות היום'}
+                <div className={`${SOS_INTAKE_SECTION} space-y-2`}>
+                  <p className={SOS_LABEL}>
+                    {firstName ? `${firstName}, משימות פתוחות היום` : 'משימות פתוחות היום'}
                   </p>
                   <div className="grid gap-2">
                     {focusTasks.map((task) => {
@@ -778,7 +787,7 @@ export function SosDialog({
                             {task.stepTitle ?? 'מהמסע'}
                           </span>
                           <span className="flex items-center gap-2 text-sm font-black text-slate-900">
-                            {active ? <Check className="h-4 w-4 text-sky-600" /> : null}
+                            {active ? <Check className="h-4 w-4 text-emerald-600" /> : null}
                             <span className="text-lg">{task.emoji ?? '✅'}</span>
                             {task.title}
                           </span>
@@ -790,15 +799,35 @@ export function SosDialog({
                       onClick={() => {
                         setSelectedTask(null);
                       }}
-                      className="rounded-2xl border border-dashed border-violet-300/70 bg-violet-50/80 px-4 py-2.5 text-xs font-bold text-violet-900/80"
+                      className={`flex w-full items-center justify-between px-4 py-3 text-right text-xs font-bold transition active:scale-[0.99] ${
+                        selectedTask === null
+                          ? SOS_INTAKE_TASK_ACTIVE
+                          : 'rounded-2xl border border-dashed border-slate-300 bg-slate-50/90 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/60 hover:text-emerald-900'
+                      }`}
                     >
-                      לא קשור למשימה ספציפית
+                      <span className={selectedTask === null ? 'text-emerald-700' : SOS_MUTED}>
+                        {selectedTask === null ? 'נבחר' : 'אפשרות נוספת'}
+                      </span>
+                      <span
+                        className={`flex items-center gap-2 ${
+                          selectedTask === null ? 'text-emerald-950' : 'text-slate-700'
+                        }`}
+                      >
+                        {selectedTask === null ? (
+                          <Check className="h-4 w-4 text-emerald-600" aria-hidden />
+                        ) : (
+                          <span className="text-base leading-none" aria-hidden>
+                            💭
+                          </span>
+                        )}
+                        לא קשור למשימה ספציפית
+                      </span>
                     </button>
                   </div>
                 </div>
               ) : null}
 
-              <p className="text-xs font-black text-violet-900/75">
+              <p className={SOS_LABEL}>
                 {firstName ? `${firstName}, מה הכי קרוב לרגע הזה?` : 'מה הכי קרוב לרגע הזה?'}
               </p>
               <div className="grid gap-2.5">
@@ -808,20 +837,22 @@ export function SosDialog({
                     type="button"
                     onClick={() => void handleTrigger(trigger.id)}
                     disabled={loadingTrigger !== null}
-                    className={`${sosSurface(TRIGGER_SURFACE[trigger.id])} flex items-center justify-between px-4 py-3.5 text-right shadow-sm transition active:scale-[0.99] disabled:opacity-70`}
+                    className={`${SOS_TRIGGER_CARD[trigger.id]} flex items-center justify-between px-4 py-3.5 text-right transition active:scale-[0.98] disabled:opacity-70`}
                   >
-                    <span className="text-xs font-semibold text-slate-700/85">{trigger.helper}</span>
-                    <span className="flex items-center gap-2.5 text-sm font-black text-slate-900">
-                      {loadingTrigger === trigger.id && <Loader2 className="h-4 w-4 animate-spin" />}
-                      <span className="text-xl">{trigger.emoji}</span>
-                      {trigger.label}
+                    <span className={SOS_TRIGGER_HELPER}>{trigger.helper}</span>
+                    <span className="flex items-center gap-2.5">
+                      {loadingTrigger === trigger.id && (
+                        <Loader2 className="h-4 w-4 animate-spin text-white/90" />
+                      )}
+                      <span className="text-xl leading-none">{trigger.emoji}</span>
+                      <span className={SOS_TRIGGER_LABEL}>{trigger.label}</span>
                     </span>
                   </button>
                 ))}
               </div>
 
               <label className="block">
-                <span className="mb-1 block text-xs font-bold text-violet-900/70">
+                <span className={`mb-1.5 block ${SOS_LABEL}`}>
                   {firstName ? `${firstName}, רוצה להוסיף מילה?` : 'רוצה להוסיף מילה?'}
                 </span>
                 <textarea
@@ -829,7 +860,7 @@ export function SosDialog({
                   onChange={(e) => setNote(e.target.value)}
                   maxLength={240}
                   rows={2}
-                  className={`${sosSurface('lavender')} w-full resize-none px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-violet-300/45`}
+                  className={SOS_NOTE_FIELD}
                   placeholder={
                     selectedTask?.title
                       ? `למשל: קשה לי עם "${selectedTask.title}" אחרי יום עמוס`
@@ -837,7 +868,7 @@ export function SosDialog({
                   }
                 />
               </label>
-                </>
+                </div>
               ) : null}
             </div>
           ) : (
@@ -979,7 +1010,7 @@ export function SosDialog({
                 <button
                   type="button"
                   onClick={openChatFromSos}
-                  className={`${sosSurface('lavender')} flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-800`}
+                  className={`${sosSurface('white')} flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-800`}
                 >
                   <MessageCircle className="h-3.5 w-3.5" />
                   לדבר עם אלמוג

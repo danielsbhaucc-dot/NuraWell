@@ -72,7 +72,14 @@ export function AnimatedDialog({
 
   const overlayStyle: CSSProperties = {
     zIndex,
-    ...(mobileChromePadding ? MOBILE_DIALOG_CHROME_STYLE : {}),
+    ...(mobileChromePadding
+      ? variant === 'sheet'
+        ? {
+            paddingTop: 'max(72px, 12vh)',
+            paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px))',
+          }
+        : MOBILE_DIALOG_CHROME_STYLE
+      : {}),
   };
 
   const panelInitial =
