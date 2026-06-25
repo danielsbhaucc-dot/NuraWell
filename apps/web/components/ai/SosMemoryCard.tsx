@@ -20,7 +20,7 @@ function outcomeLabel(outcome: string): string {
   if (outcome === 'passed') return 'עבר ✓';
   if (outcome === 'fell') return 'עדיין קשה';
   if (outcome === 'escalated') return 'הופנה לעזרה';
-  if (outcome === 'unknown') return 'מחכה שתספר';
+  if (outcome === 'unknown') return 'ממתין למשוב';
   return 'נסגר';
 }
 
