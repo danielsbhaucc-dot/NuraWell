@@ -25,6 +25,7 @@ import {
 } from '@/components/profile/onboarding-fun-experience';
 import { ALMOG_AVATAR_FALLBACK } from '@/lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '@/lib/client/useAlmogAvatarUrl';
+import { useProfileAvatarUrl } from '@/lib/client/useProfileAvatarUrl';
 import { useChatBackground } from '@/lib/client/useChatBackground';
 import { useVisualDrawerLayout } from '@/lib/client/use-visual-drawer-layout';
 import type { OnboardingExtracted } from '@/lib/ai/onboarding-chat-llm';
@@ -68,6 +69,8 @@ interface OnboardingChatProps {
   onSaved?: () => void;
   /** נתוני פרופיל קיימים — דגלים ושדות ציבוריים בלבד */
   profileSnapshot?: ProfileRowForChat | null;
+  /** מפתח רענון אחרי העלאת תמונת פרופיל */
+  avatarRefreshKey?: number;
 }
 
 const EXTRACTED_LABELS: Record<string, string> = {
@@ -136,6 +139,56 @@ function AlmogAvatar({
           e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
         }}
       />
+    </div>
+  );
+}
+
+function UserAvatar({
+  avatarUrl,
+  initials,
+  size = 28,
+  className = '',
+  fun = false,
+  onImageError,
+}: {
+  avatarUrl: string | null;
+  initials: string;
+  size?: number;
+  className?: string;
+  fun?: boolean;
+  onImageError?: () => void;
+}) {
+  const borderClass = fun ? 'border-white/30' : 'border-slate-400/25';
+
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatarUrl}
+        alt=""
+        width={size}
+        height={size}
+        className={`mb-0.5 shrink-0 rounded-full border-2 object-cover ${borderClass} ${className}`}
+        style={{ width: size, height: size }}
+        onError={onImageError}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`mb-0.5 flex shrink-0 items-center justify-center rounded-full border-2 font-bold text-white ${borderClass} ${className}`}
+      style={{
+        width: size,
+        height: size,
+        fontSize: Math.max(10, Math.round(size * 0.34)),
+        background: fun
+          ? 'linear-gradient(135deg, #3d7266, #265a50)'
+          : 'linear-gradient(135deg, #285a4d, #1f453c)',
+      }}
+      aria-hidden
+    >
+      {initials}
     </div>
   );
 }
@@ -329,7 +382,13 @@ function ProfileUpdateIntentScreen({
   );
 }
 
-export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }: OnboardingChatProps) {
+export function OnboardingChat({
+  open,
+  onOpenChange,
+  onSaved,
+  profileSnapshot,
+  avatarRefreshKey = 0,
+}: OnboardingChatProps) {
   const initialBootstrap = useMemo(
     () => buildProfileChatBootstrap(profileSnapshot),
     [profileSnapshot]
@@ -354,6 +413,22 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
     [initialBootstrap.fieldFlags]
   );
   const chatFirstName = firstNameFrom(profileSnapshot?.full_name ?? null);
+  const userInitials = useMemo(() => {
+    const name = profileSnapshot?.full_name?.trim();
+    if (name) {
+      return name
+        .split(/\s+/)
+        .map((part) => part[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase();
+    }
+    return chatFirstName.slice(0, 1).toUpperCase() || 'א';
+  }, [profileSnapshot?.full_name, chatFirstName]);
+  const { avatarUrl: userAvatarUrl, refresh: refreshUserAvatar } = useProfileAvatarUrl(
+    profileSnapshot?.id,
+    avatarRefreshKey
+  );
   const [phase, setPhase] = useState<DrawerPhase>('paths');
   const [updateMode, setUpdateMode] = useState(false);
   const [path, setPath] = useState<OnboardingPath | null>(null);
@@ -760,8 +835,20 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                       initial={isFun ? { opacity: 0, y: 10, scale: 0.97 } : false}
                       animate={isFun ? { opacity: 1, y: 0, scale: 1 } : undefined}
                       transition={isFun ? { type: 'spring', stiffness: 380, damping: 28 } : undefined}
-                      className={`flex ${m.role === 'user' ? 'justify-start' : 'justify-end items-end gap-2'}`}
+                      className={`flex ${
+                        m.role === 'user' ? 'justify-start items-end gap-2' : 'justify-end items-end gap-2'
+                      }`}
                     >
+                      {m.role === 'user' ? (
+                        <UserAvatar
+                          avatarUrl={userAvatarUrl}
+                          initials={userInitials}
+                          fun={isFun}
+                          onImageError={() => {
+                            void refreshUserAvatar();
+                          }}
+                        />
+                      ) : null}
                       {m.role === 'assistant' ? (
                         <div
                           className={`max-w-[82%] px-3.5 py-2.5 text-[14px] leading-relaxed ${
