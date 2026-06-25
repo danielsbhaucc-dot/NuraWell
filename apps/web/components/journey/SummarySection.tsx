@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileCheck, RotateCcw, BookOpen, Download, CheckCircle2,
   ChevronDown, ExternalLink, Award, Sparkles, ListChecks, Heart,
-  Check, X, Route,
+  Check, X,
 } from 'lucide-react';
 import type {
   JourneyStep,
@@ -14,7 +14,7 @@ import type {
   Research,
 } from '../../lib/types/journey';
 import Link from 'next/link';
-import { AlmogAvatarChipWithNameTag } from './AlmogPresence';
+import { MomentsHeroAvatar } from './AlmogPresence';
 import { isCommitmentGateResolved } from '../../lib/journey/commitment-gate';
 import { emojiFromWellnessText } from '../../lib/emoji-from-text';
 import { useProgressReport } from '../progress-report/ProgressReportProvider';
@@ -62,10 +62,10 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
   };
 
   const getScoreMessage = (score: number) => {
-    if (score >= 90) return 'מדהים! שליטה מלאה בחומר!';
-    if (score >= 70) return 'מצוין! הבנת את רוב החומר';
-    if (score >= 50) return 'לא רע! תוכל לשפר בפעם הבאה';
-    return 'כדאי לצפות שוב ולנסות שוב 💪';
+    if (score >= 90) return 'וואו — שליטה ממש מרשימה! אני גאה בך.';
+    if (score >= 70) return 'מצוין! הבנת את רוב החומר, וזה בדיוק מה שרציתי.';
+    if (score >= 50) return 'לא רע בכלל — בפעם הבאה נחזק עוד קצת יחד.';
+    return 'בוא נצפה שוב וננסה יחד — אני איתך.';
   };
 
   const WEEKDAY_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'] as const;
@@ -78,12 +78,12 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
 
   const glassPanelStyle: CSSProperties = {
     background:
-      'linear-gradient(165deg, rgba(255,255,255,0.34) 0%, rgba(167,243,208,0.2) 38%, rgba(255,255,255,0.3) 100%)',
+      'linear-gradient(165deg, rgba(236,253,245,0.92) 0%, rgba(209,250,229,0.55) 38%, rgba(240,253,250,0.88) 100%)',
     backdropFilter: 'blur(28px) saturate(1.35)',
     WebkitBackdropFilter: 'blur(28px) saturate(1.35)',
     boxShadow:
-      '0 32px 64px rgba(6,78,59,0.14), 0 0 0 1px rgba(255,255,255,0.45) inset, inset 0 1px 1px rgba(255,255,255,0.78)',
-    border: '1px solid rgba(255,255,255,0.48)',
+      '0 32px 64px rgba(6,78,59,0.14), 0 0 0 1px rgba(16,185,129,0.12) inset, inset 0 1px 1px rgba(255,255,255,0.5)',
+    border: '1px solid rgba(16,185,129,0.18)',
   };
 
   /** הפרדה ברורה בין כותרת לגוף — כמו כרטיסי הפיצ׳רים בעמוד הנחיתה, עם גוף זכוכית */
@@ -106,24 +106,20 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
         className="rounded-[28px] overflow-x-clip overflow-y-visible w-full max-w-full min-w-0"
         style={glassPanelStyle}
       >
-        <div className="px-3 sm:px-6 pt-5 pb-2">
-          <div className="flex items-center justify-center gap-4 flex-row-reverse flex-wrap sm:flex-nowrap">
-            <div
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full"
-              style={{
-                background: 'rgba(255,255,255,0.42)',
-                border: '1px solid rgba(255,255,255,0.55)',
-                backdropFilter: 'blur(12px)',
-                boxShadow: '0 4px 18px rgba(6,78,59,0.06)',
-              }}
-            >
-              <FileCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-              <span className="text-sm font-black text-emerald-900">סיכום השיעור</span>
-            </div>
-            <AlmogAvatarChipWithNameTag size={46} name="אלמוג" />
+        <div className="px-3 sm:px-6 pt-6 pb-3 flex flex-col items-center text-center">
+          <MomentsHeroAvatar size={120} name="אלמוג" />
+          <div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full mt-5 mb-2"
+            style={{
+              background: 'rgba(6,78,59,0.08)',
+              border: '1px solid rgba(16,185,129,0.22)',
+            }}
+          >
+            <FileCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+            <span className="text-sm font-black text-emerald-900">סיכום השיעור</span>
           </div>
-          <p className="text-center text-[11px] sm:text-xs text-emerald-900/75 font-semibold mt-2">
-            מסכם איתך את השלב
+          <p className="text-sm text-emerald-900/85 font-bold max-w-xs leading-relaxed">
+            בואו נסכם יחד את מה שעברנו — אני איתך עד הסוף.
           </p>
         </div>
 
@@ -216,22 +212,16 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
             <div className="px-3 sm:px-6 pb-1 pt-6">
               <div className="relative mx-auto w-full max-w-lg min-w-0">
                 <div
-                  className="pointer-events-none absolute right-[23px] top-14 bottom-14 z-0 border-r-2 border-dashed border-emerald-400/45"
+                  className="pointer-events-none absolute right-[27px] top-16 bottom-14 z-0 border-r-2 border-dashed border-emerald-400/45"
                   aria-hidden
                 />
-                <div
-                  className="pointer-events-none absolute right-[15px] top-0 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200/95 bg-gradient-to-br from-white to-emerald-50 shadow-md shadow-emerald-900/15"
-                  aria-hidden
-                >
-                  <Route className="h-4 w-4 text-emerald-600" strokeWidth={2.4} />
-                </div>
-                <div className="relative z-[1] space-y-12">
+                <div className="relative z-[1] space-y-12 pt-2">
         {/* מה למדנו */}
         {step.summary_text && (
           <TimelineRailRow stepNum={nextTimeline()} accent="emerald">
             <AccordionSummarySection
               title="מה למדנו?"
-              subtitle="נקודות מרכזיות מהשיעור"
+              subtitle="אלה הנקודות שחשוב לי שתיקחו מהשיעור"
               headerGradient="linear-gradient(145deg, #065f46, #047857, #059669)"
               icon={<BookOpen className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
               isOpen={accordionOpen.learn}
@@ -634,12 +624,17 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               boxShadow: '0 14px 40px rgba(6,78,59,0.12), inset 0 1px 0 rgba(255,255,255,0.75)',
             }}
           >
-          <p className="text-center text-[11px] font-bold text-emerald-900/75">המשך בשיעור</p>
+          <p className="text-center text-[11px] font-bold text-emerald-900/80">רוצה לעבור שוב? אני איתך.</p>
           <button
             type="button"
             onClick={onReplay}
-            className="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-95 border border-white/45 shadow-sm"
-            style={{ background: 'rgba(255,255,255,0.55)', color: '#374151', backdropFilter: 'blur(8px)' }}
+            className="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-95"
+            style={{
+              background: 'linear-gradient(145deg, rgba(209,250,229,0.95), rgba(167,243,208,0.65))',
+              color: '#065f46',
+              border: '1.5px solid rgba(16,185,129,0.35)',
+              boxShadow: '0 4px 16px rgba(6,78,59,0.1)',
+            }}
           >
             <RotateCcw className="w-4 h-4" />
             <span>שחק שוב את השיעור</span>
@@ -773,10 +768,10 @@ function TimelineStepBadge({ step, accent }: { step: number; accent: TimelineAcc
   const { gradient, shadow } = timelineAccentStyle(accent);
   return (
     <span
-      className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[17px] font-black tabular-nums tracking-tight text-white"
+      className="relative z-10 flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full text-[19px] font-black tabular-nums tracking-tight text-white"
       style={{
         background: gradient,
-        boxShadow: `${shadow}, 0 0 0 3px rgba(255,255,255,0.96)`,
+        boxShadow: `${shadow}, 0 0 0 3px rgba(167,243,208,0.55)`,
         textShadow: '0 1px 2px rgba(0,0,0,0.18)',
       }}
       aria-hidden
@@ -797,7 +792,7 @@ function TimelineRailRow({
 }) {
   return (
     <div dir="rtl" className="flex items-start gap-3 sm:gap-4">
-      <div className="flex w-[50px] shrink-0 flex-col items-center pt-2 sm:w-[52px]">
+      <div className="flex w-[58px] shrink-0 flex-col items-center pt-1 sm:w-[60px]">
         <TimelineStepBadge step={stepNum} accent={accent} />
       </div>
       <div className="min-w-0 flex-1">{children}</div>
@@ -912,6 +907,7 @@ function AccordionSummarySection({
 function LessonScoreRing({ percent }: { percent: number }) {
   const rid = useId().replace(/:/g, '');
   const gradId = `lessonScoreRingStroke-${rid}`;
+  const trackId = `lessonScoreRingTrack-${rid}`;
   const r = 38;
   const c = 2 * Math.PI * r;
   const clamped = Math.min(100, Math.max(0, percent));
@@ -921,20 +917,24 @@ function LessonScoreRing({ percent }: { percent: number }) {
     <div
       className="relative h-[104px] w-[104px] shrink-0 rounded-full p-[3px]"
       style={{
-        background: 'linear-gradient(135deg, #fbbf24 0%, #34d399 40%, #22d3ee 75%, #c4b5fd 100%)',
-        boxShadow: '0 10px 32px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.35)',
+        background: 'linear-gradient(145deg, #059669 0%, #10b981 55%, #34d399 100%)',
+        boxShadow: '0 10px 32px rgba(4,120,87,0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
       }}
     >
-      <div className="relative flex h-full w-full items-center justify-center rounded-full bg-emerald-950/45 p-1.5">
+      <div className="relative flex h-full w-full items-center justify-center rounded-full bg-emerald-950/50 p-1.5">
         <svg width={90} height={90} viewBox="0 0 100 100" className="-rotate-90 shrink-0" aria-hidden>
           <defs>
-            <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fef08a" />
-              <stop offset="40%" stopColor="#4ade80" />
-              <stop offset="100%" stopColor="#38bdf8" />
+            <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#6ee7b7" />
+              <stop offset="55%" stopColor="#34d399" />
+              <stop offset="100%" stopColor="#10b981" />
+            </linearGradient>
+            <linearGradient id={trackId} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="rgba(255,255,255,0.12)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0.22)" />
             </linearGradient>
           </defs>
-          <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="8" />
+          <circle cx="50" cy="50" r={r} fill="none" stroke={`url(#${trackId})`} strokeWidth="8" />
           <circle
             cx="50"
             cy="50"
@@ -950,7 +950,7 @@ function LessonScoreRing({ percent }: { percent: number }) {
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-white">
           <span className="text-2xl font-black leading-none tracking-tight drop-shadow-md">{clamped}%</span>
-          <span className="text-[10px] font-bold text-white/90 mt-0.5">התקדמות</span>
+          <span className="text-[10px] font-bold text-emerald-100 mt-0.5">התקדמות</span>
         </div>
       </div>
     </div>

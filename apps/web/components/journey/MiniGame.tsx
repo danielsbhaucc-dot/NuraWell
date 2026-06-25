@@ -7,6 +7,7 @@ import type { GameItem } from '../../lib/types/journey';
 import { AlmogLessonFeedback } from './AlmogLessonFeedback';
 import { AlmogCompletionHero } from './AlmogPresence';
 import { JourneyResultsDrawer } from './JourneyResultsDrawer';
+import { GameResultMapCard } from './JourneyResultsMap';
 import { QuestionTtsPlayer } from './QuestionTtsPlayer';
 
 interface MiniGameProps {
@@ -54,10 +55,10 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTt
   if (isComplete) {
     return (
       <div className="text-center py-8">
-        <AlmogCompletionHero />
+        <AlmogCompletionHero subtitle="אהבתי את האינטואיציה שלך — נמשיך?" />
         <h2 className="text-2xl font-black mb-2" style={{ color: '#1A1730' }}>סיימת את המשחק! 🎮</h2>
-        <p className="text-gray-500 text-lg mb-4">
-          <strong className="text-emerald-600">{score}</strong> מתוך <strong>{items.length}</strong> נכונים
+        <p className="text-gray-600 text-lg mb-4 leading-relaxed max-w-sm mx-auto">
+          <strong className="text-emerald-600">{score}</strong> מתוך <strong>{items.length}</strong> פגעת בול — כל הכבוד.
         </p>
 
         <div className="mt-8 flex flex-col gap-3 max-w-sm mx-auto">
@@ -97,46 +98,21 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTt
           onOpenChange={setResultsOpen}
           variant="game"
           title="מפת האינטואיציה"
-          subtitle="מה סימנת מול מה שבאמת נכון"
+          subtitle="ככה אני רואה את מה שסימנת מול מה שבאמת נכון"
         >
           {items.map((it, i) => {
             const picked = answers[it.id];
             const ok = picked === it.is_true;
             return (
-              <div
+              <GameResultMapCard
                 key={it.id}
-                className="rounded-2xl p-4"
-                style={{
-                  background: 'linear-gradient(165deg, #ffffff 0%, #fffbeb 100%)',
-                  border: '1px solid rgba(245,158,11,0.2)',
-                  boxShadow: '0 4px 12px rgba(245,158,11,0.08)',
-                }}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-black text-amber-800">משפט {i + 1}</p>
-                  <span
-                    className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                    style={{
-                      background: ok ? 'rgba(16,185,129,0.16)' : 'rgba(239,68,68,0.12)',
-                      color: ok ? '#047857' : '#b91c1c',
-                    }}
-                  >
-                    {ok ? 'פגעת בול' : 'שווה חידוד'}
-                  </span>
-                </div>
-                <p className="text-sm font-bold mb-2 leading-relaxed" style={{ color: '#1A1730' }}>
-                  &ldquo;{it.statement}&rdquo;
-                </p>
-                <p className="text-xs text-gray-600">
-                  ענית:{' '}
-                  <strong style={{ color: ok ? '#059669' : '#dc2626' }}>
-                    {picked === true ? 'נכון' : picked === false ? 'לא נכון' : '—'}
-                  </strong>
-                  {' · '}
-                  נכון: <strong className="text-emerald-700">{it.is_true ? 'נכון' : 'לא נכון'}</strong>
-                </p>
-                <p className="text-xs text-gray-600 leading-relaxed mt-2 border-t border-gray-100 pt-2">{it.explanation}</p>
-              </div>
+                index={i}
+                statement={it.statement}
+                pickedLabel={picked === true ? 'נכון' : picked === false ? 'לא נכון' : '—'}
+                correctLabel={it.is_true ? 'נכון' : 'לא נכון'}
+                ok={ok}
+                explanation={it.explanation}
+              />
             );
           })}
         </JourneyResultsDrawer>
@@ -153,9 +129,9 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTt
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
           style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
           <Gamepad2 className="w-4 h-4 text-amber-600" />
-          <span className="text-sm font-bold text-amber-700">נכון או לא?</span>
+          <span className="text-sm font-bold text-amber-700">נכון או לא? — בואו נבדוק את האינטואיציה</span>
         </div>
-        <p className="text-sm text-gray-500">{currentIdx + 1} מתוך {items.length}</p>
+        <p className="text-sm text-amber-900/70 font-medium">{currentIdx + 1} מתוך {items.length} · אני איתך</p>
         <QuestionTtsPlayer
           className="mt-3"
           audioUrl={item?.tts?.status === 'ready' ? item.tts.url : null}

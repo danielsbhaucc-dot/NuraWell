@@ -147,7 +147,6 @@ export function VideoSection({
   ]);
 
   useEffect(() => {
-    setImmersiveReady(true);
     let branch:
       | 'open_immersive'
       | 'not_bunny_or_placeholder'
@@ -179,7 +178,12 @@ export function VideoSection({
   const handleImmersiveEnded = useCallback(() => {
     setImmersiveOpen(false);
     setImmersiveFinished(true);
-    // Mark as played so mini-player shows replay state
+    setInlinePlaying(false);
+  }, []);
+
+  const handleImmersiveFallback = useCallback(() => {
+    setImmersiveOpen(false);
+    setImmersiveFinished(true);
     setInlinePlaying(false);
   }, []);
 
@@ -192,8 +196,8 @@ export function VideoSection({
   const showNonBunnyIframe = !isPlaceholder && !isBunnyHls && !isBunnyIframe && !!baseEmbed;
   const showInlineIframe = !isPlaceholder && isBunnyIframe && inlinePlaying && !!inlineIframeSrc;
   const showBunnyHls = !isPlaceholder && isBunnyHls && inlinePlaying;
-  const shouldBlockInlineUntilImmersiveEnds =
-    immersiveReady && isBunnyProvider && !!bunnyEmbedId && !isPlaceholder && !immersiveFinished;
+  /** חוסם inline רק כשמסך מלא פעיל — לא כשהנגן נכשל או לפני mount */
+  const shouldBlockInlineUntilImmersiveEnds = immersiveOpen;
 
   const willRenderFullscreen = immersiveReady && immersiveOpen && !!bunnyEmbedId;
 
@@ -232,6 +236,7 @@ export function VideoSection({
           viewportInsetTopPx={immersiveViewportTopPx ?? undefined}
           onEnded={handleImmersiveEnded}
           onExit={handleImmersiveExit}
+          onFallback={handleImmersiveFallback}
           onTimeUpdate={() => {
             // FUTURE CHECKPOINTS: use seconds/duration from Bunny timeupdate
           }}
@@ -244,11 +249,14 @@ export function VideoSection({
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
           style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
           <Play className="w-4 h-4 text-emerald-600" />
-          <span className="text-sm font-bold text-emerald-700">צפו בסרטון</span>
+          <span className="text-sm font-bold text-emerald-700">בואו נתחיל יחד</span>
         </div>
         <h2 className="text-2xl font-black" style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}>
           {title}
         </h2>
+        <p className="text-sm text-emerald-800/80 font-semibold mt-2 max-w-sm mx-auto leading-relaxed">
+          אני מלווה אותך בסרטון — תרגישו בנוח, קחו נשימה, ונמשיך בקצב שלכם.
+        </p>
       </div>
 
       <div
@@ -299,7 +307,6 @@ export function VideoSection({
               allowFullScreen
               className="absolute inset-0 w-full h-full border-0"
               onLoad={() => setInlineLoaded(true)}
-              loading="lazy"
             />
           </>
         )}
@@ -324,7 +331,6 @@ export function VideoSection({
               allowFullScreen
               className="absolute inset-0 w-full h-full border-0"
               onLoad={() => setInlineLoaded(true)}
-              loading="lazy"
             />
           </>
         )}
@@ -375,7 +381,7 @@ export function VideoSection({
         <button onClick={onComplete}
           className="mt-3 w-full py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
           style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}>
-          <span>{isWatched ? 'המשך לשאלות' : 'צפיתי — קדימה!'}</span>
+          <span>{isWatched ? 'מעולה — בואו לשאלות' : 'צפיתי, בואו נמשיך יחד!'}</span>
           <ArrowLeft className="w-5 h-5" />
         </button>
       </div>

@@ -22,6 +22,8 @@ interface FullscreenVideoPlayerProps {
   attentionStops?: ImmersiveAttentionStop[];
   onEnded: () => void;
   onExit: () => void;
+  /** כשהנגן המלא נכשל — חוזרים לנגן inline */
+  onFallback?: () => void;
   /** Future checkpoints: called on every timeupdate */
   onTimeUpdate?: (seconds: number, duration: number) => void;
   /**
@@ -42,6 +44,7 @@ export function FullscreenVideoPlayer({
   attentionStops = [],
   onEnded,
   onExit,
+  onFallback,
   onTimeUpdate,
   viewportInsetTopPx,
 }: FullscreenVideoPlayerProps) {
@@ -64,9 +67,11 @@ export function FullscreenVideoPlayer({
   const answeredAttentionIdsRef = useRef<Set<string>>(new Set());
   const onEndedRef = useRef(onEnded);
   const onTimeUpdateRef = useRef(onTimeUpdate);
+  const onFallbackRef = useRef(onFallback);
   const mountedRef = useRef(true);
   onEndedRef.current = onEnded;
   onTimeUpdateRef.current = onTimeUpdate;
+  onFallbackRef.current = onFallback;
 
   useEffect(() => {
     mountedRef.current = true;
@@ -287,6 +292,7 @@ export function FullscreenVideoPlayer({
           className="absolute inset-0 w-full h-full border-0"
           onLoaded={() => setHlsListenKey(k => k + 1)}
           onEnded={() => onEndedRef.current()}
+          onError={() => onFallbackRef.current?.()}
         />
       ) : (
         <iframe

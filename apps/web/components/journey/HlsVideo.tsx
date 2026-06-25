@@ -22,6 +22,7 @@ export type HlsVideoProps = {
   controls?: boolean;
   onLoaded?: () => void;
   onEnded?: () => void;
+  onError?: () => void;
 };
 
 /**
@@ -38,7 +39,7 @@ function shouldUseNativeHlsInVideoTag(video: HTMLVideoElement): boolean {
 }
 
 export const HlsVideo = forwardRef<HTMLVideoElement, HlsVideoProps>(function HlsVideo(
-  { src, className, style, videoClassName, autoPlay, playsInline = true, muted, controls, onLoaded, onEnded },
+  { src, className, style, videoClassName, autoPlay, playsInline = true, muted, controls, onLoaded, onEnded, onError },
   forwardedRef
 ) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -57,6 +58,8 @@ export const HlsVideo = forwardRef<HTMLVideoElement, HlsVideoProps>(function Hls
   const hlsRef = useRef<import('hls.js').default | null>(null);
   const onLoadedRef = useRef(onLoaded);
   onLoadedRef.current = onLoaded;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -77,6 +80,7 @@ export const HlsVideo = forwardRef<HTMLVideoElement, HlsVideoProps>(function Hls
       const msg = video.error?.message || 'שגיאת ניגון';
       console.warn('HlsVideo: video error', msg);
       setLoadError(msg);
+      onErrorRef.current?.();
       fireLoaded();
     };
 
@@ -147,6 +151,7 @@ export const HlsVideo = forwardRef<HTMLVideoElement, HlsVideoProps>(function Hls
           }
         }
         setLoadError(`לא ניתן לטעון: ${src} — בדקו CORS ב-Bunny Pull Zone (video.nurawell.ai) או הפעילו NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID למעבר ל-embed.`);
+        onErrorRef.current?.();
         fireLoaded();
         hls.destroy();
         hlsRef.current = null;

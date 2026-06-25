@@ -7,6 +7,7 @@ import type { QuizQuestion } from '../../lib/types/journey';
 import { AlmogLessonFeedback } from './AlmogLessonFeedback';
 import { AlmogCompletionHero } from './AlmogPresence';
 import { JourneyResultsDrawer } from './JourneyResultsDrawer';
+import { QuizResultMapCard } from './JourneyResultsMap';
 import { QuestionTtsPlayer } from './QuestionTtsPlayer';
 
 interface QuizSectionProps {
@@ -66,10 +67,10 @@ export function QuizSection({
   if (isComplete) {
     return (
       <div className="text-center py-8">
-        <AlmogCompletionHero />
-        <h2 className="text-2xl font-black mb-2" style={{ color: '#1A1730' }}>כל הכבוד! 🎉</h2>
-        <p className="text-gray-500 text-lg mb-2">
-          ענית נכון על <strong className="text-emerald-600">{score}</strong> מתוך <strong>{questions.length}</strong> שאלות
+        <AlmogCompletionHero subtitle="אני כאן איתך — בואו נמשיך יחד" />
+        <h2 className="text-2xl font-black mb-2" style={{ color: '#1A1730' }}>כל הכבוד! סיימת את השאלות 🎉</h2>
+        <p className="text-gray-600 text-lg mb-2 leading-relaxed max-w-sm mx-auto">
+          ענית נכון על <strong className="text-emerald-600">{score}</strong> מתוך <strong>{questions.length}</strong> — אני גאה בך.
         </p>
         <div className="mt-4 flex justify-center gap-2 flex-wrap">
           {questions.map((q, i) => (
@@ -121,49 +122,21 @@ export function QuizSection({
           onOpenChange={setResultsOpen}
           variant="quiz"
           title="מפת התשובות"
-          subtitle="מה ענית בכל שאלה"
+          subtitle="ככה אני רואה את מה שענית בכל שאלה"
         >
           {questions.map((q, i) => {
             const picked = answers[q.id];
             const ok = picked === q.correct_index;
             return (
-              <div
+              <QuizResultMapCard
                 key={q.id}
-                className="rounded-2xl p-4"
-                style={{
-                  background: 'linear-gradient(165deg, #ffffff 0%, #f0fdf4 100%)',
-                  border: '1px solid rgba(16,185,129,0.15)',
-                  boxShadow: '0 4px 12px rgba(16,185,129,0.08)',
-                }}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-black text-emerald-700">שאלה {i + 1}</p>
-                  <span
-                    className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                    style={{
-                      background: ok ? 'rgba(16,185,129,0.16)' : 'rgba(239,68,68,0.12)',
-                      color: ok ? '#047857' : '#b91c1c',
-                    }}
-                  >
-                    {ok ? 'נכון' : 'צריך חיזוק'}
-                  </span>
-                </div>
-                <p className="text-sm font-bold mb-2 leading-relaxed" style={{ color: '#1A1730' }}>
-                  {q.question}
-                </p>
-                <p className="text-xs text-gray-500 mb-1">
-                  תשובתך:{' '}
-                  <strong style={{ color: ok ? '#059669' : '#dc2626' }}>
-                    {picked !== undefined ? q.options[picked] : '—'}
-                  </strong>
-                </p>
-                {!ok && (
-                  <p className="text-xs text-gray-500 mb-1">
-                    נכון: <strong className="text-emerald-700">{q.options[q.correct_index]}</strong>
-                  </p>
-                )}
-                <p className="text-xs text-gray-600 leading-relaxed mt-2 border-t border-emerald-100 pt-2">{q.explanation}</p>
-              </div>
+                index={i}
+                question={q.question}
+                pickedLabel={picked !== undefined ? q.options[picked] : '—'}
+                correctLabel={q.options[q.correct_index]}
+                ok={ok}
+                explanation={q.explanation}
+              />
             );
           })}
         </JourneyResultsDrawer>
@@ -177,9 +150,9 @@ export function QuizSection({
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
           style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
           <HelpCircle className="w-4 h-4 text-emerald-600" />
-          <span className="text-sm font-bold text-emerald-700">שאלות הבנה</span>
+          <span className="text-sm font-bold text-emerald-700">שאלות הבנה — בואו נבדוק יחד</span>
         </div>
-        <p className="text-sm text-gray-500">שאלה {currentQ + 1} מתוך {questions.length}</p>
+        <p className="text-sm text-emerald-800/75 font-medium">שאלה {currentQ + 1} מתוך {questions.length} · אני איתך שלב שלב</p>
         <QuestionTtsPlayer
           className="mt-3"
           audioUrl={question?.tts?.status === 'ready' ? question.tts.url : null}
