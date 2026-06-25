@@ -472,6 +472,7 @@ export function StepLesson({ step, initialProgress, userId, userGender = null, a
                 immersiveViewportTopPx={immersiveViewportTopPx}
                 onPlaybackChange={handleVideoPlaybackChange}
                 onViewStart={handleVideoViewStart}
+                gender={userGender}
               />
             )}
             {currentSection === 'quiz' && (
@@ -484,6 +485,7 @@ export function StepLesson({ step, initialProgress, userId, userGender = null, a
                 onComplete={handleQuizComplete}
                 onResetQuiz={resetQuizProgress}
                 onTtsPlayingChange={handleTtsPlayingChange}
+                gender={userGender}
               />
             )}
             {currentSection === 'game' && (
@@ -496,6 +498,7 @@ export function StepLesson({ step, initialProgress, userId, userGender = null, a
                 onComplete={handleGameComplete}
                 onResetGame={resetGameProgress}
                 onTtsPlayingChange={handleTtsPlayingChange}
+                gender={userGender}
               />
             )}
             {currentSection === 'commitment' && step.commitment && (
@@ -516,6 +519,7 @@ export function StepLesson({ step, initialProgress, userId, userGender = null, a
                 onReplay={handleReplay}
                 onComplete={handleLessonComplete}
                 onTaskDecisionChange={handleTaskDecisionChange}
+                gender={userGender}
               />
             )}
         </motion.div>

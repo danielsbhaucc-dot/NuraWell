@@ -9,6 +9,7 @@ import { AlmogCompletionHero } from './AlmogPresence';
 import { JourneyResultsDrawer } from './JourneyResultsDrawer';
 import { QuizResultMapCard } from './JourneyResultsMap';
 import { QuestionTtsPlayer } from './QuestionTtsPlayer';
+import { lessonGenderCopy } from '../../lib/journey/lesson-gender-copy';
 
 interface QuizSectionProps {
   questions: QuizQuestion[];
@@ -18,6 +19,7 @@ interface QuizSectionProps {
   onTtsPlayingChange?: (playing: boolean) => void;
   stepId?: string;
   userId?: string;
+  gender?: 'male' | 'female' | null;
 }
 
 export function QuizSection({
@@ -27,7 +29,9 @@ export function QuizSection({
   onResetQuiz,
   onTtsPlayingChange,
   stepId,
+  gender = null,
 }: QuizSectionProps) {
+  const copy = lessonGenderCopy(gender);
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>(existingAnswers);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -67,10 +71,10 @@ export function QuizSection({
   if (isComplete) {
     return (
       <div className="text-center py-8">
-        <AlmogCompletionHero subtitle="אני כאן איתך — בואו נמשיך יחד" />
+        <AlmogCompletionHero subtitle={copy.quizContinueTogether} />
         <h2 className="text-2xl font-black mb-2" style={{ color: '#1A1730' }}>כל הכבוד! סיימת את השאלות 🎉</h2>
         <p className="text-gray-600 text-lg mb-2 leading-relaxed max-w-sm mx-auto">
-          ענית נכון על <strong className="text-emerald-600">{score}</strong> מתוך <strong>{questions.length}</strong> — אני גאה בך.
+          {copy.quizAnsweredCorrect(score, questions.length)}
         </p>
         <div className="mt-4 flex justify-center gap-2 flex-wrap">
           {questions.map((q, i) => (
@@ -122,7 +126,7 @@ export function QuizSection({
           onOpenChange={setResultsOpen}
           variant="quiz"
           title="מפת התשובות"
-          subtitle="ככה אני רואה את מה שענית בכל שאלה"
+          subtitle={copy.quizMapSubtitle}
         >
           {questions.map((q, i) => {
             const picked = answers[q.id];
@@ -136,6 +140,7 @@ export function QuizSection({
                 correctLabel={q.options[q.correct_index]}
                 ok={ok}
                 explanation={q.explanation}
+                youAnsweredLabel={copy.youAnswered}
               />
             );
           })}
@@ -150,7 +155,7 @@ export function QuizSection({
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
           style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
           <HelpCircle className="w-4 h-4 text-emerald-600" />
-          <span className="text-sm font-bold text-emerald-700">שאלות הבנה — בואו נבדוק יחד</span>
+          <span className="text-sm font-bold text-emerald-700">{copy.quizLetsCheck}</span>
         </div>
         <p className="text-sm text-emerald-800/75 font-medium">שאלה {currentQ + 1} מתוך {questions.length} · אני איתך שלב שלב</p>
         <QuestionTtsPlayer

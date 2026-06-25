@@ -10,6 +10,7 @@ import {
 import { HlsVideoGate } from './HlsVideoGate';
 import { FullscreenVideoPlayer } from './FullscreenVideoPlayer';
 import type { ImmersiveAttentionStop } from '../../lib/journey/immersiveAttentionStops';
+import { lessonGenderCopy } from '../../lib/journey/lesson-gender-copy';
 
 interface VideoSectionProps {
   provider: string | null;
@@ -28,6 +29,7 @@ interface VideoSectionProps {
   onPlaybackChange?: (active: boolean) => void;
   /** מדווח פעם אחת בכל *תחילת* ניגון (כולל replay) — לחישוב עלות Bunny. */
   onViewStart?: () => void;
+  gender?: 'male' | 'female' | null;
 }
 
 function getEmbedUrl(
@@ -78,7 +80,9 @@ export function VideoSection({
   immersiveViewportTopPx,
   onPlaybackChange,
   onViewStart,
+  gender = null,
 }: VideoSectionProps) {
+  const copy = lessonGenderCopy(gender);
   const router = useRouter();
   const pathname = usePathname();
   const [inlineLoaded, setInlineLoaded] = useState(false);
@@ -97,6 +101,8 @@ export function VideoSection({
   const [immersiveReady, setImmersiveReady] = useState(false);
   const [immersiveFinished, setImmersiveFinished] = useState(false);
   const [inlinePlaying, setInlinePlaying] = useState(false);
+  /** מגדילים בכל הפעלה מחדש — remount נקי לנגן (מסך מלא / HLS / iframe) */
+  const [playerEpoch, setPlayerEpoch] = useState(0);
 
   const baseEmbed = getEmbedUrl(providerKey || null, externalId, externalUrl, { autoplay: false, bunnyCompact: false });
   const isPlaceholder =
@@ -147,6 +153,10 @@ export function VideoSection({
   ]);
 
   useEffect(() => {
+    setImmersiveReady(true);
+  }, []);
+
+  useEffect(() => {
     let branch:
       | 'open_immersive'
       | 'not_bunny_or_placeholder'
@@ -178,13 +188,13 @@ export function VideoSection({
   const handleImmersiveEnded = useCallback(() => {
     setImmersiveOpen(false);
     setImmersiveFinished(true);
-    setInlinePlaying(false);
+    setInlinePlaying(true);
   }, []);
 
   const handleImmersiveFallback = useCallback(() => {
     setImmersiveOpen(false);
     setImmersiveFinished(true);
-    setInlinePlaying(false);
+    setInlinePlaying(true);
   }, []);
 
   const handleImmersiveExit = useCallback(() => {
@@ -192,7 +202,20 @@ export function VideoSection({
     router.push('/journey');
   }, [router]);
 
-  const showBunnyReplayGate = (isBunnyIframe || isBunnyHls) && !inlinePlaying;
+  /** צפייה חוזרת — Bunny עם embed: מסך מלא (כמו בפעם הראשונה); אחרת inline */
+  const handleStartPlayback = useCallback(() => {
+    setPlayerEpoch((n) => n + 1);
+    setInlineLoaded(false);
+    if (isBunnyProvider && bunnyEmbedId && !isPlaceholder) {
+      setInlinePlaying(false);
+      setImmersiveFinished(false);
+      setImmersiveOpen(true);
+      return;
+    }
+    setInlinePlaying(true);
+  }, [isBunnyProvider, bunnyEmbedId, isPlaceholder]);
+
+  const showBunnyReplayGate = (isBunnyIframe || isBunnyHls) && !inlinePlaying && !immersiveOpen;
   const showNonBunnyIframe = !isPlaceholder && !isBunnyHls && !isBunnyIframe && !!baseEmbed;
   const showInlineIframe = !isPlaceholder && isBunnyIframe && inlinePlaying && !!inlineIframeSrc;
   const showBunnyHls = !isPlaceholder && isBunnyHls && inlinePlaying;
@@ -229,6 +252,7 @@ export function VideoSection({
     <div className="space-y-5">
       {immersiveReady && immersiveOpen && bunnyEmbedId && (
         <FullscreenVideoPlayer
+          key={`immersive-${playerEpoch}`}
           bunnyEmbedId={bunnyEmbedId}
           pullZoneHlsSrc={bunnyHlsSrc}
           title={title}
@@ -249,13 +273,13 @@ export function VideoSection({
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
           style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
           <Play className="w-4 h-4 text-emerald-600" />
-          <span className="text-sm font-bold text-emerald-700">בואו נתחיל יחד</span>
+          <span className="text-sm font-bold text-emerald-700">{copy.letsStartTogether}</span>
         </div>
         <h2 className="text-2xl font-black" style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}>
           {title}
         </h2>
         <p className="text-sm text-emerald-800/80 font-semibold mt-2 max-w-sm mx-auto leading-relaxed">
-          אני מלווה אותך בסרטון — תרגישו בנוח, קחו נשימה, ונמשיך בקצב שלכם.
+          {copy.videoIntro}
         </p>
       </div>
 
@@ -276,7 +300,7 @@ export function VideoSection({
         ) : showBunnyReplayGate ? (
           <button
             type="button"
-            onClick={() => { setInlinePlaying(true); setInlineLoaded(false); }}
+            onClick={handleStartPlayback}
             className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 group"
             style={{ background: 'linear-gradient(145deg, #064e3b, #0f172a)' }}
           >
@@ -284,7 +308,7 @@ export function VideoSection({
               style={{ background: 'rgba(16,185,129,0.35)', border: '2px solid rgba(52,211,153,0.5)' }}>
               <Play className="w-10 h-10 text-white ml-1" fill="white" />
             </div>
-            <span className="text-white font-bold text-sm">הפעלת הסרטון שוב</span>
+            <span className="text-white font-bold text-sm">צפה שוב</span>
           </button>
         ) : null}
 
@@ -323,7 +347,7 @@ export function VideoSection({
               </div>
             )}
             <iframe
-              key={`inline-${inlineIframeSrc}-${inlinePlaying}`}
+              key={`inline-${inlineIframeSrc}-${playerEpoch}`}
               src={inlineIframeSrc!}
               title={title}
               referrerPolicy="strict-origin-when-cross-origin"
@@ -336,16 +360,36 @@ export function VideoSection({
         )}
 
         {showBunnyHls && (
-          <HlsVideoGate
-            src={bunnyHlsSrc!}
-            autoPlay={true}
-            controls={true}
-            className="absolute inset-0 w-full h-full object-contain bg-black"
-            onLoaded={() => setInlineLoaded(true)}
-            onEnded={() => {
-              // Automatically handle completion or close if needed
-            }}
-          />
+          <>
+            {!inlineLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center z-10"
+                style={{ background: 'rgba(0,0,0,0.7)' }}>
+                <div className="w-16 h-16 rounded-full flex items-center justify-center animate-pulse"
+                  style={{ background: 'rgba(16,185,129,0.3)', border: '2px solid rgba(16,185,129,0.5)' }}>
+                  <Play className="w-7 h-7 text-emerald-400 ml-0.5" fill="currentColor" />
+                </div>
+              </div>
+            )}
+            <HlsVideoGate
+              key={`hls-inline-${playerEpoch}`}
+              src={bunnyHlsSrc!}
+              autoPlay={true}
+              controls={true}
+              className="absolute inset-0 w-full h-full object-contain bg-black"
+              onLoaded={() => setInlineLoaded(true)}
+              onError={() => {
+                if (bunnyEmbedId) {
+                  setInlinePlaying(false);
+                  setImmersiveFinished(false);
+                  setImmersiveOpen(true);
+                  setPlayerEpoch((n) => n + 1);
+                }
+              }}
+              onEnded={() => {
+                setInlinePlaying(false);
+              }}
+            />
+          </>
         )}
 
       </div>
@@ -381,7 +425,7 @@ export function VideoSection({
         <button onClick={onComplete}
           className="mt-3 w-full py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
           style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}>
-          <span>{isWatched ? 'מעולה — בואו לשאלות' : 'צפיתי, בואו נמשיך יחד!'}</span>
+          <span>{isWatched ? copy.watchedToQuestions : copy.watchedContinue}</span>
           <ArrowLeft className="w-5 h-5" />
         </button>
       </div>

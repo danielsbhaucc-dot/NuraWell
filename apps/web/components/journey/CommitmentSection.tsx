@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Heart, CheckCircle2 } from 'lucide-react';
 import type { CommitmentData } from '../../lib/types/journey';
 import { commitmentCopy } from '../../lib/onboarding/gender-copy';
+import { lessonGenderCopy } from '../../lib/journey/lesson-gender-copy';
 import { AlmogLessonFeedback } from './AlmogLessonFeedback';
 
 interface CommitmentSectionProps {
@@ -28,6 +29,7 @@ export function CommitmentSection({
 }: CommitmentSectionProps) {
   const [accepted, setAccepted] = useState(isAccepted);
   const copy = commitmentCopy(gender);
+  const lessonCopy = lessonGenderCopy(gender);
 
   useEffect(() => {
     setAccepted(isAccepted);
@@ -59,7 +61,7 @@ export function CommitmentSection({
           <span className="text-sm font-bold text-amber-700">התחייבות</span>
         </div>
         <h2 className="text-2xl font-black" style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}>
-          בואו נדבר על ההתחייבות 💪
+          {lessonCopy.commitmentLetsTalk}
         </h2>
         <p className="text-sm text-amber-900/75 mt-2 max-w-xs mx-auto font-medium leading-relaxed">
           אני יודע שזה לא תמיד קל — אבל התחייבות קטנה וברורה יכולה לשנות הכל.

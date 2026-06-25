@@ -9,6 +9,7 @@ import { AlmogCompletionHero } from './AlmogPresence';
 import { JourneyResultsDrawer } from './JourneyResultsDrawer';
 import { GameResultMapCard } from './JourneyResultsMap';
 import { QuestionTtsPlayer } from './QuestionTtsPlayer';
+import { lessonGenderCopy } from '../../lib/journey/lesson-gender-copy';
 
 interface MiniGameProps {
   items: GameItem[];
@@ -18,9 +19,11 @@ interface MiniGameProps {
   onTtsPlayingChange?: (playing: boolean) => void;
   stepId?: string;
   userId?: string;
+  gender?: 'male' | 'female' | null;
 }
 
-export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTtsPlayingChange, stepId }: MiniGameProps) {
+export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTtsPlayingChange, stepId, gender = null }: MiniGameProps) {
+  const copy = lessonGenderCopy(gender);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, boolean>>(existingAnswers);
   const [showResult, setShowResult] = useState(false);
@@ -55,7 +58,7 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTt
   if (isComplete) {
     return (
       <div className="text-center py-8">
-        <AlmogCompletionHero subtitle="אהבתי את האינטואיציה שלך — נמשיך?" />
+        <AlmogCompletionHero subtitle={copy.gameCompleteSubtitle} />
         <h2 className="text-2xl font-black mb-2" style={{ color: '#1A1730' }}>סיימת את המשחק! 🎮</h2>
         <p className="text-gray-600 text-lg mb-4 leading-relaxed max-w-sm mx-auto">
           <strong className="text-emerald-600">{score}</strong> מתוך <strong>{items.length}</strong> פגעת בול — כל הכבוד.
@@ -98,7 +101,7 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTt
           onOpenChange={setResultsOpen}
           variant="game"
           title="מפת האינטואיציה"
-          subtitle="ככה אני רואה את מה שסימנת מול מה שבאמת נכון"
+          subtitle={copy.gameMapSubtitle}
         >
           {items.map((it, i) => {
             const picked = answers[it.id];
@@ -112,6 +115,7 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTt
                 correctLabel={it.is_true ? 'נכון' : 'לא נכון'}
                 ok={ok}
                 explanation={it.explanation}
+                youMarkedLabel={copy.youMarked}
               />
             );
           })}
@@ -129,7 +133,7 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTt
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
           style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
           <Gamepad2 className="w-4 h-4 text-amber-600" />
-          <span className="text-sm font-bold text-amber-700">נכון או לא? — בואו נבדוק את האינטואיציה</span>
+          <span className="text-sm font-bold text-amber-700">{copy.gameLetsCheck}</span>
         </div>
         <p className="text-sm text-amber-900/70 font-medium">{currentIdx + 1} מתוך {items.length} · אני איתך</p>
         <QuestionTtsPlayer
