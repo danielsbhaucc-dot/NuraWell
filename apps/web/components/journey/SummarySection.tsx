@@ -21,6 +21,7 @@ import { useProgressReport } from '../progress-report/ProgressReportProvider';
 import { TaskDailySlots } from './TaskDailySlots';
 import { TaskLevelProgressStepPanel } from './TaskLevelProgressStepPanel';
 import { resolveTaskSchedule, scheduleLabel } from '../../lib/journey/task-schedule';
+import { lessonGenderCopy } from '../../lib/journey/lesson-gender-copy';
 
 interface SummarySectionProps {
   step: JourneyStep;
@@ -28,11 +29,13 @@ interface SummarySectionProps {
   onReplay: () => void;
   onComplete: () => void;
   onTaskDecisionChange: (taskId: string, status: JourneyTaskDecisionStatus) => void | Promise<void>;
+  gender?: 'male' | 'female' | null;
 }
 
 type AccordionKey = 'learn' | 'tasks' | 'habits' | 'research' | 'pdf';
 
-export function SummarySection({ step, progress, onReplay, onComplete, onTaskDecisionChange }: SummarySectionProps) {
+export function SummarySection({ step, progress, onReplay, onComplete, onTaskDecisionChange, gender = null }: SummarySectionProps) {
+  const copy = lessonGenderCopy(gender);
   const progressReport = useProgressReport();
   const [expandedResearch, setExpandedResearch] = useState<string | null>(null);
   const [accordionOpen, setAccordionOpen] = useState<Record<AccordionKey, boolean>>({
@@ -119,7 +122,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
             <span className="text-sm font-black text-emerald-900">סיכום השיעור</span>
           </div>
           <p className="text-sm text-emerald-900/85 font-bold max-w-xs leading-relaxed">
-            בואו נסכם יחד את מה שעברנו — אני איתך עד הסוף.
+            {copy.summaryLetsSummarize}
           </p>
         </div>
 
@@ -221,7 +224,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
           <TimelineRailRow stepNum={nextTimeline()} accent="emerald">
             <AccordionSummarySection
               title="מה למדנו?"
-              subtitle="אלה הנקודות שחשוב לי שתיקחו מהשיעור"
+              subtitle={copy.summaryLearnSubtitle}
               headerGradient="linear-gradient(145deg, #065f46, #047857, #059669)"
               icon={<BookOpen className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
               isOpen={accordionOpen.learn}
