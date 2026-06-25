@@ -138,3 +138,46 @@ describe('profile-chat-bootstrap', () => {
     expect(normalized).toMatch(/^https:\/\/cdn\.nurawell\.ai\/images\/users\//);
   });
 });
+
+describe('onboarding-sensitive-leak', () => {
+  const emptyFlags = {
+    has_full_name: false,
+    has_gender: false,
+    has_main_goal: false,
+    has_current_weight: false,
+    has_goal_weight: false,
+    has_weakest_time: false,
+    has_main_obstacle: false,
+    has_wake_time: false,
+    has_sleep_time: false,
+  };
+
+  it('detects name, weight, and time leaks in open chat', async () => {
+    const { detectSensitiveLeak, buildSensitiveLeakRedirect } = await import(
+      '../lib/ai/onboarding-sensitive-leak'
+    );
+    expect(detectSensitiveLeak('שמי דני כהן', emptyFlags)).toBe('full_name');
+    expect(detectSensitiveLeak('78 ק"ג', emptyFlags)).toBe('current_weight_kg');
+    expect(detectSensitiveLeak('קם ב-07:30', emptyFlags)).toBe('wake_up_time');
+    expect(detectSensitiveLeak('גם וגם', emptyFlags)).toBeNull();
+
+    const reply = buildSensitiveLeakRedirect('full_name', 'quick', 'male');
+    expect(reply).toMatch(/ערוץ מאובטח/);
+    expect(reply).not.toMatch(/דני/);
+  });
+
+  it('blocks sensitive leak before LLM in onboarding chat turn', async () => {
+    const { runOnboardingChatTurn } = await import('../lib/ai/onboarding-chat-llm');
+    const result = await runOnboardingChatTurn({
+      messages: [
+        { role: 'assistant', content: 'מה השם?' },
+        { role: 'user', content: 'שמי יעל לוי' },
+      ],
+      path: 'quick',
+      fieldFlags: emptyFlags,
+    });
+    expect(result.blocked_sensitive_leak).toBe(true);
+    expect(result.request_discrete_field).toBe('full_name');
+    expect(result.reply).toMatch(/ערוץ מאובטח/);
+  });
+});

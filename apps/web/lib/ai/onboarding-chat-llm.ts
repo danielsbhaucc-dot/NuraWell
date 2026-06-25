@@ -3,6 +3,10 @@ import { ALMOG_VOICE_DNA } from './prompts';
 import type { DiscreteFieldKey } from './onboarding-discrete-fields';
 import { discreteFieldAck, funDiscreteFieldAck } from './onboarding-discrete-fields';
 import {
+  buildSensitiveLeakRedirect,
+  detectSensitiveLeak,
+} from './onboarding-sensitive-leak';
+import {
   buildLlmKnownContext,
   type ProfileFieldFlags,
 } from '../profile/extracted-field-flags';
@@ -39,6 +43,7 @@ export type OnboardingChatResult = {
   summary: string | null;
   used_fallback: boolean;
   model: string | null;
+  blocked_sensitive_leak?: boolean;
 };
 
 const ONBOARDING_MODEL_GROQ = AI_MODELS.background_groq;
@@ -424,6 +429,23 @@ export async function runOnboardingChatTurn(params: {
     has_sleep_time: Boolean(knownExtracted.sleep_time),
   };
   const trimmed = messages.slice(-14);
+  const lastUser = [...trimmed].reverse().find((m) => m.role === 'user');
+
+  if (lastUser && !isOpening) {
+    const leakedField = detectSensitiveLeak(lastUser.content, flags);
+    if (leakedField) {
+      return {
+        reply: buildSensitiveLeakRedirect(leakedField, path, profileGender),
+        extracted: {},
+        request_discrete_field: leakedField,
+        ready_for_summary: false,
+        summary: null,
+        used_fallback: true,
+        model: null,
+        blocked_sensitive_leak: true,
+      };
+    }
+  }
 
   if (isOpening && trimmed.length <= 1) {
     const request_discrete_field = openingDiscreteField(flags);
@@ -456,7 +478,6 @@ export async function runOnboardingChatTurn(params: {
     const reply = typeof parsed.reply === 'string' ? parsed.reply.trim() : '';
     const llmExtracted = stripSensitiveFromLlmExtracted(sanitizeExtracted(parsed.extracted));
     const llmDiscrete = parseDiscreteField(parsed.request_discrete_field);
-    const lastUser = [...trimmed].reverse().find((m) => m.role === 'user');
     const diversion = lastUser ? classifyUserDiversion(lastUser.content) : null;
 
     if (lastUser && AFFIRMATION_RE.test(lastUser.content.trim())) {
