@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Check, Loader2, MessageCircle, Snowflake, Sparkles, Volume2, X } from 'lucide-react';
 
 import { useDialogA11y } from '@/lib/a11y/use-dialog-a11y';
+import { AnimatedDialog } from '../shared/AnimatedDialog';
 import { AlmogAvatarChip } from '../journey/AlmogPresence';
 
 import type { FrictionCategory, StrategyType } from '../../lib/ai/almog-commitments/friction';
@@ -227,8 +228,6 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
     onClose: resetAndClose,
     containerRef: dialogRef,
   });
-
-  if (!open) return null;
 
   async function handleTrigger(trigger: FrictionCategory) {
     setError(null);
@@ -462,29 +461,20 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
     !response && selectedTask?.title && taskHardConfirmed === null && focusTasks.length > 0;
 
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center sm:px-4 sm:py-6"
+    <AnimatedDialog
+      open={open}
+      onClose={resetAndClose}
+      panelRef={dialogRef}
+      zIndex={200}
+      aria-labelledby={titleId}
+      aria-describedby={subtitleId}
+      backdropClassName="absolute inset-0 bg-slate-950/50"
+      panelClassName="max-w-md flex flex-col overflow-hidden rounded-[28px] border border-emerald-500/25 text-right shadow-2xl"
+      panelStyle={{
+        maxHeight: '100%',
+        boxShadow: '0 -8px 40px rgba(2,44,34,0.22), 0 24px 70px rgba(2,44,34,0.18)',
+      }}
     >
-      <button
-        type="button"
-        aria-label="סגירה"
-        className="absolute inset-0 bg-slate-950/50"
-        onClick={resetAndClose}
-      />
-
-      <div
-        ref={dialogRef}
-        dir="rtl"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={subtitleId}
-        className="relative z-10 mb-[max(5.25rem,calc(4.75rem+env(safe-area-inset-bottom)))] flex w-full max-w-md flex-col overflow-hidden rounded-t-[28px] border border-emerald-500/25 border-b-0 text-right shadow-2xl sm:mb-0 sm:rounded-[28px] sm:border-b"
-        style={{
-          maxHeight: 'min(88dvh, 680px)',
-          boxShadow: '0 -8px 40px rgba(2,44,34,0.22), 0 24px 70px rgba(2,44,34,0.18)',
-        }}
-      >
         {/* Header — solid green like 404 */}
         <div
           className="relative shrink-0 px-5 pb-4 pt-5"
@@ -836,7 +826,6 @@ export function SosDialog({ open, onClose, focusTasks = [] }: SosDialogProps) {
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </AnimatedDialog>
   );
 }

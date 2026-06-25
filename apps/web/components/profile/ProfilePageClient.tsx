@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { OnboardingChat } from './OnboardingChat';
 import { LegalLinksRow } from '../legal/LegalLinksRow';
+import { AnimatedDialog } from '../shared/AnimatedDialog';
 
 interface ProfileData {
   id: string;
@@ -326,12 +327,14 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
 
       </div>
 
-      {isEditOpen && (
-        <div
-          className="fixed inset-0 z-[280] flex items-start justify-center bg-slate-900/45 p-3 pt-20 sm:items-center sm:pt-3"
-          style={{ paddingTop: 'max(5rem, env(safe-area-inset-top))' }}
-        >
-          <div dir="rtl" className="crystal-surface w-full max-w-md overflow-hidden rounded-2xl shadow-2xl">
+      <AnimatedDialog
+        open={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        zIndex={280}
+        aria-label="עריכת פרופיל"
+        backdropClassName="absolute inset-0 bg-slate-900/45"
+        panelClassName="crystal-surface max-w-md overflow-hidden rounded-2xl shadow-2xl"
+      >
             <div className="crystal-header flex items-center justify-between px-4 py-3">
               <h3 className="text-lg font-black text-white">עריכת פרופיל</h3>
               <button
@@ -393,9 +396,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
                 שמירה
               </button>
             </div>
-          </div>
-        </div>
-      )}
+      </AnimatedDialog>
     </div>
   );
 }
