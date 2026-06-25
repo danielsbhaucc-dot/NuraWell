@@ -16,7 +16,7 @@ export default async function ProfilePage() {
   const { data: rawProfile } = await supabase
     .from('profiles')
     .select(
-      'id, full_name, role, avatar_url, created_at, streak_days, onboarding_completed, goal_weight_kg, current_weight_kg, height_cm, activity_level, gender, wake_up_time, sleep_time, meal_count, meal_schedule'
+      'id, full_name, role, avatar_url, created_at, streak_days, onboarding_completed, goal_weight_kg, current_weight_kg, height_cm, activity_level, gender, wake_up_time, sleep_time, meal_count, meal_schedule, main_goal, main_obstacle, main_obstacle_detail, weakest_time_of_day'
     )
     .eq('id', user.id)
     .single();
@@ -38,6 +38,10 @@ export default async function ProfilePage() {
     sleep_time: string | null;
     meal_count: number | null;
     meal_schedule: Array<{ time?: string }> | null;
+    main_goal: string | null;
+    main_obstacle: string | null;
+    main_obstacle_detail: string | null;
+    weakest_time_of_day: string | null;
   } | null;
 
   const mealTimes = Array.isArray(profile?.meal_schedule)

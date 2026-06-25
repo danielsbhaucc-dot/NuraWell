@@ -1,6 +1,9 @@
+export type ChatSessionKindClient = 'chat' | 'profile_update';
+
 export type ChatSessionListItemClient = {
   id: string;
   status: 'open' | 'closed';
+  session_kind: ChatSessionKindClient;
   summary: string | null;
   created_at: string;
   updated_at: string;
@@ -12,6 +15,7 @@ export type ChatSessionListItemClient = {
 export type ChatSessionClientState = {
   id: string;
   status: 'open' | 'closed';
+  session_kind?: ChatSessionKindClient;
   summary: string | null;
 };
 

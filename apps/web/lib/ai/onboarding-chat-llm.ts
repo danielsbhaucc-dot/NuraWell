@@ -1,11 +1,12 @@
-import { openrouter } from './client';
-import {
-  ALMOG_VOICE_DNA,
-} from './prompts';
+import { groq, openrouter, AI_MODELS } from './client';
+import { ALMOG_VOICE_DNA } from './prompts';
+import type { DiscreteFieldKey } from './onboarding-discrete-fields';
 
 export type OnboardingChatTurn = { role: 'user' | 'assistant'; content: string };
 
-/** השדות המובנים שאלמוג מחלץ מתוך שיחה חופשית. */
+export type OnboardingPath = 'quick' | 'fun';
+
+/** השדות המובנים שאלמוג מחלץ מתוך שיחה חופשית + ערוץ דיסקרטי. */
 export type OnboardingExtracted = {
   full_name?: string;
   gender?: 'male' | 'female';
@@ -22,48 +23,57 @@ export type OnboardingExtracted = {
 export type OnboardingChatResult = {
   reply: string;
   extracted: OnboardingExtracted;
-  /** האם יש מספיק מידע לסיכום אישור */
+  request_discrete_field: DiscreteFieldKey | null;
   ready_for_summary: boolean;
-  /** סיכום קצר של מה שהובן (לאישור המשתמש) */
   summary: string | null;
   used_fallback: boolean;
   model: string | null;
 };
 
-const ONBOARDING_MODEL = 'openai/gpt-5-mini';
+const ONBOARDING_MODEL_GROQ = AI_MODELS.background_groq;
+const ONBOARDING_MODEL_OPENROUTER = 'meta-llama/llama-4-scout';
 
 const TIME_RE = /^([01]?\d|2[0-3]):[0-5]\d$/;
 
-const SYSTEM_PROMPT = `${ALMOG_VOICE_DNA}
+function buildSystemPrompt(path: OnboardingPath | null, known: OnboardingExtracted): string {
+  const pathNote =
+    path === 'fun'
+      ? 'מסלול כייפי: יותר הומור, הפתעות קטנות, אנלוגיות מצחיקות, שאלות יצירתיות — אבל עדיין שאלה אחת בכל פעם.'
+      : path === 'quick'
+        ? 'מסלול מהיר: שאלות ישירות ונחמדות, פחות סטנדאפ — עדיין חם ואנושי.'
+        : 'עדיין לא נבחר מסלול — פתח בחום ובקלילות, והצע לבחור מסלול.';
 
-עכשיו אתה בשיחת היכרות ראשונה עם המשתמש (onboarding). המטרה: להכיר אותו בשיחה חופשית וחמה — לא טופס — ולחלץ ברקע שדות מובנים. שאל שאלה אחת בכל פעם, טבעי, בלי להציף.
+  const knownBlock =
+    Object.keys(known).length > 0
+      ? `\nמה כבר יודעים (אל תשאל שוב): ${JSON.stringify(known)}`
+      : '';
 
-מה אתה רוצה להבין לאורך השיחה (לא בבת אחת):
-- שם פרטי
-- מטרה עיקרית (ירידה במשקל / אורח חיים בריא / שניהם)
-- משקל נוכחי ומשקל יעד (אם רלוונטי וטבעי לשאול)
-- הזמן הכי חלש ביום (בוקר/צהריים/אחה"צ/ערב-לילה)
-- המכשול העיקרי (חוסר זמן / אכילה רגשית / קושי להתמיד / חוסר תמיכה / אחר)
-- שעת השכמה ושעת שינה משוערות
+  return `${ALMOG_VOICE_DNA}
+
+עכשיו אתה בשיחת עדכון פרופיל עם משתמש קיים. ${pathNote}
+המטרה: להכיר/לעדכן בשיחה חופשית וחמה — לא טופס.
+
+חוק פרטיות קריטי:
+- שם, משקלים ושעות שינה/השכמה — *אסור* לבקש שהמשתמש יכתוב בצ'אט החופשי.
+- כשצריך שדה רגיש — הגדר request_discrete_field (full_name | current_weight_kg | goal_weight_kg | wake_up_time | sleep_time) ובקש בקולך: "רגע, אל תשלח לי את זה כאן בצ'אט! זה מסוכן. בוא תשלח בצורה דיסקרטית" — עם הומור קל.
+- מטרה, מכשול, זמן חלש ביום — אפשר לשאול בצ'אט רגיל.
+
+סגנון:
+- חבר ששואל, לא רובוט. הומור עדין, פדיחות מחמיאות ("איזו פדיחות... אני לא סגור איך קוראים לך"), הפתעות קטנות.
+- שאלה אחת בכל תגובה. קצר-בינוני.
+${knownBlock}
 
 החזר JSON בלבד:
 {
-  "reply": "התגובה השיחתית הבאה של אלמוג — חמה, קצרה, עם שאלה אחת פתוחה שמקדמת את ההיכרות. בקול של אלמוג מהדוגמאות.",
-  "extracted": {
-    "full_name": "אם הוזכר", "gender": "male|female אם ברור מהפנייה",
-    "main_goal": "weight_loss|healthy_lifestyle|both", "current_weight_kg": number,
-    "goal_weight_kg": number, "weakest_time_of_day": "morning|noon|afternoon|evening_night",
-    "main_obstacle": "no_time|emotional_eating|lack_of_consistency|no_support|other",
-    "main_obstacle_detail": "אם other או פירוט", "wake_up_time": "HH:MM", "sleep_time": "HH:MM"
-  },
+  "reply": "תגובת אלמוג",
+  "extracted": { /* רק שדות לא-רגישים שהמשתמש אמר בבירור בצ'אט */ },
+  "request_discrete_field": "full_name|current_weight_kg|goal_weight_kg|wake_up_time|sleep_time|null",
   "ready_for_summary": true/false,
-  "summary": "אם ready_for_summary=true — סיכום קצר בגוף 'הבנתי נכון? ...' לאישור. אחרת null"
+  "summary": "אם ready — סיכום לאישור בלי לחזור על מספרים/שם"
 }
 
-כללים:
-- כלול ב-extracted *רק* שדות שהמשתמש באמת אמר/רמז בבירור. אל תמציא. השמט מה שלא ידוע.
-- ready_for_summary=true רק כשיש לפחות שם + מטרה + מכשול או זמן חלש.
-- reply תמיד בקול אלמוג: חם, אנושי, שאלה אחת. בלי שפת מערכת, בלי "מילאתי", בלי רשימות.`;
+ready_for_summary=true כשיש שם + מטרה + (מכשול או זמן חלש).`;
+}
 
 function sanitizeExtracted(raw: unknown): OnboardingExtracted {
   if (!raw || typeof raw !== 'object') return {};
@@ -107,15 +117,93 @@ function sanitizeExtracted(raw: unknown): OnboardingExtracted {
   return out;
 }
 
-export async function runOnboardingChatTurn(
-  messages: OnboardingChatTurn[]
-): Promise<OnboardingChatResult> {
-  const trimmed = messages.slice(-12);
+function parseDiscreteField(raw: unknown): DiscreteFieldKey | null {
+  if (typeof raw !== 'string' || raw === 'null') return null;
+  const keys = ['full_name', 'current_weight_kg', 'goal_weight_kg', 'wake_up_time', 'sleep_time'] as const;
+  return keys.includes(raw as DiscreteFieldKey) ? (raw as DiscreteFieldKey) : null;
+}
 
-  if (!process.env.OPENROUTER_API_KEY?.trim()) {
+function openingReply(path: OnboardingPath | null): string {
+  if (path === 'fun') {
+    return 'היי! 👋 איזו פדיחות... אני אלמוג ואני לא סגור איך קוראים לך עדיין 😅 בוא נתקן את זה — אבל קודם: מה הכי דחוף לך לעדכן אצלי? (ואל תדאג, פרטים רגישים נכנסים ל"קובץ סודי", לא לצ\'אט הפתוח)';
+  }
+  if (path === 'quick') {
+    return 'היי! כיף שבאת לעדכן ✦ נעבור על כמה דברים ביחד — קליל ומהיר. נתחיל: מה המטרה העיקרית שלך כרגע?';
+  }
+  return 'היי! אלמוג כאן ✦ בוא נעדכן את הפרופיל שלך בשיחה — לא טופס משעמם. איך בא לך לעבור?';
+}
+
+async function callLlm(
+  system: string,
+  messages: OnboardingChatTurn[]
+): Promise<{ content: string; model: string } | null> {
+  const chatMessages = [
+    { role: 'system' as const, content: system },
+    ...messages.map((m) => ({ role: m.role, content: m.content })),
+  ];
+
+  if (process.env.GROQ_API_KEY?.trim()) {
+    try {
+      const completion = await groq.chat.completions.create({
+        model: ONBOARDING_MODEL_GROQ,
+        temperature: 0.85,
+        max_tokens: 800,
+        response_format: { type: 'json_object' },
+        messages: chatMessages,
+      });
+      const content = completion.choices[0]?.message?.content ?? '';
+      if (content) return { content, model: ONBOARDING_MODEL_GROQ };
+    } catch (e) {
+      console.error('[onboarding-chat-llm] Groq failed', e);
+    }
+  }
+
+  if (process.env.OPENROUTER_API_KEY?.trim()) {
+    try {
+      const completion = await openrouter.chat.completions.create({
+        model: ONBOARDING_MODEL_OPENROUTER,
+        temperature: 0.85,
+        max_tokens: 800,
+        response_format: { type: 'json_object' },
+        messages: chatMessages,
+      });
+      const content = completion.choices[0]?.message?.content ?? '';
+      if (content) return { content, model: ONBOARDING_MODEL_OPENROUTER };
+    } catch (e) {
+      console.error('[onboarding-chat-llm] OpenRouter failed', e);
+    }
+  }
+
+  return null;
+}
+
+export async function runOnboardingChatTurn(params: {
+  messages: OnboardingChatTurn[];
+  path?: OnboardingPath | null;
+  knownExtracted?: OnboardingExtracted;
+  isOpening?: boolean;
+}): Promise<OnboardingChatResult> {
+  const { messages, path = null, knownExtracted = {}, isOpening = false } = params;
+  const trimmed = messages.slice(-14);
+
+  if (isOpening && trimmed.length <= 1) {
     return {
-      reply: 'אהלן 👋 כיף שאתה כאן. ספר לי קצת — מה הכי גרם לך לרצות לעשות שינוי עכשיו?',
+      reply: openingReply(path),
       extracted: {},
+      request_discrete_field: path ? 'full_name' : null,
+      ready_for_summary: false,
+      summary: null,
+      used_fallback: true,
+      model: null,
+    };
+  }
+
+  const llm = await callLlm(buildSystemPrompt(path, knownExtracted), trimmed);
+  if (!llm) {
+    return {
+      reply: openingReply(path ?? 'quick'),
+      extracted: {},
+      request_discrete_field: null,
       ready_for_summary: false,
       summary: null,
       used_fallback: true,
@@ -124,45 +212,32 @@ export async function runOnboardingChatTurn(
   }
 
   try {
-    const completion = await openrouter.chat.completions.create({
-      model: ONBOARDING_MODEL,
-      temperature: 0.75,
-      max_tokens: 700,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...trimmed.map((m) => ({ role: m.role, content: m.content })),
-      ],
-    });
-
-    const parsed = JSON.parse(completion.choices[0]?.message?.content ?? '{}') as Record<
-      string,
-      unknown
-    >;
+    const parsed = JSON.parse(llm.content) as Record<string, unknown>;
     const reply = typeof parsed.reply === 'string' ? parsed.reply.trim() : '';
+    const llmExtracted = sanitizeExtracted(parsed.extracted);
 
     return {
-      reply:
-        reply ||
-        'אהלן 👋 ספר לי קצת על עצמך — מה הכי חשוב לך לשנות בתקופה הזו?',
-      extracted: sanitizeExtracted(parsed.extracted),
+      reply: reply || 'ספר לי עוד קצת — אני איתך',
+      extracted: llmExtracted,
+      request_discrete_field: parseDiscreteField(parsed.request_discrete_field),
       ready_for_summary: parsed.ready_for_summary === true,
       summary:
         typeof parsed.summary === 'string' && parsed.summary.trim()
           ? parsed.summary.trim().slice(0, 600)
           : null,
       used_fallback: false,
-      model: ONBOARDING_MODEL,
+      model: llm.model,
     };
   } catch (error) {
-    console.error('[onboarding-chat-llm] generation failed', error);
+    console.error('[onboarding-chat-llm] parse failed', error);
     return {
-      reply: 'אהלן 👋 כיף שאתה כאן. ספר לי קצת — מה הכי גרם לך לרצות לעשות שינוי עכשיו?',
+      reply: 'רגע, נתקעתי רגע 😅 ספר לי שוב — מה הכי חשוב לך לעדכן?',
       extracted: {},
+      request_discrete_field: null,
       ready_for_summary: false,
       summary: null,
       used_fallback: true,
-      model: ONBOARDING_MODEL,
+      model: llm.model,
     };
   }
 }

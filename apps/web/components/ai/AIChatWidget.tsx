@@ -719,6 +719,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   }, [open, panelView, setMessages]);
 
   const openSessionThread = async (session: ChatSessionListItemClient) => {
+    if (session.session_kind === 'profile_update') return;
     setLoadingThread(true);
     setPanelView('thread');
     setSummaryExpanded(false);

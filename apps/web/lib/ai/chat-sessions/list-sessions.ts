@@ -4,9 +4,12 @@ import { buildChatSessionListTitle } from './session-list-title';
 
 export { buildChatSessionListTitle };
 
+export type ChatSessionKind = 'chat' | 'profile_update';
+
 export type ChatSessionListItem = {
   id: string;
   status: 'open' | 'closed';
+  session_kind: ChatSessionKind;
   summary: string | null;
   created_at: string;
   updated_at: string;
@@ -51,7 +54,7 @@ export async function listChatSessionsForUser(
 
   const { data: sessions, error } = await supabase
     .from('chat_sessions')
-    .select('id, status, summary, created_at, updated_at, closed_at')
+    .select('id, status, session_kind, summary, created_at, updated_at, closed_at')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false })
     .limit(limit);
@@ -89,14 +92,18 @@ export async function listChatSessionsForUser(
     }
   }
 
-  return rows.map((row) => ({
-    id: row.id as string,
-    status: row.status as 'open' | 'closed',
-    summary: (row.summary as string | null) ?? null,
-    created_at: row.created_at as string,
-    updated_at: row.updated_at as string,
-    closed_at: (row.closed_at as string | null) ?? null,
-    preview_text: previewBySession.get(row.id as string) ?? null,
-    message_count: countBySession.get(row.id as string) ?? 0,
-  }));
+  return rows.map((row) => {
+    const kind = (row.session_kind as ChatSessionKind | null) ?? 'chat';
+    return {
+      id: row.id as string,
+      status: row.status as 'open' | 'closed',
+      session_kind: kind,
+      summary: (row.summary as string | null) ?? null,
+      created_at: row.created_at as string,
+      updated_at: row.updated_at as string,
+      closed_at: (row.closed_at as string | null) ?? null,
+      preview_text: kind === 'profile_update' ? null : previewBySession.get(row.id as string) ?? null,
+      message_count: kind === 'profile_update' ? 0 : countBySession.get(row.id as string) ?? 0,
+    };
+  });
 }

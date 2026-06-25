@@ -7,11 +7,24 @@ import {
   runOnboardingChatTurn,
   type OnboardingChatTurn,
   type OnboardingExtracted,
+  type OnboardingPath,
 } from '../../../../../lib/ai/onboarding-chat-llm';
+import {
+  applyDiscreteField,
+  discreteFieldAck,
+  type DiscreteFieldKey,
+} from '../../../../../lib/ai/onboarding-discrete-fields';
+import { buildPrivacySafeProfileSummary } from '../../../../../lib/ai/onboarding-privacy-summary';
+import { createProfileUpdateSession } from '../../../../../lib/ai/chat-sessions/create-profile-update-session';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
+
+const discreteFieldSchema = z.object({
+  key: z.enum(['full_name', 'current_weight_kg', 'goal_weight_kg', 'wake_up_time', 'sleep_time']),
+  value: z.string().min(1).max(200),
+});
 
 const bodySchema = z.object({
   user_id: z.string().uuid().optional(),
@@ -22,13 +35,22 @@ const bodySchema = z.object({
         content: z.string().min(1).max(4000),
       })
     )
-    .min(1)
-    .max(40),
-  /** אם true — לשמור את השדות שחולצו לפרופיל (אחרי אישור המשתמש) */
+    .max(40)
+    .optional(),
+  path: z.enum(['quick', 'fun']).optional(),
+  is_opening: z.boolean().optional(),
+  extracted: z.record(z.unknown()).optional(),
+  discrete_field: discreteFieldSchema.optional(),
   persist: z.boolean().optional(),
 });
 
-/** מיפוי השדות שחולצו לעמודות profiles. */
+function mergeExtracted(
+  base: OnboardingExtracted,
+  patch: OnboardingExtracted
+): OnboardingExtracted {
+  return { ...base, ...patch };
+}
+
 function extractedToProfilePatch(e: OnboardingExtracted): Record<string, unknown> {
   const patch: Record<string, unknown> = {};
   if (e.full_name) patch.full_name = e.full_name;
@@ -65,27 +87,73 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const result = await runOnboardingChatTurn(parsed.data.messages as OnboardingChatTurn[]);
+    let extracted = (parsed.data.extracted ?? {}) as OnboardingExtracted;
+    const path = (parsed.data.path ?? null) as OnboardingPath | null;
+    const gender = extracted.gender ?? null;
+
+    if (parsed.data.discrete_field) {
+      const { key, value } = parsed.data.discrete_field;
+      const applied = applyDiscreteField(extracted, key as DiscreteFieldKey, value);
+      if (!applied.ok) {
+        return NextResponse.json({ error: applied.error }, { status: 400 });
+      }
+      extracted = applied.extracted;
+
+      return NextResponse.json({
+        reply: discreteFieldAck(key as DiscreteFieldKey, gender),
+        extracted,
+        request_discrete_field: null,
+        ready_for_summary: false,
+        summary: null,
+        persisted: false,
+        discrete_ack: true,
+        used_fallback: false,
+        model: null,
+      });
+    }
+
+    const messages = (parsed.data.messages ?? []) as OnboardingChatTurn[];
+    if (!parsed.data.is_opening && messages.length === 0) {
+      return NextResponse.json({ error: 'messages required' }, { status: 400 });
+    }
+
+    const result = await runOnboardingChatTurn({
+      messages,
+      path,
+      knownExtracted: extracted,
+      isOpening: parsed.data.is_opening,
+    });
+
+    extracted = mergeExtracted(extracted, result.extracted);
 
     let persisted = false;
+    let profile_session_id: string | null = null;
+
     if (parsed.data.persist) {
-      const patch = extractedToProfilePatch(result.extracted);
+      const patch = extractedToProfilePatch(extracted);
       if (Object.keys(patch).length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await supabase
-          .from('profiles')
-          .update(patch)
-          .eq('id', user.id);
+        const { error } = await supabase.from('profiles').update(patch).eq('id', user.id);
         persisted = !error;
+      }
+
+      if (persisted) {
+        const summary = buildPrivacySafeProfileSummary(extracted, gender);
+        const session = await createProfileUpdateSession(supabase, {
+          userId: user.id,
+          summary,
+        });
+        profile_session_id = session.id;
       }
     }
 
     return NextResponse.json({
       reply: result.reply,
-      extracted: result.extracted,
+      extracted,
+      request_discrete_field: result.request_discrete_field,
       ready_for_summary: result.ready_for_summary,
       summary: result.summary,
       persisted,
+      profile_session_id,
       used_fallback: result.used_fallback,
       model: result.model,
     });
