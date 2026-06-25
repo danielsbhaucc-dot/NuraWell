@@ -1,6 +1,7 @@
 import { groq, openrouter, AI_MODELS } from './client';
 import { ALMOG_VOICE_DNA } from './prompts';
 import type { DiscreteFieldKey } from './onboarding-discrete-fields';
+import { discreteFieldAck } from './onboarding-discrete-fields';
 import {
   buildLlmKnownContext,
   type ProfileFieldFlags,
@@ -110,7 +111,8 @@ ${pathNote}
 חוק פרטיות קריטי:
 - שם, משקלים ושעות שינה/השכמה — *אסור* לבקש שהמשתמש יכתוב בצ'אט החופשי.
 - כשצריך שדה רגיש — חובה להגדיר request_discrete_field (full_name | current_weight_kg | goal_weight_kg | wake_up_time | sleep_time). אז בקש בקולך שלא לכתוב בצ'אט, והפנה לכפתור 🔐 למטה. בלי request_discrete_field — אל תזכיר כפתור סודי.
-- מטרה, מכשול, זמן חלש ביום — אפשר לשאול בצ'אט רגיל.
+- אחרי שדה רגיש נשמר בערוץ 🔐 — מיד המשך לשדה הבא. אל תפתח שיחת חולין.
+- מטרה, מכשול, זמן חלש, מגדר — אפשר לשאול בצ'אט רגיל.
 
 סגנון:
 - חבר ששואל, לא רובוט. הומור עדין, פדיחות מחמיאות ("איזו פדיחות... אני לא סגור איך קוראים לך"), הפתעות קטנות.
@@ -198,7 +200,7 @@ const CONTEXT_LOSS_RE =
   /מה המטרה של השיחה|מה מטרת השיחה|למה אנחנו|מה אנחנו עושים|לא מבין|מה זה השיחה|לא הבנתי|עזוב את זה|בוא נדבר על|מה הקטע|לא קשור/i;
 
 const OFF_TOPIC_RE =
-  /איך לרדוץ|מה לאכול|טיפים|תפריט|מתכון|המלצה|ספר לי על|מה דעתך|איך להתחיל דיאטה|למה אני|מה לעשות כש|אימון|כושר/i;
+  /איך לרדוץ|מה לאכול|טיפים|תפריט|מתכון|המלצה|ספר לי על|מה דעתך|איך להתחיל דיאטה|למה אני|מה לעשות כש|אימון|כושר|בחיים|יום שלי|איך אתה מרגיש|ספר לי על עצמך/i;
 
 type UserDiversion = 'meta_ui' | 'context_loss' | 'off_topic';
 
@@ -223,6 +225,43 @@ function leadQuestion(flags: ProfileFieldFlags): string {
   if (!flags.has_sleep_time) return 'ובאיזו שעה אתה הולך לישון? (🔐 למטה)';
   return 'נראה שיש לנו את רוב הפרטים — רוצה לשנות משהו ספציפי?';
 }
+
+/** שדה רגיש שמתאים לשאלת ההמשך הנוכחית (אם יש) */
+export function discreteFieldForCurrentLead(flags: ProfileFieldFlags): DiscreteFieldKey | null {
+  if (!flags.has_main_goal) return null;
+  if (!flags.has_main_obstacle && !flags.has_weakest_time) return null;
+  if (!flags.has_gender) return null;
+  if (!flags.has_current_weight) return 'current_weight_kg';
+  if (!flags.has_goal_weight) return 'goal_weight_kg';
+  if (!flags.has_wake_time) return 'wake_up_time';
+  if (!flags.has_sleep_time) return 'sleep_time';
+  return null;
+}
+
+export function isProfileUpdateComplete(flags: ProfileFieldFlags): boolean {
+  return Boolean(
+    flags.has_full_name &&
+      flags.has_main_goal &&
+      (flags.has_main_obstacle || flags.has_weakest_time)
+  );
+}
+
+/** המשך אוטומטי אחרי שמירת שדה בערוץ מאובטח — בלי קריאת LLM */
+export function buildAfterDiscreteContinuation(
+  key: DiscreteFieldKey,
+  flags: ProfileFieldFlags,
+  gender: ProfileGender
+): Pick<OnboardingChatResult, 'reply' | 'request_discrete_field' | 'ready_for_summary'> {
+  const ack = discreteFieldAck(key, gender);
+  const next = leadQuestion(flags);
+  return {
+    reply: `${ack} ממשיכים בעדכון הפרופיל — ${next}`,
+    request_discrete_field: discreteFieldForCurrentLead(flags),
+    ready_for_summary: isProfileUpdateComplete(flags),
+  };
+}
+
+const AFFIRMATION_RE = /^(אוקיי|אוקי|יופי|תודה|סבבה|בסדר|יאללה|כן|מעולה|קדימה|נו)[.!?\s]*$/iu;
 
 function redirectToProfileMission(
   kind: UserDiversion,
@@ -390,6 +429,18 @@ export async function runOnboardingChatTurn(params: {
     const llmDiscrete = parseDiscreteField(parsed.request_discrete_field);
     const lastUser = [...trimmed].reverse().find((m) => m.role === 'user');
     const diversion = lastUser ? classifyUserDiversion(lastUser.content) : null;
+
+    if (lastUser && AFFIRMATION_RE.test(lastUser.content.trim())) {
+      return {
+        reply: `מעולה. ${leadQuestion(flags)}`,
+        extracted: llmExtracted,
+        request_discrete_field: discreteFieldForCurrentLead(flags),
+        ready_for_summary: isProfileUpdateComplete(flags),
+        summary: null,
+        used_fallback: true,
+        model: llm.model,
+      };
+    }
 
     if (diversion) {
       const field = llmDiscrete ?? nextMissingDiscreteField(flags);

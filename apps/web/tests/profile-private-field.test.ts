@@ -70,6 +70,27 @@ describe('discrete-field privacy intro', () => {
   });
 });
 
+describe('after discrete continuation', () => {
+  it('advances to main goal after name is saved', async () => {
+    const { buildAfterDiscreteContinuation } = await import('../lib/ai/onboarding-chat-llm');
+    const flags = {
+      has_full_name: true,
+      has_gender: false,
+      has_main_goal: false,
+      has_current_weight: false,
+      has_goal_weight: false,
+      has_weakest_time: false,
+      has_main_obstacle: false,
+      has_wake_time: false,
+      has_sleep_time: false,
+    };
+    const cont = buildAfterDiscreteContinuation('full_name', flags, 'female');
+    expect(cont.reply).toMatch(/ממשיכים בעדכון הפרופיל/);
+    expect(cont.reply).toMatch(/מטרה/);
+    expect(cont.request_discrete_field).toBeNull();
+  });
+});
+
 describe('profile-chat-bootstrap', () => {
   it('builds flags from DB row without exposing sensitive values to public extracted', async () => {
     const { buildProfileChatBootstrap, describeKnownProfileForLlm } = await import(
