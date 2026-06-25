@@ -3,7 +3,16 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, CheckCircle2, Clock, Repeat, Sparkles, Snowflake, X } from 'lucide-react';
+import {
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
+  Repeat,
+  Sparkles,
+  Snowflake,
+  X,
+} from 'lucide-react';
 import { AlmogAvatarChip } from './AlmogPresence';
 
 /* טיפוסי תצוגה — תואמים ל-API /api/v1/almog-assignments */
@@ -44,6 +53,8 @@ const SCHEDULE_LABEL: Record<AssignmentView['schedule'], string> = {
   weekly: 'שבועי',
 };
 
+const PAGE_SIZE = 3;
+
 function formatDay(iso: string | null): string | null {
   if (!iso) return null;
   const t = new Date(iso).getTime();
@@ -51,11 +62,43 @@ function formatDay(iso: string | null): string | null {
   return new Intl.DateTimeFormat('he-IL', { day: '2-digit', month: '2-digit' }).format(new Date(t));
 }
 
-/**
- * סקשן "מאלמוג" — משימות אישיות שאלמוג נתן + מצב פוקוס.
- * עיצוב זכוכית שקופה (mint glass), mobile-first, בלי לבן שטוח.
- */
-export function AlmogAssignmentsSection() {
+function buildDynamicHeadline(
+  visible: AssignmentView[],
+  focus: FocusView | null
+): { title: string; subtitle: string } {
+  if (focus?.status === 'active') {
+    return {
+      title: 'אני מרכז אותך רק במה שחשוב עכשיו',
+      subtitle: focus.reason
+        ? `בפוקוס: ${focus.reason}`
+        : 'שאר המשימות מחכות בצד — בלי לחץ',
+    };
+  }
+  if (focus?.status === 'proposed') {
+    return {
+      title: 'יש לי הצעה — בוא נוריד רעש לרגע',
+      subtitle: 'מצב פוקוס יוריד תזכורות על שאר המשימות',
+    };
+  }
+  if (visible.length === 1) {
+    return {
+      title: 'יש לנו משימה אחת שדיברנו עליה',
+      subtitle: 'סמן כשעשית — אני איתך',
+    };
+  }
+  if (visible.length > 1) {
+    return {
+      title: `סיכמנו בינינו ${visible.length} משימות`,
+      subtitle: 'אחת בכל פעם, בקצב שלך',
+    };
+  }
+  return {
+    title: 'אם תרצה — יש עוד מה לעשות',
+    subtitle: 'פתח ונראה מה מחכה',
+  };
+}
+
+function useAlmogAssignments() {
   const [assignments, setAssignments] = useState<AssignmentView[]>([]);
   const [focus, setFocus] = useState<FocusView | null>(null);
   const [completed, setCompleted] = useState<CompletedView[]>([]);
@@ -106,8 +149,40 @@ export function AlmogAssignmentsSection() {
   );
 
   const visible = assignments.filter((a) => a.status === 'active' || a.status === 'frozen');
-  if (loaded && visible.length === 0 && !focus && completed.length === 0) return null;
+
+  return { visible, focus, completed, loaded, busyId, act };
+}
+
+/** משימות אישיות שהושלמו — מוצגות באזור "הושלמו" בעמוד המסע */
+export function AlmogCompletedSection() {
+  const { completed, loaded } = useAlmogAssignments();
+  if (!loaded || completed.length === 0) return null;
+
+  return (
+    <div className="mb-6">
+      <p className="mb-2.5 px-1 text-[11px] font-black uppercase tracking-[0.12em] text-emerald-800/65">
+        משימות שסיימת איתי
+      </p>
+      <CompletedList items={completed} compact />
+    </div>
+  );
+}
+
+/**
+ * פאנל תחתון — משימות פעילות מאלמוג + מצב פוקוס, באקורדיון שלא מציף את המסך.
+ */
+export function AlmogAssignmentsSection() {
+  const { visible, focus, completed, loaded, busyId, act } = useAlmogAssignments();
+  const [expanded, setExpanded] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  if (loaded && visible.length === 0 && !focus) return null;
   if (!loaded) return null;
+
+  const headline = buildDynamicHeadline(visible, focus);
+  const shown = visible.slice(0, visibleCount);
+  const hasMore = visible.length > visibleCount;
+  const summaryCount = visible.length + (focus ? 1 : 0);
 
   return (
     <motion.section
@@ -115,109 +190,176 @@ export function AlmogAssignmentsSection() {
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="mb-6"
+      className="mt-7"
     >
-      {/* כותרת הסקשן */}
-      <div className="mb-3.5 flex items-center gap-3 px-1">
-        <AlmogAvatarChip size={40} />
-        <div className="flex-1 text-right">
-          <p
-            className="text-[16px] font-black"
-            style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
-          >
-            מאלמוג · אישי בשבילך
-          </p>
-          <p className="mt-0.5 text-xs text-emerald-800/70">
-            {focus?.status === 'active'
-              ? 'מצב פוקוס פעיל'
-              : `${visible.length} ${visible.length === 1 ? 'משימה' : 'משימות'} פעיל${visible.length === 1 ? 'ה' : 'ות'}`}
-          </p>
-        </div>
-        <Link
-          href="/plans"
-          prefetch
-          className="shrink-0 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-emerald-800 no-tap-highlight"
-          style={{
-            background: 'rgba(255,255,255,0.55)',
-            border: '1px solid rgba(110,231,183,0.45)',
-          }}
+      <div
+        className="overflow-hidden rounded-[24px]"
+        style={{
+          background:
+            'linear-gradient(135deg, rgba(236,253,245,0.92) 0%, rgba(209,250,229,0.72) 100%)',
+          backdropFilter: 'blur(14px) saturate(160%)',
+          WebkitBackdropFilter: 'blur(14px) saturate(160%)',
+          border: '1px solid rgba(110,231,183,0.45)',
+          boxShadow: '0 8px 22px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.55)',
+        }}
+      >
+        {/* כותרת אקורדיון */}
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="flex w-full items-center gap-3 px-4 py-4 text-right no-tap-highlight"
+          aria-expanded={expanded}
         >
-          לכל התוכנית
-        </Link>
-      </div>
-
-      {/* באנר פוקוס */}
-      <AnimatePresence initial={false}>
-        {focus ? (
-          <FocusBanner
-            focus={focus}
-            busy={busyId === `focus-${focus.id}`}
-            onConfirm={() => act({ action: 'confirm_focus', focus_id: focus.id }, `focus-${focus.id}`)}
-            onDecline={() => act({ action: 'decline_focus', focus_id: focus.id }, `focus-${focus.id}`)}
-            onEnd={() => act({ action: 'end_focus', focus_id: focus.id }, `focus-${focus.id}`)}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      {/* כרטיסי משימות */}
-      <div className="space-y-3">
-        <AnimatePresence initial={false}>
-          {visible.map((a) => (
-            <AssignmentCard
-              key={a.id}
-              assignment={a}
-              busy={busyId === a.id}
-              onDone={() => act({ action: 'done', assignment_id: a.id }, a.id)}
-              onDrop={() => act({ action: 'drop', assignment_id: a.id }, a.id)}
+          <AlmogAvatarChip size={40} />
+          <div className="min-w-0 flex-1">
+            <p
+              className="text-[15px] font-black leading-snug"
+              style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
+            >
+              {headline.title}
+            </p>
+            <p className="mt-0.5 text-xs text-emerald-800/70">{headline.subtitle}</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {summaryCount > 0 ? (
+              <span
+                className="rounded-full px-2 py-0.5 text-[10.5px] font-bold text-emerald-800"
+                style={{ background: 'rgba(16,185,129,0.16)' }}
+              >
+                {summaryCount}
+              </span>
+            ) : null}
+            <ChevronDown
+              className={`h-5 w-5 text-emerald-700 transition-transform ${expanded ? 'rotate-180' : ''}`}
+              aria-hidden
             />
-          ))}
+          </div>
+        </button>
+
+        <AnimatePresence initial={false}>
+          {expanded ? (
+            <motion.div
+              key="panel-body"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="border-t border-emerald-200/50 px-4 pb-4 pt-3">
+                <div className="mb-3 flex justify-end">
+                  <Link
+                    href="/plans"
+                    prefetch
+                    className="shrink-0 rounded-xl px-3 py-1.5 text-[11px] font-bold text-emerald-900 no-tap-highlight"
+                    style={{
+                      background: 'rgba(167,243,208,0.55)',
+                      border: '1px solid rgba(52,211,153,0.45)',
+                    }}
+                  >
+                    לכל התוכנית
+                  </Link>
+                </div>
+
+                <AnimatePresence initial={false}>
+                  {focus ? (
+                    <FocusBanner
+                      focus={focus}
+                      busy={busyId === `focus-${focus.id}`}
+                      onConfirm={() =>
+                        act({ action: 'confirm_focus', focus_id: focus.id }, `focus-${focus.id}`)
+                      }
+                      onDecline={() =>
+                        act({ action: 'decline_focus', focus_id: focus.id }, `focus-${focus.id}`)
+                      }
+                      onEnd={() =>
+                        act({ action: 'end_focus', focus_id: focus.id }, `focus-${focus.id}`)
+                      }
+                    />
+                  ) : null}
+                </AnimatePresence>
+
+                <div className="space-y-3">
+                  <AnimatePresence initial={false}>
+                    {shown.map((a) => (
+                      <AssignmentCard
+                        key={a.id}
+                        assignment={a}
+                        busy={busyId === a.id}
+                        onDone={() => act({ action: 'done', assignment_id: a.id }, a.id)}
+                        onDrop={() => act({ action: 'drop', assignment_id: a.id }, a.id)}
+                      />
+                    ))}
+                  </AnimatePresence>
+                </div>
+
+                {hasMore ? (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+                    className="mt-3 w-full rounded-xl py-2.5 text-[13px] font-bold text-emerald-800 transition active:scale-[0.98]"
+                    style={{
+                      background: 'rgba(16,185,129,0.12)',
+                      border: '1px solid rgba(110,231,183,0.35)',
+                    }}
+                  >
+                    הצג עוד ({visible.length - visibleCount} נוספות)
+                  </button>
+                ) : null}
+
+                {visible.length === 0 && !focus && completed.length > 0 ? (
+                  <p className="py-2 text-center text-[13px] text-emerald-800/70">
+                    אין כרגע משימות פתוחות — כל הכבוד על מה שסיימת 🙌
+                  </p>
+                ) : null}
+              </div>
+            </motion.div>
+          ) : null}
         </AnimatePresence>
       </div>
-
-      {/* הושלמו — תיעוד גלוי של משימות אישיות שסיימת */}
-      {completed.length > 0 ? <CompletedList items={completed} /> : null}
     </motion.section>
   );
 }
 
-function CompletedList({ items }: { items: CompletedView[] }) {
+function CompletedList({
+  items,
+  compact = false,
+}: {
+  items: CompletedView[];
+  compact?: boolean;
+}) {
   return (
-    <div className="mt-3.5">
-      <p className="mb-2 px-1 text-[11px] font-black uppercase tracking-[0.12em] text-emerald-800/65">
-        הושלמו
-      </p>
-      <ul className="space-y-1.5">
-        {items.map((c) => {
-          const when = formatDay(c.last_done_at) ?? formatDay(c.given_at);
-          return (
-            <li
-              key={c.id}
-              dir="rtl"
-              className="flex items-center gap-2.5 rounded-2xl px-3 py-2.5"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(236,253,245,0.62) 0%, rgba(209,250,229,0.38) 100%)',
-                backdropFilter: 'blur(10px) saturate(140%)',
-                WebkitBackdropFilter: 'blur(10px) saturate(140%)',
-                border: '1px solid rgba(110,231,183,0.32)',
-              }}
-            >
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-              <div className="min-w-0 flex-1 text-right">
-                <p className="truncate text-[13px] font-bold text-emerald-900/85 line-through decoration-emerald-700/40">
-                  {c.title}
-                </p>
-              </div>
-              {when ? (
-                <span className="shrink-0 text-[10.5px] font-semibold text-emerald-800/60">
-                  {when}
-                </span>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+    <ul className={compact ? 'space-y-1.5' : 'space-y-1.5'}>
+      {items.map((c) => {
+        const when = formatDay(c.last_done_at) ?? formatDay(c.given_at);
+        return (
+          <li
+            key={c.id}
+            dir="rtl"
+            className="flex items-center gap-2.5 rounded-2xl px-3 py-2.5"
+            style={{
+              background:
+                'linear-gradient(135deg, rgba(236,253,245,0.62) 0%, rgba(209,250,229,0.38) 100%)',
+              backdropFilter: 'blur(10px) saturate(140%)',
+              WebkitBackdropFilter: 'blur(10px) saturate(140%)',
+              border: '1px solid rgba(110,231,183,0.32)',
+            }}
+          >
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+            <div className="min-w-0 flex-1 text-right">
+              <p className="truncate text-[13px] font-bold text-emerald-900/85 line-through decoration-emerald-700/40">
+                {c.title}
+              </p>
+            </div>
+            {when ? (
+              <span className="shrink-0 text-[10.5px] font-semibold text-emerald-800/60">
+                {when}
+              </span>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -236,6 +378,9 @@ function FocusBanner({
 }) {
   const until = formatDay(focus.ends_at);
   const isProposed = focus.status === 'proposed';
+  const pausesReminders =
+    focus.paused_scope === 'reminders' || focus.paused_scope === 'reminders_and_dim';
+
   return (
     <motion.div
       initial={{ opacity: 0, height: 0 }}
@@ -255,7 +400,10 @@ function FocusBanner({
       <div
         aria-hidden
         className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.32) 0%, transparent 70%)', filter: 'blur(20px)' }}
+        style={{
+          background: 'radial-gradient(circle, rgba(251,191,36,0.32) 0%, transparent 70%)',
+          filter: 'blur(20px)',
+        }}
       />
       <div className="relative px-4 py-4">
         <div className="flex items-start gap-2.5">
@@ -270,16 +418,24 @@ function FocusBanner({
               className="text-[10.5px] font-black uppercase tracking-[0.14em] text-emerald-200/90"
               style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
             >
-              {isProposed ? 'אלמוג מציע מצב פוקוס' : 'מצב פוקוס פעיל'}
+              {isProposed ? 'הצעת מצב פוקוס' : 'מצב פוקוס פעיל'}
             </p>
             <p
               className="mt-1 text-[14px] font-bold leading-relaxed text-white"
               style={{ fontFamily: "'Rubik','Heebo',sans-serif", textShadow: '0 1px 6px rgba(2,44,34,0.45)' }}
             >
               {isProposed
-                ? `בוא נשים בצד את שאר המשימות רגע${focus.reason ? ` ונתמקד ב${focus.reason}` : ''}. שאר ההרגלים ממשיכים להיספר ברקע — רק לוקחים אוויר.`
-                : `שמנו בצד את שאר המשימות${until ? ` עד ${until}` : ''}${focus.reason ? ` כדי להתמקד ב${focus.reason}` : ''}. ההתקדמות שלך נשמרת — אנחנו רק מתמקדים.`}
+                ? `אני מציע שנוריד רגע את שאר המשימות מהמסך${focus.reason ? ` ונתמקד ב${focus.reason}` : ''}.`
+                : `אנחנו במצב פוקוס${until ? ` עד ${until}` : ''}${focus.reason ? ` — ${focus.reason}` : ''}.`}
             </p>
+            <ul className="mt-2.5 space-y-1 text-[12px] leading-relaxed text-emerald-100/90">
+              {pausesReminders ? (
+                <li>· תזכורות על משימות אחרות ייעצרו — פחות רעש בפעמון</li>
+              ) : null}
+              <li>· ההתקדמות שלך נשמרת — שום דבר לא נמחק</li>
+              <li>· הרגלים יומיים (כמו מים) ממשיכים להיספר אם סימנת אותם</li>
+              <li>· כשתרגיש מוכן — לחץ &quot;חזרתי לשגרה&quot; ונחזיר הכל</li>
+            </ul>
           </div>
         </div>
 
@@ -296,7 +452,7 @@ function FocusBanner({
               }}
             >
               <Check className="h-4 w-4" strokeWidth={2.6} />
-              בוא נתמקד
+              כן, בוא נתמקד
             </button>
             <button
               type="button"
@@ -352,19 +508,13 @@ function AssignmentCard({
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       className="relative overflow-hidden rounded-[20px]"
       style={{
-        // זכוכית מנטה שקופה — לא לבן שטוח
-        background: 'linear-gradient(135deg, rgba(236,253,245,0.88) 0%, rgba(209,250,229,0.62) 100%)',
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.72) 0%, rgba(236,253,245,0.55) 100%)',
         backdropFilter: 'blur(14px) saturate(160%)',
         WebkitBackdropFilter: 'blur(14px) saturate(160%)',
-        border: '1px solid rgba(110,231,183,0.45)',
-        boxShadow: '0 8px 22px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.6)',
+        border: '1px solid rgba(110,231,183,0.4)',
+        boxShadow: '0 6px 18px rgba(6,78,59,0.08), inset 0 1px 0 rgba(255,255,255,0.5)',
       }}
     >
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-x-3 top-px h-px"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)' }}
-      />
       <div className="relative p-4">
         <div className="mb-1.5 flex flex-wrap items-center gap-2">
           <span
@@ -377,12 +527,12 @@ function AssignmentCard({
           {given ? (
             <span className="flex items-center gap-1 text-[11px] text-emerald-800/70">
               <Clock className="h-3 w-3" />
-              ניתנה {given}
+              נתתי לך {given}
             </span>
           ) : null}
           {assignment.done_count > 0 ? (
             <span className="mr-auto text-[11px] font-bold text-emerald-600">
-              בוצע {assignment.done_count}×
+              עשית {assignment.done_count}×
             </span>
           ) : null}
         </div>
@@ -396,7 +546,7 @@ function AssignmentCard({
 
         {assignment.reason ? (
           <p className="mt-1.5 text-[13px] leading-relaxed text-emerald-900/75">
-            <span className="font-bold text-emerald-800">למה: </span>
+            <span className="font-bold text-emerald-800">למה בחרתי בזה: </span>
             {assignment.reason}
           </p>
         ) : null}
@@ -418,17 +568,21 @@ function AssignmentCard({
             }}
           >
             {doneToday ? <CheckCircle2 className="h-4 w-4" /> : <Check className="h-4 w-4" strokeWidth={2.6} />}
-            {doneToday ? 'בוצע היום ✨' : isRecurring ? 'סמן שעשיתי' : 'סיימתי'}
+            {doneToday ? 'עשית היום ✨' : isRecurring ? 'סמן שעשית' : 'סיימתי'}
           </button>
           <button
             type="button"
             disabled={busy}
             onClick={onDrop}
             aria-label="כבר לא רלוונטי"
-            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl text-emerald-700/70 transition-transform active:scale-95 disabled:opacity-50"
-            style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(110,231,183,0.4)' }}
+            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl text-white transition-transform active:scale-95 disabled:opacity-50"
+            style={{
+              background: 'linear-gradient(135deg, #dc2626, #ef4444)',
+              border: 'none',
+              boxShadow: '0 4px 10px rgba(220,38,38,0.28)',
+            }}
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4 text-white" strokeWidth={2.6} />
           </button>
         </div>
       </div>

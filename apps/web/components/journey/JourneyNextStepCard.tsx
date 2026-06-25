@@ -101,9 +101,16 @@ export function JourneyNextStepCard() {
             fontFamily: "'Rubik','Heebo',sans-serif",
           }}
         >
-          {rec.headline}
+          {rec.pace === 'return' ? 'בוא נחזור בעדינות' : 'הצעד הבא שלך'}
         </span>
       </div>
+
+      <p
+        className="text-[15px] font-black leading-snug mb-1.5"
+        style={{ color: '#0f3d2e', fontFamily: "'Rubik','Heebo',sans-serif" }}
+      >
+        {rec.headline}
+      </p>
 
       <p style={{ fontSize: '13.5px', lineHeight: 1.6, color: '#065f46', margin: '0 0 6px' }}>
         {rec.why}
@@ -119,7 +126,7 @@ export function JourneyNextStepCard() {
         >
           <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" aria-hidden />
           <span style={{ fontSize: '12.5px', color: '#065f46', lineHeight: 1.5 }}>
-            הצעה להתחייבות: {rec.commitment_suggestion}
+            אני מציע: {rec.commitment_suggestion}
           </span>
         </div>
       ) : null}
@@ -134,7 +141,7 @@ export function JourneyNextStepCard() {
               boxShadow: '0 6px 16px rgba(16,185,129,0.25)',
             }}
           >
-            {rec.pace === 'return' ? 'בוא נחזור בעדינות' : rec.pace === 'start' ? 'בוא נתחיל' : 'המשך לצעד'}
+            {rec.pace === 'return' ? 'בוא נחזור בעדינות' : rec.pace === 'start' ? 'בוא נתחיל' : 'קדימה לצעד'}
             <ArrowLeft className="w-4 h-4" aria-hidden />
           </Link>
         ) : null}
@@ -154,7 +161,7 @@ export function JourneyNextStepCard() {
             border: '1px solid rgba(16,185,129,0.25)',
           }}
         >
-          דבר עם אלמוג
+          דבר איתי
         </button>
       </div>
     </motion.div>
