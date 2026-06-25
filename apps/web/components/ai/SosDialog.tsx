@@ -13,8 +13,10 @@ import type { FrictionCategory, StrategyType } from '../../lib/ai/almog-commitme
 import { FRICTION_META } from '../../lib/ai/almog-commitments/friction';
 import {
   SOS_ALMOG_BUBBLE,
+  SOS_ALMOG_BUBBLE_TEXT,
   SOS_BODY_BG,
   SOS_GATE_BUBBLE,
+  SOS_GATE_NO_BUTTON,
   SOS_GATE_PANEL,
   SOS_INTAKE_SECTION,
   SOS_INTAKE_TASK_ACTIVE,
@@ -23,8 +25,11 @@ import {
   SOS_MUTED,
   SOS_NOTE_FIELD,
   SOS_TASK_CARD,
+  SOS_TASK_CARD_LABEL,
+  SOS_TASK_CARD_TITLE,
   SOS_TEXT,
   SOS_TEXT_STRONG,
+  SOS_TRIGGER_BG,
   SOS_TRIGGER_CARD,
   SOS_TRIGGER_HELPER,
   SOS_TRIGGER_LABEL,
@@ -44,6 +49,8 @@ import {
 import type { JourneyTaskSlot } from '../../lib/types/journey';
 
 type SosMode = 'intervention' | 'escalation' | 'slow_down' | 'pivot';
+
+type DialogPhase = 'gate' | 'intake' | 'response' | 'done';
 
 type SosIntervention = {
   message: string;
@@ -166,6 +173,8 @@ type SosDialogProps = {
   focusTasks?: SosFocusTask[];
   /** מספר משימות פתוחות — מייצב את שער ההרגל גם לפני שהמערך מתמלא */
   pendingTaskCount?: number;
+  /** ננעל בזמן הפתיחה — מונע קפיצה לפני שער ההרגל */
+  gateOnOpen?: boolean;
   firstName?: string;
   gender?: OnboardingGender | '';
 };
@@ -175,11 +184,15 @@ export function SosDialog({
   onClose,
   focusTasks = [],
   pendingTaskCount = 0,
+  gateOnOpen = false,
   firstName = '',
   gender = '',
 }: SosDialogProps) {
   const { play: playSosTts, isLoading: isSosTtsLoading } = useSosTts();
   const router = useRouter();
+  const [phase, setPhase] = useState<DialogPhase>(() =>
+    gateOnOpen || focusTasks.length > 0 || pendingTaskCount > 0 ? 'gate' : 'intake'
+  );
   const [note, setNote] = useState('');
   const [selectedTask, setSelectedTask] = useState<SosFocusTask | null>(null);
   const [loadingTrigger, setLoadingTrigger] = useState<FrictionCategory | null>(null);
@@ -204,8 +217,15 @@ export function SosDialog({
 
   useLayoutEffect(() => {
     if (!open) return;
+    const shouldGate = gateOnOpen || focusTasks.length > 0 || pendingTaskCount > 0;
+    setPhase(shouldGate ? 'gate' : 'intake');
+    setTaskHardConfirmed(null);
+    setResponse(null);
+    setError(null);
+    setOutcomeSaved(null);
+    setTaskMarked(false);
     setSelectedTask(focusTasks[0] ?? null);
-  }, [open, focusTasks]);
+  }, [open, gateOnOpen, focusTasks, pendingTaskCount]);
 
   useEffect(() => {
     if (!open) return;
@@ -224,12 +244,9 @@ export function SosDialog({
     return 'רוצה/ה להוסיף מילה?';
   }, [gender]);
 
-  const hasPendingTasks = focusTasks.length > 0 || pendingTaskCount > 0;
-
   const gateTask = selectedTask ?? focusTasks[0] ?? null;
-  const showTaskHardnessGate =
-    !response && hasPendingTasks && taskHardConfirmed === null;
-  const showIntake = !response && !showTaskHardnessGate;
+  const showTaskHardnessGate = phase === 'gate' && !response && !outcomeSaved && !taskMarked;
+  const showIntake = phase === 'intake' && !response && !outcomeSaved && !taskMarked;
 
   const gateGreeting = useMemo(() => {
     const taskLabel = gateTask?.title ?? 'המשימה שעל הראש';
@@ -298,7 +315,8 @@ export function SosDialog({
     setTaskHardConfirmed(null);
     setEaseCreating(false);
     setEaseCreated(false);
-  }, []);
+    setPhase(gateOnOpen || focusTasks.length > 0 || pendingTaskCount > 0 ? 'gate' : 'intake');
+  }, [gateOnOpen, focusTasks.length, pendingTaskCount]);
 
   const closeDialog = useCallback(() => {
     onClose();
@@ -317,17 +335,18 @@ export function SosDialog({
     setOutcomeSaving(false);
     setEaseCreated(false);
     setEaseCreating(false);
+    setPhase('intake');
   }, []);
 
   const showBackButton = Boolean(response && !outcomeSaved && !taskMarked);
 
   const bodyPhaseKey = useMemo(() => {
     if (outcomeSaved || taskMarked) return 'done';
-    if (response) return 'response';
-    if (showTaskHardnessGate) return 'gate';
-    if (showIntake) return 'intake';
+    if (response || phase === 'response') return 'response';
+    if (phase === 'gate') return 'gate';
+    if (phase === 'intake') return 'intake';
     return 'idle';
-  }, [outcomeSaved, taskMarked, response, showTaskHardnessGate, showIntake]);
+  }, [outcomeSaved, taskMarked, response, phase]);
 
   useDialogA11y({
     open,
@@ -342,6 +361,7 @@ export function SosDialog({
     try {
       const next = await requestSos({ trigger, note, focusTask: selectedTask });
       setResponse(next);
+      setPhase('response');
     } catch {
       setResponse({
         ok: true,
@@ -373,6 +393,7 @@ export function SosDialog({
         },
       });
       setError('לא הצלחתי להתחבר עכשיו, אז הבאתי לך צעד בטוח ומהיר.');
+      setPhase('response');
     } finally {
       setLoadingTrigger(null);
     }
@@ -398,6 +419,7 @@ export function SosDialog({
           response,
         });
         setResponse(next);
+        setPhase('response');
         void loadContext();
         return;
       } catch {
@@ -700,7 +722,9 @@ export function SosDialog({
             <div className="space-y-4">
               {showTaskHardnessGate ? (
                 <div className={`${SOS_GATE_PANEL} space-y-3`}>
-                  <div className={SOS_GATE_BUBBLE}>{gateGreeting}</div>
+                  <div className={SOS_GATE_BUBBLE} style={SOS_ALMOG_BUBBLE_TEXT}>
+                    {gateGreeting}
+                  </div>
 
                   {focusTasks.length > 1 ? (
                     <div className="space-y-2">
@@ -731,9 +755,9 @@ export function SosDialog({
                   ) : null}
 
                   <div className={SOS_TASK_CARD}>
-                    <p className="text-xs font-bold text-emerald-900/75">המשימה שעל הראש עכשיו</p>
+                    <p className={SOS_TASK_CARD_LABEL}>המשימה שעל הראש עכשיו</p>
                     <div className="mt-1 flex items-start justify-between gap-2">
-                      <p className="text-base font-black leading-snug text-emerald-950">
+                      <p className={SOS_TASK_CARD_TITLE}>
                         {gateTask?.emoji ? `${gateTask.emoji} ` : ''}
                         {gateTask?.title ?? '…'}
                       </p>
@@ -755,7 +779,10 @@ export function SosDialog({
                   <div className="grid gap-2 sm:grid-cols-2">
                     <button
                       type="button"
-                      onClick={() => setTaskHardConfirmed(true)}
+                      onClick={() => {
+                        setTaskHardConfirmed(true);
+                        setPhase('intake');
+                      }}
                       className="rounded-2xl px-4 py-3 text-sm font-black text-white"
                       style={{
                         background: 'linear-gradient(135deg, #047857, #10b981)',
@@ -769,8 +796,9 @@ export function SosDialog({
                       onClick={() => {
                         setTaskHardConfirmed(false);
                         setSelectedTask(null);
+                        setPhase('intake');
                       }}
-                      className={`${sosSurface('slate')} px-4 py-3 text-sm font-bold text-slate-800`}
+                      className={SOS_GATE_NO_BUTTON}
                     >
                       לא, משהו אחר
                     </button>
@@ -778,7 +806,9 @@ export function SosDialog({
                 </div>
               ) : showIntake ? (
                 <div className="space-y-4">
-              <div className={SOS_ALMOG_BUBBLE}>{intakeGreeting}</div>
+              <div className={SOS_ALMOG_BUBBLE} style={SOS_ALMOG_BUBBLE_TEXT}>
+                {intakeGreeting}
+              </div>
 
               {focusTasks.length > 0 ? (
                 <div className={`${SOS_INTAKE_SECTION} space-y-2`}>
@@ -854,6 +884,7 @@ export function SosDialog({
                     onClick={() => void handleTrigger(trigger.id)}
                     disabled={loadingTrigger !== null}
                     className={`${SOS_TRIGGER_CARD[trigger.id]} flex items-center justify-between px-4 py-3.5 text-right transition active:scale-[0.98] disabled:opacity-70`}
+                    style={SOS_TRIGGER_BG[trigger.id]}
                   >
                     <span className={SOS_TRIGGER_HELPER}>{trigger.helper}</span>
                     <span className="flex items-center gap-2.5">

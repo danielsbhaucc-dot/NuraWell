@@ -24,9 +24,11 @@ type SosButtonProps = {
 export function SosButton({ focusTasks = [], firstName = '', gender = '' }: SosButtonProps) {
   const [open, setOpen] = useState(false);
   const [sessionKey, setSessionKey] = useState(0);
+  const [gateOnOpen, setGateOnOpen] = useState(false);
   const pendingCount = focusTasks.length;
 
   function openDialog() {
+    setGateOnOpen(pendingCount > 0);
     setSessionKey((k) => k + 1);
     setOpen(true);
   }
@@ -71,6 +73,7 @@ export function SosButton({ focusTasks = [], firstName = '', gender = '' }: SosB
         onClose={() => setOpen(false)}
         focusTasks={focusTasks}
         pendingTaskCount={pendingCount}
+        gateOnOpen={gateOnOpen}
         firstName={firstName}
         gender={gender}
       />
