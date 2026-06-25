@@ -17,6 +17,7 @@ export type ProfileRowForChat = {
   main_obstacle_detail?: string | null;
   wake_up_time?: string | null;
   sleep_time?: string | null;
+  onboarding_completed?: boolean | null;
 };
 
 const MAIN_GOALS = new Set(['weight_loss', 'healthy_lifestyle', 'both']);
@@ -92,6 +93,23 @@ export function buildProfileChatBootstrap(row: ProfileRowForChat | null | undefi
 
 export function countKnownProfileFields(flags: ProfileFieldFlags): number {
   return Object.values(flags).filter(Boolean).length;
+}
+
+/** מינימום לסיכום שיחת עדכון — שם + מטרה + מכשול או זמן חלש */
+export function isProfileBasicsComplete(flags: ProfileFieldFlags): boolean {
+  return Boolean(
+    flags.has_full_name &&
+      flags.has_main_goal &&
+      (flags.has_main_obstacle || flags.has_weakest_time)
+  );
+}
+
+/** לפני בחירת מסלול — הפרופיל כבר מלא והמשתמש אולי הגיע בטעות */
+export function shouldClarifyProfileUpdateIntent(
+  flags: ProfileFieldFlags,
+  onboardingCompleted?: boolean | null
+): boolean {
+  return Boolean(onboardingCompleted) || isProfileBasicsComplete(flags);
 }
 
 const GOAL_LABELS: Record<string, string> = {
