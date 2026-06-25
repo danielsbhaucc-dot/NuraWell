@@ -12,12 +12,11 @@ const WEIGHT_LABEL_RE =
 const GOAL_WEIGHT_CTX = /יעד|מטרה|רוצה להגיע|goal/i;
 const WAKE_CTX = /קם|השכמה|בוקר|מתעורר|קמתי/i;
 const SLEEP_CTX = /ישן|שינה|לילה|הולך לישון|מתכנן לישון|נרדמתי/i;
+/** שם רק עם הצהרה מפורשת — לא ניחוש משפט/שאלה */
 const NAME_INTRO_RE =
-  /(?:^|\s)(?:שמי|קוראים לי|השם שלי)\s+([א-ת][א-ת'\-]{1,24}(?:\s+[א-ת][א-ת'\-]{1,24}){0,2})/i;
-const HEBREW_NAME_LINE_RE = /^[א-ת][א-ת'\-]{1,24}(?:\s+[א-ת][א-ת'\-]{1,24}){1,3}$/u;
-
-const NON_NAME_PHRASES =
-  /^(גם וגם|ירידה במשקל|אורח חיים|זכר|נקבה|בוקר|צהריים|אחר הצהריים|ערב|לילה|אין זמן|אכילה רגשית|עקביות|תמיכה)$/i;
+  /^(?:שמי|קוראים לי|השם שלי|השם שלי הוא)\s+([א-ת][א-ת'\-]{1,24}(?:\s+[א-ת][א-ת'\-]{1,24}){0,2})\s*$/i;
+const LOOKS_LIKE_QUESTION_RE =
+  /[?؟]|^(?:מה|איך|למה|מדוע|האם|אפשר|תוכל|תגיד|ספר|בבקשה|אני רוצה לדעת|יש לך)/i;
 
 function parseWeightKg(text: string): number | null {
   const unit = text.match(WEIGHT_WITH_UNIT_RE);
@@ -58,28 +57,12 @@ function detectTimeField(text: string, flags: ProfileFieldFlags): DiscreteFieldK
   return 'wake_up_time';
 }
 
-function preferredDiscreteField(flags: ProfileFieldFlags): DiscreteFieldKey | null {
-  if (!flags.has_full_name) return 'full_name';
-  if (!flags.has_current_weight) return 'current_weight_kg';
-  if (!flags.has_goal_weight) return 'goal_weight_kg';
-  if (!flags.has_wake_time) return 'wake_up_time';
-  if (!flags.has_sleep_time) return 'sleep_time';
-  return null;
-}
-
 function detectNameField(text: string, flags: ProfileFieldFlags): DiscreteFieldKey | null {
   if (flags.has_full_name) return null;
   const trimmed = text.trim();
-  if (trimmed.length < 3 || NON_NAME_PHRASES.test(trimmed)) return null;
+  if (trimmed.length < 3) return null;
+  if (LOOKS_LIKE_QUESTION_RE.test(trimmed)) return null;
   if (NAME_INTRO_RE.test(trimmed)) return 'full_name';
-  if (HEBREW_NAME_LINE_RE.test(trimmed) && !/\d/.test(trimmed)) return 'full_name';
-  if (
-    preferredDiscreteField(flags) === 'full_name' &&
-    /^[א-ת][א-ת'\-]{1,30}$/u.test(trimmed) &&
-    trimmed.length >= 2
-  ) {
-    return 'full_name';
-  }
   return null;
 }
 
@@ -105,6 +88,13 @@ export function buildSensitiveLeakRedirect(
 ): string {
   const label = DISCRETE_FIELD_LABELS[key];
   const tap = imperativeTap(gender);
+
+  if (key === 'full_name') {
+    if (path === 'fun') {
+      return `רגע — שם לא עובר בצ'אט הפתוח, גם לא כשזה נשמע כמו שם 😅 ${tap} על 🔐 למטה ושלח שם בערוץ מאובטח בלבד.`;
+    }
+    return `שם נשמר רק בערוץ 🔐 — לא בצ'אט הפתוח, גם אם כתבת "שמי…". ${tap} על "שלח בערוץ מאובטח" למטה.`;
+  }
 
   if (path === 'fun') {
     return `אוי — תפסתי ${label} בצ'אט הפתוח! 😅 זה לא עובר דרך השיחה (גם לא אליי במודל) — מחקתי את זה מהדרך. ${tap} על 🔐 למטה ושלח בערוץ מאובטח, ונמשיך משם.`;

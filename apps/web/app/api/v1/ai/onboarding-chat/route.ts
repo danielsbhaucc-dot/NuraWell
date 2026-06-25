@@ -18,6 +18,7 @@ import {
 } from '../../../../../lib/profile/extracted-field-flags';
 import {
   buildFlagsFromProfileRow,
+  buildOnboardingResponseFlags,
   buildPublicExtractedFromProfileRow,
   mergeProfileFlags,
 } from '../../../../../lib/profile/profile-chat-bootstrap';
@@ -179,14 +180,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const responseFlags = buildFieldFlags({
-      ...mergedPublic,
-      full_name: profileRow?.full_name ?? undefined,
-      current_weight_kg: profileRow?.current_weight_kg ?? undefined,
-      goal_weight_kg: profileRow?.goal_weight_kg ?? undefined,
-      wake_up_time: profileRow?.wake_up_time?.slice(0, 5) ?? undefined,
-      sleep_time: profileRow?.sleep_time?.slice(0, 5) ?? undefined,
-    });
+    const responseFlags = buildOnboardingResponseFlags(mergedPublic, dbFlags);
 
     return NextResponse.json({
       reply: parsed.data.persist
