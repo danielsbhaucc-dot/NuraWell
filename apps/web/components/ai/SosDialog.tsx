@@ -14,8 +14,6 @@ import { FRICTION_META } from '../../lib/ai/almog-commitments/friction';
 import {
   SOS_ALMOG_BUBBLE,
   SOS_BODY_BG,
-  SOS_INTAKE_TASK_ACTIVE,
-  SOS_INTAKE_TASK_IDLE,
   SOS_INTAKE_SECTION,
   SOS_INTAKE_TASK_ACTIVE,
   SOS_INTAKE_TASK_IDLE,
