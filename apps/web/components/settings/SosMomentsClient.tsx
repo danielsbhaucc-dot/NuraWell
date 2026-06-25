@@ -2,24 +2,28 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, History, Loader2, MapPin, Sparkles } from 'lucide-react';
+import { ArrowRight, CircleHelp, Loader2 } from 'lucide-react';
 
-import {
-  FRICTION_META,
-  STRATEGY_LABELS_HE,
-  normalizeFrictionCategory,
-  normalizeStrategyType,
-} from '../../lib/ai/almog-commitments/friction';
+import { normalizeFrictionCategory } from '../../lib/ai/almog-commitments/friction';
 import type { SosMemorySnippet, SosRecentEvent } from '../../lib/ai/guardian/sos-memory';
 import { filterRelevantSosEvents } from '../../lib/ai/guardian/sos-ease-shared';
+import { AlmogAvatarChip } from '../journey/AlmogPresence';
 
-const ACCENT_GRADIENTS = [
-  'linear-gradient(145deg, #047857, #10b981)',
-  'linear-gradient(145deg, #0d9488, #2dd4bf)',
-  'linear-gradient(145deg, #0f766e, #14b8a6)',
-  'linear-gradient(145deg, #059669, #34d399)',
-  'linear-gradient(145deg, #0e7490, #22d3ee)',
-  'linear-gradient(145deg, #4d7c0f, #84cc16)',
+const TRIGGER_HUMAN: Record<string, string> = {
+  emotional: 'הרגשת עמוס או לחוץ',
+  motivational: 'לא היה לך כוח או חשק',
+  physiological: 'חשק, רעב או עייפות',
+  logistical: 'הסביבה לא עזרה',
+  cognitive: 'קשה להתמקד',
+  social: 'לחץ מסביב',
+  knowledge: 'לא היה ברור מה לעשות',
+};
+
+const DIVIDER_COLORS = [
+  ['#10b981', '#2dd4bf'],
+  ['#0d9488', '#5eead4'],
+  ['#059669', '#34d399'],
+  ['#0e7490', '#22d3ee'],
 ] as const;
 
 function formatRelative(iso: string): string {
@@ -27,7 +31,7 @@ function formatRelative(iso: string): string {
   if (mins < 1) return 'עכשיו';
   if (mins < 60) return `לפני ${mins} דק׳`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `לפני ${hours} ש׳`;
+  if (hours < 24) return `לפני ${hours} שעות`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `לפני ${days} ימים`;
   return new Intl.DateTimeFormat('he-IL', {
@@ -48,6 +52,7 @@ function formatDayKey(iso: string): string {
 
 type OutcomeBadge = {
   label: string;
+  hint?: string;
   bg: string;
   text: string;
   border: string;
@@ -56,7 +61,7 @@ type OutcomeBadge = {
 function outcomeBadge(outcome: string): OutcomeBadge {
   if (outcome === 'passed') {
     return {
-      label: 'עבר ✓',
+      label: 'עזר לך',
       bg: 'linear-gradient(135deg, #d1fae5, #a7f3d0)',
       text: '#065f46',
       border: 'rgba(16,185,129,0.35)',
@@ -64,7 +69,7 @@ function outcomeBadge(outcome: string): OutcomeBadge {
   }
   if (outcome === 'fell') {
     return {
-      label: 'עדיין קשה',
+      label: 'עדיין היה קשה',
       bg: 'linear-gradient(135deg, #fef3c7, #fde68a)',
       text: '#92400e',
       border: 'rgba(245,158,11,0.35)',
@@ -72,7 +77,7 @@ function outcomeBadge(outcome: string): OutcomeBadge {
   }
   if (outcome === 'escalated') {
     return {
-      label: 'הופנה לעזרה',
+      label: 'פנינו לעזרה נוספת',
       bg: 'linear-gradient(135deg, #ffe4e6, #fecdd3)',
       text: '#9f1239',
       border: 'rgba(244,63,94,0.35)',
@@ -80,7 +85,8 @@ function outcomeBadge(outcome: string): OutcomeBadge {
   }
   if (outcome === 'unknown') {
     return {
-      label: 'ממתין למשוב',
+      label: 'מחכה שתספר',
+      hint: 'אחרי רגע קשה אני שואל אם הצעה עזרה. אם לא ענית — זה נשאר פתוח. בפעם הבאה שתלחץ/י על "רגע, קשה לי" אפשר לספר לי איך היה.',
       bg: 'linear-gradient(135deg, #e0e7ff, #c7d2fe)',
       text: '#3730a3',
       border: 'rgba(99,102,241,0.35)',
@@ -94,32 +100,11 @@ function outcomeBadge(outcome: string): OutcomeBadge {
   };
 }
 
-function memoryOutcomeLabel(outcome: string): string {
-  if (outcome === 'helped' || outcome === 'resolved') return 'עזר';
-  if (outcome === 'not_helped') return 'פחות התאים';
-  return 'במעקב';
-}
-
-function triggerLabel(trigger: string | null): string {
-  if (!trigger) return 'רגע קשה';
+function triggerHuman(trigger: string | null): string | null {
+  if (!trigger) return null;
   const cat = normalizeFrictionCategory(trigger);
-  return FRICTION_META[cat]?.labelHe ?? trigger;
+  return TRIGGER_HUMAN[cat] ?? null;
 }
-
-function strategyLabelHe(raw: string | null): string | null {
-  if (!raw?.trim()) return null;
-  const type = normalizeStrategyType(raw);
-  return STRATEGY_LABELS_HE[type] ?? null;
-}
-
-const DIVIDER_COLORS = [
-  ['#10b981', '#2dd4bf'],
-  ['#0d9488', '#5eead4'],
-  ['#059669', '#34d399'],
-  ['#0e7490', '#22d3ee'],
-  ['#b45309', '#fbbf24'],
-  ['#4d7c0f', '#84cc16'],
-] as const;
 
 function MomentsColorDivider({ index }: { index: number }) {
   const [from, to] = DIVIDER_COLORS[index % DIVIDER_COLORS.length];
@@ -141,30 +126,79 @@ function MomentsColorDivider({ index }: { index: number }) {
   );
 }
 
-function StatPill({
-  value,
-  label,
-  gradient,
-}: {
-  value: number;
-  label: string;
-  gradient: string;
-}) {
+function OutcomeStatus({ outcome }: { outcome: string }) {
+  const [showHint, setShowHint] = useState(false);
+  const badge = outcomeBadge(outcome);
+
   return (
-    <div
-      className="flex min-w-[5.5rem] flex-col items-center rounded-2xl px-3 py-2.5"
-      style={{
-        background: gradient,
-        boxShadow: '0 4px 14px rgba(6,78,59,0.14)',
-      }}
-    >
-      <span className="text-xl font-black leading-none text-emerald-50">{value}</span>
-      <span className="mt-1 text-[10px] font-bold text-emerald-50/85">{label}</span>
+    <div className="min-w-0">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span
+          className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold"
+          style={{
+            background: badge.bg,
+            color: badge.text,
+            borderColor: badge.border,
+          }}
+        >
+          {badge.label}
+          {badge.hint ? (
+            <button
+              type="button"
+              onClick={() => setShowHint((v) => !v)}
+              className="inline-flex rounded-full p-0.5 opacity-80 transition hover:opacity-100"
+              aria-label="מה זה אומר?"
+              aria-expanded={showHint}
+            >
+              <CircleHelp className="h-3 w-3" />
+            </button>
+          ) : null}
+        </span>
+      </div>
+      {showHint && badge.hint ? (
+        <p className="mt-2 rounded-xl bg-indigo-50/90 px-3 py-2 text-[11px] leading-5 text-indigo-950">
+          {badge.hint}
+        </p>
+      ) : null}
     </div>
   );
 }
 
-export function SosMomentsClient() {
+function SummaryLine({
+  eventsCount,
+  helpedCount,
+  firstName,
+}: {
+  eventsCount: number;
+  helpedCount: number;
+  firstName: string;
+}) {
+  if (eventsCount === 0) return null;
+
+  const parts: string[] = [];
+  if (eventsCount === 1) {
+    parts.push('עצרת פעם אחת כשהיה קשה');
+  } else {
+    parts.push(`עצרת ${eventsCount} פעמים כשהיה קשה`);
+  }
+  if (helpedCount > 0) {
+    parts.push(
+      helpedCount === 1 ? 'ומשהו אחד עזר לך' : `ו-${helpedCount} דברים עזרו לך`
+    );
+  }
+
+  return (
+    <p className="mt-4 max-w-sm text-sm leading-relaxed text-emerald-50/92">
+      {firstName}, {parts.join(' ')}. אני שומר את זה כדי שבפעם הבאה אדע מה מתאים לך.
+    </p>
+  );
+}
+
+type SosMomentsClientProps = {
+  firstName: string;
+};
+
+export function SosMomentsClient({ firstName }: SosMomentsClientProps) {
   const [memory, setMemory] = useState<SosMemorySnippet[]>([]);
   const [events, setEvents] = useState<SosRecentEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -185,7 +219,7 @@ export function SosMomentsClient() {
       setMemory(json.memory ?? []);
       setEvents(filterRelevantSosEvents(json.recent_events ?? []));
     } catch {
-      setError('לא הצלחנו לטעון את ההיסטוריה — נסה שוב בעוד רגע.');
+      setError('לא הצלחתי לזכור עכשיו — נסה/י שוב בעוד רגע.');
     } finally {
       setLoading(false);
     }
@@ -206,24 +240,11 @@ export function SosMomentsClient() {
     return Array.from(groups.entries());
   }, [events]);
 
-  const numberedGroups = useMemo(() => {
-    let counter = 0;
-    return groupedEvents.map(([day, dayEvents], groupIdx) => ({
-      day,
-      groupIdx,
-      events: dayEvents.map((ev) => {
-        counter += 1;
-        return { ev, itemNum: counter };
-      }),
-    }));
-  }, [groupedEvents]);
-
   const helpedMemory = memory.filter((m) => m.outcome === 'helped' || m.outcome === 'resolved');
   const failedMemory = memory.filter((m) => m.outcome === 'not_helped');
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#ecfdf5] via-[#f0fdf9] to-[#f8fafc]">
-      {/* HERO */}
       <div
         className="relative overflow-hidden px-4 pb-8 pt-4"
         style={{
@@ -253,43 +274,19 @@ export function SosMomentsClient() {
 
         <div className="relative mx-auto max-w-lg">
           <div className="flex flex-col items-center pt-10 text-center">
-            <div
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
-              style={{
-                background: 'rgba(167, 243, 208, 0.2)',
-                boxShadow: 'inset 0 1px 0 rgba(167, 243, 208, 0.4)',
-              }}
-            >
-              <MapPin className="h-7 w-7 text-emerald-50" />
-            </div>
-            <h1 className="mt-4 text-2xl font-black text-emerald-50">מסע הרגעים הקשים</h1>
-            <p className="mt-2 max-w-sm text-sm leading-relaxed text-emerald-50/90">
-              כל פעם שלחצת &quot;רגע… קשה לי&quot; — מה עזר, מה פחות, ואיך אלמוג לומד איתך.
+            <AlmogAvatarChip size={56} />
+            <p className="mt-4 text-sm font-bold text-emerald-100/90">היי {firstName},</p>
+            <h1 className="mt-1 text-2xl font-black text-emerald-50">הרגעים שלך</h1>
+            <p className="mt-2 max-w-sm text-sm leading-relaxed text-emerald-50/88">
+              כל פעם שעצרת כשהיה קשה — אני זוכר מה עזר ומה פחות. בלי שיפוט, רק כדי להיות שם בשבילך.
             </p>
 
-            {!loading && !error && (events.length > 0 || memory.length > 0) ? (
-              <div className="mt-5 flex flex-wrap justify-center gap-2">
-                <StatPill
-                  value={events.length}
-                  label="רגעים"
-                  gradient="linear-gradient(145deg, #047857, #10b981)"
-                />
-                <StatPill
-                  value={helpedMemory.length}
-                  label="מה עזר"
-                  gradient="linear-gradient(145deg, #0d9488, #2dd4bf)"
-                />
-                <StatPill
-                  value={failedMemory.length}
-                  label="פחות התאים"
-                  gradient="linear-gradient(145deg, #b45309, #f59e0b)"
-                />
-                <StatPill
-                  value={groupedEvents.length}
-                  label="ימים"
-                  gradient="linear-gradient(145deg, #0e7490, #22d3ee)"
-                />
-              </div>
+            {!loading && !error && events.length > 0 ? (
+              <SummaryLine
+                firstName={firstName}
+                eventsCount={events.length}
+                helpedCount={helpedMemory.length}
+              />
             ) : null}
           </div>
         </div>
@@ -299,7 +296,7 @@ export function SosMomentsClient() {
         {loading ? (
           <div className="glass-surface-home flex items-center justify-center gap-2 rounded-[22px] py-16 text-emerald-800">
             <Loader2 className="h-5 w-5 animate-spin" />
-            <span className="text-sm font-semibold">טוען היסטוריה…</span>
+            <span className="text-sm font-semibold">רגע, אני זוכר…</span>
           </div>
         ) : error ? (
           <div className="glass-surface-home rounded-[22px] border border-red-200/60 px-4 py-3 text-sm text-red-800">
@@ -309,15 +306,17 @@ export function SosMomentsClient() {
               onClick={() => void load()}
               className="mt-2 block font-bold text-red-900 underline"
             >
-              נסה שוב
+              נסה/י שוב
             </button>
           </div>
         ) : events.length === 0 && memory.length === 0 ? (
           <div dir="rtl" className="glass-surface-home rounded-[22px] px-5 py-10 text-center">
-            <History className="mx-auto h-10 w-10 text-emerald-600/70" />
-            <p className="mt-3 text-base font-bold text-emerald-950">עדיין אין רגעים שמורים</p>
-            <p className="mt-2 text-sm text-emerald-900/70">
-              כשתלחץ &quot;רגע… קשה לי&quot; מהבית — ההיסטוריה תופיע כאן.
+            <AlmogAvatarChip size={48} />
+            <p className="mt-4 text-base font-bold text-emerald-950">
+              {firstName}, עדיין אין כאן רגעים שמורים
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-emerald-900/70">
+              כשיהיה רגע קשה — לחץ/י על &quot;רגע, קשה לי עכשיו&quot; מהבית. אני אהיה שם, ומה שיעזור יופיע כאן.
             </p>
             <Link
               href="/"
@@ -334,40 +333,26 @@ export function SosMomentsClient() {
           <>
             {(helpedMemory.length > 0 || failedMemory.length > 0) && (
               <section dir="rtl" className="glass-surface-home space-y-4 rounded-[22px] p-5">
-                <div className="flex items-center justify-center gap-2">
-                  <Sparkles className="h-5 w-5 text-emerald-700" />
-                  <h2 className="text-lg font-black text-emerald-950">מה אלמוג למד ממך</h2>
+                <div className="text-center">
+                  <h2 className="text-lg font-black text-emerald-950">מה עזר לך</h2>
+                  <p className="mt-1 text-xs text-emerald-800/65">דברים שכדאי לזכור לפעם הבאה</p>
                 </div>
 
                 {helpedMemory.length > 0 ? (
-                  <div>
-                    <p className="mb-2 text-center text-xs font-bold text-emerald-800/70">מה עזר</p>
-                    <ul className="space-y-0">
-                      {helpedMemory.map((m, i) => (
-                        <li key={`h-${i}`}>
-                          {i > 0 ? <MomentsColorDivider index={i} /> : null}
-                          <div className="glass-inset-emerald flex items-start gap-3 rounded-2xl px-4 py-3 text-sm text-emerald-900">
-                            <span
-                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-emerald-50"
-                              style={{
-                                background: ACCENT_GRADIENTS[i % ACCENT_GRADIENTS.length],
-                                boxShadow: '0 3px 10px rgba(4,120,87,0.18)',
-                              }}
-                            >
-                              {i + 1}
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <span className="font-bold">{m.strategy}</span>
-                              {m.task_title ? ` · ${m.task_title}` : ''}
-                              <span className="mt-1 block text-xs text-emerald-800/60">
-                                {memoryOutcomeLabel(m.outcome)} · {formatRelative(m.created_at)}
-                              </span>
-                            </div>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <ul className="space-y-0">
+                    {helpedMemory.map((m, i) => (
+                      <li key={`h-${i}`}>
+                        {i > 0 ? <MomentsColorDivider index={i} /> : null}
+                        <div className="glass-inset-emerald rounded-2xl px-4 py-3 text-sm text-emerald-900">
+                          <p className="font-bold leading-snug">{m.strategy}</p>
+                          {m.task_title ? (
+                            <p className="mt-1 text-xs text-emerald-800/70">בקשר ל: {m.task_title}</p>
+                          ) : null}
+                          <p className="mt-1.5 text-[11px] text-emerald-800/55">{formatRelative(m.created_at)}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 ) : null}
 
                 {helpedMemory.length > 0 && failedMemory.length > 0 ? (
@@ -376,34 +361,25 @@ export function SosMomentsClient() {
 
                 {failedMemory.length > 0 ? (
                   <div>
-                    <p className="mb-2 text-center text-xs font-bold text-amber-900/70">פחות התאים</p>
+                    <p className="mb-2 text-center text-xs font-bold text-amber-900/75">
+                      מה שפחות התאים הפעם
+                    </p>
                     <ul className="space-y-0">
                       {failedMemory.map((m, i) => (
                         <li key={`f-${i}`}>
                           {i > 0 ? <MomentsColorDivider index={helpedMemory.length + i} /> : null}
                           <div
-                            className="flex items-start gap-3 rounded-2xl px-4 py-3 text-sm text-amber-950"
+                            className="rounded-2xl px-4 py-3 text-sm text-amber-950"
                             style={{
                               background: 'linear-gradient(135deg, rgba(254,243,199,0.75), rgba(253,230,138,0.45))',
                               border: '1px solid rgba(245,158,11,0.25)',
                             }}
                           >
-                            <span
-                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-amber-50"
-                              style={{
-                                background: 'linear-gradient(145deg, #b45309, #f59e0b)',
-                                boxShadow: '0 3px 10px rgba(180,83,9,0.2)',
-                              }}
-                            >
-                              {i + 1}
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <span className="font-bold">{m.strategy}</span>
-                              {m.task_title ? ` · ${m.task_title}` : ''}
-                              <span className="mt-1 block text-xs text-amber-900/60">
-                                {formatRelative(m.created_at)}
-                              </span>
-                            </div>
+                            <p className="font-bold leading-snug">{m.strategy}</p>
+                            {m.task_title ? (
+                              <p className="mt-1 text-xs text-amber-900/70">בקשר ל: {m.task_title}</p>
+                            ) : null}
+                            <p className="mt-1.5 text-[11px] text-amber-900/55">{formatRelative(m.created_at)}</p>
                           </div>
                         </li>
                       ))}
@@ -419,80 +395,37 @@ export function SosMomentsClient() {
 
             {groupedEvents.length > 0 ? (
               <section dir="rtl" className="space-y-4">
-                <div className="flex items-center justify-center gap-2 px-1">
-                  <History className="h-5 w-5 text-emerald-700" />
-                  <h2 className="text-lg font-black text-emerald-950">רגעים לפי תאריך</h2>
+                <div className="px-1 text-center">
+                  <h2 className="text-lg font-black text-emerald-950">מתי זה קרה</h2>
+                  <p className="mt-1 text-xs text-emerald-800/65">יום אחרי יום — בלי מספרים מסובכים</p>
                 </div>
 
-                {numberedGroups.map(({ day, groupIdx, events: dayEvents }) => (
-                  <div key={day} className="relative space-y-0">
-                    {groupIdx > 0 ? <MomentsColorDivider index={groupIdx + 2} /> : null}
-                    <div className="flex items-center justify-center gap-2 px-1 py-1">
-                      <span
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black text-emerald-50"
-                        style={{
-                          background: ACCENT_GRADIENTS[groupIdx % ACCENT_GRADIENTS.length],
-                          boxShadow: '0 4px 12px rgba(4,120,87,0.2)',
-                        }}
-                      >
-                        {groupIdx + 1}
-                      </span>
-                      <p className="text-sm font-bold text-emerald-900/80">{day}</p>
-                      <span
-                        className="rounded-full px-2 py-0.5 text-[10px] font-bold text-emerald-800"
-                        style={{
-                          background: 'rgba(167, 243, 208, 0.35)',
-                          border: '1px solid rgba(16,185,129,0.2)',
-                        }}
-                      >
-                        {dayEvents.length} רגעים
-                      </span>
-                    </div>
+                {groupedEvents.map(([day, dayEvents], groupIdx) => (
+                  <div key={day} className="relative space-y-2">
+                    {groupIdx > 0 ? <MomentsColorDivider index={groupIdx + 1} /> : null}
+                    <p className="px-1 text-center text-sm font-bold text-emerald-900/85">{day}</p>
 
-                    {dayEvents.map(({ ev, itemNum }, evIdx) => {
-                      const badge = outcomeBadge(ev.outcome);
-                      const strategyHe = strategyLabelHe(ev.strategy_offered);
+                    {dayEvents.map((ev, evIdx) => {
+                      const humanTrigger = triggerHuman(ev.trigger);
                       return (
                         <div key={ev.id}>
-                          {evIdx > 0 ? <MomentsColorDivider index={itemNum} /> : null}
-                          <article className="glass-surface-home flex items-start gap-3 rounded-2xl px-4 py-3">
-                          <span
-                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-emerald-50"
-                            style={{
-                              background: ACCENT_GRADIENTS[(itemNum - 1) % ACCENT_GRADIENTS.length],
-                              boxShadow: '0 3px 10px rgba(4,120,87,0.16)',
-                            }}
-                          >
-                            {itemNum}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span
-                                className="rounded-full border px-2.5 py-0.5 text-[11px] font-bold"
-                                style={{
-                                  background: badge.bg,
-                                  color: badge.text,
-                                  borderColor: badge.border,
-                                }}
-                              >
-                                {badge.label}
-                              </span>
-                              <span className="text-xs text-emerald-800/55">{formatRelative(ev.created_at)}</span>
-                              <span className="text-xs font-semibold text-emerald-800/70">
-                                {triggerLabel(ev.trigger)}
+                          {evIdx > 0 ? <MomentsColorDivider index={groupIdx + evIdx + 2} /> : null}
+                          <article className="glass-surface-home rounded-2xl px-4 py-3">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <OutcomeStatus outcome={ev.outcome} />
+                              <span className="shrink-0 text-xs text-emerald-800/55">
+                                {formatRelative(ev.created_at)}
                               </span>
                             </div>
                             {ev.task_title ? (
-                              <p className="mt-2 text-sm font-bold text-emerald-950">{ev.task_title}</p>
-                            ) : null}
-                            {strategyHe ? (
-                              <p className="mt-1 text-xs text-emerald-900/75">
-                                <span className="font-bold text-emerald-800">מה ניסינו: </span>
-                                {strategyHe}
+                              <p className="mt-2 text-sm font-bold leading-snug text-emerald-950">
+                                {ev.task_title}
                               </p>
                             ) : null}
-                          </div>
-                        </article>
+                            {humanTrigger ? (
+                              <p className="mt-1.5 text-xs leading-5 text-emerald-900/75">{humanTrigger}</p>
+                            ) : null}
+                          </article>
                         </div>
                       );
                     })}
