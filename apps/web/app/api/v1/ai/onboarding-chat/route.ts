@@ -206,6 +206,7 @@ export async function POST(request: Request) {
       profile_session_id,
       used_fallback: result.used_fallback,
       model: result.model,
+      blocked_sensitive_leak: result.blocked_sensitive_leak === true,
     });
   } catch (error) {
     console.error('[API /v1/ai/onboarding-chat POST]', error);

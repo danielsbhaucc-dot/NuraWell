@@ -53,6 +53,7 @@ type ApiResponse = {
   summary: string | null;
   persisted: boolean;
   error?: string;
+  blocked_sensitive_leak?: boolean;
 };
 
 interface OnboardingChatProps {
@@ -586,7 +587,24 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
     if (!json) return;
 
     if (!persist) {
-      setMessages((prev) => [...prev, { role: 'assistant', content: json.reply }]);
+      if (json.blocked_sensitive_leak) {
+        setMessages((prev) => {
+          const updated = [...prev];
+          for (let i = updated.length - 1; i >= 0; i--) {
+            if (updated[i].role === 'user') {
+              updated[i] = {
+                role: 'user',
+                content: '🔐 פרט רגיש — לא נשמר בצ\'אט הפתוח',
+                secret: true,
+              };
+              break;
+            }
+          }
+          return [...updated, { role: 'assistant', content: json.reply }];
+        });
+      } else {
+        setMessages((prev) => [...prev, { role: 'assistant', content: json.reply }]);
+      }
     }
     applyApiResponse(json);
     if (persist && json.persisted) {
