@@ -26,3 +26,17 @@ export function genderLabel(gender: ProfileGender): string {
   if (gender === 'female') return 'נקבה';
   return '';
 }
+
+/** "אל תכתוב" / "אל תכתבי" לפי מגדר הפרופיל */
+export function imperativeDontWrite(gender: ProfileGender): string {
+  if (gender === 'female') return 'אל תכתבי';
+  if (gender === 'male') return 'אל תכתוב';
+  return 'אל תכתוב/י';
+}
+
+/** "תלחץ" / "תלחצי" לפי מגדר */
+export function imperativeTap(gender: ProfileGender): string {
+  if (gender === 'female') return 'תלחצי';
+  if (gender === 'male') return 'תלחץ';
+  return 'לחץ/י';
+}

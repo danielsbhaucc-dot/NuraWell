@@ -16,6 +16,12 @@ import {
   redactExtractedForClient,
   type ProfileFieldFlags,
 } from '../../../../../lib/profile/extracted-field-flags';
+import {
+  buildFlagsFromProfileRow,
+  buildPublicExtractedFromProfileRow,
+  mergeProfileFlags,
+} from '../../../../../lib/profile/profile-chat-bootstrap';
+import { firstNameFrom } from '../../../../../lib/profile/personalized-copy';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -95,29 +101,22 @@ export async function POST(request: Request) {
 
     const { data: profileRow } = await supabase
       .from('profiles')
-      .select('gender, full_name, current_weight_kg, goal_weight_kg, wake_up_time, sleep_time')
+      .select(
+        'gender, full_name, main_goal, current_weight_kg, goal_weight_kg, weakest_time_of_day, main_obstacle, main_obstacle_detail, wake_up_time, sleep_time'
+      )
       .eq('id', user.id)
       .maybeSingle();
+
+    const dbFlags = buildFlagsFromProfileRow(profileRow);
+    const dbPublic = buildPublicExtractedFromProfileRow(profileRow);
+    const knownExtracted = mergeExtracted(dbPublic, publicExtracted);
 
     const gender =
       profileRow?.gender === 'male' || profileRow?.gender === 'female'
         ? profileRow.gender
-        : publicExtracted.gender ?? null;
+        : knownExtracted.gender ?? null;
 
-    const resolvedFlags: ProfileFieldFlags = {
-      has_full_name: fieldFlags.has_full_name ?? Boolean(profileRow?.full_name),
-      has_gender: fieldFlags.has_gender ?? Boolean(gender),
-      has_main_goal: fieldFlags.has_main_goal ?? Boolean(publicExtracted.main_goal),
-      has_current_weight:
-        fieldFlags.has_current_weight ?? profileRow?.current_weight_kg != null,
-      has_goal_weight: fieldFlags.has_goal_weight ?? profileRow?.goal_weight_kg != null,
-      has_weakest_time:
-        fieldFlags.has_weakest_time ?? Boolean(publicExtracted.weakest_time_of_day),
-      has_main_obstacle:
-        fieldFlags.has_main_obstacle ?? Boolean(publicExtracted.main_obstacle),
-      has_wake_time: fieldFlags.has_wake_time ?? Boolean(profileRow?.wake_up_time),
-      has_sleep_time: fieldFlags.has_sleep_time ?? Boolean(profileRow?.sleep_time),
-    };
+    const resolvedFlags = mergeProfileFlags(fieldFlags, dbFlags);
 
     const messages = (parsed.data.messages ?? []) as OnboardingChatTurn[];
     if (!parsed.data.is_opening && messages.length === 0 && !parsed.data.persist) {
@@ -138,13 +137,15 @@ export async function POST(request: Request) {
       result = await runOnboardingChatTurn({
         messages,
         path,
-        knownExtracted: publicExtracted,
+        knownExtracted,
         fieldFlags: resolvedFlags,
         isOpening: parsed.data.is_opening,
+        firstNameHint: firstNameFrom(profileRow?.full_name ?? null, ''),
+        profileGender: gender,
       });
     }
 
-    const mergedPublic = mergeExtracted(publicExtracted, result.extracted);
+    const mergedPublic = mergeExtracted(knownExtracted, result.extracted);
 
     let persisted = false;
     let profile_session_id: string | null = null;

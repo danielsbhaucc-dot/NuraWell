@@ -5,6 +5,11 @@ import {
   buildLlmKnownContext,
   type ProfileFieldFlags,
 } from '../profile/extracted-field-flags';
+import {
+  countKnownProfileFields,
+  describeKnownProfileForLlm,
+} from '../profile/profile-chat-bootstrap';
+import { imperativeTap, type ProfileGender } from '../profile/personalized-copy';
 
 export type OnboardingChatTurn = { role: 'user' | 'assistant'; content: string };
 
@@ -67,30 +72,40 @@ function buildSystemPrompt(
 ): string {
   const pathNote =
     path === 'fun'
-      ? `מסלול כייפי — זה הזמן להיות אלמוג האמיתי:
-- הומור עצמי ופדיחות מחמיאה — רק כשמבקשים שדה רגיש דרך request_discrete_field, הפנה לכפתור 🔐 שמופיע אוטומטית למטה (אל תמציא כפתור שלא קיים)
-- אנלוגיות מצחיקות ומפתיעות (כמו חבר שמספר סיפור בוואטסאפ)
-- שאלות יצירתיות ולא צפויות — "אם היית סופרגיבורית, מה הכוח שלך ביום רגיל?"
-- אימוג'י במידה, בלי להפוך לקרקס
-- יותר תורות מהמסלול המהיר — אבל עדיין שאלה אחת בכל הודעה`
+      ? `מסלול כייפי — אלמוג מנחה (לא שואל "מה דחוף לעדכן"):
+- פתח בקטע/סיפור קצר ומצחיק (1-2 משפטים), ואז מיד שאלה ממוקדת על השדה החסר הבא.
+- הומור עצמי — רק כשמבקשים שדה רגיש, הפנה לכפתור 🔐 למטה.
+- אתה מוביל שלב-שלב; אל תשאל שאלות פתוחות כמו "מה הכי דחוף לעדכן".
+- שאלה אחת בכל הודעה, ישר לעניין.`
       : path === 'quick'
-        ? 'מסלול מהיר: שאלות ישירות ונחמדות, פחות סטנדאפ — עדיין חם ואנושי.'
-        : 'עדיין לא נבחר מסלול — פתח בחום ובקלילות, והצע לבחור מסלול.';
+        ? `מסלול מהיר — אלמוג מנחה ישירות:
+- בלי "מה תרצה לעדכן" — שאל את השדה החסר הבא בסדר לוגי.
+- שאלות קצרות וחמות. שאלה אחת בכל תגובה.`
+        : 'עדיין לא נבחר מסלול — פתח בחום והצע לבחור מסלול.';
 
-  const knownBlock = `\nמה כבר יודעים (דגלים בלבד — בלי ערכים): ${JSON.stringify(buildLlmKnownContext(known, flags))}`;
+  const knownBlock = `\nמה כבר יודעים (דגלים בלבד — בלי ערכים רגישים): ${JSON.stringify(buildLlmKnownContext(known, flags))}
+${describeKnownProfileForLlm(flags, known)}
+
+נתונים קיימים בפרופיל:
+- אם has_* = true — השדה כבר שמור. אל תבקש שוב אלא אם המשתמש רוצה לעדכן במפורש.
+- אתה המנחה: המשך לשדה החסר הבא בסדר — שם(🔐) → מטרה → מכשול/זמן חלש → משקלים(🔐) → שעות(🔐).
+- לעדכון שדה רגיש — request_discrete_field + כפתור 🔐.`;
 
   return `${ALMOG_VOICE_DNA}
 
-עכשיו אתה בשיחת עדכון פרופיל בלבד (לא צ'אט כללי). ${pathNote}
-המטרה: לעדכן פרטי פרופיל — קצר וממוקד. אל תבזבז טוקנים על שיחת חולין.
+=== מצב: שיחת עדכון פרופיל בלבד ===
+זו לא שיחה כללית. המטרה היחידה: לעדכן פרטי פרופיל. אתה המנחה — מוביל שלב-שלב.
+אסור לשאול "מה הכי דחוף לעדכן", "מה תרצה לעדכן", "ספר לי מה בא לך" — במקום זה שאל את השדה החסר הבא.
+אם השיחה סטתה — משפט אחד: "אנחנו כאן לעדכון פרופיל", וחזור מיד לשאלה הבאה.
+${pathNote}
 
-אם המשתמש שואל משהו שלא קשור לפרופיל (בריאות, טיפים, מדריכים, שיחת חולין) — אל תענה על התוכן. משפט אחד: כאן רק מעדכנים פרופיל. הפנה לצ'אט הרגיל (כפתור "המשך בצ'אט הרגיל" למטה או בועת הצ'את). חזור מיד לשאלת עדכון הבאה.
+שאלות על הממשק (איפה הכפתור, למה לא רואים):
+- הסבר קצר על כפתור 🔐 למטה. שמור request_discrete_field. חזור לשאלת השדה הבאה.
 
-שאלות על הממשק (איפה הכפתור, למה לא רואים, מה זה ערוץ מאובטח):
-- אל תחליף נושא ואל תפתח שיחה כללית.
-- הסבר בקצרה: כפתור 🔐 "שלח בערוץ מאובטח" מופיע באזור התחתון, מעל שדה הטקסט (אם request_discrete_field פעיל).
-- שמור request_discrete_field אם עדיין חסר שדה רגיש.
-- חזור מיד לשאלת עדכון פרופיל הבאה — שאלה אחת.
+אם המשתמש שואל משהו לא קשור לפרופיל, או "מה המטרה של השיחה", או מאבד הקשר:
+- אל תענה על התוכן החיצוני. אל תפתח נושא חדש.
+- משפט אחד: כאן מעדכנים פרופיל בלבד. לשיחה חופשית — "המשך בצ'אט הרגיל" למטה.
+- מיד אחר כך — השאלה הבאה לעדכון (השדה החסר).
 
 חוק פרטיות קריטי:
 - שם, משקלים ושעות שינה/השכמה — *אסור* לבקש שהמשתמש יכתוב בצ'אט החופשי.
@@ -179,35 +194,88 @@ function nextMissingDiscreteField(flags: ProfileFieldFlags): DiscreteFieldKey | 
 const META_UI_QUESTION_RE =
   /איפה הכפתור|לא רואה|אין כפתור|איפה הכפתור הסודי|מה זה ערוץ|איך שולח|למה לא רואה|איפה זה|איפה ללחוץ/i;
 
-function isMetaUiQuestion(text: string): boolean {
-  return META_UI_QUESTION_RE.test(text);
+const CONTEXT_LOSS_RE =
+  /מה המטרה של השיחה|מה מטרת השיחה|למה אנחנו|מה אנחנו עושים|לא מבין|מה זה השיחה|לא הבנתי|עזוב את זה|בוא נדבר על|מה הקטע|לא קשור/i;
+
+const OFF_TOPIC_RE =
+  /איך לרדוץ|מה לאכול|טיפים|תפריט|מתכון|המלצה|ספר לי על|מה דעתך|איך להתחיל דיאטה|למה אני|מה לעשות כש|אימון|כושר/i;
+
+type UserDiversion = 'meta_ui' | 'context_loss' | 'off_topic';
+
+function classifyUserDiversion(text: string): UserDiversion | null {
+  if (META_UI_QUESTION_RE.test(text)) return 'meta_ui';
+  if (CONTEXT_LOSS_RE.test(text)) return 'context_loss';
+  if (OFF_TOPIC_RE.test(text)) return 'off_topic';
+  return null;
 }
 
-function metaUiReply(field: DiscreteFieldKey | null): string {
-  if (field === 'full_name') {
-    return 'הכפתור 🔐 "שלח בערוץ מאובטח" נמצא למטה, מעל שדה הטקסט — שם שולחים שם בפרטיות. כאן אנחנו רק מעדכנים פרופיל; לשיחה חופשית יש כפתור "המשך בצ\'אט הרגיל". בינתיים — מה המטרה העיקרית שלך כרגע?';
+function leadQuestion(flags: ProfileFieldFlags): string {
+  if (!flags.has_main_goal) {
+    return 'מה המטרה העיקרית שלך — ירידה במשקל, אורח חיים בריא, או גם וגם?';
   }
-  if (field) {
-    return 'הכפתור 🔐 למטה פותח ערוץ מאובטח לפרטים רגישים — מעל שדה הטקסט. נשארים כאן לעדכון פרופיל בלבד. נמשיך?';
+  if (!flags.has_main_obstacle && !flags.has_weakest_time) {
+    return 'מה הכי משפיע עליך היום — מכשול (זמן, אכילה רגשית, עקביות…) או זמן קשה ביום?';
   }
-  return 'אנחנו כאן רק לעדכון פרופיל. לשיחה חופשית — "המשך בצ\'אט הרגיל" למטה. מה עוד חשוב לך לעדכן?';
+  if (!flags.has_gender) return 'איך נוח לך שאפנה אליך — זכר או נקבה?';
+  if (!flags.has_current_weight) return 'נעבור למשקל נוכחי — שלח בערוץ 🔐 למטה.';
+  if (!flags.has_goal_weight) return 'מה משקל היעד? שלח בערוץ 🔐 למטה.';
+  if (!flags.has_wake_time) return 'באיזו שעה אתה בדרך כלל קם? (🔐 למטה)';
+  if (!flags.has_sleep_time) return 'ובאיזו שעה אתה הולך לישון? (🔐 למטה)';
+  return 'נראה שיש לנו את רוב הפרטים — רוצה לשנות משהו ספציפי?';
 }
 
-function openingReply(path: OnboardingPath | null, flags: ProfileFieldFlags): string {
+function redirectToProfileMission(
+  kind: UserDiversion,
+  flags: ProfileFieldFlags,
+  field: DiscreteFieldKey | null
+): string {
+  const next = leadQuestion(flags);
+  if (kind === 'meta_ui' && field === 'full_name') {
+    return `הכפתור 🔐 "שלח בערוץ מאובטח" למטה, מעל שדה הטקסט — שם שולחים שם בפרטיות. אנחנו כאן רק לעדכון פרופיל. ${next}`;
+  }
+  if (kind === 'meta_ui' && field) {
+    return `הכפתור 🔐 למטה פותח ערוץ מאובטח. נשארים בעדכון פרופיל. ${next}`;
+  }
+  const prefix =
+    kind === 'context_loss'
+      ? 'המטרה כאן: לעדכן את הפרופיל שלך בשיחה קצרה — אני מנחה שלב-שלב. לשיחה חופשית יש "המשך בצ\'אט הרגיל" למטה.'
+      : 'כאן רק מעדכנים פרופיל — לא טיפים או שיחה כללית. לזה יש את הצ\'אט הרגיל.';
+  return `${prefix} ${next}`;
+}
+
+function openingReply(
+  path: OnboardingPath | null,
+  flags: ProfileFieldFlags,
+  firstNameHint?: string | null,
+  profileGender: ProfileGender = null
+): string {
+  const name = firstNameHint?.trim();
+  const hi = name ? `היי ${name}!` : 'היי!';
+  const tap = imperativeTap(profileGender);
   const needsName = !flags.has_full_name;
+  const next = leadQuestion(flags);
+  const knownCount = countKnownProfileFields(flags);
+  const hasExisting = knownCount >= 2;
+
   if (path === 'fun') {
     if (needsName) {
-      return 'היי! 👋 איזו פדיחות מביכה — אני אלמוג ואני לא סגור בכלל איך קוראים לך 😅 אל תכתוב את זה כאן בצ\'אט — למטה יש כפתור 🔐 לערוץ מאובטח. בינתיים: מה הכי דחוף לך לעדכן?';
+      return `${hi} 👋 אוקיי סיפור מהיר — פעם שכחתי את שם החברה הכי טובה שלי מול כולם, מביך בטירוף 😅 אני מנחה את עדכון הפרופיל שלך — קודם שם, בערוץ מאובטח: ${tap} על 🔐 למטה. אחרי זה נמשיך.`;
     }
-    return 'היי! 👋 אלמוג כאן — בוא נעדכן את הפרופיל בכיף. מה הכי דחוף לך לעדכן אצלי?';
+    if (hasExisting) {
+      return `${hi} 👋 יש לי כבר חלק מהפרטים שלך שמורים 🔒 — אני ממשיך מאיפה שחסר. ${next}`;
+    }
+    return `${hi} 👋 טוב, אני מנחה — לא טופס, שיחה קצרה. ${next}`;
   }
   if (path === 'quick') {
     if (needsName) {
-      return 'היי! כיף שבאת לעדכן ✨ נעבור על כמה דברים ביחד — קליל ומהיר. קודם כל: איך קוראים לך? (יש כפתור 🔐 למטה — לא כאן בצ\'אט)';
+      return `${hi} נעדכן את הפרופיל ביחד — קודם שם בערוץ 🔐 למטה (${tap}, לא כאן בצ'אט). מיד אחר כך נמשיך.`;
     }
-    return 'היי! כיף שבאת לעדכן ✨ נעבור על כמה דברים ביחד — קליל ומהיר. נתחיל: מה המטרה העיקרית שלך כרגע?';
+    if (hasExisting) {
+      return `${hi} יש נתונים שמורים — אני ממשיך לשדה הבא. ${next}`;
+    }
+    return `${hi} נעדכן מהר ונעים. ${next}`;
   }
-  return 'היי! אלמוג כאן ✨ בוא נעדכן את הפרופיל שלך בשיחה — לא טופס משעמם. איך בא לך לעבור?';
+  return `${hi} אלמוג כאן ✨ בוא נעדכן את הפרופיל בשיחה. איך בא לך לעבור — מהיר או כייפי?`;
 }
 
 async function callLlm(
@@ -226,7 +294,7 @@ async function callLlm(
     try {
       const completion = await groq.chat.completions.create({
         model: ONBOARDING_MODEL_GROQ,
-        temperature: 0.85,
+        temperature: 0.72,
         max_tokens: 800,
         response_format: { type: 'json_object' },
         messages: chatMessages,
@@ -242,7 +310,7 @@ async function callLlm(
     try {
       const completion = await openrouter.chat.completions.create({
         model: ONBOARDING_MODEL_OPENROUTER,
-        temperature: 0.85,
+        temperature: 0.72,
         max_tokens: 800,
         response_format: { type: 'json_object' },
         messages: chatMessages,
@@ -263,8 +331,19 @@ export async function runOnboardingChatTurn(params: {
   knownExtracted?: OnboardingExtracted;
   fieldFlags?: ProfileFieldFlags;
   isOpening?: boolean;
+  /** לפתיחה בלבד — שם פרטי מהשרת, לא נשלח ל-LLM */
+  firstNameHint?: string | null;
+  profileGender?: ProfileGender;
 }): Promise<OnboardingChatResult> {
-  const { messages, path = null, knownExtracted = {}, fieldFlags, isOpening = false } = params;
+  const {
+    messages,
+    path = null,
+    knownExtracted = {},
+    fieldFlags,
+    isOpening = false,
+    firstNameHint = null,
+    profileGender = null,
+  } = params;
   const flags: ProfileFieldFlags = fieldFlags ?? {
     has_full_name: Boolean(knownExtracted.full_name),
     has_gender: knownExtracted.gender === 'male' || knownExtracted.gender === 'female',
@@ -281,7 +360,7 @@ export async function runOnboardingChatTurn(params: {
   if (isOpening && trimmed.length <= 1) {
     const request_discrete_field = openingDiscreteField(flags);
     return {
-      reply: openingReply(path, flags),
+      reply: openingReply(path, flags, firstNameHint, profileGender),
       extracted: {},
       request_discrete_field,
       ready_for_summary: false,
@@ -294,7 +373,7 @@ export async function runOnboardingChatTurn(params: {
   const llm = await callLlm(buildSystemPrompt(path, knownExtracted, flags), trimmed);
   if (!llm) {
     return {
-      reply: openingReply(path ?? 'quick', flags),
+      reply: openingReply(path ?? 'quick', flags, firstNameHint),
       extracted: {},
       request_discrete_field: openingDiscreteField(flags),
       ready_for_summary: false,
@@ -310,11 +389,12 @@ export async function runOnboardingChatTurn(params: {
     const llmExtracted = stripSensitiveFromLlmExtracted(sanitizeExtracted(parsed.extracted));
     const llmDiscrete = parseDiscreteField(parsed.request_discrete_field);
     const lastUser = [...trimmed].reverse().find((m) => m.role === 'user');
+    const diversion = lastUser ? classifyUserDiversion(lastUser.content) : null;
 
-    if (lastUser && isMetaUiQuestion(lastUser.content)) {
+    if (diversion) {
       const field = llmDiscrete ?? nextMissingDiscreteField(flags);
       return {
-        reply: metaUiReply(field),
+        reply: redirectToProfileMission(diversion, flags, field),
         extracted: llmExtracted,
         request_discrete_field: field,
         ready_for_summary: parsed.ready_for_summary === true,
@@ -342,7 +422,7 @@ export async function runOnboardingChatTurn(params: {
   } catch (error) {
     console.error('[onboarding-chat-llm] parse failed', error);
     return {
-      reply: 'רגע, נתקעתי רגע 😅 ספר לי שוב — מה הכי חשוב לך לעדכן?',
+      reply: `רגע, נתקעתי רגע 😅 אנחנו כאן לעדכון פרופיל. ${leadQuestion(flags)}`,
       extracted: {},
       request_discrete_field: null,
       ready_for_summary: false,
