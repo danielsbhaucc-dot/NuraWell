@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
-import { Check, FileLock2, Loader2, MessageCircle, Send, X, Zap, PartyPopper } from 'lucide-react';
-import { useAlmogAvatarUrl } from '@/lib/client/useAlmogAvatarUrl';
+import { Check, ChevronRight, FileLock2, Loader2, MessageCircle, Send, X, Zap, PartyPopper } from 'lucide-react';
 import { useChatBackground } from '@/lib/client/useChatBackground';
+import { useVisualDrawerLayout } from '@/lib/client/use-visual-drawer-layout';
 import type { OnboardingExtracted } from '@/lib/ai/onboarding-chat-llm';
 import type { DiscreteFieldKey } from '@/lib/ai/onboarding-discrete-fields';
 import {
@@ -13,8 +13,6 @@ import {
   discreteFieldPrivacyIntro,
 } from '@/lib/ai/onboarding-discrete-fields';
 import { type ProfileFieldFlags } from '@/lib/profile/extracted-field-flags';
-import { encryptPrivateFieldValue } from '@/lib/profile/private-field-crypto-client';
-import type { PrivateFieldTransportMode } from '@/lib/profile/private-field-envelope';
 import {
   dispatchOpenAlmogChat,
   setProfileOnboardingChatVisible,
@@ -23,12 +21,6 @@ import {
 type Turn = { role: 'user' | 'assistant'; content: string; secret?: boolean };
 
 type OnboardingPath = 'quick' | 'fun';
-
-type VaultConfig = {
-  mode: PrivateFieldTransportMode;
-  public_key: JsonWebKey | null;
-  encryption_required: boolean;
-};
 
 type ApiResponse = {
   reply: string;
@@ -79,34 +71,44 @@ const PATH_LABEL: Record<OnboardingPath, string> = {
 
 function ChatHeader({
   path,
+  onBack,
   onClose,
 }: {
   path: OnboardingPath | null;
+  onBack: () => void;
   onClose: () => void;
 }) {
-  const { avatarUrl } = useAlmogAvatarUrl();
-
   return (
     <div
       dir="rtl"
-      className="shrink-0 border-b border-white/10 px-4 pb-3 pt-1"
-      style={{ background: 'rgba(12,18,34,0.92)', backdropFilter: 'blur(16px)' }}
+      className="shrink-0 rounded-t-[28px] border-b border-white/10"
+      style={{
+        background: 'linear-gradient(160deg, #064e3b 0%, #047857 50%, #0c1222 100%)',
+        paddingTop: 'max(10px, env(safe-area-inset-top, 0px))',
+      }}
     >
-      <div className="flex items-center gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={avatarUrl}
-          alt="אלמוג"
-          className="h-11 w-11 shrink-0 rounded-full object-cover object-top border-2 border-emerald-400/40"
-        />
+      <Drawer.Handle className="mx-auto mb-2 mt-1 h-1.5 w-12 shrink-0 rounded-full bg-white/40" />
+      <div className="flex items-center gap-2 px-3 pb-3.5">
+        {path ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white border border-white/15"
+            aria-label="חזרה לבחירת מסלול"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        ) : (
+          <div className="h-9 w-9 shrink-0" aria-hidden />
+        )}
         <div className="min-w-0 flex-1 text-right">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-300/90">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-200/90">
             עדכון פרופיל
           </p>
           <h3 className="text-[17px] font-black leading-tight text-white">שיחה עם אלמוג</h3>
-          <p className="mt-0.5 text-[12px] font-medium text-slate-300">
+          <p className="mt-0.5 text-[12px] font-medium text-emerald-50/75">
             {path
-              ? `${PATH_LABEL[path]} · רק לעדכון פרטים, לא צ'אט כללי`
+              ? `${PATH_LABEL[path]} · רק לעדכון פרטים`
               : 'בחר מסלול כדי להתחיל'}
           </p>
         </div>
@@ -140,15 +142,14 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
     has_wake_time: false,
     has_sleep_time: false,
   });
-  const [vaultConfig, setVaultConfig] = useState<VaultConfig | null>(null);
   const [pendingDiscrete, setPendingDiscrete] = useState<DiscreteFieldKey | null>(null);
   const [discreteField, setDiscreteField] = useState<DiscreteFieldKey | null>(null);
   const [discreteValue, setDiscreteValue] = useState('');
   const [readyForSummary, setReadyForSummary] = useState(false);
   const [saved, setSaved] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const { avatarUrl } = useAlmogAvatarUrl();
   const { url: backgroundUrl } = useChatBackground();
+  const drawerLayout = useVisualDrawerLayout(open);
 
   useEffect(() => {
     setProfileOnboardingChatVisible(open);
@@ -177,14 +178,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
       setReadyForSummary(false);
       setSaved(false);
       setInput('');
-      return;
     }
-    void fetch('/api/v1/profile/private-field')
-      .then((r) => r.json())
-      .then((d: VaultConfig) => setVaultConfig(d))
-      .catch(() =>
-        setVaultConfig({ mode: 'tls-v1', public_key: null, encryption_required: false })
-      );
   }, [open]);
 
   useEffect(() => {
@@ -235,6 +229,17 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
     setPendingDiscrete(null);
   }
 
+  function goBack() {
+    setPath(null);
+    setMessages([]);
+    setPendingDiscrete(null);
+    setDiscreteField(null);
+    setDiscreteValue('');
+    setReadyForSummary(false);
+    setSaved(false);
+    setInput('');
+  }
+
   function goToMainChat() {
     onOpenChange(false);
     dispatchOpenAlmogChat();
@@ -242,7 +247,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
 
   async function sendDiscrete() {
     const value = discreteValue.trim();
-    if (!value || !discreteField || loading || !vaultConfig) return;
+    if (!value || !discreteField || loading) return;
     setLoading(true);
     setMessages((prev) => [
       ...prev,
@@ -253,15 +258,14 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
     setDiscreteField(null);
 
     try {
-      const envelope =
-        vaultConfig.mode === 'ecdh-aes-gcm-v1' && vaultConfig.public_key
-          ? await encryptPrivateFieldValue(value, vaultConfig.public_key)
-          : { mode: 'tls-v1' as const, value };
-
       const res = await fetch('/api/v1/profile/private-field', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, envelope, field_flags: fieldFlags }),
+        body: JSON.stringify({
+          key,
+          envelope: { mode: 'tls-v1', value },
+          field_flags: fieldFlags,
+        }),
       });
       if (!res.ok) return;
       const json = (await res.json()) as {
@@ -317,13 +321,22 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
   const collectedPublicKeys = Object.keys(extractedPublic).filter((k) => EXTRACTED_LABELS[k]);
 
   return (
-    <Drawer.Root open={open} onOpenChange={onOpenChange} direction="bottom" shouldScaleBackground>
+    <Drawer.Root open={open} onOpenChange={onOpenChange} direction="bottom" shouldScaleBackground={false}>
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-[3px]" />
+        <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/55" />
         <Drawer.Content
           className="fixed inset-x-0 bottom-0 z-[210] mx-auto flex w-full max-w-md flex-col rounded-t-[28px] outline-none overflow-hidden"
           style={{
-            height: 'min(92dvh, 720px)',
+            ...(drawerLayout
+              ? {
+                  top: `${drawerLayout.top}px`,
+                  height: `${drawerLayout.height}px`,
+                  bottom: 'auto',
+                  maxHeight: 'none',
+                }
+              : {
+                  height: 'min(92dvh, 720px)',
+                }),
             background: '#0c1222',
             boxShadow: '0 -24px 80px rgba(4,120,87,0.25)',
           }}
@@ -331,7 +344,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
           <Drawer.Title className="sr-only">עדכון פרופיל עם אלמוג</Drawer.Title>
           <Drawer.Description className="sr-only">שיחה לעדכון פרטים אישיים</Drawer.Description>
 
-          <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 pointer-events-none bg-[#0c1222]">
             {backgroundUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={backgroundUrl} alt="" className="h-full w-full object-cover opacity-[0.15]" />
@@ -346,20 +359,18 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
           </div>
 
           <div className="relative z-10 flex min-h-0 flex-1 flex-col">
-            <div className="shrink-0 pt-2">
-              <Drawer.Handle className="mx-auto mb-2 mt-1 h-1.5 w-12 shrink-0 rounded-full bg-white/35" />
-              <ChatHeader path={path} onClose={() => onOpenChange(false)} />
-            </div>
+            <ChatHeader
+              path={path}
+              onBack={goBack}
+              onClose={() => onOpenChange(false)}
+            />
 
             {!path ? (
               <div dir="rtl" className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
                 <div className="flex flex-col items-center gap-5">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={avatarUrl}
-                    alt="אלמוג"
-                    className="h-20 w-20 rounded-full object-cover object-top border-4 border-emerald-400/40 shadow-xl"
-                  />
+                  <span className="text-5xl leading-none" aria-hidden>
+                    ✨
+                  </span>
                   <p className="text-center text-white/90 text-[15px] font-semibold leading-relaxed">
                     איך בא לך לעדכן את הפרופיל?
                   </p>
@@ -426,18 +437,10 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
                   {messages.map((m, i) => (
                     <div
                       key={i}
-                      className={`flex gap-2 ${m.role === 'user' ? 'justify-start' : 'justify-end'}`}
+                      className={`flex ${m.role === 'user' ? 'justify-start' : 'justify-end'}`}
                     >
-                      {m.role === 'assistant' ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={avatarUrl}
-                          alt=""
-                          className="h-8 w-8 rounded-full object-cover object-top shrink-0 mt-1 border border-emerald-400/30"
-                        />
-                      ) : null}
                       <div
-                        className="max-w-[82%] rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed"
+                        className="max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed"
                         style={
                           m.role === 'user'
                             ? {
@@ -451,9 +454,14 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
                               }
                         }
                       >
+                        {m.role === 'assistant' && !m.secret ? (
+                          <span className="mr-1.5" aria-hidden>
+                            💬
+                          </span>
+                        ) : null}
                         {m.secret ? (
                           <span className="flex items-center gap-1.5 text-amber-200 text-[13px]">
-                            <FileLock2 className="h-3.5 w-3.5 shrink-0" />
+                            <span aria-hidden>🔐</span>
                             {m.content}
                           </span>
                         ) : (
@@ -464,11 +472,10 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
                   ))}
 
                   {loading ? (
-                    <div className="flex justify-end gap-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={avatarUrl} alt="" className="h-8 w-8 rounded-full opacity-60" />
-                      <div className="rounded-2xl px-4 py-3 bg-emerald-900/40">
-                        <Loader2 className="h-4 w-4 animate-spin text-emerald-200" />
+                    <div className="flex justify-end">
+                      <div className="rounded-2xl px-4 py-3 bg-emerald-900/40 text-emerald-100 text-sm">
+                        <Loader2 className="h-4 w-4 animate-spin inline ml-2" />
+                        חושב…
                       </div>
                     </div>
                   ) : null}
@@ -478,10 +485,17 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
                 <div
                   dir="rtl"
                   className="shrink-0 border-t border-white/8"
-                  style={{ background: 'rgba(12,18,34,0.95)', backdropFilter: 'blur(16px)' }}
+                  style={{
+                    background: '#0c1222',
+                    paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))',
+                  }}
                 >
                   {pendingDiscrete ? (
-                    <div className="px-4 pt-3 pb-2 space-y-3">
+                    <div className="px-4 pt-3 pb-3 space-y-3 border-b border-amber-400/20 bg-amber-950/30">
+                      <p className="text-[13px] font-bold text-amber-200 flex items-center gap-1.5">
+                        <span aria-hidden>🔐</span>
+                        ערוץ פרטי — {DISCRETE_FIELD_LABELS[pendingDiscrete]}
+                      </p>
                       <p className="text-[13px] leading-relaxed text-amber-100/95">
                         {discreteFieldPrivacyIntro(pendingDiscrete)}
                       </p>
@@ -492,7 +506,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
                           className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold text-white"
                           style={{ background: 'linear-gradient(135deg, #b45309, #f59e0b)' }}
                         >
-                          <FileLock2 className="h-4 w-4" />
+                          <span aria-hidden>🔐</span>
                           שלח בערוץ מאובטח
                         </button>
                         <button
@@ -521,7 +535,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
                             if (e.key === 'Enter') void sendDiscrete();
                           }}
                           placeholder={DISCRETE_FIELD_PLACEHOLDERS[discreteField]}
-                          className="flex-1 rounded-xl px-3 py-2.5 text-sm text-emerald-50 outline-none placeholder:text-slate-500"
+                          className="flex-1 rounded-xl px-3 py-2.5 text-base text-emerald-50 outline-none placeholder:text-slate-500"
                           style={{
                             background: 'rgba(16,185,129,0.12)',
                             border: '1px solid rgba(52,211,153,0.35)',
@@ -563,7 +577,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
                     </p>
                   ) : null}
 
-                  {!pendingDiscrete && !discreteField ? (
+                  {!discreteField ? (
                     <div className="flex items-center gap-2 px-4 py-3">
                       <input
                         value={input}
@@ -575,7 +589,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved }: OnboardingChatPr
                           }
                         }}
                         placeholder="כתוב לאלמוג…"
-                        className="min-w-0 flex-1 rounded-2xl px-4 py-2.5 text-[14px] text-slate-100 outline-none placeholder:text-slate-500"
+                        className="min-w-0 flex-1 rounded-2xl px-4 py-2.5 text-base text-slate-100 outline-none placeholder:text-slate-500"
                         style={{
                           background: 'rgba(255,255,255,0.07)',
                           border: '1px solid rgba(255,255,255,0.1)',

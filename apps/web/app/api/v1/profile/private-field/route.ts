@@ -13,32 +13,16 @@ import {
   buildFieldFlags,
   redactExtractedForClient,
 } from '../../../../../lib/profile/extracted-field-flags';
-import {
-  getProfileVaultPublicJwk,
-  profileVaultEncryptionEnabled,
-  resolvePrivateFieldPlaintext,
-} from '../../../../../lib/profile/private-field-crypto-server';
-import type { PrivateFieldTransportMode } from '../../../../../lib/profile/private-field-envelope';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const envelopeSchema = z.discriminatedUnion('mode', [
-  z.object({
-    mode: z.literal('ecdh-aes-gcm-v1'),
-    ephemeral_public_key: z.record(z.unknown()),
-    iv: z.string().min(8).max(32),
-    ciphertext: z.string().min(8).max(8192),
-  }),
-  z.object({
+const bodySchema = z.object({
+  key: z.enum(['full_name', 'current_weight_kg', 'goal_weight_kg', 'wake_up_time', 'sleep_time']),
+  envelope: z.object({
     mode: z.literal('tls-v1'),
     value: z.string().min(1).max(200),
   }),
-]);
-
-const bodySchema = z.object({
-  key: z.enum(['full_name', 'current_weight_kg', 'goal_weight_kg', 'wake_up_time', 'sleep_time']),
-  envelope: envelopeSchema,
   /** דגלים קיימים מהלקוח — בלי ערכים רגישים */
   field_flags: z.record(z.boolean()).optional(),
 });
@@ -50,39 +34,9 @@ function extractedToProfilePatch(key: DiscreteFieldKey, value: string | number):
   return {};
 }
 
-/** הגדרות ערוץ פרטי — מפתח ציבורי ל-ECDH (אם מוגדר) */
-export async function GET(request: Request) {
-  const auth = await requireApiSession(request);
-  if (!auth.ok) return auth.response;
-
-  const rl = await consumeMultiRateLimits(auth.user.id, 'profile-private-field', [
-    { limit: 60, windowSeconds: 60 },
-  ]);
-  if (!rl.ok) return rateLimitResponse(rl);
-
-  const encrypted = profileVaultEncryptionEnabled();
-  const mode: PrivateFieldTransportMode = encrypted ? 'ecdh-aes-gcm-v1' : 'tls-v1';
-  const public_key = encrypted ? await getProfileVaultPublicJwk() : null;
-
-  return NextResponse.json(
-    {
-      mode,
-      public_key,
-      curve: 'P-256',
-      encryption_required: encrypted && process.env.NODE_ENV === 'production',
-    },
-    {
-      headers: {
-        'Cache-Control': 'private, no-store',
-        'X-Content-Type-Options': 'nosniff',
-      },
-    }
-  );
-}
-
 /**
- * קבלת שדה רגיש מוצפן — לא עובר דרך מודל שפה, לא נרשם בלוגים.
- * שומר ישירות ל-profiles (עדכון חלקי).
+ * קבלת שדה רגיש — לא עובר דרך מודל שפה, לא נרשם בלוגים.
+ * שומר ישירות ל-profiles (עדכון חלקי). ההעברה מוגנת ב-HTTPS.
  */
 export async function POST(request: Request) {
   const auth = await requireApiSession(request);
@@ -102,20 +56,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   }
 
-  const { key } = parsed.data;
-  let plaintext: string;
-
-  try {
-    plaintext = await resolvePrivateFieldPlaintext(
-      parsed.data.envelope as Parameters<typeof resolvePrivateFieldPlaintext>[0]
-    );
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : 'decrypt_failed';
-    if (msg === 'ENCRYPTION_REQUIRED') {
-      return NextResponse.json({ error: 'encryption_required' }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'decrypt_failed' }, { status: 400 });
-  }
+  const { key, envelope } = parsed.data;
+  const plaintext = envelope.value;
 
   const applied = applyDiscreteField({}, key as DiscreteFieldKey, plaintext);
   if (!applied.ok) {
