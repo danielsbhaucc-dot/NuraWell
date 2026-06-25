@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Zap } from 'lucide-react';
 
 export const FUN_TYPING_LINES = [
   'אלמוג מחפש את הבדיחה המושלמת…',
@@ -14,9 +14,26 @@ export const FUN_TYPING_LINES = [
 
 const FLOAT_EMOJIS = ['✨', '🎉', '😅', '🍕', '💫', '🎭', '🔥', '🌈'] as const;
 
-const CONFETTI_COLORS = ['#f472b6', '#fbbf24', '#a78bfa', '#34d399', '#fb7185', '#38bdf8'];
+const CONFETTI_COLORS = ['#fbbf24', '#34d399', '#fb923c', '#38bdf8', '#f472b6', '#a3e635'];
 
 type Particle = { id: number; x: number; y: number; emoji: string; delay: number; duration: number };
+
+export function HeaderTypingDots({ className = '' }: { className?: string }) {
+  const [dots, setDots] = useState(1);
+
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      setDots((d) => (d % 3) + 1);
+    }, 420);
+    return () => window.clearInterval(t);
+  }, []);
+
+  return (
+    <span className={className} aria-live="polite">
+      מקליד{'.'.repeat(dots)}
+    </span>
+  );
+}
 
 export function FunFloatingAmbience() {
   const particles = useMemo<Particle[]>(
@@ -53,13 +70,13 @@ export function FunFloatingAmbience() {
       ))}
       <motion.div
         className="absolute -top-24 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(236,72,153,0.35) 0%, transparent 70%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.32) 0%, transparent 70%)' }}
         animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.75, 0.5] }}
         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
         className="absolute -bottom-16 -right-10 h-48 w-48 rounded-full blur-3xl"
-        style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.3) 0%, transparent 70%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(20,184,166,0.28) 0%, transparent 70%)' }}
         animate={{ scale: [1.1, 0.95, 1.1], opacity: [0.4, 0.65, 0.4] }}
         transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
       />
@@ -107,7 +124,7 @@ export function FunPathSelectHero({ onSelect }: { onSelect: () => void }) {
     <motion.button
       type="button"
       onClick={onSelect}
-      className="relative w-full overflow-hidden rounded-3xl text-right active:scale-[0.98]"
+      className="relative w-full overflow-hidden rounded-[32px] text-right active:scale-[0.98]"
       initial={{ opacity: 0, y: 16, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: 'spring', stiffness: 260, damping: 22, delay: 0.08 }}
@@ -115,18 +132,19 @@ export function FunPathSelectHero({ onSelect }: { onSelect: () => void }) {
       whileTap={{ scale: 0.98 }}
     >
       <motion.div
-        className="absolute -inset-[2px] rounded-3xl"
+        className="absolute -inset-[2px] rounded-[32px]"
         style={{
           background:
-            'conic-gradient(from 0deg, #f472b6, #fbbf24, #a78bfa, #34d399, #fb7185, #f472b6)',
+            'conic-gradient(from 0deg, #fbbf24, #34d399, #fb923c, #38bdf8, #fbbf24)',
         }}
         animate={{ rotate: 360 }}
         transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
       />
       <div
-        className="relative m-[2px] overflow-hidden rounded-[22px] px-5 py-5"
+        className="relative m-[2px] overflow-hidden rounded-[30px] px-5 py-5"
         style={{
-          background: 'linear-gradient(145deg, rgba(88,28,135,0.95) 0%, rgba(190,24,93,0.9) 45%, rgba(217,119,6,0.88) 100%)',
+          background:
+            'linear-gradient(145deg, rgba(13,148,136,0.96) 0%, rgba(5,150,105,0.94) 42%, rgba(234,88,12,0.9) 100%)',
         }}
       >
         <FunFloatingAmbience />
@@ -157,6 +175,40 @@ export function FunPathSelectHero({ onSelect }: { onSelect: () => void }) {
   );
 }
 
+export function QuickPathSelectCard({ onSelect }: { onSelect: () => void }) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onSelect}
+      className="relative w-full overflow-hidden rounded-[28px] text-right active:scale-[0.98]"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 280, damping: 24, delay: 0.14 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      <div
+        className="absolute -inset-[1px] rounded-[28px] opacity-90"
+        style={{
+          background: 'linear-gradient(135deg, rgba(56,189,248,0.7), rgba(16,185,129,0.75))',
+        }}
+      />
+      <div
+        className="relative m-[1px] flex items-center gap-3 rounded-[27px] px-4 py-4"
+        style={{
+          background: 'linear-gradient(135deg, rgba(8,145,178,0.95) 0%, rgba(5,150,105,0.92) 100%)',
+          boxShadow: '0 10px 28px rgba(14,165,233,0.22)',
+        }}
+      >
+        <Zap className="h-6 w-6 text-sky-100 shrink-0" />
+        <span className="text-right">
+          <span className="block text-white font-black text-sm">מסלול מהיר</span>
+          <span className="block text-emerald-100/90 text-xs mt-0.5">ישיר, רציני, בלי בדיחות</span>
+        </span>
+      </div>
+    </motion.button>
+  );
+}
+
 export function FunTypingLine() {
   const [idx, setIdx] = useState(0);
 
@@ -175,7 +227,7 @@ export function FunTypingLine() {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -4 }}
         transition={{ duration: 0.25 }}
-        className="text-[11px] font-bold text-pink-200/90 px-0.5"
+        className="text-[11px] font-bold text-amber-100/90 px-0.5"
       >
         {FUN_TYPING_LINES[idx]}
       </motion.span>
@@ -184,20 +236,23 @@ export function FunTypingLine() {
 }
 
 export const FUN_CHAT_BG =
-  'linear-gradient(180deg, rgba(88,28,135,0.45) 0%, rgba(190,24,93,0.28) 35%, rgba(12,18,34,0.96) 72%, #0c1222 100%)';
+  'linear-gradient(180deg, rgba(13,148,136,0.38) 0%, rgba(234,88,12,0.18) 38%, rgba(12,18,34,0.96) 72%, #0c1222 100%)';
 
 export const FUN_HEADER_BG =
-  'linear-gradient(160deg, #701a75 0%, #be185d 42%, #c2410c 100%)';
+  'linear-gradient(160deg, #0f766e 0%, #059669 45%, #ea580c 100%)';
 
 export const FUN_ASSISTANT_BUBBLE = {
-  background: 'linear-gradient(145deg, #a21caf 0%, #db2777 48%, #f59e0b 100%)',
+  background: 'linear-gradient(145deg, #0d9488 0%, #14b8a6 42%, #f59e0b 100%)',
   color: '#fff',
   border: '1px solid rgba(255,255,255,0.22)',
-  boxShadow: '0 8px 28px rgba(236,72,153,0.35)',
+  boxShadow: '0 8px 28px rgba(20,184,166,0.32)',
 };
 
 export const FUN_USER_BUBBLE = {
-  background: 'rgba(255,255,255,0.14)',
-  color: '#fdf2f8',
-  border: '1px solid rgba(251,191,36,0.25)',
+  background: 'rgba(255,255,255,0.13)',
+  color: '#f0fdfa',
+  border: '1px solid rgba(52,211,153,0.28)',
 };
+
+export const FUN_AVATAR_RING =
+  'conic-gradient(from 0deg, #34d399, #fbbf24, #fb923c, #38bdf8, #34d399)';

@@ -1,20 +1,40 @@
 'use client';
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { Camera, ImageUp, Loader2, Trash2, X } from 'lucide-react';
+import { Camera, Heart, Loader2, Sparkles, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { encodeProfileAvatarWebp } from '@/lib/client/encodeProfileAvatarWebp';
 import { isWebpEncodeUnsupportedError } from '@/lib/client/encodeAlmogAvatarWebp';
+import type { ProfileGender } from '@/lib/profile/personalized-copy';
 import { AnimatedDialog } from '../shared/AnimatedDialog';
 
 type Props = {
   open: boolean;
   onClose: () => void;
   currentInitials: string;
+  firstName: string;
+  gender?: ProfileGender;
   onUploaded: (url: string | null) => void;
 };
 
-export function ProfileAvatarUpload({ open, onClose, currentInitials, onUploaded }: Props) {
+function uploadIntro(gender: ProfileGender, firstName: string): string {
+  if (gender === 'female') {
+    return `${firstName}, בואי נוסיף פנים לפרופיל — תמונה שמרגישה נכונה לך.`;
+  }
+  if (gender === 'male') {
+    return `${firstName}, בוא נוסיף פנים לפרופיל — תמונה שמרגישה נכונה לך.`;
+  }
+  return 'בואו נוסיף פנים לפרופיל — תמונה שמרגישה נכונה לכם.';
+}
+
+export function ProfileAvatarUpload({
+  open,
+  onClose,
+  currentInitials,
+  firstName,
+  gender = null,
+  onUploaded,
+}: Props) {
   const inputId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -22,6 +42,14 @@ export function ProfileAvatarUpload({ open, onClose, currentInitials, onUploaded
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setFile(null);
+      setError(null);
+      setDragOver(false);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!file) {
@@ -69,8 +97,8 @@ export function ProfileAvatarUpload({ open, onClose, currentInitials, onUploaded
       } catch (e) {
         setError(
           isWebpEncodeUnsupportedError(e)
-            ? 'הדפדפן לא תומך בדחיסה — נסה כרום או אדג׳'
-            : 'לא הצלחנו להכין את התמונה'
+            ? 'הדפדפן לא תומך בהכנת התמונה — נסה כרום או אדג׳'
+            : 'לא הצלחנו להכין את התמונה, נסה תמונה אחרת'
         );
         return;
       }
@@ -83,7 +111,7 @@ export function ProfileAvatarUpload({ open, onClose, currentInitials, onUploaded
       const res = await fetch('/api/v1/profile/avatar', { method: 'POST', body: form });
       const data = (await res.json()) as { avatar_url?: string; error?: string };
       if (!res.ok) {
-        setError(data.error ?? 'העלאה נכשלה');
+        setError(data.error ?? 'משהו לא הצליח — נסה שוב בעוד רגע');
         return;
       }
 
@@ -91,7 +119,7 @@ export function ProfileAvatarUpload({ open, onClose, currentInitials, onUploaded
       setFile(null);
       onClose();
     } catch {
-      setError('בעיית רשת — נסה שוב');
+      setError('אין חיבור כרגע — נסה שוב');
     } finally {
       setBusy(false);
     }
@@ -104,14 +132,14 @@ export function ProfileAvatarUpload({ open, onClose, currentInitials, onUploaded
     try {
       const res = await fetch('/api/v1/profile/avatar', { method: 'DELETE' });
       if (!res.ok) {
-        setError('מחיקה נכשלה');
+        setError('לא הצלחנו להסיר — נסה שוב');
         return;
       }
       onUploaded(null);
       setFile(null);
       onClose();
     } catch {
-      setError('בעיית רשת');
+      setError('אין חיבור כרגע');
     } finally {
       setBusy(false);
     }
@@ -122,29 +150,46 @@ export function ProfileAvatarUpload({ open, onClose, currentInitials, onUploaded
       open={open}
       onClose={onClose}
       zIndex={290}
-      aria-label="העלאת תמונת פרופיל"
-      backdropClassName="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
-      panelClassName="crystal-surface max-w-md overflow-hidden rounded-3xl shadow-2xl"
+      aria-label="תמונת פרופיל"
+      backdropClassName="absolute inset-0 bg-slate-900/55 backdrop-blur-sm"
+      panelClassName="max-w-md overflow-hidden rounded-3xl shadow-2xl border border-white/20"
+      panelStyle={{
+        background: 'linear-gradient(165deg, #ecfdf5 0%, #ffffff 42%, #f0fdfa 100%)',
+      }}
     >
-      <div dir="rtl" className="crystal-header flex items-center justify-between px-4 py-3">
-        <h3 className="text-lg font-black text-white flex items-center gap-2">
-          <Camera className="h-5 w-5" />
-          תמונת פרופיל
-        </h3>
-        <button
-          type="button"
-          onClick={onClose}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/90 hover:bg-white/15"
-          aria-label="סגור"
-        >
-          <X className="h-4 w-4" />
-        </button>
+      <div
+        dir="rtl"
+        className="relative px-5 pt-5 pb-2"
+        style={{
+          background: 'linear-gradient(145deg, #047857 0%, #10b981 55%, #14b8a6 100%)',
+        }}
+      >
+        <div className="absolute inset-0 opacity-25 pointer-events-none bg-[radial-gradient(circle_at_20%_0%,white,transparent_55%)]" />
+        <div className="relative flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-bold text-emerald-100/90 flex items-center gap-1">
+              <Sparkles className="h-3.5 w-3.5" />
+              הפרופיל שלך
+            </p>
+            <h3 className="mt-1 text-xl font-black text-white leading-tight">תמונה שמייצגת אותך</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white hover:bg-white/25"
+            aria-label="סגור"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
-      <div className="p-5 space-y-4">
-        <p className="text-sm text-slate-600 text-right leading-relaxed">
-          גרור תמונה, לחץ לבחירה, או <kbd className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">Ctrl+V</kbd> להדבקה.
-          התמונה תידחס אוטומטית ותישמר בצורה מאובטחת.
+      <div className="px-5 py-5 space-y-4">
+        <p className="text-[15px] text-slate-700 text-right leading-relaxed font-medium">
+          {uploadIntro(gender, firstName)}
+        </p>
+        <p className="text-[13px] text-slate-500 text-right leading-relaxed -mt-2">
+          אפשר לבחור מהגלריה, לגרור לכאן, או להדביק תמונה — אנחנו נדאג לשאר.
         </p>
 
         <div
@@ -164,37 +209,37 @@ export function ProfileAvatarUpload({ open, onClose, currentInitials, onUploaded
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') fileRef.current?.click();
           }}
-          className={`relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 transition cursor-pointer ${
+          className={`relative flex flex-col items-center justify-center rounded-3xl border-2 border-dashed p-7 transition cursor-pointer ${
             dragOver
-              ? 'border-emerald-400 bg-emerald-50/80'
-              : 'border-emerald-200/80 bg-gradient-to-br from-emerald-50/60 to-teal-50/40'
+              ? 'border-emerald-400 bg-emerald-50 scale-[1.01]'
+              : 'border-emerald-200 bg-white/80 shadow-inner'
           }`}
         >
           <AnimatePresence mode="wait">
             {preview ? (
               <motion.img
                 key="preview"
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.92 }}
                 animate={{ opacity: 1, scale: 1 }}
                 src={preview}
-                alt="תצוגה מקדימה"
-                className="h-28 w-28 rounded-2xl object-cover shadow-lg"
+                alt="איך זה ייראה בפרופיל"
+                className="h-32 w-32 rounded-3xl object-cover shadow-xl ring-4 ring-white"
               />
             ) : (
               <motion.div
                 key="placeholder"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex h-28 w-28 items-center justify-center rounded-2xl text-3xl font-black text-white shadow-lg"
-                style={{ background: 'linear-gradient(135deg, #14b8a6, #10b981)' }}
+                className="flex h-32 w-32 items-center justify-center rounded-3xl text-4xl font-black text-white shadow-xl ring-4 ring-white"
+                style={{ background: 'linear-gradient(135deg, #14b8a6, #059669)' }}
               >
                 {currentInitials}
               </motion.div>
             )}
           </AnimatePresence>
-          <p className="mt-3 text-sm font-bold text-emerald-800 flex items-center gap-1.5">
-            <ImageUp className="h-4 w-4" />
-            {file ? file.name : 'בחר או גרור תמונה'}
+          <p className="mt-4 text-sm font-bold text-emerald-800 flex items-center gap-1.5">
+            <Camera className="h-4 w-4" />
+            {file ? 'נראה מעולה — מוכן לשמירה' : 'לחץ או גרור תמונה לכאן'}
           </p>
           <input
             id={inputId}
@@ -206,23 +251,28 @@ export function ProfileAvatarUpload({ open, onClose, currentInitials, onUploaded
           />
         </div>
 
-        {error ? <p className="text-sm font-semibold text-red-600 text-right">{error}</p> : null}
+        {error ? (
+          <p className="text-sm font-semibold text-red-600 text-right rounded-xl bg-red-50 px-3 py-2">
+            {error}
+          </p>
+        ) : null}
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 pt-1">
           <button
             type="button"
             onClick={() => void upload()}
             disabled={!file || busy}
-            className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
+            className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-black text-white disabled:opacity-50 shadow-lg"
+            style={{ background: 'linear-gradient(135deg, #059669, #10b981)' }}
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
-            שמור תמונה
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Heart className="h-4 w-4" />}
+            {busy ? 'שומר…' : 'זהו, נשמור!'}
           </button>
           <button
             type="button"
             onClick={() => void remove()}
             disabled={busy}
-            className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700"
+            className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-bold text-slate-600"
           >
             <Trash2 className="h-4 w-4" />
             הסר

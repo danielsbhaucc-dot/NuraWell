@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
 import { motion } from 'framer-motion';
-import { Check, ChevronRight, FileLock2, MessageCircle, Send, X, Zap } from 'lucide-react';
+import { Check, ChevronRight, FileLock2, MessageCircle, Send, X } from 'lucide-react';
 import {
   FUN_ASSISTANT_BUBBLE,
+  FUN_AVATAR_RING,
   FUN_CHAT_BG,
   FUN_HEADER_BG,
   FUN_USER_BUBBLE,
@@ -13,6 +14,8 @@ import {
   FunFloatingAmbience,
   FunPathSelectHero,
   FunTypingLine,
+  HeaderTypingDots,
+  QuickPathSelectCard,
 } from '@/components/profile/onboarding-fun-experience';
 import { ALMOG_AVATAR_FALLBACK } from '@/lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '@/lib/client/useAlmogAvatarUrl';
@@ -105,9 +108,7 @@ function AlmogAvatar({
       {fun ? (
         <motion.div
           className="absolute -inset-1 rounded-full"
-          style={{
-            background: 'conic-gradient(from 0deg, #f472b6, #fbbf24, #a78bfa, #f472b6)',
-          }}
+          style={{ background: FUN_AVATAR_RING }}
           animate={{ rotate: 360 }}
           transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
           aria-hidden
@@ -174,11 +175,13 @@ type DrawerPhase = 'intent' | 'paths' | 'chat';
 function ChatHeader({
   path,
   phase,
+  typing = false,
   onBack,
   onClose,
 }: {
   path: OnboardingPath | null;
   phase: DrawerPhase;
+  typing?: boolean;
   onBack: () => void;
   onClose: () => void;
 }) {
@@ -219,9 +222,15 @@ function ChatHeader({
           >
             <AlmogAvatar size={40} className="border-white/30" fun={isFun} />
           </div>
-          <div className="text-right">
+          <div className="text-right min-w-0">
             <p className="text-[16px] font-black leading-none text-white">אלמוג</p>
-            <p className="mt-1 text-[11px] font-medium text-white/75">{subtitle}</p>
+            {typing ? (
+              <p className="mt-1 text-[11px] font-semibold text-white/90">
+                <HeaderTypingDots />
+              </p>
+            ) : (
+              <p className="mt-1 text-[11px] font-medium text-white/75 truncate">{subtitle}</p>
+            )}
           </div>
         </div>
 
@@ -370,8 +379,24 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
   const [readyForSummary, setReadyForSummary] = useState(false);
   const [saved, setSaved] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
   const { url: backgroundUrl } = useChatBackground();
-  const drawerLayout = useVisualDrawerLayout(open);
+  const drawerLayout = useVisualDrawerLayout(open && Boolean(path));
+
+  const scrollChatToBottom = useCallback(() => {
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    });
+  }, []);
+
+  const focusChatInput = useCallback(() => {
+    scrollChatToBottom();
+    window.setTimeout(() => {
+      scrollChatToBottom();
+      footerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 280);
+  }, [scrollChatToBottom]);
 
   useEffect(() => {
     setProfileOnboardingChatVisible(open);
@@ -412,8 +437,14 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
   }, [open, initialBootstrap, needsIntentClarify]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [messages.length, loading, discreteField, pendingDiscrete]);
+    if (drawerLayout?.keyboardOpen) {
+      focusChatInput();
+    }
+  }, [drawerLayout?.keyboardOpen, focusChatInput]);
+
+  useEffect(() => {
+    scrollChatToBottom();
+  }, [messages.length, loading, discreteField, pendingDiscrete, scrollChatToBottom]);
 
   async function apiCall(body: Record<string, unknown>): Promise<ApiResponse | null> {
     const res = await fetch('/api/v1/ai/onboarding-chat', {
@@ -639,6 +670,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
             <ChatHeader
               path={path}
               phase={drawerPhase}
+              typing={loading}
               onBack={handleHeaderBack}
               onClose={() => onOpenChange(false)}
             />
@@ -674,17 +706,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
 
                   <FunPathSelectHero onSelect={() => void startPath('fun')} />
 
-                  <button
-                    type="button"
-                    onClick={() => void startPath('quick')}
-                    className="w-full flex items-center gap-3 rounded-2xl border border-white/15 bg-white/8 px-4 py-3.5 text-right active:scale-[0.98] backdrop-blur-sm"
-                  >
-                    <Zap className="h-5 w-5 text-emerald-300 shrink-0" />
-                    <span>
-                      <span className="block text-white font-bold text-sm">מסלול מהיר</span>
-                      <span className="block text-slate-300 text-xs mt-0.5">ישיר, רציני, בלי בדיחות</span>
-                    </span>
-                  </button>
+                  <QuickPathSelectCard onSelect={() => void startPath('quick')} />
                 </div>
               </div>
             ) : (
@@ -725,7 +747,9 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                     >
                       {m.role === 'assistant' ? (
                         <div
-                          className="max-w-[82%] rounded-[20px] rounded-bl-md px-3.5 py-2.5 text-[14px] leading-relaxed"
+                          className={`max-w-[82%] px-3.5 py-2.5 text-[14px] leading-relaxed ${
+                            isFun ? 'rounded-[24px] rounded-bl-lg' : 'rounded-[20px] rounded-bl-md'
+                          }`}
                           style={
                             isFun
                               ? FUN_ASSISTANT_BUBBLE
@@ -748,7 +772,9 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                         </div>
                       ) : (
                         <div
-                          className="max-w-[82%] rounded-[20px] rounded-tr-md px-3.5 py-2.5 text-[14px] leading-relaxed"
+                          className={`max-w-[82%] px-3.5 py-2.5 text-[14px] leading-relaxed ${
+                            isFun ? 'rounded-[24px] rounded-tr-lg' : 'rounded-[20px] rounded-tr-md'
+                          }`}
                           style={
                             isFun
                               ? FUN_USER_BUBBLE
@@ -784,11 +810,14 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                 </div>
 
                 <div
+                  ref={footerRef}
                   dir="rtl"
-                  className="shrink-0 border-t border-white/8"
+                  className="shrink-0 border-t border-white/8 relative z-20"
                   style={{
-                    background: isFun ? 'rgba(15,8,28,0.98)' : '#0c1222',
-                    paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))',
+                    background: isFun ? 'rgba(8,28,24,0.98)' : '#0c1222',
+                    paddingBottom: drawerLayout?.keyboardOpen
+                      ? '0.35rem'
+                      : 'max(0.5rem, env(safe-area-inset-bottom, 0px))',
                   }}
                 >
                   {pendingDiscrete ? (
@@ -832,6 +861,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                         <input
                           value={discreteValue}
                           onChange={(e) => setDiscreteValue(e.target.value)}
+                          onFocus={focusChatInput}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') void sendDiscrete();
                           }}
@@ -880,10 +910,12 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
 
                   {!discreteField ? (
                     <div className="flex items-center gap-2 px-4 py-3">
-                      <input
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => {
+                        <input
+                          ref={inputRef}
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          onFocus={focusChatInput}
+                          onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
                             void handleSend();
@@ -905,7 +937,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
                         className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white disabled:opacity-40"
                         style={{
                           background: isFun
-                            ? 'linear-gradient(145deg, #a21caf, #f59e0b)'
+                            ? 'linear-gradient(145deg, #0d9488, #f59e0b)'
                             : 'linear-gradient(145deg, #047857, #10b981)',
                         }}
                         aria-label="שליחה"
