@@ -27,6 +27,13 @@ export function genderLabel(gender: ProfileGender): string {
   return '';
 }
 
+/** "חבר מאז" / "חברה מאז" לפי מגדר הפרופיל */
+export function memberSinceLabel(gender: ProfileGender, since: string): string {
+  if (gender === 'female') return `חברה מאז ${since}`;
+  if (gender === 'male') return `חבר מאז ${since}`;
+  return `חבר/ה מאז ${since}`;
+}
+
 /** "אל תכתוב" / "אל תכתבי" לפי מגדר הפרופיל */
 export function imperativeDontWrite(gender: ProfileGender): string {
   if (gender === 'female') return 'אל תכתבי';
