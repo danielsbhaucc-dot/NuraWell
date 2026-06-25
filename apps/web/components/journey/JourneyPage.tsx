@@ -26,7 +26,7 @@ import type { JourneyStationGroup } from '../../lib/journey/group-journey-by-sta
 import { JourneyStationCard } from './JourneyStationCard';
 import { JourneyNextStepCard } from './JourneyNextStepCard';
 import { AlmogAvatarChip } from './AlmogPresence';
-import { AlmogAssignmentsSection } from './AlmogAssignmentsSection';
+import { AlmogAssignmentsSection, AlmogCompletedSection } from './AlmogAssignmentsSection';
 import { stationCoverAlt } from '../../lib/a11y/alt-text';
 
 interface JourneyPageProps {
@@ -181,6 +181,19 @@ function GalleryView({
   onSelect: (key: string) => void;
 }) {
   const reduced = useReducedMotion();
+
+  const { activeGroups, completedGroups } = useMemo(() => {
+    const active: JourneyStationGroup[] = [];
+    const completed: JourneyStationGroup[] = [];
+    for (const g of groups) {
+      const total = g.steps.length;
+      const done = g.steps.filter((s) => s.progress?.is_completed).length;
+      if (total > 0 && done === total) completed.push(g);
+      else active.push(g);
+    }
+    return { activeGroups: active, completedGroups: completed };
+  }, [groups]);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -212,29 +225,42 @@ function GalleryView({
           <EmptyState firstName={firstName} />
         ) : (
           <>
-            {/* שכבת AI — הצעד הבא האדפטיבי, מותאם לקצב ולקשיים של המשתמש */}
+            {/* 1. הצעד הבא — אלמוג ממליץ מה לעשות עכשיו */}
             <JourneyNextStepCard />
 
-            {/* משימות אישיות מאלמוג + מצב פוקוס — מה שאלמוג סיכם איתך בצ'אט */}
-            <AlmogAssignmentsSection />
-
-            <SectionHeader
-              count={groups.length}
-              completed={overall.stationsDone}
-            />
-
-            <div className="space-y-5">
-              {groups.map((g, idx) => (
-                <JourneyStationCard
-                  key={g.key}
-                  group={g}
-                  index={idx}
-                  onSelect={() => onSelect(g.key)}
+            {/* 2. התחנות במסלול — תחנות פעילות */}
+            {activeGroups.length > 0 ? (
+              <>
+                <SectionHeader
+                  count={activeGroups.length}
+                  completed={0}
+                  variant="active"
                 />
-              ))}
-            </div>
+                <div className="mb-6 space-y-5">
+                  {activeGroups.map((g, idx) => (
+                    <JourneyStationCard
+                      key={g.key}
+                      group={g}
+                      index={idx}
+                      onSelect={() => onSelect(g.key)}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : null}
 
-            {/* באנר אישי בתחתית — אלמוג איתך */}
+            {/* 3. הושלמו — תחנות ומשימות אישיות שסיימת */}
+            {completedGroups.length > 0 ? (
+              <CompletedSection
+                groups={completedGroups}
+                onSelect={onSelect}
+                stationOffset={activeGroups.length}
+              />
+            ) : null}
+            <AlmogCompletedSection />
+
+            {/* 4. שאר העמוד — פאנל אלמוג בתחתית + באנר אישי */}
+            <AlmogAssignmentsSection />
             <AlmogTouchBanner firstName={firstName} overall={overall} />
           </>
         )}
@@ -445,7 +471,7 @@ function HeroSection({
               <ProgressRing pct={overall.pct} reduced={reduced} />
               <div className="min-w-0 flex-1 text-right">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-100/85">
-                  ההתקדמות שלך עד עכשיו
+                  כך נראית ההתקדמות שלך
                 </p>
                 <p
                   className="mt-0.5 text-[18px] font-black text-white"
@@ -456,8 +482,8 @@ function HeroSection({
                 </p>
                 <p className="mt-0.5 text-[12px] text-emerald-50/85">
                   {overall.stationsDone > 0
-                    ? `כבר השלמת ${overall.stationsDone} תחנ${overall.stationsDone === 1 ? 'ה' : 'ות'} ✦`
-                    : 'כל צעד מקרב אותך ליעד שלך'}
+                    ? `כבר סיימת ${overall.stationsDone} תחנ${overall.stationsDone === 1 ? 'ה' : 'ות'} — אני רואה את זה ✦`
+                    : 'כל צעד מקרב אותך — אני איתך'}
                 </p>
               </div>
             </motion.div>
@@ -658,20 +684,20 @@ function buildIntroText(
       message: 'המסע שלך מחכה',
       sparkle: '✦',
       subline:
-        'תחנות בדרך, צעדים אישיים והרגלים שמשתלבים בחיים — הכל מוכן להופיע ברגע שתפרוץ קדימה.',
+        'אני מכין לך תחנות, צעדים והרגלים שמשתלבים בחיים — ברגע שתרצה, נצא לדרך יחד.',
     };
   }
   if (overall.done === 0) {
     return {
       preamble,
-      message: 'זה הרגע להתחיל',
+      message: 'זה הרגע שלנו להתחיל',
       sparkle: '✿',
       subline:
         tod?.bucket === 'morning'
-          ? 'הבוקר הזה מתחיל משהו חדש. בחר תחנה ובוא נצא לדרך — צעד אחד בכל פעם, בקצב שלך.'
+          ? 'בוקר טוב להתחלה חדשה. בחר תחנה ואני איתך — צעד אחד בכל פעם, בקצב שלך.'
           : tod?.bucket === 'night'
-            ? 'גם רגע שקט בלילה הוא רגע טוב להתחיל. בחר תחנה ופתח את הצעד הראשון שלך.'
-            : 'בחר תחנה במסלול, ובוא נצא לדרך — צעד אחד בכל פעם, בקצב שלך.',
+            ? 'גם רגע שקט בלילה מתאים להתחלה. בחר תחנה ואני אהיה כאן.'
+            : 'בחר תחנה במסלול ונצא לדרך — אני איתך בכל צעד.',
     };
   }
   if (overall.pct >= 100) {
@@ -680,16 +706,16 @@ function buildIntroText(
       message: 'עשית את כל הדרך!',
       sparkle: '🏆',
       subline:
-        'השלמת את כל הצעדים. אתה יכול לחזור בכל רגע ולהתבונן שוב במה שלמדת — או להמשיך לעבות את ההרגלים שבנית.',
+        'סיימת את כל הצעדים — אני באמת גאה. אפשר לחזור ולהתבונן, או להמשיך לחזק את מה שבנית.',
     };
   }
   if (overall.pct >= 60) {
     return {
       preamble,
-      message: 'הקו כבר נראה באופק',
+      message: 'אנחנו כבר קרובים',
       sparkle: '✦',
       subline:
-        'עברת יותר ממחצית הדרך. כל צעד נוסף מקבע את ההרגלים שאתה בונה לעצמך — וזה ממש מרשים.',
+        'עברת יותר ממחצית הדרך. כל צעד נוסף מחזק את מה שאתה בונה — אני רואה את זה.',
     };
   }
   if (overall.pct >= 30) {
@@ -702,12 +728,12 @@ function buildIntroText(
   }
   return {
     preamble,
-    message: 'ממשיכים את המסע',
+    message: 'ממשיכים יחד',
     sparkle: '✿',
     subline:
       tod?.bucket === 'morning'
-        ? 'בוקר חדש, צעד חדש. אני גאה בכל צעד שאתה עושה — בחר את התחנה הבאה ובוא נמשיך יחד.'
-        : 'אני גאה בכל צעד שאתה עושה. בחר את התחנה הבאה ובוא נמשיך יחד.',
+        ? 'בוקר חדש, צעד חדש. אני גאה בך — בחר את התחנה הבאה ונמשיך.'
+        : 'אני גאה בכל צעד שאתה עושה. בחר את התחנה הבאה ונמשיך יחד.',
   };
 }
 
@@ -1126,7 +1152,15 @@ function FloatingSparkles() {
    SECTION HEADER + EMPTY STATE
    ════════════════════════════════════════════════════════════════ */
 
-function SectionHeader({ count, completed }: { count: number; completed: number }) {
+function SectionHeader({
+  count,
+  completed,
+  variant = 'all',
+}: {
+  count: number;
+  completed: number;
+  variant?: 'active' | 'all';
+}) {
   return (
     <div className="mb-5 flex items-center gap-3 px-1">
       <div
@@ -1141,9 +1175,78 @@ function SectionHeader({ count, completed }: { count: number; completed: number 
           התחנות במסלול
         </p>
         <p className="mt-0.5 text-xs text-emerald-800/70">
-          {count} תחנות · {completed} הושלמו
+          {variant === 'active'
+            ? count === 1
+              ? 'יש לך תחנה אחת שמחכה — בוא ניכנס'
+              : `${count} תחנות מחכות לך — בחר תחנה ונמשיך`
+            : `${count} תחנות · ${completed} הושלמו`}
         </p>
       </div>
+    </div>
+  );
+}
+
+function CompletedSection({
+  groups,
+  onSelect,
+  stationOffset,
+}: {
+  groups: JourneyStationGroup[];
+  onSelect: (key: string) => void;
+  stationOffset: number;
+}) {
+  const [expanded, setExpanded] = useState(groups.length <= 2);
+
+  if (groups.length === 0) return null;
+
+  const shown = expanded ? groups : groups.slice(0, 2);
+
+  return (
+    <div className="mb-6">
+      <div className="mb-3 flex items-center gap-3 px-1">
+        <div
+          className="h-7 w-1.5 shrink-0 rounded-full"
+          style={{ background: 'linear-gradient(to bottom, #a7f3d0, #34d399)' }}
+        />
+        <div className="flex-1 text-right">
+          <p
+            className="text-[17px] font-black"
+            style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
+          >
+            הושלמו
+          </p>
+          <p className="mt-0.5 text-xs text-emerald-800/70">
+            {groups.length === 1
+              ? 'סיימת תחנה אחת — אני גאה בך'
+              : `סיימת ${groups.length} תחנות — כל הכבוד`}
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {shown.map((g, idx) => (
+          <JourneyStationCard
+            key={g.key}
+            group={g}
+            index={stationOffset + idx}
+            onSelect={() => onSelect(g.key)}
+          />
+        ))}
+      </div>
+
+      {!expanded && groups.length > 2 ? (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="mt-3 w-full rounded-xl py-2.5 text-[13px] font-bold text-emerald-800 transition active:scale-[0.98]"
+          style={{
+            background: 'rgba(16,185,129,0.10)',
+            border: '1px solid rgba(110,231,183,0.35)',
+          }}
+        >
+          הצג עוד ({groups.length - 2} תחנות)
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -1155,7 +1258,9 @@ function EmptyState({ firstName }: { firstName: string }) {
       <h3 className="mb-2 text-xl font-black" style={{ color: '#1A1730' }}>
         {firstName}, המסע שלך מחכה
       </h3>
-      <p className="text-sm text-gray-500">כשיצטרפו תחנות וצעדים — הם יופיעו כאן בדיוק בשבילך</p>
+      <p className="text-sm text-gray-500">
+        כשיצטרפו תחנות וצעדים — אני אדאג שיופיעו כאן בדיוק בשבילך
+      </p>
     </div>
   );
 }
@@ -1221,7 +1326,7 @@ function AlmogTouchBanner({
             className="text-[10.5px] font-black uppercase tracking-[0.14em] text-emerald-200/90"
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
-            המנטור שלך · אלמוג
+            אלמוג · המנטור שלך
           </p>
           <p
             className="mt-1.5 text-[14.5px] font-bold leading-relaxed text-white"
