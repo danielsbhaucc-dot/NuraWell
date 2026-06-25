@@ -8,14 +8,14 @@ export type SosSurfaceTone = 'lavender' | 'sky' | 'amber' | 'rose' | 'white' | '
 
 const SURFACE_BASE: Record<SosSurfaceTone, string> = {
   lavender:
-    'rounded-2xl border border-violet-200/55 bg-gradient-to-br from-violet-50 to-indigo-50/90',
-  sky: 'rounded-2xl border border-sky-200/50 bg-gradient-to-br from-sky-50 to-cyan-50/85',
+    'rounded-2xl border border-violet-300/55 bg-gradient-to-br from-violet-100 via-violet-50 to-indigo-100/90',
+  sky: 'rounded-2xl border border-sky-300/55 bg-gradient-to-br from-sky-100 via-cyan-50 to-sky-50/90',
   amber:
-    'rounded-2xl border border-amber-200/50 bg-gradient-to-br from-amber-50 to-orange-50/80',
-  rose: 'rounded-2xl border border-rose-200/50 bg-gradient-to-br from-rose-50 to-pink-50/85',
+    'rounded-2xl border border-amber-300/55 bg-gradient-to-br from-amber-100 via-orange-50 to-amber-50/85',
+  rose: 'rounded-2xl border border-rose-300/55 bg-gradient-to-br from-rose-100 via-pink-50 to-rose-50/90',
   white: 'rounded-2xl border border-emerald-200/45 bg-white/95 shadow-sm',
   slate:
-    'rounded-2xl border border-slate-200/50 bg-gradient-to-br from-slate-50 to-stone-50/90',
+    'rounded-2xl border border-slate-300/55 bg-gradient-to-br from-slate-100 to-stone-100/90',
 };
 
 export function sosSurface(tone: SosSurfaceTone, extra = ''): string {
@@ -37,6 +37,17 @@ export const SOS_TEXT = 'text-sm text-emerald-950';
 export const SOS_TEXT_STRONG = 'text-sm font-black text-emerald-950';
 export const SOS_MUTED = 'text-xs font-semibold text-emerald-800/60';
 
-/** בועת הודעה ממנוול אלמוג */
+/** בועת הודעה ממנוול אלמוג — ניגודיות גבוהה על רקע בהיר */
 export const SOS_ALMOG_BUBBLE =
-  'rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-600/90 via-teal-600/88 to-emerald-700/92 px-4 py-3 text-sm font-semibold leading-7 text-emerald-50 shadow-[0_8px_24px_rgba(4,120,87,0.18)]';
+  'rounded-2xl border border-violet-300/55 bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 px-4 py-3.5 text-sm font-semibold leading-7 text-white shadow-[0_10px_28px_rgba(91,33,182,0.28)]';
+
+/** תיבת משימה/הרגל בשער — לא בהיר מדי */
+export const SOS_TASK_CARD =
+  'rounded-2xl border border-emerald-500/35 bg-gradient-to-br from-emerald-200/95 via-teal-100/90 to-emerald-100/85 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]';
+
+/** כרטיס משימה ב-intake */
+export const SOS_INTAKE_TASK_ACTIVE =
+  'rounded-2xl border-2 border-sky-400/55 bg-gradient-to-br from-sky-100 to-cyan-50 ring-2 ring-sky-300/35';
+
+export const SOS_INTAKE_TASK_IDLE =
+  'rounded-2xl border border-slate-200/70 bg-gradient-to-br from-slate-50 to-stone-100/90';
