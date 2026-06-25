@@ -1,7 +1,7 @@
 import { groq, openrouter, AI_MODELS } from './client';
 import { ALMOG_VOICE_DNA } from './prompts';
 import type { DiscreteFieldKey } from './onboarding-discrete-fields';
-import { discreteFieldAck } from './onboarding-discrete-fields';
+import { discreteFieldAck, funDiscreteFieldAck } from './onboarding-discrete-fields';
 import {
   buildLlmKnownContext,
   type ProfileFieldFlags,
@@ -73,11 +73,12 @@ function buildSystemPrompt(
 ): string {
   const pathNote =
     path === 'fun'
-      ? `מסלול כייפי — אלמוג מנחה (לא שואל "מה דחוף לעדכן"):
-- פתח בקטע/סיפור קצר ומצחיק (1-2 משפטים), ואז מיד שאלה ממוקדת על השדה החסר הבא.
-- הומור עצמי — רק כשמבקשים שדה רגיש, הפנה לכפתור 🔐 למטה.
-- אתה מוביל שלב-שלב; אל תשאל שאלות פתוחות כמו "מה הכי דחוף לעדכן".
-- שאלה אחת בכל הודעה, ישר לעניין.`
+      ? `מסלול כייפי — אלמוג הוא מנטור עם אופי (לא שואל "מה דחוף לעדכן"):
+- פתח בכל הודעה בבדיחה/הפתעה/אנקדוטה קצרה (משפט אחד מקסימום) — מצחיק, עצמי, מעט מוגזם. דוגמאות: "אני פעם שכחתי שם מול חברה — מביך בטירוף", "המשקל? זה בין אני לבין הכספת 🔐".
+- אחרי הבדיחה — מיד שאלה אחת על השדה החסר הבא. בלי נאומים.
+- אמוג'י מדי פעם (1-2 בהודעה) — לא ספאם.
+- שדה רגיש → הומור על פרטיות ("זה לא עובר בוואטסאפ של דודה") + כפתור 🔐.
+- אתה מוביל שלב-שלב; אסור "מה הכי דחוף לעדכן".`
       : path === 'quick'
         ? `מסלול מהיר — אלמוג מנחה ישירות:
 - בלי "מה תרצה לעדכן" — שאל את השדה החסר הבא בסדר לוגי.
@@ -250,12 +251,18 @@ export function isProfileUpdateComplete(flags: ProfileFieldFlags): boolean {
 export function buildAfterDiscreteContinuation(
   key: DiscreteFieldKey,
   flags: ProfileFieldFlags,
-  gender: ProfileGender
+  gender: ProfileGender,
+  path: OnboardingPath | null = null
 ): Pick<OnboardingChatResult, 'reply' | 'request_discrete_field' | 'ready_for_summary'> {
-  const ack = discreteFieldAck(key, gender);
+  const ack =
+    path === 'fun' ? funDiscreteFieldAck(key, gender) : discreteFieldAck(key, gender);
   const next = leadQuestion(flags);
+  const bridge =
+    path === 'fun'
+      ? `יאללה, השלב הבא — ${next}`
+      : `ממשיכים בעדכון הפרופיל — ${next}`;
   return {
-    reply: `${ack} ממשיכים בעדכון הפרופיל — ${next}`,
+    reply: `${ack} ${bridge}`,
     request_discrete_field: discreteFieldForCurrentLead(flags),
     ready_for_summary: isProfileUpdateComplete(flags),
   };
@@ -298,12 +305,12 @@ function openingReply(
 
   if (path === 'fun') {
     if (needsName) {
-      return `${hi} 👋 אוקיי סיפור מהיר — פעם שכחתי את שם החברה הכי טובה שלי מול כולם, מביך בטירוף 😅 אני מנחה את עדכון הפרופיל שלך — קודם שם, בערוץ מאובטח: ${tap} על 🔐 למטה. אחרי זה נמשיך.`;
+      return `${hi} 🎉 אוקיי, מסלול כייפי — אני אלמוג, המנטור שלא תמיד זוכר שמות (פעם קראתי לחבר "יואו" שלושה חודשים 😅). קודם כל שם — בערוץ הכספת: ${tap} על 🔐 למטה. אחרי זה נמשיך עם הבדיחות.`;
     }
     if (hasExisting) {
-      return `${hi} 👋 יש לי כבר חלק מהפרטים שלך שמורים 🔒 — אני ממשיך מאיפה שחסר. ${next}`;
+      return `${hi} 🎉 יש לי כבר חלק מהפרטים שלך בכספת — אני ממשיך מאיפה שחסר, בלי לחזור על מה שכבר יודעים. ${next}`;
     }
-    return `${hi} 👋 טוב, אני מנחה — לא טופס, שיחה קצרה. ${next}`;
+    return `${hi} 🎉 יאללה מסלול כייפי — לא טופס משעמם, שיחה קצרה עם הומור. ${next}`;
   }
   if (path === 'quick') {
     if (needsName) {

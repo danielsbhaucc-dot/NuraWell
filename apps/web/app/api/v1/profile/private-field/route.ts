@@ -8,7 +8,7 @@ import {
   applyDiscreteField,
   type DiscreteFieldKey,
 } from '../../../../../lib/ai/onboarding-discrete-fields';
-import { buildAfterDiscreteContinuation } from '../../../../../lib/ai/onboarding-chat-llm';
+import { buildAfterDiscreteContinuation, type OnboardingPath } from '../../../../../lib/ai/onboarding-chat-llm';
 import { redactExtractedForClient } from '../../../../../lib/profile/extracted-field-flags';
 import {
   buildFlagsFromProfileRow,
@@ -26,6 +26,7 @@ const bodySchema = z.object({
   }),
   /** דגלים קיימים מהלקוח — בלי ערכים רגישים */
   field_flags: z.record(z.boolean()).optional(),
+  path: z.enum(['quick', 'fun']).optional(),
 });
 
 function extractedToProfilePatch(key: DiscreteFieldKey, value: string | number): Record<string, unknown> {
@@ -88,7 +89,12 @@ export async function POST(request: Request) {
     profileRow?.gender === 'male' || profileRow?.gender === 'female' ? profileRow.gender : null;
 
   const flags = mergeProfileFlags(parsed.data.field_flags ?? {}, buildFlagsFromProfileRow(profileRow));
-  const continuation = buildAfterDiscreteContinuation(key as DiscreteFieldKey, flags, gender);
+  const continuation = buildAfterDiscreteContinuation(
+    key as DiscreteFieldKey,
+    flags,
+    gender,
+    (parsed.data.path ?? null) as OnboardingPath | null
+  );
 
   return NextResponse.json(
     {
