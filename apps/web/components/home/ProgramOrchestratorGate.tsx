@@ -14,8 +14,9 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Rocket, Heart, Sparkles, X } from 'lucide-react';
+import { AnimatedDialog } from '../shared/AnimatedDialog';
 
 type ProposalKind = 'level_up' | 'daily_kickoff' | 'pivot';
 
@@ -110,21 +111,15 @@ export function ProgramOrchestratorGate() {
   // ── Level Up — overlay נועל ──────────────────────────────────────
   if (proposal.requires_buyin) {
     return (
-      <AnimatePresence>
-        <motion.div
-          dir="rtl"
-          className="fixed inset-0 z-[300] flex items-center justify-center px-5"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          style={{ background: 'rgba(2,28,22,0.55)', backdropFilter: 'blur(6px)' }}
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-            className="w-full max-w-md overflow-hidden rounded-[28px] bg-white shadow-2xl"
-          >
+      <AnimatedDialog
+        open
+        onClose={() => respond('decline')}
+        dismissOnBackdrop={false}
+        zIndex={300}
+        aria-label={proposal.headline}
+        backdropClassName="absolute inset-0 bg-[rgba(2,28,22,0.55)] backdrop-blur-[6px]"
+        panelClassName="max-w-md overflow-hidden rounded-[28px] bg-white shadow-2xl"
+      >
             <div
               className="flex flex-col items-center px-6 pb-5 pt-7 text-center"
               style={{
@@ -187,9 +182,7 @@ export function ProgramOrchestratorGate() {
                 </button>
               </div>
             </div>
-          </motion.div>
-        </motion.div>
-      </AnimatePresence>
+      </AnimatedDialog>
     );
   }
 

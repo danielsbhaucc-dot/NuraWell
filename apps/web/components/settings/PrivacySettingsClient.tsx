@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Download, Trash2, Shield, Loader2, Mail } from 'lucide-react';
+import { AnimatedDialog } from '@/components/shared/AnimatedDialog';
 import { signOutClient } from '@/lib/auth/sign-out-client';
 import { LegalLinksRow } from '@/components/legal/LegalLinksRow';
 
@@ -135,14 +136,16 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
 
       <LegalLinksRow tone="light" />
 
-      {deleteOpen ? (
-        <div
-          className="fixed inset-0 z-[280] flex items-end sm:items-center justify-center bg-slate-900/45 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-account-title"
-        >
-          <div dir="rtl" className="crystal-surface w-full max-w-md rounded-2xl p-5 shadow-2xl">
+      <AnimatedDialog
+        open={deleteOpen}
+        onClose={() => !deleting && setDeleteOpen(false)}
+        zIndex={280}
+        aria-labelledby="delete-account-title"
+        variant="sheet"
+        mobileChromePadding
+        backdropClassName="absolute inset-0 bg-slate-900/45"
+        panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl"
+      >
             <h3 id="delete-account-title" className="text-lg font-black text-slate-900">
               מחיקת חשבון לצמיתות
             </h3>
@@ -185,9 +188,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                 ביטול
               </button>
             </div>
-          </div>
-        </div>
-      ) : null}
+      </AnimatedDialog>
     </div>
   );
 }

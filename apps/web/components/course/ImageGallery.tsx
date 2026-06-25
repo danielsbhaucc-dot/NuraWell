@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { X, ChevronRight, ChevronLeft, ZoomIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,9 +19,12 @@ interface ImageGalleryProps {
 
 export function ImageGallery({ images }: ImageGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
   const lightboxRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const open = lightboxIndex !== null;
+
+  useEffect(() => setMounted(true), []);
 
   const closeLightbox = () => setLightboxIndex(null);
   const prev = () =>
@@ -90,9 +94,12 @@ export function ImageGallery({ images }: ImageGalleryProps) {
         })}
       </div>
 
+      {mounted
+        ? createPortal(
       <AnimatePresence>
         {open && lightboxIndex !== null ? (
           <motion.div
+            key="image-lightbox"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -170,7 +177,10 @@ export function ImageGallery({ images }: ImageGalleryProps) {
             </motion.div>
           </motion.div>
         ) : null}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+        )
+        : null}
     </>
   );
 }
