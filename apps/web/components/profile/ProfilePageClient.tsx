@@ -243,6 +243,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           onOpenChange={setIsChatOpen}
           onSaved={() => router.refresh()}
           profileSnapshot={profile}
+          avatarRefreshKey={avatarRefreshKey}
         />
         <ProfileSettingsDrawer open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
         <ProfileAvatarUpload

@@ -7,6 +7,7 @@ import {
 
 /** שדות פרופיל לטעינת שיחת עדכון — הערכים הרגישים נשארים בשרת */
 export type ProfileRowForChat = {
+  id?: string;
   gender?: 'male' | 'female' | null;
   full_name?: string | null;
   main_goal?: OnboardingExtracted['main_goal'] | string | null;
