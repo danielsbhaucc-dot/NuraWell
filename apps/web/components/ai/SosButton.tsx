@@ -23,13 +23,19 @@ type SosButtonProps = {
 
 export function SosButton({ focusTasks = [], firstName = '', gender = '' }: SosButtonProps) {
   const [open, setOpen] = useState(false);
+  const [dialogSession, setDialogSession] = useState(0);
   const pendingCount = focusTasks.length;
+
+  function openDialog() {
+    setDialogSession((s) => s + 1);
+    setOpen(true);
+  }
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openDialog}
         dir="rtl"
         className="touch-manipulation relative flex w-full items-center gap-3.5 p-4 text-right transition active:scale-[0.99] outline-none focus-visible:ring-2 focus-visible:ring-violet-400/35"
         style={{
@@ -60,6 +66,7 @@ export function SosButton({ focusTasks = [], firstName = '', gender = '' }: SosB
       </button>
 
       <SosDialog
+        key={dialogSession}
         open={open}
         onClose={() => setOpen(false)}
         focusTasks={focusTasks}

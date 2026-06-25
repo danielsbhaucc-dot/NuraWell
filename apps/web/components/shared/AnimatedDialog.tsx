@@ -32,9 +32,12 @@ export type AnimatedDialogProps = {
   'aria-label'?: string;
   /** לחיצה על הרקע סוגרת (ברירת מחדל: כן) */
   dismissOnBackdrop?: boolean;
+  /** נקרא אחרי שאנימציית הסגירה מסתיימת */
+  onExitComplete?: () => void;
 };
 
-const springTransition = { type: 'spring' as const, stiffness: 340, damping: 30 };
+const springTransition = { type: 'spring' as const, stiffness: 380, damping: 32, mass: 0.88 };
+const backdropTransition = { duration: 0.28, ease: [0.4, 0, 0.2, 1] as const };
 
 /**
  * מעטפת דיאלוג עם Portal ל-body + אנימציות פתיחה/סגירה.
@@ -55,6 +58,7 @@ export function AnimatedDialog({
   'aria-describedby': ariaDescribedBy,
   'aria-label': ariaLabel,
   dismissOnBackdrop = true,
+  onExitComplete,
 }: AnimatedDialogProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -73,15 +77,15 @@ export function AnimatedDialog({
 
   const panelInitial =
     variant === 'sheet'
-      ? { y: 40, opacity: 0 }
-      : { y: 20, opacity: 0, scale: 0.96 };
+      ? { y: 72, opacity: 0, scale: 0.98 }
+      : { y: 24, opacity: 0, scale: 0.94 };
   const panelExit =
     variant === 'sheet'
-      ? { y: 28, opacity: 0 }
-      : { y: 16, opacity: 0, scale: 0.96 };
+      ? { y: 48, opacity: 0, scale: 0.98 }
+      : { y: 20, opacity: 0, scale: 0.96 };
 
   return createPortal(
-    <AnimatePresence>
+    <AnimatePresence initial={false} onExitComplete={onExitComplete}>
       {open ? (
         <motion.div
           key="animated-dialog-overlay"
@@ -91,14 +95,18 @@ export function AnimatedDialog({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={backdropTransition}
         >
-          <button
+          <motion.button
             type="button"
             aria-label="סגירה"
-            className={backdropClassName ?? 'absolute inset-0 bg-slate-950/50'}
+            className={backdropClassName ?? 'absolute inset-0 bg-slate-950/50 backdrop-blur-sm'}
             onClick={dismissOnBackdrop ? onClose : undefined}
             tabIndex={dismissOnBackdrop ? 0 : -1}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={backdropTransition}
           />
           <motion.div
             ref={panelRef}

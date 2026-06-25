@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Loader2, MessageCircle, Snowflake, Sparkles, Volume2, X } from 'lucide-react';
 
 import { useDialogA11y } from '@/lib/a11y/use-dialog-a11y';
@@ -13,8 +14,11 @@ import { FRICTION_META } from '../../lib/ai/almog-commitments/friction';
 import {
   SOS_ALMOG_BUBBLE,
   SOS_BODY_BG,
+  SOS_INTAKE_TASK_ACTIVE,
+  SOS_INTAKE_TASK_IDLE,
   SOS_LABEL,
   SOS_MUTED,
+  SOS_TASK_CARD,
   SOS_TEXT,
   SOS_TEXT_STRONG,
   sosSurface,
@@ -187,17 +191,27 @@ export function SosDialog({
     await fetchSosContext();
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
-    setSelectedTask((prev) => {
-      if (prev && focusTasks.some((t) => t.id === prev.id)) return prev;
-      return focusTasks[0] ?? null;
-    });
+    setNote('');
+    setResponse(null);
+    setError(null);
+    setLoadingTrigger(null);
     setOutcomeSaved(null);
+    setActiveTrigger(null);
+    setPivoting(false);
+    setTaskMarking(false);
     setTaskMarked(false);
     setGuardianSaved(false);
     setTaskHardConfirmed(null);
+    setEaseCreating(false);
     setEaseCreated(false);
+    setSelectedTask(focusTasks[0] ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- איפוס רק בפתיחה, לא כש-focusTasks מתעדכן ברקע
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
     void loadContext();
     void fetch('/api/v1/profile/guardian-settings', { cache: 'no-store' })
       .then((res) => res.json())
@@ -208,25 +222,45 @@ export function SosDialog({
   const gateTask = selectedTask ?? focusTasks[0] ?? null;
   const showTaskHardnessGate =
     !response && focusTasks.length > 0 && taskHardConfirmed === null;
+  const showIntake = !response && !showTaskHardnessGate;
+
+  const gateGreeting = useMemo(() => {
+    const taskLabel = gateTask?.title ? `«${gateTask.title}»` : 'המשימה שעל הראש';
+    if (firstName) {
+      return `היי ${firstName}, קשה לך עם ${taskLabel} עכשיו?`;
+    }
+    return `קשה לך עם ${taskLabel} עכשיו?`;
+  }, [firstName, gateTask?.title]);
+
+  const intakeGreeting = useMemo(() => {
+    if (firstName) {
+      return `היי ${firstName}, אני איתך. מה הכי קשה לך ברגע הזה? נתחיל ממקום אחד קטן — ונתקדם משם ביחד.`;
+    }
+    return 'מה הכי קשה לך ברגע הזה? נתחיל ממקום אחד קטן — ונתקדם משם ביחד.';
+  }, [firstName]);
 
   const title = useMemo(() => {
     if (outcomeSaved) return firstName ? `תודה, ${firstName} 🌱` : 'תודה ששיתפת 🌱';
     if (showTaskHardnessGate) {
       return firstName ? `היי ${firstName}` : 'רגע לפני שממשיכים';
     }
-    if (!response) return firstName ? `רגע, ${firstName} — אני איתך` : 'רגע, אני איתך';
+    if (showIntake) return firstName ? `${firstName}, אני איתך` : 'רגע, אני איתך';
+    if (!response) return 'הנה מה שיכול לעזור עכשיו';
     if (response.mode === 'escalation') return 'לא נשארים עם זה לבד';
     if (response.mode === 'slow_down') return 'מורידים הילוך';
     if (response.mode === 'pivot') return 'בוא ננסה גישה אחרת';
     return 'הנה מה שיכול לעזור עכשיו';
-  }, [response, outcomeSaved, showTaskHardnessGate, firstName]);
+  }, [response, outcomeSaved, showTaskHardnessGate, showIntake, firstName]);
 
   const subtitle = useMemo(() => {
     if (outcomeSaved) return 'שמרתי — בפעם הבאה אדע מה עזר ומה פחות.';
     if (showTaskHardnessGate) {
-      return gateTask?.title
-        ? `נתחיל מהמשימה שעל הראש — "${gateTask.title}"`
-        : 'קודם נבין על מה מדובר';
+      return 'קודם נבין אם זה קשור למשימה שעל הראש — ואז נמשיך יחד.';
+    }
+    if (showIntake) {
+      return firstName
+        ? `${firstName}, בחר/י מה הכי קרוב לרגע הזה — או ספר/י במילה.`
+        : 'בחר/י מה הכי קרוב לרגע הזה — או ספר/י במילה.';
     }
     if (response?.context.focus_task_title) {
       return `בקשר ל: ${response.context.focus_task_emoji ?? '✅'} ${response.context.focus_task_title}`;
@@ -237,13 +271,13 @@ export function SosDialog({
     return firstName
       ? `${firstName}, ספר לי מה עולה — נמצא צעד קטן יחד.`
       : 'ספר לי מה עולה — נמצא צעד קטן יחד.';
-  }, [response, selectedTask, outcomeSaved, showTaskHardnessGate, gateTask, firstName]);
+  }, [response, selectedTask, outcomeSaved, showTaskHardnessGate, showIntake, firstName]);
 
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const subtitleId = useId();
 
-  const resetAndClose = useCallback(() => {
+  const resetDialogState = useCallback(() => {
     setNote('');
     setSelectedTask(null);
     setResponse(null);
@@ -258,12 +292,35 @@ export function SosDialog({
     setTaskHardConfirmed(null);
     setEaseCreating(false);
     setEaseCreated(false);
+  }, []);
+
+  const closeDialog = useCallback(() => {
     onClose();
   }, [onClose]);
 
+  const resetAndClose = useCallback(() => {
+    resetDialogState();
+    onClose();
+  }, [onClose, resetDialogState]);
+
+  useEffect(() => {
+    if (!open) {
+      const timer = window.setTimeout(resetDialogState, 320);
+      return () => window.clearTimeout(timer);
+    }
+  }, [open, resetDialogState]);
+
+  const bodyPhaseKey = useMemo(() => {
+    if (outcomeSaved || taskMarked) return 'done';
+    if (response) return 'response';
+    if (showTaskHardnessGate) return 'gate';
+    if (showIntake) return 'intake';
+    return 'idle';
+  }, [outcomeSaved, taskMarked, response, showTaskHardnessGate, showIntake]);
+
   useDialogA11y({
     open,
-    onClose: resetAndClose,
+    onClose: closeDialog,
     containerRef: dialogRef,
   });
 
@@ -507,13 +564,14 @@ export function SosDialog({
   return (
     <AnimatedDialog
       open={open}
-      onClose={resetAndClose}
+      onClose={closeDialog}
+      variant="sheet"
       panelRef={dialogRef}
       zIndex={200}
       aria-labelledby={titleId}
       aria-describedby={subtitleId}
-      backdropClassName="absolute inset-0 bg-slate-950/50"
-      panelClassName="touch-manipulation max-w-md flex flex-col overflow-hidden rounded-[28px] border border-emerald-500/25 text-right shadow-2xl"
+      backdropClassName="absolute inset-0 bg-slate-950/55 backdrop-blur-md"
+      panelClassName="touch-manipulation max-w-md flex flex-col overflow-hidden rounded-t-[28px] sm:rounded-[28px] border border-emerald-500/25 text-right shadow-2xl"
       panelStyle={{
         maxHeight: '100%',
         boxShadow: '0 -8px 40px rgba(2,44,34,0.22), 0 24px 70px rgba(2,44,34,0.18)',
@@ -526,18 +584,29 @@ export function SosDialog({
         >
           <button
             type="button"
-            onClick={resetAndClose}
+            onClick={closeDialog}
             className="absolute left-4 top-4 rounded-full bg-white/15 p-2 text-white/90 transition hover:bg-white/25"
             aria-label="סגירה"
           >
             <X className="h-4 w-4" />
           </button>
           <div className="flex items-start gap-3">
-            <AlmogAvatarChip size={44} />
-            <div className="min-w-0 flex-1">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.88 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 26, delay: 0.05 }}
+            >
+              <AlmogAvatarChip size={44} />
+            </motion.div>
+            <motion.div
+              className="min-w-0 flex-1"
+              initial={{ opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30, delay: 0.08 }}
+            >
               <p id={titleId} className="text-lg font-black text-white">{title}</p>
               <p id={subtitleId} className="mt-1 text-xs font-semibold leading-5 text-emerald-50/90">{subtitle}</p>
-            </div>
+            </motion.div>
           </div>
         </div>
 
@@ -549,6 +618,14 @@ export function SosDialog({
             WebkitOverflowScrolling: 'touch',
           }}
         >
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={bodyPhaseKey}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            >
           {outcomeSaved || taskMarked ? (
             <div className="space-y-3 py-2 text-center">
               <p className={`${SOS_TEXT_STRONG} leading-7`}>
@@ -584,7 +661,7 @@ export function SosDialog({
               </button>
               <button
                 type="button"
-                onClick={resetAndClose}
+                onClick={closeDialog}
                 className="w-full rounded-2xl px-4 py-3 text-sm font-black text-white shadow-lg"
                 style={{
                   background: 'linear-gradient(135deg, #047857, #10b981)',
@@ -598,6 +675,8 @@ export function SosDialog({
             <div className="space-y-4">
               {showTaskHardnessGate ? (
                 <div className={`${sosSurface('amber')} space-y-3 px-4 py-4`}>
+                  <div className={SOS_ALMOG_BUBBLE}>{gateGreeting}</div>
+
                   {focusTasks.length > 1 ? (
                     <div className="space-y-2">
                       <p className={SOS_LABEL}>על איזו משימה מדובר?</p>
@@ -609,10 +688,9 @@ export function SosDialog({
                               key={task.id}
                               type="button"
                               onClick={() => setSelectedTask(task)}
-                              className={`flex items-center justify-between px-3 py-2.5 text-right transition active:scale-[0.99] ${sosSurface(
-                                active ? 'sky' : 'white',
-                                active ? 'ring-2 ring-sky-400/40' : ''
-                              )}`}
+                              className={`flex items-center justify-between px-3 py-2.5 text-right transition active:scale-[0.99] ${
+                                active ? SOS_INTAKE_TASK_ACTIVE : SOS_INTAKE_TASK_IDLE
+                              }`}
                             >
                               <span className={SOS_MUTED}>{task.stepTitle ?? 'מהמסע'}</span>
                               <span className="flex items-center gap-2 text-sm font-black text-slate-900">
@@ -627,10 +705,10 @@ export function SosDialog({
                     </div>
                   ) : null}
 
-                  <div className={`${sosSurface('white')} px-3 py-3`}>
-                    <p className={SOS_MUTED}>המשימה שעל הראש עכשיו</p>
+                  <div className={SOS_TASK_CARD}>
+                    <p className="text-xs font-bold text-emerald-900/75">המשימה שעל הראש עכשיו</p>
                     <div className="mt-1 flex items-start justify-between gap-2">
-                      <p className="text-base font-black leading-snug text-slate-900">
+                      <p className="text-base font-black leading-snug text-emerald-950">
                         {gateTask?.emoji ? `${gateTask.emoji} ` : ''}
                         {gateTask?.title ?? '…'}
                       </p>
@@ -649,7 +727,6 @@ export function SosDialog({
                       </button>
                     </div>
                   </div>
-                  <p className={SOS_TEXT_STRONG}>קשה לך לבצע אותה עכשיו?</p>
                   <div className="grid gap-2 sm:grid-cols-2">
                     <button
                       type="button"
@@ -674,16 +751,15 @@ export function SosDialog({
                     </button>
                   </div>
                 </div>
-              ) : (
+              ) : showIntake ? (
                 <>
-              <div className={SOS_ALMOG_BUBBLE}>
-                {firstName ? `היי ${firstName}, ` : ''}
-                מה הכי קשה לך עכשיו? נתחיל ממקום אחד קטן — ונתקדם משם ביחד.
-              </div>
+              <div className={SOS_ALMOG_BUBBLE}>{intakeGreeting}</div>
 
               {focusTasks.length > 0 ? (
-                <div className="space-y-2">
-                  <p className={SOS_LABEL}>משימות פתוחות היום</p>
+                <div className={`${sosSurface('sky')} space-y-2 px-3 py-3`}>
+                  <p className="text-xs font-black text-sky-900/80">
+                    {firstName ? `${firstName}, יש לך משימות פתוחות היום` : 'משימות פתוחות היום'}
+                  </p>
                   <div className="grid gap-2">
                     {focusTasks.map((task) => {
                       const active = selectedTask?.id === task.id;
@@ -694,17 +770,16 @@ export function SosDialog({
                           onClick={() => {
                             setSelectedTask(task);
                           }}
-                          className={`flex items-center justify-between px-4 py-3 text-right transition active:scale-[0.99] ${sosSurface(
-                            active ? 'sky' : 'white',
-                            active ? 'ring-2 ring-sky-300/50' : ''
-                          )}`}
+                          className={`flex items-center justify-between px-4 py-3 text-right transition active:scale-[0.99] ${
+                            active ? SOS_INTAKE_TASK_ACTIVE : SOS_INTAKE_TASK_IDLE
+                          }`}
                         >
                           <span className={SOS_MUTED}>
                             {task.stepTitle ?? 'מהמסע'}
                           </span>
                           <span className="flex items-center gap-2 text-sm font-black text-slate-900">
                             {active ? <Check className="h-4 w-4 text-sky-600" /> : null}
-                            <span>{task.emoji ?? '✅'}</span>
+                            <span className="text-lg">{task.emoji ?? '✅'}</span>
                             {task.title}
                           </span>
                         </button>
@@ -715,10 +790,7 @@ export function SosDialog({
                       onClick={() => {
                         setSelectedTask(null);
                       }}
-                      className="rounded-2xl border border-dashed border-slate-300/80 px-4 py-2.5 text-xs font-bold text-slate-600"
-                      style={{
-                        background: !selectedTask ? 'rgba(148, 163, 184, 0.12)' : 'transparent',
-                      }}
+                      className="rounded-2xl border border-dashed border-violet-300/70 bg-violet-50/80 px-4 py-2.5 text-xs font-bold text-violet-900/80"
                     >
                       לא קשור למשימה ספציפית
                     </button>
@@ -726,7 +798,9 @@ export function SosDialog({
                 </div>
               ) : null}
 
-              <p className={SOS_LABEL}>מה הכי קרוב לרגע הזה?</p>
+              <p className="text-xs font-black text-violet-900/75">
+                {firstName ? `${firstName}, מה הכי קרוב לרגע הזה?` : 'מה הכי קרוב לרגע הזה?'}
+              </p>
               <div className="grid gap-2.5">
                 {QUICK_TRIGGERS.map((trigger) => (
                   <button
@@ -734,12 +808,12 @@ export function SosDialog({
                     type="button"
                     onClick={() => void handleTrigger(trigger.id)}
                     disabled={loadingTrigger !== null}
-                    className={`${sosSurface(TRIGGER_SURFACE[trigger.id])} flex items-center justify-between px-4 py-3 text-right transition active:scale-[0.99] disabled:opacity-70`}
+                    className={`${sosSurface(TRIGGER_SURFACE[trigger.id])} flex items-center justify-between px-4 py-3.5 text-right shadow-sm transition active:scale-[0.99] disabled:opacity-70`}
                   >
-                    <span className={SOS_MUTED}>{trigger.helper}</span>
-                    <span className="flex items-center gap-2 text-sm font-black text-slate-900">
+                    <span className="text-xs font-semibold text-slate-700/85">{trigger.helper}</span>
+                    <span className="flex items-center gap-2.5 text-sm font-black text-slate-900">
                       {loadingTrigger === trigger.id && <Loader2 className="h-4 w-4 animate-spin" />}
-                      <span>{trigger.emoji}</span>
+                      <span className="text-xl">{trigger.emoji}</span>
                       {trigger.label}
                     </span>
                   </button>
@@ -747,13 +821,15 @@ export function SosDialog({
               </div>
 
               <label className="block">
-                <span className={`mb-1 block ${SOS_LABEL}`}>רוצה להוסיף מילה?</span>
+                <span className="mb-1 block text-xs font-bold text-violet-900/70">
+                  {firstName ? `${firstName}, רוצה להוסיף מילה?` : 'רוצה להוסיף מילה?'}
+                </span>
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   maxLength={240}
                   rows={2}
-                  className={`${sosSurface('white')} w-full resize-none px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-violet-300/40`}
+                  className={`${sosSurface('lavender')} w-full resize-none px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-violet-300/45`}
                   placeholder={
                     selectedTask?.title
                       ? `למשל: קשה לי עם "${selectedTask.title}" אחרי יום עמוס`
@@ -762,7 +838,7 @@ export function SosDialog({
                 />
               </label>
                 </>
-              )}
+              ) : null}
             </div>
           ) : (
             <div className="space-y-4">
@@ -921,6 +997,8 @@ export function SosDialog({
               </div>
             </div>
           )}
+            </motion.div>
+          </AnimatePresence>
         </div>
     </AnimatedDialog>
   );
