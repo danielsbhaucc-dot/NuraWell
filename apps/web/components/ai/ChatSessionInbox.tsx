@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, type ReactNode } from 'react';
-import { ChevronDown, Loader2, MessageSquarePlus, Search, X } from 'lucide-react';
+import { ChevronDown, Loader2, Lock, MessageSquarePlus, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { buildChatSessionListTitle } from '../../lib/ai/chat-sessions/session-list-title';
 import { formatSessionRelativeTime } from '../../lib/client/chat-session-messages';
@@ -110,6 +110,7 @@ function SessionRow({
   isActive: boolean;
   onSelect: () => void;
 }) {
+  const isProfileUpdate = session.session_kind === 'profile_update';
   const title = titleForSession(session);
   const preview =
     session.preview_text && session.preview_text !== title
@@ -118,6 +119,35 @@ function SessionRow({
         ? session.summary
         : null;
   const isOpen = session.status === 'open';
+
+  if (isProfileUpdate) {
+    return (
+      <div
+        className="w-full rounded-xl border px-3 py-2.5 text-right opacity-90"
+        style={{
+          borderColor: 'rgba(251,191,36,0.25)',
+          background: 'rgba(251,191,36,0.06)',
+        }}
+      >
+        <div className="flex items-start gap-2">
+          <Lock className="mt-1 h-3.5 w-3.5 shrink-0 text-amber-400/90" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="flex items-baseline justify-between gap-2">
+              <span className="line-clamp-2 text-[12px] font-semibold text-amber-100/95">
+                {session.summary ?? title}
+              </span>
+              <span className="shrink-0 text-[10px] text-slate-500">
+                {formatSessionRelativeTime(session.updated_at)}
+              </span>
+            </span>
+            <span className="mt-0.5 block text-[10px] text-amber-200/70">
+              תיעוד עדכון פרופיל · סגור · ללא פרטים אישיים
+            </span>
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <button

@@ -11,6 +11,18 @@ export async function POST(request: Request, context: RouteContext) {
   if (!auth.ok) return auth.response;
 
   const { id } = await context.params;
+
+  const { data: existing } = await auth.supabase
+    .from('chat_sessions')
+    .select('session_kind')
+    .eq('id', id)
+    .eq('user_id', auth.user.id)
+    .maybeSingle();
+
+  if (existing?.session_kind === 'profile_update') {
+    return NextResponse.json({ error: 'profile_update_read_only' }, { status: 403 });
+  }
+
   const now = new Date().toISOString();
 
   const { data, error } = await auth.supabase
