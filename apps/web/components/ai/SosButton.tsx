@@ -23,11 +23,11 @@ type SosButtonProps = {
 
 export function SosButton({ focusTasks = [], firstName = '', gender = '' }: SosButtonProps) {
   const [open, setOpen] = useState(false);
-  const [dialogSession, setDialogSession] = useState(0);
+  const [sessionKey, setSessionKey] = useState(0);
   const pendingCount = focusTasks.length;
 
   function openDialog() {
-    setDialogSession((s) => s + 1);
+    setSessionKey((k) => k + 1);
     setOpen(true);
   }
 
@@ -66,10 +66,11 @@ export function SosButton({ focusTasks = [], firstName = '', gender = '' }: SosB
       </button>
 
       <SosDialog
-        key={dialogSession}
+        key={sessionKey}
         open={open}
         onClose={() => setOpen(false)}
         focusTasks={focusTasks}
+        pendingTaskCount={pendingCount}
         firstName={firstName}
         gender={gender}
       />
