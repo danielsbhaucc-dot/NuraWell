@@ -5,6 +5,7 @@ import { readJsonBody } from '../../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import {
   runOnboardingChatTurn,
+  type OnboardingChatResult,
   type OnboardingChatTurn,
   type OnboardingExtracted,
   type OnboardingPath,
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'messages required' }, { status: 400 });
     }
 
-    let result = {
+    let result: OnboardingChatResult = {
       reply: '',
       extracted: {} as OnboardingExtracted,
       request_discrete_field: null as import('../../../../../lib/ai/onboarding-discrete-fields').DiscreteFieldKey | null,
@@ -133,6 +134,7 @@ export async function POST(request: Request) {
       summary: null as string | null,
       used_fallback: false,
       model: null as string | null,
+      blocked_sensitive_leak: false,
     };
 
     if (!parsed.data.persist) {
