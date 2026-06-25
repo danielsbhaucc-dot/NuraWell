@@ -693,7 +693,6 @@ export function SosDialog({
                           type="button"
                           onClick={() => {
                             setSelectedTask(task);
-                            setTaskHardConfirmed(null);
                           }}
                           className={`flex items-center justify-between px-4 py-3 text-right transition active:scale-[0.99] ${sosSurface(
                             active ? 'sky' : 'white',
@@ -715,7 +714,6 @@ export function SosDialog({
                       type="button"
                       onClick={() => {
                         setSelectedTask(null);
-                        setTaskHardConfirmed(null);
                       }}
                       className="rounded-2xl border border-dashed border-slate-300/80 px-4 py-2.5 text-xs font-bold text-slate-600"
                       style={{
