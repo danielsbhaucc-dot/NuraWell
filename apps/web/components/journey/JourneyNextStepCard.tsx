@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Compass, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
+import { AlmogAvatarChip } from './AlmogPresence';
 import {
   dispatchOpenAlmogChatWithPrefill,
 } from '../../lib/notifications/open-almog-chat';
@@ -80,29 +81,23 @@ export function JourneyNextStepCard() {
         }}
       />
 
-      <div className="flex items-center gap-2 mb-2">
-        <div
-          className="flex items-center justify-center"
-          style={{
-            width: '30px',
-            height: '30px',
-            borderRadius: '11px',
-            background: 'linear-gradient(145deg, #047857, #10b981)',
-            boxShadow: '0 4px 12px rgba(16,185,129,0.25)',
-          }}
-        >
-          <Compass className="w-4 h-4 text-white" strokeWidth={2.4} />
+      <div className="flex items-center gap-2.5 mb-3">
+        <AlmogAvatarChip size={32} />
+        <div className="text-right">
+          <span
+            style={{
+              fontSize: '13px',
+              fontWeight: 800,
+              color: '#022c22',
+              fontFamily: "'Rubik','Heebo',sans-serif",
+            }}
+          >
+            {rec.pace === 'return' ? 'בוא נחזור בעדינות' : 'חשבתי עליך — הצעד הבא'}
+          </span>
+          <p className="text-[11.5px] text-emerald-800/65 leading-snug">
+            זה מה שהייתי ממליץ לך עכשיו
+          </p>
         </div>
-        <span
-          style={{
-            fontSize: '13px',
-            fontWeight: 800,
-            color: '#022c22',
-            fontFamily: "'Rubik','Heebo',sans-serif",
-          }}
-        >
-          {rec.pace === 'return' ? 'בוא נחזור בעדינות' : 'הצעד הבא שלך'}
-        </span>
       </div>
 
       <p
@@ -161,7 +156,7 @@ export function JourneyNextStepCard() {
             border: '1px solid rgba(16,185,129,0.25)',
           }}
         >
-          דבר איתי
+          יש לי שאלה
         </button>
       </div>
     </motion.div>
