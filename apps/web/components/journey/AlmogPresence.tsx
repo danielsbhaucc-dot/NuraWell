@@ -103,6 +103,53 @@ export function AlmogAvatarChipWithNameTag({ size = 46, name = 'אלמוג' }: {
   );
 }
 
+/** גיבור עמוד רגעים — תמונה גדולה + תג שם חופף לתחתית */
+export function MomentsHeroAvatar({ size = 84, name = 'אלמוג' }: { size?: number; name?: string }) {
+  const { avatarUrl } = useAlmogAvatarUrl();
+  const px = `${size}px`;
+
+  return (
+    <div className="relative shrink-0 pb-4">
+      <div
+        className="relative rounded-full p-[3px]"
+        style={{
+          background:
+            'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(167,243,208,0.55), rgba(4,120,87,0.85))',
+          boxShadow: '0 12px 40px rgba(4,120,87,0.22), 0 0 0 1px rgba(255,255,255,0.35) inset',
+        }}
+      >
+        <div
+          className="rounded-full p-0.5"
+          style={{ background: 'linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%)' }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={avatarUrl}
+            alt={name}
+            width={size}
+            height={size}
+            className="rounded-full object-cover object-top block"
+            style={{ width: px, height: px }}
+            onError={(e) => {
+              e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+            }}
+          />
+        </div>
+        <span
+          className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 translate-y-1/2 px-4 py-1 rounded-full text-xs font-black text-white whitespace-nowrap shadow-md"
+          style={{
+            background: 'linear-gradient(135deg, #047857, #10b981)',
+            border: '1px solid rgba(255,255,255,0.38)',
+            boxShadow: '0 6px 18px rgba(4,120,87,0.32)',
+          }}
+        >
+          {name}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /** @deprecated השתמשו בשורת כותרת עם AlmogAvatarChip ב-SummarySection */
 export function AlmogInlinePresence({
   title = 'אלמוג',

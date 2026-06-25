@@ -1,3 +1,4 @@
+import type { Viewport } from 'next';
 import { createClient } from '../../lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { MobileHeader } from '../../components/shared/MobileHeader';
@@ -9,6 +10,13 @@ import { NotificationsProvider } from '../../components/notifications/Notificati
 import { DolevFirstLoginHost } from '../../components/onboarding/DolevFirstLoginHost';
 import { AlmogFirstLoginHost } from '../../components/onboarding/AlmogFirstLoginHost';
 import type { ProfileSummarySource } from '../../lib/onboarding/profile-summary-rows';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export default async function DashboardLayout({
   children,

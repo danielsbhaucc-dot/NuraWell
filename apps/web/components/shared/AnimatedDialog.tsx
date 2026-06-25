@@ -86,7 +86,7 @@ export function AnimatedDialog({
         <motion.div
           key="animated-dialog-overlay"
           dir="rtl"
-          className={overlayClass}
+          className={`touch-manipulation ${overlayClass}`}
           style={overlayStyle}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

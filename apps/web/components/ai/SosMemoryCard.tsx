@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, ChevronLeft, MapPin, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Sparkles } from 'lucide-react';
 
 import type { SosMemorySnippet, SosRecentEvent } from '../../lib/ai/guardian/sos-memory';
 import { filterRelevantSosEvents } from '../../lib/ai/guardian/sos-ease-shared';
+import { AlmogAvatarChip } from '../journey/AlmogPresence';
 
 function formatRelative(iso: string): string {
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
@@ -22,6 +23,34 @@ function outcomeLabel(outcome: string): string {
   if (outcome === 'escalated') return 'הופנה לעזרה';
   if (outcome === 'unknown') return 'מחכה שתספר';
   return 'נסגר';
+}
+
+function SosMemoryCardSkeleton() {
+  return (
+    <div
+      dir="rtl"
+      className="glass-surface-home animate-pulse rounded-[22px] p-4"
+      aria-busy="true"
+      aria-label="טוען רגעים אחרונים"
+    >
+      <div className="mb-3 flex items-center gap-3">
+        <div className="h-10 w-10 shrink-0 rounded-full bg-emerald-900/10" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-36 rounded-lg bg-emerald-900/10" />
+          <div className="h-3 w-24 rounded-md bg-emerald-900/6" />
+        </div>
+      </div>
+      <div className="space-y-2">
+        {[0, 1].map((i) => (
+          <div key={i} className="rounded-2xl border border-emerald-900/8 px-3 py-2.5">
+            <div className="h-3.5 w-4/5 rounded-md bg-emerald-900/8" />
+            <div className="mt-2 h-3 w-full rounded-md bg-emerald-900/5" />
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 h-3 w-16 rounded-md bg-emerald-900/8" />
+    </div>
+  );
 }
 
 export function SosMemoryCard() {
@@ -52,7 +81,7 @@ export function SosMemoryCard() {
     void load();
   }, [load]);
 
-  if (loading) return null;
+  if (loading) return <SosMemoryCardSkeleton />;
   if (memory.length === 0 && events.length === 0) return null;
 
   const helped = memory.filter((m) => m.outcome === 'helped' || m.outcome === 'resolved').slice(0, 4);
@@ -80,31 +109,23 @@ export function SosMemoryCard() {
             }
           : undefined
       }
-      className={`glass-surface-home rounded-[22px] p-4 text-right ${
+      className={`touch-manipulation glass-surface-home rounded-[22px] p-4 text-right ${
         showAccordion ? 'cursor-pointer transition active:scale-[0.995]' : ''
       }`}
     >
       <div className="relative mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-xl"
-            style={{
-              background: 'linear-gradient(145deg, rgba(4,120,87,0.85), rgba(16,185,129,0.8))',
-              boxShadow: '0 4px 12px rgba(4,120,87,0.18)',
-            }}
-          >
-            <MapPin className="h-4 w-4 text-white" />
-          </div>
+          <AlmogAvatarChip size={40} />
           <div>
-            <p className="text-sm font-black text-emerald-950">מה עזר לך לאחרונה</p>
-            <p className="text-[10px] font-semibold text-emerald-800/55">
-              {showAccordion ? 'לחץ לפתיחה / סגירה' : 'מסלול קצר'}
+            <p className="text-sm font-black text-slate-900">מה עזר לך לאחרונה</p>
+            <p className="text-[10px] font-semibold text-slate-500">
+              {showAccordion ? 'לחץ לפתיחה / סגירה' : 'רגעים אחרונים'}
             </p>
           </div>
         </div>
         {showAccordion ? (
           <span
-            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold text-emerald-50"
+            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold text-white"
             style={{
               background: 'linear-gradient(145deg, #047857, #10b981)',
               boxShadow: '0 4px 12px rgba(4,120,87,0.2)',
@@ -138,15 +159,15 @@ export function SosMemoryCard() {
         ))}
 
         {events.length > 0 && (expanded || !showAccordion) ? (
-          <div className="glass-inset-home rounded-2xl px-3 py-2.5">
-            <p className="mb-2 flex items-center gap-1 text-[11px] font-bold text-emerald-800">
+          <div className="rounded-2xl border border-violet-200/50 bg-gradient-to-br from-violet-50/80 to-white px-3 py-2.5">
+            <p className="mb-2 flex items-center gap-1 text-[11px] font-bold text-violet-900">
               <Sparkles className="h-3 w-3" />
               רגעים אחרונים
             </p>
             <div className="space-y-1.5">
               {events.slice(0, expanded ? 4 : 2).map((ev, i) => (
-                <div key={ev.id} className="flex items-start gap-2 text-[11px] leading-5 text-emerald-900/80">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600/15 text-[9px] font-black text-emerald-800">
+                <div key={ev.id} className="flex items-start gap-2 text-[11px] leading-5 text-slate-700">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-[9px] font-black text-violet-800">
                     {i + 1}
                   </span>
                   <span>
@@ -185,9 +206,13 @@ function JourneyStepRow({
   body: string;
   index: number;
 }) {
-  const accent = tone === 'good' ? '#10b981' : '#f59e0b';
+  const accent = tone === 'good' ? '#8b5cf6' : '#f59e0b';
+  const surface =
+    tone === 'good'
+      ? 'border-violet-200/50 bg-gradient-to-br from-violet-50/80 to-white'
+      : 'border-amber-200/50 bg-gradient-to-br from-amber-50/80 to-white';
   return (
-    <div className="glass-inset-home flex gap-3 rounded-2xl px-3 py-2.5">
+    <div className={`flex gap-3 rounded-2xl border px-3 py-2.5 ${surface}`}>
       <div className="flex flex-col items-center pt-0.5">
         <div
           className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black text-white"
@@ -195,11 +220,11 @@ function JourneyStepRow({
         >
           {index}
         </div>
-        <div className="mt-1 w-px flex-1 min-h-[8px] bg-emerald-900/10" aria-hidden />
+        <div className="mt-1 w-px flex-1 min-h-[8px] bg-slate-900/10" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-black text-emerald-950">{title}</p>
-        <p className="mt-0.5 text-[11px] leading-5 text-emerald-900/75">{body}</p>
+        <p className="text-xs font-black text-slate-900">{title}</p>
+        <p className="mt-0.5 text-[11px] leading-5 text-slate-600">{body}</p>
       </div>
     </div>
   );
