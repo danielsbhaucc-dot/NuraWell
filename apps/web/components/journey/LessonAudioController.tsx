@@ -6,13 +6,13 @@ import type { LessonAudioTrack } from '../../lib/types/audio';
 
 interface LessonAudioControllerProps {
   tracks: LessonAudioTrack[];
-  /** האם וידאו מתנגן כרגע — אם כן, מנמיכים את עוצמת המוזיקה (duck). */
+  /** האם וידאו מתנגן כרגע — אם כן, משתיקים את מוזיקת הרקע לחלוטין */
   videoActive: boolean;
-  /** האם הקראת שאלה פעילה — מנמיך מוזיקת רקע (duck) כמו בווידאו. */
+  /** האם הקראת שאלה פעילה — מנמיך מוזיקת רקע (duck) כמו בווידאו */
   ttsActive?: boolean;
-  /** מפתח השלב הנוכחי — שינוי שלו מפעיל צליל מעבר. */
+  /** מפתח השלב הנוכחי — שינוי שלו מפעיל צליל מעבר */
   sectionKey: string;
-  /** התחתית של ההדר הירוק (px בחלון) — כדי למקם את הבקרה בדיוק מתחתיו. */
+  /** התחתית של ההדר הירוק (px בחלון) — כדי למקום את הבקרה בדיוק מתחתיו */
   anchorTopPx?: number | null;
 }
 
@@ -47,7 +47,7 @@ function scheduleCue(ctx: AudioContext) {
     const start = now + i * 0.085;
     gain.gain.setValueAtTime(0.0001, start);
     gain.gain.exponentialRampToValueAtTime(0.16, start + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.24);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.26);
     osc.connect(gain).connect(ctx.destination);
     osc.start(start);
     osc.stop(start + 0.26);
@@ -59,15 +59,13 @@ function playTransitionCue(ctxRef: { current: AudioContext | null }) {
   try {
     const ctx = ensureCueCtx(ctxRef);
     if (!ctx) return;
-    // אם ה-context עדיין במצב suspended (טרם מחוות משתמש) — מחדשים ואז מתזמנים,
-    // אחרת הצלילים מתוזמנים על זמן "קפוא" ולא נשמעים.
     if (ctx.state === 'suspended') {
       void ctx.resume().then(() => scheduleCue(ctx)).catch(() => {});
     } else {
       scheduleCue(ctx);
     }
   } catch {
-    /* ignore — צליל מעבר הוא תוספת, לא קריטי */
+    /* ignore */
   }
 }
 
@@ -85,7 +83,6 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
   const [needsGesture, setNeedsGesture] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  // המיקום ננעל לתחתית ההדר כשהוא במלוא גובהו, ולא "עולה" בגלילה.
   const [stableTopPx, setStableTopPx] = useState<number | null>(null);
 
   useEffect(() => {
@@ -93,7 +90,6 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
     setStableTopPx((prev) => (prev == null ? anchorTopPx : Math.max(prev, anchorTopPx)));
   }, [anchorTopPx]);
 
-  // העדפת השתקה נשמרת מקומית
   useEffect(() => {
     try {
       setMuted(localStorage.getItem(MUTE_STORAGE_KEY) === '1');
@@ -111,7 +107,6 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
     }
   }, []);
 
-  // ref עם אתחול עוצמה נמוכה כדי שלא יהיה "פיצוץ" קול ברגע הראשון
   const setAudioRef = useCallback((el: HTMLAudioElement | null) => {
     audioRef.current = el;
     if (el) el.volume = BASE_VOLUME;
@@ -119,21 +114,19 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
 
   const attemptPlay = useCallback(() => {
     const a = audioRef.current;
-    if (!a) return;
+    if (!a || videoActive) return;
     const p = a.play();
     if (p && typeof p.then === 'function') {
       p.then(() => setNeedsGesture(false)).catch(() => setNeedsGesture(true));
     }
-  }, []);
+  }, [videoActive]);
 
-  // ניגון אוטומטי + שחזור אחרי מחוות משתמש ראשונה (מדיניות autoplay)
   useEffect(() => {
     if (!hasTracks || !hydrated) return;
     attemptPlay();
 
     const onGesture = () => {
       attemptPlay();
-      // מחדשים את ה-context של צליל המעבר כבר עכשיו, כדי שיהיה "רץ" למעבר הבא
       ensureCueCtx(cueCtxRef);
     };
     window.addEventListener('pointerdown', onGesture, { passive: true });
@@ -144,7 +137,6 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
     };
   }, [hasTracks, hydrated, attemptPlay, index]);
 
-  // החלפת רצועה → טעינה וניגון
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
@@ -152,22 +144,34 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
     attemptPlay();
   }, [index, attemptPlay]);
 
-  // הנמכה/השתקה חלקה של העוצמה
+  // וידאו פעיל → השתקה מלאה; TTS → duck; אחרת עוצמה רגילה
   useEffect(() => {
     if (!hasTracks) return;
-    const shouldDuck = videoActive || ttsActive;
+    const a = audioRef.current;
+    if (!a) return;
+
+    if (videoActive) {
+      a.pause();
+      a.volume = 0;
+      a.muted = true;
+      return;
+    }
+
+    const shouldDuck = ttsActive;
     const target = muted ? 0 : shouldDuck ? DUCK_VOLUME : BASE_VOLUME;
+    if (!muted) void a.play().catch(() => {});
+
     if (rampRef.current) cancelAnimationFrame(rampRef.current);
     const tick = () => {
-      const a = audioRef.current;
-      if (!a) return;
-      const diff = target - a.volume;
+      const el = audioRef.current;
+      if (!el) return;
+      const diff = target - el.volume;
       if (Math.abs(diff) < 0.008) {
-        a.volume = target;
-        a.muted = muted;
+        el.volume = target;
+        el.muted = muted;
         return;
       }
-      a.volume = Math.max(0, Math.min(1, a.volume + diff * 0.18));
+      el.volume = Math.max(0, Math.min(1, el.volume + diff * 0.18));
       rampRef.current = requestAnimationFrame(tick);
     };
     rampRef.current = requestAnimationFrame(tick);
@@ -176,14 +180,13 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
     };
   }, [muted, videoActive, ttsActive, hasTracks]);
 
-  // צליל מעבר בכל החלפת שלב (אלא אם מושתק)
   useEffect(() => {
     if (!hydrated) return;
     if (prevSectionRef.current !== sectionKey) {
       prevSectionRef.current = sectionKey;
-      if (!muted) playTransitionCue(cueCtxRef);
+      if (!muted && !videoActive) playTransitionCue(cueCtxRef);
     }
-  }, [sectionKey, muted, hydrated]);
+  }, [sectionKey, muted, hydrated, videoActive]);
 
   useEffect(() => {
     const ctx = cueCtxRef.current;
@@ -192,19 +195,16 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
     };
   }, []);
 
-  // Prefetch של הרצועה הבאה — מחמם את קאש ה-CDN/דפדפן כדי שמעברים יהיו מיידיים.
   useEffect(() => {
     if (playable.length <= 1) return;
     const nextUrl = playable[(index + 1) % playable.length]?.url;
     if (!nextUrl) return;
     const id = window.setTimeout(() => {
-      // low-priority — לא חוסם את הניגון הנוכחי
       void fetch(nextUrl, { mode: 'cors', cache: 'force-cache' }).catch(() => {});
     }, 1500);
     return () => window.clearTimeout(id);
   }, [index, playable]);
 
-  // עצירת המוזיקה כשהאפליקציה נסגרת / עוברת לרקע; חידוש כשחוזרים (אם לא מושתק)
   useEffect(() => {
     if (!hasTracks) return;
     const pauseAll = () => {
@@ -213,7 +213,7 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
     const onVisibility = () => {
       if (document.hidden) {
         pauseAll();
-      } else if (!muted) {
+      } else if (!muted && !videoActive) {
         attemptPlay();
       }
     };
@@ -223,28 +223,28 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pagehide', pauseAll);
     };
-  }, [hasTracks, muted, attemptPlay]);
+  }, [hasTracks, muted, videoActive, attemptPlay]);
 
   const handleEnded = useCallback(() => {
     if (playable.length <= 1) {
       const a = audioRef.current;
-      if (a) {
+      if (a && !videoActive) {
         a.currentTime = 0;
         void a.play().catch(() => {});
       }
       return;
     }
     setIndex((i) => (i + 1) % playable.length);
-  }, [playable.length]);
+  }, [playable.length, videoActive]);
 
   const toggleMute = useCallback(() => {
     setMuted((m) => {
       const next = !m;
       persistMuted(next);
-      if (!next) attemptPlay();
+      if (!next && !videoActive) attemptPlay();
       return next;
     });
-  }, [persistMuted, attemptPlay]);
+  }, [persistMuted, attemptPlay, videoActive]);
 
   if (!hasTracks) return null;
 
@@ -268,7 +268,7 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
 
       <div
         dir="rtl"
-        className="fixed right-2 z-40 flex flex-col items-end gap-2"
+        className="fixed right-3 z-40 flex flex-col items-end gap-2"
         style={{
           top:
             stableTopPx != null
@@ -277,50 +277,74 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
         }}
         aria-label="בקרת מוזיקת רקע"
       >
-        {/* פאנל מורחב — מופיע רק בלחיצה, אחרת לא תופס מקום */}
         {expanded && (
-          <div className="w-[min(18rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-white/50 bg-gradient-to-br from-white/60 to-white/25 p-3 shadow-[0_12px_40px_rgba(6,78,59,0.3)] backdrop-blur-2xl">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-emerald-800">
-                <Music2 className={`h-3.5 w-3.5 ${muted ? '' : 'animate-pulse'}`} />
+          <div
+            className="w-[min(19rem,calc(100vw-1.25rem))] overflow-hidden rounded-[22px] p-4"
+            style={{
+              background: 'rgba(248,250,252,0.72)',
+              backdropFilter: 'blur(40px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+              border: '0.5px solid rgba(255,255,255,0.65)',
+              boxShadow: '0 20px 50px rgba(6,78,59,0.22), inset 0 1px 0 rgba(255,255,255,0.85)',
+            }}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <span className="flex items-center gap-2 text-[12px] font-bold text-emerald-900">
+                <span
+                  className="flex h-7 w-7 items-center justify-center rounded-[10px]"
+                  style={{ background: 'rgba(16,185,129,0.14)', border: '0.5px solid rgba(16,185,129,0.25)' }}
+                >
+                  <Music2 className={`h-3.5 w-3.5 text-emerald-700 ${muted ? '' : 'animate-pulse'}`} />
+                </span>
                 מוזיקת רקע
               </span>
               <button
                 type="button"
                 onClick={() => setExpanded(false)}
                 aria-label="סגור"
-                className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-white/60 bg-white/50 text-emerald-900 hover:bg-white/70"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full text-emerald-800/70 transition active:scale-95"
+                style={{ background: 'rgba(0,0,0,0.06)' }}
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            <p className="truncate text-sm font-bold text-emerald-950">{creditTrackTitle}</p>
+            <p className="truncate text-[15px] font-bold text-slate-800">{creditTrackTitle}</p>
             {creditAuthor && (
-              <p className="mt-0.5 text-xs text-emerald-900/90">
-                מאת <span className="font-semibold">{creditAuthor}</span>
-                {creditSource ? <span className="text-emerald-800/70"> · {creditSource}</span> : null}
+              <p className="mt-1 text-[12px] font-medium text-slate-600">
+                מאת <span className="font-bold text-emerald-900">{creditAuthor}</span>
+                {creditSource ? <span className="text-slate-500"> · {creditSource}</span> : null}
               </p>
             )}
 
-            <div className="mt-2.5 flex items-center gap-2">
+            <div className="mt-3.5 flex items-center gap-2">
               <button
                 type="button"
                 onClick={toggleMute}
                 aria-pressed={muted}
-                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/60 bg-white/50 px-3 py-2 text-xs font-bold text-emerald-900 transition-colors hover:bg-white/70"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-3 py-2.5 text-[13px] font-bold text-emerald-950 transition active:scale-[0.98]"
+                style={{
+                  background: 'rgba(255,255,255,0.82)',
+                  border: '0.5px solid rgba(16,185,129,0.22)',
+                  boxShadow: '0 2px 8px rgba(6,78,59,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+                }}
               >
-                {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                {muted ? 'הפעל' : 'השתק'}
+                {muted ? <VolumeX className="h-[18px] w-[18px] text-emerald-800" /> : <Volume2 className="h-[18px] w-[18px] text-emerald-800" />}
+                {muted ? 'הפעל שוב' : 'השתק'}
               </button>
               {creditLink && (
                 <a
                   href={creditLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 rounded-xl border border-emerald-300/60 bg-emerald-50/70 px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100/80"
+                  className="inline-flex items-center gap-1 rounded-[14px] px-3 py-2.5 text-[12px] font-bold text-emerald-900 transition active:scale-[0.98]"
+                  style={{
+                    background: 'rgba(209,250,229,0.75)',
+                    border: '0.5px solid rgba(16,185,129,0.28)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
+                  }}
                 >
-                  קרדיט
+                  זכויות יוצרים
                   <ExternalLink className="h-3 w-3" />
                 </a>
               )}
@@ -328,30 +352,45 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
           </div>
         )}
 
-        {/* כפתור צף קומפקטי — השתקה בלחיצה, הרחבה בלחיצה על הלשונית */}
         {!expanded && (
-          <div className="flex items-center overflow-hidden rounded-full border border-white/45 bg-white/25 shadow-[0_6px_20px_rgba(6,78,59,0.22)] backdrop-blur-2xl">
+          <div
+            className="flex items-center overflow-hidden rounded-full"
+            style={{
+              background: 'rgba(248,250,252,0.55)',
+              backdropFilter: 'blur(24px) saturate(160%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+              border: '0.5px solid rgba(255,255,255,0.72)',
+              boxShadow: '0 8px 28px rgba(6,78,59,0.18), inset 0 1px 0 rgba(255,255,255,0.75)',
+            }}
+          >
             <button
               type="button"
               onClick={() => setExpanded(true)}
               aria-label="פתח בקרת מוזיקת רקע"
-              className="flex h-8 items-center pe-0.5 ps-1.5 text-emerald-800/80 transition-colors hover:text-emerald-900"
+              className="flex h-10 items-center pe-1 ps-2 text-emerald-800/75 transition active:opacity-80"
             >
-              <ChevronLeft className="h-3.5 w-3.5" />
+              <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               type="button"
               onClick={toggleMute}
               aria-pressed={muted}
               aria-label={muted ? 'הפעל מוזיקת רקע' : 'השתק מוזיקת רקע'}
-              className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-emerald-900 transition-colors hover:bg-white/30"
+              className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-95"
+              style={{
+                background: muted
+                  ? 'linear-gradient(145deg, rgba(254,226,226,0.9), rgba(255,255,255,0.7))'
+                  : 'linear-gradient(145deg, rgba(209,250,229,0.95), rgba(255,255,255,0.75))',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 10px rgba(6,78,59,0.12)',
+              }}
             >
-              {muted ? <VolumeX className="h-[18px] w-[18px]" /> : <Volume2 className="h-[18px] w-[18px]" />}
-              {needsGesture && !muted && (
-                <span className="absolute right-0.5 top-0.5 h-2 w-2 animate-ping rounded-full bg-amber-400" />
+              {muted ? (
+                <VolumeX className="h-5 w-5 text-rose-700" strokeWidth={2.25} />
+              ) : (
+                <Volume2 className="h-5 w-5 text-emerald-800" strokeWidth={2.25} />
               )}
-              {!muted && (
-                <span className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-emerald-400/30" />
+              {needsGesture && !muted && (
+                <span className="absolute right-1 top-1 h-2.5 w-2.5 animate-ping rounded-full bg-amber-400" />
               )}
             </button>
           </div>

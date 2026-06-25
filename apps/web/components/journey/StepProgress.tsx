@@ -77,10 +77,10 @@ export function StepProgress({ sections, currentSection, progress, onSectionClic
             background: isDone
               ? 'linear-gradient(145deg, #34d399, #059669)'
               : isCurrent
-                ? 'rgba(255,255,255,0.98)'
+                ? 'linear-gradient(145deg, #a7f3d0, #6ee7b7)'
                 : 'rgba(255,255,255,0.22)',
             boxShadow: isCurrent
-              ? '0 0 0 3px rgba(255,255,255,0.38), 0 4px 14px rgba(0,0,0,0.18)'
+              ? '0 0 0 3px rgba(167,243,208,0.55), 0 4px 14px rgba(0,0,0,0.18)'
               : isDone
                 ? '0 2px 10px rgba(16,185,129,0.35)'
                 : 'inset 0 1px 0 rgba(255,255,255,0.2)',
@@ -89,7 +89,7 @@ export function StepProgress({ sections, currentSection, progress, onSectionClic
           {isDone ? (
             <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" strokeWidth={3} />
           ) : (
-            <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isCurrent ? 'text-emerald-700' : 'text-white/90'}`} />
+            <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isCurrent ? 'text-emerald-900' : 'text-white/90'}`} />
           )}
         </motion.div>
         <span

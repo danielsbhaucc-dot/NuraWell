@@ -386,7 +386,15 @@ export function StepLesson({ step, initialProgress, userId, userGender = null, a
       </div>
 
       {/* Content */}
-      <div style={{ borderRadius: '26px 26px 0 0', marginTop: '-14px', position: 'relative', zIndex: 3 }}>
+      <div
+        style={{
+          borderRadius: '26px 26px 0 0',
+          marginTop: '-14px',
+          position: 'relative',
+          zIndex: 3,
+          background: 'linear-gradient(180deg, #ecfdf5 0%, #f0fdf4 35%, #e8f5ef 100%)',
+        }}
+      >
         <motion.div
           key={currentSection}
           dir="rtl"

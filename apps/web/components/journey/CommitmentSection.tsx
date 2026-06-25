@@ -59,10 +59,10 @@ export function CommitmentSection({
           <span className="text-sm font-bold text-amber-700">התחייבות</span>
         </div>
         <h2 className="text-2xl font-black" style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}>
-          הגיע הזמן להתחייב 💪
+          בואו נדבר על ההתחייבות 💪
         </h2>
-        <p className="text-sm text-gray-500 mt-2 max-w-xs mx-auto">
-          מחקרים מראים שהתחייבות מפורשת מגבירה את הסיכוי ליצור הרגל חדש פי 3
+        <p className="text-sm text-amber-900/75 mt-2 max-w-xs mx-auto font-medium leading-relaxed">
+          אני יודע שזה לא תמיד קל — אבל התחייבות קטנה וברורה יכולה לשנות הכל.
         </p>
       </div>
 
