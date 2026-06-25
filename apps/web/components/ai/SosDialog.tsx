@@ -26,6 +26,7 @@ import {
   SOS_TRIGGER_CARD,
   SOS_TRIGGER_HELPER,
   SOS_TRIGGER_LABEL,
+  type SosQuickTriggerId,
   sosSurface,
 } from '../../lib/ai/sos-dialog-surfaces';
 import type { OnboardingGender } from '../../lib/onboarding/types';
@@ -75,7 +76,7 @@ type SosContextResponse = {
   ok: true;
 };
 
-const QUICK_TRIGGERS: Array<{ id: FrictionCategory; label: string; helper: string; emoji: string }> = [
+const QUICK_TRIGGERS: Array<{ id: SosQuickTriggerId; label: string; helper: string; emoji: string }> = [
   { id: 'emotional', label: 'לחוץ/עמוס', helper: 'רגש, עומס, עצבים', emoji: '😮‍💨' },
   { id: 'motivational', label: 'משעמם / אין כוח', helper: 'חוסר חשק או מוטיבציה', emoji: '😴' },
   { id: 'physiological', label: 'מתחשק / רעב', helper: 'חשק, עייפות, רעב', emoji: '🍽️' },
