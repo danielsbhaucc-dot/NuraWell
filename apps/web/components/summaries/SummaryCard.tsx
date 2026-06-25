@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import type { SummaryType } from '../../lib/notifications/summaries/period-keys';
 import type { PeriodicSummaryRow } from '../../app/(dashboard)/summaries/page';
+import { formatHebrewRelative } from '../../lib/time/hebrew-relative';
 
 interface MetricsShape {
   completion_rate?: number;
@@ -131,19 +132,6 @@ function formatPeriodKeyHe(type: SummaryType, key: string): string {
   }
 }
 
-function formatRelativeDate(isoString: string): string {
-  const d = new Date(isoString);
-  if (Number.isNaN(d.getTime())) return '';
-  const diffMs = Date.now() - d.getTime();
-  const diffH = Math.round(diffMs / (1000 * 60 * 60));
-  if (diffH < 1) return 'לפני רגע';
-  if (diffH < 24) return `לפני ${diffH} שעות`;
-  const diffD = Math.round(diffH / 24);
-  if (diffD === 1) return 'אתמול';
-  if (diffD < 7) return `לפני ${diffD} ימים`;
-  return d.toLocaleDateString('he-IL', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
 export function SummaryCard({ summary }: { summary: PeriodicSummaryRow }) {
   const colors = TYPE_COLORS[summary.type];
   const Icon = colors.icon;
@@ -178,7 +166,7 @@ export function SummaryCard({ summary }: { summary: PeriodicSummaryRow }) {
           </div>
         </div>
         <span className="shrink-0 text-[11px] text-gray-500 mt-1">
-          {formatRelativeDate(summary.created_at)}
+          {formatHebrewRelative(summary.created_at)}
         </span>
       </header>
 

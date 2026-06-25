@@ -27,6 +27,7 @@ import { TaskHistoryStrip } from '../tasks/TaskHistoryStrip';
 import { TaskHistoryCalendar } from '../tasks/TaskHistoryCalendar';
 import { DayDetailPopup, type DayExecRow } from '../tasks/DayDetailPopup';
 import { WeightTrendInsightCard } from './WeightTrendInsightCard';
+import { formatHebrewRelative } from '../../lib/time/hebrew-relative';
 
 interface CourseStatItem {
   id: string;
@@ -113,17 +114,6 @@ function formatTime(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return m > 0 ? `${h}ש' ${m}ד'` : `${h} שעות`;
-}
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffDays = Math.floor(diffMs / 86400000);
-  if (diffDays === 0) return 'היום';
-  if (diffDays === 1) return 'אתמול';
-  if (diffDays < 7) return `לפני ${diffDays} ימים`;
-  return d.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
 }
 
 export function ProgressPageClient({
@@ -551,7 +541,7 @@ export function ProgressPageClient({
                       <div className="flex-1 min-w-0 text-right">
                         <p className="text-sm text-[#1A1730] font-bold line-clamp-1">{a.lesson_title}</p>
                         <p className="text-[11px] text-gray-600 mt-0.5 font-medium">
-                          הושלם · {formatDate(a.completed_at)}
+                          הושלם · {formatHebrewRelative(a.completed_at)}
                         </p>
                       </div>
                       <IconComp className="w-4 h-4 text-gray-500 flex-shrink-0" />

@@ -23,9 +23,7 @@ type SupabaseAdmin = {
         maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: { message: string } | null }>;
       };
     };
-    insert: (row: Record<string, unknown>) => {
-      select: (cols: string) => { single: () => Promise<{ data: Record<string, unknown>; error: { message: string } | null }> };
-    };
+    insert: (row: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
     update: (row: Record<string, unknown>) => {
       eq: (col: string, val: string) => Promise<{ error: { message: string } | null }>;
     };
@@ -49,11 +47,11 @@ function buildTtsUrl(objectKey: string, contentHash: string): string | null {
 
 async function upsertSosMediaAsset(params: {
   supabase: SupabaseAdmin;
-  userId: string;
   objectKey: string;
   title: string;
   folder: string;
   sizeBytes: number;
+  createdBy?: string | null;
 }): Promise<void> {
   const publicUrl =
     buildPublicUrlForUpload({ kind: 'audio', objectKey: params.objectKey }) ??
@@ -70,18 +68,6 @@ async function upsertSosMediaAsset(params: {
     .maybeSingle();
 
   if (existing?.id) {
-    await admin
-      .from('media_assets')
-      .update({
-        title: params.title,
-        folder: params.folder,
-        public_url: publicUrl,
-        size_bytes: params.sizeBytes,
-        mime_type: 'audio/mpeg',
-        updated_at: new Date().toISOString(),
-        credit: TTS_ELEVENLABS_CREDIT,
-      })
-      .eq('id', existing.id as string);
     return;
   }
 
@@ -98,21 +84,27 @@ async function upsertSosMediaAsset(params: {
     folder: params.folder,
     source: 'other',
     credit: TTS_ELEVENLABS_CREDIT,
-    created_by: params.userId,
+    ...(params.createdBy ? { created_by: params.createdBy } : {}),
   });
 }
 
 export type EnsureSosTtsResult = {
   ok: true;
   url: string;
+  /** הקובץ כבר היה ב-R2 — לא נוצר מחדש */
   cached: boolean;
+  /** אותו קובץ CDN לכל המשתמשים (מפתח לפי hash תוכן) */
+  shared: true;
   content_hash: string;
   object_key: string;
   voice_id: string;
   model_id: string;
 };
 
-/** יצירה/שימוש חוזר ב-ElevenLabs + R2 — אותה שרשרת כמו בשיעורים. */
+/**
+ * TTS גלובלי ל-SOS: מפתח R2 לפי hash+קטגוריה בלבד.
+ * המשתמש הראשון מייצר; כל השאר מקבלים את אותו URL מ-CDN.
+ */
 export async function ensureSosTts(params: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any;
@@ -132,27 +124,36 @@ export async function ensureSosTts(params: {
     throw new Error('לא ניתן לבנות URL ציבורי — בדוק NEXT_PUBLIC_CDN_URL');
   }
 
-  const cached = await r2AudioExists(objectKey);
-  if (!cached) {
-    const buffer = await synthesizeQuestionSpeech(normalized);
-    const { sizeBytes } = await uploadTtsMp3ToR2({ objectKey, buffer });
-    await upsertSosMediaAsset({
-      supabase: params.supabase,
-      userId: params.userId,
-      objectKey,
-      title: buildSosTtsMediaTitle(params.category, normalized),
-      folder: buildSosTtsFolder(params.category),
-      sizeBytes,
-    });
-  }
-
-  return {
-    ok: true,
+  const base = {
+    ok: true as const,
     url,
-    cached,
+    shared: true as const,
     content_hash: contentHash,
     object_key: objectKey,
     voice_id: TTS_VOICE_ID,
     model_id: TTS_MODEL_ID,
   };
+
+  if (await r2AudioExists(objectKey)) {
+    return { ...base, cached: true };
+  }
+
+  const buffer = await synthesizeQuestionSpeech(normalized);
+
+  // מניעת כפילות אם בקשה מקבילה סיימה לפנינו
+  if (await r2AudioExists(objectKey)) {
+    return { ...base, cached: true };
+  }
+
+  const { sizeBytes } = await uploadTtsMp3ToR2({ objectKey, buffer });
+  await upsertSosMediaAsset({
+    supabase: params.supabase,
+    objectKey,
+    title: buildSosTtsMediaTitle(params.category, normalized),
+    folder: buildSosTtsFolder(params.category),
+    sizeBytes,
+    createdBy: params.userId,
+  });
+
+  return { ...base, cached: false };
 }

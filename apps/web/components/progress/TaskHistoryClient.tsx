@@ -27,6 +27,7 @@ import type {
 import type { JourneyTaskSlot } from '../../lib/types/journey';
 import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import { DayDetailPopup, type DayExecRow } from '../tasks/DayDetailPopup';
+import { formatHebrewRelativeFromDateKey } from '../../lib/time/hebrew-relative';
 
 /* ── Design tokens — no #FFF anywhere ───────────────────────────── */
 const glassCard = {
@@ -126,16 +127,6 @@ function formatDateTime(iso: string | null): string {
     hour: '2-digit',
     minute: '2-digit',
   });
-}
-
-function formatDateKey(key: string, todayKey: string): string {
-  if (key === todayKey) return 'היום';
-  const d = new Date(`${key}T12:00:00`);
-  const today = new Date(`${todayKey}T12:00:00`);
-  const diff = Math.round((today.getTime() - d.getTime()) / 86400000);
-  if (diff === 1) return 'אתמול';
-  if (diff > 1 && diff <= 6) return `לפני ${diff} ימים`;
-  return d.toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
 function formatTimeOnly(iso: string): string {
@@ -299,7 +290,7 @@ function DayRow({ day, todayKey }: { day: TaskHistoryDay; todayKey: string }) {
         <div className="flex items-center gap-2 min-w-0">
           <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${st.dot}`} />
           <span className={`text-xs font-bold ${st.text}`}>
-            {formatDateKey(day.date_key, todayKey)}
+            {formatHebrewRelativeFromDateKey(day.date_key, todayKey)}
           </span>
           <span
             className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${st.text}`}

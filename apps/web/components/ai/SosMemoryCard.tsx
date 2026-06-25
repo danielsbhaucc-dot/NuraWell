@@ -6,16 +6,8 @@ import { ChevronDown, ChevronLeft, Sparkles } from 'lucide-react';
 
 import type { SosMemorySnippet, SosRecentEvent } from '../../lib/ai/guardian/sos-memory';
 import { filterRelevantSosEvents } from '../../lib/ai/guardian/sos-ease-shared';
+import { formatHebrewRelative } from '../../lib/time/hebrew-relative';
 import { AlmogAvatarChip } from '../journey/AlmogPresence';
-
-function formatRelative(iso: string): string {
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
-  if (mins < 1) return 'עכשיו';
-  if (mins < 60) return `לפני ${mins} דק׳`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `לפני ${hours} ש׳`;
-  return `לפני ${Math.floor(hours / 24)} ימים`;
-}
 
 function outcomeLabel(outcome: string): string {
   if (outcome === 'passed') return 'עבר ✓';
@@ -171,7 +163,7 @@ export function SosMemoryCard() {
                     {i + 1}
                   </span>
                   <span>
-                    <span className="font-bold">{formatRelative(ev.created_at)}</span>
+                    <span className="font-bold">{formatHebrewRelative(ev.created_at)}</span>
                     {' · '}
                     {outcomeLabel(ev.outcome)}
                     {ev.task_title ? ` · ${ev.task_title}` : ''}

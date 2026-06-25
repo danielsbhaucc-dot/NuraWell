@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, MapPin, Sparkles, Sunrise, X } from 'lucide-react';
 import { slotLabel } from '../../lib/journey/task-schedule';
 import type { JourneyTaskSlot } from '../../lib/types/journey';
+import { formatHebrewRelativeFromDateKey } from '../../lib/time/hebrew-relative';
 
 export interface DayExecRow {
   task_id: string;
@@ -24,20 +25,6 @@ interface Props {
   todayKey: string;
   rows: DayExecRow[];
   onClose: () => void;
-}
-
-function friendlyDate(dateKey: string, todayKey: string): string {
-  if (dateKey === todayKey) return 'היום';
-  const today = new Date(`${todayKey}T12:00:00`);
-  const target = new Date(`${dateKey}T12:00:00`);
-  const diff = Math.round((today.getTime() - target.getTime()) / 86400000);
-  if (diff === 1) return 'אתמול';
-  if (diff > 1 && diff <= 6) return `לפני ${diff} ימים`;
-  return target.toLocaleDateString('he-IL', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  });
 }
 
 function timeOnly(iso: string): string {
@@ -176,7 +163,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                 className="text-lg font-black text-emerald-950"
                 style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
               >
-                {friendlyDate(dateKey, todayKey)}
+                {formatHebrewRelativeFromDateKey(dateKey, todayKey)}
               </h2>
               <p className="text-[11px] text-emerald-900/75 font-semibold tabular-nums mt-0.5">
                 {dateKey}

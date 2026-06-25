@@ -13,7 +13,7 @@ const SOS_TTS_TITLE_PREFIX: Record<SosTtsCategory, string> = {
   micro_step: 'SOS — הקראת צעד',
 };
 
-/** אחד לכל hash תוכן — דחיסה מקסימלית, בלי כפילויות. */
+/** אחד לכל hash תוכן — קובץ CDN משותף לכל המשתמשים (לא per-user). */
 export function buildSosTtsObjectKey(category: SosTtsCategory, contentHash: string): string {
   return `tts/sos/${category}/${contentHash}.mp3`;
 }

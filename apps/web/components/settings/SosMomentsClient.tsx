@@ -9,6 +9,7 @@ import type { SosMemorySnippet, SosRecentEvent } from '../../lib/ai/guardian/sos
 import { filterRelevantSosEvents } from '../../lib/ai/guardian/sos-ease-shared';
 import { genderCopy } from '../../lib/onboarding/gender-copy';
 import type { OnboardingGender } from '../../lib/onboarding/types';
+import { formatHebrewRelative } from '../../lib/time/hebrew-relative';
 import { MomentsHeroAvatar } from '../journey/AlmogPresence';
 
 const HEBREW_HEAD: CSSProperties = {
@@ -16,13 +17,14 @@ const HEBREW_HEAD: CSSProperties = {
 };
 
 const HEADER_GRADIENT =
-  'linear-gradient(155deg, #4c1d95 0%, #6d28d9 32%, #0f766e 68%, #0d9488 100%)';
+  'linear-gradient(155deg, #034d3a 0%, #059669 45%, #10b981 85%)';
 
+/** טקסטים בהירים על הירוק — לא לבן חד */
 const HEADER_TEXT = {
-  greeting: '#e9d5ff',
-  title: '#f5f3ff',
-  body: '#c4b5fd',
-  accent: '#99f6e4',
+  greeting: '#d1fae5',
+  title: '#ecfdf5',
+  body: '#a7f3d0',
+  accent: '#ccfbf1',
 } as const;
 
 const MEMORY_PAGE_SIZE = 5;
@@ -41,10 +43,10 @@ const TRIGGER_HUMAN: Record<string, string> = {
 };
 
 const DIVIDER_COLORS = [
-  ['#8b5cf6', '#a78bfa'],
+  ['#10b981', '#34d399'],
+  ['#0d9488', '#2dd4bf'],
   ['#f59e0b', '#fbbf24'],
   ['#0ea5e9', '#38bdf8'],
-  ['#f43f5e', '#fb7185'],
 ] as const;
 
 const MEMORY_CARD_STYLES = [
@@ -64,21 +66,6 @@ function whenYouPress(gender: OnboardingGender | ''): string {
   if (gender === 'male') return 'שתלחץ';
   if (gender === 'female') return 'שתלחצי';
   return 'שתלחץ/י';
-}
-
-function formatRelative(iso: string): string {
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
-  if (mins < 1) return 'עכשיו';
-  if (mins < 60) return `לפני ${mins} דק׳`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `לפני ${hours} שעות`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `לפני ${days} ימים`;
-  return new Intl.DateTimeFormat('he-IL', {
-    timeZone: 'Asia/Jerusalem',
-    day: 'numeric',
-    month: 'short',
-  }).format(new Date(iso));
 }
 
 function formatDayKey(iso: string): string {
@@ -199,8 +186,8 @@ function ListPagination({
         type="button"
         disabled={page === 0}
         onClick={() => onPageChange(page - 1)}
-        className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold text-violet-800 transition disabled:opacity-40"
-        style={{ background: page === 0 ? 'transparent' : 'rgba(139,92,246,0.1)' }}
+        className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold text-emerald-900 transition disabled:opacity-40"
+        style={{ background: page === 0 ? 'transparent' : 'rgba(16,185,129,0.12)' }}
       >
         <ChevronRight className="h-3.5 w-3.5" />
         הקודם
@@ -212,8 +199,8 @@ function ListPagination({
         type="button"
         disabled={page >= total - 1}
         onClick={() => onPageChange(page + 1)}
-        className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold text-violet-800 transition disabled:opacity-40"
-        style={{ background: page >= total - 1 ? 'transparent' : 'rgba(139,92,246,0.1)' }}
+        className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold text-emerald-900 transition disabled:opacity-40"
+        style={{ background: page >= total - 1 ? 'transparent' : 'rgba(16,185,129,0.12)' }}
       >
         הבא
         <ChevronLeft className="h-3.5 w-3.5" />
@@ -229,10 +216,10 @@ function DayHeading({ day }: { day: string }) {
         className="mx-auto max-w-sm rounded-2xl px-4 py-2 text-center text-[15px] font-black tracking-wide"
         style={{
           ...HEBREW_HEAD,
-          color: '#5b21b6',
-          background: 'linear-gradient(135deg, rgba(237,233,254,0.95), rgba(224,231,255,0.85))',
-          border: '1px solid rgba(139,92,246,0.22)',
-          boxShadow: '0 4px 14px rgba(139,92,246,0.08)',
+          color: '#065f46',
+          background: 'linear-gradient(135deg, rgba(209,250,229,0.95), rgba(167,243,208,0.85))',
+          border: '1px solid rgba(16,185,129,0.28)',
+          boxShadow: '0 4px 14px rgba(4,120,87,0.1)',
         }}
       >
         {day}
@@ -334,9 +321,9 @@ function MomentsPageSkeleton() {
       <div className="glass-surface-home animate-pulse space-y-3 rounded-[22px] p-5">
         <div className="mx-auto h-5 w-28 rounded-lg bg-emerald-900/10" />
         {[0, 1].map((i) => (
-          <div key={i} className="rounded-2xl border border-violet-200/40 bg-violet-50/50 px-4 py-3">
+          <div key={i} className="rounded-2xl border border-emerald-200/40 bg-emerald-50/50 px-4 py-3">
             <div className="flex justify-between gap-3">
-              <div className="h-5 w-20 rounded-full bg-violet-200/60" />
+              <div className="h-5 w-20 rounded-full bg-emerald-200/60" />
               <div className="h-3 w-14 rounded-md bg-emerald-900/8" />
             </div>
             <div className="mt-3 h-4 w-2/3 rounded-lg bg-emerald-900/10" />
@@ -415,7 +402,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
   const visibleEventDays = paginate(groupedEvents, eventsPage, EVENT_DAYS_PAGE_SIZE);
 
   return (
-    <div className="touch-manipulation min-h-screen bg-gradient-to-b from-[#f5f3ff] via-[#faf8f5] to-[#f8fafc]">
+    <div className="touch-manipulation min-h-screen bg-gradient-to-b from-[#ecfdf5] via-[#f0fdf9] to-[#f8fafc]">
       <div
         className="relative overflow-hidden px-4 pb-10 pt-4"
         style={{ background: HEADER_GRADIENT }}
@@ -424,7 +411,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 h-2/3"
           style={{
-            background: 'linear-gradient(180deg, rgba(196,181,253,0.18) 0%, transparent 100%)',
+            background: 'linear-gradient(180deg, rgba(167,243,208,0.22) 0%, transparent 100%)',
           }}
         />
 
@@ -432,13 +419,13 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
           href="/"
           className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95"
           style={{
-            background: 'rgba(196, 181, 253, 0.2)',
-            border: '1px solid rgba(233, 213, 255, 0.35)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 16px rgba(76,29,149,0.15)',
+            background: 'rgba(167, 243, 208, 0.18)',
+            border: '1px solid rgba(167, 243, 208, 0.38)',
+            boxShadow: 'inset 0 1px 0 rgba(167, 243, 208, 0.45), 0 4px 16px rgba(6,78,59,0.12)',
           }}
           aria-label="חזרה לבית"
         >
-          <ArrowRight className="h-5 w-5" style={{ color: HEADER_TEXT.title }} aria-hidden />
+          <ArrowRight className="h-5 w-5 text-emerald-50" aria-hidden />
         </Link>
 
         <div className="relative mx-auto max-w-lg">
@@ -471,8 +458,8 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
               />
             ) : loading ? (
               <div className="mt-5 w-full max-w-xs space-y-2 animate-pulse" aria-hidden>
-                <div className="mx-auto h-3 w-40 rounded-md bg-violet-200/25" />
-                <div className="mx-auto h-3 w-56 rounded-md bg-violet-200/18" />
+                <div className="mx-auto h-3 w-40 rounded-md bg-emerald-50/25" />
+                <div className="mx-auto h-3 w-56 rounded-md bg-emerald-50/18" />
               </div>
             ) : null}
           </div>
@@ -539,7 +526,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                               {m.task_title ? (
                                 <p className="mt-1 text-xs text-slate-600">בקשר ל: {m.task_title}</p>
                               ) : null}
-                              <p className="mt-1.5 text-[11px] text-slate-500">{formatRelative(m.created_at)}</p>
+                              <p className="mt-1.5 text-[11px] text-slate-500">{formatHebrewRelative(m.created_at)}</p>
                             </div>
                           </li>
                         );
@@ -583,7 +570,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                                 <p className="mt-1 text-xs text-amber-900/70">בקשר ל: {m.task_title}</p>
                               ) : null}
                               <p className="mt-1.5 text-[11px] text-amber-900/55">
-                                {formatRelative(m.created_at)}
+                                {formatHebrewRelative(m.created_at)}
                               </p>
                             </div>
                           </li>
@@ -643,8 +630,8 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                             <article className={`rounded-2xl border px-4 py-3 ${cardStyle}`}>
                               <div className="flex flex-wrap items-start justify-between gap-2">
                                 <OutcomeStatus outcome={ev.outcome} gender={gender} />
-                                <span className="shrink-0 text-xs font-semibold text-violet-700/80">
-                                  {formatRelative(ev.created_at)}
+                                <span className="shrink-0 text-xs font-semibold text-emerald-800/65">
+                                  {formatHebrewRelative(ev.created_at)}
                                 </span>
                               </div>
                               {ev.task_title ? (
@@ -666,7 +653,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                           onClick={() =>
                             setExpandedDays((prev) => ({ ...prev, [day]: true }))
                           }
-                          className="w-full rounded-xl border border-violet-200/60 bg-violet-50/70 px-3 py-2 text-xs font-bold text-violet-800"
+                          className="w-full rounded-xl border border-emerald-200/60 bg-emerald-50/70 px-3 py-2 text-xs font-bold text-emerald-900"
                         >
                           עוד {hiddenInDay} רגעים באותו יום
                         </button>
