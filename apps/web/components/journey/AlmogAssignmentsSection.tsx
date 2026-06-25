@@ -68,33 +68,33 @@ function buildDynamicHeadline(
 ): { title: string; subtitle: string } {
   if (focus?.status === 'active') {
     return {
-      title: 'אני מרכז אותך רק במה שחשוב עכשיו',
+      title: 'בוא נתמקד רק במה שחשוב עכשיו',
       subtitle: focus.reason
-        ? `בפוקוס: ${focus.reason}`
+        ? `אני מרכז אותך ב${focus.reason}`
         : 'שאר המשימות מחכות בצד — בלי לחץ',
     };
   }
   if (focus?.status === 'proposed') {
     return {
-      title: 'יש לי הצעה — בוא נוריד רעש לרגע',
-      subtitle: 'מצב פוקוס יוריד תזכורות על שאר המשימות',
+      title: 'יש לי רעיון — בוא נוריד רעש',
+      subtitle: 'אפשר לעצור תזכורות על שאר המשימות לרגע',
     };
   }
   if (visible.length === 1) {
     return {
-      title: 'יש לנו משימה אחת שדיברנו עליה',
-      subtitle: 'סמן כשעשית — אני איתך',
+      title: 'דיברנו על משימה אחת',
+      subtitle: 'תסמן לי כשעשית — אני איתך',
     };
   }
   if (visible.length > 1) {
     return {
-      title: `סיכמנו בינינו ${visible.length} משימות`,
-      subtitle: 'אחת בכל פעם, בקצב שלך',
+      title: `יש לנו ${visible.length} משימות פתוחות`,
+      subtitle: 'נעשה אחת בכל פעם, בסדר?',
     };
   }
   return {
-    title: 'אם תרצה — יש עוד מה לעשות',
-    subtitle: 'פתח ונראה מה מחכה',
+    title: 'רוצה לראות מה עוד יש?',
+    subtitle: 'פתח ונעבור על זה יחד',
   };
 }
 
@@ -153,16 +153,27 @@ function useAlmogAssignments() {
   return { visible, focus, completed, loaded, busyId, act };
 }
 
-/** משימות אישיות שהושלמו — מוצגות באזור "הושלמו" בעמוד המסע */
+/** משימות אישיות שהושלמו — בתחתית העמוד */
 export function AlmogCompletedSection() {
   const { completed, loaded } = useAlmogAssignments();
   if (!loaded || completed.length === 0) return null;
 
   return (
-    <div className="mb-6">
-      <p className="mb-2.5 px-1 text-[11px] font-black uppercase tracking-[0.12em] text-emerald-800/65">
-        משימות שסיימת איתי
-      </p>
+    <div className="mt-6">
+      <div className="mb-2.5 flex items-center gap-2.5 px-1">
+        <AlmogAvatarChip size={28} />
+        <div className="text-right">
+          <p
+            className="text-[14px] font-black leading-snug"
+            style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
+          >
+            {completed.length === 1
+              ? 'סגרנו משימה אחת ביחד'
+              : `סגרנו ${completed.length} משימות ביחד`}
+          </p>
+          <p className="text-[11.5px] text-emerald-800/65">זה מה שכבר עשית — שווה לזכור</p>
+        </div>
+      </div>
       <CompletedList items={completed} compact />
     </div>
   );
@@ -390,51 +401,51 @@ function FocusBanner({
       className="relative mb-3 overflow-hidden rounded-[22px]"
       style={{
         background:
-          'linear-gradient(135deg, rgba(6,78,59,0.92) 0%, rgba(4,120,87,0.88) 55%, rgba(2,44,34,0.94) 100%)',
-        backdropFilter: 'blur(18px) saturate(150%)',
-        WebkitBackdropFilter: 'blur(18px) saturate(150%)',
-        border: '1px solid rgba(167,243,208,0.32)',
-        boxShadow: '0 14px 34px rgba(2,44,34,0.26), inset 0 1px 0 rgba(255,255,255,0.16)',
+          'linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(236,253,245,0.88) 55%, rgba(209,250,229,0.82) 100%)',
+        backdropFilter: 'blur(14px) saturate(150%)',
+        WebkitBackdropFilter: 'blur(14px) saturate(150%)',
+        border: '1px solid rgba(52,211,153,0.42)',
+        boxShadow: '0 8px 22px rgba(6,78,59,0.08), inset 0 1px 0 rgba(255,255,255,0.75)',
       }}
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full"
+        className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgba(251,191,36,0.32) 0%, transparent 70%)',
-          filter: 'blur(20px)',
+          background: 'radial-gradient(circle, rgba(167,243,208,0.45) 0%, transparent 70%)',
+          filter: 'blur(16px)',
         }}
       />
       <div className="relative px-4 py-4">
         <div className="flex items-start gap-2.5">
           <div
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-            style={{ background: 'rgba(167,243,208,0.18)', border: '1px solid rgba(167,243,208,0.35)' }}
+            style={{ background: 'rgba(16,185,129,0.14)', border: '1px solid rgba(52,211,153,0.35)' }}
           >
-            <Snowflake className="h-4 w-4 text-emerald-200" />
+            <Snowflake className="h-4 w-4 text-emerald-700" />
           </div>
           <div className="min-w-0 flex-1">
             <p
-              className="text-[10.5px] font-black uppercase tracking-[0.14em] text-emerald-200/90"
+              className="text-[11px] font-black tracking-wide text-emerald-700"
               style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
             >
-              {isProposed ? 'הצעת מצב פוקוס' : 'מצב פוקוס פעיל'}
+              {isProposed ? 'הצעה שלי: מצב פוקוס' : 'אנחנו במצב פוקוס'}
             </p>
             <p
-              className="mt-1 text-[14px] font-bold leading-relaxed text-white"
-              style={{ fontFamily: "'Rubik','Heebo',sans-serif", textShadow: '0 1px 6px rgba(2,44,34,0.45)' }}
+              className="mt-1 text-[14px] font-bold leading-relaxed text-emerald-950"
+              style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
             >
               {isProposed
                 ? `אני מציע שנוריד רגע את שאר המשימות מהמסך${focus.reason ? ` ונתמקד ב${focus.reason}` : ''}.`
                 : `אנחנו במצב פוקוס${until ? ` עד ${until}` : ''}${focus.reason ? ` — ${focus.reason}` : ''}.`}
             </p>
-            <ul className="mt-2.5 space-y-1 text-[12px] leading-relaxed text-emerald-100/90">
+            <ul className="mt-2.5 space-y-1.5 text-[12.5px] leading-relaxed text-emerald-900/80">
               {pausesReminders ? (
-                <li>· תזכורות על משימות אחרות ייעצרו — פחות רעש בפעמון</li>
+                <li>· אעצור תזכורות על משימות אחרות — פחות רעש בפעמון</li>
               ) : null}
-              <li>· ההתקדמות שלך נשמרת — שום דבר לא נמחק</li>
-              <li>· הרגלים יומיים (כמו מים) ממשיכים להיספר אם סימנת אותם</li>
-              <li>· כשתרגיש מוכן — לחץ &quot;חזרתי לשגרה&quot; ונחזיר הכל</li>
+              <li>· ההתקדמות שלך נשמרת, שום דבר לא נמחק</li>
+              <li>· הרגלים יומיים (כמו מים) ממשיכים להיספר אם סימנת</li>
+              <li>· כשתרגיש מוכן — תלחץ &quot;חזרתי לשגרה&quot; ואחזיר הכל</li>
             </ul>
           </div>
         </div>
@@ -445,10 +456,10 @@ function FocusBanner({
               type="button"
               disabled={busy}
               onClick={onConfirm}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-[13.5px] font-black text-emerald-950 transition-transform active:scale-95 disabled:opacity-60"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-[13.5px] font-black text-white transition-transform active:scale-95 disabled:opacity-60"
               style={{
-                background: 'linear-gradient(135deg, rgba(167,243,208,0.98), rgba(52,211,153,0.92))',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5), 0 4px 12px rgba(2,44,34,0.25)',
+                background: 'linear-gradient(135deg, #047857, #10b981)',
+                boxShadow: '0 4px 12px rgba(16,185,129,0.28)',
               }}
             >
               <Check className="h-4 w-4" strokeWidth={2.6} />
@@ -458,8 +469,8 @@ function FocusBanner({
               type="button"
               disabled={busy}
               onClick={onDecline}
-              className="flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-bold text-emerald-50 transition-transform active:scale-95 disabled:opacity-60"
-              style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)' }}
+              className="flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-bold text-emerald-800 transition-transform active:scale-95 disabled:opacity-60"
+              style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(52,211,153,0.35)' }}
             >
               לא עכשיו
             </button>
@@ -470,8 +481,8 @@ function FocusBanner({
               type="button"
               disabled={busy}
               onClick={onEnd}
-              className="w-full rounded-xl px-3 py-2.5 text-[13px] font-bold text-emerald-50 transition-transform active:scale-95 disabled:opacity-60"
-              style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)' }}
+              className="w-full rounded-xl px-3 py-2.5 text-[13px] font-bold text-emerald-800 transition-transform active:scale-95 disabled:opacity-60"
+              style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(52,211,153,0.35)' }}
             >
               חזרתי לשגרה
             </button>

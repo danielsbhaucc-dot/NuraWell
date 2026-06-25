@@ -249,7 +249,7 @@ function GalleryView({
               </>
             ) : null}
 
-            {/* 3. הושלמו — תחנות ומשימות אישיות שסיימת */}
+            {/* 3. הושלמו — תחנות שסיימת */}
             {completedGroups.length > 0 ? (
               <CompletedSection
                 groups={completedGroups}
@@ -257,11 +257,13 @@ function GalleryView({
                 stationOffset={activeGroups.length}
               />
             ) : null}
-            <AlmogCompletedSection />
 
-            {/* 4. שאר העמוד — פאנל אלמוג בתחתית + באנר אישי */}
+            {/* 4. פאנל אלמוג + באנר אישי */}
             <AlmogAssignmentsSection />
             <AlmogTouchBanner firstName={firstName} overall={overall} />
+
+            {/* 5. משימות אישיות שהושלמו — בתחתית */}
+            <AlmogCompletedSection />
           </>
         )}
       </div>
@@ -471,7 +473,7 @@ function HeroSection({
               <ProgressRing pct={overall.pct} reduced={reduced} />
               <div className="min-w-0 flex-1 text-right">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-100/85">
-                  כך נראית ההתקדמות שלך
+                  ככה זה נראה אצלי
                 </p>
                 <p
                   className="mt-0.5 text-[18px] font-black text-white"
@@ -482,7 +484,7 @@ function HeroSection({
                 </p>
                 <p className="mt-0.5 text-[12px] text-emerald-50/85">
                   {overall.stationsDone > 0
-                    ? `כבר סיימת ${overall.stationsDone} תחנ${overall.stationsDone === 1 ? 'ה' : 'ות'} — אני רואה את זה ✦`
+                    ? `כבר סגרנו ${overall.stationsDone} תחנ${overall.stationsDone === 1 ? 'ה' : 'ות'} — יפה מאוד ✦`
                     : 'כל צעד מקרב אותך — אני איתך'}
                 </p>
               </div>
@@ -681,59 +683,59 @@ function buildIntroText(
   if (overall.all === 0) {
     return {
       preamble,
-      message: 'המסע שלך מחכה',
+      message: 'אני מחכה לך כאן',
       sparkle: '✦',
       subline:
-        'אני מכין לך תחנות, צעדים והרגלים שמשתלבים בחיים — ברגע שתרצה, נצא לדרך יחד.',
+        'כשתרצה נצא לדרך — אני אכין לך תחנות, צעדים והרגלים שמתאימים לחיים שלך.',
     };
   }
   if (overall.done === 0) {
     return {
       preamble,
-      message: 'זה הרגע שלנו להתחיל',
+      message: 'בוא נתחיל ביחד',
       sparkle: '✿',
       subline:
         tod?.bucket === 'morning'
-          ? 'בוקר טוב להתחלה חדשה. בחר תחנה ואני איתך — צעד אחד בכל פעם, בקצב שלך.'
+          ? 'יש לי תחנה שמחכה לך. ניכנס אליה בקצב שלך — אני איתך.'
           : tod?.bucket === 'night'
-            ? 'גם רגע שקט בלילה מתאים להתחלה. בחר תחנה ואני אהיה כאן.'
-            : 'בחר תחנה במסלול ונצא לדרך — אני איתך בכל צעד.',
+            ? 'גם עכשיו זה זמן טוב. תבחר תחנה ואני אהיה פה איתך.'
+            : 'תבחר תחנה ונצא לדרך — צעד אחד, בלי למהר.',
     };
   }
   if (overall.pct >= 100) {
     return {
       preamble,
-      message: 'עשית את כל הדרך!',
+      message: 'סיימת הכל!',
       sparkle: '🏆',
       subline:
-        'סיימת את כל הצעדים — אני באמת גאה. אפשר לחזור ולהתבונן, או להמשיך לחזק את מה שבנית.',
+        'אני באמת גאה בך. אפשר לחזור ולהתבונן, או פשוט לשמור על מה שבנית.',
     };
   }
   if (overall.pct >= 60) {
     return {
       preamble,
-      message: 'אנחנו כבר קרובים',
+      message: 'אנחנו כבר שם כמעט',
       sparkle: '✦',
       subline:
-        'עברת יותר ממחצית הדרך. כל צעד נוסף מחזק את מה שאתה בונה — אני רואה את זה.',
+        'ראיתי כמה השקעת — עברת יותר ממחצית. עוד צעד קטן ואנחנו שם.',
     };
   }
   if (overall.pct >= 30) {
     return {
       preamble,
-      message: 'אתה תופס מומנטום',
+      message: 'אתה בדרך הנכונה',
       sparkle: '✿',
-      subline: 'התחלת לבנות שגרה שמתאימה לך. ממשיכים בקצב שלך — אני כאן לאורך כל הדרך.',
+      subline: 'אני רואה שזה מתחיל להתיישב. נמשיך בקצב שלך — אני פה.',
     };
   }
   return {
     preamble,
-    message: 'ממשיכים יחד',
+    message: 'נמשיך מכאן',
     sparkle: '✿',
     subline:
       tod?.bucket === 'morning'
-        ? 'בוקר חדש, צעד חדש. אני גאה בך — בחר את התחנה הבאה ונמשיך.'
-        : 'אני גאה בכל צעד שאתה עושה. בחר את התחנה הבאה ונמשיך יחד.',
+        ? 'בוקר טוב. תבחר תחנה ונמשיך — אני איתך.'
+        : 'תבחר תחנה ונמשיך יחד. אני פה אם משהו יעלה.',
   };
 }
 
@@ -1172,13 +1174,13 @@ function SectionHeader({
           className="text-[17px] font-black"
           style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
         >
-          התחנות במסלול
+          התחנות שמחכות לך
         </p>
         <p className="mt-0.5 text-xs text-emerald-800/70">
           {variant === 'active'
             ? count === 1
-              ? 'יש לך תחנה אחת שמחכה — בוא ניכנס'
-              : `${count} תחנות מחכות לך — בחר תחנה ונמשיך`
+              ? 'יש תחנה אחת — בוא ניכנס אליה'
+              : `יש לך ${count} תחנות פתוחות — תבחר ונמשיך`
             : `${count} תחנות · ${completed} הושלמו`}
         </p>
       </div>
@@ -1213,12 +1215,12 @@ function CompletedSection({
             className="text-[17px] font-black"
             style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
-            הושלמו
+            כבר סגרנו את אלה
           </p>
           <p className="mt-0.5 text-xs text-emerald-800/70">
             {groups.length === 1
-              ? 'סיימת תחנה אחת — אני גאה בך'
-              : `סיימת ${groups.length} תחנות — כל הכבוד`}
+              ? 'תחנה אחת מאחוריך — כל הכבוד'
+              : `${groups.length} תחנות מאחוריך — אני גאה בך`}
           </p>
         </div>
       </div>
@@ -1256,10 +1258,10 @@ function EmptyState({ firstName }: { firstName: string }) {
     <div className="glass-surface rounded-3xl px-6 py-16 text-center">
       <Droplets className="mx-auto mb-4 h-12 w-12 text-emerald-300" />
       <h3 className="mb-2 text-xl font-black" style={{ color: '#1A1730' }}>
-        {firstName}, המסע שלך מחכה
+        {firstName}, אני מחכה לך כאן
       </h3>
       <p className="text-sm text-gray-500">
-        כשיצטרפו תחנות וצעדים — אני אדאג שיופיעו כאן בדיוק בשבילך
+        כשיצטרפו תחנות — אני אדאג שיופיעו פה בדיוק בשבילך
       </p>
     </div>
   );
@@ -1326,7 +1328,7 @@ function AlmogTouchBanner({
             className="text-[10.5px] font-black uppercase tracking-[0.14em] text-emerald-200/90"
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
-            אלמוג · המנטור שלך
+            ממני, אלמוג
           </p>
           <p
             className="mt-1.5 text-[14.5px] font-bold leading-relaxed text-white"
@@ -1352,21 +1354,21 @@ function buildAlmogMessage(
   overall: { done: number; all: number; pct: number; stations: number; stationsDone: number }
 ): string {
   if (overall.all === 0) {
-    return `${firstName}, אין שום מירוץ. תגיד לי מתי, ויוצאים יחד.`;
+    return `${firstName}, אין פה מירוץ. תגיד לי מתי אתה מוכן ונצא יחד.`;
   }
   if (overall.done === 0) {
-    return `${firstName}, אני זוכר את הצעד הראשון של כל אחד. אני פה איתך.`;
+    return `${firstName}, הצעד הראשון תמיד הכי קשה — אני פה איתך, באמת.`;
   }
   if (overall.pct >= 100) {
-    return `${firstName}, אני באמת גאה. עכשיו פשוט לשמר את מה שבנית.`;
+    return `${firstName}, סיימת הכל. אני גאה בך — עכשיו רק לשמור על מה שבנית.`;
   }
   if (overall.pct >= 60) {
-    return `${firstName}, אני רואה כמה אתה משקיע. ממשיכים יחד, בקצב שלך.`;
+    return `${firstName}, אני רואה כמה השקעת. נמשיך יחד, בקצב שלך.`;
   }
   if (overall.pct >= 30) {
-    return `יפה לך, ${firstName}. בלי לחץ — אני פה אם יעלה משהו.`;
+    return `היי ${firstName}, זה מתחיל להתיישב יפה. אני פה אם משהו יעלה.`;
   }
-  return `${firstName}, צעד אחד בכל פעם. אני פה לאורך כל הדרך.`;
+  return `${firstName}, צעד אחד בכל פעם. אני לא הולך לשום מקום.`;
 }
 
 /* ════════════════════════════════════════════════════════════════
