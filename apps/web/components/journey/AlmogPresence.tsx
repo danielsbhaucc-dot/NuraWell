@@ -104,7 +104,7 @@ export function AlmogAvatarChipWithNameTag({ size = 46, name = 'אלמוג' }: {
 }
 
 /** גיבור עמוד רגעים — תמונה גדולה + תג שם חופף לתחתית */
-export function MomentsHeroAvatar({ size = 84, name = 'אלמוג' }: { size?: number; name?: string }) {
+export function MomentsHeroAvatar({ size = 96, name = 'אלמוג' }: { size?: number; name?: string }) {
   const { avatarUrl } = useAlmogAvatarUrl();
   const px = `${size}px`;
 
@@ -136,11 +136,11 @@ export function MomentsHeroAvatar({ size = 84, name = 'אלמוג' }: { size?: n
           />
         </div>
         <span
-          className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 translate-y-1/2 px-4 py-1 rounded-full text-xs font-black text-white whitespace-nowrap shadow-md"
+          className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 translate-y-1/2 px-4 py-1 rounded-full text-xs font-black text-white/95 whitespace-nowrap shadow-md backdrop-blur-sm"
           style={{
-            background: 'linear-gradient(135deg, #047857, #10b981)',
-            border: '1px solid rgba(255,255,255,0.38)',
-            boxShadow: '0 6px 18px rgba(4,120,87,0.32)',
+            background: 'linear-gradient(135deg, rgba(4,120,87,0.72), rgba(16,185,129,0.68))',
+            border: '1px solid rgba(255,255,255,0.42)',
+            boxShadow: '0 6px 18px rgba(4,120,87,0.24)',
           }}
         >
           {name}

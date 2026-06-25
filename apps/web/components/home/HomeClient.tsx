@@ -33,6 +33,8 @@ import {
   type UserScheduleProfile,
 } from '../../lib/journey/pick-next-task-for-now';
 
+import type { OnboardingGender } from '../../lib/onboarding/types';
+
 type JourneyReportResponse = {
   steps: JourneyReportStepShape[];
   today_executions?: TodayExecutionRow[];
@@ -48,6 +50,7 @@ export type HomeStats = {
 
 interface HomeClientProps {
   firstName: string;
+  gender?: OnboardingGender | '';
   stats: HomeStats;
   simplifiedDashboard?: boolean;
   /** RSC — DynamicMentorWidget מוזרק מ-home/page (שליפה יחידה). */
@@ -65,6 +68,7 @@ const item = {
 
 export function HomeClient({
   firstName,
+  gender = '',
   stats,
   simplifiedDashboard = false,
   mentorWidget,
@@ -287,6 +291,8 @@ export function HomeClient({
               subtitle="סיוע קצר של אלמוג — בלי שיפוט"
             />
             <SosButton
+              firstName={firstName}
+              gender={gender}
               focusTasks={todayTasks
                 .filter((t) => !t.done)
                 .map((t) => ({

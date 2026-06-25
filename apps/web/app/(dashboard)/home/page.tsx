@@ -7,6 +7,7 @@ import {
   loadMentorshipHomeContext,
 } from '../../../components/mentorship/DynamicMentorWidget';
 import { firstNameFromFull } from '../../../lib/onboarding/profile-summary-rows';
+import type { OnboardingGender } from '../../../lib/onboarding/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,7 @@ export default async function HomePage() {
       .eq('user_id', user.id)
       .eq('is_active', true),
     supabase.from('lesson_progress').select('lesson_id, is_completed').eq('user_id', user.id),
-    supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
+    supabase.from('profiles').select('full_name, gender').eq('id', user.id).maybeSingle(),
   ]);
 
   const enrollments = (rawEnrollments as RawEnrollmentRow[]) || [];
@@ -61,8 +62,9 @@ export default async function HomePage() {
     progressSum += Math.round((done / total) * 100);
   }
 
-  const profile = profileRow as { full_name: string | null } | null;
+  const profile = profileRow as { full_name: string | null; gender?: string | null } | null;
   const profileFullName = profile?.full_name?.trim();
+  const gender = (profile?.gender as OnboardingGender | null) ?? '';
   const metaFullName =
     typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name.trim() : '';
   const fullName =
@@ -80,6 +82,7 @@ export default async function HomePage() {
   return (
     <HomeClient
       firstName={firstName}
+      gender={gender}
       stats={{
         activeCoursesCount,
         avgProgress: activeCoursesCount ? Math.round(progressSum / activeCoursesCount) : 0,
