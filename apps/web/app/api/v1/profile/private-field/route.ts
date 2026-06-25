@@ -6,13 +6,14 @@ import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { consumeMultiRateLimits, rateLimitResponse } from '../../../../../lib/api/rate-limit';
 import {
   applyDiscreteField,
-  discreteFieldAck,
   type DiscreteFieldKey,
 } from '../../../../../lib/ai/onboarding-discrete-fields';
+import { buildAfterDiscreteContinuation } from '../../../../../lib/ai/onboarding-chat-llm';
+import { redactExtractedForClient } from '../../../../../lib/profile/extracted-field-flags';
 import {
-  buildFieldFlags,
-  redactExtractedForClient,
-} from '../../../../../lib/profile/extracted-field-flags';
+  buildFlagsFromProfileRow,
+  mergeProfileFlags,
+} from '../../../../../lib/profile/profile-chat-bootstrap';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -75,20 +76,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'save_failed' }, { status: 500 });
   }
 
-  const flags = {
-    ...(parsed.data.field_flags ?? {}),
-    ...Object.fromEntries(
-      Object.entries(buildFieldFlags(applied.extracted)).map(([k, v]) => [k, v])
-    ),
-  };
-
-  const { data: profile } = await auth.supabase
+  const { data: profileRow } = await auth.supabase
     .from('profiles')
-    .select('gender')
+    .select(
+      'gender, full_name, main_goal, current_weight_kg, goal_weight_kg, weakest_time_of_day, main_obstacle, main_obstacle_detail, wake_up_time, sleep_time'
+    )
     .eq('id', auth.user.id)
     .maybeSingle();
 
-  const gender = profile?.gender === 'male' || profile?.gender === 'female' ? profile.gender : null;
+  const gender =
+    profileRow?.gender === 'male' || profileRow?.gender === 'female' ? profileRow.gender : null;
+
+  const flags = mergeProfileFlags(parsed.data.field_flags ?? {}, buildFlagsFromProfileRow(profileRow));
+  const continuation = buildAfterDiscreteContinuation(key as DiscreteFieldKey, flags, gender);
 
   return NextResponse.json(
     {
@@ -96,7 +96,9 @@ export async function POST(request: Request) {
       key,
       field_flags: flags,
       extracted_public: redactExtractedForClient(applied.extracted),
-      reply: discreteFieldAck(key as DiscreteFieldKey, gender),
+      reply: continuation.reply,
+      request_discrete_field: continuation.request_discrete_field,
+      ready_for_summary: continuation.ready_for_summary,
     },
     {
       headers: {

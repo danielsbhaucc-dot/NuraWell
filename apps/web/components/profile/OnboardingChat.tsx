@@ -289,9 +289,18 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
         reply: string;
         field_flags: ProfileFieldFlags;
         extracted_public: OnboardingExtracted;
+        request_discrete_field?: DiscreteFieldKey | null;
+        ready_for_summary?: boolean;
       };
       setFieldFlags(json.field_flags);
       setExtractedPublic((prev) => ({ ...prev, ...json.extracted_public }));
+      setReadyForSummary(Boolean(json.ready_for_summary));
+      if (json.request_discrete_field) {
+        setPendingDiscrete(json.request_discrete_field);
+        setDiscreteField(null);
+      } else {
+        setPendingDiscrete(null);
+      }
       setMessages((prev) => [...prev, { role: 'assistant', content: json.reply }]);
     } finally {
       setLoading(false);
