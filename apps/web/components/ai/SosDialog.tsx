@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, Loader2, MessageCircle, Snowflake, Sparkles, Volume2, X } from 'lucide-react';
+import { Check, Loader2, MessageCircle, Snowflake, Sparkles, Volume2, X, ArrowRight } from 'lucide-react';
 
 import { useDialogA11y } from '@/lib/a11y/use-dialog-a11y';
 import { AnimatedDialog } from '../shared/AnimatedDialog';
@@ -14,6 +14,8 @@ import { FRICTION_META } from '../../lib/ai/almog-commitments/friction';
 import {
   SOS_ALMOG_BUBBLE,
   SOS_BODY_BG,
+  SOS_GATE_BUBBLE,
+  SOS_GATE_PANEL,
   SOS_INTAKE_SECTION,
   SOS_INTAKE_TASK_ACTIVE,
   SOS_INTAKE_TASK_IDLE,
@@ -30,6 +32,7 @@ import {
   sosSurface,
 } from '../../lib/ai/sos-dialog-surfaces';
 import type { OnboardingGender } from '../../lib/onboarding/types';
+import { genderCopy } from '../../lib/onboarding/gender-copy';
 import { useSosTts } from './useSosTts';
 import type {
   SosFocusTask,
@@ -161,6 +164,8 @@ type SosDialogProps = {
   open: boolean;
   onClose: () => void;
   focusTasks?: SosFocusTask[];
+  /** מספר משימות פתוחות — מייצב את שער ההרגל גם לפני שהמערך מתמלא */
+  pendingTaskCount?: number;
   firstName?: string;
   gender?: OnboardingGender | '';
 };
@@ -169,6 +174,7 @@ export function SosDialog({
   open,
   onClose,
   focusTasks = [],
+  pendingTaskCount = 0,
   firstName = '',
   gender = '',
 }: SosDialogProps) {
@@ -198,22 +204,8 @@ export function SosDialog({
 
   useLayoutEffect(() => {
     if (!open) return;
-    setNote('');
-    setResponse(null);
-    setError(null);
-    setLoadingTrigger(null);
-    setOutcomeSaved(null);
-    setActiveTrigger(null);
-    setPivoting(false);
-    setTaskMarking(false);
-    setTaskMarked(false);
-    setGuardianSaved(false);
-    setTaskHardConfirmed(null);
-    setEaseCreating(false);
-    setEaseCreated(false);
     setSelectedTask(focusTasks[0] ?? null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- איפוס רק בפתיחה, לא כש-focusTasks מתעדכן ברקע
-  }, [open]);
+  }, [open, focusTasks]);
 
   useEffect(() => {
     if (!open) return;
@@ -224,13 +216,23 @@ export function SosDialog({
       .catch(() => setGuardianOptedIn(null));
   }, [open, focusTasks, loadContext]);
 
+  const gc = useMemo(() => genderCopy(gender), [gender]);
+
+  const wantAddWordLabel = useMemo(() => {
+    if (gender === 'male') return 'רוצה להוסיף מילה?';
+    if (gender === 'female') return 'רוצה להוסיף מילה?';
+    return 'רוצה/ה להוסיף מילה?';
+  }, [gender]);
+
+  const hasPendingTasks = focusTasks.length > 0 || pendingTaskCount > 0;
+
   const gateTask = selectedTask ?? focusTasks[0] ?? null;
   const showTaskHardnessGate =
-    !response && focusTasks.length > 0 && taskHardConfirmed === null;
+    !response && hasPendingTasks && taskHardConfirmed === null;
   const showIntake = !response && !showTaskHardnessGate;
 
   const gateGreeting = useMemo(() => {
-    const taskLabel = gateTask?.title ? `«${gateTask.title}»` : 'המשימה שעל הראש';
+    const taskLabel = gateTask?.title ?? 'המשימה שעל הראש';
     if (firstName) {
       return `היי ${firstName}, קשה לך עם ${taskLabel} עכשיו?`;
     }
@@ -263,9 +265,8 @@ export function SosDialog({
       return 'קודם נבין אם זה קשור למשימה שעל הראש — ואז נמשיך יחד.';
     }
     if (showIntake) {
-      return firstName
-        ? `${firstName}, בחר/י מה הכי קרוב לרגע הזה — או ספר/י במילה.`
-        : 'בחר/י מה הכי קרוב לרגע הזה — או ספר/י במילה.';
+      const lead = firstName ? `${firstName}, ` : '';
+      return `${lead}${gc.tell} או ${gc.choose} מה הכי קרוב לרגע הזה.`;
     }
     if (response?.context.focus_task_title) {
       return `בקשר ל: ${response.context.focus_task_emoji ?? '✅'} ${response.context.focus_task_title}`;
@@ -276,7 +277,7 @@ export function SosDialog({
     return firstName
       ? `${firstName}, ספר לי מה עולה — נמצא צעד קטן יחד.`
       : 'ספר לי מה עולה — נמצא צעד קטן יחד.';
-  }, [response, selectedTask, outcomeSaved, showTaskHardnessGate, showIntake, firstName]);
+  }, [response, selectedTask, outcomeSaved, showTaskHardnessGate, showIntake, firstName, gc]);
 
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -308,12 +309,17 @@ export function SosDialog({
     onClose();
   }, [onClose, resetDialogState]);
 
-  useEffect(() => {
-    if (!open) {
-      const timer = window.setTimeout(resetDialogState, 320);
-      return () => window.clearTimeout(timer);
-    }
-  }, [open, resetDialogState]);
+  const goBackFromResponse = useCallback(() => {
+    setResponse(null);
+    setError(null);
+    setLoadingTrigger(null);
+    setPivoting(false);
+    setOutcomeSaving(false);
+    setEaseCreated(false);
+    setEaseCreating(false);
+  }, []);
+
+  const showBackButton = Boolean(response && !outcomeSaved && !taskMarked);
 
   const bodyPhaseKey = useMemo(() => {
     if (outcomeSaved || taskMarked) return 'done';
@@ -570,15 +576,15 @@ export function SosDialog({
     <AnimatedDialog
       open={open}
       onClose={closeDialog}
-      variant="sheet"
+      variant="center"
       panelRef={dialogRef}
       zIndex={200}
       aria-labelledby={titleId}
       aria-describedby={subtitleId}
       backdropClassName="absolute inset-0 bg-slate-950/55 backdrop-blur-md"
-      panelClassName="touch-manipulation w-full max-w-md flex flex-col overflow-hidden rounded-t-[28px] sm:rounded-[28px] border border-emerald-500/25 text-right shadow-2xl max-h-[min(72dvh,560px)]"
+      panelClassName="touch-manipulation w-full max-w-md flex flex-col overflow-hidden rounded-[28px] border border-emerald-500/25 text-right shadow-2xl max-h-[min(80dvh,600px)]"
       panelStyle={{
-        maxHeight: 'min(72dvh, 560px)',
+        maxHeight: 'min(80dvh, 600px)',
         height: 'auto',
         boxShadow: '0 -8px 40px rgba(2,44,34,0.22), 0 24px 70px rgba(2,44,34,0.18)',
       }}
@@ -597,6 +603,17 @@ export function SosDialog({
           >
             <X className="h-4 w-4" />
           </button>
+          {showBackButton ? (
+            <button
+              type="button"
+              onClick={goBackFromResponse}
+              className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-2 text-xs font-bold text-white/95 transition hover:bg-white/25"
+              aria-label="חזרה לבחירת הקושי"
+            >
+              <ArrowRight className="h-4 w-4" aria-hidden />
+              חזרה
+            </button>
+          ) : null}
           <div className="flex items-start gap-3">
             <motion.div
               initial={{ opacity: 0, scale: 0.88 }}
@@ -623,16 +640,16 @@ export function SosDialog({
           style={{
             background: SOS_BODY_BG,
             WebkitOverflowScrolling: 'touch',
-            maxHeight: 'calc(min(72dvh, 560px) - 6.5rem)',
+            maxHeight: 'calc(min(80dvh, 600px) - 6.5rem)',
           }}
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={bodyPhaseKey}
-              initial={{ opacity: 0, y: 14 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
             >
           {outcomeSaved || taskMarked ? (
             <div className="space-y-3 py-2 text-center">
@@ -682,8 +699,8 @@ export function SosDialog({
           ) : !response ? (
             <div className="space-y-4">
               {showTaskHardnessGate ? (
-                <div className={`${sosSurface('white')} space-y-3 px-4 py-4`}>
-                  <div className={SOS_ALMOG_BUBBLE}>{gateGreeting}</div>
+                <div className={`${SOS_GATE_PANEL} space-y-3`}>
+                  <div className={SOS_GATE_BUBBLE}>{gateGreeting}</div>
 
                   {focusTasks.length > 1 ? (
                     <div className="space-y-2">
@@ -852,7 +869,7 @@ export function SosDialog({
 
               <label className="block">
                 <span className={`mb-1.5 block ${SOS_LABEL}`}>
-                  {firstName ? `${firstName}, רוצה להוסיף מילה?` : 'רוצה להוסיף מילה?'}
+                  {firstName ? `${firstName}, ${wantAddWordLabel}` : wantAddWordLabel}
                 </span>
                 <textarea
                   value={note}
