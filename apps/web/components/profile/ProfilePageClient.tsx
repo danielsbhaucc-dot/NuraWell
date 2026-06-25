@@ -21,6 +21,7 @@ import {
   profileSubtitle,
   profileChatCta,
   genderLabel,
+  memberSinceLabel,
 } from '@/lib/profile/personalized-copy';
 import { buildProfileSummaryRows } from '@/lib/onboarding/profile-summary-rows';
 
@@ -216,11 +217,13 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
             <p className="mt-2 text-[15px] font-semibold leading-relaxed text-white/95 text-right w-full">
               {profileSubtitle(profile?.gender ?? null, firstName)}
             </p>
+          </div>
 
+          <div className="relative z-10 mt-4 flex justify-center px-1">
             <button
               type="button"
               onClick={() => setIsChatOpen(true)}
-              className="mt-4 inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-sm font-bold text-white transition hover:scale-[1.01] active:scale-[0.99]"
+              className="inline-flex w-full max-w-[280px] items-center justify-center rounded-2xl px-4 py-3 text-sm font-bold text-white transition hover:scale-[1.01] active:scale-[0.99]"
               style={{
                 background: 'rgba(255,255,255,0.14)',
                 border: '1px solid rgba(255,255,255,0.28)',
@@ -307,7 +310,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
                   </span>
                 )}
                 <span className="text-xs text-slate-500 flex items-center gap-1">
-                  חבר/ה מאז {memberSince}
+                  {memberSinceLabel(profile?.gender ?? null, memberSince)}
                   {genderLabel(profile?.gender ?? null) ? ` · ${genderLabel(profile?.gender ?? null)}` : ''}
                   <button
                     type="button"
