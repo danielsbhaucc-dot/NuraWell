@@ -428,7 +428,7 @@ export function OnboardingChat({ open, onOpenChange, onSaved, profileSnapshot }:
               : {
                   height: 'min(92dvh, 720px)',
                 }),
-            background: '#0c1222',
+            background: path ? '#0c1222' : 'transparent',
             boxShadow: '0 -24px 80px rgba(4,120,87,0.25)',
           }}
         >
