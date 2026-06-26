@@ -13,15 +13,20 @@ interface LessonNavProps {
   prevLesson: NavLesson | null;
   nextLesson: NavLesson | null;
   isCurrentCompleted: boolean;
-  onMarkComplete?: () => void;
-  isMarkingComplete?: boolean;
+  onToggleComplete?: () => void;
+  isTogglingComplete?: boolean;
 }
 
-export function LessonNav({ prevLesson, nextLesson, isCurrentCompleted, onMarkComplete, isMarkingComplete }: LessonNavProps) {
+export function LessonNav({
+  prevLesson,
+  nextLesson,
+  isCurrentCompleted,
+  onToggleComplete,
+  isTogglingComplete,
+}: LessonNavProps) {
   return (
     <div className="guide-glass-card p-4">
       <div className="flex items-center gap-3">
-        {/* Prev */}
         {prevLesson ? (
           <Link
             href={`/lessons/${prevLesson.id}`}
@@ -40,28 +45,37 @@ export function LessonNav({ prevLesson, nextLesson, isCurrentCompleted, onMarkCo
           <div className="flex-1" />
         )}
 
-        {/* Mark Complete */}
-        {onMarkComplete && (
+        {onToggleComplete && (
           <motion.button
             whileTap={{ scale: 0.92 }}
-            onClick={onMarkComplete}
-            disabled={isCurrentCompleted || isMarkingComplete}
-            className="flex-shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center transition-all"
-            style={isCurrentCompleted
-              ? { background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)' }
-              : { background: 'rgba(20,184,166,0.15)', border: '1px solid rgba(20,184,166,0.3)' }
+            onClick={onToggleComplete}
+            disabled={isTogglingComplete}
+            className="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all disabled:opacity-60"
+            style={
+              isCurrentCompleted
+                ? {
+                    background: 'linear-gradient(145deg, rgba(16,185,129,0.28), rgba(52,211,153,0.18))',
+                    border: '2px solid rgba(16,185,129,0.55)',
+                    boxShadow: '0 6px 18px rgba(16,185,129,0.22)',
+                  }
+                : {
+                    background: 'rgba(255,255,255,0.72)',
+                    border: '2px solid rgba(20,184,166,0.35)',
+                    boxShadow: '0 4px 14px rgba(6,78,59,0.08)',
+                  }
             }
-            aria-label={isCurrentCompleted ? 'פרק הושלם' : 'סמן כהושלם'}
+            aria-label={isCurrentCompleted ? 'בטל סימון השלמה' : 'סמן כהושלם'}
+            title={isCurrentCompleted ? 'לחץ לביטול סימון' : 'סמן כהושלם'}
           >
             <CheckCircle2
-              className="w-5 h-5 transition-colors"
-              style={{ color: isCurrentCompleted ? '#10b981' : '#14b8a6' }}
+              className="w-6 h-6 transition-colors"
+              style={{ color: isCurrentCompleted ? '#059669' : '#14b8a6' }}
               fill={isCurrentCompleted ? '#10b981' : 'none'}
+              strokeWidth={isCurrentCompleted ? 0 : 2}
             />
           </motion.button>
         )}
 
-        {/* Next */}
         {nextLesson ? (
           <Link
             href={`/lessons/${nextLesson.id}`}

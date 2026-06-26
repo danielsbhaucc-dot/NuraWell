@@ -22,6 +22,7 @@ import {
   type OpenAlmogChatDetail,
 } from '../../lib/notifications/open-almog-chat';
 import { taskReportHintToPayload, type TaskReportHint } from '../../lib/ai/task-report-hint';
+import { guideContextHintToPayload, type GuideContextHint } from '../../lib/ai/guide-context-hint';
 import { ChatSessionInbox } from './ChatSessionInbox';
 import { AiChatPrivacyNotice } from './AiChatPrivacyNotice';
 import {
@@ -505,6 +506,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const resumeAssistantAttemptedRef = useRef(false);
   const notificationIdRef = useRef<string | null>(null);
   const taskReportHintRef = useRef<TaskReportHint | null>(null);
+  const guideContextHintRef = useRef<GuideContextHint | null>(null);
   const pendingInitialReplyRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const wasLoadingRef = useRef(false);
@@ -602,6 +604,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
         setNotificationContext(detail);
         notificationIdRef.current = detail.notificationId;
         taskReportHintRef.current = null;
+        guideContextHintRef.current = null;
         if (detail.initialReply?.trim()) {
           pendingInitialReplyRef.current = detail.initialReply.trim();
           setQuotedReply({
@@ -618,6 +621,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
         notificationIdRef.current = null;
         pendingInitialReplyRef.current = null;
         taskReportHintRef.current = detail?.taskReportHint ?? null;
+        guideContextHintRef.current = detail?.guideContextHint ?? null;
         const prefill = detail?.prefillText?.trim();
         if (prefill) {
           setPanelView('thread');
@@ -642,16 +646,19 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
 
   const buildOutgoingChatBody = useCallback(() => {
     const hint = taskReportHintRef.current;
+    const guideHint = guideContextHintRef.current;
     return {
       user_id: userId,
       session_id: sessionIdRef.current ?? undefined,
       notification_id: notificationIdRef.current ?? undefined,
       ...(hint ? { task_report_hint: taskReportHintToPayload(hint) } : {}),
+      ...(guideHint ? { guide_context_hint: guideContextHintToPayload(guideHint) } : {}),
     };
   }, [userId]);
 
-  const clearTaskReportHintAfterSend = () => {
+  const clearHintsAfterSend = () => {
     taskReportHintRef.current = null;
+    guideContextHintRef.current = null;
   };
 
   const [memoryRecallWriterActive, setMemoryRecallWriterActive] = useState(false);
@@ -837,7 +844,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
         body: buildOutgoingChatBody(),
       }
     );
-    clearTaskReportHintAfterSend();
+    clearHintsAfterSend();
     setNotificationContext(null);
     notificationIdRef.current = null;
   }, [open, sendMessage, status, userId, buildOutgoingChatBody]);
@@ -1548,7 +1555,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                         body: buildOutgoingChatBody(),
                       }
                     );
-                    clearTaskReportHintAfterSend();
+                    clearHintsAfterSend();
                     setInput('');
                     clearChatInputDraft(sessionIdRef.current);
                     if (replyNotificationId) {

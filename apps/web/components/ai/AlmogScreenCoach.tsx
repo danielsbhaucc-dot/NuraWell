@@ -2,7 +2,8 @@
 
 import { MessageCircle } from 'lucide-react';
 import { AlmogAvatarChipWithNameTag } from '../journey/AlmogPresence';
-import { dispatchOpenAlmogChatWithPrefill } from '../../lib/notifications/open-almog-chat';
+import { dispatchOpenAlmogChatWithGuideContext, dispatchOpenAlmogChatWithPrefill } from '../../lib/notifications/open-almog-chat';
+import type { GuideContextHint } from '../../lib/ai/guide-context-hint';
 
 type AlmogScreenCoachProps = {
   title: string;
@@ -10,6 +11,7 @@ type AlmogScreenCoachProps = {
   prompt: string;
   cta?: string;
   tone?: 'emerald' | 'amber' | 'violet' | 'teal';
+  guideContext?: GuideContextHint;
 };
 
 const toneMap = {
@@ -63,8 +65,17 @@ export function AlmogScreenCoach({
   prompt,
   cta = 'דבר איתי',
   tone = 'emerald',
+  guideContext,
 }: AlmogScreenCoachProps) {
   const palette = toneMap[tone];
+
+  const openChat = () => {
+    if (guideContext) {
+      dispatchOpenAlmogChatWithGuideContext(prompt, guideContext);
+    } else {
+      dispatchOpenAlmogChatWithPrefill(prompt);
+    }
+  };
 
   return (
     <section
@@ -99,7 +110,7 @@ export function AlmogScreenCoach({
           </p>
           <button
             type="button"
-            onClick={() => dispatchOpenAlmogChatWithPrefill(prompt)}
+            onClick={openChat}
             className="mt-3 inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold transition active:scale-[0.98]"
             style={{ background: palette.soft, border: `1px solid ${palette.border}`, color: palette.text }}
           >

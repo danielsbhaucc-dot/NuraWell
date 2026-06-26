@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, Loader2, Save, ImagePlus, Trash2, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Loader2, Save, ImagePlus, Trash2, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { resolveGuideBackgroundUrl } from '@/lib/guides/resolve-background';
 import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
 import type { MediaAsset } from '@/components/media-manager/types';
+import { GuideLessonEditor } from '@/components/admin/GuideLessonEditor';
 
 interface LessonRow {
   id: string;
@@ -44,6 +45,7 @@ export default function OpsGuideDetailPage() {
   const [saving, setSaving] = useState(false);
   const [bgKey, setBgKey] = useState('');
   const [saveMsg, setSaveMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
 
   const saveBackground = async (key: string) => {
     setSaving(true);
@@ -313,17 +315,33 @@ export default function OpsGuideDetailPage() {
           {[...(guide.lessons ?? [])]
             .sort((a, b) => a.sort_order - b.sort_order)
             .map((l, i) => (
-              <div
-                key={l.id}
-                className="crystal-pill p-3 rounded-xl flex items-center gap-3"
-              >
-                <span className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 text-sm font-bold flex items-center justify-center">
-                  {i + 1}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">{l.title}</p>
-                  <p className="text-xs text-slate-500">{l.lesson_type}</p>
-                </div>
+              <div key={l.id} className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setExpandedLessonId((prev) => (prev === l.id ? null : l.id))}
+                  className="crystal-pill p-3 rounded-xl flex items-center gap-3 w-full text-right"
+                >
+                  <span className="guide-chapter-index">{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{l.title}</p>
+                    <p className="text-xs text-slate-500">{l.lesson_type}</p>
+                  </div>
+                  {expandedLessonId === l.id ? (
+                    <ChevronUp className="w-4 h-4 text-slate-500" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-slate-500" />
+                  )}
+                </button>
+                {expandedLessonId === l.id ? (
+                  <GuideLessonEditor
+                    lessonId={l.id}
+                    guideId={id}
+                    initialTitle={l.title}
+                    initialDescription={l.description}
+                    initialContent={l.text_content}
+                    onSaved={() => void load()}
+                  />
+                ) : null}
               </div>
             ))}
         </div>

@@ -158,7 +158,8 @@ export function formatAlmogPrinciplesBlock(
 
 export function formatSystemKnowledgeContextBlock(
   hits: Array<{ metadata?: Record<string, unknown> }>,
-  topK: number
+  topK: number,
+  opts?: { guideMode?: boolean }
 ): string {
   const lines: string[] = [];
   let i = 1;
@@ -170,13 +171,37 @@ export function formatSystemKnowledgeContextBlock(
       const prefix =
         typeof sn === 'number'
           ? `[צעד ${sn}${typeof st === 'string' && st ? ` · ${st}` : ''}] `
-          : '';
+          : typeof st === 'string' && st
+            ? `[פרק: ${st}] `
+            : '';
       lines.push(`${i}. ${prefix}${text.trim()}`);
       i += 1;
     }
   }
   if (!lines.length) return '';
+  if (opts?.guideMode) {
+    return `חומר עזר מהמדריך (ממוקד לפרק הנוכחי):\n${lines.join('\n')}`;
+  }
   return `חומר עזר מהמסע (רק לפי ההתקדמות של המשתמש):\n${lines.join('\n')}`;
+}
+
+/** מסנן RAG ממוקד לפרק במדריך — guides → chapters. */
+export function buildGuideChapterKnowledgeFilter(params: {
+  courseId: string;
+  lessonId: string;
+  enrolledCourseIds: string[];
+}): string | null {
+  const { courseId, lessonId, enrolledCourseIds } = params;
+  if (!enrolledCourseIds.includes(courseId)) return null;
+
+  const accessParts = [`accessLevel = 'public'`];
+  accessParts.push(
+    `(accessLevel = 'premium' AND courseId = ${escapeFilterString(courseId)})`
+  );
+  const accessClause = `(${accessParts.join(' OR ')})`;
+
+  const scope = `(dataType = 'course' AND courseId = ${escapeFilterString(courseId)} AND (stationId = ${escapeFilterString(lessonId)} OR HAS NOT FIELD stationId))`;
+  return `${scope} AND ${accessClause}`;
 }
 
 export async function queryAlmogSystemKnowledgeForUser(params: {
