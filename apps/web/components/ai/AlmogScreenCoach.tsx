@@ -3,7 +3,6 @@
 import { MessageCircle } from 'lucide-react';
 import { AlmogAvatarChipWithNameTag } from '../journey/AlmogPresence';
 import { dispatchOpenAlmogChatWithPrefill } from '../../lib/notifications/open-almog-chat';
-import type { ProfileGender } from '../../lib/profile/personalized-copy';
 
 type AlmogScreenCoachProps = {
   title: string;
@@ -11,8 +10,6 @@ type AlmogScreenCoachProps = {
   prompt: string;
   cta?: string;
   tone?: 'emerald' | 'amber' | 'violet' | 'teal';
-  firstName?: string;
-  gender?: ProfileGender;
 };
 
 const toneMap = {
@@ -21,6 +18,8 @@ const toneMap = {
     soft: 'rgba(16,185,129,0.10)',
     border: 'rgba(16,185,129,0.28)',
     text: '#047857',
+    title: '#1A1730',
+    body: '#3A3654',
     cardBg:
       'linear-gradient(170deg, rgba(236,253,245,0.88) 0%, rgba(220,252,231,0.76) 55%, rgba(254,252,232,0.72) 100%)',
   },
@@ -29,6 +28,8 @@ const toneMap = {
     soft: 'rgba(245,158,11,0.12)',
     border: 'rgba(245,158,11,0.28)',
     text: '#b45309',
+    title: '#451a03',
+    body: '#57534e',
     cardBg:
       'linear-gradient(170deg, rgba(255,251,235,0.92) 0%, rgba(254,243,199,0.78) 55%, rgba(255,251,235,0.88) 100%)',
   },
@@ -37,6 +38,8 @@ const toneMap = {
     soft: 'rgba(168,85,247,0.12)',
     border: 'rgba(168,85,247,0.28)',
     text: '#6d28d9',
+    title: '#3b0764',
+    body: '#4c1d95',
     cardBg:
       'linear-gradient(170deg, rgba(245,243,255,0.92) 0%, rgba(237,233,254,0.78) 55%, rgba(236,253,245,0.72) 100%)',
   },
@@ -45,25 +48,23 @@ const toneMap = {
     soft: 'rgba(20,184,166,0.12)',
     border: 'rgba(20,184,166,0.30)',
     text: '#0f766e',
+    title: '#134e4a',
+    body: '#3A3654',
     cardBg:
       'linear-gradient(170deg, rgba(240,253,250,0.92) 0%, rgba(204,251,241,0.76) 55%, rgba(236,253,245,0.80) 100%)',
   },
 } as const;
 
+const hebrewFont = "'Rubik','Heebo',sans-serif";
+
 export function AlmogScreenCoach({
   title,
   body,
   prompt,
-  cta = 'דבר עם אלמוג',
+  cta = 'דבר איתי',
   tone = 'emerald',
-  firstName,
-  gender,
 }: AlmogScreenCoachProps) {
   const palette = toneMap[tone];
-  const displayTitle =
-    firstName && title.includes('אלמוג')
-      ? title.replace('את המדריכים', `איתך את המדריכים, ${firstName}`)
-      : title;
 
   return (
     <section
@@ -84,8 +85,18 @@ export function AlmogScreenCoach({
       <div className="flex items-start gap-3">
         <AlmogAvatarChipWithNameTag size={48} />
         <div className="min-w-0 flex-1 text-right">
-          <h3 className="text-[15px] font-black text-emerald-950">{displayTitle}</h3>
-          <p className="mt-1 text-[13px] leading-relaxed text-emerald-800/85">{body}</p>
+          <h3
+            className="text-[15px] font-black leading-snug"
+            style={{ fontFamily: hebrewFont, color: palette.title, letterSpacing: '-0.01em' }}
+          >
+            {title}
+          </h3>
+          <p
+            className="mt-1.5 text-[13px] leading-[1.65]"
+            style={{ fontFamily: hebrewFont, color: palette.body }}
+          >
+            {body}
+          </p>
           <button
             type="button"
             onClick={() => dispatchOpenAlmogChatWithPrefill(prompt)}

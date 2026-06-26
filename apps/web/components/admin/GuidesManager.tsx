@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { BookOpen, Loader2, Plus, Sparkles, Wand2, Database } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { resolveGuideBackgroundUrl } from '@/lib/guides/resolve-background';
+import { GuidesAlmogKnowledgePanel } from '@/components/course/GuidesAlmogKnowledgePanel';
 
 interface GuideRow {
   id: string;
@@ -248,6 +249,18 @@ export function GuidesManager() {
           <span className="text-xs font-semibold text-teal-800 w-full">{syncRagMessage}</span>
         ) : null}
       </div>
+
+      {!loading && guides.length > 0 ? (
+        <GuidesAlmogKnowledgePanel
+          entries={guides.map((g) => ({
+            courseId: g.id,
+            title: g.title,
+            chapterCount: g.lessons?.length ?? 0,
+            chunkCount: g.rag?.chunk_count ?? 0,
+            indexed: Boolean(g.rag && g.rag.chunk_count > 0),
+          }))}
+        />
+      ) : null}
 
       {/* List */}
       {loading ? (

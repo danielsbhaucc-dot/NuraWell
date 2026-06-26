@@ -17,7 +17,7 @@ import { HabitTracker } from './HabitTracker';
 import { LessonNav } from './LessonNav';
 import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import type { LessonDetail, LessonProgressData, MediaFile } from '../../lib/types/course';
-import type { ProfileGender } from '../../lib/profile/personalized-copy';
+import { lessonAlmogCoachTitle, lessonAlmogCta, type ProfileGender } from '../../lib/profile/personalized-copy';
 
 interface NavLesson { id: string; title: string; }
 
@@ -146,19 +146,17 @@ export function LessonPageClient({
         </motion.div>
 
         <AlmogScreenCoach
-          title="אלמוג איתך בפרק"
+          title={lessonAlmogCoachTitle(firstName)}
           body={
             gender === 'female'
-              ? `${firstName}, אני כאן איתך בפרק הזה — אפשר לשאול על התוכן, לבקש סיכום פשוט, או להפוך את זה לצעד קטן שמתאים להיום.`
+              ? `אפשר לשאול אותי על התוכן, לבקש סיכום פשוט, או להפוך את זה לצעד קטן שמתאים להיום.`
               : gender === 'male'
-                ? `${firstName}, אני כאן איתך בפרק הזה — אפשר לשאול על התוכן, לבקש סיכום פשוט, או להפוך את זה לצעד קטן שמתאים להיום.`
-                : `${firstName}, אני כאן איתך בפרק הזה — אפשר לשאול על התוכן, לבקש סיכום פשוט, או להפוך את זה לצעד קטן שמתאים להיום.`
+                ? `אפשר לשאול אותי על התוכן, לבקש סיכום פשוט, או להפוך את זה לצעד קטן שמתאים להיום.`
+                : `אפשר לשאול אותי על התוכן, לבקש סיכום פשוט, או להפוך את זה לצעד קטן שמתאים להיום.`
           }
-          prompt={`אלמוג, תעזור לי עם הפרק "${lesson.title}" מהמדריך "${lesson.course.title}". מה הכי חשוב לקחת ממנו ואיך ליישם את זה היום?`}
-          cta={gender === 'female' ? 'שאלי את אלמוג על הפרק' : gender === 'male' ? 'שאל את אלמוג על הפרק' : 'שאל/י את אלמוג על הפרק'}
+          prompt={`תעזור לי עם הפרק "${lesson.title}" מהמדריך "${lesson.course.title}". מה הכי חשוב לקחת ממנו ואיך ליישם את זה היום?`}
+          cta={lessonAlmogCta(gender)}
           tone="teal"
-          firstName={firstName}
-          gender={gender}
         />
 
         {/* Video Content */}

@@ -49,14 +49,28 @@ export function imperativeTap(gender: ProfileGender): string {
 }
 
 /** כותרת עמוד המדריכים */
-export function guidesPageTitle(gender: ProfileGender, firstName: string): string {
-  return `היי ${firstName}`;
+export function guidesPageTitle(): string {
+  return 'המדריכים שלך';
+}
+
+export function guidesPageGreeting(firstName: string): string {
+  return `היי ${firstName} 👋`;
 }
 
 export function guidesPageSubtitle(gender: ProfileGender): string {
-  if (gender === 'female') return 'המדריכים שלך — בואי נמשיך בקצב שנוח לך';
-  if (gender === 'male') return 'המדריכים שלך — בוא נמשיך בקצב שנוח לך';
-  return 'המדריכים שלך — בוא/י נמשיך בקצב שנוח לך';
+  if (gender === 'female') return 'אני כאן איתך — בואי נמשיך בקצב שנוח לך';
+  if (gender === 'male') return 'אני כאן איתך — בוא נמשיך בקצב שנוח לך';
+  return 'אני כאן איתך — בוא/י נמשיך בקצב שנוח לך';
+}
+
+/** כותרת תיבת אלמוג בעמוד המדריכים — גוף ראשון */
+export function guidesAlmogCoachTitle(firstName: string): string {
+  return `${firstName}, אני קורא איתך את המדריכים`;
+}
+
+/** כותרת תיבת אלמוג בעמוד מדריך בודד — גוף ראשון */
+export function guideDetailAlmogTitle(firstName: string): string {
+  return `${firstName}, אני כאן במדריך הזה`;
 }
 
 /** טקסט אלמוג בעמוד המדריכים — גוף ראשון */
@@ -113,4 +127,16 @@ export function guidesContinueBanner(gender: ProfileGender): { title: string; su
     return { title: '⚡ בוא נמשיך ללמוד!', subtitle: 'יש פרקים שמחכים לך' };
   }
   return { title: '⚡ בוא/י נמשיך ללמוד!', subtitle: 'יש פרקים שמחכים לך' };
+}
+
+/** כותרת תיבת אלמוג בפרק — גוף ראשון */
+export function lessonAlmogCoachTitle(firstName: string): string {
+  return `${firstName}, אני איתך בפרק הזה`;
+}
+
+/** CTA תיבת אלמוג בפרק */
+export function lessonAlmogCta(gender: ProfileGender): string {
+  if (gender === 'female') return 'דברי איתי על הפרק';
+  if (gender === 'male') return 'דבר איתי על הפרק';
+  return 'דבר/י איתי על הפרק';
 }

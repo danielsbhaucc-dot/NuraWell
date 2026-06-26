@@ -3334,20 +3334,29 @@ html {
   .guide-hero-overlay {
     position: absolute;
     inset: 0;
+    z-index: 1;
     background:
       linear-gradient(
-        to top,
-        rgba(6, 78, 59, 0.94) 0%,
-        rgba(4, 120, 87, 0.42) 48%,
-        rgba(6, 78, 59, 0.16) 78%,
-        rgba(6, 78, 59, 0.30) 100%
+        180deg,
+        rgba(17, 24, 39, 0.52) 0%,
+        rgba(0, 0, 0, 0.38) 42%,
+        rgba(0, 0, 0, 0.72) 100%
       );
+  }
+
+  .guide-hero-scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: rgba(10, 12, 16, 0.28);
+    pointer-events: none;
   }
 
   /* Soft colourful glow that makes the hero feel premium */
   .guide-hero-glow {
     position: absolute;
     inset: 0;
+    z-index: 2;
     pointer-events: none;
     background:
       radial-gradient(60% 50% at 12% 8%, rgba(45, 212, 191, 0.35) 0%, transparent 70%),
