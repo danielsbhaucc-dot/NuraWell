@@ -75,5 +75,29 @@ export function formatGuidesStateForAi(summaries: GuideProgressSummary[]): strin
     }
   }
   lines.push('השתמש בזה בעדינות — אל תציג רשימת דאטה.');
+  lines.push('כלל: רק אתה (אלמוג) פותח מדריכים חדשים — אל תנחה את המשתמש לפתוח לבד.');
+  return lines.join('\n');
+}
+
+/** המלצות יומיות מ-cron — לפרומפט אלמוג. */
+export function formatGuideCompanionForAi(
+  companion: {
+    almog_note?: string;
+    next_pick?: { courseTitle: string; reason: string } | null;
+    available_picks?: Array<{ courseTitle: string; reason: string }>;
+  } | null | undefined
+): string | null {
+  if (!companion?.almog_note && !companion?.next_pick) return null;
+  const lines: string[] = ['[המלצות מדריכים יומיות — אלמוג]'];
+  if (companion.almog_note) lines.push(companion.almog_note);
+  if (companion.next_pick) {
+    lines.push(
+      `המשך מומלץ: "${companion.next_pick.courseTitle}" — ${companion.next_pick.reason}`
+    );
+  }
+  for (const pick of companion.available_picks ?? []) {
+    lines.push(`אפשר לפתוח: "${pick.courseTitle}" — ${pick.reason}`);
+  }
+  lines.push('אתה יכול להציע מדריך רלוונטי ולפתוח גישה — אלא אם יש עומס מטורף.');
   return lines.join('\n');
 }

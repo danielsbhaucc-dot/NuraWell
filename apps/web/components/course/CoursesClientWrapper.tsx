@@ -4,12 +4,25 @@ import { motion } from 'framer-motion';
 import { GraduationCap } from 'lucide-react';
 import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import { CourseCard } from '../shared/CourseCard';
+import { GuidesAlmogKnowledgePanel, type GuideKnowledgeEntry } from './GuidesAlmogKnowledgePanel';
 import type { CourseWithProgress, UserStats } from '../../lib/types/course';
+import {
+  guidesAlmogCoachBody,
+  guidesContinueBanner,
+  guidesPageSubtitle,
+  guidesPageTitle,
+  type ProfileGender,
+} from '../../lib/profile/personalized-copy';
 
 interface CoursesClientWrapperProps {
   enrolledCourses: CourseWithProgress[];
   availableCourses: CourseWithProgress[];
   stats: UserStats;
+  firstName?: string;
+  gender?: ProfileGender;
+  almogNote?: string | null;
+  nextPickTitle?: string | null;
+  knowledgeEntries?: GuideKnowledgeEntry[];
 }
 
 const container = {
@@ -21,9 +34,22 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: 'easeOut' } },
 };
 
-export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats }: CoursesClientWrapperProps) {
+export function CoursesClientWrapper({
+  enrolledCourses,
+  availableCourses,
+  stats,
+  firstName = 'חבר',
+  gender = null,
+  almogNote = null,
+  nextPickTitle = null,
+  knowledgeEntries = [],
+}: CoursesClientWrapperProps) {
   const isEmpty = enrolledCourses.length === 0 && availableCourses.length === 0;
   const totalSegments = enrolledCourses.length > 0 ? Math.max(enrolledCourses.length, 6) : 6;
+  const continueBanner = guidesContinueBanner(gender);
+  const coachPrompt = nextPickTitle
+    ? `אלמוג, לפי מה שאתה יודע על המדריכים וההתקדמות שלי — תעזור לי להמשיך ב"${nextPickTitle}" או לבחור מדריך אחר שמתאים לי עכשיו.`
+    : 'אלמוג, תעזור לי לבחור באיזה מדריך או פרק להמשיך עכשיו לפי ההתקדמות שלי ומה שאתה יודע עליי.';
 
   return (
     <motion.div className="pt-2">
@@ -45,8 +71,8 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
           transition={{ duration: 0.35 }}
           className="crystal-header rounded-2xl px-4 py-3.5 mb-4"
         >
-          <h1 className="text-xl font-black text-white">המדריכים שלי</h1>
-          <p className="text-sm text-white/80 mt-0.5">המשך ללמוד ולהתקדם</p>
+          <h1 className="text-xl font-black text-white">{guidesPageTitle(gender, firstName)}</h1>
+          <p className="text-sm text-white/80 mt-0.5">{guidesPageSubtitle(gender)}</p>
         </motion.div>
 
         {enrolledCourses.length > 0 && (
@@ -114,12 +140,18 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
         <div className="mb-4">
           <AlmogScreenCoach
             title="אלמוג קורא איתך את המדריכים"
-            body="לא בטוח במה להמשיך? אלמוג יכול להסתכל על ההתקדמות שלך ולעזור לבחור את הפרק שהכי מתאים לרגע הזה."
-            prompt="אלמוג, תעזור לי לבחור באיזה מדריך או פרק להמשיך עכשיו לפי ההתקדמות שלי."
-            cta="בחר איתי המשך"
+            body={guidesAlmogCoachBody(gender, firstName, almogNote)}
+            prompt={coachPrompt}
+            cta={gender === 'female' ? 'בחרי איתי המשך' : gender === 'male' ? 'בחר איתי המשך' : 'בחר/י איתי המשך'}
             tone="amber"
+            firstName={firstName}
+            gender={gender}
           />
         </div>
+
+        {knowledgeEntries.length > 0 ? (
+          <GuidesAlmogKnowledgePanel entries={knowledgeEntries} />
+        ) : null}
 
         {enrolledCourses.length > 0 && (
           <motion.div
@@ -157,9 +189,9 @@ export function CoursesClientWrapper({ enrolledCourses, availableCourses, stats 
                   fontFamily: "'Rubik','Heebo',sans-serif",
                 }}
               >
-                ⚡ בוא נמשיך ללמוד!
+                {continueBanner.title}
               </p>
-              <p style={{ fontSize: '12px', color: '#B45309', marginTop: '2px' }}>יש פרקים שמחכים לך</p>
+              <p style={{ fontSize: '12px', color: '#B45309', marginTop: '2px' }}>{continueBanner.subtitle}</p>
             </div>
           </motion.div>
         )}

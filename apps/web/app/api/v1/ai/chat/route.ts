@@ -111,7 +111,7 @@ import {
 import { sendTaskCompletionCelebration } from '../../../../../lib/ai/send-task-completion-celebration';
 import { applyGuideAccessFromSignals } from '../../../../../lib/ai/chat-guide-access';
 import { fetchUserGuideSummaries } from '../../../../../lib/guides/fetch-user-guides';
-import { formatGuidesStateForAi } from '../../../../../lib/guides/progress';
+import { formatGuidesStateForAi, formatGuideCompanionForAi } from '../../../../../lib/guides/progress';
 import { createAdminClient } from '../../../../../lib/supabase/admin';
 import {
   fetchTodayChatTurns,
@@ -2584,6 +2584,7 @@ export async function POST(request: Request) {
       isGreeting: isGreetingTurn,
     });
     const guidesStateBlock = formatGuidesStateForAi(guideSummaries);
+    const guideCompanionBlock = formatGuideCompanionForAi(profileRow.ai_context.guide_companion);
     const turnWeightBlock =
       parsedWeightKg != null ? formatWeightLoggedPromptBlock(parsedWeightKg) : null;
 
@@ -2675,6 +2676,8 @@ export async function POST(request: Request) {
     if (journeyStateLine) contextSections.push(journeyStateLine.trim());
 
     if (journeyGuidanceBlock) contextSections.push(journeyGuidanceBlock);
+    if (guidesStateBlock) contextSections.push(guidesStateBlock);
+    if (guideCompanionBlock) contextSections.push(guideCompanionBlock);
     const pendingTasksBlock = formatPendingAcceptedTasksPromptBlock(pendingTasks, {
       isGreeting: isGreetingTurn,
     });
@@ -3114,7 +3117,12 @@ export async function POST(request: Request) {
 
         try {
           const admin = createAdminClient();
-          const guideAccess = await applyGuideAccessFromSignals(admin, user.id, lastUserText);
+          const guideAccess = await applyGuideAccessFromSignals(
+            admin,
+            user.id,
+            lastUserText,
+            profileRow.ai_context
+          );
           if (guideAccess.granted) {
             console.info('[ai/chat]', {
               debug_id: debugId,

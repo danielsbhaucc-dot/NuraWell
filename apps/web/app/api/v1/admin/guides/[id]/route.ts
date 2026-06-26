@@ -36,7 +36,7 @@ export async function GET(request: Request, ctx: RouteCtx) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (auth.supabase as any)
     .from('courses')
-    .select('*, lessons(*)')
+    .select('*, lessons(*, media_files(file_type))')
     .eq('id', id)
     .single();
 
@@ -87,6 +87,7 @@ export async function PATCH(request: Request, ctx: RouteCtx) {
             text_content: l.text_content as string | null,
             tasks: l.tasks as Array<{ title?: string; description?: string }> | null,
             habits: l.habits as Array<{ title?: string }> | null,
+            media_files: (l.media_files as Array<{ file_type?: string }> | null) ?? [],
             sort_order: l.sort_order as number,
             duration_minutes: l.duration_minutes as number | null,
           })),

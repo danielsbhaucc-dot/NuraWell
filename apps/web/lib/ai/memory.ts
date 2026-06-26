@@ -83,6 +83,17 @@ export interface AiUserContext {
     keys: { p256dh: string; auth: string };
     updated_at?: string;
   } | null;
+  /**
+   * מטמון יומי של המלצות מדריכים — נבנה ב-cron master (Llama 4).
+   * `date` ב-YYYY-MM-DD בלוח ירושלים.
+   */
+  guide_companion?: {
+    date: string;
+    almog_note: string;
+    next_pick: { courseId: string; courseTitle: string; reason: string } | null;
+    available_picks: Array<{ courseId: string; courseTitle: string; reason: string }>;
+    model: string | null;
+  } | null;
 }
 
 export interface BuildUserContextResult {
@@ -369,6 +380,7 @@ export async function updateAiContext(
     'pending_focus',
     'struggles',
     'daily_availability',
+    'guide_companion',
   ];
 
   const { data: existing } = await supabase

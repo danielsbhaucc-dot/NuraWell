@@ -11,6 +11,11 @@ import {
 } from 'lucide-react';
 import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import { cn } from '../../lib/cn';
+import {
+  guideDetailAlmogBody,
+  guideLearnCta,
+  type ProfileGender,
+} from '../../lib/profile/personalized-copy';
 
 interface LessonItem {
   id: string;
@@ -36,6 +41,9 @@ interface CourseDetailClientProps {
   progress: number;
   completedCount: number;
   firstIncompleteLessonId: string | null;
+  firstName?: string;
+  gender?: ProfileGender;
+  almogNote?: string | null;
 }
 
 const lessonTypeConfig: Record<LessonItem['lesson_type'], { icon: React.ElementType; label: string; color: string }> = {
@@ -57,26 +65,60 @@ const item = {
 };
 
 export function CourseDetailClient({
-  course, isEnrolled, progress, completedCount, firstIncompleteLessonId
+  course, isEnrolled, progress, completedCount, firstIncompleteLessonId,
+  firstName = 'חבר', gender = null, almogNote = null,
 }: CourseDetailClientProps) {
   const totalLessons = course.lessons.length;
   const totalMinutes = course.lessons.reduce((s, l) => s + (l.duration_minutes || 15), 0);
   const typeConfig = lessonTypeConfig;
 
   const bgUrl = course.background_image_url || course.thumbnail_url;
+  const enteredKey = `guide-entered:${course.id}`;
 
-  // מסך כניסה מלא-מסך לפני שהמדריך "נופל" ונפתח — בלי רענון, רק מעבר חלק.
   const [entered, setEntered] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [skipEnterAnim, setSkipEnterAnim] = useState(false);
 
-  // נעילת גלילה כל עוד מסך הכניסה פתוח, כדי שהוא ירגיש כמו שער אמיתי.
   useEffect(() => {
-    if (entered) return;
+    try {
+      if (sessionStorage.getItem(enteredKey) === '1') {
+        setEntered(true);
+        setSkipEnterAnim(true);
+      }
+    } catch {
+      /* ignore */
+    }
+    setReady(true);
+  }, [enteredKey]);
+
+  useEffect(() => {
+    if (!ready) return;
+    window.scrollTo(0, 0);
+  }, [ready, course.id]);
+
+  useEffect(() => {
+    if (!ready || entered) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [entered]);
+  }, [ready, entered]);
+
+  useEffect(() => () => {
+    document.body.style.overflow = '';
+  }, []);
+
+  const handleEnter = () => {
+    try {
+      sessionStorage.setItem(enteredKey, '1');
+    } catch {
+      /* ignore */
+    }
+    setEntered(true);
+  };
+
+  if (!ready) return null;
 
   return (
     <>
@@ -91,17 +133,19 @@ export function CourseDetailClient({
             isPremium={course.is_premium}
             progress={progress}
             isEnrolled={isEnrolled}
-            onEnter={() => setEntered(true)}
+            onEnter={handleEnter}
           />
         ) : null}
       </AnimatePresence>
 
+      {entered ? (
       <motion.div
-        initial={{ opacity: 0, y: -36 }}
-        animate={entered ? { opacity: 1, y: 0 } : { opacity: 0, y: -36 }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        className="-mt-16"
+        initial={skipEnterAnim ? false : { opacity: 0, y: -36 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: skipEnterAnim ? 0 : 0.55, ease: [0.22, 1, 0.36, 1] }}
       >
-    <div className="min-h-screen guide-page-bg relative">
+    <div className="guide-page-bg relative pb-8">
       {/* HERO header — large & premium; the background image lives ONLY here */}
       <div className="guide-hero relative h-[20rem] md:h-[28rem]">
         {bgUrl ? (
@@ -232,10 +276,12 @@ export function CourseDetailClient({
           <div className="mb-4">
             <AlmogScreenCoach
               title="אלמוג על המדריך הזה"
-              body="אפשר לעצור רגע לפני שממשיכים: מה חשוב לקחת מהמדריך הזה, איפה להתחיל, ואיך לחבר אותו להרגלים שלך."
-              prompt={`אלמוג, תעזור לי להבין איך להמשיך במדריך "${course.title}" ומה הפרק הכי נכון לי עכשיו.`}
+              body={guideDetailAlmogBody(gender, firstName, course.title, almogNote)}
+              prompt={`אלמוג, תעזור לי להבין איך להמשיך במדריך "${course.title}" ומה הפרק הכי נכון לי עכשיו לפי מה שאתה יודע על התוכן וההתקדמות שלי.`}
               cta="דבר איתי על המדריך"
-              tone="violet"
+              tone="teal"
+              firstName={firstName}
+              gender={gender}
             />
           </div>
 
@@ -246,12 +292,12 @@ export function CourseDetailClient({
                 href={`/lessons/${firstIncompleteLessonId}`}
                 className="w-full justify-center mb-6 text-base py-4 inline-flex items-center gap-2 rounded-2xl font-black text-white transition active:scale-[0.99]"
                 style={{
-                  background: 'linear-gradient(135deg, #6366f1 0%, #14b8a6 60%, #2dd4bf 100%)',
+                  background: 'linear-gradient(135deg, #047857 0%, #14b8a6 60%, #2dd4bf 100%)',
                   boxShadow: '0 10px 30px rgba(20,184,166,0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
                 }}
               >
                 <Play className="w-5 h-5" fill="white" />
-                {progress === 0 ? 'התחל ללמוד' : 'המשך ללמוד'}
+                {guideLearnCta(gender, progress === 0)}
               </Link>
             ) : (
               <div className="w-full text-center py-4 rounded-2xl font-bold mb-6 flex items-center justify-center gap-2"
@@ -311,6 +357,7 @@ export function CourseDetailClient({
       </div>
     </div>
       </motion.div>
+      ) : null}
     </>
   );
 }
@@ -441,7 +488,7 @@ function GuideCover({
           </motion.div>
         </div>
 
-        {/* כפתור כניסה */}
+        {/* כפתור כניסה — שקוף, RTL מלא, אייקון משמאל */}
         <motion.button
           type="button"
           onClick={onEnter}
@@ -449,14 +496,17 @@ function GuideCover({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.8 }}
           whileTap={{ scale: 0.98 }}
-          className="mx-auto flex w-full max-w-sm items-center justify-center gap-2 rounded-2xl py-4 text-base font-black text-white"
+          dir="rtl"
+          className="mx-auto mb-2 flex w-full max-w-sm items-center justify-center gap-2.5 rounded-2xl border py-4 text-base font-black text-white backdrop-blur-md"
           style={{
-            background: 'linear-gradient(135deg, #6366f1 0%, #14b8a6 60%, #2dd4bf 100%)',
-            boxShadow: '0 14px 38px rgba(20,184,166,0.4), inset 0 1px 0 rgba(255,255,255,0.25)',
+            marginTop: '-1.25rem',
+            background: 'rgba(255,255,255,0.14)',
+            borderColor: 'rgba(255,255,255,0.38)',
+            boxShadow: '0 14px 38px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.22)',
           }}
         >
-          <Play className="h-5 w-5" fill="white" />
-          בוא נצלול פנימה
+          <span>בוא נצלול פנימה</span>
+          <Zap className="h-5 w-5 shrink-0" fill="white" />
         </motion.button>
         <motion.div
           initial={{ opacity: 0 }}
