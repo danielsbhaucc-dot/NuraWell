@@ -110,6 +110,31 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
   const background_image_url = resolveGuideBackgroundUrl(course.background_image_key);
 
+  const { data: profileRow } = await supabase
+    .from('profiles')
+    .select('full_name, gender, ai_context')
+    .eq('id', user.id)
+    .single();
+
+  const profile = profileRow as {
+    full_name: string | null;
+    gender: 'male' | 'female' | null;
+    ai_context: {
+      guide_companion?: {
+        almog_note?: string;
+        next_pick?: { courseId?: string; courseTitle?: string; reason?: string };
+      };
+    } | null;
+  } | null;
+
+  const firstName = profile?.full_name?.trim().split(/\s+/)[0] || 'חבר';
+  const gender = profile?.gender ?? null;
+  const companion = profile?.ai_context?.guide_companion;
+  let almogNote = companion?.almog_note ?? null;
+  if (companion?.next_pick?.courseId === id && companion.next_pick.reason) {
+    almogNote = companion.next_pick.reason;
+  }
+
   return (
     <CourseDetailClient
       course={{ ...course, lessons: publishedLessons, background_image_url }}
@@ -117,6 +142,9 @@ export default async function CourseDetailPage({ params }: PageProps) {
       progress={progress}
       completedCount={completedCount}
       firstIncompleteLessonId={firstIncompleteLesson?.id ?? null}
+      firstName={firstName}
+      gender={gender}
+      almogNote={almogNote}
     />
   );
 }

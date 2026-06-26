@@ -5,6 +5,7 @@ import { CoursesClientWrapper } from '../../../components/course/CoursesClientWr
 import type { CourseWithProgress } from '../../../lib/types/course';
 import { canAccessGuide, type GuideCourseRow, type GuideEnrollmentRow } from '../../../lib/guides/access';
 import { computeGuideProgress } from '../../../lib/guides/progress';
+import type { GuideKnowledgeEntry } from '../../../components/course/GuidesAlmogKnowledgePanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,23 @@ export default async function CoursesPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect('/login');
+
+  const { data: profileRow } = await supabase
+    .from('profiles')
+    .select('full_name, gender, ai_context')
+    .eq('id', user.id)
+    .single();
+
+  const profile = profileRow as {
+    full_name: string | null;
+    gender: 'male' | 'female' | null;
+    ai_context: { guide_companion?: { almog_note?: string; next_pick?: { courseTitle?: string } } } | null;
+  } | null;
+
+  const firstName = profile?.full_name?.trim().split(/\s+/)[0] || 'חבר';
+  const gender = profile?.gender ?? null;
+  const almogNote = profile?.ai_context?.guide_companion?.almog_note ?? null;
+  const nextPickTitle = profile?.ai_context?.guide_companion?.next_pick?.courseTitle ?? null;
 
   interface RawEnrollmentRow {
     course_id: string;
@@ -100,11 +118,38 @@ export default async function CoursesPage() {
     ? Math.round(enrolledCourses.reduce((s, c) => s + c.progress, 0) / enrolledCourses.length)
     : 0;
 
+  const enrolledIds = enrolledCourses.map((c) => c.id);
+  const ragByCourse = new Map<string, number>();
+  if (enrolledIds.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: knowledgeRows } = await supabase
+      .from('almog_knowledge')
+      .select('course_id, chunk_count')
+      .eq('data_type', 'course')
+      .in('course_id', enrolledIds);
+    for (const row of (knowledgeRows ?? []) as Array<{ course_id: string; chunk_count: number | null }>) {
+      if (row.course_id) ragByCourse.set(row.course_id, row.chunk_count ?? 0);
+    }
+  }
+
+  const knowledgeEntries: GuideKnowledgeEntry[] = enrolledCourses.map((c) => ({
+    courseId: c.id,
+    title: c.title,
+    chapterCount: c.totalChapters ?? c.lessons?.length ?? 0,
+    chunkCount: ragByCourse.get(c.id) ?? 0,
+    indexed: ragByCourse.has(c.id),
+  }));
+
   return (
     <CoursesClientWrapper
       enrolledCourses={enrolledCourses}
       availableCourses={[]}
       stats={{ totalLessonsCompleted, activeCoursesCount, avgProgress }}
+      firstName={firstName}
+      gender={gender}
+      almogNote={almogNote}
+      nextPickTitle={nextPickTitle}
+      knowledgeEntries={knowledgeEntries}
     />
   );
 }

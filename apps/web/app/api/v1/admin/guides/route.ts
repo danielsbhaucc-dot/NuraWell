@@ -35,7 +35,27 @@ export async function GET(request: Request) {
     .order('sort_order');
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ guides: data ?? [] });
+
+  const guideIds = (data ?? []).map((g: { id: string }) => g.id);
+  const ragByCourse = new Map<string, { chunk_count: number; id: string }>();
+  if (guideIds.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: knowledgeRows } = await (auth.supabase as any)
+      .from('almog_knowledge')
+      .select('id, course_id, chunk_count')
+      .eq('data_type', 'course')
+      .in('course_id', guideIds);
+    for (const row of knowledgeRows ?? []) {
+      if (row.course_id) ragByCourse.set(row.course_id, { chunk_count: row.chunk_count ?? 0, id: row.id });
+    }
+  }
+
+  const guides = (data ?? []).map((g: { id: string }) => ({
+    ...g,
+    rag: ragByCourse.get(g.id) ?? null,
+  }));
+
+  return NextResponse.json({ guides });
 }
 
 export async function POST(request: Request) {

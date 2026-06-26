@@ -12,9 +12,19 @@ interface GuideLessonForSync {
   text_content?: string | null;
   tasks?: Array<{ title?: string; description?: string }> | null;
   habits?: Array<{ title?: string }> | null;
+  media_files?: Array<{ file_type?: string | null }> | null;
   sort_order: number;
   duration_minutes?: number | null;
 }
+
+const LESSON_TYPE_LABELS: Record<string, string> = {
+  video: 'וידאו',
+  audio: 'אודיו',
+  text: 'טקסט',
+  pdf: 'PDF',
+  presentation: 'מצגת',
+  mixed: 'מגוון',
+};
 
 interface GuideForSync {
   id: string;
@@ -25,22 +35,38 @@ interface GuideForSync {
 }
 
 function buildGuideKnowledgeBody(guide: GuideForSync): string {
+  const sorted = [...guide.lessons].sort((a, b) => a.sort_order - b.sort_order);
+  const totalMinutes = sorted.reduce((s, l) => s + (l.duration_minutes ?? 15), 0);
+  const typeCounts = new Map<string, number>();
+  for (const lesson of sorted) {
+    const t = lesson.lesson_type ?? 'text';
+    typeCounts.set(t, (typeCounts.get(t) ?? 0) + 1);
+  }
+  const typeSummary = [...typeCounts.entries()]
+    .map(([t, n]) => `${LESSON_TYPE_LABELS[t] ?? t}: ${n}`)
+    .join(', ');
+
   const lines: string[] = [
     `מדריך: ${guide.title}`,
     guide.description ? `תיאור: ${guide.description}` : null,
+    `סיכום: ${sorted.length} פרקים | ~${totalMinutes} דקות סה"כ`,
+    typeSummary ? `סוגי תוכן במדריך: ${typeSummary}` : null,
     '',
-    'פרקים:',
+    'פרקים (מפורט):',
   ].filter((x) => x != null) as string[];
 
-  const sorted = [...guide.lessons].sort((a, b) => a.sort_order - b.sort_order);
   for (const lesson of sorted) {
     lines.push(`\n--- פרק ${lesson.sort_order + 1}: ${lesson.title} ---`);
     if (lesson.description) lines.push(lesson.description);
-    if (lesson.lesson_type) lines.push(`סוג: ${lesson.lesson_type}`);
+    if (lesson.lesson_type) {
+      lines.push(`סוג תוכן: ${LESSON_TYPE_LABELS[lesson.lesson_type] ?? lesson.lesson_type}`);
+    }
     if (lesson.duration_minutes) lines.push(`משך: ${lesson.duration_minutes} דקות`);
+    const mediaTypes = [...new Set((lesson.media_files ?? []).map((m) => m.file_type).filter(Boolean))];
+    if (mediaTypes.length) lines.push(`מדיה: ${mediaTypes.join(', ')}`);
     if (lesson.text_content?.trim()) {
       const text = lesson.text_content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-      lines.push(text.slice(0, 3000));
+      lines.push(text.slice(0, 6000));
     }
     const tasks = lesson.tasks ?? [];
     if (tasks.length) {

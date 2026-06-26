@@ -63,6 +63,15 @@ export default async function LessonPage({ params }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
+  const { data: profileRow } = await supabase
+    .from('profiles')
+    .select('full_name, gender')
+    .eq('id', user.id)
+    .single();
+  const profile = profileRow as { full_name: string | null; gender: 'male' | 'female' | null } | null;
+  const firstName = profile?.full_name?.trim().split(/\s+/)[0] || 'חבר';
+  const gender = profile?.gender ?? null;
+
   const { data: rawLesson } = await supabase
     .from('lessons')
     .select(`
@@ -150,6 +159,8 @@ export default async function LessonPage({ params }: PageProps) {
       prevLesson={prevLesson}
       nextLesson={nextLesson}
       userId={user.id}
+      firstName={firstName}
+      gender={gender}
     />
   );
 }

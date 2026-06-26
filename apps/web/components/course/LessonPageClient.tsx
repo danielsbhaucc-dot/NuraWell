@@ -1,10 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useTransition, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { sanitizeLessonHtml } from '../../lib/sanitize-lesson-html';
 import {
-  Clock, BookOpen, CheckCircle2, ExternalLink as ExternalLinkIcon,
+  Clock, BookOpen, CheckCircle2, ExternalLink as ExternalLinkIcon, ChevronRight,
   Video, Headphones, FileText, Presentation, AlignLeft, Layers, Images
 } from 'lucide-react';
 import { VideoPlayer } from './VideoPlayer';
@@ -16,6 +17,7 @@ import { HabitTracker } from './HabitTracker';
 import { LessonNav } from './LessonNav';
 import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import type { LessonDetail, LessonProgressData, MediaFile } from '../../lib/types/course';
+import type { ProfileGender } from '../../lib/profile/personalized-copy';
 
 interface NavLesson { id: string; title: string; }
 
@@ -25,6 +27,8 @@ interface LessonPageClientProps {
   prevLesson: NavLesson | null;
   nextLesson: NavLesson | null;
   userId: string;
+  firstName?: string;
+  gender?: ProfileGender;
 }
 
 const typeLabel: Record<LessonDetail['lesson_type'], { label: string; icon: React.ElementType; color: string }> = {
@@ -49,7 +53,8 @@ async function saveProgress(
 }
 
 export function LessonPageClient({
-  lesson, initialProgress, prevLesson, nextLesson, userId
+  lesson, initialProgress, prevLesson, nextLesson, userId,
+  firstName = 'חבר', gender = null,
 }: LessonPageClientProps) {
   const [progress, setProgress] = useState<LessonProgressData>(initialProgress);
   const [isPending, startTransition] = useTransition();
@@ -84,8 +89,16 @@ export function LessonPageClient({
   const imageFiles = lesson.media_files.filter(m => m.file_type === 'image');
 
   return (
-    <div className="min-h-screen guide-page-bg relative">
+    <div className="guide-page-bg relative pb-8">
       <div className="container-mobile py-4 pb-8 space-y-5 relative z-10">
+
+        <Link
+          href={`/guides/${lesson.course_id}`}
+          className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-700 hover:text-emerald-900 transition"
+        >
+          <ChevronRight className="w-4 h-4" />
+          חזרה למדריך
+        </Link>
 
         {/* Chapter Header */}
         <motion.div
@@ -126,16 +139,26 @@ export function LessonPageClient({
 
           <div className="flex items-center gap-1.5 text-xs">
             <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="font-semibold" style={{ color: '#047857' }}>{lesson.course.title}</span>
+            <Link href={`/guides/${lesson.course_id}`} className="font-semibold hover:underline" style={{ color: '#047857' }}>
+              {lesson.course.title}
+            </Link>
           </div>
         </motion.div>
 
         <AlmogScreenCoach
           title="אלמוג איתך בפרק"
-          body="אפשר לשאול על התוכן, לבקש סיכום פשוט, או להפוך את הפרק לצעד קטן שמתאים להיום."
+          body={
+            gender === 'female'
+              ? `${firstName}, אני כאן איתך בפרק הזה — אפשר לשאול על התוכן, לבקש סיכום פשוט, או להפוך את זה לצעד קטן שמתאים להיום.`
+              : gender === 'male'
+                ? `${firstName}, אני כאן איתך בפרק הזה — אפשר לשאול על התוכן, לבקש סיכום פשוט, או להפוך את זה לצעד קטן שמתאים להיום.`
+                : `${firstName}, אני כאן איתך בפרק הזה — אפשר לשאול על התוכן, לבקש סיכום פשוט, או להפוך את זה לצעד קטן שמתאים להיום.`
+          }
           prompt={`אלמוג, תעזור לי עם הפרק "${lesson.title}" מהמדריך "${lesson.course.title}". מה הכי חשוב לקחת ממנו ואיך ליישם את זה היום?`}
-          cta="שאל את אלמוג על הפרק"
-          tone="violet"
+          cta={gender === 'female' ? 'שאלי את אלמוג על הפרק' : gender === 'male' ? 'שאל את אלמוג על הפרק' : 'שאל/י את אלמוג על הפרק'}
+          tone="teal"
+          firstName={firstName}
+          gender={gender}
         />
 
         {/* Video Content */}

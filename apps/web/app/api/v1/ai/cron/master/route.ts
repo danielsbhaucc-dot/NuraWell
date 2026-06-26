@@ -753,6 +753,20 @@ async function runMasterCron() {
     }
   }
 
+  // --- Guide companion — סריקה יומית של מדריכים (Llama 4 / Groq)
+  let guideCompanion: Awaited<ReturnType<typeof import('../../../../../../lib/workflows/guide-companion-cron').runGuideCompanionBatch>> | null = null;
+  if (process.env.GUIDE_COMPANION_IN_MASTER?.trim() !== '0') {
+    try {
+      const { runGuideCompanionBatch } = await import(
+        '../../../../../../lib/workflows/guide-companion-cron'
+      );
+      guideCompanion = await runGuideCompanionBatch(admin);
+      console.log('[cron/master] guide_companion', JSON.stringify(guideCompanion));
+    } catch (e) {
+      errors.push(`guide_companion: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     window_hours: 24,
@@ -766,6 +780,7 @@ async function runMasterCron() {
       failed: kickoffWatchdogFailed,
     },
     memory_consolidation: memoryConsolidation,
+    guide_companion: guideCompanion,
     notifications_sent:
       celebrated + churnNotificationsSent + journeyCompanionSent + kickoffWatchdogSent,
     action_counts: actionCounts,

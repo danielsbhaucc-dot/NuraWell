@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Loader2, Plus, Sparkles, Wand2 } from 'lucide-react';
+import { BookOpen, Loader2, Plus, Sparkles, Wand2, Database } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { resolveGuideBackgroundUrl } from '@/lib/guides/resolve-background';
 
@@ -17,6 +17,7 @@ interface GuideRow {
   unlock_at: string | null;
   background_image_key: string | null;
   lessons: { id: string; title: string; sort_order: number }[];
+  rag?: { id: string; chunk_count: number } | null;
 }
 
 type AiPhase =
@@ -36,6 +37,8 @@ export function GuidesManager() {
   const [aiPhase, setAiPhase] = useState<AiPhase>({ phase: 'idle' });
   const [clarificationAnswers, setClarificationAnswers] = useState<Record<string, string>>({});
   const [newTitle, setNewTitle] = useState('');
+  const [syncingRag, setSyncingRag] = useState(false);
+  const [syncRagMessage, setSyncRagMessage] = useState<string | null>(null);
 
   const loadGuides = useCallback(async () => {
     setLoading(true);
@@ -51,6 +54,22 @@ export function GuidesManager() {
   useEffect(() => {
     void loadGuides();
   }, [loadGuides]);
+
+  const syncAllRag = async () => {
+    setSyncingRag(true);
+    setSyncRagMessage(null);
+    try {
+      const res = await fetch('/api/v1/admin/guides/sync-rag', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'שגיאה');
+      setSyncRagMessage(`סונכרנו ${data.synced} מדריכים (${data.total_chunks} קטעי ידע)`);
+      await loadGuides();
+    } catch (e) {
+      setSyncRagMessage(e instanceof Error ? e.message : 'שגיאת סנכרון');
+    } finally {
+      setSyncingRag(false);
+    }
+  };
 
   const runAiGenerate = async (withAnswers = false) => {
     setAiPhase({ phase: 'working', message: 'מתחיל…' });
@@ -201,12 +220,12 @@ export function GuidesManager() {
       </section>
 
       {/* Quick create */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap items-center">
         <input
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           placeholder="שם מדריך חדש"
-          className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm"
+          className="flex-1 min-w-[200px] rounded-xl border border-slate-200 px-3 py-2 text-sm"
         />
         <button
           type="button"
@@ -216,6 +235,18 @@ export function GuidesManager() {
           <Plus className="w-4 h-4" />
           מדריך ריק
         </button>
+        <button
+          type="button"
+          disabled={syncingRag}
+          onClick={() => void syncAllRag()}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-700 text-white text-sm font-bold disabled:opacity-50"
+        >
+          {syncingRag ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+          סנכרן הכל ל-RAG
+        </button>
+        {syncRagMessage ? (
+          <span className="text-xs font-semibold text-teal-800 w-full">{syncRagMessage}</span>
+        ) : null}
       </div>
 
       {/* List */}
@@ -251,6 +282,11 @@ export function GuidesManager() {
                     {(g.lessons?.length ?? 0)} פרקים
                     {g.is_published ? ' · פורסם' : ' · טיוטה'}
                     {g.visibility === 'hidden' ? ' · מוסתר' : ''}
+                    {g.is_published && (
+                      g.rag && g.rag.chunk_count > 0
+                        ? ` · אלמוג: ${g.rag.chunk_count} קטעי ידע`
+                        : ' · אלמוג: לא מסונכרן'
+                    )}
                   </p>
                 </div>
                 <span
