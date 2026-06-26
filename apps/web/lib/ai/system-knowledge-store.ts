@@ -54,6 +54,9 @@ export async function ingestKnowledgeDoc(doc: AlmogKnowledgeDocInput): Promise<I
 
     if (doc.dataType === 'course' && doc.courseId) {
       metadata.courseId = doc.courseId;
+      if (doc.stationId) metadata.stationId = doc.stationId;
+      if (doc.stationTitle) metadata.stationTitle = doc.stationTitle;
+      if (typeof doc.stationOrder === 'number') metadata.stationOrder = doc.stationOrder;
     }
     if (doc.dataType === 'step' && doc.stepId) {
       metadata.stepId = doc.stepId;

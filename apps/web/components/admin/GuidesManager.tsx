@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Loader2, Plus, Sparkles, Wand2, Database } from 'lucide-react';
+import { BookOpen, Loader2, Plus, Sparkles, Wand2, Database, Eye, Check } from 'lucide-react';
+import { sanitizeLessonHtml } from '@/lib/sanitize-lesson-html';
 import { cn } from '@/lib/cn';
 import { resolveGuideBackgroundUrl } from '@/lib/guides/resolve-background';
 import { GuidesAlmogKnowledgePanel } from '@/components/course/GuidesAlmogKnowledgePanel';
@@ -25,8 +26,26 @@ type AiPhase =
   | { phase: 'idle' }
   | { phase: 'working'; message: string }
   | { phase: 'questions'; questions: string[] }
+  | { phase: 'preview'; guide: PreviewGuide }
   | { phase: 'done'; guide_id: string | null }
   | { phase: 'error'; message: string };
+
+type PreviewLesson = {
+  title: string;
+  description: string;
+  lesson_type: string;
+  text_content: string;
+  duration_minutes: number;
+  tasks: Array<{ id: string; title: string; description?: string; is_required: boolean }>;
+  habits: Array<{ id: string; title: string; emoji?: string; frequency: string }>;
+  sort_order: number;
+};
+
+type PreviewGuide = {
+  title: string;
+  description: string;
+  lessons: PreviewLesson[];
+};
 
 export function GuidesManager() {
   const pathname = usePathname();
@@ -81,7 +100,7 @@ export function GuidesManager() {
         body: JSON.stringify({
           sourceText,
           clarificationAnswers: withAnswers ? clarificationAnswers : undefined,
-          save: true,
+          save: false,
         }),
       });
 
@@ -113,7 +132,13 @@ export function GuidesManager() {
             return;
           }
           if (evt.phase === 'done') {
-            setAiPhase({ phase: 'done', guide_id: (evt.guide_id as string) ?? null });
+            const guide = evt.guide as PreviewGuide | undefined;
+            const guideId = (evt.guide_id as string) ?? null;
+            if (guide && !guideId) {
+              setAiPhase({ phase: 'preview', guide });
+              return;
+            }
+            setAiPhase({ phase: 'done', guide_id: guideId });
             setSourceText('');
             setClarificationAnswers({});
             void loadGuides();
@@ -124,6 +149,49 @@ export function GuidesManager() {
           }
         }
       }
+    } catch (err) {
+      setAiPhase({
+        phase: 'error',
+        message: err instanceof Error ? err.message : 'שגיאה',
+      });
+    }
+  };
+
+  const publishPreview = async (guide: PreviewGuide) => {
+    setAiPhase({ phase: 'working', message: 'שומר טיוטה…' });
+    try {
+      const courseRes = await fetch('/api/v1/admin/guides', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: guide.title,
+          description: guide.description,
+          is_published: false,
+        }),
+      });
+      const courseData = await courseRes.json();
+      if (!courseRes.ok) throw new Error(courseData.error ?? 'שגיאת שמירה');
+      const courseId = courseData.guide?.id as string;
+      for (const lesson of guide.lessons) {
+        await fetch(`/api/v1/admin/guides/${courseId}/lessons`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: lesson.title,
+            description: lesson.description,
+            lesson_type: lesson.lesson_type,
+            text_content: lesson.text_content,
+            duration_minutes: lesson.duration_minutes,
+            tasks: lesson.tasks,
+            habits: lesson.habits,
+            sort_order: lesson.sort_order,
+            is_published: true,
+          }),
+        });
+      }
+      setAiPhase({ phase: 'done', guide_id: courseId });
+      setSourceText('');
+      void loadGuides();
     } catch (err) {
       setAiPhase({
         phase: 'error',
@@ -188,6 +256,43 @@ export function GuidesManager() {
               className="px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-bold"
             >
               המשך יצירה
+            </button>
+          </div>
+        )}
+
+        {aiPhase.phase === 'preview' && (
+          <div className="mt-4 space-y-4 rounded-2xl border border-violet-200/60 bg-white/90 p-4">
+            <div className="flex items-center gap-2 text-violet-900">
+              <Eye className="w-4 h-4" />
+              <p className="text-sm font-black">תצוגה מקדימה — אשר לפני פרסום</p>
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900">{aiPhase.guide.title}</h3>
+              <p className="text-sm text-slate-600 mt-1">{aiPhase.guide.description}</p>
+            </div>
+            <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+              {[...aiPhase.guide.lessons]
+                .sort((a, b) => a.sort_order - b.sort_order)
+                .map((lesson, i) => (
+                  <div key={`${lesson.title}-${i}`} className="guide-glass-card p-3">
+                    <p className="font-bold text-sm text-slate-900">
+                      {i + 1}. {lesson.title}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">{lesson.description}</p>
+                    <div
+                      className="lesson-content text-sm mt-2 max-h-32 overflow-hidden"
+                      dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(lesson.text_content) }}
+                    />
+                  </div>
+                ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => void publishPreview(aiPhase.guide)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold"
+            >
+              <Check className="w-4 h-4" />
+              שמור כטיוטה לעריכה
             </button>
           </div>
         )}

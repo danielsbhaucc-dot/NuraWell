@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
+import { syncGuideLessonToAlmogKnowledge } from '@/lib/guides/sync-knowledge';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -60,6 +61,33 @@ export async function PATCH(request: Request, ctx: RouteCtx) {
     .single();
 
   if (error || !data) return NextResponse.json({ error: error?.message ?? 'שגיאה' }, { status: 500 });
+
+  const { id: courseId } = await ctx.params;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: course } = await (auth.supabase as any)
+      .from('courses')
+      .select('id, title, description, is_published, is_premium, lessons(*)')
+      .eq('id', courseId)
+      .single();
+    if (course?.is_published) {
+      await syncGuideLessonToAlmogKnowledge({
+        supabase: auth.supabase,
+        guide: {
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          is_premium: course.is_premium,
+          lessons: course.lessons ?? [],
+        },
+        lessonId,
+        createdBy: auth.user.id,
+      });
+    }
+  } catch (syncErr) {
+    console.warn('[admin/guides/lesson PATCH] rag_sync', syncErr);
+  }
+
   return NextResponse.json({ lesson: data });
 }
 

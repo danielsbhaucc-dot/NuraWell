@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX, RotateCcw } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, RotateCcw, Headphones } from 'lucide-react';
 
 interface AudioPlayerProps {
   src: string;
@@ -15,6 +15,7 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+/** נגן אודיו לפרק — זכוכית iOS, קריא וברור על רקע בהיר. */
 export function AudioPlayer({ src, title, duration }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -30,15 +31,21 @@ export function AudioPlayer({ src, title, duration }: AudioPlayerProps) {
     const onDurationChange = () => setTotalDuration(audio.duration);
     const onEnded = () => setIsPlaying(false);
     const onCanPlay = () => setIsLoading(false);
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
     audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('durationchange', onDurationChange);
     audio.addEventListener('ended', onEnded);
     audio.addEventListener('canplay', onCanPlay);
+    audio.addEventListener('play', onPlay);
+    audio.addEventListener('pause', onPause);
     return () => {
       audio.removeEventListener('timeupdate', onTimeUpdate);
       audio.removeEventListener('durationchange', onDurationChange);
       audio.removeEventListener('ended', onEnded);
       audio.removeEventListener('canplay', onCanPlay);
+      audio.removeEventListener('play', onPlay);
+      audio.removeEventListener('pause', onPause);
     };
   }, []);
 
@@ -46,10 +53,8 @@ export function AudioPlayer({ src, title, duration }: AudioPlayerProps) {
     if (!audioRef.current) return;
     if (isPlaying) {
       audioRef.current.pause();
-      setIsPlaying(false);
     } else {
       await audioRef.current.play();
-      setIsPlaying(true);
     }
   };
 
@@ -75,61 +80,77 @@ export function AudioPlayer({ src, title, duration }: AudioPlayerProps) {
   const progress = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
 
   return (
-    <div className="audio-player">
+    <div className="lesson-audio-player" dir="ltr">
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <audio ref={audioRef} src={src} preload="metadata" />
 
-      {title && (
-        <p className="text-white font-semibold text-sm mb-3 line-clamp-1">🎵 {title}</p>
-      )}
+      <div className="lesson-audio-player__inner">
+        <div className="lesson-audio-player__glow" aria-hidden />
+        <div className="lesson-audio-player__shine" aria-hidden />
 
-      {/* Progress Bar */}
-      <div className="mb-3">
-        <input
-          type="range"
-          min={0}
-          max={totalDuration || 100}
-          value={currentTime}
-          onChange={handleSeek}
-          className="w-full h-2 rounded-full appearance-none cursor-pointer"
-          style={{
-            background: `linear-gradient(to left, #14b8a6 ${progress}%, rgba(255,255,255,0.15) ${progress}%)`,
-          }}
-        />
-        <div className="flex justify-between text-xs text-slate-400 mt-1">
-          <span>{formatTime(currentTime)}</span>
-          <span>{totalDuration ? formatTime(totalDuration) : '--:--'}</span>
+        <div dir="rtl" className="flex items-center gap-3 mb-4">
+          <div className="lesson-audio-player__icon-wrap">
+            <Headphones className="w-5 h-5 text-emerald-700" />
+          </div>
+          {title && (
+            <p className="text-[15px] font-black text-slate-800 line-clamp-2 leading-snug flex-1">
+              {title}
+            </p>
+          )}
         </div>
-      </div>
 
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-4">
-        <button
-          onClick={restart}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-          style={{ background: 'rgba(255,255,255,0.08)' }}
-          aria-label="חזור להתחלה"
-        >
-          <RotateCcw className="w-4 h-4" />
-        </button>
+        <div className="mb-4">
+          <input
+            type="range"
+            min={0}
+            max={totalDuration || 100}
+            value={currentTime}
+            onChange={handleSeek}
+            aria-label="מיקום בניגון"
+            className="nura-range lesson-audio-player__range w-full h-2.5 cursor-pointer appearance-none rounded-full"
+            style={{
+              background: `linear-gradient(to right, #10b981, #2dd4bf ${progress}%, rgba(15,23,42,0.12) ${progress}%)`,
+            }}
+          />
+          <div className="flex justify-between text-[11px] font-bold tabular-nums text-slate-600 mt-1.5">
+            <span>{formatTime(currentTime)}</span>
+            <span>{totalDuration ? formatTime(totalDuration) : '--:--'}</span>
+          </div>
+        </div>
 
-        <button
-          onClick={togglePlay}
-          disabled={isLoading}
-          className="w-14 h-14 rounded-2xl flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
-          style={{ background: 'linear-gradient(135deg, #14b8a6, #10b981)', boxShadow: '0 6px 20px rgba(20,184,166,0.4)' }}
-          aria-label={isPlaying ? 'השהה' : 'נגן'}
-        >
-          {isPlaying ? <Pause className="w-6 h-6" fill="white" /> : <Play className="w-6 h-6 mr-[-2px]" fill="white" />}
-        </button>
+        <div className="flex items-center justify-center gap-5">
+          <button
+            type="button"
+            onClick={restart}
+            className="lesson-audio-player__side-btn"
+            aria-label="חזור להתחלה"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
 
-        <button
-          onClick={toggleMute}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-          style={{ background: 'rgba(255,255,255,0.08)' }}
-          aria-label={isMuted ? 'בטל השתקה' : 'השתק'}
-        >
-          {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-        </button>
+          <button
+            type="button"
+            onClick={() => void togglePlay()}
+            disabled={isLoading}
+            className="lesson-audio-player__play-btn"
+            aria-label={isPlaying ? 'השהה' : 'נגן'}
+          >
+            {isPlaying ? (
+              <Pause className="w-7 h-7" fill="white" />
+            ) : (
+              <Play className="w-7 h-7 translate-x-px" fill="white" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleMute}
+            className="lesson-audio-player__side-btn"
+            aria-label={isMuted ? 'בטל השתקה' : 'השתק'}
+          >
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -530,11 +530,14 @@ function LessonCardContent({
   return (
     <>
       {/* Number / Status */}
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold"
-        style={isDone
-          ? { background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981' }
-          : { background: `${config.color}22`, border: `1px solid ${config.color}44`, color: config.color }
-        }>
+      <div
+        className={cn('guide-chapter-index', isDone && 'opacity-80')}
+        style={
+          isDone
+            ? { background: 'rgba(16,185,129,0.2)', borderColor: 'rgba(16,185,129,0.4)', color: '#10b981' }
+            : undefined
+        }
+      >
         {isDone ? <CheckCircle2 className="w-4.5 h-4.5" /> : idx + 1}
       </div>
 

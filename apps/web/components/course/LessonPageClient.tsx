@@ -76,12 +76,13 @@ export function LessonPageClient({
     await saveProgress(userId, lesson.id, { habit_progress: newHabitProgress });
   }, [progress.habit_progress, userId, lesson.id]);
 
-  const handleMarkComplete = useCallback(() => {
+  const handleToggleComplete = useCallback(() => {
+    const next = !progress.is_completed;
     startTransition(async () => {
-      setProgress(p => ({ ...p, is_completed: true }));
-      await saveProgress(userId, lesson.id, { is_completed: true });
+      setProgress((p) => ({ ...p, is_completed: next }));
+      await saveProgress(userId, lesson.id, { is_completed: next });
     });
-  }, [userId, lesson.id]);
+  }, [progress.is_completed, userId, lesson.id]);
 
   const videoFiles = lesson.media_files.filter(m => m.video_provider !== null || m.file_type === 'video_url');
   const audioFiles = lesson.media_files.filter(m => m.file_type === 'audio');
@@ -157,6 +158,14 @@ export function LessonPageClient({
           prompt={`תעזור לי עם הפרק "${lesson.title}" מהמדריך "${lesson.course.title}". מה הכי חשוב לקחת ממנו ואיך ליישם את זה היום?`}
           cta={lessonAlmogCta(gender)}
           tone="teal"
+          guideContext={{
+            courseId: lesson.course_id,
+            courseTitle: lesson.course.title,
+            lessonId: lesson.id,
+            lessonTitle: lesson.title,
+            lessonCompleted: progress.is_completed,
+            source: 'lesson_page',
+          }}
         />
 
         {/* Video Content */}
@@ -335,8 +344,8 @@ export function LessonPageClient({
             prevLesson={prevLesson}
             nextLesson={nextLesson}
             isCurrentCompleted={progress.is_completed}
-            onMarkComplete={handleMarkComplete}
-            isMarkingComplete={isPending}
+            onToggleComplete={handleToggleComplete}
+            isTogglingComplete={isPending}
           />
         </motion.div>
       </div>

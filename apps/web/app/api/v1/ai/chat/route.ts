@@ -25,6 +25,7 @@ import {
 import {
   buildAlmogPrinciplesFilter,
   buildAlmogSystemKnowledgeFilter,
+  buildGuideChapterKnowledgeFilter,
   fetchJourneyProgressCapForRag,
   formatAlmogPrinciplesBlock,
   formatSystemKnowledgeContextBlock,
@@ -86,6 +87,7 @@ import {
   detectTaskIntent,
 } from '../../../../../lib/ai/chat-task-intent';
 import { resolveTaskIntentWithHint } from '../../../../../lib/ai/task-report-hint';
+import { formatGuideContextPromptBlock } from '../../../../../lib/ai/guide-context-hint';
 import { fetchPendingAcceptedTasksForUser } from '../../../../../lib/ai/mark-task-execution';
 import {
   applyWeightFromUserMessage,
@@ -174,6 +176,16 @@ const chatBodySchema = z.object({
       slot: z.string().max(32).optional(),
       source: z.enum(['home_tasks_popup', 'home_hero']),
       category: z.enum(['done']).optional(),
+    })
+    .optional(),
+  guide_context_hint: z
+    .object({
+      course_id: z.string().uuid(),
+      course_title: z.string().min(1).max(200),
+      lesson_id: z.string().uuid(),
+      lesson_title: z.string().min(1).max(200),
+      lesson_completed: z.boolean().optional(),
+      source: z.enum(['lesson_page', 'guide_detail']),
     })
     .optional(),
 });
@@ -2044,9 +2056,12 @@ export async function POST(request: Request) {
    * בורר מודלים: ברירת מחדל = אלמוג (Qwen). אם המשתמש בחר מודל אחר להשוואה,
    * מריצים אותו *לבקשה הזו בלבד* עם ה-config הנכון לו (reasoning/PII/cache/פרומפט).
    */
-  const mcfg = resolveChatModelRuntime(parsed.data.model);
+  let mcfg = resolveChatModelRuntime(parsed.data.model);
+  const guideContextHint = parsed.data.guide_context_hint;
+  if (guideContextHint && !parsed.data.model) {
+    mcfg = resolveChatModelRuntime('llama4');
+  }
   const effectiveModel = mcfg.slug;
-  // כשנבחר מודל השוואה מפורש — לא עוקפים לכותב הזול, כדי שהמודל הנבחר באמת יכתוב.
   const explicitCompareModel = Boolean(parsed.data.model && parsed.data.model !== 'almog');
 
   if (bodyUserId && bodyUserId !== user.id) {
@@ -2131,6 +2146,18 @@ export async function POST(request: Request) {
       needs_system_knowledge_rag: true,
       needs_journey_knowledge: true,
       reason: `${contextDecision.reason ?? ''}+lesson_knowledge_request`.replace(/^\+/, ''),
+    };
+  }
+
+  if (guideContextHint) {
+    contextDecision = {
+      ...contextDecision,
+      heavy_context: false,
+      needs_system_knowledge_rag: true,
+      needs_full_progress_report: false,
+      needs_journey_knowledge: false,
+      needs_user_memory_rag: false,
+      reason: `${contextDecision.reason ?? ''}+guide_chapter_context`.replace(/^\+/, ''),
     };
   }
 
@@ -2419,8 +2446,16 @@ export async function POST(request: Request) {
     let ragMemoryBlock = '';
     let systemKnowledgeBlock = '';
     let principlesBlock = '';
-    const skFilter =
-      journeyCap && isSystemKnowledgeVectorConfigured()
+    const guideChapterFilter = guideContextHint
+      ? buildGuideChapterKnowledgeFilter({
+          courseId: guideContextHint.course_id,
+          lessonId: guideContextHint.lesson_id,
+          enrolledCourseIds,
+        })
+      : null;
+    const skFilter = guideChapterFilter
+      ? guideChapterFilter
+      : journeyCap && isSystemKnowledgeVectorConfigured()
         ? buildAlmogSystemKnowledgeFilter({
             maxStepNumber: journeyCap.maxStepNumber,
             enrolledCourseIds,
@@ -2433,9 +2468,11 @@ export async function POST(request: Request) {
     const principlesFilter = isSystemKnowledgeVectorConfigured()
       ? buildAlmogPrinciplesFilter({ enrolledCourseIds })
       : null;
+    const guideRagTopK = guideContextHint ? 3 : 5;
     const needUserRag = contextDecision.needs_user_memory_rag && isVectorRagRetrieveEnabled();
     const needSystemRag = contextDecision.needs_system_knowledge_rag && Boolean(skFilter);
-    const needPrinciples = contextDecision.needs_principles && Boolean(principlesFilter);
+    const needPrinciples =
+      contextDecision.needs_principles && Boolean(principlesFilter) && !guideContextHint;
 
     if (needUserRag || needSystemRag || needPrinciples) {
       try {
@@ -2451,7 +2488,11 @@ export async function POST(request: Request) {
               })
             : Promise.resolve(''),
           needSystemRag && skFilter
-            ? queryAlmogSystemKnowledgeForUser({ questionEmbedding: qv, filter: skFilter, topK: 5 })
+            ? queryAlmogSystemKnowledgeForUser({
+                questionEmbedding: qv,
+                filter: skFilter,
+                topK: guideRagTopK,
+              })
             : Promise.resolve(null),
           needPrinciples && principlesFilter
             ? queryAlmogSystemKnowledgeForUser({ questionEmbedding: qv, filter: principlesFilter, topK: 4 })
@@ -2461,7 +2502,9 @@ export async function POST(request: Request) {
           ragMemoryBlock = userMemoryBlock;
         }
         if (skHits) {
-          systemKnowledgeBlock = formatSystemKnowledgeContextBlock(skHits, 5);
+          systemKnowledgeBlock = formatSystemKnowledgeContextBlock(skHits, guideRagTopK, {
+            guideMode: Boolean(guideContextHint),
+          });
         }
         if (principleHits) {
           principlesBlock = formatAlmogPrinciplesBlock(principleHits, 4);
@@ -2583,8 +2626,11 @@ export async function POST(request: Request) {
       journeyData: journeyDataBlock,
       isGreeting: isGreetingTurn,
     });
-    const guidesStateBlock = formatGuidesStateForAi(guideSummaries);
-    const guideCompanionBlock = formatGuideCompanionForAi(profileRow.ai_context.guide_companion);
+    const guidesStateBlock = guideContextHint ? null : formatGuidesStateForAi(guideSummaries);
+    const guideCompanionBlock = guideContextHint
+      ? null
+      : formatGuideCompanionForAi(profileRow.ai_context.guide_companion);
+    const guideContextBlock = formatGuideContextPromptBlock(guideContextHint);
     const turnWeightBlock =
       parsedWeightKg != null ? formatWeightLoggedPromptBlock(parsedWeightKg) : null;
 
@@ -2637,6 +2683,7 @@ export async function POST(request: Request) {
      * של "מה הגעת מהתראה X". בלי זה — הוא ישאל "היי מה קורה?" אדיש להתראה.
      */
     if (notificationContextBlock) contextSections.push(notificationContextBlock);
+    if (guideContextBlock) contextSections.push(guideContextBlock);
 
     // coaching style + dossier + onboarding כפולים לזיכרון העבודה — רק בתור כבד.
     if (coachingStyleBlock && !leanLightTurn) contextSections.push(coachingStyleBlock);

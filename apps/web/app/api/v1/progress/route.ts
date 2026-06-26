@@ -34,8 +34,14 @@ export async function POST(request: NextRequest) {
       .eq('lesson_id', lesson_id)
       .maybeSingle();
 
-    const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    if (is_completed !== undefined) updateData.is_completed = is_completed;
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+      last_accessed_at: new Date().toISOString(),
+    };
+    if (is_completed !== undefined) {
+      updateData.is_completed = is_completed;
+      updateData.completed_at = is_completed ? new Date().toISOString() : null;
+    }
     if (task_progress !== undefined) updateData.task_progress = task_progress;
     if (habit_progress !== undefined) updateData.habit_progress = habit_progress;
     if (time_spent_seconds !== undefined) {
@@ -56,9 +62,11 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         lesson_id,
         is_completed: is_completed ?? false,
+        completed_at: is_completed ? new Date().toISOString() : null,
         task_progress: task_progress ?? {},
         habit_progress: habit_progress ?? {},
         time_spent_seconds: time_spent_seconds ?? 0,
+        last_accessed_at: new Date().toISOString(),
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.from('lesson_progress') as any).insert(insertData);

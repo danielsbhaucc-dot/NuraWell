@@ -46,7 +46,12 @@ export async function GET(request: Request) {
       .eq('data_type', 'course')
       .in('course_id', guideIds);
     for (const row of knowledgeRows ?? []) {
-      if (row.course_id) ragByCourse.set(row.course_id, { chunk_count: row.chunk_count ?? 0, id: row.id });
+      if (!row.course_id) continue;
+      const prev = ragByCourse.get(row.course_id);
+      ragByCourse.set(row.course_id, {
+        id: row.id,
+        chunk_count: (prev?.chunk_count ?? 0) + (row.chunk_count ?? 0),
+      });
     }
   }
 
