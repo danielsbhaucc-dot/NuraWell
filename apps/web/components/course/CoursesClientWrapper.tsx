@@ -4,11 +4,12 @@ import { motion } from 'framer-motion';
 import { GraduationCap } from 'lucide-react';
 import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import { CourseCard } from '../shared/CourseCard';
-import { GuidesAlmogKnowledgePanel, type GuideKnowledgeEntry } from './GuidesAlmogKnowledgePanel';
 import type { CourseWithProgress, UserStats } from '../../lib/types/course';
 import {
   guidesAlmogCoachBody,
+  guidesAlmogCoachTitle,
   guidesContinueBanner,
+  guidesPageGreeting,
   guidesPageSubtitle,
   guidesPageTitle,
   type ProfileGender,
@@ -22,7 +23,6 @@ interface CoursesClientWrapperProps {
   gender?: ProfileGender;
   almogNote?: string | null;
   nextPickTitle?: string | null;
-  knowledgeEntries?: GuideKnowledgeEntry[];
 }
 
 const container = {
@@ -42,14 +42,13 @@ export function CoursesClientWrapper({
   gender = null,
   almogNote = null,
   nextPickTitle = null,
-  knowledgeEntries = [],
 }: CoursesClientWrapperProps) {
   const isEmpty = enrolledCourses.length === 0 && availableCourses.length === 0;
   const totalSegments = enrolledCourses.length > 0 ? Math.max(enrolledCourses.length, 6) : 6;
   const continueBanner = guidesContinueBanner(gender);
   const coachPrompt = nextPickTitle
-    ? `אלמוג, לפי מה שאתה יודע על המדריכים וההתקדמות שלי — תעזור לי להמשיך ב"${nextPickTitle}" או לבחור מדריך אחר שמתאים לי עכשיו.`
-    : 'אלמוג, תעזור לי לבחור באיזה מדריך או פרק להמשיך עכשיו לפי ההתקדמות שלי ומה שאתה יודע עליי.';
+    ? `תעזור לי להמשיך ב"${nextPickTitle}" או לבחור מדריך אחר שמתאים לי עכשיו.`
+    : 'תעזור לי לבחור באיזה מדריך או פרק להמשיך עכשיו לפי ההתקדמות שלי.';
 
   return (
     <motion.div className="pt-2">
@@ -69,10 +68,21 @@ export function CoursesClientWrapper({
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="crystal-header rounded-2xl px-4 py-3.5 mb-4"
+          className="crystal-header rounded-2xl px-4 py-4 mb-4"
         >
-          <h1 className="text-xl font-black text-white">{guidesPageTitle(gender, firstName)}</h1>
-          <p className="text-sm text-white/80 mt-0.5">{guidesPageSubtitle(gender)}</p>
+          <h1
+            className="text-[22px] font-black text-white leading-tight"
+            style={{ fontFamily: "'Rubik','Heebo',sans-serif", letterSpacing: '-0.02em' }}
+          >
+            {guidesPageTitle()}
+          </h1>
+          <p
+            className="text-[15px] font-bold text-white/95 mt-1.5"
+            style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+          >
+            {guidesPageGreeting(firstName)}
+          </p>
+          <p className="text-sm text-white/75 mt-0.5">{guidesPageSubtitle(gender)}</p>
         </motion.div>
 
         {enrolledCourses.length > 0 && (
@@ -139,19 +149,13 @@ export function CoursesClientWrapper({
 
         <div className="mb-4">
           <AlmogScreenCoach
-            title="אלמוג קורא איתך את המדריכים"
+            title={guidesAlmogCoachTitle(firstName)}
             body={guidesAlmogCoachBody(gender, firstName, almogNote)}
             prompt={coachPrompt}
             cta={gender === 'female' ? 'בחרי איתי המשך' : gender === 'male' ? 'בחר איתי המשך' : 'בחר/י איתי המשך'}
             tone="amber"
-            firstName={firstName}
-            gender={gender}
           />
         </div>
-
-        {knowledgeEntries.length > 0 ? (
-          <GuidesAlmogKnowledgePanel entries={knowledgeEntries} />
-        ) : null}
 
         {enrolledCourses.length > 0 && (
           <motion.div

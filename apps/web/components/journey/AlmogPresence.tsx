@@ -84,13 +84,13 @@ export function AlmogAvatarChip({ size = 44 }: { size?: number }) {
   );
 }
 
-/** תמונת אלמוג + תג שם ירוק מתחת — כמו בגיבוי סיום, בקומפקטיות */
+/** תמונת אלמוג + תג שם ירוק חופף לתחתית האווטאר */
 export function AlmogAvatarChipWithNameTag({ size = 46, name = 'אלמוג' }: { size?: number; name?: string }) {
   return (
-    <div className="flex flex-col items-center gap-2 shrink-0">
+    <div className="relative shrink-0 pb-2">
       <AlmogAvatarChip size={size} />
       <span
-        className="px-3.5 py-1 rounded-full text-[11px] font-black text-white shadow-md whitespace-nowrap"
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 px-3 py-0.5 rounded-full text-[10px] font-black text-white whitespace-nowrap shadow-md"
         style={{
           background: 'linear-gradient(135deg, #047857, #10b981)',
           border: '1px solid rgba(255,255,255,0.38)',

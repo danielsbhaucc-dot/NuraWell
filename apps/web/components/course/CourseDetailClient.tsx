@@ -13,6 +13,7 @@ import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import { cn } from '../../lib/cn';
 import {
   guideDetailAlmogBody,
+  guideDetailAlmogTitle,
   guideLearnCta,
   type ProfileGender,
 } from '../../lib/profile/personalized-copy';
@@ -76,7 +77,6 @@ export function CourseDetailClient({
   const enteredKey = `guide-entered:${course.id}`;
 
   const [entered, setEntered] = useState(false);
-  const [ready, setReady] = useState(false);
   const [skipEnterAnim, setSkipEnterAnim] = useState(false);
 
   useEffect(() => {
@@ -88,22 +88,20 @@ export function CourseDetailClient({
     } catch {
       /* ignore */
     }
-    setReady(true);
   }, [enteredKey]);
 
   useEffect(() => {
-    if (!ready) return;
     window.scrollTo(0, 0);
-  }, [ready, course.id]);
+  }, [course.id]);
 
   useEffect(() => {
-    if (!ready || entered) return;
+    if (entered) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [ready, entered]);
+  }, [entered]);
 
   useEffect(() => () => {
     document.body.style.overflow = '';
@@ -118,42 +116,18 @@ export function CourseDetailClient({
     setEntered(true);
   };
 
-  if (!ready) return null;
-
   return (
     <>
-      <AnimatePresence>
-        {!entered ? (
-          <GuideCover
-            key="cover"
-            title={course.title}
-            bgUrl={bgUrl}
-            totalLessons={totalLessons}
-            totalMinutes={totalMinutes}
-            isPremium={course.is_premium}
-            progress={progress}
-            isEnrolled={isEnrolled}
-            onEnter={handleEnter}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      {entered ? (
-      <motion.div
-        className="-mt-16"
-        initial={skipEnterAnim ? false : { opacity: 0, y: -36 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: skipEnterAnim ? 0 : 0.55, ease: [0.22, 1, 0.36, 1] }}
-      >
+      <div className="-mt-16">
     <div className="guide-page-bg relative pb-8">
       {/* HERO header — large & premium; the background image lives ONLY here */}
       <div className="guide-hero relative h-[20rem] md:h-[28rem]">
         {bgUrl ? (
           <motion.div
             className="absolute inset-0"
-            initial={{ scale: 1.14 }}
+            initial={skipEnterAnim ? false : { scale: 1.05 }}
             animate={{ scale: 1 }}
-            transition={{ duration: 1.4, ease: 'easeOut' }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
           >
             <Image
               src={bgUrl}
@@ -167,16 +141,12 @@ export function CourseDetailClient({
           <div className="guide-hero-fallback" aria-hidden />
         )}
         <div className="guide-hero-overlay" aria-hidden />
+        <div className="guide-hero-scrim" aria-hidden />
         <div className="guide-hero-glow" aria-hidden />
 
         {/* Top pills row */}
-        <div className="container-mobile absolute inset-x-0 top-0 px-4 pt-5">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="flex items-center gap-2 flex-wrap"
-          >
+        <div className="container-mobile absolute inset-x-0 top-0 z-[3] px-4 pt-5">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md"
               style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.35)', color: '#fff' }}>
               <BookOpen className="w-3.5 h-3.5" /> מדריך
@@ -199,16 +169,12 @@ export function CourseDetailClient({
                 <BookOpen className="w-3.5 h-3.5" /> בלמידה
               </span>
             )}
-          </motion.div>
+          </div>
         </div>
 
         {/* Title + glass stats strip at the bottom */}
-        <div className="container-mobile absolute inset-x-0 bottom-0 px-4 pb-7">
-          <motion.div
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.1 }}
-          >
+        <div className="container-mobile absolute inset-x-0 bottom-0 z-[3] px-4 pb-7">
+          <div>
             <h1 className="text-4xl md:text-5xl font-black text-white mb-4 leading-[1.1] tracking-tight"
               style={{ textShadow: '0 4px 24px rgba(0,0,0,0.45)' }}>
               {course.title}
@@ -237,17 +203,13 @@ export function CourseDetailClient({
                 </>
               )}
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 
       {/* Light body */}
       <div className="container-mobile relative px-4 -mt-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.05 }}
-        >
+        <div>
           {course.description && (
             <div className="guide-glass-card p-4 mb-4">
               <p className="text-sm leading-relaxed" style={{ color: '#3A3654' }}>{course.description}</p>
@@ -275,13 +237,11 @@ export function CourseDetailClient({
 
           <div className="mb-4">
             <AlmogScreenCoach
-              title="אלמוג על המדריך הזה"
+              title={guideDetailAlmogTitle(firstName)}
               body={guideDetailAlmogBody(gender, firstName, course.title, almogNote)}
-              prompt={`אלמוג, תעזור לי להבין איך להמשיך במדריך "${course.title}" ומה הפרק הכי נכון לי עכשיו לפי מה שאתה יודע על התוכן וההתקדמות שלי.`}
-              cta="דבר איתי על המדריך"
+              prompt={`תעזור לי להבין איך להמשיך במדריך "${course.title}" ומה הפרק הכי נכון לי עכשיו לפי ההתקדמות שלי.`}
+              cta={gender === 'female' ? 'דברי איתי על המדריך' : gender === 'male' ? 'דבר איתי על המדריך' : 'דבר/י איתי על המדריך'}
               tone="teal"
-              firstName={firstName}
-              gender={gender}
             />
           </div>
 
@@ -313,7 +273,7 @@ export function CourseDetailClient({
               גישה תיפתח על ידי המנהל
             </div>
           )}
-        </motion.div>
+        </div>
       </div>
 
       {/* Chapters List */}
@@ -356,8 +316,23 @@ export function CourseDetailClient({
         </motion.div>
       </div>
     </div>
-      </motion.div>
-      ) : null}
+      </div>
+
+      <AnimatePresence>
+        {!entered ? (
+          <GuideCover
+            key="cover"
+            title={course.title}
+            bgUrl={bgUrl}
+            totalLessons={totalLessons}
+            totalMinutes={totalMinutes}
+            isPremium={course.is_premium}
+            progress={progress}
+            isEnrolled={isEnrolled}
+            onEnter={handleEnter}
+          />
+        ) : null}
+      </AnimatePresence>
     </>
   );
 }
@@ -391,7 +366,7 @@ function GuideCover({
       className="fixed inset-0 z-[70] flex flex-col overflow-hidden"
       style={{ width: '100vw', height: '100vh' }}
       initial={{ opacity: 1 }}
-      exit={{ y: '108%', opacity: 1, transition: { duration: 0.7, ease: [0.7, 0, 0.84, 0] } }}
+      exit={{ y: '108%', opacity: 1, transition: { duration: 0.35, ease: [0.7, 0, 0.84, 0] } }}
     >
       {/* תמונת רקע */}
       {bgUrl ? (
@@ -399,7 +374,7 @@ function GuideCover({
           className="absolute inset-0"
           initial={{ scale: 1.16 }}
           animate={{ scale: 1 }}
-          transition={{ duration: 6, ease: 'easeOut' }}
+          transition={{ duration: 2.5, ease: 'easeOut' }}
         >
           <Image src={bgUrl} alt={title} fill className="object-cover" priority />
         </motion.div>
@@ -427,7 +402,7 @@ function GuideCover({
       />
 
       {/* תוכן השער */}
-      <div className="relative z-10 flex flex-1 flex-col px-6 pb-10 pt-[max(2rem,env(safe-area-inset-top))]">
+      <div className="relative z-10 flex flex-1 flex-col px-6 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -451,7 +426,7 @@ function GuideCover({
         </motion.div>
 
         {/* מרכז: שם המדריך בפונט מרהיב */}
-        <div className="flex flex-1 flex-col items-center justify-center text-center">
+        <div className="flex flex-1 flex-col items-center justify-center text-center pb-6">
           <motion.h1
             initial={{ opacity: 0, y: 24, letterSpacing: '0.06em' }}
             animate={{ opacity: 1, y: 0, letterSpacing: '-0.01em' }}
@@ -488,7 +463,7 @@ function GuideCover({
           </motion.div>
         </div>
 
-        {/* כפתור כניסה — שקוף, RTL מלא, אייקון משמאל */}
+        {/* כפתור כניסה — גבוה יותר על המסך */}
         <motion.button
           type="button"
           onClick={onEnter}
@@ -497,9 +472,8 @@ function GuideCover({
           transition={{ duration: 0.5, delay: 0.8 }}
           whileTap={{ scale: 0.98 }}
           dir="rtl"
-          className="mx-auto mb-2 flex w-full max-w-sm items-center justify-center gap-2.5 rounded-2xl border py-4 text-base font-black text-white backdrop-blur-md"
+          className="mx-auto -mt-14 mb-1 flex w-full max-w-sm items-center justify-center gap-2.5 rounded-2xl border py-4 text-base font-black text-white backdrop-blur-md"
           style={{
-            marginTop: '-1.25rem',
             background: 'rgba(255,255,255,0.14)',
             borderColor: 'rgba(255,255,255,0.38)',
             boxShadow: '0 14px 38px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.22)',
