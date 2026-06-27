@@ -212,15 +212,15 @@ export function LessonPageClient({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.18 }}
-            className="guide-glass-card p-5"
+            className="guide-glass-card guide-content-card p-5 md:p-6"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-1.5 h-6 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(to bottom, #14b8a6, #10b981)' }} />
+            <div className="guide-section-header !mb-5 !mt-0 !shadow-none">
+              <span className="guide-section-bar" aria-hidden />
               <AlignLeft className="w-4 h-4 text-emerald-600" />
-              <h2 className="font-black text-base" style={{ color: '#1A1730' }}>תוכן הפרק</h2>
+              <h2 className="!text-base !font-black !text-[#1A1730]">תוכן הפרק</h2>
             </div>
             <div
-              className="lesson-content"
+              className="lesson-content guide-lesson-body"
               dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(lesson.text_content) }}
             />
           </motion.article>
@@ -268,12 +268,12 @@ export function LessonPageClient({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
-            className="guide-glass-card p-4"
+            className="guide-glass-card p-4 md:p-5"
           >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-1.5 h-6 rounded-full flex-shrink-0" style={{ background: 'linear-gradient(to bottom, #3b82f6, #60a5fa)' }} />
+            <div className="guide-section-header !mb-4 !mt-0 !shadow-none">
+              <span className="guide-section-bar" aria-hidden />
               <ExternalLinkIcon className="w-4 h-4 text-blue-500" />
-              <h3 className="font-black text-base" style={{ color: '#1A1730' }}>קישורים נוספים</h3>
+              <h3 className="!text-base !font-black !text-[#1A1730]">קישורים נוספים</h3>
             </div>
             <div className="space-y-2">
               {lesson.external_links.map((link) => (
@@ -299,7 +299,7 @@ export function LessonPageClient({
 
         {/* Divider */}
         {(lesson.tasks.length > 0 || lesson.habits.length > 0) && (
-          <div className="divider-gradient" />
+          <div className="guide-section-divider" />
         )}
 
         {/* Tasks */}
