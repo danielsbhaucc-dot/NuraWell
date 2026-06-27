@@ -209,3 +209,58 @@ export function lessonPathIntroHint(gender: ProfileGender): string {
   if (gender === 'male') return 'עבור בין השקפים בקצב שנוח לך';
   return 'עברו בין השקפים בקצב שנוח לכם';
 }
+
+/** ברכת פתיחה בעמוד ההתקדמות */
+export function progressPageGreeting(firstName: string): string {
+  return `היי ${firstName} 👋`;
+}
+
+/** טקסט חם של אלמוג בגיבור עמוד ההתקדמות — משתנה לפי seed */
+export function progressPageAlmogHeroBody(
+  gender: ProfileGender,
+  firstName: string,
+  seed = 0
+): string {
+  const female = [
+    `${firstName}, הסתכלתי על מה שעשית — ויש פה דברים ששווה לחגוג.`,
+    `${firstName}, זה לא מבחן. זה סיכום קצר של הצעדים שלך, בלי רעש.`,
+    `${firstName}, כל נקודה כאן היא רמז — לא שיפוט. בואי נמשיך בקצב שנוח לך.`,
+    `${firstName}, אני גאה בך על ההתמדה. בואי נראה יחד מה כבר עובד.`,
+  ];
+  const male = [
+    `${firstName}, הסתכלתי על מה שעשית — ויש פה דברים ששווה לחגוג.`,
+    `${firstName}, זה לא מבחן. זה סיכום קצר של הצעדים שלך, בלי רעש.`,
+    `${firstName}, כל נקודה כאן היא רמז — לא שיפוט. בוא נמשיך בקצב שנוח לך.`,
+    `${firstName}, אני גאה בך על ההתמדה. בוא נראה יחד מה כבר עובד.`,
+  ];
+  const neutral = [
+    `${firstName}, הסתכלתי על מה שעשית — ויש פה דברים ששווה לחגוג.`,
+    `${firstName}, זה לא מבחן. זה סיכום קצר של הצעדים שלך, בלי רעש.`,
+    `${firstName}, כל נקודה כאן היא רמז — לא שיפוט. בוא/י נמשיך בקצב שנוח.`,
+    `${firstName}, אני גאה/ה בך על ההתמדה. בוא/י נראה יחד מה כבר עובד.`,
+  ];
+  const pool = gender === 'female' ? female : gender === 'male' ? male : neutral;
+  return pool[Math.abs(seed) % pool.length]!;
+}
+
+/** כותרת משנה לסקשן סטטיסטיקות */
+export function progressStatsSectionSubtitle(gender: ProfileGender): string {
+  if (gender === 'female') return 'המספרים שלך — בקצרה ובבהירות';
+  if (gender === 'male') return 'המספרים שלך — בקצרה ובבהירות';
+  return 'המספרים שלך — בקצרה ובבהירות';
+}
+
+/** הודעה דינמית על ימים עם ביצוע חלקי */
+export function progressPartialDaysMessage(count: number): string {
+  if (count <= 0) return '';
+  if (count === 1) {
+    return 'יום אחד עם ביצוע חלקי — גם ניסיון חשוב, וכל צעד קטן נספר.';
+  }
+  if (count === 2) {
+    return 'שני ימים עם התקדמות חלקית — זה בדיוק איך הרגלים נבנים, לא בקפיצה אחת.';
+  }
+  if (count <= 5) {
+    return `${count} ימים עם ביצוע חלקי — כל צעד קטן מצטבר למשהו גדול יותר.`;
+  }
+  return `${count} ימים עם התקדמות חלקית — את/ה לא מוותר/ת, וזה מה שבאמת משנה.`;
+}

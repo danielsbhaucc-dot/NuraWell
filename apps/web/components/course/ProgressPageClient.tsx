@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useProgressLiveRefresh } from '../../lib/journey/use-progress-live-refresh';
 import {
@@ -21,12 +21,23 @@ import {
   ListChecks,
   CalendarDays,
   ChevronLeft,
+  LineChart,
+  Sparkles,
 } from 'lucide-react';
 import { TaskHistoryStrip } from '../tasks/TaskHistoryStrip';
 import { TaskHistoryCalendar } from '../tasks/TaskHistoryCalendar';
 import { DayDetailPopup, type DayExecRow } from '../tasks/DayDetailPopup';
 import { WeightTrendInsightCard } from './WeightTrendInsightCard';
+import { AlmogAvatarChipWithNameTag } from '../journey/AlmogPresence';
 import { formatHebrewRelative } from '../../lib/time/hebrew-relative';
+import { getPersonalGreeting } from '../../lib/time/greeting';
+import {
+  progressPageAlmogHeroBody,
+  progressPageGreeting,
+  progressPartialDaysMessage,
+  progressStatsSectionSubtitle,
+  type ProfileGender,
+} from '../../lib/profile/personalized-copy';
 
 interface CourseStatItem {
   id: string;
@@ -54,6 +65,8 @@ interface TaskHistoryDay {
 
 interface ProgressPageClientProps {
   userId: string;
+  firstName?: string;
+  gender?: ProfileGender;
   totalCompleted: number;
   totalEnrolled: number;
   totalTimeMinutes: number;
@@ -90,31 +103,71 @@ const item = {
 
 const hebrewFont = "'Rubik','Heebo',sans-serif";
 
-function jerusalemTodayKey(): string {
-  return new Intl.DateTimeFormat('sv-SE', {
-    timeZone: 'Asia/Jerusalem',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date());
-}
+type StripeTone = 'teal' | 'indigo' | 'emerald' | 'amber';
 
-function formatTime(minutes: number): string {
-  if (minutes < 60) return `${minutes} דק'`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m > 0 ? `${h}ש' ${m}ד'` : `${h} שעות`;
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
+function ProgressSectionHeader({
+  title,
+  subtitle,
+  tone,
+  icon: Icon,
+}: {
+  title: string;
+  subtitle?: string;
+  tone: StripeTone;
+  icon?: React.ElementType;
+}) {
   return (
-    <h2
-      className="text-[15px] font-black text-[#1A1730] mb-3"
-      style={{ fontFamily: hebrewFont }}
-    >
-      {children}
-    </h2>
+    <div className="progress-section-header">
+      <span className={`progress-section-stripe progress-section-stripe-${tone}`} aria-hidden />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          {Icon ? (
+            <span
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+              style={{
+                background:
+                  tone === 'teal'
+                    ? 'rgba(20,184,166,0.12)'
+                    : tone === 'indigo'
+                      ? 'rgba(99,102,241,0.10)'
+                      : tone === 'amber'
+                        ? 'rgba(245,158,11,0.12)'
+                        : 'rgba(16,185,129,0.10)',
+              }}
+            >
+              <Icon
+                className="h-3.5 w-3.5"
+                strokeWidth={2.2}
+                style={{
+                  color:
+                    tone === 'teal'
+                      ? '#0f766e'
+                      : tone === 'indigo'
+                        ? '#6366f1'
+                        : tone === 'amber'
+                          ? '#d97706'
+                          : '#059669',
+                }}
+              />
+            </span>
+          ) : null}
+          <h2
+            className="text-[15px] font-black text-[#1A1730] leading-tight"
+            style={{ fontFamily: hebrewFont }}
+          >
+            {title}
+          </h2>
+        </div>
+        {subtitle ? (
+          <p className="mt-0.5 text-xs font-medium text-[#9896B8] leading-relaxed">{subtitle}</p>
+        ) : null}
+      </div>
+    </div>
   );
+}
+
+function ProgressSectionDivider({ tone }: { tone: StripeTone }) {
+  return <hr className={`progress-section-divider progress-section-divider-${tone}`} aria-hidden />;
 }
 
 function ProgressTrack({
@@ -144,8 +197,26 @@ function ProgressTrack({
   );
 }
 
+function jerusalemTodayKey(): string {
+  return new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+function formatTime(minutes: number): string {
+  if (minutes < 60) return `${minutes} דק'`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}ש' ${m}ד'` : `${h} שעות`;
+}
+
 export function ProgressPageClient({
   userId,
+  firstName = 'חבר',
+  gender = null,
   totalCompleted,
   totalEnrolled,
   totalTimeMinutes,
@@ -163,6 +234,12 @@ export function ProgressPageClient({
   const router = useRouter();
   const [popupDateKey, setPopupDateKey] = useState<string | null>(null);
   const todayKey = jerusalemTodayKey();
+  const greeting = useMemo(() => getPersonalGreeting(new Date()), []);
+  const heroSeed = useMemo(
+    () => new Date().getDate() + currentStreak + totalCompleted,
+    [currentStreak, totalCompleted]
+  );
+  const almogHeroBody = progressPageAlmogHeroBody(gender, firstName, heroSeed);
 
   useProgressLiveRefresh(userId, () => router.refresh());
 
@@ -175,6 +252,7 @@ export function ProgressPageClient({
   const activeDaysCount = historyDays.filter((d) => d.t > 0 && d.c >= d.t).length;
   const partialDaysCount = historyDays.filter((d) => d.t > 0 && d.c > 0 && d.c < d.t).length;
   const showDailySection = historyDays.length > 0;
+  const partialDaysMessage = progressPartialDaysMessage(partialDaysCount);
 
   const stats = [
     {
@@ -209,275 +287,346 @@ export function ProgressPageClient({
   ];
 
   return (
-    <div className="min-h-full bg-dashboard">
-      <div className="container-mobile py-6 pt-6 md:pt-16 pb-10 space-y-6">
-        <motion.header
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
-          className="crystal-header rounded-3xl px-5 py-5 relative overflow-hidden"
-        >
-          <div
-            className="absolute inset-0 opacity-30 pointer-events-none"
-            style={{
-              background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.35) 0%, transparent 55%)',
-            }}
-          />
-          <div className="relative text-right">
-            <p className="text-white/75 text-xs font-semibold mb-1">סטטוס כללי</p>
-            <h1
-              className="text-2xl font-black text-white tracking-tight"
-              style={{ fontFamily: hebrewFont }}
-            >
-              ההתקדמות שלי
-            </h1>
-            <p className="mt-2 text-sm text-white/85 leading-relaxed max-w-sm">
-              סיכום קצר של מה שעשית — בלי רעש, רק מה שחשוב
-            </p>
-          </div>
-        </motion.header>
+    <div className="min-h-full bg-dashboard" dir="rtl">
+      <motion.header
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="-mt-16 relative overflow-hidden pt-16"
+        style={{
+          background:
+            'linear-gradient(155deg, #034d3a 0%, #059669 35%, #0d9488 65%, #10b981 85%, #34d399 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
+          isolation: 'isolate',
+        }}
+      >
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-2/3"
+          style={{
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 100%)',
+          }}
+        />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -right-16 -top-12 h-48 w-48 rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 68%)' }}
+        />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -bottom-10 -left-16 h-56 w-56 rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.45), transparent 70%)' }}
+        />
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-2 gap-3"
-        >
-          {stats.map((s) => (
-            <motion.div
-              key={s.label}
-              variants={item}
-              className="crystal-stat rounded-2xl p-4 flex flex-col gap-2.5"
-            >
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ background: s.iconBg }}
+        <div className="relative z-10 px-5 pb-[4.5rem] pt-3">
+          <div className="flex items-start gap-3">
+            <AlmogAvatarChipWithNameTag size={76} />
+            <div className="min-w-0 flex-1 text-right">
+              <p
+                className="text-[15px] font-black text-white leading-tight"
+                style={{ fontFamily: hebrewFont }}
               >
-                <s.icon className="w-[18px] h-[18px]" strokeWidth={2.2} style={{ color: s.iconColor }} />
-              </div>
-              <div>
-                <p className="text-xl font-black text-[#1A1730] leading-none tabular-nums">
-                  {s.value}
-                  {'suffix' in s && s.suffix ? (
-                    <span className="text-sm font-bold text-[#9896B8] mr-1">{s.suffix}</span>
-                  ) : null}
-                </p>
-                <p className="text-[11px] font-semibold text-[#9896B8] mt-1">{s.label}</p>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        <WeightTrendInsightCard />
-
-        <motion.section
-          variants={item}
-          initial="hidden"
-          animate="show"
-          className="crystal-surface rounded-2xl p-5"
-        >
-          <div className="flex items-start justify-between gap-3 mb-4">
-            <div className="min-w-0 text-right flex-1">
-              <div className="flex items-center gap-2 justify-end mb-1">
-                <h2 className="text-[15px] font-black text-[#1A1730]" style={{ fontFamily: hebrewFont }}>
-                  המסע שלי
-                </h2>
-                <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: 'rgba(20,184,166,0.10)' }}
-                >
-                  <Route className="w-4 h-4 text-teal-700" strokeWidth={2.2} />
-                </div>
-              </div>
-              <p className="text-xs text-[#9896B8] font-medium">
-                {journeyStepsCompleted}/{journeyStepsTotal || '—'} צעדים
-                {' · '}
-                {journeyTasksReportedDone}/{journeyTasksAccepted || '0'} משימות שדווחו
+                {progressPageGreeting(firstName)}
               </p>
+              {greeting.occasionGreeting ? (
+                <p
+                  className="mt-1 text-xs font-bold leading-relaxed"
+                  style={{
+                    color:
+                      greeting.tone === 'festive'
+                        ? '#FFD97D'
+                        : greeting.tone === 'solemn'
+                          ? 'rgba(255,255,255,0.78)'
+                          : 'rgba(255,255,255,0.92)',
+                    fontStyle: greeting.tone === 'solemn' ? 'italic' : 'normal',
+                  }}
+                >
+                  {greeting.occasionGreeting}
+                </p>
+              ) : (
+                <p className="mt-1 text-xs font-semibold text-white/80">
+                  {greeting.timeGreeting.replace(/,$/, '')}
+                </p>
+              )}
+              <h1
+                className="mt-2 text-2xl font-black text-white tracking-tight"
+                style={{ fontFamily: hebrewFont }}
+              >
+                ההתקדמות שלי
+              </h1>
+              <p className="mt-2 text-sm text-white/88 leading-relaxed">{almogHeroBody}</p>
             </div>
+          </div>
+        </div>
+      </motion.header>
+
+      <div className="container-mobile relative z-[3] -mt-14 pb-10 space-y-7">
+        <section>
+          <ProgressSectionHeader
+            title="במספרים"
+            subtitle={progressStatsSectionSubtitle(gender)}
+            tone="teal"
+            icon={Sparkles}
+          />
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="mt-3 grid grid-cols-2 gap-3"
+          >
+            {stats.map((s) => (
+              <motion.div
+                key={s.label}
+                variants={item}
+                className="progress-glass-stat rounded-2xl p-4 flex flex-col items-center justify-center gap-2.5 text-center"
+              >
+                <div
+                  className="flex h-9 w-9 items-center justify-center rounded-xl"
+                  style={{ background: s.iconBg }}
+                >
+                  <s.icon className="h-[18px] w-[18px]" strokeWidth={2.2} style={{ color: s.iconColor }} />
+                </div>
+                <div>
+                  <p className="text-xl font-black text-[#1A1730] leading-none tabular-nums">
+                    {s.value}
+                    {'suffix' in s && s.suffix ? (
+                      <span className="mr-1 text-sm font-bold text-[#9896B8]">{s.suffix}</span>
+                    ) : null}
+                  </p>
+                  <p className="mt-1 text-[11px] font-semibold text-[#9896B8]">{s.label}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </section>
+
+        <ProgressSectionDivider tone="indigo" />
+
+        <section>
+          <ProgressSectionHeader
+            title="מעקב משקל"
+            subtitle="אלמוג קורא את המגמה — בלי טפסים מיותרים"
+            tone="indigo"
+            icon={LineChart}
+          />
+          <div className="mt-3">
+            <WeightTrendInsightCard />
+          </div>
+        </section>
+
+        <ProgressSectionDivider tone="emerald" />
+
+        <section>
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <ProgressSectionHeader
+              title="המסע שלי"
+              subtitle={`${journeyStepsCompleted}/${journeyStepsTotal || '—'} צעדים · ${journeyTasksReportedDone}/${journeyTasksAccepted || '0'} משימות שדווחו`}
+              tone="emerald"
+              icon={Route}
+            />
             <Link
               href="/journey"
-              className="inline-flex items-center gap-0.5 text-xs font-bold text-teal-800 shrink-0 px-3 py-1.5 rounded-full crystal-pill"
+              className="inline-flex shrink-0 items-center gap-0.5 rounded-full px-3 py-1.5 text-xs font-bold text-teal-800 crystal-pill"
             >
               למסע
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <ChevronLeft className="h-3.5 w-3.5" />
             </Link>
           </div>
 
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-[11px] font-semibold text-[#9896B8]">
-                <span className="text-[#1A1730] tabular-nums">{journeyPct}%</span>
-                <span>התקדמות במסע</span>
-              </div>
-              <ProgressTrack value={journeyPct} />
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-[11px] font-semibold text-[#9896B8]">
-                <span className="text-[#1A1730] tabular-nums">{taskFollowPct}%</span>
-                <span className="inline-flex items-center gap-1">
-                  <ListChecks className="w-3.5 h-3.5 text-amber-600" />
-                  ביצוע משימות שאישרת
-                </span>
-              </div>
-              <ProgressTrack value={taskFollowPct} delay={0.08} tone="amber" />
-            </div>
-          </div>
-
-          {journeyHabitChecks > 0 ? (
-            <p className="mt-4 text-[11px] font-medium text-[#9896B8] text-right">
-              סימוני הרגלים: {journeyHabitChecks}
-            </p>
-          ) : null}
-        </motion.section>
-
-        {showDailySection ? (
           <motion.section
             variants={item}
             initial="hidden"
             animate="show"
             className="crystal-surface rounded-2xl p-5"
           >
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <div className="min-w-0 text-right flex-1">
-                <div className="flex items-center gap-2 justify-end mb-1">
-                  <h2 className="text-[15px] font-black text-[#1A1730]" style={{ fontFamily: hebrewFont }}>
-                    מעקב יומי
-                  </h2>
-                  <div
-                    className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: 'rgba(245,158,11,0.10)' }}
-                  >
-                    <CalendarDays className="w-4 h-4 text-amber-700" strokeWidth={2.2} />
-                  </div>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px] font-semibold text-[#9896B8]">
+                  <span className="tabular-nums text-[#1A1730]">{journeyPct}%</span>
+                  <span>התקדמות במסע</span>
                 </div>
-                <p className="text-xs text-[#9896B8] font-medium">
-                  {activeDaysCount} ימים מלאים · 30 הימים האחרונים
-                </p>
+                <ProgressTrack value={journeyPct} />
               </div>
+
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px] font-semibold text-[#9896B8]">
+                  <span className="tabular-nums text-[#1A1730]">{taskFollowPct}%</span>
+                  <span className="inline-flex items-center gap-1">
+                    <ListChecks className="h-3.5 w-3.5 text-amber-600" />
+                    ביצוע משימות שאישרת
+                  </span>
+                </div>
+                <ProgressTrack value={taskFollowPct} delay={0.08} tone="amber" />
+              </div>
+            </div>
+
+            {journeyHabitChecks > 0 ? (
+              <p className="mt-4 text-[11px] font-medium text-[#9896B8] text-right">
+                סימוני הרגלים: {journeyHabitChecks}
+              </p>
+            ) : null}
+          </motion.section>
+        </section>
+
+        <ProgressSectionDivider tone="amber" />
+
+        {showDailySection ? (
+          <section>
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <ProgressSectionHeader
+                title="מעקב יומי"
+                subtitle={`${activeDaysCount} ימים מלאים · 30 הימים האחרונים`}
+                tone="amber"
+                icon={CalendarDays}
+              />
               <Link
                 href="/progress/history"
-                className="inline-flex items-center gap-0.5 text-xs font-bold text-[#6366f1] shrink-0 px-3 py-1.5 rounded-full"
+                className="inline-flex shrink-0 items-center gap-0.5 rounded-full px-3 py-1.5 text-xs font-bold text-[#6366f1]"
                 style={{
                   background: 'rgba(99,102,241,0.08)',
                   border: '1px solid rgba(99,102,241,0.18)',
                 }}
               >
                 היסטוריה מפורטת
-                <ChevronLeft className="w-3.5 h-3.5" />
+                <ChevronLeft className="h-3.5 w-3.5" />
               </Link>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <p className="text-[10px] font-bold text-[#9896B8] mb-2 text-right uppercase tracking-wide">
-                  השבוע האחרון
-                </p>
-                <TaskHistoryStrip
-                  days={historyDays.slice(-7)}
-                  todayKey={todayKey}
-                  activeKey={popupDateKey}
-                  onSelect={setPopupDateKey}
-                />
-              </div>
-
-              <div>
-                <p className="text-[10px] font-bold text-[#9896B8] mb-2 text-right uppercase tracking-wide">
-                  חודש לאחור
-                </p>
-                <TaskHistoryCalendar
-                  days={historyDays.slice(-28)}
-                  todayKey={todayKey}
-                  activeKey={popupDateKey}
-                  onSelect={setPopupDateKey}
-                />
-              </div>
-
-              <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 pt-1 text-[10px] font-medium text-[#9896B8]">
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-teal-500" />
-                  הושלם
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-amber-500" />
-                  חלקי
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-violet-500" />
-                  ניסיתי
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-sky-300" />
-                  פתוח
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-rose-300" />
-                  פספוס
-                </span>
-              </div>
-
-              {partialDaysCount > 0 ? (
-                <p className="text-[11px] font-medium text-[#9896B8] text-right">
-                  {partialDaysCount} ימים עם ביצוע חלקי — כל צעד נחשב
-                </p>
-              ) : null}
-            </div>
-          </motion.section>
-        ) : (
-          <motion.section
-            variants={item}
-            initial="hidden"
-            animate="show"
-            className="crystal-surface rounded-2xl p-5 flex items-center justify-between gap-3"
-          >
-            <Link
-              href="/progress/history"
-              className="inline-flex items-center gap-0.5 text-xs font-bold text-[#6366f1] shrink-0 px-3 py-1.5 rounded-full"
-              style={{
-                background: 'rgba(99,102,241,0.08)',
-                border: '1px solid rgba(99,102,241,0.18)',
-              }}
+            <motion.section
+              variants={item}
+              initial="hidden"
+              animate="show"
+              className="crystal-surface rounded-2xl p-5"
             >
-              פתח
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </Link>
-            <div className="min-w-0 text-right">
-              <p className="text-sm font-black text-[#1A1730]">היסטוריית משימות</p>
-              <p className="text-xs text-[#9896B8] mt-0.5">ציר זמן מפורט לפי תאריך ושעה</p>
-            </div>
-          </motion.section>
+              <div className="space-y-4">
+                <div>
+                  <p className="mb-2 text-right text-[10px] font-bold uppercase tracking-wide text-[#9896B8]">
+                    השבוע האחרון
+                  </p>
+                  <TaskHistoryStrip
+                    days={historyDays.slice(-7)}
+                    todayKey={todayKey}
+                    activeKey={popupDateKey}
+                    onSelect={setPopupDateKey}
+                  />
+                </div>
+
+                <div>
+                  <p className="mb-2 text-right text-[10px] font-bold uppercase tracking-wide text-[#9896B8]">
+                    חודש לאחור
+                  </p>
+                  <TaskHistoryCalendar
+                    days={historyDays.slice(-28)}
+                    todayKey={todayKey}
+                    activeKey={popupDateKey}
+                    onSelect={setPopupDateKey}
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 pt-1 text-[10px] font-medium text-[#9896B8]">
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-teal-500" />
+                    הושלם
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-amber-500" />
+                    חלקי
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-violet-500" />
+                    ניסיתי
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-sky-300" />
+                    פתוח
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-rose-300" />
+                    פספוס
+                  </span>
+                </div>
+
+                {partialDaysCount > 0 ? (
+                  <div
+                    className="progress-partial-info-box rounded-2xl px-4 py-3 text-right"
+                    role="note"
+                  >
+                    <p className="text-[12px] font-bold leading-relaxed text-amber-900/90">
+                      {partialDaysMessage}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            </motion.section>
+          </section>
+        ) : (
+          <section>
+            <ProgressSectionHeader
+              title="מעקב יומי"
+              subtitle="ציר זמן מפורט לפי תאריך ושעה"
+              tone="amber"
+              icon={CalendarDays}
+            />
+            <motion.section
+              variants={item}
+              initial="hidden"
+              animate="show"
+              className="crystal-surface mt-3 flex items-center justify-between gap-3 rounded-2xl p-5"
+            >
+              <Link
+                href="/progress/history"
+                className="inline-flex shrink-0 items-center gap-0.5 rounded-full px-3 py-1.5 text-xs font-bold text-[#6366f1]"
+                style={{
+                  background: 'rgba(99,102,241,0.08)',
+                  border: '1px solid rgba(99,102,241,0.18)',
+                }}
+              >
+                פתח
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Link>
+              <div className="min-w-0 text-right">
+                <p className="text-sm font-black text-[#1A1730]">היסטוריית משימות</p>
+                <p className="mt-0.5 text-xs text-[#9896B8]">כשתתחיל לבצע — זה יופיע כאן</p>
+              </div>
+            </motion.section>
+          </section>
         )}
 
         {courseStats.length > 0 && (
           <section>
-            <SectionTitle>מדריכים</SectionTitle>
-            <motion.div variants={container} initial="hidden" animate="show" className="space-y-2.5">
+            <ProgressSectionDivider tone="teal" />
+            <ProgressSectionHeader title="מדריכים" subtitle="ההתקדמות בכל מדריך" tone="teal" icon={BookOpen} />
+            <motion.div
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="mt-3 space-y-2.5"
+            >
               {courseStats.map((course) => (
                 <motion.div key={course.id} variants={item}>
                   <Link
                     href={`/guides/${course.id}`}
-                    className="crystal-surface rounded-2xl flex items-center gap-3 p-3.5 block transition hover:opacity-95"
+                    className="crystal-surface block flex items-center gap-3 rounded-2xl p-3.5 transition hover:opacity-95"
                   >
-                    <div className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 bg-black/[0.04] border border-black/[0.04]">
+                    <div className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl border border-black/[0.04] bg-black/[0.04]">
                       {course.thumbnail ? (
                         <Image
                           src={course.thumbnail}
                           alt={course.title}
                           width={44}
                           height={44}
-                          className="w-full h-full object-cover"
+                          className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <BookOpen className="w-5 h-5 text-[#9896B8]" />
+                        <div className="flex h-full w-full items-center justify-center">
+                          <BookOpen className="h-5 w-5 text-[#9896B8]" />
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0 text-right">
-                      <p className="text-sm font-bold text-[#1A1730] line-clamp-1 mb-2">{course.title}</p>
+                    <div className="min-w-0 flex-1 text-right">
+                      <p className="mb-2 line-clamp-1 text-sm font-bold text-[#1A1730]">{course.title}</p>
                       <ProgressTrack value={course.progress} />
-                      <div className="flex items-center justify-between text-[11px] text-[#9896B8] font-medium mt-1.5">
+                      <div className="mt-1.5 flex items-center justify-between text-[11px] font-medium text-[#9896B8]">
                         <span className="tabular-nums text-[#1A1730]">{course.progress}%</span>
                         <span>
                           {course.completed}/{course.total} פרקים
@@ -493,24 +642,25 @@ export function ProgressPageClient({
 
         {recentActivity.length > 0 && (
           <section>
-            <SectionTitle>פעילות אחרונה</SectionTitle>
-            <motion.div variants={container} initial="hidden" animate="show" className="space-y-2">
+            <ProgressSectionDivider tone="indigo" />
+            <ProgressSectionHeader title="פעילות אחרונה" tone="indigo" icon={CheckCircle2} />
+            <motion.div variants={container} initial="hidden" animate="show" className="mt-3 space-y-2">
               {recentActivity.map((a, idx) => {
                 const IconComp = lessonTypeIcon[a.lesson_type] ?? AlignLeft;
                 return (
                   <motion.div key={`${a.lesson_id}-${idx}`} variants={item}>
                     <Link
                       href={`/lessons/${a.lesson_id}`}
-                      className="crystal-surface rounded-2xl flex items-center gap-3 p-3 transition hover:opacity-95"
+                      className="crystal-surface flex items-center gap-3 rounded-2xl p-3 transition hover:opacity-95"
                     >
-                      <IconComp className="w-4 h-4 text-[#9896B8] flex-shrink-0" />
-                      <div className="flex-1 min-w-0 text-right">
-                        <p className="text-sm text-[#1A1730] font-semibold line-clamp-1">{a.lesson_title}</p>
-                        <p className="text-[11px] text-[#9896B8] mt-0.5">
+                      <IconComp className="h-4 w-4 flex-shrink-0 text-[#9896B8]" />
+                      <div className="min-w-0 flex-1 text-right">
+                        <p className="line-clamp-1 text-sm font-semibold text-[#1A1730]">{a.lesson_title}</p>
+                        <p className="mt-0.5 text-[11px] text-[#9896B8]">
                           הושלם · {formatHebrewRelative(a.completed_at)}
                         </p>
                       </div>
-                      <CheckCircle2 className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-teal-600" />
                     </Link>
                   </motion.div>
                 );
@@ -523,18 +673,20 @@ export function ProgressPageClient({
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="crystal-surface rounded-2xl text-center py-12 px-5"
+            className="crystal-surface rounded-2xl px-5 py-12 text-center"
           >
-            <div className="text-4xl mb-3">📊</div>
-            <h3 className="text-lg font-black text-[#1A1730] mb-2" style={{ fontFamily: hebrewFont }}>
+            <div className="mb-3 flex justify-center">
+              <AlmogAvatarChipWithNameTag size={64} />
+            </div>
+            <h3 className="mb-2 text-lg font-black text-[#1A1730]" style={{ fontFamily: hebrewFont }}>
               כאן יופיע הסיכום שלך
             </h3>
-            <p className="text-[#9896B8] text-sm mb-6 leading-relaxed max-w-xs mx-auto">
-              התחל מפרק או מהמסע — והנתונים יתעדכנו כאן אוטומטית
+            <p className="mx-auto mb-6 max-w-xs text-sm leading-relaxed text-[#9896B8]">
+              התחל מפרק או מהמסע — והנתונים יתעדכנו כאן אוטומטית. אני איתך.
             </p>
             <Link
               href="/home"
-              className="inline-flex items-center justify-center px-6 py-3 rounded-2xl font-bold text-white crystal-header"
+              className="inline-flex items-center justify-center rounded-2xl px-6 py-3 font-bold text-white crystal-header"
             >
               למדריכים
             </Link>

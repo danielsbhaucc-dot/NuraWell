@@ -94,10 +94,12 @@ export function WeightTrendInsightCard() {
           </div>
           <span className="text-sm font-black text-[#1A1730]">מעקב משקל</span>
         </div>
-        <p className="text-[13px] text-[#9896B8] leading-relaxed mb-3">
+        <p className="text-[13px] text-[#9896B8] leading-relaxed mb-3 text-center">
           עוד אין מספיק מדידות לניתוח מגמה. אפשר פשוט לכתוב לאלמוג את המשקל — בלי טפסים.
         </p>
-        <ChatButton label="ספר לאלמוג את המשקל" prefill="אלמוג, אני שוקל היום " />
+        <div className="flex justify-center">
+          <ChatButton label="ספר לאלמוג את המשקל" prefill="אלמוג, אני שוקל היום " />
+        </div>
       </motion.div>
     );
   }
@@ -142,10 +144,12 @@ export function WeightTrendInsightCard() {
         </ul>
       ) : null}
 
-      <ChatButton
-        label="דבר עם אלמוג"
-        prefill="אלמוג, בוא נדבר על מגמת המשקל שלי"
-      />
+      <div className="flex justify-center">
+        <ChatButton
+          label="דבר עם אלמוג"
+          prefill="אלמוג, בוא נדבר על מגמת המשקל שלי"
+        />
+      </div>
     </motion.div>
   );
 }
