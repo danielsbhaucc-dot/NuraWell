@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { useState, useTransition, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { sanitizeLessonHtml } from '../../lib/sanitize-lesson-html';
 import {
   Clock, BookOpen, CheckCircle2, ExternalLink as ExternalLinkIcon, ChevronRight,
-  Video, Headphones, FileText, Presentation, AlignLeft, Layers, Images
+  Video, Headphones, FileText, Presentation, AlignLeft, Layers, Images, Sparkles, AlignJustify,
 } from 'lucide-react';
 import { VideoPlayer } from './VideoPlayer';
 import { AudioPlayer } from './AudioPlayer';
@@ -15,9 +15,17 @@ import { ImageGallery } from './ImageGallery';
 import { TaskChecklist } from './TaskChecklist';
 import { HabitTracker } from './HabitTracker';
 import { LessonNav } from './LessonNav';
+import { LessonImmersivePath } from './LessonImmersivePath';
 import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
+import { cn } from '../../lib/cn';
 import type { LessonDetail, LessonProgressData, MediaFile } from '../../lib/types/course';
-import { lessonAlmogCoachTitle, lessonAlmogCta, type ProfileGender } from '../../lib/profile/personalized-copy';
+import {
+  lessonAlmogCoachTitle,
+  lessonAlmogCta,
+  lessonAlmogCoachBody,
+  lessonImmersiveModeLabel,
+  type ProfileGender,
+} from '../../lib/profile/personalized-copy';
 
 interface NavLesson { id: string; title: string; }
 
@@ -58,6 +66,7 @@ export function LessonPageClient({
 }: LessonPageClientProps) {
   const [progress, setProgress] = useState<LessonProgressData>(initialProgress);
   const [isPending, startTransition] = useTransition();
+  const [viewMode, setViewMode] = useState<'read' | 'path'>('read');
   const config = typeLabel[lesson.lesson_type];
   const IconComp = config.icon;
 
@@ -90,7 +99,8 @@ export function LessonPageClient({
   const imageFiles = lesson.media_files.filter(m => m.file_type === 'image');
 
   return (
-    <div className="guide-page-bg relative pb-8">
+    <>
+    <div className="guide-page-bg relative pb-8 guide-read-surface">
       <div className="container-mobile py-4 pb-8 space-y-5 relative z-10">
 
         <Link
@@ -101,12 +111,34 @@ export function LessonPageClient({
           חזרה למדריך
         </Link>
 
+        <div className="guide-read-accent-strip" aria-hidden />
+
+        {/* Mode switcher */}
+        <div className="guide-mode-switch">
+          <button
+            type="button"
+            onClick={() => setViewMode('read')}
+            className={cn('guide-mode-btn', viewMode === 'read' && 'active')}
+          >
+            <AlignJustify className="h-4 w-4" />
+            קריאה
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('path')}
+            className={cn('guide-mode-btn', viewMode === 'path' && 'active')}
+          >
+            <Sparkles className="h-4 w-4" />
+            {lessonImmersiveModeLabel()}
+          </button>
+        </div>
+
         {/* Chapter Header */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="guide-glass-card p-4"
+          className="guide-read-hero-card p-4 md:p-5"
         >
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
@@ -148,13 +180,7 @@ export function LessonPageClient({
 
         <AlmogScreenCoach
           title={lessonAlmogCoachTitle(firstName)}
-          body={
-            gender === 'female'
-              ? `אפשר לשאול אותי על התוכן, לבקש סיכום פשוט, או להפוך את זה לצעד קטן שמתאים להיום.`
-              : gender === 'male'
-                ? `אפשר לשאול אותי על התוכן, לבקש סיכום פשוט, או להפוך את זה לצעד קטן שמתאים להיום.`
-                : `אפשר לשאול אותי על התוכן, לבקש סיכום פשוט, או להפוך את זה לצעד קטן שמתאים להיום.`
-          }
+          body={lessonAlmogCoachBody(gender)}
           prompt={`תעזור לי עם הפרק "${lesson.title}" מהמדריך "${lesson.course.title}". מה הכי חשוב לקחת ממנו ואיך ליישם את זה היום?`}
           cta={lessonAlmogCta(gender)}
           tone="teal"
@@ -350,5 +376,24 @@ export function LessonPageClient({
         </motion.div>
       </div>
     </div>
+
+    <AnimatePresence>
+      {viewMode === 'path' ? (
+        <LessonImmersivePath
+          key="lesson-path"
+          lesson={lesson}
+          progress={progress}
+          prevLesson={prevLesson}
+          nextLesson={nextLesson}
+          gender={gender}
+          onExit={() => setViewMode('read')}
+          onTaskToggle={handleTaskToggle}
+          onHabitToggle={handleHabitToggle}
+          onToggleComplete={handleToggleComplete}
+          isTogglingComplete={isPending}
+        />
+      ) : null}
+    </AnimatePresence>
+    </>
   );
 }

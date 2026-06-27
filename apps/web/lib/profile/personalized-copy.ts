@@ -140,3 +140,55 @@ export function lessonAlmogCta(gender: ProfileGender): string {
   if (gender === 'male') return 'דבר איתי על הפרק';
   return 'דבר/י איתי על הפרק';
 }
+
+/** שם מצב הלמידה האימרסיבי במדריך — במקום "מסלול לימוד" */
+export const GUIDE_IMMERSIVE_MODE_LABEL = 'מסע הצלילה';
+
+/** כותרת שער הכניסה למדריך */
+export function guideCoverDivePrompt(gender: ProfileGender): string {
+  if (gender === 'female') return 'בואי נצלול פנימה';
+  if (gender === 'male') return 'בוא נצלול פנימה';
+  return 'בואו נצלול פנימה';
+}
+
+/** שאלת בחירת מצב בשער הכניסה */
+export function guideCoverModeQuestion(gender: ProfileGender): string {
+  if (gender === 'female') return 'איך תרצי לחוות את המדריך?';
+  if (gender === 'male') return 'איך תרצה לחוות את המדריך?';
+  return 'איך תרצו לחוות את המדריך?';
+}
+
+/** רמז בתחילת מסע הצלילה */
+export function guidePathIntroHint(gender: ProfileGender): string {
+  if (gender === 'female') return 'גללי בין הפרקים וגלי את המסע צעד אחר צעד';
+  if (gender === 'male') return 'גלול בין הפרקים וגלה את המסע צעד אחר צעד';
+  return 'גללו בין הפרקים וגלו את המסע צעד אחר צעד';
+}
+
+/** כפתור חזרה לשער הכניסה */
+export function guideBackToCoverLabel(): string {
+  return 'חזרה לשער';
+}
+
+/** טקסט אלמוג בפרק — מותאם מגדר */
+export function lessonAlmogCoachBody(gender: ProfileGender): string {
+  if (gender === 'female') {
+    return 'אפשר לשאול אותי על התוכן, לבקש סיכום פשוט, או להפוך את זה לצעד קטן שמתאים להיום.';
+  }
+  if (gender === 'male') {
+    return 'אפשר לשאול אותי על התוכן, לבקש סיכום פשוט, או להפוך את זה לצעד קטן שמתאים להיום.';
+  }
+  return 'אפשר לשאול אותי על התוכן, לבקש סיכום פשוט, או להפוך את זה לצעד קטן שמתאים להיום.';
+}
+
+/** כותרת מצב אימרסיבי בפרק */
+export function lessonImmersiveModeLabel(): string {
+  return 'מסע הפרק';
+}
+
+/** רמז בתחילת מסע הפרק */
+export function lessonPathIntroHint(gender: ProfileGender): string {
+  if (gender === 'female') return 'עברי בין השקפים בקצב שנוח לך';
+  if (gender === 'male') return 'עבור בין השקפים בקצב שנוח לך';
+  return 'עברו בין השקפים בקצב שנוח לכם';
+}
