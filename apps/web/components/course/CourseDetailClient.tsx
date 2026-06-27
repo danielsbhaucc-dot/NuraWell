@@ -7,9 +7,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play, BookOpen, Clock, CheckCircle2, Lock,
   ChevronLeft, Award, Zap, Video, Headphones, FileText, Presentation, AlignLeft, Layers, Crown,
-  ArrowDown,
+  Sparkles, AlignJustify,
 } from 'lucide-react';
 import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
+import { GuideLearningPath } from './GuideLearningPath';
 import { cn } from '../../lib/cn';
 import {
   guideDetailAlmogBody,
@@ -74,46 +75,30 @@ export function CourseDetailClient({
   const typeConfig = lessonTypeConfig;
 
   const bgUrl = course.background_image_url || course.thumbnail_url;
-  const enteredKey = `guide-entered:${course.id}`;
 
-  const [entered, setEntered] = useState(false);
-  const [skipEnterAnim, setSkipEnterAnim] = useState(false);
-
-  useEffect(() => {
-    try {
-      if (sessionStorage.getItem(enteredKey) === '1') {
-        setEntered(true);
-        setSkipEnterAnim(true);
-      }
-    } catch {
-      /* ignore */
-    }
-  }, [enteredKey]);
+  type GuideViewMode = 'cover' | 'read' | 'path';
+  const [viewMode, setViewMode] = useState<GuideViewMode>('cover');
 
   useEffect(() => {
+    setViewMode('cover');
     window.scrollTo(0, 0);
   }, [course.id]);
 
   useEffect(() => {
-    if (entered) return;
+    if (viewMode !== 'cover') return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [entered]);
+  }, [viewMode]);
 
   useEffect(() => () => {
     document.body.style.overflow = '';
   }, []);
 
-  const handleEnter = () => {
-    try {
-      sessionStorage.setItem(enteredKey, '1');
-    } catch {
-      /* ignore */
-    }
-    setEntered(true);
+  const handleSelectMode = (mode: 'read' | 'path') => {
+    setViewMode(mode);
   };
 
   return (
@@ -125,7 +110,7 @@ export function CourseDetailClient({
         {bgUrl ? (
           <motion.div
             className="absolute inset-0"
-            initial={skipEnterAnim ? false : { scale: 1.05 }}
+            initial={{ scale: 1.05 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
           >
@@ -151,6 +136,16 @@ export function CourseDetailClient({
               style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.35)', color: '#fff' }}>
               <BookOpen className="w-3.5 h-3.5" /> מדריך
             </span>
+            {viewMode !== 'cover' && (
+              <button
+                type="button"
+                onClick={() => setViewMode('cover')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md transition hover:bg-white/25"
+                style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff' }}
+              >
+                <Sparkles className="w-3.5 h-3.5" /> שער כניסה
+              </button>
+            )}
             {course.is_premium && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md"
                 style={{ background: 'rgba(168,85,247,0.32)', border: '1px solid rgba(216,180,254,0.55)', color: '#f3e8ff' }}>
@@ -234,6 +229,26 @@ export function CourseDetailClient({
               </div>
             </div>
           )}
+
+          {/* Mode switcher */}
+          <div className="guide-mode-switch mb-4">
+            <button
+              type="button"
+              onClick={() => setViewMode('read')}
+              className={cn('guide-mode-btn', viewMode === 'read' && 'active')}
+            >
+              <AlignJustify className="h-4 w-4" />
+              קריאה
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('path')}
+              className={cn('guide-mode-btn', viewMode === 'path' && 'active')}
+            >
+              <Sparkles className="h-4 w-4" />
+              מסלול לימוד
+            </button>
+          </div>
 
           <div className="mb-4">
             <AlmogScreenCoach
@@ -319,7 +334,7 @@ export function CourseDetailClient({
       </div>
 
       <AnimatePresence>
-        {!entered ? (
+        {viewMode === 'cover' ? (
           <GuideCover
             key="cover"
             title={course.title}
@@ -329,7 +344,20 @@ export function CourseDetailClient({
             isPremium={course.is_premium}
             progress={progress}
             isEnrolled={isEnrolled}
-            onEnter={handleEnter}
+            onSelectMode={handleSelectMode}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {viewMode === 'path' ? (
+          <GuideLearningPath
+            key="learning-path"
+            course={course}
+            progress={progress}
+            completedCount={completedCount}
+            firstIncompleteLessonId={firstIncompleteLessonId}
+            onExit={() => setViewMode('read')}
           />
         ) : null}
       </AnimatePresence>
@@ -350,7 +378,7 @@ function GuideCover({
   isPremium,
   progress,
   isEnrolled,
-  onEnter,
+  onSelectMode,
 }: {
   title: string;
   bgUrl: string | null;
@@ -359,7 +387,7 @@ function GuideCover({
   isPremium: boolean;
   progress: number;
   isEnrolled: boolean;
-  onEnter: () => void;
+  onSelectMode: (mode: 'read' | 'path') => void;
 }) {
   return (
     <motion.div
@@ -426,7 +454,7 @@ function GuideCover({
         </motion.div>
 
         {/* מרכז: שם המדריך בפונט מרהיב */}
-        <div className="flex flex-1 flex-col items-center justify-center text-center pb-6">
+        <div className="flex flex-1 flex-col items-center justify-center text-center pb-2">
           <motion.h1
             initial={{ opacity: 0, y: 24, letterSpacing: '0.06em' }}
             animate={{ opacity: 1, y: 0, letterSpacing: '-0.01em' }}
@@ -463,33 +491,55 @@ function GuideCover({
           </motion.div>
         </div>
 
-        {/* כפתור כניסה — גבוה יותר על המסך */}
-        <motion.button
-          type="button"
-          onClick={onEnter}
+        {/* בחירת מצב + כפתורי כניסה — גבוה יותר על המסך */}
+        <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.8 }}
-          whileTap={{ scale: 0.98 }}
-          dir="rtl"
-          className="mx-auto -mt-14 mb-1 flex w-full max-w-sm items-center justify-center gap-2.5 rounded-2xl border py-4 text-base font-black text-white backdrop-blur-md"
-          style={{
-            background: 'rgba(255,255,255,0.14)',
-            borderColor: 'rgba(255,255,255,0.38)',
-            boxShadow: '0 14px 38px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.22)',
-          }}
+          transition={{ duration: 0.5, delay: 0.75 }}
+          className="-mt-24 mx-auto w-full max-w-sm space-y-3"
         >
-          <span>בוא נצלול פנימה</span>
-          <Zap className="h-5 w-5 shrink-0" fill="white" />
-        </motion.button>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.1 }}
-          className="mt-3 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-white/55"
-        >
-          <ArrowDown className="h-3.5 w-3.5" />
-          הקש כדי לפתוח את המדריך
+          <p
+            className="text-center text-lg font-black text-white"
+            style={{ textShadow: '0 2px 12px rgba(0,0,0,0.4)' }}
+          >
+            בוא נצלול פנימה
+          </p>
+          <p className="text-center text-xs font-bold text-white/60">איך תרצה לחוות את המדריך?</p>
+
+          <motion.button
+            type="button"
+            onClick={() => onSelectMode('path')}
+            whileTap={{ scale: 0.98 }}
+            dir="rtl"
+            className="flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-black text-white transition hover:brightness-110"
+            style={{
+              background: 'linear-gradient(135deg, #047857 0%, #14b8a6 60%, #2dd4bf 100%)',
+              boxShadow: '0 14px 38px rgba(20,184,166,0.4), inset 0 1px 0 rgba(255,255,255,0.25)',
+            }}
+          >
+            <Sparkles className="h-5 w-5 shrink-0" />
+            <span>מסלול לימוד</span>
+          </motion.button>
+
+          <motion.button
+            type="button"
+            onClick={() => onSelectMode('read')}
+            whileTap={{ scale: 0.98 }}
+            dir="rtl"
+            className="flex w-full items-center justify-center gap-2.5 rounded-2xl border py-3.5 text-sm font-black text-white backdrop-blur-md transition hover:bg-white/10"
+            style={{
+              background: 'rgba(255,255,255,0.12)',
+              borderColor: 'rgba(255,255,255,0.35)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.18)',
+            }}
+          >
+            <BookOpen className="h-4 w-4 shrink-0" />
+            <span>קרא במדריך</span>
+          </motion.button>
+
+          <p className="pt-1 text-center text-[11px] font-semibold text-white/45">
+            בחר מצב — תמיד אפשר לעבור ביניהם
+          </p>
         </motion.div>
       </div>
     </motion.div>
