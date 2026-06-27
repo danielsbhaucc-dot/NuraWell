@@ -5,6 +5,7 @@ import { ProgressPageClient } from '../../../components/course/ProgressPageClien
 import { jerusalemDateKey } from '../../../lib/journey/task-schedule';
 import { parseJourneyTasksFull } from '../../../lib/journey/journey-report-parse';
 import { buildDailyAggregateDays } from '../../../lib/journey/build-daily-aggregate-days';
+import { firstNameFrom, type ProfileGender } from '../../../lib/profile/personalized-copy';
 
 export const metadata: Metadata = {
   title: 'ההתקדמות שלי',
@@ -29,6 +30,15 @@ export default async function ProgressPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, gender')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const firstName = firstNameFrom(profile?.full_name ?? null);
+  const gender = (profile?.gender ?? null) as ProfileGender;
 
   const { data: rawProgress } = await supabase
     .from('lesson_progress')
@@ -266,6 +276,8 @@ export default async function ProgressPage() {
   return (
     <ProgressPageClient
       userId={user.id}
+      firstName={firstName}
+      gender={gender}
       totalCompleted={totalCompleted}
       totalEnrolled={enrollments.length}
       totalTimeMinutes={Math.round(totalTimeSeconds / 60)}
