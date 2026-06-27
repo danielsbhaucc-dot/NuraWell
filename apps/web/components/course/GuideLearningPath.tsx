@@ -9,6 +9,10 @@ import {
   CheckCircle2, Sparkles, Award,
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { lessonHrefWithViewMode } from '../../lib/client/guide-view-mode';
+import { GuideBackIconButton } from './GuideBackIconButton';
+import { GuideImmersiveAlmogHero } from './GuideImmersiveAlmogHero';
+import { GuideImmersiveSlideHeader } from './GuideImmersiveSlideHeader';
 import {
   GUIDE_IMMERSIVE_MODE_LABEL,
   guideBackToCoverLabel,
@@ -110,33 +114,36 @@ export function GuideLearningPath({
       />
 
       {/* Top bar */}
-      <div className="relative z-10 flex items-center gap-3 px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
-        <button
-          type="button"
-          onClick={onExit}
-          className="guide-back-to-cover shrink-0 !text-white !border-white/25 !bg-white/12 backdrop-blur-md hover:!bg-white/20"
-          aria-label={guideBackToCoverLabel()}
-        >
-          <ChevronRight className="h-4 w-4" />
-          {guideBackToCoverLabel()}
-        </button>
-        <div className="flex-1">
-          <div className="mb-1 flex items-center justify-between text-[11px] font-bold text-white/60">
-            <span className="inline-flex items-center gap-1">
-              <Sparkles className="h-3 w-3 text-emerald-300" />
-              {GUIDE_IMMERSIVE_MODE_LABEL}
-            </span>
-            <span>{slideIdx + 1} / {totalSlides}</span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }}>
-            <motion.div
-              className="h-full rounded-full"
-              animate={{ width: `${progressPct}%` }}
-              transition={{ duration: 0.35, ease: 'easeOut' }}
-              style={{ background: 'linear-gradient(90deg, #10b981, #2dd4bf)' }}
-            />
+      <div className="relative z-10 px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-2">
+        <div className="mb-3 flex items-center gap-3">
+          <GuideBackIconButton
+            onClick={onExit}
+            ariaLabel={guideBackToCoverLabel()}
+            variant="immersive"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="mb-1 flex items-center justify-between text-[11px] font-bold text-white/60">
+              <span className="inline-flex items-center gap-1 truncate">
+                <Sparkles className="h-3 w-3 shrink-0 text-emerald-300" />
+                {GUIDE_IMMERSIVE_MODE_LABEL}
+              </span>
+              <span className="shrink-0">{slideIdx + 1} / {totalSlides}</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }}>
+              <motion.div
+                className="h-full rounded-full"
+                animate={{ width: `${progressPct}%` }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+                style={{ background: 'linear-gradient(90deg, #10b981, #2dd4bf)' }}
+              />
+            </div>
           </div>
         </div>
+        <GuideImmersiveSlideHeader
+          eyebrow={GUIDE_IMMERSIVE_MODE_LABEL}
+          title={course.title}
+          subtitle={slideIdx === 0 ? 'פתיחה' : slideIdx === totalSlides - 1 ? 'סיום המסלול' : `פרק ${slideIdx}`}
+        />
       </div>
 
       {/* Slides */}
@@ -255,15 +262,9 @@ function PathIntroSlide({
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       className="w-full max-w-md text-center"
     >
-      <motion.span
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
-        className="mx-auto mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl"
-        style={{ background: 'rgba(16,185,129,0.25)', border: '1px solid rgba(52,211,153,0.45)' }}
-      >
-        <Sparkles className="h-7 w-7 text-emerald-200" />
-      </motion.span>
+      <div className="mb-5 flex justify-center">
+        <GuideImmersiveAlmogHero size={92} />
+      </div>
       <h2 className="mb-3 text-3xl font-black leading-tight text-white" style={{ textShadow: '0 4px 24px rgba(0,0,0,0.5)' }}>
         {title}
       </h2>
@@ -298,14 +299,7 @@ function PathLessonSlide({
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       className="w-full max-w-md"
     >
-      <div
-        className="rounded-3xl p-6 backdrop-blur-xl"
-        style={{
-          background: 'rgba(255,255,255,0.1)',
-          border: '1px solid rgba(255,255,255,0.22)',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15)',
-        }}
-      >
+      <div className="guide-immersive-slide-card rounded-3xl p-6">
         <div className="mb-4 flex items-center gap-3">
           <span
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg font-black text-white"
@@ -338,7 +332,7 @@ function PathLessonSlide({
           <p className="text-sm italic text-white/45">פרק זה מחכה לך — לחץ על &quot;התחל ללמוד&quot; בסוף המסלול</p>
         )}
         <Link
-          href={`/lessons/${lesson.id}`}
+          href={lessonHrefWithViewMode(lesson.id, 'path')}
           className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition hover:brightness-110"
           style={{ background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.3)' }}
         >
@@ -395,7 +389,7 @@ function PathOutroSlide({
       </p>
       {!done && firstLessonId ? (
         <Link
-          href={`/lessons/${firstLessonId}`}
+          href={lessonHrefWithViewMode(firstLessonId, 'path')}
           className="inline-flex items-center gap-2 rounded-2xl px-6 py-3.5 text-base font-black text-white"
           style={{
             background: 'linear-gradient(135deg, #047857, #14b8a6)',

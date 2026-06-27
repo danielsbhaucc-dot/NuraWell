@@ -35,6 +35,7 @@ type StationRow = {
   title: string;
   description: string | null;
   sort_order: number;
+  is_foundation?: boolean;
   cover_image_key: string | null;
   cover_image_credit: StationCoverCredit | null;
   coverImageUrl: string | null;
@@ -206,6 +207,31 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
     setBusy(null);
   }
 
+  async function toggleFoundation(id: string, next: boolean) {
+    setBusy(`foundation-${id}`);
+    const res = await fetch('/api/v1/admin/journey-stations', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, is_foundation: next }),
+    });
+    if (res.ok) {
+      const row = (await res.json()) as StationRow;
+      setStations((prev) =>
+        prev
+          .map((s) => ({
+            ...s,
+            is_foundation: s.id === row.id ? row.is_foundation === true : next ? false : s.is_foundation,
+          }))
+          .sort(
+            (a, b) => a.sort_order - b.sort_order || a.title.localeCompare(b.title, 'he'),
+          ),
+      );
+      router.refresh();
+    }
+    setBusy(null);
+  }
+
   return (
     <div className="space-y-4">
       <OpsPageHeader
@@ -304,6 +330,11 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-display text-[15px] font-black text-slate-900">
                         {st.title}
+                        {st.is_foundation ? (
+                          <span className="mr-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                            תחנת חובה
+                          </span>
+                        ) : null}
                       </span>
                       <span className="text-[11px] text-slate-500">
                         {stepCount} צעדים
@@ -389,10 +420,25 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                   </h2>
                   <p className="text-xs text-slate-600">
                     {stepsByStation(selected.id).length} צעדים
+                    {selected.is_foundation ? ' · תחנת חובה' : ''}
                     {selected.coverImageUrl ? ' · יש תמונת רקע' : ''}
                   </p>
                 </div>
               </div>
+
+              <label className="mt-3 flex cursor-pointer items-center gap-2 rounded-xl border border-emerald-200/50 bg-emerald-50/40 px-3 py-2 text-sm text-emerald-900">
+                <input
+                  type="checkbox"
+                  checked={selected.is_foundation === true}
+                  disabled={busy === `foundation-${selected.id}`}
+                  onChange={(e) => void toggleFoundation(selected.id, e.target.checked)}
+                  className="h-4 w-4 rounded border-emerald-400 text-emerald-600"
+                />
+                <span>
+                  <strong>תחנת חובה (Foundation)</strong> — כל המשתמשים עוברים כאן לפני שיעורים
+                  מותאמים
+                </span>
+              </label>
 
               <div className="mt-4 flex gap-1.5 rounded-2xl border border-white/50 bg-white/30 p-1 backdrop-blur-md">
                 {(

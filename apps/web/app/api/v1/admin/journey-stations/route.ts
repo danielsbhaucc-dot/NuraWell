@@ -81,6 +81,15 @@ export async function PATCH(request: Request) {
 
   const { supabase } = auth;
 
+  if (cleaned.is_foundation === true) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await supabase
+      .from('journey_stations')
+      .update({ is_foundation: false, updated_at: new Date().toISOString() })
+      .neq('id', id)
+      .eq('is_foundation', true);
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await supabase
     .from('journey_stations')

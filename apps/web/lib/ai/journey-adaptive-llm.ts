@@ -4,26 +4,24 @@ import { openrouter } from './client';
 import { buildUserContext } from './memory';
 import { buildCoachingStylePromptBlock } from './almog-coaching-style';
 import { formatUserProgressForAi } from './format-user-progress-for-ai';
+import { buildAdminUserJourneyReport } from '../admin/build-user-journey-report';
 import {
-  buildAdminUserJourneyReport,
-  type AdminUserJourneyReport,
-  type AdminUserJourneyStepRow,
-} from '../admin/build-user-journey-report';
+  loadJourneyAccessContext,
+  pickNextJourneyStep,
+  type PickNextJourneyStepResult,
+} from '../journey/journey-access';
+import type { MainObstacle, WeakestTimeOfDay } from '../onboarding/types';
 
 export type AdaptiveNextStep = {
   step_id: string | null;
   step_number: number | null;
   step_title: string | null;
-  /** למה דווקא הצעד הזה עכשיו — משפט ממוקד */
   headline: string;
-  /** חיבור אישי בין הצעד לקושי/יעד של המשתמש */
   why: string;
-  /** דחיפה רכה לפעולה — משפט אחד */
   nudge: string;
-  /** הצעת התחייבות ריאלית מותאמת להיסטוריה */
   commitment_suggestion: string | null;
-  /** מצב: מתחיל / ממשיך / חוזר אחרי היעדרות / סיים הכל */
   pace: 'start' | 'continue' | 'return' | 'complete';
+  phase: PickNextJourneyStepResult['phase'];
 };
 
 export type AdaptiveNextStepResult = {
@@ -52,30 +50,10 @@ const ADAPTIVE_SYSTEM_PROMPT = `אתה אלמוג — מנטור הליווי ש
 - בלי שפת מערכת ("השלם", "תזכורת", "סימנתי"). חם, אנושי, כמו חבר.
 - אל תמציא תוכן של הצעד עצמו — רק מסגר אותו ביחס למשתמש.`;
 
-function pickNextStep(report: AdminUserJourneyReport): {
-  step: AdminUserJourneyStepRow | null;
-  pace: AdaptiveNextStep['pace'];
-} {
-  const published = report.steps
-    .filter((s) => s.is_published)
-    .sort((a, b) => a.step_number - b.step_number);
-
-  if (published.length === 0) return { step: null, pace: 'start' };
-
-  const inProgress = published.find((s) => s.started && !s.is_completed);
-  if (inProgress) return { step: inProgress, pace: 'continue' };
-
-  const nextNew = published.find((s) => !s.is_completed);
-  if (!nextNew) return { step: null, pace: 'complete' };
-
-  const anyStarted = published.some((s) => s.started || s.is_completed);
-  return { step: nextNew, pace: anyStarted ? 'continue' : 'start' };
-}
-
 function buildFallback(
-  step: AdminUserJourneyStepRow | null,
-  pace: AdaptiveNextStep['pace']
+  pick: PickNextJourneyStepResult
 ): AdaptiveNextStep {
+  const { step, pace } = pick;
   if (!step || pace === 'complete') {
     return {
       step_id: null,
@@ -86,6 +64,7 @@ function buildFallback(
       nudge: 'בינתיים, בוא נשמור על ההרגלים שכבר בנית.',
       commitment_suggestion: null,
       pace: 'complete',
+      phase: pick.phase,
     };
   }
 
@@ -93,14 +72,22 @@ function buildFallback(
     step_id: step.id,
     step_number: step.step_number,
     step_title: step.title,
-    headline: pace === 'return' ? 'בוא נחזור בעדינות' : `הצעד הבא: ${step.title}`,
+    headline:
+      pace === 'return'
+        ? 'בוא נחזור בעדינות'
+        : pick.phase === 'foundation'
+          ? `הצעד הבא: ${step.title}`
+          : `נבחר עבורך: ${step.title}`,
     why:
-      pace === 'start'
+      pace === 'start' && pick.phase === 'foundation'
         ? 'זה הצעד הראשון שלך במסע — קטן וברור, בלי לחץ.'
-        : 'זה הצעד הבא שמחכה לך. צעד אחד קדימה, בקצב שלך.',
+        : pick.phase === 'adaptive'
+          ? 'בחרתי את השיעור הזה כי הוא מתאים למה שכבר למדתי עליך — בקצב שלך.'
+          : 'זה הצעד הבא שמחכה לך. צעד אחד קדימה, בקצב שלך.',
     nudge: 'בא לך לפתוח אותו עכשיו? אני איתך.',
     commitment_suggestion: null,
     pace,
+    phase: pick.phase,
   };
 }
 
@@ -113,27 +100,53 @@ export async function buildAdaptiveNextStep(params: {
 }): Promise<AdaptiveNextStepResult> {
   const { supabase, admin, userId } = params;
 
-  const [contextResult, report] = await Promise.all([
+  const [contextResult, report, profileRow] = await Promise.all([
     buildUserContext(supabase, userId).catch(() => null),
     buildAdminUserJourneyReport(admin, userId).catch(() => null),
+    supabase
+      .from('profiles')
+      .select('main_obstacle, main_obstacle_detail, weakest_time_of_day')
+      .eq('id', userId)
+      .maybeSingle(),
   ]);
 
   if (!report) {
     return {
-      recommendation: buildFallback(null, 'start'),
+      recommendation: buildFallback({ step: null, pace: 'start', phase: 'legacy' }),
       used_fallback: true,
       model: null,
     };
   }
 
-  const { step, pace: rawPace } = pickNextStep(report);
+  const ctx = await loadJourneyAccessContext(supabase, userId, report);
+  const profile = profileRow as {
+    main_obstacle?: string | null;
+    main_obstacle_detail?: string | null;
+    weakest_time_of_day?: string | null;
+  } | null;
+
+  const pick = await pickNextJourneyStep({
+    report,
+    ctx,
+    admin,
+    userId,
+    daysSinceLastActive: contextResult?.raw.daysSinceLastActive ?? null,
+    signals: {
+      main_obstacle: (profile?.main_obstacle as MainObstacle | null) ?? null,
+      main_obstacle_detail: profile?.main_obstacle_detail ?? null,
+      weakest_time_of_day:
+        (profile?.weakest_time_of_day as WeakestTimeOfDay | null) ?? null,
+    },
+  });
+
+  const { step, pace: rawPace } = pick;
   const daysSinceLastActive = contextResult?.raw.daysSinceLastActive ?? null;
   const pace: AdaptiveNextStep['pace'] =
     rawPace === 'continue' && daysSinceLastActive !== null && daysSinceLastActive >= 3
       ? 'return'
       : rawPace;
 
-  const fallback = buildFallback(step, pace);
+  const fallback = buildFallback({ ...pick, pace });
 
   if (!step || pace === 'complete' || !process.env.OPENROUTER_API_KEY?.trim()) {
     return { recommendation: fallback, used_fallback: true, model: null };
@@ -144,6 +157,7 @@ export async function buildAdaptiveNextStep(params: {
   const progressText = formatUserProgressForAi(report);
 
   const userContent = [
+    `שלב מסע: ${pick.phase}`,
     `הצעד הבא שנבחר: צעד ${step.step_number} — "${step.title}"`,
     `מצב קצב: ${pace}`,
     daysSinceLastActive !== null ? `ימים מאז כניסה אחרונה: ${daysSinceLastActive}` : null,
@@ -196,6 +210,7 @@ export async function buildAdaptiveNextStep(params: {
           fallback.nudge,
         commitment_suggestion: commitment,
         pace,
+        phase: pick.phase,
       },
       used_fallback: false,
       model: ADAPTIVE_MODEL,

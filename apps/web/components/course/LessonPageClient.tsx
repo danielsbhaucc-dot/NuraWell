@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useTransition, useCallback } from 'react';
+import { useState, useTransition, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sanitizeLessonHtml } from '../../lib/sanitize-lesson-html';
 import {
-  Clock, BookOpen, CheckCircle2, ExternalLink as ExternalLinkIcon, ChevronRight,
+  Clock, BookOpen, CheckCircle2, ExternalLink as ExternalLinkIcon,
   Video, Headphones, FileText, Presentation, AlignLeft, Layers, Images, Sparkles, AlignJustify,
 } from 'lucide-react';
 import { VideoPlayer } from './VideoPlayer';
@@ -16,14 +16,21 @@ import { TaskChecklist } from './TaskChecklist';
 import { HabitTracker } from './HabitTracker';
 import { LessonNav } from './LessonNav';
 import { LessonImmersivePath } from './LessonImmersivePath';
+import { GuideBackIconButton } from './GuideBackIconButton';
 import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import { cn } from '../../lib/cn';
+import {
+  persistGuideViewModePreference,
+  readGuideViewModePreference,
+  type GuideViewMode,
+} from '../../lib/client/guide-view-mode';
 import type { LessonDetail, LessonProgressData, MediaFile } from '../../lib/types/course';
 import {
   lessonAlmogCoachTitle,
   lessonAlmogCta,
   lessonAlmogCoachBody,
   lessonImmersiveModeLabel,
+  guideBackToGuideLabel,
   type ProfileGender,
 } from '../../lib/profile/personalized-copy';
 
@@ -70,6 +77,15 @@ export function LessonPageClient({
   const config = typeLabel[lesson.lesson_type];
   const IconComp = config.icon;
 
+  useEffect(() => {
+    setViewMode(readGuideViewModePreference());
+  }, [lesson.id]);
+
+  const setLessonViewMode = (mode: GuideViewMode) => {
+    persistGuideViewModePreference(mode);
+    setViewMode(mode);
+  };
+
   const handleTaskToggle = useCallback(async (taskId: string, completed: boolean) => {
     const newTaskProgress = { ...progress.task_progress, [taskId]: completed };
     setProgress(p => ({ ...p, task_progress: newTaskProgress }));
@@ -103,13 +119,10 @@ export function LessonPageClient({
     <div className="guide-page-bg relative pb-8 guide-read-surface">
       <div className="container-mobile py-4 pb-8 space-y-5 relative z-10">
 
-        <Link
+        <GuideBackIconButton
           href={`/guides/${lesson.course_id}`}
-          className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-700 hover:text-emerald-900 transition"
-        >
-          <ChevronRight className="w-4 h-4" />
-          חזרה למדריך
-        </Link>
+          ariaLabel={guideBackToGuideLabel()}
+        />
 
         <div className="guide-read-accent-strip" aria-hidden />
 
@@ -117,7 +130,7 @@ export function LessonPageClient({
         <div className="guide-mode-switch">
           <button
             type="button"
-            onClick={() => setViewMode('read')}
+            onClick={() => setLessonViewMode('read')}
             className={cn('guide-mode-btn', viewMode === 'read' && 'active')}
           >
             <AlignJustify className="h-4 w-4" />
@@ -125,7 +138,7 @@ export function LessonPageClient({
           </button>
           <button
             type="button"
-            onClick={() => setViewMode('path')}
+            onClick={() => setLessonViewMode('path')}
             className={cn('guide-mode-btn', viewMode === 'path' && 'active')}
           >
             <Sparkles className="h-4 w-4" />
@@ -386,7 +399,7 @@ export function LessonPageClient({
           prevLesson={prevLesson}
           nextLesson={nextLesson}
           gender={gender}
-          onExit={() => setViewMode('read')}
+          onExit={() => setLessonViewMode('read')}
           onTaskToggle={handleTaskToggle}
           onHabitToggle={handleHabitToggle}
           onToggleComplete={handleToggleComplete}

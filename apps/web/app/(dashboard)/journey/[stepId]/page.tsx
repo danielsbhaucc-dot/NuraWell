@@ -1,11 +1,17 @@
 import type { Metadata } from 'next';
 import { createClient } from '../../../../lib/supabase/server';
+import { createAdminClient } from '../../../../lib/supabase/admin';
 import { redirect, notFound } from 'next/navigation';
 import { StepLesson } from '../../../../components/journey/StepLesson';
 import type { JourneyStep, JourneyStepProgress } from '../../../../lib/types/journey';
 import type { LessonAudioTrack } from '../../../../lib/types/audio';
 import { getPublicCdnAudioUrl } from '../../../../lib/cdn/public-audio';
 import { isJourneyStepNumber, isJourneyStepUuid } from '../../../../lib/journey/resolve-step';
+import { buildAdminUserJourneyReport } from '../../../../lib/admin/build-user-journey-report';
+import {
+  canAccessJourneyStep,
+  loadJourneyAccessContext,
+} from '../../../../lib/journey/journey-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,6 +92,8 @@ export default async function StepPage({ params }: { params: Promise<{ stepId: s
 
   if (!step) notFound();
 
+  if (!step.is_published) notFound();
+
   const resolvedStepId = step.id;
 
   // מגדר המשתמש — לנוסח התחייבות מותאם ("אני מתחייב/מתחייבת")
@@ -120,6 +128,19 @@ export default async function StepPage({ params }: { params: Promise<{ stepId: s
     completed_at: null,
     last_section: 'video',
   };
+
+  const admin = createAdminClient();
+  const report = await buildAdminUserJourneyReport(admin, user.id);
+  const accessCtx = await loadJourneyAccessContext(supabase, user.id, report);
+  const allowed = canAccessJourneyStep({
+    ctx: accessCtx,
+    stepId: resolvedStepId,
+    stationId: step.station_id,
+    isPublished: step.is_published,
+    isCompleted: Boolean(initialProgress.is_completed),
+    started: Boolean(progress),
+  });
+  if (!allowed) redirect('/journey');
 
   let audioTracks: LessonAudioTrack[] = [];
   if (step.audio_playlist_id) {
