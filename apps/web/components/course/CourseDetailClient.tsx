@@ -16,6 +16,10 @@ import {
   guideDetailAlmogBody,
   guideDetailAlmogTitle,
   guideLearnCta,
+  GUIDE_IMMERSIVE_MODE_LABEL,
+  guideCoverDivePrompt,
+  guideCoverModeQuestion,
+  guideBackToCoverLabel,
   type ProfileGender,
 } from '../../lib/profile/personalized-copy';
 
@@ -101,10 +105,24 @@ export function CourseDetailClient({
     setViewMode(mode);
   };
 
+  const showReadContent = viewMode === 'read';
+
   return (
     <>
       <div className="-mt-16">
-    <div className="guide-page-bg relative pb-8">
+    <div className={cn('guide-page-bg relative pb-8', showReadContent && 'guide-read-surface')}>
+      {viewMode === 'read' && (
+        <div className="container-mobile px-4 guide-back-to-cover-bar">
+          <button
+            type="button"
+            onClick={() => setViewMode('cover')}
+            className="guide-back-to-cover"
+          >
+            <ChevronRight className="h-4 w-4" />
+            {guideBackToCoverLabel()}
+          </button>
+        </div>
+      )}
       {/* HERO header — large & premium; the background image lives ONLY here */}
       <div className="guide-hero relative h-[20rem] md:h-[28rem]">
         {bgUrl ? (
@@ -136,7 +154,7 @@ export function CourseDetailClient({
               style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.35)', color: '#fff' }}>
               <BookOpen className="w-3.5 h-3.5" /> מדריך
             </span>
-            {viewMode !== 'cover' && (
+            {viewMode === 'read' && (
               <button
                 type="button"
                 onClick={() => setViewMode('cover')}
@@ -205,8 +223,10 @@ export function CourseDetailClient({
       {/* Light body */}
       <div className="container-mobile relative px-4 -mt-6">
         <div>
+          {showReadContent && <div className="guide-read-accent-strip" aria-hidden />}
+
           {course.description && (
-            <div className="guide-glass-card p-4 mb-4">
+            <div className={cn('guide-glass-card p-4 mb-4', showReadContent && 'guide-read-hero-card')}>
               <p className="text-sm leading-relaxed" style={{ color: '#3A3654' }}>{course.description}</p>
             </div>
           )}
@@ -246,7 +266,7 @@ export function CourseDetailClient({
               className={cn('guide-mode-btn', viewMode === 'path' && 'active')}
             >
               <Sparkles className="h-4 w-4" />
-              מסלול לימוד
+              {GUIDE_IMMERSIVE_MODE_LABEL}
             </button>
           </div>
 
@@ -344,6 +364,7 @@ export function CourseDetailClient({
             isPremium={course.is_premium}
             progress={progress}
             isEnrolled={isEnrolled}
+            gender={gender}
             onSelectMode={handleSelectMode}
           />
         ) : null}
@@ -357,7 +378,8 @@ export function CourseDetailClient({
             progress={progress}
             completedCount={completedCount}
             firstIncompleteLessonId={firstIncompleteLessonId}
-            onExit={() => setViewMode('read')}
+            gender={gender}
+            onExit={() => setViewMode('cover')}
           />
         ) : null}
       </AnimatePresence>
@@ -378,6 +400,7 @@ function GuideCover({
   isPremium,
   progress,
   isEnrolled,
+  gender,
   onSelectMode,
 }: {
   title: string;
@@ -387,6 +410,7 @@ function GuideCover({
   isPremium: boolean;
   progress: number;
   isEnrolled: boolean;
+  gender: ProfileGender;
   onSelectMode: (mode: 'read' | 'path') => void;
 }) {
   return (
@@ -430,7 +454,7 @@ function GuideCover({
       />
 
       {/* תוכן השער */}
-      <div className="relative z-10 flex flex-1 flex-col px-6 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      <div className="relative z-10 flex flex-1 flex-col px-6 pt-[max(2rem,env(safe-area-inset-top))] guide-immersive-bottom-safe">
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -502,9 +526,9 @@ function GuideCover({
             className="text-center text-lg font-black text-white"
             style={{ textShadow: '0 2px 12px rgba(0,0,0,0.4)' }}
           >
-            בוא נצלול פנימה
+            {guideCoverDivePrompt(gender)}
           </p>
-          <p className="text-center text-xs font-bold text-white/60">איך תרצה לחוות את המדריך?</p>
+          <p className="text-center text-xs font-bold text-white/60">{guideCoverModeQuestion(gender)}</p>
 
           <motion.button
             type="button"
@@ -518,7 +542,7 @@ function GuideCover({
             }}
           >
             <Sparkles className="h-5 w-5 shrink-0" />
-            <span>מסלול לימוד</span>
+            <span>{GUIDE_IMMERSIVE_MODE_LABEL}</span>
           </motion.button>
 
           <motion.button

@@ -5,10 +5,16 @@ import Image from 'next/image';
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  BookOpen, Clock, ChevronLeft, ChevronRight, X, Play,
+  BookOpen, Clock, ChevronLeft, ChevronRight, Play,
   CheckCircle2, Sparkles, Award,
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import {
+  GUIDE_IMMERSIVE_MODE_LABEL,
+  guideBackToCoverLabel,
+  guidePathIntroHint,
+  type ProfileGender,
+} from '../../lib/profile/personalized-copy';
 
 interface PathLesson {
   id: string;
@@ -31,6 +37,7 @@ interface GuideLearningPathProps {
   progress: number;
   completedCount: number;
   firstIncompleteLessonId: string | null;
+  gender?: ProfileGender;
   onExit: () => void;
 }
 
@@ -41,7 +48,7 @@ const slideVariants = {
 };
 
 export function GuideLearningPath({
-  course, progress, completedCount, firstIncompleteLessonId, onExit,
+  course, progress, completedCount, firstIncompleteLessonId, gender = null, onExit,
 }: GuideLearningPathProps) {
   const bgUrl = course.background_image_url || course.thumbnail_url;
   const totalSlides = course.lessons.length + 2; // intro + lessons + outro
@@ -107,17 +114,17 @@ export function GuideLearningPath({
         <button
           type="button"
           onClick={onExit}
-          className="flex h-9 w-9 items-center justify-center rounded-full backdrop-blur-md transition hover:bg-white/20"
-          style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)' }}
-          aria-label="יציאה למצב קריאה"
+          className="guide-back-to-cover shrink-0 !text-white !border-white/25 !bg-white/12 backdrop-blur-md hover:!bg-white/20"
+          aria-label={guideBackToCoverLabel()}
         >
-          <X className="h-4 w-4 text-white" />
+          <ChevronRight className="h-4 w-4" />
+          {guideBackToCoverLabel()}
         </button>
         <div className="flex-1">
           <div className="mb-1 flex items-center justify-between text-[11px] font-bold text-white/60">
             <span className="inline-flex items-center gap-1">
               <Sparkles className="h-3 w-3 text-emerald-300" />
-              מסלול לימוד
+              {GUIDE_IMMERSIVE_MODE_LABEL}
             </span>
             <span>{slideIdx + 1} / {totalSlides}</span>
           </div>
@@ -143,6 +150,7 @@ export function GuideLearningPath({
               description={course.description}
               lessonCount={course.lessons.length}
               progress={progress}
+              gender={gender}
             />
           ) : slideIdx === totalSlides - 1 ? (
             <PathOutroSlide
@@ -166,7 +174,7 @@ export function GuideLearningPath({
       </div>
 
       {/* Navigation */}
-      <div className="relative z-10 flex items-center justify-between gap-4 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      <div className="relative z-10 flex items-center justify-between gap-4 px-6 guide-immersive-nav-safe">
         <button
           type="button"
           onClick={goPrev}
@@ -228,13 +236,14 @@ export function GuideLearningPath({
 }
 
 function PathIntroSlide({
-  direction, title, description, lessonCount, progress,
+  direction, title, description, lessonCount, progress, gender,
 }: {
   direction: number;
   title: string;
   description: string | null;
   lessonCount: number;
   progress: number;
+  gender: ProfileGender;
 }) {
   return (
     <motion.div
@@ -266,7 +275,7 @@ function PathIntroSlide({
         {progress > 0 ? <PathStat icon={Award} value={`${progress}%`} label="הושלם" /> : null}
       </div>
       <p className="mt-6 text-xs font-semibold text-white/50">
-        גלול בין הפרקים וגלות את המסלול צעד אחר צעד
+        {guidePathIntroHint(gender)}
       </p>
     </motion.div>
   );
