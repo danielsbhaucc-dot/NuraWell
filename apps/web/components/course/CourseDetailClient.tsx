@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play, BookOpen, Clock, CheckCircle2, Lock,
-  ChevronLeft, Award, Zap, Video, Headphones, FileText, Presentation, AlignLeft, Layers, Crown,
+  ChevronLeft, ChevronRight, Award, Zap, Video, Headphones, FileText, Presentation, AlignLeft, Layers, Crown,
   Sparkles, AlignJustify,
 } from 'lucide-react';
 import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
