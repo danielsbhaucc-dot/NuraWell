@@ -55,8 +55,8 @@ interface LessonImmersivePathProps {
   nextLesson: NavLesson | null;
   gender?: ProfileGender;
   onExit: () => void;
-  onTaskToggle: (taskId: string, completed: boolean) => void;
-  onHabitToggle: (habitId: string, dayIndex: number, completed: boolean) => void;
+  onTaskToggle: (taskId: string, completed: boolean) => Promise<void>;
+  onHabitToggle: (habitId: string, dayIndex: number, completed: boolean) => Promise<void>;
   onToggleComplete: () => void;
   isTogglingComplete: boolean;
 }
@@ -292,8 +292,8 @@ function LessonSlideContent({
   nextLesson: NavLesson | null;
   onToggleComplete: () => void;
   isTogglingComplete: boolean;
-  onTaskToggle: (taskId: string, completed: boolean) => void;
-  onHabitToggle: (habitId: string, dayIndex: number, completed: boolean) => void;
+  onTaskToggle: (taskId: string, completed: boolean) => Promise<void>;
+  onHabitToggle: (habitId: string, dayIndex: number, completed: boolean) => Promise<void>;
 }) {
   const wrap = (children: React.ReactNode, className = 'w-full max-w-md') => (
     <motion.div
