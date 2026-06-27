@@ -12,6 +12,8 @@ export interface JourneyStationMeta {
   title: string;
   description: string | null;
   sort_order: number;
+  /** תחנת חובה — כל המשתמשים עוברים לינארית */
+  is_foundation?: boolean;
   cover_image_key?: string | null;
   cover_image_credit?: StationCoverCredit | null;
 }
@@ -22,6 +24,7 @@ export type JourneyStationGroup = {
   title: string;
   description: string | null;
   sortOrder: number;
+  isFoundation: boolean;
   coverImageUrl: string | null;
   coverImageCredit: StationCoverCredit | null;
   steps: JourneyStepWithProgress[];
@@ -58,6 +61,7 @@ export function groupJourneyStepsByStation(
     title: st.title,
     description: st.description,
     sortOrder: st.sort_order,
+    isFoundation: st.is_foundation === true,
     coverImageUrl: st.cover_image_key ? getPublicCdnImageUrl(st.cover_image_key) : null,
     coverImageCredit: normalizeStationCoverCredit(st.cover_image_credit),
     steps: (byStation.get(st.id) ?? []).sort((a, b) => (a.step_number ?? 0) - (b.step_number ?? 0)),
@@ -70,6 +74,7 @@ export function groupJourneyStepsByStation(
       title: 'צעדים נוספים',
       description: 'צעדים שעדיין לא שויכו לתחנה',
       sortOrder: 1_000_000,
+      isFoundation: false,
       coverImageUrl: null,
       coverImageCredit: null,
       steps: orphan.sort((a, b) => (a.step_number ?? 0) - (b.step_number ?? 0)),
@@ -88,6 +93,7 @@ export function groupAllStepsWhenNoStations(steps: JourneyStepWithProgress[]): J
       title: 'הצעדים שלך',
       description: null,
       sortOrder: 0,
+      isFoundation: false,
       coverImageUrl: null,
       coverImageCredit: null,
       steps: [...steps].sort((a, b) => (a.step_number ?? 0) - (b.step_number ?? 0)),
@@ -100,6 +106,12 @@ export function pickInitialStationGroupKey(
   progressRows: Array<JourneyStepProgress & { updated_at?: string }>
 ): string {
   if (!groups.length) return '';
+
+  const foundation = groups.find((g) => g.isFoundation);
+  if (foundation) {
+    const incomplete = foundation.steps.some((s) => !s.progress?.is_completed);
+    if (incomplete) return foundation.key;
+  }
 
   const stepIdToGroupKey = new Map<string, string>();
   for (const g of groups) {

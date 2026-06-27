@@ -35,9 +35,17 @@ interface JourneyPageProps {
   initialExpandedKey?: string;
   userId: string;
   firstName: string;
+  foundationComplete?: boolean;
+  hasFoundationStation?: boolean;
 }
 
-export function JourneyPage({ groups, userId, firstName }: JourneyPageProps) {
+export function JourneyPage({
+  groups,
+  userId,
+  firstName,
+  foundationComplete = true,
+  hasFoundationStation = false,
+}: JourneyPageProps) {
   const [liveProgressByStep, setLiveProgressByStep] = useState<
     Record<string, JourneyStepProgress>
   >({});
@@ -156,6 +164,8 @@ export function JourneyPage({ groups, userId, firstName }: JourneyPageProps) {
             }}
             daysInJourney={daysInJourney}
             onSelect={handleSelect}
+            foundationComplete={foundationComplete}
+            hasFoundationStation={hasFoundationStation}
           />
         )}
       </AnimatePresence>
@@ -173,12 +183,16 @@ function GalleryView({
   overall,
   daysInJourney,
   onSelect,
+  foundationComplete,
+  hasFoundationStation,
 }: {
   firstName: string;
   groups: JourneyStationGroup[];
   overall: { done: number; all: number; pct: number; stations: number; stationsDone: number };
   daysInJourney: number;
   onSelect: (key: string) => void;
+  foundationComplete: boolean;
+  hasFoundationStation: boolean;
 }) {
   const reduced = useReducedMotion();
 
@@ -227,6 +241,13 @@ function GalleryView({
           <>
             {/* 1. הצעד הבא — אלמוג ממליץ מה לעשות עכשיו */}
             <JourneyNextStepCard />
+
+            {hasFoundationStation && !foundationComplete ? (
+              <p className="mb-4 rounded-2xl border border-emerald-200/60 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900">
+                קודם נשלים את <strong>תחנת החובה</strong> — אחר כך Almog יפתח שיעורים מותאמים אישית
+                בקצב שלך.
+              </p>
+            ) : null}
 
             {/* 2. התחנות במסלול — תחנות פעילות */}
             {activeGroups.length > 0 ? (
@@ -1487,7 +1508,11 @@ function StationDetailView({
             בתחנה הזו עדיין אין צעדים — זה יתעדכן מיד כשהתוכן יתפרסם.
           </p>
         ) : (
-          <StepsTimeline steps={steps} activeIndex={activeIndex} />
+          <StepsTimeline
+            steps={steps}
+            activeIndex={activeIndex}
+            linearLock={group.isFoundation}
+          />
         )}
       </div>
     </motion.div>
@@ -1685,9 +1710,11 @@ function StationHeader({
 function StepsTimeline({
   steps,
   activeIndex,
+  linearLock = true,
 }: {
   steps: JourneyStepWithProgress[];
   activeIndex: number;
+  linearLock?: boolean;
 }) {
   return (
     <div className="relative">
@@ -1700,7 +1727,7 @@ function StepsTimeline({
         {steps.map((step, index) => {
           const isCompleted = Boolean(step.progress?.is_completed);
           const isActive = index === activeIndex;
-          const isLocked = !isCompleted && !isActive;
+          const isLocked = linearLock ? !isCompleted && !isActive : false;
 
           return (
             <motion.div

@@ -10,15 +10,19 @@ import {
 import { cn } from '../../lib/cn';
 import { sanitizeLessonHtml } from '../../lib/sanitize-lesson-html';
 import { splitLessonHtmlToSections } from '../../lib/course/split-lesson-slides';
+import { lessonHrefWithViewMode } from '../../lib/client/guide-view-mode';
+import { GuideBackIconButton } from './GuideBackIconButton';
+import { GuideImmersiveAlmogHero } from './GuideImmersiveAlmogHero';
+import { GuideImmersiveSlideHeader } from './GuideImmersiveSlideHeader';
 import { VideoPlayer } from './VideoPlayer';
 import { AudioPlayer } from './AudioPlayer';
 import { TaskChecklist } from './TaskChecklist';
 import { HabitTracker } from './HabitTracker';
 import type { LessonDetail, LessonProgressData } from '../../lib/types/course';
 import {
-  GUIDE_IMMERSIVE_MODE_LABEL,
-  guideBackToCoverLabel,
   lessonPathIntroHint,
+  lessonImmersiveModeLabel,
+  lessonBackToReadLabel,
   type ProfileGender,
 } from '../../lib/profile/personalized-copy';
 
@@ -141,6 +145,22 @@ export function LessonImmersivePath({
   const progressPct = totalSlides > 1 ? Math.round((slideIdx / (totalSlides - 1)) * 100) : 100;
   const current = slides[slideIdx];
 
+  const slideEyebrow = current.kind === 'intro'
+    ? 'פתיחת הפרק'
+    : current.kind === 'outro'
+      ? 'סיום הפרק'
+      : current.kind === 'text'
+        ? (current.heading ?? 'תוכן הפרק')
+        : current.kind === 'video'
+          ? 'וידאו'
+          : current.kind === 'audio'
+            ? 'אודיו'
+            : current.kind === 'tasks'
+              ? 'משימות'
+              : current.kind === 'habits'
+                ? 'הרגלים'
+                : 'קישורים';
+
   return (
     <motion.div
       className="fixed inset-0 z-[75] flex flex-col overflow-hidden"
@@ -163,33 +183,36 @@ export function LessonImmersivePath({
         }}
       />
 
-      <div className="relative z-10 flex items-center gap-3 px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
-        <button
-          type="button"
-          onClick={onExit}
-          className="guide-back-to-cover shrink-0 !text-white !border-white/25 !bg-white/12 backdrop-blur-md hover:!bg-white/20"
-          aria-label={guideBackToCoverLabel()}
-        >
-          <ChevronRight className="h-4 w-4" />
-          {guideBackToCoverLabel()}
-        </button>
-        <div className="flex-1 min-w-0">
-          <div className="mb-1 flex items-center justify-between text-[11px] font-bold text-white/60">
-            <span className="inline-flex items-center gap-1 truncate">
-              <Sparkles className="h-3 w-3 shrink-0 text-emerald-300" />
-              {GUIDE_IMMERSIVE_MODE_LABEL}
-            </span>
-            <span className="shrink-0">{slideIdx + 1} / {totalSlides}</span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }}>
-            <motion.div
-              className="h-full rounded-full"
-              animate={{ width: `${progressPct}%` }}
-              transition={{ duration: 0.35, ease: 'easeOut' }}
-              style={{ background: 'linear-gradient(90deg, #10b981, #2dd4bf)' }}
-            />
+      <div className="relative z-10 px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-2">
+        <div className="mb-3 flex items-center gap-3">
+          <GuideBackIconButton
+            onClick={onExit}
+            ariaLabel={lessonBackToReadLabel()}
+            variant="immersive"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="mb-1 flex items-center justify-between text-[11px] font-bold text-white/60">
+              <span className="inline-flex items-center gap-1 truncate">
+                <Sparkles className="h-3 w-3 shrink-0 text-emerald-300" />
+                {lessonImmersiveModeLabel()}
+              </span>
+              <span className="shrink-0">{slideIdx + 1} / {totalSlides}</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }}>
+              <motion.div
+                className="h-full rounded-full"
+                animate={{ width: `${progressPct}%` }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+                style={{ background: 'linear-gradient(90deg, #10b981, #2dd4bf)' }}
+              />
+            </div>
           </div>
         </div>
+        <GuideImmersiveSlideHeader
+          eyebrow={slideEyebrow}
+          title={lesson.title}
+          subtitle={lesson.course.title}
+        />
       </div>
 
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-2">
@@ -312,15 +335,9 @@ function LessonSlideContent({
   if (slide.kind === 'intro') {
     return wrap(
       <div className="text-center">
-        <motion.span
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
-          className="mx-auto mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl"
-          style={{ background: 'rgba(16,185,129,0.25)', border: '1px solid rgba(52,211,153,0.45)' }}
-        >
-          <Sparkles className="h-7 w-7 text-emerald-200" />
-        </motion.span>
+        <div className="mb-5 flex justify-center">
+          <GuideImmersiveAlmogHero size={92} />
+        </div>
         <h2 className="mb-3 text-3xl font-black leading-tight text-white" style={{ textShadow: '0 4px 24px rgba(0,0,0,0.5)' }}>
           {lesson.title}
         </h2>
@@ -341,14 +358,7 @@ function LessonSlideContent({
 
   if (slide.kind === 'text' && slide.html) {
     return wrap(
-      <div
-        className="max-h-[55vh] overflow-y-auto rounded-3xl p-6 backdrop-blur-xl"
-        style={{
-          background: 'rgba(255,255,255,0.1)',
-          border: '1px solid rgba(255,255,255,0.22)',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15)',
-        }}
-      >
+      <div className="guide-immersive-slide-card max-h-[55vh] overflow-y-auto rounded-3xl p-6">
         {slide.heading ? (
           <h3 className="mb-3 flex items-center gap-2 text-xl font-black text-white">
             <AlignLeft className="h-5 w-5 text-emerald-300" />
@@ -356,7 +366,7 @@ function LessonSlideContent({
           </h3>
         ) : null}
         <div
-          className="lesson-content text-sm leading-relaxed text-white/85 [&_a]:text-emerald-200 [&_strong]:text-white"
+          className="lesson-content lesson-content-immersive text-sm leading-relaxed"
           dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(slide.html) }}
         />
       </div>,
@@ -395,10 +405,7 @@ function LessonSlideContent({
 
   if (slide.kind === 'links') {
     return wrap(
-      <div
-        className="rounded-3xl p-5 backdrop-blur-xl"
-        style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.22)' }}
-      >
+      <div className="guide-immersive-slide-card rounded-3xl p-5">
         <h3 className="mb-4 text-lg font-black text-white">קישורים נוספים</h3>
         <div className="space-y-2">
           {lesson.external_links.map((link) => (
@@ -421,8 +428,7 @@ function LessonSlideContent({
 
   if (slide.kind === 'tasks') {
     return wrap(
-      <div className="max-h-[55vh] overflow-y-auto rounded-3xl p-4 backdrop-blur-xl"
-        style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(16,185,129,0.25)' }}>
+      <div className="guide-immersive-slide-card guide-immersive-tasks max-h-[55vh] overflow-y-auto rounded-3xl p-4">
         <TaskChecklist
           tasks={lesson.tasks}
           completedTaskIds={progress.task_progress}
@@ -436,8 +442,7 @@ function LessonSlideContent({
 
   if (slide.kind === 'habits') {
     return wrap(
-      <div className="max-h-[55vh] overflow-y-auto rounded-3xl p-4 backdrop-blur-xl"
-        style={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(245,158,11,0.3)' }}>
+      <div className="guide-immersive-slide-card guide-immersive-tasks max-h-[55vh] overflow-y-auto rounded-3xl p-4">
         <HabitTracker
           habits={lesson.habits}
           habitProgress={progress.habit_progress}
@@ -490,7 +495,7 @@ function LessonSlideContent({
           ) : null}
           {nextLesson ? (
             <Link
-              href={`/lessons/${nextLesson.id}`}
+              href={lessonHrefWithViewMode(nextLesson.id, 'path')}
               className="inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-black text-white"
               style={{
                 background: 'linear-gradient(135deg, #047857, #14b8a6)',
@@ -509,7 +514,7 @@ function LessonSlideContent({
             חזרה למדריך
           </Link>
           {prevLesson ? (
-            <Link href={`/lessons/${prevLesson.id}`} className="text-xs font-semibold text-white/50 hover:text-white/75">
+            <Link href={lessonHrefWithViewMode(prevLesson.id, 'path')} className="text-xs font-semibold text-white/50 hover:text-white/75">
               ← {prevLesson.title}
             </Link>
           ) : null}

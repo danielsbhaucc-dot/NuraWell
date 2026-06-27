@@ -11,7 +11,14 @@ import {
 } from 'lucide-react';
 import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import { GuideLearningPath } from './GuideLearningPath';
+import { GuideBackIconButton } from './GuideBackIconButton';
 import { cn } from '../../lib/cn';
+import {
+  persistGuideViewModePreference,
+  readGuideViewModePreference,
+  lessonHrefWithViewMode,
+  type GuideViewMode,
+} from '../../lib/client/guide-view-mode';
 import {
   guideDetailAlmogBody,
   guideDetailAlmogTitle,
@@ -20,6 +27,7 @@ import {
   guideCoverDivePrompt,
   guideCoverModeQuestion,
   guideBackToCoverLabel,
+  guideChaptersSubtitle,
   type ProfileGender,
 } from '../../lib/profile/personalized-copy';
 
@@ -61,6 +69,15 @@ const lessonTypeConfig: Record<LessonItem['lesson_type'], { icon: React.ElementT
   mixed:        { icon: Layers,                   label: 'מגוון',     color: '#059669' },
 };
 
+const CHAPTER_CARD_VARIANTS = [
+  'guide-chapter-card--emerald',
+  'guide-chapter-card--teal',
+  'guide-chapter-card--indigo',
+  'guide-chapter-card--amber',
+  'guide-chapter-card--rose',
+  'guide-chapter-card--violet',
+] as const;
+
 const container = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.05 } },
@@ -80,13 +97,25 @@ export function CourseDetailClient({
 
   const bgUrl = course.background_image_url || course.thumbnail_url;
 
-  type GuideViewMode = 'cover' | 'read' | 'path';
-  const [viewMode, setViewMode] = useState<GuideViewMode>('cover');
+  type GuideViewModeLocal = 'cover' | 'read' | 'path';
+  const [viewMode, setViewMode] = useState<GuideViewModeLocal>('cover');
+  const [immersivePref, setImmersivePref] = useState<GuideViewMode>('read');
 
   useEffect(() => {
     setViewMode('cover');
+    setImmersivePref(readGuideViewModePreference());
     window.scrollTo(0, 0);
   }, [course.id]);
+
+  const setGuideMode = (mode: GuideViewMode) => {
+    persistGuideViewModePreference(mode);
+    setImmersivePref(mode);
+    setViewMode(mode);
+  };
+
+  const handleSelectMode = (mode: 'read' | 'path') => {
+    setGuideMode(mode);
+  };
 
   useEffect(() => {
     if (viewMode !== 'cover') return;
@@ -101,11 +130,9 @@ export function CourseDetailClient({
     document.body.style.overflow = '';
   }, []);
 
-  const handleSelectMode = (mode: 'read' | 'path') => {
-    setViewMode(mode);
-  };
-
   const showReadContent = viewMode === 'read';
+  const lessonHref = (lessonId: string) =>
+    lessonHrefWithViewMode(lessonId, immersivePref === 'path' ? 'path' : undefined);
 
   return (
     <>
@@ -113,14 +140,10 @@ export function CourseDetailClient({
     <div className={cn('guide-page-bg relative pb-8', showReadContent && 'guide-read-surface')}>
       {viewMode === 'read' && (
         <div className="container-mobile px-4 guide-back-to-cover-bar">
-          <button
-            type="button"
+          <GuideBackIconButton
             onClick={() => setViewMode('cover')}
-            className="guide-back-to-cover"
-          >
-            <ChevronRight className="h-4 w-4" />
-            {guideBackToCoverLabel()}
-          </button>
+            ariaLabel={guideBackToCoverLabel()}
+          />
         </div>
       )}
       {/* HERO header — large & premium; the background image lives ONLY here */}
@@ -254,7 +277,7 @@ export function CourseDetailClient({
           <div className="guide-mode-switch mb-4">
             <button
               type="button"
-              onClick={() => setViewMode('read')}
+              onClick={() => setGuideMode('read')}
               className={cn('guide-mode-btn', viewMode === 'read' && 'active')}
             >
               <AlignJustify className="h-4 w-4" />
@@ -262,7 +285,7 @@ export function CourseDetailClient({
             </button>
             <button
               type="button"
-              onClick={() => setViewMode('path')}
+              onClick={() => setGuideMode('path')}
               className={cn('guide-mode-btn', viewMode === 'path' && 'active')}
             >
               <Sparkles className="h-4 w-4" />
@@ -284,7 +307,7 @@ export function CourseDetailClient({
           {isEnrolled ? (
             firstIncompleteLessonId ? (
               <Link
-                href={`/lessons/${firstIncompleteLessonId}`}
+                href={lessonHref(firstIncompleteLessonId)}
                 className="w-full justify-center mb-6 text-base py-4 inline-flex items-center gap-2 rounded-2xl font-black text-white transition active:scale-[0.99]"
                 style={{
                   background: 'linear-gradient(135deg, #047857 0%, #14b8a6 60%, #2dd4bf 100%)',
@@ -316,7 +339,12 @@ export function CourseDetailClient({
         <div className="guide-section-header">
           <span className="guide-section-bar" aria-hidden />
           <Zap className="w-4 h-4 text-emerald-600" />
-          <h2>תוכן המדריך</h2>
+          <div>
+            <h2>תוכן המדריך</h2>
+            <p className="text-xs font-semibold mt-0.5" style={{ color: '#6B6890' }}>
+              {guideChaptersSubtitle(gender)}
+            </p>
+          </div>
           <span className="guide-glass-badge mr-auto">
             {course.lessons.length} פרקים
           </span>
@@ -332,16 +360,20 @@ export function CourseDetailClient({
               <motion.div key={lesson.id} variants={item}>
                 {isEnrolled ? (
                   <Link
-                    href={`/lessons/${lesson.id}`}
+                    href={lessonHref(lesson.id)}
                     className={cn(
-                      'guide-glass-card flex items-center gap-3 p-4',
+                      'guide-glass-card guide-chapter-card flex items-center gap-3 p-4',
+                      CHAPTER_CARD_VARIANTS[idx % CHAPTER_CARD_VARIANTS.length],
                       isDone && 'completed'
                     )}
                   >
                     <LessonCardContent lesson={lesson} idx={idx} config={config} isDone={isDone} isLocked={false} />
                   </Link>
                 ) : (
-                  <div className="guide-glass-card flex items-center gap-3 p-4 opacity-60 cursor-not-allowed">
+                  <div className={cn(
+                    'guide-glass-card guide-chapter-card flex items-center gap-3 p-4 opacity-60 cursor-not-allowed',
+                    CHAPTER_CARD_VARIANTS[idx % CHAPTER_CARD_VARIANTS.length],
+                  )}>
                     <LessonCardContent lesson={lesson} idx={idx} config={config} isDone={false} isLocked={true} />
                   </div>
                 )}

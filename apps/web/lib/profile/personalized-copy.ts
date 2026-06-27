@@ -170,6 +170,23 @@ export function guideBackToCoverLabel(): string {
   return 'חזרה לשער';
 }
 
+/** כפתור חזרה למדריך מפרק */
+export function guideBackToGuideLabel(): string {
+  return 'חזרה למדריך';
+}
+
+/** יציאה ממסע הפרק למצב קריאה */
+export function lessonBackToReadLabel(): string {
+  return 'חזרה למצב קריאה';
+}
+
+/** כותרת משנה חמה ברשימת פרקים */
+export function guideChaptersSubtitle(gender: ProfileGender): string {
+  if (gender === 'female') return 'כל פרק הוא צעד קטן — בקצב שנוח לך';
+  if (gender === 'male') return 'כל פרק הוא צעד קטן — בקצב שנוח לך';
+  return 'כל פרק הוא צעד קטן — בקצב שנוח לכם';
+}
+
 /** טקסט אלמוג בפרק — מותאם מגדר */
 export function lessonAlmogCoachBody(gender: ProfileGender): string {
   if (gender === 'female') {
