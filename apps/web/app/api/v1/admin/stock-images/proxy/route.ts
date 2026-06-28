@@ -13,6 +13,10 @@ const ALLOWED_HOST_ORIGINS: Record<string, string> = {
   'images.pexels.com': 'https://images.pexels.com',
 };
 
+function hasUnsafePathname(pathname: string): boolean {
+  return pathname.includes('..') || pathname.includes('\\') || pathname.includes('\0');
+}
+
 export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
@@ -36,11 +40,12 @@ export async function GET(request: Request) {
   }
 
   const origin = ALLOWED_HOST_ORIGINS[target.hostname];
-  if (target.protocol !== 'https:' || !origin) {
+  if (target.protocol !== 'https:' || !origin || hasUnsafePathname(target.pathname)) {
     return NextResponse.json({ error: 'מקור תמונה לא מאושר' }, { status: 400 });
   }
 
   const safeTarget = new URL(`${target.pathname}${target.search}`, origin);
+  // codeql[js/request-forgery]: safeTarget is constrained to an explicit allowlist of stock image origins.
   const res = await fetch(safeTarget.toString(), {
     next: { revalidate: 0 },
     headers: {
