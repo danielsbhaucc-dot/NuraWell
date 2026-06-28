@@ -21,6 +21,25 @@ type StockHit = {
   alt?: string;
 };
 
+const ALLOWED_STOCK_HOSTS = new Set([
+  'pixabay.com',
+  'www.pixabay.com',
+  'cdn.pixabay.com',
+  'pexels.com',
+  'www.pexels.com',
+  'images.pexels.com',
+]);
+
+function buildProxyImageUrl(rawUrl: string): string | null {
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== 'https:' || !ALLOWED_STOCK_HOSTS.has(parsed.hostname)) return null;
+    return `/api/v1/admin/stock-images/proxy?url=${encodeURIComponent(parsed.toString())}`;
+  } catch {
+    return null;
+  }
+}
+
 type MediaStockSearchProps = {
   folder?: string;
   onImported: (asset: MediaAsset) => void;
@@ -140,21 +159,27 @@ export function MediaStockSearch({ folder, onImported, onError }: MediaStockSear
           <StockImageSearchAttribution providers={providers} className="text-xs text-slate-600" />
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {hits.map((hit) => (
-              <button
-                key={hit.id}
-                type="button"
-                disabled={applyBusy}
-                onClick={() => void applyHit(hit)}
-                aria-label={`ייבא תמונה: ${stockPreviewAlt(hit.alt, hit.photographer)}`}
-                className="group relative overflow-hidden rounded-xl border border-white/50 text-right disabled:opacity-60"
-                style={{ background: 'rgba(255,255,255,0.18)' }}
-              >
-                <img
-                  src={`/api/v1/admin/stock-images/proxy?url=${encodeURIComponent(hit.preview_url)}`}
-                  alt={stockPreviewAlt(hit.alt, hit.photographer)}
-                  className="aspect-[4/3] w-full object-cover"
-                />
-              </button>
+              (() => {
+                const previewUrl = buildProxyImageUrl(hit.preview_url);
+                if (!previewUrl) return null;
+                return (
+                  <button
+                    key={hit.id}
+                    type="button"
+                    disabled={applyBusy}
+                    onClick={() => void applyHit(hit)}
+                    aria-label={`ייבא תמונה: ${stockPreviewAlt(hit.alt, hit.photographer)}`}
+                    className="group relative overflow-hidden rounded-xl border border-white/50 text-right disabled:opacity-60"
+                    style={{ background: 'rgba(255,255,255,0.18)' }}
+                  >
+                    <img
+                      src={previewUrl}
+                      alt={stockPreviewAlt(hit.alt, hit.photographer)}
+                      className="aspect-[4/3] w-full object-cover"
+                    />
+                  </button>
+                );
+              })()
             ))}
           </div>
         </>
