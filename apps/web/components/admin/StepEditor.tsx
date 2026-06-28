@@ -14,6 +14,7 @@ import type {
 } from '../../lib/types/journey';
 import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
 import type { MediaAsset } from '@/components/media-manager/types';
+import { buildJourneyStepUploadFolder } from '@/lib/media-manager/folders';
 import {
   formatSecondsAsClock,
   parseClockToSeconds,
@@ -247,6 +248,12 @@ export function StepEditor({ step }: StepEditorProps) {
   const [stationId, setStationId] = useState<string>(step?.station_id ?? '');
   const [audioPlaylists, setAudioPlaylists] = useState<AudioPlaylistOption[]>([]);
   const [audioPlaylistId, setAudioPlaylistId] = useState<string>(step?.audio_playlist_id ?? '');
+  const stationTitle = stations.find((s) => s.id === stationId)?.title ?? 'ללא תחנה';
+  const stepUploadFolder = buildJourneyStepUploadFolder({
+    stationTitle,
+    stepNumber,
+    stepTitle: title,
+  });
 
   useEffect(() => {
     if (!step) {
@@ -1244,6 +1251,7 @@ export function StepEditor({ step }: StepEditorProps) {
                 kind: 'video',
                 mode: 'pick',
                 title: 'בחר וידאו',
+                uploadFolder: stepUploadFolder,
                 onSelect: (asset: MediaAsset) => {
                   setVideoProvider('bunny');
                   setVideoExternalId(asset.external_id ?? '');
@@ -2319,6 +2327,7 @@ export function StepEditor({ step }: StepEditorProps) {
                 kind: 'file',
                 mode: 'pick',
                 title: 'בחר קובץ PDF',
+                uploadFolder: stepUploadFolder,
                 onSelect: (asset: MediaAsset) => {
                   setPdfUrl(asset.url ?? asset.public_url ?? '');
                   setPdfName(asset.title ?? asset.original_filename ?? 'קובץ.pdf');
