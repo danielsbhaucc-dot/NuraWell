@@ -9,7 +9,12 @@ export type SmartFolderCategory = {
   match: (asset: Pick<MediaAsset, 'folder' | 'object_key' | 'kind'>) => boolean;
 };
 
-export const SMART_FOLDER_CATEGORIES: SmartFolderCategory[] = [
+export type FolderLevelView = {
+  folders: { path: string; label: string; count: number; latestTs: number }[];
+  files: MediaAsset[];
+};
+
+const SPECIFIC_CATEGORIES: SmartFolderCategory[] = [
   {
     id: 'tts',
     label: 'תמלול שאלונים',
@@ -40,42 +45,187 @@ export const SMART_FOLDER_CATEGORIES: SmartFolderCategory[] = [
       (a.object_key?.includes('almog') ?? false) ||
       (a.folder?.includes('almog') ?? false),
   },
-  {
+];
+
+const GENERIC_CATEGORY_BY_KIND: Record<MediaAsset['kind'], SmartFolderCategory> = {
+  image: {
     id: 'images',
     label: 'תמונות כלליות',
     icon: 'images',
-    match: (a) =>
-      a.kind === 'image' &&
-      !SMART_FOLDER_CATEGORIES.slice(0, 4).some((c) => c.id !== 'images' && c.match(a)),
+    match: (a) => a.kind === 'image',
   },
-  {
+  audio: {
     id: 'audio',
     label: 'אודיו כללי',
     icon: 'audio',
-    match: (a) =>
-      a.kind === 'audio' &&
-      !(a.folder?.startsWith('tts/') ?? false) &&
-      !(a.object_key?.startsWith('tts/') ?? false),
+    match: (a) => a.kind === 'audio',
   },
-  {
+  file: {
     id: 'files',
     label: 'קבצים',
     icon: 'files',
     match: (a) => a.kind === 'file',
   },
-  {
+  video: {
     id: 'video',
     label: 'וידאו',
     icon: 'video',
     match: (a) => a.kind === 'video',
   },
+};
+
+export const SMART_FOLDER_CATEGORIES: SmartFolderCategory[] = [
+  ...SPECIFIC_CATEGORIES,
+  ...Object.values(GENERIC_CATEGORY_BY_KIND),
 ];
+
+const KNOWN_SEGMENT_TO_CATEGORY_ID: Record<string, string> = {
+  tts: 'tts',
+  transcript: 'tts',
+  transcripts: 'tts',
+  transcription: 'tts',
+  guides: 'guides',
+  guide: 'guides',
+  journey: 'journey',
+  station: 'journey',
+  stations: 'journey',
+  almog: 'almog',
+};
+
+const SKIP_PATH_SEGMENTS = new Set(['media', 'images', 'audio', 'files', 'video']);
+
+function splitPath(value: string | null | undefined): string[] {
+  if (!value) return [];
+  return value
+    .split('/')
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+
+function stripStoragePrefix(parts: string[]): string[] {
+  if (parts.length === 0) return parts;
+  if (SKIP_PATH_SEGMENTS.has(parts[0].toLowerCase())) return parts.slice(1);
+  return parts;
+}
+
+function inferPathParts(asset: MediaAsset): string[] {
+  const fromFolder = stripStoragePrefix(splitPath(asset.folder));
+  if (fromFolder.length > 0) return fromFolder;
+
+  const keyParts = splitPath(asset.object_key);
+  if (keyParts.length <= 1) return [];
+
+  const withoutFilename = keyParts.slice(0, -1);
+  return stripStoragePrefix(withoutFilename);
+}
+
+function humanizeSegment(segment: string): string {
+  const clean = segment
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!clean) return 'כללי';
+  return clean;
+}
+
+function categoryById(id: string): SmartFolderCategory | undefined {
+  return SMART_FOLDER_CATEGORIES.find((cat) => cat.id === id);
+}
+
+function dynamicCategoryFromSegment(
+  segment: string,
+  kind: MediaAsset['kind']
+): SmartFolderCategory {
+  const id = `folder:${segment.toLowerCase()}`;
+  const icon = inferDynamicIcon(segment, kind);
+  return {
+    id,
+    label: humanizeSegment(segment),
+    icon,
+    match: (asset) => resolveSmartCategoryId(asset as MediaAsset) === id,
+  };
+}
+
+const DYNAMIC_ICON_POOL: Array<SmartFolderCategory['icon']> = [
+  'guides',
+  'journey',
+  'images',
+  'audio',
+  'files',
+  'video',
+  'tts',
+];
+
+function hashString(input: string): number {
+  let h = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    h = (h * 31 + input.charCodeAt(i)) >>> 0;
+  }
+  return h;
+}
+
+function inferDynamicIcon(
+  segment: string,
+  kind: MediaAsset['kind']
+): SmartFolderCategory['icon'] {
+  const s = segment.toLowerCase();
+
+  if (/tts|transcript|speech|voice|question|survey|quiz/i.test(s)) return 'tts';
+  if (/guide|manual|doc|help|tutorial/i.test(s)) return 'guides';
+  if (/journey|station|route|path|track/i.test(s)) return 'journey';
+  if (/image|photo|gallery|cover|banner/i.test(s)) return 'images';
+  if (/audio|music|voice|sound|podcast/i.test(s)) return 'audio';
+  if (/video|clip|reel/i.test(s)) return 'video';
+  if (/file|report|sheet|pdf|docx?|pptx?|xlsx?/i.test(s)) return 'files';
+
+  const fallback = GENERIC_CATEGORY_BY_KIND[kind].icon;
+  const idx = hashString(s) % DYNAMIC_ICON_POOL.length;
+  return DYNAMIC_ICON_POOL[idx] ?? fallback;
+}
+
+/** קטגוריה חכמה לפי נכס יחיד (כולל קטגוריות דינמיות אוטומטיות). */
+export function resolveSmartCategoryId(asset: MediaAsset): string {
+  const specific = SPECIFIC_CATEGORIES.find((c) => c.match(asset));
+  if (specific) return specific.id;
+
+  const root = inferPathParts(asset)[0]?.toLowerCase();
+  if (root) {
+    const known = KNOWN_SEGMENT_TO_CATEGORY_ID[root];
+    if (known) return known;
+    return `folder:${root}`;
+  }
+
+  return GENERIC_CATEGORY_BY_KIND[asset.kind].id;
+}
+
+/** בונה רשימת קטגוריות חכמה ודינמית עבור הפריטים הקיימים. */
+export function buildSmartFolderCategories(assets: MediaAsset[]): SmartFolderCategory[] {
+  const dynamic = new Map<string, SmartFolderCategory>();
+
+  for (const asset of assets) {
+    const id = resolveSmartCategoryId(asset);
+    if (categoryById(id) || dynamic.has(id)) continue;
+    if (!id.startsWith('folder:')) continue;
+
+    const segment = id.slice('folder:'.length);
+    dynamic.set(id, dynamicCategoryFromSegment(segment, asset.kind));
+  }
+
+  return [...SMART_FOLDER_CATEGORIES, ...Array.from(dynamic.values())];
+}
+
+/** מחזיר האם נכס שייך לקטגוריה נבחרת. */
+export function matchesSmartCategory(asset: MediaAsset, categoryId: string): boolean {
+  return resolveSmartCategoryId(asset) === categoryId;
+}
 
 /** מחזיר את הקטגוריה החכמה של נכס */
 export function resolveSmartCategory(
   asset: Pick<MediaAsset, 'folder' | 'object_key' | 'kind'>
 ): SmartFolderCategory {
-  return SMART_FOLDER_CATEGORIES.find((c) => c.match(asset)) ?? SMART_FOLDER_CATEGORIES[4];
+  const full = asset as MediaAsset;
+  const id = resolveSmartCategoryId(full);
+  return categoryById(id) ?? dynamicCategoryFromSegment(id.replace('folder:', ''), full.kind);
 }
 
 /** מקבץ נכסים לפי תיקיית משנה בתוך קטגוריה */
@@ -86,7 +236,7 @@ export function groupBySubfolder(
   const map = new Map<string, MediaAsset[]>();
 
   for (const asset of assets) {
-    const sub = extractSubfolder(asset, categoryId);
+    const sub = extractRelativeFolder(asset, categoryId);
     const list = map.get(sub) ?? [];
     list.push(asset);
     map.set(sub, list);
@@ -101,23 +251,25 @@ export function groupBySubfolder(
     .sort((a, b) => a.label.localeCompare(b.label, 'he'));
 }
 
-function extractSubfolder(
-  asset: MediaAsset,
-  categoryId: string
-): string {
-  if (categoryId === 'tts' && asset.folder?.startsWith('tts/')) {
-    const parts = asset.folder.split('/');
-    return parts.length >= 3 ? `${parts[1]}/${parts[2]}` : parts[1] ?? 'כללי';
+function dropCategoryRoot(parts: string[], categoryId: string): string[] {
+  if (parts.length === 0) return parts;
+
+  if (categoryId.startsWith('folder:')) {
+    const segment = categoryId.slice('folder:'.length).toLowerCase();
+    if (parts[0]?.toLowerCase() === segment) return parts.slice(1);
   }
-  if (asset.folder?.trim()) {
-    const parts = asset.folder.split('/');
-    return parts.length > 1 ? parts.slice(1).join('/') : asset.folder;
-  }
-  if (asset.object_key) {
-    const parts = asset.object_key.split('/');
-    if (parts.length >= 2) return parts.slice(0, -1).join('/');
-  }
-  return 'כללי';
+
+  if (categoryId === 'tts' && parts[0]?.toLowerCase() === 'tts') return parts.slice(1);
+  if (categoryId === 'guides' && parts[0]?.toLowerCase() === 'guides') return parts.slice(1);
+  if (categoryId === 'journey' && parts[0]?.toLowerCase() === 'journey') return parts.slice(1);
+
+  return parts;
+}
+
+function extractRelativeFolder(asset: MediaAsset, categoryId: string): string {
+  const parts = dropCategoryRoot(inferPathParts(asset), categoryId);
+  if (parts.length === 0) return 'כללי';
+  return parts.join('/');
 }
 
 function formatSubfolderLabel(subfolder: string, categoryId: string): string {
@@ -128,4 +280,85 @@ function formatSubfolderLabel(subfolder: string, categoryId: string): string {
     return station;
   }
   return subfolder.replace(/\//g, ' › ');
+}
+
+/**
+ * בונה תצוגת "תיקייה נוכחית":
+ * - folders: תתי תיקיות של הרמה הנוכחית
+ * - files: קבצים שנמצאים ישירות ברמה הנוכחית
+ */
+export function buildFolderLevelView(
+  assets: MediaAsset[],
+  categoryId: string,
+  currentPath: string | null
+): FolderLevelView {
+  const folderMap = new Map<string, { path: string; label: string; count: number; latestTs: number }>();
+  const files: MediaAsset[] = [];
+  const normalizedCurrentPath = currentPath?.trim().replace(/^\/+|\/+$/g, '') || null;
+
+  const tsForAsset = (asset: MediaAsset): number => {
+    const t = Date.parse(asset.updated_at ?? asset.created_at ?? '');
+    return Number.isFinite(t) ? t : 0;
+  };
+
+  for (const asset of assets) {
+    const relative = extractRelativeFolder(asset, categoryId);
+    const cleanRelative = relative === 'כללי' ? '' : relative.replace(/^\/+|\/+$/g, '');
+
+    if (!normalizedCurrentPath) {
+      if (!cleanRelative) {
+        files.push(asset);
+        continue;
+      }
+      const first = cleanRelative.split('/')[0];
+      const existing = folderMap.get(first);
+      if (existing) {
+        existing.count += 1;
+        existing.latestTs = Math.max(existing.latestTs, tsForAsset(asset));
+      } else {
+        folderMap.set(first, {
+          path: first,
+          label: humanizeSegment(first),
+          count: 1,
+          latestTs: tsForAsset(asset),
+        });
+      }
+      continue;
+    }
+
+    if (!cleanRelative) continue;
+    if (cleanRelative !== normalizedCurrentPath && !cleanRelative.startsWith(`${normalizedCurrentPath}/`)) {
+      continue;
+    }
+
+    const remainder = cleanRelative === normalizedCurrentPath
+      ? ''
+      : cleanRelative.slice(normalizedCurrentPath.length + 1);
+
+    if (!remainder) {
+      files.push(asset);
+      continue;
+    }
+
+    const next = remainder.split('/')[0];
+    const path = `${normalizedCurrentPath}/${next}`;
+    const existing = folderMap.get(path);
+    if (existing) {
+      existing.count += 1;
+      existing.latestTs = Math.max(existing.latestTs, tsForAsset(asset));
+    } else {
+      folderMap.set(path, {
+        path,
+        label: humanizeSegment(next),
+        count: 1,
+        latestTs: tsForAsset(asset),
+      });
+    }
+  }
+
+  return {
+    folders: Array.from(folderMap.values())
+      .sort((a, b) => b.latestTs - a.latestTs || a.label.localeCompare(b.label, 'he')),
+    files,
+  };
 }
