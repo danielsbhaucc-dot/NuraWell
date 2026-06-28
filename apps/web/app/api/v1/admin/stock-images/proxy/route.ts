@@ -4,13 +4,14 @@ import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit'
 
 export const runtime = 'nodejs';
 
-const ALLOWED_HOST_SUFFIXES = ['pixabay.com', 'pexels.com'];
-
-function isAllowedHost(hostname: string): boolean {
-  return ALLOWED_HOST_SUFFIXES.some(
-    (suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`)
-  );
-}
+const ALLOWED_HOST_ORIGINS: Record<string, string> = {
+  'pixabay.com': 'https://pixabay.com',
+  'www.pixabay.com': 'https://www.pixabay.com',
+  'cdn.pixabay.com': 'https://cdn.pixabay.com',
+  'pexels.com': 'https://pexels.com',
+  'www.pexels.com': 'https://www.pexels.com',
+  'images.pexels.com': 'https://images.pexels.com',
+};
 
 export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
@@ -34,11 +35,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'כתובת תמונה לא תקינה' }, { status: 400 });
   }
 
-  if (target.protocol !== 'https:' || !isAllowedHost(target.hostname)) {
+  const origin = ALLOWED_HOST_ORIGINS[target.hostname];
+  if (target.protocol !== 'https:' || !origin) {
     return NextResponse.json({ error: 'מקור תמונה לא מאושר' }, { status: 400 });
   }
 
-  const res = await fetch(target.toString(), {
+  const safeTarget = new URL(`${target.pathname}${target.search}`, origin);
+  const res = await fetch(safeTarget.toString(), {
     next: { revalidate: 0 },
     headers: {
       Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
