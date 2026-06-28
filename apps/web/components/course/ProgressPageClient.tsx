@@ -22,7 +22,7 @@ import {
   CalendarDays,
   ChevronLeft,
   LineChart,
-  Info,
+  AlertCircle,
 } from 'lucide-react';
 import { TaskHistoryStrip } from '../tasks/TaskHistoryStrip';
 import { TaskHistoryCalendar } from '../tasks/TaskHistoryCalendar';
@@ -191,30 +191,80 @@ const PROGRESS_DIVIDER_COLORS: Record<
   },
 };
 
-/** מפריד בין אזורים — דפוס עמוד הבית עם צבעי accent משתנים */
-function ProgressSectionDivider({ tone }: { tone: StripeTone }) {
+const PROGRESS_DIVIDER_TEXT_COLORS: Record<StripeTone, { title: string; subtitle: string }> = {
+  teal: { title: '#0f766e', subtitle: 'rgba(15,118,110,0.55)' },
+  indigo: { title: '#6366f1', subtitle: 'rgba(99,102,241,0.55)' },
+  emerald: { title: '#059669', subtitle: 'rgba(5,150,105,0.55)' },
+  amber: { title: '#d97706', subtitle: 'rgba(217,119,6,0.55)' },
+};
+
+/** מפריד בין אזורים — כמו עמוד הבית, עם כותרת וצבעי accent משתנים */
+function ProgressSectionDivider({
+  tone,
+  title,
+  subtitle,
+}: {
+  tone: StripeTone;
+  title?: string;
+  subtitle?: string;
+}) {
   const c = PROGRESS_DIVIDER_COLORS[tone];
+  const tc = PROGRESS_DIVIDER_TEXT_COLORS[tone];
+
+  if (!title) {
+    return (
+      <div dir="rtl" className="py-1.5" role="presentation" aria-hidden>
+        <div className="flex items-center gap-3">
+          <div
+            className="h-px flex-1"
+            style={{
+              background: `linear-gradient(90deg, transparent, ${c.lineStrong} 40%, ${c.lineSoft})`,
+            }}
+          />
+          <div
+            className="h-1.5 w-1.5 shrink-0 rounded-full"
+            style={{ background: c.dot, boxShadow: `0 0 10px ${c.dot}55` }}
+          />
+          <div
+            className="h-px flex-1"
+            style={{
+              background: `linear-gradient(270deg, transparent, ${c.lineStrong} 40%, ${c.lineSoft})`,
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div dir="rtl" className="py-1.5" role="presentation" aria-hidden>
+    <div dir="rtl" className="py-1.5" role="separator" aria-label={title}>
       <div className="flex items-center gap-3">
         <div
           className="h-px flex-1"
           style={{
-            background: `linear-gradient(90deg, transparent, ${c.lineStrong} 40%, ${c.lineSoft})`,
+            background: `linear-gradient(90deg, transparent, ${c.lineStrong} 50%, ${c.lineSoft})`,
           }}
         />
-        <div
-          className="h-1.5 w-1.5 shrink-0 rounded-full"
-          style={{
-            background: c.dot,
-            boxShadow: `0 0 10px ${c.dot}55`,
-          }}
-        />
+        <div className="shrink-0 px-1 text-center">
+          <p
+            className="text-[11px] font-black tracking-wide"
+            style={{ color: tc.title, fontFamily: hebrewFont }}
+          >
+            {title}
+          </p>
+          {subtitle ? (
+            <p
+              className="mt-0.5 text-[10px] font-semibold leading-relaxed"
+              style={{ color: tc.subtitle }}
+            >
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
         <div
           className="h-px flex-1"
           style={{
-            background: `linear-gradient(270deg, transparent, ${c.lineStrong} 40%, ${c.lineSoft})`,
+            background: `linear-gradient(270deg, transparent, ${c.lineStrong} 50%, ${c.lineSoft})`,
           }}
         />
       </div>
@@ -372,7 +422,9 @@ export function ProgressPageClient({
 
         <div className="relative z-10 px-5 pb-[4.5rem] pt-3">
           <div className="flex items-start gap-3">
-            <AlmogAvatarChipWithNameTag size={76} nameTagVariant="prominent" />
+            <div className="-mt-3">
+              <AlmogAvatarChipWithNameTag size={92} nameTagVariant="prominent" />
+            </div>
             <div className="min-w-0 flex-1 text-right">
               <p
                 className="text-[15px] font-black text-white leading-tight"
@@ -407,8 +459,8 @@ export function ProgressPageClient({
                 ההתקדמות שלי
               </h1>
               <p
-                className="mt-2 text-sm font-bold leading-relaxed"
-                style={{ color: '#FFF8E7', fontFamily: hebrewFont }}
+                className="mt-2 text-sm font-black leading-relaxed"
+                style={{ color: '#FFFDE7', fontFamily: "'Rubik', 'Heebo', sans-serif" }}
               >
                 {almogHeroBody}
               </p>
@@ -417,7 +469,7 @@ export function ProgressPageClient({
         </div>
       </motion.header>
 
-      <div className="container-mobile relative z-[3] -mt-[5.75rem] pb-10 space-y-7">
+      <div className="container-mobile relative z-[3] -mt-[7.5rem] pb-10 space-y-7">
         <section>
           <motion.div
             variants={container}
@@ -451,7 +503,7 @@ export function ProgressPageClient({
           </motion.div>
         </section>
 
-        <ProgressSectionDivider tone="indigo" />
+        <ProgressSectionDivider tone="indigo" title="מגמות בריאות" subtitle="מה הגוף שלך מספר" />
 
         <section>
           <ProgressSectionHeader
@@ -465,7 +517,7 @@ export function ProgressPageClient({
           </div>
         </section>
 
-        <ProgressSectionDivider tone="emerald" />
+        <ProgressSectionDivider tone="emerald" title="מסע אישי" subtitle="צעדים, משימות והרגלים" />
 
         <section>
           <div className="mb-3 flex items-start justify-between gap-3">
@@ -519,7 +571,7 @@ export function ProgressPageClient({
           </motion.section>
         </section>
 
-        <ProgressSectionDivider tone="amber" />
+        <ProgressSectionDivider tone="amber" title="מעקב יומי" subtitle="30 הימים האחרונים" />
 
         {showDailySection ? (
           <section>
@@ -602,7 +654,7 @@ export function ProgressPageClient({
                     className="progress-partial-info-box flex items-start gap-2.5 rounded-2xl px-4 py-3 text-right"
                     role="note"
                   >
-                    <Info
+                    <AlertCircle
                       className="mt-0.5 h-4 w-4 shrink-0 text-amber-700"
                       strokeWidth={2.4}
                       aria-hidden
@@ -650,7 +702,7 @@ export function ProgressPageClient({
 
         {courseStats.length > 0 && (
           <section>
-            <ProgressSectionDivider tone="teal" />
+            <ProgressSectionDivider tone="teal" title="מדריכים" subtitle="ההתקדמות לפי מדריך" />
             <ProgressSectionHeader title="מדריכים" subtitle="ההתקדמות בכל מדריך" tone="teal" icon={BookOpen} />
             <motion.div
               variants={container}
@@ -698,7 +750,7 @@ export function ProgressPageClient({
 
         {recentActivity.length > 0 && (
           <section>
-            <ProgressSectionDivider tone="indigo" />
+            <ProgressSectionDivider tone="indigo" title="פעילות אחרונה" subtitle="מה הושלם לאחרונה" />
             <ProgressSectionHeader title="פעילות אחרונה" tone="indigo" icon={CheckCircle2} />
             <motion.div variants={container} initial="hidden" animate="show" className="mt-3 space-y-2">
               {recentActivity.map((a, idx) => {
