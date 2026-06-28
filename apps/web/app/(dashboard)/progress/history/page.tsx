@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '../../../../lib/supabase/server';
 import { buildTaskHistoryReport } from '../../../../lib/journey/build-task-history';
 import { TaskHistoryClient } from '../../../../components/progress/TaskHistoryClient';
+import { firstNameFrom, type ProfileGender } from '../../../../lib/profile/personalized-copy';
 
 export const metadata: Metadata = {
   title: 'היסטוריית משימות',
@@ -24,7 +25,23 @@ export default async function TaskHistoryPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, gender')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const firstName = firstNameFrom(profile?.full_name ?? null);
+  const gender = (profile?.gender ?? null) as ProfileGender;
+
   const initialReport = await buildTaskHistoryReport(supabase, user.id, { range: 'month' });
 
-  return <TaskHistoryClient userId={user.id} initialReport={initialReport} />;
+  return (
+    <TaskHistoryClient
+      userId={user.id}
+      firstName={firstName}
+      gender={gender}
+      initialReport={initialReport}
+    />
+  );
 }

@@ -250,6 +250,64 @@ export function progressStatsSectionSubtitle(gender: ProfileGender): string {
   return 'המספרים שלך — בקצרה ובבהירות';
 }
 
+/** ברכת פתיחה בעמוד היסטוריית משימות */
+export function historyPageGreeting(firstName: string): string {
+  return `היי ${firstName} 👋`;
+}
+
+/** טקסט חם של אלמוג בגיבור עמוד היסטוריית משימות — משתנה לפי seed */
+export function historyPageAlmogHeroBody(
+  gender: ProfileGender,
+  firstName: string,
+  seed = 0
+): string {
+  const female = [
+    `${firstName}, כל שורה כאן היא הוכחה שאת בתנועה. זה לא על שלמות — זה על כיוון.`,
+    `${firstName}, הנתונים האלו מספרים סיפור. בואי נקרא אותו יחד ונבין מה עובד לך.`,
+    `${firstName}, גם הימים ה"חלקיים" נמצאים כאן בכוונה — כי כל ניסיון הוא צעד קדימה.`,
+    `${firstName}, הסתכלתי על הנתונים שלך — יש כאן הרבה יותר ממה שנראה במבט ראשון.`,
+  ];
+  const male = [
+    `${firstName}, כל שורה כאן היא הוכחה שאתה בתנועה. זה לא על שלמות — זה על כיוון.`,
+    `${firstName}, הנתונים האלו מספרים סיפור. בוא נקרא אותו יחד ונבין מה עובד לך.`,
+    `${firstName}, גם הימים ה"חלקיים" נמצאים כאן בכוונה — כי כל ניסיון הוא צעד קדימה.`,
+    `${firstName}, הסתכלתי על הנתונים שלך — יש כאן הרבה יותר ממה שנראה במבט ראשון.`,
+  ];
+  const neutral = [
+    `${firstName}, כל שורה כאן היא הוכחה שאת/ה בתנועה. זה לא על שלמות — זה על כיוון.`,
+    `${firstName}, הנתונים האלו מספרים סיפור. בוא/י נקרא אותו יחד ונבין מה עובד.`,
+    `${firstName}, גם הימים ה"חלקיים" נמצאים כאן בכוונה — כי כל ניסיון הוא צעד קדימה.`,
+    `${firstName}, הסתכלתי על הנתונים שלך — יש כאן הרבה יותר ממה שנראה במבט ראשון.`,
+  ];
+  const pool = gender === 'female' ? female : gender === 'male' ? male : neutral;
+  return pool[Math.abs(seed) % pool.length]!;
+}
+
+/** עידוד מאלמוג לפי אחוז הצלחה כולל */
+export function historyPageSuccessEncouragement(
+  gender: ProfileGender,
+  pct: number
+): string {
+  if (pct >= 80) {
+    if (gender === 'female') return `${pct}% הצלחה — את בונה הרגל אמיתי 🔥`;
+    if (gender === 'male') return `${pct}% הצלחה — אתה בונה הרגל אמיתי 🔥`;
+    return `${pct}% הצלחה — הרגל אמיתי בבנייה 🔥`;
+  }
+  if (pct >= 50) {
+    if (gender === 'female') return `${pct}% — את בדרך הנכונה, המשיכי כך`;
+    if (gender === 'male') return `${pct}% — אתה בדרך הנכונה, המשך כך`;
+    return `${pct}% — בדרך הנכונה, המשיכו כך`;
+  }
+  if (pct > 0) {
+    if (gender === 'female') return `${pct}% — כל התחלה חשובה. כל צעד נספר`;
+    if (gender === 'male') return `${pct}% — כל התחלה חשובה. כל צעד נספר`;
+    return `${pct}% — כל התחלה חשובה. כל צעד נספר`;
+  }
+  if (gender === 'female') return 'עוד לא התחלת — ואין רגע טוב יותר מעכשיו';
+  if (gender === 'male') return 'עוד לא התחלת — ואין רגע טוב יותר מעכשיו';
+  return 'עוד לא התחלתם — ואין רגע טוב יותר מעכשיו';
+}
+
 /** הודעה דינמית על ימים עם ביצוע חלקי */
 export function progressPartialDaysMessage(count: number): string {
   if (count <= 0) return '';
