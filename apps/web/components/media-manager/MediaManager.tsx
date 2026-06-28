@@ -161,6 +161,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
           provider: 'bunny',
           external_id: id || undefined,
           external_url: url || undefined,
+          folder: options?.uploadFolder,
           source: 'upload',
         }),
       });
@@ -515,6 +516,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
               {panel === 'upload' && activeKind !== 'video' ? (
                 <MediaUploadZone
                   kind={activeKind as 'image' | 'audio' | 'file'}
+                  folder={options?.uploadFolder}
                   onUploaded={onAssetUploaded}
                   onError={(msg) => toast.error('העלאה נכשלה', msg)}
                 />
@@ -522,6 +524,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
 
               {panel === 'stock' && activeKind === 'image' ? (
                 <MediaStockSearch
+                  folder={options?.uploadFolder}
                   onImported={onAssetUploaded}
                   onError={(msg) => toast.error('ייבוא נכשל', msg)}
                 />

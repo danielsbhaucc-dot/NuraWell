@@ -22,11 +22,12 @@ type StockHit = {
 };
 
 type MediaStockSearchProps = {
+  folder?: string;
   onImported: (asset: MediaAsset) => void;
   onError: (msg: string) => void;
 };
 
-export function MediaStockSearch({ onImported, onError }: MediaStockSearchProps) {
+export function MediaStockSearch({ folder, onImported, onError }: MediaStockSearchProps) {
   const [query, setQuery] = useState('');
   const [source, setSource] = useState<'all' | 'pixabay' | 'pexels'>('all');
   const [hits, setHits] = useState<StockHit[]>([]);
@@ -74,6 +75,7 @@ export function MediaStockSearch({ onImported, onError }: MediaStockSearchProps)
         downloadUrl: hit.download_url,
         title: hit.alt || hit.photographer || 'תמונה',
         source: hit.source,
+        folder,
         credit: {
           source: hit.source,
           photographer: credit.photographer,
@@ -148,7 +150,7 @@ export function MediaStockSearch({ onImported, onError }: MediaStockSearchProps)
                 style={{ background: 'rgba(255,255,255,0.18)' }}
               >
                 <img
-                  src={hit.preview_url}
+                  src={`/api/v1/admin/stock-images/proxy?url=${encodeURIComponent(hit.preview_url)}`}
                   alt={stockPreviewAlt(hit.alt, hit.photographer)}
                   className="aspect-[4/3] w-full object-cover"
                 />
