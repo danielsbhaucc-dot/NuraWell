@@ -6,6 +6,7 @@ import type { StationCoverCredit } from '@/lib/media/stock-image-attribution';
 import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
 import { applyStationCoverFromAsset } from '@/lib/media-manager/apply-asset';
 import type { MediaAsset } from '@/components/media-manager/types';
+import { buildJourneyStationUploadFolder } from '@/lib/media-manager/folders';
 import { GlassConfirmDialog } from '@/components/media-manager/GlassConfirmDialog';
 import { opsGlassBtnClass, opsGlassBtnDangerClass } from '@/components/admin/OpsPanel';
 
@@ -46,6 +47,7 @@ export function AdminStationCoverPanel({
       kind: 'image',
       mode: 'pick',
       title: `תמונת רקע — ${stationTitle}`,
+      uploadFolder: buildJourneyStationUploadFolder(stationTitle),
       onSelect: (asset: MediaAsset) => void applyAsset(asset),
     });
   };
