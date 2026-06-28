@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { buildStationCoverCredit, type StationCoverCredit } from './stock-image-attribution';
 
+// מטמון פשוט בזיכרון למניעת הורדות כפולות
+const imageCache = new Map<string, { buffer: Buffer; contentType: string; credit: StationCoverCredit }>();
+
 const pixabayResponseSchema = z.object({
   hits: z.array(
     z.object({
@@ -118,9 +121,26 @@ export async function downloadStockImage(
   provider?: StockImageProvider
 ): Promise<StockImageResult> {
   const useProvider = provider ?? (process.env.PIXABAY_API_KEY ? 'pixabay' : 'pexels');
+  const cacheKey = `${useProvider}:${query.toLowerCase().trim()}`;
 
-  if (useProvider === 'pixabay') {
-    return fetchPixabayImage(query);
+  const cached = imageCache.get(cacheKey);
+  if (cached) {
+    return { ...cached };
   }
-  return fetchPexelsImage(query);
+
+  let result: StockImageResult;
+  if (useProvider === 'pixabay') {
+    result = await fetchPixabayImage(query);
+  } else {
+    result = await fetchPexelsImage(query);
+  }
+
+  imageCache.set(cacheKey, { buffer: result.buffer, contentType: result.contentType, credit: result.credit });
+
+  return result;
+}
+
+/** ניקוי מטמון התמונות (לשימוש בעת מחיקת מדריך) */
+export function clearStockImageCache(): void {
+  imageCache.clear();
 }
