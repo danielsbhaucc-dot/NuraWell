@@ -3,8 +3,6 @@ import { buildStationCoverCredit, type StationCoverCredit } from './stock-image-
 
 import crypto from 'crypto';
 
-import crypto from 'crypto';
-
 // מטמון פשוט בזיכרון למניעת הורדות כפולות
 const imageCache = new Map<string, { buffer: Buffer; contentType: string; credit: StationCoverCredit }>();
 
@@ -13,30 +11,6 @@ const contentHashCache = new Map<string, { objectKey: string; credit: StationCov
 
 /** חישוב hash SHA-256 של Buffer */
 export function computeContentHash(buffer: Buffer): string {
-  return crypto.createHash('sha256').update(buffer).digest('hex');
-}
-
-/** שמירת hash במטמון */
-export function cacheContentHash(
-  hash: string,
-  objectKey: string,
-  credit: StationCoverCredit
-): void {
-  contentHashCache.set(hash, { objectKey, credit });
-}
-
-/** בדיקה אם hash קיים במטמון */
-export function getCachedContentHash(
-  hash: string
-): { objectKey: string; credit: StationCoverCredit } | null {
-  return contentHashCache.get(hash) ?? null;
-}
-
-/** מטמון מבוסס hash של תוכן התמונה למניעת העלאות כפולות ל-R2 */
-const contentHashCache = new Map<string, { objectKey: string; credit: StationCoverCredit }>();
-
-/** חישוב hash SHA-256 של Buffer */
-function computeContentHash(buffer: Buffer): string {
   return crypto.createHash('sha256').update(buffer).digest('hex');
 }
 

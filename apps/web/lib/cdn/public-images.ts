@@ -48,22 +48,3 @@ export async function imageExistsInR2(objectKey: string): Promise<boolean> {
     return false;
   }
 }
-
-/** בדיקה אם אובייקט קיים ב-R2 */
-export async function imageExistsInR2(objectKey: string): Promise<boolean> {
-  const bucket = r2ImageBucketName();
-  if (!bucket) return false;
-
-  try {
-    const s3 = getR2Client();
-    await s3.send(
-      new HeadObjectCommand({
-        Bucket: bucket,
-        Key: objectKey,
-      })
-    );
-    return true;
-  } catch {
-    return false;
-  }
-}
