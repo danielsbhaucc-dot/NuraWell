@@ -180,6 +180,7 @@ export async function importStockImageAsAsset(params: {
   downloadUrl: string;
   title: string;
   source: 'pixabay' | 'pexels';
+  folder?: string;
   credit: MediaCredit;
   onProgress: (p: UploadProgress) => void;
 }): Promise<Record<string, unknown>> {
@@ -198,6 +199,7 @@ export async function importStockImageAsAsset(params: {
     file,
     title: params.title,
     source: params.source,
+    folder: params.folder,
     credit: { ...params.credit, requires_attribution: true },
     onProgress: params.onProgress,
   });

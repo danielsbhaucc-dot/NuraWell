@@ -34,6 +34,7 @@ export type OpenMediaManagerOptions = {
   kind?: MediaKind | MediaKind[];
   mode?: MediaManagerMode;
   title?: string;
+  uploadFolder?: string;
   onSelect?: (asset: MediaAsset) => void;
 };
 

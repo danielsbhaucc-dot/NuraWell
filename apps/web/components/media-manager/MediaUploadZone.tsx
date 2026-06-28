@@ -15,6 +15,7 @@ import type { MediaAsset } from './types';
 
 type MediaUploadZoneProps = {
   kind: Exclude<MediaKind, 'video'>;
+  folder?: string;
   onUploaded: (asset: MediaAsset) => void;
   onError: (msg: string) => void;
 };
@@ -40,6 +41,7 @@ const SOURCE_OPTIONS: Record<Exclude<MediaKind, 'video'>, { value: MediaSource; 
 
 export function MediaUploadZone({
   kind,
+  folder,
   onUploaded,
   onError,
 }: MediaUploadZoneProps) {
@@ -129,6 +131,7 @@ export function MediaUploadZone({
           title: title.trim() || undefined,
           source,
           credit,
+          folder,
           onProgress: setProgress,
         });
         onUploaded(row as unknown as MediaAsset);
@@ -155,7 +158,7 @@ export function MediaUploadZone({
         if (fileRef.current) fileRef.current.value = '';
       }
     },
-    [author, busy, kind, license, link, onError, onUploaded, source, title]
+    [author, busy, folder, kind, license, link, onError, onUploaded, source, title]
   );
 
   return (

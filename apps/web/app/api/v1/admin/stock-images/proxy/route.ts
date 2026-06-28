@@ -4,12 +4,13 @@ import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit'
 
 export const runtime = 'nodejs';
 
-const ALLOWED_HOSTS = new Set([
-  'pixabay.com',
-  'cdn.pixabay.com',
-  'images.pexels.com',
-  'www.pexels.com',
-]);
+const ALLOWED_HOST_SUFFIXES = ['pixabay.com', 'pexels.com'];
+
+function isAllowedHost(hostname: string): boolean {
+  return ALLOWED_HOST_SUFFIXES.some(
+    (suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`)
+  );
+}
 
 export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
@@ -33,11 +34,17 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'כתובת תמונה לא תקינה' }, { status: 400 });
   }
 
-  if (target.protocol !== 'https:' || !ALLOWED_HOSTS.has(target.hostname)) {
+  if (target.protocol !== 'https:' || !isAllowedHost(target.hostname)) {
     return NextResponse.json({ error: 'מקור תמונה לא מאושר' }, { status: 400 });
   }
 
-  const res = await fetch(target.toString(), { next: { revalidate: 0 } });
+  const res = await fetch(target.toString(), {
+    next: { revalidate: 0 },
+    headers: {
+      Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+      'User-Agent': 'NuraWellMediaManager/1.0 (+https://nurawell.ai)',
+    },
+  });
   if (!res.ok) {
     return NextResponse.json({ error: 'לא הצלחנו להוריד את התמונה' }, { status: 502 });
   }
