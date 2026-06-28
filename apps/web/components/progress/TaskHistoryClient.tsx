@@ -443,6 +443,28 @@ function DayRow({ day, todayKey }: { day: TaskHistoryDay; todayKey: string }) {
   );
 }
 
+/* ── Task encouragement helper ──────────────────────────────────── */
+function getTaskEncouragement(task: TaskHistoryEntry, gender: ProfileGender): string | null {
+  if (task.missed_days_in_range === 0 && task.active_days_in_range > 0) {
+    return '✨ הכל מתועד — כל יום שנחשב נמצא כאן';
+  }
+  if (task.current_streak >= 3) {
+    return `🔥 ${task.current_streak} ימים ברצף — זה בדיוק איך הרגל נבנה`;
+  }
+  if (task.partial_days_in_range > 0) {
+    return `כל צעד קטן נחשב — גם ${task.partial_days_in_range} ימים חלקיים מצביעים על תנועה`;
+  }
+  if (task.pending_days_in_range > 0) {
+    return 'היום עוד פתוח — אפשר להשלים עכשיו';
+  }
+  if (task.missed_days_in_range > 0) {
+    return gender === 'female'
+      ? 'אל תוותרי — כל יום חדש הוא הזדמנות חדשה'
+      : 'אל תוותר — כל יום חדש הוא הזדמנות חדשה';
+  }
+  return null;
+}
+
 /* ── Task card — glass, expandable ──────────────────────────────── */
 function TaskCard({
   task,
@@ -458,20 +480,7 @@ function TaskCard({
     (d) => d.status !== 'off' && d.status !== 'before_accept'
   );
 
-  const encouragement =
-    task.missed_days_in_range === 0 && task.active_days_in_range > 0
-      ? '✨ הכל מתועד — כל יום שנחשב נמצא כאן'
-      : task.current_streak >= 3
-        ? `🔥 ${task.current_streak} ימים ברצף — זה בדיוק איך הרגל נבנה`
-        : task.partial_days_in_range > 0
-          ? `כל צעד קטן נחשב — גם ${task.partial_days_in_range} ימים חלקיים מצביעים על תנועה`
-          : task.pending_days_in_range > 0
-            ? 'היום עוד פתוח — אפשר להשלים עכשיו'
-            : task.missed_days_in_range > 0 && gender === 'female'
-              ? 'אל תוותרי — כל יום חדש הוא הזדמנות חדשה'
-              : task.missed_days_in_range > 0
-                ? 'אל תוותר — כל יום חדש הוא הזדמנות חדשה'
-                : null;
+  const encouragement = getTaskEncouragement(task, gender);
 
   return (
     <article className="rounded-[24px] overflow-hidden" style={glassTaskCard}>
@@ -658,7 +667,7 @@ export function TaskHistoryClient({
   const todayKey = jerusalemTodayKey();
   const greeting = useMemo(() => getPersonalGreeting(new Date()), []);
   const heroSeed = useMemo(
-    () => new Date().getDate() + report.total_accepted_lifetime + report.total_executions_in_range,
+    () => report.total_accepted_lifetime + report.total_executions_in_range,
     [report.total_accepted_lifetime, report.total_executions_in_range]
   );
   const almogHeroBody = historyPageAlmogHeroBody(gender, firstName, heroSeed);
