@@ -279,7 +279,8 @@ export function historyPageAlmogHeroBody(
     `${firstName}, גם הימים ה"חלקיים" נמצאים כאן בכוונה — כי כל ניסיון הוא צעד קדימה.`,
     `${firstName}, הסתכלתי על הנתונים שלך — יש כאן הרבה יותר ממה שנראה במבט ראשון.`,
   ];
-  const pool = gender === 'female' ? female : gender === 'male' ? male : neutral;
+  const pools: Partial<Record<NonNullable<ProfileGender>, string[]>> = { female, male };
+  const pool = (gender ? pools[gender] : null) ?? neutral;
   return pool[Math.abs(seed) % pool.length]!;
 }
 
