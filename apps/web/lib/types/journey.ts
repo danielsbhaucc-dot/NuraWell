@@ -37,6 +37,9 @@ export interface JourneyStep {
   /** פלייליסט מוזיקת רקע שינוגן לאורך הצעד (NULL = ללא) */
   audio_playlist_id: string | null;
 
+  /** קרדיט לתמונת רקע (JSON) */
+  cover_credit?: string | null;
+
   created_at: string;
   updated_at: string;
 }

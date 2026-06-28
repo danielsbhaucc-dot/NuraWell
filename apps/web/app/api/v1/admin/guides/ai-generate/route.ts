@@ -5,6 +5,12 @@ import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit'
 import { readJsonBody } from '@/lib/api/json-request';
 import { AI_MODELS, groq, openrouter } from '@/lib/ai/client';
 import { syncGuideToAlmogKnowledge } from '@/lib/guides/sync-knowledge';
+import { downloadStockImage } from '@/lib/media/stock-image-download';
+import { optimizeImageToWebP } from '@/lib/media/image-optimization';
+import { getR2Client, r2ImageBucketName } from '@/lib/storage/r2-almog';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { journeyStationCoverObjectKey } from '@/lib/cdn/public-images';
+import type { StationCoverCredit } from '@/lib/media/stock-image-attribution';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,11 +36,28 @@ type GeneratedLesson = {
   sort_order: number;
 };
 
+type StationCoverImage = {
+  /** מילות חיפוש לתמונה (בעברית) */
+  searchQuery: string;
+  /** ספק מועדף (אופציונלי) */
+  provider?: 'pixabay' | 'pexels';
+};
+
+type GeneratedStation = {
+  title: string;
+  description: string;
+  /** תמונת רקע - AI בוחר מילות חיפוש */
+  coverImage: StationCoverImage;
+  /** רשימת פרקים בתחנה */
+  lessons: GeneratedLesson[];
+  sort_order: number;
+};
+
 type GeneratedGuide = {
   title: string;
   description: string;
   clarification_questions: string[];
-  lessons: GeneratedLesson[];
+  stations: GeneratedStation[];
 };
 
 let idCounter = 0;
@@ -51,11 +74,14 @@ function buildPrompt(sourceText: string, answers?: Record<string, string>): stri
     : '';
 
   return `אתה מחולל מדריכים ל-NuraWell — אפליקציית בריאות בעברית.
-קרא את הטקסט הגולמי וצור מדריך מלא עם פרקים.
+קרא את הטקסט הגולמי וצור מדריך מלא עם תחנות (stations).
 
 כללים:
 - עברית חמה וברורה, mobile-first
-- 4-8 פרקים לפי אורך התוכן
+- 3-6 תחנות לפי אורך התוכן
+- כל תחנה: 2-4 פרקים (lessons)
+- לכל תחנה: בחר מילות חיפוש לתמונת רקע (coverImage.searchQuery) בעברית
+- תמונת רקע תתאים לנושא התחנה (למשל "אישה מתעמלת בחדר כושר", "ירקות טריים על שולחן")
 - כל פרק: HTML פשוט (p, h2, ul, li, strong) — לא markdown
 - לכל פרק: 1-3 משימות מעשיות + 0-2 הרגלים
 - lesson_type: text/mixed/audio לפי התוכן
@@ -72,14 +98,22 @@ ${sourceText.slice(0, MAX_SOURCE)}
   "title": "...",
   "description": "...",
   "clarification_questions": [],
-  "lessons": [{
+  "stations": [{
     "title": "...",
     "description": "...",
-    "lesson_type": "text",
-    "text_content": "<p>...</p>",
-    "duration_minutes": 15,
-    "tasks": [{"id":"t1","title":"...","description":"...","is_required":true}],
-    "habits": [{"id":"h1","title":"...","emoji":"🌱","frequency":"daily"}],
+    "coverImage": {
+      "searchQuery": "מילות חיפוש בעברית לתמונה"
+    },
+    "lessons": [{
+      "title": "...",
+      "description": "...",
+      "lesson_type": "text",
+      "text_content": "<p>...</p>",
+      "duration_minutes": 15,
+      "tasks": [{"id":"t1","title":"...","description":"...","is_required":true}],
+      "habits": [{"id":"h1","title":"...","emoji":"🌱","frequency":"daily"}],
+      "sort_order": 0
+    }],
     "sort_order": 0
   }]
 }`;
@@ -124,32 +158,41 @@ function extractJson(text: string): GeneratedGuide | null {
 }
 
 function normalizeGuide(raw: GeneratedGuide): GeneratedGuide {
-  const lessons = (raw.lessons ?? []).map((l, i) => ({
-    title: l.title?.trim() || `פרק ${i + 1}`,
-    description: l.description?.trim() || '',
-    lesson_type: l.lesson_type || 'text',
-    text_content: l.text_content?.trim() || `<p>${l.description || l.title}</p>`,
-    duration_minutes: l.duration_minutes || 15,
-    tasks: (l.tasks ?? []).map((t) => ({
-      id: t.id || genId(),
-      title: t.title || 'משימה',
-      description: t.description,
-      is_required: t.is_required ?? true,
+  const stations = (raw.stations ?? []).map((s, si) => ({
+    title: s.title?.trim() || `תחנה ${si + 1}`,
+    description: s.description?.trim() || '',
+    coverImage: {
+      searchQuery: s.coverImage?.searchQuery?.trim() || 'בריאות כושר',
+      provider: s.coverImage?.provider || undefined,
+    },
+    lessons: (s.lessons ?? []).map((l, li) => ({
+      title: l.title?.trim() || `פרק ${li + 1}`,
+      description: l.description?.trim() || '',
+      lesson_type: l.lesson_type || 'text',
+      text_content: l.text_content?.trim() || `<p>${l.description || l.title}</p>`,
+      duration_minutes: l.duration_minutes || 15,
+      tasks: (l.tasks ?? []).map((t) => ({
+        id: t.id || genId(),
+        title: t.title || 'משימה',
+        description: t.description,
+        is_required: t.is_required ?? true,
+      })),
+      habits: (l.habits ?? []).map((h) => ({
+        id: h.id || genId(),
+        title: h.title || 'הרגל',
+        emoji: h.emoji || '🌱',
+        frequency: h.frequency || 'daily',
+      })),
+      sort_order: l.sort_order ?? li,
     })),
-    habits: (l.habits ?? []).map((h) => ({
-      id: h.id || genId(),
-      title: h.title || 'הרגל',
-      emoji: h.emoji || '🌱',
-      frequency: h.frequency || 'daily',
-    })),
-    sort_order: l.sort_order ?? i,
+    sort_order: s.sort_order ?? si,
   }));
 
   return {
     title: raw.title?.trim() || 'מדריך חדש',
     description: raw.description?.trim() || '',
     clarification_questions: raw.clarification_questions ?? [],
-    lessons,
+    stations,
   };
 }
 
@@ -227,20 +270,90 @@ export async function POST(request: Request) {
 
           savedGuideId = course.id;
 
-          for (const lesson of guide.lessons) {
+          // Create stations with cover images
+          for (const station of guide.stations) {
+            let backgroundImageKey: string | null = null;
+            let coverCredit: StationCoverCredit | null = null;
+
+            try {
+              const imageResult = await downloadStockImage(
+                station.coverImage.searchQuery,
+                station.coverImage.provider
+              );
+
+              const optimized = await optimizeImageToWebP(
+                imageResult.buffer,
+                1200,
+                630,
+                80
+              );
+
+              const stationId = `station-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+              const objectKey = journeyStationCoverObjectKey(stationId);
+
+              const bucket = r2ImageBucketName();
+              if (bucket) {
+                const s3 = getR2Client();
+                await s3.send(
+                  new PutObjectCommand({
+                    Bucket: bucket,
+                    Key: objectKey,
+                    Body: optimized,
+                    ContentType: 'image/webp',
+                    CacheControl: 'public, max-age=31536000, immutable',
+                  })
+                );
+                backgroundImageKey = objectKey;
+                coverCredit = imageResult.credit;
+              }
+            } catch (imgErr) {
+              console.warn(
+                '[ai-generate] image download failed for station',
+                station.title,
+                imgErr
+              );
+            }
+
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (auth.supabase as any).from('lessons').insert({
-              course_id: course.id,
-              title: lesson.title,
-              description: lesson.description,
-              lesson_type: lesson.lesson_type,
-              text_content: lesson.text_content,
-              tasks: lesson.tasks,
-              habits: lesson.habits,
-              sort_order: lesson.sort_order,
-              duration_minutes: lesson.duration_minutes,
-              is_published: true,
-            });
+            const { data: stationRow, error: stationErr } = await (auth.supabase as any)
+              .from('journey_stations')
+              .insert({
+                course_id: course.id,
+                title: station.title,
+                description: station.description,
+                sort_order: station.sort_order,
+                background_image_key: backgroundImageKey,
+                cover_credit: coverCredit ? JSON.stringify(coverCredit) : null,
+                is_published: true,
+              })
+              .select('id')
+              .single();
+
+            if (stationErr || !stationRow) {
+              send({
+                phase: 'error',
+                message: stationErr?.message ?? 'שגיאה ביצירת תחנה',
+              });
+              controller.close();
+              return;
+            }
+
+            for (const lesson of station.lessons) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await (auth.supabase as any).from('lessons').insert({
+                course_id: course.id,
+                station_id: stationRow.id,
+                title: lesson.title,
+                description: lesson.description,
+                lesson_type: lesson.lesson_type,
+                text_content: lesson.text_content,
+                tasks: lesson.tasks,
+                habits: lesson.habits,
+                sort_order: lesson.sort_order,
+                duration_minutes: lesson.duration_minutes,
+                is_published: true,
+              });
+            }
           }
 
           send({ phase: 'syncing_rag', message: 'מסנכרן לידע אלמוג…' });
