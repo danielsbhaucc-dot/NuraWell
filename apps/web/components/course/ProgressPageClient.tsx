@@ -22,7 +22,7 @@ import {
   CalendarDays,
   ChevronLeft,
   LineChart,
-  Sparkles,
+  Info,
 } from 'lucide-react';
 import { TaskHistoryStrip } from '../tasks/TaskHistoryStrip';
 import { TaskHistoryCalendar } from '../tasks/TaskHistoryCalendar';
@@ -35,7 +35,6 @@ import {
   progressPageAlmogHeroBody,
   progressPageGreeting,
   progressPartialDaysMessage,
-  progressStatsSectionSubtitle,
   type ProfileGender,
 } from '../../lib/profile/personalized-copy';
 
@@ -166,8 +165,61 @@ function ProgressSectionHeader({
   );
 }
 
+const PROGRESS_DIVIDER_COLORS: Record<
+  StripeTone,
+  { lineStrong: string; lineSoft: string; dot: string }
+> = {
+  teal: {
+    lineStrong: 'rgba(20,184,166,0.28)',
+    lineSoft: 'rgba(4,120,87,0.10)',
+    dot: '#14b8a6',
+  },
+  indigo: {
+    lineStrong: 'rgba(99,102,241,0.26)',
+    lineSoft: 'rgba(129,140,248,0.10)',
+    dot: '#818cf8',
+  },
+  emerald: {
+    lineStrong: 'rgba(16,185,129,0.28)',
+    lineSoft: 'rgba(52,211,153,0.10)',
+    dot: '#34d399',
+  },
+  amber: {
+    lineStrong: 'rgba(245,158,11,0.30)',
+    lineSoft: 'rgba(251,191,36,0.12)',
+    dot: '#fbbf24',
+  },
+};
+
+/** מפריד בין אזורים — דפוס עמוד הבית עם צבעי accent משתנים */
 function ProgressSectionDivider({ tone }: { tone: StripeTone }) {
-  return <hr className={`progress-section-divider progress-section-divider-${tone}`} aria-hidden />;
+  const c = PROGRESS_DIVIDER_COLORS[tone];
+
+  return (
+    <div dir="rtl" className="py-1.5" role="presentation" aria-hidden>
+      <div className="flex items-center gap-3">
+        <div
+          className="h-px flex-1"
+          style={{
+            background: `linear-gradient(90deg, transparent, ${c.lineStrong} 40%, ${c.lineSoft})`,
+          }}
+        />
+        <div
+          className="h-1.5 w-1.5 shrink-0 rounded-full"
+          style={{
+            background: c.dot,
+            boxShadow: `0 0 10px ${c.dot}55`,
+          }}
+        />
+        <div
+          className="h-px flex-1"
+          style={{
+            background: `linear-gradient(270deg, transparent, ${c.lineStrong} 40%, ${c.lineSoft})`,
+          }}
+        />
+      </div>
+    </div>
+  );
 }
 
 function ProgressTrack({
@@ -320,7 +372,7 @@ export function ProgressPageClient({
 
         <div className="relative z-10 px-5 pb-[4.5rem] pt-3">
           <div className="flex items-start gap-3">
-            <AlmogAvatarChipWithNameTag size={76} />
+            <AlmogAvatarChipWithNameTag size={76} nameTagVariant="prominent" />
             <div className="min-w-0 flex-1 text-right">
               <p
                 className="text-[15px] font-black text-white leading-tight"
@@ -354,25 +406,24 @@ export function ProgressPageClient({
               >
                 ההתקדמות שלי
               </h1>
-              <p className="mt-2 text-sm text-white/88 leading-relaxed">{almogHeroBody}</p>
+              <p
+                className="mt-2 text-sm font-bold leading-relaxed"
+                style={{ color: '#FFF8E7', fontFamily: hebrewFont }}
+              >
+                {almogHeroBody}
+              </p>
             </div>
           </div>
         </div>
       </motion.header>
 
-      <div className="container-mobile relative z-[3] -mt-14 pb-10 space-y-7">
+      <div className="container-mobile relative z-[3] -mt-[5.75rem] pb-10 space-y-7">
         <section>
-          <ProgressSectionHeader
-            title="במספרים"
-            subtitle={progressStatsSectionSubtitle(gender)}
-            tone="teal"
-            icon={Sparkles}
-          />
           <motion.div
             variants={container}
             initial="hidden"
             animate="show"
-            className="mt-3 grid grid-cols-2 gap-3"
+            className="grid grid-cols-2 gap-3"
           >
             {stats.map((s) => (
               <motion.div
@@ -548,9 +599,14 @@ export function ProgressPageClient({
 
                 {partialDaysCount > 0 ? (
                   <div
-                    className="progress-partial-info-box rounded-2xl px-4 py-3 text-right"
+                    className="progress-partial-info-box flex items-start gap-2.5 rounded-2xl px-4 py-3 text-right"
                     role="note"
                   >
+                    <Info
+                      className="mt-0.5 h-4 w-4 shrink-0 text-amber-700"
+                      strokeWidth={2.4}
+                      aria-hidden
+                    />
                     <p className="text-[12px] font-bold leading-relaxed text-amber-900/90">
                       {partialDaysMessage}
                     </p>

@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
-import { AlmogAvatarChip } from '../journey/AlmogPresence';
+import { AlmogAvatarChipWithNameTag } from '../journey/AlmogPresence';
 
 interface GuideImmersiveSlideHeaderProps {
   eyebrow: string;
@@ -21,7 +21,7 @@ export function GuideImmersiveSlideHeader({ eyebrow, title, subtitle }: GuideImm
     >
       <div className="guide-immersive-slide-header__ornament" aria-hidden />
       <div className="flex items-center gap-3">
-        <AlmogAvatarChip size={36} />
+        <AlmogAvatarChipWithNameTag size={36} />
         <div className="min-w-0 flex-1 text-right">
           <p className="flex items-center justify-end gap-1 text-[11px] font-bold text-emerald-200/90">
             <Sparkles className="h-3 w-3 shrink-0 text-emerald-300" aria-hidden />
