@@ -1,5 +1,5 @@
 import { resolveAlmogPublicBaseUrl, resolveCdnImagesPrefix } from '../ai/almog-avatar';
-import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getR2Client, r2ImageBucketName } from '@/lib/storage/r2-almog';
 
 /** מפתח אובייקט WebP לתמונת רקע של תחנה במסע. */
@@ -28,4 +28,42 @@ export async function deleteImageFromR2(objectKey: string): Promise<void> {
       Key: objectKey,
     })
   );
+}
+
+/** בדיקה אם אובייקט קיים ב-R2 */
+export async function imageExistsInR2(objectKey: string): Promise<boolean> {
+  const bucket = r2ImageBucketName();
+  if (!bucket) return false;
+
+  try {
+    const s3 = getR2Client();
+    await s3.send(
+      new HeadObjectCommand({
+        Bucket: bucket,
+        Key: objectKey,
+      })
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** בדיקה אם אובייקט קיים ב-R2 */
+export async function imageExistsInR2(objectKey: string): Promise<boolean> {
+  const bucket = r2ImageBucketName();
+  if (!bucket) return false;
+
+  try {
+    const s3 = getR2Client();
+    await s3.send(
+      new HeadObjectCommand({
+        Bucket: bucket,
+        Key: objectKey,
+      })
+    );
+    return true;
+  } catch {
+    return false;
+  }
 }

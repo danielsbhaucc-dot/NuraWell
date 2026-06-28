@@ -9,8 +9,9 @@ import { downloadStockImage } from '@/lib/media/stock-image-download';
 import { optimizeImageToWebP } from '@/lib/media/image-optimization';
 import { getR2Client, r2ImageBucketName } from '@/lib/storage/r2-almog';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
-import { journeyStationCoverObjectKey } from '@/lib/cdn/public-images';
+import { journeyStationCoverObjectKey, imageExistsInR2 } from '@/lib/cdn/public-images';
 import type { StationCoverCredit } from '@/lib/media/stock-image-attribution';
+import { computeContentHash, cacheContentHash, getCachedContentHash } from '@/lib/media/stock-image-download';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -272,7 +273,7 @@ export async function POST(request: Request) {
 
           // Create stations with cover images
           for (const station of guide.stations) {
-            let backgroundImageKey: string | null = null;
+            let coverImageKey: string | null = null;
             let coverCredit: StationCoverCredit | null = null;
 
             try {
@@ -288,23 +289,41 @@ export async function POST(request: Request) {
                 80
               );
 
-              const stationId = `station-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-              const objectKey = journeyStationCoverObjectKey(stationId);
+              // בדיקה אם תמונה עם אותו hash כבר קיימת ב-R2
+              const contentHash = computeContentHash(optimized);
+              const cached = getCachedContentHash(contentHash);
 
-              const bucket = r2ImageBucketName();
-              if (bucket) {
-                const s3 = getR2Client();
-                await s3.send(
-                  new PutObjectCommand({
-                    Bucket: bucket,
-                    Key: objectKey,
-                    Body: optimized,
-                    ContentType: 'image/webp',
-                    CacheControl: 'public, max-age=31536000, immutable',
-                  })
-                );
-                backgroundImageKey = objectKey;
-                coverCredit = imageResult.credit;
+              if (cached) {
+                // תמונה קיימת - נשתמש במפתח הקיים
+                const exists = await imageExistsInR2(cached.objectKey);
+                if (exists) {
+                  coverImageKey = cached.objectKey;
+                  coverCredit = cached.credit;
+                }
+              }
+
+              if (!coverImageKey) {
+                const stationId = `station-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+                const objectKey = journeyStationCoverObjectKey(stationId);
+
+                const bucket = r2ImageBucketName();
+                if (bucket) {
+                  const s3 = getR2Client();
+                  await s3.send(
+                    new PutObjectCommand({
+                      Bucket: bucket,
+                      Key: objectKey,
+                      Body: optimized,
+                      ContentType: 'image/webp',
+                      CacheControl: 'public, max-age=31536000, immutable',
+                    })
+                  );
+                  coverImageKey = objectKey;
+                  coverCredit = imageResult.credit;
+
+                  // שמירה במטמון hash
+                  cacheContentHash(contentHash, objectKey, imageResult.credit);
+                }
               }
             } catch (imgErr) {
               console.warn(
@@ -322,8 +341,8 @@ export async function POST(request: Request) {
                 title: station.title,
                 description: station.description,
                 sort_order: station.sort_order,
-                background_image_key: backgroundImageKey,
-                cover_credit: coverCredit ? JSON.stringify(coverCredit) : null,
+                cover_image_key: coverImageKey,
+                cover_image_credit: coverCredit ? JSON.stringify(coverCredit) : null,
                 is_published: true,
               })
               .select('id')
