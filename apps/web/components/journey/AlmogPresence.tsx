@@ -85,16 +85,33 @@ export function AlmogAvatarChip({ size = 44 }: { size?: number }) {
 }
 
 /** תמונת אלמוג + תג שם ירוק חופף לתחתית האווטאר */
-export function AlmogAvatarChipWithNameTag({ size = 46, name = 'אלמוג' }: { size?: number; name?: string }) {
+export function AlmogAvatarChipWithNameTag({
+  size = 46,
+  name = 'אלמוג',
+  nameTagVariant = 'default',
+}: {
+  size?: number;
+  name?: string;
+  /** prominent — תג גדול יותר, ממוקם גבוה יותר על האווטאר (עמוד התקדמות) */
+  nameTagVariant?: 'default' | 'prominent';
+}) {
+  const prominent = nameTagVariant === 'prominent';
+
   return (
-    <div className="relative shrink-0 pb-2">
+    <div className={`relative shrink-0 ${prominent ? 'pb-2.5' : 'pb-2'}`}>
       <AlmogAvatarChip size={size} />
       <span
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 px-3 py-0.5 rounded-full text-[10px] font-black text-white whitespace-nowrap shadow-md"
+        className={`absolute left-1/2 -translate-x-1/2 rounded-full font-black text-white whitespace-nowrap shadow-md ${
+          prominent
+            ? 'bottom-1.5 translate-y-[28%] px-4 py-1 text-[11px]'
+            : 'bottom-0 translate-y-1/2 px-3 py-0.5 text-[10px]'
+        }`}
         style={{
           background: 'linear-gradient(135deg, #047857, #10b981)',
           border: '1px solid rgba(255,255,255,0.38)',
-          boxShadow: '0 4px 14px rgba(4,120,87,0.28)',
+          boxShadow: prominent
+            ? '0 5px 16px rgba(4,120,87,0.32)'
+            : '0 4px 14px rgba(4,120,87,0.28)',
         }}
       >
         {name}

@@ -9,7 +9,6 @@ import {
   CheckCircle2, Sparkles, Award,
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
-import { lessonHrefWithViewMode } from '../../lib/client/guide-view-mode';
 import { GuideBackIconButton } from './GuideBackIconButton';
 import { GuideImmersiveAlmogHero } from './GuideImmersiveAlmogHero';
 import { GuideImmersiveSlideHeader } from './GuideImmersiveSlideHeader';
@@ -332,7 +331,7 @@ function PathLessonSlide({
           <p className="text-sm italic text-white/45">פרק זה מחכה לך — לחץ על &quot;התחל ללמוד&quot; בסוף המסלול</p>
         )}
         <Link
-          href={lessonHrefWithViewMode(lesson.id, 'path')}
+          href={`/lessons/${lesson.id}`}
           className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition hover:brightness-110"
           style={{ background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.3)' }}
         >
@@ -389,7 +388,7 @@ function PathOutroSlide({
       </p>
       {!done && firstLessonId ? (
         <Link
-          href={lessonHrefWithViewMode(firstLessonId, 'path')}
+          href={`/lessons/${firstLessonId}`}
           className="inline-flex items-center gap-2 rounded-2xl px-6 py-3.5 text-base font-black text-white"
           style={{
             background: 'linear-gradient(135deg, #047857, #14b8a6)',
@@ -421,10 +420,10 @@ function PathStat({
 }) {
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm backdrop-blur-md"
+      className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm backdrop-blur-md whitespace-nowrap"
       style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)' }}
     >
-      <Icon className="h-4 w-4 text-emerald-200" />
+      <Icon className="h-4 w-4 text-emerald-200 shrink-0" />
       <span className="font-bold text-white">{value}</span>
       <span className="text-xs text-white/65">{label}</span>
     </span>

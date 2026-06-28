@@ -3408,9 +3408,9 @@ html {
     background:
       linear-gradient(
         180deg,
-        rgba(17, 24, 39, 0.52) 0%,
-        rgba(0, 0, 0, 0.38) 42%,
-        rgba(0, 0, 0, 0.72) 100%
+        rgba(17, 24, 39, 0.55) 0%,
+        rgba(0, 0, 0, 0.42) 45%,
+        rgba(0, 0, 0, 0.82) 100%
       );
   }
 
@@ -3460,6 +3460,42 @@ html {
     width: 1px;
     height: 1.1rem;
     background: rgba(255, 255, 255, 0.28);
+    flex-shrink: 0;
+  }
+
+  .guide-hero-stats--inline .guide-hero-stat {
+    white-space: nowrap;
+  }
+
+  @media (max-width: 640px) {
+    .guide-hero-stats {
+      flex-wrap: wrap;
+      gap: 0.45rem 0.65rem;
+      padding: 0.55rem 0.85rem;
+      max-width: 100%;
+      border-radius: 1.25rem;
+    }
+
+    .guide-hero-stat-sep {
+      display: none;
+    }
+
+    .guide-section-header {
+      flex-wrap: wrap;
+      gap: 0.5rem 0.65rem;
+      align-items: flex-start;
+    }
+
+    .guide-section-header > div:not(.guide-section-bar) {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .guide-section-badge {
+      margin-inline-start: auto;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
   }
 
   .guide-glass-card {
@@ -3517,6 +3553,12 @@ html {
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(20, 184, 166, 0.14));
     border: 1px solid rgba(16, 185, 129, 0.3);
     color: #047857;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .guide-section-badge {
+    margin-inline-start: auto;
   }
 
   .guide-section-header {
@@ -3878,7 +3920,7 @@ html {
 
   .guide-immersive-slide-header {
     position: relative;
-    padding: 0.65rem 0.85rem;
+    padding: 0.65rem 0.85rem 0.85rem;
     border-radius: 1.1rem;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.16);
@@ -4276,29 +4318,6 @@ body.overflow-hidden { overflow: hidden; }
 .progress-section-stripe-amber {
   background: linear-gradient(180deg, #fbbf24, #d97706);
   box-shadow: 0 0 12px rgba(245, 158, 11, 0.32);
-}
-
-.progress-section-divider {
-  height: 1px;
-  width: 100%;
-  border: none;
-  margin: 0;
-}
-
-.progress-section-divider-teal {
-  background: linear-gradient(90deg, transparent, rgba(20, 184, 166, 0.42), rgba(4, 120, 87, 0.18), transparent);
-}
-
-.progress-section-divider-indigo {
-  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.38), rgba(129, 140, 248, 0.16), transparent);
-}
-
-.progress-section-divider-emerald {
-  background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.4), rgba(52, 211, 153, 0.16), transparent);
-}
-
-.progress-section-divider-amber {
-  background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.42), rgba(251, 191, 36, 0.16), transparent);
 }
 
 .progress-partial-info-box {

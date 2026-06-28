@@ -15,8 +15,6 @@ import { GuideBackIconButton } from './GuideBackIconButton';
 import { cn } from '../../lib/cn';
 import {
   persistGuideViewModePreference,
-  readGuideViewModePreference,
-  lessonHrefWithViewMode,
   type GuideViewMode,
 } from '../../lib/client/guide-view-mode';
 import {
@@ -99,17 +97,14 @@ export function CourseDetailClient({
 
   type GuideViewModeLocal = 'cover' | 'read' | 'path';
   const [viewMode, setViewMode] = useState<GuideViewModeLocal>('cover');
-  const [immersivePref, setImmersivePref] = useState<GuideViewMode>('read');
 
   useEffect(() => {
     setViewMode('cover');
-    setImmersivePref(readGuideViewModePreference());
     window.scrollTo(0, 0);
   }, [course.id]);
 
   const setGuideMode = (mode: GuideViewMode) => {
     persistGuideViewModePreference(mode);
-    setImmersivePref(mode);
     setViewMode(mode);
   };
 
@@ -131,8 +126,7 @@ export function CourseDetailClient({
   }, []);
 
   const showReadContent = viewMode === 'read';
-  const lessonHref = (lessonId: string) =>
-    lessonHrefWithViewMode(lessonId, immersivePref === 'path' ? 'path' : undefined);
+  const lessonHref = (lessonId: string) => `/lessons/${lessonId}`;
 
   return (
     <>
@@ -216,25 +210,22 @@ export function CourseDetailClient({
               {course.title}
             </h1>
 
-            <div className="guide-hero-stats">
+            <div className="guide-hero-stats guide-hero-stats--inline">
               <div className="guide-hero-stat">
-                <BookOpen className="w-4 h-4 text-emerald-200" />
-                <span className="font-bold text-white">{totalLessons}</span>
-                <span className="text-white/70 text-xs">פרקים</span>
+                <BookOpen className="w-4 h-4 text-emerald-200 shrink-0" />
+                <span className="font-bold text-white whitespace-nowrap">{totalLessons} פרקים</span>
               </div>
               <span className="guide-hero-stat-sep" aria-hidden />
               <div className="guide-hero-stat">
-                <Clock className="w-4 h-4 text-emerald-200" />
-                <span className="font-bold text-white">~{totalMinutes}</span>
-                <span className="text-white/70 text-xs">דקות</span>
+                <Clock className="w-4 h-4 text-emerald-200 shrink-0" />
+                <span className="font-bold text-white whitespace-nowrap">~{totalMinutes} דקות</span>
               </div>
               {isEnrolled && (
                 <>
                   <span className="guide-hero-stat-sep" aria-hidden />
                   <div className="guide-hero-stat">
-                    <Award className="w-4 h-4 text-teal-100" />
-                    <span className="font-bold text-white">{completedCount}/{totalLessons}</span>
-                    <span className="text-white/70 text-xs">הושלמו</span>
+                    <Award className="w-4 h-4 text-teal-100 shrink-0" />
+                    <span className="font-bold text-white whitespace-nowrap">{completedCount}/{totalLessons} הושלמו</span>
                   </div>
                 </>
               )}
@@ -345,7 +336,7 @@ export function CourseDetailClient({
               {guideChaptersSubtitle(gender)}
             </p>
           </div>
-          <span className="guide-glass-badge mr-auto">
+          <span className="guide-glass-badge guide-section-badge">
             {course.lessons.length} פרקים
           </span>
         </div>
@@ -613,10 +604,10 @@ function CoverStat({
 }) {
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm backdrop-blur-md"
+      className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm backdrop-blur-md whitespace-nowrap"
       style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)' }}
     >
-      <Icon className="h-4 w-4 text-emerald-200" />
+      <Icon className="h-4 w-4 text-emerald-200 shrink-0" />
       <span className="font-bold text-white">{value}</span>
       <span className="text-xs text-white/65">{label}</span>
     </span>

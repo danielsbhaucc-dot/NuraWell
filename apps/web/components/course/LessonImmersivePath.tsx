@@ -5,12 +5,12 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clock, ChevronLeft, ChevronRight, Play, CheckCircle2, Sparkles,
-  AlignLeft, ExternalLink as ExternalLinkIcon,
+  AlignLeft, ExternalLink as ExternalLinkIcon, MessageCircle,
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { sanitizeLessonHtml } from '../../lib/sanitize-lesson-html';
 import { splitLessonHtmlToSections } from '../../lib/course/split-lesson-slides';
-import { lessonHrefWithViewMode } from '../../lib/client/guide-view-mode';
+import { dispatchOpenAlmogChatWithGuideContext } from '../../lib/notifications/open-almog-chat';
 import { GuideBackIconButton } from './GuideBackIconButton';
 import { GuideImmersiveAlmogHero } from './GuideImmersiveAlmogHero';
 import { GuideImmersiveSlideHeader } from './GuideImmersiveSlideHeader';
@@ -22,7 +22,8 @@ import type { LessonDetail, LessonProgressData } from '../../lib/types/course';
 import {
   lessonPathIntroHint,
   lessonImmersiveModeLabel,
-  lessonBackToReadLabel,
+  guideBackToGuideLabel,
+  lessonAlmogCta,
   type ProfileGender,
 } from '../../lib/profile/personalized-copy';
 
@@ -187,7 +188,7 @@ export function LessonImmersivePath({
         <div className="mb-3 flex items-center gap-3">
           <GuideBackIconButton
             onClick={onExit}
-            ariaLabel={lessonBackToReadLabel()}
+            ariaLabel={guideBackToGuideLabel()}
             variant="immersive"
           />
           <div className="flex-1 min-w-0">
@@ -215,7 +216,12 @@ export function LessonImmersivePath({
         />
       </div>
 
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-2">
+      <div
+        className={cn(
+          'relative z-10 flex flex-1 flex-col items-center overflow-y-auto px-6 py-2',
+          current.kind === 'links' ? 'justify-start pt-1' : 'justify-center',
+        )}
+      >
         <AnimatePresence mode="wait" custom={direction}>
           <LessonSlideContent
             key={current.key}
@@ -333,6 +339,7 @@ function LessonSlideContent({
   );
 
   if (slide.kind === 'intro') {
+    const almogPrompt = `תעזור לי עם הפרק "${lesson.title}" מהמדריך "${lesson.course.title}". מה הכי חשוב לקחת ממנו ואיך ליישם את זה היום?`;
     return wrap(
       <div className="text-center">
         <div className="mb-5 flex justify-center">
@@ -351,6 +358,22 @@ function LessonSlideContent({
             {lesson.duration_minutes} דקות
           </p>
         ) : null}
+        <button
+          type="button"
+          onClick={() => dispatchOpenAlmogChatWithGuideContext(almogPrompt, {
+            courseId: lesson.course_id,
+            courseTitle: lesson.course.title,
+            lessonId: lesson.id,
+            lessonTitle: lesson.title,
+            lessonCompleted: progress.is_completed,
+            source: 'lesson_page',
+          })}
+          className="mt-5 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-white/90 backdrop-blur-md transition hover:bg-white/15"
+          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.28)' }}
+        >
+          <MessageCircle className="h-3.5 w-3.5 text-emerald-200" />
+          {lessonAlmogCta(gender)}
+        </button>
         <p className="mt-6 text-xs font-semibold text-white/50">{lessonPathIntroHint(gender)}</p>
       </div>,
     );
@@ -404,9 +427,12 @@ function LessonSlideContent({
   }
 
   if (slide.kind === 'links') {
+    const linkCount = lesson.external_links.length;
     return wrap(
       <div className="guide-immersive-slide-card rounded-3xl p-5">
-        <h3 className="mb-4 text-lg font-black text-white">קישורים נוספים</h3>
+        <h3 className={cn('text-lg font-black text-white', linkCount <= 2 ? 'mb-2' : 'mb-3')}>
+          קישורים נוספים
+        </h3>
         <div className="space-y-2">
           {lesson.external_links.map((link) => (
             <a
@@ -495,7 +521,7 @@ function LessonSlideContent({
           ) : null}
           {nextLesson ? (
             <Link
-              href={lessonHrefWithViewMode(nextLesson.id, 'path')}
+              href={`/lessons/${nextLesson.id}`}
               className="inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-black text-white"
               style={{
                 background: 'linear-gradient(135deg, #047857, #14b8a6)',
@@ -514,7 +540,7 @@ function LessonSlideContent({
             חזרה למדריך
           </Link>
           {prevLesson ? (
-            <Link href={lessonHrefWithViewMode(prevLesson.id, 'path')} className="text-xs font-semibold text-white/50 hover:text-white/75">
+            <Link href={`/lessons/${prevLesson.id}`} className="text-xs font-semibold text-white/50 hover:text-white/75">
               ← {prevLesson.title}
             </Link>
           ) : null}
