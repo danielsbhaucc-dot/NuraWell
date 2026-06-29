@@ -10,6 +10,7 @@ import {
 } from './lib/ops-host';
 import { resolvePublicAppOriginForOpsRedirect } from './lib/public-app-url';
 import { APP_HOME_PATH } from './lib/navigation/app-home-path';
+import { handleChallengeMiddleware } from './lib/challenge/middleware-challenge';
 
 // ── CSP nonce ──────────────────────────────────────────────────────────────
 // Each request gets a unique cryptographic nonce, replacing 'unsafe-inline'
@@ -346,6 +347,14 @@ export async function middleware(request: NextRequest) {
           /* last_active_at update is best-effort — failure should not block navigation */
         },
       );
+
+    const challengeRedirect = await handleChallengeMiddleware(
+      request,
+      user,
+      supabase,
+      applySecurityHeaders,
+    );
+    if (challengeRedirect) return challengeRedirect;
   }
 
   return applySecurityHeaders(response);

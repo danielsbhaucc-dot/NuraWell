@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { PublicAiPresence } from '@/components/ai/PublicAiPresence';
 import { ComingSoonExperience } from '@/components/coming-soon/ComingSoonExperience';
@@ -49,6 +50,20 @@ async function getComingSoonConfig(): Promise<{
 }
 
 export default async function ComingSoonPage() {
+  const supabase = await createClient();
+  const { data: settings } = await supabase
+    .from('site_settings')
+    .select('challenge_enabled')
+    .eq('id', 1)
+    .maybeSingle();
+
+  if (settings?.challenge_enabled) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) redirect('/challenge');
+  }
+
   const config = await getComingSoonConfig();
   return (
     <>

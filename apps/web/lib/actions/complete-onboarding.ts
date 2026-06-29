@@ -12,6 +12,10 @@ import { BODY_METRICS } from '@/lib/onboarding/body-metrics';
 import { validateBirthDate } from '@/lib/privacy/age-validation';
 import { recordRegistrationConsents } from '@/lib/privacy/record-consent';
 import {
+  computeChallengeEndDate,
+  computeChallengeStartDate,
+} from '@/lib/challenge/start-date';
+import {
   GENDERS,
   MAIN_GOALS,
   MAIN_OBSTACLES,
@@ -64,6 +68,41 @@ const onboardingSchema = z.object({
 export type OnboardingActionState =
   | { ok: true; redirectTo: string; needsEmailVerification?: boolean }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
+
+async function enrollNewUserInChallenge(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+): Promise<void> {
+  const { data: settings } = await admin
+    .from('site_settings')
+    .select('challenge_enabled')
+    .eq('id', 1)
+    .maybeSingle();
+  if (!settings?.challenge_enabled) return;
+
+  const { data: campaign } = await admin
+    .from('challenge_campaigns')
+    .select('id, duration_days')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!campaign) return;
+
+  const now = new Date();
+  const startDate = computeChallengeStartDate(now);
+  const endDate = computeChallengeEndDate(startDate, campaign.duration_days);
+
+  await admin.from('challenge_enrollments').insert({
+    user_id: userId,
+    campaign_id: campaign.id,
+    registered_at: now.toISOString(),
+    challenge_start_date: startDate,
+    challenge_end_date: endDate,
+    status: 'waiting',
+    is_demo: false,
+  });
+}
 
 export async function completeOnboarding(
   _prev: OnboardingActionState | null,
@@ -270,6 +309,10 @@ export async function completeOnboarding(
 
   ingestOnboardingIntoVectorMemory(userId, vectorProfile).catch((err) => {
     console.warn('[complete-onboarding] vector ingest failed', err);
+  });
+
+  await enrollNewUserInChallenge(admin, userId).catch((err) => {
+    console.warn('[complete-onboarding] challenge enroll failed', err);
   });
 
   const needsEmailVerification = !signUpData.user?.email_confirmed_at;

@@ -21,6 +21,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Sparkles,
+  Trophy,
   UserCircle,
   X,
 } from 'lucide-react';
@@ -79,6 +80,7 @@ export function AdminShell({
   const isJourneyHub = np === '/ops/journey-hub';
   const isAudio = np === '/ops/audio' || np.startsWith('/ops/audio/');
   const isGuides = np === '/ops/guides' || np.startsWith('/ops/guides/');
+  const isChallenge = np === '/ops/challenge' || np.startsWith('/ops/challenge/');
   const isJourneyManage =
     np.startsWith('/ops/journey') || np.startsWith('/ops/steps') || isJourneyHub || isAudio;
 
@@ -269,6 +271,16 @@ export function AdminShell({
             >
               <BookOpen size={20} className={cn('shrink-0', isGuides && 'text-emerald-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>מדריכים</span>
+            </Link>
+
+            <Link
+              href={opsHref('/challenge')}
+              onClick={() => setSidebarOpen(false)}
+              className={navBtn(isChallenge, 'violet')}
+              title="אתגר 14 יום"
+            >
+              <Trophy size={20} className={cn('shrink-0', isChallenge && 'text-violet-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>אתגר</span>
             </Link>
 
             {sidebarCollapsed ? (
