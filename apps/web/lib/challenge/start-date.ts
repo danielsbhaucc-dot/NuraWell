@@ -22,6 +22,11 @@ function addDaysToKey(key: string, days: number): string {
   return dt.toISOString().slice(0, 10);
 }
 
+/** מחר בלוח ירושלים — לדמו "חוויה מלאה" עם ספירה קצרה */
+export function jerusalemTomorrowDateKey(now: Date = new Date()): string {
+  return addDaysToKey(jerusalemDateKeyFromDate(now), 1);
+}
+
 /**
  * האתגר תמיד מתחיל ביום ראשון:
  * - נרשם בראשון לפני 15:00 → אותו ראשון

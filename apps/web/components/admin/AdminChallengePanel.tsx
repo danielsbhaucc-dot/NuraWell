@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ExternalLink, FlaskConical, Loader2, Play, Trash2 } from 'lucide-react';
+import { ExternalLink, FlaskConical, Loader2, Play, Route, Trash2 } from 'lucide-react';
 import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
 import { AdminChallengeTasksEditor } from '@/components/admin/AdminChallengeTasksEditor';
 import { AdminChallengeIntroEditor } from '@/components/admin/AdminChallengeIntroEditor';
@@ -9,7 +9,13 @@ import { AdminChallengeEatingWindowEditor } from '@/components/admin/AdminChalle
 import { AdminChallengeStatsPanel } from '@/components/admin/AdminChallengeStatsPanel';
 import { AdminChallengeAuditPanel } from '@/components/admin/AdminChallengeAuditPanel';
 
-type DemoScenario = 'waiting' | 'intro' | 'active' | 'wrap_up';
+type DemoScenario = 'waiting' | 'intro' | 'active' | 'wrap_up' | 'full';
+
+const FULL_EXPERIENCE: { key: DemoScenario; label: string; desc: string } = {
+  key: 'full',
+  label: 'חוויה מלאה מההתחלה',
+  desc: 'המתנה → פתיחה → חלון אכילה → ריאיון → דשבורד (כפתור "התחל עכשיו" במסך ההמתנה)',
+};
 
 const SCENARIOS: { key: DemoScenario; label: string; desc: string; day?: number }[] = [
   { key: 'waiting', label: 'המתנה לפני האתגר', desc: 'שעון חול + אלמוג נרגש' },
@@ -118,6 +124,25 @@ export function AdminChallengePanel() {
           הקישור חתום ותקף 15 דקות — <strong>לא יעבוד למשתמשים רגילים</strong>, רק
           למנהל מחובר. ודא/י שאת/ה מחובר/ת גם באפליקציה הראשית (לא רק ב-OPS).
         </p>
+
+        <button
+          type="button"
+          disabled={loading !== null}
+          onClick={() => startDemo(FULL_EXPERIENCE.key)}
+          className="mb-4 flex w-full flex-col items-start rounded-2xl border-2 border-violet-400 bg-gradient-to-br from-violet-100 to-white p-5 text-right transition hover:border-violet-500 hover:shadow-md disabled:opacity-60"
+        >
+          <span className="flex items-center gap-2 text-base font-black text-violet-950">
+            {loading === 'full-0' ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Route className="h-5 w-5" />
+            )}
+            {FULL_EXPERIENCE.label}
+          </span>
+          <span className="mt-2 text-sm text-slate-600">{FULL_EXPERIENCE.desc}</span>
+        </button>
+
+        <p className="mb-3 text-xs font-semibold text-slate-500">קפיצה ישירה למסך:</p>
 
         <div className="grid gap-3 sm:grid-cols-2">
           {SCENARIOS.map((s) => {

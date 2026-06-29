@@ -49,6 +49,14 @@ function demoScenarioToPhase(
       if (!enrollment.eating_window) return 'eating_window_setup';
       if (!enrollment.interview_completed_at) return 'interview';
       return 'active';
+    case 'full': {
+      const todayKey = jerusalemDateKeyFromDate(new Date());
+      if (todayKey < enrollment.challenge_start_date) return 'waiting';
+      if (!enrollment.intro_completed_at) return 'intro';
+      if (!enrollment.eating_window) return 'eating_window_setup';
+      if (!enrollment.interview_completed_at) return 'interview';
+      return 'active';
+    }
     case 'active':
       return 'active';
     case 'wrap_up':
@@ -93,7 +101,7 @@ export function challengeAllowedPaths(phase: ChallengePhase): string[] {
   const base = ['/challenge', '/api/v1/challenge', ...apiExtras];
   switch (phase) {
     case 'waiting':
-      return [...base];
+      return [...base, '/api/v1/challenge/demo-skip-wait'];
     case 'intro':
       return [...base, '/challenge/intro'];
     case 'eating_window_setup':

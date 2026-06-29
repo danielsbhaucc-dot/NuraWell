@@ -11,6 +11,7 @@ import {
   countdownToDate,
   currentChallengeDayIndex,
   jerusalemDateKeyFromDate,
+  jerusalemTomorrowDateKey,
 } from './start-date';
 import { resolveChallengePhase } from './phase';
 
@@ -107,13 +108,15 @@ export function buildChallengeState(
 }
 
 export async function upsertDemoEnrollment(
-  supabase: SupabaseClient,
+  admin: SupabaseClient,
   userId: string,
-  scenario: 'waiting' | 'intro' | 'active' | 'wrap_up',
+  scenario: 'waiting' | 'intro' | 'active' | 'wrap_up' | 'full',
   simulatedDay?: number,
-): Promise<EnrollmentRow | null> {
-  const campaign = await getActiveCampaign(supabase);
-  if (!campaign) return null;
+): Promise<{ enrollment: EnrollmentRow | null; error?: string }> {
+  const campaign = await getActiveCampaign(admin);
+  if (!campaign) {
+    return { enrollment: null, error: 'לא נמצא קמפיין אתגר פעיל — הרץ מיגרציה 069 והפעל קמפיין' };
+  }
 
   const now = new Date();
   const demoEatingWindow = {
@@ -137,6 +140,10 @@ export async function upsertDemoEnrollment(
 
   if (scenario === 'waiting') {
     startDate = computeChallengeStartDate(new Date(now.getTime() + 5 * 86400000));
+    endDate = computeChallengeEndDate(startDate, campaign.duration_days);
+    status = 'waiting';
+  } else if (scenario === 'full') {
+    startDate = jerusalemTomorrowDateKey(now);
     endDate = computeChallengeEndDate(startDate, campaign.duration_days);
     status = 'waiting';
   } else if (scenario === 'wrap_up') {
@@ -173,43 +180,111 @@ export async function upsertDemoEnrollment(
     }
   }
 
-  await supabase.from('challenge_enrollments').delete().eq('user_id', userId).eq('is_demo', true);
-
-  const { data, error } = await supabase
+  const { data: existing } = await admin
     .from('challenge_enrollments')
-    .insert({
-      user_id: userId,
-      campaign_id: campaign.id,
-      registered_at: now.toISOString(),
-      challenge_start_date: startDate,
-      challenge_end_date: endDate,
-      status,
-      is_demo: true,
-      demo_scenario: scenario,
-      demo_simulated_day: demoSimulatedDay,
-      intro_completed_at: introCompleted,
-      interview_completed_at: interviewCompleted,
-      eating_window: eatingWindow,
-      wrap_up_seen_at: wrapUpSeenAt,
-      completion_summary: completionSummary,
-    })
-    .select(
-      `
+    .select('*')
+    .eq('user_id', userId)
+    .eq('campaign_id', campaign.id)
+    .maybeSingle();
+
+  const metadata: Record<string, unknown> = {};
+  if (existing && !existing.is_demo) {
+    metadata.demo_backup = {
+      status: existing.status,
+      challenge_start_date: existing.challenge_start_date,
+      challenge_end_date: existing.challenge_end_date,
+      intro_completed_at: existing.intro_completed_at,
+      interview_completed_at: existing.interview_completed_at,
+      eating_window: existing.eating_window,
+      wrap_up_seen_at: existing.wrap_up_seen_at,
+      completion_summary: existing.completion_summary,
+      demo_simulated_day: existing.demo_simulated_day,
+      registered_at: existing.registered_at,
+    };
+  }
+
+  const row = {
+    user_id: userId,
+    campaign_id: campaign.id,
+    registered_at: now.toISOString(),
+    challenge_start_date: startDate,
+    challenge_end_date: endDate,
+    status,
+    is_demo: true,
+    demo_scenario: scenario,
+    demo_simulated_day: demoSimulatedDay,
+    intro_completed_at: introCompleted,
+    interview_completed_at: interviewCompleted,
+    eating_window: eatingWindow,
+    wrap_up_seen_at: wrapUpSeenAt,
+    completion_summary: completionSummary,
+    metadata,
+    updated_at: now.toISOString(),
+  };
+
+  const { data, error } = existing
+    ? await admin
+        .from('challenge_enrollments')
+        .update(row)
+        .eq('id', existing.id)
+        .select(
+          `
       *,
       campaign:challenge_campaigns(id, slug, title, duration_days, is_active, config)
     `,
-    )
-    .single();
+        )
+        .single()
+    : await admin
+        .from('challenge_enrollments')
+        .insert(row)
+        .select(
+          `
+      *,
+      campaign:challenge_campaigns(id, slug, title, duration_days, is_active, config)
+    `,
+        )
+        .single();
 
   if (error) {
     console.error('[challenge] upsertDemoEnrollment', error.message);
-    return null;
+    return {
+      enrollment: null,
+      error:
+        error.message.includes('demo_scenario')
+          ? 'סוג דמו לא נתמך ב-DB — הרץ מיגרציה 000074'
+          : error.message,
+    };
   }
-  return data as EnrollmentRow;
+  return { enrollment: data as EnrollmentRow };
 }
 
-export async function clearDemoEnrollment(supabase: SupabaseClient, userId: string): Promise<void> {
-  await supabase.from('challenge_enrollments').delete().eq('user_id', userId).eq('is_demo', true);
+export async function clearDemoEnrollment(admin: SupabaseClient, userId: string): Promise<void> {
+  const { data: demoRow } = await admin
+    .from('challenge_enrollments')
+    .select('id, is_demo, metadata')
+    .eq('user_id', userId)
+    .eq('is_demo', true)
+    .maybeSingle();
+
+  if (!demoRow) return;
+
+  const backup = (demoRow.metadata as { demo_backup?: Record<string, unknown> } | null)?.demo_backup;
+
+  if (backup) {
+    await admin
+      .from('challenge_enrollments')
+      .update({
+        ...backup,
+        is_demo: false,
+        demo_scenario: null,
+        metadata: {},
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', demoRow.id);
+    return;
+  }
+
+  await admin.from('challenge_enrollments').delete().eq('id', demoRow.id);
 }
 
 export async function getTodayTasks(

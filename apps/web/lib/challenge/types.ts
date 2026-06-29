@@ -1,6 +1,6 @@
 export type ChallengeEnrollmentStatus = 'waiting' | 'active' | 'completed' | 'dropped';
 
-export type ChallengeDemoScenario = 'waiting' | 'intro' | 'active' | 'wrap_up';
+export type ChallengeDemoScenario = 'waiting' | 'intro' | 'active' | 'wrap_up' | 'full';
 
 export type ChallengePhase =
   | 'none'

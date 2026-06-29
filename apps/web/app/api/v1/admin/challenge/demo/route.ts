@@ -5,12 +5,13 @@ import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { TOKEN_TTL_MS, createChallengeDemoToken } from '@/lib/challenge/demo-token';
 import { upsertDemoEnrollment, clearDemoEnrollment } from '@/lib/challenge/enrollment';
 import { publicAppBaseNoSlashSync } from '@/lib/public-app-url';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const startSchema = z.object({
-  scenario: z.enum(['waiting', 'intro', 'active', 'wrap_up']),
+  scenario: z.enum(['waiting', 'intro', 'active', 'wrap_up', 'full']),
   simulated_day: z.number().int().min(1).max(14).optional(),
 });
 
@@ -24,18 +25,22 @@ export async function POST(request: Request) {
 
   const parsed = startSchema.safeParse(raw.value);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid scenario' }, { status: 400 });
+    return NextResponse.json({ error: 'תרחיש דמו לא תקין' }, { status: 400 });
   }
 
-  const enrollment = await upsertDemoEnrollment(
-    auth.supabase,
+  const admin = createAdminClient();
+  const { enrollment, error: enrollError } = await upsertDemoEnrollment(
+    admin,
     auth.user.id,
     parsed.data.scenario,
     parsed.data.simulated_day,
   );
 
   if (!enrollment) {
-    return NextResponse.json({ error: 'Failed to create demo enrollment' }, { status: 500 });
+    return NextResponse.json(
+      { error: enrollError ?? 'לא ניתן ליצור הרשמת דמו' },
+      { status: 500 },
+    );
   }
 
   let token: string;
@@ -46,7 +51,7 @@ export async function POST(request: Request) {
       parsed.data.simulated_day,
     );
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Demo secret missing';
+    const msg = e instanceof Error ? e.message : 'חסר מפתח חתימה לדמו';
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
@@ -66,6 +71,6 @@ export async function DELETE(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
-  await clearDemoEnrollment(auth.supabase, auth.user.id);
+  await clearDemoEnrollment(createAdminClient(), auth.user.id);
   return NextResponse.json({ ok: true });
 }
