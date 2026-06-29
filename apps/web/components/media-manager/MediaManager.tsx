@@ -1,19 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
-  BookOpen,
-  ChevronLeft,
   ChevronRight,
   FileText,
   Film,
   FolderOpen,
-  Home,
   ImageIcon,
   Loader2,
-  Map,
-  Mic,
   Music,
   Search,
   Upload,
@@ -28,6 +23,7 @@ import { MediaStockSearch } from './MediaStockSearch';
 import { MediaAssetEditPanel, deleteMediaAsset } from './MediaAssetEditPanel';
 import { MediaAssetPreview } from './MediaAssetPreview';
 import { MediaFinderGrid } from './MediaFinderGrid';
+import { FinderPathBar } from './FinderPathBar';
 import { glassOverlayClass, glassPanelStyle, glassInputClass } from './glass-styles';
 import {
   FILE_TAB_LABELS,
@@ -42,9 +38,10 @@ import {
   buildRootCategoryFolders,
   buildSmartFolderCategories,
   matchesSmartCategory,
+  navSubfolderScope,
   parentSubfolderPath,
+  type FinderBreadcrumbSegment,
   type FinderFolderEntry,
-  type SmartFolderCategory,
 } from '@/lib/media-manager/smart-folders';
 
 type MediaManagerProps = {
@@ -64,12 +61,19 @@ const FILE_SUBTYPES: FileSubtype[] = [
   'other',
 ];
 
-const MEDIA_NAV_STORAGE_KEY = 'ops-media-manager-navigation-v1';
-const PINNED_CATEGORY_IDS = ['tts', 'journey', 'guides', 'almog', 'images', 'audio', 'files', 'video'];
+const MEDIA_NAV_STORAGE_KEY = 'ops-media-manager-navigation-v2';
 
-function pinRankForCategory(id: string): number {
-  const idx = PINNED_CATEGORY_IDS.indexOf(id);
-  return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
+type PersistedNav = {
+  smartFolderByKind?: Partial<Record<MediaKind, string | null>>;
+  subfolderByScope?: Record<string, string | null>;
+};
+
+function readSubfolderForScope(
+  scope: Record<string, string | null> | undefined,
+  kind: MediaKind,
+  categoryId: string
+): string | null {
+  return scope?.[navSubfolderScope(kind, categoryId)] ?? null;
 }
 
 function kindIcon(kind: MediaKind) {
@@ -77,17 +81,6 @@ function kindIcon(kind: MediaKind) {
   if (kind === 'audio') return Music;
   if (kind === 'video') return Film;
   return FileText;
-}
-
-function smartFolderIcon(icon: SmartFolderCategory['icon']) {
-  if (icon === 'tts') return Mic;
-  if (icon === 'guides') return BookOpen;
-  if (icon === 'journey') return Map;
-  if (icon === 'images') return ImageIcon;
-  if (icon === 'audio') return Music;
-  if (icon === 'files') return FileText;
-  if (icon === 'video') return Film;
-  return FolderOpen;
 }
 
 export function MediaManager({ open, options, onClose }: MediaManagerProps) {
@@ -111,21 +104,50 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
   const [smartFolder, setSmartFolder] = useState<string | null>(null);
   const [subfolder, setSubfolder] = useState<string | null>(null);
   const [smartFolderByKind, setSmartFolderByKind] = useState<Partial<Record<MediaKind, string | null>>>({});
-  const [subfolderByCategory, setSubfolderByCategory] = useState<Record<string, string | null>>({});
+  const [subfolderByScope, setSubfolderByScope] = useState<Record<string, string | null>>({});
   const [navigationHydrated, setNavigationHydrated] = useState(false);
+  const wasOpenRef = useRef(false);
 
   const mode: MediaManagerMode = options?.mode ?? 'browse';
 
+  const restoreKindNavigation = useCallback(
+    (kind: MediaKind) => {
+      const rememberedFolder = smartFolderByKind[kind] ?? null;
+      setSmartFolder(rememberedFolder);
+      setSubfolder(
+        rememberedFolder
+          ? readSubfolderForScope(subfolderByScope, kind, rememberedFolder)
+          : null
+      );
+    },
+    [smartFolderByKind, subfolderByScope]
+  );
+
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(MEDIA_NAV_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as {
-          smartFolderByKind?: Partial<Record<MediaKind, string | null>>;
-          subfolderByCategory?: Record<string, string | null>;
-        };
+      const rawV2 = localStorage.getItem(MEDIA_NAV_STORAGE_KEY);
+      if (rawV2) {
+        const parsed = JSON.parse(rawV2) as PersistedNav;
         if (parsed.smartFolderByKind) setSmartFolderByKind(parsed.smartFolderByKind);
-        if (parsed.subfolderByCategory) setSubfolderByCategory(parsed.subfolderByCategory);
+        if (parsed.subfolderByScope) setSubfolderByScope(parsed.subfolderByScope);
+      } else {
+        const rawV1 = localStorage.getItem('ops-media-manager-navigation-v1');
+        if (rawV1) {
+          const parsed = JSON.parse(rawV1) as {
+            smartFolderByKind?: Partial<Record<MediaKind, string | null>>;
+            subfolderByCategory?: Record<string, string | null>;
+          };
+          if (parsed.smartFolderByKind) setSmartFolderByKind(parsed.smartFolderByKind);
+          if (parsed.subfolderByCategory) {
+            const migrated: Record<string, string | null> = {};
+            for (const [categoryId, path] of Object.entries(parsed.subfolderByCategory)) {
+              for (const kind of ALL_KINDS) {
+                migrated[navSubfolderScope(kind, categoryId)] = path;
+              }
+            }
+            setSubfolderByScope(migrated);
+          }
+        }
       }
     } catch {
       // ignore broken local data
@@ -141,41 +163,72 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
         MEDIA_NAV_STORAGE_KEY,
         JSON.stringify({
           smartFolderByKind,
-          subfolderByCategory,
-        })
+          subfolderByScope,
+        } satisfies PersistedNav)
       );
     } catch {
       // ignore write failures
     }
-  }, [navigationHydrated, smartFolderByKind, subfolderByCategory]);
+  }, [navigationHydrated, smartFolderByKind, subfolderByScope]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      wasOpenRef.current = false;
+      return;
+    }
+    if (wasOpenRef.current) return;
+    wasOpenRef.current = true;
+
     const initialKind = allowedKinds[0] ?? 'image';
-    const initialFolder = smartFolderByKind[initialKind] ?? null;
     setActiveKind(initialKind);
     setPanel('library');
     setSelected(null);
     setSearchQ('');
-    setSmartFolder(initialFolder);
-    setSubfolder(initialFolder ? (subfolderByCategory[initialFolder] ?? null) : null);
-  }, [open, allowedKinds, smartFolderByKind, subfolderByCategory]);
+    restoreKindNavigation(initialKind);
+  }, [open, allowedKinds, restoreKindNavigation]);
 
-  const setCurrentSubfolder = useCallback((next: string | null) => {
-    setSubfolder(next);
-    setSubfolderByCategory((prev) => {
-      if (!smartFolder) return prev;
-      return { ...prev, [smartFolder]: next };
-    });
-  }, [smartFolder]);
+  const setCurrentSubfolder = useCallback(
+    (next: string | null) => {
+      setSubfolder(next);
+      if (!smartFolder) return;
+      const scope = navSubfolderScope(activeKind, smartFolder);
+      setSubfolderByScope((prev) => ({ ...prev, [scope]: next }));
+    },
+    [activeKind, smartFolder]
+  );
 
   const enterCategory = useCallback(
     (categoryId: string) => {
       setSmartFolder(categoryId);
       setSmartFolderByKind((prev) => ({ ...prev, [activeKind]: categoryId }));
-      setSubfolder(subfolderByCategory[categoryId] ?? null);
+      const remembered = readSubfolderForScope(subfolderByScope, activeKind, categoryId);
+      setSubfolder(remembered);
     },
-    [activeKind, subfolderByCategory]
+    [activeKind, subfolderByScope]
+  );
+
+  const goToKindRoot = useCallback(() => {
+    setSmartFolder(null);
+    setSubfolder(null);
+    setSmartFolderByKind((prev) => ({ ...prev, [activeKind]: null }));
+  }, [activeKind]);
+
+  const navigateToCrumb = useCallback(
+    (crumb: FinderBreadcrumbSegment) => {
+      if (crumb.level === 'kind') {
+        goToKindRoot();
+        return;
+      }
+      if (!crumb.categoryId) return;
+      setSmartFolder(crumb.categoryId);
+      setSmartFolderByKind((prev) => ({ ...prev, [activeKind]: crumb.categoryId }));
+      setSubfolder(crumb.subfolder);
+      if (crumb.subfolder !== null) {
+        const scope = navSubfolderScope(activeKind, crumb.categoryId);
+        setSubfolderByScope((prev) => ({ ...prev, [scope]: crumb.subfolder }));
+      }
+    },
+    [activeKind, goToKindRoot]
   );
 
   const navigateUp = useCallback(() => {
@@ -184,11 +237,9 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
       return;
     }
     if (smartFolder) {
-      setSmartFolder(null);
-      setSubfolder(null);
-      setSmartFolderByKind((prev) => ({ ...prev, [activeKind]: null }));
+      goToKindRoot();
     }
-  }, [activeKind, smartFolder, subfolder, setCurrentSubfolder]);
+  }, [smartFolder, subfolder, setCurrentSubfolder, goToKindRoot]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -284,21 +335,6 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
 
   const allSmartCategories = useMemo(() => buildSmartFolderCategories(items), [items]);
 
-  const smartCategories = useMemo(() => {
-    return allSmartCategories
-      .map((cat) => ({
-        ...cat,
-        count: items.filter((asset) => matchesSmartCategory(asset, cat.id)).length,
-      }))
-      .filter((cat) => cat.count > 0)
-      .sort(
-        (a, b) =>
-          pinRankForCategory(a.id) - pinRankForCategory(b.id) ||
-          b.count - a.count ||
-          a.label.localeCompare(b.label, 'he')
-      );
-  }, [allSmartCategories, items]);
-
   const categoryItems = useMemo(() => {
     if (!smartFolder) return items;
     return items.filter((asset) => matchesSmartCategory(asset, smartFolder));
@@ -315,8 +351,8 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
   }, [allSmartCategories, categoryItems, items, smartFolder, subfolder]);
 
   const finderBreadcrumbs = useMemo(
-    () => buildFinderBreadcrumbs(smartFolder, subfolder, allSmartCategories),
-    [allSmartCategories, smartFolder, subfolder]
+    () => buildFinderBreadcrumbs(KIND_LABELS[activeKind], smartFolder, subfolder, allSmartCategories),
+    [activeKind, allSmartCategories, smartFolder, subfolder]
   );
 
   const canNavigateUp = Boolean(smartFolder || subfolder);
@@ -390,10 +426,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                   type="button"
                   onClick={() => {
                     setActiveKind(k);
-                    setPanel('library');
-                    const rememberedFolder = smartFolderByKind[k] ?? null;
-                    setSmartFolder(rememberedFolder);
-                    setSubfolder(rememberedFolder ? (subfolderByCategory[rememberedFolder] ?? null) : null);
+                    restoreKindNavigation(k);
                   }}
                   className={cn(
                     'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold whitespace-nowrap transition',
@@ -466,97 +499,14 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
               ) : null}
             </div>
 
-            {/* Smart folder bar */}
             {panel === 'library' ? (
-              <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-white/30 px-3 py-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSmartFolder(null);
-                    setSubfolder(null);
-                    setSmartFolderByKind((prev) => ({ ...prev, [activeKind]: null }));
-                  }}
-                  className={cn(
-                    'rounded-lg px-2.5 py-1 text-xs font-bold whitespace-nowrap transition',
-                    !smartFolder ? 'bg-emerald-800/80 text-white' : 'text-slate-600 hover:bg-white/25'
-                  )}
-                >
-                  הכל ({items.length})
-                </button>
-                {smartCategories.map((cat) => {
-                  const Icon = smartFolderIcon(cat.icon);
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => enterCategory(cat.id)}
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold whitespace-nowrap transition',
-                        smartFolder === cat.id ? 'bg-emerald-800/80 text-white' : 'text-slate-600 hover:bg-white/25'
-                      )}
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                      {cat.label} ({cat.count})
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
-
-            {/* Finder path bar */}
-            {panel === 'library' ? (
-              <div className="flex shrink-0 items-center gap-2 border-b border-white/25 px-3 py-2">
-                <button
-                  type="button"
-                  onClick={navigateUp}
-                  disabled={!canNavigateUp}
-                  aria-label="חזרה לתיקייה מעלה"
-                  className={cn(
-                    'shrink-0 rounded-lg border border-white/45 p-1.5 transition',
-                    canNavigateUp
-                      ? 'bg-white/20 text-slate-700 hover:bg-white/35'
-                      : 'cursor-not-allowed bg-white/10 text-slate-400 opacity-60'
-                  )}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-                <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-xl border border-white/35 bg-white/15 px-2 py-1.5">
-                  {finderBreadcrumbs.map((crumb, idx) => {
-                    const isLast = idx === finderBreadcrumbs.length - 1;
-                    return (
-                      <span key={`${crumb.categoryId ?? 'root'}-${crumb.subfolder ?? 'root'}-${idx}`} className="flex items-center gap-1">
-                        {idx > 0 ? <ChevronLeft className="h-3 w-3 shrink-0 text-slate-400" /> : null}
-                        <button
-                          type="button"
-                          disabled={isLast}
-                          onClick={() => {
-                            if (crumb.categoryId === null) {
-                              setSmartFolder(null);
-                              setSubfolder(null);
-                              setSmartFolderByKind((prev) => ({ ...prev, [activeKind]: null }));
-                              return;
-                            }
-                            enterCategory(crumb.categoryId);
-                            setCurrentSubfolder(crumb.subfolder);
-                          }}
-                          className={cn(
-                            'inline-flex max-w-[10rem] items-center gap-1 truncate rounded-md px-1.5 py-0.5 text-[11px] font-bold transition',
-                            isLast
-                              ? 'cursor-default text-slate-800'
-                              : 'text-slate-500 hover:bg-white/30 hover:text-slate-700'
-                          )}
-                        >
-                          {idx === 0 ? <Home className="h-3 w-3 shrink-0" /> : null}
-                          <span className="truncate">{crumb.label}</span>
-                        </button>
-                      </span>
-                    );
-                  })}
-                </div>
-                <span className="hidden shrink-0 rounded-lg bg-white/20 px-2 py-1 text-[10px] font-bold text-slate-600 sm:inline">
-                  {folderView.folders.length + visibleItems.length} פריטים
-                </span>
-              </div>
+              <FinderPathBar
+                crumbs={finderBreadcrumbs}
+                itemCount={folderView.folders.length + visibleItems.length}
+                canGoBack={canNavigateUp}
+                onBack={navigateUp}
+                onNavigate={navigateToCrumb}
+              />
             ) : null}
 
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -578,16 +528,6 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                       <Search className="h-4 w-4" />
                     </button>
                   </div>
-                  {smartFolder && folderView.folders.length > 0 ? (
-                    <p className="mb-2 text-[11px] font-bold text-slate-500">
-                      {subfolder ? 'תיקיות וקבצים' : 'תיקיות'}
-                    </p>
-                  ) : null}
-                  {isRootLibraryView && folderView.folders.length > 0 ? (
-                    <p className="mb-2 text-[11px] font-bold text-slate-500">
-                      בחרו תיקייה לפי קטגוריה
-                    </p>
-                  ) : null}
                   {loadError ? (
                     <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-200/20 px-3 py-2.5 text-sm text-amber-900 backdrop-blur-sm">
                       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />

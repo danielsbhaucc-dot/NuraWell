@@ -97,6 +97,10 @@ const KNOWN_SEGMENT_TO_CATEGORY_ID: Record<string, string> = {
   questionnaires: 'tts',
   survey: 'tts',
   quiz: 'tts',
+  lesson: 'tts',
+  lessons: 'tts',
+  שיעור: 'tts',
+  שיעורים: 'tts',
   guides: 'guides',
   guide: 'guides',
   journey: 'journey',
@@ -274,6 +278,7 @@ function dropCategoryRoot(parts: string[], categoryId: string): string[] {
   }
 
   if (categoryId === 'tts' && parts[0]?.toLowerCase() === 'tts') return parts.slice(1);
+  if (categoryId === 'tts' && parts[0]?.toLowerCase() === 'journey') return parts.slice(1);
   if (categoryId === 'guides' && parts[0]?.toLowerCase() === 'guides') return parts.slice(1);
   if (categoryId === 'journey' && parts[0]?.toLowerCase() === 'journey') return parts.slice(1);
 
@@ -312,7 +317,7 @@ export function buildFolderLevelView(
 
   for (const asset of assets) {
     const relative = extractRelativeFolder(asset, categoryId);
-    const cleanRelative = relative === 'כללי' ? '' : relative.replace(/^\/+|\/+$/g, '');
+    const cleanRelative = relative.replace(/^\/+|\/+$/g, '');
 
     if (!normalizedCurrentPath) {
       if (!cleanRelative) {
@@ -407,8 +412,18 @@ export function buildRootCategoryFolders(
   }
 
   return Array.from(map.values()).sort(
-    (a, b) => b.latestTs - a.latestTs || a.label.localeCompare(b.label, 'he')
+    (a, b) =>
+      pinRankForCategory(a.path) - pinRankForCategory(b.path) ||
+      b.latestTs - a.latestTs ||
+      a.label.localeCompare(b.label, 'he')
   );
+}
+
+const PINNED_CATEGORY_IDS = ['tts', 'journey', 'guides', 'almog', 'images', 'audio', 'files', 'video'];
+
+function pinRankForCategory(id: string): number {
+  const idx = PINNED_CATEGORY_IDS.indexOf(id);
+  return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
 }
 
 /** מחזיר את נתיב האב של תת-תיקייה (null = שורש הקטגוריה). */
@@ -421,18 +436,25 @@ export function parentSubfolderPath(currentPath: string | null): string | null {
 
 export type FinderBreadcrumbSegment = {
   label: string;
+  level: 'kind' | 'category' | 'subfolder';
   categoryId: string | null;
   subfolder: string | null;
 };
 
-/** בונה פירורי לחם לניווט Finder. */
+/** מפתח ייחודי לשמירת תת-תיקייה לפי סוג מדיה + קטגוריה. */
+export function navSubfolderScope(kind: string, categoryId: string): string {
+  return `${kind}::${categoryId}`;
+}
+
+/** בונה פירורי לחם לניווט Finder (סגנון macOS — נתיב יחיד ללא כפילויות). */
 export function buildFinderBreadcrumbs(
+  kindLabel: string,
   categoryId: string | null,
   subfolder: string | null,
   categories: SmartFolderCategory[]
 ): FinderBreadcrumbSegment[] {
   const crumbs: FinderBreadcrumbSegment[] = [
-    { label: 'ספרייה', categoryId: null, subfolder: null },
+    { label: kindLabel, level: 'kind', categoryId: null, subfolder: null },
   ];
 
   if (!categoryId) return crumbs;
@@ -440,6 +462,7 @@ export function buildFinderBreadcrumbs(
   const cat = categories.find((c) => c.id === categoryId);
   crumbs.push({
     label: cat?.label ?? categoryId,
+    level: 'category',
     categoryId,
     subfolder: null,
   });
@@ -452,6 +475,7 @@ export function buildFinderBreadcrumbs(
     path = path ? `${path}/${part}` : part;
     crumbs.push({
       label: humanizeSegment(part),
+      level: 'subfolder',
       categoryId,
       subfolder: path,
     });

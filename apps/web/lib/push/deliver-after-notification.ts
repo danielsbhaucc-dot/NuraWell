@@ -11,7 +11,8 @@ import type { WebPushStored } from './types';
 export async function deliverWebPushAfterAlmogNotification(
   userId: string,
   title: string,
-  body: string
+  body: string,
+  opts?: { url?: string; tag?: string },
 ): Promise<void> {
   const { sendWebPushToSubscription, isWebPushConfigured } = await import('./send-web-push');
   if (!isWebPushConfigured()) return;
@@ -34,8 +35,8 @@ export async function deliverWebPushAfterAlmogNotification(
   const result = await sendWebPushToSubscription(sub, {
     title,
     body: body.slice(0, 180),
-    url: '/home',
-    tag: `almog-${userId.slice(0, 8)}`,
+    url: opts?.url ?? '/home',
+    tag: opts?.tag ?? `almog-${userId.slice(0, 8)}`,
   });
 
   if (!result.ok && result.error?.includes('410')) {

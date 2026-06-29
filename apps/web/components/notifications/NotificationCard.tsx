@@ -39,6 +39,7 @@ export function NotificationCard({
   const isAi = n.type === 'ai_message';
   const isDolev = n.mentorId === 'dolev';
   const isCheckpoint = n.source === 'almog_habit_checkpoint';
+  const isChallenge = n.source === 'challenge';
   const canReply = isNotificationReplyable(n);
   const relative = formatHebrewRelativeTime(n.created_at, nowMs);
   const aiAvatar = isDolev ? dolevAvatar : almogAvatar;
@@ -83,7 +84,9 @@ export function NotificationCard({
         'relative rounded-2xl border text-right shadow-sm transition backdrop-blur-sm',
         n.is_read
           ? 'border-slate-200/70 bg-gradient-to-br from-slate-100/90 via-emerald-50/50 to-teal-50/40 opacity-95'
-          : isCheckpoint
+          : isChallenge
+            ? 'border-emerald-300/70 bg-gradient-to-br from-emerald-50/95 via-teal-50/75 to-emerald-100/60 shadow-emerald-900/8'
+            : isCheckpoint
             ? 'border-amber-300/70 bg-gradient-to-br from-amber-50/95 via-orange-50/75 to-amber-100/60 shadow-amber-900/8'
             : 'border-amber-200/65 bg-gradient-to-br from-amber-50/90 via-yellow-50/55 to-emerald-50/70 shadow-amber-900/5',
         'cursor-pointer active:scale-[0.99]'
@@ -149,6 +152,11 @@ export function NotificationCard({
       <div className={cn('px-3.5 py-3.5 ps-10', showMarkReadIcon ? 'pe-10' : 'pe-3')}>
         <div className="flex flex-row-reverse items-start gap-3">
           <div className="min-w-0 flex-1 space-y-1.5">
+            {isChallenge && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-200/60 px-2 py-0.5 text-[10px] font-bold text-emerald-950">
+                🏆 אתגר 14 יום
+              </span>
+            )}
             {isCheckpoint && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-200/60 px-2 py-0.5 text-[10px] font-bold text-amber-950">
                 ✨ תובנה רגע
@@ -195,7 +203,11 @@ export function NotificationCard({
                     }}
                     className="inline-flex items-center rounded-full border border-emerald-300/60 bg-emerald-100/70 px-3.5 py-1.5 text-xs font-bold text-emerald-900 transition hover:bg-emerald-200/60"
                   >
-                    {n.action_url.includes('journey') ? 'למסלול' : 'פתח'}
+                    {n.action_url.includes('challenge')
+                      ? 'לאתגר'
+                      : n.action_url.includes('journey')
+                        ? 'למסלול'
+                        : 'פתח'}
                   </Link>
                 )}
               </div>

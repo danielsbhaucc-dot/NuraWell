@@ -32,6 +32,8 @@ import {
   queryAlmogSystemKnowledgeForUser,
 } from '../../../../../lib/ai/almog-system-rag';
 import { isSystemKnowledgeVectorConfigured } from '../../../../../lib/ai/system-knowledge-vector';
+import { fetchChallengeAlmogContextBlock } from '../../../../../lib/challenge/almog-context';
+import { scanChallengeSuccessFromChat } from '../../../../../lib/challenge/scan-chat-success';
 import { fetchUserEnrolledCourseIds } from '../../../../../lib/api/rag-chat-access';
 import { isUpstashVectorConfigured } from '../../../../../lib/ai/upstash-vector-rest';
 import { createPiiShield, type PiiShield } from '../../../../../lib/ai/privacy/pii-shield';
@@ -2122,6 +2124,7 @@ export async function POST(request: Request) {
   const guideSummariesPromise = trivialBypass
     ? Promise.resolve([])
     : fetchUserGuideSummaries(supabase, user.id).catch(() => []);
+  const challengeContextPromise = fetchChallengeAlmogContextBlock(supabase, user.id).catch(() => null);
 
   let contextDecision = trivialBypass
     ? lowContextDecision('trivial_bypass')
@@ -2328,6 +2331,7 @@ export async function POST(request: Request) {
     mentorStrategyBlock,
     mentorUserContextBlock,
     guideSummaries,
+    challengeContextBlock,
   ] = await Promise.all([
     profilePromise,
     journeyPromise,
@@ -2341,6 +2345,7 @@ export async function POST(request: Request) {
     mentorStrategyPromise,
     mentorUserContextPromise,
     guideSummariesPromise,
+    challengeContextPromise,
   ]);
 
   const [todayChatTurns, todayAlmogTouches] = dailyContextBundle;
@@ -2683,6 +2688,7 @@ export async function POST(request: Request) {
      * של "מה הגעת מהתראה X". בלי זה — הוא ישאל "היי מה קורה?" אדיש להתראה.
      */
     if (notificationContextBlock) contextSections.push(notificationContextBlock);
+    if (challengeContextBlock) contextSections.push(challengeContextBlock);
     if (guideContextBlock) contextSections.push(guideContextBlock);
 
     // coaching style + dossier + onboarding כפולים לזיכרון העבודה — רק בתור כבד.
@@ -2956,6 +2962,18 @@ export async function POST(request: Request) {
             error: persistErr instanceof Error ? persistErr.message : String(persistErr),
           });
         }
+
+        after(async () => {
+          try {
+            await scanChallengeSuccessFromChat(user.id, lastUserText);
+          } catch (challengeErr) {
+            console.warn('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_challenge_success`,
+              error: challengeErr instanceof Error ? challengeErr.message : String(challengeErr),
+            });
+          }
+        });
 
         after(async () => {
           try {
