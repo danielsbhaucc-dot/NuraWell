@@ -22,40 +22,64 @@ export function requestHostname(hostnameHeader: string | null): string {
   return hostnameHeader?.split(':')[0]?.toLowerCase() ?? '';
 }
 
+function opsUrlHostname(): string {
+  const opsUrl = process.env.NEXT_PUBLIC_OPS_URL?.trim();
+  if (!opsUrl) return '';
+  try {
+    const withP = opsUrl.startsWith('http') ? opsUrl : `https://${opsUrl}`;
+    return new URL(withP).hostname.replace(/^www\./, '').toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
+/** Host מורשה ל-OPS API (דומיין Ops, preview, localhost, או NEXT_PUBLIC_OPS_URL). */
+export function isTrustedOpsRequestHost(hostname: string | null | undefined): boolean {
+  const h = requestHostname(hostname ?? null);
+  if (!h) return false;
+  if (isOpsHostname(h) || isOpsPreviewHostname(h)) return true;
+  if (
+    process.env.NODE_ENV === 'development' &&
+    (h === 'localhost' || h === '127.0.0.1')
+  ) {
+    return true;
+  }
+  const fromOpsUrl = opsUrlHostname();
+  return Boolean(fromOpsUrl && h === fromOpsUrl);
+}
+
 /**
  * דריוואט בטוח של ה-host מאוביקט Request — Next.js בונה את `request.url` מ-host
- * שעבר ולידציה פנימית. זה עדיף על קריאת `x-forwarded-host` ידנית, כי אם שכבת
- * proxy לא תסיר את ה-header (בלתי-Vercel infra), header מזויף עלול לעקוף את
- * ה-gate. כאן אנחנו דורשים ש-`request.url` ו-`x-forwarded-host`/`host` יסכימו
- * (אם שניהם קיימים), אחרת חוזרים ל-host שמ-Next.js פירש.
+ * שעבר ולידציה פנימית. כש-x-forwarded-host הוא דומיין Ops מוכר (Vercel) — סומכים עליו
+ * גם אם request.url שונה (edge/internal).
  */
 export function requestHostnameFromRequest(request: Request): string {
   try {
     const fromUrl = new URL(request.url).hostname.toLowerCase();
-    const forwarded = request.headers.get('x-forwarded-host');
-    const hostHeader = request.headers.get('host');
-    const headerHost = requestHostname(forwarded ?? hostHeader);
+    const headerHost = requestHostname(
+      request.headers.get('x-forwarded-host') ?? request.headers.get('host'),
+    );
+    if (headerHost && isTrustedOpsRequestHost(headerHost)) {
+      return headerHost;
+    }
     if (headerHost && headerHost !== fromUrl) {
-      /**
-       * חוסר התאמה בין URL ל-header → תוקף שניסה לזייף header.
-       * נחזיר רק את ה-host מה-URL (האמין יותר); המתודות שבודקות ops/preview
-       * ידחו אם זה לא דומיין מורשה.
-       */
       return fromUrl;
     }
     return fromUrl || headerHost;
   } catch {
     return requestHostname(
-      request.headers.get('x-forwarded-host') ?? request.headers.get('host')
+      request.headers.get('x-forwarded-host') ?? request.headers.get('host'),
     );
   }
 }
 
 /** האם הבקשה מגיעה מכתובת Ops המוגדרת */
 export function isOpsHostname(hostnameHeader: string | null): boolean {
+  const h = requestHostname(hostnameHeader);
   const canonical = opsCanonicalHostname();
-  if (!canonical) return false;
-  return requestHostname(hostnameHeader) === canonical;
+  if (canonical && h === canonical) return true;
+  const fromOpsUrl = opsUrlHostname();
+  return Boolean(fromOpsUrl && h === fromOpsUrl);
 }
 
 /**

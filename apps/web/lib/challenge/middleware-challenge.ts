@@ -10,7 +10,7 @@ import {
 } from './phase';
 import { APP_HOME_PATH } from '@/lib/navigation/app-home-path';
 
-const CHALLENGE_SKIP_PREFIXES = ['/ops', '/api/v1/admin/challenge', '/auth/'];
+const CHALLENGE_SKIP_PREFIXES = ['/ops', '/api/v1/admin', '/api/v1/admin/challenge', '/auth/'];
 
 /**
  * Middleware helper — מנתב משתמשים באתגר פעיל.
