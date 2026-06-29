@@ -219,25 +219,30 @@ ALTER TABLE public.challenge_task_completions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.challenge_success_events ENABLE ROW LEVEL SECURITY;
 
 -- campaigns: read active for authenticated
+DROP POLICY IF EXISTS "challenge_campaigns_select_active" ON public.challenge_campaigns;
 CREATE POLICY "challenge_campaigns_select_active"
   ON public.challenge_campaigns FOR SELECT TO authenticated
   USING (is_active = true);
 
+DROP POLICY IF EXISTS "challenge_campaigns_admin_all" ON public.challenge_campaigns;
 CREATE POLICY "challenge_campaigns_admin_all"
   ON public.challenge_campaigns FOR ALL TO authenticated
   USING (public.nura_is_admin())
   WITH CHECK (public.nura_is_admin());
 
 -- enrollments: own rows only
+DROP POLICY IF EXISTS "challenge_enrollments_select_own" ON public.challenge_enrollments;
 CREATE POLICY "challenge_enrollments_select_own"
   ON public.challenge_enrollments FOR SELECT TO authenticated
   USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "challenge_enrollments_update_own" ON public.challenge_enrollments;
 CREATE POLICY "challenge_enrollments_update_own"
   ON public.challenge_enrollments FOR UPDATE TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid() AND is_demo = (SELECT e.is_demo FROM public.challenge_enrollments e WHERE e.id = challenge_enrollments.id));
 
+DROP POLICY IF EXISTS "challenge_enrollments_insert_admin" ON public.challenge_enrollments;
 CREATE POLICY "challenge_enrollments_insert_admin"
   ON public.challenge_enrollments FOR INSERT TO authenticated
   WITH CHECK (
@@ -248,11 +253,13 @@ CREATE POLICY "challenge_enrollments_insert_admin"
     )
   );
 
+DROP POLICY IF EXISTS "challenge_enrollments_delete_own_demo" ON public.challenge_enrollments;
 CREATE POLICY "challenge_enrollments_delete_own_demo"
   ON public.challenge_enrollments FOR DELETE TO authenticated
   USING (user_id = auth.uid() AND is_demo = true);
 
 -- task definitions: read if enrolled in campaign
+DROP POLICY IF EXISTS "challenge_tasks_select_enrolled" ON public.challenge_task_definitions;
 CREATE POLICY "challenge_tasks_select_enrolled"
   ON public.challenge_task_definitions FOR SELECT TO authenticated
   USING (
@@ -264,21 +271,25 @@ CREATE POLICY "challenge_tasks_select_enrolled"
     )
   );
 
+DROP POLICY IF EXISTS "challenge_tasks_admin_all" ON public.challenge_task_definitions;
 CREATE POLICY "challenge_tasks_admin_all"
   ON public.challenge_task_definitions FOR ALL TO authenticated
   USING (public.nura_is_admin())
   WITH CHECK (public.nura_is_admin());
 
 -- completions: own rows
+DROP POLICY IF EXISTS "challenge_completions_select_own" ON public.challenge_task_completions;
 CREATE POLICY "challenge_completions_select_own"
   ON public.challenge_task_completions FOR SELECT TO authenticated
   USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "challenge_completions_insert_own" ON public.challenge_task_completions;
 CREATE POLICY "challenge_completions_insert_own"
   ON public.challenge_task_completions FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());
 
 -- success events: own rows
+DROP POLICY IF EXISTS "challenge_success_select_own" ON public.challenge_success_events;
 CREATE POLICY "challenge_success_select_own"
   ON public.challenge_success_events FOR SELECT TO authenticated
   USING (user_id = auth.uid());
