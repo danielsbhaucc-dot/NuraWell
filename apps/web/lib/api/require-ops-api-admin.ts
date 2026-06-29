@@ -1,13 +1,30 @@
 import { NextResponse } from 'next/server';
 import { requireApiAdmin } from './route-guards';
 import {
-  isOpsHostname,
-  isOpsPreviewHostname,
+  isOpsPanelBrowserPath,
+  isTrustedOpsRequestHost,
   requestHostnameFromRequest,
 } from '../ops-host';
 
 type GuardFail = { ok: false; response: NextResponse };
 type SessionOk = Extract<Awaited<ReturnType<typeof requireApiAdmin>>, { ok: true }>;
+
+function refererFromOpsPanel(request: Request): boolean {
+  for (const raw of [request.headers.get('referer'), request.headers.get('origin')]) {
+    if (!raw) continue;
+    try {
+      const u = new URL(raw);
+      if (!isTrustedOpsRequestHost(u.hostname)) continue;
+      const path = u.pathname.endsWith('/') && u.pathname.length > 1
+        ? u.pathname.slice(0, -1)
+        : u.pathname;
+      if (isOpsPanelBrowserPath(path) || path.startsWith('/ops')) return true;
+    } catch {
+      /* ignore malformed referer */
+    }
+  }
+  return false;
+}
 
 /**
  * ניהול תוכן / אלמוג — רק מנהלים, ורק מכתובת Ops (או preview מורשה).
@@ -19,11 +36,7 @@ type SessionOk = Extract<Awaited<ReturnType<typeof requireApiAdmin>>, { ok: true
  */
 export async function requireOpsApiAdmin(request: Request): Promise<SessionOk | GuardFail> {
   const host = requestHostnameFromRequest(request);
-  const okHost =
-    isOpsHostname(host) ||
-    (process.env.NODE_ENV === 'development' &&
-      (host === 'localhost' || host === '127.0.0.1')) ||
-    isOpsPreviewHostname(host);
+  const okHost = isTrustedOpsRequestHost(host) || refererFromOpsPanel(request);
 
   if (!okHost) {
     return {
