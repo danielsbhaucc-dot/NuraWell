@@ -41,7 +41,7 @@ async function ingestInterviewInsights(userId: string, insights: Record<string, 
     metadata: {
       userId,
       text,
-      category: 'Challenges',
+      category: 'motivation',
       updatedAt: new Date().toISOString(),
       memoryLevel: 4,
       isInsight: true,

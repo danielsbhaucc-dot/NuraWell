@@ -22,7 +22,9 @@ export type CronIdleProfile =
   | 'auto-close-chat-sessions'
   | 'habit-target-tune'
   | 'passive-presence'
-  | 'almog-reminders';
+  | 'almog-reminders'
+  | 'challenge-daily'
+  | 'challenge-hourly';
 
 export type CronIdleSkipPayload = {
   ok: true;
@@ -195,6 +197,22 @@ export async function evaluateCronIdleSkip(
       );
       counts.churned_profiles = churned;
       return { idle: isIdleWhenEmpty(churned), counts };
+    }
+
+    case 'challenge-daily': {
+      const activeEnrollments = await countExact(admin, 'challenge_enrollments', (q) =>
+        q.in('status', ['waiting', 'active']).eq('is_demo', false)
+      );
+      counts.challenge_enrollments = activeEnrollments;
+      return { idle: isIdleWhenEmpty(activeEnrollments), counts };
+    }
+
+    case 'challenge-hourly': {
+      const activeEnrollments = await countExact(admin, 'challenge_enrollments', (q) =>
+        q.eq('status', 'active').eq('is_demo', false)
+      );
+      counts.challenge_active_enrollments = activeEnrollments;
+      return { idle: isIdleWhenEmpty(activeEnrollments), counts };
     }
 
     default:

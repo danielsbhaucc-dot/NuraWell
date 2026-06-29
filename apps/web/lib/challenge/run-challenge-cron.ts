@@ -115,7 +115,7 @@ export async function runChallengeDailyCron(
             {
               ...enrollment,
               wrap_up_seen_at: row.wrap_up_seen_at,
-              completion_summary: row.completion_summary,
+              completion_summary: row.completion_summary as ChallengeEnrollment['completion_summary'],
             },
             firstName,
           );

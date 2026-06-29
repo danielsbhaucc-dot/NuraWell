@@ -145,6 +145,7 @@ export async function upsertDemoEnrollment(
     startDate = jerusalemDateKeyFromDate(
       new Date(endDt.getTime() - (campaign.duration_days - 1) * 86400000),
     );
+    const pastStart = new Date(`${startDate}T08:00:00+02:00`);
     introCompleted = pastStart.toISOString();
     interviewCompleted = pastStart.toISOString();
     eatingWindow = demoEatingWindow;
