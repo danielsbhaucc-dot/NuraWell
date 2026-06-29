@@ -59,7 +59,7 @@ ${genderHint}. שם המשתמש: ${params.firstName}.
     model: openrouter(modelId),
     system,
     prompt: history,
-    maxTokens: 500,
+    maxOutputTokens: 500,
     temperature: 0.7,
   });
 
