@@ -270,6 +270,9 @@ export async function upsertDemoEnrollment(
           : error.message,
     };
   }
+  if (!data) {
+    return { enrollment: null, error: 'לא ניתן לשמור הרשמת דמו' };
+  }
   return { enrollment: data as EnrollmentRow };
 }
 
