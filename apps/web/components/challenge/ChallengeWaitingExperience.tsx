@@ -132,6 +132,25 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
           </motion.p>
         ) : null}
 
+        {state.is_demo && state.enrollment?.demo_scenario === 'full' ? (
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={async () => {
+                await fetch('/api/v1/challenge/demo-skip-wait', {
+                  method: 'POST',
+                  credentials: 'include',
+                });
+                window.location.href = '/challenge/intro';
+              }}
+              className="rounded-2xl border border-violet-400/50 bg-violet-500/20 px-6 py-3 text-sm font-bold text-violet-100 backdrop-blur-md transition hover:bg-violet-500/30"
+            >
+              דמו — התחל את האתגר עכשיו →
+            </button>
+            <p className="mt-2 text-xs text-white/40">מדלג על ספירה לאחור — להמשך חוויה מלאה</p>
+          </div>
+        ) : null}
+
         <div className="mt-auto pt-10 text-center text-sm text-white/40">
           עד אז — המערכת נעולה. רק אתה, אלמוג, והציפייה לשינוי.
         </div>

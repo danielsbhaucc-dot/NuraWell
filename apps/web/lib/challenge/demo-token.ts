@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export type ChallengeDemoTokenPayload = {
   adminId: string;
-  scenario: 'waiting' | 'intro' | 'active' | 'wrap_up';
+  scenario: 'waiting' | 'intro' | 'active' | 'wrap_up' | 'full';
   simulatedDay?: number;
   exp: number;
 };
@@ -12,9 +12,11 @@ const TOKEN_TTL_MS = 15 * 60 * 1000;
 function demoSecret(): string {
   const secret =
     process.env.CRON_SECRET?.trim() ||
+    process.env.QSTASH_CURRENT_SIGNING_KEY?.trim() ||
+    process.env.QSTASH_NEXT_SIGNING_KEY?.trim() ||
     process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!secret) {
-    throw new Error('CRON_SECRET required for challenge demo tokens');
+    throw new Error('חסר CRON_SECRET או SUPABASE_SERVICE_ROLE_KEY לחתימת קישור דמו');
   }
   return secret;
 }
