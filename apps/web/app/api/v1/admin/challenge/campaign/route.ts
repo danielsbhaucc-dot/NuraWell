@@ -3,7 +3,9 @@ import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { logChallengeAdminAudit } from '@/lib/challenge/admin-audit';
+import { readChallengeEnabled, writeChallengeEnabled } from '@/lib/challenge/challenge-site-settings';
 import { ensureActiveChallengeCampaign, getChallengeCampaignForAdmin } from '@/lib/challenge/campaign-bootstrap';
+import { ensureChallengeOpsSchema } from '@/lib/challenge/ensure-challenge-schema';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
@@ -13,22 +15,19 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   const admin = createAdminClient();
+  await ensureChallengeOpsSchema(admin);
+
   const campaign = await getChallengeCampaignForAdmin(admin);
+  const { challenge_enabled, error } = await readChallengeEnabled(admin);
 
-  const { data: settings, error: settingsError } = await admin
-    .from('site_settings')
-    .select('challenge_enabled')
-    .eq('id', 1)
-    .maybeSingle();
-
-  if (settingsError) {
-    console.error('[challenge/campaign] GET settings', settingsError.message);
-    return NextResponse.json({ error: settingsError.message }, { status: 500 });
+  if (error) {
+    console.error('[challenge/campaign] GET settings', error);
+    return NextResponse.json({ error }, { status: 500 });
   }
 
   return NextResponse.json({
     campaign,
-    challenge_enabled: settings?.challenge_enabled ?? false,
+    challenge_enabled,
   });
 }
 
@@ -52,19 +51,13 @@ export async function PATCH(request: Request) {
   }
 
   const admin = createAdminClient();
+  await ensureChallengeOpsSchema(admin);
 
   if (parsed.data.challenge_enabled !== undefined) {
-    const { error } = await admin
-      .from('site_settings')
-      .update({
-        challenge_enabled: parsed.data.challenge_enabled,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', 1);
-
-    if (error) {
-      console.error('[challenge/campaign] PATCH settings', error.message);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    const write = await writeChallengeEnabled(admin, parsed.data.challenge_enabled);
+    if (!write.ok) {
+      console.error('[challenge/campaign] PATCH settings', write.error);
+      return NextResponse.json({ error: write.error ?? 'לא ניתן לעדכן את מצב האתגר' }, { status: 500 });
     }
 
     if (parsed.data.challenge_enabled) {
@@ -100,11 +93,10 @@ export async function PATCH(request: Request) {
     }
   }
 
-  const { data: settings } = await admin
-    .from('site_settings')
-    .select('challenge_enabled')
-    .eq('id', 1)
-    .maybeSingle();
+  const { challenge_enabled, error: readError } = await readChallengeEnabled(admin);
+  if (readError) {
+    return NextResponse.json({ error: readError }, { status: 500 });
+  }
 
   const campaign = await getChallengeCampaignForAdmin(admin);
 
@@ -119,6 +111,6 @@ export async function PATCH(request: Request) {
   return NextResponse.json({
     ok: true,
     campaign,
-    challenge_enabled: settings?.challenge_enabled ?? false,
+    challenge_enabled,
   });
 }

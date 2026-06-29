@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { ensureChallengeOpsSchema, withChallengeSchemaRetry } from './ensure-challenge-schema';
 
 export const DEFAULT_CHALLENGE_CAMPAIGN_SLUG = '14-day-reset';
 
@@ -38,21 +39,31 @@ export async function ensureActiveChallengeCampaign(
   const existing = await getChallengeCampaignForAdmin(admin);
   if (existing?.is_active) return { campaign: existing };
 
-  const { data: upserted, error: upsertError } = await admin
-    .from('challenge_campaigns')
-    .upsert(
-      {
-        slug: DEFAULT_CHALLENGE_CAMPAIGN_SLUG,
-        title: 'אתגר 14 יום — Reset',
-        duration_days: 14,
-        is_active: true,
-        config: { version: 1 },
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'slug' },
-    )
-    .select('id, slug, title, duration_days, is_active')
-    .single();
+  await ensureChallengeOpsSchema(admin);
+
+  const { data: upserted, error: upsertError, schemaError } = await withChallengeSchemaRetry(
+    admin,
+    () =>
+      admin
+        .from('challenge_campaigns')
+        .upsert(
+          {
+            slug: DEFAULT_CHALLENGE_CAMPAIGN_SLUG,
+            title: 'אתגר 14 יום — Reset',
+            duration_days: 14,
+            is_active: true,
+            config: { version: 1 },
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'slug' },
+        )
+        .select('id, slug, title, duration_days, is_active')
+        .single(),
+  );
+
+  if (schemaError) {
+    return { campaign: null, error: schemaError };
+  }
 
   if (upsertError) {
     console.error('[challenge] ensureActiveCampaign upsert', upsertError.message);

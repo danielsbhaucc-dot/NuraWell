@@ -28,14 +28,25 @@ const SCENARIOS: { key: DemoScenario; label: string; desc: string; day?: number 
 
 export function AdminChallengePanel() {
   const [loading, setLoading] = useState<string | null>(null);
+  const [toggleLoading, setToggleLoading] = useState(false);
   const [lastUrl, setLastUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [challengeEnabled, setChallengeEnabled] = useState<boolean | null>(null);
 
   const loadCampaign = async () => {
-    const res = await fetch('/api/v1/admin/challenge/campaign', { credentials: 'include' });
-    const data = await res.json();
-    setChallengeEnabled(data.challenge_enabled ?? false);
+    try {
+      const res = await fetch('/api/v1/admin/challenge/campaign', { credentials: 'include' });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? 'לא ניתן לטעון הגדרות אתגר');
+        setChallengeEnabled(false);
+        return;
+      }
+      setChallengeEnabled(data.challenge_enabled ?? false);
+    } catch {
+      setError('לא ניתן לטעון הגדרות אתגר');
+      setChallengeEnabled(false);
+    }
   };
 
   useEffect(() => {
@@ -43,8 +54,9 @@ export function AdminChallengePanel() {
   }, []);
 
   const toggleChallenge = async () => {
-    if (challengeEnabled === null) return;
+    if (challengeEnabled === null || toggleLoading) return;
     setError(null);
+    setToggleLoading(true);
     const next = !challengeEnabled;
     try {
       const res = await fetch('/api/v1/admin/challenge/campaign', {
@@ -61,6 +73,8 @@ export function AdminChallengePanel() {
       setChallengeEnabled(data.challenge_enabled ?? next);
     } catch {
       setError('לא ניתן לעדכן את מצב האתגר');
+    } finally {
+      setToggleLoading(false);
     }
   };
 
@@ -98,6 +112,10 @@ export function AdminChallengePanel() {
 
   return (
     <div className="space-y-6">
+      {error ? (
+        <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+      ) : null}
+
       <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-5 shadow-sm backdrop-blur-md sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -107,12 +125,22 @@ export function AdminChallengePanel() {
           {challengeEnabled !== null ? (
             <button
               type="button"
+              disabled={toggleLoading}
               onClick={toggleChallenge}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold ${
+              className={`rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-60 ${
                 challengeEnabled ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'
               }`}
             >
-              {challengeEnabled ? 'אתגר פעיל ✓' : 'אתגר כבוי'}
+              {toggleLoading ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  מעדכן…
+                </span>
+              ) : challengeEnabled ? (
+                'אתגר פעיל ✓'
+              ) : (
+                'אתגר כבוי'
+              )}
             </button>
           ) : null}
         </div>
@@ -180,10 +208,6 @@ export function AdminChallengePanel() {
             );
           })}
         </div>
-
-        {error ? (
-          <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
-        ) : null}
 
         {lastUrl ? (
           <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3">
