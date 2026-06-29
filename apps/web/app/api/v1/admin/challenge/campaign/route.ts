@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { logChallengeAdminAudit } from '@/lib/challenge/admin-audit';
+import { ensureActiveChallengeCampaign, getChallengeCampaignForAdmin } from '@/lib/challenge/campaign-bootstrap';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,21 +12,24 @@ export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
-  const { data: campaign } = await auth.supabase
-    .from('challenge_campaigns')
-    .select('*')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const admin = createAdminClient();
+  const campaign = await getChallengeCampaignForAdmin(admin);
 
-  const { data: settings } = await auth.supabase
+  const { data: settings, error: settingsError } = await admin
     .from('site_settings')
     .select('challenge_enabled')
     .eq('id', 1)
     .maybeSingle();
 
-  return NextResponse.json({ campaign, challenge_enabled: settings?.challenge_enabled ?? false });
+  if (settingsError) {
+    console.error('[challenge/campaign] GET settings', settingsError.message);
+    return NextResponse.json({ error: settingsError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    campaign,
+    challenge_enabled: settings?.challenge_enabled ?? false,
+  });
 }
 
 const patchSchema = z.object({
@@ -46,30 +51,64 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
   }
 
+  const admin = createAdminClient();
+
   if (parsed.data.challenge_enabled !== undefined) {
-    await auth.supabase
+    const { error } = await admin
       .from('site_settings')
-      .update({ challenge_enabled: parsed.data.challenge_enabled })
+      .update({
+        challenge_enabled: parsed.data.challenge_enabled,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', 1);
+
+    if (error) {
+      console.error('[challenge/campaign] PATCH settings', error.message);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (parsed.data.challenge_enabled) {
+      const ensured = await ensureActiveChallengeCampaign(admin);
+      if (!ensured.campaign) {
+        return NextResponse.json(
+          { error: ensured.error ?? 'לא ניתן להפעיל קמפיין אתגר' },
+          { status: 500 },
+        );
+      }
+    }
   }
 
-  const { data: campaign } = await auth.supabase
-    .from('challenge_campaigns')
-    .select('id')
-    .eq('is_active', true)
-    .limit(1)
-    .maybeSingle();
+  let campaignForPatch = await getChallengeCampaignForAdmin(admin);
+  if (!campaignForPatch && parsed.data.challenge_enabled) {
+    const ensured = await ensureActiveChallengeCampaign(admin);
+    campaignForPatch = ensured.campaign;
+  }
 
-  if (campaign && (parsed.data.title || parsed.data.duration_days !== undefined || parsed.data.is_active !== undefined)) {
+  if (
+    campaignForPatch &&
+    (parsed.data.title || parsed.data.duration_days !== undefined || parsed.data.is_active !== undefined)
+  ) {
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (parsed.data.title) patch.title = parsed.data.title;
     if (parsed.data.duration_days !== undefined) patch.duration_days = parsed.data.duration_days;
     if (parsed.data.is_active !== undefined) patch.is_active = parsed.data.is_active;
 
-    await auth.supabase.from('challenge_campaigns').update(patch).eq('id', campaign.id);
+    const { error } = await admin.from('challenge_campaigns').update(patch).eq('id', campaignForPatch.id);
+    if (error) {
+      console.error('[challenge/campaign] PATCH campaign', error.message);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
   }
 
-  await logChallengeAdminAudit(auth.supabase, auth.user.id, {
+  const { data: settings } = await admin
+    .from('site_settings')
+    .select('challenge_enabled')
+    .eq('id', 1)
+    .maybeSingle();
+
+  const campaign = await getChallengeCampaignForAdmin(admin);
+
+  await logChallengeAdminAudit(admin, auth.user.id, {
     action: 'campaign.patch',
     entity_type: 'campaign',
     entity_id: campaign?.id ?? null,
@@ -77,5 +116,9 @@ export async function PATCH(request: Request) {
     payload: parsed.data as Record<string, unknown>,
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    ok: true,
+    campaign,
+    challenge_enabled: settings?.challenge_enabled ?? false,
+  });
 }

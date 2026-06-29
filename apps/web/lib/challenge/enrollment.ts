@@ -14,6 +14,7 @@ import {
   jerusalemTomorrowDateKey,
 } from './start-date';
 import { resolveChallengePhase } from './phase';
+import { ensureActiveChallengeCampaign } from './campaign-bootstrap';
 
 type EnrollmentRow = ChallengeEnrollment & {
   campaign?: {
@@ -113,9 +114,14 @@ export async function upsertDemoEnrollment(
   scenario: 'waiting' | 'intro' | 'active' | 'wrap_up' | 'full',
   simulatedDay?: number,
 ): Promise<{ enrollment: EnrollmentRow | null; error?: string }> {
-  const campaign = await getActiveCampaign(admin);
+  const { campaign, error: campaignError } = await ensureActiveChallengeCampaign(admin);
   if (!campaign) {
-    return { enrollment: null, error: 'לא נמצא קמפיין אתגר פעיל — הרץ מיגרציה 069 והפעל קמפיין' };
+    return {
+      enrollment: null,
+      error:
+        campaignError ??
+        'לא נמצא קמפיין אתגר פעיל — הרץ מיגרציה 069 או בדוק חיבור Supabase',
+    };
   }
 
   const now = new Date();

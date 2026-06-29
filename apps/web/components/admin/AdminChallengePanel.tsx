@@ -43,13 +43,25 @@ export function AdminChallengePanel() {
   }, []);
 
   const toggleChallenge = async () => {
-    await fetch('/api/v1/admin/challenge/campaign', {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ challenge_enabled: !challengeEnabled }),
-    });
-    setChallengeEnabled((v) => !v);
+    if (challengeEnabled === null) return;
+    setError(null);
+    const next = !challengeEnabled;
+    try {
+      const res = await fetch('/api/v1/admin/challenge/campaign', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ challenge_enabled: next }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? 'לא ניתן לעדכן את מצב האתגר');
+        return;
+      }
+      setChallengeEnabled(data.challenge_enabled ?? next);
+    } catch {
+      setError('לא ניתן לעדכן את מצב האתגר');
+    }
   };
 
   const startDemo = async (scenario: DemoScenario, day?: number) => {
