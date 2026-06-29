@@ -15,6 +15,7 @@ import {
 } from './start-date';
 import { resolveChallengePhase } from './phase';
 import { ensureActiveChallengeCampaign } from './campaign-bootstrap';
+import { withChallengeSchemaRetry } from './ensure-challenge-schema';
 
 type EnrollmentRow = ChallengeEnrollment & {
   campaign?: {
@@ -228,28 +229,36 @@ export async function upsertDemoEnrollment(
     updated_at: now.toISOString(),
   };
 
-  const { data, error } = existing
-    ? await admin
-        .from('challenge_enrollments')
-        .update(row)
-        .eq('id', existing.id)
-        .select(
-          `
+  const { data, error, schemaError } = existing
+    ? await withChallengeSchemaRetry(admin, () =>
+        admin
+          .from('challenge_enrollments')
+          .update(row)
+          .eq('id', existing.id)
+          .select(
+            `
       *,
       campaign:challenge_campaigns(id, slug, title, duration_days, is_active, config)
     `,
-        )
-        .single()
-    : await admin
-        .from('challenge_enrollments')
-        .insert(row)
-        .select(
-          `
+          )
+          .single(),
+      )
+    : await withChallengeSchemaRetry(admin, () =>
+        admin
+          .from('challenge_enrollments')
+          .insert(row)
+          .select(
+            `
       *,
       campaign:challenge_campaigns(id, slug, title, duration_days, is_active, config)
     `,
-        )
-        .single();
+          )
+          .single(),
+      );
+
+  if (schemaError) {
+    return { enrollment: null, error: schemaError };
+  }
 
   if (error) {
     console.error('[challenge] upsertDemoEnrollment', error.message);

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { TOKEN_TTL_MS, createChallengeDemoToken } from '@/lib/challenge/demo-token';
+import { ensureChallengeOpsSchema } from '@/lib/challenge/ensure-challenge-schema';
 import { upsertDemoEnrollment, clearDemoEnrollment } from '@/lib/challenge/enrollment';
 import { publicAppBaseNoSlashSync } from '@/lib/public-app-url';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
+  await ensureChallengeOpsSchema(admin);
   const { enrollment, error: enrollError } = await upsertDemoEnrollment(
     admin,
     auth.user.id,
