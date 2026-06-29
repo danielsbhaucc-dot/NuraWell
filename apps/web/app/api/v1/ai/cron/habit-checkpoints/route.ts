@@ -646,6 +646,23 @@ async function runHabitCheckpointCron(request: Request) {
     }
   }
 
+  /**
+   * 🏆 אתגר 14 יום — בוקר (תזכורת יומית, סריקת הצלחות, סיום אתגר).
+   * רץ ב-slot=b morning (08:00 ישראל) — בלי schedule נפרד.
+   */
+  let challengeDaily: Awaited<
+    ReturnType<typeof import('@/lib/challenge/run-challenge-cron').runChallengeDailyCron>
+  > | { error: string } | null = null;
+  if (slot === 'morning') {
+    try {
+      const { runChallengeDailyCron } = await import('@/lib/challenge/run-challenge-cron');
+      challengeDaily = await runChallengeDailyCron(admin, { dryRun: isDryRun });
+      console.log('[habit-checkpoints] challenge_daily', JSON.stringify(challengeDaily));
+    } catch (e) {
+      challengeDaily = { error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
   const summary = {
     slot,
     planned_users: plan.length,
@@ -663,6 +680,7 @@ async function runHabitCheckpointCron(request: Request) {
     guardian_schedules_planned: guardianSchedulesPlanned,
     guardian_schedules_triggered: guardianSchedulesTriggered,
     mentorship_synthesis: mentorshipSynthesis,
+    challenge_daily: challengeDaily,
   };
 
   /**

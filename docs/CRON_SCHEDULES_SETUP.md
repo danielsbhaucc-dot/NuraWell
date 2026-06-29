@@ -39,6 +39,13 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 | `POST /api/v1/ai/cron/almog-reminders` | אופציונלי (מאוחד ל-onboarding) | `apps/web/app/api/v1/ai/cron/almog-reminders/route.ts` |
 | `POST /api/v1/ai/cron/passive-presence` | יומי 13:00 ישראל | `apps/web/app/api/v1/ai/cron/passive-presence/route.ts` |
 
+**אתגר 14 יום** — אין schedules נפרדים:
+
+| לוגיקה | רץ בתוך | מתי |
+|---|---|---|
+| בוקר + סיום + סריקת הצלחות | `habit-checkpoints?slot=morning` | 08:00 ישראל |
+| חלון אכילה + ערב | `onboarding-check-ins` | כל ~30 דקות |
+
 ### Pre-Lapse Guardian ("רגע לפני") — בלי cron כל 30 דקות
 
 ה-Guardian לא מקבל Schedule עצמאי מסוג `risk-window-guardian`.
