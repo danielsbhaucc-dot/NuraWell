@@ -9,8 +9,17 @@ export type SmartFolderCategory = {
   match: (asset: Pick<MediaAsset, 'folder' | 'object_key' | 'kind'>) => boolean;
 };
 
+export type FinderFolderEntry = {
+  path: string;
+  label: string;
+  count: number;
+  latestTs: number;
+  icon?: SmartFolderCategory['icon'];
+  categoryId?: string;
+};
+
 export type FolderLevelView = {
-  folders: { path: string; label: string; count: number; latestTs: number }[];
+  folders: FinderFolderEntry[];
   files: MediaAsset[];
 };
 
@@ -84,12 +93,17 @@ const KNOWN_SEGMENT_TO_CATEGORY_ID: Record<string, string> = {
   transcript: 'tts',
   transcripts: 'tts',
   transcription: 'tts',
+  questionnaire: 'tts',
+  questionnaires: 'tts',
+  survey: 'tts',
+  quiz: 'tts',
   guides: 'guides',
   guide: 'guides',
   journey: 'journey',
   station: 'journey',
   stations: 'journey',
   almog: 'almog',
+  sos: 'tts',
 };
 
 const SKIP_PATH_SEGMENTS = new Set(['media', 'images', 'audio', 'files', 'video']);
@@ -292,14 +306,9 @@ export function buildFolderLevelView(
   categoryId: string,
   currentPath: string | null
 ): FolderLevelView {
-  const folderMap = new Map<string, { path: string; label: string; count: number; latestTs: number }>();
+  const folderMap = new Map<string, FinderFolderEntry>();
   const files: MediaAsset[] = [];
   const normalizedCurrentPath = currentPath?.trim().replace(/^\/+|\/+$/g, '') || null;
-
-  const tsForAsset = (asset: MediaAsset): number => {
-    const t = Date.parse(asset.updated_at ?? asset.created_at ?? '');
-    return Number.isFinite(t) ? t : 0;
-  };
 
   for (const asset of assets) {
     const relative = extractRelativeFolder(asset, categoryId);
@@ -361,4 +370,92 @@ export function buildFolderLevelView(
       .sort((a, b) => b.latestTs - a.latestTs || a.label.localeCompare(b.label, 'he')),
     files,
   };
+}
+
+function tsForAsset(asset: MediaAsset): number {
+  const t = Date.parse(asset.updated_at ?? asset.created_at ?? '');
+  return Number.isFinite(t) ? t : 0;
+}
+
+/** בונה תיקיות קטגוריה ברמת השורש (כשנכנסים ל"הכל"). */
+export function buildRootCategoryFolders(
+  assets: MediaAsset[],
+  categories: SmartFolderCategory[]
+): FinderFolderEntry[] {
+  const map = new Map<string, FinderFolderEntry>();
+
+  for (const asset of assets) {
+    const categoryId = resolveSmartCategoryId(asset);
+    const cat = categories.find((c) => c.id === categoryId);
+    if (!cat) continue;
+
+    const existing = map.get(categoryId);
+    const ts = tsForAsset(asset);
+    if (existing) {
+      existing.count += 1;
+      existing.latestTs = Math.max(existing.latestTs, ts);
+    } else {
+      map.set(categoryId, {
+        path: categoryId,
+        label: cat.label,
+        count: 1,
+        latestTs: ts,
+        icon: cat.icon,
+        categoryId,
+      });
+    }
+  }
+
+  return Array.from(map.values()).sort(
+    (a, b) => b.latestTs - a.latestTs || a.label.localeCompare(b.label, 'he')
+  );
+}
+
+/** מחזיר את נתיב האב של תת-תיקייה (null = שורש הקטגוריה). */
+export function parentSubfolderPath(currentPath: string | null): string | null {
+  if (!currentPath?.trim()) return null;
+  const parts = currentPath.split('/').filter(Boolean);
+  if (parts.length <= 1) return null;
+  return parts.slice(0, -1).join('/');
+}
+
+export type FinderBreadcrumbSegment = {
+  label: string;
+  categoryId: string | null;
+  subfolder: string | null;
+};
+
+/** בונה פירורי לחם לניווט Finder. */
+export function buildFinderBreadcrumbs(
+  categoryId: string | null,
+  subfolder: string | null,
+  categories: SmartFolderCategory[]
+): FinderBreadcrumbSegment[] {
+  const crumbs: FinderBreadcrumbSegment[] = [
+    { label: 'ספרייה', categoryId: null, subfolder: null },
+  ];
+
+  if (!categoryId) return crumbs;
+
+  const cat = categories.find((c) => c.id === categoryId);
+  crumbs.push({
+    label: cat?.label ?? categoryId,
+    categoryId,
+    subfolder: null,
+  });
+
+  if (!subfolder?.trim()) return crumbs;
+
+  const parts = subfolder.split('/').filter(Boolean);
+  let path = '';
+  for (const part of parts) {
+    path = path ? `${path}/${part}` : part;
+    crumbs.push({
+      label: humanizeSegment(part),
+      categoryId,
+      subfolder: path,
+    });
+  }
+
+  return crumbs;
 }
