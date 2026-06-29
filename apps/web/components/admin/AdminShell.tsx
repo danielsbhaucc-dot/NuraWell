@@ -62,7 +62,10 @@ export function AdminShell({
 }: AdminShellProps) {
   const pathname = usePathname();
   const np = normalizeOpsPathname(pathname);
-  const opsHref = (path: string) => (pathname.startsWith('/ops') ? `/ops${path}` : path);
+  const opsHref = (path: string) => {
+    const suffix = path.startsWith('/') ? path : `/${path}`;
+    return pathname.startsWith('/ops') ? `/ops${suffix}` : suffix;
+  };
   const homeHref = pathname.startsWith('/ops') ? '/ops' : '/';
   const coursesHref = mainAppBase ? `${mainAppBase}/home` : '/home';
   const [sidebarOpen, setSidebarOpen] = useState(false);

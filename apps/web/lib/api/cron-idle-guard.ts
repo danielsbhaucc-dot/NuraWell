@@ -22,9 +22,7 @@ export type CronIdleProfile =
   | 'auto-close-chat-sessions'
   | 'habit-target-tune'
   | 'passive-presence'
-  | 'almog-reminders'
-  | 'challenge-daily'
-  | 'challenge-hourly';
+  | 'almog-reminders';
 
 export type CronIdleSkipPayload = {
   ok: true;
@@ -145,9 +143,13 @@ export async function evaluateCronIdleSkip(
     case 'onboarding-check-ins': {
       const dueCheckIns = await countDuePersonalizedCheckIns(admin, now, windowMinutes);
       const dueReminders = await countDueReminders(admin, now);
+      const challengeActive = await countExact(admin, 'challenge_enrollments', (q) =>
+        q.eq('status', 'active').eq('is_demo', false)
+      );
       counts.due_check_ins_now = dueCheckIns;
       counts.due_reminders = dueReminders;
-      return { idle: isIdleWhenEmpty(dueCheckIns, dueReminders), counts };
+      counts.challenge_active_enrollments = challengeActive;
+      return { idle: isIdleWhenEmpty(dueCheckIns, dueReminders, challengeActive), counts };
     }
 
     case 'almog-reminders': {
@@ -158,8 +160,12 @@ export async function evaluateCronIdleSkip(
 
     case 'habit-checkpoints': {
       const progress = await countExact(admin, 'journey_progress');
+      const challengeEnrollments = await countExact(admin, 'challenge_enrollments', (q) =>
+        q.in('status', ['waiting', 'active']).eq('is_demo', false)
+      );
       counts.journey_progress = progress;
-      return { idle: isIdleWhenEmpty(onboarded, progress), counts };
+      counts.challenge_enrollments = challengeEnrollments;
+      return { idle: isIdleWhenEmpty(onboarded, progress, challengeEnrollments), counts };
     }
 
     case 'master': {
@@ -197,22 +203,6 @@ export async function evaluateCronIdleSkip(
       );
       counts.churned_profiles = churned;
       return { idle: isIdleWhenEmpty(churned), counts };
-    }
-
-    case 'challenge-daily': {
-      const activeEnrollments = await countExact(admin, 'challenge_enrollments', (q) =>
-        q.in('status', ['waiting', 'active']).eq('is_demo', false)
-      );
-      counts.challenge_enrollments = activeEnrollments;
-      return { idle: isIdleWhenEmpty(activeEnrollments), counts };
-    }
-
-    case 'challenge-hourly': {
-      const activeEnrollments = await countExact(admin, 'challenge_enrollments', (q) =>
-        q.eq('status', 'active').eq('is_demo', false)
-      );
-      counts.challenge_active_enrollments = activeEnrollments;
-      return { idle: isIdleWhenEmpty(activeEnrollments), counts };
     }
 
     default:

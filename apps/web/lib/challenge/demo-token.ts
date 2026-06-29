@@ -11,11 +11,10 @@ const TOKEN_TTL_MS = 15 * 60 * 1000;
 
 function demoSecret(): string {
   const secret =
-    process.env.CHALLENGE_DEMO_SECRET?.trim() ||
     process.env.CRON_SECRET?.trim() ||
     process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!secret) {
-    throw new Error('CHALLENGE_DEMO_SECRET or CRON_SECRET required for challenge demo');
+    throw new Error('CRON_SECRET required for challenge demo tokens');
   }
   return secret;
 }

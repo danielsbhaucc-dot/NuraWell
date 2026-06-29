@@ -97,6 +97,21 @@ async function runOnboardingCheckInsCron(request: Request) {
     recoveryOrchestration = { error: e instanceof Error ? e.message : String(e) };
   }
 
+  /**
+   * 🏆 אתגר 14 יום — תזכורות שעתיות (חלון אכילה, ערב) + סריקות בזמן אמת.
+   * רץ כאן כי ה-cron כבר מתוזמן כל ~30 דקות — בלי schedule נפרד.
+   */
+  let challengeHourly: Awaited<
+    ReturnType<typeof import('@/lib/challenge/run-challenge-hourly').runChallengeHourlyReminders>
+  > | { error: string } | null = null;
+  try {
+    const { runChallengeHourlyReminders } = await import('@/lib/challenge/run-challenge-hourly');
+    challengeHourly = await runChallengeHourlyReminders(createAdminClient(), { dryRun: isDryRun });
+    console.log('[onboarding-check-ins] challenge_hourly', JSON.stringify(challengeHourly));
+  } catch (e) {
+    challengeHourly = { error: e instanceof Error ? e.message : String(e) };
+  }
+
   const token = process.env.QSTASH_TOKEN?.trim();
   if (!token && !isDryRun) {
     return NextResponse.json(
@@ -220,6 +235,7 @@ async function runOnboardingCheckInsCron(request: Request) {
     assignment_sweep: assignmentSweep,
     orchestrator,
     recovery_orchestration: recoveryOrchestration,
+    challenge_hourly: challengeHourly,
     errors: errors.length ? errors : undefined,
   });
 }
