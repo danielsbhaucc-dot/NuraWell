@@ -70,5 +70,9 @@ export async function ensureActiveChallengeCampaign(
     return { campaign: null, error: upsertError.message };
   }
 
+  if (!upserted) {
+    return { campaign: null, error: 'לא ניתן ליצור קמפיין אתגר' };
+  }
+
   return { campaign: upserted as CampaignRow };
 }
