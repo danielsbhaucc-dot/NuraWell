@@ -5,7 +5,6 @@ import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { TOKEN_TTL_MS, createChallengeDemoToken } from '@/lib/challenge/demo-token';
 import { ensureChallengeOpsSchema } from '@/lib/challenge/ensure-challenge-schema';
 import { upsertDemoEnrollment, clearDemoEnrollment } from '@/lib/challenge/enrollment';
-import { publicAppBaseNoSlashSync } from '@/lib/public-app-url';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -16,57 +15,112 @@ const startSchema = z.object({
   simulated_day: z.number().int().min(1).max(14).optional(),
 });
 
-/** יצירת קישור דמו — רק מנהל מ-OPS */
-export async function POST(request: Request) {
-  const auth = await requireOpsApiAdmin(request);
-  if (!auth.ok) return auth.response;
+type DemoScenario = z.infer<typeof startSchema>['scenario'];
 
-  const raw = await readJsonBody(request);
-  if (!raw.ok) return raw.response;
-
-  const parsed = startSchema.safeParse(raw.value);
+const parseStartPayload = (payload: unknown) => {
+  const parsed = startSchema.safeParse(payload);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'תרחיש דמו לא תקין' }, { status: 400 });
+    return {
+      ok: false as const,
+      response: NextResponse.json({ error: 'תרחיש דמו לא תקין' }, { status: 400 }),
+    };
   }
 
+  return { ok: true as const, value: parsed.data };
+};
+
+const parseStartRequest = async (request: Request) => {
+  const raw = await readJsonBody(request);
+  if (!raw.ok) return raw;
+
+  const parsed = parseStartPayload(raw.value);
+  if (!parsed.ok) return parsed;
+
+  return {
+    ok: true as const,
+    value: {
+      scenario: parsed.value.scenario,
+      simulatedDay: parsed.value.simulated_day,
+    },
+  };
+};
+
+const createDemoEnrollment = async (
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  scenario: DemoScenario,
+  simulatedDay?: number,
+) => {
+  const { enrollment, error } = await upsertDemoEnrollment(admin, userId, scenario, simulatedDay);
+  if (!enrollment) {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ error: error ?? 'לא ניתן ליצור הרשמת דמו' }, { status: 500 }),
+    };
+  }
+
+  return { ok: true as const, enrollment };
+};
+
+const createDemoTokenResponse = (
+  userId: string,
+  scenario: DemoScenario,
+  simulatedDay?: number,
+) => {
+  try {
+    return {
+      ok: true as const,
+      token: createChallengeDemoToken(userId, scenario, simulatedDay),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'חסר מפתח חתימה לדמו';
+    return {
+      ok: false as const,
+      response: NextResponse.json({ error: message }, { status: 500 }),
+    };
+  }
+};
+
+const createDemoUrlResponse = async (
+  request: Request,
+  userId: string,
+  scenario: DemoScenario,
+  simulatedDay?: number,
+) => {
   const admin = createAdminClient();
   await ensureChallengeOpsSchema(admin);
-  const { enrollment, error: enrollError } = await upsertDemoEnrollment(
-    admin,
-    auth.user.id,
-    parsed.data.scenario,
-    parsed.data.simulated_day,
-  );
 
-  if (!enrollment) {
-    return NextResponse.json(
-      { error: enrollError ?? 'לא ניתן ליצור הרשמת דמו' },
-      { status: 500 },
-    );
-  }
+  const enrollmentResult = await createDemoEnrollment(admin, userId, scenario, simulatedDay);
+  if (!enrollmentResult.ok) return enrollmentResult.response;
 
-  let token: string;
-  try {
-    token = createChallengeDemoToken(
-      auth.user.id,
-      parsed.data.scenario,
-      parsed.data.simulated_day,
-    );
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : 'חסר מפתח חתימה לדמו';
-    return NextResponse.json({ error: msg }, { status: 500 });
-  }
+  const tokenResult = createDemoTokenResponse(userId, scenario, simulatedDay);
+  if (!tokenResult.ok) return tokenResult.response;
 
-  const appBase = publicAppBaseNoSlashSync() || new URL(request.url).origin;
-  const demoUrl = `${appBase}/challenge/demo?t=${encodeURIComponent(token)}`;
-
+  const appBase = new URL(request.url).origin;
+  const demoUrl = `${appBase}/challenge/demo?t=${encodeURIComponent(tokenResult.token)}`;
   return NextResponse.json({
     demo_url: demoUrl,
     expires_in_seconds: Math.floor(TOKEN_TTL_MS / 1000),
-    scenario: parsed.data.scenario,
-    enrollment_id: enrollment.id,
+    scenario,
+    enrollment_id: enrollmentResult.enrollment.id,
   });
-}
+};
+
+/** יצירת קישור דמו — רק מנהל מ-OPS */
+export const POST = async (request: Request) => {
+  const auth = await requireOpsApiAdmin(request);
+  if (!auth.ok) return auth.response;
+
+  const startRequest = await parseStartRequest(request);
+  if (!startRequest.ok) return startRequest.response;
+
+  return createDemoUrlResponse(
+    request,
+    auth.user.id,
+    startRequest.value.scenario,
+    startRequest.value.simulatedDay,
+  );
+};
 
 /** יציאה מדמו */
 export async function DELETE(request: Request) {
