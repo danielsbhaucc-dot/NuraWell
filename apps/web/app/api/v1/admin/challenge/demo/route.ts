@@ -29,6 +29,22 @@ const parseStartPayload = (payload: unknown) => {
   return { ok: true as const, value: parsed.data };
 };
 
+const parseStartRequest = async (request: Request) => {
+  const raw = await readJsonBody(request);
+  if (!raw.ok) return raw;
+
+  const parsed = parseStartPayload(raw.value);
+  if (!parsed.ok) return parsed;
+
+  return {
+    ok: true as const,
+    value: {
+      scenario: parsed.value.scenario,
+      simulatedDay: parsed.value.simulated_day,
+    },
+  };
+};
+
 const createDemoEnrollment = async (
   admin: ReturnType<typeof createAdminClient>,
   userId: string,
@@ -95,17 +111,14 @@ export const POST = async (request: Request) => {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
-  const raw = await readJsonBody(request);
-  if (!raw.ok) return raw.response;
-
-  const parsed = parseStartPayload(raw.value);
-  if (!parsed.ok) return parsed.response;
+  const startRequest = await parseStartRequest(request);
+  if (!startRequest.ok) return startRequest.response;
 
   return createDemoUrlResponse(
     request,
     auth.user.id,
-    parsed.value.scenario,
-    parsed.value.simulated_day,
+    startRequest.value.scenario,
+    startRequest.value.simulatedDay,
   );
 };
 
