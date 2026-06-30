@@ -15,7 +15,9 @@ const startSchema = z.object({
   simulated_day: z.number().int().min(1).max(14).optional(),
 });
 
-function parseStartPayload(payload: unknown) {
+type DemoScenario = z.infer<typeof startSchema>['scenario'];
+
+const parseStartPayload = (payload: unknown) => {
   const parsed = startSchema.safeParse(payload);
   if (!parsed.success) {
     return {
@@ -25,14 +27,14 @@ function parseStartPayload(payload: unknown) {
   }
 
   return { ok: true as const, value: parsed.data };
-}
+};
 
-async function createDemoEnrollment(
+const createDemoEnrollment = async (
   admin: ReturnType<typeof createAdminClient>,
   userId: string,
-  scenario: z.infer<typeof startSchema>['scenario'],
+  scenario: DemoScenario,
   simulatedDay?: number,
-) {
+) => {
   const { enrollment, error } = await upsertDemoEnrollment(admin, userId, scenario, simulatedDay);
   if (!enrollment) {
     return {
@@ -42,13 +44,13 @@ async function createDemoEnrollment(
   }
 
   return { ok: true as const, enrollment };
-}
+};
 
-function createDemoTokenResponse(
+const createDemoTokenResponse = (
   userId: string,
-  scenario: z.infer<typeof startSchema>['scenario'],
+  scenario: DemoScenario,
   simulatedDay?: number,
-) {
+) => {
   try {
     return {
       ok: true as const,
@@ -61,10 +63,35 @@ function createDemoTokenResponse(
       response: NextResponse.json({ error: message }, { status: 500 }),
     };
   }
-}
+};
+
+const createDemoUrlResponse = async (
+  request: Request,
+  userId: string,
+  scenario: DemoScenario,
+  simulatedDay?: number,
+) => {
+  const admin = createAdminClient();
+  await ensureChallengeOpsSchema(admin);
+
+  const enrollmentResult = await createDemoEnrollment(admin, userId, scenario, simulatedDay);
+  if (!enrollmentResult.ok) return enrollmentResult.response;
+
+  const tokenResult = createDemoTokenResponse(userId, scenario, simulatedDay);
+  if (!tokenResult.ok) return tokenResult.response;
+
+  const appBase = new URL(request.url).origin;
+  const demoUrl = `${appBase}/challenge/demo?t=${encodeURIComponent(tokenResult.token)}`;
+  return NextResponse.json({
+    demo_url: demoUrl,
+    expires_in_seconds: Math.floor(TOKEN_TTL_MS / 1000),
+    scenario,
+    enrollment_id: enrollmentResult.enrollment.id,
+  });
+};
 
 /** יצירת קישור דמו — רק מנהל מ-OPS */
-export async function POST(request: Request) {
+export const POST = async (request: Request) => {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -74,33 +101,13 @@ export async function POST(request: Request) {
   const parsed = parseStartPayload(raw.value);
   if (!parsed.ok) return parsed.response;
 
-  const admin = createAdminClient();
-  await ensureChallengeOpsSchema(admin);
-  const enrollmentResult = await createDemoEnrollment(
-    admin,
+  return createDemoUrlResponse(
+    request,
     auth.user.id,
     parsed.value.scenario,
     parsed.value.simulated_day,
   );
-  if (!enrollmentResult.ok) return enrollmentResult.response;
-
-  const tokenResult = createDemoTokenResponse(
-    auth.user.id,
-    parsed.value.scenario,
-    parsed.value.simulated_day,
-  );
-  if (!tokenResult.ok) return tokenResult.response;
-
-  const appBase = new URL(request.url).origin;
-  const demoUrl = `${appBase}/challenge/demo?t=${encodeURIComponent(tokenResult.token)}`;
-
-  return NextResponse.json({
-    demo_url: demoUrl,
-    expires_in_seconds: Math.floor(TOKEN_TTL_MS / 1000),
-    scenario: parsed.value.scenario,
-    enrollment_id: enrollmentResult.enrollment.id,
-  });
-}
+};
 
 /** יציאה מדמו */
 export async function DELETE(request: Request) {
