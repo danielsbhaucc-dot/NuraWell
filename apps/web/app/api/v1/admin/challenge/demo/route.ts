@@ -5,6 +5,7 @@ import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { TOKEN_TTL_MS, createChallengeDemoToken } from '@/lib/challenge/demo-token';
 import { ensureChallengeOpsSchema } from '@/lib/challenge/ensure-challenge-schema';
 import { upsertDemoEnrollment, clearDemoEnrollment } from '@/lib/challenge/enrollment';
+import { publicAppBaseNoSlashFromServer } from '@/lib/public-app-url';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -82,7 +83,7 @@ const createDemoTokenResponse = (
 };
 
 const createDemoUrlResponse = async (
-  request: Request,
+  appBase: string,
   userId: string,
   scenario: DemoScenario,
   simulatedDay?: number,
@@ -96,7 +97,6 @@ const createDemoUrlResponse = async (
   const tokenResult = createDemoTokenResponse(userId, scenario, simulatedDay);
   if (!tokenResult.ok) return tokenResult.response;
 
-  const appBase = new URL(request.url).origin;
   const demoUrl = `${appBase}/challenge/demo?t=${encodeURIComponent(tokenResult.token)}`;
   return NextResponse.json({
     demo_url: demoUrl,
@@ -114,8 +114,10 @@ export const POST = async (request: Request) => {
   const startRequest = await parseStartRequest(request);
   if (!startRequest.ok) return startRequest.response;
 
+  const appBase = await publicAppBaseNoSlashFromServer(auth.supabase);
+
   return createDemoUrlResponse(
-    request,
+    appBase,
     auth.user.id,
     startRequest.value.scenario,
     startRequest.value.simulatedDay,
