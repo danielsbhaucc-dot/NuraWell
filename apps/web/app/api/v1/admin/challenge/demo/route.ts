@@ -5,7 +5,6 @@ import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { TOKEN_TTL_MS, createChallengeDemoToken } from '@/lib/challenge/demo-token';
 import { ensureChallengeOpsSchema } from '@/lib/challenge/ensure-challenge-schema';
 import { upsertDemoEnrollment, clearDemoEnrollment } from '@/lib/challenge/enrollment';
-import { publicAppBaseNoSlashSync } from '@/lib/public-app-url';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -57,7 +56,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  const appBase = publicAppBaseNoSlashSync() || new URL(request.url).origin;
+  const appBase = new URL(request.url).origin;
   const demoUrl = `${appBase}/challenge/demo?t=${encodeURIComponent(token)}`;
 
   return NextResponse.json({
