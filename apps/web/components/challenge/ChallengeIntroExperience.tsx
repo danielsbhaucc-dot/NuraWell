@@ -41,6 +41,8 @@ export function ChallengeIntroExperience({
   const ttsRef = useRef<HTMLAudioElement | null>(null);
   const [muted, setMuted] = useState(false);
   const [showLines, setShowLines] = useState(false);
+  const [demoExiting, setDemoExiting] = useState(false);
+  const [demoExitError, setDemoExitError] = useState<string | null>(null);
 
   const renderedLines = introLines.map((l) => renderIntroLine(l.text, name));
 
@@ -69,22 +71,36 @@ export function ChallengeIntroExperience({
     router.push('/challenge/eating-window');
   }, [router]);
 
+  const exitDemo = async () => {
+    setDemoExiting(true);
+    setDemoExitError(null);
+    try {
+      const res = await fetch('/api/v1/admin/challenge/demo', { method: 'DELETE', credentials: 'include' });
+      if (!res.ok) throw new Error('server error');
+      window.location.href = '/home';
+    } catch {
+      setDemoExitError('שגיאה ביציאה מדמו — נסה שוב');
+      setDemoExiting(false);
+    }
+  };
+
   return (
     <div className="relative">
       {isDemo ? (
-        <div className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between gap-2 border-b border-amber-400/30 bg-amber-500/15 px-4 py-2">
-          <span className="text-sm text-amber-100">מצב דמו — פתיחת אתגר</span>
-          <button
-            type="button"
-            onClick={async () => {
-              await fetch('/api/v1/admin/challenge/demo', { method: 'DELETE', credentials: 'include' });
-              window.location.href = '/home';
-            }}
-            className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold text-amber-100"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            יציאה
-          </button>
+        <div className="fixed left-0 right-0 top-0 z-50 border-b border-amber-400/30 bg-amber-500/15 px-4 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm text-amber-100">מצב דמו — פתיחת אתגר</span>
+            <button
+              type="button"
+              disabled={demoExiting}
+              onClick={exitDemo}
+              className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold text-amber-100 disabled:opacity-60"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              {demoExiting ? 'יוצא...' : 'יציאה'}
+            </button>
+          </div>
+          {demoExitError ? <p className="mt-1 text-xs text-red-400">{demoExitError}</p> : null}
         </div>
       ) : null}
 

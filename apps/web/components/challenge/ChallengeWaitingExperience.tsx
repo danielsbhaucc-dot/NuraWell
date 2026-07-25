@@ -34,6 +34,8 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
   const [countdown, setCountdown] = useState(initialState.countdown_to_start);
   const [state] = useState(initialState);
   const [participants, setParticipants] = useState<number | null>(null);
+  const [demoExiting, setDemoExiting] = useState(false);
+  const [demoExitError, setDemoExitError] = useState<string | null>(null);
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
@@ -59,6 +61,19 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
     return () => clearInterval(id);
   }, [state.enrollment?.challenge_start_date]);
 
+  const exitDemo = async () => {
+    setDemoExiting(true);
+    setDemoExitError(null);
+    try {
+      const res = await fetch('/api/v1/admin/challenge/demo', { method: 'DELETE', credentials: 'include' });
+      if (!res.ok) throw new Error('server error');
+      window.location.href = '/home';
+    } catch {
+      setDemoExitError('שגיאה ביציאה מדמו — נסה שוב');
+      setDemoExiting(false);
+    }
+  };
+
   const cd = countdown ?? { days: 0, hours: 0, minutes: 0, seconds: 0 };
 
   return (
@@ -70,19 +85,20 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
 
       <div className="relative z-10 mx-auto flex min-h-[100dvh] max-w-lg flex-col px-5 pb-10 pt-8">
         {state.is_demo ? (
-          <div className="mb-4 flex items-center justify-between gap-2 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3">
-            <span className="text-sm text-amber-100">מצב דמו — תצוגה מקדימה למנהל בלבד</span>
-            <button
-              type="button"
-              onClick={async () => {
-                await fetch('/api/v1/admin/challenge/demo', { method: 'DELETE', credentials: 'include' });
-                window.location.href = '/home';
-              }}
-              className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              יציאה
-            </button>
+          <div className="mb-4 space-y-1">
+            <div className="flex items-center justify-between gap-2 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3">
+              <span className="text-sm text-amber-100">מצב דמו — תצוגה מקדימה למנהל בלבד</span>
+              <button
+                type="button"
+                disabled={demoExiting}
+                onClick={exitDemo}
+                className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                {demoExiting ? 'יוצא...' : 'יציאה'}
+              </button>
+            </div>
+            {demoExitError ? <p className="text-xs text-red-400 px-1">{demoExitError}</p> : null}
           </div>
         ) : null}
 
