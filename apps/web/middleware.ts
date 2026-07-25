@@ -57,6 +57,11 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
     'https://openrouter.ai',
     'https://api.openrouter.ai',
     'https://*.upstash.io',
+    // Bunny Pull Zone + CDN — hls.js fetches .m3u8 manifests and .ts segments via
+    // XHR/fetch (not <video src>), so these must appear in connect-src, not only media-src.
+    'https://video.nurawell.ai',
+    'https://*.bunnycdn.com',
+    'https://*.b-cdn.net',
   ],
   'media-src': [
     "'self'",

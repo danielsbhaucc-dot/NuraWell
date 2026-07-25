@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import type { ChallengeEatingWindowLesson } from '@/lib/challenge/content';
 import type { EatingWindowConfig } from '@/lib/challenge/types';
+import { DemoExitBanner } from './DemoExitBanner';
 
 type Step = 'lesson' | 'confirm';
 
@@ -55,6 +56,7 @@ export function ChallengeEatingWindowClient() {
     return (
       <div className="min-h-[100dvh] bg-[#05010f] px-4 py-8 text-white" dir="rtl">
         <div className="mx-auto max-w-lg">
+          <DemoExitBanner />
           <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400/80">
             שיעור קצר לפני ההגדרה
           </p>
@@ -91,6 +93,7 @@ export function ChallengeEatingWindowClient() {
   return (
     <div className="min-h-[100dvh] bg-[#05010f] px-4 py-8 text-white" dir="rtl">
       <div className="mx-auto max-w-lg">
+        <DemoExitBanner />
         {lesson ? (
           <button
             type="button"

@@ -54,7 +54,7 @@ export function FullscreenVideoPlayer({
   const [hlsListenKey, setHlsListenKey] = useState(0);
   const useHlsImmersive = Boolean(pullZoneHlsSrc?.trim());
 
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [showIcon, setShowIcon] = useState(false);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const [activeAttentionStop, setActiveAttentionStop] = useState<ImmersiveAttentionStop | null>(null);

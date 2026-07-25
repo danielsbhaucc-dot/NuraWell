@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
+import { requireApiAdmin } from '@/lib/api/route-guards';
 import { TOKEN_TTL_MS, createChallengeDemoToken } from '@/lib/challenge/demo-token';
 import { ensureChallengeOpsSchema } from '@/lib/challenge/ensure-challenge-schema';
 import { upsertDemoEnrollment, clearDemoEnrollment } from '@/lib/challenge/enrollment';
@@ -126,7 +127,7 @@ export const POST = async (request: Request) => {
 
 /** יציאה מדמו */
 export async function DELETE(request: Request) {
-  const auth = await requireOpsApiAdmin(request);
+  const auth = await requireApiAdmin(request);
   if (!auth.ok) return auth.response;
 
   await clearDemoEnrollment(createAdminClient(), auth.user.id);
