@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Clock, Sparkles, Users } from 'lucide-react';
+import { Clock, LogOut, Sparkles, Users } from 'lucide-react';
 import { getMentorAvatarUrl } from '@/lib/mentors/avatar-url';
 import { MENTORS } from '@/lib/mentors/registry';
 import type { ChallengeStateResponse } from '@/lib/challenge/types';
@@ -15,6 +15,7 @@ import {
 } from '@/lib/challenge/gender-copy';
 import { challengeFadeUp } from '@/lib/challenge/motion';
 import { useReducedMotion } from '@/lib/client/useReducedMotion';
+import { useDemoExit } from '@/lib/client/useDemoExit';
 
 type Props = {
   firstName: string;
@@ -34,6 +35,7 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
   const [countdown, setCountdown] = useState(initialState.countdown_to_start);
   const [state] = useState(initialState);
   const [participants, setParticipants] = useState<number | null>(null);
+  const { exiting: demoExiting, error: demoExitError, handleExitDemo } = useDemoExit();
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
@@ -70,8 +72,20 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
 
       <div className="relative z-10 mx-auto flex min-h-[100dvh] max-w-lg flex-col px-5 pb-10 pt-8">
         {state.is_demo ? (
-          <div className="mb-4 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-2 text-center text-sm text-amber-100">
-            מצב דמו — תצוגה מקדימה למנהל בלבד
+          <div className="mb-4 space-y-1">
+            <div className="flex items-center justify-between gap-2 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3">
+              <span className="text-sm text-amber-100">מצב דמו — תצוגה מקדימה למנהל בלבד</span>
+              <button
+                type="button"
+                disabled={demoExiting}
+                onClick={handleExitDemo}
+                className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                {demoExiting ? 'יוצא...' : 'יציאה'}
+              </button>
+            </div>
+            {demoExitError ? <p className="text-xs text-red-400 px-1">{demoExitError}</p> : null}
           </div>
         ) : null}
 

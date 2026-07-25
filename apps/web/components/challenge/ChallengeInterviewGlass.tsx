@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Mic, Send, Sparkles } from 'lucide-react';
 import { useAlmogAvatarUrl } from '@/lib/client/useAlmogAvatarUrl';
 import { ALMOG_AVATAR_FALLBACK } from '@/lib/ai/almog-avatar';
+import { DemoExitBanner } from './DemoExitBanner';
 
 type Turn = { role: 'user' | 'assistant'; content: string };
 
@@ -71,23 +72,26 @@ export function ChallengeInterviewGlass() {
       </div>
 
       <header className="relative z-10 border-b border-white/10 bg-white/5 px-4 py-4 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-lg items-center gap-3">
-          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ring-emerald-400/40">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={avatarUrl}
-              alt="אלמוג"
-              className="h-full w-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
-              }}
-            />
+        <div className="mx-auto max-w-lg">
+          <DemoExitBanner />
+          <div className="flex items-center gap-3">
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ring-emerald-400/40">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={avatarUrl}
+                alt="אלמוג"
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
+                }}
+              />
+            </div>
+            <div>
+              <h1 className="font-display text-lg font-bold text-white">ריאיון עם אלמוג</h1>
+              <p className="text-xs text-white/50">כמה דקות — כדי שאזהה את ההצלחות שלך</p>
+            </div>
+            <Sparkles className="mr-auto h-5 w-5 text-emerald-400" />
           </div>
-          <div>
-            <h1 className="font-display text-lg font-bold text-white">ריאיון עם אלמוג</h1>
-            <p className="text-xs text-white/50">כמה דקות — כדי שאזהה את ההצלחות שלך</p>
-          </div>
-          <Sparkles className="mr-auto h-5 w-5 text-emerald-400" />
         </div>
       </header>
 
