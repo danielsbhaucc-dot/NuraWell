@@ -93,7 +93,11 @@ export function VideoSection({
   const bunnyHlsCandidate = isBunnyProvider ? getBunnyHlsSourceFromFields(externalId, externalUrl) : null;
   const bunnyEmbedId = isBunnyProvider ? resolveBunnyStreamEmbedId(externalId, externalUrl) : null;
   const bunnyHlsSrc = bunnyHlsCandidate;
-  const isBunnyHls = isBunnyProvider && !!bunnyHlsSrc;
+
+  /** כשה-HLS נכשל (CORS/403), עוברים אוטומטית ל-embed iframe */
+  const [hlsFailed, setHlsFailed] = useState(false);
+
+  const isBunnyHls = isBunnyProvider && !!bunnyHlsSrc && !hlsFailed;
   const isBunnyIframe = isBunnyProvider && !isBunnyHls && !!bunnyEmbedId;
 
   // Fullscreen immersive mode lifecycle
@@ -194,6 +198,8 @@ export function VideoSection({
   const handleImmersiveFallback = useCallback(() => {
     setImmersiveOpen(false);
     setImmersiveFinished(true);
+    // HLS נכשל גם במסך מלא — עוברים ל-iframe embed במקום לנסות HLS שוב
+    setHlsFailed(true);
     setInlinePlaying(true);
   }, []);
 
@@ -205,6 +211,7 @@ export function VideoSection({
   /** צפייה חוזרת — Bunny עם embed: מסך מלא (כמו בפעם הראשונה); אחרת inline */
   const handleStartPlayback = useCallback(() => {
     setPlayerEpoch((n) => n + 1);
+    setHlsFailed(false);
     setInlineLoaded(false);
     if (isBunnyProvider && bunnyEmbedId && !isPlaceholder) {
       setInlinePlaying(false);
@@ -379,10 +386,9 @@ export function VideoSection({
               onLoaded={() => setInlineLoaded(true)}
               onError={() => {
                 if (bunnyEmbedId) {
-                  setInlinePlaying(false);
-                  setImmersiveFinished(false);
-                  setImmersiveOpen(true);
-                  setPlayerEpoch((n) => n + 1);
+                  // HLS נכשל (CORS/403) — עוברים ל-iframe embed במקום לנסות שוב
+                  setHlsFailed(true);
+                  setInlinePlaying(true);
                 }
               }}
               onEnded={() => {
@@ -453,6 +459,7 @@ export function VideoSection({
           <div>provider key: {providerKey || '—'}</div>
           <div>embed: {bunnyEmbedId || '—'}</div>
           <div>hls: {bunnyHlsSrc ? `${bunnyHlsSrc.slice(0, 64)}…` : '—'}</div>
+          <div>hlsFailed: {String(hlsFailed)}</div>
           <div>
             immersive: ready={String(immersiveReady)} open={String(immersiveOpen)} done={String(immersiveFinished)}
           </div>
