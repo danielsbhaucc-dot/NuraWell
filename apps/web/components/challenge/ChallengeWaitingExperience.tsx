@@ -15,6 +15,7 @@ import {
 } from '@/lib/challenge/gender-copy';
 import { challengeFadeUp } from '@/lib/challenge/motion';
 import { useReducedMotion } from '@/lib/client/useReducedMotion';
+import { useDemoExit } from '@/lib/client/useDemoExit';
 
 type Props = {
   firstName: string;
@@ -34,8 +35,7 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
   const [countdown, setCountdown] = useState(initialState.countdown_to_start);
   const [state] = useState(initialState);
   const [participants, setParticipants] = useState<number | null>(null);
-  const [demoExiting, setDemoExiting] = useState(false);
-  const [demoExitError, setDemoExitError] = useState<string | null>(null);
+  const { exiting: demoExiting, error: demoExitError, handleExitDemo } = useDemoExit();
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
@@ -61,19 +61,6 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
     return () => clearInterval(id);
   }, [state.enrollment?.challenge_start_date]);
 
-  const exitDemo = async () => {
-    setDemoExiting(true);
-    setDemoExitError(null);
-    try {
-      const res = await fetch('/api/v1/admin/challenge/demo', { method: 'DELETE', credentials: 'include' });
-      if (!res.ok) throw new Error('server error');
-      window.location.href = '/home';
-    } catch {
-      setDemoExitError('שגיאה ביציאה מדמו — נסה שוב');
-      setDemoExiting(false);
-    }
-  };
-
   const cd = countdown ?? { days: 0, hours: 0, minutes: 0, seconds: 0 };
 
   return (
@@ -91,7 +78,7 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
               <button
                 type="button"
                 disabled={demoExiting}
-                onClick={exitDemo}
+                onClick={handleExitDemo}
                 className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
               >
                 <LogOut className="h-3.5 w-3.5" />

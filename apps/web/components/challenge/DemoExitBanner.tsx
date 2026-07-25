@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { LogOut } from 'lucide-react';
+import { useDemoExit } from '@/lib/client/useDemoExit';
 
 /**
  * Shows an "Exit Demo" button when the logged-in admin user is in demo mode.
@@ -10,8 +11,7 @@ import { LogOut } from 'lucide-react';
  */
 export function DemoExitBanner() {
   const [isDemo, setIsDemo] = useState<boolean | null>(null);
-  const [exiting, setExiting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { exiting, error, handleExitDemo } = useDemoExit();
 
   useEffect(() => {
     fetch('/api/v1/challenge/state', { credentials: 'include' })
@@ -25,26 +25,13 @@ export function DemoExitBanner() {
 
   if (!isDemo) return null;
 
-  const exit = async () => {
-    setExiting(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/v1/admin/challenge/demo', { method: 'DELETE', credentials: 'include' });
-      if (!res.ok) throw new Error('server error');
-      window.location.href = '/home';
-    } catch {
-      setError('שגיאה ביציאה מדמו — נסה שוב');
-      setExiting(false);
-    }
-  };
-
   return (
     <div className="mb-4 space-y-1">
       <div className="flex items-center justify-between gap-2 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3">
         <span className="text-sm text-amber-100">מצב דמו</span>
         <button
           type="button"
-          onClick={exit}
+          onClick={handleExitDemo}
           disabled={exiting}
           className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
         >
