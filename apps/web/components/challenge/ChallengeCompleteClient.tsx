@@ -8,6 +8,7 @@ import type { ChallengeCompletionSummary } from '@/lib/challenge/types';
 import { challengeFadeUp } from '@/lib/challenge/motion';
 import { useReducedMotion } from '@/lib/client/useReducedMotion';
 import { ChallengeShareCard } from './ChallengeShareCard';
+import { DemoExitBanner } from './DemoExitBanner';
 
 type Props = {
   firstName: string;
@@ -41,6 +42,7 @@ export function ChallengeCompleteClient({ firstName, initialSummary }: Props) {
       </div>
 
       <div className="relative z-10 mx-auto max-w-lg text-center">
+        <DemoExitBanner />
         <motion.div
           {...challengeFadeUp(reducedMotion, 0)}
           className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-emerald-500 shadow-lg shadow-emerald-600/30"

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Clock, Sparkles, Users } from 'lucide-react';
+import { Clock, LogOut, Sparkles, Users } from 'lucide-react';
 import { getMentorAvatarUrl } from '@/lib/mentors/avatar-url';
 import { MENTORS } from '@/lib/mentors/registry';
 import type { ChallengeStateResponse } from '@/lib/challenge/types';
@@ -70,8 +70,19 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
 
       <div className="relative z-10 mx-auto flex min-h-[100dvh] max-w-lg flex-col px-5 pb-10 pt-8">
         {state.is_demo ? (
-          <div className="mb-4 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-2 text-center text-sm text-amber-100">
-            מצב דמו — תצוגה מקדימה למנהל בלבד
+          <div className="mb-4 flex items-center justify-between gap-2 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3">
+            <span className="text-sm text-amber-100">מצב דמו — תצוגה מקדימה למנהל בלבד</span>
+            <button
+              type="button"
+              onClick={async () => {
+                await fetch('/api/v1/admin/challenge/demo', { method: 'DELETE', credentials: 'include' });
+                window.location.href = '/home';
+              }}
+              className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              יציאה
+            </button>
           </div>
         ) : null}
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Volume2, VolumeX } from 'lucide-react';
+import { LogOut, Volume2, VolumeX } from 'lucide-react';
 import { ComingSoonExperience } from '@/components/coming-soon/ComingSoonExperience';
 import type { ComingSoonLyrics } from '@/lib/coming-soon/lyrics';
 import {
@@ -72,8 +72,19 @@ export function ChallengeIntroExperience({
   return (
     <div className="relative">
       {isDemo ? (
-        <div className="fixed left-0 right-0 top-0 z-50 border-b border-amber-400/30 bg-amber-500/15 px-4 py-2 text-center text-sm text-amber-100">
-          מצב דמו — פתיחת אתגר
+        <div className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between gap-2 border-b border-amber-400/30 bg-amber-500/15 px-4 py-2">
+          <span className="text-sm text-amber-100">מצב דמו — פתיחת אתגר</span>
+          <button
+            type="button"
+            onClick={async () => {
+              await fetch('/api/v1/admin/challenge/demo', { method: 'DELETE', credentials: 'include' });
+              window.location.href = '/home';
+            }}
+            className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold text-amber-100"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            יציאה
+          </button>
         </div>
       ) : null}
 
