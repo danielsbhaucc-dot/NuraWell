@@ -10,6 +10,7 @@ import {
   renderIntroLine,
 } from '@/lib/challenge/content';
 import { challengeIntroLine, firstNameFromFullName, genderFromProfile } from '@/lib/challenge/gender-copy';
+import { useDemoExit } from '@/lib/client/useDemoExit';
 
 type Props = {
   songUrl: string | null;
@@ -41,8 +42,7 @@ export function ChallengeIntroExperience({
   const ttsRef = useRef<HTMLAudioElement | null>(null);
   const [muted, setMuted] = useState(false);
   const [showLines, setShowLines] = useState(false);
-  const [demoExiting, setDemoExiting] = useState(false);
-  const [demoExitError, setDemoExitError] = useState<string | null>(null);
+  const { exiting: demoExiting, error: demoExitError, handleExitDemo } = useDemoExit();
 
   const renderedLines = introLines.map((l) => renderIntroLine(l.text, name));
 
@@ -71,19 +71,6 @@ export function ChallengeIntroExperience({
     router.push('/challenge/eating-window');
   }, [router]);
 
-  const exitDemo = async () => {
-    setDemoExiting(true);
-    setDemoExitError(null);
-    try {
-      const res = await fetch('/api/v1/admin/challenge/demo', { method: 'DELETE', credentials: 'include' });
-      if (!res.ok) throw new Error('server error');
-      window.location.href = '/home';
-    } catch {
-      setDemoExitError('שגיאה ביציאה מדמו — נסה שוב');
-      setDemoExiting(false);
-    }
-  };
-
   return (
     <div className="relative">
       {isDemo ? (
@@ -93,7 +80,7 @@ export function ChallengeIntroExperience({
             <button
               type="button"
               disabled={demoExiting}
-              onClick={exitDemo}
+              onClick={handleExitDemo}
               className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold text-amber-100 disabled:opacity-60"
             >
               <LogOut className="h-3.5 w-3.5" />
