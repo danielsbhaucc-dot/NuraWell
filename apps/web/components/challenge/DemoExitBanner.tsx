@@ -20,7 +20,10 @@ export function DemoExitBanner() {
         return r.json() as Promise<{ is_demo?: boolean }>;
       })
       .then((d) => setIsDemo(d?.is_demo ?? false))
-      .catch(() => setIsDemo(false));
+      .catch((err) => {
+        if (process.env.NODE_ENV !== 'production') console.warn('[DemoExitBanner] failed to fetch state', err);
+        setIsDemo(false);
+      });
   }, []);
 
   if (!isDemo) return null;
