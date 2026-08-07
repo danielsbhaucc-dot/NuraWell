@@ -34,7 +34,7 @@ interface FullscreenVideoPlayerProps {
 }
 
 function bunnyIframeUrl(embedId: string): string {
-  return `https://iframe.mediadelivery.net/embed/${embedId}?autoplay=true&preload=true&responsive=true&playsinline=true&muted=false&controls=false`;
+  return `https://iframe.mediadelivery.net/embed/${embedId}?autoplay=true&preload=true&responsive=true&playsinline=true&muted=false&controls=true`;
 }
 
 export function FullscreenVideoPlayer({
@@ -52,7 +52,9 @@ export function FullscreenVideoPlayer({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const hlsVideoRef = useRef<HTMLVideoElement | null>(null);
   const [hlsListenKey, setHlsListenKey] = useState(0);
-  const useHlsImmersive = Boolean(pullZoneHlsSrc?.trim());
+  const [hlsForcedFallback, setHlsForcedFallback] = useState(false);
+  const useHlsImmersive = Boolean(pullZoneHlsSrc?.trim()) && !hlsForcedFallback;
+  const hlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [showIcon, setShowIcon] = useState(false);
@@ -92,8 +94,21 @@ export function FullscreenVideoPlayer({
       document.body.style.overflow = prev;
       if (iconTimerRef.current) clearTimeout(iconTimerRef.current);
       if (autoResumeIntervalRef.current) clearInterval(autoResumeIntervalRef.current);
+      if (hlsTimeoutRef.current) clearTimeout(hlsTimeoutRef.current);
     };
   }, [mounted]);
+
+  // If HLS mode is active but nothing loads within 10s, fall back to iframe embed
+  useEffect(() => {
+    if (!Boolean(pullZoneHlsSrc?.trim()) || hlsForcedFallback) return;
+    hlsTimeoutRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
+      setHlsForcedFallback(true);
+    }, 10000);
+    return () => {
+      if (hlsTimeoutRef.current) clearTimeout(hlsTimeoutRef.current);
+    };
+  }, [pullZoneHlsSrc, hlsForcedFallback]);
 
   useEffect(() => {
     answeredAttentionIdsRef.current.clear();
@@ -290,9 +305,15 @@ export function FullscreenVideoPlayer({
           controls={false}
           videoClassName="absolute inset-0 h-full w-full object-cover"
           className="absolute inset-0 w-full h-full border-0"
-          onLoaded={() => setHlsListenKey(k => k + 1)}
+          onLoaded={() => {
+            if (hlsTimeoutRef.current) clearTimeout(hlsTimeoutRef.current);
+            setHlsListenKey(k => k + 1);
+          }}
           onEnded={() => onEndedRef.current()}
-          onError={() => onFallbackRef.current?.()}
+          onError={() => {
+            if (hlsTimeoutRef.current) clearTimeout(hlsTimeoutRef.current);
+            setHlsForcedFallback(true);
+          }}
         />
       ) : (
         <iframe
