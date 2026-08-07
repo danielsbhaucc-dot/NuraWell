@@ -13,7 +13,7 @@ interface VideoPlayerProps {
 function getEmbedUrl(provider: VideoPlayerProps['provider'], externalId?: string | null, externalUrl?: string | null): string | null {
   switch (provider) {
     case 'bunny':
-      return externalId ? `https://iframe.mediadelivery.net/embed/${externalId}?autoplay=false&preload=true` : null;
+      return externalId ? `https://iframe.mediadelivery.net/embed/${externalId}?autoplay=true&preload=true&controls=true` : null;
     case 'heygen':
       return externalId ? `https://app.heygen.com/share/${externalId}` : null;
     case 'youtube':
