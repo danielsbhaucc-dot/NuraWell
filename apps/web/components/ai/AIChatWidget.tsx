@@ -514,6 +514,9 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const pendingInitialReplyRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const wasLoadingRef = useRef(false);
+  const isLoading = status === 'submitted' || status === 'streaming';
+  const showLoading = isLoading || awaitingAssistantRecovery;
+  const isThinking = status === 'submitted' || (awaitingAssistantRecovery && !isLoading);
 
   useEffect(() => {
     setMounted(true);
@@ -741,10 +744,6 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
         setLoadingThread(false);
       });
   }, [open, panelView, setMessages]);
-
-  const isLoading = status === 'submitted' || status === 'streaming';
-  const showLoading = isLoading || awaitingAssistantRecovery;
-  const isThinking = status === 'submitted' || (awaitingAssistantRecovery && !isLoading);
 
   const openSessionThread = async (session: ChatSessionListItemClient) => {
     if (session.session_kind === 'profile_update') return;
