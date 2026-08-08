@@ -19,6 +19,8 @@ function mockAdminSimple(counts: Record<string, number>) {
     const chain = {
       eq: (column: string, value: unknown) =>
         makeQuery(table, [...filters, `${column}=${String(value)}`]),
+      in: (column: string, values: unknown[]) =>
+        makeQuery(table, [...filters, `${column}.in(${values.join(',')})`]),
       lte: (column: string, value: unknown) =>
         makeQuery(table, [...filters, `${column}<=${String(value)}`]),
       select: (_cols: string, opts?: { head?: boolean }) => {
@@ -82,6 +84,8 @@ function mockAdminOnboardingIdle(opts: {
           const chain = {
             eq: (column: string, value: unknown) =>
               makeReminderQuery([...filters, `${column}=${String(value)}`]),
+            in: (column: string, values: unknown[]) =>
+              makeReminderQuery([...filters, `${column}.in(${values.join(',')})`]),
             lte: (column: string, value: unknown) =>
               makeReminderQuery([...filters, `${column}<=${String(value)}`]),
             select: (_cols: string, opts?: { head?: boolean }) => {
