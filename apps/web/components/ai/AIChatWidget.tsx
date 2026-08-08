@@ -742,6 +742,9 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
       });
   }, [open, panelView, setMessages]);
 
+  // Keep loading state declarations below the dependent effects so the
+  // TypeScript analyzer sees the declarations after the last effect that
+  // references them.
   const isLoading = status === 'submitted' || status === 'streaming';
   const showLoading = isLoading || awaitingAssistantRecovery;
   const isThinking = status === 'submitted' || (awaitingAssistantRecovery && !isLoading);
