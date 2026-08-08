@@ -9,6 +9,7 @@ import { MemorySearchIndicator } from './MemorySearchIndicator';
 import { messagesHavePendingRecallTool } from '../../lib/ai/memory-recall/detect-pending-recall';
 import {
   extractDisplayTextFromChatMessage,
+  normalizeDisplayText,
   type ChatDisplayMessage,
 } from '../../lib/client/chat-message-display';
 import { NuraWellChatTransport } from '../../lib/client/nurawell-chat-transport';
@@ -87,7 +88,7 @@ async function postMicroWinHabit(): Promise<{ ok: boolean; habitTitle?: string }
 }
 
 function getMessageText(msg: ChatDisplayMessage): string {
-  return extractDisplayTextFromChatMessage(msg);
+  return normalizeDisplayText(extractDisplayTextFromChatMessage(msg));
 }
 
 function getMessageCreatedAt(msg: unknown): Date {
@@ -535,7 +536,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
       const sessions = await fetchChatSessionsList();
       setSessionList(sessions);
     } catch {
-      setSessionList([]);
+      /* keep the last known list visible */
     } finally {
       setSessionsLoading(false);
     }
@@ -576,13 +577,13 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     if (!open) return;
     const tick = () => {
       void refreshSessionList();
-      if (panelView === 'thread' && sessionIdRef.current) {
+      if (panelView === 'thread' && sessionIdRef.current && !showLoading) {
         void refreshChatSession(sessionIdRef.current);
       }
     };
-    const id = window.setInterval(tick, 5 * 60_000);
+    const id = window.setInterval(tick, 60_000);
     return () => window.clearInterval(id);
-  }, [open, panelView]);
+  }, [open, panelView, showLoading]);
 
   const isSessionClosed = chatSession?.status === 'closed';
 
@@ -833,7 +834,11 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   };
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!open) return;
+    const el = bottomRef.current;
+    if (!el) return;
+    const behavior = status === 'streaming' ? 'auto' : 'smooth';
+    el.scrollIntoView({ behavior, block: 'end' });
   }, [messages.length, status, open]);
 
   useEffect(() => {
@@ -1349,7 +1354,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                 const isUser = msg.role === 'user';
                 const displayMsg = msg as ChatDisplayMessage;
                 const text = getMessageText(displayMsg);
-                if (!isUser && !text) return null;
+                if (!text && !isUser) return null;
                 const showQuote =
                   isUser &&
                   i === 0 &&
@@ -1648,4 +1653,3 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     </Drawer.Root>
   );
 }
-
