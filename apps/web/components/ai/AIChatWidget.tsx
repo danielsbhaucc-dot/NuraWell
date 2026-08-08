@@ -716,6 +716,10 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     }),
   });
 
+  const isLoading = status === 'submitted' || status === 'streaming';
+  const showLoading = isLoading || awaitingAssistantRecovery;
+  const isThinking = status === 'submitted' || (awaitingAssistantRecovery && !isLoading);
+
   useEffect(() => {
     if (!open) return;
     const pending = readPendingChatReply();
@@ -858,9 +862,6 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     notificationIdRef.current = null;
   }, [open, sendMessage, status, userId, buildOutgoingChatBody]);
 
-  const isLoading = status === 'submitted' || status === 'streaming';
-  const showLoading = isLoading || awaitingAssistantRecovery;
-  const isThinking = status === 'submitted' || (awaitingAssistantRecovery && !isLoading);
   const pendingRecallTool = useMemo(
     () => messagesHavePendingRecallTool(messages),
     [messages]

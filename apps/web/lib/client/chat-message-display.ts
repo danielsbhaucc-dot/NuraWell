@@ -57,8 +57,7 @@ function isToolOrNonDisplayPart(part: ChatMessagePart): boolean {
   if (type === 'dynamic-tool') return true;
   if (type.startsWith('tool-')) return true;
   if (type.startsWith('data-')) return true;
-  if (type === 'source-url' || type === 'source-document' || type === 'file') return true;
-  return false;
+  return type === 'source-url' || type === 'source-document' || type === 'file';
 }
 
 function looksLikeStreamProtocolPayload(line: string): boolean {
