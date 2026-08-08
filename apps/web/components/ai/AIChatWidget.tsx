@@ -473,6 +473,8 @@ export interface AIChatWidgetProps {
   firstName?: string;
 }
 
+type AIModel = 'almog' | 'llama4' | 'gpt' | 'gpt_luna' | 'gpt_terra' | 'claude' | 'claude_sonnet5' | 'gemini_flash';
+
 export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const { avatarUrl: avatarSrc } = useAlmogAvatarUrl();
   const { url: bgUrl, hasPhoto } = useChatBackground();
@@ -483,7 +485,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const [profileOnboardingOpen, setProfileOnboardingOpen] = useState(false);
   const [online, setOnline] = useState(true);
   const [input, setInput] = useState('');
-  const [selectedModel, setSelectedModel] = useState<'almog' | 'llama4' | 'gpt' | 'gpt_luna' | 'gpt_terra' | 'claude' | 'claude_sonnet5' | 'gemini_flash' | null>(null);
+  const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
   const [typingStep, setTypingStep] = useState(0);
   const [statusIdx, setStatusIdx] = useState(0);
   const [waitSeconds, setWaitSeconds] = useState(0);
@@ -1610,7 +1612,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                   {!isLoading && (
                     <select
                       value={selectedModel ?? ''}
-                      onChange={(e) => setSelectedModel(e.target.value === '' ? null : (e.target.value as any))}
+                      onChange={(e) => setSelectedModel(e.target.value === '' ? null : (e.target.value as AIModel))}
                       className="shrink-0 rounded-xl border border-white/20 bg-white/5 px-2.5 py-2 text-[11px] font-semibold text-white outline-none hover:bg-white/10 disabled:opacity-60"
                       title="בחר מודל להשוואה"
                     >
