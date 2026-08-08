@@ -57,8 +57,7 @@ function isToolOrNonDisplayPart(part: ChatMessagePart): boolean {
   if (type === 'dynamic-tool') return true;
   if (type.startsWith('tool-')) return true;
   if (type.startsWith('data-')) return true;
-  if (type === 'source-url' || type === 'source-document' || type === 'file') return true;
-  return false;
+  return type === 'source-url' || type === 'source-document' || type === 'file';
 }
 
 function looksLikeStreamProtocolPayload(line: string): boolean {
@@ -131,6 +130,32 @@ export function extractDisplayTextFromChatMessage(message: ChatDisplayMessage): 
   }
 
   return '';
+}
+
+export function normalizeDisplayText(raw: string): string {
+  const cleaned = stripStreamProtocolArtifacts(raw);
+  if (!cleaned) return '';
+
+  return cleaned
+    .split('\n')
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return '';
+      const jsonLine = trimmed.match(/^data:\s*(\{.*\})$/i);
+      if (!jsonLine) return line;
+      try {
+        const parsed = JSON.parse(jsonLine[1]) as { type?: unknown; text?: unknown; value?: unknown };
+        if (typeof parsed.text === 'string' && parsed.text.trim()) return parsed.text;
+        if (typeof parsed.value === 'string' && parsed.value.trim()) return parsed.value;
+        if (typeof parsed.type === 'string') return '';
+      } catch {
+        return line;
+      }
+      return '';
+    })
+    .filter(Boolean)
+    .join('\n')
+    .trim();
 }
 
 /** האם להודעת עוזר יש טקסט גלוי (לא רק tool parts). */
