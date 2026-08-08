@@ -568,10 +568,10 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   useEffect(() => {
     if (!open) return;
     void refreshSessionList();
-    if (panelView === 'thread') {
+    if (panelView === 'thread' && !loadingThread) {
       void refreshChatSession(sessionIdRef.current);
     }
-  }, [open, panelView]);
+  }, [open, panelView, loadingThread]);
 
   useEffect(() => {
     if (!open) return;
