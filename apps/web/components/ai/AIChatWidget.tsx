@@ -580,13 +580,13 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     if (!open) return;
     const tick = () => {
       void refreshSessionList();
-      if (panelView === 'thread' && sessionIdRef.current && !showLoading) {
+      if (panelView === 'thread' && sessionIdRef.current) {
         void refreshChatSession(sessionIdRef.current);
       }
     };
     const id = window.setInterval(tick, 60_000);
     return () => window.clearInterval(id);
-  }, [open, panelView, showLoading]);
+  }, [open, panelView]);
 
   const isSessionClosed = chatSession?.status === 'closed';
 
