@@ -514,9 +514,6 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const pendingInitialReplyRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const wasLoadingRef = useRef(false);
-  const isLoading = status === 'submitted' || status === 'streaming';
-  const showLoading = isLoading || awaitingAssistantRecovery;
-  const isThinking = status === 'submitted' || (awaitingAssistantRecovery && !isLoading);
 
   useEffect(() => {
     setMounted(true);
