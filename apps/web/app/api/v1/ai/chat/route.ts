@@ -168,7 +168,9 @@ const chatBodySchema = z.object({
    * בורר מודל להשוואה (אופציונלי). ברירת מחדל: אלמוג (Qwen). מאפשר למשתמש
    * לבחור מודל אחר *לאותה בקשה* בלבד כדי להשוות איכות — הכל דרך OpenRouter.
    */
-  model: z.enum(['almog', 'llama4', 'gpt', 'claude']).optional(),
+  model: z
+    .enum(['almog', 'llama4', 'gpt', 'gpt_luna', 'gpt_terra', 'claude', 'claude_sonnet5', 'gemini_flash'])
+    .optional(),
   /** הקשר מובנה ממסך הבית — task_id + slot, בלי להסתמך על ניחוש מהטקסט */
   task_report_hint: z
     .object({
@@ -415,10 +417,10 @@ const CHAT_TRIVIAL_BYPASS_ENABLED =
  * 'almog' = ברירת המחדל (Qwen, או מה שהוגדר ב-AI_CHAT_MODEL). השאר —
  * אופציות השוואה שהמשתמש בוחר ידנית מהצ'אט. ה-slugs ניתנים לכוונון ב-env.
  */
-type ChatModelKey = 'almog' | 'llama4' | 'gpt' | 'claude';
+type ChatModelKey = 'almog' | 'llama4' | 'gpt' | 'gpt_luna' | 'gpt_terra' | 'claude' | 'claude_sonnet5' | 'gemini_flash';
 
 const CHAT_MODEL_REGISTRY: Record<ChatModelKey, { slug: string; label: string }> = {
-  almog: { slug: CHAT_MODEL, label: 'אלמוג' },
+  almog: { slug: CHAT_MODEL, label: 'אלמוג (Qwen)' },
   llama4: {
     slug: process.env.AI_CHAT_COMPARE_LLAMA?.trim() || 'meta-llama/llama-4-maverick',
     label: 'Llama 4',
@@ -427,9 +429,25 @@ const CHAT_MODEL_REGISTRY: Record<ChatModelKey, { slug: string; label: string }>
     slug: process.env.AI_CHAT_COMPARE_GPT?.trim() || 'openai/gpt-5.3-chat',
     label: 'GPT-5.3',
   },
+  gpt_luna: {
+    slug: process.env.AI_CHAT_COMPARE_GPT_LUNA?.trim() || 'openai/gpt-5.6-luna',
+    label: 'GPT-5.6-Luna',
+  },
+  gpt_terra: {
+    slug: process.env.AI_CHAT_COMPARE_GPT_TERRA?.trim() || 'openai/gpt-5.6-terra',
+    label: 'GPT-5.6-Terra',
+  },
   claude: {
     slug: process.env.AI_CHAT_COMPARE_CLAUDE?.trim() || 'anthropic/claude-sonnet-4.6',
-    label: 'Claude 4.6',
+    label: 'Claude Sonnet 4.6',
+  },
+  claude_sonnet5: {
+    slug: process.env.AI_CHAT_COMPARE_CLAUDE_SONNET5?.trim() || 'anthropic/claude-sonnet-5',
+    label: 'Claude Sonnet 5',
+  },
+  gemini_flash: {
+    slug: process.env.AI_CHAT_COMPARE_GEMINI_FLASH?.trim() || 'google/gemini-3.6-flash',
+    label: 'Gemini Flash 3.6',
   },
 };
 
@@ -454,6 +472,7 @@ function resolveChatModelRuntime(modelKey: ChatModelKey | undefined): ChatModelR
   const slug = CHAT_MODEL_REGISTRY[modelKey ?? 'almog']?.slug ?? CHAT_MODEL;
   const isOpenAI = slug.startsWith('openai/');
   const isQwen = slug.toLowerCase().includes('qwen');
+  const isGoogle = slug.startsWith('google/');
   const requiresPiiShield = slug.startsWith('qwen/') || slug.includes('qwen3');
   const supportsPromptCache = slug.startsWith('anthropic/');
   // reasoning + פרומפט רזה רלוונטיים ל-Qwen בלבד (התנהגות קיימת).
@@ -461,7 +480,7 @@ function resolveChatModelRuntime(modelKey: ChatModelKey | undefined): ChatModelR
   const useLeanPrompt = CHAT_LEAN_PROMPT_ENABLED && isQwen;
   return {
     slug,
-    isOpenAI,
+    isOpenAI: isOpenAI || isGoogle,
     isQwen,
     requiresPiiShield,
     supportsPromptCache,
