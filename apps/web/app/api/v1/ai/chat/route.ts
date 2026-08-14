@@ -1256,7 +1256,8 @@ function mergeContextDecisions(
       base.writer,
       extra.writer ?? 'terra',
       base.writer_scores as WriterScores | undefined,
-      extra.writer_scores as WriterScores | undefined
+      extra.writer_scores as WriterScores | undefined,
+      extra.intent ? extra.intent.split(',') : []
     ),
     writer_scores: extra.writer_scores ?? base.writer_scores,
     writer_confidence: base.writer_confidence ?? extra.writer_confidence,
@@ -2217,7 +2218,8 @@ export async function POST(request: Request) {
         isChatWriterKey(contextDecision.writer) ? contextDecision.writer : undefined,
         heuristicAnalysis.writer,
         contextDecision.writer_scores as WriterScores | undefined,
-        heuristicAnalysis.scores
+        heuristicAnalysis.scores,
+        heuristicAnalysis.tags
       );
   mcfg = resolveChatModelRuntime(routedWriter);
   effectiveModel = mcfg.slug;

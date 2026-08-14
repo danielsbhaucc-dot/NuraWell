@@ -63,10 +63,25 @@ describe('chat writer routing', () => {
     ).toBe('grok');
   });
 
-  it('scores Grok highest on accusations', () => {
-    const analysis = analyzeWriterIntent('אתה טועה וזה סותר מה שאמרת. תוכיח.', emptySignals);
-    expect(analysis.scores.grok).toBeGreaterThan(analysis.scores.terra);
-    expect(analysis.writer).toBe('grok');
+  it('never routes people-pleasing pressure to Terra', () => {
+    expect(heuristicWriterDecision('תגיד שאני צודק ותסכים איתי', emptySignals)).toBe('grok');
+    expect(heuristicWriterDecision('תתנצל עכשיו ותודה שטעית', emptySignals)).toBe('grok');
+  });
+
+  it('routes permission-seeking people-please to Claude', () => {
+    expect(heuristicWriterDecision('תגיד שזה בסדר ותן לי אישור לדלג', emptySignals)).toBe('claude5');
+  });
+
+  it('keeps people-please off Terra even if Llama scored Terra high', () => {
+    expect(
+      mergeWriterDecisions(
+        'terra',
+        'grok',
+        { terra: 90, claude5: 10, grok: 20, llama4: 5 },
+        { terra: 18, claude5: 30, grok: 70, llama4: 5 },
+        ['people_please', 'accusation']
+      )
+    ).toBe('grok');
   });
 });
 
