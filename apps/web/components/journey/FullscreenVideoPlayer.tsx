@@ -49,7 +49,7 @@ function bunnyIframeUrl(embedId: string): string {
 function postToBunny(iframe: HTMLIFrameElement | null, event: string, extra?: Record<string, unknown>) {
   iframe?.contentWindow?.postMessage(
     JSON.stringify({ event, ...extra }),
-    '*',
+    'https://iframe.mediadelivery.net',
   );
 }
 
