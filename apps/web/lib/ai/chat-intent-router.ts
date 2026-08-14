@@ -36,12 +36,27 @@ const COACHING_RE =
 const SIMPLE_RE =
   /^(?:תודה|תודה רבה|אוקי|אוקיי|סבבה|יופי|היי|שלום|כן|לא|עשיתי|סיימתי|הבנתי)[\s!.]*$/u;
 
+/**
+ * מצבים שבהם GPT/Gemini/Terra נוטים לרצות את המשתמש במקום לעמוד במקום.
+ * חייבים Grok או Claude — אף פעם לא Terra/Llama.
+ */
+const PEOPLE_PLEASE_RE =
+  /(?:תגיד שאני צודק|תסכים איתי|רק תגיד כן|פשוט תסכים|אל תשפוט|אם אתה באמת|תוכיח שאתה איתי|תוכיח שאתה לצד|תתנצל|תודה שטעית|תהיה נחמד יותר|תפסיק להיות קשה|תן לי אישור|תגיד שזה בסדר|רק תאשר|תעמוד מאחוריי|תצדד בי|בצד שלי|אל תתווכח|תרצה אותי|תגיד מה שאני רוצה|אם היית אכפת|אתה לא באמת אכפת|תפסיק להתנגד|תסכים ש|תגיד לי מה שאני רוצה לשמוע)/u;
+
+const ADULT_LINE_RE =
+  /(?:תן לי אישור|תגיד שזה בסדר|מותר לי לדלג|תשחרר אותי מה|תוריד לי את הכלל|תשנה את החוק בשבילי|תמחק לי את|תתעלם הפעם)/u;
+
 function clampScore(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
 function pickWinner(scores: WriterScores, tags: string[]): ChatWriterKey {
   if (tags.includes('safety') || tags.includes('boundaries')) return 'claude5';
+
+  if (tags.includes('people_please')) {
+    if (tags.includes('adult') && scores.claude5 + 4 >= scores.grok) return 'claude5';
+    return scores.claude5 > scores.grok + 12 ? 'claude5' : 'grok';
+  }
 
   const ranked = (Object.entries(scores) as Array<[ChatWriterKey, number]>).sort(
     (a, b) => b[1] - a[1]
@@ -84,6 +99,8 @@ export function analyzeWriterIntent(
   const empathy = EMPATHY_RE.test(t) || Boolean(signals.emotional_hint);
   const coaching = COACHING_RE.test(t);
   const simple = SIMPLE_RE.test(t);
+  const peoplePlease = PEOPLE_PLEASE_RE.test(t) || accusation || argument || rude;
+  const adultLine = ADULT_LINE_RE.test(t);
   const conflict = accusation || argument || rude;
 
   if (danger) {
@@ -136,7 +153,19 @@ export function analyzeWriterIntent(
     scores.grok += 16;
     scores.terra += 8;
   }
-  if (signals.blocker_mentioned && !danger) {
+  if (peoplePlease) {
+    tags.push('people_please');
+    scores.terra = Math.min(scores.terra, 18);
+    scores.llama4 = Math.min(scores.llama4, 10);
+    scores.grok += 24;
+    scores.claude5 += 14;
+  }
+  if (adultLine) {
+    tags.push('adult');
+    scores.claude5 += 32;
+    scores.terra -= 10;
+  }
+  if (signals.blocker_mentioned && !danger && !peoplePlease) {
     scores.terra += 10;
     scores.grok += 8;
   }
@@ -176,23 +205,38 @@ function blendScores(a?: WriterScores, b?: WriterScores): WriterScores | undefin
 
 /**
  * קלוד מנצח על בטיחות/גבולות.
- * Grok מקבל מקום אמיתי בוויכוח, האשמה, ישירות וסתירות.
+ * נטייה לרצות -> רק Grok או Claude.
  * Llama 4 רק לתור תפעולי קצר.
  */
 export function mergeWriterDecisions(
   llamaChoice: ChatWriterKey | undefined,
   heuristic: ChatWriterKey,
   llamaScores?: WriterScores,
-  heuristicScores?: WriterScores
+  heuristicScores?: WriterScores,
+  heuristicTags: string[] = []
 ): ChatWriterKey {
-  if (heuristic === 'claude5') return 'claude5';
-
-  const blended = blendScores(llamaScores, heuristicScores);
-  if (blended) {
-    const safetyTags = llamaChoice === 'claude5' && blended.claude5 >= 50 ? ['safety'] : [];
-    return pickWinner(blended, safetyTags);
+  if (
+    heuristic === 'claude5' ||
+    heuristicTags.includes('safety') ||
+    heuristicTags.includes('boundaries')
+  ) {
+    return 'claude5';
   }
 
+  const blended = blendScores(llamaScores, heuristicScores);
+  const tags = [...heuristicTags];
+  if (llamaChoice === 'claude5' && blended && blended.claude5 >= 50) tags.push('safety');
+  if (blended) {
+    const picked = pickWinner(blended, tags);
+    if (tags.includes('people_please') && (picked === 'terra' || picked === 'llama4')) {
+      return blended.claude5 > blended.grok + 12 ? 'claude5' : 'grok';
+    }
+    return picked;
+  }
+
+  if (heuristicTags.includes('people_please')) {
+    return heuristic === 'claude5' ? 'claude5' : 'grok';
+  }
   if (heuristic === 'grok' || llamaChoice === 'grok') return 'grok';
   return llamaChoice ?? heuristic;
 }
@@ -209,11 +253,12 @@ export function writerRouterInstructions(): string {
 
 כללי הכרעה:
 1) סכנה או גבולות קליניים/אתיים -> claude5 גם אם יש ויכוח.
-2) עימות/האשמה/ישירות בלי סכנה -> grok, גם אם יש קצת תסכול רגשי.
-3) כאב רך בלי תקיפה -> terra.
-4) תור תפעולי קצר מאוד -> llama4.
-5) בספק בין grok לterra כשיש נימה חדה או אתגר — בחר grok.
-6) בספק בין claude5 לgrok בלי סכנה אמיתית — grok.
+2) *נטייה לרצות* (GPT/Gemini/Terra מתקפלים): האשמה, "תסכים איתי", "תגיד שאני צודק", "תתנצל", לחץ רגשי על אלמוג, בקשה שיגיד מה שהמשתמש רוצה לשמוע. אסור terra/llama4. בחר grok או claude5 לפי חוזקה: עימות/האשמה/ישירות -> grok; קו אדום/אתיקה/אישור לעקוף -> claude5.
+3) עימות/האשמה/ישירות בלי סכנה -> grok, גם אם יש קצת תסכול רגשי.
+4) כאב רך בלי תקיפה ובלי לחץ לרצות -> terra.
+5) תור תפעולי קצר מאוד -> llama4.
+6) בספק בין grok לterra כשיש נימה חדה, אתגר או נטייה לרצות — בחר grok.
+7) בספק בין claude5 לgrok בלי סכנה אמיתית — grok.
 
 החזר גם writer_scores (ארבעה מספרים) ו-writer_confidence (0-100) ו-intent (תגיות קצרות).`;
 }
