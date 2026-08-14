@@ -35,21 +35,29 @@ interface FullscreenVideoPlayerProps {
 
 function bunnyIframeUrl(embedId: string): string {
   const params = new URLSearchParams({
-    autoplay: 'true',
-    muted: 'true',
+    autoplay: 'false',
+    muted: 'false',
     preload: 'true',
     responsive: 'true',
     playsinline: 'true',
     controls: 'false',
     rememberPosition: 'false',
+    playerjs: 'true',
   });
-  return `https://iframe.mediadelivery.net/embed/${embedId}?${params.toString()}&t=0`;
+  return `https://iframe.mediadelivery.net/embed/${embedId}?${params.toString()}`;
 }
 
-function postToBunny(iframe: HTMLIFrameElement | null, event: string, extra?: Record<string, unknown>) {
+const PLAYER_JS_ORIGIN = 'https://iframe.mediadelivery.net';
+
+function postToBunny(iframe: HTMLIFrameElement | null, method: string, value?: unknown) {
   iframe?.contentWindow?.postMessage(
-    JSON.stringify({ event, ...extra }),
-    'https://iframe.mediadelivery.net',
+    JSON.stringify({
+      context: 'player.js',
+      version: '0.0.11',
+      method,
+      value,
+    }),
+    PLAYER_JS_ORIGIN,
   );
 }
 
@@ -67,10 +75,9 @@ export function FullscreenVideoPlayer({
   const { avatarUrl: almogAvatarSrc } = useAlmogAvatarUrl();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   void pullZoneHlsSrc;
-  const soundUnlockedRef = useRef(false);
   const [tapFlash, setTapFlash] = useState<'play' | 'pause' | null>(null);
 
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [showIcon, setShowIcon] = useState(false);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const [activeAttentionStop, setActiveAttentionStop] = useState<ImmersiveAttentionStop | null>(null);
@@ -117,8 +124,8 @@ export function FullscreenVideoPlayer({
     answeredAttentionIdsRef.current.clear();
   }, [attentionStops, bunnyEmbedId]);
 
-  const sendToPlayer = useCallback((event: string, extra?: Record<string, unknown>) => {
-    postToBunny(iframeRef.current, event, extra);
+  const sendToPlayer = useCallback((method: string, value?: unknown) => {
+    postToBunny(iframeRef.current, method, value);
   }, []);
 
   const pausePlayback = useCallback(() => {
@@ -128,6 +135,8 @@ export function FullscreenVideoPlayer({
 
   const resumePlayback = useCallback(() => {
     sendToPlayer('play');
+    sendToPlayer('unmute');
+    sendToPlayer('setVolume', 100);
     setIsPlaying(true);
   }, [sendToPlayer]);
 
@@ -145,6 +154,18 @@ export function FullscreenVideoPlayer({
     setAutoResumeSecondsLeft(null);
   }, [attentionStops, activeAttentionStop, exitConfirmOpen, pausePlayback]);
 
+  const flashIcon = useCallback((kind: 'play' | 'pause') => {
+    setTapFlash(kind);
+    setShowIcon(true);
+    if (iconTimerRef.current) clearTimeout(iconTimerRef.current);
+    iconTimerRef.current = setTimeout(() => {
+      setShowIcon(false);
+      setTapFlash(null);
+    }, 900);
+  }, []);
+  const flashIconRef = useRef(flashIcon);
+  flashIconRef.current = flashIcon;
+
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (!mountedRef.current) return;
@@ -155,17 +176,28 @@ export function FullscreenVideoPlayer({
       } catch {
         return;
       }
+      if (data.context !== 'player.js' && typeof data.event !== 'string') return;
 
-      const event = (data.event as string)?.toLowerCase();
+      const event = String(data.event ?? '').toLowerCase();
+      const value = (data.value && typeof data.value === 'object')
+        ? data.value as Record<string, unknown>
+        : data;
+
       if (event === 'ended') {
         onEndedRef.current();
       } else if (event === 'play') {
-        if (mountedRef.current) setIsPlaying(true);
+        if (mountedRef.current) {
+          setIsPlaying(true);
+          flashIconRef.current('play');
+        }
       } else if (event === 'pause') {
-        if (mountedRef.current) setIsPlaying(false);
+        if (mountedRef.current) {
+          setIsPlaying(false);
+          flashIconRef.current('pause');
+        }
       } else if (event === 'timeupdate') {
-        const seconds = Number(data.seconds ?? data.currentTime ?? 0);
-        const duration = Number(data.duration ?? 0);
+        const seconds = Number(value.seconds ?? data.seconds ?? 0);
+        const duration = Number(value.duration ?? data.duration ?? 0);
         onTimeUpdateRef.current?.(seconds, duration);
         handleAttentionCheck(seconds);
       }
@@ -217,38 +249,6 @@ export function FullscreenVideoPlayer({
     }, 1000);
   }, [activeAttentionStop, finishAttentionStop]);
 
-  const flashIcon = useCallback((kind: 'play' | 'pause') => {
-    setTapFlash(kind);
-    setShowIcon(true);
-    if (iconTimerRef.current) clearTimeout(iconTimerRef.current);
-    iconTimerRef.current = setTimeout(() => {
-      setShowIcon(false);
-      setTapFlash(null);
-    }, 900);
-  }, []);
-
-  const handleTap = useCallback(() => {
-    if (exitConfirmOpen || activeAttentionStop) return;
-    if (!soundUnlockedRef.current) {
-      soundUnlockedRef.current = true;
-      sendToPlayer('unmute');
-      sendToPlayer('setVolume', { volume: 1 });
-      sendToPlayer('play');
-      setIsPlaying(true);
-      return;
-    }
-    if (isPlaying) {
-      sendToPlayer('pause');
-      setIsPlaying(false);
-      flashIcon('pause');
-    } else {
-      sendToPlayer('play');
-      sendToPlayer('unmute');
-      setIsPlaying(true);
-      flashIcon('play');
-    }
-  }, [isPlaying, exitConfirmOpen, activeAttentionStop, sendToPlayer, flashIcon]);
-
   const iframeUrl = bunnyIframeUrl(bunnyEmbedId);
   // Keep prop for backwards compatibility with callers; immersive now always covers full viewport.
   void viewportInsetTopPx;
@@ -276,19 +276,19 @@ export function FullscreenVideoPlayer({
           referrerPolicy="strict-origin-when-cross-origin"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
-          className="absolute inset-0 w-full h-full border-0 pointer-events-none"
+          className="absolute inset-0 w-full h-full border-0"
         />
 
-      <div
-        className="absolute inset-0 z-[305] cursor-pointer"
-        onClick={handleTap}
-        aria-label={isPlaying ? 'השהה' : 'הפעל'}
-        role="button"
-        tabIndex={0}
-        onKeyDown={e => {
-          if (e.key === ' ' || e.key === 'Enter') handleTap();
-        }}
-      />
+      {!isPlaying && !showIcon ? (
+        <div className="absolute inset-0 z-[305] flex items-center justify-center pointer-events-none">
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.45)' }}
+          >
+            <Play className="w-9 h-9 text-white ml-1" fill="white" />
+          </div>
+        </div>
+      ) : null}
 
       {showIcon && (
         <div className="absolute inset-0 z-[306] flex items-center justify-center pointer-events-none animate-pulse">
