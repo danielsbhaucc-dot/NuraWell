@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { heuristicWriterDecision, mergeWriterDecisions } from '../lib/ai/chat-intent-router';
+import {
+  analyzeWriterIntent,
+  heuristicWriterDecision,
+  mergeWriterDecisions,
+} from '../lib/ai/chat-intent-router';
 import { sanitizeWriterOutput, looksLikeBracketOnlyReply } from '../lib/ai/sanitize-writer-output';
 import { formatConversationFilePromptBlock } from '../lib/ai/chat-conversation-file';
 
@@ -20,10 +24,24 @@ describe('chat writer routing', () => {
     expect(heuristicWriterDecision('אתה לא עוזר ואתה מתנשא', emptySignals)).toBe('grok');
   });
 
-  it('routes high empathy to Terra', () => {
+  it('routes direct challenge to Grok', () => {
+    expect(heuristicWriterDecision('תגיד לי ישר בלי שטויות, תן לי את האמת', emptySignals)).toBe('grok');
+  });
+
+  it('routes frustrated conflict to Grok not Claude', () => {
+    expect(
+      heuristicWriterDecision('אתה לא עוזר ואני נשברתי מזה שאתה מתנשא', emptySignals)
+    ).toBe('grok');
+  });
+
+  it('routes high empathy without attack to Terra', () => {
     expect(heuristicWriterDecision('וואלה היום נשברתי. פישלתי ואני מרגיש חרא עם עצמי', emptySignals)).toBe(
       'terra'
     );
+  });
+
+  it('routes coaching questions to Terra', () => {
+    expect(heuristicWriterDecision('מה כדאי לי לאכול אחרי אימון?', emptySignals)).toBe('terra');
   });
 
   it('routes simple thanks to Llama 4', () => {
@@ -32,6 +50,23 @@ describe('chat writer routing', () => {
 
   it('never lets Grok override Claude on safety', () => {
     expect(mergeWriterDecisions('grok', 'claude5')).toBe('claude5');
+  });
+
+  it('gives Grok room when Llama defaulted to Terra', () => {
+    expect(
+      mergeWriterDecisions('terra', 'grok', { terra: 70, claude5: 10, grok: 55, llama4: 5 }, {
+        terra: 20,
+        claude5: 10,
+        grok: 80,
+        llama4: 5,
+      })
+    ).toBe('grok');
+  });
+
+  it('scores Grok highest on accusations', () => {
+    const analysis = analyzeWriterIntent('אתה טועה וזה סותר מה שאמרת. תוכיח.', emptySignals);
+    expect(analysis.scores.grok).toBeGreaterThan(analysis.scores.terra);
+    expect(analysis.writer).toBe('grok');
   });
 });
 

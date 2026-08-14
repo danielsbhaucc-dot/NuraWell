@@ -7,9 +7,10 @@ import { fetchChatSessionTranscript } from '../../../../../lib/ai/chat-sessions/
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
 import { chatWriterFleet, isChatWriterKey, type ChatWriterKey } from '../../../../../lib/ai/chat-writer-fleet';
 import {
-  heuristicWriterDecision,
+  analyzeWriterIntent,
   mergeWriterDecisions,
   writerRouterInstructions,
+  type WriterScores,
 } from '../../../../../lib/ai/chat-intent-router';
 import {
   buildConversationFileUserPrompt,
@@ -1124,9 +1125,19 @@ const chatContextRouterSchema = z.object({
   needs_assignments: z.boolean().optional().default(false),
   // חסמים שאלמוג מזהה ובמעקב (almog_blockers) — נטען על קושי/חסם/רגש.
   needs_blockers: z.boolean().optional().default(false),
-  reason: z.string().max(160).optional(),
+  reason: z.string().max(280).optional(),
   summary: z.string().max(240).nullable().optional(),
   writer: z.enum(['terra', 'claude5', 'grok', 'llama4']).optional(),
+  writer_confidence: z.number().min(0).max(100).optional(),
+  intent: z.string().max(220).optional(),
+  writer_scores: z
+    .object({
+      terra: z.number(),
+      claude5: z.number(),
+      grok: z.number(),
+      llama4: z.number(),
+    })
+    .optional(),
 });
 
 type ChatContextDecision = z.infer<typeof chatContextRouterSchema>;
@@ -1189,6 +1200,7 @@ function heuristicContextDecision(
   const principlesHint = ROUTER_PRINCIPLES_RE.test(t);
   const assignmentsHint = ROUTER_ASSIGNMENTS_RE.test(t);
   const blockerHint = principlesHint || signals.blocker_mentioned || Boolean(signals.emotional_hint);
+  const writerAnalysis = analyzeWriterIntent(userMessage, signals);
   return {
     heavy_context:
       Boolean(opts?.forceHeavy) ||
@@ -1216,7 +1228,10 @@ function heuristicContextDecision(
     // חסמים: על קושי/חסם/רגש/התלבטות.
     needs_blockers: Boolean(opts?.forceHeavy) || blockerHint,
     reason,
-    writer: heuristicWriterDecision(userMessage, signals),
+    writer: writerAnalysis.writer,
+    writer_scores: writerAnalysis.scores,
+    writer_confidence: writerAnalysis.confidence,
+    intent: writerAnalysis.tags.join(','),
   };
 }
 
@@ -1237,7 +1252,15 @@ function mergeContextDecisions(
     needs_blockers: Boolean(base.needs_blockers) || Boolean(extra.needs_blockers),
     reason: base.reason,
     summary: base.summary,
-    writer: mergeWriterDecisions(base.writer, extra.writer ?? 'terra'),
+    writer: mergeWriterDecisions(
+      base.writer,
+      extra.writer ?? 'terra',
+      base.writer_scores as WriterScores | undefined,
+      extra.writer_scores as WriterScores | undefined
+    ),
+    writer_scores: extra.writer_scores ?? base.writer_scores,
+    writer_confidence: base.writer_confidence ?? extra.writer_confidence,
+    intent: base.intent ?? extra.intent,
   };
 }
 
@@ -1284,29 +1307,29 @@ function buildChatContextRouterPrompt(
     ? `\nשיחה קודמת (הקשר — ההודעה החדשה היא לרוב המשך שלה):\n${historySnippet}\n`
     : '';
 
-  return `אתה נתב הקשר זול ומהיר לצ'אט מנטור בריאות בעברית.
-המטרה: להחליט איזה הקשר באמת צריך כדי שהמודל הראשי ייתן תשובה מצוינת. איכות לפני חיסכון.
+  return `אתה נתב כוונה בכיר לצ'אט מנטור בריאות בעברית.
+המטרה: ניתוח מדויק מאוד של ההודעה — איזה הקשר צריך, ואיזה כותב הכי חזק לתור הזה. איכות ודיוק לפני מהירות.
 
-⚠️ קרא את ההודעה ביחס לשיחה הקודמת. הודעות קצרות הן לרוב *המשך* ("איך נתקדם?", "ולמה זה?", "שאלתי על X") — פענח את הכוונה האמיתית מההקשר, לא רק מהמילים.
+⚠️ קרא את ההודעה ביחס לשיחה הקודמת. הודעות קצרות הן לרוב *המשך*. פענח כוונה אמיתית, טון, ומידת עימות/סכנה/אמפתיה בנפרד.
 
-החלטה:
-- שאלה כלשהי (גם קצרה/המשך), קושי רגשי, חסם, התלבטות, חזרה אחרי היעדרות, או צורך בידע/מסע/זיכרון -> heavy_context=true.
-- הודעה קצרה וברורה של ביצוע/תודה/אישור בלבד -> heavy_context=false.
+החלטת הקשר:
+- שאלה, קושי רגשי, חסם, התלבטות, חזרה, ידע/מסע/זיכרון -> heavy_context=true.
+- אישור/תודה/ביצוע קצר בלבד -> heavy_context=false.
 - בספק -> heavy_context=true.
 
-הגדר needs (היה נדיב כשזו שאלה אמיתית — עדיף לשלוף מדי מאשר לענות גנרי):
-- needs_user_memory_rag: שאלה אישית/"מה אתה יודע עליי"/רגש/דפוס אישי.
-- needs_system_knowledge_rag: שאלת ידע/"למה"/"איך"/"כדאי" על בריאות/תזונה/הרגלים/תוכן מהמסע. (למשל "למה לשתות מים לפני האוכל" -> true)
-- needs_full_progress_report: דפוסים רב-יומיים/היסטוריית ביצועים.
-- needs_journey_knowledge: להבין צעד/תחנה/גישה/תוכנית מהמסע. (למשל "איך נתקדם בתוכנית" -> true)
-- needs_principles: עקרונות/חוקי התוכנית או "איך להתמודד עם X" — התלבטות, חסם, נפילה/פיתוי, רגש, "מותר/אסור", "מה לעשות אם", שאלת גבולות/מדיניות, או בקשת הכוונה התנהגותית. בספק כשזו לא הודעת אישור קצרה -> true.
-- needs_assignments: המשתמש מדבר על משימה אישית שאלמוג נתן / מדווח ביצוע / "מה ביקשת" / "המשימה שנתת" / הבטחה אישית. (דיווח "עשיתי X" -> true)
-- needs_blockers: המשתמש מתאר קושי/חסם/מה שמעכב אותו, או חוזר לנושא מתסכל. (קושי/תקיעות -> true)
-
-החזר JSON בלבד:
-{"heavy_context":true/false,"needs_user_memory_rag":true/false,"needs_system_knowledge_rag":true/false,"needs_full_progress_report":true/false,"needs_journey_knowledge":true/false,"needs_principles":true/false,"needs_assignments":true/false,"needs_blockers":true/false,"writer":"terra|claude5|grok|llama4","reason":"קצר","summary":"סיכום קצר או null"}
+needs (נדיב בשאלות אמיתיות):
+- needs_user_memory_rag: אישי/רגש/דפוס.
+- needs_system_knowledge_rag: ידע בריאות/תזונה/הרגלים.
+- needs_full_progress_report: דפוסים רב-יומיים.
+- needs_journey_knowledge: צעד/תחנה/תוכנית.
+- needs_principles: חוקים, גבולות, "מה לעשות אם", נפילה.
+- needs_assignments: משימה אישית/דיווח/הבטחה.
+- needs_blockers: קושי/תקיעות.
 
 ${writerRouterInstructions()}
+
+החזר JSON בלבד:
+{"heavy_context":true/false,"needs_user_memory_rag":true/false,"needs_system_knowledge_rag":true/false,"needs_full_progress_report":true/false,"needs_journey_knowledge":true/false,"needs_principles":true/false,"needs_assignments":true/false,"needs_blockers":true/false,"writer":"terra|claude5|grok|llama4","writer_scores":{"terra":0,"claude5":0,"grok":0,"llama4":0},"writer_confidence":0,"intent":"תגיות","reason":"ניתוח קצר ומדויק","summary":"סיכום קצר או null"}
 
 אותות regex: ${signalParts.join(', ') || 'none'}${historyBlock}
 הודעת משתמש (חדשה):
@@ -1342,14 +1365,14 @@ async function attemptContextRoute(opts: {
       body: JSON.stringify({
         model: opts.model,
         temperature: 0,
-        max_tokens: 420,
+        max_tokens: 720,
         response_format: { type: 'json_object' },
         provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] },
         messages: [
           {
             role: 'system',
             content:
-              'אתה מחזיר JSON תקין בלבד. אתה נתב הקשר שמרני: בספק בוחר heavy_context=true.',
+              'אתה מחזיר JSON תקין בלבד. נתח לעומק: הקשר + ציוני כותבים. דיוק לפני מהירות. בספק הקשר: heavy_context=true. אל תברר את grok לterra בלי סיבה.',
           },
           {
             role: 'user',
@@ -2187,17 +2210,15 @@ export async function POST(request: Request) {
     };
   }
 
+  const heuristicAnalysis = analyzeWriterIntent(lastUserText, earlySignals);
   const routedWriter: ChatWriterKey = trivialBypass
     ? 'llama4'
-    : guideContextHint
-      ? mergeWriterDecisions(
-          isChatWriterKey(contextDecision.writer) ? contextDecision.writer : undefined,
-          'llama4'
-        )
-      : mergeWriterDecisions(
-          isChatWriterKey(contextDecision.writer) ? contextDecision.writer : undefined,
-          heuristicWriterDecision(lastUserText, earlySignals)
-        );
+    : mergeWriterDecisions(
+        isChatWriterKey(contextDecision.writer) ? contextDecision.writer : undefined,
+        heuristicAnalysis.writer,
+        contextDecision.writer_scores as WriterScores | undefined,
+        heuristicAnalysis.scores
+      );
   mcfg = resolveChatModelRuntime(routedWriter);
   effectiveModel = mcfg.slug;
   console.info('[ai/chat]', {
@@ -2205,6 +2226,9 @@ export async function POST(request: Request) {
     stage: 'writer_routed',
     writer: mcfg.writer,
     model: effectiveModel,
+    confidence: contextDecision.writer_confidence ?? heuristicAnalysis.confidence,
+    intent: contextDecision.intent ?? heuristicAnalysis.tags.join(','),
+    scores: contextDecision.writer_scores ?? heuristicAnalysis.scores,
   });
 
   const useHeavyContext = contextDecision.heavy_context;
