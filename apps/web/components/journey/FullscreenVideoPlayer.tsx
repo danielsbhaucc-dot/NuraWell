@@ -41,10 +41,9 @@ function bunnyIframeUrl(embedId: string): string {
     preload: 'true',
     responsive: 'true',
     playsinline: 'true',
-    controls: 'true',
+    controls: 'false',
     rememberPosition: 'false',
   });
-  // Unique src avoids Player.js collisions; start from 0 every session.
   return `https://iframe.mediadelivery.net/embed/${embedId}?${params.toString()}&t=0`;
 }
 
@@ -64,12 +63,10 @@ export function FullscreenVideoPlayer({
   const hlsVideoRef = useRef<HTMLVideoElement | null>(null);
   const [hlsListenKey, setHlsListenKey] = useState(0);
   const [hlsForcedFallback, setHlsForcedFallback] = useState(false);
-  // Prefer Bunny iframe in fullscreen: Pull Zone HLS often loads a black <video>
-  // (CORS/token/autoplay) while the Stream embed plays the same library video.
-  const useHlsImmersive = false;
-  void pullZoneHlsSrc;
-  void hlsForcedFallback;
+  const useHlsImmersive = Boolean(pullZoneHlsSrc?.trim()) && !hlsForcedFallback;
   const hlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const soundUnlockedRef = useRef(false);
+  const [soundOn, setSoundOn] = useState(false);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [showIcon, setShowIcon] = useState(false);
@@ -92,10 +89,6 @@ export function FullscreenVideoPlayer({
 
   const handleHlsFailure = useCallback(() => {
     if (hlsTimeoutRef.current) clearTimeout(hlsTimeoutRef.current);
-    if (onFallbackRef.current) {
-      onFallbackRef.current();
-      return;
-    }
     setHlsForcedFallback(true);
   }, []);
 
@@ -123,8 +116,6 @@ export function FullscreenVideoPlayer({
       if (hlsTimeoutRef.current) clearTimeout(hlsTimeoutRef.current);
     };
   }, [mounted]);
-
-  // Fullscreen uses the Stream iframe; do not time out HLS and close the player.
 
   useEffect(() => {
     answeredAttentionIdsRef.current.clear();
@@ -190,10 +181,6 @@ export function FullscreenVideoPlayer({
         onEndedRef.current();
       } else if (event === 'play') {
         if (mountedRef.current) setIsPlaying(true);
-        iframeRef.current?.contentWindow?.postMessage(
-          JSON.stringify({ event: 'unmute' }),
-          'https://iframe.mediadelivery.net',
-        );
       } else if (event === 'pause') {
         if (mountedRef.current) setIsPlaying(false);
       } else if (event === 'timeupdate') {
@@ -277,8 +264,27 @@ export function FullscreenVideoPlayer({
     iconTimerRef.current = setTimeout(() => setShowIcon(false), 900);
   }, []);
 
+  const unlockSound = useCallback(() => {
+    soundUnlockedRef.current = true;
+    setSoundOn(true);
+    const v = hlsVideoRef.current;
+    if (v) {
+      v.muted = false;
+      v.volume = 1;
+      void v.play().catch(() => {});
+    }
+    sendToPlayer('unmute');
+    sendToPlayer('play');
+    sendToPlayer('setVolume', { volume: 1 });
+  }, [sendToPlayer]);
+
   const handleTap = useCallback(() => {
     if (exitConfirmOpen || activeAttentionStop) return;
+    if (!soundUnlockedRef.current) {
+      unlockSound();
+      flashIcon();
+      return;
+    }
     if (useHlsImmersive) {
       const v = hlsVideoRef.current;
       if (!v) return;
@@ -295,7 +301,7 @@ export function FullscreenVideoPlayer({
       setIsPlaying(true);
     }
     flashIcon();
-  }, [useHlsImmersive, isPlaying, exitConfirmOpen, activeAttentionStop, sendToPlayer, flashIcon]);
+  }, [useHlsImmersive, isPlaying, exitConfirmOpen, activeAttentionStop, sendToPlayer, flashIcon, unlockSound]);
 
   const iframeUrl = bunnyIframeUrl(bunnyEmbedId);
   // Keep prop for backwards compatibility with callers; immersive now always covers full viewport.
@@ -322,6 +328,7 @@ export function FullscreenVideoPlayer({
           ref={hlsVideoRef}
           src={pullZoneHlsSrc!.trim()}
           autoPlay
+          muted={!soundOn}
           playsInline
           controls={false}
           videoClassName="absolute inset-0 h-full w-full object-cover"
@@ -329,6 +336,8 @@ export function FullscreenVideoPlayer({
           onLoaded={() => {
             if (hlsTimeoutRef.current) clearTimeout(hlsTimeoutRef.current);
             setHlsListenKey(k => k + 1);
+            const activation = typeof navigator !== 'undefined' ? navigator.userActivation : undefined;
+            if (activation?.isActive) unlockSound();
           }}
           onEnded={() => onEndedRef.current()}
           onError={handleHlsFailure}
@@ -341,28 +350,20 @@ export function FullscreenVideoPlayer({
           referrerPolicy="strict-origin-when-cross-origin"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
-          className="absolute inset-0 w-full h-full border-0"
-          onLoad={() => {
-            iframeRef.current?.contentWindow?.postMessage(
-              JSON.stringify({ event: 'play' }),
-              'https://iframe.mediadelivery.net',
-            );
-          }}
+          className="absolute inset-0 w-full h-full border-0 pointer-events-none"
         />
       )}
 
-      {useHlsImmersive ? (
-        <div
-          className="absolute inset-0 z-[305] cursor-pointer"
-          onClick={handleTap}
-          aria-label={isPlaying ? 'השהה' : 'הפעל'}
-          role="button"
-          tabIndex={0}
-          onKeyDown={e => {
-            if (e.key === ' ' || e.key === 'Enter') handleTap();
-          }}
-        />
-      ) : null}
+      <div
+        className="absolute inset-0 z-[305] cursor-pointer"
+        onClick={handleTap}
+        aria-label={isPlaying ? 'השהה' : 'הפעל'}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => {
+          if (e.key === ' ' || e.key === 'Enter') handleTap();
+        }}
+      />
 
       {showIcon && (
         <div className="absolute inset-0 z-[306] flex items-center justify-center pointer-events-none animate-pulse">
