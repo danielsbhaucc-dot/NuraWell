@@ -64,7 +64,7 @@ function getEmbedUrl(
 function bunnyIframeUrl(embedId: string, opts?: { autoplay?: boolean; bunnyCompact?: boolean }): string {
   const ap = opts?.autoplay !== false;
   const compact = opts?.bunnyCompact ? 'true' : 'false';
-  return `https://iframe.mediadelivery.net/embed/${embedId}?autoplay=${ap}&preload=true&responsive=true&playsinline=true&compactControls=${compact}&rememberPosition=false`;
+  return `https://iframe.mediadelivery.net/embed/${embedId}?autoplay=${ap}&muted=${ap}&preload=true&responsive=true&playsinline=true&compactControls=${compact}&rememberPosition=false`;
 }
 
 export function VideoSection({

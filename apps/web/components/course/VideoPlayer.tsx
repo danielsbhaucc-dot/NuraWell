@@ -13,7 +13,7 @@ interface VideoPlayerProps {
 }
 
 function bunnyIframeUrl(embedId: string): string {
-  return `https://iframe.mediadelivery.net/embed/${embedId}?autoplay=false&preload=true&responsive=true&playsinline=true&controls=true`;
+  return `https://iframe.mediadelivery.net/embed/${embedId}?autoplay=true&muted=true&preload=true&responsive=true&playsinline=true&controls=true&rememberPosition=false`;
 }
 
 function getEmbedUrl(provider: VideoPlayerProps['provider'], externalId?: string | null, externalUrl?: string | null): string | null {

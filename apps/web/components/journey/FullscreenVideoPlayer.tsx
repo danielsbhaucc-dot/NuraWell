@@ -35,9 +35,17 @@ interface FullscreenVideoPlayerProps {
 }
 
 function bunnyIframeUrl(embedId: string): string {
-  // autoplay=false: the overlay used to swallow taps, so muted autoplay never started.
-  // Bunny's own play button must stay clickable.
-  return `https://iframe.mediadelivery.net/embed/${embedId}?autoplay=false&preload=true&responsive=true&playsinline=true&controls=true`;
+  const params = new URLSearchParams({
+    autoplay: 'true',
+    muted: 'true',
+    preload: 'true',
+    responsive: 'true',
+    playsinline: 'true',
+    controls: 'true',
+    rememberPosition: 'false',
+  });
+  // Unique src avoids Player.js collisions; start from 0 every session.
+  return `https://iframe.mediadelivery.net/embed/${embedId}?${params.toString()}&t=0`;
 }
 
 export function FullscreenVideoPlayer({
@@ -152,6 +160,7 @@ export function FullscreenVideoPlayer({
   }, [sendToPlayer, useHlsImmersive]);
 
   const handleAttentionCheck = useCallback((seconds: number) => {
+    if (!Number.isFinite(seconds) || seconds < 1.5) return;
     if (!attentionStops.length || activeAttentionStop || exitConfirmOpen) return;
     const nextStop = attentionStops.find(stop => (
       !answeredAttentionIdsRef.current.has(stop.id) && seconds >= stop.time_seconds
@@ -181,10 +190,14 @@ export function FullscreenVideoPlayer({
         onEndedRef.current();
       } else if (event === 'play') {
         if (mountedRef.current) setIsPlaying(true);
+        iframeRef.current?.contentWindow?.postMessage(
+          JSON.stringify({ event: 'unmute' }),
+          'https://iframe.mediadelivery.net',
+        );
       } else if (event === 'pause') {
         if (mountedRef.current) setIsPlaying(false);
       } else if (event === 'timeupdate') {
-        const seconds = Number(data.seconds ?? 0);
+        const seconds = Number(data.seconds ?? data.currentTime ?? 0);
         const duration = Number(data.duration ?? 0);
         onTimeUpdateRef.current?.(seconds, duration);
         handleAttentionCheck(seconds);
@@ -329,7 +342,12 @@ export function FullscreenVideoPlayer({
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
           className="absolute inset-0 w-full h-full border-0"
-          style={{ objectFit: 'cover' }}
+          onLoad={() => {
+            iframeRef.current?.contentWindow?.postMessage(
+              JSON.stringify({ event: 'play' }),
+              'https://iframe.mediadelivery.net',
+            );
+          }}
         />
       )}
 
