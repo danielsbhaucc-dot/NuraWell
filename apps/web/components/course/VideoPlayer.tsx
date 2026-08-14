@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Play, AlertCircle } from 'lucide-react';
 import { resolveBunnyStreamEmbedId } from '../../lib/journey/bunny-pull';
+import { useScreenWakeLock } from '../../lib/journey/use-screen-wake-lock';
 
 interface VideoPlayerProps {
   provider: 'bunny' | 'heygen' | 'youtube' | 'vimeo' | 'custom';
@@ -12,7 +13,7 @@ interface VideoPlayerProps {
 }
 
 function bunnyIframeUrl(embedId: string): string {
-  return `https://iframe.mediadelivery.net/embed/${embedId}?autoplay=true&preload=true&responsive=true&playsinline=true&controls=true`;
+  return `https://iframe.mediadelivery.net/embed/${embedId}?autoplay=false&preload=true&responsive=true&playsinline=true&controls=true`;
 }
 
 function getEmbedUrl(provider: VideoPlayerProps['provider'], externalId?: string | null, externalUrl?: string | null): string | null {
@@ -37,6 +38,7 @@ function getEmbedUrl(provider: VideoPlayerProps['provider'], externalId?: string
 export function VideoPlayer({ provider, externalId, externalUrl, title }: VideoPlayerProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  useScreenWakeLock(isLoaded && !hasError);
 
   const embedUrl = getEmbedUrl(provider, externalId, externalUrl);
 

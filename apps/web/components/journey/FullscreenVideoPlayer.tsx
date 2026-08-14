@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { HlsVideoGate } from './HlsVideoGate';
 import type { ImmersiveAttentionStop } from '../../lib/journey/immersiveAttentionStops';
 import { formatSecondsAsClock } from '../../lib/journey/immersiveAttentionStops';
+import { useScreenWakeLock } from '../../lib/journey/use-screen-wake-lock';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 
@@ -34,7 +35,9 @@ interface FullscreenVideoPlayerProps {
 }
 
 function bunnyIframeUrl(embedId: string): string {
-  return `https://iframe.mediadelivery.net/embed/${embedId}?autoplay=true&preload=true&responsive=true&playsinline=true&muted=false&controls=true`;
+  // autoplay=false: the overlay used to swallow taps, so muted autoplay never started.
+  // Bunny's own play button must stay clickable.
+  return `https://iframe.mediadelivery.net/embed/${embedId}?autoplay=false&preload=true&responsive=true&playsinline=true&controls=true`;
 }
 
 export function FullscreenVideoPlayer({
@@ -53,7 +56,11 @@ export function FullscreenVideoPlayer({
   const hlsVideoRef = useRef<HTMLVideoElement | null>(null);
   const [hlsListenKey, setHlsListenKey] = useState(0);
   const [hlsForcedFallback, setHlsForcedFallback] = useState(false);
-  const useHlsImmersive = Boolean(pullZoneHlsSrc?.trim()) && !hlsForcedFallback;
+  // Prefer Bunny iframe in fullscreen: Pull Zone HLS often loads a black <video>
+  // (CORS/token/autoplay) while the Stream embed plays the same library video.
+  const useHlsImmersive = false;
+  void pullZoneHlsSrc;
+  void hlsForcedFallback;
   const hlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -84,6 +91,8 @@ export function FullscreenVideoPlayer({
     setHlsForcedFallback(true);
   }, []);
 
+  useScreenWakeLock(mounted);
+
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -107,17 +116,7 @@ export function FullscreenVideoPlayer({
     };
   }, [mounted]);
 
-  // If HLS mode is active but nothing loads within 10s, fall back (inline iframe via parent, or embed here)
-  useEffect(() => {
-    if (!Boolean(pullZoneHlsSrc?.trim()) || hlsForcedFallback) return;
-    hlsTimeoutRef.current = setTimeout(() => {
-      if (!mountedRef.current) return;
-      handleHlsFailure();
-    }, 10000);
-    return () => {
-      if (hlsTimeoutRef.current) clearTimeout(hlsTimeoutRef.current);
-    };
-  }, [pullZoneHlsSrc, hlsForcedFallback, handleHlsFailure]);
+  // Fullscreen uses the Stream iframe; do not time out HLS and close the player.
 
   useEffect(() => {
     answeredAttentionIdsRef.current.clear();
@@ -334,16 +333,18 @@ export function FullscreenVideoPlayer({
         />
       )}
 
-      <div
-        className="absolute inset-0 z-[305] cursor-pointer"
-        onClick={handleTap}
-        aria-label={isPlaying ? 'השהה' : 'הפעל'}
-        role="button"
-        tabIndex={0}
-        onKeyDown={e => {
-          if (e.key === ' ' || e.key === 'Enter') handleTap();
-        }}
-      />
+      {useHlsImmersive ? (
+        <div
+          className="absolute inset-0 z-[305] cursor-pointer"
+          onClick={handleTap}
+          aria-label={isPlaying ? 'השהה' : 'הפעל'}
+          role="button"
+          tabIndex={0}
+          onKeyDown={e => {
+            if (e.key === ' ' || e.key === 'Enter') handleTap();
+          }}
+        />
+      ) : null}
 
       {showIcon && (
         <div className="absolute inset-0 z-[306] flex items-center justify-center pointer-events-none animate-pulse">

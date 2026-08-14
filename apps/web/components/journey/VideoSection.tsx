@@ -11,6 +11,7 @@ import { HlsVideoGate } from './HlsVideoGate';
 import { FullscreenVideoPlayer } from './FullscreenVideoPlayer';
 import type { ImmersiveAttentionStop } from '../../lib/journey/immersiveAttentionStops';
 import { lessonGenderCopy } from '../../lib/journey/lesson-gender-copy';
+import { useScreenWakeLock } from '../../lib/journey/use-screen-wake-lock';
 
 interface VideoSectionProps {
   provider: string | null;
@@ -234,6 +235,8 @@ export function VideoSection({
   // נגן וידאו פעיל = מסך מלא פתוח / ניגון inline / iframe חיצוני / HLS פעיל
   const videoEngaged =
     immersiveOpen || inlinePlaying || showNonBunnyIframe || showBunnyHls;
+
+  useScreenWakeLock(videoEngaged);
 
   useEffect(() => {
     onPlaybackChange?.(videoEngaged);
