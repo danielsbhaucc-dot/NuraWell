@@ -75,6 +75,15 @@ export function FullscreenVideoPlayer({
   onTimeUpdateRef.current = onTimeUpdate;
   onFallbackRef.current = onFallback;
 
+  const handleHlsFailure = useCallback(() => {
+    if (hlsTimeoutRef.current) clearTimeout(hlsTimeoutRef.current);
+    if (onFallbackRef.current) {
+      onFallbackRef.current();
+      return;
+    }
+    setHlsForcedFallback(true);
+  }, []);
+
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -98,17 +107,17 @@ export function FullscreenVideoPlayer({
     };
   }, [mounted]);
 
-  // If HLS mode is active but nothing loads within 10s, fall back to iframe embed
+  // If HLS mode is active but nothing loads within 10s, fall back (inline iframe via parent, or embed here)
   useEffect(() => {
     if (!Boolean(pullZoneHlsSrc?.trim()) || hlsForcedFallback) return;
     hlsTimeoutRef.current = setTimeout(() => {
       if (!mountedRef.current) return;
-      setHlsForcedFallback(true);
+      handleHlsFailure();
     }, 10000);
     return () => {
       if (hlsTimeoutRef.current) clearTimeout(hlsTimeoutRef.current);
     };
-  }, [pullZoneHlsSrc, hlsForcedFallback]);
+  }, [pullZoneHlsSrc, hlsForcedFallback, handleHlsFailure]);
 
   useEffect(() => {
     answeredAttentionIdsRef.current.clear();
@@ -310,10 +319,7 @@ export function FullscreenVideoPlayer({
             setHlsListenKey(k => k + 1);
           }}
           onEnded={() => onEndedRef.current()}
-          onError={() => {
-            if (hlsTimeoutRef.current) clearTimeout(hlsTimeoutRef.current);
-            setHlsForcedFallback(true);
-          }}
+          onError={handleHlsFailure}
         />
       ) : (
         <iframe
