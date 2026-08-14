@@ -35,8 +35,8 @@ interface FullscreenVideoPlayerProps {
 
 function bunnyIframeUrl(embedId: string): string {
   const params = new URLSearchParams({
-    autoplay: 'false',
-    muted: 'false',
+    autoplay: 'true',
+    muted: 'true',
     preload: 'true',
     responsive: 'true',
     playsinline: 'true',
@@ -50,7 +50,9 @@ function bunnyIframeUrl(embedId: string): string {
 const PLAYER_JS_ORIGIN = 'https://iframe.mediadelivery.net';
 
 function postToBunny(iframe: HTMLIFrameElement | null, method: string, value?: unknown) {
-  iframe?.contentWindow?.postMessage(
+  const win = iframe?.contentWindow;
+  if (!win) return;
+  win.postMessage(
     JSON.stringify({
       context: 'player.js',
       version: '0.0.11',
@@ -59,6 +61,8 @@ function postToBunny(iframe: HTMLIFrameElement | null, method: string, value?: u
     }),
     PLAYER_JS_ORIGIN,
   );
+  // Legacy Bunny commands (some library versions still listen to these)
+  win.postMessage(JSON.stringify({ event: method, volume: value, value }), PLAYER_JS_ORIGIN);
 }
 
 export function FullscreenVideoPlayer({
@@ -76,8 +80,10 @@ export function FullscreenVideoPlayer({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   void pullZoneHlsSrc;
   const [tapFlash, setTapFlash] = useState<'play' | 'pause' | null>(null);
+  const soundOnRef = useRef(false);
+  const playingRef = useRef(true);
 
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [showIcon, setShowIcon] = useState(false);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const [activeAttentionStop, setActiveAttentionStop] = useState<ImmersiveAttentionStop | null>(null);
@@ -130,6 +136,7 @@ export function FullscreenVideoPlayer({
 
   const pausePlayback = useCallback(() => {
     sendToPlayer('pause');
+    playingRef.current = false;
     setIsPlaying(false);
   }, [sendToPlayer]);
 
@@ -137,6 +144,7 @@ export function FullscreenVideoPlayer({
     sendToPlayer('play');
     sendToPlayer('unmute');
     sendToPlayer('setVolume', 100);
+    playingRef.current = true;
     setIsPlaying(true);
   }, [sendToPlayer]);
 
@@ -187,13 +195,13 @@ export function FullscreenVideoPlayer({
         onEndedRef.current();
       } else if (event === 'play') {
         if (mountedRef.current) {
+          playingRef.current = true;
           setIsPlaying(true);
-          flashIconRef.current('play');
         }
       } else if (event === 'pause') {
         if (mountedRef.current) {
+          playingRef.current = false;
           setIsPlaying(false);
-          flashIconRef.current('pause');
         }
       } else if (event === 'timeupdate') {
         const seconds = Number(value.seconds ?? data.seconds ?? 0);
@@ -249,8 +257,27 @@ export function FullscreenVideoPlayer({
     }, 1000);
   }, [activeAttentionStop, finishAttentionStop]);
 
+  const handleScreenTap = useCallback(() => {
+    if (exitConfirmOpen || activeAttentionStop) return;
+    if (!soundOnRef.current) {
+      soundOnRef.current = true;
+      sendToPlayer('unmute');
+      sendToPlayer('setVolume', 100);
+      sendToPlayer('play');
+      playingRef.current = true;
+      setIsPlaying(true);
+      return;
+    }
+    if (playingRef.current) {
+      pausePlayback();
+      flashIcon('pause');
+    } else {
+      resumePlayback();
+      flashIcon('play');
+    }
+  }, [exitConfirmOpen, activeAttentionStop, sendToPlayer, pausePlayback, resumePlayback, flashIcon]);
+
   const iframeUrl = bunnyIframeUrl(bunnyEmbedId);
-  // Keep prop for backwards compatibility with callers; immersive now always covers full viewport.
   void viewportInsetTopPx;
 
   if (!mounted || typeof document === 'undefined') return null;
@@ -274,21 +301,21 @@ export function FullscreenVideoPlayer({
           src={iframeUrl}
           title={title}
           referrerPolicy="strict-origin-when-cross-origin"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-          allowFullScreen
-          className="absolute inset-0 w-full h-full border-0"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          className="absolute inset-0 w-full h-full border-0 pointer-events-none"
         />
 
-      {!isPlaying && !showIcon ? (
-        <div className="absolute inset-0 z-[305] flex items-center justify-center pointer-events-none">
-          <div
-            className="w-20 h-20 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(0,0,0,0.45)' }}
-          >
-            <Play className="w-9 h-9 text-white ml-1" fill="white" />
-          </div>
-        </div>
-      ) : null}
+      <div
+        className="absolute inset-0 z-[305]"
+        onClick={handleScreenTap}
+        onDoubleClick={(e) => e.preventDefault()}
+        role="button"
+        tabIndex={0}
+        aria-label={isPlaying ? 'השהה' : 'הפעל'}
+        onKeyDown={e => {
+          if (e.key === ' ' || e.key === 'Enter') handleScreenTap();
+        }}
+      />
 
       {showIcon && (
         <div className="absolute inset-0 z-[306] flex items-center justify-center pointer-events-none animate-pulse">
