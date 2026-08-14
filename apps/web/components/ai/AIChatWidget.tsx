@@ -481,6 +481,8 @@ export interface AIChatWidgetProps {
 type AIModel = ToneSimulationModelKey;
 
 const TONE_SIM_REGISTRY = defaultChatCompareRegistry('qwen/qwen3.7-plus');
+
+function estimateHebrewTokens(text: string): number {
   return Math.max(1, Math.ceil([...text].length / 2.4));
 }
 
