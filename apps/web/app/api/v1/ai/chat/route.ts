@@ -5,6 +5,12 @@ import { after } from 'next/server';
 import { ensureChatSession, touchChatSessionActivity } from '../../../../../lib/ai/chat-sessions/ensure-session';
 import { fetchChatSessionTranscript } from '../../../../../lib/ai/chat-sessions/fetch-transcript';
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
+import {
+  CHAT_COMPARE_MODEL_KEYS,
+  defaultChatCompareRegistry,
+  type ChatModelKey,
+} from '../../../../../lib/ai/chat-compare-models';
+import { computeChatCostUsd } from '../../../../../lib/admin/cost-model';
 import { embedTextForRag } from '../../../../../lib/ai/openrouter-embeddings';
 import { buildRelevantMemoriesPromptBlock } from '../../../../../lib/ai/user-memories/retrieve-relevant-memories';
 import {
@@ -168,9 +174,9 @@ const chatBodySchema = z.object({
    * בורר מודל להשוואה (אופציונלי). ברירת מחדל: אלמוג (Qwen). מאפשר למשתמש
    * לבחור מודל אחר *לאותה בקשה* בלבד כדי להשוות איכות — הכל דרך OpenRouter.
    */
-  model: z
-    .enum(['almog', 'llama4', 'gpt', 'gpt_luna', 'gpt_terra', 'claude', 'claude_sonnet5', 'gemini_flash'])
-    .optional(),
+  model: z.enum(CHAT_COMPARE_MODEL_KEYS).optional(),
+  /** ריצת סימולציית טון — בלי side-effects על הרגלים/סיגנלים. */
+  tone_simulation: z.boolean().optional(),
   /** הקשר מובנה ממסך הבית — task_id + slot, בלי להסתמך על ניחוש מהטקסט */
   task_report_hint: z
     .object({
@@ -414,42 +420,8 @@ const CHAT_TRIVIAL_BYPASS_ENABLED =
 
 /**
  * בורר מודלים להשוואה. כל המודלים רצים דרך OpenRouter (מפתח אחד).
- * 'almog' = ברירת המחדל (Qwen, או מה שהוגדר ב-AI_CHAT_MODEL). השאר —
- * אופציות השוואה שהמשתמש בוחר ידנית מהצ'אט. ה-slugs ניתנים לכוונון ב-env.
  */
-type ChatModelKey = 'almog' | 'llama4' | 'gpt' | 'gpt_luna' | 'gpt_terra' | 'claude' | 'claude_sonnet5' | 'gemini_flash';
-
-const CHAT_MODEL_REGISTRY: Record<ChatModelKey, { slug: string; label: string }> = {
-  almog: { slug: CHAT_MODEL, label: 'אלמוג (Qwen)' },
-  llama4: {
-    slug: process.env.AI_CHAT_COMPARE_LLAMA?.trim() || 'meta-llama/llama-4-maverick',
-    label: 'Llama 4',
-  },
-  gpt: {
-    slug: process.env.AI_CHAT_COMPARE_GPT?.trim() || 'openai/gpt-5.3-chat',
-    label: 'GPT-5.3',
-  },
-  gpt_luna: {
-    slug: process.env.AI_CHAT_COMPARE_GPT_LUNA?.trim() || 'openai/gpt-5.6-luna',
-    label: 'GPT-5.6-Luna',
-  },
-  gpt_terra: {
-    slug: process.env.AI_CHAT_COMPARE_GPT_TERRA?.trim() || 'openai/gpt-5.6-terra',
-    label: 'GPT-5.6-Terra',
-  },
-  claude: {
-    slug: process.env.AI_CHAT_COMPARE_CLAUDE?.trim() || 'anthropic/claude-sonnet-4.6',
-    label: 'Claude Sonnet 4.6',
-  },
-  claude_sonnet5: {
-    slug: process.env.AI_CHAT_COMPARE_CLAUDE_SONNET5?.trim() || 'anthropic/claude-sonnet-5',
-    label: 'Claude Sonnet 5',
-  },
-  gemini_flash: {
-    slug: process.env.AI_CHAT_COMPARE_GEMINI_FLASH?.trim() || 'google/gemini-3.6-flash',
-    label: 'Gemini Flash 3.6',
-  },
-};
+const CHAT_MODEL_REGISTRY = defaultChatCompareRegistry(CHAT_MODEL);
 
 /**
  * Config פר-מודל שנגזר מה-slug. מאפשר לבורר ההשוואה להריץ כל מודל עם
@@ -464,18 +436,19 @@ type ChatModelRuntime = {
   supportsPromptCache: boolean;
   useReasoning: boolean;
   useLeanPrompt: boolean;
+  providerOnly?: readonly string[];
   mainWriterSystemPrompt: string;
   finalGuardrails: string;
 };
 
 function resolveChatModelRuntime(modelKey: ChatModelKey | undefined): ChatModelRuntime {
-  const slug = CHAT_MODEL_REGISTRY[modelKey ?? 'almog']?.slug ?? CHAT_MODEL;
+  const entry = CHAT_MODEL_REGISTRY[modelKey ?? 'almog'];
+  const slug = entry?.slug ?? CHAT_MODEL;
   const isOpenAI = slug.startsWith('openai/');
   const isQwen = slug.toLowerCase().includes('qwen');
   const isGoogle = slug.startsWith('google/');
   const requiresPiiShield = slug.startsWith('qwen/') || slug.includes('qwen3');
   const supportsPromptCache = slug.startsWith('anthropic/');
-  // reasoning + פרומפט רזה רלוונטיים ל-Qwen בלבד (התנהגות קיימת).
   const useReasoning = CHAT_REASONING_ENABLED && isQwen;
   const useLeanPrompt = CHAT_LEAN_PROMPT_ENABLED && isQwen;
   return {
@@ -486,6 +459,7 @@ function resolveChatModelRuntime(modelKey: ChatModelKey | undefined): ChatModelR
     supportsPromptCache,
     useReasoning,
     useLeanPrompt,
+    providerOnly: entry?.providerOnly,
     mainWriterSystemPrompt: useLeanPrompt ? NURAWELL_CHAT_SYSTEM_PROMPT_LEAN : BASE_SYSTEM_PROMPT,
     finalGuardrails: useLeanPrompt ? ALMOG_CHAT_FINAL_GUARDRAILS_LEAN : ALMOG_CHAT_FINAL_GUARDRAILS,
   };
@@ -583,6 +557,7 @@ async function createOpenRouterTextStreamResponse({
   piiShield,
   reasoning,
   supportsPromptCache,
+  providerOnly,
 }: {
   apiKey: string;
   referer: string;
@@ -598,6 +573,7 @@ async function createOpenRouterTextStreamResponse({
   piiShield?: PiiShield | null;
   reasoning: { max_tokens: number; exclude: boolean } | null;
   supportsPromptCache: boolean;
+  providerOnly?: readonly string[];
 }) {
   const tokenizedStatic = piiShield ? piiShield.tokenizeText(staticSystemPrompt) : staticSystemPrompt;
   const tokenizedDynamic = piiShield ? piiShield.tokenizeText(dynamicSystemPrompt) : dynamicSystemPrompt;
@@ -613,8 +589,14 @@ async function createOpenRouterTextStreamResponse({
     // כשהחשיבה פעילה — מרחיבים את התקרה כדי שטוקני התשובה לא ייקצצו על-ידי החשיבה.
     max_tokens: reasoning ? maxOutputTokens + reasoning.max_tokens : maxOutputTokens,
     ...(reasoning ? { reasoning } : {}),
-    // ניתוב ספק לפי מהירות (אופציונלי, env) — מקצר TTFB בלי לשנות את המודל.
-    ...(CHAT_PROVIDER_SORT ? { provider: { sort: CHAT_PROVIDER_SORT } } : {}),
+    ...(CHAT_PROVIDER_SORT || providerOnly?.length
+      ? {
+          provider: {
+            ...(CHAT_PROVIDER_SORT ? { sort: CHAT_PROVIDER_SORT } : {}),
+            ...(providerOnly?.length ? { only: [...providerOnly] } : {}),
+          },
+        }
+      : {}),
     stream: true,
     stream_options: { include_usage: true },
     messages: openRouterMessagesWithCachedSystem(
@@ -2083,7 +2065,10 @@ export async function POST(request: Request) {
     mcfg = resolveChatModelRuntime('llama4');
   }
   const effectiveModel = mcfg.slug;
-  const explicitCompareModel = Boolean(parsed.data.model && parsed.data.model !== 'almog');
+  const toneSimulation = parsed.data.tone_simulation === true;
+  const explicitCompareModel = Boolean(
+    toneSimulation || (parsed.data.model && parsed.data.model !== 'almog')
+  );
 
   if (bodyUserId && bodyUserId !== user.id) {
     console.error('[ai/chat]', { debug_id: debugId, stage: 'user_mismatch', body_user_id: bodyUserId, session_user_id: user.id });
@@ -2953,6 +2938,13 @@ export async function POST(request: Request) {
           });
         }
 
+        const costUsd = computeChatCostUsd(assistantModelName, {
+          totalTokens,
+          outputTokens,
+          cacheReadTokens: cacheReadInputTokens,
+          cacheCreationTokens: cacheCreationInputTokens,
+        });
+
         try {
           await insertAiInteraction(supabase, {
             user_id: user.id,
@@ -2972,6 +2964,8 @@ export async function POST(request: Request) {
               cache_creation_input_tokens: cacheCreationInputTokens,
               finish_reason: effectiveFinishReason,
               continued_after_length: finishReason === 'length' && t !== (text ?? '').trim(),
+              cost_usd: costUsd,
+              tone_simulation: toneSimulation,
             },
           });
         } catch (persistErr) {
@@ -2980,6 +2974,10 @@ export async function POST(request: Request) {
             stage: `${finishStage}_persist_assistant`,
             error: persistErr instanceof Error ? persistErr.message : String(persistErr),
           });
+        }
+
+        if (toneSimulation) {
+          return;
         }
 
         after(async () => {
@@ -3449,6 +3447,7 @@ export async function POST(request: Request) {
 
     /** Contextual Recall — כלי recall רק בתור עמוק/רגשי (חוסך טוקנים). */
     const useMemoryRecallTools =
+      !toneSimulation &&
       !trivialBypass &&
       shouldAttemptMemoryRecall(lastUserText, {
         emotional: Boolean(earlySignals.emotional_hint),
@@ -3490,6 +3489,7 @@ export async function POST(request: Request) {
         piiShield,
         reasoning: reasoningParam,
         supportsPromptCache: mcfg.supportsPromptCache,
+        providerOnly: mcfg.providerOnly,
         onEmptyRetry: emptyRetryHandler,
         onFinish: handleChatFinish,
       });

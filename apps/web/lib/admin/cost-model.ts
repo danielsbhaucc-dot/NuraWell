@@ -35,10 +35,16 @@ const PRICING_TABLE: Array<{ match: RegExp; price: ModelPricing }> = [
   { match: /claude.*haiku/i, price: { input: 0.8, cachedInput: 0.08, cacheWrite: 1, output: 4 } },
   { match: /claude.*opus/i, price: { input: 15, cachedInput: 1.5, cacheWrite: 18.75, output: 75 } },
   // OpenAI
+  { match: /gpt-5\.6-luna|gpt-5-6-luna/i, price: { input: 1.25, cachedInput: 0.125, cacheWrite: 1.25, output: 10 } },
+  { match: /gpt-5\.6-terra|gpt-5-6-terra/i, price: { input: 1.25, cachedInput: 0.125, cacheWrite: 1.25, output: 10 } },
   { match: /gpt-5-mini/i, price: { input: 0.25, cachedInput: 0.025, cacheWrite: 0.25, output: 2 } },
   { match: /gpt-5/i, price: { input: 1.25, cachedInput: 0.125, cacheWrite: 1.25, output: 10 } },
   { match: /gpt-4o-mini/i, price: { input: 0.15, cachedInput: 0.075, cacheWrite: 0.15, output: 0.6 } },
   { match: /gpt-4o/i, price: { input: 2.5, cachedInput: 1.25, cacheWrite: 2.5, output: 10 } },
+  { match: /gemini.*flash/i, price: { input: 0.375, cachedInput: 0.0375, cacheWrite: 0.375, output: 1.875 } },
+  { match: /qwen/i, price: { input: 0.15, cachedInput: 0.15, cacheWrite: 0.15, output: 0.6 } },
+  { match: /grok-4\.5|grok 4\.5/i, price: { input: 2, cachedInput: 2, cacheWrite: 2, output: 6 } },
+  { match: /kimi/i, price: { input: 0.15, cachedInput: 0.15, cacheWrite: 0.15, output: 0.6 } },
   // Llama 4 (נתב + fallback, דרך Groq/OpenRouter)
   { match: /llama-4/i, price: { input: 0.11, cachedInput: 0.11, cacheWrite: 0.11, output: 0.34 } },
   // DeepSeek
