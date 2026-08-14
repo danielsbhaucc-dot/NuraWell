@@ -46,12 +46,16 @@ import {
   readPendingChatReply,
   writePendingChatReply,
 } from '../../lib/client/chat-awaiting-assistant';
+import { computeChatCostUsd } from '../../lib/admin/cost-model';
 import {
-  clearChatInputDraft,
-  migrateChatInputDraft,
-  readChatInputDraft,
-  writeChatInputDraft,
-} from '../../lib/client/chat-input-draft';
+  TONE_SIMULATION_MODEL_OPTIONS,
+  defaultChatCompareRegistry,
+  type ToneSimulationModelKey,
+} from '../../lib/ai/chat-compare-models';
+import {
+  TONE_SIMULATION_STEPS,
+  formatToneSimulationCostSummary,
+} from '../../lib/ai/tone-simulation-script';
 
 const SESSION_STORAGE_KEY = 'nurawell_almog_chat_session';
 
@@ -474,7 +478,11 @@ export interface AIChatWidgetProps {
   firstName?: string;
 }
 
-type AIModel = 'almog' | 'llama4' | 'gpt' | 'gpt_luna' | 'gpt_terra' | 'claude' | 'claude_sonnet5' | 'gemini_flash';
+type AIModel = ToneSimulationModelKey;
+
+const TONE_SIM_REGISTRY = defaultChatCompareRegistry('qwen/qwen3.7-plus');
+  return Math.max(1, Math.ceil([...text].length / 2.4));
+}
 
 export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const { avatarUrl: avatarSrc } = useAlmogAvatarUrl();
@@ -487,6 +495,15 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const [online, setOnline] = useState(true);
   const [input, setInput] = useState('');
   const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
+  const [toneSimRunning, setToneSimRunning] = useState(false);
+  const [toneSimStepIndex, setToneSimStepIndex] = useState(0);
+  const toneSimRunningRef = useRef(false);
+  const toneSimStepRef = useRef(0);
+  const toneSimSawLoadingRef = useRef(false);
+  const toneSimCostsRef = useRef<
+    Array<{ title: string; costUsd: number; inputTokens: number; outputTokens: number }>
+  >([]);
+  const lastUserTextForCostRef = useRef('');
   const [typingStep, setTypingStep] = useState(0);
   const [statusIdx, setStatusIdx] = useState(0);
   const [waitSeconds, setWaitSeconds] = useState(0);
@@ -656,6 +673,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
       session_id: sessionIdRef.current ?? undefined,
       notification_id: notificationIdRef.current ?? undefined,
       ...(selectedModel ? { model: selectedModel } : {}),
+      ...(toneSimRunningRef.current ? { tone_simulation: true } : {}),
       ...(hint ? { task_report_hint: taskReportHintToPayload(hint) } : {}),
       ...(guideHint ? { guide_context_hint: guideContextHintToPayload(guideHint) } : {}),
     };
@@ -719,6 +737,106 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const isLoading = status === 'submitted' || status === 'streaming';
   const showLoading = isLoading || awaitingAssistantRecovery;
   const isThinking = status === 'submitted' || (awaitingAssistantRecovery && !isLoading);
+
+  const sendToneSimStep = (index: number, model: AIModel) => {
+    const step = TONE_SIMULATION_STEPS[index];
+    if (!step) return;
+    lastUserTextForCostRef.current = step.userText;
+    toneSimSawLoadingRef.current = false;
+    markChatSendStarted(sessionIdRef.current);
+    sendMessage(
+      { text: step.userText },
+      {
+        body: {
+          ...buildOutgoingChatBody(),
+          model,
+          tone_simulation: true,
+        },
+      }
+    );
+  };
+
+  const finishToneSimulation = () => {
+    toneSimRunningRef.current = false;
+    setToneSimRunning(false);
+    const modelLabel =
+      TONE_SIMULATION_MODEL_OPTIONS.find((opt) => opt.key === selectedModel)?.label ??
+      selectedModel ??
+      'מודל';
+    const summary = formatToneSimulationCostSummary({
+      modelLabel,
+      steps: toneSimCostsRef.current,
+    });
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `tone-sim-cost-${Date.now()}`,
+        role: 'assistant',
+        parts: [{ type: 'text', text: summary }],
+      },
+    ]);
+  };
+
+  const startToneSimulation = async (model: AIModel) => {
+    if (isLoading) stop();
+    toneSimRunningRef.current = true;
+    toneSimStepRef.current = 0;
+    toneSimCostsRef.current = [];
+    toneSimSawLoadingRef.current = false;
+    setToneSimRunning(true);
+    setToneSimStepIndex(0);
+    setSelectedModel(model);
+    setOpen(true);
+    setPanelView('thread');
+    await startNewChatSession();
+    window.setTimeout(() => sendToneSimStep(0, model), 250);
+  };
+
+  useEffect(() => {
+    if (!toneSimRunningRef.current) return;
+    if (isLoading) {
+      toneSimSawLoadingRef.current = true;
+      return;
+    }
+    if (status === 'error') {
+      toneSimRunningRef.current = false;
+      setToneSimRunning(false);
+      return;
+    }
+    if (status !== 'ready' || !toneSimSawLoadingRef.current) return;
+
+    const step = TONE_SIMULATION_STEPS[toneSimStepRef.current];
+    const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+    const assistantText = lastAssistant ? getMessageText(lastAssistant as ChatDisplayMessage) : '';
+    const modelSlug = TONE_SIM_REGISTRY[selectedModel ?? 'qwen']?.slug ?? 'qwen/qwen3.7-plus';
+    const inputTokens = estimateHebrewTokens(lastUserTextForCostRef.current);
+    const outputTokens = estimateHebrewTokens(assistantText);
+    const costUsd = computeChatCostUsd(modelSlug, {
+      totalTokens: inputTokens + outputTokens,
+      outputTokens,
+    });
+    if (step) {
+      toneSimCostsRef.current.push({
+        title: step.title,
+        costUsd,
+        inputTokens,
+        outputTokens,
+      });
+    }
+
+    const nextIndex = toneSimStepRef.current + 1;
+    toneSimSawLoadingRef.current = false;
+    if (nextIndex >= TONE_SIMULATION_STEPS.length) {
+      finishToneSimulation();
+      return;
+    }
+    toneSimStepRef.current = nextIndex;
+    setToneSimStepIndex(nextIndex);
+    const timer = window.setTimeout(() => {
+      if (selectedModel) sendToneSimStep(nextIndex, selectedModel);
+    }, 800);
+    return () => window.clearTimeout(timer);
+  }, [isLoading, status, messages, selectedModel]);
 
   useEffect(() => {
     if (!open) return;
@@ -1548,6 +1666,13 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                   ))}
                 </div>
               )}
+              {toneSimRunning ? (
+                <p className="mb-2 text-center text-[11px] font-semibold text-amber-200">
+                  סימולציית טון · {TONE_SIMULATION_MODEL_OPTIONS.find((o) => o.key === selectedModel)?.label} ·{' '}
+                  {Math.min(toneSimStepIndex + 1, TONE_SIMULATION_STEPS.length)}/{TONE_SIMULATION_STEPS.length}{' '}
+                  {TONE_SIMULATION_STEPS[toneSimStepIndex]?.title ?? ''}
+                </p>
+              ) : null}
               {!isSessionClosed && !isClosing ? (
                 <AiChatPrivacyNotice variant="dark" className="mb-2 px-0.5" />
               ) : null}
@@ -1556,7 +1681,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                   onSubmit={(e) => {
                     e.preventDefault();
                     const text = input.trim();
-                    if (!text || showLoading || isSessionClosed || isClosing) return;
+                    if (!text || showLoading || isSessionClosed || isClosing || toneSimRunning) return;
                     const replyNotificationId = notificationIdRef.current;
                     markChatSendStarted(sessionIdRef.current);
                     sendMessage(
@@ -1589,10 +1714,12 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                         (e.currentTarget.form as HTMLFormElement | null)?.requestSubmit();
                       }
                     }}
-                    disabled={showLoading || isSessionClosed || isClosing}
+                    disabled={showLoading || isSessionClosed || isClosing || toneSimRunning}
                     placeholder={
                       isSessionClosed
                         ? 'השיחה נסגרה — פתח מחדש או התחל שיחה חדשה'
+                        : toneSimRunning
+                          ? 'סימולציה רצה אוטומטית...'
                         : notificationContext
                           ? 'ענה לאלמוג על מה ששאל...'
                           : 'כתוב לי מה עובר עליך...'
@@ -1618,23 +1745,29 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                   {!isLoading && (
                     <select
                       value={selectedModel ?? ''}
-                      onChange={(e) => setSelectedModel(e.target.value === '' ? null : (e.target.value as AIModel))}
-                      className="shrink-0 rounded-xl border border-white/20 bg-white/5 px-2.5 py-2 text-[11px] font-semibold text-white outline-none hover:bg-white/10 disabled:opacity-60"
-                      title="בחר מודל להשוואה"
+                      disabled={toneSimRunning || isSessionClosed || isClosing}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (!value) {
+                          setSelectedModel(null);
+                          return;
+                        }
+                        void startToneSimulation(value as AIModel);
+                      }}
+                      className="max-w-[148px] shrink-0 rounded-xl border border-white/20 bg-white/5 px-2.5 py-2 text-[11px] font-semibold text-white outline-none hover:bg-white/10 disabled:opacity-60"
+                      title="בחר מודל — סימולציית טון תרוץ אוטומטית"
                     >
-                      <option value="">אלמוג (ברירת מחדל)</option>
-                      <option value="llama4">Llama 4</option>
-                      <option value="gpt">GPT-5.3</option>
-                      <option value="gpt_luna">GPT-5.6-Luna</option>
-                      <option value="gpt_terra">GPT-5.6-Terra</option>
-                      <option value="claude">Claude Sonnet 4.6</option>
-                      <option value="claude_sonnet5">Claude Sonnet 5</option>
-                      <option value="gemini_flash">Gemini Flash 3.6</option>
+                      <option value="">סימולציית טון</option>
+                      {TONE_SIMULATION_MODEL_OPTIONS.map((opt) => (
+                        <option key={opt.key} value={opt.key}>
+                          {opt.label}
+                        </option>
+                      ))}
                     </select>
                   )}
                   <button
                     type="submit"
-                    disabled={showLoading || isSessionClosed || isClosing || !input.trim()}
+                    disabled={showLoading || isSessionClosed || isClosing || toneSimRunning}
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg transition active:scale-95 disabled:opacity-40"
                     style={{
                       background: 'linear-gradient(145deg, #047857, #10b981)',
