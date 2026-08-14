@@ -46,6 +46,12 @@ import {
   readPendingChatReply,
   writePendingChatReply,
 } from '../../lib/client/chat-awaiting-assistant';
+import {
+  clearChatInputDraft,
+  migrateChatInputDraft,
+  readChatInputDraft,
+  writeChatInputDraft,
+} from '../../lib/client/chat-input-draft';
 import { computeChatCostUsd } from '../../lib/admin/cost-model';
 import {
   TONE_SIMULATION_MODEL_OPTIONS,
