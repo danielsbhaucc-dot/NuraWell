@@ -378,6 +378,15 @@ const CHAT_PROVIDER_SORT = (() => {
  * ממילא לא מציגים אותם, וזה חוסך רוחב-פס ומונע הדלפת "מחשבות" ללקוח.
  * מקבל `useReasoning` פר-מודל (הבורר יכול להריץ מודל חושב או לא-חושב).
  */
+function isClaudeSonnet5(slug: string): boolean {
+  const s = slug.toLowerCase();
+  return s.includes('claude-sonnet-5') || s.includes('claude-5-sonnet');
+}
+
+type OpenRouterReasoning =
+  | { max_tokens: number; exclude: boolean }
+  | { effort: 'low' | 'medium' | 'high'; exclude: boolean };
+
 function buildReasoningParam(useReasoning: boolean): { max_tokens: number; exclude: boolean } | null {
   if (!useReasoning) return null;
   return { max_tokens: CHAT_REASONING_MAX_TOKENS, exclude: true };
@@ -571,7 +580,7 @@ async function createOpenRouterTextStreamResponse({
   onFinish: (payload: StreamFinishPayload) => Promise<void>;
   onEmptyRetry?: () => Promise<string>;
   piiShield?: PiiShield | null;
-  reasoning: { max_tokens: number; exclude: boolean } | null;
+  reasoning: OpenRouterReasoning | null;
   supportsPromptCache: boolean;
   providerOnly?: readonly string[];
 }) {
@@ -581,14 +590,24 @@ async function createOpenRouterTextStreamResponse({
     ? piiShield.tokenizeMessages(recentMessages)
     : recentMessages;
 
+  const claude5 = isClaudeSonnet5(model);
+  const claude5Reasoning: OpenRouterReasoning = { effort: 'low', exclude: true };
+  const effectiveReasoning: OpenRouterReasoning | null = claude5
+    ? claude5Reasoning
+    : reasoning;
+  const reasoningBudget =
+    effectiveReasoning && 'max_tokens' in effectiveReasoning ? effectiveReasoning.max_tokens : 0;
+  const effectiveMaxTokens = claude5
+    ? Math.max(maxOutputTokens, 2500)
+    : reasoningBudget
+      ? maxOutputTokens + reasoningBudget
+      : maxOutputTokens;
+
   const requestBody = JSON.stringify({
     model,
-    temperature,
-    top_p: 0.95,
-    seed: randomSamplingSeed(),
-    // כשהחשיבה פעילה — מרחיבים את התקרה כדי שטוקני התשובה לא ייקצצו על-ידי החשיבה.
-    max_tokens: reasoning ? maxOutputTokens + reasoning.max_tokens : maxOutputTokens,
-    ...(reasoning ? { reasoning } : {}),
+    ...(claude5 ? {} : { temperature, top_p: 0.95, seed: randomSamplingSeed() }),
+    max_tokens: effectiveMaxTokens,
+    ...(effectiveReasoning ? { reasoning: effectiveReasoning } : {}),
     ...(CHAT_PROVIDER_SORT || providerOnly?.length
       ? {
           provider: {
@@ -688,13 +707,19 @@ async function createOpenRouterTextStreamResponse({
     if (!data || data === '[DONE]') return;
     const parsed = JSON.parse(data) as {
       choices?: Array<{
-        delta?: { content?: string };
+        delta?: { content?: string | Array<{ type?: string; text?: string }> };
         finish_reason?: string | null;
       }>;
       usage?: unknown;
     };
     const choice = parsed.choices?.[0];
-    const content = choice?.delta?.content;
+    const rawContent = choice?.delta?.content;
+    const content =
+      typeof rawContent === 'string'
+        ? rawContent
+        : Array.isArray(rawContent)
+          ? rawContent.map((part) => (typeof part.text === 'string' ? part.text : '')).join('')
+          : '';
     if (typeof content === 'string' && content.length > 0) {
       accumulated += content;
       enqueueModelText(content, controller);
@@ -3538,6 +3563,9 @@ export async function POST(request: Request) {
       try {
         upstream = await runClaudeWriter();
       } catch (primaryErr) {
+        if (explicitCompareModel || toneSimulation) {
+          throw primaryErr;
+        }
         console.warn('[ai/chat]', {
           debug_id: debugId,
           stage: 'primary_writer_failed_using_safety_net',

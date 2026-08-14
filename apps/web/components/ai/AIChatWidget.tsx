@@ -813,9 +813,14 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     }
     if (status !== 'ready' || !toneSimSawLoadingRef.current) return;
 
-    const step = TONE_SIMULATION_STEPS[toneSimStepRef.current];
     const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
     const assistantText = lastAssistant ? getMessageText(lastAssistant as ChatDisplayMessage) : '';
+    if (!assistantText.trim()) {
+      toneSimRunningRef.current = false;
+      setToneSimRunning(false);
+      return;
+    }
+    const step = TONE_SIMULATION_STEPS[toneSimStepRef.current];
     const modelSlug = TONE_SIM_REGISTRY[selectedModel ?? 'qwen']?.slug ?? 'qwen/qwen3.7-plus';
     const inputTokens = estimateHebrewTokens(lastUserTextForCostRef.current);
     const outputTokens = estimateHebrewTokens(assistantText);
@@ -1557,7 +1562,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                         <span className="text-[12px] text-white/70">{almogStatusText}</span>
                       ) : null}
                     </div>
-                    {isLongWait ? (
+                    {isLongWait && !toneSimRunning ? (
                       <div className="mt-2 border-t border-white/10 pt-2 text-[11px] leading-relaxed text-slate-300">
                         <p>לפעמים תשובה טובה לוקחת עוד קצת.</p>
                         {!notifyWhenReady ? (
@@ -1736,7 +1741,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                   />
                   {isLoading && (
                     <>
-                      {isLongWait ? (
+                      {isLongWait && !toneSimRunning ? (
                         <button
                           type="button"
                           onClick={continueInBackground}
