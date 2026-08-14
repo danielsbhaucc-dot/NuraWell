@@ -5,11 +5,18 @@ import { after } from 'next/server';
 import { ensureChatSession, touchChatSessionActivity } from '../../../../../lib/ai/chat-sessions/ensure-session';
 import { fetchChatSessionTranscript } from '../../../../../lib/ai/chat-sessions/fetch-transcript';
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
+import { chatWriterFleet, isChatWriterKey, type ChatWriterKey } from '../../../../../lib/ai/chat-writer-fleet';
 import {
-  CHAT_COMPARE_MODEL_KEYS,
-  defaultChatCompareRegistry,
-  type ChatModelKey,
-} from '../../../../../lib/ai/chat-compare-models';
+  heuristicWriterDecision,
+  mergeWriterDecisions,
+  writerRouterInstructions,
+} from '../../../../../lib/ai/chat-intent-router';
+import {
+  buildConversationFileUserPrompt,
+  conversationFileSystemInstructions,
+  formatConversationFilePromptBlock,
+} from '../../../../../lib/ai/chat-conversation-file';
+import { looksLikeBracketOnlyReply, sanitizeWriterOutput } from '../../../../../lib/ai/sanitize-writer-output';
 import { computeChatCostUsd } from '../../../../../lib/admin/cost-model';
 import { embedTextForRag } from '../../../../../lib/ai/openrouter-embeddings';
 import { buildRelevantMemoriesPromptBlock } from '../../../../../lib/ai/user-memories/retrieve-relevant-memories';
@@ -170,13 +177,6 @@ const chatBodySchema = z.object({
   notification_id: z.string().uuid().optional(),
   /** המשך יצירת תשובה אחרי רענון — בלי שכפול הודעת משתמש ב-DB */
   resume_assistant: z.boolean().optional(),
-  /**
-   * בורר מודל להשוואה (אופציונלי). ברירת מחדל: אלמוג (Qwen). מאפשר למשתמש
-   * לבחור מודל אחר *לאותה בקשה* בלבד כדי להשוות איכות — הכל דרך OpenRouter.
-   */
-  model: z.enum(CHAT_COMPARE_MODEL_KEYS).optional(),
-  /** ריצת סימולציית טון — בלי side-effects על הרגלים/סיגנלים. */
-  tone_simulation: z.boolean().optional(),
   /** הקשר מובנה ממסך הבית — task_id + slot, בלי להסתמך על ניחוש מהטקסט */
   task_report_hint: z
     .object({
@@ -264,13 +264,13 @@ function isStubModelReply(text: string): boolean {
 /**
  * תקרת פלט מקסימלית.
  * 480 הסתבר כצר מדי. 768 גרם ל"לחץ קיצוץ" שכפה תשובות תסריטיות.
- * 900 נותן מרווח של ~600 מילים — מספיק לפסקה אנושית טבעית בלי שהמודל
- * "מצמצם" את הקול שלו מתוך פחד מתקרה. ניתן לכוון דרך AI_CHAT_MAX_OUTPUT_TOKENS.
+ * בלי תקרת תווים מלאכותית לכותב — איכות לפני קיצור.
+ * ניתן לכוון דרך AI_CHAT_MAX_OUTPUT_TOKENS (עד 16384).
  */
 const CHAT_MAX_OUTPUT_TOKENS = (() => {
   const raw = process.env.AI_CHAT_MAX_OUTPUT_TOKENS?.trim();
   const n = raw ? Number(raw) : NaN;
-  return Number.isFinite(n) && n >= 200 && n <= 4096 ? Math.floor(n) : 900;
+  return Number.isFinite(n) && n >= 200 && n <= 16384 ? Math.floor(n) : 8192;
 })();
 
 /** סף אזהרה — אם usage.outputTokens חוצה את הסף הזה, נסמן onFinish כ"כמעט קצוץ". */
@@ -280,11 +280,9 @@ const CHAT_OUTPUT_TOKENS_NEAR_CAP_RATIO = 0.92;
  * מודל הצ'אט (אלמוג המנטור).
  * Override ב-env: `AI_CHAT_MODEL`.
  *
- * ברירת המחדל: `qwen/qwen3.7-plus` (דרך OpenRouter) — מודל סיני עם מגן PII.
- * לחזרה ל-Llama: `AI_CHAT_MODEL=meta-llama/llama-4-maverick`.
- * לחזרה ל-Claude: `AI_CHAT_MODEL=anthropic/claude-sonnet-4.6`.
+ * ברירת המחדל: GPT Terra דרך OpenRouter. הנתב (Llama 4 / Groq) יכול להחליף כותב.
  */
-const CHAT_MODEL = process.env.AI_CHAT_MODEL?.trim() || 'qwen/qwen3.7-plus';
+const CHAT_MODEL = process.env.AI_CHAT_MODEL?.trim() || 'openai/gpt-5.6-terra';
 /**
  * טמפרטורת הכתיבה של אלמוג. Qwen מרוויח מטמפרטורה גבוהה יחסית: יותר שיחה
  * טבעית, דימויים, וריאציה ואינטליגנציה רגשית. לא עולים ל-1.2+ כברירת מחדל
@@ -296,16 +294,13 @@ const CHAT_TEMPERATURE = (() => {
   return Number.isFinite(n) && n >= 0.2 && n <= 1.3 ? n : 0.95;
 })();
 /**
- * מודל זול לראוטינג ול-trivial-bypass ול-safety-net: Llama 4 *Scout* (אח קטן
- * של Maverick — 16 מומחים, מהיר וזול ~$0.08/M, מצוין לאישורים/תודות קצרים).
- * ⚠️ משתמשים ב-slug של OpenRouter בלבד, כדי שכל הצ'אט יעבוד דרך ספק אחד
- * (`OPENROUTER_API_KEY`) בלי צורך במפתחות נוספים.
+ * נתב + סיכום קובץ שיחה: Llama 4 Maverick דרך OpenRouter עם ספק Groq בלבד.
  */
 const CHAT_ROUTER_MODEL =
-  process.env.AI_CHAT_ROUTER_MODEL?.trim() ||
-  process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() ||
-  'meta-llama/llama-4-scout';
-const CHAT_SAFETY_NET_MODEL = process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() || CHAT_ROUTER_MODEL;
+  process.env.AI_CHAT_ROUTER_MODEL?.trim() || 'meta-llama/llama-4-maverick';
+const CHAT_SAFETY_NET_MODEL =
+  process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() || 'meta-llama/llama-4-maverick';
+const CHAT_ROUTER_PROVIDER_ONLY = ['Groq'] as const;
 
 /**
  * הערה: דגלים כמו isOpenAI / requiresPiiShield / isQwen / supportsPromptCache /
@@ -427,17 +422,10 @@ const CHAT_PROMPT_CACHE_TTL = process.env.AI_CHAT_PROMPT_CACHE_TTL?.trim() || '1
 const CHAT_TRIVIAL_BYPASS_ENABLED =
   (process.env.AI_CHAT_TRIVIAL_BYPASS?.trim() || 'on').toLowerCase() !== 'off';
 
-/**
- * בורר מודלים להשוואה. כל המודלים רצים דרך OpenRouter (מפתח אחד).
- */
-const CHAT_MODEL_REGISTRY = defaultChatCompareRegistry(CHAT_MODEL);
+const CHAT_WRITER_FLEET = chatWriterFleet();
 
-/**
- * Config פר-מודל שנגזר מה-slug. מאפשר לבורר ההשוואה להריץ כל מודל עם
- * ההגדרות הנכונות לו (reasoning ל-Qwen, PII-shield ל-Qwen, prompt-cache
- * ל-Claude, פרומפט מלא vs רזה) בלי קבועים גלובליים שמניחים מודל יחיד.
- */
 type ChatModelRuntime = {
+  writer: ChatWriterKey;
   slug: string;
   isOpenAI: boolean;
   isQwen: boolean;
@@ -450,27 +438,31 @@ type ChatModelRuntime = {
   finalGuardrails: string;
 };
 
-function resolveChatModelRuntime(modelKey: ChatModelKey | undefined): ChatModelRuntime {
-  const entry = CHAT_MODEL_REGISTRY[modelKey ?? 'almog'];
+function resolveChatModelRuntime(writer: ChatWriterKey): ChatModelRuntime {
+  const entry = CHAT_WRITER_FLEET[writer];
   const slug = entry?.slug ?? CHAT_MODEL;
   const isOpenAI = slug.startsWith('openai/');
   const isQwen = slug.toLowerCase().includes('qwen');
   const isGoogle = slug.startsWith('google/');
-  const requiresPiiShield = slug.startsWith('qwen/') || slug.includes('qwen3');
   const supportsPromptCache = slug.startsWith('anthropic/');
   const useReasoning = CHAT_REASONING_ENABLED && isQwen;
-  const useLeanPrompt = CHAT_LEAN_PROMPT_ENABLED && isQwen;
+  const useLeanPrompt = CHAT_LEAN_PROMPT_ENABLED && writer === 'llama4';
+  const claudeGuard =
+    writer === 'claude5'
+      ? `${ALMOG_CHAT_FINAL_GUARDRAILS}\nכתוב למשתמש רק את התשובה בעברית. אסור סוגריים מרובעים, תגיות מטה, הערות מערכת או placeholders.`
+      : ALMOG_CHAT_FINAL_GUARDRAILS;
   return {
+    writer,
     slug,
     isOpenAI: isOpenAI || isGoogle,
     isQwen,
-    requiresPiiShield,
+    requiresPiiShield: true,
     supportsPromptCache,
     useReasoning,
     useLeanPrompt,
     providerOnly: entry?.providerOnly,
     mainWriterSystemPrompt: useLeanPrompt ? NURAWELL_CHAT_SYSTEM_PROMPT_LEAN : BASE_SYSTEM_PROMPT,
-    finalGuardrails: useLeanPrompt ? ALMOG_CHAT_FINAL_GUARDRAILS_LEAN : ALMOG_CHAT_FINAL_GUARDRAILS,
+    finalGuardrails: useLeanPrompt ? ALMOG_CHAT_FINAL_GUARDRAILS_LEAN : claudeGuard,
   };
 }
 
@@ -685,9 +677,10 @@ async function createOpenRouterTextStreamResponse({
     }
 
     streamPrefixBuffer += clientText;
-    if (normalizeLine(streamPrefixBuffer).length >= MIN_STREAM_PREFIX_CHARS) {
+    const cleanedPrefix = sanitizeWriterOutput(streamPrefixBuffer);
+    if (normalizeLine(cleanedPrefix || streamPrefixBuffer).length >= MIN_STREAM_PREFIX_CHARS) {
       streamStarted = true;
-      controller.enqueue(encoder.encode(streamPrefixBuffer));
+      controller.enqueue(encoder.encode(cleanedPrefix || streamPrefixBuffer));
       streamPrefixBuffer = '';
     }
   };
@@ -754,10 +747,16 @@ async function createOpenRouterTextStreamResponse({
           processDataLine(line.slice(5).trim(), controller);
         }
 
+        accumulated = sanitizeWriterOutput(accumulated) || accumulated;
         const accumulatedTrimmed = accumulated.trim();
-        if (!accumulatedTrimmed || isStubModelReply(accumulatedTrimmed)) {
+        if (
+          !accumulatedTrimmed ||
+          isStubModelReply(accumulatedTrimmed) ||
+          looksLikeBracketOnlyReply(accumulatedTrimmed)
+        ) {
           let retryText = onEmptyRetry ? (await onEmptyRetry()).trim() : '';
           if (retryText && piiShield) retryText = piiShield.detokenizeText(retryText);
+          retryText = sanitizeWriterOutput(retryText) || retryText;
           const recoveredText = retryText || pickEmptyResponseFallback();
           accumulated = recoveredText;
           finishReason = 'stop';
@@ -848,7 +847,8 @@ async function createOpenRouterCheapTextResponse({
       temperature,
       top_p: 0.95,
       seed: randomSamplingSeed(),
-      max_tokens: Math.min(maxOutputTokens, 600),
+      max_tokens: Math.min(maxOutputTokens, 4000),
+      provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] },
       messages: [
         { role: 'system', content: tokenizedSystem },
         ...tokenizedMessages,
@@ -867,7 +867,7 @@ async function createOpenRouterCheapTextResponse({
     usage?: unknown;
   };
   const rawText = data.choices?.[0]?.message?.content?.trim() ?? '';
-  const text = piiShield ? piiShield.detokenizeText(rawText) : rawText;
+  const text = sanitizeWriterOutput(piiShield ? piiShield.detokenizeText(rawText) : rawText);
   const safeText = text && !isStubModelReply(text) ? text : pickEmptyResponseFallback();
   await onFinish({
     text: safeText,
@@ -888,7 +888,7 @@ async function createOpenRouterCheapTextResponse({
 function chatHistoryWindow(): number {
   const raw = process.env.AI_CHAT_HISTORY_WINDOW?.trim();
   const n = raw ? Number(raw) : NaN;
-  return Number.isFinite(n) && n >= 4 && n <= 40 ? Math.floor(n) : 12;
+  return Number.isFinite(n) && n >= 1 && n <= 6 ? Math.floor(n) : 2;
 }
 
 function currentIsraelDaypart(minutes: number): 'בוקר' | 'צהריים' | 'אחר הצהריים' | 'ערב' | 'לילה' {
@@ -1126,6 +1126,7 @@ const chatContextRouterSchema = z.object({
   needs_blockers: z.boolean().optional().default(false),
   reason: z.string().max(160).optional(),
   summary: z.string().max(240).nullable().optional(),
+  writer: z.enum(['terra', 'claude5', 'grok', 'llama4']).optional(),
 });
 
 type ChatContextDecision = z.infer<typeof chatContextRouterSchema>;
@@ -1141,6 +1142,7 @@ function lowContextDecision(reason: string): ChatContextDecision {
     needs_assignments: false,
     needs_blockers: false,
     reason,
+    writer: 'llama4',
   };
 }
 
@@ -1214,6 +1216,7 @@ function heuristicContextDecision(
     // חסמים: על קושי/חסם/רגש/התלבטות.
     needs_blockers: Boolean(opts?.forceHeavy) || blockerHint,
     reason,
+    writer: heuristicWriterDecision(userMessage, signals),
   };
 }
 
@@ -1234,6 +1237,7 @@ function mergeContextDecisions(
     needs_blockers: Boolean(base.needs_blockers) || Boolean(extra.needs_blockers),
     reason: base.reason,
     summary: base.summary,
+    writer: mergeWriterDecisions(base.writer, extra.writer ?? 'terra'),
   };
 }
 
@@ -1261,7 +1265,7 @@ const CHAT_ROUTER_TIMEOUT_MS = (() => {
   const n = raw ? Number(raw) : NaN;
   // 2000ms: 1200 היה צר מדי ל-Llama scout ונפל ל-fallback תכופות (תשובות
   // גנריות בלי RAG). 2s נותן מרווח אמין, וה-heuristic מכסה גם אם בכל זאת ייפול.
-  return Number.isFinite(n) && n >= 600 && n <= 6000 ? Math.floor(n) : 2000;
+  return Number.isFinite(n) && n >= 600 && n <= 15000 ? Math.floor(n) : 8000;
 })();
 
 function buildChatContextRouterPrompt(
@@ -1300,11 +1304,13 @@ function buildChatContextRouterPrompt(
 - needs_blockers: המשתמש מתאר קושי/חסם/מה שמעכב אותו, או חוזר לנושא מתסכל. (קושי/תקיעות -> true)
 
 החזר JSON בלבד:
-{"heavy_context":true/false,"needs_user_memory_rag":true/false,"needs_system_knowledge_rag":true/false,"needs_full_progress_report":true/false,"needs_journey_knowledge":true/false,"needs_principles":true/false,"needs_assignments":true/false,"needs_blockers":true/false,"reason":"קצר","summary":"סיכום קצר לקלוד או null"}
+{"heavy_context":true/false,"needs_user_memory_rag":true/false,"needs_system_knowledge_rag":true/false,"needs_full_progress_report":true/false,"needs_journey_knowledge":true/false,"needs_principles":true/false,"needs_assignments":true/false,"needs_blockers":true/false,"writer":"terra|claude5|grok|llama4","reason":"קצר","summary":"סיכום קצר או null"}
+
+${writerRouterInstructions()}
 
 אותות regex: ${signalParts.join(', ') || 'none'}${historyBlock}
 הודעת משתמש (חדשה):
-${userMessage.slice(0, 1200)}`;
+${userMessage.slice(0, 4000)}`;
 }
 
 /**
@@ -1336,8 +1342,9 @@ async function attemptContextRoute(opts: {
       body: JSON.stringify({
         model: opts.model,
         temperature: 0,
-        max_tokens: 220,
+        max_tokens: 420,
         response_format: { type: 'json_object' },
+        provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] },
         messages: [
           {
             role: 'system',
@@ -1427,10 +1434,7 @@ async function routeChatContextWithCheapModel(
 }
 
 function formatChatSummaryPromptBlock(summary: unknown): string | null {
-  if (typeof summary !== 'string') return null;
-  const clean = normalizeLine(summary).slice(0, 900);
-  if (!clean) return null;
-  return `[סיכום שיחה קודם]\n${clean}\nהשתמש בזה כרצף שיחה בלבד; אם ההודעות האחרונות סותרות, הן עדכניות יותר. שים לב לדפוסים חוזרים שמצוינים בסיכום (פעם שנייה/שלישית) — התייחס אליהם כמו שהיית מתייחס לדפוס שזיהית בעצמך בשיחה.`;
+  return formatConversationFilePromptBlock(summary);
 }
 
 async function summarizeChatTurnWithCheapModel({
@@ -1446,7 +1450,7 @@ async function summarizeChatTurnWithCheapModel({
   if (!openrouterKey || !assistantMessage.trim()) return null;
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 2_000);
+  const timer = setTimeout(() => controller.abort(), 8_000);
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -1459,20 +1463,20 @@ async function summarizeChatTurnWithCheapModel({
       body: JSON.stringify({
         model: CHAT_ROUTER_MODEL,
         temperature: 0,
-        max_tokens: 260,
+        max_tokens: 700,
+        provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] },
         messages: [
           {
             role: 'system',
-            content:
-              'אתה מתחזק תקציר שיחה מתגלגל למנטור בריאות בעברית. החזר תקציר קצר בלבד, עד 900 תווים, בלי כותרת.\n' +
-              'שמור עובדות, רגשות, הבטחות, החלטות וטון שחשובים לתור הבא.\n' +
-              'שמור במפורש *התחייבויות פתוחות* שאלמוג נתן: משימה אישית שניתנה, תזכורת שהובטחה, מצב פוקוס/הקפאה שסוכם, וחסם שבמעקב — כולל מה הסטטוס שלהם (ניתן / בוצע / טרם). כך אלמוג זוכר מה הוא סיכם ולא שוכח לעקוב.\n' +
-              'הכי חשוב — עקוב אחרי דפוסים חוזרים: אם נושא/תלונה/פחד/בקשה כבר מופיע בתקציר הקודם והמשתמש מעלה אותו שוב, ציין זאת מפורש עם מונה. לדוגמה: "המשתמש העלה בפעם השלישית שהוא מפחד מ-X" או "שוב התלונן על Y (פעם 2)".\n' +
-              'אם דפוס נפתר/השתנה — עדכן זאת. אל תמחק ספירות חזרות קיימות; קדם אותן.',
+            content: conversationFileSystemInstructions(),
           },
           {
             role: 'user',
-            content: `תקציר קודם (כולל ספירת חזרות אם יש):\n${previousSummary?.trim() || '(אין)'}\n\nהודעת משתמש אחרונה:\n${userMessage}\n\nתשובת אלמוג אחרונה:\n${assistantMessage.slice(0, 1600)}\n\nעדכן את התקציר ושמר/קדם מוני חזרות לדפוסים שחוזרים.`,
+            content: buildConversationFileUserPrompt({
+              previousFile: previousSummary,
+              userMessage,
+              assistantMessage,
+            }),
           },
         ],
       }),
@@ -1482,7 +1486,7 @@ async function summarizeChatTurnWithCheapModel({
     const data = (await response.json()) as {
       choices?: Array<{ message?: { content?: string | null } }>;
     };
-    const summary = normalizeLine(data.choices?.[0]?.message?.content ?? '').slice(0, 900);
+    const summary = normalizeLine(data.choices?.[0]?.message?.content ?? '').slice(0, 2800);
     return summary || null;
   } catch {
     return null;
@@ -2081,19 +2085,11 @@ export async function POST(request: Request) {
   const { messages, user_id: bodyUserId } = parsed.data;
 
   /**
-   * בורר מודלים: ברירת מחדל = אלמוג (Qwen). אם המשתמש בחר מודל אחר להשוואה,
-   * מריצים אותו *לבקשה הזו בלבד* עם ה-config הנכון לו (reasoning/PII/cache/פרומפט).
+   * ברירת מחדל Terra; Llama 4 (Groq/OpenRouter) בוחר כותב אחרי הנתב.
    */
-  let mcfg = resolveChatModelRuntime(parsed.data.model);
+  let mcfg = resolveChatModelRuntime('terra');
   const guideContextHint = parsed.data.guide_context_hint;
-  if (guideContextHint && !parsed.data.model) {
-    mcfg = resolveChatModelRuntime('llama4');
-  }
-  const effectiveModel = mcfg.slug;
-  const toneSimulation = parsed.data.tone_simulation === true;
-  const explicitCompareModel = Boolean(
-    toneSimulation || (parsed.data.model && parsed.data.model !== 'almog')
-  );
+  let effectiveModel = mcfg.slug;
 
   if (bodyUserId && bodyUserId !== user.id) {
     console.error('[ai/chat]', { debug_id: debugId, stage: 'user_mismatch', body_user_id: bodyUserId, session_user_id: user.id });
@@ -2111,9 +2107,7 @@ export async function POST(request: Request) {
   stage = 'message_ok';
   const earlySignals = detectChatSignals(lastUserText);
   const trivialBypass =
-    CHAT_TRIVIAL_BYPASS_ENABLED &&
-    !explicitCompareModel &&
-    isTrivialBypassEligible(lastUserText, earlySignals);
+    CHAT_TRIVIAL_BYPASS_ENABLED && isTrivialBypassEligible(lastUserText, earlySignals);
   const routerHistorySnippet = buildRouterHistorySnippet(messages);
 
   /**
@@ -2192,6 +2186,26 @@ export async function POST(request: Request) {
       reason: `${contextDecision.reason ?? ''}+guide_chapter_context`.replace(/^\+/, ''),
     };
   }
+
+  const routedWriter: ChatWriterKey = trivialBypass
+    ? 'llama4'
+    : guideContextHint
+      ? mergeWriterDecisions(
+          isChatWriterKey(contextDecision.writer) ? contextDecision.writer : undefined,
+          'llama4'
+        )
+      : mergeWriterDecisions(
+          isChatWriterKey(contextDecision.writer) ? contextDecision.writer : undefined,
+          heuristicWriterDecision(lastUserText, earlySignals)
+        );
+  mcfg = resolveChatModelRuntime(routedWriter);
+  effectiveModel = mcfg.slug;
+  console.info('[ai/chat]', {
+    debug_id: debugId,
+    stage: 'writer_routed',
+    writer: mcfg.writer,
+    model: effectiveModel,
+  });
 
   const useHeavyContext = contextDecision.heavy_context;
 
@@ -2405,10 +2419,7 @@ export async function POST(request: Request) {
     })
     .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m))
     /**
-     * חלון היסטוריה גולמי. גם כשקיים סיכום מתגלגל — שומרים חלון מלא (ברירת
-     * מחדל 12 = ~6 סיבובים) כדי לא לאבד את החוט הרגשי/ההקשרי של השיחה. הסיכום
-     * הוא *תוספת* להקשר ישן מעבר לחלון, לא תחליף לחלון. (רגרסיה קודמת חתכה ל-4
-     * הודעות כשהיה סיכום, מה שגרם לקלוד "לשכוח" את מהלך השיחה.)
+     * קובץ השיחה מחליף היסטוריה ארוכה — שולחים רק את התור האחרון (משתמש + עוזר קודם אם יש).
      */
     .slice(-chatHistoryWindow());
 
@@ -2920,7 +2931,7 @@ export async function POST(request: Request) {
           }
         }
 
-        const assistantText = t || pickEmptyResponseFallback();
+        const assistantText = sanitizeWriterOutput(t) || t || pickEmptyResponseFallback();
         if (!t) {
           console.warn('[ai/chat]', {
             debug_id: debugId,
@@ -2990,7 +3001,7 @@ export async function POST(request: Request) {
               finish_reason: effectiveFinishReason,
               continued_after_length: finishReason === 'length' && t !== (text ?? '').trim(),
               cost_usd: costUsd,
-              tone_simulation: toneSimulation,
+              writer: mcfg.writer,
             },
           });
         } catch (persistErr) {
@@ -2999,10 +3010,6 @@ export async function POST(request: Request) {
             stage: `${finishStage}_persist_assistant`,
             error: persistErr instanceof Error ? persistErr.message : String(persistErr),
           });
-        }
-
-        if (toneSimulation) {
-          return;
         }
 
         after(async () => {
@@ -3472,7 +3479,6 @@ export async function POST(request: Request) {
 
     /** Contextual Recall — כלי recall רק בתור עמוק/רגשי (חוסך טוקנים). */
     const useMemoryRecallTools =
-      !toneSimulation &&
       !trivialBypass &&
       shouldAttemptMemoryRecall(lastUserText, {
         emotional: Boolean(earlySignals.emotional_hint),
@@ -3563,9 +3569,6 @@ export async function POST(request: Request) {
       try {
         upstream = await runClaudeWriter();
       } catch (primaryErr) {
-        if (explicitCompareModel || toneSimulation) {
-          throw primaryErr;
-        }
         console.warn('[ai/chat]', {
           debug_id: debugId,
           stage: 'primary_writer_failed_using_safety_net',
