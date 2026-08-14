@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Play, Maximize2, AlertCircle } from 'lucide-react';
+import { Play, AlertCircle } from 'lucide-react';
+import { resolveBunnyStreamEmbedId } from '../../lib/journey/bunny-pull';
 
 interface VideoPlayerProps {
   provider: 'bunny' | 'heygen' | 'youtube' | 'vimeo' | 'custom';
@@ -10,10 +11,16 @@ interface VideoPlayerProps {
   title?: string;
 }
 
+function bunnyIframeUrl(embedId: string): string {
+  return `https://iframe.mediadelivery.net/embed/${embedId}?autoplay=true&preload=true&responsive=true&playsinline=true&controls=true`;
+}
+
 function getEmbedUrl(provider: VideoPlayerProps['provider'], externalId?: string | null, externalUrl?: string | null): string | null {
   switch (provider) {
-    case 'bunny':
-      return externalId ? `https://iframe.mediadelivery.net/embed/${externalId}?autoplay=true&preload=true&controls=true` : null;
+    case 'bunny': {
+      const embedId = resolveBunnyStreamEmbedId(externalId ?? null, externalUrl ?? null);
+      return embedId ? bunnyIframeUrl(embedId) : null;
+    }
     case 'heygen':
       return externalId ? `https://app.heygen.com/share/${externalId}` : null;
     case 'youtube':
@@ -71,9 +78,10 @@ export function VideoPlayer({ provider, externalId, externalUrl, title }: VideoP
       <iframe
         src={embedUrl}
         title={title || 'שיעור וידאו'}
+        referrerPolicy="strict-origin-when-cross-origin"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
         allowFullScreen
-        className="absolute inset-0 w-full h-full"
+        className="absolute inset-0 w-full h-full border-0"
         onLoad={() => setIsLoaded(true)}
         onError={() => setHasError(true)}
         loading="lazy"
