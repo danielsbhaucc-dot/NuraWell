@@ -381,7 +381,7 @@ function ThreadPresenceText({
 }
 
 function MessageTicks({ state }: { state: 'sent' | 'delivered' | 'read' }) {
-  const color = state === 'read' ? '#53bdeb' : 'rgba(226,232,240,0.88)';
+  const color = state === 'read' ? '#53bdeb' : '#e2e8f0';
   const label = state === 'read' ? 'נקראה' : state === 'delivered' ? 'התקבלה' : 'נשלחה';
   return (
     <span className="inline-flex h-[11px] w-[18px] items-center justify-end" title={label} aria-label={label}>
@@ -421,15 +421,20 @@ function userMessageTickState(
   index: number,
   messages: Array<{ role: string }>,
   chatStatus: string,
-  hasError: boolean
+  awaiting: boolean,
+  sentAck: 'sent' | 'delivered'
 ): 'sent' | 'delivered' | 'read' {
   const hasLaterAssistant = messages.slice(index + 1).some((m) => m.role === 'assistant');
-  if (hasLaterAssistant) return 'read';
   const lastUserIndex = messages.reduce((acc, m, i) => (m.role === 'user' ? i : acc), -1);
-  if (index !== lastUserIndex) return 'delivered';
-  if (hasError) return 'sent';
-  if (chatStatus === 'submitted') return 'sent';
-  if (chatStatus === 'streaming') return 'delivered';
+  const isLastUser = index === lastUserIndex;
+  const inFlight =
+    awaiting || chatStatus === 'submitted' || chatStatus === 'streaming';
+
+  if (isLastUser && inFlight) {
+    if (chatStatus === 'submitted' && sentAck === 'sent') return 'sent';
+    return 'delivered';
+  }
+  if (hasLaterAssistant) return 'read';
   return 'delivered';
 }
 
@@ -514,6 +519,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const [online, setOnline] = useState(true);
   const [input, setInput] = useState('');
   const [waitSeconds, setWaitSeconds] = useState(0);
+  const [sentAck, setSentAck] = useState<'sent' | 'delivered'>('sent');
   const [notifyWhenReady, setNotifyWhenReady] = useState(false);
   const [answerReadyToast, setAnswerReadyToast] = useState(false);
   const [hasBackgroundAnswer, setHasBackgroundAnswer] = useState(false);
@@ -748,6 +754,17 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const isLoading = status === 'submitted' || status === 'streaming';
   const showLoading = isLoading || awaitingAssistantRecovery;
   const isThinking = status === 'submitted' || (awaitingAssistantRecovery && !isLoading);
+
+  useEffect(() => {
+    if (status === 'submitted') {
+      setSentAck('sent');
+      const timer = window.setTimeout(() => setSentAck('delivered'), 350);
+      return () => window.clearTimeout(timer);
+    }
+    if (status === 'streaming' || showLoading) {
+      setSentAck('delivered');
+    }
+  }, [status, showLoading]);
 
   useEffect(() => {
     if (!open) return;
@@ -1418,7 +1435,8 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                               i,
                               messages,
                               status,
-                              Boolean(error)
+                              showLoading,
+                              sentAck
                             )}
                           />
                         </div>
