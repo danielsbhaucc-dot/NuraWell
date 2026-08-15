@@ -63,6 +63,32 @@ describe('memory-dossier', () => {
     expect(block).not.toContain('"user_id"');
   });
 
+  it('always includes personal_context even when the query does not overlap', () => {
+    const block = formatUserMemoryDossierPromptBlock(
+      {
+        user_id: 'u1',
+        tags: [],
+        essentials: {},
+        goals: { primary: 'ירידה במשקל' },
+        task_memory: {},
+        habit_memory: {},
+        schedule_memory: {},
+        personal_context: { family: 'אבא לשניים', job: 'עובד משמרות לילה' },
+        health_context: { notes: 'רגיש ללקטוז' },
+        psychology: {},
+        coaching_profile: {},
+        risk_signals: {},
+        inferred_insights: [],
+        source_stats: {},
+      },
+      { query: 'היי מה קורה', maxLines: 8 }
+    );
+
+    expect(block).toContain('אבא לשניים');
+    expect(block).toContain('עובד משמרות לילה');
+    expect(block).toContain('רגיש ללקטוז');
+  });
+
   it('formatUserMemoryDossierPromptBlock ranks lines by the current query', () => {
     const block = formatUserMemoryDossierPromptBlock(
       {
@@ -86,6 +112,7 @@ describe('memory-dossier', () => {
 
     expect(block).toContain('טלוויזיה בערב');
     expect(block).toContain('הקושי המרכזי');
+    expect(block).toContain('להוריד במשקל');
     expect(block).not.toContain('שתיית מים בבוקר');
   });
 

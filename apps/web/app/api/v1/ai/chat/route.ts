@@ -1238,6 +1238,8 @@ const ROUTER_PRINCIPLES_RE =
  */
 const ROUTER_ASSIGNMENTS_RE =
   /(?:משימה|המשימה|שנתת|ביקשת|אמרת לי לעשות|התרגיל|עשיתי|לא עשיתי|ביצעתי|הספקתי|לא הספקתי|הבטחתי|מה אני אמור|מה היה עליי)/u;
+const ROUTER_MEMORY_RE =
+  /(?:זוכר|זכרת|אמרתי|סיפרתי|בשיחה(?:\s+הקודמת)?|פעם שעבר|אתמול|מה אתה יודע|עליי|הפרופיל|המשקל שלי|המטרה שלי)/u;
 
 function heuristicContextDecision(
   userMessage: string,
@@ -1250,17 +1252,26 @@ function heuristicContextDecision(
   const knowledge = ROUTER_KNOWLEDGE_RE.test(t);
   const principlesHint = ROUTER_PRINCIPLES_RE.test(t);
   const assignmentsHint = ROUTER_ASSIGNMENTS_RE.test(t);
+  const memoryHint = ROUTER_MEMORY_RE.test(t);
   const blockerHint = principlesHint || signals.blocker_mentioned || Boolean(signals.emotional_hint);
   const writerAnalysis = analyzeWriterIntent(userMessage, signals);
+  const substantial = t.length >= 18;
   return {
     heavy_context:
       Boolean(opts?.forceHeavy) ||
       isQuestion ||
       knowledge ||
       principlesHint ||
+      memoryHint ||
       signals.blocker_mentioned ||
       Boolean(signals.emotional_hint),
-    needs_user_memory_rag: isQuestion || knowledge,
+    needs_user_memory_rag:
+      Boolean(opts?.forceHeavy) ||
+      isQuestion ||
+      knowledge ||
+      memoryHint ||
+      substantial ||
+      Boolean(signals.emotional_hint),
     needs_system_knowledge_rag: knowledge,
     needs_full_progress_report: false,
     needs_journey_knowledge: knowledge,
@@ -2224,16 +2235,30 @@ export async function POST(request: Request) {
     : fetchUserGuideSummaries(supabase, user.id).catch(() => []);
   const challengeContextPromise = fetchChallengeAlmogContextBlock(supabase, user.id).catch(() => null);
 
+  /**
+   * הנתב רץ כמעט בכל תור (חוץ מתודה/עשיתי קצר). דילוג דטרמיניסטי ישן
+   * ביטל את בחירת הכותב ואת זיכרון המשתמש בברכות ובהמשך-שיחה.
+   */
   let contextDecision = trivialBypass
     ? lowContextDecision('trivial_bypass')
-    : isLowContextTurn(lastUserText, earlySignals)
-      ? lowContextDecision('deterministic_low_context')
-      : await routeChatContextWithCheapModel(
-          lastUserText,
-          earlySignals,
-          debugId,
-          routerHistorySnippet
-        );
+    : await routeChatContextWithCheapModel(
+        lastUserText,
+        earlySignals,
+        debugId,
+        routerHistorySnippet
+      );
+
+  if (!trivialBypass && isLowContextTurn(lastUserText, earlySignals)) {
+    contextDecision = {
+      ...contextDecision,
+      heavy_context: false,
+      needs_full_progress_report: false,
+      needs_system_knowledge_rag: false,
+      needs_journey_knowledge: false,
+      needs_user_memory_rag: true,
+      reason: `${contextDecision.reason ?? ''}+low_context_keep_memory`.replace(/^\+/, ''),
+    };
+  }
 
   /**
    * עקיפה דטרמיניסטית: בקשת סיכום/ידע על שיעור — מאלצים שליפת חומר עזר מהמסע
@@ -2798,7 +2823,7 @@ export async function POST(request: Request) {
     if (routerSummary) {
       contextSections.push(`[נתב-הקשר] ${routerSummary.slice(0, 240)}`);
     }
-    if (chatSummaryBlock && !leanLightTurn) contextSections.push(chatSummaryBlock);
+    if (chatSummaryBlock) contextSections.push(chatSummaryBlock);
 
     /**
      * עדיפות עליונה: כשהמשתמש מגיב להתראה — אלמוג חייב לדעת על מה הוא מגיב.
@@ -2810,7 +2835,7 @@ export async function POST(request: Request) {
     if (guideContextBlock) contextSections.push(guideContextBlock);
 
     // coaching style + dossier + onboarding כפולים לזיכרון העבודה — רק בתור כבד.
-    if (coachingStyleBlock && !leanLightTurn) contextSections.push(coachingStyleBlock);
+    if (coachingStyleBlock) contextSections.push(coachingStyleBlock);
     /**
      * עקרונות אלמוג (חוקי תוכנית + "איך להתמודד עם X") — קו מנחה התנהגותי מחייב.
      * גבוה בעדיפות (מיד אחרי סגנון האימון) כדי שיעצב את התשובה, ולא ייקבר תחת RAG.
@@ -2818,7 +2843,7 @@ export async function POST(request: Request) {
      */
     if (principlesBlock) contextSections.push(principlesBlock);
     if (workingMemoryBlock) contextSections.push(workingMemoryBlock);
-    if (memoryDossierBlock && !leanLightTurn) contextSections.push(memoryDossierBlock);
+    if (memoryDossierBlock) contextSections.push(memoryDossierBlock);
     if (mentorStrategyBlock && !leanLightTurn) contextSections.push(mentorStrategyBlock);
     if (mentorUserContextBlock && !leanLightTurn) contextSections.push(mentorUserContextBlock);
     /**
@@ -2829,7 +2854,7 @@ export async function POST(request: Request) {
     for (const block of commitmentBlocks) contextSections.push(block);
     if (journeyFollowUpBlock) contextSections.push(journeyFollowUpBlock);
     if (lifeContextBlock) contextSections.push(lifeContextBlock);
-    if (onboardingContextBlock && !leanLightTurn) contextSections.push(onboardingContextBlock);
+    if (onboardingContextBlock) contextSections.push(onboardingContextBlock);
 
     if (turnSignalsBlock) contextSections.push(turnSignalsBlock);
     if (turnHabitBlock) contextSections.push(turnHabitBlock);

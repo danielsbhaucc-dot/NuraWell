@@ -104,6 +104,27 @@ describe('chat writer routing', () => {
     expect(heuristicWriterDecision('מה הצעד הבא לשגרה שלי?', emptySignals)).toBe('terra');
   });
 
+  it('honors the LLM router writer when heuristic is the default Terra lane', () => {
+    expect(
+      mergeWriterDecisions(
+        'grok',
+        'terra',
+        { terra: 40, claude5: 10, grok: 70, llama4: 5 },
+        { terra: 28, claude5: 12, grok: 22, llama4: 8 },
+        []
+      )
+    ).toBe('grok');
+    expect(
+      mergeWriterDecisions(
+        'claude5',
+        'terra',
+        { terra: 20, claude5: 80, grok: 10, llama4: 5 },
+        { terra: 28, claude5: 12, grok: 22, llama4: 8 },
+        []
+      )
+    ).toBe('claude5');
+  });
+
   it('does not let Llama Grok steal a Terra empathy turn without conflict tags', () => {
     expect(mergeWriterDecisions('grok', 'terra', undefined, undefined, ['empathy'])).toBe('terra');
   });

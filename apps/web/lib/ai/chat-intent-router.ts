@@ -251,8 +251,9 @@ function blendScores(a?: WriterScores, b?: WriterScores): WriterScores | undefin
 
 /**
  * קלוד מנצח על בטיחות/גבולות.
- * נטייה לרצות -> רק Grok או Claude.
- * Llama 4 רק לתור תפעולי קצר.
+ * נטייה לרצות / תירוץ / ויכוח -> Grok.
+ * Llama 4 רק לתור תפעולי קצר מההיוריסטיקה.
+ * אחרת — הנתב (LLM) בוחר את הכותב. בלי זה הכל נופל ל-Terra ונשמע אותו מודל.
  */
 export function mergeWriterDecisions(
   llamaChoice: ChatWriterKey | undefined,
@@ -269,6 +270,18 @@ export function mergeWriterDecisions(
   if (lane === 'claude5' || heuristic === 'claude5') return 'claude5';
   if (lane === 'grok' || heuristic === 'grok') return 'grok';
   if (heuristic === 'llama4' && (lane === 'llama4' || lane === 'terra')) return 'llama4';
+
+  // אמפתיה/שגרה בלי עימות: אל תתן לנתב הזול לגנוב ל-Grok.
+  if (
+    llamaChoice === 'grok' &&
+    (tags.includes('empathy') || tags.includes('coaching')) &&
+    !hasAny(tags, ['evasion', 'argument', 'accusation', 'direct', 'rude', 'people_please'])
+  ) {
+    return 'terra';
+  }
+
+  const routed = llamaChoice && llamaChoice !== 'llama4' ? llamaChoice : undefined;
+  if (routed === 'claude5' || routed === 'grok' || routed === 'terra') return routed;
   return 'terra';
 }
 
