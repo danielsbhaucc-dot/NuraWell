@@ -3644,6 +3644,10 @@ export async function POST(request: Request) {
       uiHeaders.set('x-ai-writer', 'memory-recall-tools');
       uiHeaders.set('x-ai-model', assistantModelName);
       uiHeaders.set('Cache-Control', 'no-cache, no-transform');
+      uiHeaders.set(
+        'Access-Control-Expose-Headers',
+        'x-session-id, x-debug-id, x-debug-stage, x-ai-writer, x-ai-model'
+      );
       return new Response(upstream.body, {
         status: upstream.status,
         statusText: upstream.statusText,
@@ -3717,6 +3721,10 @@ export async function POST(request: Request) {
     headers.set('x-ai-model', assistantModelName);
     headers.set('Cache-Control', 'no-cache, no-transform');
     if (!headers.get('Content-Type')) headers.set('Content-Type', 'text/plain; charset=utf-8');
+    headers.set(
+      'Access-Control-Expose-Headers',
+      'x-session-id, x-debug-id, x-debug-stage, x-ai-writer, x-ai-model'
+    );
 
     return new Response(stream, {
       status: upstreamWithHeaders.status,

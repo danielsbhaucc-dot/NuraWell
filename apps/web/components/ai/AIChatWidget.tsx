@@ -661,7 +661,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
       const writer = res.headers.get('x-ai-writer');
       const model = res.headers.get('x-ai-model');
       if (writer === 'memory-recall-tools') {
-        setMemoryRecallWriterActive(true);
+        queueMicrotask(() => setMemoryRecallWriterActive(true));
       }
       if (sid) {
         const previousSessionId = sessionIdRef.current;
@@ -693,12 +693,18 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     };
   }, []);
 
+  const chatTransport = useMemo(
+    () =>
+      new NuraWellChatTransport({
+        api: '/api/v1/ai/chat',
+        fetch: fetchWithSession,
+        body: () => buildOutgoingChatBody(),
+      }),
+    [fetchWithSession, buildOutgoingChatBody]
+  );
+
   const { messages, setMessages, sendMessage, status, stop, error } = useChat({
-    transport: new NuraWellChatTransport({
-      api: '/api/v1/ai/chat',
-      fetch: fetchWithSession,
-      body: () => buildOutgoingChatBody(),
-    }),
+    transport: chatTransport,
   });
 
   const isLoading = status === 'submitted' || status === 'streaming';
@@ -1056,8 +1062,10 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
         <Drawer.Overlay className="fixed inset-0 z-[200] bg-slate-900/55" />
         <Drawer.Content
           dir="rtl"
-          className="almog-chat-surface fixed inset-x-0 bottom-0 z-[210] mx-auto flex h-[min(96dvh,960px)] max-h-[96dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] outline-none"
+          className="almog-chat-surface fixed inset-x-0 bottom-0 z-[210] mx-auto flex w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] outline-none"
           style={{
+            height: 'min(96dvh, 960px)',
+            maxHeight: '96dvh',
             border: '1px solid rgba(255,255,255,0.18)',
             background: 'linear-gradient(180deg, rgba(15,23,42,0.96), rgba(2,6,23,0.96))',
             boxShadow: '0 -24px 60px rgba(2,6,23,0.45)',
@@ -1327,10 +1335,34 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
               )}
 
               {error && (
-                <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-[13px] text-red-100" role="alert">
-                  {error.message?.includes('session_closed')
-                    ? 'השיחה נסגרה. אפשר לפתוח מחדש או להתחיל שיחה חדשה.'
-                    : 'שליחת ההודעה נכשלה. נסה שוב בעוד כמה שניות.'}
+                <div
+                  className="relative overflow-hidden rounded-[22px] px-3.5 py-3 text-right"
+                  role="alert"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 100%)',
+                    border: '1px solid rgba(255,255,255,0.28)',
+                    boxShadow:
+                      'inset 0 1px 0 rgba(255,255,255,0.35), 0 12px 32px rgba(15,23,42,0.28)',
+                    backdropFilter: 'blur(22px)',
+                    WebkitBackdropFilter: 'blur(22px)',
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 top-0 h-1/2"
+                    style={{
+                      background:
+                        'linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 100%)',
+                    }}
+                  />
+                  <p className="relative text-[13px] font-semibold leading-relaxed text-white">
+                    {error.message?.includes('session_closed')
+                      ? 'השיחה נסגרה. אפשר לפתוח מחדש או להתחיל שיחה חדשה.'
+                      : error.message && /[\u0590-\u05FF]/.test(error.message)
+                        ? error.message
+                        : 'לא הצלחנו לשלוח את ההודעה. אפשר לנסות שוב בעוד רגע.'}
+                  </p>
                 </div>
               )}
               {answerReadyToast && (
