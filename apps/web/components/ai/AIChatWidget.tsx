@@ -299,26 +299,76 @@ function AlmogChatTypingDots() {
   );
 }
 
-function typingEllipsis(step: number): string {
-  const frames = ['.', '..', '...'];
-  return frames[step % frames.length] ?? '.';
+function TypingDotsLabel({ prefix }: { prefix: string }) {
+  return (
+    <span className="inline-flex items-baseline gap-0 text-[11px] font-medium text-emerald-50/90">
+      {prefix}
+      <span className="almog-typing-dots ms-0.5 inline-flex w-[1.15em] justify-start tracking-tight" aria-hidden>
+        <span>.</span>
+        <span>.</span>
+        <span>.</span>
+      </span>
+    </span>
+  );
 }
 
-/**
- * סטטוסים טבעיים ואנושיים שאלמוג "חושב/קורא/מנסח" — מתקדמים לפי זמן ההמתנה
- * כדי שהמשתמש לא ישתעמם בזמן שהמודל חושב (reasoning מוסיף השהיה לפני התו הראשון).
- * נשמע כמו חבר אמיתי, לא כמו ספינר טכני.
- */
-const ALMOG_STATUS_PHRASES: readonly string[] = [
-  'אלמוג קורא מה שכתבת',
-  'הוא רגע מחבר את זה אליך',
-  'אלמוג מנסח לך תשובה מדויקת',
-  'זה לוקח עוד רגע כי הוא לא רוצה לזרוק תשובה סתם',
-  'אלמוג עדיין איתך — הוא מסדר את זה לצעד שאפשר לעשות',
-];
+function ThreadPresenceText({
+  showLoading,
+  online,
+  isSessionClosed,
+}: {
+  showLoading: boolean;
+  online: boolean;
+  isSessionClosed: boolean;
+}) {
+  if (showLoading) return <TypingDotsLabel prefix="מקליד" />;
+  if (!online) return <span className="text-[11px] font-medium text-rose-100/85">בלי חיבור</span>;
+  if (isSessionClosed) return <span className="text-[11px] font-medium text-white/70">שיחה נסגרה</span>;
+  return <span className="text-[11px] font-medium text-emerald-50/90">זמין</span>;
+}
 
-/** ספי הזמן (ms) למעבר בין הסטטוסים. */
-const ALMOG_STATUS_THRESHOLDS_MS: readonly number[] = [1500, 4500, 9000, 15000];
+function MessageTicks({ state }: { state: 'sent' | 'delivered' | 'read' }) {
+  const color = state === 'read' ? '#7dd3fc' : 'rgba(203,213,225,0.92)';
+  const label = state === 'read' ? 'נקראה' : state === 'delivered' ? 'התקבלה' : 'נשלחה';
+  return (
+    <span className="inline-flex h-3 w-[18px] items-center justify-end" title={label} aria-label={label}>
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="none" aria-hidden>
+        <path
+          d="M1.2 5.6 3.4 8.1 8.4 1.4"
+          stroke={color}
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {state !== 'sent' ? (
+          <path
+            d="M6.6 5.6 8.8 8.1 14.6 1.3"
+            stroke={color}
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ) : null}
+      </svg>
+    </span>
+  );
+}
+
+function userMessageTickState(
+  index: number,
+  messages: Array<{ role: string }>,
+  chatStatus: string,
+  hasError: boolean
+): 'sent' | 'delivered' | 'read' {
+  const hasLaterAssistant = messages.slice(index + 1).some((m) => m.role === 'assistant');
+  if (hasLaterAssistant) return 'read';
+  const lastUserIndex = messages.reduce((acc, m, i) => (m.role === 'user' ? i : acc), -1);
+  if (index !== lastUserIndex) return 'delivered';
+  if (hasError) return 'sent';
+  if (chatStatus === 'submitted') return 'sent';
+  if (chatStatus === 'streaming') return 'delivered';
+  return 'delivered';
+}
 
 /** ציטוט ווטסאפ בתוך בועת הודעה */
 function WhatsAppQuote({ author, text }: { author: string; text: string }) {
@@ -360,80 +410,6 @@ function ChatSessionClosingOverlay({ visible }: { visible: boolean }) {
   );
 }
 
-function ThreadStatusPill({
-  status,
-  children,
-}: {
-  status: 'online' | 'typing' | 'thinking' | 'closed' | 'offline';
-  children: ReactNode;
-}) {
-  const palette = {
-    online: {
-      bg: 'linear-gradient(135deg, rgba(16,185,129,0.45), rgba(52,211,153,0.28))',
-      border: 'rgba(110,231,183,0.55)',
-      dot: '#6ee7b7',
-      text: '#ecfdf5',
-    },
-    typing: {
-      bg: 'linear-gradient(135deg, rgba(6,182,212,0.42), rgba(34,211,238,0.22))',
-      border: 'rgba(34,211,238,0.5)',
-      dot: '#67e8f9',
-      text: '#ecfeff',
-    },
-    thinking: {
-      bg: 'linear-gradient(135deg, rgba(245,158,11,0.42), rgba(251,191,36,0.22))',
-      border: 'rgba(251,191,36,0.52)',
-      dot: '#fcd34d',
-      text: '#fffbeb',
-    },
-    closed: {
-      bg: 'linear-gradient(135deg, rgba(100,116,139,0.42), rgba(148,163,184,0.22))',
-      border: 'rgba(148,163,184,0.48)',
-      dot: '#94a3b8',
-      text: '#f8fafc',
-    },
-    offline: {
-      bg: 'linear-gradient(135deg, rgba(244,63,94,0.38), rgba(251,113,133,0.2))',
-      border: 'rgba(251,113,133,0.48)',
-      dot: '#fb7185',
-      text: '#fff1f2',
-    },
-  } as const;
-  const s = palette[status];
-  const pulsing = status === 'typing' || status === 'thinking';
-
-  return (
-    <span
-      className="inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold"
-      style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.text }}
-    >
-      <span
-        className={`h-1.5 w-1.5 shrink-0 rounded-full ${pulsing ? 'animate-pulse' : ''}`}
-        style={{ background: s.dot, boxShadow: pulsing ? `0 0 6px ${s.dot}` : undefined }}
-      />
-      <span className="truncate">{children}</span>
-    </span>
-  );
-}
-
-function threadStatusLabel(
-  showLoading: boolean,
-  isThinking: boolean,
-  online: boolean,
-  isSessionClosed: boolean,
-  almogStatusText: string,
-  typingStep: number
-): { status: 'online' | 'typing' | 'thinking' | 'closed' | 'offline'; label: string } {
-  if (showLoading) {
-    return isThinking
-      ? { status: 'thinking', label: `${almogStatusText}${typingEllipsis(typingStep)}` }
-      : { status: 'typing', label: `מקליד${typingEllipsis(typingStep)}` };
-  }
-  if (!online) return { status: 'offline', label: 'בלי חיבור' };
-  if (isSessionClosed) return { status: 'closed', label: 'שיחה נסגרה' };
-  return { status: 'online', label: 'זמין עכשיו' };
-}
-
 function ThreadHeaderIconButton({
   label,
   onClick,
@@ -470,11 +446,10 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const displayName = firstName?.trim() || '';
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
+  const [sheetHeight, setSheetHeight] = useState('min(96dvh, 960px)');
   const [profileOnboardingOpen, setProfileOnboardingOpen] = useState(false);
   const [online, setOnline] = useState(true);
   const [input, setInput] = useState('');
-  const [typingStep, setTypingStep] = useState(0);
-  const [statusIdx, setStatusIdx] = useState(0);
   const [waitSeconds, setWaitSeconds] = useState(0);
   const [notifyWhenReady, setNotifyWhenReady] = useState(false);
   const [answerReadyToast, setAnswerReadyToast] = useState(false);
@@ -943,16 +918,6 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const isLongWait = isThinking && waitSeconds >= 15;
   useEffect(() => {
     if (!showLoading) {
-      setTypingStep(0);
-      return;
-    }
-    const id = window.setInterval(() => {
-      setTypingStep((s) => (s + 1) % 3);
-    }, 420);
-    return () => window.clearInterval(id);
-  }, [showLoading]);
-  useEffect(() => {
-    if (!showLoading) {
       setWaitSeconds(0);
       return;
     }
@@ -963,18 +928,6 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     }, 1000);
     return () => window.clearInterval(id);
   }, [showLoading]);
-  // התקדמות הסטטוסים הטבעיים לפי זמן ההמתנה.
-  useEffect(() => {
-    if (!isThinking) {
-      setStatusIdx(0);
-      return;
-    }
-    const timers = ALMOG_STATUS_THRESHOLDS_MS.map((ms, i) =>
-      window.setTimeout(() => setStatusIdx(i + 1), ms)
-    );
-    return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [isThinking]);
-  const almogStatusText = ALMOG_STATUS_PHRASES[statusIdx] ?? ALMOG_STATUS_PHRASES[0];
 
   useEffect(() => {
     if (wasLoadingRef.current && !showLoading) {
@@ -1021,6 +974,8 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
         if (next) {
           setHasBackgroundAnswer(false);
           setAnswerReadyToast(false);
+          const px = Math.min(Math.round(window.innerHeight * 0.96), 960);
+          setSheetHeight(`${px}px`);
         }
         if (!next) {
           setPanelView('inbox');
@@ -1030,6 +985,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
       }}
       direction="bottom"
       shouldScaleBackground={false}
+      repositionInputs={false}
     >
       {!profileOnboardingOpen ? (
         <Drawer.Trigger asChild>
@@ -1064,8 +1020,9 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
           dir="rtl"
           className="almog-chat-surface fixed inset-x-0 bottom-0 z-[210] mx-auto flex w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] outline-none"
           style={{
-            height: 'min(96dvh, 960px)',
-            maxHeight: '96dvh',
+            height: sheetHeight,
+            minHeight: sheetHeight,
+            maxHeight: sheetHeight,
             border: '1px solid rgba(255,255,255,0.18)',
             background: 'linear-gradient(180deg, rgba(15,23,42,0.96), rgba(2,6,23,0.96))',
             boxShadow: '0 -24px 60px rgba(2,6,23,0.45)',
@@ -1202,19 +1159,13 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                         }}
                       />
                     </div>
-                    <div className="flex flex-col items-start gap-1">
+                    <div className="flex flex-col items-start">
                       <p className="text-[16px] font-black leading-none text-white">אלמוג</p>
-                      {(() => {
-                        const { status, label } = threadStatusLabel(
-                          showLoading,
-                          isThinking,
-                          online,
-                          isSessionClosed,
-                          almogStatusText,
-                          typingStep
-                        );
-                        return <ThreadStatusPill status={status}>{label}</ThreadStatusPill>;
-                      })()}
+                      <ThreadPresenceText
+                        showLoading={showLoading}
+                        online={online}
+                        isSessionClosed={isSessionClosed}
+                      />
                     </div>
                   </div>
 
@@ -1340,10 +1291,10 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                   role="alert"
                   style={{
                     background:
-                      'linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 100%)',
-                    border: '1px solid rgba(255,255,255,0.28)',
+                      'linear-gradient(165deg, rgba(254,226,226,0.22) 0%, rgba(127,29,29,0.42) 48%, rgba(69,10,10,0.38) 100%)',
+                    border: '1px solid rgba(252,165,165,0.45)',
                     boxShadow:
-                      'inset 0 1px 0 rgba(255,255,255,0.35), 0 12px 32px rgba(15,23,42,0.28)',
+                      'inset 0 1px 0 rgba(254,202,202,0.35), 0 14px 36px rgba(127,29,29,0.28)',
                     backdropFilter: 'blur(22px)',
                     WebkitBackdropFilter: 'blur(22px)',
                   }}
@@ -1353,10 +1304,10 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                     className="pointer-events-none absolute inset-x-0 top-0 h-1/2"
                     style={{
                       background:
-                        'linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 100%)',
+                        'linear-gradient(180deg, rgba(254,226,226,0.28) 0%, rgba(254,226,226,0) 100%)',
                     }}
                   />
-                  <p className="relative text-[13px] font-semibold leading-relaxed text-white">
+                  <p className="relative text-[13px] font-semibold leading-relaxed text-rose-50">
                     {error.message?.includes('session_closed')
                       ? 'השיחה נסגרה. אפשר לפתוח מחדש או להתחיל שיחה חדשה.'
                       : error.message && /[\u0590-\u05FF]/.test(error.message)
@@ -1397,8 +1348,16 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                           <WhatsAppQuote author="אלמוג" text={quotedReply.mentorMessage} />
                         )}
                         <p className="whitespace-pre-wrap">{text}</p>
-                        <div className="mt-1.5 text-[10px] text-slate-400">
-                          {formatHebrewTime(getMessageCreatedAt(msg))}
+                        <div className="mt-1.5 flex items-center justify-end gap-1 text-[10px] text-slate-400">
+                          <span>{formatHebrewTime(getMessageCreatedAt(msg))}</span>
+                          <MessageTicks
+                            state={userMessageTickState(
+                              i,
+                              messages,
+                              status,
+                              Boolean(error)
+                            )}
+                          />
                         </div>
                       </div>
                     ) : (
@@ -1445,9 +1404,6 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                   >
                     <div className="inline-flex items-center gap-2">
                       <AlmogChatTypingDots />
-                      {isThinking ? (
-                        <span className="text-[12px] text-white/70">{almogStatusText}</span>
-                      ) : null}
                     </div>
                     {isLongWait ? (
                       <div className="mt-2 border-t border-white/10 pt-2 text-[11px] leading-relaxed text-slate-300">
