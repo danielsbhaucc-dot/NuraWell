@@ -301,15 +301,41 @@ function AlmogChatTypingDots() {
 
 function TypingDotsLabel({ prefix }: { prefix: string }) {
   return (
-    <span className="inline-flex items-baseline gap-0 text-[11px] font-medium text-emerald-50/90">
+    <span className="inline-flex items-baseline">
       {prefix}
-      <span className="almog-typing-dots ms-0.5 inline-flex w-[1.15em] justify-start tracking-tight" aria-hidden>
+      <span className="almog-typing-dots ms-0.5 inline-flex w-[1.1em] justify-start tracking-tight" aria-hidden>
         <span>.</span>
         <span>.</span>
         <span>.</span>
       </span>
     </span>
   );
+}
+
+function PresenceDot({ tone }: { tone: 'live' | 'typing' | 'off' }) {
+  const color =
+    tone === 'typing' ? 'bg-sky-300' : tone === 'off' ? 'bg-white/45' : 'bg-emerald-300';
+  const glow =
+    tone === 'typing'
+      ? 'bg-sky-300/70'
+      : tone === 'off'
+        ? 'bg-white/20'
+        : 'bg-emerald-300/70';
+  return (
+    <span className="relative mt-px flex h-2 w-2 shrink-0">
+      {tone !== 'off' ? (
+        <span className={`absolute inset-0 rounded-full ${glow} ${tone === 'typing' ? 'animate-ping' : 'animate-pulse'}`} />
+      ) : null}
+      <span
+        className={`relative h-2 w-2 rounded-full ${color}`}
+        style={{ boxShadow: tone === 'live' ? '0 0 8px rgba(110,231,183,0.95)' : undefined }}
+      />
+    </span>
+  );
+}
+
+function presenceRowClass(extra: string): string {
+  return `mt-1.5 inline-flex items-center gap-1.5 text-[13.5px] font-medium leading-none tracking-[0.01em] ${extra}`;
 }
 
 function ThreadPresenceText({
@@ -321,34 +347,71 @@ function ThreadPresenceText({
   online: boolean;
   isSessionClosed: boolean;
 }) {
-  if (showLoading) return <TypingDotsLabel prefix="מקליד" />;
-  if (!online) return <span className="text-[11px] font-medium text-rose-100/85">בלי חיבור</span>;
-  if (isSessionClosed) return <span className="text-[11px] font-medium text-white/70">שיחה נסגרה</span>;
-  return <span className="text-[11px] font-medium text-emerald-50/90">זמין</span>;
+  const typeface = { fontFamily: "var(--font-rubik), var(--font-heebo), sans-serif" } as const;
+  if (showLoading) {
+    return (
+      <span className={presenceRowClass('text-sky-50')} style={typeface}>
+        <PresenceDot tone="typing" />
+        <TypingDotsLabel prefix="מקליד" />
+      </span>
+    );
+  }
+  if (!online) {
+    return (
+      <span className={presenceRowClass('text-white/70')} style={typeface}>
+        <PresenceDot tone="off" />
+        בלי חיבור
+      </span>
+    );
+  }
+  if (isSessionClosed) {
+    return (
+      <span className={presenceRowClass('text-white/75')} style={typeface}>
+        <PresenceDot tone="off" />
+        שיחה נסגרה
+      </span>
+    );
+  }
+  return (
+    <span className={presenceRowClass('text-emerald-50')} style={typeface}>
+      <PresenceDot tone="live" />
+      זמין
+    </span>
+  );
 }
 
 function MessageTicks({ state }: { state: 'sent' | 'delivered' | 'read' }) {
-  const color = state === 'read' ? '#7dd3fc' : 'rgba(203,213,225,0.92)';
+  const color = state === 'read' ? '#53bdeb' : 'rgba(226,232,240,0.88)';
   const label = state === 'read' ? 'נקראה' : state === 'delivered' ? 'התקבלה' : 'נשלחה';
   return (
-    <span className="inline-flex h-3 w-[18px] items-center justify-end" title={label} aria-label={label}>
-      <svg width="16" height="11" viewBox="0 0 16 11" fill="none" aria-hidden>
-        <path
-          d="M1.2 5.6 3.4 8.1 8.4 1.4"
-          stroke={color}
-          strokeWidth="1.7"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {state !== 'sent' ? (
+    <span className="inline-flex h-[11px] w-[18px] items-center justify-end" title={label} aria-label={label}>
+      <svg width="18" height="11" viewBox="0 0 18 11" fill="none" aria-hidden>
+        {state === 'sent' ? (
           <path
-            d="M6.6 5.6 8.8 8.1 14.6 1.3"
+            d="M2 6.1 4.35 8.6 10.2 1.6"
             stroke={color}
-            strokeWidth="1.7"
+            strokeWidth="1.65"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-        ) : null}
+        ) : (
+          <>
+            <path
+              d="M1.15 6.05 3.4 8.55 8.7 1.7"
+              stroke={color}
+              strokeWidth="1.65"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M6.4 6.05 8.7 8.55 16.35 1.45"
+              stroke={color}
+              strokeWidth="1.65"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </>
+        )}
       </svg>
     </span>
   );
