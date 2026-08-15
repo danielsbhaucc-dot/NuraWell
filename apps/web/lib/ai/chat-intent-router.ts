@@ -36,6 +36,14 @@ const COACHING_RE =
 const SIMPLE_RE =
   /^(?:תודה|תודה רבה|אוקי|אוקיי|סבבה|יופי|היי|שלום|כן|לא|עשיתי|סיימתי|הבנתי)[\s!.]*$/u;
 
+/** תירוץ/התחמקות ברורה — Grok קורא את זה, Terra נוטה לקנות. */
+const EXCUSE_RE =
+  /(?:שכחתי|לא בא לי|התחמק|תירוץ|ברחתי מ|נדחה ל|נדחה את|לא הספקתי|מחר אתחיל|זה לא אני|כולם עושים|זה בגלל העבודה|זה בגלל הילדים|פספסתי כי|לא עשיתי כי|אין מצב היום|אי אפשר עכשיו|אולי אחר כך|נתקעתי בדרך)/u;
+
+const BUSY_RE = /(?:אין לי זמן|יום עמוס|הייתי עסוק)/u;
+
+const SKIPPED_RE = /(?:דילג|לא עשיתי|פספס|ויתר|לא התחל|ברח|נדחה)/u;
+
 /**
  * מצבים שבהם GPT/Gemini/Terra נוטים לרצות את המשתמש במקום לעמוד במקום.
  * חייבים Grok או Claude — אף פעם לא Terra/Llama.
@@ -52,6 +60,14 @@ function clampScore(n: number): number {
 
 function pickWinner(scores: WriterScores, tags: string[]): ChatWriterKey {
   if (tags.includes('safety') || tags.includes('boundaries')) return 'claude5';
+
+  if (tags.includes('warm_boundary') || (tags.includes('empathy') && tags.includes('adult'))) {
+    return 'claude5';
+  }
+
+  if (tags.includes('evasion') && !tags.includes('adult')) {
+    return 'grok';
+  }
 
   if (tags.includes('people_please')) {
     if (tags.includes('adult') && scores.claude5 + 4 >= scores.grok) return 'claude5';
@@ -102,6 +118,10 @@ export function analyzeWriterIntent(
   const peoplePlease = PEOPLE_PLEASE_RE.test(t) || accusation || argument || rude;
   const adultLine = ADULT_LINE_RE.test(t);
   const conflict = accusation || argument || rude;
+  const excuse = EXCUSE_RE.test(t);
+  const busy = BUSY_RE.test(t);
+  const skipped = SKIPPED_RE.test(t);
+  const evasion = excuse || (busy && skipped) || (busy && !coaching && !simple);
 
   if (danger) {
     tags.push('safety');
@@ -135,9 +155,15 @@ export function analyzeWriterIntent(
   if (empathy) {
     tags.push('empathy');
     scores.terra += 36;
-    if (!conflict && !grokSpark) scores.grok -= 4;
+    if (!conflict && !grokSpark && !evasion) scores.grok -= 4;
   }
-  if (coaching && !conflict && !danger) {
+  if (evasion && !danger && !boundaries) {
+    tags.push('evasion');
+    scores.grok += 40;
+    scores.terra = Math.min(scores.terra, 22);
+    scores.llama4 = Math.min(scores.llama4, 8);
+  }
+  if (coaching && !conflict && !danger && !evasion) {
     tags.push('coaching');
     scores.terra += 22;
   }
@@ -165,7 +191,11 @@ export function analyzeWriterIntent(
     scores.claude5 += 32;
     scores.terra -= 10;
   }
-  if (signals.blocker_mentioned && !danger && !peoplePlease) {
+  if (empathy && (danger || boundaries || adultLine)) {
+    tags.push('warm_boundary');
+    scores.claude5 += 18;
+  }
+  if (signals.blocker_mentioned && !danger && !peoplePlease && !evasion) {
     scores.terra += 10;
     scores.grok += 8;
   }
@@ -218,7 +248,7 @@ export function mergeWriterDecisions(
   if (heuristicTags.includes('safety') || heuristicTags.includes('boundaries')) {
     return 'claude5';
   }
-  if (heuristic === 'claude5') return 'claude5';
+  if (heuristicTags.includes('warm_boundary') || heuristic === 'claude5') return 'claude5';
 
   const blended = blendScores(llamaScores, heuristicScores);
   const tags = [...heuristicTags];
@@ -232,16 +262,41 @@ export function mergeWriterDecisions(
   }
 
   if (heuristicTags.includes('people_please')) {
-    return heuristicTags.includes('adult') ? 'claude5' : 'grok';
+    return heuristicTags.includes('adult') || heuristicTags.includes('warm_boundary')
+      ? 'claude5'
+      : 'grok';
   }
+  if (heuristicTags.includes('evasion')) return 'grok';
   if (heuristic === 'grok') return 'grok';
   const grokConflict =
     heuristicTags.includes('argument') ||
     heuristicTags.includes('accusation') ||
     heuristicTags.includes('direct') ||
-    heuristicTags.includes('rude');
+    heuristicTags.includes('rude') ||
+    heuristicTags.includes('evasion');
   if (llamaChoice === 'grok' && grokConflict) return 'grok';
   return heuristic;
+}
+
+export function writerStancePrompt(tags: string[]): string | null {
+  const hardLine =
+    tags.includes('safety') || tags.includes('boundaries') || tags.includes('adult');
+  const empathy = tags.includes('empathy');
+  const evasion = tags.includes('evasion');
+
+  if (hardLine && empathy) {
+    return `[עמדת תור] כאב אמיתי וגם גבול. שתי שכבות באותה תשובה: הכרה קצרה ואנושית בכאב, ואז גבול ברור שלא מתקפל. אסור לרצות, אסור להתעלם מהרגש.`;
+  }
+  if (evasion && empathy) {
+    return `[עמדת תור] יש רגש ויש התחמקות. הכרה קצרה ברגש, אחר כך קרא את התירוץ ישר. אל תאשר את ההתחמקות ואל תהפוך את הכאב לפטור.`;
+  }
+  if (evasion) {
+    return `[עמדת תור] התחמקות או תירוץ. קרא את זה ישר, בלי דרמה מתוקה ובלי לקנות את הסיפור. אפשר חיוך חד, לא השפלה.`;
+  }
+  if (hardLine) {
+    return `[עמדת תור] גבול אתי/תוכניתי. עמוד במקום בחום בוגר, בלי השפלה ובלי אישור לעקוף.`;
+  }
+  return null;
 }
 
 export function writerRouterInstructions(): string {
@@ -249,19 +304,20 @@ export function writerRouterInstructions(): string {
 תן ציון 0-100 לכל כותב לפי כמה הוא *הכי טוב* להודעה הזו, לא לפי מי ברירת מחדל.
 
 פרופילי כותבים:
-- grok: חזק מאוד. ויכוח, האשמות כלפי אלמוג, סתירות, דיבור לא מכבד, "תגיד לי ישר", דחיפה חדה, הומור/ציניות, לקרוא תירוצים, שכנוע לוגי, "תוכיח", אתגר מדעי, משתמש שמאתגר את אלמוג. תן לו מקום — אל תברר אותו לטרה רק כי הטון הכללי חם.
-- claude5: מבוגר אחראי. סכנה, פגיעה עצמית, מחשבות אובדניות, הפרעות אכילה קיצוניות, בקשה לעקוף תוכנית/לשקר לצוות/להסתיר ממטפל, העמדת גבולות רצינית, אתיקה. לא haiku. אם יש סכנה — הוא מנצח גם מול grok.
-- terra: אמפתיה גבוהה, ליווי רגשי עדין, בושה/בדידות/פחד/יום קשה, תזונה והרגלים בטון חם, שגרה וצעד הבא, שיחת מנטור רגילה בלי עימות.
+- grok: חזק מאוד. ויכוח, האשמות כלפי אלמוג, סתירות, דיבור לא מכבד, "תגיד לי ישר", דחיפה חדה, הומור/ציניות, לקרוא תירוצים והתחמקויות ("אין לי זמן"+"דילגתי", שכחתי, לא בא לי, מחר אתחיל), שכנוע לוגי, "תוכיח", אתגר מדעי. תן לו מקום — אל תברר אותו לטרה רק כי הטון הכללי חם או כי יש גם קצת כאב.
+- claude5: מבוגר אחראי. סכנה, פגיעה עצמית, מחשבות אובדניות, הפרעות אכילה קיצוניות, בקשה לעקוף תוכנית/לשקר לצוות/להסתיר ממטפל, העמדת גבולות רצינית, אתיקה. כשיש *גם* כאב אמיתי וגם גבול — הוא הכותב (חום + קו שלא מתקפל). לא haiku. אם יש סכנה — הוא מנצח גם מול grok.
+- terra: אמפתיה גבוהה, ליווי רגשי עדין, בושה/בדידות/פחד/יום קשה, תזונה והרגלים בטון חם, שגרה וצעד הבא, שיחת מנטור רגילה בלי עימות ובלי התחמקות.
 - llama4: דגש קטן בלבד. רק אישור/תודה/היי/עשיתי קצר בלי רגש ובלי ויכוח. אם יש ספק — לא llama4.
 
 כללי הכרעה:
-1) סכנה או גבולות קליניים/אתיים -> claude5 גם אם יש ויכוח.
-2) *נטייה לרצות* (GPT/Gemini/Terra מתקפלים): האשמה, "תסכים איתי", "תגיד שאני צודק", "תתנצל", לחץ רגשי על אלמוג, בקשה שיגיד מה שהמשתמש רוצה לשמוע. אסור terra/llama4. בחר grok או claude5 לפי חוזקה: עימות/האשמה/ישירות -> grok; קו אדום/אתיקה/אישור לעקוף -> claude5.
-3) עימות/האשמה/ישירות בלי סכנה -> grok, גם אם יש קצת תסכול רגשי.
-4) כאב רך בלי תקיפה ובלי לחץ לרצות -> terra.
-5) תור תפעולי קצר מאוד -> llama4.
-6) בספק בין grok לterra כשיש נימה חדה, אתגר או נטייה לרצות — בחר grok.
-7) בספק בין claude5 לgrok בלי סכנה אמיתית — grok.
+1) סכנה או גבולות קליניים/אתיים -> claude5 גם אם יש ויכוח או כאב.
+2) *אמפתיה + גבול* (כואב וגם מבקש לדלג/לעקוף/להסתיר) -> claude5. אסור terra (מתקפל) ואסור grok לבד (חד מדי בלי הכלה).
+3) תירוץ/התחמקות בלי סכנה -> grok, גם אם יש קצת רגש. "אין לי זמן" כתכנון ארוחה/שגרה בלי דילוג -> terra.
+4) *נטייה לרצות*: האשמה, "תסכים איתי", לחץ רגשי על אלמוג. אסור terra/llama4. עימות -> grok; אישור לעקוף -> claude5.
+5) עימות/האשמה/ישירות בלי סכנה -> grok.
+6) כאב רך בלי תקיפה, בלי התחמקות, בלי לחץ לרצות -> terra.
+7) תור תפעולי קצר מאוד -> llama4.
+8) בספק בין grok לterra כשיש תירוץ, אתגר או נטייה לרצות — בחר grok.
 
 החזר גם writer_scores (ארבעה מספרים) ו-writer_confidence (0-100) ו-intent (תגיות קצרות).`;
 }
