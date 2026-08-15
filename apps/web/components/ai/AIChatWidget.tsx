@@ -192,32 +192,28 @@ function renderInlineStyledText(text: string): ReactNode[] {
         const clean = token.replace(/^(\*\*|__|\*)/, '').replace(/(\*\*|__|\*)$/, '').trim();
         if (!clean) return <Fragment key={`txt-${index}`}>{token}</Fragment>;
         if (isStrong) {
-          // הדגשה חזקה: "מרקר" עדין עם קו-תחתון מואר וזוהר רך — בולט נקי בלי קופסה כבדה.
           return (
             <span
               key={`hl-${index}`}
-              className="mx-[1px] rounded-[5px] px-1 font-extrabold"
+              className="mx-[1px] rounded-[4px] px-[3px] font-extrabold"
               style={{
-                color: '#ffffff',
+                color: '#fffbeb',
                 background:
-                  'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.16) 55%, rgba(255,255,255,0.04) 100%)',
-                boxShadow:
-                  'inset 0 -0.5em 0 rgba(255,255,255,0.14), 0 1px 0 rgba(255,255,255,0.25)',
-                textShadow: '0 1px 2px rgba(2,6,23,0.25)',
+                  'linear-gradient(180deg, rgba(253,230,138,0.42) 0%, rgba(245,158,11,0.55) 100%)',
+                boxShadow: 'inset 0 -0.12em 0 rgba(180,83,9,0.45)',
               }}
             >
               {clean}
             </span>
           );
         }
-        // הדגשה רכה: משקל בינוני + קו-תחתון דק כמו סימון עט, בלי רקע.
         return (
           <span
             key={`hl-${index}`}
             className="font-semibold"
             style={{
-              color: '#ffffff',
-              borderBottom: '1.5px solid rgba(255,255,255,0.4)',
+              color: '#fef3c7',
+              borderBottom: '2px solid rgba(251,191,36,0.85)',
               paddingBottom: '0.5px',
             }}
           >
@@ -231,12 +227,6 @@ function renderInlineStyledText(text: string): ReactNode[] {
 
 function renderAlmogMessage(text: string): ReactNode {
   const blocks = parseMessageBlocks(text);
-  const listAccentPalette = [
-    { from: '#10b981', to: '#059669', text: '#ecfdf5', glow: 'rgba(16,185,129,0.35)' },
-    { from: '#14b8a6', to: '#0f766e', text: '#f0fdfa', glow: 'rgba(20,184,166,0.35)' },
-    { from: '#22c55e', to: '#15803d', text: '#f0fdf4', glow: 'rgba(34,197,94,0.3)' },
-    { from: '#34d399', to: '#047857', text: '#ecfdf5', glow: 'rgba(52,211,153,0.32)' },
-  ];
   return (
     <div className="space-y-2.5">
       {blocks.map((block, blockIndex) => {
@@ -249,38 +239,37 @@ function renderAlmogMessage(text: string): ReactNode {
         }
 
         return (
-          <div
-            key={`l-${blockIndex}`}
-            className="rounded-xl border border-white/20 bg-white/10 px-3 py-2"
-            style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)' }}
-          >
-            <ul className="m-0 list-none space-y-2 p-0">
-              {block.items.map((item, itemIndex) => (
-                <li
-                  key={`li-${blockIndex}-${itemIndex}`}
-                  className="flex items-start gap-2.5 border-b border-white/15 pb-2 last:border-b-0 last:pb-0"
-                >
-                  {(() => {
-                    const accent = listAccentPalette[itemIndex % listAccentPalette.length];
-                    return (
+          <ul key={`l-${blockIndex}`} className="m-0 list-none space-y-1.5 p-0">
+            {block.items.map((item, itemIndex) => (
+              <li
+                key={`li-${blockIndex}-${itemIndex}`}
+                className="flex items-start gap-2.5"
+              >
+                {item.kind === 'numbered' ? (
                   <span
-                    className="mt-1 inline-flex h-6 min-w-[1.65rem] items-center justify-center rounded-full px-1.5 text-[11px] font-extrabold tracking-tight"
+                    className="mt-0.5 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold tabular-nums"
                     style={{
-                      background: `linear-gradient(145deg, ${accent.from}, ${accent.to})`,
-                      color: accent.text,
-                      border: '1px solid rgba(255,255,255,0.45)',
-                      boxShadow: `0 6px 14px ${accent.glow}, inset 0 1px 0 rgba(255,255,255,0.38)`,
+                      background: 'rgba(253,230,138,0.22)',
+                      color: '#fef3c7',
+                      border: '1px solid rgba(251,191,36,0.45)',
                     }}
                   >
-                    {item.kind === 'numbered' ? item.number : '•'}
+                    {item.number}
                   </span>
-                    );
-                  })()}
-                  <span className="flex-1 leading-7">{renderInlineStyledText(item.text)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+                ) : (
+                  <span
+                    className="mt-[0.7em] inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{
+                      background: '#fbbf24',
+                      boxShadow: '0 0 0 3px rgba(251,191,36,0.18)',
+                    }}
+                    aria-hidden
+                  />
+                )}
+                <span className="min-w-0 flex-1 leading-7">{renderInlineStyledText(item.text)}</span>
+              </li>
+            ))}
+          </ul>
         );
       })}
     </div>
@@ -1034,7 +1023,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
         }
       }}
       direction="bottom"
-      shouldScaleBackground
+      shouldScaleBackground={false}
     >
       {!profileOnboardingOpen ? (
         <Drawer.Trigger asChild>
@@ -1067,18 +1056,17 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
         <Drawer.Overlay className="fixed inset-0 z-[200] bg-slate-900/55" />
         <Drawer.Content
           dir="rtl"
-          className="fixed bottom-0 right-0 left-0 z-[210] mx-auto w-full max-w-md rounded-t-[28px] outline-none"
+          className="almog-chat-surface fixed inset-x-0 bottom-0 z-[210] mx-auto flex h-[min(96dvh,960px)] max-h-[96dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] outline-none"
           style={{
             border: '1px solid rgba(255,255,255,0.18)',
             background: 'linear-gradient(180deg, rgba(15,23,42,0.96), rgba(2,6,23,0.96))',
             boxShadow: '0 -24px 60px rgba(2,6,23,0.45)',
-            height: 'min(94dvh, 720px)',
           }}
         >
           <Drawer.Title className="sr-only">שיחה עם אלמוג</Drawer.Title>
           <Drawer.Description className="sr-only">צ׳אט אישי עם המנטור אלמוג</Drawer.Description>
 
-          <div className="relative h-full flex flex-col overflow-hidden rounded-t-[28px] bg-transparent backdrop-blur-2xl">
+          <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[28px] bg-transparent backdrop-blur-2xl">
             <ChatSessionClosingOverlay visible={isClosing} />
             <div
               className={`shrink-0 rounded-t-[28px] text-white ${
@@ -1340,7 +1328,9 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
 
               {error && (
                 <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-[13px] text-red-100" role="alert">
-                  בעיה בקבלת תשובה. נסה שוב בעוד כמה שניות.
+                  {error.message?.includes('session_closed')
+                    ? 'השיחה נסגרה. אפשר לפתוח מחדש או להתחיל שיחה חדשה.'
+                    : 'שליחת ההודעה נכשלה. נסה שוב בעוד כמה שניות.'}
                 </div>
               )}
               {answerReadyToast && (

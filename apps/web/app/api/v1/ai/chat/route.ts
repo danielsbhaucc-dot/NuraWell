@@ -160,6 +160,9 @@ import { publicAppUrlForAiReferer } from '../../../../../lib/public-app-url';
 /** Vercel Edge — סטרימינג צ׳אט ו-TTFB נמוך קרוב ל-POP הגלובלי */
 export const runtime = 'edge';
 
+/** RAG + כותב ארוך; בלי זה Edge חותך ~25ש׳ והלקוח רואה כשל שליחה */
+export const maxDuration = 60;
+
 /** לא נשמרים סטטיים; תמיד ריצה צינורית עם cookies */
 export const dynamic = 'force-dynamic';
 
@@ -243,7 +246,7 @@ function pickEmptyResponseFallback(): string {
   return EMPTY_RESPONSE_FALLBACKS[idx] ?? EMPTY_RESPONSE_FALLBACKS[0];
 }
 
-const MIN_STREAM_PREFIX_CHARS = 12;
+const MIN_STREAM_PREFIX_CHARS = 4;
 
 /**
  * seed אקראי לכל בקשה. למה: חלק מספקי ה-Llama ב-OpenRouter דוגמים עם seed קבוע
@@ -271,7 +274,7 @@ function isStubModelReply(text: string): boolean {
 const CHAT_MAX_OUTPUT_TOKENS = (() => {
   const raw = process.env.AI_CHAT_MAX_OUTPUT_TOKENS?.trim();
   const n = raw ? Number(raw) : NaN;
-  return Number.isFinite(n) && n >= 200 && n <= 16384 ? Math.floor(n) : 8192;
+  return Number.isFinite(n) && n >= 200 && n <= 16384 ? Math.floor(n) : 4096;
 })();
 
 /** סף אזהרה — אם usage.outputTokens חוצה את הסף הזה, נסמן onFinish כ"כמעט קצוץ". */
@@ -889,7 +892,7 @@ async function createOpenRouterCheapTextResponse({
 function chatHistoryWindow(): number {
   const raw = process.env.AI_CHAT_HISTORY_WINDOW?.trim();
   const n = raw ? Number(raw) : NaN;
-  return Number.isFinite(n) && n >= 1 && n <= 6 ? Math.floor(n) : 2;
+  return Number.isFinite(n) && n >= 1 && n <= 20 ? Math.floor(n) : 10;
 }
 
 function currentIsraelDaypart(minutes: number): 'בוקר' | 'צהריים' | 'אחר הצהריים' | 'ערב' | 'לילה' {
@@ -2445,7 +2448,7 @@ export async function POST(request: Request) {
     })
     .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m))
     /**
-     * קובץ השיחה מחליף היסטוריה ארוכה — שולחים רק את התור האחרון (משתמש + עוזר קודם אם יש).
+     * קובץ השיחה משלים היסטוריה ארוכה; כאן שולחים את הסיבובים האחרונים לכותב.
      */
     .slice(-chatHistoryWindow());
 
@@ -3621,6 +3624,28 @@ export async function POST(request: Request) {
           piiShield,
         });
       }
+    }
+
+    const upstreamWriter = upstream.headers.get('x-ai-writer');
+    const isUiMessageStream = upstreamWriter === 'memory-recall-tools';
+
+    /**
+     * UI message stream (כלי recall) חייב להישאר בפרוטוקול המקורי.
+     * עטיפה כ-text/plain + דריסת x-ai-writer שוברת את הלקוח ("שליחה נכשלה").
+     */
+    if (isUiMessageStream) {
+      const uiHeaders = new Headers(upstream.headers);
+      uiHeaders.set('x-session-id', sessionId);
+      uiHeaders.set('x-debug-id', debugId);
+      uiHeaders.set('x-debug-stage', stage);
+      uiHeaders.set('x-ai-writer', 'memory-recall-tools');
+      uiHeaders.set('x-ai-model', assistantModelName);
+      uiHeaders.set('Cache-Control', 'no-cache, no-transform');
+      return new Response(upstream.body, {
+        status: upstream.status,
+        statusText: upstream.statusText,
+        headers: uiHeaders,
+      });
     }
 
     /*
