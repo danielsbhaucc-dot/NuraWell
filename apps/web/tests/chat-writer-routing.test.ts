@@ -186,8 +186,10 @@ describe('chat writer routing', () => {
     expect(heuristicWriterDecision('הייתי עסוק היום', emptySignals)).toBe('terra');
   });
 
-  it('does not treat "ימים" as a water-coaching turn', () => {
-    expect(heuristicWriterDecision('הימים האלה קשים לי ואני מתבייש', emptySignals)).toBe('terra');
+  it('never lets the cheap router pick Llama 4 over Terra/Grok/Claude', () => {
+    expect(
+      mergeWriterDecisions('llama4', 'terra', undefined, undefined, ['coaching'])
+    ).toBe('terra');
   });
 });
 

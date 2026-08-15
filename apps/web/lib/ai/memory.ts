@@ -94,6 +94,17 @@ export interface AiUserContext {
     available_picks: Array<{ courseId: string; courseTitle: string; reason: string }>;
     model: string | null;
   } | null;
+  /**
+   * כותב דביק לשיחה חיה — Grok/Claude נשארים כמה תורים באותו עימות/גבול.
+   * מתעדכן בכל הודעת צ'אט.
+   */
+  writer_stance?: {
+    writer: 'terra' | 'claude5' | 'grok' | 'llama4';
+    reason: string;
+    tags: string[];
+    turns: number;
+    updated_at: string;
+  } | null;
 }
 
 export interface BuildUserContextResult {
@@ -381,6 +392,7 @@ export async function updateAiContext(
     'struggles',
     'daily_availability',
     'guide_companion',
+    'writer_stance',
   ];
 
   const { data: existing } = await supabase
@@ -406,6 +418,10 @@ export async function updateAiContext(
   }
   if (filtered.life_context === null) {
     const { life_context: _lc, ...rest } = merged;
+    merged = rest;
+  }
+  if (filtered.writer_stance === null) {
+    const { writer_stance: _ws, ...rest } = merged;
     merged = rest;
   }
   if ((filtered as { daily_availability?: unknown }).daily_availability === null) {

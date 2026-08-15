@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseLlmJsonObject } from '../lib/ai/parse-llm-json';
 import { mergeTranscriptWithClientMessages } from '../lib/ai/chat-sessions/fetch-transcript';
 import { chatWriterFallbackSlugs } from '../lib/ai/chat-writer-fleet';
+import { applyStickyWriterStance } from '../lib/ai/writer-stance-memory';
 
 describe('parseLlmJsonObject', () => {
   it('parses fenced JSON from a chat router', () => {
@@ -32,5 +33,62 @@ describe('chatWriterFallbackSlugs', () => {
     const fallbacks = chatWriterFallbackSlugs('openai/gpt-5.6-terra');
     expect(fallbacks.some((s) => /llama/i.test(s))).toBe(false);
     expect(fallbacks.length).toBeGreaterThan(0);
+  });
+});
+
+describe('applyStickyWriterStance', () => {
+  const now = new Date('2026-08-15T20:00:00Z');
+
+  it('keeps Grok on a short excuse follow-up', () => {
+    const out = applyStickyWriterStance({
+      turnWriter: 'terra',
+      turnTags: [],
+      sticky: {
+        writer: 'grok',
+        reason: 'confrontation',
+        tags: ['evasion'],
+        turns: 1,
+        updated_at: '2026-08-15T19:55:00Z',
+      },
+      userMessage: 'כן אבל שוב שכחתי',
+      now,
+    });
+    expect(out.writer).toBe('grok');
+    expect(out.stickyApplied).toBe(true);
+  });
+
+  it('releases Grok when the user starts a new coaching question', () => {
+    const out = applyStickyWriterStance({
+      turnWriter: 'terra',
+      turnTags: ['coaching'],
+      sticky: {
+        writer: 'grok',
+        reason: 'confrontation',
+        tags: ['evasion'],
+        turns: 2,
+        updated_at: '2026-08-15T19:55:00Z',
+      },
+      userMessage: 'מה כדאי לי לאכול אחרי אימון?',
+      now,
+    });
+    expect(out.writer).toBe('terra');
+    expect(out.stickyApplied).toBe(false);
+  });
+
+  it('always lets Claude take a hard boundary even over sticky Grok', () => {
+    const out = applyStickyWriterStance({
+      turnWriter: 'claude5',
+      turnTags: ['safety'],
+      sticky: {
+        writer: 'grok',
+        reason: 'confrontation',
+        tags: ['evasion'],
+        turns: 1,
+        updated_at: '2026-08-15T19:55:00Z',
+      },
+      userMessage: 'אני רוצה להיעלם',
+      now,
+    });
+    expect(out.writer).toBe('claude5');
   });
 });
