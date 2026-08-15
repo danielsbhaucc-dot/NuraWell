@@ -30,8 +30,14 @@ html {
   }
 
   ::selection {
-    background: rgba(16, 185, 129, 0.25);
-    color: #064e3b;
+    background: rgba(245, 158, 11, 0.45);
+    color: #1c1917;
+  }
+
+  .almog-chat-surface ::selection,
+  .almog-chat-surface *::selection {
+    background: rgba(253, 224, 71, 0.72);
+    color: #1c1917;
   }
 
   h1, h2, h3, h4, h5, h6 {
