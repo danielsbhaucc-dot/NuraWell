@@ -226,10 +226,10 @@ function blendScores(a?: WriterScores, b?: WriterScores): WriterScores | undefin
   if (!a) return b;
   if (!b) return a;
   return {
-    terra: clampScore(a.terra * 0.62 + b.terra * 0.38),
-    claude5: clampScore(a.claude5 * 0.62 + b.claude5 * 0.38),
-    grok: clampScore(a.grok * 0.62 + b.grok * 0.38),
-    llama4: clampScore(a.llama4 * 0.62 + b.llama4 * 0.38),
+    terra: clampScore(a.terra * 0.28 + b.terra * 0.72),
+    claude5: clampScore(a.claude5 * 0.28 + b.claude5 * 0.72),
+    grok: clampScore(a.grok * 0.28 + b.grok * 0.72),
+    llama4: clampScore(a.llama4 * 0.28 + b.llama4 * 0.72),
   };
 }
 
@@ -250,31 +250,29 @@ export function mergeWriterDecisions(
   }
   if (heuristicTags.includes('warm_boundary') || heuristic === 'claude5') return 'claude5';
 
+  const grokLane =
+    heuristic === 'grok' ||
+    heuristicTags.includes('evasion') ||
+    heuristicTags.includes('argument') ||
+    heuristicTags.includes('accusation') ||
+    heuristicTags.includes('direct') ||
+    heuristicTags.includes('rude') ||
+    heuristicTags.includes('people_please');
+  if (grokLane && !heuristicTags.includes('adult')) return 'grok';
+  if (heuristicTags.includes('people_please') && heuristicTags.includes('adult')) {
+    return 'claude5';
+  }
+
   const blended = blendScores(llamaScores, heuristicScores);
   const tags = [...heuristicTags];
   if (llamaChoice === 'claude5' && blended && blended.claude5 >= 50) tags.push('safety');
   if (blended) {
     const picked = pickWinner(blended, tags);
-    if (tags.includes('people_please') && (picked === 'terra' || picked === 'llama4')) {
-      return blended.claude5 > blended.grok + 12 ? 'claude5' : 'grok';
-    }
+    if (picked === 'llama4' && heuristic !== 'llama4') return heuristic;
     return picked;
   }
 
-  if (heuristicTags.includes('people_please')) {
-    return heuristicTags.includes('adult') || heuristicTags.includes('warm_boundary')
-      ? 'claude5'
-      : 'grok';
-  }
-  if (heuristicTags.includes('evasion')) return 'grok';
-  if (heuristic === 'grok') return 'grok';
-  const grokConflict =
-    heuristicTags.includes('argument') ||
-    heuristicTags.includes('accusation') ||
-    heuristicTags.includes('direct') ||
-    heuristicTags.includes('rude') ||
-    heuristicTags.includes('evasion');
-  if (llamaChoice === 'grok' && grokConflict) return 'grok';
+  if (llamaChoice === 'grok' && grokLane) return 'grok';
   return heuristic;
 }
 
