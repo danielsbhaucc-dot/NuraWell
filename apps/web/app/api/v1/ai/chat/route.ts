@@ -3738,22 +3738,14 @@ export async function POST(request: Request) {
       elapsed_ms: Date.now() - startedAt,
       error: err instanceof Error ? err.message : String(err),
     });
-    const isProd = process.env.NODE_ENV === 'production';
-    const body = isProd
-      ? { error: 'שירות הצ׳אט אינו זמין כרגע. נסה שוב בעוד רגע.', debug_id: debugId }
-      : {
-          error: 'chat model request failed',
-          details: err instanceof Error ? err.message : String(err),
-          debug_id: debugId,
-          stage,
-        };
-    return new Response(JSON.stringify(body), {
-      status: 502,
+    return new Response(pickEmptyResponseFallback(), {
+      status: 200,
       headers: {
-        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Type': 'text/plain; charset=utf-8',
         'x-session-id': sessionId,
         'x-debug-id': debugId,
         'x-debug-stage': stage,
+        'x-ai-writer': 'fallback',
         'Cache-Control': 'no-cache, no-transform',
       },
     });
