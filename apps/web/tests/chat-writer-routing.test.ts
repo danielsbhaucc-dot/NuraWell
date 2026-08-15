@@ -6,6 +6,7 @@ import {
 } from '../lib/ai/chat-intent-router';
 import { sanitizeWriterOutput, looksLikeBracketOnlyReply } from '../lib/ai/sanitize-writer-output';
 import { formatConversationFilePromptBlock } from '../lib/ai/chat-conversation-file';
+import { resolveChatSafetyNetModel } from '../lib/ai/chat-writer-fleet';
 
 const emptySignals = {
   blocker_mentioned: false,
@@ -162,6 +163,18 @@ describe('chat writer routing', () => {
 
   it('does not treat a busy day without a skip as Grok evasion', () => {
     expect(heuristicWriterDecision('הייתי עסוק היום', emptySignals)).toBe('terra');
+  });
+
+  it('does not treat "ימים" as a water-coaching turn', () => {
+    expect(heuristicWriterDecision('הימים האלה קשים לי ואני מתבייש', emptySignals)).toBe('terra');
+  });
+});
+
+describe('chat safety net model', () => {
+  it('rejects stale Llama env so Voice DNA is not replaced by a cheap writer', () => {
+    expect(resolveChatSafetyNetModel('meta-llama/llama-4-maverick')).toBe('x-ai/grok-4');
+    expect(resolveChatSafetyNetModel('meta-llama/llama-4-scout')).toBe('x-ai/grok-4');
+    expect(resolveChatSafetyNetModel('x-ai/grok-4')).toBe('x-ai/grok-4');
   });
 });
 

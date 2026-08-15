@@ -5,7 +5,13 @@ import { after } from 'next/server';
 import { ensureChatSession, touchChatSessionActivity } from '../../../../../lib/ai/chat-sessions/ensure-session';
 import { fetchChatSessionTranscript } from '../../../../../lib/ai/chat-sessions/fetch-transcript';
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
-import { chatWriterFleet, isChatWriterKey, type ChatWriterKey } from '../../../../../lib/ai/chat-writer-fleet';
+import {
+  chatWriterFleet,
+  isChatWriterKey,
+  isGpt5FamilySlug,
+  resolveChatSafetyNetModel,
+  type ChatWriterKey,
+} from '../../../../../lib/ai/chat-writer-fleet';
 import {
   analyzeWriterIntent,
   mergeWriterDecisions,
@@ -303,8 +309,7 @@ const CHAT_TEMPERATURE = (() => {
  */
 const CHAT_ROUTER_MODEL =
   process.env.AI_CHAT_ROUTER_MODEL?.trim() || 'meta-llama/llama-4-maverick';
-const CHAT_SAFETY_NET_MODEL =
-  process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() || 'x-ai/grok-4';
+const CHAT_SAFETY_NET_MODEL = resolveChatSafetyNetModel();
 const CHAT_ROUTER_PROVIDER_ONLY = ['Groq'] as const;
 
 /**
@@ -467,7 +472,7 @@ function resolveChatModelRuntime(writer: ChatWriterKey): ChatModelRuntime {
   const isGoogle = slug.startsWith('google/');
   const supportsPromptCache = slug.startsWith('anthropic/');
   const useReasoning = CHAT_REASONING_ENABLED && isQwen;
-  const useLeanPrompt = CHAT_LEAN_PROMPT_ENABLED && writer === 'llama4';
+  const useLeanPrompt = false;
   const claudeGuard =
     writer === 'claude5'
       ? `${ALMOG_CHAT_FINAL_GUARDRAILS}\nכתוב למשתמש רק את התשובה בעברית. אסור סוגריים מרובעים, תגיות מטה, הערות מערכת או placeholders.`
@@ -604,9 +609,11 @@ async function createOpenRouterTextStreamResponse({
     : recentMessages;
 
   const claude5 = isClaudeSonnet5(model);
-  const effectiveReasoning: OpenRouterReasoning | null = claude5
-    ? { effort: 'low', exclude: true }
-    : reasoning;
+  const gpt5 = isGpt5FamilySlug(model);
+  const llamaLike = /llama/i.test(model);
+  /** Claude 5 + GPT-5: reasoning.effort / seed שוברים פלט ריק או 400 — ואז נופלים לגיבוי בלי קול. */
+  const effectiveReasoning: OpenRouterReasoning | null =
+    claude5 || gpt5 ? null : reasoning;
   const reasoningBudget =
     effectiveReasoning && 'max_tokens' in effectiveReasoning ? effectiveReasoning.max_tokens : 0;
   const effectiveMaxTokens = claude5
@@ -615,10 +622,19 @@ async function createOpenRouterTextStreamResponse({
       ? maxOutputTokens + reasoningBudget
       : maxOutputTokens;
 
+  const sampling =
+    claude5 || gpt5
+      ? {}
+      : {
+          temperature,
+          top_p: 0.95,
+          ...(llamaLike ? { seed: randomSamplingSeed() } : {}),
+        };
+
   const buildBody = (includeReasoning: boolean) =>
     JSON.stringify({
       model,
-      ...(claude5 ? {} : { temperature, top_p: 0.95, seed: randomSamplingSeed() }),
+      ...sampling,
       max_tokens: effectiveMaxTokens,
       ...(includeReasoning && effectiveReasoning ? { reasoning: effectiveReasoning } : {}),
       ...(CHAT_PROVIDER_SORT || providerOnly?.length
@@ -2903,8 +2919,10 @@ export async function POST(request: Request) {
      *      הכי אפקטיבי לחוקים שעלולים להתפספס כשהפרומפט גדל.
      */
     const turnStance = writerStancePrompt(heuristicAnalysis.tags);
+    const writerVoiceLine = `[כותב התור: ${mcfg.writer}] דבר בקול אלמוג המלא מהמערכת. אסור קול של עוזר גנרי, אסור therapy-speak, אסור להזדהות כמודל.`;
     const dynamicSystemPrompt = [
       '— הקשר לשיחה הזו —',
+      writerVoiceLine,
       ...contextSections,
       '',
       '— פנייה אישית —',
@@ -2977,7 +2995,7 @@ export async function POST(request: Request) {
                 model: openrouter.chat(effectiveModel),
                 temperature: 0.65,
                 maxOutputTokens: 160,
-                providerOptions: mcfg.isOpenAI ? { openai: { reasoningEffort: 'low' } } : {},
+                providerOptions: {},
                 messages: [
                   {
                     role: 'user',
@@ -3514,18 +3532,19 @@ export async function POST(request: Request) {
       'x-session-id': sessionId,
       'x-debug-id': debugId,
       'x-debug-stage': stage,
+      'x-nura-writer': mcfg.writer,
       'Cache-Control': 'no-cache, no-transform',
     };
 
     const cheapWriterKey = openrouterKey;
 
     const emptyRetryHandler = async () => {
-      const run = async (slug: string, openAiEffort: boolean) => {
+      const grokSlug = CHAT_WRITER_FLEET.grok.slug;
+      const run = async (slug: string) => {
         const retry = await generateText({
           model: openrouter.chat(slug),
           temperature: Math.max(0.75, CHAT_TEMPERATURE - 0.1),
           maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 360),
-          providerOptions: openAiEffort ? { openai: { reasoningEffort: 'low' } } : {},
           system: piiShield
             ? piiShield.tokenizeText(systemPromptWithMemory)
             : systemPromptWithMemory,
@@ -3536,14 +3555,15 @@ export async function POST(request: Request) {
         return (retry.text ?? '').trim();
       };
       try {
-        let retryText = await run(effectiveModel, false);
-        if (!retryText) {
-          retryText = await run(CHAT_SAFETY_NET_MODEL, false);
+        let retryText = await run(grokSlug);
+        if (!retryText && grokSlug !== CHAT_SAFETY_NET_MODEL) {
+          retryText = await run(CHAT_SAFETY_NET_MODEL);
         }
         if (retryText) {
           console.info('[ai/chat]', {
             debug_id: debugId,
             stage: 'stream_empty_retry_recovered',
+            model: grokSlug,
           });
         }
         return piiShield ? piiShield.detokenizeText(retryText) : retryText;
@@ -3554,7 +3574,7 @@ export async function POST(request: Request) {
           error: retryErr instanceof Error ? retryErr.message : String(retryErr),
         });
         try {
-          const fallbackText = await run(CHAT_SAFETY_NET_MODEL, false);
+          const fallbackText = await run(CHAT_SAFETY_NET_MODEL);
           return piiShield ? piiShield.detokenizeText(fallbackText) : fallbackText;
         } catch {
           return '';
@@ -3585,7 +3605,7 @@ export async function POST(request: Request) {
           maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
           headers: upstreamHeaders,
           piiShield,
-          providerOptions: mcfg.isOpenAI ? { openai: { reasoningEffort: 'low' } } : {},
+          providerOptions: {},
           debugId,
           onEmptyRetry: emptyRetryHandler,
           onFinish: handleChatFinish,
@@ -3777,11 +3797,12 @@ export async function POST(request: Request) {
     headers.set('x-debug-stage', stage);
     headers.set('x-ai-writer', safetyNetUsed ? 'safety-net' : trivialBypass ? 'cheap-trivial' : 'primary');
     headers.set('x-ai-model', assistantModelName);
+    headers.set('x-nura-writer', mcfg.writer);
     headers.set('Cache-Control', 'no-cache, no-transform');
     if (!headers.get('Content-Type')) headers.set('Content-Type', 'text/plain; charset=utf-8');
     headers.set(
       'Access-Control-Expose-Headers',
-      'x-session-id, x-debug-id, x-debug-stage, x-ai-writer, x-ai-model'
+      'x-session-id, x-debug-id, x-debug-stage, x-ai-writer, x-ai-model, x-nura-writer'
     );
 
     return new Response(stream, {

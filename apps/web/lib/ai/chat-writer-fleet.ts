@@ -32,3 +32,34 @@ export function chatWriterFleet(): Record<ChatWriterKey, ChatWriterDef> {
 export function isChatWriterKey(value: string | undefined): value is ChatWriterKey {
   return Boolean(value && (CHAT_WRITER_KEYS as readonly string[]).includes(value));
 }
+
+const DEFAULT_GROK_SLUG = 'x-ai/grok-4';
+
+/** מודלים זולים/רזים ששוברים את קול אלמוג אם משתמשים בהם כגיבוי כותב. */
+export function isGenericChatFallbackSlug(slug: string | undefined): boolean {
+  const s = (slug ?? '').toLowerCase();
+  if (!s) return true;
+  return (
+    s.includes('llama') ||
+    s.includes('scout') ||
+    s.includes('maverick') ||
+    s.includes('qwen') ||
+    s.includes('haiku') ||
+    s.includes('mini') ||
+    s.includes('flash-lite')
+  );
+}
+
+/**
+ * גיבוי כותב חייב מודל עם Voice DNA מלא.
+ * env ישן (`AI_CHAT_SAFETY_NET_MODEL=llama`) היה דורס את ברירת המחדל ומוחק אישיות.
+ */
+export function resolveChatSafetyNetModel(envValue?: string): string {
+  const raw = (envValue ?? process.env.AI_CHAT_SAFETY_NET_MODEL)?.trim();
+  if (!raw || isGenericChatFallbackSlug(raw)) return DEFAULT_GROK_SLUG;
+  return raw;
+}
+
+export function isGpt5FamilySlug(slug: string): boolean {
+  return /gpt-5/i.test(slug);
+}
