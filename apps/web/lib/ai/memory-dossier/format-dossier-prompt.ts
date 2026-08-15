@@ -16,7 +16,7 @@ type DossierLine = {
   createdAt?: string;
 };
 
-const DEFAULT_MAX_DOSSIER_LINES = 8;
+const DEFAULT_MAX_DOSSIER_LINES = 14;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const INSIGHT_HALF_LIFE_DAYS = 60;
 
@@ -90,7 +90,9 @@ function recencyBoost(createdAt: string | undefined, now: Date): number {
 
 function rankDossierLines(lines: DossierLine[], opts: Required<DossierPromptOptions>): DossierLine[] {
   const queryTokens = tokenizeHebrewish(opts.query);
-  return [...lines]
+  const pinned = lines.filter((line) => line.priority >= 0.82);
+  const rest = lines.filter((line) => line.priority < 0.82);
+  const rankedRest = [...rest]
     .map((line, index) => ({
       line,
       index,
@@ -100,8 +102,36 @@ function rankDossierLines(lines: DossierLine[], opts: Required<DossierPromptOpti
         recencyBoost(line.createdAt, opts.now) * 0.12,
     }))
     .sort((a, b) => b.score - a.score || a.index - b.index)
-    .slice(0, opts.maxLines)
     .map((x) => x.line);
+  const room = Math.max(0, opts.maxLines - pinned.length);
+  return [...pinned, ...rankedRest.slice(0, room)].slice(0, opts.maxLines);
+}
+
+function pushRecordFacts(
+  candidates: DossierLine[],
+  record: Record<string, unknown>,
+  section: string,
+  priority: number,
+  max = 4
+) {
+  let added = 0;
+  for (const value of Object.values(record)) {
+    if (added >= max) break;
+    if (typeof value === 'string' && value.trim()) {
+      candidates.push({ section, text: value.trim().slice(0, 180), priority });
+      added += 1;
+      continue;
+    }
+    if (Array.isArray(value)) {
+      const items = value
+        .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+        .slice(0, 3);
+      if (items.length) {
+        candidates.push({ section, text: items.join(' · '), priority });
+        added += 1;
+      }
+    }
+  }
 }
 
 /**
@@ -136,6 +166,10 @@ export function formatUserMemoryDossierPromptBlock(
 
   const currentFocus = asString(dossier.essentials.current_focus);
   if (currentFocus) candidates.push({ section: 'פוקוס', text: currentFocus, priority: 0.85 });
+
+  pushRecordFacts(candidates, dossier.personal_context, 'חיים אישיים', 0.9, 5);
+  pushRecordFacts(candidates, dossier.health_context, 'בריאות', 0.88, 4);
+  pushRecordFacts(candidates, dossier.schedule_memory, 'לוח זמנים', 0.7, 3);
 
   const completed = asStringList(dossier.task_memory, 'completed_recent', 2);
   if (completed.length) {
