@@ -443,10 +443,11 @@ const CHAT_PROMPT_CACHE_TTL = process.env.AI_CHAT_PROMPT_CACHE_TTL?.trim() || '1
  * עוקף-כותב להודעות טריוויאליות: על אישור/תודה/דיווח-ביצוע חיובי קצר —
  * Llama דרך OpenRouter כותב את התשובה (כמעט $0) במקום קלוד, כי שם אין הבדל איכותי. סימון
  * משימות/הרגלים/משקל קורה ב-onFinish על בסיס הודעת המשתמש — לכן הנכונות
- * נשמרת. כל מה שדורש אמפתיה/ניואנס/שאלה נשאר בקלוד. כיבוי: `AI_CHAT_TRIVIAL_BYPASS=off`.
+ * כיבוי כברירת מחדל: העוקף שלח כמעט הכל ל-Llama4 (תשובות קצרות בלי נתב).
+ * הפעלה מפורשת: `AI_CHAT_TRIVIAL_BYPASS=on`.
  */
 const CHAT_TRIVIAL_BYPASS_ENABLED =
-  (process.env.AI_CHAT_TRIVIAL_BYPASS?.trim() || 'on').toLowerCase() !== 'off';
+  (process.env.AI_CHAT_TRIVIAL_BYPASS?.trim() || 'off').toLowerCase() === 'on';
 
 const CHAT_WRITER_FLEET = chatWriterFleet();
 
@@ -1227,7 +1228,7 @@ function lowContextDecision(reason: string): ChatContextDecision {
     needs_assignments: false,
     needs_blockers: false,
     reason,
-    writer: 'llama4',
+    writer: 'terra',
   };
 }
 
@@ -2286,10 +2287,11 @@ export async function POST(request: Request) {
   }
 
   const heuristicAnalysis = analyzeWriterIntent(lastUserText, earlySignals);
+  const cheapWriter = isChatWriterKey(contextDecision.writer) ? contextDecision.writer : undefined;
   const routedWriter: ChatWriterKey = trivialBypass
     ? 'llama4'
     : mergeWriterDecisions(
-        isChatWriterKey(contextDecision.writer) ? contextDecision.writer : undefined,
+        cheapWriter === 'llama4' ? undefined : cheapWriter,
         heuristicAnalysis.writer,
         contextDecision.writer_scores as WriterScores | undefined,
         heuristicAnalysis.scores,
@@ -3555,7 +3557,7 @@ export async function POST(request: Request) {
         const retry = await generateText({
           model: openrouter.chat(slug),
           temperature: Math.max(0.75, CHAT_TEMPERATURE - 0.1),
-          maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 360),
+          maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 1200),
           system: `${mcfg.mainWriterSystemPrompt}\n\n${
             piiShield ? piiShield.tokenizeText(dynamicSystemPrompt) : dynamicSystemPrompt
           }`,
