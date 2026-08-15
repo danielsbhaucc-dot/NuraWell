@@ -304,7 +304,7 @@ const CHAT_TEMPERATURE = (() => {
 const CHAT_ROUTER_MODEL =
   process.env.AI_CHAT_ROUTER_MODEL?.trim() || 'meta-llama/llama-4-maverick';
 const CHAT_SAFETY_NET_MODEL =
-  process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() || 'meta-llama/llama-4-maverick';
+  process.env.AI_CHAT_SAFETY_NET_MODEL?.trim() || 'x-ai/grok-4';
 const CHAT_ROUTER_PROVIDER_ONLY = ['Groq'] as const;
 
 /**
@@ -3536,7 +3536,7 @@ export async function POST(request: Request) {
         return (retry.text ?? '').trim();
       };
       try {
-        let retryText = await run(effectiveModel, mcfg.isOpenAI);
+        let retryText = await run(effectiveModel, false);
         if (!retryText) {
           retryText = await run(CHAT_SAFETY_NET_MODEL, false);
         }
@@ -3619,11 +3619,13 @@ export async function POST(request: Request) {
        * נופלים *מעלה* לקלוד כדי שלעולם לא נאבד תשובה.
        * חשוב: assistantModelName נקבע לפני ה-await כי onFinish רץ בתוך הקריאה.
        */
-      assistantModelName = CHAT_SAFETY_NET_MODEL;
+      assistantModelName = effectiveModel;
       try {
         upstream = await createOpenRouterCheapTextResponse({
           apiKey: cheapWriterKey,
-          // קול עקבי גם בעוקף-הזול (תודה/אישור קצר).
+          model: effectiveModel,
+          restrictProvider: Boolean(mcfg.providerOnly?.length),
+          // קול עקבי גם בעוקף-הזול (תודה/אישור קצר) — Llama4 + פרומפט lean.
           staticSystemPrompt: mcfg.mainWriterSystemPrompt,
           dynamicSystemPrompt,
           recentMessages,
@@ -3639,7 +3641,7 @@ export async function POST(request: Request) {
         console.info('[ai/chat]', {
           debug_id: debugId,
           stage: 'trivial_bypass_openrouter_cheap',
-          model: CHAT_SAFETY_NET_MODEL,
+          model: effectiveModel,
         });
       } catch (bypassErr) {
         console.warn('[ai/chat]', {
@@ -3663,21 +3665,24 @@ export async function POST(request: Request) {
         });
         assistantModelName = CHAT_SAFETY_NET_MODEL;
         safetyNetUsed = true;
-        upstream = await createOpenRouterCheapTextResponse({
+        upstream = await createOpenRouterTextStreamResponse({
           apiKey: cheapWriterKey,
-          // קול עקבי: גם הגיבוי מדבר בקול הרזה של אלמוג, לא בפרומפט הכבד
-          // שגורם ל"גיבוי גנרי ממודל אחר" שמרגיש שונה לגמרי.
-          staticSystemPrompt: mcfg.mainWriterSystemPrompt,
+          referer: publicAppUrlForAiReferer(),
+          model: CHAT_SAFETY_NET_MODEL,
+          staticSystemPrompt: BASE_SYSTEM_PROMPT,
           dynamicSystemPrompt,
           recentMessages,
-          temperature: Math.max(0.8, CHAT_TEMPERATURE - 0.05),
+          temperature: CHAT_TEMPERATURE,
           maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
           headers: {
             ...upstreamHeaders,
-            'x-ai-safety-net': 'openrouter-cheap',
+            'x-ai-safety-net': 'grok-stream',
           },
-          onFinish: handleChatFinish,
           piiShield,
+          reasoning: null,
+          supportsPromptCache: false,
+          onEmptyRetry: emptyRetryHandler,
+          onFinish: handleChatFinish,
         });
       }
     }

@@ -107,6 +107,18 @@ describe('chat writer routing', () => {
     expect(mergeWriterDecisions('grok', 'terra', undefined, undefined, ['empathy'])).toBe('terra');
   });
 
+  it('does not let the cheap router override a Grok debate turn', () => {
+    expect(
+      mergeWriterDecisions(
+        'terra',
+        'grok',
+        { terra: 95, claude5: 5, grok: 10, llama4: 5 },
+        { terra: 20, claude5: 10, grok: 82, llama4: 5 },
+        ['argument', 'people_please']
+      )
+    ).toBe('grok');
+  });
+
   it('routes excuses and evasion to Grok', () => {
     expect(heuristicWriterDecision('שכחתי ולא בא לי עכשיו', emptySignals)).toBe('grok');
     expect(heuristicWriterDecision('אין לי זמן אז דילגתי', emptySignals)).toBe('grok');
