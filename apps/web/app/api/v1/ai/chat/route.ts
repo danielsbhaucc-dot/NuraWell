@@ -3,10 +3,11 @@ import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { after } from 'next/server';
 import { ensureChatSession, touchChatSessionActivity } from '../../../../../lib/ai/chat-sessions/ensure-session';
-import { fetchChatSessionTranscript } from '../../../../../lib/ai/chat-sessions/fetch-transcript';
+import { fetchChatSessionTranscript, mergeTranscriptWithClientMessages } from '../../../../../lib/ai/chat-sessions/fetch-transcript';
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
 import {
   chatWriterFleet,
+  chatWriterFallbackSlugs,
   isChatWriterKey,
   isGpt5FamilySlug,
   resolveChatSafetyNetModel,
@@ -25,6 +26,7 @@ import {
   formatConversationFilePromptBlock,
 } from '../../../../../lib/ai/chat-conversation-file';
 import { looksLikeBracketOnlyReply, sanitizeWriterOutput } from '../../../../../lib/ai/sanitize-writer-output';
+import { parseLlmJsonObject } from '../../../../../lib/ai/parse-llm-json';
 import { extractOpenRouterDeltaText } from '../../../../../lib/ai/openrouter-delta-text';
 import { computeChatCostUsd } from '../../../../../lib/admin/cost-model';
 import { embedTextForRag } from '../../../../../lib/ai/openrouter-embeddings';
@@ -34,6 +36,7 @@ import {
   ALMOG_CHAT_FINAL_GUARDRAILS_LEAN,
   ALMOG_HABIT_CHECKPOINT_RULES,
   ALMOG_STATION_PROGRESSIVE_RULES,
+  ALMOG_VOICE_STICKY,
   NURAWELL_CHAT_SYSTEM_PROMPT,
   NURAWELL_CHAT_SYSTEM_PROMPT_LEAN,
 } from '../../../../../lib/ai/prompts';
@@ -290,10 +293,18 @@ const CHAT_TEMPERATURE = (() => {
 /**
  * נתב + סיכום קובץ שיחה: Llama 4 Maverick דרך OpenRouter עם ספק Groq בלבד.
  */
+/**
+ * נתב Llama. נעילת Groq הישנה הפילה את הנתב ב-400/timeout — ואז הכל נשמע אותו כותב.
+ * אופציונלי: AI_CHAT_ROUTER_PROVIDER_ONLY=Groq
+ */
 const CHAT_ROUTER_MODEL =
   process.env.AI_CHAT_ROUTER_MODEL?.trim() || 'meta-llama/llama-4-maverick';
 const CHAT_SAFETY_NET_MODEL = resolveChatSafetyNetModel();
-const CHAT_ROUTER_PROVIDER_ONLY = ['Groq'] as const;
+const CHAT_ROUTER_PROVIDER_ONLY = (() => {
+  const raw = process.env.AI_CHAT_ROUTER_PROVIDER_ONLY?.trim();
+  if (!raw) return [] as string[];
+  return raw.split(',').map((s) => s.trim()).filter(Boolean);
+})();
 
 /**
  * הערה: דגלים כמו isOpenAI / requiresPiiShield / isQwen / supportsPromptCache /
@@ -613,17 +624,19 @@ async function createOpenRouterTextStreamResponse({
           ...(llamaLike ? { seed: randomSamplingSeed() } : {}),
         };
 
-  const buildBody = (includeReasoning: boolean) =>
+  const fallbackModels = chatWriterFallbackSlugs(model);
+  const buildBody = (includeReasoning: boolean, lockProvider: boolean) =>
     JSON.stringify({
       model,
+      ...(fallbackModels.length ? { models: fallbackModels } : {}),
       ...sampling,
       max_tokens: effectiveMaxTokens,
       ...(includeReasoning && effectiveReasoning ? { reasoning: effectiveReasoning } : {}),
-      ...(CHAT_PROVIDER_SORT || providerOnly?.length
+      ...(CHAT_PROVIDER_SORT || (lockProvider && providerOnly?.length)
         ? {
             provider: {
               ...(CHAT_PROVIDER_SORT ? { sort: CHAT_PROVIDER_SORT } : {}),
-              ...(providerOnly?.length ? { only: [...providerOnly] } : {}),
+              ...(lockProvider && providerOnly?.length ? { only: [...providerOnly] } : {}),
             },
           }
         : {}),
@@ -637,7 +650,7 @@ async function createOpenRouterTextStreamResponse({
       ),
     });
 
-  let requestBody = buildBody(true);
+  let requestBody = buildBody(true, Boolean(providerOnly?.length));
   if (piiShield) {
     piiShield.assertNoRawPii(`${tokenizedDynamic}\n${JSON.stringify(tokenizedMessages)}`);
   }
@@ -662,7 +675,7 @@ async function createOpenRouterTextStreamResponse({
     const invalidReasoning =
       Boolean(effectiveReasoning) && (upstream.status === 400 || upstream.status === 422);
     if (invalidReasoning && attempt === 1 && !(gpt5 || claude5)) {
-      requestBody = buildBody(false);
+      requestBody = buildBody(false, Boolean(providerOnly?.length));
       continue;
     }
     const retriable = upstream.status === 429 || upstream.status >= 500;
@@ -892,7 +905,9 @@ async function createOpenRouterCheapTextResponse({
         top_p: 0.95,
         seed: randomSamplingSeed(),
         max_tokens: Math.min(maxOutputTokens, 4000),
-        ...(groqOnly ? { provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] } } : {}),
+        ...(groqOnly && CHAT_ROUTER_PROVIDER_ONLY.length
+          ? { provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] } }
+          : {}),
         messages: [
           { role: 'system', content: tokenizedSystem },
           ...tokenizedMessages,
@@ -940,7 +955,7 @@ async function createOpenRouterCheapTextResponse({
 function chatHistoryWindow(): number {
   const raw = process.env.AI_CHAT_HISTORY_WINDOW?.trim();
   const n = raw ? Number(raw) : NaN;
-  return Number.isFinite(n) && n >= 1 && n <= 20 ? Math.floor(n) : 10;
+  return Number.isFinite(n) && n >= 1 && n <= 40 ? Math.floor(n) : 24;
 }
 
 function currentIsraelDaypart(minutes: number): 'בוקר' | 'צהריים' | 'אחר הצהריים' | 'ערב' | 'לילה' {
@@ -1430,7 +1445,9 @@ async function attemptContextRoute(opts: {
         temperature: 0,
         max_tokens: 720,
         response_format: { type: 'json_object' },
-        provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] },
+        ...(CHAT_ROUTER_PROVIDER_ONLY.length
+          ? { provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] } }
+          : {}),
         messages: [
           {
             role: 'system',
@@ -1463,7 +1480,7 @@ async function attemptContextRoute(opts: {
     };
     const raw = data.choices?.[0]?.message?.content?.trim();
     if (!raw) return null;
-    const parsed = chatContextRouterSchema.safeParse(JSON.parse(raw.replace(/```json|```/g, '')));
+    const parsed = chatContextRouterSchema.safeParse(parseLlmJsonObject(raw));
     if (!parsed.success) return null;
     return parsed.data;
   } catch (err) {
@@ -2282,7 +2299,6 @@ export async function POST(request: Request) {
       needs_system_knowledge_rag: true,
       needs_full_progress_report: false,
       needs_journey_knowledge: false,
-      needs_user_memory_rag: false,
       reason: `${contextDecision.reason ?? ''}+guide_chapter_context`.replace(/^\+/, ''),
     };
   }
@@ -2512,7 +2528,7 @@ export async function POST(request: Request) {
   const onboardingContextBlock = buildOnboardingChatContextBlock(profileRow.onboarding);
   const chatSummaryBlock = formatChatSummaryPromptBlock(profileRow.ai_context.chat_summary);
 
-  const recentMessages = messages
+  const clientTurns = messages
     .map((m) => {
       const role = uiMessageRole(m);
       if (!role || role === 'system') return null;
@@ -2520,11 +2536,19 @@ export async function POST(request: Request) {
       if (!content) return null;
       return { role, content };
     })
-    .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m))
-    /**
-     * קובץ השיחה משלים היסטוריה ארוכה; כאן שולחים את הסיבובים האחרונים לכותב.
-     */
-    .slice(-chatHistoryWindow());
+    .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m));
+
+  const dbTurns = await fetchChatSessionTranscript(supabase, {
+    sessionId,
+    userId: user.id,
+  }).catch(() => []);
+
+  const recentMessages = mergeTranscriptWithClientMessages({
+    dbTurns,
+    clientTurns,
+    lastUserText,
+    windowSize: chatHistoryWindow(),
+  });
 
   const genderCorrection = detectGenderCorrectionFromRecentMessages(recentMessages);
   const profileGender = genderCorrection ?? profileRow.gender;
@@ -2944,6 +2968,7 @@ export async function POST(request: Request) {
       turnStance,
       '',
       mcfg.finalGuardrails,
+      ALMOG_VOICE_STICKY,
     ]
       .filter((s) => s !== null && s !== undefined)
       .join('\n');

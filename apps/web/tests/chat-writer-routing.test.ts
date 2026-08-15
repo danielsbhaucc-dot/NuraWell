@@ -193,9 +193,9 @@ describe('chat writer routing', () => {
 
 describe('chat safety net model', () => {
   it('rejects stale Llama env so Voice DNA is not replaced by a cheap writer', () => {
-    expect(resolveChatSafetyNetModel('meta-llama/llama-4-maverick')).toBe('x-ai/grok-4');
-    expect(resolveChatSafetyNetModel('meta-llama/llama-4-scout')).toBe('x-ai/grok-4');
-    expect(resolveChatSafetyNetModel('x-ai/grok-4')).toBe('x-ai/grok-4');
+    expect(resolveChatSafetyNetModel('meta-llama/llama-4-maverick')).toBe('x-ai/grok-4.5');
+    expect(resolveChatSafetyNetModel('meta-llama/llama-4-scout')).toBe('x-ai/grok-4.5');
+    expect(resolveChatSafetyNetModel('x-ai/grok-4.5')).toBe('x-ai/grok-4.5');
   });
 });
 

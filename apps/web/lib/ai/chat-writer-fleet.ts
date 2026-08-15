@@ -14,7 +14,7 @@ export type ChatWriterDef = {
 const DEFAULT_WRITER_SLUGS: Record<ChatWriterKey, string> = {
   terra: 'openai/gpt-5.6-terra',
   claude5: 'anthropic/claude-sonnet-5',
-  grok: 'x-ai/grok-4',
+  grok: 'x-ai/grok-4.5',
   llama4: 'meta-llama/llama-4-maverick',
 };
 
@@ -32,7 +32,6 @@ export function chatWriterFleet(): Record<ChatWriterKey, ChatWriterDef> {
     grok: { slug: envWriterSlug('grok', 'AI_CHAT_WRITER_GROK') },
     llama4: {
       slug: envWriterSlug('llama4', 'AI_CHAT_WRITER_LLAMA4'),
-      providerOnly: ['Groq'],
     },
   };
 }
@@ -41,7 +40,19 @@ export function isChatWriterKey(value: string | undefined): value is ChatWriterK
   return Boolean(value && (CHAT_WRITER_KEYS as readonly string[]).includes(value));
 }
 
-const DEFAULT_GROK_SLUG = 'x-ai/grok-4';
+const DEFAULT_GROK_SLUG = 'x-ai/grok-4.5';
+
+/** גיבויי OpenRouter לכותב — בלי Llama/Qwen, כדי שהקול לא יימחק בכשל מודל. */
+export function chatWriterFallbackSlugs(primary: string): string[] {
+  const fleet = chatWriterFleet();
+  const terra = fleet.terra.slug;
+  const grok = fleet.grok.slug;
+  const claude = fleet.claude5.slug;
+  const rest = [grok, terra, claude].filter(
+    (slug) => slug !== primary && !isGenericChatFallbackSlug(slug)
+  );
+  return [...new Set(rest)].slice(0, 2);
+}
 
 /** מודלים זולים/רזים ששוברים את קול אלמוג אם משתמשים בהם כגיבוי כותב. */
 export function isGenericChatFallbackSlug(slug: string | undefined): boolean {
