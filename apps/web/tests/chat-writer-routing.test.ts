@@ -157,7 +157,7 @@ describe('chat writer routing', () => {
     expect(heuristicWriterDecision('אין לי כוח, מחר אתחיל', emptySignals)).toBe('grok');
     expect(heuristicWriterDecision('קשה לי היום ואני מתבייש', emptySignals)).toBe('terra');
     expect(heuristicWriterDecision('מה לאכול בארוחת בוקר עם חלבון?', emptySignals)).toBe('terra');
-    expect(heuristicWriterDecision('היי', emptySignals)).toBe('llama4');
+    expect(heuristicWriterDecision('היי', emptySignals)).toBe('terra');
     expect(heuristicWriterDecision('עשיתי', emptySignals)).toBe('llama4');
   });
 

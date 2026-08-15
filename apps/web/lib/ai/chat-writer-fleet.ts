@@ -11,19 +11,27 @@ export type ChatWriterDef = {
   providerOnly?: readonly string[];
 };
 
+const DEFAULT_WRITER_SLUGS: Record<ChatWriterKey, string> = {
+  terra: 'openai/gpt-5.6-terra',
+  claude5: 'anthropic/claude-sonnet-5',
+  grok: 'x-ai/grok-4',
+  llama4: 'meta-llama/llama-4-maverick',
+};
+
+function envWriterSlug(key: ChatWriterKey, envName: string): string {
+  const raw = process.env[envName]?.trim();
+  if (!raw) return DEFAULT_WRITER_SLUGS[key];
+  if (key !== 'llama4' && isGenericChatFallbackSlug(raw)) return DEFAULT_WRITER_SLUGS[key];
+  return raw;
+}
+
 export function chatWriterFleet(): Record<ChatWriterKey, ChatWriterDef> {
   return {
-    terra: {
-      slug: process.env.AI_CHAT_WRITER_TERRA?.trim() || 'openai/gpt-5.6-terra',
-    },
-    claude5: {
-      slug: process.env.AI_CHAT_WRITER_CLAUDE5?.trim() || 'anthropic/claude-sonnet-5',
-    },
-    grok: {
-      slug: process.env.AI_CHAT_WRITER_GROK?.trim() || 'x-ai/grok-4',
-    },
+    terra: { slug: envWriterSlug('terra', 'AI_CHAT_WRITER_TERRA') },
+    claude5: { slug: envWriterSlug('claude5', 'AI_CHAT_WRITER_CLAUDE5') },
+    grok: { slug: envWriterSlug('grok', 'AI_CHAT_WRITER_GROK') },
     llama4: {
-      slug: process.env.AI_CHAT_WRITER_LLAMA4?.trim() || 'meta-llama/llama-4-maverick',
+      slug: envWriterSlug('llama4', 'AI_CHAT_WRITER_LLAMA4'),
       providerOnly: ['Groq'],
     },
   };
