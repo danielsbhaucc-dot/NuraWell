@@ -14,6 +14,10 @@ import {
   type ChatWriterKey,
 } from '../../../../../lib/ai/chat-writer-fleet';
 import {
+  applyStickyWriterStance,
+  parseChatWriterStance,
+} from '../../../../../lib/ai/writer-stance-memory';
+import {
   analyzeWriterIntent,
   mergeWriterDecisions,
   writerRouterInstructions,
@@ -1372,7 +1376,8 @@ const CHAT_ROUTER_TIMEOUT_MS = (() => {
 function buildChatContextRouterPrompt(
   userMessage: string,
   signals: ReturnType<typeof detectChatSignals>,
-  historySnippet: string
+  historySnippet: string,
+  stickyLine?: string
 ): string {
   const signalParts = [
     signals.blocker_mentioned ? `blocker=${signals.main_blocker ?? 'yes'}` : '',
@@ -1384,6 +1389,7 @@ function buildChatContextRouterPrompt(
   const historyBlock = historySnippet
     ? `\nשיחה קודמת (הקשר — ההודעה החדשה היא לרוב המשך שלה):\n${historySnippet}\n`
     : '';
+  const stickyBlock = stickyLine ? `\nכותב דביק מתור קודם: ${stickyLine}\n` : '';
 
   return `אתה נתב כוונה בכיר לצ'אט מנטור בריאות בעברית.
 המטרה: ניתוח מדויק מאוד של ההודעה — איזה הקשר צריך, ואיזה כותב הכי חזק לתור הזה. איכות ודיוק לפני מהירות.
@@ -1409,7 +1415,7 @@ ${writerRouterInstructions()}
 החזר JSON בלבד:
 {"heavy_context":true/false,"needs_user_memory_rag":true/false,"needs_system_knowledge_rag":true/false,"needs_full_progress_report":true/false,"needs_journey_knowledge":true/false,"needs_principles":true/false,"needs_assignments":true/false,"needs_blockers":true/false,"writer":"terra|claude5|grok|llama4","writer_scores":{"terra":0,"claude5":0,"grok":0,"llama4":0},"writer_confidence":0,"intent":"תגיות","reason":"ניתוח קצר ומדויק","summary":"סיכום קצר או null"}
 
-אותות regex: ${signalParts.join(', ') || 'none'}${historyBlock}
+אותות regex: ${signalParts.join(', ') || 'none'}${historyBlock}${stickyBlock}
 הודעת משתמש (חדשה):
 ${userMessage.slice(0, 4000)}`;
 }
@@ -1429,6 +1435,7 @@ async function attemptContextRoute(opts: {
   historySnippet: string;
   debugId: string;
   provider: 'openrouter';
+  stickyLine?: string;
 }): Promise<ChatContextDecision | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
@@ -1459,7 +1466,8 @@ async function attemptContextRoute(opts: {
             content: buildChatContextRouterPrompt(
               opts.userMessage,
               opts.signals,
-              opts.historySnippet
+              opts.historySnippet,
+              opts.stickyLine
             ),
           },
         ],
@@ -1500,7 +1508,8 @@ async function routeChatContextWithCheapModel(
   userMessage: string,
   signals: ReturnType<typeof detectChatSignals>,
   debugId: string,
-  historySnippet: string
+  historySnippet: string,
+  stickyLine?: string
 ): Promise<ChatContextDecision> {
   const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
   if (!openrouterKey) {
@@ -1521,6 +1530,7 @@ async function routeChatContextWithCheapModel(
     historySnippet,
     debugId,
     provider: 'openrouter',
+    stickyLine,
   });
   // נכשל/timeout: במקום "בלי RAG" (שגרם לתשובות גנריות) — fallback היוריסטי
   // שמזהה שאלות/ידע ומפעיל שליפה בהתאם.
@@ -2253,19 +2263,23 @@ export async function POST(request: Request) {
   const challengeContextPromise = fetchChallengeAlmogContextBlock(supabase, user.id).catch(() => null);
 
   /**
-   * הנתב רץ כמעט בכל תור (חוץ מתודה/עשיתי קצר). דילוג דטרמיניסטי ישן
-   * ביטל את בחירת הכותב ואת זיכרון המשתמש בברכות ובהמשך-שיחה.
+   * הנתב רץ בכל תור. דילוג ישן ביטל בחירת כותב וזיכרון טון בין הודעות.
    */
-  let contextDecision = trivialBypass
-    ? lowContextDecision('trivial_bypass')
-    : await routeChatContextWithCheapModel(
-        lastUserText,
-        earlySignals,
-        debugId,
-        routerHistorySnippet
-      );
+  const profilePeek = await profilePromise;
+  const stickyStance = parseChatWriterStance(profilePeek.ai_context.writer_stance);
+  const stickyLine = stickyStance
+    ? `${stickyStance.writer} · ${stickyStance.reason} · turns=${stickyStance.turns}`
+    : undefined;
 
-  if (!trivialBypass && isLowContextTurn(lastUserText, earlySignals)) {
+  let contextDecision = await routeChatContextWithCheapModel(
+    lastUserText,
+    earlySignals,
+    debugId,
+    routerHistorySnippet,
+    stickyLine
+  );
+
+  if (isLowContextTurn(lastUserText, earlySignals)) {
     contextDecision = {
       ...contextDecision,
       heavy_context: false,
@@ -2305,21 +2319,29 @@ export async function POST(request: Request) {
 
   const heuristicAnalysis = analyzeWriterIntent(lastUserText, earlySignals);
   const cheapWriter = isChatWriterKey(contextDecision.writer) ? contextDecision.writer : undefined;
-  const routedWriter: ChatWriterKey = trivialBypass
-    ? 'llama4'
-    : mergeWriterDecisions(
-        cheapWriter === 'llama4' ? undefined : cheapWriter,
-        heuristicAnalysis.writer,
-        contextDecision.writer_scores as WriterScores | undefined,
-        heuristicAnalysis.scores,
-        heuristicAnalysis.tags
-      );
+  const turnWriter: ChatWriterKey = mergeWriterDecisions(
+    cheapWriter === 'llama4' ? undefined : cheapWriter,
+    heuristicAnalysis.writer,
+    contextDecision.writer_scores as WriterScores | undefined,
+    heuristicAnalysis.scores,
+    heuristicAnalysis.tags
+  );
+  const stickyResult = applyStickyWriterStance({
+    turnWriter,
+    turnTags: heuristicAnalysis.tags,
+    sticky: stickyStance,
+    userMessage: lastUserText,
+  });
+  const routedWriter = stickyResult.writer;
+  const cheapTrivialWriter = trivialBypass && routedWriter === 'llama4';
   mcfg = resolveChatModelRuntime(routedWriter);
   effectiveModel = mcfg.slug;
   console.info('[ai/chat]', {
     debug_id: debugId,
     stage: 'writer_routed',
     writer: mcfg.writer,
+    sticky: stickyResult.stickyApplied,
+    sticky_reason: stickyResult.stance?.reason ?? null,
     model: effectiveModel,
     confidence: contextDecision.writer_confidence ?? heuristicAnalysis.confidence,
     intent: contextDecision.intent ?? heuristicAnalysis.tags.join(','),
@@ -2956,7 +2978,14 @@ export async function POST(request: Request) {
      *      לפני שהוא יוצר את התשובה. עם reasoningEffort=medium זה הסל-ביטחון
      *      הכי אפקטיבי לחוקים שעלולים להתפספס כשהפרומפט גדל.
      */
-    const turnStance = writerStancePrompt(heuristicAnalysis.tags);
+    const turnStance = [
+      writerStancePrompt(heuristicAnalysis.tags),
+      stickyResult.stickyApplied
+        ? `[נתב] ממשיך ${mcfg.writer} מאותו עימות/גבול. כשהנושא מתחלף חוזרים ל-Terra.`
+        : `[נתב] כותב לפי חוזקה: Claude=גבול/אחריות, Grok=תירוץ/ויכוח/התחמקות, Terra=אמפתיה ושגרה. בחירה לתור: ${mcfg.writer}.`,
+    ]
+      .filter(Boolean)
+      .join('\n');
     const writerVoiceLine = `[כותב התור: ${mcfg.writer}] דבר בקול אלמוג המלא מהמערכת. אסור קול של עוזר גנרי, אסור therapy-speak, אסור להזדהות כמודל.`;
     const dynamicSystemPrompt = [
       '— הקשר לשיחה הזו —',
@@ -3188,6 +3217,18 @@ export async function POST(request: Request) {
             debug_id: debugId,
             stage: `${finishStage}_chat_signals`,
             error: sigErr instanceof Error ? sigErr.message : String(sigErr),
+          });
+        }
+
+        try {
+          await updateAiContext(createAdminClient(), user.id, {
+            writer_stance: stickyResult.stance,
+          });
+        } catch (stanceErr) {
+          console.warn('[ai/chat]', {
+            debug_id: debugId,
+            stage: `${finishStage}_writer_stance_failed`,
+            error: stanceErr instanceof Error ? stanceErr.message : String(stanceErr),
           });
         }
 
@@ -3671,7 +3712,7 @@ export async function POST(request: Request) {
     };
 
     let upstream: Response;
-    if (trivialBypass) {
+    if (cheapTrivialWriter) {
       /**
        * עוקף-כותב: הודעה טריוויאלית (תודה/אישור/דיווח-ביצוע קצר). מודל זול
        * דרך OpenRouter כותב במקום קלוד — חיסכון אדיר בלי פגיעה באיכות. אם הוא נכשל,
@@ -3833,7 +3874,7 @@ export async function POST(request: Request) {
     headers.set('x-session-id', sessionId);
     headers.set('x-debug-id', debugId);
     headers.set('x-debug-stage', stage);
-    headers.set('x-ai-writer', safetyNetUsed ? 'safety-net' : trivialBypass ? 'cheap-trivial' : 'primary');
+    headers.set('x-ai-writer', safetyNetUsed ? 'safety-net' : cheapTrivialWriter ? 'cheap-trivial' : 'primary');
     headers.set('x-ai-model', assistantModelName);
     headers.set('x-nura-writer', mcfg.writer);
     headers.set('Cache-Control', 'no-cache, no-transform');
