@@ -25,6 +25,7 @@ import {
   formatConversationFilePromptBlock,
 } from '../../../../../lib/ai/chat-conversation-file';
 import { looksLikeBracketOnlyReply, sanitizeWriterOutput } from '../../../../../lib/ai/sanitize-writer-output';
+import { extractOpenRouterDeltaText } from '../../../../../lib/ai/openrouter-delta-text';
 import { computeChatCostUsd } from '../../../../../lib/admin/cost-model';
 import { embedTextForRag } from '../../../../../lib/ai/openrouter-embeddings';
 import { buildRelevantMemoriesPromptBlock } from '../../../../../lib/ai/user-memories/retrieve-relevant-memories';
@@ -235,24 +236,6 @@ function chatRateLimitWindows() {
 
 const BASE_SYSTEM_PROMPT = NURAWELL_CHAT_SYSTEM_PROMPT;
 
-/**
- * Fallback למקרה שהמודל מחזיר טקסט ריק (קורה מדי פעם ב-edge עם reasoning).
- * Pool של 5 ניסוחים טבעיים — בכל קריאה ננשלף אחד אקראי כדי שהמשתמש לא יראה
- * את אותה תשובה פעמיים ברצף. כל הניסוחים בקול של אלמוג, לא של מערכת.
- */
-const EMPTY_RESPONSE_FALLBACKS: readonly string[] = [
-  'רגע, נתקעתי על הניסוח 😅 תוכל לזרוק לי שוב במילים אחרות?',
-  'אוף, איבדתי את החוט לרגע. תספר לי עוד משפט?',
-  'יששש, פספסתי. במשפט אחד — מה הכי קורה איתך עכשיו?',
-  'אחי הלכתי לאיבוד שניה 😄 רגע — מה היה הכי על הלב שלך?',
-  'וואלה, חמקה לי המחשבה. תזרוק לי שוב את הקצה?',
-];
-
-function pickEmptyResponseFallback(): string {
-  const idx = Math.floor(Math.random() * EMPTY_RESPONSE_FALLBACKS.length);
-  return EMPTY_RESPONSE_FALLBACKS[idx] ?? EMPTY_RESPONSE_FALLBACKS[0];
-}
-
 const MIN_STREAM_PREFIX_CHARS = 4;
 
 /**
@@ -388,25 +371,9 @@ function isClaudeSonnet5(slug: string): boolean {
   return s.includes('claude-sonnet-5') || s.includes('claude-5-sonnet');
 }
 
-function extractOpenRouterDeltaText(choice: {
-  delta?: {
-    content?: string | Array<{ type?: string; text?: string }>;
-    text?: string;
-  };
-  message?: { content?: string };
-} | undefined): string {
-  if (!choice) return '';
-  const raw = choice.delta?.content ?? choice.delta?.text ?? choice.message?.content;
-  if (typeof raw === 'string') return raw;
-  if (Array.isArray(raw)) {
-    return raw.map((part) => (typeof part.text === 'string' ? part.text : '')).join('');
-  }
-  return '';
-}
-
 type OpenRouterReasoning =
   | { max_tokens: number; exclude: boolean }
-  | { effort: 'low' | 'medium' | 'high'; exclude: boolean };
+  | { effort: 'none' | 'low' | 'medium' | 'high'; exclude?: boolean };
 
 function buildReasoningParam(useReasoning: boolean): { max_tokens: number; exclude: boolean } | null {
   if (!useReasoning) return null;
@@ -622,9 +589,12 @@ async function createOpenRouterTextStreamResponse({
   const claude5 = isClaudeSonnet5(model);
   const gpt5 = isGpt5FamilySlug(model);
   const llamaLike = /llama/i.test(model);
-  /** Claude 5 + GPT-5: reasoning.effort / seed שוברים פלט ריק או 400 — ואז נופלים לגיבוי בלי קול. */
+  /**
+   * GPT-5.6 / Claude 5 חושבים כברירת מחדל. בלי effort:none כל הטוקנים הולכים
+   * לחשיבה, content ריק, והמשתמש רואה הודעת גיבוי במקום אלמוג.
+   */
   const effectiveReasoning: OpenRouterReasoning | null =
-    claude5 || gpt5 ? null : reasoning;
+    gpt5 || claude5 ? { effort: 'none' } : reasoning;
   const reasoningBudget =
     effectiveReasoning && 'max_tokens' in effectiveReasoning ? effectiveReasoning.max_tokens : 0;
   const effectiveMaxTokens = claude5
@@ -691,7 +661,7 @@ async function createOpenRouterTextStreamResponse({
     lastErrorText = await upstream.text().catch(() => '');
     const invalidReasoning =
       Boolean(effectiveReasoning) && (upstream.status === 400 || upstream.status === 422);
-    if (invalidReasoning && attempt === 1) {
+    if (invalidReasoning && attempt === 1 && !(gpt5 || claude5)) {
       requestBody = buildBody(false);
       continue;
     }
@@ -814,12 +784,13 @@ async function createOpenRouterTextStreamResponse({
           let retryText = onEmptyRetry ? (await onEmptyRetry()).trim() : '';
           if (retryText && piiShield) retryText = piiShield.detokenizeText(retryText);
           retryText = sanitizeWriterOutput(retryText) || retryText;
-          const recoveredText = retryText || pickEmptyResponseFallback();
-          accumulated = recoveredText;
-          finishReason = 'stop';
-          streamPrefixBuffer = '';
-          streamStarted = true;
-          controller.enqueue(encoder.encode(recoveredText));
+          if (retryText) {
+            accumulated = retryText;
+            finishReason = 'stop';
+            streamPrefixBuffer = '';
+            streamStarted = true;
+            controller.enqueue(encoder.encode(retryText));
+          }
         }
 
         if (streamDetokenizer) {
@@ -849,9 +820,14 @@ async function createOpenRouterTextStreamResponse({
           stage: 'openrouter_stream_read_failed',
           error: err instanceof Error ? err.message : String(err),
         });
-        if (!streamStarted) {
-          const recovered = pickEmptyResponseFallback();
-          controller.enqueue(encoder.encode(recovered));
+        if (!streamStarted && onEmptyRetry) {
+          let retryText = (await onEmptyRetry()).trim();
+          if (retryText && piiShield) retryText = piiShield.detokenizeText(retryText);
+          retryText = sanitizeWriterOutput(retryText) || retryText;
+          if (retryText) {
+            accumulated = retryText;
+            controller.enqueue(encoder.encode(retryText));
+          }
         }
         controller.close();
       } finally {
@@ -3037,7 +3013,7 @@ export async function POST(request: Request) {
           }
         }
 
-        const assistantText = sanitizeWriterOutput(t) || t || pickEmptyResponseFallback();
+        const assistantText = sanitizeWriterOutput(t) || t;
         if (!t) {
           console.warn('[ai/chat]', {
             debug_id: debugId,
@@ -3760,10 +3736,10 @@ export async function POST(request: Request) {
     });
 
     if (!upstreamWithHeaders.body) {
-      return new Response(pickEmptyResponseFallback(), {
-        status: 200,
+      return new Response(JSON.stringify({ error: 'empty_upstream', debug_id: debugId }), {
+        status: 502,
         headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
+          'Content-Type': 'application/json; charset=utf-8',
           'x-session-id': sessionId,
           'x-debug-id': debugId,
           'x-debug-stage': 'no_body_fallback',
@@ -3792,8 +3768,7 @@ export async function POST(request: Request) {
           const trailing = decoder.decode();
           if (!hadVisibleText && trailing.trim().length > 0) hadVisibleText = true;
           if (!hadVisibleText) {
-            controller.enqueue(encoder.encode(pickEmptyResponseFallback()));
-            console.warn('[ai/chat]', { debug_id: debugId, stage: 'stream_empty_fallback' });
+            console.warn('[ai/chat]', { debug_id: debugId, stage: 'stream_empty_no_canned_fallback' });
           }
           controller.close();
         } catch (streamErr) {
@@ -3830,14 +3805,13 @@ export async function POST(request: Request) {
       elapsed_ms: Date.now() - startedAt,
       error: err instanceof Error ? err.message : String(err),
     });
-    return new Response(pickEmptyResponseFallback(), {
-      status: 200,
+    return new Response(JSON.stringify({ error: 'chat_writer_failed', debug_id: debugId }), {
+      status: 502,
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Type': 'application/json; charset=utf-8',
         'x-session-id': sessionId,
         'x-debug-id': debugId,
         'x-debug-stage': stage,
-        'x-ai-writer': 'fallback',
         'Cache-Control': 'no-cache, no-transform',
       },
     });
