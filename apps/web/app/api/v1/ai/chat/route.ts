@@ -10,6 +10,7 @@ import {
   analyzeWriterIntent,
   mergeWriterDecisions,
   writerRouterInstructions,
+  writerStancePrompt,
   type WriterScores,
 } from '../../../../../lib/ai/chat-intent-router';
 import {
@@ -2858,12 +2859,14 @@ export async function POST(request: Request) {
      *      לפני שהוא יוצר את התשובה. עם reasoningEffort=medium זה הסל-ביטחון
      *      הכי אפקטיבי לחוקים שעלולים להתפספס כשהפרומפט גדל.
      */
+    const turnStance = writerStancePrompt(heuristicAnalysis.tags);
     const dynamicSystemPrompt = [
       '— הקשר לשיחה הזו —',
       ...contextSections,
       '',
       '— פנייה אישית —',
       addressingFooter,
+      turnStance,
       '',
       mcfg.finalGuardrails,
     ]

@@ -102,6 +102,32 @@ describe('chat writer routing', () => {
   it('does not let Llama Grok steal a Terra empathy turn without conflict tags', () => {
     expect(mergeWriterDecisions('grok', 'terra', undefined, undefined, ['empathy'])).toBe('terra');
   });
+
+  it('routes excuses and evasion to Grok', () => {
+    expect(heuristicWriterDecision('שכחתי ולא בא לי עכשיו', emptySignals)).toBe('grok');
+    expect(heuristicWriterDecision('אין לי זמן אז דילגתי', emptySignals)).toBe('grok');
+  });
+
+  it('does not treat busy coaching as evasion', () => {
+    expect(heuristicWriterDecision('מה כדאי לי לאכול אם אין לי זמן בבוקר?', emptySignals)).toBe(
+      'terra'
+    );
+  });
+
+  it('routes empathy plus evasion to Grok not Terra', () => {
+    expect(
+      heuristicWriterDecision('נשברתי היום ודילגתי כי אין לי זמן', emptySignals)
+    ).toBe('grok');
+  });
+
+  it('routes empathy plus hard boundary to Claude', () => {
+    expect(
+      heuristicWriterDecision('קשה לי רגשית, תגיד שזה בסדר ותן לי אישור לדלג', emptySignals)
+    ).toBe('claude5');
+    expect(heuristicWriterDecision('אני נשברתי, תשקר למטפל ותכסה עליי', emptySignals)).toBe(
+      'claude5'
+    );
+  });
 });
 
 describe('sanitizeWriterOutput', () => {
