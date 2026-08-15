@@ -383,6 +383,26 @@ function isClaudeSonnet5(slug: string): boolean {
   return s.includes('claude-sonnet-5') || s.includes('claude-5-sonnet');
 }
 
+function isGpt5Family(slug: string): boolean {
+  return /gpt-5/i.test(slug);
+}
+
+function extractOpenRouterDeltaText(choice: {
+  delta?: {
+    content?: string | Array<{ type?: string; text?: string }>;
+    text?: string;
+  };
+  message?: { content?: string };
+} | undefined): string {
+  if (!choice) return '';
+  const raw = choice.delta?.content ?? choice.delta?.text ?? choice.message?.content;
+  if (typeof raw === 'string') return raw;
+  if (Array.isArray(raw)) {
+    return raw.map((part) => (typeof part.text === 'string' ? part.text : '')).join('');
+  }
+  return '';
+}
+
 type OpenRouterReasoning =
   | { max_tokens: number; exclude: boolean }
   | { effort: 'low' | 'medium' | 'high'; exclude: boolean };
@@ -588,13 +608,14 @@ async function createOpenRouterTextStreamResponse({
     : recentMessages;
 
   const claude5 = isClaudeSonnet5(model);
-  const claude5Reasoning: OpenRouterReasoning = { effort: 'low', exclude: true };
-  const effectiveReasoning: OpenRouterReasoning | null = claude5
-    ? claude5Reasoning
+  const gpt5 = isGpt5Family(model);
+  const effortReasoning: OpenRouterReasoning = { effort: 'low', exclude: true };
+  const effectiveReasoning: OpenRouterReasoning | null = claude5 || gpt5
+    ? effortReasoning
     : reasoning;
   const reasoningBudget =
     effectiveReasoning && 'max_tokens' in effectiveReasoning ? effectiveReasoning.max_tokens : 0;
-  const effectiveMaxTokens = claude5
+  const effectiveMaxTokens = claude5 || gpt5
     ? Math.max(maxOutputTokens, 2500)
     : reasoningBudget
       ? maxOutputTokens + reasoningBudget
@@ -602,7 +623,7 @@ async function createOpenRouterTextStreamResponse({
 
   const requestBody = JSON.stringify({
     model,
-    ...(claude5 ? {} : { temperature, top_p: 0.95, seed: randomSamplingSeed() }),
+    ...(claude5 || gpt5 ? {} : { temperature, top_p: 0.95, seed: randomSamplingSeed() }),
     max_tokens: effectiveMaxTokens,
     ...(effectiveReasoning ? { reasoning: effectiveReasoning } : {}),
     ...(CHAT_PROVIDER_SORT || providerOnly?.length
@@ -703,30 +724,32 @@ async function createOpenRouterTextStreamResponse({
     controller: ReadableStreamDefaultController<Uint8Array>
   ) => {
     if (!data || data === '[DONE]') return;
-    const parsed = JSON.parse(data) as {
-      choices?: Array<{
-        delta?: { content?: string | Array<{ type?: string; text?: string }> };
-        finish_reason?: string | null;
-      }>;
-      usage?: unknown;
-    };
-    const choice = parsed.choices?.[0];
-    const rawContent = choice?.delta?.content;
-    const content =
-      typeof rawContent === 'string'
-        ? rawContent
-        : Array.isArray(rawContent)
-          ? rawContent.map((part) => (typeof part.text === 'string' ? part.text : '')).join('')
-          : '';
-    if (typeof content === 'string' && content.length > 0) {
-      accumulated += content;
-      enqueueModelText(content, controller);
-    }
-    if (typeof choice?.finish_reason === 'string') {
-      finishReason = choice.finish_reason;
-    }
-    if (parsed.usage) {
-      usage = normalizeOpenRouterUsage(parsed.usage);
+    try {
+      const parsed = JSON.parse(data) as {
+        choices?: Array<{
+          delta?: {
+            content?: string | Array<{ type?: string; text?: string }>;
+            text?: string;
+          };
+          message?: { content?: string };
+          finish_reason?: string | null;
+        }>;
+        usage?: unknown;
+      };
+      const choice = parsed.choices?.[0];
+      const content = extractOpenRouterDeltaText(choice);
+      if (content.length > 0) {
+        accumulated += content;
+        enqueueModelText(content, controller);
+      }
+      if (typeof choice?.finish_reason === 'string') {
+        finishReason = choice.finish_reason;
+      }
+      if (parsed.usage) {
+        usage = normalizeOpenRouterUsage(parsed.usage);
+      }
+    } catch {
+      /* שורת SSE לא תקינה — ממשיכים כדי לא להפיל את כל הזרם */
     }
   };
 
@@ -793,7 +816,15 @@ async function createOpenRouterTextStreamResponse({
         });
         controller.close();
       } catch (err) {
-        controller.error(err);
+        console.warn('[ai/chat]', {
+          stage: 'openrouter_stream_read_failed',
+          error: err instanceof Error ? err.message : String(err),
+        });
+        if (!streamStarted) {
+          const recovered = pickEmptyResponseFallback();
+          controller.enqueue(encoder.encode(recovered));
+        }
+        controller.close();
       } finally {
         reader.releaseLock();
       }
