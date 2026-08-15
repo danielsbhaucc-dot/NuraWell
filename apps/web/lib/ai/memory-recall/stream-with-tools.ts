@@ -56,12 +56,12 @@ export async function createMemoryRecallStreamResponse(params: {
   const systemContent = [
     params.staticSystemPrompt,
     MEMORY_RECALL_TOOL_PROMPT,
-    params.dynamicSystemPrompt,
+    params.piiShield
+      ? params.piiShield.tokenizeText(params.dynamicSystemPrompt)
+      : params.dynamicSystemPrompt,
   ].join('\n\n');
 
-  const tokenizedSystem = params.piiShield
-    ? params.piiShield.tokenizeText(systemContent)
-    : systemContent;
+  const tokenizedSystem = systemContent;
   const tokenizedMessages = params.piiShield
     ? params.piiShield.tokenizeMessages(params.recentMessages)
     : params.recentMessages;

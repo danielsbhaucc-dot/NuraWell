@@ -16,7 +16,7 @@ export function shouldAttemptMemoryRecall(
   userMessage: string,
   hints?: { emotional?: boolean; blocker?: boolean; heavyContext?: boolean }
 ): boolean {
-  if (process.env.AI_MEMORY_RECALL_TOOLS?.trim() === '0') return false;
+  if (process.env.AI_MEMORY_RECALL_TOOLS?.trim() !== '1') return false;
 
   const t = userMessage.replace(/\s+/g, ' ').trim();
   if (!t || SMALL_TALK.test(t)) return false;
@@ -34,5 +34,5 @@ export function shouldAttemptMemoryRecall(
 }
 
 export function isMemoryRecallToolsEnabled(): boolean {
-  return process.env.AI_MEMORY_RECALL_TOOLS?.trim() !== '0';
+  return process.env.AI_MEMORY_RECALL_TOOLS?.trim() === '1';
 }

@@ -552,19 +552,29 @@ function openRouterMessagesWithCachedSystem(
   recentMessages: TextChatMessage[],
   supportsPromptCache: boolean
 ) {
-  const staticContent = supportsPromptCache
-    ? [
-        {
-          type: 'text',
-          text: staticSystemPrompt,
-          cache_control: { type: 'ephemeral', ttl: CHAT_PROMPT_CACHE_TTL },
-        },
-      ]
-    : staticSystemPrompt;
+  /**
+   * הודעת מערכת *אחת*. שתי הודעות system גורמות ל-GPT-5/Grok לקחת רק אחת —
+   * ואז נעלמים Voice DNA או ההקשר האישי.
+   */
+  if (supportsPromptCache) {
+    return [
+      {
+        role: 'system',
+        content: [
+          {
+            type: 'text',
+            text: staticSystemPrompt,
+            cache_control: { type: 'ephemeral', ttl: CHAT_PROMPT_CACHE_TTL },
+          },
+          { type: 'text', text: dynamicSystemPrompt },
+        ],
+      },
+      ...recentMessages,
+    ];
+  }
 
   return [
-    { role: 'system', content: staticContent },
-    { role: 'system', content: dynamicSystemPrompt },
+    { role: 'system', content: `${staticSystemPrompt}\n\n${dynamicSystemPrompt}` },
     ...recentMessages,
   ];
 }
@@ -602,7 +612,7 @@ async function createOpenRouterTextStreamResponse({
   supportsPromptCache: boolean;
   providerOnly?: readonly string[];
 }) {
-  const tokenizedStatic = piiShield ? piiShield.tokenizeText(staticSystemPrompt) : staticSystemPrompt;
+  const tokenizedStatic = staticSystemPrompt;
   const tokenizedDynamic = piiShield ? piiShield.tokenizeText(dynamicSystemPrompt) : dynamicSystemPrompt;
   const tokenizedMessages = piiShield
     ? piiShield.tokenizeMessages(recentMessages)
@@ -622,8 +632,9 @@ async function createOpenRouterTextStreamResponse({
       ? maxOutputTokens + reasoningBudget
       : maxOutputTokens;
 
-  const sampling =
-    claude5 || gpt5
+  const sampling = gpt5
+    ? { temperature: 1 }
+    : claude5
       ? {}
       : {
           temperature,
@@ -657,7 +668,7 @@ async function createOpenRouterTextStreamResponse({
 
   let requestBody = buildBody(true);
   if (piiShield) {
-    piiShield.assertNoRawPii(requestBody);
+    piiShield.assertNoRawPii(`${tokenizedDynamic}\n${JSON.stringify(tokenizedMessages)}`);
   }
 
   let upstream: Response | null = null;
@@ -884,8 +895,8 @@ async function createOpenRouterCheapTextResponse({
    * ה-PII פעיל. בלי detokenize כאן — המשתמש היה רואה את המשתנה במקום השם. לכן
    * מטוקנים את הקלט ומפענחים את הפלט בדיוק כמו הנתיב הראשי.
    */
-  const systemContent = `${staticSystemPrompt}\n\n${dynamicSystemPrompt}`;
-  const tokenizedSystem = piiShield ? piiShield.tokenizeText(systemContent) : systemContent;
+  const tokenizedDynamic = piiShield ? piiShield.tokenizeText(dynamicSystemPrompt) : dynamicSystemPrompt;
+  const tokenizedSystem = `${staticSystemPrompt}\n\n${tokenizedDynamic}`;
   const tokenizedMessages = piiShield ? piiShield.tokenizeMessages(recentMessages) : recentMessages;
 
   const postCheap = (groqOnly: boolean) =>
@@ -3545,9 +3556,9 @@ export async function POST(request: Request) {
           model: openrouter.chat(slug),
           temperature: Math.max(0.75, CHAT_TEMPERATURE - 0.1),
           maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 360),
-          system: piiShield
-            ? piiShield.tokenizeText(systemPromptWithMemory)
-            : systemPromptWithMemory,
+          system: `${mcfg.mainWriterSystemPrompt}\n\n${
+            piiShield ? piiShield.tokenizeText(dynamicSystemPrompt) : dynamicSystemPrompt
+          }`,
           messages: piiShield
             ? piiShield.tokenizeMessages(recentMessages)
             : recentMessages,
