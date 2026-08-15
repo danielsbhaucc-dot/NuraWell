@@ -383,10 +383,6 @@ function isClaudeSonnet5(slug: string): boolean {
   return s.includes('claude-sonnet-5') || s.includes('claude-5-sonnet');
 }
 
-function isGpt5Family(slug: string): boolean {
-  return /gpt-5/i.test(slug);
-}
-
 function extractOpenRouterDeltaText(choice: {
   delta?: {
     content?: string | Array<{ type?: string; text?: string }>;
@@ -608,49 +604,49 @@ async function createOpenRouterTextStreamResponse({
     : recentMessages;
 
   const claude5 = isClaudeSonnet5(model);
-  const gpt5 = isGpt5Family(model);
-  const effortReasoning: OpenRouterReasoning = { effort: 'low', exclude: true };
-  const effectiveReasoning: OpenRouterReasoning | null = claude5 || gpt5
-    ? effortReasoning
+  const effectiveReasoning: OpenRouterReasoning | null = claude5
+    ? { effort: 'low', exclude: true }
     : reasoning;
   const reasoningBudget =
     effectiveReasoning && 'max_tokens' in effectiveReasoning ? effectiveReasoning.max_tokens : 0;
-  const effectiveMaxTokens = claude5 || gpt5
+  const effectiveMaxTokens = claude5
     ? Math.max(maxOutputTokens, 2500)
     : reasoningBudget
       ? maxOutputTokens + reasoningBudget
       : maxOutputTokens;
 
-  const requestBody = JSON.stringify({
-    model,
-    ...(claude5 || gpt5 ? {} : { temperature, top_p: 0.95, seed: randomSamplingSeed() }),
-    max_tokens: effectiveMaxTokens,
-    ...(effectiveReasoning ? { reasoning: effectiveReasoning } : {}),
-    ...(CHAT_PROVIDER_SORT || providerOnly?.length
-      ? {
-          provider: {
-            ...(CHAT_PROVIDER_SORT ? { sort: CHAT_PROVIDER_SORT } : {}),
-            ...(providerOnly?.length ? { only: [...providerOnly] } : {}),
-          },
-        }
-      : {}),
-    stream: true,
-    stream_options: { include_usage: true },
-    messages: openRouterMessagesWithCachedSystem(
-      tokenizedStatic,
-      tokenizedDynamic,
-      tokenizedMessages,
-      supportsPromptCache
-    ),
-  });
+  const buildBody = (includeReasoning: boolean) =>
+    JSON.stringify({
+      model,
+      ...(claude5 ? {} : { temperature, top_p: 0.95, seed: randomSamplingSeed() }),
+      max_tokens: effectiveMaxTokens,
+      ...(includeReasoning && effectiveReasoning ? { reasoning: effectiveReasoning } : {}),
+      ...(CHAT_PROVIDER_SORT || providerOnly?.length
+        ? {
+            provider: {
+              ...(CHAT_PROVIDER_SORT ? { sort: CHAT_PROVIDER_SORT } : {}),
+              ...(providerOnly?.length ? { only: [...providerOnly] } : {}),
+            },
+          }
+        : {}),
+      stream: true,
+      stream_options: { include_usage: true },
+      messages: openRouterMessagesWithCachedSystem(
+        tokenizedStatic,
+        tokenizedDynamic,
+        tokenizedMessages,
+        supportsPromptCache
+      ),
+    });
 
+  let requestBody = buildBody(true);
   if (piiShield) {
     piiShield.assertNoRawPii(requestBody);
   }
 
   let upstream: Response | null = null;
   let lastErrorText = '';
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
     upstream = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -658,7 +654,6 @@ async function createOpenRouterTextStreamResponse({
         Authorization: `Bearer ${apiKey}`,
         'HTTP-Referer': referer,
         'X-Title': 'NuraWell',
-        // מבטל response-cache ברמת OpenRouter — תמיד תשובה טרייה, לא משוחזרת.
         'X-OpenRouter-Cache': 'false',
       },
       body: requestBody,
@@ -666,8 +661,14 @@ async function createOpenRouterTextStreamResponse({
     if (upstream.ok) break;
 
     lastErrorText = await upstream.text().catch(() => '');
+    const invalidReasoning =
+      Boolean(effectiveReasoning) && (upstream.status === 400 || upstream.status === 422);
+    if (invalidReasoning && attempt === 1) {
+      requestBody = buildBody(false);
+      continue;
+    }
     const retriable = upstream.status === 429 || upstream.status >= 500;
-    if (!retriable || attempt === 2) break;
+    if (!retriable || attempt === 3) break;
     await sleep(300 * attempt);
   }
 
@@ -848,6 +849,7 @@ async function createOpenRouterCheapTextResponse({
   onFinish,
   piiShield,
   model,
+  restrictProvider = true,
 }: {
   apiKey: string;
   staticSystemPrompt: string;
@@ -859,6 +861,7 @@ async function createOpenRouterCheapTextResponse({
   onFinish: (payload: StreamFinishPayload) => Promise<void>;
   piiShield?: PiiShield | null;
   model?: string;
+  restrictProvider?: boolean;
 }): Promise<Response> {
   /**
    * הפרומפט המשותף כבר מכיל placeholders של PII (למשל [[USER_FIRST_NAME]]) כשמגן
@@ -869,28 +872,34 @@ async function createOpenRouterCheapTextResponse({
   const tokenizedSystem = piiShield ? piiShield.tokenizeText(systemContent) : systemContent;
   const tokenizedMessages = piiShield ? piiShield.tokenizeMessages(recentMessages) : recentMessages;
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-      'HTTP-Referer': publicAppUrlForAiReferer(),
-      'X-Title': 'NuraWell',
-      'X-OpenRouter-Cache': 'false',
-    },
-    body: JSON.stringify({
-      model: model ?? CHAT_SAFETY_NET_MODEL,
-      temperature,
-      top_p: 0.95,
-      seed: randomSamplingSeed(),
-      max_tokens: Math.min(maxOutputTokens, 4000),
-      provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] },
-      messages: [
-        { role: 'system', content: tokenizedSystem },
-        ...tokenizedMessages,
-      ],
-    }),
-  });
+  const postCheap = (groqOnly: boolean) =>
+    fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        'HTTP-Referer': publicAppUrlForAiReferer(),
+        'X-Title': 'NuraWell',
+        'X-OpenRouter-Cache': 'false',
+      },
+      body: JSON.stringify({
+        model: model ?? CHAT_SAFETY_NET_MODEL,
+        temperature,
+        top_p: 0.95,
+        seed: randomSamplingSeed(),
+        max_tokens: Math.min(maxOutputTokens, 4000),
+        ...(groqOnly ? { provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] } } : {}),
+        messages: [
+          { role: 'system', content: tokenizedSystem },
+          ...tokenizedMessages,
+        ],
+      }),
+    });
+
+  let response = await postCheap(restrictProvider);
+  if (!response.ok && restrictProvider) {
+    response = await postCheap(false);
+  }
   if (!response.ok) {
     const errorText = await response.text().catch(() => '');
     throw new Error(
@@ -904,7 +913,10 @@ async function createOpenRouterCheapTextResponse({
   };
   const rawText = data.choices?.[0]?.message?.content?.trim() ?? '';
   const text = sanitizeWriterOutput(piiShield ? piiShield.detokenizeText(rawText) : rawText);
-  const safeText = text && !isStubModelReply(text) ? text : pickEmptyResponseFallback();
+  const safeText = text && !isStubModelReply(text) ? text : '';
+  if (!safeText) {
+    throw new Error('OpenRouter cheap writer empty');
+  }
   await onFinish({
     text: safeText,
     usage: normalizeOpenRouterUsage(data.usage),
@@ -3508,12 +3520,12 @@ export async function POST(request: Request) {
     const cheapWriterKey = openrouterKey;
 
     const emptyRetryHandler = async () => {
-      try {
+      const run = async (slug: string, openAiEffort: boolean) => {
         const retry = await generateText({
-          model: openrouter.chat(effectiveModel),
+          model: openrouter.chat(slug),
           temperature: Math.max(0.75, CHAT_TEMPERATURE - 0.1),
           maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 360),
-          providerOptions: mcfg.isOpenAI ? { openai: { reasoningEffort: 'low' } } : {},
+          providerOptions: openAiEffort ? { openai: { reasoningEffort: 'low' } } : {},
           system: piiShield
             ? piiShield.tokenizeText(systemPromptWithMemory)
             : systemPromptWithMemory,
@@ -3521,12 +3533,17 @@ export async function POST(request: Request) {
             ? piiShield.tokenizeMessages(recentMessages)
             : recentMessages,
         });
-        const retryText = (retry.text ?? '').trim();
+        return (retry.text ?? '').trim();
+      };
+      try {
+        let retryText = await run(effectiveModel, mcfg.isOpenAI);
+        if (!retryText) {
+          retryText = await run(CHAT_SAFETY_NET_MODEL, false);
+        }
         if (retryText) {
           console.info('[ai/chat]', {
             debug_id: debugId,
             stage: 'stream_empty_retry_recovered',
-            finish_reason: retry.finishReason,
           });
         }
         return piiShield ? piiShield.detokenizeText(retryText) : retryText;
@@ -3536,7 +3553,12 @@ export async function POST(request: Request) {
           stage: 'stream_empty_retry_failed',
           error: retryErr instanceof Error ? retryErr.message : String(retryErr),
         });
-        return '';
+        try {
+          const fallbackText = await run(CHAT_SAFETY_NET_MODEL, false);
+          return piiShield ? piiShield.detokenizeText(fallbackText) : fallbackText;
+        } catch {
+          return '';
+        }
       }
     };
 
