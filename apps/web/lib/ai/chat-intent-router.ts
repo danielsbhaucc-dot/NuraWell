@@ -11,34 +11,34 @@ export type WriterAnalysis = {
 };
 
 const DANGER_RE =
-  /(?:להתאבד|לא שווה לחיות|רוצה להיעלם|למות|פגיעה עצמית|לפגוע בעצמי|לחתוך|לקרוע|משלשל|הקא[הוה]|הקאה|לטהר|אנורקס|בולימ|בינג'|binge|דיאטה קיצונית|800\s*קלור|אל תשאל|אל תעצור|תפסיק לשאול|תן לי רעב|בלי אוכל|צום מים|סכנה|לפגוע ב|לאכול כלום|להרעיב|מנת יתר|overdose|כדורים כדי)/u;
+  /(?:להתאבד|אובדנ|לא שווה לחיות|לא רוצה לחיות|רוצה להיעלם|למות|פגיעה עצמית|לפגוע בעצמי|לחתוך|לקרוע|משלשל|הקא[הוה]|הקאה|לטהר|אנורקס|בולימ|בינג'|binge|דיאטה קיצונית|800\s*קלור|אל תשאל|אל תעצור|תפסיק לשאול|תן לי רעב|בלי אוכל|צום מים|לפגוע ב|לאכול כלום|להרעיב|מנת יתר|overdose|כדורים כדי|purge|להקיא אחרי)/u;
 
 const BOUNDARY_RE =
-  /(?:תגיד לי איך לעשות|בלי שאלות|תעבור על החוקים|תשקר לצוות|תשקר למטפל|לדלג על הכל|תעזור לי לרמות|תעמיד פנים|עקוף את|תתעלם מהתוכנית|תכסה עליי|תשקר בשבילי|אל תגיד לאף אחד|תסתיר מ|תכסה על זה)/u;
+  /(?:תגיד לי איך לעשות|בלי שאלות|תעבור על החוקים|תשקר לצוות|תשקר למטפל|לדלג על הכל|תעזור לי לרמות|תעמיד פנים|עקוף את|תתעלם מהתוכנית|תכסה עליי|תשקר בשבילי|אל תגיד לאף אחד|תסתיר מ|תכסה על זה|תסתיר מהצוות|לשקר לצוות)/u;
 
 const ACCUSATION_RE =
-  /(?:אתה לא עוזר|אתה מתנשא|אתה שקרן|אתה גרוע|אתה מטומטם|אתה לא מבין|אלמוג אתה|אתם לא|תמיד אתה|אף פעם אתה לא|אתה נגד|אתה חסר תועלת|בזבוז זמן|לא שווה כלום כמנטור|פישלת(?!י)|טעית(?!י)|אתה רק בינה|אתה חוזר על עצמך|תפסיק לחפור)/u;
+  /(?:אתה לא עוזר|אתה מתנשא|אתה שקרן|אתה גרוע|אתה מטומטם|אתה לא מבין|אלמוג אתה|אתם לא|תמיד אתה|אף פעם אתה לא|אתה נגד|אתה חסר תועלת|בזבוז זמן|לא שווה כלום כמנטור|פישלת(?!י)|טעית(?!י)|אתה רק בינה|אתה חוזר על עצמך|תפסיק לחפור|אתה לא שומע|לא אכפת לך)/u;
 
 const ARGUMENT_RE =
-  /(?:תוכיח|אחרת אני עוזב|תתווכח|אתה טועה|לא נכון|זה שקר|סותר|סתירה|לא מה שאמרת|מי ביקש ממך|שכנע אותי|תתווכח איתי|בוא נתווכח|זה לא עובד|ההפך|זה לא מדעי|תוכיח לי|תביא מחקר)/u;
+  /(?:תוכיח|אחרת אני עוזב|תתווכח|אתה טועה|לא נכון|זה שקר|סותר|סתירה|לא מה שאמרת|מי ביקש ממך|שכנע אותי|תתווכח איתי|בוא נתווכח|זה לא עובד|ההפך|זה לא מדעי|תוכיח לי|תביא מחקר|לא מסכים|תוכיח שזה)/u;
 
 const RUDE_RE = /(?:לעזאזל|שתוק|מטומטם|דפוק|חלאה|זין|לך ת|סתום|דפוקה|מעצבן)/u;
 
 const GROK_SPARK_RE =
-  /(?:תגיד לי ישר|בלי שטויות|בלי לקשקש|תן לי את האמת|אל תתייפייף|אל תלטף|תוציא אותי מהאשליה|תעיר אותי|תן לי בעיטה|תייבש אותי|תיקח אותי קשה|רוסט|צחוק|ציני|בלי דרמה מתוקה|תפסיק לייפות|זה שטויות|זה שקר|תיקח אחריות|תיקח אותי במקום|תקרא לי תירוצים|בלי חמאה)/u;
+  /(?:תגיד לי ישר|תגיד ישר|בלי שטויות|בלי לקשקש|תן לי את האמת|אל תתייפייף|אל תלטף|תוציא אותי מהאשליה|תעיר אותי|תן לי בעיטה|תייבש אותי|תיקח אותי קשה|רוסט|צחוק|ציני|בלי דרמה מתוקה|תפסיק לייפות|זה שטויות|זה שקר|תיקח אחריות|תיקח אותי במקום|תקרא לי תירוצים|בלי חמאה|בלי לפנק)/u;
 
 const EMPATHY_RE =
-  /(?:נשברתי|חרא עם עצמי|אין טעם|לבד|בודד|בדידות|בוכה|פחד|חרדה|דיכאון|מתייאש|לא שווה|פישלתי|אשם|מתבייש|בושה|כואב לי|קשה לי רגשית|אני צריך חיבוק|עצוב|יום קשה|מפחד להיכשל|לא מספיק)/u;
+  /(?:נשברתי|חרא עם עצמי|אין טעם|לבד|בודד|בדידות|בוכה|פחד|חרדה|דיכאון|מתייאש|לא שווה|פישלתי|אשם|מתבייש|בושה|כואב לי|קשה לי רגשית|אני צריך חיבוק|עצוב|יום קשה|מפחד להיכשל|לא מספיק|קשה לי היום)/u;
 
 const COACHING_RE =
-  /(?:מה לאכול|מה כדאי|אימון|הרגל|מים|שינה|משקל|קלור|ארוחה|תפריט|איך להתחיל|תוכנית|צעד קטן|משימה|שגרה|מה הצעד הבא|ליווי)/u;
+  /(?:מה לאכול|מה כדאי|אימון|הרגל|מים|שינה|לישון|משקל|קלור|חלבון|ארוחה|תפריט|תזונה|איך להתחיל|תוכנית|צעד קטן|משימה|שגרה|מה הצעד הבא|ליווי|ארוחת בוקר|מה עושים היום)/u;
 
 const SIMPLE_RE =
   /^(?:תודה|תודה רבה|אוקי|אוקיי|סבבה|יופי|היי|שלום|כן|לא|עשיתי|סיימתי|הבנתי)[\s!.]*$/u;
 
 /** תירוץ/התחמקות ברורה — Grok קורא את זה, Terra נוטה לקנות. */
 const EXCUSE_RE =
-  /(?:שכחתי|לא בא לי|התחמק|תירוץ|ברחתי מ|נדחה ל|נדחה את|לא הספקתי|מחר אתחיל|זה לא אני|כולם עושים|זה בגלל העבודה|זה בגלל הילדים|פספסתי כי|לא עשיתי כי|אין מצב היום|אי אפשר עכשיו|אולי אחר כך|נתקעתי בדרך)/u;
+  /(?:שכחתי|לא בא לי|אין לי כוח|התחמק|תירוץ|ברחתי מ|נדחה ל|נדחה את|דחיתי|לא הספקתי|מחר אתחיל|אתחיל ביום|זה לא אני|כולם עושים|זה בגלל העבודה|זה בגלל הילדים|פספסתי כי|לא עשיתי כי|אין מצב היום|אי אפשר עכשיו|אולי אחר כך|נתקעתי בדרך|זה לא הזמן)/u;
 
 const BUSY_RE = /(?:אין לי זמן|יום עמוס|הייתי עסוק)/u;
 
@@ -58,43 +58,59 @@ function clampScore(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
-function pickWinner(scores: WriterScores, tags: string[]): ChatWriterKey {
-  if (tags.includes('safety') || tags.includes('boundaries')) return 'claude5';
+function hasAny(tags: string[], keys: string[]): boolean {
+  return keys.some((key) => tags.includes(key));
+}
 
-  if (tags.includes('warm_boundary') || (tags.includes('empathy') && tags.includes('adult'))) {
+/**
+ * נתיב כותב לפי חוזקות — לא לפי ציון הנתב הזול.
+ * Claude: סכנה / גבול אתי / אמפתיה+אישור לדלג.
+ * Grok: ויכוח / האשמה / תירוץ / "תגיד ישר" / אמפתיה+התחמקות.
+ * Terra: אמפתיה רכה / שגרה / תזונה בלי עימות.
+ * Llama4: רק תודה/היי/עשיתי קצר.
+ */
+export function writerLaneFromTags(
+  tags: string[],
+  fallback: ChatWriterKey = 'terra'
+): ChatWriterKey {
+  if (hasAny(tags, ['safety', 'boundaries', 'warm_boundary'])) return 'claude5';
+  if (tags.includes('adult') && (tags.includes('empathy') || tags.includes('people_please'))) {
     return 'claude5';
   }
-
-  if (tags.includes('evasion') && !tags.includes('adult')) {
+  if (
+    tags.includes('simple') &&
+    !hasAny(tags, [
+      'empathy',
+      'evasion',
+      'argument',
+      'accusation',
+      'direct',
+      'rude',
+      'people_please',
+      'coaching',
+    ])
+  ) {
+    return 'llama4';
+  }
+  if (
+    hasAny(tags, ['evasion', 'argument', 'accusation', 'direct', 'rude']) ||
+    (tags.includes('people_please') && !tags.includes('adult'))
+  ) {
     return 'grok';
   }
+  if (hasAny(tags, ['empathy', 'coaching'])) return 'terra';
+  return fallback === 'llama4' ? 'terra' : fallback;
+}
 
-  if (tags.includes('people_please')) {
-    if (tags.includes('adult') && scores.claude5 + 4 >= scores.grok) return 'claude5';
-    return scores.claude5 > scores.grok + 12 ? 'claude5' : 'grok';
-  }
+function pickWinner(scores: WriterScores, tags: string[]): ChatWriterKey {
+  const lane = writerLaneFromTags(tags);
+  if (lane !== 'terra' || hasAny(tags, ['empathy', 'coaching', 'simple'])) return lane;
 
   const ranked = (Object.entries(scores) as Array<[ChatWriterKey, number]>).sort(
     (a, b) => b[1] - a[1]
   );
-  const [top, second] = ranked;
-  if (!top) return 'terra';
-
-  if (top[0] === 'llama4') {
-    const othersMax = Math.max(scores.terra, scores.claude5, scores.grok);
-    if (top[1] >= 72 && othersMax < 38) return 'llama4';
-    return (ranked.find(([key]) => key !== 'llama4') ?? ['terra', 0])[0];
-  }
-
-  if (scores.grok >= 42 && scores.grok + 8 >= scores.terra && !tags.includes('safety')) {
-    if (scores.claude5 > scores.grok + 15 && tags.includes('adult')) return 'claude5';
-    return 'grok';
-  }
-
-  if (top[0] === 'terra' && second?.[0] === 'grok' && top[1] - second[1] <= 6) {
-    return 'grok';
-  }
-
+  const [top] = ranked;
+  if (!top || top[0] === 'llama4') return 'terra';
   return top[0];
 }
 
@@ -121,7 +137,7 @@ export function analyzeWriterIntent(
   const excuse = EXCUSE_RE.test(t);
   const busy = BUSY_RE.test(t);
   const skipped = SKIPPED_RE.test(t);
-  const evasion = excuse || (busy && skipped) || (busy && !coaching && !simple);
+  const evasion = excuse || (busy && skipped);
 
   if (danger) {
     tags.push('safety');
@@ -245,35 +261,15 @@ export function mergeWriterDecisions(
   heuristicScores?: WriterScores,
   heuristicTags: string[] = []
 ): ChatWriterKey {
-  if (heuristicTags.includes('safety') || heuristicTags.includes('boundaries')) {
-    return 'claude5';
-  }
-  if (heuristicTags.includes('warm_boundary') || heuristic === 'claude5') return 'claude5';
-
-  const grokLane =
-    heuristic === 'grok' ||
-    heuristicTags.includes('evasion') ||
-    heuristicTags.includes('argument') ||
-    heuristicTags.includes('accusation') ||
-    heuristicTags.includes('direct') ||
-    heuristicTags.includes('rude') ||
-    heuristicTags.includes('people_please');
-  if (grokLane && !heuristicTags.includes('adult')) return 'grok';
-  if (heuristicTags.includes('people_please') && heuristicTags.includes('adult')) {
-    return 'claude5';
-  }
-
-  const blended = blendScores(llamaScores, heuristicScores);
   const tags = [...heuristicTags];
+  const blended = blendScores(llamaScores, heuristicScores);
   if (llamaChoice === 'claude5' && blended && blended.claude5 >= 50) tags.push('safety');
-  if (blended) {
-    const picked = pickWinner(blended, tags);
-    if (picked === 'llama4' && heuristic !== 'llama4') return heuristic;
-    return picked;
-  }
 
-  if (llamaChoice === 'grok' && grokLane) return 'grok';
-  return heuristic;
+  const lane = writerLaneFromTags(tags, heuristic);
+  if (lane === 'claude5' || heuristic === 'claude5') return 'claude5';
+  if (lane === 'grok' || heuristic === 'grok') return 'grok';
+  if (heuristic === 'llama4' && (lane === 'llama4' || lane === 'terra')) return 'llama4';
+  return 'terra';
 }
 
 export function writerStancePrompt(tags: string[]): string | null {
@@ -298,24 +294,21 @@ export function writerStancePrompt(tags: string[]): string | null {
 }
 
 export function writerRouterInstructions(): string {
-  return `נתח את ההודעה לעומק לפני בחירת כותב. אל תמהר. דיוק חשוב יותר ממהירות.
-תן ציון 0-100 לכל כותב לפי כמה הוא *הכי טוב* להודעה הזו, לא לפי מי ברירת מחדל.
+  return `נתח את ההודעה לפי *חוזקות הכותב*, לא לפי מי ברירת מחדל. דיוק לפני מהירות.
+תן ציון 0-100 לפי מי הכי חזק *בסוג השיחה הזה*. אל תבחר terra רק כי הטון חם.
 
-פרופילי כותבים:
-- grok: חזק מאוד. ויכוח, האשמות כלפי אלמוג, סתירות, דיבור לא מכבד, "תגיד לי ישר", דחיפה חדה, הומור/ציניות, לקרוא תירוצים והתחמקויות ("אין לי זמן"+"דילגתי", שכחתי, לא בא לי, מחר אתחיל), שכנוע לוגי, "תוכיח", אתגר מדעי. תן לו מקום — אל תברר אותו לטרה רק כי הטון הכללי חם או כי יש גם קצת כאב.
-- claude5: מבוגר אחראי. סכנה, פגיעה עצמית, מחשבות אובדניות, הפרעות אכילה קיצוניות, בקשה לעקוף תוכנית/לשקר לצוות/להסתיר ממטפל, העמדת גבולות רצינית, אתיקה. כשיש *גם* כאב אמיתי וגם גבול — הוא הכותב (חום + קו שלא מתקפל). לא haiku. אם יש סכנה — הוא מנצח גם מול grok.
-- terra: אמפתיה גבוהה, ליווי רגשי עדין, בושה/בדידות/פחד/יום קשה, תזונה והרגלים בטון חם, שגרה וצעד הבא, שיחת מנטור רגילה בלי עימות ובלי התחמקות.
-- llama4: דגש קטן בלבד. רק אישור/תודה/היי/עשיתי קצר בלי רגש ובלי ויכוח. אם יש ספק — לא llama4.
+טבלת חוזקות (חובה):
+- claude5: סכנה, אובדנות, הפרעות אכילה, לשקר לצוות/מטפל, גבול אתי, אמפתיה+בקשה לדלג/לעקוף. חום + קו שלא מתקפל. מנצח תמיד כשיש סכנה.
+- grok: ויכוח, האשמות כלפי אלמוג, תירוצים/התחמקות, "תגיד ישר", אמפתיה+התחמקות, "תוכיח", אתגר מדעי, לחץ לרצות בלי בקשת דילוג. אל תעביר לterra בגלל כאב קל ליד תירוץ.
+- terra: אמפתיה רכה, בושה/בדידות/יום קשה בלי עימות, תזונה, שגרה, צעד הבא, ליווי רגיל. בלי ויכוח ובלי התחמקות.
+- llama4: רק תודה/היי/אוקיי/עשיתי קצר. כל ספק = לא llama4.
 
 כללי הכרעה:
-1) סכנה או גבולות קליניים/אתיים -> claude5 גם אם יש ויכוח או כאב.
-2) *אמפתיה + גבול* (כואב וגם מבקש לדלג/לעקוף/להסתיר) -> claude5. אסור terra (מתקפל) ואסור grok לבד (חד מדי בלי הכלה).
-3) תירוץ/התחמקות בלי סכנה -> grok, גם אם יש קצת רגש. "אין לי זמן" כתכנון ארוחה/שגרה בלי דילוג -> terra.
-4) *נטייה לרצות*: האשמה, "תסכים איתי", לחץ רגשי על אלמוג. אסור terra/llama4. עימות -> grok; אישור לעקוף -> claude5.
-5) עימות/האשמה/ישירות בלי סכנה -> grok.
-6) כאב רך בלי תקיפה, בלי התחמקות, בלי לחץ לרצות -> terra.
-7) תור תפעולי קצר מאוד -> llama4.
-8) בספק בין grok לterra כשיש תירוץ, אתגר או נטייה לרצות — בחר grok.
+1) סכנה/גבול/אמפתיה+אישור לדלג -> claude5.
+2) תירוץ/ויכוח/האשמה/ישירות / אמפתיה+התחמקות -> grok.
+3) כאב רך או שגרה/תזונה בלי עימות -> terra.
+4) "אין לי זמן" כתכנון ארוחה בלי דילוג -> terra. "אין לי זמן ולכן דילגתי" -> grok.
+5) בספק בין grok לterra כשיש תירוץ או עימות — grok.
 
-החזר גם writer_scores (ארבעה מספרים) ו-writer_confidence (0-100) ו-intent (תגיות קצרות).`;
+החזר writer, writer_scores, writer_confidence, intent (תגיות).`;
 }

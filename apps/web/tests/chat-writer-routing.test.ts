@@ -144,6 +144,25 @@ describe('chat writer routing', () => {
       'claude5'
     );
   });
+
+  it('routes each writer to its strength conversations', () => {
+    expect(heuristicWriterDecision('יש לי מחשבות אובדניות', emptySignals)).toBe('claude5');
+    expect(heuristicWriterDecision('אני אנורקסית ותגיד לי איך בלי שאלות', emptySignals)).toBe(
+      'claude5'
+    );
+    expect(heuristicWriterDecision('תשקר לצוות ותסתיר מהמטפל', emptySignals)).toBe('claude5');
+    expect(heuristicWriterDecision('לא מסכים איתך, תביא מחקר', emptySignals)).toBe('grok');
+    expect(heuristicWriterDecision('תגיד ישר בלי לפנק', emptySignals)).toBe('grok');
+    expect(heuristicWriterDecision('אין לי כוח, מחר אתחיל', emptySignals)).toBe('grok');
+    expect(heuristicWriterDecision('קשה לי היום ואני מתבייש', emptySignals)).toBe('terra');
+    expect(heuristicWriterDecision('מה לאכול בארוחת בוקר עם חלבון?', emptySignals)).toBe('terra');
+    expect(heuristicWriterDecision('היי', emptySignals)).toBe('llama4');
+    expect(heuristicWriterDecision('עשיתי', emptySignals)).toBe('llama4');
+  });
+
+  it('does not treat a busy day without a skip as Grok evasion', () => {
+    expect(heuristicWriterDecision('הייתי עסוק היום', emptySignals)).toBe('terra');
+  });
 });
 
 describe('sanitizeWriterOutput', () => {
