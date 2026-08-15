@@ -83,6 +83,25 @@ describe('chat writer routing', () => {
       )
     ).toBe('grok');
   });
+
+  it('routes self-harm and hiding from a clinician to Claude', () => {
+    expect(heuristicWriterDecision('אני רוצה להיעלם ולא שווה לחיות', emptySignals)).toBe('claude5');
+    expect(heuristicWriterDecision('תשקר למטפל ותכסה עליי', emptySignals)).toBe('claude5');
+  });
+
+  it('routes scientific challenge and excuses to Grok', () => {
+    expect(heuristicWriterDecision('תוכיח לי שזה מדעי, אחרת אני עוזב', emptySignals)).toBe('grok');
+    expect(heuristicWriterDecision('תקרא לי תירוצים בלי חמאה', emptySignals)).toBe('grok');
+  });
+
+  it('routes loneliness and next-step coaching to Terra', () => {
+    expect(heuristicWriterDecision('אני בודד ומתבייש, היה לי יום קשה', emptySignals)).toBe('terra');
+    expect(heuristicWriterDecision('מה הצעד הבא לשגרה שלי?', emptySignals)).toBe('terra');
+  });
+
+  it('does not let Llama Grok steal a Terra empathy turn without conflict tags', () => {
+    expect(mergeWriterDecisions('grok', 'terra', undefined, undefined, ['empathy'])).toBe('terra');
+  });
 });
 
 describe('sanitizeWriterOutput', () => {
