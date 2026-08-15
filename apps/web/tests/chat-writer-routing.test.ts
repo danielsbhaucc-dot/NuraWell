@@ -40,6 +40,10 @@ describe('chat writer routing', () => {
     );
   });
 
+  it('still treats "אתה פישלת" as Grok accusation', () => {
+    expect(heuristicWriterDecision('אתה פישלת כמנטור', emptySignals)).toBe('grok');
+  });
+
   it('routes coaching questions to Terra', () => {
     expect(heuristicWriterDecision('מה כדאי לי לאכול אחרי אימון?', emptySignals)).toBe('terra');
   });
