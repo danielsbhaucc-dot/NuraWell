@@ -2883,7 +2883,7 @@ export async function POST(request: Request) {
     if (coachingStyleBlock) contextSections.push(coachingStyleBlock);
     if (mcfg.writer === 'grok') {
       contextSections.push(
-        'סגנון ליווי בתור Grok: אל תרכך ל-warm_friend. חם וישיר — קורא דפוס בשם, לא קונה, לא רוצה.'
+        'סגנון ליווי בתור Grok: חם וישיר כמו חבר בוואטסאפ — לא קונה תירוץ, לא רוצה, בלי סקריפט אימון.'
       );
     } else if (mcfg.writer === 'claude5') {
       contextSections.push(
@@ -2990,35 +2990,25 @@ export async function POST(request: Request) {
      */
     const writerStrengthLine =
       mcfg.writer === 'claude5'
-        ? '[כותב Claude] גבול/בטיחות: חום + קו שלא מתקפל. אל תרצה.'
+        ? '[כותב Claude] חום + גבול שלא מתקפל. בלי לרצות.'
         : mcfg.writer === 'grok'
-          ? '[כותב Grok] תירוץ/ויכוח/האשמה: קרא בשם, אל תקנה, אל תרצה. דרוש צעד היום או הודאה.'
+          ? '[כותב Grok] על תירוץ/ויכוח: אל תקנה, אל תרצה, בלי סקריפט אימון ובלי בחירה בינארית. דבר טבעי וחד.'
           : mcfg.writer === 'llama4'
-            ? '[כותב Llama] קצר וחם בלבד. בלי הרצאה.'
+            ? '[כותב Llama] קצר וחם.'
             : '[כותב Terra] אמפתיה/שגרה: קודם הלב, בלי עימות מיותר.';
-    const grokExcuseHard =
-      mcfg.writer === 'grok' &&
-      (heuristicAnalysis.tags.includes('evasion') ||
-        heuristicAnalysis.tags.includes('people_please') ||
-        heuristicAnalysis.tags.includes('argument') ||
-        heuristicAnalysis.tags.includes('accusation') ||
-        heuristicAnalysis.tags.includes('direct'));
     const turnStance = [
       writerStancePrompt(heuristicAnalysis.tags),
       writerStrengthLine,
       stickyResult.stickyApplied
         ? `[נתב] ממשיך ${mcfg.writer} מאותו עימות/גבול. כשהנושא מתחלף חוזרים ל-Terra.`
-        : `[נתב] כותב לפי חוזקה: Claude=גבול/אחריות, Grok=תירוץ/ויכוח/התחמקות, Terra=אמפתיה ושגרה, Llama=קצר. בחירה לתור: ${mcfg.writer}.`,
-      grokExcuseHard
-        ? `[כותב Grok · דפוס] אל תקנה. אל תרכך. אל תשאל "מה הכי כואב". קרא את הדפוס ודרוש צעד היום או הודאה.`
-        : null,
+        : `[נתב] כותב לפי חוזקה: Claude=גבול, Grok=תירוץ/ויכוח, Terra=אמפתיה/שגרה, Llama=קצר. בחירה לתור: ${mcfg.writer}.`,
     ]
       .filter(Boolean)
       .join('\n');
-    const writerVoiceLine = `[כותב התור: ${mcfg.writer}] דבר בקול אלמוג המלא מהמערכת — חבר ישיר, לא מתחנף, לא מתחנן בין הודעות. אסור קול של עוזר גנרי/Llama זול, אסור therapy-speak, אסור להזדהות כמודל. אורך טבעי: אל תקצר בכוח ואל תחפור.`;
+    const writerVoiceLine = `[כותב התור: ${mcfg.writer}] דבר בקול אלמוג — חבר בוואטסאפ, לא טופס אימון ולא עוזר גנרי. בלי therapy-speak, בלי להתחנן. אורך טבעי.`;
     const endStrengthOverride =
       mcfg.writer === 'grok'
-        ? 'על תירוץ/ויכוח/האשמה — אלמוג לא קונה ולא רוצה. קורא את זה ישר.'
+        ? 'על תירוץ/ויכוח — אלמוג לא קונה ולא רוצה, ובלי סקריפט "הכרה → דחייה → מים או בחוץ". פשוט האמת, טבעי וחד.'
         : mcfg.writer === 'claude5'
           ? 'על גבול/בטיחות — אלמוג לא מתקפל. חום + קו ישר.'
           : mcfg.writer === 'llama4'
