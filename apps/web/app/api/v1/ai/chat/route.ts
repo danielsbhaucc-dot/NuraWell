@@ -2881,6 +2881,14 @@ export async function POST(request: Request) {
 
     // coaching style + dossier + onboarding כפולים לזיכרון העבודה — רק בתור כבד.
     if (coachingStyleBlock) contextSections.push(coachingStyleBlock);
+    if (
+      mcfg.writer === 'grok' &&
+      (heuristicAnalysis.tags.includes('evasion') || heuristicAnalysis.tags.includes('people_please'))
+    ) {
+      contextSections.push(
+        'סגנון ליווי בתור תירוץ: אל תרכך ל-warm_friend. חם וישיר — קורא תירוץ בשם, דורש צעד היום.'
+      );
+    }
     /**
      * עקרונות אלמוג (חוקי תוכנית + "איך להתמודד עם X") — קו מנחה התנהגותי מחייב.
      * גבוה בעדיפות (מיד אחרי סגנון האימון) כדי שיעצב את התשובה, ולא ייקבר תחת RAG.
@@ -2977,15 +2985,25 @@ export async function POST(request: Request) {
      *      לפני שהוא יוצר את התשובה. עם reasoningEffort=medium זה הסל-ביטחון
      *      הכי אפקטיבי לחוקים שעלולים להתפספס כשהפרומפט גדל.
      */
+    const grokExcuseHard =
+      mcfg.writer === 'grok' &&
+      (heuristicAnalysis.tags.includes('evasion') ||
+        heuristicAnalysis.tags.includes('people_please'));
     const turnStance = [
       writerStancePrompt(heuristicAnalysis.tags),
       stickyResult.stickyApplied
         ? `[נתב] ממשיך ${mcfg.writer} מאותו עימות/גבול. כשהנושא מתחלף חוזרים ל-Terra.`
         : `[נתב] כותב לפי חוזקה: Claude=גבול/אחריות, Grok=תירוץ/ויכוח/התחמקות, Terra=אמפתיה ושגרה. בחירה לתור: ${mcfg.writer}.`,
+      grokExcuseHard
+        ? `[כותב Grok · תירוץ] אל תקנה. אל תרכך. אל תשאל "מה הכי כואב". קרא את התירוץ ודרוש צעד היום.`
+        : null,
     ]
       .filter(Boolean)
       .join('\n');
-    const writerVoiceLine = `[כותב התור: ${mcfg.writer}] דבר בקול אלמוג המלא מהמערכת. אסור קול של עוזר גנרי, אסור therapy-speak, אסור להזדהות כמודל.`;
+    const writerVoiceLine = `[כותב התור: ${mcfg.writer}] דבר בקול אלמוג המלא מהמערכת — חבר ישיר, לא מתחנף, לא מתחנן בין הודעות. אסור קול של עוזר גנרי/Llama זול, אסור therapy-speak, אסור להזדהות כמודל. אורך טבעי: אל תקצר בכוח ואל תחפור.`;
+    const grokExcuseOverride = grokExcuseHard
+      ? 'על תירוץ/התחמקות — אלמוג לא קונה. קורא את זה ישר.'
+      : null;
     const dynamicSystemPrompt = [
       '— הקשר לשיחה הזו —',
       writerVoiceLine,
@@ -2997,6 +3015,7 @@ export async function POST(request: Request) {
       '',
       mcfg.finalGuardrails,
       ALMOG_VOICE_STICKY,
+      grokExcuseOverride,
     ]
       .filter((s) => s !== null && s !== undefined)
       .join('\n');
