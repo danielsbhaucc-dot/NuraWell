@@ -202,7 +202,8 @@ describe('chat writer routing', () => {
     expect(writerStancePrompt(['evasion'])).toMatch(/סקריפט אימון|בחירה בינארית/);
     expect(writerStancePrompt(['evasion'])).not.toMatch(/1\)/);
     expect(writerStancePrompt(['people_please'])).toMatch(/אל תרצה/);
-    expect(writerStancePrompt(['argument'])).toMatch(/חצוף/);
+    expect(writerStancePrompt(['argument'])).toMatch(/בחן|העמד במקום|אל תרצה/);
+    expect(writerStancePrompt(['accusation'])).toMatch(/אתה צודק/);
   });
 
   it('covers Terra empathy/coaching and Llama short stances', () => {
