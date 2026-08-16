@@ -36,6 +36,22 @@ export function chatWriterFleet(): Record<ChatWriterKey, ChatWriterDef> {
   };
 }
 
+/**
+ * ה-slug שיוצא ל-OpenRouter אחרי בחירת כותב.
+ * Grok/Claude לעולם לא נופלים ל-Llama / mini / CHAT_MODEL.
+ */
+export function openRouterSlugForWriter(writer: ChatWriterKey): string {
+  const slug = chatWriterFleet()[writer].slug;
+  if (writer === 'grok' || writer === 'claude5') {
+    if (!slug || isGenericChatFallbackSlug(slug)) return DEFAULT_WRITER_SLUGS[writer];
+    return slug;
+  }
+  if (writer !== 'llama4' && isGenericChatFallbackSlug(slug)) {
+    return DEFAULT_WRITER_SLUGS[writer];
+  }
+  return slug;
+}
+
 export function isChatWriterKey(value: string | undefined): value is ChatWriterKey {
   return Boolean(value && (CHAT_WRITER_KEYS as readonly string[]).includes(value));
 }

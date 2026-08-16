@@ -3,10 +3,14 @@ import {
   analyzeWriterIntent,
   heuristicWriterDecision,
   mergeWriterDecisions,
+  writerStancePrompt,
 } from '../lib/ai/chat-intent-router';
 import { sanitizeWriterOutput, looksLikeBracketOnlyReply } from '../lib/ai/sanitize-writer-output';
 import { formatConversationFilePromptBlock } from '../lib/ai/chat-conversation-file';
-import { resolveChatSafetyNetModel } from '../lib/ai/chat-writer-fleet';
+import {
+  openRouterSlugForWriter,
+  resolveChatSafetyNetModel,
+} from '../lib/ai/chat-writer-fleet';
 
 const emptySignals = {
   blocker_mentioned: false,
@@ -190,6 +194,20 @@ describe('chat writer routing', () => {
     expect(
       mergeWriterDecisions('llama4', 'terra', undefined, undefined, ['coaching'])
     ).toBe('terra');
+  });
+
+  it('keeps mixed-intent stance prompts for Claude and Grok lanes', () => {
+    expect(writerStancePrompt(['empathy', 'adult'])).toMatch(/כאב אמיתי וגם גבול/);
+    expect(writerStancePrompt(['empathy', 'evasion'])).toMatch(/יש רגש ויש התחמקות/);
+  });
+});
+
+describe('openRouterSlugForWriter', () => {
+  it('maps grok and claude5 to fleet slugs, never llama', () => {
+    expect(openRouterSlugForWriter('grok')).toBe('x-ai/grok-4.5');
+    expect(openRouterSlugForWriter('claude5')).toBe('anthropic/claude-sonnet-5');
+    expect(openRouterSlugForWriter('grok')).not.toMatch(/llama|qwen|mini/i);
+    expect(openRouterSlugForWriter('claude5')).not.toMatch(/llama|qwen|mini/i);
   });
 });
 
