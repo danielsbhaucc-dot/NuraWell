@@ -203,6 +203,31 @@ describe('chat writer routing', () => {
   it('does not treat soft fatigue alone as Grok evasion', () => {
     expect(heuristicWriterDecision('אין לי כוח', emptySignals)).toBe('terra');
     expect(heuristicWriterDecision('שכחתי', emptySignals)).toBe('terra');
+    expect(heuristicWriterDecision('אין לי כוח מחר', emptySignals)).toBe('terra');
+  });
+
+  it('routes natural skip-approval language to Claude', () => {
+    expect(heuristicWriterDecision('מותר לי לדלג היום', emptySignals)).toBe('claude5');
+    expect(heuristicWriterDecision('תשחרר אותי מהמשימה', emptySignals)).toBe('claude5');
+    expect(heuristicWriterDecision('תן לי הפסקה מהתוכנית', emptySignals)).toBe('claude5');
+    expect(heuristicWriterDecision('אל תלחץ עליי לעשות את זה', emptySignals)).toBe('claude5');
+    expect(heuristicWriterDecision('תגיד שזה בסדר לדלג', emptySignals)).toBe('claude5');
+  });
+
+  it('keeps fight people-please on Grok but skip-approval on Claude', () => {
+    expect(heuristicWriterDecision('תגיד שאני צודק ותסכים איתי', emptySignals)).toBe('grok');
+    expect(heuristicWriterDecision('תגיד שזה בסדר ותן לי אישור לדלג', emptySignals)).toBe(
+      'claude5'
+    );
+  });
+
+  it('forces terra when LLM picks grok on soft empathy/coaching without hard tags', () => {
+    expect(
+      mergeWriterDecisions('grok', 'grok', undefined, undefined, ['coaching'])
+    ).toBe('terra');
+    expect(
+      mergeWriterDecisions('grok', 'terra', undefined, undefined, ['empathy', 'coaching'])
+    ).toBe('terra');
   });
 
   it('does not treat busy coaching as evasion', () => {
@@ -257,8 +282,8 @@ describe('chat writer routing', () => {
     expect(writerStancePrompt(['evasion'])).toMatch(/סקריפט אימון|בחירה בינארית/);
     expect(writerStancePrompt(['evasion'])).not.toMatch(/1\)/);
     expect(writerStancePrompt(['people_please'])).toMatch(/אל תרצה/);
-    expect(writerStancePrompt(['argument'])).toMatch(/בחן|העמד במקום|אל תרצה/);
-    expect(writerStancePrompt(['accusation'])).toMatch(/אתה צודק/);
+    expect(writerStancePrompt(['argument'])).toMatch(/בחן|העמד במקום|אל תרצה|עובדות/);
+    expect(writerStancePrompt(['accusation'])).toMatch(/אתה צודק|עובדות|אמת/);
   });
 
   it('covers Terra empathy/coaching and Llama short stances', () => {
