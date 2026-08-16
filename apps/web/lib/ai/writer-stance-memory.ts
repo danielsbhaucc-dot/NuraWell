@@ -9,28 +9,26 @@ export type ChatWriterStance = {
   updated_at: string;
 };
 
-const STICKY_MAX_TURNS = 5;
-const STICKY_TTL_MS = 30 * 60 * 1000;
+const STICKY_MAX_TURNS = 3;
+const STICKY_TTL_MS = 20 * 60 * 1000;
 
 const RELEASE_RE =
   /^(?:תודה|תודה רבה|סבבה|אוקיי|היי|שלום|אהלן)[\s!.]*$/u;
 
 /** המשך ברור לאותו עימות — לא כל הודעה קצרה. */
 const CONTINUE_RE =
-  /(?:^|\s)(?:כן אבל|לא אבל|עדיין|שוב|ומה|נו |ברצינות|בכל זאת|אותו דבר|כמו ש|אמרתי|תירוץ|שכחתי|אין לי כוח|תוכיח)/u;
+  /(?:^|\s)(?:כן אבל|לא אבל|עדיין|שוב|ברצינות|בכל זאת|אותו דבר|תירוץ|תוכיח)/u;
 
 function isStickyWriter(writer: ChatWriterKey): boolean {
   return writer === 'grok' || writer === 'claude5';
 }
 
-function hasConfrontationTags(tags: string[]): boolean {
-  return tags.some((t) =>
-    ['evasion', 'argument', 'accusation', 'direct', 'rude', 'people_please'].includes(t)
-  );
-}
-
 function hasBoundaryTags(tags: string[]): boolean {
   return tags.some((t) => ['safety', 'boundaries', 'adult', 'warm_boundary'].includes(t));
+}
+
+function hasHardConfrontationTags(tags: string[]): boolean {
+  return tags.some((t) => ['accusation', 'argument', 'direct', 'rude'].includes(t));
 }
 
 export function parseChatWriterStance(raw: unknown): ChatWriterStance | null {
@@ -55,9 +53,8 @@ function stickyExpired(stance: ChatWriterStance, now: Date): boolean {
 }
 
 /**
- * בכל הודעה בוחרים כותב מחדש לפי חוזקות.
- * Grok/Claude נדבקים רק אם התור *הנוכחי* עדיין בעימות/גבול,
- * או המשך קצר וברור לאותו קונפליקט — לא רק כי התור הקודם היה Grok.
+ * ברירת מחדל: הכותב מהנתב/מיזוג (LLM) — כל תור מחדש.
+ * Sticky קל בלבד: המשך קצר וברור לאותו עימות, כשהנתב חזר ל-terra בטעות.
  */
 export function applyStickyWriterStance(opts: {
   turnWriter: ChatWriterKey;
@@ -69,17 +66,8 @@ export function applyStickyWriterStance(opts: {
   const now = opts.now ?? new Date();
   const t = opts.userMessage.replace(/\s+/g, ' ').trim();
   const tags = opts.turnTags;
-  const safetyNow = hasBoundaryTags(tags) || opts.turnWriter === 'claude5';
-  const grokNow = hasConfrontationTags(tags);
 
-  // שחרור מפורש: תודה/ברכה, אמפתיה רכה, שגרה/תזונה.
-  const releaseTopic =
-    RELEASE_RE.test(t) ||
-    tags.includes('coaching') ||
-    tags.includes('simple') ||
-    (tags.includes('empathy') && !grokNow && !safetyNow);
-
-  if (safetyNow) {
+  if (hasBoundaryTags(tags) || opts.turnWriter === 'claude5') {
     return {
       writer: 'claude5',
       stickyApplied: false,
@@ -93,64 +81,59 @@ export function applyStickyWriterStance(opts: {
     };
   }
 
-  // Grok רק כשיש תגיות עימות *בתור הזה* — לא רק כי turnWriter=======grok.
-  if (grokNow) {
-    const prevTurns =
-      opts.sticky?.writer === 'grok' && !stickyExpired(opts.sticky, now) ? opts.sticky.turns : 0;
+  // נושא חדש / אמפתיה רכה / שגרה / תודה — תמיד לפי הנתב, בלי כלא sticky.
+  const releaseTopic =
+    RELEASE_RE.test(t) ||
+    tags.includes('coaching') ||
+    tags.includes('simple') ||
+    (tags.includes('empathy') && !hasHardConfrontationTags(tags));
+
+  if (releaseTopic) {
     return {
-      writer: 'grok',
-      stickyApplied: prevTurns > 0,
+      writer: opts.turnWriter,
+      stickyApplied: false,
+      stance: null,
+    };
+  }
+
+  const sticky = opts.sticky && !stickyExpired(opts.sticky, now) ? opts.sticky : null;
+  const clearSameConflict =
+    sticky &&
+    isStickyWriter(sticky.writer) &&
+    opts.turnWriter === 'terra' &&
+    CONTINUE_RE.test(t) &&
+    t.length <= 80 &&
+    !/[?？]/.test(t) &&
+    !tags.includes('coaching') &&
+    !tags.includes('empathy');
+
+  if (clearSameConflict && sticky) {
+    return {
+      writer: sticky.writer,
+      stickyApplied: true,
       stance: {
-        writer: 'grok',
-        reason: 'confrontation',
-        tags,
-        turns: prevTurns + 1,
+        ...sticky,
+        turns: sticky.turns + 1,
         updated_at: now.toISOString(),
       },
     };
   }
 
-  if (releaseTopic) {
-    if (opts.turnWriter === 'llama4') {
-      return { writer: 'llama4', stickyApplied: false, stance: null };
-    }
-    return { writer: 'terra', stickyApplied: false, stance: null };
-  }
-
-  const sticky = opts.sticky && !stickyExpired(opts.sticky, now) ? opts.sticky : null;
-  if (sticky && isStickyWriter(sticky.writer)) {
-    // המשך קצר לאותו עימות: רמז המשך + לא שאלה חדשה / לא נושא חדש.
-    const clearSameConflict =
-      CONTINUE_RE.test(t) &&
-      t.length <= 90 &&
-      !/[?？]/.test(t) &&
-      !tags.includes('coaching') &&
-      !tags.includes('empathy');
-    if (clearSameConflict) {
-      return {
-        writer: sticky.writer,
-        stickyApplied: true,
-        stance: {
-          ...sticky,
-          turns: sticky.turns + 1,
+  // ברירת מחדל: מה שהנתב בחר.
+  const stance =
+    opts.turnWriter === 'grok'
+      ? {
+          writer: 'grok' as const,
+          reason: 'confrontation',
+          tags,
+          turns: 1,
           updated_at: now.toISOString(),
-        },
-      };
-    }
-  }
-
-  if (opts.turnWriter === 'llama4') {
-    return { writer: 'llama4', stickyApplied: false, stance: null };
-  }
-
-  // בלי תגיות עימות — גם אם המיזוג אמר grok, לא נועלים sticky.
-  if (opts.turnWriter === 'grok' && !grokNow) {
-    return { writer: 'terra', stickyApplied: false, stance: null };
-  }
+        }
+      : null;
 
   return {
-    writer: opts.turnWriter === 'claude5' ? 'terra' : opts.turnWriter,
+    writer: opts.turnWriter,
     stickyApplied: false,
-    stance: null,
+    stance,
   };
 }

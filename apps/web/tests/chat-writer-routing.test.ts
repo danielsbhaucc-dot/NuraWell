@@ -73,9 +73,21 @@ describe('chat writer routing', () => {
           grok: 80,
           llama4: 5,
         },
-        ['evasion']
+        ['accusation']
       )
     ).toBe('grok');
+  });
+
+  it('lets LLM terra win over weak evasion heuristic', () => {
+    expect(
+      mergeWriterDecisions(
+        'terra',
+        'grok',
+        { terra: 70, claude5: 10, grok: 20, llama4: 5 },
+        { terra: 20, claude5: 10, grok: 80, llama4: 5 },
+        ['evasion']
+      )
+    ).toBe('terra');
   });
 
   it('does not let weak heuristic grok beat LLM terra without confrontation tags', () => {
@@ -99,14 +111,26 @@ describe('chat writer routing', () => {
     expect(heuristicWriterDecision('תגיד שזה בסדר ותן לי אישור לדלג', emptySignals)).toBe('claude5');
   });
 
-  it('keeps people-please off Terra even if Llama scored Terra high', () => {
+  it('prefers LLM terra over people_please heuristic alone', () => {
     expect(
       mergeWriterDecisions(
         'terra',
         'grok',
         { terra: 90, claude5: 10, grok: 20, llama4: 5 },
         { terra: 18, claude5: 30, grok: 70, llama4: 5 },
-        ['people_please', 'accusation']
+        ['people_please']
+      )
+    ).toBe('terra');
+  });
+
+  it('lets hard accusation heuristic override LLM terra', () => {
+    expect(
+      mergeWriterDecisions(
+        'terra',
+        'grok',
+        { terra: 90, claude5: 10, grok: 20, llama4: 5 },
+        { terra: 18, claude5: 30, grok: 70, llama4: 5 },
+        ['accusation']
       )
     ).toBe('grok');
   });
@@ -161,6 +185,11 @@ describe('chat writer routing', () => {
         ['argument', 'accusation']
       )
     ).toBe('grok');
+  });
+
+  it('prefers LLM writer when present', () => {
+    expect(mergeWriterDecisions('terra', 'grok', undefined, undefined, ['evasion'])).toBe('terra');
+    expect(mergeWriterDecisions('grok', 'terra', undefined, undefined, [])).toBe('grok');
   });
 
   it('routes excuses and evasion to Grok', () => {
