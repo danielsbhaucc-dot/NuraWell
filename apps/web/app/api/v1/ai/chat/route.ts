@@ -2349,6 +2349,13 @@ export async function POST(request: Request) {
     debug_id: debugId,
     stage: 'writer_routed',
     writer: mcfg.writer,
+    tags: heuristicAnalysis.tags,
+    reason: stickyResult.stickyApplied
+      ? `sticky:${stickyResult.stance?.reason ?? 'continue'}`
+      : `merge:llm=${cheapWriter ?? 'none'};heuristic=${heuristicAnalysis.writer};turn=${turnWriter}`,
+    llm_writer: cheapWriter ?? null,
+    heuristic_writer: heuristicAnalysis.writer,
+    turn_writer: turnWriter,
     sticky: stickyResult.stickyApplied,
     sticky_reason: stickyResult.stance?.reason ?? null,
     model: effectiveModel,

@@ -14,7 +14,7 @@ const DANGER_RE =
   /(?:להתאבד|אובדנ|לא שווה לחיות|לא רוצה לחיות|רוצה להיעלם|למות|פגיעה עצמית|לפגוע בעצמי|לחתוך|לקרוע|משלשל|הקא[הוה]|הקאה|לטהר|אנורקס|בולימ|בינג'|binge|דיאטה קיצונית|800\s*קלור|אל תשאל|אל תעצור|תפסיק לשאול|תן לי רעב|בלי אוכל|צום מים|לפגוע ב|לאכול כלום|להרעיב|מנת יתר|overdose|כדורים כדי|purge|להקיא אחרי)/u;
 
 const BOUNDARY_RE =
-  /(?:תגיד לי איך לעשות|בלי שאלות|תעבור על החוקים|תשקר לצוות|תשקר למטפל|לדלג על הכל|תעזור לי לרמות|תעמיד פנים|עקוף את|תתעלם מהתוכנית|תכסה עליי|תשקר בשבילי|אל תגיד לאף אחד|תסתיר מ|תכסה על זה|תסתיר מהצוות|לשקר לצוות)/u;
+  /(?:תגיד לי איך לעשות|בלי שאלות|תעבור על החוקים|תשקר לצוות|תשקר למטפל|לדלג על הכל|תעזור לי לרמות|תעמיד פנים|עקוף את|תתעלם מהתוכנית|תכסה עליי|תשקר בשבילי|אל תגיד לאף אחד|תסתיר מ|תכסה על זה|תסתיר מהצוות|לשקר לצוות|מותר לי לדלג|תשחרר אותי מהמשימה|תשחרר אותי מהכללים|תשחרר אותי מהתוכנית|תן לי הפסקה מהתוכנית|אל תלחץ עליי|תגיד שזה בסדר לדלג)/u;
 
 const ACCUSATION_RE =
   /(?:אתה לא עוזר|אתה מתנשא|אתה שקרן|אתה גרוע|אתה מטומטם|אתה לא מבין|אלמוג אתה|אתם לא|תמיד אתה|אף פעם אתה לא|אתה נגד|אתה חסר תועלת|בזבוז זמן|לא שווה כלום כמנטור|פישלת(?!י)|טעית(?!י)|אתה רק בינה|אתה חוזר על עצמך|תפסיק לחפור|אתה לא שומע|לא אכפת לך)/u;
@@ -36,7 +36,7 @@ const COACHING_RE =
 const SIMPLE_RE =
   /^(?:תודה|תודה רבה|עשיתי|סיימתי)[\s!.]*$/u;
 
-/** דחייה/דחיית פעולה ברורה — לא עייפות יומיומית לבד. */
+/** דחייה/דחיית פעולה ברורה — לא עייפות יומיומית לבד, ולא המילה "מחר" לבד. */
 const DELAY_INTENT_RE =
   /(?:מחר אתחיל|אמשיך מחר|מחר אני|מחר חוזר|אתחיל ביום|נדחה ל|נדחה את|דחיתי|אולי אחר כך|אין מצב היום|אי אפשר עכשיו|זה לא הזמן)/u;
 
@@ -44,12 +44,19 @@ const DELAY_INTENT_RE =
 const STRONG_EXCUSE_RE =
   /(?:התחמק|תירוץ|ברחתי מ|פספסתי כי|לא עשיתי כי|זה לא אני|כולם עושים|זה בגלל העבודה|זה בגלל הילדים)/u;
 
-/** מילות עייפות/שכחה רכות — לבד ≠ התחמקות; רק עם דחייה/דילוג. */
+/** מילות עייפות/שכחה רכות — לבד ≠ התחמקות. */
 const SOFT_EXCUSE_RE = /(?:שכחתי|לא בא לי|אין לי כוח|לא הספקתי)/u;
 
 const BUSY_RE = /(?:אין לי זמן|יום עמוס|הייתי עסוק)/u;
 
 const SKIPPED_RE = /(?:דילג(?:תי|ת|נו)?|לא עשיתי|פספס(?:תי|ת)?|ויתר(?:תי|ת)?|לא התחל(?:תי|ת)?|ברחתי|נדחה)/u;
+
+/**
+ * בקשת אישור לדלג / לשחרר מכללים — Claude, לא Grok.
+ * "תגיד שאני צודק" בויכוח נשאר Grok (בלי דפוסי דילוג כאן).
+ */
+const SKIP_APPROVAL_RE =
+  /(?:מותר לי לדלג|תן לי אישור|תגיד שזה בסדר|לדלג|תשחרר אותי|הפסקה מהתוכנית|אל תלחץ עליי|לעקוף|לרמות|תתעלם מה|מהכללים|מהמשימה)/u;
 
 function detectEvasion(text: string): boolean {
   const t = text.trim();
@@ -57,8 +64,8 @@ function detectEvasion(text: string): boolean {
   const busy = BUSY_RE.test(t);
   const skipped = SKIPPED_RE.test(t);
   if (busy && skipped) return true;
-  // "אין לי כוח" / "שכחתי" לבד — לא. רק כשיש דחייה או דילוג באותה הודעה.
-  if (SOFT_EXCUSE_RE.test(t) && (DELAY_INTENT_RE.test(t) || skipped || /מחר/u.test(t))) {
+  // עייפות/שכחתי לבד — לא. רק עם דחייה מפורשת או דילוג באותה הודעה (לא "מחר" עירום).
+  if (SOFT_EXCUSE_RE.test(t) && (DELAY_INTENT_RE.test(t) || skipped)) {
     return true;
   }
   return false;
@@ -72,7 +79,7 @@ const PEOPLE_PLEASE_RE =
   /(?:תגיד שאני צודק|תסכים איתי|רק תגיד כן|פשוט תסכים|אל תשפוט|אם אתה באמת|תוכיח שאתה איתי|תוכיח שאתה לצד|תתנצל|תודה שטעית|תהיה נחמד יותר|תפסיק להיות קשה|תן לי אישור|תגיד שזה בסדר|רק תאשר|תעמוד מאחוריי|תצדד בי|בצד שלי|אל תתווכח|תרצה אותי|תגיד מה שאני רוצה|אם היית אכפת|אתה לא באמת אכפת|תפסיק להתנגד|תסכים ש|תגיד לי מה שאני רוצה לשמוע)/u;
 
 const ADULT_LINE_RE =
-  /(?:תן לי אישור|תגיד שזה בסדר|מותר לי לדלג|תשחרר אותי מה|תוריד לי את הכלל|תשנה את החוק בשבילי|תמחק לי את|תתעלם הפעם)/u;
+  /(?:תן לי אישור|תגיד שזה בסדר|מותר לי לדלג|תשחרר אותי מה|תוריד לי את הכלל|תשנה את החוק בשבילי|תמחק לי את|תתעלם הפעם|תן לי הפסקה מהתוכנית|אל תלחץ עליי|תגיד שזה בסדר לדלג|תשחרר אותי מהמשימה|תשחרר אותי מהכללים)/u;
 
 function clampScore(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n)));
@@ -84,19 +91,14 @@ function hasAny(tags: string[], keys: string[]): boolean {
 
 /**
  * נתיב כותב לפי חוזקות — לא לפי ציון הנתב הזול.
- * Claude: סכנה / גבול אתי / אמפתיה+אישור לדלג.
- * Grok: ויכוח / האשמה / תירוץ / "תגיד ישר" / אמפתיה+התחמקות.
- * Terra: אמפתיה רכה / שגרה / תזונה בלי עימות.
- * Llama4: רק תודה/היי/עשיתי קצר.
+ * Claude לפני Grok על כל גבול/בטיחות/אישור־דילוג.
  */
 export function writerLaneFromTags(
   tags: string[],
   fallback: ChatWriterKey = 'terra'
 ): ChatWriterKey {
-  if (hasAny(tags, ['safety', 'boundaries', 'warm_boundary'])) return 'claude5';
-  if (tags.includes('adult') && (tags.includes('empathy') || tags.includes('people_please'))) {
-    return 'claude5';
-  }
+  // Claude תמיד לפני Grok על גבול/בטיחות/אישור לדלג.
+  if (hasAny(tags, ['safety', 'boundaries', 'warm_boundary', 'adult'])) return 'claude5';
   if (
     tags.includes('simple') &&
     !hasAny(tags, [
@@ -114,7 +116,7 @@ export function writerLaneFromTags(
   }
   if (
     hasAny(tags, ['evasion', 'argument', 'accusation', 'direct', 'rude']) ||
-    (tags.includes('people_please') && !tags.includes('adult'))
+    tags.includes('people_please')
   ) {
     return 'grok';
   }
@@ -140,7 +142,8 @@ export function analyzeWriterIntent(
 ): WriterAnalysis {
   const t = userMessage.trim();
   const tags: string[] = [];
-  const scores: WriterScores = { terra: 28, claude5: 12, grok: 22, llama4: 8 };
+  // baseline גבוה יותר ל-Claude כדי שגבול חלש יוכל לנצח.
+  const scores: WriterScores = { terra: 28, claude5: 18, grok: 20, llama4: 8 };
 
   const danger = DANGER_RE.test(t);
   const boundaries = BOUNDARY_RE.test(t);
@@ -153,6 +156,7 @@ export function analyzeWriterIntent(
   const simple = SIMPLE_RE.test(t);
   const peoplePlease = PEOPLE_PLEASE_RE.test(t);
   const adultLine = ADULT_LINE_RE.test(t);
+  const skipApproval = SKIP_APPROVAL_RE.test(t);
   const conflict = accusation || argument || rude;
   const evasion = detectEvasion(t);
 
@@ -212,20 +216,33 @@ export function analyzeWriterIntent(
     scores.grok += 16;
     scores.terra += 8;
   }
+
   if (peoplePlease) {
     tags.push('people_please');
     scores.terra = Math.min(scores.terra, 18);
     scores.llama4 = Math.min(scores.llama4, 10);
-    scores.grok += 24;
-    scores.claude5 += 14;
   }
-  if (adultLine) {
-    tags.push('adult');
-    scores.claude5 += 32;
+
+  // people_please + אישור לדלג/לעקוף → Claude. "תגיד שאני צודק" בויכוח → Grok.
+  const approvalSkipIntent =
+    (adultLine || boundaries || skipApproval) &&
+    !accusation &&
+    !argument &&
+    !rude &&
+    !grokSpark;
+
+  if (adultLine || (peoplePlease && approvalSkipIntent)) {
+    if (!tags.includes('adult')) tags.push('adult');
+    scores.claude5 += adultLine ? 36 : 42;
     scores.terra -= 10;
+    scores.grok = Math.min(scores.grok, 30);
+  } else if (peoplePlease) {
+    scores.grok += 28;
+    scores.claude5 += 10;
   }
-  if (empathy && (danger || boundaries || adultLine)) {
-    tags.push('warm_boundary');
+
+  if (empathy && (danger || boundaries || tags.includes('adult'))) {
+    if (!tags.includes('warm_boundary')) tags.push('warm_boundary');
     scores.claude5 += 18;
   }
   if (signals.blocker_mentioned && !danger && !peoplePlease && !evasion) {
@@ -293,10 +310,9 @@ export function mergeWriterDecisions(
   if (hardConfrontation && heuristic === 'grok') return 'grok';
 
   // בחירה ראשית: הנתב (LLM), כל עוד זה לא llama4 ככותב ראשי מהנתב.
-  // חריג: Grok מהנתב לא גונב תור אמפתיה/אימון רך בלי תגי עימות/תירוץ.
+  // Grok מהנתב לא גונב תור אמפתיה/אימון רך בלי עימות קשה ובלי evasion ברור.
   const routed = llamaChoice && llamaChoice !== 'llama4' ? llamaChoice : undefined;
   const softEmpathyLane =
-    heuristic === 'terra' &&
     hasAny(tags, ['empathy', 'coaching']) &&
     !hardConfrontation &&
     !hasAny(tags, ['evasion']);
@@ -342,7 +358,8 @@ export function writerStancePrompt(tags: string[]): string | null {
   if (argument) {
     return `[עמדה · Grok] התקפה / האשמה / ויכוח כלפי אלמוג.
 אל תרצה. אל תגיד ישר "אתה צודק" / "סליחה נורא" רק כדי להרגיע.
-בחן את זה כמו חבר אמיתי: אם יש נקודה צודקת — הכר בה בקצרה ובדיוק. אם זו האשמה לא־הוגנת / פריקה עליך — העמד במקום בחום חד, בלי השפלה.
+בחן כמו חבר אמיתי: נקודה צודקת → הכר בקצרה ובדיוק. האשמה לא־הוגנת / פריקה → העמד במקום בחום חד, בלי השפלה.
+אם מאשימים אותך במשהו שלא קרה בשיחה/בנתונים — עמוד על העובדות ביושר ובשקיפות. אמת מעל ריצוי; אל תתנצל על מה שלא עשית.
 מותר חצוף־חיוך. אסור תרפסות. אסור לברוח לאמפתיה רכה שמטשטשת.`;
   }
 
@@ -367,16 +384,26 @@ export function writerRouterInstructions(): string {
   return `אתה נתב כותבים. החלטת *אתה* (המודל) היא העיקרית — לפי טון וכוונה של ההודעה, לא לפי מילת־מפתח בודדת.
 
 טבלת חוזקות:
-- claude5: סכנה, אובדנות, הפרעות אכילה, לשקר לצוות/מטפל, גבול אתי, בקשה לדלג/לעקוף. חום + קו שלא מתקפל.
-- grok: ויכוח אמיתי, האשמות כלפי אלמוג, תירוץ/דחייה ברורה ("מחר אתחיל" אחרי דילוג), "תגיד ישר", לחץ לרצות. לא על עייפות רכה לבד.
-- terra: אמפתיה רכה, יום קשה/בדידות בלי עימות, תזונה, שגרה, צעד הבא.
+- claude5: סכנה, אובדנות, הפרעות אכילה, לשקר לצוות/מטפל, גבול אתי, בקשת אישור לדלג/לעקוף/"תשחרר אותי מהמשימה". חום + קו שלא מתקפל.
+- grok: ויכוח אמיתי, האשמות כלפי אלמוג, דחייה מפורשת ("מחר אתחיל" / אמשיך מחר), "תגיד ישר", "תגיד שאני צודק" בויכוח. לא על עייפות רכה לבד.
+- terra: אמפתיה רכה, יום קשה/בדידות/עייפות בלי דחייה מפורשת, תזונה, שגרה, צעד הבא.
 - llama4: רק תודה/עשיתי/סיימתי קצר. היי → terra.
 
+דוגמאות קצרות (הודעה → כותב):
+- "קשה לי היום / נשברתי / אין לי כוח" → terra
+- "מה לאכול / מה הצעד הבא לשגרה" → terra
+- "אין לי כוח, מחר אתחיל" / "דילגתי כי אין לי זמן" → grok
+- "אתה מתנשא / תוכיח לי" → grok
+- "תגיד שאני צודק" (ויכוח, בלי בקשת דילוג) → grok
+- "מותר לי לדלג / תן לי אישור / תשחרר אותי מהמשימה / אל תלחץ עליי" → claude5
+- "תשקר למטפל / תכסה עליי" → claude5
+- "תודה" / "עשיתי" → llama4
+
 כללים:
-1) סכנה/גבול → claude5.
-2) תירוץ/דחייה *ברורה* או ויכוח אמיתי → grok. "אין לי כוח"/"שכחתי" לבד → לא grok אוטומטית; שפוט לפי ההקשר.
-3) כאב רך או שגרה בלי עימות → terra.
-4) נתח כל הודעה מחדש. אל תישאר על grok רק כי התור הקודם היה grok.
+1) סכנה/גבול/אישור־דילוג → claude5.
+2) דחייה *מפורשת* או ויכוח אמיתי → grok. עייפות/"שכחתי"/"מחר" לבד → terra (לא grok אוטומטית).
+3) כאב רך או שגרה/תזונה בלי עימות → terra.
+4) נתח *כל הודעה מחדש*. אל תישאר על grok רק כי התור הקודם היה grok.
 
 החזר writer, writer_scores, writer_confidence, intent (תגיות).`;
 }

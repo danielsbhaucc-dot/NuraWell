@@ -2,7 +2,7 @@
 
 import { Fragment, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BellRing, MessageCircle, Send, Loader2, X, RotateCcw, PlusCircle, LogOut, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { BellRing, Clock, MessageCircle, Send, Loader2, X, RotateCcw, PlusCircle, LogOut, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useChat } from '@ai-sdk/react';
 import { MemorySearchIndicator } from './MemorySearchIndicator';
@@ -52,6 +52,11 @@ import {
   readChatInputDraft,
   writeChatInputDraft,
 } from '../../lib/client/chat-input-draft';
+import {
+  buildTickChoreographyTimeline,
+  resolveUserMessageTickStage,
+  type MessageTickStage,
+} from '../../lib/client/message-tick-choreography';
 
 const SESSION_STORAGE_KEY = 'nurawell_almog_chat_session';
 
@@ -380,7 +385,19 @@ function ThreadPresenceText({
   );
 }
 
-function MessageTicks({ state }: { state: 'sent' | 'delivered' | 'read' }) {
+function MessageTicks({ state }: { state: MessageTickStage }) {
+  if (state === 'pending') {
+    return (
+      <span
+        className="inline-flex h-[11px] w-[18px] items-center justify-end text-slate-400"
+        title="ממתינה"
+        aria-label="ממתינה"
+      >
+        <Clock className="h-[11px] w-[11px]" strokeWidth={2.2} aria-hidden />
+      </span>
+    );
+  }
+
   const color = state === 'read' ? '#53bdeb' : '#e2e8f0';
   const label = state === 'read' ? 'נקראה' : state === 'delivered' ? 'התקבלה' : 'נשלחה';
   return (
@@ -415,27 +432,6 @@ function MessageTicks({ state }: { state: 'sent' | 'delivered' | 'read' }) {
       </svg>
     </span>
   );
-}
-
-function userMessageTickState(
-  index: number,
-  messages: Array<{ role: string }>,
-  chatStatus: string,
-  awaiting: boolean,
-  sentAck: 'sent' | 'delivered'
-): 'sent' | 'delivered' | 'read' {
-  const hasLaterAssistant = messages.slice(index + 1).some((m) => m.role === 'assistant');
-  const lastUserIndex = messages.reduce((acc, m, i) => (m.role === 'user' ? i : acc), -1);
-  const isLastUser = index === lastUserIndex;
-  const inFlight =
-    awaiting || chatStatus === 'submitted' || chatStatus === 'streaming';
-
-  if (isLastUser && inFlight) {
-    if (chatStatus === 'submitted' && sentAck === 'sent') return 'sent';
-    return 'delivered';
-  }
-  if (hasLaterAssistant) return 'read';
-  return 'delivered';
 }
 
 /** ציטוט ווטסאפ בתוך בועת הודעה */
@@ -519,7 +515,10 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const [online, setOnline] = useState(true);
   const [input, setInput] = useState('');
   const [waitSeconds, setWaitSeconds] = useState(0);
-  const [sentAck, setSentAck] = useState<'sent' | 'delivered'>('sent');
+  const [tickStage, setTickStage] = useState<MessageTickStage>('read');
+  const [typingRevealReady, setTypingRevealReady] = useState(true);
+  const [tickSendGen, setTickSendGen] = useState(0);
+  const tickTimersRef = useRef<number[]>([]);
   const [notifyWhenReady, setNotifyWhenReady] = useState(false);
   const [answerReadyToast, setAnswerReadyToast] = useState(false);
   const [hasBackgroundAnswer, setHasBackgroundAnswer] = useState(false);
@@ -753,17 +752,68 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
 
   const isLoading = status === 'submitted' || status === 'streaming';
   const showLoading = isLoading || awaitingAssistantRecovery;
-  const isThinking = status === 'submitted' || (awaitingAssistantRecovery && !isLoading);
+  /** מקליד רק אחרי שווי כחול כבר הוצג (או recovery באמצע טיסה). */
+  const showTypingUi = showLoading && typingRevealReady;
+  const isThinking =
+    (status === 'submitted' || (awaitingAssistantRecovery && !isLoading)) && typingRevealReady;
+  const messageInFlight = showLoading;
+
+  const beginOutgoingTickChoreography = useCallback(() => {
+    setTickSendGen((g) => g + 1);
+  }, []);
 
   useEffect(() => {
-    if (status === 'submitted') {
-      setSentAck('sent');
-      const timer = window.setTimeout(() => setSentAck('delivered'), 350);
-      return () => window.clearTimeout(timer);
+    const clearTickTimers = () => {
+      for (const id of tickTimersRef.current) window.clearTimeout(id);
+      tickTimersRef.current = [];
+    };
+
+    if (!showLoading) {
+      clearTickTimers();
+      setTickStage('read');
+      setTypingRevealReady(true);
+      return () => clearTickTimers();
     }
-    if (status === 'streaming' || showLoading) {
-      setSentAck('delivered');
+
+    if (!online) {
+      clearTickTimers();
+      setTickStage('pending');
+      setTypingRevealReady(false);
+      return () => clearTickTimers();
     }
+
+    // חזרה לשיחה באמצע המתנה (בלי שליחה חדשה מהווידג'ט) — כבר נקרא + מקליד.
+    if (tickSendGen === 0) {
+      clearTickTimers();
+      setTickStage('read');
+      setTypingRevealReady(true);
+      return () => clearTickTimers();
+    }
+
+    clearTickTimers();
+    const timeline = buildTickChoreographyTimeline();
+    setTickStage('pending');
+    setTypingRevealReady(false);
+
+    for (const step of timeline) {
+      if (step.atMs === 0) continue;
+      const id = window.setTimeout(() => {
+        setTickStage(step.stage);
+        if (step.revealTyping) setTypingRevealReady(true);
+      }, step.atMs);
+      tickTimersRef.current.push(id);
+    }
+
+    return () => clearTickTimers();
+  }, [showLoading, tickSendGen, online]);
+
+  // סטרימינג התחיל לפני סוף הכוריאוגרפיה — אלמוג כבר קרא וכותב.
+  useEffect(() => {
+    if (!showLoading || status !== 'streaming') return;
+    for (const id of tickTimersRef.current) window.clearTimeout(id);
+    tickTimersRef.current = [];
+    setTickStage('read');
+    setTypingRevealReady(true);
   }, [status, showLoading]);
 
   useEffect(() => {
@@ -841,6 +891,9 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
       applySessionId(created.id);
       setChatSession(created);
       setMessages([]);
+      setTickSendGen(0);
+      setTickStage('read');
+      setTypingRevealReady(true);
       clearChatInputDraft(created.id);
       setInput(prefill ?? '');
       if (prefill?.trim()) {
@@ -897,6 +950,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     pendingInitialReplyRef.current = null;
     const replyNotificationId = notificationIdRef.current;
     markChatSendStarted(sessionIdRef.current);
+    beginOutgoingTickChoreography();
     sendMessage(
       { text },
       {
@@ -906,7 +960,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     clearHintsAfterSend();
     setNotificationContext(null);
     notificationIdRef.current = null;
-  }, [open, sendMessage, status, userId, buildOutgoingChatBody]);
+  }, [open, sendMessage, status, userId, buildOutgoingChatBody, beginOutgoingTickChoreography]);
 
   const pendingRecallTool = useMemo(
     () => messagesHavePendingRecallTool(messages),
@@ -1242,7 +1296,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                     <div className="flex flex-col items-start">
                       <p className="text-[16px] font-black leading-none text-white">אלמוג</p>
                       <ThreadPresenceText
-                        showLoading={showLoading}
+                        showLoading={showTypingUi}
                         online={online}
                         isSessionClosed={isSessionClosed}
                       />
@@ -1431,13 +1485,13 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                         <div className="mt-1.5 flex items-center justify-end gap-1 text-[10px] text-slate-400">
                           <span>{formatHebrewTime(getMessageCreatedAt(msg))}</span>
                           <MessageTicks
-                            state={userMessageTickState(
-                              i,
+                            state={resolveUserMessageTickStage({
+                              index: i,
                               messages,
-                              status,
-                              showLoading,
-                              sentAck
-                            )}
+                              inFlight: messageInFlight,
+                              choreographyStage: tickStage,
+                              offline: !online,
+                            })}
                           />
                         </div>
                       </div>
@@ -1474,7 +1528,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
 
               <MemorySearchIndicator visible={showMemorySearch} />
 
-              {showLoading && !showMemorySearch && (
+              {showTypingUi && !showMemorySearch && (
                 <div className="flex justify-end items-end gap-2">
                   <div
                     className="max-w-[80%] rounded-[20px] rounded-bl-md px-3.5 py-2.5 text-[14px] text-white"
@@ -1586,6 +1640,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                           await postMicroWinHabit();
                         }
                         markChatSendStarted(sessionIdRef.current);
+                        beginOutgoingTickChoreography();
                         sendMessage(
                           { text: chip.text },
                           {
@@ -1614,6 +1669,7 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                     if (!text || showLoading || isSessionClosed || isClosing) return;
                     const replyNotificationId = notificationIdRef.current;
                     markChatSendStarted(sessionIdRef.current);
+                    beginOutgoingTickChoreography();
                     sendMessage(
                       { text },
                       {
