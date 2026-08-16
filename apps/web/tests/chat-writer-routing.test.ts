@@ -199,8 +199,16 @@ describe('chat writer routing', () => {
   it('keeps mixed-intent stance prompts for Claude and Grok lanes', () => {
     expect(writerStancePrompt(['empathy', 'adult'])).toMatch(/כאב אמיתי \+ גבול/);
     expect(writerStancePrompt(['empathy', 'evasion'])).toMatch(/יש רגש ויש התחמקות/);
-    expect(writerStancePrompt(['evasion'])).toMatch(/אל תקנה את הסיפור/);
-    expect(writerStancePrompt(['evasion'])).toMatch(/דרוש משהו קונקרטי היום/);
+    expect(writerStancePrompt(['evasion'])).toMatch(/תירוץ \/ התחמקות/);
+    expect(writerStancePrompt(['evasion'])).toMatch(/דרוש צעד קונקרטי היום/);
+  });
+
+  it('covers Terra empathy/coaching and Llama short stances', () => {
+    expect(writerStancePrompt(['empathy'])).toMatch(/רגש רך בלי עימות/);
+    expect(writerStancePrompt(['coaching'])).toMatch(/שגרה \/ תזונה/);
+    expect(writerStancePrompt(['simple'])).toMatch(/תודה \/ עשיתי/);
+    expect(writerStancePrompt(['argument'])).toMatch(/ויכוח \/ האשמה/);
+    expect(writerStancePrompt(['safety'])).toMatch(/גבול אתי/);
   });
 });
 
