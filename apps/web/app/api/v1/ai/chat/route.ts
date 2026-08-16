@@ -10,6 +10,7 @@ import {
   chatWriterFallbackSlugs,
   isChatWriterKey,
   isGpt5FamilySlug,
+  openRouterSlugForWriter,
   resolveChatSafetyNetModel,
   type ChatWriterKey,
 } from '../../../../../lib/ai/chat-writer-fleet';
@@ -278,13 +279,6 @@ const CHAT_MAX_OUTPUT_TOKENS = (() => {
 const CHAT_OUTPUT_TOKENS_NEAR_CAP_RATIO = 0.92;
 
 /**
- * מודל הצ'אט (אלמוג המנטור).
- * Override ב-env: `AI_CHAT_MODEL`.
- *
- * ברירת המחדל: GPT Terra דרך OpenRouter. הנתב (Llama 4 / Groq) יכול להחליף כותב.
- */
-const CHAT_MODEL = process.env.AI_CHAT_MODEL?.trim() || 'openai/gpt-5.6-terra';
-/**
  * טמפרטורת הכתיבה של אלמוג. Qwen מרוויח מטמפרטורה גבוהה יחסית: יותר שיחה
  * טבעית, דימויים, וריאציה ואינטליגנציה רגשית. לא עולים ל-1.2+ כברירת מחדל
  * כדי לא להפוך את המנטור לפטפטן/לא יציב. Override: `AI_CHAT_TEMPERATURE`.
@@ -431,8 +425,6 @@ const CHAT_PROMPT_CACHE_TTL = process.env.AI_CHAT_PROMPT_CACHE_TTL?.trim() || '1
 const CHAT_TRIVIAL_BYPASS_ENABLED =
   (process.env.AI_CHAT_TRIVIAL_BYPASS?.trim() || 'off').toLowerCase() === 'on';
 
-const CHAT_WRITER_FLEET = chatWriterFleet();
-
 type ChatModelRuntime = {
   writer: ChatWriterKey;
   slug: string;
@@ -448,8 +440,9 @@ type ChatModelRuntime = {
 };
 
 function resolveChatModelRuntime(writer: ChatWriterKey): ChatModelRuntime {
-  const entry = CHAT_WRITER_FLEET[writer];
-  const slug = entry?.slug ?? CHAT_MODEL;
+  const fleet = chatWriterFleet();
+  const entry = fleet[writer];
+  const slug = openRouterSlugForWriter(writer);
   const isOpenAI = slug.startsWith('openai/');
   const isQwen = slug.toLowerCase().includes('qwen');
   const isGoogle = slug.startsWith('google/');
@@ -628,7 +621,8 @@ async function createOpenRouterTextStreamResponse({
           ...(llamaLike ? { seed: randomSamplingSeed() } : {}),
         };
 
-  const fallbackModels = chatWriterFallbackSlugs(model);
+  const lockWriterLane = /(?:x-ai\/grok|anthropic\/claude-sonnet-5)/i.test(model);
+  const fallbackModels = lockWriterLane ? [] : chatWriterFallbackSlugs(model);
   const buildBody = (includeReasoning: boolean, lockProvider: boolean) =>
     JSON.stringify({
       model,
@@ -2317,6 +2311,11 @@ export async function POST(request: Request) {
     };
   }
 
+  /**
+   * lastUserText → routeChatContextWithCheapModel → analyzeWriterIntent →
+   * mergeWriterDecisions → applyStickyWriterStance → resolveChatModelRuntime(openRouterSlugForWriter).
+   * דילוג כתיבה זול רק אם AI_CHAT_TRIVIAL_BYPASS=on ו-routedWriter===llama4.
+   */
   const heuristicAnalysis = analyzeWriterIntent(lastUserText, earlySignals);
   const cheapWriter = isChatWriterKey(contextDecision.writer) ? contextDecision.writer : undefined;
   const turnWriter: ChatWriterKey = mergeWriterDecisions(
@@ -3619,7 +3618,7 @@ export async function POST(request: Request) {
     const cheapWriterKey = openrouterKey;
 
     const emptyRetryHandler = async () => {
-      const grokSlug = CHAT_WRITER_FLEET.grok.slug;
+      const grokSlug = openRouterSlugForWriter('grok');
       const run = async (slug: string) => {
         const retry = await generateText({
           model: openrouter.chat(slug),
@@ -3801,10 +3800,11 @@ export async function POST(request: Request) {
       uiHeaders.set('x-debug-stage', stage);
       uiHeaders.set('x-ai-writer', 'memory-recall-tools');
       uiHeaders.set('x-ai-model', assistantModelName);
+      uiHeaders.set('x-nura-writer', mcfg.writer);
       uiHeaders.set('Cache-Control', 'no-cache, no-transform');
       uiHeaders.set(
         'Access-Control-Expose-Headers',
-        'x-session-id, x-debug-id, x-debug-stage, x-ai-writer, x-ai-model'
+        'x-session-id, x-debug-id, x-debug-stage, x-ai-writer, x-ai-model, x-nura-writer'
       );
       return new Response(upstream.body, {
         status: upstream.status,
@@ -3903,6 +3903,7 @@ export async function POST(request: Request) {
         'x-session-id': sessionId,
         'x-debug-id': debugId,
         'x-debug-stage': stage,
+        'x-nura-writer': mcfg.writer,
         'Cache-Control': 'no-cache, no-transform',
       },
     });

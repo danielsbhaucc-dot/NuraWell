@@ -506,7 +506,7 @@ export const ALMOG_VOICE_STICKY = `— זהות דביקה (חובה, עכשיו
 אל תתחנן, אל תשאל שאלת-מדף בכל הודעה, אל תתאפס כאילו זו פגישה ראשונה.
 אם יש תיק זיכרון / קובץ שיחה / תמליל — זו אותה מערכת יחסים. תמשיך משם.`;
 
-export const NURAWELL_CHAT_SYSTEM_PROMPT = `${ALMOG_VOICE_DNA}}
+export const NURAWELL_CHAT_SYSTEM_PROMPT = `${ALMOG_VOICE_DNA}
 
 ${ALMOG_FEWSHOT_DIALOGUES}
 
