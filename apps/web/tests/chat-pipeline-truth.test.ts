@@ -39,7 +39,7 @@ describe('chatWriterFallbackSlugs', () => {
 describe('applyStickyWriterStance', () => {
   const now = new Date('2026-08-15T20:00:00Z');
 
-  it('keeps Grok on a short excuse follow-up', () => {
+  it('keeps Grok on a short excuse follow-up when LLM slipped to terra', () => {
     const out = applyStickyWriterStance({
       turnWriter: 'terra',
       turnTags: [],
@@ -50,7 +50,7 @@ describe('applyStickyWriterStance', () => {
         turns: 1,
         updated_at: '2026-08-15T19:55:00Z',
       },
-      userMessage: 'כן אבל שוב שכחתי',
+      userMessage: 'כן אבל שוב אותו דבר',
       now,
     });
     expect(out.writer).toBe('grok');
@@ -110,10 +110,10 @@ describe('applyStickyWriterStance', () => {
     expect(out.stickyApplied).toBe(false);
   });
 
-  it('does not keep Grok merely because previous turn was grok', () => {
+  it('trusts LLM terra on a soft follow-up without clear conflict continuation', () => {
     const out = applyStickyWriterStance({
-      turnWriter: 'grok',
-      turnTags: [],
+      turnWriter: 'terra',
+      turnTags: ['empathy'],
       sticky: {
         writer: 'grok',
         reason: 'confrontation',
@@ -121,7 +121,7 @@ describe('applyStickyWriterStance', () => {
         turns: 1,
         updated_at: '2026-08-15T19:55:00Z',
       },
-      userMessage: 'סבבה מה הולך עם המים',
+      userMessage: 'נשברתי קצת היום',
       now,
     });
     expect(out.writer).toBe('terra');

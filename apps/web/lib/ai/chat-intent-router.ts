@@ -267,10 +267,9 @@ function blendScores(a?: WriterScores, b?: WriterScores): WriterScores | undefin
 }
 
 /**
- * קלוד מנצח על בטיחות/גבולות.
- * Grok רק על עימות/תירוץ *חזק* (תגיות), לא על עייפות רכה.
- * Llama 4 רק לתור תפעולי קצר מההיוריסטיקה.
- * אחרת — הנתב (LLM) בוחר את הכותב.
+ * בחירה ראשית = נתב ה-LLM (writer מהקשר).
+ * היוריסטיקה = רשת ביטחון בלבד: סכנה/גבול → Claude; עימות קשה מאוד → Grok.
+ * תירוץ רך / עייפות / people-please חלש — לא דורסים את בחירת ה-LLM.
  */
 export function mergeWriterDecisions(
   llamaChoice: ChatWriterKey | undefined,
@@ -283,47 +282,30 @@ export function mergeWriterDecisions(
   const blended = blendScores(llamaScores, heuristicScores);
   if (llamaChoice === 'claude5' && blended && blended.claude5 >= 50) tags.push('safety');
 
-  const lane = writerLaneFromTags(tags, heuristic);
-  if (lane === 'claude5' || heuristic === 'claude5') return 'claude5';
+  const hardSafety =
+    hasAny(tags, ['safety', 'boundaries', 'adult', 'warm_boundary']) || heuristic === 'claude5';
 
-  const strongGrok = hasAny(tags, [
-    'evasion',
-    'argument',
-    'accusation',
-    'direct',
-    'rude',
-    'people_please',
-  ]);
+  // רשת ביטחון: סכנה/גבול תמיד ל-Claude.
+  if (hardSafety) return 'claude5';
 
-  // תירוץ/ויכוח/האשמה חזקים — Grok מנצח גם אם הנתב הזול בחר terra.
-  if (strongGrok && (lane === 'grok' || heuristic === 'grok')) return 'grok';
+  // עימות קשה מאוד בלבד (האשמה/ויכוח/ישירות/גסות) — לא evasion רך ולא people_please לבד.
+  const hardConfrontation = hasAny(tags, ['accusation', 'argument', 'direct', 'rude']);
+  if (hardConfrontation && heuristic === 'grok') return 'grok';
 
-  // היוריסטיקת grok חלשה (בלי תגיות עימות) לא דורסת LLM terra באמפתיה/שגרה.
-  if (
-    heuristic === 'grok' &&
-    !strongGrok &&
-    (llamaChoice === 'terra' || llamaChoice === undefined) &&
-    (tags.includes('empathy') || tags.includes('coaching') || tags.length === 0)
-  ) {
-    return 'terra';
-  }
-
-  if (heuristic === 'llama4' && (lane === 'llama4' || lane === 'terra')) return 'llama4';
-
-  // אמפתיה/שגרה בלי עימות: אל תתן לנתב הזול לגנוב ל-Grok.
-  if (
-    llamaChoice === 'grok' &&
-    (tags.includes('empathy') || tags.includes('coaching')) &&
-    !strongGrok
-  ) {
-    return 'terra';
-  }
-
-  if (lane === 'grok') return 'grok';
-
+  // בחירה ראשית: הנתב (LLM), כל עוד זה לא llama4 ככותב ראשי מהנתב.
+  // חריג: Grok מהנתב לא גונב תור אמפתיה/אימון רך בלי תגי עימות/תירוץ.
   const routed = llamaChoice && llamaChoice !== 'llama4' ? llamaChoice : undefined;
+  const softEmpathyLane =
+    heuristic === 'terra' &&
+    hasAny(tags, ['empathy', 'coaching']) &&
+    !hardConfrontation &&
+    !hasAny(tags, ['evasion']);
+  if (routed === 'grok' && softEmpathyLane) return 'terra';
   if (routed === 'claude5' || routed === 'grok' || routed === 'terra') return routed;
-  if (heuristic === 'grok') return strongGrok ? 'grok' : 'terra';
+
+  // בלי נתב: היוריסטיקה, אבל grok חלש (בלי עימות קשה) → terra.
+  if (heuristic === 'llama4') return 'llama4';
+  if (heuristic === 'grok') return hardConfrontation ? 'grok' : 'terra';
   return 'terra';
 }
 
@@ -382,22 +364,19 @@ export function writerStancePrompt(tags: string[]): string | null {
 }
 
 export function writerRouterInstructions(): string {
-  return `נתח את ההודעה לפי *חוזקות הכותב*, לא לפי מי ברירת מחדל. דיוק לפני מהירות.
-תן ציון 0-100 לפי מי הכי חזק *בסוג השיחה הזה*. אל תבחר terra רק כי הטון חם.
+  return `אתה נתב כותבים. החלטת *אתה* (המודל) היא העיקרית — לפי טון וכוונה של ההודעה, לא לפי מילת־מפתח בודדת.
 
-טבלת חוזקות (חובה):
-- claude5: סכנה, אובדנות, הפרעות אכילה, לשקר לצוות/מטפל, גבול אתי, אמפתיה+בקשה לדלג/לעקוף. חום + קו שלא מתקפל. מנצח תמיד כשיש סכנה.
-- grok: ויכוח, האשמות כלפי אלמוג, תירוצים/התחמקות, "תגיד ישר", אמפתיה+התחמקות, "תוכיח", אתגר מדעי, לחץ לרצות בלי בקשת דילוג. אל תעביר לterra בגלל כאב קל ליד תירוץ.
-- terra: אמפתיה רכה, בושה/בדידות/יום קשה בלי עימות, תזונה, שגרה, צעד הבא, ליווי רגיל. בלי ויכוח ובלי התחמקות.
-- llama4: רק תודה/עשיתי/סיימתי קצר. היי/שלום/כן → terra. כל ספק = לא llama4.
+טבלת חוזקות:
+- claude5: סכנה, אובדנות, הפרעות אכילה, לשקר לצוות/מטפל, גבול אתי, בקשה לדלג/לעקוף. חום + קו שלא מתקפל.
+- grok: ויכוח אמיתי, האשמות כלפי אלמוג, תירוץ/דחייה ברורה ("מחר אתחיל" אחרי דילוג), "תגיד ישר", לחץ לרצות. לא על עייפות רכה לבד.
+- terra: אמפתיה רכה, יום קשה/בדידות בלי עימות, תזונה, שגרה, צעד הבא.
+- llama4: רק תודה/עשיתי/סיימתי קצר. היי → terra.
 
-כללי הכרעה:
-1) סכנה/גבול/אמפתיה+אישור לדלג -> claude5.
-2) תירוץ/ויכוח/האשמה/ישירות / אמפתיה+התחמקות -> grok.
-3) כאב רך או שגרה/תזונה בלי עימות -> terra.
-4) "אין לי זמן" כתכנון ארוחה בלי דילוג -> terra. "אין לי זמן ולכן דילגתי" -> grok.
-5) בספק בין grok לterra כשיש תירוץ או עימות — grok.
-6) נתח *כל הודעה מחדש*. אם בתור הקודם היה grok (ויכוח/תירוץ) או claude5 (גבול) וההודעה הזו היא המשך קצר לאותו עימות — השאר את אותו כותב. שחרר לterra אחרי תודה, נושא חדש, או שאלת שגרה/תזונה חדשה.
+כללים:
+1) סכנה/גבול → claude5.
+2) תירוץ/דחייה *ברורה* או ויכוח אמיתי → grok. "אין לי כוח"/"שכחתי" לבד → לא grok אוטומטית; שפוט לפי ההקשר.
+3) כאב רך או שגרה בלי עימות → terra.
+4) נתח כל הודעה מחדש. אל תישאר על grok רק כי התור הקודם היה grok.
 
 החזר writer, writer_scores, writer_confidence, intent (תגיות).`;
 }
