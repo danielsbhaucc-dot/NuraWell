@@ -15,11 +15,22 @@ const STICKY_TTL_MS = 30 * 60 * 1000;
 const RELEASE_RE =
   /^(?:תודה|תודה רבה|סבבה|אוקיי|היי|שלום|אהלן)[\s!.]*$/u;
 
+/** המשך ברור לאותו עימות — לא כל הודעה קצרה. */
 const CONTINUE_RE =
   /(?:^|\s)(?:כן אבל|לא אבל|עדיין|שוב|ומה|נו |ברצינות|בכל זאת|אותו דבר|כמו ש|אמרתי|תירוץ|שכחתי|אין לי כוח|תוכיח)/u;
 
 function isStickyWriter(writer: ChatWriterKey): boolean {
   return writer === 'grok' || writer === 'claude5';
+}
+
+function hasConfrontationTags(tags: string[]): boolean {
+  return tags.some((t) =>
+    ['evasion', 'argument', 'accusation', 'direct', 'rude', 'people_please'].includes(t)
+  );
+}
+
+function hasBoundaryTags(tags: string[]): boolean {
+  return tags.some((t) => ['safety', 'boundaries', 'adult', 'warm_boundary'].includes(t));
 }
 
 export function parseChatWriterStance(raw: unknown): ChatWriterStance | null {
@@ -45,7 +56,8 @@ function stickyExpired(stance: ChatWriterStance, now: Date): boolean {
 
 /**
  * בכל הודעה בוחרים כותב מחדש לפי חוזקות.
- * Grok/Claude נדבקים לכמה תורים אם זה אותו עימות/גבול, ומשוחררים כשהנושא מתחלף.
+ * Grok/Claude נדבקים רק אם התור *הנוכחי* עדיין בעימות/גבול,
+ * או המשך קצר וברור לאותו קונפליקט — לא רק כי התור הקודם היה Grok.
  */
 export function applyStickyWriterStance(opts: {
   turnWriter: ChatWriterKey;
@@ -57,16 +69,17 @@ export function applyStickyWriterStance(opts: {
   const now = opts.now ?? new Date();
   const t = opts.userMessage.replace(/\s+/g, ' ').trim();
   const tags = opts.turnTags;
-  const safetyNow = tags.includes('safety') || tags.includes('boundaries') || tags.includes('adult');
-  const grokNow =
-    tags.includes('evasion') ||
-    tags.includes('argument') ||
-    tags.includes('accusation') ||
-    tags.includes('direct') ||
-    tags.includes('rude') ||
-    tags.includes('people_please');
+  const safetyNow = hasBoundaryTags(tags) || opts.turnWriter === 'claude5';
+  const grokNow = hasConfrontationTags(tags);
 
-  if (safetyNow || opts.turnWriter === 'claude5') {
+  // שחרור מפורש: תודה/ברכה, אמפתיה רכה, שגרה/תזונה.
+  const releaseTopic =
+    RELEASE_RE.test(t) ||
+    tags.includes('coaching') ||
+    tags.includes('simple') ||
+    (tags.includes('empathy') && !grokNow && !safetyNow);
+
+  if (safetyNow) {
     return {
       writer: 'claude5',
       stickyApplied: false,
@@ -80,7 +93,8 @@ export function applyStickyWriterStance(opts: {
     };
   }
 
-  if (grokNow || opts.turnWriter === 'grok') {
+  // Grok רק כשיש תגיות עימות *בתור הזה* — לא רק כי turnWriter=======grok.
+  if (grokNow) {
     const prevTurns =
       opts.sticky?.writer === 'grok' && !stickyExpired(opts.sticky, now) ? opts.sticky.turns : 0;
     return {
@@ -96,12 +110,23 @@ export function applyStickyWriterStance(opts: {
     };
   }
 
+  if (releaseTopic) {
+    if (opts.turnWriter === 'llama4') {
+      return { writer: 'llama4', stickyApplied: false, stance: null };
+    }
+    return { writer: 'terra', stickyApplied: false, stance: null };
+  }
+
   const sticky = opts.sticky && !stickyExpired(opts.sticky, now) ? opts.sticky : null;
-  if (sticky && isStickyWriter(sticky.writer) && !RELEASE_RE.test(t)) {
-    const shortFollowUp = t.length <= 90;
-    const continues = CONTINUE_RE.test(t) || (shortFollowUp && !tags.includes('empathy'));
-    const newCoaching = tags.includes('coaching') && !tags.includes('empathy');
-    if (continues && !newCoaching) {
+  if (sticky && isStickyWriter(sticky.writer)) {
+    // המשך קצר לאותו עימות: רמז המשך + לא שאלה חדשה / לא נושא חדש.
+    const clearSameConflict =
+      CONTINUE_RE.test(t) &&
+      t.length <= 90 &&
+      !/[?？]/.test(t) &&
+      !tags.includes('coaching') &&
+      !tags.includes('empathy');
+    if (clearSameConflict) {
       return {
         writer: sticky.writer,
         stickyApplied: true,
@@ -118,8 +143,13 @@ export function applyStickyWriterStance(opts: {
     return { writer: 'llama4', stickyApplied: false, stance: null };
   }
 
+  // בלי תגיות עימות — גם אם המיזוג אמר grok, לא נועלים sticky.
+  if (opts.turnWriter === 'grok' && !grokNow) {
+    return { writer: 'terra', stickyApplied: false, stance: null };
+  }
+
   return {
-    writer: 'terra',
+    writer: opts.turnWriter === 'claude5' ? 'terra' : opts.turnWriter,
     stickyApplied: false,
     stance: null,
   };

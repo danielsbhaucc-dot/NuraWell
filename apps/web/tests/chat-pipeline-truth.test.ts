@@ -91,4 +91,40 @@ describe('applyStickyWriterStance', () => {
     });
     expect(out.writer).toBe('claude5');
   });
+
+  it('releases Grok sticky on a new food/coaching question', () => {
+    const out = applyStickyWriterStance({
+      turnWriter: 'terra',
+      turnTags: ['coaching'],
+      sticky: {
+        writer: 'grok',
+        reason: 'confrontation',
+        tags: ['evasion'],
+        turns: 1,
+        updated_at: '2026-08-15T19:55:00Z',
+      },
+      userMessage: 'מה אוכלים היום?',
+      now,
+    });
+    expect(out.writer).toBe('terra');
+    expect(out.stickyApplied).toBe(false);
+  });
+
+  it('does not keep Grok merely because previous turn was grok', () => {
+    const out = applyStickyWriterStance({
+      turnWriter: 'grok',
+      turnTags: [],
+      sticky: {
+        writer: 'grok',
+        reason: 'confrontation',
+        tags: ['evasion'],
+        turns: 1,
+        updated_at: '2026-08-15T19:55:00Z',
+      },
+      userMessage: 'סבבה מה הולך עם המים',
+      now,
+    });
+    expect(out.writer).toBe('terra');
+    expect(out.stickyApplied).toBe(false);
+  });
 });
