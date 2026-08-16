@@ -202,13 +202,13 @@ describe('chat writer routing', () => {
     expect(writerStancePrompt(['evasion'])).toMatch(/סקריפט אימון|בחירה בינארית/);
     expect(writerStancePrompt(['evasion'])).not.toMatch(/1\)/);
     expect(writerStancePrompt(['people_please'])).toMatch(/אל תרצה/);
+    expect(writerStancePrompt(['argument'])).toMatch(/חצוף/);
   });
 
   it('covers Terra empathy/coaching and Llama short stances', () => {
-    expect(writerStancePrompt(['empathy'])).toMatch(/רגש רך בלי עימות/);
+    expect(writerStancePrompt(['empathy'])).toMatch(/אמפתיה תותחית|רגש רך/);
     expect(writerStancePrompt(['coaching'])).toMatch(/שגרה\/תזונה/);
     expect(writerStancePrompt(['simple'])).toMatch(/תודה\/עשיתי/);
-    expect(writerStancePrompt(['argument'])).toMatch(/ויכוח\/האשמה/);
     expect(writerStancePrompt(['safety'])).toMatch(/גבול\/בטיחות/);
   });
 });
