@@ -63,13 +63,31 @@ describe('chat writer routing', () => {
 
   it('gives Grok room when Llama defaulted to Terra', () => {
     expect(
-      mergeWriterDecisions('terra', 'grok', { terra: 70, claude5: 10, grok: 55, llama4: 5 }, {
-        terra: 20,
-        claude5: 10,
-        grok: 80,
-        llama4: 5,
-      })
+      mergeWriterDecisions(
+        'terra',
+        'grok',
+        { terra: 70, claude5: 10, grok: 55, llama4: 5 },
+        {
+          terra: 20,
+          claude5: 10,
+          grok: 80,
+          llama4: 5,
+        },
+        ['evasion']
+      )
     ).toBe('grok');
+  });
+
+  it('does not let weak heuristic grok beat LLM terra without confrontation tags', () => {
+    expect(
+      mergeWriterDecisions(
+        'terra',
+        'grok',
+        { terra: 70, claude5: 10, grok: 20, llama4: 5 },
+        { terra: 40, claude5: 10, grok: 50, llama4: 5 },
+        ['empathy']
+      )
+    ).toBe('terra');
   });
 
   it('never routes people-pleasing pressure to Terra', () => {
@@ -140,14 +158,22 @@ describe('chat writer routing', () => {
         'grok',
         { terra: 95, claude5: 5, grok: 10, llama4: 5 },
         { terra: 20, claude5: 10, grok: 82, llama4: 5 },
-        ['argument', 'people_please']
+        ['argument', 'accusation']
       )
     ).toBe('grok');
   });
 
   it('routes excuses and evasion to Grok', () => {
-    expect(heuristicWriterDecision('שכחתי ולא בא לי עכשיו', emptySignals)).toBe('grok');
+    expect(heuristicWriterDecision('אין לי כוח, מחר אתחיל', emptySignals)).toBe('grok');
+    expect(
+      heuristicWriterDecision('אין לי כוח. אמשיך מחר שכחתי הכול', emptySignals)
+    ).toBe('grok');
     expect(heuristicWriterDecision('אין לי זמן אז דילגתי', emptySignals)).toBe('grok');
+  });
+
+  it('does not treat soft fatigue alone as Grok evasion', () => {
+    expect(heuristicWriterDecision('אין לי כוח', emptySignals)).toBe('terra');
+    expect(heuristicWriterDecision('שכחתי', emptySignals)).toBe('terra');
   });
 
   it('does not treat busy coaching as evasion', () => {

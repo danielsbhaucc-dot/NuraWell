@@ -36,13 +36,33 @@ const COACHING_RE =
 const SIMPLE_RE =
   /^(?:תודה|תודה רבה|עשיתי|סיימתי)[\s!.]*$/u;
 
-/** תירוץ/התחמקות ברורה — Grok קורא את זה, Terra נוטה לקנות. */
-const EXCUSE_RE =
-  /(?:שכחתי|לא בא לי|אין לי כוח|התחמק|תירוץ|ברחתי מ|נדחה ל|נדחה את|דחיתי|לא הספקתי|מחר אתחיל|אתחיל ביום|זה לא אני|כולם עושים|זה בגלל העבודה|זה בגלל הילדים|פספסתי כי|לא עשיתי כי|אין מצב היום|אי אפשר עכשיו|אולי אחר כך|נתקעתי בדרך|זה לא הזמן)/u;
+/** דחייה/דחיית פעולה ברורה — לא עייפות יומיומית לבד. */
+const DELAY_INTENT_RE =
+  /(?:מחר אתחיל|אמשיך מחר|מחר אני|מחר חוזר|אתחיל ביום|נדחה ל|נדחה את|דחיתי|אולי אחר כך|אין מצב היום|אי אפשר עכשיו|זה לא הזמן)/u;
+
+/** תירוץ מפורש / הסרת אחריות — חזק מספיק לבד. */
+const STRONG_EXCUSE_RE =
+  /(?:התחמק|תירוץ|ברחתי מ|פספסתי כי|לא עשיתי כי|זה לא אני|כולם עושים|זה בגלל העבודה|זה בגלל הילדים)/u;
+
+/** מילות עייפות/שכחה רכות — לבד ≠ התחמקות; רק עם דחייה/דילוג. */
+const SOFT_EXCUSE_RE = /(?:שכחתי|לא בא לי|אין לי כוח|לא הספקתי)/u;
 
 const BUSY_RE = /(?:אין לי זמן|יום עמוס|הייתי עסוק)/u;
 
 const SKIPPED_RE = /(?:דילג(?:תי|ת|נו)?|לא עשיתי|פספס(?:תי|ת)?|ויתר(?:תי|ת)?|לא התחל(?:תי|ת)?|ברחתי|נדחה)/u;
+
+function detectEvasion(text: string): boolean {
+  const t = text.trim();
+  if (DELAY_INTENT_RE.test(t) || STRONG_EXCUSE_RE.test(t)) return true;
+  const busy = BUSY_RE.test(t);
+  const skipped = SKIPPED_RE.test(t);
+  if (busy && skipped) return true;
+  // "אין לי כוח" / "שכחתי" לבד — לא. רק כשיש דחייה או דילוג באותה הודעה.
+  if (SOFT_EXCUSE_RE.test(t) && (DELAY_INTENT_RE.test(t) || skipped || /מחר/u.test(t))) {
+    return true;
+  }
+  return false;
+}
 
 /**
  * מצבים שבהם GPT/Gemini/Terra נוטים לרצות את המשתמש במקום לעמוד במקום.
@@ -131,13 +151,10 @@ export function analyzeWriterIntent(
   const empathy = EMPATHY_RE.test(t) || Boolean(signals.emotional_hint);
   const coaching = COACHING_RE.test(t);
   const simple = SIMPLE_RE.test(t);
-  const peoplePlease = PEOPLE_PLEASE_RE.test(t) || accusation || argument || rude;
+  const peoplePlease = PEOPLE_PLEASE_RE.test(t);
   const adultLine = ADULT_LINE_RE.test(t);
   const conflict = accusation || argument || rude;
-  const excuse = EXCUSE_RE.test(t);
-  const busy = BUSY_RE.test(t);
-  const skipped = SKIPPED_RE.test(t);
-  const evasion = excuse || (busy && skipped);
+  const evasion = detectEvasion(t);
 
   if (danger) {
     tags.push('safety');
@@ -251,9 +268,9 @@ function blendScores(a?: WriterScores, b?: WriterScores): WriterScores | undefin
 
 /**
  * קלוד מנצח על בטיחות/גבולות.
- * נטייה לרצות / תירוץ / ויכוח -> Grok.
+ * Grok רק על עימות/תירוץ *חזק* (תגיות), לא על עייפות רכה.
  * Llama 4 רק לתור תפעולי קצר מההיוריסטיקה.
- * אחרת — הנתב (LLM) בוחר את הכותב. בלי זה הכל נופל ל-Terra ונשמע אותו מודל.
+ * אחרת — הנתב (LLM) בוחר את הכותב.
  */
 export function mergeWriterDecisions(
   llamaChoice: ChatWriterKey | undefined,
@@ -268,20 +285,45 @@ export function mergeWriterDecisions(
 
   const lane = writerLaneFromTags(tags, heuristic);
   if (lane === 'claude5' || heuristic === 'claude5') return 'claude5';
-  if (lane === 'grok' || heuristic === 'grok') return 'grok';
+
+  const strongGrok = hasAny(tags, [
+    'evasion',
+    'argument',
+    'accusation',
+    'direct',
+    'rude',
+    'people_please',
+  ]);
+
+  // תירוץ/ויכוח/האשמה חזקים — Grok מנצח גם אם הנתב הזול בחר terra.
+  if (strongGrok && (lane === 'grok' || heuristic === 'grok')) return 'grok';
+
+  // היוריסטיקת grok חלשה (בלי תגיות עימות) לא דורסת LLM terra באמפתיה/שגרה.
+  if (
+    heuristic === 'grok' &&
+    !strongGrok &&
+    (llamaChoice === 'terra' || llamaChoice === undefined) &&
+    (tags.includes('empathy') || tags.includes('coaching') || tags.length === 0)
+  ) {
+    return 'terra';
+  }
+
   if (heuristic === 'llama4' && (lane === 'llama4' || lane === 'terra')) return 'llama4';
 
   // אמפתיה/שגרה בלי עימות: אל תתן לנתב הזול לגנוב ל-Grok.
   if (
     llamaChoice === 'grok' &&
     (tags.includes('empathy') || tags.includes('coaching')) &&
-    !hasAny(tags, ['evasion', 'argument', 'accusation', 'direct', 'rude', 'people_please'])
+    !strongGrok
   ) {
     return 'terra';
   }
 
+  if (lane === 'grok') return 'grok';
+
   const routed = llamaChoice && llamaChoice !== 'llama4' ? llamaChoice : undefined;
   if (routed === 'claude5' || routed === 'grok' || routed === 'terra') return routed;
+  if (heuristic === 'grok') return strongGrok ? 'grok' : 'terra';
   return 'terra';
 }
 
