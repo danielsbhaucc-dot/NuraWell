@@ -9,8 +9,8 @@ export type ChatWriterStance = {
   updated_at: string;
 };
 
-const STICKY_MAX_TURNS = 3;
-const STICKY_TTL_MS = 20 * 60 * 1000;
+const STICKY_MAX_TURNS = 2;
+const STICKY_TTL_MS = 15 * 60 * 1000;
 
 const RELEASE_RE =
   /^(?:תודה|תודה רבה|סבבה|אוקיי|היי|שלום|אהלן)[\s!.]*$/u;
@@ -28,7 +28,7 @@ function hasBoundaryTags(tags: string[]): boolean {
 }
 
 function hasHardConfrontationTags(tags: string[]): boolean {
-  return tags.some((t) => ['accusation', 'argument', 'direct', 'rude'].includes(t));
+  return tags.some((t) => ['accusation', 'argument', 'direct', 'rude', 'evasion'].includes(t));
 }
 
 export function parseChatWriterStance(raw: unknown): ChatWriterStance | null {
@@ -53,8 +53,8 @@ function stickyExpired(stance: ChatWriterStance, now: Date): boolean {
 }
 
 /**
- * ברירת מחדל: הכותב מהנתב/מיזוג (LLM) — כל תור מחדש.
- * Sticky קל בלבד: המשך קצר וברור לאותו עימות, כשהנתב חזר ל-terra בטעות.
+ * ברירת מחדל: הכותב מהנתב/מיזוג כל תור מחדש.
+ * Sticky קל בלבד (עד 2 תורים) להמשך עימות ברור — לא על תור רך.
  */
 export function applyStickyWriterStance(opts: {
   turnWriter: ChatWriterKey;
@@ -81,7 +81,7 @@ export function applyStickyWriterStance(opts: {
     };
   }
 
-  // נושא חדש / אמפתיה רכה / שגרה / תודה — תמיד לפי הנתב, בלי כלא sticky.
+  // שחרור: אמפתיה / אימון / תודה / נושא רך — תמיד לפי הנתב, בלי כלא Grok.
   const releaseTopic =
     RELEASE_RE.test(t) ||
     tags.includes('coaching') ||
@@ -119,7 +119,6 @@ export function applyStickyWriterStance(opts: {
     };
   }
 
-  // ברירת מחדל: מה שהנתב בחר.
   const stance =
     opts.turnWriter === 'grok'
       ? {

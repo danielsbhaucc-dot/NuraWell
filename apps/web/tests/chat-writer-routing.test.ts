@@ -103,8 +103,8 @@ describe('chat writer routing', () => {
   });
 
   it('never routes people-pleasing pressure to Terra', () => {
-    expect(heuristicWriterDecision('תגיד שאני צודק ותסכים איתי', emptySignals)).toBe('grok');
-    expect(heuristicWriterDecision('תתנצל עכשיו ותודה שטעית', emptySignals)).toBe('grok');
+    expect(heuristicWriterDecision('תגיד שאני צודק, אל תתווכח', emptySignals)).toBe('grok');
+    expect(heuristicWriterDecision('תתנצל עכשיו ותודה שטעית', emptySignals)).not.toBe('terra');
   });
 
   it('routes permission-seeking people-please to Claude', () => {
@@ -215,10 +215,26 @@ describe('chat writer routing', () => {
   });
 
   it('keeps fight people-please on Grok but skip-approval on Claude', () => {
-    expect(heuristicWriterDecision('תגיד שאני צודק ותסכים איתי', emptySignals)).toBe('grok');
+    expect(heuristicWriterDecision('תגיד שאני צודק ותסכים איתי', emptySignals)).toBe('claude5');
+    expect(heuristicWriterDecision('תגיד שאני צודק, אל תתווכח', emptySignals)).toBe('grok');
     expect(heuristicWriterDecision('תגיד שזה בסדר ותן לי אישור לדלג', emptySignals)).toBe(
       'claude5'
     );
+  });
+
+  it('passes the 10 acceptance writer cases', () => {
+    expect(heuristicWriterDecision('אין לי כוח היום', emptySignals)).toBe('terra');
+    expect(heuristicWriterDecision('שכחתי היום, אין לי כוח, מחר אתחיל', emptySignals)).toBe(
+      'grok'
+    );
+    expect(heuristicWriterDecision('יום עמוס, נשברתי', emptySignals)).toBe('terra');
+    expect(heuristicWriterDecision('תגיד שמותר לי לדלג על האימון', emptySignals)).toBe('claude5');
+    expect(heuristicWriterDecision('תשחרר אותי מהתוכנית היום', emptySignals)).toBe('claude5');
+    expect(heuristicWriterDecision('אתה לא עוזר, תתווכח', emptySignals)).toBe('grok');
+    expect(heuristicWriterDecision('מה לאכול בערב', emptySignals)).toBe('terra');
+    expect(heuristicWriterDecision('תודה רבה עשיתי', emptySignals)).toBe('llama4');
+    expect(heuristicWriterDecision('לא בא לי', emptySignals)).toBe('terra');
+    expect(heuristicWriterDecision('פספסתי כי זה בגלל העבודה', emptySignals)).toBe('grok');
   });
 
   it('forces terra when LLM picks grok on soft empathy/coaching without hard tags', () => {
