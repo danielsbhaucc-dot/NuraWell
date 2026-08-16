@@ -333,6 +333,15 @@ describe('sanitizeWriterOutput', () => {
     expect(sanitizeWriterOutput(raw)).toBe('אני איתך בזה, בלי שיפוט.');
   });
 
+  it('strips mid-sentence Claude placeholders like PERSON_NAME and ADDRESS', () => {
+    const raw =
+      'זה שיפוט אכזרי שאתה [PERSON_NAME] בפרוצוף שלך עכשיו. תגיד לי – היית מדבר ככה על חבר? [ADDRESS] לא. אז למה זה מותר להגיד את זה עליך? אתה, עייף, זה [ADDRESS].';
+    const cleaned = sanitizeWriterOutput(raw);
+    expect(cleaned).not.toMatch(/\[PERSON_NAME\]|\[ADDRESS\]/);
+    expect(cleaned).toContain('בפרוצוף שלך עכשיו');
+    expect(cleaned).toContain('אז למה זה מותר');
+  });
+
   it('detects bracket-only replies', () => {
     expect(looksLikeBracketOnlyReply('[[USER_FIRST_NAME]]')).toBe(true);
   });

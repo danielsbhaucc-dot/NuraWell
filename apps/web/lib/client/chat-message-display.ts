@@ -3,6 +3,7 @@
  */
 
 import type { UIMessage } from 'ai';
+import { sanitizeWriterOutput } from '../ai/sanitize-writer-output';
 
 /** חלקי הודעה מינימליים לחילוץ — תואם UIMessage.parts בלי לייבא כל ה-union. */
 export type ChatMessageTextPart = {
@@ -121,19 +122,19 @@ export function extractDisplayTextFromChatMessage(message: ChatDisplayMessage): 
       (part) => isToolOrNonDisplayPart(part) && !isTextPart(part)
     );
     const fromParts = textFromParts(parts);
-    if (fromParts) return stripStreamProtocolArtifacts(fromParts);
+    if (fromParts) return sanitizeWriterOutput(stripStreamProtocolArtifacts(fromParts));
     if (hasNonTextDisplayParts) return '';
   }
 
   if (typeof message.content === 'string' && message.content.trim()) {
-    return stripStreamProtocolArtifacts(message.content.trim());
+    return sanitizeWriterOutput(stripStreamProtocolArtifacts(message.content.trim()));
   }
 
   return '';
 }
 
 export function normalizeDisplayText(raw: string): string {
-  const cleaned = stripStreamProtocolArtifacts(raw);
+  const cleaned = sanitizeWriterOutput(stripStreamProtocolArtifacts(raw));
   if (!cleaned) return '';
 
   return cleaned
@@ -145,8 +146,12 @@ export function normalizeDisplayText(raw: string): string {
       if (!jsonLine) return line;
       try {
         const parsed = JSON.parse(jsonLine[1]) as { type?: unknown; text?: unknown; value?: unknown };
-        if (typeof parsed.text === 'string' && parsed.text.trim()) return parsed.text;
-        if (typeof parsed.value === 'string' && parsed.value.trim()) return parsed.value;
+        if (typeof parsed.text === 'string' && parsed.text.trim()) {
+          return sanitizeWriterOutput(parsed.text);
+        }
+        if (typeof parsed.value === 'string' && parsed.value.trim()) {
+          return sanitizeWriterOutput(parsed.value);
+        }
         if (typeof parsed.type === 'string') return '';
       } catch {
         return line;
