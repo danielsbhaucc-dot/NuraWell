@@ -208,7 +208,9 @@ export function formatAiWorkingMemoryPromptBlock(
   }
 
   if (lines.length === 1) return null;
-  lines.push('השתמש בזה בעדינות ובקיצור; אל תגיד "אני רואה בזיכרון" ואל תציג רשימת דאטה.');
+  lines.push(
+    'חובה: זו אותה מערכת יחסים — השתמש ביעד/פוקוס/פעולות הפתוחות כשזה רלוונטי לתשובה. אל תתאפס כשיחה חדשה. אל תגיד "אני רואה בזיכרון" ואל תציג רשימת דאטה.'
+  );
   return lines.join('\n');
 }
 
