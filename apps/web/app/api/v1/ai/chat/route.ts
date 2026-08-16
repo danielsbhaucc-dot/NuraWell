@@ -1080,7 +1080,7 @@ function isLowContextTurn(userMessage: string, signals: ReturnType<typeof detect
   if (/[?؟]/.test(t)) return false;
   // ⚠️ עברית: `\b` של JS לא יוצר גבול-מילה סביב אותיות עבריות, ולכן זיהוי
   // substring (ללא `\b`) — אחרת שאלות ידע ("למה", "איך") נופלות בטעות ל-low-context.
-  if (/(?:למה|מדוע|איך|כיצד|תסביר|הסבר|עזרה|בעיה|מה\s+(?:כדאי|אפשר|לעשות|המשימות|נשאר|זה))/u.test(t)) {
+  if (/(?:למה|מדוע|איך|כיצד|תסביר|הסבר|עזרה|בעיה|מה\s+(?:כדאי|אפשר|לעשות|המשימות|נשאר|זה)|יעד|מטרה|המשך|מה\s+הלאה|מה\s+לעשות|זוכר|זכרת)/u.test(t)) {
     return false;
   }
 
@@ -1252,7 +1252,10 @@ const ROUTER_PRINCIPLES_RE =
 const ROUTER_ASSIGNMENTS_RE =
   /(?:משימה|המשימה|שנתת|ביקשת|אמרת לי לעשות|התרגיל|עשיתי|לא עשיתי|ביצעתי|הספקתי|לא הספקתי|הבטחתי|מה אני אמור|מה היה עליי)/u;
 const ROUTER_MEMORY_RE =
-  /(?:זוכר|זכרת|אמרתי|סיפרתי|בשיחה(?:\s+הקודמת)?|פעם שעבר|אתמול|מה אתה יודע|עליי|הפרופיל|המשקל שלי|המטרה שלי)/u;
+  /(?:זוכר|זכרת|אמרתי|סיפרתי|בשיחה(?:\s+הקודמת)?|פעם שעבר|אתמול|מה אתה יודע|עליי|הפרופיל|המשקל שלי|המטרה שלי|היעד שלי|המטרה|היעד|מה\s+נשאר|מה\s+הלאה|מה\s+לעשות|איפה\s+אנחנו|מה\s+התוכנית)/u;
+
+const ROUTER_GOAL_FOCUS_RE =
+  /(?:יעד|מטרה|פוקוס|מה\s+לעשות|מה\s+הלאה|מה\s+נשאר|המשך|תוכנית|משימ)/u;
 
 function heuristicContextDecision(
   userMessage: string,
@@ -1266,6 +1269,7 @@ function heuristicContextDecision(
   const principlesHint = ROUTER_PRINCIPLES_RE.test(t);
   const assignmentsHint = ROUTER_ASSIGNMENTS_RE.test(t);
   const memoryHint = ROUTER_MEMORY_RE.test(t);
+  const goalFocusHint = ROUTER_GOAL_FOCUS_RE.test(t);
   const blockerHint = principlesHint || signals.blocker_mentioned || Boolean(signals.emotional_hint);
   const writerAnalysis = analyzeWriterIntent(userMessage, signals);
   const substantial = t.length >= 18;
@@ -1276,6 +1280,7 @@ function heuristicContextDecision(
       knowledge ||
       principlesHint ||
       memoryHint ||
+      goalFocusHint ||
       signals.blocker_mentioned ||
       Boolean(signals.emotional_hint),
     needs_user_memory_rag:
@@ -1283,11 +1288,13 @@ function heuristicContextDecision(
       isQuestion ||
       knowledge ||
       memoryHint ||
+      goalFocusHint ||
       substantial ||
       Boolean(signals.emotional_hint),
     needs_system_knowledge_rag: knowledge,
-    needs_full_progress_report: false,
-    needs_journey_knowledge: knowledge,
+    needs_full_progress_report:
+      Boolean(opts?.forceHeavy) || memoryHint || goalFocusHint || assignmentsHint,
+    needs_journey_knowledge: knowledge || goalFocusHint || assignmentsHint || Boolean(opts?.forceHeavy),
     // עקרונות נשלפים בנדיבות: כל תור "כבד" אמיתי (שאלה/חסם/רגש/התלבטות) או
     // ניסוח שמרמז על חוקי תוכנית / "איך להתמודד". זול וסמנטי, אז עדיף לשלוף.
     needs_principles:
@@ -1295,11 +1302,12 @@ function heuristicContextDecision(
       isQuestion ||
       knowledge ||
       principlesHint ||
+      goalFocusHint ||
       signals.blocker_mentioned ||
       Boolean(signals.emotional_hint) ||
       Boolean(signals.avoid_push_requested),
     // משימות אישיות: רק כשמדברים על משימה/דיווח/הבטחה (לא בכל תור — שומר רזה).
-    needs_assignments: Boolean(opts?.forceHeavy) || assignmentsHint,
+    needs_assignments: Boolean(opts?.forceHeavy) || assignmentsHint || goalFocusHint,
     // חסמים: על קושי/חסם/רגש/התלבטות.
     needs_blockers: Boolean(opts?.forceHeavy) || blockerHint,
     reason,
@@ -2279,8 +2287,10 @@ export async function POST(request: Request) {
       heavy_context: false,
       needs_full_progress_report: false,
       needs_system_knowledge_rag: false,
-      needs_journey_knowledge: false,
+      // מסע + זיכרון אישי נשארים — אחרת אלמוג "שוכח" יעד/משימות גם בדיווח קצר.
+      needs_journey_knowledge: true,
       needs_user_memory_rag: true,
+      needs_assignments: true,
       reason: `${contextDecision.reason ?? ''}+low_context_keep_memory`.replace(/^\+/, ''),
     };
   }
@@ -2992,15 +3002,18 @@ export async function POST(request: Request) {
      *      לפני שהוא יוצר את התשובה. עם reasoningEffort=medium זה הסל-ביטחון
      *      הכי אפקטיבי לחוקים שעלולים להתפספס כשהפרומפט גדל.
      */
+    const continuityAnchor =
+      '[חובה · הקשר] זו אותה שיחה עם אותו אדם. אם יש יעד/פוקוס/משימות פתוחות/קובץ שיחה/זיכרון עובד — השתמש בהם בתשובה. אל תתאפס. חוזקת הכותב = טון, לא מחיקת זיכרון. אורך טבעי: פרט כשיש מה להגיד.';
     const writerStrengthLine =
       mcfg.writer === 'claude5'
         ? '[כותב Claude] חום + גבול שלא מתקפל. אמת בפרצוף, בלי לרצות.'
         : mcfg.writer === 'grok'
           ? '[כותב Grok] תירוץ/ויכוח: אל תקנה, אל תרצה. מותר חצוף־חיוך. בלי סקריפט אימון ובלי בחירה בינארית.'
           : mcfg.writer === 'llama4'
-            ? '[כותב Llama] קצר וחם — עדיין אלמוג.'
-            : '[כותב Terra] אמפתיה/שגרה תותחית: ספציפי לרגע, קודם הלב, בלי גנריות ובלי עימות מיותר.';
+            ? '[כותב Llama] קצר וחם — עדיין אלמוג. אם סומנה משימה, הכרה ספציפית קצרה.'
+            : '[כותב Terra] אמפתיה/שגרה תותחית: ספציפי לרגע, קודם הלב. אפשר לפרט כשיש יעד/מסע — בלי גנריות.';
     const turnStance = [
+      continuityAnchor,
       writerStancePrompt(heuristicAnalysis.tags),
       writerStrengthLine,
       stickyResult.stickyApplied
@@ -3009,18 +3022,19 @@ export async function POST(request: Request) {
     ]
       .filter(Boolean)
       .join('\n');
-    const writerVoiceLine = `[כותב התור: ${mcfg.writer}] אלמוג = חבר אמיתי: ישיר, מעט ציני, לא מתחנף ולא רוצה. יודע לתמוך ויודע להגיד אמת בפרצוף. מקף עברי (־) בעברית. אורך טבעי.`;
+    const writerVoiceLine = `[כותב התור: ${mcfg.writer}] אלמוג = חבר אמיתי: ישיר, מעט ציני, לא מתחנף ולא רוצה. זוכר יעד/פוקוס/משימות מההקשר. מקף עברי (־). אורך טבעי — אל תקצר בכוח כשיש עומק.`;
     const endStrengthOverride =
       mcfg.writer === 'grok'
-        ? 'על תירוץ/ויכוח — אלמוג לא קונה ולא רוצה. מותר חצוף־חיוך. בלי סקריפט "הכרה → דחייה → מים או בחוץ".'
+        ? 'על תירוץ/ויכוח — אלמוג לא קונה ולא רוצה. מותר חצוף־חיוך. בלי סקריפט "הכרה → דחייה → מים או בחוץ". עדיין זוכר את היעד שלו.'
         : mcfg.writer === 'claude5'
-          ? 'על גבול/בטיחות — אלמוג לא מתקפל. חום + קו ישר. אמת בפרצוף.'
+          ? 'על גבול/בטיחות — אלמוג לא מתקפל. חום + קו ישר. אמת בפרצוף. עדיין בתוך המסע/היעד שלו.'
           : mcfg.writer === 'llama4'
-            ? 'תודה/עשיתי — קצר וחם בלבד.'
-            : 'על כאב רך/שגרה — אמפתיה ספציפית תותחית, קודם הלב, בלי גנריות ובלי לקרוא תירוץ כשאין.';
+            ? 'תודה/עשיתי — קצר וחם. אם רלוונטי, הכרה ספציפית למשימה/הרגל — בלי הרצאה.'
+            : 'על כאב רך/שגרה — אמפתיה ספציפית תותחית. קשר בעדינות ליעד/פוקוס אם יש. פרט כשצריך, בלי לחפור.';
     const dynamicSystemPrompt = [
       '— הקשר לשיחה הזו —',
       writerVoiceLine,
+      continuityAnchor,
       ...contextSections,
       '',
       '— פנייה אישית —',
