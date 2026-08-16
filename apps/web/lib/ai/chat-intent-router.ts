@@ -306,7 +306,7 @@ export function mergeWriterDecisions(
   if (heuristic === 'grok') {
     return hardConfrontation || clearEvasion ? 'grok' : 'terra';
   }
-  if (heuristic === 'claude5') return 'claude5';
+  // claude5 כבר טופל ב-hardSafety למעלה; נשאר רק terra.
   return 'terra';
 }
 
