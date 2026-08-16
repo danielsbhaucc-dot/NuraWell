@@ -14,7 +14,7 @@ const DANGER_RE =
   /(?:להתאבד|אובדנ|לא שווה לחיות|לא רוצה לחיות|רוצה להיעלם|למות|פגיעה עצמית|לפגוע בעצמי|לחתוך|לקרוע|משלשל|הקא[הוה]|הקאה|לטהר|אנורקס|בולימ|בינג'|binge|דיאטה קיצונית|800\s*קלור|אל תשאל|אל תעצור|תפסיק לשאול|תן לי רעב|בלי אוכל|צום מים|לפגוע ב|לאכול כלום|להרעיב|מנת יתר|overdose|כדורים כדי|purge|להקיא אחרי)/u;
 
 const BOUNDARY_RE =
-  /(?:תגיד לי איך לעשות|בלי שאלות|תעבור על החוקים|תשקר לצוות|תשקר למטפל|לדלג על הכל|תעזור לי לרמות|תעמיד פנים|עקוף את|תתעלם מהתוכנית|תכסה עליי|תשקר בשבילי|אל תגיד לאף אחד|תסתיר מ|תכסה על זה|תסתיר מהצוות|לשקר לצוות|מותר לי לדלג|תשחרר אותי מהמשימה|תשחרר אותי מהכללים|תשחרר אותי מהתוכנית|תן לי הפסקה מהתוכנית|אל תלחץ עליי|תגיד שזה בסדר לדלג)/u;
+  /(?:תגיד לי איך לעשות|בלי שאלות|תעבור על החוקים|תשקר לצוות|תשקר למטפל|לדלג על הכל|תעזור לי לרמות|תעמיד פנים|עקוף את|תתעלם מהתוכנית|תכסה עליי|תשקר בשבילי|אל תגיד לאף אחד|תסתיר מ|תכסה על זה|תסתיר מהצוות|לשקר לצוות|מותר לי לדלג|תן לי לדלג|אפשר לדלג|תשחרר אותי מהמשימה|תשחרר אותי מהכללים|תשחרר אותי מהתוכנית|תן לי הפסקה מהתוכנית|תן לי הפסקה מהכללים|אל תלחץ עליי|תגיד שזה בסדר לדלג|תגיד שמותר לי לדלג|תעקוף|תתעלם מהכלל|תוריד לי את הכלל|תשנה את החוק בשבילי)/u;
 
 const ACCUSATION_RE =
   /(?:אתה לא עוזר|אתה מתנשא|אתה שקרן|אתה גרוע|אתה מטומטם|אתה לא מבין|אלמוג אתה|אתם לא|תמיד אתה|אף פעם אתה לא|אתה נגד|אתה חסר תועלת|בזבוז זמן|לא שווה כלום כמנטור|פישלת(?!י)|טעית(?!י)|אתה רק בינה|אתה חוזר על עצמך|תפסיק לחפור|אתה לא שומע|לא אכפת לך)/u;
@@ -28,58 +28,44 @@ const GROK_SPARK_RE =
   /(?:תגיד לי ישר|תגיד ישר|בלי שטויות|בלי לקשקש|תן לי את האמת|אל תתייפייף|אל תלטף|תוציא אותי מהאשליה|תעיר אותי|תן לי בעיטה|תייבש אותי|תיקח אותי קשה|רוסט|צחוק|ציני|בלי דרמה מתוקה|תפסיק לייפות|זה שטויות|זה שקר|תיקח אחריות|תיקח אותי במקום|תקרא לי תירוצים|בלי חמאה|בלי לפנק)/u;
 
 const EMPATHY_RE =
-  /(?:נשברתי|חרא עם עצמי|אין טעם|לבד|בודד|בדידות|בוכה|פחד|חרדה|דיכאון|מתייאש|לא שווה|פישלתי|אשם|מתבייש|בושה|כואב לי|קשה לי רגשית|אני צריך חיבוק|עצוב|יום קשה|מפחד להיכשל|לא מספיק|קשה לי היום)/u;
+  /(?:נשברתי|חרא עם עצמי|אין טעם|לבד|בודד|בדידות|בוכה|פחד|חרדה|דיכאון|מתייאש|לא שווה|פישלתי|אשם|מתבייש|בושה|כואב לי|קשה לי רגשית|אני צריך חיבוק|עצוב|יום קשה|מפחד להיכשל|לא מספיק|קשה לי היום|אין לי כוח)/u;
 
 const COACHING_RE =
-  /(?:מה לאכול|מה כדאי|אימון|הרגל|(?<![\u0590-\u05FF])מים(?![\u0590-\u05FF])|שינה|לישון|משקל|קלור|חלבון|ארוחה|תפריט|תזונה|איך להתחיל|תוכנית|צעד קטן|משימה|שגרה|מה הצעד הבא|ליווי|ארוחת בוקר|מה עושים היום)/u;
+  /(?:מה לאכול|מה כדאי|אימון|הרגל|(?<![\u0590-\u05FF])מים(?![\u0590-\u05FF])|שינה|לישון|משקל|קלור|חלבון|ארוחה|תפריט|תזונה|איך להתחיל|תוכנית|צעד קטן|משימה|שגרה|מה הצעד הבא|ליווי|ארוחת בוקר|מה עושים היום|בערב)/u;
 
 const SIMPLE_RE =
-  /^(?:תודה|תודה רבה|עשיתי|סיימתי)[\s!.]*$/u;
+  /^(?:תודה|תודה רבה|עשיתי|סיימתי|תודה,? עשיתי|תודה רבה,? עשיתי)[\s!.]*$/u;
 
-/** דחייה/דחיית פעולה ברורה — לא עייפות יומיומית לבד, ולא המילה "מחר" לבד. */
+/** דחייה מפורשת בלבד — לא המילה "מחר" לבד. */
 const DELAY_INTENT_RE =
-  /(?:מחר אתחיל|אמשיך מחר|מחר אני|מחר חוזר|אתחיל ביום|נדחה ל|נדחה את|דחיתי|אולי אחר כך|אין מצב היום|אי אפשר עכשיו|זה לא הזמן)/u;
+  /(?:מחר אתחיל|אמשיך מחר|מחר אני מתחיל|מחר אני|מחר חוזר|אתחיל ביום|נדחה ל|נדחה את|דחיתי|אולי אחר כך|אין מצב היום|אי אפשר עכשיו|זה לא הזמן)/u;
 
-/** תירוץ מפורש / הסרת אחריות — חזק מספיק לבד. */
 const STRONG_EXCUSE_RE =
   /(?:התחמק|תירוץ|ברחתי מ|פספסתי כי|לא עשיתי כי|זה לא אני|כולם עושים|זה בגלל העבודה|זה בגלל הילדים)/u;
-
-/** מילות עייפות/שכחה רכות — לבד ≠ התחמקות. */
-const SOFT_EXCUSE_RE = /(?:שכחתי|לא בא לי|אין לי כוח|לא הספקתי)/u;
 
 const BUSY_RE = /(?:אין לי זמן|יום עמוס|הייתי עסוק)/u;
 
 const SKIPPED_RE = /(?:דילג(?:תי|ת|נו)?|לא עשיתי|פספס(?:תי|ת)?|ויתר(?:תי|ת)?|לא התחל(?:תי|ת)?|ברחתי|נדחה)/u;
 
-/**
- * בקשת אישור לדלג / לשחרר מכללים — Claude, לא Grok.
- * "תגיד שאני צודק" בויכוח נשאר Grok (בלי דפוסי דילוג כאן).
- */
 const SKIP_APPROVAL_RE =
-  /(?:מותר לי לדלג|תן לי אישור|תגיד שזה בסדר|לדלג|תשחרר אותי|הפסקה מהתוכנית|אל תלחץ עליי|לעקוף|לרמות|תתעלם מה|מהכללים|מהמשימה)/u;
+  /(?:מותר לי לדלג|תן לי לדלג|אפשר לדלג|תגיד שמותר לי לדלג|תן לי אישור|תגיד שזה בסדר|לדלג|תשחרר אותי|הפסקה מהתוכנית|הפסקה מהכללים|אל תלחץ עליי|לעקוף|תעקוף|לרמות|תתעלם מה|מהכללים|מהמשימה|מהתוכנית|תוריד לי את הכלל|תשנה את החוק)/u;
 
-function detectEvasion(text: string): boolean {
-  const t = text.trim();
-  if (DELAY_INTENT_RE.test(t) || STRONG_EXCUSE_RE.test(t)) return true;
-  const busy = BUSY_RE.test(t);
-  const skipped = SKIPPED_RE.test(t);
-  if (busy && skipped) return true;
-  // עייפות/שכחתי לבד — לא. רק עם דחייה מפורשת או דילוג באותה הודעה (לא "מחר" עירום).
-  if (SOFT_EXCUSE_RE.test(t) && (DELAY_INTENT_RE.test(t) || skipped)) {
-    return true;
-  }
-  return false;
-}
-
-/**
- * מצבים שבהם GPT/Gemini/Terra נוטים לרצות את המשתמש במקום לעמוד במקום.
- * חייבים Grok או Claude — אף פעם לא Terra/Llama.
- */
 const PEOPLE_PLEASE_RE =
   /(?:תגיד שאני צודק|תסכים איתי|רק תגיד כן|פשוט תסכים|אל תשפוט|אם אתה באמת|תוכיח שאתה איתי|תוכיח שאתה לצד|תתנצל|תודה שטעית|תהיה נחמד יותר|תפסיק להיות קשה|תן לי אישור|תגיד שזה בסדר|רק תאשר|תעמוד מאחוריי|תצדד בי|בצד שלי|אל תתווכח|תרצה אותי|תגיד מה שאני רוצה|אם היית אכפת|אתה לא באמת אכפת|תפסיק להתנגד|תסכים ש|תגיד לי מה שאני רוצה לשמוע)/u;
 
 const ADULT_LINE_RE =
-  /(?:תן לי אישור|תגיד שזה בסדר|מותר לי לדלג|תשחרר אותי מה|תוריד לי את הכלל|תשנה את החוק בשבילי|תמחק לי את|תתעלם הפעם|תן לי הפסקה מהתוכנית|אל תלחץ עליי|תגיד שזה בסדר לדלג|תשחרר אותי מהמשימה|תשחרר אותי מהכללים)/u;
+  /(?:תן לי אישור|תגיד שזה בסדר|מותר לי לדלג|תן לי לדלג|אפשר לדלג|תגיד שמותר לי לדלג|תשחרר אותי מה|תוריד לי את הכלל|תשנה את החוק בשבילי|תמחק לי את|תתעלם הפעם|תתעלם מהכלל|תן לי הפסקה מהתוכנית|תן לי הפסקה מהכללים|אל תלחץ עליי|תגיד שזה בסדר לדלג|תשחרר אותי מהמשימה|תשחרר אותי מהכללים|תשחרר אותי מהתוכנית|תעקוף)/u;
+
+/**
+ * Evasion רק על דחייה מפורשת / תירוץ חזק / busy+skip.
+ * עייפות/"שכחתי"/"מחר" לבד — לא evasion.
+ */
+export function detectEvasion(text: string): boolean {
+  const t = text.trim();
+  if (DELAY_INTENT_RE.test(t) || STRONG_EXCUSE_RE.test(t)) return true;
+  if (BUSY_RE.test(t) && SKIPPED_RE.test(t)) return true;
+  return false;
+}
 
 function clampScore(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n)));
@@ -90,38 +76,33 @@ function hasAny(tags: string[], keys: string[]): boolean {
 }
 
 /**
- * נתיב כותב לפי חוזקות — לא לפי ציון הנתב הזול.
- * Claude לפני Grok על כל גבול/בטיחות/אישור־דילוג.
+ * סדר עדיפויות קשיח:
+ * 1 Claude גבול/בטיחות → 2 Grok עימות/התחמקות → 3 Terra → 4 llama פשוט → terra
  */
 export function writerLaneFromTags(
   tags: string[],
   fallback: ChatWriterKey = 'terra'
 ): ChatWriterKey {
-  // Claude תמיד לפני Grok על גבול/בטיחות/אישור לדלג.
-  if (hasAny(tags, ['safety', 'boundaries', 'warm_boundary', 'adult'])) return 'claude5';
+  if (hasAny(tags, ['safety', 'boundaries', 'adult', 'warm_boundary'])) return 'claude5';
+
+  if (hasAny(tags, ['accusation', 'argument', 'direct', 'rude', 'evasion'])) return 'grok';
+
+  if (tags.includes('people_please')) {
+    // בלי adult (כבר טופל למעלה) — ויכוח→grok, אחרת Claude (לחץ לרצות / אישור).
+    if (hasAny(tags, ['accusation', 'argument', 'direct', 'rude'])) return 'grok';
+    return 'claude5';
+  }
+
+  if (hasAny(tags, ['empathy', 'coaching'])) return 'terra';
+
   if (
     tags.includes('simple') &&
-    !hasAny(tags, [
-      'empathy',
-      'evasion',
-      'argument',
-      'accusation',
-      'direct',
-      'rude',
-      'people_please',
-      'coaching',
-    ])
+    !hasAny(tags, ['empathy', 'evasion', 'argument', 'accusation', 'direct', 'rude', 'coaching'])
   ) {
     return 'llama4';
   }
-  if (
-    hasAny(tags, ['evasion', 'argument', 'accusation', 'direct', 'rude']) ||
-    tags.includes('people_please')
-  ) {
-    return 'grok';
-  }
-  if (hasAny(tags, ['empathy', 'coaching'])) return 'terra';
-  return fallback === 'llama4' ? 'terra' : fallback;
+
+  return fallback === 'llama4' ? 'terra' : fallback === 'grok' ? 'terra' : fallback;
 }
 
 function pickWinner(scores: WriterScores, tags: string[]): ChatWriterKey {
@@ -132,7 +113,7 @@ function pickWinner(scores: WriterScores, tags: string[]): ChatWriterKey {
     (a, b) => b[1] - a[1]
   );
   const [top] = ranked;
-  if (!top || top[0] === 'llama4') return 'terra';
+  if (!top || top[0] === 'llama4' || top[0] === 'grok') return 'terra';
   return top[0];
 }
 
@@ -142,8 +123,7 @@ export function analyzeWriterIntent(
 ): WriterAnalysis {
   const t = userMessage.trim();
   const tags: string[] = [];
-  // baseline גבוה יותר ל-Claude כדי שגבול חלש יוכל לנצח.
-  const scores: WriterScores = { terra: 28, claude5: 18, grok: 20, llama4: 8 };
+  const scores: WriterScores = { terra: 30, claude5: 20, grok: 20, llama4: 8 };
 
   const danger = DANGER_RE.test(t);
   const boundaries = BOUNDARY_RE.test(t);
@@ -168,8 +148,8 @@ export function analyzeWriterIntent(
   }
   if (boundaries) {
     tags.push('boundaries');
-    scores.claude5 += 48;
-    scores.terra += 4;
+    scores.claude5 += 50;
+    scores.terra += 2;
   }
   if (accusation) {
     tags.push('accusation');
@@ -192,19 +172,19 @@ export function analyzeWriterIntent(
   if (empathy) {
     tags.push('empathy');
     scores.terra += 36;
-    if (!conflict && !grokSpark && !evasion) scores.grok -= 4;
+    if (!conflict && !grokSpark && !evasion) scores.grok -= 6;
   }
-  if (evasion && !danger && !boundaries) {
+  if (evasion && !danger && !boundaries && !adultLine && !skipApproval) {
     tags.push('evasion');
-    scores.grok += 40;
+    scores.grok += 42;
     scores.terra = Math.min(scores.terra, 22);
     scores.llama4 = Math.min(scores.llama4, 8);
   }
-  if (coaching && !conflict && !danger && !evasion) {
+  if (coaching && !conflict && !danger && !evasion && !adultLine) {
     tags.push('coaching');
-    scores.terra += 22;
+    scores.terra += 24;
   }
-  if (simple && !empathy && !conflict && !danger && !boundaries) {
+  if (simple && !empathy && !conflict && !danger && !boundaries && !peoplePlease) {
     tags.push('simple');
     scores.llama4 += 70;
     scores.terra -= 8;
@@ -214,7 +194,7 @@ export function analyzeWriterIntent(
   if (conflict && empathy && !danger && !boundaries) {
     tags.push('frustrated_conflict');
     scores.grok += 16;
-    scores.terra += 8;
+    scores.terra += 6;
   }
 
   if (peoplePlease) {
@@ -223,22 +203,23 @@ export function analyzeWriterIntent(
     scores.llama4 = Math.min(scores.llama4, 10);
   }
 
-  // people_please + אישור לדלג/לעקוף → Claude. "תגיד שאני צודק" בויכוח → Grok.
+  // אישור־דילוג / גבול → Claude. "תגיד שאני צודק" בויכוח → Grok.
   const approvalSkipIntent =
-    (adultLine || boundaries || skipApproval) &&
-    !accusation &&
-    !argument &&
-    !rude &&
-    !grokSpark;
+    (adultLine || boundaries || skipApproval) && !accusation && !argument && !rude && !grokSpark;
 
-  if (adultLine || (peoplePlease && approvalSkipIntent)) {
+  if (adultLine || (peoplePlease && approvalSkipIntent) || (skipApproval && !conflict && !grokSpark)) {
     if (!tags.includes('adult')) tags.push('adult');
-    scores.claude5 += adultLine ? 36 : 42;
-    scores.terra -= 10;
-    scores.grok = Math.min(scores.grok, 30);
+    scores.claude5 += 44;
+    scores.terra -= 12;
+    scores.grok = Math.min(scores.grok, 28);
+  } else if (peoplePlease && conflict) {
+    scores.grok += 30;
+    scores.claude5 += 8;
   } else if (peoplePlease) {
-    scores.grok += 28;
-    scores.claude5 += 10;
+    // לחץ לרצות בלי דילוג ובלי ויכוח מפורש — Claude (לא Grok ברירת מחדל).
+    if (!tags.includes('adult')) tags.push('adult');
+    scores.claude5 += 28;
+    scores.grok = Math.min(scores.grok, 32);
   }
 
   if (empathy && (danger || boundaries || tags.includes('adult'))) {
@@ -247,7 +228,7 @@ export function analyzeWriterIntent(
   }
   if (signals.blocker_mentioned && !danger && !peoplePlease && !evasion) {
     scores.terra += 10;
-    scores.grok += 8;
+    scores.grok += 6;
   }
 
   scores.terra = clampScore(scores.terra);
@@ -257,8 +238,7 @@ export function analyzeWriterIntent(
 
   const writer = pickWinner(scores, tags);
   const top = Math.max(...Object.values(scores));
-  const second = Object.values(scores)
-    .sort((a, b) => b - a)[1] ?? 0;
+  const second = Object.values(scores).sort((a, b) => b - a)[1] ?? 0;
   const confidence = clampScore(58 + (top - second) * 0.7);
 
   return { writer, scores, confidence, tags };
@@ -284,9 +264,7 @@ function blendScores(a?: WriterScores, b?: WriterScores): WriterScores | undefin
 }
 
 /**
- * בחירה ראשית = נתב ה-LLM (writer מהקשר).
- * היוריסטיקה = רשת ביטחון בלבד: סכנה/גבול → Claude; עימות קשה מאוד → Grok.
- * תירוץ רך / עייפות / people-please חלש — לא דורסים את בחירת ה-LLM.
+ * LLM ראשי. היוריסטיקה = רשת ביטחון: סכנה/גבול → Claude; עימות קשה → Grok.
  */
 export function mergeWriterDecisions(
   llamaChoice: ChatWriterKey | undefined,
@@ -301,27 +279,34 @@ export function mergeWriterDecisions(
 
   const hardSafety =
     hasAny(tags, ['safety', 'boundaries', 'adult', 'warm_boundary']) || heuristic === 'claude5';
-
-  // רשת ביטחון: סכנה/גבול תמיד ל-Claude.
   if (hardSafety) return 'claude5';
 
-  // עימות קשה מאוד בלבד (האשמה/ויכוח/ישירות/גסות) — לא evasion רך ולא people_please לבד.
   const hardConfrontation = hasAny(tags, ['accusation', 'argument', 'direct', 'rude']);
+  const clearEvasion = tags.includes('evasion');
+
+  // עימות קשה בלבד יכול לדרוס LLM terra — לא people_please ולא עייפות רכה.
   if (hardConfrontation && heuristic === 'grok') return 'grok';
 
-  // בחירה ראשית: הנתב (LLM), כל עוד זה לא llama4 ככותב ראשי מהנתב.
-  // Grok מהנתב לא גונב תור אמפתיה/אימון רך בלי עימות קשה ובלי evasion ברור.
-  const routed = llamaChoice && llamaChoice !== 'llama4' ? llamaChoice : undefined;
-  const softEmpathyLane =
-    hasAny(tags, ['empathy', 'coaching']) &&
-    !hardConfrontation &&
-    !hasAny(tags, ['evasion']);
-  if (routed === 'grok' && softEmpathyLane) return 'terra';
-  if (routed === 'claude5' || routed === 'grok' || routed === 'terra') return routed;
+  const routed =
+    llamaChoice === 'terra' || llamaChoice === 'grok' || llamaChoice === 'claude5'
+      ? llamaChoice
+      : undefined;
 
-  // בלי נתב: היוריסטיקה, אבל grok חלש (בלי עימות קשה) → terra.
+  if (routed) {
+    const softLane =
+      hasAny(tags, ['empathy', 'coaching']) &&
+      !hardConfrontation &&
+      !clearEvasion &&
+      !hasAny(tags, ['safety', 'boundaries', 'adult', 'warm_boundary']);
+    if (routed === 'grok' && softLane) return 'terra';
+    return routed;
+  }
+
   if (heuristic === 'llama4') return 'llama4';
-  if (heuristic === 'grok') return hardConfrontation ? 'grok' : 'terra';
+  if (heuristic === 'grok') {
+    return hardConfrontation || clearEvasion ? 'grok' : 'terra';
+  }
+  if (heuristic === 'claude5') return 'claude5';
   return 'terra';
 }
 
@@ -381,29 +366,34 @@ export function writerStancePrompt(tags: string[]): string | null {
 }
 
 export function writerRouterInstructions(): string {
-  return `אתה נתב כותבים. החלטת *אתה* (המודל) היא העיקרית — לפי טון וכוונה של ההודעה, לא לפי מילת־מפתח בודדת.
+  return `אתה נתב כותבים. החלטת *אתה* היא העיקרית.
+שפוט טון וכוונה של *ההודעה הזו בלבד*. לא בינגו מילות־מפתח. לא sticky מתור קודם.
 
 טבלת חוזקות:
-- claude5: סכנה, אובדנות, הפרעות אכילה, לשקר לצוות/מטפל, גבול אתי, בקשת אישור לדלג/לעקוף/"תשחרר אותי מהמשימה". חום + קו שלא מתקפל.
-- grok: ויכוח אמיתי, האשמות כלפי אלמוג, דחייה מפורשת ("מחר אתחיל" / אמשיך מחר), "תגיד ישר", "תגיד שאני צודק" בויכוח. לא על עייפות רכה לבד.
-- terra: אמפתיה רכה, יום קשה/בדידות/עייפות בלי דחייה מפורשת, תזונה, שגרה, צעד הבא.
-- llama4: רק תודה/עשיתי/סיימתי קצר. היי → terra.
+- claude5: סכנה, אובדנות, הפרעות אכילה, לשקר לצוות/מטפל, גבול אתי, בקשת אישור לדלג/לעקוף כללים, "תשחרר אותי מהמשימה/מהכללים". חום + קו שלא מתקפל.
+- grok: ויכוח אמיתי, האשמות כלפי אלמוג, דחייה מפורשת ("מחר אתחיל" / אמשיך מחר אחרי דילוג), "תגיד ישר", "תגיד שאני צודק" בתוך עימות. לא על עייפות רכה לבד.
+- terra: אמפתיה רכה, יום קשה, בדידות, מצב רוח בלי עימות, עייפות בלי דחייה מפורשת, תזונה, שגרה, צעד הבא.
+- llama4: רק תודה/עשיתי/סיימתי קצר. "היי" → terra.
 
-דוגמאות קצרות (הודעה → כותב):
-- "קשה לי היום / נשברתי / אין לי כוח" → terra
-- "מה לאכול / מה הצעד הבא לשגרה" → terra
-- "אין לי כוח, מחר אתחיל" / "דילגתי כי אין לי זמן" → grok
-- "אתה מתנשא / תוכיח לי" → grok
-- "תגיד שאני צודק" (ויכוח, בלי בקשת דילוג) → grok
-- "מותר לי לדלג / תן לי אישור / תשחרר אותי מהמשימה / אל תלחץ עליי" → claude5
-- "תשקר למטפל / תכסה עליי" → claude5
-- "תודה" / "עשיתי" → llama4
+כללים קשיחים:
+1) סכנה / גבול / אישור־דילוג / לעקוף תוכנית → claude5
+2) דחייה מפורשת / תירוץ ברור / ויכוח אמיתי → grok
+3) כאב רך / יום קשה / תזונה / שגרה בלי עימות → terra
+4) מילות עייפות לבד ("אין לי כוח"/"שכחתי"/"לא בא לי") ≠ תירוץ → terra
+5) נתח כל הודעה מחדש. אל תישאר על grok כי התור הקודם היה grok.
 
-כללים:
-1) סכנה/גבול/אישור־דילוג → claude5.
-2) דחייה *מפורשת* או ויכוח אמיתי → grok. עייפות/"שכחתי"/"מחר" לבד → terra (לא grok אוטומטית).
-3) כאב רך או שגרה/תזונה בלי עימות → terra.
-4) נתח *כל הודעה מחדש*. אל תישאר על grok רק כי התור הקודם היה grok.
+דוגמאות (חובה לכייל לפיהן):
+User: "אין לי כוח היום" → writer: terra | reason: עייפות רכה בלי דחייה
+User: "יום קשה, נשברתי, לבד" → writer: terra | reason: אמפתיה רכה
+User: "מה לאכול בערב / מה הצעד הבא" → writer: terra | reason: שגרה/אימון
+User: "שכחתי, מחר אתחיל" → writer: grok | reason: דחייה מפורשת
+User: "דילגתי כי יום עמוס, אמשיך מחר" → writer: grok | reason: דילוג + דחייה
+User: "תגיד שמותר לי לדלג על האימון" → writer: claude5 | reason: בקשת אישור לעקוף
+User: "תשחרר אותי מהכללים היום" → writer: claude5 | reason: גבול/שחרור תוכנית
+User: "אתה לא עוזר, תוכיח לי" → writer: grok | reason: האשמה/ויכוח
+User: "תגיד שאני צודק, אל תתווכח" → writer: grok | reason: לחץ לרצות בתוך עימות
+User: "תודה, עשיתי" → writer: llama4 | reason: אישור קצר
 
-החזר writer, writer_scores, writer_confidence, intent (תגיות).`;
+פלט JSON בלבד:
+{"writer":"terra|claude5|grok|llama4","writer_scores":{"terra":0,"claude5":0,"grok":0,"llama4":0},"writer_confidence":0,"intent":["tags"],"reason":"short"}`;
 }
