@@ -2881,13 +2881,16 @@ export async function POST(request: Request) {
 
     // coaching style + dossier + onboarding כפולים לזיכרון העבודה — רק בתור כבד.
     if (coachingStyleBlock) contextSections.push(coachingStyleBlock);
-    if (
-      mcfg.writer === 'grok' &&
-      (heuristicAnalysis.tags.includes('evasion') || heuristicAnalysis.tags.includes('people_please'))
-    ) {
+    if (mcfg.writer === 'grok') {
       contextSections.push(
-        'סגנון ליווי בתור תירוץ: אל תרכך ל-warm_friend. חם וישיר — קורא תירוץ בשם, דורש צעד היום.'
+        'סגנון ליווי בתור Grok: אל תרכך ל-warm_friend. חם וישיר — קורא דפוס בשם, לא קונה, לא רוצה.'
       );
+    } else if (mcfg.writer === 'claude5') {
+      contextSections.push(
+        'סגנון ליווי בתור Claude: חום בוגר + גבול שלא מתקפל. אל תרצה ואל תאשר דילוג/עקיפה.'
+      );
+    } else if (mcfg.writer === 'llama4') {
+      contextSections.push('סגנון ליווי בתור קצר: 1–2 שורות חמות בקול אלמוג. בלי הרצאה.');
     }
     /**
      * עקרונות אלמוג (חוקי תוכנית + "איך להתמודד עם X") — קו מנחה התנהגותי מחייב.
@@ -2985,25 +2988,42 @@ export async function POST(request: Request) {
      *      לפני שהוא יוצר את התשובה. עם reasoningEffort=medium זה הסל-ביטחון
      *      הכי אפקטיבי לחוקים שעלולים להתפספס כשהפרומפט גדל.
      */
+    const writerStrengthLine =
+      mcfg.writer === 'claude5'
+        ? '[כותב Claude] גבול/בטיחות: חום + קו שלא מתקפל. אל תרצה.'
+        : mcfg.writer === 'grok'
+          ? '[כותב Grok] תירוץ/ויכוח/האשמה: קרא בשם, אל תקנה, אל תרצה. דרוש צעד היום או הודאה.'
+          : mcfg.writer === 'llama4'
+            ? '[כותב Llama] קצר וחם בלבד. בלי הרצאה.'
+            : '[כותב Terra] אמפתיה/שגרה: קודם הלב, בלי עימות מיותר.';
     const grokExcuseHard =
       mcfg.writer === 'grok' &&
       (heuristicAnalysis.tags.includes('evasion') ||
-        heuristicAnalysis.tags.includes('people_please'));
+        heuristicAnalysis.tags.includes('people_please') ||
+        heuristicAnalysis.tags.includes('argument') ||
+        heuristicAnalysis.tags.includes('accusation') ||
+        heuristicAnalysis.tags.includes('direct'));
     const turnStance = [
       writerStancePrompt(heuristicAnalysis.tags),
+      writerStrengthLine,
       stickyResult.stickyApplied
         ? `[נתב] ממשיך ${mcfg.writer} מאותו עימות/גבול. כשהנושא מתחלף חוזרים ל-Terra.`
-        : `[נתב] כותב לפי חוזקה: Claude=גבול/אחריות, Grok=תירוץ/ויכוח/התחמקות, Terra=אמפתיה ושגרה. בחירה לתור: ${mcfg.writer}.`,
+        : `[נתב] כותב לפי חוזקה: Claude=גבול/אחריות, Grok=תירוץ/ויכוח/התחמקות, Terra=אמפתיה ושגרה, Llama=קצר. בחירה לתור: ${mcfg.writer}.`,
       grokExcuseHard
-        ? `[כותב Grok · תירוץ] אל תקנה. אל תרכך. אל תשאל "מה הכי כואב". קרא את התירוץ ודרוש צעד היום.`
+        ? `[כותב Grok · דפוס] אל תקנה. אל תרכך. אל תשאל "מה הכי כואב". קרא את הדפוס ודרוש צעד היום או הודאה.`
         : null,
     ]
       .filter(Boolean)
       .join('\n');
     const writerVoiceLine = `[כותב התור: ${mcfg.writer}] דבר בקול אלמוג המלא מהמערכת — חבר ישיר, לא מתחנף, לא מתחנן בין הודעות. אסור קול של עוזר גנרי/Llama זול, אסור therapy-speak, אסור להזדהות כמודל. אורך טבעי: אל תקצר בכוח ואל תחפור.`;
-    const grokExcuseOverride = grokExcuseHard
-      ? 'על תירוץ/התחמקות — אלמוג לא קונה. קורא את זה ישר.'
-      : null;
+    const endStrengthOverride =
+      mcfg.writer === 'grok'
+        ? 'על תירוץ/ויכוח/האשמה — אלמוג לא קונה ולא רוצה. קורא את זה ישר.'
+        : mcfg.writer === 'claude5'
+          ? 'על גבול/בטיחות — אלמוג לא מתקפל. חום + קו ישר.'
+          : mcfg.writer === 'llama4'
+            ? 'תודה/עשיתי — קצר וחם בלבד.'
+            : 'על כאב רך/שגרה — קודם הלב, בלי לקרוא תירוץ כשאין.';
     const dynamicSystemPrompt = [
       '— הקשר לשיחה הזו —',
       writerVoiceLine,
@@ -3015,7 +3035,7 @@ export async function POST(request: Request) {
       '',
       mcfg.finalGuardrails,
       ALMOG_VOICE_STICKY,
-      grokExcuseOverride,
+      endStrengthOverride,
     ]
       .filter((s) => s !== null && s !== undefined)
       .join('\n');
