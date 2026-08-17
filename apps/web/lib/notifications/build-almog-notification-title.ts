@@ -56,7 +56,7 @@ export function buildAlmogNotificationTitle(input: BuildAlmogNotificationTitleIn
   }
 
   if (days >= 8) {
-    return `${name}, אני כאן בשבילך`;
+    return `${name}, בלי לחץ`;
   }
 
   if (days >= 3) {
