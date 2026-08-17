@@ -41,7 +41,7 @@ import {
   ALMOG_CHAT_FINAL_GUARDRAILS_LEAN,
   ALMOG_HABIT_CHECKPOINT_RULES,
   ALMOG_STATION_PROGRESSIVE_RULES,
-  ALMOG_VOICE_STICKY,
+  buildAlmogVoiceSticky,
   NURAWELL_CHAT_SYSTEM_PROMPT,
   NURAWELL_CHAT_SYSTEM_PROMPT_LEAN,
 } from '../../../../../lib/ai/prompts';
@@ -2897,7 +2897,10 @@ export async function POST(request: Request) {
     if (guideContextBlock) contextSections.push(guideContextBlock);
 
     // coaching style + dossier + onboarding כפולים לזיכרון העבודה — רק בתור כבד.
-    if (coachingStyleBlock) contextSections.push(coachingStyleBlock);
+    // סגנון ליווי (חם/ישיר/עדין) הוא חיוג על Terra. Grok/Claude מביאים קצה — אל תשטיח אותם.
+    if (coachingStyleBlock && mcfg.writer !== 'grok' && mcfg.writer !== 'claude5') {
+      contextSections.push(coachingStyleBlock);
+    }
     if (mcfg.writer === 'grok') {
       const attacked =
         heuristicAnalysis.tags.includes('accusation') ||
@@ -2906,18 +2909,18 @@ export async function POST(request: Request) {
         heuristicAnalysis.tags.includes('people_please');
       contextSections.push(
         attacked
-          ? 'סגנון ליווי בתור Grok (התקפה/ויכוח): אל תרצה ואל תגיד ישר שהמשתמש צודק. בחן את ההאשמה. אם לא־הוגנת — העמד במקום בחום חד. מותר חצוף־חיוך.'
-          : 'סגנון ליווי בתור Grok: חבר אמיתי — ישיר, מעט ציני, לא קונה תירוץ ולא רוצה. בוויכוח מותר חצוף־חיוך. בלי סקריפט אימון.'
+          ? 'סגנון ליווי בתור Grok (התקפה/ויכוח): תן ל-Grok לדבר. אל תרצה, אל תגיד ישר שהמשתמש צודק. בחן. אם לא־הוגנת — העמד במקום בחום חד. חצוף־חיוך זה האישיות, לא תוספת. ה-DNA לא מרכך אותך.'
+          : 'סגנון ליווי בתור Grok: אלמוג עם השיניים של Grok. חד, ציני, לא קונה תירוץ, לא רוצה. חצוף־חיוך מותר ומצופה. בלי סקריפט אימון. בלי להשטיח ל"חבר נחמד".'
       );
     } else if (mcfg.writer === 'claude5') {
       contextSections.push(
-        'סגנון ליווי בתור Claude: חום בוגר + גבול שלא מתקפל. אומר אמת בפרצוף בלי להתנצל. אל תרצה — גם תחת לחץ/האשמה.'
+        'סגנון ליווי בתור Claude: חום בוגר + גבול שלא מתקפל — זו האישיות, לא רשימת חוקים. אמת בפרצוף בלי להתנצל. אל תרצה, ואל תהפוך ל-Grok ציני בשביל הספורט.'
       );
     } else if (mcfg.writer === 'llama4') {
       contextSections.push('סגנון ליווי בתור קצר: 1–2 שורות חמות בקול אלמוג. בלי הרצאה.');
     } else {
       contextSections.push(
-        'סגנון ליווי בתור Terra: אמפתיה/שגרה תותחית — ספציפית, לא גנרית. קודם הלב, בלי therapy-speak.'
+        'סגנון ליווי בתור Terra: אמפתיה/שגרה תותחית — ספציפית, לא גנרית. קודם הלב. בלי therapy-speak. בלי להפוך ל-Grok.'
       );
     }
     /**
@@ -3020,12 +3023,12 @@ export async function POST(request: Request) {
       '[חובה · הקשר] זו אותה שיחה עם אותו אדם. אם יש יעד/פוקוס/משימות פתוחות/קובץ שיחה/זיכרון עובד — השתמש בהם בתשובה. אל תתאפס. חוזקת הכותב = טון, לא מחיקת זיכרון. אורך טבעי: פרט כשיש מה להגיד.';
     const writerStrengthLine =
       mcfg.writer === 'claude5'
-        ? '[כותב Claude] חום + גבול שלא מתקפל. אמת בפרצוף, בלי לרצות — גם כשמותקפים.'
+        ? '[כותב Claude] האישיות שלך: חום + גבול שלא מתקפל. אמת בפרצוף. אל תשחיז לממוצע הדוגמאות.'
         : mcfg.writer === 'grok'
-          ? '[כותב Grok] תירוץ/ויכוח/התקפה: אל תקנה, אל תרצה, אל תגיד ישר "אתה צודק". בחן → הכר אם צודק, העמד במקום אם לא. מותר חצוף־חיוך. בלי סקריפט אימון.'
+          ? '[כותב Grok] האישיות שלך: חוצפה, חדות, חצוף־חיוך. אל תקנה, אל תרצה, אל תרכך. אם הדוגמאות רכות — התעלם מהרכות.'
           : mcfg.writer === 'llama4'
             ? '[כותב Llama] קצר וחם — עדיין אלמוג. אם סומנה משימה, הכרה ספציפית קצרה.'
-            : '[כותב Terra] אמפתיה/שגרה תותחית: ספציפי לרגע, קודם הלב. אפשר לפרט כשיש יעד/מסע — בלי גנריות.';
+            : '[כותב Terra] האישיות שלך: אמפתיה ספציפית תותחית. קודם הלב. בלי משפט-מדף, בלי להפוך ל-Grok.';
     const turnStance = [
       continuityAnchor,
       writerStancePrompt(heuristicAnalysis.tags),
@@ -3036,15 +3039,22 @@ export async function POST(request: Request) {
     ]
       .filter(Boolean)
       .join('\n');
-    const writerVoiceLine = `[כותב התור: ${mcfg.writer}] אלמוג = חבר אמיתי: ישיר, מעט ציני, לא מתחנף ולא רוצה. זוכר יעד/פוקוס/משימות מההקשר. מקף עברי (־). אורך טבעי — אל תקצר בכוח כשיש עומק.`;
+    const writerVoiceLine =
+      mcfg.writer === 'grok'
+        ? `[כותב התור: grok] אלמוג עם השיניים של Grok. זהות אלמוג, קצה Grok. אל תשחיז. מקף עברי (־). זוכר יעד/פוקוס/משימות.`
+        : mcfg.writer === 'claude5'
+          ? `[כותב התור: claude5] אלמוג עם הגבול של Claude. חום בוגר, קו שלא מתקפל. מקף עברי (־). זוכר יעד/פוקוס/משימות.`
+          : mcfg.writer === 'llama4'
+            ? `[כותב התור: llama4] אלמוג קצר וחם. משפט אחד, לא הרצאה. מקף עברי (־).`
+            : `[כותב התור: terra] אלמוג עם הלב של Terra. אמפתיה ספציפית, לא גנרית. מקף עברי (־). זוכר יעד/פוקוס/משימות. אורך טבעי.`;
     const endStrengthOverride =
       mcfg.writer === 'grok'
-        ? 'על תירוץ/ויכוח/התקפה — אלמוג לא קונה ולא רוצה. לא אומר ישר "אתה צודק". בוחן, ומעמיד במקום כשצריך. בלי סקריפט אימון. עדיין זוכר את היעד שלו.'
+        ? 'עכשיו: Grok מדבר. אלמוג לא קונה ולא רוצה. חוצפה מותרת ומצופה. לא אומר ישר "אתה צודק". מעמיד במקום. בלי סקריפט. בלי להירגע לטון Terra.'
         : mcfg.writer === 'claude5'
-          ? 'על גבול/בטיחות — אלמוג לא מתקפל ולא רוצה תחת לחץ. חום + קו ישר. אמת בפרצוף. עדיין בתוך המסע/היעד שלו.'
+          ? 'עכשיו: Claude מדבר. אלמוג לא מתקפל ולא רוצה תחת לחץ. חום + קו ישר. אמת בפרצוף. עדיין בתוך המסע/היעד שלו.'
           : mcfg.writer === 'llama4'
             ? 'תודה/עשיתי — קצר וחם. אם רלוונטי, הכרה ספציפית למשימה/הרגל — בלי הרצאה.'
-            : 'על כאב רך/שגרה — אמפתיה ספציפית תותחית. קשר בעדינות ליעד/פוקוס אם יש. פרט כשצריך, בלי לחפור.';
+            : 'עכשיו: Terra מדבר. אמפתיה ספציפית תותחית. קשר בעדינות ליעד/פוקוס אם יש. פרט כשצריך, בלי לחפור ובלי להפוך ל-Grok.';
     const dynamicSystemPrompt = [
       '— הקשר לשיחה הזו —',
       writerVoiceLine,
@@ -3056,7 +3066,7 @@ export async function POST(request: Request) {
       turnStance,
       '',
       mcfg.finalGuardrails,
-      ALMOG_VOICE_STICKY,
+      buildAlmogVoiceSticky(mcfg.writer),
       endStrengthOverride,
     ]
       .filter((s) => s !== null && s !== undefined)
