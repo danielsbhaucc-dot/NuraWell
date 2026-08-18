@@ -712,11 +712,30 @@ async function createOpenRouterTextStreamResponse({
   const encoder = new TextEncoder();
   let buffer = '';
   let accumulated = '';
-  let streamPrefixBuffer = '';
+  let visibleTextBuffer = '';
+  let emittedVisibleLength = 0;
   let streamStarted = false;
   let finishReason = 'stop';
   let usage: StreamFinishPayload['usage'];
   const streamDetokenizer = piiShield?.createStreamDetokenizer();
+
+  const emitSanitizedVisibleDelta = (
+    controller: ReadableStreamDefaultController<Uint8Array>
+  ) => {
+    if (shouldHoldStreamForThinking(visibleTextBuffer)) return;
+
+    const cleaned = preferSanitizedWriterOutput(visibleTextBuffer);
+    if (!cleaned) return;
+
+    if (!streamStarted && normalizeLine(cleaned).length < MIN_STREAM_PREFIX_CHARS) return;
+
+    const delta = cleaned.slice(emittedVisibleLength);
+    if (!delta) return;
+
+    streamStarted = true;
+    emittedVisibleLength = cleaned.length;
+    controller.enqueue(encoder.encode(delta));
+  };
 
   const enqueueModelText = (
     content: string,
@@ -725,30 +744,13 @@ async function createOpenRouterTextStreamResponse({
     if (!content) return;
     const clientText = streamDetokenizer ? streamDetokenizer.push(content) : content;
     if (!clientText) return;
-    if (streamStarted) {
-      controller.enqueue(encoder.encode(clientText));
-      return;
-    }
 
-    streamPrefixBuffer += clientText;
-    if (shouldHoldStreamForThinking(streamPrefixBuffer)) {
-      return;
-    }
-    const cleanedPrefix = preferSanitizedWriterOutput(streamPrefixBuffer);
-    if (normalizeLine(cleanedPrefix).length >= MIN_STREAM_PREFIX_CHARS) {
-      streamStarted = true;
-      controller.enqueue(encoder.encode(cleanedPrefix));
-      streamPrefixBuffer = '';
-    }
+    visibleTextBuffer += clientText;
+    emitSanitizedVisibleDelta(controller);
   };
 
   const flushModelText = (controller: ReadableStreamDefaultController<Uint8Array>) => {
-    if (streamPrefixBuffer) {
-      const flushed = preferSanitizedWriterOutput(streamPrefixBuffer);
-      streamStarted = true;
-      if (flushed) controller.enqueue(encoder.encode(flushed));
-      streamPrefixBuffer = '';
-    }
+    emitSanitizedVisibleDelta(controller);
   };
 
   const processDataLine = (
@@ -821,19 +823,18 @@ async function createOpenRouterTextStreamResponse({
           if (retryText) {
             accumulated = retryText;
             finishReason = 'stop';
-            streamPrefixBuffer = '';
-            streamStarted = true;
-            controller.enqueue(encoder.encode(retryText));
+            visibleTextBuffer = retryText;
+            emittedVisibleLength = 0;
+            streamStarted = false;
+            emitSanitizedVisibleDelta(controller);
           }
         }
 
         if (streamDetokenizer) {
           const tail = streamDetokenizer.flush();
           if (tail) {
-            if (streamStarted) controller.enqueue(encoder.encode(tail));
-            else {
-              streamPrefixBuffer += tail;
-            }
+            visibleTextBuffer += tail;
+            emitSanitizedVisibleDelta(controller);
           }
         }
 

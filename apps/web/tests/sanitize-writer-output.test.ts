@@ -60,6 +60,7 @@ describe('looksLikeLeakedThinking', () => {
   it('holds a short English prefix so CoT never starts streaming', () => {
     expect(shouldHoldStreamForThinking('The user')).toBe(true);
     expect(shouldHoldStreamForThinking('אוף יום')).toBe(false);
+    expect(preferSanitizedWriterOutput('The user claimed 1, 2, 3')).toBe('');
   });
 
   it('still detects bracket-only replies', () => {

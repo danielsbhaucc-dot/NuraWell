@@ -197,12 +197,29 @@ export function shouldHoldStreamForThinking(prefix: string): boolean {
 
 /**
  * כמו sanitizeWriterOutput, בלי להחזיר את המקור אם נשאר רק מטא/חשיבה.
- * `sanitize() || raw` היה מחזיר את הדליפה אחרי ניקוי מלא.
  */
+/** קידומת לטינית בלי עברית — כנראה מחשבות שעדיין לא זוהו כ-CoT מלא. */
+function isLatinOnlyThinkingPrefix(raw: string): boolean {
+  const t = raw.trim();
+  if (!t) return false;
+  const { hebrew, latin } = letterCounts(t);
+  if (hebrew > 0) return false;
+  if (latin < 6) return false;
+  return isCotBlob(t) || latinRatio(t) >= 0.85;
+}
+
 export function preferSanitizedWriterOutput(raw: string): string {
   const cleaned = sanitizeWriterOutput(raw);
   if (!cleaned) {
-    return looksLikeLeakedThinking(raw) || looksLikeBracketOnlyReply(raw) ? '' : raw.trim();
+    if (
+      looksLikeLeakedThinking(raw) ||
+      looksLikeBracketOnlyReply(raw) ||
+      isCotBlob(raw) ||
+      isLatinOnlyThinkingPrefix(raw)
+    ) {
+      return '';
+    }
+    return raw.trim();
   }
   return looksLikeLeakedThinking(cleaned) ? '' : cleaned;
 }
