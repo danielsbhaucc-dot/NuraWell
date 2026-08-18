@@ -1,8 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { closeChatSession } from './close-session';
 
-/** סשן נסגר אוטומטית אם המשתמש לא הגיב תוך 2 שעות מתשובת אלמוג האחרונה. */
-export const STALE_CHAT_SESSION_MS = 2 * 60 * 60 * 1000;
+/** סשן נסגר אוטומטית אם המשתמש לא הגיב תוך X שעות מתשובת אלמוג האחרונה. */
+export function staleChatSessionMs(): number {
+  const raw = process.env.CHAT_SESSION_STALE_HOURS?.trim();
+  const hours = raw ? Number(raw) : NaN;
+  const h = Number.isFinite(hours) && hours >= 0.5 && hours <= 72 ? hours : 2;
+  return h * 60 * 60 * 1000;
+}
+
+export const STALE_CHAT_SESSION_MS = staleChatSessionMs();
 
 export function isChatSessionStale(lastActivityAt: string | Date, nowMs = Date.now()): boolean {
   const ts =
@@ -10,7 +17,7 @@ export function isChatSessionStale(lastActivityAt: string | Date, nowMs = Date.n
       ? lastActivityAt.getTime()
       : new Date(lastActivityAt).getTime();
   if (!Number.isFinite(ts)) return false;
-  return nowMs - ts >= STALE_CHAT_SESSION_MS;
+  return nowMs - ts >= staleChatSessionMs();
 }
 
 export function resolveSessionLastActivity(params: {
@@ -152,7 +159,7 @@ export async function autoCloseStaleSessionsBatch(
   params: { limit?: number } = {}
 ): Promise<{ closed: number; scanned: number; errors: number }> {
   const limit = params.limit ?? 40;
-  const cutoff = new Date(Date.now() - STALE_CHAT_SESSION_MS).toISOString();
+  const cutoff = new Date(Date.now() - staleChatSessionMs()).toISOString();
 
   const { data: candidates, error } = await supabase
     .from('chat_sessions')

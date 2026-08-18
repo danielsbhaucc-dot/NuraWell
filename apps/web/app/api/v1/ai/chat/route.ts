@@ -4,6 +4,15 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { after } from 'next/server';
 import { ensureChatSession, touchChatSessionActivity } from '../../../../../lib/ai/chat-sessions/ensure-session';
 import { fetchChatSessionTranscript, mergeTranscriptWithClientMessages } from '../../../../../lib/ai/chat-sessions/fetch-transcript';
+import { buildConversationMemoryPromptBlock } from '../../../../../lib/ai/chat-memory/conversation-vector';
+import {
+  fetchLatestChatPeriodicSummaries,
+  fetchRecentClosedSessionSummaries,
+  formatCrossSessionMemoryBlock,
+  formatSessionLiveFileBlock,
+  formatSessionTurnCountBlock,
+} from '../../../../../lib/ai/chat-memory/fetch-chat-memory-context';
+import { updateSessionLiveConversationFile } from '../../../../../lib/ai/chat-memory/session-conversation-file';
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
 import {
   chatWriterFleet,
@@ -953,7 +962,7 @@ async function createOpenRouterCheapTextResponse({
 function chatHistoryWindow(): number {
   const raw = process.env.AI_CHAT_HISTORY_WINDOW?.trim();
   const n = raw ? Number(raw) : NaN;
-  return Number.isFinite(n) && n >= 1 && n <= 40 ? Math.floor(n) : 24;
+  return Number.isFinite(n) && n >= 1 && n <= 50 ? Math.floor(n) : 30;
 }
 
 function currentIsraelDaypart(minutes: number): 'בוקר' | 'צהריים' | 'אחר הצהריים' | 'ערב' | 'לילה' {
@@ -2518,6 +2527,13 @@ export async function POST(request: Request) {
       })
     : Promise.resolve(null);
 
+  const chatMemoryContextPromise = Promise.all([
+    fetchRecentClosedSessionSummaries(supabase, user.id, 5),
+    fetchLatestChatPeriodicSummaries(supabase, user.id),
+  ])
+    .then(([closedSessions, periodicSummaries]) => ({ closedSessions, periodicSummaries }))
+    .catch(() => ({ closedSessions: [], periodicSummaries: [] }));
+
   const [
     profileRow,
     activeJourneyContext,
@@ -2532,6 +2548,7 @@ export async function POST(request: Request) {
     mentorUserContextBlock,
     guideSummaries,
     challengeContextBlock,
+    chatMemoryContext,
   ] = await Promise.all([
     profilePromise,
     journeyPromise,
@@ -2546,6 +2563,7 @@ export async function POST(request: Request) {
     mentorUserContextPromise,
     guideSummariesPromise,
     challengeContextPromise,
+    chatMemoryContextPromise,
   ]);
 
   const [todayChatTurns, todayAlmogTouches] = dailyContextBundle;
@@ -2564,7 +2582,12 @@ export async function POST(request: Request) {
   const profileFullName = profileRow.full_name;
   const profileMoodSignal = profileRow.mood_signal;
   const onboardingContextBlock = buildOnboardingChatContextBlock(profileRow.onboarding);
-  const chatSummaryBlock = formatChatSummaryPromptBlock(profileRow.ai_context.chat_summary);
+  const sessionLiveFileBlock = formatSessionLiveFileBlock(chatSession?.live_conversation_file);
+  const crossSessionBlock = formatCrossSessionMemoryBlock({
+    closedSessions: chatMemoryContext.closedSessions,
+    periodicSummaries: chatMemoryContext.periodicSummaries,
+    userRollup: profileRow.ai_context.chat_summary,
+  });
 
   const clientTurns = messages
     .map((m) => {
@@ -2684,12 +2707,13 @@ export async function POST(request: Request) {
     const needPrinciples =
       contextDecision.needs_principles && Boolean(principlesFilter) && !guideContextHint;
 
-    if (needUserRag || needSystemRag || needPrinciples) {
+    const needConversationRag =
+      (contextDecision.needs_user_memory_rag || useHeavyContext) && isVectorRagRetrieveEnabled();
+
+    if (needUserRag || needSystemRag || needPrinciples || needConversationRag) {
       try {
         const qv = await embedTextForRag(lastUserText);
-        // שלוש השאילתות עצמאיות וחולקות את אותו embedding — מריצים במקביל
-        // (במקום בטור) כדי לקצר את ההמתנה לפני streamText, בלי לשנות תוצאות.
-        const [userMemoryBlock, skHits, principleHits] = await Promise.all([
+        const [userMemoryBlock, skHits, principleHits, conversationMemoryBlock] = await Promise.all([
           needUserRag
             ? buildRelevantMemoriesPromptBlock({
                 userId: user.id,
@@ -2707,9 +2731,17 @@ export async function POST(request: Request) {
           needPrinciples && principlesFilter
             ? queryAlmogSystemKnowledgeForUser({ questionEmbedding: qv, filter: principlesFilter, topK: 4 })
             : Promise.resolve(null),
+          needConversationRag
+            ? buildConversationMemoryPromptBlock({ userId: user.id, queryText: lastUserText })
+            : Promise.resolve(''),
         ]);
         if (userMemoryBlock) {
           ragMemoryBlock = userMemoryBlock;
+        }
+        if (conversationMemoryBlock) {
+          ragMemoryBlock = ragMemoryBlock
+            ? `${ragMemoryBlock}\n\n${conversationMemoryBlock}`
+            : conversationMemoryBlock;
         }
         if (skHits) {
           systemKnowledgeBlock = formatSystemKnowledgeContextBlock(skHits, guideRagTopK, {
@@ -2882,7 +2914,10 @@ export async function POST(request: Request) {
     if (routerSummary) {
       contextSections.push(`[נתב-הקשר] ${routerSummary.slice(0, 240)}`);
     }
-    if (chatSummaryBlock) contextSections.push(chatSummaryBlock);
+    if (sessionLiveFileBlock) contextSections.push(sessionLiveFileBlock);
+    if (crossSessionBlock) contextSections.push(crossSessionBlock);
+    const turnCountBlock = formatSessionTurnCountBlock(recentMessages.length);
+    if (turnCountBlock) contextSections.push(turnCountBlock);
 
     /**
      * עדיפות עליונה: כשהמשתמש מגיב להתראה — אלמוג חייב לדעת על מה הוא מגיב.
@@ -3214,24 +3249,25 @@ export async function POST(request: Request) {
 
         after(async () => {
           try {
-            const updatedSummary = await summarizeChatTurnWithCheapModel({
-              previousSummary: profileRow.ai_context.chat_summary,
+            const admin = createAdminClient();
+            const updatedSummary = await updateSessionLiveConversationFile(admin, {
+              sessionId,
+              userId: user.id,
+              previousFile: chatSession?.live_conversation_file,
               userMessage: lastUserText,
               assistantMessage: assistantText,
+              turnAt: new Date().toISOString(),
             });
             if (!updatedSummary) return;
-            await updateAiContext(createAdminClient(), user.id, {
-              chat_summary: updatedSummary,
-            });
             console.info('[ai/chat]', {
               debug_id: debugId,
-              stage: `${finishStage}_chat_summary_updated`,
+              stage: `${finishStage}_session_live_file_updated`,
               chars: updatedSummary.length,
             });
           } catch (summaryErr) {
             console.warn('[ai/chat]', {
               debug_id: debugId,
-              stage: `${finishStage}_chat_summary_failed`,
+              stage: `${finishStage}_session_live_file_failed`,
               error: summaryErr instanceof Error ? summaryErr.message : String(summaryErr),
             });
           }

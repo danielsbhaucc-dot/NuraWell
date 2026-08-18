@@ -3,6 +3,9 @@
 /** Namespace ייעודי לזיכרון צ'אט; בעתיד אפשר להוסיף למשל `course-material`. */
 export const UPSTASH_NAMESPACE_USER_MEMORY = 'user-memory';
 
+/** אינדקס וקטורי לסיכומי שיחות ותובנות מתמלילים (namespace נפרד). */
+export const UPSTASH_NAMESPACE_CONVERSATION_MEMORY = 'conversation-memory';
+
 /** ידע מערכת (RAG) — אינדקס Upstash ייעודי (UPSTASH_SYSTEM_VECTOR_*); namespace לוגי בתוך האינדקס. */
 export const UPSTASH_NAMESPACE_SYSTEM_KNOWLEDGE = 'system-knowledge';
 

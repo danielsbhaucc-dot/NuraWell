@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { autoCloseStaleSessionsBatch } from '@/lib/ai/chat-sessions/auto-close-stale-sessions';
+import { runChatPeriodicSummariesBatch } from '@/lib/ai/chat-memory/chat-periodic-summaries';
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
-import { maybeReturnCronIdleSkip } from '@/lib/api/cron-idle-guard';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -9,8 +8,8 @@ export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 /**
- * POST /api/v1/ai/cron/auto-close-chat-sessions
- * סוגר סשנים נטושים (ברירת מחדל 2 שעות ללא תגובה אחרי אלמוג) ומריץ חילוץ זיכרון.
+ * POST /api/v1/ai/cron/chat-periodic-summaries
+ * מייצר/מעדכן סיכומים תקופתיים לשיחות (weekly/monthly cascade).
  */
 export async function POST(request: Request) {
   const authError = await authorizeCronRequest(request);
@@ -21,21 +20,19 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  const idleSkip = await maybeReturnCronIdleSkip(request, admin, 'auto-close-chat-sessions');
-  if (idleSkip) return idleSkip;
 
   const url = new URL(request.url);
   const limitRaw = url.searchParams.get('limit');
-  const limit = limitRaw ? Math.min(200, Math.max(1, Number(limitRaw))) : 40;
+  const limit = limitRaw ? Math.min(100, Math.max(1, Number(limitRaw))) : 30;
 
   try {
-    const result = await autoCloseStaleSessionsBatch(admin, { limit });
+    const result = await runChatPeriodicSummariesBatch(admin, { limit });
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
     return NextResponse.json(
       {
         ok: false,
-        error: 'auto_close_chat_sessions_failed',
+        error: 'chat_periodic_summaries_failed',
         detail: e instanceof Error ? e.message : String(e),
       },
       { status: 500 }

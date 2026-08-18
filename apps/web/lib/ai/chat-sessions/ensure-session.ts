@@ -10,7 +10,7 @@ export async function ensureChatSession(
 ): Promise<ChatSessionRow> {
   const { data: existing, error: readErr } = await supabase
     .from('chat_sessions')
-    .select('id, user_id, status, summary, created_at, updated_at, closed_at')
+    .select('id, user_id, status, summary, live_conversation_file, created_at, updated_at, closed_at')
     .eq('id', params.sessionId)
     .maybeSingle();
 
@@ -26,7 +26,7 @@ export async function ensureChatSession(
       status: 'open',
       updated_at: now,
     })
-    .select('id, user_id, status, summary, created_at, updated_at, closed_at')
+    .select('id, user_id, status, summary, live_conversation_file, created_at, updated_at, closed_at')
     .single();
 
   if (insertErr) throw insertErr;
