@@ -19,13 +19,21 @@ const bodySchema = z
   })
   .strict();
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
+  const markViewedRaw = new URL(request.url).searchParams.get('mark_viewed');
+  if (markViewedRaw && z.string().uuid().safeParse(markViewedRaw).success) {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const { markTranscriptRequestViewed } = await import('@/lib/admin/chat-transcript-security');
+    const admin = createAdminClient();
+    await markTranscriptRequestViewed(admin, { requestId: markViewedRaw, userId: user.id });
   }
 
   const { data: profile } = await supabase

@@ -261,3 +261,103 @@ export function validateTranscriptAccessReason(reason: string | null | undefined
   if (t.length > 500) return t.slice(0, 500);
   return t;
 }
+
+const ACCESS_REQUEST_SELECTS = [
+  'id, session_id, status, reason, created_at, expires_at, resolved_at, access_until, notification_sent_at, user_viewed_at, user_response_note',
+  'id, session_id, status, reason, created_at, expires_at, resolved_at, access_until, user_response_note',
+  'id, session_id, status, reason, created_at, expires_at, resolved_at, access_until',
+] as const;
+
+export type AccessRequestRecord = {
+  id: string;
+  session_id: string | null;
+  status: 'pending' | 'approved' | 'denied' | 'expired';
+  reason: string;
+  created_at: string;
+  expires_at: string;
+  resolved_at: string | null;
+  access_until: string | null;
+  notification_sent_at: string | null;
+  user_viewed_at: string | null;
+  user_response_note: string | null;
+};
+
+function isMissingColumnError(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return error.code === '42703' || error.code === 'PGRST204' || /column .* does not exist/i.test(error.message ?? '');
+}
+
+export async function fetchAccessRequestById(
+  admin: SupabaseClient,
+  requestId: string,
+): Promise<AccessRequestRecord | null> {
+  for (const select of ACCESS_REQUEST_SELECTS) {
+    const { data, error } = await admin
+      .from('chat_transcript_access_requests')
+      .select(select)
+      .eq('id', requestId)
+      .maybeSingle();
+    if (!error) return (data as unknown as AccessRequestRecord | null) ?? null;
+    if (!isMissingColumnError(error)) break;
+  }
+  return null;
+}
+
+export async function fetchLatestAccessRequestsForSessions(
+  admin: SupabaseClient,
+  params: { userId: string; sessionIds: string[] },
+): Promise<Map<string, AccessRequestRecord>> {
+  const map = new Map<string, AccessRequestRecord>();
+  if (params.sessionIds.length === 0) return map;
+
+  for (const select of ACCESS_REQUEST_SELECTS) {
+    const { data, error } = await admin
+      .from('chat_transcript_access_requests')
+      .select(select)
+      .eq('user_id', params.userId)
+      .in('session_id', params.sessionIds)
+      .order('created_at', { ascending: false });
+
+    if (!error) {
+      for (const row of (data ?? []) as unknown as AccessRequestRecord[]) {
+        if (!row.session_id || map.has(row.session_id)) continue;
+        map.set(row.session_id, row);
+      }
+      return map;
+    }
+    if (!isMissingColumnError(error)) break;
+  }
+  return map;
+}
+
+export async function markTranscriptRequestViewed(
+  admin: SupabaseClient,
+  params: { requestId: string; userId: string },
+): Promise<void> {
+  const now = new Date().toISOString();
+  let updated = await admin
+    .from('chat_transcript_access_requests')
+    .update({ user_viewed_at: now })
+    .eq('id', params.requestId)
+    .eq('user_id', params.userId)
+    .is('user_viewed_at', null);
+
+  if (updated.error && isMissingColumnError(updated.error)) {
+    return;
+  }
+}
+
+export async function markTranscriptRequestNotificationSent(
+  admin: SupabaseClient,
+  requestId: string,
+): Promise<void> {
+  const now = new Date().toISOString();
+  const { error } = await admin
+    .from('chat_transcript_access_requests')
+    .update({ notification_sent_at: now })
+    .eq('id', requestId);
+
+  if (error && !isMissingColumnError(error)) {
+    console.warn('[transcript-access] notification_sent_at update failed', error.message);
+  }
+}

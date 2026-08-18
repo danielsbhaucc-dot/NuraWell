@@ -41,7 +41,11 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
   const loadTranscriptConsent = useCallback(async () => {
     setTranscriptLoading(true);
     try {
-      const res = await fetch('/api/v1/account/transcript-access-consent', { cache: 'no-store' });
+      const highlight = searchParams.get('transcript_request');
+      const url = highlight
+        ? `/api/v1/account/transcript-access-consent?mark_viewed=${encodeURIComponent(highlight)}`
+        : '/api/v1/account/transcript-access-consent';
+      const res = await fetch(url, { cache: 'no-store' });
       const data = (await res.json()) as {
         granted?: boolean;
         pending_requests?: PendingRequest[];
@@ -53,7 +57,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
     } finally {
       setTranscriptLoading(false);
     }
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     void loadTranscriptConsent();

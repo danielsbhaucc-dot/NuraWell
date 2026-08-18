@@ -38,6 +38,9 @@ export async function notifyTranscriptAccessRequest(
   ).catch((e) => {
     console.warn('[transcript-access-notify] push failed', e);
   });
+
+  const { markTranscriptRequestNotificationSent } = await import('./chat-transcript-security');
+  await markTranscriptRequestNotificationSent(admin, params.requestId);
 }
 
 export async function notifyTranscriptSentToUser(
