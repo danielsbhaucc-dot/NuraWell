@@ -4,9 +4,9 @@
  *
  * 🎯 מטרה (לפי דרישת המוצר):
  *   • משימה חד-פעמית / יומית שהושלמה במלואה →
- *     "אלוף!" / "תותח 🎯" / חיזוק חברי, *בלי* שאלה.
+ *     עובדות: סגור היום. הכותב מגיב בקולו.
  *   • משימת per_meal / multi_daily שעדיין יש בה סלוטים פתוחים →
- *     חיזוק חברי + שאלה אנושית: "וגם בערב?", "תותח, רק עכשיו?", "סגרת את היום!".
+ *     עובדות: מה סומן, מה נותר. בלי תסריט שאלה.
  *
  * הקובץ *רק* בונה את הסטרינג. ההזרקה ל-prompt-ה-AI נעשית ב-`chat/route.ts`.
  * הסיבה: ה-route מעורב במידע נוסף (זמן מקומי, journey context וכו'),
@@ -40,7 +40,6 @@ export interface SlotReinforcementInput {
 
 /**
  * האם השלמת המשימה היא "סגירה מלאה של היום" (אין סלוטים פתוחים)?
- * משמש את ה-prompt להחליט אם להוסיף שאלה (אם נשארו) או רק חיזוק (אם סגור).
  */
 export function isFullDayComplete(input: SlotReinforcementInput): boolean {
   return input.slotsRemainingToday.length === 0;
@@ -48,14 +47,13 @@ export function isFullDayComplete(input: SlotReinforcementInput): boolean {
 
 /**
  * בונה את בלוק ההקשר שאלמוג רואה.
- * הפלט כולל הוראת-מטא קצרה ("רק חיזוק / חיזוק+שאלה") שמכוונת את ה-LLM
- * לטון הנכון בלי לבטל את הקול האנושי.
+ * הפלט נותן עובדות יבשות (שם, סלוט, מה נותר) — הקול מגיע מכרטיס הכותב.
  *
  * דוגמת פלט (per_meal עם סלוט אחד מתוך 3 סגור):
- *   "[משימה: כוס מים לפני ארוחה · בוצע: לפני ארוחת בוקר · נותרו היום: לפני ארוחת צהריים, לפני ארוחת ערב · טון: חיזוק חם + שאלה רכה אם גם בארוחות הקרובות]"
+ *   "[משימה: כוס מים לפני ארוחה · בוצע: לפני ארוחת בוקר · נותרו היום: לפני ארוחת צהריים, לפני ארוחת ערב · עובדות בלבד...]"
  *
  * דוגמת פלט (one_time סגור):
- *   "[משימה: ללכת 20 דקות · סגור היום · טון: חיזוק חם, בלי שאלה — היום נסגר]"
+ *   "[משימה: ללכת 20 דקות · סגור היום (1/1 הליכות) · עובדות בלבד...]"
  */
 /**
  * מנסה לזהות יחידה טבעית של המשימה מתוך הכותרת
@@ -81,48 +79,30 @@ export function formatSlotReinforcementBlock(input: SlotReinforcementInput): str
     : null;
   const remainingLabels = input.slotsRemainingToday.map((s) => slotLabel(s));
   const unit = inferUnitHint(title);
-
-  // הוראת זהב לכל המצבים — חוזרת בכל בלוק כדי שהמודל לא יחליק חזרה ל-AI-speak.
-  const TONE_GUARDRAIL =
+  const voice =
+    `עובדות בלבד. הגב בקול הכותב — חי, ספציפי. ` +
     `אסור: "נסגור?", "סגרת", "יום נקי", "יום מושלם", "איך הראש שלך?", ` +
-    `"מה תפס אותך?", "נחנו", "דילגנו" (סתם), "X מתוך Y" בלי יחידה. ` +
-    `מותר: שם המשימה במפורש, היחידה "${unit}", רגש אנושי, ולידציה.`;
+    `"מה תפס אותך?", "נחנו", "X מתוך Y" בלי יחידה. ` +
+    `שם המשימה והיחידה "${unit}" מותרים. לא חובה שאלה. לא סקריפט חיזוק.`;
 
-  // המקרה הקל: משימה שכבר היתה סגורה לפני ההודעה.
   if (input.wasAlreadyDone && input.slotsRemainingToday.length === 0) {
-    return `[משימה: ${title} · כבר היה סגור היום · טון: חמים אבל מאופק ("כל הכבוד שעדכנת"), בלי קופאות יתר · ${TONE_GUARDRAIL}]`;
+    return `[משימה: ${title} · כבר היה סגור היום · ${voice}]`;
   }
 
-  // משימה חד-פעמית או יומית שסגרה את היום:
   if (input.totalSlotsToday <= 1 || input.slotsRemainingToday.length === 0) {
     const isFullClose = input.slotsCompletedToday >= input.totalSlotsToday;
     if (isFullClose) {
-      return [
-        `[משימה: ${title} · סגור היום (${input.slotsCompletedToday}/${input.totalSlotsToday} ${unit})`,
-        `· טון: חיזוק חם וספציפי ("אלוף", "תותח", "🎯") שמזכיר את שם המשימה במפורש`,
-        `+ שאלה רגשית ספציפית קצרה (לדוגמה: "איך הרגשת אחרי ${title}?", "מה היה הכי כיף?")`,
-        `· אסור שאלה חוזרת על המשימה`,
-        `· ${TONE_GUARDRAIL}]`,
-      ].join(' ');
+      return `[משימה: ${title} · סגור היום (${input.slotsCompletedToday}/${input.totalSlotsToday} ${unit}) · ${voice}]`;
     }
   }
 
-  // משימה רב-סלוטית עם סלוטים שנותרו פתוחים:
   const justPart = justMarkedLabel ? ` · בוצע: ${justMarkedLabel}` : '';
   const remainingPart = remainingLabels.length
     ? ` · נותרו היום: ${remainingLabels.join(', ')}`
     : '';
   const counter = `(${input.slotsCompletedToday}/${input.totalSlotsToday} ${unit})`;
-  const firstRemaining = remainingLabels[0] ?? 'בהמשך';
 
-  return [
-    `[משימה: ${title}${justPart}${remainingPart} ${counter}`,
-    `· טון: חיזוק חם שמזכיר במפורש את ה${unit} שכבר נעשו ואת הסלוט שסומן,`,
-    `+ שאלה רכה ואנושית על הסלוט הבא הספציפי (לדוגמה: "גם ${firstRemaining} תזכור?", "ו${firstRemaining}?").`,
-    `אסור: "נסגור?", "סגרת", "סוגרים את היום?". מותר: "תשתה גם בערב?", "תזכור גם בארוחה הבאה?".`,
-    `שאלה אחת בלבד, לא רשימה`,
-    `· ${TONE_GUARDRAIL}]`,
-  ].join(' ');
+  return `[משימה: ${title}${justPart}${remainingPart} ${counter} · ${voice}]`;
 }
 
 /**

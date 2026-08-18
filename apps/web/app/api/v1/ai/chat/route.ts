@@ -39,7 +39,6 @@ import { buildRelevantMemoriesPromptBlock } from '../../../../../lib/ai/user-mem
 import {
   ALMOG_CHAT_FINAL_GUARDRAILS,
   ALMOG_CHAT_FINAL_GUARDRAILS_LEAN,
-  ALMOG_HABIT_CHECKPOINT_RULES,
   ALMOG_STATION_PROGRESSIVE_RULES,
   buildAlmogVoiceSticky,
   buildAlmogWriterPersona,
@@ -2732,9 +2731,6 @@ export async function POST(request: Request) {
     const stationRules =
       journeyCap || activeJourneyContext ? `\n${ALMOG_STATION_PROGRESSIVE_RULES}\n` : '';
 
-    const habitCheckpointRules =
-      activeJourneyContext?.habits?.length ? `\n${ALMOG_HABIT_CHECKPOINT_RULES}\n` : '';
-
     const journeyStateLine =
       journeyCap != null
         ? `מסע (פנימי): צעד ${activeJourneyContext?.stepNumber ?? journeyCap.currentStepNumber}/${journeyCap.totalPublishedSteps}${journeyCap.allJourneyComplete ? ' · הושלם' : ''} · תחנה ${sanitizeUserVisibleTitle(activeJourneyContext?.stationTitle ?? journeyCap.currentStationTitle ?? '', 80) || '—'}\n`
@@ -2934,8 +2930,6 @@ export async function POST(request: Request) {
     if (dailyShortTermBlock) contextSections.push(dailyShortTermBlock);
 
     if (stationRules) contextSections.push(stationRules.trim());
-    // חוקי קצב-נוטיפיקציה לא רלוונטיים לצ'אט חי — מדלגים במצב רזה (חיסכון).
-    if (habitCheckpointRules && !leanContext) contextSections.push(habitCheckpointRules.trim());
     if (journeyStateLine) contextSections.push(journeyStateLine.trim());
 
     if (journeyGuidanceBlock) contextSections.push(journeyGuidanceBlock);
