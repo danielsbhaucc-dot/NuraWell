@@ -10,6 +10,8 @@ export const NOTIFICATION_TYPES = [
   'ai_message',
   'plan_ready',
   'system',
+  'transcript_access_request',
+  'chat_transcript_delivered',
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];

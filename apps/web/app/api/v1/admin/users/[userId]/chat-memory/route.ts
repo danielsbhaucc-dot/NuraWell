@@ -8,6 +8,7 @@ import { readJsonBody } from '@/lib/api/json-request';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import {
   createTranscriptAccessRequest,
+  cancelTranscriptAccessRequest,
   fetchAccessRequestById,
   fetchLatestAccessRequestsForSessions,
   getSessionTranscriptAccess,
@@ -296,6 +297,7 @@ export async function GET(request: Request, context: RouteContext) {
       return {
         ...s,
         transcript_access: access.status,
+        transcript_access_until: access.sessionAccessUntil,
         ...enrichAccessRequestPayload(request),
       };
     }),
@@ -401,6 +403,12 @@ const postBodySchema = z.discriminatedUnion('action', [
     .strict(),
   z
     .object({
+      action: z.literal('cancel_transcript_access'),
+      sessionId: z.string().uuid(),
+    })
+    .strict(),
+  z
+    .object({
       action: z.literal('send_transcript_to_user'),
       sessionId: z.string().uuid(),
       reason: z.string().min(8).max(500),
@@ -429,14 +437,16 @@ export async function POST(request: Request, context: RouteContext) {
 
   const { createAdminClient } = await import('@/lib/supabase/admin');
   const admin = createAdminClient();
-  const { sessionId, reason } = parsed.data;
+  const body = parsed.data;
+  const sessionId = body.sessionId;
 
   const { data: session } = await selectUserChatSession(admin, userId, sessionId);
   if (!session) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
 
-  if (parsed.data.action === 'request_transcript_access') {
+  if (body.action === 'request_transcript_access') {
+    const reason = body.reason;
     const result = await createTranscriptAccessRequest(admin, {
       userId,
       sessionId,
@@ -449,12 +459,28 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json({ error: result.error }, { status });
     }
 
-    await notifyTranscriptAccessRequest(admin, {
+    const notifyResult = await notifyTranscriptAccessRequest(admin, {
       userId,
       sessionId,
       requestId: result.requestId,
       reason,
     });
+
+    if (!notifyResult.ok) {
+      await logChatTranscriptAdminAudit(admin, {
+        adminUserId: auth.user.id,
+        targetUserId: userId,
+        sessionId,
+        action: 'request_access',
+        reason,
+        summary: `בקשה נוצרה אך שליחת ההתראה נכשלה: ${notifyResult.error}`,
+        payload: { request_id: result.requestId, notify_error: notifyResult.error },
+      });
+      return NextResponse.json(
+        { error: 'notification_failed', message: 'הבקשה נוצרה אך ההתראה למשתמש נכשלה', request_id: result.requestId },
+        { status: 502 },
+      );
+    }
 
     await logChatTranscriptAdminAudit(admin, {
       adminUserId: auth.user.id,
@@ -472,8 +498,44 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({
       ok: true,
       request_id: result.requestId,
+      notification_id: notifyResult.notificationId,
       status: 'pending',
       message: 'הבקשה נשלחה בהצלחה! התראה נשלחה למשתמש — הסטטוס יתעדכן כאן אוטומטית.',
+      ...enriched,
+    });
+  }
+
+  if (body.action === 'cancel_transcript_access') {
+    const cancelResult = await cancelTranscriptAccessRequest(admin, {
+      userId,
+      sessionId,
+      adminUserId: auth.user.id,
+    });
+
+    if (!cancelResult.ok) {
+      const status = cancelResult.error === 'no_pending_request' ? 404 : 400;
+      return NextResponse.json({ error: cancelResult.error }, { status });
+    }
+
+    await logChatTranscriptAdminAudit(admin, {
+      adminUserId: auth.user.id,
+      targetUserId: userId,
+      sessionId,
+      action: 'cancel_access_request',
+      summary: 'בקשת גישה לתמליל בוטלה — ההתראה הוסרה מהמשתמש',
+      payload: {
+        request_id: cancelResult.requestId,
+        notification_id: cancelResult.notificationId,
+      },
+    });
+
+    const request = await fetchAccessRequestById(admin, cancelResult.requestId);
+    const enriched = enrichAccessRequestPayload(request);
+
+    return NextResponse.json({
+      ok: true,
+      cancelled: true,
+      message: 'הבקשה בוטלה. ההתראה הוסרה מהמשתמש — נשמר לוג פנימי.',
       ...enriched,
     });
   }
@@ -494,7 +556,7 @@ export async function POST(request: Request, context: RouteContext) {
     targetUserId: userId,
     sessionId,
     action: 'send_to_user',
-    reason,
+    reason: body.action === 'send_transcript_to_user' ? body.reason : undefined,
     summary: 'נשלח קישור לשיחה למשתמש',
   });
 

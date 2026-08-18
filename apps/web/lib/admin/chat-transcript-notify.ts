@@ -1,6 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { deliverWebPushAfterAlmogNotification } from '@/lib/push/deliver-after-notification';
 
+const PLATFORM_NOTIFICATION_META = {
+  channel: 'platform',
+  mentor: null,
+  category: 'privacy',
+} as const;
+
 export async function notifyTranscriptAccessRequest(
   admin: SupabaseClient,
   params: {
@@ -9,26 +15,36 @@ export async function notifyTranscriptAccessRequest(
     requestId: string;
     reason: string;
   },
-): Promise<void> {
+): Promise<{ ok: true; notificationId: string } | { ok: false; error: string }> {
   const actionUrl = `/settings/privacy?transcript_request=${params.requestId}`;
 
-  await admin.from('notifications').insert({
-    user_id: params.userId,
-    type: 'transcript_access_request',
-    title: 'בקשה לצפייה בתמליל שיחה',
-    body: 'צוות NuraWell מבקש אישורך לצפות בתמליל שיחה. לחץ/י לאישור או דחייה.',
-    icon_emoji: '🔒',
-    action_url: actionUrl,
-    is_read: false,
-    is_sent: false,
-    send_at: new Date().toISOString(),
-    metadata: {
-      source: 'admin_transcript_security',
-      session_id: params.sessionId,
-      request_id: params.requestId,
-      reason_preview: params.reason.slice(0, 120),
-    },
-  });
+  const { data, error } = await admin
+    .from('notifications')
+    .insert({
+      user_id: params.userId,
+      type: 'transcript_access_request',
+      title: 'בקשה לצפייה בתמליל שיחה',
+      body: 'צוות NuraWell מבקש אישורך לצפות בתמליל שיחה. לחץ/י לאישור או דחייה.',
+      icon_emoji: '🔒',
+      action_url: actionUrl,
+      is_read: false,
+      is_sent: true,
+      send_at: new Date().toISOString(),
+      metadata: {
+        ...PLATFORM_NOTIFICATION_META,
+        source: 'admin_transcript_security',
+        session_id: params.sessionId,
+        request_id: params.requestId,
+        reason_preview: params.reason.slice(0, 120),
+      },
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('[transcript-access-notify] insert failed', error.message);
+    return { ok: false, error: error.message };
+  }
 
   void deliverWebPushAfterAlmogNotification(
     params.userId,
@@ -40,7 +56,24 @@ export async function notifyTranscriptAccessRequest(
   });
 
   const { markTranscriptRequestNotificationSent } = await import('./chat-transcript-security');
-  await markTranscriptRequestNotificationSent(admin, params.requestId);
+  await markTranscriptRequestNotificationSent(admin, params.requestId, data.id as string);
+
+  return { ok: true, notificationId: data.id as string };
+}
+
+export async function revokeTranscriptAccessNotification(
+  admin: SupabaseClient,
+  params: { notificationId: string; userId: string },
+): Promise<void> {
+  const { error } = await admin
+    .from('notifications')
+    .delete()
+    .eq('id', params.notificationId)
+    .eq('user_id', params.userId);
+
+  if (error) {
+    console.warn('[transcript-access-notify] delete notification failed', error.message);
+  }
 }
 
 export async function notifyTranscriptSentToUser(
@@ -54,7 +87,7 @@ export async function notifyTranscriptSentToUser(
   const actionUrl = `/home?chatSession=${params.sessionId}`;
   const title = params.sessionTitle?.trim() || 'שיחה עם אלמוג';
 
-  await admin.from('notifications').insert({
+  const { error } = await admin.from('notifications').insert({
     user_id: params.userId,
     type: 'chat_transcript_delivered',
     title: 'עותק השיחה שלך',
@@ -62,13 +95,18 @@ export async function notifyTranscriptSentToUser(
     icon_emoji: '💬',
     action_url: actionUrl,
     is_read: false,
-    is_sent: false,
+    is_sent: true,
     send_at: new Date().toISOString(),
     metadata: {
+      ...PLATFORM_NOTIFICATION_META,
       source: 'admin_transcript_delivery',
       session_id: params.sessionId,
     },
   });
+
+  if (error) {
+    console.warn('[transcript-deliver-notify] insert failed', error.message);
+  }
 
   void deliverWebPushAfterAlmogNotification(
     params.userId,

@@ -36,8 +36,9 @@ export function NotificationCard({
   onUnarchive,
   onCloseDrawer,
 }: NotificationCardProps) {
-  const isAi = n.type === 'ai_message';
-  const isDolev = n.mentorId === 'dolev';
+  const isPlatform = n.channel === 'platform';
+  const isAi = n.type === 'ai_message' && !isPlatform;
+  const isDolev = !isPlatform && n.mentorId === 'dolev';
   const isCheckpoint = n.source === 'almog_habit_checkpoint';
   const isChallenge = n.source === 'challenge';
   const canReply = isNotificationReplyable(n);
@@ -84,6 +85,8 @@ export function NotificationCard({
         'relative rounded-2xl border text-right shadow-sm transition backdrop-blur-sm',
         n.is_read
           ? 'border-slate-200/70 bg-gradient-to-br from-slate-100/90 via-emerald-50/50 to-teal-50/40 opacity-95'
+          : isPlatform
+            ? 'border-indigo-200/70 bg-gradient-to-br from-indigo-50/95 via-slate-50/80 to-indigo-100/50 shadow-indigo-900/5'
           : isChallenge
             ? 'border-emerald-300/70 bg-gradient-to-br from-emerald-50/95 via-teal-50/75 to-emerald-100/60 shadow-emerald-900/8'
             : isCheckpoint
@@ -152,6 +155,11 @@ export function NotificationCard({
       <div className={cn('px-3.5 py-3.5 ps-10', showMarkReadIcon ? 'pe-10' : 'pe-3')}>
         <div className="flex flex-row-reverse items-start gap-3">
           <div className="min-w-0 flex-1 space-y-1.5">
+            {isPlatform && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-200/60 px-2 py-0.5 text-[10px] font-bold text-indigo-950">
+                🛡️ מערכת · פרטיות
+              </span>
+            )}
             {isChallenge && (
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-200/60 px-2 py-0.5 text-[10px] font-bold text-emerald-950">
                 🏆 אתגר 14 יום
@@ -215,7 +223,16 @@ export function NotificationCard({
           </div>
 
           <div className="shrink-0">
-            {isAi ? (
+            {isPlatform ? (
+              <div className="relative">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-indigo-100 text-lg ring-2 ring-indigo-200/80 shadow-md">
+                  {n.icon_emoji ?? '🔒'}
+                </div>
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-indigo-700 px-1.5 py-px text-[8px] font-bold text-indigo-50 shadow">
+                  מערכת
+                </span>
+              </div>
+            ) : isAi ? (
               <div className="relative">
                 <img
                   src={aiAvatar}
