@@ -317,6 +317,7 @@ describe('chat writer routing', () => {
 
   it('covers Terra empathy/coaching and Llama short stances', () => {
     expect(writerStancePrompt(['empathy'])).toMatch(/אמפתיה תותחית|רגש רך|עולם שלו/);
+    expect(writerStancePrompt(['empathy'])).toMatch(/דימוי אחד חזק/);
     expect(writerStancePrompt(['coaching'])).toMatch(/שגרה\/תזונה/);
     expect(writerStancePrompt(['simple'])).toMatch(/תודה\/עשיתי/);
     expect(writerStancePrompt(['safety'])).toMatch(/גבול\/בטיחות/);
@@ -334,6 +335,9 @@ describe('Almog voice: enter world without people-pleasing', () => {
     expect(ALMOG_RATIONAL_AND_PSYCHOLOGY_RULES).toMatch(/כניסה ≠ הסכמה/);
     expect(ALMOG_VOICE_DNA).toMatch(/אל תמציא חטא/);
     expect(ALMOG_VOICE_DNA).toMatch(/כי פישלתי/);
+    expect(ALMOG_VOICE_DNA).toMatch(/המשימה \(לא מתפשטים ממנה\)/);
+    expect(ALMOG_VOICE_DNA).toMatch(/פלט למשתמש \(קשיח\)/);
+    expect(ALMOG_VOICE_DNA).toMatch(/דימוי אחד חזק/);
   });
 
   it('gives each writer a distinct persona card, not a one-line overlay', () => {

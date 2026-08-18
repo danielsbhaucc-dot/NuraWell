@@ -8,6 +8,7 @@ import { stepCountIs, streamText, type LanguageModel } from 'ai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { PiiShield } from '../privacy/pii-shield';
+import { preferSanitizedWriterOutput } from '../sanitize-writer-output';
 import { buildRecallPastMemoryTools } from './recall-tool';
 import { MEMORY_RECALL_TOOL_PROMPT } from './prompt';
 import { createRecallToolTelemetry } from './recall-telemetry';
@@ -121,16 +122,18 @@ export async function createMemoryRecallStreamResponse(params: {
     onFinish: async ({ responseMessage, isAborted }) => {
       if (isAborted) return;
 
-      let text = extractAssistantText(
-        (responseMessage.parts ?? []) as Array<{ type: string; text?: string }>
+      let text = preferSanitizedWriterOutput(
+        extractAssistantText(
+          (responseMessage.parts ?? []) as Array<{ type: string; text?: string }>
+        )
       );
 
       if (params.piiShield) {
-        text = params.piiShield.detokenizeText(text);
+        text = preferSanitizedWriterOutput(params.piiShield.detokenizeText(text));
       }
 
       if (!text && params.onEmptyRetry) {
-        text = (await params.onEmptyRetry()).trim();
+        text = preferSanitizedWriterOutput((await params.onEmptyRetry()).trim());
       }
 
       const usage = await result.usage;
