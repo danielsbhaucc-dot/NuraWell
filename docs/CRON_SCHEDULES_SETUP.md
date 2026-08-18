@@ -38,6 +38,10 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 | `POST /api/v1/ai/cron/onboarding-check-ins` | כל 30 דקות (מומלץ) | `apps/web/app/api/v1/ai/cron/onboarding-check-ins/route.ts` |
 | `POST /api/v1/ai/cron/almog-reminders` | אופציונלי (מאוחד ל-onboarding) | `apps/web/app/api/v1/ai/cron/almog-reminders/route.ts` |
 | `POST /api/v1/ai/cron/passive-presence` | יומי 13:00 ישראל | `apps/web/app/api/v1/ai/cron/passive-presence/route.ts` |
+| `POST /api/v1/ai/cron/chat-periodic-summaries?tier=daily` | יומי ~23:30 ישראל | `apps/web/app/api/v1/ai/cron/chat-periodic-summaries/route.ts` |
+| `POST /api/v1/ai/cron/chat-periodic-summaries?tier=weekly` | שבת ~23:00 ישראל (מוצ"ש) | אותו קובץ |
+| `POST /api/v1/ai/cron/chat-periodic-summaries?tier=monthly` | 1 לחודש | אותו קובץ |
+| `POST /api/v1/ai/cron/auto-close-chat-sessions` | כל 1–2 שעות (מומלץ) | `apps/web/app/api/v1/ai/cron/auto-close-chat-sessions/route.ts` |
 
 **אתגר 14 יום** — אין schedules נפרדים:
 
