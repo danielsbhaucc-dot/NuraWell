@@ -30,7 +30,7 @@ export async function recordUserConsent(
     return { ok: false, error: insertError.message };
   }
 
-  const profilePatch: Record<string, string> = {};
+  const profilePatch: Record<string, string | null> = {};
   if (input.granted && input.consentType === 'terms') profilePatch.terms_accepted_at = now;
   if (input.granted && input.consentType === 'privacy') profilePatch.privacy_accepted_at = now;
   if (input.granted && input.consentType === 'health_data') profilePatch.health_data_consent_at = now;
@@ -39,6 +39,9 @@ export async function recordUserConsent(
   }
   if (input.granted && (input.consentType === 'terms' || input.consentType === 'privacy')) {
     profilePatch.accepted_policy_version = policyVersion;
+  }
+  if (input.consentType === 'admin_transcript_access') {
+    profilePatch.admin_transcript_access_at = input.granted ? now : null;
   }
 
   if (Object.keys(profilePatch).length > 0) {
