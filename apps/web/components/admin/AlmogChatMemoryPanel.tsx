@@ -85,8 +85,9 @@ export function AlmogChatMemoryPanel({ userId }: { userId: string }) {
         credentials: 'include',
         cache: 'no-store',
       });
-      if (!res.ok) throw new Error('שגיאת טעינה');
-      setData((await res.json()) as ChatMemoryResp);
+      const body = (await res.json()) as ChatMemoryResp & { error?: string };
+      if (!res.ok) throw new Error(body.error ?? 'שגיאת טעינה');
+      setData(body);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'שגיאה');
     } finally {
