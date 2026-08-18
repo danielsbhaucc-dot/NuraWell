@@ -35,7 +35,7 @@ const SYSTEM_PROMPT = `אתה מארגן זיכרון שיחות של מנטור
 - הפרד בין מה שנאמר בפועל לבין השערות.
 - קצר ומדויק. יום=עד ~400 מילים; שבוע+=עד ~600.`;
 
-function useOpenRouterBatch(): boolean {
+function isOpenRouterBatchEnabled(): boolean {
   const v = process.env.CHAT_SUMMARY_USE_BATCH?.trim().toLowerCase();
   return v === '1' || v === 'true';
 }
@@ -169,7 +169,7 @@ export async function generateChatSummaryInsight(params: {
 חומר גולמי:
 ${params.sourceBlock || '(אין חומר)'}${childBlock}`;
 
-  if (useOpenRouterBatch()) {
+  if (isOpenRouterBatchEnabled()) {
     const batchResult = await callOpenRouterBatch({
       customId: `${params.type}-${params.periodKey}`.slice(0, 64),
       userContent,
