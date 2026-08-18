@@ -2,8 +2,9 @@ import { z } from 'zod';
 import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { after } from 'next/server';
-import { ensureChatSession, touchChatSessionActivity } from '../../../../../lib/ai/chat-sessions/ensure-session';
+import { bumpChatSessionTurn, ensureChatSession, touchChatSessionActivity } from '../../../../../lib/ai/chat-sessions/ensure-session';
 import { fetchChatSessionTranscript, mergeTranscriptWithClientMessages } from '../../../../../lib/ai/chat-sessions/fetch-transcript';
+import { maybeAssignChatSessionTitle } from '../../../../../lib/ai/chat-sessions/session-title';
 import { buildConversationMemoryPromptBlock } from '../../../../../lib/ai/chat-memory/conversation-vector';
 import {
   fetchLatestChatPeriodicSummaries,
@@ -2533,6 +2534,16 @@ export async function POST(request: Request) {
     });
   });
 
+  if (!skipUserPersist) {
+    void bumpChatSessionTurn(supabase, {
+      sessionId,
+      userId: user.id,
+      preview: lastUserText,
+    }).catch(() => {
+      /* non-blocking */
+    });
+  }
+
   // הערה: ה"תגובה" של המשתמש נקלטת אוטומטית ב-ai_interactions (role='user',
   // ה-insertAiInteraction למעלה). מנוע הדורמנסי (fetchTrueLastActiveByUser)
   // קורא את זה ישירות, אז אין צורך לעדכן profiles.last_responded_at בנפרד.
@@ -2630,16 +2641,18 @@ export async function POST(request: Request) {
     })
     .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m));
 
+  const historyWindow = chatHistoryWindow();
   const dbTurns = await fetchChatSessionTranscript(supabase, {
     sessionId,
     userId: user.id,
+    limit: Math.max(historyWindow + 4, 8),
   }).catch(() => []);
 
   const recentMessages = mergeTranscriptWithClientMessages({
     dbTurns,
     clientTurns,
     lastUserText,
-    windowSize: chatHistoryWindow(),
+    windowSize: historyWindow,
   });
 
   const genderCorrection = detectGenderCorrectionFromRecentMessages(recentMessages);
@@ -3267,6 +3280,14 @@ export async function POST(request: Request) {
           });
         }
 
+        void bumpChatSessionTurn(supabase, {
+          sessionId,
+          userId: user.id,
+          preview: assistantText,
+        }).catch(() => {
+          /* non-blocking */
+        });
+
         after(async () => {
           try {
             await scanChallengeSuccessFromChat(user.id, lastUserText);
@@ -3290,11 +3311,20 @@ export async function POST(request: Request) {
               assistantMessage: assistantText,
               turnAt: new Date().toISOString(),
             });
-            if (!updatedSummary) return;
-            console.info('[ai/chat]', {
-              debug_id: debugId,
-              stage: `${finishStage}_session_live_file_updated`,
-              chars: updatedSummary.length,
+            if (updatedSummary) {
+              console.info('[ai/chat]', {
+                debug_id: debugId,
+                stage: `${finishStage}_session_live_file_updated`,
+                chars: updatedSummary.length,
+              });
+            }
+            await maybeAssignChatSessionTitle(admin, {
+              sessionId,
+              userId: user.id,
+              existingTitle: chatSession?.title ?? null,
+              userMessage: lastUserText,
+              assistantMessage: assistantText,
+              liveFile: updatedSummary ?? chatSession?.live_conversation_file,
             });
           } catch (summaryErr) {
             console.warn('[ai/chat]', {

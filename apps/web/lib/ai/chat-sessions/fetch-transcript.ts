@@ -3,23 +3,36 @@ import type { ChatTranscriptTurn } from './types';
 
 export async function fetchChatSessionTranscript(
   supabase: SupabaseClient,
-  params: { sessionId: string; userId: string }
+  params: { sessionId: string; userId: string; limit?: number }
 ): Promise<ChatTranscriptTurn[]> {
-  const { data, error } = await supabase
+  const limit =
+    typeof params.limit === 'number' && params.limit > 0
+      ? Math.min(Math.floor(params.limit), 500)
+      : null;
+
+  const base = supabase
     .from('ai_interactions')
     .select('role, content, created_at')
     .eq('session_id', params.sessionId)
     .eq('user_id', params.userId)
-    .in('role', ['user', 'assistant'])
-    .order('created_at', { ascending: true });
+    .in('role', ['user', 'assistant']);
+
+  const { data, error } = limit
+    ? await base.order('created_at', { ascending: false }).limit(limit)
+    : await base.order('created_at', { ascending: true });
 
   if (error) throw error;
 
-  return (data ?? []).map((row) => ({
-    role: row.role as ChatTranscriptTurn['role'],
-    content: String(row.content ?? '').trim(),
-    created_at: row.created_at as string,
-  })).filter((t) => t.content.length > 0);
+  const turns = (data ?? [])
+    .map((row) => ({
+      role: row.role as ChatTranscriptTurn['role'],
+      content: String(row.content ?? '').trim(),
+      created_at: row.created_at as string,
+    }))
+    .filter((t) => t.content.length > 0);
+
+  if (limit) turns.reverse();
+  return turns;
 }
 
 export type WriterChatTurn = { role: 'user' | 'assistant'; content: string };

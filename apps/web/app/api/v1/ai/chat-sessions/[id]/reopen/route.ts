@@ -34,7 +34,7 @@ export async function POST(request: Request, context: RouteContext) {
     })
     .eq('id', id)
     .eq('user_id', auth.user.id)
-    .select('id, status, summary')
+    .select('id, status, title, summary')
     .single();
 
   if (error) {

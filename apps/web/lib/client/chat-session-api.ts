@@ -4,6 +4,7 @@ export type ChatSessionListItemClient = {
   id: string;
   status: 'open' | 'closed';
   session_kind: ChatSessionKindClient;
+  title?: string | null;
   summary: string | null;
   created_at: string;
   updated_at: string;
@@ -16,6 +17,7 @@ export type ChatSessionClientState = {
   id: string;
   status: 'open' | 'closed';
   session_kind?: ChatSessionKindClient;
+  title?: string | null;
   summary: string | null;
 };
 

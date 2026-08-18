@@ -4,6 +4,7 @@ import { rollupUserChatContext } from '../chat-memory/session-conversation-file'
 import { extractMemoriesFromTranscript } from '../user-memories/extract-from-transcript';
 import { reconcileSessionMemories } from '../user-memories/reconcile-session-memories';
 import { fetchChatSessionTranscript, formatTranscriptForLlm } from './fetch-transcript';
+import { generateChatSessionTitle, sanitizeChatSessionTitle, titleFromSummaryFallback } from './session-title';
 import { summarizeChatSession } from './summarize-session';
 import type { ChatSessionRow } from './types';
 
@@ -31,7 +32,7 @@ export async function closeChatSession(
   const { data: session, error: sessionErr } = await supabase
     .from('chat_sessions')
     .select(
-      'id, user_id, status, summary, live_conversation_file, created_at, updated_at, closed_at'
+      'id, user_id, status, title, summary, live_conversation_file, created_at, updated_at, closed_at'
     )
     .eq('id', params.sessionId)
     .eq('user_id', params.userId)
@@ -55,18 +56,30 @@ export async function closeChatSession(
   ]);
 
   const now = new Date().toISOString();
+  const existingTitle = sanitizeChatSessionTitle(session.title as string | null);
+  let title = existingTitle;
+  if (!title) {
+    const firstUser = turns.find((t) => t.role === 'user')?.content ?? '';
+    title =
+      (await generateChatSessionTitle({
+        userMessage: firstUser,
+        liveFile: session.live_conversation_file as string | null,
+      })) ?? titleFromSummaryFallback(summary);
+  }
+
   const { data: updated, error: updateErr } = await supabase
     .from('chat_sessions')
     .update({
       status: 'closed',
       summary,
+      ...(title ? { title } : {}),
       closed_at: now,
       updated_at: now,
     })
     .eq('id', params.sessionId)
     .eq('user_id', params.userId)
     .select(
-      'id, user_id, status, summary, live_conversation_file, created_at, updated_at, closed_at'
+      'id, user_id, status, title, summary, live_conversation_file, created_at, updated_at, closed_at'
     )
     .single();
 

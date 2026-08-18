@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { fallbackLiveConversationFile } from '../chat-conversation-file';
 import { summarizeConversationTurn } from './summarize-conversation-turn';
 
 export async function updateSessionLiveConversationFile(
@@ -12,13 +13,20 @@ export async function updateSessionLiveConversationFile(
     turnAt?: string;
   }
 ): Promise<string | null> {
-  const updated = await summarizeConversationTurn({
-    previousFile: params.previousFile,
-    userMessage: params.userMessage,
-    assistantMessage: params.assistantMessage,
-    turnAt: params.turnAt,
-  });
-  if (!updated) return null;
+  const updated =
+    (await summarizeConversationTurn({
+      previousFile: params.previousFile,
+      userMessage: params.userMessage,
+      assistantMessage: params.assistantMessage,
+      turnAt: params.turnAt,
+    })) ??
+    fallbackLiveConversationFile({
+      previousFile: params.previousFile,
+      userMessage: params.userMessage,
+      assistantMessage: params.assistantMessage,
+      turnAt: params.turnAt,
+    });
+  if (!updated.trim()) return null;
 
   const now = new Date().toISOString();
   const { error } = await supabase

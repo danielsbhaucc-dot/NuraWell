@@ -6,10 +6,12 @@ function truncatePreview(text: string, max = 88): string {
 
 /** כותרת לרשימת שיחות — טהור, בטוח ל-client bundle */
 export function buildChatSessionListTitle(item: {
+  title?: string | null;
   summary: string | null;
   preview_text: string | null;
   created_at: string;
 }): string {
+  if (item.title?.trim()) return truncatePreview(item.title, 72);
   if (item.summary?.trim()) return truncatePreview(item.summary, 72);
   if (item.preview_text?.trim()) return truncatePreview(item.preview_text, 72);
   try {

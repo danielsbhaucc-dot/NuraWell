@@ -558,17 +558,24 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
     }
   }, []);
 
-  const refreshSessionList = async () => {
-    setSessionsLoading(true);
+  const refreshSessionList = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setSessionsLoading(true);
     try {
-      await autoCloseStaleChatSessionsApi().catch(() => ({ closedSessionIds: [] }));
       const sessions = await fetchChatSessionsList();
       setSessionList(sessions);
     } catch {
       /* keep the last known list visible */
     } finally {
-      setSessionsLoading(false);
+      if (!opts?.silent) setSessionsLoading(false);
     }
+    void autoCloseStaleChatSessionsApi()
+      .then((result) => {
+        if (result.closedSessionIds.length === 0) return;
+        return fetchChatSessionsList().then(setSessionList);
+      })
+      .catch(() => {
+        /* non-blocking */
+      });
   };
 
   const refreshChatSession = async (sessionId: string | null) => {
@@ -577,7 +584,6 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
       return;
     }
     try {
-      await autoCloseStaleChatSessionsApi().catch(() => ({ closedSessionIds: [] }));
       const row = await fetchChatSession(sessionId);
       setChatSession(row ?? { id: sessionId, status: 'open', summary: null });
     } catch {
@@ -597,15 +603,12 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   useEffect(() => {
     if (!open) return;
     void refreshSessionList();
-    if (panelView === 'thread' && !loadingThread) {
-      void refreshChatSession(sessionIdRef.current);
-    }
-  }, [open, panelView, loadingThread]);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const tick = () => {
-      void refreshSessionList();
+      void refreshSessionList({ silent: true });
       if (panelView === 'thread' && sessionIdRef.current) {
         void refreshChatSession(sessionIdRef.current);
       }
@@ -1293,13 +1296,19 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
                         }}
                       />
                     </div>
-                    <div className="flex flex-col items-start">
+                    <div className="flex min-w-0 flex-col items-start">
                       <p className="text-[16px] font-black leading-none text-white">אלמוג</p>
-                      <ThreadPresenceText
-                        showLoading={showTypingUi}
-                        online={online}
-                        isSessionClosed={isSessionClosed}
-                      />
+                      {chatSession?.title?.trim() ? (
+                        <p className="mt-0.5 max-w-[11rem] truncate text-[11px] font-medium text-emerald-100/80">
+                          {chatSession.title}
+                        </p>
+                      ) : (
+                        <ThreadPresenceText
+                          showLoading={showTypingUi}
+                          online={online}
+                          isSessionClosed={isSessionClosed}
+                        />
+                      )}
                     </div>
                   </div>
 

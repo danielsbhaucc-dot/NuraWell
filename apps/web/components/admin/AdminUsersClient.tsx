@@ -520,7 +520,10 @@ export function AdminUsersClient() {
                   </div>
 
                   {/* טאבים */}
-                  <div className="mt-4 flex gap-1.5 rounded-2xl border border-white/50 bg-white/35 p-1 backdrop-blur-md">
+                  <div
+                    className="mt-4 flex gap-1.5 overflow-x-auto overscroll-x-contain rounded-2xl border border-white/50 bg-white/35 p-1 backdrop-blur-md [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    style={{ WebkitOverflowScrolling: 'touch' }}
+                  >
                     {(
                       [
                         { key: 'details', label: 'פרטים', icon: User },
@@ -536,7 +539,7 @@ export function AdminUsersClient() {
                         type="button"
                         onClick={() => setTab(key)}
                         className={cn(
-                          'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-all sm:text-sm',
+                          'flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all sm:text-sm',
                           tab === key
                             ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-600/25'
                             : 'text-slate-600 hover:bg-white/55 hover:text-slate-900',
@@ -544,7 +547,7 @@ export function AdminUsersClient() {
                         aria-pressed={tab === key}
                       >
                         <Icon className="h-4 w-4 shrink-0" />
-                        <span className="truncate">{label}</span>
+                        <span className="whitespace-nowrap">{label}</span>
                       </button>
                     ))}
                   </div>

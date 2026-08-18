@@ -107,7 +107,8 @@ export async function autoCloseStaleSessionsForUser(
     .from('chat_sessions')
     .select('id, updated_at')
     .eq('user_id', userId)
-    .eq('status', 'open');
+    .eq('status', 'open')
+    .lt('updated_at', new Date(Date.now() - staleChatSessionMs()).toISOString());
 
   if (error) throw error;
   const sessions = (openSessions ?? []) as OpenSessionRow[];
