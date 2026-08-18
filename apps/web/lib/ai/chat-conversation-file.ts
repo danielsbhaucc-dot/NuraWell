@@ -33,3 +33,48 @@ export function buildConversationFileUserPrompt(params: {
 }): string {
   return `קובץ קודם:\n${params.previousFile?.trim() || '(אין)'}\n\nהודעת משתמש:\n${params.userMessage.slice(0, 2000)}\n\nתשובת אלמוג:\n${params.assistantMessage.slice(0, 2200)}\n\nעדכן את קובץ השיחה.`;
 }
+
+function clipLine(text: string, max: number): string {
+  const t = text.replace(/\s+/g, ' ').trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1)}…`;
+}
+
+function formatIsraelStamp(iso?: string): string {
+  const d = iso ? new Date(iso) : new Date();
+  try {
+    return new Intl.DateTimeFormat('he-IL', {
+      timeZone: 'Asia/Jerusalem',
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }).format(d);
+  } catch {
+    return d.toISOString();
+  }
+}
+
+/** קובץ חי דטרמיניסטי כשה-LLM נכשל — כדי שלאדמין תמיד יהיה תוכן. */
+export function fallbackLiveConversationFile(params: {
+  previousFile?: string | null;
+  userMessage: string;
+  assistantMessage: string;
+  turnAt?: string;
+}): string {
+  const when = formatIsraelStamp(params.turnAt);
+  const user = clipLine(params.userMessage, 400);
+  const assistant = clipLine(params.assistantMessage, 400);
+  const prev = params.previousFile?.trim();
+  if (prev) {
+    return `${prev}\n\n[${when}] משתמש: ${user}\nאלמוג: ${assistant}`.slice(0, 3200);
+  }
+  return [
+    `נפתח: ${when} — פתיחה`,
+    `הקשר: ${user || '—'}`,
+    'בקשות חוזרות: —',
+    'עובדות: —',
+    'התחייבויות: —',
+    'טון: —',
+    'פתוח: —',
+    `חשוב לסשן: ${assistant || '—'}`,
+  ].join('\n');
+}

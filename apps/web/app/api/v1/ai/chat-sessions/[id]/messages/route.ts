@@ -16,7 +16,7 @@ export async function GET(request: Request, context: RouteContext) {
 
   const { data: session, error: sessionErr } = await auth.supabase
     .from('chat_sessions')
-    .select('id, status, session_kind, summary')
+    .select('id, status, session_kind, title, summary')
     .eq('id', id)
     .eq('user_id', auth.user.id)
     .maybeSingle();
@@ -36,6 +36,7 @@ export async function GET(request: Request, context: RouteContext) {
         id: session.id,
         status: session.status,
         session_kind: 'profile_update',
+        title: session.title ?? null,
         summary: session.summary,
       },
       messages: [],
@@ -48,12 +49,14 @@ export async function GET(request: Request, context: RouteContext) {
     const turns = await fetchChatSessionTranscript(auth.supabase, {
       sessionId: id,
       userId: auth.user.id,
+      limit: 250,
     });
     return NextResponse.json({
       session: {
         id: session.id,
         status: session.status,
         session_kind: 'chat',
+        title: session.title ?? null,
         summary: session.summary,
       },
       messages: turns,

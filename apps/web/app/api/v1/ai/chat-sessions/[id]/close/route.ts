@@ -20,11 +20,12 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
     return NextResponse.json({
-      session: {
-        id: result.session.id,
-        status: result.session.status,
-        summary: result.session.summary,
-      },
+        session: {
+          id: result.session.id,
+          status: result.session.status,
+          title: result.session.title,
+          summary: result.session.summary,
+        },
       memories_extracted: result.memories_extracted,
       summary: result.summary,
     });

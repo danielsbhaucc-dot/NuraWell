@@ -46,6 +46,16 @@ const sampleSessions = [
 ];
 
 describe('buildChatSessionListTitle', () => {
+  it('prefers explicit session title', () => {
+    const title = buildChatSessionListTitle({
+      title: 'מים בבוקר',
+      summary: 'דיברנו על דפוסי אכילה בערב ועל צעד קטן למים',
+      preview_text: 'קשה לי היום',
+      created_at: '2026-06-10T10:00:00.000Z',
+    });
+    expect(title).toBe('מים בבוקר');
+  });
+
   it('prefers AI summary for closed sessions', () => {
     const title = buildChatSessionListTitle({
       summary: 'דיברנו על דפוסי אכילה בערב ועל צעד קטן למים',

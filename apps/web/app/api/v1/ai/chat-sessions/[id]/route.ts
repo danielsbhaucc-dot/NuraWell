@@ -13,7 +13,7 @@ export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const { data, error } = await auth.supabase
     .from('chat_sessions')
-    .select('id, status, session_kind, summary')
+    .select('id, status, session_kind, title, summary')
     .eq('id', id)
     .eq('user_id', auth.user.id)
     .maybeSingle();

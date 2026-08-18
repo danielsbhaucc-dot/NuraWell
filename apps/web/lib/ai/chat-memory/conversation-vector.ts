@@ -127,3 +127,15 @@ export async function ingestConversationToVector(params: {
 
   return count;
 }
+
+export async function deleteConversationVectors(params: {
+  userId: string;
+  sessionId: string;
+}): Promise<void> {
+  if (!isUpstashVectorConfigured()) return;
+  const { deleteVectorsByIds } = await import('../upstash-vector-rest');
+  await deleteVectorsByIds({
+    namespace: UPSTASH_NAMESPACE_CONVERSATION_MEMORY,
+    ids: [0, 1].map((i) => `conv:${params.userId}:${params.sessionId}:${i}`),
+  });
+}

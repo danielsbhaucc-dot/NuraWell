@@ -12,6 +12,7 @@ export async function createProfileUpdateSession(
       user_id: params.userId,
       status: 'closed',
       session_kind: 'profile_update',
+      title: params.summary.replace(/\s+/g, ' ').trim().slice(0, 48) || null,
       summary: params.summary,
       closed_at: now,
       updated_at: now,

@@ -28,6 +28,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     id: session.id,
     status: session.status,
+    title: session.title,
     summary: session.summary,
   });
 }

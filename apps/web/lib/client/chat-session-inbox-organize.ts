@@ -10,6 +10,7 @@ export type InboxSession = {
   id: string;
   status: 'open' | 'closed';
   session_kind?: 'chat' | 'profile_update';
+  title?: string | null;
   summary: string | null;
   created_at: string;
   updated_at: string;
