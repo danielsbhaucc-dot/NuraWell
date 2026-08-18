@@ -3,6 +3,12 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { recordUserConsent } from '@/lib/privacy/record-consent';
 import { CONSENT_TYPES } from '@/lib/privacy/constants';
+import {
+  notifyAdminTranscriptAccessApproved,
+  notifyAdminTranscriptAccessDenied,
+  notifyAllAdminsTranscriptConsentChange,
+  resolveUserDisplayName,
+} from '@/lib/admin/ops-admin-notify';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -80,6 +86,14 @@ export async function PATCH(request: Request) {
   const { createAdminClient } = await import('@/lib/supabase/admin');
   const admin = createAdminClient();
 
+  const { data: beforeProfile } = await admin
+    .from('profiles')
+    .select('admin_transcript_access_at')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const wasGranted = Boolean(beforeProfile?.admin_transcript_access_at);
+
   const result = await recordUserConsent(admin, {
     userId: user.id,
     consentType: CONSENT_TYPES.adminTranscriptAccess,
@@ -91,6 +105,15 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: result.error }, { status: 500 });
   }
 
+  if (wasGranted !== parsed.data.granted) {
+    const displayName = await resolveUserDisplayName(admin, user.id);
+    await notifyAllAdminsTranscriptConsentChange(admin, {
+      userId: user.id,
+      userDisplayName: displayName,
+      granted: parsed.data.granted,
+    });
+  }
+
   return NextResponse.json({ ok: true, granted: parsed.data.granted });
 }
 
@@ -98,6 +121,7 @@ const resolveSchema = z
   .object({
     requestId: z.string().uuid(),
     approve: z.boolean(),
+    denialReason: z.string().max(500).optional(),
   })
   .strict();
 
@@ -130,12 +154,34 @@ export async function POST(request: Request) {
     requestId: parsed.data.requestId,
     userId: user.id,
     approve: parsed.data.approve,
+    userResponseNote: parsed.data.denialReason ?? null,
   });
 
   if (!result.ok) {
     const status =
       result.error === 'not_found' ? 404 : result.error === 'expired' ? 410 : 400;
     return NextResponse.json({ error: result.error }, { status });
+  }
+
+  const displayName = await resolveUserDisplayName(admin, user.id);
+
+  if (parsed.data.approve) {
+    await notifyAdminTranscriptAccessApproved(admin, {
+      adminUserId: result.adminUserId,
+      userId: user.id,
+      userDisplayName: displayName,
+      sessionId: result.sessionId,
+      requestId: result.requestId,
+    });
+  } else {
+    await notifyAdminTranscriptAccessDenied(admin, {
+      adminUserId: result.adminUserId,
+      userId: user.id,
+      userDisplayName: displayName,
+      sessionId: result.sessionId,
+      requestId: result.requestId,
+      userNote: parsed.data.denialReason ?? null,
+    });
   }
 
   return NextResponse.json({ ok: true, approved: parsed.data.approve });

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Activity,
   AlertCircle,
@@ -175,6 +176,7 @@ function Avatar({ id, name, size = 'md' }: { id: string; name: string | null; si
 }
 
 export function AdminUsersClient() {
+  const searchParams = useSearchParams();
   const [q, setQ] = useState('');
   const [list, setList] = useState<UserRow[]>([]);
   const [listLoading, setListLoading] = useState(true);
@@ -275,13 +277,28 @@ export function AdminUsersClient() {
     }
   }, []);
 
-  const openUser = useCallback((userId: string) => {
+  const openUser = useCallback((userId: string, initialTab: TabKey = 'details') => {
     setSelectedId(userId);
-    setTab('details');
+    setTab(initialTab);
     setCost(null);
     setCostDays(30);
     void loadDetail(userId);
   }, [loadDetail]);
+
+  const urlUserId = searchParams.get('user') ?? searchParams.get('userId');
+  const urlTabRaw = searchParams.get('tab');
+  const urlSessionId = searchParams.get('session');
+
+  useEffect(() => {
+    if (!urlUserId) return;
+    const validTabs: TabKey[] = ['details', 'journey', 'almog', 'memory', 'conversations', 'costs'];
+    const nextTab = validTabs.includes(urlTabRaw as TabKey) ? (urlTabRaw as TabKey) : 'details';
+    if (selectedId !== urlUserId || tab !== nextTab) {
+      setSelectedId(urlUserId);
+      setTab(nextTab);
+      void loadDetail(urlUserId);
+    }
+  }, [urlUserId, urlTabRaw, selectedId, tab, loadDetail]);
 
   const closeUser = useCallback(() => {
     setSelectedId(null);
@@ -839,7 +856,9 @@ export function AdminUsersClient() {
 
                   {tab === 'memory' ? <AlmogMemoryPanel userId={selectedId} /> : null}
 
-                  {tab === 'conversations' ? <AlmogChatMemoryPanel userId={selectedId} /> : null}
+                  {tab === 'conversations' ? (
+                    <AlmogChatMemoryPanel userId={selectedId} initialSessionId={urlSessionId} />
+                  ) : null}
                 </div>
 
                 {/* פעולות */}
