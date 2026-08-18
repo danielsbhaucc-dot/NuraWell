@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { PrivacySettingsClient } from '@/components/settings/PrivacySettingsClient';
+import { Loader2 } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'פרטיות ונתונים',
@@ -17,5 +19,15 @@ export default async function PrivacySettingsPage() {
 
   if (!user) redirect('/login?next=/settings/privacy');
 
-  return <PrivacySettingsClient email={user.email ?? ''} />;
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+        </div>
+      }
+    >
+      <PrivacySettingsClient email={user.email ?? ''} />
+    </Suspense>
+  );
 }

@@ -13,6 +13,7 @@ export const CONSENT_TYPES = {
   healthData: 'health_data',
   parentalGuardian: 'parental_guardian',
   ageDeclaration: 'age_declaration',
+  adminTranscriptAccess: 'admin_transcript_access',
 } as const;
 
 export type ConsentType = (typeof CONSENT_TYPES)[keyof typeof CONSENT_TYPES];
