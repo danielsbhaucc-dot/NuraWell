@@ -36,6 +36,9 @@ export function formatCurrentUserStrategy(strategy: MentorshipStrategy): string 
   }
 
   lines.push(`<NextBestAction>${strategy.next_best_action}</NextBestAction>`);
+  lines.push(
+    '<Usage>עובדות לעבודה שקטה בקול הכותב. לא הרצאה, לא תוכנית חובה, לא רשימת טיפים.</Usage>'
+  );
   lines.push('</CURRENT_USER_STRATEGY>');
 
   return lines.join('\n');

@@ -5,7 +5,7 @@ import {
   mergeWriterDecisions,
   writerStancePrompt,
 } from '../lib/ai/chat-intent-router';
-import { ALMOG_VOICE_DNA, ALMOG_RATIONAL_AND_PSYCHOLOGY_RULES, buildAlmogWriterPersona } from '../lib/ai/prompts';
+import { ALMOG_VOICE_DNA, ALMOG_RATIONAL_AND_PSYCHOLOGY_RULES, CHAT_KNOWLEDGE_AND_REALTIME_RULES, buildAlmogWriterPersona } from '../lib/ai/prompts';
 import { sanitizeWriterOutput, looksLikeBracketOnlyReply } from '../lib/ai/sanitize-writer-output';
 import { formatConversationFilePromptBlock } from '../lib/ai/chat-conversation-file';
 import {
@@ -338,6 +338,13 @@ describe('Almog voice: enter world without people-pleasing', () => {
     expect(buildAlmogWriterPersona('terra')).toMatch(/כניסה ≠ ריצוי/);
     expect(buildAlmogWriterPersona('llama4')).toMatch(/תודה\/עשיתי/);
     expect(buildAlmogWriterPersona('grok')).not.toEqual(buildAlmogWriterPersona('terra'));
+  });
+
+  it('does not script chat journey replies as canned questions', () => {
+    expect(CHAT_KNOWLEDGE_AND_REALTIME_RULES).toMatch(/לא תסריט תשובה/);
+    expect(CHAT_KNOWLEDGE_AND_REALTIME_RULES).toMatch(/בקול הכותב/);
+    expect(CHAT_KNOWLEDGE_AND_REALTIME_RULES).not.toMatch(/איך הרגשת אחרי ההליכה/);
+    expect(CHAT_KNOWLEDGE_AND_REALTIME_RULES).not.toMatch(/תותח 🎯 גם בארוחת ערב/);
   });
 });
 

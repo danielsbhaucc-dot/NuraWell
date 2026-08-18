@@ -78,7 +78,7 @@ export function formatHabitIntentPromptBlock(intent: HabitIntentDetection): stri
 
     case 'partial':
       if (!title) return null;
-      return `[הרגל:${title}·partial${note}] המשתמש עשה *חלק*. הכר במאמץ ספציפית (מה הצליח), שאל מה עצר. *אסור* "אבל" אחרי המחמאה. בקול הכותב — לא מברק, לא הרצאה.`;
+      return `[הרגל:${title}·partial${note}] המשתמש עשה *חלק*. הכר במאמץ ספציפית (מה הצליח). *אסור* "אבל" אחרי המחמאה. בקול הכותב — לא מברק, לא הרצאה.`;
 
     case 'failed':
       if (!title) return null;
@@ -128,14 +128,14 @@ export function formatTaskIntentPromptBlock(
   let afterDifficulty = '';
   if (opts?.emotionalHint === 'resigned' || opts?.emotionalHint === 'self_blame') {
     afterDifficulty =
-      ' · לפני כן ויתור/ביקורת עצמית — חזק: "העיקר שהגעת", "אמרת שלא תצליח — ועדיין עשית".';
+      ' · לפני כן ויתור/ביקורת עצמית — הכר בזה בקול הכותב, בלי משפט-מדף.';
   } else if (opts?.emotionalHint === 'heavy' || opts?.emotionalHint === 'frustrated') {
     afterDifficulty = ' · אחרי קושי — חיזוק חם ספציפי, לא "מערכת".';
   }
 
   /**
-   * הקשר רב-סלוטי: רלוונטי רק ב-`done` ו-`partial`, כדי לשאול "וגם בערב?".
-   * ב-failed/skipped/opted_out לא רוצים להציע סלוטים נוספים — זה דוחק.
+   * הקשר רב-סלוטי: רלוונטי רק ב-`done` ו-`partial` — עובדות על מה סומן.
+   * ב-failed/skipped/opted_out לא מזריקים סלוטים נוספים — זה דוחק.
    */
   let slotHint = '';
   if ((intent.category === 'done' || intent.category === 'partial') && opts?.matchedTask) {
@@ -143,7 +143,7 @@ export function formatTaskIntentPromptBlock(
     if (m.schedule === 'per_meal' || m.schedule === 'multi_daily') {
       const slot = inferSlotFromUserMessage(opts.userMessage ?? '', m.schedule, m.times_per_day);
       const label = slotLabel(slot);
-      slotHint = ` · משימה רב-סלוטית (${m.schedule}, ${m.times_per_day}/יום) · יסומן: ${label} · אם נשארו סלוטים פתוחים — שאל בעדינות אם יבצע גם שם.`;
+      slotHint = ` · משימה רב-סלוטית (${m.schedule}, ${m.times_per_day}/יום) · יסומן: ${label} · אם נשארו סלוטים — זו עובדה, לא תסריט. הזכר בשם הסלוט רק אם זה טבעי לכותב.`;
     }
   }
 
@@ -152,7 +152,7 @@ export function formatTaskIntentPromptBlock(
       return `[משימה:${t}·done${note}]${slotHint} חיזוק אנושי ספציפי בקול הכותב. אסור: מערכת/עדכנתי/סימנתי.${afterDifficulty}`;
 
     case 'partial':
-      return `[משימה:${t}·partial${note}]${slotHint} עשה *חלק*. הכר ספציפית במה הצליח ושאל מה עצר. *אל תחגוג כאילו done*. בקול הכותב.${afterDifficulty}`;
+      return `[משימה:${t}·partial${note}]${slotHint} עשה *חלק*. הכר ספציפית במה הצליח. *אל תחגוג כאילו done*. בקול הכותב.${afterDifficulty}`;
 
     case 'failed':
       return `[משימה:${t}·failed${note}] ניסה ולא הצליח. אל תאשים. הכר בקושי בקול הכותב. טיפ אחד רק אם יושב. אסור "אתה תצליח" גנרי.${afterDifficulty}`;
@@ -234,7 +234,7 @@ export function formatJourneyChatGuidanceBlock(opts: {
   if (!opts.journeyData) return null;
   const lines = [
     '[נתוני מסע — מקור אמת לביצוע היום]',
-    'habits: ✓ = המשתמש כבר סימן ביצוע היום — אל תציע שוב, לא "נבדוק ביחד", לא תזכורת. אפשר חיזוק קצר במשפט.',
+    'habits: ✓ = המשתמש כבר סימן ביצוע היום — אל תציע שוב, לא "נבדוק ביחד", לא תזכורת. אפשר חיזוק בקול הכותב.',
     'habits: ○ = לא סומן — אפשר להזכיר בעדינות אם זה יושב בשיחה, לא חובה בכל תור.',
     'tasks: ✓ בוצע היום · ◐ חלקי (למשל 1/3) · ○ פתוח — דבר רק לפי הסטטוס.',
     'משימות יומיות/לפני-ארוחה מתאפסות מחר — ✓ היום לא אומר "סגור לנצח".',
@@ -250,7 +250,7 @@ export function formatJourneyChatGuidanceBlock(opts: {
 }
 
 export function formatWeightLoggedPromptBlock(kg: number): string {
-  return `[משקל] ${kg}קג — אשר במשפט אחד; אל תבקש טופס.`;
+  return `[משקל] ${kg}קג — אשר בקול הכותב; אל תבקש טופס.`;
 }
 
 /** JSON קומפקטי למסע — פחות טוקנים ממערכים נפרדים. */

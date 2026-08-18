@@ -94,7 +94,7 @@ export function formatRecoveryStateForChat(state: UserRecoveryState): string | n
   });
   return (
     `[תוכנית recovery פעילה]\n${lines.join('\n')}\n` +
-    `אל תדחוף את המשימה המקורית. שאל איך הלך עם הצעד המותאם. אם קשה — הצע pivot קטן יותר.`
+    `אל תדחוף את המשימה המקורית. הצעד המותאם הוא מה שעל השולחן. בקול הכותב — בלי תסריט "איך הלך".`
   );
 }
 
