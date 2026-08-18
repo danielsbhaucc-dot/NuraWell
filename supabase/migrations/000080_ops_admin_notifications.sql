@@ -3,6 +3,8 @@
 -- Migration: 000080_ops_admin_notifications.sql
 -- ============================================================
 
+SET lock_timeout = '120s';
+
 ALTER TABLE public.chat_transcript_access_requests
   ADD COLUMN IF NOT EXISTS user_response_note TEXT;
 
@@ -33,10 +35,12 @@ COMMENT ON TABLE public.ops_admin_notifications IS
 
 ALTER TABLE public.ops_admin_notifications ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "ops_admin_notif_select_own" ON public.ops_admin_notifications;
 CREATE POLICY "ops_admin_notif_select_own"
   ON public.ops_admin_notifications FOR SELECT TO authenticated
   USING (admin_user_id = auth.uid() AND public.nura_is_admin());
 
+DROP POLICY IF EXISTS "ops_admin_notif_update_own" ON public.ops_admin_notifications;
 CREATE POLICY "ops_admin_notif_update_own"
   ON public.ops_admin_notifications FOR UPDATE TO authenticated
   USING (admin_user_id = auth.uid() AND public.nura_is_admin())

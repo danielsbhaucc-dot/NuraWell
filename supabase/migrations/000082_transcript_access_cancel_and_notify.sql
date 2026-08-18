@@ -3,6 +3,8 @@
 -- Migration: 000082_transcript_access_cancel_and_notify.sql
 -- ============================================================
 
+SET lock_timeout = '120s';
+
 -- הרחבת סוגי התראות (תמליל/פרטיות)
 ALTER TABLE public.notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
 ALTER TABLE public.notifications ADD CONSTRAINT notifications_type_check CHECK (

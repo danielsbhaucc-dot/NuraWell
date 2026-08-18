@@ -31,6 +31,7 @@ import type {
 } from '@/lib/admin/transcript-access-timeline';
 import { TranscriptAccessStatusPanel } from '@/components/admin/TranscriptAccessStatusPanel';
 import { TranscriptAccessCountdown } from '@/components/admin/TranscriptAccessCountdown';
+import { ConfirmDialog, type ConfirmDialogTone } from '@/components/admin/ConfirmDialog';
 
 type TranscriptAccessStatus =
   | 'granted_global'
@@ -162,6 +163,14 @@ export function AlmogChatMemoryPanel({
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [successSessionId, setSuccessSessionId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [confirmPopup, setConfirmPopup] = useState<
+    { kind: 'cancel'; sessionId: string } | { kind: 'delete'; sessionId: string } | null
+  >(null);
+  const [feedbackPopup, setFeedbackPopup] = useState<{
+    title: string;
+    message: string;
+    tone: ConfirmDialogTone;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -280,7 +289,11 @@ export function AlmogChatMemoryPanel({
   const requestAccess = async (sessionId: string) => {
     const reason = requestReason.trim();
     if (reason.length < 8) {
-      setTranscriptError('יש להזין סיבה (לפחות 8 תווים) לבקשת הגישה');
+      setFeedbackPopup({
+        title: 'חסרה סיבת בקשה',
+        message: 'יש להזין סיבה (לפחות 8 תווים) לבקשת הגישה.',
+        tone: 'warning',
+      });
       return;
     }
     setActingId(sessionId);
@@ -303,27 +316,36 @@ export function AlmogChatMemoryPanel({
         access_insight?: TranscriptAccessInsight | null;
       };
       if (!res.ok) throw new Error(body.error ?? 'הבקשה נכשלה');
+      const okMessage =
+        body.message ?? 'הבקשה נשלחה בהצלחה! התראה נשלחה למשתמש — הסטטוס יתעדכן כאן אוטומטית.';
       setSuccessSessionId(sessionId);
-      setSuccessMessage(
-        body.message ?? 'הבקשה נשלחה בהצלחה! התראה נשלחה למשתמש — הסטטוס יתעדכן כאן אוטומטית.',
-      );
+      setSuccessMessage(okMessage);
       setActionMsg(null);
       setRequestReason('');
+      setFeedbackPopup({
+        title: 'הבקשה נשלחה בהצלחה',
+        message: okMessage,
+        tone: 'success',
+      });
       await load();
       setTimeout(() => {
         setSuccessSessionId((current) => (current === sessionId ? null : current));
       }, 12_000);
     } catch (e) {
-      setTranscriptError(e instanceof Error ? e.message : 'שגיאה');
+      const msg = e instanceof Error ? e.message : 'שגיאה';
+      setTranscriptError(msg);
+      setFeedbackPopup({ title: 'שליחת הבקשה נכשלה', message: msg, tone: 'danger' });
     } finally {
       setActingId(null);
     }
   };
 
-  const cancelAccessRequest = async (sessionId: string) => {
-    if (!window.confirm('לבטל את הבקשה? ההתראה תימחק אצל המשתמש (לוג פנימי יישמר).')) {
-      return;
-    }
+  const cancelAccessRequest = (sessionId: string) => {
+    setConfirmPopup({ kind: 'cancel', sessionId });
+  };
+
+  const executeCancelAccessRequest = async (sessionId: string) => {
+    setConfirmPopup(null);
     setActingId(sessionId);
     setTranscriptError(null);
     try {
@@ -338,11 +360,15 @@ export function AlmogChatMemoryPanel({
       });
       const body = (await res.json()) as { error?: string; message?: string };
       if (!res.ok) throw new Error(body.error ?? 'ביטול נכשל');
+      const okMessage = body.message ?? 'הבקשה בוטלה וההתראה נמחקה אצל המשתמש.';
       setSuccessSessionId(null);
-      setActionMsg(body.message ?? 'הבקשה בוטלה');
+      setActionMsg(okMessage);
+      setFeedbackPopup({ title: 'הבקשה בוטלה', message: okMessage, tone: 'info' });
       await load();
     } catch (e) {
-      setTranscriptError(e instanceof Error ? e.message : 'שגיאה');
+      const msg = e instanceof Error ? e.message : 'שגיאה';
+      setTranscriptError(msg);
+      setFeedbackPopup({ title: 'ביטול הבקשה נכשל', message: msg, tone: 'danger' });
     } finally {
       setActingId(null);
     }
@@ -434,9 +460,15 @@ export function AlmogChatMemoryPanel({
   };
 
   const runAction = async (sessionId: string, action: 'close' | 'reopen' | 'delete') => {
-    if (action === 'delete' && !window.confirm('למחוק את השיחה והתמליל? לא ניתן לשחזר.')) {
+    if (action === 'delete') {
+      setConfirmPopup({ kind: 'delete', sessionId });
       return;
     }
+    await executeSessionAction(sessionId, action);
+  };
+
+  const executeSessionAction = async (sessionId: string, action: 'close' | 'reopen' | 'delete') => {
+    setConfirmPopup(null);
     setActingId(sessionId);
     try {
       const res = await fetch(`/api/v1/admin/users/${userId}/chat-memory`, {
@@ -836,6 +868,43 @@ export function AlmogChatMemoryPanel({
           </div>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={confirmPopup?.kind === 'cancel'}
+        title="לבטל את הבקשה?"
+        message="ההתראה תימחק אצל המשתמש. לוג פנימי יישמר."
+        confirmLabel="בטל בקשה"
+        cancelLabel="השאר בקשה"
+        tone="warning"
+        danger
+        busy={actingId === confirmPopup?.sessionId}
+        onConfirm={() => {
+          if (confirmPopup?.kind === 'cancel') void executeCancelAccessRequest(confirmPopup.sessionId);
+        }}
+        onCancel={() => setConfirmPopup(null)}
+      />
+      <ConfirmDialog
+        open={confirmPopup?.kind === 'delete'}
+        title="למחוק את השיחה?"
+        message="השיחה והתמליל יימחקו לצמיתות. לא ניתן לשחזר."
+        confirmLabel="מחק"
+        cancelLabel="ביטול"
+        danger
+        busy={actingId === confirmPopup?.sessionId}
+        onConfirm={() => {
+          if (confirmPopup?.kind === 'delete') void executeSessionAction(confirmPopup.sessionId, 'delete');
+        }}
+        onCancel={() => setConfirmPopup(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(feedbackPopup)}
+        title={feedbackPopup?.title ?? ''}
+        message={feedbackPopup?.message}
+        tone={feedbackPopup?.tone ?? 'info'}
+        alert
+        onConfirm={() => setFeedbackPopup(null)}
+        onCancel={() => setFeedbackPopup(null)}
+      />
     </div>
   );
 }

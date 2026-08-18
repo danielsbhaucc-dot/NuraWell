@@ -29,6 +29,7 @@ import {
 } from '@/components/admin/OpsPanel';
 import { glassPanelStyle } from '@/components/media-manager/glass-styles';
 import { cn } from '@/lib/cn';
+import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 
 type StationRow = {
   id: string;
@@ -65,6 +66,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
   const [newTitle, setNewTitle] = useState('');
   const [newSort, setNewSort] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   // מצב סוכן — יצירת מסע שלם ב-AI
   const [showAiPopup, setShowAiPopup] = useState(false);
@@ -191,7 +193,12 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
   }
 
   async function deleteStation(id: string) {
-    if (!confirm('למחוק תחנה? צעדים משויכים יישארו ללא תחנה.')) return;
+    setPendingDeleteId(id);
+  }
+
+  async function executeDeleteStation() {
+    if (!pendingDeleteId) return;
+    const id = pendingDeleteId;
     setBusy(id);
     const res = await fetch('/api/v1/admin/journey-stations', {
       method: 'DELETE',
@@ -205,6 +212,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
       router.refresh();
     }
     setBusy(null);
+    setPendingDeleteId(null);
   }
 
   async function toggleFoundation(id: string, next: boolean) {
@@ -234,6 +242,20 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
 
   return (
     <div className="space-y-4">
+      <ConfirmDialog
+        open={Boolean(pendingDeleteId)}
+        title="למחוק תחנה?"
+        message="צעדים משויכים יישארו ללא תחנה."
+        confirmLabel="מחק"
+        cancelLabel="ביטול"
+        danger
+        busy={busy === pendingDeleteId}
+        onConfirm={() => void executeDeleteStation()}
+        onCancel={() => {
+          if (busy) return;
+          setPendingDeleteId(null);
+        }}
+      />
       <OpsPageHeader
         icon={Map}
         eyebrow="ניהול מסע"
