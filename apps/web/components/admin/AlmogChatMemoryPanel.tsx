@@ -19,6 +19,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
+  XCircle,
+  Ban,
 } from 'lucide-react';
 import { glassCardStyle, glassPanelStyle } from '@/components/media-manager/glass-styles';
 import { buildChatSessionListTitle } from '@/lib/ai/chat-sessions/session-list-title';
@@ -28,6 +30,7 @@ import type {
   TranscriptAccessTimelineStep,
 } from '@/lib/admin/transcript-access-timeline';
 import { TranscriptAccessStatusPanel } from '@/components/admin/TranscriptAccessStatusPanel';
+import { TranscriptAccessCountdown } from '@/components/admin/TranscriptAccessCountdown';
 
 type TranscriptAccessStatus =
   | 'granted_global'
@@ -48,6 +51,7 @@ type ChatSessionRow = {
   updated_at: string;
   closed_at: string | null;
   transcript_access?: TranscriptAccessStatus;
+  transcript_access_until?: string | null;
   access_timeline?: TranscriptAccessTimelineStep[];
   access_insight?: TranscriptAccessInsight | null;
 };
@@ -309,6 +313,34 @@ export function AlmogChatMemoryPanel({
       setTimeout(() => {
         setSuccessSessionId((current) => (current === sessionId ? null : current));
       }, 12_000);
+    } catch (e) {
+      setTranscriptError(e instanceof Error ? e.message : 'שגיאה');
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const cancelAccessRequest = async (sessionId: string) => {
+    if (!window.confirm('לבטל את הבקשה? ההתראה תימחק אצל המשתמש (לוג פנימי יישמר).')) {
+      return;
+    }
+    setActingId(sessionId);
+    setTranscriptError(null);
+    try {
+      const res = await fetch(`/api/v1/admin/users/${userId}/chat-memory`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'cancel_transcript_access',
+          sessionId,
+        }),
+      });
+      const body = (await res.json()) as { error?: string; message?: string };
+      if (!res.ok) throw new Error(body.error ?? 'ביטול נכשל');
+      setSuccessSessionId(null);
+      setActionMsg(body.message ?? 'הבקשה בוטלה');
+      await load();
     } catch (e) {
       setTranscriptError(e instanceof Error ? e.message : 'שגיאה');
     } finally {
@@ -635,6 +667,17 @@ export function AlmogChatMemoryPanel({
                             נשלחה התראה למשתמש. הסטטוס מתעדכן אוטומטית כל 20 שניות.
                           </p>
                         )}
+                        {access === 'pending' ? (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void cancelAccessRequest(s.id)}
+                            className="mb-2 inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-[#FFFBF5] px-3 py-1.5 text-xs font-bold text-rose-700 disabled:opacity-50"
+                          >
+                            <Ban className="h-3.5 w-3.5" />
+                            בטל בקשה (מחק התראה מהמשתמש)
+                          </button>
+                        ) : null}
                         {(successSessionId === s.id ||
                           (s.access_timeline?.length ?? 0) > 0 ||
                           access === 'pending' ||
@@ -653,6 +696,9 @@ export function AlmogChatMemoryPanel({
                       </div>
                     ) : (
                       <>
+                        {s.transcript_access === 'granted_session' && s.transcript_access_until ? (
+                          <TranscriptAccessCountdown accessUntil={s.transcript_access_until} />
+                        ) : null}
                         <div className="flex flex-wrap gap-2">
                           <button
                             type="button"

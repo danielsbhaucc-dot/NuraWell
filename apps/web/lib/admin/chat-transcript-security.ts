@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-export type TranscriptAccessStatus = 'granted_global' | 'granted_session' | 'pending' | 'denied' | 'none';
+export type TranscriptAccessStatus = 'granted_global' | 'granted_session' | 'pending' | 'denied' | 'none' | 'cancelled';
 
 export type TranscriptAccessInfo = {
   status: TranscriptAccessStatus;
@@ -106,6 +106,25 @@ export async function getSessionTranscriptAccess(
   if (denied) {
     return {
       status: 'denied',
+      globalConsent: false,
+      pendingRequestId: null,
+      sessionAccessUntil: null,
+    };
+  }
+
+  const { data: cancelled } = await admin
+    .from('chat_transcript_access_requests')
+    .select('id')
+    .eq('user_id', params.userId)
+    .eq('session_id', params.sessionId)
+    .eq('status', 'cancelled')
+    .order('resolved_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (cancelled) {
+    return {
+      status: 'none',
       globalConsent: false,
       pendingRequestId: null,
       sessionAccessUntil: null,
@@ -226,6 +245,7 @@ export type ChatTranscriptAuditAction =
   | 'copy_transcript'
   | 'send_to_user'
   | 'request_access'
+  | 'cancel_access_request'
   | 'share_summary';
 
 export async function logChatTranscriptAdminAudit(
@@ -263,6 +283,7 @@ export function validateTranscriptAccessReason(reason: string | null | undefined
 }
 
 const ACCESS_REQUEST_SELECTS = [
+  'id, session_id, status, reason, created_at, expires_at, resolved_at, access_until, notification_sent_at, user_viewed_at, user_response_note, notification_id, cancelled_at',
   'id, session_id, status, reason, created_at, expires_at, resolved_at, access_until, notification_sent_at, user_viewed_at, user_response_note',
   'id, session_id, status, reason, created_at, expires_at, resolved_at, access_until, user_response_note',
   'id, session_id, status, reason, created_at, expires_at, resolved_at, access_until',
@@ -271,7 +292,7 @@ const ACCESS_REQUEST_SELECTS = [
 export type AccessRequestRecord = {
   id: string;
   session_id: string | null;
-  status: 'pending' | 'approved' | 'denied' | 'expired';
+  status: 'pending' | 'approved' | 'denied' | 'expired' | 'cancelled';
   reason: string;
   created_at: string;
   expires_at: string;
@@ -280,6 +301,8 @@ export type AccessRequestRecord = {
   notification_sent_at: string | null;
   user_viewed_at: string | null;
   user_response_note: string | null;
+  notification_id?: string | null;
+  cancelled_at?: string | null;
 };
 
 function isMissingColumnError(error: { code?: string; message?: string } | null): boolean {
@@ -350,14 +373,72 @@ export async function markTranscriptRequestViewed(
 export async function markTranscriptRequestNotificationSent(
   admin: SupabaseClient,
   requestId: string,
+  notificationId?: string | null,
 ): Promise<void> {
   const now = new Date().toISOString();
+  const patch: Record<string, string> = { notification_sent_at: now };
+  if (notificationId) patch.notification_id = notificationId;
+
   const { error } = await admin
     .from('chat_transcript_access_requests')
-    .update({ notification_sent_at: now })
+    .update(patch)
     .eq('id', requestId);
 
   if (error && !isMissingColumnError(error)) {
     console.warn('[transcript-access] notification_sent_at update failed', error.message);
   }
+}
+
+export async function cancelTranscriptAccessRequest(
+  admin: SupabaseClient,
+  params: {
+    userId: string;
+    sessionId: string;
+    adminUserId: string;
+  },
+): Promise<
+  | { ok: true; requestId: string; notificationId: string | null }
+  | { ok: false; error: string }
+> {
+  const { data: pending, error: fetchErr } = await admin
+    .from('chat_transcript_access_requests')
+    .select('id, status, notification_id')
+    .eq('user_id', params.userId)
+    .eq('session_id', params.sessionId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (fetchErr) return { ok: false, error: fetchErr.message };
+  if (!pending) return { ok: false, error: 'no_pending_request' };
+
+  const now = new Date().toISOString();
+  const { error } = await admin
+    .from('chat_transcript_access_requests')
+    .update({
+      status: 'cancelled',
+      resolved_at: now,
+      cancelled_at: now,
+      cancelled_by_admin_id: params.adminUserId,
+    })
+    .eq('id', pending.id)
+    .eq('user_id', params.userId);
+
+  if (error) return { ok: false, error: error.message };
+
+  const notificationId = (pending.notification_id as string | null) ?? null;
+  if (notificationId) {
+    const { revokeTranscriptAccessNotification } = await import('./chat-transcript-notify');
+    await revokeTranscriptAccessNotification(admin, {
+      notificationId,
+      userId: params.userId,
+    });
+  }
+
+  return {
+    ok: true,
+    requestId: pending.id as string,
+    notificationId,
+  };
 }

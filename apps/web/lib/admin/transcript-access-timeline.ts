@@ -1,7 +1,7 @@
 export type TranscriptAccessRequestRow = {
   id: string;
   session_id: string | null;
-  status: 'pending' | 'approved' | 'denied' | 'expired';
+  status: 'pending' | 'approved' | 'denied' | 'expired' | 'cancelled';
   reason: string;
   created_at: string;
   expires_at: string;
@@ -10,6 +10,7 @@ export type TranscriptAccessRequestRow = {
   notification_sent_at: string | null;
   user_viewed_at: string | null;
   user_response_note: string | null;
+  cancelled_at?: string | null;
 };
 
 export type TimelineStepStatus = 'done' | 'active' | 'pending' | 'failed' | 'skipped';
@@ -97,6 +98,14 @@ export function buildTranscriptAccessTimeline(
       at: request.resolved_at,
       detail: request.user_response_note?.trim() || 'ללא הסבר',
     });
+  } else if (request.status === 'cancelled') {
+    steps.push({
+      key: 'cancelled',
+      label: 'הבקשה בוטלה על ידי צוות',
+      status: 'failed',
+      at: request.resolved_at ?? request.cancelled_at ?? null,
+      detail: 'ההתראה הוסרה מהמשתמש',
+    });
   } else if (isExpired) {
     steps.push({
       key: 'expired',
@@ -138,6 +147,13 @@ export function buildTranscriptAccessInsight(
       text: note
         ? `המשתמש דחה את הבקשה: «${note}». ניתן לשלוח בקשה חדשה עם נימוק מעודכן.`
         : 'המשתמש דחה את הבקשה. ניתן לשלוח בקשה חדשה עם נימוק מעודכן.',
+    };
+  }
+
+  if (request.status === 'cancelled') {
+    return {
+      tone: 'neutral',
+      text: 'הבקשה בוטלה. ההתראה הוסרה מהמשתמש — ניתן לשלוח בקשה חדשה.',
     };
   }
 

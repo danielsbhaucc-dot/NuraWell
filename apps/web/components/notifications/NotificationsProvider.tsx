@@ -39,6 +39,7 @@ export type NotificationItem = {
   archived_at: string | null;
   /** מקור — להבחנה בעיצוב (almog_habit_checkpoint וכו') */
   source: string | null;
+  channel: NotificationChannel;
   mentorId: MentorId;
   /** האם ניתן להגיב דרך הצ'אט (הודעות מאלמוג עם שאלה) */
   expectsReply?: boolean;
@@ -47,9 +48,28 @@ export type NotificationItem = {
 };
 
 type ViewMode = 'inbox' | 'archive';
-type FilterKind = 'all' | 'unread' | 'almog';
+type FilterKind = 'all' | 'unread' | 'almog' | 'platform';
+
+export type NotificationChannel = 'platform' | 'mentor';
+
+function extractChannel(meta: unknown): NotificationChannel {
+  if (meta && typeof meta === 'object') {
+    const ch = (meta as { channel?: unknown }).channel;
+    if (ch === 'platform') return 'platform';
+    const src = (meta as { source?: unknown }).source;
+    if (typeof src === 'string') {
+      if (src.startsWith('admin_') || src === 'privacy' || src.includes('transcript')) {
+        return 'platform';
+      }
+    }
+    const cat = (meta as { category?: unknown }).category;
+    if (cat === 'privacy') return 'platform';
+  }
+  return 'mentor';
+}
 
 function extractMentor(meta: unknown, title: string): MentorId {
+  if (extractChannel(meta) === 'platform') return 'almog';
   if (meta && typeof meta === 'object') {
     const m = (meta as { mentor?: unknown }).mentor;
     if (m === 'dolev' || m === 'almog') return m;
@@ -76,6 +96,7 @@ function mapRealtimeRow(row: Record<string, unknown>): NotificationItem | null {
     type: typeof row.type === 'string' ? row.type : 'system',
     archived_at: archived,
     source: extractSource(row.metadata),
+    channel: extractChannel(row.metadata),
     mentorId: extractMentor(row.metadata, typeof row.title === 'string' ? row.title : ''),
     expectsReply: extractExpectsReply(row.metadata),
     survey: extractSurvey(row.metadata),
@@ -97,6 +118,7 @@ function mapApiRow(row: Record<string, unknown>): NotificationItem {
     archived_at:
       row.archived_at != null && typeof row.archived_at === 'string' ? row.archived_at : null,
     source: extractSource(row.metadata),
+    channel: extractChannel(row.metadata),
     mentorId: extractMentor(row.metadata, title),
     expectsReply: extractExpectsReply(row.metadata),
     survey: extractSurvey(row.metadata),
@@ -115,6 +137,7 @@ function buildListUrl(opts: {
   const fk = opts.viewMode === 'archive' ? 'all' : opts.filterKind;
   if (fk === 'unread') params.set('unread_only', '1');
   if (fk === 'almog') params.set('types', 'ai_message');
+  if (fk === 'platform') params.set('types', 'system,transcript_access_request,chat_transcript_delivered');
   if (opts.cursor) params.set('cursor', opts.cursor);
   return `/api/v1/notifications?${params.toString()}`;
 }
@@ -568,6 +591,21 @@ export function NotificationsProvider({
 
   const showMarkAll = viewMode === 'inbox' && items.some((n) => !n.is_read);
 
+  const visibleItems = useMemo(() => {
+    if (filterKind === 'platform') {
+      return items.filter(
+        (n) =>
+          n.channel === 'platform' ||
+          n.type === 'transcript_access_request' ||
+          n.type === 'chat_transcript_delivered',
+      );
+    }
+    if (filterKind === 'almog') {
+      return items.filter((n) => n.channel === 'mentor' && n.type === 'ai_message');
+    }
+    return items;
+  }, [items, filterKind]);
+
   return (
     <NotificationsDrawerContext.Provider value={ctxValue}>
       {children}
@@ -698,6 +736,7 @@ export function NotificationsProvider({
                         ['all', 'הכל'],
                         ['unread', 'לא נקראו'],
                         ['almog', 'מאלמוג'],
+                        ['platform', 'מערכת'],
                       ] as const
                     ).map(([k, label]) => (
                       <button
@@ -725,7 +764,7 @@ export function NotificationsProvider({
                   <Loader2 className="h-8 w-8 animate-spin opacity-85" />
                 </div>
               )}
-              {!busy && items.length === 0 && (
+              {!busy && visibleItems.length === 0 && (
                 <div className="py-14 text-center px-4 rounded-[20px] mx-0.5 border border-emerald-200/50 bg-gradient-to-br from-emerald-100/50 to-teal-50/60 backdrop-blur-sm">
                   <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500/25 to-emerald-500/20 ring-1 ring-emerald-600/15">
                     <span className="text-2xl" aria-hidden>
@@ -745,7 +784,7 @@ export function NotificationsProvider({
                   </p>
                 </div>
               )}
-              {items.map((n) => (
+              {visibleItems.map((n) => (
                 <NotificationCard
                   key={n.id}
                   notification={n}
