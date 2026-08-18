@@ -26,6 +26,13 @@ import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { useMentorAvatarUrl } from '../../lib/client/useMentorAvatarUrl';
 import type { MentorId } from '../../lib/mentors/registry';
 import { cn } from '../../lib/cn';
+import { ToastContainer, useToast } from '../shared/Toast';
+import {
+  TranscriptAccessRequestDialog,
+  type TranscriptAccessRequestPayload,
+} from '../settings/TranscriptAccessRequestDialog';
+import type { ProfileGender } from '../../lib/privacy/gender-hebrew';
+import type { TranscriptAccessGrant } from '@/lib/privacy/transcript-access-grants';
 
 export type NotificationItem = {
   id: string;
@@ -162,6 +169,12 @@ export function useNotificationsDrawer(): NotificationsDrawerContextValue {
 const HEADER_GRADIENT =
   'linear-gradient(118deg, #0f766e 0%, #047857 38%, #059669 72%, #10b981 100%)';
 
+function extractTranscriptRequestId(actionUrl: string | null): string | null {
+  if (!actionUrl) return null;
+  const match = actionUrl.match(/transcript_request=([0-9a-f-]{36})/i);
+  return match?.[1] ?? null;
+}
+
 export function NotificationsProvider({
   userId,
   user: _user,
@@ -189,6 +202,72 @@ export function NotificationsProvider({
    * ה-stack מציג עד 3 — הישנים יוצאים אוטומטית או כשהמשתמש סוגר.
    */
   const [liveToasts, setLiveToasts] = useState<NotificationItem[]>([]);
+  const toast = useToast();
+  const [transcriptPopupOpen, setTranscriptPopupOpen] = useState(false);
+  const [transcriptPopupRequest, setTranscriptPopupRequest] =
+    useState<TranscriptAccessRequestPayload | null>(null);
+  const [transcriptGender, setTranscriptGender] = useState<ProfileGender>(null);
+  const [transcriptResolving, setTranscriptResolving] = useState(false);
+
+  const openTranscriptRequestPopup = useCallback(async (requestId?: string | null) => {
+    try {
+      const res = await fetch('/api/v1/account/transcript-access-consent', { cache: 'no-store' });
+      const data = (await res.json()) as {
+        gender?: ProfileGender;
+        pending_requests?: TranscriptAccessRequestPayload[];
+      };
+      if (!res.ok) return;
+      setTranscriptGender(data.gender ?? null);
+      const pending = data.pending_requests ?? [];
+      const req = requestId ? pending.find((p) => p.id === requestId) : pending[0];
+      if (req) {
+        setTranscriptPopupRequest(req);
+        setTranscriptPopupOpen(true);
+      }
+    } catch {
+      toast.error('לא ניתן לטעון את הבקשה', 'נסה/י מהגדרות פרטיות.');
+    }
+  }, [toast]);
+
+  const resolveTranscriptRequest = useCallback(
+    async (requestId: string, approve: boolean, denialReason?: string) => {
+      setTranscriptResolving(true);
+      try {
+        const res = await fetch('/api/v1/account/transcript-access-consent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            requestId,
+            approve,
+            ...(approve ? {} : { denialReason: denialReason?.trim() || undefined }),
+          }),
+        });
+        const data = (await res.json()) as {
+          error?: string;
+          access_until?: string | null;
+          active_grants?: TranscriptAccessGrant[];
+        };
+        if (!res.ok) throw new Error(data.error ?? 'פעולה נכשלה');
+        setTranscriptPopupOpen(false);
+        setTranscriptPopupRequest(null);
+        if (approve) {
+          toast.success(
+            'הגישה אושרה',
+            data.access_until
+              ? `צוות NuraWell יכול לצפות עד ${new Date(data.access_until).toLocaleString('he-IL')}.`
+              : 'הגישה אושרה בהצלחה.',
+          );
+        } else {
+          toast.info('הבקשה נדחתה', 'צוות NuraWell לא יוכל לצפות בתמליל זה.');
+        }
+      } catch (e) {
+        toast.error('טיפול בבקשה נכשל', e instanceof Error ? e.message : 'שגיאה');
+      } finally {
+        setTranscriptResolving(false);
+      }
+    },
+    [toast],
+  );
 
   const filterKey = `${viewMode}-${filterKind}`;
 
@@ -325,9 +404,12 @@ export function NotificationsProvider({
 
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
         enqueueToast(row);
+        if (row.type === 'transcript_access_request') {
+          void openTranscriptRequestPopup(extractTranscriptRequestId(row.action_url));
+        }
       }
     },
-    [enqueueToast]
+    [enqueueToast, openTranscriptRequestPopup]
   );
 
   useEffect(() => {
@@ -573,14 +655,18 @@ export function NotificationsProvider({
    */
   const handleToastClick = useCallback(
     (id: string) => {
-      const toast = liveToasts.find((t) => t.id === id);
-      if (toast && !toast.is_read) {
+      const toastItem = liveToasts.find((t) => t.id === id);
+      if (toastItem && !toastItem.is_read) {
         void markOne(id, true);
       }
       setLiveToasts((prev) => prev.filter((t) => t.id !== id));
+      if (toastItem?.type === 'transcript_access_request') {
+        void openTranscriptRequestPopup(extractTranscriptRequestId(toastItem.action_url));
+        return;
+      }
       setOpen(true);
     },
-    [liveToasts, markOne]
+    [liveToasts, markOne, openTranscriptRequestPopup]
   );
 
   const nowMs = useMemo(() => {
@@ -609,6 +695,22 @@ export function NotificationsProvider({
   return (
     <NotificationsDrawerContext.Provider value={ctxValue}>
       {children}
+
+      <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
+
+      <TranscriptAccessRequestDialog
+        open={transcriptPopupOpen && Boolean(transcriptPopupRequest)}
+        request={transcriptPopupRequest}
+        gender={transcriptGender}
+        busy={transcriptResolving}
+        onApprove={(id) => void resolveTranscriptRequest(id, true)}
+        onDeny={(id, reason) => void resolveTranscriptRequest(id, false, reason)}
+        onClose={() => {
+          if (transcriptResolving) return;
+          setTranscriptPopupOpen(false);
+          setTranscriptPopupRequest(null);
+        }}
+      />
 
       {/* 🔔 Live toast stack — מופיע על כל המסך, גלובלי. */}
       <LiveToastStack

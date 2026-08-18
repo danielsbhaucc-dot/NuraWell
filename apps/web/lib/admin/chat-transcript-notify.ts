@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { deliverWebPushAfterAlmogNotification } from '@/lib/push/deliver-after-notification';
+import { genderPress } from '@/lib/privacy/gender-hebrew';
+import type { ProfileGender } from '@/lib/privacy/gender-hebrew';
 
 const PLATFORM_NOTIFICATION_META = {
   channel: 'platform',
@@ -18,13 +20,23 @@ export async function notifyTranscriptAccessRequest(
 ): Promise<{ ok: true; notificationId: string } | { ok: false; error: string }> {
   const actionUrl = `/settings/privacy?transcript_request=${params.requestId}`;
 
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('gender')
+    .eq('id', params.userId)
+    .maybeSingle();
+
+  const gender = (profile?.gender as ProfileGender) ?? null;
+  const press = genderPress(gender);
+  const body = `צוות NuraWell מבקש אישורך לצפות בתמליל שיחה. ${press} לאישור או דחייה.`;
+
   const { data, error } = await admin
     .from('notifications')
     .insert({
       user_id: params.userId,
       type: 'transcript_access_request',
       title: 'בקשה לצפייה בתמליל שיחה',
-      body: 'צוות NuraWell מבקש אישורך לצפות בתמליל שיחה. לחץ/י לאישור או דחייה.',
+      body,
       icon_emoji: '🔒',
       action_url: actionUrl,
       is_read: false,
@@ -49,7 +61,7 @@ export async function notifyTranscriptAccessRequest(
   void deliverWebPushAfterAlmogNotification(
     params.userId,
     'בקשה לצפייה בתמליל שיחה',
-    'נדרש אישורך — הגדרות פרטיות',
+    body.slice(0, 120),
     { url: actionUrl, tag: `transcript-req-${params.requestId.slice(0, 8)}` },
   ).catch((e) => {
     console.warn('[transcript-access-notify] push failed', e);

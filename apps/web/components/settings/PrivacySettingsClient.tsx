@@ -5,6 +5,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Download, Trash2, Shield, Loader2, Mail, Lock, CheckCircle2, XCircle } from 'lucide-react';
 import { AnimatedDialog } from '@/components/shared/AnimatedDialog';
+import { ToastContainer, useToast } from '@/components/shared/Toast';
+import { TranscriptAccessRequestDialog } from '@/components/settings/TranscriptAccessRequestDialog';
+import {
+  TranscriptAccessTransparencyPanel,
+} from '@/components/settings/TranscriptAccessTransparencyPanel';
+import type { TranscriptAccessGrant } from '@/lib/privacy/transcript-access-grants';
+import type { ProfileGender } from '@/lib/privacy/gender-hebrew';
 import { signOutClient } from '@/lib/auth/sign-out-client';
 import { LegalLinksRow } from '@/components/legal/LegalLinksRow';
 
@@ -37,6 +44,11 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
   const [denyDetailId, setDenyDetailId] = useState<string | null>(null);
   const [denyReason, setDenyReason] = useState('');
   const [revokeConfirmOpen, setRevokeConfirmOpen] = useState(false);
+  const [gender, setGender] = useState<ProfileGender>(null);
+  const [activeGrants, setActiveGrants] = useState<TranscriptAccessGrant[]>([]);
+  const [requestDialogOpen, setRequestDialogOpen] = useState(false);
+  const [requestDialogTarget, setRequestDialogTarget] = useState<PendingRequest | null>(null);
+  const toast = useToast();
 
   const loadTranscriptConsent = useCallback(async () => {
     setTranscriptLoading(true);
@@ -48,11 +60,15 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
       const res = await fetch(url, { cache: 'no-store' });
       const data = (await res.json()) as {
         granted?: boolean;
+        gender?: ProfileGender;
         pending_requests?: PendingRequest[];
+        active_grants?: TranscriptAccessGrant[];
       };
       if (res.ok) {
         setTranscriptConsent(data.granted === true);
+        setGender(data.gender ?? null);
         setPendingRequests(data.pending_requests ?? []);
+        setActiveGrants(data.active_grants ?? []);
       }
     } finally {
       setTranscriptLoading(false);
@@ -61,6 +77,20 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
 
   useEffect(() => {
     void loadTranscriptConsent();
+  }, [loadTranscriptConsent]);
+
+  useEffect(() => {
+    const highlight = searchParams.get('transcript_request');
+    if (!highlight || transcriptLoading) return;
+    const req = pendingRequests.find((r) => r.id === highlight);
+    if (req) {
+      setRequestDialogTarget(req);
+      setRequestDialogOpen(true);
+    }
+  }, [searchParams, pendingRequests, transcriptLoading]);
+
+  const reloadTranscriptState = useCallback(async () => {
+    await loadTranscriptConsent();
   }, [loadTranscriptConsent]);
 
   const handleTranscriptConsentToggle = async (granted: boolean) => {
@@ -82,8 +112,15 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
       if (!res.ok) throw new Error('עדכון נכשל');
       setTranscriptConsent(granted);
       setRevokeConfirmOpen(false);
+      toast.success(
+        granted ? 'הסכמה גלובלית אושרה' : 'הסכמה גלובלית בוטלה',
+        granted
+          ? 'צוות NuraWell יכול לצפות בתמלילים — ראה/י טבלת השקיפות.'
+          : 'גישת הצוות הוגבלה מחדש.',
+      );
+      await reloadTranscriptState();
     } catch {
-      setExportError('עדכון הסכמת תמליל נכשל');
+      toast.error('עדכון נכשל', 'עדכון הסכמת תמליל נכשל');
     } finally {
       setTranscriptSaving(false);
     }
@@ -105,16 +142,36 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
           ...(approve ? {} : { denialReason: denialReason?.trim() || undefined }),
         }),
       });
-      if (!res.ok) throw new Error('פעולה נכשלה');
+      const data = (await res.json()) as {
+        error?: string;
+        approved?: boolean;
+        access_until?: string | null;
+        active_grants?: TranscriptAccessGrant[];
+      };
+      if (!res.ok) throw new Error(data.error ?? 'פעולה נכשלה');
       setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
       setDenyDetailId(null);
       setDenyReason('');
+      setRequestDialogOpen(false);
+      setRequestDialogTarget(null);
+      if (data.active_grants) setActiveGrants(data.active_grants);
+      if (approve) {
+        toast.success(
+          'הגישה אושרה',
+          data.access_until
+            ? `צוות NuraWell יכול לצפות עד ${new Date(data.access_until).toLocaleString('he-IL')}.`
+            : 'הגישה אושרה בהצלחה.',
+        );
+      } else {
+        toast.info('הבקשה נדחתה', 'צוות NuraWell לא יוכל לצפות בתמליל זה.');
+      }
+      await reloadTranscriptState();
       const highlight = searchParams.get('transcript_request');
       if (highlight === requestId) {
         router.replace('/settings/privacy');
       }
     } catch {
-      setExportError('טיפול בבקשה נכשל');
+      toast.error('טיפול בבקשה נכשל', 'נסה/י שוב או פנה/י לתמיכה.');
     } finally {
       setResolvingId(null);
     }
@@ -171,6 +228,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
 
   return (
     <div className="container-mobile py-6 pt-6 md:pt-16 pb-10 space-y-5" dir="rtl">
+      <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
       <div className="crystal-surface rounded-2xl p-5">
         <div className="flex items-center gap-3 mb-2">
           <div className="crystal-pill w-10 h-10 rounded-xl flex items-center justify-center">
@@ -252,6 +310,10 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
               </button>
             ) : null}
 
+            {activeGrants.length > 0 ? (
+              <TranscriptAccessTransparencyPanel grants={activeGrants} className="mt-2" />
+            ) : null}
+
             {pendingRequests.length > 0 ? (
               <div className="space-y-2">
                 <p className="text-sm font-bold text-amber-900">בקשות ממתינות לאישור</p>
@@ -304,6 +366,17 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                         </div>
                       ) : (
                         <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            disabled={resolvingId === req.id}
+                            onClick={() => {
+                              setRequestDialogTarget(req);
+                              setRequestDialogOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+                          >
+                            פרטים ואישור
+                          </button>
                           <button
                             type="button"
                             disabled={resolvingId === req.id}
@@ -372,6 +445,20 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
       </section>
 
       <LegalLinksRow tone="light" />
+
+      <TranscriptAccessRequestDialog
+        open={requestDialogOpen && Boolean(requestDialogTarget)}
+        request={requestDialogTarget}
+        gender={gender}
+        busy={Boolean(resolvingId)}
+        onApprove={(id) => void resolveRequest(id, true)}
+        onDeny={(id, reason) => void resolveRequest(id, false, reason)}
+        onClose={() => {
+          if (resolvingId) return;
+          setRequestDialogOpen(false);
+          setRequestDialogTarget(null);
+        }}
+      />
 
       <AnimatedDialog
         open={revokeConfirmOpen}
