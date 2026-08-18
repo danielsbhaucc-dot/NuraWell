@@ -166,6 +166,10 @@ import {
   type TodayAlmogTouch,
 } from '../../../../../lib/ai/almog-notify-day-context';
 import {
+  fetchRecentAlmogNotifications,
+  formatAlmogNotificationsPromptBlock,
+} from '../../../../../lib/ai/almog-notification-memory';
+import {
   buildOnboardingChatContextBlock,
   type OnboardingProfileForChat,
 } from '../../../../../lib/ai/onboarding-chat-context';
@@ -2109,7 +2113,7 @@ async function fetchNotificationContextBlock(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await supabase
       .from('notifications')
-      .select('title, body, metadata, created_at')
+      .select('title, body, metadata, created_at, send_at, is_sent')
       .eq('id', notificationId)
       .eq('user_id', userId)
       .maybeSingle();
@@ -2119,18 +2123,25 @@ async function fetchNotificationContextBlock(
       body?: string;
       metadata?: unknown;
       created_at?: string;
+      send_at?: string | null;
+      is_sent?: boolean | null;
     };
     const title = typeof row.title === 'string' ? row.title : '';
     const body = typeof row.body === 'string' ? row.body : '';
     if (!body.trim()) return null;
+    const sentAt =
+      row.is_sent && row.send_at
+        ? row.send_at
+        : row.send_at && new Date(row.send_at).getTime() <= Date.now()
+          ? row.send_at
+          : typeof row.created_at === 'string'
+            ? row.created_at
+            : new Date().toISOString();
     return formatNotificationReplyContextBlock({
       title,
       body,
       source: extractSource(row.metadata),
-      createdAt:
-        typeof row.created_at === 'string'
-          ? row.created_at
-          : new Date().toISOString(),
+      createdAt: sentAt,
     });
   } catch {
     return null;
@@ -2459,6 +2470,10 @@ export async function POST(request: Request) {
     ? fetchNotificationContextBlock(supabase, user.id, notificationId)
     : Promise.resolve(null);
 
+  const almogNotificationsPromise = fetchRecentAlmogNotifications(supabase, user.id).catch(
+    () => []
+  );
+
   let skipUserPersist = false;
   if (parsed.data.resume_assistant) {
     try {
@@ -2542,6 +2557,7 @@ export async function POST(request: Request) {
     dailyContextBundle,
     _userTurnInserted,
     notificationContextBlock,
+    almogNotificationRecords,
     fullProgressReport,
     memoryDossier,
     mentorStrategyBlock,
@@ -2557,6 +2573,7 @@ export async function POST(request: Request) {
     dailyContextPromise,
     insertPromise,
     notificationContextPromise,
+    almogNotificationsPromise,
     fullProgressReportPromise,
     memoryDossierPromise,
     mentorStrategyPromise,
@@ -2567,6 +2584,9 @@ export async function POST(request: Request) {
   ]);
 
   const [todayChatTurns, todayAlmogTouches] = dailyContextBundle;
+  const almogNotificationsBlock = formatAlmogNotificationsPromptBlock(almogNotificationRecords, {
+    highlightNotificationId: notificationId ?? null,
+  });
 
   /**
    * לברכה סתמית ("היי") לא מזריקים מסגור חזרה/ריסט, אז אין טעם לשלם על שאילתות
@@ -2925,6 +2945,7 @@ export async function POST(request: Request) {
      * של "מה הגעת מהתראה X". בלי זה — הוא ישאל "היי מה קורה?" אדיש להתראה.
      */
     if (notificationContextBlock) contextSections.push(notificationContextBlock);
+    if (almogNotificationsBlock) contextSections.push(almogNotificationsBlock);
     if (challengeContextBlock) contextSections.push(challengeContextBlock);
     if (guideContextBlock) contextSections.push(guideContextBlock);
 

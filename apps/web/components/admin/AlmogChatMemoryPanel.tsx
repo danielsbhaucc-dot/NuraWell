@@ -29,8 +29,10 @@ type ChatMemoryResp = {
 };
 
 const TYPE_LABELS: Record<string, string> = {
+  daily: 'יומי',
   weekly: 'שבועי',
   monthly: 'חודשי',
+  bi_monthly: 'דו-חודשי',
   quarterly: 'רבעוני',
   semi_annual: 'חצי שנתי',
   annual: 'שנתי',

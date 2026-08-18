@@ -11,19 +11,30 @@
 const SOURCE_LABELS: Record<string, string> = {
   habit_checkpoint: 'תזכורת/בדיקה על הרגל מהמסע',
   habit_checkpoint_batch: 'תזכורת/בדיקה על הרגל מהמסע',
+  almog_habit_checkpoint: 'תזכורת/בדיקה על הרגל (אלמוג)',
+  almog_personalized_check_in: 'צ׳ק-אין אישי',
+  onboarding_check_in: 'צ׳ק-אין onboarding',
   almog_kickoff: 'פנייה ראשונה אחרי הצטרפות למסע',
+  almog_intro_welcome: 'ברוכים הבאים מאלמוג',
   journey_motivation: 'דחיפה מוטיבציונית למסע',
   journey_followup: 'פולואו-אפ אחרי צעד במסע',
+  almog_followup_workflow: 'פולואו-אפ משימה',
+  almog_journey_companion: 'ליווי מסע',
+  almog_life_context: 'מגע הקשר חיים',
+  almog_scheduled_reminder: 'תזכורת שהבטיח אלמוג',
+  almog_passive_presence: 'נוכחות שקטה / חיבור מחדש',
+  almog_sos: 'SOS / Guardian',
   lesson_feedback: 'משוב אחרי שיעור/חידון',
   reengagement: 'חיבור מחדש אחרי היעדרות',
   crisis_reconnect: 'חיבור מחדש בעת קושי/רכבת-הרים',
   micro_win: 'חגיגה של ניצחון קטן',
   weight_log: 'תזכורת לעדכן משקל',
   return_visit: 'ברוכים השבים אחרי היעדרות',
+  cron_ops: 'הודעה יזומה (cron)',
   almog_message: 'הודעה אישית מאלמוג',
 };
 
-function describeSource(source: string | null): string | null {
+export function describeNotificationSource(source: string | null): string | null {
   if (!source) return null;
   const label = SOURCE_LABELS[source];
   if (label) return label;
@@ -38,7 +49,18 @@ export function formatNotificationReplyContextBlock(params: {
 }): string {
   const titleSnippet = (params.title ?? '').trim().slice(0, 120);
   const bodySnippet = params.body.trim().slice(0, 480);
-  const sourceLabel = describeSource(params.source);
+  const sourceLabel = describeNotificationSource(params.source);
+  const whenLabel = (() => {
+    try {
+      return new Intl.DateTimeFormat('he-IL', {
+        timeZone: 'Asia/Jerusalem',
+        dateStyle: 'short',
+        timeStyle: 'short',
+      }).format(new Date(params.createdAt));
+    } catch {
+      return params.createdAt;
+    }
+  })();
 
   const titleLine = titleSnippet ? `כותרת: "${titleSnippet}"\n` : '';
   const sourceLine = sourceLabel ? `סוג ההתראה: ${sourceLabel}\n` : '';
@@ -46,7 +68,7 @@ export function formatNotificationReplyContextBlock(params: {
   return `[מענה להתראה — זה ההקשר להודעה האחרונה של המשתמש. עדיפות עליונה.]
 שלחת למשתמש התראה (ביוזמתך, לא הוא פתח שיחה). הוא קרא אותה ולחץ "השב לאלמוג" — ולכן ההודעה האחרונה שלו ב-chat היא תגובה ישירה להתראה הזו.
 
-ההתראה ששלחת:
+ההתראה ששלחת (${whenLabel}):
 ${titleLine}${sourceLine}גוף: "${bodySnippet}"
 
 איך לענות:

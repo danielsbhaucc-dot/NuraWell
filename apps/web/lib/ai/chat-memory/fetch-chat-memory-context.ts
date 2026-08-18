@@ -17,11 +17,13 @@ export type ChatPeriodicSummaryRow = {
 };
 
 const PERIODIC_TYPE_LABELS: Record<string, string> = {
-  weekly: 'שבוע',
-  monthly: 'חודש',
-  quarterly: 'רבעון',
-  semi_annual: 'חצי שנה',
-  annual: 'שנה',
+  daily: 'יומי',
+  weekly: 'שבועי',
+  monthly: 'חודשי',
+  bi_monthly: 'דו-חודשי',
+  quarterly: 'רבעוני',
+  semi_annual: 'חצי שנתי',
+  annual: 'שנתי',
 };
 
 function formatIsraelTimestamp(iso: string | null | undefined): string {
@@ -61,7 +63,7 @@ export async function fetchLatestChatPeriodicSummaries(
   supabase: SupabaseClient,
   userId: string
 ): Promise<ChatPeriodicSummaryRow[]> {
-  const types = ['weekly', 'monthly', 'quarterly', 'semi_annual', 'annual'] as const;
+  const types = ['daily', 'weekly', 'monthly', 'bi_monthly', 'quarterly', 'semi_annual', 'annual'] as const;
   const rows: ChatPeriodicSummaryRow[] = [];
 
   for (const type of types) {
