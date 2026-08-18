@@ -50,7 +50,7 @@ export const CHAT_SESSION_DETAIL_SELECTS = [
 
 export async function queryWithColumnFallbacks<T>(
   selects: readonly string[],
-  run: (select: string) => Promise<QueryResult>
+  run: (select: string) => PromiseLike<QueryResult>
 ): Promise<{ data: T | null; error: PgError }> {
   let lastError: PgError = null;
   for (const select of selects) {
