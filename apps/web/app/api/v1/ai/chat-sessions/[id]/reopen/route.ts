@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server';
+import {
+  CHAT_SESSION_DETAIL_SELECTS,
+  queryWithColumnFallbacks,
+} from '@/lib/ai/chat-sessions/select-fallbacks';
 import { requireApiSession } from '@/lib/api/route-guards';
 
 export const runtime = 'edge';
@@ -25,19 +29,23 @@ export async function POST(request: Request, context: RouteContext) {
 
   const now = new Date().toISOString();
 
-  const { data, error } = await auth.supabase
-    .from('chat_sessions')
-    .update({
-      status: 'open',
-      closed_at: null,
-      updated_at: now,
-    })
-    .eq('id', id)
-    .eq('user_id', auth.user.id)
-    .select('id, status, title, summary')
-    .single();
+  const { data, error } = await queryWithColumnFallbacks<Record<string, unknown>>(
+    CHAT_SESSION_DETAIL_SELECTS,
+    (select) =>
+      auth.supabase
+        .from('chat_sessions')
+        .update({
+          status: 'open',
+          closed_at: null,
+          updated_at: now,
+        })
+        .eq('id', id)
+        .eq('user_id', auth.user.id)
+        .select(select)
+        .single()
+  );
 
-  if (error) {
+  if (error || !data) {
     return NextResponse.json({ error: 'reopen_failed' }, { status: 500 });
   }
 

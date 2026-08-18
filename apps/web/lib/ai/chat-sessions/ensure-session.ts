@@ -1,8 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ChatSessionRow } from './types';
-
-const SESSION_ROW_COLUMNS =
-  'id, user_id, status, title, summary, live_conversation_file, preview_text, message_count, created_at, updated_at, closed_at';
+import {
+  normalizeChatSessionRow,
+  selectChatSessionRow,
+} from './select-fallbacks';
 
 /**
  * מוודא שקיים שורת chat_sessions — יוצר אם חסר (תאימות לאחור לסשנים ישנים).
@@ -11,29 +12,23 @@ export async function ensureChatSession(
   supabase: SupabaseClient,
   params: { sessionId: string; userId: string }
 ): Promise<ChatSessionRow> {
-  const { data: existing, error: readErr } = await supabase
-    .from('chat_sessions')
-    .select(SESSION_ROW_COLUMNS)
-    .eq('id', params.sessionId)
-    .maybeSingle();
-
+  const { data: existing, error: readErr } = await selectChatSessionRow(supabase, params);
   if (readErr) throw readErr;
-  if (existing) return existing as ChatSessionRow;
+  if (existing) return normalizeChatSessionRow(existing);
 
   const now = new Date().toISOString();
-  const { data: inserted, error: insertErr } = await supabase
-    .from('chat_sessions')
-    .insert({
-      id: params.sessionId,
-      user_id: params.userId,
-      status: 'open',
-      updated_at: now,
-    })
-    .select(SESSION_ROW_COLUMNS)
-    .single();
-
+  const { error: insertErr } = await supabase.from('chat_sessions').insert({
+    id: params.sessionId,
+    user_id: params.userId,
+    status: 'open',
+    updated_at: now,
+  });
   if (insertErr) throw insertErr;
-  return inserted as ChatSessionRow;
+
+  const { data: inserted, error: reloadErr } = await selectChatSessionRow(supabase, params);
+  if (reloadErr) throw reloadErr;
+  if (!inserted) throw new Error('chat_session_insert_missing_row');
+  return normalizeChatSessionRow(inserted);
 }
 
 /** מעדכן חותמת פעילות — לזיהוי סשנים נטושים */

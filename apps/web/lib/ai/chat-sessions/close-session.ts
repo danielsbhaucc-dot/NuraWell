@@ -4,6 +4,13 @@ import { rollupUserChatContext } from '../chat-memory/session-conversation-file'
 import { extractMemoriesFromTranscript } from '../user-memories/extract-from-transcript';
 import { reconcileSessionMemories } from '../user-memories/reconcile-session-memories';
 import { fetchChatSessionTranscript, formatTranscriptForLlm } from './fetch-transcript';
+import {
+  CHAT_SESSION_CLOSE_SELECTS,
+  isMissingColumnError,
+  normalizeChatSessionRow,
+  queryWithColumnFallbacks,
+  selectChatSessionRow,
+} from './select-fallbacks';
 import { generateChatSessionTitle, sanitizeChatSessionTitle, titleFromSummaryFallback } from './session-title';
 import { summarizeChatSession } from './summarize-session';
 import type { ChatSessionRow } from './types';
@@ -29,21 +36,20 @@ export async function closeChatSession(
   supabase: SupabaseClient,
   params: { sessionId: string; userId: string }
 ): Promise<CloseChatSessionResult> {
-  const { data: session, error: sessionErr } = await supabase
-    .from('chat_sessions')
-    .select(
-      'id, user_id, status, title, summary, live_conversation_file, created_at, updated_at, closed_at'
-    )
-    .eq('id', params.sessionId)
-    .eq('user_id', params.userId)
-    .single();
+  const { data: session, error: sessionErr } = await selectChatSessionRow(
+    supabase,
+    params,
+    CHAT_SESSION_CLOSE_SELECTS
+  );
 
   if (sessionErr) throw sessionErr;
-  if (session.status === 'closed' && session.summary) {
+  if (!session) throw new Error('chat_session_not_found');
+  const normalized = normalizeChatSessionRow(session);
+  if (normalized.status === 'closed' && normalized.summary) {
     return {
-      session: session as ChatSessionRow,
+      session: normalized,
       memories_extracted: 0,
-      summary: session.summary,
+      summary: normalized.summary,
       vectors_ingested: 0,
     };
   }
@@ -56,34 +62,54 @@ export async function closeChatSession(
   ]);
 
   const now = new Date().toISOString();
-  const existingTitle = sanitizeChatSessionTitle(session.title as string | null);
+  const existingTitle = sanitizeChatSessionTitle(normalized.title);
   let title = existingTitle;
   if (!title) {
     const firstUser = turns.find((t) => t.role === 'user')?.content ?? '';
     title =
       (await generateChatSessionTitle({
         userMessage: firstUser,
-        liveFile: session.live_conversation_file as string | null,
+        liveFile: normalized.live_conversation_file,
       })) ?? titleFromSummaryFallback(summary);
   }
 
-  const { data: updated, error: updateErr } = await supabase
-    .from('chat_sessions')
-    .update({
-      status: 'closed',
-      summary,
-      ...(title ? { title } : {}),
-      closed_at: now,
-      updated_at: now,
-    })
-    .eq('id', params.sessionId)
-    .eq('user_id', params.userId)
-    .select(
-      'id, user_id, status, title, summary, live_conversation_file, created_at, updated_at, closed_at'
-    )
-    .single();
+  const updatePayload: Record<string, unknown> = {
+    status: 'closed',
+    summary,
+    closed_at: now,
+    updated_at: now,
+  };
+  if (title) updatePayload.title = title;
 
-  if (updateErr) throw updateErr;
+  let updatedResult = await queryWithColumnFallbacks<Record<string, unknown>>(
+    CHAT_SESSION_CLOSE_SELECTS,
+    (select) =>
+      supabase
+        .from('chat_sessions')
+        .update(updatePayload)
+        .eq('id', params.sessionId)
+        .eq('user_id', params.userId)
+        .select(select)
+        .single()
+  );
+
+  if (updatedResult.error && isMissingColumnError(updatedResult.error) && title) {
+    const { title: _title, ...withoutTitle } = updatePayload;
+    updatedResult = await queryWithColumnFallbacks<Record<string, unknown>>(
+      CHAT_SESSION_CLOSE_SELECTS,
+      (select) =>
+        supabase
+          .from('chat_sessions')
+          .update(withoutTitle)
+          .eq('id', params.sessionId)
+          .eq('user_id', params.userId)
+          .select(select)
+          .single()
+    );
+  }
+
+  if (updatedResult.error) throw updatedResult.error;
+  const updated = normalizeChatSessionRow(updatedResult.data!);
 
   const memoryReconcile = await reconcileSessionMemories({
     userId: params.userId,
@@ -100,7 +126,7 @@ export async function closeChatSession(
       userId: params.userId,
       sessionId: params.sessionId,
       summary,
-      liveFile: session.live_conversation_file as string | null,
+      liveFile: normalized.live_conversation_file,
       closedAt: now,
     });
   } catch (vecErr) {
@@ -131,7 +157,7 @@ export async function closeChatSession(
   }
 
   return {
-    session: updated as ChatSessionRow,
+    session: updated,
     memories_extracted: memoriesExtracted,
     summary,
     vectors_ingested: vectorsIngested,

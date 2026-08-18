@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fetchChatSessionTranscript } from '@/lib/ai/chat-sessions/fetch-transcript';
+import { selectChatSessionDetail } from '@/lib/ai/chat-sessions/select-fallbacks';
 import { isAwaitingAssistantResponse } from '@/lib/client/chat-awaiting-assistant';
 import { requireApiSession } from '@/lib/api/route-guards';
 
@@ -14,12 +15,10 @@ export async function GET(request: Request, context: RouteContext) {
 
   const { id } = await context.params;
 
-  const { data: session, error: sessionErr } = await auth.supabase
-    .from('chat_sessions')
-    .select('id, status, session_kind, title, summary')
-    .eq('id', id)
-    .eq('user_id', auth.user.id)
-    .maybeSingle();
+  const { data: session, error: sessionErr } = await selectChatSessionDetail(auth.supabase, {
+    sessionId: id,
+    userId: auth.user.id,
+  });
 
   if (sessionErr) {
     return NextResponse.json({ error: 'read_failed' }, { status: 500 });
