@@ -2995,9 +2995,16 @@ export async function POST(request: Request) {
      */
     const writerPersona = buildAlmogWriterPersona(mcfg.writer);
     const continuityAnchor =
-      '[חובה · הקשר] זו אותה שיחה עם אותו אדם. אם יש יעד/פוקוס/משימות פתוחות/קובץ שיחה/זיכרון עובד — השתמש בהם. אל תתאפס. כרטיס הכותב = האופי של התור. ה-DNA לא כלוב.';
+      '[חובה · הקשר] אותו אדם. הודעות *השיחה הזו* = מקור האמת לתור. יעד/משימות/זיכרון = רקע שקט, לא מריבה להמשיך ואל תתוודה עליהם. אם אין תשובה קודמת שלך פה — זו פתיחה. כרטיס הכותב = האופי. ה-DNA לא כלוב.';
+    const hasPriorAssistantTurn = recentMessages.some(
+      (m) => m.role === 'assistant' && m.content.trim().length > 0
+    );
+    const freshSessionLine = hasPriorAssistantTurn
+      ? null
+      : '[פתיחה] אין תשובה קודמת שלך בשיחה הזו. ההודעה הנוכחית היא הפתיחה. אל תמציא תור קודם. אל תתוודה על טון/פישול/התנשאות שלא הופיעו פה.';
     const turnStance = [
       continuityAnchor,
+      freshSessionLine,
       writerStancePrompt(heuristicAnalysis.tags),
       stickyResult.stickyApplied
         ? `[נתב] ממשיך ${mcfg.writer} מאותו עימות/גבול. כשהנושא מתחלף חוזרים ל-Terra.`
@@ -3009,6 +3016,7 @@ export async function POST(request: Request) {
       '— הקשר לשיחה הזו —',
       writerPersona,
       continuityAnchor,
+      freshSessionLine,
       ...contextSections,
       '',
       '— פנייה אישית —',
