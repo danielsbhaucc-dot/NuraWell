@@ -15,6 +15,7 @@ import {
   computeSimpleCostUsd,
   computeVideoCostUsd,
   emptyBreakdown,
+  estimateChatBackgroundUsd,
   NOTIFICATION_ESTIMATED_COMPLETION_TOKENS,
   NOTIFICATION_ESTIMATED_PROMPT_TOKENS,
   type CostBreakdown,
@@ -34,6 +35,7 @@ export interface CostCounts {
 export interface UserCostReport {
   breakdown: CostBreakdown;
   counts: CostCounts;
+  byModel: Array<{ model: string; usd: number; messages: number }>;
 }
 
 export interface UserCostRow {
@@ -62,17 +64,45 @@ export interface AggregateCostReport {
 
 function addBreakdown(a: CostBreakdown, b: CostBreakdown): void {
   a.chatUsd += b.chatUsd;
+  a.backgroundUsd += b.backgroundUsd;
   a.notificationsUsd += b.notificationsUsd;
   a.videoUsd += b.videoUsd;
   a.totalUsd += b.totalUsd;
 }
 
 function finalizeBreakdown(b: CostBreakdown): void {
-  b.totalUsd = b.chatUsd + b.notificationsUsd + b.videoUsd;
+  b.totalUsd = b.chatUsd + b.backgroundUsd + b.notificationsUsd + b.videoUsd;
 }
 
 function readNum(v: unknown): number {
   return typeof v === 'number' && Number.isFinite(v) ? v : 0;
+}
+
+function readOptNum(v: unknown): number | undefined {
+  return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+}
+
+const PAGE_SIZE = 1000;
+const MAX_ROWS = 200_000;
+
+async function fetchAllRows<T>(
+  run: (
+    from: number,
+    to: number
+  ) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>
+): Promise<T[]> {
+  const out: T[] = [];
+  let from = 0;
+  for (;;) {
+    const { data, error } = await run(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    const batch = data ?? [];
+    out.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+    if (out.length >= MAX_ROWS) break;
+  }
+  return out;
 }
 
 // ---------- שורות גולמיות ----------
@@ -97,11 +127,14 @@ interface VideoRow {
 
 function chatRowCost(row: ChatRow): number {
   const meta = row.metadata ?? {};
+  const billed = readNum(meta.provider_cost_usd);
+  if (billed > 0) return billed;
   return computeChatCostUsd(row.model_name, {
     totalTokens: row.tokens_used ?? 0,
-    outputTokens: readNum(meta.output_tokens),
-    cacheReadTokens: readNum(meta.cache_read_input_tokens),
-    cacheCreationTokens: readNum(meta.cache_creation_input_tokens),
+    inputTokens: readOptNum(meta.input_tokens),
+    outputTokens: readOptNum(meta.output_tokens),
+    cacheReadTokens: readOptNum(meta.cache_read_input_tokens),
+    cacheCreationTokens: readOptNum(meta.cache_creation_input_tokens),
   });
 }
 
@@ -143,45 +176,65 @@ export async function buildUserCostReport(
     videoSeconds: 0,
   };
 
-  const [chatRes, notifRes, videoRes] = await Promise.all([
-    admin
-      .from('ai_interactions')
-      .select('user_id, model_name, tokens_used, metadata')
-      .eq('user_id', userId)
-      .eq('role', 'assistant')
-      .gte('created_at', sinceIso),
-    admin
-      .from('notification_logs')
-      .select('user_id, ai_model, metadata')
-      .eq('user_id', userId)
-      .gte('created_at', sinceIso),
-    admin
-      .from('video_view_events')
-      .select('user_id, estimated_seconds')
-      .eq('user_id', userId)
-      .gte('created_at', sinceIso),
+  const [chatRows, notifRows, videoRows] = await Promise.all([
+    fetchAllRows<ChatRow>((from, to) =>
+      admin
+        .from('ai_interactions')
+        .select('user_id, model_name, tokens_used, metadata')
+        .eq('user_id', userId)
+        .eq('role', 'assistant')
+        .gte('created_at', sinceIso)
+        .range(from, to)
+    ),
+    fetchAllRows<NotifRow>((from, to) =>
+      admin
+        .from('notification_logs')
+        .select('user_id, ai_model, metadata')
+        .eq('user_id', userId)
+        .gte('created_at', sinceIso)
+        .range(from, to)
+    ),
+    fetchAllRows<VideoRow>((from, to) =>
+      admin
+        .from('video_view_events')
+        .select('user_id, estimated_seconds')
+        .eq('user_id', userId)
+        .gte('created_at', sinceIso)
+        .range(from, to)
+    ),
   ]);
 
-  for (const row of (chatRes.data ?? []) as ChatRow[]) {
-    breakdown.chatUsd += chatRowCost(row);
+  const byModelMap = new Map<string, { usd: number; messages: number }>();
+  for (const row of chatRows) {
+    const cost = chatRowCost(row);
+    breakdown.chatUsd += cost;
     counts.chatMessages += 1;
+    const model = (row.model_name ?? 'unknown').trim() || 'unknown';
+    const prev = byModelMap.get(model) ?? { usd: 0, messages: 0 };
+    prev.usd += cost;
+    prev.messages += 1;
+    byModelMap.set(model, prev);
   }
-  for (const row of (notifRes.data ?? []) as NotifRow[]) {
+  for (const row of notifRows) {
     const { cost, estimated } = notifRowCost(row);
     breakdown.notificationsUsd += cost;
     counts.notifications += 1;
     if (estimated) counts.notificationsEstimated += 1;
   }
   let videoSeconds = 0;
-  for (const row of (videoRes.data ?? []) as VideoRow[]) {
+  for (const row of videoRows) {
     counts.videoViews += 1;
     videoSeconds += readNum(row.estimated_seconds);
   }
   counts.videoSeconds = videoSeconds;
   breakdown.videoUsd = computeVideoCostUsd(counts.videoViews, videoSeconds);
+  breakdown.backgroundUsd = estimateChatBackgroundUsd(counts.chatMessages);
 
   finalizeBreakdown(breakdown);
-  return { breakdown, counts };
+  const byModel = Array.from(byModelMap.entries())
+    .map(([model, v]) => ({ model, usd: v.usd, messages: v.messages }))
+    .sort((a, b) => b.usd - a.usd);
+  return { breakdown, counts, byModel };
 }
 
 // ---------- אגרגציה ----------
@@ -213,43 +266,49 @@ export async function buildAggregateCostReport(
     return row;
   };
 
-  const [profilesRes, chatRes, notifRes, videoRes] = await Promise.all([
+  const [profilesRes, chatRows, notifRows, videoRows] = await Promise.all([
     admin.from('profiles').select('id, full_name'),
-    admin
-      .from('ai_interactions')
-      .select('user_id, model_name, tokens_used, metadata')
-      .eq('role', 'assistant')
-      .gte('created_at', sinceIso)
-      .limit(50000),
-    admin
-      .from('notification_logs')
-      .select('user_id, ai_model, metadata')
-      .gte('created_at', sinceIso)
-      .limit(50000),
-    admin
-      .from('video_view_events')
-      .select('user_id, estimated_seconds')
-      .gte('created_at', sinceIso)
-      .limit(50000),
+    fetchAllRows<ChatRow>((from, to) =>
+      admin
+        .from('ai_interactions')
+        .select('user_id, model_name, tokens_used, metadata')
+        .eq('role', 'assistant')
+        .gte('created_at', sinceIso)
+        .range(from, to)
+    ),
+    fetchAllRows<NotifRow>((from, to) =>
+      admin
+        .from('notification_logs')
+        .select('user_id, ai_model, metadata')
+        .gte('created_at', sinceIso)
+        .range(from, to)
+    ),
+    fetchAllRows<VideoRow>((from, to) =>
+      admin
+        .from('video_view_events')
+        .select('user_id, estimated_seconds')
+        .gte('created_at', sinceIso)
+        .range(from, to)
+    ),
   ]);
 
   const profiles = (profilesRes.data ?? []) as Array<{ id: string; full_name: string | null }>;
   const nameById = new Map(profiles.map((p) => [p.id, p.full_name]));
   const totalUsers = profiles.length;
 
-  for (const row of (chatRes.data ?? []) as ChatRow[]) {
+  for (const row of chatRows) {
     const r = ensure(row.user_id);
     r.breakdown.chatUsd += chatRowCost(row);
     r.counts.chatMessages += 1;
   }
-  for (const row of (notifRes.data ?? []) as NotifRow[]) {
+  for (const row of notifRows) {
     const r = ensure(row.user_id);
     const { cost, estimated } = notifRowCost(row);
     r.breakdown.notificationsUsd += cost;
     r.counts.notifications += 1;
     if (estimated) r.counts.notificationsEstimated += 1;
   }
-  for (const row of (videoRes.data ?? []) as VideoRow[]) {
+  for (const row of videoRows) {
     const r = ensure(row.user_id);
     r.counts.videoViews += 1;
     r.counts.videoSeconds += readNum(row.estimated_seconds);
@@ -258,6 +317,7 @@ export async function buildAggregateCostReport(
   const totals = emptyBreakdown();
   for (const row of perUser.values()) {
     row.breakdown.videoUsd = computeVideoCostUsd(row.counts.videoViews, row.counts.videoSeconds);
+    row.breakdown.backgroundUsd = estimateChatBackgroundUsd(row.counts.chatMessages);
     finalizeBreakdown(row.breakdown);
     row.fullName = nameById.get(row.userId) ?? null;
     addBreakdown(totals, row.breakdown);
@@ -270,12 +330,14 @@ export async function buildAggregateCostReport(
 
   const averagePerUser: CostBreakdown = {
     chatUsd: totals.chatUsd / divUsers,
+    backgroundUsd: totals.backgroundUsd / divUsers,
     notificationsUsd: totals.notificationsUsd / divUsers,
     videoUsd: totals.videoUsd / divUsers,
     totalUsd: totals.totalUsd / divUsers,
   };
   const averagePerActiveUser: CostBreakdown = {
     chatUsd: totals.chatUsd / divActive,
+    backgroundUsd: totals.backgroundUsd / divActive,
     notificationsUsd: totals.notificationsUsd / divActive,
     videoUsd: totals.videoUsd / divActive,
     totalUsd: totals.totalUsd / divActive,
