@@ -30,6 +30,11 @@ describe('chat writer routing', () => {
     expect(heuristicWriterDecision('אתה לא עוזר ואתה מתנשא', emptySignals)).toBe('grok');
   });
 
+  it('routes "talking nonsense" as Grok accusation, not a confession lecture', () => {
+    expect(heuristicWriterDecision('למה אתה מדבר שטויות', emptySignals)).toBe('grok');
+    expect(writerStancePrompt(['accusation'])).toMatch(/אל תמציא חטא|אל תתוודה/);
+  });
+
   it('routes direct challenge to Grok', () => {
     expect(heuristicWriterDecision('תגיד לי ישר בלי שטויות, תן לי את האמת', emptySignals)).toBe('grok');
   });
@@ -327,11 +332,14 @@ describe('Almog voice: enter world without people-pleasing', () => {
     expect(ALMOG_VOICE_DNA).not.toMatch(/לרוב קצר/);
     expect(ALMOG_RATIONAL_AND_PSYCHOLOGY_RULES).toMatch(/אל תלמד פסיכולוגיה/);
     expect(ALMOG_RATIONAL_AND_PSYCHOLOGY_RULES).toMatch(/כניסה ≠ הסכמה/);
+    expect(ALMOG_VOICE_DNA).toMatch(/אל תמציא חטא/);
+    expect(ALMOG_VOICE_DNA).toMatch(/כי פישלתי/);
   });
 
   it('gives each writer a distinct persona card, not a one-line overlay', () => {
     expect(buildAlmogWriterPersona('grok')).toMatch(/כותב התור: Grok/);
-    expect(buildAlmogWriterPersona('grok')).toMatch(/חצוף־חיוך/);
+    expect(buildAlmogWriterPersona('grok')).toMatch(/למה אתה מדבר שטויות/);
+    expect(buildAlmogWriterPersona('grok')).not.toMatch(/אם דיברתי מלמעלה/);
     expect(buildAlmogWriterPersona('claude5')).toMatch(/כותב התור: Claude/);
     expect(buildAlmogWriterPersona('claude5')).toMatch(/קו שלא מתקפל/);
     expect(buildAlmogWriterPersona('terra')).toMatch(/כותב התור: Terra/);

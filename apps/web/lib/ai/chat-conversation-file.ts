@@ -22,7 +22,7 @@ export function formatConversationFilePromptBlock(summary: unknown): string | nu
   const clean = summary.replace(/\s+/g, ' ').trim();
   if (!clean) return null;
   const clipped = clean.length > 2800 ? `${clean.slice(0, 2800)}…` : clean;
-  return `[קובץ שיחה נוכחית — זה הזיכרון במקום היסטוריית הודעות מלאה]\n${clipped}\nאם ההודעה האחרונה סותרת את הקובץ, ההודעה האחרונה קובעת. התייחס לבקשות חוזרות כמו לדפוס שזיהית בעצמך.`;
+  return `[קובץ שיחה נוכחית — זה הזיכרון במקום היסטוריית הודעות מלאה]\n${clipped}\nאם ההודעה האחרונה סותרת את הקובץ, ההודעה האחרונה קובעת. התייחס לבקשות חוזרות כמו לדפוס שזיהית בעצמך. הקובץ הוא רקע שקט — לא תירוץ להתוודות על מריבה ישנה או על טון שלא מופיע בהודעות של השיחה הזו.`;
 }
 
 export function buildConversationFileUserPrompt(params: {
