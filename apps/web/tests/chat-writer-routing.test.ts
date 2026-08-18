@@ -5,7 +5,7 @@ import {
   mergeWriterDecisions,
   writerStancePrompt,
 } from '../lib/ai/chat-intent-router';
-import { ALMOG_VOICE_DNA, ALMOG_RATIONAL_AND_PSYCHOLOGY_RULES } from '../lib/ai/prompts';
+import { ALMOG_VOICE_DNA, ALMOG_RATIONAL_AND_PSYCHOLOGY_RULES, buildAlmogWriterPersona } from '../lib/ai/prompts';
 import { sanitizeWriterOutput, looksLikeBracketOnlyReply } from '../lib/ai/sanitize-writer-output';
 import { formatConversationFilePromptBlock } from '../lib/ai/chat-conversation-file';
 import {
@@ -327,6 +327,17 @@ describe('Almog voice: enter world without people-pleasing', () => {
     expect(ALMOG_VOICE_DNA).not.toMatch(/לרוב קצר/);
     expect(ALMOG_RATIONAL_AND_PSYCHOLOGY_RULES).toMatch(/אל תלמד פסיכולוגיה/);
     expect(ALMOG_RATIONAL_AND_PSYCHOLOGY_RULES).toMatch(/כניסה ≠ הסכמה/);
+  });
+
+  it('gives each writer a distinct persona card, not a one-line overlay', () => {
+    expect(buildAlmogWriterPersona('grok')).toMatch(/כותב התור: Grok/);
+    expect(buildAlmogWriterPersona('grok')).toMatch(/חצוף־חיוך/);
+    expect(buildAlmogWriterPersona('claude5')).toMatch(/כותב התור: Claude/);
+    expect(buildAlmogWriterPersona('claude5')).toMatch(/קו שלא מתקפל/);
+    expect(buildAlmogWriterPersona('terra')).toMatch(/כותב התור: Terra/);
+    expect(buildAlmogWriterPersona('terra')).toMatch(/כניסה ≠ ריצוי/);
+    expect(buildAlmogWriterPersona('llama4')).toMatch(/תודה\/עשיתי/);
+    expect(buildAlmogWriterPersona('grok')).not.toEqual(buildAlmogWriterPersona('terra'));
   });
 });
 

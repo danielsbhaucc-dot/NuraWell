@@ -42,6 +42,7 @@ import {
   ALMOG_HABIT_CHECKPOINT_RULES,
   ALMOG_STATION_PROGRESSIVE_RULES,
   buildAlmogVoiceSticky,
+  buildAlmogWriterPersona,
   NURAWELL_CHAT_SYSTEM_PROMPT,
   NURAWELL_CHAT_SYSTEM_PROMPT_LEAN,
 } from '../../../../../lib/ai/prompts';
@@ -2898,30 +2899,9 @@ export async function POST(request: Request) {
 
     // coaching style + dossier + onboarding כפולים לזיכרון העבודה — רק בתור כבד.
     // סגנון ליווי (חם/ישיר/עדין) הוא חיוג על Terra. Grok/Claude מביאים קצה — אל תשטיח אותם.
+    // סגנון ליווי (חם/ישיר/עדין) הוא חיוג על Terra. Grok/Claude מביאים אופי משלהם — אל תשטיח.
     if (coachingStyleBlock && mcfg.writer !== 'grok' && mcfg.writer !== 'claude5') {
       contextSections.push(coachingStyleBlock);
-    }
-    if (mcfg.writer === 'grok') {
-      const attacked =
-        heuristicAnalysis.tags.includes('accusation') ||
-        heuristicAnalysis.tags.includes('argument') ||
-        heuristicAnalysis.tags.includes('rude') ||
-        heuristicAnalysis.tags.includes('people_please');
-      contextSections.push(
-        attacked
-          ? 'סגנון ליווי בתור Grok (התקפה/ויכוח): קבל את האישיות במלואה. היכנס לעולם שלו בלי לרצות ובלי להגיד ישר שהוא צודק. בחן. אם לא־הוגנת — העמד במקום בחום חד. חצוף־חיוך זה האישיות. ה-DNA לא מרכך אותך ולא נועל אותך.'
-          : 'סגנון ליווי בתור Grok: אלמוג עם השיניים של Grok במלואן. היכנס, תראה מה קורה, אל תקנה, אל תרצה. חצוף־חיוך מצופה. בלי סקריפט אימון, בלי הרצאה, בלי מברק, בלי להשטיח ל"חבר נחמד".'
-      );
-    } else if (mcfg.writer === 'claude5') {
-      contextSections.push(
-        'סגנון ליווי בתור Claude: קבל את האישיות במלואה. היכנס לעולם שלו בחום + קו שלא מתקפל. אמת בפרצוף בלי להתנצל ובלי להרצות. אל תרצה, ואל תהפוך ל-Grok ציני בשביל הספורט.'
-      );
-    } else if (mcfg.writer === 'llama4') {
-      contextSections.push('סגנון ליווי בתור קצר: 1–2 שורות חמות בקול אלמוג. בלי הרצאה.');
-    } else {
-      contextSections.push(
-        'סגנון ליווי בתור Terra: קבל את האישיות במלואה. היכנס לעולם שלו — מילים שלו, רגע שלו — בגובה עיניים. כניסה ≠ ריצוי. לא therapy-speak, לא שיעור, לא מברק. בלי להפוך ל-Grok.'
-      );
     }
     /**
      * עקרונות אלמוג (חוקי תוכנית + "איך להתמודד עם X") — קו מנחה התנהגותי מחייב.
@@ -3019,45 +2999,21 @@ export async function POST(request: Request) {
      *      לפני שהוא יוצר את התשובה. עם reasoningEffort=medium זה הסל-ביטחון
      *      הכי אפקטיבי לחוקים שעלולים להתפספס כשהפרומפט גדל.
      */
+    const writerPersona = buildAlmogWriterPersona(mcfg.writer);
     const continuityAnchor =
-      '[חובה · הקשר] זו אותה שיחה עם אותו אדם. אם יש יעד/פוקוס/משימות פתוחות/קובץ שיחה/זיכרון עובד — השתמש בהם בתשובה. אל תתאפס. אישיות הכותב = טון במלואו, לא מחיקת זיכרון ולא רובוט נעול. אורך של חבר: לא מברק, לא נאום.';
-    const writerStrengthLine =
-      mcfg.writer === 'claude5'
-        ? '[כותב Claude] קבל את האישיות במלואה: חום + גבול. היכנס לעולם שלו בלי להתקפל. אמת בפרצוף, לא הרצאה. אל תשטח לממוצע.'
-        : mcfg.writer === 'grok'
-          ? '[כותב Grok] קבל את האישיות במלואה: חוצפה, חדות, חצוף־חיוך. היכנס בלי לקנות ובלי לרצות. אם הדוגמאות רכות — התעלם מהרכות.'
-          : mcfg.writer === 'llama4'
-            ? '[כותב Llama] קצר וחם — עדיין אלמוג. אם סומנה משימה, הכרה ספציפית קצרה.'
-            : '[כותב Terra] קבל את האישיות במלואה: היכנס לעולם שלו. גובה עיניים, כנות, לא ריצוי. לא משפט-מדף, לא שיעור, לא מברק.';
+      '[חובה · הקשר] זו אותה שיחה עם אותו אדם. אם יש יעד/פוקוס/משימות פתוחות/קובץ שיחה/זיכרון עובד — השתמש בהם. אל תתאפס. כרטיס הכותב = האופי של התור. ה-DNA לא כלוב.';
     const turnStance = [
       continuityAnchor,
       writerStancePrompt(heuristicAnalysis.tags),
-      writerStrengthLine,
       stickyResult.stickyApplied
         ? `[נתב] ממשיך ${mcfg.writer} מאותו עימות/גבול. כשהנושא מתחלף חוזרים ל-Terra.`
         : `[נתב] כותב לפי חוזקה: Claude=גבול, Grok=תירוץ/ויכוח/התקפה, Terra=אמפתיה/שגרה, Llama=קצר. בחירה לתור: ${mcfg.writer}.`,
     ]
       .filter(Boolean)
       .join('\n');
-    const writerVoiceLine =
-      mcfg.writer === 'grok'
-        ? `[כותב התור: grok] אלמוג עם השיניים של Grok במלואן. זהות אלמוג, אישיות Grok. אל תשטח. היכנס בלי לרצות. מקף עברי (־). זוכר יעד/פוקוס/משימות.`
-        : mcfg.writer === 'claude5'
-          ? `[כותב התור: claude5] אלמוג עם הגבול של Claude במלואו. היכנס בחום, קו שלא מתקפל. מקף עברי (־). זוכר יעד/פוקוס/משימות.`
-          : mcfg.writer === 'llama4'
-            ? `[כותב התור: llama4] אלמוג קצר וחם. משפט אחד, לא הרצאה. מקף עברי (־).`
-            : `[כותב התור: terra] אלמוג עם הלב של Terra במלואו. היכנס לעולם שלו, לא גנרי, לא ריצוי. מקף עברי (־). זוכר יעד/פוקוס/משימות. אורך של חבר.`;
-    const endStrengthOverride =
-      mcfg.writer === 'grok'
-        ? 'עכשיו: Grok מדבר דרכך במלואו. אל תשטח. היכנס לעולם שלו — תראה מה קורה — בלי לקנות ובלי לרצות. חוצפה מצופה. לא אומר ישר "אתה צודק". לא מרצה. לא מקצר למברק. מעמיד במקום בגובה עיניים.'
-        : mcfg.writer === 'claude5'
-          ? 'עכשיו: Claude מדבר דרכך במלואו. היכנס לעולם שלו בלי להתקפל. חום + קו ישר. אמת בפרצוף, לא הרצאה. לא רוצה תחת לחץ. תן לתשובה מקום. עדיין בתוך המסע/היעד שלו.'
-          : mcfg.writer === 'llama4'
-            ? 'תודה/עשיתי — קצר וחם. אם רלוונטי, הכרה ספציפית למשימה/הרגל — בלי הרצאה.'
-            : 'עכשיו: Terra מדבר דרכך במלואו. היכנס לעולם שלו באמת — המילים שלו, הרגע שלו. גובה עיניים, כנות, לא ריצוי. לא שיעור פסיכולוגיה. תן לזה מקום כשיש מה להגיד. אל תהפוך ל-Grok.';
     const dynamicSystemPrompt = [
       '— הקשר לשיחה הזו —',
-      writerVoiceLine,
+      writerPersona,
       continuityAnchor,
       ...contextSections,
       '',
@@ -3067,7 +3023,6 @@ export async function POST(request: Request) {
       '',
       mcfg.finalGuardrails,
       buildAlmogVoiceSticky(mcfg.writer),
-      endStrengthOverride,
     ]
       .filter((s) => s !== null && s !== undefined)
       .join('\n');

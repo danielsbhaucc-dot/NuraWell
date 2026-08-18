@@ -279,18 +279,18 @@ export function formatReturnVisitChatBlock(ctx: ReturnVisitContext, firstName: s
   const name = firstName || 'שם';
   switch (ctx.mode) {
     case 'crisis_reconnect':
-      return `[מצב:חזרה-משבר·${ctx.daysAway}יום] ${name} חזר/ה אחרי היעדרות. לא "התגעגענו", לא שיפוט. הכר בקושי אפשרי (סופ"ש/עומס). צעד זעיר אחד — כוס מים. שאלה: "אתה איתי?"`;
+      return `[מצב:חזרה-משבר·${ctx.daysAway}יום] ${name} חזר/ה אחרי היעדרות. היכנס לעולם שלו בלי "התגעגענו" ובלי שיפוט. כנות, לא ריצוי. צעד זעיר אחד אם יושב.`;
     case 're_engage':
-      return `[מצב:חזרה·${ctx.daysAway}יום] ${name} חזר/ה — סקרנות חמה, שאלה פתוחה מה הכי כבד. בלי מעקב שיעורי בית.`;
+      return `[מצב:חזרה·${ctx.daysAway}יום] ${name} חזר/ה — סקרנות חמה בקול הכותב. מה הכי כבד. בלי מעקב שיעורי בית.`;
     case 'micro_win':
-      return `[מצב:התחלה-מחדש·${ctx.daysAway}יום] צעד זעיר אחד (מים/נשימה). בלי אשמה. שאלה קצרה בסוף.`;
+      return `[מצב:התחלה-מחדש·${ctx.daysAway}יום] צעד זעיר אחד אם יושב (מים/נשימה). בלי אשמה, בלי סקריפט שאלה בסוף.`;
     default:
       return null;
   }
 }
 
 export function formatRelapseChatBlock(): string {
-  return `[מצב:נפילה] ולידציה→צעד אחד מעכשיו. בלי שיפוט/רשימות.`;
+  return `[מצב:נפילה] היכנס לעולם שלו → צעד אחד מעכשיו אם יושב. בלי שיפוט, בלי רשימות, בלי הרצאה.`;
 }
 
 /** בלוק יחיד לצ'אט — רק כשצריך (לא בכל הודעה). */
