@@ -3040,7 +3040,7 @@ export async function POST(request: Request) {
         has_principles_block: Boolean(principlesBlock),
         has_journey_state: Boolean(journeyStateLine),
         has_station_rules: Boolean(stationRules),
-        has_habit_rules: Boolean(habitCheckpointRules),
+        has_habit_rules: false,
         heavy_context: useHeavyContext,
         context_router_reason: contextDecision.reason,
         needs_user_memory_rag: contextDecision.needs_user_memory_rag,
