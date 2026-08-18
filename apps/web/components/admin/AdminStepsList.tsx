@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import type { JourneyStep } from '../../lib/types/journey';
 import { parseImmersiveAttentionStops } from '../../lib/journey/immersiveAttentionStops';
+import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 
 interface AdminStepsListProps {
   steps: JourneyStep[];
@@ -22,6 +23,7 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
   const opsBase = pathname.startsWith('/ops') ? '/ops' : '';
   const [steps, setSteps] = useState(initialSteps);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const handleTogglePublish = async (stepId: string, currentPublished: boolean) => {
     const res = await fetch('/api/v1/admin/journey-steps', {
@@ -34,8 +36,13 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
     }
   };
 
-  const handleDelete = async (stepId: string) => {
-    if (!confirm('האם למחוק את הצעד הזה? לא ניתן לשחזר.')) return;
+  const handleDelete = (stepId: string) => {
+    setPendingDeleteId(stepId);
+  };
+
+  const executeDelete = async () => {
+    if (!pendingDeleteId) return;
+    const stepId = pendingDeleteId;
     setIsDeleting(stepId);
     const res = await fetch('/api/v1/admin/journey-steps', {
       method: 'DELETE',
@@ -46,10 +53,25 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
       setSteps(prev => prev.filter(s => s.id !== stepId));
     }
     setIsDeleting(null);
+    setPendingDeleteId(null);
   };
 
   return (
     <div>
+      <ConfirmDialog
+        open={Boolean(pendingDeleteId)}
+        title="למחוק את הצעד?"
+        message="האם למחוק את הצעד הזה? לא ניתן לשחזר."
+        confirmLabel="מחק"
+        cancelLabel="ביטול"
+        danger
+        busy={Boolean(isDeleting)}
+        onConfirm={() => void executeDelete()}
+        onCancel={() => {
+          if (isDeleting) return;
+          setPendingDeleteId(null);
+        }}
+      />
       <div
         className={[
           'mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4',

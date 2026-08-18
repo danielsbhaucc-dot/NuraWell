@@ -3,6 +3,8 @@
 -- Migration: 000081_transcript_access_tracking.sql
 -- ============================================================
 
+SET lock_timeout = '120s';
+
 ALTER TABLE public.chat_transcript_access_requests
   ADD COLUMN IF NOT EXISTS notification_sent_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS user_viewed_at TIMESTAMPTZ;

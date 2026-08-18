@@ -13,6 +13,7 @@ import type {
   JourneyTaskLevelingConfig,
 } from '../../lib/types/journey';
 import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
+import { ConfirmDialog, type ConfirmDialogTone } from '@/components/admin/ConfirmDialog';
 import type { MediaAsset } from '@/components/media-manager/types';
 import { buildJourneyStepUploadFolder } from '@/lib/media-manager/folders';
 import {
@@ -192,6 +193,12 @@ export function StepEditor({ step }: StepEditorProps) {
   const journeyListPath = pathname.startsWith('/ops') ? '/ops/journey' : '/journey';
   const isNew = !step;
   const [saving, setSaving] = useState(false);
+  const [feedbackPopup, setFeedbackPopup] = useState<{
+    title: string;
+    message: string;
+    tone: ConfirmDialogTone;
+  } | null>(null);
+  const [aiFillConfirmOpen, setAiFillConfirmOpen] = useState(false);
   const [saveProgress, setSaveProgress] = useState(0);
   const [saveStageIndex, setSaveStageIndex] = useState(0);
   const [saveHasTts, setSaveHasTts] = useState(false);
@@ -600,6 +607,10 @@ export function StepEditor({ step }: StepEditorProps) {
     }
   };
 
+  const showAlert = (title: string, message: string, tone: ConfirmDialogTone = 'warning') => {
+    setFeedbackPopup({ title, message, tone });
+  };
+
   const handleAiFill = async () => {
     const text = aiSourceText.trim();
     if (text.length < 40) {
@@ -618,12 +629,17 @@ export function StepEditor({ step }: StepEditorProps) {
       researches.length > 0 ||
       immersiveAttentionStops.length > 0 ||
       commitment;
-    if (
-      hasExistingContent &&
-      !window.confirm('המילוי האוטומטי יחליף את התוכן הקיים בכל הסעיפים (חוץ מהווידאו). להמשיך?')
-    ) {
+    if (hasExistingContent) {
+      setAiFillConfirmOpen(true);
       return;
     }
+
+    await startAiFill();
+  };
+
+  const startAiFill = async () => {
+    setAiFillConfirmOpen(false);
+    const text = aiSourceText.trim();
 
     setAiError(null);
     setAiMessage(null);
@@ -686,7 +702,10 @@ export function StepEditor({ step }: StepEditorProps) {
   };
 
   const handleSave = async () => {
-    if (!title.trim()) { alert('חובה להזין כותרת'); return; }
+    if (!title.trim()) {
+      showAlert('חסרה כותרת', 'חובה להזין כותרת לצעד.', 'warning');
+      return;
+    }
 
     const ttsCount =
       quizQuestions.filter((q) => q.question.trim()).length +
@@ -771,12 +790,16 @@ export function StepEditor({ step }: StepEditorProps) {
         router.refresh();
       } else {
         const err = await res.json().catch(() => ({}));
-        alert('שגיאה: ' + (err.error || 'Unknown'));
+        showAlert('שגיאה בשמירה', String(err.error || 'Unknown'), 'danger');
         setSaving(false);
       }
     } catch (e) {
       finishProgress();
-      alert('שגיאה בשמירה: ' + (e instanceof Error ? e.message : 'תקלת רשת'));
+      showAlert(
+        'שגיאה בשמירה',
+        e instanceof Error ? e.message : 'תקלת רשת',
+        'danger',
+      );
       setSaving(false);
     }
   };
@@ -793,7 +816,11 @@ export function StepEditor({ step }: StepEditorProps) {
     const research = researches[index];
     if (!research) return;
     if (!research.url && !research.source_text?.trim()) {
-      alert('צריך קישור למחקר או טקסט/Abstract בשדה הטקסט לסריקה');
+      showAlert(
+        'חסר מקור לסריקה',
+        'צריך קישור למחקר או טקסט/Abstract בשדה הטקסט לסריקה.',
+        'warning',
+      );
       return;
     }
 
@@ -847,7 +874,7 @@ export function StepEditor({ step }: StepEditorProps) {
 
   const syncResearchesToAlmog = async (index?: number) => {
     if (isNew || !step?.id) {
-      alert('צריך לשמור את הצעד לפני סנכרון ידני לאלמוג');
+      showAlert('יש לשמור קודם', 'צריך לשמור את הצעד לפני סנכרון ידני לאלמוג.', 'warning');
       return;
     }
 
@@ -2503,6 +2530,26 @@ export function StepEditor({ step }: StepEditorProps) {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={aiFillConfirmOpen}
+        title="להחליף את התוכן הקיים?"
+        message="המילוי האוטומטי יחליף את התוכן הקיים בכל הסעיפים (חוץ מהווידאו)."
+        confirmLabel="המשך מילוי"
+        cancelLabel="ביטול"
+        tone="warning"
+        onConfirm={() => void startAiFill()}
+        onCancel={() => setAiFillConfirmOpen(false)}
+      />
+      <ConfirmDialog
+        open={Boolean(feedbackPopup)}
+        title={feedbackPopup?.title ?? ''}
+        message={feedbackPopup?.message}
+        tone={feedbackPopup?.tone ?? 'warning'}
+        alert
+        onConfirm={() => setFeedbackPopup(null)}
+        onCancel={() => setFeedbackPopup(null)}
+      />
     </div>
   );
 }
