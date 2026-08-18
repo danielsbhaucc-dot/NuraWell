@@ -8,6 +8,8 @@ import { readJsonBody } from '@/lib/api/json-request';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import {
   createTranscriptAccessRequest,
+  fetchAccessRequestById,
+  fetchLatestAccessRequestsForSessions,
   getSessionTranscriptAccess,
   logChatTranscriptAdminAudit,
   transcriptAccessAllowsView,
@@ -22,6 +24,11 @@ import {
   notifyTranscriptAccessRequest,
   notifyTranscriptSentToUser,
 } from '@/lib/admin/chat-transcript-notify';
+import {
+  buildTranscriptAccessInsight,
+  buildTranscriptAccessTimeline,
+} from '@/lib/admin/transcript-access-timeline';
+import type { AccessRequestRecord } from '@/lib/admin/chat-transcript-security';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -86,6 +93,17 @@ async function selectUserChatSession(
     if (!isMissingColumnError(error)) break;
   }
   return { data: null, error: lastError };
+}
+
+function enrichAccessRequestPayload(request: AccessRequestRecord | null | undefined) {
+  if (!request) {
+    return { access_request: null, access_timeline: [], access_insight: null };
+  }
+  return {
+    access_request: request,
+    access_timeline: buildTranscriptAccessTimeline(request),
+    access_insight: buildTranscriptAccessInsight(request),
+  };
 }
 
 async function rateLimitAdmin(userId: string) {
@@ -259,13 +277,27 @@ export async function GET(request: Request, context: RouteContext) {
   const rollup = typeof aiContext.chat_summary === 'string' ? aiContext.chat_summary : null;
 
   const sessions = sessionsRes.data ?? [];
+  const sessionIds = sessions.map((s: { id: string }) => s.id);
+  const requestMap = globalConsent
+    ? new Map<string, AccessRequestRecord>()
+    : await fetchLatestAccessRequestsForSessions(admin, { userId, sessionIds });
+
   const sessionsWithAccess = await Promise.all(
     sessions.map(async (s: { id: string }) => {
       if (globalConsent) {
-        return { ...s, transcript_access: 'granted_global' as const };
+        return {
+          ...s,
+          transcript_access: 'granted_global' as const,
+          ...enrichAccessRequestPayload(null),
+        };
       }
       const access = await getSessionTranscriptAccess(admin, { userId, sessionId: s.id });
-      return { ...s, transcript_access: access.status };
+      const request = requestMap.get(s.id) ?? null;
+      return {
+        ...s,
+        transcript_access: access.status,
+        ...enrichAccessRequestPayload(request),
+      };
     }),
   );
 
@@ -434,7 +466,16 @@ export async function POST(request: Request, context: RouteContext) {
       payload: { request_id: result.requestId },
     });
 
-    return NextResponse.json({ ok: true, request_id: result.requestId, status: 'pending' });
+    const request = await fetchAccessRequestById(admin, result.requestId);
+    const enriched = enrichAccessRequestPayload(request);
+
+    return NextResponse.json({
+      ok: true,
+      request_id: result.requestId,
+      status: 'pending',
+      message: 'הבקשה נשלחה בהצלחה! התראה נשלחה למשתמש — הסטטוס יתעדכן כאן אוטומטית.',
+      ...enriched,
+    });
   }
 
   const access = await getSessionTranscriptAccess(admin, { userId, sessionId });

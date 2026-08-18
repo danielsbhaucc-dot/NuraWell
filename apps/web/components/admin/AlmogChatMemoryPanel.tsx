@@ -23,6 +23,11 @@ import {
 import { glassCardStyle, glassPanelStyle } from '@/components/media-manager/glass-styles';
 import { buildChatSessionListTitle } from '@/lib/ai/chat-sessions/session-list-title';
 import { formatTranscriptForLlm } from '@/lib/ai/chat-sessions/fetch-transcript';
+import type {
+  TranscriptAccessInsight,
+  TranscriptAccessTimelineStep,
+} from '@/lib/admin/transcript-access-timeline';
+import { TranscriptAccessStatusPanel } from '@/components/admin/TranscriptAccessStatusPanel';
 
 type TranscriptAccessStatus =
   | 'granted_global'
@@ -43,6 +48,8 @@ type ChatSessionRow = {
   updated_at: string;
   closed_at: string | null;
   transcript_access?: TranscriptAccessStatus;
+  access_timeline?: TranscriptAccessTimelineStep[];
+  access_insight?: TranscriptAccessInsight | null;
 };
 
 type PeriodicRow = {
@@ -149,6 +156,8 @@ export function AlmogChatMemoryPanel({
   const [reasonModalSession, setReasonModalSession] = useState<string | null>(null);
   const [requestReason, setRequestReason] = useState('');
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [successSessionId, setSuccessSessionId] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -171,6 +180,14 @@ export function AlmogChatMemoryPanel({
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!expandedSession) return;
+    const session = data?.sessions.find((s) => s.id === expandedSession);
+    if (session?.transcript_access !== 'pending') return;
+    const interval = setInterval(() => void load(), 20_000);
+    return () => clearInterval(interval);
+  }, [expandedSession, data?.sessions, load]);
 
   const [initialApplied, setInitialApplied] = useState(false);
   useEffect(() => {
@@ -275,11 +292,23 @@ export function AlmogChatMemoryPanel({
           reason,
         }),
       });
-      const body = (await res.json()) as { error?: string };
+      const body = (await res.json()) as {
+        error?: string;
+        message?: string;
+        access_timeline?: TranscriptAccessTimelineStep[];
+        access_insight?: TranscriptAccessInsight | null;
+      };
       if (!res.ok) throw new Error(body.error ?? 'הבקשה נכשלה');
-      setActionMsg('בקשת הגישה נשלחה למשתמש — ממתין לאישור');
+      setSuccessSessionId(sessionId);
+      setSuccessMessage(
+        body.message ?? 'הבקשה נשלחה בהצלחה! התראה נשלחה למשתמש — הסטטוס יתעדכן כאן אוטומטית.',
+      );
+      setActionMsg(null);
       setRequestReason('');
       await load();
+      setTimeout(() => {
+        setSuccessSessionId((current) => (current === sessionId ? null : current));
+      }, 12_000);
     } catch (e) {
       setTranscriptError(e instanceof Error ? e.message : 'שגיאה');
     } finally {
@@ -602,10 +631,23 @@ export function AlmogChatMemoryPanel({
                             </button>
                           </>
                         ) : (
-                          <p className="text-amber-900/90">
-                            נשלחה התראה למשתמש. לאחר אישור — יהיה ניתן לצפות בתמליל ל-24 שעות.
+                          <p className="mb-2 text-amber-900/90">
+                            נשלחה התראה למשתמש. הסטטוס מתעדכן אוטומטית כל 20 שניות.
                           </p>
                         )}
+                        {(successSessionId === s.id ||
+                          (s.access_timeline?.length ?? 0) > 0 ||
+                          access === 'pending' ||
+                          access === 'denied') ? (
+                          <div className="mt-3">
+                            <TranscriptAccessStatusPanel
+                              timeline={s.access_timeline ?? []}
+                              insight={s.access_insight ?? null}
+                              showSuccess={successSessionId === s.id}
+                              successMessage={successSessionId === s.id ? successMessage : null}
+                            />
+                          </div>
+                        ) : null}
                         </div>
                         <Shield className="mt-0.5 h-5 w-5 shrink-0 text-amber-800/70" aria-hidden />
                       </div>
