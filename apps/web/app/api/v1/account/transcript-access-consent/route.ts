@@ -9,6 +9,8 @@ import {
   notifyAllAdminsTranscriptConsentChange,
   resolveUserDisplayName,
 } from '@/lib/admin/ops-admin-notify';
+import { fetchUserTranscriptAccessGrants } from '@/lib/privacy/transcript-access-grants';
+import type { ProfileGender } from '@/lib/privacy/gender-hebrew';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,7 +40,7 @@ export async function GET(request: Request) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('admin_transcript_access_at')
+    .select('admin_transcript_access_at, gender')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -63,10 +65,20 @@ export async function GET(request: Request) {
     .order('created_at', { ascending: false })
     .limit(10);
 
+  const grantedAt = (profile?.admin_transcript_access_at as string | null) ?? null;
+  const activeGrants = await fetchUserTranscriptAccessGrants(
+    supabase,
+    user.id,
+    granted,
+    grantedAt,
+  );
+
   return NextResponse.json({
     granted,
-    granted_at: profile?.admin_transcript_access_at ?? null,
+    granted_at: grantedAt,
+    gender: (profile?.gender as ProfileGender) ?? null,
     pending_requests: pending ?? [],
+    active_grants: activeGrants,
   });
 }
 
@@ -172,6 +184,12 @@ export async function POST(request: Request) {
   }
 
   const displayName = await resolveUserDisplayName(admin, user.id);
+  const { data: userProfile } = await admin
+    .from('profiles')
+    .select('gender')
+    .eq('id', user.id)
+    .maybeSingle();
+  const userGender = (userProfile?.gender as ProfileGender) ?? null;
 
   if (parsed.data.approve) {
     await notifyAdminTranscriptAccessApproved(admin, {
@@ -180,6 +198,7 @@ export async function POST(request: Request) {
       userDisplayName: displayName,
       sessionId: result.sessionId,
       requestId: result.requestId,
+      userGender,
     });
   } else {
     await notifyAdminTranscriptAccessDenied(admin, {
@@ -189,8 +208,34 @@ export async function POST(request: Request) {
       sessionId: result.sessionId,
       requestId: result.requestId,
       userNote: parsed.data.denialReason ?? null,
+      userGender,
     });
   }
 
-  return NextResponse.json({ ok: true, approved: parsed.data.approve });
+  const { data: resolvedRow } = await admin
+    .from('chat_transcript_access_requests')
+    .select('access_until, session_id, reason, resolved_at')
+    .eq('id', result.requestId)
+    .maybeSingle();
+
+  const { data: profileAfter } = await admin
+    .from('profiles')
+    .select('admin_transcript_access_at')
+    .eq('id', user.id)
+    .maybeSingle();
+  const globalGranted = Boolean(profileAfter?.admin_transcript_access_at);
+  const activeGrants = await fetchUserTranscriptAccessGrants(
+    admin,
+    user.id,
+    globalGranted,
+    (profileAfter?.admin_transcript_access_at as string | null) ?? null,
+  );
+
+  return NextResponse.json({
+    ok: true,
+    approved: parsed.data.approve,
+    access_until: parsed.data.approve ? (resolvedRow?.access_until as string | null) : null,
+    session_id: result.sessionId,
+    active_grants: activeGrants,
+  });
 }

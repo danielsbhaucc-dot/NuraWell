@@ -22,7 +22,7 @@
 import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { X } from 'lucide-react';
+import { Shield, X } from 'lucide-react';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { getMentorAvatarFallback } from '../../lib/mentors/avatar-url';
 import { MENTORS } from '../../lib/mentors/registry';
@@ -66,12 +66,13 @@ export function LiveNotificationToast({
     };
   }, [n.id, onDismiss]);
 
-  const isDolev = n.mentorId === 'dolev';
+  const isPlatform = n.channel === 'platform' || n.type === 'transcript_access_request';
+  const isDolev = !isPlatform && n.mentorId === 'dolev';
   const avatar = isDolev ? dolevAvatar : almogAvatar;
   const avatarFallback = isDolev
     ? getMentorAvatarFallback(MENTORS.dolev)
     : ALMOG_AVATAR_FALLBACK;
-  const mentorLabel = isDolev ? 'דולב' : 'אלמוג';
+  const mentorLabel = isPlatform ? 'מערכת' : isDolev ? 'דולב' : 'אלמוג';
 
   const handleClick = () => onClick(n.id);
 
@@ -120,8 +121,9 @@ export function LiveNotificationToast({
       className={cn(
         'pointer-events-auto group relative w-full rounded-2xl',
         'cursor-pointer select-none border text-right',
-        'border-emerald-200/60 bg-gradient-to-br from-emerald-50 via-white to-teal-50',
-        'shadow-[0_10px_28px_rgba(6,78,59,0.14)]',
+        isPlatform
+          ? 'border-indigo-200/70 bg-gradient-to-br from-indigo-50 via-white to-violet-50 shadow-[0_10px_28px_rgba(67,56,202,0.14)]'
+          : 'border-emerald-200/60 bg-gradient-to-br from-emerald-50 via-white to-teal-50 shadow-[0_10px_28px_rgba(6,78,59,0.14)]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60'
       )}
     >
@@ -129,31 +131,45 @@ export function LiveNotificationToast({
         {/* Avatar */}
         <div className="relative shrink-0">
           <div
-            className="relative h-11 w-11 overflow-hidden rounded-full ring-2 ring-white/80 shadow-md"
-            style={{ background: 'linear-gradient(140deg,#10b981 0%,#059669 100%)' }}
+            className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full ring-2 ring-white/80 shadow-md"
+            style={{
+              background: isPlatform
+                ? 'linear-gradient(140deg,#6366f1 0%,#4f46e5 100%)'
+                : 'linear-gradient(140deg,#10b981 0%,#059669 100%)',
+            }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <Image
-              src={avatar || avatarFallback}
-              alt={mentorLabel}
-              fill
-              sizes="44px"
-              className="object-cover"
-              unoptimized
-            />
+            {isPlatform ? (
+              <Shield className="h-5 w-5 text-white" strokeWidth={2.2} />
+            ) : (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <Image
+                  src={avatar || avatarFallback}
+                  alt={mentorLabel}
+                  fill
+                  sizes="44px"
+                  className="object-cover"
+                  unoptimized
+                />
+              </>
+            )}
           </div>
-          {/* live dot */}
-          <span className="absolute -bottom-0.5 -left-0.5 flex h-3 w-3" aria-hidden>
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-80" />
-            <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white shadow-sm" />
-          </span>
+          {!isPlatform ? (
+            <span className="absolute -bottom-0.5 -left-0.5 flex h-3 w-3" aria-hidden>
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-80" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white shadow-sm" />
+            </span>
+          ) : null}
         </div>
 
         {/* טקסט */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <h3
-              className="truncate text-[13.5px] font-black text-emerald-950 leading-tight"
+              className={cn(
+                'truncate text-[13.5px] font-black leading-tight',
+                isPlatform ? 'text-indigo-950' : 'text-emerald-950',
+              )}
               style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
             >
               {n.title || mentorLabel}
@@ -168,7 +184,10 @@ export function LiveNotificationToast({
             </button>
           </div>
           <p
-            className="mt-0.5 line-clamp-3 text-[13px] font-medium leading-snug text-emerald-900/85"
+            className={cn(
+              'mt-0.5 line-clamp-3 text-[13px] font-medium leading-snug',
+              isPlatform ? 'text-indigo-900/85' : 'text-emerald-900/85',
+            )}
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
             {n.body}

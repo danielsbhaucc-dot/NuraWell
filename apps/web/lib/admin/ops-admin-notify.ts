@@ -1,4 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+  genderApproved,
+  genderDenied,
+  genderGrantedGlobal,
+  genderRevoked,
+  type ProfileGender,
+} from '@/lib/privacy/gender-hebrew';
 
 export type OpsAdminNotificationType =
   | 'transcript_access_approved'
@@ -45,13 +52,16 @@ export async function notifyAdminTranscriptAccessApproved(
     userDisplayName: string;
     sessionId: string;
     requestId: string;
+    userGender?: ProfileGender;
   },
 ): Promise<void> {
+  const gender = params.userGender ?? (await resolveUserProfile(admin, params.userId)).gender;
+  const approved = genderApproved(gender);
   await sendOpsAdminNotification(admin, {
     adminUserId: params.adminUserId,
     type: 'transcript_access_approved',
     title: 'אושרה גישה לתמליל',
-    body: `${params.userDisplayName} אישר/ה את בקשתך לצפייה בתמליל. הגישה תקפה ל-24 שעות.`,
+    body: `${params.userDisplayName} ${approved} את בקשתך לצפייה בתמליל. הגישה תקפה ל-24 שעות.`,
     iconEmoji: '✅',
     actionUrl: `/ops/users?user=${params.userId}&tab=conversations&session=${params.sessionId}`,
     metadata: {
@@ -71,8 +81,11 @@ export async function notifyAdminTranscriptAccessDenied(
     sessionId: string;
     requestId: string;
     userNote?: string | null;
+    userGender?: ProfileGender;
   },
 ): Promise<void> {
+  const gender = params.userGender ?? (await resolveUserProfile(admin, params.userId)).gender;
+  const denied = genderDenied(gender);
   const noteSuffix = params.userNote?.trim()
     ? `\nהערת המשתמש: ${params.userNote.trim()}`
     : '';
@@ -80,7 +93,7 @@ export async function notifyAdminTranscriptAccessDenied(
     adminUserId: params.adminUserId,
     type: 'transcript_access_denied',
     title: 'נדחתה בקשת גישה לתמליל',
-    body: `${params.userDisplayName} דחה/תה את הבקשה.${noteSuffix}`,
+    body: `${params.userDisplayName} ${denied} את הבקשה.${noteSuffix}`,
     iconEmoji: '🚫',
     actionUrl: `/ops/users?user=${params.userId}&tab=conversations`,
     metadata: {
@@ -98,13 +111,15 @@ export async function notifyAdminTranscriptConsentGranted(
     adminUserId: string;
     userId: string;
     userDisplayName: string;
+    userGender?: ProfileGender;
   },
 ): Promise<void> {
+  const gender = params.userGender ?? (await resolveUserProfile(admin, params.userId)).gender;
   await sendOpsAdminNotification(admin, {
     adminUserId: params.adminUserId,
     type: 'transcript_consent_granted',
     title: 'הסכמה גלובלית לתמלילים',
-    body: `${params.userDisplayName} אישר/ה גישת צוות לכל תמלילי השיחות.`,
+    body: `${params.userDisplayName} ${genderGrantedGlobal(gender)}.`,
     iconEmoji: '🔓',
     actionUrl: `/ops/users?user=${params.userId}&tab=conversations`,
     metadata: { user_id: params.userId },
@@ -117,13 +132,16 @@ export async function notifyAdminTranscriptConsentRevoked(
     adminUserId: string;
     userId: string;
     userDisplayName: string;
+    userGender?: ProfileGender;
   },
 ): Promise<void> {
+  const gender = params.userGender ?? (await resolveUserProfile(admin, params.userId)).gender;
+  const revoked = genderRevoked(gender);
   await sendOpsAdminNotification(admin, {
     adminUserId: params.adminUserId,
     type: 'transcript_consent_revoked',
     title: 'בוטלה הסכמה לתמלילים',
-    body: `${params.userDisplayName} ביטל/ה את ההסכמה הגלובלית לגישת צוות לתמלילים.`,
+    body: `${params.userDisplayName} ${revoked} את ההסכמה הגלובלית לגישת צוות לתמלילים.`,
     iconEmoji: '🔒',
     actionUrl: `/ops/users?user=${params.userId}&tab=conversations`,
     metadata: { user_id: params.userId },
@@ -162,19 +180,29 @@ export async function notifyAllAdminsTranscriptConsentChange(
   }
 }
 
-async function resolveUserDisplayName(
+async function resolveUserProfile(
   admin: SupabaseClient,
   userId: string,
-): Promise<string> {
+): Promise<{ displayName: string; gender: ProfileGender }> {
   const { data } = await admin
     .from('profiles')
-    .select('full_name')
+    .select('full_name, gender')
     .eq('id', userId)
     .maybeSingle();
 
   const full = (data?.full_name as string | null)?.trim();
-  if (full) return full;
-  return 'משתמש';
+  return {
+    displayName: full || 'משתמש',
+    gender: (data?.gender as ProfileGender) ?? null,
+  };
+}
+
+async function resolveUserDisplayName(
+  admin: SupabaseClient,
+  userId: string,
+): Promise<string> {
+  const profile = await resolveUserProfile(admin, userId);
+  return profile.displayName;
 }
 
 export { resolveUserDisplayName };
