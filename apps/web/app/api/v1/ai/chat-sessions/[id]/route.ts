@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { selectChatSessionDetail } from '@/lib/ai/chat-sessions/select-fallbacks';
 import { requireApiSession } from '@/lib/api/route-guards';
 
 export const runtime = 'edge';
@@ -11,12 +12,10 @@ export async function GET(request: Request, context: RouteContext) {
   if (!auth.ok) return auth.response;
 
   const { id } = await context.params;
-  const { data, error } = await auth.supabase
-    .from('chat_sessions')
-    .select('id, status, session_kind, title, summary')
-    .eq('id', id)
-    .eq('user_id', auth.user.id)
-    .maybeSingle();
+  const { data, error } = await selectChatSessionDetail(auth.supabase, {
+    sessionId: id,
+    userId: auth.user.id,
+  });
 
   if (error) {
     return NextResponse.json({ error: 'read_failed' }, { status: 500 });

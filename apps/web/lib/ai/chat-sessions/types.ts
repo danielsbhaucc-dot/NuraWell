@@ -1,5 +1,20 @@
 export type ChatSessionStatus = 'open' | 'closed';
 
+export type ChatSessionKind = 'chat' | 'profile_update';
+
+export type ChatSessionListItem = {
+  id: string;
+  status: 'open' | 'closed';
+  session_kind: ChatSessionKind;
+  title: string | null;
+  summary: string | null;
+  created_at: string;
+  updated_at: string;
+  closed_at: string | null;
+  preview_text: string | null;
+  message_count: number;
+};
+
 export type ChatSessionRow = {
   id: string;
   user_id: string;
