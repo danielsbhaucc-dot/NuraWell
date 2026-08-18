@@ -5,6 +5,7 @@ import {
   mergeWriterDecisions,
   writerStancePrompt,
 } from '../lib/ai/chat-intent-router';
+import { ALMOG_VOICE_DNA, ALMOG_RATIONAL_AND_PSYCHOLOGY_RULES } from '../lib/ai/prompts';
 import { sanitizeWriterOutput, looksLikeBracketOnlyReply } from '../lib/ai/sanitize-writer-output';
 import { formatConversationFilePromptBlock } from '../lib/ai/chat-conversation-file';
 import {
@@ -111,7 +112,7 @@ describe('chat writer routing', () => {
     expect(heuristicWriterDecision('תגיד שזה בסדר ותן לי אישור לדלג', emptySignals)).toBe('claude5');
   });
 
-  it('prefers LLM terra over people_please heuristic alone', () => {
+  it('never lets LLM terra win over people_please pressure', () => {
     expect(
       mergeWriterDecisions(
         'terra',
@@ -120,7 +121,13 @@ describe('chat writer routing', () => {
         { terra: 18, claude5: 30, grok: 70, llama4: 5 },
         ['people_please']
       )
-    ).toBe('terra');
+    ).toBe('grok');
+  });
+
+  it('does not flatten people_please+empathy to Terra when LLM picked grok', () => {
+    expect(
+      mergeWriterDecisions('grok', 'grok', undefined, undefined, ['empathy', 'people_please'])
+    ).toBe('grok');
   });
 
   it('lets hard accusation heuristic override LLM terra', () => {
@@ -294,19 +301,32 @@ describe('chat writer routing', () => {
 
   it('keeps mixed-intent stance prompts for Claude and Grok lanes', () => {
     expect(writerStancePrompt(['empathy', 'adult'])).toMatch(/כאב אמיתי וגם גבול/);
-    expect(writerStancePrompt(['evasion'])).toMatch(/אל תקנה/);
+    expect(writerStancePrompt(['evasion'])).toMatch(/אל תקנה|בלי לקנות/);
     expect(writerStancePrompt(['evasion'])).toMatch(/סקריפט אימון|בחירה בינארית/);
     expect(writerStancePrompt(['evasion'])).not.toMatch(/1\)/);
-    expect(writerStancePrompt(['people_please'])).toMatch(/אל תרצה/);
+    expect(writerStancePrompt(['people_please'])).toMatch(/אל תרצה|בלי לרצות/);
+    expect(writerStancePrompt(['people_please'])).toMatch(/עולם שלו|גובה עיניים/);
     expect(writerStancePrompt(['argument'])).toMatch(/בחן|העמד במקום|אל תרצה|עובדות/);
     expect(writerStancePrompt(['accusation'])).toMatch(/אתה צודק|עובדות|אמת/);
   });
 
   it('covers Terra empathy/coaching and Llama short stances', () => {
-    expect(writerStancePrompt(['empathy'])).toMatch(/אמפתיה תותחית|רגש רך/);
+    expect(writerStancePrompt(['empathy'])).toMatch(/אמפתיה תותחית|רגש רך|עולם שלו/);
     expect(writerStancePrompt(['coaching'])).toMatch(/שגרה\/תזונה/);
     expect(writerStancePrompt(['simple'])).toMatch(/תודה\/עשיתי/);
     expect(writerStancePrompt(['safety'])).toMatch(/גבול\/בטיחות/);
+  });
+});
+
+describe('Almog voice: enter world without people-pleasing', () => {
+  it('unlocks writer personality and forbids lecture/people-please/telegram replies', () => {
+    expect(ALMOG_VOICE_DNA).toMatch(/כניסה ≠ הסכמה/);
+    expect(ALMOG_VOICE_DNA).toMatch(/גובה עיניים/);
+    expect(ALMOG_VOICE_DNA).toMatch(/שחקן, לא רובוט נעול/);
+    expect(ALMOG_VOICE_DNA).toMatch(/קיצור בכוח זה רובוט/);
+    expect(ALMOG_VOICE_DNA).not.toMatch(/לרוב קצר/);
+    expect(ALMOG_RATIONAL_AND_PSYCHOLOGY_RULES).toMatch(/אל תלמד פסיכולוגיה/);
+    expect(ALMOG_RATIONAL_AND_PSYCHOLOGY_RULES).toMatch(/כניסה ≠ הסכמה/);
   });
 });
 
