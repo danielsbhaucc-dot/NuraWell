@@ -14,6 +14,63 @@ type RouteContext = { params: Promise<{ userId: string }> };
 
 const sessionIdSchema = z.string().uuid();
 
+const SESSION_LIST_SELECTS = [
+  'id, status, title, summary, live_conversation_file, created_at, updated_at, closed_at',
+  'id, status, summary, live_conversation_file, created_at, updated_at, closed_at',
+  'id, status, summary, created_at, updated_at, closed_at',
+] as const;
+
+function isMissingColumnError(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return error.code === '42703' || error.code === 'PGRST204' || /column .* does not exist/i.test(error.message ?? '');
+}
+
+function isMissingRelationError(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return error.code === '42P01' || error.code === 'PGRST205' || /relation .* does not exist/i.test(error.message ?? '');
+}
+
+async function selectUserChatSessions(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: { from: (table: string) => any },
+  userId: string
+) {
+  let lastError: { code?: string; message?: string } | null = null;
+  for (const select of SESSION_LIST_SELECTS) {
+    const { data, error } = await admin
+      .from('chat_sessions')
+      .select(select)
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false })
+      .limit(50);
+    if (!error) return { data: data ?? [], error: null };
+    lastError = error;
+    if (!isMissingColumnError(error)) break;
+  }
+  return { data: null, error: lastError };
+}
+
+async function selectUserChatSession(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: { from: (table: string) => any },
+  userId: string,
+  sessionId: string
+) {
+  let lastError: { code?: string; message?: string } | null = null;
+  for (const select of SESSION_LIST_SELECTS) {
+    const { data, error } = await admin
+      .from('chat_sessions')
+      .select(select)
+      .eq('id', sessionId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (!error) return { data, error: null };
+    lastError = error;
+    if (!isMissingColumnError(error)) break;
+  }
+  return { data: null, error: lastError };
+}
+
 async function rateLimitAdmin(userId: string) {
   return consumeMultiRateLimits(userId, 'admin-api', [
     { limit: 120, windowSeconds: 60 },
@@ -43,14 +100,7 @@ export async function GET(request: Request, context: RouteContext) {
       return NextResponse.json({ error: 'invalid_session' }, { status: 400 });
     }
 
-    const { data: session, error } = await admin
-      .from('chat_sessions')
-      .select(
-        'id, status, title, summary, live_conversation_file, created_at, updated_at, closed_at'
-      )
-      .eq('id', parsed.data)
-      .eq('user_id', userId)
-      .maybeSingle();
+    const { data: session, error } = await selectUserChatSession(admin, userId, parsed.data);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -69,14 +119,7 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   const [sessionsRes, periodicRes, profileRes] = await Promise.all([
-    admin
-      .from('chat_sessions')
-      .select(
-        'id, status, title, summary, live_conversation_file, created_at, updated_at, closed_at'
-      )
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false })
-      .limit(50),
+    selectUserChatSessions(admin, userId),
     admin
       .from('chat_periodic_summaries')
       .select('type, period_key, session_count, ai_insight, updated_at')
@@ -90,13 +133,22 @@ export async function GET(request: Request, context: RouteContext) {
     return NextResponse.json({ error: sessionsRes.error.message }, { status: 500 });
   }
 
+  const periodicSummaries =
+    periodicRes.error && !isMissingRelationError(periodicRes.error) && !isMissingColumnError(periodicRes.error)
+      ? null
+      : (periodicRes.data ?? []);
+
+  if (periodicSummaries === null) {
+    return NextResponse.json({ error: periodicRes.error?.message ?? 'periodic_fetch_failed' }, { status: 500 });
+  }
+
   const aiContext = (profileRes.data?.ai_context as { chat_summary?: string } | null) ?? {};
   const rollup = typeof aiContext.chat_summary === 'string' ? aiContext.chat_summary : null;
 
   return NextResponse.json({
     rollup,
     sessions: sessionsRes.data ?? [],
-    periodic_summaries: periodicRes.data ?? [],
+    periodic_summaries: periodicSummaries,
   });
 }
 
@@ -158,15 +210,24 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const now = new Date().toISOString();
-    const { data, error } = await admin
+    let reopened = await admin
       .from('chat_sessions')
       .update({ status: 'open', closed_at: null, updated_at: now })
       .eq('id', sessionId)
       .eq('user_id', userId)
       .select('id, status, title, summary')
       .single();
-    if (error) throw error;
-    return NextResponse.json({ session: data });
+    if (reopened.error && isMissingColumnError(reopened.error)) {
+      reopened = await admin
+        .from('chat_sessions')
+        .update({ status: 'open', closed_at: null, updated_at: now })
+        .eq('id', sessionId)
+        .eq('user_id', userId)
+        .select('id, status, summary')
+        .single();
+    }
+    if (reopened.error) throw reopened.error;
+    return NextResponse.json({ session: reopened.data });
   } catch (err) {
     console.error('[admin/chat-memory PATCH]', err);
     return NextResponse.json({ error: 'action_failed' }, { status: 500 });
