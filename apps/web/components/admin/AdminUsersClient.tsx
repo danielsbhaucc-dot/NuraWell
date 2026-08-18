@@ -184,6 +184,7 @@ export function AdminUsersClient() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; label: string } | null>(null);
   const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [tab, setTab] = useState<TabKey>('details');
   const [cost, setCost] = useState<UserCostResp | null>(null);
@@ -307,16 +308,23 @@ export function AdminUsersClient() {
     };
   }, [selectedId, saving, deleting, deleteDialogOpen, closeUser]);
 
+  const requestDelete = (id: string, label: string) => {
+    setPendingDelete({ id, label: label.trim() || id });
+    setDeleteDialogOpen(true);
+  };
+
   const deleteUser = async () => {
-    if (!selectedId || !detail) return;
+    if (!pendingDelete) return;
+    const targetId = pendingDelete.id;
     setDeleting(true);
     setDeleteDialogOpen(false);
     setMessage(null);
     try {
-      const res = await fetch(`/api/v1/admin/users/${selectedId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/v1/admin/users/${targetId}`, { method: 'DELETE' });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? 'מחיקה נכשלה');
-      closeUser();
+      if (selectedId === targetId) closeUser();
+      setPendingDelete(null);
       setMessage({ kind: 'ok', text: 'המשתמש נמחק לצמיתות' });
       void loadList(q);
     } catch (e) {
@@ -362,7 +370,7 @@ export function AdminUsersClient() {
   };
 
   const set = (key: keyof typeof form, value: string) => setForm((f) => ({ ...f, [key]: value }));
-  const deleteLabel = form.full_name || detail?.auth.email || selectedId || 'משתמש זה';
+  const deleteLabel = pendingDelete?.label || 'משתמש זה';
 
   const stats = detail?.stats;
   const statChips = useMemo(
@@ -389,7 +397,11 @@ export function AdminUsersClient() {
         danger
         busy={deleting}
         onConfirm={() => void deleteUser()}
-        onCancel={() => !deleting && setDeleteDialogOpen(false)}
+        onCancel={() => {
+          if (deleting) return;
+          setDeleteDialogOpen(false);
+          setPendingDelete(null);
+        }}
       />
 
       {/* כותרת */}
@@ -398,7 +410,7 @@ export function AdminUsersClient() {
         eyebrow="ניהול קהילה"
         title="משתמשים"
         tone="emerald"
-        description="חיפוש, צפייה בפרופיל ההרשמה ועריכה — כל שינוי מסנכרן אוטומטית את הזיכרון של אלמוג."
+        description="חיפוש, צפייה בפרופיל, עריכה ומחיקה — כל שינוי מסנכרן אוטומטית את הזיכרון של אלמוג."
       />
 
       {/* חיפוש + תוצאות */}
@@ -442,45 +454,64 @@ export function AdminUsersClient() {
         </div>
       ) : (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {list.map((u) => (
-            <li key={u.id}>
-              <button
-                type="button"
-                onClick={() => openUser(u.id)}
-                className="group flex w-full items-center gap-3 rounded-2xl border border-white/60 bg-white/45 p-3.5 text-right shadow-[0_8px_24px_rgba(99,102,241,0.07)] backdrop-blur-xl transition-all hover:border-emerald-300/70 hover:bg-white/70 hover:shadow-[0_12px_32px_rgba(16,185,129,0.16)] active:scale-[0.99]"
-              >
-                <Avatar id={u.id} name={u.full_name} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-display text-sm font-black text-slate-900">
-                    {u.full_name || 'ללא שם'}
-                  </p>
-                  <p className="truncate text-xs text-slate-500">{u.email ?? u.id}</p>
-                  <div className="mt-1.5 flex flex-wrap gap-1">
-                    <span
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold',
-                        u.onboarding_completed
-                          ? 'bg-emerald-100/90 text-emerald-800'
-                          : 'bg-amber-100/90 text-amber-800',
-                      )}
-                    >
-                      {u.onboarding_completed ? 'השלים הרשמה' : 'הרשמה חלקית'}
-                    </span>
-                    {u.email_confirmed ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-sky-100/90 px-2 py-0.5 text-[10px] font-bold text-sky-800">
-                        <CheckCircle2 className="h-3 w-3" /> מאומת
-                      </span>
-                    ) : null}
-                    {u.role && u.role !== 'user' ? (
-                      <span className="inline-flex items-center rounded-full bg-violet-100/90 px-2 py-0.5 text-[10px] font-bold text-violet-800">
-                        {u.role}
-                      </span>
-                    ) : null}
-                  </div>
+          {list.map((u) => {
+            const label = u.full_name || u.email || u.id;
+            return (
+              <li key={u.id}>
+                <div className="group flex items-stretch rounded-2xl border border-white/60 bg-white/45 shadow-[0_8px_24px_rgba(99,102,241,0.07)] backdrop-blur-xl transition-all hover:border-emerald-300/70 hover:bg-white/70 hover:shadow-[0_12px_32px_rgba(16,185,129,0.16)]">
+                  <button
+                    type="button"
+                    onClick={() => openUser(u.id)}
+                    className="flex min-w-0 flex-1 items-center gap-3 p-3.5 text-right active:scale-[0.99]"
+                  >
+                    <Avatar id={u.id} name={u.full_name} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-display text-sm font-black text-slate-900">
+                        {u.full_name || 'ללא שם'}
+                      </p>
+                      <p className="truncate text-xs text-slate-500">{u.email ?? u.id}</p>
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold',
+                            u.onboarding_completed
+                              ? 'bg-emerald-100/90 text-emerald-800'
+                              : 'bg-amber-100/90 text-amber-800',
+                          )}
+                        >
+                          {u.onboarding_completed ? 'השלים הרשמה' : 'הרשמה חלקית'}
+                        </span>
+                        {u.email_confirmed ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-sky-100/90 px-2 py-0.5 text-[10px] font-bold text-sky-800">
+                            <CheckCircle2 className="h-3 w-3" /> מאומת
+                          </span>
+                        ) : null}
+                        {u.role && u.role !== 'user' ? (
+                          <span className="inline-flex items-center rounded-full bg-violet-100/90 px-2 py-0.5 text-[10px] font-bold text-violet-800">
+                            {u.role}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => requestDelete(u.id, label)}
+                    disabled={deleting}
+                    aria-label={`מחק את ${label}`}
+                    title="מחיקת משתמש"
+                    className="m-2 shrink-0 self-center rounded-xl border border-rose-200/80 bg-rose-50/80 p-2 text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+                  >
+                    {deleting && pendingDelete?.id === u.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </button>
                 </div>
-              </button>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -825,13 +856,18 @@ export function AdminUsersClient() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setDeleteDialogOpen(true)}
+                      onClick={() =>
+                        requestDelete(
+                          selectedId,
+                          form.full_name || detail.auth.email || selectedId,
+                        )
+                      }
                       disabled={saving || deleting}
                       className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-300/70 bg-rose-50/70 px-4 py-3 text-sm font-bold text-rose-700 backdrop-blur-md transition hover:bg-rose-100/80 disabled:opacity-60"
                       aria-label="מחיקה מלאה"
                     >
                       {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                      <span className="hidden sm:inline">מחיקה</span>
+                      מחיקה
                     </button>
                   </div>
                   {message ? (
