@@ -39,7 +39,12 @@ import {
   conversationFileSystemInstructions,
   formatConversationFilePromptBlock,
 } from '../../../../../lib/ai/chat-conversation-file';
-import { looksLikeBracketOnlyReply, sanitizeWriterOutput } from '../../../../../lib/ai/sanitize-writer-output';
+import {
+  looksLikeBracketOnlyReply,
+  looksLikeLeakedThinking,
+  preferSanitizedWriterOutput,
+  shouldHoldStreamForThinking,
+} from '../../../../../lib/ai/sanitize-writer-output';
 import { parseLlmJsonObject } from '../../../../../lib/ai/parse-llm-json';
 import { extractOpenRouterDeltaText } from '../../../../../lib/ai/openrouter-delta-text';
 import { computeChatCostUsd } from '../../../../../lib/admin/cost-model';
@@ -726,18 +731,22 @@ async function createOpenRouterTextStreamResponse({
     }
 
     streamPrefixBuffer += clientText;
-    const cleanedPrefix = sanitizeWriterOutput(streamPrefixBuffer);
-    if (normalizeLine(cleanedPrefix || streamPrefixBuffer).length >= MIN_STREAM_PREFIX_CHARS) {
+    if (shouldHoldStreamForThinking(streamPrefixBuffer)) {
+      return;
+    }
+    const cleanedPrefix = preferSanitizedWriterOutput(streamPrefixBuffer);
+    if (normalizeLine(cleanedPrefix).length >= MIN_STREAM_PREFIX_CHARS) {
       streamStarted = true;
-      controller.enqueue(encoder.encode(cleanedPrefix || streamPrefixBuffer));
+      controller.enqueue(encoder.encode(cleanedPrefix));
       streamPrefixBuffer = '';
     }
   };
 
   const flushModelText = (controller: ReadableStreamDefaultController<Uint8Array>) => {
     if (streamPrefixBuffer) {
+      const flushed = preferSanitizedWriterOutput(streamPrefixBuffer);
       streamStarted = true;
-      controller.enqueue(encoder.encode(streamPrefixBuffer));
+      if (flushed) controller.enqueue(encoder.encode(flushed));
       streamPrefixBuffer = '';
     }
   };
@@ -798,16 +807,17 @@ async function createOpenRouterTextStreamResponse({
           processDataLine(line.slice(5).trim(), controller);
         }
 
-        accumulated = sanitizeWriterOutput(accumulated) || accumulated;
+        accumulated = preferSanitizedWriterOutput(accumulated);
         const accumulatedTrimmed = accumulated.trim();
         if (
           !accumulatedTrimmed ||
           isStubModelReply(accumulatedTrimmed) ||
-          looksLikeBracketOnlyReply(accumulatedTrimmed)
+          looksLikeBracketOnlyReply(accumulatedTrimmed) ||
+          looksLikeLeakedThinking(accumulatedTrimmed)
         ) {
           let retryText = onEmptyRetry ? (await onEmptyRetry()).trim() : '';
           if (retryText && piiShield) retryText = piiShield.detokenizeText(retryText);
-          retryText = sanitizeWriterOutput(retryText) || retryText;
+          retryText = preferSanitizedWriterOutput(retryText);
           if (retryText) {
             accumulated = retryText;
             finishReason = 'stop';
@@ -847,7 +857,7 @@ async function createOpenRouterTextStreamResponse({
         if (!streamStarted && onEmptyRetry) {
           let retryText = (await onEmptyRetry()).trim();
           if (retryText && piiShield) retryText = piiShield.detokenizeText(retryText);
-          retryText = sanitizeWriterOutput(retryText) || retryText;
+          retryText = preferSanitizedWriterOutput(retryText);
           if (retryText) {
             accumulated = retryText;
             controller.enqueue(encoder.encode(retryText));
@@ -942,7 +952,7 @@ async function createOpenRouterCheapTextResponse({
     usage?: unknown;
   };
   const rawText = data.choices?.[0]?.message?.content?.trim() ?? '';
-  const text = sanitizeWriterOutput(piiShield ? piiShield.detokenizeText(rawText) : rawText);
+  const text = preferSanitizedWriterOutput(piiShield ? piiShield.detokenizeText(rawText) : rawText);
   const safeText = text && !isStubModelReply(text) ? text : '';
   if (!safeText) {
     throw new Error('OpenRouter cheap writer empty');
@@ -3175,7 +3185,7 @@ export async function POST(request: Request) {
           }
         }
 
-        const assistantText = sanitizeWriterOutput(t) || t;
+        const assistantText = preferSanitizedWriterOutput(t);
         if (!t) {
           console.warn('[ai/chat]', {
             debug_id: debugId,

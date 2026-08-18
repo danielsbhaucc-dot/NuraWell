@@ -3,7 +3,7 @@
  */
 
 import type { UIMessage } from 'ai';
-import { sanitizeWriterOutput } from '../ai/sanitize-writer-output';
+import { preferSanitizedWriterOutput } from '../ai/sanitize-writer-output';
 
 /** חלקי הודעה מינימליים לחילוץ — תואם UIMessage.parts בלי לייבא כל ה-union. */
 export type ChatMessageTextPart = {
@@ -122,19 +122,19 @@ export function extractDisplayTextFromChatMessage(message: ChatDisplayMessage): 
       (part) => isToolOrNonDisplayPart(part) && !isTextPart(part)
     );
     const fromParts = textFromParts(parts);
-    if (fromParts) return sanitizeWriterOutput(stripStreamProtocolArtifacts(fromParts));
+    if (fromParts) return preferSanitizedWriterOutput(stripStreamProtocolArtifacts(fromParts));
     if (hasNonTextDisplayParts) return '';
   }
 
   if (typeof message.content === 'string' && message.content.trim()) {
-    return sanitizeWriterOutput(stripStreamProtocolArtifacts(message.content.trim()));
+    return preferSanitizedWriterOutput(stripStreamProtocolArtifacts(message.content.trim()));
   }
 
   return '';
 }
 
 export function normalizeDisplayText(raw: string): string {
-  const cleaned = sanitizeWriterOutput(stripStreamProtocolArtifacts(raw));
+  const cleaned = preferSanitizedWriterOutput(stripStreamProtocolArtifacts(raw));
   if (!cleaned) return '';
 
   return cleaned
@@ -147,10 +147,10 @@ export function normalizeDisplayText(raw: string): string {
       try {
         const parsed = JSON.parse(jsonLine[1]) as { type?: unknown; text?: unknown; value?: unknown };
         if (typeof parsed.text === 'string' && parsed.text.trim()) {
-          return sanitizeWriterOutput(parsed.text);
+          return preferSanitizedWriterOutput(parsed.text);
         }
         if (typeof parsed.value === 'string' && parsed.value.trim()) {
-          return sanitizeWriterOutput(parsed.value);
+          return preferSanitizedWriterOutput(parsed.value);
         }
         if (typeof parsed.type === 'string') return '';
       } catch {
