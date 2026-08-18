@@ -1,4 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { ingestConversationToVector } from '../chat-memory/conversation-vector';
+import { rollupUserChatContext } from '../chat-memory/session-conversation-file';
 import { extractMemoriesFromTranscript } from '../user-memories/extract-from-transcript';
 import { reconcileSessionMemories } from '../user-memories/reconcile-session-memories';
 import { fetchChatSessionTranscript, formatTranscriptForLlm } from './fetch-transcript';
@@ -9,6 +11,7 @@ export type CloseChatSessionResult = {
   session: ChatSessionRow;
   memories_extracted: number;
   summary: string;
+  vectors_ingested: number;
   memory_reconcile?: {
     inserted: number;
     refreshed: number;
@@ -19,7 +22,7 @@ export type CloseChatSessionResult = {
 };
 
 /**
- * סגירת סשן: סיכום AI + חילוץ זיכרונות + שמירה ל-user_memories + Upstash.
+ * סגירת סשן: סיכום AI + חילוץ זיכרונות + Upstash + אינדקס שיחות.
  */
 export async function closeChatSession(
   supabase: SupabaseClient,
@@ -27,7 +30,9 @@ export async function closeChatSession(
 ): Promise<CloseChatSessionResult> {
   const { data: session, error: sessionErr } = await supabase
     .from('chat_sessions')
-    .select('id, user_id, status, summary, created_at, updated_at, closed_at')
+    .select(
+      'id, user_id, status, summary, live_conversation_file, created_at, updated_at, closed_at'
+    )
     .eq('id', params.sessionId)
     .eq('user_id', params.userId)
     .single();
@@ -38,6 +43,7 @@ export async function closeChatSession(
       session: session as ChatSessionRow,
       memories_extracted: 0,
       summary: session.summary,
+      vectors_ingested: 0,
     };
   }
 
@@ -59,7 +65,9 @@ export async function closeChatSession(
     })
     .eq('id', params.sessionId)
     .eq('user_id', params.userId)
-    .select('id, user_id, status, summary, created_at, updated_at, closed_at')
+    .select(
+      'id, user_id, status, summary, live_conversation_file, created_at, updated_at, closed_at'
+    )
     .single();
 
   if (updateErr) throw updateErr;
@@ -71,14 +79,49 @@ export async function closeChatSession(
   });
 
   const memoriesExtracted =
-    memoryReconcile.inserted +
-    memoryReconcile.refreshed +
-    memoryReconcile.merged;
+    memoryReconcile.inserted + memoryReconcile.refreshed + memoryReconcile.merged;
+
+  let vectorsIngested = 0;
+  try {
+    vectorsIngested = await ingestConversationToVector({
+      userId: params.userId,
+      sessionId: params.sessionId,
+      summary,
+      liveFile: session.live_conversation_file as string | null,
+      closedAt: now,
+    });
+  } catch (vecErr) {
+    console.warn('[closeChatSession] vector ingest failed', {
+      sessionId: params.sessionId,
+      error: vecErr instanceof Error ? vecErr.message : String(vecErr),
+    });
+  }
+
+  try {
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('ai_context')
+      .eq('id', params.userId)
+      .maybeSingle();
+    const prevRollup = (prof?.ai_context as { chat_summary?: string } | null)?.chat_summary;
+    await rollupUserChatContext(supabase, {
+      userId: params.userId,
+      sessionSummary: summary,
+      sessionClosedAt: now,
+      previousRollup: prevRollup,
+    });
+  } catch (rollupErr) {
+    console.warn('[closeChatSession] rollup failed', {
+      sessionId: params.sessionId,
+      error: rollupErr instanceof Error ? rollupErr.message : String(rollupErr),
+    });
+  }
 
   return {
     session: updated as ChatSessionRow,
     memories_extracted: memoriesExtracted,
     summary,
+    vectors_ingested: vectorsIngested,
     memory_reconcile: memoryReconcile,
   };
 }

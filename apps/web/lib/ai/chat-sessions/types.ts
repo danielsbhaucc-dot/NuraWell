@@ -5,6 +5,7 @@ export type ChatSessionRow = {
   user_id: string;
   status: ChatSessionStatus;
   summary: string | null;
+  live_conversation_file: string | null;
   created_at: string;
   updated_at: string;
   closed_at: string | null;

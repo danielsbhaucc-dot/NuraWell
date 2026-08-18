@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/v1/ai/cron/auto-close-chat-sessions
- * סוגר סשנים נטושים (12+ שעות ללא פעילות) ומריץ חילוץ זיכרון.
+ * סוגר סשנים נטושים (ברירת מחדל 2 שעות ללא תגובה אחרי אלמוג) ומריץ חילוץ זיכרון.
  */
 export async function POST(request: Request) {
   const authError = await authorizeCronRequest(request);

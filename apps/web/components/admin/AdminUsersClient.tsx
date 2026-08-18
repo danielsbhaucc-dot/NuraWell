@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react';
 import { AdminUserJourneyDetail } from '@/components/admin/AdminUserJourneyDetail';
+import { AlmogChatMemoryPanel } from '@/components/admin/AlmogChatMemoryPanel';
 import { AlmogCommitmentsPanel } from '@/components/admin/AlmogCommitmentsPanel';
 import { AlmogMemoryPanel } from '@/components/admin/AlmogMemoryPanel';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
@@ -50,7 +51,7 @@ type UserDetail = {
   journeyReport: AdminUserJourneyReport;
 };
 
-type TabKey = 'details' | 'journey' | 'almog' | 'memory' | 'costs';
+type TabKey = 'details' | 'journey' | 'almog' | 'memory' | 'conversations' | 'costs';
 
 type CostBreakdown = { chatUsd: number; notificationsUsd: number; videoUsd: number; totalUsd: number };
 type UserCostResp = {
@@ -527,6 +528,7 @@ export function AdminUsersClient() {
                         { key: 'almog', label: 'אלמוג', icon: Sparkles },
                         { key: 'costs', label: 'עלויות', icon: DollarSign },
                         { key: 'memory', label: 'זיכרון', icon: Brain },
+                        { key: 'conversations', label: 'שיחות', icon: MessageSquare },
                       ] as const
                     ).map(({ key, label, icon: Icon }) => (
                       <button
@@ -714,6 +716,8 @@ export function AdminUsersClient() {
                   {tab === 'almog' ? <AlmogCommitmentsPanel userId={selectedId} /> : null}
 
                   {tab === 'memory' ? <AlmogMemoryPanel userId={selectedId} /> : null}
+
+                  {tab === 'conversations' ? <AlmogChatMemoryPanel userId={selectedId} /> : null}
                 </div>
 
                 {/* פעולות */}
