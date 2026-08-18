@@ -497,6 +497,7 @@ type StreamFinishPayload = {
     totalTokens?: number;
     cacheReadInputTokens?: number;
     cacheCreationInputTokens?: number;
+    costUsd?: number;
   };
   finishReason?: string;
 };
@@ -524,20 +525,20 @@ function normalizeOpenRouterUsage(raw: unknown): StreamFinishPayload['usage'] {
     typeof row.completion_tokens === 'number' ? row.completion_tokens : undefined;
   const totalTokens = typeof row.total_tokens === 'number' ? row.total_tokens : undefined;
   const details = row.prompt_tokens_details ?? row.input_token_details;
+  const costRaw = row.cost ?? row.total_cost;
+  const costUsd = typeof costRaw === 'number' && Number.isFinite(costRaw) && costRaw > 0 ? costRaw : undefined;
 
   return {
     inputTokens: promptTokens,
     outputTokens: completionTokens,
     totalTokens,
-    cacheReadInputTokens: readTokenDetail(details, [
-      'cached_tokens',
-      'cache_read',
-      'cache_read_input_tokens',
-    ]),
-    cacheCreationInputTokens: readTokenDetail(details, [
-      'cache_creation',
-      'cache_creation_input_tokens',
-    ]),
+    cacheReadInputTokens:
+      readTokenDetail(details, ['cached_tokens', 'cache_read', 'cache_read_input_tokens']) ??
+      readTokenDetail(row, ['cache_read_input_tokens', 'cached_tokens']),
+    cacheCreationInputTokens:
+      readTokenDetail(details, ['cache_creation', 'cache_creation_input_tokens']) ??
+      readTokenDetail(row, ['cache_creation_input_tokens', 'cache_creation']),
+    costUsd,
   };
 }
 
@@ -659,6 +660,7 @@ async function createOpenRouterTextStreamResponse({
         : {}),
       stream: true,
       stream_options: { include_usage: true },
+      usage: { include: true },
       messages: openRouterMessagesWithCachedSystem(
         tokenizedStatic,
         tokenizedDynamic,
@@ -3242,12 +3244,18 @@ export async function POST(request: Request) {
           });
         }
 
-        const costUsd = computeChatCostUsd(assistantModelName, {
+        const providerCostUsd = usage?.costUsd;
+        const estimatedCostUsd = computeChatCostUsd(assistantModelName, {
           totalTokens,
+          inputTokens,
           outputTokens,
           cacheReadTokens: cacheReadInputTokens,
           cacheCreationTokens: cacheCreationInputTokens,
         });
+        const costUsd =
+          typeof providerCostUsd === 'number' && providerCostUsd > 0
+            ? providerCostUsd
+            : estimatedCostUsd;
 
         try {
           await insertAiInteraction(supabase, {
@@ -3263,12 +3271,14 @@ export async function POST(request: Request) {
               safety_net_used: safetyNetUsed,
               trivial_bypass: trivialBypass,
               fallback_used: !t,
+              input_tokens: inputTokens,
               output_tokens: outputTokens,
               cache_read_input_tokens: cacheReadInputTokens,
               cache_creation_input_tokens: cacheCreationInputTokens,
               finish_reason: effectiveFinishReason,
               continued_after_length: finishReason === 'length' && t !== (text ?? '').trim(),
               cost_usd: costUsd,
+              provider_cost_usd: providerCostUsd ?? null,
               writer: mcfg.writer,
             },
           });

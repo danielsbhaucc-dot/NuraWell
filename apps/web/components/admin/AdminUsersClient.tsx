@@ -53,7 +53,13 @@ type UserDetail = {
 
 type TabKey = 'details' | 'journey' | 'almog' | 'memory' | 'conversations' | 'costs';
 
-type CostBreakdown = { chatUsd: number; notificationsUsd: number; videoUsd: number; totalUsd: number };
+type CostBreakdown = {
+  chatUsd: number;
+  backgroundUsd?: number;
+  notificationsUsd: number;
+  videoUsd: number;
+  totalUsd: number;
+};
 type UserCostResp = {
   breakdown: CostBreakdown;
   counts: {
@@ -63,7 +69,27 @@ type UserCostResp = {
     videoViews: number;
     videoSeconds: number;
   };
+  byModel?: Array<{ model: string; usd: number; messages: number }>;
+  days?: number;
 };
+
+const COST_WINDOWS = [
+  { days: 7, label: '7 ימים' },
+  { days: 30, label: '30 יום' },
+  { days: 90, label: '90 יום' },
+];
+
+function shortModelName(model: string): string {
+  const slug = model.split('/').pop() ?? model;
+  if (/claude-sonnet-5/i.test(slug)) return 'Claude Sonnet 5';
+  if (/gpt-5\.6-terra/i.test(slug)) return 'GPT-5.6 Terra';
+  if (/gpt-5\.6-luna/i.test(slug)) return 'GPT-5.6 Luna';
+  if (/grok-4\.5/i.test(slug)) return 'Grok 4.5';
+  if (/llama-4-maverick/i.test(slug)) return 'Llama 4 Maverick';
+  if (/llama-4-scout/i.test(slug)) return 'Llama 4 Scout';
+  if (/gpt-5-mini/i.test(slug)) return 'GPT-5 mini';
+  return slug;
+}
 
 function usdFmt(n: number): string {
   if (!Number.isFinite(n) || n === 0) return '$0';
@@ -162,6 +188,7 @@ export function AdminUsersClient() {
   const [tab, setTab] = useState<TabKey>('details');
   const [cost, setCost] = useState<UserCostResp | null>(null);
   const [costLoading, setCostLoading] = useState(false);
+  const [costDays, setCostDays] = useState(30);
 
   const [form, setForm] = useState({
     full_name: '',
@@ -231,10 +258,12 @@ export function AdminUsersClient() {
     return () => clearTimeout(t);
   }, [q, loadList]);
 
-  const loadCost = useCallback(async (userId: string) => {
+  const loadCost = useCallback(async (userId: string, days: number) => {
     setCostLoading(true);
     try {
-      const res = await fetch(`/api/v1/admin/costs?userId=${userId}&days=30`, { cache: 'no-store' });
+      const res = await fetch(`/api/v1/admin/costs?userId=${encodeURIComponent(userId)}&days=${days}`, {
+        cache: 'no-store',
+      });
       const data = (await res.json()) as UserCostResp & { error?: string };
       if (!res.ok) throw new Error(data.error ?? 'שגיאה');
       setCost(data);
@@ -249,6 +278,7 @@ export function AdminUsersClient() {
     setSelectedId(userId);
     setTab('details');
     setCost(null);
+    setCostDays(30);
     void loadDetail(userId);
   }, [loadDetail]);
 
@@ -260,8 +290,8 @@ export function AdminUsersClient() {
   }, []);
 
   useEffect(() => {
-    if (selectedId && tab === 'costs' && !cost && !costLoading) void loadCost(selectedId);
-  }, [selectedId, tab, cost, costLoading, loadCost]);
+    if (selectedId && tab === 'costs') void loadCost(selectedId, costDays);
+  }, [selectedId, tab, costDays, loadCost]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -667,53 +697,111 @@ export function AdminUsersClient() {
                   ) : null}
 
                   {tab === 'costs' ? (
-                    costLoading ? (
-                      <div className="flex justify-center py-12">
-                        <Loader2 className="h-7 w-7 animate-spin text-emerald-600" />
+                    <div className="space-y-4">
+                      <div className="flex gap-1 rounded-xl bg-white/40 p-1">
+                        {COST_WINDOWS.map((w) => (
+                          <button
+                            key={w.days}
+                            type="button"
+                            onClick={() => setCostDays(w.days)}
+                            className={cn(
+                              'flex-1 rounded-lg py-1.5 text-xs font-bold transition',
+                              costDays === w.days
+                                ? 'bg-emerald-600 text-white shadow-sm'
+                                : 'text-slate-600 hover:bg-white/70',
+                            )}
+                          >
+                            {w.label}
+                          </button>
+                        ))}
                       </div>
-                    ) : cost ? (
-                      <div className="space-y-4">
-                        <div className="rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-teal-50/60 p-4 text-center backdrop-blur-md">
-                          <p className="text-xs font-semibold text-emerald-800/85">סה״כ עלות · 30 יום</p>
-                          <p className="mt-1 font-display text-4xl font-black tabular-nums text-emerald-800">
-                            {usdFmt(cost.breakdown.totalUsd)}
-                          </p>
+                      {costLoading ? (
+                        <div className="flex justify-center py-12">
+                          <Loader2 className="h-7 w-7 animate-spin text-emerald-600" />
                         </div>
-                        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-                          <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/60 p-3">
-                            <p className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
-                              <MessageSquare className="h-3.5 w-3.5" /> צ׳אט
+                      ) : cost ? (
+                        <>
+                          <div className="rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-teal-50/60 p-4 text-center backdrop-blur-md">
+                            <p className="text-xs font-semibold text-emerald-800/85">
+                              סה״כ עלות · {costDays} יום
                             </p>
-                            <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
-                              {usdFmt(cost.breakdown.chatUsd)}
+                            <p className="mt-1 font-display text-4xl font-black tabular-nums text-emerald-800">
+                              {usdFmt(cost.breakdown.totalUsd)}
                             </p>
-                            <p className="text-[11px] text-slate-500">{cost.counts.chatMessages} הודעות</p>
-                          </div>
-                          <div className="rounded-2xl border border-violet-200/70 bg-violet-50/60 p-3">
-                            <p className="flex items-center gap-1.5 text-xs font-bold text-violet-800">
-                              <Bell className="h-3.5 w-3.5" /> התראות
-                            </p>
-                            <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
-                              {usdFmt(cost.breakdown.notificationsUsd)}
-                            </p>
-                            <p className="text-[11px] text-slate-500">{cost.counts.notifications} התראות</p>
-                          </div>
-                          <div className="rounded-2xl border border-sky-200/70 bg-sky-50/60 p-3">
-                            <p className="flex items-center gap-1.5 text-xs font-bold text-sky-800">
-                              <Video className="h-3.5 w-3.5" /> וידאו
-                            </p>
-                            <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
-                              {usdFmt(cost.breakdown.videoUsd)}
-                            </p>
-                            <p className="text-[11px] text-slate-500">
-                              {cost.counts.videoViews} צפיות · {Math.round(cost.counts.videoSeconds / 60)} דק׳
+                            <p className="mt-1 text-[11px] text-slate-500">
+                              מחירון OpenRouter נוכחי + חיוב ספק כשנשמר
                             </p>
                           </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="py-12 text-center text-sm text-slate-500">לא נמצאו נתוני עלות למשתמש זה</p>
-                    )
+                          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2">
+                            <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/60 p-3">
+                              <p className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+                                <MessageSquare className="h-3.5 w-3.5" /> צ׳אט
+                              </p>
+                              <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
+                                {usdFmt(cost.breakdown.chatUsd)}
+                              </p>
+                              <p className="text-[11px] text-slate-500">{cost.counts.chatMessages} הודעות</p>
+                            </div>
+                            <div className="rounded-2xl border border-amber-200/70 bg-amber-50/60 p-3">
+                              <p className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
+                                <Sparkles className="h-3.5 w-3.5" /> נתב וקובץ חי
+                              </p>
+                              <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
+                                {usdFmt(cost.breakdown.backgroundUsd ?? 0)}
+                              </p>
+                              <p className="text-[11px] text-slate-500">אומדן לכל תור</p>
+                            </div>
+                            <div className="rounded-2xl border border-violet-200/70 bg-violet-50/60 p-3">
+                              <p className="flex items-center gap-1.5 text-xs font-bold text-violet-800">
+                                <Bell className="h-3.5 w-3.5" /> התראות
+                              </p>
+                              <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
+                                {usdFmt(cost.breakdown.notificationsUsd)}
+                              </p>
+                              <p className="text-[11px] text-slate-500">
+                                {cost.counts.notifications} התראות
+                                {cost.counts.notificationsEstimated > 0
+                                  ? ` · ${cost.counts.notificationsEstimated} באומדן`
+                                  : ''}
+                              </p>
+                            </div>
+                            <div className="rounded-2xl border border-sky-200/70 bg-sky-50/60 p-3">
+                              <p className="flex items-center gap-1.5 text-xs font-bold text-sky-800">
+                                <Video className="h-3.5 w-3.5" /> וידאו
+                              </p>
+                              <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
+                                {usdFmt(cost.breakdown.videoUsd)}
+                              </p>
+                              <p className="text-[11px] text-slate-500">
+                                {cost.counts.videoViews} צפיות · {Math.round(cost.counts.videoSeconds / 60)} דק׳
+                              </p>
+                            </div>
+                          </div>
+                          {cost.byModel && cost.byModel.length > 0 ? (
+                            <div className="rounded-2xl border border-white/45 bg-white/40 p-3">
+                              <p className="mb-2 text-xs font-bold text-slate-700">פירוק לפי מודל כותב</p>
+                              <ul className="space-y-1.5">
+                                {cost.byModel.map((m) => (
+                                  <li
+                                    key={m.model}
+                                    className="flex items-center justify-between gap-2 text-xs"
+                                  >
+                                    <span className="truncate text-slate-700">{shortModelName(m.model)}</span>
+                                    <span className="shrink-0 tabular-nums text-slate-900">
+                                      {usdFmt(m.usd)} · {m.messages}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null}
+                        </>
+                      ) : (
+                        <p className="py-12 text-center text-sm text-slate-500">
+                          לא הצלחנו לטעון עלויות למשתמש זה
+                        </p>
+                      )}
+                    </div>
                   ) : null}
 
                   {tab === 'almog' ? <AlmogCommitmentsPanel userId={selectedId} /> : null}

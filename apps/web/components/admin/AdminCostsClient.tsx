@@ -11,11 +11,13 @@ import {
   Video,
   Users,
   TrendingUp,
+  Sparkles,
 } from 'lucide-react';
 import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
 
 type Breakdown = {
   chatUsd: number;
+  backgroundUsd?: number;
   notificationsUsd: number;
   videoUsd: number;
   totalUsd: number;
@@ -109,6 +111,7 @@ function BreakdownBars({ b }: { b: Breakdown }) {
   const pct = (v: number) => `${Math.round((v / total) * 100)}%`;
   const parts = [
     { label: 'צ׳אט', v: b.chatUsd, color: 'bg-emerald-500' },
+    { label: 'רקע', v: b.backgroundUsd ?? 0, color: 'bg-amber-500' },
     { label: 'התראות', v: b.notificationsUsd, color: 'bg-violet-500' },
     { label: 'וידאו', v: b.videoUsd, color: 'bg-sky-500' },
   ];
@@ -119,7 +122,7 @@ function BreakdownBars({ b }: { b: Breakdown }) {
           <div key={p.label} className={p.color} style={{ width: pct(p.v) }} title={`${p.label} ${usd(p.v)}`} />
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+      <div className="grid grid-cols-4 gap-2 text-center text-xs">
         {parts.map((p) => (
           <div key={p.label}>
             <p className="font-bold text-slate-800">{usd(p.v)}</p>
@@ -318,8 +321,9 @@ export function AdminCostsClient() {
                         {usd(u.breakdown.totalUsd)}
                       </p>
                     </div>
-                    <div className="mt-2 grid grid-cols-3 gap-1 text-[10px] text-slate-500">
+                    <div className="mt-2 grid grid-cols-2 gap-1 text-[10px] text-slate-500 sm:grid-cols-4">
                       <span>צ׳אט {usd(u.breakdown.chatUsd)}</span>
+                      <span>רקע {usd(u.breakdown.backgroundUsd ?? 0)}</span>
                       <span>התראות {usd(u.breakdown.notificationsUsd)}</span>
                       <span>וידאו {usd(u.breakdown.videoUsd)}</span>
                     </div>
@@ -381,13 +385,22 @@ export function AdminCostsClient() {
 
               <BreakdownBars b={userCost.breakdown} />
 
-              <div className="grid gap-2 sm:grid-cols-3">
+              <div className="grid gap-2 sm:grid-cols-2">
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3">
                   <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800">
                     <MessageSquare className="h-3.5 w-3.5" /> צ׳אט
                   </p>
                   <p className="mt-1 font-bold tabular-nums text-slate-900">{usd(userCost.breakdown.chatUsd)}</p>
                   <p className="text-[11px] text-slate-500">{userCost.counts.chatMessages} הודעות</p>
+                </div>
+                <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-800">
+                    <Sparkles className="h-3.5 w-3.5" /> נתב וקובץ חי
+                  </p>
+                  <p className="mt-1 font-bold tabular-nums text-slate-900">
+                    {usd(userCost.breakdown.backgroundUsd ?? 0)}
+                  </p>
+                  <p className="text-[11px] text-slate-500">אומדן לכל תור</p>
                 </div>
                 <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-3">
                   <p className="flex items-center gap-1.5 text-xs font-semibold text-violet-800">
@@ -415,9 +428,10 @@ export function AdminCostsClient() {
               </div>
 
               <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-500">
-                העלויות מבוססות על מחירון הספקים שמוגדר ב-cost-model. התראות ללא טוקנים מתועדים מחושבות
-                באומדן. צפיות וידאו מתומחרות לפי {userCost.pricing.bunnyMinutesPerView} דק׳ לצפייה ×{' '}
-                {usd(userCost.pricing.bunnyUsdPerMinute)} לדקה.
+                מחירון OpenRouter נוכחי (אוגוסט 2026). חיוב ספק נשמר כש-OpenRouter מחזיר usage.cost.
+                נתב וקובץ חי הם אומדן. התראות ללא טוקנים מתועדים מחושבות באומדן. צפיות וידאו מתומחרות
+                לפי {userCost.pricing.bunnyMinutesPerView} דק׳ לצפייה × {usd(userCost.pricing.bunnyUsdPerMinute)}{' '}
+                לדקה.
               </p>
             </div>
           ) : null}
