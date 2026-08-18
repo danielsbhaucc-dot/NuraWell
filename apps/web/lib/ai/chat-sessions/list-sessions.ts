@@ -4,6 +4,7 @@ import {
   normalizeChatSessionListItem,
   selectUserChatSessionList,
 } from './select-fallbacks';
+import type { ChatSessionListItem } from './types';
 
 export { buildChatSessionListTitle } from './session-list-title';
 export type { ChatSessionKind, ChatSessionListItem } from './types';
