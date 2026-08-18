@@ -171,14 +171,19 @@ export async function resolveTranscriptAccessRequest(
     requestId: string;
     userId: string;
     approve: boolean;
+    userResponseNote?: string | null;
   },
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; adminUserId: string; sessionId: string; requestId: string }
+  | { ok: false; error: string }
+> {
   const now = new Date();
   const accessUntil = new Date(now.getTime() + SESSION_ACCESS_HOURS * 60 * 60 * 1000).toISOString();
+  const userNote = params.userResponseNote?.trim() || null;
 
   const { data: existing, error: fetchErr } = await admin
     .from('chat_transcript_access_requests')
-    .select('id, status, expires_at')
+    .select('id, status, expires_at, admin_user_id, session_id')
     .eq('id', params.requestId)
     .eq('user_id', params.userId)
     .maybeSingle();
@@ -200,12 +205,18 @@ export async function resolveTranscriptAccessRequest(
       status: params.approve ? 'approved' : 'denied',
       resolved_at: now.toISOString(),
       access_until: params.approve ? accessUntil : null,
+      user_response_note: params.approve ? null : userNote,
     })
     .eq('id', params.requestId)
     .eq('user_id', params.userId);
 
   if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  return {
+    ok: true,
+    adminUserId: existing.admin_user_id as string,
+    sessionId: existing.session_id as string,
+    requestId: params.requestId,
+  };
 }
 
 export type ChatTranscriptAuditAction =

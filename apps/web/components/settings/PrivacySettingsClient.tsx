@@ -34,6 +34,9 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
   const [transcriptSaving, setTranscriptSaving] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [denyDetailId, setDenyDetailId] = useState<string | null>(null);
+  const [denyReason, setDenyReason] = useState('');
+  const [revokeConfirmOpen, setRevokeConfirmOpen] = useState(false);
 
   const loadTranscriptConsent = useCallback(async () => {
     setTranscriptLoading(true);
@@ -57,6 +60,14 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
   }, [loadTranscriptConsent]);
 
   const handleTranscriptConsentToggle = async (granted: boolean) => {
+    if (!granted && transcriptConsent) {
+      setRevokeConfirmOpen(true);
+      return;
+    }
+    await applyTranscriptConsent(granted);
+  };
+
+  const applyTranscriptConsent = async (granted: boolean) => {
     setTranscriptSaving(true);
     try {
       const res = await fetch('/api/v1/account/transcript-access-consent', {
@@ -66,6 +77,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
       });
       if (!res.ok) throw new Error('עדכון נכשל');
       setTranscriptConsent(granted);
+      setRevokeConfirmOpen(false);
     } catch {
       setExportError('עדכון הסכמת תמליל נכשל');
     } finally {
@@ -73,16 +85,26 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
     }
   };
 
-  const resolveRequest = async (requestId: string, approve: boolean) => {
+  const resolveRequest = async (
+    requestId: string,
+    approve: boolean,
+    denialReason?: string,
+  ) => {
     setResolvingId(requestId);
     try {
       const res = await fetch('/api/v1/account/transcript-access-consent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestId, approve }),
+        body: JSON.stringify({
+          requestId,
+          approve,
+          ...(approve ? {} : { denialReason: denialReason?.trim() || undefined }),
+        }),
       });
       if (!res.ok) throw new Error('פעולה נכשלה');
       setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
+      setDenyDetailId(null);
+      setDenyReason('');
       const highlight = searchParams.get('transcript_request');
       if (highlight === requestId) {
         router.replace('/settings/privacy');
@@ -198,56 +220,119 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
           </div>
         ) : (
           <>
-            <label className="flex items-start gap-3 rounded-xl border border-slate-200/80 bg-white/60 p-3 cursor-pointer">
+            <label className="flex items-start gap-3 rounded-xl border border-[#E8D5B5] bg-[#FFF8ED] p-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={transcriptConsent === true}
                 disabled={transcriptSaving}
                 onChange={(e) => void handleTranscriptConsentToggle(e.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-slate-300"
+                className="mt-1 h-4 w-4 rounded border-[#D4C4A8]"
               />
-              <span className="text-sm text-slate-700">
+              <span className="min-w-0 flex-1 text-sm text-slate-700">
                 <span className="font-bold text-slate-900 block mb-0.5">
                   אני מאשר/ת לצוות NuraWell לצפות בתמלילי השיחות שלי
                 </span>
-                ניתן לבטל בכל עת. כל גישה נרשמת ביומן audit פנימי.
+                ניתן לבטל בכל עת — הצוות יקבל התראה על ביטול. כל גישה נרשמת ביומן audit פנימי.
               </span>
+              <Lock className="mt-0.5 h-5 w-5 shrink-0 text-amber-800/70" aria-hidden />
             </label>
+
+            {transcriptConsent ? (
+              <button
+                type="button"
+                disabled={transcriptSaving}
+                onClick={() => setRevokeConfirmOpen(true)}
+                className="w-full min-h-[44px] rounded-xl border border-rose-200 bg-[#FFF5F0] px-4 py-2 text-sm font-bold text-rose-800 disabled:opacity-50"
+              >
+                בטל/י את האישור לגישת צוות
+              </button>
+            ) : null}
 
             {pendingRequests.length > 0 ? (
               <div className="space-y-2">
-                <p className="text-sm font-bold text-amber-800">בקשות ממתינות לאישור</p>
+                <p className="text-sm font-bold text-amber-900">בקשות ממתינות לאישור</p>
                 {pendingRequests.map((req) => (
                   <div
                     key={req.id}
-                    className={`rounded-xl border p-3 ${
+                    className={`flex items-start gap-3 rounded-xl border p-3 ${
                       highlightedRequest === req.id
-                        ? 'border-indigo-400 bg-indigo-50/80'
-                        : 'border-amber-200 bg-amber-50/60'
+                        ? 'border-indigo-300 bg-[#F5F0FF]'
+                        : 'border-[#E8D5B5] bg-[#FFF8ED]'
                     }`}
                   >
-                    <p className="text-xs text-slate-500 mb-1">נשלח {new Date(req.created_at).toLocaleString('he-IL')}</p>
-                    <p className="text-sm text-slate-800 mb-2">{req.reason}</p>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        disabled={resolvingId === req.id}
-                        onClick={() => void resolveRequest(req.id, true)}
-                        className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        אשר
-                      </button>
-                      <button
-                        type="button"
-                        disabled={resolvingId === req.id}
-                        onClick={() => void resolveRequest(req.id, false)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 disabled:opacity-50"
-                      >
-                        <XCircle className="w-3.5 h-3.5" />
-                        דחה
-                      </button>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-stone-500 mb-1">
+                        נשלח {new Date(req.created_at).toLocaleString('he-IL')}
+                      </p>
+                      <p className="text-sm text-stone-800 mb-2">{req.reason}</p>
+                      {denyDetailId === req.id ? (
+                        <div className="mb-2 space-y-2">
+                          <label className="block text-xs font-semibold text-stone-700">
+                            הסבר לדחייה (אופציונלי)
+                          </label>
+                          <textarea
+                            value={denyReason}
+                            onChange={(e) => setDenyReason(e.target.value)}
+                            rows={2}
+                            className="w-full rounded-lg border border-[#E8D5B5] bg-[#FFFBF5] px-2 py-1.5 text-sm text-stone-800"
+                            placeholder="למשל: מעדיף/ה לא לשתף את השיחה הזו"
+                          />
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              disabled={resolvingId === req.id}
+                              onClick={() => void resolveRequest(req.id, false, denyReason)}
+                              className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+                            >
+                              שלח דחייה
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDenyDetailId(null);
+                                setDenyReason('');
+                              }}
+                              className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold text-stone-600"
+                            >
+                              ביטול
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            disabled={resolvingId === req.id}
+                            onClick={() => void resolveRequest(req.id, true)}
+                            className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            אשר
+                          </button>
+                          <button
+                            type="button"
+                            disabled={resolvingId === req.id}
+                            onClick={() => void resolveRequest(req.id, false)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-[#FFFBF5] px-3 py-1.5 text-xs font-bold text-rose-700 disabled:opacity-50"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                            דחה
+                          </button>
+                          <button
+                            type="button"
+                            disabled={resolvingId === req.id}
+                            onClick={() => {
+                              setDenyDetailId(req.id);
+                              setDenyReason('');
+                            }}
+                            className="inline-flex items-center gap-1 rounded-lg border border-stone-300 bg-[#FFFBF5] px-3 py-1.5 text-xs font-bold text-stone-700 disabled:opacity-50"
+                          >
+                            דחה עם הסבר
+                          </button>
+                        </div>
+                      )}
                     </div>
+                    <Shield className="mt-0.5 h-5 w-5 shrink-0 text-amber-800/70" aria-hidden />
                   </div>
                 ))}
               </div>
@@ -283,6 +368,44 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
       </section>
 
       <LegalLinksRow tone="light" />
+
+      <AnimatedDialog
+        open={revokeConfirmOpen}
+        onClose={() => !transcriptSaving && setRevokeConfirmOpen(false)}
+        zIndex={280}
+        aria-labelledby="revoke-transcript-title"
+        variant="sheet"
+        mobileChromePadding
+        backdropClassName="absolute inset-0 bg-slate-900/45"
+        panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl"
+      >
+        <h3 id="revoke-transcript-title" className="text-lg font-black text-slate-900">
+          לבטל את האישור?
+        </h3>
+        <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+          צוות NuraWell לא יוכל לצפות בתמלילי השיחות שלך (אלא אם תאשר/י שוב). מנהלי המערכת יקבלו
+          התראה על הביטול.
+        </p>
+        <div className="mt-5 flex gap-2">
+          <button
+            type="button"
+            onClick={() => void applyTranscriptConsent(false)}
+            disabled={transcriptSaving}
+            className="flex-1 min-h-[44px] rounded-xl font-bold text-white bg-rose-600 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {transcriptSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            כן, בטל אישור
+          </button>
+          <button
+            type="button"
+            onClick={() => setRevokeConfirmOpen(false)}
+            disabled={transcriptSaving}
+            className="px-4 min-h-[44px] rounded-xl font-bold border border-slate-200 text-slate-700"
+          >
+            השאר מאושר
+          </button>
+        </div>
+      </AnimatedDialog>
 
       <AnimatedDialog
         open={deleteOpen}

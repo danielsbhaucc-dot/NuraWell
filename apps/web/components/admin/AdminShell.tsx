@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 import {
   Accessibility,
   ArrowLeft,
-  Bell,
   ChevronDown,
   DollarSign,
   Globe,
@@ -28,6 +27,7 @@ import {
 import { cn } from '../../lib/cn';
 import { OpsSessionGuard } from './OpsSessionGuard';
 import { AdminAiAssistantCard } from './AdminAiAssistantCard';
+import { AdminNotificationsBell } from './AdminNotificationsBell';
 import { MediaManagerProvider } from '@/components/media-manager/MediaManagerProvider';
 import { AdminMediaManagerLauncher } from '@/components/media-manager/AdminMediaManagerLauncher';
 
@@ -539,14 +539,7 @@ export function AdminShell({
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
-              <button
-                type="button"
-                className="relative inline-flex min-h-10 min-w-10 items-center justify-center rounded-2xl border border-white/55 bg-white/45 text-emerald-900 shadow-sm backdrop-blur-md transition-colors hover:bg-white/70"
-                aria-label="התראות (בקרוב)"
-              >
-                <Bell size={19} className="opacity-90" />
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-400 ring-2 ring-white/80" aria-hidden />
-              </button>
+              <AdminNotificationsBell opsHref={opsHref} />
 
               <div className="flex items-center gap-2.5 rounded-2xl border border-white/55 bg-white/45 py-1 pl-1 pr-2.5 shadow-sm backdrop-blur-md sm:pr-3">
                 <div className="hidden min-w-0 flex-col items-end leading-tight sm:flex">

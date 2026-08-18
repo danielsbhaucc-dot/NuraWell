@@ -129,7 +129,13 @@ function canViewTranscript(status: TranscriptAccessStatus | undefined): boolean 
   return status === 'granted_global' || status === 'granted_session';
 }
 
-export function AlmogChatMemoryPanel({ userId }: { userId: string }) {
+export function AlmogChatMemoryPanel({
+  userId,
+  initialSessionId = null,
+}: {
+  userId: string;
+  initialSessionId?: string | null;
+}) {
   const [data, setData] = useState<ChatMemoryResp | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -165,6 +171,18 @@ export function AlmogChatMemoryPanel({ userId }: { userId: string }) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const [initialApplied, setInitialApplied] = useState(false);
+  useEffect(() => {
+    if (!data || !initialSessionId || initialApplied) return;
+    const session = data.sessions.find((s) => s.id === initialSessionId);
+    if (!session) return;
+    setExpandedSession(initialSessionId);
+    if (canViewTranscript(session.transcript_access)) {
+      setReasonModalSession(initialSessionId);
+    }
+    setInitialApplied(true);
+  }, [data, initialSessionId, initialApplied]);
 
   const expandedRow = useMemo(
     () => data?.sessions.find((s) => s.id === expandedSession) ?? null,
@@ -549,12 +567,13 @@ export function AlmogChatMemoryPanel({ userId }: { userId: string }) {
                     ) : null}
 
                     {!hasAccess ? (
-                      <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3">
+                      <div className="flex items-start gap-3 rounded-xl border border-[#E8D5B5] bg-[#FFF8ED] p-3">
+                        <div className="min-w-0 flex-1">
                         <div className="mb-2 flex items-center gap-2 font-medium text-amber-900">
                           {access === 'pending' ? (
-                            <Clock className="h-4 w-4" />
+                            <Clock className="h-4 w-4 shrink-0" />
                           ) : (
-                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTriangle className="h-4 w-4 shrink-0" />
                           )}
                           {access === 'pending'
                             ? 'ממתין לאישור המשתמש'
@@ -564,29 +583,31 @@ export function AlmogChatMemoryPanel({ userId }: { userId: string }) {
                         </div>
                         {access !== 'pending' ? (
                           <>
-                            <label className="mb-1 block text-amber-800">סיבת הבקשה (נשלחת למשתמש)</label>
+                            <label className="mb-1 block text-amber-900/90">סיבת הבקשה (נשלחת למשתמש)</label>
                             <textarea
                               value={requestReason}
                               onChange={(e) => setRequestReason(e.target.value)}
                               rows={2}
-                              className="mb-2 w-full rounded-lg border border-amber-200 bg-white px-2 py-1 text-slate-800"
+                              className="mb-2 w-full rounded-lg border border-[#E8D5B5] bg-[#FFFBF5] px-2 py-1 text-slate-800"
                               placeholder="למשל: בקשת תמיכה #1234 — בדיקת תקלה בשיחה"
                             />
                             <button
                               type="button"
                               disabled={busy}
                               onClick={() => void requestAccess(s.id)}
-                              className="inline-flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1.5 font-medium text-white disabled:opacity-50"
+                              className="inline-flex items-center gap-1 rounded-lg bg-amber-700 px-3 py-1.5 font-medium text-[#FFFBF5] disabled:opacity-50"
                             >
                               <Send className="h-3.5 w-3.5" />
                               שלח בקשת אישור למשתמש
                             </button>
                           </>
                         ) : (
-                          <p className="text-amber-800">
+                          <p className="text-amber-900/90">
                             נשלחה התראה למשתמש. לאחר אישור — יהיה ניתן לצפות בתמליל ל-24 שעות.
                           </p>
                         )}
+                        </div>
+                        <Shield className="mt-0.5 h-5 w-5 shrink-0 text-amber-800/70" aria-hidden />
                       </div>
                     ) : (
                       <>
