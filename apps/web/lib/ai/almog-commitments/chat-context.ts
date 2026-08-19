@@ -25,6 +25,7 @@ import {
   fetchRecentSosForChat,
   formatRecentSosForChat,
 } from '../guardian/sos-memory';
+import { formatPlansPageSnapshotForChat } from './plans-page-tracking';
 
 type Supa = SupabaseClient;
 
@@ -45,6 +46,7 @@ export async function fetchAlmogCommitmentContext(
   userId: string,
   opts: { needsAssignments: boolean; needsBlockers: boolean }
 ): Promise<AlmogCommitmentContext> {
+  void opts;
   const ctx: AlmogCommitmentContext = {
     activeAssignments: [],
     openBlockers: [],
@@ -104,14 +106,14 @@ export async function fetchAlmogCommitmentContext(
       .catch(() => null)
   );
 
-  const loadAssignments = opts.needsAssignments;
-  const loadBlockers = opts.needsBlockers;
+  const loadAssignments = true;
+  const loadBlockers = true;
 
   if (loadAssignments) {
     tasks.push(
       supabase
         .from('almog_assignments')
-        .select('id, title, reason, schedule, status, given_at, last_done_at, related_habit_id')
+        .select('id, title, reason, schedule, status, given_at, last_done_at, related_habit_id, relation')
         .eq('user_id', userId)
         .eq('status', 'active')
         .order('given_at', { ascending: false })
@@ -176,7 +178,7 @@ export async function fetchAlmogCommitmentContext(
       extra.push(
         supabase
           .from('almog_assignments')
-          .select('id, title, reason, schedule, status, given_at, last_done_at, related_habit_id')
+          .select('id, title, reason, schedule, status, given_at, last_done_at, related_habit_id, relation')
           .eq('user_id', userId)
           .eq('status', 'active')
           .order('given_at', { ascending: false })
@@ -268,6 +270,9 @@ const SCHEDULE_LABEL: Record<string, string> = {
 export function formatAlmogCommitmentBlocks(ctx: AlmogCommitmentContext): string[] {
   const blocks: string[] = [];
 
+  const plansSnapshot = formatPlansPageSnapshotForChat(ctx);
+  if (plansSnapshot) blocks.push(plansSnapshot);
+
   // ── חוסר תגובה לשאילתות / צעדים מותאמים ──
   const noReplyBlock = formatUnansweredRecoveryForChat(ctx.unansweredRecovery);
   if (noReplyBlock) blocks.push(noReplyBlock);
@@ -303,8 +308,8 @@ export function formatAlmogCommitmentBlocks(ctx: AlmogCommitmentContext): string
     }
   }
 
-  // ── משימות אישיות ──
-  if (ctx.activeAssignments.length > 0) {
+  // ── משימות אישיות (רק אם אין snapshot — אחרת זה כפול) ──
+  if (!plansSnapshot && ctx.activeAssignments.length > 0) {
     const lines = ctx.activeAssignments.slice(0, 6).map((a) => {
       const when = israelDayLabel(a.given_at);
       const sched = SCHEDULE_LABEL[a.schedule] ?? '';

@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { Drawer } from 'vaul';
 import { useRouter } from 'next/navigation';
-import { ClipboardCheck, ChevronLeft, History, UserX } from 'lucide-react';
+import { ClipboardCheck, ChevronLeft, History, ListChecks, UserX } from 'lucide-react';
 import { useProgressReport } from '../progress-report/ProgressReportProvider';
 import {
   countTaskStatusesByReport,
@@ -37,6 +37,7 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [acceptedCount, setAcceptedCount] = useState(0);
   const [rejectedCount, setRejectedCount] = useState(0);
+  const [plansCount, setPlansCount] = useState(0);
   const progressReport = useProgressReport();
   const router = useRouter();
 
@@ -49,6 +50,20 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
       const { accepted, rejected } = countTaskStatusesByReport(json.steps ?? []);
       setAcceptedCount(accepted);
       setRejectedCount(rejected);
+
+      const plansRes = await fetch('/api/v1/almog-assignments', { cache: 'no-store' });
+      const plansJson = (await plansRes.json()) as {
+        assignments?: unknown[];
+        blockers?: Array<{ status?: string }>;
+        error?: string;
+      };
+      if (plansRes.ok) {
+        const active = Array.isArray(plansJson.assignments) ? plansJson.assignments.length : 0;
+        const openBlockers = Array.isArray(plansJson.blockers)
+          ? plansJson.blockers.filter((b) => b.status === 'open' || b.status === 'improving').length
+          : 0;
+        setPlansCount(active + openBlockers);
+      }
     } finally {
       setLoading(false);
     }
@@ -73,6 +88,11 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
   const openHistory = useCallback(() => {
     close();
     router.push('/journey/history');
+  }, [close, router]);
+
+  const openPlans = useCallback(() => {
+    close();
+    router.push('/plans');
   }, [close, router]);
 
   const value: ActionHubContextValue = {
@@ -117,7 +137,7 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
                 עדכון למנטור
               </p>
               <p className="text-xs font-semibold text-emerald-900/72 mt-1 leading-relaxed">
-                דווחו לאלמוג על התקדמות — משימות והרגלים מהמסע
+                דווחו לאלמוג על התקדמות — משימות מהמסע ומהתוכנית שלי
               </p>
             </div>
 
@@ -159,6 +179,46 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
                     </p>
                   </div>
                   <ChevronLeft className="h-5 w-5 text-emerald-800/35 shrink-0" aria-hidden />
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={openPlans}
+                className="w-full text-right rounded-[22px] p-[1px] transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(13,148,136,0.5), rgba(45,212,191,0.35), rgba(255,255,255,0.65))',
+                  boxShadow: '0 12px 36px rgba(13,148,136,0.1)',
+                }}
+              >
+                <div
+                  className="flex items-center gap-4 rounded-[21px] px-4 py-4 flex-row-reverse"
+                  style={{
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(240,253,250,0.45) 100%)',
+                    border: '1px solid rgba(255,255,255,0.65)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
+                  }}
+                >
+                  <div
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
+                    style={{
+                      background: 'linear-gradient(145deg, #0f766e, #14b8a6)',
+                      boxShadow: '0 8px 22px rgba(15,118,110,0.28), inset 0 1px 0 rgba(255,255,255,0.25)',
+                    }}
+                  >
+                    <ListChecks className="h-7 w-7 text-white" strokeWidth={2.2} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-black text-[15px] text-[#1A1730] leading-snug">התוכנית שלי</p>
+                    <p className="text-[12px] text-teal-900/75 font-semibold mt-1 leading-relaxed">
+                      {loading
+                        ? 'רגע, טוען…'
+                        : plansCount > 0
+                          ? `${plansCount} צעדים במעקב עם אלמוג`
+                          : 'צעדים מותאמים, תזכורות ומעקב אישי'}
+                    </p>
+                  </div>
+                  <ChevronLeft className="h-5 w-5 text-teal-800/35 shrink-0" aria-hidden />
                 </div>
               </button>
 

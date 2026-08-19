@@ -22,10 +22,9 @@ import {
   type ProgressRow,
 } from '../../../../../../../lib/workflows/habit-checkpoint-batch';
 import {
-  filterHabitsForSlot,
-  jerusalemCalendarParts,
-  parseJourneyHabitsJson,
-} from '../../../../../../../lib/workflows/habit-checkpoint-eligibility';
+  fetchPendingPlanAssignmentsForUsers,
+  mergePendingPlanAssignmentsIntoCheckpoints,
+} from '../../../../../../../lib/ai/almog-commitments/plans-page-tracking';
 
 /**
  * /api/v1/ai/cron/habit-checkpoints/diagnose
@@ -351,13 +350,24 @@ export async function POST(request: Request) {
    * את המפה הפנימית תחת `targetUserId`.
    */
   const todayExecutionsByUser = new Map([[targetUserId, todayExecutions]]);
-  const plan = planHabitCheckpointTriggers(
+  const planned = planHabitCheckpointTriggers(
     progressRows,
     slot,
     now,
     todayExecutionsByUser,
     lastActiveByUser
   );
+  const pendingPlanByUser = await fetchPendingPlanAssignmentsForUsers(
+    admin,
+    [targetUserId],
+    now
+  );
+  const plan = mergePendingPlanAssignmentsIntoCheckpoints({
+    plan: planned,
+    assignmentsByUser: pendingPlanByUser,
+    slot,
+    checkpointDate: dateKey,
+  });
   const userPlan = plan.find((p) => p.userId === targetUserId) ?? null;
 
   if (

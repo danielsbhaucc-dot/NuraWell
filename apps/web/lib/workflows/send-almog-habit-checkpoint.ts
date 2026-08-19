@@ -24,7 +24,7 @@ import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from '../ai/prompts';
 import type { AlmogHabitCheckpointPayload, HabitCheckpointSlot } from './almog-habit-checkpoint-payload';
 import { isActiveReengagementMove, churnSurveyOptions, type ReengagementMove } from '../churn/reengagement-moves';
 import { patchReengagementContext } from '../churn/patch-reengagement-context';
-import { reportError } from '../monitoring/report-error';
+import { checkpointShouldOpenPlansPage } from '../ai/almog-commitments/plans-page-tracking';
 
 const SLOT_HE: Record<HabitCheckpointSlot, string> = {
   morning: 'בוקר',
@@ -128,7 +128,11 @@ function formatHabitsForPrompt(
       t.pendingSlotLabels && t.pendingSlotLabels.length > 0
         ? `; נשאר היום: ${joinNatural(t.pendingSlotLabels)}`
         : '';
-    const stepContext = step && step !== payload.stepTitle ? ` מתוך הצעד "${step}"` : '';
+        const stepContext = t.fromPlansPage
+          ? ' (מופיע בעמוד התוכנית שלי — זה הצעד לעקוב אחריו)'
+          : step && step !== payload.stepTitle
+            ? ` מתוך הצעד "${step}"`
+            : '';
     return `${t.title}${stepContext} (${schedule}${pending})`;
   });
 
@@ -514,7 +518,7 @@ export async function sendAlmogHabitCheckpointNotification(
       title,
       body,
       icon_emoji: '🌿',
-      action_url: '/journey',
+      action_url: checkpointShouldOpenPlansPage(payload) ? '/plans' : '/journey',
       is_read: false,
       is_sent: false,
       send_at: new Date().toISOString(),
@@ -528,6 +532,7 @@ export async function sendAlmogHabitCheckpointNotification(
         checkpoint_date: payload.checkpointDate,
         habit_ids: habitIds,
         pending_task_ids: pendingTaskIds,
+        from_plans_page: checkpointShouldOpenPlansPage(payload),
         model: AI_MODELS.empathy,
         template: false,
         compassion_only: isCompassionOnly,

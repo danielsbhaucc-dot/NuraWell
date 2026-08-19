@@ -16,7 +16,6 @@ import {
   ThumbsDown,
   ThumbsUp,
 } from 'lucide-react';
-import { AlmogAvatarChip } from '@/components/journey/AlmogPresence';
 import { createClient } from '@/lib/supabase/client';
 import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog-chat';
 import type { BlockerCoachState, BlockerProposal } from '@/lib/ai/almog-commitments/types';
@@ -391,8 +390,6 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
           })
         : null;
 
-  const hasPrimaryWork = Boolean(primaryRecovery || primaryStandalone || (openBlockers.length > 0 && !primaryRecovery));
-
   return (
     <div dir="rtl" className="relative min-h-[calc(100vh-9rem)] overflow-hidden">
       <SoftBackground />
@@ -441,14 +438,10 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
               <ActionNeeded items={actionItems} onJump={jumpTo} />
             ) : null}
 
-            {hasPrimaryWork && primaryStory ? (
-              <TodayOverview story={primaryStory} moreCount={secondaryCount} />
-            ) : null}
-
             {/* ── מיקוד: צעד אחד בלבד (תמיד גלוי כשיש) ── */}
             {primaryRecovery ? (
               <div className="space-y-3">
-                <StepStoryPanel story={primaryStory!} pinned />
+                <SectionLabel>הצעד שלך עכשיו</SectionLabel>
                 <RecoveryPlanCard
                   key={primaryRecovery.blocker.id}
                   plan={primaryRecovery}
@@ -509,7 +502,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
               </div>
             ) : primaryStandalone ? (
               <div className="space-y-3">
-                <StepStoryPanel story={primaryStory!} pinned />
+                <SectionLabel>הצעד שלך עכשיו</SectionLabel>
                 <AssignmentCard
                   key={primaryStandalone.id}
                   assignment={primaryStandalone}
@@ -522,7 +515,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
               </div>
             ) : openBlockers.length > 0 ? (
               <div className="space-y-3">
-                {primaryStory ? <StepStoryPanel story={primaryStory} pinned /> : null}
+                <SectionLabel>אלמוג רוצה לעזור</SectionLabel>
                 {openBlockers.map((b, i) => (
                   <BlockerCoachCard
                     key={b.id}
@@ -818,9 +811,6 @@ function EncouragementCard({ name }: { name: string }) {
       }}
     >
       <div className="mb-2 flex items-center gap-2">
-        <span className="rounded-full ring-2 ring-emerald-100">
-          <AlmogAvatarChip size={28} />
-        </span>
         <span className="text-[12px] font-black text-emerald-700">מילה ממני{name ? `, ${name}` : ''}</span>
       </div>
       <div className="relative min-h-[42px]">
@@ -932,122 +922,59 @@ function Hero({
 }) {
   return (
     <motion.section
-      initial={{ opacity: 0, y: 14 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="relative z-10 w-full overflow-hidden rounded-b-[32px] pb-10 pt-14"
+      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      className="relative z-10 w-full overflow-hidden rounded-b-[28px] pb-9 pt-10"
       style={{
         background:
-          'linear-gradient(155deg, #034d3a 0%, #059669 35%, #0d9488 65%, #10b981 85%, #34d399 100%)',
-        boxShadow: '0 20px 60px rgba(6,78,59,0.36), inset 0 1px 0 rgba(255,255,255,0.22)',
+          'linear-gradient(155deg, #034d3a 0%, #059669 42%, #0d9488 78%, #10b981 100%)',
+        boxShadow: '0 16px 40px rgba(6,78,59,0.28), inset 0 1px 0 rgba(255,255,255,0.22)',
       }}
     >
-      {/* שכבת ברק עליונה — מדמה השתקפות זכוכית על ה-hero */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-2/3"
+        className="pointer-events-none absolute inset-x-0 top-0 h-1/2"
         style={{
           background:
-            'linear-gradient(180deg, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0) 100%)',
+            'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 100%)',
         }}
       />
-      {/* קו זוהר תחתון */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-1"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)' }}
-      />
-      {/* זוהר אור פינתי ימין */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.32), transparent 68%)' }}
+        className="pointer-events-none absolute -left-16 -bottom-20 h-56 w-56 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.4), transparent 70%)' }}
       />
-      {/* זוהר אור שמאל */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-28 -left-20 h-80 w-80 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.50), transparent 70%)' }}
-      />
-      {/* זוהר מרכזי */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(52,211,153,0.18), transparent 65%)' }}
-      />
-      {/* עלה מרחף */}
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute right-6 top-8 text-3xl"
-        animate={{ rotate: [0, -12, 12, 0], y: [0, -6, 0] }}
-        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-      >
-        🍃
-      </motion.div>
-      {/* ניצוץ ימני תחתון */}
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute bottom-10 left-8 text-xl opacity-70"
-        animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.8, 0.5] }}
-        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 1.2 }}
-      >
-        ✦
-      </motion.div>
 
-      {/* תוכן ממורכז — mobile-first */}
-      <div className="container-mobile relative text-center">
-        <motion.div
-          className="relative mx-auto inline-block rounded-full p-1.5"
-          style={{
-            background: 'linear-gradient(140deg, rgba(255,255,255,0.6), rgba(255,255,255,0.15))',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.22)',
-          }}
-          animate={{ y: [0, -5, 0] }}
-          transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <div className="rounded-full ring-2 ring-white/60">
-            <AlmogAvatarChip size={88} />
-          </div>
+      <div className="container-mobile relative text-right">
+        <div className="flex flex-wrap items-center gap-2">
           <span
-            aria-hidden
-            className="absolute -bottom-0.5 -left-0.5 flex h-6 w-6 items-center justify-center rounded-full text-sm"
-            style={{ background: '#ecfdf5', boxShadow: '0 2px 8px rgba(0,0,0,0.22)' }}
+            className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-bold text-white"
+            style={{ background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.28)' }}
           >
-            🌱
-          </span>
-        </motion.div>
-
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          <span
-            className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[13px] font-bold text-white"
-            style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)' }}
-          >
-            {name ? (
-              <>
-                שלום {name} <span aria-hidden>👋</span>
-              </>
-            ) : (
-              <>
-                {greeting()} <span aria-hidden>👋</span>
-              </>
-            )}
+            {name ? `שלום ${name}` : greeting()}
           </span>
           <LivePill live={live} pulsing={pulsing} />
         </div>
 
-        <h1 className="mt-3 text-[2.125rem] font-black leading-[1.0] text-white drop-shadow-md">
+        <h1 className="mt-3 text-[1.85rem] font-black leading-tight text-white drop-shadow-sm">
           התוכנית שלי
         </h1>
 
-        <p className="mx-auto mt-3 max-w-[20rem] text-[14px] leading-relaxed font-medium text-emerald-50/95">
-          {nowLabel
-            ? `עכשיו: ${nowLabel}`
-            : 'אין כרגע צעד דחוץ — הכול רגוע'}
+        <p className="mt-2 max-w-[22rem] text-[13.5px] leading-relaxed font-medium text-emerald-50/95">
+          {nowLabel ? (
+            <>
+              <span className="font-black text-white">עכשיו: </span>
+              {nowLabel}
+            </>
+          ) : (
+            'אין כרגע צעד דחוף — הכול רגוע'
+          )}
           {moreCount > 0 ? ` · ועוד ${moreCount} ברקע` : ''}
         </p>
 
         {needsYou ? (
-          <p className="mt-3 text-[12px] font-bold text-amber-100/95">יש משהו שמחכה לתשובה שלך למטה ↓</p>
+          <p className="mt-2 text-[12px] font-bold text-amber-100/95">יש משהו שמחכה לתשובה שלך למטה ↓</p>
         ) : null}
       </div>
     </motion.section>
@@ -1119,6 +1046,14 @@ function Card({ tint, children }: { tint: Tint; children: React.ReactNode }) {
   );
 }
 
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <p className="px-1 text-[11px] font-black uppercase tracking-[0.14em] text-emerald-800/70">
+      {children}
+    </p>
+  );
+}
+
 function LivePill({ live, pulsing }: { live: boolean; pulsing: boolean }) {
   return (
     <span
@@ -1140,32 +1075,7 @@ function LivePill({ live, pulsing }: { live: boolean; pulsing: boolean }) {
   );
 }
 
-/** סיכום קצר מתחת ל-hero — מה רואים עכשיו */
-function TodayOverview({ story, moreCount }: { story: StepStory; moreCount: number }) {
-  return (
-    <div
-      className="rounded-3xl px-4 py-3.5"
-      style={{
-        background: 'linear-gradient(160deg, rgba(255,255,255,0.88), rgba(236,253,245,0.55))',
-        border: '1px solid rgba(16,185,129,0.2)',
-        boxShadow: '0 6px 20px rgba(16,185,129,0.08)',
-      }}
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black text-emerald-800">
-          {story.tag}
-        </span>
-        {moreCount > 0 ? (
-          <span className="text-[10px] font-semibold text-slate-500">+{moreCount} נוספים ברקע</span>
-        ) : null}
-      </div>
-      <p className="mt-2 text-[15px] font-black leading-snug text-slate-800">{story.headline}</p>
-      <p className="mt-1 text-[12px] leading-relaxed text-slate-500 line-clamp-2">{story.why}</p>
-    </div>
-  );
-}
-
-/** למה / מה שמתי לב / איך עוזר — תמיד גלוי בצעד הראשי */
+/** למה / מה שמתי לב / איך עוזר — נפתח בלחיצה בצעדים משניים */}
 function StepStoryPanel({ story, pinned = false }: { story: StepStory; pinned?: boolean }) {
   const [open, setOpen] = useState(pinned);
 
@@ -1637,6 +1547,9 @@ function AssignmentCard({
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-[15px] font-black leading-snug text-slate-800">{assignment.title}</p>
+            {variant === 'primary' && assignment.reason ? (
+              <p className="mt-1 text-[12px] leading-relaxed text-slate-500">{assignment.reason}</p>
+            ) : null}
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-100/90 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
                 {isRecurring ? <Repeat className="h-2.5 w-2.5" /> : <Sparkles className="h-2.5 w-2.5" />}
@@ -1764,6 +1677,10 @@ function RecoveryPlanCard({
     Boolean(microStep.last_done_at) &&
     fmtDay(microStep.last_done_at) === fmtDay(new Date().toISOString());
   const recoveryProgressDays = Math.min(consecutiveDoneDays(microStep), RECOVERY_GOOD_DAYS_TARGET);
+  const story = storyFromAssignment(microStep, {
+    blocker: plan.syntheticBlocker ? null : blocker,
+    originalTitle: original?.title ?? null,
+  });
 
   return (
     <motion.div
@@ -1805,6 +1722,9 @@ function RecoveryPlanCard({
             </p>
           ) : null}
           <p className="text-[15px] font-black leading-snug text-slate-800">{microStep.title}</p>
+          {!compact ? (
+            <p className="mt-1 text-[12px] leading-relaxed text-slate-500">{story.why}</p>
+          ) : null}
           {microStep.detail ? (
             <p className="mt-1 text-[12px] leading-relaxed text-slate-500">{microStep.detail}</p>
           ) : null}
@@ -2036,8 +1956,8 @@ function BlockerCoachCard({
         <GlassSheen />
         <div className="relative z-[1]">
           <div className="flex items-center gap-2.5">
-            <span className="shrink-0 rounded-full ring-2 ring-rose-100/70">
-              <AlmogAvatarChip size={34} />
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-rose-100">
+              <MessageCircle className="h-4 w-4 text-rose-600" />
             </span>
             <p className="min-w-0 flex-1 text-[14px] font-black leading-snug text-slate-800">
               איך הלך עם הצעד הקטן?
@@ -2104,15 +2024,12 @@ function BlockerCoachCard({
           <>
             {/* כותרת — אלמוג + הקושי שעליו מדברים, פעם אחת */}
             <div className="flex items-center gap-2.5">
-              <span className="shrink-0 rounded-full ring-2 ring-rose-100/70">
-                <AlmogAvatarChip size={34} />
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-rose-100">
+                <MessageCircle className="h-4 w-4 text-rose-600" />
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[13px] font-black text-slate-800">אלמוג</span>
-                  <span className="rounded-full bg-rose-100/80 px-1.5 py-0.5 text-[9px] font-bold text-rose-600">
-                    כאן בשבילך
-                  </span>
+                  <span className="text-[13px] font-black text-slate-800">נקודה שדורשת תשומת לב</span>
                 </div>
                 <p className="mt-0.5 truncate text-[11px] text-slate-400">לגבי: {blocker.description}</p>
               </div>

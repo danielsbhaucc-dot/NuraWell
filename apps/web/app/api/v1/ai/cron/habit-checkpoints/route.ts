@@ -36,6 +36,10 @@ import { guardianOptedIn } from '../../../../../../lib/ai/guardian/guardian-gate
 import { scheduleGuardianTrigger } from '../../../../../../lib/ai/guardian/qstash-scheduler';
 import { runMentorshipSynthesisBatch } from '../../../../../../lib/ai/mentorship/run-synthesis-batch';
 import { fetchRecoveryStatesForUsers } from '../../../../../../lib/ai/almog-commitments/recovery-state';
+import {
+  fetchPendingPlanAssignmentsForUsers,
+  mergePendingPlanAssignmentsIntoCheckpoints,
+} from '../../../../../../lib/ai/almog-commitments/plans-page-tracking';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -445,8 +449,26 @@ async function runHabitCheckpointCron(request: Request) {
   }
 
   const recoveryStateByUser = await fetchRecoveryStatesForUsers(admin, progressUserIds);
+  const { data: activeAssignUsers } = await admin
+    .from('almog_assignments')
+    .select('user_id')
+    .eq('status', 'active')
+    .limit(4000);
+  const planTrackUserIds = [
+    ...new Set([
+      ...progressUserIds,
+      ...((activeAssignUsers ?? []) as Array<{ user_id?: string }>)
+        .map((row) => row.user_id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0),
+    ]),
+  ];
+  const pendingPlanByUser = await fetchPendingPlanAssignmentsForUsers(
+    admin,
+    planTrackUserIds,
+    now
+  );
 
-  const plan = await planHabitCheckpointTriggersWithChat(
+  const planned = await planHabitCheckpointTriggersWithChat(
     admin,
     (progressRows ?? []) as unknown as ProgressRow[],
     slot,
@@ -459,6 +481,12 @@ async function runHabitCheckpointCron(request: Request) {
     mealProfileByUser,
     recoveryStateByUser
   );
+  const plan = mergePendingPlanAssignmentsIntoCheckpoints({
+    plan: planned,
+    assignmentsByUser: pendingPlanByUser,
+    slot,
+    checkpointDate: todayKey,
+  });
 
   /**
    * עדכון engagement_status persisted + reactivation reset (ספק 6.5).

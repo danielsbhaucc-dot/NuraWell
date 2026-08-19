@@ -402,7 +402,8 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
       title,
       body,
       icon_emoji: iconEmoji,
-      action_url: kickoffActionUrl ?? (journeyCtx ? '/journey' : '/home'),
+      action_url: kickoffActionUrl
+        ?? (journeyCtx?.pendingTasks.some((t) => t.fromPlansPage) ? '/plans' : journeyCtx ? '/journey' : '/home'),
       is_read: false,
       is_sent: false,
       send_at: new Date().toISOString(),
