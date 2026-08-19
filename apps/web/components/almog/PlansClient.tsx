@@ -1075,7 +1075,7 @@ function LivePill({ live, pulsing }: { live: boolean; pulsing: boolean }) {
   );
 }
 
-/** למה / מה שמתי לב / איך עוזר — נפתח בלחיצה בצעדים משניים */}
+/** למה / מה שמתי לב / איך עוזר — נפתח בלחיצה בצעדים משניים */
 function StepStoryPanel({ story, pinned = false }: { story: StepStory; pinned?: boolean }) {
   const [open, setOpen] = useState(pinned);
 
