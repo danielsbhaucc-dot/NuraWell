@@ -16,6 +16,7 @@ import {
   ThumbsDown,
   ThumbsUp,
 } from 'lucide-react';
+import { AlmogAvatarChip } from '@/components/journey/AlmogPresence';
 import { createClient } from '@/lib/supabase/client';
 import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog-chat';
 import type { BlockerCoachState, BlockerProposal } from '@/lib/ai/almog-commitments/types';
@@ -922,59 +923,122 @@ function Hero({
 }) {
   return (
     <motion.section
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-      className="relative z-10 w-full overflow-hidden rounded-b-[28px] pb-9 pt-10"
+      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      className="relative z-10 w-full overflow-hidden rounded-b-[32px] pb-10 pt-14"
       style={{
         background:
-          'linear-gradient(155deg, #034d3a 0%, #059669 42%, #0d9488 78%, #10b981 100%)',
-        boxShadow: '0 16px 40px rgba(6,78,59,0.28), inset 0 1px 0 rgba(255,255,255,0.22)',
+          'linear-gradient(155deg, #034d3a 0%, #059669 35%, #0d9488 65%, #10b981 85%, #34d399 100%)',
+        boxShadow: '0 20px 60px rgba(6,78,59,0.36), inset 0 1px 0 rgba(255,255,255,0.22)',
       }}
     >
+      {/* שכבת ברק עליונה — מדמה השתקפות זכוכית על ה-hero */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-1/2"
+        className="pointer-events-none absolute inset-x-0 top-0 h-2/3"
         style={{
           background:
-            'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 100%)',
+            'linear-gradient(180deg, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0) 100%)',
         }}
       />
+      {/* קו זוהר תחתון */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-1"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)' }}
+      />
+      {/* זוהר אור פינתי ימין */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -left-16 -bottom-20 h-56 w-56 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.4), transparent 70%)' }}
+        className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.32), transparent 68%)' }}
       />
+      {/* זוהר אור שמאל */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-28 -left-20 h-80 w-80 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.50), transparent 70%)' }}
+      />
+      {/* זוהר מרכזי */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(52,211,153,0.18), transparent 65%)' }}
+      />
+      {/* עלה מרחף */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute right-6 top-8 text-3xl"
+        animate={{ rotate: [0, -12, 12, 0], y: [0, -6, 0] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        🍃
+      </motion.div>
+      {/* ניצוץ ימני תחתון */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute bottom-10 left-8 text-xl opacity-70"
+        animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.8, 0.5] }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 1.2 }}
+      >
+        ✦
+      </motion.div>
 
-      <div className="container-mobile relative text-right">
-        <div className="flex flex-wrap items-center gap-2">
+      {/* תוכן ממורכז — mobile-first */}
+      <div className="container-mobile relative text-center">
+        <motion.div
+          className="relative mx-auto inline-block rounded-full p-1.5"
+          style={{
+            background: 'linear-gradient(140deg, rgba(255,255,255,0.6), rgba(255,255,255,0.15))',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.22)',
+          }}
+          animate={{ y: [0, -5, 0] }}
+          transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <div className="rounded-full ring-2 ring-white/60">
+            <AlmogAvatarChip size={88} />
+          </div>
           <span
-            className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-bold text-white"
-            style={{ background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.28)' }}
+            aria-hidden
+            className="absolute -bottom-0.5 -left-0.5 flex h-6 w-6 items-center justify-center rounded-full text-sm"
+            style={{ background: '#ecfdf5', boxShadow: '0 2px 8px rgba(0,0,0,0.22)' }}
           >
-            {name ? `שלום ${name}` : greeting()}
+            🌱
+          </span>
+        </motion.div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          <span
+            className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[13px] font-bold text-white"
+            style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)' }}
+          >
+            {name ? (
+              <>
+                שלום {name} <span aria-hidden>👋</span>
+              </>
+            ) : (
+              <>
+                {greeting()} <span aria-hidden>👋</span>
+              </>
+            )}
           </span>
           <LivePill live={live} pulsing={pulsing} />
         </div>
 
-        <h1 className="mt-3 text-[1.85rem] font-black leading-tight text-white drop-shadow-sm">
+        <h1 className="mt-3 text-[2.125rem] font-black leading-[1.0] text-white drop-shadow-md">
           התוכנית שלי
         </h1>
 
-        <p className="mt-2 max-w-[22rem] text-[13.5px] leading-relaxed font-medium text-emerald-50/95">
-          {nowLabel ? (
-            <>
-              <span className="font-black text-white">עכשיו: </span>
-              {nowLabel}
-            </>
-          ) : (
-            'אין כרגע צעד דחוף — הכול רגוע'
-          )}
+        <p className="mx-auto mt-3 max-w-[20rem] text-[14px] leading-relaxed font-medium text-emerald-50/95">
+          {nowLabel
+            ? `עכשיו: ${nowLabel}`
+            : 'אין כרגע צעד דחוף — הכול רגוע'}
           {moreCount > 0 ? ` · ועוד ${moreCount} ברקע` : ''}
         </p>
 
         {needsYou ? (
-          <p className="mt-2 text-[12px] font-bold text-amber-100/95">יש משהו שמחכה לתשובה שלך למטה ↓</p>
+          <p className="mt-3 text-[12px] font-bold text-amber-100/95">יש משהו שמחכה לתשובה שלך למטה ↓</p>
         ) : null}
       </div>
     </motion.section>
