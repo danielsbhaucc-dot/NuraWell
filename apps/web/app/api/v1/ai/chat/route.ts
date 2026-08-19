@@ -2821,8 +2821,8 @@ export async function POST(request: Request) {
       fetchPendingAcceptedTasksForUser(supabase, user.id).catch(() => []),
       fetchHabitGapForChat(supabase, user.id).catch(() => null),
       fetchAlmogCommitmentContext(supabase, user.id, {
-        needsAssignments: Boolean(contextDecision.needs_assignments),
-        needsBlockers: Boolean(contextDecision.needs_blockers),
+        needsAssignments: true,
+        needsBlockers: true,
       }).catch(() => EMPTY_ALMOG_COMMITMENT_CONTEXT),
     ]);
     const commitmentBlocks = formatAlmogCommitmentBlocks(commitmentContext);

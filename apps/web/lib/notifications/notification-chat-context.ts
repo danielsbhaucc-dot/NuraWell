@@ -22,6 +22,7 @@ const SOURCE_LABELS: Record<string, string> = {
   almog_journey_companion: 'ליווי מסע',
   almog_life_context: 'מגע הקשר חיים',
   almog_scheduled_reminder: 'תזכורת שהבטיח אלמוג',
+  almog_plans_followup: 'מעקב לפי התוכנית שלי',
   almog_passive_presence: 'נוכחות שקטה / חיבור מחדש',
   almog_sos: 'SOS / Guardian',
   lesson_feedback: 'משוב אחרי שיעור/חידון',

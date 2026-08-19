@@ -290,6 +290,8 @@ export function collectPendingAcceptedTasks(
   pendingSlotLabels?: string[];
   /** Label עברי לתזמון ("3 פעמים ביום" / "לפני כל ארוחה"). */
   scheduleLabel?: string;
+  /** true כשהכותרת הוחלפה לצעד מותאם מעמוד התוכנית. */
+  fromPlansPage?: boolean;
 }> {
   const seen = new Set<string>();
   const out: Array<{
@@ -299,6 +301,7 @@ export function collectPendingAcceptedTasks(
     pendingSlots?: JourneyTaskSlot[];
     pendingSlotLabels?: string[];
     scheduleLabel?: string;
+    fromPlansPage?: boolean;
   }> = [];
 
   const sortedByRecent = [...rows].sort(
@@ -323,10 +326,15 @@ export function collectPendingAcceptedTasks(
       if (s.execution_done === true) continue;
       if (t.schedule === 'one_time') {
         seen.add(t.id);
-        const title = options.recoveryState
-          ? resolveCheckpointTaskTitle(t.id, t.title, options.recoveryState).title
-          : t.title;
-        out.push({ id: t.id, title, stepTitle });
+        const resolved = options.recoveryState
+          ? resolveCheckpointTaskTitle(t.id, t.title, options.recoveryState)
+          : { title: t.title, inRecovery: false };
+        out.push({
+          id: t.id,
+          title: resolved.title,
+          stepTitle: resolved.inRecovery ? 'התוכנית שלי' : stepTitle,
+          ...(resolved.inRecovery ? { fromPlansPage: true } : {}),
+        });
         continue;
       }
       /** משימה חוזרת — בודק את הסלוטים שבוצעו היום. */
@@ -335,13 +343,14 @@ export function collectPendingAcceptedTasks(
       if (closed) continue;
       const pending = pendingSlotLabelsForToday(t, doneSlots, weekday);
       seen.add(t.id);
-      const title = options.recoveryState
-        ? resolveCheckpointTaskTitle(t.id, t.title, options.recoveryState).title
-        : t.title;
+      const resolved = options.recoveryState
+        ? resolveCheckpointTaskTitle(t.id, t.title, options.recoveryState)
+        : { title: t.title, inRecovery: false };
       out.push({
         id: t.id,
-        title,
-        stepTitle,
+        title: resolved.title,
+        stepTitle: resolved.inRecovery ? 'התוכנית שלי' : stepTitle,
+        ...(resolved.inRecovery ? { fromPlansPage: true } : {}),
         pendingSlots: pending.length > 0 ? pending : undefined,
         pendingSlotLabels:
           pending.length > 0
@@ -1107,6 +1116,7 @@ export function planHabitCheckpointTriggers(
           stepTitle: t.stepTitle,
           scheduleLabel: t.scheduleLabel,
           pendingSlotLabels: t.pendingSlotLabels,
+          ...(t.fromPlansPage ? { fromPlansPage: true } : {}),
         })),
         completedTodayHabits,
         completedTodayTasks,

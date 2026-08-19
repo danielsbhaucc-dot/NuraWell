@@ -10,6 +10,7 @@ import {
   filterHabitsForSlot,
   jerusalemCalendarParts,
 } from './habit-checkpoint-eligibility';
+import { fetchPendingPlanAssignmentsForUsers } from '../ai/almog-commitments/plans-page-tracking';
 
 const JOURNEY_PROGRESS_SELECT = `
   user_id,
@@ -38,7 +39,12 @@ export type PersonalizedJourneyContext = {
   stepTitle: string | null;
   stationTitle: string | null;
   habits: Array<{ id: string; title: string; frequency: string }>;
-  pendingTasks: Array<{ id: string; title: string; stepTitle: string | null }>;
+  pendingTasks: Array<{
+    id: string;
+    title: string;
+    stepTitle: string | null;
+    fromPlansPage?: boolean;
+  }>;
 };
 
 export async function fetchPersonalizedCheckInJourneyContext(
@@ -86,6 +92,21 @@ export async function fetchPersonalizedCheckInJourneyContext(
     cronSlot: slot,
     jerusalemWeekday: weekday,
   });
+  const planRows =
+    (await fetchPendingPlanAssignmentsForUsers(admin, [userId], now)).get(userId) ?? [];
+  const seen = new Set(pendingTasks.map((t) => t.id));
+  for (const row of planRows) {
+    if (row.journeyTaskId && seen.has(row.journeyTaskId)) continue;
+    const planId = `plan:${row.id}`;
+    if (seen.has(planId)) continue;
+    seen.add(planId);
+    pendingTasks.push({
+      id: planId,
+      title: row.title,
+      stepTitle: 'התוכנית שלי',
+      fromPlansPage: true,
+    });
+  }
 
   if (due.length === 0 && pendingTasks.length === 0) return null;
 
@@ -110,6 +131,7 @@ export async function fetchPersonalizedCheckInJourneyContext(
       id: t.id,
       title: t.title,
       stepTitle: t.stepTitle,
+      ...(t.fromPlansPage ? { fromPlansPage: true } : {}),
     })),
   };
 }
@@ -125,8 +147,11 @@ export function formatJourneyBlockForPersonalizedCheckIn(ctx: PersonalizedJourne
     );
   }
   if (taskLines.length) {
+    const fromPlans = ctx.pendingTasks.some((t) => t.fromPlansPage);
     parts.push(
-      `נושאים במסע לשיחה (רקע פנימי — לא לבדוק ביצוע):\n${taskLines.join('\n')}`
+      fromPlans
+        ? `צעדים מעמוד התוכנית שלי (זה המעקב של אלמוג עכשיו):\n${taskLines.join('\n')}`
+        : `נושאים במסע לשיחה (רקע פנימי — לא לבדוק ביצוע):\n${taskLines.join('\n')}`
     );
   }
   if (habitLines.length) {

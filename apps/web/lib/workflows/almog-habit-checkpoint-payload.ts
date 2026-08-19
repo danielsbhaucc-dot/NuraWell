@@ -18,6 +18,8 @@ const pendingTaskSchema = z.object({
   scheduleLabel: z.string().max(120).optional(),
   /** שמות עבריים של הסלוטים שעוד פתוחים היום (לדוגמה ["ערב"]). */
   pendingSlotLabels: z.array(z.string().max(60)).max(8).optional(),
+  /** true = הצעד מופיע בעמוד "התוכנית שלי" (משימה אישית / גרסה מוקלת). */
+  fromPlansPage: z.boolean().optional(),
 });
 
 const completedItemSchema = z.object({

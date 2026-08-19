@@ -6,9 +6,9 @@ import {
   BookOpen,
   ClipboardCheck,
   FileText,
+  ListChecks,
   Route,
   Settings,
-  Sparkles,
   TrendingUp,
   UserRound,
 } from 'lucide-react';
@@ -40,7 +40,7 @@ export function QuickAccessGrid({ simplifiedDashboard = false, onOpenTasks }: Qu
     },
     {
       href: '/plans',
-      icon: Sparkles,
+      icon: ListChecks,
       label: 'התוכנית',
       emoji: '🎯',
       gradient: 'linear-gradient(145deg, #0d9488 0%, #14b8a6 70%)',

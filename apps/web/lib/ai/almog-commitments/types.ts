@@ -167,7 +167,15 @@ export interface BlockerHistoryEntry {
 export interface AlmogCommitmentContext {
   activeAssignments: Pick<
     AlmogAssignment,
-    'id' | 'title' | 'reason' | 'schedule' | 'status' | 'given_at' | 'last_done_at' | 'related_habit_id'
+    | 'id'
+    | 'title'
+    | 'reason'
+    | 'schedule'
+    | 'status'
+    | 'given_at'
+    | 'last_done_at'
+    | 'related_habit_id'
+    | 'relation'
   >[];
   openBlockers: Pick<
     AlmogBlocker,
