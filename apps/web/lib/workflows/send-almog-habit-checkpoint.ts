@@ -25,6 +25,7 @@ import type { AlmogHabitCheckpointPayload, HabitCheckpointSlot } from './almog-h
 import { isActiveReengagementMove, churnSurveyOptions, type ReengagementMove } from '../churn/reengagement-moves';
 import { patchReengagementContext } from '../churn/patch-reengagement-context';
 import { checkpointShouldOpenPlansPage } from '../ai/almog-commitments/plans-page-tracking';
+import { reportError } from '../monitoring/report-error';
 
 const SLOT_HE: Record<HabitCheckpointSlot, string> = {
   morning: 'בוקר',
