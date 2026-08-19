@@ -25,6 +25,11 @@ import {
   fetchPendingPlanAssignmentsForUsers,
   mergePendingPlanAssignmentsIntoCheckpoints,
 } from '../../../../../../../lib/ai/almog-commitments/plans-page-tracking';
+import {
+  filterHabitsForSlot,
+  jerusalemCalendarParts,
+  parseJourneyHabitsJson,
+} from '../../../../../../../lib/workflows/habit-checkpoint-eligibility';
 
 /**
  * /api/v1/ai/cron/habit-checkpoints/diagnose
