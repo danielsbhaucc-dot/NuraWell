@@ -19,7 +19,7 @@
     "backfill:insight-vectors": "node --env-file=.env.local scripts/backfill-insight-vectors-upstash.mjs"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.63",
+    "@ai-sdk/openai": "^4.0.50",
     "@ai-sdk/react": "^3.0.178",
     "@aws-sdk/client-s3": "^3.1045.0",
     "@hebcal/core": "^6.5.1",
