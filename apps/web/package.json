@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.63",
-    "@ai-sdk/react": "^3.0.178",
+    "@ai-sdk/react": "^4.0.86",
     "@aws-sdk/client-s3": "^3.1045.0",
     "@hebcal/core": "^6.5.1",
     "@supabase/ssr": "^0.5.0",
