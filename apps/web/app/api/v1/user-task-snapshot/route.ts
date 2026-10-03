@@ -1,11 +1,57 @@
 import { NextResponse } from 'next/server';
 import { requireApiSession } from '../../../../lib/api/route-guards';
+import {
+  type JourneyReportStepShape,
+} from '../../../../lib/journey/journey-report-parse';
 import { jerusalemDateKey } from '../../../../lib/journey/task-schedule';
 import { buildUserTaskSnapshot } from '../../../../lib/tasks/user-task-ssot';
 import {
   genderDisplayLabel,
   resolveDisplayWeightKg,
 } from '../../../../lib/profile/profile-field-ssot';
+
+type JourneyStepRow = {
+  id?: string;
+  title?: string | null;
+  step_number?: number | null;
+  tasks?: unknown;
+};
+
+type JourneyProgressRow = {
+  step_id: string;
+  task_statuses?: Record<string, { status?: string }> | null;
+};
+
+/** ממפה שורות DB לצורת הצעד ש־SSOT מצפה לה — בלי cast עיוור. */
+function toJourneyReportSteps(
+  stepRows: JourneyStepRow[] | null | undefined,
+  progressRows: JourneyProgressRow[] | null | undefined
+): JourneyReportStepShape[] {
+  const progByStep = new Map(
+    (progressRows ?? []).map((p) => [p.step_id, p])
+  );
+  const steps: JourneyReportStepShape[] = [];
+  for (const row of stepRows ?? []) {
+    if (
+      typeof row.id !== 'string' ||
+      typeof row.title !== 'string' ||
+      typeof row.step_number !== 'number'
+    ) {
+      continue;
+    }
+    const prog = progByStep.get(row.id);
+    steps.push({
+      id: row.id,
+      title: row.title,
+      step_number: row.step_number,
+      tasks: row.tasks ?? null,
+      progress: prog
+        ? { task_statuses: prog.task_statuses ?? undefined }
+        : null,
+    });
+  }
+  return steps;
+}
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -123,13 +169,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed to load progress' }, { status: 500 });
     }
 
-    const progByStep = new Map(
-      (progressRes.data ?? []).map((p: { step_id: string }) => [p.step_id, p])
+    const steps = toJourneyReportSteps(
+      stepsRes.data as JourneyStepRow[] | null,
+      progressRes.data as JourneyProgressRow[] | null
     );
-    const steps = (stepsRes.data ?? []).map((s: { id: string }) => ({
-      ...s,
-      progress: progByStep.get(s.id) ?? null,
-    }));
 
     const snapshot = buildUserTaskSnapshot({
       steps,
