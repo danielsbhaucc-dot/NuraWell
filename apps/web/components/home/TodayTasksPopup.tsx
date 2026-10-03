@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { getAppOverlayRoot } from '../../lib/dom/app-overlay-root';
 import {
   CheckCircle2,
   ClipboardCheck,
@@ -154,6 +155,7 @@ export function TodayTasksPopup({
         <motion.div
           key="today-tasks-popup"
           dir="rtl"
+          data-nura-overlay="1"
           className="fixed inset-0 z-[280] flex items-center justify-center px-4"
           style={{
             paddingTop: 'calc(64px + env(safe-area-inset-top, 0px) + 8px)',
@@ -540,6 +542,6 @@ export function TodayTasksPopup({
         </motion.div>
       ) : null}
     </AnimatePresence>,
-    document.body
+    getAppOverlayRoot()
   );
 }

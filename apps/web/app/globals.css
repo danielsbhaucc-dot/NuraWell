@@ -4151,9 +4151,11 @@ html {
     background: linear-gradient(to right, transparent, rgba(16,185,129,0.4), rgba(4,120,87,0.25), transparent);
   }
 
-  /* ---- PAGE TRANSITION ---- */
+  /* ---- PAGE TRANSITION ----
+     Opacity-only: a lasting `transform` (fill-mode: both) turns <main> into a
+     containing block for position:fixed and clips/offsets overlays. */
   .page-enter {
-    animation: fadeInUp 0.18s ease-out both;
+    animation: pageEnterFade 0.18s ease-out both;
   }
 
   /* Line clamp helpers */
@@ -4173,6 +4175,11 @@ html {
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pageEnterFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes slideUp {
@@ -4554,10 +4561,9 @@ body.overflow-hidden { overflow: hidden; }
   /* --- Floating app shell ---
      The dashboard column floats inside the canvas with vertical margins,
      pronounced rounded corners, and a multi-layer shadow that lifts it off
-     the dark canvas. Backdrop-filter is intentionally avoided here because
-     it creates a new containing block, which would break the position:fixed
-     header and bottom nav (they would scroll with the column). The "glass"
-     character comes from the sophisticated canvas + premium edge treatment. */
+     the dark canvas. `transform` makes the shell a containing block so
+     portaled overlays (`#nura-app-overlay-root`) with position:fixed stay
+     inside the phone frame. Header/BottomNav are re-anchored below. */
   .min-h-screen.bg-dashboard {
     width: 100%;
     max-width: 480px;
@@ -4570,6 +4576,8 @@ body.overflow-hidden { overflow: hidden; }
     overflow: hidden;
     position: relative;
     z-index: 1;
+    transform: translateZ(0);
+    isolation: isolate;
     box-shadow:
       /* Far ambient drop shadow */
       0 50px 120px -25px rgba(0, 0, 0, 0.75),
@@ -4583,6 +4591,17 @@ body.overflow-hidden { overflow: hidden; }
       inset 0 1px 0 rgba(255, 255, 255, 0.55),
       /* Inner highlight — bottom edge (subtle) */
       inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  /* Overlay portal host — fills the shell; children use position:fixed */
+  .min-h-screen.bg-dashboard > #nura-app-overlay-root {
+    position: absolute;
+    inset: 0;
+    z-index: 400;
+    pointer-events: none;
+  }
+  .min-h-screen.bg-dashboard > #nura-app-overlay-root > * {
+    pointer-events: auto;
   }
 
   /* Keep the rounded glass frame stable; scroll only the app content.
@@ -4604,35 +4623,46 @@ body.overflow-hidden { overflow: hidden; }
     display: none;
   }
 
-  /* --- Fixed MobileHeader: pinned to the very top of the column ---
-     Belt + suspenders on positioning so nothing during scroll can shift it. */
+  /* --- Fixed MobileHeader: pinned to the shell (containing block) --- */
   .min-h-screen.bg-dashboard > header.fixed.top-0.left-0.right-0 {
     position: fixed !important;
-    top: 48px !important;
+    top: 0 !important;
     bottom: auto !important;
-    left: 50% !important;
-    right: auto !important;
-    transform: translateX(-50%) !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
     width: 100%;
-    max-width: 480px;
+    max-width: none;
     border-radius: 36px 36px 0 0;
     will-change: auto;
   }
 
-  /* --- Fixed BottomNav: pinned to the very bottom of the column ---
+  /* --- Fixed BottomNav: pinned to the shell bottom ---
      Note: NOT using overflow:hidden because the centered FAB sticks out
      of the top edge and must remain visible. */
   .min-h-screen.bg-dashboard > nav.fixed.bottom-0.left-0.right-0 {
     position: fixed !important;
-    bottom: 32px !important;
+    bottom: 0 !important;
     top: auto !important;
-    left: 50% !important;
-    right: auto !important;
-    transform: translateX(-50%) !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
     width: 100%;
-    max-width: 480px;
+    max-width: none;
     border-radius: 0 0 36px 36px;
     will-change: auto;
+  }
+
+  /* Fallback: overlays that still portal to <body> (e.g. before hydration of shell root) */
+  body.bg-background:has(.min-h-screen.bg-dashboard) > [data-nura-overlay='1'] {
+    top: 48px !important;
+    bottom: 32px !important;
+    left: max(0px, calc(50% - 240px)) !important;
+    right: max(0px, calc(50% - 240px)) !important;
+    width: auto !important;
+    max-width: 480px !important;
+    border-radius: 36px;
+    overflow: hidden;
   }
 
   /* --- Container utilities: a hair wider on desktop for breathing room --- */

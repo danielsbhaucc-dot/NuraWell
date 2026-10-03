@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { ClipboardCheck, ChevronLeft, History, ListChecks, UserX } from 'lucide-react';
 import { fetchUserTaskSnapshot } from '../../lib/client/user-task-snapshot';
 import { useProgressReport } from '../progress-report/ProgressReportProvider';
+import { useAppOverlayRoot } from '../../lib/dom/use-app-overlay-root';
 
 type ActionHubContextValue = {
   open: () => void;
@@ -28,6 +29,7 @@ export function useActionHub(): ActionHubContextValue {
 }
 
 export function ActionHubProvider({ children }: { children: ReactNode }) {
+  const overlayRoot = useAppOverlayRoot();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [acceptedCount, setAcceptedCount] = useState(0);
@@ -85,10 +87,11 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
       {children}
 
       <Drawer.Root open={menuOpen} onOpenChange={setMenuOpen} direction="bottom" shouldScaleBackground>
-        <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 z-[210] bg-emerald-950/35 backdrop-blur-[2px]" />
+        <Drawer.Portal container={overlayRoot ?? undefined}>
+          <Drawer.Overlay data-nura-overlay="1" className="fixed inset-0 z-[210] bg-emerald-950/35 backdrop-blur-[2px]" />
           <Drawer.Content
             dir="rtl"
+            data-nura-overlay="1"
             className="fixed bottom-0 right-0 left-0 z-[215] mx-auto flex w-full max-w-md flex-col rounded-t-[28px] outline-none"
             style={{
               maxHeight: 'min(88dvh, 520px)',

@@ -411,7 +411,7 @@ export function CourseDetailClient({
 }
 
 /**
- * GuideCover — שער כניסה מלא-מסך (100vh/100vw): תמונת רקע עם שכבה כהה,
+ * GuideCover — שער כניסה מלא-מסך: תמונת רקע עם שכבה כהה,
  * שם המדריך בפונט מרהיב, מידע טכני, וכפתור כניסה. בלחיצה הוא "נופל"
  * החוצה והעמוד נפתח מתחתיו בלי רענון.
  */
@@ -439,7 +439,7 @@ function GuideCover({
   return (
     <motion.div
       className="fixed inset-0 z-[70] flex flex-col overflow-hidden"
-      style={{ width: '100vw', height: '100vh' }}
+      style={{ width: '100%', height: '100%' }}
       initial={{ opacity: 1 }}
       exit={{ y: '108%', opacity: 1, transition: { duration: 0.35, ease: [0.7, 0, 0.84, 0] } }}
     >
@@ -506,7 +506,7 @@ function GuideCover({
             initial={{ opacity: 0, y: 24, letterSpacing: '0.06em' }}
             animate={{ opacity: 1, y: 0, letterSpacing: '-0.01em' }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-            className="max-w-[18ch] text-[44px] leading-[1.04] text-white sm:text-6xl"
+            className="max-w-full px-1 text-[clamp(1.75rem,7vw,3.5rem)] leading-[1.15] text-white break-words hyphens-none"
             style={{
               fontFamily: "'Rubik','Heebo',sans-serif",
               fontWeight: 900,

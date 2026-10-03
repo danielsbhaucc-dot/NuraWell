@@ -90,6 +90,8 @@ export default async function DashboardLayout({
             </main>
             <BottomNav />
             <AIOverlaysClient userId={user.id} firstName={firstName} />
+            {/* Portal target for dialogs/drawers/fullscreen video — keeps overlays inside the phone shell */}
+            <div id="nura-app-overlay-root" />
           </div>
         </ActionHubProvider>
       </ProgressReportProvider>

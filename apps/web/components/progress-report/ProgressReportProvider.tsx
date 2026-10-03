@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { Drawer } from 'vaul';
 import { ClipboardCheck, Leaf, Loader2, Sparkles } from 'lucide-react';
+import { useAppOverlayRoot } from '../../lib/dom/use-app-overlay-root';
 import { emojiFromWellnessText } from '../../lib/emoji-from-text';
 import { parseJourneyReportItems } from '../../lib/journey/journey-report-parse';
 import type { JourneyHabit, JourneyTask, JourneyTaskSlot, JourneyTaskExecution } from '../../lib/types/journey';
@@ -152,6 +153,7 @@ export function ProgressReportProvider({
   userMealProfile?: UserMealProfile | null;
   children: ReactNode;
 }) {
+  const overlayRoot = useAppOverlayRoot();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ProgressReportTabId>('task_execution');
   const [loading, setLoading] = useState(false);
@@ -244,10 +246,11 @@ export function ProgressReportProvider({
       {children}
 
       <Drawer.Root open={open} onOpenChange={setOpen} direction="bottom" shouldScaleBackground>
-        <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 z-[220] bg-emerald-950/40 backdrop-blur-[2px]" />
+        <Drawer.Portal container={overlayRoot ?? undefined}>
+          <Drawer.Overlay data-nura-overlay="1" className="fixed inset-0 z-[220] bg-emerald-950/40 backdrop-blur-[2px]" />
           <Drawer.Content
             dir="rtl"
+            data-nura-overlay="1"
             className="fixed bottom-0 right-0 left-0 z-[230] mx-auto flex w-full max-w-md flex-col rounded-t-[28px] outline-none"
             style={{
               height: 'min(90dvh, 720px)',

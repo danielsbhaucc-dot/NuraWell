@@ -812,11 +812,7 @@ export function TaskHistoryClient({
         />
 
         <div className="relative z-10 px-5 pb-[4.5rem] pt-3">
-          {/* Back button + avatar row */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="-mt-3">
-              <AlmogAvatarChipWithNameTag size={92} nameTagVariant="prominent" />
-            </div>
+          <div className="mb-3 flex justify-end">
             <Link
               href="/progress"
               className="flex h-9 w-9 items-center justify-center rounded-xl text-emerald-50"
@@ -830,46 +826,51 @@ export function TaskHistoryClient({
             </Link>
           </div>
 
-          {/* Greeting + title */}
-          <div className="text-right">
-            <p
-              className="text-[15px] font-black text-white leading-tight"
-              style={{ fontFamily: hebrewFont }}
-            >
-              {historyPageGreeting(firstName)}
-            </p>
-            {greeting.occasionGreeting ? (
+          {/* Avatar + title side-by-side (same composition as ProgressPageClient) */}
+          <div className="flex items-start gap-3">
+            <div className="-mt-3 shrink-0">
+              <AlmogAvatarChipWithNameTag size={92} nameTagVariant="prominent" />
+            </div>
+            <div className="min-w-0 flex-1 text-right">
               <p
-                className="mt-1 text-xs font-bold leading-relaxed"
-                style={{
-                  color:
-                    greeting.tone === 'festive'
-                      ? '#FFD97D'
-                      : greeting.tone === 'solemn'
-                        ? 'rgba(255,255,255,0.78)'
-                        : 'rgba(255,255,255,0.92)',
-                  fontStyle: greeting.tone === 'solemn' ? 'italic' : 'normal',
-                }}
+                className="text-[15px] font-black text-white leading-tight"
+                style={{ fontFamily: hebrewFont }}
               >
-                {greeting.occasionGreeting}
+                {historyPageGreeting(firstName)}
               </p>
-            ) : (
-              <p className="mt-1 text-xs font-semibold text-white/80">
-                {greeting.timeGreeting.replace(/,$/, '')}
+              {greeting.occasionGreeting ? (
+                <p
+                  className="mt-1 text-xs font-bold leading-relaxed break-words"
+                  style={{
+                    color:
+                      greeting.tone === 'festive'
+                        ? '#FFD97D'
+                        : greeting.tone === 'solemn'
+                          ? 'rgba(255,255,255,0.78)'
+                          : 'rgba(255,255,255,0.92)',
+                    fontStyle: greeting.tone === 'solemn' ? 'italic' : 'normal',
+                  }}
+                >
+                  {greeting.occasionGreeting}
+                </p>
+              ) : (
+                <p className="mt-1 text-xs font-semibold text-white/80">
+                  {greeting.timeGreeting.replace(/,$/, '')}
+                </p>
+              )}
+              <h1
+                className="mt-2 text-2xl font-black text-white tracking-tight break-words leading-snug"
+                style={{ fontFamily: hebrewFont }}
+              >
+                היסטוריית משימות
+              </h1>
+              <p
+                className="mt-2 text-sm font-black leading-relaxed break-words"
+                style={{ color: '#FFFDE7', fontFamily: "'Rubik', 'Heebo', sans-serif" }}
+              >
+                {almogHeroBody}
               </p>
-            )}
-            <h1
-              className="mt-2 text-2xl font-black text-white tracking-tight"
-              style={{ fontFamily: hebrewFont }}
-            >
-              היסטוריית משימות
-            </h1>
-            <p
-              className="mt-2 text-sm font-black leading-relaxed"
-              style={{ color: '#FFFDE7', fontFamily: "'Rubik', 'Heebo', sans-serif" }}
-            >
-              {almogHeroBody}
-            </p>
+            </div>
           </div>
         </div>
       </motion.header>

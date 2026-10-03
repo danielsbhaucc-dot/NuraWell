@@ -7,6 +7,7 @@ import { X, ChevronRight, ChevronLeft, ZoomIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDialogA11y } from '@/lib/a11y/use-dialog-a11y';
 import { mediaAltText } from '@/lib/a11y/alt-text';
+import { getAppOverlayRoot } from '../../lib/dom/app-overlay-root';
 
 interface ImageItem {
   url: string;
@@ -103,6 +104,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            data-nura-overlay="1"
             className="fixed inset-0 z-[100] flex items-center justify-center p-4"
             style={{ background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(20px)' }}
           >
@@ -178,7 +180,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
           </motion.div>
         ) : null}
       </AnimatePresence>,
-      document.body
+      getAppOverlayRoot()
         )
         : null}
     </>

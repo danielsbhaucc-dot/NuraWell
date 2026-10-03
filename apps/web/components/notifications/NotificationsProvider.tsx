@@ -13,6 +13,7 @@ import {
 import type { RealtimeChannel, User } from '@supabase/supabase-js';
 import { Drawer } from 'vaul';
 import { CheckCheck, ChevronDown, Loader2 } from 'lucide-react';
+import { useAppOverlayRoot } from '../../lib/dom/use-app-overlay-root';
 import { NotificationCard } from './NotificationCard';
 import { LiveToastStack } from './LiveNotificationToast';
 import {
@@ -203,6 +204,7 @@ export function NotificationsProvider({
   void _user;
   const { avatarUrl: almogAvatar } = useAlmogAvatarUrl();
   const { avatarUrl: dolevAvatar } = useMentorAvatarUrl('dolev');
+  const overlayRoot = useAppOverlayRoot();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -752,10 +754,11 @@ export function NotificationsProvider({
       />
 
       <Drawer.Root open={open} onOpenChange={setOpen} direction="bottom" shouldScaleBackground>
-        <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 z-[240] bg-emerald-950/38 backdrop-blur-[4px]" />
+        <Drawer.Portal container={overlayRoot ?? undefined}>
+          <Drawer.Overlay data-nura-overlay="1" className="fixed inset-0 z-[240] bg-emerald-950/38 backdrop-blur-[4px]" />
           <Drawer.Content
             dir="rtl"
+            data-nura-overlay="1"
             className="fixed bottom-0 left-0 right-0 z-[250] mx-auto flex max-h-[88dvh] w-full max-w-md flex-col rounded-t-[26px] outline-none overflow-hidden"
             style={{
               border: '1px solid rgba(255,255,255,0.52)',
