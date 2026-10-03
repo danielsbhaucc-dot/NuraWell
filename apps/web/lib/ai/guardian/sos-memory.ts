@@ -97,14 +97,16 @@ export async function fetchSosContext(
       .limit(eventsLimit),
   ]);
 
-  const memory: SosMemorySnippet[] = ((interventionsRes.data ?? []) as Array<{
+  const seenMemory = new Set<string>();
+  const memory: SosMemorySnippet[] = [];
+  for (const row of (interventionsRes.data ?? []) as Array<{
     strategy: string;
     strategy_type: string;
     barrier_type: string;
     outcome: string;
     metadata: Record<string, unknown> | null;
     created_at: string;
-  }>).map((row) => {
+  }>) {
     const meta = row.metadata ?? {};
     const taskTitle =
       typeof meta.focus_task_title === 'string'
@@ -112,15 +114,19 @@ export async function fetchSosContext(
         : typeof meta.journey_task_title === 'string'
           ? meta.journey_task_title
           : null;
-    return {
+    const outcome = outcomeLabel(row.outcome);
+    const key = `${outcome}|${dedupeKey(row.strategy)}|${dedupeKey(taskTitle ?? '')}`;
+    if (!key || seenMemory.has(key)) continue;
+    seenMemory.add(key);
+    memory.push({
       strategy: row.strategy,
       strategy_type: row.strategy_type,
       barrier_type: row.barrier_type,
-      outcome: outcomeLabel(row.outcome),
+      outcome,
       task_title: taskTitle,
       created_at: row.created_at,
-    };
-  });
+    });
+  }
 
   const recent_events: SosRecentEvent[] = ((eventsRes.data ?? []) as Array<{
     id: string;

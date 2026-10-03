@@ -83,12 +83,19 @@ export function HomeClient({
     pending: 0,
     dueToday: 0,
   });
+  const [taskLoadError, setTaskLoadError] = useState(false);
 
   const refreshTasks = useCallback(async () => {
     setTaskLoading(true);
+    setTaskLoadError(false);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 12_000);
     try {
-      const json = await fetchUserTaskSnapshot();
-      if (!json?.counts) return;
+      const json = await fetchUserTaskSnapshot({ signal: controller.signal });
+      if (!json?.counts) {
+        setTaskLoadError(true);
+        return;
+      }
       const { unified, journey, almog } = json.counts;
       setSnapshotCounts(json.counts);
       setTaskCounts({
@@ -100,7 +107,10 @@ export function HomeClient({
       setTodayTasks(json.journey_today ?? []);
       setAlmogOpen(json.almog_open ?? []);
       setUserSchedule((json.user_schedule as UserScheduleProfile | undefined) ?? {});
+    } catch {
+      setTaskLoadError(true);
     } finally {
+      window.clearTimeout(timeoutId);
       setTaskLoading(false);
     }
   }, []);
@@ -315,8 +325,8 @@ export function HomeClient({
 
           <motion.div variants={item}>
             <HomeSectionDivider
-              title="מה עזר לך לאחרונה"
-              subtitle="מסלול קצר ממה שעבד — לא רשימה עמוסה"
+              title="רגעים אחרונים"
+              subtitle="מה עזר — ומה שפחות התאים"
             />
             <SosMemoryCard />
           </motion.div>
@@ -349,7 +359,14 @@ export function HomeClient({
                     {taskLoading ? '…' : taskCounts.done}
                   </span>
                   <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.75)', fontWeight: 600 }}>
-                    מתוך {taskLoading ? '…' : taskCounts.dueToday || taskCounts.accepted || '·'}
+                    מתוך{' '}
+                    {taskLoading
+                      ? '…'
+                      : taskCounts.dueToday > 0
+                        ? taskCounts.dueToday
+                        : taskCounts.accepted > 0
+                          ? taskCounts.accepted
+                          : 0}
                   </span>
                 </div>
                 <div className="relative text-right" style={{ flex: 1 }}>
@@ -366,13 +383,15 @@ export function HomeClient({
                   <p style={{ fontSize: '12px', color: '#065f46', margin: '2px 0 8px', opacity: 0.85 }}>
                     {taskLoading
                       ? 'רגע, טוען…'
-                      : !(snapshotCounts && hasAnyTakenTasks(snapshotCounts))
-                        ? 'עוד לא לקחנו משימות — בוא נתחיל ביחד'
-                        : taskCounts.dueToday === 0
-                          ? 'אין משימה פתוחה להיום — מחר נמשיך 🌱'
-                          : taskCounts.pending > 0
-                            ? `${taskCounts.pending} משימות מחכות לך היום`
-                            : 'סיימת את כל מה שלהיום! גאה בך ✦'}
+                      : taskLoadError
+                        ? 'לא הצלחנו לטעון משימות — נסו שוב בעוד רגע'
+                        : !(snapshotCounts && hasAnyTakenTasks(snapshotCounts))
+                          ? 'עוד לא לקחנו משימות — בוא נתחיל ביחד'
+                          : taskCounts.dueToday === 0
+                            ? 'אין משימה פתוחה להיום — מחר נמשיך 🌱'
+                            : taskCounts.pending > 0
+                              ? `${taskCounts.pending} משימות מחכות לך היום`
+                              : 'סיימת את כל מה שלהיום! גאה בך ✦'}
                   </p>
                   {(taskCounts.dueToday > 0 || taskCounts.accepted > 0) && (
                     <div className="flex gap-1">

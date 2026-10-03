@@ -71,10 +71,11 @@ export function LegalDataItem({
 }) {
   return (
     <div className="legal-data-item">
-      <h4>
+      {/* כותרת כטקסט מודגש (לא heading) — מונע דילוג heading-order ב-axe */}
+      <p className="legal-data-item-title">
         {icon ? <span aria-hidden>{icon}</span> : null}
-        {title}
-      </h4>
+        <strong>{title}</strong>
+      </p>
       <p>{what}</p>
       <span className="legal-data-why">
         <strong>למה זה נאסף: </strong>

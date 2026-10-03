@@ -81,7 +81,7 @@ export function RegisterLandingClient() {
                     : 'bg-gradient-to-l from-emerald-800 via-emerald-700 to-teal-700 bg-clip-text text-transparent'
                 }
               >
-                NuraWell.ai
+                NuraWell
               </span>
               <span className="onboarding-wave-hand mr-1.5" aria-hidden>
                 {' '}

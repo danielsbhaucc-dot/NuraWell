@@ -919,7 +919,7 @@ export function LandingPageClient() {
               transition={{ delay: 0.3, duration: 0.3 }}
             >
               <InfinityIcon className="w-5 h-5 shrink-0" aria-hidden />
-              1% טוב יותר כל יום = <strong>37×</strong> שינוי בשנה. זה המתמטיקה של אורח חיים.
+              שינוי קטן שחוזר על עצמו נדבק — בלי הבטחות מופרזות, בקצב שלכם.
             </motion.p>
           </div>
         </section>
@@ -1295,7 +1295,7 @@ export function LandingPageClient() {
                 <span className="landing-cta-title-accent">תתחילו עכשיו.</span>
               </h2>
               <p className="landing-cta-text">
-                60 שניות להירשם. גישה מלאה למסע, לקורסים ולמנטור AI שלכם.
+                כמה דקות להירשם — עם פס התקדמות ברור. גישה מלאה למסע, לקורסים ולמנטור AI שלכם.
                 <strong className="block mt-2 text-white">בלי דיאטה. בלי איסורים. בלי שיפוטיות.</strong>
               </p>
               <div className="landing-cta-actions">

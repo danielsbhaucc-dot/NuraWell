@@ -289,12 +289,14 @@ function LoginFormContent() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
+                    aria-pressed={showPassword}
                     className={[
                       'absolute left-3 top-1/2 -translate-y-1/2 transition-colors p-1',
                       isDarkUi ? 'text-emerald-200/70 hover:text-white' : 'text-gray-400 hover:text-gray-600',
                     ].join(' ')}
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" aria-hidden /> : <Eye className="w-4 h-4" aria-hidden />}
                   </button>
                 </div>
               </div>

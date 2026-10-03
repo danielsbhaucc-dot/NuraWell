@@ -31,7 +31,7 @@ export function AiChatPrivacyNotice({ variant = 'dark', className = '' }: AiChat
       <span>
         <strong className={isDark ? 'text-amber-50/95' : 'text-amber-950'}>לפני שליחה:</strong>{' '}
         אל תמסור/י פרטים מזהים (מספר זהות, כתובת, טלפון, אימייל). עיבוד השיחה מתבצע דרך ספקי AI
-        בינלאומיים (ארה&quot;ב וסין) תחת הגנות פרטיות.{' '}
+        בינלאומיים (בעיקר ארה&quot;ב והאיחוד האירופי) תחת הגנות פרטיות.{' '}
         <Link
           href="/privacy"
           className={`underline underline-offset-2 ${isDark ? 'text-emerald-200/90' : 'text-emerald-800'}`}

@@ -4,7 +4,7 @@ import { RegisterLandingClient } from '@/components/onboarding/RegisterLandingCl
 export const metadata: Metadata = {
   title: 'הרשמה',
   description:
-    'הצטרפו ל-NuraWell.ai — ליווי AI אישי לירידה במשקל ואורח חיים בריא. מנטור דולב מלווה אתכם מהרגע הראשון.',
+    'הצטרפו ל-NuraWell — ליווי AI אישי לירידה במשקל ואורח חיים בריא. מנטור דולב מלווה אתכם מהרגע הראשון.',
   robots: { index: true, follow: true },
 };
 

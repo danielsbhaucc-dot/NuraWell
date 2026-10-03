@@ -94,6 +94,50 @@ function dedupeKey(text: string): string {
     .slice(0, 80);
 }
 
+/** אסימונים משמעותיים להשוואת דמיון (M2). */
+function significantTokens(text: string): Set<string> {
+  const stop = new Set(['של', 'את', 'על', 'עם', 'או', 'גם', 'זה', 'זו', 'היא', 'הוא', 'אני', 'כל', 'רק']);
+  return new Set(
+    dedupeKey(text)
+      .split(' ')
+      .filter((t) => t.length >= 2 && !stop.has(t))
+  );
+}
+
+/**
+ * דמיון חלקי בין כותרות — Jaccard על אסימונים, או הכלה כמעט מלאה.
+ * מונע לולאת "כוסות ליד הצלחת" / "חצי כוס" מסיכומי שיחה.
+ */
+export function titlesAreSimilar(a: string, b: string, threshold = 0.55): boolean {
+  const ta = significantTokens(a);
+  const tb = significantTokens(b);
+  if (ta.size === 0 || tb.size === 0) return false;
+  let intersection = 0;
+  for (const t of ta) if (tb.has(t)) intersection += 1;
+  const union = ta.size + tb.size - intersection;
+  if (union === 0) return false;
+  const jaccard = intersection / union;
+  if (jaccard >= threshold) return true;
+  const smaller = ta.size <= tb.size ? ta : tb;
+  const larger = ta.size <= tb.size ? tb : ta;
+  let contained = 0;
+  for (const t of smaller) if (larger.has(t)) contained += 1;
+  return contained / smaller.size >= 0.8;
+}
+
+async function fetchActiveAssignmentTitles(admin: Admin, userId: string): Promise<string[]> {
+  const { data, error } = await admin
+    .from('almog_assignments')
+    .select('title')
+    .eq('user_id', userId)
+    .in('status', ['active', 'proposed'])
+    .limit(80);
+  if (error || !data) return [];
+  return (data as Array<{ title: string | null }>)
+    .map((r) => r.title?.trim() ?? '')
+    .filter(Boolean);
+}
+
 /**
  * ברירת מחדל לזמן תזכורת כשהמודל לא נתן זמן מפורש.
  *
@@ -160,18 +204,38 @@ export async function persistCommitmentExtraction(params: {
   };
 
   // ── משימות אישיות ──────────────────────────────────────────────
+  // M2: דילוג על כותרות כמעט-זהות; אם יש דמיון חלקי — נשמר כ-proposed לאישור.
+  const knownTitles = await fetchActiveAssignmentTitles(admin, userId);
+  const batchTitles: string[] = [];
+
   for (const task of extraction.tasks) {
     const key = dedupeKey(task.title);
     if (!key) continue;
+
+    const nearExact = [...knownTitles, ...batchTitles].some(
+      (existing) => titlesAreSimilar(task.title, existing, 0.72)
+    );
+    if (nearExact) {
+      // כמעט זהה למשימה קיימת — לא מוסיפים שוב אוטומטית.
+      continue;
+    }
+
+    const softSimilar = [...knownTitles, ...batchTitles].some((existing) =>
+      titlesAreSimilar(task.title, existing, 0.55)
+    );
+    const status = softSimilar ? ('proposed' as const) : ('active' as const);
+
     const relatedHabitId = task.related_habit
       ? params.habitTitleToId?.get(task.related_habit.trim()) ?? null
       : null;
     const outcome = await insertDeduped(admin, 'almog_assignments', userId, key, {
       user_id: userId,
       title: task.title,
-      reason: task.reason,
+      reason: softSimilar
+        ? `${task.reason ?? ''} (ממתין לאישור — דומה למשימה קיימת)`.trim()
+        : task.reason,
       detail: task.detail,
-      status: 'active',
+      status,
       schedule: task.schedule,
       given_at: now.toISOString(),
       due_at: task.due_at_iso,
@@ -181,10 +245,18 @@ export async function persistCommitmentExtraction(params: {
       source_excerpt: params.sourceExcerpt ?? null,
       dedupe_key: key,
       created_by: 'almog',
-      metadata: task.related_habit ? { related_habit_title: task.related_habit } : {},
+      metadata: {
+        ...(task.related_habit ? { related_habit_title: task.related_habit } : {}),
+        ...(softSimilar ? { needs_user_approval: true, similar_to_existing: true } : {}),
+      },
     });
-    if (outcome === 'inserted') result.assignments_created += 1;
-    else if (outcome === 'error') result.write_errors += 1;
+    if (outcome === 'inserted') {
+      result.assignments_created += 1;
+      batchTitles.push(task.title);
+      knownTitles.push(task.title);
+    } else if (outcome === 'error') {
+      result.write_errors += 1;
+    }
   }
 
   // תזכורות קרובות שנוצרו זה עתה — נתזמן להן מסירה *מדויקת* דרך QStash אחרי

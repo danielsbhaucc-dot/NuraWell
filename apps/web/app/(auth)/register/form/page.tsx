@@ -3,7 +3,7 @@ import { OnboardingFormClient } from '@/components/onboarding/OnboardingFormClie
 
 export const metadata: Metadata = {
   title: 'שאלון הרשמה',
-  description: 'שאלון קצר להכרות עם המנטור האישי דולב ב-NuraWell.ai',
+  description: 'שאלון קצר להכרות עם המנטור האישי דולב ב-NuraWell',
   robots: { index: false, follow: false },
 };
 

@@ -352,15 +352,19 @@ function CompletedList({
   items: CompletedView[];
   compact?: boolean;
 }) {
+  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
+
   return (
     <ul className={compact ? 'space-y-1.5' : 'space-y-1.5'}>
       {items.map((c) => {
         const when = formatDay(c.last_done_at) ?? formatDay(c.given_at);
+        const expanded = Boolean(expandedIds[c.id]);
+        const longTitle = c.title.trim().length > 42;
         return (
           <li
             key={c.id}
             dir="rtl"
-            className="flex items-center gap-2.5 rounded-2xl px-3 py-2.5"
+            className="flex items-start gap-2.5 rounded-2xl px-3 py-2.5"
             style={{
               background:
                 'linear-gradient(135deg, rgba(236,253,245,0.62) 0%, rgba(209,250,229,0.38) 100%)',
@@ -369,14 +373,31 @@ function CompletedList({
               border: '1px solid rgba(110,231,183,0.32)',
             }}
           >
-            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
             <div className="min-w-0 flex-1 text-right">
-              <p className="truncate text-[13px] font-bold text-emerald-900/85 line-through decoration-emerald-700/40">
+              <p
+                className={[
+                  'text-[13px] font-bold text-emerald-900/85 line-through decoration-emerald-700/40',
+                  expanded ? 'whitespace-normal break-words' : 'truncate',
+                ].join(' ')}
+              >
                 {c.title}
               </p>
+              {longTitle ? (
+                <button
+                  type="button"
+                  className="mt-1 text-[11px] font-bold text-emerald-800 underline-offset-2 hover:underline"
+                  onClick={() =>
+                    setExpandedIds((prev) => ({ ...prev, [c.id]: !prev[c.id] }))
+                  }
+                  aria-expanded={expanded}
+                >
+                  {expanded ? 'הצג פחות' : 'הצג במלואו'}
+                </button>
+              ) : null}
             </div>
             {when ? (
-              <span className="shrink-0 text-[10.5px] font-semibold text-emerald-800/60">
+              <span className="shrink-0 pt-0.5 text-[10.5px] font-semibold text-emerald-800/60">
                 {when}
               </span>
             ) : null}

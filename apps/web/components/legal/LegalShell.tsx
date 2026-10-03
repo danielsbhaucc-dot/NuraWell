@@ -41,7 +41,7 @@ export function LegalShell({
       </div>
 
       <div className="legal-shell">
-        <div className="legal-topbar">
+        <header className="legal-topbar">
           <Link href="/" className="legal-brand" aria-label="חזרה לעמוד הבית של NuraWell">
             <span className="legal-brand-mark" aria-hidden>
               <Leaf className="w-4 h-4" />
@@ -52,9 +52,9 @@ export function LegalShell({
             לעמוד הבית
             <ArrowRight className="w-4 h-4" aria-hidden />
           </Link>
-        </div>
+        </header>
 
-        <motion.header
+        <motion.div
           className="legal-hero"
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
@@ -65,8 +65,8 @@ export function LegalShell({
           </span>
           <h1 className="legal-hero-title">{title}</h1>
           <p className="legal-hero-sub">{subtitle}</p>
-          <span className="legal-hero-meta">עודכן לאחרונה: {updatedAt}</span>
-        </motion.header>
+          <p className="legal-hero-meta">עודכן לאחרונה: {updatedAt}</p>
+        </motion.div>
 
         <nav className="legal-nav" aria-label="ניווט בין מסמכים משפטיים">
           {LEGAL_NAV.map((item) => (
@@ -81,23 +81,24 @@ export function LegalShell({
           ))}
         </nav>
 
-        <motion.main
-          id="main-content"
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease, delay: 0.1 }}
-        >
-          {children}
-        </motion.main>
+        <main id="main-content">
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease, delay: 0.1 }}
+          >
+            {children}
+          </motion.div>
+        </main>
 
         <footer className="legal-footer">
-          <div className="legal-footer-links">
+          <nav className="legal-footer-links" aria-label="קישורים משפטיים בתחתית">
             {LEGAL_NAV.map((item) => (
               <Link key={item.href} href={item.href}>
                 {item.label}
               </Link>
             ))}
-          </div>
+          </nav>
           <p className="legal-footer-copy">
             © {new Date().getFullYear()} NuraWell — כל הזכויות שמורות. נבנה באהבה לשינוי אורח חיים בריא 🌿
           </p>

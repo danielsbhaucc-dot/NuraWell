@@ -109,9 +109,9 @@ export function SosMemoryCard() {
         <div className="flex items-center gap-2">
           <AlmogAvatarChip size={40} />
           <div>
-            <p className="text-sm font-black text-slate-900">מה עזר לך לאחרונה</p>
+            <p className="text-sm font-black text-slate-900">רגעים אחרונים</p>
             <p className="text-[10px] font-semibold text-slate-500">
-              {showAccordion ? 'לחץ לפתיחה / סגירה' : 'רגעים אחרונים'}
+              {showAccordion ? 'לחץ לפתיחה / סגירה' : 'מה עזר ומה שפחות התאים'}
             </p>
           </div>
         </div>
@@ -130,9 +130,12 @@ export function SosMemoryCard() {
       </div>
 
       <div className="relative space-y-2">
+        {helped.length > 0 ? (
+          <p className="text-[11px] font-bold text-emerald-800/90">מה עזר לך</p>
+        ) : null}
         {(expanded || !showAccordion ? helped : helped.slice(0, 1)).map((m, i) => (
           <JourneyStepRow
-            key={`h-${i}`}
+            key={`h-${m.strategy}-${m.created_at}-${i}`}
             tone="good"
             title={m.task_title ? `"${m.task_title}"` : 'רגע קשה'}
             body={m.strategy}
@@ -140,13 +143,16 @@ export function SosMemoryCard() {
           />
         ))}
 
+        {failed.length > 0 && (expanded || !showAccordion) ? (
+          <p className="pt-1 text-[11px] font-bold text-amber-900/85">מה שפחות התאים</p>
+        ) : null}
         {(expanded || !showAccordion ? failed : []).map((m, i) => (
           <JourneyStepRow
-            key={`f-${i}`}
+            key={`f-${m.strategy}-${m.created_at}-${i}`}
             tone="warn"
             title={m.task_title ? `"${m.task_title}"` : 'ניסיון'}
-            body={`${m.strategy} — פחות התאים`}
-            index={helped.length + i + 1}
+            body={m.strategy}
+            index={i + 1}
           />
         ))}
 
