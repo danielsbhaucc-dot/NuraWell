@@ -168,7 +168,8 @@ export function LessonImmersivePath({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      style={{ width: '100vw', height: '100vh' }}
+      /* Fill the phone shell / viewport — never 100vw (escapes the desktop frame and clips Hebrew titles) */
+      style={{ width: '100%', height: '100%' }}
     >
       <div
         className="absolute inset-0"
@@ -345,7 +346,10 @@ function LessonSlideContent({
         <div className="mb-5 flex justify-center">
           <GuideImmersiveAlmogHero size={92} />
         </div>
-        <h2 className="mb-3 text-3xl font-black leading-tight text-white" style={{ textShadow: '0 4px 24px rgba(0,0,0,0.5)' }}>
+        <h2
+          className="mb-3 text-3xl font-black leading-snug text-white break-words whitespace-normal px-1"
+          style={{ textShadow: '0 4px 24px rgba(0,0,0,0.5)' }}
+        >
           {lesson.title}
         </h2>
         {lesson.description ? (

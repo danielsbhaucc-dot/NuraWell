@@ -193,8 +193,10 @@ export function VideoSection({
   const handleImmersiveEnded = useCallback(() => {
     setImmersiveOpen(false);
     setImmersiveFinished(true);
-    setInlinePlaying(true);
-  }, []);
+    setInlinePlaying(false);
+    // Close the video stage and advance into quiz / game / tasks
+    onComplete();
+  }, [onComplete]);
 
   const handleImmersiveFallback = useCallback(() => {
     setImmersiveOpen(false);

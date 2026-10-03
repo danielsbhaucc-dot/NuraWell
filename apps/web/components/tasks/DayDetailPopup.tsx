@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { getAppOverlayRoot } from '../../lib/dom/app-overlay-root';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, MapPin, Sparkles, Sunrise, X } from 'lucide-react';
 import { slotLabel } from '../../lib/journey/task-schedule';
@@ -82,10 +83,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
   if (!mounted) return null;
 
   /**
-   * רינדור דרך Portal ל-document.body — קריטי: עוטף ה-<main> מקבל
-   * `transform` קבוע (animation fadeInUp עם fill=both), מה שהופך אותו
-   * ל-containing-block של position:fixed וגורם ל-popup "להיצמד" ל-main
-   * הנגלל/הנחתך במקום ל-viewport. ה-Portal מוציא אותו החוצה ל-body.
+   * Portal לשורש ה־phone shell (לא ל־body) — כדי שהדיאלוג לא יישפך מחוץ למסגרת בדסקטופ.
    */
   return createPortal(
     <AnimatePresence>
@@ -93,6 +91,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
         <motion.div
           key="day-popup"
           dir="rtl"
+          data-nura-overlay="1"
           className="fixed inset-0 z-[280] flex items-center justify-center px-4"
           /**
            * padding מעל ל-MobileHeader (~64px) ומעל ל-BottomNav (~80px + safe-area).
@@ -307,6 +306,6 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
         </motion.div>
       ) : null}
     </AnimatePresence>,
-    document.body
+    getAppOverlayRoot()
   );
 }

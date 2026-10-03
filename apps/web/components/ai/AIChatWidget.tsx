@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { BellRing, Clock, MessageCircle, Send, Loader2, X, RotateCcw, PlusCircle, LogOut, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useChat } from '@ai-sdk/react';
+import { useAppOverlayRoot } from '../../lib/dom/use-app-overlay-root';
 import { MemorySearchIndicator } from './MemorySearchIndicator';
 import { messagesHavePendingRecallTool } from '../../lib/ai/memory-recall/detect-pending-recall';
 import {
@@ -506,6 +507,7 @@ export interface AIChatWidgetProps {
 export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
   const { avatarUrl: avatarSrc } = useAlmogAvatarUrl();
   const { url: bgUrl, hasPhoto } = useChatBackground();
+  const overlayRoot = useAppOverlayRoot();
   const greeting = getPersonalGreeting();
   const displayName = firstName?.trim() || '';
   const [mounted, setMounted] = useState(false);
@@ -1151,10 +1153,11 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
         </Drawer.Trigger>
       ) : null}
 
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-[200] bg-slate-900/55" />
+      <Drawer.Portal container={overlayRoot ?? undefined}>
+        <Drawer.Overlay data-nura-overlay="1" className="fixed inset-0 z-[200] bg-slate-900/55" />
         <Drawer.Content
           dir="rtl"
+          data-nura-overlay="1"
           className="almog-chat-surface fixed inset-x-0 bottom-0 z-[210] mx-auto flex w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] outline-none"
           style={{
             height: sheetHeight,

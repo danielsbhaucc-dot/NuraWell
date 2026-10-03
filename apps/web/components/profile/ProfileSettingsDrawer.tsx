@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Drawer } from 'vaul';
 import { Bell, ChevronLeft, Heart, Shield, Sparkles, X } from 'lucide-react';
+import { useAppOverlayRoot } from '../../lib/dom/use-app-overlay-root';
 
 type SettingsItem = {
   label: string;
@@ -38,13 +39,18 @@ type Props = {
 };
 
 export function ProfileSettingsDrawer({ open, onOpenChange }: Props) {
+  const overlayRoot = useAppOverlayRoot();
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} direction="bottom">
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-[2px]" />
+      <Drawer.Portal container={overlayRoot ?? undefined}>
+        <Drawer.Overlay
+          data-nura-overlay="1"
+          className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-[2px]"
+        />
         <Drawer.Content
           dir="rtl"
-          className="fixed inset-x-0 bottom-0 z-[61] flex max-h-[85vh] flex-col rounded-t-3xl outline-none"
+          data-nura-overlay="1"
+          className="fixed inset-x-0 bottom-0 z-[61] mx-auto flex w-full max-w-md max-h-[85vh] flex-col rounded-t-3xl outline-none"
           style={{
             background: 'linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(236,253,245,0.95) 100%)',
             boxShadow: '0 -20px 60px rgba(4,120,87,0.15)',

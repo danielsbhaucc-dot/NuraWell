@@ -3,6 +3,7 @@
 import { Drawer } from 'vaul';
 import type { ReactNode } from 'react';
 import { Map } from 'lucide-react';
+import { useAppOverlayRoot } from '../../lib/dom/use-app-overlay-root';
 
 type Variant = 'quiz' | 'game';
 
@@ -33,13 +34,18 @@ export function JourneyResultsDrawer({
   children: ReactNode;
 }) {
   const h = HEADER[variant];
+  const overlayRoot = useAppOverlayRoot();
 
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} direction="bottom" shouldScaleBackground>
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-[180] bg-slate-900/50 backdrop-blur-[3px]" />
+      <Drawer.Portal container={overlayRoot ?? undefined}>
+        <Drawer.Overlay
+          data-nura-overlay="1"
+          className="fixed inset-0 z-[180] bg-slate-900/50 backdrop-blur-[3px]"
+        />
         <Drawer.Content
           dir="rtl"
+          data-nura-overlay="1"
           className="fixed bottom-0 left-0 right-0 z-[190] mx-auto flex max-h-[min(90dvh,920px)] h-auto w-full max-w-md flex-col rounded-t-[26px] outline-none shadow-[0_-12px_48px_rgba(0,0,0,0.2)] sm:max-h-[85vh]"
           style={{
             background: 'linear-gradient(180deg, #ecfdf5 0%, #f0fdf4 40%, #f8fafc 100%)',

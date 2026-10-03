@@ -3,6 +3,7 @@
 import { useEffect, useState, type CSSProperties, type ReactNode, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { getAppOverlayRoot } from '../../lib/dom/app-overlay-root';
 
 /**
  * ריווח כדי שדיאלוג ממורכז לא יוסתר מתחת ל-MobileHeader / BottomNav בנייד.
@@ -40,8 +41,8 @@ const springTransition = { type: 'spring' as const, stiffness: 380, damping: 32,
 const backdropTransition = { duration: 0.28, ease: [0.4, 0, 0.2, 1] as const };
 
 /**
- * מעטפת דיאלוג עם Portal ל-body + אנימציות פתיחה/סגירה.
- * פותר באג שבו position:fixed "נדבק" ל-main בגלל transform על עוטף העמוד.
+ * מעטפת דיאלוג עם Portal לשורש ה־phone shell (או body כ־fallback) + אנימציות.
+ * נמנעים מ־100vw / fixed לחלון — כך המודל נשאר בתוך מסגרת האפליקציה בדסקטופ.
  */
 export function AnimatedDialog({
   open,
@@ -97,6 +98,7 @@ export function AnimatedDialog({
         <motion.div
           key="animated-dialog-overlay"
           dir="rtl"
+          data-nura-overlay="1"
           className={`touch-manipulation ${overlayClass}`}
           style={overlayStyle}
           initial={{ opacity: 0 }}
@@ -134,6 +136,6 @@ export function AnimatedDialog({
         </motion.div>
       ) : null}
     </AnimatePresence>,
-    document.body
+    getAppOverlayRoot()
   );
 }

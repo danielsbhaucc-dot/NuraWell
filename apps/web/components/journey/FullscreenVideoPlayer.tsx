@@ -4,11 +4,13 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Play, Pause, Sparkles, Clock3 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { HlsVideoGate } from './HlsVideoGate';
 import type { ImmersiveAttentionStop } from '../../lib/journey/immersiveAttentionStops';
 import { formatSecondsAsClock } from '../../lib/journey/immersiveAttentionStops';
 import { useScreenWakeLock } from '../../lib/journey/use-screen-wake-lock';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
+import { getAppOverlayRoot } from '../../lib/dom/app-overlay-root';
 
 interface FullscreenVideoPlayerProps {
   /** bunnyEmbedId = "{libraryId}/{videoId}" — used for iframe fallback when no Pull Zone HLS */
@@ -48,6 +50,7 @@ function bunnyIframeUrl(embedId: string): string {
 }
 
 const PLAYER_JS_ORIGIN = 'https://iframe.mediadelivery.net';
+const PLAYER_JS_EVENTS = ['ready', 'play', 'pause', 'timeupdate', 'ended'] as const;
 
 function postToBunny(iframe: HTMLIFrameElement | null, method: string, value?: unknown) {
   const win = iframe?.contentWindow;
@@ -65,6 +68,12 @@ function postToBunny(iframe: HTMLIFrameElement | null, method: string, value?: u
   win.postMessage(JSON.stringify({ event: method, volume: value, value }), PLAYER_JS_ORIGIN);
 }
 
+function registerBunnyListeners(iframe: HTMLIFrameElement | null) {
+  for (const eventName of PLAYER_JS_EVENTS) {
+    postToBunny(iframe, 'addEventListener', eventName);
+  }
+}
+
 export function FullscreenVideoPlayer({
   bunnyEmbedId,
   pullZoneHlsSrc,
@@ -78,10 +87,15 @@ export function FullscreenVideoPlayer({
 }: FullscreenVideoPlayerProps) {
   const { avatarUrl: almogAvatarSrc } = useAlmogAvatarUrl();
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  void pullZoneHlsSrc;
+  const hlsVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [hlsForcedFallback, setHlsForcedFallback] = useState(false);
+  const [hlsListenKey, setHlsListenKey] = useState(0);
+  const useHlsImmersive = Boolean(pullZoneHlsSrc?.trim()) && !hlsForcedFallback;
+
   const [tapFlash, setTapFlash] = useState<'play' | 'pause' | null>(null);
   const soundOnRef = useRef(false);
   const playingRef = useRef(true);
+  const endedFiredRef = useRef(false);
 
   const [isPlaying, setIsPlaying] = useState(true);
   const [showIcon, setShowIcon] = useState(false);
@@ -96,11 +110,11 @@ export function FullscreenVideoPlayer({
   const answeredAttentionIdsRef = useRef<Set<string>>(new Set());
   const onEndedRef = useRef(onEnded);
   const onTimeUpdateRef = useRef(onTimeUpdate);
-  const onFallbackRef = useRef(onFallback);
   const mountedRef = useRef(true);
   onEndedRef.current = onEnded;
   onTimeUpdateRef.current = onTimeUpdate;
-  onFallbackRef.current = onFallback;
+  // Kept for API compatibility with VideoSection; immersive HLS failures stay in-player (iframe).
+  void onFallback;
 
   useScreenWakeLock(mounted);
 
@@ -128,25 +142,46 @@ export function FullscreenVideoPlayer({
 
   useEffect(() => {
     answeredAttentionIdsRef.current.clear();
-  }, [attentionStops, bunnyEmbedId]);
+    endedFiredRef.current = false;
+    setHlsForcedFallback(false);
+  }, [attentionStops, bunnyEmbedId, pullZoneHlsSrc]);
+
+  const fireEnded = useCallback(() => {
+    if (endedFiredRef.current) return;
+    endedFiredRef.current = true;
+    onEndedRef.current();
+  }, []);
 
   const sendToPlayer = useCallback((method: string, value?: unknown) => {
     postToBunny(iframeRef.current, method, value);
   }, []);
 
   const pausePlayback = useCallback(() => {
-    sendToPlayer('pause');
+    if (useHlsImmersive) {
+      hlsVideoRef.current?.pause();
+    } else {
+      sendToPlayer('pause');
+    }
     playingRef.current = false;
     setIsPlaying(false);
-  }, [sendToPlayer]);
+  }, [sendToPlayer, useHlsImmersive]);
 
   const resumePlayback = useCallback(() => {
-    sendToPlayer('play');
-    sendToPlayer('unmute');
-    sendToPlayer('setVolume', 100);
+    if (useHlsImmersive) {
+      const v = hlsVideoRef.current;
+      if (v) {
+        v.muted = false;
+        v.volume = 1;
+        void v.play().catch(() => {});
+      }
+    } else {
+      sendToPlayer('play');
+      sendToPlayer('unmute');
+      sendToPlayer('setVolume', 100);
+    }
     playingRef.current = true;
     setIsPlaying(true);
-  }, [sendToPlayer]);
+  }, [sendToPlayer, useHlsImmersive]);
 
   const handleAttentionCheck = useCallback((seconds: number) => {
     if (!Number.isFinite(seconds) || seconds < 1.5) return;
@@ -162,6 +197,12 @@ export function FullscreenVideoPlayer({
     setAutoResumeSecondsLeft(null);
   }, [attentionStops, activeAttentionStop, exitConfirmOpen, pausePlayback]);
 
+  const maybeEndFromTime = useCallback((seconds: number, duration: number) => {
+    if (!Number.isFinite(duration) || duration < 2) return;
+    if (!Number.isFinite(seconds)) return;
+    if (duration - seconds <= 0.35) fireEnded();
+  }, [fireEnded]);
+
   const flashIcon = useCallback((kind: 'play' | 'pause') => {
     setTapFlash(kind);
     setShowIcon(true);
@@ -171,10 +212,9 @@ export function FullscreenVideoPlayer({
       setTapFlash(null);
     }, 900);
   }, []);
-  const flashIconRef = useRef(flashIcon);
-  flashIconRef.current = flashIcon;
 
   useEffect(() => {
+    if (useHlsImmersive) return;
     const handler = (e: MessageEvent) => {
       if (!mountedRef.current) return;
       if (typeof e.origin === 'string' && e.origin && !e.origin.includes('mediadelivery.net')) return;
@@ -191,8 +231,10 @@ export function FullscreenVideoPlayer({
         ? data.value as Record<string, unknown>
         : data;
 
-      if (event === 'ended') {
-        onEndedRef.current();
+      if (event === 'ready') {
+        registerBunnyListeners(iframeRef.current);
+      } else if (event === 'ended') {
+        fireEnded();
       } else if (event === 'play') {
         if (mountedRef.current) {
           playingRef.current = true;
@@ -204,15 +246,47 @@ export function FullscreenVideoPlayer({
           setIsPlaying(false);
         }
       } else if (event === 'timeupdate') {
-        const seconds = Number(value.seconds ?? data.seconds ?? 0);
+        const seconds = Number(value.seconds ?? data.seconds ?? data.currentTime ?? 0);
         const duration = Number(value.duration ?? data.duration ?? 0);
         onTimeUpdateRef.current?.(seconds, duration);
         handleAttentionCheck(seconds);
+        maybeEndFromTime(seconds, duration);
       }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [handleAttentionCheck]);
+  }, [handleAttentionCheck, useHlsImmersive, fireEnded, maybeEndFromTime]);
+
+  useEffect(() => {
+    if (!useHlsImmersive) return;
+    const v = hlsVideoRef.current;
+    if (!v) return;
+    const onPlay = () => {
+      playingRef.current = true;
+      setIsPlaying(true);
+    };
+    const onPause = () => {
+      playingRef.current = false;
+      setIsPlaying(false);
+    };
+    const onTimeUpdateEv = () => {
+      onTimeUpdateRef.current?.(v.currentTime, v.duration || 0);
+      handleAttentionCheck(v.currentTime);
+      maybeEndFromTime(v.currentTime, v.duration || 0);
+    };
+    const onEndedEv = () => fireEnded();
+    v.addEventListener('play', onPlay);
+    v.addEventListener('pause', onPause);
+    v.addEventListener('timeupdate', onTimeUpdateEv);
+    v.addEventListener('ended', onEndedEv);
+    setIsPlaying(!v.paused);
+    return () => {
+      v.removeEventListener('play', onPlay);
+      v.removeEventListener('pause', onPause);
+      v.removeEventListener('timeupdate', onTimeUpdateEv);
+      v.removeEventListener('ended', onEndedEv);
+    };
+  }, [handleAttentionCheck, hlsListenKey, pullZoneHlsSrc, useHlsImmersive, fireEnded, maybeEndFromTime]);
 
   const finishAttentionStop = useCallback(() => {
     if (!activeAttentionStop) return;
@@ -261,11 +335,32 @@ export function FullscreenVideoPlayer({
     if (exitConfirmOpen || activeAttentionStop) return;
     if (!soundOnRef.current) {
       soundOnRef.current = true;
-      sendToPlayer('unmute');
-      sendToPlayer('setVolume', 100);
-      sendToPlayer('play');
+      if (useHlsImmersive) {
+        const v = hlsVideoRef.current;
+        if (v) {
+          v.muted = false;
+          v.volume = 1;
+          void v.play().catch(() => {});
+        }
+      } else {
+        sendToPlayer('unmute');
+        sendToPlayer('setVolume', 100);
+        sendToPlayer('play');
+      }
       playingRef.current = true;
       setIsPlaying(true);
+      return;
+    }
+    if (useHlsImmersive) {
+      const v = hlsVideoRef.current;
+      if (!v) return;
+      if (v.paused) {
+        void v.play().catch(() => {});
+        flashIcon('play');
+      } else {
+        v.pause();
+        flashIcon('pause');
+      }
       return;
     }
     if (playingRef.current) {
@@ -275,9 +370,21 @@ export function FullscreenVideoPlayer({
       resumePlayback();
       flashIcon('play');
     }
-  }, [exitConfirmOpen, activeAttentionStop, sendToPlayer, pausePlayback, resumePlayback, flashIcon]);
+  }, [
+    exitConfirmOpen,
+    activeAttentionStop,
+    sendToPlayer,
+    pausePlayback,
+    resumePlayback,
+    flashIcon,
+    useHlsImmersive,
+  ]);
 
-  const iframeUrl = bunnyIframeUrl(bunnyEmbedId);
+  const handleHlsFailure = useCallback(() => {
+    // Stay immersive — fall back to Bunny iframe so attention stops / ended still work via Player.js
+    setHlsForcedFallback(true);
+  }, []);
+
   void viewportInsetTopPx;
 
   if (!mounted || typeof document === 'undefined') return null;
@@ -285,6 +392,7 @@ export function FullscreenVideoPlayer({
   return createPortal(
     <div
       className="fixed inset-0 z-[300] bg-black flex flex-col"
+      data-nura-overlay="1"
     >
       <button
         type="button"
@@ -296,14 +404,35 @@ export function FullscreenVideoPlayer({
         <X className="w-5 h-5 text-white" />
       </button>
 
+      {useHlsImmersive ? (
+        <HlsVideoGate
+          ref={hlsVideoRef}
+          src={pullZoneHlsSrc!.trim()}
+          autoPlay
+          muted
+          playsInline
+          controls={false}
+          videoClassName="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 w-full h-full border-0"
+          onLoaded={() => {
+            setHlsListenKey(k => k + 1);
+          }}
+          onEnded={() => fireEnded()}
+          onError={handleHlsFailure}
+        />
+      ) : (
         <iframe
           ref={iframeRef}
-          src={iframeUrl}
+          src={bunnyIframeUrl(bunnyEmbedId)}
           title={title}
           referrerPolicy="strict-origin-when-cross-origin"
           allow="autoplay; encrypted-media; picture-in-picture"
           className="absolute inset-0 w-full h-full border-0 pointer-events-none"
+          onLoad={() => {
+            registerBunnyListeners(iframeRef.current);
+          }}
         />
+      )}
 
       <div
         className="absolute inset-0 z-[305]"
@@ -541,6 +670,6 @@ export function FullscreenVideoPlayer({
         )}
       </AnimatePresence>
     </div>,
-    document.body
+    getAppOverlayRoot()
   );
 }
