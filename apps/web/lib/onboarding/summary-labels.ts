@@ -2,6 +2,7 @@ import type { MainGoal, MainObstacle, OnboardingGender, WeakestTimeOfDay } from 
 import type { MealScheduleEntry } from './meal-schedule';
 import { isValidHeightCm, isValidWeightKg, parseMetric } from './body-metrics';
 import { formatWeightRangeKg } from './format-weight-range';
+import { genderDisplayLabel } from '../profile/profile-field-ssot';
 
 const GOAL: Record<MainGoal, string> = {
   weight_loss: 'ירידה במשקל',
@@ -22,11 +23,6 @@ const OBSTACLE: Record<MainObstacle, string> = {
   lack_of_consistency: 'קושי להתמיד',
   no_support: 'חוסר תמיכה',
   other: 'אחר',
-};
-
-const GENDER: Record<OnboardingGender, string> = {
-  male: 'גבר',
-  female: 'אישה',
 };
 
 export type OnboardingSummaryData = {
@@ -69,7 +65,11 @@ export function formatOnboardingSummary(data: OnboardingSummaryData): Onboarding
 
   const rows: OnboardingSummaryRow[] = [
     { label: 'שם', value: data.fullName.trim() || '—', editStep: 1 },
-    { label: 'מין', value: data.gender ? GENDER[data.gender] : '—', editStep: 2 },
+    {
+      label: 'מין',
+      value: data.gender ? genderDisplayLabel(data.gender) || '—' : '—',
+      editStep: 2,
+    },
     { label: 'מטרה', value: data.mainGoal ? GOAL[data.mainGoal] : '—', editStep: 2 },
     {
       label: 'משקל (נוכחי → יעד)',

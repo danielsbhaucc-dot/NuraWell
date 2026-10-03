@@ -5,20 +5,17 @@ import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 
 import {
-  listPendingTasksToday,
-  type JourneyReportStepShape,
   type PendingTaskTodayRow,
-  type TodayExecutionRow,
 } from '../../lib/journey/journey-report-parse';
 import {
   pickNextTaskForNow,
   type UserScheduleProfile,
 } from '../../lib/journey/pick-next-task-for-now';
+import type { AlmogTodayRow } from '../../lib/tasks/user-task-ssot';
 
-type JourneyReportResponse = {
-  steps: JourneyReportStepShape[];
-  today_executions?: TodayExecutionRow[];
-  today_date_key?: string;
+type UserTaskSnapshotResponse = {
+  journey_today?: PendingTaskTodayRow[];
+  almog_open?: AlmogTodayRow[];
   user_schedule?: UserScheduleProfile;
 };
 
@@ -45,24 +42,44 @@ export function DynamicMentorWidgetClient({
   const loadContext = useCallback(async () => {
     setLoading(true);
     try {
-      const [journeyRes, briefRes] = await Promise.all([
-        fetch('/api/v1/journey-report', { cache: 'no-store' }),
+      const [snapshotRes, briefRes] = await Promise.all([
+        fetch('/api/v1/user-task-snapshot', { cache: 'no-store' }),
         fetch('/api/v1/ai/dashboard-brief', { cache: 'no-store' }),
       ]);
 
-      if (journeyRes.ok) {
-        const json = (await journeyRes.json()) as JourneyReportResponse;
-        const pending = listPendingTasksToday(
-          json.steps ?? [],
-          json.today_executions ?? [],
-          json.today_date_key
-        );
+      if (snapshotRes.ok) {
+        const json = (await snapshotRes.json()) as UserTaskSnapshotResponse;
+        const pending = (json.journey_today ?? []).filter((t) => !t.done);
         const picked = pickNextTaskForNow(pending, json.user_schedule ?? {});
-        setNextTask(
+        const journeyNext =
           picked
-            ? (pending.find((t) => t.id === picked.taskId && !t.done) ?? pending.find((t) => !t.done) ?? null)
-            : pending.find((t) => !t.done) ?? null
-        );
+            ? (pending.find((t) => t.id === picked.taskId) ?? pending[0] ?? null)
+            : pending[0] ?? null;
+        if (journeyNext) {
+          setNextTask(journeyNext);
+        } else if ((json.almog_open ?? []).length > 0) {
+          const almog = json.almog_open![0]!;
+          setNextTask({
+            id: almog.id,
+            stepId: 'almog',
+            title: almog.title,
+            emoji: '✨',
+            stepTitle: 'מאלמוג',
+            stepNumber: 0,
+            pendingSlots: ['once'],
+            done: false,
+            schedule: 'one_time',
+            times_per_day: 1,
+            weekly_day: 0,
+            monthly_day: 1,
+            interval_days: 1,
+            meal_offset_minutes: null,
+            meal_timing: 'before',
+            meal_target: 'fixed',
+          });
+        } else {
+          setNextTask(null);
+        }
       }
 
       if (briefRes.ok) {

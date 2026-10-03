@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '../../../lib/supabase/server';
 import { ProfilePageClient } from '../../../components/profile/ProfilePageClient';
+import { resolveDisplayWeightKg } from '../../../lib/profile/profile-field-ssot';
 
 export const metadata: Metadata = {
   title: 'הפרופיל שלי',
@@ -48,25 +49,47 @@ export default async function ProfilePage() {
     ? profile.meal_schedule.map((m) => String(m.time ?? '').slice(0, 5)).filter(Boolean)
     : [];
 
-  const { data: rawStats } = await supabase
-    .from('lesson_progress')
-    .select('lesson_id, is_completed')
-    .eq('user_id', user.id);
+  const [{ data: rawStats }, { data: rawEnrollments }, { data: latestMeasurement }] =
+    await Promise.all([
+      supabase
+        .from('lesson_progress')
+        .select('lesson_id, is_completed')
+        .eq('user_id', user.id),
+      supabase
+        .from('enrollments')
+        .select('course_id')
+        .eq('user_id', user.id)
+        .eq('is_active', true),
+      supabase
+        .from('user_measurements')
+        .select('weight_kg')
+        .eq('user_id', user.id)
+        .order('measured_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
   const stats = rawStats as { lesson_id: string; is_completed: boolean }[] | null;
   const totalCompleted = (stats || []).filter(s => s.is_completed).length;
-
-  const { data: rawEnrollments } = await supabase
-    .from('enrollments')
-    .select('course_id')
-    .eq('user_id', user.id)
-    .eq('is_active', true);
-
   const enrolledCount = (rawEnrollments as { course_id: string }[] | null)?.length ?? 0;
+
+  const latestKg =
+    typeof (latestMeasurement as { weight_kg?: number } | null)?.weight_kg === 'number'
+      ? (latestMeasurement as { weight_kg: number }).weight_kg
+      : null;
+  const displayWeightKg = resolveDisplayWeightKg(profile?.current_weight_kg, latestKg);
+
+  const profileForClient =
+    profile == null
+      ? null
+      : {
+          ...profile,
+          current_weight_kg: displayWeightKg,
+        };
 
   return (
     <ProfilePageClient
-      profile={profile}
+      profile={profileForClient}
       email={user.email ?? ''}
       totalCompleted={totalCompleted}
       enrolledCount={enrolledCount}

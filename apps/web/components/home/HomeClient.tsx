@@ -18,11 +18,7 @@ import { SosButton } from '../ai/SosButton';
 import { SosMemoryCard } from '../ai/SosMemoryCard';
 import { buildAlmogGreeting, type GreetingTaskState } from '../../lib/ai/almog-greeting';
 import {
-  countAcceptedTaskExecutionToday,
-  listPendingTasksToday,
-  type JourneyReportStepShape,
   type PendingTaskTodayRow,
-  type TodayExecutionRow,
 } from '../../lib/journey/journey-report-parse';
 import { dispatchOpenAlmogChatWithPrefill, dispatchOpenAlmogChatWithTaskReport } from '../../lib/notifications/open-almog-chat';
 import { buildTaskReportHintFromPendingRow } from '../../lib/ai/task-report-hint';
@@ -32,14 +28,20 @@ import {
   pickNextTaskForNow,
   type UserScheduleProfile,
 } from '../../lib/journey/pick-next-task-for-now';
+import {
+  hasAnyTakenTasks,
+  type AlmogTodayRow,
+  type UserTaskSnapshotCounts,
+} from '../../lib/tasks/user-task-ssot';
 
 import type { OnboardingGender } from '../../lib/onboarding/types';
 
-type JourneyReportResponse = {
-  steps: JourneyReportStepShape[];
-  today_executions?: TodayExecutionRow[];
-  today_date_key?: string;
+type UserTaskSnapshotResponse = {
+  counts: UserTaskSnapshotCounts;
+  journey_today?: PendingTaskTodayRow[];
+  almog_open?: AlmogTodayRow[];
   user_schedule?: UserScheduleProfile;
+  error?: string;
 };
 
 export type HomeStats = {
@@ -78,7 +80,9 @@ export function HomeClient({
   const [taskLoading, setTaskLoading] = useState(true);
   const [tasksPopupOpen, setTasksPopupOpen] = useState(false);
   const [todayTasks, setTodayTasks] = useState<PendingTaskTodayRow[]>([]);
+  const [almogOpen, setAlmogOpen] = useState<AlmogTodayRow[]>([]);
   const [userSchedule, setUserSchedule] = useState<UserScheduleProfile | undefined>(undefined);
+  const [snapshotCounts, setSnapshotCounts] = useState<UserTaskSnapshotCounts | null>(null);
   const [taskCounts, setTaskCounts] = useState({
     accepted: 0,
     done: 0,
@@ -89,16 +93,19 @@ export function HomeClient({
   const refreshTasks = useCallback(async () => {
     setTaskLoading(true);
     try {
-      const res = await fetch('/api/v1/journey-report', { cache: 'no-store' });
-      const json = (await res.json()) as JourneyReportResponse & { error?: string };
-      if (!res.ok) return;
-      const steps = json.steps ?? [];
-      const todayExecutions = json.today_executions ?? [];
-      const todayDateKey = json.today_date_key;
-      setTaskCounts(
-        countAcceptedTaskExecutionToday(steps, todayExecutions, todayDateKey)
-      );
-      setTodayTasks(listPendingTasksToday(steps, todayExecutions, todayDateKey));
+      const res = await fetch('/api/v1/user-task-snapshot', { cache: 'no-store' });
+      const json = (await res.json()) as UserTaskSnapshotResponse;
+      if (!res.ok || !json.counts) return;
+      const { unified, journey, almog } = json.counts;
+      setSnapshotCounts(json.counts);
+      setTaskCounts({
+        accepted: journey.accepted + almog.active,
+        done: unified.doneToday,
+        pending: unified.pendingToday,
+        dueToday: unified.dueToday,
+      });
+      setTodayTasks(json.journey_today ?? []);
+      setAlmogOpen(json.almog_open ?? []);
       setUserSchedule(json.user_schedule ?? {});
     } finally {
       setTaskLoading(false);
@@ -115,9 +122,10 @@ export function HomeClient({
   );
 
   const greeting = useMemo(() => {
+    const taken = snapshotCounts ? hasAnyTakenTasks(snapshotCounts) : taskCounts.accepted > 0;
     const taskState: GreetingTaskState = taskLoading
       ? 'loading'
-      : taskCounts.dueToday === 0 && taskCounts.accepted === 0
+      : !taken
         ? 'fresh'
         : taskCounts.pending > 0
           ? 'pending'
@@ -131,9 +139,10 @@ export function HomeClient({
             slotLabel: nextTask.timeHint,
           },
         ]
-      : todayTasks
-          .filter((t) => !t.done)
-          .map((t) => ({ title: t.title, emoji: t.emoji }));
+      : [
+          ...todayTasks.filter((t) => !t.done).map((t) => ({ title: t.title, emoji: t.emoji })),
+          ...almogOpen.map((t) => ({ title: t.title, emoji: '✨' })),
+        ];
 
     return buildAlmogGreeting({
       firstName,
@@ -143,7 +152,7 @@ export function HomeClient({
       dueToday: taskCounts.dueToday,
       pendingTasks,
     });
-  }, [taskCounts, taskLoading, firstName, todayTasks, nextTask]);
+  }, [taskCounts, taskLoading, firstName, todayTasks, nextTask, almogOpen, snapshotCounts]);
 
   const bubbleContent = useMemo(() => {
     return (
@@ -359,8 +368,8 @@ export function HomeClient({
                   <p style={{ fontSize: '12px', color: '#065f46', margin: '2px 0 8px', opacity: 0.85 }}>
                     {taskLoading
                       ? 'רגע, טוען…'
-                      : taskCounts.accepted === 0
-                        ? 'עוד לא לקחנו משימות במסע — בוא נתחיל ביחד'
+                      : !(snapshotCounts && hasAnyTakenTasks(snapshotCounts))
+                        ? 'עוד לא לקחנו משימות — בוא נתחיל ביחד'
                         : taskCounts.dueToday === 0
                           ? 'אין משימה פתוחה להיום — מחר נמשיך 🌱'
                           : taskCounts.pending > 0
@@ -490,6 +499,7 @@ export function HomeClient({
         open={tasksPopupOpen}
         firstName={firstName}
         tasks={todayTasks}
+        almogTasks={almogOpen}
         doneCount={taskCounts.done}
         pendingCount={taskCounts.pending}
         userSchedule={userSchedule}

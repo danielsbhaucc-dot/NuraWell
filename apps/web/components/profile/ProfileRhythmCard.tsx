@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, Loader2, Moon, Pencil, Sun, UtensilsCrossed, X } from 'lucide-react';
 import { classifyMealSlot, mealSlotLabel } from '../../lib/onboarding/meal-schedule';
+import { RHYTHM_EDIT_DEFAULTS } from '../../lib/profile/profile-field-ssot';
 
 export type ProfileRhythmInitial = {
   wake_up_time: string | null;
@@ -23,16 +24,20 @@ export function ProfileRhythmCard({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [wakeUp, setWakeUp] = useState(initial.wake_up_time ?? '07:00');
-  const [sleep, setSleep] = useState(initial.sleep_time ?? '22:30');
+  const [wakeUp, setWakeUp] = useState(
+    initial.wake_up_time ?? RHYTHM_EDIT_DEFAULTS.wake_up_time
+  );
+  const [sleep, setSleep] = useState(
+    initial.sleep_time ?? RHYTHM_EDIT_DEFAULTS.sleep_time
+  );
   const [mealCount, setMealCount] = useState(initial.meal_count);
   const [mealTimes, setMealTimes] = useState(
     initial.meal_times.length ? initial.meal_times : ['08:00', '13:00', '19:30']
   );
 
   const resetForm = () => {
-    setWakeUp(initial.wake_up_time ?? '07:00');
-    setSleep(initial.sleep_time ?? '22:30');
+    setWakeUp(initial.wake_up_time ?? RHYTHM_EDIT_DEFAULTS.wake_up_time);
+    setSleep(initial.sleep_time ?? RHYTHM_EDIT_DEFAULTS.sleep_time);
     setMealCount(initial.meal_count);
     setMealTimes(
       initial.meal_times.length ? initial.meal_times : ['08:00', '13:00', '19:30']
@@ -124,7 +129,8 @@ export function ProfileRhythmCard({
         <div className="px-5 py-3 space-y-2.5 text-sm">
           <p className="text-slate-600">
             <Sun className="w-3.5 h-3.5 inline ml-1 text-amber-500" />
-            השכמה {wakeUp} · שינה {sleep}
+            השכמה {initial.wake_up_time?.trim() || '—'} · שינה{' '}
+            {initial.sleep_time?.trim() || '—'}
           </p>
           <p className="text-slate-600 leading-relaxed">
             <UtensilsCrossed className="w-3.5 h-3.5 inline ml-1 text-emerald-600" />

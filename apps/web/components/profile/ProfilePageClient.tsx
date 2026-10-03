@@ -549,8 +549,8 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
                   className="crystal-pill w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-emerald-400/40"
                 >
                   <option value="">ללא בחירה</option>
-                  <option value="male">זכר</option>
-                  <option value="female">נקבה</option>
+                  <option value="male">גבר</option>
+                  <option value="female">אישה</option>
                 </select>
               </div>
             ) : null}

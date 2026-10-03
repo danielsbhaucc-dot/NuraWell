@@ -28,6 +28,7 @@ import { JourneyNextStepCard } from './JourneyNextStepCard';
 import { AlmogAvatarChip } from './AlmogPresence';
 import { AlmogAssignmentsSection, AlmogCompletedSection } from './AlmogAssignmentsSection';
 import { stationCoverAlt } from '../../lib/a11y/alt-text';
+import { getIsraelTimeOfDay } from '../../lib/time/greeting';
 
 interface JourneyPageProps {
   groups: JourneyStationGroup[];
@@ -672,12 +673,9 @@ type TimeOfDay = {
 };
 
 function getTimeOfDay(): TimeOfDay {
-  const h = new Date().getHours();
-  if (h >= 5 && h < 11) return { greeting: 'בוקר טוב', bucket: 'morning' };
-  if (h >= 11 && h < 16) return { greeting: 'צהריים טובים', bucket: 'noon' };
-  if (h >= 16 && h < 20) return { greeting: 'אחר הצהריים נעימים', bucket: 'evening' };
-  if (h >= 20 && h < 24) return { greeting: 'ערב טוב', bucket: 'night' };
-  return { greeting: 'לילה שקט', bucket: 'night' };
+  // SSOT: אותה לוגיקת שעון ישראל כמו בדף הבית / תוכנית.
+  const tod = getIsraelTimeOfDay();
+  return { greeting: tod.greeting, bucket: tod.bucket };
 }
 
 function TimeOfDayIcon({ tod }: { tod: TimeOfDay }) {

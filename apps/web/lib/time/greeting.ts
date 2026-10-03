@@ -20,14 +20,32 @@ function israelHour(date: Date): number {
   return Number.isFinite(h) ? h : 0;
 }
 
+export type IsraelTimeOfDayBucket = 'morning' | 'noon' | 'evening' | 'night';
+
+export type IsraelTimeOfDay = {
+  /** ברכה בלי פסיק — "בוקר טוב" / "צהריים טובים". */
+  greeting: string;
+  bucket: IsraelTimeOfDayBucket;
+};
+
+/**
+ * חלק היום לפי שעון ישראל — מקור אמת לברכות בכל המסכים
+ * (בית, מסע, תוכנית). ספים: בוקר עד 12, צהריים עד 17, ערב עד 21.
+ */
+export function getIsraelTimeOfDay(now: Date = new Date()): IsraelTimeOfDay {
+  const hour = israelHour(now);
+  if (hour >= 5 && hour < 12) return { greeting: 'בוקר טוב', bucket: 'morning' };
+  if (hour >= 12 && hour < 17) return { greeting: 'צהריים טובים', bucket: 'noon' };
+  if (hour >= 17 && hour < 21) return { greeting: 'ערב טוב', bucket: 'evening' };
+  return { greeting: 'לילה טוב', bucket: 'night' };
+}
+
 /** ברכת שעה בלבד — בלי שכבת חג. */
 export function getTimeGreeting(now: Date = new Date()): string {
   const hour = israelHour(now);
   if (hour === 5) return 'חמש לפנות בוקר,';
-  if (hour >= 6 && hour < 12) return 'בוקר טוב,';
-  if (hour >= 12 && hour < 17) return 'צהריים טובים,';
-  if (hour >= 17 && hour < 21) return 'ערב טוב,';
-  return 'לילה טוב,';
+  const { greeting } = getIsraelTimeOfDay(now);
+  return `${greeting},`;
 }
 
 /**
