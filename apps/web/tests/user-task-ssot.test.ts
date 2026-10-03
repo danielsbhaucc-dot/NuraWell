@@ -62,6 +62,27 @@ describe('user-task-ssot', () => {
     expect(plansActive).toBe(journeyOpen);
   });
 
+  it('groups near-duplicate almog titles so home counters stay honest', () => {
+    const snapshot = buildUserTaskSnapshot({
+      steps: [],
+      todayExecutions: [],
+      todayDateKey: '2026-10-03',
+      almogAssignments: [
+        { id: 'a1', title: 'כוסות ליד הצלחת', status: 'active', schedule: 'daily' },
+        { id: 'a2', title: 'כוס ליד הצלחת', status: 'active', schedule: 'daily' },
+        { id: 'a3', title: 'חצי כוס מים ליד הצלחת', status: 'active', schedule: 'daily' },
+        { id: 'a4', title: 'הליכה קצרה בבוקר', status: 'active', schedule: 'daily' },
+      ],
+    });
+
+    expect(snapshot.almogOpen).toHaveLength(2);
+    expect(snapshot.counts.almog.active).toBe(2);
+    expect(snapshot.counts.unified.dueToday).toBe(2);
+    const cups = snapshot.almogOpen.find((t) => (t.similarCount ?? 1) > 1);
+    expect(cups?.similarCount).toBe(3);
+    expect(cups?.groupedIds).toHaveLength(3);
+  });
+
   it('keeps journey today counts when tasks are accepted', () => {
     const snapshot = buildUserTaskSnapshot({
       steps: [

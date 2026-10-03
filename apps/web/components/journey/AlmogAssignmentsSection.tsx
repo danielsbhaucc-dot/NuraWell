@@ -23,7 +23,7 @@ interface AssignmentView {
   title: string;
   reason: string | null;
   detail: string | null;
-  status: 'active' | 'frozen' | 'completed' | 'dropped';
+  status: 'proposed' | 'active' | 'frozen' | 'completed' | 'dropped';
   schedule: 'one_time' | 'daily' | 'weekly';
   given_at: string;
   due_at: string | null;
@@ -102,6 +102,7 @@ function buildDynamicHeadline(
 
 function useAlmogAssignments() {
   const [assignments, setAssignments] = useState<AssignmentView[]>([]);
+  const [proposed, setProposed] = useState<AssignmentView[]>([]);
   const [focus, setFocus] = useState<FocusView | null>(null);
   const [completed, setCompleted] = useState<CompletedView[]>([]);
   const [ssotCounts, setSsotCounts] = useState<UserTaskSnapshotCounts | null>(null);
@@ -117,10 +118,12 @@ function useAlmogAssignments() {
       if (!res.ok) return;
       const json = (await res.json()) as {
         assignments: AssignmentView[];
+        proposed?: AssignmentView[];
         focus: FocusView | null;
         completed?: CompletedView[];
       };
       setAssignments(Array.isArray(json.assignments) ? json.assignments : []);
+      setProposed(Array.isArray(json.proposed) ? json.proposed : []);
       setFocus(json.focus ?? null);
       setCompleted(Array.isArray(json.completed) ? json.completed : []);
       if (snapshot?.counts) setSsotCounts(snapshot.counts);
@@ -159,7 +162,7 @@ function useAlmogAssignments() {
   const visible = assignments.filter((a) => isAlmogOpenStatus(a.status));
   const openCount = ssotCounts?.almog.active ?? visible.length;
 
-  return { visible, openCount, focus, completed, ssotCounts, loaded, busyId, act };
+  return { visible, proposed, openCount, focus, completed, ssotCounts, loaded, busyId, act };
 }
 
 /** משימות אישיות שהושלמו — בתחתית העמוד */
@@ -192,18 +195,18 @@ export function AlmogCompletedSection() {
  * פאנל תחתון — משימות פעילות מאלמוג + מצב פוקוס, באקורדיון שלא מציף את המסך.
  */
 export function AlmogAssignmentsSection() {
-  const { visible, openCount, focus, completed, ssotCounts, loaded, busyId, act } =
+  const { visible, proposed, openCount, focus, completed, ssotCounts, loaded, busyId, act } =
     useAlmogAssignments();
   const [expanded, setExpanded] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  if (loaded && visible.length === 0 && !focus) return null;
+  if (loaded && visible.length === 0 && proposed.length === 0 && !focus) return null;
   if (!loaded) return null;
 
   const headline = buildDynamicHeadline(visible, focus);
   const shown = visible.slice(0, visibleCount);
   const hasMore = visible.length > visibleCount;
-  const summaryCount = openCount + (focus ? 1 : 0);
+  const summaryCount = openCount + proposed.length + (focus ? 1 : 0);
 
   return (
     <motion.section
@@ -302,6 +305,27 @@ export function AlmogAssignmentsSection() {
                     />
                   ) : null}
                 </AnimatePresence>
+
+                {proposed.length > 0 ? (
+                  <div className="mb-3 space-y-2">
+                    <p className="text-[11px] font-bold text-amber-900/85 px-0.5">
+                      משימות דומות — ממתינות לאישור
+                    </p>
+                    {proposed.map((a) => (
+                      <ProposedAssignmentCard
+                        key={a.id}
+                        assignment={a}
+                        busy={busyId === `prop-${a.id}`}
+                        onApprove={() =>
+                          act({ action: 'approve', assignment_id: a.id }, `prop-${a.id}`)
+                        }
+                        onDecline={() =>
+                          act({ action: 'decline', assignment_id: a.id }, `prop-${a.id}`)
+                        }
+                      />
+                    ))}
+                  </div>
+                ) : null}
 
                 <div className="space-y-3">
                   <AnimatePresence initial={false}>
@@ -524,6 +548,63 @@ function FocusBanner({
         )}
       </div>
     </motion.div>
+  );
+}
+
+function ProposedAssignmentCard({
+  assignment,
+  busy,
+  onApprove,
+  onDecline,
+}: {
+  assignment: AssignmentView;
+  busy: boolean;
+  onApprove: () => void;
+  onDecline: () => void;
+}) {
+  return (
+    <div
+      dir="rtl"
+      className="rounded-[18px] px-3.5 py-3"
+      style={{
+        background: 'linear-gradient(135deg, rgba(255,251,235,0.9) 0%, rgba(254,243,199,0.55) 100%)',
+        border: '1px solid rgba(245,158,11,0.35)',
+      }}
+    >
+      <p className="text-[10px] font-bold text-amber-900/80 mb-1">דומה למשימה שכבר יש לך</p>
+      <p
+        className="text-[14px] font-black leading-snug text-amber-950"
+        style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
+      >
+        {assignment.title}
+      </p>
+      {assignment.reason ? (
+        <p className="mt-1 text-[12px] leading-relaxed text-amber-950/75">{assignment.reason}</p>
+      ) : null}
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onApprove}
+          className="rounded-xl py-2 text-[12px] font-black text-white disabled:opacity-60"
+          style={{ background: 'linear-gradient(145deg, #047857, #10b981)' }}
+        >
+          אשר
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onDecline}
+          className="rounded-xl py-2 text-[12px] font-black text-amber-950 disabled:opacity-60"
+          style={{
+            background: 'rgba(255,255,255,0.75)',
+            border: '1px solid rgba(245,158,11,0.35)',
+          }}
+        >
+          דחה
+        </button>
+      </div>
+    </div>
   );
 }
 

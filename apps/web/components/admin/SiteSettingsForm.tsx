@@ -60,7 +60,7 @@ export function SiteSettingsForm() {
       try {
         await navigator.clipboard.writeText(REMINDER_TEXT);
         setMessage(
-          'ההפניות מ־Ops מצביעות כעת ל־nurawell.ai. הודעת תזכורת הועתקה ללוח — שלח לעצמך במייל/ווטסאפ ומחק אחרי שסיימת את השלב.',
+          'ההפניות מ־Ops מצביעות כעת ל־NuraWell (nurawell.ai). הודעת תזכורת הועתקה ללוח — שלח לעצמך במייל/ווטסאפ ומחק אחרי שסיימת את השלב.',
         );
       } catch {
         setMessage(
@@ -106,7 +106,7 @@ export function SiteSettingsForm() {
       </div>
 
       <div className="rounded-2xl border border-amber-400/35 bg-amber-50/50 p-5 shadow-md backdrop-blur-xl sm:p-6">
-        <p className="text-sm font-bold text-amber-950">שלב מעבר — מעבר ל־NuraWell.ai</p>
+        <p className="text-sm font-bold text-amber-950">שלב מעבר — הפניה ל־NuraWell</p>
         <p className="mt-2 text-sm text-amber-950/90">
           לחיצה אחת מעדכנת את כתובת ההפניות ל־<strong className="font-semibold">{PRESET_PROD}</strong> ומעתיקה תזכורת לניקוי
           ההגדרה כשתסיים עם השלב.
@@ -118,7 +118,7 @@ export function SiteSettingsForm() {
           className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-amber-600 px-6 py-3 font-bold text-white shadow-lg transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Sparkles className="h-5 w-5" aria-hidden />}
-          החלף ל־NuraWell.ai והעתק תזכורת
+          החלף ל־NuraWell והעתק תזכורת
         </button>
       </div>
 

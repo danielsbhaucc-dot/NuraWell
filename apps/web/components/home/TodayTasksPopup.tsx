@@ -7,6 +7,7 @@ import { getAppOverlayRoot } from '../../lib/dom/app-overlay-root';
 import {
   CheckCircle2,
   ClipboardCheck,
+  Loader2,
   MessageCircle,
   Sparkles,
   X,
@@ -41,6 +42,8 @@ interface TodayTasksPopupProps {
   onClose: () => void;
   onMarkDone: () => void;
   onOpenChat: (prefill: string, hint?: TaskReportHint) => void;
+  /** אחרי סימון משימת אלמוג — לרענון SSOT בבית. */
+  onAlmogMarked?: () => void;
 }
 
 function taskTimeHintForRow(
@@ -55,6 +58,38 @@ function taskTimeHintForRow(
   return buildTaskTimeHint(slotKey, slotLabelHe, task, profile, now);
 }
 
+async function markAlmogDone(task: AlmogTodayRow): Promise<boolean> {
+  const ids = task.groupedIds?.length ? task.groupedIds : [task.id];
+  const res = await fetch('/api/v1/almog-assignments', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'done',
+      assignment_id: task.id,
+      assignment_ids: ids,
+    }),
+  });
+  return res.ok;
+}
+
+async function markJourneyDone(task: PendingTaskTodayRow): Promise<boolean> {
+  const slot = task.pendingSlots[0] ?? 'once';
+  const res = await fetch('/api/v1/task-executions', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      step_id: task.stepId,
+      task_id: task.id,
+      slot: slot === 'once' ? 'full_day' : slot,
+      source: 'manual',
+      outcome: 'completed',
+    }),
+  });
+  return res.ok;
+}
+
 export function TodayTasksPopup({
   open,
   firstName = '',
@@ -66,8 +101,11 @@ export function TodayTasksPopup({
   onClose,
   onMarkDone,
   onOpenChat,
+  onAlmogMarked,
 }: TodayTasksPopupProps) {
   const [mounted, setMounted] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const { avatarUrl } = useAlmogAvatarUrl();
@@ -79,6 +117,13 @@ export function TodayTasksPopup({
     onClose,
     containerRef: dialogRef,
   });
+
+  useEffect(() => {
+    if (!open) {
+      setExpandedId(null);
+      setBusyId(null);
+    }
+  }, [open]);
 
   const nextTask = useMemo(
     () => pickNextTaskForNow(tasks, schedule),
@@ -103,7 +148,7 @@ export function TodayTasksPopup({
       ? Math.round((doneCount / (pendingCount + doneCount)) * 100)
       : 0;
 
-  const openChatForTask = (task: PendingTaskTodayRow) => {
+  const openChatForJourney = (task: PendingTaskTodayRow) => {
     const slotKey = task.pendingSlots.find((s) => s !== 'once');
     const slotLabelHe =
       slotKey && slotKey !== 'once' ? slotLabel(slotKey as JourneyTaskSlot) : null;
@@ -112,6 +157,11 @@ export function TodayTasksPopup({
       buildTaskDoneChatPrefill(task.title, slotLabelHe),
       buildTaskReportHintFromPendingRow(task, 'home_tasks_popup')
     );
+  };
+
+  const openChatForAlmog = (task: AlmogTodayRow) => {
+    onClose();
+    onOpenChat(buildTaskDoneChatPrefill(task.title, null));
   };
 
   const openChatGeneral = () => {
@@ -126,7 +176,31 @@ export function TodayTasksPopup({
       );
       return;
     }
+    if (almogTasks[0]) {
+      onOpenChat(buildTaskDoneChatPrefill(almogTasks[0].title, null));
+      return;
+    }
     onOpenChat(name ? `היי אלמוג, מה כדאי לי להתמקד בו היום?` : 'בוא נדבר על המשימות שלי להיום');
+  };
+
+  const handleMarkJourney = async (task: PendingTaskTodayRow) => {
+    setBusyId(task.id);
+    try {
+      const ok = await markJourneyDone(task);
+      if (ok) onAlmogMarked?.();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleMarkAlmog = async (task: AlmogTodayRow) => {
+    setBusyId(task.id);
+    try {
+      const ok = await markAlmogDone(task);
+      if (ok) onAlmogMarked?.();
+    } finally {
+      setBusyId(null);
+    }
   };
 
   if (!mounted) return null;
@@ -321,41 +395,86 @@ export function TodayTasksPopup({
                 </div>
               ) : null}
 
-              {almogTasks.map((task) => (
-                <button
-                  key={`almog-${task.id}`}
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onOpenChat(buildTaskDoneChatPrefill(task.title, null));
-                  }}
-                  className="w-full text-right rounded-2xl p-3.5 transition active:scale-[0.98]"
-                  style={{
-                    background: 'rgba(255,255,255,0.55)',
-                    border: '1px solid rgba(167,243,208,0.4)',
-                    boxShadow: '0 4px 14px rgba(6,78,59,0.05), inset 0 1px 0 rgba(255,255,255,0.65)',
-                  }}
-                  aria-label={`ספר לאלמוג שסיימת את ${task.title}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl"
-                      style={{
-                        background: 'rgba(236,253,245,0.95)',
-                        border: '1px solid rgba(110,231,183,0.4)',
-                      }}
+              {almogTasks.map((task) => {
+                const isExpanded = expandedId === `almog-${task.id}`;
+                const busy = busyId === task.id;
+                return (
+                  <article
+                    key={`almog-${task.id}`}
+                    className="w-full text-right rounded-2xl p-3.5"
+                    style={{
+                      background: 'rgba(255,255,255,0.55)',
+                      border: '1px solid rgba(167,243,208,0.4)',
+                      boxShadow:
+                        '0 4px 14px rgba(6,78,59,0.05), inset 0 1px 0 rgba(255,255,255,0.65)',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedId(isExpanded ? null : `almog-${task.id}`)
+                      }
+                      className="w-full text-right"
+                      aria-expanded={isExpanded}
                     >
-                      ✨
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-black text-emerald-950 leading-snug">{task.title}</p>
-                      <p className="text-[10px] font-medium text-emerald-800/70 mt-0.5">
-                        מאלמוג · פתוח
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              ))}
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl"
+                          style={{
+                            background: 'rgba(236,253,245,0.95)',
+                            border: '1px solid rgba(110,231,183,0.4)',
+                          }}
+                        >
+                          ✨
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-black text-emerald-950 leading-snug">
+                            {task.title}
+                          </p>
+                          <p className="text-[10px] font-medium text-emerald-800/70 mt-0.5">
+                            מאלמוג · פתוח
+                            {(task.similarCount ?? 1) > 1
+                              ? ` · ${task.similarCount} ניסוחים דומים אוחדו`
+                              : ''}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                    {isExpanded ? (
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void handleMarkAlmog(task)}
+                          className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-black text-white disabled:opacity-60"
+                          style={{
+                            background: 'linear-gradient(145deg, #047857, #10b981)',
+                          }}
+                        >
+                          {busy ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          )}
+                          סמן בוצע
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openChatForAlmog(task)}
+                          className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-black text-emerald-900"
+                          style={{
+                            background: 'rgba(167,243,208,0.45)',
+                            border: '1px solid rgba(110,231,183,0.4)',
+                          }}
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          מעבר לצ׳אט
+                        </button>
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })}
 
               {pendingTasks.map((task, index) => {
                 const timeHint =
@@ -363,13 +482,13 @@ export function TodayTasksPopup({
                     ? nextTask.timeHint
                     : taskTimeHintForRow(task, schedule);
                 const isFeatured = index === 0 && pendingCount > 0;
+                const isExpanded = expandedId === task.id;
+                const busy = busyId === task.id;
 
                 return (
-                  <button
+                  <article
                     key={task.id}
-                    type="button"
-                    onClick={() => openChatForTask(task)}
-                    className="w-full text-right rounded-2xl p-3.5 transition active:scale-[0.98]"
+                    className="w-full text-right rounded-2xl p-3.5"
                     style={{
                       background: isFeatured
                         ? 'linear-gradient(170deg, rgba(255,255,255,0.72) 0%, rgba(255,251,235,0.58) 100%)'
@@ -383,56 +502,95 @@ export function TodayTasksPopup({
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
                     }}
-                    aria-label={`ספר לאלמוג שסיימת את ${task.title}`}
                   >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl"
-                        style={{
-                          background: isFeatured
-                            ? 'linear-gradient(145deg, #fef3c7, #fde68a)'
-                            : 'rgba(236,253,245,0.95)',
-                          border: isFeatured
-                            ? '1px solid rgba(245,158,11,0.35)'
-                            : '1px solid rgba(110,231,183,0.4)',
-                        }}
-                      >
-                        {task.emoji}
+                    <button
+                      type="button"
+                      onClick={() => setExpandedId(isExpanded ? null : task.id)}
+                      className="w-full text-right"
+                      aria-expanded={isExpanded}
+                      aria-label={`פתיחת אפשרויות ל${task.title}`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl"
+                          style={{
+                            background: isFeatured
+                              ? 'linear-gradient(145deg, #fef3c7, #fde68a)'
+                              : 'rgba(236,253,245,0.95)',
+                            border: isFeatured
+                              ? '1px solid rgba(245,158,11,0.35)'
+                              : '1px solid rgba(110,231,183,0.4)',
+                          }}
+                        >
+                          {task.emoji}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          {isFeatured ? (
+                            <span
+                              className="inline-block text-[9px] font-bold text-amber-900 mb-1 px-2 py-0.5 rounded-full"
+                              style={{
+                                background: 'rgba(254,240,138,0.85)',
+                                border: '1px solid rgba(245,158,11,0.3)',
+                              }}
+                            >
+                              מומלץ עכשיו
+                            </span>
+                          ) : null}
+                          <p className="text-sm font-black text-emerald-950 leading-snug">
+                            {task.title}
+                          </p>
+                          <p className="text-[10px] font-medium text-emerald-800/70 mt-0.5">
+                            {task.stepTitle} · צעד {task.stepNumber}
+                          </p>
+                          {timeHint ? (
+                            <span
+                              className="inline-block text-[10px] font-bold mt-2 px-2.5 py-0.5 rounded-full text-emerald-900"
+                              style={{
+                                background: isFeatured
+                                  ? 'rgba(254,240,138,0.55)'
+                                  : 'rgba(167,243,208,0.45)',
+                                border: '1px solid rgba(110,231,183,0.35)',
+                              }}
+                            >
+                              {timeHint}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        {isFeatured ? (
-                          <span
-                            className="inline-block text-[9px] font-bold text-amber-900 mb-1 px-2 py-0.5 rounded-full"
-                            style={{
-                              background: 'rgba(254,240,138,0.85)',
-                              border: '1px solid rgba(245,158,11,0.3)',
-                            }}
-                          >
-                            מומלץ עכשיו
-                          </span>
-                        ) : null}
-                        <p className="text-sm font-black text-emerald-950 leading-snug">
-                          {task.title}
-                        </p>
-                        <p className="text-[10px] font-medium text-emerald-800/70 mt-0.5">
-                          {task.stepTitle} · צעד {task.stepNumber}
-                        </p>
-                        {timeHint ? (
-                          <span
-                            className="inline-block text-[10px] font-bold mt-2 px-2.5 py-0.5 rounded-full text-emerald-900"
-                            style={{
-                              background: isFeatured
-                                ? 'rgba(254,240,138,0.55)'
-                                : 'rgba(167,243,208,0.45)',
-                              border: '1px solid rgba(110,231,183,0.35)',
-                            }}
-                          >
-                            {timeHint}
-                          </span>
-                        ) : null}
+                    </button>
+                    {isExpanded ? (
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void handleMarkJourney(task)}
+                          className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-black text-white disabled:opacity-60"
+                          style={{
+                            background: 'linear-gradient(145deg, #047857, #10b981)',
+                          }}
+                        >
+                          {busy ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          )}
+                          סמן בוצע
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openChatForJourney(task)}
+                          className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-black text-emerald-900"
+                          style={{
+                            background: 'rgba(167,243,208,0.45)',
+                            border: '1px solid rgba(110,231,183,0.4)',
+                          }}
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          מעבר לצ׳אט
+                        </button>
                       </div>
-                    </div>
-                  </button>
+                    ) : null}
+                  </article>
                 );
               })}
 
@@ -503,7 +661,7 @@ export function TodayTasksPopup({
                     }}
                   >
                     <ClipboardCheck className="w-5 h-5" />
-                    סמן בעצמי
+                    אסמן בעצמי
                   </button>
                   <button
                     type="button"
@@ -534,7 +692,7 @@ export function TodayTasksPopup({
               )}
               <p className="text-center text-[11px] font-medium text-emerald-800/65 leading-relaxed">
                 {pendingCount > 0
-                  ? 'לחיצה על משימה פותחת צ׳אט עם טקסט מוכן — אלמוג יסמן בשבילך'
+                  ? 'לחיצה על משימה פותחת סימון מהיר — או מעבר לצ׳אט אם בא לך'
                   : 'יום מצוין. מחר נמשיך 🌱'}
               </p>
             </div>

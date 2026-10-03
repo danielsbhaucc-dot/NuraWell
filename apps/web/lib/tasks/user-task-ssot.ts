@@ -19,6 +19,7 @@ import {
   type PendingTaskTodayRow,
   type TodayExecutionRow,
 } from '../journey/journey-report-parse';
+import { groupSimilarByTitle } from '../ai/almog-commitments/title-similarity';
 
 export type UnifiedTaskLifecycle = 'active' | 'completed' | 'rejected';
 
@@ -97,6 +98,10 @@ export type AlmogTodayRow = {
   status: UnifiedTaskLifecycle;
   schedule: string | null;
   done: boolean;
+  /** מזהים של וריאציות כמעט-זהות שאוחדו לתצוגה (כולל id). */
+  groupedIds?: string[];
+  /** כמה וריאציות דומות אוחדו — >1 כשיש כפילויות. */
+  similarCount?: number;
 };
 
 export type BuildUserTaskSnapshotInput = {
@@ -149,21 +154,35 @@ export function buildUserTaskSnapshot(input: BuildUserTaskSnapshotInput): UserTa
       ? input.almogDroppedCount
       : (input.almogAssignments ?? []).filter((a) => a.status === 'dropped').length;
 
-  const almogOpen: AlmogTodayRow[] = almogOpenRaw.map((a) => ({
-    id: a.id,
-    title: a.title,
+  // קיבוץ כותרות כמעט-זהות — מונע "16 שיבוטים" ברשימת היום / מונים.
+  const almogOpen: AlmogTodayRow[] = groupSimilarByTitle(
+    almogOpenRaw.map((a) => ({
+      id: a.id,
+      title: a.title,
+      source: 'almog' as const,
+      status: 'active' as const,
+      schedule: typeof a.schedule === 'string' ? a.schedule : null,
+      done: false,
+    })),
+    0.55
+  ).map((g) => ({
+    id: g.id,
+    title: g.title,
     source: 'almog' as const,
     status: 'active' as const,
-    schedule: typeof a.schedule === 'string' ? a.schedule : null,
+    schedule: g.schedule,
     done: false,
+    groupedIds: g.groupedIds,
+    similarCount: g.similarCount,
   }));
 
-  const dueToday = journeyTodayCounts.dueToday + almogOpen.length;
+  const almogActiveGrouped = almogOpen.length;
+  const dueToday = journeyTodayCounts.dueToday + almogActiveGrouped;
   const doneToday = journeyTodayCounts.done;
   const pendingToday = Math.max(0, dueToday - doneToday);
 
   const unified: UnifiedTaskCounts = {
-    active: journeyTodayCounts.pending + almogOpen.length,
+    active: journeyTodayCounts.pending + almogActiveGrouped,
     completed: doneToday + almogCompleted,
     rejected: journeyStatuses.rejected + almogDropped,
     dueToday,
@@ -181,7 +200,7 @@ export function buildUserTaskSnapshot(input: BuildUserTaskSnapshotInput): UserTa
         pendingToday: journeyTodayCounts.pending,
       },
       almog: {
-        active: almogOpen.length,
+        active: almogActiveGrouped,
         completed: almogCompleted,
         dropped: almogDropped,
       },
