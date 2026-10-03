@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { detectHebrewMoment, isQuietWindow } from '../lib/time/hebrew-calendar';
-import { getPersonalGreeting } from '../lib/time/greeting';
+import { getPersonalGreeting } from '../lib/time/greeting-hebrew';
 
 /**
  * הזמנים ב-Asia/Jerusalem. ב-2026 ישראל ב-DST → UTC+3.

@@ -1,6 +1,6 @@
 /**
  * צרכן קליינט משותף ל-SSOT משימות — בית / תוכנית / מסע / היסטוריה.
- * כל מסך שמציג מוני משימות חייב לקרוא מכאן (או מ-/api/v1/user-task-snapshot).
+ * כולל dedupe in-flight + cache קצר כדי שמסכים מקבילים לא יירו את אותו fetch פעמיים.
  */
 
 import type { UserTaskSnapshotCounts } from '../tasks/user-task-ssot';
@@ -28,20 +28,50 @@ export type UserTaskSnapshotResponse = {
   screen_counters?: Record<string, number>;
 };
 
+const CACHE_TTL_MS = 4_000;
+let cached: { at: number; data: UserTaskSnapshotResponse | null } | null = null;
+let inflight: Promise<UserTaskSnapshotResponse | null> | null = null;
+
+export function invalidateUserTaskSnapshotCache(): void {
+  cached = null;
+  inflight = null;
+}
+
 export async function fetchUserTaskSnapshot(
   init?: RequestInit
 ): Promise<UserTaskSnapshotResponse | null> {
-  try {
-    const res = await fetch('/api/v1/user-task-snapshot', {
-      cache: 'no-store',
-      credentials: 'include',
-      ...init,
-    });
-    if (!res.ok) return null;
-    const json = (await res.json()) as UserTaskSnapshotResponse;
-    if (!json?.counts?.unified) return null;
-    return json;
-  } catch {
-    return null;
+  const forceNetwork = Boolean(init?.cache === 'reload' || (init as { refresh?: boolean })?.refresh);
+  if (!forceNetwork && cached && Date.now() - cached.at < CACHE_TTL_MS) {
+    return cached.data;
   }
+  if (!forceNetwork && inflight) return inflight;
+
+  const run = (async () => {
+    try {
+      const res = await fetch('/api/v1/user-task-snapshot', {
+        cache: 'no-store',
+        credentials: 'include',
+        ...init,
+      });
+      if (!res.ok) {
+        cached = { at: Date.now(), data: null };
+        return null;
+      }
+      const json = (await res.json()) as UserTaskSnapshotResponse;
+      if (!json?.counts?.unified) {
+        cached = { at: Date.now(), data: null };
+        return null;
+      }
+      cached = { at: Date.now(), data: json };
+      return json;
+    } catch {
+      cached = { at: Date.now(), data: null };
+      return null;
+    } finally {
+      inflight = null;
+    }
+  })();
+
+  inflight = run;
+  return run;
 }

@@ -61,3 +61,17 @@ export function dispatchOpenAlmogChatFromNotification(detail: OpenAlmogChatDetai
 export function dispatchOpenAlmogChat(): void {
   window.dispatchEvent(new Event(OPEN_ALMOG_CHAT_EVENT));
 }
+
+/** תור פרטים כש-AIChatWidget עדיין לא טעון (lazy). */
+let pendingOpenDetail: OpenAlmogChatDetail | null | undefined;
+
+export function stashPendingOpenAlmogChat(detail?: OpenAlmogChatDetail | null): void {
+  pendingOpenDetail = detail === undefined ? null : detail;
+}
+
+/** מחזיר ומוחק את הפרטים שנשמרו לפתיחה אחרי mount. */
+export function consumePendingOpenAlmogChat(): OpenAlmogChatDetail | null | undefined {
+  const d = pendingOpenDetail;
+  pendingOpenDetail = undefined;
+  return d;
+}

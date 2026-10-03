@@ -30,7 +30,7 @@ import { DayDetailPopup, type DayExecRow } from '../tasks/DayDetailPopup';
 import { WeightTrendInsightCard } from './WeightTrendInsightCard';
 import { AlmogAvatarChipWithNameTag } from '../journey/AlmogPresence';
 import { formatHebrewRelative } from '../../lib/time/hebrew-relative';
-import { getPersonalGreeting } from '../../lib/time/greeting';
+import { usePersonalGreeting } from '../../lib/time/usePersonalGreeting';
 import {
   progressPageAlmogHeroBody,
   progressPageGreeting,
@@ -337,7 +337,7 @@ export function ProgressPageClient({
   const router = useRouter();
   const [popupDateKey, setPopupDateKey] = useState<string | null>(null);
   const todayKey = jerusalemTodayKey();
-  const greeting = useMemo(() => getPersonalGreeting(new Date()), []);
+  const greeting = usePersonalGreeting();
   const heroSeed = useMemo(
     () => new Date().getDate() + currentStreak + totalCompleted,
     [currentStreak, totalCompleted]

@@ -8,12 +8,17 @@ type ChatBackgroundState = {
   hasPhoto: boolean;
 };
 
-export function useChatBackground(): ChatBackgroundState {
+/** `enabled=false` — לא מושכים/preload רקע עד שהצ׳אט באמת נפתח. */
+export function useChatBackground(enabled = true): ChatBackgroundState {
   const [url, setUrl] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(!enabled);
   const [hasPhoto, setHasPhoto] = useState(false);
 
   useEffect(() => {
+    if (!enabled) {
+      setReady(false);
+      return;
+    }
     let cancelled = false;
 
     void fetch('/api/v1/chat-background')
@@ -51,7 +56,7 @@ export function useChatBackground(): ChatBackgroundState {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [enabled]);
 
   return { url, ready, hasPhoto };
 }

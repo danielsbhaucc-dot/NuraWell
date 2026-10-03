@@ -289,6 +289,23 @@ export function NotificationsProvider({
 
   const filterKey = `${viewMode}-${filterKind}`;
 
+  const loadBadgeOnly = useCallback(async () => {
+    try {
+      const url = buildListUrl({
+        viewMode: 'inbox',
+        filterKind: 'all',
+        cursor: null,
+        limit: 1,
+      });
+      const res = await fetch(url, { cache: 'no-store' });
+      const data = (await res.json()) as { unread_total?: number };
+      if (!res.ok) return;
+      if (typeof data.unread_total === 'number') setUnreadTotal(data.unread_total);
+    } catch {
+      /* badge best-effort */
+    }
+  }, []);
+
   const loadInitial = useCallback(
     async (opts?: { silent?: boolean }) => {
       if (!opts?.silent) setBusy(true);
@@ -350,10 +367,16 @@ export function NotificationsProvider({
     }
   }, [filterKind, nextCursor, viewMode]);
 
+  /** רשימה מלאה רק כשהמגירה פתוחה — ב-mount מספיק badge. */
   useEffect(() => {
+    if (!open) return;
     void loadInitial();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- טעינה כשמשנים טאב/פילטר
-  }, [filterKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- טעינה בפתיחה / שינוי טאב
+  }, [open, filterKey]);
+
+  useEffect(() => {
+    void loadBadgeOnly();
+  }, [loadBadgeOnly]);
 
   /**
    * 🚀 דחיפה ל-live toast queue — נקרא ע"י realtime ו-SW כש-INSERT מתקבל
@@ -433,6 +456,7 @@ export function NotificationsProvider({
   useEffect(() => {
     const supabase = createClient();
     let teardown = false;
+    let started = false;
 
     const cleanupChannel = () => {
       const ch = channelRef.current;
@@ -443,7 +467,7 @@ export function NotificationsProvider({
     };
 
     const scheduleReconnect = (reason: string) => {
-      if (teardown) return;
+      if (teardown || !started) return;
       if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
       reconnectAttemptRef.current += 1;
       /** Exponential backoff עם תקרה — מתחיל ב-2s ועד 30s. */
@@ -459,6 +483,7 @@ export function NotificationsProvider({
 
     const connect = () => {
       if (teardown) return;
+      started = true;
       cleanupChannel();
 
       const channel = supabase
@@ -481,11 +506,8 @@ export function NotificationsProvider({
           channelStatusRef.current = status;
           if (status === 'SUBSCRIBED') {
             reconnectAttemptRef.current = 0;
-            /**
-             * אחרי חיבור-מחדש — סנכרון מצב כדי לא לפספס INSERT-ים שהתרחשו
-             * בזמן שהיינו offline / channel סגור.
-             */
-            void loadInitial({ silent: true });
+            /** סנכרון קל ל-badge; רשימה מלאה רק אם המגירה פתוחה. */
+            void loadBadgeOnly();
           } else if (
             status === 'CHANNEL_ERROR' ||
             status === 'TIMED_OUT' ||
@@ -501,12 +523,24 @@ export function NotificationsProvider({
       channelRef.current = channel;
     };
 
-    connect();
+    /** Realtime אחרי idle — לא על critical path של טעינת הדשבורד. */
+    let idleCancel: (() => void) | undefined;
+    if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+      const idleId = window.requestIdleCallback(() => connect(), { timeout: 5000 });
+      idleCancel = () => window.cancelIdleCallback(idleId);
+    } else {
+      const t = window.setTimeout(connect, 2500);
+      idleCancel = () => window.clearTimeout(t);
+    }
 
-    /** visibility — חזרה לטאב: רענון + ודא שה-channel חי. */
+    /** visibility — חזרה לטאב: badge + ודא שה-channel חי. */
     const onVis = () => {
       if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
-      void loadInitial({ silent: true });
+      void loadBadgeOnly();
+      if (!started) {
+        connect();
+        return;
+      }
       if (channelStatusRef.current !== 'SUBSCRIBED') {
         console.info('[notifications-realtime] tab visible — forcing reconnect');
         reconnectAttemptRef.current = 0;
@@ -541,13 +575,14 @@ export function NotificationsProvider({
 
     return () => {
       teardown = true;
+      idleCancel?.();
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('online', onOnline);
       if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
       window.clearInterval(heartbeat);
       cleanupChannel();
     };
-  }, [userId, handleRealtimeInsert, loadInitial]);
+  }, [userId, handleRealtimeInsert, loadBadgeOnly]);
 
   /**
    * 📨 גשר Service Worker → חלון. ה-SW שולח postMessage כש-push מתקבל
@@ -600,10 +635,11 @@ export function NotificationsProvider({
       // Realtime בריא ועדיין בתוך חלון הסנכרון האיטי → דלג, חוסך Egress.
       if (healthy && elapsed < SLOW_SYNC_MS) return;
       lastBgSyncRef.current = Date.now();
-      void loadInitial({ silent: true });
+      if (open) void loadInitial({ silent: true });
+      else void loadBadgeOnly();
     }, 30_000);
     return () => window.clearInterval(id);
-  }, [loadInitial]);
+  }, [loadInitial, loadBadgeOnly, open]);
 
   useEffect(() => {
     if (!open) return;

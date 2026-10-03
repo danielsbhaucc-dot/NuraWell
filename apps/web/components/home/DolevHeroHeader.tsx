@@ -6,7 +6,7 @@ import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { dispatchOpenAlmogChatWithPrefill, dispatchOpenAlmogChatWithTaskReport } from '../../lib/notifications/open-almog-chat';
 import type { TaskReportHint } from '../../lib/ai/task-report-hint';
-import { getPersonalGreeting } from '../../lib/time/greeting';
+import { usePersonalGreeting } from '../../lib/time/usePersonalGreeting';
 
 interface AlmogHeroHeaderProps {
   firstName: string;
@@ -68,7 +68,7 @@ export function AlmogHeroHeader({
   onTaskBadgeClick,
 }: AlmogHeroHeaderProps) {
   const { avatarUrl } = useAlmogAvatarUrl();
-  const greeting = getPersonalGreeting(new Date());
+  const greeting = usePersonalGreeting();
 
   /** ברירת מחדל אם לא מועבר מבחוץ — לא מציגים שורת משימות */
   const showTaskBadge = !!taskBadge && !taskBadge.loading;

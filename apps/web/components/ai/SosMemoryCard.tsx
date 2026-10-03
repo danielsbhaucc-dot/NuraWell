@@ -7,6 +7,7 @@ import { ChevronDown, ChevronLeft, Sparkles } from 'lucide-react';
 import type { SosMemorySnippet, SosRecentEvent } from '../../lib/ai/guardian/sos-memory';
 import { filterRelevantSosEvents } from '../../lib/ai/guardian/sos-ease-shared';
 import { formatHebrewRelative } from '../../lib/time/hebrew-relative';
+import { runWhenIdle } from '../../lib/client/run-when-idle';
 import { AlmogAvatarChip } from '../journey/AlmogPresence';
 
 function outcomeLabel(outcome: string): string {
@@ -70,7 +71,9 @@ export function SosMemoryCard() {
   }, []);
 
   useEffect(() => {
-    void load();
+    return runWhenIdle(() => {
+      void load();
+    }, 3000);
   }, [load]);
 
   if (loading) return <SosMemoryCardSkeleton />;

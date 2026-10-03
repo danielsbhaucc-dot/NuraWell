@@ -12,12 +12,8 @@ import {
   type UserScheduleProfile,
 } from '../../lib/journey/pick-next-task-for-now';
 import type { AlmogTodayRow } from '../../lib/tasks/user-task-ssot';
-
-type UserTaskSnapshotResponse = {
-  journey_today?: PendingTaskTodayRow[];
-  almog_open?: AlmogTodayRow[];
-  user_schedule?: UserScheduleProfile;
-};
+import { fetchUserTaskSnapshot } from '../../lib/client/user-task-snapshot';
+import { fetchDashboardBrief } from '../../lib/client/dashboard-brief';
 
 type DashboardBrief = {
   headline: string;
@@ -42,15 +38,14 @@ export function DynamicMentorWidgetClient({
   const loadContext = useCallback(async () => {
     setLoading(true);
     try {
-      const [snapshotRes, briefRes] = await Promise.all([
-        fetch('/api/v1/user-task-snapshot', { cache: 'no-store' }),
-        fetch('/api/v1/ai/dashboard-brief', { cache: 'no-store' }),
+      const [json, briefJson] = await Promise.all([
+        fetchUserTaskSnapshot(),
+        fetchDashboardBrief(),
       ]);
 
-      if (snapshotRes.ok) {
-        const json = (await snapshotRes.json()) as UserTaskSnapshotResponse;
+      if (json) {
         const pending = (json.journey_today ?? []).filter((t) => !t.done);
-        const picked = pickNextTaskForNow(pending, json.user_schedule ?? {});
+        const picked = pickNextTaskForNow(pending, (json.user_schedule ?? {}) as UserScheduleProfile);
         const journeyNext =
           picked
             ? (pending.find((t) => t.id === picked.taskId) ?? pending[0] ?? null)
@@ -82,9 +77,8 @@ export function DynamicMentorWidgetClient({
         }
       }
 
-      if (briefRes.ok) {
-        const json = (await briefRes.json()) as { brief?: DashboardBrief };
-        if (json.brief?.headline && json.brief?.body) setBrief(json.brief);
+      if (briefJson?.headline && briefJson?.body) {
+        setBrief({ headline: briefJson.headline, body: briefJson.body });
       }
     } finally {
       setLoading(false);

@@ -21,13 +21,17 @@ function randomBetween(min: number, max: number): number {
   return Math.floor(min + Math.random() * (max - min + 1));
 }
 
-/** גיוון קל בכל שליחה — לא אותם מספרים קבועים. */
+/**
+ * גיוון קל בכל שליחה — לא אותם מספרים קבועים.
+ * תקרות מקוצרות: כש-TTFB כבר ארוך, streaming מדלג על שאר הכוריאוגרפיה;
+ * כשמהיר — עדיין תחושת וואטסאפ בלי ~3 שנ׳ מלאכותיות.
+ */
 export function sampleTickChoreographyDelays(): TickChoreographyDelays {
   return {
-    pendingMs: randomBetween(140, 420),
-    sentMs: randomBetween(220, 560),
-    deliveredMs: randomBetween(320, 780),
-    readHoldMs: randomBetween(520, 1400),
+    pendingMs: randomBetween(100, 280),
+    sentMs: randomBetween(160, 380),
+    deliveredMs: randomBetween(220, 480),
+    readHoldMs: randomBetween(280, 720),
   };
 }
 

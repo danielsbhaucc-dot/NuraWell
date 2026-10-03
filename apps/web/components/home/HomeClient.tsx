@@ -512,27 +512,29 @@ export function HomeClient({
         </motion.div>
       </div>
 
-      <TodayTasksPopup
-        open={tasksPopupOpen}
-        firstName={firstName}
-        tasks={todayTasks}
-        almogTasks={almogOpen}
-        doneCount={taskCounts.done}
-        pendingCount={taskCounts.pending}
-        userSchedule={userSchedule}
-        onClose={() => setTasksPopupOpen(false)}
-        onMarkDone={() => {
-          setTasksPopupOpen(false);
-          progressReport.open('task_execution');
-        }}
-        onAlmogMarked={() => {
-          void refreshTasks();
-        }}
-        onOpenChat={(prefill, hint) => {
-          if (hint) dispatchOpenAlmogChatWithTaskReport(prefill, hint);
-          else dispatchOpenAlmogChatWithPrefill(prefill);
-        }}
-      />
+      {tasksPopupOpen ? (
+        <TodayTasksPopup
+          open={tasksPopupOpen}
+          firstName={firstName}
+          tasks={todayTasks}
+          almogTasks={almogOpen}
+          doneCount={taskCounts.done}
+          pendingCount={taskCounts.pending}
+          userSchedule={userSchedule}
+          onClose={() => setTasksPopupOpen(false)}
+          onMarkDone={() => {
+            setTasksPopupOpen(false);
+            progressReport.open('task_execution');
+          }}
+          onAlmogMarked={() => {
+            void refreshTasks();
+          }}
+          onOpenChat={(prefill, hint) => {
+            if (hint) dispatchOpenAlmogChatWithTaskReport(prefill, hint);
+            else dispatchOpenAlmogChatWithPrefill(prefill);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

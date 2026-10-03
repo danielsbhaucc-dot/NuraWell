@@ -13,14 +13,31 @@ export type AlmogAvatarMeta = {
   refresh: () => Promise<void>;
 };
 
-export function useAlmogAvatarUrl(refreshToken = 0): AlmogAvatarMeta {
+type UseAlmogAvatarUrlOptions = {
+  refreshToken?: number;
+  /** כבוי — לא קוראים ל-API (fallback מקומי בלבד). */
+  enabled?: boolean;
+};
+
+export function useAlmogAvatarUrl(
+  refreshTokenOrOpts: number | UseAlmogAvatarUrlOptions = 0
+): AlmogAvatarMeta {
+  const refreshToken =
+    typeof refreshTokenOrOpts === 'number' ? refreshTokenOrOpts : (refreshTokenOrOpts.refreshToken ?? 0);
+  const enabled =
+    typeof refreshTokenOrOpts === 'number' ? true : (refreshTokenOrOpts.enabled ?? true);
+
   const [avatarUrl, setAvatarUrl] = useState<string>(ALMOG_AVATAR_FALLBACK);
   const [hasCustom, setHasCustom] = useState(false);
   const [cdnConfigured, setCdnConfigured] = useState(false);
   const [cdnHostname, setCdnHostname] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(!enabled);
 
   const refresh = useCallback(async () => {
+    if (!enabled) {
+      setReady(true);
+      return;
+    }
     try {
       const res = await fetch('/api/v1/almog-avatar', { cache: 'no-store' });
       const data = (await res.json()) as {
@@ -42,7 +59,7 @@ export function useAlmogAvatarUrl(refreshToken = 0): AlmogAvatarMeta {
     } finally {
       setReady(true);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     void refresh();

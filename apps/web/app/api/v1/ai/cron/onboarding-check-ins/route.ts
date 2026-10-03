@@ -15,6 +15,10 @@ import {
   type DrainRemindersResult,
 } from '../../../../../../lib/ai/almog-commitments/drain-reminders';
 import {
+  processPendingAlmogCommitmentJobs,
+  type ProcessCommitmentJobsResult,
+} from '../../../../../../lib/ai/almog-commitments/process-pending-commitment-jobs';
+import {
   sweepStaleAssignments,
   type SweepAssignmentsResult,
 } from '../../../../../../lib/ai/almog-commitments/sweep-assignments';
@@ -43,73 +47,110 @@ type PlannedTrigger = {
   aiSystemPrompt: string;
 };
 
+/**
+ * ?phase=all|reminders|orchestrator|challenge|checkins
+ * מאפשר לפצל schedules ב-Upstash בלי לשנות לוגיקה — פחות spike באותו tick.
+ */
+type CronPhase = 'all' | 'reminders' | 'orchestrator' | 'challenge' | 'checkins';
+
+function parseCronPhase(raw: string | null): CronPhase {
+  const v = (raw ?? 'all').trim().toLowerCase();
+  if (v === 'reminders' || v === 'orchestrator' || v === 'challenge' || v === 'checkins') {
+    return v;
+  }
+  return 'all';
+}
+
 async function runOnboardingCheckInsCron(request: Request) {
   const url = new URL(request.url);
   const dryRunRaw = url.searchParams.get('dryRun') ?? url.searchParams.get('dry_run');
   const isDryRun = dryRunRaw === '1' || dryRunRaw === 'true';
+  const phase = parseCronPhase(url.searchParams.get('phase'));
+  const runReminders = phase === 'all' || phase === 'reminders';
+  const runOrchestrator = phase === 'all' || phase === 'orchestrator';
+  const runChallenge = phase === 'all' || phase === 'challenge';
+  const runCheckins = phase === 'all' || phase === 'checkins';
 
   /**
    * 🔗 איחוד תזמונים: ה-cron הזה כבר רץ כל חצי שעה, אז כאן גם מרוקנים את תור
    * התזכורות של אלמוג (`scheduled_reminders`) — בלי schedule נפרד ב-Upstash.
    * רץ *לפני* בדיקת QSTASH_TOKEN ובתוך try, כדי שהתזכורות יישלחו תמיד, גם אם
    * חלק ה-onboarding (שתלוי ב-QStash Workflows) נכשל/לא מוגדר.
-   */
-  /**
-   * 🔗 מעקב אוטומטי אחרי צעדים תקועים — רץ *לפני* ה-drain כדי שנדנודים שנוצרו
-   * עם fire_at=now יישלחו כבר באותה ריצה. בלי קריאת LLM (טקסט קבוע), אז לא
-   * שותה טוקנים.
+   * ניתן לפצל עם ?phase=reminders|orchestrator|challenge|checkins.
    */
   let assignmentSweep: SweepAssignmentsResult | { error: string } | null = null;
-  try {
-    assignmentSweep = await sweepStaleAssignments(createAdminClient(), { dryRun: isDryRun });
-  } catch (e) {
-    assignmentSweep = { error: e instanceof Error ? e.message : String(e) };
-  }
-
+  let commitmentJobs: ProcessCommitmentJobsResult | { error: string } | null = null;
   let almogReminders: DrainRemindersResult | { error: string } | null = null;
-  try {
-    almogReminders = await drainAlmogReminders(createAdminClient(), { dryRun: isDryRun });
-  } catch (e) {
-    almogReminders = { error: e instanceof Error ? e.message : String(e) };
+
+  if (runReminders) {
+    try {
+      assignmentSweep = await sweepStaleAssignments(createAdminClient(), { dryRun: isDryRun });
+    } catch (e) {
+      assignmentSweep = { error: e instanceof Error ? e.message : String(e) };
+    }
+
+    try {
+      commitmentJobs = isDryRun
+        ? { claimed: 0, processed: 0, failed: 0 }
+        : await processPendingAlmogCommitmentJobs(createAdminClient(), { limit: 20 });
+    } catch (e) {
+      commitmentJobs = { error: e instanceof Error ? e.message : String(e) };
+    }
+
+    try {
+      almogReminders = await drainAlmogReminders(createAdminClient(), { dryRun: isDryRun });
+    } catch (e) {
+      almogReminders = { error: e instanceof Error ? e.message : String(e) };
+    }
   }
 
-  /**
-   * 🫀 Program Orchestrator — "לב הפעימה". רץ כפאזה עצמאית בכל tick: מעריך את
-   * מצב המשתמש (ready_to_advance | maintaining | struggling), שומר program_state,
-   * ומנסח הצעה יזומה כשעובר את שערי הבטיחות/התדירות. עטוף ב-try כדי שלא יפיל את
-   * שאר ה-cron, ומכבד dryRun.
-   */
   let orchestrator: RunOrchestratorResult | { error: string } | null = null;
-  try {
-    orchestrator = await runProgramOrchestrator(createAdminClient(), { dryRun: isDryRun });
-  } catch (e) {
-    orchestrator = { error: e instanceof Error ? e.message : String(e) };
-  }
-
   let recoveryOrchestration: Awaited<ReturnType<typeof runRecoveryOrchestrationBatch>> | {
     error: string;
   } | null = null;
-  try {
-    recoveryOrchestration = await runRecoveryOrchestrationBatch(createAdminClient(), {
-      dryRun: isDryRun,
-    });
-  } catch (e) {
-    recoveryOrchestration = { error: e instanceof Error ? e.message : String(e) };
+
+  if (runOrchestrator) {
+    try {
+      orchestrator = await runProgramOrchestrator(createAdminClient(), { dryRun: isDryRun });
+    } catch (e) {
+      orchestrator = { error: e instanceof Error ? e.message : String(e) };
+    }
+
+    try {
+      recoveryOrchestration = await runRecoveryOrchestrationBatch(createAdminClient(), {
+        dryRun: isDryRun,
+      });
+    } catch (e) {
+      recoveryOrchestration = { error: e instanceof Error ? e.message : String(e) };
+    }
   }
 
-  /**
-   * 🏆 אתגר 14 יום — תזכורות שעתיות (חלון אכילה, ערב) + סריקות בזמן אמת.
-   * רץ כאן כי ה-cron כבר מתוזמן כל ~30 דקות — בלי schedule נפרד.
-   */
   let challengeHourly: Awaited<
     ReturnType<typeof import('@/lib/challenge/run-challenge-hourly').runChallengeHourlyReminders>
   > | { error: string } | null = null;
-  try {
-    const { runChallengeHourlyReminders } = await import('@/lib/challenge/run-challenge-hourly');
-    challengeHourly = await runChallengeHourlyReminders(createAdminClient(), { dryRun: isDryRun });
-    console.log('[onboarding-check-ins] challenge_hourly', JSON.stringify(challengeHourly));
-  } catch (e) {
-    challengeHourly = { error: e instanceof Error ? e.message : String(e) };
+
+  if (runChallenge) {
+    try {
+      const { runChallengeHourlyReminders } = await import('@/lib/challenge/run-challenge-hourly');
+      challengeHourly = await runChallengeHourlyReminders(createAdminClient(), { dryRun: isDryRun });
+      console.log('[onboarding-check-ins] challenge_hourly', JSON.stringify(challengeHourly));
+    } catch (e) {
+      challengeHourly = { error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
+  if (!runCheckins) {
+    return NextResponse.json({
+      ok: true,
+      phase,
+      skipped_checkins: true,
+      almog_reminders: almogReminders,
+      assignment_sweep: assignmentSweep,
+      commitment_jobs: commitmentJobs,
+      orchestrator,
+      recovery_orchestration: recoveryOrchestration,
+      challenge_hourly: challengeHourly,
+    });
   }
 
   const token = process.env.QSTASH_TOKEN?.trim();
@@ -188,6 +229,7 @@ async function runOnboardingCheckInsCron(request: Request) {
       })),
       almog_reminders: almogReminders,
       assignment_sweep: assignmentSweep,
+      commitment_jobs: commitmentJobs,
       orchestrator,
       recovery_orchestration: recoveryOrchestration,
       hint_he:
@@ -233,6 +275,7 @@ async function runOnboardingCheckInsCron(request: Request) {
     ...summary,
     almog_reminders: almogReminders,
     assignment_sweep: assignmentSweep,
+    commitment_jobs: commitmentJobs,
     orchestrator,
     recovery_orchestration: recoveryOrchestration,
     challenge_hourly: challengeHourly,

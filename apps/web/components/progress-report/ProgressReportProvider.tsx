@@ -262,14 +262,19 @@ export function ProgressReportProvider({
     });
   }, [data]);
 
-  const value: ProgressReportContextValue = {
-    open: (tab) => {
-      setActiveTab(tab ?? 'task_execution');
-      setOpen(true);
-    },
-    close: () => setOpen(false),
-    isOpen: open,
-  };
+  const openReport = useCallback((tab?: ProgressReportTabId) => {
+    setActiveTab(tab ?? 'task_execution');
+    setOpen(true);
+  }, []);
+  const closeReport = useCallback(() => setOpen(false), []);
+  const value = useMemo<ProgressReportContextValue>(
+    () => ({
+      open: openReport,
+      close: closeReport,
+      isOpen: open,
+    }),
+    [openReport, closeReport, open]
+  );
 
   /** קיבוץ ביצועי היום לפי step_id — מאיץ לתצוגת TaskDailySlots */
   const stepExecutionsByStep = useMemo(() => {

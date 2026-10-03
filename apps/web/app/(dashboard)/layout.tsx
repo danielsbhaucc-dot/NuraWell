@@ -1,5 +1,4 @@
 import type { Viewport } from 'next';
-import { createClient } from '../../lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { MobileHeader } from '../../components/shared/MobileHeader';
 import { BottomNav } from '../../components/shared/BottomNav';
@@ -10,6 +9,10 @@ import { NotificationsProvider } from '../../components/notifications/Notificati
 import { DolevFirstLoginHost } from '../../components/onboarding/DolevFirstLoginHost';
 import { AlmogFirstLoginHost } from '../../components/onboarding/AlmogFirstLoginHost';
 import type { ProfileSummarySource } from '../../lib/onboarding/profile-summary-rows';
+import {
+  getCachedAuthUser,
+  getCachedDashboardProfile,
+} from '../../lib/supabase/cached-auth';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -24,24 +27,13 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user } = await getCachedAuthUser();
 
   if (!user) {
     redirect('/login');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select(
-      `full_name, gender, main_goal, current_weight_kg, goal_weight_kg,
-      weakest_time_of_day, main_obstacle, main_obstacle_detail,
-      wake_up_time, sleep_time, meal_count, meal_schedule, dolev_welcome_seen_at, almog_welcome_seen_at,
-      onboarding_completed`
-    )
-    .eq('id', user.id)
-    .maybeSingle();
+  const profile = await getCachedDashboardProfile(user.id);
 
   const showDolevWelcome =
     Boolean(user.email_confirmed_at) &&
