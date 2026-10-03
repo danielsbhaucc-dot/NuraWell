@@ -22,8 +22,9 @@ export function profileChatCta(gender: ProfileGender): string {
 }
 
 export function genderLabel(gender: ProfileGender): string {
-  if (gender === 'male') return 'זכר';
-  if (gender === 'female') return 'נקבה';
+  // SSOT: אותו מילון כמו «מה אלמוג יודע» / אונבורדינג — גבר/אישה.
+  if (gender === 'male') return 'גבר';
+  if (gender === 'female') return 'אישה';
   return '';
 }
 

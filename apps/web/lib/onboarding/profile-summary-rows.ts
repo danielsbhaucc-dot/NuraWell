@@ -1,5 +1,6 @@
 import type { OnboardingGender, MainGoal, MainObstacle, WeakestTimeOfDay } from './types';
 import { formatWeightRangeKg } from './format-weight-range';
+import { genderDisplayLabel } from '../profile/profile-field-ssot';
 
 const GOAL: Record<MainGoal, string> = {
   weight_loss: 'ירידה במשקל',
@@ -20,11 +21,6 @@ const OBSTACLE: Record<MainObstacle, string> = {
   lack_of_consistency: 'קושי להתמיד',
   no_support: 'חוסר תמיכה',
   other: 'אחר',
-};
-
-const GENDER: Record<OnboardingGender, string> = {
-  male: 'גבר',
-  female: 'אישה',
 };
 
 export type ProfileSummarySource = {
@@ -49,7 +45,7 @@ export function buildProfileSummaryRows(profile: ProfileSummarySource): { label:
 
   return [
     { label: 'שם', value: profile.full_name?.trim() || '—' },
-    { label: 'מין', value: profile.gender ? GENDER[profile.gender] : '—' },
+    { label: 'מין', value: genderDisplayLabel(profile.gender) || '—' },
     { label: 'מטרה', value: profile.main_goal ? GOAL[profile.main_goal] : '—' },
     {
       label: 'משקל (נוכחי → יעד)',

@@ -12,12 +12,7 @@ import { Drawer } from 'vaul';
 import { useRouter } from 'next/navigation';
 import { ClipboardCheck, ChevronLeft, History, ListChecks, UserX } from 'lucide-react';
 import { useProgressReport } from '../progress-report/ProgressReportProvider';
-import {
-  countTaskStatusesByReport,
-  type JourneyReportStepShape,
-} from '../../lib/journey/journey-report-parse';
-
-type JourneyReportResponse = { steps: JourneyReportStepShape[] };
+import type { UserTaskSnapshotCounts } from '../../lib/tasks/user-task-ssot';
 
 type ActionHubContextValue = {
   open: () => void;
@@ -44,26 +39,15 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
   const refreshCounts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/v1/journey-report', { cache: 'no-store' });
-      const json = (await res.json()) as JourneyReportResponse & { error?: string };
-      if (!res.ok) return;
-      const { accepted, rejected } = countTaskStatusesByReport(json.steps ?? []);
-      setAcceptedCount(accepted);
-      setRejectedCount(rejected);
-
-      const plansRes = await fetch('/api/v1/almog-assignments', { cache: 'no-store' });
-      const plansJson = (await plansRes.json()) as {
-        assignments?: unknown[];
-        blockers?: Array<{ status?: string }>;
+      const res = await fetch('/api/v1/user-task-snapshot', { cache: 'no-store' });
+      const json = (await res.json()) as {
+        counts?: UserTaskSnapshotCounts;
         error?: string;
       };
-      if (plansRes.ok) {
-        const active = Array.isArray(plansJson.assignments) ? plansJson.assignments.length : 0;
-        const openBlockers = Array.isArray(plansJson.blockers)
-          ? plansJson.blockers.filter((b) => b.status === 'open' || b.status === 'improving').length
-          : 0;
-        setPlansCount(active + openBlockers);
-      }
+      if (!res.ok || !json.counts) return;
+      setAcceptedCount(json.counts.journey.accepted + json.counts.almog.active);
+      setRejectedCount(json.counts.unified.rejected);
+      setPlansCount(json.counts.almog.active);
     } finally {
       setLoading(false);
     }

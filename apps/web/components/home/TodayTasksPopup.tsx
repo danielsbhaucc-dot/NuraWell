@@ -26,11 +26,14 @@ import {
 import type { JourneyTaskSlot } from '../../lib/types/journey';
 import type { PendingTaskTodayRow } from '../../lib/journey/journey-report-parse';
 import type { UserScheduleProfile } from '../../lib/journey/pick-next-task-for-now';
+import type { AlmogTodayRow } from '../../lib/tasks/user-task-ssot';
 
 interface TodayTasksPopupProps {
   open: boolean;
   firstName?: string;
   tasks: PendingTaskTodayRow[];
+  /** משימות אלמוג פתוחות — מאותו SSOT כמו בית/תוכנית/מסע. */
+  almogTasks?: AlmogTodayRow[];
   doneCount: number;
   pendingCount: number;
   userSchedule?: UserScheduleProfile;
@@ -55,6 +58,7 @@ export function TodayTasksPopup({
   open,
   firstName = '',
   tasks,
+  almogTasks = [],
   doneCount,
   pendingCount,
   userSchedule,
@@ -282,7 +286,7 @@ export function TodayTasksPopup({
                   'linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(236,253,245,0.28) 100%)',
               }}
             >
-              {pendingTasks.length === 0 && doneTasks.length === 0 ? (
+              {pendingTasks.length === 0 && doneTasks.length === 0 && almogTasks.length === 0 ? (
                 <div
                   className="rounded-2xl p-4 text-right"
                   style={{
@@ -297,8 +301,8 @@ export function TodayTasksPopup({
                   </div>
                   <p className="text-xs text-emerald-800/85 leading-relaxed mb-3">
                     {name
-                      ? `${name}, עוד לא לקחנו משימות במסע. בוא נתחיל ביחד כשמתאים לך.`
-                      : 'עוד לא לקחנו משימות במסע. בוא נתחיל ביחד כשמתאים לך.'}
+                      ? `${name}, עוד לא לקחנו משימות. בוא נתחיל ביחד כשמתאים לך.`
+                      : 'עוד לא לקחנו משימות. בוא נתחיל ביחד כשמתאים לך.'}
                   </p>
                   <button
                     type="button"
@@ -314,6 +318,42 @@ export function TodayTasksPopup({
                   </button>
                 </div>
               ) : null}
+
+              {almogTasks.map((task) => (
+                <button
+                  key={`almog-${task.id}`}
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenChat(buildTaskDoneChatPrefill(task.title, null));
+                  }}
+                  className="w-full text-right rounded-2xl p-3.5 transition active:scale-[0.98]"
+                  style={{
+                    background: 'rgba(255,255,255,0.55)',
+                    border: '1px solid rgba(167,243,208,0.4)',
+                    boxShadow: '0 4px 14px rgba(6,78,59,0.05), inset 0 1px 0 rgba(255,255,255,0.65)',
+                  }}
+                  aria-label={`ספר לאלמוג שסיימת את ${task.title}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl"
+                      style={{
+                        background: 'rgba(236,253,245,0.95)',
+                        border: '1px solid rgba(110,231,183,0.4)',
+                      }}
+                    >
+                      ✨
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-black text-emerald-950 leading-snug">{task.title}</p>
+                      <p className="text-[10px] font-medium text-emerald-800/70 mt-0.5">
+                        מאלמוג · פתוח
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
 
               {pendingTasks.map((task, index) => {
                 const timeHint =

@@ -148,6 +148,7 @@ function useAlmogAssignments() {
     [load]
   );
 
+  // SSOT: active|frozen = משימה פתוחה (זהה לתוכנית / בית).
   const visible = assignments.filter((a) => a.status === 'active' || a.status === 'frozen');
 
   return { visible, focus, completed, loaded, busyId, act };

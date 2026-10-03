@@ -22,6 +22,7 @@ import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog
 import type { BlockerCoachState, BlockerProposal } from '@/lib/ai/almog-commitments/types';
 import { consecutiveJerusalemDoneDays } from '@/lib/journey/recovery-streak';
 import { buildStepStory, storyFromAssignment, type StepStory } from '@/lib/almog/step-story';
+import { getIsraelTimeOfDay } from '@/lib/time/greeting';
 
 type AssignmentRelation = 'standalone' | 'replaces' | 'eases' | 'supports';
 type AssignmentHistoryEntry = {
@@ -173,11 +174,8 @@ function consecutiveDoneDays(assignment: Assignment): number {
 }
 
 function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 11) return 'בוקר טוב';
-  if (h < 17) return 'צהריים טובים';
-  if (h < 21) return 'ערב טוב';
-  return 'לילה טוב';
+  // SSOT: שעון ישראל — זהה לבית ולמסע.
+  return getIsraelTimeOfDay().greeting;
 }
 
 
