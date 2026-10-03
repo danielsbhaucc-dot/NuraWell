@@ -452,7 +452,7 @@ export function HomeClient({
           <motion.div variants={item}>
             <QuickAccessGrid
               simplifiedDashboard={simplifiedDashboard}
-              onOpenTasks={() => actionHub.open()}
+              onOpenTasks={() => setTasksPopupOpen(true)}
             />
           </motion.div>
 

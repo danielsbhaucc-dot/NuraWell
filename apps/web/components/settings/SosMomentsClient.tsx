@@ -10,6 +10,7 @@ import { filterRelevantSosEvents } from '../../lib/ai/guardian/sos-ease-shared';
 import { genderCopy } from '../../lib/onboarding/gender-copy';
 import type { OnboardingGender } from '../../lib/onboarding/types';
 import { formatHebrewRelative } from '../../lib/time/hebrew-relative';
+import { APP_HOME_PATH } from '../../lib/navigation/app-home-path';
 import { MomentsHeroAvatar } from '../journey/AlmogPresence';
 
 const HEBREW_HEAD: CSSProperties = {
@@ -416,7 +417,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
         />
 
         <Link
-          href="/"
+          href={APP_HOME_PATH}
           className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95"
           style={{
             background: 'rgba(167, 243, 208, 0.18)',
@@ -490,7 +491,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
               כשיהיה רגע קשה — {gc.press} על &quot;רגע, קשה לי עכשיו&quot; מהבית. אני אהיה שם, ומה שיעזור יופיע כאן.
             </p>
             <Link
-              href="/"
+              href={APP_HOME_PATH}
               className="mt-5 inline-flex rounded-2xl px-5 py-2.5 text-sm font-bold text-white"
               style={{
                 background: 'linear-gradient(135deg, #047857, #10b981)',

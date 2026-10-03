@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Home, Search, Leaf, Sparkles } from 'lucide-react';
+import { ArrowLeft, Home, Leaf, LogIn, Mail, Info } from 'lucide-react';
+import { PUBLIC_HOME_PATH } from '@/lib/navigation/app-home-path';
 
 export default function NotFoundPage() {
   return (
@@ -13,7 +14,6 @@ export default function NotFoundPage() {
         transition={{ duration: 0.5 }}
         className="max-w-md w-full text-center"
       >
-        {/* 404 Illustration */}
         <div className="relative mb-8">
           <div className="text-8xl font-black mb-4 text-gradient">404</div>
           <motion.div
@@ -32,15 +32,12 @@ export default function NotFoundPage() {
           </motion.div>
         </div>
 
-        {/* Message Card */}
         <div className="rounded-2xl overflow-hidden mb-8" style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
-          {/* Green header */}
           <div className="px-6 py-5" style={{ background: 'linear-gradient(145deg, #047857, #059669, #10b981)' }}>
             <h1 className="text-2xl font-black text-white">
               אופס! הדף לא נמצא 🌱
             </h1>
           </div>
-          {/* White body */}
           <div className="p-6 bg-white">
             <p className="text-gray-600 text-lg leading-relaxed mb-4">
               נראה שטיילתם קצת רחוק מדי בדרך לבריאות...
@@ -51,19 +48,19 @@ export default function NotFoundPage() {
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="space-y-3">
           <Link
-            href="/home"
+            href={PUBLIC_HOME_PATH}
             className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl font-bold text-lg text-white transition-all hover:scale-[1.02] active:scale-95"
             style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 6px 20px rgba(16,185,129,0.25)' }}
           >
             <Home className="w-5 h-5" />
-            <span>חזרה למדריכים</span>
+            <span>לעמוד הבית</span>
           </Link>
 
           <div className="flex gap-3">
             <button
+              type="button"
               onClick={() => window.history.back()}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01] active:scale-95"
               style={{ background: 'rgba(0,0,0,0.03)', border: '1.5px solid rgba(0,0,0,0.08)', color: '#4b5563' }}
@@ -73,17 +70,35 @@ export default function NotFoundPage() {
             </button>
 
             <Link
-              href="/journey"
+              href="/login"
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01] active:scale-95"
               style={{ background: 'rgba(0,0,0,0.03)', border: '1.5px solid rgba(0,0,0,0.08)', color: '#4b5563' }}
             >
-              <Sparkles className="w-4 h-4" />
-              <span>המסע שלי</span>
+              <LogIn className="w-4 h-4" />
+              <span>כניסה</span>
+            </Link>
+          </div>
+
+          <div className="flex gap-3">
+            <Link
+              href="/about"
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01] active:scale-95"
+              style={{ background: 'rgba(0,0,0,0.03)', border: '1.5px solid rgba(0,0,0,0.08)', color: '#4b5563' }}
+            >
+              <Info className="w-4 h-4" />
+              <span>אודות</span>
+            </Link>
+            <Link
+              href="/contact"
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01] active:scale-95"
+              style={{ background: 'rgba(0,0,0,0.03)', border: '1.5px solid rgba(0,0,0,0.08)', color: '#4b5563' }}
+            >
+              <Mail className="w-4 h-4" />
+              <span>צור קשר</span>
             </Link>
           </div>
         </div>
 
-        {/* Fun fact */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
