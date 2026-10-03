@@ -14,6 +14,7 @@ import {
   guidesPageTitle,
   type ProfileGender,
 } from '../../lib/profile/personalized-copy';
+import { hebrewActiveGuidesLabel } from '../../lib/text/hebrew-plural';
 
 interface CoursesClientWrapperProps {
   enrolledCourses: CourseWithProgress[];
@@ -116,7 +117,7 @@ export function CoursesClientWrapper({
                   fontFamily: "'Rubik','Heebo',sans-serif",
                 }}
               >
-                {stats.activeCoursesCount} מדריכים פעילים
+                {hebrewActiveGuidesLabel(stats.activeCoursesCount)}
               </p>
               <p style={{ fontSize: '12px', color: '#9896B8', margin: '2px 0 8px' }}>
                 {stats.totalLessonsCompleted} פרקים הושלמו ✦

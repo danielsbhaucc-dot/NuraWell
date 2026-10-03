@@ -73,9 +73,6 @@ export function RegisterLandingClient() {
               >
                 ברוכים הבאים ל־
               </span>
-              <span className="onboarding-wave-hand mr-1.5" aria-hidden>
-                👋
-              </span>
               <br />
               <span
                 className={
@@ -85,6 +82,10 @@ export function RegisterLandingClient() {
                 }
               >
                 NuraWell.ai
+              </span>
+              <span className="onboarding-wave-hand mr-1.5" aria-hidden>
+                {' '}
+                👋
               </span>
             </h1>
 

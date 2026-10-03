@@ -230,7 +230,7 @@ function leadQuestion(flags: ProfileFieldFlags, updateMode = false): string {
   if (!flags.has_main_obstacle && !flags.has_weakest_time) {
     return 'מה הכי משפיע עליך היום — מכשול (זמן, אכילה רגשית, עקביות…) או זמן קשה ביום?';
   }
-  if (!flags.has_gender) return 'איך נוח לך שאפנה אליך — זכר או נקבה?';
+  if (!flags.has_gender) return 'איך נוח לך שאפנה אליך — גבר או אישה?';
   if (!flags.has_current_weight) return 'נעבור למשקל נוכחי — שלח בערוץ 🔐 למטה.';
   if (!flags.has_goal_weight) return 'מה משקל היעד? שלח בערוץ 🔐 למטה.';
   if (!flags.has_wake_time) return 'באיזו שעה אתה בדרך כלל קם? (🔐 למטה)';

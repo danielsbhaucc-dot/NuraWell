@@ -3,6 +3,7 @@ import {
   deleteKnowledgeRowVectors,
   type AlmogKnowledgeRow,
 } from '@/lib/admin/almog-knowledge';
+import { hebrewMinutesLabel, sumLessonDurationMinutes } from '@/lib/text/hebrew-plural';
 
 interface GuideLessonForSync {
   id: string;
@@ -72,11 +73,11 @@ function buildLessonKnowledgeBody(guide: GuideForSync, lesson: GuideLessonForSyn
 
 function buildGuideOverviewBody(guide: GuideForSync): string {
   const sorted = [...guide.lessons].sort((a, b) => a.sort_order - b.sort_order);
-  const totalMinutes = sorted.reduce((s, l) => s + (l.duration_minutes ?? 15), 0);
+  const totalMinutes = sumLessonDurationMinutes(sorted);
   const lines = [
     `מדריך: ${guide.title}`,
     guide.description ? `תיאור: ${guide.description}` : null,
-    `סיכום: ${sorted.length} פרקים | ~${totalMinutes} דקות`,
+    `סיכום: ${sorted.length} פרקים | ${hebrewMinutesLabel(totalMinutes, { approx: true })}`,
     '',
     'רשימת פרקים:',
     ...sorted.map((l, i) => `${i + 1}. ${l.title}`),

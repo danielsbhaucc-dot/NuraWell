@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Flame, CheckCircle2 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import type { LessonHabit } from '../../lib/types/course';
+import { hebrewDaysLabel } from '../../lib/text/hebrew-plural';
 
 interface HabitTrackerProps {
   habits: LessonHabit[];
@@ -133,7 +134,7 @@ export function HabitTracker({ habits, habitProgress, lessonId, onHabitToggle }:
                 <span className="text-sm font-bold" style={{ color: '#1A1730' }}>{habit.title}</span>
                 <div className="flex items-center gap-1.5">
                   {streak > 1 && (
-                    <span className="guide-chip guide-chip-amber">🔥 {streak} ימים</span>
+                    <span className="guide-chip guide-chip-amber">🔥 {hebrewDaysLabel(streak)}</span>
                   )}
                   <span className="guide-chip guide-chip-emerald">{completedThisWeek}/7</span>
                 </div>

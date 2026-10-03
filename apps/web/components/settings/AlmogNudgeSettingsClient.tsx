@@ -220,7 +220,7 @@ export function AlmogNudgeSettingsClient({
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-black text-slate-900">איך אלמוג נוגע בכם מחוץ לצ׳אט</h1>
+          <h1 className="text-2xl font-black text-slate-900">איך אלמוג נוגע בך מחוץ לצ׳אט</h1>
           <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
             אלמוג יכול לשלוח עדכונים קצרים באפליקציה — כשמפספסים יום במסע, כשנותנים רצף ימים,
             או כשחסר עדכון משקל. כאן אפשר להרגיע או לכוון בלי מילים טכניות.

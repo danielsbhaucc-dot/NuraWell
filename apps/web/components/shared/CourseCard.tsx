@@ -4,6 +4,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Play, Clock, BookOpen, CheckCircle2, Lock, Crown } from 'lucide-react';
+import {
+  hebrewMinutesLabel,
+  hebrewPlural,
+  sumLessonDurationMinutes,
+} from '../../lib/text/hebrew-plural';
 
 interface CourseCardProps {
   course: {
@@ -11,7 +16,7 @@ interface CourseCardProps {
     title: string;
     description: string | null;
     thumbnail_url: string | null;
-    lessons: { id: string }[];
+    lessons: Array<{ id: string; duration_minutes?: number | null }>;
     is_premium: boolean;
     currentChapterTitle?: string | null;
     completedChapters?: number;
@@ -85,6 +90,13 @@ const ACCENTS: Accent[] = [
 
 export function CourseCard({ course, progress, isEnrolled, accentIndex = 0 }: CourseCardProps) {
   const lessonCount = course.lessons?.length || 0;
+  const totalMinutes = sumLessonDurationMinutes(course.lessons ?? []);
+  const chaptersLabel = hebrewPlural(lessonCount, {
+    zero: '0 פרקים',
+    one: 'פרק אחד',
+    two: '2 פרקים',
+    other: '{n} פרקים',
+  });
   const isCompleted = isEnrolled && progress === 100;
   const accent = ACCENTS[accentIndex % ACCENTS.length];
 
@@ -144,7 +156,7 @@ export function CourseCard({ course, progress, isEnrolled, accentIndex = 0 }: Co
           {/* Info */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: '0.5px', marginBottom: '4px' }}>
-              {lessonCount} פרקים · ~{lessonCount * 15} דקות
+              {chaptersLabel} · {hebrewMinutesLabel(totalMinutes, { approx: true })}
             </div>
             <div className="line-clamp-1" style={{ fontSize: '16px', fontWeight: 800, color: '#fff', fontFamily: "'Rubik','Heebo',sans-serif", lineHeight: 1.3 }}>
               {course.title}
@@ -207,7 +219,7 @@ export function CourseCard({ course, progress, isEnrolled, accentIndex = 0 }: Co
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1" style={{ fontSize: '12px', color: '#9896B8' }}>
               <Clock className="w-3.5 h-3.5" style={{ color: '#9896B8' }} />
-              <span><strong style={{ color: accent.strong }}>{lessonCount}</strong> פרקים</span>
+              <span style={{ color: accent.strong, fontWeight: 700 }}>{chaptersLabel}</span>
             </div>
             {isEnrolled && !isCompleted && (
               <div style={{

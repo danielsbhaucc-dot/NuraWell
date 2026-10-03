@@ -36,6 +36,7 @@ import {
 } from '../../lib/tasks/user-task-ssot';
 
 import type { OnboardingGender } from '../../lib/onboarding/types';
+import { hebrewActiveGuidesLabel } from '../../lib/text/hebrew-plural';
 
 export type HomeStats = {
   activeCoursesCount: number;
@@ -435,7 +436,7 @@ export function HomeClient({
                         fontFamily: "'Rubik','Heebo',sans-serif",
                       }}
                     >
-                      {stats.activeCoursesCount} מדריכים פעילים
+                      {hebrewActiveGuidesLabel(stats.activeCoursesCount)}
                     </p>
                     <p style={{ fontSize: '12px', color: '#B45309', marginTop: '2px' }}>
                       כבר סיימת {stats.totalLessonsCompleted} פרקים — בוא נמשיך

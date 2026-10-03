@@ -37,6 +37,7 @@ import {
   progressPartialDaysMessage,
   type ProfileGender,
 } from '../../lib/profile/personalized-copy';
+import { hebrewDaysLabel } from '../../lib/text/hebrew-plural';
 
 interface CourseStatItem {
   id: string;
@@ -380,8 +381,7 @@ export function ProgressPageClient({
     },
     {
       label: 'רצף ימים',
-      value: `${currentStreak}`,
-      suffix: 'ימים',
+      value: hebrewDaysLabel(currentStreak),
       icon: Flame,
       iconBg: 'rgba(249,115,22,0.10)',
       iconColor: '#ea580c',
@@ -492,9 +492,6 @@ export function ProgressPageClient({
                 <div>
                   <p className="text-xl font-black text-[#1A1730] leading-none tabular-nums">
                     {s.value}
-                    {'suffix' in s && s.suffix ? (
-                      <span className="mr-1 text-sm font-bold text-[#9896B8]">{s.suffix}</span>
-                    ) : null}
                   </p>
                   <p className="mt-1 text-[11px] font-semibold text-[#9896B8]">{s.label}</p>
                 </div>

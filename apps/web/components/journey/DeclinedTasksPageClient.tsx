@@ -75,7 +75,7 @@ export function DeclinedTasksPageClient() {
         </div>
         <p className="text-[15px] font-black text-[#1A1730]">אין משימות שלא לקחת על עצמך</p>
         <p className="text-sm text-gray-600 leading-relaxed">
-          אם סימנתם &quot;לא מקובל&quot; בסיכום צעד — המשימות יופיעו כאן. אפשר לחזור לצעד במסע ולעדכן את הבחירה.
+          אם סימנת &quot;לא מקובל&quot; בסיכום צעד — המשימות יופיעו כאן. אפשר לחזור לצעד במסע ולעדכן את הבחירה.
         </p>
         <Link
           href="/journey"
@@ -103,7 +103,7 @@ export function DeclinedTasksPageClient() {
       />
 
       <p className="text-xs font-semibold text-emerald-900/75 text-right leading-relaxed">
-        רשימה דינמית לפי מה שסימנתם במסע. לחיצה על צעד פותחת את השיעור לעדכון.
+        רשימה דינמית לפי מה שסימנת במסע. לחיצה על צעד פותחת את השיעור לעדכון.
       </p>
       <ul className="space-y-3">
         {rows.map((row) => (

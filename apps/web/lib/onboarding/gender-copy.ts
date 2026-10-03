@@ -140,7 +140,7 @@ export function genderCopy(gender: OnboardingGender | ''): GenderCopy {
     checkSpam: 'בדוק/י',
     wantReturn: 'תרצה/י',
     useSupport: 'השתמש/י',
-    sendsYouEmail: 'דולב שולח אליך/אליך עכשיו מייל',
-    willShowYou: 'יציג לך/לך',
+    sendsYouEmail: 'דולב שולח אליך/אלייך עכשיו מייל',
+    willShowYou: 'יציג לך/לָך',
   };
 }

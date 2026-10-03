@@ -5,7 +5,7 @@ import { firstNameFromFull } from '@/lib/onboarding/profile-summary-rows';
 import type { OnboardingGender } from '@/lib/onboarding/types';
 
 export const metadata = {
-  title: 'אימות אימייל | NuraWell',
+  title: 'אימות אימייל',
 };
 
 export default async function RegisterCheckEmailPage({

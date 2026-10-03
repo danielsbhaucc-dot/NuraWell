@@ -103,7 +103,7 @@ export async function notifyTranscriptSentToUser(
     user_id: params.userId,
     type: 'chat_transcript_delivered',
     title: 'עותק השיחה שלך',
-    body: `שלחנו אליך/ אלייך קישור לשיחה "${title}". ניתן לצפות בה באפליקציה.`,
+    body: `שלחנו אליך/אלייך קישור לשיחה "${title}". ניתן לצפות בה באפליקציה.`,
     icon_emoji: '💬',
     action_url: actionUrl,
     is_read: false,

@@ -18,7 +18,7 @@ const FIELD_ACKS: Array<{
     test: (e) => Boolean(e.gender),
     male: 'יודע איך לפנות אליך',
     female: 'יודע איך לפנות אלייך',
-    neutral: 'יודע איך לפנות אליך/י',
+    neutral: 'יודע איך לפנות אליך/אלייך',
   },
   {
     test: (e) => Boolean(e.main_goal),
