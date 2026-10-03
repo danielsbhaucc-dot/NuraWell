@@ -1,25 +1,30 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fetchTodayAlmogTouches } from '../ai/almog-notify-day-context';
 import { shouldSkipNotifyForTouchFatigue } from '../ai/almog-daily-context';
+import { hasRecentSimilarHabitNotification } from '../notifications/similar-habit-dedupe';
 import type { HabitCheckpointSlot } from './almog-habit-checkpoint-payload';
 
 type NotifyMode = 'remind' | 'reinforce';
 
 export type HabitCheckpointGate =
   | { ok: true }
-  | { ok: false; reason: 'already_sent_this_slot' | 'touch_fatigue' };
+  | {
+      ok: false;
+      reason: 'already_sent_this_slot' | 'touch_fatigue' | 'similar_habit_recent';
+    };
 
 export async function gateAlmogHabitCheckpoint(
   admin: SupabaseClient,
   userId: string,
   checkpointDate: string,
   slot: HabitCheckpointSlot,
-  notifyMode: NotifyMode = 'remind'
+  notifyMode: NotifyMode = 'remind',
+  habitIds: string[] = []
 ): Promise<HabitCheckpointGate> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: recent, error: nErr } = await admin
     .from('notifications')
-    .select('metadata')
+    .select('metadata, created_at')
     .eq('user_id', userId)
     .eq('type', 'ai_message')
     .order('created_at', { ascending: false })
@@ -27,7 +32,9 @@ export async function gateAlmogHabitCheckpoint(
 
   if (nErr) throw new Error(nErr.message);
 
-  const dup = (recent ?? []).some((row: { metadata?: unknown }) => {
+  const rows = (recent ?? []) as Array<{ metadata?: unknown; created_at?: string }>;
+
+  const dup = rows.some((row) => {
     const m = row.metadata as Record<string, unknown> | null | undefined;
     return (
       m?.source === 'almog_habit_checkpoint' &&
@@ -41,6 +48,20 @@ export async function gateAlmogHabitCheckpoint(
   const todayTouches = await fetchTodayAlmogTouches(admin, userId);
   if (shouldSkipNotifyForTouchFatigue(todayTouches, notifyMode)) {
     return { ok: false, reason: 'touch_fatigue' };
+  }
+
+  if (habitIds.length > 0) {
+    const recentForDedupe = rows.map((row) => {
+      const m = (row.metadata ?? null) as Record<string, unknown> | null;
+      return {
+        source: m?.source,
+        habit_ids: m?.habit_ids,
+        created_at: typeof row.created_at === 'string' ? row.created_at : undefined,
+      };
+    });
+    if (hasRecentSimilarHabitNotification(recentForDedupe, habitIds)) {
+      return { ok: false, reason: 'similar_habit_recent' };
+    }
   }
 
   return { ok: true };

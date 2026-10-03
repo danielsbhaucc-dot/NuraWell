@@ -161,15 +161,17 @@ export async function fetchUserIdsWithChatToday(
   return ids;
 }
 
+/** הבטחת המוצר: עד 3 מגעים ביום (כמו במסכי ההרשמה / "איך זה עובד"). */
+export const MAX_DAILY_ALMOG_TOUCHES = 3;
+
 /**
- * שער עייפות — לא חוסם ליווי נוכחות/מסע.
- * אלמוג לא נעלם גם בלי תשובה; רק מפחית תזכורות הרגלים כשיש הצפה קיצונית באותו יום.
+ * שער עייפות / תקרת יום — מכבד "3 מגעים ביום".
+ * mode=presence לא נחסם (נוכחות רכה בנטישה), אבל remind/reinforce כן.
  */
 export function shouldSkipNotifyForTouchFatigue(
   todayTouches: TodayAlmogTouch[],
   mode: 'remind' | 'reinforce' | 'presence' = 'remind'
 ): boolean {
-  if (mode === 'reinforce' || mode === 'presence') return false;
-  const unanswered = todayTouches.filter((t) => !t.userRepliedSince);
-  return unanswered.length >= 8;
+  if (mode === 'presence') return false;
+  return todayTouches.length >= MAX_DAILY_ALMOG_TOUCHES;
 }

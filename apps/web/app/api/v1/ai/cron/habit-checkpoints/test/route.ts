@@ -325,7 +325,14 @@ export async function POST(request: Request) {
   };
 
   if (!bypassGate) {
-    const gate = await gateAlmogHabitCheckpoint(admin, targetUserId, dateKey, slot);
+    const gate = await gateAlmogHabitCheckpoint(
+      admin,
+      targetUserId,
+      dateKey,
+      slot,
+      'remind',
+      payloadHabits.map((h) => h.id)
+    );
     if (!gate.ok) {
       return NextResponse.json(
         {
@@ -334,8 +341,10 @@ export async function POST(request: Request) {
           reason: gate.reason,
           hint_he:
             gate.reason === 'touch_fatigue'
-              ? 'כבר היו יותר מדי מגעים היום. שלח bypassGate=true כדי לבדוק בכל זאת.'
-              : 'התראה לאותו slot/יום כבר נשלחה. שלח bypassGate=true (ברירת מחדל) כדי לדרוס.',
+              ? 'כבר היו 3 מגעים היום. שלח bypassGate=true כדי לבדוק בכל זאת.'
+              : gate.reason === 'similar_habit_recent'
+                ? 'כבר נשלחה לאחרונה התראה דומה על אותו הרגל. שלח bypassGate=true כדי לדרוס.'
+                : 'התראה לאותו slot/יום כבר נשלחה. שלח bypassGate=true (ברירת מחדל) כדי לדרוס.',
           slot,
           checkpoint_date: dateKey,
         },

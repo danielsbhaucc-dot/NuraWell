@@ -26,6 +26,7 @@ import { isActiveReengagementMove, churnSurveyOptions, type ReengagementMove } f
 import { patchReengagementContext } from '../churn/patch-reengagement-context';
 import { checkpointShouldOpenPlansPage } from '../ai/almog-commitments/plans-page-tracking';
 import { reportError } from '../monitoring/report-error';
+import { truncateAtWordBoundary } from '../text/truncate-graphemes';
 
 const SLOT_HE: Record<HabitCheckpointSlot, string> = {
   morning: 'בוקר',
@@ -268,6 +269,8 @@ function formatHabitTuneBlock(aiContext: unknown): string | null {
 function pickNotificationTitle(payload: AlmogHabitCheckpointPayload, firstName: string): string {
   const task = payload.pendingTasks[0]?.title?.trim();
   const habit = payload.habits[0]?.title?.trim();
+  const shortTask = task ? truncateAtWordBoundary(task, 24) : '';
+  const shortHabit = habit ? truncateAtWordBoundary(habit, 24) : '';
   /** מהלך "כיף שחזרת" — כותרת חמה שמכירה בחזרה, בלי תוכחה. */
   if (payload.reengagementMove === 'welcome_back') {
     const welcomeVariants = [
@@ -290,8 +293,8 @@ function pickNotificationTitle(payload: AlmogHabitCheckpointPayload, firstName: 
         ]
       : [
           task ? `${firstName}, המשימה מחכה לרגע הנכון` : `${firstName}, תזכורת קטנה להיום`,
-          task ? `${firstName}, איך הולך עם ${task.slice(0, 24)}?` : `${firstName}, בדיקה קצרה`,
-          habit ? `${firstName}, מקום קטן ל-${habit.slice(0, 24)}` : `${firstName}, נזכרים בעדינות`,
+          shortTask ? `${firstName}, איך הולך עם ${shortTask}?` : `${firstName}, בדיקה קצרה`,
+          shortHabit ? `${firstName}, מקום קטן ל-${shortHabit}` : `${firstName}, נזכרים בעדינות`,
           `${firstName}, רגע לפני שזה בורח מהיום`,
         ];
   const seed = `${payload.userId}:${payload.checkpointDate}:${payload.slot}:${task ?? habit ?? ''}`;
@@ -496,6 +499,7 @@ export async function sendAlmogHabitCheckpointNotification(
   const title = pickNotificationTitle(payload, firstName);
 
   const habitIds = payload.habits.map((h) => h.id);
+  const habitTitles = payload.habits.map((h) => h.title.trim()).filter(Boolean);
   const pendingTaskIds = payload.pendingTasks.map((t) => t.id);
 
   /**
@@ -532,6 +536,7 @@ export async function sendAlmogHabitCheckpointNotification(
         slot: payload.slot,
         checkpoint_date: payload.checkpointDate,
         habit_ids: habitIds,
+        habit_titles: habitTitles,
         pending_task_ids: pendingTaskIds,
         from_plans_page: checkpointShouldOpenPlansPage(payload),
         model: AI_MODELS.empathy,

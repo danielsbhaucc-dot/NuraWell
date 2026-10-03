@@ -61,7 +61,7 @@ const SECTION_IMAGE_JOURNEY =
   'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=900&q=85&auto=format&fit=crop';
 
 const SECTION_IMAGE_LIFESTYLE =
-  'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50c?w=900&q=85&auto=format&fit=crop';
+  'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=900&q=85&auto=format&fit=crop';
 
 const ease = [0.22, 1, 0.36, 1] as const;
 

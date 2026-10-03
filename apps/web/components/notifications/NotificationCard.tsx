@@ -23,6 +23,8 @@ type NotificationCardProps = {
   onArchive: (id: string, e: React.MouseEvent) => void;
   onUnarchive: (id: string, e: React.MouseEvent) => void;
   onCloseDrawer: () => void;
+  /** כשמציגים קבוצת תובנות מרוכזת */
+  groupCount?: number;
 };
 
 export function NotificationCard({
@@ -35,6 +37,7 @@ export function NotificationCard({
   onArchive,
   onUnarchive,
   onCloseDrawer,
+  groupCount,
 }: NotificationCardProps) {
   const isPlatform = n.channel === 'platform';
   const isAi = n.type === 'ai_message' && !isPlatform;
@@ -167,7 +170,7 @@ export function NotificationCard({
             )}
             {isCheckpoint && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-200/60 px-2 py-0.5 text-[10px] font-bold text-amber-950">
-                ✨ תובנה רגע
+                ✨ {groupCount && groupCount > 1 ? `${groupCount} תובנות רגע` : 'תובנה רגע'}
               </span>
             )}
             <div className="flex flex-row items-baseline justify-between gap-2">

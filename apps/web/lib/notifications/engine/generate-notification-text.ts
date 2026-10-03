@@ -26,6 +26,7 @@ import type {
   AINotificationContext,
   NotificationState,
 } from '../../types/notification-state';
+import { truncateAtWordBoundary } from '../../text/truncate-graphemes';
 import {
   getNotificationBackgroundLLM,
   getNotificationLLM,
@@ -222,7 +223,7 @@ function postProcess(text: string): string {
     .filter(Boolean);
   cleaned = lines.slice(0, 2).join(' ');
   if (!cleaned) return '';
-  if (cleaned.length > 250) cleaned = `${cleaned.slice(0, 247)}…`;
+  if (cleaned.length > 250) cleaned = truncateAtWordBoundary(cleaned, 247);
   return cleaned;
 }
 

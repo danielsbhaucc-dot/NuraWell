@@ -5,6 +5,10 @@ import Link from 'next/link';
 import { Bell, CheckCheck, Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import {
+  formatUnreadBadgeCount,
+  formatUnreadBellAriaLabel,
+} from '@/lib/notifications/format-unread-badge';
+import {
   OpsAdminNotificationDialog,
   type OpsAdminNotificationPayload,
 } from '@/components/admin/OpsAdminNotificationDialog';
@@ -142,14 +146,14 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
               className="min-w-[1.35rem] rounded-full bg-rose-500 px-1.5 py-0.5 text-center text-[10px] font-black leading-none text-white shadow-sm ring-2 ring-[#FFFBF5]"
               aria-hidden
             >
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {formatUnreadBadgeCount(unreadCount)}
             </span>
           ) : null}
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
             className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-2xl border border-white/55 bg-white/45 text-emerald-900 shadow-sm backdrop-blur-md transition-colors hover:bg-white/70"
-            aria-label={unreadCount > 0 ? `התראות — ${unreadCount} חדשות` : 'התראות'}
+            aria-label={formatUnreadBellAriaLabel(unreadCount)}
             aria-expanded={open}
           >
             <Bell size={19} className="opacity-90" />

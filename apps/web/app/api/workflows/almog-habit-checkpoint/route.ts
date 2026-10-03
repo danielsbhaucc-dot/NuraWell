@@ -26,7 +26,8 @@ const { POST: workflowPost } = serve<AlmogHabitCheckpointPayload>(async (context
       payload.userId,
       payload.checkpointDate,
       payload.slot,
-      payload.notifyMode
+      payload.notifyMode,
+      payload.habits.map((h) => h.id)
     );
   });
 

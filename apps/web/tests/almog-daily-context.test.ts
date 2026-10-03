@@ -58,8 +58,8 @@ describe('almog-daily-context', () => {
     expect(block).toContain('אל תציע "מתחילים מחדש" בלי בקשה מפורשת');
   });
 
-  it('skips remind only after heavy unanswered fatigue but not reinforce', () => {
-    const touches: TodayAlmogTouch[] = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({
+  it('caps remind/reinforce at 3 daily touches (product promise)', () => {
+    const touches: TodayAlmogTouch[] = [1, 2, 3].map((i) => ({
       slot: 'morning',
       slotLabel: 'בוקר',
       bodySnippet: `m${i}`,
@@ -67,7 +67,8 @@ describe('almog-daily-context', () => {
       userRepliedSince: false,
     }));
     expect(shouldSkipNotifyForTouchFatigue(touches, 'remind')).toBe(true);
-    expect(shouldSkipNotifyForTouchFatigue(touches, 'reinforce')).toBe(false);
-    expect(shouldSkipNotifyForTouchFatigue(touches.slice(0, 3), 'remind')).toBe(false);
+    expect(shouldSkipNotifyForTouchFatigue(touches, 'reinforce')).toBe(true);
+    expect(shouldSkipNotifyForTouchFatigue(touches, 'presence')).toBe(false);
+    expect(shouldSkipNotifyForTouchFatigue(touches.slice(0, 2), 'remind')).toBe(false);
   });
 });
