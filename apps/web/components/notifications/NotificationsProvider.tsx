@@ -21,6 +21,7 @@ import {
   extractSurvey,
   type NotificationSurvey,
 } from '../../lib/notifications/replyable';
+import { groupSimilarNotifications } from '../../lib/notifications/group-similar';
 import { createClient } from '../../lib/supabase/client';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { useMentorAvatarUrl } from '../../lib/client/useMentorAvatarUrl';
@@ -52,7 +53,17 @@ export type NotificationItem = {
   expectsReply?: boolean;
   /** סקר Exit (מערכת הנטישה — מהלך breakup). null כשאין. */
   survey?: NotificationSurvey | null;
+  /** הרגלים שקשורים להתראה (לקיבוץ / dedupe) */
+  habitIds: string[];
+  habitTitles: string[];
 };
+
+function extractStringArray(meta: unknown, key: string): string[] {
+  if (!meta || typeof meta !== 'object') return [];
+  const raw = (meta as Record<string, unknown>)[key];
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((x): x is string => typeof x === 'string' && x.trim().length > 0);
+}
 
 type ViewMode = 'inbox' | 'archive';
 type FilterKind = 'all' | 'unread' | 'almog' | 'platform';
@@ -107,6 +118,8 @@ function mapRealtimeRow(row: Record<string, unknown>): NotificationItem | null {
     mentorId: extractMentor(row.metadata, typeof row.title === 'string' ? row.title : ''),
     expectsReply: extractExpectsReply(row.metadata),
     survey: extractSurvey(row.metadata),
+    habitIds: extractStringArray(row.metadata, 'habit_ids'),
+    habitTitles: extractStringArray(row.metadata, 'habit_titles'),
   };
 }
 
@@ -129,6 +142,8 @@ function mapApiRow(row: Record<string, unknown>): NotificationItem {
     mentorId: extractMentor(row.metadata, title),
     expectsReply: extractExpectsReply(row.metadata),
     survey: extractSurvey(row.metadata),
+    habitIds: extractStringArray(row.metadata, 'habit_ids'),
+    habitTitles: extractStringArray(row.metadata, 'habit_titles'),
   };
 }
 
@@ -154,6 +169,7 @@ type NotificationsDrawerContextValue = {
   close: () => void;
   unreadCount: number;
   isOpen: boolean;
+  markAllRead: () => Promise<void>;
 };
 
 const NotificationsDrawerContext = createContext<NotificationsDrawerContextValue | null>(null);
@@ -645,8 +661,9 @@ export function NotificationsProvider({
       close: () => setOpen(false),
       unreadCount: unreadTotal,
       isOpen: open,
+      markAllRead: markAll,
     }),
-    [open, unreadTotal]
+    [open, unreadTotal, markAll]
   );
 
   /**
@@ -691,6 +708,19 @@ export function NotificationsProvider({
     }
     return items;
   }, [items, filterKind]);
+
+  const listEntries = useMemo(
+    () => groupSimilarNotifications(visibleItems),
+    [visibleItems]
+  );
+
+  const markGroupRead = useCallback(
+    async (groupItems: NotificationItem[]) => {
+      const unread = groupItems.filter((n) => !n.is_read);
+      await Promise.all(unread.map((n) => markOne(n.id, true)));
+    },
+    [markOne]
+  );
 
   return (
     <NotificationsDrawerContext.Provider value={ctxValue}>
@@ -775,10 +805,10 @@ export function NotificationsProvider({
                       onClick={() => void markAll()}
                     >
                       <CheckCheck className="h-3.5 w-3.5 text-emerald-700" strokeWidth={2.5} />
-                      הכל נקרא
+                      סמן הכל כנקרא
                     </button>
                   ) : (
-                    <span className="w-16 shrink-0" aria-hidden />
+                    <span className="w-[7.5rem] shrink-0" aria-hidden />
                   )}
 
                   <div className="min-w-0 flex-1 text-right pe-0.5">
@@ -866,7 +896,7 @@ export function NotificationsProvider({
                   <Loader2 className="h-8 w-8 animate-spin opacity-85" />
                 </div>
               )}
-              {!busy && visibleItems.length === 0 && (
+              {!busy && listEntries.length === 0 && (
                 <div className="py-14 text-center px-4 rounded-[20px] mx-0.5 border border-emerald-200/50 bg-gradient-to-br from-emerald-100/50 to-teal-50/60 backdrop-blur-sm">
                   <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500/25 to-emerald-500/20 ring-1 ring-emerald-600/15">
                     <span className="text-2xl" aria-hidden>
@@ -886,20 +916,58 @@ export function NotificationsProvider({
                   </p>
                 </div>
               )}
-              {visibleItems.map((n) => (
-                <NotificationCard
-                  key={n.id}
-                  notification={n}
-                  nowMs={nowMs}
-                  viewMode={viewMode}
-                  almogAvatar={almogAvatar}
-                  dolevAvatar={dolevAvatar}
-                  onMarkRead={markOne}
-                  onArchive={archiveOne}
-                  onUnarchive={unarchiveOne}
-                  onCloseDrawer={() => setOpen(false)}
-                />
-              ))}
+              {listEntries.map((entry) => {
+                if (entry.kind === 'single') {
+                  return (
+                    <NotificationCard
+                      key={entry.notification.id}
+                      notification={entry.notification}
+                      nowMs={nowMs}
+                      viewMode={viewMode}
+                      almogAvatar={almogAvatar}
+                      dolevAvatar={dolevAvatar}
+                      onMarkRead={markOne}
+                      onArchive={archiveOne}
+                      onUnarchive={unarchiveOne}
+                      onCloseDrawer={() => setOpen(false)}
+                    />
+                  );
+                }
+
+                const latest = entry.notifications[0]!;
+                const grouped: NotificationItem = {
+                  ...latest,
+                  title: entry.groupTitle,
+                  body: entry.previewBody,
+                  is_read: entry.unreadCount === 0,
+                };
+                return (
+                  <NotificationCard
+                    key={entry.key}
+                    notification={grouped}
+                    nowMs={nowMs}
+                    viewMode={viewMode}
+                    almogAvatar={almogAvatar}
+                    dolevAvatar={dolevAvatar}
+                    onMarkRead={() => {
+                      void markGroupRead(entry.notifications);
+                    }}
+                    onArchive={(id, e) => {
+                      // ארכיון של הקבוצה — האחרונה גלויה; מעבירים את כולן
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void Promise.all(
+                        entry.notifications.map((n) =>
+                          archiveOne(n.id, e)
+                        )
+                      );
+                    }}
+                    onUnarchive={unarchiveOne}
+                    onCloseDrawer={() => setOpen(false)}
+                    groupCount={entry.notifications.length}
+                  />
+                );
+              })}
 
               {nextCursor ? (
                 <div className="flex justify-center pt-2 pb-6">

@@ -209,7 +209,8 @@ export async function GET(request: Request) {
     userId,
     myItem.payload.checkpointDate,
     myItem.payload.slot,
-    myItem.payload.notifyMode
+    myItem.payload.notifyMode,
+    myItem.payload.habits.map((h) => h.id)
   );
 
   if (!gate.ok) {
@@ -220,7 +221,9 @@ export async function GET(request: Request) {
       hint_he:
         gate.reason === 'already_sent_this_slot'
           ? 'כבר נשלחה התראה ל-slot+תאריך הזה. נסה slot אחר או יום אחר, או מחק את ההתראה הקיימת.'
-          : 'touch_fatigue — כבר היו יותר מדי מגעים היום.',
+          : gate.reason === 'similar_habit_recent'
+            ? 'כבר נשלחה לאחרונה התראה דומה על אותו הרגל — מניעת הצפה.'
+            : 'touch_fatigue — כבר היו 3 מגעים היום (תקרת המוצר).',
       ...diagnostics,
       payload_preview: {
         notify_mode: myItem.payload.notifyMode,

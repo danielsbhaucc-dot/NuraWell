@@ -7,6 +7,7 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isAvoidPushActive } from '@/lib/ai/avoid-push';
 import type { WebPushStored } from './types';
+import { truncateAtWordBoundary } from '@/lib/text/truncate-graphemes';
 
 export async function deliverWebPushAfterAlmogNotification(
   userId: string,
@@ -33,8 +34,8 @@ export async function deliverWebPushAfterAlmogNotification(
   if (!sub?.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) return;
 
   const result = await sendWebPushToSubscription(sub, {
-    title,
-    body: body.slice(0, 180),
+    title: truncateAtWordBoundary(title, 48),
+    body: truncateAtWordBoundary(body, 180),
     url: opts?.url ?? '/home',
     tag: opts?.tag ?? `almog-${userId.slice(0, 8)}`,
   });

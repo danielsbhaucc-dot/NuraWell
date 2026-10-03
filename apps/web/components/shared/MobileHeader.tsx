@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
-import { BookOpen, TrendingUp, UserCircle, X, Menu, Bell, Home, LogOut, ListChecks } from 'lucide-react';
+import { BookOpen, TrendingUp, UserCircle, X, Menu, Home, LogOut, ListChecks } from 'lucide-react';
 import { useState } from 'react';
 import { signOutClient } from '../../lib/auth/sign-out-client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNotificationsDrawer } from '../notifications/NotificationsProvider';
+import { NotificationsBellButton } from '../notifications/NotificationsBellButton';
 import { APP_HOME_PATH } from '../../lib/navigation/app-home-path';
 
 interface MobileHeaderProps {
@@ -25,7 +25,6 @@ const menuItems = [
 export function MobileHeader({ user, title }: MobileHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const { open: openNotifications, unreadCount } = useNotificationsDrawer();
   const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'משתמש';
   const firstName = String(fullName).trim().split(/\s+/)[0] || 'משתמש';
 
@@ -66,30 +65,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
           </Link>
 
           <motion.div className="flex items-center gap-2">
-            <button
-              type="button"
-              aria-label={unreadCount > 0 ? `התראות, ${unreadCount} שלא נקראו` : 'התראות'}
-              onClick={() => openNotifications()}
-              className="relative w-[42px] h-[42px] rounded-[14px] flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-90"
-              style={{
-                background: 'linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08))',
-                border: '1px solid rgba(255,255,255,0.35)',
-                backdropFilter: 'blur(10px)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 16px rgba(192,38,211,0.15)',
-              }}
-            >
-              <Bell className="w-5 h-5 text-white drop-shadow-sm" strokeWidth={2.2} />
-              {unreadCount > 0 && (
-                <span
-                  className="absolute -right-0.5 -top-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-black leading-none text-white border-2 border-white/90 shadow-md"
-                  style={{
-                    background: 'linear-gradient(135deg, #f97316, #ec4899, #a855f7)',
-                  }}
-                >
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
+            <NotificationsBellButton />
             <button
               aria-label={isMenuOpen ? 'סגור תפריט' : 'פתח תפריט'}
               className="w-[42px] h-[42px] rounded-[14px] flex flex-col items-center justify-center gap-[4px] transition-all duration-200 hover:scale-105 active:scale-90"
