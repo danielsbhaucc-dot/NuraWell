@@ -1714,6 +1714,8 @@ function StepsTimeline({
   activeIndex: number;
   linearLock?: boolean;
 }) {
+  const [expandedDesc, setExpandedDesc] = useState<Record<string, boolean>>({});
+
   return (
     <div className="relative">
       <div
@@ -1726,6 +1728,7 @@ function StepsTimeline({
           const isCompleted = Boolean(step.progress?.is_completed);
           const isActive = index === activeIndex;
           const isLocked = linearLock ? !isCompleted && !isActive : false;
+          const descExpanded = Boolean(expandedDesc[step.id]);
 
           return (
             <motion.div
@@ -1813,9 +1816,33 @@ function StepsTimeline({
                     </h3>
 
                     {step.description ? (
-                      <p className="line-clamp-2 text-sm leading-relaxed text-gray-500">
-                        {step.description}
-                      </p>
+                      <div>
+                        <p
+                          className={[
+                            'text-sm leading-relaxed text-gray-500',
+                            descExpanded ? '' : 'line-clamp-2',
+                          ].join(' ')}
+                        >
+                          {step.description}
+                        </p>
+                        {step.description.trim().length > 90 ? (
+                          <button
+                            type="button"
+                            className="mt-1 text-xs font-bold text-emerald-700 underline-offset-2 hover:underline"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setExpandedDesc((prev) => ({
+                                ...prev,
+                                [step.id]: !prev[step.id],
+                              }));
+                            }}
+                            aria-expanded={descExpanded}
+                          >
+                            {descExpanded ? 'הצג פחות' : 'הצג במלואו'}
+                          </button>
+                        ) : null}
+                      </div>
                     ) : null}
 
                     {isActive ? (

@@ -1,24 +1,20 @@
 import type { MetadataRoute } from 'next';
-import { createClient } from '../lib/supabase/server';
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+/**
+ * Sitemap ציבורי בלבד — ללא /guides/* (דורשים התחברות) וללא /login.
+ */
+export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     process.env.NEXT_PUBLIC_APP_URL?.trim() ||
     'https://nurawell.co.il';
 
-  const staticRoutes: MetadataRoute.Sitemap = [
+  return [
     {
       url: baseUrl,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 1,
-    },
-    {
-      url: `${baseUrl}/login`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
     },
     {
       url: `${baseUrl}/register`,
@@ -35,24 +31,4 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }),
     ),
   ];
-
-  try {
-    const supabase = await createClient();
-    const { data: courses } = await supabase
-      .from('courses')
-      .select('id, updated_at')
-      .eq('is_published', true);
-
-    const courseRows = courses as { id: string; updated_at: string | null }[] | null;
-    const courseRoutes: MetadataRoute.Sitemap = (courseRows || []).map(course => ({
-      url: `${baseUrl}/guides/${course.id}`,
-      lastModified: course.updated_at ? new Date(course.updated_at) : new Date(),
-      changeFrequency: 'weekly' as const,
-      priority: 0.8,
-    }));
-
-    return [...staticRoutes, ...courseRoutes];
-  } catch {
-    return staticRoutes;
-  }
 }

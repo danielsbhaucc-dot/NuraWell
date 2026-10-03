@@ -90,7 +90,17 @@ export function FullscreenVideoPlayer({
   const hlsVideoRef = useRef<HTMLVideoElement | null>(null);
   const [hlsForcedFallback, setHlsForcedFallback] = useState(false);
   const [hlsListenKey, setHlsListenKey] = useState(0);
-  const useHlsImmersive = Boolean(pullZoneHlsSrc?.trim()) && !hlsForcedFallback;
+  /**
+   * Immersive playback must stay on Bunny iframe by default.
+   * HLS-first (cd75cf8) caused a black screen + X when Pull Zone blocks direct
+   * m3u8 (403) or HLS stalls without a timely fatal error. Keep HLS only as an
+   * explicit opt-in for environments that prove it works.
+   */
+  const preferHlsImmersive =
+    typeof process !== 'undefined' &&
+    process.env.NEXT_PUBLIC_IMMERSIVE_HLS === '1';
+  const useHlsImmersive =
+    preferHlsImmersive && Boolean(pullZoneHlsSrc?.trim()) && !hlsForcedFallback;
 
   const [tapFlash, setTapFlash] = useState<'play' | 'pause' | null>(null);
   const soundOnRef = useRef(false);

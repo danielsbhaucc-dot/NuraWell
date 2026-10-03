@@ -313,9 +313,11 @@ export function OnboardingFormClient() {
                   <MentorBubble mentorId="dolev">
                     <p>שמח שבאת! לפני הכל — איך קוראים לך? אני דולב, ומכאן אדבר איתך בשם הפרטי 😊</p>
                   </MentorBubble>
-                  <label className="block mt-6">
+                  <label htmlFor="onboarding-full-name" className="block mt-6">
                     <span className="text-sm font-bold text-emerald-50 mb-2 block">השם שלך</span>
                     <input
+                      id="onboarding-full-name"
+                      name="full_name"
                       type="text"
                       autoComplete="name"
                       autoFocus
@@ -323,6 +325,7 @@ export function OnboardingFormClient() {
                       onChange={(e) => setFullName(e.target.value)}
                       className="onboarding-input-dark w-full text-lg"
                       placeholder="למשל: ישראל"
+                      aria-required="true"
                     />
                   </label>
                 </>

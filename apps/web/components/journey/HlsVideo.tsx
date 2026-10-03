@@ -106,6 +106,7 @@ export const HlsVideo = forwardRef<HTMLVideoElement, HlsVideoProps>(function Hls
 
       if (!Hls.isSupported()) {
         setLoadError('הדפדפן לא תומך בניגון HLS');
+        onErrorRef.current?.();
         fireLoaded();
         return;
       }
@@ -158,7 +159,13 @@ export const HlsVideo = forwardRef<HTMLVideoElement, HlsVideoProps>(function Hls
       });
     };
 
-    const failSafe = window.setTimeout(() => fireLoaded(), 20000);
+    // אם המניפסט נתקע (403/CORS בלי fatal מיידי) — נכשלים מהר כדי לאפשר fallback ל-iframe.
+    const failSafe = window.setTimeout(() => {
+      if (loaded) return;
+      setLoadError('תם הזמן לטעינת הווידאו');
+      onErrorRef.current?.();
+      fireLoaded();
+    }, 8_000);
 
     void run();
 

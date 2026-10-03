@@ -60,7 +60,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
             }}
           >
             <span style={{ color: '#fff', fontWeight: 900, fontSize: '13px', letterSpacing: '0.2px', fontFamily: "'Rubik','Heebo',sans-serif" }}>
-              NuraWell.ai
+              NuraWell
             </span>
           </Link>
 

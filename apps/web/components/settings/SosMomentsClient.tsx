@@ -503,7 +503,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
           </div>
         ) : (
           <>
-            {(helpedMemory.length > 0 || failedMemory.length > 0) && (
+            {helpedMemory.length > 0 ? (
               <section dir="rtl" className="glass-surface-home space-y-4 rounded-[22px] p-5">
                 <div className="text-center">
                   <h2 className="text-lg font-black text-slate-900" style={HEBREW_HEAD}>
@@ -511,85 +511,85 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                   </h2>
                   <p className="mt-1 text-xs text-slate-600">אלה הדברים שעבדו לך</p>
                 </div>
-
-                {helpedMemory.length > 0 ? (
-                  <>
-                    <ul className="space-y-0">
-                      {visibleHelped.map((m, i) => {
-                        const globalIndex = helpedPage * MEMORY_PAGE_SIZE + i;
-                        return (
-                          <li key={`h-${globalIndex}`}>
-                            {i > 0 ? <MomentsColorDivider index={globalIndex} /> : null}
-                            <div
-                              className={`rounded-2xl border px-4 py-3 text-sm text-slate-800 ${MEMORY_CARD_STYLES[globalIndex % MEMORY_CARD_STYLES.length]}`}
-                            >
-                              <p className="font-bold leading-snug">{m.strategy}</p>
-                              {m.task_title ? (
-                                <p className="mt-1 text-xs text-slate-600">בקשר ל: {m.task_title}</p>
-                              ) : null}
-                              <p className="mt-1.5 text-[11px] text-slate-500">{formatHebrewRelative(m.created_at)}</p>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                    <ListPagination
-                      page={helpedPage}
-                      total={helpedPages}
-                      onPageChange={setHelpedPage}
-                      label="עימוד — מה עזר לך"
-                    />
-                  </>
-                ) : null}
-
-                {helpedMemory.length > 0 && failedMemory.length > 0 ? (
-                  <MomentsColorDivider index={helpedMemory.length} />
-                ) : null}
-
-                {failedMemory.length > 0 ? (
-                  <div>
-                    <p className="mb-3 text-center text-xs font-bold text-amber-900/80">
-                      מה שפחות התאים הפעם
-                    </p>
-                    <ul className="space-y-0">
-                      {visibleFailed.map((m, i) => {
-                        const globalIndex = failedPage * FAILED_PAGE_SIZE + i;
-                        return (
-                          <li key={`f-${globalIndex}`}>
-                            {i > 0 ? (
-                              <MomentsColorDivider index={helpedMemory.length + globalIndex} />
-                            ) : null}
-                            <div
-                              className="rounded-2xl border border-amber-200/50 px-4 py-3 text-sm text-amber-950"
-                              style={{
-                                background:
-                                  'linear-gradient(135deg, rgba(254,243,199,0.85), rgba(253,230,138,0.5))',
-                              }}
-                            >
-                              <p className="font-bold leading-snug">{m.strategy}</p>
-                              {m.task_title ? (
-                                <p className="mt-1 text-xs text-amber-900/70">בקשר ל: {m.task_title}</p>
-                              ) : null}
-                              <p className="mt-1.5 text-[11px] text-amber-900/55">
-                                {formatHebrewRelative(m.created_at)}
-                              </p>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                    <div className="mt-3">
-                      <ListPagination
-                        page={failedPage}
-                        total={failedPages}
-                        onPageChange={setFailedPage}
-                        label="עימוד — מה שפחות התאים"
-                      />
-                    </div>
-                  </div>
-                ) : null}
+                <ul className="space-y-0">
+                  {visibleHelped.map((m, i) => {
+                    const globalIndex = helpedPage * MEMORY_PAGE_SIZE + i;
+                    return (
+                      <li key={`h-${m.strategy}-${m.created_at}-${globalIndex}`}>
+                        {i > 0 ? <MomentsColorDivider index={globalIndex} /> : null}
+                        <div
+                          className={`rounded-2xl border px-4 py-3 text-sm text-slate-800 ${MEMORY_CARD_STYLES[globalIndex % MEMORY_CARD_STYLES.length]}`}
+                        >
+                          <p className="font-bold leading-snug break-words">{m.strategy}</p>
+                          {m.task_title ? (
+                            <p className="mt-1 text-xs text-slate-600 break-words">בקשר ל: {m.task_title}</p>
+                          ) : null}
+                          <p className="mt-1.5 text-[11px] text-slate-500">
+                            {formatHebrewRelative(m.created_at)}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <ListPagination
+                  page={helpedPage}
+                  total={helpedPages}
+                  onPageChange={setHelpedPage}
+                  label="עימוד — מה עזר לך"
+                />
               </section>
-            )}
+            ) : null}
+
+            {helpedMemory.length > 0 && failedMemory.length > 0 ? (
+              <MomentsColorDivider index={helpedMemory.length} />
+            ) : null}
+
+            {failedMemory.length > 0 ? (
+              <section dir="rtl" className="glass-surface-home space-y-4 rounded-[22px] p-5">
+                <div className="text-center">
+                  <h2 className="text-lg font-black text-amber-950" style={HEBREW_HEAD}>
+                    מה שפחות התאים
+                  </h2>
+                  <p className="mt-1 text-xs text-amber-900/70">כדי שנדע מה לא לחזור עליו</p>
+                </div>
+                <ul className="space-y-0">
+                  {visibleFailed.map((m, i) => {
+                    const globalIndex = failedPage * FAILED_PAGE_SIZE + i;
+                    return (
+                      <li key={`f-${m.strategy}-${m.created_at}-${globalIndex}`}>
+                        {i > 0 ? (
+                          <MomentsColorDivider index={helpedMemory.length + globalIndex} />
+                        ) : null}
+                        <div
+                          className="rounded-2xl border border-amber-200/50 px-4 py-3 text-sm text-amber-950"
+                          style={{
+                            background:
+                              'linear-gradient(135deg, rgba(254,243,199,0.85), rgba(253,230,138,0.5))',
+                          }}
+                        >
+                          <p className="font-bold leading-snug break-words">{m.strategy}</p>
+                          {m.task_title ? (
+                            <p className="mt-1 text-xs text-amber-900/70 break-words">
+                              בקשר ל: {m.task_title}
+                            </p>
+                          ) : null}
+                          <p className="mt-1.5 text-[11px] text-amber-900/55">
+                            {formatHebrewRelative(m.created_at)}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <ListPagination
+                  page={failedPage}
+                  total={failedPages}
+                  onPageChange={setFailedPage}
+                  label="עימוד — מה שפחות התאים"
+                />
+              </section>
+            ) : null}
 
             {(helpedMemory.length > 0 || failedMemory.length > 0) && groupedEvents.length > 0 ? (
               <MomentsColorDivider index={0} />

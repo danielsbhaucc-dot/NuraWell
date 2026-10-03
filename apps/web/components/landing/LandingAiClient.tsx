@@ -982,7 +982,7 @@ export function LandingAiClient() {
             className="mx-auto mt-10 flex max-w-xl items-center justify-center gap-2 text-center text-base font-semibold text-emerald-100/85"
           >
             <InfinityIcon className="h-5 w-5 shrink-0 text-cyan-300" aria-hidden />
-            1% טוב יותר כל יום = <strong className="text-white">37×</strong> שינוי בשנה.
+            שינוי קטן שחוזר על עצמו נדבק — בלי הבטחות מופרזות, בקצב שלכם.
           </motion.p>
         </section>
 
@@ -1218,7 +1218,7 @@ export function LandingAiClient() {
                   <span className={styles.shimmer}>מחכה בצד השני.</span>
                 </h2>
                 <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-emerald-50/80 sm:text-lg">
-                  60 שניות להירשם. אחר כך אלמוג מכיר אתכם, בונה את המסע, ומלווה אתכם כל יום.
+                  כמה דקות להירשם — עם פס התקדמות ברור. אחר כך אלמוג מכיר אתכם, בונה את המסע, ומלווה אתכם כל יום.
                 </p>
                 <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
                   <Link

@@ -316,11 +316,12 @@ html {
 
   .landing-hero-overlay {
     @apply absolute inset-0;
+    /* שכבה כהה יותר מתחת לטקסט ה-Hero — ניגודיות קריאה (M13 / axe) */
     background: linear-gradient(
       180deg,
-      rgba(2, 44, 34, 0.5) 0%,
-      rgba(4, 47, 46, 0.7) 38%,
-      rgba(4, 78, 59, 0.92) 100%
+      rgba(2, 44, 34, 0.72) 0%,
+      rgba(2, 44, 34, 0.82) 38%,
+      rgba(2, 44, 34, 0.94) 100%
     );
   }
 
@@ -1907,29 +1908,21 @@ html {
     @apply flex flex-col gap-3 items-center max-w-sm mx-auto;
   }
 
+  /* כפתור CTA אטום עם טקסט לבן — ניגודיות יציבה (M13) */
   .landing-cta-band .landing-btn-primary {
-    background:
-      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.3), transparent 60%),
-      linear-gradient(135deg, rgba(167, 243, 208, 0.4), rgba(110, 231, 183, 0.25));
-    color: #064e3b;
-    border: 1.5px solid rgba(110, 231, 183, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow:
-      0 18px 40px rgba(0, 0, 0, 0.3),
-      0 0 0 1px rgba(236, 253, 245, 0.18) inset,
-      inset 0 1px 0 rgba(236, 253, 245, 0.45);
-    text-shadow: 0 1px 0 rgba(236, 253, 245, 0.4);
+    background: #047857;
+    color: #ffffff;
+    border: 1.5px solid #065f46;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.35);
+    text-shadow: none;
   }
 
   .landing-cta-band .landing-btn-primary:hover {
-    background:
-      radial-gradient(ellipse at top right, rgba(34, 211, 238, 0.45), transparent 60%),
-      linear-gradient(135deg, rgba(167, 243, 208, 0.55), rgba(110, 231, 183, 0.4));
+    background: #065f46;
     transform: translateY(-2px);
-    box-shadow:
-      0 22px 48px rgba(0, 0, 0, 0.35),
-      inset 0 1px 0 rgba(236, 253, 245, 0.55);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
   }
 
   /* ---- Contrast section (instead → you get) ---- */
@@ -2907,10 +2900,10 @@ html {
   }
 
   .landing-footer-links {
-    @apply flex flex-wrap items-center justify-center gap-x-2 gap-y-1 mb-3 px-4;
+    @apply flex flex-wrap items-center justify-center gap-x-1 gap-y-2 mb-3 px-4;
   }
   .landing-footer-links a {
-    @apply text-xs font-bold;
+    @apply inline-flex items-center justify-center text-sm font-bold min-h-11 px-2;
     color: #14543d;
     text-decoration: underline;
     text-underline-offset: 3px;
@@ -5120,7 +5113,8 @@ body.overflow-hidden { overflow: hidden; }
   border: 1px solid rgba(16, 185, 129, 0.16);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
-.legal-data-item h4 {
+.legal-data-item h4,
+.legal-data-item .legal-data-item-title {
   display: flex; align-items: center; gap: 0.5rem;
   font-family: 'Rubik', sans-serif;
   font-weight: 700;
