@@ -10,6 +10,7 @@ import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
 import { buildCoachingStylePromptBlock } from '../ai/almog-coaching-style';
 import type { AiUserContext } from '../ai/memory';
 import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildAlmogNotifySystemPrompt } from '../ai/prompts';
+import { gateAlmogUserFacingTouch } from '../notifications/almog-touch-send-gate';
 import type { AlmogFollowupUserState } from './almog-followup-state';
 import { habitSlotFromCheckInTime } from './personalized-check-in-journey';
 
@@ -48,7 +49,15 @@ export async function sendAlmogTaskFollowupNotification(
   userId: string,
   taskId: string,
   state: AlmogFollowupUserState
-): Promise<{ body: string }> {
+): Promise<{ body: string } | null> {
+  const habitIds = [
+    ...state.activeHabits.map((h) => h.id),
+    ...state.ingrainedHabits.map((h) => h.id),
+  ].filter((id): id is string => typeof id === 'string' && id.length > 0);
+
+  const touchGate = await gateAlmogUserFacingTouch(admin, userId, { habitIds });
+  if (!touchGate.ok) return null;
+
   const slot = habitSlotFromCheckInTime(
     new Date().toLocaleTimeString('en-GB', {
       timeZone: 'Asia/Jerusalem',
@@ -108,6 +117,7 @@ ${cooldownBlock ?? ''}
       source: 'almog_followup_workflow',
       expects_reply: true,
       task_id: taskId,
+      habit_ids: habitIds,
       model: AI_MODELS.empathy,
       recipient_first_name: firstName,
     },

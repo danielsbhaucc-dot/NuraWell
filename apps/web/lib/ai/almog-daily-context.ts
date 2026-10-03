@@ -165,13 +165,13 @@ export async function fetchUserIdsWithChatToday(
 export const MAX_DAILY_ALMOG_TOUCHES = 3;
 
 /**
- * שער עייפות / תקרת יום — מכבד "3 מגעים ביום".
- * mode=presence לא נחסם (נוכחות רכה בנטישה), אבל remind/reinforce כן.
+ * שער עייפות / תקרת יום — מכבד "3 מגעים ביום" לכל mode כולל presence.
+ * נוכחות רכה נספרת בתקרה כדי שלא תציף מעבר להבטחת המוצר.
+ * (חריגים קריטיים כמו SOS לא עוברים דרך השער הזה.)
  */
 export function shouldSkipNotifyForTouchFatigue(
   todayTouches: TodayAlmogTouch[],
-  mode: 'remind' | 'reinforce' | 'presence' = 'remind'
+  _mode: 'remind' | 'reinforce' | 'presence' = 'remind'
 ): boolean {
-  if (mode === 'presence') return false;
   return todayTouches.length >= MAX_DAILY_ALMOG_TOUCHES;
 }

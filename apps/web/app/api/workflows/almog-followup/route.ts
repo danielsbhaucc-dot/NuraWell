@@ -34,10 +34,14 @@ const { POST: workflowPost } = serve<AlmogFollowupPayload>(async (context) => {
     return { skipped: true, reason: 'task_already_reported_done' as const };
   }
 
-  await context.run('trigger-almog', async () => {
+  const sent = await context.run('trigger-almog', async () => {
     const admin = createAdminClient();
-    await sendAlmogTaskFollowupNotification(admin, payload.userId, payload.taskId, state);
+    return sendAlmogTaskFollowupNotification(admin, payload.userId, payload.taskId, state);
   });
+
+  if (!sent) {
+    return { skipped: true as const, reason: 'touch_gate_blocked' as const };
+  }
 
   return { ok: true as const, reminded: true as const };
 });

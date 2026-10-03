@@ -28,6 +28,7 @@ import {
 import { AdminUserJourneyDetail } from '@/components/admin/AdminUserJourneyDetail';
 import { AlmogChatMemoryPanel } from '@/components/admin/AlmogChatMemoryPanel';
 import { AlmogCommitmentsPanel } from '@/components/admin/AlmogCommitmentsPanel';
+import { genderDisplayLabel } from '@/lib/profile/profile-field-ssot';
 import { AlmogMemoryPanel } from '@/components/admin/AlmogMemoryPanel';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
@@ -101,8 +102,8 @@ function usdFmt(n: number): string {
 
 const GENDER_OPTIONS = [
   { value: '', label: '— ללא —' },
-  { value: 'male', label: 'גבר' },
-  { value: 'female', label: 'אישה' },
+  { value: 'male', label: genderDisplayLabel('male') },
+  { value: 'female', label: genderDisplayLabel('female') },
 ];
 
 const GOAL_OPTIONS = [

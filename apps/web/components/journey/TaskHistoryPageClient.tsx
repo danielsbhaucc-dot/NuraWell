@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { ArrowRight, History, Loader2, Sparkles, CalendarDays } from 'lucide-react';
 
 import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
+import { fetchUserTaskSnapshot } from '../../lib/client/user-task-snapshot';
 import type { JourneyTaskExecution, JourneyTaskSlot } from '../../lib/types/journey';
 import { slotEmoji, slotLabel } from '../../lib/journey/task-schedule';
 import { emojiFromWellnessText } from '../../lib/emoji-from-text';
+import type { UserTaskSnapshotCounts } from '../../lib/tasks/user-task-ssot';
 
 type StepShape = {
   id: string;
@@ -66,6 +68,7 @@ export function TaskHistoryPageClient() {
   const [executions, setExecutions] = useState<JourneyTaskExecution[]>([]);
   const [almogCompletions, setAlmogCompletions] = useState<AlmogCompletion[]>([]);
   const [steps, setSteps] = useState<StepShape[]>([]);
+  const [ssotCounts, setSsotCounts] = useState<UserTaskSnapshotCounts | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,9 +76,10 @@ export function TaskHistoryPageClient() {
     setLoading(true);
     setError(null);
     try {
-      const [execRes, repRes] = await Promise.all([
+      const [execRes, repRes, snapshot] = await Promise.all([
         fetch('/api/v1/task-executions?days=60', { cache: 'no-store', credentials: 'include' }),
         fetch('/api/v1/journey-report', { cache: 'no-store', credentials: 'include' }),
+        fetchUserTaskSnapshot(),
       ]);
       if (!execRes.ok) throw new Error('שגיאה בטעינת היסטוריה');
       const execJson = (await execRes.json()) as {
@@ -88,6 +92,7 @@ export function TaskHistoryPageClient() {
         const repJson = (await repRes.json()) as { steps: StepShape[] };
         setSteps(repJson.steps ?? []);
       }
+      if (snapshot?.counts) setSsotCounts(snapshot.counts);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'שגיאה');
     } finally {
@@ -252,7 +257,13 @@ export function TaskHistoryPageClient() {
   }
 
   return (
-    <div dir="rtl" className="max-w-lg mx-auto w-full min-w-0 px-4 py-4 space-y-5 pb-8">
+    <div
+      dir="rtl"
+      className="max-w-lg mx-auto w-full min-w-0 px-4 py-4 space-y-5 pb-8"
+      data-ssot-unified-rejected={ssotCounts?.unified.rejected ?? ''}
+      data-ssot-unified-completed={ssotCounts?.unified.completed ?? ''}
+      data-ssot-almog-active={ssotCounts?.almog.active ?? ''}
+    >
       <AlmogScreenCoach
         title="אלמוג מחפש דפוסים"
         body="ההיסטוריה הזאת יכולה להפוך לתובנה: מה עובד, מה מתפספס, ואיזה שינוי קטן יעזור לך להמשיך בלי לחץ."
@@ -286,6 +297,14 @@ export function TaskHistoryPageClient() {
           <p className="relative text-[10px] font-bold text-sky-900/75">ימים פעילים (שבוע)</p>
           <p className="relative text-2xl font-black text-sky-900 tabular-nums">{summary.daysActive}/7</p>
         </div>
+        {ssotCounts && ssotCounts.unified.rejected > 0 ? (
+          <div className="glass-surface relative overflow-hidden rounded-2xl p-3 text-right col-span-2">
+            <p className="relative text-[10px] font-bold text-rose-900/70">נדחו (מסע + אלמוג)</p>
+            <p className="relative text-xl font-black text-rose-900 tabular-nums">
+              {ssotCounts.unified.rejected}
+            </p>
+          </div>
+        ) : null}
       </div>
 
       {/* ───── Top tasks — מרכוז + RTL + זכוכית שקופה אמיתית ───── */}

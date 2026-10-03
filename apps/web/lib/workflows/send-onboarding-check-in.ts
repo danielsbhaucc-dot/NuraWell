@@ -48,6 +48,7 @@ import {
   fetchPersonalizedCheckInJourneyContext,
   formatJourneyBlockForPersonalizedCheckIn,
 } from './personalized-check-in-journey';
+import { gateAlmogUserFacingTouch } from '../notifications/almog-touch-send-gate';
 import { sendJourneyCompanionNudge } from './send-journey-companion-nudge';
 
 const NOTIFY_PERSONALIZED_TASK = buildAlmogNotifySystemPrompt(
@@ -359,6 +360,14 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
           : companionCtx && companionCtx.phase === 'step_in_progress'
             ? ' אפשר להזכיר בעדינות את הצעד הנוכחי במסע אם מתאים.'
             : '';
+
+  const habitIdsForGate = journeyCtx?.habits.map((h) => h.id) ?? [];
+  const touchGate = await gateAlmogUserFacingTouch(admin, payload.userId, {
+    habitIds: habitIdsForGate,
+  });
+  if (!touchGate.ok) {
+    return { body: '', inserted: null };
+  }
 
   const body = await completeEmpathyNotifyBody({
     label: 'almog_personalized_check_in',

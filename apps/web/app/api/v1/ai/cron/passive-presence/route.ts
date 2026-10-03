@@ -92,17 +92,19 @@ async function runPassivePresenceCron(request: Request) {
         continue;
       }
 
-      const { body, inserted } = await sendPassivePresenceNotification(admin, {
+      const result = await sendPassivePresenceNotification(admin, {
         userId,
         kind: plan.kind,
         trigger: plan.trigger,
         now,
       });
 
-      if (!inserted) {
-        errors.push(`${userId}: insert returned null`);
+      if (!result?.inserted) {
+        // תקרת יום / gate — לא שגיאה; דילוג שקט.
+        skippedGate += 1;
         continue;
       }
+      const { body, inserted } = result;
 
       await patchPassiveTouch(admin, userId, plan.kind, now);
       const title = typeof inserted.title === 'string' ? inserted.title : `${userId} 🌿`;

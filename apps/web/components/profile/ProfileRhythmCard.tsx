@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, Loader2, Moon, Pencil, Sun, UtensilsCrossed, X } from 'lucide-react';
 import { classifyMealSlot, mealSlotLabel } from '../../lib/onboarding/meal-schedule';
-import { RHYTHM_EDIT_DEFAULTS } from '../../lib/profile/profile-field-ssot';
+import { formatSleepDisplayLabeled, RHYTHM_EDIT_DEFAULTS } from '../../lib/profile/profile-field-ssot';
 
 export type ProfileRhythmInitial = {
   wake_up_time: string | null;
@@ -129,8 +129,7 @@ export function ProfileRhythmCard({
         <div className="px-5 py-3 space-y-2.5 text-sm">
           <p className="text-slate-600">
             <Sun className="w-3.5 h-3.5 inline ml-1 text-amber-500" />
-            השכמה {initial.wake_up_time?.trim() || '—'} · שינה{' '}
-            {initial.sleep_time?.trim() || '—'}
+            {formatSleepDisplayLabeled(initial)}
           </p>
           <p className="text-slate-600 leading-relaxed">
             <UtensilsCrossed className="w-3.5 h-3.5 inline ml-1 text-emerald-600" />

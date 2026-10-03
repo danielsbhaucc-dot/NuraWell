@@ -9,6 +9,7 @@ import { AI_MODELS } from '../ai/client';
 import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
 import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
 import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from '../ai/prompts';
+import { gateAlmogUserFacingTouch } from '../notifications/almog-touch-send-gate';
 import {
   daysBetween,
   fetchTrueLastActiveByUser,
@@ -142,9 +143,13 @@ export async function sendPassivePresenceNotification(
     trigger: PassiveTrigger | null;
     now?: Date;
   }
-): Promise<{ body: string; inserted: Record<string, unknown> | null }> {
+): Promise<{ body: string; inserted: Record<string, unknown> | null } | null> {
   const now = params.now ?? new Date();
   const userId = params.userId;
+
+  // presence נספר בתקרת 3 מגעים ביום — לא חריג שמציף.
+  const touchGate = await gateAlmogUserFacingTouch(admin, userId);
+  if (!touchGate.ok) return null;
 
   const [{ firstName, genderInstruction }, lastActiveMap, userCtx, recentBodies] =
     await Promise.all([

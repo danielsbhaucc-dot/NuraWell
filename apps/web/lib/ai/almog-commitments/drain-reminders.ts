@@ -13,6 +13,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { skipSosFollowUpIfResolved } from '../guardian/sos-care-loop';
+import { gateAlmogUserFacingTouch } from '../../notifications/almog-touch-send-gate';
 
 type Admin = SupabaseClient;
 
@@ -128,6 +129,17 @@ export async function drainAlmogReminders(
         const ok = await skipSosFollowUpIfResolved(admin, r.user_id, r.id, r.metadata);
         if (!ok) {
           skipped += 1;
+          continue;
+        }
+        // SOS follow-up — חריג מכוון מתקרת 3 מגעים (קריטי).
+      } else {
+        const habitIdsRaw = r.metadata?.habit_ids;
+        const habitIds = Array.isArray(habitIdsRaw)
+          ? habitIdsRaw.filter((x): x is string => typeof x === 'string')
+          : [];
+        const touchGate = await gateAlmogUserFacingTouch(admin, r.user_id, { habitIds });
+        if (!touchGate.ok) {
+          deferred += 1;
           continue;
         }
       }

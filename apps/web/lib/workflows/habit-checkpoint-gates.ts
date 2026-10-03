@@ -1,7 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { fetchTodayAlmogTouches } from '../ai/almog-notify-day-context';
-import { shouldSkipNotifyForTouchFatigue } from '../ai/almog-daily-context';
-import { hasRecentSimilarHabitNotification } from '../notifications/similar-habit-dedupe';
+import { gateAlmogUserFacingTouch } from '../notifications/almog-touch-send-gate';
 import type { HabitCheckpointSlot } from './almog-habit-checkpoint-payload';
 
 type NotifyMode = 'remind' | 'reinforce';
@@ -18,7 +16,7 @@ export async function gateAlmogHabitCheckpoint(
   userId: string,
   checkpointDate: string,
   slot: HabitCheckpointSlot,
-  notifyMode: NotifyMode = 'remind',
+  _notifyMode: NotifyMode = 'remind',
   habitIds: string[] = []
 ): Promise<HabitCheckpointGate> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,24 +43,9 @@ export async function gateAlmogHabitCheckpoint(
 
   if (dup) return { ok: false, reason: 'already_sent_this_slot' };
 
-  const todayTouches = await fetchTodayAlmogTouches(admin, userId);
-  if (shouldSkipNotifyForTouchFatigue(todayTouches, notifyMode)) {
-    return { ok: false, reason: 'touch_fatigue' };
-  }
-
-  if (habitIds.length > 0) {
-    const recentForDedupe = rows.map((row) => {
-      const m = (row.metadata ?? null) as Record<string, unknown> | null;
-      return {
-        source: m?.source,
-        habit_ids: m?.habit_ids,
-        created_at: typeof row.created_at === 'string' ? row.created_at : undefined,
-      };
-    });
-    if (hasRecentSimilarHabitNotification(recentForDedupe, habitIds)) {
-      return { ok: false, reason: 'similar_habit_recent' };
-    }
-  }
+  // תקרת יום + similar-habit — אותו שער כמו כל שולחי אלמוג.
+  const touchGate = await gateAlmogUserFacingTouch(admin, userId, { habitIds });
+  if (!touchGate.ok) return touchGate;
 
   return { ok: true };
 }

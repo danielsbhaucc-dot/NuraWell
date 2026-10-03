@@ -1,3 +1,5 @@
+import { genderDisplayLabel } from './profile-field-ssot';
+
 export type ProfileGender = 'male' | 'female' | null;
 
 export function firstNameFrom(fullName: string | null, fallback = 'חבר'): string {
@@ -22,10 +24,8 @@ export function profileChatCta(gender: ProfileGender): string {
 }
 
 export function genderLabel(gender: ProfileGender): string {
-  // SSOT: אותו מילון כמו «מה אלמוג יודע» / אונבורדינג — גבר/אישה.
-  if (gender === 'male') return 'גבר';
-  if (gender === 'female') return 'אישה';
-  return '';
+  // SSOT: מילון יחיד ב-profile-field-ssot — אין מילונים כפולים.
+  return genderDisplayLabel(gender);
 }
 
 /** "חבר מאז" / "חברה מאז" לפי מגדר הפרופיל */

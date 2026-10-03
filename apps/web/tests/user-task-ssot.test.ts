@@ -6,6 +6,7 @@ import {
   mapJourneyDecisionToUnified,
 } from '../lib/tasks/user-task-ssot';
 import {
+  formatSleepDisplayLabeled,
   genderDisplayLabel,
   resolveDisplayWeightKg,
 } from '../lib/profile/profile-field-ssot';
@@ -105,6 +106,12 @@ describe('profile-field-ssot', () => {
     expect(resolveDisplayWeightKg(null, 100)).toBe(100);
     expect(resolveDisplayWeightKg(88, 100)).toBe(88);
     expect(resolveDisplayWeightKg(null, null)).toBeNull();
+  });
+
+  it('formats sleep with labeled helper consistently', () => {
+    expect(
+      formatSleepDisplayLabeled({ wake_up_time: '07:00', sleep_time: null })
+    ).toBe('השכמה 07:00 · שינה —');
   });
 });
 

@@ -28,6 +28,7 @@ import {
   pickNextTaskForNow,
   type UserScheduleProfile,
 } from '../../lib/journey/pick-next-task-for-now';
+import { fetchUserTaskSnapshot } from '../../lib/client/user-task-snapshot';
 import {
   hasAnyTakenTasks,
   type AlmogTodayRow,
@@ -35,14 +36,6 @@ import {
 } from '../../lib/tasks/user-task-ssot';
 
 import type { OnboardingGender } from '../../lib/onboarding/types';
-
-type UserTaskSnapshotResponse = {
-  counts: UserTaskSnapshotCounts;
-  journey_today?: PendingTaskTodayRow[];
-  almog_open?: AlmogTodayRow[];
-  user_schedule?: UserScheduleProfile;
-  error?: string;
-};
 
 export type HomeStats = {
   activeCoursesCount: number;
@@ -93,9 +86,8 @@ export function HomeClient({
   const refreshTasks = useCallback(async () => {
     setTaskLoading(true);
     try {
-      const res = await fetch('/api/v1/user-task-snapshot', { cache: 'no-store' });
-      const json = (await res.json()) as UserTaskSnapshotResponse;
-      if (!res.ok || !json.counts) return;
+      const json = await fetchUserTaskSnapshot();
+      if (!json?.counts) return;
       const { unified, journey, almog } = json.counts;
       setSnapshotCounts(json.counts);
       setTaskCounts({
@@ -106,7 +98,7 @@ export function HomeClient({
       });
       setTodayTasks(json.journey_today ?? []);
       setAlmogOpen(json.almog_open ?? []);
-      setUserSchedule(json.user_schedule ?? {});
+      setUserSchedule((json.user_schedule as UserScheduleProfile | undefined) ?? {});
     } finally {
       setTaskLoading(false);
     }
@@ -218,7 +210,12 @@ export function HomeClient({
   );
 
   return (
-    <div>
+    <div
+      data-ssot-due-today={taskCounts.dueToday}
+      data-ssot-almog-active={snapshotCounts?.almog.active ?? ''}
+      data-ssot-unified-active={snapshotCounts?.unified.active ?? ''}
+      data-ssot-unified-rejected={snapshotCounts?.unified.rejected ?? ''}
+    >
       <div
         className="-mt-16 relative overflow-hidden pt-16"
         style={{

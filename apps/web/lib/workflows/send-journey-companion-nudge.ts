@@ -11,6 +11,7 @@ import {
   ALMOG_JOURNEY_MOTIVATION_SYSTEM_PROMPT,
   ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
 } from '../ai/prompts';
+import { gateAlmogUserFacingTouch } from '../notifications/almog-touch-send-gate';
 import {
   formatJourneyCompanionPromptBlock,
   type JourneyCompanionContext,
@@ -123,6 +124,9 @@ export async function sendJourneyCompanionNudge(
   companion: JourneyCompanionContext,
   checkInTime?: string
 ): Promise<{ body: string; inserted: Record<string, unknown> | null } | null> {
+  const touchGate = await gateAlmogUserFacingTouch(admin, userId);
+  if (!touchGate.ok) return null;
+
   const time =
     checkInTime ??
     new Date().toLocaleTimeString('en-GB', {

@@ -18,10 +18,12 @@ import {
 } from 'lucide-react';
 import { AlmogAvatarChip } from '@/components/journey/AlmogPresence';
 import { createClient } from '@/lib/supabase/client';
+import { fetchUserTaskSnapshot } from '@/lib/client/user-task-snapshot';
 import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog-chat';
 import type { BlockerCoachState, BlockerProposal } from '@/lib/ai/almog-commitments/types';
 import { consecutiveJerusalemDoneDays } from '@/lib/journey/recovery-streak';
 import { buildStepStory, storyFromAssignment, type StepStory } from '@/lib/almog/step-story';
+import { isAlmogOpenStatus, type UserTaskSnapshotCounts } from '@/lib/tasks/user-task-ssot';
 import { getIsraelTimeOfDay } from '@/lib/time/greeting';
 
 type AssignmentRelation = 'standalone' | 'replaces' | 'eases' | 'supports';
@@ -209,6 +211,8 @@ async function postAction(body: Record<string, string>) {
 
 export function PlansClient({ userId, firstName }: { userId: string; firstName?: string }) {
   const [data, setData] = useState<Payload | null>(null);
+  /** מונים מאוחדים מ-SSOT — זהים לבית / מסע / היסטוריה. */
+  const [ssotCounts, setSsotCounts] = useState<UserTaskSnapshotCounts | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -224,13 +228,17 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
     if (!silent) setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/v1/almog-assignments', {
-        credentials: 'include',
-        cache: 'no-store',
-      });
+      const [res, snapshot] = await Promise.all([
+        fetch('/api/v1/almog-assignments', {
+          credentials: 'include',
+          cache: 'no-store',
+        }),
+        fetchUserTaskSnapshot(),
+      ]);
       const json = (await res.json()) as Payload & { error?: string };
       if (!res.ok) throw new Error(json.error ?? 'שגיאה בטעינה');
       setData(json);
+      if (snapshot?.counts) setSsotCounts(snapshot.counts);
       if (!firstLoad.current && silent) {
         setJustUpdated(true);
         window.setTimeout(() => setJustUpdated(false), 1800);
@@ -320,10 +328,16 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
 
   const openBlockers = (data?.blockers ?? []).filter((b) => b.status === 'open');
 
-  // משימות פעילות שאינן חלק מתוכנית החזרה
+  // משימות פתוחות (active|frozen) שאינן חלק מתוכנית החזרה — SSOT כמו בית/מסע.
   const standaloneTasks = (data?.assignments ?? []).filter(
-    (a) => a.status === 'active' && !recoveryStepIds.has(a.id)
+    (a) => isAlmogOpenStatus(a.status) && !recoveryStepIds.has(a.id)
   );
+  /** מונה אלמוג פתוח — מ-SSOT (זהה לבית/מסע), עם נפילה לסינון מקומי. */
+  const almogOpenCount =
+    ssotCounts?.almog.active ??
+    (data?.assignments ?? []).filter((a) => isAlmogOpenStatus(a.status)).length;
+  const almogCompletedCount =
+    ssotCounts?.almog.completed ?? (data?.completed.length ?? 0);
 
   const primaryRecovery = recoveryPlans[0] ?? null;
   const extraRecovery = recoveryPlans.slice(1);
@@ -336,7 +350,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
     extraStandalone.length +
     openBlockers.length +
     pendingReminders.length +
-    (data?.completed.length ?? 0);
+    almogCompletedCount;
 
   // גלילה חלקה לפריט + הבהוב קצר שמסמן בדיוק מה דורש תשומת לב.
   const jumpTo = (id: string) => {
@@ -390,7 +404,13 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
         : null;
 
   return (
-    <div dir="rtl" className="relative min-h-[calc(100vh-9rem)] overflow-hidden">
+    <div
+      dir="rtl"
+      className="relative min-h-[calc(100vh-9rem)] overflow-hidden"
+      data-ssot-almog-active={almogOpenCount}
+      data-ssot-unified-active={ssotCounts?.unified.active ?? ''}
+      data-ssot-unified-rejected={ssotCounts?.unified.rejected ?? ''}
+    >
       <SoftBackground />
 
       {/* ── HERO ברוחב מלא (full-bleed) ── */}

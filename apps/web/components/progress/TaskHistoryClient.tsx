@@ -776,7 +776,12 @@ export function TaskHistoryClient({
   ];
 
   return (
-    <div className="min-h-full bg-dashboard" dir="rtl">
+    <div
+      className="min-h-full bg-dashboard"
+      dir="rtl"
+      data-ssot-history-rejected={rejected.length}
+      data-ssot-history-accepted={report.total_accepted_lifetime}
+    >
       {/* ─── Hero Header ─── */}
       <motion.header
         initial={{ opacity: 0, y: -8 }}
@@ -1085,7 +1090,7 @@ export function TaskHistoryClient({
               <ul className="space-y-2">
                 {rejected.map((r) => (
                   <li
-                    key={r.task_id}
+                    key={`${r.source ?? 'journey'}-${r.task_id}`}
                     className="flex items-center justify-between gap-2 text-xs pb-2 last:border-0"
                     style={{ borderBottom: '1px solid rgba(167,243,208,0.3)' }}
                   >
@@ -1094,7 +1099,10 @@ export function TaskHistoryClient({
                     </span>
                     <span className="font-medium text-emerald-950 text-right min-w-0 line-clamp-1">
                       {r.task_title}
-                      <span className="text-emerald-900/55 font-normal"> · צעד {r.step_number}</span>
+                      <span className="text-emerald-900/55 font-normal">
+                        {' '}
+                        · {r.source === 'almog' ? 'מאלמוג' : `צעד ${r.step_number}`}
+                      </span>
                     </span>
                   </li>
                 ))}
