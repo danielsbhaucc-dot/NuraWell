@@ -14,7 +14,7 @@ export type SyncChallengeIntroTtsResult = {
 export async function syncChallengeIntroTts(text: string): Promise<SyncChallengeIntroTtsResult> {
   const normalized = normalizeTtsText(text);
   if (!normalized) {
-    return { url: null, error: 'טקst ריק' };
+    return { url: null, error: 'טקסט ריק' };
   }
 
   try {

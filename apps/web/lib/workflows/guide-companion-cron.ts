@@ -5,6 +5,7 @@ import { revokeGuideAccess } from '../guides/revoke-access';
 import { runGuideCompanionLlm, type GuideCatalogEntry } from '../guides/guide-companion-llm';
 import { detectGuideSeasonTag, isGuideSeasonallyActive, seasonInactiveReason } from '../guides/seasonal';
 import type { AiUserContext } from '../ai/memory';
+import { sumLessonDurationMinutes } from '../text/hebrew-plural';
 
 export interface GuideCompanionSnapshot {
   date: string;
@@ -49,7 +50,7 @@ async function fetchGuideCatalog(admin: AdminDb): Promise<GuideCatalogEntry[]> {
       title: c.title,
       description: c.description,
       lessonCount: lessons.length,
-      totalMinutes: lessons.reduce((s, l) => s + (l.duration_minutes ?? 15), 0),
+      totalMinutes: sumLessonDurationMinutes(lessons),
       contentTypes: types,
       seasonTag: tag,
       seasonallyActive: isGuideSeasonallyActive(tag, now),

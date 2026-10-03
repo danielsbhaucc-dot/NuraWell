@@ -100,9 +100,9 @@ export default function AccessibilityPage() {
             <li><strong>הגדלת תצוגה</strong> — תמיכה ב-zoom עד 500% (WCAG 1.4.4).</li>
             <li><strong>עיצוב רספונסיבי</strong> המותאם לנייד, טאבלט ומחשב.</li>
             <li><strong>Modals ו-lightbox</strong> — focus trap, <code>role=&quot;dialog&quot;</code>, סגירה ב-Escape (SOS, משימות היום, גלריית תמונות).</li>
-            <li><strong>סריקת alt</strong> — תיקון תמונות במסע, מדיה, התראות ו-stock; רקעים דקораטיביים מסומנים ב-<code>aria-hidden</code>.</li>
-            <li><strong>כלי ניהול</strong> — ביקורת alt ויצירה אוטומטית ב-<Link href="/ops/accessibility">לוח הבקרה</Link>.</li>
-            <li><SlidersHorizontal className="inline w-4 h-4 align-middle text-emerald-600" aria-hidden /> <strong>שמירת העדפות נגישות</strong> ב-localStorage בדפדפן.</li>
+            <li><strong>סריקת alt</strong> — תיקון תמונות במסע, מדיה והתראות; רקעים דקורטיביים מסומנים ב-<code>aria-hidden</code>.</li>
+            <li><strong>תיאורי תמונה</strong> — ביקורת והשלמת טקסט חלופי (alt) לתמונות בתוכן.</li>
+            <li><SlidersHorizontal className="inline w-4 h-4 align-middle text-emerald-600" aria-hidden /> <strong>שמירת העדפות נגישות</strong> בדפדפן שלך.</li>
           </ul>
         </LegalSection>
 
@@ -117,10 +117,9 @@ export default function AccessibilityPage() {
         <LegalSection num="6" title="מגבלות ידועות">
           <p>נכון ל-{UPDATED_AT}, בין הפערים שטרם תוקנו במלואם:</p>
           <ul>
-            <li>חלק מה-drawers (Vaul) — לא כל dialog עבר לאיחוד מלא עם focus trap.</li>
-            <li>נגני וידאו ותכני צד שלישי — עשויים שלא לכלול כתוביות/תיאור קולי.</li>
+            <li>חלק מחלונות צד (drawers) — לא כל החלונות עוברים עדיין מלכודת פוקוס מלאה.</li>
+            <li>נגני וידאו ותכני צד שלישי — עשויים שלא לכלול כתוביות או תיאור קולי.</li>
             <li>ממשק צ׳אט AI בזמן אמת — תוכן דינמי שקשה להבטיח נגישות מלאה בכל מצב.</li>
-            <li>בדיקות axe אוטומטיות (WCAG 2.2) על דפים ציבוריים — הרץ <code>npm run test:a11y:e2e</code> ב-<code>apps/web</code>.</li>
           </ul>
           <p>
             אנו פועלים לשיפור מתמיד. דיווחים ממשתמשים עוזרים לנו לתעדף תיקונים — פנה/י לרכז הנגישות.

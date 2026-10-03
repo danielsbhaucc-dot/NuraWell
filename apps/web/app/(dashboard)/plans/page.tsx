@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { PlansClient } from '@/components/almog/PlansClient';
 
 export const metadata = {
-  title: 'התוכנית שלי | NuraWell',
+  title: 'התוכנית שלי',
 };
 
 export default async function PlansPage() {

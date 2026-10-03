@@ -28,6 +28,7 @@ import {
   guideChaptersSubtitle,
   type ProfileGender,
 } from '../../lib/profile/personalized-copy';
+import { hebrewMinutesLabel, sumLessonDurationMinutes } from '../../lib/text/hebrew-plural';
 
 interface LessonItem {
   id: string;
@@ -90,7 +91,7 @@ export function CourseDetailClient({
   firstName = 'חבר', gender = null, almogNote = null,
 }: CourseDetailClientProps) {
   const totalLessons = course.lessons.length;
-  const totalMinutes = course.lessons.reduce((s, l) => s + (l.duration_minutes || 15), 0);
+  const totalMinutes = sumLessonDurationMinutes(course.lessons);
   const typeConfig = lessonTypeConfig;
 
   const bgUrl = course.background_image_url || course.thumbnail_url;
@@ -218,7 +219,9 @@ export function CourseDetailClient({
               <span className="guide-hero-stat-sep" aria-hidden />
               <div className="guide-hero-stat">
                 <Clock className="w-4 h-4 text-emerald-200 shrink-0" />
-                <span className="font-bold text-white whitespace-nowrap">~{totalMinutes} דקות</span>
+                <span className="font-bold text-white whitespace-nowrap">
+                  {hebrewMinutesLabel(totalMinutes, { approx: true })}
+                </span>
               </div>
               {isEnrolled && (
                 <>
@@ -531,7 +534,11 @@ function GuideCover({
             className="mt-6 flex flex-wrap items-center justify-center gap-2.5"
           >
             <CoverStat icon={BookOpen} value={`${totalLessons}`} label="פרקים" />
-            <CoverStat icon={Clock} value={`~${totalMinutes}`} label="דקות" />
+            <CoverStat
+              icon={Clock}
+              value={String(totalMinutes)}
+              label={totalMinutes === 1 ? 'דקה' : 'דקות'}
+            />
             {isEnrolled && progress > 0 ? (
               <CoverStat icon={Award} value={`${progress}%`} label="הושלם" />
             ) : null}

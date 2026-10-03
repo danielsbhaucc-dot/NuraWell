@@ -5,6 +5,9 @@
 
 export interface LessonMeta {
   id: string;
+  title?: string;
+  sort_order?: number;
+  duration_minutes?: number | null;
 }
 
 export interface CourseWithProgress {

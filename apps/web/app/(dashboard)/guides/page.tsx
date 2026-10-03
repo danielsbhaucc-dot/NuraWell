@@ -52,7 +52,7 @@ export default async function CoursesPage() {
     is_published?: boolean | null;
     unlock_at?: string | null;
     visibility?: string | null;
-    lessons: { id: string; title?: string; sort_order?: number }[];
+    lessons: { id: string; title?: string; sort_order?: number; duration_minutes?: number | null }[];
   }
   interface RawProgressRow {
     lesson_id: string;
@@ -62,7 +62,7 @@ export default async function CoursesPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawEnrollments } = await supabase
     .from('enrollments')
-    .select('course_id, is_active, access_type, trial_ends_at, course:courses(id, title, description, thumbnail_url, is_premium, is_published, unlock_at, visibility, lessons(id, title, sort_order))')
+    .select('course_id, is_active, access_type, trial_ends_at, course:courses(id, title, description, thumbnail_url, is_premium, is_published, unlock_at, visibility, lessons(id, title, sort_order, duration_minutes))')
     .eq('user_id', user.id)
     .eq('is_active', true);
 

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { OnboardingGender } from '@/lib/onboarding/types';
 
 export const metadata = {
-  title: 'האימייל אומת | NuraWell',
+  title: 'האימייל אומת',
 };
 
 export default async function RegisterVerifiedPage() {
