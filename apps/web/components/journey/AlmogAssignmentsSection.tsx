@@ -13,6 +13,8 @@ import {
   Snowflake,
   X,
 } from 'lucide-react';
+import { fetchUserTaskSnapshot } from '@/lib/client/user-task-snapshot';
+import { isAlmogOpenStatus, type UserTaskSnapshotCounts } from '@/lib/tasks/user-task-ssot';
 import { AlmogAvatarChip } from './AlmogPresence';
 
 /* טיפוסי תצוגה — תואמים ל-API /api/v1/almog-assignments */
@@ -102,12 +104,16 @@ function useAlmogAssignments() {
   const [assignments, setAssignments] = useState<AssignmentView[]>([]);
   const [focus, setFocus] = useState<FocusView | null>(null);
   const [completed, setCompleted] = useState<CompletedView[]>([]);
+  const [ssotCounts, setSsotCounts] = useState<UserTaskSnapshotCounts | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/almog-assignments', { credentials: 'include' });
+      const [res, snapshot] = await Promise.all([
+        fetch('/api/v1/almog-assignments', { credentials: 'include' }),
+        fetchUserTaskSnapshot(),
+      ]);
       if (!res.ok) return;
       const json = (await res.json()) as {
         assignments: AssignmentView[];
@@ -117,6 +123,7 @@ function useAlmogAssignments() {
       setAssignments(Array.isArray(json.assignments) ? json.assignments : []);
       setFocus(json.focus ?? null);
       setCompleted(Array.isArray(json.completed) ? json.completed : []);
+      if (snapshot?.counts) setSsotCounts(snapshot.counts);
     } catch {
       /* שקט — לא שוברים את עמוד המסע */
     } finally {
@@ -149,9 +156,10 @@ function useAlmogAssignments() {
   );
 
   // SSOT: active|frozen = משימה פתוחה (זהה לתוכנית / בית).
-  const visible = assignments.filter((a) => a.status === 'active' || a.status === 'frozen');
+  const visible = assignments.filter((a) => isAlmogOpenStatus(a.status));
+  const openCount = ssotCounts?.almog.active ?? visible.length;
 
-  return { visible, focus, completed, loaded, busyId, act };
+  return { visible, openCount, focus, completed, ssotCounts, loaded, busyId, act };
 }
 
 /** משימות אישיות שהושלמו — בתחתית העמוד */
@@ -184,7 +192,8 @@ export function AlmogCompletedSection() {
  * פאנל תחתון — משימות פעילות מאלמוג + מצב פוקוס, באקורדיון שלא מציף את המסך.
  */
 export function AlmogAssignmentsSection() {
-  const { visible, focus, completed, loaded, busyId, act } = useAlmogAssignments();
+  const { visible, openCount, focus, completed, ssotCounts, loaded, busyId, act } =
+    useAlmogAssignments();
   const [expanded, setExpanded] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
@@ -194,10 +203,13 @@ export function AlmogAssignmentsSection() {
   const headline = buildDynamicHeadline(visible, focus);
   const shown = visible.slice(0, visibleCount);
   const hasMore = visible.length > visibleCount;
-  const summaryCount = visible.length + (focus ? 1 : 0);
+  const summaryCount = openCount + (focus ? 1 : 0);
 
   return (
     <motion.section
+      data-ssot-almog-active={openCount}
+      data-ssot-unified-active={ssotCounts?.unified.active ?? ''}
+      data-ssot-unified-rejected={ssotCounts?.unified.rejected ?? ''}
       dir="rtl"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}

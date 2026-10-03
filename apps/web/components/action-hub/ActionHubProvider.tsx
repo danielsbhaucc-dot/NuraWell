@@ -11,8 +11,8 @@ import {
 import { Drawer } from 'vaul';
 import { useRouter } from 'next/navigation';
 import { ClipboardCheck, ChevronLeft, History, ListChecks, UserX } from 'lucide-react';
+import { fetchUserTaskSnapshot } from '../../lib/client/user-task-snapshot';
 import { useProgressReport } from '../progress-report/ProgressReportProvider';
-import type { UserTaskSnapshotCounts } from '../../lib/tasks/user-task-ssot';
 
 type ActionHubContextValue = {
   open: () => void;
@@ -39,12 +39,8 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
   const refreshCounts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/v1/user-task-snapshot', { cache: 'no-store' });
-      const json = (await res.json()) as {
-        counts?: UserTaskSnapshotCounts;
-        error?: string;
-      };
-      if (!res.ok || !json.counts) return;
+      const json = await fetchUserTaskSnapshot();
+      if (!json?.counts) return;
       setAcceptedCount(json.counts.journey.accepted + json.counts.almog.active);
       setRejectedCount(json.counts.unified.rejected);
       setPlansCount(json.counts.almog.active);

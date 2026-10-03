@@ -390,6 +390,10 @@ export async function sendLifeContextTouch(
   lc: LifeContext,
   checkInTime?: string
 ): Promise<{ body: string; inserted: Record<string, unknown> | null } | null> {
+  const { gateAlmogUserFacingTouch } = await import('../notifications/almog-touch-send-gate');
+  const touchGate = await gateAlmogUserFacingTouch(admin, userId);
+  if (!touchGate.ok) return null;
+
   const time =
     checkInTime ??
     new Date().toLocaleTimeString('en-GB', {

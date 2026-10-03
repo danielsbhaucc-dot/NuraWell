@@ -26,6 +26,7 @@ import { isActiveReengagementMove, churnSurveyOptions, type ReengagementMove } f
 import { patchReengagementContext } from '../churn/patch-reengagement-context';
 import { checkpointShouldOpenPlansPage } from '../ai/almog-commitments/plans-page-tracking';
 import { reportError } from '../monitoring/report-error';
+import { gateAlmogUserFacingTouch } from '../notifications/almog-touch-send-gate';
 import { truncateAtWordBoundary } from '../text/truncate-graphemes';
 
 const SLOT_HE: Record<HabitCheckpointSlot, string> = {
@@ -329,6 +330,14 @@ export async function sendAlmogHabitCheckpointNotification(
   admin: SupabaseClient,
   payload: AlmogHabitCheckpointPayload
 ): Promise<{ body: string; inserted: Record<string, unknown> | null }> {
+  const habitIdsForGate = payload.habits.map((h) => h.id);
+  const touchGate = await gateAlmogUserFacingTouch(admin, payload.userId, {
+    habitIds: habitIdsForGate,
+  });
+  if (!touchGate.ok) {
+    return { body: '', inserted: null };
+  }
+
   const [{ firstName, genderInstruction }, scheduleHints, todayTouches, todayChat] =
     await Promise.all([
       fetchNotifyUserProfile(admin, payload.userId),

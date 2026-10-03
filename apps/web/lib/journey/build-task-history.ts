@@ -160,7 +160,9 @@ export interface TaskHistoryReport {
   overall_success_rate_pct: number;
   /** רשימת המשימות שהמשתמש קיבל — מסודרות לפי החדש ביותר (accepted_at desc) */
   tasks: TaskHistoryEntry[];
-  /** סטיב'ים שלא קיבל אבל יש להם מידע (rejected) — אופציונלי לתצוגה */
+  /**
+   * נדחו — מסע rejected + אלמוג dropped (אותו אוצר מילים כמו Action Hub / user-task-ssot).
+   */
   rejected_tasks: Array<{
     task_id: string;
     task_title: string;
@@ -168,6 +170,8 @@ export interface TaskHistoryReport {
     step_number: number;
     step_title: string;
     rejected_at: string | null;
+    /** מקור: מסע או אלמוג — לתצוגה ול-SSOT. */
+    source?: 'journey' | 'almog';
   }>;
 }
 
@@ -384,7 +388,7 @@ export async function buildTaskHistoryReport(
   /** רוחב טווח לסקירת רצף — מספיק 90 יום להצגת best_streak גם אם הטווח קצר */
   const streakWindowKey = jerusalemDateKey(addDays(now, -89));
 
-  const [{ data: rawSteps }, { data: rawProgress }, { data: rawExecutions }] =
+  const [{ data: rawSteps }, { data: rawProgress }, { data: rawExecutions }, almogDroppedRes] =
     await Promise.all([
       supabase
         .from('journey_steps')
@@ -400,6 +404,14 @@ export async function buildTaskHistoryReport(
         .eq('user_id', userId)
         .order('completed_at', { ascending: true })
         .limit(5000),
+      // אלמוג dropped = rejected ב-SSOT (כמו Action Hub / user-task-snapshot).
+      supabase
+        .from('almog_assignments')
+        .select('id, title, given_at, last_done_at, history')
+        .eq('user_id', userId)
+        .eq('status', 'dropped')
+        .order('given_at', { ascending: false })
+        .limit(100),
     ]);
 
   const steps: StepRow[] = (rawSteps ?? []) as StepRow[];
@@ -442,6 +454,7 @@ export async function buildTaskHistoryReport(
           step_number: step.step_number,
           step_title: step.title,
           rejected_at: decision.decided_at ?? null,
+          source: 'journey',
         });
         continue;
       }
@@ -621,6 +634,36 @@ export async function buildTaskHistoryReport(
     const B = b.accepted_at ?? '';
     return B.localeCompare(A);
   });
+
+  // אלמוג dropped → rejected (אותו מונה כמו unified.rejected ב-SSOT).
+  type AlmogDroppedRow = {
+    id: string;
+    title: string;
+    given_at?: string | null;
+    last_done_at?: string | null;
+    history?: Array<{ at?: string; action?: string }> | null;
+  };
+  const almogDroppedRows = almogDroppedRes.error
+    ? []
+    : ((almogDroppedRes.data ?? []) as AlmogDroppedRow[]);
+  for (const row of almogDroppedRows) {
+    const dropAt =
+      (Array.isArray(row.history)
+        ? [...row.history].reverse().find((h) => h?.action === 'dropped')?.at
+        : null) ??
+      row.last_done_at ??
+      row.given_at ??
+      null;
+    rejected.push({
+      task_id: row.id,
+      task_title: row.title || 'משימה מאלמוג',
+      step_id: 'almog',
+      step_number: 0,
+      step_title: 'מאלמוג',
+      rejected_at: typeof dropAt === 'string' ? dropAt : null,
+      source: 'almog',
+    });
+  }
 
   rejected.sort((a, b) => (b.rejected_at ?? '').localeCompare(a.rejected_at ?? ''));
 

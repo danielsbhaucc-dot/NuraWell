@@ -113,4 +113,21 @@ describe('hasRecentSimilarHabitNotification', () => {
     ];
     expect(hasRecentSimilarHabitNotification(recent, ['habit-water'], now)).toBe(false);
   });
+
+  it('dedupes across personalized check-in sender', () => {
+    const now = Date.parse('2026-05-19T12:00:00Z');
+    expect(
+      hasRecentSimilarHabitNotification(
+        [
+          {
+            source: 'almog_personalized_check_in',
+            habit_ids: ['habit-water'],
+            created_at: '2026-05-19T11:00:00Z',
+          },
+        ],
+        ['habit-water'],
+        now
+      )
+    ).toBe(true);
+  });
 });

@@ -24,6 +24,13 @@ export function formatSleepDisplay(rhythm: RhythmTimes): string {
   return `${wake ?? '—'} · ${sleep ?? '—'}`;
 }
 
+/** תצוגת שינה עם תוויות עבריות — אותו מקור כמו formatSleepDisplay. */
+export function formatSleepDisplayLabeled(rhythm: RhythmTimes): string {
+  const wake = rhythm.wake_up_time?.trim() || '—';
+  const sleep = rhythm.sleep_time?.trim() || '—';
+  return `השכמה ${wake} · שינה ${sleep}`;
+}
+
 /**
  * משקל לתצוגה: קודם profiles.current_weight_kg, אחרת מדידה אחרונה מ-user_measurements.
  */

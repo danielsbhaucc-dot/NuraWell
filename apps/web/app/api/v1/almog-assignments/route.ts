@@ -115,13 +115,25 @@ export async function GET(request: Request) {
       .limit(12),
   ]);
 
+  const assignments = assignmentsRes.data ?? [];
+  const completed = completedRes.data ?? [];
+  // מוני אלמוג לתאימות SSOT עם /user-task-snapshot (active|frozen = open).
+  const almogActive = assignments.filter(
+    (a: { status?: string }) => a.status === 'active' || a.status === 'frozen'
+  ).length;
+
   return NextResponse.json({
     tables_ready: !hasMissingTable(assignmentsRes, focusRes, completedRes, remindersRes, blockersRes),
-    assignments: assignmentsRes.data ?? [],
+    assignments,
     focus: focusRes.data ?? null,
-    completed: completedRes.data ?? [],
+    completed,
     reminders: remindersRes.data ?? [],
     blockers: blockersRes.data ?? [],
+    /** מונים תואמי SSOT — Plan/Journey צריכים להשוות ל-user-task-snapshot.counts.almog */
+    ssot_counts: {
+      almog_active: almogActive,
+      almog_completed: completed.length,
+    },
   });
 }
 
