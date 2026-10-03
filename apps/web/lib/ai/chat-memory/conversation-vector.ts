@@ -27,11 +27,13 @@ export async function retrieveRelevantConversationMemories(params: {
   userId: string;
   queryText: string;
   topK?: number;
+  /** Embedding מוכן מראש — מונע קריאת embed כפולה בנתיב הצ׳אט. */
+  queryVector?: number[];
 }): Promise<ConversationVectorHit[]> {
   const q = params.queryText.replace(/\s+/g, ' ').trim();
   if (!q || !isUpstashVectorConfigured()) return [];
 
-  const queryVector = await embedTextForRag(q);
+  const queryVector = params.queryVector ?? (await embedTextForRag(q));
   const hits = await queryUserMemoryVectors({
     namespace: UPSTASH_NAMESPACE_CONVERSATION_MEMORY,
     userId: params.userId,
@@ -63,10 +65,12 @@ export async function buildConversationMemoryPromptBlock(params: {
   userId: string;
   queryText: string;
   maxItems?: number;
+  queryVector?: number[];
 }): Promise<string> {
   const hits = await retrieveRelevantConversationMemories({
     userId: params.userId,
     queryText: params.queryText,
+    queryVector: params.queryVector,
   });
   if (!hits.length) return '';
 

@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { createClient } from '../../../lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { HomeClient } from '../../../components/home/HomeClient';
 import {
@@ -8,6 +7,10 @@ import {
 } from '../../../components/mentorship/DynamicMentorWidget';
 import { firstNameFromFull } from '../../../lib/onboarding/profile-summary-rows';
 import type { OnboardingGender } from '../../../lib/onboarding/types';
+import {
+  getCachedAuthUser,
+  getCachedDashboardProfile,
+} from '../../../lib/supabase/cached-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,10 +20,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getCachedAuthUser();
 
   if (!user) redirect('/login');
 
@@ -34,14 +34,20 @@ export default async function HomePage() {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [{ data: rawEnrollments }, { data: rawProgressRows }, { data: profileRow }] = await Promise.all([
+  const [
+    { data: rawEnrollments },
+    { data: rawProgressRows },
+    profileRow,
+    mentorship,
+  ] = await Promise.all([
     supabase
       .from('enrollments')
       .select('course_id, course:courses(lessons(id))')
       .eq('user_id', user.id)
       .eq('is_active', true),
     supabase.from('lesson_progress').select('lesson_id, is_completed').eq('user_id', user.id),
-    supabase.from('profiles').select('full_name, gender').eq('id', user.id).maybeSingle(),
+    getCachedDashboardProfile(user.id),
+    loadMentorshipHomeContext(supabase, user.id),
   ]);
 
   const enrollments = (rawEnrollments as RawEnrollmentRow[]) || [];
@@ -73,11 +79,7 @@ export default async function HomePage() {
     user.email?.split('@')[0] ??
     'משתמש';
   const firstName = firstNameFromFull(fullName) || 'משתמש';
-
-  const { strategy: mentorshipStrategy, simplifiedDashboard } = await loadMentorshipHomeContext(
-    supabase,
-    user.id
-  );
+  const { strategy: mentorshipStrategy, simplifiedDashboard } = mentorship;
 
   return (
     <HomeClient

@@ -1,15 +1,16 @@
 import { Cormorant_Garamond, DM_Sans, Heebo, Rubik } from 'next/font/google';
 
+/** משקלים שבשימוש ב-UI (medium→500 נדיר; 400/600/700/800/900 מכסים את המערכת). */
 export const heebo = Heebo({
   subsets: ['hebrew', 'latin'],
-  weight: ['400', '500', '600', '700', '800', '900'],
+  weight: ['400', '600', '700', '800', '900'],
   variable: '--font-heebo',
   display: 'swap',
 });
 
 export const rubik = Rubik({
   subsets: ['hebrew', 'latin'],
-  weight: ['400', '500', '600', '700', '800', '900'],
+  weight: ['400', '600', '700', '800', '900'],
   variable: '--font-rubik',
   display: 'swap',
 });

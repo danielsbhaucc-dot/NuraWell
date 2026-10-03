@@ -31,7 +31,7 @@ import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import { AlmogAvatarChipWithNameTag } from '../journey/AlmogPresence';
 import { DayDetailPopup, type DayExecRow } from '../tasks/DayDetailPopup';
 import { formatHebrewRelativeFromDateKey } from '../../lib/time/hebrew-relative';
-import { getPersonalGreeting } from '../../lib/time/greeting';
+import { usePersonalGreeting } from '../../lib/time/usePersonalGreeting';
 import {
   historyPageGreeting,
   historyPageAlmogHeroBody,
@@ -665,7 +665,7 @@ export function TaskHistoryClient({
   const [popupDateKey, setPopupDateKey] = useState<string | null>(null);
 
   const todayKey = jerusalemTodayKey();
-  const greeting = useMemo(() => getPersonalGreeting(new Date()), []);
+  const greeting = usePersonalGreeting();
   const heroSeed = useMemo(
     () => report.total_accepted_lifetime + report.total_executions_in_range,
     [report.total_accepted_lifetime, report.total_executions_in_range]

@@ -8,6 +8,7 @@ import {
   dispatchOpenAlmogChat,
   dispatchOpenAlmogChatWithPrefill,
 } from '../../lib/notifications/open-almog-chat';
+import { fetchDashboardBrief } from '../../lib/client/dashboard-brief';
 
 type CtaAction = 'open_chat' | 'open_journey' | 'open_tasks' | 'open_progress' | 'open_courses';
 type Mood = 'celebrate' | 'encourage' | 'gentle' | 'neutral';
@@ -19,12 +20,6 @@ type DashboardBrief = {
   cta_action: CtaAction;
   cta_prompt: string | null;
   mood: Mood;
-};
-
-type BriefResponse = {
-  brief: DashboardBrief;
-  cached?: boolean;
-  error?: string;
 };
 
 const MOOD_STYLE: Record<
@@ -52,15 +47,12 @@ export function DashboardBriefCard({ onOpenTasks, firstName }: DashboardBriefCar
     if (refresh) setRefreshing(true);
     else setLoading(true);
     try {
-      const res = await fetch(`/api/v1/ai/dashboard-brief${refresh ? '?refresh=1' : ''}`, {
-        cache: 'no-store',
-      });
-      if (!res.ok) {
+      const next = await fetchDashboardBrief({ refresh });
+      if (next?.headline && next?.body && next.cta_label && next.cta_action && next.mood) {
+        setBrief(next as DashboardBrief);
+      } else {
         setBrief(null);
-        return;
       }
-      const json = (await res.json()) as BriefResponse;
-      if (json.brief) setBrief(json.brief);
     } catch {
       setBrief(null);
     } finally {

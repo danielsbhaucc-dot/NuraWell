@@ -99,12 +99,12 @@ import {
   formatAlmogCommitmentBlocks,
 } from '../../../../../lib/ai/almog-commitments/chat-context';
 import {
-  extractAlmogCommitments,
   shouldAttemptCommitmentExtraction,
   detectExplicitReminderPromise,
   mentionsReminderKeyword,
 } from '../../../../../lib/ai/almog-commitments/extract-commitments';
-import { persistCommitmentExtraction } from '../../../../../lib/ai/almog-commitments/persist';
+import { enqueueAlmogCommitmentJob } from '../../../../../lib/ai/almog-commitments/enqueue-commitment-job';
+import { processPendingAlmogCommitmentJobs } from '../../../../../lib/ai/almog-commitments/process-pending-commitment-jobs';
 import { applyChatSignalsFromUserMessage, detectChatSignals } from '../../../../../lib/ai/chat-signals';
 import {
   applyHabitIntentFromUserMessage,
@@ -2299,21 +2299,52 @@ export async function POST(request: Request) {
   const challengeContextPromise = fetchChallengeAlmogContextBlock(supabase, user.id).catch(() => null);
 
   /**
-   * הנתב רץ בכל תור. דילוג ישן ביטל בחירת כותב וזיכרון טון בין הודעות.
+   * הנתב רץ אחרי profile (sticky) אבל במקביל לשאר שליפות ה-DB שכבר התחילו.
+   * בתור טריוויאלי/ברכה עם sticky — מדלגים על LLM הנתב (כותב נשאר sticky/פרימיום).
    */
-  const profilePeek = await profilePromise;
-  const stickyStance = parseChatWriterStance(profilePeek.ai_context.writer_stance);
-  const stickyLine = stickyStance
-    ? `${stickyStance.writer} · ${stickyStance.reason} · turns=${stickyStance.turns}`
-    : undefined;
+  const routerBundlePromise = (async () => {
+    const profilePeek = await profilePromise;
+    const stickyStance = parseChatWriterStance(profilePeek.ai_context.writer_stance);
+    const stickyLine = stickyStance
+      ? `${stickyStance.writer} · ${stickyStance.reason} · turns=${stickyStance.turns}`
+      : undefined;
+    const skipRouterLlm =
+      Boolean(stickyStance) &&
+      (isTrivialBypassEligible(lastUserText, earlySignals) || isCasualGreeting(lastUserText));
 
-  let contextDecision = await routeChatContextWithCheapModel(
-    lastUserText,
-    earlySignals,
-    debugId,
-    routerHistorySnippet,
-    stickyLine
-  );
+    if (skipRouterLlm && stickyStance) {
+      const heuristic = heuristicContextDecision(
+        lastUserText,
+        earlySignals,
+        'trivial_skip_router_sticky',
+        { forceHeavy: false }
+      );
+      return {
+        profilePeek,
+        contextDecision: {
+          ...heuristic,
+          writer: stickyStance.writer,
+          heavy_context: false,
+          needs_full_progress_report: false,
+          needs_system_knowledge_rag: false,
+          reason: 'trivial_skip_router_sticky',
+        } satisfies ChatContextDecision,
+      };
+    }
+
+    const contextDecision = await routeChatContextWithCheapModel(
+      lastUserText,
+      earlySignals,
+      debugId,
+      routerHistorySnippet,
+      stickyLine
+    );
+    return { profilePeek, contextDecision };
+  })();
+
+  const routerBundle = await routerBundlePromise;
+  let { contextDecision } = routerBundle;
+  const stickyStance = parseChatWriterStance(routerBundle.profilePeek.ai_context.writer_stance);
 
   if (isLowContextTurn(lastUserText, earlySignals)) {
     contextDecision = {
@@ -2379,6 +2410,12 @@ export async function POST(request: Request) {
   const cheapTrivialWriter = trivialBypass && routedWriter === 'llama4';
   mcfg = resolveChatModelRuntime(routedWriter);
   effectiveModel = mcfg.slug;
+  /** תקרת פלט קצרה רק לתודה/ברכה — לא לשיחות מהותיות. */
+  const shortTurnOutput =
+    isTrivialBypassEligible(lastUserText, earlySignals) || isCasualGreeting(lastUserText);
+  const effectiveMaxOutputTokens = shortTurnOutput
+    ? Math.min(CHAT_MAX_OUTPUT_TOKENS, 700)
+    : CHAT_MAX_OUTPUT_TOKENS;
   console.info('[ai/chat]', {
     debug_id: debugId,
     stage: 'writer_routed',
@@ -2396,6 +2433,8 @@ export async function POST(request: Request) {
     confidence: contextDecision.writer_confidence ?? heuristicAnalysis.confidence,
     intent: contextDecision.intent ?? heuristicAnalysis.tags.join(','),
     scores: contextDecision.writer_scores ?? heuristicAnalysis.scores,
+    max_output_tokens: effectiveMaxOutputTokens,
+    router_skipped: contextDecision.reason === 'trivial_skip_router_sticky',
   });
 
   const useHeavyContext = contextDecision.heavy_context;
@@ -2573,6 +2612,13 @@ export async function POST(request: Request) {
     .then(([closedSessions, periodicSummaries]) => ({ closedSessions, periodicSummaries }))
     .catch(() => ({ closedSessions: [], periodicSummaries: [] }));
 
+  const historyWindow = chatHistoryWindow();
+  const transcriptPromise = fetchChatSessionTranscript(supabase, {
+    sessionId,
+    userId: user.id,
+    limit: Math.max(historyWindow + 4, 8),
+  }).catch(() => []);
+
   const [
     profileRow,
     activeJourneyContext,
@@ -2589,6 +2635,7 @@ export async function POST(request: Request) {
     guideSummaries,
     challengeContextBlock,
     chatMemoryContext,
+    dbTurns,
   ] = await Promise.all([
     profilePromise,
     journeyPromise,
@@ -2605,6 +2652,7 @@ export async function POST(request: Request) {
     guideSummariesPromise,
     challengeContextPromise,
     chatMemoryContextPromise,
+    transcriptPromise,
   ]);
 
   const [todayChatTurns, todayAlmogTouches] = dailyContextBundle;
@@ -2642,13 +2690,6 @@ export async function POST(request: Request) {
       return { role, content };
     })
     .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m));
-
-  const historyWindow = chatHistoryWindow();
-  const dbTurns = await fetchChatSessionTranscript(supabase, {
-    sessionId,
-    userId: user.id,
-    limit: Math.max(historyWindow + 4, 8),
-  }).catch(() => []);
 
   const recentMessages = mergeTranscriptWithClientMessages({
     dbTurns,
@@ -2778,7 +2819,11 @@ export async function POST(request: Request) {
             ? queryAlmogSystemKnowledgeForUser({ questionEmbedding: qv, filter: principlesFilter, topK: 4 })
             : Promise.resolve(null),
           needConversationRag
-            ? buildConversationMemoryPromptBlock({ userId: user.id, queryText: lastUserText })
+            ? buildConversationMemoryPromptBlock({
+                userId: user.id,
+                queryText: lastUserText,
+                queryVector: qv,
+              })
             : Promise.resolve(''),
         ]);
         if (userMemoryBlock) {
@@ -3345,133 +3390,130 @@ export async function POST(request: Request) {
           }
         });
 
-        try {
-          await applyChatSignalsFromUserMessage(supabase, user.id, lastUserText);
-        } catch (sigErr) {
-          console.warn('[ai/chat]', {
-            debug_id: debugId,
-            stage: `${finishStage}_chat_signals`,
-            error: sigErr instanceof Error ? sigErr.message : String(sigErr),
-          });
-        }
+        after(async () => {
+          try {
+            await applyChatSignalsFromUserMessage(supabase, user.id, lastUserText);
+          } catch (sigErr) {
+            console.warn('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_chat_signals`,
+              error: sigErr instanceof Error ? sigErr.message : String(sigErr),
+            });
+          }
+        });
 
-        try {
-          await updateAiContext(createAdminClient(), user.id, {
-            writer_stance: stickyResult.stance,
-          });
-        } catch (stanceErr) {
-          console.warn('[ai/chat]', {
-            debug_id: debugId,
-            stage: `${finishStage}_writer_stance_failed`,
-            error: stanceErr instanceof Error ? stanceErr.message : String(stanceErr),
-          });
-        }
+        after(async () => {
+          try {
+            await updateAiContext(createAdminClient(), user.id, {
+              writer_stance: stickyResult.stance,
+            });
+          } catch (stanceErr) {
+            console.warn('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_writer_stance_failed`,
+              error: stanceErr instanceof Error ? stanceErr.message : String(stanceErr),
+            });
+          }
+        });
 
-        try {
-          const habitIntent = await applyHabitIntentFromUserMessage(
-            supabase,
-            user.id,
-            lastUserText,
-            journeyHabits
-          );
-          if (habitIntent.marked) {
-            console.info('[ai/chat]', {
+        after(async () => {
+          try {
+            const habitIntent = await applyHabitIntentFromUserMessage(
+              supabase,
+              user.id,
+              lastUserText,
+              journeyHabits
+            );
+            if (habitIntent.marked) {
+              console.info('[ai/chat]', {
+                debug_id: debugId,
+                stage: `${finishStage}_habit_intent`,
+                habit_title: habitIntent.habitTitle,
+                category: habitIntent.intent.category,
+                confidence: habitIntent.intent.confidence,
+                source: habitIntent.intent.source,
+              });
+            } else if (habitIntent.optedOut) {
+              console.info('[ai/chat]', {
+                debug_id: debugId,
+                stage: `${finishStage}_habit_opted_out`,
+                habit_title: habitIntent.habitTitle,
+              });
+            } else if (
+              isReportingCategory(habitIntent.intent.category) &&
+              habitIntent.intent.confidence !== 'low'
+            ) {
+              console.info('[ai/chat]', {
+                debug_id: debugId,
+                stage: `${finishStage}_habit_reported_no_match`,
+                category: habitIntent.intent.category,
+                habit_title: habitIntent.intent.habitTitle,
+              });
+            }
+          } catch (habitErr) {
+            console.warn('[ai/chat]', {
               debug_id: debugId,
               stage: `${finishStage}_habit_intent`,
-              habit_title: habitIntent.habitTitle,
-              category: habitIntent.intent.category,
-              confidence: habitIntent.intent.confidence,
-              source: habitIntent.intent.source,
-            });
-          } else if (habitIntent.optedOut) {
-            console.info('[ai/chat]', {
-              debug_id: debugId,
-              stage: `${finishStage}_habit_opted_out`,
-              habit_title: habitIntent.habitTitle,
-            });
-          } else if (
-            isReportingCategory(habitIntent.intent.category) &&
-            habitIntent.intent.confidence !== 'low'
-          ) {
-            // partial / failed / skipped — לוג בלי side-effect כדי שנדע
-            // שהמשתמש דיווח אבל לא הצליחנו להתאים את ההרגל.
-            console.info('[ai/chat]', {
-              debug_id: debugId,
-              stage: `${finishStage}_habit_reported_no_match`,
-              category: habitIntent.intent.category,
-              habit_title: habitIntent.intent.habitTitle,
+              error: habitErr instanceof Error ? habitErr.message : String(habitErr),
             });
           }
-        } catch (habitErr) {
-          console.warn('[ai/chat]', {
-            debug_id: debugId,
-            stage: `${finishStage}_habit_intent`,
-            error: habitErr instanceof Error ? habitErr.message : String(habitErr),
-          });
-        }
+        });
 
-        try {
-          const weightResult = await applyWeightFromUserMessage(
-            supabase,
-            user.id,
-            lastUserText
-          );
-          if (weightResult.logged) {
-            console.info('[ai/chat]', {
+        after(async () => {
+          try {
+            const weightResult = await applyWeightFromUserMessage(
+              supabase,
+              user.id,
+              lastUserText
+            );
+            if (weightResult.logged) {
+              console.info('[ai/chat]', {
+                debug_id: debugId,
+                stage: `${finishStage}_weight_intent`,
+                weight_kg: weightResult.weightKg,
+              });
+            }
+          } catch (weightErr) {
+            console.warn('[ai/chat]', {
               debug_id: debugId,
               stage: `${finishStage}_weight_intent`,
-              weight_kg: weightResult.weightKg,
+              error: weightErr instanceof Error ? weightErr.message : String(weightErr),
             });
           }
-        } catch (weightErr) {
-          console.warn('[ai/chat]', {
-            debug_id: debugId,
-            stage: `${finishStage}_weight_intent`,
-            error: weightErr instanceof Error ? weightErr.message : String(weightErr),
-          });
-        }
+        });
 
-        try {
-          const taskIntent = await applyTaskIntentFromUserMessage(
-            supabase,
-            user.id,
-            lastUserText,
-            pendingTasks,
-            taskReportHint
-          );
-          if (taskIntent.marked && taskIntent.stepId && taskIntent.taskId) {
-            console.info('[ai/chat]', {
-              debug_id: debugId,
-              stage: `${finishStage}_task_intent`,
-              task_title: taskIntent.taskTitle,
-              category: taskIntent.category,
-            });
-            /**
-             * 🎉 celebration / 💙 support — נקרא תמיד, גם על failed/partial:
-             *   - done       → חגיגה רגילה עם סטריק.
-             *   - partial    → חגיגה רכה (מתייחס למה שבוצע).
-             *   - failed     → outcome=attempt_failed → מסר תמיכה (לא חגיגה).
-             *   - skipped    → לא מפעילים (זה לא ניצחון ולא כישלון).
-             */
-            const celebrationOutcome: 'completed' | 'attempt_failed' | null =
-              taskIntent.category === 'done' || taskIntent.category === 'partial'
-                ? 'completed'
-                : taskIntent.category === 'failed'
-                  ? 'attempt_failed'
-                  : null;
-            if (celebrationOutcome) {
-              const slotForCelebration = taskIntent.slot;
-              const wasAlreadyDone = taskIntent.wasAlreadyDone;
-              after(async () => {
+        after(async () => {
+          try {
+            const taskIntent = await applyTaskIntentFromUserMessage(
+              supabase,
+              user.id,
+              lastUserText,
+              pendingTasks,
+              taskReportHint
+            );
+            if (taskIntent.marked && taskIntent.stepId && taskIntent.taskId) {
+              console.info('[ai/chat]', {
+                debug_id: debugId,
+                stage: `${finishStage}_task_intent`,
+                task_title: taskIntent.taskTitle,
+                category: taskIntent.category,
+              });
+              const celebrationOutcome: 'completed' | 'attempt_failed' | null =
+                taskIntent.category === 'done' || taskIntent.category === 'partial'
+                  ? 'completed'
+                  : taskIntent.category === 'failed'
+                    ? 'attempt_failed'
+                    : null;
+              if (celebrationOutcome) {
                 try {
                   const admin = createAdminClient();
                   await sendTaskCompletionCelebration(admin, {
                     userId: user.id,
-                    stepId: taskIntent.stepId!,
-                    taskId: taskIntent.taskId!,
-                    slot: slotForCelebration ?? null,
+                    stepId: taskIntent.stepId,
+                    taskId: taskIntent.taskId,
+                    slot: taskIntent.slot ?? null,
                     outcome: celebrationOutcome,
-                    wasAlreadyDone,
+                    wasAlreadyDone: taskIntent.wasAlreadyDone,
                   });
                 } catch (celebrateErr) {
                   console.warn('[ai/chat]', {
@@ -3481,86 +3523,93 @@ export async function POST(request: Request) {
                       celebrateErr instanceof Error ? celebrateErr.message : String(celebrateErr),
                   });
                 }
+              }
+            }
+          } catch (taskErr) {
+            console.warn('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_task_intent`,
+              error: taskErr instanceof Error ? taskErr.message : String(taskErr),
+            });
+          }
+        });
+
+        after(async () => {
+          try {
+            const lifeCtx = await applyLifeContextFromUserMessage(
+              supabase,
+              user.id,
+              lastUserText
+            );
+            if (lifeCtx.stored || lifeCtx.cleared) {
+              console.info('[ai/chat]', {
+                debug_id: debugId,
+                stage: `${finishStage}_life_context`,
+                stored: lifeCtx.stored,
+                cleared: lifeCtx.cleared,
               });
             }
-          }
-        } catch (taskErr) {
-          console.warn('[ai/chat]', {
-            debug_id: debugId,
-            stage: `${finishStage}_task_intent`,
-            error: taskErr instanceof Error ? taskErr.message : String(taskErr),
-          });
-        }
-
-        try {
-          const lifeCtx = await applyLifeContextFromUserMessage(
-            supabase,
-            user.id,
-            lastUserText
-          );
-          if (lifeCtx.stored || lifeCtx.cleared) {
-            console.info('[ai/chat]', {
+          } catch (lifeCtxErr) {
+            console.warn('[ai/chat]', {
               debug_id: debugId,
               stage: `${finishStage}_life_context`,
-              stored: lifeCtx.stored,
-              cleared: lifeCtx.cleared,
+              error: lifeCtxErr instanceof Error ? lifeCtxErr.message : String(lifeCtxErr),
             });
           }
-        } catch (lifeCtxErr) {
-          console.warn('[ai/chat]', {
-            debug_id: debugId,
-            stage: `${finishStage}_life_context`,
-            error: lifeCtxErr instanceof Error ? lifeCtxErr.message : String(lifeCtxErr),
-          });
-        }
+        });
 
-        try {
-          const followUp = await applyJourneyFollowUpFromUserMessage(
-            supabase,
-            user.id,
-            lastUserText,
-            activeJourneyContext?.stepId ?? null
-          );
-          if (followUp.stored || followUp.cleared) {
-            console.info('[ai/chat]', {
+        after(async () => {
+          try {
+            const followUp = await applyJourneyFollowUpFromUserMessage(
+              supabase,
+              user.id,
+              lastUserText,
+              activeJourneyContext?.stepId ?? null
+            );
+            if (followUp.stored || followUp.cleared) {
+              console.info('[ai/chat]', {
+                debug_id: debugId,
+                stage: `${finishStage}_journey_follow_up`,
+                stored: followUp.stored,
+                cleared: followUp.cleared,
+              });
+            }
+          } catch (followUpErr) {
+            console.warn('[ai/chat]', {
               debug_id: debugId,
               stage: `${finishStage}_journey_follow_up`,
-              stored: followUp.stored,
-              cleared: followUp.cleared,
+              error: followUpErr instanceof Error ? followUpErr.message : String(followUpErr),
             });
           }
-        } catch (followUpErr) {
-          console.warn('[ai/chat]', {
-            debug_id: debugId,
-            stage: `${finishStage}_journey_follow_up`,
-            error: followUpErr instanceof Error ? followUpErr.message : String(followUpErr),
-          });
-        }
+        });
 
-        try {
-          const admin = createAdminClient();
-          const guideAccess = await applyGuideAccessFromSignals(
-            admin,
-            user.id,
-            lastUserText,
-            profileRow.ai_context
-          );
-          if (guideAccess.granted) {
-            console.info('[ai/chat]', {
+        after(async () => {
+          try {
+            const admin = createAdminClient();
+            const guideAccess = await applyGuideAccessFromSignals(
+              admin,
+              user.id,
+              lastUserText,
+              profileRow.ai_context
+            );
+            if (guideAccess.granted) {
+              console.info('[ai/chat]', {
+                debug_id: debugId,
+                stage: `${finishStage}_guide_access`,
+                guide: guideAccess.guideTitle,
+                signal: guideAccess.signal,
+                message: guideAccess.message,
+              });
+            }
+          } catch (guideAccessErr) {
+            console.warn('[ai/chat]', {
               debug_id: debugId,
               stage: `${finishStage}_guide_access`,
-              guide: guideAccess.guideTitle,
-              signal: guideAccess.signal,
-              message: guideAccess.message,
+              error:
+                guideAccessErr instanceof Error ? guideAccessErr.message : String(guideAccessErr),
             });
           }
-        } catch (guideAccessErr) {
-          console.warn('[ai/chat]', {
-            debug_id: debugId,
-            stage: `${finishStage}_guide_access`,
-            error: guideAccessErr instanceof Error ? guideAccessErr.message : String(guideAccessErr),
-          });
-        }
+        });
 
         /**
          * חילוץ זיכרון מאוחד (Llama 4) — *רקע מלא* דרך after(), לא חוסם את Qwen.
@@ -3640,15 +3689,8 @@ export async function POST(request: Request) {
         }
 
         /**
-         * חילוץ התחייבויות אלמוג (Llama 4 דרך OpenRouter/Groq) — רץ *סינכרונית*
-         * ב-onFinish, לא ב-after(). למה: ב-edge runtime ל-after() תקציב זמן מוגבל,
-         * וקריאת ה-LLM עלולה להיקטע *לפני* שהתזכורת נשמרת — ואז ההבטחה "נעלמת".
-         * הרצה סינכרונית מבטיחה שגם הזמן נפרס נכון וגם ה-notify_text נכתב דינמית
-         * ע"י Llama, באמינות מלאה. ה-LLM גם פותר זמנים ("בעוד 5 דקות"/"מחר בבוקר",
-         * כולל תיקון אחרי-חצות). אם ה-LLM נכשל — רשת הביטחון הדטרמיניסטית מכסה.
-         * Gating (recall-oriented): מריצים את ה-LLM כשיש *רמז כלשהו* — אלמוג רמז
-         * להתחייבות, או שמופיעה מילת-תזכורת בהודעת המשתמש/אלמוג. ההכרעה אם זו באמת
-         * בקשת תזכורת (ולא אזכור אגבי "המורה הזכירה לי") נעשית ע"י ההבנה של ה-LLM.
+         * חילוץ התחייבויות אלמוג — תור עמיד (DB) + עיבוד מיידי ב-after() כשניתן.
+         * לא חוסם סגירת stream. אם after() נקטע ב-Edge — cron/sync-reminders מנקזים.
          */
         if (
           shouldAttemptCommitmentExtraction(assistantText) ||
@@ -3656,80 +3698,58 @@ export async function POST(request: Request) {
           mentionsReminderKeyword(lastUserText) ||
           mentionsReminderKeyword(assistantText)
         ) {
-          await (async () => {
-            try {
-              const admin = createAdminClient();
-              /**
-               * חסמים פתוחים במעקב — מספקים ל-Llama כדי שיוכל לזהות שהמשתמש
-               * התקדם/התגבר על אחד מהם ולסגור את הלולאה (status improving/resolved).
-               */
-              const { data: openBlockerRows } = await admin
-                .from('almog_blockers')
-                .select('id, description')
-                .eq('user_id', user.id)
-                .in('status', ['open', 'improving'])
-                .order('identified_at', { ascending: false })
-                .limit(6);
-              const blockerTagToId = new Map<string, string>();
-              const openBlockers = ((openBlockerRows ?? []) as { id: string; description: string }[]).map(
-                (b, i) => {
-                  const tag = `B${i + 1}`;
-                  blockerTagToId.set(tag, b.id);
-                  return { tag, description: b.description };
+          try {
+            const admin = createAdminClient();
+            const habitTitleToId: Record<string, string> = {};
+            for (const h of journeyHabits) {
+              if (h.title && h.id) habitTitleToId[h.title] = h.id;
+            }
+            const enqueue = await enqueueAlmogCommitmentJob({
+              admin,
+              userId: user.id,
+              sessionId,
+              userMessage: lastUserText,
+              assistantMessage: assistantText,
+              rollingSummary: profileRow.ai_context.chat_summary,
+              habitTitles: journeyHabits.map((h) => h.title),
+              habitTitleToId,
+              relatedStepId: activeJourneyContext?.stepId ?? null,
+            });
+            if (enqueue.enqueued) {
+              console.info('[ai/chat]', {
+                debug_id: debugId,
+                stage: 'almog_commitments_enqueued',
+                job_id: enqueue.jobId ?? null,
+              });
+              const jobId = enqueue.jobId;
+              after(async () => {
+                try {
+                  await processPendingAlmogCommitmentJobs(createAdminClient(), {
+                    limit: 1,
+                    jobId,
+                    userId: user.id,
+                  });
+                } catch (commitErr) {
+                  console.warn('[ai/chat]', {
+                    debug_id: debugId,
+                    stage: 'almog_commitments_process_after_failed',
+                    error: commitErr instanceof Error ? commitErr.message : String(commitErr),
+                  });
                 }
-              );
-              const extraction = await extractAlmogCommitments({
-                userMessage: lastUserText,
-                assistantMessage: assistantText,
-                rollingSummary: profileRow.ai_context.chat_summary,
-                habitTitles: journeyHabits.map((h) => h.title),
-                openBlockers,
               });
-              const habitTitleToId = new Map(journeyHabits.map((h) => [h.title, h.id]));
-              const persistResult = await persistCommitmentExtraction({
-                admin,
-                userId: user.id,
-                sessionId,
-                extraction,
-                habitTitleToId,
-                blockerTagToId,
-                relatedStepId: activeJourneyContext?.stepId ?? null,
-                sourceExcerpt: lastUserText.slice(0, 280),
-              });
-              if (
-                persistResult.assignments_created ||
-                persistResult.reminders_created ||
-                persistResult.blockers_upserted ||
-                persistResult.blockers_updated ||
-                persistResult.focus_action !== 'none'
-              ) {
-                console.info('[ai/chat]', {
-                  debug_id: debugId,
-                  stage: 'almog_commitments_persisted',
-                  ...persistResult,
-                });
-              }
-              /**
-               * הצפה ייעודית של כשלי כתיבה: אלמוג חילץ התחייבות אבל היא לא נשמרה
-               * (לרוב service-role/RLS). בלי הלוג הזה התזכורת "נעלמת" בלי עקבה.
-               */
-              if (persistResult.write_errors > 0) {
-                console.error('[ai/chat]', {
-                  debug_id: debugId,
-                  stage: 'almog_commitments_write_errors',
-                  write_errors: persistResult.write_errors,
-                  extracted_reminders: extraction.reminders.length,
-                  extracted_tasks: extraction.tasks.length,
-                });
-              }
-            } catch (commitErr) {
+            } else {
               console.warn('[ai/chat]', {
                 debug_id: debugId,
-                stage: 'almog_commitments_failed',
-                error: commitErr instanceof Error ? commitErr.message : String(commitErr),
+                stage: 'almog_commitments_enqueue_failed',
               });
             }
-          })();
+          } catch (commitErr) {
+            console.warn('[ai/chat]', {
+              debug_id: debugId,
+              stage: 'almog_commitments_enqueue_error',
+              error: commitErr instanceof Error ? commitErr.message : String(commitErr),
+            });
+          }
         }
       };
 
@@ -3817,7 +3837,7 @@ export async function POST(request: Request) {
           userId: user.id,
           supabase,
           temperature: CHAT_TEMPERATURE,
-          maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
+          maxOutputTokens: effectiveMaxOutputTokens,
           headers: upstreamHeaders,
           piiShield,
           providerOptions: {},
@@ -3835,7 +3855,7 @@ export async function POST(request: Request) {
         dynamicSystemPrompt,
         recentMessages,
         temperature: CHAT_TEMPERATURE,
-        maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
+        maxOutputTokens: effectiveMaxOutputTokens,
         headers: upstreamHeaders,
         piiShield,
         reasoning: reasoningParam,
@@ -3908,7 +3928,7 @@ export async function POST(request: Request) {
           dynamicSystemPrompt,
           recentMessages,
           temperature: CHAT_TEMPERATURE,
-          maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
+          maxOutputTokens: effectiveMaxOutputTokens,
           headers: {
             ...upstreamHeaders,
             'x-ai-safety-net': 'grok-stream',

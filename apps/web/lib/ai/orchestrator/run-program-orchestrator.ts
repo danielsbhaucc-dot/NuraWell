@@ -62,8 +62,10 @@ type ProfileForOrchestration = {
 async function orchestratorTouchedToday(
   admin: SupabaseClient,
   userId: string,
-  now: Date
+  now: Date,
+  prefetched?: ReadonlySet<string>
 ): Promise<boolean> {
+  if (prefetched) return prefetched.has(userId);
   const todayKey = israelDateKey(now);
   const startIso = new Date(
     new Date(now.getTime()).setHours(0, 0, 0, 0) - 26 * 60 * 60 * 1000
@@ -86,6 +88,46 @@ async function orchestratorTouchedToday(
   return false;
 }
 
+/** Batch: מי כבר קיבל הצעת אורקסטרטור היום — שאילתה אחת במקום N+1. */
+async function prefetchOrchestratorTouchedToday(
+  admin: SupabaseClient,
+  userIds: string[],
+  now: Date
+): Promise<Set<string>> {
+  const touched = new Set<string>();
+  if (userIds.length === 0) return touched;
+  const todayKey = israelDateKey(now);
+  const startIso = new Date(
+    new Date(now.getTime()).setHours(0, 0, 0, 0) - 26 * 60 * 60 * 1000
+  ).toISOString();
+
+  const chunkSize = 80;
+  for (let i = 0; i < userIds.length; i += chunkSize) {
+    const chunk = userIds.slice(i, i + chunkSize);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await admin
+      .from('notifications')
+      .select('user_id, created_at, metadata')
+      .in('user_id', chunk)
+      .eq('type', 'ai_message')
+      .gte('created_at', startIso)
+      .limit(chunk.length * 20);
+
+    for (const row of (data ?? []) as Array<{
+      user_id?: string;
+      created_at?: string;
+      metadata?: { source?: string };
+    }>) {
+      if (row.metadata?.source !== PROGRAM_ORCHESTRATOR_SOURCE) continue;
+      if (typeof row.user_id !== 'string' || typeof row.created_at !== 'string') continue;
+      if (israelDateKey(new Date(row.created_at)) === todayKey) {
+        touched.add(row.user_id);
+      }
+    }
+  }
+  return touched;
+}
+
 /**
  * מטפל במשתמש בודד. תמיד מעדכן program_state; שולח הצעה רק אם עובר את כל
  * השערים. ב-dryRun לא כותב ולא שולח דבר.
@@ -93,7 +135,11 @@ async function orchestratorTouchedToday(
 export async function orchestrateProgramForUser(
   admin: SupabaseClient,
   profile: ProfileForOrchestration,
-  opts: { now?: Date; dryRun?: boolean } = {}
+  opts: {
+    now?: Date;
+    dryRun?: boolean;
+    touchedTodayUserIds?: ReadonlySet<string>;
+  } = {}
 ): Promise<OrchestrateUserResult> {
   const now = opts.now ?? new Date();
   const dryRun = opts.dryRun ?? false;
@@ -157,7 +203,7 @@ export async function orchestrateProgramForUser(
 
   if (dryRun) return { ...base, skippedReason: 'dry_run' };
 
-  if (await orchestratorTouchedToday(admin, profile.id, now)) {
+  if (await orchestratorTouchedToday(admin, profile.id, now, opts.touchedTodayUserIds)) {
     return { ...base, skippedReason: 'frequency_cap_today' };
   }
 
@@ -257,15 +303,36 @@ export async function runProgramOrchestrator(
   let processed = 0;
   let emitted = 0;
 
-  for (const profile of profiles) {
-    try {
-      const result = await orchestrateProgramForUser(admin, profile, { now, dryRun });
+  const touchedTodayUserIds = await prefetchOrchestratorTouchedToday(
+    admin,
+    profiles.map((p) => p.id),
+    now
+  ).catch(() => new Set<string>());
+
+  /** מקביליות מוגבלת — מפחית wall-clock בלי להציף את ה-DB/LLM. */
+  const concurrency = 4;
+  for (let i = 0; i < profiles.length; i += concurrency) {
+    const batch = profiles.slice(i, i + concurrency);
+    const results = await Promise.all(
+      batch.map(async (profile) => {
+        try {
+          return await orchestrateProgramForUser(admin, profile, {
+            now,
+            dryRun,
+            touchedTodayUserIds,
+          });
+        } catch (e) {
+          errors.push(`${profile.id}: ${e instanceof Error ? e.message : String(e)}`);
+          return null;
+        }
+      })
+    );
+    for (const result of results) {
+      if (!result) continue;
       processed++;
       by_state[result.state]++;
       if (result.emitted) emitted++;
       if (sample.length < 10) sample.push(result);
-    } catch (e) {
-      errors.push(`${profile.id}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 

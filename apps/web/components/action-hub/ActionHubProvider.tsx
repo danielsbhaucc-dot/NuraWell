@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from 'react';
@@ -77,10 +78,8 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
     router.push('/plans');
   }, [close, router]);
 
-  const value: ActionHubContextValue = {
-    open: () => setMenuOpen(true),
-    close,
-  };
+  const open = useCallback(() => setMenuOpen(true), []);
+  const value = useMemo<ActionHubContextValue>(() => ({ open, close }), [open, close]);
 
   return (
     <ActionHubContext.Provider value={value}>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { createAdminClient } from '../../../../../lib/supabase/admin';
 import { drainAlmogReminders } from '../../../../../lib/ai/almog-commitments/drain-reminders';
+import { processPendingAlmogCommitmentJobs } from '../../../../../lib/ai/almog-commitments/process-pending-commitment-jobs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,8 +23,18 @@ export async function POST(request: Request) {
   const { user } = auth;
 
   try {
-    const summary = await drainAlmogReminders(createAdminClient(), { userId: user.id });
-    return NextResponse.json({ ok: true, sent: summary.sent, deferred: summary.deferred ?? 0 });
+    const admin = createAdminClient();
+    const commitmentJobs = await processPendingAlmogCommitmentJobs(admin, {
+      userId: user.id,
+      limit: 4,
+    }).catch(() => ({ claimed: 0, processed: 0, failed: 0 }));
+    const summary = await drainAlmogReminders(admin, { userId: user.id });
+    return NextResponse.json({
+      ok: true,
+      sent: summary.sent,
+      deferred: summary.deferred ?? 0,
+      commitment_jobs: commitmentJobs,
+    });
   } catch (e) {
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : 'sync failed' },

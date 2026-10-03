@@ -17,6 +17,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Rocket, Heart, Sparkles, X } from 'lucide-react';
 import { AnimatedDialog } from '../shared/AnimatedDialog';
+import { runWhenIdle } from '../../lib/client/run-when-idle';
 
 type ProposalKind = 'level_up' | 'daily_kickoff' | 'pivot';
 
@@ -56,18 +57,21 @@ export function ProgramOrchestratorGate() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/v1/ai/program/proposal', { cache: 'no-store' });
-        if (!res.ok) return;
-        const json = (await res.json()) as ProposalResponse;
-        if (!cancelled && json.proposal) setProposal(json.proposal);
-      } catch {
-        /* שקט — זו שכבת עידוד, לא חוסמת */
-      }
-    })();
+    const cancelIdle = runWhenIdle(() => {
+      void (async () => {
+        try {
+          const res = await fetch('/api/v1/ai/program/proposal', { cache: 'no-store' });
+          if (!res.ok) return;
+          const json = (await res.json()) as ProposalResponse;
+          if (!cancelled && json.proposal) setProposal(json.proposal);
+        } catch {
+          /* שקט — זו שכבת עידוד, לא חוסמת */
+        }
+      })();
+    }, 2800);
     return () => {
       cancelled = true;
+      cancelIdle();
     };
   }, []);
 

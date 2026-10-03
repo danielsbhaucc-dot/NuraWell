@@ -1,10 +1,14 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { HandHeart } from 'lucide-react';
 
 import type { OnboardingGender } from '../../lib/onboarding/types';
-import { SosDialog } from './SosDialog';
+
+const SosDialog = dynamic(() => import('./SosDialog').then((m) => m.SosDialog), {
+  ssr: false,
+});
 
 type SosFocusTask = {
   id: string;
@@ -67,16 +71,18 @@ export function SosButton({ focusTasks = [], firstName = '', gender = '' }: SosB
         </span>
       </button>
 
-      <SosDialog
-        key={sessionKey}
-        open={open}
-        onClose={() => setOpen(false)}
-        focusTasks={focusTasks}
-        pendingTaskCount={pendingCount}
-        gateOnOpen={gateOnOpen}
-        firstName={firstName}
-        gender={gender}
-      />
+      {open ? (
+        <SosDialog
+          key={sessionKey}
+          open={open}
+          onClose={() => setOpen(false)}
+          focusTasks={focusTasks}
+          pendingTaskCount={pendingCount}
+          gateOnOpen={gateOnOpen}
+          firstName={firstName}
+          gender={gender}
+        />
+      ) : null}
     </>
   );
 }

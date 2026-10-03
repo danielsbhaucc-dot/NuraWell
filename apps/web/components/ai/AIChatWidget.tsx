@@ -17,8 +17,9 @@ import { NuraWellChatTransport } from '../../lib/client/nurawell-chat-transport'
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { useChatBackground } from '../../lib/client/useChatBackground';
-import { getPersonalGreeting } from '../../lib/time/greeting';
+import { usePersonalGreeting } from '../../lib/time/usePersonalGreeting';
 import {
+  consumePendingOpenAlmogChat,
   OPEN_ALMOG_CHAT_EVENT,
   PROFILE_ONBOARDING_CHAT_VISIBILITY_EVENT,
   type OpenAlmogChatDetail,
@@ -502,16 +503,18 @@ function ThreadHeaderIconButton({
 export interface AIChatWidgetProps {
   userId: string;
   firstName?: string;
+  /** נפתח מיד אחרי mount (טעינה עצלה מ-AIOverlaysClient). */
+  autoOpen?: boolean;
 }
 
-export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
-  const { avatarUrl: avatarSrc } = useAlmogAvatarUrl();
-  const { url: bgUrl, hasPhoto } = useChatBackground();
+export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidgetProps) {
   const overlayRoot = useAppOverlayRoot();
-  const greeting = getPersonalGreeting();
+  const greeting = usePersonalGreeting();
   const displayName = firstName?.trim() || '';
   const [mounted, setMounted] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen);
+  const { avatarUrl: avatarSrc } = useAlmogAvatarUrl({ enabled: open });
+  const { url: bgUrl, hasPhoto } = useChatBackground(open);
   const [sheetHeight, setSheetHeight] = useState('min(96dvh, 960px)');
   const [profileOnboardingOpen, setProfileOnboardingOpen] = useState(false);
   const [online, setOnline] = useState(true);
@@ -559,6 +562,49 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
       /* */
     }
   }, []);
+
+  const applyOpenDetail = useCallback((detail?: OpenAlmogChatDetail | null) => {
+    setOpen(true);
+    if (detail?.notificationId && detail.mentorMessage) {
+      setPanelView('thread');
+      setNotificationContext(detail);
+      notificationIdRef.current = detail.notificationId;
+      taskReportHintRef.current = null;
+      guideContextHintRef.current = null;
+      if (detail.initialReply?.trim()) {
+        pendingInitialReplyRef.current = detail.initialReply.trim();
+        setQuotedReply({
+          mentorMessage: detail.mentorMessage,
+          userReply: detail.initialReply.trim(),
+        });
+      } else {
+        pendingInitialReplyRef.current = null;
+        setQuotedReply(null);
+      }
+    } else {
+      setNotificationContext(null);
+      setQuotedReply(null);
+      notificationIdRef.current = null;
+      pendingInitialReplyRef.current = null;
+      taskReportHintRef.current = detail?.taskReportHint ?? null;
+      guideContextHintRef.current = detail?.guideContextHint ?? null;
+      const prefill = detail?.prefillText?.trim();
+      if (prefill) {
+        setPanelView('thread');
+        setInput(prefill);
+        writeChatInputDraft(sessionIdRef.current, prefill);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const pending = consumePendingOpenAlmogChat();
+    if (pending !== undefined) {
+      applyOpenDetail(pending);
+    } else if (autoOpen) {
+      setOpen(true);
+    }
+  }, [autoOpen, applyOpenDetail]);
 
   const refreshSessionList = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setSessionsLoading(true);
@@ -635,42 +681,11 @@ export function AIChatWidget({ userId, firstName }: AIChatWidgetProps) {
 
   useEffect(() => {
     const onOpenChat = (e: Event) => {
-      setOpen(true);
-      const detail = (e as CustomEvent<OpenAlmogChatDetail>).detail;
-      if (detail?.notificationId && detail.mentorMessage) {
-        setPanelView('thread');
-        setNotificationContext(detail);
-        notificationIdRef.current = detail.notificationId;
-        taskReportHintRef.current = null;
-        guideContextHintRef.current = null;
-        if (detail.initialReply?.trim()) {
-          pendingInitialReplyRef.current = detail.initialReply.trim();
-          setQuotedReply({
-            mentorMessage: detail.mentorMessage,
-            userReply: detail.initialReply.trim(),
-          });
-        } else {
-          pendingInitialReplyRef.current = null;
-          setQuotedReply(null);
-        }
-      } else {
-        setNotificationContext(null);
-        setQuotedReply(null);
-        notificationIdRef.current = null;
-        pendingInitialReplyRef.current = null;
-        taskReportHintRef.current = detail?.taskReportHint ?? null;
-        guideContextHintRef.current = detail?.guideContextHint ?? null;
-        const prefill = detail?.prefillText?.trim();
-        if (prefill) {
-          setPanelView('thread');
-          setInput(prefill);
-          writeChatInputDraft(sessionIdRef.current, prefill);
-        }
-      }
+      applyOpenDetail((e as CustomEvent<OpenAlmogChatDetail>).detail);
     };
     window.addEventListener(OPEN_ALMOG_CHAT_EVENT, onOpenChat);
     return () => window.removeEventListener(OPEN_ALMOG_CHAT_EVENT, onOpenChat);
-  }, []);
+  }, [applyOpenDetail]);
 
   useEffect(() => {
     const onVisibility = (e: Event) => {
