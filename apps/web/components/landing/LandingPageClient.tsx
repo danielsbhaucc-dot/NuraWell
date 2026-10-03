@@ -1314,7 +1314,11 @@ export function LandingPageClient() {
       </main>
 
       <footer className="landing-footer">
-        <nav className="landing-footer-links" aria-label="מסמכים משפטיים">
+        <nav className="landing-footer-links" aria-label="קישורים ציבוריים">
+          <Link href="/about">אודות</Link>
+          <span aria-hidden>·</span>
+          <Link href="/contact">צור קשר</Link>
+          <span aria-hidden>·</span>
           <Link href="/terms">תנאי שימוש</Link>
           <span aria-hidden>·</span>
           <Link href="/privacy">מדיניות פרטיות</Link>

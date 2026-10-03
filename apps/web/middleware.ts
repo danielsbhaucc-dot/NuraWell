@@ -9,7 +9,10 @@ import {
   requestHostname,
 } from './lib/ops-host';
 import { resolvePublicAppOriginForOpsRedirect } from './lib/public-app-url';
-import { APP_HOME_PATH } from './lib/navigation/app-home-path';
+import {
+  APP_HOME_PATH,
+  MARKETING_PATHS_REDIRECT_WHEN_AUTHED,
+} from './lib/navigation/app-home-path';
 import { handleChallengeMiddleware } from './lib/challenge/middleware-challenge';
 
 // ── CSP nonce ──────────────────────────────────────────────────────────────
@@ -327,6 +330,15 @@ export async function middleware(request: NextRequest) {
       bridge.searchParams.set('next', rawRedirect);
       return applySecurityHeaders(NextResponse.redirect(bridge));
     }
+    return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
+  }
+
+  /** משתמש מחובר ומאומת לא נשאר בדף שיווק מלא־רוחב מחוץ ל־phone shell */
+  if (
+    user &&
+    user.email_confirmed_at &&
+    MARKETING_PATHS_REDIRECT_WHEN_AUTHED.some((p) => pathname === p)
+  ) {
     return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
   }
 

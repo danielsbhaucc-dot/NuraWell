@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import type { ElementType, MouseEvent } from 'react';
+import type { ElementType } from 'react';
 import {
   BookOpen,
   ClipboardCheck,
@@ -13,24 +13,39 @@ import {
   UserRound,
 } from 'lucide-react';
 
-type QuickTile = {
+type LinkTile = {
+  kind: 'link';
   href: string;
   icon: ElementType;
   label: string;
   emoji: string;
   gradient: string;
   shadow: string;
-  onClick?: (e: MouseEvent<HTMLAnchorElement>) => void;
 };
+
+type ActionTile = {
+  kind: 'action';
+  icon: ElementType;
+  label: string;
+  emoji: string;
+  gradient: string;
+  shadow: string;
+  onClick: () => void;
+  ariaLabel: string;
+};
+
+type QuickTile = LinkTile | ActionTile;
 
 interface QuickAccessGridProps {
   simplifiedDashboard?: boolean;
+  /** פותח את רשימת משימות היום (לא קישור מת). */
   onOpenTasks: () => void;
 }
 
 export function QuickAccessGrid({ simplifiedDashboard = false, onOpenTasks }: QuickAccessGridProps) {
   const tiles: QuickTile[] = [
     {
+      kind: 'link',
       href: '/journey',
       icon: Route,
       label: 'המסע',
@@ -39,6 +54,7 @@ export function QuickAccessGrid({ simplifiedDashboard = false, onOpenTasks }: Qu
       shadow: '0 6px 16px rgba(4,120,87,0.22)',
     },
     {
+      kind: 'link',
       href: '/plans',
       icon: ListChecks,
       label: 'התוכנית',
@@ -47,18 +63,17 @@ export function QuickAccessGrid({ simplifiedDashboard = false, onOpenTasks }: Qu
       shadow: '0 6px 16px rgba(13,148,136,0.22)',
     },
     {
-      href: '#',
+      kind: 'action',
       icon: ClipboardCheck,
       label: 'משימות',
       emoji: '✓',
       gradient: 'linear-gradient(145deg, #059669 0%, #22c55e 70%)',
       shadow: '0 6px 16px rgba(5,150,105,0.22)',
-      onClick: (e) => {
-        e.preventDefault();
-        onOpenTasks();
-      },
+      onClick: onOpenTasks,
+      ariaLabel: 'פתח את רשימת המשימות להיום',
     },
     {
+      kind: 'link',
       href: '/progress',
       icon: TrendingUp,
       label: 'התקדמות',
@@ -70,6 +85,7 @@ export function QuickAccessGrid({ simplifiedDashboard = false, onOpenTasks }: Qu
       ? []
       : ([
           {
+            kind: 'link',
             href: '/guides',
             icon: BookOpen,
             label: 'מדריכים',
@@ -78,6 +94,7 @@ export function QuickAccessGrid({ simplifiedDashboard = false, onOpenTasks }: Qu
             shadow: '0 6px 16px rgba(217,119,6,0.22)',
           },
           {
+            kind: 'link',
             href: '/summaries',
             icon: FileText,
             label: 'סיכומים',
@@ -86,6 +103,7 @@ export function QuickAccessGrid({ simplifiedDashboard = false, onOpenTasks }: Qu
             shadow: '0 6px 16px rgba(37,99,235,0.22)',
           },
           {
+            kind: 'link',
             href: '/profile',
             icon: UserRound,
             label: 'פרופיל',
@@ -94,6 +112,7 @@ export function QuickAccessGrid({ simplifiedDashboard = false, onOpenTasks }: Qu
             shadow: '0 6px 16px rgba(219,39,119,0.22)',
           },
           {
+            kind: 'link',
             href: '/settings/almog',
             icon: Settings,
             label: 'אלמוג',
@@ -101,7 +120,7 @@ export function QuickAccessGrid({ simplifiedDashboard = false, onOpenTasks }: Qu
             gradient: 'linear-gradient(145deg, #047857 0%, #34d399 70%)',
             shadow: '0 6px 16px rgba(4,120,87,0.22)',
           },
-        ] as QuickTile[])),
+        ] as LinkTile[])),
   ];
 
   const colClass = simplifiedDashboard ? 'grid-cols-4' : 'grid-cols-4';
@@ -129,9 +148,13 @@ export function QuickAccessGrid({ simplifiedDashboard = false, onOpenTasks }: Qu
   );
 }
 
-function QuickTileCard({ tile }: { tile: QuickTile }) {
+function TileFace({
+  tile,
+}: {
+  tile: Pick<QuickTile, 'icon' | 'label' | 'emoji' | 'gradient' | 'shadow'>;
+}) {
   const Icon = tile.icon;
-  const inner = (
+  return (
     <div
       className="relative flex flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[14px] px-1 py-2 transition active:scale-[0.96]"
       style={{
@@ -159,18 +182,25 @@ function QuickTileCard({ tile }: { tile: QuickTile }) {
       </span>
     </div>
   );
+}
 
-  if (tile.onClick) {
+function QuickTileCard({ tile }: { tile: QuickTile }) {
+  if (tile.kind === 'action') {
     return (
-      <a href={tile.href} onClick={tile.onClick} className="block no-tap-highlight">
-        {inner}
-      </a>
+      <button
+        type="button"
+        onClick={tile.onClick}
+        aria-label={tile.ariaLabel}
+        className="block w-full no-tap-highlight"
+      >
+        <TileFace tile={tile} />
+      </button>
     );
   }
 
   return (
     <Link href={tile.href} prefetch className="block no-tap-highlight">
-      {inner}
+      <TileFace tile={tile} />
     </Link>
   );
 }
