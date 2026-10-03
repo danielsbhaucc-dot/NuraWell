@@ -6,6 +6,7 @@ import {
   MARKETING_PATHS_REDIRECT_WHEN_AUTHED,
   PUBLIC_HOME_PATH,
 } from '@/lib/navigation/app-home-path';
+import { getNotFoundLinks } from '@/lib/navigation/not-found-links';
 import { LEGAL_NAV } from '@/components/legal/legal-nav';
 
 const webRoot = resolve(__dirname, '..');
@@ -43,14 +44,32 @@ describe('public / app navigation link contracts', () => {
     expect(source).not.toMatch(/href=["']\/["']/);
   });
 
-  it('keeps the public 404 page on guest-safe routes', () => {
-    const source = readWeb('app/not-found.tsx');
-    expect(source).toContain('PUBLIC_HOME_PATH');
-    expect(source).toContain('href="/about"');
-    expect(source).toContain('href="/contact"');
-    expect(source).not.toContain('href="/home"');
-    expect(source).not.toContain('href="/journey"');
-    expect(source).not.toContain('חזרה למדריכים');
+  it('keeps guest 404 CTAs on public routes only', () => {
+    const guest = getNotFoundLinks(false);
+    expect(guest.primary.href).toBe(PUBLIC_HOME_PATH);
+    expect(guest.secondary.map((l) => l.href)).toEqual(['/login', '/about', '/contact']);
+    expect(guest.secondary.some((l) => l.href === APP_HOME_PATH || l.href === '/journey')).toBe(
+      false,
+    );
+  });
+
+  it('gives authenticated 404 CTAs app routes, not login/signup', () => {
+    const authed = getNotFoundLinks(true);
+    expect(authed.primary.href).toBe(APP_HOME_PATH);
+    expect(authed.secondary.map((l) => l.href)).toEqual(['/journey', '/guides']);
+    expect(authed.secondary.some((l) => l.href === '/login' || l.label.includes('כניסה'))).toBe(
+      false,
+    );
+  });
+
+  it('wires the 404 page to resolve auth and render auth-aware CTAs', () => {
+    const page = readWeb('app/not-found.tsx');
+    const client = readWeb('components/not-found/NotFoundClient.tsx');
+    expect(page).toContain('getUser');
+    expect(page).toContain('NotFoundClient');
+    expect(page).toContain('isAuthenticated');
+    expect(client).toContain('getNotFoundLinks');
+    expect(client).toContain('isAuthenticated');
   });
 
   it('exposes about and contact in legal nav (middleware already allows them)', () => {
