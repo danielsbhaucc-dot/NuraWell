@@ -38,7 +38,7 @@ type Assignment = {
   title: string;
   reason: string | null;
   detail: string | null;
-  status: 'active' | 'frozen' | 'completed' | 'dropped';
+  status: 'proposed' | 'active' | 'frozen' | 'completed' | 'dropped';
   schedule: 'one_time' | 'daily' | 'weekly';
   given_at: string;
   due_at: string | null;
@@ -126,6 +126,8 @@ function buildRecoveryPlans(assignments: Assignment[], blockers: Blocker[]): Rec
 type Payload = {
   tables_ready: boolean;
   assignments: Assignment[];
+  /** M2: משימות דומות שממתינות לאישור. */
+  proposed?: Assignment[];
   completed: Assignment[];
   reminders: Reminder[];
   blockers: Blocker[];
@@ -195,7 +197,7 @@ async function postBlockerAction(body: Record<string, string>): Promise<Record<s
   return (await res.json()) as Record<string, unknown>;
 }
 
-async function postAction(body: Record<string, string>) {
+async function postAction(body: Record<string, unknown>) {
   const res = await fetch('/api/v1/almog-assignments', {
     method: 'POST',
     credentials: 'include',
@@ -596,6 +598,67 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                 </FocusShell>
               ) : null}
             </AnimatePresence>
+
+            {(data.proposed?.length ?? 0) > 0 ? (
+              <section
+                dir="rtl"
+                className="rounded-3xl px-4 py-4 space-y-3"
+                style={glassStyle('amber')}
+              >
+                <div className="text-right">
+                  <p className="text-[14px] font-black text-amber-950">משימות דומות לאישור</p>
+                  <p className="text-[12px] text-amber-900/75 mt-0.5">
+                    אלמוג הציע ניסוח קרוב למשימה שכבר יש לך — אפשר לאשר או לדחות
+                  </p>
+                </div>
+                {(data.proposed ?? []).map((a) => (
+                  <div
+                    key={a.id}
+                    className="rounded-2xl px-3.5 py-3"
+                    style={{
+                      background: 'rgba(255,255,255,0.65)',
+                      border: '1px solid rgba(245,158,11,0.3)',
+                    }}
+                  >
+                    <p className="text-[15px] font-black text-amber-950 leading-snug">{a.title}</p>
+                    {a.reason ? (
+                      <p className="mt-1 text-[12px] text-amber-900/75 leading-relaxed">{a.reason}</p>
+                    ) : null}
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        disabled={busyId === `prop-${a.id}`}
+                        onClick={() =>
+                          void run(`prop-${a.id}`, () =>
+                            postAction({ action: 'approve', assignment_id: a.id })
+                          )
+                        }
+                        className="rounded-xl py-2.5 text-[12px] font-black text-white disabled:opacity-60"
+                        style={{ background: 'linear-gradient(145deg, #047857, #10b981)' }}
+                      >
+                        אשר
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === `prop-${a.id}`}
+                        onClick={() =>
+                          void run(`prop-${a.id}`, () =>
+                            postAction({ action: 'decline', assignment_id: a.id })
+                          )
+                        }
+                        className="rounded-xl py-2.5 text-[12px] font-black text-amber-950 disabled:opacity-60"
+                        style={{
+                          background: 'rgba(255,251,235,0.9)',
+                          border: '1px solid rgba(245,158,11,0.35)',
+                        }}
+                      >
+                        דחה
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </section>
+            ) : null}
 
             {secondaryCount > 0 ? (
               <details

@@ -525,6 +525,9 @@ export function HomeClient({
           setTasksPopupOpen(false);
           progressReport.open('task_execution');
         }}
+        onAlmogMarked={() => {
+          void refreshTasks();
+        }}
         onOpenChat={(prefill, hint) => {
           if (hint) dispatchOpenAlmogChatWithTaskReport(prefill, hint);
           else dispatchOpenAlmogChatWithPrefill(prefill);

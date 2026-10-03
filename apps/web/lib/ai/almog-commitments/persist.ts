@@ -15,6 +15,12 @@ import {
   schedulePreciseReminderDelivery,
 } from './schedule-precise-reminder';
 import { israelDayOffsetToUtcIso, israelHour } from './time';
+import {
+  normalizeTitleKey,
+  titlesAreSimilar,
+} from './title-similarity';
+
+export { titlesAreSimilar } from './title-similarity';
 
 type Admin = SupabaseClient;
 
@@ -86,43 +92,7 @@ async function insertDeduped(
 
 /** מנרמל טקסט עברי/אנגלי למפתח dedupe יציב. */
 function dedupeKey(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 80);
-}
-
-/** אסימונים משמעותיים להשוואת דמיון (M2). */
-function significantTokens(text: string): Set<string> {
-  const stop = new Set(['של', 'את', 'על', 'עם', 'או', 'גם', 'זה', 'זו', 'היא', 'הוא', 'אני', 'כל', 'רק']);
-  return new Set(
-    dedupeKey(text)
-      .split(' ')
-      .filter((t) => t.length >= 2 && !stop.has(t))
-  );
-}
-
-/**
- * דמיון חלקי בין כותרות — Jaccard על אסימונים, או הכלה כמעט מלאה.
- * מונע לולאת "כוסות ליד הצלחת" / "חצי כוס" מסיכומי שיחה.
- */
-export function titlesAreSimilar(a: string, b: string, threshold = 0.55): boolean {
-  const ta = significantTokens(a);
-  const tb = significantTokens(b);
-  if (ta.size === 0 || tb.size === 0) return false;
-  let intersection = 0;
-  for (const t of ta) if (tb.has(t)) intersection += 1;
-  const union = ta.size + tb.size - intersection;
-  if (union === 0) return false;
-  const jaccard = intersection / union;
-  if (jaccard >= threshold) return true;
-  const smaller = ta.size <= tb.size ? ta : tb;
-  const larger = ta.size <= tb.size ? tb : ta;
-  let contained = 0;
-  for (const t of smaller) if (larger.has(t)) contained += 1;
-  return contained / smaller.size >= 0.8;
+  return normalizeTitleKey(text);
 }
 
 async function fetchActiveAssignmentTitles(admin: Admin, userId: string): Promise<string[]> {

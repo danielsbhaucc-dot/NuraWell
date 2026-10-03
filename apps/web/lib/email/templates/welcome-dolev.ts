@@ -89,7 +89,7 @@ export function buildWelcomeDolevEmailHtml(
     <tr><td align="center" dir="rtl">
       <table dir="rtl" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(6,78,59,0.12);direction:rtl">
         <tr><td dir="rtl" style="background:linear-gradient(135deg,#0f766e,#047857);padding:28px 24px;text-align:right">
-          <p style="margin:0;color:#d1fae5;font-size:13px;direction:rtl;text-align:right">Dolev NuraWell.ai</p>
+          <p style="margin:0;color:#d1fae5;font-size:13px;direction:rtl;text-align:right">Dolev · NuraWell</p>
           <h1 style="margin:8px 0 0;color:#fff;font-size:22px;direction:rtl;text-align:right">${copy.headline}</h1>
         </td></tr>
         <tr><td dir="rtl" style="padding:24px;text-align:right;direction:rtl">

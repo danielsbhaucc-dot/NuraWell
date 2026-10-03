@@ -4,7 +4,12 @@
  * רץ ב-after() על Llama 4 ובטבלאות הייעודיות.
  */
 
-export type AlmogAssignmentStatus = 'active' | 'completed' | 'dropped' | 'frozen';
+export type AlmogAssignmentStatus =
+  | 'proposed'
+  | 'active'
+  | 'completed'
+  | 'dropped'
+  | 'frozen';
 export type AlmogAssignmentSchedule = 'one_time' | 'daily' | 'weekly';
 
 export interface AlmogAssignment {
@@ -35,7 +40,7 @@ export interface AlmogAssignment {
 
 export interface AssignmentHistoryEntry {
   at: string;
-  action: 'done' | 'dropped' | 'reactivated' | 'frozen';
+  action: 'done' | 'dropped' | 'reactivated' | 'frozen' | 'approved' | 'declined';
   note?: string;
 }
 

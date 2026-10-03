@@ -25,8 +25,10 @@ export const dynamic = 'force-dynamic';
 
 const actionSchema = z.union([
   z.object({
-    action: z.enum(['done', 'drop', 'reactivate']),
+    action: z.enum(['done', 'drop', 'reactivate', 'approve', 'decline']),
     assignment_id: z.string().uuid(),
+    /** כשמסמנים קבוצת כפילויות — משלימים/דוחים את כל המזהים. */
+    assignment_ids: z.array(z.string().uuid()).max(40).optional(),
   }),
   z.object({
     action: z.literal('rate_difficulty'),
@@ -73,49 +75,65 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
   const { supabase, user } = auth;
 
-  const [assignmentsRes, focusRes, completedRes, remindersRes, blockersRes] = await Promise.all([
-    supabase
-      .from('almog_assignments')
-      .select(
-        'id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id, source_excerpt, relation, parent_assignment_id, history, metadata'
-      )
-      .eq('user_id', user.id)
-      .in('status', ['active', 'frozen'])
-      .order('given_at', { ascending: false })
-      .limit(20),
-    supabase
-      .from('almog_focus_periods')
-      .select('id, status, reason, paused_scope, started_at, ends_at, user_confirmed, assignment_ids')
-      .eq('user_id', user.id)
-      .in('status', ['proposed', 'active'])
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    // משימות שהושלמו (חד-פעמיות) — מוצגות כ"הושלמו" כדי שיהיה תיעוד גלוי למשתמש.
-    supabase
-      .from('almog_assignments')
-      .select('id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id, source_excerpt')
-      .eq('user_id', user.id)
-      .eq('status', 'completed')
-      .order('last_done_at', { ascending: false, nullsFirst: false })
-      .limit(8),
-    supabase
-      .from('scheduled_reminders')
-      .select('id, kind, title, body, status, fire_at, sent_at, assignment_id, blocker_id')
-      .eq('user_id', user.id)
-      .in('status', ['pending', 'sent'])
-      .order('fire_at', { ascending: true })
-      .limit(20),
-    supabase
-      .from('almog_blockers')
-      .select('id, description, strategy, category, attempt_count, current_options, status, identified_at, last_checked_at, next_check_at, history, metadata, related_assignment_id')
-      .eq('user_id', user.id)
-      .in('status', ['open', 'improving'])
-      .order('identified_at', { ascending: false })
-      .limit(12),
-  ]);
+  const [assignmentsRes, proposedRes, focusRes, completedRes, remindersRes, blockersRes] =
+    await Promise.all([
+      supabase
+        .from('almog_assignments')
+        .select(
+          'id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id, source_excerpt, relation, parent_assignment_id, history, metadata'
+        )
+        .eq('user_id', user.id)
+        .in('status', ['active', 'frozen'])
+        .order('given_at', { ascending: false })
+        .limit(40),
+      // M2: משימות דומות שממתינות לאישור משתמש.
+      supabase
+        .from('almog_assignments')
+        .select(
+          'id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id, source_excerpt, relation, parent_assignment_id, history, metadata'
+        )
+        .eq('user_id', user.id)
+        .eq('status', 'proposed')
+        .order('given_at', { ascending: false })
+        .limit(20),
+      supabase
+        .from('almog_focus_periods')
+        .select('id, status, reason, paused_scope, started_at, ends_at, user_confirmed, assignment_ids')
+        .eq('user_id', user.id)
+        .in('status', ['proposed', 'active'])
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      // משימות שהושלמו (חד-פעמיות) — מוצגות כ"הושלמו" כדי שיהיה תיעוד גלוי למשתמש.
+      supabase
+        .from('almog_assignments')
+        .select(
+          'id, title, reason, detail, status, schedule, given_at, due_at, last_done_at, done_count, related_habit_id, source_excerpt'
+        )
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .order('last_done_at', { ascending: false, nullsFirst: false })
+        .limit(8),
+      supabase
+        .from('scheduled_reminders')
+        .select('id, kind, title, body, status, fire_at, sent_at, assignment_id, blocker_id')
+        .eq('user_id', user.id)
+        .in('status', ['pending', 'sent'])
+        .order('fire_at', { ascending: true })
+        .limit(20),
+      supabase
+        .from('almog_blockers')
+        .select(
+          'id, description, strategy, category, attempt_count, current_options, status, identified_at, last_checked_at, next_check_at, history, metadata, related_assignment_id'
+        )
+        .eq('user_id', user.id)
+        .in('status', ['open', 'improving'])
+        .order('identified_at', { ascending: false })
+        .limit(12),
+    ]);
 
   const assignments = assignmentsRes.data ?? [];
+  const proposed = proposedRes.data ?? [];
   const completed = completedRes.data ?? [];
   // מוני אלמוג לתאימות SSOT עם /user-task-snapshot (active|frozen = open).
   const almogActive = assignments.filter(
@@ -123,8 +141,16 @@ export async function GET(request: Request) {
   ).length;
 
   return NextResponse.json({
-    tables_ready: !hasMissingTable(assignmentsRes, focusRes, completedRes, remindersRes, blockersRes),
+    tables_ready: !hasMissingTable(
+      assignmentsRes,
+      proposedRes,
+      focusRes,
+      completedRes,
+      remindersRes,
+      blockersRes
+    ),
     assignments,
+    proposed,
     focus: focusRes.data ?? null,
     completed,
     reminders: remindersRes.data ?? [],
@@ -132,6 +158,7 @@ export async function GET(request: Request) {
     /** מונים תואמי SSOT — Plan/Journey צריכים להשוות ל-user-task-snapshot.counts.almog */
     ssot_counts: {
       almog_active: almogActive,
+      almog_proposed: proposed.length,
       almog_completed: completed.length,
     },
   });
@@ -317,9 +344,69 @@ export async function POST(request: Request) {
     });
   }
 
-  if (data.action !== 'done' && data.action !== 'drop' && data.action !== 'reactivate') {
+  if (
+    data.action !== 'done' &&
+    data.action !== 'drop' &&
+    data.action !== 'reactivate' &&
+    data.action !== 'approve' &&
+    data.action !== 'decline'
+  ) {
     return NextResponse.json({ ok: true });
   }
+
+  const targetIds = Array.from(
+    new Set([data.assignment_id, ...(data.assignment_ids ?? [])].filter(Boolean))
+  );
+
+  // M2: אישור / דחייה של משימה proposed (או קבוצת כפילויות).
+  if (data.action === 'approve' || data.action === 'decline') {
+    const { data: rows } = await admin
+      .from('almog_assignments')
+      .select('id, status, history, metadata')
+      .eq('user_id', user.id)
+      .in('id', targetIds);
+
+    if (!rows?.length) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    for (const raw of rows) {
+      const row = raw as {
+        id: string;
+        status: string;
+        history: AssignmentHistoryEntry[] | null;
+        metadata: Record<string, unknown> | null;
+      };
+      if (row.status !== 'proposed' && data.action === 'approve') continue;
+      if (row.status !== 'proposed' && data.action === 'decline') continue;
+      const history = Array.isArray(row.history) ? row.history : [];
+      const meta = { ...(row.metadata ?? {}) };
+      delete meta.needs_user_approval;
+      delete meta.similar_to_existing;
+
+      if (data.action === 'approve') {
+        await admin
+          .from('almog_assignments')
+          .update({
+            status: 'active',
+            history: [...history, { at: nowIso, action: 'approved' }].slice(-50),
+            metadata: meta,
+          })
+          .eq('id', row.id)
+          .eq('user_id', user.id);
+      } else {
+        await admin
+          .from('almog_assignments')
+          .update({
+            status: 'dropped',
+            history: [...history, { at: nowIso, action: 'declined' }].slice(-50),
+            metadata: meta,
+          })
+          .eq('id', row.id)
+          .eq('user_id', user.id);
+      }
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   const assignmentId = data.assignment_id;
   const { data: assignment } = await admin
     .from('almog_assignments')
@@ -362,6 +449,41 @@ export async function POST(request: Request) {
       .eq('id', row.id)
       .eq('user_id', user.id);
 
+    // כפילויות מקובצות: משלימים גם את שאר המזהים בקבוצה (בלי דירוג קושי).
+    const siblingIds = targetIds.filter((id) => id !== row.id);
+    for (const siblingId of siblingIds) {
+      const { data: sib } = await admin
+        .from('almog_assignments')
+        .select('id, status, done_count, history, schedule, relation')
+        .eq('id', siblingId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!sib || (sib.status !== 'active' && sib.status !== 'frozen')) continue;
+      const sibNext =
+        sib.schedule === 'one_time' && sib.relation !== 'eases' ? 'completed' : 'active';
+      const sibHistory = Array.isArray(sib.history) ? sib.history : [];
+      await admin
+        .from('almog_assignments')
+        .update({
+          status: sibNext,
+          last_done_at: nowIso,
+          done_count: (sib.done_count ?? 0) + 1,
+          history: [...sibHistory, { at: nowIso, action: 'done', note: 'grouped_sibling' }].slice(
+            -50
+          ),
+        })
+        .eq('id', siblingId)
+        .eq('user_id', user.id);
+      if (sibNext === 'completed') {
+        await admin
+          .from('scheduled_reminders')
+          .update({ status: 'cancelled' })
+          .eq('user_id', user.id)
+          .eq('assignment_id', siblingId)
+          .eq('status', 'pending');
+      }
+    }
+
     if (nextStatus === 'completed') {
       await admin
         .from('scheduled_reminders')
@@ -401,14 +523,24 @@ export async function POST(request: Request) {
       graduation,
     });
   } else if (data.action === 'drop') {
-    await admin
-      .from('almog_assignments')
-      .update({
-        status: 'dropped',
-        history: [...history, { at: nowIso, action: 'dropped' }].slice(-50),
-      })
-      .eq('id', row.id)
-      .eq('user_id', user.id);
+    for (const id of targetIds) {
+      const { data: dropRow } = await admin
+        .from('almog_assignments')
+        .select('id, history')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!dropRow) continue;
+      const dropHistory = Array.isArray(dropRow.history) ? dropRow.history : [];
+      await admin
+        .from('almog_assignments')
+        .update({
+          status: 'dropped',
+          history: [...dropHistory, { at: nowIso, action: 'dropped' }].slice(-50),
+        })
+        .eq('id', id)
+        .eq('user_id', user.id);
+    }
   } else if (data.action === 'reactivate') {
     await admin
       .from('almog_assignments')

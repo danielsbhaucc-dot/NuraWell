@@ -36,6 +36,6 @@ export function welcomeEmailCopy(
     cta: 'כניסה לאפליקציה',
     noReplyTop: '⚠️ אין להשיב לכתובת מייל זו — התיבה אינה מנוטרת',
     noReplyBottom: `שוב — אין להשיב למייל זה. ${supportLine}`,
-    textPlain: `⚠️ אין להשיב לכתובת מייל זו\n\n${name}, ${gc.welcome} ל-NuraWell!\n\n${intro}\n\n— דולב · Dolev NuraWell.ai`,
+    textPlain: `⚠️ אין להשיב לכתובת מייל זו\n\n${name}, ${gc.welcome} ל-NuraWell!\n\n${intro}\n\n— דולב · Dolev · NuraWell`,
   };
 }

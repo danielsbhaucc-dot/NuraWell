@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Drawer } from 'vaul';
-import { ClipboardCheck, Leaf, Loader2, Sparkles } from 'lucide-react';
+import { CheckCircle2, ClipboardCheck, Leaf, Loader2, Sparkles } from 'lucide-react';
 import { useAppOverlayRoot } from '../../lib/dom/use-app-overlay-root';
 import { emojiFromWellnessText } from '../../lib/emoji-from-text';
 import { parseJourneyReportItems } from '../../lib/journey/journey-report-parse';
@@ -27,6 +27,8 @@ import { TaskLevelProgressCard } from '../journey/TaskLevelProgressCard';
 import { computeHabitProgressSnapshot } from '../../lib/journey/habit-progress';
 import { computeTaskLevelProgressSnapshot } from '../../lib/journey/task-level-progress';
 import { parseJourneyTasksFull } from '../../lib/journey/journey-report-parse';
+import { fetchUserTaskSnapshot } from '../../lib/client/user-task-snapshot';
+import type { AlmogTodayRow } from '../../lib/tasks/user-task-ssot';
 
 type TaskStatus = 'accepted' | 'rejected' | 'pending';
 
@@ -158,6 +160,7 @@ export function ProgressReportProvider({
   const [activeTab, setActiveTab] = useState<ProgressReportTabId>('task_execution');
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<JourneyReportResponse | null>(null);
+  const [almogOpen, setAlmogOpen] = useState<AlmogTodayRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -165,10 +168,14 @@ export function ProgressReportProvider({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/v1/journey-report', { cache: 'no-store' });
+      const [res, snapshot] = await Promise.all([
+        fetch('/api/v1/journey-report', { cache: 'no-store' }),
+        fetchUserTaskSnapshot(),
+      ]);
       const json = (await res.json()) as JourneyReportResponse & { error?: string };
       if (!res.ok) throw new Error(json.error || 'טעינה נכשלה');
       setData(json);
+      setAlmogOpen(snapshot?.almog_open ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'שגיאה');
     } finally {
@@ -220,6 +227,40 @@ export function ProgressReportProvider({
     },
     [load]
   );
+
+  const saveAlmogDone = useCallback(
+    async (task: AlmogTodayRow) => {
+      setSaving(task.id);
+      try {
+        const ids = task.groupedIds?.length ? task.groupedIds : [task.id];
+        const res = await fetch('/api/v1/almog-assignments', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'done',
+            assignment_id: task.id,
+            assignment_ids: ids,
+          }),
+        });
+        if (!res.ok) throw new Error('שמירת משימת אלמוג נכשלה');
+        await load();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'שגיאה בשמירה');
+      } finally {
+        setSaving(null);
+      }
+    },
+    [load]
+  );
+
+  const hasAcceptedJourney = useMemo(() => {
+    if (!data?.steps) return false;
+    return data.steps.some((s) => {
+      const tasks = parseItems(s.tasks);
+      return tasks.some((t) => s.progress?.task_statuses?.[t.id]?.status === 'accepted');
+    });
+  }, [data]);
 
   const value: ProgressReportContextValue = {
     open: (tab) => {
@@ -341,6 +382,63 @@ export function ProgressReportProvider({
                 <div className="space-y-5 pb-4">
                   {activeTab === 'task_execution' && (
                     <>
+                      {almogOpen.length > 0 ? (
+                        <div
+                          dir="rtl"
+                          className="glass-surface relative overflow-hidden rounded-[22px] px-3 py-3"
+                        >
+                          <span
+                            aria-hidden
+                            className="pointer-events-none absolute inset-x-4 top-px h-px"
+                            style={{
+                              background:
+                                'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+                            }}
+                          />
+                          <div className="relative flex items-center gap-2 justify-end mb-3">
+                            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+                            <h3 className="text-sm font-black text-emerald-950 truncate text-right">
+                              משימות מאלמוג
+                            </h3>
+                          </div>
+                          <div className="relative space-y-2">
+                            <p className="text-[11px] font-bold text-emerald-800/85 text-right">
+                              אותן משימות שרואים ב&quot;המשימות שלי&quot;
+                            </p>
+                            {almogOpen.map((t) => {
+                              const busy = saving === t.id;
+                              const similar = t.similarCount ?? 1;
+                              return (
+                                <button
+                                  key={t.id}
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() => void saveAlmogDone(t)}
+                                  className="glass-inset flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-right transition active:scale-[0.99] disabled:opacity-60"
+                                >
+                                  {busy ? (
+                                    <Loader2 className="h-5 w-5 shrink-0 animate-spin text-emerald-700" />
+                                  ) : (
+                                    <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+                                  )}
+                                  <span className="text-xl shrink-0" aria-hidden>
+                                    ✨
+                                  </span>
+                                  <span className="flex-1 text-right text-sm font-bold text-emerald-950 leading-snug">
+                                    {t.title}
+                                    {similar > 1 ? (
+                                      <span className="mt-0.5 block text-[10px] font-semibold text-emerald-800/65">
+                                        {similar} ניסוחים דומים · לחיצה מסמנת את כולם
+                                      </span>
+                                    ) : null}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
+
                       {data.steps.map((step) => {
                         const tasks = parseTaskItems(step.tasks);
                         const prog = step.progress;
@@ -442,13 +540,9 @@ export function ProgressReportProvider({
                           </div>
                         );
                       })}
-                      {data.steps.every((s) => {
-                        const tasks = parseItems(s.tasks);
-                        const accepted = tasks.filter((t) => s.progress?.task_statuses?.[t.id]?.status === 'accepted');
-                        return accepted.length === 0;
-                      }) && (
+                      {!hasAcceptedJourney && almogOpen.length === 0 && (
                         <p className="text-center text-sm text-emerald-900/70 py-12 px-4 leading-relaxed">
-                          עוד אין משימות שסימנת כמקובלות. בסיכום השיעור תלחץ &quot;מקובל עליי&quot; — ואז תוכל לדווח לי כאן על הביצוע.
+                          עוד אין משימות לדיווח. משימות מאלמוג או ממסע שקיבלת יופיעו כאן — ואז תוכל לסמן ביצוע.
                         </p>
                       )}
                     </>
