@@ -53,3 +53,6 @@ logs/
 /python
 .vercel
 .aider*
+
+# Local audit artifacts
+apps/web/.lighthouse-landing.json
