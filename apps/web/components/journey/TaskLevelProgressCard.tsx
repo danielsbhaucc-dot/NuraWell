@@ -81,9 +81,9 @@ export function TaskLevelProgressCard({
       className="rounded-2xl px-3 py-3 space-y-3"
       style={{
         background:
-          'linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(255,247,237,0.65) 100%)',
+          'linear-gradient(180deg, rgba(248,251,246,0.78) 0%, rgba(255,247,237,0.65) 100%)',
         border: '1px solid rgba(249,115,22,0.25)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
+        boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.85)',
       }}
     >
       <div className="flex items-start gap-2">

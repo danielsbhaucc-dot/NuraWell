@@ -59,7 +59,7 @@ export function LessonNav({
                     boxShadow: '0 6px 18px rgba(16,185,129,0.22)',
                   }
                 : {
-                    background: 'rgba(255,255,255,0.72)',
+                    background: 'rgba(248,251,246,0.72)',
                     border: '2px solid rgba(20,184,166,0.35)',
                     boxShadow: '0 4px 14px rgba(6,78,59,0.08)',
                   }

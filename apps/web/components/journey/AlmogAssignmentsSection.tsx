@@ -227,7 +227,7 @@ export function AlmogAssignmentsSection() {
           backdropFilter: 'blur(14px) saturate(160%)',
           WebkitBackdropFilter: 'blur(14px) saturate(160%)',
           border: '1px solid rgba(110,231,183,0.45)',
-          boxShadow: '0 8px 22px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.55)',
+          boxShadow: '0 8px 22px rgba(6,78,59,0.10), inset 0 1px 0 rgba(248,251,246,0.55)',
         }}
       >
         {/* כותרת אקורדיון */}
@@ -459,11 +459,11 @@ function FocusBanner({
       className="relative mb-3 overflow-hidden rounded-[22px]"
       style={{
         background:
-          'linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(236,253,245,0.88) 55%, rgba(209,250,229,0.82) 100%)',
+          'linear-gradient(135deg, rgba(248,251,246,0.92) 0%, rgba(236,253,245,0.88) 55%, rgba(209,250,229,0.82) 100%)',
         backdropFilter: 'blur(14px) saturate(150%)',
         WebkitBackdropFilter: 'blur(14px) saturate(150%)',
         border: '1px solid rgba(52,211,153,0.42)',
-        boxShadow: '0 8px 22px rgba(6,78,59,0.08), inset 0 1px 0 rgba(255,255,255,0.75)',
+        boxShadow: '0 8px 22px rgba(6,78,59,0.08), inset 0 1px 0 rgba(248,251,246,0.75)',
       }}
     >
       <div
@@ -528,7 +528,7 @@ function FocusBanner({
               disabled={busy}
               onClick={onDecline}
               className="flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-bold text-emerald-800 transition-transform active:scale-95 disabled:opacity-60"
-              style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(52,211,153,0.35)' }}
+              style={{ background: 'rgba(248,251,246,0.85)', border: '1px solid rgba(52,211,153,0.35)' }}
             >
               לא עכשיו
             </button>
@@ -540,7 +540,7 @@ function FocusBanner({
               disabled={busy}
               onClick={onEnd}
               className="w-full rounded-xl px-3 py-2.5 text-[13px] font-bold text-emerald-800 transition-transform active:scale-95 disabled:opacity-60"
-              style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(52,211,153,0.35)' }}
+              style={{ background: 'rgba(248,251,246,0.85)', border: '1px solid rgba(52,211,153,0.35)' }}
             >
               חזרתי לשגרה
             </button>
@@ -597,7 +597,7 @@ function ProposedAssignmentCard({
           onClick={onDecline}
           className="rounded-xl py-2 text-[12px] font-black text-amber-950 disabled:opacity-60"
           style={{
-            background: 'rgba(255,255,255,0.75)',
+            background: 'rgba(248,251,246,0.75)',
             border: '1px solid rgba(245,158,11,0.35)',
           }}
         >
@@ -634,7 +634,7 @@ function AssignmentCard({
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       className="relative overflow-hidden rounded-[20px]"
       style={{
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.72) 0%, rgba(236,253,245,0.55) 100%)',
+        background: 'linear-gradient(135deg, rgba(248,251,246,0.72) 0%, rgba(236,253,245,0.55) 100%)',
         backdropFilter: 'blur(14px) saturate(160%)',
         WebkitBackdropFilter: 'blur(14px) saturate(160%)',
         border: '1px solid rgba(110,231,183,0.4)',

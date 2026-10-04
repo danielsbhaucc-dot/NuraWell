@@ -83,7 +83,7 @@ export function GlassAudioPlayer({ src, title }: GlassAudioPlayerProps) {
       {/* גוון זכוכית צבעוני שמבליט את האפקט על רקע בהיר */}
       <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-emerald-300/30 via-teal-200/15 to-sky-300/25" />
       {/* נצנוץ רך בפינה — מראה של זכוכית אמיתית */}
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(80%_140%_at_0%_-10%,rgba(255,255,255,0.55),transparent_45%)]" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(80%_140%_at_0%_-10%,rgba(248,251,246,0.55),transparent_45%)]" />
       {/* קו הדגשה עליון (גימור זכוכית) */}
       <div className="pointer-events-none absolute inset-x-2 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-background-card/90 to-transparent" />
 

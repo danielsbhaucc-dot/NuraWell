@@ -397,7 +397,7 @@ export function ProgressReportProvider({
                             className="pointer-events-none absolute inset-x-4 top-px h-px"
                             style={{
                               background:
-                                'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+                                'linear-gradient(90deg, transparent, rgba(248,251,246,0.8), transparent)',
                             }}
                           />
                           <div className="relative flex items-center gap-2 justify-end mb-3">
@@ -462,7 +462,7 @@ export function ProgressReportProvider({
                               className="pointer-events-none absolute inset-x-4 top-px h-px"
                               style={{
                                 background:
-                                  'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+                                  'linear-gradient(90deg, transparent, rgba(248,251,246,0.8), transparent)',
                               }}
                             />
                             <div className="relative flex items-center gap-2 justify-end mb-3">
@@ -575,7 +575,7 @@ export function ProgressReportProvider({
                               className="pointer-events-none absolute inset-x-4 top-px h-px"
                               style={{
                                 background:
-                                  'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+                                  'linear-gradient(90deg, transparent, rgba(248,251,246,0.8), transparent)',
                               }}
                             />
                             <div className="relative flex items-center gap-2 justify-end mb-3">

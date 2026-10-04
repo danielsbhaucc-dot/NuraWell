@@ -199,7 +199,7 @@ export function CourseCard({ course, progress, isEnrolled, accentIndex = 0 }: Co
 
         {/* ── White Footer ── */}
         <div style={{
-          background: 'rgba(255,255,255,0.97)',
+          background: 'rgba(248,251,246,0.97)',
           padding: isEnrolled ? '10px 16px 14px' : '12px 16px',
           borderTop: '1px solid rgba(6,78,59,0.06)',
         }}>

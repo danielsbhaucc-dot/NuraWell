@@ -49,7 +49,7 @@ export function SosButton({ focusTasks = [], firstName = '', gender = '' }: SosB
           background: 'linear-gradient(165deg, #f8fbf6 0%, #faf7f4 55%, #f3f0ff 100%)',
           border: '1px solid rgba(148, 130, 180, 0.18)',
           boxShadow:
-            'inset 0 1px 0 rgba(255,255,255,0.95), 0 8px 28px rgba(55, 45, 75, 0.07)',
+            'inset 0 1px 0 rgba(248,251,246,0.95), 0 8px 28px rgba(55, 45, 75, 0.07)',
         }}
       >
         <span

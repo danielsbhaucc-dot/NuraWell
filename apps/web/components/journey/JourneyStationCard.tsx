@@ -43,7 +43,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
       )}
       style={{
         boxShadow:
-          '0 10px 28px rgba(6, 78, 59, 0.14), 0 2px 8px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.6)',
+          '0 10px 28px rgba(6, 78, 59, 0.14), 0 2px 8px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(248,251,246,0.6)',
       }}
       aria-label={`כניסה לתחנה ${index + 1}: ${group.title}`}
     >
@@ -173,7 +173,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
                 className="pointer-events-none absolute inset-x-2 top-px h-px"
                 style={{
                   background:
-                    'linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent)',
+                    'linear-gradient(90deg, transparent, rgba(248,251,246,0.75), transparent)',
                 }}
               />
               {isCompleted ? (

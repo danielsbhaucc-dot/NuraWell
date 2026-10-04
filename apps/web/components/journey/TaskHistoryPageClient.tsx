@@ -279,7 +279,7 @@ export function TaskHistoryPageClient() {
             className="pointer-events-none absolute inset-x-3 top-px h-px"
             style={{
               background:
-                'linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent)',
+                'linear-gradient(90deg, transparent, rgba(248,251,246,0.75), transparent)',
             }}
           />
           <p className="relative text-[10px] font-bold text-emerald-900/75">סך ביצועים (60 יום)</p>
@@ -291,7 +291,7 @@ export function TaskHistoryPageClient() {
             className="pointer-events-none absolute inset-x-3 top-px h-px"
             style={{
               background:
-                'linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent)',
+                'linear-gradient(90deg, transparent, rgba(248,251,246,0.75), transparent)',
             }}
           />
           <p className="relative text-[10px] font-bold text-sky-900/75">ימים פעילים (שבוע)</p>
@@ -318,7 +318,7 @@ export function TaskHistoryPageClient() {
             className="pointer-events-none absolute inset-x-4 top-px h-px"
             style={{
               background:
-                'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+                'linear-gradient(90deg, transparent, rgba(248,251,246,0.8), transparent)',
             }}
           />
           <div className="relative flex items-center justify-center gap-2">
@@ -363,7 +363,7 @@ export function TaskHistoryPageClient() {
               className="pointer-events-none absolute inset-x-4 top-px h-px"
               style={{
                 background:
-                  'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
+                  'linear-gradient(90deg, transparent, rgba(248,251,246,0.8), transparent)',
               }}
             />
             <div className="relative flex items-center justify-between mb-2">

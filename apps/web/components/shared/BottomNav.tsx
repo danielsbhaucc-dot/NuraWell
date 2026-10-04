@@ -48,10 +48,10 @@ export function BottomNav() {
       <div
         className="absolute inset-0"
         style={{
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.66) 0%, rgba(255,255,255,0.94) 100%)',
+          background: 'linear-gradient(180deg, rgba(248,251,246,0.66) 0%, rgba(248,251,246,0.94) 100%)',
           backdropFilter: 'blur(26px) saturate(190%)',
           WebkitBackdropFilter: 'blur(26px) saturate(190%)',
-          borderTop: '1px solid rgba(255,255,255,0.9)',
+          borderTop: '1px solid rgba(248,251,246,0.9)',
           boxShadow: '0 -12px 40px rgba(6,78,59,0.12)',
         }}
       />
@@ -83,7 +83,7 @@ export function BottomNav() {
               background: 'linear-gradient(155deg, #047857 0%, #059669 50%, #34d399 100%)',
               borderRadius: '50%',
               boxShadow: '0 12px 30px rgba(6,78,59,0.42), inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -6px 12px rgba(6,78,59,0.35)',
-              border: '2px solid rgba(255,255,255,0.55)',
+              border: '2px solid rgba(248,251,246,0.55)',
             }}
           >
             {/* ברק עליון רך (gloss) — לא קו מגירה */}

@@ -64,7 +64,7 @@ export function GuidesAlmogKnowledgePanel({ entries }: GuidesAlmogKnowledgePanel
               key={entry.courseId}
               className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm"
               style={{
-                background: entry.indexed ? 'rgba(255,255,255,0.72)' : 'rgba(254,243,199,0.5)',
+                background: entry.indexed ? 'rgba(248,251,246,0.72)' : 'rgba(254,243,199,0.5)',
                 border: `1px solid ${entry.indexed ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.3)'}`,
               }}
             >

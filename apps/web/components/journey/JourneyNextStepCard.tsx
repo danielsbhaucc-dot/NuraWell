@@ -70,14 +70,14 @@ export function JourneyNextStepCard() {
         borderRadius: '22px',
         border: '1px solid rgba(16,185,129,0.28)',
         boxShadow:
-          '0 10px 28px rgba(4,120,87,0.14), inset 0 1px 0 rgba(255,255,255,0.55)',
+          '0 10px 28px rgba(4,120,87,0.14), inset 0 1px 0 rgba(248,251,246,0.55)',
       }}
     >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-4 top-px h-px"
         style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(248,251,246,0.85), transparent)',
         }}
       />
 

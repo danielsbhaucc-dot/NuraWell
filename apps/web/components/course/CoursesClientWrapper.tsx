@@ -167,7 +167,7 @@ export function CoursesClientWrapper({
             style={{
               background: 'linear-gradient(135deg, #FFF8E7 0%, #FFFBF0 100%)',
               border: '1.5px solid rgba(245,166,35,0.35)',
-              boxShadow: '0 4px 20px rgba(245,166,35,0.12), inset 0 1px 0 rgba(255,255,255,0.9)',
+              boxShadow: '0 4px 20px rgba(245,166,35,0.12), inset 0 1px 0 rgba(248,251,246,0.9)',
             }}
           >
             <div

@@ -19,7 +19,7 @@ export default function DashboardLoading() {
       }}>
         {/* Progress card skeleton */}
         <div className="flex gap-3.5 items-center mb-3.5 p-4 animate-pulse"
-          style={{ background: 'rgba(255,255,255,0.92)', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.8)', boxShadow: '0 4px 20px rgba(6,78,59,0.08)' }}>
+          style={{ background: 'rgba(248,251,246,0.92)', borderRadius: '22px', border: '1px solid rgba(248,251,246,0.8)', boxShadow: '0 4px 20px rgba(6,78,59,0.08)' }}>
           <div className="w-[58px] h-[58px] rounded-[18px]" style={{ background: 'linear-gradient(145deg, #047857, #10b981)' }} />
           <div className="flex-1 space-y-2">
             <div className="h-4 w-32 rounded-lg" style={{ background: 'rgba(6,78,59,0.12)' }} />
@@ -55,7 +55,7 @@ export default function DashboardLoading() {
               </div>
               <div className="w-[42px] h-[42px] rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }} />
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.97)', padding: '12px 16px' }}>
+            <div style={{ background: 'rgba(248,251,246,0.97)', padding: '12px 16px' }}>
               <div className="h-3 w-full rounded-md mb-2" style={{ background: 'rgba(6,78,59,0.07)' }} />
               <div className="flex justify-between items-center">
                 <div className="h-3 w-20 rounded-md" style={{ background: 'rgba(6,78,59,0.08)' }} />

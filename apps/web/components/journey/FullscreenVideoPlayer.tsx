@@ -523,8 +523,8 @@ export function FullscreenVideoPlayer({
             <motion.div
               className="w-full max-w-md rounded-3xl p-5 sm:p-6"
               style={{
-                background: 'linear-gradient(165deg, rgba(255,255,255,0.72) 0%, rgba(236,253,245,0.55) 100%)',
-                border: '1px solid rgba(255,255,255,0.55)',
+                background: 'linear-gradient(165deg, rgba(248,251,246,0.72) 0%, rgba(236,253,245,0.55) 100%)',
+                border: '1px solid rgba(248,251,246,0.55)',
                 boxShadow: '0 24px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.45)',
                 backdropFilter: 'blur(18px)',
               }}
@@ -537,7 +537,7 @@ export function FullscreenVideoPlayer({
               <motion.div
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4 text-xs font-bold text-emerald-700"
                 style={{
-                  background: 'rgba(255,255,255,0.72)',
+                  background: 'rgba(248,251,246,0.72)',
                   border: '1px solid rgba(16,185,129,0.22)',
                   boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)',
                 }}
@@ -626,7 +626,7 @@ export function FullscreenVideoPlayer({
                             className="rounded-full px-2.5 py-1 text-[11px] font-black text-emerald-950"
                             style={{
                               background: 'linear-gradient(135deg, rgba(16,185,129,0.35), rgba(52,211,153,0.45))',
-                              border: '1px solid rgba(255,255,255,0.55)',
+                              border: '1px solid rgba(248,251,246,0.55)',
                               boxShadow: '0 4px 12px rgba(16,185,129,0.2)',
                             }}
                           >

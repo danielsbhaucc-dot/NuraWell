@@ -429,7 +429,7 @@ export function HomeClient({
                     borderRadius: '20px',
                     border: '1px solid rgba(245,166,35,0.35)',
                     boxShadow:
-                      '0 8px 24px rgba(245,166,35,0.14), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(255,255,255,0.10)',
+                      '0 8px 24px rgba(245,166,35,0.14), inset 0 1px 0 rgba(248,251,246,0.55), inset 0 -1px 0 rgba(255,255,255,0.10)',
                   }}
                 >
                   <div

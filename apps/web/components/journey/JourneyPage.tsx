@@ -623,7 +623,7 @@ function StatChips({
               className="pointer-events-none absolute inset-x-2 top-px h-px"
               style={{
                 background:
-                  'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
+                  'linear-gradient(90deg, transparent, rgba(248,251,246,0.7), transparent)',
               }}
             />
 
@@ -634,7 +634,7 @@ function StatChips({
                 background: palette.iconBg,
                 color: palette.iconColor,
                 boxShadow:
-                  'inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 6px rgba(2,44,34,0.25)',
+                  'inset 0 1px 0 rgba(248,251,246,0.6), 0 2px 6px rgba(2,44,34,0.25)',
               }}
             >
               {c.icon}
@@ -799,7 +799,7 @@ function AnimatedSparkle({ char, reduced }: { char: string; reduced: boolean }) 
       className="inline-block"
       style={{
         textShadow:
-          '0 0 14px rgba(252,211,77,0.7), 0 0 4px rgba(255,255,255,0.85)',
+          '0 0 14px rgba(252,211,77,0.7), 0 0 4px rgba(248,251,246,0.85)',
       }}
       animate={
         reduced
@@ -1072,9 +1072,9 @@ function ShootingStar() {
           width: 140,
           height: 2,
           background:
-            'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.95) 60%, rgba(167,243,208,0.95) 100%)',
+            'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(248,251,246,0.95) 60%, rgba(167,243,208,0.95) 100%)',
           borderRadius: 9999,
-          filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.95)) drop-shadow(0 0 14px rgba(167,243,208,0.7))',
+          filter: 'drop-shadow(0 0 6px rgba(248,251,246,0.95)) drop-shadow(0 0 14px rgba(167,243,208,0.7))',
           transform: 'rotate(-18deg)',
         }}
         initial={{ x: 0, opacity: 0 }}
@@ -1098,9 +1098,9 @@ function ShootingStar() {
           width: 110,
           height: 2,
           background:
-            'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.85) 60%, rgba(251,191,36,0.9) 100%)',
+            'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(248,251,246,0.85) 60%, rgba(251,191,36,0.9) 100%)',
           borderRadius: 9999,
-          filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.9)) drop-shadow(0 0 14px rgba(251,191,36,0.6))',
+          filter: 'drop-shadow(0 0 6px rgba(248,251,246,0.9)) drop-shadow(0 0 14px rgba(251,191,36,0.6))',
           transform: 'rotate(-12deg)',
         }}
         initial={{ x: 0, opacity: 0 }}
@@ -1147,7 +1147,7 @@ function FloatingSparkles() {
             top: s.top,
             width: s.size,
             height: s.size,
-            background: 'rgba(255, 255, 255, 0.9)',
+            background: 'rgba(248, 251, 246, 0.9)',
             boxShadow:
               '0 0 8px rgba(167,243,208,0.85), 0 0 14px rgba(110,231,183,0.6)',
           }}
@@ -1443,7 +1443,7 @@ function StationDetailView({
             className="pointer-events-none absolute inset-x-4 top-px h-px"
             style={{
               background:
-                'linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)',
+                'linear-gradient(90deg, transparent, rgba(248,251,246,0.85), transparent)',
             }}
           />
 
@@ -1585,7 +1585,7 @@ function StationHeader({
             className="pointer-events-none absolute inset-x-3 top-px h-px"
             style={{
               background:
-                'linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent)',
+                'linear-gradient(90deg, transparent, rgba(248,251,246,0.75), transparent)',
             }}
           />
           <ChevronRight
@@ -1776,7 +1776,7 @@ function StepsTimeline({
                       ? {
                           border: '1.5px solid rgba(16,185,129,0.45)',
                           boxShadow:
-                            '0 10px 28px rgba(16,185,129,0.22), inset 0 1px 0 rgba(255,255,255,0.65), inset 0 -1px 0 rgba(255,255,255,0.10), 0 0 0 4px rgba(16,185,129,0.08)',
+                            '0 10px 28px rgba(16,185,129,0.22), inset 0 1px 0 rgba(248,251,246,0.65), inset 0 -1px 0 rgba(255,255,255,0.10), 0 0 0 4px rgba(16,185,129,0.08)',
                         }
                       : undefined
                   }

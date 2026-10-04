@@ -167,7 +167,7 @@ function TileFace({
         aria-hidden
         className="pointer-events-none absolute inset-x-1 top-px h-px"
         style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(248,251,246,0.65), transparent)',
         }}
       />
       <span className="text-[14px] leading-none" aria-hidden>
