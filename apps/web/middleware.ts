@@ -354,16 +354,39 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && isPageRequest) {
-    supabase
-      .from('profiles')
-      .update({ last_active_at: new Date().toISOString() })
-      .eq('id', user.id)
-      .then(
-        () => {},
-        () => {
-          /* last_active_at update is best-effort — failure should not block navigation */
-        },
-      );
+    /**
+     * Throttle כתיבת last_active_at — לא בכל ניווט.
+     * Cookie קל מסמן מתי עודכנו לאחרונה (10 דק׳).
+     */
+    const LAST_ACTIVE_COOKIE = 'nw_la_at';
+    const LAST_ACTIVE_THROTTLE_MS = 10 * 60 * 1000;
+    const nowMs = Date.now();
+    const prevRaw = request.cookies.get(LAST_ACTIVE_COOKIE)?.value;
+    const prevMs = prevRaw ? Number(prevRaw) : 0;
+    const shouldTouchLastActive =
+      !Number.isFinite(prevMs) || prevMs <= 0 || nowMs - prevMs >= LAST_ACTIVE_THROTTLE_MS;
+
+    const lastActiveCookieOpts = {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30,
+      sameSite: 'lax' as const,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+    };
+
+    if (shouldTouchLastActive) {
+      supabase
+        .from('profiles')
+        .update({ last_active_at: new Date(nowMs).toISOString() })
+        .eq('id', user.id)
+        .then(
+          () => {},
+          () => {
+            /* last_active_at update is best-effort — failure should not block navigation */
+          },
+        );
+      response.cookies.set(LAST_ACTIVE_COOKIE, String(nowMs), lastActiveCookieOpts);
+    }
 
     const challengeRedirect = await handleChallengeMiddleware(
       request,
@@ -371,7 +394,12 @@ export async function middleware(request: NextRequest) {
       supabase,
       applySecurityHeaders,
     );
-    if (challengeRedirect) return challengeRedirect;
+    if (challengeRedirect) {
+      if (shouldTouchLastActive) {
+        challengeRedirect.cookies.set(LAST_ACTIVE_COOKIE, String(nowMs), lastActiveCookieOpts);
+      }
+      return challengeRedirect;
+    }
   }
 
   return applySecurityHeaders(response);

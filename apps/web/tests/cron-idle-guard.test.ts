@@ -162,7 +162,19 @@ describe('countDueCheckInsFromProfiles', () => {
 describe('evaluateCronIdleSkip', () => {
   const at0830 = new Date('2026-06-23T05:30:00.000Z');
 
-  it('onboarding-check-ins idle when no due check-ins and no due reminders', async () => {
+  it('onboarding-check-ins idle only when no onboarded users and no due reminders', async () => {
+    const admin = mockAdminOnboardingIdle({
+      profiles: [],
+      dueReminders: 0,
+    });
+    const result = await evaluateCronIdleSkip(admin, 'onboarding-check-ins', {
+      now: at0830,
+    });
+    expect(result.idle).toBe(true);
+    expect(result.counts.onboarded_profiles).toBe(0);
+  });
+
+  it('onboarding-check-ins stays active when onboarded users exist (orchestrator must tick)', async () => {
     const admin = mockAdminOnboardingIdle({
       profiles: [{ ai_check_in_times: ['14:00'] }],
       dueReminders: 0,
@@ -170,25 +182,24 @@ describe('evaluateCronIdleSkip', () => {
     const result = await evaluateCronIdleSkip(admin, 'onboarding-check-ins', {
       now: at0830,
     });
-    expect(result.idle).toBe(true);
-    expect(result.counts.due_check_ins_now).toBe(0);
+    expect(result.idle).toBe(false);
+    expect(result.counts.onboarded_profiles).toBe(1);
   });
 
-  it('onboarding-check-ins active when onboarded user has check-in due now', async () => {
+  it('onboarding-check-ins active with onboarded even when reminders due elsewhere', async () => {
     const admin = mockAdminOnboardingIdle({
-      profiles: [{ ai_check_in_times: ['08:45'] }],
-      dueReminders: 0,
+      profiles: [{ ai_check_in_times: ['22:00'] }],
+      dueReminders: 2,
     });
     const result = await evaluateCronIdleSkip(admin, 'onboarding-check-ins', {
       now: at0830,
     });
     expect(result.idle).toBe(false);
-    expect(result.counts.due_check_ins_now).toBe(1);
   });
 
-  it('onboarding-check-ins active when due reminders exist even without check-ins', async () => {
+  it('onboarding-check-ins active with due reminders even without onboarded profiles', async () => {
     const admin = mockAdminOnboardingIdle({
-      profiles: [{ ai_check_in_times: ['22:00'] }],
+      profiles: [],
       dueReminders: 2,
     });
     const result = await evaluateCronIdleSkip(admin, 'onboarding-check-ins', {

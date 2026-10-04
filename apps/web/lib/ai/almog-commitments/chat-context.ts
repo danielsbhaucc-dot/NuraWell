@@ -46,7 +46,6 @@ export async function fetchAlmogCommitmentContext(
   userId: string,
   opts: { needsAssignments: boolean; needsBlockers: boolean }
 ): Promise<AlmogCommitmentContext> {
-  void opts;
   const ctx: AlmogCommitmentContext = {
     activeAssignments: [],
     openBlockers: [],
@@ -106,8 +105,9 @@ export async function fetchAlmogCommitmentContext(
       .catch(() => null)
   );
 
-  const loadAssignments = true;
-  const loadBlockers = true;
+  /** לפי החלטת הנתב — focus/recovery/SOS נטענים תמיד למעלה. */
+  const loadAssignments = Boolean(opts.needsAssignments);
+  const loadBlockers = Boolean(opts.needsBlockers);
 
   if (loadAssignments) {
     tasks.push(

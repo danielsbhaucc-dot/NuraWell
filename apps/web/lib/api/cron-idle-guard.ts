@@ -141,15 +141,22 @@ export async function evaluateCronIdleSkip(
 
   switch (profile) {
     case 'onboarding-check-ins': {
-      const dueCheckIns = await countDuePersonalizedCheckIns(admin, now, windowMinutes);
-      const dueReminders = await countDueReminders(admin, now);
-      const challengeActive = await countExact(admin, 'challenge_enrollments', (q) =>
-        q.eq('status', 'active').eq('is_demo', false)
-      );
-      counts.due_check_ins_now = dueCheckIns;
-      counts.due_reminders = dueReminders;
-      counts.challenge_active_enrollments = challengeActive;
-      return { idle: isIdleWhenEmpty(dueCheckIns, dueReminders, challengeActive), counts };
+      /**
+       * חשוב לאיכות: כשיש משתמשים onboarded אסור לדלג על *כל* ה-tick רק כי
+       * אין check-in בחלון — האורקסטרטור/recovery חייבים לרוץ בין חלונות.
+       * idle גלובלי רק כשאין onboarded (ואז בודקים תזכורות יתומות).
+       */
+      if (onboarded === 0) {
+        const dueReminders = await countDueReminders(admin, now);
+        counts.due_check_ins_now = 0;
+        counts.due_reminders = dueReminders;
+        counts.challenge_active_enrollments = 0;
+        return { idle: isIdleWhenEmpty(dueReminders), counts };
+      }
+      counts.due_check_ins_now = -1;
+      counts.due_reminders = -1;
+      counts.challenge_active_enrollments = -1;
+      return { idle: false, counts };
     }
 
     case 'almog-reminders': {
@@ -169,13 +176,12 @@ export async function evaluateCronIdleSkip(
     }
 
     case 'master': {
-      const totalProfiles = await countExact(admin, 'profiles');
-      counts.profiles = totalProfiles;
+      /** פרופיל ghost (הרשמה חלקית) לא משאיר את master חי — רק onboarded / logs. */
       const pendingLogs = await countExact(admin, 'pending_chat_logs', (q) =>
         q.eq('processed', false)
       );
       counts.pending_chat_logs = pendingLogs;
-      return { idle: isIdleWhenEmpty(totalProfiles, pendingLogs), counts };
+      return { idle: isIdleWhenEmpty(onboarded, pendingLogs), counts };
     }
 
     case 'memory-consolidation': {
@@ -220,7 +226,7 @@ export function buildCronIdleSkipResponse(
     profile,
     counts,
     hint_he:
-      'אין check-in אישי בחלון הנוכחי ואין תזכורות שמגיעות ל-fire_at — דילגנו על cron כדי לחסוך CPU. ?force=1 לבדיקה מלאה; CRON_IDLE_SKIP=0 מבטל idle skip.',
+      'אין עבודה רלוונטית ל-cron (למשל אין משתמשים onboarded / תזכורות / לוגים) — דילגנו כדי לחסוך CPU. ?force=1 לבדיקה מלאה; CRON_IDLE_SKIP=0 מבטל idle skip.',
   };
   return NextResponse.json(payload);
 }

@@ -847,10 +847,22 @@ async function createOpenRouterTextStreamResponse({
 
         const finalText = piiShield ? piiShield.detokenizeText(accumulated) : accumulated;
 
-        await onFinish({
-          text: finalText,
-          usage,
-          finishReason,
+        /**
+         * סוגרים את ה-stream מיד — onFinish (persist/after/continuation ל-DB)
+         * ממשיך ברקע. הטקסט שכבר הוזרם לא משתנה; continuation של length
+         * נשמר ל-DB כמו קודם ולא נדחף מחדש ללקוח.
+         */
+        void Promise.resolve(
+          onFinish({
+            text: finalText,
+            usage,
+            finishReason,
+          })
+        ).catch((finishErr) => {
+          console.warn('[ai/chat]', {
+            stage: 'on_finish_background_failed',
+            error: finishErr instanceof Error ? finishErr.message : String(finishErr),
+          });
         });
         controller.close();
       } catch (err) {
@@ -961,10 +973,17 @@ async function createOpenRouterCheapTextResponse({
   if (!safeText) {
     throw new Error('OpenRouter cheap writer empty');
   }
-  await onFinish({
-    text: safeText,
-    usage: normalizeOpenRouterUsage(data.usage),
-    finishReason: data.choices?.[0]?.finish_reason ?? 'stop',
+  void Promise.resolve(
+    onFinish({
+      text: safeText,
+      usage: normalizeOpenRouterUsage(data.usage),
+      finishReason: data.choices?.[0]?.finish_reason ?? 'stop',
+    })
+  ).catch((finishErr) => {
+    console.warn('[ai/chat]', {
+      stage: 'cheap_on_finish_background_failed',
+      error: finishErr instanceof Error ? finishErr.message : String(finishErr),
+    });
   });
   return new Response(safeText, {
     status: 200,
@@ -2005,26 +2024,50 @@ async function fetchChatProfileRow(
   }
 }
 
-async function getActiveJourneyContext(
+type JourneyProgressSharedRow = {
+  step_id?: string | null;
+  is_completed?: boolean | null;
+  commitment_accepted?: boolean | null;
+  task_statuses?: unknown;
+  habits_progress?: unknown;
+  updated_at?: string;
+};
+
+async function fetchAllJourneyProgressRows(
   supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
   userId: string
-): Promise<ActiveJourneyContext> {
+): Promise<JourneyProgressSharedRow[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: progressData } = await supabase
+  const { data } = await supabase
     .from('journey_progress')
-    .select('step_id, commitment_accepted, task_statuses, habits_progress, updated_at')
-    .eq('user_id', userId)
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .select('step_id, is_completed, commitment_accepted, task_statuses, habits_progress, updated_at')
+    .eq('user_id', userId);
+  return Array.isArray(data) ? (data as JourneyProgressSharedRow[]) : [];
+}
 
-  const latestProgress = (progressData ?? null) as {
-    step_id?: string | null;
-    commitment_accepted?: boolean | null;
-    task_statuses?: unknown;
-    habits_progress?: unknown;
-    updated_at?: string;
-  } | null;
+async function getActiveJourneyContext(
+  supabase: Awaited<ReturnType<typeof createSupabaseForApiRoute>>['supabase'],
+  userId: string,
+  opts?: { progressRows?: JourneyProgressSharedRow[] | null }
+): Promise<ActiveJourneyContext> {
+  let latestProgress: JourneyProgressSharedRow | null = null;
+  if (opts?.progressRows) {
+    latestProgress =
+      [...opts.progressRows].sort(
+        (a, b) =>
+          new Date(b.updated_at ?? 0).getTime() - new Date(a.updated_at ?? 0).getTime()
+      )[0] ?? null;
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: progressData } = await supabase
+      .from('journey_progress')
+      .select('step_id, is_completed, commitment_accepted, task_statuses, habits_progress, updated_at')
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    latestProgress = (progressData ?? null) as JourneyProgressSharedRow | null;
+  }
   const stepId = latestProgress?.step_id ?? null;
   if (!stepId) return null;
 
@@ -2201,11 +2244,12 @@ export async function POST(request: Request) {
   stage = 'auth_ok';
 
   /**
-   * Rate limit per user. ראשון אחרי auth — לפני קריאה ל-DB/AI שעולה כסף.
-   * Edge-safe: בלי תלות ב-Node API. עם Upstash Redis אם הוגדר; אחרת in-memory
-   * per-instance (ראו `lib/api/rate-limit.ts`).
+   * Rate limit + body במקביל אחרי auth — בלתי תלויים; חוסך RTT קטן בכל בקשה.
    */
-  const rateResult = await consumeMultiRateLimits(user.id, 'ai_chat', chatRateLimitWindows());
+  const [rateResult, rawBody] = await Promise.all([
+    consumeMultiRateLimits(user.id, 'ai_chat', chatRateLimitWindows()),
+    readJsonBody(request),
+  ]);
   if (!rateResult.ok) {
     console.warn('[ai/chat]', {
       debug_id: debugId,
@@ -2221,7 +2265,6 @@ export async function POST(request: Request) {
   }
   stage = 'rate_ok';
 
-  const rawBody = await readJsonBody(request);
   if (!rawBody.ok) return rawBody.response;
 
   const parsed = chatBodySchema.safeParse(rawBody.value);
@@ -2258,6 +2301,11 @@ export async function POST(request: Request) {
   const trivialBypass =
     CHAT_TRIVIAL_BYPASS_ENABLED && isTrivialBypassEligible(lastUserText, earlySignals);
   const routerHistorySnippet = buildRouterHistorySnippet(messages);
+  /** מוקדם — מאפשר session/transcript/embed במקביל לנתב (בלי לשנות החלטות). */
+  const sessionId = parsed.data.session_id ?? crypto.randomUUID();
+  const notificationId = parsed.data.notification_id;
+  const taskReportHint = parsed.data.task_report_hint;
+  const historyWindow = chatHistoryWindow();
 
   /**
    * שליפות DB שאינן תלויות בהחלטת הנתב — מתחילות *לפני* ה-await של הנתב כדי לרוץ
@@ -2265,14 +2313,27 @@ export async function POST(request: Request) {
    * ה-DB במקום להצטבר עליהן. trivialBypass כבר ידוע כאן — אין שינוי תוצאה, רק תזמון.
    */
   const profilePromise = fetchChatProfileRow(supabase, user.id);
-  const journeyPromise = getActiveJourneyContext(supabase, user.id).catch((journeyCtxErr) => {
-    console.warn('[ai/chat]', {
-      debug_id: debugId,
-      stage: 'journey_context_read_failed',
-      error: journeyCtxErr instanceof Error ? journeyCtxErr.message : String(journeyCtxErr),
+  /** שאילתת progress אחת ל-context + cap RAG (בלי כפילות journey_progress). */
+  const journeyProgressRowsPromise = fetchAllJourneyProgressRows(supabase, user.id).catch(
+    (progressErr) => {
+      console.warn('[ai/chat]', {
+        debug_id: debugId,
+        stage: 'journey_progress_rows_failed',
+        error: progressErr instanceof Error ? progressErr.message : String(progressErr),
+      });
+      return [] as JourneyProgressSharedRow[];
+    }
+  );
+  const journeyPromise = journeyProgressRowsPromise
+    .then((rows) => getActiveJourneyContext(supabase, user.id, { progressRows: rows }))
+    .catch((journeyCtxErr) => {
+      console.warn('[ai/chat]', {
+        debug_id: debugId,
+        stage: 'journey_context_read_failed',
+        error: journeyCtxErr instanceof Error ? journeyCtxErr.message : String(journeyCtxErr),
+      });
+      return null;
     });
-    return null;
-  });
   const dailyContextPromise: Promise<[TodayChatTurn[], TodayAlmogTouch[]]> = Promise.all([
     fetchTodayChatTurns(supabase, user.id).catch(() => [] as TodayChatTurn[]),
     fetchTodayAlmogTouches(supabase, user.id).catch(() => [] as TodayAlmogTouch[]),
@@ -2297,6 +2358,43 @@ export async function POST(request: Request) {
     ? Promise.resolve([])
     : fetchUserGuideSummaries(supabase, user.id).catch(() => []);
   const challengeContextPromise = fetchChallengeAlmogContextBlock(supabase, user.id).catch(() => null);
+  const ensureSessionPromise = ensureChatSession(supabase, { sessionId, userId: user.id }).catch(
+    (sessionErr) => {
+      console.warn('[ai/chat]', {
+        debug_id: debugId,
+        stage: 'ensure_chat_session_failed',
+        error: sessionErr instanceof Error ? sessionErr.message : String(sessionErr),
+      });
+      return null;
+    }
+  );
+  const transcriptPromiseEarly = fetchChatSessionTranscript(supabase, {
+    sessionId,
+    userId: user.id,
+    limit: Math.max(historyWindow + 4, 8),
+  }).catch(() => []);
+  const pendingTasksPromise = fetchPendingAcceptedTasksForUser(supabase, user.id).catch(() => []);
+  const habitGapPromise = fetchHabitGapForChat(supabase, user.id).catch(() => null);
+  const notificationContextPromiseEarly = notificationId
+    ? fetchNotificationContextBlock(supabase, user.id, notificationId)
+    : Promise.resolve(null);
+  const almogNotificationsPromiseEarly = fetchRecentAlmogNotifications(supabase, user.id).catch(
+    () => []
+  );
+  const chatMemoryContextPromiseEarly = Promise.all([
+    fetchRecentClosedSessionSummaries(supabase, user.id, 5),
+    fetchLatestChatPeriodicSummaries(supabase, user.id),
+  ])
+    .then(([closedSessions, periodicSummaries]) => ({ closedSessions, periodicSummaries }))
+    .catch(() => ({ closedSessions: [], periodicSummaries: [] }));
+  /**
+   * Embedding ל-RAG — ספקולטיבי במקביל לנתב. כמעט תמיד נדרש (זיכרון נשאר גם ב-low-context).
+   * אם בסוף לא צריך RAG — התוצאה פשוט לא בשימוש; אין שינוי בתוכן התשובה.
+   */
+  const speculativeEmbedPromise =
+    isVectorRagRetrieveEnabled() || isSystemKnowledgeVectorConfigured()
+      ? embedTextForRag(lastUserText).catch(() => null)
+      : Promise.resolve(null);
 
   /**
    * הנתב רץ אחרי profile (sticky) אבל במקביל לשאר שליפות ה-DB שכבר התחילו.
@@ -2439,6 +2537,12 @@ export async function POST(request: Request) {
 
   const useHeavyContext = contextDecision.heavy_context;
 
+  /** אחרי החלטת הנתב — assignments/blockers לפי needs_* (focus/recovery תמיד בפנים). */
+  const commitmentContextPromise = fetchAlmogCommitmentContext(supabase, user.id, {
+    needsAssignments: Boolean(contextDecision.needs_assignments),
+    needsBlockers: Boolean(contextDecision.needs_blockers),
+  }).catch(() => EMPTY_ALMOG_COMMITMENT_CONTEXT);
+
   /**
    * חשיבה (reasoning) מותנית-תור — רכיב ה-TTFB הדומיננטי של Qwen. מפעילים אותה
    * רק כשבאמת צריך עומק (תור כבד: שאלה/רגש/חסם/התלבטות). תורים קלים (ברכה/אישור/
@@ -2451,20 +2555,7 @@ export async function POST(request: Request) {
     (CHAT_REASONING_SCOPE === 'always' || useHeavyContext);
   const reasoningParam = buildReasoningParam(useReasoningForTurn);
 
-  const sessionId = parsed.data.session_id ?? crypto.randomUUID();
-  const notificationId = parsed.data.notification_id;
-  const taskReportHint = parsed.data.task_report_hint;
-
-  const chatSession = await ensureChatSession(supabase, { sessionId, userId: user.id }).catch(
-    (sessionErr) => {
-      console.warn('[ai/chat]', {
-        debug_id: debugId,
-        stage: 'ensure_chat_session_failed',
-        error: sessionErr instanceof Error ? sessionErr.message : String(sessionErr),
-      });
-      return null;
-    }
-  );
+  const chatSession = await ensureSessionPromise;
 
   if (chatSession?.status === 'closed') {
     return new Response(
@@ -2495,15 +2586,31 @@ export async function POST(request: Request) {
 
   const journeyCapPromise =
     contextDecision.needs_journey_knowledge || contextDecision.needs_system_knowledge_rag
-    ? fetchJourneyProgressCapForRag(supabase, user.id).catch((capErr) => {
-        console.warn('[ai/chat]', {
-          debug_id: debugId,
-          stage: 'journey_cap_read_failed',
-          error: capErr instanceof Error ? capErr.message : String(capErr),
-        });
-        return null;
-      })
-    : Promise.resolve(null);
+      ? Promise.all([journeyProgressRowsPromise, journeyPromise])
+          .then(([rows, activeCtx]) =>
+            fetchJourneyProgressCapForRag(supabase, user.id, {
+              progressRows: rows.map((r) => ({
+                step_id: String(r.step_id ?? ''),
+                is_completed: Boolean(r.is_completed),
+                updated_at: r.updated_at ?? new Date(0).toISOString(),
+              })).filter((r) => r.step_id),
+              activeHint: activeCtx
+                ? {
+                    stepNumber: activeCtx.stepNumber ?? null,
+                    stationTitle: activeCtx.stationTitle ?? null,
+                  }
+                : null,
+            })
+          )
+          .catch((capErr) => {
+            console.warn('[ai/chat]', {
+              debug_id: debugId,
+              stage: 'journey_cap_read_failed',
+              error: capErr instanceof Error ? capErr.message : String(capErr),
+            });
+            return null;
+          })
+      : Promise.resolve(null);
 
   const enrolledPromise =
     contextDecision.needs_journey_knowledge ||
@@ -2519,21 +2626,11 @@ export async function POST(request: Request) {
       })
     : Promise.resolve([] as string[]);
 
-  const notificationContextPromise = notificationId
-    ? fetchNotificationContextBlock(supabase, user.id, notificationId)
-    : Promise.resolve(null);
-
-  const almogNotificationsPromise = fetchRecentAlmogNotifications(supabase, user.id).catch(
-    () => []
-  );
-
   let skipUserPersist = false;
   if (parsed.data.resume_assistant) {
     try {
-      const turns = await fetchChatSessionTranscript(supabase, {
-        sessionId,
-        userId: user.id,
-      });
+      /** משתמשים ב-transcript שכבר רץ במקביל לנתב — בלי שאילתה כפולה. */
+      const turns = await transcriptPromiseEarly;
       const lastTurn = turns[turns.length - 1];
       if (lastTurn?.role === 'user' && lastTurn.content.trim() === lastUserText) {
         skipUserPersist = true;
@@ -2547,35 +2644,35 @@ export async function POST(request: Request) {
     }
   }
 
-  const insertPromise = skipUserPersist
-    ? Promise.resolve()
-    : insertAiInteraction(supabase, {
-    user_id: user.id,
-    session_id: sessionId,
-    role: 'user',
-    content: lastUserText,
-    model_name: effectiveModel,
-    metadata: {
-      edge: true,
-      heavy_context: useHeavyContext,
-      context_router: {
-        reason: contextDecision.reason ?? null,
-        needs_user_memory_rag: contextDecision.needs_user_memory_rag,
-        needs_system_knowledge_rag: contextDecision.needs_system_knowledge_rag,
-        needs_full_progress_report: contextDecision.needs_full_progress_report,
-        needs_journey_knowledge: contextDecision.needs_journey_knowledge,
-        needs_principles: contextDecision.needs_principles,
-      },
-    },
-  }).catch((persistErr) => {
-    console.warn('[ai/chat]', {
-      debug_id: debugId,
-      stage: 'persist_user_turn_failed',
-      error: persistErr instanceof Error ? persistErr.message : String(persistErr),
-    });
-  });
-
+  /**
+   * Persist הודעת משתמש — לא חוסם TTFB. אותו תוכן/מטא כמו קודם.
+   */
   if (!skipUserPersist) {
+    void insertAiInteraction(supabase, {
+      user_id: user.id,
+      session_id: sessionId,
+      role: 'user',
+      content: lastUserText,
+      model_name: effectiveModel,
+      metadata: {
+        edge: true,
+        heavy_context: useHeavyContext,
+        context_router: {
+          reason: contextDecision.reason ?? null,
+          needs_user_memory_rag: contextDecision.needs_user_memory_rag,
+          needs_system_knowledge_rag: contextDecision.needs_system_knowledge_rag,
+          needs_full_progress_report: contextDecision.needs_full_progress_report,
+          needs_journey_knowledge: contextDecision.needs_journey_knowledge,
+          needs_principles: contextDecision.needs_principles,
+        },
+      },
+    }).catch((persistErr) => {
+      console.warn('[ai/chat]', {
+        debug_id: debugId,
+        stage: 'persist_user_turn_failed',
+        error: persistErr instanceof Error ? persistErr.message : String(persistErr),
+      });
+    });
     void bumpChatSessionTurn(supabase, {
       sessionId,
       userId: user.id,
@@ -2605,27 +2702,12 @@ export async function POST(request: Request) {
       })
     : Promise.resolve(null);
 
-  const chatMemoryContextPromise = Promise.all([
-    fetchRecentClosedSessionSummaries(supabase, user.id, 5),
-    fetchLatestChatPeriodicSummaries(supabase, user.id),
-  ])
-    .then(([closedSessions, periodicSummaries]) => ({ closedSessions, periodicSummaries }))
-    .catch(() => ({ closedSessions: [], periodicSummaries: [] }));
-
-  const historyWindow = chatHistoryWindow();
-  const transcriptPromise = fetchChatSessionTranscript(supabase, {
-    sessionId,
-    userId: user.id,
-    limit: Math.max(historyWindow + 4, 8),
-  }).catch(() => []);
-
   const [
     profileRow,
     activeJourneyContext,
     journeyCap,
     enrolledCourseIds,
     dailyContextBundle,
-    _userTurnInserted,
     notificationContextBlock,
     almogNotificationRecords,
     fullProgressReport,
@@ -2642,17 +2724,16 @@ export async function POST(request: Request) {
     journeyCapPromise,
     enrolledPromise,
     dailyContextPromise,
-    insertPromise,
-    notificationContextPromise,
-    almogNotificationsPromise,
+    notificationContextPromiseEarly,
+    almogNotificationsPromiseEarly,
     fullProgressReportPromise,
     memoryDossierPromise,
     mentorStrategyPromise,
     mentorUserContextPromise,
     guideSummariesPromise,
     challengeContextPromise,
-    chatMemoryContextPromise,
-    transcriptPromise,
+    chatMemoryContextPromiseEarly,
+    transcriptPromiseEarly,
   ]);
 
   const [todayChatTurns, todayAlmogTouches] = dailyContextBundle;
@@ -2799,7 +2880,7 @@ export async function POST(request: Request) {
 
     if (needUserRag || needSystemRag || needPrinciples || needConversationRag) {
       try {
-        const qv = await embedTextForRag(lastUserText);
+        const qv = (await speculativeEmbedPromise) ?? (await embedTextForRag(lastUserText));
         const [userMemoryBlock, skHits, principleHits, conversationMemoryBlock] = await Promise.all([
           needUserRag
             ? buildRelevantMemoriesPromptBlock({
@@ -2863,12 +2944,9 @@ export async function POST(request: Request) {
 
     const [returnSignals, pendingTasks, habitGap, commitmentContext] = await Promise.all([
       returnSignalsPromise,
-      fetchPendingAcceptedTasksForUser(supabase, user.id).catch(() => []),
-      fetchHabitGapForChat(supabase, user.id).catch(() => null),
-      fetchAlmogCommitmentContext(supabase, user.id, {
-        needsAssignments: true,
-        needsBlockers: true,
-      }).catch(() => EMPTY_ALMOG_COMMITMENT_CONTEXT),
+      pendingTasksPromise,
+      habitGapPromise,
+      commitmentContextPromise,
     ]);
     const commitmentBlocks = formatAlmogCommitmentBlocks(commitmentContext);
 

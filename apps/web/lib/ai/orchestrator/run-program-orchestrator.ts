@@ -37,7 +37,12 @@ const PROPOSAL_ICON: Record<ProgramProposalKind, string> = {
 };
 
 export const PROGRAM_ORCHESTRATOR_SOURCE = 'almog_program_orchestrator';
-const MAX_PROGRAM_ORCHESTRATIONS_PER_TICK = 150;
+/** ברירת מחדל; ניתן להוריד ב-prelaunch עם CRON_MAX_PROGRAM_ORCHESTRATIONS. */
+const MAX_PROGRAM_ORCHESTRATIONS_PER_TICK = (() => {
+  const raw = process.env.CRON_MAX_PROGRAM_ORCHESTRATIONS?.trim();
+  const n = raw ? Number(raw) : NaN;
+  return Number.isFinite(n) && n >= 1 && n <= 500 ? Math.floor(n) : 150;
+})();
 
 export type OrchestrateUserResult = {
   userId: string;

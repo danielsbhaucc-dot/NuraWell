@@ -9,14 +9,32 @@ export type JourneyRagProgressState = {
   totalStations: number;
 };
 
+export type JourneyProgressRowForRag = {
+  step_id: string;
+  is_completed: boolean;
+  updated_at: string;
+};
+
+export type JourneyCapActiveHint = {
+  stepNumber?: number | null;
+  stationTitle?: string | null;
+};
+
 /**
  * חישוב עד איזה מספר צעד מותר לשלוף מידע מערכת (RAG) — רק צעדים שהמשתמש נגע בהם או סיים;
  * אם כל הצעדים המפורסמים הושלמו — נפתח כל החומר.
+ *
+ * `progressRows` / `activeHint` אופציונליים — חוסכים שאילתות כפולות כשכבר נשלף
+ * journey_progress / הקשר פעיל באותה בקשה.
  */
 export async function fetchJourneyProgressCapForRag(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
-  userId: string
+  userId: string,
+  opts?: {
+    progressRows?: JourneyProgressRowForRag[] | null;
+    activeHint?: JourneyCapActiveHint | null;
+  }
 ): Promise<JourneyRagProgressState> {
   const { data: publishedSteps } = await supabase
     .from('journey_steps')
@@ -24,17 +42,18 @@ export async function fetchJourneyProgressCapForRag(
     .eq('is_published', true)
     .order('step_number');
 
-  const { data: progressRows } = await supabase
-    .from('journey_progress')
-    .select('step_id, is_completed, updated_at')
-    .eq('user_id', userId);
+  let progList: JourneyProgressRowForRag[];
+  if (opts?.progressRows) {
+    progList = opts.progressRows;
+  } else {
+    const { data: progressRows } = await supabase
+      .from('journey_progress')
+      .select('step_id, is_completed, updated_at')
+      .eq('user_id', userId);
+    progList = (progressRows ?? []) as JourneyProgressRowForRag[];
+  }
 
   const steps = (publishedSteps ?? []) as Array<{ id: string; step_number: number }>;
-  const progList = (progressRows ?? []) as Array<{
-    step_id: string;
-    is_completed: boolean;
-    updated_at: string;
-  }>;
 
   const progByStep = new Map(progList.map((p) => [p.step_id, p]));
 
@@ -56,26 +75,35 @@ export async function fetchJourneyProgressCapForRag(
     .from('journey_stations')
     .select('*', { count: 'exact', head: true });
 
-  const latest = [...progList].sort(
-    (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-  )[0];
+  let currentStationTitle: string | null = opts?.activeHint?.stationTitle ?? null;
+  let currentStepNumber: number | null =
+    typeof opts?.activeHint?.stepNumber === 'number' ? opts.activeHint.stepNumber : null;
 
-  let currentStationTitle: string | null = null;
-  let currentStepNumber: number | null = null;
+  if (currentStationTitle == null || currentStepNumber == null) {
+    const latest = [...progList].sort(
+      (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    )[0];
 
-  if (latest) {
-    const { data: stepRow } = await supabase
-      .from('journey_steps')
-      .select('step_number, journey_stations(title)')
-      .eq('id', latest.step_id)
-      .maybeSingle();
+    if (latest) {
+      const { data: stepRow } = await supabase
+        .from('journey_steps')
+        .select('step_number, journey_stations(title)')
+        .eq('id', latest.step_id)
+        .maybeSingle();
 
-    if (stepRow) {
-      currentStepNumber = stepRow.step_number as number;
-      const st = stepRow.journey_stations as { title?: string } | { title?: string }[] | null;
-      const title =
-        Array.isArray(st) && st[0] ? st[0].title : st && 'title' in st ? (st as { title?: string }).title : undefined;
-      currentStationTitle = title ?? null;
+      if (stepRow) {
+        if (currentStepNumber == null) currentStepNumber = stepRow.step_number as number;
+        if (currentStationTitle == null) {
+          const st = stepRow.journey_stations as { title?: string } | { title?: string }[] | null;
+          const title =
+            Array.isArray(st) && st[0]
+              ? st[0].title
+              : st && 'title' in st
+                ? (st as { title?: string }).title
+                : undefined;
+          currentStationTitle = title ?? null;
+        }
+      }
     }
   }
 
