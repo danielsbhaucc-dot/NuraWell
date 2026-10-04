@@ -35,7 +35,7 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 | `POST /api/v1/ai/cron/habit-checkpoints?slot=morning` | יומי 08:00 ישראל | `apps/web/app/api/v1/ai/cron/habit-checkpoints/route.ts` |
 | `POST /api/v1/ai/cron/habit-checkpoints?slot=midday`  | יומי 13:00 ישראל | אותו קובץ |
 | `POST /api/v1/ai/cron/habit-checkpoints?slot=evening` | יומי 20:00 ישראל | אותו קובץ |
-| `POST /api/v1/ai/cron/onboarding-check-ins` | כל 30 דקות (מומלץ) | `apps/web/app/api/v1/ai/cron/onboarding-check-ins/route.ts` |
+| `POST /api/v1/ai/cron/onboarding-check-ins` | כל 30 דקות (מומלץ) — ראו פיצול `?phase=` למטה | `apps/web/app/api/v1/ai/cron/onboarding-check-ins/route.ts` |
 | `POST /api/v1/ai/cron/almog-reminders` | אופציונלי (מאוחד ל-onboarding) | `apps/web/app/api/v1/ai/cron/almog-reminders/route.ts` |
 | `POST /api/v1/ai/cron/passive-presence` | יומי 13:00 ישראל | `apps/web/app/api/v1/ai/cron/passive-presence/route.ts` |
 | `POST /api/v1/ai/cron/chat-periodic-summaries?tier=daily` | יומי ~23:30 ישראל | `apps/web/app/api/v1/ai/cron/chat-periodic-summaries/route.ts` |
@@ -43,12 +43,33 @@ Upstash QStash הוא queue + scheduler. כשמגדירים שם **Schedule**, Q
 | `POST /api/v1/ai/cron/chat-periodic-summaries?tier=monthly` | 1 לחודש | אותו קובץ |
 | `POST /api/v1/ai/cron/auto-close-chat-sessions` | כל 1–2 שעות (מומלץ) | `apps/web/app/api/v1/ai/cron/auto-close-chat-sessions/route.ts` |
 
-**אתגר 14 יום** — אין schedules נפרדים:
+### פיצול `onboarding-check-ins` עם `?phase=` (מומלץ בעומס)
+
+בלי `phase` (או `phase=all`) רצים יחד באותו tick: תזכורות + אורקסטרטור + אתגר + check-ins —
+spike על DB/LLM. הקוד תומך בפיצול ל-schedules נפרדים ב-Upstash (אותה לוגיקה, פחות עומס שיא):
+
+| Schedule URL | תוכן | תדירות מומלצת |
+|---|---|---|
+| `.../onboarding-check-ins?phase=reminders` | sweep assignments + commitment jobs + drain תזכורות | כל 10–15 דק׳ |
+| `.../onboarding-check-ins?phase=orchestrator` | `runProgramOrchestrator` | כל 30 דק׳ (מפוזר מדקה אחרת) |
+| `.../onboarding-check-ins?phase=challenge` | לוגיקת אתגר 14 יום | כל 30 דק׳ |
+| `.../onboarding-check-ins?phase=checkins` | onboarding check-ins / QStash workflows | כל 30 דק׳ |
+
+אם משאירים schedule יחיד — השאירו בלי query (שווה ל-`phase=all`). אין צורך לשנות חתימת QStash.
+
+**מיגרציות קשורות לביצועי רקע** (לוודא שיושמו ב-Supabase לפני/עם הפריסה):
+
+| מיגרציה | תפקיד |
+|---|---|
+| `000086_pending_almog_commitment_jobs.sql` | תור עמיד לחילוץ התחייבויות (enqueue מחוץ ל-stream) |
+| `000087_ai_interactions_user_created_idx.sql` | אינדקס `(user_id, created_at)` + `profiles.program_state_updated_at` לאורקסטרטור |
+
+**אתגר 14 יום** — אין schedules נפרדים (אלא אם מפצלים עם `phase=challenge`):
 
 | לוגיקה | רץ בתוך | מתי |
 |---|---|---|
 | בוקר + סיום + סריקת הצלחות | `habit-checkpoints?slot=morning` | 08:00 ישראל |
-| חלון אכילה + ערב | `onboarding-check-ins` | כל ~30 דקות |
+| חלון אכילה + ערב | `onboarding-check-ins` (`phase=all` או `phase=challenge`) | כל ~30 דקות |
 
 ### Pre-Lapse Guardian ("רגע לפני") — בלי cron כל 30 דקות
 

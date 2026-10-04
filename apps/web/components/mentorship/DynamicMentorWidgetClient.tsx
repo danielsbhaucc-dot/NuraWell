@@ -11,9 +11,9 @@ import {
   pickNextTaskForNow,
   type UserScheduleProfile,
 } from '../../lib/journey/pick-next-task-for-now';
-import type { AlmogTodayRow } from '../../lib/tasks/user-task-ssot';
 import { fetchUserTaskSnapshot } from '../../lib/client/user-task-snapshot';
 import { fetchDashboardBrief } from '../../lib/client/dashboard-brief';
+import { runWhenIdle } from '../../lib/client/run-when-idle';
 
 type DashboardBrief = {
   headline: string;
@@ -35,59 +35,61 @@ export function DynamicMentorWidgetClient({
   const [brief, setBrief] = useState<DashboardBrief | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadContext = useCallback(async () => {
-    setLoading(true);
+  const loadSnapshot = useCallback(async () => {
     try {
-      const [json, briefJson] = await Promise.all([
-        fetchUserTaskSnapshot(),
-        fetchDashboardBrief(),
-      ]);
-
-      if (json) {
-        const pending = (json.journey_today ?? []).filter((t) => !t.done);
-        const picked = pickNextTaskForNow(pending, (json.user_schedule ?? {}) as UserScheduleProfile);
-        const journeyNext =
-          picked
-            ? (pending.find((t) => t.id === picked.taskId) ?? pending[0] ?? null)
-            : pending[0] ?? null;
-        if (journeyNext) {
-          setNextTask(journeyNext);
-        } else if ((json.almog_open ?? []).length > 0) {
-          const almog = json.almog_open![0]!;
-          setNextTask({
-            id: almog.id,
-            stepId: 'almog',
-            title: almog.title,
-            emoji: '✨',
-            stepTitle: 'מאלמוג',
-            stepNumber: 0,
-            pendingSlots: ['once'],
-            done: false,
-            schedule: 'one_time',
-            times_per_day: 1,
-            weekly_day: 0,
-            monthly_day: 1,
-            interval_days: 1,
-            meal_offset_minutes: null,
-            meal_timing: 'before',
-            meal_target: 'fixed',
-          });
-        } else {
-          setNextTask(null);
-        }
+      const json = await fetchUserTaskSnapshot();
+      if (!json) {
+        setNextTask(null);
+        return;
       }
-
-      if (briefJson?.headline && briefJson?.body) {
-        setBrief({ headline: briefJson.headline, body: briefJson.body });
+      const pending = (json.journey_today ?? []).filter((t) => !t.done);
+      const picked = pickNextTaskForNow(pending, (json.user_schedule ?? {}) as UserScheduleProfile);
+      const journeyNext = picked
+        ? (pending.find((t) => t.id === picked.taskId) ?? pending[0] ?? null)
+        : pending[0] ?? null;
+      if (journeyNext) {
+        setNextTask(journeyNext);
+      } else if ((json.almog_open ?? []).length > 0) {
+        const almog = json.almog_open![0]!;
+        setNextTask({
+          id: almog.id,
+          stepId: 'almog',
+          title: almog.title,
+          emoji: '✨',
+          stepTitle: 'מאלמוג',
+          stepNumber: 0,
+          pendingSlots: ['once'],
+          done: false,
+          schedule: 'one_time',
+          times_per_day: 1,
+          weekly_day: 0,
+          monthly_day: 1,
+          interval_days: 1,
+          meal_offset_minutes: null,
+          meal_timing: 'before',
+          meal_target: 'fixed',
+        });
+      } else {
+        setNextTask(null);
       }
+    } catch {
+      setNextTask(null);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadContext();
-  }, [loadContext]);
+    void loadSnapshot();
+    // brief — אותו SSOT כמו DashboardBriefCard; idle כדי לא להכפיל לחץ רשת ב-mount.
+    return runWhenIdle(() => {
+      void fetchDashboardBrief().then((briefJson) => {
+        if (briefJson?.headline && briefJson?.body) {
+          setBrief({ headline: briefJson.headline, body: briefJson.body });
+        }
+      });
+    }, 1800);
+  }, [loadSnapshot]);
 
   const name = firstName && firstName !== 'משתמש' ? firstName : null;
 
