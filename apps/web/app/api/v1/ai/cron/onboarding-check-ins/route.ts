@@ -111,17 +111,45 @@ async function runOnboardingCheckInsCron(request: Request) {
 
   if (runOrchestrator) {
     try {
-      orchestrator = await runProgramOrchestrator(createAdminClient(), { dryRun: isDryRun });
+      const adminForOrch = createAdminClient();
+      /** בלי משתמשים onboarded — אין מה לסרוק (pre-launch / DB ריק). */
+      const { count: onboardedCount, error: onboardedErr } = await adminForOrch
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('onboarding_completed', true);
+      if (onboardedErr) {
+        orchestrator = { error: onboardedErr.message };
+      } else if ((onboardedCount ?? 0) === 0) {
+        orchestrator = {
+          enabled: true,
+          scanned: 0,
+          processed: 0,
+          emitted: 0,
+          by_state: { ready_to_advance: 0, maintaining: 0, struggling: 0 },
+          errors: [],
+          sample: [],
+        };
+        recoveryOrchestration = {
+          processed: 0,
+          total_inquiries: 0,
+          total_plans: 0,
+          total_graduated: 0,
+          total_no_reply: 0,
+          total_follow_ups: 0,
+          errors: [],
+        };
+      } else {
+        orchestrator = await runProgramOrchestrator(adminForOrch, { dryRun: isDryRun });
+        try {
+          recoveryOrchestration = await runRecoveryOrchestrationBatch(adminForOrch, {
+            dryRun: isDryRun,
+          });
+        } catch (e) {
+          recoveryOrchestration = { error: e instanceof Error ? e.message : String(e) };
+        }
+      }
     } catch (e) {
       orchestrator = { error: e instanceof Error ? e.message : String(e) };
-    }
-
-    try {
-      recoveryOrchestration = await runRecoveryOrchestrationBatch(createAdminClient(), {
-        dryRun: isDryRun,
-      });
-    } catch (e) {
-      recoveryOrchestration = { error: e instanceof Error ? e.message : String(e) };
     }
   }
 

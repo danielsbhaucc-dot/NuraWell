@@ -24,11 +24,45 @@ export async function POST(request: Request) {
 
   try {
     const admin = createAdminClient();
-    const commitmentJobs = await processPendingAlmogCommitmentJobs(admin, {
-      userId: user.id,
-      limit: 4,
-    }).catch(() => ({ claimed: 0, processed: 0, failed: 0 }));
-    const summary = await drainAlmogReminders(admin, { userId: user.id });
+    const nowIso = new Date().toISOString();
+
+    const [{ count: dueReminders }, { count: pendingJobs }] = await Promise.all([
+      admin
+        .from('scheduled_reminders')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .lte('fire_at', nowIso),
+      admin
+        .from('pending_almog_commitment_jobs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('processed', false),
+    ]);
+
+    if ((dueReminders ?? 0) === 0 && (pendingJobs ?? 0) === 0) {
+      return NextResponse.json({
+        ok: true,
+        sent: 0,
+        deferred: 0,
+        skipped: 'idle',
+        commitment_jobs: { claimed: 0, processed: 0, failed: 0 },
+      });
+    }
+
+    const commitmentJobs =
+      (pendingJobs ?? 0) > 0
+        ? await processPendingAlmogCommitmentJobs(admin, {
+            userId: user.id,
+            limit: 4,
+          }).catch(() => ({ claimed: 0, processed: 0, failed: 0 }))
+        : { claimed: 0, processed: 0, failed: 0 };
+
+    const summary =
+      (dueReminders ?? 0) > 0
+        ? await drainAlmogReminders(admin, { userId: user.id })
+        : { sent: 0, deferred: 0 };
+
     return NextResponse.json({
       ok: true,
       sent: summary.sent,

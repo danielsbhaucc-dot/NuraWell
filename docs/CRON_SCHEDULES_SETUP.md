@@ -64,6 +64,8 @@ spike על DB/LLM. הקוד תומך בפיצול ל-schedules נפרדים ב-U
 | `000086_pending_almog_commitment_jobs.sql` | תור עמיד לחילוץ התחייבויות (enqueue מחוץ ל-stream) |
 | `000087_ai_interactions_user_created_idx.sql` | אינדקס `(user_id, created_at)` + `profiles.program_state_updated_at` לאורקסטרטור |
 
+משתנה אופציונלי ל-prelaunch: `CRON_MAX_PROGRAM_ORCHESTRATIONS` (ברירת מחדל 150) — מוריד כמה פרופילים נסרקים בכל tick של האורקסטרטור. כשאין משתמשים onboarded הקרון מדלג על האורקסטרטור לגמרי.
+
 **אתגר 14 יום** — אין schedules נפרדים (אלא אם מפצלים עם `phase=challenge`):
 
 | לוגיקה | רץ בתוך | מתי |

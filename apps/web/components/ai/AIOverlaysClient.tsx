@@ -3,19 +3,19 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { MessageCircle } from 'lucide-react';
-import { AlmogReplyModal } from '../notifications/AlmogReplyModal';
 import {
   OPEN_ALMOG_CHAT_EVENT,
   stashPendingOpenAlmogChat,
   type OpenAlmogChatDetail,
 } from '../../lib/notifications/open-almog-chat';
+import { runWhenIdle } from '../../lib/client/run-when-idle';
 
 type AIOverlaysClientProps = {
   userId: string;
   firstName?: string;
 };
 
-const SYNC_THROTTLE_MS = 10 * 60 * 1000;
+const SYNC_THROTTLE_MS = 20 * 60 * 1000;
 const SYNC_KEY = 'almog:lastReminderSync';
 
 const AIChatWidgetLazy = dynamic(
@@ -23,13 +23,19 @@ const AIChatWidgetLazy = dynamic(
   { ssr: false, loading: () => null }
 );
 
+const AlmogReplyModalLazy = dynamic(
+  () => import('../notifications/AlmogReplyModal').then((m) => m.AlmogReplyModal),
+  { ssr: false, loading: () => null }
+);
+
 /**
  * רשת ביטחון לתזכורות: כשהמשתמש פעיל, מנקזים תזכורות שהגיע זמנן (גיבוי ל-CRON).
- * Throttle של 10 דק' כדי לא להעמיס, רץ ברקע בלי לחסום את ה-UI.
+ * Idle + throttle 20 דק' — לא על critical path של טעינת הדשבורד.
  */
 function useReminderSelfHeal() {
   useEffect(() => {
     const run = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
       try {
         const last = Number(localStorage.getItem(SYNC_KEY) || '0');
         if (Date.now() - last < SYNC_THROTTLE_MS) return;
@@ -44,13 +50,13 @@ function useReminderSelfHeal() {
       }).catch(() => {});
     };
 
-    const t = window.setTimeout(run, 1500);
+    const cancelIdle = runWhenIdle(run, 4500);
     const onVisible = () => {
       if (document.visibilityState === 'visible') run();
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
-      window.clearTimeout(t);
+      cancelIdle();
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
@@ -103,7 +109,7 @@ export function AIOverlaysClient({ userId, firstName }: AIOverlaysClientProps) {
           }}
         />
       )}
-      <AlmogReplyModal />
+      <AlmogReplyModalLazy />
     </>
   );
 }
