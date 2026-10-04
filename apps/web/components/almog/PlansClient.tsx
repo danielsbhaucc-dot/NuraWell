@@ -428,7 +428,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
       <div
         className="relative z-10 -mt-8 rounded-t-[32px] border-t border-white/55 px-4 pb-12 pt-7"
         style={{
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(236,253,245,0.78) 100%)',
+          background: 'linear-gradient(180deg, rgba(248,251,246,0.94) 0%, rgba(236,253,245,0.78) 100%)',
           boxShadow: '0 -16px 48px rgba(6,78,59,0.14)',
         }}
       >
@@ -616,7 +616,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                     key={a.id}
                     className="rounded-2xl px-3.5 py-3"
                     style={{
-                      background: 'rgba(255,255,255,0.65)',
+                      background: 'rgba(248,251,246,0.65)',
                       border: '1px solid rgba(245,158,11,0.3)',
                     }}
                   >
@@ -889,7 +889,7 @@ function EncouragementCard({ name }: { name: string }) {
       className="relative overflow-hidden rounded-[22px] p-4 backdrop-blur-md"
       style={{
         ...glassStyle('emerald'),
-        background: 'linear-gradient(160deg, rgba(255,255,255,0.82) 0%, rgba(236,253,245,0.55) 100%)',
+        background: 'linear-gradient(160deg, rgba(248,251,246,0.82) 0%, rgba(236,253,245,0.55) 100%)',
       }}
     >
       <div className="mb-2 flex items-center gap-2">
@@ -1027,7 +1027,7 @@ function Hero({
       <span
         aria-hidden
         className="pointer-events-none absolute inset-x-0 bottom-0 h-1"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)' }}
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(248,251,246,0.6), transparent)' }}
       />
       {/* זוהר אור פינתי ימין */}
       <div
@@ -1071,7 +1071,7 @@ function Hero({
         <motion.div
           className="relative mx-auto inline-block rounded-full p-1.5"
           style={{
-            background: 'linear-gradient(140deg, rgba(255,255,255,0.6), rgba(255,255,255,0.15))',
+            background: 'linear-gradient(140deg, rgba(248,251,246,0.6), rgba(255,255,255,0.15))',
             boxShadow: '0 10px 30px rgba(0,0,0,0.22)',
           }}
           animate={{ y: [0, -5, 0] }}
@@ -1151,7 +1151,7 @@ function glassStyle(tint: Tint): React.CSSProperties {
     WebkitBackdropFilter: 'blur(22px) saturate(180%)',
     border: `1px solid rgba(255,255,255,0.5)`,
     // צל בודד, רך וצמוד — מונע את ה"שבירה" של צל בין כרטיסי זכוכית בנייד.
-    boxShadow: `0 6px 18px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.55)`,
+    boxShadow: `0 6px 18px rgba(15,23,42,0.07), inset 0 1px 0 rgba(248,251,246,0.55)`,
   };
 }
 
@@ -1243,7 +1243,7 @@ function StepStoryPanel({ story, pinned = false }: { story: StepStory; pinned?: 
   return (
     <div
       className="rounded-2xl border border-emerald-100/80 px-3.5 py-3"
-      style={{ background: 'rgba(255,255,255,0.65)' }}
+      style={{ background: 'rgba(248,251,246,0.65)' }}
     >
       <div className="mb-2.5 flex items-center justify-between gap-2">
         <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-black text-emerald-700">
@@ -1282,7 +1282,7 @@ function QuietState({ moreCount, onExpand }: { moreCount: number; onExpand: () =
     <div
       className="rounded-3xl px-4 py-6 text-center"
       style={{
-        background: 'rgba(255,255,255,0.55)',
+        background: 'rgba(248,251,246,0.55)',
         border: '1px solid rgba(16,185,129,0.15)',
       }}
     >
@@ -1471,12 +1471,12 @@ function Section({
         className="relative flex w-full items-center gap-3 overflow-hidden rounded-2xl px-4 py-3.5 text-right transition active:scale-[0.98]"
         style={{
           background: open
-            ? `linear-gradient(145deg, rgba(255,255,255,0.88) 0%, rgba(${t.rgb},0.12) 100%)`
-            : `linear-gradient(145deg, rgba(255,255,255,0.72) 0%, rgba(${t.rgb},0.08) 100%)`,
+            ? `linear-gradient(145deg, rgba(248,251,246,0.88) 0%, rgba(${t.rgb},0.12) 100%)`
+            : `linear-gradient(145deg, rgba(248,251,246,0.72) 0%, rgba(${t.rgb},0.08) 100%)`,
           border: `1px solid rgba(${t.rgb},${open ? 0.35 : 0.22})`,
           boxShadow: open
-            ? `0 8px 28px rgba(${t.rgb},0.14), inset 0 1px 0 rgba(255,255,255,0.85)`
-            : `0 4px 16px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.75)`,
+            ? `0 8px 28px rgba(${t.rgb},0.14), inset 0 1px 0 rgba(248,251,246,0.85)`
+            : `0 4px 16px rgba(15,23,42,0.06), inset 0 1px 0 rgba(248,251,246,0.75)`,
           backdropFilter: 'blur(20px) saturate(180%)',
           WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         }}
@@ -1484,7 +1484,7 @@ function Section({
         <span
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-2xl"
-          style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 100%)' }}
+          style={{ background: 'linear-gradient(180deg, rgba(248,251,246,0.55) 0%, rgba(255,255,255,0) 100%)' }}
         />
         <span
           className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
@@ -1591,7 +1591,7 @@ function ActionNeeded({
               type="button"
               onClick={() => onJump(it.id)}
               className="flex w-full items-center gap-2.5 rounded-2xl px-3 py-2.5 text-right transition active:scale-[0.99]"
-              style={{ background: 'rgba(255,255,255,0.55)', border: `1px solid rgba(${t.rgb},0.16)` }}
+              style={{ background: 'rgba(248,251,246,0.55)', border: `1px solid rgba(${t.rgb},0.16)` }}
             >
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: `rgba(${t.rgb},0.9)` }} />
               <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-slate-700">{it.label}</span>
@@ -1666,10 +1666,10 @@ function AssignmentCard({
       className="relative overflow-hidden rounded-[22px]"
       style={{
         background: compact
-          ? 'rgba(255,255,255,0.72)'
-          : 'linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(236,253,245,0.55) 100%)',
+          ? 'rgba(248,251,246,0.72)'
+          : 'linear-gradient(160deg, rgba(248,251,246,0.92) 0%, rgba(236,253,245,0.55) 100%)',
         border: '1px solid rgba(16,185,129,0.18)',
-        boxShadow: compact ? 'none' : '0 8px 24px rgba(16,185,129,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+        boxShadow: compact ? 'none' : '0 8px 24px rgba(16,185,129,0.08), inset 0 1px 0 rgba(248,251,246,0.9)',
         ...(isEasedOriginal ? { opacity: 0.82 } : {}),
       }}
     >
@@ -1835,7 +1835,7 @@ function RecoveryPlanCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
       className="relative overflow-hidden rounded-[24px] p-4"
-      style={compact ? { background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(245,158,11,0.2)' } : glassStyle('amber')}
+      style={compact ? { background: 'rgba(248,251,246,0.55)', border: '1px solid rgba(245,158,11,0.2)' } : glassStyle('amber')}
     >
       {!compact ? <GlassSheen /> : null}
       <div className="relative z-[1] space-y-3">
@@ -1857,7 +1857,7 @@ function RecoveryPlanCard({
         ) : null}
 
         <div className={compact ? '' : 'rounded-2xl px-3.5 py-3'} style={compact ? undefined : {
-            background: 'linear-gradient(160deg, rgba(255,255,255,0.6), rgba(236,253,245,0.4))',
+            background: 'linear-gradient(160deg, rgba(248,251,246,0.6), rgba(236,253,245,0.4))',
             border: '1px solid rgba(16,185,129,0.22)',
           }}>
           {!compact ? (
@@ -1940,7 +1940,7 @@ function DifficultyRatingBar({
   return (
     <div
       className="rounded-2xl px-3 py-3"
-      style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(16,185,129,0.2)' }}
+      style={{ background: 'rgba(248,251,246,0.55)', border: '1px solid rgba(16,185,129,0.2)' }}
     >
       <p className="mb-2 text-center text-[13px] font-bold text-slate-700">איך זה היה?</p>
       <div className="flex gap-2">
@@ -2203,7 +2203,7 @@ function BlockerCoachCard({
                 <div
                   className="rounded-2xl px-3.5 py-3"
                   style={{
-                    background: 'linear-gradient(160deg, rgba(255,255,255,0.6), rgba(236,253,245,0.4))',
+                    background: 'linear-gradient(160deg, rgba(248,251,246,0.6), rgba(236,253,245,0.4))',
                     border: '1px solid rgba(16,185,129,0.2)',
                   }}
                 >

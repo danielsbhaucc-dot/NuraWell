@@ -108,8 +108,8 @@ export function AlmogHeroHeader({
                 greeting.tone === 'festive'
                   ? '#FFD97D'
                   : greeting.tone === 'solemn'
-                    ? 'rgba(255,255,255,0.78)'
-                    : 'rgba(255,255,255,0.92)',
+                    ? 'rgba(248,251,246,0.78)'
+                    : 'rgba(248,251,246,0.92)',
               fontWeight: greeting.tone === 'solemn' ? 600 : 700,
               fontStyle: greeting.tone === 'solemn' ? 'italic' : 'normal',
               letterSpacing: '0.2px',

@@ -388,7 +388,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
           />
           <div className="relative flex items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/45 bg-background-card/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] backdrop-blur-md">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/45 bg-background-card/20 shadow-[inset_0_1px_0_rgba(248,251,246,0.55)] backdrop-blur-md">
                 <FolderOpen className="h-5 w-5 text-white" />
               </div>
               <div className="min-w-0">

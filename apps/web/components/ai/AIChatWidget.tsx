@@ -1250,7 +1250,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                     <div
                       className="rounded-full p-1.5"
                       style={{
-                        background: 'linear-gradient(140deg, rgba(255,255,255,0.55), rgba(255,255,255,0.12))',
+                        background: 'linear-gradient(140deg, rgba(248,251,246,0.55), rgba(255,255,255,0.12))',
                         boxShadow: '0 10px 32px rgba(0,0,0,0.24)',
                       }}
                     >

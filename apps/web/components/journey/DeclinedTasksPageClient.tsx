@@ -113,16 +113,16 @@ export function DeclinedTasksPageClient() {
               className="block rounded-[22px] p-[1px] transition active:scale-[0.99]"
               style={{
                 background:
-                  'linear-gradient(135deg, rgba(251,113,133,0.4), rgba(254,215,170,0.3), rgba(255,255,255,0.55))',
+                  'linear-gradient(135deg, rgba(251,113,133,0.4), rgba(254,215,170,0.3), rgba(248,251,246,0.55))',
                 boxShadow: '0 10px 32px rgba(6,78,59,0.08)',
               }}
             >
               <div
                 className="rounded-[21px] px-4 py-3.5 text-right"
                 style={{
-                  background: 'linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(255,241,242,0.38) 100%)',
-                  border: '1px solid rgba(255,255,255,0.65)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.88)',
+                  background: 'linear-gradient(180deg, rgba(248,251,246,0.78) 0%, rgba(255,241,242,0.38) 100%)',
+                  border: '1px solid rgba(248,251,246,0.65)',
+                  boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.88)',
                   backdropFilter: 'blur(12px)',
                 }}
               >

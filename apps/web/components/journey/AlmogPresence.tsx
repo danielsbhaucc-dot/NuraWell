@@ -21,7 +21,7 @@ export function AlmogCompletionHero({
       <div
         className="relative p-[3px] rounded-full mb-3"
         style={{
-          background: 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(16,185,129,0.55), rgba(4,120,87,0.85))',
+          background: 'linear-gradient(145deg, rgba(248,251,246,0.95), rgba(16,185,129,0.55), rgba(4,120,87,0.85))',
           boxShadow: '0 12px 40px rgba(4,120,87,0.22), 0 0 0 1px rgba(255,255,255,0.35) inset',
         }}
       >
@@ -131,7 +131,7 @@ export function MomentsHeroAvatar({ size = 96, name = 'אלמוג' }: { size?: n
         className="relative rounded-full p-[3px]"
         style={{
           background:
-            'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(167,243,208,0.55), rgba(4,120,87,0.85))',
+            'linear-gradient(145deg, rgba(248,251,246,0.95), rgba(167,243,208,0.55), rgba(4,120,87,0.85))',
           boxShadow: '0 12px 40px rgba(4,120,87,0.22), 0 0 0 1px rgba(255,255,255,0.35) inset',
         }}
       >

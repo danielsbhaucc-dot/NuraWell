@@ -126,7 +126,7 @@ export function DashboardBriefCard({ onOpenTasks, firstName }: DashboardBriefCar
         aria-hidden
         className="pointer-events-none absolute inset-x-4 top-px h-px"
         style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.75), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(248,251,246,0.75), transparent)',
         }}
       />
 

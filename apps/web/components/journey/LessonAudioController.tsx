@@ -284,8 +284,8 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
               background: 'rgba(248,250,252,0.72)',
               backdropFilter: 'blur(40px) saturate(180%)',
               WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-              border: '0.5px solid rgba(255,255,255,0.65)',
-              boxShadow: '0 20px 50px rgba(6,78,59,0.22), inset 0 1px 0 rgba(255,255,255,0.85)',
+              border: '0.5px solid rgba(248,251,246,0.65)',
+              boxShadow: '0 20px 50px rgba(6,78,59,0.22), inset 0 1px 0 rgba(248,251,246,0.85)',
             }}
           >
             <div className="mb-3 flex items-center justify-between">
@@ -324,9 +324,9 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
                 aria-pressed={muted}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-3 py-2.5 text-[13px] font-bold text-emerald-950 transition active:scale-[0.98]"
                 style={{
-                  background: 'rgba(255,255,255,0.82)',
+                  background: 'rgba(248,251,246,0.82)',
                   border: '0.5px solid rgba(16,185,129,0.22)',
-                  boxShadow: '0 2px 8px rgba(6,78,59,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+                  boxShadow: '0 2px 8px rgba(6,78,59,0.08), inset 0 1px 0 rgba(248,251,246,0.9)',
                 }}
               >
                 {muted ? <VolumeX className="h-[18px] w-[18px] text-emerald-800" /> : <Volume2 className="h-[18px] w-[18px] text-emerald-800" />}
@@ -341,7 +341,7 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
                   style={{
                     background: 'rgba(209,250,229,0.75)',
                     border: '0.5px solid rgba(16,185,129,0.28)',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7)',
+                    boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.7)',
                   }}
                 >
                   זכויות יוצרים
@@ -359,8 +359,8 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
               background: 'rgba(248,250,252,0.55)',
               backdropFilter: 'blur(24px) saturate(160%)',
               WebkitBackdropFilter: 'blur(24px) saturate(160%)',
-              border: '0.5px solid rgba(255,255,255,0.72)',
-              boxShadow: '0 8px 28px rgba(6,78,59,0.18), inset 0 1px 0 rgba(255,255,255,0.75)',
+              border: '0.5px solid rgba(248,251,246,0.72)',
+              boxShadow: '0 8px 28px rgba(6,78,59,0.18), inset 0 1px 0 rgba(248,251,246,0.75)',
             }}
           >
             <button
@@ -379,9 +379,9 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
               className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-95"
               style={{
                 background: muted
-                  ? 'linear-gradient(145deg, rgba(254,226,226,0.9), rgba(255,255,255,0.7))'
-                  : 'linear-gradient(145deg, rgba(209,250,229,0.95), rgba(255,255,255,0.75))',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 10px rgba(6,78,59,0.12)',
+                  ? 'linear-gradient(145deg, rgba(254,226,226,0.9), rgba(248,251,246,0.7))'
+                  : 'linear-gradient(145deg, rgba(209,250,229,0.95), rgba(248,251,246,0.75))',
+                boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.9), 0 2px 10px rgba(6,78,59,0.12)',
               }}
             >
               {muted ? (

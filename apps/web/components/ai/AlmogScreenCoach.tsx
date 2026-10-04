@@ -85,13 +85,13 @@ export function AlmogScreenCoach({
         borderRadius: 22,
         background: palette.cardBg,
         border: `1px solid ${palette.border}`,
-        boxShadow: '0 12px 34px rgba(6,78,59,0.10), inset 0 1px 0 rgba(255,255,255,0.72)',
+        boxShadow: '0 12px 34px rgba(6,78,59,0.10), inset 0 1px 0 rgba(248,251,246,0.72)',
       }}
     >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-4 top-px h-px"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent)' }}
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(248,251,246,0.9), transparent)' }}
       />
       <div className="flex items-start gap-3">
         <AlmogAvatarChipWithNameTag size={48} />

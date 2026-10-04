@@ -129,9 +129,9 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
               maxHeight: '100%',
               background:
                 'linear-gradient(168deg, rgba(236,253,245,0.9) 0%, rgba(220,252,231,0.82) 48%, rgba(254,252,232,0.82) 100%)',
-              border: '1px solid rgba(255,255,255,0.55)',
+              border: '1px solid rgba(248,251,246,0.55)',
               boxShadow:
-                '0 36px 90px rgba(6,78,59,0.4), 0 0 0 1px rgba(167,243,208,0.45), inset 0 1px 1px rgba(255,255,255,0.95)',
+                '0 36px 90px rgba(6,78,59,0.4), 0 0 0 1px rgba(167,243,208,0.45), inset 0 1px 1px rgba(248,251,246,0.95)',
               backdropFilter: 'blur(36px) saturate(1.45)',
               WebkitBackdropFilter: 'blur(36px) saturate(1.45)',
             }}

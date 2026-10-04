@@ -99,7 +99,7 @@
   z-index: 0;
   pointer-events: none;
   opacity: 0.04;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.9) 0.5px, transparent 0.5px);
+  background-image: radial-gradient(rgba(248, 251, 246, 0.9) 0.5px, transparent 0.5px);
   background-size: 3px 3px;
 }
 

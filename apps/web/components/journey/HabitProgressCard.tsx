@@ -94,11 +94,11 @@ export function HabitProgressCard({ title, emoji, snapshot }: HabitProgressCardP
       style={{
         background: achieved
           ? 'linear-gradient(135deg, rgba(16,185,129,0.18), rgba(52,211,153,0.12))'
-          : 'linear-gradient(180deg, rgba(255,255,255,0.75) 0%, rgba(236,253,245,0.55) 100%)',
+          : 'linear-gradient(180deg, rgba(248,251,246,0.75) 0%, rgba(236,253,245,0.55) 100%)',
         border: achieved
           ? '1px solid rgba(16,185,129,0.45)'
           : '1px solid rgba(16,185,129,0.22)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)',
+        boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.85)',
       }}
     >
       <div className="flex items-start gap-2">
