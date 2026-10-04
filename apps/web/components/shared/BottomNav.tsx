@@ -8,6 +8,7 @@ import { cn } from '../../lib/cn';
 import { motion } from 'framer-motion';
 import { useEffect } from 'react';
 import { useActionHub } from '../action-hub/ActionHubProvider';
+import { runWhenIdle } from '../../lib/client/run-when-idle';
 
 const leftItems = [
   { href: APP_HOME_PATH, label: 'בית',    icon: Home  },
@@ -18,14 +19,27 @@ const rightItems = [
   { href: '/plans', label: 'התוכנית', icon: ClipboardCheck },
 ];
 
+/** Prefetch מיידי — רק פריטי הניווט הגלויים. */
+const VISIBLE_NAV_ROUTES = [APP_HOME_PATH, '/journey', '/guides', '/plans'] as const;
+/** Prefetch ב-idle — מסכים משניים שלא בבר התחתון. */
+const IDLE_PREFETCH_ROUTES = [
+  '/journey/declined',
+  '/progress',
+  '/progress/history',
+  '/profile',
+  '/settings/almog',
+] as const;
+
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const actionHub = useActionHub();
 
   useEffect(() => {
-    const fastRoutes = [APP_HOME_PATH, '/guides', '/journey', '/journey/declined', '/plans', '/progress', '/progress/history', '/profile', '/settings/almog'];
-    fastRoutes.forEach((href) => router.prefetch(href));
+    VISIBLE_NAV_ROUTES.forEach((href) => router.prefetch(href));
+    return runWhenIdle(() => {
+      IDLE_PREFETCH_ROUTES.forEach((href) => router.prefetch(href));
+    }, 3200);
   }, [router]);
 
   return (

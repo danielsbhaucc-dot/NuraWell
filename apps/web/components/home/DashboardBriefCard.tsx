@@ -9,6 +9,7 @@ import {
   dispatchOpenAlmogChatWithPrefill,
 } from '../../lib/notifications/open-almog-chat';
 import { fetchDashboardBrief } from '../../lib/client/dashboard-brief';
+import { runWhenIdle } from '../../lib/client/run-when-idle';
 
 type CtaAction = 'open_chat' | 'open_journey' | 'open_tasks' | 'open_progress' | 'open_courses';
 type Mood = 'celebrate' | 'encourage' | 'gentle' | 'neutral';
@@ -62,7 +63,10 @@ export function DashboardBriefCard({ onOpenTasks, firstName }: DashboardBriefCar
   }, []);
 
   useEffect(() => {
-    void load(false);
+    // אותו brief — אחרי idle קצר כדי לא להתחרות עם snapshot/TTI ב-mount.
+    return runWhenIdle(() => {
+      void load(false);
+    }, 1800);
   }, [load]);
 
   const handleCta = useCallback(() => {

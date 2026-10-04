@@ -1,6 +1,11 @@
 import { Cormorant_Garamond, DM_Sans, Heebo, Rubik } from 'next/font/google';
 
-/** משקלים שבשימוש ב-UI (medium→500 נדיר; 400/600/700/800/900 מכסים את המערכת). */
+/**
+ * משקלים בשימוש פעיל — אין משקל מת להסרה בטוחה (ביקורת Safe Perf):
+ * Heebo/Rubik 400–900: font-normal/semibold/bold/extrabold/black ברחבי הדשבורד.
+ * Cormorant 300/600: לוגו + ComingSoon. DM Sans 300: לוגו (.ai / tagline).
+ * לא מסירים משפחות — כולן בשימוש.
+ */
 export const heebo = Heebo({
   subsets: ['hebrew', 'latin'],
   weight: ['400', '600', '700', '800', '900'],

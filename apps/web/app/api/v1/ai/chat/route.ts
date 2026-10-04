@@ -3302,45 +3302,53 @@ export async function POST(request: Request) {
             ? providerCostUsd
             : estimatedCostUsd;
 
-        try {
-          await insertAiInteraction(supabase, {
-            user_id: user.id,
-            session_id: sessionId,
-            role: 'assistant',
-            content: assistantText,
-            model_name: assistantModelName,
-            tokens_used: totalTokens,
-            metadata: {
-              edge: true,
-              streamed: true,
-              safety_net_used: safetyNetUsed,
-              trivial_bypass: trivialBypass,
-              fallback_used: !t,
-              input_tokens: inputTokens,
-              output_tokens: outputTokens,
-              cache_read_input_tokens: cacheReadInputTokens,
-              cache_creation_input_tokens: cacheCreationInputTokens,
-              finish_reason: effectiveFinishReason,
-              continued_after_length: finishReason === 'length' && t !== (text ?? '').trim(),
-              cost_usd: costUsd,
-              provider_cost_usd: providerCostUsd ?? null,
-              writer: mcfg.writer,
-            },
-          });
-        } catch (persistErr) {
-          console.error('[ai/chat]', {
-            debug_id: debugId,
-            stage: `${finishStage}_persist_assistant`,
-            error: persistErr instanceof Error ? persistErr.message : String(persistErr),
-          });
-        }
+        /**
+         * Persist assistant + bump session — אחרי סגירת stream.
+         * לא חוסם את useChat; אותו תוכן/מטא־דאטה כמו קודם.
+         */
+        after(async () => {
+          try {
+            await insertAiInteraction(supabase, {
+              user_id: user.id,
+              session_id: sessionId,
+              role: 'assistant',
+              content: assistantText,
+              model_name: assistantModelName,
+              tokens_used: totalTokens,
+              metadata: {
+                edge: true,
+                streamed: true,
+                safety_net_used: safetyNetUsed,
+                trivial_bypass: trivialBypass,
+                fallback_used: !t,
+                input_tokens: inputTokens,
+                output_tokens: outputTokens,
+                cache_read_input_tokens: cacheReadInputTokens,
+                cache_creation_input_tokens: cacheCreationInputTokens,
+                finish_reason: effectiveFinishReason,
+                continued_after_length: finishReason === 'length' && t !== (text ?? '').trim(),
+                cost_usd: costUsd,
+                provider_cost_usd: providerCostUsd ?? null,
+                writer: mcfg.writer,
+              },
+            });
+          } catch (persistErr) {
+            console.error('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_persist_assistant`,
+              error: persistErr instanceof Error ? persistErr.message : String(persistErr),
+            });
+          }
 
-        void bumpChatSessionTurn(supabase, {
-          sessionId,
-          userId: user.id,
-          preview: assistantText,
-        }).catch(() => {
-          /* non-blocking */
+          try {
+            await bumpChatSessionTurn(supabase, {
+              sessionId,
+              userId: user.id,
+              preview: assistantText,
+            });
+          } catch {
+            /* non-blocking */
+          }
         });
 
         after(async () => {
@@ -3689,7 +3697,7 @@ export async function POST(request: Request) {
         }
 
         /**
-         * חילוץ התחייבויות אלמוג — תור עמיד (DB) + עיבוד מיידי ב-after() כשניתן.
+         * חילוץ התחייבויות אלמוג — enqueue + process כולו ב-after().
          * לא חוסם סגירת stream. אם after() נקטע ב-Edge — cron/sync-reminders מנקזים.
          */
         if (
@@ -3698,58 +3706,60 @@ export async function POST(request: Request) {
           mentionsReminderKeyword(lastUserText) ||
           mentionsReminderKeyword(assistantText)
         ) {
-          try {
-            const admin = createAdminClient();
-            const habitTitleToId: Record<string, string> = {};
-            for (const h of journeyHabits) {
-              if (h.title && h.id) habitTitleToId[h.title] = h.id;
-            }
-            const enqueue = await enqueueAlmogCommitmentJob({
-              admin,
-              userId: user.id,
-              sessionId,
-              userMessage: lastUserText,
-              assistantMessage: assistantText,
-              rollingSummary: profileRow.ai_context.chat_summary,
-              habitTitles: journeyHabits.map((h) => h.title),
-              habitTitleToId,
-              relatedStepId: activeJourneyContext?.stepId ?? null,
-            });
-            if (enqueue.enqueued) {
+          const habitTitleToId: Record<string, string> = {};
+          for (const h of journeyHabits) {
+            if (h.title && h.id) habitTitleToId[h.title] = h.id;
+          }
+          const habitTitles = journeyHabits.map((h) => h.title);
+          const relatedStepId = activeJourneyContext?.stepId ?? null;
+          const rollingSummary = profileRow.ai_context.chat_summary;
+          after(async () => {
+            try {
+              const admin = createAdminClient();
+              const enqueue = await enqueueAlmogCommitmentJob({
+                admin,
+                userId: user.id,
+                sessionId,
+                userMessage: lastUserText,
+                assistantMessage: assistantText,
+                rollingSummary,
+                habitTitles,
+                habitTitleToId,
+                relatedStepId,
+              });
+              if (!enqueue.enqueued) {
+                console.warn('[ai/chat]', {
+                  debug_id: debugId,
+                  stage: 'almog_commitments_enqueue_failed',
+                });
+                return;
+              }
               console.info('[ai/chat]', {
                 debug_id: debugId,
                 stage: 'almog_commitments_enqueued',
                 job_id: enqueue.jobId ?? null,
               });
-              const jobId = enqueue.jobId;
-              after(async () => {
-                try {
-                  await processPendingAlmogCommitmentJobs(createAdminClient(), {
-                    limit: 1,
-                    jobId,
-                    userId: user.id,
-                  });
-                } catch (commitErr) {
-                  console.warn('[ai/chat]', {
-                    debug_id: debugId,
-                    stage: 'almog_commitments_process_after_failed',
-                    error: commitErr instanceof Error ? commitErr.message : String(commitErr),
-                  });
-                }
-              });
-            } else {
+              try {
+                await processPendingAlmogCommitmentJobs(createAdminClient(), {
+                  limit: 1,
+                  jobId: enqueue.jobId,
+                  userId: user.id,
+                });
+              } catch (commitErr) {
+                console.warn('[ai/chat]', {
+                  debug_id: debugId,
+                  stage: 'almog_commitments_process_after_failed',
+                  error: commitErr instanceof Error ? commitErr.message : String(commitErr),
+                });
+              }
+            } catch (commitErr) {
               console.warn('[ai/chat]', {
                 debug_id: debugId,
-                stage: 'almog_commitments_enqueue_failed',
+                stage: 'almog_commitments_enqueue_error',
+                error: commitErr instanceof Error ? commitErr.message : String(commitErr),
               });
             }
-          } catch (commitErr) {
-            console.warn('[ai/chat]', {
-              debug_id: debugId,
-              stage: 'almog_commitments_enqueue_error',
-              error: commitErr instanceof Error ? commitErr.message : String(commitErr),
-            });
-          }
+          });
         }
       };
 
