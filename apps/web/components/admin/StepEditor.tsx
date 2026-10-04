@@ -1343,7 +1343,7 @@ export function StepEditor({ step }: StepEditorProps) {
               יופיע רק בנגן מסך מלא: הסרטון יעצור בזמן שתבחרו, תוצג שאלה קצרה, ואז משוב והמשך אוטומטי או ידני.
             </p>
             {immersiveAttentionStops.map((stop, si) => (
-              <div key={stop.id || si} className="p-3 rounded-xl bg-white border border-blue-100 space-y-2.5">
+              <div key={stop.id || si} className="p-3 rounded-xl bg-background-card border border-blue-100 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-blue-700">נקודה {si + 1}</span>
                   <button
@@ -1550,7 +1550,7 @@ export function StepEditor({ step }: StepEditorProps) {
                 </div>
               </button>
               {expandedQuiz === qi && (
-                <div className="p-4 pt-0 space-y-3 border-t border-emerald-100/80 bg-white/90">
+                <div className="p-4 pt-0 space-y-3 border-t border-emerald-100/80 bg-background-card/90">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <TtsStatusBadge text={q.question} tts={q.tts} />
                     {q.tts?.status === 'ready' && q.tts.url ? (
@@ -1619,7 +1619,7 @@ export function StepEditor({ step }: StepEditorProps) {
                 </div>
               </button>
               {expandedGame === gi && (
-                <div className="p-4 pt-0 space-y-3 border-t border-amber-100/90 bg-white/90">
+                <div className="p-4 pt-0 space-y-3 border-t border-amber-100/90 bg-background-card/90">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <TtsStatusBadge text={g.statement} tts={g.tts} />
                     {g.tts?.status === 'ready' && g.tts.url ? (
@@ -2381,7 +2381,7 @@ export function StepEditor({ step }: StepEditorProps) {
             onClick={goPrevSection}
             disabled={!canGoBack}
             className="px-4 py-2.5 rounded-xl font-bold text-sm border transition disabled:opacity-40"
-            style={{ borderColor: 'rgba(0,0,0,0.12)', background: '#fff', color: '#374151' }}
+            style={{ borderColor: 'rgba(0,0,0,0.12)', background: '#f8fbf6', color: '#374151' }}
           >
             שלב קודם
           </button>

@@ -77,7 +77,7 @@ export function ChallengeCompleteClient({ firstName, initialSummary }: Props) {
             ].map(({ label, value, icon: Icon }) => (
               <div
                 key={label}
-                className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur-md"
+                className="rounded-2xl border border-white/10 bg-background-card/10 p-4 backdrop-blur-md"
               >
                 <Icon className="mx-auto mb-2 h-5 w-5 text-emerald-300" />
                 <div className="font-display text-2xl font-black">{value}</div>

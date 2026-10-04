@@ -177,7 +177,7 @@ function FilterChip({ active, onClick, children, icon, accentClass }: FilterChip
         ${
           active
             ? 'bg-gray-900 text-white shadow-sm'
-            : 'bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50'
+            : 'bg-background-card text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50'
         }`}
       aria-pressed={active}
     >

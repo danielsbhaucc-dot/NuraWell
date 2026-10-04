@@ -66,7 +66,7 @@ export function AlmogAvatarChip({ size = 44 }: { size?: number }) {
         boxShadow: '0 4px 16px rgba(4,120,87,0.22)',
       }}
     >
-      <div className="rounded-full bg-white p-[2px]">
+      <div className="rounded-full bg-background-card p-[2px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={avatarUrl}

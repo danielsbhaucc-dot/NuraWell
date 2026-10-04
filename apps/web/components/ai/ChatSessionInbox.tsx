@@ -65,7 +65,7 @@ function InboxTabBar({
       role="tablist"
       aria-label="ניווט שיחות"
     >
-      <div className="flex gap-1 rounded-xl bg-white/[0.05] p-1">
+      <div className="flex gap-1 rounded-xl bg-background-card/[0.05] p-1">
         {items.map((item) => {
           const active = tab === item.id;
           return (
@@ -83,7 +83,7 @@ function InboxTabBar({
               {item.badge != null && item.badge > 0 ? (
                 <span
                   className={`rounded-full px-1.5 py-px text-[10px] font-black ${
-                    active ? 'bg-white/25 text-white' : 'bg-white/10 text-slate-300'
+                    active ? 'bg-background-card/25 text-white' : 'bg-background-card/10 text-slate-300'
                   }`}
                 >
                   {item.badge}
@@ -156,7 +156,7 @@ function SessionRow({
       className={`w-full rounded-xl border px-3 py-2.5 text-right transition ${
         isActive
           ? 'border-emerald-400/40 bg-emerald-500/12'
-          : 'border-white/10 bg-white/[0.04] hover:border-white/18 hover:bg-white/[0.06]'
+          : 'border-white/10 bg-background-card/[0.04] hover:border-white/18 hover:bg-background-card/[0.06]'
       }`}
     >
       <div className="flex items-start gap-2">
@@ -219,7 +219,7 @@ function AccordionSection({
           <span className="text-[16px] leading-none" aria-hidden>{emoji}</span>
         ) : null}
         <span className="flex-1 text-[14px] font-bold text-slate-200">{label}</span>
-        <span className="rounded-full bg-white/10 px-2 py-px text-[10px] font-bold text-slate-400">
+        <span className="rounded-full bg-background-card/10 px-2 py-px text-[10px] font-bold text-slate-400">
           {sessions.length}
         </span>
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.22 }} className="shrink-0">
@@ -361,7 +361,7 @@ export function ChatSessionInbox({
                       onStartNewChat();
                     }
                   }}
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-[13px] font-semibold text-slate-200 transition active:scale-[0.98] hover:border-emerald-400/25 hover:bg-emerald-500/10 disabled:opacity-60"
+                  className="w-full rounded-xl border border-white/10 bg-background-card/[0.04] px-3 py-3 text-[13px] font-semibold text-slate-200 transition active:scale-[0.98] hover:border-emerald-400/25 hover:bg-emerald-500/10 disabled:opacity-60"
                 >
                   {chip.label}
                 </button>
@@ -383,7 +383,7 @@ export function ChatSessionInbox({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="חיפוש בשיחות..."
-                className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-2.5 pl-8 pr-9 text-[13px] text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/35"
+                className="w-full rounded-xl border border-white/10 bg-background-card/[0.04] py-2.5 pl-8 pr-9 text-[13px] text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/35"
               />
               {searchQuery ? (
                 <button
@@ -421,7 +421,7 @@ export function ChatSessionInbox({
             ) : null}
 
             {!trimmedSearch && topicChips.length > 0 ? (
-              <div className="rounded-xl border border-white/8 bg-white/[0.02]">
+              <div className="rounded-xl border border-white/8 bg-background-card/[0.02]">
                 <button
                   type="button"
                   aria-expanded={topicsOpen}

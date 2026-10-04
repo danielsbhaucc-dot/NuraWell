@@ -164,7 +164,7 @@ export default function OpsGuideDetailPage() {
           type="button"
           onClick={() => void saveGuide()}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/90 text-emerald-800 text-sm font-bold hover:bg-white"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-background-card/90 text-emerald-800 text-sm font-bold hover:bg-background-card"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           שמור
@@ -235,7 +235,7 @@ export default function OpsGuideDetailPage() {
                 <button
                   type="button"
                   onClick={pickBackground}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-bold text-slate-800 shadow hover:bg-white"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-background-card/90 px-3 py-1.5 text-xs font-bold text-slate-800 shadow hover:bg-background-card"
                 >
                   <ImagePlus className="w-3.5 h-3.5" />
                   החלפת תמונה

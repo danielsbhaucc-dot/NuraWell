@@ -51,9 +51,9 @@ const DIVIDER_COLORS = [
 ] as const;
 
 const MEMORY_CARD_STYLES = [
-  'border-violet-200/60 bg-gradient-to-br from-violet-50/95 to-white',
-  'border-sky-200/60 bg-gradient-to-br from-sky-50/95 to-white',
-  'border-amber-200/60 bg-gradient-to-br from-amber-50/95 to-white',
+  'border-violet-200/60 bg-gradient-to-br from-violet-50/95 to-background-card',
+  'border-sky-200/60 bg-gradient-to-br from-sky-50/95 to-background-card',
+  'border-amber-200/60 bg-gradient-to-br from-amber-50/95 to-background-card',
 ] as const;
 
 const EVENT_CARD_STYLES = [
@@ -180,7 +180,7 @@ function ListPagination({
 
   return (
     <nav
-      className="flex items-center justify-between gap-2 rounded-2xl border border-slate-200/70 bg-white/70 px-3 py-2.5"
+      className="flex items-center justify-between gap-2 rounded-2xl border border-slate-200/70 bg-background-card/70 px-3 py-2.5"
       aria-label={label}
     >
       <button

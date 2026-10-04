@@ -69,7 +69,7 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
           <Drawer.Title className="sr-only">ברכה ראשונה מדולב</Drawer.Title>
           <Drawer.Description className="sr-only">סיכום ההרשמה ושיחה קצרה עם דולב</Drawer.Description>
 
-          <div className="mx-auto mt-3 mb-1 h-1.5 w-12 shrink-0 rounded-full bg-white/25" aria-hidden />
+          <div className="mx-auto mt-3 mb-1 h-1.5 w-12 shrink-0 rounded-full bg-background-card/25" aria-hidden />
 
           <div className={REGISTER_DRAWER_BODY_CLASS}>
             <p className="text-center text-xs font-bold text-emerald-300/80 mb-3 tracking-wide">
@@ -80,7 +80,7 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
               {rows.map((row) => (
                 <li
                   key={row.label}
-                  className="flex items-center justify-between gap-3 rounded-lg bg-white/5 px-3 py-2"
+                  className="flex items-center justify-between gap-3 rounded-lg bg-background-card/5 px-3 py-2"
                 >
                   <span className="text-[11px] font-bold text-emerald-200/60">{row.label}</span>
                   <span

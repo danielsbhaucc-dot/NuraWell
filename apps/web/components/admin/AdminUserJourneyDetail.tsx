@@ -53,7 +53,7 @@ function DetailBlock({ title, children }: { title: string; children: ReactNode }
 
 function StepCard({ step }: { step: AdminUserJourneyStepRow }) {
   return (
-    <article className="rounded-xl border border-slate-200/90 bg-white/90 p-3 space-y-2">
+    <article className="rounded-xl border border-slate-200/90 bg-background-card/90 p-3 space-y-2">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="text-sm font-black text-slate-900">
@@ -326,7 +326,7 @@ export function AdminUserJourneyDetail({ steps }: { steps: AdminUserJourneyStepR
             ) : (
               groups.map((group) => (
                 <div key={group.title} className="space-y-2">
-                  <h3 className="text-xs font-black text-emerald-900 sticky top-0 bg-white/95 py-1 z-10">
+                  <h3 className="text-xs font-black text-emerald-900 sticky top-0 bg-background-card/95 py-1 z-10">
                     {group.title}
                   </h3>
                   <div className="space-y-2">

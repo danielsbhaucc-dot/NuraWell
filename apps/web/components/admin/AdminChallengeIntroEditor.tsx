@@ -68,7 +68,7 @@ export function AdminChallengeIntroEditor() {
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-5 shadow-sm backdrop-blur-md sm:p-6">
+    <div className="rounded-3xl border border-slate-200/60 bg-background-card/70 p-5 shadow-sm backdrop-blur-md sm:p-6">
       <h2 className="mb-4 text-lg font-bold text-slate-900">טקסט פתיחה + ElevenLabs</h2>
       <p className="mb-4 text-sm text-slate-600">
         שורות הפתיחה אחרי השיר. השתמש ב-{'{firstName}'} לשם פרטי.

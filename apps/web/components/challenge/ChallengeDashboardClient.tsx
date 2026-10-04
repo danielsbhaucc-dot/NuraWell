@@ -180,7 +180,7 @@ export function ChallengeDashboardClient({ initialState }: Props) {
             <button
               type="button"
               onClick={exitDemo}
-              className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold"
+              className="inline-flex items-center gap-1 rounded-xl bg-background-card/10 px-3 py-1.5 text-xs font-semibold"
             >
               <LogOut className="h-3.5 w-3.5" />
               יציאה
@@ -197,7 +197,7 @@ export function ChallengeDashboardClient({ initialState }: Props) {
               type="button"
               disabled={syncing}
               onClick={() => void sync()}
-              className="rounded-lg bg-white/10 px-3 py-1 text-xs font-semibold"
+              className="rounded-lg bg-background-card/10 px-3 py-1 text-xs font-semibold"
             >
               {syncing ? 'מסנכרן...' : 'סנכרן עכשיו'}
             </button>
@@ -209,7 +209,7 @@ export function ChallengeDashboardClient({ initialState }: Props) {
           <h1 className="font-display text-2xl font-black">
             יום {dayIndex} מתוך {state.days_total}
           </h1>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-background-card/10">
             <motion.div
               className="h-full rounded-full bg-gradient-to-l from-emerald-400 to-teal-500"
               initial={{ width: 0 }}
@@ -249,7 +249,7 @@ export function ChallengeDashboardClient({ initialState }: Props) {
                     className={`rounded-2xl border transition-colors ${
                       task.completed
                         ? 'border-emerald-500/30 bg-emerald-500/10'
-                        : 'border-white/10 bg-white/5'
+                        : 'border-white/10 bg-background-card/5'
                     }`}
                   >
                     <button
@@ -287,7 +287,7 @@ export function ChallengeDashboardClient({ initialState }: Props) {
                             className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm ${
                               slot.completed
                                 ? 'bg-emerald-500/15 text-emerald-200'
-                                : 'bg-black/20 active:bg-white/10'
+                                : 'bg-black/20 active:bg-background-card/10'
                             }`}
                           >
                             <span>{slot.label}</span>
@@ -316,7 +316,7 @@ export function ChallengeDashboardClient({ initialState }: Props) {
                   className={`flex w-full items-start gap-3 rounded-2xl border p-4 text-right transition-colors ${
                     task.completed
                       ? 'border-emerald-500/30 bg-emerald-500/10'
-                      : 'border-white/10 bg-white/5 active:bg-white/10'
+                      : 'border-white/10 bg-background-card/5 active:bg-background-card/10'
                   }`}
                 >
                   <div className="mt-0.5 shrink-0">

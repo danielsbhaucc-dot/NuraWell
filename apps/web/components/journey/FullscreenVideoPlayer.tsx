@@ -479,7 +479,7 @@ export function FullscreenVideoPlayer({
           <div
             className="w-full max-w-sm rounded-3xl p-6 text-center transition-all duration-200"
             style={{
-              background: 'linear-gradient(165deg, #ffffff 0%, #ecfdf5 100%)',
+              background: 'linear-gradient(165deg, #f8fbf6 0%, #ecfdf5 100%)',
               border: '1px solid rgba(16,185,129,0.25)',
             }}
             onClick={e => e.stopPropagation()}

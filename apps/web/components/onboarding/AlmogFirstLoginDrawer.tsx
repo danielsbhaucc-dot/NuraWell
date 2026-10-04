@@ -107,7 +107,7 @@ export function AlmogFirstLoginDrawer({ profile }: AlmogFirstLoginDrawerProps) {
                   key="user-bubble"
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="mt-4 mr-auto max-w-[85%] rounded-2xl bg-white px-4 py-3 text-right text-sm text-gray-800 shadow-sm ring-1 ring-emerald-100"
+                  className="mt-4 mr-auto max-w-[85%] rounded-2xl bg-background-card px-4 py-3 text-right text-sm text-gray-800 shadow-sm ring-1 ring-emerald-100"
                 >
                   כן, בוא נתחיל 💪
                 </motion.div>

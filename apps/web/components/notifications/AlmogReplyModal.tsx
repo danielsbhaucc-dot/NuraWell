@@ -100,7 +100,7 @@ export function AlmogReplyModal() {
               style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
             >
               <div className="pt-2.5 pb-2 flex justify-center">
-                <div className="h-1.5 w-11 rounded-full bg-white/45" />
+                <div className="h-1.5 w-11 rounded-full bg-background-card/45" />
               </div>
 
               <div className="flex items-center justify-between px-4 pb-3">
@@ -123,7 +123,7 @@ export function AlmogReplyModal() {
                 <button
                   type="button"
                   onClick={closeDrawer}
-                  className="rounded-xl p-2 hover:bg-white/15"
+                  className="rounded-xl p-2 hover:bg-background-card/15"
                   aria-label="סגור"
                 >
                   <X className="h-5 w-5" />
@@ -144,7 +144,7 @@ export function AlmogReplyModal() {
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-white/30 bg-white/95 p-2 shadow-sm">
+                <div className="rounded-2xl border border-white/30 bg-background-card/95 p-2 shadow-sm">
                   <textarea
                     ref={textareaRef}
                     dir="rtl"
@@ -166,7 +166,7 @@ export function AlmogReplyModal() {
                   type="button"
                   disabled={!reply.trim() || submitting}
                   onClick={handleSubmit}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-sm font-black text-emerald-700 shadow-lg transition active:scale-[0.98] disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-background-card py-3.5 text-sm font-black text-emerald-700 shadow-lg transition active:scale-[0.98] disabled:opacity-60"
                 >
                   {submitting ? (
                     <span className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-700" />

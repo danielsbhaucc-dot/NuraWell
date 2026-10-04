@@ -98,7 +98,7 @@ function CostCard({
           <p className="mt-1 font-display text-2xl font-black tabular-nums text-slate-900">{value}</p>
           {sub ? <p className="mt-1 text-[11px] text-slate-600">{sub}</p> : null}
         </div>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/60 bg-white/55 shadow-sm">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/60 bg-background-card/55 shadow-sm">
           {icon}
         </div>
       </div>
@@ -207,7 +207,7 @@ export function AdminCostsClient() {
         tone="emerald"
         description="עלות AI (צ׳אט + התראות) וצפיות וידאו (Bunny) פר-משתמש, לפי הנתונים שנרשמו ב-Supabase."
         actions={
-          <div className="flex gap-1 rounded-2xl border border-white/60 bg-white/55 p-1 backdrop-blur-md">
+          <div className="flex gap-1 rounded-2xl border border-white/60 bg-background-card/55 p-1 backdrop-blur-md">
             {WINDOWS.map((w) => (
               <button
                 key={w.days}
@@ -217,7 +217,7 @@ export function AdminCostsClient() {
                   'rounded-xl px-3 py-2 text-xs font-bold transition-colors',
                   days === w.days
                     ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-600/25'
-                    : 'text-slate-600 hover:bg-white/70',
+                    : 'text-slate-600 hover:bg-background-card/70',
                 ].join(' ')}
               >
                 {w.label}
@@ -270,7 +270,7 @@ export function AdminCostsClient() {
             />
           </div>
 
-          <div className="rounded-2xl border border-white/80 bg-white/60 p-4 backdrop-blur-xl">
+          <div className="rounded-2xl border border-white/80 bg-background-card/60 p-4 backdrop-blur-xl">
             <p className="mb-3 text-sm font-bold text-slate-700">פירוק סך העלות לפי מקור</p>
             <BreakdownBars b={agg.totals} />
           </div>
@@ -279,7 +279,7 @@ export function AdminCostsClient() {
 
       {/* בחירת משתמש + פירוק */}
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,320px)_1fr]">
-        <section className="flex max-h-[60vh] flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/60 backdrop-blur-xl">
+        <section className="flex max-h-[60vh] flex-col overflow-hidden rounded-2xl border border-white/80 bg-background-card/60 backdrop-blur-xl">
           <div className="border-b border-slate-100 p-3">
             <div className="relative">
               <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -288,7 +288,7 @@ export function AdminCostsClient() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="חיפוש משתמש..."
-                className="w-full rounded-xl border border-slate-200 bg-white/80 py-2 pr-10 pl-3 text-sm"
+                className="w-full rounded-xl border border-slate-200 bg-background-card/80 py-2 pr-10 pl-3 text-sm"
                 dir="rtl"
               />
             </div>
@@ -337,7 +337,7 @@ export function AdminCostsClient() {
           )}
         </section>
 
-        <section className="min-h-[280px] rounded-2xl border border-white/80 bg-white/60 p-4 backdrop-blur-xl sm:p-5">
+        <section className="min-h-[280px] rounded-2xl border border-white/80 bg-background-card/60 p-4 backdrop-blur-xl sm:p-5">
           {!selectedId ? (
             <div className="space-y-4">
               <p className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">

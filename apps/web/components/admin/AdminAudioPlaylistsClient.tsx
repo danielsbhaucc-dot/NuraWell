@@ -243,7 +243,7 @@ export function AdminAudioPlaylistsClient() {
                       'flex flex-col gap-3 rounded-2xl border px-3 py-3 transition-colors sm:flex-row sm:items-center',
                       active
                         ? 'border-emerald-400/70 bg-emerald-50/80 shadow-[0_10px_28px_rgba(16,185,129,0.12)]'
-                        : 'border-white/60 bg-white/55 hover:bg-white/75',
+                        : 'border-white/60 bg-background-card/55 hover:bg-background-card/75',
                     ].join(' ')}
                   >
                     <button
@@ -304,8 +304,8 @@ export function AdminAudioPlaylistsClient() {
                   </div>
 
                   {active && (
-                    <div className="mt-2 rounded-2xl border border-white/60 bg-white/40 p-3 backdrop-blur-md sm:p-4">
-                      <div className="mb-3 flex gap-1.5 rounded-xl border border-white/50 bg-white/35 p-1">
+                    <div className="mt-2 rounded-2xl border border-white/60 bg-background-card/40 p-3 backdrop-blur-md sm:p-4">
+                      <div className="mb-3 flex gap-1.5 rounded-xl border border-white/50 bg-background-card/35 p-1">
                         <button
                           type="button"
                           onClick={() => setPlaylistTab('tracks')}
@@ -313,7 +313,7 @@ export function AdminAudioPlaylistsClient() {
                             'flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition-all',
                             playlistTab === 'tracks'
                               ? 'bg-gradient-to-l from-violet-500 to-fuchsia-600 text-white shadow-sm'
-                              : 'text-slate-600 hover:bg-white/55',
+                              : 'text-slate-600 hover:bg-background-card/55',
                           ].join(' ')}
                         >
                           <Music className="h-3.5 w-3.5" />
@@ -326,7 +326,7 @@ export function AdminAudioPlaylistsClient() {
                             'flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition-all',
                             playlistTab === 'assign'
                               ? 'bg-gradient-to-l from-sky-500 to-cyan-600 text-white shadow-sm'
-                              : 'text-slate-600 hover:bg-white/55',
+                              : 'text-slate-600 hover:bg-background-card/55',
                           ].join(' ')}
                         >
                           <MapPin className="h-3.5 w-3.5" />
@@ -441,7 +441,7 @@ function PlaylistTrackManager({
         <button
           type="button"
           onClick={() => setShowUploader((v) => !v)}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/55 bg-white/30 px-3 py-1.5 text-xs font-bold text-slate-800 backdrop-blur-md transition hover:bg-white/50"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/55 bg-background-card/30 px-3 py-1.5 text-xs font-bold text-slate-800 backdrop-blur-md transition hover:bg-background-card/50"
         >
           <Upload className="h-3.5 w-3.5" />
           {showUploader ? 'סגור העלאה' : 'הוסף רצועה'}
@@ -471,7 +471,7 @@ function PlaylistTrackManager({
             {tracks.map((track) => (
               <li
                 key={track.id}
-                className="rounded-xl border border-white/60 bg-white/65 p-3"
+                className="rounded-xl border border-white/60 bg-background-card/65 p-3"
               >
                 {editingId === track.id ? (
                   <TrackEditor
@@ -613,7 +613,7 @@ function PlaylistStepAssigner({ playlistId }: { playlistId: string }) {
     : steps;
 
   return (
-    <div className="mt-4 rounded-2xl border border-sky-200/60 bg-gradient-to-br from-sky-50/70 to-white/30 p-3 backdrop-blur-xl sm:p-4">
+    <div className="mt-4 rounded-2xl border border-sky-200/60 bg-gradient-to-br from-sky-50/70 to-background-card/30 p-3 backdrop-blur-xl sm:p-4">
       <div className="mb-1 flex items-center gap-2">
         <MapPin className="h-4 w-4 text-sky-600" />
         <h4 className="text-sm font-black text-slate-700">איפה זה מתנגן?</h4>
@@ -643,7 +643,7 @@ function PlaylistStepAssigner({ playlistId }: { playlistId: string }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="חיפוש צעד לפי שם…"
-            className="mb-2 w-full rounded-lg border border-white/70 bg-white/80 px-3 py-2 text-sm outline-none focus:border-sky-400"
+            className="mb-2 w-full rounded-lg border border-white/70 bg-background-card/80 px-3 py-2 text-sm outline-none focus:border-sky-400"
           />
           <ul className="max-h-64 space-y-1.5 overflow-y-auto pe-1">
             {filtered.map((step) => {
@@ -659,13 +659,13 @@ function PlaylistStepAssigner({ playlistId }: { playlistId: string }) {
                       'flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-right transition-colors',
                       assignedHere
                         ? 'border-sky-400/70 bg-sky-100/70'
-                        : 'border-white/70 bg-white/55 hover:bg-white/80',
+                        : 'border-white/70 bg-background-card/55 hover:bg-background-card/80',
                     ].join(' ')}
                   >
                     <span
                       className={[
                         'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors',
-                        assignedHere ? 'border-sky-500 bg-sky-500 text-white' : 'border-slate-300 bg-white/70',
+                        assignedHere ? 'border-sky-500 bg-sky-500 text-white' : 'border-slate-300 bg-background-card/70',
                       ].join(' ')}
                     >
                       {savingId === step.id ? (
@@ -744,7 +744,7 @@ function applySourcePreset(credit: AudioCredit, type: CreditSourceType): AudioCr
 }
 
 const inputCls =
-  'w-full rounded-lg border border-white/60 bg-white/80 px-3 py-2 text-sm outline-none focus:border-emerald-400';
+  'w-full rounded-lg border border-white/60 bg-background-card/80 px-3 py-2 text-sm outline-none focus:border-emerald-400';
 
 /** טופס קרדיט משותף להעלאה ולעריכה — כולל בורר מקור (Pixabay / Suno / אחר). */
 function CreditFields({
@@ -781,7 +781,7 @@ function CreditFields({
                     ? s.id === 'suno'
                       ? 'border-violet-400/70 bg-violet-100/80 text-violet-800'
                       : 'border-emerald-400/70 bg-emerald-100/80 text-emerald-800'
-                    : 'border-white/70 bg-white/60 text-slate-600 hover:bg-white/90',
+                    : 'border-white/70 bg-background-card/60 text-slate-600 hover:bg-background-card/90',
                 ].join(' ')}
               >
                 {s.id === 'suno' && <Sparkles className="h-3.5 w-3.5" />}
@@ -939,7 +939,7 @@ function TrackEditor({
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/70 bg-white/60 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-white/90 disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/70 bg-background-card/60 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-background-card/90 disabled:opacity-50"
         >
           <X className="h-4 w-4" />
           ביטול
@@ -1238,7 +1238,7 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
   };
 
   return (
-    <div className="rounded-2xl border border-white/60 bg-white/55 p-3 sm:p-4" dir="rtl">
+    <div className="rounded-2xl border border-white/60 bg-background-card/55 p-3 sm:p-4" dir="rtl">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h4 className="flex items-center gap-2 text-sm font-black text-slate-700">
           <Upload className="h-4 w-4 text-emerald-600" />
@@ -1270,7 +1270,7 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
             type="button"
             onClick={reset}
             title="מחיקת הפרטים השמורים והתחלה מאפס"
-            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-amber-300/70 bg-white/30 px-3 py-1.5 text-[11px] font-bold text-amber-900 backdrop-blur-md transition-colors hover:bg-white/50"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-amber-300/70 bg-background-card/30 px-3 py-1.5 text-[11px] font-bold text-amber-900 backdrop-blur-md transition-colors hover:bg-background-card/50"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             התחל מחדש
@@ -1346,7 +1346,7 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
               style={{ width: phase === 'transcoding' ? `${progress}%` : '100%' }}
             />
             {phase === 'uploading' && (
-              <div className="absolute inset-0 animate-pulse rounded-full bg-white/20" />
+              <div className="absolute inset-0 animate-pulse rounded-full bg-background-card/20" />
             )}
           </div>
           <div className="mt-1 flex items-center justify-between text-[11px] font-semibold text-slate-500">

@@ -50,7 +50,7 @@ export function MediaAssetPreview({ asset }: { asset: MediaAsset }) {
       );
     }
     return (
-      <p className="break-all rounded-xl border border-white/45 bg-white/15 p-2 text-[11px] text-slate-700" dir="ltr">
+      <p className="break-all rounded-xl border border-white/45 bg-background-card/15 p-2 text-[11px] text-slate-700" dir="ltr">
         {asset.external_url ?? asset.external_id ?? '—'}
       </p>
     );
@@ -61,7 +61,7 @@ export function MediaAssetPreview({ asset }: { asset: MediaAsset }) {
       href={url ?? '#'}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-2 rounded-xl border border-white/45 bg-white/15 p-3 text-sm font-bold text-slate-800"
+      className="flex items-center gap-2 rounded-xl border border-white/45 bg-background-card/15 p-3 text-sm font-bold text-slate-800"
     >
       <FileText className="h-5 w-5 text-slate-600" />
       <span className="min-w-0 flex-1 truncate">{asset.title ?? asset.original_filename ?? 'קובץ'}</span>

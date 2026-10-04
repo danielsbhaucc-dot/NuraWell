@@ -129,8 +129,8 @@ export function RegisterLandingClient() {
               className={[
                 'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all',
                 hasPhotoBg
-                  ? 'text-white border border-white/30 bg-white/10 backdrop-blur-xl hover:bg-white/15'
-                  : 'text-emerald-800 border border-emerald-200 bg-white hover:bg-emerald-50 shadow-sm',
+                  ? 'text-white border border-white/30 bg-background-card/10 backdrop-blur-xl hover:bg-background-card/15'
+                  : 'text-emerald-800 border border-emerald-200 bg-background-card hover:bg-emerald-50 shadow-sm',
               ].join(' ')}
             >
               <HelpCircle className="w-5 h-5" aria-hidden />

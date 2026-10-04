@@ -171,7 +171,7 @@ export function MediaUploadZone({
           <button
             type="button"
             onClick={resetDraft}
-            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-amber-300/60 bg-white/20 px-2.5 py-1 text-[11px] font-bold text-amber-900"
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-amber-300/60 bg-background-card/20 px-2.5 py-1 text-[11px] font-bold text-amber-900"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             התחל מחדש
@@ -297,7 +297,7 @@ export function MediaUploadZone({
             <span>{progress.message ?? progress.phase}</span>
             <span>{progress.percent}%</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-white/30">
+          <div className="h-2 overflow-hidden rounded-full bg-background-card/30">
             <div
               className="h-full rounded-full transition-all duration-200"
               style={{ ...progressBarStyle, width: `${progress.percent}%` }}

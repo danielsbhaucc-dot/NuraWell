@@ -28,7 +28,7 @@ const variantStyles: Record<
   emerald: {
     border: '1px solid rgba(16,185,129,0.28)',
     shadow: '0 12px 40px rgba(6,78,59,0.1)',
-    cardBg: 'linear-gradient(180deg, #ffffff 0%, #f0fdf9 100%)',
+    cardBg: 'linear-gradient(180deg, #f8fbf6 0%, #f0fdf9 100%)',
     headerBar: 'linear-gradient(135deg, #064e3b 0%, #047857 55%, #10b981 100%)',
     title: 'text-white',
     subtitle: 'text-emerald-100/95',
@@ -36,7 +36,7 @@ const variantStyles: Record<
   amber: {
     border: '1px solid rgba(245,158,11,0.35)',
     shadow: '0 12px 40px rgba(120,53,15,0.1)',
-    cardBg: 'linear-gradient(180deg, #ffffff 0%, #fffbeb 100%)',
+    cardBg: 'linear-gradient(180deg, #f8fbf6 0%, #fffbeb 100%)',
     headerBar: 'linear-gradient(135deg, #78350f 0%, #b45309 50%, #f59e0b 100%)',
     title: 'text-white',
     subtitle: 'text-amber-100/95',

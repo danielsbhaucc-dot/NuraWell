@@ -75,7 +75,7 @@ export default function RagDebugPage() {
         ומה קורה אם מפעילים כתיבה. התחברות חובה (עמוד זה בתוך האפליקציה המשוחזרת).
       </p>
 
-      <section className="mb-8 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+      <section className="mb-8 rounded-xl border border-neutral-200 bg-background-card p-4 shadow-sm">
         <h2 className="mb-2 font-medium text-neutral-800">איך לוודא שזה עובד</h2>
         <ol className="list-decimal pr-5 text-sm leading-relaxed text-neutral-700 space-y-3">
           <li>
@@ -118,7 +118,7 @@ export default function RagDebugPage() {
           </label>
           <textarea
             id="rag-test-message"
-            className="min-h-[120px] w-full rounded-lg border border-neutral-300 bg-white p-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+            className="min-h-[120px] w-full rounded-lg border border-neutral-300 bg-background-card p-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             disabled={busy}
@@ -132,7 +132,7 @@ export default function RagDebugPage() {
           <input
             id="rag-prod-secret"
             type="password"
-            className="w-full rounded-lg border border-neutral-300 bg-white p-2 text-sm text-neutral-900 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+            className="w-full rounded-lg border border-neutral-300 bg-background-card p-2 text-sm text-neutral-900 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
             value={prodSecret}
             onChange={(e) => setProdSecret(e.target.value)}
             placeholder="RAG_SELF_TEST_SECRET — רק אם צריך"
@@ -152,7 +152,7 @@ export default function RagDebugPage() {
           </button>
           <button
             type="button"
-            className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
+            className="rounded-lg border border-neutral-300 bg-background-card px-4 py-2 text-sm font-medium text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
             disabled={busy || !message.trim()}
             onClick={() => void postSelfTest(false)}
           >

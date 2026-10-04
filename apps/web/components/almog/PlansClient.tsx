@@ -935,7 +935,7 @@ function SoftBackground() {
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(170deg, #ecfdf5 0%, #f0fdfa 28%, #eff6ff 52%, #faf5ff 76%, #ffffff 100%)',
+            'linear-gradient(170deg, #ecfdf5 0%, #f0fdfa 28%, #eff6ff 52%, #faf5ff 76%, #f8fbf6 100%)',
         }}
       />
       {/* מארג ברי-זוהר עדין בסגנון Apple — כתמי צבע רכים שצפים ברקע */}
@@ -1229,7 +1229,7 @@ function StepStoryPanel({ story, pinned = false }: { story: StepStory; pinned?: 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center gap-2 rounded-2xl border border-slate-200/70 bg-white/60 px-3 py-2.5 text-right transition active:scale-[0.99]"
+        className="flex w-full items-center gap-2 rounded-2xl border border-slate-200/70 bg-background-card/60 px-3 py-2.5 text-right transition active:scale-[0.99]"
       >
         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
           {story.tag}
@@ -1332,7 +1332,7 @@ function CompactRecoveryRow(props: ComponentProps<typeof RecoveryPlanCard>) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex w-full items-center gap-2.5 rounded-2xl border border-amber-100/80 bg-white/50 px-3 py-2.5 text-right transition active:scale-[0.99]"
+          className="flex w-full items-center gap-2.5 rounded-2xl border border-amber-100/80 bg-background-card/50 px-3 py-2.5 text-right transition active:scale-[0.99]"
         >
           <NumBadge n={props.index} rgb={TINT.amber.rgb} />
           <div className="min-w-0 flex-1">
@@ -1383,7 +1383,7 @@ function CompactAssignmentRow({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex w-full items-center gap-2.5 rounded-2xl border border-emerald-100/80 bg-white/50 px-3 py-2.5 text-right transition active:scale-[0.99]"
+          className="flex w-full items-center gap-2.5 rounded-2xl border border-emerald-100/80 bg-background-card/50 px-3 py-2.5 text-right transition active:scale-[0.99]"
         >
           <NumBadge n={index} rgb={TINT.emerald.rgb} />
           <div className="min-w-0 flex-1">
@@ -1778,7 +1778,7 @@ function AssignmentCard({
               type="button"
               disabled={busy}
               onClick={onDrop}
-              className="rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2.5 text-[11.5px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-50"
+              className="rounded-xl border border-slate-200/80 bg-background-card/80 px-3 py-2.5 text-[11.5px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-50"
             >
               לא מתאים
             </button>
@@ -1908,7 +1908,7 @@ function RecoveryPlanCard({
               type="button"
               disabled={busy}
               onClick={() => void onPivot()}
-              className="flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-white/60 px-3 py-2.5 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
+              className="flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-background-card/60 px-3 py-2.5 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
             >
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ThumbsDown className="h-3.5 w-3.5" />}
               לא עובד — נחליף עכשיו
@@ -1986,7 +1986,7 @@ function ReminderRow({ reminder, index }: { reminder: Reminder; index: number })
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex w-full items-center gap-2 rounded-2xl border border-amber-100/70 bg-white/45 px-3 py-2 text-right"
+          className="flex w-full items-center gap-2 rounded-2xl border border-amber-100/70 bg-background-card/45 px-3 py-2 text-right"
         >
           <NumBadge n={index} rgb={TINT.amber.rgb} />
           <span className="min-w-0 flex-1 truncate text-[12px] text-slate-700">{reminder.title}</span>
@@ -2109,7 +2109,7 @@ function BlockerCoachCard({
             </p>
             <NumBadge n={index} rgb={TINT.rose.rgb} />
           </div>
-          <div className="mt-2.5 rounded-2xl border border-rose-100/70 bg-white/40 px-3.5 py-2.5">
+          <div className="mt-2.5 rounded-2xl border border-rose-100/70 bg-background-card/40 px-3.5 py-2.5">
             <p className="text-[13px] leading-relaxed text-slate-700">{blocker.strategy}</p>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -2126,7 +2126,7 @@ function BlockerCoachCard({
                 type="button"
                 disabled={busy}
                 onClick={() => void handlePivot()}
-                className="inline-flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-white/70 px-3 py-2 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
+                className="inline-flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-background-card/70 px-3 py-2 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
               >
                 {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ThumbsDown className="h-3.5 w-3.5" />}
                 לא מתאים — בוא ננסה אחרת
@@ -2242,7 +2242,7 @@ function BlockerCoachCard({
                     type="button"
                     disabled={busy}
                     onClick={() => void handlePivot()}
-                    className="flex-1 rounded-2xl border border-slate-200/80 bg-white/50 px-3 py-2 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
+                    className="flex-1 rounded-2xl border border-slate-200/80 bg-background-card/50 px-3 py-2 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
                   >
                     קשה לי דווקא זה
                   </button>
@@ -2319,7 +2319,7 @@ function FocusCard({
               type="button"
               disabled={busy}
               onClick={onDecline}
-              className="rounded-2xl border border-slate-200 bg-white/70 px-4 py-2.5 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
+              className="rounded-2xl border border-slate-200 bg-background-card/70 px-4 py-2.5 text-[12px] font-bold text-slate-500 transition active:scale-95 disabled:opacity-60"
             >
               לא עכשיו
             </button>

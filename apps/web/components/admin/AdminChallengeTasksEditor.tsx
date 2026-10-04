@@ -90,7 +90,7 @@ export function AdminChallengeTasksEditor() {
   };
 
   return (
-    <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-5 shadow-sm backdrop-blur-md sm:p-6">
+    <div className="rounded-3xl border border-slate-200/60 bg-background-card/70 p-5 shadow-sm backdrop-blur-md sm:p-6">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-bold text-slate-900">משימות לפי יום</h2>
         <label className="mr-auto flex items-center gap-2 text-sm">
@@ -124,7 +124,7 @@ export function AdminChallengeTasksEditor() {
       ) : (
         <div className="space-y-3">
           {tasks.map((task) => (
-            <div key={task.id} className="rounded-2xl border border-slate-200/80 bg-white p-4">
+            <div key={task.id} className="rounded-2xl border border-slate-200/80 bg-background-card p-4">
               <div className="grid gap-3 sm:grid-cols-2">
                 <input
                   value={task.title_he}

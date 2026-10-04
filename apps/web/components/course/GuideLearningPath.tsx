@@ -187,7 +187,7 @@ export function GuideLearningPath({
           disabled={slideIdx === 0}
           className={cn(
             'flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-bold backdrop-blur-md transition',
-            slideIdx === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/15',
+            slideIdx === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-background-card/15',
           )}
           style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.22)', color: '#fff' }}
         >
@@ -203,7 +203,7 @@ export function GuideLearningPath({
               onClick={() => goTo(i)}
               className={cn(
                 'rounded-full transition-all',
-                i === slideIdx ? 'h-2 w-5 bg-emerald-400' : 'h-2 w-2 bg-white/35 hover:bg-white/55',
+                i === slideIdx ? 'h-2 w-5 bg-emerald-400' : 'h-2 w-2 bg-background-card/35 hover:bg-background-card/55',
               )}
               aria-label={`שקף ${i + 1}`}
             />

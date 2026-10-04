@@ -146,7 +146,7 @@ export function AdminShell({
             amber:
               'border border-amber-400/50 bg-amber-400/15 font-bold text-amber-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-md',
           }[color]
-        : 'text-slate-600 hover:bg-white/55 hover:text-slate-900',
+        : 'text-slate-600 hover:bg-background-card/55 hover:text-slate-900',
     );
 
   const bottomNavClass = (active: boolean) =>
@@ -179,7 +179,7 @@ export function AdminShell({
       >
         <div
           className={cn(
-            'flex h-full min-h-0 flex-col overscroll-contain border-l border-white/70 bg-white/50 px-3 py-5 shadow-[0_20px_56px_rgba(99,102,241,0.14)] backdrop-blur-2xl sm:px-4 sm:py-6',
+            'flex h-full min-h-0 flex-col overscroll-contain border-l border-white/70 bg-background-card/50 px-3 py-5 shadow-[0_20px_56px_rgba(99,102,241,0.14)] backdrop-blur-2xl sm:px-4 sm:py-6',
             sidebarCollapsed && 'lg:px-2 lg:py-5',
           )}
         >
@@ -214,7 +214,7 @@ export function AdminShell({
               <button
                 type="button"
                 onClick={() => setSidebarCollapsed((c) => !c)}
-                className="hidden min-h-10 min-w-10 items-center justify-center rounded-xl border border-white/50 bg-white/40 text-slate-700 shadow-sm backdrop-blur-md transition-colors hover:bg-white/70 lg:inline-flex"
+                className="hidden min-h-10 min-w-10 items-center justify-center rounded-xl border border-white/50 bg-background-card/40 text-slate-700 shadow-sm backdrop-blur-md transition-colors hover:bg-background-card/70 lg:inline-flex"
                 aria-expanded={!sidebarCollapsed}
                 aria-label={sidebarCollapsed ? 'הרחב תפריט צד' : 'כווץ תפריט צד'}
                 title={sidebarCollapsed ? 'הרחב תפריט' : 'כווץ תפריט'}
@@ -224,7 +224,7 @@ export function AdminShell({
               <button
                 type="button"
                 onClick={() => setSidebarOpen(false)}
-                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-600 hover:bg-white/60 active:bg-white/80 lg:hidden"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-600 hover:bg-background-card/60 active:bg-background-card/80 lg:hidden"
                 aria-label="סגור תפריט"
               >
                 <X size={24} />
@@ -297,7 +297,7 @@ export function AdminShell({
                 <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>אלמוג</span>
               </Link>
             ) : (
-              <div className="rounded-2xl border border-white/50 bg-white/35 backdrop-blur-md">
+              <div className="rounded-2xl border border-white/50 bg-background-card/35 backdrop-blur-md">
                 <button
                   type="button"
                   onClick={() => setAlmogNavOpen((o) => !o)}
@@ -305,7 +305,7 @@ export function AdminShell({
                     'flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-right text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
                     isAlmogNavSection && !isHome && !isJourneyManage
                       ? 'bg-violet-500/15 font-semibold text-violet-950'
-                      : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
+                      : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
                   )}
                   aria-expanded={almogNavOpen}
                 >
@@ -329,7 +329,7 @@ export function AdminShell({
                           'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-violet-400/20 sm:text-[15px]',
                           isAlmogSettings
                             ? 'bg-violet-400/20 font-bold text-violet-950'
-                            : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
+                            : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
                         )}
                       >
                         <UserCircle size={17} className="shrink-0 opacity-90" />
@@ -344,7 +344,7 @@ export function AdminShell({
                           'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-violet-400/20 sm:text-[15px]',
                           isSystemRagIngest
                             ? 'bg-violet-400/20 font-bold text-violet-950'
-                            : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
+                            : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
                         )}
                       >
                         <BookOpen size={17} className="shrink-0 opacity-90" />
@@ -367,7 +367,7 @@ export function AdminShell({
                 <span className="lg:sr-only">הגדרות מסע</span>
               </Link>
             ) : (
-              <div className="rounded-2xl border border-white/50 bg-white/35 backdrop-blur-md">
+              <div className="rounded-2xl border border-white/50 bg-background-card/35 backdrop-blur-md">
                 <button
                   type="button"
                   onClick={() => setJourneySettingsOpen((o) => !o)}
@@ -375,7 +375,7 @@ export function AdminShell({
                     'flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-right text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
                     isJourneyManage && !isHome && !isAlmogNavSection
                       ? 'bg-amber-400/20 font-semibold text-amber-950'
-                      : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
+                      : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
                   )}
                   aria-expanded={journeySettingsOpen}
                 >
@@ -399,7 +399,7 @@ export function AdminShell({
                           'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-amber-400/25 sm:text-[15px]',
                           isJourneyHub
                             ? 'bg-amber-400/25 font-bold text-amber-950'
-                            : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
+                            : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
                         )}
                       >
                         <Layers size={17} className="shrink-0 opacity-90" />
@@ -414,7 +414,7 @@ export function AdminShell({
                           'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-amber-400/25 sm:text-[15px]',
                           (np === '/ops/journey' || np.startsWith('/ops/steps')) && !isJourneyHub
                             ? 'bg-amber-400/25 font-bold text-amber-950'
-                            : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
+                            : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
                         )}
                       >
                         <ListTree size={17} className="shrink-0 opacity-90" />
@@ -429,7 +429,7 @@ export function AdminShell({
                           'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-amber-400/25 sm:text-[15px]',
                           isAudio
                             ? 'bg-amber-400/25 font-bold text-amber-950'
-                            : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
+                            : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
                         )}
                       >
                         <Music size={17} className="shrink-0 opacity-90" />
@@ -454,7 +454,7 @@ export function AdminShell({
               onClick={() => setSidebarOpen(false)}
               className={cn(
                 navBtn(isSiteSettings, 'sky'),
-                'border border-white/40 bg-white/30 shadow-sm',
+                'border border-white/40 bg-background-card/30 shadow-sm',
               )}
               title="הגדרות אתר"
             >
@@ -466,7 +466,7 @@ export function AdminShell({
               onClick={() => setSidebarOpen(false)}
               className={cn(
                 navBtn(isAccessibility, 'emerald'),
-                'border border-white/40 bg-white/30 shadow-sm',
+                'border border-white/40 bg-background-card/30 shadow-sm',
               )}
               title="כלי נגישות"
             >
@@ -476,7 +476,7 @@ export function AdminShell({
             <Link
               href={coursesHref}
               className={cn(
-                'flex min-h-11 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-500 transition-colors hover:bg-white/55 hover:text-slate-800 active:bg-white/70',
+                'flex min-h-11 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-500 transition-colors hover:bg-background-card/55 hover:text-slate-800 active:bg-background-card/70',
                 sidebarCollapsed && 'lg:justify-center lg:px-2',
               )}
               onClick={() => setSidebarOpen(false)}
@@ -511,7 +511,7 @@ export function AdminShell({
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
-                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-white/60 bg-white/50 text-slate-800 shadow-sm backdrop-blur-md active:scale-[0.98]"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-white/60 bg-background-card/50 text-slate-800 shadow-sm backdrop-blur-md active:scale-[0.98]"
                 aria-label="פתח תפריט"
               >
                 <Menu size={22} />
@@ -541,7 +541,7 @@ export function AdminShell({
             <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
               <AdminNotificationsBell opsHref={opsHref} />
 
-              <div className="flex items-center gap-2.5 rounded-2xl border border-white/55 bg-white/45 py-1 pl-1 pr-2.5 shadow-sm backdrop-blur-md sm:pr-3">
+              <div className="flex items-center gap-2.5 rounded-2xl border border-white/55 bg-background-card/45 py-1 pl-1 pr-2.5 shadow-sm backdrop-blur-md sm:pr-3">
                 <div className="hidden min-w-0 flex-col items-end leading-tight sm:flex">
                   <span className="max-w-[10rem] truncate text-sm font-bold text-emerald-950">
                     {adminDisplayName}
@@ -555,7 +555,7 @@ export function AdminShell({
                   className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-violet-300 via-emerald-200 to-cyan-200 p-[2px] shadow-md ring-1 ring-white/70 sm:h-10 sm:w-10"
                   title={adminDisplayName}
                 >
-                  <div className="relative h-full w-full overflow-hidden rounded-full bg-white">
+                  <div className="relative h-full w-full overflow-hidden rounded-full bg-background-card">
                     {adminAvatarUrl && adminAvatarUrl.startsWith('http') ? (
                       <Image
                         src={adminAvatarUrl}
@@ -587,7 +587,7 @@ export function AdminShell({
       </main>
 
       <nav
-        className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-white/55 bg-white/55 px-2 py-2 shadow-[0_-8px_32px_rgba(99,102,241,0.12)] backdrop-blur-2xl safe-area-bottom lg:hidden"
+        className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-white/55 bg-background-card/55 px-2 py-2 shadow-[0_-8px_32px_rgba(99,102,241,0.12)] backdrop-blur-2xl safe-area-bottom lg:hidden"
         aria-label="ניווט מהיר"
       >
         <Link href={homeHref} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isHome)}>

@@ -152,7 +152,7 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-2xl border border-white/55 bg-white/45 text-emerald-900 shadow-sm backdrop-blur-md transition-colors hover:bg-white/70"
+            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-2xl border border-white/55 bg-background-card/45 text-emerald-900 shadow-sm backdrop-blur-md transition-colors hover:bg-background-card/70"
             aria-label={formatUnreadBellAriaLabel(unreadCount)}
             aria-expanded={open}
           >

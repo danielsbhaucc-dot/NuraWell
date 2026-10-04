@@ -774,7 +774,7 @@ function ShimmerText({
       className="inline-block"
       style={{
         backgroundImage:
-          'linear-gradient(110deg, #ffffff 0%, #fef3c7 22%, #fde68a 38%, #ffffff 50%, #fef9c3 62%, #ffffff 100%)',
+          'linear-gradient(110deg, #f8fbf6 0%, #fef3c7 22%, #fde68a 38%, #f8fbf6 50%, #fef9c3 62%, #f8fbf6 100%)',
         backgroundSize: '300% 100%',
         WebkitBackgroundClip: 'text',
         backgroundClip: 'text',
@@ -1746,7 +1746,7 @@ function StepsTimeline({
                   <div
                     className="flex h-[22px] w-[22px] items-center justify-center rounded-full"
                     style={{
-                      background: isCompleted ? '#10b981' : isActive ? '#fff' : '#d1d5db',
+                      background: isCompleted ? '#10b981' : isActive ? '#f8fbf6' : '#d1d5db',
                       border: isCompleted
                         ? '3px solid #10b981'
                         : isActive

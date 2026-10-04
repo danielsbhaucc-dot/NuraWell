@@ -160,7 +160,7 @@ export function SosMemoryCard() {
         ))}
 
         {events.length > 0 && (expanded || !showAccordion) ? (
-          <div className="rounded-2xl border border-violet-200/50 bg-gradient-to-br from-violet-50/80 to-white px-3 py-2.5">
+          <div className="rounded-2xl border border-violet-200/50 bg-gradient-to-br from-violet-50/80 to-background-card px-3 py-2.5">
             <p className="mb-2 flex items-center gap-1 text-[11px] font-bold text-violet-900">
               <Sparkles className="h-3 w-3" />
               רגעים אחרונים
@@ -210,8 +210,8 @@ function JourneyStepRow({
   const accent = tone === 'good' ? '#8b5cf6' : '#f59e0b';
   const surface =
     tone === 'good'
-      ? 'border-violet-200/50 bg-gradient-to-br from-violet-50/80 to-white'
-      : 'border-amber-200/50 bg-gradient-to-br from-amber-50/80 to-white';
+      ? 'border-violet-200/50 bg-gradient-to-br from-violet-50/80 to-background-card'
+      : 'border-amber-200/50 bg-gradient-to-br from-amber-50/80 to-background-card';
   return (
     <div className={`flex gap-3 rounded-2xl border px-3 py-2.5 ${surface}`}>
       <div className="flex flex-col items-center pt-0.5">

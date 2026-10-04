@@ -86,7 +86,7 @@ export function CommitmentSection({
           <p className="text-sm font-bold text-white/85 mb-1">{copy.prefix}:</p>
           <p className="text-lg font-black leading-relaxed text-white">{commitment.text}</p>
         </div>
-        <div className="p-6 bg-white text-center">
+        <div className="p-6 bg-background-card text-center">
           <p className="text-sm text-gray-500 leading-relaxed mb-6">{commitment.description}</p>
 
           {accepted ? (

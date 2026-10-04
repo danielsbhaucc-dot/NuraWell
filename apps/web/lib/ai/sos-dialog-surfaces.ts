@@ -12,13 +12,13 @@ export type SosSurfaceTone = 'lavender' | 'sky' | 'amber' | 'rose' | 'white' | '
 
 const SURFACE_BASE: Record<SosSurfaceTone, string> = {
   lavender:
-    'rounded-2xl border border-slate-200/80 bg-white shadow-[0_2px_10px_rgba(15,23,42,0.04)]',
+    'rounded-2xl border border-slate-200/80 bg-background-card shadow-[0_2px_10px_rgba(15,23,42,0.04)]',
   sky: 'rounded-2xl border border-sky-200/70 bg-sky-50 shadow-[0_2px_10px_rgba(14,116,144,0.06)]',
   amber:
     'rounded-2xl border border-amber-200/70 bg-amber-50 shadow-[0_2px_10px_rgba(180,83,9,0.06)]',
   rose: 'rounded-2xl border border-rose-200/70 bg-rose-50 shadow-[0_2px_10px_rgba(190,18,60,0.05)]',
   white:
-    'rounded-2xl border border-emerald-100 bg-white shadow-[0_2px_10px_rgba(6,78,59,0.05)]',
+    'rounded-2xl border border-emerald-100 bg-background-card shadow-[0_2px_10px_rgba(6,78,59,0.05)]',
   slate:
     'rounded-2xl border border-slate-200 bg-slate-50 shadow-[0_2px_8px_rgba(15,23,42,0.04)]',
 };
@@ -67,7 +67,7 @@ export const SOS_INTAKE_TASK_ACTIVE =
   'rounded-2xl border-2 border-emerald-500/55 bg-emerald-50/90 shadow-[0_4px_14px_rgba(16,185,129,0.14)] ring-1 ring-emerald-400/30';
 
 export const SOS_INTAKE_TASK_IDLE =
-  'rounded-2xl border border-emerald-200/70 bg-white/95 shadow-[0_1px_6px_rgba(6,78,59,0.05)]';
+  'rounded-2xl border border-emerald-200/70 bg-background-card/95 shadow-[0_1px_6px_rgba(6,78,59,0.05)]';
 
 export const SOS_INTAKE_SECTION =
   'rounded-2xl border border-teal-300/60 bg-gradient-to-br from-teal-100/95 via-emerald-50 to-cyan-50/80 px-3 py-3 shadow-[0_4px_16px_rgba(13,148,136,0.12)]';

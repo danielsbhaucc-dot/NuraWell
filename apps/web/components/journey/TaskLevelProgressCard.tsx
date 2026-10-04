@@ -185,7 +185,7 @@ export function TaskLevelProgressCard({
           type="button"
           disabled={submitting}
           onClick={() => void handleFeedback('ok')}
-          className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-white/80 text-gray-800 border border-gray-200 disabled:opacity-50"
+          className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-background-card/80 text-gray-800 border border-gray-200 disabled:opacity-50"
         >
           מתאים לי
         </button>

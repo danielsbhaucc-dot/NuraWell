@@ -250,7 +250,7 @@ export function LessonImmersivePath({
           disabled={slideIdx === 0}
           className={cn(
             'flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-bold backdrop-blur-md transition',
-            slideIdx === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/15',
+            slideIdx === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-background-card/15',
           )}
           style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.22)', color: '#fff' }}
         >
@@ -266,7 +266,7 @@ export function LessonImmersivePath({
               onClick={() => goTo(i)}
               className={cn(
                 'rounded-full transition-all',
-                i === slideIdx ? 'h-2 w-5 bg-emerald-400' : 'h-2 w-2 bg-white/35 hover:bg-white/55',
+                i === slideIdx ? 'h-2 w-5 bg-emerald-400' : 'h-2 w-2 bg-background-card/35 hover:bg-background-card/55',
               )}
               aria-label={`שקף ${i + 1}`}
             />
@@ -372,7 +372,7 @@ function LessonSlideContent({
             lessonCompleted: progress.is_completed,
             source: 'lesson_page',
           })}
-          className="mt-5 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-white/90 backdrop-blur-md transition hover:bg-white/15"
+          className="mt-5 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-white/90 backdrop-blur-md transition hover:bg-background-card/15"
           style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.28)' }}
         >
           <MessageCircle className="h-3.5 w-3.5 text-emerald-200" />
@@ -444,7 +444,7 @@ function LessonSlideContent({
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-xl p-3 text-sm font-semibold text-white transition hover:bg-white/10"
+              className="flex items-center gap-2 rounded-xl p-3 text-sm font-semibold text-white transition hover:bg-background-card/10"
               style={{ border: '1px solid rgba(255,255,255,0.2)' }}
             >
               <ExternalLinkIcon className="h-4 w-4 text-emerald-300" />

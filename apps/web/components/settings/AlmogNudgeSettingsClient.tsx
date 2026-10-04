@@ -204,7 +204,7 @@ export function AlmogNudgeSettingsClient({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f2fbf8] via-[#f8fafc] to-white">
+    <div className="min-h-screen bg-gradient-to-b from-[#f2fbf8] via-[#f8fafc] to-background-card">
       <div className="container-mobile py-6 pb-10 space-y-5">
         <motion.div
           initial={{ opacity: 0, y: -6 }}
@@ -284,7 +284,7 @@ export function AlmogNudgeSettingsClient({
           ) : null}
 
           {testResult?.kind === 'ok' ? (
-            <div className="rounded-2xl border-2 border-emerald-400 bg-white px-4 py-3 text-right space-y-2">
+            <div className="rounded-2xl border-2 border-emerald-400 bg-background-card px-4 py-3 text-right space-y-2">
               <p className="text-xs font-black text-emerald-700">
                 ✓ ההתראה נשלחה ({testResult.slot}
                 {testResult.usedFallback ? ' · פלייסהולדר' : ''})
@@ -381,7 +381,7 @@ export function AlmogNudgeSettingsClient({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.04 }}
-          className="rounded-3xl border border-violet-100 bg-white p-5 shadow-[0_10px_30px_rgba(139,92,246,0.08)] space-y-4"
+          className="rounded-3xl border border-violet-100 bg-background-card p-5 shadow-[0_10px_30px_rgba(139,92,246,0.08)] space-y-4"
         >
           <div className="flex gap-3">
             <motion.div
@@ -431,7 +431,7 @@ export function AlmogNudgeSettingsClient({
               type="time"
               value={workArrivalTime}
               onChange={(e) => setWorkArrivalTime(e.target.value)}
-              className="w-full max-w-[10rem] rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900"
+              className="w-full max-w-[10rem] rounded-xl border border-slate-200 bg-background-card px-3 py-2.5 text-sm font-medium text-slate-900"
             />
           </label>
         </motion.section>
@@ -440,7 +440,7 @@ export function AlmogNudgeSettingsClient({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="rounded-3xl border border-emerald-100 bg-white p-5 shadow-[0_10px_30px_rgba(16,185,129,0.08)] space-y-4"
+          className="rounded-3xl border border-emerald-100 bg-background-card p-5 shadow-[0_10px_30px_rgba(16,185,129,0.08)] space-y-4"
         >
           <div className="flex gap-3">
             <div
@@ -482,7 +482,7 @@ export function AlmogNudgeSettingsClient({
             >
               <span
                 className={cn(
-                  'absolute top-1 h-6 w-6 rounded-full bg-white shadow-md transition-[inset-inline-start]',
+                  'absolute top-1 h-6 w-6 rounded-full bg-background-card shadow-md transition-[inset-inline-start]',
                   avoidPush ? 'start-1' : 'end-1'
                 )}
               />
@@ -496,7 +496,7 @@ export function AlmogNudgeSettingsClient({
           transition={{ delay: 0.1 }}
           className={cn(
             'rounded-3xl border p-5 shadow-[0_10px_30px_rgba(16,185,129,0.06)] space-y-4',
-            avoidPush ? 'border-slate-200 bg-slate-50/60 opacity-75' : 'border-teal-100 bg-white'
+            avoidPush ? 'border-slate-200 bg-slate-50/60 opacity-75' : 'border-teal-100 bg-background-card'
           )}
         >
           <div className="flex gap-3">
@@ -535,7 +535,7 @@ export function AlmogNudgeSettingsClient({
             >
               <span
                 className={cn(
-                  'absolute top-1 h-6 w-6 rounded-full bg-white shadow-md transition-[inset-inline-start]',
+                  'absolute top-1 h-6 w-6 rounded-full bg-background-card shadow-md transition-[inset-inline-start]',
                   weightReminders ? 'start-1' : 'end-1'
                 )}
               />
@@ -552,7 +552,7 @@ export function AlmogNudgeSettingsClient({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12 }}
-          className="rounded-3xl border border-emerald-100 bg-white p-5 shadow-[0_10px_30px_rgba(16,185,129,0.06)] space-y-4"
+          className="rounded-3xl border border-emerald-100 bg-background-card p-5 shadow-[0_10px_30px_rgba(16,185,129,0.06)] space-y-4"
         >
           <div className="flex gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-800">
@@ -592,7 +592,7 @@ export function AlmogNudgeSettingsClient({
             >
               <span
                 className={cn(
-                  'absolute top-1 h-6 w-6 rounded-full bg-white shadow-md transition-[inset-inline-start]',
+                  'absolute top-1 h-6 w-6 rounded-full bg-background-card shadow-md transition-[inset-inline-start]',
                   guardianOptedIn ? 'start-1' : 'end-1'
                 )}
               />

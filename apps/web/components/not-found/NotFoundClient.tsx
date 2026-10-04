@@ -86,7 +86,7 @@ export default function NotFoundClient({ isAuthenticated }: Props) {
           <div className="px-6 py-5" style={{ background: 'linear-gradient(145deg, #047857, #059669, #10b981)' }}>
             <h1 className="text-2xl font-black text-white">אופס! הדף לא נמצא 🌱</h1>
           </div>
-          <div className="p-6 bg-white">
+          <div className="p-6 bg-background-card">
             <p className="text-gray-600 text-lg leading-relaxed mb-4">
               נראה שטיילתם קצת רחוק מדי בדרך לבריאות...
             </p>

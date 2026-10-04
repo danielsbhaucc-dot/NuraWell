@@ -289,7 +289,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
       />
 
       {/* חיפוש + טאבי תצוגה */}
-      <section className="overflow-hidden rounded-2xl border border-white/50 bg-white/30 shadow-[0_8px_28px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+      <section className="overflow-hidden rounded-2xl border border-white/50 bg-background-card/30 shadow-[0_8px_28px_rgba(15,23,42,0.06)] backdrop-blur-xl">
         <div className="border-b border-white/40 p-3">
           <div className="relative">
             <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
@@ -318,12 +318,12 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                 'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-all sm:text-sm',
                 viewTab === key
                   ? 'border border-amber-300/50 bg-amber-500/15 text-amber-900 shadow-sm backdrop-blur-md'
-                  : 'border border-transparent text-slate-600 hover:border-white/50 hover:bg-white/35',
+                  : 'border border-transparent text-slate-600 hover:border-white/50 hover:bg-background-card/35',
               )}
             >
               <Icon className="h-4 w-4" aria-hidden />
               {label}
-              <span className="rounded-full bg-white/40 px-1.5 py-0.5 text-[10px] tabular-nums">{count}</span>
+              <span className="rounded-full bg-background-card/40 px-1.5 py-0.5 text-[10px] tabular-nums">{count}</span>
             </button>
           ))}
         </div>
@@ -344,7 +344,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                   <button
                     type="button"
                     onClick={() => openStation(st.id)}
-                    className="flex w-full items-center gap-3 rounded-2xl border border-white/50 bg-white/28 px-3 py-3 text-right shadow-sm backdrop-blur-xl transition hover:border-amber-300/45 hover:bg-white/40 active:scale-[0.995] sm:px-4"
+                    className="flex w-full items-center gap-3 rounded-2xl border border-white/50 bg-background-card/28 px-3 py-3 text-right shadow-sm backdrop-blur-xl transition hover:border-amber-300/45 hover:bg-background-card/40 active:scale-[0.995] sm:px-4"
                   >
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-300/40 bg-gradient-to-br from-amber-500/70 to-orange-500/70 text-sm font-black text-white shadow-sm backdrop-blur-sm">
                       {st.sort_order}
@@ -381,7 +381,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
           {filteredOrphans.map((s) => (
             <li
               key={s.id}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-white/50 bg-white/28 px-3 py-2.5 backdrop-blur-xl sm:px-4"
+              className="flex items-center justify-between gap-3 rounded-2xl border border-white/50 bg-background-card/28 px-3 py-2.5 backdrop-blur-xl sm:px-4"
             >
               <span className="flex min-w-0 items-center gap-2">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-300/35 bg-emerald-500/10 text-xs font-black text-emerald-800 backdrop-blur-sm">
@@ -418,14 +418,14 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             style={glassPanelStyle}
           >
             <div className="pointer-events-none absolute -left-12 -top-16 h-44 w-44 rounded-full bg-amber-400/25 blur-3xl" aria-hidden />
-            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-background-card/90 to-transparent" />
 
-            <header className="relative shrink-0 border-b border-white/40 bg-gradient-to-bl from-amber-100/55 via-white/25 to-orange-100/40 px-4 pb-3 pt-4 sm:px-6">
+            <header className="relative shrink-0 border-b border-white/40 bg-gradient-to-bl from-amber-100/55 via-background-card/25 to-orange-100/40 px-4 pb-3 pt-4 sm:px-6">
               <button
                 type="button"
                 onClick={() => !busy && closeStation()}
                 disabled={!!busy}
-                className="absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-white/30 text-slate-600 backdrop-blur-md transition hover:bg-white/50 disabled:opacity-50 sm:left-4 sm:top-4"
+                className="absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/30 text-slate-600 backdrop-blur-md transition hover:bg-background-card/50 disabled:opacity-50 sm:left-4 sm:top-4"
                 aria-label="סגור"
               >
                 <X className="h-4 w-4" />
@@ -462,7 +462,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                 </span>
               </label>
 
-              <div className="mt-4 flex gap-1.5 rounded-2xl border border-white/50 bg-white/30 p-1 backdrop-blur-md">
+              <div className="mt-4 flex gap-1.5 rounded-2xl border border-white/50 bg-background-card/30 p-1 backdrop-blur-md">
                 {(
                   [
                     { key: 'steps' as const, label: 'צעדים', icon: Footprints },
@@ -477,7 +477,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                       'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-all sm:text-sm',
                       popupTab === key
                         ? 'border border-amber-300/50 bg-amber-500/20 text-amber-900 shadow-sm backdrop-blur-md'
-                        : 'border border-transparent text-slate-600 hover:bg-white/40',
+                        : 'border border-transparent text-slate-600 hover:bg-background-card/40',
                     )}
                   >
                     <Icon className="h-4 w-4" aria-hidden />
@@ -491,14 +491,14 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
               {popupTab === 'steps' ? (
                 <ul className="space-y-2">
                   {stepsByStation(selected.id).length === 0 ? (
-                    <li className="rounded-2xl border border-dashed border-white/55 bg-white/20 py-10 text-center text-sm text-slate-500 backdrop-blur-md">
+                    <li className="rounded-2xl border border-dashed border-white/55 bg-background-card/20 py-10 text-center text-sm text-slate-500 backdrop-blur-md">
                       אין צעדים בתחנה זו
                     </li>
                   ) : (
                     stepsByStation(selected.id).map((s) => (
                       <li
                         key={s.id}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-white/45 bg-white/25 px-3 py-2.5 backdrop-blur-md"
+                        className="flex items-center justify-between gap-3 rounded-xl border border-white/45 bg-background-card/25 px-3 py-2.5 backdrop-blur-md"
                       >
                         <span className="flex min-w-0 items-center gap-2">
                           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-300/35 bg-emerald-500/10 text-xs font-black text-emerald-800">
@@ -542,7 +542,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
               )}
             </div>
 
-            <footer className="shrink-0 border-t border-white/40 bg-white/20 px-4 py-3 backdrop-blur-md sm:px-6">
+            <footer className="shrink-0 border-t border-white/40 bg-background-card/20 px-4 py-3 backdrop-blur-md sm:px-6">
               <button
                 type="button"
                 onClick={() => void deleteStation(selected.id)}
@@ -579,7 +579,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             <button
               type="button"
               onClick={() => !busy && setShowAddPopup(false)}
-              className="absolute left-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/55 bg-white/30 text-slate-600 backdrop-blur-md hover:bg-white/50"
+              className="absolute left-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
               aria-label="סגור"
             >
               <X className="h-4 w-4" />
@@ -637,7 +637,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             <button
               type="button"
               onClick={() => !aiBusy && setShowAiPopup(false)}
-              className="absolute left-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/55 bg-white/30 text-slate-600 backdrop-blur-md hover:bg-white/50"
+              className="absolute left-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
               aria-label="סגור"
             >
               <X className="h-4 w-4" />

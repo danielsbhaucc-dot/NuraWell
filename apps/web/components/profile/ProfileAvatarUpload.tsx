@@ -154,7 +154,7 @@ export function ProfileAvatarUpload({
       backdropClassName="absolute inset-0 bg-slate-900/55 backdrop-blur-sm"
       panelClassName="max-w-md overflow-hidden rounded-3xl shadow-2xl border border-white/20"
       panelStyle={{
-        background: 'linear-gradient(165deg, #ecfdf5 0%, #ffffff 42%, #f0fdfa 100%)',
+        background: 'linear-gradient(165deg, #ecfdf5 0%, #f8fbf6 42%, #f0fdfa 100%)',
       }}
     >
       <div
@@ -176,7 +176,7 @@ export function ProfileAvatarUpload({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white hover:bg-white/25"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background-card/15 text-white hover:bg-background-card/25"
             aria-label="סגור"
           >
             <X className="h-4 w-4" />
@@ -212,7 +212,7 @@ export function ProfileAvatarUpload({
           className={`relative flex flex-col items-center justify-center rounded-3xl border-2 border-dashed p-7 transition cursor-pointer ${
             dragOver
               ? 'border-emerald-400 bg-emerald-50 scale-[1.01]'
-              : 'border-emerald-200 bg-white/80 shadow-inner'
+              : 'border-emerald-200 bg-background-card/80 shadow-inner'
           }`}
         >
           <AnimatePresence mode="wait">
@@ -272,7 +272,7 @@ export function ProfileAvatarUpload({
             type="button"
             onClick={() => void remove()}
             disabled={busy}
-            className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-bold text-slate-600"
+            className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-background-card px-4 py-3.5 text-sm font-bold text-slate-600"
           >
             <Trash2 className="h-4 w-4" />
             הסר

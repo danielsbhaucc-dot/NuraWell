@@ -21,7 +21,7 @@ export const glassCardStyle: CSSProperties = {
 };
 
 export const glassInputClass =
-  'w-full rounded-xl border border-white/50 bg-white/25 px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-400/45 backdrop-blur-sm';
+  'w-full rounded-xl border border-white/50 bg-background-card/25 px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-400/45 backdrop-blur-sm';
 
 export const progressBarStyle: CSSProperties = {
   background: 'linear-gradient(90deg, #059669, #10b981, #34d399, #2dd4bf)',

@@ -94,7 +94,7 @@ export function AdminMentorAvatarPanel({ mentorId }: AdminMentorAvatarPanelProps
 
   return (
     <section
-      className="relative mb-6 overflow-hidden rounded-3xl border border-white/40 bg-white/45 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-2xl sm:p-6"
+      className="relative mb-6 overflow-hidden rounded-3xl border border-white/40 bg-background-card/45 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-2xl sm:p-6"
       dir="rtl"
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

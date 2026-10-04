@@ -80,7 +80,7 @@ export function ProfileSettingsDrawer({ open, onOpenChange }: Props) {
                 key={item.href}
                 href={item.href}
                 onClick={() => onOpenChange(false)}
-                className="flex items-center gap-3 rounded-2xl border border-emerald-100/80 bg-white/80 px-4 py-3.5 transition hover:border-emerald-300/60 hover:bg-emerald-50/50"
+                className="flex items-center gap-3 rounded-2xl border border-emerald-100/80 bg-background-card/80 px-4 py-3.5 transition hover:border-emerald-300/60 hover:bg-emerald-50/50"
               >
                 <span className="text-2xl">{item.emoji}</span>
                 <span className="flex-1 min-w-0 text-right">

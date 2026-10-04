@@ -194,7 +194,7 @@ export function QuizSection({
             </h3>
           </div>
 
-          <div className="p-5 bg-white">
+          <div className="p-5 bg-background-card">
             <div className="space-y-2.5">
               {question.options.map((option, i) => {
                 const isSelected = currentAnswer === i;

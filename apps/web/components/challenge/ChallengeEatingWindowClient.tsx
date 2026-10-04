@@ -108,7 +108,7 @@ export function ChallengeEatingWindowClient() {
         <h1 className="font-display text-2xl font-black">חלון האכילה שלך</h1>
         <p className="mt-2 text-white/60">12:12 — מותאם אישית לפי השעות שהגדרת בהרשמה.</p>
 
-        <div className="mt-8 space-y-4 rounded-3xl border border-white/10 bg-white/5 p-6">
+        <div className="mt-8 space-y-4 rounded-3xl border border-white/10 bg-background-card/5 p-6">
           <div className="flex justify-between text-lg">
             <span className="text-white/50">פתיחה</span>
             <span className="font-bold tabular-nums">{config.start}</span>

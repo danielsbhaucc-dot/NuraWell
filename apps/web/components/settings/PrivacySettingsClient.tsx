@@ -438,7 +438,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
             setDeleteError(null);
             setDeleteOpen(true);
           }}
-          className="mt-4 w-full min-h-[48px] rounded-xl font-bold text-red-800 border border-red-300 bg-white hover:bg-red-50"
+          className="mt-4 w-full min-h-[48px] rounded-xl font-bold text-red-800 border border-red-300 bg-background-card hover:bg-red-50"
         >
           מחק/י את החשבון שלי
         </button>

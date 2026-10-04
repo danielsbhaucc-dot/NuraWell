@@ -207,7 +207,7 @@ function AdminComingSoonSongSection() {
 
   return (
     <section
-      className="relative overflow-hidden rounded-3xl border border-white/40 bg-white/40 p-5 backdrop-blur-xl"
+      className="relative overflow-hidden rounded-3xl border border-white/40 bg-background-card/40 p-5 backdrop-blur-xl"
       dir="rtl"
     >
       <div className="pointer-events-none absolute -left-16 -top-16 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" />
@@ -227,7 +227,7 @@ function AdminComingSoonSongSection() {
         {songUrl ? (
           <GlassAudioPlayer src={songUrl} title={songTitle} />
         ) : (
-          <div className="flex items-center justify-center rounded-2xl border border-dashed border-slate-300/70 bg-white/30 px-4 py-8 text-sm text-slate-500">
+          <div className="flex items-center justify-center rounded-2xl border border-dashed border-slate-300/70 bg-background-card/30 px-4 py-8 text-sm text-slate-500">
             עדיין לא נבחר שיר.
           </div>
         )}
@@ -260,7 +260,7 @@ function AdminComingSoonSongSection() {
           href="/coming-soon"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-emerald-300/60 bg-white/40 px-4 py-2 text-sm font-bold text-emerald-900 transition hover:bg-white/70"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-emerald-300/60 bg-background-card/40 px-4 py-2 text-sm font-bold text-emerald-900 transition hover:bg-background-card/70"
         >
           <ExternalLink className="h-4 w-4" />
           תצוגה מקדימה
@@ -326,8 +326,8 @@ export function AdminComingSoonPanel() {
               className={cn(
                 'inline-flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-bold transition-all',
                 active
-                  ? 'bg-white text-emerald-900 shadow-sm'
-                  : 'text-emerald-800/70 hover:bg-white/60 hover:text-emerald-900',
+                  ? 'bg-background-card text-emerald-900 shadow-sm'
+                  : 'text-emerald-800/70 hover:bg-background-card/60 hover:text-emerald-900',
               )}
             >
               <Icon className="h-3.5 w-3.5" aria-hidden />

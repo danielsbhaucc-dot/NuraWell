@@ -100,11 +100,11 @@ export function TranscriptAccessRequestDialog({
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="rounded-lg border border-stone-200 bg-white/80 px-2.5 py-2">
+          <div className="rounded-lg border border-stone-200 bg-background-card/80 px-2.5 py-2">
             <p className="font-bold text-stone-500">נשלח</p>
             <p className="mt-0.5 font-medium text-stone-800">{fmt(request.created_at)}</p>
           </div>
-          <div className="rounded-lg border border-stone-200 bg-white/80 px-2.5 py-2">
+          <div className="rounded-lg border border-stone-200 bg-background-card/80 px-2.5 py-2">
             <p className="font-bold text-stone-500">תוקף הבקשה</p>
             <p className="mt-0.5 font-medium text-stone-800">{fmt(request.expires_at)}</p>
           </div>
@@ -189,7 +189,7 @@ export function TranscriptAccessRequestDialog({
               type="button"
               disabled={busy}
               onClick={() => setDenyMode(true)}
-              className="rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-bold text-stone-700 disabled:opacity-50"
+              className="rounded-xl border border-stone-300 bg-background-card px-4 py-3 text-sm font-bold text-stone-700 disabled:opacity-50"
             >
               דחה עם הסבר
             </button>

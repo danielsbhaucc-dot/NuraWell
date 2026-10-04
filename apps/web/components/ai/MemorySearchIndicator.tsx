@@ -22,7 +22,7 @@ export function MemorySearchIndicator({ visible }: MemorySearchIndicatorProps) {
           aria-label="המנטור סורק את הזיכרון"
         >
           <div
-            className="inline-flex max-w-[92%] items-center gap-2.5 rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-emerald-50 shadow-[0_8px_28px_rgba(16,185,129,0.18)] backdrop-blur-md"
+            className="inline-flex max-w-[92%] items-center gap-2.5 rounded-2xl border border-white/20 bg-background-card/10 px-4 py-2.5 text-sm text-emerald-50 shadow-[0_8px_28px_rgba(16,185,129,0.18)] backdrop-blur-md"
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
             <span className="relative flex h-2.5 w-2.5 shrink-0">
