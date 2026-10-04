@@ -297,7 +297,7 @@ function AlmogChatTypingDots() {
       {[0, 1, 2].map((i) => (
         <motion.span
           key={i}
-          className="h-2 w-2 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.45)]"
+          className="h-2 w-2 rounded-full bg-background-card shadow-[0_0_10px_rgba(255,255,255,0.45)]"
           animate={{ y: [0, -5, 0], opacity: [0.35, 1, 0.35] }}
           transition={{ duration: 0.75, repeat: Infinity, ease: 'easeInOut', delay: i * 0.14 }}
         />
@@ -321,12 +321,12 @@ function TypingDotsLabel({ prefix }: { prefix: string }) {
 
 function PresenceDot({ tone }: { tone: 'live' | 'typing' | 'off' }) {
   const color =
-    tone === 'typing' ? 'bg-sky-300' : tone === 'off' ? 'bg-white/45' : 'bg-emerald-300';
+    tone === 'typing' ? 'bg-sky-300' : tone === 'off' ? 'bg-background-card/45' : 'bg-emerald-300';
   const glow =
     tone === 'typing'
       ? 'bg-sky-300/70'
       : tone === 'off'
-        ? 'bg-white/20'
+        ? 'bg-background-card/20'
         : 'bg-emerald-300/70';
   return (
     <span className="relative mt-px flex h-2 w-2 shrink-0">
@@ -493,7 +493,7 @@ function ThreadHeaderIconButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-white backdrop-blur-md transition hover:border-white/18 hover:bg-white/[0.12] active:scale-95 disabled:opacity-50"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-background-card/[0.06] text-white backdrop-blur-md transition hover:border-white/18 hover:bg-background-card/[0.12] active:scale-95 disabled:opacity-50"
     >
       {children}
     </button>
@@ -1233,7 +1233,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
               )}
               {panelView === 'inbox' ? (
                 <div className="relative pt-2 pb-1 flex justify-center">
-                  <div className="w-10 h-1 rounded-full bg-white/40" />
+                  <div className="w-10 h-1 rounded-full bg-background-card/40" />
                 </div>
               ) : null}
               {panelView === 'inbox' ? (
@@ -1242,7 +1242,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                     type="button"
                     aria-label="סגור"
                     onClick={() => setOpen(false)}
-                    className="absolute left-3 top-2 z-10 rounded-lg p-2 hover:bg-white/10"
+                    className="absolute left-3 top-2 z-10 rounded-lg p-2 hover:bg-background-card/10"
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -1638,7 +1638,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                       type="button"
                       disabled={sessionActionLoading}
                       onClick={() => void handleReopenChatSession()}
-                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-bold text-white backdrop-blur-md transition hover:bg-white/15 disabled:opacity-50"
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-background-card/10 px-3 py-2 text-xs font-bold text-white backdrop-blur-md transition hover:bg-background-card/15 disabled:opacity-50"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                       פתיחה מחדש
@@ -1689,7 +1689,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                 <AiChatPrivacyNotice variant="dark" className="mb-2 px-0.5" />
               ) : null}
               <form
-                className="flex items-end gap-2 rounded-2xl border border-white/12 bg-white/[0.06] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                className="flex items-end gap-2 rounded-2xl border border-white/12 bg-background-card/[0.06] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
                   onSubmit={(e) => {
                     e.preventDefault();
                     const text = input.trim();
@@ -1748,7 +1748,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                           רקע
                         </button>
                       ) : null}
-                      <button type="button" onClick={stop} className="shrink-0 rounded-xl px-2.5 py-2 text-[11px] font-bold text-white/80 hover:bg-white/10">
+                      <button type="button" onClick={stop} className="shrink-0 rounded-xl px-2.5 py-2 text-[11px] font-bold text-white/80 hover:bg-background-card/10">
                         עצור
                       </button>
                     </>

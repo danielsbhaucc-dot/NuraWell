@@ -122,7 +122,7 @@ export function ProgramOrchestratorGate() {
         zIndex={300}
         aria-label={proposal.headline}
         backdropClassName="absolute inset-0 bg-[rgba(2,28,22,0.55)] backdrop-blur-[6px]"
-        panelClassName="max-w-md overflow-hidden rounded-[28px] bg-white shadow-2xl"
+        panelClassName="max-w-md overflow-hidden rounded-[28px] bg-background-card shadow-2xl"
       >
             <div
               className="flex flex-col items-center px-6 pb-5 pt-7 text-center"
@@ -131,7 +131,7 @@ export function ProgramOrchestratorGate() {
                   'linear-gradient(160deg, #047857 0%, #059669 55%, #10b981 100%)',
               }}
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-background-card/20">
                 <Icon className="h-7 w-7 text-white" strokeWidth={2.2} />
               </div>
               <p

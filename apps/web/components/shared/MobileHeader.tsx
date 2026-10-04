@@ -96,7 +96,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
               transition={{ duration: 0.2, ease: 'easeOut' }}
               className="container-mobile pb-4 pt-2"
             >
-              <motion.div className="rounded-2xl overflow-hidden bg-white" style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+              <motion.div className="rounded-2xl overflow-hidden bg-background-card" style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
                 {menuItems.map((item, idx) => (
                   <Link
                     key={item.href}

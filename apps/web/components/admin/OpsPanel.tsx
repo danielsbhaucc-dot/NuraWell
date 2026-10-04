@@ -14,14 +14,14 @@ const ICON_TONES: Record<Tone, string> = {
 };
 
 export const opsGlassCardClass =
-  'relative overflow-hidden rounded-3xl border border-white/50 bg-white/45 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.1)] backdrop-blur-2xl sm:p-6';
+  'relative overflow-hidden rounded-3xl border border-white/50 bg-background-card/45 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.1)] backdrop-blur-2xl sm:p-6';
 
 export const opsInputClass =
-  'w-full rounded-xl border border-white/55 bg-white/35 px-3 py-2.5 text-sm font-medium text-slate-900 outline-none backdrop-blur-md transition placeholder:text-slate-400 focus:border-emerald-300/60 focus:ring-2 focus:ring-emerald-400/30';
+  'w-full rounded-xl border border-white/55 bg-background-card/35 px-3 py-2.5 text-sm font-medium text-slate-900 outline-none backdrop-blur-md transition placeholder:text-slate-400 focus:border-emerald-300/60 focus:ring-2 focus:ring-emerald-400/30';
 
 /** כפתור זכוכית שקוף — לפעולות משניות */
 export const opsGlassBtnClass =
-  'inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/55 bg-white/30 px-3.5 py-2 text-xs font-bold text-slate-800 shadow-sm backdrop-blur-md transition hover:border-emerald-300/50 hover:bg-white/50 active:scale-[0.99] disabled:opacity-50';
+  'inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/55 bg-background-card/30 px-3.5 py-2 text-xs font-bold text-slate-800 shadow-sm backdrop-blur-md transition hover:border-emerald-300/50 hover:bg-background-card/50 active:scale-[0.99] disabled:opacity-50';
 
 /** כפתור זכוכית מודגש — לפעולה ראשית */
 export const opsGlassBtnPrimaryClass =

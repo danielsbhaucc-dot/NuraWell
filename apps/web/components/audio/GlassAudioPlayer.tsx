@@ -78,14 +78,14 @@ export function GlassAudioPlayer({ src, title }: GlassAudioPlayerProps) {
   return (
     <div
       dir="ltr"
-      className="group relative mt-2 flex items-center gap-3 overflow-hidden rounded-2xl border border-white/30 bg-white/10 px-3 py-2.5 shadow-[0_10px_30px_-6px_rgba(6,78,59,0.35)] ring-1 ring-inset ring-white/25 backdrop-blur-2xl backdrop-saturate-150"
+      className="group relative mt-2 flex items-center gap-3 overflow-hidden rounded-2xl border border-white/30 bg-background-card/10 px-3 py-2.5 shadow-[0_10px_30px_-6px_rgba(6,78,59,0.35)] ring-1 ring-inset ring-white/25 backdrop-blur-2xl backdrop-saturate-150"
     >
       {/* גוון זכוכית צבעוני שמבליט את האפקט על רקע בהיר */}
       <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-emerald-300/30 via-teal-200/15 to-sky-300/25" />
       {/* נצנוץ רך בפינה — מראה של זכוכית אמיתית */}
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(80%_140%_at_0%_-10%,rgba(255,255,255,0.55),transparent_45%)]" />
       {/* קו הדגשה עליון (גימור זכוכית) */}
-      <div className="pointer-events-none absolute inset-x-2 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-2 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-background-card/90 to-transparent" />
 
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <audio ref={audioRef} src={src} preload="none" />

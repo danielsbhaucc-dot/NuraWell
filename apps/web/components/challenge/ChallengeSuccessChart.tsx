@@ -25,7 +25,7 @@ export function ChallengeSuccessChart() {
 
   if (!events.length) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center text-sm text-white/40">
+      <div className="rounded-2xl border border-white/10 bg-background-card/5 p-4 text-center text-sm text-white/40">
         ההצלחות שלך יופיעו כאן — כל סימון קטן נספר.
       </div>
     );
@@ -44,7 +44,7 @@ export function ChallengeSuccessChart() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md">
+      <div className="rounded-2xl border border-white/10 bg-background-card/5 p-4 backdrop-blur-md">
         <div className="mb-3 flex items-center gap-2">
           <Trophy className="h-4 w-4 text-amber-400" />
           <span className="text-sm font-bold text-white/70">מפת הצלחות — 14 יום</span>
@@ -62,7 +62,7 @@ export function ChallengeSuccessChart() {
                     className={`w-full rounded-t-md ${
                       count > 0
                         ? 'bg-gradient-to-t from-emerald-600 to-emerald-400'
-                        : 'bg-white/10'
+                        : 'bg-background-card/10'
                     }`}
                     title={`${count} הצלחות`}
                   />
@@ -77,7 +77,7 @@ export function ChallengeSuccessChart() {
       </div>
 
       {byType.length > 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md">
+        <div className="rounded-2xl border border-white/10 bg-background-card/5 p-4 backdrop-blur-md">
           <div className="mb-3 flex items-center gap-2">
             <Flame className="h-4 w-4 text-orange-400" />
             <span className="text-sm font-bold text-white/70">לפי סוג הצלחה</span>
@@ -86,7 +86,7 @@ export function ChallengeSuccessChart() {
             {byType.slice(0, 5).map((t) => (
               <div key={t.type} className="flex items-center gap-2">
                 <span className="w-24 shrink-0 truncate text-xs text-white/50">{t.label}</span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-background-card/10">
                   <motion.div
                     className="h-full rounded-full bg-gradient-to-l from-amber-500 to-orange-400"
                     initial={{ width: 0 }}
@@ -100,7 +100,7 @@ export function ChallengeSuccessChart() {
         </div>
       ) : null}
 
-      <ul className="max-h-36 space-y-2 overflow-y-auto rounded-2xl border border-white/10 bg-white/5 p-3">
+      <ul className="max-h-36 space-y-2 overflow-y-auto rounded-2xl border border-white/10 bg-background-card/5 p-3">
         {events.slice(0, 6).map((e) => (
           <li key={e.id} className="rounded-xl bg-black/20 px-3 py-2 text-sm">
             <span className="font-medium text-emerald-200">{e.title}</span>

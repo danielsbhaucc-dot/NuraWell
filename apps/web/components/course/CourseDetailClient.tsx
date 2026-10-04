@@ -176,7 +176,7 @@ export function CourseDetailClient({
               <button
                 type="button"
                 onClick={() => setViewMode('cover')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md transition hover:bg-white/25"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md transition hover:bg-background-card/25"
                 style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff' }}
               >
                 <Sparkles className="w-3.5 h-3.5" /> שער כניסה
@@ -580,7 +580,7 @@ function GuideCover({
             onClick={() => onSelectMode('read')}
             whileTap={{ scale: 0.98 }}
             dir="rtl"
-            className="flex w-full items-center justify-center gap-2.5 rounded-2xl border py-3.5 text-sm font-black text-white backdrop-blur-md transition hover:bg-white/10"
+            className="flex w-full items-center justify-center gap-2.5 rounded-2xl border py-3.5 text-sm font-black text-white backdrop-blur-md transition hover:bg-background-card/10"
             style={{
               background: 'rgba(255,255,255,0.12)',
               borderColor: 'rgba(255,255,255,0.35)',

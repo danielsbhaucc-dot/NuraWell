@@ -122,8 +122,8 @@ export function LiveNotificationToast({
         'pointer-events-auto group relative w-full rounded-2xl',
         'cursor-pointer select-none border text-right',
         isPlatform
-          ? 'border-indigo-200/70 bg-gradient-to-br from-indigo-50 via-white to-violet-50 shadow-[0_10px_28px_rgba(67,56,202,0.14)]'
-          : 'border-emerald-200/60 bg-gradient-to-br from-emerald-50 via-white to-teal-50 shadow-[0_10px_28px_rgba(6,78,59,0.14)]',
+          ? 'border-indigo-200/70 bg-gradient-to-br from-indigo-50 via-background-card to-violet-50 shadow-[0_10px_28px_rgba(67,56,202,0.14)]'
+          : 'border-emerald-200/60 bg-gradient-to-br from-emerald-50 via-background-card to-teal-50 shadow-[0_10px_28px_rgba(6,78,59,0.14)]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60'
       )}
     >

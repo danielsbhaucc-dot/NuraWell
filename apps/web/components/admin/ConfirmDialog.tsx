@@ -73,15 +73,15 @@ export function ConfirmDialog({
       zIndex={320}
       aria-label={title}
       backdropClassName="absolute inset-0 cursor-default bg-slate-900/30 backdrop-blur-sm"
-      panelClassName="max-w-sm overflow-hidden rounded-3xl border border-white/40 bg-white/20 p-5 shadow-[0_20px_60px_-12px_rgba(15,23,42,0.5)] ring-1 ring-inset ring-white/30 backdrop-blur-2xl backdrop-saturate-150"
+      panelClassName="max-w-sm overflow-hidden rounded-3xl border border-white/40 bg-background-card/20 p-5 shadow-[0_20px_60px_-12px_rgba(15,23,42,0.5)] ring-1 ring-inset ring-white/30 backdrop-blur-2xl backdrop-saturate-150"
     >
-      <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-background-card/80 to-transparent" />
 
       <button
         type="button"
         onClick={() => !busy && onCancel()}
         aria-label="סגור"
-        className="absolute left-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/50 bg-white/40 text-slate-600 hover:bg-white/70"
+        className="absolute left-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/50 bg-background-card/40 text-slate-600 hover:bg-background-card/70"
       >
         <X className="h-4 w-4" />
       </button>
@@ -119,7 +119,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="inline-flex items-center justify-center rounded-xl border border-white/60 bg-white/40 px-4 py-2.5 text-sm font-bold text-slate-700 backdrop-blur-md hover:bg-white/70 disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-xl border border-white/60 bg-background-card/40 px-4 py-2.5 text-sm font-bold text-slate-700 backdrop-blur-md hover:bg-background-card/70 disabled:opacity-60"
           >
             {cancelLabel}
           </button>

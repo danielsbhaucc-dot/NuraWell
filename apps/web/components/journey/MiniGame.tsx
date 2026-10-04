@@ -169,7 +169,7 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTt
             </p>
           </div>
 
-          <div className="p-5 bg-white">
+          <div className="p-5 bg-background-card">
             {!isAnswered && (
               <div className="flex gap-3 justify-center">
                 <motion.button

@@ -99,7 +99,7 @@ export function OpsAdminNotificationDialog({
               onDismiss();
               onOpenPanel();
             }}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E8D5B5] bg-white px-4 py-2.5 text-sm font-bold text-stone-700"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E8D5B5] bg-background-card px-4 py-2.5 text-sm font-bold text-stone-700"
           >
             <Bell className="h-4 w-4" />
             כל ההתראות

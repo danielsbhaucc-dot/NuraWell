@@ -309,7 +309,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
         <button
           type="button"
           onClick={restartSong}
-          className="h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-sm font-semibold text-white/80 transition hover:bg-white/10"
+          className="h-10 rounded-xl border border-white/15 bg-background-card/5 px-3 text-sm font-semibold text-white/80 transition hover:bg-background-card/10"
         >
           להתחלת השיר
         </button>
@@ -323,7 +323,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
           </span>
           {done && <span className="text-lime-300">הושלם — אפשר לשמור ✓</span>}
         </div>
-        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-background-card/10">
           <div
             className="h-full rounded-full bg-gradient-to-l from-emerald-400 to-lime-300 transition-[width] duration-150"
             style={{ width: `${progress * 100}%` }}
@@ -367,7 +367,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
           type="button"
           onClick={undoTap}
           disabled={tapPos === 0}
-          className="flex h-9 items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-semibold text-white/80 transition hover:bg-white/10 disabled:opacity-40"
+          className="flex h-9 items-center gap-1.5 rounded-xl border border-white/15 bg-background-card/5 px-3 text-xs font-semibold text-white/80 transition hover:bg-background-card/10 disabled:opacity-40"
         >
           <Undo2 className="h-4 w-4" />
           אחורה (Backspace)
@@ -375,7 +375,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
         <button
           type="button"
           onClick={resetTaps}
-          className="h-9 rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-semibold text-white/80 transition hover:bg-white/10"
+          className="h-9 rounded-xl border border-white/15 bg-background-card/5 px-3 text-xs font-semibold text-white/80 transition hover:bg-background-card/10"
         >
           אפס סימונים
         </button>
@@ -421,7 +421,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
             <button
               type="button"
               onClick={loadDefaults}
-              className="flex h-9 items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-semibold text-white/80 transition hover:bg-white/10"
+              className="flex h-9 items-center gap-1.5 rounded-xl border border-white/15 bg-background-card/5 px-3 text-xs font-semibold text-white/80 transition hover:bg-background-card/10"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               ברירת מחדל

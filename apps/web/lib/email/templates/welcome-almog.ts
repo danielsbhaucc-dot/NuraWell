@@ -70,7 +70,7 @@ export function buildWelcomeAlmogEmailHtml(
 <body style="margin:0;background:#ecfdf5;font-family:Rubik,Heebo,Arial,sans-serif">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#ecfdf5;padding:32px 16px">
     <tr><td align="center">
-      <table width="100%" style="max-width:520px;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(6,78,59,0.12)">
+      <table width="100%" style="max-width:520px;background:#f8fbf6;border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(6,78,59,0.12)">
         <tr><td style="background:linear-gradient(135deg,#047857,#0d9488);padding:28px 24px">
           <p style="margin:0;color:#d1fae5;font-size:13px">NuraWell · אלמוג</p>
           <h1 style="margin:8px 0 0;color:#fff;font-size:22px">שלום ${firstName} 🌿</h1>

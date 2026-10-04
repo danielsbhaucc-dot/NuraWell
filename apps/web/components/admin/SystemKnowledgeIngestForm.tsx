@@ -168,7 +168,7 @@ export function SystemKnowledgeIngestForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="space-y-5 rounded-3xl border border-white/60 bg-white/55 p-5 shadow-lg backdrop-blur-md sm:p-7"
+      className="space-y-5 rounded-3xl border border-white/60 bg-background-card/55 p-5 shadow-lg backdrop-blur-md sm:p-7"
     >
       <p className="text-[15px] leading-relaxed text-slate-700">
         הדביקו כאן טקסט לימודי או הנחיה למנטור. המערכת תפצל את זה לקטעים קצרים ותחבר לאלמוג — המשתמשים יקבלו את התוכן רק כשהם מתקדמים לתחנה ולשלב המתאימים (ולפי הרשאות קורס).
@@ -184,7 +184,7 @@ export function SystemKnowledgeIngestForm() {
           onChange={(ev) => setTranscript(ev.target.value)}
           required
           rows={12}
-          className="w-full resize-y rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] text-slate-900 shadow-inner outline-none ring-emerald-500/30 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-2"
+          className="w-full resize-y rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] text-slate-900 shadow-inner outline-none ring-emerald-500/30 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-2"
           placeholder="למשל: הסבר על ארוחת ערב מאוזנת, טיפים לשעות הערב, או תזכורות רכות להתמדה..."
         />
       </div>
@@ -198,7 +198,7 @@ export function SystemKnowledgeIngestForm() {
             id="sk-data-type"
             value={dataType}
             onChange={(ev) => setDataType(ev.target.value as DataType)}
-            className="w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] font-medium text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
+            className="w-full rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] font-medium text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
           >
             <option value="step">שלב ספציפי בתחנה</option>
             <option value="course">קורס שלם</option>
@@ -213,7 +213,7 @@ export function SystemKnowledgeIngestForm() {
             id="sk-access"
             value={accessLevel}
             onChange={(ev) => setAccessLevel(ev.target.value as AccessLevel)}
-            className="w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] font-medium text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
+            className="w-full rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] font-medium text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
           >
             <option value="public">כל מי שהגיע לשלב המתאים</option>
             <option value="premium">משתמשים רשומים לקורס פרימיום (מזהה קורס)</option>
@@ -238,7 +238,7 @@ export function SystemKnowledgeIngestForm() {
                 id="sk-step"
                 value={selectedStepId}
                 onChange={(ev) => setSelectedStepId(ev.target.value)}
-                className="w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
+                className="w-full rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
               >
                 {journeySteps.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -264,7 +264,7 @@ export function SystemKnowledgeIngestForm() {
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                 courseMode === 'preset'
                   ? 'bg-amber-500 text-white shadow'
-                  : 'bg-white/80 text-amber-900 hover:bg-white'
+                  : 'bg-background-card/80 text-amber-900 hover:bg-background-card'
               }`}
             >
               מהרשימה
@@ -275,7 +275,7 @@ export function SystemKnowledgeIngestForm() {
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                 courseMode === 'custom'
                   ? 'bg-amber-500 text-white shadow'
-                  : 'bg-white/80 text-amber-900 hover:bg-white'
+                  : 'bg-background-card/80 text-amber-900 hover:bg-background-card'
               }`}
             >
               מזהה מהמערכת
@@ -285,7 +285,7 @@ export function SystemKnowledgeIngestForm() {
             <select
               value={presetCourseId}
               onChange={(ev) => setPresetCourseId(ev.target.value)}
-              className="w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/35"
+              className="w-full rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/35"
             >
               {PRESET_COURSES.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -299,7 +299,7 @@ export function SystemKnowledgeIngestForm() {
               value={customCourseId}
               onChange={(ev) => setCustomCourseId(ev.target.value)}
               placeholder="הדביקו את מזהה הקורס כפי שמופיע במערכת"
-              className="w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-[15px] text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/35"
+              className="w-full rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/35"
             />
           )}
           <p className="text-xs leading-relaxed text-amber-950/85">

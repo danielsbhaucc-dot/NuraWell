@@ -236,7 +236,7 @@ export function GuidesManager() {
         />
 
         {aiPhase.phase === 'questions' && (
-          <div className="mt-4 space-y-3 p-4 rounded-xl bg-white/80 border border-violet-100">
+          <div className="mt-4 space-y-3 p-4 rounded-xl bg-background-card/80 border border-violet-100">
             <p className="text-sm font-bold text-violet-900">שאלות חידוד:</p>
             {aiPhase.questions.map((q) => (
               <div key={q}>
@@ -261,7 +261,7 @@ export function GuidesManager() {
         )}
 
         {aiPhase.phase === 'preview' && (
-          <div className="mt-4 space-y-4 rounded-2xl border border-violet-200/60 bg-white/90 p-4">
+          <div className="mt-4 space-y-4 rounded-2xl border border-violet-200/60 bg-background-card/90 p-4">
             <div className="flex items-center gap-2 text-violet-900">
               <Eye className="w-4 h-4" />
               <p className="text-sm font-black">תצוגה מקדימה — אשר לפני פרסום</p>

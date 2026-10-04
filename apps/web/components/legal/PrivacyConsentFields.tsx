@@ -105,7 +105,7 @@ export function ParentalConsentCheckbox({
   disabled,
 }: ParentalConsentCheckboxProps) {
   return (
-    <label className="mt-3 flex items-start gap-3 cursor-pointer rounded-xl border border-white/15 bg-white/5 p-3">
+    <label className="mt-3 flex items-start gap-3 cursor-pointer rounded-xl border border-white/15 bg-background-card/5 p-3">
       <input
         type="checkbox"
         checked={checked}

@@ -79,7 +79,7 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
                 type="button"
                 disabled={demoExiting}
                 onClick={handleExitDemo}
-                className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
+                className="inline-flex items-center gap-1 rounded-xl bg-background-card/10 px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
               >
                 <LogOut className="h-3.5 w-3.5" />
                 {demoExiting ? 'יוצא...' : 'יציאה'}
@@ -105,7 +105,7 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
 
         <motion.div
           {...challengeFadeUp(reducedMotion, 0.15)}
-          className="mt-10 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl"
+          className="mt-10 rounded-3xl border border-white/10 bg-background-card/5 p-6 backdrop-blur-xl"
         >
           <div className="mb-4 flex items-center justify-center gap-2 text-emerald-300">
             <Clock className="h-5 w-5" />

@@ -52,7 +52,7 @@ export function AdminAccessibilityPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-white/50 bg-white/35 p-4 backdrop-blur-xl">
+      <div className="rounded-2xl border border-white/50 bg-background-card/35 p-4 backdrop-blur-xl">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="font-display text-sm font-black text-slate-900">ביקורת alt במדיה</p>
@@ -88,7 +88,7 @@ export function AdminAccessibilityPanel() {
       </div>
 
       {audit && audit.samples.length > 0 ? (
-        <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/30 backdrop-blur-xl">
+        <div className="overflow-hidden rounded-2xl border border-white/50 bg-background-card/30 backdrop-blur-xl">
           <div className="border-b border-white/40 px-4 py-3">
             <p className="text-sm font-black text-slate-900">דוגמאות לתיקון</p>
           </div>
@@ -147,7 +147,7 @@ function StatCard({
         'rounded-xl border px-3 py-3',
         tone === 'warn'
           ? 'border-amber-200/80 bg-amber-50/80'
-          : 'border-slate-200/70 bg-white/70',
+          : 'border-slate-200/70 bg-background-card/70',
       )}
     >
       <p className="text-[11px] font-bold text-slate-600">{label}</p>

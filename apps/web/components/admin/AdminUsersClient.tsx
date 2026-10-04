@@ -440,7 +440,7 @@ export function AdminUsersClient() {
           onChange={(e) => setQ(e.target.value)}
           placeholder="חיפוש לפי שם, אימייל או מזהה..."
           dir="rtl"
-          className="w-full rounded-2xl border border-white/60 bg-white/55 py-3.5 pr-12 pl-4 text-sm font-medium text-slate-900 shadow-[0_8px_28px_rgba(16,185,129,0.08)] outline-none backdrop-blur-xl transition placeholder:text-slate-400 focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40"
+          className="w-full rounded-2xl border border-white/60 bg-background-card/55 py-3.5 pr-12 pl-4 text-sm font-medium text-slate-900 shadow-[0_8px_28px_rgba(16,185,129,0.08)] outline-none backdrop-blur-xl transition placeholder:text-slate-400 focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40"
         />
       </div>
 
@@ -476,7 +476,7 @@ export function AdminUsersClient() {
             const label = u.full_name || u.email || u.id;
             return (
               <li key={u.id}>
-                <div className="group flex items-stretch rounded-2xl border border-white/60 bg-white/45 shadow-[0_8px_24px_rgba(99,102,241,0.07)] backdrop-blur-xl transition-all hover:border-emerald-300/70 hover:bg-white/70 hover:shadow-[0_12px_32px_rgba(16,185,129,0.16)]">
+                <div className="group flex items-stretch rounded-2xl border border-white/60 bg-background-card/45 shadow-[0_8px_24px_rgba(99,102,241,0.07)] backdrop-blur-xl transition-all hover:border-emerald-300/70 hover:bg-background-card/70 hover:shadow-[0_12px_32px_rgba(16,185,129,0.16)]">
                   <button
                     type="button"
                     onClick={() => openUser(u.id)}
@@ -553,7 +553,7 @@ export function AdminUsersClient() {
             className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl shadow-[0_24px_70px_-12px_rgba(6,78,59,0.5)] sm:rounded-3xl"
             style={glassPanelStyle}
           >
-            <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-background-card/80 to-transparent" />
 
             {detailLoading || !detail ? (
               <div className="flex min-h-[40vh] items-center justify-center p-10">
@@ -565,7 +565,7 @@ export function AdminUsersClient() {
                 <button
                   type="button"
                   onClick={closeUser}
-                  className="absolute left-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-white/45 text-slate-600 backdrop-blur-md hover:bg-white/70"
+                  className="absolute left-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/45 text-slate-600 backdrop-blur-md hover:bg-background-card/70"
                   aria-label="סגור"
                 >
                   <X className="h-4 w-4" />
@@ -574,12 +574,12 @@ export function AdminUsersClient() {
             ) : (
               <>
                 {/* כותרת הפופאפ */}
-                <header className="relative shrink-0 border-b border-white/40 bg-gradient-to-l from-emerald-100/50 via-white/30 to-cyan-100/40 px-4 pb-3 pt-4 sm:px-6">
+                <header className="relative shrink-0 border-b border-white/40 bg-gradient-to-l from-emerald-100/50 via-background-card/30 to-cyan-100/40 px-4 pb-3 pt-4 sm:px-6">
                   <button
                     type="button"
                     onClick={closeUser}
                     disabled={saving || deleting}
-                    className="absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-white/45 text-slate-600 backdrop-blur-md transition hover:bg-white/70 disabled:opacity-50 sm:left-4 sm:top-4"
+                    className="absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/45 text-slate-600 backdrop-blur-md transition hover:bg-background-card/70 disabled:opacity-50 sm:left-4 sm:top-4"
                     aria-label="סגור"
                   >
                     <X className="h-4 w-4" />
@@ -600,7 +600,7 @@ export function AdminUsersClient() {
 
                   {/* טאבים */}
                   <div
-                    className="mt-4 flex gap-1.5 overflow-x-auto overscroll-x-contain rounded-2xl border border-white/50 bg-white/35 p-1 backdrop-blur-md [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    className="mt-4 flex gap-1.5 overflow-x-auto overscroll-x-contain rounded-2xl border border-white/50 bg-background-card/35 p-1 backdrop-blur-md [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                     style={{ WebkitOverflowScrolling: 'touch' }}
                   >
                     {(
@@ -621,7 +621,7 @@ export function AdminUsersClient() {
                           'flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all sm:text-sm',
                           tab === key
                             ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-600/25'
-                            : 'text-slate-600 hover:bg-white/55 hover:text-slate-900',
+                            : 'text-slate-600 hover:bg-background-card/55 hover:text-slate-900',
                         )}
                         aria-pressed={tab === key}
                       >
@@ -739,7 +739,7 @@ export function AdminUsersClient() {
                           <StatChip key={c.label} label={c.label} value={c.value} tone={c.tone} />
                         ))}
                       </div>
-                      <div className="rounded-2xl border border-white/45 bg-white/35 p-3 backdrop-blur-md">
+                      <div className="rounded-2xl border border-white/45 bg-background-card/35 p-3 backdrop-blur-md">
                         <AdminUserJourneyDetail steps={detail.journeyReport.steps} />
                       </div>
                     </div>
@@ -747,7 +747,7 @@ export function AdminUsersClient() {
 
                   {tab === 'costs' ? (
                     <div className="space-y-4">
-                      <div className="flex gap-1 rounded-xl bg-white/40 p-1">
+                      <div className="flex gap-1 rounded-xl bg-background-card/40 p-1">
                         {COST_WINDOWS.map((w) => (
                           <button
                             key={w.days}
@@ -757,7 +757,7 @@ export function AdminUsersClient() {
                               'flex-1 rounded-lg py-1.5 text-xs font-bold transition',
                               costDays === w.days
                                 ? 'bg-emerald-600 text-white shadow-sm'
-                                : 'text-slate-600 hover:bg-white/70',
+                                : 'text-slate-600 hover:bg-background-card/70',
                             )}
                           >
                             {w.label}
@@ -827,7 +827,7 @@ export function AdminUsersClient() {
                             </div>
                           </div>
                           {cost.byModel && cost.byModel.length > 0 ? (
-                            <div className="rounded-2xl border border-white/45 bg-white/40 p-3">
+                            <div className="rounded-2xl border border-white/45 bg-background-card/40 p-3">
                               <p className="mb-2 text-xs font-bold text-slate-700">פירוק לפי מודל כותב</p>
                               <ul className="space-y-1.5">
                                 {cost.byModel.map((m) => (
@@ -863,7 +863,7 @@ export function AdminUsersClient() {
                 </div>
 
                 {/* פעולות */}
-                <footer className="shrink-0 border-t border-white/40 bg-white/25 px-4 py-3 backdrop-blur-md sm:px-6">
+                <footer className="shrink-0 border-t border-white/40 bg-background-card/25 px-4 py-3 backdrop-blur-md sm:px-6">
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
@@ -912,7 +912,7 @@ export function AdminUsersClient() {
 }
 
 const inputClass =
-  'w-full rounded-xl border border-white/60 bg-white/60 px-3 py-2.5 text-sm font-medium text-slate-900 outline-none backdrop-blur-sm transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40';
+  'w-full rounded-xl border border-white/60 bg-background-card/60 px-3 py-2.5 text-sm font-medium text-slate-900 outline-none backdrop-blur-sm transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40';
 
 function SelectInput({
   value,
@@ -961,7 +961,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-white/45 bg-white/30 p-3.5 backdrop-blur-md sm:p-4">
+    <section className="rounded-2xl border border-white/45 bg-background-card/30 p-3.5 backdrop-blur-md sm:p-4">
       <div className="mb-3 flex items-center gap-2">
         <span
           className={cn(

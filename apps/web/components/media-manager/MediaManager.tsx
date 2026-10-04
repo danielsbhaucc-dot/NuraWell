@@ -388,7 +388,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
           />
           <div className="relative flex items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/45 bg-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] backdrop-blur-md">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/45 bg-background-card/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] backdrop-blur-md">
                 <FolderOpen className="h-5 w-5 text-white" />
               </div>
               <div className="min-w-0">
@@ -404,7 +404,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
               type="button"
               onClick={onClose}
               aria-label="סגירה"
-              className="shrink-0 rounded-xl border border-white/45 bg-white/15 p-2 text-white shadow-sm backdrop-blur-md transition hover:bg-white/30"
+              className="shrink-0 rounded-xl border border-white/45 bg-background-card/15 p-2 text-white shadow-sm backdrop-blur-md transition hover:bg-background-card/30"
             >
               <X className="h-5 w-5" />
             </button>
@@ -432,7 +432,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                     'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold whitespace-nowrap transition',
                     activeKind === k
                       ? 'bg-emerald-800/80 text-white'
-                      : 'text-slate-700 hover:bg-white/25'
+                      : 'text-slate-700 hover:bg-background-card/25'
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -536,7 +536,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                         <button
                           type="button"
                           onClick={() => void load()}
-                          className="mt-1 rounded-lg border border-amber-400/60 bg-white/25 px-2.5 py-1 text-xs font-bold"
+                          className="mt-1 rounded-lg border border-amber-400/60 bg-background-card/25 px-2.5 py-1 text-xs font-bold"
                         >
                           נסה שוב
                         </button>
@@ -565,7 +565,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                   )}
                   {!loading && !loadError && visibleItems.length === 0 && folderView.folders.length === 0 ? (
                     <div className="flex flex-col items-center gap-2 py-12 text-center">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/45 bg-white/15 backdrop-blur-sm">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/45 bg-background-card/15 backdrop-blur-sm">
                         <FolderOpen className="h-7 w-7 text-slate-500" />
                       </div>
                       <p className="text-sm font-bold text-slate-700">
@@ -667,7 +667,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                 type="button"
                 onClick={() => setSelected(null)}
                 aria-label="סגור תצוגה"
-                className="ml-auto rounded-lg border border-white/50 bg-white/40 p-1.5 text-slate-700"
+                className="ml-auto rounded-lg border border-white/50 bg-background-card/40 p-1.5 text-slate-700"
               >
                 <X className="h-4 w-4" />
               </button>

@@ -35,7 +35,7 @@ export function OnboardingSummaryStep({ data, name, gender, onEdit }: Onboarding
         {rows.map((row) => (
           <li
             key={row.label}
-            className="flex items-start justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5"
+            className="flex items-start justify-between gap-2 rounded-xl border border-white/10 bg-background-card/5 px-3 py-2.5"
           >
             <span className="text-xs font-bold text-emerald-100/70 shrink-0 pt-0.5">{row.label}</span>
             <span

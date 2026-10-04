@@ -31,7 +31,7 @@ function RegisterStartBody({ onClose }: { onClose: () => void }) {
       <ul className="space-y-3" role="list">
         <li>
           <div
-            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 opacity-55 cursor-not-allowed"
+            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-background-card/5 px-4 py-4 opacity-55 cursor-not-allowed"
             aria-disabled="true"
           >
             <Phone className="w-5 h-5 text-white/50 shrink-0" />
@@ -44,7 +44,7 @@ function RegisterStartBody({ onClose }: { onClose: () => void }) {
         </li>
         <li>
           <div
-            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 opacity-55 cursor-not-allowed"
+            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-background-card/5 px-4 py-4 opacity-55 cursor-not-allowed"
             aria-disabled="true"
           >
             <MessageCircle className="w-5 h-5 text-white/50 shrink-0" />
@@ -88,12 +88,12 @@ function MobileStartDrawer({ open, onClose }: RegisterStartModalProps) {
 
           <div className="shrink-0 rounded-t-[26px] px-5 pt-3 pb-2 relative">
             <div className="mb-3 flex justify-center">
-              <div className="h-1.5 w-11 rounded-full bg-white/35" />
+              <div className="h-1.5 w-11 rounded-full bg-background-card/35" />
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white/70 hover:bg-white/20"
+              className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
               aria-label="סגור"
             >
               <X className="w-5 h-5" />
@@ -137,7 +137,7 @@ function DesktopStartModal({ open, onClose }: RegisterStartModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white/70 hover:bg-white/20"
+              className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
               aria-label="סגור"
             >
               <X className="w-5 h-5" />

@@ -620,7 +620,7 @@ export function SosDialog({
           <button
             type="button"
             onClick={closeDialog}
-            className="absolute left-4 top-4 rounded-full bg-white/15 p-2 text-white/90 transition hover:bg-white/25"
+            className="absolute left-4 top-4 rounded-full bg-background-card/15 p-2 text-white/90 transition hover:bg-background-card/25"
             aria-label="סגירה"
           >
             <X className="h-4 w-4" />
@@ -629,7 +629,7 @@ export function SosDialog({
             <button
               type="button"
               onClick={goBackFromResponse}
-              className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-2 text-xs font-bold text-white/95 transition hover:bg-white/25"
+              className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-background-card/15 px-3 py-2 text-xs font-bold text-white/95 transition hover:bg-background-card/25"
               aria-label="חזרה לבחירת הקושי"
             >
               <ArrowRight className="h-4 w-4" aria-hidden />
@@ -947,7 +947,7 @@ export function SosDialog({
               >
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute inset-x-4 top-px h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                  className="pointer-events-none absolute inset-x-4 top-px h-px bg-gradient-to-r from-transparent via-background-card/40 to-transparent"
                 />
                 <div className="flex items-start justify-between gap-2">
                   <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm font-semibold leading-7">
@@ -957,7 +957,7 @@ export function SosDialog({
                     type="button"
                     onClick={speakInterventionMessage}
                     disabled={isSosTtsLoading(response.intervention.message, 'intervention_message')}
-                    className="shrink-0 rounded-xl bg-white/15 p-2 text-white/90 transition hover:bg-white/25 disabled:opacity-60"
+                    className="shrink-0 rounded-xl bg-background-card/15 p-2 text-white/90 transition hover:bg-background-card/25 disabled:opacity-60"
                     aria-label="הקרא את ההודעה"
                   >
                     {isSosTtsLoading(response.intervention.message, 'intervention_message') ? (

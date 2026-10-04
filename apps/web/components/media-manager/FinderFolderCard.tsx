@@ -94,7 +94,7 @@ export function FinderFolderCard({ folder, onOpen, variant = 'subfolder' }: Find
       onDoubleClick={onOpen}
       className={cn(
         'group flex w-full flex-col items-center gap-2 rounded-2xl p-3 text-center transition',
-        'hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50',
+        'hover:bg-background-card/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50',
         variant === 'category' ? 'min-h-[9.5rem]' : 'min-h-[8.5rem]'
       )}
     >
@@ -123,7 +123,7 @@ export function FinderFolderCard({ folder, onOpen, variant = 'subfolder' }: Find
             aria-hidden
           />
           <div
-            className="pointer-events-none absolute inset-x-[0.35rem] top-[0.7rem] bottom-[0.35rem] rounded-[7px] bg-gradient-to-br from-white/40 via-white/10 to-transparent"
+            className="pointer-events-none absolute inset-x-[0.35rem] top-[0.7rem] bottom-[0.35rem] rounded-[7px] bg-gradient-to-br from-background-card/40 via-background-card/10 to-transparent"
             aria-hidden
           />
           <div className="absolute inset-0 flex items-center justify-center pt-2">

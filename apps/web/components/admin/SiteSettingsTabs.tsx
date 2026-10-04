@@ -29,7 +29,7 @@ export function SiteSettingsTabs() {
   return (
     <div className="space-y-3">
       <div
-        className="flex gap-1.5 overflow-x-auto rounded-2xl border border-white/55 bg-white/35 p-1.5 backdrop-blur-xl"
+        className="flex gap-1.5 overflow-x-auto rounded-2xl border border-white/55 bg-background-card/35 p-1.5 backdrop-blur-xl"
         role="tablist"
       >
         {TABS.map(({ key, label, icon: Icon }) => {
@@ -48,7 +48,7 @@ export function SiteSettingsTabs() {
                 'inline-flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 py-2 text-sm font-bold transition-all',
                 active
                   ? 'bg-gradient-to-l from-sky-500 to-cyan-600 text-white shadow-md shadow-sky-500/25'
-                  : 'text-slate-600 hover:bg-white/50 hover:text-slate-900',
+                  : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
               )}
             >
               <Icon className="h-4 w-4" aria-hidden />
@@ -58,7 +58,7 @@ export function SiteSettingsTabs() {
         })}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-white/50 bg-white/30 backdrop-blur-xl">
+      <div className="overflow-hidden rounded-2xl border border-white/50 bg-background-card/30 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-3 border-b border-white/40 px-4 py-3">
           <div className="min-w-0">
             <p className="font-display text-sm font-black text-slate-900">{activeTab.label}</p>

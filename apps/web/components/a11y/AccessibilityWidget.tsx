@@ -48,10 +48,10 @@ function FeatureTile({
         'a11y-feature-tile flex flex-col items-center justify-center gap-1.5 rounded-xl border px-2 py-3 text-center transition-all',
         pressed
           ? 'border-emerald-500/70 bg-gradient-to-b from-emerald-700 to-teal-700 text-white shadow-md'
-          : 'border-white/70 bg-white/75 text-slate-700 hover:border-emerald-200 hover:bg-white',
+          : 'border-white/70 bg-background-card/75 text-slate-700 hover:border-emerald-200 hover:bg-background-card',
       )}
     >
-      <span className={cn('flex h-8 w-8 items-center justify-center rounded-lg', pressed ? 'bg-white/15' : 'bg-emerald-50 text-emerald-700')} aria-hidden>
+      <span className={cn('flex h-8 w-8 items-center justify-center rounded-lg', pressed ? 'bg-background-card/15' : 'bg-emerald-50 text-emerald-700')} aria-hidden>
         {icon}
       </span>
       <span className="text-[10px] font-bold leading-tight">{label}</span>
@@ -73,7 +73,7 @@ function AccordionSection({
   children: ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/60 bg-white/35">
+    <div className="overflow-hidden rounded-2xl border border-white/60 bg-background-card/35">
       <button
         type="button"
         id={`${id}-btn`}
@@ -119,7 +119,7 @@ function ScalePicker<T extends string>({
               'rounded-lg border px-2 py-2 text-[10px] font-bold transition-colors',
               value === option.key
                 ? 'border-emerald-600 bg-emerald-700 text-white'
-                : 'border-white/70 bg-white/70 text-slate-700 hover:bg-white',
+                : 'border-white/70 bg-background-card/70 text-slate-700 hover:bg-background-card',
             )}
           >
             {option.label}
@@ -182,7 +182,7 @@ export function AccessibilityWidget() {
           <div className="a11y-widget-header relative px-4 py-4 text-white">
             <div className="relative flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/25 bg-white/15 shadow-sm">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/25 bg-background-card/15 shadow-sm">
                   <Accessibility className="h-5 w-5" aria-hidden />
                 </span>
                 <div>
@@ -200,7 +200,7 @@ export function AccessibilityWidget() {
                   setOpen(false);
                   toggleRef.current?.focus();
                 }}
-                className="rounded-xl border border-white/25 bg-white/10 p-2 transition hover:bg-white/20"
+                className="rounded-xl border border-white/25 bg-background-card/10 p-2 transition hover:bg-background-card/20"
                 aria-label="סגור תפריט נגישות"
               >
                 <X className="h-4 w-4" aria-hidden />
@@ -362,7 +362,7 @@ export function AccessibilityWidget() {
             </AccordionSection>
           </div>
 
-          <div className="space-y-2 border-t border-white/50 bg-white/30 px-3 py-3">
+          <div className="space-y-2 border-t border-white/50 bg-background-card/30 px-3 py-3">
             <button
               type="button"
               onClick={resetPreferences}
@@ -378,7 +378,7 @@ export function AccessibilityWidget() {
                   hideWidget();
                   setOpen(false);
                 }}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-white/70 bg-white/60 px-3 py-2 text-[11px] font-bold text-slate-700 transition hover:bg-white"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-white/70 bg-background-card/60 px-3 py-2 text-[11px] font-bold text-slate-700 transition hover:bg-background-card"
               >
                 <Minus className="h-3.5 w-3.5" aria-hidden />
                 הסתר תפריט

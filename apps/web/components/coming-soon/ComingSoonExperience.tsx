@@ -13,7 +13,7 @@ const FEATURES = [
   { icon: ShieldCheck, title: 'שקט וביטחון', desc: 'פחות לחץ, יותר בהירות. בריאות נפש וגוף שמרגישים בכל יום.' },
 ];
 
-const CONFETTI_COLORS = ['#34d399', '#10b981', '#a3e635', '#5eead4', '#bbf7d0', '#ffffff', '#22d3ee'];
+const CONFETTI_COLORS = ['#34d399', '#10b981', '#a3e635', '#5eead4', '#bbf7d0', '#f8fbf6', '#22d3ee'];
 
 type Phase = 'intro' | 'lyrics' | 'loop';
 
@@ -407,7 +407,7 @@ export function ComingSoonExperience({
           <button
             type="button"
             onClick={toggleMute}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 backdrop-blur-md transition hover:bg-white/15"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-background-card/5 backdrop-blur-md transition hover:bg-background-card/15"
             aria-label={muted ? 'בטל השתקה' : 'השתק'}
           >
             {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
@@ -416,7 +416,7 @@ export function ComingSoonExperience({
             <button
               type="button"
               onClick={goToLoop}
-              className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/75 backdrop-blur-md transition hover:bg-white/15"
+              className="rounded-full border border-white/15 bg-background-card/5 px-4 py-2 text-sm font-semibold text-white/75 backdrop-blur-md transition hover:bg-background-card/15"
             >
               דלג ←
             </button>
@@ -425,7 +425,7 @@ export function ComingSoonExperience({
       )}
 
       {phase === 'lyrics' && (
-        <div className="absolute bottom-0 left-0 right-0 z-30 h-1.5 bg-white/10">
+        <div className="absolute bottom-0 left-0 right-0 z-30 h-1.5 bg-background-card/10">
           <div
             ref={progressBarRef}
             className="h-full bg-gradient-to-l from-emerald-400 via-teal-300 to-lime-300 shadow-[0_0_18px_rgba(52,211,153,0.9)]"
@@ -675,7 +675,7 @@ export function ComingSoonExperience({
                 <button
                   type="button"
                   onClick={replay}
-                  className="mt-2 flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-bold text-white/85 backdrop-blur-md transition hover:bg-white/15"
+                  className="mt-2 flex items-center gap-2 rounded-full border border-white/15 bg-background-card/5 px-6 py-3 text-sm font-bold text-white/85 backdrop-blur-md transition hover:bg-background-card/15"
                 >
                   <Repeat className="h-4 w-4" />
                   צפה שוב בפתיח

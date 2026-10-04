@@ -73,7 +73,7 @@ export function GuideLessonEditor({
   };
 
   return (
-    <div className="space-y-3 rounded-2xl border border-emerald-100/80 bg-white/70 p-4 backdrop-blur-md" dir="rtl">
+    <div className="space-y-3 rounded-2xl border border-emerald-100/80 bg-background-card/70 p-4 backdrop-blur-md" dir="rtl">
       <div className="flex flex-wrap items-center gap-2">
         <input
           className="flex-1 min-w-[180px] rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold"
@@ -84,7 +84,7 @@ export function GuideLessonEditor({
         <button
           type="button"
           onClick={() => setPreview((p) => !p)}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-background-card px-3 py-2 text-xs font-bold text-slate-700"
         >
           <Eye className="h-3.5 w-3.5" />
           {preview ? 'עריכה' : 'תצוגה מקדימה'}

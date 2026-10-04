@@ -278,7 +278,7 @@ function AiDemoChat() {
           m.role === 'user' ? (
             <div
               key={i}
-              className="ms-auto max-w-[82%] whitespace-pre-wrap break-words rounded-2xl rounded-tl-md bg-white/12 px-3.5 py-2.5 text-emerald-50"
+              className="ms-auto max-w-[82%] whitespace-pre-wrap break-words rounded-2xl rounded-tl-md bg-background-card/12 px-3.5 py-2.5 text-emerald-50"
             >
               {m.content}
             </div>
@@ -292,7 +292,7 @@ function AiDemoChat() {
           ),
         )}
         {waiting ? (
-          <div className="me-auto inline-flex items-center gap-1 rounded-2xl rounded-tr-md border border-white/10 bg-white/8 px-3.5 py-3">
+          <div className="me-auto inline-flex items-center gap-1 rounded-2xl rounded-tr-md border border-white/10 bg-background-card/8 px-3.5 py-3">
             <span className={styles.typing}>
               <span />
               <span />
@@ -324,7 +324,7 @@ function AiDemoChat() {
           e.preventDefault();
           send(input);
         }}
-        className="flex items-center gap-2 rounded-2xl border border-white/12 bg-white/8 px-3 py-2"
+        className="flex items-center gap-2 rounded-2xl border border-white/12 bg-background-card/8 px-3 py-2"
       >
         <input
           value={input}
@@ -427,7 +427,7 @@ export function LandingAiClient() {
             </span>
             <Link
               href="/login"
-              className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/20"
+              className="rounded-full border border-white/20 bg-background-card/10 px-4 py-2 text-sm font-bold text-white backdrop-blur-md transition hover:bg-background-card/20"
             >
               כניסה
             </Link>
@@ -479,7 +479,7 @@ export function LandingAiClient() {
               </Link>
               <Link
                 href="/login"
-                className={`inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-bold text-white transition hover:bg-white/15 ${styles.glass}`}
+                className={`inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-bold text-white transition hover:bg-background-card/15 ${styles.glass}`}
               >
                 כבר יש לי חשבון
               </Link>
@@ -492,7 +492,7 @@ export function LandingAiClient() {
               {['זמין 24/7', 'זוכר כל שיחה', 'מותאם רק לכם', 'בעברית מלאה'].map((t) => (
                 <li
                   key={t}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/8 px-3 py-1.5 text-xs font-semibold text-emerald-50/90 backdrop-blur-md"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-background-card/8 px-3 py-1.5 text-xs font-semibold text-emerald-50/90 backdrop-blur-md"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5 text-cyan-300" aria-hidden />
                   {t}
@@ -566,7 +566,7 @@ export function LandingAiClient() {
             ].map((t, i) => (
               <span
                 key={`${dup}-${i}`}
-                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/12 bg-white/6 px-4 py-2 text-sm font-semibold text-emerald-50/80 backdrop-blur-md"
+                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/12 bg-background-card/6 px-4 py-2 text-sm font-semibold text-emerald-50/80 backdrop-blur-md"
               >
                 <Zap className="h-3.5 w-3.5 text-cyan-300" />
                 {t}
@@ -613,7 +613,7 @@ export function LandingAiClient() {
               ))}
             </div>
 
-            <div className={`mx-auto mt-8 inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-white/5 px-4 py-2 text-sm font-semibold text-emerald-50/80 ${styles.insight}`}>
+            <div className={`mx-auto mt-8 inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-background-card/5 px-4 py-2 text-sm font-semibold text-emerald-50/80 ${styles.insight}`}>
               <InfinityIcon className="h-4 w-4 text-cyan-300" aria-hidden />
               הרגלים קטנים · השפעה אדירה · לכל החיים
             </div>
@@ -959,7 +959,7 @@ export function LandingAiClient() {
                   </span>
                   <Glass className="rounded-3xl p-5">
                     <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-cyan-200 sm:hidden">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-background-card/10 text-cyan-200 sm:hidden">
                         <step.icon className="h-5 w-5" aria-hidden />
                       </span>
                       <span className="rounded-full bg-cyan-300/15 px-3 py-1 text-xs font-black text-cyan-100">
@@ -1230,7 +1230,7 @@ export function LandingAiClient() {
                   </Link>
                   <Link
                     href="/login"
-                    className={`inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-bold text-white transition hover:bg-white/15 ${styles.glass}`}
+                    className={`inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-bold text-white transition hover:bg-background-card/15 ${styles.glass}`}
                   >
                     כניסה לחשבון
                     <ArrowLeft className="h-4 w-4" aria-hidden />

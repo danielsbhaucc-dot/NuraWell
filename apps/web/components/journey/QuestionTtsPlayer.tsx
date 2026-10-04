@@ -139,7 +139,7 @@ export function QuestionTtsPlayer({
           type="button"
           onClick={toggleMute}
           aria-pressed={muted}
-          className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/20 px-4 py-2 text-xs font-bold text-emerald-900 shadow-[0_6px_22px_rgba(6,78,59,0.18)] backdrop-blur-xl transition hover:bg-white/30 active:scale-95"
+          className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-background-card/20 px-4 py-2 text-xs font-bold text-emerald-900 shadow-[0_6px_22px_rgba(6,78,59,0.18)] backdrop-blur-xl transition hover:bg-background-card/30 active:scale-95"
         >
           {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           {muted ? 'הפעל הקראה' : 'השתק הקראה'}

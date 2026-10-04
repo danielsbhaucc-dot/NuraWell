@@ -545,7 +545,7 @@ export function AlmogChatMemoryPanel({
         ) : (
           <ul className="space-y-3">
             {data.periodic_summaries.map((p) => (
-              <li key={`${p.type}-${p.period_key}`} className="rounded-xl border border-slate-200/80 bg-white/60 p-3">
+              <li key={`${p.type}-${p.period_key}`} className="rounded-xl border border-slate-200/80 bg-background-card/60 p-3">
                 <div className="mb-1 text-xs font-medium text-indigo-700">
                   {TYPE_LABELS[p.type] ?? p.type} · {p.period_key} · {p.session_count} שיחות · {fmt(p.updated_at)}
                 </div>
@@ -569,7 +569,7 @@ export function AlmogChatMemoryPanel({
             const hasAccess = canViewTranscript(access);
 
             return (
-              <li key={s.id} className="rounded-xl border border-slate-200/80 bg-white/60">
+              <li key={s.id} className="rounded-xl border border-slate-200/80 bg-background-card/60">
                 <button
                   type="button"
                   className="flex w-full flex-col gap-1 px-3 py-2 text-right text-sm"
@@ -608,7 +608,7 @@ export function AlmogChatMemoryPanel({
                           type="button"
                           disabled={busy}
                           onClick={() => void runAction(s.id, 'close')}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 font-medium text-slate-700 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-background-card px-2 py-1 font-medium text-slate-700 disabled:opacity-50"
                         >
                           <Lock className="h-3.5 w-3.5" />
                           סגירה
@@ -618,7 +618,7 @@ export function AlmogChatMemoryPanel({
                           type="button"
                           disabled={busy}
                           onClick={() => void runAction(s.id, 'reopen')}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 font-medium text-slate-700 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-background-card px-2 py-1 font-medium text-slate-700 disabled:opacity-50"
                         >
                           <Unlock className="h-3.5 w-3.5" />
                           פתיחה מחדש
@@ -735,7 +735,7 @@ export function AlmogChatMemoryPanel({
                           <button
                             type="button"
                             onClick={() => void exportTranscript(s.id, 'txt')}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 font-medium text-slate-700"
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-background-card px-2 py-1 font-medium text-slate-700"
                           >
                             <FileText className="h-3.5 w-3.5" />
                             ייצוא TXT
@@ -743,7 +743,7 @@ export function AlmogChatMemoryPanel({
                           <button
                             type="button"
                             onClick={() => void exportTranscript(s.id, 'json')}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 font-medium text-slate-700"
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-background-card px-2 py-1 font-medium text-slate-700"
                           >
                             <FileJson className="h-3.5 w-3.5" />
                             ייצוא JSON
@@ -752,7 +752,7 @@ export function AlmogChatMemoryPanel({
                             type="button"
                             disabled={!transcript?.length}
                             onClick={() => void copyTranscript()}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 font-medium text-slate-700 disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-background-card px-2 py-1 font-medium text-slate-700 disabled:opacity-50"
                           >
                             <Copy className="h-3.5 w-3.5" />
                             העתק
@@ -761,7 +761,7 @@ export function AlmogChatMemoryPanel({
                             type="button"
                             disabled={!transcript?.length}
                             onClick={printTranscript}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 font-medium text-slate-700 disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-background-card px-2 py-1 font-medium text-slate-700 disabled:opacity-50"
                           >
                             <Printer className="h-3.5 w-3.5" />
                             הדפס
@@ -784,7 +784,7 @@ export function AlmogChatMemoryPanel({
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="חיפוש בתמליל..."
-                            className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pr-8 pl-2 text-slate-800"
+                            className="w-full rounded-lg border border-slate-200 bg-background-card py-1.5 pr-8 pl-2 text-slate-800"
                           />
                         </div>
 
@@ -833,7 +833,7 @@ export function AlmogChatMemoryPanel({
 
       {reasonModalSession ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl" dir="rtl">
+          <div className="w-full max-w-md rounded-2xl bg-background-card p-5 shadow-xl" dir="rtl">
             <h4 className="mb-2 flex items-center gap-2 font-bold text-slate-900">
               <Shield className="h-4 w-4 text-indigo-600" />
               אישור גישה לתמליל

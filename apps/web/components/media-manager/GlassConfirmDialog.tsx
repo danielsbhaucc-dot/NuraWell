@@ -60,7 +60,7 @@ export function GlassConfirmDialog({
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="rounded-xl border border-white/55 bg-white/20 px-4 py-2 text-sm font-bold text-slate-800 backdrop-blur-sm disabled:opacity-50"
+          className="rounded-xl border border-white/55 bg-background-card/20 px-4 py-2 text-sm font-bold text-slate-800 backdrop-blur-sm disabled:opacity-50"
         >
           {cancelLabel}
         </button>

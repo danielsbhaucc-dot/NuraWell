@@ -512,7 +512,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           <button
             type="button"
             onClick={() => setEditField(null)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/90 hover:bg-white/15"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/90 hover:bg-background-card/15"
             aria-label="סגור"
           >
             <X className="h-4 w-4" />

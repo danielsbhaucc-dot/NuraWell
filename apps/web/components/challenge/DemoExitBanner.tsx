@@ -36,7 +36,7 @@ export function DemoExitBanner() {
           type="button"
           onClick={handleExitDemo}
           disabled={exiting}
-          className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
+          className="inline-flex items-center gap-1 rounded-xl bg-background-card/10 px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
         >
           <LogOut className="h-3.5 w-3.5" />
           {exiting ? 'יוצא...' : 'יציאה'}

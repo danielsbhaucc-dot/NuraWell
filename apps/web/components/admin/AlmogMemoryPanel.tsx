@@ -181,7 +181,7 @@ export function AlmogMemoryPanel({ userId }: Props) {
           </div>
         </div>
         {!loading && items.length > 0 ? (
-          <span className="shrink-0 rounded-lg bg-white/40 px-2 py-1 text-[10px] font-bold text-violet-900 border border-white/50">
+          <span className="shrink-0 rounded-lg bg-background-card/40 px-2 py-1 text-[10px] font-bold text-violet-900 border border-white/50">
             {items.length} פריטים
           </span>
         ) : null}

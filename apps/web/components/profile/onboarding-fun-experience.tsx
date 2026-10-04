@@ -210,7 +210,7 @@ export function FunPathSelectHero({ onSelect }: { onSelect: () => void }) {
         <FunFloatingAmbience />
         <div className="relative z-10">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-black text-white backdrop-blur-sm">
+            <span className="inline-flex items-center gap-1 rounded-full bg-background-card/20 px-2.5 py-1 text-[10px] font-black text-white backdrop-blur-sm">
               <Sparkles className="h-3 w-3" />
               הכי כיף
             </span>

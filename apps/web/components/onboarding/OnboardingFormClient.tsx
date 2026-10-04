@@ -286,7 +286,7 @@ export function OnboardingFormClient() {
           </div>
 
           <div
-            className="h-1.5 rounded-full bg-white/10 mb-6 overflow-hidden"
+            className="h-1.5 rounded-full bg-background-card/10 mb-6 overflow-hidden"
             role="progressbar"
             aria-valuenow={progress}
             aria-valuemin={0}
@@ -685,7 +685,7 @@ export function OnboardingFormClient() {
                 type="button"
                 onClick={() => setStep((s) => s - 1)}
                 disabled={pending}
-                className="min-h-[52px] px-5 rounded-2xl border border-white/20 text-white font-bold bg-white/10"
+                className="min-h-[52px] px-5 rounded-2xl border border-white/20 text-white font-bold bg-background-card/10"
               >
                 אחורה
               </button>

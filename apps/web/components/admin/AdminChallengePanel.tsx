@@ -116,7 +116,7 @@ export function AdminChallengePanel() {
         <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
       ) : null}
 
-      <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-5 shadow-sm backdrop-blur-md sm:p-6">
+      <div className="rounded-3xl border border-slate-200/60 bg-background-card/70 p-5 shadow-sm backdrop-blur-md sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-slate-900">קמפיין פעיל</h2>
@@ -154,7 +154,7 @@ export function AdminChallengePanel() {
       <AdminChallengeEatingWindowEditor />
       <AdminChallengeTasksEditor />
 
-      <div className="rounded-3xl border border-violet-200/60 bg-white/70 p-5 shadow-sm backdrop-blur-md sm:p-6">
+      <div className="rounded-3xl border border-violet-200/60 bg-background-card/70 p-5 shadow-sm backdrop-blur-md sm:p-6">
         <div className="mb-4 flex items-center gap-2">
           <FlaskConical className="h-5 w-5 text-violet-600" />
           <h2 className="text-lg font-bold text-slate-900">דמו אתגר — מנהל בלבד</h2>
@@ -169,7 +169,7 @@ export function AdminChallengePanel() {
           type="button"
           disabled={loading !== null}
           onClick={() => startDemo(FULL_EXPERIENCE.key)}
-          className="mb-4 flex w-full flex-col items-start rounded-2xl border-2 border-violet-400 bg-gradient-to-br from-violet-100 to-white p-5 text-right transition hover:border-violet-500 hover:shadow-md disabled:opacity-60"
+          className="mb-4 flex w-full flex-col items-start rounded-2xl border-2 border-violet-400 bg-gradient-to-br from-violet-100 to-background-card p-5 text-right transition hover:border-violet-500 hover:shadow-md disabled:opacity-60"
         >
           <span className="flex items-center gap-2 text-base font-black text-violet-950">
             {loading === 'full-0' ? (
@@ -193,7 +193,7 @@ export function AdminChallengePanel() {
                 type="button"
                 disabled={loading !== null}
                 onClick={() => startDemo(s.key, s.day)}
-                className="flex min-h-[5.5rem] flex-col items-start rounded-2xl border border-violet-200/80 bg-gradient-to-br from-violet-50 to-white p-4 text-right transition hover:border-violet-400 hover:shadow-md disabled:opacity-60"
+                className="flex min-h-[5.5rem] flex-col items-start rounded-2xl border border-violet-200/80 bg-gradient-to-br from-violet-50 to-background-card p-4 text-right transition hover:border-violet-400 hover:shadow-md disabled:opacity-60"
               >
                 <span className="flex items-center gap-2 font-bold text-violet-900">
                   {loading === key ? (
@@ -223,7 +223,7 @@ export function AdminChallengePanel() {
             <button
               type="button"
               onClick={exitDemo}
-              className="mr-auto inline-flex items-center gap-1 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm"
+              className="mr-auto inline-flex items-center gap-1 rounded-lg bg-background-card px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm"
             >
               <Trash2 className="h-3.5 w-3.5" />
               נקה דמו

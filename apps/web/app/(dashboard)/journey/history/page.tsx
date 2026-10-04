@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function JourneyTaskHistoryPage() {
   return (
     <div dir="rtl" className="min-w-0">
-      <div className="px-4 pt-3 pb-3 border-b border-emerald-900/[0.06] bg-white/30 backdrop-blur-sm">
+      <div className="px-4 pt-3 pb-3 border-b border-emerald-900/[0.06] bg-background-card/30 backdrop-blur-sm">
         <div className="flex items-start gap-3">
           <div
             className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-emerald-700"

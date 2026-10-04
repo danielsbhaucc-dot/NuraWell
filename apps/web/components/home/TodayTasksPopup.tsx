@@ -366,7 +366,7 @@ export function TodayTasksPopup({
                 <div
                   className="rounded-2xl p-4 text-right"
                   style={{
-                    background: '#ffffff',
+                    background: '#f8fbf6',
                     border: '1px solid rgba(167,243,208,0.55)',
                     boxShadow: '0 6px 20px rgba(6,78,59,0.06)',
                   }}

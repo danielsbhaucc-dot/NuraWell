@@ -353,7 +353,7 @@ export function ProgressReportProvider({
                   className={`min-h-[42px] flex-1 rounded-[16px] px-2 py-2 text-center text-[11px] font-black leading-tight transition sm:text-xs ${
                     activeTab === 'task_execution'
                       ? 'bg-gradient-to-l from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/25 ring-1 ring-white/25'
-                      : 'text-emerald-900/88 hover:bg-white/45'
+                      : 'text-emerald-900/88 hover:bg-background-card/45'
                   }`}
                 >
                   עדכון ביצוע משימות
@@ -366,7 +366,7 @@ export function ProgressReportProvider({
                   className={`min-h-[42px] flex-1 rounded-[16px] px-2 py-2 text-center text-[11px] font-black leading-tight transition sm:text-xs ${
                     activeTab === 'habits'
                       ? 'bg-gradient-to-l from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/25 ring-1 ring-white/25'
-                      : 'text-emerald-900/88 hover:bg-white/45'
+                      : 'text-emerald-900/88 hover:bg-background-card/45'
                   }`}
                 >
                   מעקב הרגלים

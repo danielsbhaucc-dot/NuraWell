@@ -44,7 +44,7 @@ function HowItWorksBody() {
         {STEPS.map((s, i) => (
           <li
             key={s.title}
-            className="flex gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-xl"
+            className="flex gap-3 rounded-2xl border border-white/15 bg-background-card/10 px-4 py-3 backdrop-blur-xl"
           >
             <span className="w-8 h-8 rounded-full bg-emerald-500/30 flex items-center justify-center text-emerald-200 font-black text-sm shrink-0">
               {i + 1}
@@ -78,12 +78,12 @@ function MobileHowDrawer({ open, onClose }: RegisterHowItWorksModalProps) {
 
           <div className="shrink-0 rounded-t-[26px] px-5 pt-3 pb-2 relative">
             <div className="mb-3 flex justify-center">
-              <div className="h-1.5 w-11 rounded-full bg-white/35" />
+              <div className="h-1.5 w-11 rounded-full bg-background-card/35" />
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white/70 hover:bg-white/20"
+              className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
               aria-label="סגור"
             >
               <X className="w-5 h-5" />
@@ -127,7 +127,7 @@ function DesktopHowModal({ open, onClose }: RegisterHowItWorksModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white/70"
+              className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70"
               aria-label="סגור"
             >
               <X className="w-5 h-5" />

@@ -20,7 +20,7 @@ export function FinderPathBar({
   onNavigate,
 }: FinderPathBarProps) {
   return (
-    <div className="flex shrink-0 items-center gap-2 border-b border-white/20 bg-white/8 px-3 py-2">
+    <div className="flex shrink-0 items-center gap-2 border-b border-white/20 bg-background-card/8 px-3 py-2">
       <button
         type="button"
         onClick={onBack}
@@ -29,15 +29,15 @@ export function FinderPathBar({
         className={cn(
           'flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition',
           canGoBack
-            ? 'border-white/40 bg-white/25 text-slate-700 hover:bg-white/40'
-            : 'cursor-default border-white/20 bg-white/10 text-slate-400'
+            ? 'border-white/40 bg-background-card/25 text-slate-700 hover:bg-background-card/40'
+            : 'cursor-default border-white/20 bg-background-card/10 text-slate-400'
         )}
       >
         <ChevronRight className="h-3.5 w-3.5" />
       </button>
 
       <div
-        className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto rounded-lg border border-white/30 bg-white/20 px-1 py-0.5"
+        className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto rounded-lg border border-white/30 bg-background-card/20 px-1 py-0.5"
         role="navigation"
         aria-label="נתיב תיקייה"
       >
@@ -55,8 +55,8 @@ export function FinderPathBar({
                 className={cn(
                   'max-w-[9rem] truncate rounded-md px-2 py-1 text-[11px] font-semibold transition',
                   isLast
-                    ? 'cursor-default bg-white/45 text-slate-900 shadow-sm'
-                    : 'text-slate-600 hover:bg-white/35 hover:text-slate-800'
+                    ? 'cursor-default bg-background-card/45 text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:bg-background-card/35 hover:text-slate-800'
                 )}
               >
                 {crumb.label}

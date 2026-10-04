@@ -71,7 +71,7 @@ export function ChallengeInterviewGlass() {
         <div className="absolute bottom-32 right-1/4 h-72 w-72 rounded-full bg-emerald-500/15 blur-3xl" />
       </div>
 
-      <header className="relative z-10 border-b border-white/10 bg-white/5 px-4 py-4 backdrop-blur-xl">
+      <header className="relative z-10 border-b border-white/10 bg-background-card/5 px-4 py-4 backdrop-blur-xl">
         <div className="mx-auto max-w-lg">
           <DemoExitBanner />
           <div className="flex items-center gap-3">
@@ -100,7 +100,7 @@ export function ChallengeInterviewGlass() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-3xl border border-white/15 bg-white/10 p-6 text-center backdrop-blur-2xl"
+            className="rounded-3xl border border-white/15 bg-background-card/10 p-6 text-center backdrop-blur-2xl"
           >
             <Mic className="mx-auto mb-4 h-10 w-10 text-emerald-300" />
             <p className="leading-relaxed text-white/80">
@@ -129,7 +129,7 @@ export function ChallengeInterviewGlass() {
                   <div
                     className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                       t.role === 'user'
-                        ? 'rounded-br-md bg-white/15 text-white'
+                        ? 'rounded-br-md bg-background-card/15 text-white'
                         : 'rounded-bl-md border border-emerald-400/20 bg-emerald-500/10 text-emerald-50'
                     }`}
                   >
@@ -162,7 +162,7 @@ export function ChallengeInterviewGlass() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="כתוב/י בכנות..."
               disabled={loading}
-              className="min-h-12 flex-1 rounded-2xl border border-white/10 bg-white/10 px-4 text-white placeholder:text-white/35 focus:border-emerald-400/50 focus:outline-none"
+              className="min-h-12 flex-1 rounded-2xl border border-white/10 bg-background-card/10 px-4 text-white placeholder:text-white/35 focus:border-emerald-400/50 focus:outline-none"
             />
             <button
               type="submit"

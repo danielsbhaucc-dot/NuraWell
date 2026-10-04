@@ -348,7 +348,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                                 {task.title}
                               </p>
                               {task.description ? (
-                                <p className="text-[13px] sm:text-[14px] text-slate-600 leading-relaxed [overflow-wrap:anywhere] break-words rounded-xl bg-white/45 px-3 py-2.5 border border-white/55">
+                                <p className="text-[13px] sm:text-[14px] text-slate-600 leading-relaxed [overflow-wrap:anywhere] break-words rounded-xl bg-background-card/45 px-3 py-2.5 border border-white/55">
                                   {task.description}
                                 </p>
                               ) : null}
@@ -371,7 +371,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                               className={`flex min-h-[48px] items-center justify-center gap-1.5 rounded-2xl px-2 py-2.5 text-[11px] sm:text-xs font-black transition active:scale-[0.98] disabled:opacity-60 ${
                                 status === 'accepted'
                                   ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/18 ring-1 ring-white/25'
-                                  : 'border border-emerald-400/45 bg-white/60 text-emerald-900 hover:bg-emerald-50/95'
+                                  : 'border border-emerald-400/45 bg-background-card/60 text-emerald-900 hover:bg-emerald-50/95'
                               }`}
                               style={{ backdropFilter: 'blur(8px)' }}
                             >
@@ -385,7 +385,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                               className={`flex min-h-[48px] items-center justify-center gap-1.5 rounded-2xl px-2 py-2.5 text-[11px] sm:text-xs font-black transition active:scale-[0.98] disabled:opacity-60 ${
                                 status === 'rejected'
                                   ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/15 ring-1 ring-white/20'
-                                  : 'border border-rose-300/65 bg-white/55 text-rose-900 hover:bg-rose-50/95'
+                                  : 'border border-rose-300/65 bg-background-card/55 text-rose-900 hover:bg-rose-50/95'
                               }`}
                               style={{ backdropFilter: 'blur(8px)' }}
                             >
@@ -394,7 +394,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                             </button>
                           </div>
 
-                          <div className="flex justify-end flex-wrap gap-2 border-t border-emerald-900/[0.07] px-3 py-3 bg-white/[0.12]">
+                          <div className="flex justify-end flex-wrap gap-2 border-t border-emerald-900/[0.07] px-3 py-3 bg-background-card/[0.12]">
                             {status === 'accepted' && (
                               <span
                                 className="text-[10px] sm:text-[11px] font-bold tracking-wide text-emerald-900 bg-gradient-to-r from-emerald-50 to-teal-50/90 border border-emerald-300/50 rounded-full px-3 py-1.5 shadow-sm shadow-emerald-900/5"
@@ -976,7 +976,7 @@ function ResearchItem({ research, isExpanded, onToggle }: { research: Research; 
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-start gap-3 p-3.5 text-start transition-all hover:bg-white/25 active:bg-white/30"
+        className="w-full flex items-start gap-3 p-3.5 text-start transition-all hover:bg-background-card/25 active:bg-background-card/30"
       >
         <ChevronDown
           className={`w-4 h-4 text-emerald-700/50 transition-transform shrink-0 mt-1 ${isExpanded ? 'rotate-180' : ''}`}

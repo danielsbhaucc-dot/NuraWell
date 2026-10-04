@@ -81,7 +81,7 @@ export function ChallengeIntroExperience({
               type="button"
               disabled={demoExiting}
               onClick={handleExitDemo}
-              className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold text-amber-100 disabled:opacity-60"
+              className="inline-flex items-center gap-1 rounded-xl bg-background-card/10 px-3 py-1.5 text-xs font-semibold text-amber-100 disabled:opacity-60"
             >
               <LogOut className="h-3.5 w-3.5" />
               {demoExiting ? 'יוצא...' : 'יציאה'}

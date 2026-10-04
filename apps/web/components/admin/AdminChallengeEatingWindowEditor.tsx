@@ -51,7 +51,7 @@ export function AdminChallengeEatingWindowEditor() {
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-5 shadow-sm backdrop-blur-md sm:p-6">
+    <div className="rounded-3xl border border-slate-200/60 bg-background-card/70 p-5 shadow-sm backdrop-blur-md sm:p-6">
       <div className="mb-4 flex items-center gap-2">
         <BookOpen className="h-5 w-5 text-emerald-600" />
         <h2 className="text-lg font-bold text-slate-900">שיעור חלון אכילה</h2>

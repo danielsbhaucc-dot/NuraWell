@@ -210,7 +210,7 @@ function AlmogTypingIndicator({ fun = false }: { fun?: boolean }) {
             {[0, 1, 2].map((i) => (
               <motion.span
                 key={i}
-                className={`h-2 w-2 rounded-full ${fun ? 'bg-white' : 'bg-white/90'}`}
+                className={`h-2 w-2 rounded-full ${fun ? 'bg-background-card' : 'bg-background-card/90'}`}
                 animate={{ y: [0, -4, 0], opacity: [0.4, 1, 0.4] }}
                 transition={{ duration: 0.7, repeat: Infinity, ease: 'easeInOut', delay: i * 0.12 }}
               />
@@ -264,7 +264,7 @@ function ChatHeader({
         backdropFilter: 'blur(12px)',
       }}
     >
-      <Drawer.Handle className="mx-auto mb-2 mt-1 h-1.5 w-12 shrink-0 rounded-full bg-white/40" />
+      <Drawer.Handle className="mx-auto mb-2 mt-1 h-1.5 w-12 shrink-0 rounded-full bg-background-card/40" />
       <div className="flex items-center gap-2.5 px-3 pb-3.5">
         <div className="flex shrink-0 items-center gap-2.5">
           <div
@@ -293,7 +293,7 @@ function ChatHeader({
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white border border-white/15"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background-card/10 text-white border border-white/15"
             aria-label={phase === 'chat' ? 'חזרה לבחירת מסלול' : 'חזרה'}
           >
             <ChevronRight className="h-5 w-5" />
@@ -303,7 +303,7 @@ function ChatHeader({
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white/90 border border-white/15"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background-card/10 text-white/90 border border-white/15"
           aria-label="סגירה"
         >
           <X className="h-5 w-5" />
@@ -345,7 +345,7 @@ function ProfileUpdateIntentScreen({
         </div>
 
         {savedLabels.length > 0 ? (
-          <div className="w-full rounded-2xl border border-white/10 bg-white/6 px-4 py-3 backdrop-blur-sm">
+          <div className="w-full rounded-2xl border border-white/10 bg-background-card/6 px-4 py-3 backdrop-blur-sm">
             <p className="text-[11px] font-bold text-emerald-200/90 mb-2">מה שכבר שמור אצלי:</p>
             <div className="flex flex-wrap gap-1.5">
               {savedLabels.map((label) => (
@@ -373,7 +373,7 @@ function ProfileUpdateIntentScreen({
         <button
           type="button"
           onClick={onDismiss}
-          className="w-full rounded-2xl border border-white/15 bg-white/8 px-4 py-3 text-sm font-semibold text-slate-200 active:scale-[0.98]"
+          className="w-full rounded-2xl border border-white/15 bg-background-card/8 px-4 py-3 text-sm font-semibold text-slate-200 active:scale-[0.98]"
         >
           לא עכשיו
         </button>
@@ -929,7 +929,7 @@ export function OnboardingChat({
                         <button
                           type="button"
                           onClick={goToMainChat}
-                          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/8 px-3 py-2.5 text-sm font-semibold text-slate-200"
+                          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-background-card/8 px-3 py-2.5 text-sm font-semibold text-slate-200"
                         >
                           <MessageCircle className="h-4 w-4" />
                           המשך בצ&apos;אט הרגיל

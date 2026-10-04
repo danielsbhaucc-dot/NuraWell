@@ -131,7 +131,7 @@ export function AdminAlmogAvatarPanel() {
 
   return (
     <section
-      className="relative mb-6 overflow-hidden rounded-3xl border border-white/40 bg-white/45 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-2xl transition-all sm:p-6 md:p-8 sm:hover:border-emerald-400/30 sm:hover:shadow-[0_12px_44px_rgba(16,185,129,0.15)]"
+      className="relative mb-6 overflow-hidden rounded-3xl border border-white/40 bg-background-card/45 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-2xl transition-all sm:p-6 md:p-8 sm:hover:border-emerald-400/30 sm:hover:shadow-[0_12px_44px_rgba(16,185,129,0.15)]"
       dir="rtl"
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -231,7 +231,7 @@ export function AdminAlmogAvatarPanel() {
               : 'border-emerald-200/90 bg-emerald-50/40 hover:border-emerald-300 hover:bg-emerald-50/70',
           ].join(' ')}
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-emerald-100">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background-card shadow-sm ring-1 ring-emerald-100">
             <Upload className="h-6 w-6 text-emerald-600" strokeWidth={2} />
           </div>
           <p className="text-sm font-bold text-slate-800">גרור תמונה לכאן או לחץ לבחירה</p>

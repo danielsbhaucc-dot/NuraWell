@@ -46,7 +46,7 @@ export function SosButton({ focusTasks = [], firstName = '', gender = '' }: SosB
         className="touch-manipulation relative flex w-full items-center gap-3.5 p-4 text-right transition active:scale-[0.99] outline-none focus-visible:ring-2 focus-visible:ring-violet-400/35"
         style={{
           borderRadius: '22px',
-          background: 'linear-gradient(165deg, #ffffff 0%, #faf7f4 55%, #f3f0ff 100%)',
+          background: 'linear-gradient(165deg, #f8fbf6 0%, #faf7f4 55%, #f3f0ff 100%)',
           border: '1px solid rgba(148, 130, 180, 0.18)',
           boxShadow:
             'inset 0 1px 0 rgba(255,255,255,0.95), 0 8px 28px rgba(55, 45, 75, 0.07)',

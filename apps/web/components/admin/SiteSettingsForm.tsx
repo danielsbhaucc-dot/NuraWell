@@ -85,7 +85,7 @@ export function SiteSettingsForm() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-white/35 bg-white/40 p-5 shadow-lg backdrop-blur-xl sm:p-6">
+      <div className="rounded-2xl border border-white/35 bg-background-card/40 p-5 shadow-lg backdrop-blur-xl sm:p-6">
         <p className="flex items-center gap-2 text-sm font-bold text-slate-800">
           <Globe className="h-4 w-4 text-emerald-700" aria-hidden />
           כתובת האתר הציבורי
@@ -96,7 +96,7 @@ export function SiteSettingsForm() {
         </p>
         <p
           dir="ltr"
-          className="mt-3 rounded-xl border border-slate-200/80 bg-white/70 px-4 py-3 text-left text-sm text-slate-800"
+          className="mt-3 rounded-xl border border-slate-200/80 bg-background-card/70 px-4 py-3 text-left text-sm text-slate-800"
         >
           {url || '—'}
         </p>
@@ -124,7 +124,7 @@ export function SiteSettingsForm() {
 
       <div className="rounded-xl border border-slate-300/60 bg-slate-50/80 p-4 text-sm text-slate-700">
         <p className="font-semibold text-slate-800">טקסט התזכורת (להעתקה ידנית)</p>
-        <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-white/90 p-3 text-xs leading-relaxed text-slate-800">
+        <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-background-card/90 p-3 text-xs leading-relaxed text-slate-800">
           {REMINDER_TEXT}
         </pre>
       </div>

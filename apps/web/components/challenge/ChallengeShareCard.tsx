@@ -64,7 +64,7 @@ export function ChallengeShareCard({ firstName, summary }: Props) {
       <button
         type="button"
         onClick={share}
-        className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold hover:bg-white/15"
+        className="mt-5 inline-flex items-center gap-2 rounded-xl bg-background-card/10 px-4 py-2.5 text-sm font-semibold hover:bg-background-card/15"
       >
         <Share2 className="h-4 w-4" />
         {copied ? 'הועתק!' : 'שתף את ההישג'}

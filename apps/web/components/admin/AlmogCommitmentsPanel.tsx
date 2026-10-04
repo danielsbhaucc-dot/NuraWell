@@ -186,7 +186,7 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
           </div>
         </div>
         {!loading && total > 0 ? (
-          <span className="shrink-0 rounded-lg bg-white/40 px-2 py-1 text-[10px] font-bold text-emerald-900 border border-white/50">
+          <span className="shrink-0 rounded-lg bg-background-card/40 px-2 py-1 text-[10px] font-bold text-emerald-900 border border-white/50">
             {total} פריטים
           </span>
         ) : null}

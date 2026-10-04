@@ -64,7 +64,7 @@ function StatCard({
         t.wrap,
       )}
     >
-      <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-background-card/80 to-transparent" />
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-xs font-semibold text-slate-700/85">{label}</p>
@@ -106,7 +106,7 @@ function QuickLink({
     <Link
       href={href}
       className={cn(
-        'group flex items-center gap-3 rounded-3xl border border-white/60 bg-white/45 p-4 shadow-[0_10px_30px_rgba(99,102,241,0.07)] backdrop-blur-xl transition-all active:scale-[0.99]',
+        'group flex items-center gap-3 rounded-3xl border border-white/60 bg-background-card/45 p-4 shadow-[0_10px_30px_rgba(99,102,241,0.07)] backdrop-blur-xl transition-all active:scale-[0.99]',
         t.hover,
       )}
     >

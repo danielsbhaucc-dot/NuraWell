@@ -128,7 +128,7 @@ export function NotificationsBellButton({
             'absolute z-50 mt-2 min-w-[11.5rem] overflow-hidden rounded-2xl border shadow-xl',
             isChallenge
               ? 'left-0 border-white/15 bg-zinc-950/95 text-white'
-              : 'right-0 border-emerald-100/80 bg-white/95 text-emerald-950'
+              : 'right-0 border-emerald-100/80 bg-background-card/95 text-emerald-950'
           )}
         >
           <button
@@ -136,7 +136,7 @@ export function NotificationsBellButton({
             role="menuitem"
             className={cn(
               'flex w-full items-center gap-2 px-3.5 py-2.5 text-right text-[13px] font-bold transition',
-              isChallenge ? 'hover:bg-white/10' : 'hover:bg-emerald-50'
+              isChallenge ? 'hover:bg-background-card/10' : 'hover:bg-emerald-50'
             )}
             onClick={openInbox}
           >
@@ -149,7 +149,7 @@ export function NotificationsBellButton({
             className={cn(
               'flex w-full items-center gap-2 border-t px-3.5 py-2.5 text-right text-[13px] font-bold transition',
               isChallenge
-                ? 'border-white/10 hover:bg-white/10'
+                ? 'border-white/10 hover:bg-background-card/10'
                 : 'border-emerald-100 hover:bg-emerald-50'
             )}
             onClick={() => void handleMarkAll()}
