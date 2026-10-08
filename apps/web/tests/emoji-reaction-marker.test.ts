@@ -8,7 +8,11 @@ import {
   parseMentorEmojiReaction,
   stripEmojiReactionMarker,
 } from '../lib/ai/emoji-reaction/marker';
-import { heuristicEmojiReaction } from '../lib/ai/emoji-reaction/heuristic';
+import {
+  detectReactionSignal,
+  heuristicEmojiReaction,
+  pickFallbackReaction,
+} from '../lib/ai/emoji-reaction/heuristic';
 import { formatMentorReactionTooltip } from '../lib/ai/emoji-reaction/types';
 import {
   extractDisplayTextFromChatMessage,
@@ -49,22 +53,42 @@ describe('emoji reaction marker', () => {
   });
 });
 
-describe('emoji reaction heuristic', () => {
-  it('supports struggling users with a heart', () => {
-    expect(heuristicEmojiReaction('קשה לי היום ואני צריך תמיכה')).toEqual({
-      emoji: '💙',
-      verb: 'תומך',
+describe('emoji reaction heuristic intelligence', () => {
+  it('detects support intent without locking a single emoji', () => {
+    const signal = detectReactionSignal('קשה לי היום ואני צריך תמיכה');
+    expect(signal?.intent).toBe('support');
+    expect(signal?.mustReact).toBe(true);
+  });
+
+  it('picks topic-specific micro-win emoji for water', () => {
+    expect(pickFallbackReaction('micro_win', 'שתיתי 3 כוסות מים')).toEqual({
+      emoji: '💧',
+      verb: 'ציין',
     });
   });
 
-  it('celebrates completed tasks', () => {
-    expect(heuristicEmojiReaction('סיימתי את כל המשימות להיום ואני גאה בעצמי')).toEqual({
-      emoji: '💪',
-      verb: 'חיזק',
+  it('picks topic-specific micro-win emoji for walking', () => {
+    expect(pickFallbackReaction('micro_win', 'הלכתי 20 דקות היום')).toEqual({
+      emoji: '🚶',
+      verb: 'מחא כפיים',
     });
+  });
+
+  it('varies celebrate fallbacks beyond a single muscle emoji', () => {
+    const a = pickFallbackReaction('celebrate', 'סיימתי את כל המשימות להיום');
+    const b = pickFallbackReaction('celebrate', 'שברתי שיא אישי היום');
+    expect(['💪', '🏆', '🎉', '🌟', '🚀', '🔥', '🙌', '✨']).toContain(a.emoji);
+    expect(['💪', '🏆', '🎉', '🌟', '🚀', '🔥', '🙌', '✨']).toContain(b.emoji);
+  });
+
+  it('supports struggling users with a must-react fallback', () => {
+    const reaction = heuristicEmojiReaction('קשה לי היום ואני צריך תמיכה');
+    expect(reaction).not.toBeNull();
+    expect(['💙', '🤗', '🫂', '🤍', '🌧️', '🕊️', '🩵', '🥺']).toContain(reaction!.emoji);
   });
 
   it('skips dry questions', () => {
     expect(heuristicEmojiReaction('מה השעה המומלצת לשתות מים?')).toBeNull();
+    expect(detectReactionSignal('מה השעה המומלצת לשתות מים?')).toBeNull();
   });
 });

@@ -1,8 +1,8 @@
 /**
  * החלטת תגובת אימוג'י חכמה של המנטור על הודעת המשתמש.
- * רץ ברקע במקביל לכותב — לא חוסם את התשובה הרגילה.
  *
- * עדיפות: LLM רגיש → נפילה דטרמיניסטית למסרים רגשיים ברורים.
+ * LLM בוחר חופשי מכל Unicode לפי המסר הרגשי.
+ * היוריסטיקה רק: רמז כוונה + נפילה ממגוון מאגרים (לא 3 אימוג'ים קבועים).
  */
 
 import 'server-only';
@@ -10,48 +10,75 @@ import 'server-only';
 import { z } from 'zod';
 
 import { getClientForModel, AI_MODELS } from '../client';
-import { heuristicEmojiReaction } from './heuristic';
+import {
+  detectReactionSignal,
+  isInappropriateLaughEmoji,
+  isVulnerableIntent,
+  pickFallbackReaction,
+} from './heuristic';
 import { parseMentorEmojiReaction } from './marker';
-import type { MentorEmojiReaction } from './types';
+import type { MentorEmojiReaction, ReactionIntent } from './types';
 
 export type { MentorEmojiReaction };
 
-const DECISION_TIMEOUT_MS = 3200;
-const MAX_TOKENS = 120;
+const DECISION_TIMEOUT_MS = 3400;
+const MAX_TOKENS = 140;
+
+const INTENT_VALUES = [
+  'crisis_care',
+  'support',
+  'empathy',
+  'celebrate',
+  'micro_win',
+  'thanks',
+  'joy',
+  'encourage',
+  'warmth',
+  'relief',
+  'focus',
+  'gentle_humor',
+  'none',
+] as const;
 
 const decisionSchema = z.object({
   react: z.boolean(),
   emoji: z.string().max(16).optional().nullable(),
   verb: z.string().max(24).optional().nullable(),
-  intent: z
-    .enum(['support', 'celebrate', 'thanks', 'encourage', 'empathy', 'joy', 'none'])
-    .optional()
-    .nullable(),
+  intent: z.enum(INTENT_VALUES).optional().nullable(),
 });
 
-const SYSTEM = `אתה מחליט אם המנטור "אלמוג" יגיב באימוג'י להודעת המשתמש — כמו תגובה בוואטסאפ, *בנוסף* לתשובה המילולית.
-
-המטרה: האימוג'י מעביר *מסר רגשי קצר* (תמיכה / עידוד / שמחה משותפת) — לא קישוט.
-
-מתי חובה react=true (אל תחסוך):
-- המשתמש צריך תמיכה / עצוב / קשה לו / מפחד / מיואש → 💙 או 🤍 או 🤗 או 🫂 + verb כמו "תומך"/"מחבק"/"הזדהה"
-- הצלחה / גאווה / סיים משימות → 💪 או ✨ או 👏 או 🙌 + "חיזק"/"מחא כפיים"
-- תודה / חיבה → ❤️ או 🙏 + "אהב"
-- התרגשות חיובית → ✨ או 😊 + "שמח איתך"
-
-מתי בדרך כלל react=false:
-- שאלה טכנית/יבשה, אישור קצר ("אוקיי"), פטפוט בלי מטען רגשי.
-- משבר אקוטי חריף מאוד — עדיף לפעמים בלי אימוג'י (התשובה המילולית מובילה), חוץ מאמפתיה עדינה (💙/🫂) אם זה מרגיש נכון.
-
-חוקי טון (קריטי):
-- לעולם לא 😂 🤣 💀 על כאב/כישלון/עצבות.
-- לא ספאם ולא שטותי. אימוג'י אחד (או רצף קצר כמו ❤️‍🩹).
-- יש לך גישה לכל אימוג'י בעולם (Unicode) — בחר את המדויק ביותר למסר.
-- verb = פועל/ביטוי עברי קצר לטולטיפ (בלי שם המנטור): תומך / מחבק / אהב / חיזק / עודד / הזדהה / מחא כפיים / שמח איתך.
-
-החזר JSON בלבד:
-{"react":true,"emoji":"💙","verb":"תומך","intent":"support"}
-או {"react":false,"emoji":null,"verb":null,"intent":"none"}`;
+const SYSTEM = [
+  'אתה בוחר תגובת אימוג\'י עבור המנטור "אלמוג" — כמו react בוואטסאפ, *בנוסף* לתשובה המילולית.',
+  '',
+  'תפקיד האימוג\'י: להעביר *מסר רגשי מדויק* בסימן אחד. לא קישוט, לא ספאם, לא קלישאה חוזרת.',
+  '',
+  'יש לך גישה לכל אימוג\'י בעולם (Unicode מלא). אל תצטמצם ללב/שריר/תודה.',
+  'בחר את הסימן הכי מדויק לסיטואציה — כולל ניואנסים:',
+  '- פחד/חרדה → 🤍 🤗 🫧 🕊️ (לא בהכרח 💙)',
+  '- עייפות/שחיקה → 😮‍💨 🌑 🛏️ ❤️‍🩹',
+  '- געגוע לתמיכה → 🫂 🤲 🫶',
+  '- גאווה גדולה → 🏆 🌟 🚀 🔥 🎉 (לא רק 💪)',
+  '- ניצחון קטן (מים/הליכה/שינה) → אימוג\'י ספציפי לנושא (💧 🚶 😴 🥗 🧘) או 👏 ✅ 🌱',
+  '- תודה חמה → ❤️ 💕 🌹 🙏 🫶',
+  '- הקלה → 😮‍💨 🌿 ☀️ 😌',
+  '- הומור עדין מהמשתמש → 🙂 😊 😉 (לעולם לא הגזמה)',
+  '- מיקוד/התחייבות → 🎯 ⚡ 📌',
+  '',
+  'מתי react=true (אל תהיה שמרן):',
+  '- יש מטען רגשי, תמיכה נדרשת, הצלחה, תודה, הקלה, ניצחון קטן, עידוד.',
+  'מתי react=false:',
+  '- שאלה יבשה/טכנית, "אוקיי", פטפוט בלי רגש.',
+  '',
+  'חוקי ברזל:',
+  '- לעולם לא 😂 🤣 💀 על כאב/כישלון/עצבות/משבר.',
+  '- אימוג\'י אחד או רצף קצר (❤️‍🩹). לא שרשרת.',
+  '- verb קצר בעברית לטולטיפ (בלי שם המנטור): תומך / מחבק / אהב / חיזק / עודד / הזדהה / מחא כפיים / שמח איתך / מרגיע / חוגג / ציין / איתך / מעריך',
+  '- גוון: אל תחזור תמיד על אותו אימוג\'י לאותה קטגוריה — התאם למילים של ההודעה הזו.',
+  '',
+  'החזר JSON בלבד:',
+  '{"react":true,"emoji":"🕊️","verb":"מרגיע","intent":"support"}',
+  'או {"react":false,"emoji":null,"verb":null,"intent":"none"}',
+].join('\n');
 
 function looksTrivialAck(text: string): boolean {
   const t = text.trim();
@@ -64,10 +91,12 @@ export type DecideEmojiReactionParams = {
   priorUserSnippet?: string | null;
 };
 
-async function decideWithLlm(
-  userMessage: string,
-  prior: string | null | undefined
-): Promise<MentorEmojiReaction | null> {
+async function decideWithLlm(params: {
+  userMessage: string;
+  prior?: string | null;
+  intentHint?: ReactionIntent | null;
+  hints?: string[];
+}): Promise<(MentorEmojiReaction & { intent?: string | null }) | null> {
   const hasGroq = Boolean(process.env.GROQ_API_KEY?.trim());
   const hasOpenRouter = Boolean(process.env.OPENROUTER_API_KEY?.trim());
   if (!hasGroq && !hasOpenRouter) return null;
@@ -76,8 +105,16 @@ async function decideWithLlm(
   const timeoutId = setTimeout(() => controller.abort(), DECISION_TIMEOUT_MS);
 
   const userContent = [
-    prior?.trim() ? `הודעה קודמת של המשתמש (הקשר):\n${prior.trim().slice(0, 280)}` : null,
-    `הודעת המשתמש לתגובה:\n${userMessage.slice(0, 900)}`,
+    params.prior?.trim()
+      ? `הודעה קודמת של המשתמש (הקשר):\n${params.prior.trim().slice(0, 280)}`
+      : null,
+    params.intentHint
+      ? `רמז כוונה מהמערכת (לא חובה להיצמד לאימוג'י ספציפי — בחר חופשי ומדויק): ${params.intentHint}${
+          params.hints?.length ? ` · ${params.hints.join(', ')}` : ''
+        }`
+      : null,
+    `הודעת המשתמש לתגובה:\n${params.userMessage.slice(0, 900)}`,
+    "בחר אימוג'י *מדויק להודעה הזו* מכל Unicode. אל תתקבע על 💙/💪/❤️ אלא אם הם באמת הכי מדויקים.",
   ]
     .filter(Boolean)
     .join('\n\n');
@@ -89,7 +126,7 @@ async function decideWithLlm(
     const completion = await client.chat.completions.create(
       {
         model,
-        temperature: 0.25,
+        temperature: 0.55,
         max_tokens: MAX_TOKENS,
         response_format: { type: 'json_object' },
         messages: [
@@ -107,10 +144,12 @@ async function decideWithLlm(
     const parsed = decisionSchema.safeParse(JSON.parse(cleaned));
     if (!parsed.success || !parsed.data.react) return null;
 
-    return parseMentorEmojiReaction({
+    const reaction = parseMentorEmojiReaction({
       emoji: parsed.data.emoji,
       verb: parsed.data.verb,
     });
+    if (!reaction) return null;
+    return { ...reaction, intent: parsed.data.intent ?? null };
   } catch {
     return null;
   } finally {
@@ -127,20 +166,28 @@ export async function decideEmojiReaction(
   const userMessage = params.userMessage.trim();
   if (!userMessage || userMessage.length < 2) return null;
 
-  const heuristic = heuristicEmojiReaction(userMessage);
+  const signal = detectReactionSignal(userMessage);
 
-  if (looksTrivialAck(userMessage) && !heuristic) return null;
+  if (looksTrivialAck(userMessage) && !signal?.mustReact) return null;
 
-  const fromLlm = await decideWithLlm(userMessage, params.priorUserSnippet);
+  const fromLlm = await decideWithLlm({
+    userMessage,
+    prior: params.priorUserSnippet,
+    intentHint: signal?.intent ?? null,
+    hints: signal?.hints,
+  });
 
-  /** חוסם אימוג'י לא-מתאים (צחוק על כאב) גם אם המודל טעה. */
-  if (fromLlm && heuristic?.emoji === '💙' && /[😂🤣💀]/u.test(fromLlm.emoji)) {
-    return heuristic;
+  if (fromLlm) {
+    if (isVulnerableIntent(signal?.intent) && isInappropriateLaughEmoji(fromLlm.emoji)) {
+      return pickFallbackReaction(signal!.intent, userMessage);
+    }
+    return { emoji: fromLlm.emoji, verb: fromLlm.verb };
   }
 
-  /** LLM ניצח כשיש תוצאה; אחרת — מסר רגשי ברור מההיוריסטיקה. */
-  if (fromLlm) return fromLlm;
-  if (heuristic) return heuristic;
+  /** נפילה: רק כשיש אות רגשי ברור — ממגוון מאגרים לפי כוונה+תוכן. */
+  if (signal?.mustReact) {
+    return pickFallbackReaction(signal.intent, userMessage);
+  }
 
   return null;
 }
