@@ -1,5 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { parseMentorEmojiReaction } from '../emoji-reaction/marker';
 import type { ChatTranscriptTurn } from './types';
+
+function reactionFromMetadata(metadata: unknown): ChatTranscriptTurn['emoji_reaction'] {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+  const raw = (metadata as Record<string, unknown>).emoji_reaction;
+  return parseMentorEmojiReaction(raw);
+}
 
 export async function fetchChatSessionTranscript(
   supabase: SupabaseClient,
@@ -12,7 +19,7 @@ export async function fetchChatSessionTranscript(
 
   const base = supabase
     .from('ai_interactions')
-    .select('role, content, created_at')
+    .select('role, content, created_at, metadata')
     .eq('session_id', params.sessionId)
     .eq('user_id', params.userId)
     .in('role', ['user', 'assistant']);
@@ -24,11 +31,17 @@ export async function fetchChatSessionTranscript(
   if (error) throw error;
 
   const turns = (data ?? [])
-    .map((row) => ({
-      role: row.role as ChatTranscriptTurn['role'],
-      content: String(row.content ?? '').trim(),
-      created_at: row.created_at as string,
-    }))
+    .map((row) => {
+      const role = row.role as ChatTranscriptTurn['role'];
+      const reaction =
+        role === 'user' ? reactionFromMetadata(row.metadata) : null;
+      return {
+        role,
+        content: String(row.content ?? '').trim(),
+        created_at: row.created_at as string,
+        ...(reaction ? { emoji_reaction: reaction } : {}),
+      };
+    })
     .filter((t) => t.content.length > 0);
 
   if (limit) turns.reverse();

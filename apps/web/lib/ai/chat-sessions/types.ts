@@ -29,8 +29,15 @@ export type ChatSessionRow = {
   closed_at: string | null;
 };
 
+export type ChatTranscriptEmojiReaction = {
+  emoji: string;
+  verb: string;
+};
+
 export type ChatTranscriptTurn = {
   role: 'user' | 'assistant' | 'system';
   content: string;
   created_at: string;
+  /** תגובת אימוג'י של המנטור על הודעת משתמש (אם יש) */
+  emoji_reaction?: ChatTranscriptEmojiReaction | null;
 };

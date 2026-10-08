@@ -3,6 +3,11 @@
  */
 
 import type { UIMessage } from 'ai';
+import {
+  extractEmojiReactionMarker,
+  stripEmojiReactionMarker,
+} from '../ai/emoji-reaction/marker';
+import type { MentorEmojiReaction } from '../ai/emoji-reaction/types';
 import { preferSanitizedWriterOutput } from '../ai/sanitize-writer-output';
 
 /** חלקי הודעה מינימליים לחילוץ — תואם UIMessage.parts בלי לייבא כל ה-union. */
@@ -111,6 +116,12 @@ function textFromParts(parts: ChatMessagePart[]): string {
     .trim();
 }
 
+function finalizeDisplayText(raw: string): string {
+  return preferSanitizedWriterOutput(
+    stripEmojiReactionMarker(stripStreamProtocolArtifacts(raw))
+  );
+}
+
 /**
  * מחזיר רק טקסט אנושי להצגה בבועה — לעולם לא tool input/output או JSON של הסטרימינג.
  */
@@ -122,19 +133,35 @@ export function extractDisplayTextFromChatMessage(message: ChatDisplayMessage): 
       (part) => isToolOrNonDisplayPart(part) && !isTextPart(part)
     );
     const fromParts = textFromParts(parts);
-    if (fromParts) return preferSanitizedWriterOutput(stripStreamProtocolArtifacts(fromParts));
+    if (fromParts) return finalizeDisplayText(fromParts);
     if (hasNonTextDisplayParts) return '';
   }
 
   if (typeof message.content === 'string' && message.content.trim()) {
-    return preferSanitizedWriterOutput(stripStreamProtocolArtifacts(message.content.trim()));
+    return finalizeDisplayText(message.content.trim());
   }
 
   return '';
 }
 
+/** חילוץ תגובת אימוג'י שהוטמעה בזרם תשובת העוזר (אם יש). */
+export function extractEmojiReactionFromChatMessage(
+  message: ChatDisplayMessage
+): MentorEmojiReaction | null {
+  const parts = Array.isArray(message.parts) ? message.parts : [];
+  const fromParts = textFromParts(parts);
+  if (fromParts) {
+    const hit = extractEmojiReactionMarker(fromParts);
+    if (hit) return hit;
+  }
+  if (typeof message.content === 'string' && message.content.trim()) {
+    return extractEmojiReactionMarker(message.content);
+  }
+  return null;
+}
+
 export function normalizeDisplayText(raw: string): string {
-  const cleaned = preferSanitizedWriterOutput(stripStreamProtocolArtifacts(raw));
+  const cleaned = finalizeDisplayText(raw);
   if (!cleaned) return '';
 
   return cleaned
@@ -147,10 +174,10 @@ export function normalizeDisplayText(raw: string): string {
       try {
         const parsed = JSON.parse(jsonLine[1]) as { type?: unknown; text?: unknown; value?: unknown };
         if (typeof parsed.text === 'string' && parsed.text.trim()) {
-          return preferSanitizedWriterOutput(parsed.text);
+          return finalizeDisplayText(parsed.text);
         }
         if (typeof parsed.value === 'string' && parsed.value.trim()) {
-          return preferSanitizedWriterOutput(parsed.value);
+          return finalizeDisplayText(parsed.value);
         }
         if (typeof parsed.type === 'string') return '';
       } catch {
