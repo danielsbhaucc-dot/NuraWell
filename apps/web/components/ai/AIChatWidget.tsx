@@ -1603,7 +1603,9 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                     className={`flex ${isUser ? 'justify-start' : 'justify-end items-end gap-2'}`}
                   >
                     {isUser ? (
-                      <div className="flex max-w-[82%] flex-col items-start">
+                      <div
+                        className={`relative max-w-[82%] ${userReaction ? 'mb-3' : ''}`}
+                      >
                         <div
                           className="rounded-[20px] rounded-tr-md px-3.5 py-2.5 text-[14px] leading-relaxed text-slate-100"
                           style={{
@@ -1631,7 +1633,9 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                           </div>
                         </div>
                         {userReaction ? (
-                          <MentorEmojiReactionBadge reaction={userReaction} />
+                          <div className="pointer-events-auto absolute -bottom-2.5 start-2 z-10">
+                            <MentorEmojiReactionBadge reaction={userReaction} />
+                          </div>
                         ) : null}
                       </div>
                     ) : (
