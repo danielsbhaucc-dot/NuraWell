@@ -4093,8 +4093,11 @@ export async function POST(request: Request) {
     const upstreamWriter = upstream.headers.get('x-ai-writer');
     const isUiMessageStream = upstreamWriter === 'memory-recall-tools';
 
-    /** אם ההחלטה כבר מוכנה — שולחים ב-header בלי לחכות; אחרת המתנה קצרה. */
-    const headerWaitMs = isUiMessageStream ? 900 : 450;
+    /**
+     * מחכים להחלטת האימוג'י לפני פתיחת הזרם — ההחלטה רצה במקביל לבניית הקונטקסט
+     * ולכן בדרך כלל כבר מוכנה. מקסימום ~1.2ש׳ כדי לא לעכב TTFB.
+     */
+    const headerWaitMs = isUiMessageStream ? 1400 : 1200;
     const headerReaction =
       resolvedEmojiReaction ??
       (await Promise.race([
@@ -4104,6 +4107,19 @@ export async function POST(request: Request) {
 
     const exposeReactionHeaders =
       'x-session-id, x-debug-id, x-debug-stage, x-ai-writer, x-ai-model, x-nura-writer, x-almog-reaction';
+
+    const applyReactionHeader = (headers: Headers, reaction: MentorEmojiReaction | null) => {
+      if (!reaction) return;
+      try {
+        headers.set('x-almog-reaction', headerEncodeEmojiReaction(reaction));
+      } catch (headerErr) {
+        console.warn('[ai/chat]', {
+          debug_id: debugId,
+          stage: 'emoji_reaction_header_failed',
+          error: headerErr instanceof Error ? headerErr.message : String(headerErr),
+        });
+      }
+    };
 
     /**
      * UI message stream (כלי recall) חייב להישאר בפרוטוקול המקורי.
@@ -4118,9 +4134,7 @@ export async function POST(request: Request) {
       uiHeaders.set('x-ai-model', assistantModelName);
       uiHeaders.set('x-nura-writer', mcfg.writer);
       uiHeaders.set('Cache-Control', 'no-cache, no-transform');
-      if (headerReaction) {
-        uiHeaders.set('x-almog-reaction', headerEncodeEmojiReaction(headerReaction));
-      }
+      applyReactionHeader(uiHeaders, headerReaction);
       uiHeaders.set('Access-Control-Expose-Headers', exposeReactionHeaders);
       return new Response(upstream.body, {
         status: upstream.status,
@@ -4158,12 +4172,12 @@ export async function POST(request: Request) {
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
     let hadVisibleText = false;
-    let reactionMarkerSent = Boolean(headerReaction);
 
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         const reader = upstreamWithHeaders.body!.getReader();
         try {
+          /** Marker בתחילת הזרם — הלקוח מחלץ ומציג על הודעת המשתמש. */
           if (headerReaction) {
             controller.enqueue(encoder.encode(encodeEmojiReactionMarker(headerReaction)));
           }
@@ -4182,16 +4196,15 @@ export async function POST(request: Request) {
             console.warn('[ai/chat]', { debug_id: debugId, stage: 'stream_empty_no_canned_fallback' });
           }
 
-          if (!reactionMarkerSent) {
+          if (!headerReaction) {
             const lateReaction =
               resolvedEmojiReaction ??
               (await Promise.race([
                 emojiReactionPromise,
-                new Promise<null>((resolve) => setTimeout(() => resolve(null), 1600)),
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 2800)),
               ]));
             if (lateReaction) {
               controller.enqueue(encoder.encode(encodeEmojiReactionMarker(lateReaction)));
-              reactionMarkerSent = true;
             }
           }
           controller.close();
@@ -4212,9 +4225,7 @@ export async function POST(request: Request) {
     headers.set('x-nura-writer', mcfg.writer);
     headers.set('Cache-Control', 'no-cache, no-transform');
     if (!headers.get('Content-Type')) headers.set('Content-Type', 'text/plain; charset=utf-8');
-    if (headerReaction) {
-      headers.set('x-almog-reaction', headerEncodeEmojiReaction(headerReaction));
-    }
+    applyReactionHeader(headers, headerReaction);
     headers.set('Access-Control-Expose-Headers', exposeReactionHeaders);
 
     return new Response(stream, {

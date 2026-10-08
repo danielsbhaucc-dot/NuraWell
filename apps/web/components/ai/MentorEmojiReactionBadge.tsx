@@ -25,33 +25,31 @@ export function MentorEmojiReactionBadge({
 
   return (
     <motion.span
-      className="pointer-events-auto absolute -bottom-2.5 start-2 z-10 inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-white/25 bg-[#0f172a]/92 px-1.5 text-[15px] leading-none shadow-[0_6px_16px_rgba(0,0,0,0.35)] backdrop-blur-md"
+      className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-white/20 bg-[#0f172a]/95 px-2 py-0.5 text-[13px] leading-none shadow-[0_6px_16px_rgba(0,0,0,0.28)] backdrop-blur-md"
       title={label}
       aria-label={label}
-      initial={reduceMotion ? false : { opacity: 0, scale: 0.35, y: 8 }}
+      initial={reduceMotion ? false : { opacity: 0, scale: 0.4, y: 6 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={
         reduceMotion
           ? { duration: 0 }
           : { type: 'spring', stiffness: 520, damping: 18, mass: 0.7 }
       }
-      whileHover={reduceMotion ? undefined : { scale: 1.12 }}
+      whileHover={reduceMotion ? undefined : { scale: 1.08 }}
     >
       <motion.span
         aria-hidden
-        className="select-none"
+        className="select-none text-[15px]"
         animate={
           reduceMotion
             ? undefined
             : {
-                rotate: [0, -8, 8, -4, 0],
-                scale: [1, 1.12, 1],
+                rotate: [0, -10, 10, -4, 0],
+                scale: [1, 1.18, 1],
               }
         }
         transition={
-          reduceMotion
-            ? undefined
-            : { delay: 0.15, duration: 0.55, ease: 'easeOut' }
+          reduceMotion ? undefined : { delay: 0.12, duration: 0.55, ease: 'easeOut' }
         }
       >
         {reaction.emoji}

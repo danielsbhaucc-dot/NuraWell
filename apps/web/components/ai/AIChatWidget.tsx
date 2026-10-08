@@ -724,6 +724,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     Record<string, MentorEmojiReaction>
   >({});
   const attachReactionRef = useRef<(reaction: MentorEmojiReaction) => void>(() => {});
+  const pendingReactionRef = useRef<MentorEmojiReaction | null>(null);
 
   const fetchWithSession = useMemo(() => {
     return async (url: RequestInfo | URL, init?: RequestInit) => {
@@ -734,6 +735,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
       const model = res.headers.get('x-ai-model');
       const headerReaction = headerDecodeEmojiReaction(res.headers.get('x-almog-reaction'));
       if (headerReaction) {
+        pendingReactionRef.current = headerReaction;
         queueMicrotask(() => attachReactionRef.current(headerReaction));
       }
       if (writer === 'memory-recall-tools') {
@@ -784,6 +786,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
   });
 
   attachReactionRef.current = (reaction: MentorEmojiReaction) => {
+    pendingReactionRef.current = reaction;
     setMessages((prev) => {
       const next = [...prev];
       let targetId: string | undefined;
@@ -795,7 +798,10 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
           next[i] && typeof next[i] === 'object' && 'metadata' in next[i]!
             ? ((next[i] as { metadata?: { emojiReaction?: MentorEmojiReaction } }).metadata ?? {})
             : {};
-        if (existingMeta.emojiReaction?.emoji === reaction.emoji) return prev;
+        if (existingMeta.emojiReaction?.emoji === reaction.emoji) {
+          pendingReactionRef.current = null;
+          return prev;
+        }
         next[i] = {
           ...next[i]!,
           metadata: { ...existingMeta, emojiReaction: reaction },
@@ -805,6 +811,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
       }
       if (changed && targetId) {
         const id = targetId;
+        pendingReactionRef.current = null;
         queueMicrotask(() => {
           setEmojiReactionsByUserMsgId((map) =>
             map[id]?.emoji === reaction.emoji ? map : { ...map, [id]: reaction }
@@ -814,6 +821,15 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
       return changed ? next : prev;
     });
   };
+
+  /** אם ה-header הגיע לפני שהודעת המשתמש נכנסה ל-state — מנסים שוב. */
+  useEffect(() => {
+    const pending = pendingReactionRef.current;
+    if (!pending) return;
+    const hasUser = messages.some((m) => m.role === 'user');
+    if (!hasUser) return;
+    attachReactionRef.current(pending);
+  }, [messages]);
 
   /** גיבוי: חילוץ marker מתשובת העוזר אם ה-header לא הספיק. */
   useEffect(() => {
@@ -1587,29 +1603,32 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                     className={`flex ${isUser ? 'justify-start' : 'justify-end items-end gap-2'}`}
                   >
                     {isUser ? (
-                      <div
-                        className="relative mb-2 max-w-[82%] rounded-[20px] rounded-tr-md px-3.5 py-2.5 text-[14px] leading-relaxed text-slate-100"
-                        style={{
-                          background: 'linear-gradient(145deg, rgba(51,65,85,0.92), rgba(30,41,59,0.88))',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
-                        }}
-                      >
-                        {showQuote && quotedReply && (
-                          <WhatsAppQuote author="אלמוג" text={quotedReply.mentorMessage} />
-                        )}
-                        <p className="whitespace-pre-wrap">{text}</p>
-                        <div className="mt-1.5 flex items-center justify-end gap-1 text-[10px] text-slate-400">
-                          <span>{formatHebrewTime(getMessageCreatedAt(msg))}</span>
-                          <MessageTicks
-                            state={resolveUserMessageTickStage({
-                              index: i,
-                              messages,
-                              inFlight: messageInFlight,
-                              choreographyStage: tickStage,
-                              offline: !online,
-                            })}
-                          />
+                      <div className="flex max-w-[82%] flex-col items-start">
+                        <div
+                          className="rounded-[20px] rounded-tr-md px-3.5 py-2.5 text-[14px] leading-relaxed text-slate-100"
+                          style={{
+                            background:
+                              'linear-gradient(145deg, rgba(51,65,85,0.92), rgba(30,41,59,0.88))',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+                          }}
+                        >
+                          {showQuote && quotedReply && (
+                            <WhatsAppQuote author="אלמוג" text={quotedReply.mentorMessage} />
+                          )}
+                          <p className="whitespace-pre-wrap">{text}</p>
+                          <div className="mt-1.5 flex items-center justify-end gap-1 text-[10px] text-slate-400">
+                            <span>{formatHebrewTime(getMessageCreatedAt(msg))}</span>
+                            <MessageTicks
+                              state={resolveUserMessageTickStage({
+                                index: i,
+                                messages,
+                                inFlight: messageInFlight,
+                                choreographyStage: tickStage,
+                                offline: !online,
+                              })}
+                            />
+                          </div>
                         </div>
                         {userReaction ? (
                           <MentorEmojiReactionBadge reaction={userReaction} />
