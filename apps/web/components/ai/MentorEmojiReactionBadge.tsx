@@ -14,7 +14,7 @@ type Props = {
 };
 
 /**
- * תגובת אימוג'י על בועת המשתמש — אנימציית כניסה + טולטיפ עם שם המנטור.
+ * תגובת אימוג'י על בועת המשתמש — יושב על שפת הבועה (כמו וואטסאפ).
  */
 export function MentorEmojiReactionBadge({
   reaction,
@@ -25,21 +25,21 @@ export function MentorEmojiReactionBadge({
 
   return (
     <motion.span
-      className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-white/20 bg-[#0f172a]/95 px-2 py-0.5 text-[13px] leading-none shadow-[0_6px_16px_rgba(0,0,0,0.28)] backdrop-blur-md"
+      className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-white/25 bg-[#0f172a]/95 px-1.5 text-[15px] leading-none shadow-[0_6px_16px_rgba(0,0,0,0.35)] backdrop-blur-md"
       title={label}
       aria-label={label}
-      initial={reduceMotion ? false : { opacity: 0, scale: 0.4, y: 6 }}
+      initial={reduceMotion ? false : { opacity: 0, scale: 0.35, y: 8 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={
         reduceMotion
           ? { duration: 0 }
           : { type: 'spring', stiffness: 520, damping: 18, mass: 0.7 }
       }
-      whileHover={reduceMotion ? undefined : { scale: 1.08 }}
+      whileHover={reduceMotion ? undefined : { scale: 1.12 }}
     >
       <motion.span
         aria-hidden
-        className="select-none text-[15px]"
+        className="select-none"
         animate={
           reduceMotion
             ? undefined
