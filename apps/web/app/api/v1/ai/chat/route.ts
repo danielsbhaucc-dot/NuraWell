@@ -87,6 +87,14 @@ import { formatUserMemoryDossierPromptBlock } from '../../../../../lib/ai/memory
 import { ingestChatTurnIntoMemoryDossier } from '../../../../../lib/ai/memory-dossier/ingest-chat-turn';
 import { createMemoryRecallStreamResponse } from '../../../../../lib/ai/memory-recall/stream-with-tools';
 import { shouldAttemptMemoryRecall } from '../../../../../lib/ai/memory-recall/eligibility';
+import { decideEmojiReaction } from '../../../../../lib/ai/emoji-reaction/decide-emoji-reaction';
+import {
+  encodeEmojiReactionMarker,
+  headerEncodeEmojiReaction,
+  stripEmojiReactionMarker,
+} from '../../../../../lib/ai/emoji-reaction/marker';
+import { persistUserEmojiReaction } from '../../../../../lib/ai/emoji-reaction/persist-user-reaction';
+import type { MentorEmojiReaction } from '../../../../../lib/ai/emoji-reaction/types';
 import {
   enqueuePendingChatLog,
   formatChatTurnForPendingLog,
@@ -2308,6 +2316,27 @@ export async function POST(request: Request) {
   const historyWindow = chatHistoryWindow();
 
   /**
+   * תגובת אימוג'י על הודעת המשתמש — במקביל לנתב/כותב.
+   * לא חוסם TTFB; אם מוכן לפני ה-response נשלח ב-header + marker בזרם.
+   */
+  let resolvedEmojiReaction: MentorEmojiReaction | null = null;
+  const emojiReactionPromise: Promise<MentorEmojiReaction | null> = decideEmojiReaction({
+    userMessage: lastUserText,
+  })
+    .then((reaction) => {
+      resolvedEmojiReaction = reaction;
+      return reaction;
+    })
+    .catch((rxErr) => {
+      console.warn('[ai/chat]', {
+        debug_id: debugId,
+        stage: 'emoji_reaction_failed',
+        error: rxErr instanceof Error ? rxErr.message : String(rxErr),
+      });
+      return null;
+    });
+
+  /**
    * שליפות DB שאינן תלויות בהחלטת הנתב — מתחילות *לפני* ה-await של הנתב כדי לרוץ
    * במקביל לקריאת ה-LLM שלו (בתור כבד). כך זמן הנתב (~1ש') "מוסתר" מאחורי שליפות
    * ה-DB במקום להצטבר עליהן. trivialBypass כבר ידוע כאן — אין שינוי תוצאה, רק תזמון.
@@ -3324,13 +3353,44 @@ export async function POST(request: Request) {
           }
         }
 
-        const assistantText = preferSanitizedWriterOutput(t);
-        if (!t) {
+        const assistantText = preferSanitizedWriterOutput(stripEmojiReactionMarker(t));
+        if (!assistantText) {
           console.warn('[ai/chat]', {
             debug_id: debugId,
             stage: `${finishStage}_empty_text_fallback`,
           });
         }
+
+        after(async () => {
+          try {
+            const reaction =
+              resolvedEmojiReaction ??
+              (await Promise.race([
+                emojiReactionPromise,
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 2200)),
+              ]));
+            if (!reaction) return;
+            await persistUserEmojiReaction(supabase, {
+              sessionId,
+              userId: user.id,
+              userMessage: lastUserText,
+              reaction,
+            });
+            console.info('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_emoji_reaction`,
+              emoji: reaction.emoji,
+              verb: reaction.verb,
+            });
+          } catch (rxPersistErr) {
+            console.warn('[ai/chat]', {
+              debug_id: debugId,
+              stage: `${finishStage}_emoji_reaction_persist_failed`,
+              error:
+                rxPersistErr instanceof Error ? rxPersistErr.message : String(rxPersistErr),
+            });
+          }
+        });
 
         const outputTokens = usage?.outputTokens;
         const inputTokens = usage?.inputTokens;
@@ -4033,6 +4093,18 @@ export async function POST(request: Request) {
     const upstreamWriter = upstream.headers.get('x-ai-writer');
     const isUiMessageStream = upstreamWriter === 'memory-recall-tools';
 
+    /** אם ההחלטה כבר מוכנה — שולחים ב-header בלי לחכות; אחרת המתנה קצרה. */
+    const headerWaitMs = isUiMessageStream ? 900 : 450;
+    const headerReaction =
+      resolvedEmojiReaction ??
+      (await Promise.race([
+        emojiReactionPromise,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), headerWaitMs)),
+      ]));
+
+    const exposeReactionHeaders =
+      'x-session-id, x-debug-id, x-debug-stage, x-ai-writer, x-ai-model, x-nura-writer, x-almog-reaction';
+
     /**
      * UI message stream (כלי recall) חייב להישאר בפרוטוקול המקורי.
      * עטיפה כ-text/plain + דריסת x-ai-writer שוברת את הלקוח ("שליחה נכשלה").
@@ -4046,10 +4118,10 @@ export async function POST(request: Request) {
       uiHeaders.set('x-ai-model', assistantModelName);
       uiHeaders.set('x-nura-writer', mcfg.writer);
       uiHeaders.set('Cache-Control', 'no-cache, no-transform');
-      uiHeaders.set(
-        'Access-Control-Expose-Headers',
-        'x-session-id, x-debug-id, x-debug-stage, x-ai-writer, x-ai-model, x-nura-writer'
-      );
+      if (headerReaction) {
+        uiHeaders.set('x-almog-reaction', headerEncodeEmojiReaction(headerReaction));
+      }
+      uiHeaders.set('Access-Control-Expose-Headers', exposeReactionHeaders);
       return new Response(upstream.body, {
         status: upstream.status,
         statusText: upstream.statusText,
@@ -4086,11 +4158,15 @@ export async function POST(request: Request) {
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
     let hadVisibleText = false;
+    let reactionMarkerSent = Boolean(headerReaction);
 
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         const reader = upstreamWithHeaders.body!.getReader();
         try {
+          if (headerReaction) {
+            controller.enqueue(encoder.encode(encodeEmojiReactionMarker(headerReaction)));
+          }
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -4104,6 +4180,19 @@ export async function POST(request: Request) {
           if (!hadVisibleText && trailing.trim().length > 0) hadVisibleText = true;
           if (!hadVisibleText) {
             console.warn('[ai/chat]', { debug_id: debugId, stage: 'stream_empty_no_canned_fallback' });
+          }
+
+          if (!reactionMarkerSent) {
+            const lateReaction =
+              resolvedEmojiReaction ??
+              (await Promise.race([
+                emojiReactionPromise,
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 1600)),
+              ]));
+            if (lateReaction) {
+              controller.enqueue(encoder.encode(encodeEmojiReactionMarker(lateReaction)));
+              reactionMarkerSent = true;
+            }
           }
           controller.close();
         } catch (streamErr) {
@@ -4123,10 +4212,10 @@ export async function POST(request: Request) {
     headers.set('x-nura-writer', mcfg.writer);
     headers.set('Cache-Control', 'no-cache, no-transform');
     if (!headers.get('Content-Type')) headers.set('Content-Type', 'text/plain; charset=utf-8');
-    headers.set(
-      'Access-Control-Expose-Headers',
-      'x-session-id, x-debug-id, x-debug-stage, x-ai-writer, x-ai-model, x-nura-writer'
-    );
+    if (headerReaction) {
+      headers.set('x-almog-reaction', headerEncodeEmojiReaction(headerReaction));
+    }
+    headers.set('Access-Control-Expose-Headers', exposeReactionHeaders);
 
     return new Response(stream, {
       status: upstreamWithHeaders.status,

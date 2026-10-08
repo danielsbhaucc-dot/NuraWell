@@ -10,11 +10,15 @@ import { MemorySearchIndicator } from './MemorySearchIndicator';
 import { messagesHavePendingRecallTool } from '../../lib/ai/memory-recall/detect-pending-recall';
 import {
   extractDisplayTextFromChatMessage,
+  extractEmojiReactionFromChatMessage,
   normalizeDisplayText,
   type ChatDisplayMessage,
 } from '../../lib/client/chat-message-display';
 import { NuraWellChatTransport } from '../../lib/client/nurawell-chat-transport';
+import { headerDecodeEmojiReaction } from '../../lib/ai/emoji-reaction/marker';
+import type { MentorEmojiReaction } from '../../lib/ai/emoji-reaction/types';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
+import { MentorEmojiReactionBadge } from './MentorEmojiReactionBadge';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { useChatBackground } from '../../lib/client/useChatBackground';
 import { usePersonalGreeting } from '../../lib/time/usePersonalGreeting';
@@ -715,6 +719,11 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
   };
 
   const [memoryRecallWriterActive, setMemoryRecallWriterActive] = useState(false);
+  /** תגובות אימוג'י לפי מזהה הודעת משתמש (לייב + היסטוריה). */
+  const [emojiReactionsByUserMsgId, setEmojiReactionsByUserMsgId] = useState<
+    Record<string, MentorEmojiReaction>
+  >({});
+  const attachReactionRef = useRef<(reaction: MentorEmojiReaction) => void>(() => {});
 
   const fetchWithSession = useMemo(() => {
     return async (url: RequestInfo | URL, init?: RequestInit) => {
@@ -723,6 +732,10 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
       const dbg = res.headers.get('x-debug-id');
       const writer = res.headers.get('x-ai-writer');
       const model = res.headers.get('x-ai-model');
+      const headerReaction = headerDecodeEmojiReaction(res.headers.get('x-almog-reaction'));
+      if (headerReaction) {
+        queueMicrotask(() => attachReactionRef.current(headerReaction));
+      }
       if (writer === 'memory-recall-tools') {
         queueMicrotask(() => setMemoryRecallWriterActive(true));
       }
@@ -769,6 +782,80 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
   const { messages, setMessages, sendMessage, status, stop, error } = useChat({
     transport: chatTransport,
   });
+
+  attachReactionRef.current = (reaction: MentorEmojiReaction) => {
+    setMessages((prev) => {
+      const next = [...prev];
+      let targetId: string | undefined;
+      let changed = false;
+      for (let i = next.length - 1; i >= 0; i -= 1) {
+        if (next[i]?.role !== 'user') continue;
+        targetId = next[i]!.id;
+        const existingMeta =
+          next[i] && typeof next[i] === 'object' && 'metadata' in next[i]!
+            ? ((next[i] as { metadata?: { emojiReaction?: MentorEmojiReaction } }).metadata ?? {})
+            : {};
+        if (existingMeta.emojiReaction?.emoji === reaction.emoji) return prev;
+        next[i] = {
+          ...next[i]!,
+          metadata: { ...existingMeta, emojiReaction: reaction },
+        } as (typeof next)[number];
+        changed = true;
+        break;
+      }
+      if (changed && targetId) {
+        const id = targetId;
+        queueMicrotask(() => {
+          setEmojiReactionsByUserMsgId((map) =>
+            map[id]?.emoji === reaction.emoji ? map : { ...map, [id]: reaction }
+          );
+        });
+      }
+      return changed ? next : prev;
+    });
+  };
+
+  /** גיבוי: חילוץ marker מתשובת העוזר אם ה-header לא הספיק. */
+  useEffect(() => {
+    const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+    if (!lastAssistant) return;
+    const fromStream = extractEmojiReactionFromChatMessage(lastAssistant as ChatDisplayMessage);
+    if (!fromStream) return;
+
+    const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+    if (!lastUser?.id) {
+      attachReactionRef.current(fromStream);
+      return;
+    }
+    if (emojiReactionsByUserMsgId[lastUser.id]?.emoji === fromStream.emoji) return;
+    const meta = (lastUser as { metadata?: { emojiReaction?: MentorEmojiReaction } }).metadata;
+    if (meta?.emojiReaction?.emoji === fromStream.emoji) return;
+    attachReactionRef.current(fromStream);
+  }, [messages, emojiReactionsByUserMsgId]);
+
+  /** סנכרון תגובות מהיסטוריה (metadata על הודעות משתמש). */
+  useEffect(() => {
+    const fromHistory: Record<string, MentorEmojiReaction> = {};
+    for (const msg of messages) {
+      if (msg.role !== 'user' || !msg.id) continue;
+      const meta = (msg as { metadata?: { emojiReaction?: MentorEmojiReaction } }).metadata;
+      if (meta?.emojiReaction?.emoji) {
+        fromHistory[msg.id] = meta.emojiReaction;
+      }
+    }
+    if (!Object.keys(fromHistory).length) return;
+    setEmojiReactionsByUserMsgId((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const [id, reaction] of Object.entries(fromHistory)) {
+        if (!next[id]) {
+          next[id] = reaction;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [messages]);
 
   const isLoading = status === 'submitted' || status === 'streaming';
   const showLoading = isLoading || awaitingAssistantRecovery;
@@ -848,6 +935,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     void fetchChatSessionMessages(pending.sessionId)
       .then(({ session, messages: turns, awaiting_assistant }) => {
         setChatSession(session);
+        setEmojiReactionsByUserMsgId({});
         setMessages(transcriptTurnsToUiMessages(turns));
         if (awaiting_assistant ?? isAwaitingAssistantResponse(turns)) {
           setAwaitingAssistantRecovery(true);
@@ -873,15 +961,8 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
       const { session: row, messages: turns, awaiting_assistant } =
         await fetchChatSessionMessages(session.id);
       setChatSession(row);
-      setMessages(
-        transcriptTurnsToUiMessages(
-          turns.map((t) => ({
-            role: t.role,
-            content: t.content,
-            created_at: t.created_at,
-          }))
-        )
-      );
+      setEmojiReactionsByUserMsgId({});
+      setMessages(transcriptTurnsToUiMessages(turns));
       setAwaitingAssistantRecovery(
         awaiting_assistant ?? isAwaitingAssistantResponse(turns)
       );
@@ -911,6 +992,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
       applySessionId(created.id);
       setChatSession(created);
       setMessages([]);
+      setEmojiReactionsByUserMsgId({});
       setTickSendGen(0);
       setTickStage('read');
       setTypingRevealReady(true);
@@ -1032,6 +1114,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
         if (cancelled) return;
         setChatSession(session);
         if (!(awaiting_assistant ?? isAwaitingAssistantResponse(turns))) {
+          setEmojiReactionsByUserMsgId({});
           setMessages(transcriptTurnsToUiMessages(turns));
           setAwaitingAssistantRecovery(false);
           clearPendingChatReply();
@@ -1491,6 +1574,13 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                   i === 0 &&
                   quotedReply != null &&
                   text.trim() === quotedReply.userReply.trim();
+                const metaReaction = (
+                  msg as { metadata?: { emojiReaction?: MentorEmojiReaction } }
+                ).metadata?.emojiReaction;
+                const userReaction =
+                  isUser && msg.id
+                    ? emojiReactionsByUserMsgId[msg.id] ?? metaReaction ?? null
+                    : null;
                 return (
                   <div
                     key={msg.id ?? `${i}-${text.slice(0, 16)}`}
@@ -1498,7 +1588,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                   >
                     {isUser ? (
                       <div
-                        className="max-w-[82%] rounded-[20px] rounded-tr-md px-3.5 py-2.5 text-[14px] leading-relaxed text-slate-100"
+                        className="relative mb-2 max-w-[82%] rounded-[20px] rounded-tr-md px-3.5 py-2.5 text-[14px] leading-relaxed text-slate-100"
                         style={{
                           background: 'linear-gradient(145deg, rgba(51,65,85,0.92), rgba(30,41,59,0.88))',
                           border: '1px solid rgba(255,255,255,0.1)',
@@ -1521,6 +1611,9 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                             })}
                           />
                         </div>
+                        {userReaction ? (
+                          <MentorEmojiReactionBadge reaction={userReaction} />
+                        ) : null}
                       </div>
                     ) : (
                       <>
