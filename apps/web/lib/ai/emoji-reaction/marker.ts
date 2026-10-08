@@ -1,15 +1,37 @@
 /**
- * פרוטוקול הטמעת תגובת אימוג'י בזרם טקסט (TextStream / UI stream).
- * הסימון מוסר לפני תצוגה ולפני שמירת תשובת העוזר.
+ * פרוטוקול הטמעת תגובת אימוג'י בזרם טקסט + header ASCII-safe (base64).
  */
 
 import type { MentorEmojiReaction } from './types';
 
 const MARKER_RE = /⟦NW_RX:(\{[\s\S]*?\})⟧/g;
 
-/** אימוג'י / רצף אימוג'י סביר — לא אותיות/ספרות בלבד. */
-const EMOJI_CANDIDATE_RE =
-  /^(?:[\p{Extended_Pictographic}\p{Emoji_Presentation}\uFE0F\u200D\u20E3\u{1F3FB}-\u{1F3FF}])+$/u;
+function utf8ToBase64(value: string): string {
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]!);
+  }
+  return btoa(binary);
+}
+
+function base64ToUtf8(value: string): string {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
+}
+
+function looksLikeEmoji(emoji: string): boolean {
+  if (!emoji || emoji.length > 16) return false;
+  if (/[A-Za-z\u0590-\u05FF]{3,}/.test(emoji)) return false;
+  if (/\p{Extended_Pictographic}/u.test(emoji)) return true;
+  if (/\p{Emoji_Presentation}/u.test(emoji)) return true;
+  /** לבנים/כוכבים קלאסיים */
+  return /[\u2764\u2665\u2605\u2728\u2B50]/.test(emoji);
+}
 
 export function encodeEmojiReactionMarker(reaction: MentorEmojiReaction): string {
   const payload = JSON.stringify({ e: reaction.emoji, v: reaction.verb });
@@ -31,11 +53,7 @@ export function parseMentorEmojiReaction(raw: unknown): MentorEmojiReaction | nu
       : typeof row.v === 'string'
         ? row.v.trim()
         : '';
-  if (!emoji || emoji.length > 16) return null;
-  if (!EMOJI_CANDIDATE_RE.test(emoji) && !/\p{Extended_Pictographic}/u.test(emoji)) {
-    return null;
-  }
-  if (/[A-Za-z\u0590-\u05FF]{3,}/.test(emoji)) return null;
+  if (!looksLikeEmoji(emoji)) return null;
   const safeVerb = (verb || 'הגיב עם').slice(0, 24);
   return { emoji, verb: safeVerb };
 }
@@ -64,14 +82,19 @@ export function stripEmojiReactionMarker(text: string): string {
     .trim();
 }
 
+/** Header ASCII-safe — emoji/עברית ב-JSON גולמי נשברים ב-HTTP headers. */
 export function headerEncodeEmojiReaction(reaction: MentorEmojiReaction): string {
-  return JSON.stringify({ emoji: reaction.emoji, verb: reaction.verb });
+  return utf8ToBase64(JSON.stringify({ emoji: reaction.emoji, verb: reaction.verb }));
 }
 
 export function headerDecodeEmojiReaction(raw: string | null | undefined): MentorEmojiReaction | null {
   if (!raw?.trim()) return null;
+  const trimmed = raw.trim();
   try {
-    return parseMentorEmojiReaction(JSON.parse(raw));
+    if (trimmed.startsWith('{')) {
+      return parseMentorEmojiReaction(JSON.parse(trimmed));
+    }
+    return parseMentorEmojiReaction(JSON.parse(base64ToUtf8(trimmed)));
   } catch {
     return null;
   }
