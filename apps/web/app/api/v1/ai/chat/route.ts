@@ -2342,6 +2342,14 @@ export async function POST(request: Request) {
    * ה-DB במקום להצטבר עליהן. trivialBypass כבר ידוע כאן — אין שינוי תוצאה, רק תזמון.
    */
   const profilePromise = fetchChatProfileRow(supabase, user.id);
+  /** perf: מתחיל מיד כש-profile מוכן (במקביל לנתב), במקום אחרי כל שליפות ההקשר. */
+  const returnSignalsPromise = isCasualGreeting(lastUserText)
+    ? Promise.resolve({ daysSincePriorChat: null as number | null, unansweredTouchCount: 0 })
+    : profilePromise
+        .then((p) => fetchReturnVisitSignalsForChat(supabase, user.id, p.last_active_at)).catch(() => ({
+        daysSincePriorChat: null as number | null,
+        unansweredTouchCount: 0,
+      }));
   /** שאילתת progress אחת ל-context + cap RAG (בלי כפילות journey_progress). */
   const journeyProgressRowsPromise = fetchAllJourneyProgressRows(supabase, user.id).catch(
     (progressErr) => {
@@ -2423,6 +2431,38 @@ export async function POST(request: Request) {
   const speculativeEmbedPromise =
     isVectorRagRetrieveEnabled() || isSystemKnowledgeVectorConfigured()
       ? embedTextForRag(lastUserText).catch(() => null)
+      : Promise.resolve(null);
+
+  /**
+   * perf: שליפות זיכרון וקטוריות (זיכרון משתמש + שיחות עבר) — ספקולטיביות במקביל לנתב.
+   * קריאה בלבד, אותם קלטים בדיוק (userId + טקסט + אותו embedding) — התוצאה זהה למה
+   * שהיה נשלף אחרי הנתב. משתמשים בה רק אם הנתב קבע שצריך; אחרת פשוט לא בשימוש.
+   * בתורים טריוויאליים/ברכות לא מריצים (חוסך קריאות מיותרות).
+   */
+  const speculativeMemoryRagPromise: Promise<{
+    qv: number[];
+    userBlock: string;
+    conversationBlock: string;
+  } | null> =
+    !trivialBypass && !isCasualGreeting(lastUserText) && isVectorRagRetrieveEnabled()
+      ? speculativeEmbedPromise
+          .then(async (qv) => {
+            if (!qv) return null;
+            const [userBlock, conversationBlock] = await Promise.all([
+              buildRelevantMemoriesPromptBlock({
+                userId: user.id,
+                queryText: lastUserText,
+                queryVector: qv,
+              }),
+              buildConversationMemoryPromptBlock({
+                userId: user.id,
+                queryText: lastUserText,
+                queryVector: qv,
+              }),
+            ]);
+            return { qv, userBlock, conversationBlock };
+          })
+          .catch(() => null)
       : Promise.resolve(null);
 
   /**
@@ -2774,12 +2814,6 @@ export async function POST(request: Request) {
    * לברכה סתמית ("היי") לא מזריקים מסגור חזרה/ריסט, אז אין טעם לשלם על שאילתות
    * ה-return-visit (ימים מאז שיחה אחרונה + מגעים ללא מענה). חוסך השהיה.
    */
-  const returnSignalsPromise = isCasualGreeting(lastUserText)
-    ? Promise.resolve({ daysSincePriorChat: null as number | null, unansweredTouchCount: 0 })
-    : fetchReturnVisitSignalsForChat(supabase, user.id, profileRow.last_active_at).catch(() => ({
-        daysSincePriorChat: null as number | null,
-        unansweredTouchCount: 0,
-      }));
 
   const profileFullName = profileRow.full_name;
   const profileMoodSignal = profileRow.mood_signal;
@@ -2910,8 +2944,12 @@ export async function POST(request: Request) {
     if (needUserRag || needSystemRag || needPrinciples || needConversationRag) {
       try {
         const qv = (await speculativeEmbedPromise) ?? (await embedTextForRag(lastUserText));
+        const specMem = await speculativeMemoryRagPromise;
+        const specUsable = specMem !== null && specMem.qv === qv;
         const [userMemoryBlock, skHits, principleHits, conversationMemoryBlock] = await Promise.all([
-          needUserRag
+          needUserRag && specUsable
+            ? Promise.resolve(specMem.userBlock)
+            : needUserRag
             ? buildRelevantMemoriesPromptBlock({
                 userId: user.id,
                 queryText: lastUserText,
@@ -2928,7 +2966,9 @@ export async function POST(request: Request) {
           needPrinciples && principlesFilter
             ? queryAlmogSystemKnowledgeForUser({ questionEmbedding: qv, filter: principlesFilter, topK: 4 })
             : Promise.resolve(null),
-          needConversationRag
+          needConversationRag && specUsable
+            ? Promise.resolve(specMem.conversationBlock)
+            : needConversationRag
             ? buildConversationMemoryPromptBlock({
                 userId: user.id,
                 queryText: lastUserText,
