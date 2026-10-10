@@ -330,6 +330,66 @@ const CHAT_ROUTER_PROVIDER_ONLY = (() => {
   if (!raw) return [] as string[];
   return raw.split(',').map((s) => s.trim()).filter(Boolean);
 })();
+/**
+ * perf: מיון ספקים ב-OpenRouter לנתב — אותו מודל בדיוק, רק בוחרים את הספק המהיר
+ * מבין אלה שמארחים אותו (allow_fallbacks נשאר פעיל → אם הספק המהיר נופל, OpenRouter
+ * עובר לבא בתור). הערה: Groq כבר לא מארח את llama-4-maverick ב-OpenRouter — זו
+ * הסיבה ש-AI_CHAT_ROUTER_PROVIDER_ONLY=Groq הפיל את הנתב ב-400/timeout בעבר.
+ * ערכים: latency (ברירת מחדל) | throughput | price | off.
+ */
+/**
+ * לוג זמנים לפי שלב — שורה אחת לכל תור צ'אט, בלי תוכן/PII (רק מספרים + מזהי debug/writer).
+ * כיבוי: AI_CHAT_PERF_LOG=off.
+ */
+const CHAT_PERF_LOG_ENABLED =
+  (process.env.AI_CHAT_PERF_LOG?.trim() || 'on').toLowerCase() !== 'off';
+
+function withChatPerfTiming(
+  res: Response,
+  onDone: (marks: { firstByteAt: number | null; endAt: number; aborted: boolean }) => void
+): Response {
+  if (!CHAT_PERF_LOG_ENABLED || !res.body) return res;
+  let firstByteAt: number | null = null;
+  let done = false;
+  const finish = (aborted: boolean) => {
+    if (done) return;
+    done = true;
+    try {
+      onDone({ firstByteAt, endAt: Date.now(), aborted });
+    } catch {
+      /* logging only */
+    }
+  };
+  const body = res.body.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        if (firstByteAt === null && chunk.byteLength > 0) firstByteAt = Date.now();
+        controller.enqueue(chunk);
+      },
+      flush() {
+        finish(false);
+      },
+      cancel() {
+        finish(true);
+      },
+    } as Transformer<Uint8Array, Uint8Array>)
+  );
+  return new Response(body, { status: res.status, statusText: res.statusText, headers: res.headers });
+}
+
+const CHAT_ROUTER_PROVIDER_SORT = (() => {
+  const raw = (process.env.AI_CHAT_ROUTER_PROVIDER_SORT?.trim() || 'latency').toLowerCase();
+  return raw === 'latency' || raw === 'throughput' || raw === 'price' ? raw : null;
+})();
+
+function chatRouterProviderPrefs(pinned: boolean): Record<string, unknown> {
+  if (pinned && CHAT_ROUTER_PROVIDER_ONLY.length) {
+    return { provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] } };
+  }
+  return CHAT_ROUTER_PROVIDER_SORT
+    ? { provider: { sort: CHAT_ROUTER_PROVIDER_SORT, allow_fallbacks: true } }
+    : {};
+}
 
 /**
  * הערה: דגלים כמו isOpenAI / requiresPiiShield / isQwen / supportsPromptCache /
@@ -1492,6 +1552,8 @@ async function attemptContextRoute(opts: {
   debugId: string;
   provider: 'openrouter';
   stickyLine?: string;
+  /** false → בלי נעילת ספק (fallback לניתוב הרגיל של OpenRouter). */
+  pinProvider?: boolean;
 }): Promise<ChatContextDecision | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
@@ -1508,9 +1570,7 @@ async function attemptContextRoute(opts: {
         temperature: 0,
         max_tokens: 720,
         response_format: { type: 'json_object' },
-        ...(CHAT_ROUTER_PROVIDER_ONLY.length
-          ? { provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] } }
-          : {}),
+        ...chatRouterProviderPrefs(opts.pinProvider !== false),
         messages: [
           {
             role: 'system',
@@ -1575,7 +1635,8 @@ async function routeChatContextWithCheapModel(
     });
   }
 
-  const orDecision = await attemptContextRoute({
+  const routerStartedAt = Date.now();
+  let orDecision = await attemptContextRoute({
     endpoint: 'https://openrouter.ai/api/v1/chat/completions',
     apiKey: openrouterKey,
     model: CHAT_ROUTER_MODEL,
@@ -1588,6 +1649,27 @@ async function routeChatContextWithCheapModel(
     provider: 'openrouter',
     stickyLine,
   });
+  /**
+   * נעילת ספק (AI_CHAT_ROUTER_PROVIDER_ONLY) נכשלה → ניסיון אחד בניתוב הרגיל
+   * בזמן שנותר, לפני נפילה להיוריסטיקה.
+   */
+  const routerRemainingMs = CHAT_ROUTER_TIMEOUT_MS - (Date.now() - routerStartedAt);
+  if (!orDecision && CHAT_ROUTER_PROVIDER_ONLY.length && routerRemainingMs > 400) {
+    orDecision = await attemptContextRoute({
+      pinProvider: false,
+    endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+    apiKey: openrouterKey,
+    model: CHAT_ROUTER_MODEL,
+    extraHeaders: { 'HTTP-Referer': publicAppUrlForAiReferer(), 'X-Title': 'NuraWell' },
+    timeoutMs: routerRemainingMs,
+    userMessage,
+    signals,
+    historySnippet,
+    debugId,
+    provider: 'openrouter',
+    stickyLine,
+    });
+  }
   // נכשל/timeout: במקום "בלי RAG" (שגרם לתשובות גנריות) — fallback היוריסטי
   // שמזהה שאלות/ידע ומפעיל שליפה בהתאם.
   if (!orDecision) {
@@ -2510,6 +2592,7 @@ export async function POST(request: Request) {
   })();
 
   const routerBundle = await routerBundlePromise;
+  const perfRouterDoneAt = Date.now();
   let { contextDecision } = routerBundle;
   const stickyStance = parseChatWriterStance(routerBundle.profilePeek.ai_context.writer_stance);
 
@@ -3306,6 +3389,7 @@ export async function POST(request: Request) {
     const systemPromptWithMemory = `${mcfg.mainWriterSystemPrompt}\n\n${dynamicSystemPrompt}`;
 
     stage = 'stream_init';
+    const perfContextDoneAt = Date.now();
     /**
      * תצפית בפרודקשן — אורך הפרומפט הכולל אחרי כל ההזרקות (זיכרון/journey/ידע).
      * מעל הסף נסמן כדי לעקוב אחרי "ניפוח" שלוקח קונטקסט מהפלט.
@@ -4130,6 +4214,24 @@ export async function POST(request: Request) {
       }
     }
 
+    const perfWriterOpenAt = Date.now();
+    upstream = withChatPerfTiming(upstream, ({ firstByteAt, endAt, aborted }) => {
+      console.info('[ai/chat]', {
+        debug_id: debugId,
+        stage: 'perf_timings',
+        writer: mcfg.writer,
+        model: assistantModelName,
+        router_ms: perfRouterDoneAt - startedAt,
+        context_ms: perfContextDoneAt - perfRouterDoneAt,
+        writer_open_ms: perfWriterOpenAt - perfContextDoneAt,
+        ttft_ms: firstByteAt === null ? null : firstByteAt - startedAt,
+        total_ms: endAt - startedAt,
+        heavy_context: useHeavyContext,
+        router_skipped: contextDecision.reason === 'trivial_skip_router_sticky',
+        router_fallback: contextDecision.reason === 'cheap_router_failed_heuristic',
+        aborted,
+      });
+    });
     const upstreamWriter = upstream.headers.get('x-ai-writer');
     const isUiMessageStream = upstreamWriter === 'memory-recall-tools';
 
