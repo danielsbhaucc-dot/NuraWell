@@ -90,7 +90,7 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
     void load();
     const interval = setInterval(() => {
       // perf: לא שולפים כשהטאב מוסתר
-      if (document.visibilityState === 'visible') void load();
+      if (document.visibilityState === 'visible') load().catch(() => undefined);
     }, 60_000);
     return () => clearInterval(interval);
   }, [load]);

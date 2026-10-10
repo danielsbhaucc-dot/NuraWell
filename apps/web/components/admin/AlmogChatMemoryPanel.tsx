@@ -200,7 +200,7 @@ export function AlmogChatMemoryPanel({
     if (session?.transcript_access !== 'pending') return;
     const interval = setInterval(() => {
       // perf: לא שולפים כשהטאב מוסתר
-      if (document.visibilityState === 'visible') void load();
+      if (document.visibilityState === 'visible') load().catch(() => undefined);
     }, 20_000);
     return () => clearInterval(interval);
   }, [expandedSession, data?.sessions, load]);

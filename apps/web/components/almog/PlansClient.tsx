@@ -296,7 +296,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
       if (document.visibilityState !== 'visible') return;
       if (subscribed && Date.now() - lastSync < 300_000) return;
       lastSync = Date.now();
-      void load(true);
+      load(true).catch(() => undefined);
     }, 45_000);
     const onVisible = () => {
       if (document.visibilityState === 'visible') void load(true);

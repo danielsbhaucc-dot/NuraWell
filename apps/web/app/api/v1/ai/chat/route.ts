@@ -2320,6 +2320,8 @@ function uiMessageRole(msg: unknown): 'system' | 'user' | 'assistant' | null {
   return r === 'system' || r === 'user' || r === 'assistant' ? r : null;
 }
 
+// Pre-existing orchestration handler; splitting it is tracked separately (perf audit).
+// skipcq: JS-R1005
 export async function POST(request: Request) {
   const debugId = crypto.randomUUID();
   const startedAt = Date.now();
