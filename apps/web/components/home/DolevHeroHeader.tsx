@@ -220,7 +220,7 @@ export function AlmogHeroHeader({
           <motion.div
             initial={{ opacity: 0, y: 8, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
+            transition={{ duration: 0.5, delay: 0.35, ease: [0.34, 1.56, 0.64, 1] as const }}
             className="min-w-0 flex-1"
             style={{
               padding: '11px 14px',

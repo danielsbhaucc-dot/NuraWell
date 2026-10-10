@@ -205,7 +205,7 @@ export function LiveNotificationToast({
         className="absolute bottom-0 right-0 h-[2.5px] bg-gradient-to-l from-emerald-500 via-emerald-400 to-teal-300"
         initial={{ width: '100%' }}
         animate={{ width: '0%' }}
-        transition={{ duration: TOAST_AUTO_DISMISS_MS / 1000, ease: 'linear' }}
+        transition={{ duration: TOAST_AUTO_DISMISS_MS / 1000, ease: 'linear' as const }}
         aria-hidden
       />
     </motion.div>

@@ -216,7 +216,7 @@ export function AlmogAssignmentsSection() {
       dir="rtl"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] as const }}
       className="mt-7"
     >
       <div
@@ -270,7 +270,7 @@ export function AlmogAssignmentsSection() {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] as const }}
               className="overflow-hidden"
             >
               <div className="border-t border-emerald-200/50 px-4 pb-4 pt-3">
@@ -631,7 +631,7 @@ function AssignmentCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] as const }}
       className="relative overflow-hidden rounded-[20px]"
       style={{
         background: 'linear-gradient(135deg, rgba(248,251,246,0.72) 0%, rgba(236,253,245,0.55) 100%)',

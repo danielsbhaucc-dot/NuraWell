@@ -132,7 +132,7 @@ export function GuideLearningPath({
               <motion.div
                 className="h-full rounded-full"
                 animate={{ width: `${progressPct}%` }}
-                transition={{ duration: 0.35, ease: 'easeOut' }}
+                transition={{ duration: 0.35, ease: 'easeOut' as const }}
                 style={{ background: 'linear-gradient(90deg, #10b981, #2dd4bf)' }}
               />
             </div>
@@ -258,7 +258,7 @@ function PathIntroSlide({
       initial="enter"
       animate="center"
       exit="exit"
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
       className="w-full max-w-md text-center"
     >
       <div className="mb-5 flex justify-center">
@@ -298,7 +298,7 @@ function PathLessonSlide({
       initial="enter"
       animate="center"
       exit="exit"
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
       className="w-full max-w-md"
     >
       <div className="guide-immersive-slide-card rounded-3xl p-6">
@@ -364,7 +364,7 @@ function PathOutroSlide({
       initial="enter"
       animate="center"
       exit="exit"
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
       className="w-full max-w-md text-center"
     >
       <motion.div

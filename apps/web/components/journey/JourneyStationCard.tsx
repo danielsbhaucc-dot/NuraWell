@@ -35,7 +35,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
       whileTap={{ scale: 0.985 }}
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.45, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] as const }}
       className={cn(
         'group relative block w-full overflow-hidden rounded-[28px] text-right',
         'transition-shadow duration-300',
@@ -51,7 +51,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
         layoutId={layoutId}
         className="relative w-full overflow-hidden rounded-[28px]"
         style={{ aspectRatio: '16 / 11', minHeight: 220 }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] as const }}
       >
         {hasCover ? (
           <img
@@ -146,7 +146,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${isEmpty ? 0 : pct}%` }}
-                  transition={{ duration: 0.9, delay: 0.25 + index * 0.06, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 0.9, delay: 0.25 + index * 0.06, ease: [0.22, 1, 0.36, 1] as const }}
                   className="h-full rounded-full"
                   style={{
                     background:

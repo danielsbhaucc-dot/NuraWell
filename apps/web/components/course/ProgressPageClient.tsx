@@ -98,7 +98,7 @@ const container = {
 };
 const item = {
   hidden: { opacity: 0, y: 8 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: 'easeOut' } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: 'easeOut' as const } },
 };
 
 const hebrewFont = "'Rubik','Heebo',sans-serif";
@@ -294,7 +294,7 @@ function ProgressTrack({
         style={{ background: fill }}
         initial={{ width: 0 }}
         animate={{ width: `${value}%` }}
-        transition={{ duration: 0.65, ease: 'easeOut', delay }}
+        transition={{ duration: 0.65, ease: 'easeOut' as const, delay }}
       />
     </div>
   );

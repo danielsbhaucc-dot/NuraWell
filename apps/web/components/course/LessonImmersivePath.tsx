@@ -204,7 +204,7 @@ export function LessonImmersivePath({
               <motion.div
                 className="h-full rounded-full"
                 animate={{ width: `${progressPct}%` }}
-                transition={{ duration: 0.35, ease: 'easeOut' }}
+                transition={{ duration: 0.35, ease: 'easeOut' as const }}
                 style={{ background: 'linear-gradient(90deg, #10b981, #2dd4bf)' }}
               />
             </div>
@@ -332,7 +332,7 @@ function LessonSlideContent({
       initial="enter"
       animate="center"
       exit="exit"
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
       className={className}
     >
       {children}

@@ -303,7 +303,7 @@ function AlmogChatTypingDots() {
           key={i}
           className="h-2 w-2 rounded-full bg-background-card shadow-[0_0_10px_rgba(255,255,255,0.45)]"
           animate={{ y: [0, -5, 0], opacity: [0.35, 1, 0.35] }}
-          transition={{ duration: 0.75, repeat: Infinity, ease: 'easeInOut', delay: i * 0.14 }}
+          transition={{ duration: 0.75, repeat: Infinity, ease: 'easeInOut' as const, delay: i * 0.14 }}
         />
       ))}
     </span>

@@ -93,7 +93,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
+              transition={{ duration: 0.2, ease: 'easeOut' as const }}
               className="container-mobile pb-4 pt-2"
             >
               <motion.div className="rounded-2xl overflow-hidden bg-background-card" style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>

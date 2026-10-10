@@ -269,7 +269,7 @@ export function CourseCard({ course, progress, isEnrolled, accentIndex = 0 }: Co
                   }}
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.8, ease: 'easeOut', delay: 0.15 }}
+                  transition={{ duration: 0.8, ease: 'easeOut' as const, delay: 0.15 }}
                 />
               </div>
             </div>
