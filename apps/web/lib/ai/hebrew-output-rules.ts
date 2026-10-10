@@ -3,9 +3,17 @@
  * Same convention as the main chat (genderAddressingHint in app/api/v1/ai/chat/route.ts):
  * known gender → consistent masculine/feminine; unknown → genuinely neutral phrasing.
  */
+/** אלמוג הוא גבר — דיבור על עצמו תמיד בלשון זכר, בלי קשר למגדר המשתמש. */
+export const ALMOG_SELF_GENDER_RULE =
+  'אלמוג הוא גבר: כשאתה מדבר על עצמך — תמיד בלשון זכר (אני מבין, אני שמח, הייתי בטוח), גם כשהמשתמשת היא אישה. הפנייה למשתמש — לפי המגדר שלו.';
+
 export type HebrewGender = 'male' | 'female' | null | undefined;
 
 export function hebrewAddressingRule(gender: HebrewGender): string {
+  return `${ALMOG_SELF_GENDER_RULE} ${userAddressingRule(gender)}`;
+}
+
+function userAddressingRule(gender: HebrewGender): string {
   if (gender === 'female') {
     return 'פנייה: המשתמשת היא נקבה — כל פנייה בגוף שני בלשון נקבה, בעקביות (בלי לערבב זכר ונקבה באותו משפט).';
   }
