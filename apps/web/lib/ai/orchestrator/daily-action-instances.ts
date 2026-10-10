@@ -13,6 +13,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { groq, AI_MODELS } from '../client';
 import { israelDateKey } from '../onboarding-check-in-time';
 import { isGroqLaneAvailable } from '../groq-compat';
+import { hebrewAddressingRule } from '../hebrew-output-rules';
 
 export type DailyActionStatus = 'pending' | 'completed' | 'skipped';
 
@@ -165,7 +166,8 @@ async function generateProgressionStepTitle(params: {
           content:
             'אתה אלמוג, מאמן הרגלים תומך (לא מטפל/דיאטן). נסח כותרת קצרה אחת בעברית למשימת היום ' +
             'שהיא צעד ביניים בדרך *חזרה* מהצעד הזעיר אל היעד המלא — מעט גדול יותר מאתמול אך עדיין בר-השגה. ' +
-            'החזר שורה אחת בלבד, בלי גרשיים ובלי הסבר.',
+            'החזר שורה אחת בלבד, בלי גרשיים ובלי הסבר. ' +
+            hebrewAddressingRule(null),
         },
         {
           role: 'user',

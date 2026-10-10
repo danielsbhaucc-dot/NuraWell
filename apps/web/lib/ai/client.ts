@@ -50,6 +50,8 @@ export const openrouter = new OpenAI({
     'HTTP-Referer': APP_URL,
     'X-Title': APP_TITLE,
   },
+  /** gpt-oss: provider Groq preferred + low reasoning (see groq-compat.ts); other models untouched. */
+  fetch: groqCompatFetch,
 });
 
 /**

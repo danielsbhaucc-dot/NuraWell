@@ -13,11 +13,11 @@ export const EMBEDDING_MODEL_OPENROUTER = 'openai/text-embedding-3-small';
 
 /** חילוץ עובדות אסינכרוני — Llama דרך OpenRouter (לא מענה למשתמש) */
 export const MEMORY_EXTRACTION_MODEL_OPENROUTER =
-  process.env.MEMORY_EXTRACTION_MODEL?.trim() || 'meta-llama/llama-4-scout';
+  process.env.MEMORY_EXTRACTION_MODEL?.trim() || 'openai/gpt-oss-120b';
 
 /** חילוץ תיק זיכרון מובנה — Llama 4 דרך OpenRouter (רקע, לא צ'אט) */
 export const MEMORY_DOSSIER_MODEL_OPENROUTER =
-  process.env.MEMORY_DOSSIER_MODEL?.trim() || 'meta-llama/llama-4-scout';
+  process.env.MEMORY_DOSSIER_MODEL?.trim() || 'openai/gpt-oss-120b';
 
 /** כמה זיכרונות מוזרקים בפועל לפרומפט אחרי דירוג חכם */
 export const RAG_TOP_K = 3;

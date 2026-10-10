@@ -154,7 +154,7 @@ export async function runGuideCompanionLlm(
   if (process.env.OPENROUTER_API_KEY?.trim()) {
     try {
       const completion = await openrouter.chat.completions.create({
-        model: 'meta-llama/llama-4-scout',
+        model: 'openai/gpt-oss-120b',
         temperature: 0.25,
         max_tokens: 700,
         response_format: { type: 'json_object' },

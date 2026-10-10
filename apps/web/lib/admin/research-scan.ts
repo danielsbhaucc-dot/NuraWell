@@ -119,7 +119,7 @@ ${params.bibliographicContext}
 טקסט מקור:
 ${params.sourceText.slice(0, MAX_SOURCE_CHARS)}`;
 
-  const openrouterModel = process.env.RESEARCH_SCAN_MODEL?.trim() || 'meta-llama/llama-4-scout';
+  const openrouterModel = process.env.RESEARCH_SCAN_MODEL?.trim() || 'openai/gpt-oss-120b';
   const groqModel = process.env.RESEARCH_SCAN_GROQ_MODEL?.trim() || AI_MODELS.background_groq_strong;
   const groqEnabled = isGroqLaneAvailable();
 

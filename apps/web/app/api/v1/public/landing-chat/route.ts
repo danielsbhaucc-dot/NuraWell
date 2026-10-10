@@ -3,6 +3,7 @@ import { streamText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { consumeMultiRateLimits, rateLimitResponse } from '../../../../../lib/api/rate-limit';
 import { publicAppUrlForAiReferer } from '../../../../../lib/public-app-url';
+import { groqCompatFetch } from '@/lib/ai/groq-compat';
 
 /** Edge — סטרימינג מהיר וקרוב ל-POP, בלי תלות ב-Node APIs. */
 export const runtime = 'edge';
@@ -13,7 +14,7 @@ export const runtime = 'edge';
  * מחדל ~$0.08/M, override ב-AI_LANDING_MODEL). מוגבל בתוכן, באורך וב-rate-limit
  * לפי IP כדי שלא ישרוף קרדיט.
  */
-const LANDING_MODEL = process.env.AI_LANDING_MODEL?.trim() || 'meta-llama/llama-4-scout';
+const LANDING_MODEL = process.env.AI_LANDING_MODEL?.trim() || 'openai/gpt-oss-120b';
 
 const MAX_TURNS = 8;
 
@@ -83,6 +84,7 @@ export async function POST(req: Request): Promise<Response> {
   const openrouter = createOpenAI({
     apiKey,
     baseURL: 'https://openrouter.ai/api/v1',
+    fetch: groqCompatFetch,
     headers: {
       'HTTP-Referer': publicAppUrlForAiReferer(),
       'X-Title': 'NuraWell Landing Demo',

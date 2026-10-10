@@ -22,6 +22,7 @@ import type {
 import type { JourneyCompanionContext } from '../../workflows/journey-companion';
 import type { AiUserContext } from '../memory';
 import { isGroqLaneAvailable } from '../groq-compat';
+import { HEBREW_JSON_VALUES_RULE } from '../hebrew-output-rules';
 
 export type BuildProposalInput = {
   decision: ProgramStateDecision;
@@ -179,7 +180,8 @@ ${stateInstruction(input)}
   "next_step_detail": "משפט הסבר קצר אחד למה זה קטן וקל"`
       : ''
   }
-}`;
+}
+${HEBREW_JSON_VALUES_RULE}`;
 
     try {
       const completion = await groq.chat.completions.create({

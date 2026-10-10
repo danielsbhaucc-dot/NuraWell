@@ -17,6 +17,7 @@ import {
 } from '../profile/profile-chat-bootstrap';
 import { imperativeTap, type ProfileGender } from '../profile/personalized-copy';
 import { isGroqLaneAvailable } from './groq-compat';
+import { HEBREW_JSON_VALUES_RULE, hebrewAddressingRule } from './hebrew-output-rules';
 
 export type OnboardingChatTurn = { role: 'user' | 'assistant'; content: string };
 
@@ -48,7 +49,7 @@ export type OnboardingChatResult = {
 };
 
 const ONBOARDING_MODEL_GROQ = AI_MODELS.background_groq_strong;
-const ONBOARDING_MODEL_OPENROUTER = 'meta-llama/llama-4-scout';
+const ONBOARDING_MODEL_OPENROUTER = 'openai/gpt-oss-120b';
 
 const TIME_RE = /^([01]?\d|2[0-3]):[0-5]\d$/;
 
@@ -147,7 +148,10 @@ ${knownBlock}
   "summary": "אם ready — סיכום לאישור בלי לחזור על מספרים/שם"
 }
 
-ready_for_summary=true כשיש שם + מטרה + (מכשול או זמן חלש).`;
+ready_for_summary=true כשיש שם + מטרה + (מכשול או זמן חלש).
+
+${hebrewAddressingRule(known.gender)}
+${HEBREW_JSON_VALUES_RULE}`;
 }
 
 function sanitizeExtracted(raw: unknown): OnboardingExtracted {
