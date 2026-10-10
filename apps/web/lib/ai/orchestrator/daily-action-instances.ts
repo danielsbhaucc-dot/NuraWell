@@ -156,7 +156,7 @@ async function generateProgressionStepTitle(params: {
 
   try {
     const completion = await groq.chat.completions.create({
-      model: AI_MODELS.background_groq,
+      model: AI_MODELS.background_groq_strong,
       temperature: 0.5,
       max_tokens: 80,
       messages: [

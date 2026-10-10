@@ -147,7 +147,7 @@ function notifyProviders(): NotifyProvider[] {
   if (isGroqLaneAvailable()) {
     providers.push({
       label: 'groq',
-      model: AI_MODELS.background_groq,
+      model: AI_MODELS.background_groq_strong,
       chat: groqAi,
       attempts: 1,
       isReasoningModel: false,

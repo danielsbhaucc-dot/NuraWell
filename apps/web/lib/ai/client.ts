@@ -91,8 +91,8 @@ export const AI_MODELS = {
   /** Legacy DeepSeek background id; cron uses `getDeepseekAnalysisModel()` (same default, env override). */
   background: 'deepseek-chat',
   /**
-   * Groq "light" model for background work: classifiers, emoji reaction,
-   * short notification texts, daily actions, summary fallbacks.
+   * Groq "light" model for structured background work: response classifier and emoji reaction.
+   * (User-facing Hebrew text uses background_groq_strong, based on the 2026-10-10 quality check.)
    * Llama 4 Scout was retired on Groq (2026-07-17); gpt-oss-20b is Groq's recommended
    * replacement and is cheaper ($0.075 / $0.30 per 1M in/out vs Scout ~$0.11 / $0.34).
    * Override: `GROQ_BACKGROUND_MODEL`.
