@@ -1,5 +1,6 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText, type ModelMessage } from 'ai';
+import { splitSystemMessages } from './split-system-messages';
 
 import { AI_MODELS } from './client';
 import {
@@ -261,7 +262,7 @@ export async function completeEmpathyNotifyBody(
           ...(options.frequencyPenalty != null
             ? { frequencyPenalty: options.frequencyPenalty }
             : {}),
-          messages: options.messages,
+          ...splitSystemMessages(options.messages),
         });
 
         lastFinishReason = out.finishReason;

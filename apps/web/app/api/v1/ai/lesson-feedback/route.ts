@@ -123,10 +123,8 @@ export async function POST(request: Request) {
         model: openrouter.chat('openai/gpt-5-mini'),
         temperature: 0.72,
         maxOutputTokens: 180,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userEventText },
-        ],
+        instructions: systemPrompt,
+        messages: [{ role: 'user', content: userEventText }],
       });
       assistantReply = (out.text ?? '').trim();
       usage = out.usage;
