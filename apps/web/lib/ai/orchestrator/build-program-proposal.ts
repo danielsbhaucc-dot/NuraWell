@@ -21,6 +21,8 @@ import type {
 } from './program-state';
 import type { JourneyCompanionContext } from '../../workflows/journey-companion';
 import type { AiUserContext } from '../memory';
+import { isGroqLaneAvailable } from '../groq-compat';
+import { HEBREW_JSON_VALUES_RULE } from '../hebrew-output-rules';
 
 export type BuildProposalInput = {
   decision: ProgramStateDecision;
@@ -157,7 +159,7 @@ export async function buildProgramProposal(
   let nextStep = fallback.nextStep;
   let model: string | null = null;
 
-  if (process.env.GROQ_API_KEY?.trim()) {
+  if (isGroqLaneAvailable()) {
     const kind = input.decision.proposalKind;
     const wantsNextStep = kind === 'level_up' || kind === 'pivot';
     const restoreTo =
@@ -178,11 +180,12 @@ ${stateInstruction(input)}
   "next_step_detail": "משפט הסבר קצר אחד למה זה קטן וקל"`
       : ''
   }
-}`;
+}
+${HEBREW_JSON_VALUES_RULE}`;
 
     try {
       const completion = await groq.chat.completions.create({
-        model: AI_MODELS.background_groq,
+        model: AI_MODELS.background_groq_strong,
         temperature: 0.6,
         max_tokens: 400,
         response_format: { type: 'json_object' },
@@ -200,7 +203,7 @@ ${stateInstruction(input)}
       if (h && b) {
         headline = h;
         body = b;
-        model = AI_MODELS.background_groq;
+        model = AI_MODELS.background_groq_strong;
         if (wantsNextStep) {
           const title = asText(parsed?.next_step_title, 120) ?? fallback.nextStep?.title ?? '';
           const detail = asText(parsed?.next_step_detail, 160);

@@ -138,7 +138,7 @@ async function callLlm(prompt: string): Promise<{ text: string; provider: string
     };
   }
 
-  const groqModel = process.env.GUIDE_AI_GROQ_MODEL?.trim() || 'llama-3.3-70b-versatile';
+  const groqModel = process.env.GUIDE_AI_GROQ_MODEL?.trim() || AI_MODELS.background_groq_strong;
   const res = await groq.chat.completions.create({
     model: groqModel,
     temperature: 0.4,

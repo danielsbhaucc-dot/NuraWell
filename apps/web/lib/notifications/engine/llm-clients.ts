@@ -44,4 +44,4 @@ export const NOTIFICATION_ENGINE_MODEL_SECONDARY =
  * מודל שלישוני — Llama 4 דרך Groq, ספק שונה לחלוטין. נכנס רק אם כל
  * OpenRouter נופל (אזורי outage נדירים).
  */
-export const NOTIFICATION_BACKGROUND_MODEL = AI_MODELS.background_groq;
+export const NOTIFICATION_BACKGROUND_MODEL = AI_MODELS.background_groq_strong;

@@ -330,6 +330,66 @@ const CHAT_ROUTER_PROVIDER_ONLY = (() => {
   if (!raw) return [] as string[];
   return raw.split(',').map((s) => s.trim()).filter(Boolean);
 })();
+/**
+ * perf: מיון ספקים ב-OpenRouter לנתב — אותו מודל בדיוק, רק בוחרים את הספק המהיר
+ * מבין אלה שמארחים אותו (allow_fallbacks נשאר פעיל → אם הספק המהיר נופל, OpenRouter
+ * עובר לבא בתור). הערה: Groq כבר לא מארח את llama-4-maverick ב-OpenRouter — זו
+ * הסיבה ש-AI_CHAT_ROUTER_PROVIDER_ONLY=Groq הפיל את הנתב ב-400/timeout בעבר.
+ * ערכים: latency (ברירת מחדל) | throughput | price | off.
+ */
+/**
+ * לוג זמנים לפי שלב — שורה אחת לכל תור צ'אט, בלי תוכן/PII (רק מספרים + מזהי debug/writer).
+ * כיבוי: AI_CHAT_PERF_LOG=off.
+ */
+const CHAT_PERF_LOG_ENABLED =
+  (process.env.AI_CHAT_PERF_LOG?.trim() || 'on').toLowerCase() !== 'off';
+
+function withChatPerfTiming(
+  res: Response,
+  onDone: (marks: { firstByteAt: number | null; endAt: number; aborted: boolean }) => void
+): Response {
+  if (!CHAT_PERF_LOG_ENABLED || !res.body) return res;
+  let firstByteAt: number | null = null;
+  let done = false;
+  const finish = (aborted: boolean) => {
+    if (done) return;
+    done = true;
+    try {
+      onDone({ firstByteAt, endAt: Date.now(), aborted });
+    } catch {
+      /* logging only */
+    }
+  };
+  const body = res.body.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        if (firstByteAt === null && chunk.byteLength > 0) firstByteAt = Date.now();
+        controller.enqueue(chunk);
+      },
+      flush() {
+        finish(false);
+      },
+      cancel() {
+        finish(true);
+      },
+    } as Transformer<Uint8Array, Uint8Array>)
+  );
+  return new Response(body, { status: res.status, statusText: res.statusText, headers: res.headers });
+}
+
+const CHAT_ROUTER_PROVIDER_SORT = (() => {
+  const raw = (process.env.AI_CHAT_ROUTER_PROVIDER_SORT?.trim() || 'latency').toLowerCase();
+  return raw === 'latency' || raw === 'throughput' || raw === 'price' ? raw : null;
+})();
+
+function chatRouterProviderPrefs(pinned: boolean): Record<string, unknown> {
+  if (pinned && CHAT_ROUTER_PROVIDER_ONLY.length) {
+    return { provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] } };
+  }
+  return CHAT_ROUTER_PROVIDER_SORT
+    ? { provider: { sort: CHAT_ROUTER_PROVIDER_SORT, allow_fallbacks: true } }
+    : {};
+}
 
 /**
  * הערה: דגלים כמו isOpenAI / requiresPiiShield / isQwen / supportsPromptCache /
@@ -1492,6 +1552,8 @@ async function attemptContextRoute(opts: {
   debugId: string;
   provider: 'openrouter';
   stickyLine?: string;
+  /** false → בלי נעילת ספק (fallback לניתוב הרגיל של OpenRouter). */
+  pinProvider?: boolean;
 }): Promise<ChatContextDecision | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
@@ -1508,9 +1570,7 @@ async function attemptContextRoute(opts: {
         temperature: 0,
         max_tokens: 720,
         response_format: { type: 'json_object' },
-        ...(CHAT_ROUTER_PROVIDER_ONLY.length
-          ? { provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] } }
-          : {}),
+        ...chatRouterProviderPrefs(opts.pinProvider !== false),
         messages: [
           {
             role: 'system',
@@ -1575,7 +1635,8 @@ async function routeChatContextWithCheapModel(
     });
   }
 
-  const orDecision = await attemptContextRoute({
+  const routerStartedAt = Date.now();
+  let orDecision = await attemptContextRoute({
     endpoint: 'https://openrouter.ai/api/v1/chat/completions',
     apiKey: openrouterKey,
     model: CHAT_ROUTER_MODEL,
@@ -1588,6 +1649,27 @@ async function routeChatContextWithCheapModel(
     provider: 'openrouter',
     stickyLine,
   });
+  /**
+   * נעילת ספק (AI_CHAT_ROUTER_PROVIDER_ONLY) נכשלה → ניסיון אחד בניתוב הרגיל
+   * בזמן שנותר, לפני נפילה להיוריסטיקה.
+   */
+  const routerRemainingMs = CHAT_ROUTER_TIMEOUT_MS - (Date.now() - routerStartedAt);
+  if (!orDecision && CHAT_ROUTER_PROVIDER_ONLY.length && routerRemainingMs > 400) {
+    orDecision = await attemptContextRoute({
+      pinProvider: false,
+    endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+    apiKey: openrouterKey,
+    model: CHAT_ROUTER_MODEL,
+    extraHeaders: { 'HTTP-Referer': publicAppUrlForAiReferer(), 'X-Title': 'NuraWell' },
+    timeoutMs: routerRemainingMs,
+    userMessage,
+    signals,
+    historySnippet,
+    debugId,
+    provider: 'openrouter',
+    stickyLine,
+    });
+  }
   // נכשל/timeout: במקום "בלי RAG" (שגרם לתשובות גנריות) — fallback היוריסטי
   // שמזהה שאלות/ידע ומפעיל שליפה בהתאם.
   if (!orDecision) {
@@ -2238,6 +2320,8 @@ function uiMessageRole(msg: unknown): 'system' | 'user' | 'assistant' | null {
   return r === 'system' || r === 'user' || r === 'assistant' ? r : null;
 }
 
+// Pre-existing orchestration handler; splitting it is tracked separately (perf audit).
+// skipcq: JS-R1005
 export async function POST(request: Request) {
   const debugId = crypto.randomUUID();
   const startedAt = Date.now();
@@ -2342,6 +2426,14 @@ export async function POST(request: Request) {
    * ה-DB במקום להצטבר עליהן. trivialBypass כבר ידוע כאן — אין שינוי תוצאה, רק תזמון.
    */
   const profilePromise = fetchChatProfileRow(supabase, user.id);
+  /** perf: מתחיל מיד כש-profile מוכן (במקביל לנתב), במקום אחרי כל שליפות ההקשר. */
+  const returnSignalsPromise = isCasualGreeting(lastUserText)
+    ? Promise.resolve({ daysSincePriorChat: null as number | null, unansweredTouchCount: 0 })
+    : profilePromise
+        .then((p) => fetchReturnVisitSignalsForChat(supabase, user.id, p.last_active_at)).catch(() => ({
+        daysSincePriorChat: null as number | null,
+        unansweredTouchCount: 0,
+      }));
   /** שאילתת progress אחת ל-context + cap RAG (בלי כפילות journey_progress). */
   const journeyProgressRowsPromise = fetchAllJourneyProgressRows(supabase, user.id).catch(
     (progressErr) => {
@@ -2426,6 +2518,38 @@ export async function POST(request: Request) {
       : Promise.resolve(null);
 
   /**
+   * perf: שליפות זיכרון וקטוריות (זיכרון משתמש + שיחות עבר) — ספקולטיביות במקביל לנתב.
+   * קריאה בלבד, אותם קלטים בדיוק (userId + טקסט + אותו embedding) — התוצאה זהה למה
+   * שהיה נשלף אחרי הנתב. משתמשים בה רק אם הנתב קבע שצריך; אחרת פשוט לא בשימוש.
+   * בתורים טריוויאליים/ברכות לא מריצים (חוסך קריאות מיותרות).
+   */
+  const speculativeMemoryRagPromise: Promise<{
+    qv: number[];
+    userBlock: string;
+    conversationBlock: string;
+  } | null> =
+    !trivialBypass && !isCasualGreeting(lastUserText) && isVectorRagRetrieveEnabled()
+      ? speculativeEmbedPromise
+          .then(async (qv) => {
+            if (!qv) return null;
+            const [userBlock, conversationBlock] = await Promise.all([
+              buildRelevantMemoriesPromptBlock({
+                userId: user.id,
+                queryText: lastUserText,
+                queryVector: qv,
+              }),
+              buildConversationMemoryPromptBlock({
+                userId: user.id,
+                queryText: lastUserText,
+                queryVector: qv,
+              }),
+            ]);
+            return { qv, userBlock, conversationBlock };
+          })
+          .catch(() => null)
+      : Promise.resolve(null);
+
+  /**
    * הנתב רץ אחרי profile (sticky) אבל במקביל לשאר שליפות ה-DB שכבר התחילו.
    * בתור טריוויאלי/ברכה עם sticky — מדלגים על LLM הנתב (כותב נשאר sticky/פרימיום).
    */
@@ -2470,6 +2594,7 @@ export async function POST(request: Request) {
   })();
 
   const routerBundle = await routerBundlePromise;
+  const perfRouterDoneAt = Date.now();
   let { contextDecision } = routerBundle;
   const stickyStance = parseChatWriterStance(routerBundle.profilePeek.ai_context.writer_stance);
 
@@ -2774,12 +2899,6 @@ export async function POST(request: Request) {
    * לברכה סתמית ("היי") לא מזריקים מסגור חזרה/ריסט, אז אין טעם לשלם על שאילתות
    * ה-return-visit (ימים מאז שיחה אחרונה + מגעים ללא מענה). חוסך השהיה.
    */
-  const returnSignalsPromise = isCasualGreeting(lastUserText)
-    ? Promise.resolve({ daysSincePriorChat: null as number | null, unansweredTouchCount: 0 })
-    : fetchReturnVisitSignalsForChat(supabase, user.id, profileRow.last_active_at).catch(() => ({
-        daysSincePriorChat: null as number | null,
-        unansweredTouchCount: 0,
-      }));
 
   const profileFullName = profileRow.full_name;
   const profileMoodSignal = profileRow.mood_signal;
@@ -2910,8 +3029,12 @@ export async function POST(request: Request) {
     if (needUserRag || needSystemRag || needPrinciples || needConversationRag) {
       try {
         const qv = (await speculativeEmbedPromise) ?? (await embedTextForRag(lastUserText));
+        const specMem = await speculativeMemoryRagPromise;
+        const specUsable = specMem !== null && specMem.qv === qv;
         const [userMemoryBlock, skHits, principleHits, conversationMemoryBlock] = await Promise.all([
-          needUserRag
+          needUserRag && specUsable
+            ? Promise.resolve(specMem.userBlock)
+            : needUserRag
             ? buildRelevantMemoriesPromptBlock({
                 userId: user.id,
                 queryText: lastUserText,
@@ -2928,7 +3051,9 @@ export async function POST(request: Request) {
           needPrinciples && principlesFilter
             ? queryAlmogSystemKnowledgeForUser({ questionEmbedding: qv, filter: principlesFilter, topK: 4 })
             : Promise.resolve(null),
-          needConversationRag
+          needConversationRag && specUsable
+            ? Promise.resolve(specMem.conversationBlock)
+            : needConversationRag
             ? buildConversationMemoryPromptBlock({
                 userId: user.id,
                 queryText: lastUserText,
@@ -3266,6 +3391,7 @@ export async function POST(request: Request) {
     const systemPromptWithMemory = `${mcfg.mainWriterSystemPrompt}\n\n${dynamicSystemPrompt}`;
 
     stage = 'stream_init';
+    const perfContextDoneAt = Date.now();
     /**
      * תצפית בפרודקשן — אורך הפרומפט הכולל אחרי כל ההזרקות (זיכרון/journey/ידע).
      * מעל הסף נסמן כדי לעקוב אחרי "ניפוח" שלוקח קונטקסט מהפלט.
@@ -4090,20 +4216,33 @@ export async function POST(request: Request) {
       }
     }
 
+    const perfWriterOpenAt = Date.now();
+    upstream = withChatPerfTiming(upstream, ({ firstByteAt, endAt, aborted }) => {
+      console.info('[ai/chat]', {
+        debug_id: debugId,
+        stage: 'perf_timings',
+        writer: mcfg.writer,
+        model: assistantModelName,
+        router_ms: perfRouterDoneAt - startedAt,
+        context_ms: perfContextDoneAt - perfRouterDoneAt,
+        writer_open_ms: perfWriterOpenAt - perfContextDoneAt,
+        ttft_ms: firstByteAt === null ? null : firstByteAt - startedAt,
+        total_ms: endAt - startedAt,
+        heavy_context: useHeavyContext,
+        router_skipped: contextDecision.reason === 'trivial_skip_router_sticky',
+        router_fallback: contextDecision.reason === 'cheap_router_failed_heuristic',
+        aborted,
+      });
+    });
     const upstreamWriter = upstream.headers.get('x-ai-writer');
     const isUiMessageStream = upstreamWriter === 'memory-recall-tools';
 
     /**
-     * מחכים להחלטת האימוג'י לפני פתיחת הזרם — ההחלטה רצה במקביל לבניית הקונטקסט
-     * ולכן בדרך כלל כבר מוכנה. מקסימום ~1.2ש׳ כדי לא לעכב TTFB.
+     * perf: לא מחכים להחלטת האימוג'י לפני פתיחת הזרם (חסך עד ~1.2ש׳ TTFB).
+     * אם כבר מוכנה — נשלחת ב-header/marker בתחילת הזרם; אחרת נשלחת כ-marker באמצע/סוף
+     * הזרם ברגע שהיא מוכנה (הלקוח מחלץ marker מכל מקום בטקסט), ונשמרת ב-DB כרגיל.
      */
-    const headerWaitMs = isUiMessageStream ? 1400 : 1200;
-    const headerReaction =
-      resolvedEmojiReaction ??
-      (await Promise.race([
-        emojiReactionPromise,
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), headerWaitMs)),
-      ]));
+    const headerReaction = resolvedEmojiReaction;
 
     const exposeReactionHeaders =
       'x-session-id, x-debug-id, x-debug-stage, x-ai-writer, x-ai-model, x-nura-writer, x-almog-reaction';
@@ -4181,13 +4320,21 @@ export async function POST(request: Request) {
           if (headerReaction) {
             controller.enqueue(encoder.encode(encodeEmojiReactionMarker(headerReaction)));
           }
+          let reactionSent = Boolean(headerReaction);
+          const flushLateReaction = () => {
+            if (reactionSent || !resolvedEmojiReaction) return;
+            reactionSent = true;
+            controller.enqueue(encoder.encode(encodeEmojiReactionMarker(resolvedEmojiReaction)));
+          };
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
             if (value) {
               const chunkText = decoder.decode(value, { stream: true });
               if (!hadVisibleText && chunkText.trim().length > 0) hadVisibleText = true;
-              controller.enqueue(value);
+              /** מקודדים מחדש טקסט מפוענח → גבולות chunk תמיד על תו שלם, כך שאפשר להזריק marker ביניהם. */
+              if (chunkText) controller.enqueue(encoder.encode(chunkText));
+              flushLateReaction();
             }
           }
           const trailing = decoder.decode();
@@ -4196,7 +4343,8 @@ export async function POST(request: Request) {
             console.warn('[ai/chat]', { debug_id: debugId, stage: 'stream_empty_no_canned_fallback' });
           }
 
-          if (!headerReaction) {
+          if (trailing) controller.enqueue(encoder.encode(trailing));
+          if (!reactionSent) {
             const lateReaction =
               resolvedEmojiReaction ??
               (await Promise.race([

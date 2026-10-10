@@ -16,6 +16,7 @@ import {
 import { resolveChallengePhase } from './phase';
 import { ensureActiveChallengeCampaign } from './campaign-bootstrap';
 import { withChallengeSchemaRetry } from './ensure-challenge-schema';
+import { clearChallengeGateCookie } from './gate-cookie';
 
 type EnrollmentRow = ChallengeEnrollment & {
   campaign?: {
@@ -115,6 +116,7 @@ export async function upsertDemoEnrollment(
   scenario: 'waiting' | 'intro' | 'active' | 'wrap_up' | 'full',
   simulatedDay?: number,
 ): Promise<{ enrollment: EnrollmentRow | null; error?: string }> {
+  await clearChallengeGateCookie();
   const { campaign, error: campaignError } = await ensureActiveChallengeCampaign(admin);
   if (!campaign) {
     return {
@@ -277,6 +279,7 @@ export async function upsertDemoEnrollment(
 }
 
 export async function clearDemoEnrollment(admin: SupabaseClient, userId: string): Promise<void> {
+  await clearChallengeGateCookie();
   const { data: demoRow } = await admin
     .from('challenge_enrollments')
     .select('id, is_demo, metadata')
@@ -338,6 +341,7 @@ export async function enrollUserInChallenge(
   userId: string,
   registeredAt: Date = new Date(),
 ): Promise<EnrollmentRow | null> {
+  await clearChallengeGateCookie();
   const enabled = await isChallengeEnabled(supabase);
   if (!enabled) return null;
 

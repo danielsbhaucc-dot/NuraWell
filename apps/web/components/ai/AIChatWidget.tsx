@@ -1600,7 +1600,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                 return (
                   <div
                     key={msg.id ?? `${i}-${text.slice(0, 16)}`}
-                    className={`flex ${isUser ? 'justify-start' : 'justify-end items-end gap-2'}`}
+                    className={`flex ${isUser ? 'justify-start nw-chat-send' : 'justify-end items-end gap-2 nw-chat-receive'}`}
                   >
                     {isUser ? (
                       <div

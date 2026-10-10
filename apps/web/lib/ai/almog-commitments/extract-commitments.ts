@@ -21,7 +21,7 @@ import {
 
 /** מודל העבודה השחורה: Llama 4 Scout דרך OpenRouter (Meta — לא סין). */
 export const ALMOG_COMMITMENTS_MODEL =
-  process.env.ALMOG_COMMITMENTS_MODEL?.trim() || 'meta-llama/llama-4-scout';
+  process.env.ALMOG_COMMITMENTS_MODEL?.trim() || 'openai/gpt-oss-120b';
 
 const MIN_CONFIDENCE = 0.6;
 /** סף נמוך יותר למשימות — אלה הפריט החשוב ביותר למשתמש, עדיף להציג מאשר לפספס. */

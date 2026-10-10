@@ -7,6 +7,7 @@ import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit'
 import { scanResearchSource } from '@/lib/admin/research-scan';
 import { normalizeTaskLeveling } from '@/lib/admin/ai-fill-leveling';
 import type { JourneyTaskLevelingConfig } from '@/lib/types/journey';
+import { isGroqLaneAvailable } from '@/lib/ai/groq-compat';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -481,8 +482,8 @@ async function chatJson(
   opts: { maxTokens: number; temperature: number }
 ): Promise<{ content: string; model: string; provider: 'openrouter' | 'groq' }> {
   const openrouterModel = process.env.STEP_AIFILL_MODEL?.trim() || 'meta-llama/llama-4-maverick';
-  const groqModel = process.env.STEP_AIFILL_GROQ_MODEL?.trim() || AI_MODELS.background_groq;
-  const groqEnabled = Boolean(process.env.GROQ_API_KEY?.trim());
+  const groqModel = process.env.STEP_AIFILL_GROQ_MODEL?.trim() || AI_MODELS.background_groq_strong;
+  const groqEnabled = isGroqLaneAvailable();
 
   if (process.env.OPENROUTER_API_KEY?.trim()) {
     try {

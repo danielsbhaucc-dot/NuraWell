@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fallbackLiveConversationFile } from '../chat-conversation-file';
 import { summarizeConversationTurn } from './summarize-conversation-turn';
+import { groqCompatFetch } from '../groq-compat';
 
 export async function updateSessionLiveConversationFile(
   supabase: SupabaseClient,
@@ -58,14 +59,14 @@ export async function rollupUserChatContext(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8_000);
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await groqCompatFetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${openrouterKey}`,
       },
       body: JSON.stringify({
-        model: process.env.MEMORY_EXTRACTION_MODEL?.trim() || 'meta-llama/llama-4-scout',
+        model: process.env.MEMORY_EXTRACTION_MODEL?.trim() || 'openai/gpt-oss-120b',
         temperature: 0,
         max_tokens: 500,
         messages: [

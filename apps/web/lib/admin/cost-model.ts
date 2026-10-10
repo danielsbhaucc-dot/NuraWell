@@ -53,6 +53,9 @@ const PRICING_TABLE: Array<{ match: RegExp; price: ModelPricing }> = [
     match: /llama-4-maverick/i,
     price: { input: 0.2, cachedInput: 0.2, cacheWrite: 0.2, output: 0.7 },
   },
+  // gpt-oss via OpenRouter, Groq provider (2026-10): 120b $0.15/$0.60, 20b $0.075/$0.30 per 1M (same as Groq list; OpenRouter fallback hosts are cheaper).
+  { match: /gpt-oss-120b/i, price: { input: 0.15, cachedInput: 0.075, cacheWrite: 0.15, output: 0.6 } },
+  { match: /gpt-oss-20b/i, price: { input: 0.075, cachedInput: 0.0375, cacheWrite: 0.075, output: 0.3 } },
   {
     match: /llama-4-scout/i,
     price: { input: 0.11, cachedInput: 0.055, cacheWrite: 0.11, output: 0.34 },

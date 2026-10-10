@@ -19,7 +19,7 @@ const SUMMARY_PRIMARY_MODEL =
   process.env.SUMMARY_ENGINE_MODEL?.trim() || AI_MODELS.empathy;
 
 // Fallback ספק שונה לחלוטין — Llama 4 Scout דרך Groq.
-const SUMMARY_FALLBACK_MODEL = AI_MODELS.background_groq;
+const SUMMARY_FALLBACK_MODEL = AI_MODELS.background_groq_strong;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 

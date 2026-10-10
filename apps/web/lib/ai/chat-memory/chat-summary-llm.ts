@@ -4,11 +4,12 @@
 
 import { publicAppUrlForAiReferer } from '../../public-app-url';
 import type { ChatSummaryType } from './chat-period-keys';
+import { adaptGroqChatBody, groqCompatFetch } from '../groq-compat';
 
 export const CHAT_SUMMARY_MODEL =
   process.env.CHAT_SUMMARY_MODEL?.trim() ||
   process.env.MEMORY_EXTRACTION_MODEL?.trim() ||
-  'meta-llama/llama-4-scout';
+  'openai/gpt-oss-120b';
 
 const TYPE_LABELS: Record<ChatSummaryType, string> = {
   daily: 'יום',
@@ -47,7 +48,7 @@ async function callOpenRouterSync(params: {
   const key = process.env.OPENROUTER_API_KEY?.trim();
   if (!key) return '';
 
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const res = await groqCompatFetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -98,15 +99,18 @@ async function callOpenRouterBatch(params: {
             custom_id: params.customId,
             method: 'POST',
             url: '/v1/chat/completions',
-            body: {
-              model: CHAT_SUMMARY_MODEL,
-              temperature: 0.2,
-              max_tokens: params.maxTokens,
-              messages: [
-                { role: 'system', content: SYSTEM_PROMPT },
-                { role: 'user', content: params.userContent },
-              ],
-            },
+            body: adaptGroqChatBody(
+              {
+                model: CHAT_SUMMARY_MODEL,
+                temperature: 0.2,
+                max_tokens: params.maxTokens,
+                messages: [
+                  { role: 'system', content: SYSTEM_PROMPT },
+                  { role: 'user', content: params.userContent },
+                ],
+              },
+              { viaOpenRouter: true }
+            ),
           },
         ],
       }),

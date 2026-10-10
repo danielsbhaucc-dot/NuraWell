@@ -88,7 +88,10 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
 
   useEffect(() => {
     void load();
-    const interval = setInterval(() => void load(), 60_000);
+    const interval = setInterval(() => {
+      // perf: לא שולפים כשהטאב מוסתר
+      if (document.visibilityState === 'visible') load().catch(() => undefined);
+    }, 60_000);
     return () => clearInterval(interval);
   }, [load]);
 
