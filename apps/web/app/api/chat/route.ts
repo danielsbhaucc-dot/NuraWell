@@ -182,10 +182,8 @@ export async function POST(request: Request) {
     providerOptions: {
       openai: { reasoningEffort: 'low' },
     },
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: userContent },
-    ],
+    instructions: SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: userContent }],
   });
 
   return result.toTextStreamResponse();

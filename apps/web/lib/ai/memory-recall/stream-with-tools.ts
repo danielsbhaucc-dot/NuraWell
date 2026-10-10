@@ -4,7 +4,7 @@
  */
 
 import 'server-only';
-import { stepCountIs, streamText, type LanguageModel } from 'ai';
+import { isStepCount, streamText, type LanguageModel } from 'ai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { PiiShield } from '../privacy/pii-shield';
@@ -80,7 +80,7 @@ export async function createMemoryRecallStreamResponse(params: {
     messages: tokenizedMessages,
     tools,
     toolChoice: 'auto',
-    stopWhen: stepCountIs(2),
+    stopWhen: isStepCount(2),
     temperature: params.temperature,
     maxOutputTokens: params.maxOutputTokens,
     providerOptions: params.providerOptions,
