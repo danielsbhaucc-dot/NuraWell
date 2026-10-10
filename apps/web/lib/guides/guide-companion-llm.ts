@@ -137,7 +137,7 @@ export async function runGuideCompanionLlm(
   if (process.env.GROQ_API_KEY?.trim()) {
     try {
       const completion = await groq.chat.completions.create({
-        model: AI_MODELS.background_groq,
+        model: AI_MODELS.background_groq_strong,
         temperature: 0.25,
         max_tokens: 700,
         response_format: { type: 'json_object' },

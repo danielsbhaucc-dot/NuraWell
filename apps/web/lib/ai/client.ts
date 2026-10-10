@@ -11,6 +11,7 @@
 import 'server-only';
 
 import OpenAI from 'openai';
+import { groqCompatFetch } from './groq-compat';
 import { publicAppUrlForAiReferer } from '../public-app-url';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
@@ -70,6 +71,8 @@ export const deepseek = new OpenAI({
 export const groq = new OpenAI({
   apiKey: process.env.GROQ_API_KEY?.trim() || BUILD_SAFE_API_KEY,
   baseURL: GROQ_BASE_URL,
+  /** gpt-oss: reasoning_effort=low + reasoning budget headroom (see groq-compat.ts) */
+  fetch: groqCompatFetch,
 });
 
 /**
@@ -84,14 +87,22 @@ export const AI_MODELS = {
   /** Legacy DeepSeek background id; cron uses `getDeepseekAnalysisModel()` (same default, env override). */
   background: 'deepseek-chat',
   /**
-   * Groq + LLaMA 4 Scout — ברירת המחדל החדשה לכל background AI
-   * (סיווגים, סיכומים, דיסיז'ן-רוטר וכו'). מהיר משמעותית מ-DeepSeek
-   * וזול יותר ב-volume של פיצ'רים שאינם user-facing.
-   * Override ב-env: `GROQ_BACKGROUND_MODEL`.
+   * Groq "light" model for background work: classifiers, emoji reaction,
+   * short notification texts, daily actions, summary fallbacks.
+   * Llama 4 Scout was retired on Groq (2026-07-17); gpt-oss-20b is Groq's recommended
+   * replacement and is cheaper ($0.075 / $0.30 per 1M in/out vs Scout ~$0.11 / $0.34).
+   * Override: `GROQ_BACKGROUND_MODEL`.
    */
   background_groq:
-    process.env.GROQ_BACKGROUND_MODEL?.trim() ||
-    'meta-llama/llama-4-scout-17b-16e-instruct',
+    process.env.GROQ_BACKGROUND_MODEL?.trim() || 'openai/gpt-oss-20b',
+  /**
+   * Groq "strong" model for generation: onboarding conversation, program proposal,
+   * guide companion, admin content generation (journey / step / guide), research scan.
+   * Replaces llama-3.3-70b-versatile ($0.59 / $0.79), which was retired on 2026-08-16.
+   * gpt-oss-120b: $0.15 / $0.60. Override: `GROQ_STRONG_MODEL`.
+   */
+  background_groq_strong:
+    process.env.GROQ_STRONG_MODEL?.trim() || 'openai/gpt-oss-120b',
 } as const;
 
 export type AiModelKind = keyof typeof AI_MODELS;
@@ -105,6 +116,6 @@ export type AiModelId = (typeof AI_MODELS)[AiModelKind];
  */
 export function getClientForModel(kind: AiModelKind): OpenAI {
   if (kind === 'background') return deepseek;
-  if (kind === 'background_groq') return groq;
+  if (kind === 'background_groq' || kind === 'background_groq_strong') return groq;
   return openrouter;
 }

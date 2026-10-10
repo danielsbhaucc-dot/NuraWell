@@ -119,7 +119,7 @@ ${params.bibliographicContext}
 ${params.sourceText.slice(0, MAX_SOURCE_CHARS)}`;
 
   const openrouterModel = process.env.RESEARCH_SCAN_MODEL?.trim() || 'meta-llama/llama-4-scout';
-  const groqModel = process.env.RESEARCH_SCAN_GROQ_MODEL?.trim() || AI_MODELS.background_groq;
+  const groqModel = process.env.RESEARCH_SCAN_GROQ_MODEL?.trim() || AI_MODELS.background_groq_strong;
   const groqEnabled = Boolean(process.env.GROQ_API_KEY?.trim());
 
   if (process.env.OPENROUTER_API_KEY?.trim()) {

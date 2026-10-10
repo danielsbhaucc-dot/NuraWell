@@ -46,7 +46,7 @@ export type OnboardingChatResult = {
   blocked_sensitive_leak?: boolean;
 };
 
-const ONBOARDING_MODEL_GROQ = AI_MODELS.background_groq;
+const ONBOARDING_MODEL_GROQ = AI_MODELS.background_groq_strong;
 const ONBOARDING_MODEL_OPENROUTER = 'meta-llama/llama-4-scout';
 
 const TIME_RE = /^([01]?\d|2[0-3]):[0-5]\d$/;

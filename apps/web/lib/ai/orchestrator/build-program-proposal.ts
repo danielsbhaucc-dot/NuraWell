@@ -182,7 +182,7 @@ ${stateInstruction(input)}
 
     try {
       const completion = await groq.chat.completions.create({
-        model: AI_MODELS.background_groq,
+        model: AI_MODELS.background_groq_strong,
         temperature: 0.6,
         max_tokens: 400,
         response_format: { type: 'json_object' },
@@ -200,7 +200,7 @@ ${stateInstruction(input)}
       if (h && b) {
         headline = h;
         body = b;
-        model = AI_MODELS.background_groq;
+        model = AI_MODELS.background_groq_strong;
         if (wantsNextStep) {
           const title = asText(parsed?.next_step_title, 120) ?? fallback.nextStep?.title ?? '';
           const detail = asText(parsed?.next_step_detail, 160);

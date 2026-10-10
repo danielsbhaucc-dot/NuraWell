@@ -154,7 +154,7 @@ async function generateBlueprint(userPrompt: string): Promise<JourneyBlueprint |
   if (process.env.GROQ_API_KEY?.trim()) {
     try {
       const completion = await groq.chat.completions.create({
-        model: AI_MODELS.background_groq,
+        model: AI_MODELS.background_groq_strong,
         temperature: 0.6,
         max_tokens: 8000,
         response_format: { type: 'json_object' },

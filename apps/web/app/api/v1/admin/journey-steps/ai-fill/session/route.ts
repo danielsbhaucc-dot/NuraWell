@@ -147,7 +147,7 @@ async function runClarificationLLM(payload: {
     '\n\nהחלט: האם צריך עוד שאלות חידוד לשלב הנוכחי/הבא, או שיש מספיק מידע (ready)?';
 
   const openrouterModel = process.env.STEP_AIFILL_MODEL?.trim() || 'meta-llama/llama-4-maverick';
-  const groqModel = process.env.STEP_AIFILL_GROQ_MODEL?.trim() || AI_MODELS.background_groq;
+  const groqModel = process.env.STEP_AIFILL_GROQ_MODEL?.trim() || AI_MODELS.background_groq_strong;
   const groqEnabled = Boolean(process.env.GROQ_API_KEY?.trim());
 
   const call = async (provider: 'openrouter' | 'groq') => {
