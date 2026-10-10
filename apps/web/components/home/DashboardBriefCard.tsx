@@ -117,7 +117,7 @@ export function DashboardBriefCard({ onOpenTasks, firstName }: DashboardBriefCar
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
+      transition={{ duration: 0.4, ease: 'easeOut' as const }}
       dir="rtl"
       className="glass-surface-home relative rounded-[22px] p-4"
       style={{ borderRadius: '22px' }}

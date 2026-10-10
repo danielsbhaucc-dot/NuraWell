@@ -518,7 +518,7 @@ export function FullscreenVideoPlayer({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
+            transition={{ duration: 0.22, ease: 'easeOut' as const }}
           >
             <motion.div
               className="w-full max-w-md rounded-3xl p-5 sm:p-6"
@@ -532,7 +532,7 @@ export function FullscreenVideoPlayer({
               initial={{ opacity: 0, y: 20, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.98 }}
-              transition={{ duration: 0.26, ease: 'easeOut' }}
+              transition={{ duration: 0.26, ease: 'easeOut' as const }}
             >
               <motion.div
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4 text-xs font-bold text-emerald-700"

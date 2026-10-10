@@ -49,7 +49,7 @@ export function MentorEmojiReactionBadge({
               }
         }
         transition={
-          reduceMotion ? undefined : { delay: 0.12, duration: 0.55, ease: 'easeOut' }
+          reduceMotion ? undefined : { delay: 0.12, duration: 0.55, ease: 'easeOut' as const }
         }
       >
         {reaction.emoji}

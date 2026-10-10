@@ -1,7 +1,7 @@
 import type { Transition, Variants } from 'framer-motion';
 
 export function challengeTransition(reduced: boolean): Transition {
-  return reduced ? { duration: 0 } : { duration: 0.35, ease: 'easeOut' };
+  return reduced ? { duration: 0 } : { duration: 0.35, ease: 'easeOut' as const };
 }
 
 export function challengeFadeUp(reduced: boolean, delay = 0) {
@@ -15,7 +15,7 @@ export function challengeFadeUp(reduced: boolean, delay = 0) {
   return {
     initial: { opacity: 0, y: 12 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.35, ease: 'easeOut', delay },
+    transition: { duration: 0.35, ease: 'easeOut' as const, delay },
   };
 }
 

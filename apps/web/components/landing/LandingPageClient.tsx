@@ -97,7 +97,7 @@ function CountUp({ value, duration = 1.1 }: { value: string; duration?: number }
     }
     const controls = animate(0, target, {
       duration,
-      ease: [0.22, 1, 0.36, 1],
+      ease: [0.22, 1, 0.36, 1] as const,
       onUpdate(latest) {
         const v = Math.round(latest);
         const formatted = hasComma ? v.toLocaleString('he-IL') : String(v);

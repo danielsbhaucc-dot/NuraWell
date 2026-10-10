@@ -234,7 +234,7 @@ function AccordionSection({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] as const }}
             className="overflow-hidden"
           >
             <ul className="mb-3 space-y-1.5 pl-1">
@@ -447,7 +447,7 @@ export function ChatSessionInbox({
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] as const }}
                       className="overflow-hidden border-t border-white/6"
                     >
                       <div className="px-1 py-2">

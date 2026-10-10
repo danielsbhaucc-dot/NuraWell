@@ -70,7 +70,7 @@ export function BottomNav() {
             className="absolute -inset-1 rounded-full"
             style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.45), transparent 70%)', filter: 'blur(10px)' }}
             animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.85, 0.5] }}
-            transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+            transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' as const }}
           />
           <motion.button
             type="button"

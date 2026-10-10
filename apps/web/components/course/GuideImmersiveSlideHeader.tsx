@@ -16,7 +16,7 @@ export function GuideImmersiveSlideHeader({ eyebrow, title, subtitle }: GuideImm
     <motion.div
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
+      transition={{ duration: 0.35, ease: 'easeOut' as const }}
       className="guide-immersive-slide-header mb-4 w-full max-w-md"
     >
       <div className="guide-immersive-slide-header__ornament" aria-hidden />

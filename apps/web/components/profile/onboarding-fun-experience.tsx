@@ -126,7 +126,7 @@ export function FunFloatingAmbience() {
             rotate: [0, 12, -8, 16, 0],
             scale: [0.7, 1.05, 0.95, 1.1, 0.8],
           }}
-          transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: 'easeInOut' }}
+          transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: 'easeInOut' as const }}
         >
           {p.emoji}
         </motion.span>
@@ -135,13 +135,13 @@ export function FunFloatingAmbience() {
         className="absolute -top-24 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full blur-3xl"
         style={{ background: 'radial-gradient(circle, rgba(201,169,98,0.14) 0%, transparent 70%)' }}
         animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.75, 0.5] }}
-        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' as const }}
       />
       <motion.div
         className="absolute -bottom-16 -right-10 h-48 w-48 rounded-full blur-3xl"
         style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.12) 0%, transparent 70%)' }}
         animate={{ scale: [1.1, 0.95, 1.1], opacity: [0.4, 0.65, 0.4] }}
-        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' as const, delay: 0.8 }}
       />
     </div>
   );
@@ -175,7 +175,7 @@ export function FunConfettiBurst({ active }: { active: boolean }) {
           style={{ backgroundColor: p.color }}
           initial={{ opacity: 1, y: 0, x: 0, rotate: 0 }}
           animate={{ opacity: 0, y: 120 + Math.random() * 80, x: p.x, rotate: p.rotate }}
-          transition={{ duration: 1.1, ease: 'easeOut' }}
+          transition={{ duration: 1.1, ease: 'easeOut' as const }}
         />
       ))}
     </div>
@@ -198,7 +198,7 @@ export function FunPathSelectHero({ onSelect }: { onSelect: () => void }) {
         className="absolute -inset-[1.5px] rounded-[32px]"
         style={{ background: 'linear-gradient(135deg, rgba(201,169,98,0.45), rgba(45,212,191,0.28))' }}
         animate={{ opacity: [0.75, 1, 0.75] }}
-        transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' as const }}
       />
       <div
         className="relative m-[1.5px] overflow-hidden rounded-[30.5px] px-5 py-5"
@@ -217,7 +217,7 @@ export function FunPathSelectHero({ onSelect }: { onSelect: () => void }) {
             <motion.span
               className="text-2xl"
               animate={{ rotate: [0, -12, 12, 0], scale: [1, 1.15, 1] }}
-              transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' as const }}
             >
               🎉
             </motion.span>

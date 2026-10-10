@@ -958,7 +958,7 @@ function SoftBackground() {
           filter: 'blur(56px)',
         }}
         animate={{ y: [0, 18, 0], x: [0, -10, 0] }}
-        transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' as const }}
       />
       <motion.div
         className="absolute -left-32 top-1/3 h-[26rem] w-[26rem] rounded-full"
@@ -967,7 +967,7 @@ function SoftBackground() {
           filter: 'blur(64px)',
         }}
         animate={{ y: [0, -22, 0], x: [0, 14, 0] }}
-        transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' as const }}
       />
       <motion.div
         className="absolute bottom-0 right-1/4 h-72 w-72 rounded-full"
@@ -976,7 +976,7 @@ function SoftBackground() {
           filter: 'blur(56px)',
         }}
         animate={{ y: [0, -14, 0] }}
-        transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' as const }}
       />
       <div
         className="absolute bottom-1/4 left-1/3 h-64 w-64 rounded-full opacity-60"
@@ -1018,7 +1018,7 @@ function Hero({
     <motion.section
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] as const }}
       className="relative z-10 w-full overflow-hidden rounded-b-[32px] pb-10 pt-14"
       style={{
         background:
@@ -1064,7 +1064,7 @@ function Hero({
         aria-hidden
         className="pointer-events-none absolute right-6 top-8 text-3xl"
         animate={{ rotate: [0, -12, 12, 0], y: [0, -6, 0] }}
-        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' as const }}
       >
         🍃
       </motion.div>
@@ -1073,7 +1073,7 @@ function Hero({
         aria-hidden
         className="pointer-events-none absolute bottom-10 left-8 text-xl opacity-70"
         animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.8, 0.5] }}
-        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 1.2 }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' as const, delay: 1.2 }}
       >
         ✦
       </motion.div>
@@ -1087,7 +1087,7 @@ function Hero({
             boxShadow: '0 10px 30px rgba(0,0,0,0.22)',
           }}
           animate={{ y: [0, -5, 0] }}
-          transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' as const }}
         >
           <div className="rounded-full ring-2 ring-white/60">
             <AlmogAvatarChip size={88} />
@@ -1531,7 +1531,7 @@ function Section({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] as const }}
             className="overflow-hidden"
           >
             <div className="space-y-3 pt-3">
@@ -1744,7 +1744,7 @@ function AssignmentCard({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] as const }}
               className="overflow-hidden"
             >
               <div className="mt-2 space-y-1 border-t border-emerald-100/60 pt-2">

@@ -152,7 +152,7 @@ function LoginFormContent() {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: bgReady ? 1 : 0, y: bgReady ? 0 : 12 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
+          transition={{ duration: 0.3, ease: 'easeOut' as const }}
           className="relative z-10 flex min-h-0 flex-1 flex-col justify-center overflow-y-auto overscroll-none px-4 py-8 max-w-md mx-auto w-full"
         >
           <div className="text-center mb-10">

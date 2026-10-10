@@ -120,7 +120,7 @@ function AlmogAvatar({
           className="absolute -inset-1 rounded-full"
           style={{ background: FUN_AVATAR_RING }}
           animate={{ rotate: 360 }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'linear' as const }}
           aria-hidden
         />
       ) : null}
@@ -212,7 +212,7 @@ function AlmogTypingIndicator({ fun = false }: { fun?: boolean }) {
                 key={i}
                 className={`h-2 w-2 rounded-full ${fun ? 'bg-background-card' : 'bg-background-card/90'}`}
                 animate={{ y: [0, -4, 0], opacity: [0.4, 1, 0.4] }}
-                transition={{ duration: 0.7, repeat: Infinity, ease: 'easeInOut', delay: i * 0.12 }}
+                transition={{ duration: 0.7, repeat: Infinity, ease: 'easeInOut' as const, delay: i * 0.12 }}
               />
             ))}
           </span>
@@ -785,7 +785,7 @@ export function OnboardingChat({
                       boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
                     }}
                     animate={{ y: [0, -4, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' as const }}
                   >
                     <AlmogAvatar size={72} className="border-white/40" />
                   </motion.div>

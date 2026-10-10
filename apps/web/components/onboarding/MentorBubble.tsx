@@ -44,7 +44,7 @@ export function MentorBubble({
       dir="rtl"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28, ease: 'easeOut' }}
+      transition={{ duration: 0.28, ease: 'easeOut' as const }}
     >
       <header className="flex items-center gap-2.5 mb-2">
         <span
