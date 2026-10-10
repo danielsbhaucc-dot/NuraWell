@@ -57,7 +57,7 @@
     "axe-core": "^4.10.3",
     "eslint": "^8.0.0",
     "eslint-config-next": "15.5.16",
-    "jsdom": "^25.0.1",
+    "jsdom": "^30.0.1",
     "vitest": "^3.0.0"
   }
 }
