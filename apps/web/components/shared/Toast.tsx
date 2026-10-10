@@ -117,7 +117,7 @@ function Toast({ toast, onDismiss }: ToastProps) {
         style={{ background: c.bar, opacity: 0.6 }}
         initial={{ width: '100%' }}
         animate={{ width: '0%' }}
-        transition={{ duration: 4.0, ease: 'linear' }}
+        transition={{ duration: 4.0, ease: 'linear' as const }}
       />
 
       <div className="flex items-start gap-3.5 px-4 py-4 pr-5">

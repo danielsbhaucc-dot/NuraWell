@@ -343,7 +343,7 @@ function HeroSection({
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] as const }}
           className="mx-auto max-w-xl"
         >
           {/* ╔═ Eyebrow chips — "המסע שלי" + יום במסע ═╗ */}
@@ -429,14 +429,14 @@ function HeroSection({
                 transition={
                   reduced
                     ? { duration: 0.6, delay: 0.2 }
-                    : { duration: 5.5, repeat: Infinity, ease: 'easeInOut' }
+                    : { duration: 5.5, repeat: Infinity, ease: 'easeInOut' as const }
                 }
               />
 
               <motion.h1
                 initial={{ opacity: 0, y: 12, scale: 0.94 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.7, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.7, delay: 0.24, ease: [0.22, 1, 0.36, 1] as const }}
                 className="relative text-[56px] font-black leading-[0.98] sm:text-[72px]"
                 style={{
                   fontFamily: "'Rubik','Heebo',sans-serif",
@@ -604,7 +604,7 @@ function StatChips({
             dir="rtl"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, delay: 0.6 + i * 0.07, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.4, delay: 0.6 + i * 0.07, ease: [0.22, 1, 0.36, 1] as const }}
             whileHover={{ y: -2, scale: 1.03 }}
             className="glass-pill-dark relative flex items-center gap-2 rounded-full py-1.5 pl-3.5 pr-1.5 overflow-hidden"
           >
@@ -782,7 +782,7 @@ function ShimmerText({
         color: 'transparent',
       }}
       animate={reduced ? {} : { backgroundPositionX: ['200%', '0%'] }}
-      transition={{ duration: 6.5, repeat: Infinity, ease: 'linear' }}
+      transition={{ duration: 6.5, repeat: Infinity, ease: 'linear' as const }}
     >
       {children}
     </motion.span>
@@ -809,7 +809,7 @@ function AnimatedSparkle({ char, reduced }: { char: string; reduced: boolean }) 
               scale: [1, 1.18, 0.95, 1],
             }
       }
-      transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
+      transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' as const }}
     >
       {char}
     </motion.span>
@@ -874,7 +874,7 @@ function ProgressRing({ pct, reduced }: { pct: number; reduced: boolean }) {
           strokeLinecap="round"
           initial={reduced ? false : { strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] as const }}
           style={{
             strokeDasharray: circumference,
             filter: 'drop-shadow(0 0 6px rgba(167,243,208,0.6))',
@@ -1019,7 +1019,7 @@ function AuroraField({ reduced }: { reduced: boolean }) {
             duration: o.dur,
             delay: o.delay,
             repeat: Infinity,
-            ease: 'easeInOut',
+            ease: 'easeInOut' as const,
           }}
         />
       ))}
@@ -1047,7 +1047,7 @@ function SweepingLightBeam() {
         animate={{ left: ['-25%', '120%'] }}
         transition={{
           duration: 4.5,
-          ease: [0.45, 0, 0.55, 1],
+          ease: [0.45, 0, 0.55, 1] as const,
           repeat: Infinity,
           repeatDelay: 9,
         }}
@@ -1087,7 +1087,7 @@ function ShootingStar() {
           times: [0, 0.6, 1],
           repeat: Infinity,
           repeatDelay: 7,
-          ease: 'easeOut',
+          ease: 'easeOut' as const,
         }}
       />
       <motion.div
@@ -1114,7 +1114,7 @@ function ShootingStar() {
           repeat: Infinity,
           repeatDelay: 11,
           delay: 4,
-          ease: 'easeOut',
+          ease: 'easeOut' as const,
         }}
       />
     </div>
@@ -1161,7 +1161,7 @@ function FloatingSparkles() {
             duration: s.duration,
             delay: s.delay,
             repeat: Infinity,
-            ease: 'easeInOut',
+            ease: 'easeInOut' as const,
           }}
         />
       ))}
@@ -1303,7 +1303,7 @@ function AlmogTouchBanner({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.55, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.55, delay: 0.18, ease: [0.22, 1, 0.36, 1] as const }}
       className="relative mt-7 overflow-hidden rounded-[28px]"
       style={{
         // זכוכית ירוקה כהה — שקופה, עם blur ו-saturate כדי לקבל אפקט "tinted glass"
@@ -1612,7 +1612,7 @@ function StationHeader({
       <div className="relative -mt-16 overflow-hidden">
       <motion.div
         layoutId={`station-cover-${group.key}`}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] as const }}
         className="relative w-full overflow-hidden"
         style={{ height: 'min(58vh, 420px)', minHeight: 300 }}
       >
@@ -1684,7 +1684,7 @@ function StationHeader({
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${pct}%` }}
-                  transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] as const }}
                   className="h-full rounded-full"
                   style={{
                     background: 'linear-gradient(90deg, #a7f3d0, #34d399 60%, #fbbf24)',
@@ -1761,7 +1761,7 @@ function StepsTimeline({
                       <motion.div
                         className="h-2 w-2 rounded-full bg-emerald-500"
                         animate={{ scale: [1, 1.4, 1] }}
-                        transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+                        transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' as const }}
                       />
                     ) : (
                       <Lock className="h-2.5 w-2.5 text-gray-400" />

@@ -65,7 +65,7 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
           className="absolute inset-y-0 right-0 rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+          transition={{ duration: 0.5, ease: 'easeOut' as const }}
           style={{ background: 'linear-gradient(90deg, #f59e0b, #fb923c)', boxShadow: '0 0 10px rgba(249,115,22,0.5)' }}
         />
       </div>

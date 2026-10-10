@@ -148,7 +148,7 @@ export function CourseDetailClient({
             className="absolute inset-0"
             initial={{ scale: 1.05 }}
             animate={{ scale: 1 }}
-            transition={{ duration: 0.4, ease: 'easeOut' }}
+            transition={{ duration: 0.4, ease: 'easeOut' as const }}
           >
             <Image
               src={bgUrl}
@@ -260,7 +260,7 @@ export function CourseDetailClient({
                   className="absolute inset-y-0 right-0 rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }}
+                  transition={{ duration: 0.8, ease: 'easeOut' as const, delay: 0.3 }}
                   style={{ background: 'linear-gradient(90deg, #10b981, #14b8a6, #2dd4bf)', boxShadow: '0 0 10px rgba(20,184,166,0.4)' }}
                 />
               </div>
@@ -444,7 +444,7 @@ function GuideCover({
       className="fixed inset-0 z-[70] flex flex-col overflow-hidden"
       style={{ width: '100%', height: '100%' }}
       initial={{ opacity: 1 }}
-      exit={{ y: '108%', opacity: 1, transition: { duration: 0.35, ease: [0.7, 0, 0.84, 0] } }}
+      exit={{ y: '108%', opacity: 1, transition: { duration: 0.35, ease: [0.7, 0, 0.84, 0] as const } }}
     >
       {/* תמונת רקע */}
       {bgUrl ? (
@@ -452,7 +452,7 @@ function GuideCover({
           className="absolute inset-0"
           initial={{ scale: 1.16 }}
           animate={{ scale: 1 }}
-          transition={{ duration: 2.5, ease: 'easeOut' }}
+          transition={{ duration: 2.5, ease: 'easeOut' as const }}
         >
           <Image src={bgUrl} alt={title} fill className="object-cover" priority />
         </motion.div>
@@ -508,7 +508,7 @@ function GuideCover({
           <motion.h1
             initial={{ opacity: 0, y: 24, letterSpacing: '0.06em' }}
             animate={{ opacity: 1, y: 0, letterSpacing: '-0.01em' }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] as const, delay: 0.2 }}
             className="max-w-full px-1 text-[clamp(1.75rem,7vw,3.5rem)] leading-[1.15] text-white break-words hyphens-none"
             style={{
               fontFamily: "'Rubik','Heebo',sans-serif",

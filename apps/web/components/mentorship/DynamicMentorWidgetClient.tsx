@@ -138,7 +138,7 @@ export function DynamicMentorWidgetClient({
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: 'easeOut' }}
+      transition={{ duration: 0.45, ease: 'easeOut' as const }}
       dir="rtl"
       className="glass-surface-home rounded-[22px] p-4"
     >

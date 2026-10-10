@@ -454,7 +454,7 @@ export function ComingSoonExperience({
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 1.1, filter: 'blur(8px)' }}
-                transition={{ duration: 0.7, ease: 'easeOut' }}
+                transition={{ duration: 0.7, ease: 'easeOut' as const }}
                 className="relative z-20 flex flex-col items-center text-center"
               >
                 <motion.div
@@ -520,7 +520,7 @@ export function ComingSoonExperience({
                       initial={{ opacity: 0, y: 36, scale: 0.86, filter: 'blur(8px)' }}
                       animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
                       exit={{ opacity: 0, y: -24, scale: 1.1, filter: 'blur(6px)' }}
-                      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] as const }}
                       className="flex flex-col items-center"
                     >
                       {current.kind === 'drop' || current.kind === 'mega' ? (
@@ -583,7 +583,7 @@ export function ComingSoonExperience({
             <motion.div
               initial={{ y: 16, opacity: 0, scale: 0.9 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1, duration: 0.7, ease: 'easeOut' }}
+              transition={{ delay: 0.1, duration: 0.7, ease: 'easeOut' as const }}
               className="cs-revolution-badge"
             >
               <span className="cs-revolution-dot" />
@@ -620,7 +620,7 @@ export function ComingSoonExperience({
                     initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -14 }}
-                    transition={{ duration: 0.55, ease: 'easeOut' }}
+                    transition={{ duration: 0.55, ease: 'easeOut' as const }}
                     className="cs-quote-text text-balance text-2xl leading-[1.5] sm:text-[2rem] sm:leading-[1.5]"
                   >
                     {renderEmphasis(revolution[revIndex] ?? '')}
