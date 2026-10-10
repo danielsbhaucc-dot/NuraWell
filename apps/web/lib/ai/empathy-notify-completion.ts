@@ -2,7 +2,12 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateText, type ModelMessage } from 'ai';
 
 import { AI_MODELS } from './client';
-import { groqCompatFetch } from './groq-compat';
+import {
+  groqCompatFetch,
+  groqLaneApiKey,
+  groqLaneBaseUrl,
+  isGroqLaneAvailable,
+} from './groq-compat';
 import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from './prompts';
 import { publicAppUrlForAiReferer } from '../public-app-url';
 
@@ -92,8 +97,8 @@ function looksLikeReasoningModel(model: string): boolean {
 }
 
 const groqAi = createOpenAI({
-  apiKey: process.env.GROQ_API_KEY ?? '',
-  baseURL: 'https://api.groq.com/openai/v1',
+  apiKey: groqLaneApiKey(),
+  baseURL: groqLaneBaseUrl(),
   /** gpt-oss: reasoning_effort=low + reasoning budget headroom (see groq-compat.ts) */
   fetch: groqCompatFetch,
 });
@@ -139,7 +144,7 @@ function notifyProviders(): NotifyProvider[] {
     }
   }
 
-  if (process.env.GROQ_API_KEY?.trim()) {
+  if (isGroqLaneAvailable()) {
     providers.push({
       label: 'groq',
       model: AI_MODELS.background_groq,

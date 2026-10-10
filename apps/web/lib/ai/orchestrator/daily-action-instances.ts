@@ -12,6 +12,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { groq, AI_MODELS } from '../client';
 import { israelDateKey } from '../onboarding-check-in-time';
+import { isGroqLaneAvailable } from '../groq-compat';
 
 export type DailyActionStatus = 'pending' | 'completed' | 'skipped';
 
@@ -151,7 +152,7 @@ async function generateProgressionStepTitle(params: {
   target: number;
 }): Promise<string> {
   const deterministic = `${params.originalTitle} — בונים בחזרה בהדרגה (${params.step}/${params.target})`;
-  if (!process.env.GROQ_API_KEY?.trim()) return deterministic;
+  if (!isGroqLaneAvailable()) return deterministic;
 
   try {
     const completion = await groq.chat.completions.create({

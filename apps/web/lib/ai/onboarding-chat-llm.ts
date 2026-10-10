@@ -16,6 +16,7 @@ import {
   isProfileBasicsComplete,
 } from '../profile/profile-chat-bootstrap';
 import { imperativeTap, type ProfileGender } from '../profile/personalized-copy';
+import { isGroqLaneAvailable } from './groq-compat';
 
 export type OnboardingChatTurn = { role: 'user' | 'assistant'; content: string };
 
@@ -360,7 +361,7 @@ async function callLlm(
     })),
   ];
 
-  if (process.env.GROQ_API_KEY?.trim()) {
+  if (isGroqLaneAvailable()) {
     try {
       const completion = await groq.chat.completions.create({
         model: ONBOARDING_MODEL_GROQ,

@@ -1,5 +1,6 @@
 import { groq, openrouter, AI_MODELS } from '../ai/client';
 import type { GuideProgressSummary } from './progress';
+import { isGroqLaneAvailable } from '@/lib/ai/groq-compat';
 
 export interface GuideCatalogEntry {
   id: string;
@@ -134,7 +135,7 @@ export async function runGuideCompanionLlm(
     { role: 'user' as const, content: userContent },
   ];
 
-  if (process.env.GROQ_API_KEY?.trim()) {
+  if (isGroqLaneAvailable()) {
     try {
       const completion = await groq.chat.completions.create({
         model: AI_MODELS.background_groq_strong,

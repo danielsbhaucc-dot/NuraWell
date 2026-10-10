@@ -11,12 +11,16 @@
 import 'server-only';
 
 import OpenAI from 'openai';
-import { groqCompatFetch } from './groq-compat';
+import {
+  groqCompatFetch,
+  groqLaneApiKey,
+  groqLaneBaseUrl,
+  groqLaneUsesDirectGroq,
+} from './groq-compat';
 import { publicAppUrlForAiReferer } from '../public-app-url';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 const DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1';
-const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
 
 const APP_URL = publicAppUrlForAiReferer();
 const APP_TITLE = 'NuraWell';
@@ -34,10 +38,6 @@ if (!process.env.DEEPSEEK_API_KEY && process.env.NODE_ENV === 'production') {
   console.warn('[ai/client] DEEPSEEK_API_KEY is missing - DeepSeek calls will 401.');
 }
 
-if (!process.env.GROQ_API_KEY && process.env.NODE_ENV === 'production') {
-  // eslint-disable-next-line no-console
-  console.warn('[ai/client] GROQ_API_KEY is missing - Groq calls will 401.');
-}
 
 /**
  * OpenRouter client. Headers `HTTP-Referer` and `X-Title` are recommended by
@@ -69,8 +69,12 @@ export const deepseek = new OpenAI({
  * שימוש חדש ב-background AI יעדיף את `groq` עם `AI_MODELS.background_groq`.
  */
 export const groq = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY?.trim() || BUILD_SAFE_API_KEY,
-  baseURL: GROQ_BASE_URL,
+  /** אין GROQ_API_KEY → אותו נתיב דרך OpenRouter עם העדפת ספק Groq (ראה groq-compat.ts). */
+  apiKey: groqLaneApiKey() || BUILD_SAFE_API_KEY,
+  baseURL: groqLaneBaseUrl(),
+  defaultHeaders: groqLaneUsesDirectGroq()
+    ? undefined
+    : { 'HTTP-Referer': APP_URL, 'X-Title': APP_TITLE },
   /** gpt-oss: reasoning_effort=low + reasoning budget headroom (see groq-compat.ts) */
   fetch: groqCompatFetch,
 });

@@ -4,6 +4,7 @@ import { AI_MODELS, groq, openrouter } from '@/lib/ai/client';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
+import { isGroqLaneAvailable } from '@/lib/ai/groq-compat';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -148,7 +149,7 @@ async function runClarificationLLM(payload: {
 
   const openrouterModel = process.env.STEP_AIFILL_MODEL?.trim() || 'meta-llama/llama-4-maverick';
   const groqModel = process.env.STEP_AIFILL_GROQ_MODEL?.trim() || AI_MODELS.background_groq_strong;
-  const groqEnabled = Boolean(process.env.GROQ_API_KEY?.trim());
+  const groqEnabled = isGroqLaneAvailable();
 
   const call = async (provider: 'openrouter' | 'groq') => {
     const model = provider === 'openrouter' ? openrouterModel : groqModel;

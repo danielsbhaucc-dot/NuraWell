@@ -6,6 +6,7 @@ import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
+import { isGroqLaneAvailable } from '@/lib/ai/groq-compat';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -151,7 +152,7 @@ async function generateBlueprint(userPrompt: string): Promise<JourneyBlueprint |
     }
   }
 
-  if (process.env.GROQ_API_KEY?.trim()) {
+  if (isGroqLaneAvailable()) {
     try {
       const completion = await groq.chat.completions.create({
         model: AI_MODELS.background_groq_strong,

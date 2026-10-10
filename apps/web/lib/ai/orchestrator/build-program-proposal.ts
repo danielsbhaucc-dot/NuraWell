@@ -21,6 +21,7 @@ import type {
 } from './program-state';
 import type { JourneyCompanionContext } from '../../workflows/journey-companion';
 import type { AiUserContext } from '../memory';
+import { isGroqLaneAvailable } from '../groq-compat';
 
 export type BuildProposalInput = {
   decision: ProgramStateDecision;
@@ -157,7 +158,7 @@ export async function buildProgramProposal(
   let nextStep = fallback.nextStep;
   let model: string | null = null;
 
-  if (process.env.GROQ_API_KEY?.trim()) {
+  if (isGroqLaneAvailable()) {
     const kind = input.decision.proposalKind;
     const wantsNextStep = kind === 'level_up' || kind === 'pivot';
     const restoreTo =
