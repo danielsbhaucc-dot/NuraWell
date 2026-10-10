@@ -1,4 +1,5 @@
 import { AI_MODELS, groq, openrouter } from '@/lib/ai/client';
+import { isGroqLaneAvailable } from '@/lib/ai/groq-compat';
 
 export const MAX_SOURCE_CHARS = 45_000;
 const MAX_FETCH_CHARS = 80_000;
@@ -118,9 +119,9 @@ ${params.bibliographicContext}
 טקסט מקור:
 ${params.sourceText.slice(0, MAX_SOURCE_CHARS)}`;
 
-  const openrouterModel = process.env.RESEARCH_SCAN_MODEL?.trim() || 'meta-llama/llama-4-scout';
-  const groqModel = process.env.RESEARCH_SCAN_GROQ_MODEL?.trim() || AI_MODELS.background_groq;
-  const groqEnabled = Boolean(process.env.GROQ_API_KEY?.trim());
+  const openrouterModel = process.env.RESEARCH_SCAN_MODEL?.trim() || 'openai/gpt-oss-120b';
+  const groqModel = process.env.RESEARCH_SCAN_GROQ_MODEL?.trim() || AI_MODELS.background_groq_strong;
+  const groqEnabled = isGroqLaneAvailable();
 
   if (process.env.OPENROUTER_API_KEY?.trim()) {
     try {

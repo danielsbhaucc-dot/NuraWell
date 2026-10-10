@@ -18,6 +18,7 @@ import {
 } from './heuristic';
 import { parseMentorEmojiReaction } from './marker';
 import type { MentorEmojiReaction, ReactionIntent } from './types';
+import { isGroqLaneAvailable } from '../groq-compat';
 
 export type { MentorEmojiReaction };
 
@@ -97,7 +98,7 @@ async function decideWithLlm(params: {
   intentHint?: ReactionIntent | null;
   hints?: string[];
 }): Promise<(MentorEmojiReaction & { intent?: string | null }) | null> {
-  const hasGroq = Boolean(process.env.GROQ_API_KEY?.trim());
+  const hasGroq = isGroqLaneAvailable();
   const hasOpenRouter = Boolean(process.env.OPENROUTER_API_KEY?.trim());
   if (!hasGroq && !hasOpenRouter) return null;
 

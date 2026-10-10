@@ -188,6 +188,16 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  /**
+   * perf: API routes אינם נחסמים/מנותבים כאן (הם public במידלוור ומאמתים בעצמם
+   * מול Supabase ב-route handler, כולל רענון cookie). קריאת getUser כאן הייתה
+   * round-trip רשת מיותר על כל קריאת API. אין שינוי אבטחתי — ההחלטות כאן לא
+   * השתמשו ב-user עבור /api/*.
+   */
+  if (pathname.startsWith('/api/')) {
+    return applySecurityHeaders(NextResponse.next({ request: { headers: requestHeaders } }));
+  }
+
   let response = NextResponse.next({
     request: {
       headers: requestHeaders,
@@ -393,6 +403,7 @@ export async function middleware(request: NextRequest) {
       user,
       supabase,
       applySecurityHeaders,
+      response,
     );
     if (challengeRedirect) {
       if (shouldTouchLastActive) {

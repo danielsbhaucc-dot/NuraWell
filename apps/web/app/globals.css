@@ -5363,3 +5363,32 @@ html.a11y-reduce-motion .a11y-widget-panel {
   transition: none !important;
 }
 
+
+/* ── Chat message enter animations (send / receive) ──────────────────
+   transform+opacity בלבד (compositor, בלי layout). רץ פעם אחת ב-mount. */
+@keyframes nw-chat-send {
+  from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes nw-chat-receive {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: none; }
+}
+.nw-chat-send {
+  animation: nw-chat-send 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform-origin: bottom right;
+}
+.nw-chat-receive {
+  animation: nw-chat-receive 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform-origin: bottom left;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nw-chat-send,
+  .nw-chat-receive {
+    animation: none;
+  }
+}
+html.a11y-reduce-motion .nw-chat-send,
+html.a11y-reduce-motion .nw-chat-receive {
+  animation: none;
+}

@@ -22,6 +22,7 @@ import {
   PREFERRED_CHANNELS,
   WEAKEST_TIMES,
 } from '@/lib/onboarding/types';
+import { clearChallengeGateCookie } from '@/lib/challenge/gate-cookie';
 
 const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -73,6 +74,7 @@ async function enrollNewUserInChallenge(
   admin: ReturnType<typeof createAdminClient>,
   userId: string,
 ): Promise<void> {
+  await clearChallengeGateCookie();
   const { data: settings } = await admin
     .from('site_settings')
     .select('challenge_enabled')
