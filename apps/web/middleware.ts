@@ -403,6 +403,7 @@ export async function middleware(request: NextRequest) {
       user,
       supabase,
       applySecurityHeaders,
+      response,
     );
     if (challengeRedirect) {
       if (shouldTouchLastActive) {
