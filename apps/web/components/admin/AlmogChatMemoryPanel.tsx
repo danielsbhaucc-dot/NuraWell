@@ -198,7 +198,10 @@ export function AlmogChatMemoryPanel({
     if (!expandedSession) return;
     const session = data?.sessions.find((s) => s.id === expandedSession);
     if (session?.transcript_access !== 'pending') return;
-    const interval = setInterval(() => void load(), 20_000);
+    const interval = setInterval(() => {
+      // perf: לא שולפים כשהטאב מוסתר
+      if (document.visibilityState === 'visible') void load();
+    }, 20_000);
     return () => clearInterval(interval);
   }, [expandedSession, data?.sessions, load]);
 

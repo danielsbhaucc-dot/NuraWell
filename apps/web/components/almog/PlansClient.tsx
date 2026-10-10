@@ -281,11 +281,23 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
         ping
       );
     }
+    let subscribed = false;
+    let lastSync = Date.now();
     channel.subscribe((status) => {
-      setLive(status === 'SUBSCRIBED');
+      subscribed = status === 'SUBSCRIBED';
+      setLive(subscribed);
     });
 
-    const poll = window.setInterval(() => void load(true), 45_000);
+    /**
+     * perf: פולינג רק כפולבק — כש-realtime מחובר מסתפקים בסנכרון רקע איטי (5 דק'),
+     * וכשהטאב מוסתר לא שולפים בכלל (visibilitychange מרענן בחזרה).
+     */
+    const poll = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      if (subscribed && Date.now() - lastSync < 300_000) return;
+      lastSync = Date.now();
+      void load(true);
+    }, 45_000);
     const onVisible = () => {
       if (document.visibilityState === 'visible') void load(true);
     };
