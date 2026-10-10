@@ -4236,16 +4236,11 @@ export async function POST(request: Request) {
     const isUiMessageStream = upstreamWriter === 'memory-recall-tools';
 
     /**
-     * מחכים להחלטת האימוג'י לפני פתיחת הזרם — ההחלטה רצה במקביל לבניית הקונטקסט
-     * ולכן בדרך כלל כבר מוכנה. מקסימום ~1.2ש׳ כדי לא לעכב TTFB.
+     * perf: לא מחכים להחלטת האימוג'י לפני פתיחת הזרם (חסך עד ~1.2ש׳ TTFB).
+     * אם כבר מוכנה — נשלחת ב-header/marker בתחילת הזרם; אחרת נשלחת כ-marker באמצע/סוף
+     * הזרם ברגע שהיא מוכנה (הלקוח מחלץ marker מכל מקום בטקסט), ונשמרת ב-DB כרגיל.
      */
-    const headerWaitMs = isUiMessageStream ? 1400 : 1200;
-    const headerReaction =
-      resolvedEmojiReaction ??
-      (await Promise.race([
-        emojiReactionPromise,
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), headerWaitMs)),
-      ]));
+    const headerReaction = resolvedEmojiReaction;
 
     const exposeReactionHeaders =
       'x-session-id, x-debug-id, x-debug-stage, x-ai-writer, x-ai-model, x-nura-writer, x-almog-reaction';
@@ -4323,13 +4318,21 @@ export async function POST(request: Request) {
           if (headerReaction) {
             controller.enqueue(encoder.encode(encodeEmojiReactionMarker(headerReaction)));
           }
+          let reactionSent = Boolean(headerReaction);
+          const flushLateReaction = () => {
+            if (reactionSent || !resolvedEmojiReaction) return;
+            reactionSent = true;
+            controller.enqueue(encoder.encode(encodeEmojiReactionMarker(resolvedEmojiReaction)));
+          };
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
             if (value) {
               const chunkText = decoder.decode(value, { stream: true });
               if (!hadVisibleText && chunkText.trim().length > 0) hadVisibleText = true;
-              controller.enqueue(value);
+              /** מקודדים מחדש טקסט מפוענח → גבולות chunk תמיד על תו שלם, כך שאפשר להזריק marker ביניהם. */
+              if (chunkText) controller.enqueue(encoder.encode(chunkText));
+              flushLateReaction();
             }
           }
           const trailing = decoder.decode();
@@ -4338,7 +4341,8 @@ export async function POST(request: Request) {
             console.warn('[ai/chat]', { debug_id: debugId, stage: 'stream_empty_no_canned_fallback' });
           }
 
-          if (!headerReaction) {
+          if (trailing) controller.enqueue(encoder.encode(trailing));
+          if (!reactionSent) {
             const lateReaction =
               resolvedEmojiReaction ??
               (await Promise.race([
