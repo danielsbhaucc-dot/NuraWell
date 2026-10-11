@@ -1,6 +1,6 @@
 import {
   Apple, Brain, Check, Cookie, Dumbbell, Footprints, GlassWater, HeartHandshake, Home, Leaf, Lock, Moon, Scale,
-  ShieldCheck, Sparkles, Sprout, Sun, Users, Utensils, type LucideIcon,
+  ShieldCheck, Sparkles, Sprout, Sun, Users, Utensils, Egg, CupSoda, Timer, Gauge, ClipboardList, Carrot, Wind, type LucideIcon,
 } from 'lucide-react';
 
 /**
@@ -24,6 +24,14 @@ export const HABIT_ICONS: Record<string, LucideIcon> = {
   social: Users,
   weighing: Scale,
   maintenance: ShieldCheck,
+  // 14-station curriculum
+  protein: Egg,
+  drinks: CupSoda,
+  slow_eating: Timer,
+  hunger: Gauge,
+  planning: ClipboardList,
+  whole_food: Carrot,
+  breathing: Wind,
 };
 
 const TITLE_HINTS: [RegExp, string][] = [

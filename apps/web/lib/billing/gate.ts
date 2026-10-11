@@ -6,7 +6,7 @@ export async function canAccessStationById(admin: SupabaseClient, userId: string
   if (!stationId) return true;
   const e = await getEntitlements(admin, userId);
   if (!e.enforced) return true;
-  const { data } = await admin.from('journey_stations').select('id').order('sort_order');
+  const { data } = await admin.from('journey_stations').select('id').eq('track', 'main').order('sort_order');
   const idx = (data ?? []).findIndex((s) => s.id === stationId);
   return canAccessStation(e, idx < 0 ? 0 : idx);
 }
