@@ -1,16 +1,40 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/** E2E against a deployed URL (default production) with the dedicated role=test account. */
+const PORT = process.env.PLAYWRIGHT_PORT ?? '3000';
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${PORT}`;
+
 export default defineConfig({
-  testDir: './e2e',
+  testDir: './tests/e2e',
+  fullyParallel: true,
+  forbidOnly: Boolean(process.env.CI),
+  retries: process.env.CI ? 1 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: process.env.CI ? 'github' : 'list',
   timeout: 60_000,
-  retries: 1,
-  reporter: [['list']],
   use: {
-    baseURL: process.env.E2E_BASE_URL || 'https://nurawell.vercel.app',
+    baseURL,
+    trace: 'on-first-retry',
     locale: 'he-IL',
-    timezoneId: 'Asia/Jerusalem',
-    trace: 'retain-on-failure',
   },
-  projects: [{ name: 'mobile', use: { ...devices['Pixel 7'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      testIgnore: /signed-in\//,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // Signed-in pass with the role=test account (see docs/E2E.md); mobile RTL.
+      name: 'signed-in-mobile',
+      testMatch: /signed-in\/.*\.spec\.ts/,
+      use: { ...devices['Pixel 7'], timezoneId: 'Asia/Jerusalem' },
+    },
+  ],
+  webServer: process.env.PLAYWRIGHT_SKIP_WEBSERVER
+    ? undefined
+    : {
+        command: `npm run dev -- --port ${PORT}`,
+        url: baseURL,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+      },
 });

@@ -17,7 +17,7 @@
     "playwright:install": "npx playwright install chromium",
     "test:watch": "vitest",
     "backfill:insight-vectors": "node --env-file=.env.local scripts/backfill-insight-vectors-upstash.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e:signed-in": "PLAYWRIGHT_SKIP_WEBSERVER=1 PLAYWRIGHT_BASE_URL=${PLAYWRIGHT_BASE_URL:-https://nurawell.vercel.app} playwright test --project=signed-in-mobile"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.91",
