@@ -27,7 +27,7 @@ function HowItWorksBody() {
     <>
       <h2
         id="how-it-works-title"
-        className="text-xl font-black text-white mt-2 mb-4 text-right"
+        className="text-xl font-black text-white mt-2 mb-4 text-start"
         style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}
       >
         איך זה עובד?
@@ -49,7 +49,7 @@ function HowItWorksBody() {
             <span className="w-8 h-8 rounded-full bg-emerald-500/30 flex items-center justify-center text-emerald-200 font-black text-sm shrink-0">
               {i + 1}
             </span>
-            <div className="text-right flex-1">
+            <div className="text-start flex-1">
               <p className="font-bold text-white flex items-center gap-2 justify-end">
                 <s.icon className="w-4 h-4 text-emerald-400" aria-hidden />
                 {s.title}
@@ -83,7 +83,7 @@ function MobileHowDrawer({ open, onClose }: RegisterHowItWorksModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
+              className="absolute end-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
               aria-label="סגור"
             >
               <X className="w-5 h-5" />
@@ -127,7 +127,7 @@ function DesktopHowModal({ open, onClose }: RegisterHowItWorksModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70"
+              className="absolute end-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70"
               aria-label="סגור"
             >
               <X className="w-5 h-5" />

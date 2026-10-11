@@ -74,7 +74,7 @@ export function ChallengeIntroExperience({
   return (
     <div className="relative">
       {isDemo ? (
-        <div className="fixed left-0 right-0 top-0 z-50 border-b border-amber-400/30 bg-amber-500/15 px-4 py-2">
+        <div className="fixed end-0 start-0 top-0 z-50 border-b border-amber-400/30 bg-amber-500/15 px-4 py-2">
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm text-amber-100">מצב דמו — פתיחת אתגר</span>
             <button
@@ -95,7 +95,7 @@ export function ChallengeIntroExperience({
         <button
           type="button"
           onClick={() => setMuted((m) => !m)}
-          className="fixed left-4 top-16 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md"
+          className="fixed end-4 top-16 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md"
           aria-label={muted ? 'הפעל תמלול' : 'השתק תמלול'}
         >
           {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
@@ -103,7 +103,7 @@ export function ChallengeIntroExperience({
       ) : null}
 
       {showLines ? (
-        <div className="fixed left-0 right-0 top-12 z-40 max-h-[40vh] overflow-y-auto px-4 sm:top-4">
+        <div className="fixed end-0 start-0 top-12 z-40 max-h-[40vh] overflow-y-auto px-4 sm:top-4">
           <div className="mx-auto max-w-md space-y-2 rounded-2xl border border-white/10 bg-black/50 p-4 backdrop-blur-md">
             {(renderedLines.length ? renderedLines : [fallbackLine]).map((line, i) => (
               <p
@@ -125,7 +125,7 @@ export function ChallengeIntroExperience({
         lyrics={lyrics}
         revolutionLines={revolutionLines}
       />
-      <div className="fixed bottom-6 left-0 right-0 z-40 flex justify-center px-4">
+      <div className="fixed bottom-6 end-0 start-0 z-40 flex justify-center px-4">
         <button
           type="button"
           onClick={onIntroFinished}

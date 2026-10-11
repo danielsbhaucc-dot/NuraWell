@@ -292,7 +292,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
       <section className="overflow-hidden rounded-2xl border border-white/50 bg-background-card/30 shadow-[0_8px_28px_rgba(15,23,42,0.06)] backdrop-blur-xl">
         <div className="border-b border-white/40 p-3">
           <div className="relative">
-            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
+            <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
             <input
               type="search"
               value={searchQ}
@@ -344,7 +344,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                   <button
                     type="button"
                     onClick={() => openStation(st.id)}
-                    className="flex w-full items-center gap-3 rounded-2xl border border-white/50 bg-background-card/28 px-3 py-3 text-right shadow-sm backdrop-blur-xl transition hover:border-amber-300/45 hover:bg-background-card/40 active:scale-[0.995] sm:px-4"
+                    className="flex w-full items-center gap-3 rounded-2xl border border-white/50 bg-background-card/28 px-3 py-3 text-start shadow-sm backdrop-blur-xl transition hover:border-amber-300/45 hover:bg-background-card/40 active:scale-[0.995] sm:px-4"
                   >
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-300/40 bg-gradient-to-br from-amber-500/70 to-orange-500/70 text-sm font-black text-white shadow-sm backdrop-blur-sm">
                       {st.sort_order}
@@ -353,7 +353,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                       <span className="block truncate font-display text-[15px] font-black text-slate-900">
                         {st.title}
                         {st.is_foundation ? (
-                          <span className="mr-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                          <span className="ms-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
                             תחנת חובה
                           </span>
                         ) : null}
@@ -417,7 +417,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[1.75rem] shadow-[0_28px_80px_-16px_rgba(180,83,9,0.4)] ring-1 ring-white/50 sm:rounded-[1.75rem]"
             style={glassPanelStyle}
           >
-            <div className="pointer-events-none absolute -left-12 -top-16 h-44 w-44 rounded-full bg-amber-400/25 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute -end-12 -top-16 h-44 w-44 rounded-full bg-amber-400/25 blur-3xl" aria-hidden />
             <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-background-card/90 to-transparent" />
 
             <header className="relative shrink-0 border-b border-white/40 bg-gradient-to-bl from-amber-100/55 via-background-card/25 to-orange-100/40 px-4 pb-3 pt-4 sm:px-6">
@@ -425,13 +425,13 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                 type="button"
                 onClick={() => !busy && closeStation()}
                 disabled={!!busy}
-                className="absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/30 text-slate-600 backdrop-blur-md transition hover:bg-background-card/50 disabled:opacity-50 sm:left-4 sm:top-4"
+                className="absolute end-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/30 text-slate-600 backdrop-blur-md transition hover:bg-background-card/50 disabled:opacity-50 sm:end-4 sm:top-4"
                 aria-label="סגור"
               >
                 <X className="h-4 w-4" />
               </button>
 
-              <div className="flex items-center gap-3 pl-10">
+              <div className="flex items-center gap-3 pe-10">
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-300/40 bg-gradient-to-br from-amber-500 to-orange-600 text-lg font-black text-white shadow-md ring-1 ring-white/50">
                   {selected.sort_order}
                 </span>
@@ -579,12 +579,12 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             <button
               type="button"
               onClick={() => !busy && setShowAddPopup(false)}
-              className="absolute left-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
+              className="absolute end-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
               aria-label="סגור"
             >
               <X className="h-4 w-4" />
             </button>
-            <h3 className="mb-4 pr-8 font-display text-lg font-black text-slate-900">תחנה חדשה</h3>
+            <h3 className="mb-4 ps-8 font-display text-lg font-black text-slate-900">תחנה חדשה</h3>
             <form onSubmit={addStation} className="space-y-3">
               <label className="block">
                 <span className="mb-1 block text-xs font-bold text-slate-700">שם תחנה</span>
@@ -637,17 +637,17 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             <button
               type="button"
               onClick={() => !aiBusy && setShowAiPopup(false)}
-              className="absolute left-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
+              className="absolute end-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
               aria-label="סגור"
             >
               <X className="h-4 w-4" />
             </button>
 
-            <div className="mb-1 flex items-center gap-2 pr-8">
+            <div className="mb-1 flex items-center gap-2 ps-8">
               <Sparkles className="h-5 w-5 text-indigo-500" />
               <h3 className="font-display text-lg font-black text-slate-900">מצב סוכן — צור מסע ב-AI</h3>
             </div>
-            <p className="mb-4 pr-8 text-xs text-slate-600">
+            <p className="mb-4 ps-8 text-xs text-slate-600">
               תארו את המסע הרצוי ואלמוג יבנה תחנות וצעדים כטיוטה (לא מפורסם). אחר כך אפשר ללטש כל צעד עם המילוי החכם.
             </p>
 

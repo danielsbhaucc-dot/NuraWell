@@ -104,7 +104,7 @@ export function SosMemoryCard() {
             }
           : undefined
       }
-      className={`touch-manipulation glass-surface-home rounded-[22px] p-4 text-right ${
+      className={`touch-manipulation glass-surface-home rounded-[22px] p-4 text-start ${
         showAccordion ? 'cursor-pointer transition active:scale-[0.995]' : ''
       }`}
     >

@@ -41,7 +41,7 @@ export function ChallengeEatingWindowTimer({ initialStatus }: Props) {
         <Clock className={`h-4 w-4 ${status.is_open ? 'text-emerald-300' : 'text-white/50'}`} />
         <span className="text-sm font-bold text-white/80">חלון אכילה 12:12</span>
         <span
-          className={`mr-auto rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+          className={`ms-auto rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
             status.is_open ? 'bg-emerald-500/30 text-emerald-200' : 'bg-background-card/10 text-white/45'
           }`}
         >

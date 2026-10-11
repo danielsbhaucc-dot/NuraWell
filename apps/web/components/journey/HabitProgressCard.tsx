@@ -105,7 +105,7 @@ export function HabitProgressCard({ title, emoji, snapshot }: HabitProgressCardP
         <span className="text-2xl shrink-0 order-1" aria-hidden>
           {emoji}
         </span>
-        <div className="flex-1 text-right order-2">
+        <div className="flex-1 text-start order-2">
           <p className="text-sm font-black text-[#1A1730] leading-snug">{title}</p>
           <p className="text-[11px] text-emerald-800/75 mt-0.5 font-semibold">
             {achieved ? (
@@ -115,7 +115,7 @@ export function HabitProgressCard({ title, emoji, snapshot }: HabitProgressCardP
               </span>
             ) : (
               <>
-                <Target className="inline w-3 h-3 ml-0.5 -mt-0.5" />
+                <Target className="inline w-3 h-3 me-0.5 -mt-0.5" />
                 עוד {daysRemaining} ימים ליעד ({targetDays} ימים)
               </>
             )}
@@ -222,7 +222,7 @@ export function HabitProgressCard({ title, emoji, snapshot }: HabitProgressCardP
       )}
 
       <div className="flex items-center justify-between gap-2 pt-1">
-        <p className="text-[10px] text-emerald-900/55 leading-relaxed flex-1 text-right">
+        <p className="text-[10px] text-emerald-900/55 leading-relaxed flex-1 text-start">
           ירוק = בוצע · אדום = פספוס · כתום = היום פתוח · אפור = עתיד/לא רלוונטי.
         </p>
         {useHeatmap && totalDays >= 60 && (

@@ -282,13 +282,13 @@ export function AdminCostsClient() {
         <section className="flex max-h-[60vh] flex-col overflow-hidden rounded-2xl border border-white/80 bg-background-card/60 backdrop-blur-xl">
           <div className="border-b border-slate-100 p-3">
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="search"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="חיפוש משתמש..."
-                className="w-full rounded-xl border border-slate-200 bg-background-card/80 py-2 pr-10 pl-3 text-sm"
+                className="w-full rounded-xl border border-slate-200 bg-background-card/80 py-2 ps-10 pe-3 text-sm"
                 dir="rtl"
               />
             </div>
@@ -308,7 +308,7 @@ export function AdminCostsClient() {
                       setSelectedName(u.fullName || 'משתמש');
                     }}
                     className={[
-                      'w-full px-4 py-3 text-right transition-colors hover:bg-emerald-50/80',
+                      'w-full px-4 py-3 text-start transition-colors hover:bg-emerald-50/80',
                       selectedId === u.userId ? 'bg-emerald-50' : '',
                     ].join(' ')}
                   >
@@ -356,7 +356,7 @@ export function AdminCostsClient() {
                             setSelectedId(u.userId);
                             setSelectedName(u.fullName || 'משתמש');
                           }}
-                          className="flex w-full items-center justify-between gap-3 px-1 py-2 text-right hover:bg-slate-50"
+                          className="flex w-full items-center justify-between gap-3 px-1 py-2 text-start hover:bg-slate-50"
                         >
                           <span className="truncate text-sm text-slate-700">{u.fullName || u.userId}</span>
                           <span className="shrink-0 font-bold tabular-nums text-emerald-700">

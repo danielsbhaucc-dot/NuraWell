@@ -1275,7 +1275,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
             <MessageCircle className="h-7 w-7 md:h-8 md:w-8" strokeWidth={2} />
             {hasBackgroundAnswer ? (
               <span
-                className="absolute -top-1 -left-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-white/70 bg-amber-300 px-1 text-[10px] font-black text-emerald-950 shadow-lg"
+                className="absolute -top-1 -end-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-white/70 bg-amber-300 px-1 text-[10px] font-black text-emerald-950 shadow-lg"
                 aria-label="תשובה חדשה מאלמוג"
               >
                 1
@@ -1336,7 +1336,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                   />
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full"
+                    className="pointer-events-none absolute -start-16 -top-16 h-56 w-56 rounded-full"
                     style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 68%)' }}
                   />
                   <span
@@ -1359,7 +1359,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                     type="button"
                     aria-label="סגור"
                     onClick={() => setOpen(false)}
-                    className="absolute left-3 top-2 z-10 rounded-lg p-2 hover:bg-background-card/10"
+                    className="absolute end-3 top-2 z-10 rounded-lg p-2 hover:bg-background-card/10"
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -1493,7 +1493,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
             ) : (
             <>
             <div
-              className="relative min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-4 text-right"
+              className="relative min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-4 text-start"
               style={{
                 WebkitOverflowScrolling: 'touch',
                 background:
@@ -1625,7 +1625,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                         className={`relative max-w-[82%] ${userReaction ? 'mb-3' : ''}`}
                       >
                         <div
-                          className="rounded-[20px] rounded-tr-md px-3.5 py-2.5 text-[14px] leading-relaxed text-slate-100"
+                          className="rounded-[20px] rounded-ss-md px-3.5 py-2.5 text-[14px] leading-relaxed text-slate-100"
                           style={{
                             background:
                               'linear-gradient(145deg, rgba(51,65,85,0.92), rgba(30,41,59,0.88))',
@@ -1659,7 +1659,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                     ) : (
                       <>
                         <div
-                          className="max-w-[82%] rounded-[20px] rounded-bl-md px-3.5 py-2.5 text-[14px] leading-relaxed text-white"
+                          className="max-w-[82%] rounded-[20px] rounded-ee-md px-3.5 py-2.5 text-[14px] leading-relaxed text-white"
                           style={{
                             background: 'linear-gradient(145deg, #047857 0%, #059669 55%, #10b981 100%)',
                             border: '1px solid rgba(255,255,255,0.22)',
@@ -1692,7 +1692,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
               {showTypingUi && !showMemorySearch && (
                 <div className="flex justify-end items-end gap-2">
                   <div
-                    className="max-w-[80%] rounded-[20px] rounded-bl-md px-3.5 py-2.5 text-[14px] text-white"
+                    className="max-w-[80%] rounded-[20px] rounded-ee-md px-3.5 py-2.5 text-[14px] text-white"
                     style={{
                       background: 'linear-gradient(145deg, rgba(51,65,85,0.85), rgba(30,41,59,0.8))',
                       border: '1px solid rgba(255,255,255,0.1)',
@@ -1869,7 +1869,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                           ? 'ענה לאלמוג על מה ששאל...'
                           : 'כתוב לי מה עובר עליך...'
                     }
-                    className="max-h-24 min-h-[40px] flex-1 resize-none rounded-xl border-0 bg-transparent px-3 py-2 text-[14px] leading-snug text-right text-white outline-none placeholder:text-white/35 disabled:opacity-60"
+                    className="max-h-24 min-h-[40px] flex-1 resize-none rounded-xl border-0 bg-transparent px-3 py-2 text-[14px] leading-snug text-start text-white outline-none placeholder:text-white/35 disabled:opacity-60"
                   />
                   {isLoading && (
                     <>
