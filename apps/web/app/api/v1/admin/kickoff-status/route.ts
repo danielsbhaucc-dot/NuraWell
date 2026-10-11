@@ -127,3 +127,6 @@ export async function POST(request: Request) {
   await markKickoffFailed(admin, body.userId, result.reason ?? 'unknown');
   return NextResponse.json({ ok: false, reason: result.reason ?? 'unknown' }, { status: 500 });
 }
+
+// Cap function time so a hung upstream call cannot burn active CPU for the 300s default.
+export const maxDuration = 30;
