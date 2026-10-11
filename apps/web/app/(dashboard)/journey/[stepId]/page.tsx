@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { createClient } from '../../../../lib/supabase/server';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import { redirect, notFound } from 'next/navigation';
+import { canAccessStationById } from '@/lib/billing/gate';
 import { StepLesson } from '../../../../components/journey/StepLesson';
 import type { JourneyStep, JourneyStepProgress } from '../../../../lib/types/journey';
 import type { LessonAudioTrack } from '../../../../lib/types/audio';
@@ -141,6 +142,8 @@ export default async function StepPage({ params }: { params: Promise<{ stepId: s
     started: Boolean(progress),
   });
   if (!allowed) redirect('/journey');
+  // SaaS content gate (no-op until BILLING_ENFORCE=1)
+  if (!(await canAccessStationById(admin, user.id, step.station_id))) redirect('/upgrade?reason=station');
 
   let audioTracks: LessonAudioTrack[] = [];
   if (step.audio_playlist_id) {
