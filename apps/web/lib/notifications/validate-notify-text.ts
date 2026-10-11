@@ -79,6 +79,9 @@ export function validateNotifyText(raw: string, opts: NotifyValidateOptions = {}
   }
   // a Hebrew "word" absurdly long without spaces = garbage
   if (/[\u0590-\u05FF]{18,}/.test(text)) return { ok: false, reason: 'garbled word' };
+  if (/קיבלתי\s+את\s+(?:ה)?(?:הודעה|עדכון|העדכון|ההודעה)|תודה\s+ששיתפת/u.test(text)) {
+    return { ok: false, reason: 'claims an incoming message (proactive notification)' };
+  }
   if (ALMOG_FEMININE_SELF.test(text)) return { ok: false, reason: 'Almog feminine self-reference' };
   if (/\[(?:PERSON_NAME|USER_FIRST_NAME|FIRST_NAME|שם|Task|TASK|task|משימה)\]|\{\{|\}\}/i.test(text)) {
     return { ok: false, reason: 'unresolved placeholder' };

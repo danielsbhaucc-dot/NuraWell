@@ -21,6 +21,7 @@
  * זורקים מיידית בלי לקרוא ל-LLM כלל.
  */
 
+import { NOTIFY_DIRECT_ADDRESS_RULE } from '../../ai/empathy-notify-completion';
 import type OpenAI from 'openai';
 import type {
   AINotificationContext,
@@ -283,7 +284,7 @@ async function callOnce(
         // → empty/truncated text. The 250-char cap is enforced after generation instead.
         max_tokens: 400,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: `${SYSTEM_PROMPT}\n\n${NOTIFY_DIRECT_ADDRESS_RULE}` },
           { role: 'user', content: buildUserMessage(ctx) },
         ],
       },

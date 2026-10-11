@@ -32,6 +32,10 @@ describe('validateNotifyText', () => {
     expect(validateNotifyText('אני מבינה שהיום היה קשה, בואי ננסה צעד קטן').ok).toBe(false);
     expect(validateNotifyText('אני מבין שהיום היה קשה, בואי ננסה צעד קטן').ok).toBe(true);
   });
+  it('rejects claims of a received message', () => {
+    expect(validateNotifyText('היי נועה, קיבלתי את ההודעה שלך 😊 איך אפשר לעזור?').ok).toBe(false);
+    expect(validateNotifyText('היי, קיבלתי את העדכון על יוסי, איך אפשר לעזור?').ok).toBe(false);
+  });
   it('allows brand words', () => {
     expect(validateNotifyText('היי, ב-NuraWell מחכה לך צעד קטן להיום 🌿').ok).toBe(true);
   });

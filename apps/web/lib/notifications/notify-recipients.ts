@@ -108,3 +108,9 @@ export async function filterNotifyEligibleUserIds(
   }
   return userIds.filter((id) => out.has(id));
 }
+
+/** בדיקה לפני שליחה למשתמש בודד. fail-open (כמו קודם) בשגיאה. */
+export async function isUserNotifyEligible(admin: SupabaseClient, userId: string): Promise<boolean> {
+  const ids = await filterNotifyEligibleUserIds(admin, [userId]);
+  return ids.length > 0;
+}

@@ -5,6 +5,7 @@ import { splitSystemMessages } from './split-system-messages';
 import { AI_MODELS } from './client';
 import {
   groqCompatFetch,
+  groqLaneUsesDirectGroq,
   groqLaneApiKey,
   groqLaneBaseUrl,
   isGroqLaneAvailable,
@@ -37,6 +38,11 @@ import { stripReasoningArtifacts, validateNotifyText } from '../notifications/va
  */
 
 const MIN_NOTIFY_BODY_CHARS = 6;
+/** per-attempt cap so a hung provider can't burn the function's maxDuration */
+const NOTIFY_AI_TIMEOUT_MS = 20_000;
+/** prevents 'קיבלתי את ההודעה שלך' hallucinations and third-person addressing */
+export const NOTIFY_DIRECT_ADDRESS_RULE =
+  'חשוב: ההקשר למעלה מתאר את *הנמען עצמו*. ההודעה נשלחת אליו ישירות — פנה אליו בגוף שני ("איך הלך לך…"), לעולם לא עליו בגוף שלישי ("יוסי לא דיווח", "לעזור לו") ולא למישהו אחר. זו הודעה יזומה ממך — הוא לא שלח לך כלום עכשיו: אסור "קיבלתי את ההודעה/העדכון", "תודה ששיתפת", ואסור להמציא אירועים, נתונים או שיחות שלא מופיעים בהקשר.';
 const MAX_BODY_CHARS = 320;
 
 type EmpathyNotifyCompletionOptions = {
@@ -68,6 +74,10 @@ const openrouterAi = createOpenAI({
  * `allow_fallbacks: true` כדי שלעולם לא ניפול לשקט אם DeepInfra לא זמין רגעית.
  */
 const routePrimaryToDeepInfra: typeof fetch = async (input, init) => {
+  // gpt-oss (default): Groq-preferred + low reasoning + token headroom (groq-compat.ts)
+  if (init && typeof init.body === 'string' && /gpt-oss/i.test(init.body.slice(0, 300))) {
+    return groqCompatFetch(input, init);
+  }
   if (init && typeof init.body === 'string') {
     try {
       const json = JSON.parse(init.body) as Record<string, unknown>;
@@ -124,7 +134,7 @@ type NotifyProvider = {
 };
 
 const NOTIFICATION_PRIMARY_MODEL =
-  process.env.NOTIFICATION_EMPATHY_MODEL?.trim() || 'deepseek/deepseek-v4-flash';
+  process.env.NOTIFICATION_EMPATHY_MODEL?.trim() || 'openai/gpt-oss-120b';
 
 function notifyProviders(): NotifyProvider[] {
   const providers: NotifyProvider[] = [];
@@ -151,7 +161,9 @@ function notifyProviders(): NotifyProvider[] {
     }
   }
 
-  if (isGroqLaneAvailable()) {
+  const groqDuplicatesPrimary =
+    AI_MODELS.background_groq_strong === NOTIFICATION_PRIMARY_MODEL && !groqLaneUsesDirectGroq();
+  if (isGroqLaneAvailable() && !groqDuplicatesPrimary) {
     providers.push({
       label: 'groq',
       model: AI_MODELS.background_groq_strong,
@@ -266,7 +278,11 @@ export async function completeEmpathyNotifyBody(
           ...(options.frequencyPenalty != null
             ? { frequencyPenalty: options.frequencyPenalty }
             : {}),
-          ...splitSystemMessages(options.messages),
+          abortSignal: AbortSignal.timeout(NOTIFY_AI_TIMEOUT_MS),
+          ...splitSystemMessages([
+            ...options.messages,
+            { role: 'system', content: NOTIFY_DIRECT_ADDRESS_RULE },
+          ]),
         });
 
         lastFinishReason = out.finishReason;

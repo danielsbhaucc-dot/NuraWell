@@ -513,3 +513,10 @@ curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints/te
 
 בדיקה: `POST /api/v1/ai/cron/habit-checkpoints?slot=morning&dryRun=1` — המשתמש צריך להופיע ב-plan.
 משתמשים רגילים (`role = 'user'`) לא מושפעים.
+
+## למה לא תזמון QStash מושהה לכל משתמש (עדיין)
+
+נבדק ונדחה כרגע: ההחלטה אם לשלוח תלויה במצב הסלוט באותו רגע (משימות שבוצעו היום, touch-fatigue,
+cooldown להרגלים דומים, focus, ghosted weekly), כך שהודעה מתוזמנת מראש הייתה צריכה לבדוק הכול מחדש בשליחה
+ולהתבטל/להידחות בכל פעילות — יותר invocations ולא פחות, וסיכון לשינוי תזמון. במקום זה: guards זולים
+(count אחד, יציאה מיידית), שאילתות ממוקדות למשתמשים זכאים, וטעינת prompt רק למי שבאמת due.
