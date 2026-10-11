@@ -18,9 +18,14 @@ test.describe.serial('main flow', () => {
     await expectHealthy(page);
     await expect(page.getByText('פתיחה: מעקב ועוגנים').first()).toBeVisible();
 
-    // unknown lesson → not-found screen + noindex (status stays 200: the dashboard streams before the page resolves)
-    await page.goto('/journey/00000000-0000-0000-0000-000000000000');
-    await expect(page.locator('meta[name="robots"][content*="noindex"]')).not.toHaveCount(0);
+    // unknown content URLs → real 404 status
+    for (const u of ['/journey/00000000-0000-0000-0000-000000000000', '/journey/99999', '/journey/xyz', '/guides/00000000-0000-0000-0000-000000000000', '/lessons/00000000-0000-0000-0000-000000000000']) {
+      const r = await page.goto(u);
+      expect(r?.status(), u).toBe(404);
+    }
+    // existing lesson still opens
+    const ok = await page.goto('/journey/a1b2c3d4-e5f6-7890-abcd-ef1234567890');
+    expect(ok?.status()).toBe(200);
 
     await page.goto('/plans');
     await expectHealthy(page);

@@ -419,9 +419,55 @@ export async function middleware(request: NextRequest) {
       }
       return challengeRedirect;
     }
+
+    /**
+     * Real 404 status for unknown content URLs. The (dashboard) loading boundary streams a 200 before the page
+     * can call notFound(), so resolve existence here (one indexed lookup, same RLS as the page).
+     */
+    const missing = await isMissingContent(supabase, pathname);
+    if (missing) {
+      return applySecurityHeaders(NextResponse.rewrite(new URL('/__not_found', request.url), { status: 404 }));
+    }
   }
 
   return applySecurityHeaders(response);
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CONTENT_RE = /^\/(journey|guides|lessons)\/([^/]+)\/?$/;
+const JOURNEY_STATIC = new Set(['declined', 'history']);
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function isMissingContent(supabase: any, pathname: string): Promise<boolean> {
+  const m = CONTENT_RE.exec(pathname);
+  if (!m) return false;
+  const [, kind, raw] = m;
+  const param = decodeURIComponent(raw);
+  if (kind === 'journey' && JOURNEY_STATIC.has(param)) return false;
+  try {
+    if (kind === 'journey') {
+      if (UUID_RE.test(param)) {
+        const { data, error } = await supabase.from('journey_steps').select('id').eq('id', param).maybeSingle();
+        return !error && !data;
+      }
+      if (/^\d{1,6}$/.test(param)) {
+        const { data, error } = await supabase
+          .from('journey_steps')
+          .select('id')
+          .eq('step_number', Number(param))
+          .eq('is_published', true)
+          .limit(1);
+        return !error && !data?.length;
+      }
+      return true; // neither uuid nor step number
+    }
+    if (!UUID_RE.test(param)) return true;
+    const table = kind === 'guides' ? 'courses' : 'lessons';
+    const { data, error } = await supabase.from(table).select('id').eq('id', param).maybeSingle();
+    return !error && !data;
+  } catch {
+    return false; // never block navigation on a lookup failure
+  }
 }
 
 export const config = {
