@@ -71,7 +71,9 @@ export function decideStaleProfileAction(params: {
   const mood = String(ctx.current_mood_signal ?? '');
 
   if (
-    !ctx.skip_weight_check_ins &&
+    // opt-in only (habits-first; never for users whose safety screening says no weight focus)
+    ctx.skip_weight_check_ins === false &&
+    ctx.safety_no_weight !== true &&
     params.daysSinceLastWeight !== null &&
     params.daysSinceLastWeight >= 5 &&
     params.daysSinceActive <= 21

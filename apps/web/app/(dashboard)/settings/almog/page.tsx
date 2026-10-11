@@ -27,7 +27,8 @@ export default async function AlmogNudgeSettingsPage() {
 
   const ctx = (row?.ai_context ?? null) as AiUserContext | null;
   const avoidPush = ctx?.avoid_push === true;
-  const weightReminders = ctx?.skip_weight_check_ins !== true;
+  // weight reminders are opt-in (habits-first): on only when the user explicitly enabled them
+  const weightReminders = ctx?.skip_weight_check_ins === false && ctx?.safety_no_weight !== true;
   const coachingStyle: AlmogCoachingStyle = coachingStyleFromContext(ctx);
   const workArrival =
     typeof ctx?.work_arrival_time === 'string' ? ctx.work_arrival_time.slice(0, 5) : '';

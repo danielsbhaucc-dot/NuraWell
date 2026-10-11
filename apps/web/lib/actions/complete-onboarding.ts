@@ -1,4 +1,5 @@
 'use server';
+import { buildSafetyScreening } from '@/lib/onboarding/safety-screening';
 
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
@@ -30,14 +31,24 @@ const onboardingSchema = z.object({
   full_name: z.string().trim().min(2, 'שם קצר מדי').max(120),
   gender: z.enum(GENDERS),
   main_goal: z.enum(MAIN_GOALS),
+  // weight is optional (habits-first positioning)
   current_weight: z.coerce
     .number()
     .min(BODY_METRICS.weightMin)
-    .max(BODY_METRICS.weightMax),
+    .max(BODY_METRICS.weightMax)
+    .optional()
+    .nullable(),
   target_weight: z.coerce
     .number()
     .min(BODY_METRICS.weightMin)
-    .max(BODY_METRICS.weightMax),
+    .max(BODY_METRICS.weightMax)
+    .optional()
+    .nullable(),
+  // safety screening (stored with the health-data consent)
+  screen_ed_history: z.enum(['true', 'false']).optional(),
+  screen_pregnancy: z.enum(['true', 'false']).optional(),
+  screen_fluid_restriction: z.enum(['true', 'false']).optional(),
+  screen_medical_followup: z.enum(['true', 'false']).optional(),
   height: z.coerce
     .number()
     .min(BODY_METRICS.heightMin)
@@ -114,8 +125,12 @@ export async function completeOnboarding(
     full_name: formData.get('full_name'),
     gender: formData.get('gender'),
     main_goal: formData.get('main_goal'),
-    current_weight: formData.get('current_weight'),
-    target_weight: formData.get('target_weight'),
+    current_weight: formData.get('current_weight') || null,
+    target_weight: formData.get('target_weight') || null,
+    screen_ed_history: formData.get('screen_ed_history') || undefined,
+    screen_pregnancy: formData.get('screen_pregnancy') || undefined,
+    screen_fluid_restriction: formData.get('screen_fluid_restriction') || undefined,
+    screen_medical_followup: formData.get('screen_medical_followup') || undefined,
     height: formData.get('height') || null,
     weakest_time_of_day: formData.get('weakest_time_of_day'),
     main_obstacle: formData.get('main_obstacle'),
@@ -223,12 +238,23 @@ export async function completeOnboarding(
     { dinnerTime, meals: mealSchedule.length ? mealSchedule : null }
   );
 
+  const screening = buildSafetyScreening({
+    edHistory: data.screen_ed_history === 'true',
+    pregnancy: data.screen_pregnancy === 'true',
+    fluidRestriction: data.screen_fluid_restriction === 'true',
+    medicalFollowup: data.screen_medical_followup === 'true',
+    minor: ageCheck.requiresParentalConsent,
+  });
+  // no weight focus for ED history / pregnancy / minors: drop weights even if typed
+  const currentWeight = screening.no_weight ? null : (data.current_weight ?? null);
+  const goalWeight = screening.no_weight ? null : (data.target_weight ?? null);
+
   const systemPrompt = generateMentorSystemPrompt({
     full_name: data.full_name,
     gender: data.gender,
     main_goal: data.main_goal,
-    current_weight_kg: data.current_weight,
-    goal_weight_kg: data.target_weight,
+    current_weight_kg: currentWeight,
+    goal_weight_kg: goalWeight,
     height_cm: data.height ?? null,
     weakest_time_of_day: data.weakest_time_of_day,
     main_obstacle: data.main_obstacle,
@@ -240,6 +266,7 @@ export async function completeOnboarding(
     preferred_channel: data.preferred_channel,
   });
 
+
   const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: profileError } = await (admin.from('profiles') as any)
@@ -249,9 +276,10 @@ export async function completeOnboarding(
       date_of_birth: data.date_of_birth,
       birth_date: data.date_of_birth,
       main_goal: data.main_goal,
-      current_weight_kg: data.current_weight,
-      goal_weight_kg: data.target_weight,
+      current_weight_kg: currentWeight,
+      goal_weight_kg: goalWeight,
       height_cm: data.height ?? null,
+      safety_screening: screening,
       weakest_time_of_day: data.weakest_time_of_day,
       main_obstacle: data.main_obstacle,
       main_obstacle_detail:
@@ -270,6 +298,8 @@ export async function completeOnboarding(
         intake_collected_by: 'dolev',
         onboarding_channel: data.preferred_channel,
         check_in_times: checkInTimes,
+        ...(screening.no_weight ? { safety_no_weight: true } : {}),
+        ...(screening.fluid_restriction ? { safety_fluid_restriction: true } : {}),
       },
     })
     .eq('id', userId);
@@ -294,8 +324,8 @@ export async function completeOnboarding(
     full_name: data.full_name,
     gender: data.gender,
     main_goal: data.main_goal,
-    current_weight_kg: data.current_weight,
-    goal_weight_kg: data.target_weight,
+    current_weight_kg: data.current_weight ?? null,
+    goal_weight_kg: data.target_weight ?? null,
     weakest_time_of_day: data.weakest_time_of_day,
     main_obstacle: data.main_obstacle,
     main_obstacle_detail:
