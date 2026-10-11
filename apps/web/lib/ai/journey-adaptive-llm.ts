@@ -50,7 +50,8 @@ const ADAPTIVE_SYSTEM_PROMPT = `אתה אלמוג — מנטור הליווי ש
 - בלי שפת מערכת ("השלם", "תזכורת", "סימנתי"). חם, אנושי, כמו חבר.
 - אל תמציא תוכן של הצעד עצמו — רק מסגר אותו ביחס למשתמש.`;
 
-function buildFallback(
+/** Deterministic (no AI) card content — rendered instantly server-side on /journey. */
+export function buildFallback(
   pick: PickNextJourneyStepResult
 ): AdaptiveNextStep {
   const { step, pace } = pick;
@@ -152,6 +153,17 @@ export async function buildAdaptiveNextStep(params: {
     return { recommendation: fallback, used_fallback: true, model: null };
   }
 
+  const dateKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }).format(new Date());
+  const { data: cached } = await admin
+    .from('journey_next_step_cache')
+    .select('step_id, pace, recommendation, model')
+    .eq('user_id', userId)
+    .eq('date_key', dateKey)
+    .maybeSingle();
+  if (cached && cached.step_id === step.id && cached.pace === pace) {
+    return { recommendation: cached.recommendation as AdaptiveNextStep, used_fallback: false, model: (cached.model as string) ?? ADAPTIVE_MODEL };
+  }
+
   const aiContext = contextResult?.raw.aiContext ?? null;
   const coachingBlock = buildCoachingStylePromptBlock(aiContext);
   const progressText = formatUserProgressForAi(report);
@@ -169,7 +181,8 @@ export async function buildAdaptiveNextStep(params: {
     .join('\n\n');
 
   try {
-    const completion = await openrouter.chat.completions.create({
+    const completion = await openrouter.chat.completions.create(
+      {
       model: ADAPTIVE_MODEL,
       temperature: 0.7,
       max_tokens: 500,
@@ -178,7 +191,9 @@ export async function buildAdaptiveNextStep(params: {
         { role: 'system', content: ADAPTIVE_SYSTEM_PROMPT },
         { role: 'user', content: userContent },
       ],
-    });
+      },
+      { signal: AbortSignal.timeout(20_000) }
+    );
 
     const parsed = JSON.parse(completion.choices[0]?.message?.content ?? '{}') as Record<
       string,
@@ -198,8 +213,7 @@ export async function buildAdaptiveNextStep(params: {
         ? parsed.commitment_suggestion.trim()
         : null;
 
-    return {
-      recommendation: {
+    const recommendation: AdaptiveNextStep = {
         step_id: step.id,
         step_number: step.step_number,
         step_title: step.title,
@@ -211,10 +225,13 @@ export async function buildAdaptiveNextStep(params: {
         commitment_suggestion: commitment,
         pace,
         phase: pick.phase,
-      },
-      used_fallback: false,
-      model: ADAPTIVE_MODEL,
     };
+    // cache per user per day (same step + pace) so the card's AI text costs one call/day
+    await admin
+      .from('journey_next_step_cache')
+      .upsert({ user_id: userId, date_key: dateKey, step_id: step.id, pace, recommendation, model: ADAPTIVE_MODEL }, { onConflict: 'user_id,date_key' })
+      .then(() => null, () => null);
+    return { recommendation, used_fallback: false, model: ADAPTIVE_MODEL };
   } catch (error) {
     console.error('[journey-adaptive-llm] generation failed', error);
     return { recommendation: fallback, used_fallback: true, model: ADAPTIVE_MODEL };

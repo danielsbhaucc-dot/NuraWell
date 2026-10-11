@@ -9,6 +9,7 @@ import {
   dispatchOpenAlmogChatWithPrefill,
 } from '../../lib/notifications/open-almog-chat';
 
+export type NextStepCardData = AdaptiveNextStep;
 type AdaptiveNextStep = {
   step_id: string | null;
   step_number: number | null;
@@ -20,9 +21,13 @@ type AdaptiveNextStep = {
   pace: 'start' | 'continue' | 'return' | 'complete';
 };
 
-export function JourneyNextStepCard() {
-  const [rec, setRec] = useState<AdaptiveNextStep | null>(null);
-  const [loading, setLoading] = useState(true);
+/**
+ * Renders instantly from server-computed `initial` (deterministic); the AI-personalised text
+ * (cached per user per day on the server) replaces it when it arrives — no skeleton wait.
+ */
+export function JourneyNextStepCard({ initial = null }: { initial?: AdaptiveNextStep | null }) {
+  const [rec, setRec] = useState<AdaptiveNextStep | null>(initial);
+  const [loading, setLoading] = useState(!initial);
 
   useEffect(() => {
     let alive = true;
@@ -48,7 +53,7 @@ export function JourneyNextStepCard() {
       <div
         dir="rtl"
         className="glass-surface relative mb-5 overflow-hidden p-4"
-        style={{ borderRadius: '22px' }}
+        style={{ borderRadius: '22px', background: '#F5FAF2' }}
       >
         <div className="h-3 w-32 rounded-full bg-emerald-200/60 animate-pulse mb-3" />
         <div className="h-3 w-full rounded-full bg-emerald-100/70 animate-pulse mb-2" />
@@ -68,6 +73,7 @@ export function JourneyNextStepCard() {
       className="glass-surface relative mb-5 overflow-hidden p-4"
       style={{
         borderRadius: '22px',
+        background: '#F5FAF2', // theme token: cream
         border: '1px solid rgba(16,185,129,0.28)',
         boxShadow:
           '0 10px 28px rgba(4,120,87,0.14), inset 0 1px 0 rgba(248,251,246,0.55)',
