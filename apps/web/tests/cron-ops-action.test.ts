@@ -12,14 +12,16 @@ describe('decideStaleProfileAction', () => {
     expect(d.action).toBe('silent');
   });
 
-  it('check_in when weight stale and skip not set', () => {
-    const d = decideStaleProfileAction({
-      daysSinceActive: 5,
-      aiContext: {},
-      daysSinceLastWeight: 7,
-      nudgeAfterDays: 2,
-    });
-    expect(d.action).toBe('check_in');
+  it('weight reminders are opt-in: check_in only when the user enabled them', () => {
+    const base = { daysSinceActive: 5, daysSinceLastWeight: 7, nudgeAfterDays: 2 };
+    expect(decideStaleProfileAction({ ...base, aiContext: {} }).reason).not.toBe('weight_stale');
+    const on = decideStaleProfileAction({ ...base, aiContext: { skip_weight_check_ins: false } });
+    expect(on.action).toBe('check_in');
+    expect(on.reason).toBe('weight_stale');
+    // safety screening overrides the opt-in
+    expect(
+      decideStaleProfileAction({ ...base, aiContext: { skip_weight_check_ins: false, safety_no_weight: true } }).reason
+    ).not.toBe('weight_stale');
   });
 
   it('skips check_in when skip_weight_check_ins', () => {

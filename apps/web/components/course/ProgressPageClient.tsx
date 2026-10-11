@@ -64,6 +64,8 @@ interface TaskHistoryDay {
 }
 
 interface ProgressPageClientProps {
+  /** weight tracking is opt-in: shown only to users who entered weight (habits lead the page) */
+  showWeight?: boolean;
   userId: string;
   firstName?: string;
   gender?: ProfileGender;
@@ -317,6 +319,7 @@ function formatTime(minutes: number): string {
 }
 
 export function ProgressPageClient({
+  showWeight = false,
   userId,
   firstName = 'חבר',
   gender = null,
@@ -498,20 +501,6 @@ export function ProgressPageClient({
               </motion.div>
             ))}
           </motion.div>
-        </section>
-
-        <ProgressSectionDivider tone="indigo" title="מגמות בריאות" subtitle="מה הגוף שלך מספר" />
-
-        <section>
-          <ProgressSectionHeader
-            title="מעקב משקל"
-            subtitle="אלמוג קורא את המגמה — בלי טפסים מיותרים"
-            tone="indigo"
-            icon={LineChart}
-          />
-          <div className="mt-3">
-            <WeightTrendInsightCard />
-          </div>
         </section>
 
         <ProgressSectionDivider tone="emerald" title="מסע אישי" subtitle="צעדים, משימות והרגלים" />
@@ -696,6 +685,21 @@ export function ProgressPageClient({
             </motion.section>
           </section>
         )}
+
+        {showWeight ? (
+          <section>
+            <ProgressSectionDivider tone="indigo" title="מעקב משקל" subtitle="לא חובה — רק למי שבחר לעקוב" />
+            <ProgressSectionHeader
+              title="מעקב משקל"
+              subtitle="אלמוג קורא את המגמה — בלי טפסים מיותרים"
+              tone="indigo"
+              icon={LineChart}
+            />
+            <div className="mt-3">
+              <WeightTrendInsightCard />
+            </div>
+          </section>
+        ) : null}
 
         {courseStats.length > 0 && (
           <section>

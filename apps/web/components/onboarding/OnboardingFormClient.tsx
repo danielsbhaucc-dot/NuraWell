@@ -20,6 +20,7 @@ import {
   ParentalConsentCheckbox,
 } from '@/components/legal/PrivacyConsentFields';
 import { validateBirthDate } from '@/lib/privacy/age-validation';
+import { SCREENING_GUIDANCE } from '@/lib/onboarding/safety-screening';
 
 const TOTAL_STEPS = 6;
 
@@ -56,6 +57,7 @@ export function OnboardingFormClient() {
   const [password, setPassword] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [healthConsent, setHealthConsent] = useState(false);
+  const [screen, setScreen] = useState({ ed_history: false, pregnancy: false, fluid_restriction: false, medical_followup: false });
   const [parentalConsent, setParentalConsent] = useState(false);
   const [legalConsent, setLegalConsent] = useState(false);
 
@@ -66,6 +68,9 @@ export function OnboardingFormClient() {
 
   const name = address('', fullName);
   const gc = useMemo(() => genderCopy(gender), [gender]);
+
+  // ED history / pregnancy / minor → no weight fields at all (habits only)
+  const noWeight = screen.ed_history || screen.pregnancy || Boolean(ageInfo?.ok && ageInfo.requiresParentalConsent);
 
   const progress = useMemo(() => (step / TOTAL_STEPS) * 100, [step]);
 
@@ -225,8 +230,12 @@ export function OnboardingFormClient() {
     fd.set('full_name', fullName.trim());
     fd.set('gender', gender);
     fd.set('main_goal', mainGoal);
-    fd.set('current_weight', currentWeight);
-    fd.set('target_weight', targetWeight);
+    fd.set('current_weight', noWeight ? '' : currentWeight);
+    fd.set('target_weight', noWeight ? '' : targetWeight);
+    fd.set('screen_ed_history', String(screen.ed_history));
+    fd.set('screen_pregnancy', String(screen.pregnancy));
+    fd.set('screen_fluid_restriction', String(screen.fluid_restriction));
+    fd.set('screen_medical_followup', String(screen.medical_followup));
     if (height.trim()) fd.set('height', height);
     fd.set('weakest_time_of_day', weakest);
     fd.set('main_obstacle', obstacle);
@@ -360,12 +369,6 @@ export function OnboardingFormClient() {
                   </p>
                   <div className="space-y-2 mb-4">
                     <GlassChoiceButton
-                      selected={mainGoal === 'weight_loss'}
-                      onClick={() => setMainGoal('weight_loss')}
-                      emoji="🎯"
-                      title="ירידה במשקל"
-                    />
-                    <GlassChoiceButton
                       selected={mainGoal === 'healthy_lifestyle'}
                       onClick={() => setMainGoal('healthy_lifestyle')}
                       emoji="🌿"
@@ -376,6 +379,12 @@ export function OnboardingFormClient() {
                       onClick={() => setMainGoal('both')}
                       emoji="✨"
                       title="גם וגם"
+                    />
+                    <GlassChoiceButton
+                      selected={mainGoal === 'weight_loss'}
+                      onClick={() => setMainGoal('weight_loss')}
+                      emoji="🎯"
+                      title="ירידה במשקל"
                     />
                   </div>
 
@@ -401,10 +410,43 @@ export function OnboardingFormClient() {
 
                   <HealthDataConsentBlock checked={healthConsent} onChange={setHealthConsent} />
 
+                  <fieldset className={`mt-4 rounded-2xl border border-emerald-200/20 bg-white/5 p-3 ${healthConsent ? '' : 'opacity-50 pointer-events-none'}`}>
+                    <legend className="px-1 text-sm font-bold text-emerald-100/90">כדי להתאים את התוכנית בבטחה (לא חובה)</legend>
+                    <p className="mb-2 text-xs text-emerald-100/70">מה מהבאים נכון לגבי המצב שלך היום? התשובות נשמרות בהסכמה למידע בריאותי.</p>
+                    {(
+                      [
+                        ['ed_history', 'הפרעת אכילה עכשיו או בעבר'],
+                        ['pregnancy', 'הריון או הנקה'],
+                        ['fluid_restriction', 'מחלת כליות או לב, או הגבלת שתייה מרופא'],
+                        ['medical_followup', 'מצב רפואי אחר במעקב (למשל סוכרת)'],
+                      ] as const
+                    ).map(([key, label]) => (
+                      <div key={key} className="mb-2">
+                        <label className="flex items-start gap-2 text-sm text-emerald-50">
+                          <input
+                            type="checkbox"
+                            className="mt-1"
+                            checked={screen[key]}
+                            onChange={(e) => setScreen((p) => ({ ...p, [key]: e.target.checked }))}
+                          />
+                          <span>{label}</span>
+                        </label>
+                        {screen[key] ? (
+                          <p role="note" className="mt-1 ms-6 rounded-xl bg-emerald-950/40 p-2 text-xs leading-relaxed text-emerald-100">
+                            {SCREENING_GUIDANCE[key]}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </fieldset>
+
                   <div className={healthConsent ? '' : 'opacity-50 pointer-events-none'}>
-                  <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-end mt-4">
+                  {noWeight ? null : (
+                  <>
+                  <p className="mt-4 text-xs text-emerald-100/70">משקל — לא חובה. אפשר לדלג; NuraWell מתמקדת בהרגלים.</p>
+                  <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-end mt-2">
                     <label>
-                      <span className="text-xs font-bold text-emerald-100/85">משקל נוכחי (ק״ג)</span>
+                      <span className="text-xs font-bold text-emerald-100/85">משקל נוכחי (ק״ג) — לא חובה</span>
                       <input
                         type="number"
                         inputMode="decimal"
@@ -424,7 +466,7 @@ export function OnboardingFormClient() {
                       <ArrowLeft className="w-5 h-5" strokeWidth={2.5} />
                     </span>
                     <label>
-                      <span className="text-xs font-bold text-emerald-100/85">משקל יעד (ק״ג)</span>
+                      <span className="text-xs font-bold text-emerald-100/85">משקל יעד (ק״ג) — לא חובה</span>
                       <input
                         type="number"
                         inputMode="decimal"
@@ -451,6 +493,8 @@ export function OnboardingFormClient() {
                       dir="ltr"
                     />
                   </label>
+                  </>
+                  )}
                   </div>
                 </>
               )}

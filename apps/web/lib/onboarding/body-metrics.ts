@@ -35,14 +35,14 @@ export type BodyMetricsValidationError = {
 };
 
 export function validateBodyMetrics(input: BodyMetricsInput): BodyMetricsValidationError | null {
-  const cw = parseMetric(input.currentWeight);
-  if (cw === null || !isValidWeightKg(cw)) {
-    return { field: 'current_weight', code: cw === null ? 'missing' : 'range' };
+  // weight is optional (habits-first); validate only what was entered
+  if (input.currentWeight.trim()) {
+    const cw = parseMetric(input.currentWeight);
+    if (cw === null || !isValidWeightKg(cw)) return { field: 'current_weight', code: 'range' };
   }
-
-  const tw = parseMetric(input.targetWeight);
-  if (tw === null || !isValidWeightKg(tw)) {
-    return { field: 'target_weight', code: tw === null ? 'missing' : 'range' };
+  if (input.targetWeight.trim()) {
+    const tw = parseMetric(input.targetWeight);
+    if (tw === null || !isValidWeightKg(tw)) return { field: 'target_weight', code: 'range' };
   }
 
   if (input.height.trim()) {

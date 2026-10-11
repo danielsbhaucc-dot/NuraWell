@@ -56,6 +56,10 @@ export interface AiUserContext {
   avoid_push_until?: string;
   /** כשמוגדר — לא שולחים תזכורות ייעודיות לעדכון משקל (Cron) */
   skip_weight_check_ins?: boolean;
+  /** onboarding safety screening (ED history / pregnancy / minor): no weight focus at all */
+  safety_no_weight?: boolean;
+  /** onboarding safety screening: no increased fluids (kidney/heart/fluid restriction) */
+  safety_fluid_restriction?: boolean;
   /** warm_friend | direct | gentle — טון ליווי (ברירת מחדל: warm_friend) */
   coaching_style?: 'warm_friend' | 'direct' | 'gentle' | string;
   /** שעת הגעה טיפוסית לעבודה (HH:MM) — לעיגון הודעות לפני המשרד */
@@ -305,7 +309,9 @@ export async function buildUserContext(
     const ms = new Date(ctx.avoid_push_until).getTime();
     if (Number.isFinite(ms) && Date.now() < ms) parts.push('השהיית דחיפה זמנית פעילה');
   }
-  if (ctx.skip_weight_check_ins) parts.push('העדפה: ללא תזכורות ייעודיות לעדכון משקל.');
+  if (ctx.skip_weight_check_ins !== false) parts.push('העדפה: ללא תזכורות ייעודיות לעדכון משקל (המיקוד הוא הרגלים).');
+  if (ctx.safety_no_weight) parts.push('בטיחות: אין לדבר על משקל, קלוריות, דיאטה או ירידה במשקל. מיקוד בהרגלים ובהרגשה בלבד; לעודד ליווי של איש מקצוע.');
+  if (ctx.safety_fluid_restriction) parts.push('בטיחות: יש הגבלת נוזלים/מצב כליות או לב — לא להמליץ להגדיל שתייה. בהרגל המים להציע חלופה (עצירה של דקה לפני הארוחה) ולהפנות לרופא.');
   if (ctx.current_mood_signal && ctx.current_mood_signal !== 'unknown') {
     parts.push(`אות מצב רגשי (ניתוח אחרון): ${ctx.current_mood_signal}`);
   }

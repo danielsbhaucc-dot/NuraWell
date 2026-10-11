@@ -6,8 +6,8 @@ export type MentorPromptProfile = {
   full_name: string;
   gender: OnboardingGender;
   main_goal: MainGoal;
-  current_weight_kg: number;
-  goal_weight_kg: number;
+  current_weight_kg: number | null;
+  goal_weight_kg: number | null;
   height_cm?: number | null;
   weakest_time_of_day: WeakestTimeOfDay;
   main_obstacle: MainObstacle;
@@ -164,7 +164,7 @@ export function generateMentorSystemPrompt(profile: MentorPromptProfile): string
 ### פרופיל
 - שם: ${profile.full_name} | פניה: ${addr.you}
 - מטרה: ${GOAL_LABELS[profile.main_goal]}
-- משקל נוכחי: ${profile.current_weight_kg} ק"ג | יעד: ${profile.goal_weight_kg} ק"ג${heightLine}
+${profile.current_weight_kg != null ? `- משקל נוכחי: ${profile.current_weight_kg} ק"ג${profile.goal_weight_kg != null ? ` | יעד: ${profile.goal_weight_kg} ק"ג` : ''}${heightLine}` : `- משקל: לא נמסר (המיקוד בהרגלים — לא לשאול על משקל)${heightLine}`}
 - החלון הקשה ביום: ${WEAKEST_LABELS[profile.weakest_time_of_day]}
 - המכשול העיקרי: ${obstacleText}
 - שעת השכמה: ${profile.wake_up_time} | שעת שינה: ${profile.sleep_time}${mealsLine}
