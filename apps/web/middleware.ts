@@ -1,3 +1,4 @@
+import { isMissingContent } from './lib/routing/missing-content';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { mergeAuthCookieOptions } from './lib/supabase/cookie-options';
@@ -140,6 +141,29 @@ function copyCookies(from: NextResponse, to: NextResponse) {
     to.cookies.set(c);
   });
 }
+
+/** Redirects for an already signed-in user hitting login/register/marketing paths. */
+const signedInRedirectTarget = (
+  user: { email_confirmed_at?: string | null },
+  pathname: string,
+  searchParams: URLSearchParams,
+  origin: string,
+): string | null => {
+  if (pathname === '/login') {
+    const rawRedirect = searchParams.get('redirect');
+    if (rawRedirect && isOpsLoginRedirectUrl(rawRedirect)) {
+      const bridge = new URL('/auth/bridge-to-ops', origin);
+      bridge.searchParams.set('next', rawRedirect);
+      return bridge.href;
+    }
+    return APP_HOME_PATH;
+  }
+  const confirmed = Boolean(user.email_confirmed_at);
+  if (confirmed && MARKETING_PATHS_REDIRECT_WHEN_AUTHED.some((p) => pathname === p)) return APP_HOME_PATH;
+  if (pathname === '/register') return confirmed ? '/register/verified' : '/register/form';
+  if (confirmed && pathname === '/register/check-email') return '/register/verified';
+  return null;
+};
 
 export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -341,34 +365,9 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
   }
 
-  if (user && pathname === '/login') {
-    const rawRedirect = request.nextUrl.searchParams.get('redirect');
-    if (rawRedirect && isOpsLoginRedirectUrl(rawRedirect)) {
-      const bridge = new URL('/auth/bridge-to-ops', request.nextUrl.origin);
-      bridge.searchParams.set('next', rawRedirect);
-      return applySecurityHeaders(NextResponse.redirect(bridge));
-    }
-    return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
-  }
-
-  /** משתמש מחובר ומאומת לא נשאר בדף שיווק מלא־רוחב מחוץ ל־phone shell */
-  if (
-    user &&
-    user.email_confirmed_at &&
-    MARKETING_PATHS_REDIRECT_WHEN_AUTHED.some((p) => pathname === p)
-  ) {
-    return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
-  }
-
-  if (user && pathname === '/register') {
-    if (user.email_confirmed_at) {
-      return applySecurityHeaders(NextResponse.redirect(new URL('/register/verified', request.url)));
-    }
-    return applySecurityHeaders(NextResponse.redirect(new URL('/register/form', request.url)));
-  }
-
-  if (user && user.email_confirmed_at && pathname === '/register/check-email') {
-    return applySecurityHeaders(NextResponse.redirect(new URL('/register/verified', request.url)));
+  if (user) {
+    const target = signedInRedirectTarget(user, pathname, request.nextUrl.searchParams, request.nextUrl.origin);
+    if (target) return applySecurityHeaders(NextResponse.redirect(new URL(target, request.url)));
   }
 
   if (user && isPageRequest) {
@@ -398,10 +397,8 @@ export async function middleware(request: NextRequest) {
         .update({ last_active_at: new Date(nowMs).toISOString() })
         .eq('id', user.id)
         .then(
-          () => {},
-          () => {
-            /* last_active_at update is best-effort — failure should not block navigation */
-          },
+          () => undefined,
+          () => undefined, // last_active_at update is best-effort — failure should not block navigation
         );
       response.cookies.set(LAST_ACTIVE_COOKIE, String(nowMs), lastActiveCookieOpts);
     }
@@ -418,6 +415,15 @@ export async function middleware(request: NextRequest) {
         challengeRedirect.cookies.set(LAST_ACTIVE_COOKIE, String(nowMs), lastActiveCookieOpts);
       }
       return challengeRedirect;
+    }
+
+    /**
+     * Real 404 status for unknown content URLs. The (dashboard) loading boundary streams a 200 before the page
+     * can call notFound(), so resolve existence here (one indexed lookup, same RLS as the page).
+     */
+    const missing = await isMissingContent(supabase, pathname);
+    if (missing) {
+      return applySecurityHeaders(NextResponse.rewrite(new URL('/__not_found', request.url), { status: 404 }));
     }
   }
 

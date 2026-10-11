@@ -24,6 +24,7 @@ import {
 import type { JourneyStepWithProgress } from '../../lib/types/journey';
 import type { JourneyStationGroup } from '../../lib/journey/group-journey-by-station';
 import { JourneyStationCard } from './JourneyStationCard';
+import { PracticingStepsContext, useStepCredit } from './practicing-context';
 import { JourneyNextStepCard, type NextStepCardData } from './JourneyNextStepCard';
 import { AlmogAvatarChip } from './AlmogPresence';
 import { AlmogAssignmentsSection, AlmogCompletedSection } from './AlmogAssignmentsSection';
@@ -158,6 +159,7 @@ export function JourneyPage({
   }, [selectedKey, handleBack]);
 
   return (
+    <PracticingStepsContext.Provider value={practicingSet}>
     <div className="relative pb-10">
       <AnimatePresence mode="wait" initial={false}>
         {selectedKey && activeGroup ? (
@@ -187,6 +189,7 @@ export function JourneyPage({
         )}
       </AnimatePresence>
     </div>
+    </PracticingStepsContext.Provider>
   );
 }
 
@@ -1412,9 +1415,10 @@ function StationDetailView({
   onBack: () => void;
 }) {
   const steps = group.steps;
+  const credit = useStepCredit();
   const completedCount = steps.filter((s) => s.progress?.is_completed).length;
   const totalCount = steps.length;
-  const pct = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
+  const pct = totalCount ? Math.round((steps.reduce((n, s) => n + credit(s), 0) / totalCount) * 100) : 0;
   const allDone = totalCount > 0 && completedCount === totalCount;
 
   // אינדקס הצעד הבא הפעיל (הראשון שלא הושלם)

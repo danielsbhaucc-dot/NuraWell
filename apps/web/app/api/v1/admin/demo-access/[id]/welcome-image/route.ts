@@ -16,7 +16,7 @@ const idSchema = z.string().uuid();
 
 type RouteCtx = { params: Promise<{ id: string }> };
 
-export function demoWelcomeImageObjectKey(linkId: string): string {
+function demoWelcomeImageObjectKey(linkId: string): string {
   return `demo-access/${linkId}/welcome.webp`;
 }
 

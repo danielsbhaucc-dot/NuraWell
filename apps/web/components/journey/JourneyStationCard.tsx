@@ -5,6 +5,7 @@ import { MapPin, ArrowLeft, CheckCircle2, Sparkles } from 'lucide-react';
 import type { JourneyStationGroup } from '../../lib/journey/group-journey-by-station';
 import { stationCoverAlt } from '../../lib/a11y/alt-text';
 import { cn } from '../../lib/cn';
+import { useStepCredit } from './practicing-context';
 
 type JourneyStationCardProps = {
   group: JourneyStationGroup;
@@ -18,9 +19,11 @@ type JourneyStationCardProps = {
  * shared-element בין הגלריה לתצוגת הפירוט.
  */
 export function JourneyStationCard({ group, index, onSelect }: JourneyStationCardProps) {
+  const credit = useStepCredit();
   const done = group.steps.filter((s) => s.progress?.is_completed).length;
   const total = group.steps.length;
-  const pct = total ? Math.round((done / total) * 100) : 0;
+  // same rule as the overall ring: practiced-but-not-completed steps count half
+  const pct = total ? Math.round((group.steps.reduce((n, s) => n + credit(s), 0) / total) * 100) : 0;
   const isEmpty = total === 0;
   const isCompleted = total > 0 && done === total;
   const hasCover = Boolean(group.coverImageUrl);
