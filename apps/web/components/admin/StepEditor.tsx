@@ -2381,7 +2381,7 @@ export function StepEditor({ step }: StepEditorProps) {
             onClick={goPrevSection}
             disabled={!canGoBack}
             className="px-4 py-2.5 rounded-xl font-bold text-sm border transition disabled:opacity-40"
-            style={{ borderColor: 'rgba(0,0,0,0.12)', background: '#f8fbf6', color: '#374151' }}
+            style={{ borderColor: 'rgba(0,0,0,0.12)', background: '#F7FBF4', color: '#374151' }}
           >
             שלב קודם
           </button>
