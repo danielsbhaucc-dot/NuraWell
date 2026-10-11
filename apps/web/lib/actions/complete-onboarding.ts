@@ -69,10 +69,10 @@ const onboardingSchema = z.object({
   password: z.string().min(6, 'סיסמה קצרה מדי — לפחות 6 תווים'),
   date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'תאריך לידה לא תקין'),
   health_data_consent: z.literal('true', {
-    errorMap: () => ({ message: 'נדרשת הסכמה למידע בריאותי' }),
+    error: 'נדרשת הסכמה למידע בריאותי',
   }),
   legal_consent: z.literal('true', {
-    errorMap: () => ({ message: 'נדרש אישור תנאי שימוש ומדיניות פרטיות' }),
+    error: 'נדרש אישור תנאי שימוש ומדיניות פרטיות',
   }),
   parental_consent: z.enum(['true', 'false']).optional(),
 });
@@ -152,7 +152,7 @@ export async function completeOnboarding(
     const fieldErrors = parsed.error.flatten().fieldErrors;
     const first =
       Object.values(fieldErrors).flat()[0] ||
-      parsed.error.errors[0]?.message ||
+      parsed.error.issues[0]?.message ||
       'נתונים לא תקינים';
     return { ok: false, error: first, fieldErrors };
   }
