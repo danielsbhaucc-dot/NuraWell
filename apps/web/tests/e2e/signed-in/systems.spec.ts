@@ -71,5 +71,7 @@ test.describe.serial('systems (prod, test account)', () => {
     const sj = await sos.json().catch(() => ({}));
     console.log('EVIDENCE sos', sos.status(), JSON.stringify(sj).slice(0, 300));
     expect(sos.status()).toBe(200);
+    // test account is female (seed) — SOS must address her in feminine, never 'אתה'
+    expect(JSON.stringify(sj)).not.toMatch(/(?<![א-ת])אתה(?![א-ת])/);
   });
 });
