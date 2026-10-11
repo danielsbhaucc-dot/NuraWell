@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { mergeAuthCookieOptions } from './lib/supabase/cookie-options';
@@ -437,8 +438,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const CONTENT_RE = /^\/(journey|guides|lessons)\/([^/]+)\/?$/;
 const JOURNEY_STATIC = new Set(['declined', 'history']);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function isMissingContent(supabase: any, pathname: string): Promise<boolean> {
+async function isMissingContent(supabase: SupabaseClient, pathname: string): Promise<boolean> {
   const m = CONTENT_RE.exec(pathname);
   if (!m) return false;
   const [, kind, raw] = m;
