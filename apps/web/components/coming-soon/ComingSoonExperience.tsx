@@ -403,7 +403,7 @@ export function ComingSoonExperience({
 
       {/* top controls */}
       {phase !== 'intro' && (
-        <div className="absolute end-0 start-0 top-0 z-30 flex items-center justify-between p-4 sm:p-6">
+        <div className="absolute inset-e-0 inset-s-0 top-0 z-30 flex items-center justify-between p-4 sm:p-6">
           <button
             type="button"
             onClick={toggleMute}
@@ -425,10 +425,10 @@ export function ComingSoonExperience({
       )}
 
       {phase === 'lyrics' && (
-        <div className="absolute bottom-0 end-0 start-0 z-30 h-1.5 bg-background-card/10">
+        <div className="absolute bottom-0 inset-e-0 inset-s-0 z-30 h-1.5 bg-background-card/10">
           <div
             ref={progressBarRef}
-            className="h-full bg-gradient-to-l from-emerald-400 via-teal-300 to-lime-300 shadow-[0_0_18px_rgba(52,211,153,0.9)]"
+            className="h-full bg-linear-to-l from-emerald-400 via-teal-300 to-lime-300 shadow-[0_0_18px_rgba(52,211,153,0.9)]"
             style={{ width: '0%' }}
           />
         </div>
@@ -461,7 +461,7 @@ export function ComingSoonExperience({
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.2, duration: 0.6 }}
-                  className="mb-6 flex h-24 w-24 items-center justify-center rounded-[2rem] bg-gradient-to-br from-emerald-400 via-teal-500 to-lime-400 text-5xl font-black text-[#04231a] shadow-[0_0_60px_rgba(52,211,153,0.6)] sm:h-28 sm:w-28"
+                  className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-linear-to-br from-emerald-400 via-teal-500 to-lime-400 text-5xl font-black text-[#04231a] shadow-[0_0_60px_rgba(52,211,153,0.6)] sm:h-28 sm:w-28"
                 >
                   N
                 </motion.div>
@@ -489,7 +489,7 @@ export function ComingSoonExperience({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={startExperience}
-                  className="cs-cta group mt-10 flex items-center gap-3 rounded-full bg-gradient-to-l from-emerald-500 via-teal-500 to-lime-400 px-9 py-4 text-lg font-black text-[#04231a] shadow-[0_0_40px_rgba(52,211,153,0.55)]"
+                  className="cs-cta group mt-10 flex items-center gap-3 rounded-full bg-linear-to-l from-emerald-500 via-teal-500 to-lime-400 px-9 py-4 text-lg font-black text-[#04231a] shadow-[0_0_40px_rgba(52,211,153,0.55)]"
                 >
                   <Play className="h-6 w-6 fill-[#04231a]" />
                   {songUrl ? 'התחל את החוויה' : 'כניסה'}
@@ -610,7 +610,7 @@ export function ComingSoonExperience({
 
             {/* rotating psychological line — readable glass card, nicer type */}
             <div className="mt-10 w-full max-w-2xl">
-              <div className="cs-glass-card relative flex min-h-[9.5rem] items-center justify-center px-6 py-8 sm:min-h-[10rem] sm:px-10">
+              <div className="cs-glass-card relative flex min-h-38 items-center justify-center px-6 py-8 sm:min-h-40 sm:px-10">
                 <span className="cs-quote" aria-hidden>
                   ”
                 </span>
@@ -621,7 +621,7 @@ export function ComingSoonExperience({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -14 }}
                     transition={{ duration: 0.55, ease: 'easeOut' as const }}
-                    className="cs-quote-text text-balance text-2xl leading-[1.5] sm:text-[2rem] sm:leading-[1.5]"
+                    className="cs-quote-text text-balance text-2xl leading-normal sm:text-[2rem] sm:leading-normal"
                   >
                     {renderEmphasis(revolution[revIndex] ?? '')}
                   </motion.p>
@@ -642,7 +642,7 @@ export function ComingSoonExperience({
                     transition={{ duration: 0.55, delay: 0.05 * i }}
                     className="cs-glass-card flex flex-col items-center gap-3 px-5 py-6 text-center sm:items-start sm:text-start"
                   >
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400/90 to-teal-500/90 text-[#04231a] shadow-[0_0_24px_rgba(45,212,191,0.45)]">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-400/90 to-teal-500/90 text-[#04231a] shadow-[0_0_24px_rgba(45,212,191,0.45)]">
                       <Icon className="h-6 w-6" />
                     </span>
                     <h3 className="text-lg font-black text-white sm:text-xl">{f.title}</h3>

@@ -68,7 +68,7 @@ function ChatFabPlaceholder({ onOpen }: { onOpen: () => void }) {
       type="button"
       aria-label="שיחה עם אלמוג"
       onClick={onOpen}
-      className="fixed z-[190] flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-full text-white shadow-lg md:h-[3.5rem] md:w-[3.5rem]"
+      className="fixed z-190 flex h-13 w-13 items-center justify-center rounded-full text-white shadow-lg md:h-14 md:w-14"
       style={{
         bottom: 'calc(7.25rem + env(safe-area-inset-bottom, 0px))',
         right: 'calc(1rem + env(safe-area-inset-right, 0px))',

@@ -27,22 +27,22 @@ const TONE_STYLES: Record<
 > = {
   danger: {
     iconWrap: 'border-red-300/60 bg-red-100/70 text-red-600',
-    btn: 'bg-gradient-to-l from-red-600 to-rose-500 shadow-red-500/25',
+    btn: 'bg-linear-to-l from-red-600 to-rose-500 shadow-red-500/25',
     Icon: AlertTriangle,
   },
   warning: {
     iconWrap: 'border-amber-300/60 bg-amber-100/70 text-amber-700',
-    btn: 'bg-gradient-to-l from-amber-600 to-orange-500 shadow-amber-500/25',
+    btn: 'bg-linear-to-l from-amber-600 to-orange-500 shadow-amber-500/25',
     Icon: AlertTriangle,
   },
   success: {
     iconWrap: 'border-emerald-300/60 bg-emerald-100/70 text-emerald-700',
-    btn: 'bg-gradient-to-l from-emerald-600 to-teal-500 shadow-emerald-500/25',
+    btn: 'bg-linear-to-l from-emerald-600 to-teal-500 shadow-emerald-500/25',
     Icon: CheckCircle2,
   },
   info: {
     iconWrap: 'border-indigo-300/60 bg-indigo-100/70 text-indigo-700',
-    btn: 'bg-gradient-to-l from-indigo-600 to-violet-500 shadow-indigo-500/25',
+    btn: 'bg-linear-to-l from-indigo-600 to-violet-500 shadow-indigo-500/25',
     Icon: Info,
   },
 };
@@ -75,13 +75,13 @@ export function ConfirmDialog({
       backdropClassName="absolute inset-0 cursor-default bg-slate-900/30 backdrop-blur-sm"
       panelClassName="max-w-sm overflow-hidden rounded-3xl border border-white/40 bg-background-card/20 p-5 shadow-[0_20px_60px_-12px_rgba(15,23,42,0.5)] ring-1 ring-inset ring-white/30 backdrop-blur-2xl backdrop-saturate-150"
     >
-      <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-background-card/80 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-linear-to-r from-transparent via-background-card/80 to-transparent" />
 
       <button
         type="button"
         onClick={() => !busy && onCancel()}
         aria-label="סגור"
-        className="absolute end-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/50 bg-background-card/40 text-slate-600 hover:bg-background-card/70"
+        className="absolute inset-e-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/50 bg-background-card/40 text-slate-600 hover:bg-background-card/70"
       >
         <X className="h-4 w-4" />
       </button>

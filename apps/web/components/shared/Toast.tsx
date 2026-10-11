@@ -109,11 +109,11 @@ function Toast({ toast, onDismiss }: ToastProps) {
       <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-[20px]" style={{ background: c.bar }} />
 
       {/* Right accent bar (RTL layout) */}
-      <div className="absolute top-4 bottom-4 start-0 w-[3px] rounded-full" style={{ background: c.sideBar }} />
+      <div className="absolute top-4 bottom-4 inset-s-0 w-[3px] rounded-full" style={{ background: c.sideBar }} />
 
       {/* Progress bar */}
       <motion.div
-        className="absolute bottom-0 start-0 h-[2px] rounded-b-[20px]"
+        className="absolute bottom-0 inset-s-0 h-[2px] rounded-b-[20px]"
         style={{ background: c.bar, opacity: 0.6 }}
         initial={{ width: '100%' }}
         animate={{ width: '0%' }}
@@ -168,7 +168,7 @@ interface ToastContainerProps {
 
 export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   return (
-    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2.5 w-full px-4 max-w-[380px] pointer-events-none">
+    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-9999 flex flex-col gap-2.5 w-full px-4 max-w-[380px] pointer-events-none">
       <AnimatePresence mode="sync">
         {toasts.map((t) => (
           <div key={t.id} className="pointer-events-auto">

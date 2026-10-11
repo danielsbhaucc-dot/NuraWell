@@ -39,7 +39,7 @@ export function CreditBadge({ asset, className = '' }: CreditBadgeProps) {
       {open ? (
         <div
           dir="rtl"
-          className="absolute top-8 left-0 z-[60] w-max min-w-[9rem] max-w-[15rem] space-y-1 rounded-xl border border-white/60 p-2.5 text-[11px] leading-relaxed text-slate-800 shadow-xl"
+          className="absolute top-8 left-0 z-60 w-max min-w-36 max-w-60 space-y-1 rounded-xl border border-white/60 p-2.5 text-[11px] leading-relaxed text-slate-800 shadow-xl"
           style={{
             background: 'rgba(248,251,246,0.9)',
             backdropFilter: 'blur(14px)',

@@ -290,7 +290,7 @@ function ProgressTrack({
       : 'linear-gradient(90deg, #0f766e, #14b8a6)';
 
   return (
-    <div className="h-1.5 rounded-full bg-black/[0.06] overflow-hidden">
+    <div className="h-1.5 rounded-full bg-black/6 overflow-hidden">
       <motion.div
         className="h-full rounded-full"
         style={{ background: fill }}
@@ -414,16 +414,16 @@ export function ProgressPageClient({
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute -start-16 -top-12 h-48 w-48 rounded-full"
+          className="pointer-events-none absolute -inset-s-16 -top-12 h-48 w-48 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 68%)' }}
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute -bottom-10 -end-16 h-56 w-56 rounded-full"
+          className="pointer-events-none absolute -bottom-10 -inset-e-16 h-56 w-56 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.45), transparent 70%)' }}
         />
 
-        <div className="relative z-10 px-5 pb-[4.5rem] pt-3">
+        <div className="relative z-10 px-5 pb-18 pt-3">
           <div className="flex items-start gap-3">
             <div className="-mt-3">
               <AlmogAvatarChipWithNameTag size={92} nameTagVariant="prominent" />
@@ -472,7 +472,7 @@ export function ProgressPageClient({
         </div>
       </motion.header>
 
-      <div className="container-mobile relative z-[3] -mt-[3.5rem] pb-10 space-y-7">
+      <div className="container-mobile relative z-3 -mt-14 pb-10 space-y-7">
         <section>
           <motion.div
             variants={container}
@@ -717,7 +717,7 @@ export function ProgressPageClient({
                     href={`/guides/${course.id}`}
                     className="crystal-surface block flex items-center gap-3 rounded-2xl p-3.5 transition hover:opacity-95"
                   >
-                    <div className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl border border-black/[0.04] bg-black/[0.04]">
+                    <div className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl border border-black/4 bg-black/4">
                       {course.thumbnail ? (
                         <Image
                           src={course.thumbnail}

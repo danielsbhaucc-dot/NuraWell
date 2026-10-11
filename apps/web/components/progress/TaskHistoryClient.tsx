@@ -802,16 +802,16 @@ export function TaskHistoryClient({
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute -start-16 -top-12 h-48 w-48 rounded-full"
+          className="pointer-events-none absolute -inset-s-16 -top-12 h-48 w-48 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 68%)' }}
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute -bottom-10 -end-16 h-56 w-56 rounded-full"
+          className="pointer-events-none absolute -bottom-10 -inset-e-16 h-56 w-56 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.45), transparent 70%)' }}
         />
 
-        <div className="relative z-10 px-5 pb-[4.5rem] pt-3">
+        <div className="relative z-10 px-5 pb-18 pt-3">
           <div className="mb-3 flex justify-end">
             <Link
               href="/progress"
@@ -840,7 +840,7 @@ export function TaskHistoryClient({
               </p>
               {greeting.occasionGreeting ? (
                 <p
-                  className="mt-1 text-xs font-bold leading-relaxed break-words"
+                  className="mt-1 text-xs font-bold leading-relaxed wrap-break-word"
                   style={{
                     color:
                       greeting.tone === 'festive'
@@ -859,13 +859,13 @@ export function TaskHistoryClient({
                 </p>
               )}
               <h1
-                className="mt-2 text-2xl font-black text-white tracking-tight break-words leading-snug"
+                className="mt-2 text-2xl font-black text-white tracking-tight wrap-break-word leading-snug"
                 style={{ fontFamily: hebrewFont }}
               >
                 היסטוריית משימות
               </h1>
               <p
-                className="mt-2 text-sm font-black leading-relaxed break-words"
+                className="mt-2 text-sm font-black leading-relaxed wrap-break-word"
                 style={{ color: '#FFFDE7', fontFamily: "'Rubik', 'Heebo', sans-serif" }}
               >
                 {almogHeroBody}
@@ -875,7 +875,7 @@ export function TaskHistoryClient({
         </div>
       </motion.header>
 
-      <div className="container-mobile relative z-[3] -mt-[7.5rem] pb-10 space-y-7">
+      <div className="container-mobile relative z-3 -mt-30 pb-10 space-y-7">
         {/* ─── Stats grid (4 cards — same as progress page) ─── */}
         <section>
           <motion.div

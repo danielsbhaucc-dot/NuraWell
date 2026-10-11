@@ -146,7 +146,7 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
         <div className="inline-flex items-center gap-1.5">
           {unreadCount > 0 ? (
             <span
-              className="min-w-[1.35rem] rounded-full bg-rose-500 px-1.5 py-0.5 text-center text-[10px] font-black leading-none text-white shadow-sm ring-2 ring-[#FFFBF5]"
+              className="min-w-[1.35rem] rounded-full bg-rose-500 px-1.5 py-0.5 text-center text-[10px] font-black leading-none text-white shadow-xs ring-2 ring-[#FFFBF5]"
               aria-hidden
             >
               {formatUnreadBadgeCount(unreadCount)}
@@ -155,7 +155,7 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-2xl border border-white/55 bg-background-card/45 text-emerald-900 shadow-sm backdrop-blur-md transition-colors hover:bg-background-card/70"
+            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-2xl border border-white/55 bg-background-card/45 text-emerald-900 shadow-xs backdrop-blur-md transition-colors hover:bg-background-card/70"
             aria-label={formatUnreadBellAriaLabel(unreadCount)}
             aria-expanded={open}
           >
@@ -165,7 +165,7 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
 
         {open ? (
           <div
-            className="absolute start-0 top-[calc(100%+0.5rem)] z-50 w-[min(20rem,calc(100vw-1.25rem))] max-w-[calc(100vw-1.25rem)] overflow-hidden rounded-2xl border border-white/60 bg-[#FFFBF5]/95 shadow-2xl backdrop-blur-xl sm:w-[22rem]"
+            className="absolute inset-s-0 top-[calc(100%+0.5rem)] z-50 w-[min(20rem,calc(100vw-1.25rem))] max-w-[calc(100vw-1.25rem)] overflow-hidden rounded-2xl border border-white/60 bg-[#FFFBF5]/95 shadow-2xl backdrop-blur-xl sm:w-88"
             dir="rtl"
           >
             <div className="flex items-center justify-between border-b border-stone-200/80 bg-[#FFF5E6]/80 px-3 py-2.5">
@@ -213,13 +213,13 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
                           <div className="min-w-0 flex-1">
                             <p
                               className={cn(
-                                'text-sm leading-snug break-words',
+                                'text-sm leading-snug wrap-break-word',
                                 n.is_read ? 'font-medium text-stone-700' : 'font-bold text-stone-900',
                               )}
                             >
                               {n.title}
                             </p>
-                            <p className="mt-0.5 break-words text-xs leading-relaxed text-stone-600">
+                            <p className="mt-0.5 wrap-break-word text-xs leading-relaxed text-stone-600">
                               {n.body}
                             </p>
                             <p className="mt-1 text-[10px] text-stone-400">{fmtTime(n.created_at)}</p>

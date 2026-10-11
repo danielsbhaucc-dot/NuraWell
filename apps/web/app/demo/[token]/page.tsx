@@ -16,7 +16,7 @@ export default async function DemoAccessPage({ params }: PageProps) {
 
   if (!safeToken || safeToken.length < 20) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-[#0b1f1c] px-6 text-center text-teal-50" dir="rtl">
+      <div className="flex min-h-dvh items-center justify-center bg-[#0b1f1c] px-6 text-center text-teal-50" dir="rtl">
         <p className="text-lg font-bold">קישור לא תקין.</p>
       </div>
     );

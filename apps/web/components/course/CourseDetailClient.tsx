@@ -142,7 +142,7 @@ export function CourseDetailClient({
         </div>
       )}
       {/* HERO header — large & premium; the background image lives ONLY here */}
-      <div className="guide-hero relative h-[20rem] md:h-[28rem]">
+      <div className="guide-hero relative h-80 md:h-112">
         {bgUrl ? (
           <motion.div
             className="absolute inset-0"
@@ -166,7 +166,7 @@ export function CourseDetailClient({
         <div className="guide-hero-glow" aria-hidden />
 
         {/* Top pills row */}
-        <div className="container-mobile absolute inset-x-0 top-0 z-[3] px-4 pt-5">
+        <div className="container-mobile absolute inset-x-0 top-0 z-3 px-4 pt-5">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md"
               style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.35)', color: '#fff' }}>
@@ -204,7 +204,7 @@ export function CourseDetailClient({
         </div>
 
         {/* Title + glass stats strip at the bottom */}
-        <div className="container-mobile absolute inset-x-0 bottom-0 z-[3] px-4 pb-7">
+        <div className="container-mobile absolute inset-x-0 bottom-0 z-3 px-4 pb-7">
           <div>
             <h1 className="text-4xl md:text-5xl font-black text-white mb-4 leading-[1.1] tracking-tight"
               style={{ textShadow: '0 4px 24px rgba(0,0,0,0.45)' }}>
@@ -257,7 +257,7 @@ export function CourseDetailClient({
               </div>
               <div className="progress-bar-lg">
                 <motion.div
-                  className="absolute inset-y-0 start-0 rounded-full"
+                  className="absolute inset-y-0 inset-s-0 rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 0.8, ease: 'easeOut' as const, delay: 0.3 }}
@@ -441,7 +441,7 @@ function GuideCover({
 }) {
   return (
     <motion.div
-      className="fixed inset-0 z-[70] flex flex-col overflow-hidden"
+      className="fixed inset-0 z-70 flex flex-col overflow-hidden"
       style={{ width: '100%', height: '100%' }}
       initial={{ opacity: 1 }}
       exit={{ y: '108%', opacity: 1, transition: { duration: 0.35, ease: [0.7, 0, 0.84, 0] as const } }}
@@ -509,7 +509,7 @@ function GuideCover({
             initial={{ opacity: 0, y: 24, letterSpacing: '0.06em' }}
             animate={{ opacity: 1, y: 0, letterSpacing: '-0.01em' }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] as const, delay: 0.2 }}
-            className="max-w-full px-1 text-[clamp(1.75rem,7vw,3.5rem)] leading-[1.15] text-white break-words hyphens-none"
+            className="max-w-full px-1 text-[clamp(1.75rem,7vw,3.5rem)] leading-[1.15] text-white wrap-break-word hyphens-none"
             style={{
               fontFamily: "'Rubik','Heebo',sans-serif",
               fontWeight: 900,
@@ -642,7 +642,7 @@ function LessonCardContent({
             : undefined
         }
       >
-        {isDone ? <CheckCircle2 className="w-4.5 h-4.5" /> : idx + 1}
+        {isDone ? <CheckCircle2 className="" /> : idx + 1}
       </div>
 
       {/* Content */}

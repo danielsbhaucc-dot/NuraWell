@@ -33,19 +33,19 @@ export function ChallengeCompleteClient({ firstName, initialSummary }: Props) {
 
   return (
     <div
-      className="relative min-h-[100dvh] overflow-hidden bg-gradient-to-b from-[#0a1628] via-[#1a1035] to-[#05010f] px-4 py-10 text-white"
+      className="relative min-h-dvh overflow-hidden bg-linear-to-b from-[#0a1628] via-[#1a1035] to-[#05010f] px-4 py-10 text-white"
       dir="rtl"
     >
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-20 h-80 w-80 -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
-        <div className="absolute bottom-20 start-1/4 h-64 w-64 rounded-full bg-amber-500/15 blur-3xl" />
+        <div className="absolute bottom-20 inset-s-1/4 h-64 w-64 rounded-full bg-amber-500/15 blur-3xl" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-lg text-center">
         <DemoExitBanner />
         <motion.div
           {...challengeFadeUp(reducedMotion, 0)}
-          className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-emerald-500 shadow-lg shadow-emerald-600/30"
+          className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-amber-400 to-emerald-500 shadow-lg shadow-emerald-600/30"
         >
           <Award className="h-10 w-10 text-white" />
         </motion.div>

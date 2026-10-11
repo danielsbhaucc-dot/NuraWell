@@ -110,7 +110,7 @@ export function DeclinedTasksPageClient() {
           <li key={`${row.stepId}-${row.taskId}`}>
             <Link
               href={`/journey/${row.stepId}`}
-              className="block rounded-[22px] p-[1px] transition active:scale-[0.99]"
+              className="block rounded-[22px] p-px transition active:scale-[0.99]"
               style={{
                 background:
                   'linear-gradient(135deg, rgba(251,113,133,0.4), rgba(254,215,170,0.3), rgba(248,251,246,0.55))',
@@ -129,7 +129,7 @@ export function DeclinedTasksPageClient() {
                 <p className="text-[11px] font-bold text-rose-800/85 mb-1">
                   צעד {row.stepNumber}: {row.stepTitle}
                 </p>
-                <p className="text-[15px] font-black text-[#1A1730] leading-snug [overflow-wrap:anywhere] break-words">
+                <p className="text-[15px] font-black text-[#1A1730] leading-snug wrap-anywhere wrap-break-word">
                   {row.taskTitle}
                 </p>
                 <p className="text-[11px] font-semibold text-emerald-800/70 mt-2">פתיחת השיעור ←</p>

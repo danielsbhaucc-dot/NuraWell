@@ -43,7 +43,7 @@ export function BottomNav() {
   }, [router]);
 
   return (
-    <nav className="fixed bottom-0 end-0 start-0 z-50 safe-area-bottom" aria-label="ניווט ראשי">
+    <nav className="fixed bottom-0 inset-e-0 inset-s-0 z-50 safe-area-bottom" aria-label="ניווט ראשי">
       {/* שכבת זכוכית */}
       <div
         className="absolute inset-0"
@@ -92,7 +92,7 @@ export function BottomNav() {
               className="pointer-events-none absolute inset-x-0 top-0 h-1/2"
               style={{ background: 'radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,0.45), transparent 60%)' }}
             />
-            <Sparkles className="relative h-6 w-6 text-white drop-shadow" strokeWidth={2.2} />
+            <Sparkles className="relative h-6 w-6 text-white drop-shadow-sm" strokeWidth={2.2} />
           </motion.button>
         </div>
 
@@ -126,7 +126,7 @@ function NavItem({ item, isActive }: { item: { href: string; label: string; icon
         aria-current={isActive ? 'page' : undefined}
         className={cn(
           'relative flex flex-col items-center justify-center gap-1 px-1 py-1.5 rounded-2xl transition-all duration-200 no-tap-highlight touch-manipulation min-w-0 w-full',
-          isActive ? 'text-[#047857]' : 'text-[#9896B8] hover:text-[#5A5880]'
+          isActive ? 'text-primary-700' : 'text-[#9896B8] hover:text-[#5A5880]'
         )}
       >
         {isActive && (
@@ -151,7 +151,7 @@ function NavItem({ item, isActive }: { item: { href: string; label: string; icon
         <span
           className={cn(
             'text-[10.5px] leading-none font-bold relative z-10 whitespace-nowrap transition-all',
-            isActive ? 'text-[#047857]' : 'text-[#9896B8]'
+            isActive ? 'text-primary-700' : 'text-[#9896B8]'
           )}
         >
           {item.label}

@@ -107,7 +107,7 @@ export function TranscriptAccessStatusPanel({
                   </td>
                   <td className="px-2 py-2 font-medium text-stone-800">{step.label}</td>
                   <td className="px-2 py-2 whitespace-nowrap text-stone-500">{fmt(step.at)}</td>
-                  <td className="px-2 py-2 text-stone-600 max-w-[12rem] truncate" title={step.detail ?? undefined}>
+                  <td className="px-2 py-2 text-stone-600 max-w-48 truncate" title={step.detail ?? undefined}>
                     {step.detail ?? '—'}
                   </td>
                 </tr>

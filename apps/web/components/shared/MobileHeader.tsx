@@ -36,7 +36,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
 
   return (
     <>
-      <header className="fixed top-0 end-0 start-0 z-50 safe-area-top overflow-hidden"
+      <header className="fixed top-0 inset-e-0 inset-s-0 z-50 safe-area-top overflow-hidden"
         style={{ background: 'linear-gradient(160deg, #047857 0%, #059669 50%, #10b981 100%)' }}>
 
         <motion.div className="container-mobile h-16 flex items-center justify-between gap-3 relative z-10">
@@ -107,7 +107,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
                   >
                     <motion.div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                       style={{ background: `${item.color}12`, border: `1px solid ${item.color}25` }}>
-                      <item.icon className="w-4.5 h-4.5" style={{ color: item.color }} />
+                      <item.icon style={{ color: item.color }} />
                     </motion.div>
                     <span className="font-bold text-gray-800 flex-1">{item.label}</span>
                     <item.icon className="w-3.5 h-3.5 text-gray-400" />
@@ -126,7 +126,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
                     {isSigningOut ? (
                       <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-400/40 border-t-red-600" />
                     ) : (
-                      <LogOut className="h-4.5 w-4.5 text-red-600" />
+                      <LogOut className=" text-red-600" />
                     )}
                   </motion.div>
                   <span className="flex-1 font-bold text-red-700">התנתקות</span>

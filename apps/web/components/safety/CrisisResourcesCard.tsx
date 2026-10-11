@@ -7,7 +7,7 @@ export function CrisisResourcesCard() {
     <section
       role="alert"
       aria-label="עזרה מיידית"
-      className="mx-1 my-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-start text-rose-950 shadow-sm"
+      className="mx-1 my-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-start text-rose-950 shadow-xs"
     >
       <p className="text-sm font-bold">לא צריך להתמודד עם זה לבד. יש מי שזמין עכשיו:</p>
       <ul className="mt-2 space-y-1.5 text-sm">

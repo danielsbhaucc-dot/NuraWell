@@ -250,7 +250,7 @@ export function AdminDemoAccessPanel() {
         <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
       ) : null}
 
-      <section className="rounded-3xl border border-teal-200/60 bg-gradient-to-br from-teal-50/80 via-white to-amber-50/50 p-5 shadow-sm sm:p-6">
+      <section className="rounded-3xl border border-teal-200/60 bg-linear-to-br from-teal-50/80 via-white to-amber-50/50 p-5 shadow-xs sm:p-6">
         <h2 className="text-lg font-black text-slate-900">פתיחת גישת דמו</h2>
         <p className="mt-1 text-sm text-slate-600">
           לינק + סיבה + שם אורח (אופציונלי) + סיסמה זמנית (אופציונלי). האורח רואה את נתוני משתמש היעד
@@ -382,7 +382,7 @@ export function AdminDemoAccessPanel() {
             return (
               <article
                 key={link.id}
-                className="rounded-3xl border border-slate-200/70 bg-background-card/70 p-4 shadow-sm backdrop-blur-md sm:p-5"
+                className="rounded-3xl border border-slate-200/70 bg-background-card/70 p-4 shadow-xs backdrop-blur-md sm:p-5"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
                   <div className="min-w-0">
@@ -390,7 +390,7 @@ export function AdminDemoAccessPanel() {
                       {link.guest_name ? `${link.guest_name} · ` : ''}
                       {link.reason}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500 break-words">
+                    <p className="mt-1 text-xs text-slate-500 wrap-break-word">
                       יעד: {link.target_name || 'ללא שם'}
                       {link.target_email ? ` · ${link.target_email}` : ''} · דרגה במקור:{' '}
                       {link.target_role}

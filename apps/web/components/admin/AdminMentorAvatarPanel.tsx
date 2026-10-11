@@ -187,7 +187,7 @@ export function AdminMentorAvatarPanel({ mentorId }: AdminMentorAvatarPanelProps
         type="button"
         onClick={() => void onUpload()}
         disabled={!file || busy}
-        className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-500 px-6 py-3 font-bold text-white disabled:opacity-45 sm:w-auto sm:self-end"
+        className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-6 py-3 font-bold text-white disabled:opacity-45 sm:w-auto sm:self-end"
       >
         {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageUp className="h-5 w-5" />}
         שמור תמונת {mentor.name}

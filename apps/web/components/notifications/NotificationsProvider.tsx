@@ -814,11 +814,11 @@ export function NotificationsProvider({
 
       <Drawer.Root open={open} onOpenChange={setOpen} direction="bottom" shouldScaleBackground>
         <Drawer.Portal container={overlayRoot ?? undefined}>
-          <Drawer.Overlay data-nura-overlay="1" className="fixed inset-0 z-[240] bg-emerald-950/38 backdrop-blur-[4px]" />
+          <Drawer.Overlay data-nura-overlay="1" className="fixed inset-0 z-240 backdrop-blur-[4px]" />
           <Drawer.Content
             dir="rtl"
             data-nura-overlay="1"
-            className="fixed bottom-0 left-0 right-0 z-[250] mx-auto flex max-h-[88dvh] w-full max-w-md flex-col rounded-t-[26px] outline-none overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-250 mx-auto flex max-h-[88dvh] w-full max-w-md flex-col rounded-t-[26px] outline-hidden overflow-hidden"
             style={{
               border: '1px solid rgba(255,255,255,0.52)',
               boxShadow:
@@ -847,7 +847,7 @@ export function NotificationsProvider({
                 }}
                 aria-hidden
               />
-              <div className="relative z-[1]">
+              <div className="relative z-1">
                 <div className="flex justify-center pt-2.5 pb-2">
                   <div
                     className="h-1.5 w-12 rounded-full"
@@ -870,7 +870,7 @@ export function NotificationsProvider({
                       סמן הכל כנקרא
                     </button>
                   ) : (
-                    <span className="w-[7.5rem] shrink-0" aria-hidden />
+                    <span className="w-30 shrink-0" aria-hidden />
                   )}
 
                   <div className="min-w-0 flex-1 text-start pe-0.5">
@@ -880,7 +880,7 @@ export function NotificationsProvider({
                         <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-50 shadow-[0_0_8px_rgba(167,243,208,0.9)]" />
                       </span>
                       <h2
-                        className="text-[18px] sm:text-[19px] font-black text-white leading-tight drop-shadow-sm tracking-tight"
+                        className="text-[18px] sm:text-[19px] font-black text-white leading-tight drop-shadow-xs tracking-tight"
                         style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                       >
                         התראות
@@ -900,7 +900,7 @@ export function NotificationsProvider({
                     className={cn(
                       'rounded-full px-4 py-1.5 text-xs font-black transition',
                       viewMode === 'inbox'
-                        ? 'bg-emerald-50/95 text-emerald-900 shadow'
+                        ? 'bg-emerald-50/95 text-emerald-900 shadow-sm'
                         : 'bg-emerald-950/15 text-white hover:bg-emerald-50/20'
                     )}
                   >
@@ -915,7 +915,7 @@ export function NotificationsProvider({
                     className={cn(
                       'rounded-full px-4 py-1.5 text-xs font-black transition',
                       viewMode === 'archive'
-                        ? 'bg-emerald-50/95 text-emerald-900 shadow'
+                        ? 'bg-emerald-50/95 text-emerald-900 shadow-sm'
                         : 'bg-emerald-950/15 text-white hover:bg-emerald-50/20'
                     )}
                   >
@@ -952,15 +952,15 @@ export function NotificationsProvider({
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-emerald-50/70 via-teal-50/40 to-slate-100/60 px-3 sm:px-4 pb-10 pt-3 space-y-2.5 scrollbar-hide text-start">
+            <div className="min-h-0 flex-1 overflow-y-auto bg-linear-to-b from-emerald-50/70 via-teal-50/40 to-slate-100/60 px-3 sm:px-4 pb-10 pt-3 space-y-2.5 scrollbar-hide text-start">
               {busy && items.length === 0 && (
                 <div className="flex items-center justify-center py-16 text-teal-800">
                   <Loader2 className="h-8 w-8 animate-spin opacity-85" />
                 </div>
               )}
               {!busy && listEntries.length === 0 && (
-                <div className="py-14 text-center px-4 rounded-[20px] mx-0.5 border border-emerald-200/50 bg-gradient-to-br from-emerald-100/50 to-teal-50/60 backdrop-blur-sm">
-                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500/25 to-emerald-500/20 ring-1 ring-emerald-600/15">
+                <div className="py-14 text-center px-4 rounded-[20px] mx-0.5 border border-emerald-200/50 bg-linear-to-br from-emerald-100/50 to-teal-50/60 backdrop-blur-sm">
+                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-teal-500/25 to-emerald-500/20 ring-1 ring-emerald-600/15">
                     <span className="text-2xl" aria-hidden>
                       🌿
                     </span>
@@ -1037,7 +1037,7 @@ export function NotificationsProvider({
                     type="button"
                     disabled={loadingMore}
                     onClick={() => void loadMore()}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-emerald-300/50 bg-emerald-100/70 px-5 py-2.5 text-sm font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-200/50 disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-emerald-300/50 bg-emerald-100/70 px-5 py-2.5 text-sm font-bold text-emerald-900 shadow-xs transition hover:bg-emerald-200/50 disabled:opacity-50"
                   >
                     {loadingMore ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

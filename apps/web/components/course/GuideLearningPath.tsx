@@ -86,7 +86,7 @@ export function GuideLearningPath({
 
   return (
     <motion.div
-      className="fixed inset-0 z-[75] flex flex-col overflow-hidden"
+      className="fixed inset-0 z-75 flex flex-col overflow-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -265,7 +265,7 @@ function PathIntroSlide({
         <GuideImmersiveAlmogHero size={92} />
       </div>
       <h2
-        className="mb-3 text-3xl font-black leading-snug text-white break-words whitespace-normal px-1"
+        className="mb-3 text-3xl font-black leading-snug text-white wrap-break-word whitespace-normal px-1"
         style={{ textShadow: '0 4px 24px rgba(0,0,0,0.5)' }}
       >
         {title}

@@ -165,7 +165,7 @@ function Avatar({ id, name, size = 'md' }: { id: string; name: string | null; si
   return (
     <div
       className={cn(
-        'flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br font-display font-black text-white shadow-md ring-1 ring-white/50',
+        'flex shrink-0 items-center justify-center rounded-2xl bg-linear-to-br font-display font-black text-white shadow-md ring-1 ring-white/50',
         gradientFor(id),
         dim,
       )}
@@ -433,14 +433,14 @@ export function AdminUsersClient() {
 
       {/* חיפוש + תוצאות */}
       <div className="relative">
-        <Search className="pointer-events-none absolute start-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-600/70" />
+        <Search className="pointer-events-none absolute inset-s-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-600/70" />
         <input
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="חיפוש לפי שם, אימייל או מזהה..."
           dir="rtl"
-          className="w-full rounded-2xl border border-white/60 bg-background-card/55 py-3.5 ps-12 pe-4 text-sm font-medium text-slate-900 shadow-[0_8px_28px_rgba(16,185,129,0.08)] outline-none backdrop-blur-xl transition placeholder:text-slate-400 focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40"
+          className="w-full rounded-2xl border border-white/60 bg-background-card/55 py-3.5 ps-12 pe-4 text-sm font-medium text-slate-900 shadow-[0_8px_28px_rgba(16,185,129,0.08)] outline-hidden backdrop-blur-xl transition placeholder:text-slate-400 focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40"
         />
       </div>
 
@@ -540,7 +540,7 @@ export function AdminUsersClient() {
           role="dialog"
           aria-modal="true"
           aria-label="פרטי משתמש"
-          className="fixed inset-0 z-[55] flex items-end justify-center p-0 sm:items-center sm:p-4"
+          className="fixed inset-0 z-55 flex items-end justify-center p-0 sm:items-center sm:p-4"
         >
           <button
             type="button"
@@ -553,7 +553,7 @@ export function AdminUsersClient() {
             className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl shadow-[0_24px_70px_-12px_rgba(6,78,59,0.5)] sm:rounded-3xl"
             style={glassPanelStyle}
           >
-            <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-background-card/80 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-linear-to-r from-transparent via-background-card/80 to-transparent" />
 
             {detailLoading || !detail ? (
               <div className="flex min-h-[40vh] items-center justify-center p-10">
@@ -565,7 +565,7 @@ export function AdminUsersClient() {
                 <button
                   type="button"
                   onClick={closeUser}
-                  className="absolute end-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/45 text-slate-600 backdrop-blur-md hover:bg-background-card/70"
+                  className="absolute inset-e-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/45 text-slate-600 backdrop-blur-md hover:bg-background-card/70"
                   aria-label="סגור"
                 >
                   <X className="h-4 w-4" />
@@ -574,12 +574,12 @@ export function AdminUsersClient() {
             ) : (
               <>
                 {/* כותרת הפופאפ */}
-                <header className="relative shrink-0 border-b border-white/40 bg-gradient-to-l from-emerald-100/50 via-background-card/30 to-cyan-100/40 px-4 pb-3 pt-4 sm:px-6">
+                <header className="relative shrink-0 border-b border-white/40 bg-linear-to-l from-emerald-100/50 via-background-card/30 to-cyan-100/40 px-4 pb-3 pt-4 sm:px-6">
                   <button
                     type="button"
                     onClick={closeUser}
                     disabled={saving || deleting}
-                    className="absolute end-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/45 text-slate-600 backdrop-blur-md transition hover:bg-background-card/70 disabled:opacity-50 sm:end-4 sm:top-4"
+                    className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/45 text-slate-600 backdrop-blur-md transition hover:bg-background-card/70 disabled:opacity-50 sm:inset-e-4 sm:top-4"
                     aria-label="סגור"
                   >
                     <X className="h-4 w-4" />
@@ -588,7 +588,7 @@ export function AdminUsersClient() {
                   <div className="flex items-center gap-3 pe-10">
                     <Avatar id={selectedId} name={form.full_name} size="lg" />
                     <div className="min-w-0">
-                      <h2 className="truncate bg-gradient-to-l from-emerald-700 via-teal-600 to-cyan-700 bg-clip-text font-display text-xl font-black text-transparent">
+                      <h2 className="truncate bg-linear-to-l from-emerald-700 via-teal-600 to-cyan-700 bg-clip-text font-display text-xl font-black text-transparent">
                         {form.full_name || 'משתמש'}
                       </h2>
                       <p className="flex items-center gap-1.5 truncate text-xs text-slate-600">
@@ -600,7 +600,7 @@ export function AdminUsersClient() {
 
                   {/* טאבים */}
                   <div
-                    className="mt-4 flex gap-1.5 overflow-x-auto overscroll-x-contain rounded-2xl border border-white/50 bg-background-card/35 p-1 backdrop-blur-md [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    className="mt-4 flex gap-1.5 overflow-x-auto overscroll-x-contain rounded-2xl border border-white/50 bg-background-card/35 p-1 backdrop-blur-md [-ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden"
                     style={{ WebkitOverflowScrolling: 'touch' }}
                   >
                     {(
@@ -620,7 +620,7 @@ export function AdminUsersClient() {
                         className={cn(
                           'flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all sm:text-sm',
                           tab === key
-                            ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-600/25'
+                            ? 'bg-linear-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-600/25'
                             : 'text-slate-600 hover:bg-background-card/55 hover:text-slate-900',
                         )}
                         aria-pressed={tab === key}
@@ -761,7 +761,7 @@ export function AdminUsersClient() {
                             className={cn(
                               'flex-1 rounded-lg py-1.5 text-xs font-bold transition',
                               costDays === w.days
-                                ? 'bg-emerald-600 text-white shadow-sm'
+                                ? 'bg-emerald-600 text-white shadow-xs'
                                 : 'text-slate-600 hover:bg-background-card/70',
                             )}
                           >
@@ -775,7 +775,7 @@ export function AdminUsersClient() {
                         </div>
                       ) : cost ? (
                         <>
-                          <div className="rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-teal-50/60 p-4 text-center backdrop-blur-md">
+                          <div className="rounded-2xl border border-emerald-200/60 bg-linear-to-br from-emerald-50/80 to-teal-50/60 p-4 text-center backdrop-blur-md">
                             <p className="text-xs font-semibold text-emerald-800/85">
                               סה״כ עלות · {costDays} יום
                             </p>
@@ -874,7 +874,7 @@ export function AdminUsersClient() {
                       type="button"
                       onClick={() => void save()}
                       disabled={saving || deleting}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-500 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] disabled:opacity-60"
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] disabled:opacity-60"
                     >
                       {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                       שמירה ועדכון אלמוג
@@ -917,7 +917,7 @@ export function AdminUsersClient() {
 }
 
 const inputClass =
-  'w-full rounded-xl border border-white/60 bg-background-card/60 px-3 py-2.5 text-sm font-medium text-slate-900 outline-none backdrop-blur-sm transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40';
+  'w-full rounded-xl border border-white/60 bg-background-card/60 px-3 py-2.5 text-sm font-medium text-slate-900 outline-hidden backdrop-blur-sm transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40';
 
 function SelectInput({
   value,
@@ -930,7 +930,7 @@ function SelectInput({
 }) {
   return (
     <select
-      className={cn(inputClass, 'appearance-none bg-[length:1rem] bg-[left_0.75rem_center] bg-no-repeat pl-9')}
+      className={cn(inputClass, 'appearance-none bg-size-[1rem] bg-position-[left_0.75rem_center] bg-no-repeat pl-9')}
       style={{
         backgroundImage:
           "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='4 6 8 10 12 6'/%3E%3C/svg%3E\")",
@@ -970,7 +970,7 @@ function Section({
       <div className="mb-3 flex items-center gap-2">
         <span
           className={cn(
-            'flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm',
+            'flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br text-white shadow-xs',
             SECTION_TONES[tone].split(' ').slice(0, 2).join(' '),
           )}
         >
@@ -1047,7 +1047,7 @@ function NotifyTestToggle({
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-cream px-4 py-3 shadow-sm">
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-cream px-4 py-3 shadow-xs">
       <div className="min-w-0">
         <p className="text-sm font-semibold text-slate-800">משתמש בדיקה להתראות</p>
         <p className="text-xs text-slate-500">

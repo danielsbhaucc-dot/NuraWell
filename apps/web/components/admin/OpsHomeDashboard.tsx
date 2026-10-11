@@ -61,18 +61,18 @@ function StatCard({
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-3xl border bg-gradient-to-br p-4 shadow-[0_12px_36px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-5',
+        'relative overflow-hidden rounded-3xl border bg-linear-to-br p-4 shadow-[0_12px_36px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-5',
         t.wrap,
       )}
     >
-      <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-background-card/80 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-linear-to-r from-transparent via-background-card/80 to-transparent" />
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-xs font-semibold text-slate-700/85">{label}</p>
           <p className={cn('mt-1 font-display text-3xl font-black tabular-nums', t.value)}>{value}</p>
           {sub ? <p className="mt-1.5 text-[11px] leading-relaxed text-slate-600">{sub}</p> : null}
         </div>
-        <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-md ring-1 ring-white/50', t.icon)}>
+        <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-white shadow-md ring-1 ring-white/50', t.icon)}>
           <Icon className="h-5 w-5" aria-hidden />
         </span>
       </div>
@@ -111,7 +111,7 @@ function QuickLink({
         t.hover,
       )}
     >
-      <span className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-md ring-1 ring-white/50 transition-transform group-hover:scale-105', t.icon)}>
+      <span className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-white shadow-md ring-1 ring-white/50 transition-transform group-hover:scale-105', t.icon)}>
         <Icon className="h-6 w-6" aria-hidden />
       </span>
       <div className="min-w-0">

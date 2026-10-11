@@ -101,11 +101,11 @@ export function GenerateSummaryButton({
         hover:shadow-md hover:-translate-y-0.5
         active:translate-y-0
         disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0
-        focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2`}
+        focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2`}
     >
       <span className="flex items-center justify-between gap-2">
         <span
-          className={`w-9 h-9 rounded-xl ${colors.accent} text-white flex items-center justify-center shadow-sm`}
+          className={`w-9 h-9 rounded-xl ${colors.accent} text-white flex items-center justify-center shadow-xs`}
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2.6} />

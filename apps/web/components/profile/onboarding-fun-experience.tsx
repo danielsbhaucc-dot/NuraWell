@@ -138,7 +138,7 @@ export function FunFloatingAmbience() {
         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' as const }}
       />
       <motion.div
-        className="absolute -bottom-16 -start-10 h-48 w-48 rounded-full blur-3xl"
+        className="absolute -bottom-16 -inset-s-10 h-48 w-48 rounded-full blur-3xl"
         style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.12) 0%, transparent 70%)' }}
         animate={{ scale: [1.1, 0.95, 1.1], opacity: [0.4, 0.65, 0.4] }}
         transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' as const, delay: 0.8 }}
@@ -195,7 +195,7 @@ export function FunPathSelectHero({ onSelect }: { onSelect: () => void }) {
       whileTap={{ scale: 0.98 }}
     >
       <motion.div
-        className="absolute -inset-[1.5px] rounded-[32px]"
+        className="absolute inset-[-1.5px] rounded-[32px]"
         style={{ background: 'linear-gradient(135deg, rgba(201,169,98,0.45), rgba(45,212,191,0.28))' }}
         animate={{ opacity: [0.75, 1, 0.75] }}
         transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' as const }}
@@ -247,11 +247,11 @@ export function QuickPathSelectCard({ onSelect }: { onSelect: () => void }) {
       whileTap={{ scale: 0.98 }}
     >
       <div
-        className="absolute -inset-[1px] rounded-[28px] opacity-90"
+        className="absolute -inset-px rounded-[28px] opacity-90"
         style={{ background: QUICK_PATH_SELECT_BORDER }}
       />
       <div
-        className="relative m-[1px] flex items-center gap-3 rounded-[27px] px-4 py-4"
+        className="relative m-px flex items-center gap-3 rounded-[27px] px-4 py-4"
         style={{
           background: QUICK_PATH_SELECT_FILL,
           boxShadow: '0 12px 32px rgba(7, 20, 31, 0.45)',

@@ -368,7 +368,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
         role="dialog"
         aria-modal="true"
         dir="rtl"
-        className="fixed inset-4 z-[290] mx-auto flex max-h-[min(92dvh,900px)] max-w-6xl flex-col overflow-hidden rounded-[26px] outline-none sm:inset-6"
+        className="fixed inset-4 z-290 mx-auto flex max-h-[min(92dvh,900px)] max-w-6xl flex-col overflow-hidden rounded-[26px] outline-hidden sm:inset-6"
         style={glassPanelStyle}
         onClick={(e) => e.stopPropagation()}
       >
@@ -392,7 +392,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                 <FolderOpen className="h-5 w-5 text-white" />
               </div>
               <div className="min-w-0">
-                <h2 className="truncate text-lg font-black text-white drop-shadow-sm">
+                <h2 className="truncate text-lg font-black text-white drop-shadow-xs">
                   {options?.title ?? 'מנהל קבצים'}
                 </h2>
                 <p className="truncate text-xs font-medium text-white/85">
@@ -404,7 +404,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
               type="button"
               onClick={onClose}
               aria-label="סגירה"
-              className="shrink-0 rounded-xl border border-white/45 bg-background-card/15 p-2 text-white shadow-sm backdrop-blur-md transition hover:bg-background-card/30"
+              className="shrink-0 rounded-xl border border-white/45 bg-background-card/15 p-2 text-white shadow-xs backdrop-blur-md transition hover:bg-background-card/30"
             >
               <X className="h-5 w-5" />
             </button>
@@ -645,14 +645,14 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
               type="button"
               aria-label="סגור תצוגה"
               onClick={() => setSelected(null)}
-              className="fixed inset-0 z-[295] bg-slate-900/40 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-295 bg-slate-900/40 backdrop-blur-sm lg:hidden"
             />
           ) : null}
           <aside
             className={cn(
               'flex-col gap-3 overflow-y-auto p-4',
               selected
-                ? 'fixed inset-x-0 bottom-0 z-[300] flex max-h-[85dvh] rounded-t-[26px] border-t border-white/45 shadow-[0_-14px_44px_rgba(6,78,59,0.28)]'
+                ? 'fixed inset-x-0 bottom-0 z-300 flex max-h-[85dvh] rounded-t-[26px] border-t border-white/45 shadow-[0_-14px_44px_rgba(6,78,59,0.28)]'
                 : 'hidden',
               'lg:static lg:z-auto lg:flex lg:max-h-none lg:w-72 lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-white/35 lg:shadow-none'
             )}

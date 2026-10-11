@@ -51,16 +51,16 @@ const DIVIDER_COLORS = [
 ] as const;
 
 const MEMORY_CARD_STYLES = [
-  'border-violet-200/60 bg-gradient-to-br from-violet-50/95 to-background-card',
-  'border-sky-200/60 bg-gradient-to-br from-sky-50/95 to-background-card',
-  'border-amber-200/60 bg-gradient-to-br from-amber-50/95 to-background-card',
+  'border-violet-200/60 bg-linear-to-br from-violet-50/95 to-background-card',
+  'border-sky-200/60 bg-linear-to-br from-sky-50/95 to-background-card',
+  'border-amber-200/60 bg-linear-to-br from-amber-50/95 to-background-card',
 ] as const;
 
 const EVENT_CARD_STYLES = [
-  'border-violet-200/55 bg-gradient-to-br from-violet-50/90 to-indigo-50/40',
-  'border-sky-200/55 bg-gradient-to-br from-sky-50/90 to-cyan-50/40',
-  'border-rose-200/55 bg-gradient-to-br from-rose-50/90 to-pink-50/40',
-  'border-amber-200/55 bg-gradient-to-br from-amber-50/90 to-orange-50/40',
+  'border-violet-200/55 bg-linear-to-br from-violet-50/90 to-indigo-50/40',
+  'border-sky-200/55 bg-linear-to-br from-sky-50/90 to-cyan-50/40',
+  'border-rose-200/55 bg-linear-to-br from-rose-50/90 to-pink-50/40',
+  'border-amber-200/55 bg-linear-to-br from-amber-50/90 to-orange-50/40',
 ] as const;
 
 function whenYouPress(gender: OnboardingGender | ''): string {
@@ -305,16 +305,16 @@ function MomentsPageSkeleton() {
     <div className="space-y-5" aria-busy="true" aria-label="טוען רגעים">
       <div className="glass-surface-home animate-pulse space-y-4 rounded-[22px] p-5">
         <div className="mx-auto h-5 w-32 rounded-lg bg-emerald-900/10" />
-        <div className="mx-auto h-3 w-48 rounded-md bg-emerald-900/8" />
+        <div className="mx-auto h-3 w-48 rounded-md" />
         <div className="space-y-3 pt-2">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="rounded-2xl border border-emerald-900/8 px-4 py-4"
+              className="rounded-2xl border px-4 py-4"
               style={{ animationDelay: `${i * 80}ms` }}
             >
               <div className="h-4 w-3/4 rounded-lg bg-emerald-900/10" />
-              <div className="mt-2 h-3 w-1/2 rounded-md bg-emerald-900/6" />
+              <div className="mt-2 h-3 w-1/2 rounded-md" />
             </div>
           ))}
         </div>
@@ -325,7 +325,7 @@ function MomentsPageSkeleton() {
           <div key={i} className="rounded-2xl border border-emerald-200/40 bg-emerald-50/50 px-4 py-3">
             <div className="flex justify-between gap-3">
               <div className="h-5 w-20 rounded-full bg-emerald-200/60" />
-              <div className="h-3 w-14 rounded-md bg-emerald-900/8" />
+              <div className="h-3 w-14 rounded-md" />
             </div>
             <div className="mt-3 h-4 w-2/3 rounded-lg bg-emerald-900/10" />
           </div>
@@ -403,7 +403,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
   const visibleEventDays = paginate(groupedEvents, eventsPage, EVENT_DAYS_PAGE_SIZE);
 
   return (
-    <div className="touch-manipulation min-h-screen bg-gradient-to-b from-[#ecfdf5] via-[#f0fdf9] to-[#f8fafc]">
+    <div className="touch-manipulation min-h-screen bg-linear-to-b from-primary-50 via-[#f0fdf9] to-[#f8fafc]">
       <div
         className="relative overflow-hidden px-4 pb-10 pt-4"
         style={{ background: HEADER_GRADIENT }}
@@ -418,7 +418,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
 
         <Link
           href={APP_HOME_PATH}
-          className="absolute start-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95"
+          className="absolute inset-s-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95"
           style={{
             background: 'rgba(167, 243, 208, 0.18)',
             border: '1px solid rgba(167, 243, 208, 0.38)',
@@ -460,14 +460,14 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
             ) : loading ? (
               <div className="mt-5 w-full max-w-xs space-y-2 animate-pulse" aria-hidden>
                 <div className="mx-auto h-3 w-40 rounded-md bg-emerald-50/25" />
-                <div className="mx-auto h-3 w-56 rounded-md bg-emerald-50/18" />
+                <div className="mx-auto h-3 w-56 rounded-md" />
               </div>
             ) : null}
           </div>
         </div>
       </div>
 
-      <div className="relative z-[2] mx-auto max-w-lg space-y-5 px-4 pb-28 -mt-5">
+      <div className="relative z-2 mx-auto max-w-lg space-y-5 px-4 pb-28 -mt-5">
         {loading ? (
           <MomentsPageSkeleton />
         ) : error ? (
@@ -520,9 +520,9 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                         <div
                           className={`rounded-2xl border px-4 py-3 text-sm text-slate-800 ${MEMORY_CARD_STYLES[globalIndex % MEMORY_CARD_STYLES.length]}`}
                         >
-                          <p className="font-bold leading-snug break-words">{m.strategy}</p>
+                          <p className="font-bold leading-snug wrap-break-word">{m.strategy}</p>
                           {m.task_title ? (
-                            <p className="mt-1 text-xs text-slate-600 break-words">בקשר ל: {m.task_title}</p>
+                            <p className="mt-1 text-xs text-slate-600 wrap-break-word">בקשר ל: {m.task_title}</p>
                           ) : null}
                           <p className="mt-1.5 text-[11px] text-slate-500">
                             {formatHebrewRelative(m.created_at)}
@@ -568,9 +568,9 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                               'linear-gradient(135deg, rgba(254,243,199,0.85), rgba(253,230,138,0.5))',
                           }}
                         >
-                          <p className="font-bold leading-snug break-words">{m.strategy}</p>
+                          <p className="font-bold leading-snug wrap-break-word">{m.strategy}</p>
                           {m.task_title ? (
-                            <p className="mt-1 text-xs text-amber-900/70 break-words">
+                            <p className="mt-1 text-xs text-amber-900/70 wrap-break-word">
                               בקשר ל: {m.task_title}
                             </p>
                           ) : null}

@@ -230,7 +230,7 @@ export function TodayTasksPopup({
           key="today-tasks-popup"
           dir="rtl"
           data-nura-overlay="1"
-          className="fixed inset-0 z-[280] flex items-center justify-center px-4"
+          className="fixed inset-0 z-280 flex items-center justify-center px-4"
           style={{
             paddingTop: 'calc(64px + env(safe-area-inset-top, 0px) + 8px)',
             paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px) + 12px)',
@@ -270,7 +270,7 @@ export function TodayTasksPopup({
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-3.5 end-3.5 z-20 flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:text-white transition-colors"
+              className="absolute top-3.5 inset-e-3.5 z-20 flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:text-white transition-colors"
               style={{
                 background: 'rgba(255,255,255,0.18)',
                 border: '1px solid rgba(255,255,255,0.28)',
@@ -291,7 +291,7 @@ export function TodayTasksPopup({
             >
               <span
                 aria-hidden
-                className="pointer-events-none absolute -end-10 -top-8 h-32 w-32 rounded-full"
+                className="pointer-events-none absolute -inset-e-10 -top-8 h-32 w-32 rounded-full"
                 style={{
                   background: 'radial-gradient(circle, rgba(255,255,255,0.22), transparent 68%)',
                 }}

@@ -31,7 +31,7 @@ export function RegisterLandingClient() {
         id="main-content"
         className={[
           'relative flex flex-col overflow-hidden',
-          hasPhotoBg ? 'min-h-[100dvh]' : 'onboarding-shell-light min-h-[100dvh]',
+          hasPhotoBg ? 'min-h-dvh' : 'onboarding-shell-light min-h-dvh',
         ].join(' ')}
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
@@ -67,8 +67,8 @@ export function RegisterLandingClient() {
               <span
                 className={
                   hasPhotoBg
-                    ? 'bg-gradient-to-l from-emerald-300 via-teal-200 to-amber-200 bg-clip-text text-transparent'
-                    : 'bg-gradient-to-l from-emerald-700 via-emerald-600 to-teal-600 bg-clip-text text-transparent'
+                    ? 'bg-linear-to-l from-emerald-300 via-teal-200 to-amber-200 bg-clip-text text-transparent'
+                    : 'bg-linear-to-l from-emerald-700 via-emerald-600 to-teal-600 bg-clip-text text-transparent'
                 }
               >
                 ברוכים הבאים ל־
@@ -77,8 +77,8 @@ export function RegisterLandingClient() {
               <span
                 className={
                   hasPhotoBg
-                    ? 'bg-gradient-to-l from-emerald-200 via-teal-100 to-amber-100 bg-clip-text text-transparent'
-                    : 'bg-gradient-to-l from-emerald-800 via-emerald-700 to-teal-700 bg-clip-text text-transparent'
+                    ? 'bg-linear-to-l from-emerald-200 via-teal-100 to-amber-100 bg-clip-text text-transparent'
+                    : 'bg-linear-to-l from-emerald-800 via-emerald-700 to-teal-700 bg-clip-text text-transparent'
                 }
               >
                 NuraWell
@@ -117,7 +117,7 @@ export function RegisterLandingClient() {
             <button
               type="button"
               onClick={() => setStartOpen(true)}
-              className="w-full min-h-[52px] rounded-2xl font-black text-lg text-white flex items-center justify-center gap-2 shadow-[0_12px_40px_rgba(16,185,129,0.4)] bg-gradient-to-l from-emerald-600 via-emerald-500 to-teal-500 hover:brightness-110 active:scale-[0.98] transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+              className="w-full min-h-[52px] rounded-2xl font-black text-lg text-white flex items-center justify-center gap-2 shadow-[0_12px_40px_rgba(16,185,129,0.4)] bg-linear-to-l from-emerald-600 via-emerald-500 to-teal-500 hover:brightness-110 active:scale-[0.98] transition-all focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
             >
               <Sparkles className="w-5 h-5" aria-hidden />
               בואו נתחיל
@@ -130,7 +130,7 @@ export function RegisterLandingClient() {
                 'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all',
                 hasPhotoBg
                   ? 'text-white border border-white/30 bg-background-card/10 backdrop-blur-xl hover:bg-background-card/15'
-                  : 'text-emerald-800 border border-emerald-200 bg-background-card hover:bg-emerald-50 shadow-sm',
+                  : 'text-emerald-800 border border-emerald-200 bg-background-card hover:bg-emerald-50 shadow-xs',
               ].join(' ')}
             >
               <HelpCircle className="w-5 h-5" aria-hidden />

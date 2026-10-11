@@ -41,7 +41,7 @@ export default async function OpsErrorsPage() {
               ×{count} · אחרון {fmt.format(new Date(last.created_at))} · {last.environment}
             </span>
           </div>
-          <p dir="ltr" className="break-words text-start font-mono text-sm text-primary-950">{last.message}</p>
+          <p dir="ltr" className="wrap-break-word text-start font-mono text-sm text-primary-950">{last.message}</p>
         </Card>
       ))}
     </main>

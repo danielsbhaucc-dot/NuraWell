@@ -94,43 +94,43 @@ export function FinderFolderCard({ folder, onOpen, variant = 'subfolder' }: Find
       onDoubleClick={onOpen}
       className={cn(
         'group flex w-full flex-col items-center gap-2 rounded-2xl p-3 text-center transition',
-        'hover:bg-background-card/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50',
-        variant === 'category' ? 'min-h-[9.5rem]' : 'min-h-[8.5rem]'
+        'hover:bg-background-card/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-400/50',
+        variant === 'category' ? 'min-h-38' : 'min-h-34'
       )}
     >
       <div className="relative">
         <div
           className={cn(
             'relative h-[3.4rem] w-[4.6rem] transition-transform duration-200 group-hover:scale-[1.04] group-active:scale-[0.98]',
-            variant === 'category' && 'h-[3.8rem] w-[5rem]'
+            variant === 'category' && 'h-[3.8rem] w-20'
           )}
         >
           <div
             className={cn(
-              'absolute top-0 start-[0.85rem] h-[0.62rem] w-[2.1rem] rounded-t-[5px] bg-gradient-to-b',
+              'absolute top-0 inset-s-[0.85rem] h-[0.62rem] w-[2.1rem] rounded-t-[5px] bg-linear-to-b',
               accent.tab,
-              variant === 'category' && 'start-[0.95rem] h-[0.7rem] w-[2.35rem]'
+              variant === 'category' && 'inset-s-[0.95rem] h-[0.7rem] w-[2.35rem]'
             )}
             aria-hidden
           />
           <div
             className={cn(
-              'absolute inset-x-0 bottom-0 top-[0.45rem] rounded-[10px] rounded-ss-[4px] bg-gradient-to-br shadow-lg',
+              'absolute inset-x-0 bottom-0 top-[0.45rem] rounded-[10px] rounded-ss-[4px] bg-linear-to-br shadow-lg',
               accent.body,
               accent.glow,
-              variant === 'category' && 'top-[0.5rem] rounded-[11px]'
+              variant === 'category' && 'top-2 rounded-[11px]'
             )}
             aria-hidden
           />
           <div
-            className="pointer-events-none absolute inset-x-[0.35rem] top-[0.7rem] bottom-[0.35rem] rounded-[7px] bg-gradient-to-br from-background-card/40 via-background-card/10 to-transparent"
+            className="pointer-events-none absolute inset-x-[0.35rem] top-[0.7rem] bottom-[0.35rem] rounded-[7px] bg-linear-to-br from-background-card/40 via-background-card/10 to-transparent"
             aria-hidden
           />
           <div className="absolute inset-0 flex items-center justify-center pt-2">
-            <TypeIcon className="h-5 w-5 text-white/90 drop-shadow-sm" aria-hidden />
+            <TypeIcon className="h-5 w-5 text-white/90 drop-shadow-xs" aria-hidden />
           </div>
         </div>
-        <span className="absolute -top-1 -end-1 min-w-[1.35rem] rounded-full bg-slate-900/80 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+        <span className="absolute -top-1 -inset-e-1 min-w-[1.35rem] rounded-full bg-slate-900/80 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
           {folder.count}
         </span>
       </div>

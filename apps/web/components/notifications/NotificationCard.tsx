@@ -85,16 +85,16 @@ export function NotificationCard({
   return (
     <article
       className={cn(
-        'relative rounded-2xl border text-start shadow-sm transition backdrop-blur-sm',
+        'relative rounded-2xl border text-start shadow-xs transition backdrop-blur-sm',
         n.is_read
-          ? 'border-slate-200/70 bg-gradient-to-br from-slate-100/90 via-emerald-50/50 to-teal-50/40 opacity-95'
+          ? 'border-slate-200/70 bg-linear-to-br from-slate-100/90 via-emerald-50/50 to-teal-50/40 opacity-95'
           : isPlatform
-            ? 'border-indigo-200/70 bg-gradient-to-br from-indigo-50/95 via-slate-50/80 to-indigo-100/50 shadow-indigo-900/5'
+            ? 'border-indigo-200/70 bg-linear-to-br from-indigo-50/95 via-slate-50/80 to-indigo-100/50 shadow-indigo-900/5'
           : isChallenge
-            ? 'border-emerald-300/70 bg-gradient-to-br from-emerald-50/95 via-teal-50/75 to-emerald-100/60 shadow-emerald-900/8'
+            ? 'border-emerald-300/70 bg-linear-to-br from-emerald-50/95 via-teal-50/75 to-emerald-100/60'
             : isCheckpoint
-            ? 'border-amber-300/70 bg-gradient-to-br from-amber-50/95 via-orange-50/75 to-amber-100/60 shadow-amber-900/8'
-            : 'border-amber-200/65 bg-gradient-to-br from-amber-50/90 via-yellow-50/55 to-emerald-50/70 shadow-amber-900/5',
+            ? 'border-amber-300/70 bg-linear-to-br from-amber-50/95 via-orange-50/75 to-amber-100/60'
+            : 'border-amber-200/65 bg-linear-to-br from-amber-50/90 via-yellow-50/55 to-emerald-50/70 shadow-amber-900/5',
         'cursor-pointer active:scale-[0.99]'
       )}
       onClick={handleCardClick}
@@ -112,10 +112,10 @@ export function NotificationCard({
       {!n.is_read && (
         <span
           className={cn(
-            'absolute top-3 bottom-3 start-0 w-[3px] rounded-full shadow-sm',
+            'absolute top-3 bottom-3 inset-s-0 w-[3px] rounded-full shadow-xs',
             isCheckpoint
-              ? 'bg-gradient-to-b from-amber-400 to-orange-400'
-              : 'bg-gradient-to-b from-amber-400 to-amber-500'
+              ? 'bg-linear-to-b from-amber-400 to-orange-400'
+              : 'bg-linear-to-b from-amber-400 to-amber-500'
           )}
           aria-hidden
         />
@@ -124,7 +124,7 @@ export function NotificationCard({
       <button
         type="button"
         title={viewMode === 'inbox' ? 'העבר לארכיון' : 'החזר לתיבה'}
-        className="absolute top-2.5 start-2.5 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg text-emerald-800/70 transition hover:bg-emerald-100/80 hover:text-emerald-900"
+        className="absolute top-2.5 inset-s-2.5 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg text-emerald-800/70 transition hover:bg-emerald-100/80 hover:text-emerald-900"
         onClick={(e) =>
           viewMode === 'inbox' ? void onArchive(n.id, e) : void onUnarchive(n.id, e)
         }
@@ -148,7 +148,7 @@ export function NotificationCard({
           title="סמן כנקרא"
           aria-label="סמן כנקרא"
           onClick={handleMarkReadClick}
-          className="absolute top-2.5 end-2.5 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/85 text-white shadow-sm ring-2 ring-amber-100/80 transition hover:bg-emerald-600 hover:ring-emerald-100/90 active:scale-95"
+          className="absolute top-2.5 inset-e-2.5 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/85 text-white shadow-xs ring-2 ring-amber-100/80 transition hover:bg-emerald-600 hover:ring-emerald-100/90 active:scale-95"
         >
           <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
         </button>
@@ -174,7 +174,7 @@ export function NotificationCard({
               </span>
             )}
             <div className="flex flex-row items-baseline justify-between gap-2">
-              <h3 className="min-w-0 flex-1 text-[15px] font-bold leading-snug text-emerald-950 [overflow-wrap:anywhere]">
+              <h3 className="min-w-0 flex-1 text-[15px] font-bold leading-snug text-emerald-950 wrap-anywhere">
                 {n.title}
               </h3>
               <time
@@ -184,7 +184,7 @@ export function NotificationCard({
                 {relative}
               </time>
             </div>
-            <p className="text-[14px] leading-relaxed text-emerald-950/85 [overflow-wrap:anywhere]">
+            <p className="text-[14px] leading-relaxed text-emerald-950/85 wrap-anywhere">
               {n.body}
             </p>
 
@@ -198,7 +198,7 @@ export function NotificationCard({
                   <button
                     type="button"
                     onClick={handleReply}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-emerald-50 shadow-sm transition hover:bg-emerald-700 active:scale-[0.98]"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-emerald-50 shadow-xs transition hover:bg-emerald-700 active:scale-[0.98]"
                   >
                     <MessageCircle className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
                     השב לאלמוג
@@ -231,7 +231,7 @@ export function NotificationCard({
                 <div className="flex h-11 w-11 items-center justify-center rounded-full bg-indigo-100 text-lg ring-2 ring-indigo-200/80 shadow-md">
                   {n.icon_emoji ?? '🔒'}
                 </div>
-                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-indigo-700 px-1.5 py-px text-[8px] font-bold text-indigo-50 shadow">
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-indigo-700 px-1.5 py-px text-[8px] font-bold text-indigo-50 shadow-sm">
                   מערכת
                 </span>
               </div>
@@ -246,7 +246,7 @@ export function NotificationCard({
                     e.currentTarget.src = aiAvatarFallback;
                   }}
                 />
-                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-emerald-700 px-1.5 py-px text-[8px] font-bold text-emerald-50 shadow">
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-emerald-700 px-1.5 py-px text-[8px] font-bold text-emerald-50 shadow-sm">
                   {aiBadge}
                 </span>
               </div>

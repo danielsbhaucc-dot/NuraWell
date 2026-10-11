@@ -71,7 +71,7 @@ function MobileHowDrawer({ open, onClose }: RegisterHowItWorksModalProps) {
   return (
     <Drawer.Root open={open} onOpenChange={(v) => !v && onClose()} direction="bottom" shouldScaleBackground>
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm" />
+        <Drawer.Overlay className="fixed inset-0 z-200 bg-black/60 backdrop-blur-sm" />
         <Drawer.Content dir="rtl" className={REGISTER_DRAWER_CONTENT_CLASS}>
           <Drawer.Title className="sr-only">איך זה עובד</Drawer.Title>
           <Drawer.Description className="sr-only">הסבר על תהליך ההרשמה</Drawer.Description>
@@ -83,7 +83,7 @@ function MobileHowDrawer({ open, onClose }: RegisterHowItWorksModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="absolute end-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
+              className="absolute inset-e-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
               aria-label="סגור"
             >
               <X className="w-5 h-5" />
@@ -104,7 +104,7 @@ function DesktopHowModal({ open, onClose }: RegisterHowItWorksModalProps) {
     <AnimatePresence>
       {open ? (
         <motion.div
-          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          className="fixed inset-0 z-200 flex items-end sm:items-center justify-center p-0 sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -127,7 +127,7 @@ function DesktopHowModal({ open, onClose }: RegisterHowItWorksModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="absolute end-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70"
+              className="absolute inset-e-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70"
               aria-label="סגור"
             >
               <X className="w-5 h-5" />
