@@ -52,6 +52,7 @@ export default async function JourneyRoute() {
     supabase
       .from('journey_stations')
       .select('id, title, description, sort_order, is_foundation, cover_image_key, cover_image_credit')
+      .eq('track', 'main') // legacy/future tracks are not part of the main journey
       .order('sort_order', { ascending: true })
       .order('title', { ascending: true }),
     supabase
@@ -87,7 +88,10 @@ export default async function JourneyRoute() {
     ),
   ];
 
-  const rows = (rawSteps as unknown as RawStepRow[]) || [];
+  const mainStationIds = new Set(((stationRows ?? []) as Array<{ id: string }>).map((s) => s.id));
+  const rows = ((rawSteps as unknown as RawStepRow[]) || []).filter(
+    (r) => !r.station_id || mainStationIds.size === 0 || mainStationIds.has(r.station_id)
+  );
   const progressList = (rawProgress as unknown as JourneyStepProgress[]) || [];
   const progressMap = new Map(progressList.map((p) => [p.step_id, p]));
 
