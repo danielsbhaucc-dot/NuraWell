@@ -67,8 +67,8 @@ export function ChallengeInterviewGlass() {
       dir="rtl"
     >
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/4 top-20 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl" />
-        <div className="absolute bottom-32 right-1/4 h-72 w-72 rounded-full bg-emerald-500/15 blur-3xl" />
+        <div className="absolute end-1/4 top-20 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl" />
+        <div className="absolute bottom-32 start-1/4 h-72 w-72 rounded-full bg-emerald-500/15 blur-3xl" />
       </div>
 
       <header className="relative z-10 border-b border-white/10 bg-background-card/5 px-4 py-4 backdrop-blur-xl">
@@ -90,7 +90,7 @@ export function ChallengeInterviewGlass() {
               <h1 className="font-display text-lg font-bold text-white">ריאיון עם אלמוג</h1>
               <p className="text-xs text-white/50">כמה דקות — כדי שאזהה את ההצלחות שלך</p>
             </div>
-            <Sparkles className="mr-auto h-5 w-5 text-emerald-400" />
+            <Sparkles className="ms-auto h-5 w-5 text-emerald-400" />
           </div>
         </div>
       </header>
@@ -129,8 +129,8 @@ export function ChallengeInterviewGlass() {
                   <div
                     className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                       t.role === 'user'
-                        ? 'rounded-br-md bg-background-card/15 text-white'
-                        : 'rounded-bl-md border border-emerald-400/20 bg-emerald-500/10 text-emerald-50'
+                        ? 'rounded-es-md bg-background-card/15 text-white'
+                        : 'rounded-ee-md border border-emerald-400/20 bg-emerald-500/10 text-emerald-50'
                     }`}
                   >
                     {t.content}

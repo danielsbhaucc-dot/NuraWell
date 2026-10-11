@@ -68,7 +68,7 @@ export default function RagDebugPage() {
   const busy = loading !== 'idle';
 
   return (
-    <div dir="rtl" className="mx-auto max-w-2xl px-4 py-8 text-right">
+    <div dir="rtl" className="mx-auto max-w-2xl px-4 py-8 text-start">
       <h1 className="mb-2 text-xl font-semibold text-neutral-900">בדיקת זיכרון RAG</h1>
       <p className="mb-6 text-sm leading-relaxed text-neutral-600">
         כאן רואים מה המערכת <strong>מחלצת</strong> מהטקסט (Llama Scout), אילו וקטורים דומים נמצאו ב-Upstash,
@@ -77,7 +77,7 @@ export default function RagDebugPage() {
 
       <section className="mb-8 rounded-xl border border-neutral-200 bg-background-card p-4 shadow-sm">
         <h2 className="mb-2 font-medium text-neutral-800">איך לוודא שזה עובד</h2>
-        <ol className="list-decimal pr-5 text-sm leading-relaxed text-neutral-700 space-y-3">
+        <ol className="list-decimal ps-5 text-sm leading-relaxed text-neutral-700 space-y-3">
           <li>
             <strong>חיבור</strong> — «בדיקת חיבור»: OpenRouter + Upstash = כן. בלי זה אין embedding/וקטורים.
           </li>

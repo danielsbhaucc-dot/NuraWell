@@ -617,7 +617,7 @@ export function PlansClient({ userId, firstName }: { userId: string; firstName?:
                 className="rounded-3xl px-4 py-4 space-y-3"
                 style={glassStyle('amber')}
               >
-                <div className="text-right">
+                <div className="text-start">
                   <p className="text-[14px] font-black text-amber-950">משימות דומות לאישור</p>
                   <p className="text-[12px] text-amber-900/75 mt-0.5">
                     אלמוג הציע ניסוח קרוב למשימה שכבר יש לך — אפשר לאשר או לדחות
@@ -952,7 +952,7 @@ function SoftBackground() {
       />
       {/* מארג ברי-זוהר עדין בסגנון Apple — כתמי צבע רכים שצפים ברקע */}
       <motion.div
-        className="absolute -right-28 -top-24 h-[22rem] w-[22rem] rounded-full"
+        className="absolute -start-28 -top-24 h-[22rem] w-[22rem] rounded-full"
         style={{
           background: 'radial-gradient(circle, rgba(16,185,129,0.26), transparent 68%)',
           filter: 'blur(56px)',
@@ -961,7 +961,7 @@ function SoftBackground() {
         transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' as const }}
       />
       <motion.div
-        className="absolute -left-32 top-1/3 h-[26rem] w-[26rem] rounded-full"
+        className="absolute -end-32 top-1/3 h-[26rem] w-[26rem] rounded-full"
         style={{
           background: 'radial-gradient(circle, rgba(99,102,241,0.16), transparent 70%)',
           filter: 'blur(64px)',
@@ -970,7 +970,7 @@ function SoftBackground() {
         transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' as const }}
       />
       <motion.div
-        className="absolute bottom-0 right-1/4 h-72 w-72 rounded-full"
+        className="absolute bottom-0 start-1/4 h-72 w-72 rounded-full"
         style={{
           background: 'radial-gradient(circle, rgba(45,212,191,0.18), transparent 70%)',
           filter: 'blur(56px)',
@@ -979,7 +979,7 @@ function SoftBackground() {
         transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' as const }}
       />
       <div
-        className="absolute bottom-1/4 left-1/3 h-64 w-64 rounded-full opacity-60"
+        className="absolute bottom-1/4 end-1/3 h-64 w-64 rounded-full opacity-60"
         style={{
           background: 'radial-gradient(circle, rgba(251,191,36,0.12), transparent 70%)',
           filter: 'blur(52px)',
@@ -1044,13 +1044,13 @@ function Hero({
       {/* זוהר אור פינתי ימין */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full"
+        className="pointer-events-none absolute -start-20 -top-24 h-72 w-72 rounded-full"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.32), transparent 68%)' }}
       />
       {/* זוהר אור שמאל */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-28 -left-20 h-80 w-80 rounded-full"
+        className="pointer-events-none absolute -bottom-28 -end-20 h-80 w-80 rounded-full"
         style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.50), transparent 70%)' }}
       />
       {/* זוהר מרכזי */}
@@ -1062,7 +1062,7 @@ function Hero({
       {/* עלה מרחף */}
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute right-6 top-8 text-3xl"
+        className="pointer-events-none absolute start-6 top-8 text-3xl"
         animate={{ rotate: [0, -12, 12, 0], y: [0, -6, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' as const }}
       >
@@ -1071,7 +1071,7 @@ function Hero({
       {/* ניצוץ ימני תחתון */}
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute bottom-10 left-8 text-xl opacity-70"
+        className="pointer-events-none absolute bottom-10 end-8 text-xl opacity-70"
         animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.8, 0.5] }}
         transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' as const, delay: 1.2 }}
       >
@@ -1094,7 +1094,7 @@ function Hero({
           </div>
           <span
             aria-hidden
-            className="absolute -bottom-0.5 -left-0.5 flex h-6 w-6 items-center justify-center rounded-full text-sm"
+            className="absolute -bottom-0.5 -end-0.5 flex h-6 w-6 items-center justify-center rounded-full text-sm"
             style={{ background: '#ecfdf5', boxShadow: '0 2px 8px rgba(0,0,0,0.22)' }}
           >
             🌱
@@ -1241,7 +1241,7 @@ function StepStoryPanel({ story, pinned = false }: { story: StepStory; pinned?: 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center gap-2 rounded-2xl border border-slate-200/70 bg-background-card/60 px-3 py-2.5 text-right transition active:scale-[0.99]"
+        className="flex w-full items-center gap-2 rounded-2xl border border-slate-200/70 bg-background-card/60 px-3 py-2.5 text-start transition active:scale-[0.99]"
       >
         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
           {story.tag}
@@ -1344,7 +1344,7 @@ function CompactRecoveryRow(props: ComponentProps<typeof RecoveryPlanCard>) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex w-full items-center gap-2.5 rounded-2xl border border-amber-100/80 bg-background-card/50 px-3 py-2.5 text-right transition active:scale-[0.99]"
+          className="flex w-full items-center gap-2.5 rounded-2xl border border-amber-100/80 bg-background-card/50 px-3 py-2.5 text-start transition active:scale-[0.99]"
         >
           <NumBadge n={props.index} rgb={TINT.amber.rgb} />
           <div className="min-w-0 flex-1">
@@ -1395,7 +1395,7 @@ function CompactAssignmentRow({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex w-full items-center gap-2.5 rounded-2xl border border-emerald-100/80 bg-background-card/50 px-3 py-2.5 text-right transition active:scale-[0.99]"
+          className="flex w-full items-center gap-2.5 rounded-2xl border border-emerald-100/80 bg-background-card/50 px-3 py-2.5 text-start transition active:scale-[0.99]"
         >
           <NumBadge n={index} rgb={TINT.emerald.rgb} />
           <div className="min-w-0 flex-1">
@@ -1480,7 +1480,7 @@ function Section({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="relative flex w-full items-center gap-3 overflow-hidden rounded-2xl px-4 py-3.5 text-right transition active:scale-[0.98]"
+        className="relative flex w-full items-center gap-3 overflow-hidden rounded-2xl px-4 py-3.5 text-start transition active:scale-[0.98]"
         style={{
           background: open
             ? `linear-gradient(145deg, rgba(248,251,246,0.88) 0%, rgba(${t.rgb},0.12) 100%)`
@@ -1548,7 +1548,7 @@ function Section({
 /** שורת הסבר קצרה בקול של אלמוג — טקסט עדין ושקט, בלי עומס ויזואלי. */
 function AlmogLine({ text }: { text: string }) {
   return (
-    <p className="border-r-2 border-slate-200/70 pr-2.5 text-[12.5px] leading-relaxed text-slate-500">
+    <p className="border-s-2 border-slate-200/70 ps-2.5 text-[12.5px] leading-relaxed text-slate-500">
       {text}
     </p>
   );
@@ -1602,7 +1602,7 @@ function ActionNeeded({
               key={it.id}
               type="button"
               onClick={() => onJump(it.id)}
-              className="flex w-full items-center gap-2.5 rounded-2xl px-3 py-2.5 text-right transition active:scale-[0.99]"
+              className="flex w-full items-center gap-2.5 rounded-2xl px-3 py-2.5 text-start transition active:scale-[0.99]"
               style={{ background: 'rgba(248,251,246,0.55)', border: `1px solid rgba(${t.rgb},0.16)` }}
             >
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: `rgba(${t.rgb},0.9)` }} />
@@ -1687,10 +1687,10 @@ function AssignmentCard({
     >
       <span
         aria-hidden
-        className="absolute inset-y-0 right-0 w-1 rounded-r-[22px]"
+        className="absolute inset-y-0 start-0 w-1 rounded-s-[22px]"
         style={{ background: `linear-gradient(180deg, rgba(${TINT.emerald.rgb},0.9), rgba(${TINT.emerald.rgb},0.45))` }}
       />
-      <div className="relative z-[1] p-3.5 pr-4">
+      <div className="relative z-[1] p-3.5 ps-4">
         {/* שורה ראשית — קומפקטית */}
         <div className="flex items-start gap-3">
           <span
@@ -1998,7 +1998,7 @@ function ReminderRow({ reminder, index }: { reminder: Reminder; index: number })
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex w-full items-center gap-2 rounded-2xl border border-amber-100/70 bg-background-card/45 px-3 py-2 text-right"
+          className="flex w-full items-center gap-2 rounded-2xl border border-amber-100/70 bg-background-card/45 px-3 py-2 text-start"
         >
           <NumBadge n={index} rgb={TINT.amber.rgb} />
           <span className="min-w-0 flex-1 truncate text-[12px] text-slate-700">{reminder.title}</span>

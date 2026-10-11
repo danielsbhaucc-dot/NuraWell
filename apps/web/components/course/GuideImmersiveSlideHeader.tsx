@@ -22,7 +22,7 @@ export function GuideImmersiveSlideHeader({ eyebrow, title, subtitle }: GuideImm
       <div className="guide-immersive-slide-header__ornament" aria-hidden />
       <div className="flex items-center gap-3">
         <AlmogAvatarChipWithNameTag size={36} />
-        <div className="min-w-0 flex-1 text-right">
+        <div className="min-w-0 flex-1 text-start">
           <p className="flex items-center justify-end gap-1 text-[11px] font-bold text-emerald-200/90">
             <Sparkles className="h-3 w-3 shrink-0 text-emerald-300" aria-hidden />
             <span className="min-w-0 break-words">{eyebrow}</span>

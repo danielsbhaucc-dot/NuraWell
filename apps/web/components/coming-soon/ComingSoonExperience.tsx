@@ -403,7 +403,7 @@ export function ComingSoonExperience({
 
       {/* top controls */}
       {phase !== 'intro' && (
-        <div className="absolute left-0 right-0 top-0 z-30 flex items-center justify-between p-4 sm:p-6">
+        <div className="absolute end-0 start-0 top-0 z-30 flex items-center justify-between p-4 sm:p-6">
           <button
             type="button"
             onClick={toggleMute}
@@ -425,7 +425,7 @@ export function ComingSoonExperience({
       )}
 
       {phase === 'lyrics' && (
-        <div className="absolute bottom-0 left-0 right-0 z-30 h-1.5 bg-background-card/10">
+        <div className="absolute bottom-0 end-0 start-0 z-30 h-1.5 bg-background-card/10">
           <div
             ref={progressBarRef}
             className="h-full bg-gradient-to-l from-emerald-400 via-teal-300 to-lime-300 shadow-[0_0_18px_rgba(52,211,153,0.9)]"
@@ -640,7 +640,7 @@ export function ComingSoonExperience({
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.4 }}
                     transition={{ duration: 0.55, delay: 0.05 * i }}
-                    className="cs-glass-card flex flex-col items-center gap-3 px-5 py-6 text-center sm:items-start sm:text-right"
+                    className="cs-glass-card flex flex-col items-center gap-3 px-5 py-6 text-center sm:items-start sm:text-start"
                   >
                     <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400/90 to-teal-500/90 text-[#04231a] shadow-[0_0_24px_rgba(45,212,191,0.45)]">
                       <Icon className="h-6 w-6" />

@@ -76,7 +76,7 @@ export function OpsAdminNotificationDialog({
         </button>
       </div>
 
-      <div className="space-y-3 px-4 py-4 text-right" dir="rtl">
+      <div className="space-y-3 px-4 py-4 text-start" dir="rtl">
         <h3 id="ops-notif-popup-title" className="text-base font-black text-stone-900">
           {notification.title}
         </h3>

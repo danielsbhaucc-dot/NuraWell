@@ -183,7 +183,7 @@ export function AlmogInlinePresence({
       className="flex items-center justify-center gap-3 mb-4 px-2"
     >
       <AlmogAvatarChip size={48} />
-      <div className="text-right min-w-0">
+      <div className="text-start min-w-0">
         <p className="font-black text-sm text-emerald-900">{title}</p>
         <p className="text-xs text-gray-600 leading-snug">{subtitle}</p>
       </div>

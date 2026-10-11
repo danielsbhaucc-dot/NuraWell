@@ -433,14 +433,14 @@ export function AdminUsersClient() {
 
       {/* חיפוש + תוצאות */}
       <div className="relative">
-        <Search className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-600/70" />
+        <Search className="pointer-events-none absolute start-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-600/70" />
         <input
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="חיפוש לפי שם, אימייל או מזהה..."
           dir="rtl"
-          className="w-full rounded-2xl border border-white/60 bg-background-card/55 py-3.5 pr-12 pl-4 text-sm font-medium text-slate-900 shadow-[0_8px_28px_rgba(16,185,129,0.08)] outline-none backdrop-blur-xl transition placeholder:text-slate-400 focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40"
+          className="w-full rounded-2xl border border-white/60 bg-background-card/55 py-3.5 ps-12 pe-4 text-sm font-medium text-slate-900 shadow-[0_8px_28px_rgba(16,185,129,0.08)] outline-none backdrop-blur-xl transition placeholder:text-slate-400 focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40"
         />
       </div>
 
@@ -480,7 +480,7 @@ export function AdminUsersClient() {
                   <button
                     type="button"
                     onClick={() => openUser(u.id)}
-                    className="flex min-w-0 flex-1 items-center gap-3 p-3.5 text-right active:scale-[0.99]"
+                    className="flex min-w-0 flex-1 items-center gap-3 p-3.5 text-start active:scale-[0.99]"
                   >
                     <Avatar id={u.id} name={u.full_name} />
                     <div className="min-w-0 flex-1">
@@ -565,7 +565,7 @@ export function AdminUsersClient() {
                 <button
                   type="button"
                   onClick={closeUser}
-                  className="absolute left-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/45 text-slate-600 backdrop-blur-md hover:bg-background-card/70"
+                  className="absolute end-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/45 text-slate-600 backdrop-blur-md hover:bg-background-card/70"
                   aria-label="סגור"
                 >
                   <X className="h-4 w-4" />
@@ -579,13 +579,13 @@ export function AdminUsersClient() {
                     type="button"
                     onClick={closeUser}
                     disabled={saving || deleting}
-                    className="absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/45 text-slate-600 backdrop-blur-md transition hover:bg-background-card/70 disabled:opacity-50 sm:left-4 sm:top-4"
+                    className="absolute end-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/45 text-slate-600 backdrop-blur-md transition hover:bg-background-card/70 disabled:opacity-50 sm:end-4 sm:top-4"
                     aria-label="סגור"
                   >
                     <X className="h-4 w-4" />
                   </button>
 
-                  <div className="flex items-center gap-3 pl-10">
+                  <div className="flex items-center gap-3 pe-10">
                     <Avatar id={selectedId} name={form.full_name} size="lg" />
                     <div className="min-w-0">
                       <h2 className="truncate bg-gradient-to-l from-emerald-700 via-teal-600 to-cyan-700 bg-clip-text font-display text-xl font-black text-transparent">

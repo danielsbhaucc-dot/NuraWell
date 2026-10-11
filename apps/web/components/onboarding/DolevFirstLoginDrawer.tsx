@@ -84,7 +84,7 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
                 >
                   <span className="text-[11px] font-bold text-emerald-200/60">{row.label}</span>
                   <span
-                    className="text-sm font-semibold text-emerald-50 text-left"
+                    className="text-sm font-semibold text-emerald-50 text-end"
                     dir={row.label.includes('משקל') ? 'ltr' : undefined}
                   >
                     {row.value}
@@ -108,7 +108,7 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
                     animate={{ opacity: 1, y: 0 }}
                     className="flex justify-end"
                   >
-                    <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-emerald-600/90 px-4 py-3 text-white text-[15px] font-medium shadow-lg">
+                    <div className="max-w-[85%] rounded-2xl rounded-ee-md bg-emerald-600/90 px-4 py-3 text-white text-[15px] font-medium shadow-lg">
                       תודה דולב
                     </div>
                   </motion.div>

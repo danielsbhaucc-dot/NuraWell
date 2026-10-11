@@ -604,7 +604,7 @@ export function SosDialog({
       aria-labelledby={titleId}
       aria-describedby={subtitleId}
       backdropClassName="absolute inset-0 bg-slate-950/55 backdrop-blur-md"
-      panelClassName="touch-manipulation w-full max-w-md flex flex-col overflow-hidden rounded-[28px] border border-emerald-500/25 text-right shadow-2xl max-h-[min(80dvh,600px)]"
+      panelClassName="touch-manipulation w-full max-w-md flex flex-col overflow-hidden rounded-[28px] border border-emerald-500/25 text-start shadow-2xl max-h-[min(80dvh,600px)]"
       panelStyle={{
         maxHeight: 'min(80dvh, 600px)',
         height: 'auto',
@@ -620,7 +620,7 @@ export function SosDialog({
           <button
             type="button"
             onClick={closeDialog}
-            className="absolute left-4 top-4 rounded-full bg-background-card/15 p-2 text-white/90 transition hover:bg-background-card/25"
+            className="absolute end-4 top-4 rounded-full bg-background-card/15 p-2 text-white/90 transition hover:bg-background-card/25"
             aria-label="סגירה"
           >
             <X className="h-4 w-4" />
@@ -629,7 +629,7 @@ export function SosDialog({
             <button
               type="button"
               onClick={goBackFromResponse}
-              className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-background-card/15 px-3 py-2 text-xs font-bold text-white/95 transition hover:bg-background-card/25"
+              className="absolute start-4 top-4 inline-flex items-center gap-1 rounded-full bg-background-card/15 px-3 py-2 text-xs font-bold text-white/95 transition hover:bg-background-card/25"
               aria-label="חזרה לבחירת הקושי"
             >
               <ArrowRight className="h-4 w-4" aria-hidden />
@@ -681,7 +681,7 @@ export function SosDialog({
                   : outcomeSaved}
               </p>
               {guardianOptedIn === false && !guardianSaved ? (
-                  <div className={`${sosSurface('white')} px-4 py-3 text-right text-xs leading-6 text-slate-800`}>
+                  <div className={`${sosSurface('white')} px-4 py-3 text-start text-xs leading-6 text-slate-800`}>
                   <p className="font-black">רוצה שאלמוג יגיע לפני הרגע הבא?</p>
                   <p className="mt-1 text-slate-600">
                     תזכורת עדינה לפני חלונות שקשים לך — רק אם תרצה, בלי לחץ.
@@ -737,7 +737,7 @@ export function SosDialog({
                               key={task.id}
                               type="button"
                               onClick={() => setSelectedTask(task)}
-                              className={`flex items-center justify-between px-3 py-2.5 text-right transition active:scale-[0.99] ${
+                              className={`flex items-center justify-between px-3 py-2.5 text-start transition active:scale-[0.99] ${
                                 active ? SOS_INTAKE_TASK_ACTIVE : SOS_INTAKE_TASK_IDLE
                               }`}
                             >
@@ -825,7 +825,7 @@ export function SosDialog({
                           onClick={() => {
                             setSelectedTask(task);
                           }}
-                          className={`flex items-center justify-between px-4 py-3 text-right transition active:scale-[0.99] ${
+                          className={`flex items-center justify-between px-4 py-3 text-start transition active:scale-[0.99] ${
                             active ? SOS_INTAKE_TASK_ACTIVE : SOS_INTAKE_TASK_IDLE
                           }`}
                         >
@@ -883,7 +883,7 @@ export function SosDialog({
                     type="button"
                     onClick={() => void handleTrigger(trigger.id)}
                     disabled={loadingTrigger !== null}
-                    className={`${SOS_TRIGGER_CARD[trigger.id]} flex items-center justify-between px-4 py-3.5 text-right transition active:scale-[0.98] disabled:opacity-70`}
+                    className={`${SOS_TRIGGER_CARD[trigger.id]} flex items-center justify-between px-4 py-3.5 text-start transition active:scale-[0.98] disabled:opacity-70`}
                     style={SOS_TRIGGER_BG[trigger.id]}
                   >
                     <span className={SOS_TRIGGER_HELPER}>{trigger.helper}</span>

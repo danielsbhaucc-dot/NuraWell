@@ -61,7 +61,7 @@ export function AIFeedbackCard({
       initial={{ opacity: 0, y: 14, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-      className={`mx-auto max-w-md overflow-hidden rounded-[22px] text-right ${className}`}
+      className={`mx-auto max-w-md overflow-hidden rounded-[22px] text-start ${className}`}
       dir="rtl"
       style={{
         background: v.cardBg,
@@ -83,7 +83,7 @@ export function AIFeedbackCard({
           }}
         />
         {titleTrim ? (
-          <div className="min-w-0 flex-1 text-right">
+          <div className="min-w-0 flex-1 text-start">
             <p
               className={`text-[15px] font-black leading-tight ${v.title}`}
               style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}

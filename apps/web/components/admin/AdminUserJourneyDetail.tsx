@@ -293,7 +293,7 @@ export function AdminUserJourneyDetail({ steps }: { steps: AdminUserJourneyStepR
       <button
         type="button"
         onClick={() => setSectionOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 text-right"
+        className="w-full flex items-center justify-between gap-2 text-start"
       >
         <span className="text-sm font-black text-slate-900 flex items-center gap-2">
           <MapPin className="w-4 h-4 text-emerald-600" />
@@ -320,7 +320,7 @@ export function AdminUserJourneyDetail({ steps }: { steps: AdminUserJourneyStepR
             </button>
           ) : null}
 
-          <div className="space-y-4 max-h-[min(52vh,520px)] overflow-y-auto pr-1">
+          <div className="space-y-4 max-h-[min(52vh,520px)] overflow-y-auto ps-1">
             {groups.length === 0 ? (
               <p className="text-sm text-slate-500 text-center py-4">עדיין אין התקדמות במסע.</p>
             ) : (

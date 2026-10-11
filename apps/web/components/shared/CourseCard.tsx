@@ -180,7 +180,7 @@ export function CourseCard({ course, progress, isEnrolled, accentIndex = 0 }: Co
 
           {/* Top-right badges */}
           {(isCompleted || course.is_premium) && (
-            <div className="absolute top-2.5 left-2.5 flex gap-1.5 z-10">
+            <div className="absolute top-2.5 end-2.5 flex gap-1.5 z-10">
               {isCompleted && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
                   style={{ background: 'rgba(255,255,255,0.25)', backdropFilter: 'blur(6px)', color: '#ecfdf5' }}>
