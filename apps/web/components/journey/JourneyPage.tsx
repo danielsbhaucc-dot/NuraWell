@@ -245,7 +245,7 @@ function GalleryView({
 
             {hasFoundationStation && !foundationComplete ? (
               <p className="mb-4 rounded-2xl border border-emerald-200/60 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900">
-                קודם נשלים את <strong>תחנת החובה</strong> — אחר כך Almog יפתח שיעורים מותאמים אישית
+                קודם נשלים את <strong>תחנת החובה</strong> — אחר כך אלמוג יפתח שיעורים מותאמים אישית
                 בקצב שלך.
               </p>
             ) : null}

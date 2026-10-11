@@ -16,7 +16,8 @@
     "test:a11y:all": "npm run test:a11y && npm run test:a11y:e2e",
     "playwright:install": "npx playwright install chromium",
     "test:watch": "vitest",
-    "backfill:insight-vectors": "node --env-file=.env.local scripts/backfill-insight-vectors-upstash.mjs"
+    "backfill:insight-vectors": "node --env-file=.env.local scripts/backfill-insight-vectors-upstash.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.91",

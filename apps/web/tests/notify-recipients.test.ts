@@ -39,9 +39,9 @@ describe('isNotifyEligibleProfile', () => {
 
 describe('notifyEligibleOrFilter', () => {
   it('builds PostgREST or-filter', () => {
-    expect(notifyEligibleOrFilter([])).toBe('role.neq.admin,role.is.null,notify_test_opt_in.eq.true');
+    expect(notifyEligibleOrFilter([])).toBe('role.eq.user,role.is.null,notify_test_opt_in.eq.true');
     expect(notifyEligibleOrFilter([A], { withOptInColumn: false })).toBe(
-      `role.neq.admin,role.is.null,id.in.(${A})`
+      `role.eq.user,role.is.null,id.in.(${A})`
     );
   });
 });
@@ -127,5 +127,13 @@ describe('countNotifyEligibleProfiles (instant-exit guard)', () => {
   it('-1 on other errors (guard then stays active)', async () => {
     const { client } = mockProfiles([], { fail: true });
     expect(await countNotifyEligibleProfiles(client)).toBe(-1);
+  });
+});
+
+describe('test (e2e) accounts', () => {
+  it('role=test is excluded unless opted in', async () => {
+    const { isNotifyEligibleProfile } = await import('../lib/notifications/notify-recipients');
+    expect(isNotifyEligibleProfile({ id: 'x', role: 'test' }, [])).toBe(false);
+    expect(isNotifyEligibleProfile({ id: 'x', role: 'test', notify_test_opt_in: true }, [])).toBe(true);
   });
 });
