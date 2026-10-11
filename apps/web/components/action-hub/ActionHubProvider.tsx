@@ -70,7 +70,7 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
 
   const openHistory = useCallback(() => {
     close();
-    router.push('/journey/history');
+    router.push('/progress/history');
   }, [close, router]);
 
   const openPlans = useCallback(() => {
