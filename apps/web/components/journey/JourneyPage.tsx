@@ -29,6 +29,8 @@ import { AlmogAvatarChip } from './AlmogPresence';
 import { AlmogAssignmentsSection, AlmogCompletedSection } from './AlmogAssignmentsSection';
 import { stationCoverAlt } from '../../lib/a11y/alt-text';
 import { getIsraelTimeOfDay } from '../../lib/time/greeting';
+import { palette as tokens } from '../../lib/theme/tokens';
+import { Button } from '../ui';
 
 interface JourneyPageProps {
   groups: JourneyStationGroup[];
@@ -227,7 +229,7 @@ function GalleryView({
       {/* ═══ BODY ═══ */}
       <div
         style={{
-          background: '#EDF5F0',
+          background: tokens.mint,
           borderRadius: '28px 28px 0 0',
           marginTop: '-22px',
           padding: '26px 16px 32px',
@@ -244,7 +246,7 @@ function GalleryView({
             <JourneyNextStepCard />
 
             {hasFoundationStation && !foundationComplete ? (
-              <p className="mb-4 rounded-2xl border border-emerald-200/60 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900">
+              <p className="mb-4 rounded-2xl border border-primary-200/60 bg-primary-50/80 px-4 py-3 text-sm text-primary-900">
                 קודם נשלים את <strong>תחנת החובה</strong> — אחר כך אלמוג יפתח שיעורים מותאמים אישית
                 בקצב שלך.
               </p>
@@ -325,7 +327,7 @@ function HeroSection({
       className="-mt-16 pt-16 relative overflow-hidden"
       style={{
         background:
-          'linear-gradient(160deg, #022c22 0%, #064e3b 35%, #047857 65%, #10b981 92%, #34d399 100%)',
+          `linear-gradient(160deg, ${tokens.primary[950]} 0%, ${tokens.primary[900]} 35%, ${tokens.primary[700]} 65%, ${tokens.primary[500]} 92%, ${tokens.primary[400]} 100%)`,
       }}
     >
       {/* ✦ Aurora — מעטה אורות זוהר מונפש שזורם ברקע ה-HERO */}
@@ -395,7 +397,7 @@ function HeroSection({
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.18 }}
-              className="flex items-center justify-center gap-1.5 text-[15px] font-bold tracking-wide text-emerald-100/95 sm:text-[16px]"
+              className="flex items-center justify-center gap-1.5 text-[15px] font-bold tracking-wide text-primary-100/95 sm:text-[16px]"
               style={{
                 textShadow: '0 2px 10px rgba(2,44,34,0.45)',
                 fontFamily: "'Rubik','Heebo',sans-serif",
@@ -471,7 +473,7 @@ function HeroSection({
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.46 }}
-            className="mx-auto mt-4 max-w-md text-center text-[14px] leading-relaxed text-emerald-50/85 sm:mt-5 sm:text-[15px]"
+            className="mx-auto mt-4 max-w-md text-center text-[14px] leading-relaxed text-primary-50/85 sm:mt-5 sm:text-[15px]"
           >
             {intro.subline}
           </motion.p>
@@ -494,7 +496,7 @@ function HeroSection({
             >
               <ProgressRing pct={overall.pct} reduced={reduced} />
               <div className="min-w-0 flex-1 text-start">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-100/85">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-primary-100/85">
                   ככה זה נראה אצלי
                 </p>
                 <p
@@ -504,7 +506,7 @@ function HeroSection({
                   <CountUp value={overall.done} reduced={reduced} /> מתוך{' '}
                   <CountUp value={overall.all} reduced={reduced} /> צעדים
                 </p>
-                <p className="mt-0.5 text-[12px] text-emerald-50/85">
+                <p className="mt-0.5 text-[12px] text-primary-50/85">
                   {overall.stationsDone > 0
                     ? `כבר סגרנו ${overall.stationsDone} תחנ${overall.stationsDone === 1 ? 'ה' : 'ות'} — יפה מאוד ✦`
                     : 'כל צעד מקרב אותך — אני איתך'}
@@ -584,17 +586,17 @@ function StatChips({
           emerald: {
             glow: 'rgba(167,243,208,0.45)',
             iconBg: 'linear-gradient(135deg, rgba(167,243,208,0.95), rgba(52,211,153,0.85))',
-            iconColor: '#022c22',
+            iconColor: tokens.primary[950],
           },
           amber: {
             glow: 'rgba(252,211,77,0.55)',
             iconBg: 'linear-gradient(135deg, rgba(253,224,71,0.98), rgba(245,158,11,0.92))',
-            iconColor: '#451a03',
+            iconColor: tokens.accent[950],
           },
           rose: {
             glow: 'rgba(253,164,175,0.55)',
             iconBg: 'linear-gradient(135deg, rgba(254,202,202,0.95), rgba(251,113,133,0.92))',
-            iconColor: '#7f1d1d',
+            iconColor: tokens.danger950,
           },
         }[c.tone];
 
@@ -774,7 +776,7 @@ function ShimmerText({
       className="inline-block"
       style={{
         backgroundImage:
-          'linear-gradient(110deg, #f8fbf6 0%, #fef3c7 22%, #fde68a 38%, #f8fbf6 50%, #fef9c3 62%, #f8fbf6 100%)',
+          `linear-gradient(110deg, ${tokens.backgroundCard} 0%, ${tokens.accent[100]} 22%, ${tokens.accent[200]} 38%, ${tokens.backgroundCard} 50%, ${tokens.warmLight} 62%, ${tokens.backgroundCard} 100%)`,
         backgroundSize: '300% 100%',
         WebkitBackgroundClip: 'text',
         backgroundClip: 'text',
@@ -851,9 +853,9 @@ function ProgressRing({ pct, reduced }: { pct: number; reduced: boolean }) {
       <svg width={size} height={size} className="-rotate-90">
         <defs>
           <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#a7f3d0" />
-            <stop offset="60%" stopColor="#34d399" />
-            <stop offset="100%" stopColor="#fbbf24" />
+            <stop offset="0%" stopColor={tokens.primary[200]} />
+            <stop offset="60%" stopColor={tokens.primary[400]} />
+            <stop offset="100%" stopColor={tokens.accent[400]} />
           </linearGradient>
         </defs>
         <circle
@@ -1186,16 +1188,16 @@ function SectionHeader({
     <div className="mb-5 flex items-center gap-3 px-1">
       <div
         className="h-7 w-1.5 shrink-0 rounded-full"
-        style={{ background: 'linear-gradient(to bottom, #6ee7b7, #047857)' }}
+        style={{ background: `linear-gradient(to bottom, ${tokens.primary[300]}, ${tokens.primary[700]})` }}
       />
       <div className="flex-1 text-start">
         <p
           className="text-[17px] font-black"
-          style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
+          style={{ color: tokens.ink, fontFamily: "'Rubik','Heebo',sans-serif" }}
         >
           התחנות שמחכות לך
         </p>
-        <p className="mt-0.5 text-xs text-emerald-800/70">
+        <p className="mt-0.5 text-xs text-primary-800/70">
           {variant === 'active'
             ? count === 1
               ? 'יש תחנה אחת — בוא ניכנס אליה'
@@ -1227,16 +1229,16 @@ function CompletedSection({
       <div className="mb-3 flex items-center gap-3 px-1">
         <div
           className="h-7 w-1.5 shrink-0 rounded-full"
-          style={{ background: 'linear-gradient(to bottom, #a7f3d0, #34d399)' }}
+          style={{ background: `linear-gradient(to bottom, ${tokens.primary[200]}, ${tokens.primary[400]})` }}
         />
         <div className="flex-1 text-start">
           <p
             className="text-[17px] font-black"
-            style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
+            style={{ color: tokens.ink, fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
             כבר סגרנו את אלה
           </p>
-          <p className="mt-0.5 text-xs text-emerald-800/70">
+          <p className="mt-0.5 text-xs text-primary-800/70">
             {groups.length === 1
               ? 'תחנה אחת מאחוריך — כל הכבוד'
               : `${groups.length} תחנות מאחוריך — אני גאה בך`}
@@ -1256,17 +1258,9 @@ function CompletedSection({
       </div>
 
       {!expanded && groups.length > 2 ? (
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          className="mt-3 w-full rounded-xl py-2.5 text-[13px] font-bold text-emerald-800 transition active:scale-[0.98]"
-          style={{
-            background: 'rgba(16,185,129,0.10)',
-            border: '1px solid rgba(110,231,183,0.35)',
-          }}
-        >
+        <Button variant="secondary" size="sm" className="mt-3 w-full" onClick={() => setExpanded(true)}>
           הצג עוד ({groups.length - 2} תחנות)
-        </button>
+        </Button>
       ) : null}
     </div>
   );
@@ -1275,8 +1269,8 @@ function CompletedSection({
 function EmptyState({ firstName }: { firstName: string }) {
   return (
     <div className="glass-surface rounded-3xl px-6 py-16 text-center">
-      <Droplets className="mx-auto mb-4 h-12 w-12 text-emerald-300" />
-      <h3 className="mb-2 text-xl font-black" style={{ color: '#1A1730' }}>
+      <Droplets className="mx-auto mb-4 h-12 w-12 text-primary-300" />
+      <h3 className="mb-2 text-xl font-black" style={{ color: tokens.ink }}>
         {firstName}, אני מחכה לך כאן
       </h3>
       <p className="text-sm text-gray-500">
@@ -1344,7 +1338,7 @@ function AlmogTouchBanner({
         <AlmogAvatarChip size={52} />
         <div className="min-w-0 flex-1">
           <p
-            className="text-[10.5px] font-black uppercase tracking-[0.14em] text-emerald-200/90"
+            className="text-[10.5px] font-black uppercase tracking-[0.14em] text-primary-200/90"
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
             ממני, אלמוג
@@ -1421,7 +1415,7 @@ function StationDetailView({
 
       <div
         style={{
-          background: '#EDF5F0',
+          background: tokens.mint,
           borderRadius: '28px 28px 0 0',
           marginTop: '-22px',
           padding: '24px 16px 40px',
@@ -1452,19 +1446,19 @@ function StationDetailView({
               <div
                 className="h-8 w-1.5 rounded-full"
                 style={{
-                  background: 'linear-gradient(to bottom, #34d399, #047857)',
+                  background: `linear-gradient(to bottom, ${tokens.primary[400]}, ${tokens.primary[700]})`,
                   boxShadow: '0 0 8px rgba(52,211,153,0.55)',
                 }}
               />
               <div className="text-start">
                 <p
-                  className="text-[11px] font-black uppercase tracking-[0.12em] text-emerald-700"
+                  className="text-[11px] font-black uppercase tracking-[0.12em] text-primary-700"
                   style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                 >
                   הצעדים בתחנה
                 </p>
                 <p
-                  className="mt-0.5 text-[15px] font-black text-emerald-950"
+                  className="mt-0.5 text-[15px] font-black text-primary-950"
                   style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                 >
                   {completedCount} מתוך {totalCount} הושלמו
@@ -1488,7 +1482,7 @@ function StationDetailView({
             ) : (
               <div className="glass-pill flex items-center gap-2 rounded-full px-3 py-1.5">
                 <span
-                  className="text-[13px] font-black text-emerald-700 tabular-nums"
+                  className="text-[13px] font-black text-primary-700 tabular-nums"
                   style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                 >
                   {pct}%
@@ -1629,7 +1623,7 @@ function StationHeader({
             className="absolute inset-0"
             style={{
               background:
-                'linear-gradient(135deg, #022c22 0%, #064e3b 45%, #047857 80%, #10b981 100%)',
+                `linear-gradient(135deg, ${tokens.primary[950]} 0%, ${tokens.primary[900]} 45%, ${tokens.primary[700]} 80%, ${tokens.primary[500]} 100%)`,
             }}
           />
         )}
@@ -1687,7 +1681,7 @@ function StationHeader({
                   transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] as const }}
                   className="h-full rounded-full"
                   style={{
-                    background: 'linear-gradient(90deg, #a7f3d0, #34d399 60%, #fbbf24)',
+                    background: `linear-gradient(90deg, ${tokens.primary[200]}, ${tokens.primary[400]} 60%, ${tokens.accent[400]})`,
                     boxShadow: '0 0 10px rgba(167,243,208,0.6)',
                   }}
                 />
@@ -1720,7 +1714,7 @@ function StepsTimeline({
     <div className="relative">
       <div
         className="absolute start-[23px] top-0 bottom-0 w-0.5"
-        style={{ background: 'linear-gradient(to bottom, #10b981, #d1fae5, transparent)' }}
+        style={{ background: `linear-gradient(to bottom, ${tokens.primary[500]}, ${tokens.primary[100]}, transparent)` }}
       />
 
       <div className="space-y-4">
@@ -1746,12 +1740,12 @@ function StepsTimeline({
                   <div
                     className="flex h-[22px] w-[22px] items-center justify-center rounded-full"
                     style={{
-                      background: isCompleted ? '#10b981' : isActive ? '#f8fbf6' : '#d1d5db',
+                      background: isCompleted ? tokens.primary[500] : isActive ? tokens.backgroundCard : tokens.neutral[300],
                       border: isCompleted
-                        ? '3px solid #10b981'
+                        ? `3px solid ${tokens.primary[500]}`
                         : isActive
-                          ? '3px solid #10b981'
-                          : '3px solid #d1d5db',
+                          ? `3px solid ${tokens.primary[500]}`
+                          : `3px solid ${tokens.neutral[300]}`,
                       boxShadow: isActive ? '0 0 14px rgba(16,185,129,0.55)' : 'none',
                     }}
                   >
@@ -1759,7 +1753,7 @@ function StepsTimeline({
                       <CheckCircle2 className="h-3 w-3 text-white" />
                     ) : isActive ? (
                       <motion.div
-                        className="h-2 w-2 rounded-full bg-emerald-500"
+                        className="h-2 w-2 rounded-full bg-primary-500"
                         animate={{ scale: [1, 1.4, 1] }}
                         transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' as const }}
                       />
@@ -1791,7 +1785,7 @@ function StepsTimeline({
                             : isActive
                               ? 'rgba(16,185,129,0.12)'
                               : 'rgba(0,0,0,0.04)',
-                          color: isCompleted ? '#059669' : isActive ? '#047857' : '#9ca3af',
+                          color: isCompleted ? tokens.primary[600] : isActive ? tokens.primary[700] : tokens.neutral[400],
                         }}
                       >
                         שלב {step.step_number}
@@ -1802,7 +1796,7 @@ function StepsTimeline({
                         </span>
                       ) : null}
                       {isCompleted ? (
-                        <span className="ms-auto flex items-center gap-1 text-xs font-bold text-emerald-600">
+                        <span className="ms-auto flex items-center gap-1 text-xs font-bold text-primary-600">
                           <CheckCircle2 className="h-3 w-3" /> הושלם ✨
                         </span>
                       ) : null}
@@ -1810,7 +1804,7 @@ function StepsTimeline({
 
                     <h3
                       className="mb-1.5 text-[17px] font-black leading-snug"
-                      style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
+                      style={{ color: tokens.ink, fontFamily: "'Rubik','Heebo',sans-serif" }}
                     >
                       {step.title}
                     </h3>
@@ -1828,7 +1822,7 @@ function StepsTimeline({
                         {step.description.trim().length > 90 ? (
                           <button
                             type="button"
-                            className="mt-1 text-xs font-bold text-emerald-700 underline-offset-2 hover:underline"
+                            className="mt-1 text-xs font-bold text-primary-700 underline-offset-2 hover:underline"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -1850,7 +1844,7 @@ function StepsTimeline({
                         <div
                           className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold text-white"
                           style={{
-                            background: 'linear-gradient(135deg, #047857, #10b981)',
+                            background: `linear-gradient(135deg, ${tokens.primary[700]}, ${tokens.primary[500]})`,
                             boxShadow: '0 4px 12px rgba(16,185,129,0.3)',
                           }}
                         >
@@ -1867,7 +1861,7 @@ function StepsTimeline({
                         style={{
                           height: '100%',
                           width: `${getSectionProgress(step.progress)}%`,
-                          background: 'linear-gradient(90deg, #047857, #10b981)',
+                          background: `linear-gradient(90deg, ${tokens.primary[700]}, ${tokens.primary[500]})`,
                           borderRadius: '0 4px 4px 0',
                         }}
                       />

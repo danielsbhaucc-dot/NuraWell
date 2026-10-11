@@ -106,7 +106,6 @@ export async function POST(request: Request) {
       {
         user_id: user.id,
         step_id,
-        task_level_meta: mergedMeta,
         updated_at: nowIso,
         /** אות פעילות-משתמש אמיתי ל-dormancy engine (migration 000047). */
         last_engaged_at: nowIso,
@@ -173,6 +172,7 @@ export async function POST(request: Request) {
         task,
         taskLevelMeta: mergedMeta,
         executions: Array.isArray(execRows) ? execRows : [],
+        syncUnifiedLadder: false,
       });
 
       if (recoveryBridge?.assignment_id) {
