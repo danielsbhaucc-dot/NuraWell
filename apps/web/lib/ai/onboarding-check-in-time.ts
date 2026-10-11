@@ -50,7 +50,8 @@ export function normalizeCheckInTimes(raw: unknown): string[] {
       if (!m) return null;
       return `${m[1].padStart(2, '0')}:${m[2]}`;
     })
-    .filter((t): t is string => Boolean(t));
+    .filter((t): t is string => Boolean(t))
+    .slice(0, 12); // MAX_CHECK_IN_TIMES (workflow payload schema)
 }
 
 export function israelDateKey(now: Date = new Date()): string {
