@@ -79,7 +79,9 @@ export async function generateMetadata({ params }: { params: Promise<{ stepId: s
   const { stepId } = await params;
   const supabase = await createClient();
   const title = await fetchJourneyStepTitleByParam(supabase, stepId);
-  return { title: title || 'שיעור' };
+  // resolve unknown steps here (before the page streams) so the response is a real 404, not a soft 200
+  if (!title) notFound();
+  return { title };
 }
 
 export default async function StepPage({ params }: { params: Promise<{ stepId: string }> }) {

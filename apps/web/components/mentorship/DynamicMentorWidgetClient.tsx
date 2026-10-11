@@ -79,17 +79,11 @@ export function DynamicMentorWidgetClient({
     }
   }, []);
 
-  useEffect(() => {
-    void loadSnapshot();
-    // brief — אותו SSOT כמו DashboardBriefCard; idle כדי לא להכפיל לחץ רשת ב-mount.
-    return runWhenIdle(() => {
-      void fetchDashboardBrief().then((briefJson) => {
-        if (briefJson?.headline && briefJson?.body) {
-          setBrief({ headline: briefJson.headline, body: briefJson.body });
-        }
-      });
-    }, 1800);
-  }, [loadSnapshot]);
+  // /home dedupe: the hero already shows today's task and DashboardBriefCard shows the brief — this card
+  // carries only the mentorship strategy's next-best-action (no extra snapshot/brief fetches).
+  void loadSnapshot;
+  void fetchDashboardBrief;
+  void runWhenIdle;
 
   const name = firstName && firstName !== 'משתמש' ? firstName : null;
 

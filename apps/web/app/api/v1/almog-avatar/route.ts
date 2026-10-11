@@ -65,7 +65,7 @@ export async function GET() {
         cdn_hostname,
         cdn_configured: true,
       },
-      { headers: { 'Cache-Control': 'no-store' } }
+      { headers: { 'Cache-Control': 'public, max-age=120, s-maxage=300, stale-while-revalidate=600' } }
     );
   } catch (e: unknown) {
     const err = e as { name?: string; $metadata?: { httpStatusCode?: number } };

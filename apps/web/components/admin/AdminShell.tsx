@@ -10,6 +10,7 @@ import {
   ChevronDown,
   DollarSign,
   TrendingUp,
+  AlertTriangle,
   Globe,
   LayoutDashboard,
   BookOpen,
@@ -275,6 +276,16 @@ export function AdminShell({
             >
               <TrendingUp size={20} className={cn('shrink-0', np === '/ops/business' && 'text-emerald-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>מדדים עסקיים</span>
+            </Link>
+
+            <Link
+              href={opsHref('/errors')}
+              onClick={() => setSidebarOpen(false)}
+              className={navBtn(np === '/ops/errors', 'emerald')}
+              title="שגיאות מערכת"
+            >
+              <AlertTriangle size={20} className={cn('shrink-0', np === '/ops/errors' && 'text-emerald-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>שגיאות מערכת</span>
             </Link>
 
             <Link

@@ -266,9 +266,10 @@ export function HomeClient({
               done: taskCounts.done,
               accepted: taskCounts.accepted,
               dueToday: taskCounts.dueToday,
-              previewTitle: taskPreview?.title ?? null,
-              previewHint: taskPreview?.hint ?? null,
-              previewEmoji: taskPreview?.emoji ?? null,
+              // the featured task is already in the bubble — badge shows counts only (was a duplicate)
+              previewTitle: null,
+              previewHint: null,
+              previewEmoji: null,
               loading: taskLoading,
             }}
             onTaskBadgeClick={() => setTasksPopupOpen(true)}
@@ -389,7 +390,9 @@ export function HomeClient({
                           ? 'עוד לא לקחנו משימות — בוא נתחיל ביחד'
                           : taskCounts.dueToday === 0
                             ? 'אין משימה פתוחה להיום — מחר נמשיך 🌱'
-                            : taskCounts.pending > 0
+                            : taskCounts.pending === 1
+                              ? 'משימה אחת מחכה לך היום'
+                              : taskCounts.pending > 0
                               ? `${taskCounts.pending} משימות מחכות לך היום`
                               : 'סיימת את כל מה שלהיום! גאה בך ✦'}
                   </p>

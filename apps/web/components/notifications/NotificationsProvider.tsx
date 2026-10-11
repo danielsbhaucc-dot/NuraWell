@@ -289,7 +289,24 @@ export function NotificationsProvider({
 
   const filterKey = `${viewMode}-${filterKind}`;
 
-  const loadBadgeOnly = useCallback(async () => {
+  /** coalesce: mount + visibility + realtime + route effects used to fire 3–5 badge fetches per page */
+  const badgeInflight = useRef<Promise<void> | null>(null);
+  const badgeLastAt = useRef(0);
+  const badgeTrailing = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadBadgeOnly = useCallback(async (): Promise<void> => {
+    if (badgeInflight.current) return badgeInflight.current;
+    const since = Date.now() - badgeLastAt.current;
+    if (since < 2000) {
+      if (!badgeTrailing.current) {
+        badgeTrailing.current = setTimeout(() => {
+          badgeTrailing.current = null;
+          void loadBadgeOnlyRef.current?.();
+        }, 2000 - since);
+      }
+      return;
+    }
+    badgeLastAt.current = Date.now();
+    badgeInflight.current = (async () => {
     try {
       const url = buildListUrl({
         viewMode: 'inbox',
@@ -304,7 +321,13 @@ export function NotificationsProvider({
     } catch {
       /* badge best-effort */
     }
+    })().finally(() => {
+      badgeInflight.current = null;
+    });
+    return badgeInflight.current;
   }, []);
+  const loadBadgeOnlyRef = useRef(loadBadgeOnly);
+  loadBadgeOnlyRef.current = loadBadgeOnly;
 
   const loadInitial = useCallback(
     async (opts?: { silent?: boolean }) => {

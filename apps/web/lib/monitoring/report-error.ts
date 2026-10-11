@@ -46,7 +46,39 @@ function toMessage(error: unknown): { message: string; stack?: string } {
   }
 }
 
+/** Free default sink: public.error_events (service role, REST — works in node and edge). Never throws. */
+async function storeInSupabase(payload: MonitoringPayload): Promise<void> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!url || !key || process.env.NODE_ENV === 'test') return;
+  if (payload.severity === 'info') return;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3000);
+  try {
+    await fetch(`${url}/rest/v1/error_events`, {
+      method: 'POST',
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        environment: payload.environment,
+        severity: payload.severity,
+        source: payload.source ?? null,
+        route: payload.tags?.route ?? null,
+        message: payload.message.slice(0, 1000),
+        stack: payload.stack?.slice(0, 4000) ?? null,
+        user_id: payload.userId && /^[0-9a-f-]{36}$/i.test(payload.userId) ? payload.userId : null,
+        tags: payload.tags ?? {},
+      }),
+      signal: controller.signal,
+    });
+  } catch {
+    /* best-effort */
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function deliver(payload: MonitoringPayload): Promise<void> {
+  await storeInSupabase(payload);
   const webhook = process.env.MONITORING_WEBHOOK_URL?.trim();
   if (webhook) {
     const controller = new AbortController();
