@@ -49,3 +49,6 @@ export const AWAITING_ASSISTANT_RESUME_MS = 90_000;
 
 /** תדירות סקר לתשובה שנשמרה בשרת */
 export const AWAITING_ASSISTANT_POLL_MS = 2_500;
+
+/** אחרי זמן זה מפסיקים לסקור (סשן תקוע/נטוש) — המשתמש עדיין יראה את התשובה בטעינה הבאה. */
+export const AWAITING_ASSISTANT_GIVE_UP_MS = 5 * 60_000;
