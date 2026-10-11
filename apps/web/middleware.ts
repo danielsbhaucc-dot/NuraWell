@@ -418,6 +418,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|webmanifest)$).*)',
+    // cost: skip static/metadata files (no auth/headers needed) to cut Edge Middleware invocations.
+    '/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|webmanifest|woff2?|ttf|otf|mp3|mp4|webm|txt|xml|map)$).*)',
   ],
 };

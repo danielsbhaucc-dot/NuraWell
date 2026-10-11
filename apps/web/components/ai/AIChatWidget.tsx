@@ -46,6 +46,7 @@ import {
 import { transcriptTurnsToUiMessages } from '../../lib/client/chat-session-messages';
 import {
   AWAITING_ASSISTANT_POLL_MS,
+  AWAITING_ASSISTANT_GIVE_UP_MS,
   AWAITING_ASSISTANT_RESUME_MS,
   clearPendingChatReply,
   isAwaitingAssistantResponse,
@@ -660,13 +661,22 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
   useEffect(() => {
     if (!open) return;
     const tick = () => {
+      // cost: no background polling from hidden tabs (each tick = 1–2 function invocations).
+      if (document.visibilityState !== 'visible') return;
       void refreshSessionList({ silent: true });
       if (panelView === 'thread' && sessionIdRef.current) {
         void refreshChatSession(sessionIdRef.current);
       }
     };
     const id = window.setInterval(tick, 60_000);
-    return () => window.clearInterval(id);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') tick();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [open, panelView]);
 
   const isSessionClosed = chatSession?.status === 'closed';
@@ -1124,6 +1134,14 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
 
     const poll = async () => {
       if (cancelled) return;
+      // cost: never poll from a hidden tab, and give up after AWAITING_ASSISTANT_GIVE_UP_MS
+      // (a stuck/abandoned session otherwise polled the API every 2.5s forever).
+      if (Date.now() - startedAt > AWAITING_ASSISTANT_GIVE_UP_MS) {
+        setAwaitingAssistantRecovery(false);
+        clearPendingChatReply();
+        return;
+      }
+      if (document.visibilityState !== 'visible') return;
       try {
         const { session, messages: turns, awaiting_assistant } =
           await fetchChatSessionMessages(sid);

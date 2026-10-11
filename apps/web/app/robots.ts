@@ -11,7 +11,12 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/', '/profile', '/progress', '/lessons/'],
+        disallow: ['/api/', '/admin', '/profile', '/progress', '/lessons/', '/_next/image'],
+      },
+      {
+        // cost: AI-training/SEO scrapers that crawl heavily and bring no users.
+        userAgent: ['GPTBot', 'CCBot', 'ClaudeBot', 'anthropic-ai', 'Bytespider', 'Amazonbot', 'meta-externalagent', 'AhrefsBot', 'SemrushBot', 'MJ12bot', 'DotBot', 'PetalBot', 'DataForSeoBot'],
+        disallow: '/',
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
