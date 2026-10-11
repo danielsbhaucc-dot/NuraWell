@@ -318,7 +318,7 @@ export function ProgressReportProvider({
             </div>
 
             <div
-              className="shrink-0 px-4 pb-2 text-right"
+              className="shrink-0 px-4 pb-2 text-start"
               style={{ borderBottom: '1px solid rgba(6,78,59,0.08)' }}
             >
               <div className="flex items-center gap-2 justify-end">
@@ -402,12 +402,12 @@ export function ProgressReportProvider({
                           />
                           <div className="relative flex items-center gap-2 justify-end mb-3">
                             <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
-                            <h3 className="text-sm font-black text-emerald-950 truncate text-right">
+                            <h3 className="text-sm font-black text-emerald-950 truncate text-start">
                               משימות מאלמוג
                             </h3>
                           </div>
                           <div className="relative space-y-2">
-                            <p className="text-[11px] font-bold text-emerald-800/85 text-right">
+                            <p className="text-[11px] font-bold text-emerald-800/85 text-start">
                               אותן משימות שרואים ב&quot;המשימות שלי&quot;
                             </p>
                             {almogOpen.map((t) => {
@@ -419,7 +419,7 @@ export function ProgressReportProvider({
                                   type="button"
                                   disabled={busy}
                                   onClick={() => void saveAlmogDone(t)}
-                                  className="glass-inset flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-right transition active:scale-[0.99] disabled:opacity-60"
+                                  className="glass-inset flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-start transition active:scale-[0.99] disabled:opacity-60"
                                 >
                                   {busy ? (
                                     <Loader2 className="h-5 w-5 shrink-0 animate-spin text-emerald-700" />
@@ -429,7 +429,7 @@ export function ProgressReportProvider({
                                   <span className="text-xl shrink-0" aria-hidden>
                                     ✨
                                   </span>
-                                  <span className="flex-1 text-right text-sm font-bold text-emerald-950 leading-snug">
+                                  <span className="flex-1 text-start text-sm font-bold text-emerald-950 leading-snug">
                                     {t.title}
                                     {similar > 1 ? (
                                       <span className="mt-0.5 block text-[10px] font-semibold text-emerald-800/65">
@@ -467,12 +467,12 @@ export function ProgressReportProvider({
                             />
                             <div className="relative flex items-center gap-2 justify-end mb-3">
                               <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
-                              <h3 className="text-sm font-black text-emerald-950 truncate text-right">
+                              <h3 className="text-sm font-black text-emerald-950 truncate text-start">
                                 צעד {step.step_number}: {step.title}
                               </h3>
                             </div>
                             <div className="relative space-y-2">
-                              <p className="text-[11px] font-bold text-emerald-800/85 text-right">משימות שקיבלת</p>
+                              <p className="text-[11px] font-bold text-emerald-800/85 text-start">משימות שקיבלת</p>
                                 {acceptedTasks.map((t) => {
                                   const { schedule, times_per_day, weekly_day, meal_timing, meal_target } =
                                     resolveTaskSchedule(t, userMealProfile);
@@ -502,7 +502,7 @@ export function ProgressReportProvider({
                                           <span className="text-xl shrink-0" aria-hidden>
                                             {emoji}
                                           </span>
-                                          <span className="flex-1 text-right text-sm font-bold text-emerald-950 leading-snug">
+                                          <span className="flex-1 text-start text-sm font-bold text-emerald-950 leading-snug">
                                             {t.title}
                                           </span>
                                         </div>
@@ -535,7 +535,7 @@ export function ProgressReportProvider({
                                       <span className="text-xl shrink-0" aria-hidden>
                                         {emoji}
                                       </span>
-                                      <span className="flex-1 text-right text-sm font-bold text-emerald-950 leading-snug">
+                                      <span className="flex-1 text-start text-sm font-bold text-emerald-950 leading-snug">
                                         {t.title}
                                       </span>
                                     </label>
@@ -580,12 +580,12 @@ export function ProgressReportProvider({
                             />
                             <div className="relative flex items-center gap-2 justify-end mb-3">
                               <Leaf className="h-4 w-4 text-emerald-600 shrink-0" />
-                              <h3 className="text-sm font-black text-emerald-950 truncate text-right">
+                              <h3 className="text-sm font-black text-emerald-950 truncate text-start">
                                 צעד {step.step_number}: {step.title}
                               </h3>
                             </div>
                             <div className="relative space-y-2">
-                                <p className="text-[11px] font-bold text-emerald-800/85 text-right flex items-center justify-end gap-1">
+                                <p className="text-[11px] font-bold text-emerald-800/85 text-start flex items-center justify-end gap-1">
                                   <Leaf className="h-3.5 w-3.5" />
                                   הרגלים בצעד
                                 </p>

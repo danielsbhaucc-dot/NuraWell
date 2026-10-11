@@ -62,7 +62,7 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
       {/* Progress Bar */}
       <div className="relative h-2.5 rounded-full overflow-hidden mb-4" style={{ background: 'rgba(245,166,35,0.12)' }}>
         <motion.div
-          className="absolute inset-y-0 right-0 rounded-full"
+          className="absolute inset-y-0 start-0 rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.5, ease: 'easeOut' as const }}
@@ -99,12 +99,12 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
                 </AnimatePresence>
               </div>
               <div className="flex-1 min-w-0">
-                <p className={cn('text-sm font-semibold leading-snug text-right', isDone && 'line-through')}
+                <p className={cn('text-sm font-semibold leading-snug text-start', isDone && 'line-through')}
                   style={{ color: isDone ? '#9896B8' : '#1A1730' }}>
                   {task.title}
                 </p>
                 {task.description && !isDone && (
-                  <p className="text-xs mt-0.5 text-right leading-relaxed" style={{ color: '#6B6890' }}>{task.description}</p>
+                  <p className="text-xs mt-0.5 text-start leading-relaxed" style={{ color: '#6B6890' }}>{task.description}</p>
                 )}
               </div>
               {task.is_required && !isDone && (

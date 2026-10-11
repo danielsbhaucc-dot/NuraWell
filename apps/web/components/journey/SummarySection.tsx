@@ -141,7 +141,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
             >
               <div className="flex flex-col items-center gap-5 sm:flex-row sm:justify-center sm:gap-8">
                 <LessonScoreRing percent={overallScore} />
-                <div className="text-center sm:text-right flex flex-col items-center sm:items-end gap-2 min-w-0">
+                <div className="text-center sm:text-start flex flex-col items-center sm:items-end gap-2 min-w-0">
                   <div className="text-4xl sm:text-5xl leading-none drop-shadow-sm">{getScoreEmoji(overallScore)}</div>
                   <p className="text-white/95 font-bold text-[15px] sm:text-base leading-snug max-w-[240px] sm:max-w-xs">
                     {getScoreMessage(overallScore)}
@@ -215,7 +215,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
             <div className="px-3 sm:px-6 pb-1 pt-6">
               <div className="relative mx-auto w-full max-w-lg min-w-0">
                 <div
-                  className="pointer-events-none absolute right-[27px] top-16 bottom-14 z-0 border-r-2 border-dashed border-emerald-400/45"
+                  className="pointer-events-none absolute start-[27px] top-16 bottom-14 z-0 border-s-2 border-dashed border-emerald-400/45"
                   aria-hidden
                 />
                 <div className="relative z-[1] space-y-12 pt-2">
@@ -310,11 +310,11 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                       }}
                     >
                       <div
-                        className="absolute right-0 top-3 bottom-3 w-1 rounded-full opacity-90"
+                        className="absolute start-0 top-3 bottom-3 w-1 rounded-full opacity-90"
                         style={{ background: accentBar }}
                         aria-hidden
                       />
-                          <div className="flex flex-row-reverse items-start gap-3.5 px-4 pt-4 pb-3 pr-5">
+                          <div className="flex flex-row-reverse items-start gap-3.5 px-4 pt-4 pb-3 ps-5">
                             <div
                               className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[18px] text-[26px]"
                               style={{
@@ -326,7 +326,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                             >
                               {taskEmoji}
                             </div>
-                            <div className="min-w-0 flex-1 text-right space-y-2">
+                            <div className="min-w-0 flex-1 text-start space-y-2">
                               <div className="flex items-center justify-end gap-2 flex-wrap">
                                 {isRecurring ? (
                                   <span
@@ -503,7 +503,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                         </span>
                       </div>
                       <div
-                        className="min-w-0 flex-1 px-4 py-3.5 flex flex-col justify-center text-right"
+                        className="min-w-0 flex-1 px-4 py-3.5 flex flex-col justify-center text-start"
                         style={{
                           background: 'linear-gradient(180deg, rgba(248,251,246,0.78) 0%, rgba(240,253,250,0.5) 100%)',
                         }}
@@ -709,7 +709,7 @@ function SummaryGlassSection({
         >
           {icon}
         </div>
-        <div className="min-w-0 flex-1 text-right">
+        <div className="min-w-0 flex-1 text-start">
           <h3
             className="text-[15px] sm:text-base font-black text-white leading-snug"
             style={{ textShadow: '0 1px 2px rgba(0,0,0,0.14)' }}
@@ -861,7 +861,7 @@ function AccordionSummarySection({
           >
             {icon}
           </div>
-          <div className="min-w-0 flex-1 text-right">
+          <div className="min-w-0 flex-1 text-start">
             <h3
               className="text-[15px] font-black leading-snug text-white sm:text-base"
               style={{ textShadow: '0 1px 2px rgba(0,0,0,0.14)' }}

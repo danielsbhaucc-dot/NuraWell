@@ -86,10 +86,10 @@ export function TranscriptAccessStatusPanel({
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-[#E8D5B5]/80 text-stone-500">
-                <th className="px-2 py-1.5 text-right font-semibold w-8" aria-label="סטטוס" />
-                <th className="px-2 py-1.5 text-right font-semibold">שלב</th>
-                <th className="px-2 py-1.5 text-right font-semibold whitespace-nowrap">תאריך ושעה</th>
-                <th className="px-2 py-1.5 text-right font-semibold">פרטים</th>
+                <th className="px-2 py-1.5 text-start font-semibold w-8" aria-label="סטטוס" />
+                <th className="px-2 py-1.5 text-start font-semibold">שלב</th>
+                <th className="px-2 py-1.5 text-start font-semibold whitespace-nowrap">תאריך ושעה</th>
+                <th className="px-2 py-1.5 text-start font-semibold">פרטים</th>
               </tr>
             </thead>
             <tbody>

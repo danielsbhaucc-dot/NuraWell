@@ -850,7 +850,7 @@ export function NotificationsProvider({
                     <span className="w-[7.5rem] shrink-0" aria-hidden />
                   )}
 
-                  <div className="min-w-0 flex-1 text-right pe-0.5">
+                  <div className="min-w-0 flex-1 text-start pe-0.5">
                     <div className="flex items-center justify-end gap-2 flex-wrap">
                       <span className="relative flex h-2.5 w-2.5 shrink-0">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-100/80 opacity-75" />
@@ -929,7 +929,7 @@ export function NotificationsProvider({
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-emerald-50/70 via-teal-50/40 to-slate-100/60 px-3 sm:px-4 pb-10 pt-3 space-y-2.5 scrollbar-hide text-right">
+            <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-emerald-50/70 via-teal-50/40 to-slate-100/60 px-3 sm:px-4 pb-10 pt-3 space-y-2.5 scrollbar-hide text-start">
               {busy && items.length === 0 && (
                 <div className="flex items-center justify-center py-16 text-teal-800">
                   <Loader2 className="h-8 w-8 animate-spin opacity-85" />

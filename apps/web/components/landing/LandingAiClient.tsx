@@ -256,7 +256,7 @@ function AiDemoChat() {
         <span className={`relative flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300/30 to-emerald-400/20 text-cyan-200 ring-1 ring-white/25 ${styles.orb}`}>
           <BrainCircuit className="h-5 w-5" aria-hidden />
         </span>
-        <div className="text-right">
+        <div className="text-start">
           <p className="text-sm font-black text-white">אלמוג · מנטור AI</p>
           <p className="flex items-center gap-1.5 text-[11px] text-emerald-200/80">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
@@ -278,21 +278,21 @@ function AiDemoChat() {
           m.role === 'user' ? (
             <div
               key={i}
-              className="ms-auto max-w-[82%] whitespace-pre-wrap break-words rounded-2xl rounded-tl-md bg-background-card/12 px-3.5 py-2.5 text-emerald-50"
+              className="ms-auto max-w-[82%] whitespace-pre-wrap break-words rounded-2xl rounded-se-md bg-background-card/12 px-3.5 py-2.5 text-emerald-50"
             >
               {m.content}
             </div>
           ) : (
             <div
               key={i}
-              className="me-auto max-w-[90%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-md border border-cyan-300/25 bg-gradient-to-br from-cyan-400/15 to-emerald-400/10 px-3.5 py-2.5 text-white"
+              className="me-auto max-w-[90%] whitespace-pre-wrap break-words rounded-2xl rounded-ss-md border border-cyan-300/25 bg-gradient-to-br from-cyan-400/15 to-emerald-400/10 px-3.5 py-2.5 text-white"
             >
               {m.content}
             </div>
           ),
         )}
         {waiting ? (
-          <div className="me-auto inline-flex items-center gap-1 rounded-2xl rounded-tr-md border border-white/10 bg-background-card/8 px-3.5 py-3">
+          <div className="me-auto inline-flex items-center gap-1 rounded-2xl rounded-ss-md border border-white/10 bg-background-card/8 px-3.5 py-3">
             <span className={styles.typing}>
               <span />
               <span />
@@ -333,7 +333,7 @@ function AiDemoChat() {
           disabled={streaming}
           placeholder="כתבו לאלמוג…"
           aria-label="הודעה לאלמוג"
-          className="flex-1 bg-transparent text-right text-sm text-white outline-none placeholder:text-white/40 disabled:opacity-60"
+          className="flex-1 bg-transparent text-start text-sm text-white outline-none placeholder:text-white/40 disabled:opacity-60"
         />
         <button
           type="submit"
@@ -514,7 +514,7 @@ export function LandingAiClient() {
 
             {/* floating mini stat chips */}
             <motion.div
-              className={`absolute -right-3 -top-4 ${styles.floatMed}`}
+              className={`absolute -start-3 -top-4 ${styles.floatMed}`}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.6, duration: 0.5 }}
@@ -527,7 +527,7 @@ export function LandingAiClient() {
               </Glass>
             </motion.div>
             <motion.div
-              className={`absolute -bottom-5 -left-2 ${styles.floatSlow}`}
+              className={`absolute -bottom-5 -end-2 ${styles.floatSlow}`}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.75, duration: 0.5 }}
@@ -732,7 +732,7 @@ export function LandingAiClient() {
             ].map((s) => (
               <motion.div key={s.n} variants={fadeUp}>
                 <Glass strong className="relative h-full overflow-hidden rounded-3xl p-6">
-                  <span className="pointer-events-none absolute -left-2 -top-3 text-7xl font-black text-white/5">
+                  <span className="pointer-events-none absolute -end-2 -top-3 text-7xl font-black text-white/5">
                     {s.n}
                   </span>
                   <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-300/25 to-cyan-400/15 text-emerald-200 ring-1 ring-white/15">
@@ -931,7 +931,7 @@ export function LandingAiClient() {
 
           <div className="relative mx-auto mt-14 max-w-2xl">
             {/* glowing spine */}
-            <div className={`${styles.spine} right-[26px] top-0 hidden h-full w-[2px] sm:block`} aria-hidden>
+            <div className={`${styles.spine} start-[26px] top-0 hidden h-full w-[2px] sm:block`} aria-hidden>
               <span className={styles.spinePulse} style={{ left: '-5px' }} />
             </div>
 
@@ -952,9 +952,9 @@ export function LandingAiClient() {
                 <motion.li
                   key={step.day}
                   variants={fadeUp}
-                  className="relative sm:pr-16"
+                  className="relative sm:ps-16"
                 >
-                  <span className="absolute right-0 top-4 hidden h-[54px] w-[54px] items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300/30 to-emerald-400/20 text-cyan-100 ring-1 ring-white/25 sm:flex">
+                  <span className="absolute start-0 top-4 hidden h-[54px] w-[54px] items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300/30 to-emerald-400/20 text-cyan-100 ring-1 ring-white/25 sm:flex">
                     <step.icon className="h-6 w-6" aria-hidden />
                   </span>
                   <Glass className="rounded-3xl p-5">
@@ -1084,7 +1084,7 @@ export function LandingAiClient() {
                       type="button"
                       onClick={() => setOpenFaq(isOpen ? null : i)}
                       aria-expanded={isOpen}
-                      className="flex w-full items-center gap-3 px-5 py-4 text-right"
+                      className="flex w-full items-center gap-3 px-5 py-4 text-start"
                     >
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-cyan-300/15 text-cyan-200">
                         <HelpCircle className="h-4 w-4" aria-hidden />
@@ -1253,7 +1253,7 @@ export function LandingAiClient() {
           type="button"
           onClick={scrollTop}
           aria-label="חזרה לראש העמוד"
-          className={`fixed bottom-5 left-5 z-50 flex h-11 w-11 items-center justify-center rounded-full text-white transition hover:-translate-y-0.5 ${styles.glassStrong}`}
+          className={`fixed bottom-5 end-5 z-50 flex h-11 w-11 items-center justify-center rounded-full text-white transition hover:-translate-y-0.5 ${styles.glassStrong}`}
         >
           <ArrowUp className="h-5 w-5" aria-hidden />
         </button>

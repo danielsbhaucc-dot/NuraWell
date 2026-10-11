@@ -95,7 +95,7 @@ export function AlmogScreenCoach({
       />
       <div className="flex items-start gap-3">
         <AlmogAvatarChipWithNameTag size={48} />
-        <div className="min-w-0 flex-1 text-right">
+        <div className="min-w-0 flex-1 text-start">
           <h3
             className="text-[15px] font-black leading-snug"
             style={{ fontFamily: hebrewFont, color: palette.title, letterSpacing: '-0.01em' }}

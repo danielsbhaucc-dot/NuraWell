@@ -163,15 +163,15 @@ export function AdminShell({
     >
       <OpsSessionGuard />
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
-        <div className="absolute -top-28 -right-20 h-[22rem] w-[22rem] rounded-full bg-gradient-to-br from-emerald-400/45 to-teal-400/35 blur-3xl" />
-        <div className="absolute top-1/4 -left-16 h-72 w-72 rounded-full bg-gradient-to-tr from-fuchsia-400/35 to-violet-400/30 blur-3xl" />
-        <div className="absolute bottom-10 right-1/3 h-56 w-56 rounded-full bg-gradient-to-tl from-amber-300/40 to-orange-300/30 blur-3xl" />
-        <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-gradient-to-tr from-sky-400/30 to-cyan-300/25 blur-3xl" />
+        <div className="absolute -top-28 -start-20 h-[22rem] w-[22rem] rounded-full bg-gradient-to-br from-emerald-400/45 to-teal-400/35 blur-3xl" />
+        <div className="absolute top-1/4 -end-16 h-72 w-72 rounded-full bg-gradient-to-tr from-fuchsia-400/35 to-violet-400/30 blur-3xl" />
+        <div className="absolute bottom-10 start-1/3 h-56 w-56 rounded-full bg-gradient-to-tl from-amber-300/40 to-orange-300/30 blur-3xl" />
+        <div className="absolute bottom-0 end-0 h-64 w-64 rounded-full bg-gradient-to-tr from-sky-400/30 to-cyan-300/25 blur-3xl" />
       </div>
 
       <aside
         className={cn(
-          'fixed top-0 right-0 z-40 h-[100dvh] max-h-[100dvh] transition-[transform,width] duration-300 ease-in-out',
+          'fixed top-0 start-0 z-40 h-[100dvh] max-h-[100dvh] transition-[transform,width] duration-300 ease-in-out',
           'w-[min(18.5rem,calc(100vw-1.25rem))]',
           sidebarCollapsed ? 'lg:w-[4.75rem]' : 'lg:w-64',
           sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0',
@@ -179,7 +179,7 @@ export function AdminShell({
       >
         <div
           className={cn(
-            'flex h-full min-h-0 flex-col overscroll-contain border-l border-white/70 bg-background-card/50 px-3 py-5 shadow-[0_20px_56px_rgba(99,102,241,0.14)] backdrop-blur-2xl sm:px-4 sm:py-6',
+            'flex h-full min-h-0 flex-col overscroll-contain border-e border-white/70 bg-background-card/50 px-3 py-5 shadow-[0_20px_56px_rgba(99,102,241,0.14)] backdrop-blur-2xl sm:px-4 sm:py-6',
             sidebarCollapsed && 'lg:px-2 lg:py-5',
           )}
         >
@@ -232,7 +232,7 @@ export function AdminShell({
             </div>
           </div>
 
-          <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-0.5" aria-label="ניווט פאנל ניהול">
+          <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto ps-0.5" aria-label="ניווט פאנל ניהול">
             <Link
               href={homeHref}
               onClick={() => setSidebarOpen(false)}
@@ -242,7 +242,7 @@ export function AdminShell({
               <LayoutDashboard size={20} className={cn('shrink-0', isHome && 'text-emerald-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>ראשי</span>
               {isHome && showNavLabels && (
-                <span className="mr-auto hidden h-2 w-2 rounded-full bg-emerald-500 lg:inline-block" aria-hidden />
+                <span className="ms-auto hidden h-2 w-2 rounded-full bg-emerald-500 lg:inline-block" aria-hidden />
               )}
             </Link>
 
@@ -302,7 +302,7 @@ export function AdminShell({
                   type="button"
                   onClick={() => setAlmogNavOpen((o) => !o)}
                   className={cn(
-                    'flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-right text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
+                    'flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-start text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
                     isAlmogNavSection && !isHome && !isJourneyManage
                       ? 'bg-violet-500/15 font-semibold text-violet-950'
                       : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
@@ -320,7 +320,7 @@ export function AdminShell({
                 </button>
 
                 {almogNavOpen && (
-                  <ul className="mr-2 mt-1 space-y-1 border-r border-violet-400/35 pr-3 pb-2">
+                  <ul className="ms-2 mt-1 space-y-1 border-s border-violet-400/35 ps-3 pb-2">
                     <li>
                       <Link
                         href={opsHref('/mentors')}
@@ -372,7 +372,7 @@ export function AdminShell({
                   type="button"
                   onClick={() => setJourneySettingsOpen((o) => !o)}
                   className={cn(
-                    'flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-right text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
+                    'flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-start text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
                     isJourneyManage && !isHome && !isAlmogNavSection
                       ? 'bg-amber-400/20 font-semibold text-amber-950'
                       : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
@@ -390,7 +390,7 @@ export function AdminShell({
                 </button>
 
                 {journeySettingsOpen && (
-                  <ul className="mr-2 mt-1 space-y-1 border-r border-amber-400/40 pr-3 pb-2">
+                  <ul className="ms-2 mt-1 space-y-1 border-s border-amber-400/40 ps-3 pb-2">
                     <li>
                       <Link
                         href={opsHref('/journey-hub')}
@@ -541,7 +541,7 @@ export function AdminShell({
             <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
               <AdminNotificationsBell opsHref={opsHref} />
 
-              <div className="flex items-center gap-2.5 rounded-2xl border border-white/55 bg-background-card/45 py-1 pl-1 pr-2.5 shadow-sm backdrop-blur-md sm:pr-3">
+              <div className="flex items-center gap-2.5 rounded-2xl border border-white/55 bg-background-card/45 py-1 pe-1 ps-2.5 shadow-sm backdrop-blur-md sm:ps-3">
                 <div className="hidden min-w-0 flex-col items-end leading-tight sm:flex">
                   <span className="max-w-[10rem] truncate text-sm font-bold text-emerald-950">
                     {adminDisplayName}
@@ -587,7 +587,7 @@ export function AdminShell({
       </main>
 
       <nav
-        className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-white/55 bg-background-card/55 px-2 py-2 shadow-[0_-8px_32px_rgba(99,102,241,0.12)] backdrop-blur-2xl safe-area-bottom lg:hidden"
+        className="fixed bottom-0 end-0 start-0 z-30 flex border-t border-white/55 bg-background-card/55 px-2 py-2 shadow-[0_-8px_32px_rgba(99,102,241,0.12)] backdrop-blur-2xl safe-area-bottom lg:hidden"
         aria-label="ניווט מהיר"
       >
         <Link href={homeHref} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isHome)}>
