@@ -140,7 +140,7 @@ export function TranscriptAccessRequestDialog({
               rows={2}
               disabled={busy}
               className="w-full rounded-xl border border-[#E8D5B5] bg-[#FFFBF5] px-3 py-2 text-sm text-stone-800"
-              placeholder="למשל: מעדיף/ה לא לשתף את השיחה הזו"
+              placeholder="למשל: עדיף לי לא לשתף את השיחה הזו"
             />
             <div className="flex gap-2">
               <button

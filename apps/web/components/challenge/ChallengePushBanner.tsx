@@ -15,7 +15,7 @@ export function ChallengePushBanner() {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-sky-100">תזכורות לאתגר</p>
           <p className="mt-0.5 text-xs text-white/50">
-            קבל/י push על משימות בוקר, סגירת חלון אכילה וסיום האתגר.
+            קבלו התראות על משימות בוקר, סגירת חלון אכילה וסיום האתגר.
           </p>
           {error ? <p className="mt-1 text-xs text-red-300">{error}</p> : null}
         </div>

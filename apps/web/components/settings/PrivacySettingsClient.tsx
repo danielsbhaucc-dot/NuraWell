@@ -115,7 +115,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
       toast.success(
         granted ? 'הסכמה גלובלית אושרה' : 'הסכמה גלובלית בוטלה',
         granted
-          ? 'צוות NuraWell יכול לצפות בתמלילים — ראה/י טבלת השקיפות.'
+          ? 'צוות NuraWell יכול לצפות בתמלילים — פרטים בטבלת השקיפות.'
           : 'גישת הצוות הוגבלה מחדש.',
       );
       await reloadTranscriptState();
@@ -171,7 +171,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
         router.replace('/settings/privacy');
       }
     } catch {
-      toast.error('טיפול בבקשה נכשל', 'נסה/י שוב או פנה/י לתמיכה.');
+      toast.error('טיפול בבקשה נכשל', 'אפשר לנסות שוב או לפנות לתמיכה.');
     } finally {
       setResolvingId(null);
     }
@@ -240,7 +240,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
           </div>
         </div>
         <p className="text-sm text-slate-600 leading-relaxed mt-3">
-          כאן תוכל/י לייצא עותק של הנתונים השמורים עליך, או לבקש מחיקת חשבון. לשאלות נוספות:{' '}
+          כאן אפשר לייצא עותק של הנתונים השמורים עליך, או לבקש מחיקת חשבון. לשאלות נוספות:{' '}
           <a href="mailto:privacy@nurawell.ai" className="font-semibold text-emerald-700 underline">
             privacy@nurawell.ai
           </a>
@@ -253,7 +253,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
           ייצוא נתונים (ניידות)
         </h2>
         <p className="text-sm text-slate-600">
-          הורד/י קובץ JSON עם הפרופיל, ההסכמות, ההתקדמות, השיחות והנתונים הקשורים לחשבונך.
+          הורדת קובץ JSON עם הפרופיל, ההסכמות, ההתקדמות, השיחות והנתונים הקשורים לחשבונך.
         </p>
         <button
           type="button"
@@ -292,7 +292,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
               />
               <span className="min-w-0 flex-1 text-sm text-slate-700">
                 <span className="font-bold text-slate-900 block mb-0.5">
-                  אני מאשר/ת לצוות NuraWell לצפות בתמלילי השיחות שלי
+                  אישרתי לצוות NuraWell לצפות בתמלילי השיחות שלי
                 </span>
                 ניתן לבטל בכל עת — הצוות יקבל התראה על ביטול. כל גישה נרשמת ביומן audit פנימי.
               </span>
@@ -306,7 +306,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                 onClick={() => setRevokeConfirmOpen(true)}
                 className="w-full min-h-[44px] rounded-xl border border-rose-200 bg-[#FFF5F0] px-4 py-2 text-sm font-bold text-rose-800 disabled:opacity-50"
               >
-                בטל/י את האישור לגישת צוות
+                ביטול האישור לגישת צוות
               </button>
             ) : null}
 
@@ -341,7 +341,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                             onChange={(e) => setDenyReason(e.target.value)}
                             rows={2}
                             className="w-full rounded-lg border border-[#E8D5B5] bg-[#FFFBF5] px-2 py-1.5 text-sm text-stone-800"
-                            placeholder="למשל: מעדיף/ה לא לשתף את השיחה הזו"
+                            placeholder="למשל: עדיף לי לא לשתף את השיחה הזו"
                           />
                           <div className="flex flex-wrap gap-2">
                             <button
@@ -425,7 +425,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
         </h2>
         <p className="text-sm text-red-900/80 mt-2 leading-relaxed">
           פעולה זו <strong>בלתי הפיכה</strong>. יימחקו החשבון, הפרופיל, המסע, השיחות, ההתראות וכל
-          הנתונים האישיים, למעט מה שאנו מחויבים לשמור על-פי דין. ראה/י{' '}
+          הנתונים האישיים, למעט מה שאנו מחויבים לשמור על-פי דין. פרטים ב{' '}
           <Link href="/privacy" className="underline font-semibold">
             מדיניות הפרטיות §11
           </Link>
@@ -440,7 +440,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
           }}
           className="mt-4 w-full min-h-[48px] rounded-xl font-bold text-red-800 border border-red-300 bg-background-card hover:bg-red-50"
         >
-          מחק/י את החשבון שלי
+          מחיקת החשבון שלי
         </button>
       </section>
 
@@ -474,7 +474,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
           לבטל את האישור?
         </h3>
         <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-          צוות NuraWell לא יוכל לצפות בתמלילי השיחות שלך (אלא אם תאשר/י שוב). מנהלי המערכת יקבלו
+          צוות NuraWell לא יוכל לצפות בתמלילי השיחות שלך (אלא אם יינתן אישור מחדש). מנהלי המערכת יקבלו
           התראה על הביטול.
         </p>
         <div className="mt-5 flex gap-2">
@@ -512,7 +512,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
               מחיקת חשבון לצמיתות
             </h3>
             <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-              לא ניתן לשחזר את החשבון. לאשר, הזן/י את כתובת האימייל שלך:
+              לא ניתן לשחזר את החשבון. לאישור, יש להזין את כתובת האימייל שלך:
             </p>
             <label className="block mt-4">
               <span className="text-xs font-bold text-slate-600 flex items-center gap-1 mb-1">

@@ -66,7 +66,7 @@ const EVENT_CARD_STYLES = [
 function whenYouPress(gender: OnboardingGender | ''): string {
   if (gender === 'male') return 'שתלחץ';
   if (gender === 'female') return 'שתלחצי';
-  return 'שתלחץ/י';
+  return 'שלוחצים';
 }
 
 function formatDayKey(iso: string): string {

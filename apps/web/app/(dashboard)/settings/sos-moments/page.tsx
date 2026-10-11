@@ -24,7 +24,7 @@ export default async function SosMomentsPage() {
     .eq('id', user.id)
     .maybeSingle();
 
-  const firstName = firstNameFromFull(profile?.full_name ?? null) || 'חבר/ה';
+  const firstName = firstNameFromFull(profile?.full_name ?? null) || '';
   const gender = (profile?.gender as OnboardingGender | null) ?? '';
 
   return <SosMomentsClient firstName={firstName} gender={gender} />;

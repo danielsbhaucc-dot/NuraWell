@@ -243,7 +243,7 @@ export function NotificationsProvider({
         setTranscriptPopupOpen(true);
       }
     } catch {
-      toast.error('לא ניתן לטעון את הבקשה', 'נסה/י מהגדרות פרטיות.');
+      toast.error('לא ניתן לטעון את הבקשה', 'אפשר לנסות שוב מהגדרות פרטיות.');
     }
   }, [toast]);
 

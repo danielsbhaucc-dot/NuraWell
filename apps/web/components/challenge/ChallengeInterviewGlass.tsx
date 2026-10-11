@@ -160,7 +160,7 @@ export function ChallengeInterviewGlass() {
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="כתוב/י בכנות..."
+              placeholder="כתבו בכנות..."
               disabled={loading}
               className="min-h-12 flex-1 rounded-2xl border border-white/10 bg-background-card/10 px-4 text-white placeholder:text-white/35 focus:border-emerald-400/50 focus:outline-none"
             />

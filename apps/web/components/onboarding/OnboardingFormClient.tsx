@@ -24,7 +24,7 @@ import { validateBirthDate } from '@/lib/privacy/age-validation';
 const TOTAL_STEPS = 6;
 
 function firstName(full: string): string {
-  return full.trim().split(/\s+/)[0] || 'חבר/ה';
+  return full.trim().split(/\s+/)[0] || '';
 }
 
 function address(gender: OnboardingGender | '', name: string): string {

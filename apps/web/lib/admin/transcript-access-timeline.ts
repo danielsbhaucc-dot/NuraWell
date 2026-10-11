@@ -164,7 +164,7 @@ export function buildTranscriptAccessInsight(
   if (expired) {
     return {
       tone: 'warning',
-      text: 'הבקשה פגה ללא מענה. שלח/י בקשה חדשה אם עדיין נדרשת גישה.',
+      text: 'הבקשה פגה ללא מענה. אפשר לשלוח בקשה חדשה אם עדיין נדרשת גישה.',
     };
   }
 
@@ -176,7 +176,7 @@ export function buildTranscriptAccessInsight(
     if (hoursSinceView >= 6) {
       return {
         tone: 'info',
-        text: `המשתמש צפה בבקשה לפני ${Math.round(hoursSinceView)} שעות — ייתכן שממתין/ה להחליט. נותרו ~${Math.round(hoursLeft)} שעות לתוקף.`,
+        text: `המשתמש צפה בבקשה לפני ${Math.round(hoursSinceView)} שעות — ייתכן שעוד מתלבטים. נותרו ~${Math.round(hoursLeft)} שעות לתוקף.`,
       };
     }
     return {
@@ -188,7 +188,7 @@ export function buildTranscriptAccessInsight(
   if (request.notification_sent_at && hoursSinceCreated >= 4) {
     return {
       tone: 'warning',
-      text: `המשתמש טרם פתח את הבקשה (${Math.round(hoursSinceCreated)} שעות). שקול/י ליצור קשר ישיר או לשלוח בקשה חדשה.`,
+      text: `המשתמש טרם פתח את הבקשה (${Math.round(hoursSinceCreated)} שעות). כדאי לשקול ליצור קשר ישיר או לשלוח בקשה חדשה.`,
     };
   }
 
