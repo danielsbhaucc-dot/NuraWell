@@ -25,7 +25,7 @@ describe('public / app navigation link contracts', () => {
   it('redirects authenticated users away from marketing landing paths', () => {
     expect(MARKETING_PATHS_REDIRECT_WHEN_AUTHED).toContain('/');
     expect(MARKETING_PATHS_REDIRECT_WHEN_AUTHED).toContain('/v2');
-    expect(readWeb('middleware.ts')).toContain('MARKETING_PATHS_REDIRECT_WHEN_AUTHED');
+    expect(readWeb('proxy.ts')).toContain('MARKETING_PATHS_REDIRECT_WHEN_AUTHED');
   });
 
   it('wires home משימות shortcut as a button action, not href="#"', () => {
@@ -76,7 +76,7 @@ describe('public / app navigation link contracts', () => {
     const hrefs = LEGAL_NAV.map((item) => item.href);
     expect(hrefs).toContain('/about');
     expect(hrefs).toContain('/contact');
-    expect(readWeb('middleware.ts')).toContain("'/about'");
-    expect(readWeb('middleware.ts')).toContain("'/contact'");
+    expect(readWeb('proxy.ts')).toContain("'/about'");
+    expect(readWeb('proxy.ts')).toContain("'/contact'");
   });
 });
