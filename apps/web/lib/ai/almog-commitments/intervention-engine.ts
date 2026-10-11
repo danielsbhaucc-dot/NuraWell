@@ -452,6 +452,12 @@ export interface GeneratedPivotResult {
   relatesToRef: string | null;
 }
 
+/** Last-line guard: the model sometimes slips "אתה" to a woman. Safe 1:1 pronoun swap (not the reverse: "את" is ambiguous). */
+export function fixSecondPersonPronoun(text: string, gender: HebrewGender): string {
+  if (gender !== 'female') return text;
+  return text.replace(/(^|[^\u0590-\u05FF])אתה(?![\u0590-\u05FF])/g, '$1את');
+}
+
 const COACH_SYSTEM = `אתה "אלמוג" — מאמן הרגלים אמפתי ב-NuraWell. המשתמש נתקל בקושי עם משימה/הרגל.
 אתה מדבר בגוף ראשון, חם, קצר, בלי ז'רגון פסיכולוגי ובלי להסביר תיאוריות.
 
@@ -537,6 +543,7 @@ export async function generateBlockerPivot(
     tasksLine,
     `היסטוריית התערבויות:\n${formatMemoryForPrompt(params.memory)}`,
     pivotNote,
+    params.userGender === 'female' ? 'חשוב: המשתמשת אישה — כתבי אליה בלשון נקבה בכל משפט (את רוצה, מלאי, תתחילי). אף פעם לא "אתה".' : params.userGender === 'male' ? 'חשוב: המשתמש גבר — פנה אליו בלשון זכר בכל משפט.' : null,
   ]
     .filter(Boolean)
     .join('\n\n');
@@ -553,7 +560,7 @@ export async function generateBlockerPivot(
       ],
     });
 
-    const raw = completion.choices[0]?.message?.content ?? '';
+    const raw = fixSecondPersonPronoun(completion.choices[0]?.message?.content ?? '', params.userGender);
     const parsed = parseJsonObject(raw);
     if (!parsed || typeof parsed.empathy !== 'string' || !parsed.proposal) {
       const fb = fallbackPivot(category, allowedTypes, hasOriginal);
