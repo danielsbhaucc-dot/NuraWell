@@ -14,6 +14,7 @@ import {
   MARKETING_PATHS_REDIRECT_WHEN_AUTHED,
 } from './lib/navigation/app-home-path';
 import { handleChallengeMiddleware } from './lib/challenge/middleware-challenge';
+import { DEMO_ACCESS_COOKIE, parseDemoAccessCookie } from './lib/demo-access/cookie';
 
 // ── CSP nonce ──────────────────────────────────────────────────────────────
 // Each request gets a unique cryptographic nonce, replacing 'unsafe-inline'
@@ -114,6 +115,7 @@ const PUBLIC_ROUTES = [
   '/register/check-email',
   '/register/verified',
   '/auth/callback',
+  '/demo',
   '/about',
   '/contact',
   '/terms',
@@ -265,6 +267,11 @@ export async function middleware(request: NextRequest) {
         : new URL('/', request.nextUrl.origin).href;
       loginUrl.searchParams.set('redirect', opsReturnUrl);
       return applySecurityHeaders(NextResponse.redirect(loginUrl));
+    }
+
+    const demoPayload = await parseDemoAccessCookie(request.cookies.get(DEMO_ACCESS_COOKIE)?.value);
+    if (demoPayload && demoPayload.userId === user.id) {
+      return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, mainOrigin)));
     }
 
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();

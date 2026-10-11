@@ -14,6 +14,7 @@ import {
   getCachedAuthUser,
   getCachedDashboardProfile,
 } from '../../lib/supabase/cached-auth';
+import { DemoAccessBanner } from '../../components/demo-access/DemoAccessBanner';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -79,6 +80,7 @@ export default async function DashboardLayout({
             <DolevFirstLoginHost show={Boolean(showDolevWelcome)} profile={profileForDrawer} />
             <AlmogFirstLoginHost show={Boolean(showAlmogWelcome)} profile={profileForDrawer} />
             <MobileHeader user={user} />
+            <DemoAccessBanner />
             <main id="main-content" className="pb-24 pt-16 min-h-screen page-enter" tabIndex={-1}>
               {children}
             </main>

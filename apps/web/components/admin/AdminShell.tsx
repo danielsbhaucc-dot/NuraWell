@@ -11,6 +11,7 @@ import {
   DollarSign,
   TrendingUp,
   AlertTriangle,
+  FlaskConical,
   Globe,
   LayoutDashboard,
   BookOpen,
@@ -86,6 +87,7 @@ export function AdminShell({
   const isAudio = np === '/ops/audio' || np.startsWith('/ops/audio/');
   const isGuides = np === '/ops/guides' || np.startsWith('/ops/guides/');
   const isChallenge = np === '/ops/challenge' || np.startsWith('/ops/challenge/');
+  const isDemoAccess = np === '/ops/demo-access' || np.startsWith('/ops/demo-access/');
   const isJourneyManage =
     np.startsWith('/ops/journey') || np.startsWith('/ops/steps') || isJourneyHub || isAudio;
 
@@ -306,6 +308,16 @@ export function AdminShell({
             >
               <Trophy size={20} className={cn('shrink-0', isChallenge && 'text-violet-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>אתגר</span>
+            </Link>
+
+            <Link
+              href={opsHref('/demo-access')}
+              onClick={() => setSidebarOpen(false)}
+              className={navBtn(isDemoAccess, 'amber')}
+              title="קישורי דמו"
+            >
+              <FlaskConical size={20} className={cn('shrink-0', isDemoAccess && 'text-amber-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>קישורי דמו</span>
             </Link>
 
             {sidebarCollapsed ? (
