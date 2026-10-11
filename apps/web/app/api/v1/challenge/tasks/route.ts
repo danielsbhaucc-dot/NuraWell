@@ -236,3 +236,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ completion, celebration, day_complete: dayComplete });
 }
+
+// Cap function time so a hung upstream call cannot burn active CPU for the 300s default.
+export const maxDuration = 30;

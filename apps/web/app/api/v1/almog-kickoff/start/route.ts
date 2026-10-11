@@ -106,3 +106,6 @@ export async function POST(request: Request) {
     delayString: parsed.delayString ?? process.env.ALMOG_KICKOFF_DELAY ?? '90m',
   });
 }
+
+// Cap function time so a hung upstream call cannot burn active CPU for the 300s default.
+export const maxDuration = 30;

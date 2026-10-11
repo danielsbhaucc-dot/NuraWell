@@ -80,3 +80,6 @@ export async function POST(request: Request) {
 export function GET() {
   return NextResponse.json({ error: 'POST only' }, { status: 405, headers: { Allow: 'POST' } });
 }
+
+// Cap function time so a hung upstream call cannot burn active CPU for the 300s default.
+export const maxDuration = 60;

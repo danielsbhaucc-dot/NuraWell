@@ -34,3 +34,6 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'close_failed' }, { status: 500 });
   }
 }
+
+// Cap function time so a hung upstream call cannot burn active CPU for the 300s default.
+export const maxDuration = 30;

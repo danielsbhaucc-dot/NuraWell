@@ -22,7 +22,7 @@ import { publicAppUrlForAiReferer } from '@/lib/public-app-url';
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-export const preferredRegion = 'fra1';
+export const preferredRegion = 'syd1';
 
 const RAG_TOP_K = 5;
 

@@ -10,3 +10,6 @@ export async function GET() {
     defaultObjectKey: CHAT_BACKGROUND_OBJECT_KEY,
   });
 }
+
+// Cap function time so a hung upstream call cannot burn active CPU for the 300s default.
+export const maxDuration = 30;
