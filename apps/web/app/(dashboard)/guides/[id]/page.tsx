@@ -62,6 +62,13 @@ export default async function CourseDetailPage({ params }: PageProps) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
+  {
+    // SaaS content gate (no-op until BILLING_ENFORCE=1)
+    const { getEntitlements, hasFeature } = await import('@/lib/billing/entitlements');
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const ent = await getEntitlements(createAdminClient(), user.id);
+    if (ent.enforced && !hasFeature(ent, 'guides')) redirect('/upgrade?reason=guides');
+  }
 
   const { data: rawCourse } = await supabase
     .from('courses')

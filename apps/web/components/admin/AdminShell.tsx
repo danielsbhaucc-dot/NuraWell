@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   ChevronDown,
   DollarSign,
+  TrendingUp,
   Globe,
   LayoutDashboard,
   BookOpen,
@@ -264,6 +265,16 @@ export function AdminShell({
             >
               <DollarSign size={20} className={cn('shrink-0', isCosts && 'text-emerald-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>עלויות</span>
+            </Link>
+
+            <Link
+              href={opsHref('/business')}
+              onClick={() => setSidebarOpen(false)}
+              className={navBtn(np === '/ops/business', 'emerald')}
+              title="מדדים עסקיים"
+            >
+              <TrendingUp size={20} className={cn('shrink-0', np === '/ops/business' && 'text-emerald-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>מדדים עסקיים</span>
             </Link>
 
             <Link

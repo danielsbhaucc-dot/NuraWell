@@ -807,9 +807,18 @@ async function runMasterCron() {
     errors.push(`task_ladder: ${e instanceof Error ? e.message : String(e)}`);
   }
 
+  let billing: unknown = null;
+  try {
+    const { runBillingRetention } = await import('@/lib/billing/retention-job');
+    billing = await runBillingRetention(admin);
+  } catch (e) {
+    errors.push(`billing: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
   return NextResponse.json({
     ok: true,
     task_ladder: taskLadder,
+    billing,
     window_hours: 24,
     analyzed,
     analysis_skipped: analysisSkipped,
