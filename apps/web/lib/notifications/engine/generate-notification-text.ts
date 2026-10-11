@@ -21,12 +21,14 @@
  * זורקים מיידית בלי לקרוא ל-LLM כלל.
  */
 
+import { NOTIFY_DIRECT_ADDRESS_RULE } from '../../ai/empathy-notify-completion';
 import type OpenAI from 'openai';
 import type {
   AINotificationContext,
   NotificationState,
 } from '../../types/notification-state';
 import { truncateAtWordBoundary } from '../../text/truncate-graphemes';
+import { stripReasoningArtifacts, validateNotifyText } from '../validate-notify-text';
 import {
   getNotificationBackgroundLLM,
   getNotificationLLM,
@@ -212,7 +214,7 @@ export function buildUserMessage(ctx: AINotificationContext): string {
 
 /** מנרמל את התשובה הגולמית של ה-LLM. מחזיר '' אם פסול / ריק. */
 function postProcess(text: string): string {
-  let cleaned = (text ?? '').trim();
+  let cleaned = stripReasoningArtifacts(text ?? '');
   // הסרת גרשיים פותחים/סוגרים אם המודל הוסיף בכל זאת
   cleaned = cleaned.replace(/^["'״׳`]+|["'״׳`]+$/g, '').trim();
   if (!cleaned) return '';
@@ -278,17 +280,23 @@ async function callOnce(
         // מילים / ~250 תווים (≈ 60 טוקנים בעברית), עם buffer ל-emoji
         // ותווים מיוחדים. 140 חוסך ~36% מ-output budget מבלי לפגוע במגבלת
         // האורך המקסימלית של הודעת push.
-        max_tokens: 140,
+        // 140 was too tight: reasoning-capable fallbacks (gpt-5-mini) spent it on thinking
+        // → empty/truncated text. The 250-char cap is enforced after generation instead.
+        max_tokens: 400,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: `${SYSTEM_PROMPT}\n\n${NOTIFY_DIRECT_ADDRESS_RULE}` },
           { role: 'user', content: buildUserMessage(ctx) },
         ],
       },
       { signal: controller.signal }
     );
     const raw = completion.choices?.[0]?.message?.content ?? '';
-    const cleaned = postProcess(raw);
-    if (!cleaned) throw new Error('empty_or_invalid_response');
+    const checked = validateNotifyText(postProcess(raw), {
+      finishReason: completion.choices?.[0]?.finish_reason ?? null,
+      maxChars: 250,
+    });
+    if (!checked.ok) throw new Error(`invalid_notification_text: ${checked.reason}`);
+    const cleaned = checked.text;
     const usage = completion.usage
       ? {
           promptTokens: completion.usage.prompt_tokens ?? 0,

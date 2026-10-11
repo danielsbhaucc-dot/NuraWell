@@ -1,3 +1,4 @@
+import { filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
 import { NextResponse } from 'next/server';
 import { Client as WorkflowClient } from '@upstash/workflow';
 import { isAvoidPushActive } from '../../../../../../lib/ai/avoid-push';
@@ -199,7 +200,8 @@ async function runOnboardingCheckInsCron(request: Request) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rows, error } = await admin
     .from('profiles')
-    .select('id, ai_check_in_times, ai_system_prompt, ai_context')
+    // cost: no ai_system_prompt (large text) in the scan — fetched below only for users due now.
+    .select('id, ai_check_in_times, ai_context')
     .eq('onboarding_completed', true)
     .not('ai_check_in_times', 'is', null)
     .not('ai_system_prompt', 'is', null)
@@ -216,8 +218,7 @@ async function runOnboardingCheckInsCron(request: Request) {
     if (isAvoidPushActive(ctx)) continue;
 
     const times = normalizeCheckInTimes(row.ai_check_in_times);
-    const prompt = row.ai_system_prompt?.trim();
-    if (!prompt || times.length === 0) continue;
+    if (times.length === 0) continue;
 
     times.forEach((checkInTime, checkInIndex) => {
       if (isCheckInDueNow(checkInTime, now, windowMinutes)) {
@@ -226,10 +227,31 @@ async function runOnboardingCheckInsCron(request: Request) {
           checkInTime,
           checkInIndex,
           checkpointDate,
-          aiSystemPrompt: prompt,
+          aiSystemPrompt: '',
         });
       }
     });
+  }
+
+  /** admins מסוננים (אלא אם opt-in) + טעינת prompt רק למי שבאמת due עכשיו */
+  if (planned.length > 0) {
+    const dueIds = await filterNotifyEligibleUserIds(admin, [...new Set(planned.map((p) => p.userId))]);
+    const promptById = new Map<string, string>();
+    for (let i = 0; i < dueIds.length; i += 300) {
+      const { data: promptRows, error: promptErr } = await admin
+        .from('profiles')
+        .select('id, ai_system_prompt')
+        .in('id', dueIds.slice(i, i + 300));
+      if (promptErr) return NextResponse.json({ error: promptErr.message }, { status: 500 });
+      for (const r of (promptRows ?? []) as Array<{ id: string; ai_system_prompt: string | null }>) {
+        const p = r.ai_system_prompt?.trim();
+        if (p) promptById.set(r.id, p);
+      }
+    }
+    const kept = planned.filter((p) => promptById.has(p.userId));
+    for (const p of kept) p.aiSystemPrompt = promptById.get(p.userId)!;
+    planned.length = 0;
+    planned.push(...kept);
   }
 
   const maxTriggers = Math.min(
