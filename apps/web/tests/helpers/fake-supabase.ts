@@ -24,10 +24,16 @@ export function createFakeSupabase(seed: Record<string, Row[]> = {}) {
       return { ...r, [alias]: table(t).find((x) => x.id === r[fk]) ?? null };
     };
 
+    const defaultsFor = (): Row =>
+      name === 'user_task_assignments'
+        ? { current_level: 0, original_level: 0, last_level_change_at: null }
+        : name === 'task_definitions'
+          ? { ladder: [], floor_level: -2, max_level: 0 }
+          : {};
     const run = (): { data: unknown; error: null | { message: string } } => {
       const rows = table(name);
       if (op === 'insert') {
-        const list = (Array.isArray(payload) ? payload : [payload as Row]).map((p) => ({ id: uid(), occurred_at: new Date().toISOString(), ...p }));
+        const list = (Array.isArray(payload) ? payload : [payload as Row]).map((p) => ({ id: uid(), occurred_at: new Date().toISOString(), ...defaultsFor(), ...p }));
         rows.push(...list);
         return { data: list.map(embed), error: null };
       }
@@ -35,8 +41,7 @@ export function createFakeSupabase(seed: Record<string, Row[]> = {}) {
         const p = payload as Row;
         const ex = rows.find((r) => onConflict.every((k) => r[k] === p[k]));
         if (ex) Object.assign(ex, p);
-        const defaults: Row = name === 'user_task_assignments' ? { current_level: 0, original_level: 0, last_level_change_at: null } : name === 'task_definitions' ? { ladder: [], floor_level: -2, max_level: 0 } : {};
-        const row = ex ?? { id: uid(), ...defaults, ...p };
+        const row = ex ?? { id: uid(), ...defaultsFor(), ...p };
         if (!ex) rows.push(row);
         return { data: [embed(row)], error: null };
       }

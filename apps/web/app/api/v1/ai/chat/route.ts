@@ -2426,6 +2426,10 @@ export async function POST(request: Request) {
    * ה-DB במקום להצטבר עליהן. trivialBypass כבר ידוע כאן — אין שינוי תוצאה, רק תזמון.
    */
   const profilePromise = fetchChatProfileRow(supabase, user.id);
+  /** unified task plan (main tasks + ladder levels + recent level changes) — started early, awaited at prompt build */
+  const taskPlanPromise = import('../../../../../lib/tasks')
+    .then(({ getPlan }) => getPlan(createAdminClient(), user.id))
+    .catch(() => null);
   /** perf: מתחיל מיד כש-profile מוכן (במקביל לנתב), במקום אחרי כל שליפות ההקשר. */
   const returnSignalsPromise = isCasualGreeting(lastUserText)
     ? Promise.resolve({ daysSincePriorChat: null as number | null, unansweredTouchCount: 0 })
@@ -3327,6 +3331,20 @@ export async function POST(request: Request) {
     }
 
     if (systemKnowledgeBlock) contextSections.push(systemKnowledgeBlock);
+    {
+      const plan = await taskPlanPromise;
+      if (plan && plan.length) {
+        const { planForPrompt } = await import('../../../../../lib/tasks');
+        const recent = plan
+          .flatMap((t) => t.history.filter((h) => h.kind === 'level_change').map((h) => ({ t: t.level.title, h })))
+          .sort((x, y) => y.h.occurred_at.localeCompare(x.h.occurred_at))
+          .slice(0, 3)
+          .map(({ t, h }) => `- ${h.date_key ?? ''}: "${t}" ${(h.to_level ?? 0) < (h.from_level ?? 0) ? 'הוקלה' : 'עלתה'}${h.reason ? ` (${h.reason.slice(0, 80)})` : ''}`);
+        contextSections.push(
+          ['[התוכנית של המשתמש — רקע שקט, להזכיר רק כשרלוונטי]', planForPrompt(plan), ...(recent.length ? ['שינויי רמה אחרונים:', ...recent] : [])].join('\n')
+        );
+      }
+    }
     if (ragMemoryBlock) contextSections.push(ragMemoryBlock);
     // מצב רוח מהפרופיל כפול לזיכרון העבודה — מדלגים אם הזיכרון כבר נשלח.
     if (moodFromProfile && !(leanContext && workingMemoryBlock))
