@@ -291,7 +291,7 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
                       <p className="text-xs text-slate-600 mt-0.5">דרך להתגבר: {b.strategy}</p>
                     ) : null}
                     {Array.isArray(b.history) && b.history.length > 0 ? (
-                      <ul className="mt-2 space-y-1 border-r-2 border-rose-200/70 pr-2">
+                      <ul className="mt-2 space-y-1 border-s-2 border-rose-200/70 ps-2">
                         {b.history
                           .filter((h) => h && (h.note || h.status))
                           .slice(-5)

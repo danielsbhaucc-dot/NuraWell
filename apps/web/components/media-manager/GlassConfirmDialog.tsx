@@ -34,7 +34,7 @@ export function GlassConfirmDialog({
       zIndex={320}
       aria-labelledby="glass-confirm-title"
       backdropClassName="absolute inset-0 bg-slate-900/35 backdrop-blur-sm"
-      panelClassName="max-w-md overflow-hidden rounded-2xl p-5 text-right"
+      panelClassName="max-w-md overflow-hidden rounded-2xl p-5 text-start"
       panelStyle={glassCardStyle}
     >
       <div className="mb-3 flex items-start gap-3">

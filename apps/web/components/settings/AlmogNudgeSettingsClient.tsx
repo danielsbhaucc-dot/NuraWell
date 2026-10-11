@@ -284,7 +284,7 @@ export function AlmogNudgeSettingsClient({
           ) : null}
 
           {testResult?.kind === 'ok' ? (
-            <div className="rounded-2xl border-2 border-emerald-400 bg-background-card px-4 py-3 text-right space-y-2">
+            <div className="rounded-2xl border-2 border-emerald-400 bg-background-card px-4 py-3 text-start space-y-2">
               <p className="text-xs font-black text-emerald-700">
                 ✓ ההתראה נשלחה ({testResult.slot}
                 {testResult.usedFallback ? ' · פלייסהולדר' : ''})
@@ -353,7 +353,7 @@ export function AlmogNudgeSettingsClient({
           ) : null}
 
           {testResult?.kind === 'blocked' ? (
-            <div className="rounded-2xl border border-amber-300 bg-amber-50/90 px-4 py-3 text-right">
+            <div className="rounded-2xl border border-amber-300 bg-amber-50/90 px-4 py-3 text-start">
               <p className="text-xs font-bold text-amber-800">
                 נחסם על-ידי gate ({testResult.reason})
               </p>
@@ -366,7 +366,7 @@ export function AlmogNudgeSettingsClient({
           ) : null}
 
           {testResult?.kind === 'error' ? (
-            <div className="rounded-2xl border border-red-300 bg-red-50/90 px-4 py-3 text-right">
+            <div className="rounded-2xl border border-red-300 bg-red-50/90 px-4 py-3 text-start">
               <p className="text-sm font-bold text-red-700" role="alert">
                 ✗ {testResult.message}
               </p>
@@ -410,7 +410,7 @@ export function AlmogNudgeSettingsClient({
                 aria-checked={coachingStyle === opt.id}
                 onClick={() => setCoachingStyle(opt.id)}
                 className={cn(
-                  'rounded-2xl border px-3 py-3 text-right transition',
+                  'rounded-2xl border px-3 py-3 text-start transition',
                   coachingStyle === opt.id
                     ? 'border-violet-400 bg-violet-50 ring-2 ring-violet-300/60'
                     : 'border-slate-200 bg-slate-50/80 hover:border-violet-200'
@@ -467,7 +467,7 @@ export function AlmogNudgeSettingsClient({
             aria-checked={avoidPush}
             onClick={() => setAvoidPush((v) => !v)}
             className={cn(
-              'flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-right transition-colors',
+              'flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-start transition-colors',
               avoidPush
                 ? 'border-emerald-300 bg-emerald-50/80'
                 : 'border-slate-200 bg-slate-50/80 hover:bg-slate-50'
@@ -518,7 +518,7 @@ export function AlmogNudgeSettingsClient({
             disabled={avoidPush}
             onClick={() => setWeightReminders((v) => !v)}
             className={cn(
-              'flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-right transition-colors',
+              'flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-start transition-colors',
               avoidPush && 'cursor-not-allowed opacity-60',
               !avoidPush &&
                 (weightReminders
@@ -574,7 +574,7 @@ export function AlmogNudgeSettingsClient({
             disabled={guardianSaving}
             onClick={() => void saveGuardianOptIn(!guardianOptedIn)}
             className={cn(
-              'flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-right transition-colors',
+              'flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-start transition-colors',
               guardianOptedIn
                 ? 'border-emerald-300 bg-emerald-50/80'
                 : 'border-slate-200 bg-slate-50/80 hover:bg-slate-50',
@@ -627,10 +627,10 @@ export function AlmogNudgeSettingsClient({
             {saving ? 'שומרים…' : 'שמירת העדפות'}
           </button>
           {savedAt && !dirty ? (
-            <p className="text-center text-sm font-medium text-emerald-700 sm:text-right">נשמר בהצלחה</p>
+            <p className="text-center text-sm font-medium text-emerald-700 sm:text-start">נשמר בהצלחה</p>
           ) : null}
           {error ? (
-            <p className="text-center text-sm font-medium text-red-600 sm:text-right" role="alert">
+            <p className="text-center text-sm font-medium text-red-600 sm:text-start" role="alert">
               {error}
             </p>
           ) : null}

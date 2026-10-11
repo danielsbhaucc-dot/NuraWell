@@ -45,9 +45,9 @@ export function TranscriptAccessTransparencyPanel({
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-[#E8D5B5] bg-[#FFF5E6]/80 text-stone-600">
-              <th className="px-3 py-2 text-right font-bold">מה חשוף</th>
-              <th className="px-3 py-2 text-right font-bold whitespace-nowrap">אושר</th>
-              <th className="px-3 py-2 text-right font-bold">תוקף</th>
+              <th className="px-3 py-2 text-start font-bold">מה חשוף</th>
+              <th className="px-3 py-2 text-start font-bold whitespace-nowrap">אושר</th>
+              <th className="px-3 py-2 text-start font-bold">תוקף</th>
             </tr>
           </thead>
           <tbody>

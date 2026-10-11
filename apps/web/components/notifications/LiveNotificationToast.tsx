@@ -155,7 +155,7 @@ export function LiveNotificationToast({
             )}
           </div>
           {!isPlatform ? (
-            <span className="absolute -bottom-0.5 -left-0.5 flex h-3 w-3" aria-hidden>
+            <span className="absolute -bottom-0.5 -end-0.5 flex h-3 w-3" aria-hidden>
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-80" />
               <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white shadow-sm" />
             </span>
@@ -202,7 +202,7 @@ export function LiveNotificationToast({
 
       {/* progress bar — מסמן כמה זמן נשאר */}
       <motion.div
-        className="absolute bottom-0 right-0 h-[2.5px] bg-gradient-to-l from-emerald-500 via-emerald-400 to-teal-300"
+        className="absolute bottom-0 start-0 h-[2.5px] bg-gradient-to-l from-emerald-500 via-emerald-400 to-teal-300"
         initial={{ width: '100%' }}
         animate={{ width: '0%' }}
         transition={{ duration: TOAST_AUTO_DISMISS_MS / 1000, ease: 'linear' as const }}

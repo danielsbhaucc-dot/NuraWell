@@ -35,7 +35,7 @@ function RegisterStartBody({ onClose }: { onClose: () => void }) {
             aria-disabled="true"
           >
             <Phone className="w-5 h-5 text-white/50 shrink-0" />
-            <span className="flex-1 text-right">
+            <span className="flex-1 text-start">
               <span className="block font-bold text-white/70">שיחה עם דולב בטלפון</span>
               <span className="text-xs text-white/50">בקרוב — עובדים על זה</span>
             </span>
@@ -48,7 +48,7 @@ function RegisterStartBody({ onClose }: { onClose: () => void }) {
             aria-disabled="true"
           >
             <MessageCircle className="w-5 h-5 text-white/50 shrink-0" />
-            <span className="flex-1 text-right">
+            <span className="flex-1 text-start">
               <span className="block font-bold text-white/70">וואטסאפ עם דולב</span>
               <span className="text-xs text-white/50">בקרוב</span>
             </span>
@@ -63,7 +63,7 @@ function RegisterStartBody({ onClose }: { onClose: () => void }) {
             className="flex items-center gap-3 rounded-2xl border border-emerald-400/60 bg-gradient-to-l from-emerald-600/40 to-teal-500/30 px-4 py-4 shadow-lg shadow-emerald-500/20 hover:brightness-110 active:scale-[0.98] transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
           >
             <FormInput className="w-5 h-5 text-emerald-300 shrink-0" />
-            <span className="flex-1 text-right">
+            <span className="flex-1 text-start">
               <span className="block font-bold text-white">טופס קצר באתר</span>
               <span className="text-xs text-emerald-100/90">כמה דקות — ואני כבר מכיר אתכם</span>
             </span>
@@ -93,7 +93,7 @@ function MobileStartDrawer({ open, onClose }: RegisterStartModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
+              className="absolute end-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
               aria-label="סגור"
             >
               <X className="w-5 h-5" />
@@ -137,7 +137,7 @@ function DesktopStartModal({ open, onClose }: RegisterStartModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
+              className="absolute end-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
               aria-label="סגור"
             >
               <X className="w-5 h-5" />

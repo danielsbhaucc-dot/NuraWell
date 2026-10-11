@@ -88,7 +88,7 @@ export function TaskLevelProgressCard({
     >
       <div className="flex items-start gap-2">
         <span className="text-2xl shrink-0">{emoji}</span>
-        <div className="flex-1 text-right">
+        <div className="flex-1 text-start">
           <p className="text-sm font-black text-[#1A1730]">{taskTitle}</p>
           <p className="text-[11px] text-orange-900/75 font-semibold mt-0.5">
             רמה נוכחית: {snapshot.currentLevelLabel ?? '—'}
@@ -102,7 +102,7 @@ export function TaskLevelProgressCard({
       {/* סולם רמות */}
       {sortedLevels.length > 0 ? (
         <div className="space-y-1.5">
-          <p className="text-[10px] font-bold text-orange-900/70 text-right">סולם קושי</p>
+          <p className="text-[10px] font-bold text-orange-900/70 text-start">סולם קושי</p>
           <div className="relative h-2 rounded-full bg-orange-100/80 overflow-hidden">
             {sortedLevels.map((lvl) => {
               const pct = maxOrder > 0 ? ((lvl.order + 1) / (maxOrder + 1)) * 100 : 50;
@@ -170,7 +170,7 @@ export function TaskLevelProgressCard({
       </div>
 
       <div className="flex flex-wrap gap-2 justify-end">
-        <p className="w-full text-[10px] font-semibold text-orange-900/60 text-right mb-1">
+        <p className="w-full text-[10px] font-semibold text-orange-900/60 text-start mb-1">
           משוב על <strong>רמת הקושי</strong> — לא על רגע קשה עכשיו (לזה יש &quot;רגע… קשה לי&quot; בבית)
         </p>
         <button
@@ -200,7 +200,7 @@ export function TaskLevelProgressCard({
       </div>
 
       {localMsg ? (
-        <p className="text-[10px] font-semibold text-emerald-800 text-right flex items-center justify-end gap-1">
+        <p className="text-[10px] font-semibold text-emerald-800 text-start flex items-center justify-end gap-1">
           <Check className="w-3 h-3" />
           {localMsg}
         </p>

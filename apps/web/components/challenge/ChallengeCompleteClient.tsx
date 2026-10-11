@@ -38,7 +38,7 @@ export function ChallengeCompleteClient({ firstName, initialSummary }: Props) {
     >
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-20 h-80 w-80 -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
-        <div className="absolute bottom-20 right-1/4 h-64 w-64 rounded-full bg-amber-500/15 blur-3xl" />
+        <div className="absolute bottom-20 start-1/4 h-64 w-64 rounded-full bg-amber-500/15 blur-3xl" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-lg text-center">
@@ -90,7 +90,7 @@ export function ChallengeCompleteClient({ firstName, initialSummary }: Props) {
         {summary?.top_successes?.length ? (
           <motion.ul
             {...challengeFadeUp(reducedMotion, 0.4)}
-            className="mt-8 space-y-2 text-right"
+            className="mt-8 space-y-2 text-start"
           >
             {summary.top_successes.map((s) => (
               <li

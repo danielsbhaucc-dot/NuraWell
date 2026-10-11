@@ -493,7 +493,7 @@ function HeroSection({
               }}
             >
               <ProgressRing pct={overall.pct} reduced={reduced} />
-              <div className="min-w-0 flex-1 text-right">
+              <div className="min-w-0 flex-1 text-start">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-100/85">
                   ככה זה נראה אצלי
                 </p>
@@ -606,12 +606,12 @@ function StatChips({
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, delay: 0.6 + i * 0.07, ease: [0.22, 1, 0.36, 1] as const }}
             whileHover={{ y: -2, scale: 1.03 }}
-            className="glass-pill-dark relative flex items-center gap-2 rounded-full py-1.5 pl-3.5 pr-1.5 overflow-hidden"
+            className="glass-pill-dark relative flex items-center gap-2 rounded-full py-1.5 pe-3.5 ps-1.5 overflow-hidden"
           >
             {/* ✦ הילה רכה מאחורי האייקון (מרמזת את הגוון מבלי לצבוע את הזכוכית) */}
             <span
               aria-hidden
-              className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full"
+              className="pointer-events-none absolute start-1 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full"
               style={{
                 background: `radial-gradient(circle, ${palette.glow} 0%, transparent 70%)`,
                 filter: 'blur(8px)',
@@ -1188,7 +1188,7 @@ function SectionHeader({
         className="h-7 w-1.5 shrink-0 rounded-full"
         style={{ background: 'linear-gradient(to bottom, #6ee7b7, #047857)' }}
       />
-      <div className="flex-1 text-right">
+      <div className="flex-1 text-start">
         <p
           className="text-[17px] font-black"
           style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
@@ -1229,7 +1229,7 @@ function CompletedSection({
           className="h-7 w-1.5 shrink-0 rounded-full"
           style={{ background: 'linear-gradient(to bottom, #a7f3d0, #34d399)' }}
         />
-        <div className="flex-1 text-right">
+        <div className="flex-1 text-start">
           <p
             className="text-[17px] font-black"
             style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
@@ -1319,7 +1319,7 @@ function AlmogTouchBanner({
       {/* ✦ זוהר זהב עדין מאחורי האווטאר */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full"
+        className="pointer-events-none absolute -start-10 -top-10 h-40 w-40 rounded-full"
         style={{
           background:
             'radial-gradient(circle, rgba(251,191,36,0.35) 0%, rgba(251,191,36,0.10) 40%, transparent 70%)',
@@ -1329,7 +1329,7 @@ function AlmogTouchBanner({
       {/* ✦ זוהר ירוק עדין בצד שני */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -left-12 -bottom-12 h-44 w-44 rounded-full"
+        className="pointer-events-none absolute -end-12 -bottom-12 h-44 w-44 rounded-full"
         style={{
           background:
             'radial-gradient(circle, rgba(110,231,183,0.30) 0%, transparent 70%)',
@@ -1456,7 +1456,7 @@ function StationDetailView({
                   boxShadow: '0 0 8px rgba(52,211,153,0.55)',
                 }}
               />
-              <div className="text-right">
+              <div className="text-start">
                 <p
                   className="text-[11px] font-black uppercase tracking-[0.12em] text-emerald-700"
                   style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
@@ -1643,12 +1643,12 @@ function StationHeader({
         />
 
         {/* Title block at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 px-4 pb-8 sm:px-6">
+        <div className="absolute bottom-0 end-0 start-0 z-10 px-4 pb-8 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.15 }}
-            className="mx-auto max-w-xl text-right"
+            className="mx-auto max-w-xl text-start"
           >
             <div className="mb-2 flex items-center gap-2">
               <div
@@ -1665,13 +1665,13 @@ function StationHeader({
               </div>
             </div>
             <h1
-              className="text-right text-[28px] font-black leading-tight text-white drop-shadow-lg sm:text-[34px]"
+              className="text-start text-[28px] font-black leading-tight text-white drop-shadow-lg sm:text-[34px]"
               style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
             >
               {group.title}
             </h1>
             {group.description ? (
-              <p className="mt-2 line-clamp-3 text-right text-sm leading-relaxed text-white/90 sm:text-base">
+              <p className="mt-2 line-clamp-3 text-start text-sm leading-relaxed text-white/90 sm:text-base">
                 {group.description}
               </p>
             ) : null}
@@ -1719,7 +1719,7 @@ function StepsTimeline({
   return (
     <div className="relative">
       <div
-        className="absolute right-[23px] top-0 bottom-0 w-0.5"
+        className="absolute start-[23px] top-0 bottom-0 w-0.5"
         style={{ background: 'linear-gradient(to bottom, #10b981, #d1fae5, transparent)' }}
       />
 
@@ -1739,10 +1739,10 @@ function StepsTimeline({
             >
               <Link
                 href={isLocked ? '#' : `/journey/${step.id}`}
-                className={`block relative pr-14 ${isLocked ? 'pointer-events-none opacity-60' : ''}`}
+                className={`block relative ps-14 ${isLocked ? 'pointer-events-none opacity-60' : ''}`}
                 aria-disabled={isLocked}
               >
-                <div className="absolute right-[12px] top-5 z-10">
+                <div className="absolute start-[12px] top-5 z-10">
                   <div
                     className="flex h-[22px] w-[22px] items-center justify-center rounded-full"
                     style={{
@@ -1802,7 +1802,7 @@ function StepsTimeline({
                         </span>
                       ) : null}
                       {isCompleted ? (
-                        <span className="mr-auto flex items-center gap-1 text-xs font-bold text-emerald-600">
+                        <span className="ms-auto flex items-center gap-1 text-xs font-bold text-emerald-600">
                           <CheckCircle2 className="h-3 w-3" /> הושלם ✨
                         </span>
                       ) : null}

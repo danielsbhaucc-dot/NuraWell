@@ -185,10 +185,10 @@ export function ProfileAvatarUpload({
       </div>
 
       <div className="px-5 py-5 space-y-4">
-        <p className="text-[15px] text-slate-700 text-right leading-relaxed font-medium">
+        <p className="text-[15px] text-slate-700 text-start leading-relaxed font-medium">
           {uploadIntro(gender, firstName)}
         </p>
-        <p className="text-[13px] text-slate-500 text-right leading-relaxed -mt-2">
+        <p className="text-[13px] text-slate-500 text-start leading-relaxed -mt-2">
           אפשר לבחור מהגלריה, לגרור לכאן, או להדביק תמונה — אנחנו נדאג לשאר.
         </p>
 
@@ -252,7 +252,7 @@ export function ProfileAvatarUpload({
         </div>
 
         {error ? (
-          <p className="text-sm font-semibold text-red-600 text-right rounded-xl bg-red-50 px-3 py-2">
+          <p className="text-sm font-semibold text-red-600 text-start rounded-xl bg-red-50 px-3 py-2">
             {error}
           </p>
         ) : null}

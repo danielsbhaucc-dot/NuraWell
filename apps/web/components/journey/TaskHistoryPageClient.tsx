@@ -273,7 +273,7 @@ export function TaskHistoryPageClient() {
 
       {/* ───── Summary cards — זכוכית iOS אמיתית, שקופה ונייטרלית ───── */}
       <div className="grid grid-cols-2 gap-2.5">
-        <div className="glass-surface relative overflow-hidden rounded-2xl p-3 text-right">
+        <div className="glass-surface relative overflow-hidden rounded-2xl p-3 text-start">
           <span
             aria-hidden
             className="pointer-events-none absolute inset-x-3 top-px h-px"
@@ -285,7 +285,7 @@ export function TaskHistoryPageClient() {
           <p className="relative text-[10px] font-bold text-emerald-900/75">סך ביצועים (60 יום)</p>
           <p className="relative text-2xl font-black text-emerald-900 tabular-nums">{summary.total}</p>
         </div>
-        <div className="glass-surface relative overflow-hidden rounded-2xl p-3 text-right">
+        <div className="glass-surface relative overflow-hidden rounded-2xl p-3 text-start">
           <span
             aria-hidden
             className="pointer-events-none absolute inset-x-3 top-px h-px"
@@ -298,7 +298,7 @@ export function TaskHistoryPageClient() {
           <p className="relative text-2xl font-black text-sky-900 tabular-nums">{summary.daysActive}/7</p>
         </div>
         {ssotCounts && ssotCounts.unified.rejected > 0 ? (
-          <div className="glass-surface relative overflow-hidden rounded-2xl p-3 text-right col-span-2">
+          <div className="glass-surface relative overflow-hidden rounded-2xl p-3 text-start col-span-2">
             <p className="relative text-[10px] font-bold text-rose-900/70">נדחו (מסע + אלמוג)</p>
             <p className="relative text-xl font-black text-rose-900 tabular-nums">
               {ssotCounts.unified.rejected}
@@ -340,7 +340,7 @@ export function TaskHistoryPageClient() {
                 <span className="text-base shrink-0" aria-hidden>
                   {row.meta?.taskEmoji ?? '✅'}
                 </span>
-                <span className="truncate text-right flex-1">
+                <span className="truncate text-start flex-1">
                   {row.meta ? row.meta.taskTitle : 'משימה'}
                 </span>
                 <span className="tabular-nums text-emerald-700 shrink-0">×{row.count}</span>
@@ -408,7 +408,7 @@ export function TaskHistoryPageClient() {
                       <span className="text-base shrink-0" aria-hidden>
                         ✨
                       </span>
-                      <div className="min-w-0 flex-1 text-right">
+                      <div className="min-w-0 flex-1 text-start">
                         <p className="text-[13px] font-bold text-emerald-950 truncate">
                           {item.almog.title}
                         </p>
@@ -442,7 +442,7 @@ export function TaskHistoryPageClient() {
                     <span className="text-base shrink-0" aria-hidden>
                       {item.meta?.taskEmoji ?? '✅'}
                     </span>
-                    <div className="min-w-0 flex-1 text-right">
+                    <div className="min-w-0 flex-1 text-start">
                       <p className="text-[13px] font-bold text-emerald-950 truncate">
                         {item.meta?.taskTitle ?? 'משימה'}
                       </p>

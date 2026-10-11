@@ -96,7 +96,7 @@ export function AlmogFirstLoginDrawer({ profile }: AlmogFirstLoginDrawerProps) {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="mt-5 rounded-2xl bg-emerald-50 px-4 py-3 text-right text-[15px] leading-relaxed text-emerald-950"
+                  className="mt-5 rounded-2xl bg-emerald-50 px-4 py-3 text-start text-[15px] leading-relaxed text-emerald-950"
                 >
                   {phase === 'intro' ? introMessage : replyMessage}
                 </motion.div>
@@ -107,7 +107,7 @@ export function AlmogFirstLoginDrawer({ profile }: AlmogFirstLoginDrawerProps) {
                   key="user-bubble"
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="mt-4 mr-auto max-w-[85%] rounded-2xl bg-background-card px-4 py-3 text-right text-sm text-gray-800 shadow-sm ring-1 ring-emerald-100"
+                  className="mt-4 ms-auto max-w-[85%] rounded-2xl bg-background-card px-4 py-3 text-start text-sm text-gray-800 shadow-sm ring-1 ring-emerald-100"
                 >
                   כן, בוא נתחיל 💪
                 </motion.div>

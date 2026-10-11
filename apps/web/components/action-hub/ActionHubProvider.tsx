@@ -111,7 +111,7 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
               <div className="h-1.5 w-11 rounded-full bg-emerald-800/22" />
             </div>
 
-            <div className="shrink-0 px-5 pb-4 text-right">
+            <div className="shrink-0 px-5 pb-4 text-start">
               <p
                 className="text-lg font-black text-[#1A1730]"
                 style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
@@ -127,7 +127,7 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={openUpdateTasks}
-                className="w-full text-right rounded-[22px] p-[1px] transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60"
+                className="w-full text-start rounded-[22px] p-[1px] transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60"
                 style={{
                   background: 'linear-gradient(135deg, rgba(16,185,129,0.55), rgba(52,211,153,0.35), rgba(248,251,246,0.65))',
                   boxShadow: '0 12px 36px rgba(6,78,59,0.1)',
@@ -167,7 +167,7 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={openPlans}
-                className="w-full text-right rounded-[22px] p-[1px] transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60"
+                className="w-full text-start rounded-[22px] p-[1px] transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60"
                 style={{
                   background: 'linear-gradient(135deg, rgba(13,148,136,0.5), rgba(45,212,191,0.35), rgba(248,251,246,0.65))',
                   boxShadow: '0 12px 36px rgba(13,148,136,0.1)',
@@ -207,7 +207,7 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={openHistory}
-                className="w-full text-right rounded-[22px] p-[1px] transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
+                className="w-full text-start rounded-[22px] p-[1px] transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
                 style={{
                   background: 'linear-gradient(135deg, rgba(56,189,248,0.4), rgba(167,243,208,0.35), rgba(248,251,246,0.6))',
                   boxShadow: '0 12px 36px rgba(14,116,144,0.08)',
@@ -243,7 +243,7 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={openDeclined}
-                className="w-full text-right rounded-[22px] p-[1px] transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/50"
+                className="w-full text-start rounded-[22px] p-[1px] transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/50"
                 style={{
                   background: 'linear-gradient(135deg, rgba(251,113,133,0.45), rgba(254,215,170,0.35), rgba(248,251,246,0.6))',
                   boxShadow: '0 12px 36px rgba(190,24,93,0.08)',

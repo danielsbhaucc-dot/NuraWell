@@ -37,7 +37,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] as const }}
       className={cn(
-        'group relative block w-full overflow-hidden rounded-[28px] text-right',
+        'group relative block w-full overflow-hidden rounded-[28px] text-start',
         'transition-shadow duration-300',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#EDF5F0]'
       )}
@@ -80,7 +80,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
         />
 
         <div
-          className="absolute -top-12 -left-12 h-40 w-40 rounded-full opacity-60"
+          className="absolute -top-12 -end-12 h-40 w-40 rounded-full opacity-60"
           style={{
             background:
               'radial-gradient(circle, rgba(167,243,208,0.55) 0%, transparent 70%)',
@@ -88,7 +88,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
           }}
         />
 
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+        <div className="absolute top-3 start-3 z-10 flex items-center gap-2">
           <div
             className="flex h-10 w-10 items-center justify-center rounded-2xl text-base font-black text-white shadow-lg"
             style={{
@@ -111,7 +111,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
           ) : null}
         </div>
 
-        <div className="absolute top-3 left-3 z-10">
+        <div className="absolute top-3 end-3 z-10">
           <div
             className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-md"
             style={{
@@ -124,15 +124,15 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 z-10 p-4 sm:p-5">
+        <div className="absolute bottom-0 end-0 start-0 z-10 p-4 sm:p-5">
           <h3
-            className="mb-1.5 line-clamp-2 text-right text-xl font-black leading-tight text-white drop-shadow-md sm:text-2xl"
+            className="mb-1.5 line-clamp-2 text-start text-xl font-black leading-tight text-white drop-shadow-md sm:text-2xl"
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
             {group.title}
           </h3>
           {group.description ? (
-            <p className="mb-3 line-clamp-2 text-right text-[13px] leading-relaxed text-white/85">
+            <p className="mb-3 line-clamp-2 text-start text-[13px] leading-relaxed text-white/85">
               {group.description}
             </p>
           ) : null}
@@ -155,7 +155,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
                   }}
                 />
               </div>
-              <p className="mt-1.5 text-right text-[11px] font-bold text-white/90">
+              <p className="mt-1.5 text-start text-[11px] font-bold text-white/90">
                 {isEmpty ? 'בקרוב' : `${done}/${total} צעדים · ${pct}%`}
               </p>
             </div>

@@ -255,7 +255,7 @@ export function ChallengeDashboardClient({ initialState }: Props) {
                     <button
                       type="button"
                       onClick={() => setExpandedTask(isExpanded ? null : task.id)}
-                      className="flex w-full items-start gap-3 p-4 text-right"
+                      className="flex w-full items-start gap-3 p-4 text-start"
                     >
                       <div className="mt-0.5 shrink-0">
                         {task.completed ? (
@@ -313,7 +313,7 @@ export function ChallengeDashboardClient({ initialState }: Props) {
                   disabled={task.completed || completing === task.id}
                   onClick={() => !task.completed && completeTask(task.id)}
                   whileTap={{ scale: 0.98 }}
-                  className={`flex w-full items-start gap-3 rounded-2xl border p-4 text-right transition-colors ${
+                  className={`flex w-full items-start gap-3 rounded-2xl border p-4 text-start transition-colors ${
                     task.completed
                       ? 'border-emerald-500/30 bg-emerald-500/10'
                       : 'border-white/10 bg-background-card/5 active:bg-background-card/10'

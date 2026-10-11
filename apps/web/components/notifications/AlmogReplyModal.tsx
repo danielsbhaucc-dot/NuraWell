@@ -85,7 +85,7 @@ export function AlmogReplyModal() {
            * בלי רקע לבן בתחתית. הבועות הפנימיות (הודעת אלמוג + textarea)
            * שומרות על העיצוב המקורי כך שהן צפות מעל הירוק כמו ציטוט בווטסאפ.
            */
-          className="fixed bottom-0 left-0 right-0 z-[270] mx-auto flex w-full max-w-md flex-col rounded-t-[28px] border border-emerald-300/40 text-white outline-none shadow-2xl"
+          className="fixed bottom-0 end-0 start-0 z-[270] mx-auto flex w-full max-w-md flex-col rounded-t-[28px] border border-emerald-300/40 text-white outline-none shadow-2xl"
           style={{
             background: 'linear-gradient(160deg, #064e3b 0%, #047857 45%, #10b981 100%)',
             boxShadow: '0 -24px 60px rgba(6,78,59,0.45)',

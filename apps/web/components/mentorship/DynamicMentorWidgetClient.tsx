@@ -153,7 +153,7 @@ export function DynamicMentorWidgetClient({
           <Sparkles className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />
         </div>
 
-        <div className="min-w-0 flex-1 text-right">
+        <div className="min-w-0 flex-1 text-start">
           <p
             className="text-[10px] font-bold uppercase tracking-wider text-emerald-900/55"
             style={{ letterSpacing: '1px' }}

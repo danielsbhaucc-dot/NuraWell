@@ -107,15 +107,15 @@ export function FinderFolderCard({ folder, onOpen, variant = 'subfolder' }: Find
         >
           <div
             className={cn(
-              'absolute top-0 right-[0.85rem] h-[0.62rem] w-[2.1rem] rounded-t-[5px] bg-gradient-to-b',
+              'absolute top-0 start-[0.85rem] h-[0.62rem] w-[2.1rem] rounded-t-[5px] bg-gradient-to-b',
               accent.tab,
-              variant === 'category' && 'right-[0.95rem] h-[0.7rem] w-[2.35rem]'
+              variant === 'category' && 'start-[0.95rem] h-[0.7rem] w-[2.35rem]'
             )}
             aria-hidden
           />
           <div
             className={cn(
-              'absolute inset-x-0 bottom-0 top-[0.45rem] rounded-[10px] rounded-tr-[4px] bg-gradient-to-br shadow-lg',
+              'absolute inset-x-0 bottom-0 top-[0.45rem] rounded-[10px] rounded-ss-[4px] bg-gradient-to-br shadow-lg',
               accent.body,
               accent.glow,
               variant === 'category' && 'top-[0.5rem] rounded-[11px]'
@@ -130,7 +130,7 @@ export function FinderFolderCard({ folder, onOpen, variant = 'subfolder' }: Find
             <TypeIcon className="h-5 w-5 text-white/90 drop-shadow-sm" aria-hidden />
           </div>
         </div>
-        <span className="absolute -top-1 -left-1 min-w-[1.35rem] rounded-full bg-slate-900/80 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+        <span className="absolute -top-1 -end-1 min-w-[1.35rem] rounded-full bg-slate-900/80 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
           {folder.count}
         </span>
       </div>

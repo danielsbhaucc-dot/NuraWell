@@ -169,7 +169,7 @@ export function MediaStockSearch({ folder, onImported, onError }: MediaStockSear
                     disabled={applyBusy}
                     onClick={() => void applyHit(hit)}
                     aria-label={`ייבא תמונה: ${stockPreviewAlt(hit.alt, hit.photographer)}`}
-                    className="group relative overflow-hidden rounded-xl border border-white/50 text-right disabled:opacity-60"
+                    className="group relative overflow-hidden rounded-xl border border-white/50 text-start disabled:opacity-60"
                     style={{ background: 'rgba(255,255,255,0.18)' }}
                   >
                     <img

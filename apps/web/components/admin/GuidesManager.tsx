@@ -270,7 +270,7 @@ export function GuidesManager() {
               <h3 className="text-lg font-black text-slate-900">{aiPhase.guide.title}</h3>
               <p className="text-sm text-slate-600 mt-1">{aiPhase.guide.description}</p>
             </div>
-            <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-[420px] overflow-y-auto ps-1">
               {[...aiPhase.guide.lessons]
                 .sort((a, b) => a.sort_order - b.sort_order)
                 .map((lesson, i) => (

@@ -203,7 +203,7 @@ function AlmogTypingIndicator({ fun = false }: { fun?: boolean }) {
           <span className="text-[11px] font-semibold text-emerald-200/85 px-0.5">אלמוג מקליד…</span>
         )}
         <div
-          className="rounded-[20px] rounded-bl-md px-4 py-3"
+          className="rounded-[20px] rounded-ee-md px-4 py-3"
           style={fun ? FUN_ASSISTANT_BUBBLE : QUICK_ASSISTANT_BUBBLE}
         >
           <span className="inline-flex items-center gap-1.5" aria-hidden>
@@ -275,7 +275,7 @@ function ChatHeader({
           >
             <AlmogAvatar size={40} className="border-white/30" fun={isFun} />
           </div>
-          <div className="text-right min-w-0">
+          <div className="text-start min-w-0">
             <p className="text-[16px] font-black leading-none text-white">אלמוג</p>
             {typing ? (
               <p className="mt-1 text-[11px] font-semibold text-white/90">
@@ -852,7 +852,7 @@ export function OnboardingChat({
                       {m.role === 'assistant' ? (
                         <div
                           className={`max-w-[82%] px-3.5 py-2.5 text-[14px] leading-relaxed ${
-                            isFun ? 'rounded-[24px] rounded-bl-lg' : 'rounded-[20px] rounded-bl-md'
+                            isFun ? 'rounded-[24px] rounded-ee-lg' : 'rounded-[20px] rounded-ee-md'
                           }`}
                           style={isFun ? FUN_ASSISTANT_BUBBLE : QUICK_ASSISTANT_BUBBLE}
                         >
@@ -868,7 +868,7 @@ export function OnboardingChat({
                       ) : (
                         <div
                           className={`max-w-[82%] px-3.5 py-2.5 text-[14px] leading-relaxed ${
-                            isFun ? 'rounded-[24px] rounded-tr-lg' : 'rounded-[20px] rounded-tr-md'
+                            isFun ? 'rounded-[24px] rounded-ss-lg' : 'rounded-[20px] rounded-ss-md'
                           }`}
                           style={isFun ? FUN_USER_BUBBLE : QUICK_USER_BUBBLE}
                         >

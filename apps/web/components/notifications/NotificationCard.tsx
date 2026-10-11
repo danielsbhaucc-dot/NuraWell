@@ -85,7 +85,7 @@ export function NotificationCard({
   return (
     <article
       className={cn(
-        'relative rounded-2xl border text-right shadow-sm transition backdrop-blur-sm',
+        'relative rounded-2xl border text-start shadow-sm transition backdrop-blur-sm',
         n.is_read
           ? 'border-slate-200/70 bg-gradient-to-br from-slate-100/90 via-emerald-50/50 to-teal-50/40 opacity-95'
           : isPlatform

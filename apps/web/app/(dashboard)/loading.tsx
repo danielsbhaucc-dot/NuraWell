@@ -41,7 +41,7 @@ export default function DashboardLoading() {
         </div>
 
         {/* Section label skeleton */}
-        <div className="h-3 w-16 rounded-md mt-4 mb-3 ml-0.5 animate-pulse" style={{ background: 'rgba(6,78,59,0.10)' }} />
+        <div className="h-3 w-16 rounded-md mt-4 mb-3 me-0.5 animate-pulse" style={{ background: 'rgba(6,78,59,0.10)' }} />
 
         {/* Lesson-card skeletons */}
         {[0, 1, 2].map((i) => (

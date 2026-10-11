@@ -204,7 +204,7 @@ export function ProgramOrchestratorGate() {
         aria-label="סגירה"
         onClick={() => respond('decline')}
         disabled={submitting}
-        className="absolute left-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-emerald-900/40 transition hover:bg-black/5"
+        className="absolute end-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-emerald-900/40 transition hover:bg-black/5"
       >
         <X className="h-4 w-4" />
       </button>
@@ -216,7 +216,7 @@ export function ProgramOrchestratorGate() {
         >
           <Icon className="h-6 w-6 text-white" strokeWidth={2.2} />
         </div>
-        <div className="flex-1 pl-6 text-right">
+        <div className="flex-1 pe-6 text-start">
           <p
             className="text-[15px] font-extrabold text-emerald-950"
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}

@@ -81,7 +81,7 @@ export function OpsPageHeader({
       {/* גוון רקע צבעוני */}
       <div className={cn('pointer-events-none absolute inset-0 -z-10 bg-gradient-to-bl opacity-80', t.tint)} aria-hidden />
       {/* אורב זוהר דקורטיבי */}
-      <div className={cn('pointer-events-none absolute -left-10 -top-16 h-44 w-44 rounded-full blur-3xl', t.glow)} aria-hidden />
+      <div className={cn('pointer-events-none absolute -end-10 -top-16 h-44 w-44 rounded-full blur-3xl', t.glow)} aria-hidden />
       {/* נצנוץ עליון */}
       <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-background-card/80 to-transparent" aria-hidden />
 

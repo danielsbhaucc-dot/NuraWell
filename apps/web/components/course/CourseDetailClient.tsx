@@ -257,7 +257,7 @@ export function CourseDetailClient({
               </div>
               <div className="progress-bar-lg">
                 <motion.div
-                  className="absolute inset-y-0 right-0 rounded-full"
+                  className="absolute inset-y-0 start-0 rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 0.8, ease: 'easeOut' as const, delay: 0.3 }}

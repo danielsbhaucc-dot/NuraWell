@@ -81,7 +81,7 @@ export function ConfirmDialog({
         type="button"
         onClick={() => !busy && onCancel()}
         aria-label="סגור"
-        className="absolute left-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/50 bg-background-card/40 text-slate-600 hover:bg-background-card/70"
+        className="absolute end-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/50 bg-background-card/40 text-slate-600 hover:bg-background-card/70"
       >
         <X className="h-4 w-4" />
       </button>

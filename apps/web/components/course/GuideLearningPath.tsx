@@ -309,7 +309,7 @@ function PathLessonSlide({
           >
             {lesson.is_completed ? <CheckCircle2 className="h-5 w-5" /> : index + 1}
           </span>
-          <div className="text-right flex-1">
+          <div className="text-start flex-1">
             <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-300/80">
               פרק {index + 1}
             </p>

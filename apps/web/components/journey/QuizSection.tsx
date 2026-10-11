@@ -207,7 +207,7 @@ export function QuizSection({
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleSelect(i)}
                     disabled={isAnswered}
-                    className="w-full text-right p-4 rounded-xl font-medium text-[15px] transition-all flex items-center gap-3"
+                    className="w-full text-start p-4 rounded-xl font-medium text-[15px] transition-all flex items-center gap-3"
                     style={{
                       background: showResult && isCorrectAnswer
                         ? 'rgba(16,185,129,0.1)'

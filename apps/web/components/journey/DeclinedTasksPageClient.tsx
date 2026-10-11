@@ -102,7 +102,7 @@ export function DeclinedTasksPageClient() {
         tone="amber"
       />
 
-      <p className="text-xs font-semibold text-emerald-900/75 text-right leading-relaxed">
+      <p className="text-xs font-semibold text-emerald-900/75 text-start leading-relaxed">
         רשימה דינמית לפי מה שסימנת במסע. לחיצה על צעד פותחת את השיעור לעדכון.
       </p>
       <ul className="space-y-3">
@@ -118,7 +118,7 @@ export function DeclinedTasksPageClient() {
               }}
             >
               <div
-                className="rounded-[21px] px-4 py-3.5 text-right"
+                className="rounded-[21px] px-4 py-3.5 text-start"
                 style={{
                   background: 'linear-gradient(180deg, rgba(248,251,246,0.78) 0%, rgba(255,241,242,0.38) 100%)',
                   border: '1px solid rgba(248,251,246,0.65)',

@@ -411,12 +411,12 @@ export function ProgressPageClient({
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute -right-16 -top-12 h-48 w-48 rounded-full"
+          className="pointer-events-none absolute -start-16 -top-12 h-48 w-48 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 68%)' }}
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute -bottom-10 -left-16 h-56 w-56 rounded-full"
+          className="pointer-events-none absolute -bottom-10 -end-16 h-56 w-56 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.45), transparent 70%)' }}
         />
 
@@ -425,7 +425,7 @@ export function ProgressPageClient({
             <div className="-mt-3">
               <AlmogAvatarChipWithNameTag size={92} nameTagVariant="prominent" />
             </div>
-            <div className="min-w-0 flex-1 text-right">
+            <div className="min-w-0 flex-1 text-start">
               <p
                 className="text-[15px] font-black text-white leading-tight"
                 style={{ fontFamily: hebrewFont }}
@@ -759,7 +759,7 @@ export function ProgressPageClient({
                       className="crystal-surface flex items-center gap-3 rounded-2xl p-3 transition hover:opacity-95"
                     >
                       <IconComp className="h-4 w-4 flex-shrink-0 text-[#9896B8]" />
-                      <div className="min-w-0 flex-1 text-right">
+                      <div className="min-w-0 flex-1 text-start">
                         <p className="line-clamp-1 text-sm font-semibold text-[#1A1730]">{a.lesson_title}</p>
                         <p className="mt-0.5 text-[11px] text-[#9896B8]">
                           הושלם · {formatHebrewRelative(a.completed_at)}

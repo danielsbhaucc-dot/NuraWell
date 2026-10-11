@@ -462,10 +462,10 @@ export function TaskDailySlots({
     return (
       <div
         dir="rtl"
-        className="glass-inset mt-2 rounded-2xl px-3 py-3 text-[12px] font-semibold text-emerald-900/85 leading-relaxed text-right"
+        className="glass-inset mt-2 rounded-2xl px-3 py-3 text-[12px] font-semibold text-emerald-900/85 leading-relaxed text-start"
         style={{ borderStyle: 'dashed' }}
       >
-        <RotateCcw className="inline w-3.5 h-3.5 ml-1 -mt-0.5 text-emerald-700" />
+        <RotateCcw className="inline w-3.5 h-3.5 me-1 -mt-0.5 text-emerald-700" />
         משימה שבועית — מופיעה לסימון רק ביום שנקבע ({scheduleLabel(schedule, times_per_day, weekly_day, meal_timing, meal_target)}).
       </div>
     );
@@ -581,15 +581,15 @@ export function TaskDailySlots({
                   {slotLabel(slot, schedule === 'per_meal' ? meal_timing : undefined)}
                 </span>
                 {isCompleted ? (
-                  <Check className="absolute top-1 right-1 w-3.5 h-3.5 text-white/95" strokeWidth={3} />
+                  <Check className="absolute top-1 start-1 w-3.5 h-3.5 text-white/95" strokeWidth={3} />
                 ) : isFailed ? (
                   <XCircle
-                    className="absolute top-1 right-1 w-3.5 h-3.5 text-violet-700/85"
+                    className="absolute top-1 start-1 w-3.5 h-3.5 text-violet-700/85"
                     strokeWidth={2.5}
                   />
                 ) : null}
                 {cell.busy ? (
-                  <Loader2 className="absolute top-1 right-1 w-3.5 h-3.5 animate-spin opacity-80" />
+                  <Loader2 className="absolute top-1 start-1 w-3.5 h-3.5 animate-spin opacity-80" />
                 ) : null}
               </button>
               {/**
@@ -620,7 +620,7 @@ export function TaskDailySlots({
         })}
       </div>
 
-      <p className="text-[10px] text-emerald-900/65 leading-relaxed text-right">
+      <p className="text-[10px] text-emerald-900/65 leading-relaxed text-start">
         {schedule === 'daily' || schedule === 'weekly'
           ? 'הסימון מתאפס מחר — אפשר לחזור ולסמן שוב. אפשר גם לדווח "ניסיתי" כדי שאלמוג ידע שניסית.'
           : 'כל סלוט מתאפס מחר. דווח "בוצע" או "ניסיתי" — אלמוג רואה הכל בזמן אמת.'}

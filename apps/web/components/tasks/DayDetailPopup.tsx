@@ -139,7 +139,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-3 left-3 z-10 flex h-8 w-8 items-center justify-center rounded-full text-emerald-900/80 hover:text-emerald-900"
+              className="absolute top-3 end-3 z-10 flex h-8 w-8 items-center justify-center rounded-full text-emerald-900/80 hover:text-emerald-900"
               style={{
                 background: 'rgba(220,252,231,0.6)',
                 border: '1px solid rgba(167,243,208,0.6)',
@@ -172,7 +172,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
             <div className="p-4 space-y-2.5 overflow-y-auto flex-1 min-h-0">
               {sortedRows.length === 0 ? (
                 <div
-                  className="rounded-2xl p-4 text-right"
+                  className="rounded-2xl p-4 text-start"
                   style={{
                     background:
                       'linear-gradient(180deg, rgba(204,251,241,0.45) 0%, rgba(254,252,232,0.4) 100%)',
@@ -238,7 +238,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                       >
                         {row.task_emoji}
                       </div>
-                      <div className="min-w-0 flex-1 text-right">
+                      <div className="min-w-0 flex-1 text-start">
                         <p className="text-sm font-black text-emerald-950 leading-snug line-clamp-2">
                           {row.task_title}
                         </p>

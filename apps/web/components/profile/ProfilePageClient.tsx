@@ -200,7 +200,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           <button
             type="button"
             onClick={() => setIsSettingsOpen(true)}
-            className="absolute left-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-2xl text-white transition hover:scale-[1.03] active:scale-95"
+            className="absolute end-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-2xl text-white transition hover:scale-[1.03] active:scale-95"
             style={{
               background: 'rgba(255,255,255,0.12)',
               border: '1px solid rgba(255,255,255,0.25)',
@@ -212,10 +212,10 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           </button>
 
           <div className="relative w-full pe-12">
-            <h1 className="text-2xl font-black text-white tracking-tight text-right w-full">
+            <h1 className="text-2xl font-black text-white tracking-tight text-start w-full">
               הפרופיל שלי
             </h1>
-            <p className="mt-2 text-[15px] font-semibold leading-relaxed text-white/95 text-right w-full">
+            <p className="mt-2 text-[15px] font-semibold leading-relaxed text-white/95 text-start w-full">
               {profileSubtitle(profile?.gender ?? null, firstName)}
             </p>
           </div>
@@ -291,7 +291,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
                   {initials}
                 </div>
               )}
-              <span className="absolute -bottom-1 -left-1 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md border-2 border-white group-hover:scale-110 transition">
+              <span className="absolute -bottom-1 -end-1 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md border-2 border-white group-hover:scale-110 transition">
                 <Camera className="h-3.5 w-3.5" />
               </span>
             </button>
@@ -456,7 +456,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
               <div className="crystal-pill w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
                 {item.emoji}
               </div>
-              <span className="flex-1 text-sm font-semibold text-slate-700 text-right">{item.label}</span>
+              <span className="flex-1 text-sm font-semibold text-slate-700 text-start">{item.label}</span>
               <ChevronLeft className="w-4 h-4 text-slate-400" />
             </Link>
           ))}
@@ -467,7 +467,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
             <div className="crystal-pill w-9 h-9 rounded-xl flex items-center justify-center text-lg">
               🔔
             </div>
-            <span className="flex-1 text-sm font-semibold text-slate-700 text-right">התראות מאלמוג</span>
+            <span className="flex-1 text-sm font-semibold text-slate-700 text-start">התראות מאלמוג</span>
             <Bell className="w-4 h-4 text-slate-400" />
           </Link>
         </motion.div>
@@ -523,7 +523,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
           <div className="space-y-3">
             {(editField === 'name' || editField === 'gender') && editField === 'name' ? (
               <div>
-                <label htmlFor="profile-edit-name" className="mb-1 block text-sm font-semibold text-slate-700 text-right">
+                <label htmlFor="profile-edit-name" className="mb-1 block text-sm font-semibold text-slate-700 text-start">
                   שם מלא
                 </label>
                 <input
@@ -539,7 +539,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
 
             {editField === 'gender' ? (
               <div>
-                <label htmlFor="profile-edit-gender" className="mb-1 block text-sm font-semibold text-slate-700 text-right">
+                <label htmlFor="profile-edit-gender" className="mb-1 block text-sm font-semibold text-slate-700 text-start">
                   מגדר
                 </label>
                 <select

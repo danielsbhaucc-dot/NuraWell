@@ -575,7 +575,7 @@ export function AlmogChatMemoryPanel({
               <li key={s.id} className="rounded-xl border border-slate-200/80 bg-background-card/60">
                 <button
                   type="button"
-                  className="flex w-full flex-col gap-1 px-3 py-2 text-right text-sm"
+                  className="flex w-full flex-col gap-1 px-3 py-2 text-start text-sm"
                   onClick={() => toggleSession(s)}
                 >
                   <span
@@ -600,7 +600,7 @@ export function AlmogChatMemoryPanel({
                     {typeof s.message_count === 'number' ? (
                       <span className="text-slate-500">{s.message_count} הודעות</span>
                     ) : null}
-                    <span className="mr-auto text-slate-500">{fmt(s.updated_at)}</span>
+                    <span className="ms-auto text-slate-500">{fmt(s.updated_at)}</span>
                   </div>
                 </button>
                 {open ? (
@@ -781,13 +781,13 @@ export function AlmogChatMemoryPanel({
                         </div>
 
                         <div className="relative">
-                          <Search className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400" />
+                          <Search className="pointer-events-none absolute start-2 top-2 h-3.5 w-3.5 text-slate-400" />
                           <input
                             type="search"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="חיפוש בתמליל..."
-                            className="w-full rounded-lg border border-slate-200 bg-background-card py-1.5 pr-8 pl-2 text-slate-800"
+                            className="w-full rounded-lg border border-slate-200 bg-background-card py-1.5 ps-8 pe-2 text-slate-800"
                           />
                         </div>
 

@@ -109,18 +109,18 @@ function Toast({ toast, onDismiss }: ToastProps) {
       <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-[20px]" style={{ background: c.bar }} />
 
       {/* Right accent bar (RTL layout) */}
-      <div className="absolute top-4 bottom-4 right-0 w-[3px] rounded-full" style={{ background: c.sideBar }} />
+      <div className="absolute top-4 bottom-4 start-0 w-[3px] rounded-full" style={{ background: c.sideBar }} />
 
       {/* Progress bar */}
       <motion.div
-        className="absolute bottom-0 right-0 h-[2px] rounded-b-[20px]"
+        className="absolute bottom-0 start-0 h-[2px] rounded-b-[20px]"
         style={{ background: c.bar, opacity: 0.6 }}
         initial={{ width: '100%' }}
         animate={{ width: '0%' }}
         transition={{ duration: 4.0, ease: 'linear' as const }}
       />
 
-      <div className="flex items-start gap-3.5 px-4 py-4 pr-5">
+      <div className="flex items-start gap-3.5 px-4 py-4 ps-5">
         {/* Icon */}
         <div
           className="flex-shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center"
@@ -134,7 +134,7 @@ function Toast({ toast, onDismiss }: ToastProps) {
         </div>
 
         {/* Text */}
-        <div className="flex-1 min-w-0 text-right pt-0.5">
+        <div className="flex-1 min-w-0 text-start pt-0.5">
           <p className="font-black text-[15px] leading-tight tracking-tight" style={{ color: c.titleColor, fontFamily: 'Rubik, Heebo, sans-serif' }}>
             {toast.title}
           </p>

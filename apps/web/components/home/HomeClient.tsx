@@ -245,12 +245,12 @@ export function HomeClient({
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute -right-16 -top-12 h-48 w-48 rounded-full"
+          className="pointer-events-none absolute -start-16 -top-12 h-48 w-48 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 68%)' }}
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute -bottom-10 -left-16 h-56 w-56 rounded-full"
+          className="pointer-events-none absolute -bottom-10 -end-16 h-56 w-56 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.45), transparent 70%)' }}
         />
         <div className="relative z-10 px-5 pb-8 pt-3">
@@ -338,7 +338,7 @@ export function HomeClient({
             <button
               type="button"
               onClick={() => setTasksPopupOpen(true)}
-              className="w-full text-right"
+              className="w-full text-start"
             >
               <motion.div
                 dir="rtl"
@@ -369,7 +369,7 @@ export function HomeClient({
                           : 0}
                   </span>
                 </div>
-                <div className="relative text-right" style={{ flex: 1 }}>
+                <div className="relative text-start" style={{ flex: 1 }}>
                   <p
                     style={{
                       fontSize: '15px',
@@ -461,7 +461,7 @@ export function HomeClient({
                       כבר סיימת {stats.totalLessonsCompleted} פרקים — בוא נמשיך
                     </p>
                   </div>
-                  <ChevronLeft className="w-5 h-5 text-amber-800/35 shrink-0 mr-auto" aria-hidden />
+                  <ChevronLeft className="w-5 h-5 text-amber-800/35 shrink-0 ms-auto" aria-hidden />
                 </div>
               </Link>
             </motion.div>

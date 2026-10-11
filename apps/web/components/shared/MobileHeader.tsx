@@ -36,7 +36,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 safe-area-top overflow-hidden"
+      <header className="fixed top-0 end-0 start-0 z-50 safe-area-top overflow-hidden"
         style={{ background: 'linear-gradient(160deg, #047857 0%, #059669 50%, #10b981 100%)' }}>
 
         <motion.div className="container-mobile h-16 flex items-center justify-between gap-3 relative z-10">
@@ -117,7 +117,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
                   type="button"
                   disabled={isSigningOut}
                   onClick={() => void handleSignOut()}
-                  className="flex w-full items-center gap-3.5 border-t border-gray-100 px-5 py-4 text-right transition hover:bg-red-50 active:bg-red-100 disabled:opacity-60"
+                  className="flex w-full items-center gap-3.5 border-t border-gray-100 px-5 py-4 text-start transition hover:bg-red-50 active:bg-red-100 disabled:opacity-60"
                 >
                   <motion.div
                     className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"

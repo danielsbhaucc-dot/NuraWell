@@ -283,7 +283,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
           <h3 className="text-sm font-black">סנכרון בתיפוף — מילה אחרי מילה</h3>
           <p className="text-[11px] text-emerald-100/60">נגן את השיר והקש על כל מילה בדיוק כשהיא נשמעת.</p>
         </div>
-        <div className="mr-auto rounded-lg bg-black/40 px-2.5 py-1 font-mono text-sm font-bold tabular-nums text-lime-300">
+        <div className="ms-auto rounded-lg bg-black/40 px-2.5 py-1 font-mono text-sm font-bold tabular-nums text-lime-300">
           {fmt(currentTime)}s
         </div>
       </div>
@@ -383,7 +383,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
           type="button"
           disabled={busy || !loaded}
           onClick={() => void save()}
-          className="mr-auto flex h-10 items-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-600 px-5 text-sm font-bold text-white shadow-lg transition hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50"
+          className="ms-auto flex h-10 items-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-600 px-5 text-sm font-bold text-white shadow-lg transition hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           שמור תזמונים

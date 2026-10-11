@@ -42,7 +42,7 @@ export function AlmogInstantFeedback({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-      className="mt-4 overflow-hidden rounded-2xl text-right shadow-[0_8px_32px_rgba(6,78,59,0.12)]"
+      className="mt-4 overflow-hidden rounded-2xl text-start shadow-[0_8px_32px_rgba(6,78,59,0.12)]"
       style={{
         border: isCorrect ? '1px solid rgba(16,185,129,0.35)' : '1px solid rgba(245,158,11,0.4)',
       }}

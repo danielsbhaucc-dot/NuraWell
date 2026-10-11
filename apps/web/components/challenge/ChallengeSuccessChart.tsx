@@ -93,7 +93,7 @@ export function ChallengeSuccessChart() {
                     animate={{ width: `${(t.count / maxType) * 100}%` }}
                   />
                 </div>
-                <span className="w-6 text-left text-xs tabular-nums text-white/60">{t.count}</span>
+                <span className="w-6 text-end text-xs tabular-nums text-white/60">{t.count}</span>
               </div>
             ))}
           </div>

@@ -97,7 +97,7 @@ export function GenerateSummaryButton({
       aria-label={`צור סיכום ${TYPE_LABEL_HE[type]} ל-${periodKey}`}
       className={`group relative w-full flex flex-col items-stretch gap-2 p-3 rounded-2xl
         ring-1 ${colors.ring} ${colors.bg}
-        text-right transition-all
+        text-start transition-all
         hover:shadow-md hover:-translate-y-0.5
         active:translate-y-0
         disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0

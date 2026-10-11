@@ -35,7 +35,7 @@ export function GuidesAlmogKnowledgePanel({ entries }: GuidesAlmogKnowledgePanel
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-3 p-3.5 text-right"
+        className="flex w-full items-center gap-3 p-3.5 text-start"
         dir="rtl"
       >
         <div

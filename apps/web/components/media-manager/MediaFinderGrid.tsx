@@ -57,7 +57,7 @@ export function MediaFinderGrid({
               {item.title ?? 'ללא שם'}
             </span>
           </button>
-          <div className="pointer-events-none absolute top-2 left-2 z-10">
+          <div className="pointer-events-none absolute top-2 end-2 z-10">
             <CreditBadge asset={item} />
           </div>
         </div>

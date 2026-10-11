@@ -22,7 +22,7 @@ export default function JourneyTaskHistoryPage() {
           >
             <History className="h-5 w-5" strokeWidth={2.2} />
           </div>
-          <div className="min-w-0 flex-1 text-right">
+          <div className="min-w-0 flex-1 text-start">
             <h1
               className="text-xl font-black text-[#1A1730] leading-snug break-words"
               style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}

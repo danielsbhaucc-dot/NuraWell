@@ -128,11 +128,11 @@ export function ProfileRhythmCard({
       {!editing ? (
         <div className="px-5 py-3 space-y-2.5 text-sm">
           <p className="text-slate-600">
-            <Sun className="w-3.5 h-3.5 inline ml-1 text-amber-500" />
+            <Sun className="w-3.5 h-3.5 inline me-1 text-amber-500" />
             {formatSleepDisplayLabeled(initial)}
           </p>
           <p className="text-slate-600 leading-relaxed">
-            <UtensilsCrossed className="w-3.5 h-3.5 inline ml-1 text-emerald-600" />
+            <UtensilsCrossed className="w-3.5 h-3.5 inline me-1 text-emerald-600" />
             {mealsSummary}
           </p>
           <p className="text-[11px] text-slate-500 leading-relaxed">
@@ -147,7 +147,7 @@ export function ProfileRhythmCard({
           </p>
 
           <div className="grid grid-cols-2 gap-3">
-            <label className="block text-right">
+            <label className="block text-start">
               <span className="text-xs font-bold text-slate-700">שעת השכמה</span>
               <input
                 type="time"
@@ -156,7 +156,7 @@ export function ProfileRhythmCard({
                 className="mt-1 w-full rounded-xl border border-emerald-200 px-3 py-2 text-sm"
               />
             </label>
-            <label className="block text-right">
+            <label className="block text-start">
               <span className="text-xs font-bold text-slate-700">שעת שינה</span>
               <input
                 type="time"
@@ -193,11 +193,11 @@ export function ProfileRhythmCard({
               {mealTimes.slice(0, mealCount).map((t, i) => {
                 const slot = t ? classifyMealSlot(t) : null;
                 return (
-                  <label key={i} className="block text-right">
+                  <label key={i} className="block text-start">
                     <span className="text-xs font-bold text-slate-700">
                       ארוחה עיקרית {i + 1}
                       {slot ? (
-                        <span className="font-normal text-slate-500 mr-1">· {mealSlotLabel(slot)}</span>
+                        <span className="font-normal text-slate-500 ms-1">· {mealSlotLabel(slot)}</span>
                       ) : null}
                     </span>
                     <input

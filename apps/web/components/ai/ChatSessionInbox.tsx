@@ -123,7 +123,7 @@ function SessionRow({
   if (isProfileUpdate) {
     return (
       <div
-        className="w-full rounded-xl border px-3 py-2.5 text-right opacity-90"
+        className="w-full rounded-xl border px-3 py-2.5 text-start opacity-90"
         style={{
           borderColor: 'rgba(251,191,36,0.25)',
           background: 'rgba(251,191,36,0.06)',
@@ -153,7 +153,7 @@ function SessionRow({
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full rounded-xl border px-3 py-2.5 text-right transition ${
+      className={`w-full rounded-xl border px-3 py-2.5 text-start transition ${
         isActive
           ? 'border-emerald-400/40 bg-emerald-500/12'
           : 'border-white/10 bg-background-card/[0.04] hover:border-white/18 hover:bg-background-card/[0.06]'
@@ -209,7 +209,7 @@ function AccordionSection({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="mb-2 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-right transition active:scale-[0.98]"
+        className="mb-2 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-start transition active:scale-[0.98]"
         style={{
           background: open ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
           border: `1px solid ${open ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.06)'}`,
@@ -237,7 +237,7 @@ function AccordionSection({
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] as const }}
             className="overflow-hidden"
           >
-            <ul className="mb-3 space-y-1.5 pl-1">
+            <ul className="mb-3 space-y-1.5 pe-1">
               {sessions.map((session) => (
                 <li key={session.id}>
                   <SessionRow
@@ -376,21 +376,21 @@ export function ChatSessionInbox({
         >
           <div className="space-y-2.5 pb-3 pt-2">
             <div className="relative">
-              <Search className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <Search className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
               <input
                 type="search"
                 dir="rtl"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="חיפוש בשיחות..."
-                className="w-full rounded-xl border border-white/10 bg-background-card/[0.04] py-2.5 pl-8 pr-9 text-[13px] text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/35"
+                className="w-full rounded-xl border border-white/10 bg-background-card/[0.04] py-2.5 pe-8 ps-9 text-[13px] text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/35"
               />
               {searchQuery ? (
                 <button
                   type="button"
                   aria-label="נקה חיפוש"
                   onClick={() => setSearchQuery('')}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute end-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -426,12 +426,12 @@ export function ChatSessionInbox({
                   type="button"
                   aria-expanded={topicsOpen}
                   onClick={() => setTopicsOpen((v) => !v)}
-                  className="flex w-full items-center gap-2 px-3 py-2.5 text-right"
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-start"
                 >
                   <span className="flex-1 text-[12px] font-bold text-slate-400">
                     לפי נושא
                     {activeTopicChip ? (
-                      <span className="mr-1.5 text-emerald-300/90">
+                      <span className="ms-1.5 text-emerald-300/90">
                         · {TOPIC_EMOJIS[activeTopicChip.id] ?? '💬'} {activeTopicChip.label}
                       </span>
                     ) : null}

@@ -270,7 +270,7 @@ export function TodayTasksPopup({
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-3.5 left-3.5 z-20 flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:text-white transition-colors"
+              className="absolute top-3.5 end-3.5 z-20 flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:text-white transition-colors"
               style={{
                 background: 'rgba(255,255,255,0.18)',
                 border: '1px solid rgba(255,255,255,0.28)',
@@ -281,7 +281,7 @@ export function TodayTasksPopup({
             </button>
 
             <div
-              className="relative shrink-0 px-5 pt-5 pb-4 text-right overflow-hidden"
+              className="relative shrink-0 px-5 pt-5 pb-4 text-start overflow-hidden"
               style={{
                 background:
                   'linear-gradient(145deg, rgba(3,77,58,0.92) 0%, rgba(4,120,87,0.88) 42%, rgba(13,148,136,0.85) 100%)',
@@ -291,7 +291,7 @@ export function TodayTasksPopup({
             >
               <span
                 aria-hidden
-                className="pointer-events-none absolute -left-10 -top-8 h-32 w-32 rounded-full"
+                className="pointer-events-none absolute -end-10 -top-8 h-32 w-32 rounded-full"
                 style={{
                   background: 'radial-gradient(circle, rgba(255,255,255,0.22), transparent 68%)',
                 }}
@@ -364,7 +364,7 @@ export function TodayTasksPopup({
             >
               {pendingTasks.length === 0 && doneTasks.length === 0 && almogTasks.length === 0 ? (
                 <div
-                  className="rounded-2xl p-4 text-right"
+                  className="rounded-2xl p-4 text-start"
                   style={{
                     background: '#f8fbf6',
                     border: '1px solid rgba(167,243,208,0.55)',
@@ -401,7 +401,7 @@ export function TodayTasksPopup({
                 return (
                   <article
                     key={`almog-${task.id}`}
-                    className="w-full text-right rounded-2xl p-3.5"
+                    className="w-full text-start rounded-2xl p-3.5"
                     style={{
                       background: 'rgba(248,251,246,0.55)',
                       border: '1px solid rgba(167,243,208,0.4)',
@@ -414,7 +414,7 @@ export function TodayTasksPopup({
                       onClick={() =>
                         setExpandedId(isExpanded ? null : `almog-${task.id}`)
                       }
-                      className="w-full text-right"
+                      className="w-full text-start"
                       aria-expanded={isExpanded}
                     >
                       <div className="flex items-start gap-3">
@@ -488,7 +488,7 @@ export function TodayTasksPopup({
                 return (
                   <article
                     key={task.id}
-                    className="w-full text-right rounded-2xl p-3.5"
+                    className="w-full text-start rounded-2xl p-3.5"
                     style={{
                       background: isFeatured
                         ? 'linear-gradient(170deg, rgba(248,251,246,0.72) 0%, rgba(255,251,235,0.58) 100%)'
@@ -506,7 +506,7 @@ export function TodayTasksPopup({
                     <button
                       type="button"
                       onClick={() => setExpandedId(isExpanded ? null : task.id)}
-                      className="w-full text-right"
+                      className="w-full text-start"
                       aria-expanded={isExpanded}
                       aria-label={`פתיחת אפשרויות ל${task.title}`}
                     >

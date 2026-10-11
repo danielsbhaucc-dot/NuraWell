@@ -174,7 +174,7 @@ export function AlmogCompletedSection() {
     <div className="mt-6">
       <div className="mb-2.5 flex items-center gap-2.5 px-1">
         <AlmogAvatarChip size={28} />
-        <div className="text-right">
+        <div className="text-start">
           <p
             className="text-[14px] font-black leading-snug"
             style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
@@ -234,7 +234,7 @@ export function AlmogAssignmentsSection() {
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="flex w-full items-center gap-3 px-4 py-4 text-right no-tap-highlight"
+          className="flex w-full items-center gap-3 px-4 py-4 text-start no-tap-highlight"
           aria-expanded={expanded}
         >
           <AlmogAvatarChip size={40} />
@@ -398,7 +398,7 @@ function CompletedList({
             }}
           >
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-            <div className="min-w-0 flex-1 text-right">
+            <div className="min-w-0 flex-1 text-start">
               <p
                 className={[
                   'text-[13px] font-bold text-emerald-900/85 line-through decoration-emerald-700/40',
@@ -468,7 +468,7 @@ function FocusBanner({
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full"
+        className="pointer-events-none absolute -start-8 -top-8 h-28 w-28 rounded-full"
         style={{
           background: 'radial-gradient(circle, rgba(167,243,208,0.45) 0%, transparent 70%)',
           filter: 'blur(16px)',
@@ -657,7 +657,7 @@ function AssignmentCard({
             </span>
           ) : null}
           {assignment.done_count > 0 ? (
-            <span className="mr-auto text-[11px] font-bold text-emerald-600">
+            <span className="ms-auto text-[11px] font-bold text-emerald-600">
               עשית {assignment.done_count}×
             </span>
           ) : null}

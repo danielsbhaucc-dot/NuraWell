@@ -418,7 +418,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
 
         <Link
           href={APP_HOME_PATH}
-          className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95"
+          className="absolute start-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95"
           style={{
             background: 'rgba(167, 243, 208, 0.18)',
             border: '1px solid rgba(167, 243, 208, 0.38)',
