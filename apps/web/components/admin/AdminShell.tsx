@@ -80,7 +80,7 @@ export function AdminShell({
   const isAccessibility = np === '/ops/accessibility';
   const isSystemRagIngest = np === '/ops/system-rag-ingest';
   const isAlmogNavSection = isAlmogSettings || isSystemRagIngest;
-  const isJourneyHub = np === '/ops/journey-hub';
+  const isJourneyHub = np === '/ops/journey' || np === '/ops/journey-hub' || np.startsWith('/ops/steps');
   const isAudio = np === '/ops/audio' || np.startsWith('/ops/audio/');
   const isGuides = np === '/ops/guides' || np.startsWith('/ops/guides/');
   const isChallenge = np === '/ops/challenge' || np.startsWith('/ops/challenge/');
@@ -336,77 +336,7 @@ export function AdminShell({
                         הגדרות מנטורים
                       </Link>
                     </li>
-                    <li>
-                      <Link
-                        href={opsHref('/system-rag-ingest')}
-                        onClick={() => setSidebarOpen(false)}
-                        className={cn(
-                          'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-violet-400/20 sm:text-[15px]',
-                          isSystemRagIngest
-                            ? 'bg-violet-400/20 font-bold text-violet-950'
-                            : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
-                        )}
-                      >
-                        <BookOpen size={17} className="shrink-0 opacity-90" />
-                        ניהול ידע
-                      </Link>
-                    </li>
-                  </ul>
-                )}
-              </div>
-            )}
-
-            {sidebarCollapsed ? (
-              <Link
-                href={opsHref('/journey')}
-                onClick={() => setSidebarOpen(false)}
-                className={navBtn(isJourneyManage, 'amber')}
-                title="הגדרות מסע — ניהול"
-              >
-                <Map size={20} className={cn('shrink-0', isJourneyManage && 'text-amber-600')} />
-                <span className="lg:sr-only">הגדרות מסע</span>
-              </Link>
-            ) : (
-              <div className="rounded-2xl border border-white/50 bg-background-card/35 backdrop-blur-md">
-                <button
-                  type="button"
-                  onClick={() => setJourneySettingsOpen((o) => !o)}
-                  className={cn(
-                    'flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-right text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
-                    isJourneyManage && !isHome && !isAlmogNavSection
-                      ? 'bg-amber-400/20 font-semibold text-amber-950'
-                      : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
-                  )}
-                  aria-expanded={journeySettingsOpen}
-                >
-                  <span className="flex min-w-0 items-center gap-3">
-                    <Map size={20} className={cn('shrink-0', isJourneyManage && 'text-amber-600')} />
-                    <span className="truncate">הגדרות מסע</span>
-                  </span>
-                  <ChevronDown
-                    size={18}
-                    className={cn('shrink-0 text-slate-400 transition-transform', journeySettingsOpen && '-rotate-180')}
-                  />
-                </button>
-
-                {journeySettingsOpen && (
-                  <ul className="mr-2 mt-1 space-y-1 border-r border-amber-400/40 pr-3 pb-2">
-                    <li>
-                      <Link
-                        href={opsHref('/journey-hub')}
-                        onClick={() => setSidebarOpen(false)}
-                        className={cn(
-                          'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-amber-400/25 sm:text-[15px]',
-                          isJourneyHub
-                            ? 'bg-amber-400/25 font-bold text-amber-950'
-                            : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
-                        )}
-                      >
-                        <Layers size={17} className="shrink-0 opacity-90" />
-                        מסע ותחנות
-                      </Link>
-                    </li>
-                    <li>
+                                        <li>
                       <Link
                         href={opsHref('/journey')}
                         onClick={() => setSidebarOpen(false)}

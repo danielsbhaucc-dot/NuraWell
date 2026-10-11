@@ -1,9 +1,8 @@
-import Link from 'next/link';
-import { ListTree } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { AdminStepsList } from '@/components/admin/AdminStepsList';
-import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
+import { AdminJourneyHub } from '@/components/admin/AdminJourneyHub';
 import type { JourneyStep } from '@/lib/types/journey';
+import type { StationCoverCredit } from '@/lib/journey/group-journey-by-station';
+import { getPublicCdnImageUrl } from '@/lib/cdn/public-images';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,32 +10,32 @@ export default async function OpsJourneyPage() {
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: steps } = await supabase
-    .from('journey_steps')
-    .select('*, journey_stations(id,title,sort_order)')
-    .order('step_number');
+  const sb = supabase as any;
+
+  const [{ data: stations }, { data: steps }] = await Promise.all([
+    sb.from('journey_stations').select('*').order('sort_order', { ascending: true }).order('title', { ascending: true }),
+    sb
+      .from('journey_steps')
+      .select('*, journey_stations(id,title,sort_order)')
+      .order('step_number', { ascending: true }),
+  ]);
+
+  const stepRows = (steps ?? []) as JourneyStep[];
 
   return (
-    <div className="space-y-5 sm:space-y-6">
-      <OpsPageHeader
-        icon={ListTree}
-        eyebrow="ניהול מסע"
-        title="ניהול צעדי מסע"
-        tone="amber"
-        description={
-          <>
-            עריכה, פרסום ומחיקה של צעדים. לניהול תחנות וקיבוץ —{' '}
-            <Link
-              href="/journey-hub"
-              className="font-bold text-emerald-700 underline decoration-emerald-400/50 underline-offset-2 hover:text-emerald-800"
-            >
-              מסע ותחנות
-            </Link>
-            .
-          </>
-        }
-      />
-      <AdminStepsList steps={(steps as JourneyStep[]) || []} showIntro={false} />
-    </div>
+    <AdminJourneyHub
+      initialStations={((stations ?? []) as Array<{
+        id: string;
+        title: string;
+        description: string | null;
+        sort_order: number;
+        cover_image_key: string | null;
+        cover_image_credit: StationCoverCredit | null;
+      }>).map((row) => ({
+        ...row,
+        coverImageUrl: row.cover_image_key ? getPublicCdnImageUrl(row.cover_image_key) : null,
+      }))}
+      initialSteps={stepRows}
+    />
   );
 }
