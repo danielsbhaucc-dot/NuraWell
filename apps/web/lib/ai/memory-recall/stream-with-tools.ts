@@ -10,6 +10,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PiiShield } from '../privacy/pii-shield';
 import { looksLikeLeakedThinking, preferSanitizedWriterOutput } from '../sanitize-writer-output';
 import { buildRecallPastMemoryTools } from './recall-tool';
+import { buildTaskLevelTools } from '../task-level-tool';
+import { createAdminClient } from '../../supabase/admin';
 import { MEMORY_RECALL_TOOL_PROMPT } from './prompt';
 import { createRecallToolTelemetry } from './recall-telemetry';
 
@@ -57,6 +59,7 @@ export async function createMemoryRecallStreamResponse(params: {
   const systemContent = [
     params.staticSystemPrompt,
     MEMORY_RECALL_TOOL_PROMPT,
+    'כלי adjust_task_level: כשהמשתמש אומר במפורש שמשימה בתוכנית קשה לו מדי ("קשה לי") או קלה מדי — הקל/הקשה ברמה אחת בלבד, ואז ספר לו בחום מה המשימה החדשה. אל תשתמש בו בלי בקשה ברורה.',
     params.piiShield
       ? params.piiShield.tokenizeText(params.dynamicSystemPrompt)
       : params.dynamicSystemPrompt,
@@ -73,12 +76,16 @@ export async function createMemoryRecallStreamResponse(params: {
     userId: params.userId,
     telemetry,
   });
+  const allTools = {
+    ...tools,
+    ...buildTaskLevelTools({ admin: createAdminClient(), userId: params.userId }),
+  };
 
   const result = streamText({
     model: params.model,
     system: tokenizedSystem,
     messages: tokenizedMessages,
-    tools,
+    tools: allTools,
     toolChoice: 'auto',
     stopWhen: isStepCount(2),
     temperature: params.temperature,
