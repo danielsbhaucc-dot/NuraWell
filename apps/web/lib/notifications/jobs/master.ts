@@ -795,6 +795,10 @@ async function runMasterCron() {
       .from('chat_perf_timings')
       .delete()
       .lt('created_at', new Date(Date.now() - 30 * 86_400_000).toISOString());
+    await admin
+      .from('error_events')
+      .delete()
+      .lt('created_at', new Date(Date.now() - 30 * 86_400_000).toISOString());
   } catch (e) {
     errors.push(`perf_retention: ${e instanceof Error ? e.message : String(e)}`);
   }

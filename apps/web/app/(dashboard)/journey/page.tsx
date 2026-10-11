@@ -72,6 +72,21 @@ export default async function JourneyRoute() {
     .select(JOURNEY_PROGRESS_SELECT)
     .eq('user_id', user.id);
 
+  // task model → journey: a step whose task the user is actively practicing counts as in progress (was 0%)
+  const { data: practicing } = await supabase
+    .from('user_task_assignments')
+    .select('status, task_definitions!inner(step_id)')
+    .eq('user_id', user.id)
+    .eq('status', 'accepted');
+  const practicingStepIds = [
+    ...new Set(
+      ((practicing ?? []) as unknown as Array<{ task_definitions: { step_id: string | null } | { step_id: string | null }[] }>)
+        .flatMap((r) => (Array.isArray(r.task_definitions) ? r.task_definitions : [r.task_definitions]))
+        .map((d) => d?.step_id)
+        .filter((x): x is string => typeof x === 'string')
+    ),
+  ];
+
   const rows = (rawSteps as unknown as RawStepRow[]) || [];
   const progressList = (rawProgress as unknown as JourneyStepProgress[]) || [];
   const progressMap = new Map(progressList.map((p) => [p.step_id, p]));
@@ -141,6 +156,7 @@ export default async function JourneyRoute() {
       foundationComplete={accessCtx.foundationComplete}
       hasFoundationStation={Boolean(accessCtx.foundationStationId)}
       initialNextStep={initialNextStep}
+      practicingStepIds={practicingStepIds}
     />
   );
 }
