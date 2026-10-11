@@ -19,6 +19,21 @@ type UseAlmogAvatarUrlOptions = {
   enabled?: boolean;
 };
 
+type AvatarPayload = { url?: string | null; has_custom?: boolean; cdn_configured?: boolean; cdn_hostname?: string | null };
+/** one request per page load shared by every hook instance (was 3–4× per page); refresh() forces a new one */
+let avatarShared: Promise<AvatarPayload> | null = null;
+function fetchAvatar(force: boolean): Promise<AvatarPayload> {
+  if (!avatarShared || force) {
+    avatarShared = fetch('/api/v1/almog-avatar', { cache: force ? 'no-store' : 'default' })
+      .then((r) => r.json() as Promise<AvatarPayload>)
+      .catch((e) => {
+        avatarShared = null;
+        throw e;
+      });
+  }
+  return avatarShared;
+}
+
 export function useAlmogAvatarUrl(
   refreshTokenOrOpts: number | UseAlmogAvatarUrlOptions = 0
 ): AlmogAvatarMeta {
@@ -33,19 +48,13 @@ export function useAlmogAvatarUrl(
   const [cdnHostname, setCdnHostname] = useState<string | null>(null);
   const [ready, setReady] = useState(!enabled);
 
-  const refresh = useCallback(async () => {
+  const load = useCallback(async (force: boolean) => {
     if (!enabled) {
       setReady(true);
       return;
     }
     try {
-      const res = await fetch('/api/v1/almog-avatar', { cache: 'no-store' });
-      const data = (await res.json()) as {
-        url?: string | null;
-        has_custom?: boolean;
-        cdn_configured?: boolean;
-        cdn_hostname?: string | null;
-      };
+      const data = await fetchAvatar(force);
       const u = typeof data.url === 'string' && data.url.length > 0 ? data.url : ALMOG_AVATAR_FALLBACK;
       setAvatarUrl(u);
       setHasCustom(Boolean(data.has_custom));
@@ -60,10 +69,11 @@ export function useAlmogAvatarUrl(
       setReady(true);
     }
   }, [enabled]);
+  const refresh = useCallback(() => load(true), [load]);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh, refreshToken]);
+    void load(refreshToken > 0);
+  }, [load, refreshToken]);
 
   return { avatarUrl, hasCustom, ready, cdnConfigured, cdnHostname, refresh };
 }

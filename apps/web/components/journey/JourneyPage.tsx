@@ -42,6 +42,8 @@ interface JourneyPageProps {
   hasFoundationStation?: boolean;
   /** deterministic next-step card content from the server (AI text enriches it later) */
   initialNextStep?: NextStepCardData | null;
+  /** steps whose task the user is actively practicing (unified task model) — half credit until the step is completed */
+  practicingStepIds?: string[];
 }
 
 export function JourneyPage({
@@ -51,6 +53,7 @@ export function JourneyPage({
   foundationComplete = true,
   hasFoundationStation = false,
   initialNextStep = null,
+  practicingStepIds = [],
 }: JourneyPageProps) {
   const [liveProgressByStep, setLiveProgressByStep] = useState<
     Record<string, JourneyStepProgress>
@@ -85,25 +88,32 @@ export function JourneyPage({
     [mergedGroups, selectedKey]
   );
 
+  const practicingSet = useMemo(() => new Set(practicingStepIds), [practicingStepIds]);
   // אגרגציה כללית לכל המסע (תמיד מחושב, לתצוגת ה-HERO)
   const totalAcrossAll = useMemo(
     () =>
       mergedGroups.reduce(
         (acc, g) => ({
           done: acc.done + g.steps.filter((s) => s.progress?.is_completed).length,
+          credit:
+            acc.credit +
+            g.steps.reduce(
+              (n, s) => n + (s.progress?.is_completed ? 1 : practicingSet.has(s.id) ? 0.5 : 0),
+              0
+            ),
           all: acc.all + g.steps.length,
           stations: acc.stations + 1,
           stationsDone:
             acc.stationsDone +
             (g.steps.length > 0 && g.steps.every((s) => s.progress?.is_completed) ? 1 : 0),
         }),
-        { done: 0, all: 0, stations: 0, stationsDone: 0 }
+        { done: 0, credit: 0, all: 0, stations: 0, stationsDone: 0 }
       ),
-    [mergedGroups]
+    [mergedGroups, practicingSet]
   );
 
   const overallPct = totalAcrossAll.all
-    ? Math.round((totalAcrossAll.done / totalAcrossAll.all) * 100)
+    ? Math.round((totalAcrossAll.credit / totalAcrossAll.all) * 100)
     : 0;
 
   // ⤵ ימים מאז תחילת המסע — חישוב פר-משתמש (אם יש progress כלשהו)
