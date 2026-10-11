@@ -535,9 +535,6 @@ async function runHabitCheckpointCron(request: Request) {
 
   const userIds = [...new Set(plan.map((p) => p.userId))];
   const personalizedScheduleIds = new Set<string>();
-  const hasPendingTasksByUser = new Map(
-    plan.map((p) => [p.userId, p.payload.pendingTasks.length > 0])
-  );
 
   if (userIds.length > 0) {
     const plannedIds = new Set(userIds);
@@ -554,9 +551,12 @@ async function runHabitCheckpointCron(request: Request) {
        */
       if (
         row.onboarding_completed === true &&
-        normalizeCheckInTimes(row.ai_check_in_times).length > 0 &&
-        !hasPendingTasksByUser.get(id)
+        normalizeCheckInTimes(row.ai_check_in_times).length > 0
       ) {
+        /**
+         * משתמש עם זמנים אישיים (ai_check_in_times) מקבל את תזכורות המשימות בזמנים שלו
+         * דרך onboarding-check-ins (כולל pending tasks) — לא בסלוטים הקבועים 08/13/20.
+         */
         personalizedScheduleIds.add(id);
       }
     }

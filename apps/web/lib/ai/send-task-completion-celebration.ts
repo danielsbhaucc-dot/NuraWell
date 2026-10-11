@@ -1,3 +1,4 @@
+import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from './client';
 import { completeEmpathyNotifyBody } from './empathy-notify-completion';
@@ -277,7 +278,7 @@ export async function sendTaskCompletionCelebration(
   const title = `${titlePrefix} · מאלמוג ${titleEmoji}`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await admin.from('notifications').insert({
+  const { error } = await insertNotification(admin, {
     user_id: userId,
     type: 'ai_message',
     title,

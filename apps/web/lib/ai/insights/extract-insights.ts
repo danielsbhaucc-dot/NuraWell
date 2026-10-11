@@ -1,3 +1,4 @@
+import { createAiProvider } from '@/lib/ai/provider-factory';
 /**
  * מנוע חילוץ התובנות — שכבת ה-LLM (רקע, לא צ'אט).
  *
@@ -10,25 +11,16 @@
  */
 
 import 'server-only';
-import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 
 import { AI_MODELS } from '../client';
-import { publicAppUrlForAiReferer } from '../../public-app-url';
 import { EMPTY_EXTRACTION, InsightExtractionResult, type ExtractedInsight } from './schema';
 
 /** סף ביטחון מינימלי — תובנות חלשות מזה נזרקות (מניעת רעש). */
 const MIN_CONFIDENCE = 0.55;
 
 /** ספק OpenRouter דרך AI SDK (אותו base-url של ה-`openrouter` הקיים ב-client.ts). */
-const openrouterProvider = createOpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY?.trim() || 'build-placeholder-key',
-  headers: {
-    'HTTP-Referer': publicAppUrlForAiReferer(),
-    'X-Title': 'NuraWell',
-  },
-});
+const openrouterProvider = createAiProvider();
 
 /**
  * הפרומפט הרקעי. ממצב את המודל כפסיכולוג התנהגותי מומחה שמחפש *אותות עומק*,

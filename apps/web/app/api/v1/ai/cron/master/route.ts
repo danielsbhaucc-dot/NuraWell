@@ -1,4 +1,5 @@
-import { filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
+import { insertNotification } from '@/lib/notifications/deliver';
+import { evaluateNotifyGate, filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
 import { NextResponse } from 'next/server';
 import { deepseek } from '../../../../../../lib/ai/client';
 import { getDeepseekAnalysisModel } from '../../../../../../lib/ai/deepseek-model';
@@ -357,7 +358,7 @@ async function runMasterCron() {
           urgency: 'low',
         });
 
-        const { error: insErr } = await admin.from('notifications').insert({
+        const { error: insErr } = await insertNotification(admin, {
           user_id: userId,
           type: 'ai_message',
           title: resolved.title,
@@ -441,6 +442,13 @@ async function runMasterCron() {
           nudgeSkipped++;
           continue;
         }
+        /** unified gate: recipient + prefs + inactivity fade (once/day → once/week) */
+        const gate = await evaluateNotifyGate(admin, userId);
+        if (!gate.ok) {
+          actionCounts.silent++;
+          nudgeSkipped++;
+          continue;
+        }
 
         const { data: recentNudge } = await admin
           .from('notifications')
@@ -474,7 +482,7 @@ async function runMasterCron() {
           continue;
         }
 
-        const { error: insErr } = await admin.from('notifications').insert({
+        const { error: insErr } = await insertNotification(admin, {
           user_id: userId,
           type: 'ai_message',
           title: resolved.title,

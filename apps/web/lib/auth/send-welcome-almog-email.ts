@@ -1,3 +1,4 @@
+import { insertNotification } from '@/lib/notifications/deliver';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendResendEmail } from '@/lib/email/resend';
 import {
@@ -80,7 +81,7 @@ export async function sendWelcomeAlmogEmail(userId: string): Promise<SendWelcome
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const title = `${firstName} · מאלמוג`;
-  await admin.from('notifications').insert({
+  await insertNotification(admin, {
     user_id: userId,
     type: 'ai_message',
     title,

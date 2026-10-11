@@ -1,4 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { jerusalemTodayStartIso } from '../ai/almog-notify-day-context';
+import {
+  decideInactivityFade,
+  FADE_DAILY_FROM_DAYS,
+  FADE_WEEKLY_INTERVAL_DAYS,
+  parseNotificationPrefs,
+  type NotificationPrefs,
+} from './inactivity-fade';
 
 /**
  * מי מקבל התראות אוטומטיות (cron / מערכת חוסר-פעילות).
@@ -113,4 +121,92 @@ export async function filterNotifyEligibleUserIds(
 export async function isUserNotifyEligible(admin: SupabaseClient, userId: string): Promise<boolean> {
   const ids = await filterNotifyEligibleUserIds(admin, [userId]);
   return ids.length > 0;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Single per-user send gate (recipient + prefs + inactivity fade).
+// Used by gateAlmogUserFacingTouch (all Almog senders) BEFORE touch-fatigue (3/day).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type NotifyGateReason = 'not_notify_recipient' | 'prefs_off' | 'inactivity_fade';
+export type NotifyGateResult =
+  | { ok: true; inactiveDays: number; tier: 'active' | 'daily' | 'weekly'; prefs: NotificationPrefs }
+  | { ok: false; reason: NotifyGateReason; inactiveDays?: number };
+
+type GateProfileRow = NotifyProfileLike & {
+  notification_prefs?: unknown;
+  last_active_at?: string | null;
+  last_responded_at?: string | null;
+};
+
+function toMs(v: string | null | undefined): number | null {
+  if (!v) return null;
+  const t = Date.parse(v);
+  return Number.isFinite(t) ? t : null;
+}
+
+export async function evaluateNotifyGate(
+  admin: SupabaseClient,
+  userId: string,
+  opts: { now?: Date; isAlmogTouch?: (meta: Record<string, unknown> | null) => boolean } = {}
+): Promise<NotifyGateResult> {
+  const now = opts.now ?? new Date();
+  let row: GateProfileRow | null = null;
+  for (const select of [
+    'id, role, notify_test_opt_in, notification_prefs, last_active_at, last_responded_at',
+    'id, role, notification_prefs, last_active_at, last_responded_at',
+  ]) {
+    const { data, error } = await admin.from('profiles').select(select).eq('id', userId).maybeSingle();
+    if (!error) {
+      row = (data ?? null) as unknown as GateProfileRow | null;
+      break;
+    }
+    if (!isMissingColumnError(error)) {
+      console.warn('[notify-gate] profile lookup failed — fail-open', error.message);
+      return { ok: true, inactiveDays: 0, tier: 'active', prefs: parseNotificationPrefs(null) };
+    }
+  }
+  if (!row) return { ok: false, reason: 'not_notify_recipient' };
+  if (!isNotifyEligibleProfile(row)) return { ok: false, reason: 'not_notify_recipient' };
+
+  const prefs = parseNotificationPrefs(row.notification_prefs);
+  if (!prefs.daily_reminder) return { ok: false, reason: 'prefs_off' };
+
+  const lastA = toMs(row.last_active_at);
+  const lastR = toMs(row.last_responded_at);
+  const lastActive = lastA == null && lastR == null ? null : Math.max(lastA ?? 0, lastR ?? 0);
+
+  let touchTimes: number[] = [];
+  const nowMs = now.getTime();
+  if (lastActive != null && nowMs - lastActive >= FADE_DAILY_FROM_DAYS * 24 * 3600 * 1000) {
+    const since = new Date(Math.max(lastActive, nowMs - FADE_WEEKLY_INTERVAL_DAYS * 24 * 3600 * 1000)).toISOString();
+    const { data, error } = await admin
+      .from('notifications')
+      .select('created_at, metadata')
+      .eq('user_id', userId)
+      .eq('type', 'ai_message')
+      .gt('created_at', since)
+      .limit(50);
+    if (error) {
+      // fail-closed for fade (prefer silence over flooding an inactive user)
+      return { ok: false, reason: 'inactivity_fade' };
+    }
+    const isAlmog =
+      opts.isAlmogTouch ??
+      ((m: Record<string, unknown> | null) =>
+        m?.mentor === 'almog' || (typeof m?.source === 'string' && m.source.startsWith('almog')));
+    touchTimes = ((data ?? []) as Array<{ created_at: string; metadata: unknown }>)
+      .filter((r) => isAlmog((r.metadata ?? null) as Record<string, unknown> | null))
+      .map((r) => Date.parse(r.created_at))
+      .filter((t) => Number.isFinite(t));
+  }
+
+  const fade = decideInactivityFade({
+    now: nowMs,
+    lastActiveAt: lastActive,
+    recentTouchTimes: touchTimes,
+    todayStartMs: Date.parse(jerusalemTodayStartIso(now)),
+  });
+  if (!fade.ok) return { ok: false, reason: 'inactivity_fade', inactiveDays: fade.inactiveDays };
+  return { ok: true, inactiveDays: fade.inactiveDays, tier: fade.tier, prefs };
 }

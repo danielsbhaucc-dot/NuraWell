@@ -1,3 +1,4 @@
+import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
 import {
@@ -524,9 +525,7 @@ export async function sendAlmogHabitCheckpointNotification(
   const notificationSource = isBreakup ? 'almog_churn_survey' : 'almog_habit_checkpoint';
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: inserted, error } = await admin
-    .from('notifications')
-    .insert({
+  const { data: inserted, error } = await insertNotification(admin, {
       user_id: payload.userId,
       type: 'ai_message',
       title,
@@ -563,9 +562,7 @@ export async function sendAlmogHabitCheckpointNotification(
         ...(payload.engagementStatus ? { engagement_status: payload.engagementStatus } : {}),
         ...(surveyMeta ? { survey: surveyMeta } : {}),
       },
-    })
-    .select('id, user_id, type, title, archived_at, is_read, is_sent, created_at')
-    .single();
+    }, { select: 'id, user_id, type, title, archived_at, is_read, is_sent, created_at', single: 'single' });
 
   if (error) throw new Error(error.message);
 

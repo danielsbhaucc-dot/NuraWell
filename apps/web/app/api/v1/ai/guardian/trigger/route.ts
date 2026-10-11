@@ -1,3 +1,5 @@
+import { evaluateNotifyGate } from '@/lib/notifications/notify-recipients';
+import { insertNotification } from '@/lib/notifications/deliver';
 import { NextResponse } from 'next/server';
 
 import { buildGuardianTouch } from '../../../../../../lib/ai/guardian/build-guardian-touch';
@@ -221,15 +223,18 @@ export async function POST(request: Request) {
     });
   }
 
+  const notifyGate = await evaluateNotifyGate(admin, payload.userId);
+  if (!notifyGate.ok) {
+    return NextResponse.json({ ok: true, sent: false, blocked: notifyGate.reason, user_id: payload.userId });
+  }
+
   const touch = buildGuardianTouch({
     fullName: profile.full_name,
     window: payload.window,
     leadMin: payload.leadMin,
   });
 
-  const { data: inserted, error: insertError } = await admin
-    .from('notifications')
-    .insert({
+  const { data: inserted, error: insertError } = await insertNotification(admin, {
       user_id: payload.userId,
       type: 'ai_message',
       title: touch.title,
@@ -254,9 +259,7 @@ export async function POST(request: Request) {
           lead_min: payload.leadMin,
         },
       },
-    })
-    .select('id')
-    .maybeSingle();
+    }, { select: 'id', single: 'maybeSingle' });
 
   if (insertError) {
     return NextResponse.json({ ok: false, error: insertError.message }, { status: 500 });

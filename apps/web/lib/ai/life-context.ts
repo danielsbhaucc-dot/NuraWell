@@ -2,6 +2,7 @@
  * הקשר חיים מהצ'אט — זיהוי אירועים (לא רק חופשה/אשפוז), regex בלי LLM.
  */
 
+import { insertNotification } from '@/lib/notifications/deliver';
 import { buildSlotDaypartPromptBlock } from './almog-notify-day-context';
 import { AI_MODELS } from './client';
 import { crisisCooldownUntilIso } from './avoid-push';
@@ -428,9 +429,7 @@ export async function sendLifeContextTouch(
   const emoji = lc.profile === 'pause' ? '💙' : '🌴';
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: inserted, error } = await admin
-    .from('notifications')
-    .insert({
+  const { data: inserted, error } = await insertNotification(admin, {
       user_id: userId,
       type: 'ai_message',
       title: `${firstName} ${emoji}`,
@@ -448,9 +447,7 @@ export async function sendLifeContextTouch(
         model: AI_MODELS.empathy,
         mentor: 'almog',
       },
-    })
-    .select('id, user_id, type, title, archived_at, is_read, is_sent, created_at')
-    .single();
+    }, { select: 'id, user_id, type, title, archived_at, is_read, is_sent, created_at', single: 'single' });
 
   if (error) throw new Error(error.message);
   return { body, inserted: inserted as Record<string, unknown> | null };

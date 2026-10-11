@@ -1,3 +1,4 @@
+import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
 import {
@@ -403,9 +404,7 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
   const iconEmoji = isKickoffNeeded ? '🚀' : '🌿';
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: inserted, error } = await admin
-    .from('notifications')
-    .insert({
+  const { data: inserted, error } = await insertNotification(admin, {
       user_id: payload.userId,
       type: 'ai_message',
       title,
@@ -429,9 +428,7 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
         habit_ids: journeyCtx?.habits.map((h) => h.id) ?? [],
         pending_task_ids: journeyCtx?.pendingTasks.map((t) => t.id) ?? [],
       },
-    })
-    .select('id, user_id, type, title, archived_at, is_read, is_sent, created_at')
-    .single();
+    }, { select: 'id, user_id, type, title, archived_at, is_read, is_sent, created_at', single: 'single' });
 
   /** dedupe (migration 000089): workflow retry / overlapping cron tick → already sent, no double push */
   if (error && (error as { code?: string }).code === '23505') {

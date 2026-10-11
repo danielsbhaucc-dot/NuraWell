@@ -1,15 +1,12 @@
+import { createAiProvider } from '@/lib/ai/provider-factory';
 import { generateText } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
 import type {
   ChallengeInterviewInsights,
   ChallengeInterviewTurn,
 } from './content';
 import { INTERVIEW_MIN_TURNS, INTERVIEW_OPENING } from './content';
 
-const openrouter = createOpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
+const openrouter = createAiProvider();
 
 export type ChallengeInterviewResult = {
   reply: string;
