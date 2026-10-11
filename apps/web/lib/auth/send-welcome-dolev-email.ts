@@ -1,3 +1,4 @@
+import { insertNotification } from '@/lib/notifications/deliver';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendResendEmail } from '@/lib/email/resend';
 import {
@@ -75,7 +76,7 @@ export async function sendWelcomeDolevEmail(userId: string): Promise<SendWelcome
   const notifyBody = `שמחתי לאשר את האימייל שלך! קיבלתי את כל מה שמילאת — מכאן אלמוג איתך בקצב שלך. נתראה באפליקציה 🌿`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await admin.from('notifications').insert({
+  await insertNotification(admin, {
     user_id: userId,
     type: 'ai_message',
     title: `היי ${firstName} · מדולב`,

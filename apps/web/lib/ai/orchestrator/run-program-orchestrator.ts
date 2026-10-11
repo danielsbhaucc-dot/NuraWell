@@ -15,7 +15,8 @@
  *   - כבר נשלחה הצעת אורקסטרטור היום → תקרת תדירות (≤1/יום).
  */
 
-import { filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
+import { insertNotification } from '@/lib/notifications/deliver';
+import { evaluateNotifyGate, filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { isAvoidPushActive } from '../avoid-push';
@@ -225,9 +226,15 @@ export async function orchestrateProgramForUser(
 
   await writePendingProposal(admin, profile.id, proposal);
 
+  // unified gate (prefs + inactivity fade): the proposal stays pending in-app; only the push/notification is skipped
+  const notifyGate = await evaluateNotifyGate(admin, profile.id);
+  if (!notifyGate.ok) {
+    return { ...base, skippedReason: notifyGate.reason ?? 'notify_gate' } as typeof base & { skippedReason: string };
+  }
+
   // ── נוטיפיקציה — מקור אמת לתדירות + מנוע ה-push ──────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: notifyError } = await admin.from('notifications').insert({
+  const { error: notifyError } = await insertNotification(admin, {
     user_id: profile.id,
     type: 'ai_message',
     title: proposal.headline,

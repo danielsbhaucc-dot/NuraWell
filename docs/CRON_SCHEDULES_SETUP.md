@@ -520,3 +520,19 @@ curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints/te
 cooldown להרגלים דומים, focus, ghosted weekly), כך שהודעה מתוזמנת מראש הייתה צריכה לבדוק הכול מחדש בשליחה
 ולהתבטל/להידחות בכל פעילות — יותר invocations ולא פחות, וסיכון לשינוי תזמון. במקום זה: guards זולים
 (count אחד, יציאה מיידית), שאילתות ממוקדות למשתמשים זכאים, וטעינת prompt רק למי שבאמת due.
+
+## Unified notification system (2026-10)
+
+Every Almog/platform notification now goes through one pipeline:
+
+1. **Decision** — `lib/notifications/notify-recipients.ts › evaluateNotifyGate` (recipient eligibility incl. `notify_test_opt_in`, `notification_prefs`, inactivity fade from `lib/notifications/inactivity-fade.ts`), then `gateAlmogUserFacingTouch` (open-task 3/day / touch fatigue). Content (AI) is generated only after the gate passes.
+2. **Log / write** — `lib/notifications/deliver.ts › insertNotification` is the only write into `notifications` (flags DB dedupe 23505).
+3. **Push** — `lib/notifications/after-almog-insert.ts` → `deliverWebPushAfterAlmogNotification` (honors `notification_prefs.push`).
+
+Inactivity fade (keyed on `profiles.last_active_at`): day 1 → one nudge; day 2–6 → max once/day; 7+ days → max once/week. Constants: `FADE_DAILY_FROM_DAYS`, `FADE_WEEKLY_FROM_DAYS`, `FADE_WEEKLY_INTERVAL_DAYS`.
+
+Personal times: users with `ai_check_in_times` get task reminders at those times (onboarding-check-ins) instead of fixed 08/13/20 habit checkpoints.
+
+Removed: legacy `/api/workflows/notifications` engine (no schedule pointed at it) and the unused edge `/api/chat` route.
+`/api/v1/ai/cron/almog-reminders` is now a no-op — reminders drain only via `onboarding-check-ins`. **If an Upstash QStash schedule targets `almog-reminders`, delete it.**
+Per-sender content prompts are unchanged.

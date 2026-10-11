@@ -1,0 +1,349 @@
+import { filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
+import { NextResponse } from 'next/server';
+import { Client as WorkflowClient } from '@upstash/workflow';
+import { isAvoidPushActive } from '@/lib/ai/avoid-push';
+import { authorizeCronRequest } from '@/lib/api/authorize-cron';
+import { maybeReturnCronIdleSkip } from '@/lib/api/cron-idle-guard';
+import {
+  isCheckInDueNow,
+  israelDateKey,
+  normalizeCheckInTimes,
+} from '@/lib/ai/onboarding-check-in-time';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { workflowPublicBaseUrl } from '@/lib/workflows/resolve-workflow-public-url';
+import {
+  drainAlmogReminders,
+  type DrainRemindersResult,
+} from '@/lib/ai/almog-commitments/drain-reminders';
+import {
+  processPendingAlmogCommitmentJobs,
+  type ProcessCommitmentJobsResult,
+} from '@/lib/ai/almog-commitments/process-pending-commitment-jobs';
+import {
+  sweepStaleAssignments,
+  type SweepAssignmentsResult,
+} from '@/lib/ai/almog-commitments/sweep-assignments';
+import {
+  runProgramOrchestrator,
+  type RunOrchestratorResult,
+} from '@/lib/ai/orchestrator/run-program-orchestrator';
+import { runRecoveryOrchestrationBatch } from '@/lib/ai/almog-commitments/recovery-orchestrator';
+
+
+type ProfileRow = {
+  id: string;
+  ai_check_in_times: unknown;
+  ai_system_prompt: string | null;
+  ai_context: Record<string, unknown> | null;
+};
+
+type PlannedTrigger = {
+  userId: string;
+  checkInTime: string;
+  checkInIndex: number;
+  checkpointDate: string;
+  aiSystemPrompt: string;
+};
+
+/**
+ * ?phase=all|reminders|orchestrator|challenge|checkins
+ * מאפשר לפצל schedules ב-Upstash בלי לשנות לוגיקה — פחות spike באותו tick.
+ */
+type CronPhase = 'all' | 'reminders' | 'orchestrator' | 'challenge' | 'checkins';
+
+function parseCronPhase(raw: string | null): CronPhase {
+  const v = (raw ?? 'all').trim().toLowerCase();
+  if (v === 'reminders' || v === 'orchestrator' || v === 'challenge' || v === 'checkins') {
+    return v;
+  }
+  return 'all';
+}
+
+async function runOnboardingCheckInsCron(request: Request) {
+  const url = new URL(request.url);
+  const dryRunRaw = url.searchParams.get('dryRun') ?? url.searchParams.get('dry_run');
+  const isDryRun = dryRunRaw === '1' || dryRunRaw === 'true';
+  const phase = parseCronPhase(url.searchParams.get('phase'));
+  const runReminders = phase === 'all' || phase === 'reminders';
+  const runOrchestrator = phase === 'all' || phase === 'orchestrator';
+  const runChallenge = phase === 'all' || phase === 'challenge';
+  const runCheckins = phase === 'all' || phase === 'checkins';
+
+  /**
+   * 🔗 איחוד תזמונים: ה-cron הזה כבר רץ כל חצי שעה, אז כאן גם מרוקנים את תור
+   * התזכורות של אלמוג (`scheduled_reminders`) — בלי schedule נפרד ב-Upstash.
+   * רץ *לפני* בדיקת QSTASH_TOKEN ובתוך try, כדי שהתזכורות יישלחו תמיד, גם אם
+   * חלק ה-onboarding (שתלוי ב-QStash Workflows) נכשל/לא מוגדר.
+   * ניתן לפצל עם ?phase=reminders|orchestrator|challenge|checkins.
+   */
+  let assignmentSweep: SweepAssignmentsResult | { error: string } | null = null;
+  let commitmentJobs: ProcessCommitmentJobsResult | { error: string } | null = null;
+  let almogReminders: DrainRemindersResult | { error: string } | null = null;
+
+  if (runReminders) {
+    try {
+      assignmentSweep = await sweepStaleAssignments(createAdminClient(), { dryRun: isDryRun });
+    } catch (e) {
+      assignmentSweep = { error: e instanceof Error ? e.message : String(e) };
+    }
+
+    try {
+      commitmentJobs = isDryRun
+        ? { claimed: 0, processed: 0, failed: 0 }
+        : await processPendingAlmogCommitmentJobs(createAdminClient(), { limit: 20 });
+    } catch (e) {
+      commitmentJobs = { error: e instanceof Error ? e.message : String(e) };
+    }
+
+    try {
+      almogReminders = await drainAlmogReminders(createAdminClient(), { dryRun: isDryRun });
+    } catch (e) {
+      almogReminders = { error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
+  let orchestrator: RunOrchestratorResult | { error: string } | null = null;
+  let recoveryOrchestration: Awaited<ReturnType<typeof runRecoveryOrchestrationBatch>> | {
+    error: string;
+  } | null = null;
+
+  if (runOrchestrator) {
+    try {
+      const adminForOrch = createAdminClient();
+      /** בלי משתמשים onboarded — אין מה לסרוק (pre-launch / DB ריק). */
+      const { count: onboardedCount, error: onboardedErr } = await adminForOrch
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('onboarding_completed', true);
+      if (onboardedErr) {
+        orchestrator = { error: onboardedErr.message };
+      } else if ((onboardedCount ?? 0) === 0) {
+        orchestrator = {
+          enabled: true,
+          scanned: 0,
+          processed: 0,
+          emitted: 0,
+          by_state: { ready_to_advance: 0, maintaining: 0, struggling: 0 },
+          errors: [],
+          sample: [],
+        };
+        recoveryOrchestration = {
+          processed: 0,
+          total_inquiries: 0,
+          total_plans: 0,
+          total_graduated: 0,
+          total_no_reply: 0,
+          total_follow_ups: 0,
+          errors: [],
+        };
+      } else {
+        orchestrator = await runProgramOrchestrator(adminForOrch, { dryRun: isDryRun });
+        try {
+          recoveryOrchestration = await runRecoveryOrchestrationBatch(adminForOrch, {
+            dryRun: isDryRun,
+          });
+        } catch (e) {
+          recoveryOrchestration = { error: e instanceof Error ? e.message : String(e) };
+        }
+      }
+    } catch (e) {
+      orchestrator = { error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
+  let challengeHourly: Awaited<
+    ReturnType<typeof import('@/lib/challenge/run-challenge-hourly').runChallengeHourlyReminders>
+  > | { error: string } | null = null;
+
+  if (runChallenge) {
+    try {
+      const { runChallengeHourlyReminders } = await import('@/lib/challenge/run-challenge-hourly');
+      challengeHourly = await runChallengeHourlyReminders(createAdminClient(), { dryRun: isDryRun });
+      console.log('[onboarding-check-ins] challenge_hourly', JSON.stringify(challengeHourly));
+    } catch (e) {
+      challengeHourly = { error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
+  if (!runCheckins) {
+    return NextResponse.json({
+      ok: true,
+      phase,
+      skipped_checkins: true,
+      almog_reminders: almogReminders,
+      assignment_sweep: assignmentSweep,
+      commitment_jobs: commitmentJobs,
+      orchestrator,
+      recovery_orchestration: recoveryOrchestration,
+      challenge_hourly: challengeHourly,
+    });
+  }
+
+  const token = process.env.QSTASH_TOKEN?.trim();
+  if (!token && !isDryRun) {
+    return NextResponse.json(
+      { error: 'חסר QSTASH_TOKEN', almog_reminders: almogReminders },
+      { status: 500 }
+    );
+  }
+
+  const windowRaw = url.searchParams.get('window_minutes');
+  const windowMinutes = Math.min(45, Math.max(15, Number(windowRaw) || 30));
+
+  const admin = createAdminClient();
+  const now = new Date();
+  const checkpointDate = israelDateKey(now);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rows, error } = await admin
+    .from('profiles')
+    // cost: no ai_system_prompt (large text) in the scan — fetched below only for users due now.
+    .select('id, ai_check_in_times, ai_context')
+    .eq('onboarding_completed', true)
+    .not('ai_check_in_times', 'is', null)
+    .not('ai_system_prompt', 'is', null)
+    .limit(5000);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  const planned: PlannedTrigger[] = [];
+
+  for (const row of (rows ?? []) as ProfileRow[]) {
+    const ctx = row.ai_context;
+    if (isAvoidPushActive(ctx)) continue;
+
+    const times = normalizeCheckInTimes(row.ai_check_in_times);
+    if (times.length === 0) continue;
+
+    times.forEach((checkInTime, checkInIndex) => {
+      if (isCheckInDueNow(checkInTime, now, windowMinutes)) {
+        planned.push({
+          userId: row.id,
+          checkInTime,
+          checkInIndex,
+          checkpointDate,
+          aiSystemPrompt: '',
+        });
+      }
+    });
+  }
+
+  /** admins מסוננים (אלא אם opt-in) + טעינת prompt רק למי שבאמת due עכשיו */
+  if (planned.length > 0) {
+    const dueIds = await filterNotifyEligibleUserIds(admin, [...new Set(planned.map((p) => p.userId))]);
+    const promptById = new Map<string, string>();
+    for (let i = 0; i < dueIds.length; i += 300) {
+      const { data: promptRows, error: promptErr } = await admin
+        .from('profiles')
+        .select('id, ai_system_prompt')
+        .in('id', dueIds.slice(i, i + 300));
+      if (promptErr) return NextResponse.json({ error: promptErr.message }, { status: 500 });
+      for (const r of (promptRows ?? []) as Array<{ id: string; ai_system_prompt: string | null }>) {
+        const p = r.ai_system_prompt?.trim();
+        if (p) promptById.set(r.id, p);
+      }
+    }
+    const kept = planned.filter((p) => promptById.has(p.userId));
+    for (const p of kept) p.aiSystemPrompt = promptById.get(p.userId)!;
+    planned.length = 0;
+    planned.push(...kept);
+  }
+
+  const maxTriggers = Math.min(
+    500,
+    Math.max(1, Number(process.env.CRON_MAX_ONBOARDING_CHECK_IN_TRIGGERS) || 200)
+  );
+  const eligible = planned.slice(0, maxTriggers);
+  const workflowBase = workflowPublicBaseUrl();
+  const workflowUrl = `${workflowBase}/api/workflows/onboarding-check-in`;
+
+  if (isDryRun) {
+    return NextResponse.json({
+      ok: true,
+      mode: 'dry_run',
+      checkpoint_date: checkpointDate,
+      window_minutes: windowMinutes,
+      profiles_scanned: rows?.length ?? 0,
+      due_now: planned.length,
+      would_trigger: eligible.length,
+      workflow_url: workflowUrl,
+      sample: eligible.slice(0, 8).map((e) => ({
+        userId: e.userId,
+        time: e.checkInTime,
+        index: e.checkInIndex,
+      })),
+      almog_reminders: almogReminders,
+      assignment_sweep: assignmentSweep,
+      commitment_jobs: commitmentJobs,
+      orchestrator,
+      recovery_orchestration: recoveryOrchestration,
+      hint_he:
+        'אלמוג — זמנים אישיים מההרשמה + תזכורות אלמוג מאוחדות. הגדר ב-Upstash: POST כל 30 דקות (0,30 * * * *).',
+    });
+  }
+
+  const client = new WorkflowClient({
+    token: token!,
+    ...(process.env.QSTASH_URL?.trim() ? { baseUrl: process.env.QSTASH_URL.trim() } : {}),
+  });
+
+  let triggered = 0;
+  const errors: string[] = [];
+
+  for (const item of eligible) {
+    try {
+      await client.trigger({
+        url: workflowUrl,
+        body: JSON.stringify(item),
+        retries: 2,
+        label: 'almog-personalized-check-in',
+      });
+      triggered++;
+    } catch (e) {
+      errors.push(`${item.userId}@${item.checkInTime}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  const summary = {
+    checkpoint_date: checkpointDate,
+    window_minutes: windowMinutes,
+    due_now: planned.length,
+    workflow_triggers: triggered,
+    errors_count: errors.length,
+    workflow_url: workflowUrl,
+  };
+
+  console.log('[onboarding-check-ins CRON]', JSON.stringify(summary));
+
+  return NextResponse.json({
+    ok: true,
+    ...summary,
+    almog_reminders: almogReminders,
+    assignment_sweep: assignmentSweep,
+    commitment_jobs: commitmentJobs,
+    orchestrator,
+    recovery_orchestration: recoveryOrchestration,
+    challenge_hourly: challengeHourly,
+    errors: errors.length ? errors : undefined,
+  });
+}
+
+export async function handleGet() {
+  return NextResponse.json({ error: 'Method Not Allowed — POST only' }, { status: 405, headers: { Allow: 'POST' } });
+}
+
+export async function handlePost(request: Request) {
+  const denied = await authorizeCronRequest(request);
+  if (denied) return denied;
+
+  const idleSkip = await maybeReturnCronIdleSkip(
+    request,
+    createAdminClient(),
+    'onboarding-check-ins'
+  );
+  if (idleSkip) return idleSkip;
+
+  return runOnboardingCheckInsCron(request);
+}

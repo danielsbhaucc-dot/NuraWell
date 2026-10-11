@@ -1,23 +1,15 @@
+import { createAiProvider } from '@/lib/ai/provider-factory';
 /**
  * שכבת ה-LLM — Clinical Supervisor (generateObject + GPT-5 mini).
  */
 
 import 'server-only';
-import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 
 import { AI_MODELS } from '../client';
-import { publicAppUrlForAiReferer } from '../../public-app-url';
 import { MentorshipStrategySchema, type MentorshipStrategy } from './schema';
 
-const openrouterProvider = createOpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY?.trim() || 'build-placeholder-key',
-  headers: {
-    'HTTP-Referer': publicAppUrlForAiReferer(),
-    'X-Title': 'NuraWell',
-  },
-});
+const openrouterProvider = createAiProvider();
 
 const SYNTHESIS_SYSTEM = `אתה Clinical Supervisor ב-NuraWell. נתח תובנות גולמיות וסכם למצב נפשי/פיזי מאוחד — JSON קצר בעברית בלבד.
 
