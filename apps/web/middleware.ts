@@ -107,6 +107,7 @@ function generateNonce(): string {
 const PUBLIC_ROUTES = [
   '/',
   '/coming-soon',
+  '/v2', // permanent redirect → /
   '/login',
   '/register',
   '/register/form',

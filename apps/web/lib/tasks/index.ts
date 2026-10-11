@@ -250,3 +250,58 @@ export function planForPrompt(plan: PlanTask[]): string {
     })
     .join('\n');
 }
+
+/**
+ * Almog-opened guide → an OFFERED task on the ladder (the user still chooses in "התוכנית שלך").
+ * Idempotent per user+guide; never re-offers something the user declined or already has.
+ */
+export async function offerGuideTask(
+  admin: SupabaseClient,
+  params: { userId: string; courseId: string; courseTitle: string; reason?: string | null }
+) {
+  const key = `guide:${params.courseId}`;
+  const { data: def } = await admin
+    .from('task_definitions')
+    .upsert(
+      {
+        stable_key: key,
+        source: 'guide',
+        source_ref: params.courseId,
+        habit_key: key,
+        title: `לעבור על המדריך "${params.courseTitle}" — שיעור אחד ביום`,
+        description: params.reason ?? null,
+        emoji: '📘',
+        times_per_day: 1,
+        ladder: [
+          { level: -1, title: `לפתוח את המדריך "${params.courseTitle}" ולצפות בשיעור אחד השבוע`, times_per_day: 1 },
+          { level: 0, title: `לעבור על המדריך "${params.courseTitle}" — שיעור אחד ביום`, times_per_day: 1 },
+        ],
+        floor_level: -1,
+        max_level: 0,
+        created_by: 'almog',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'stable_key' }
+    )
+    .select('id')
+    .single();
+  if (!def?.id) return null;
+  const { data: existing } = await admin
+    .from('user_task_assignments')
+    .select('id')
+    .eq('user_id', params.userId)
+    .eq('definition_id', def.id)
+    .maybeSingle();
+  if (existing) return existing.id as string;
+  const { data: asg } = await admin
+    .from('user_task_assignments')
+    .insert({ user_id: params.userId, definition_id: def.id, status: 'offered', is_main: false })
+    .select('id')
+    .single();
+  return (asg?.id as string) ?? null;
+}
+
+/** Offered tasks waiting for the user's choice. */
+export async function listOffers(admin: SupabaseClient, userId: string) {
+  return listAssignments(admin, userId, ['offered']);
+}

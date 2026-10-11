@@ -125,6 +125,43 @@ export async function POST(request: Request) {
       taskLevelMeta: mergedMeta,
     });
 
+    /** unified task model: same feedback moves the ladder level there (recorded with reason). */
+    const ladderDirection =
+      feedback === 'too_hard' || feedback === 'downgrade'
+        ? ('easier' as const)
+        : feedback === 'too_easy' || feedback === 'accept_level_up'
+          ? ('harder' as const)
+          : null;
+    if (ladderDirection) {
+      try {
+        const admin = createAdminClient();
+        const { upsertStepTaskDefinition } = await import('@/lib/tasks/step-sync');
+        const { changeTaskLevel } = await import('@/lib/tasks');
+        const defId = await upsertStepTaskDefinition(admin, step_id, task as never);
+        if (defId) {
+          const { data: asg } = await admin
+            .from('user_task_assignments')
+            .upsert(
+              { user_id: user.id, definition_id: defId, status: 'accepted', is_main: true, accepted_at: nowIso, updated_at: nowIso },
+              { onConflict: 'user_id,definition_id', ignoreDuplicates: false }
+            )
+            .select('id')
+            .single();
+          if (asg?.id) {
+            await changeTaskLevel(admin, {
+              userId: user.id,
+              assignmentId: asg.id as string,
+              direction: ladderDirection,
+              reason: adjustment.reason || (ladderDirection === 'easier' ? 'קשה לי' : 'קל לי'),
+              source: 'user_button',
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[task-level-feedback] unified ladder sync failed', e);
+      }
+    }
+
     let recoveryBridge: Awaited<ReturnType<typeof bridgeJourneyDifficultyToRecoveryPlan>> | null =
       null;
     if (feedback === 'too_hard') {

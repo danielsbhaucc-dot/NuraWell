@@ -73,3 +73,19 @@ describe('task flow', () => {
     expect(planForPrompt(plan)).toContain('כוס אחת לפני כל ארוחה');
   });
 });
+
+import { listOffers, offerGuideTask, respondToOffer } from '../lib/tasks';
+describe('guide offers', () => {
+  it('Almog guide pick → offered task (idempotent) → user accepts → in plan', async () => {
+    const { client } = createFakeSupabase();
+    const a = await offerGuideTask(client, { userId: USER, courseId: 'c1', courseTitle: 'שינה טובה' });
+    const b = await offerGuideTask(client, { userId: USER, courseId: 'c1', courseTitle: 'שינה טובה' });
+    expect(a).toBe(b);
+    const offers = await listOffers(client, USER);
+    expect(offers).toHaveLength(1);
+    await respondToOffer(client, { userId: USER, definitionId: offers[0].definition_id, accept: true });
+    const plan = await getPlan(client, USER);
+    expect(plan[0].level.title).toContain('שינה טובה');
+    expect(plan[0].canStepDown).toBe(true);
+  });
+});

@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getPlan } from '@/lib/tasks';
+import { getPlan, listOffers } from '@/lib/tasks';
+import { OfferCard } from '@/components/plans/OfferCard';
 import { resolveLadder } from '@/lib/tasks/ladder';
 import { PlanMap, type MapStation } from '@/components/plans/PlanMap';
 import { TaskLadderCard } from '@/components/plans/TaskLadderCard';
@@ -22,8 +23,9 @@ export default async function PlansPage() {
   if (!user) redirect('/login');
 
   const admin = createAdminClient();
-  const [plan, { data: profile }, { data: stations }, { data: steps }, { data: progress }] = await Promise.all([
+  const [plan, offers, { data: profile }, { data: stations }, { data: steps }, { data: progress }] = await Promise.all([
     getPlan(admin, user.id),
+    listOffers(admin, user.id),
     supabase.from('profiles').select('full_name, gender').eq('id', user.id).maybeSingle(),
     supabase.from('journey_stations').select('id, title, sort_order').order('sort_order'),
     supabase.from('journey_steps').select('id, station_id').eq('is_published', true),
@@ -63,6 +65,9 @@ export default async function PlansPage() {
         <h2 id="plan-tasks" className="text-lg font-bold text-primary-900">
           המשימות שלך עכשיו
         </h2>
+        {offers.map((o) => (
+          <OfferCard key={o.id} definitionId={o.definition_id} title={o.definition.title} emoji={o.definition.emoji} description={o.definition.description} />
+        ))}
         {active.length ? (
           active.map((t) => (
             <TaskLadderCard
