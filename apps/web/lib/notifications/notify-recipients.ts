@@ -129,7 +129,7 @@ export async function isUserNotifyEligible(admin: SupabaseClient, userId: string
 // Used by gateAlmogUserFacingTouch (all Almog senders) BEFORE touch-fatigue (3/day).
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type NotifyGateReason = 'not_notify_recipient' | 'prefs_off' | 'inactivity_fade';
+export type NotifyGateReason = 'not_notify_recipient' | 'prefs_off' | 'inactivity_fade' | 'safety_pause';
 export type NotifyGateResult =
   | { ok: true; inactiveDays: number; tier: 'active' | 'daily' | 'weekly'; prefs: NotificationPrefs }
   | { ok: false; reason: NotifyGateReason; inactiveDays?: number };
@@ -154,7 +154,7 @@ export async function evaluateNotifyGate(
   const now = opts.now ?? new Date();
   let row: GateProfileRow | null = null;
   for (const select of [
-    'id, role, notify_test_opt_in, notification_prefs, last_active_at, last_responded_at',
+    'id, role, notify_test_opt_in, notification_prefs, last_active_at, last_responded_at, notify_paused_until',
     'id, role, notification_prefs, last_active_at, last_responded_at',
   ]) {
     const { data, error } = await admin.from('profiles').select(select).eq('id', userId).maybeSingle();
@@ -169,6 +169,10 @@ export async function evaluateNotifyGate(
   }
   if (!row) return { ok: false, reason: 'not_notify_recipient' };
   if (!isNotifyEligibleProfile(row)) return { ok: false, reason: 'not_notify_recipient' };
+
+  // crisis safety pause (lib/safety/record-crisis.ts): no automatic nudges while paused
+  const pausedUntil = toMs((row as { notify_paused_until?: string | null }).notify_paused_until);
+  if (pausedUntil != null && pausedUntil > now.getTime()) return { ok: false, reason: 'safety_pause' };
 
   const prefs = parseNotificationPrefs(row.notification_prefs);
   if (!prefs.daily_reminder) return { ok: false, reason: 'prefs_off' };
