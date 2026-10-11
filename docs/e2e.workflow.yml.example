@@ -1,0 +1,27 @@
+# Copy to .github/workflows/e2e.yml (requires a token with `workflow` scope to push).
+name: e2e
+on:
+  workflow_dispatch:
+  schedule: [{ cron: '0 5 * * 1' }]
+  deployment_status:
+jobs:
+  e2e:
+    if: github.event_name != 'deployment_status' || github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+      - run: npm run test:e2e:signed-in
+        working-directory: apps/web
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ github.event.deployment_status.environment_url || 'https://nurawell.vercel.app' }}
+          E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
+          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: playwright, path: apps/web/test-results }
