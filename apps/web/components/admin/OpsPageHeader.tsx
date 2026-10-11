@@ -79,17 +79,17 @@ export function OpsPageHeader({
       )}
     >
       {/* גוון רקע צבעוני */}
-      <div className={cn('pointer-events-none absolute inset-0 -z-10 bg-gradient-to-bl opacity-80', t.tint)} aria-hidden />
+      <div className={cn('pointer-events-none absolute inset-0 -z-10 bg-linear-to-bl opacity-80', t.tint)} aria-hidden />
       {/* אורב זוהר דקורטיבי */}
-      <div className={cn('pointer-events-none absolute -end-10 -top-16 h-44 w-44 rounded-full blur-3xl', t.glow)} aria-hidden />
+      <div className={cn('pointer-events-none absolute -inset-e-10 -top-16 h-44 w-44 rounded-full blur-3xl', t.glow)} aria-hidden />
       {/* נצנוץ עליון */}
-      <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-background-card/80 to-transparent" aria-hidden />
+      <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-linear-to-r from-transparent via-background-card/80 to-transparent" aria-hidden />
 
       <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3.5">
           <span
             className={cn(
-              'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg ring-1 ring-white/50 sm:h-14 sm:w-14',
+              'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-white shadow-lg ring-1 ring-white/50 sm:h-14 sm:w-14',
               t.icon,
             )}
           >
@@ -108,7 +108,7 @@ export function OpsPageHeader({
             ) : null}
             <h1
               className={cn(
-                'block bg-gradient-to-l bg-clip-text font-display text-[1.6rem] font-black leading-tight text-transparent sm:text-3xl',
+                'block bg-linear-to-l bg-clip-text font-display text-[1.6rem] font-black leading-tight text-transparent sm:text-3xl',
                 t.title,
               )}
             >

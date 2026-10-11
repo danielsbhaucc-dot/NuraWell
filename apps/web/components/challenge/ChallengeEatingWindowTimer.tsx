@@ -52,7 +52,7 @@ export function ChallengeEatingWindowTimer({ initialStatus }: Props) {
       {status.is_open ? (
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-background-card/10">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-l from-emerald-400 to-teal-500"
+            className="h-full rounded-full bg-linear-to-l from-emerald-400 to-teal-500"
             initial={{ width: 0 }}
             animate={{ width: `${status.progress_pct}%` }}
           />

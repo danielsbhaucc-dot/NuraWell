@@ -402,7 +402,7 @@ function CompletedList({
               <p
                 className={[
                   'text-[13px] font-bold text-emerald-900/85 line-through decoration-emerald-700/40',
-                  expanded ? 'whitespace-normal break-words' : 'truncate',
+                  expanded ? 'whitespace-normal wrap-break-word' : 'truncate',
                 ].join(' ')}
               >
                 {c.title}
@@ -468,7 +468,7 @@ function FocusBanner({
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute -start-8 -top-8 h-28 w-28 rounded-full"
+        className="pointer-events-none absolute -inset-s-8 -top-8 h-28 w-28 rounded-full"
         style={{
           background: 'radial-gradient(circle, rgba(167,243,208,0.45) 0%, transparent 70%)',
           filter: 'blur(16px)',

@@ -46,7 +46,7 @@ export function ChallengeEatingWindowClient() {
 
   if (loading || !config) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-[#05010f]">
+      <div className="flex min-h-dvh items-center justify-center bg-[#05010f]">
         <Loader2 className="h-10 w-10 animate-spin text-emerald-400" />
       </div>
     );
@@ -54,7 +54,7 @@ export function ChallengeEatingWindowClient() {
 
   if (step === 'lesson' && lesson) {
     return (
-      <div className="min-h-[100dvh] bg-[#05010f] px-4 py-8 text-white" dir="rtl">
+      <div className="min-h-dvh bg-[#05010f] px-4 py-8 text-white" dir="rtl">
         <div className="mx-auto max-w-lg">
           <DemoExitBanner />
           <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400/80">
@@ -91,7 +91,7 @@ export function ChallengeEatingWindowClient() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-[#05010f] px-4 py-8 text-white" dir="rtl">
+    <div className="min-h-dvh bg-[#05010f] px-4 py-8 text-white" dir="rtl">
       <div className="mx-auto max-w-lg">
         <DemoExitBanner />
         {lesson ? (

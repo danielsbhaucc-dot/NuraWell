@@ -231,7 +231,7 @@ export function AdminAlmogAvatarPanel() {
               : 'border-emerald-200/90 bg-emerald-50/40 hover:border-emerald-300 hover:bg-emerald-50/70',
           ].join(' ')}
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background-card shadow-sm ring-1 ring-emerald-100">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background-card shadow-xs ring-1 ring-emerald-100">
             <Upload className="h-6 w-6 text-emerald-600" strokeWidth={2} />
           </div>
           <p className="text-sm font-bold text-slate-800">גרור תמונה לכאן או לחץ לבחירה</p>
@@ -247,7 +247,7 @@ export function AdminAlmogAvatarPanel() {
           type="button"
           onClick={() => void onUpload()}
           disabled={!file || busy}
-          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-500 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-500/30 transition-transform hover:brightness-110 active:scale-[0.98] disabled:opacity-45 disabled:shadow-none sm:w-auto sm:self-end sm:text-[15px]"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-500/30 transition-transform hover:brightness-110 active:scale-[0.98] disabled:opacity-45 disabled:shadow-none sm:w-auto sm:self-end sm:text-[15px]"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageUp className="h-5 w-5" />}
           {avatarMetaReady && hasCustom ? 'עדכן תמונת אלמוג' : 'שמור תמונת אלמוג'}

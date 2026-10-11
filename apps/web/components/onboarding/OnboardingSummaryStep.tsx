@@ -19,7 +19,7 @@ export function OnboardingSummaryStep({ data, name, gender, onEdit }: Onboarding
 
   return (
     <>
-      <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-l from-emerald-950/60 to-slate-900/80 px-4 py-3 mb-4 text-center">
+      <div className="rounded-2xl border border-emerald-500/30 bg-linear-to-l from-emerald-950/60 to-slate-900/80 px-4 py-3 mb-4 text-center">
         <p className="text-[11px] font-bold text-emerald-300/80 tracking-wide">דו״ח סיכום · נשלח מדולב</p>
         <p className="text-sm font-black text-white mt-0.5">{DOLEV_REGISTRATION_ROLE} שלך</p>
       </div>
@@ -39,7 +39,7 @@ export function OnboardingSummaryStep({ data, name, gender, onEdit }: Onboarding
           >
             <span className="text-xs font-bold text-emerald-100/70 shrink-0 pt-0.5">{row.label}</span>
             <span
-              className="text-sm text-emerald-50 text-end flex-1 break-words"
+              className="text-sm text-emerald-50 text-end flex-1 wrap-break-word"
               dir={row.label.includes('משקל') ? 'ltr' : undefined}
             >
               {row.value}
@@ -47,7 +47,7 @@ export function OnboardingSummaryStep({ data, name, gender, onEdit }: Onboarding
             <button
               type="button"
               onClick={() => onEdit(row.editStep)}
-              className="shrink-0 p-1.5 rounded-lg text-emerald-300/90 hover:bg-emerald-500/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+              className="shrink-0 p-1.5 rounded-lg text-emerald-300/90 hover:bg-emerald-500/15 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-emerald-400"
               aria-label={`עריכת ${row.label}`}
             >
               <Pencil className="w-3.5 h-3.5" aria-hidden />

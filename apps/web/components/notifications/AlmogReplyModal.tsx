@@ -77,7 +77,7 @@ export function AlmogReplyModal() {
       shouldScaleBackground
     >
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-[260] bg-slate-900/55 backdrop-blur-sm" />
+        <Drawer.Overlay className="fixed inset-0 z-260 bg-slate-900/55 backdrop-blur-sm" />
         <Drawer.Content
           dir="rtl"
           /**
@@ -85,7 +85,7 @@ export function AlmogReplyModal() {
            * בלי רקע לבן בתחתית. הבועות הפנימיות (הודעת אלמוג + textarea)
            * שומרות על העיצוב המקורי כך שהן צפות מעל הירוק כמו ציטוט בווטסאפ.
            */
-          className="fixed bottom-0 end-0 start-0 z-[270] mx-auto flex w-full max-w-md flex-col rounded-t-[28px] border border-emerald-300/40 text-white outline-none shadow-2xl"
+          className="fixed bottom-0 inset-e-0 inset-s-0 z-270 mx-auto flex w-full max-w-md flex-col rounded-t-[28px] border border-emerald-300/40 text-white outline-hidden shadow-2xl"
           style={{
             background: 'linear-gradient(160deg, #064e3b 0%, #047857 45%, #10b981 100%)',
             boxShadow: '0 -24px 60px rgba(6,78,59,0.45)',
@@ -132,7 +132,7 @@ export function AlmogReplyModal() {
 
               <div className="space-y-3 px-4 pb-2">
                 <div
-                  className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/95 to-teal-50/85 p-3.5 text-right shadow-sm"
+                  className="rounded-2xl border border-emerald-100 bg-linear-to-br from-emerald-50/95 to-teal-50/85 p-3.5 text-right shadow-xs"
                   style={{ borderInlineStartWidth: '4px', borderInlineStartColor: '#10b981' }}
                 >
                   <p className="mb-1 text-[11px] font-bold text-emerald-700">אלמוג</p>
@@ -144,7 +144,7 @@ export function AlmogReplyModal() {
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-white/30 bg-background-card/95 p-2 shadow-sm">
+                <div className="rounded-2xl border border-white/30 bg-background-card/95 p-2 shadow-xs">
                   <textarea
                     ref={textareaRef}
                     dir="rtl"
@@ -158,7 +158,7 @@ export function AlmogReplyModal() {
                       }
                     }}
                     placeholder="כתוב את התשובה שלך..."
-                    className="w-full resize-none rounded-xl border-0 bg-transparent px-2 py-2 text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
+                    className="w-full resize-none rounded-xl border-0 bg-transparent px-2 py-2 text-[15px] text-slate-900 outline-hidden placeholder:text-slate-400"
                   />
                 </div>
 

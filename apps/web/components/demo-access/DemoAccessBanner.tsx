@@ -60,7 +60,7 @@ export function DemoAccessBanner() {
 
   return (
     <div className="sticky top-16 z-30 px-3 pt-2 sm:px-4">
-      <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-300/50 bg-gradient-to-l from-amber-50 via-teal-50 to-emerald-50 px-3 py-2.5 shadow-sm">
+      <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-300/50 bg-linear-to-l from-amber-50 via-teal-50 to-emerald-50 px-3 py-2.5 shadow-xs">
         <div className="min-w-0 flex items-start gap-2">
           <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-teal-700" />
           <div className="min-w-0">

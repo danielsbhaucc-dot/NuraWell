@@ -53,9 +53,9 @@ export function FinderPathBar({
                 disabled={isLast}
                 onClick={() => onNavigate(crumb)}
                 className={cn(
-                  'max-w-[9rem] truncate rounded-md px-2 py-1 text-[11px] font-semibold transition',
+                  'max-w-36 truncate rounded-md px-2 py-1 text-[11px] font-semibold transition',
                   isLast
-                    ? 'cursor-default bg-background-card/45 text-slate-900 shadow-sm'
+                    ? 'cursor-default bg-background-card/45 text-slate-900 shadow-xs'
                     : 'text-slate-600 hover:bg-background-card/35 hover:text-slate-800'
                 )}
               >

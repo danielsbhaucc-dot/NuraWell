@@ -268,7 +268,7 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
 
       <div
         dir="rtl"
-        className="fixed start-3 z-40 flex flex-col items-end gap-2"
+        className="fixed inset-s-3 z-40 flex flex-col items-end gap-2"
         style={{
           top:
             stableTopPx != null
@@ -390,7 +390,7 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
                 <Volume2 className="h-5 w-5 text-emerald-800" strokeWidth={2.25} />
               )}
               {needsGesture && !muted && (
-                <span className="absolute start-1 top-1 h-2.5 w-2.5 animate-ping rounded-full bg-amber-400" />
+                <span className="absolute inset-s-1 top-1 h-2.5 w-2.5 animate-ping rounded-full bg-amber-400" />
               )}
             </button>
           </div>

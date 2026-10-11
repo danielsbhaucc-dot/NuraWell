@@ -91,7 +91,7 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
         ) : null}
         <Link
           href={`${opsBase}/steps/new`}
-          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:brightness-110 active:scale-[0.98] sm:w-auto sm:min-w-0 sm:self-end sm:py-2.5"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:brightness-110 active:scale-[0.98] sm:w-auto sm:min-w-0 sm:self-end sm:py-2.5"
         >
           <Plus className="h-4 w-4" />
           <span>צעד חדש</span>
@@ -189,14 +189,14 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
                 className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl transition-colors hover:bg-slate-100 active:bg-slate-200/80"
                 style={{ color: step.is_published ? '#059669' : '#9ca3af' }}
               >
-                {step.is_published ? <Eye className="h-[1.125rem] w-[1.125rem]" /> : <EyeOff className="h-[1.125rem] w-[1.125rem]" />}
+                {step.is_published ? <Eye className="h-4.5 w-4.5" /> : <EyeOff className="h-4.5 w-4.5" />}
               </button>
               <Link
                 href={`${opsBase}/steps/${step.id}`}
                 title="ערוך"
                 className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-slate-100 active:bg-slate-200/80"
               >
-                <Edit3 className="h-[1.125rem] w-[1.125rem]" />
+                <Edit3 className="h-4.5 w-4.5" />
               </Link>
               <button
                 type="button"
@@ -204,7 +204,7 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
                 title="מחק"
                 className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 active:bg-red-100/80"
               >
-                <Trash2 className="h-[1.125rem] w-[1.125rem]" />
+                <Trash2 className="h-4.5 w-4.5" />
               </button>
             </div>
                 </>
@@ -222,7 +222,7 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
           <p className="text-sm text-gray-500 mb-6">צרו את הצעד הראשון במסע</p>
           <Link
             href={`${opsBase}/steps/new`}
-            className="inline-flex min-h-11 w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-500 px-6 py-3 font-bold text-white shadow-lg shadow-emerald-500/25 active:scale-[0.98] sm:w-auto"
+            className="inline-flex min-h-11 w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-6 py-3 font-bold text-white shadow-lg shadow-emerald-500/25 active:scale-[0.98] sm:w-auto"
           >
             <Plus className="h-4 w-4" /> צעד חדש
           </Link>

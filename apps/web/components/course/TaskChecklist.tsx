@@ -47,7 +47,7 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center"
             style={{ background: 'linear-gradient(145deg, #f59e0b, #f97316)', boxShadow: '0 4px 12px rgba(249,115,22,0.35)' }}>
-            <ClipboardList className="w-4.5 h-4.5 text-white" />
+            <ClipboardList className=" text-white" />
           </div>
           <div>
             <h3 className="font-black text-base leading-tight" style={{ color: '#1A1730' }}>משימות הפרק</h3>
@@ -62,7 +62,7 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
       {/* Progress Bar */}
       <div className="relative h-2.5 rounded-full overflow-hidden mb-4" style={{ background: 'rgba(245,166,35,0.12)' }}>
         <motion.div
-          className="absolute inset-y-0 start-0 rounded-full"
+          className="absolute inset-y-0 inset-s-0 rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.5, ease: 'easeOut' as const }}

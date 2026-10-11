@@ -64,13 +64,13 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
   const cd = countdown ?? { days: 0, hours: 0, minutes: 0, seconds: 0 };
 
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden bg-[#05010f] text-white" dir="rtl">
+    <div className="relative min-h-dvh overflow-hidden bg-[#05010f] text-white" dir="rtl">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
-        <div className="absolute bottom-0 start-0 h-72 w-72 rounded-full bg-violet-600/20 blur-3xl" />
+        <div className="absolute bottom-0 inset-s-0 h-72 w-72 rounded-full bg-violet-600/20 blur-3xl" />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-[100dvh] max-w-lg flex-col px-5 pb-10 pt-8">
+      <div className="relative z-10 mx-auto flex min-h-dvh max-w-lg flex-col px-5 pb-10 pt-8">
         {state.is_demo ? (
           <div className="mb-4 space-y-1">
             <div className="flex items-center justify-between gap-2 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3">

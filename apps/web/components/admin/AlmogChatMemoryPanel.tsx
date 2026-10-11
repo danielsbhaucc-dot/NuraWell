@@ -781,7 +781,7 @@ export function AlmogChatMemoryPanel({
                         </div>
 
                         <div className="relative">
-                          <Search className="pointer-events-none absolute start-2 top-2 h-3.5 w-3.5 text-slate-400" />
+                          <Search className="pointer-events-none absolute inset-s-2 top-2 h-3.5 w-3.5 text-slate-400" />
                           <input
                             type="search"
                             value={searchQuery}

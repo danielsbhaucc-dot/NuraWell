@@ -142,7 +142,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               <div className="flex flex-col items-center gap-5 sm:flex-row sm:justify-center sm:gap-8">
                 <LessonScoreRing percent={overallScore} />
                 <div className="text-center sm:text-start flex flex-col items-center sm:items-end gap-2 min-w-0">
-                  <div className="text-4xl sm:text-5xl leading-none drop-shadow-sm">{getScoreEmoji(overallScore)}</div>
+                  <div className="text-4xl sm:text-5xl leading-none drop-shadow-xs">{getScoreEmoji(overallScore)}</div>
                   <p className="text-white/95 font-bold text-[15px] sm:text-base leading-snug max-w-[240px] sm:max-w-xs">
                     {getScoreMessage(overallScore)}
                   </p>
@@ -161,7 +161,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
           >
             <div className="flex flex-wrap justify-center gap-3 sm:gap-4 text-sm w-full">
               <div
-                className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-emerald-900/10 shadow-sm"
+                className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-emerald-900/10 shadow-xs"
                 style={{
                   background: 'rgba(248,251,246,0.72)',
                   boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(248,251,246,0.9)',
@@ -171,7 +171,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                 <strong className="text-emerald-800 text-base">{quizCorrect}/{quizTotal}</strong>
               </div>
               <div
-                className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-emerald-900/10 shadow-sm"
+                className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-emerald-900/10 shadow-xs"
                 style={{
                   background: 'rgba(248,251,246,0.68)',
                   boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(248,251,246,0.88)',
@@ -182,7 +182,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               </div>
               {step.commitment && isCommitmentGateResolved(true, progress) && (
                 <div
-                  className="px-3 py-2.5 rounded-2xl flex-1 min-w-full sm:min-w-[120px] text-center border border-emerald-900/10 shadow-sm"
+                  className="px-3 py-2.5 rounded-2xl flex-1 min-w-full sm:min-w-[120px] text-center border border-emerald-900/10 shadow-xs"
                   style={{
                     background: progress.commitment_accepted
                       ? 'rgba(236,253,245,0.92)'
@@ -215,10 +215,10 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
             <div className="px-3 sm:px-6 pb-1 pt-6">
               <div className="relative mx-auto w-full max-w-lg min-w-0">
                 <div
-                  className="pointer-events-none absolute start-[27px] top-16 bottom-14 z-0 border-s-2 border-dashed border-emerald-400/45"
+                  className="pointer-events-none absolute inset-s-[27px] top-16 bottom-14 z-0 border-s-2 border-dashed border-emerald-400/45"
                   aria-hidden
                 />
-                <div className="relative z-[1] space-y-12 pt-2">
+                <div className="relative z-1 space-y-12 pt-2">
         {/* מה למדנו */}
         {step.summary_text && (
           <TimelineRailRow stepNum={nextTimeline()} accent="emerald">
@@ -231,7 +231,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               onToggle={() => toggleAccordion('learn')}
             >
               <p
-                className="m-0 text-[16px] sm:text-[17px] leading-[1.85] text-slate-700 [overflow-wrap:anywhere] break-words hyphens-auto antialiased"
+                className="m-0 text-[16px] sm:text-[17px] leading-[1.85] text-slate-700 wrap-anywhere wrap-break-word hyphens-auto antialiased"
                 lang="he"
                 style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
               >
@@ -310,7 +310,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                       }}
                     >
                       <div
-                        className="absolute start-0 top-3 bottom-3 w-1 rounded-full opacity-90"
+                        className="absolute inset-s-0 top-3 bottom-3 w-1 rounded-full opacity-90"
                         style={{ background: accentBar }}
                         aria-hidden
                       />
@@ -342,13 +342,13 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                                 ) : null}
                               </div>
                               <p
-                                className="font-black text-[16px] sm:text-[17px] leading-snug text-slate-800 [overflow-wrap:anywhere] break-words tracking-tight"
+                                className="font-black text-[16px] sm:text-[17px] leading-snug text-slate-800 wrap-anywhere wrap-break-word tracking-tight"
                                 style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                               >
                                 {task.title}
                               </p>
                               {task.description ? (
-                                <p className="text-[13px] sm:text-[14px] text-slate-600 leading-relaxed [overflow-wrap:anywhere] break-words rounded-xl bg-background-card/45 px-3 py-2.5 border border-white/55">
+                                <p className="text-[13px] sm:text-[14px] text-slate-600 leading-relaxed wrap-anywhere wrap-break-word rounded-xl bg-background-card/45 px-3 py-2.5 border border-white/55">
                                   {task.description}
                                 </p>
                               ) : null}
@@ -370,7 +370,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                               }}
                               className={`flex min-h-[48px] items-center justify-center gap-1.5 rounded-2xl px-2 py-2.5 text-[11px] sm:text-xs font-black transition active:scale-[0.98] disabled:opacity-60 ${
                                 status === 'accepted'
-                                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/18 ring-1 ring-white/25'
+                                  ? 'bg-emerald-600 text-white shadow-lg ring-1 ring-white/25'
                                   : 'border border-emerald-400/45 bg-background-card/60 text-emerald-900 hover:bg-emerald-50/95'
                               }`}
                               style={{ backdropFilter: 'blur(8px)' }}
@@ -394,10 +394,10 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                             </button>
                           </div>
 
-                          <div className="flex justify-end flex-wrap gap-2 border-t border-emerald-900/[0.07] px-3 py-3 bg-background-card/[0.12]">
+                          <div className="flex justify-end flex-wrap gap-2 border-t border-emerald-900/[0.07] px-3 py-3 bg-background-card/12">
                             {status === 'accepted' && (
                               <span
-                                className="text-[10px] sm:text-[11px] font-bold tracking-wide text-emerald-900 bg-gradient-to-r from-emerald-50 to-teal-50/90 border border-emerald-300/50 rounded-full px-3 py-1.5 shadow-sm shadow-emerald-900/5"
+                                className="text-[10px] sm:text-[11px] font-bold tracking-wide text-emerald-900 bg-linear-to-r from-emerald-50 to-teal-50/90 border border-emerald-300/50 rounded-full px-3 py-1.5 shadow-xs shadow-emerald-900/5"
                                 style={{ boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.65)' }}
                               >
                                 נשמר · מקובל
@@ -405,19 +405,19 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                             )}
                             {status === 'rejected' && (
                               <span
-                                className="text-[10px] sm:text-[11px] font-bold tracking-wide text-rose-900 bg-gradient-to-r from-rose-50 to-orange-50/90 border border-rose-300/45 rounded-full px-3 py-1.5 shadow-sm shadow-rose-900/5"
+                                className="text-[10px] sm:text-[11px] font-bold tracking-wide text-rose-900 bg-linear-to-r from-rose-50 to-orange-50/90 border border-rose-300/45 rounded-full px-3 py-1.5 shadow-xs shadow-rose-900/5"
                                 style={{ boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.65)' }}
                               >
                                 נשמר · לא מקובל כרגע
                               </span>
                             )}
                             {status === 'pending' && (
-                              <span className="text-[10px] sm:text-[11px] font-semibold text-amber-950/95 bg-amber-100/85 border border-amber-300/55 rounded-full px-3 py-1.5 shadow-sm">
+                              <span className="text-[10px] sm:text-[11px] font-semibold text-amber-950/95 bg-amber-100/85 border border-amber-300/55 rounded-full px-3 py-1.5 shadow-xs">
                                 נא לבחור למעלה
                               </span>
                             )}
                             {status === 'accepted' && !isRecurring && decision?.execution_done && (
-                              <span className="text-[10px] sm:text-[11px] font-bold text-teal-900 bg-teal-50/95 border border-teal-300/50 rounded-full px-3 py-1.5 shadow-sm">
+                              <span className="text-[10px] sm:text-[11px] font-bold text-teal-900 bg-teal-50/95 border border-teal-300/50 rounded-full px-3 py-1.5 shadow-xs">
                                 דווח: בוצע ✓
                               </span>
                             )}
@@ -461,7 +461,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                 return (
                   <div
                     key={habit.id}
-                    className="w-full rounded-[22px] p-[1px] shrink-0 overflow-hidden"
+                    className="w-full rounded-[22px] p-px shrink-0 overflow-hidden"
                     style={{
                       background:
                         'linear-gradient(135deg, rgba(16,185,129,0.5), rgba(167,243,208,0.35), rgba(248,251,246,0.55))',
@@ -482,11 +482,11 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                           borderLeft: '1px solid rgba(255,255,255,0.35)',
                         }}
                       >
-                        <span className="text-2xl drop-shadow-sm" aria-hidden>
+                        <span className="text-2xl drop-shadow-xs" aria-hidden>
                           {habitEmoji}
                         </span>
                         <span
-                          className="text-[10px] font-black leading-tight text-white/95 [overflow-wrap:anywhere] break-words px-0.5"
+                          className="text-[10px] font-black leading-tight text-white/95 wrap-anywhere wrap-break-word px-0.5"
                           style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                         >
                           {shortTitle}
@@ -499,13 +499,13 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                         }}
                       >
                         <p
-                          className="font-black text-[16px] leading-snug text-slate-800 [overflow-wrap:anywhere] break-words"
+                          className="font-black text-[16px] leading-snug text-slate-800 wrap-anywhere wrap-break-word"
                           style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                         >
                           {habit.title}
                         </p>
                         {habit.description ? (
-                          <p className="mt-2 border-t border-emerald-900/[0.08] pt-2 text-[13px] sm:text-[14px] leading-relaxed text-slate-600 [overflow-wrap:anywhere] break-words">
+                          <p className="mt-2 border-t border-emerald-900/8 pt-2 text-[13px] sm:text-[14px] leading-relaxed text-slate-600 wrap-anywhere wrap-break-word">
                             {habit.description}
                           </p>
                         ) : null}
@@ -953,7 +953,7 @@ function LessonScoreRing({ percent }: { percent: number }) {
 function ResearchItem({ research, isExpanded, onToggle }: { research: Research; isExpanded: boolean; onToggle: () => void }) {
   return (
     <div
-      className="rounded-[18px] overflow-hidden border border-white/70 ring-1 ring-emerald-900/[0.05]"
+      className="rounded-[18px] overflow-hidden border border-white/70 ring-1 ring-emerald-900/5"
       style={{
         background:
           'linear-gradient(165deg, rgba(248,251,246,0.62) 0%, rgba(239,246,255,0.48) 40%, rgba(255,255,255,0.45) 100%)',
@@ -973,12 +973,12 @@ function ResearchItem({ research, isExpanded, onToggle }: { research: Research; 
         />
         <div className="flex-1 min-w-0 dir-ltr text-left">
           <p
-            className="text-[15px] font-bold text-slate-800 leading-snug break-words [overflow-wrap:anywhere]"
+            className="text-[15px] font-bold text-slate-800 leading-snug wrap-break-word wrap-anywhere"
             lang="en"
           >
             {research.title}
           </p>
-          <p className="mt-1 text-[13px] text-slate-500 break-words">
+          <p className="mt-1 text-[13px] text-slate-500 wrap-break-word">
             {research.authors} ({research.year})
           </p>
         </div>
@@ -992,10 +992,10 @@ function ResearchItem({ research, isExpanded, onToggle }: { research: Research; 
             className="overflow-hidden"
           >
             <div className="px-3.5 pb-3.5 pt-0 border-t border-white/40">
-              <p className="mb-2 text-[13px] italic text-slate-500 dir-ltr text-left break-words" lang="en">
+              <p className="mb-2 text-[13px] italic text-slate-500 dir-ltr text-left wrap-break-word" lang="en">
                 {research.journal}
               </p>
-              <p className="mb-2 text-[15px] leading-relaxed text-slate-700 dir-ltr text-left break-words hyphens-auto" lang="en">
+              <p className="mb-2 text-[15px] leading-relaxed text-slate-700 dir-ltr text-left wrap-break-word hyphens-auto" lang="en">
                 {research.finding}
               </p>
               {research.url && (

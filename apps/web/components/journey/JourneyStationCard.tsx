@@ -42,7 +42,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
       className={cn(
         'group relative block w-full overflow-hidden rounded-[28px] text-start',
         'transition-shadow duration-300',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#EDF5F0]'
+        'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#EDF5F0]'
       )}
       style={{
         boxShadow:
@@ -83,7 +83,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
         />
 
         <div
-          className="absolute -top-12 -end-12 h-40 w-40 rounded-full opacity-60"
+          className="absolute -top-12 -inset-e-12 h-40 w-40 rounded-full opacity-60"
           style={{
             background:
               'radial-gradient(circle, rgba(167,243,208,0.55) 0%, transparent 70%)',
@@ -91,7 +91,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
           }}
         />
 
-        <div className="absolute top-3 start-3 z-10 flex items-center gap-2">
+        <div className="absolute top-3 inset-s-3 z-10 flex items-center gap-2">
           <div
             className="flex h-10 w-10 items-center justify-center rounded-2xl text-base font-black text-white shadow-lg"
             style={{
@@ -114,7 +114,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
           ) : null}
         </div>
 
-        <div className="absolute top-3 end-3 z-10">
+        <div className="absolute top-3 inset-e-3 z-10">
           <div
             className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-md"
             style={{
@@ -127,7 +127,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
           </div>
         </div>
 
-        <div className="absolute bottom-0 end-0 start-0 z-10 p-4 sm:p-5">
+        <div className="absolute bottom-0 inset-e-0 inset-s-0 z-10 p-4 sm:p-5">
           <h3
             className="mb-1.5 line-clamp-2 text-start text-xl font-black leading-tight text-white drop-shadow-md sm:text-2xl"
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}

@@ -32,7 +32,7 @@ export function GlassChoiceButton({
       onClick={onClick}
       className={[
         'w-full text-start rounded-2xl px-4 py-3.5 transition-all border backdrop-blur-xl',
-        'active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400',
+        'active:scale-[0.98] focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400',
         selected
           ? 'border-emerald-400/80 bg-emerald-500/30 shadow-[0_8px_32px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400/40'
           : 'border-emerald-500/25 bg-slate-800/50 hover:bg-slate-800/70 hover:border-emerald-400/40',

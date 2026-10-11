@@ -302,7 +302,7 @@ export function OnboardingFormClient() {
             aria-valuemax={100}
           >
             <motion.div
-              className="h-full bg-gradient-to-l from-emerald-400 to-teal-300 rounded-full"
+              className="h-full bg-linear-to-l from-emerald-400 to-teal-300 rounded-full"
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.35 }}
             />
@@ -722,7 +722,7 @@ export function OnboardingFormClient() {
           </AnimatePresence>
         </div>
 
-        <div className="fixed bottom-0 inset-x-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent z-20">
+        <div className="fixed bottom-0 inset-x-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-linear-to-t from-slate-950 via-slate-950/95 to-transparent z-20">
           <div className="max-w-lg mx-auto flex gap-2">
             {step > 1 ? (
               <button
@@ -738,7 +738,7 @@ export function OnboardingFormClient() {
               <button
                 type="button"
                 onClick={goNext}
-                className="flex-1 min-h-[52px] rounded-2xl font-black text-white bg-gradient-to-l from-emerald-600 to-teal-500 flex items-center justify-center gap-2"
+                className="flex-1 min-h-[52px] rounded-2xl font-black text-white bg-linear-to-l from-emerald-600 to-teal-500 flex items-center justify-center gap-2"
               >
                 המשך
                 <ArrowRight className="w-5 h-5 rotate-180" />
@@ -748,7 +748,7 @@ export function OnboardingFormClient() {
                 type="button"
                 onClick={submit}
                 disabled={pending}
-                className="flex-1 min-h-[52px] rounded-2xl font-black text-white bg-gradient-to-l from-emerald-600 to-teal-500 flex items-center justify-center gap-2 disabled:opacity-60"
+                className="flex-1 min-h-[52px] rounded-2xl font-black text-white bg-linear-to-l from-emerald-600 to-teal-500 flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {pending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'סיום ושליחת אימות 🎉'}
               </button>

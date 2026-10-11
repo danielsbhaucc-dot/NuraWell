@@ -43,7 +43,7 @@ export function SosButton({ focusTasks = [], firstName = '', gender = '' }: SosB
         type="button"
         onClick={openDialog}
         dir="rtl"
-        className="touch-manipulation relative flex w-full items-center gap-3.5 p-4 text-start transition active:scale-[0.99] outline-none focus-visible:ring-2 focus-visible:ring-violet-400/35"
+        className="touch-manipulation relative flex w-full items-center gap-3.5 p-4 text-start transition active:scale-[0.99] outline-hidden focus-visible:ring-2 focus-visible:ring-violet-400/35"
         style={{
           borderRadius: '22px',
           background: 'linear-gradient(165deg, #F7FBF4 0%, #faf7f4 55%, #f3f0ff 100%)',

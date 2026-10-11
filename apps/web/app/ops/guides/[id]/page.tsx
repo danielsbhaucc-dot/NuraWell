@@ -231,11 +231,11 @@ export default function OpsGuideDetailPage() {
                 className="h-32 bg-cover bg-center"
                 style={{ backgroundImage: `url(${bgUrl})` }}
               />
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-slate-900/70 to-transparent p-2.5">
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-linear-to-t from-slate-900/70 to-transparent p-2.5">
                 <button
                   type="button"
                   onClick={pickBackground}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-background-card/90 px-3 py-1.5 text-xs font-bold text-slate-800 shadow hover:bg-background-card"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-background-card/90 px-3 py-1.5 text-xs font-bold text-slate-800 shadow-sm hover:bg-background-card"
                 >
                   <ImagePlus className="w-3.5 h-3.5" />
                   החלפת תמונה
@@ -246,7 +246,7 @@ export default function OpsGuideDetailPage() {
                     setBgKey('');
                     void saveBackground('');
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-rose-500/90 px-3 py-1.5 text-xs font-bold text-white shadow hover:bg-rose-500"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-rose-500/90 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-rose-500"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   הסר

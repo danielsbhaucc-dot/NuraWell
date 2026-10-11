@@ -293,11 +293,11 @@ export function ProgressReportProvider({
 
       <Drawer.Root open={open} onOpenChange={setOpen} direction="bottom" shouldScaleBackground>
         <Drawer.Portal container={overlayRoot ?? undefined}>
-          <Drawer.Overlay data-nura-overlay="1" className="fixed inset-0 z-[220] bg-emerald-950/40 backdrop-blur-[2px]" />
+          <Drawer.Overlay data-nura-overlay="1" className="fixed inset-0 z-220 bg-emerald-950/40 backdrop-blur-xs" />
           <Drawer.Content
             dir="rtl"
             data-nura-overlay="1"
-            className="fixed bottom-0 right-0 left-0 z-[230] mx-auto flex w-full max-w-md flex-col rounded-t-[28px] outline-none"
+            className="fixed bottom-0 right-0 left-0 z-230 mx-auto flex w-full max-w-md flex-col rounded-t-[28px] outline-hidden"
             style={{
               height: 'min(90dvh, 720px)',
               border: '1px solid rgba(255,255,255,0.35)',
@@ -352,8 +352,8 @@ export function ProgressReportProvider({
                   onClick={() => setActiveTab('task_execution')}
                   className={`min-h-[42px] flex-1 rounded-[16px] px-2 py-2 text-center text-[11px] font-black leading-tight transition sm:text-xs ${
                     activeTab === 'task_execution'
-                      ? 'bg-gradient-to-l from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/25 ring-1 ring-white/25'
-                      : 'text-emerald-900/88 hover:bg-background-card/45'
+                      ? 'bg-linear-to-l from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/25 ring-1 ring-white/25'
+                      : ' hover:bg-background-card/45'
                   }`}
                 >
                   עדכון ביצוע משימות
@@ -365,8 +365,8 @@ export function ProgressReportProvider({
                   onClick={() => setActiveTab('habits')}
                   className={`min-h-[42px] flex-1 rounded-[16px] px-2 py-2 text-center text-[11px] font-black leading-tight transition sm:text-xs ${
                     activeTab === 'habits'
-                      ? 'bg-gradient-to-l from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/25 ring-1 ring-white/25'
-                      : 'text-emerald-900/88 hover:bg-background-card/45'
+                      ? 'bg-linear-to-l from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/25 ring-1 ring-white/25'
+                      : ' hover:bg-background-card/45'
                   }`}
                 >
                   מעקב הרגלים

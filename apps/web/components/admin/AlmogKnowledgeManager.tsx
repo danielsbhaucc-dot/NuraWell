@@ -742,7 +742,7 @@ export function AlmogKnowledgeManager() {
               <button
                 type="button"
                 onClick={startNew}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:brightness-105"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:brightness-105"
               >
                 <Plus className="w-4 h-4" />
                 הוספת ידע
@@ -768,7 +768,7 @@ export function AlmogKnowledgeManager() {
         <section className="rounded-3xl border border-white/60 bg-background-card/55 backdrop-blur-md shadow-lg overflow-hidden flex flex-col">
           <div className="p-3 border-b border-white/50 space-y-3">
             <div className="relative">
-              <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="search"
                 value={searchQ}
@@ -794,7 +794,7 @@ export function AlmogKnowledgeManager() {
                   className={cn(
                     'flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 text-xs font-bold transition-all sm:text-sm',
                     viewMode === key
-                      ? 'bg-gradient-to-l from-sky-500 to-cyan-600 text-white shadow-md shadow-sky-500/25'
+                      ? 'bg-linear-to-l from-sky-500 to-cyan-600 text-white shadow-md shadow-sky-500/25'
                       : 'text-slate-600 hover:bg-background-card/55',
                   )}
                 >
@@ -825,7 +825,7 @@ export function AlmogKnowledgeManager() {
                     key={station.stationKey}
                     className="rounded-2xl border border-white/70 bg-background-card/55 backdrop-blur-md overflow-hidden"
                   >
-                    <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-l from-sky-100/70 to-emerald-100/50 border-b border-white/60">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-linear-to-l from-sky-100/70 to-emerald-100/50 border-b border-white/60">
                       <MapPin className="h-4 w-4 text-sky-700" aria-hidden />
                       <h3 className="text-sm font-black text-slate-800">{station.stationTitle}</h3>
                       <span className="ms-auto text-[10px] font-bold text-slate-500">
@@ -934,7 +934,7 @@ export function AlmogKnowledgeManager() {
                     key={station.stationKey}
                     className="rounded-2xl border border-white/70 bg-background-card/55 backdrop-blur-md overflow-hidden"
                   >
-                    <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-l from-violet-100/70 to-sky-100/50 border-b border-white/60">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-linear-to-l from-violet-100/70 to-sky-100/50 border-b border-white/60">
                       <MapPin className="h-4 w-4 text-violet-700" aria-hidden />
                       <h3 className="text-sm font-black text-slate-800">{station.stationTitle}</h3>
                       <span className="ms-auto text-[10px] font-bold text-slate-500">
@@ -1203,7 +1203,7 @@ export function AlmogKnowledgeManager() {
           role="dialog"
           aria-modal="true"
           aria-label={isNew ? 'מסמך ידע חדש' : 'עריכת מסמך ידע'}
-          className="fixed inset-0 z-[55] flex items-end justify-center p-0 sm:items-center sm:p-4"
+          className="fixed inset-0 z-55 flex items-end justify-center p-0 sm:items-center sm:p-4"
         >
           <button
             type="button"
@@ -1215,31 +1215,31 @@ export function AlmogKnowledgeManager() {
             className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[1.75rem] shadow-[0_28px_80px_-16px_rgba(14,116,144,0.45)] ring-1 ring-white/50 sm:rounded-[1.75rem]"
             style={glassPanelStyle}
           >
-            <div className="pointer-events-none absolute -end-16 -top-20 h-48 w-48 rounded-full bg-sky-400/25 blur-3xl" aria-hidden />
-            <div className="pointer-events-none absolute -bottom-10 -start-10 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" aria-hidden />
-            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-background-card/90 to-transparent" />
+            <div className="pointer-events-none absolute -inset-e-16 -top-20 h-48 w-48 rounded-full bg-sky-400/25 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute -bottom-10 -inset-s-10 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-background-card/90 to-transparent" />
 
             {/* כותרת + טאבים */}
-            <header className="relative shrink-0 border-b border-white/40 bg-gradient-to-bl from-sky-100/55 via-background-card/25 to-emerald-100/45 px-4 pb-3 pt-4 sm:px-6">
+            <header className="relative shrink-0 border-b border-white/40 bg-linear-to-bl from-sky-100/55 via-background-card/25 to-emerald-100/45 px-4 pb-3 pt-4 sm:px-6">
               <button
                 type="button"
                 onClick={() => !saving && !deleting && closeEditor()}
                 disabled={saving || deleting}
-                className="absolute end-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/35 text-slate-600 backdrop-blur-md transition hover:bg-background-card/55 disabled:opacity-50 sm:end-4 sm:top-4"
+                className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/35 text-slate-600 backdrop-blur-md transition hover:bg-background-card/55 disabled:opacity-50 sm:inset-e-4 sm:top-4"
                 aria-label="סגור"
               >
                 <X className="h-4 w-4" />
               </button>
 
               <div className="flex items-center gap-3 pe-10">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shadow-lg shadow-sky-500/30 ring-1 ring-white/55">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-sky-500 to-cyan-600 text-white shadow-lg shadow-sky-500/30 ring-1 ring-white/55">
                   <FileText className="h-5 w-5" aria-hidden />
                 </span>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-sky-700/85">
                     {isNew ? 'מסמך חדש' : 'עריכה'}
                   </p>
-                  <h2 className="truncate bg-gradient-to-l from-sky-800 via-cyan-700 to-emerald-700 bg-clip-text font-display text-xl font-black text-transparent">
+                  <h2 className="truncate bg-linear-to-l from-sky-800 via-cyan-700 to-emerald-700 bg-clip-text font-display text-xl font-black text-transparent">
                     {isNew ? 'הוספת ידע לאלמוג' : form.title || 'עריכת ידע'}
                   </h2>
                   <p className="truncate text-xs text-slate-600">שמירה מפצלת ומטמיעה מחדש באינדקס</p>
@@ -1260,7 +1260,7 @@ export function AlmogKnowledgeManager() {
                     className={cn(
                       'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-all sm:text-sm',
                       editorTab === key
-                        ? 'bg-gradient-to-l from-sky-500 to-cyan-600 text-white shadow-md shadow-sky-500/25'
+                        ? 'bg-linear-to-l from-sky-500 to-cyan-600 text-white shadow-md shadow-sky-500/25'
                         : 'text-slate-600 hover:bg-background-card/50',
                     )}
                   >
@@ -1446,7 +1446,7 @@ export function AlmogKnowledgeManager() {
                   type="button"
                   onClick={() => void save()}
                   disabled={saving || deleting}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-sky-600 to-cyan-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-sky-500/25 transition active:scale-[0.99] disabled:opacity-60"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-sky-600 to-cyan-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-sky-500/25 transition active:scale-[0.99] disabled:opacity-60"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   {saving ? 'שומר ומטמיע…' : 'שמירה והטמעה'}

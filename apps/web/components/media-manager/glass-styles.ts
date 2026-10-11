@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 
 export const glassOverlayClass =
-  'fixed inset-0 z-[280] bg-emerald-950/38 backdrop-blur-[6px]';
+  'fixed inset-0 z-280 backdrop-blur-[6px]';
 
 export const glassPanelStyle: CSSProperties = {
   border: '1px solid rgba(255,255,255,0.48)',
@@ -21,7 +21,7 @@ export const glassCardStyle: CSSProperties = {
 };
 
 export const glassInputClass =
-  'w-full rounded-xl border border-white/50 bg-background-card/25 px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-400/45 backdrop-blur-sm';
+  'w-full rounded-xl border border-white/50 bg-background-card/25 px-3 py-2 text-sm text-slate-900 outline-hidden placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-400/45 backdrop-blur-sm';
 
 export const progressBarStyle: CSSProperties = {
   background: 'linear-gradient(90deg, #059669, #10b981, #34d399, #2dd4bf)',

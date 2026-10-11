@@ -43,7 +43,7 @@ export function UpgradeClient({ tiers, current, providerConfigured, status }: { 
         </p>
       </Card>
 
-      <div role="radiogroup" aria-label="תדירות חיוב" className="flex gap-2 self-center rounded-full bg-cream p-1 shadow-sm">
+      <div role="radiogroup" aria-label="תדירות חיוב" className="flex gap-2 self-center rounded-full bg-cream p-1 shadow-xs">
         {(['monthly', 'annual'] as const).map((i) => (
           <button
             key={i}

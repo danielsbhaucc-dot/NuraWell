@@ -61,11 +61,11 @@ function InboxTabBar({
 
   return (
     <div
-      className="shrink-0 border-b border-white/8 bg-[#0f172a] px-3 pb-3 pt-2"
+      className="shrink-0 border-b bg-[#0f172a] px-3 pb-3 pt-2"
       role="tablist"
       aria-label="ניווט שיחות"
     >
-      <div className="flex gap-1 rounded-xl bg-background-card/[0.05] p-1">
+      <div className="flex gap-1 rounded-xl bg-background-card/5 p-1">
         {items.map((item) => {
           const active = tab === item.id;
           return (
@@ -155,8 +155,8 @@ function SessionRow({
       onClick={onSelect}
       className={`w-full rounded-xl border px-3 py-2.5 text-start transition ${
         isActive
-          ? 'border-emerald-400/40 bg-emerald-500/12'
-          : 'border-white/10 bg-background-card/[0.04] hover:border-white/18 hover:bg-background-card/[0.06]'
+          ? 'border-emerald-400/40'
+          : 'border-white/10 bg-background-card/4 hover:bg-background-card/6'
       }`}
     >
       <div className="flex items-start gap-2">
@@ -361,7 +361,7 @@ export function ChatSessionInbox({
                       onStartNewChat();
                     }
                   }}
-                  className="w-full rounded-xl border border-white/10 bg-background-card/[0.04] px-3 py-3 text-[13px] font-semibold text-slate-200 transition active:scale-[0.98] hover:border-emerald-400/25 hover:bg-emerald-500/10 disabled:opacity-60"
+                  className="w-full rounded-xl border border-white/10 bg-background-card/4 px-3 py-3 text-[13px] font-semibold text-slate-200 transition active:scale-[0.98] hover:border-emerald-400/25 hover:bg-emerald-500/10 disabled:opacity-60"
                 >
                   {chip.label}
                 </button>
@@ -376,21 +376,21 @@ export function ChatSessionInbox({
         >
           <div className="space-y-2.5 pb-3 pt-2">
             <div className="relative">
-              <Search className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <Search className="pointer-events-none absolute inset-s-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
               <input
                 type="search"
                 dir="rtl"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="חיפוש בשיחות..."
-                className="w-full rounded-xl border border-white/10 bg-background-card/[0.04] py-2.5 pe-8 ps-9 text-[13px] text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/35"
+                className="w-full rounded-xl border border-white/10 bg-background-card/4 py-2.5 pe-8 ps-9 text-[13px] text-white outline-hidden placeholder:text-slate-500 focus:border-emerald-400/35"
               />
               {searchQuery ? (
                 <button
                   type="button"
                   aria-label="נקה חיפוש"
                   onClick={() => setSearchQuery('')}
-                  className="absolute end-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute inset-e-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -421,7 +421,7 @@ export function ChatSessionInbox({
             ) : null}
 
             {!trimmedSearch && topicChips.length > 0 ? (
-              <div className="rounded-xl border border-white/8 bg-background-card/[0.02]">
+              <div className="rounded-xl border bg-background-card/2">
                 <button
                   type="button"
                   aria-expanded={topicsOpen}
@@ -448,7 +448,7 @@ export function ChatSessionInbox({
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] as const }}
-                      className="overflow-hidden border-t border-white/6"
+                      className="overflow-hidden border-t"
                     >
                       <div className="px-1 py-2">
                         <HorizontalChipRow>

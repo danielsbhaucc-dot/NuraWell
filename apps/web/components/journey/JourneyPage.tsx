@@ -632,7 +632,7 @@ function StatChips({
             {/* ✦ הילה רכה מאחורי האייקון (מרמזת את הגוון מבלי לצבוע את הזכוכית) */}
             <span
               aria-hidden
-              className="pointer-events-none absolute start-1 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full"
+              className="pointer-events-none absolute inset-s-1 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full"
               style={{
                 background: `radial-gradient(circle, ${palette.glow} 0%, transparent 70%)`,
                 filter: 'blur(8px)',
@@ -1332,7 +1332,7 @@ function AlmogTouchBanner({
       {/* ✦ זוהר זהב עדין מאחורי האווטאר */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -start-10 -top-10 h-40 w-40 rounded-full"
+        className="pointer-events-none absolute -inset-s-10 -top-10 h-40 w-40 rounded-full"
         style={{
           background:
             'radial-gradient(circle, rgba(251,191,36,0.35) 0%, rgba(251,191,36,0.10) 40%, transparent 70%)',
@@ -1342,7 +1342,7 @@ function AlmogTouchBanner({
       {/* ✦ זוהר ירוק עדין בצד שני */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -end-12 -bottom-12 h-44 w-44 rounded-full"
+        className="pointer-events-none absolute -inset-e-12 -bottom-12 h-44 w-44 rounded-full"
         style={{
           background:
             'radial-gradient(circle, rgba(110,231,183,0.30) 0%, transparent 70%)',
@@ -1611,7 +1611,7 @@ function StationHeader({
 
         {allDone ? (
           <div
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-black text-white shadow"
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-black text-white shadow-sm"
             style={{
               background:
                 'linear-gradient(135deg, rgba(245,158,11,0.95), rgba(251,191,36,0.95))',
@@ -1657,7 +1657,7 @@ function StationHeader({
         />
 
         {/* Title block at bottom */}
-        <div className="absolute bottom-0 end-0 start-0 z-10 px-4 pb-8 sm:px-6">
+        <div className="absolute bottom-0 inset-e-0 inset-s-0 z-10 px-4 pb-8 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1733,7 +1733,7 @@ function StepsTimeline({
   return (
     <div className="relative">
       <div
-        className="absolute start-[23px] top-0 bottom-0 w-0.5"
+        className="absolute inset-s-[23px] top-0 bottom-0 w-0.5"
         style={{ background: `linear-gradient(to bottom, ${tokens.primary[500]}, ${tokens.primary[100]}, transparent)` }}
       />
 
@@ -1756,7 +1756,7 @@ function StepsTimeline({
                 className={`block relative ps-14 ${isLocked ? 'pointer-events-none opacity-60' : ''}`}
                 aria-disabled={isLocked}
               >
-                <div className="absolute start-[12px] top-5 z-10">
+                <div className="absolute inset-s-[12px] top-5 z-10">
                   <div
                     className="flex h-[22px] w-[22px] items-center justify-center rounded-full"
                     style={{

@@ -711,9 +711,9 @@ export function OnboardingChat({
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} direction="bottom" shouldScaleBackground={false}>
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/55" />
+        <Drawer.Overlay className="fixed inset-0 z-200 bg-black/55" />
         <Drawer.Content
-          className="fixed inset-x-0 bottom-0 z-[210] mx-auto flex w-full max-w-md flex-col rounded-t-[28px] outline-none overflow-hidden"
+          className="fixed inset-x-0 bottom-0 z-210 mx-auto flex w-full max-w-md flex-col rounded-t-[28px] outline-hidden overflow-hidden"
           style={{
             ...(drawerLayout
               ? {
@@ -899,7 +899,7 @@ export function OnboardingChat({
                 <div
                   ref={footerRef}
                   dir="rtl"
-                  className="shrink-0 border-t border-white/8 relative z-20"
+                  className="shrink-0 border-t relative z-20"
                   style={{
                     background: isFun ? 'rgba(10,24,22,0.98)' : '#07141f',
                     paddingBottom: drawerLayout?.keyboardOpen
@@ -953,7 +953,7 @@ export function OnboardingChat({
                             if (e.key === 'Enter') void sendDiscrete();
                           }}
                           placeholder={DISCRETE_FIELD_PLACEHOLDERS[discreteField]}
-                          className="flex-1 rounded-xl px-3 py-2.5 text-base text-emerald-50 outline-none placeholder:text-slate-500"
+                          className="flex-1 rounded-xl px-3 py-2.5 text-base text-emerald-50 outline-hidden placeholder:text-slate-500"
                           style={{
                             background: 'rgba(16,185,129,0.12)',
                             border: '1px solid rgba(52,211,153,0.35)',
@@ -1009,7 +1009,7 @@ export function OnboardingChat({
                           }
                         }}
                         placeholder="כתוב לאלמוג…"
-                        className="min-w-0 flex-1 rounded-2xl px-4 py-2.5 text-base text-slate-100 outline-none placeholder:text-slate-500"
+                        className="min-w-0 flex-1 rounded-2xl px-4 py-2.5 text-base text-slate-100 outline-hidden placeholder:text-slate-500"
                         style={{
                           background: isFun ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)',
                           border: isFun

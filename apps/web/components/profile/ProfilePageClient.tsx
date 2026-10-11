@@ -209,7 +209,7 @@ export function ProfilePageClient({
           <button
             type="button"
             onClick={() => setIsSettingsOpen(true)}
-            className="absolute end-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-2xl text-white transition hover:scale-[1.03] active:scale-95"
+            className="absolute inset-e-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-2xl text-white transition hover:scale-[1.03] active:scale-95"
             style={{
               background: 'rgba(255,255,255,0.12)',
               border: '1px solid rgba(255,255,255,0.25)',
@@ -300,7 +300,7 @@ export function ProfilePageClient({
                   {initials}
                 </div>
               )}
-              <span className="absolute -bottom-1 -end-1 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md border-2 border-white group-hover:scale-110 transition">
+              <span className="absolute -bottom-1 -inset-e-1 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md border-2 border-white group-hover:scale-110 transition">
                 <Camera className="h-3.5 w-3.5" />
               </span>
             </button>
@@ -552,7 +552,7 @@ export function ProfilePageClient({
                   id="profile-edit-name"
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
-                  className="crystal-pill w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-emerald-400/40"
+                  className="crystal-pill w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-hidden focus:ring-2 focus:ring-emerald-400/40"
                   placeholder="איך קוראים לך?"
                   dir="rtl"
                 />
@@ -568,7 +568,7 @@ export function ProfilePageClient({
                   id="profile-edit-gender"
                   value={genderInput}
                   onChange={(e) => setGenderInput((e.target.value as 'male' | 'female' | '') ?? '')}
-                  className="crystal-pill w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-emerald-400/40"
+                  className="crystal-pill w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-hidden focus:ring-2 focus:ring-emerald-400/40"
                 >
                   <option value="">ללא בחירה</option>
                   <option value="male">גבר</option>

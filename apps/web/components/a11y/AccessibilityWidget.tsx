@@ -47,7 +47,7 @@ function FeatureTile({
       className={cn(
         'a11y-feature-tile flex flex-col items-center justify-center gap-1.5 rounded-xl border px-2 py-3 text-center transition-all',
         pressed
-          ? 'border-emerald-500/70 bg-gradient-to-b from-emerald-700 to-teal-700 text-white shadow-md'
+          ? 'border-emerald-500/70 bg-linear-to-b from-emerald-700 to-teal-700 text-white shadow-md'
           : 'border-white/70 bg-background-card/75 text-slate-700 hover:border-emerald-200 hover:bg-background-card',
       )}
     >
@@ -167,7 +167,7 @@ export function AccessibilityWidget() {
 
   return (
     <div
-      className="a11y-widget-root fixed end-3 z-[80] sm:end-4"
+      className="a11y-widget-root fixed inset-e-3 z-80 sm:inset-e-4"
       style={{ bottom: 'calc(6.75rem + env(safe-area-inset-bottom, 0px))' }}
     >
       {open ? (
@@ -182,7 +182,7 @@ export function AccessibilityWidget() {
           <div className="a11y-widget-header relative px-4 py-4 text-white">
             <div className="relative flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/25 bg-background-card/15 shadow-sm">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/25 bg-background-card/15 shadow-xs">
                   <Accessibility className="h-5 w-5" aria-hidden />
                 </span>
                 <div>
@@ -366,7 +366,7 @@ export function AccessibilityWidget() {
             <button
               type="button"
               onClick={resetPreferences}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-slate-700 to-slate-900 px-4 py-3 text-sm font-black text-white shadow-md transition hover:brightness-110"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-slate-700 to-slate-900 px-4 py-3 text-sm font-black text-white shadow-md transition hover:brightness-110"
             >
               <RotateCcw className="h-4 w-4" aria-hidden />
               איפוס כל ההתאמות
@@ -403,10 +403,10 @@ export function AccessibilityWidget() {
         aria-haspopup="dialog"
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          'a11y-widget-fab relative inline-flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-full border border-white/75 text-white shadow-[0_14px_34px_rgba(6,78,59,0.35)] transition-all duration-200 hover:scale-[1.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300',
+          'a11y-widget-fab relative inline-flex h-13 w-13 items-center justify-center rounded-full border border-white/75 text-white shadow-[0_14px_34px_rgba(6,78,59,0.35)] transition-all duration-200 hover:scale-[1.04] focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300',
           open
-            ? 'bg-gradient-to-br from-slate-700 to-slate-900'
-            : 'bg-gradient-to-br from-emerald-700 via-teal-600 to-emerald-500',
+            ? 'bg-linear-to-br from-slate-700 to-slate-900'
+            : 'bg-linear-to-br from-emerald-700 via-teal-600 to-emerald-500',
         )}
         aria-label={open ? 'סגור תפריט נגישות' : 'פתח תפריט נגישות'}
       >
@@ -415,7 +415,7 @@ export function AccessibilityWidget() {
         ) : null}
         <Accessibility className="relative h-5 w-5" aria-hidden />
         {!open && activeCount > 0 ? (
-          <span className="absolute -top-1 -end-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-amber-400 px-1 text-[10px] font-black text-amber-950">
+          <span className="absolute -top-1 -inset-e-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-amber-400 px-1 text-[10px] font-black text-amber-950">
             {activeCount}
           </span>
         ) : null}

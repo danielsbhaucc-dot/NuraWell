@@ -184,7 +184,7 @@ export function SystemKnowledgeIngestForm() {
           onChange={(ev) => setTranscript(ev.target.value)}
           required
           rows={12}
-          className="w-full resize-y rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] text-slate-900 shadow-inner outline-none ring-emerald-500/30 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-2"
+          className="w-full resize-y rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] text-slate-900 shadow-inner outline-hidden ring-emerald-500/30 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-2"
           placeholder="למשל: הסבר על ארוחת ערב מאוזנת, טיפים לשעות הערב, או תזכורות רכות להתמדה..."
         />
       </div>
@@ -198,7 +198,7 @@ export function SystemKnowledgeIngestForm() {
             id="sk-data-type"
             value={dataType}
             onChange={(ev) => setDataType(ev.target.value as DataType)}
-            className="w-full rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] font-medium text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
+            className="w-full rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] font-medium text-slate-900 outline-hidden focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
           >
             <option value="step">שלב ספציפי בתחנה</option>
             <option value="course">קורס שלם</option>
@@ -213,7 +213,7 @@ export function SystemKnowledgeIngestForm() {
             id="sk-access"
             value={accessLevel}
             onChange={(ev) => setAccessLevel(ev.target.value as AccessLevel)}
-            className="w-full rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] font-medium text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
+            className="w-full rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] font-medium text-slate-900 outline-hidden focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
           >
             <option value="public">כל מי שהגיע לשלב המתאים</option>
             <option value="premium">משתמשים רשומים לקורס פרימיום (מזהה קורס)</option>
@@ -238,7 +238,7 @@ export function SystemKnowledgeIngestForm() {
                 id="sk-step"
                 value={selectedStepId}
                 onChange={(ev) => setSelectedStepId(ev.target.value)}
-                className="w-full rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
+                className="w-full rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] text-slate-900 outline-hidden focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30"
               >
                 {journeySteps.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -263,7 +263,7 @@ export function SystemKnowledgeIngestForm() {
               onClick={() => setCourseMode('preset')}
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                 courseMode === 'preset'
-                  ? 'bg-amber-500 text-white shadow'
+                  ? 'bg-amber-500 text-white shadow-sm'
                   : 'bg-background-card/80 text-amber-900 hover:bg-background-card'
               }`}
             >
@@ -274,7 +274,7 @@ export function SystemKnowledgeIngestForm() {
               onClick={() => setCourseMode('custom')}
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                 courseMode === 'custom'
-                  ? 'bg-amber-500 text-white shadow'
+                  ? 'bg-amber-500 text-white shadow-sm'
                   : 'bg-background-card/80 text-amber-900 hover:bg-background-card'
               }`}
             >
@@ -285,7 +285,7 @@ export function SystemKnowledgeIngestForm() {
             <select
               value={presetCourseId}
               onChange={(ev) => setPresetCourseId(ev.target.value)}
-              className="w-full rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/35"
+              className="w-full rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] text-slate-900 outline-hidden focus:border-amber-400 focus:ring-2 focus:ring-amber-400/35"
             >
               {PRESET_COURSES.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -299,7 +299,7 @@ export function SystemKnowledgeIngestForm() {
               value={customCourseId}
               onChange={(ev) => setCustomCourseId(ev.target.value)}
               placeholder="הדביקו את מזהה הקורס כפי שמופיע במערכת"
-              className="w-full rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/35"
+              className="w-full rounded-2xl border border-slate-200/80 bg-background-card/90 px-4 py-3 text-[15px] text-slate-900 outline-hidden focus:border-amber-400 focus:ring-2 focus:ring-amber-400/35"
             />
           )}
           <p className="text-xs leading-relaxed text-amber-950/85">
@@ -311,7 +311,7 @@ export function SystemKnowledgeIngestForm() {
       <button
         type="submit"
         disabled={status === 'loading' || (dataType === 'step' && (stepsLoading || !!stepsError || !journeySteps.length))}
-        className="w-full rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-600 px-5 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-600/30 transition hover:brightness-105 active:scale-[0.99] disabled:opacity-60"
+        className="w-full rounded-2xl bg-linear-to-l from-emerald-600 to-teal-600 px-5 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-600/30 transition hover:brightness-105 active:scale-[0.99] disabled:opacity-60"
       >
         {status === 'loading' ? 'מעלה ומחבר לאלמוג…' : 'אמן את אלמוג'}
       </button>

@@ -312,7 +312,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
       <section className="overflow-hidden rounded-2xl border border-white/50 bg-background-card/30 shadow-[0_8px_28px_rgba(15,23,42,0.06)] backdrop-blur-xl">
         <div className="border-b border-white/40 p-3">
           <div className="relative">
-            <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
+            <Search className="absolute inset-s-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
             <input
               type="search"
               value={searchQ}
@@ -337,7 +337,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
               className={cn(
                 'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-all sm:text-sm',
                 viewTab === key
-                  ? 'border border-amber-300/50 bg-amber-500/15 text-amber-900 shadow-sm backdrop-blur-md'
+                  ? 'border border-amber-300/50 bg-amber-500/15 text-amber-900 shadow-xs backdrop-blur-md'
                   : 'border border-transparent text-slate-600 hover:border-white/50 hover:bg-background-card/35',
               )}
             >
@@ -364,9 +364,9 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                   <button
                     type="button"
                     onClick={() => openStation(st.id)}
-                    className="flex w-full items-center gap-3 rounded-2xl border border-white/50 bg-background-card/28 px-3 py-3 text-start shadow-sm backdrop-blur-xl transition hover:border-amber-300/45 hover:bg-background-card/40 active:scale-[0.995] sm:px-4"
+                    className="flex w-full items-center gap-3 rounded-2xl border border-white/50 bg-background-card/28 px-3 py-3 text-start shadow-xs backdrop-blur-xl transition hover:border-amber-300/45 hover:bg-background-card/40 active:scale-[0.995] sm:px-4"
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-300/40 bg-gradient-to-br from-amber-500/70 to-orange-500/70 text-sm font-black text-white shadow-sm backdrop-blur-sm">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-300/40 bg-linear-to-br from-amber-500/70 to-orange-500/70 text-sm font-black text-white shadow-xs backdrop-blur-sm">
                       {st.sort_order}
                     </span>
                     <span className="min-w-0 flex-1">
@@ -425,7 +425,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
           role="dialog"
           aria-modal="true"
           aria-label={`תחנה: ${selected.title}`}
-          className="fixed inset-0 z-[55] flex items-end justify-center p-0 sm:items-center sm:p-4"
+          className="fixed inset-0 z-55 flex items-end justify-center p-0 sm:items-center sm:p-4"
         >
           <button
             type="button"
@@ -437,27 +437,27 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[1.75rem] shadow-[0_28px_80px_-16px_rgba(180,83,9,0.4)] ring-1 ring-white/50 sm:rounded-[1.75rem]"
             style={glassPanelStyle}
           >
-            <div className="pointer-events-none absolute -end-12 -top-16 h-44 w-44 rounded-full bg-amber-400/25 blur-3xl" aria-hidden />
-            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-background-card/90 to-transparent" />
+            <div className="pointer-events-none absolute -inset-e-12 -top-16 h-44 w-44 rounded-full bg-amber-400/25 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-background-card/90 to-transparent" />
 
-            <header className="relative shrink-0 border-b border-white/40 bg-gradient-to-bl from-amber-100/55 via-background-card/25 to-orange-100/40 px-4 pb-3 pt-4 sm:px-6">
+            <header className="relative shrink-0 border-b border-white/40 bg-linear-to-bl from-amber-100/55 via-background-card/25 to-orange-100/40 px-4 pb-3 pt-4 sm:px-6">
               <button
                 type="button"
                 onClick={() => !busy && closeStation()}
                 disabled={!!busy}
-                className="absolute end-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/30 text-slate-600 backdrop-blur-md transition hover:bg-background-card/50 disabled:opacity-50 sm:end-4 sm:top-4"
+                className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/30 text-slate-600 backdrop-blur-md transition hover:bg-background-card/50 disabled:opacity-50 sm:inset-e-4 sm:top-4"
                 aria-label="סגור"
               >
                 <X className="h-4 w-4" />
               </button>
 
               <div className="flex items-center gap-3 pe-10">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-300/40 bg-gradient-to-br from-amber-500 to-orange-600 text-lg font-black text-white shadow-md ring-1 ring-white/50">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-300/40 bg-linear-to-br from-amber-500 to-orange-600 text-lg font-black text-white shadow-md ring-1 ring-white/50">
                   {selected.sort_order}
                 </span>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-amber-800/85">תחנה</p>
-                  <h2 className="truncate bg-gradient-to-l from-amber-800 via-orange-700 to-amber-700 bg-clip-text font-display text-xl font-black text-transparent">
+                  <h2 className="truncate bg-linear-to-l from-amber-800 via-orange-700 to-amber-700 bg-clip-text font-display text-xl font-black text-transparent">
                     {selected.title}
                   </h2>
                   <p className="text-xs text-slate-600">
@@ -529,7 +529,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                     className={cn(
                       'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-all sm:text-sm',
                       popupTab === key
-                        ? 'border border-amber-300/50 bg-amber-500/20 text-amber-900 shadow-sm backdrop-blur-md'
+                        ? 'border border-amber-300/50 bg-amber-500/20 text-amber-900 shadow-xs backdrop-blur-md'
                         : 'border border-transparent text-slate-600 hover:bg-background-card/40',
                     )}
                   >
@@ -617,7 +617,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
           role="dialog"
           aria-modal="true"
           aria-label="תחנה חדשה"
-          className="fixed inset-0 z-[56] flex items-end justify-center p-0 sm:items-center sm:p-4"
+          className="fixed inset-0 z-56 flex items-end justify-center p-0 sm:items-center sm:p-4"
         >
           <button
             type="button"
@@ -632,7 +632,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             <button
               type="button"
               onClick={() => !busy && setShowAddPopup(false)}
-              className="absolute end-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
+              className="absolute inset-e-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
               aria-label="סגור"
             >
               <X className="h-4 w-4" />
@@ -675,7 +675,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
           role="dialog"
           aria-modal="true"
           aria-label="צור מסע ב-AI"
-          className="fixed inset-0 z-[57] flex items-end justify-center p-0 sm:items-center sm:p-4"
+          className="fixed inset-0 z-57 flex items-end justify-center p-0 sm:items-center sm:p-4"
         >
           <button
             type="button"
@@ -690,7 +690,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             <button
               type="button"
               onClick={() => !aiBusy && setShowAiPopup(false)}
-              className="absolute end-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
+              className="absolute inset-e-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
               aria-label="סגור"
             >
               <X className="h-4 w-4" />

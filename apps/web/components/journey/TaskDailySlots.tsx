@@ -581,15 +581,15 @@ export function TaskDailySlots({
                   {slotLabel(slot, schedule === 'per_meal' ? meal_timing : undefined)}
                 </span>
                 {isCompleted ? (
-                  <Check className="absolute top-1 start-1 w-3.5 h-3.5 text-white/95" strokeWidth={3} />
+                  <Check className="absolute top-1 inset-s-1 w-3.5 h-3.5 text-white/95" strokeWidth={3} />
                 ) : isFailed ? (
                   <XCircle
-                    className="absolute top-1 start-1 w-3.5 h-3.5 text-violet-700/85"
+                    className="absolute top-1 inset-s-1 w-3.5 h-3.5 text-violet-700/85"
                     strokeWidth={2.5}
                   />
                 ) : null}
                 {cell.busy ? (
-                  <Loader2 className="absolute top-1 start-1 w-3.5 h-3.5 animate-spin opacity-80" />
+                  <Loader2 className="absolute top-1 inset-s-1 w-3.5 h-3.5 animate-spin opacity-80" />
                 ) : null}
               </button>
               {/**
@@ -633,7 +633,7 @@ export function TaskDailySlots({
           style={{ background: 'rgba(254, 243, 199, 0.85)', border: '1px solid rgba(217,119,6,0.45)' }}
         >
           <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-700" aria-hidden />
-          <span className="break-words">{errMsg}</span>
+          <span className="wrap-break-word">{errMsg}</span>
         </div>
       ) : null}
     </div>

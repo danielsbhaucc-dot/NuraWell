@@ -22,7 +22,7 @@ function renderEmphasisPreview(text: string) {
   return parts.map((part, i) => {
     if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
       return (
-        <span key={i} className="bg-gradient-to-l from-emerald-500 to-cyan-500 bg-clip-text font-black text-transparent">
+        <span key={i} className="bg-linear-to-l from-emerald-500 to-cyan-500 bg-clip-text font-black text-transparent">
           {part.slice(1, -1)}
         </span>
       );
@@ -170,7 +170,7 @@ export function AdminComingSoonRevolutionEditor() {
 
       <div className="mt-5 rounded-2xl border border-violet-200/50 bg-violet-50/40 px-4 py-3">
         <p className="text-xs font-bold text-violet-900/70">תצוגה מקדימה</p>
-        <p className="mt-1 min-h-[2.5rem] text-base font-semibold leading-relaxed text-slate-800">
+        <p className="mt-1 min-h-10 text-base font-semibold leading-relaxed text-slate-800">
           {renderEmphasisPreview(lines[previewIdx] ?? '')}
         </p>
         <div className="mt-2 flex flex-wrap gap-1">
@@ -235,7 +235,7 @@ export function AdminComingSoonRevolutionEditor() {
               onChange={(e) => updateLine(idx, e.target.value)}
               rows={2}
               dir="rtl"
-              className={cn(opsInputClass, 'min-h-[4rem] resize-y leading-relaxed')}
+              className={cn(opsInputClass, 'min-h-16 resize-y leading-relaxed')}
               placeholder="כתוב משפט… *מילה מודגשת*"
             />
           </li>
@@ -256,7 +256,7 @@ export function AdminComingSoonRevolutionEditor() {
           type="button"
           disabled={busy}
           onClick={() => void save()}
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-bold text-white shadow-md shadow-violet-600/25 transition hover:from-violet-700 hover:to-fuchsia-700 disabled:opacity-50"
+          className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-linear-to-l from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-bold text-white shadow-md shadow-violet-600/25 transition hover:from-violet-700 hover:to-fuchsia-700 disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           שמור משפטים

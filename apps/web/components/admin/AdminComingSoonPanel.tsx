@@ -81,17 +81,17 @@ function GlassAudioPlayer({ src, title }: { src: string; title: string | null })
   const pct = duration > 0 ? (current / duration) * 100 : 0;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-emerald-300/30 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-xl">
-      <div className="pointer-events-none absolute -start-10 -top-10 h-32 w-32 rounded-full bg-emerald-400/20 blur-3xl" />
+    <div className="relative overflow-hidden rounded-2xl border border-emerald-300/30 bg-linear-to-br from-emerald-500/10 via-teal-500/5 to-transparent p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-xl">
+      <div className="pointer-events-none absolute -inset-s-10 -top-10 h-32 w-32 rounded-full bg-emerald-400/20 blur-3xl" />
       <audio ref={audioRef} src={src} preload="metadata" />
       <div className="relative flex items-center gap-3">
         <button
           type="button"
           onClick={toggle}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-600/40 transition active:scale-95"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-600/40 transition active:scale-95"
           aria-label={playing ? 'השהה' : 'נגן'}
         >
-          {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 translate-x-[1px] fill-white" />}
+          {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 translate-x-px fill-white" />}
         </button>
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1.5 truncate text-sm font-bold text-slate-800">
@@ -105,7 +105,7 @@ function GlassAudioPlayer({ src, title }: { src: string; title: string | null })
             <div className="relative flex-1">
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-300/50">
                 <div
-                  className="h-full rounded-full bg-gradient-to-l from-emerald-500 to-teal-400"
+                  className="h-full rounded-full bg-linear-to-l from-emerald-500 to-teal-400"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -210,9 +210,9 @@ function AdminComingSoonSongSection() {
       className="relative overflow-hidden rounded-3xl border border-white/40 bg-background-card/40 p-5 backdrop-blur-xl"
       dir="rtl"
     >
-      <div className="pointer-events-none absolute -end-16 -top-16 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" />
+      <div className="pointer-events-none absolute -inset-e-16 -top-16 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" />
       <div className="relative flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md">
+        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 text-white shadow-md">
           <Music4 className="h-5 w-5" />
         </span>
         <div>
@@ -250,7 +250,7 @@ function AdminComingSoonSongSection() {
               onSelect: (a) => void applyAsset(a),
             })
           }
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-600/30 transition hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-600/30 transition hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50"
         >
           {applyBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Music4 className="h-4 w-4" />}
           {songUrl ? 'החלף שיר' : 'בחר שיר'}
@@ -326,7 +326,7 @@ export function AdminComingSoonPanel() {
               className={cn(
                 'inline-flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-bold transition-all',
                 active
-                  ? 'bg-background-card text-emerald-900 shadow-sm'
+                  ? 'bg-background-card text-emerald-900 shadow-xs'
                   : 'text-emerald-800/70 hover:bg-background-card/60 hover:text-emerald-900',
               )}
             >

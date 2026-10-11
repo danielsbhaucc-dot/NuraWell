@@ -70,7 +70,7 @@ export function TranscriptAccessTransparencyPanel({
                 <td className="px-3 py-3 whitespace-nowrap text-stone-600">
                   {fmt(grant.approved_at)}
                 </td>
-                <td className="px-3 py-3 min-w-[9rem]">
+                <td className="px-3 py-3 min-w-36">
                   {grant.kind === 'global' ? (
                     <span className="inline-block rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 font-semibold text-emerald-800">
                       עד לביטול

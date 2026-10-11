@@ -90,7 +90,7 @@ export function AdminChallengeTasksEditor() {
   };
 
   return (
-    <div className="rounded-3xl border border-slate-200/60 bg-background-card/70 p-5 shadow-sm backdrop-blur-md sm:p-6">
+    <div className="rounded-3xl border border-slate-200/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-bold text-slate-900">משימות לפי יום</h2>
         <label className="ms-auto flex items-center gap-2 text-sm">

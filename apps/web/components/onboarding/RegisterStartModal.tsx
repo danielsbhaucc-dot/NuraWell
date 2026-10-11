@@ -60,7 +60,7 @@ function RegisterStartBody({ onClose }: { onClose: () => void }) {
             href="/register/form"
             prefetch
             onClick={onClose}
-            className="flex items-center gap-3 rounded-2xl border border-emerald-400/60 bg-gradient-to-l from-emerald-600/40 to-teal-500/30 px-4 py-4 shadow-lg shadow-emerald-500/20 hover:brightness-110 active:scale-[0.98] transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+            className="flex items-center gap-3 rounded-2xl border border-emerald-400/60 bg-linear-to-l from-emerald-600/40 to-teal-500/30 px-4 py-4 shadow-lg shadow-emerald-500/20 hover:brightness-110 active:scale-[0.98] transition-all focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-emerald-400"
           >
             <FormInput className="w-5 h-5 text-emerald-300 shrink-0" />
             <span className="flex-1 text-start">
@@ -81,7 +81,7 @@ function MobileStartDrawer({ open, onClose }: RegisterStartModalProps) {
   return (
     <Drawer.Root open={open} onOpenChange={(v) => !v && onClose()} direction="bottom" shouldScaleBackground>
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/55 backdrop-blur-[3px]" />
+        <Drawer.Overlay className="fixed inset-0 z-200 bg-black/55 backdrop-blur-[3px]" />
         <Drawer.Content dir="rtl" className={REGISTER_DRAWER_CONTENT_CLASS}>
           <Drawer.Title className="sr-only">איך תרצו להמשיך</Drawer.Title>
           <Drawer.Description className="sr-only">בחירת ערוץ הרשמה</Drawer.Description>
@@ -93,7 +93,7 @@ function MobileStartDrawer({ open, onClose }: RegisterStartModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="absolute end-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
+              className="absolute inset-e-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
               aria-label="סגור"
             >
               <X className="w-5 h-5" />
@@ -114,7 +114,7 @@ function DesktopStartModal({ open, onClose }: RegisterStartModalProps) {
     <AnimatePresence>
       {open ? (
         <motion.div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          className="fixed inset-0 z-200 flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -137,7 +137,7 @@ function DesktopStartModal({ open, onClose }: RegisterStartModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="absolute end-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
+              className="absolute inset-e-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
               aria-label="סגור"
             >
               <X className="w-5 h-5" />

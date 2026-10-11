@@ -61,7 +61,7 @@ export function AlmogFirstLoginDrawer({ profile }: AlmogFirstLoginDrawerProps) {
   return (
     <Drawer.Root open={open} onOpenChange={(v) => !v && void closeDrawer()}>
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-[200] bg-black/50" />
+        <Drawer.Overlay className="fixed inset-0 z-200 bg-black/50" />
         <Drawer.Content
           className={REGISTER_DRAWER_CONTENT_CLASS}
           style={{ maxHeight: '92vh' }}
@@ -107,7 +107,7 @@ export function AlmogFirstLoginDrawer({ profile }: AlmogFirstLoginDrawerProps) {
                   key="user-bubble"
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="mt-4 ms-auto max-w-[85%] rounded-2xl bg-background-card px-4 py-3 text-start text-sm text-gray-800 shadow-sm ring-1 ring-emerald-100"
+                  className="mt-4 ms-auto max-w-[85%] rounded-2xl bg-background-card px-4 py-3 text-start text-sm text-gray-800 shadow-xs ring-1 ring-emerald-100"
                 >
                   כן, בוא נתחיל 💪
                 </motion.div>

@@ -150,7 +150,7 @@ export function ChallengeDashboardClient({ initialState }: Props) {
   const progress = requiredUnits ? Math.round((doneUnits / requiredUnits) * 100) : 0;
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-b from-[#05010f] via-[#0a1628] to-[#05010f] text-white" dir="rtl">
+    <div className="min-h-dvh bg-linear-to-b from-[#05010f] via-[#0a1628] to-[#05010f] text-white" dir="rtl">
       <AnimatePresence>
         {celebration ? (
           <motion.div
@@ -161,7 +161,7 @@ export function ChallengeDashboardClient({ initialState }: Props) {
           >
             <motion.div
               {...celebrationMotion}
-              className={`max-w-sm rounded-3xl border bg-gradient-to-br px-8 py-10 text-center backdrop-blur-xl ${
+              className={`max-w-sm rounded-3xl border bg-linear-to-br px-8 py-10 text-center backdrop-blur-xl ${
                 CELEBRATION_GRADIENT[celebration.variant] ?? CELEBRATION_GRADIENT.default
               }`}
             >
@@ -211,7 +211,7 @@ export function ChallengeDashboardClient({ initialState }: Props) {
           </h1>
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-background-card/10">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-l from-emerald-400 to-teal-500"
+              className="h-full rounded-full bg-linear-to-l from-emerald-400 to-teal-500"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
             />

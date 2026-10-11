@@ -16,7 +16,7 @@ export function RegisterVerifiedClient({ gender }: RegisterVerifiedClientProps) 
   return (
     <main
       id="main-content"
-      className="onboarding-shell-dark min-h-[100dvh] flex flex-col items-center justify-center px-4 py-12"
+      className="onboarding-shell-dark min-h-dvh flex flex-col items-center justify-center px-4 py-12"
     >
       <PostVerifyEffects />
       <section className="onboarding-page-inner max-w-md w-full text-center">
@@ -38,7 +38,7 @@ export function RegisterVerifiedClient({ gender }: RegisterVerifiedClientProps) 
         </p>
         <Link
           href="/home"
-          className="inline-flex items-center justify-center w-full max-w-xs mx-auto rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-500 px-6 py-3.5 text-white font-bold text-[15px] shadow-lg shadow-emerald-500/25 hover:brightness-110 transition-all"
+          className="inline-flex items-center justify-center w-full max-w-xs mx-auto rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-6 py-3.5 text-white font-bold text-[15px] shadow-lg shadow-emerald-500/25 hover:brightness-110 transition-all"
         >
           המשך לאפליקציה
         </Link>

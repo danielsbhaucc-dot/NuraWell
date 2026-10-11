@@ -175,7 +175,7 @@ export function MediaStockSearch({ folder, onImported, onError }: MediaStockSear
                     <img
                       src={previewUrl}
                       alt={stockPreviewAlt(hit.alt, hit.photographer)}
-                      className="aspect-[4/3] w-full object-cover"
+                      className="aspect-4/3 w-full object-cover"
                     />
                   </button>
                 );

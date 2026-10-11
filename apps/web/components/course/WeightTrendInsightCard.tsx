@@ -33,7 +33,7 @@ function ChatButton({ label, prefill }: { label: string; prefill: string }) {
     <button
       type="button"
       onClick={() => dispatchOpenAlmogChatWithPrefill(prefill)}
-      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-bold text-[#0f766e] bg-teal-500/[0.08] border border-teal-500/20 transition active:scale-[0.98]"
+      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-bold text-secondary-700 bg-teal-500/8 border border-teal-500/20 transition active:scale-[0.98]"
     >
       <MessageCircle className="w-4 h-4" />
       {label}
@@ -70,9 +70,9 @@ export function WeightTrendInsightCard() {
   if (loading) {
     return (
       <div dir="rtl" className="crystal-surface rounded-3xl p-4">
-        <div className="h-3 w-28 rounded-full bg-black/[0.06] animate-pulse mb-3" />
-        <div className="h-3 w-full rounded-full bg-black/[0.04] animate-pulse mb-2" />
-        <div className="h-3 w-3/4 rounded-full bg-black/[0.04] animate-pulse" />
+        <div className="h-3 w-28 rounded-full bg-black/6 animate-pulse mb-3" />
+        <div className="h-3 w-full rounded-full bg-black/4 animate-pulse mb-2" />
+        <div className="h-3 w-3/4 rounded-full bg-black/4 animate-pulse" />
       </div>
     );
   }

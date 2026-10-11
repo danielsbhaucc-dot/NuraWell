@@ -259,7 +259,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
           type="button"
           onClick={() => void handleExport()}
           disabled={exporting}
-          className="w-full min-h-[48px] rounded-xl font-bold text-white bg-gradient-to-l from-emerald-600 to-teal-500 disabled:opacity-60 flex items-center justify-center gap-2"
+          className="w-full min-h-[48px] rounded-xl font-bold text-white bg-linear-to-l from-emerald-600 to-teal-500 disabled:opacity-60 flex items-center justify-center gap-2"
         >
           {exporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-4 h-4" />}
           הורד את הנתונים שלי

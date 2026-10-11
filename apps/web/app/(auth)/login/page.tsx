@@ -134,7 +134,7 @@ function LoginFormContent() {
       <main
         id="main-content"
         className={[
-          'relative flex flex-col overflow-hidden h-[100dvh] max-h-[100dvh]',
+          'relative flex flex-col overflow-hidden h-dvh max-h-dvh',
           useDarkShell ? 'onboarding-shell-dark' : 'onboarding-shell-light',
         ].join(' ')}
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
@@ -164,7 +164,7 @@ function LoginFormContent() {
                 className={[
                   'text-3xl font-black leading-tight',
                   isDarkUi
-                    ? 'bg-gradient-to-l from-emerald-200 via-teal-100 to-amber-100 bg-clip-text text-transparent'
+                    ? 'bg-linear-to-l from-emerald-200 via-teal-100 to-amber-100 bg-clip-text text-transparent'
                     : 'text-gray-900',
                 ].join(' ')}
                 style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}
@@ -360,7 +360,7 @@ export default function LoginPage() {
       fallback={
         <main
           id="main-content"
-          className="onboarding-shell-light flex h-[100dvh] max-h-[100dvh] items-center justify-center overflow-hidden"
+          className="onboarding-shell-light flex h-dvh max-h-dvh items-center justify-center overflow-hidden"
         >
           <div className="w-8 h-8 border-2 border-primary-500/30 border-t-primary-500 rounded-full animate-spin" />
         </main>

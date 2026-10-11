@@ -48,7 +48,7 @@ export function HabitTracker({ habits, habitProgress, lessonId, onHabitToggle }:
       <div className="flex items-center gap-2.5 mb-4">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center"
           style={{ background: 'linear-gradient(145deg, #f59e0b, #f97316)', boxShadow: '0 4px 12px rgba(249,115,22,0.35)' }}>
-          <Flame className="w-4.5 h-4.5 text-white" />
+          <Flame className=" text-white" />
         </div>
         <div>
           <h3 className="font-black text-base leading-tight" style={{ color: '#1A1730' }}>מעקב הרגלים</h3>

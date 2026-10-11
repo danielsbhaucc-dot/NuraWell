@@ -276,7 +276,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
       <audio ref={audioRef} src={songUrl} preload="metadata" />
 
       <div className="flex items-center gap-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600">
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br from-emerald-500 to-teal-600">
           <Play className="h-4 w-4 fill-white" />
         </span>
         <div>
@@ -301,7 +301,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
         <button
           type="button"
           onClick={startFresh}
-          className="flex h-10 items-center gap-1.5 rounded-xl bg-gradient-to-l from-lime-400 to-emerald-400 px-4 text-sm font-black text-[#04231a] transition hover:brightness-105"
+          className="flex h-10 items-center gap-1.5 rounded-xl bg-linear-to-l from-lime-400 to-emerald-400 px-4 text-sm font-black text-[#04231a] transition hover:brightness-105"
         >
           <RotateCcw className="h-4 w-4" />
           התחל סנכרון מ־0
@@ -325,7 +325,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
         </div>
         <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-background-card/10">
           <div
-            className="h-full rounded-full bg-gradient-to-l from-emerald-400 to-lime-300 transition-[width] duration-150"
+            className="h-full rounded-full bg-linear-to-l from-emerald-400 to-lime-300 transition-[width] duration-150"
             style={{ width: `${progress * 100}%` }}
           />
         </div>
@@ -356,7 +356,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
         type="button"
         onClick={tap}
         disabled={done}
-        className="mt-3 w-full rounded-2xl bg-gradient-to-l from-lime-400 to-emerald-400 px-4 py-6 text-center text-xl font-black text-[#04231a] shadow-lg transition active:scale-[0.99] disabled:opacity-40"
+        className="mt-3 w-full rounded-2xl bg-linear-to-l from-lime-400 to-emerald-400 px-4 py-6 text-center text-xl font-black text-[#04231a] shadow-lg transition active:scale-[0.99] disabled:opacity-40"
       >
         סמן מילה ▸
         <span className="mt-1 block text-xs font-semibold opacity-70">(או הקש על מקש הרווח)</span>
@@ -383,7 +383,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
           type="button"
           disabled={busy || !loaded}
           onClick={() => void save()}
-          className="ms-auto flex h-10 items-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-600 px-5 text-sm font-bold text-white shadow-lg transition hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50"
+          className="ms-auto flex h-10 items-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-600 px-5 text-sm font-bold text-white shadow-lg transition hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           שמור תזמונים
@@ -407,7 +407,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
             value={lyricsText}
             onChange={(e) => setLyricsText(e.target.value)}
             rows={Math.max(4, lines.length)}
-            className="w-full rounded-lg border border-white/10 bg-black/40 p-2.5 text-sm leading-relaxed text-white outline-none focus:border-emerald-400/60"
+            className="w-full rounded-lg border border-white/10 bg-black/40 p-2.5 text-sm leading-relaxed text-white outline-hidden focus:border-emerald-400/60"
             dir="rtl"
           />
           <div className="flex flex-wrap gap-2">
@@ -442,7 +442,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
                       ),
                     )
                   }
-                  className="h-8 rounded-lg border border-white/10 bg-black/40 px-1.5 text-white outline-none"
+                  className="h-8 rounded-lg border border-white/10 bg-black/40 px-1.5 text-white outline-hidden"
                 >
                   <option value="normal">רגיל</option>
                   <option value="drop">דרופ</option>
@@ -455,7 +455,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
                       setLines((prev) => prev.map((l, j) => (j === i ? { ...l, tag: e.target.value } : l)))
                     }
                     placeholder="תווית"
-                    className="h-8 w-20 rounded-lg border border-white/10 bg-black/40 px-2 text-white outline-none"
+                    className="h-8 w-20 rounded-lg border border-white/10 bg-black/40 px-2 text-white outline-hidden"
                   />
                 )}
               </div>
