@@ -86,6 +86,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to save progress' }, { status: 500 });
     }
 
+    /** unified task model: the user's accept/decline choice → user_task_assignments (main task). */
+    if (row.task_statuses) {
+      try {
+        const { applyStepTaskChoices } = await import('@/lib/tasks/step-sync');
+        const { createAdminClient } = await import('@/lib/supabase/admin');
+        await applyStepTaskChoices(createAdminClient(), {
+          userId: user.id,
+          stepId: step_id,
+          statuses: row.task_statuses as Record<string, { status: string }>,
+        });
+      } catch (e) {
+        console.warn('[journey-progress] task choice sync failed', e);
+      }
+    }
+
     /**
      * כשצעד הושלם, נפתח בפועל הצעד הבא במסע.
      * מתזמנים מגע המשך מאלמוג כך שגם הצעד הבא יקבל ליווי יזום אם המשתמש לא נכנס אליו.
