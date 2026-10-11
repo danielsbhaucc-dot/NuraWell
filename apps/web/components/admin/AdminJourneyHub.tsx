@@ -1,5 +1,7 @@
 'use client';
 
+import { HABIT_ICONS } from '@/lib/journey/habit-icons';
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -37,6 +39,8 @@ type StationRow = {
   description: string | null;
   sort_order: number;
   is_foundation?: boolean;
+  habit_key?: string | null;
+  track?: string | null;
   cover_image_key: string | null;
   cover_image_credit: StationCoverCredit | null;
   coverImageUrl: string | null;
@@ -213,6 +217,22 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
     }
     setBusy(null);
     setPendingDeleteId(null);
+  }
+
+  async function patchStationMeta(id: string, patch: { habit_key?: string | null; track?: string }) {
+    setBusy(`meta-${id}`);
+    const res = await fetch('/api/v1/admin/journey-stations', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...patch }),
+    });
+    if (res.ok) {
+      const row = (await res.json()) as StationRow;
+      setStations((prev) => prev.map((s) => (s.id === row.id ? { ...s, habit_key: row.habit_key, track: row.track } : s)));
+      router.refresh();
+    }
+    setBusy(null);
   }
 
   async function toggleFoundation(id: string, next: boolean) {
@@ -461,6 +481,39 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                   מותאמים
                 </span>
               </label>
+
+              <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                <label className="flex flex-col gap-1 text-emerald-900">
+                  <span className="font-semibold">אייקון במפה (הרגל)</span>
+                  <select
+                    value={selected.habit_key ?? ''}
+                    disabled={busy === `meta-${selected.id}`}
+                    onChange={(e) => void patchStationMeta(selected.id, { habit_key: e.target.value || null })}
+                    className="rounded-xl border border-emerald-200 bg-cream px-2 py-1.5"
+                  >
+                    <option value="">אוטומטי (לפי שם התחנה)</option>
+                    {Object.keys(HABIT_ICONS).map((k) => (
+                      <option key={k} value={k}>
+                        {k}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-emerald-900">
+                  <span className="font-semibold">מסלול</span>
+                  <input
+                    defaultValue={selected.track ?? 'main'}
+                    key={`track-${selected.id}`}
+                    disabled={busy === `meta-${selected.id}`}
+                    onBlur={(e) => {
+                      const v = e.target.value.trim() || 'main';
+                      if (v !== (selected.track ?? 'main')) void patchStationMeta(selected.id, { track: v });
+                    }}
+                    className="rounded-xl border border-emerald-200 bg-cream px-2 py-1.5"
+                    dir="ltr"
+                  />
+                </label>
+              </div>
 
               <div className="mt-4 flex gap-1.5 rounded-2xl border border-white/50 bg-background-card/30 p-1 backdrop-blur-md">
                 {(

@@ -16,4 +16,8 @@ export const journeyStationPatchSchema = journeyStationInsertSchema.partial().ex
   id: z.string().uuid(),
   cover_image_key: z.string().min(1).max(500).nullable().optional(),
   cover_image_credit: stationCoverCreditSchema.nullable().optional(),
+  /** map icon (lib/journey/habit-icons.ts) */
+  habit_key: z.string().trim().max(40).regex(/^[a-z_]*$/).nullable().optional(),
+  /** curriculum track: 'main' or a future track key */
+  track: z.string().trim().min(1).max(40).regex(/^[a-z0-9_]+$/).optional(),
 });
