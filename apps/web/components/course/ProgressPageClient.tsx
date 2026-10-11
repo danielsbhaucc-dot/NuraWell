@@ -472,7 +472,7 @@ export function ProgressPageClient({
         </div>
       </motion.header>
 
-      <div className="container-mobile relative z-[3] -mt-[7.5rem] pb-10 space-y-7">
+      <div className="container-mobile relative z-[3] -mt-[3.5rem] pb-10 space-y-7">
         <section>
           <motion.div
             variants={container}
