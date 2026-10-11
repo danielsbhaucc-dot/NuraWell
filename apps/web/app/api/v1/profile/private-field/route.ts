@@ -25,7 +25,7 @@ const bodySchema = z.object({
     value: z.string().min(1).max(200),
   }),
   /** דגלים קיימים מהלקוח — בלי ערכים רגישים */
-  field_flags: z.record(z.boolean()).optional(),
+  field_flags: z.record(z.string(), z.boolean()).optional(),
   path: z.enum(['quick', 'fun']).optional(),
 });
 
