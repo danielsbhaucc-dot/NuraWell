@@ -12,15 +12,20 @@ export const runtime = 'nodejs';
 export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
 
-type WorkflowBody = OnboardingCheckInPayload & { aiSystemPrompt: string };
+type WorkflowBody = OnboardingCheckInPayload;
 
 const { POST: workflowPost } = serve<WorkflowBody>(async (context) => {
   const raw = context.requestPayload;
   const payload = parseOnboardingCheckInPayload(raw);
-  const aiSystemPrompt =
-    typeof (raw as { aiSystemPrompt?: string }).aiSystemPrompt === 'string'
-      ? (raw as { aiSystemPrompt: string }).aiSystemPrompt
-      : '';
+  /** loaded server-side (not shipped through QStash): smaller payloads, no profile text in transit */
+  const aiSystemPrompt = await context.run('load-profile-prompt', async () => {
+    const { data } = await createAdminClient()
+      .from('profiles')
+      .select('ai_system_prompt')
+      .eq('id', payload.userId)
+      .maybeSingle();
+    return ((data?.ai_system_prompt as string | null) ?? '').trim();
+  });
 
   if (!aiSystemPrompt.trim()) {
     return { skipped: true as const, reason: 'missing_system_prompt' };
