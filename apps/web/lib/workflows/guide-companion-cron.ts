@@ -201,6 +201,16 @@ export async function runGuideCompanionForUser(
   const { error } = await admin.from('profiles').update({ ai_context: merged }).eq('id', userId);
   if (error) throw new Error(error.message);
 
+  /** unified task model: Almog's guide pick is offered as a task (user chooses in the plan). */
+  if (nextPick) {
+    try {
+      const { offerGuideTask } = await import('@/lib/tasks');
+      await offerGuideTask(admin, { userId, courseId: nextPick.courseId, courseTitle: nextPick.courseTitle, reason: nextPick.reason });
+    } catch (e) {
+      console.warn('[guide-companion] offer task failed', e);
+    }
+  }
+
   return { updated: true, opened, closed };
 }
 
