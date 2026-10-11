@@ -57,6 +57,7 @@ export function PlanMap({ stations }: { stations: MapStation[] }) {
           const p = pt(i);
           const Icon = stationIcon(s.title, s.state);
           const pct = s.total ? Math.round((s.done / s.total) * 100) : 0;
+          // geometry is physical (SVG x): right-hand nodes get their label on the left, others on the right
           const labelSide = p.x > W / 2 ? 'end' : 'start';
           const node =
             s.state === 'locked'
@@ -80,7 +81,7 @@ export function PlanMap({ stations }: { stations: MapStation[] }) {
                 <span className="sr-only">{`תחנה ${i + 1}: ${s.title}${s.state === 'done' ? ' (הושלמה)' : s.state === 'locked' ? ' (נעולה)' : ' (התחנה הנוכחית)'}`}</span>
               </Link>
               <div
-                className={`absolute top-1/2 w-32 -translate-y-1/2 ${labelSide === 'end' ? 'end-full me-3 text-end' : 'start-full ms-3 text-start'} ${s.state === 'locked' ? 'opacity-60' : ''}`}
+                className={`absolute top-1/2 w-32 -translate-y-1/2 ${labelSide === 'end' ? 'right-full mr-3 text-left' : 'left-full ml-3 text-right'} ${s.state === 'locked' ? 'opacity-60' : ''}`}
               >
                 <span className="line-clamp-2 text-sm font-semibold text-primary-900">{s.title}</span>
                 {s.total && s.state !== 'locked' ? (
