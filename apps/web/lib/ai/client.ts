@@ -44,6 +44,9 @@ if (!process.env.DEEPSEEK_API_KEY && process.env.NODE_ENV === 'production') {
  * OpenRouter so usage shows up under the right app in their dashboard.
  */
 export const openrouter = new OpenAI({
+  /** background/notification calls: fail fast instead of the SDK's 10-min default */
+  timeout: 60_000,
+  maxRetries: 1,
   apiKey: process.env.OPENROUTER_API_KEY?.trim() || BUILD_SAFE_API_KEY,
   baseURL: OPENROUTER_BASE_URL,
   defaultHeaders: {
@@ -71,6 +74,9 @@ export const deepseek = new OpenAI({
  * שימוש חדש ב-background AI יעדיף את `groq` עם `AI_MODELS.background_groq`.
  */
 export const groq = new OpenAI({
+  /** background/notification calls: fail fast instead of the SDK's 10-min default */
+  timeout: 60_000,
+  maxRetries: 1,
   /** אין GROQ_API_KEY → אותו נתיב דרך OpenRouter עם העדפת ספק Groq (ראה groq-compat.ts). */
   apiKey: groqLaneApiKey() || BUILD_SAFE_API_KEY,
   baseURL: groqLaneBaseUrl(),

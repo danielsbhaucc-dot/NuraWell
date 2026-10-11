@@ -1,3 +1,4 @@
+import { countNotifyEligibleProfiles } from '@/lib/notifications/notify-recipients';
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -134,7 +135,8 @@ export async function evaluateCronIdleSkip(
   const now = opts?.now ?? new Date();
   const windowMinutes = resolveCheckInWindowMinutes(opts?.windowMinutes);
 
-  const onboarded = await countExact(admin, 'profiles', (q) =>
+  /** admins לא נספרים (אלא אם opt-in כמשתמש בדיקה) — ראו notify-recipients.ts */
+  const onboarded = await countNotifyEligibleProfiles(admin, (q) =>
     q.eq('onboarding_completed', true)
   );
   counts.onboarded_profiles = onboarded;
@@ -204,7 +206,7 @@ export async function evaluateCronIdleSkip(
       return { idle: isIdleWhenEmpty(onboarded), counts };
 
     case 'passive-presence': {
-      const churned = await countExact(admin, 'profiles', (q) =>
+      const churned = await countNotifyEligibleProfiles(admin, (q) =>
         q.eq('engagement_status', 'churned')
       );
       counts.churned_profiles = churned;

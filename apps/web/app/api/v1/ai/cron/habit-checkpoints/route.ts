@@ -1,3 +1,4 @@
+import { filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
 import { NextResponse } from 'next/server';
 import { Client as WorkflowClient } from '@upstash/workflow';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
@@ -125,6 +126,22 @@ function deriveSlotFromJerusalemHour(now: Date): 'morning' | 'midday' | 'evening
   return 'morning';
 }
 
+/**
+ * מריץ שאילתה ממוקדת-משתמשים בצ'אנקים (אורך URL של PostgREST) במקביל ומאחד שורות.
+ * רשימה ריקה → אין שאילתה בכלל.
+ */
+async function selectForUsersChunked<T>(
+  userIds: readonly string[],
+  run: (ids: string[]) => PromiseLike<{ data: T[] | null; error: unknown }>
+): Promise<T[]> {
+  if (userIds.length === 0) return [];
+  const CHUNK = 300;
+  const chunks: string[][] = [];
+  for (let i = 0; i < userIds.length; i += CHUNK) chunks.push(userIds.slice(i, i + CHUNK));
+  const results = await Promise.all(chunks.map((c) => run(c)));
+  return results.flatMap((r) => (Array.isArray(r.data) ? r.data : []));
+}
+
 async function runHabitCheckpointCron(request: Request) {
   const url = new URL(request.url);
   const slotRaw = url.searchParams.get('slot');
@@ -170,13 +187,19 @@ async function runHabitCheckpointCron(request: Request) {
   }
 
   const now = new Date();
-  const progressUserIds = [
+  const rawProgressUserIds = [
     ...new Set(
       ((progressRows ?? []) as Array<{ user_id?: string }>)
         .map((row) => row.user_id)
         .filter((id): id is string => typeof id === 'string' && id.length > 0)
     ),
   ];
+
+  /**
+   * cost: רק משתמשים זכאים להתראות (admins מסוננים אלא אם opt-in לבדיקה — notify-recipients.ts).
+   * שאר השאילתות ממוקדות ל-ids האלה (אינדקס user_id/date_key) במקום סריקה גלובלית של 20K/50K שורות.
+   */
+  const progressUserIds = await filterNotifyEligibleUserIds(admin, rawProgressUserIds);
 
   /**
    * טוען ביצועי משימות-חוזרות של היום עבור כל המשתמשים — כדי שאלמוג לא יתזכר
@@ -189,11 +212,14 @@ async function runHabitCheckpointCron(request: Request) {
     day: '2-digit',
   }).format(now);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: execRows } = await admin
-    .from('journey_task_executions')
-    .select('user_id, task_id, slot, outcome')
-    .eq('date_key', todayKey)
-    .limit(20000);
+  const execRows = await selectForUsersChunked(progressUserIds, (ids) =>
+    admin
+      .from('journey_task_executions')
+      .select('user_id, task_id, slot, outcome')
+      .eq('date_key', todayKey)
+      .in('user_id', ids)
+      .limit(20000)
+  );
 
   const todayExecutionsByUser = new Map<string, Map<string, Set<string>>>();
   if (Array.isArray(execRows)) {
@@ -226,11 +252,14 @@ async function runHabitCheckpointCron(request: Request) {
   /** ביצועים אחרונים (21 יום) לחישוב רמות קושי */
   const sinceKey = jerusalemDateKey(new Date(now.getTime() - 20 * 24 * 60 * 60 * 1000));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: recentExecRows } = await admin
-    .from('journey_task_executions')
-    .select('user_id, task_id, date_key, slot, outcome')
-    .gte('date_key', sinceKey)
-    .limit(50000);
+  const recentExecRows = await selectForUsersChunked(progressUserIds, (ids) =>
+    admin
+      .from('journey_task_executions')
+      .select('user_id, task_id, date_key, slot, outcome')
+      .gte('date_key', sinceKey)
+      .in('user_id', ids)
+      .limit(50000)
+  );
 
   const recentExecutionsByUser: RecentExecutionsByUser = new Map();
   if (Array.isArray(recentExecRows)) {
@@ -454,7 +483,7 @@ async function runHabitCheckpointCron(request: Request) {
     .select('user_id')
     .eq('status', 'active')
     .limit(4000);
-  const planTrackUserIds = [
+  const rawPlanTrackUserIds = [
     ...new Set([
       ...progressUserIds,
       ...((activeAssignUsers ?? []) as Array<{ user_id?: string }>)
@@ -462,6 +491,9 @@ async function runHabitCheckpointCron(request: Request) {
         .filter((id): id is string => typeof id === 'string' && id.length > 0),
     ]),
   ];
+  const planTrackUserIds = await filterNotifyEligibleUserIds(admin, rawPlanTrackUserIds);
+  const planTrackSet = new Set(planTrackUserIds);
+  const planOnlyExcludedIds = new Set(rawPlanTrackUserIds.filter((id) => !planTrackSet.has(id)));
   const pendingPlanByUser = await fetchPendingPlanAssignmentsForUsers(
     admin,
     planTrackUserIds,
@@ -601,7 +633,9 @@ async function runHabitCheckpointCron(request: Request) {
       (p) =>
         !personalizedScheduleIds.has(p.userId) &&
         !ghostedWeeklyCooldownIds.has(p.userId) &&
-        !focusActiveIds.has(p.userId)
+        !focusActiveIds.has(p.userId) &&
+        /** plan-track users (active assignments) עוברים את אותו סינון זכאות */
+        !planOnlyExcludedIds.has(p.userId)
     )
     .slice(0, maxTriggers);
   const workflowBase = workflowPublicBaseUrl();

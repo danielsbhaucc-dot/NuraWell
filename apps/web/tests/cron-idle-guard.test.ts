@@ -17,6 +17,7 @@ function mockAdminSimple(counts: Record<string, number>) {
       error: null as null,
     });
     const chain = {
+      or: () => chain,
       eq: (column: string, value: unknown) =>
         makeQuery(table, [...filters, `${column}=${String(value)}`]),
       in: (column: string, values: unknown[]) =>
@@ -55,6 +56,7 @@ function mockAdminOnboardingIdle(opts: {
                   error: null as null,
                 });
                 const countChain = {
+                  or: () => countChain,
                   eq: () => countChain,
                   select: () => countChain,
                   then: countResult.then.bind(countResult),

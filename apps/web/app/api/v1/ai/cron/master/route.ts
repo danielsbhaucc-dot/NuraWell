@@ -1,3 +1,4 @@
+import { filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
 import { NextResponse } from 'next/server';
 import { deepseek } from '../../../../../../lib/ai/client';
 import { getDeepseekAnalysisModel } from '../../../../../../lib/ai/deepseek-model';
@@ -305,7 +306,15 @@ async function runMasterCron() {
   if (celErr) {
     errors.push(`profiles celebrate: ${celErr.message}`);
   } else {
-    const celebrateProfiles = (celebrateRows ?? []) as {
+    const celebrateEligible = new Set(
+      await filterNotifyEligibleUserIds(
+        admin,
+        ((celebrateRows ?? []) as Array<{ id: string }>).map((r) => r.id)
+      )
+    );
+    const celebrateProfiles = ((celebrateRows ?? []) as Array<{ id: string }>).filter((r) =>
+      celebrateEligible.has(r.id)
+    ) as unknown as {
       id: string;
       full_name: string | null;
       last_active_at: string | null;
@@ -393,7 +402,15 @@ async function runMasterCron() {
   if (stErr) {
     errors.push(`profiles churn: ${stErr.message}`);
   } else {
-    const churnProfiles = (churnRows ?? []) as {
+    const churnEligible = new Set(
+      await filterNotifyEligibleUserIds(
+        admin,
+        ((churnRows ?? []) as Array<{ id: string }>).map((r) => r.id)
+      )
+    );
+    const churnProfiles = ((churnRows ?? []) as Array<{ id: string }>).filter((r) =>
+      churnEligible.has(r.id)
+    ) as unknown as {
       id: string;
       full_name: string | null;
       last_active_at: string | null;

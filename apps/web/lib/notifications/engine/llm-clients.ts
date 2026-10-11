@@ -31,7 +31,7 @@ export const getNotificationBackgroundLLM = () => getClientForModel('background_
  * להגדיר `NOTIFICATION_ENGINE_MODEL=openai/gpt-5-mini` ב-env.
  */
 export const NOTIFICATION_ENGINE_MODEL =
-  process.env.NOTIFICATION_ENGINE_MODEL?.trim() || 'anthropic/claude-sonnet-4.6';
+  process.env.NOTIFICATION_ENGINE_MODEL?.trim() || 'openai/gpt-oss-120b';
 
 /**
  * מודל משני (עדיין דרך OpenRouter) למקרה ש-gpt-5-mini החזיר שגיאה/ריק.

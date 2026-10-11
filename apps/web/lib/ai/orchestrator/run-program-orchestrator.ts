@@ -15,6 +15,7 @@
  *   - כבר נשלחה הצעת אורקסטרטור היום → תקרת תדירות (≤1/יום).
  */
 
+import { filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { isAvoidPushActive } from '../avoid-push';
@@ -304,7 +305,12 @@ export async function runProgramOrchestrator(
     return { enabled: true, scanned: 0, processed: 0, emitted: 0, by_state, errors, sample };
   }
 
-  const profiles = (rows ?? []) as ProfileForOrchestration[];
+  const scannedProfiles = (rows ?? []) as ProfileForOrchestration[];
+  /** admins מסוננים אלא אם opt-in כמשתמש בדיקה */
+  const eligibleIds = new Set(
+    await filterNotifyEligibleUserIds(admin, scannedProfiles.map((p) => p.id))
+  );
+  const profiles = scannedProfiles.filter((p) => eligibleIds.has(p.id));
   let processed = 0;
   let emitted = 0;
 

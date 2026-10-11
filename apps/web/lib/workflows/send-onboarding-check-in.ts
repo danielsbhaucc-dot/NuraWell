@@ -433,6 +433,10 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
     .select('id, user_id, type, title, archived_at, is_read, is_sent, created_at')
     .single();
 
+  /** dedupe (migration 000089): workflow retry / overlapping cron tick → already sent, no double push */
+  if (error && (error as { code?: string }).code === '23505') {
+    return { body, inserted: null };
+  }
   if (error) throw new Error(error.message);
   return { body, inserted: inserted as Record<string, unknown> | null };
 }

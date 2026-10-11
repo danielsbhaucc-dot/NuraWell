@@ -8,7 +8,7 @@ export type HabitCheckpointGate =
   | { ok: true }
   | {
       ok: false;
-      reason: 'already_sent_this_slot' | 'touch_fatigue' | 'similar_habit_recent';
+      reason: 'already_sent_this_slot' | 'touch_fatigue' | 'similar_habit_recent' | 'not_notify_recipient';
     };
 
 export async function gateAlmogHabitCheckpoint(
