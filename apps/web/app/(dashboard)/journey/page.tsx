@@ -15,6 +15,7 @@ import {
   loadJourneyAccessContext,
   pickNextJourneyStep,
 } from '../../../lib/journey/journey-access';
+import { buildFallback } from '../../../lib/ai/journey-adaptive-llm';
 import { buildAdminUserJourneyReport } from '../../../lib/admin/build-user-journey-report';
 import { firstNameFromFull } from '../../../lib/onboarding/profile-summary-rows';
 import type { MainObstacle, WeakestTimeOfDay } from '../../../lib/onboarding/types';
@@ -99,20 +100,22 @@ export default async function JourneyRoute() {
     weakest_time_of_day?: string | null;
   } | null;
 
+  // Same pick the "הצעד הבא" card uses — computed here so the card renders instantly (no AI on the critical path).
+  const nextPick = await pickNextJourneyStep({
+    report,
+    ctx: accessCtx,
+    admin,
+    userId: user.id,
+    daysSinceLastActive: null,
+    signals: {
+      main_obstacle: (profile?.main_obstacle as MainObstacle | null) ?? null,
+      main_obstacle_detail: profile?.main_obstacle_detail ?? null,
+      weakest_time_of_day:
+        (profile?.weakest_time_of_day as WeakestTimeOfDay | null) ?? null,
+    },
+  });
+  const initialNextStep = buildFallback(nextPick);
   if (accessCtx.foundationComplete && accessCtx.foundationStationId) {
-    await pickNextJourneyStep({
-      report,
-      ctx: accessCtx,
-      admin,
-      userId: user.id,
-      daysSinceLastActive: null,
-      signals: {
-        main_obstacle: (profile?.main_obstacle as MainObstacle | null) ?? null,
-        main_obstacle_detail: profile?.main_obstacle_detail ?? null,
-        weakest_time_of_day:
-          (profile?.weakest_time_of_day as WeakestTimeOfDay | null) ?? null,
-      },
-    });
     accessCtx = await loadJourneyAccessContext(supabase, user.id, report);
   }
 
@@ -137,6 +140,7 @@ export default async function JourneyRoute() {
       firstName={firstName}
       foundationComplete={accessCtx.foundationComplete}
       hasFoundationStation={Boolean(accessCtx.foundationStationId)}
+      initialNextStep={initialNextStep}
     />
   );
 }

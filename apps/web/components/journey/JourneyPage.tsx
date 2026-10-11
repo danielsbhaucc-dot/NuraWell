@@ -24,7 +24,7 @@ import {
 import type { JourneyStepWithProgress } from '../../lib/types/journey';
 import type { JourneyStationGroup } from '../../lib/journey/group-journey-by-station';
 import { JourneyStationCard } from './JourneyStationCard';
-import { JourneyNextStepCard } from './JourneyNextStepCard';
+import { JourneyNextStepCard, type NextStepCardData } from './JourneyNextStepCard';
 import { AlmogAvatarChip } from './AlmogPresence';
 import { AlmogAssignmentsSection, AlmogCompletedSection } from './AlmogAssignmentsSection';
 import { stationCoverAlt } from '../../lib/a11y/alt-text';
@@ -40,6 +40,8 @@ interface JourneyPageProps {
   firstName: string;
   foundationComplete?: boolean;
   hasFoundationStation?: boolean;
+  /** deterministic next-step card content from the server (AI text enriches it later) */
+  initialNextStep?: NextStepCardData | null;
 }
 
 export function JourneyPage({
@@ -48,6 +50,7 @@ export function JourneyPage({
   firstName,
   foundationComplete = true,
   hasFoundationStation = false,
+  initialNextStep = null,
 }: JourneyPageProps) {
   const [liveProgressByStep, setLiveProgressByStep] = useState<
     Record<string, JourneyStepProgress>
@@ -169,6 +172,7 @@ export function JourneyPage({
             onSelect={handleSelect}
             foundationComplete={foundationComplete}
             hasFoundationStation={hasFoundationStation}
+            initialNextStep={initialNextStep}
           />
         )}
       </AnimatePresence>
@@ -188,6 +192,7 @@ function GalleryView({
   onSelect,
   foundationComplete,
   hasFoundationStation,
+  initialNextStep,
 }: {
   firstName: string;
   groups: JourneyStationGroup[];
@@ -196,6 +201,7 @@ function GalleryView({
   onSelect: (key: string) => void;
   foundationComplete: boolean;
   hasFoundationStation: boolean;
+  initialNextStep: NextStepCardData | null;
 }) {
   const reduced = useReducedMotion();
 
@@ -243,7 +249,7 @@ function GalleryView({
         ) : (
           <>
             {/* 1. הצעד הבא — אלמוג ממליץ מה לעשות עכשיו */}
-            <JourneyNextStepCard />
+            <JourneyNextStepCard initial={initialNextStep} />
 
             {hasFoundationStation && !foundationComplete ? (
               <p className="mb-4 rounded-2xl border border-primary-200/60 bg-primary-50/80 px-4 py-3 text-sm text-primary-900">
