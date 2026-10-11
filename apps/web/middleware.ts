@@ -142,6 +142,29 @@ function copyCookies(from: NextResponse, to: NextResponse) {
   });
 }
 
+/** Redirects for an already signed-in user hitting login/register/marketing paths. */
+const signedInRedirectTarget = (
+  user: { email_confirmed_at?: string | null },
+  pathname: string,
+  searchParams: URLSearchParams,
+  origin: string,
+): string | null => {
+  if (pathname === '/login') {
+    const rawRedirect = searchParams.get('redirect');
+    if (rawRedirect && isOpsLoginRedirectUrl(rawRedirect)) {
+      const bridge = new URL('/auth/bridge-to-ops', origin);
+      bridge.searchParams.set('next', rawRedirect);
+      return bridge.href;
+    }
+    return APP_HOME_PATH;
+  }
+  const confirmed = Boolean(user.email_confirmed_at);
+  if (confirmed && MARKETING_PATHS_REDIRECT_WHEN_AUTHED.some((p) => pathname === p)) return APP_HOME_PATH;
+  if (pathname === '/register') return confirmed ? '/register/verified' : '/register/form';
+  if (confirmed && pathname === '/register/check-email') return '/register/verified';
+  return null;
+};
+
 export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -342,33 +365,9 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
   }
 
-  if (user && pathname === '/login') {
-    const rawRedirect = request.nextUrl.searchParams.get('redirect');
-    if (rawRedirect && isOpsLoginRedirectUrl(rawRedirect)) {
-      const bridge = new URL('/auth/bridge-to-ops', request.nextUrl.origin);
-      bridge.searchParams.set('next', rawRedirect);
-      return applySecurityHeaders(NextResponse.redirect(bridge));
-    }
-    return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
-  }
-
-  /** משתמש מחובר ומאומת לא נשאר בדף שיווק מלא־רוחב מחוץ ל־phone shell */
-  if (
-    user?.email_confirmed_at &&
-    MARKETING_PATHS_REDIRECT_WHEN_AUTHED.some((p) => pathname === p)
-  ) {
-    return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
-  }
-
-  if (user && pathname === '/register') {
-    if (user.email_confirmed_at) {
-      return applySecurityHeaders(NextResponse.redirect(new URL('/register/verified', request.url)));
-    }
-    return applySecurityHeaders(NextResponse.redirect(new URL('/register/form', request.url)));
-  }
-
-  if (user?.email_confirmed_at && pathname === '/register/check-email') {
-    return applySecurityHeaders(NextResponse.redirect(new URL('/register/verified', request.url)));
+  if (user) {
+    const target = signedInRedirectTarget(user, pathname, request.nextUrl.searchParams, request.nextUrl.origin);
+    if (target) return applySecurityHeaders(NextResponse.redirect(new URL(target, request.url)));
   }
 
   if (user && isPageRequest) {
