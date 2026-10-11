@@ -11,6 +11,7 @@ import {
 } from './groq-compat';
 import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from './prompts';
 import { publicAppUrlForAiReferer } from '../public-app-url';
+import { stripReasoningArtifacts, validateNotifyText } from '../notifications/validate-notify-text';
 
 /**
  * 📣 מנוע יצירת טקסט להתראות אלמוג.
@@ -71,6 +72,11 @@ const routePrimaryToDeepInfra: typeof fetch = async (input, init) => {
     try {
       const json = JSON.parse(init.body) as Record<string, unknown>;
       json.provider = { order: ['deepinfra'], allow_fallbacks: true };
+      // reasoning models (DeepSeek V4 Flash): keep thinking short and OUT of `content`
+      // (leaked reasoning / budget exhaustion = truncated or nonsense notifications).
+      if (looksLikeReasoningModel(String(json.model ?? '')) && json.reasoning == null) {
+        json.reasoning = { effort: 'low', exclude: true };
+      }
       init = { ...init, body: JSON.stringify(json) };
     } catch {
       /* גוף שאינו JSON — משאירים כמו שהוא */
@@ -192,7 +198,7 @@ function stripLeadingRecipientName(value: string, firstName?: string): string {
 }
 
 function postProcessBody(raw: string, firstName?: string): string {
-  let cleaned = raw.trim();
+  let cleaned = stripReasoningArtifacts(raw);
   if (!cleaned) return '';
   // הסרת גרשיים פותחים/סוגרים שהמודל לפעמים מוסיף
   cleaned = cleaned.replace(/^["'״׳`]+|["'״׳`]+$/g, '').trim();
@@ -235,10 +241,8 @@ export async function completeEmpathyNotifyBody(
 
     for (let attempt = 0; attempt < provider.attempts; attempt++) {
       try {
-        const tempForAttempt = Math.min(
-          1,
-          temperature + attempt * 0.05
-        );
+        /** retries go *cooler* (high temperature was a source of gibberish), capped at 0.9 */
+        const tempForAttempt = Math.max(0.4, Math.min(0.9, temperature) - attempt * 0.15);
 
         const out = await generateText({
           model: provider.chat.chat(provider.model),
@@ -267,14 +271,14 @@ export async function completeEmpathyNotifyBody(
 
         lastFinishReason = out.finishReason;
         const body = postProcessBody(out.text ?? '', options.recipientFirstName);
+        const checked = validateNotifyText(body, {
+          finishReason: out.finishReason,
+          maxChars: MAX_BODY_CHARS,
+          minChars: MIN_NOTIFY_BODY_CHARS,
+        });
+        if (checked.ok) return checked.text;
 
-        if (body.length >= MIN_NOTIFY_BODY_CHARS && !hasUnresolvedPlaceholder(body)) {
-          return body;
-        }
-
-        const reason = hasUnresolvedPlaceholder(body)
-          ? `unresolved placeholder (finishReason=${out.finishReason}, body=${body.slice(0, 80)})`
-          : `empty/short text (finishReason=${out.finishReason}, len=${body.length})`;
+        const reason = `${checked.reason} (finishReason=${out.finishReason}, len=${body.length})`;
         errors.push(`${provider.label}#${attempt}: ${reason}`);
         // eslint-disable-next-line no-console
         console.warn('[empathy-notify] empty completion', {

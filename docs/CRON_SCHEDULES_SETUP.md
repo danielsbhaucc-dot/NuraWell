@@ -497,3 +497,19 @@ curl -i -X POST "https://nurawell.vercel.app/api/v1/ai/cron/habit-checkpoints/te
 - `apps/web/lib/workflows/habit-checkpoint-eligibility.ts` — סינון הרגלים לפי slot/יום.
 - `apps/web/lib/workflows/habit-checkpoint-gates.ts` — חסימת כפילויות.
 - `apps/web/components/settings/AlmogNudgeSettingsClient.tsx` — כפתור בדיקה ב-UI ב-`/settings/almog`.
+
+## משתמש בדיקה להתראות (admins מסוננים)
+
+מאז migration `000088`, חשבונות `role = 'admin'` **לא** נספרים ב-idle guards ו**לא** מקבלים התראות cron
+(habit-checkpoints וכו'), כדי שחשבונות צוות לא יגרמו ל-cron "לעבוד" כשאין משתמשים אמיתיים.
+
+כדי לבדוק שההתראות עובדות, סמנו משתמש בדיקה באחת משתי הדרכים:
+
+1. **דגל בפרופיל** (Supabase SQL editor):
+   ```sql
+   update public.profiles set notify_test_opt_in = true where email = 'you@example.com';
+   ```
+2. **משתנה סביבה ב-Vercel**: `NOTIFY_TEST_USER_IDS=<uuid1>,<uuid2>` (Production) ואז Redeploy.
+
+בדיקה: `POST /api/v1/ai/cron/habit-checkpoints?slot=morning&dryRun=1` — המשתמש צריך להופיע ב-plan.
+משתמשים רגילים (`role = 'user'`) לא מושפעים.
