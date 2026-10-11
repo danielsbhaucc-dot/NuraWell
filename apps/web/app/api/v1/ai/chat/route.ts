@@ -4211,6 +4211,25 @@ export async function POST(request: Request) {
 
     const perfWriterOpenAt = Date.now();
     upstream = withChatPerfTiming(upstream, ({ firstByteAt, endAt, aborted }) => {
+      // persisted (Hobby logs keep ~1h): no user id, no text — numbers only; 30-day retention in DB
+      void createAdminClient()
+        .from('chat_perf_timings')
+        .insert({
+          writer: String(mcfg.writer ?? ''),
+          model: assistantModelName,
+          router_ms: perfRouterDoneAt - startedAt,
+          context_ms: perfContextDoneAt - perfRouterDoneAt,
+          writer_open_ms: perfWriterOpenAt - perfContextDoneAt,
+          ttft_ms: firstByteAt === null ? null : firstByteAt - startedAt,
+          total_ms: endAt - startedAt,
+          heavy_context: useHeavyContext,
+          router_skipped: contextDecision.reason === 'trivial_skip_router_sticky',
+          router_fallback: contextDecision.reason === 'cheap_router_failed_heuristic',
+          aborted,
+        })
+        .then(({ error }) => {
+          if (error) console.warn('[ai/chat] perf persist failed', error.message);
+        });
       console.info('[ai/chat]', {
         debug_id: debugId,
         stage: 'perf_timings',

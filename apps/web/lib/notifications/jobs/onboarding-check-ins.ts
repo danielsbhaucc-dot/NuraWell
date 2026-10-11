@@ -296,7 +296,12 @@ async function runOnboardingCheckInsCron(request: Request) {
     try {
       await client.trigger({
         url: workflowUrl,
-        body: JSON.stringify(item),
+        body: JSON.stringify({
+          userId: item.userId,
+          checkInTime: item.checkInTime,
+          checkInIndex: item.checkInIndex,
+          checkpointDate: item.checkpointDate,
+        }),
         retries: 2,
         label: 'almog-personalized-check-in',
       });
