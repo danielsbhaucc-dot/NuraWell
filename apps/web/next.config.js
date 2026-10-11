@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // blocking metadata for all UAs: notFound() in generateMetadata then returns a real 404 status
-  // (with streamed metadata the 200 is already committed). Metadata here is cheap (≤1 small query).
-  htmlLimitedBots: /.*/,
   /** Native / heavy deps must not be bundled into Route Handlers (avoids 503 on Vercel). */
   serverExternalPackages: ['@aws-sdk/client-s3', 'web-push', 'sharp'],
   /**
