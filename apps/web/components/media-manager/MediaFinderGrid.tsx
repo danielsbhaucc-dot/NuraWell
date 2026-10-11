@@ -46,18 +46,18 @@ export function MediaFinderGrid({
             onClick={() => onSelectFile(item)}
             className={cn(
               'group flex w-full flex-col items-center gap-2 rounded-2xl p-2 text-center transition',
-              'hover:bg-background-card/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50',
+              'hover:bg-background-card/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-400/50',
               selectedId === item.id && 'bg-background-card/35 ring-2 ring-emerald-400/55'
             )}
           >
-            <div className="relative w-full overflow-hidden rounded-xl border border-white/40 bg-background-card/20 shadow-sm transition group-hover:border-emerald-300/50">
+            <div className="relative w-full overflow-hidden rounded-xl border border-white/40 bg-background-card/20 shadow-xs transition group-hover:border-emerald-300/50">
               <AssetThumb asset={item} />
             </div>
             <span className="line-clamp-2 w-full px-1 text-[11px] font-bold leading-tight text-slate-800">
               {item.title ?? 'ללא שם'}
             </span>
           </button>
-          <div className="pointer-events-none absolute top-2 end-2 z-10">
+          <div className="pointer-events-none absolute top-2 inset-e-2 z-10">
             <CreditBadge asset={item} />
           </div>
         </div>
@@ -89,13 +89,13 @@ function AssetThumb({ asset }: { asset: MediaAsset }) {
   }
   if (asset.kind === 'video') {
     return (
-      <div className="flex aspect-square items-center justify-center bg-violet-900/12">
+      <div className="flex aspect-square items-center justify-center">
         <Film className="h-9 w-9 text-violet-800/70" />
       </div>
     );
   }
   return (
-    <div className="flex aspect-square items-center justify-center bg-slate-900/8">
+    <div className="flex aspect-square items-center justify-center">
       <FileText className="h-9 w-9 text-slate-600" />
     </div>
   );

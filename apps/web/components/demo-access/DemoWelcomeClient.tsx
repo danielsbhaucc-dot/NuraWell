@@ -85,7 +85,7 @@ export function DemoWelcomeClient({ token }: Props) {
     : null;
 
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden bg-[#0b1f1c] text-white" dir="rtl">
+    <div className="relative min-h-dvh overflow-hidden bg-[#0b1f1c] text-white" dir="rtl">
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         {preview?.welcome_image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -97,17 +97,17 @@ export function DemoWelcomeClient({ token }: Props) {
         ) : (
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_10%,rgba(45,212,191,0.35),transparent_55%),radial-gradient(ellipse_at_80%_0%,rgba(251,191,36,0.22),transparent_45%),linear-gradient(160deg,#06201c_0%,#0f3d36_45%,#12352f_100%)]" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#041512]/95 via-[#06201c]/55 to-[#06201c]/35" />
-        <div className="absolute -start-16 top-24 h-64 w-64 rounded-full bg-teal-400/20 blur-3xl" />
-        <div className="absolute -end-10 bottom-20 h-72 w-72 rounded-full bg-amber-300/15 blur-3xl" />
+        <div className="absolute inset-0 bg-linear-to-t from-[#041512]/95 via-[#06201c]/55 to-[#06201c]/35" />
+        <div className="absolute -inset-s-16 top-24 h-64 w-64 rounded-full bg-teal-400/20 blur-3xl" />
+        <div className="absolute -inset-e-10 bottom-20 h-72 w-72 rounded-full bg-amber-300/15 blur-3xl" />
       </div>
 
-      <main className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col justify-end px-5 pb-10 pt-16 sm:justify-center sm:pb-16">
+      <main className="relative z-10 mx-auto flex min-h-dvh w-full max-w-lg flex-col justify-end px-5 pb-10 pt-16 sm:justify-center sm:pb-16">
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="rounded-[2rem] border border-white/15 bg-white/10 p-6 shadow-[0_30px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-8"
+          className="rounded-3xl border border-white/15 bg-white/10 p-6 shadow-[0_30px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-8"
         >
           <motion.div
             initial={{ scale: 0.92, opacity: 0 }}
@@ -163,7 +163,7 @@ export function DemoWelcomeClient({ token }: Props) {
                         ? `היי ${preview.guest_name}, נא להקליד סיסמה זמנית`
                         : 'נא להקליד סיסמה זמנית'
                     }
-                    className="w-full rounded-2xl border border-white/20 bg-black/25 px-4 py-3 text-base text-white placeholder:text-white/40 outline-none ring-teal-300/40 focus:ring-2"
+                    className="w-full rounded-2xl border border-white/20 bg-black/25 px-4 py-3 text-base text-white placeholder:text-white/40 outline-hidden ring-teal-300/40 focus:ring-2"
                   />
                 </label>
               ) : null}
@@ -177,7 +177,7 @@ export function DemoWelcomeClient({ token }: Props) {
                 disabled={isPending || (preview.requires_password && password.trim().length < 4)}
                 onClick={enter}
                 whileTap={{ scale: 0.98 }}
-                className="mt-7 inline-flex w-full min-h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-teal-400 via-emerald-400 to-amber-300 px-5 py-3.5 text-base font-black text-emerald-950 shadow-[0_12px_40px_rgba(45,212,191,0.35)] transition disabled:opacity-50"
+                className="mt-7 inline-flex w-full min-h-12 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-teal-400 via-emerald-400 to-amber-300 px-5 py-3.5 text-base font-black text-emerald-950 shadow-[0_12px_40px_rgba(45,212,191,0.35)] transition disabled:opacity-50"
               >
                 {isPending ? (
                   <>

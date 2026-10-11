@@ -87,7 +87,7 @@ export function OpsAdminNotificationDialog({
             <Link
               href={href}
               onClick={onDismiss}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-500 px-4 py-2.5 text-sm font-black text-white shadow-md"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-4 py-2.5 text-sm font-black text-white shadow-md"
             >
               <ExternalLink className="h-4 w-4" />
               פתח בפאנל

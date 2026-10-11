@@ -91,14 +91,14 @@ function CostCard({
     amber: 'border-amber-300/50 from-amber-100/60 to-orange-50/45 text-amber-700',
   }[tone];
   return (
-    <div className={`rounded-2xl border bg-gradient-to-br ${toneClass} p-4 backdrop-blur-xl`}>
+    <div className={`rounded-2xl border bg-linear-to-br ${toneClass} p-4 backdrop-blur-xl`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-xs font-semibold text-slate-700/85">{label}</p>
           <p className="mt-1 font-display text-2xl font-black tabular-nums text-slate-900">{value}</p>
           {sub ? <p className="mt-1 text-[11px] text-slate-600">{sub}</p> : null}
         </div>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/60 bg-background-card/55 shadow-sm">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/60 bg-background-card/55 shadow-xs">
           {icon}
         </div>
       </div>
@@ -216,7 +216,7 @@ export function AdminCostsClient() {
                 className={[
                   'rounded-xl px-3 py-2 text-xs font-bold transition-colors',
                   days === w.days
-                    ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-600/25'
+                    ? 'bg-linear-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-600/25'
                     : 'text-slate-600 hover:bg-background-card/70',
                 ].join(' ')}
               >
@@ -282,7 +282,7 @@ export function AdminCostsClient() {
         <section className="flex max-h-[60vh] flex-col overflow-hidden rounded-2xl border border-white/80 bg-background-card/60 backdrop-blur-xl">
           <div className="border-b border-slate-100 p-3">
             <div className="relative">
-              <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="absolute inset-s-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="search"
                 value={q}

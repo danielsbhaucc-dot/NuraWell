@@ -122,7 +122,7 @@ export function TaskHistoryCalendar({ days, onSelect, todayKey, activeKey }: Pro
                 {d.d.slice(8)}
               </span>
               {isToday ? (
-                <span className="absolute -top-1 -end-1 h-2 w-2 rounded-full bg-sky-400 ring-2 ring-[#EDF5F0]" />
+                <span className="absolute -top-1 -inset-e-1 h-2 w-2 rounded-full bg-sky-400 ring-2 ring-[#EDF5F0]" />
               ) : null}
             </button>
           );

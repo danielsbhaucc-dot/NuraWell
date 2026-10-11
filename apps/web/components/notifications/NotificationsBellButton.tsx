@@ -52,15 +52,15 @@ export function NotificationsBellButton({
       }
     >
       <Bell
-        className={cn(isChallenge ? 'h-5 w-5' : 'w-5 h-5 text-white drop-shadow-sm')}
+        className={cn(isChallenge ? 'h-5 w-5' : 'w-5 h-5 text-white drop-shadow-xs')}
         strokeWidth={2.2}
       />
       {unreadCount > 0 && (
         <span
           className={cn(
             isChallenge
-              ? 'absolute -start-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-white'
-              : 'absolute -start-0.5 -top-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-black leading-none text-white border-2 border-white/90 shadow-md',
+              ? 'absolute -inset-s-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-white'
+              : 'absolute -inset-s-0.5 -top-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-black leading-none text-white border-2 border-white/90 shadow-md',
             badgeClassName
           )}
           style={

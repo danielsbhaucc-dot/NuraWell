@@ -92,7 +92,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
           key="day-popup"
           dir="rtl"
           data-nura-overlay="1"
-          className="fixed inset-0 z-[280] flex items-center justify-center px-4"
+          className="fixed inset-0 z-280 flex items-center justify-center px-4"
           /**
            * padding מעל ל-MobileHeader (~64px) ומעל ל-BottomNav (~80px + safe-area).
            * המטרה: לרכז את ה-popup בתוך האזור הגלוי באמת, לא בתוך כל ה-viewport,
@@ -139,7 +139,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-3 end-3 z-10 flex h-8 w-8 items-center justify-center rounded-full text-emerald-900/80 hover:text-emerald-900"
+              className="absolute top-3 inset-e-3 z-10 flex h-8 w-8 items-center justify-center rounded-full text-emerald-900/80 hover:text-emerald-900"
               style={{
                 background: 'rgba(220,252,231,0.6)',
                 border: '1px solid rgba(167,243,208,0.6)',

@@ -183,7 +183,7 @@ function CoverSummaryRow({
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/50 bg-background-card/25 shadow-sm backdrop-blur-md">
+          <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/50 bg-background-card/25 shadow-xs backdrop-blur-md">
             {hasCover && coverUrl ? (
               <img src={coverUrl} alt="" aria-hidden className="h-full w-full object-cover" />
             ) : (

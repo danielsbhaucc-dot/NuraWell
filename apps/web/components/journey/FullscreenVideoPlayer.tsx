@@ -401,14 +401,14 @@ export function FullscreenVideoPlayer({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[300] bg-black flex flex-col"
+      className="fixed inset-0 z-300 bg-black flex flex-col"
       data-nura-overlay="1"
     >
       <button
         type="button"
         aria-label="סגור"
         onClick={() => setExitConfirmOpen(true)}
-        className="absolute top-4 left-4 z-[310] w-11 h-11 rounded-full flex items-center justify-center"
+        className="absolute top-4 left-4 z-310 w-11 h-11 rounded-full flex items-center justify-center"
         style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)' }}
       >
         <X className="w-5 h-5 text-white" />
@@ -445,7 +445,7 @@ export function FullscreenVideoPlayer({
       )}
 
       <div
-        className="absolute inset-0 z-[305]"
+        className="absolute inset-0 z-305"
         onClick={handleScreenTap}
         onDoubleClick={(e) => e.preventDefault()}
         role="button"
@@ -457,7 +457,7 @@ export function FullscreenVideoPlayer({
       />
 
       {showIcon && (
-        <div className="absolute inset-0 z-[306] flex items-center justify-center pointer-events-none animate-pulse">
+        <div className="absolute inset-0 z-306 flex items-center justify-center pointer-events-none animate-pulse">
           <div
             className="w-20 h-20 rounded-full flex items-center justify-center transition-opacity duration-300"
             style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
@@ -473,7 +473,7 @@ export function FullscreenVideoPlayer({
 
       {exitConfirmOpen && (
         <div
-          className="absolute inset-0 z-[320] flex items-center justify-center p-6 transition-all duration-200"
+          className="absolute inset-0 z-320 flex items-center justify-center p-6 transition-all duration-200"
           style={{ background: 'rgba(0,0,0,0.6)' }}
         >
           <div
@@ -512,7 +512,7 @@ export function FullscreenVideoPlayer({
       <AnimatePresence>
         {activeAttentionStop && (
           <motion.div
-            className="absolute inset-0 z-[321] flex items-center justify-center p-5"
+            className="absolute inset-0 z-321 flex items-center justify-center p-5"
             style={{ background: 'rgba(2,6,23,0.76)' }}
             onClick={() => setActiveAttentionStop(activeAttentionStop)}
             initial={{ opacity: 0 }}

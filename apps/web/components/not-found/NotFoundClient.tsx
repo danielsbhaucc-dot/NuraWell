@@ -66,14 +66,14 @@ export default function NotFoundClient({ isAuthenticated }: Props) {
           <motion.div
             animate={{ rotate: [0, -10, 10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="absolute -top-4 -start-4 text-4xl"
+            className="absolute -top-4 -inset-s-4 text-4xl"
           >
             🍃
           </motion.div>
           <motion.div
             animate={{ rotate: [0, 10, -10, 0] }}
             transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
-            className="absolute -bottom-2 -end-4 text-3xl"
+            className="absolute -bottom-2 -inset-e-4 text-3xl"
           >
             🌿
           </motion.div>

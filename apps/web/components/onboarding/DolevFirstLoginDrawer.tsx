@@ -64,8 +64,8 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
   return (
     <Drawer.Root open={open} onOpenChange={(v) => !v && void closeDrawer()} direction="bottom" shouldScaleBackground>
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-[250] bg-black/60 backdrop-blur-[4px]" />
-        <Drawer.Content dir="rtl" className={`${REGISTER_DRAWER_CONTENT_CLASS} z-[260] max-h-[min(94dvh,780px)]`}>
+        <Drawer.Overlay className="fixed inset-0 z-250 bg-black/60 backdrop-blur-[4px]" />
+        <Drawer.Content dir="rtl" className={`${REGISTER_DRAWER_CONTENT_CLASS} z-260 max-h-[min(94dvh,780px)]`}>
           <Drawer.Title className="sr-only">ברכה ראשונה מדולב</Drawer.Title>
           <Drawer.Description className="sr-only">סיכום ההרשמה ושיחה קצרה עם דולב</Drawer.Description>
 
@@ -76,7 +76,7 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
               הכירות ראשונה · דולב
             </p>
 
-            <ul className="mb-5 grid gap-1.5 rounded-2xl border border-emerald-500/25 bg-gradient-to-b from-emerald-950/80 to-slate-900/90 p-3">
+            <ul className="mb-5 grid gap-1.5 rounded-2xl border border-emerald-500/25 bg-linear-to-b from-emerald-950/80 to-slate-900/90 p-3">
               {rows.map((row) => (
                 <li
                   key={row.label}
@@ -144,7 +144,7 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
               <button
                 type="button"
                 onClick={onThanksClick}
-                className="mt-6 w-full rounded-2xl border border-emerald-400/50 bg-gradient-to-l from-emerald-600/50 to-teal-500/40 py-3.5 font-bold text-white shadow-lg shadow-emerald-500/20 hover:brightness-110 active:scale-[0.98] transition-all"
+                className="mt-6 w-full rounded-2xl border border-emerald-400/50 bg-linear-to-l from-emerald-600/50 to-teal-500/40 py-3.5 font-bold text-white shadow-lg shadow-emerald-500/20 hover:brightness-110 active:scale-[0.98] transition-all"
               >
                 תודה דולב
               </button>

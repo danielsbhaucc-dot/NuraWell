@@ -245,12 +245,12 @@ export function HomeClient({
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute -start-16 -top-12 h-48 w-48 rounded-full"
+          className="pointer-events-none absolute -inset-s-16 -top-12 h-48 w-48 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 68%)' }}
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute -bottom-10 -end-16 h-56 w-56 rounded-full"
+          className="pointer-events-none absolute -bottom-10 -inset-e-16 h-56 w-56 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.45), transparent 70%)' }}
         />
         <div className="relative z-10 px-5 pb-8 pt-3">
@@ -278,7 +278,7 @@ export function HomeClient({
       </div>
 
       <div
-        className="relative z-[3] -mt-7 min-h-[55vh] rounded-t-[28px] border-t border-white/50 px-4 pb-6 pt-6"
+        className="relative z-3 -mt-7 min-h-[55vh] rounded-t-[28px] border-t border-white/50 px-4 pb-6 pt-6"
         style={{
           background: 'linear-gradient(180deg, #f8fdfb 0%, #edf5f0 45%, #e8f2ec 100%)',
           boxShadow: '0 -16px 48px rgba(6,78,59,0.12)',

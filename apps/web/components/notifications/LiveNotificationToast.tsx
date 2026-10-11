@@ -122,9 +122,9 @@ export function LiveNotificationToast({
         'pointer-events-auto group relative w-full rounded-2xl',
         'cursor-pointer select-none border text-right',
         isPlatform
-          ? 'border-indigo-200/70 bg-gradient-to-br from-indigo-50 via-background-card to-violet-50 shadow-[0_10px_28px_rgba(67,56,202,0.14)]'
-          : 'border-emerald-200/60 bg-gradient-to-br from-emerald-50 via-background-card to-teal-50 shadow-[0_10px_28px_rgba(6,78,59,0.14)]',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60'
+          ? 'border-indigo-200/70 bg-linear-to-br from-indigo-50 via-background-card to-violet-50 shadow-[0_10px_28px_rgba(67,56,202,0.14)]'
+          : 'border-emerald-200/60 bg-linear-to-br from-emerald-50 via-background-card to-teal-50 shadow-[0_10px_28px_rgba(6,78,59,0.14)]',
+        'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/60'
       )}
     >
       <div className="flex items-start gap-3 px-3.5 py-3 sm:px-4">
@@ -155,9 +155,9 @@ export function LiveNotificationToast({
             )}
           </div>
           {!isPlatform ? (
-            <span className="absolute -bottom-0.5 -end-0.5 flex h-3 w-3" aria-hidden>
+            <span className="absolute -bottom-0.5 -inset-e-0.5 flex h-3 w-3" aria-hidden>
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-80" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white shadow-sm" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white shadow-xs" />
             </span>
           ) : null}
         </div>
@@ -202,7 +202,7 @@ export function LiveNotificationToast({
 
       {/* progress bar — מסמן כמה זמן נשאר */}
       <motion.div
-        className="absolute bottom-0 start-0 h-[2.5px] bg-gradient-to-l from-emerald-500 via-emerald-400 to-teal-300"
+        className="absolute bottom-0 inset-s-0 h-[2.5px] bg-linear-to-l from-emerald-500 via-emerald-400 to-teal-300"
         initial={{ width: '100%' }}
         animate={{ width: '0%' }}
         transition={{ duration: TOAST_AUTO_DISMISS_MS / 1000, ease: 'linear' as const }}
@@ -236,7 +236,7 @@ export function LiveToastStack({
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 top-0 z-[300] flex justify-center px-3 sm:px-4"
+      className="pointer-events-none fixed inset-x-0 top-0 z-300 flex justify-center px-3 sm:px-4"
       style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 12px)' }}
       aria-live="polite"
       aria-atomic="false"

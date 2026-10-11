@@ -61,7 +61,7 @@ export function ChallengeSuccessChart() {
                     animate={{ height: `${h}%` }}
                     className={`w-full rounded-t-md ${
                       count > 0
-                        ? 'bg-gradient-to-t from-emerald-600 to-emerald-400'
+                        ? 'bg-linear-to-t from-emerald-600 to-emerald-400'
                         : 'bg-background-card/10'
                     }`}
                     title={`${count} הצלחות`}
@@ -88,7 +88,7 @@ export function ChallengeSuccessChart() {
                 <span className="w-24 shrink-0 truncate text-xs text-white/50">{t.label}</span>
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-background-card/10">
                   <motion.div
-                    className="h-full rounded-full bg-gradient-to-l from-amber-500 to-orange-400"
+                    className="h-full rounded-full bg-linear-to-l from-amber-500 to-orange-400"
                     initial={{ width: 0 }}
                     animate={{ width: `${(t.count / maxType) * 100}%` }}
                   />

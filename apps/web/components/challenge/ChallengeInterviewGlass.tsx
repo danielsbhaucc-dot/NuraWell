@@ -63,12 +63,12 @@ export function ChallengeInterviewGlass() {
 
   return (
     <div
-      className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-gradient-to-b from-[#0a1628] via-[#1a1035] to-[#05010f]"
+      className="relative flex min-h-dvh flex-col overflow-hidden bg-linear-to-b from-[#0a1628] via-[#1a1035] to-[#05010f]"
       dir="rtl"
     >
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute end-1/4 top-20 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl" />
-        <div className="absolute bottom-32 start-1/4 h-72 w-72 rounded-full bg-emerald-500/15 blur-3xl" />
+        <div className="absolute inset-e-1/4 top-20 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl" />
+        <div className="absolute bottom-32 inset-s-1/4 h-72 w-72 rounded-full bg-emerald-500/15 blur-3xl" />
       </div>
 
       <header className="relative z-10 border-b border-white/10 bg-background-card/5 px-4 py-4 backdrop-blur-xl">
@@ -162,7 +162,7 @@ export function ChallengeInterviewGlass() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="כתבו בכנות..."
               disabled={loading}
-              className="min-h-12 flex-1 rounded-2xl border border-white/10 bg-background-card/10 px-4 text-white placeholder:text-white/35 focus:border-emerald-400/50 focus:outline-none"
+              className="min-h-12 flex-1 rounded-2xl border border-white/10 bg-background-card/10 px-4 text-white placeholder:text-white/35 focus:border-emerald-400/50 focus:outline-hidden"
             />
             <button
               type="submit"

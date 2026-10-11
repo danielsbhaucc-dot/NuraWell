@@ -77,7 +77,7 @@ export function SummariesPageClient({
       {/* Hero */}
       <header className="pt-2 pb-5">
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="inline-flex items-center justify-center w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-sm">
+          <span className="inline-flex items-center justify-center w-9 h-9 rounded-2xl bg-linear-to-br from-emerald-400 to-emerald-600 text-white shadow-xs">
             <Sparkles className="w-5 h-5" strokeWidth={2.4} />
           </span>
           <h1 className="text-2xl font-black tracking-tight text-gray-900">הסיכומים שלי</h1>
@@ -176,7 +176,7 @@ function FilterChip({ active, onClick, children, icon, accentClass }: FilterChip
       className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all
         ${
           active
-            ? 'bg-gray-900 text-white shadow-sm'
+            ? 'bg-gray-900 text-white shadow-xs'
             : 'bg-background-card text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50'
         }`}
       aria-pressed={active}

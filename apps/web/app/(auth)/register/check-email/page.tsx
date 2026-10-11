@@ -42,7 +42,7 @@ export default async function RegisterCheckEmailPage({
   return (
     <main
       id="main-content"
-      className="onboarding-shell-dark min-h-[100dvh] flex flex-col items-center justify-center px-4 py-12"
+      className="onboarding-shell-dark min-h-dvh flex flex-col items-center justify-center px-4 py-12"
     >
       <CheckEmailClient
         email={email}

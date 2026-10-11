@@ -72,7 +72,7 @@ export function AdminChatBackgroundPanel() {
   return (
     <section className="rounded-3xl border border-white/50 bg-background-card/45 p-4 backdrop-blur-xl sm:p-5" dir="rtl">
       <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-600/25">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-600/25">
           <ImageIcon className="h-5 w-5" aria-hidden />
         </span>
         <div>

@@ -78,7 +78,7 @@ export function TranscriptAccessCountdown({ accessUntil, className }: Transcript
       </div>
       <div className="mb-2 h-2.5 overflow-hidden rounded-full bg-black/10">
         <div
-          className={cn('h-full rounded-full bg-gradient-to-l transition-all duration-1000', barClass)}
+          className={cn('h-full rounded-full bg-linear-to-l transition-all duration-1000', barClass)}
           style={{ width: `${100 - pct}%` }}
         />
       </div>

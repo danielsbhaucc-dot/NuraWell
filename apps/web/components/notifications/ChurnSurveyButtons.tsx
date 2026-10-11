@@ -71,7 +71,7 @@ export function ChurnSurveyButtons({ notificationId, survey }: ChurnSurveyButton
                 e.stopPropagation();
                 void submit(opt.id);
               }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/60 bg-emerald-50/80 px-3 py-1.5 text-xs font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-100/80 active:scale-[0.98] disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/60 bg-emerald-50/80 px-3 py-1.5 text-xs font-bold text-emerald-900 shadow-xs transition hover:bg-emerald-100/80 active:scale-[0.98] disabled:opacity-50"
             >
               {sending && <Loader2 className="h-3 w-3 animate-spin" aria-hidden />}
               {opt.label}

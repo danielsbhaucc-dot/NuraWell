@@ -296,7 +296,7 @@ export function VideoSection({
       </div>
 
       <div
-        className="relative rounded-2xl overflow-hidden aspect-[9/16] md:aspect-[16/9]"
+        className="relative rounded-2xl overflow-hidden aspect-9/16 md:aspect-video"
         style={{ background: '#0a1f1a' }}
       >
         {isPlaceholder ? (
@@ -445,7 +445,7 @@ export function VideoSection({
 
       {debugVideoOverlay && (
         <div
-          className="fixed end-0 start-0 z-[99999] px-2 py-2 text-[10px] leading-tight font-mono text-white text-end break-all pointer-events-none"
+          className="fixed inset-e-0 inset-s-0 z-99999 px-2 py-2 text-[10px] leading-tight font-mono text-white text-end break-all pointer-events-none"
           style={{
             top: 'calc(4.25rem + env(safe-area-inset-top, 0px))',
             background: 'rgba(0,0,0,0.92)',

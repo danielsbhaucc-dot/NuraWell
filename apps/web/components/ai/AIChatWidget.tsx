@@ -209,7 +209,7 @@ function renderInlineStyledText(text: string): ReactNode[] {
           return (
             <span
               key={`hl-${index}`}
-              className="mx-[1px] rounded-[4px] px-[3px] font-extrabold"
+              className="mx-px rounded-[4px] px-[3px] font-extrabold"
               style={{
                 color: '#fffbeb',
                 background:
@@ -500,7 +500,7 @@ function ThreadHeaderIconButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-background-card/[0.06] text-white backdrop-blur-md transition hover:border-white/18 hover:bg-background-card/[0.12] active:scale-95 disabled:opacity-50"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-background-card/6 text-white backdrop-blur-md transition hover:bg-background-card/12 active:scale-95 disabled:opacity-50"
     >
       {children}
     </button>
@@ -1271,7 +1271,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
           <motion.button
             type="button"
             aria-label="שיחה עם אלמוג"
-            className="fixed z-[190] flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-full text-white shadow-lg md:h-[3.5rem] md:w-[3.5rem]"
+            className="fixed z-190 flex h-13 w-13 items-center justify-center rounded-full text-white shadow-lg md:h-14 md:w-14"
             style={{
               bottom: 'calc(7.25rem + env(safe-area-inset-bottom, 0px))',
               right: 'calc(1rem + env(safe-area-inset-right, 0px))',
@@ -1283,7 +1283,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
             <MessageCircle className="h-7 w-7 md:h-8 md:w-8" strokeWidth={2} />
             {hasBackgroundAnswer ? (
               <span
-                className="absolute -top-1 -end-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-white/70 bg-amber-300 px-1 text-[10px] font-black text-emerald-950 shadow-lg"
+                className="absolute -top-1 -inset-e-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-white/70 bg-amber-300 px-1 text-[10px] font-black text-emerald-950 shadow-lg"
                 aria-label="תשובה חדשה מאלמוג"
               >
                 1
@@ -1294,11 +1294,11 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
       ) : null}
 
       <Drawer.Portal container={overlayRoot ?? undefined}>
-        <Drawer.Overlay data-nura-overlay="1" className="fixed inset-0 z-[200] bg-slate-900/55" />
+        <Drawer.Overlay data-nura-overlay="1" className="fixed inset-0 z-200 bg-slate-900/55" />
         <Drawer.Content
           dir="rtl"
           data-nura-overlay="1"
-          className="almog-chat-surface fixed inset-x-0 bottom-0 z-[210] mx-auto flex w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] outline-none"
+          className="almog-chat-surface fixed inset-x-0 bottom-0 z-210 mx-auto flex w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] outline-hidden"
           style={{
             height: sheetHeight,
             minHeight: sheetHeight,
@@ -1344,7 +1344,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                   />
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute -start-16 -top-16 h-56 w-56 rounded-full"
+                    className="pointer-events-none absolute -inset-s-16 -top-16 h-56 w-56 rounded-full"
                     style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 68%)' }}
                   />
                   <span
@@ -1362,12 +1362,12 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                 </div>
               ) : null}
               {panelView === 'inbox' ? (
-                <div className="relative min-h-[11.5rem] px-4 pb-6 pt-3 sm:min-h-[12.5rem]">
+                <div className="relative min-h-46 px-4 pb-6 pt-3 sm:min-h-50">
                   <button
                     type="button"
                     aria-label="סגור"
                     onClick={() => setOpen(false)}
-                    className="absolute end-3 top-2 z-10 rounded-lg p-2 hover:bg-background-card/10"
+                    className="absolute inset-e-3 top-2 z-10 rounded-lg p-2 hover:bg-background-card/10"
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -1382,7 +1382,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                       <img
                         src={avatarSrc}
                         alt="אלמוג"
-                        className="h-[5.5rem] w-[5.5rem] rounded-full object-cover ring-2 ring-white/55 sm:h-24 sm:w-24"
+                        className="h-22 w-22 rounded-full object-cover ring-2 ring-white/55 sm:h-24 sm:w-24"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
@@ -1442,7 +1442,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                     <div className="flex min-w-0 flex-col items-start">
                       <p className="text-[16px] font-black leading-none text-white">אלמוג</p>
                       {chatSession?.title?.trim() ? (
-                        <p className="mt-0.5 max-w-[11rem] truncate text-[11px] font-medium text-emerald-100/80">
+                        <p className="mt-0.5 max-w-44 truncate text-[11px] font-medium text-emerald-100/80">
                           {chatSession.title}
                         </p>
                       ) : (
@@ -1659,7 +1659,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                           </div>
                         </div>
                         {userReaction ? (
-                          <div className="pointer-events-auto absolute -bottom-2.5 start-2 z-10">
+                          <div className="pointer-events-auto absolute -bottom-2.5 inset-s-2 z-10">
                             <MentorEmojiReactionBadge reaction={userReaction} />
                           </div>
                         ) : null}
@@ -1749,7 +1749,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
             </div>
 
             <div
-              className="shrink-0 border-t border-white/8 bg-[#0c1222]/95 px-3 pt-2 backdrop-blur-md"
+              className="shrink-0 border-t bg-[#0c1222]/95 px-3 pt-2 backdrop-blur-md"
               style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))' }}
             >
               {isSessionClosed && (
@@ -1770,7 +1770,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                   </button>
                   {summaryExpanded && (
                     <div
-                      className="rounded-xl border border-emerald-400/20 bg-emerald-500/8 px-3 py-2.5 text-[13px] leading-relaxed text-emerald-50/95 backdrop-blur-md"
+                      className="rounded-xl border border-emerald-400/20 px-3 py-2.5 text-[13px] leading-relaxed text-emerald-50/95 backdrop-blur-md"
                       style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}
                     >
                       <p className="whitespace-pre-wrap">{chatSession?.summary ?? 'אין סיכום זמין.'}</p>
@@ -1821,7 +1821,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                           }
                         );
                       }}
-                      className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-semibold text-emerald-100 transition active:scale-[0.97] hover:bg-emerald-500/18 disabled:opacity-50"
+                      className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-semibold text-emerald-100 transition active:scale-[0.97] disabled:opacity-50"
                     >
                       {chip.label}
                     </button>
@@ -1832,7 +1832,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                 <AiChatPrivacyNotice variant="dark" className="mb-2 px-0.5" />
               ) : null}
               <form
-                className="flex items-end gap-2 rounded-2xl border border-white/12 bg-background-card/[0.06] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                className="flex items-end gap-2 rounded-2xl border bg-background-card/6 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
                   onSubmit={(e) => {
                     e.preventDefault();
                     const text = input.trim();
@@ -1878,7 +1878,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                           ? 'ענה לאלמוג על מה ששאל...'
                           : 'כתוב לי מה עובר עליך...'
                     }
-                    className="max-h-24 min-h-[40px] flex-1 resize-none rounded-xl border-0 bg-transparent px-3 py-2 text-[14px] leading-snug text-start text-white outline-none placeholder:text-white/35 disabled:opacity-60"
+                    className="max-h-24 min-h-[40px] flex-1 resize-none rounded-xl border-0 bg-transparent px-3 py-2 text-[14px] leading-snug text-start text-white outline-hidden placeholder:text-white/35 disabled:opacity-60"
                   />
                   {isLoading && (
                     <>

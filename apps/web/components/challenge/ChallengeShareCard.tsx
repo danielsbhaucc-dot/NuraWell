@@ -38,7 +38,7 @@ export function ChallengeShareCard({ firstName, summary }: Props) {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mt-8 overflow-hidden rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-500/15 to-emerald-500/10 p-6 text-center"
+      className="mt-8 overflow-hidden rounded-3xl border border-amber-400/30 bg-linear-to-br from-amber-500/15 to-emerald-500/10 p-6 text-center"
     >
       <p className="text-xs font-semibold uppercase tracking-wider text-amber-300/80">תעודת סיום</p>
       <p className="mt-2 font-display text-xl font-black">{firstName}</p>

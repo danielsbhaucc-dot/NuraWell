@@ -942,7 +942,7 @@ export function StepEditor({ step }: StepEditorProps) {
       >
         <div className="flex min-w-0 items-center gap-3">
         <button onClick={() => router.push(journeyListPath)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm transition-colors"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-xs transition-colors"
           style={{ background: 'linear-gradient(135deg, #0f766e, #10b981)', border: '1px solid rgba(248,251,246,0.55)' }}>
           <ArrowRight className="w-5 h-5 text-white" />
         </button>
@@ -1019,7 +1019,7 @@ export function StepEditor({ step }: StepEditorProps) {
                         className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className="max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-[12px] leading-relaxed shadow-sm"
+                          className="max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-[12px] leading-relaxed shadow-xs"
                           style={
                             entry.role === 'user'
                               ? { background: 'linear-gradient(135deg, #7c3aed, #2563eb)', color: '#fff', borderBottomRightRadius: 4 }
@@ -2412,7 +2412,7 @@ export function StepEditor({ step }: StepEditorProps) {
 
       {/* Save progress overlay */}
       {saving && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm px-4" dir="rtl">
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/45 backdrop-blur-sm px-4" dir="rtl">
           <div
             className="w-full max-w-sm rounded-3xl p-6 text-center"
             style={{ background: 'rgba(248,251,246,0.97)', border: '1px solid rgba(248,251,246,0.9)', boxShadow: '0 24px 60px rgba(15,23,42,0.35)' }}
@@ -2475,7 +2475,7 @@ export function StepEditor({ step }: StepEditorProps) {
 
       {/* AI fill progress overlay */}
       {aiFilling && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm px-4" dir="rtl">
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/45 backdrop-blur-sm px-4" dir="rtl">
           <div
             className="w-full max-w-sm rounded-3xl p-6 text-center"
             style={{ background: 'rgba(248,251,246,0.97)', border: '1px solid rgba(248,251,246,0.9)', boxShadow: '0 24px 60px rgba(76,29,149,0.35)' }}
@@ -2605,7 +2605,7 @@ function SectionTab({
     <button
       type="button"
       onClick={onClick}
-      className="flex min-w-[13.5rem] snap-start items-center gap-2 rounded-xl px-3 py-2.5 text-right backdrop-blur-md transition-all sm:min-w-0 sm:w-full"
+      className="flex min-w-54 snap-start items-center gap-2 rounded-xl px-3 py-2.5 text-right backdrop-blur-md transition-all sm:min-w-0 sm:w-full"
       style={{
         background: active
           ? `linear-gradient(135deg, ${color}18, rgba(248,251,246,0.55))`
@@ -2619,7 +2619,7 @@ function SectionTab({
       }}
     >
       <span
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white shadow-sm"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white shadow-xs"
         style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
       >
         {number}

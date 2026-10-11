@@ -77,7 +77,7 @@ export function TranscriptAccessRequestDialog({
       backdropClassName="absolute inset-0 bg-slate-900/45 backdrop-blur-sm"
       panelClassName="crystal-surface max-w-md overflow-hidden rounded-2xl p-0 shadow-2xl sm:rounded-2xl"
     >
-      <div className="border-b border-[#E8D5B5] bg-gradient-to-l from-[#FFF8ED] to-[#F5F0FF] px-5 py-4">
+      <div className="border-b border-[#E8D5B5] bg-linear-to-l from-[#FFF8ED] to-[#F5F0FF] px-5 py-4">
         <div className="flex items-start gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-indigo-200 bg-indigo-50 text-indigo-700">
             <Lock className="h-5 w-5" />
@@ -171,7 +171,7 @@ export function TranscriptAccessRequestDialog({
               type="button"
               disabled={busy}
               onClick={() => onApprove(request.id)}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-500 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-500/20 disabled:opacity-50"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               אשר גישה

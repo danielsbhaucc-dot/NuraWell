@@ -134,7 +134,7 @@ export function AdminShell({
   const dayPart = hour < 12 ? 'בוקר טוב' : hour < 17 ? 'צהריים טובים' : hour < 21 ? 'ערב טוב' : 'לילה טוב';
 
   const showNavLabels = !sidebarCollapsed;
-  const mainPadLg = sidebarCollapsed ? 'lg:pr-[4.75rem]' : 'lg:pr-64';
+  const mainPadLg = sidebarCollapsed ? 'lg:pr-19' : 'lg:pr-64';
 
   const navBtn = (active: boolean, color: 'emerald' | 'violet' | 'sky' | 'amber') =>
     cn(
@@ -155,29 +155,29 @@ export function AdminShell({
 
   const bottomNavClass = (active: boolean) =>
     cn(
-      'flex min-h-[3.25rem] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-2 text-[10px] font-semibold transition-colors sm:text-[11px]',
+      'flex min-h-13 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-2 text-[10px] font-semibold transition-colors sm:text-[11px]',
       active ? 'text-emerald-800' : 'text-slate-500',
     );
 
   return (
     <MediaManagerProvider>
     <div
-      className="min-h-[100dvh] bg-gradient-to-br from-emerald-50 via-cyan-50/80 to-violet-100/90 font-sans text-slate-900 touch-manipulation"
+      className="min-h-dvh bg-linear-to-br from-emerald-50 via-cyan-50/80 to-violet-100/90 font-sans text-slate-900 touch-manipulation"
       dir="rtl"
     >
       <OpsSessionGuard />
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
-        <div className="absolute -top-28 -start-20 h-[22rem] w-[22rem] rounded-full bg-gradient-to-br from-emerald-400/45 to-teal-400/35 blur-3xl" />
-        <div className="absolute top-1/4 -end-16 h-72 w-72 rounded-full bg-gradient-to-tr from-fuchsia-400/35 to-violet-400/30 blur-3xl" />
-        <div className="absolute bottom-10 start-1/3 h-56 w-56 rounded-full bg-gradient-to-tl from-amber-300/40 to-orange-300/30 blur-3xl" />
-        <div className="absolute bottom-0 end-0 h-64 w-64 rounded-full bg-gradient-to-tr from-sky-400/30 to-cyan-300/25 blur-3xl" />
+        <div className="absolute -top-28 -inset-s-20 h-88 w-88 rounded-full bg-linear-to-br from-emerald-400/45 to-teal-400/35 blur-3xl" />
+        <div className="absolute top-1/4 -inset-e-16 h-72 w-72 rounded-full bg-linear-to-tr from-fuchsia-400/35 to-violet-400/30 blur-3xl" />
+        <div className="absolute bottom-10 inset-s-1/3 h-56 w-56 rounded-full bg-linear-to-tl from-amber-300/40 to-orange-300/30 blur-3xl" />
+        <div className="absolute bottom-0 inset-e-0 h-64 w-64 rounded-full bg-linear-to-tr from-sky-400/30 to-cyan-300/25 blur-3xl" />
       </div>
 
       <aside
         className={cn(
-          'fixed top-0 start-0 z-40 h-[100dvh] max-h-[100dvh] transition-[transform,width] duration-300 ease-in-out',
+          'fixed top-0 inset-s-0 z-40 h-dvh max-h-dvh transition-[transform,width] duration-300 ease-in-out',
           'w-[min(18.5rem,calc(100vw-1.25rem))]',
-          sidebarCollapsed ? 'lg:w-[4.75rem]' : 'lg:w-64',
+          sidebarCollapsed ? 'lg:w-19' : 'lg:w-64',
           sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0',
         )}
       >
@@ -202,12 +202,12 @@ export function AdminShell({
               onClick={() => setSidebarOpen(false)}
               title="NuraAdmin"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-lg font-black text-white shadow-lg shadow-emerald-600/35">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 text-lg font-black text-white shadow-lg shadow-emerald-600/35">
                 N
               </div>
               <span
                 className={cn(
-                  'bg-gradient-to-l from-emerald-600 via-teal-600 to-cyan-700 bg-clip-text font-display text-xl font-black text-transparent sm:text-2xl',
+                  'bg-linear-to-l from-emerald-600 via-teal-600 to-cyan-700 bg-clip-text font-display text-xl font-black text-transparent sm:text-2xl',
                   sidebarCollapsed && 'lg:hidden',
                 )}
               >
@@ -218,7 +218,7 @@ export function AdminShell({
               <button
                 type="button"
                 onClick={() => setSidebarCollapsed((c) => !c)}
-                className="hidden min-h-10 min-w-10 items-center justify-center rounded-xl border border-white/50 bg-background-card/40 text-slate-700 shadow-sm backdrop-blur-md transition-colors hover:bg-background-card/70 lg:inline-flex"
+                className="hidden min-h-10 min-w-10 items-center justify-center rounded-xl border border-white/50 bg-background-card/40 text-slate-700 shadow-xs backdrop-blur-md transition-colors hover:bg-background-card/70 lg:inline-flex"
                 aria-expanded={!sidebarCollapsed}
                 aria-label={sidebarCollapsed ? 'הרחב תפריט צד' : 'כווץ תפריט צד'}
                 title={sidebarCollapsed ? 'הרחב תפריט' : 'כווץ תפריט'}
@@ -418,7 +418,7 @@ export function AdminShell({
               onClick={() => setSidebarOpen(false)}
               className={cn(
                 navBtn(isSiteSettings, 'sky'),
-                'border border-white/40 bg-background-card/30 shadow-sm',
+                'border border-white/40 bg-background-card/30 shadow-xs',
               )}
               title="הגדרות אתר"
             >
@@ -430,7 +430,7 @@ export function AdminShell({
               onClick={() => setSidebarOpen(false)}
               className={cn(
                 navBtn(isAccessibility, 'emerald'),
-                'border border-white/40 bg-background-card/30 shadow-sm',
+                'border border-white/40 bg-background-card/30 shadow-xs',
               )}
               title="כלי נגישות"
             >
@@ -456,7 +456,7 @@ export function AdminShell({
       {sidebarOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-30 touch-none bg-slate-900/25 backdrop-blur-[2px] lg:hidden"
+          className="fixed inset-0 z-30 touch-none bg-slate-900/25 backdrop-blur-xs lg:hidden"
           aria-label="סגור תפריט"
           onClick={() => setSidebarOpen(false)}
         />
@@ -464,18 +464,18 @@ export function AdminShell({
 
       <main
         className={cn(
-          'relative z-10 flex min-h-[100dvh] flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-[env(safe-area-inset-bottom)]',
+          'relative z-10 flex min-h-dvh flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-safe-bottom',
           mainPadLg,
         )}
       >
-        <header className="safe-area-top sticky top-0 z-20 border-b border-white/50 bg-gradient-to-l from-emerald-200/95 via-teal-100/90 to-cyan-100/85 shadow-[0_8px_28px_rgba(16,185,129,0.15)] backdrop-blur-xl">
+        <header className="safe-area-top sticky top-0 z-20 border-b border-white/50 bg-linear-to-l from-emerald-200/95 via-teal-100/90 to-cyan-100/85 shadow-[0_8px_28px_rgba(16,185,129,0.15)] backdrop-blur-xl">
           <div className="header-grid-pattern opacity-50" aria-hidden />
-          <div className="relative flex min-h-[3.75rem] items-center gap-2.5 px-3 py-2.5 sm:min-h-16 sm:gap-3 sm:px-4 sm:py-3">
+          <div className="relative flex min-h-15 items-center gap-2.5 px-3 py-2.5 sm:min-h-16 sm:gap-3 sm:px-4 sm:py-3">
             <div className="flex shrink-0 items-center gap-2 sm:gap-2.5 lg:hidden">
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
-                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-white/60 bg-background-card/50 text-slate-800 shadow-sm backdrop-blur-md active:scale-[0.98]"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-white/60 bg-background-card/50 text-slate-800 shadow-xs backdrop-blur-md active:scale-[0.98]"
                 aria-label="פתח תפריט"
               >
                 <Menu size={22} />
@@ -492,7 +492,7 @@ export function AdminShell({
                   {dayPart} <span aria-hidden>·</span> פאנל ניהול NuraWell
                 </p>
                 <h2 className="flex min-w-0 items-center gap-1.5 truncate font-display text-base font-black leading-tight tracking-tight sm:text-lg md:text-xl">
-                  <span className="bg-gradient-to-l from-emerald-700 via-teal-600 to-cyan-700 bg-clip-text text-transparent">
+                  <span className="bg-linear-to-l from-emerald-700 via-teal-600 to-cyan-700 bg-clip-text text-transparent">
                     {greetingName ? `שלום, ${greetingName}` : 'שלום'}
                   </span>
                   <span className="onboarding-wave-hand shrink-0" aria-hidden>
@@ -505,9 +505,9 @@ export function AdminShell({
             <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
               <AdminNotificationsBell opsHref={opsHref} />
 
-              <div className="flex items-center gap-2.5 rounded-2xl border border-white/55 bg-background-card/45 py-1 pe-1 ps-2.5 shadow-sm backdrop-blur-md sm:ps-3">
+              <div className="flex items-center gap-2.5 rounded-2xl border border-white/55 bg-background-card/45 py-1 pe-1 ps-2.5 shadow-xs backdrop-blur-md sm:ps-3">
                 <div className="hidden min-w-0 flex-col items-end leading-tight sm:flex">
-                  <span className="max-w-[10rem] truncate text-sm font-bold text-emerald-950">
+                  <span className="max-w-40 truncate text-sm font-bold text-emerald-950">
                     {adminDisplayName}
                   </span>
                   <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700/85">
@@ -516,7 +516,7 @@ export function AdminShell({
                   </span>
                 </div>
                 <div
-                  className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-violet-300 via-emerald-200 to-cyan-200 p-[2px] shadow-md ring-1 ring-white/70 sm:h-10 sm:w-10"
+                  className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-linear-to-br from-violet-300 via-emerald-200 to-cyan-200 p-[2px] shadow-md ring-1 ring-white/70 sm:h-10 sm:w-10"
                   title={adminDisplayName}
                 >
                   <div className="relative h-full w-full overflow-hidden rounded-full bg-background-card">
@@ -530,7 +530,7 @@ export function AdminShell({
                         unoptimized
                       />
                     ) : (
-                      <span className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-100 to-violet-100 font-display text-sm font-black text-emerald-800">
+                      <span className="flex h-full w-full items-center justify-center bg-linear-to-br from-emerald-100 to-violet-100 font-display text-sm font-black text-emerald-800">
                         {adminDisplayName.charAt(0)}
                       </span>
                     )}
@@ -551,7 +551,7 @@ export function AdminShell({
       </main>
 
       <nav
-        className="fixed bottom-0 end-0 start-0 z-30 flex border-t border-white/55 bg-background-card/55 px-1 py-2 shadow-[0_-8px_32px_rgba(99,102,241,0.12)] backdrop-blur-2xl safe-area-bottom lg:hidden"
+        className="fixed bottom-0 inset-e-0 inset-s-0 z-30 flex border-t border-white/55 bg-background-card/55 px-1 py-2 shadow-[0_-8px_32px_rgba(99,102,241,0.12)] backdrop-blur-2xl safe-area-bottom lg:hidden"
         aria-label="ניווט מהיר"
       >
         <Link href={homeHref} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isHome)}>

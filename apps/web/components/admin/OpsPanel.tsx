@@ -17,19 +17,19 @@ export const opsGlassCardClass =
   'relative overflow-hidden rounded-3xl border border-white/50 bg-background-card/45 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.1)] backdrop-blur-2xl sm:p-6';
 
 export const opsInputClass =
-  'w-full rounded-xl border border-white/55 bg-background-card/35 px-3 py-2.5 text-sm font-medium text-slate-900 outline-none backdrop-blur-md transition placeholder:text-slate-400 focus:border-emerald-300/60 focus:ring-2 focus:ring-emerald-400/30';
+  'w-full rounded-xl border border-white/55 bg-background-card/35 px-3 py-2.5 text-sm font-medium text-slate-900 outline-hidden backdrop-blur-md transition placeholder:text-slate-400 focus:border-emerald-300/60 focus:ring-2 focus:ring-emerald-400/30';
 
 /** כפתור זכוכית שקוף — לפעולות משניות */
 export const opsGlassBtnClass =
-  'inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/55 bg-background-card/30 px-3.5 py-2 text-xs font-bold text-slate-800 shadow-sm backdrop-blur-md transition hover:border-emerald-300/50 hover:bg-background-card/50 active:scale-[0.99] disabled:opacity-50';
+  'inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/55 bg-background-card/30 px-3.5 py-2 text-xs font-bold text-slate-800 shadow-xs backdrop-blur-md transition hover:border-emerald-300/50 hover:bg-background-card/50 active:scale-[0.99] disabled:opacity-50';
 
 /** כפתור זכוכית מודגש — לפעולה ראשית */
 export const opsGlassBtnPrimaryClass =
-  'inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-300/55 bg-emerald-500/15 px-4 py-2 text-xs font-bold text-emerald-900 shadow-sm backdrop-blur-md transition hover:border-emerald-400/60 hover:bg-emerald-500/25 active:scale-[0.99] disabled:opacity-50';
+  'inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-300/55 bg-emerald-500/15 px-4 py-2 text-xs font-bold text-emerald-900 shadow-xs backdrop-blur-md transition hover:border-emerald-400/60 hover:bg-emerald-500/25 active:scale-[0.99] disabled:opacity-50';
 
 /** כפתור זכוכית מסוכן */
 export const opsGlassBtnDangerClass =
-  'inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-300/50 bg-rose-500/10 px-3.5 py-2 text-xs font-bold text-rose-800 shadow-sm backdrop-blur-md transition hover:border-rose-400/55 hover:bg-rose-500/20 active:scale-[0.99] disabled:opacity-50';
+  'inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-300/50 bg-rose-500/10 px-3.5 py-2 text-xs font-bold text-rose-800 shadow-xs backdrop-blur-md transition hover:border-rose-400/55 hover:bg-rose-500/20 active:scale-[0.99] disabled:opacity-50';
 
 export function OpsPanelHeader({
   icon: Icon,
@@ -51,7 +51,7 @@ export function OpsPanelHeader({
       <div className="flex min-w-0 items-start gap-3">
         <span
           className={cn(
-            'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br shadow-md',
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br shadow-md',
             ICON_TONES[tone],
           )}
         >

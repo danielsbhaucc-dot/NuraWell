@@ -204,7 +204,7 @@ export function AlmogNudgeSettingsClient({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f2fbf8] via-[#f8fafc] to-background-card">
+    <div className="min-h-screen bg-linear-to-b from-[#f2fbf8] via-[#f8fafc] to-background-card">
       <div className="container-mobile py-6 pb-10 space-y-5">
         <motion.div
           initial={{ opacity: 0, y: -6 }}
@@ -231,7 +231,7 @@ export function AlmogNudgeSettingsClient({
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="rounded-3xl border-2 border-amber-400 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-50 p-5 shadow-[0_10px_30px_rgba(217,119,6,0.15)] space-y-3"
+          className="rounded-3xl border-2 border-amber-400 bg-linear-to-br from-amber-50 via-orange-50 to-amber-50 p-5 shadow-[0_10px_30px_rgba(217,119,6,0.15)] space-y-3"
         >
           <div className="flex gap-3">
             <div
@@ -260,7 +260,7 @@ export function AlmogNudgeSettingsClient({
               'inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-black text-white transition',
               testing
                 ? 'bg-amber-400/70 cursor-wait'
-                : 'bg-gradient-to-l from-amber-500 to-orange-500 hover:brightness-105 shadow-lg shadow-amber-500/30 active:scale-[0.98]'
+                : 'bg-linear-to-l from-amber-500 to-orange-500 hover:brightness-105 shadow-lg shadow-amber-500/30 active:scale-[0.98]'
             )}
           >
             {testing ? (
@@ -431,7 +431,7 @@ export function AlmogNudgeSettingsClient({
               type="time"
               value={workArrivalTime}
               onChange={(e) => setWorkArrivalTime(e.target.value)}
-              className="w-full max-w-[10rem] rounded-xl border border-slate-200 bg-background-card px-3 py-2.5 text-sm font-medium text-slate-900"
+              className="w-full max-w-40 rounded-xl border border-slate-200 bg-background-card px-3 py-2.5 text-sm font-medium text-slate-900"
             />
           </label>
         </motion.section>
@@ -483,7 +483,7 @@ export function AlmogNudgeSettingsClient({
               <span
                 className={cn(
                   'absolute top-1 h-6 w-6 rounded-full bg-background-card shadow-md transition-[inset-inline-start]',
-                  avoidPush ? 'start-1' : 'end-1'
+                  avoidPush ? 'inset-s-1' : 'inset-e-1'
                 )}
               />
             </span>
@@ -536,7 +536,7 @@ export function AlmogNudgeSettingsClient({
               <span
                 className={cn(
                   'absolute top-1 h-6 w-6 rounded-full bg-background-card shadow-md transition-[inset-inline-start]',
-                  weightReminders ? 'start-1' : 'end-1'
+                  weightReminders ? 'inset-s-1' : 'inset-e-1'
                 )}
               />
             </span>
@@ -593,7 +593,7 @@ export function AlmogNudgeSettingsClient({
               <span
                 className={cn(
                   'absolute top-1 h-6 w-6 rounded-full bg-background-card shadow-md transition-[inset-inline-start]',
-                  guardianOptedIn ? 'start-1' : 'end-1'
+                  guardianOptedIn ? 'inset-s-1' : 'inset-e-1'
                 )}
               />
             </span>
@@ -621,7 +621,7 @@ export function AlmogNudgeSettingsClient({
             type="button"
             disabled={saving || !dirty}
             onClick={() => void save()}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-600 to-teal-600 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-600/25 transition hover:brightness-105 disabled:opacity-45"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-600 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-600/25 transition hover:brightness-105 disabled:opacity-45"
           >
             <Bell className="h-5 w-5" aria-hidden />
             {saving ? 'שומרים…' : 'שמירת העדפות'}

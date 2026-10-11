@@ -204,7 +204,7 @@ export function ProgramOrchestratorGate() {
         aria-label="סגירה"
         onClick={() => respond('decline')}
         disabled={submitting}
-        className="absolute end-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-emerald-900/40 transition hover:bg-black/5"
+        className="absolute inset-e-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-emerald-900/40 transition hover:bg-black/5"
       >
         <X className="h-4 w-4" />
       </button>

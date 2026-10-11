@@ -157,7 +157,7 @@ export function DynamicMentorWidgetClient({
           {loading ? (
             <div className="mt-2 space-y-2">
               <div className="h-4 w-4/5 animate-pulse rounded-lg bg-emerald-900/10" />
-              <div className="h-3 w-full animate-pulse rounded-lg bg-emerald-900/8" />
+              <div className="h-3 w-full animate-pulse rounded-lg" />
             </div>
           ) : (
             <>
@@ -168,7 +168,7 @@ export function DynamicMentorWidgetClient({
                 {title}
               </p>
               {detail ? (
-                <p className="mt-2 text-[12px] leading-relaxed text-emerald-900/72">{detail}</p>
+                <p className="mt-2 text-[12px] leading-relaxed">{detail}</p>
               ) : null}
             </>
           )}
