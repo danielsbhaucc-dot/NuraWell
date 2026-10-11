@@ -40,6 +40,8 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
   images: {
+    // cost: cache optimized images 31 days (R2/Supabase often send no Cache-Control → frequent re-transforms).
+    minimumCacheTTL: 2678400,
     remotePatterns: [
       { protocol: 'https', hostname: '*.supabase.co' },
       { protocol: 'https', hostname: 'uploadthing.com' },
