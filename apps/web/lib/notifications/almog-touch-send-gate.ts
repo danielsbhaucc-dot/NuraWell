@@ -21,7 +21,7 @@ import {
   type RecentHabitNotificationMeta,
 } from './similar-habit-dedupe';
 
-export type AlmogTouchSendGateReason = 'touch_fatigue' | 'similar_habit_recent' | 'not_notify_recipient' | 'prefs_off' | 'inactivity_fade';
+export type AlmogTouchSendGateReason = 'touch_fatigue' | 'similar_habit_recent' | 'not_notify_recipient' | 'prefs_off' | 'inactivity_fade' | 'safety_pause';
 
 export type AlmogTouchSendGate =
   | { ok: true }

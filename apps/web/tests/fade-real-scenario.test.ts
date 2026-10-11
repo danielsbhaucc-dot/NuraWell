@@ -35,3 +35,13 @@ describe('fade rule on the real prod scenario', () => {
     expect(r.ok).toBe(true);
   });
 });
+
+describe('crisis safety pause', () => {
+  it('blocks all automatic nudges while notify_paused_until is in the future', async () => {
+    const p = { ...profile, last_active_at: '2026-10-11T09:00:00Z', notify_paused_until: '2026-10-13T00:00:00Z' };
+    const r = await evaluateNotifyGate(admin(p, []) as never, 'u', { now: new Date('2026-10-11T10:00:00Z') });
+    expect(r).toMatchObject({ ok: false, reason: 'safety_pause' });
+    const after = await evaluateNotifyGate(admin(p, []) as never, 'u', { now: new Date('2026-10-14T10:00:00Z') });
+    expect(after.ok).toBe(true);
+  });
+});

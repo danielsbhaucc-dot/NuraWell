@@ -1,3 +1,4 @@
+import { recordCrisisSignal } from '@/lib/safety/record-crisis';
 import { NextResponse } from 'next/server';
 
 import { normalizeFrictionCategory, normalizeStrategyType } from '../../../../../lib/ai/almog-commitments/friction';
@@ -221,6 +222,7 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const countToday = await countSosToday(admin, auth.user.id);
     const crisis = detectCrisisSignals(note);
+    if (crisis.redFlag) void recordCrisisSignal(admin, auth.user.id, 'sos', crisis).catch(() => {});
     const nowIso = new Date().toISOString();
     const contextPayload = buildContextPayload(focusTask);
     const pivotAttempt = typeof body.pivot_attempt === 'number' ? body.pivot_attempt : 0;
