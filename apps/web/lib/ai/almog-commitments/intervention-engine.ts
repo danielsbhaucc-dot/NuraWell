@@ -1,3 +1,4 @@
+import { hebrewAddressingRule, type HebrewGender } from '../hebrew-output-rules';
 /**
  * מנוע התערבויות — יצירת אופציות A/B ו-pivot לחסמים.
  * רץ על Llama 4 Scout דרך OpenRouter (רקע, לא צ'אט אלמוג).
@@ -429,6 +430,8 @@ export async function fetchInterventionMemory(
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 export interface GeneratePivotParams {
+  /** profile gender → consistent 2nd-person addressing (was missing: SOS addressed women in masculine) */
+  userGender?: HebrewGender;
   description: string;
   category: string | null;
   currentStrategy: string | null;
@@ -545,7 +548,7 @@ export async function generateBlockerPivot(
       max_tokens: 380,
       response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: COACH_SYSTEM },
+        { role: 'system', content: `${COACH_SYSTEM}\n\n${hebrewAddressingRule(params.userGender)}` },
         { role: 'user', content: userContent },
       ],
     });

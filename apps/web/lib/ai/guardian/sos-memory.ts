@@ -440,7 +440,12 @@ export async function executeSosFlow(params: {
   const category = normalizeFrictionCategory(params.trigger);
   const linkable = await getLinkableActiveTasks(params.admin, params.userId);
   const { activeTasks, originalTaskTitle } = buildActiveTaskRefs(params.focusTask, linkable);
-  const memory = await fetchInterventionMemory(params.admin, params.userId, 6);
+  const [memory, genderRow] = await Promise.all([
+    fetchInterventionMemory(params.admin, params.userId, 6),
+    params.admin.from('profiles').select('gender').eq('id', params.userId).maybeSingle(),
+  ]);
+  const g = (genderRow.data as { gender?: string | null } | null)?.gender;
+  const userGender = g === 'male' || g === 'female' ? g : null;
   const failedTypes = (params.failedStrategyTypes ?? []).map(normalizeStrategyType);
   const pivotNote = params.pivotFromLabel
     ? `PIVOT: "${params.pivotFromLabel}" לא עזר — צריך גישה אחרת.`
@@ -468,6 +473,7 @@ export async function executeSosFlow(params: {
         originalTaskTitle,
         failedStrategyTypes: failedTypes,
         pivotFromStrategy: params.pivotFromLabel ?? null,
+        userGender,
       })
     );
     intervention = buildSosInterventionFromPivot(pivot);
