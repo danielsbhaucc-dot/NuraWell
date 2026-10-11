@@ -33,7 +33,7 @@ export default async function ProgressPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, gender')
+    .select('full_name, gender, current_weight_kg, safety_screening')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -291,6 +291,11 @@ export default async function ProgressPage() {
       journeyHabitChecks={journeyHabitChecks}
       taskHistoryDays={taskHistoryDays}
       taskHistoryByDay={taskHistoryByDay}
+      showWeight={(() => {
+        // habits-first: weight section only for users who chose to track weight (and never when screening says no)
+        const p = profile as unknown as { current_weight_kg?: number | null; safety_screening?: { no_weight?: boolean } | null } | null;
+        return p?.current_weight_kg != null && p?.safety_screening?.no_weight !== true;
+      })()}
     />
   );
 }
