@@ -154,7 +154,7 @@ export function CommitmentSection({
             onClick={handleUndoCommitment}
             className="text-sm text-gray-500 hover:text-gray-700 transition-colors underline underline-offset-2"
           >
-            התחרטתי — בטל/י התחייבות
+            התחרטתי — ביטול התחייבות
           </button>
         </motion.div>
       )}

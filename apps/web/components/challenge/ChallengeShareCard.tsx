@@ -14,7 +14,7 @@ export function ChallengeShareCard({ firstName, summary }: Props) {
   const [copied, setCopied] = useState(false);
 
   const shareText = [
-    `${firstName} סיימ/ה את אתגר 14 הימים של NuraWell! 🏆`,
+    `${firstName} — אתגר 14 הימים של NuraWell הושלם! 🏆`,
     `${summary.days_active} ימים פעילים · ${summary.total_task_completions} משימות · ${summary.total_success_events} הצלחות`,
     summary.message,
     'https://nurawell.vercel.app',

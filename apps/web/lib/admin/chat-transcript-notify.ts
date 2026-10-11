@@ -1,3 +1,4 @@
+import { gx } from '@/lib/i18n/gender';
 import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { deliverWebPushAfterAlmogNotification } from '@/lib/push/deliver-after-notification';
@@ -96,11 +97,13 @@ export async function notifyTranscriptSentToUser(
   const actionUrl = `/home?chatSession=${params.sessionId}`;
   const title = params.sessionTitle?.trim() || 'שיחה עם אלמוג';
 
+  const { data: prof } = await admin.from('profiles').select('gender').eq('id', params.userId).maybeSingle();
+  const toYou = gx((prof?.gender as string | null) ?? null, { m: 'אליך', f: 'אלייך', n: '' });
   const { error } = await insertNotification(admin, {
     user_id: params.userId,
     type: 'chat_transcript_delivered',
     title: 'עותק השיחה שלך',
-    body: `שלחנו אליך/אלייך קישור לשיחה "${title}". ניתן לצפות בה באפליקציה.`,
+    body: `שלחנו ${toYou ? `${toYou} ` : ''}קישור לשיחה "${title}". ניתן לצפות בה באפליקציה.`,
     icon_emoji: '💬',
     action_url: actionUrl,
     is_read: false,

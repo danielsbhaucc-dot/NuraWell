@@ -55,7 +55,7 @@ export function AlmogFirstLoginDrawer({ profile }: AlmogFirstLoginDrawerProps) {
     : `היי — אני אלמוג 🌿 מכאן אני איתך בצ'אט ובהתראות, בקצב ${gc.your}.`;
 
   const replyMessage = firstName
-    ? `מעולה ${firstName}. כשמשהו לא יוצא — תכתוב לי במשפט, לא צריך לסמן V. נחשוב יחד על צעד קטן. מוכן/ה?`
+    ? `מעולה ${firstName}. כשמשהו לא יוצא — תכתוב לי במשפט, לא צריך לסמן V. נחשוב יחד על צעד קטן. מתחילים?`
     : `מעולה. כשמשהו לא יוצא — תכתוב לי במשפט. נחשוב יחד על צעד קטן.`;
 
   return (

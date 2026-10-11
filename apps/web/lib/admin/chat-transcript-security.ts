@@ -143,6 +143,8 @@ export function transcriptAccessAllowsView(info: TranscriptAccessInfo): boolean 
   return info.status === 'granted_global' || info.status === 'granted_session';
 }
 
+export const TRANSCRIPT_REQUEST_COOLDOWN_MS = 10 * 60_000;
+
 export async function createTranscriptAccessRequest(
   admin: SupabaseClient,
   params: {
@@ -167,6 +169,16 @@ export async function createTranscriptAccessRequest(
   if (access.status === 'pending') {
     return { ok: false, error: 'already_pending' };
   }
+  // cooldown: no repeat request for the same chat within TRANSCRIPT_REQUEST_COOLDOWN_MS (double-click / spam)
+  const { data: recent } = await admin
+    .from('chat_transcript_access_requests')
+    .select('id')
+    .eq('user_id', params.userId)
+    .eq('session_id', params.sessionId)
+    .gte('created_at', new Date(Date.now() - TRANSCRIPT_REQUEST_COOLDOWN_MS).toISOString())
+    .limit(1)
+    .maybeSingle();
+  if (recent) return { ok: false, error: 'cooldown' };
 
   const { data, error } = await admin
     .from('chat_transcript_access_requests')
@@ -180,7 +192,8 @@ export async function createTranscriptAccessRequest(
     .select('id')
     .single();
 
-  if (error) return { ok: false, error: error.message };
+  // DB: at most one pending request per user+session (uq_transcript_one_pending) — race-safe
+  if (error) return { ok: false, error: error.code === '23505' ? 'already_pending' : error.message };
   return { ok: true, requestId: data.id as string };
 }
 

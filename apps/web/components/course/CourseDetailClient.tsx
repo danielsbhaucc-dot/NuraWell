@@ -292,7 +292,7 @@ export function CourseDetailClient({
               title={guideDetailAlmogTitle(firstName)}
               body={guideDetailAlmogBody(gender, firstName, course.title, almogNote)}
               prompt={`תעזור לי להבין איך להמשיך במדריך "${course.title}" ומה הפרק הכי נכון לי עכשיו לפי ההתקדמות שלי.`}
-              cta={gender === 'female' ? 'דברי איתי על המדריך' : gender === 'male' ? 'דבר איתי על המדריך' : 'דבר/י איתי על המדריך'}
+              cta={gender === 'female' ? 'דברי איתי על המדריך' : gender === 'male' ? 'דבר איתי על המדריך' : 'בואו נדבר על המדריך'}
               tone="teal"
             />
           </div>

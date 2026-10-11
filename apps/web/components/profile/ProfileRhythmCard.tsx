@@ -142,7 +142,7 @@ export function ProfileRhythmCard({
       ) : (
         <div className="px-5 py-4 space-y-4">
           <p className="text-xs text-slate-600 leading-relaxed">
-            הגדר/י את <strong>ארוחות העיקריות והגדולות</strong> שלך — לא נשנושים קטנים.
+            כאן מגדירים את <strong>ארוחות העיקריות והגדולות</strong> שלך — לא נשנושים קטנים.
             המשימות במסע יתאימו את עצמן לזמנים האלה.
           </p>
 
