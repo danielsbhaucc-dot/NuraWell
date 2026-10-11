@@ -19,7 +19,14 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: /signed-in\//,
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // Signed-in pass with the role=test account (see docs/E2E.md); mobile RTL.
+      name: 'signed-in-mobile',
+      testMatch: /signed-in\/.*\.spec\.ts/,
+      use: { ...devices['Pixel 7'], timezoneId: 'Asia/Jerusalem' },
     },
   ],
   webServer: process.env.PLAYWRIGHT_SKIP_WEBSERVER

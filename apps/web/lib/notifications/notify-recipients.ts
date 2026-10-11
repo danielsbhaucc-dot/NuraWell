@@ -42,17 +42,18 @@ export function isNotifyEligibleProfile(
   p: NotifyProfileLike,
   testUserIds: readonly string[] = parseNotifyTestUserIds()
 ): boolean {
-  if (p.role !== 'admin') return true;
+  // real users only; admin + 'test' (e2e) accounts need explicit opt-in
+  if (!p.role || p.role === 'user') return true;
   if (p.notify_test_opt_in === true) return true;
   return testUserIds.includes(String(p.id).toLowerCase());
 }
 
-/** PostgREST `.or()` filter: non-admin OR opted-in OR in env allowlist. */
+/** PostgREST `.or()` filter: regular user OR opted-in OR in env allowlist (admin/test excluded). */
 export function notifyEligibleOrFilter(
   testUserIds: readonly string[] = parseNotifyTestUserIds(),
   opts: { withOptInColumn?: boolean } = {}
 ): string {
-  const parts = ['role.neq.admin', 'role.is.null'];
+  const parts = ['role.eq.user', 'role.is.null'];
   if (opts.withOptInColumn !== false) parts.push('notify_test_opt_in.eq.true');
   if (testUserIds.length > 0) parts.push(`id.in.(${testUserIds.join(',')})`);
   return parts.join(',');
