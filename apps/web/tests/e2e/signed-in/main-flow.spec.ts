@@ -16,7 +16,11 @@ test.describe.serial('main flow', () => {
 
     await page.goto('/journey');
     await expectHealthy(page);
-    await expect(page.getByText('תחנת הבסיס').first()).toBeVisible();
+    await expect(page.getByText('פתיחה: מעקב ועוגנים').first()).toBeVisible();
+
+    // unknown lesson → real 404 (not a soft 200)
+    const missing = await page.goto('/journey/00000000-0000-0000-0000-000000000000');
+    expect(missing?.status()).toBe(404);
 
     await page.goto('/plans');
     await expectHealthy(page);
