@@ -14,6 +14,15 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  *  - Send decisions (recipient / prefs / inactivity fade / touch fatigue) happen BEFORE content
  *    generation via `gateAlmogUserFacingTouch` → `evaluateNotifyGate`.
  */
+/** Mirrors public.dedupe_normalize (DB) — punctuation/emoji/space/case-insensitive. */
+export function normalizeForDedupe(t: string | null | undefined): string {
+  return (t ?? '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
 export type NotificationRow = Record<string, unknown> & {
   user_id: string;
   type: string;
@@ -30,8 +39,13 @@ export type DeliverResult<T = Record<string, unknown>> = {
 export async function insertNotification<T = Record<string, unknown>>(
   admin: SupabaseClient,
   row: NotificationRow,
-  opts: { select?: string; single?: 'single' | 'maybeSingle' } = {}
+  opts: { select?: string; single?: 'single' | 'maybeSingle'; idempotencyKey?: string } = {}
 ): Promise<DeliverResult<T>> {
+  // DB trigger derives dedupe_key (purpose + normalized content) and a unique index per user/type/day
+  // rejects duplicates (23505 → deduped). Callers may pass an explicit idempotency key.
+  if (opts.idempotencyKey) {
+    row = { ...row, metadata: { ...((row.metadata as Record<string, unknown>) ?? {}), idempotency_key: opts.idempotencyKey } };
+  }
   const base = admin.from('notifications').insert(row);
   let res: { data: unknown; error: { message: string; code?: string } | null };
   if (opts.select) {

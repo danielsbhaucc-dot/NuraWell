@@ -13,25 +13,25 @@ export function genderPhrase(
 }
 
 export function genderPress(gender: ProfileGender): string {
-  return genderPhrase(gender, { male: 'לחץ', female: 'לחצי', neutral: 'לחץ/י' });
+  return genderPhrase(gender, { male: 'לחץ', female: 'לחצי', neutral: 'לחצו' });
 }
 
 export function genderApproved(gender: ProfileGender): string {
-  return genderPhrase(gender, { male: 'אישר', female: 'אישרה', neutral: 'אישר/ה' });
+  return genderPhrase(gender, { male: 'אישר', female: 'אישרה', neutral: 'אישרו' });
 }
 
 export function genderDenied(gender: ProfileGender): string {
-  return genderPhrase(gender, { male: 'דחה', female: 'דחתה', neutral: 'דחה/תה' });
+  return genderPhrase(gender, { male: 'דחה', female: 'דחתה', neutral: 'דחו' });
 }
 
 export function genderRevoked(gender: ProfileGender): string {
-  return genderPhrase(gender, { male: 'ביטל', female: 'ביטלה', neutral: 'ביטל/ה' });
+  return genderPhrase(gender, { male: 'ביטל', female: 'ביטלה', neutral: 'ביטלו' });
 }
 
 export function genderGrantedGlobal(gender: ProfileGender): string {
   return genderPhrase(gender, {
     male: 'אישר גישת צוות לכל תמלילי השיחות',
     female: 'אישרה גישת צוות לכל תמלילי השיחות',
-    neutral: 'אישר/ה גישת צוות לכל תמלילי השיחות',
+    neutral: 'אישרו גישת צוות לכל תמלילי השיחות',
   });
 }

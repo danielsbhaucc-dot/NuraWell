@@ -19,7 +19,7 @@ export function welcomeEmailCopy(
   gender: OnboardingGender | null | undefined
 ): WelcomeEmailCopy {
   const gc = genderCopy(gender ?? '');
-  const name = firstName.trim() || 'חבר/ה';
+  const name = firstName.trim() || 'חברים';
 
   const almogVerb = gender === 'female' ? 'תלווה' : 'ילווה';
   const intro = `${name}, שמחתי לאשר את האימייל שלך! קיבלתי את כל מה שמילאת בהרשמה — ושמרתי לך סיכום קצר כאן למטה. מכאן אלמוג ${almogVerb} אותך במסע, ואני כאן אם ${gc.wantReturn} לחזור לשאלות על ההרשמה.`;

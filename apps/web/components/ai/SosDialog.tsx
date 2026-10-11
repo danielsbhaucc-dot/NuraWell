@@ -241,7 +241,7 @@ export function SosDialog({
   const wantAddWordLabel = useMemo(() => {
     if (gender === 'male') return 'רוצה להוסיף מילה?';
     if (gender === 'female') return 'רוצה להוסיף מילה?';
-    return 'רוצה/ה להוסיף מילה?';
+    return 'רוצים להוסיף מילה?';
   }, [gender]);
 
   const gateTask = selectedTask ?? focusTasks[0] ?? null;
@@ -563,7 +563,7 @@ export function SosDialog({
   function openUnfreezeChat() {
     const original = selectedTask?.title ?? response?.context.focus_task_title;
     const feel =
-      gender === 'male' ? 'מרגיש' : gender === 'female' ? 'מרגישה' : 'מרגיש/ה';
+      gender === 'male' ? 'מרגיש' : gender === 'female' ? 'מרגישה' : 'מרגישים';
     const prefill = original
       ? `אני ${feel} שאולי הגיע הזמן לחזור למשימה "${original}". בוא נוודא יחד שזה הזמן הנכון.`
       : `אני ${feel} שאולי הגיע הזמן לחזור למשימה המקורית. בוא נוודא יחד שזה הזמן הנכון.`;
@@ -1010,7 +1010,7 @@ export function SosDialog({
                     className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-sky-800"
                   >
                     <Snowflake className="h-3.5 w-3.5" />
-                    מוכן/ה לחזור למשימה המקורית?
+                    חוזרים למשימה המקורית?
                   </button>
                 </div>
               ) : null}

@@ -25,6 +25,11 @@ export function buildTaskLevelTools(params: { admin: SupabaseClient; userId: str
           plan.find((t) => t.level.title.includes(hint) || t.definition.title.includes(hint)) ??
           (plan.length === 1 ? plan[0] : plan.find((t) => t.is_main));
         if (!target) return { ok: false as const, reason: 'task_not_found' };
+        // the chat route may already have applied this explicit request deterministically — never double-step
+        const last = target.history.find((h) => h.kind === 'level_change');
+        if (last && Date.now() - Date.parse(last.occurred_at) < 120_000) {
+          return { ok: true as const, new_task: target.level.title, level: target.current_level, note: 'already_applied' };
+        }
         const r = await changeTaskLevel(params.admin, {
           userId: params.userId,
           assignmentId: target.id,

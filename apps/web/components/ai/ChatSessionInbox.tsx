@@ -348,7 +348,7 @@ export function ChatSessionInbox({
               התחל שיחה חדשה
             </button>
             <div className="mt-5 w-full space-y-2">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">או התחל/י מ...</p>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">או להתחיל מ...</p>
               {QUICK_STARTERS.map((chip) => (
                 <button
                   key={chip.label}
@@ -499,7 +499,7 @@ export function ChatSessionInbox({
               </div>
             ) : sessions.length === 0 ? (
               <p className="py-8 text-center text-[13px] text-slate-400">
-                עדיין אין שיחות קודמות. עבור/י לטאב &quot;שיחה חדשה&quot; כדי להתחיל.
+                עדיין אין שיחות קודמות. אפשר לעבור לטאב &quot;שיחה חדשה&quot; כדי להתחיל.
               </p>
             ) : groupedSections.length > 0 ? (
               <div className="space-y-1">

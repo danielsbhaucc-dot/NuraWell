@@ -3334,7 +3334,29 @@ export async function POST(request: Request) {
     {
       const plan = await taskPlanPromise;
       if (plan && plan.length) {
-        const { planForPrompt } = await import('../../../../../lib/tasks');
+        const { planForPrompt, changeTaskLevel } = await import('../../../../../lib/tasks');
+        /** explicit "make it easier/harder" → do it for real before the reply (no claimed-but-not-done actions) */
+        if (!parsed.data.resume_assistant) {
+          const { detectLevelIntent } = await import('../../../../../lib/tasks/chat-intent');
+          const accepted = plan.filter((t) => t.status === 'accepted');
+          const intent = detectLevelIntent(lastUserText, accepted.map((t) => t.level.title));
+          const target = intent ? accepted[intent.targetIndex] : null;
+          if (intent && target) {
+            const r = await changeTaskLevel(createAdminClient(), {
+              userId: user.id,
+              assignmentId: target.id,
+              direction: intent.direction,
+              reason: lastUserText.slice(0, 300),
+              source: 'chat',
+            }).catch(() => ({ ok: false as const, reason: 'update_failed' as const }));
+            contextSections.push(
+              r.ok
+                ? `[פעולה שבוצעה עכשיו במערכת] המשימה "${target.level.title}" ${intent.direction === 'easier' ? 'הוקלה' : 'הוקשתה'} ברמה אחת. המשימה החדשה: "${r.level.title}". ספר למשתמש בחום ובקצרה מה המשימה החדשה.`
+                : `[לא בוצע שינוי רמה] ${'reason' in r && r.reason === 'at_floor' ? 'המשימה כבר ברמה הקלה ביותר — הצע דרך אחרת (צעד קטן יותר, שינוי זמן, שיחה על החסם).' : 'reason' in r && r.reason === 'at_max' ? 'המשימה כבר ברמה הגבוהה ביותר.' : 'השינוי לא הצליח — אל תטען שהמשימה השתנתה.'}`
+            );
+          }
+        }
+        contextSections.push('כלל: אל תטען ששינית, הורדת או העלית רמת משימה אלא אם מופיע למעלה [פעולה שבוצעה עכשיו במערכת] או שהכלי adjust_task_level החזיר הצלחה.');
         const recent = plan
           .flatMap((t) => t.history.filter((h) => h.kind === 'level_change').map((h) => ({ t: t.level.title, h })))
           .sort((x, y) => y.h.occurred_at.localeCompare(x.h.occurred_at))

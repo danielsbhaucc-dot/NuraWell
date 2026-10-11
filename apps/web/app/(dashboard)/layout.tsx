@@ -1,3 +1,4 @@
+import { UserGenderProvider } from '@/components/providers/UserGenderProvider';
 import type { Viewport } from 'next';
 import { redirect } from 'next/navigation';
 import { MobileHeader } from '../../components/shared/MobileHeader';
@@ -64,6 +65,7 @@ export default async function DashboardLayout({
   const firstName = fullName.trim().split(/\s+/)[0] || '';
 
   return (
+    <UserGenderProvider gender={(profile?.gender as string | null) ?? null}>
     <NotificationsProvider userId={user.id} user={user}>
       <ProgressReportProvider
         userId={user.id}
@@ -88,5 +90,6 @@ export default async function DashboardLayout({
         </ActionHubProvider>
       </ProgressReportProvider>
     </NotificationsProvider>
+    </UserGenderProvider>
   );
 }

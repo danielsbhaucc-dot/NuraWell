@@ -73,7 +73,7 @@ export function TranscriptAccessTransparencyPanel({
                 <td className="px-3 py-3 min-w-[9rem]">
                   {grant.kind === 'global' ? (
                     <span className="inline-block rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 font-semibold text-emerald-800">
-                      עד שתבטל/י
+                      עד לביטול
                     </span>
                   ) : grant.access_until ? (
                     <TranscriptAccessCountdown accessUntil={grant.access_until} className="text-[11px]" />

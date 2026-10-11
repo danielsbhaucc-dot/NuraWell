@@ -164,7 +164,7 @@ export function TaskLevelProgressCard({
         ) : snapshot.shouldSuggestLevelUp ? (
           <span className="inline-flex items-center gap-1 text-emerald-700">
             <ArrowUp className="w-3.5 h-3.5" />
-            מוכן/ה לרמה הבאה?
+            עולים לרמה הבאה?
           </span>
         ) : null}
       </div>

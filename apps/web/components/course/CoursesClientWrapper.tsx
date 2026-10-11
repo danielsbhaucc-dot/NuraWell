@@ -153,7 +153,7 @@ export function CoursesClientWrapper({
             title={guidesAlmogCoachTitle(firstName)}
             body={guidesAlmogCoachBody(gender, firstName, almogNote)}
             prompt={coachPrompt}
-            cta={gender === 'female' ? 'בחרי איתי המשך' : gender === 'male' ? 'בחר איתי המשך' : 'בחר/י איתי המשך'}
+            cta={gender === 'female' ? 'בחרי איתי המשך' : gender === 'male' ? 'בחר איתי המשך' : 'בואו נבחר יחד המשך'}
             tone="amber"
           />
         </div>

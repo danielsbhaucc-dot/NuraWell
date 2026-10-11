@@ -455,7 +455,7 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
     if (!result.ok) {
-      const status = result.error === 'already_granted' ? 409 : 400;
+      const status = result.error === 'already_granted' || result.error === 'already_pending' ? 409 : result.error === 'cooldown' ? 429 : 400;
       return NextResponse.json({ error: result.error }, { status });
     }
 

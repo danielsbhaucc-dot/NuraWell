@@ -40,7 +40,7 @@ export type CommitmentCopy = {
 };
 
 /**
- * נוסח התחייבות מותאם מגדר לפי הפרופיל. כשהמגדר לא ידוע — נוסח ניטרלי עם סלאשים.
+ * נוסח התחייבות מותאם מגדר לפי הפרופיל. כשהמגדר לא ידוע — נוסח ניטרלי בלי סלאשים.
  */
 export function commitmentCopy(
   gender: OnboardingGender | '' | null | undefined
@@ -51,7 +51,7 @@ export function commitmentCopy(
   if (gender === 'female') {
     return { prefix: 'אני מתחייבת', button: 'אני מתחייבת וממשיכה' };
   }
-  return { prefix: 'אני מתחייב/ת', button: 'אני מתחייב/ת וממשיך/ה' };
+  return { prefix: 'ההתחייבות שלי', button: 'מתחייבים וממשיכים' };
 }
 
 export function genderCopy(gender: OnboardingGender | ''): GenderCopy {
@@ -115,32 +115,33 @@ export function genderCopy(gender: OnboardingGender | ''): GenderCopy {
       willShowYou: 'יציג לך',
     };
   }
+  // neutral (gender unknown): plural/impersonal Hebrew — no slash forms
   return {
-    you: 'את/ה',
-    your: 'שלך',
-    choose: 'בחר/י',
-    enter: 'הזן/י',
-    tell: 'ספר/י',
-    ready: 'מוכן/ה',
-    welcome: 'ברוך/ה הבא/ה',
-    come: 'בוא/י',
-    have: 'יש לך',
-    recommend: 'ממליץ/ה',
-    hurry: 'ממהר/ת',
-    missMeals: 'מפספס/ת ארוחות',
-    eatOut: 'אוכל/ת בחוץ / משלוחים',
+    you: 'אתם',
+    your: 'שלכם',
+    choose: 'בחרו',
+    enter: 'הזינו',
+    tell: 'ספרו',
+    ready: 'מוכנים',
+    welcome: 'ברוכים הבאים',
+    come: 'בואו',
+    have: 'יש לכם',
+    recommend: 'ממליצים',
+    hurry: 'ממהרים',
+    missMeals: 'מפספסים ארוחות',
+    eatOut: 'אוכלים בחוץ / משלוחים',
     tired: 'עייפות אחרי העבודה',
     snack: 'נשנושים מול מסך',
-    glance: 'תעיף/י',
-    press: 'לחץ/י',
-    fill: 'מלא/י',
-    detail: 'פרט/י',
-    needHelp: 'תצטרך/י',
-    willReceive: 'תקבל/י',
-    checkSpam: 'בדוק/י',
-    wantReturn: 'תרצה/י',
-    useSupport: 'השתמש/י',
-    sendsYouEmail: 'דולב שולח אליך/אלייך עכשיו מייל',
-    willShowYou: 'יציג לך/לָך',
+    glance: 'תעיפו',
+    press: 'לחצו',
+    fill: 'מלאו',
+    detail: 'פרטו',
+    needHelp: 'תצטרכו',
+    willReceive: 'תקבלו',
+    checkSpam: 'בדקו',
+    wantReturn: 'תרצו',
+    useSupport: 'השתמשו',
+    sendsYouEmail: 'דולב שולח עכשיו מייל',
+    willShowYou: 'יציג',
   };
 }

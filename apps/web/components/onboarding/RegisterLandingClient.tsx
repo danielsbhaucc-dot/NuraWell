@@ -152,7 +152,7 @@ export function RegisterLandingClient() {
             <p
               className={`text-center text-xs leading-relaxed ${hasPhotoBg ? 'text-emerald-100/70' : 'text-slate-500'}`}
             >
-              בהרשמה תתבקש/י לאשר במפורש את{' '}
+              בהרשמה יש לאשר במפורש את{' '}
               <Link href="/terms" className={`font-semibold underline underline-offset-2 ${hasPhotoBg ? 'text-emerald-200' : 'text-emerald-700'}`}>
                 תנאי השימוש
               </Link>{' '}

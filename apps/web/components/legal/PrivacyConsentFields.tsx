@@ -32,7 +32,7 @@ export function HealthDataConsentBlock({
         <Link href="/privacy" className="underline font-semibold text-amber-100" target="_blank">
           מדיניות הפרטיות
         </Link>
-        . יש לך זכות עיון, תיקון ומחיקה — ראה/י §10 במדיניות.
+        . יש לך זכות עיון, תיקון ומחיקה — ראו §10 במדיניות.
       </p>
       <label className="mt-3 flex items-start gap-3 cursor-pointer">
         <input
@@ -43,7 +43,7 @@ export function HealthDataConsentBlock({
           className="mt-1 h-4 w-4 rounded border-amber-300/60 accent-emerald-500"
         />
         <span className="text-sm text-amber-50/95 leading-snug">
-          אני מסכים/ה לאיסוף ועיבוד מידע בריאותי/גוף כמתואר, בהתאם ל{' '}
+          הסכמתי לאיסוף ועיבוד מידע בריאותי/גוף כמתואר, בהתאם ל{' '}
           <Link href="/privacy" className="underline" target="_blank">
             מדיניות הפרטיות
           </Link>
@@ -79,7 +79,7 @@ export function LegalConsentCheckbox({
         required
       />
       <span className="text-xs leading-relaxed text-emerald-50/90">
-        קראתי ואני מסכים/ה ל{' '}
+        קראתי ואישרתי את {' '}
         <Link href="/terms" className="font-semibold underline underline-offset-2 text-emerald-200" target="_blank">
           תנאי השימוש
         </Link>{' '}
