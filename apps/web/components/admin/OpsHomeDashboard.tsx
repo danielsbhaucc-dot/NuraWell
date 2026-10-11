@@ -7,6 +7,7 @@ import {
   Activity,
   BookOpen,
   DollarSign,
+  FlaskConical,
   Footprints,
   Globe,
   LayoutDashboard,
@@ -179,6 +180,7 @@ export function OpsHomeDashboard({ publishedCount, totalSteps }: OpsHomeDashboar
         <p className="mb-3 px-1 text-sm font-bold text-slate-500">ניהול מהיר</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <QuickLink href={to('/users')} icon={UserCircle} title="משתמשים" desc="פרופילים, מסע וזיכרון אלמוג" tone="emerald" />
+          <QuickLink href={to('/demo-access')} icon={FlaskConical} title="קישורי דמו" desc="גישה זמנית למפתחים ואנשי מקצוע בלי הרשמת משתמש" tone="amber" />
           <QuickLink href={to('/costs')} icon={DollarSign} title="עלויות" desc="פירוק עלות AI ווידאו פר-משתמש" tone="amber" />
           <QuickLink href={to('/journey-hub')} icon={Map} title="מסע ותחנות" desc="קיבוץ צעדים לתחנות" tone="rose" />
           <QuickLink href={to('/journey')} icon={Footprints} title="רשימת צעדים" desc="יצירה, עריכה ופרסום" tone="cyan" />

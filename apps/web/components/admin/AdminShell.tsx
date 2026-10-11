@@ -551,7 +551,7 @@ export function AdminShell({
       </main>
 
       <nav
-        className="fixed bottom-0 end-0 start-0 z-30 flex border-t border-white/55 bg-background-card/55 px-2 py-2 shadow-[0_-8px_32px_rgba(99,102,241,0.12)] backdrop-blur-2xl safe-area-bottom lg:hidden"
+        className="fixed bottom-0 end-0 start-0 z-30 flex border-t border-white/55 bg-background-card/55 px-1 py-2 shadow-[0_-8px_32px_rgba(99,102,241,0.12)] backdrop-blur-2xl safe-area-bottom lg:hidden"
         aria-label="ניווט מהיר"
       >
         <Link href={homeHref} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isHome)}>
@@ -562,9 +562,9 @@ export function AdminShell({
           <UserCircle className={cn('h-5 w-5', isUsers ? 'text-emerald-600' : '')} />
           משתמשים
         </Link>
-        <Link href={opsHref('/costs')} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isCosts)}>
-          <DollarSign className={cn('h-5 w-5', isCosts ? 'text-emerald-600' : '')} />
-          עלויות
+        <Link href={opsHref('/demo-access')} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isDemoAccess)}>
+          <FlaskConical className={cn('h-5 w-5', isDemoAccess ? 'text-amber-600' : '')} />
+          דמו
         </Link>
         <Link href={opsHref('/mentors')} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isAlmogSettings)}>
           <Sparkles className={cn('h-5 w-5', isAlmogSettings ? 'text-violet-600' : '')} />
