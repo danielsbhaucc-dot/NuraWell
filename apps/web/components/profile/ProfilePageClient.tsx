@@ -52,6 +52,8 @@ interface ProfilePageClientProps {
   totalCompleted: number;
   enrolledCount: number;
   rhythm: ProfileRhythmInitial;
+  /** סשן קישור דמו פעיל — מציג «משתמש דמו» וחוסם קישור לפאנל ניהול */
+  isDemoAccess?: boolean;
 }
 
 const activityLabels: Record<string, string> = {
@@ -64,7 +66,14 @@ const activityLabels: Record<string, string> = {
 
 type EditField = 'name' | 'gender' | 'weight' | 'height' | 'activity' | null;
 
-export function ProfilePageClient({ profile, email, totalCompleted, enrolledCount, rhythm }: ProfilePageClientProps) {
+export function ProfilePageClient({
+  profile,
+  email,
+  totalCompleted,
+  enrolledCount,
+  rhythm,
+  isDemoAccess = false,
+}: ProfilePageClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -130,7 +139,7 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
 
   const opsUrl = process.env.NEXT_PUBLIC_OPS_URL?.replace(/\/$/, '');
   const navItems = [
-    ...(profile?.role === 'admin' && opsUrl
+    ...(profile?.role === 'admin' && opsUrl && !isDemoAccess
       ? [{ label: 'פאנל ניהול', href: `${opsUrl}/`, emoji: '🛠️' }]
       : []),
     { label: 'בית', href: '/home', emoji: '🏠' },
@@ -311,9 +320,22 @@ export function ProfilePageClient({ profile, email, totalCompleted, enrolledCoun
               </div>
               <p className="text-sm text-slate-500 line-clamp-1">{email}</p>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                {profile?.role === 'admin' && (
+                <span className="text-[11px] font-semibold text-slate-500">דרגת משתמש:</span>
+                {isDemoAccess ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                    <Shield className="w-3 h-3" /> משתמש דמו
+                  </span>
+                ) : profile?.role === 'admin' ? (
                   <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 border border-violet-200">
                     <Shield className="w-3 h-3" /> מנהל
+                  </span>
+                ) : profile?.role === 'test' ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200">
+                    <Shield className="w-3 h-3" /> בדיקות
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    <Shield className="w-3 h-3" /> משתמש
                   </span>
                 )}
                 <span className="text-xs text-slate-500 flex items-center gap-1">

@@ -8,6 +8,7 @@ import {
   requestHostname,
 } from '../ops-host';
 import { publicAppBaseNoSlashFromServer, publicAppBaseNoSlashSync } from '../public-app-url';
+import { isDemoAccessActiveForUser } from '../demo-access/server';
 
 function opsPublicBase(): string {
   return (process.env.NEXT_PUBLIC_OPS_URL || '').replace(/\/$/, '');
@@ -52,6 +53,10 @@ export async function ensureOpsAdminServer(): Promise<void> {
       redirect(`${app}/login?redirect=${encodeURIComponent(afterLogin)}`);
     }
     redirect(app ? `${app}/login` : '/login');
+  }
+
+  if (await isDemoAccessActiveForUser(user.id)) {
+    redirect(app ? `${app}/home` : '/home');
   }
 
   const { data: profile } = await supabase

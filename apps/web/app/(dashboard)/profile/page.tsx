@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '../../../lib/supabase/server';
 import { ProfilePageClient } from '../../../components/profile/ProfilePageClient';
 import { resolveDisplayWeightKg } from '../../../lib/profile/profile-field-ssot';
+import { isDemoAccessActiveForUser } from '../../../lib/demo-access/server';
 
 export const metadata: Metadata = {
   title: 'הפרופיל שלי',
@@ -87,12 +88,15 @@ export default async function ProfilePage() {
           current_weight_kg: displayWeightKg,
         };
 
+  const isDemoAccess = await isDemoAccessActiveForUser(user.id);
+
   return (
     <ProfilePageClient
       profile={profileForClient}
       email={user.email ?? ''}
       totalCompleted={totalCompleted}
       enrolledCount={enrolledCount}
+      isDemoAccess={isDemoAccess}
       rhythm={{
         wake_up_time: profile?.wake_up_time ? String(profile.wake_up_time).slice(0, 5) : null,
         sleep_time: profile?.sleep_time ? String(profile.sleep_time).slice(0, 5) : null,

@@ -5,6 +5,7 @@ import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit'
 import { readJsonBody } from '@/lib/api/json-request';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { deleteUserAccountCompletely } from '@/lib/privacy/delete-user-account';
+import { assertNotDemoAccessSession } from '@/lib/demo-access/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,11 @@ const deleteSchema = z.object({
 export async function POST(request: Request) {
   const auth = await requireApiSession(request);
   if (!auth.ok) return auth.response;
+
+  const demoGate = await assertNotDemoAccessSession(auth.user.id);
+  if (!demoGate.ok) {
+    return NextResponse.json({ error: demoGate.message }, { status: 403 });
+  }
 
   const rl = await consumeMultiRateLimits(auth.user.id, 'account-delete', [
     { limit: 3, windowSeconds: 3600 },

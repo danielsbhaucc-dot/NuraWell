@@ -146,6 +146,7 @@ export function isOpsPanelBrowserPath(pathname: string): boolean {
     '/audio',
     '/accessibility',
     '/challenge',
+    '/demo-access',
     '/ops',
   ];
   return prefixes.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
