@@ -1,20 +1,8 @@
 import Link from 'next/link';
-import { Apple, Dumbbell, GlassWater, Leaf, Lock, Moon, Sparkles, Utensils, Check, type LucideIcon } from 'lucide-react';
+import { habitIcon } from '@/lib/journey/habit-icons';
+import { ScrollToCurrent } from './ScrollToCurrent';
 
-export type MapStation = { id: string; title: string; total: number; done: number; state: 'done' | 'current' | 'locked' };
-
-const ICONS: [RegExp, LucideIcon][] = [
-  [/שינה|לילה|ערב/, Moon],
-  [/מים|שתי/, GlassWater],
-  [/תנועה|הליכה|גוף|ספורט|פעיל/, Dumbbell],
-  [/ארוח|אכיל|מזון|צלחת|תפריט|סביבה/, Utensils],
-  [/ירק|פרי|בריא/, Apple],
-  [/רגש|לחץ|נשימה|רוגע|מתח/, Leaf],
-];
-export function stationIcon(title: string, state: MapStation['state']): LucideIcon {
-  if (state === 'locked') return Lock;
-  return ICONS.find(([re]) => re.test(title))?.[1] ?? (state === 'done' ? Check : Sparkles);
-}
+export type MapStation = { id: string; title: string; total: number; done: number; state: 'done' | 'current' | 'locked'; habitKey?: string | null };
 
 const W = 360;
 const ROW = 104;
@@ -35,7 +23,8 @@ export function PlanMap({ stations }: { stations: MapStation[] }) {
     return `M ${a.x} ${a.y} C ${a.x} ${a.y + ROW * 0.55}, ${b.x} ${b.y - ROW * 0.55}, ${b.x} ${b.y}`;
   };
   return (
-    <nav aria-label="מפת המסע" className="relative mx-auto w-full max-w-[360px]" style={{ height: h }}>
+    <nav aria-label="מפת המסע" id="plan-map-scroll" className="relative max-h-[70vh] overflow-y-auto overscroll-contain rounded-3xl">
+      <div className="relative mx-auto w-full max-w-[360px]" style={{ height: h }}>
       <svg viewBox={`0 0 ${W} ${h}`} className="absolute inset-0 h-full w-full" aria-hidden>
         {stations.slice(1).map((s, k) => {
           const i = k + 1;
@@ -55,7 +44,7 @@ export function PlanMap({ stations }: { stations: MapStation[] }) {
       <ol className="relative h-full">
         {stations.map((s, i) => {
           const p = pt(i);
-          const Icon = stationIcon(s.title, s.state);
+          const Icon = habitIcon(s.habitKey, s.title, s.state);
           const pct = s.total ? Math.round((s.done / s.total) * 100) : 0;
           // geometry is physical (SVG x): right-hand nodes get their label on the left, others on the right
           const labelSide = p.x > W / 2 ? 'end' : 'start';
@@ -71,6 +60,7 @@ export function PlanMap({ stations }: { stations: MapStation[] }) {
               className="absolute"
               style={{ top: p.y - NODE / 2, left: `${(p.x / W) * 100}%`, transform: 'translateX(-50%)' }}
               aria-current={s.state === 'current' ? 'step' : undefined}
+              data-current={s.state === 'current' ? '' : undefined}
             >
               <Link
                 href="/journey"
@@ -94,6 +84,8 @@ export function PlanMap({ stations }: { stations: MapStation[] }) {
           );
         })}
       </ol>
+      </div>
+      {stations.length > 5 ? <ScrollToCurrent containerId="plan-map-scroll" /> : null}
     </nav>
   );
 }

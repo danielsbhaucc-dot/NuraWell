@@ -6,6 +6,7 @@ import { getPlan, listOffers } from '@/lib/tasks';
 import { OfferCard } from '@/components/plans/OfferCard';
 import { toLadderCardTask } from '@/lib/tasks/card';
 import { PlanMap, type MapStation } from '@/components/plans/PlanMap';
+import { buildMapStations } from '@/lib/journey/map-stations';
 import { TaskLadderCard } from '@/components/plans/TaskLadderCard';
 import { LevelHistory } from '@/components/plans/LevelHistory';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -28,26 +29,14 @@ export default async function PlansPage() {
     getPlan(admin, user.id),
     listOffers(admin, user.id),
     supabase.from('profiles').select('full_name, gender').eq('id', user.id).maybeSingle(),
-    supabase.from('journey_stations').select('id, title, sort_order').order('sort_order'),
+    supabase.from('journey_stations').select('id, title, sort_order, habit_key, track').order('sort_order'),
     supabase.from('journey_steps').select('id, station_id').eq('is_published', true),
     supabase.from('journey_progress').select('step_id, is_completed').eq('user_id', user.id),
   ]);
 
   const firstName = ((profile?.full_name ?? '') as string).trim().split(/\s+/)[0] || '';
   const completed = new Set((progress ?? []).filter((p) => p.is_completed).map((p) => p.step_id as string));
-  let currentFound = false;
-  const mapStations: MapStation[] = (stations ?? []).map((s) => {
-    const own = (steps ?? []).filter((st) => st.station_id === s.id);
-    const done = own.filter((st) => completed.has(st.id as string)).length;
-    const isDone = own.length > 0 && done === own.length;
-    let state: MapStation['state'] = 'locked';
-    if (isDone) state = 'done';
-    else if (!currentFound) {
-      state = 'current';
-      currentFound = true;
-    }
-    return { id: s.id as string, title: s.title as string, total: own.length, done, state };
-  });
+  const mapStations: MapStation[] = buildMapStations((stations ?? []) as never, (steps ?? []) as never, completed);
 
   const active = plan.filter((t) => t.status === 'accepted');
   const history = plan
