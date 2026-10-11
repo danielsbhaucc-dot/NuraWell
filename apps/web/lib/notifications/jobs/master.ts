@@ -789,6 +789,16 @@ async function runMasterCron() {
     }
   }
 
+  /** chat_perf_timings retention (no pg_cron on this project): keep 30 days */
+  try {
+    await admin
+      .from('chat_perf_timings')
+      .delete()
+      .lt('created_at', new Date(Date.now() - 30 * 86_400_000).toISOString());
+  } catch (e) {
+    errors.push(`perf_retention: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
   let taskLadder: unknown = null;
   try {
     const { runTaskLadderMonitorBatch } = await import('@/lib/tasks/monitor-job');
