@@ -1,3 +1,5 @@
+import { detectCrisisSignals } from '@/lib/safety/crisis-detector';
+import { recordCrisisSignal } from '@/lib/safety/record-crisis';
 import { createAiProvider } from '@/lib/ai/provider-factory';
 import { z } from 'zod';
 import { generateText } from 'ai';
@@ -2388,10 +2390,16 @@ export async function POST(request: Request) {
     console.error('[ai/chat]', { debug_id: debugId, stage: 'empty_message' });
     return new Response(JSON.stringify({ error: 'Empty user message' }), { status: 400 });
   }
+  /** crisis safety net: deterministic, independent of the model (card is shown client-side by the same detector) */
+  const crisisSignal = detectCrisisSignals(lastUserText);
+  if (crisisSignal.redFlag && !parsed.data.resume_assistant) {
+    void recordCrisisSignal(createAdminClient(), user.id, 'chat', crisisSignal).catch(() => {});
+  }
+
   stage = 'message_ok';
   const earlySignals = detectChatSignals(lastUserText);
   const trivialBypass =
-    CHAT_TRIVIAL_BYPASS_ENABLED && isTrivialBypassEligible(lastUserText, earlySignals);
+    CHAT_TRIVIAL_BYPASS_ENABLED && !crisisSignal.redFlag && isTrivialBypassEligible(lastUserText, earlySignals);
   const routerHistorySnippet = buildRouterHistorySnippet(messages);
   /** מוקדם — מאפשר session/transcript/embed במקביל לנתב (בלי לשנות החלטות). */
   const sessionId = parsed.data.session_id ?? crypto.randomUUID();
@@ -3330,6 +3338,9 @@ export async function POST(request: Request) {
       if (fullProgressBlock) contextSections.push(fullProgressBlock);
     }
 
+    if (crisisSignal.redFlag) {
+      contextSections.unshift('[בטיחות — עדיפות עליונה] המשתמש כתב עכשיו משהו שמעיד על מצוקה/סיכון. היה חם, קצר ותומך, בלי משימות, בלי אימון ובלי שיפוט. הכר ברגש, שאל אם הוא בטוח כרגע, ועודד בעדינות לפנות עכשיו לער״ן 1201 (או 101 בחירום). כרטיס עם מספרי חירום מוצג לו אוטומטית.');
+    }
     if (systemKnowledgeBlock) contextSections.push(systemKnowledgeBlock);
     {
       const plan = await taskPlanPromise;

@@ -1,4 +1,6 @@
 'use client';
+import { CrisisResourcesCard } from '@/components/safety/CrisisResourcesCard';
+import { detectCrisisSignals } from '@/lib/safety/crisis-detector';
 
 import { Fragment, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -1090,6 +1092,12 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     notificationIdRef.current = null;
   }, [open, sendMessage, status, userId, buildOutgoingChatBody, beginOutgoingTickChoreography]);
 
+  /** deterministic safety net: any user message with a crisis signal → fixed resources card (not model-dependent) */
+  const crisisInConversation = useMemo(
+    () => messages.some((m) => m.role === 'user' && detectCrisisSignals(getMessageText(m as ChatDisplayMessage)).redFlag),
+    [messages]
+  );
+
   const pendingRecallTool = useMemo(
     () => messagesHavePendingRecallTool(messages),
     [messages]
@@ -1686,6 +1694,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                   </div>
                 );
               })}
+              {crisisInConversation ? <CrisisResourcesCard /> : null}
 
               <MemorySearchIndicator visible={showMemorySearch} />
 
