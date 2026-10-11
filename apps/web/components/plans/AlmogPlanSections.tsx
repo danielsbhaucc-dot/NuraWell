@@ -250,7 +250,7 @@ export function AlmogPlanSections() {
       ) : null}
 
       {data.completed.length ? (
-        <details className="rounded-3xl bg-white/70 p-4">
+        <details className="rounded-3xl bg-cream/70 p-4">
           <summary className="cursor-pointer font-bold text-primary-900">כבר עשית את זה ({data.completed.length})</summary>
           <ul className="mt-2 flex flex-col gap-1 text-sm text-primary-800">
             {data.completed.map((a) => (

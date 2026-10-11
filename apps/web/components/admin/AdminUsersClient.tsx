@@ -1047,7 +1047,7 @@ function NotifyTestToggle({
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-cream px-4 py-3 shadow-sm">
       <div className="min-w-0">
         <p className="text-sm font-semibold text-slate-800">משתמש בדיקה להתראות</p>
         <p className="text-xs text-slate-500">
@@ -1069,7 +1069,7 @@ function NotifyTestToggle({
         }`}
       >
         <span
-          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+          className={`inline-block h-5 w-5 transform rounded-full bg-cream shadow transition-transform ${
             enabled ? '-translate-x-5' : '-translate-x-0.5'
           }`}
         />

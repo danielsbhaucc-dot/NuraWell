@@ -21,7 +21,7 @@ export function Sheet({ open, onClose, title, children, className }: { open: boo
         if (e.target === ref.current) onClose();
       }}
       className={cn(
-        'm-0 mt-auto w-full max-w-none rounded-t-3xl bg-white p-0 backdrop:bg-black/40 sm:m-auto sm:max-w-lg sm:rounded-3xl',
+        'm-0 mt-auto w-full max-w-none rounded-t-3xl bg-cream p-0 backdrop:bg-black/40 sm:m-auto sm:max-w-lg sm:rounded-3xl',
         className
       )}
     >

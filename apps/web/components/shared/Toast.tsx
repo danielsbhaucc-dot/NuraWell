@@ -150,7 +150,7 @@ function Toast({ toast, onDismiss }: ToastProps) {
           onClick={() => onDismiss(toast.id)}
           className="flex-shrink-0 w-7 h-7 rounded-xl flex items-center justify-center transition-all mt-0.5"
           style={{ color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.05)' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(245,250,242,0.8)'; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}
         >
           <X className="w-3.5 h-3.5" />
