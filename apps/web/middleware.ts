@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { isMissingContent } from './lib/routing/missing-content';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { mergeAuthCookieOptions } from './lib/supabase/cookie-options';
@@ -354,8 +354,7 @@ export async function middleware(request: NextRequest) {
 
   /** משתמש מחובר ומאומת לא נשאר בדף שיווק מלא־רוחב מחוץ ל־phone shell */
   if (
-    user &&
-    user.email_confirmed_at &&
+    user?.email_confirmed_at &&
     MARKETING_PATHS_REDIRECT_WHEN_AUTHED.some((p) => pathname === p)
   ) {
     return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
@@ -368,7 +367,7 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.redirect(new URL('/register/form', request.url)));
   }
 
-  if (user && user.email_confirmed_at && pathname === '/register/check-email') {
+  if (user?.email_confirmed_at && pathname === '/register/check-email') {
     return applySecurityHeaders(NextResponse.redirect(new URL('/register/verified', request.url)));
   }
 
@@ -399,10 +398,8 @@ export async function middleware(request: NextRequest) {
         .update({ last_active_at: new Date(nowMs).toISOString() })
         .eq('id', user.id)
         .then(
-          () => {},
-          () => {
-            /* last_active_at update is best-effort — failure should not block navigation */
-          },
+          () => undefined,
+          () => undefined, // last_active_at update is best-effort — failure should not block navigation
         );
       response.cookies.set(LAST_ACTIVE_COOKIE, String(nowMs), lastActiveCookieOpts);
     }
@@ -432,42 +429,6 @@ export async function middleware(request: NextRequest) {
   }
 
   return applySecurityHeaders(response);
-}
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const CONTENT_RE = /^\/(journey|guides|lessons)\/([^/]+)\/?$/;
-const JOURNEY_STATIC = new Set(['declined', 'history']);
-
-async function isMissingContent(supabase: SupabaseClient, pathname: string): Promise<boolean> {
-  const m = CONTENT_RE.exec(pathname);
-  if (!m) return false;
-  const [, kind, raw] = m;
-  const param = decodeURIComponent(raw);
-  if (kind === 'journey' && JOURNEY_STATIC.has(param)) return false;
-  try {
-    if (kind === 'journey') {
-      if (UUID_RE.test(param)) {
-        const { data, error } = await supabase.from('journey_steps').select('id').eq('id', param).maybeSingle();
-        return !error && !data;
-      }
-      if (/^\d{1,6}$/.test(param)) {
-        const { data, error } = await supabase
-          .from('journey_steps')
-          .select('id')
-          .eq('step_number', Number(param))
-          .eq('is_published', true)
-          .limit(1);
-        return !error && !data?.length;
-      }
-      return true; // neither uuid nor step number
-    }
-    if (!UUID_RE.test(param)) return true;
-    const table = kind === 'guides' ? 'courses' : 'lessons';
-    const { data, error } = await supabase.from(table).select('id').eq('id', param).maybeSingle();
-    return !error && !data;
-  } catch {
-    return false; // never block navigation on a lookup failure
-  }
 }
 
 export const config = {
