@@ -19,7 +19,7 @@ import { isCommitmentGateResolved } from '../../lib/journey/commitment-gate';
 import { emojiFromWellnessText } from '../../lib/emoji-from-text';
 import { useProgressReport } from '../progress-report/ProgressReportProvider';
 import { TaskDailySlots } from './TaskDailySlots';
-import { TaskLevelProgressStepPanel } from './TaskLevelProgressStepPanel';
+import { LessonTaskLevels } from './LessonTaskLevels';
 import { resolveTaskSchedule, scheduleLabel } from '../../lib/journey/task-schedule';
 import { lessonGenderCopy } from '../../lib/journey/lesson-gender-copy';
 
@@ -428,22 +428,12 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                               <TaskDailySlots task={task} stepId={step.id} />
                             </div>
                           ) : null}
-
-                          {status === 'accepted' &&
-                          step.tasks.some((t) => t.leveling?.levels?.length) ? (
-                            <TaskLevelProgressStepPanel
-                              stepId={step.id}
-                              tasks={step.tasks.filter(
-                                (t) => progress.task_statuses?.[t.id]?.status === 'accepted'
-                              )}
-                              taskLevelMeta={progress.task_level_meta}
-                            />
-                          ) : null}
                     </div>
                   </div>
                 );
               })}
             </div>
+              <LessonTaskLevels stepId={step.id} />
             </AccordionSummarySection>
             </div>
           </TimelineRailRow>

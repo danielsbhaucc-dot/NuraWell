@@ -14,7 +14,6 @@ import {
   coerceTaskExecutionsFromApi,
   recommendTaskLevelAdjustment,
 } from '../../journey/task-level-progress';
-import { applyTaskLevelMetaPatch } from '../../journey/task-level-meta';
 import { resolveTaskSchedule } from '../../journey/task-schedule';
 
 type Admin = SupabaseClient;
@@ -39,6 +38,8 @@ export async function bridgeJourneyDifficultyToRecoveryPlan(params: {
   triggerSignal?: string;
   expectedToday?: number;
   reportedToday?: number;
+  /** false when the caller already moved the unified ladder (e.g. the "קשה לי" route). */
+  syncUnifiedLadder?: boolean;
 }): Promise<{ blocker_id?: string; assignment_id?: string; downgraded?: boolean }> {
   const now = params.now ?? new Date();
   const nowIso = now.toISOString();
@@ -63,20 +64,38 @@ export async function bridgeJourneyDifficultyToRecoveryPlan(params: {
 
   if (hasLeveling && params.task.leveling) {
     adjustment = recommendTaskLevelAdjustment(snapshot, params.task, 'too_hard');
-    let mergedMeta = applyTaskLevelMetaPatch(params.taskLevelMeta, params.task.id, adjustment.metaPatch);
 
     if (adjustment.kind === 'downgrade' && adjustment.nextLevelId) {
-      mergedMeta = applyTaskLevelMetaPatch(mergedMeta, params.task.id, adjustment.metaPatch);
-      await params.admin.from('journey_progress').upsert(
-        {
-          user_id: params.userId,
-          step_id: params.stepId,
-          task_level_meta: mergedMeta,
-          updated_at: nowIso,
-          last_engaged_at: nowIso,
-        },
-        { onConflict: 'user_id,step_id' }
-      );
+      // Levels live in the unified task model now (journey_progress.task_level_meta is read-only legacy).
+      if (params.syncUnifiedLadder !== false) {
+        try {
+          const { changeTaskLevel } = await import('../../tasks');
+          const { data: def } = await params.admin
+            .from('task_definitions')
+            .select('id')
+            .eq('stable_key', `step:${params.stepId}:${params.task.id}`)
+            .maybeSingle();
+          const { data: asg } = def?.id
+            ? await params.admin
+                .from('user_task_assignments')
+                .select('id')
+                .eq('user_id', params.userId)
+                .eq('definition_id', def.id)
+                .maybeSingle()
+            : { data: null };
+          if (asg?.id) {
+            await changeTaskLevel(params.admin as never, {
+              userId: params.userId,
+              assignmentId: asg.id as string,
+              direction: 'easier',
+              reason: adjustment.reason || 'אלמוג זיהה קושי מתמשך',
+              source: 'almog_auto',
+            });
+          }
+        } catch (e) {
+          console.warn('[bridge-journey-recovery] unified ladder step-down failed', e);
+        }
+      }
     }
 
     currentLevel =

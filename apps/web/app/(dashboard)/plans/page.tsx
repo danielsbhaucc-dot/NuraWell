@@ -4,12 +4,13 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getPlan, listOffers } from '@/lib/tasks';
 import { OfferCard } from '@/components/plans/OfferCard';
-import { resolveLadder } from '@/lib/tasks/ladder';
+import { toLadderCardTask } from '@/lib/tasks/card';
 import { PlanMap, type MapStation } from '@/components/plans/PlanMap';
 import { TaskLadderCard } from '@/components/plans/TaskLadderCard';
 import { LevelHistory } from '@/components/plans/LevelHistory';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SosButton } from '@/components/ai/SosButton';
+import { AlmogPlanSections } from '@/components/plans/AlmogPlanSections';
 
 export const metadata = { title: 'התוכנית שלי' };
 export const dynamic = 'force-dynamic';
@@ -72,20 +73,7 @@ export default async function PlansPage() {
           active.map((t) => (
             <TaskLadderCard
               key={t.id}
-              task={{
-                id: t.id,
-                title: t.level.title,
-                emoji: t.definition.emoji,
-                isMain: t.is_main,
-                currentLevel: t.current_level,
-                levels: resolveLadder(t.definition).filter((l) => l.level >= t.definition.floor_level && l.level <= t.definition.max_level),
-                floorLevel: t.definition.floor_level,
-                doneToday: t.doneToday,
-                targetToday: t.targetToday,
-                streakDays: t.streakDays,
-                canStepDown: t.canStepDown,
-                canStepUp: t.canStepUp,
-              }}
+              task={toLadderCardTask(t)}
             />
           ))
         ) : (
@@ -107,11 +95,10 @@ export default async function PlansPage() {
           <Link href="/progress/history" className="text-sm font-semibold text-primary-700 underline">
             היסטוריה
           </Link>
-          <Link href="/plans/details" className="text-sm font-semibold text-primary-700 underline">
-            כל הפרטים
-          </Link>
         </div>
       </section>
+
+      <AlmogPlanSections />
 
       <section aria-labelledby="plan-map" className="flex flex-col gap-2">
         <h2 id="plan-map" className="text-lg font-bold text-primary-900">

@@ -60,3 +60,12 @@ describe('autonomous step-down', () => {
     expect(shouldAutoStepDown({ missedDays: ['2026-10-09', '2026-10-10', '2026-10-11'], successDays: [], todayKey: '2026-10-11', lastLevelChangeKey: '2026-10-08' })).toBe(false);
   });
 });
+
+describe('dedupeSameTask', () => {
+  it('keeps one card per title, preferring the lesson step', async () => {
+    const { dedupeSameTask } = await import('../lib/tasks');
+    const mk = (id: string, source: string, is_main = false, status = 'accepted') => ({ id, status, is_main, definition: { title: 'שתיית 2 כוסות מים ', source } });
+    const out = dedupeSameTask([mk('a', 'almog'), mk('s', 'step', true), mk('d', 'ai_daily'), { ...mk('o', 'step'), definition: { title: 'אחר', source: 'step' } }]);
+    expect(out.map((r) => r.id)).toEqual(['s', 'o']);
+  });
+});

@@ -21,7 +21,7 @@ export type LadderCardTask = {
 };
 
 /** Main task card: ladder position, today's progress, "קשה לי" / "גם זה קשה לי" / "קל לי". */
-export function TaskLadderCard({ task }: { task: LadderCardTask }) {
+export function TaskLadderCard({ task, onChanged }: { task: LadderCardTask; onChanged?: () => void }) {
   const router = useRouter();
   const [sheet, setSheet] = useState<null | 'easier' | 'harder'>(null);
   const [reason, setReason] = useState('');
@@ -42,9 +42,10 @@ export function TaskLadderCard({ task }: { task: LadderCardTask }) {
         setMsg(`המשימה החדשה: ${json.level.title}`);
         setSheet(null);
         setReason('');
-        router.refresh();
+        if (onChanged) onChanged();
+        else router.refresh();
       } else {
-        setMsg(json.reason === 'at_floor' ? 'זו כבר הרמה הקלה ביותר — בוא/י נדבר עם אלמוג על דרך אחרת.' : json.reason === 'at_max' ? 'זו הרמה הגבוהה ביותר כרגע.' : 'לא הצלחנו לעדכן, נסו שוב.');
+        setMsg(json.reason === 'at_floor' ? 'זו כבר הרמה הקלה ביותר — כדאי לדבר עם אלמוג על דרך אחרת.' : json.reason === 'at_max' ? 'זו הרמה הגבוהה ביותר כרגע.' : 'לא הצלחנו לעדכן, נסו שוב.');
       }
     });
 
