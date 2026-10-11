@@ -1,3 +1,4 @@
+import { createAiProvider } from '@/lib/ai/provider-factory';
 /**
  * יצירת embedding לתובנות — text-embedding-3-small (1536) דרך OpenRouter + AI SDK.
  * משמש לסנכרון Upstash (לא נשמר ב-Supabase).
@@ -5,9 +6,7 @@
 
 import 'server-only';
 import { embed } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
 
-import { publicAppUrlForAiReferer } from '../../public-app-url';
 import { EMBEDDING_MODEL_OPENROUTER } from '../rag-config';
 
 export const INSIGHT_EMBEDDING_DIMENSION = 1536;
@@ -17,14 +16,7 @@ export function isInsightEmbeddingEnabled(): boolean {
   return process.env.INSIGHT_EMBEDDING_ENABLED?.trim() !== '0';
 }
 
-const openrouterEmbed = createOpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY?.trim() || 'build-placeholder-key',
-  headers: {
-    'HTTP-Referer': publicAppUrlForAiReferer(),
-    'X-Title': 'NuraWell',
-  },
-});
+const openrouterEmbed = createAiProvider();
 
 /**
  * מחזיר וקטור 1536 או null בשגיאה — לעולם לא זורק (בטוח ל-pipeline רקע).

@@ -1,3 +1,4 @@
+import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
 import {
@@ -103,7 +104,7 @@ ${cooldownBlock ?? ''}
   const title = `${firstName} · מאלמוג`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await admin.from('notifications').insert({
+  const { error } = await insertNotification(admin, {
     user_id: userId,
     type: 'ai_message',
     title,

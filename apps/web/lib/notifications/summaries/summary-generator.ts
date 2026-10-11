@@ -17,6 +17,7 @@
  * סדרתית בצד הלקוח.
  */
 
+import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   CHILD_TYPE,
@@ -369,7 +370,7 @@ export async function dispatchSummaryReadyNotification(
       annual: 'הסיכום השנתי שלך מוכן',
     };
 
-    const { error } = await admin.from('notifications').insert({
+    const { error } = await insertNotification(admin, {
       user_id: args.userId,
       title: titleByType[args.type],
       body: `המבט שלי על ${args.periodKey} מחכה לך באפליקציה.`,

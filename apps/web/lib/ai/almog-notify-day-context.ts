@@ -46,7 +46,7 @@ export function buildSlotDaypartPromptBlock(slot: HabitCheckpointSlot): string {
   }
 }
 
-function jerusalemTodayStartIso(now = new Date()): string {
+export function jerusalemTodayStartIso(now = new Date()): string {
   const minutesSinceMidnight = getIsraelNowMinutes();
   return new Date(now.getTime() - minutesSinceMidnight * 60 * 1000).toISOString();
 }

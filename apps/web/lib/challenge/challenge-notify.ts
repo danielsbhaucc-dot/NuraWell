@@ -1,3 +1,4 @@
+import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { deliverWebPushAfterAlmogNotification } from '@/lib/push/deliver-after-notification';
 
@@ -16,7 +17,7 @@ export async function sendChallengeNotification(
   admin: SupabaseClient,
   params: ChallengeNotifyParams,
 ): Promise<void> {
-  await admin.from('notifications').insert({
+  await insertNotification(admin, {
     user_id: params.userId,
     type: params.type,
     title: params.title,

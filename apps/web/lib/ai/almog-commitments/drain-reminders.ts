@@ -10,6 +10,7 @@
  * ב-cron של habit-checkpoints.
  */
 
+import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { skipSosFollowUpIfResolved } from '../guardian/sos-care-loop';
@@ -150,9 +151,7 @@ export async function drainAlmogReminders(
         continue;
       }
 
-      const { data: inserted, error: insertErr } = await admin
-        .from('notifications')
-        .insert({
+      const { data: inserted, error: insertErr } = await insertNotification(admin, {
           user_id: r.user_id,
           type: 'ai_message',
           title: r.title,
@@ -172,9 +171,7 @@ export async function drainAlmogReminders(
             scheduled_reminder_id: r.id,
             ...(r.metadata && typeof r.metadata === 'object' ? r.metadata : {}),
           },
-        })
-        .select('id')
-        .single();
+        }, { select: 'id', single: 'single' });
 
       if (insertErr) throw new Error(insertErr.message);
 

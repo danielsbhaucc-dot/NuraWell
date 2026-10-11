@@ -1,6 +1,6 @@
+import { createAiProvider } from '@/lib/ai/provider-factory';
 import { z } from 'zod';
 import { generateText } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
 import { after } from 'next/server';
 import { bumpChatSessionTurn, ensureChatSession, touchChatSessionActivity } from '../../../../../lib/ai/chat-sessions/ensure-session';
 import { fetchChatSessionTranscript, mergeTranscriptWithClientMessages } from '../../../../../lib/ai/chat-sessions/fetch-transcript';
@@ -2967,14 +2967,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const openrouter = createOpenAI({
-    apiKey: openrouterKey,
-    baseURL: 'https://openrouter.ai/api/v1',
-    headers: {
-      'HTTP-Referer': publicAppUrlForAiReferer(),
-      'X-Title': 'NuraWell',
-    },
-  });
+  const openrouter = createAiProvider({ apiKey: openrouterKey, timeoutMs: null });
 
   try {
     const firstName = extractFirstName(profileFullName);

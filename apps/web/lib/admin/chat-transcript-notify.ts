@@ -1,3 +1,4 @@
+import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { deliverWebPushAfterAlmogNotification } from '@/lib/push/deliver-after-notification';
 import { genderPress } from '@/lib/privacy/gender-hebrew';
@@ -30,9 +31,7 @@ export async function notifyTranscriptAccessRequest(
   const press = genderPress(gender);
   const body = `צוות NuraWell מבקש אישורך לצפות בתמליל שיחה. ${press} לאישור או דחייה.`;
 
-  const { data, error } = await admin
-    .from('notifications')
-    .insert({
+  const { data, error } = await insertNotification(admin, {
       user_id: params.userId,
       type: 'transcript_access_request',
       title: 'בקשה לצפייה בתמליל שיחה',
@@ -49,9 +48,7 @@ export async function notifyTranscriptAccessRequest(
         request_id: params.requestId,
         reason_preview: params.reason.slice(0, 120),
       },
-    })
-    .select('id')
-    .single();
+    }, { select: 'id', single: 'single' });
 
   if (error) {
     console.error('[transcript-access-notify] insert failed', error.message);
@@ -68,9 +65,9 @@ export async function notifyTranscriptAccessRequest(
   });
 
   const { markTranscriptRequestNotificationSent } = await import('./chat-transcript-security');
-  await markTranscriptRequestNotificationSent(admin, params.requestId, data.id as string);
+  await markTranscriptRequestNotificationSent(admin, params.requestId, (data?.id ?? '') as string);
 
-  return { ok: true, notificationId: data.id as string };
+  return { ok: true, notificationId: (data?.id ?? '') as string };
 }
 
 export async function revokeTranscriptAccessNotification(
@@ -99,7 +96,7 @@ export async function notifyTranscriptSentToUser(
   const actionUrl = `/home?chatSession=${params.sessionId}`;
   const title = params.sessionTitle?.trim() || 'שיחה עם אלמוג';
 
-  const { error } = await admin.from('notifications').insert({
+  const { error } = await insertNotification(admin, {
     user_id: params.userId,
     type: 'chat_transcript_delivered',
     title: 'עותק השיחה שלך',

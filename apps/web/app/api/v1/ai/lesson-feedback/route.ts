@@ -1,13 +1,12 @@
+import { createAiProvider } from '@/lib/ai/provider-factory';
 import { z } from 'zod';
 import { generateText } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
 import { buildUserContext } from '../../../../../lib/ai/memory';
 import { buildCoachingStylePromptBlock } from '../../../../../lib/ai/almog-coaching-style';
 import { insertAiInteraction } from '../../../../../lib/ai/insert-ai-interaction';
 import { LESSON_FEEDBACK_PROMPT } from '../../../../../lib/ai/prompts';
 import { readJsonBody } from '../../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../../lib/api/route-guards';
-import { publicAppUrlForAiReferer } from '../../../../../lib/public-app-url';
 
 /** Vercel Edge — תגובת משוב AI מהירה */
 export const runtime = 'edge';
@@ -47,14 +46,7 @@ function buildFallbackFeedback(payload: z.infer<typeof lessonFeedbackSchema>): s
   return 'טוב שהמשכת גם בלי התחייבות מלאה כרגע. לפעמים מספיק רק להשאיר דלת פתוחה לצעד קטן בהמשך היום.';
 }
 
-const openrouter = createOpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY ?? '',
-  baseURL: 'https://openrouter.ai/api/v1',
-  headers: {
-    'HTTP-Referer': publicAppUrlForAiReferer(),
-    'X-Title': 'NuraWell',
-  },
-});
+const openrouter = createAiProvider();
 
 export async function POST(request: Request) {
   try {

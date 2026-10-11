@@ -1,3 +1,4 @@
+import { createAiProvider } from '@/lib/ai/provider-factory';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText, type ModelMessage } from 'ai';
 import { splitSystemMessages } from './split-system-messages';
@@ -11,7 +12,6 @@ import {
   isGroqLaneAvailable,
 } from './groq-compat';
 import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from './prompts';
-import { publicAppUrlForAiReferer } from '../public-app-url';
 import { stripReasoningArtifacts, validateNotifyText } from '../notifications/validate-notify-text';
 
 /**
@@ -59,14 +59,7 @@ type EmpathyNotifyCompletionOptions = {
   recipientFirstName?: string;
 };
 
-const openrouterAi = createOpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY ?? '',
-  baseURL: 'https://openrouter.ai/api/v1',
-  headers: {
-    'HTTP-Referer': publicAppUrlForAiReferer(),
-    'X-Title': 'NuraWell',
-  },
-});
+const openrouterAi = createAiProvider({ apiKey: process.env.OPENROUTER_API_KEY ?? '' });
 
 /**
  * מזריק את שדה ה-`provider` של OpenRouter כדי לנתב את מודל הנוטיפיקציות הראשי
@@ -96,15 +89,7 @@ const routePrimaryToDeepInfra: typeof fetch = async (input, init) => {
 };
 
 /** OpenRouter עם ניתוב מועדף ל-DeepInfra — רק למודל הנוטיפיקציות הראשי. */
-const openrouterPrimaryAi = createOpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY ?? '',
-  baseURL: 'https://openrouter.ai/api/v1',
-  headers: {
-    'HTTP-Referer': publicAppUrlForAiReferer(),
-    'X-Title': 'NuraWell',
-  },
-  fetch: routePrimaryToDeepInfra,
-});
+const openrouterPrimaryAi = createAiProvider({ apiKey: process.env.OPENROUTER_API_KEY ?? '', fetch: routePrimaryToDeepInfra });
 
 /** זיהוי מודלי reasoning — דורשים budget גדול יותר ל-text הסופי. */
 function looksLikeReasoningModel(model: string): boolean {
@@ -113,12 +98,7 @@ function looksLikeReasoningModel(model: string): boolean {
   );
 }
 
-const groqAi = createOpenAI({
-  apiKey: groqLaneApiKey(),
-  baseURL: groqLaneBaseUrl(),
-  /** gpt-oss: reasoning_effort=low + reasoning budget headroom (see groq-compat.ts) */
-  fetch: groqCompatFetch,
-});
+const groqAi = createAiProvider({ apiKey: groqLaneApiKey(), baseURL: groqLaneBaseUrl(), fetch: groqCompatFetch });
 
 type NotifyProvider = {
   label: string;

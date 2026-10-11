@@ -12,7 +12,7 @@
  *  - סיכומים מערכתיים (summary-generator)
  */
 
-import { isUserNotifyEligible } from './notify-recipients';
+import { evaluateNotifyGate } from './notify-recipients';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { shouldSkipNotifyForTouchFatigue } from '../ai/almog-daily-context';
 import { fetchTodayAlmogTouches } from '../ai/almog-notify-day-context';
@@ -21,7 +21,7 @@ import {
   type RecentHabitNotificationMeta,
 } from './similar-habit-dedupe';
 
-export type AlmogTouchSendGateReason = 'touch_fatigue' | 'similar_habit_recent' | 'not_notify_recipient';
+export type AlmogTouchSendGateReason = 'touch_fatigue' | 'similar_habit_recent' | 'not_notify_recipient' | 'prefs_off' | 'inactivity_fade';
 
 export type AlmogTouchSendGate =
   | { ok: true }
@@ -41,9 +41,12 @@ export async function gateAlmogUserFacingTouch(
   opts: GateAlmogUserFacingTouchOpts = {}
 ): Promise<AlmogTouchSendGate> {
   /** admins לא מקבלים התראות אוטומטיות אלא אם opt-in כמשתמש בדיקה (notify-recipients.ts) */
-  if (!(await isUserNotifyEligible(admin, userId))) {
-    return { ok: false, reason: 'not_notify_recipient' };
-  }
+  /**
+   * שער אחיד: נמען זכאי + notification_prefs + דעיכת חוסר-פעילות (יום 1: נדג' אחד,
+   * מיום 2: פעם ביום, אחרי שבוע: פעם בשבוע) — *לפני* כלל 3 ביום של משימה פתוחה.
+   */
+  const gate = await evaluateNotifyGate(admin, userId);
+  if (!gate.ok) return { ok: false, reason: gate.reason };
   const todayTouches = await fetchTodayAlmogTouches(admin, userId);
   // כולל presence — תקרת 3 מגעים ביום חלה על כל מגע משתמש-פונה.
   if (shouldSkipNotifyForTouchFatigue(todayTouches, 'remind')) {

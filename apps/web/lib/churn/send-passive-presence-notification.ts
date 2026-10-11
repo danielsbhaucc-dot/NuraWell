@@ -4,6 +4,7 @@
  * שליחת נוכחות פסיבית (14+ / churned) דרך LLM — תוכן מותאם אישית במקום templates.
  */
 
+import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
 import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
@@ -224,9 +225,7 @@ export async function sendPassivePresenceNotification(
   const title = `${firstName} 🌿`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: inserted, error } = await admin
-    .from('notifications')
-    .insert({
+  const { data: inserted, error } = await insertNotification(admin, {
       user_id: userId,
       type: 'ai_message',
       title,
@@ -248,9 +247,7 @@ export async function sendPassivePresenceNotification(
         recipient_first_name: firstName,
         llm_decision: 'passive_presence_llm',
       },
-    })
-    .select('id, user_id, type, title, archived_at, is_read, is_sent, created_at')
-    .single();
+    }, { select: 'id, user_id, type, title, archived_at, is_read, is_sent, created_at', single: 'single' });
 
   if (error) throw new Error(error.message);
 

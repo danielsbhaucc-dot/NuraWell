@@ -1,3 +1,4 @@
+import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
 import {
@@ -189,9 +190,7 @@ export async function sendJourneyCompanionNudge(
   const actionUrl = `/journey/${stepPath}`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: inserted, error } = await admin
-    .from('notifications')
-    .insert({
+  const { data: inserted, error } = await insertNotification(admin, {
       user_id: userId,
       type: 'ai_message',
       title,
@@ -213,9 +212,7 @@ export async function sendJourneyCompanionNudge(
         model: AI_MODELS.empathy,
         mentor: 'almog',
       },
-    })
-    .select('id, user_id, type, title, archived_at, is_read, is_sent, created_at')
-    .single();
+    }, { select: 'id, user_id, type, title, archived_at, is_read, is_sent, created_at', single: 'single' });
 
   if (error) throw new Error(error.message);
   return { body, inserted: inserted as Record<string, unknown> | null };

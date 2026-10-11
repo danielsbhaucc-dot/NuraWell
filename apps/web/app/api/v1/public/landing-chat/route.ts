@@ -1,8 +1,7 @@
+import { createAiProvider } from '@/lib/ai/provider-factory';
 import { z } from 'zod';
 import { streamText } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
 import { consumeMultiRateLimits, rateLimitResponse } from '../../../../../lib/api/rate-limit';
-import { publicAppUrlForAiReferer } from '../../../../../lib/public-app-url';
 import { groqCompatFetch } from '@/lib/ai/groq-compat';
 
 /** Edge — סטרימינג מהיר וקרוב ל-POP, בלי תלות ב-Node APIs. */
@@ -81,15 +80,7 @@ export async function POST(req: Request): Promise<Response> {
     });
   }
 
-  const openrouter = createOpenAI({
-    apiKey,
-    baseURL: 'https://openrouter.ai/api/v1',
-    fetch: groqCompatFetch,
-    headers: {
-      'HTTP-Referer': publicAppUrlForAiReferer(),
-      'X-Title': 'NuraWell Landing Demo',
-    },
-  });
+  const openrouter = createAiProvider({ apiKey, fetch: groqCompatFetch, title: 'NuraWell Landing Demo', timeoutMs: null });
 
   try {
     const result = streamText({

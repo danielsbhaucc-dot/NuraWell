@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { isAvoidPushActive } from '@/lib/ai/avoid-push';
 import type { WebPushStored } from './types';
 import { truncateAtWordBoundary } from '@/lib/text/truncate-graphemes';
+import { parseNotificationPrefs } from '@/lib/notifications/inactivity-fade';
 
 export async function deliverWebPushAfterAlmogNotification(
   userId: string,
@@ -22,9 +23,12 @@ export async function deliverWebPushAfterAlmogNotification(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: profile } = await admin
     .from('profiles')
-    .select('ai_context')
+    .select('ai_context, notification_prefs')
     .eq('id', userId)
     .maybeSingle();
+
+  /** notification_prefs.push=false → no device push (in-app bell still shows it). */
+  if (!parseNotificationPrefs((profile as { notification_prefs?: unknown } | null)?.notification_prefs).push) return;
 
   const ctx = (profile?.ai_context ?? {}) as Record<string, unknown>;
   /** avoid_push חוסם רק Web Push למכשיר — לא התראות in-app בפעמון. */
