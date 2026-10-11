@@ -11,13 +11,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  eslint: {
-    /**
-     * ESLint ב-build — מופעל. איסור ignoreDuringBuilds כדי לא לפספס
-     * בעיות אבטחה (no-eval, no-implied-eval, no-secrets) ב-production.
-     */
-    ignoreDuringBuilds: false,
-  },
+  // Next 16: ESLint no longer runs inside `next build` — CI runs `npm run lint` (web-test.yml).
   env: {
     /** עד חיבור דומיין קבוע — Vercel; אפשר לעקוף ב־Dashboard או בפאנל (site_settings) */
     NEXT_PUBLIC_APP_URL:
