@@ -75,3 +75,6 @@ export async function POST(request: Request) {
     file_subtype: subtype ?? null,
   });
 }
+
+// Cap function time so a hung upstream call cannot burn active CPU for the 300s default.
+export const maxDuration = 30;

@@ -48,3 +48,6 @@ export async function GET(request: Request) {
       : 'השלם משתני סביבה (QSTASH_*, OPENROUTER, SUPABASE_SERVICE_ROLE_KEY). בפיתוח: npx @upstash/qstash-cli dev',
   });
 }
+
+// Cap function time so a hung upstream call cannot burn active CPU for the 300s default.
+export const maxDuration = 30;

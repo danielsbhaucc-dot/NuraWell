@@ -14,3 +14,6 @@ export async function GET(request: Request) {
   const publicStats = await fetchChallengePublicStats(auth.supabase);
   return NextResponse.json({ ...state, public_stats: publicStats });
 }
+
+// Cap function time so a hung upstream call cannot burn active CPU for the 300s default.
+export const maxDuration = 30;

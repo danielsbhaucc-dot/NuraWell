@@ -48,3 +48,6 @@ export async function GET(request: Request) {
 
   return NextResponse.json(summary);
 }
+
+// Cap function time so a hung upstream call cannot burn active CPU for the 300s default.
+export const maxDuration = 30;
