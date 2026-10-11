@@ -12,12 +12,12 @@ const lessonSchema = z.object({
   description: z.string().max(3000).nullable().optional(),
   lesson_type: z.enum(['video', 'audio', 'text', 'pdf', 'presentation', 'mixed']).optional(),
   text_content: z.string().max(100_000).nullable().optional(),
-  tasks: z.array(z.record(z.unknown())).optional(),
-  habits: z.array(z.record(z.unknown())).optional(),
+  tasks: z.array(z.record(z.string(), z.unknown())).optional(),
+  habits: z.array(z.record(z.string(), z.unknown())).optional(),
   sort_order: z.number().int().optional(),
   duration_minutes: z.number().int().nullable().optional(),
   is_published: z.boolean().optional(),
-  external_links: z.array(z.record(z.unknown())).optional(),
+  external_links: z.array(z.record(z.string(), z.unknown())).optional(),
 });
 
 type RouteCtx = { params: Promise<{ id: string }> };

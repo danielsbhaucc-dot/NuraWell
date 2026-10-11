@@ -54,7 +54,7 @@ const bodySchema = z.object({
     .optional(),
   path: z.enum(['quick', 'fun']).optional(),
   is_opening: z.boolean().optional(),
-  extracted_public: z.record(z.unknown()).optional(),
+  extracted_public: z.record(z.string(), z.unknown()).optional(),
   field_flags: fieldFlagsSchema.optional(),
   persist: z.boolean().optional(),
   update_mode: z.boolean().optional(),
