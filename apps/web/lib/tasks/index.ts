@@ -58,9 +58,28 @@ export async function listAssignments(admin: SupabaseClient, userId: string, sta
   return (data ?? []) as unknown as TaskAssignment[];
 }
 
+const SOURCE_RANK: Record<string, number> = { step: 0, guide: 1, almog: 2, ai_daily: 3 };
+
+/**
+ * Legacy backfill mirrored the SAME habit from several old tables (lesson step + almog_assignments +
+ * daily_action_instances) → one user could see the same task 2–3 times. Show one card per task title:
+ * prefer the lesson-step definition, then main, then accepted over paused. Rows are kept (no data change).
+ */
+export function dedupeSameTask<T extends { status: string; is_main: boolean; definition: { title: string; source: string } }>(rows: T[]): T[] {
+  const best = new Map<string, T>();
+  const score = (r: T) => (SOURCE_RANK[r.definition.source] ?? 9) * 4 + (r.is_main ? 0 : 2) + (r.status === 'accepted' ? 0 : 1);
+  for (const r of rows) {
+    const key = r.definition.title.trim().replace(/\s+/g, ' ');
+    const cur = best.get(key);
+    if (!cur || score(r) < score(cur)) best.set(key, r);
+  }
+  const keep = new Set(best.values());
+  return rows.filter((r) => keep.has(r));
+}
+
 /** The plan ("התוכנית שלך"): accepted tasks with level, today's progress, streak and history. */
 export async function getPlan(admin: SupabaseClient, userId: string, now = new Date()): Promise<PlanTask[]> {
-  const assignments = await listAssignments(admin, userId, ['accepted', 'paused']);
+  const assignments = dedupeSameTask(await listAssignments(admin, userId, ['accepted', 'paused']));
   if (!assignments.length) return [];
   const today = israelDateKey(now);
   const since = israelDateKey(new Date(now.getTime() - 60 * 86_400_000));
