@@ -789,8 +789,17 @@ async function runMasterCron() {
     }
   }
 
+  let taskLadder: unknown = null;
+  try {
+    const { runTaskLadderMonitorBatch } = await import('@/lib/tasks/monitor-job');
+    taskLadder = await runTaskLadderMonitorBatch(admin);
+  } catch (e) {
+    errors.push(`task_ladder: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
   return NextResponse.json({
     ok: true,
+    task_ladder: taskLadder,
     window_hours: 24,
     analyzed,
     analysis_skipped: analysisSkipped,

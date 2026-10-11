@@ -768,7 +768,7 @@ export function AlmogKnowledgeManager() {
         <section className="rounded-3xl border border-white/60 bg-background-card/55 backdrop-blur-md shadow-lg overflow-hidden flex flex-col">
           <div className="p-3 border-b border-white/50 space-y-3">
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="search"
                 value={searchQ}
@@ -828,7 +828,7 @@ export function AlmogKnowledgeManager() {
                     <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-l from-sky-100/70 to-emerald-100/50 border-b border-white/60">
                       <MapPin className="h-4 w-4 text-sky-700" aria-hidden />
                       <h3 className="text-sm font-black text-slate-800">{station.stationTitle}</h3>
-                      <span className="mr-auto text-[10px] font-bold text-slate-500">
+                      <span className="ms-auto text-[10px] font-bold text-slate-500">
                         {station.steps.length} צעדים
                       </span>
                     </div>
@@ -937,7 +937,7 @@ export function AlmogKnowledgeManager() {
                     <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-l from-violet-100/70 to-sky-100/50 border-b border-white/60">
                       <MapPin className="h-4 w-4 text-violet-700" aria-hidden />
                       <h3 className="text-sm font-black text-slate-800">{station.stationTitle}</h3>
-                      <span className="mr-auto text-[10px] font-bold text-slate-500">
+                      <span className="ms-auto text-[10px] font-bold text-slate-500">
                         {station.steps.reduce((n, s) => n + s.items.length, 0)} מחקרים
                       </span>
                     </div>
@@ -970,11 +970,11 @@ export function AlmogKnowledgeManager() {
                                         </p>
                                       </div>
                                       {citation ? (
-                                        <p className="mt-0.5 pr-5 text-[11px] font-medium text-violet-800/80">
+                                        <p className="mt-0.5 ps-5 text-[11px] font-medium text-violet-800/80">
                                           {citation}
                                         </p>
                                       ) : null}
-                                      <div className="mt-1.5 flex flex-wrap gap-1.5 pr-5">
+                                      <div className="mt-1.5 flex flex-wrap gap-1.5 ps-5">
                                         {meta.evidenceLevel ? (
                                           <span className="inline-flex items-center rounded-full border border-emerald-300/70 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
                                             ראיות: {meta.evidenceLevel}
@@ -991,18 +991,18 @@ export function AlmogKnowledgeManager() {
                                           </a>
                                         ) : null}
                                       </div>
-                                      <p className="mt-1.5 pr-5 text-xs leading-relaxed text-slate-700">
+                                      <p className="mt-1.5 ps-5 text-xs leading-relaxed text-slate-700">
                                         <span className="font-bold text-slate-500">מה אלמוג יודע: </span>
                                         {meta.summary}
                                       </p>
                                       {meta.findings.length ? (
-                                        <ul className="mt-1.5 list-disc space-y-0.5 pr-9 text-[11px] leading-relaxed text-slate-600">
+                                        <ul className="mt-1.5 list-disc space-y-0.5 ps-9 text-[11px] leading-relaxed text-slate-600">
                                           {meta.findings.slice(0, 3).map((f, idx) => (
                                             <li key={idx}>{f}</li>
                                           ))}
                                         </ul>
                                       ) : null}
-                                      <p className="mt-1.5 pr-5 text-[10px] text-slate-400">
+                                      <p className="mt-1.5 ps-5 text-[10px] text-slate-400">
                                         {item.chunk_count} חלקים · עודכן {formatDate(item.updated_at)}
                                       </p>
                                     </div>
@@ -1122,7 +1122,7 @@ export function AlmogKnowledgeManager() {
                           type="button"
                           onClick={() => selectItem(item.id)}
                           className={[
-                            'w-full text-right px-3 py-2.5 hover:bg-emerald-50/80 transition-colors',
+                            'w-full text-start px-3 py-2.5 hover:bg-emerald-50/80 transition-colors',
                             selectedId === item.id && !isNew ? 'bg-emerald-50' : '',
                           ].join(' ')}
                         >
@@ -1149,7 +1149,7 @@ export function AlmogKnowledgeManager() {
                           type="button"
                           onClick={() => selectItem(item.id)}
                           className={[
-                            'w-full text-right px-3 py-2.5 hover:bg-amber-50/80 transition-colors',
+                            'w-full text-start px-3 py-2.5 hover:bg-amber-50/80 transition-colors',
                             selectedId === item.id && !isNew ? 'bg-amber-50' : '',
                           ].join(' ')}
                         >
@@ -1176,7 +1176,7 @@ export function AlmogKnowledgeManager() {
                           type="button"
                           onClick={() => selectItem(item.id)}
                           className={[
-                            'w-full text-right px-3 py-2.5 hover:bg-indigo-50/80 transition-colors',
+                            'w-full text-start px-3 py-2.5 hover:bg-indigo-50/80 transition-colors',
                             selectedId === item.id && !isNew ? 'bg-indigo-50' : '',
                           ].join(' ')}
                         >
@@ -1215,8 +1215,8 @@ export function AlmogKnowledgeManager() {
             className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[1.75rem] shadow-[0_28px_80px_-16px_rgba(14,116,144,0.45)] ring-1 ring-white/50 sm:rounded-[1.75rem]"
             style={glassPanelStyle}
           >
-            <div className="pointer-events-none absolute -left-16 -top-20 h-48 w-48 rounded-full bg-sky-400/25 blur-3xl" aria-hidden />
-            <div className="pointer-events-none absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute -end-16 -top-20 h-48 w-48 rounded-full bg-sky-400/25 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute -bottom-10 -start-10 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" aria-hidden />
             <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-background-card/90 to-transparent" />
 
             {/* כותרת + טאבים */}
@@ -1225,13 +1225,13 @@ export function AlmogKnowledgeManager() {
                 type="button"
                 onClick={() => !saving && !deleting && closeEditor()}
                 disabled={saving || deleting}
-                className="absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/35 text-slate-600 backdrop-blur-md transition hover:bg-background-card/55 disabled:opacity-50 sm:left-4 sm:top-4"
+                className="absolute end-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/35 text-slate-600 backdrop-blur-md transition hover:bg-background-card/55 disabled:opacity-50 sm:end-4 sm:top-4"
                 aria-label="סגור"
               >
                 <X className="h-4 w-4" />
               </button>
 
-              <div className="flex items-center gap-3 pl-10">
+              <div className="flex items-center gap-3 pe-10">
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shadow-lg shadow-sky-500/30 ring-1 ring-white/55">
                   <FileText className="h-5 w-5" aria-hidden />
                 </span>

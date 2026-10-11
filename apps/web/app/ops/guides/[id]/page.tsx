@@ -319,7 +319,7 @@ export default function OpsGuideDetailPage() {
                 <button
                   type="button"
                   onClick={() => setExpandedLessonId((prev) => (prev === l.id ? null : l.id))}
-                  className="crystal-pill p-3 rounded-xl flex items-center gap-3 w-full text-right"
+                  className="crystal-pill p-3 rounded-xl flex items-center gap-3 w-full text-start"
                 >
                   <span className="guide-chapter-index">{i + 1}</span>
                   <div className="flex-1 min-w-0">

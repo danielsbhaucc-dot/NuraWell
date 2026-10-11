@@ -165,7 +165,7 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
 
         {open ? (
           <div
-            className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[min(20rem,calc(100vw-1.25rem))] max-w-[calc(100vw-1.25rem)] overflow-hidden rounded-2xl border border-white/60 bg-[#FFFBF5]/95 shadow-2xl backdrop-blur-xl sm:w-[22rem]"
+            className="absolute start-0 top-[calc(100%+0.5rem)] z-50 w-[min(20rem,calc(100vw-1.25rem))] max-w-[calc(100vw-1.25rem)] overflow-hidden rounded-2xl border border-white/60 bg-[#FFFBF5]/95 shadow-2xl backdrop-blur-xl sm:w-[22rem]"
             dir="rtl"
           >
             <div className="flex items-center justify-between border-b border-stone-200/80 bg-[#FFF5E6]/80 px-3 py-2.5">
@@ -251,7 +251,7 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
                               if (!n.is_read) void markRead([n.id]);
                             }}
                             className={cn(
-                              'block w-full px-3 py-2.5 text-right transition-colors hover:bg-[#FFF0D4]/60',
+                              'block w-full px-3 py-2.5 text-start transition-colors hover:bg-[#FFF0D4]/60',
                               !n.is_read && 'bg-[#FFF8ED]/90',
                             )}
                           >

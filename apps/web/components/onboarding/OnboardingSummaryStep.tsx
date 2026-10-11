@@ -39,7 +39,7 @@ export function OnboardingSummaryStep({ data, name, gender, onEdit }: Onboarding
           >
             <span className="text-xs font-bold text-emerald-100/70 shrink-0 pt-0.5">{row.label}</span>
             <span
-              className="text-sm text-emerald-50 text-left flex-1 break-words"
+              className="text-sm text-emerald-50 text-end flex-1 break-words"
               dir={row.label.includes('משקל') ? 'ltr' : undefined}
             >
               {row.value}

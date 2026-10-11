@@ -304,7 +304,7 @@ export function VideoSection({
             style={{ background: 'linear-gradient(135deg, #064e3b, #047857, #10b981)' }}>
             <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4"
               style={{ background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)' }}>
-              <Play className="w-10 h-10 text-white ml-1" fill="white" />
+              <Play className="w-10 h-10 text-white me-1" fill="white" />
             </div>
             <p className="text-white/90 text-lg font-bold mb-1">{title}</p>
             <p className="text-white/60 text-sm">הסרטון יהיה זמין בקרוב 🎬</p>
@@ -318,7 +318,7 @@ export function VideoSection({
           >
             <div className="w-20 h-20 rounded-full flex items-center justify-center transition-transform group-active:scale-95"
               style={{ background: 'rgba(16,185,129,0.35)', border: '2px solid rgba(52,211,153,0.5)' }}>
-              <Play className="w-10 h-10 text-white ml-1" fill="white" />
+              <Play className="w-10 h-10 text-white me-1" fill="white" />
             </div>
             <span className="text-white font-bold text-sm">צפה שוב</span>
           </button>
@@ -331,7 +331,7 @@ export function VideoSection({
                 style={{ background: 'rgba(0,0,0,0.7)' }}>
                 <div className="w-16 h-16 rounded-full flex items-center justify-center animate-pulse"
                   style={{ background: 'rgba(16,185,129,0.3)', border: '2px solid rgba(16,185,129,0.5)' }}>
-                  <Play className="w-7 h-7 text-emerald-400 ml-0.5" fill="currentColor" />
+                  <Play className="w-7 h-7 text-emerald-400 me-0.5" fill="currentColor" />
                 </div>
               </div>
             )}
@@ -354,7 +354,7 @@ export function VideoSection({
                 style={{ background: 'rgba(0,0,0,0.7)' }}>
                 <div className="w-16 h-16 rounded-full flex items-center justify-center animate-pulse"
                   style={{ background: 'rgba(16,185,129,0.3)', border: '2px solid rgba(16,185,129,0.5)' }}>
-                  <Play className="w-7 h-7 text-emerald-400 ml-0.5" fill="currentColor" />
+                  <Play className="w-7 h-7 text-emerald-400 me-0.5" fill="currentColor" />
                 </div>
               </div>
             )}
@@ -378,7 +378,7 @@ export function VideoSection({
                 style={{ background: 'rgba(0,0,0,0.7)' }}>
                 <div className="w-16 h-16 rounded-full flex items-center justify-center animate-pulse"
                   style={{ background: 'rgba(16,185,129,0.3)', border: '2px solid rgba(16,185,129,0.5)' }}>
-                  <Play className="w-7 h-7 text-emerald-400 ml-0.5" fill="currentColor" />
+                  <Play className="w-7 h-7 text-emerald-400 me-0.5" fill="currentColor" />
                 </div>
               </div>
             )}
@@ -445,7 +445,7 @@ export function VideoSection({
 
       {debugVideoOverlay && (
         <div
-          className="fixed left-0 right-0 z-[99999] px-2 py-2 text-[10px] leading-tight font-mono text-white text-left break-all pointer-events-none"
+          className="fixed end-0 start-0 z-[99999] px-2 py-2 text-[10px] leading-tight font-mono text-white text-end break-all pointer-events-none"
           style={{
             top: 'calc(4.25rem + env(safe-area-inset-top, 0px))',
             background: 'rgba(0,0,0,0.92)',

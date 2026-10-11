@@ -82,7 +82,7 @@ function GlassAudioPlayer({ src, title }: { src: string; title: string | null })
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-emerald-300/30 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-xl">
-      <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-emerald-400/20 blur-3xl" />
+      <div className="pointer-events-none absolute -start-10 -top-10 h-32 w-32 rounded-full bg-emerald-400/20 blur-3xl" />
       <audio ref={audioRef} src={src} preload="metadata" />
       <div className="relative flex items-center gap-3">
         <button
@@ -99,7 +99,7 @@ function GlassAudioPlayer({ src, title }: { src: string; title: string | null })
             {title || 'שיר נבחר'}
           </p>
           <div className="mt-2 flex items-center gap-2">
-            <span className="w-9 text-left text-[11px] font-semibold tabular-nums text-slate-500">
+            <span className="w-9 text-end text-[11px] font-semibold tabular-nums text-slate-500">
               {formatTime(current)}
             </span>
             <div className="relative flex-1">
@@ -210,7 +210,7 @@ function AdminComingSoonSongSection() {
       className="relative overflow-hidden rounded-3xl border border-white/40 bg-background-card/40 p-5 backdrop-blur-xl"
       dir="rtl"
     >
-      <div className="pointer-events-none absolute -left-16 -top-16 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" />
+      <div className="pointer-events-none absolute -end-16 -top-16 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" />
       <div className="relative flex items-center gap-3">
         <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md">
           <Music4 className="h-5 w-5" />

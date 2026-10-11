@@ -103,8 +103,8 @@ export function NotificationsBellButton({
           <span
             className={cn(
               isChallenge
-                ? 'absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-white'
-                : 'absolute -right-0.5 -top-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-black leading-none text-white border-2 border-white/90 shadow-md',
+                ? 'absolute -start-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-white'
+                : 'absolute -start-0.5 -top-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-black leading-none text-white border-2 border-white/90 shadow-md',
               badgeClassName
             )}
             style={
@@ -127,15 +127,15 @@ export function NotificationsBellButton({
           className={cn(
             'absolute z-50 mt-2 min-w-[11.5rem] overflow-hidden rounded-2xl border shadow-xl',
             isChallenge
-              ? 'left-0 border-white/15 bg-zinc-950/95 text-white'
-              : 'right-0 border-emerald-100/80 bg-background-card/95 text-emerald-950'
+              ? 'end-0 border-white/15 bg-zinc-950/95 text-white'
+              : 'start-0 border-emerald-100/80 bg-background-card/95 text-emerald-950'
           )}
         >
           <button
             type="button"
             role="menuitem"
             className={cn(
-              'flex w-full items-center gap-2 px-3.5 py-2.5 text-right text-[13px] font-bold transition',
+              'flex w-full items-center gap-2 px-3.5 py-2.5 text-start text-[13px] font-bold transition',
               isChallenge ? 'hover:bg-background-card/10' : 'hover:bg-emerald-50'
             )}
             onClick={openInbox}
@@ -147,7 +147,7 @@ export function NotificationsBellButton({
             type="button"
             role="menuitem"
             className={cn(
-              'flex w-full items-center gap-2 border-t px-3.5 py-2.5 text-right text-[13px] font-bold transition',
+              'flex w-full items-center gap-2 border-t px-3.5 py-2.5 text-start text-[13px] font-bold transition',
               isChallenge
                 ? 'border-white/10 hover:bg-background-card/10'
                 : 'border-emerald-100 hover:bg-emerald-50'

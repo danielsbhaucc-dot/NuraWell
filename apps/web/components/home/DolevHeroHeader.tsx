@@ -379,7 +379,7 @@ function TaskBadgeRow({
     ? {
         type: 'button' as const,
         onClick,
-        className: 'w-full text-right',
+        className: 'w-full text-start',
         'aria-label': 'פתח רשימת משימות היום',
       }
     : {};

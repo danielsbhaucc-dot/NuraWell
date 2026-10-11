@@ -83,7 +83,7 @@ export function JourneyNextStepCard() {
 
       <div className="flex items-center gap-2.5 mb-3">
         <AlmogAvatarChip size={32} />
-        <div className="text-right">
+        <div className="text-start">
           <span
             style={{
               fontSize: '13px',

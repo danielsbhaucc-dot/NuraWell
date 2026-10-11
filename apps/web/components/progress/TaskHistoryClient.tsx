@@ -335,7 +335,7 @@ function PeriodTimeline({
 
   return (
     <div className="rounded-2xl p-3" style={{ background: 'rgba(220,252,231,0.45)', border: '1px solid rgba(167,243,208,0.45)' }}>
-      <p className="text-[10px] font-bold text-emerald-900/75 mb-2 text-right">
+      <p className="text-[10px] font-bold text-emerald-900/75 mb-2 text-start">
         ציר זמן · {dateKeys.length} ימים
       </p>
       <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
@@ -387,7 +387,7 @@ function DayRow({ day, todayKey }: { day: TaskHistoryDay; todayKey: string }) {
       <button
         type="button"
         onClick={() => hasExec && setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 text-right"
+        className="w-full flex items-center justify-between gap-2 text-start"
         disabled={!hasExec}
       >
         <div className="flex items-center gap-2 min-w-0">
@@ -484,7 +484,7 @@ function TaskCard({
 
   return (
     <article className="rounded-[24px] overflow-hidden" style={glassTaskCard}>
-      <button type="button" onClick={() => setExpanded((v) => !v)} className="w-full p-4 text-right">
+      <button type="button" onClick={() => setExpanded((v) => !v)} className="w-full p-4 text-start">
         <div className="flex items-start gap-3 flex-row-reverse">
           <div
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl"
@@ -549,7 +549,7 @@ function TaskCard({
 
         {encouragement ? (
           <p
-            className="text-[11px] font-semibold text-emerald-900/85 mt-2.5 text-right rounded-xl px-3 py-2"
+            className="text-[11px] font-semibold text-emerald-900/85 mt-2.5 text-start rounded-xl px-3 py-2"
             style={{ background: 'rgba(236,253,245,0.7)', border: '1px solid rgba(167,243,208,0.4)' }}
           >
             {encouragement}
@@ -596,7 +596,7 @@ function TaskCard({
               {visibleDays.length > 0 ? (
                 <div>
                   <p className="text-[10px] font-bold text-emerald-900/70 mb-2">יומן לפי יום</p>
-                  <div className="space-y-2 max-h-[min(50vh,360px)] overflow-y-auto pr-0.5">
+                  <div className="space-y-2 max-h-[min(50vh,360px)] overflow-y-auto ps-0.5">
                     {visibleDays.map((day) => (
                       <DayRow key={day.date_key} day={day} todayKey={todayKey} />
                     ))}
@@ -802,12 +802,12 @@ export function TaskHistoryClient({
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute -right-16 -top-12 h-48 w-48 rounded-full"
+          className="pointer-events-none absolute -start-16 -top-12 h-48 w-48 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.28), transparent 68%)' }}
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute -bottom-10 -left-16 h-56 w-56 rounded-full"
+          className="pointer-events-none absolute -bottom-10 -end-16 h-56 w-56 rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.45), transparent 70%)' }}
         />
 
@@ -831,7 +831,7 @@ export function TaskHistoryClient({
             <div className="-mt-3 shrink-0">
               <AlmogAvatarChipWithNameTag size={92} nameTagVariant="prominent" />
             </div>
-            <div className="min-w-0 flex-1 text-right">
+            <div className="min-w-0 flex-1 text-start">
               <p
                 className="text-[15px] font-black text-white leading-tight"
                 style={{ fontFamily: hebrewFont }}
@@ -912,7 +912,7 @@ export function TaskHistoryClient({
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.3 }}
-              className="mt-3 rounded-2xl px-4 py-3 text-right text-sm font-bold text-teal-900"
+              className="mt-3 rounded-2xl px-4 py-3 text-start text-sm font-bold text-teal-900"
               style={{
                 background: 'linear-gradient(135deg, rgba(167,243,208,0.7), rgba(110,231,183,0.5))',
                 border: '1px solid rgba(52,211,153,0.4)',
@@ -1098,7 +1098,7 @@ export function TaskHistoryClient({
                     <span className="text-emerald-900/60 shrink-0 tabular-nums">
                       {r.rejected_at ? formatDateTime(r.rejected_at) : '—'}
                     </span>
-                    <span className="font-medium text-emerald-950 text-right min-w-0 line-clamp-1">
+                    <span className="font-medium text-emerald-950 text-start min-w-0 line-clamp-1">
                       {r.task_title}
                       <span className="text-emerald-900/55 font-normal">
                         {' '}
