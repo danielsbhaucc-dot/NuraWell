@@ -636,6 +636,11 @@ export function AdminUsersClient() {
                 <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
                   {tab === 'details' ? (
                     <div className="space-y-4">
+                      <NotifyTestToggle
+                        userId={selectedId}
+                        initial={detail?.profile?.notify_test_opt_in === true}
+                        isAdminAccount={detail?.profile?.role === 'admin'}
+                      />
                       <Section icon={User} title="זהות אישית" tone="emerald">
                         <Field label="שם מלא" className="sm:col-span-2">
                           <input
@@ -999,6 +1004,76 @@ function StatChip({ label, value, tone }: { label: string; value: number; tone: 
     <div className={cn('rounded-2xl border px-3 py-2.5 text-center backdrop-blur-md', CHIP_TONES[tone])}>
       <p className="font-display text-xl font-black tabular-nums">{value}</p>
       <p className="mt-0.5 text-[11px] font-semibold opacity-80">{label}</p>
+    </div>
+  );
+}
+
+/**
+ * משתמש בדיקה להתראות: admins לא מקבלים התראות אוטומטיות אלא אם הדגל מסומן.
+ * נשמר בצד שרת (POST /api/v1/admin/users/[id]/notify-test, admin-only).
+ */
+function NotifyTestToggle({
+  userId,
+  initial,
+  isAdminAccount,
+}: {
+  userId: string | null;
+  initial: boolean;
+  isAdminAccount: boolean;
+}) {
+  const [enabled, setEnabled] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => setEnabled(initial), [initial, userId]);
+  if (!userId) return null;
+
+  const toggle = async () => {
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/v1/admin/users/${userId}/notify-test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !enabled }),
+      });
+      const data = (await res.json()) as { notify_test_opt_in?: boolean; error?: string };
+      if (!res.ok) throw new Error(data.error ?? 'שגיאה');
+      setEnabled(data.notify_test_opt_in === true);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'שגיאה');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-slate-800">משתמש בדיקה להתראות</p>
+        <p className="text-xs text-slate-500">
+          {isAdminAccount
+            ? 'חשבון אדמין — מקבל התראות אוטומטיות רק כשהמתג פעיל.'
+            : 'משתמש רגיל מקבל התראות בכל מקרה; המתג מסמן אותו כחשבון בדיקה.'}
+        </p>
+        {err ? <p className="mt-1 text-xs text-rose-600">{err}</p> : null}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={enabled}
+        aria-label="משתמש בדיקה להתראות"
+        disabled={busy}
+        onClick={toggle}
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${
+          enabled ? 'bg-emerald-500' : 'bg-slate-300'
+        }`}
+      >
+        <span
+          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+            enabled ? '-translate-x-5' : '-translate-x-0.5'
+          }`}
+        />
+      </button>
     </div>
   );
 }
