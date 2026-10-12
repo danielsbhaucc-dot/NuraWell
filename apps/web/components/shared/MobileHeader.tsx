@@ -61,9 +61,9 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- static brand SVG */}
             <img
-              src="/brand/nurawell-lockup-on-dark.svg"
+              src="/brand/nurawell-special-on-green.svg"
               alt="NuraWell"
-              width={99}
+              width={112}
               height={22}
               style={{ display: 'block', height: 22, width: 'auto' }}
             />
