@@ -5,6 +5,7 @@ import {
   parseDemoAccessCookie,
   type DemoAccessCookiePayload,
 } from './cookie';
+import { hasActiveDemoAccessSession } from './active-session';
 
 /** קריאת עוגיית דמו מהבקשה הנוכחית (Server Components / Route Handlers). */
 export async function readDemoAccessCookie(): Promise<DemoAccessCookiePayload | null> {
@@ -16,7 +17,18 @@ export async function readDemoAccessCookie(): Promise<DemoAccessCookiePayload | 
   }
 }
 
+/**
+ * סשן דמו פעיל לפי DB בלבד (לא תלוי בעוגייה).
+ * משמש לחסימת Ops / admin API גם כש-nw_demo לא מגיע ל-host.
+ */
 export async function isDemoAccessActiveForUser(userId: string): Promise<boolean> {
+  return hasActiveDemoAccessSession(userId);
+}
+
+/**
+ * אימות מלא: עוגייה חתומה + קישור תקף + סשן DB (לבאנר / סטטוס UI).
+ */
+export async function isDemoAccessCookieSessionValid(userId: string): Promise<boolean> {
   const payload = await readDemoAccessCookie();
   if (!payload || payload.userId !== userId) return false;
 
