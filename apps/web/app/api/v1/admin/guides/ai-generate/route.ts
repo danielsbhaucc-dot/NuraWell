@@ -128,9 +128,9 @@ async function callLlm(prompt: string): Promise<{ text: string; provider: string
     const res = await openrouter.chat.completions.create({
       model,
       temperature: 0.4,
-      max_tokens: 8000,
+      max_tokens: 16000, // reasoning models spend part of the budget thinking — headroom avoids truncated JSON
       messages: [{ role: 'user', content: prompt }],
-    });
+    }, { timeout: 110_000, maxRetries: 0 });
     return {
       text: res.choices[0]?.message?.content ?? '',
       provider: 'openrouter',
@@ -142,7 +142,7 @@ async function callLlm(prompt: string): Promise<{ text: string; provider: string
   const res = await groq.chat.completions.create({
     model: groqModel,
     temperature: 0.4,
-    max_tokens: 8000,
+    max_tokens: 16000, // reasoning models spend part of the budget thinking — headroom avoids truncated JSON
     messages: [{ role: 'user', content: prompt }],
   });
   return { text: res.choices[0]?.message?.content ?? '', provider: 'groq', model: groqModel };

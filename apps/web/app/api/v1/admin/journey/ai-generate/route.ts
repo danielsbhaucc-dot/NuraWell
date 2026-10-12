@@ -141,10 +141,10 @@ async function generateBlueprint(userPrompt: string): Promise<JourneyBlueprint |
       const completion = await openrouter.chat.completions.create({
         model: AI_MODELS.critical,
         temperature: 0.6,
-        max_tokens: 8000,
+        max_tokens: 16000, // reasoning models spend part of the budget thinking — headroom avoids truncated JSON
         response_format: { type: 'json_object' },
         messages,
-      });
+      }, { timeout: 110_000, maxRetries: 0 });
       const bp = coerceBlueprint(JSON.parse(pickJsonObject(completion.choices[0]?.message?.content ?? '{}')));
       if (bp) return bp;
     } catch (error) {
@@ -157,7 +157,7 @@ async function generateBlueprint(userPrompt: string): Promise<JourneyBlueprint |
       const completion = await groq.chat.completions.create({
         model: AI_MODELS.background_groq_strong,
         temperature: 0.6,
-        max_tokens: 8000,
+        max_tokens: 16000, // reasoning models spend part of the budget thinking — headroom avoids truncated JSON
         response_format: { type: 'json_object' },
         messages,
       });
