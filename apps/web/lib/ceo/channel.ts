@@ -12,8 +12,9 @@ export function allowedChatIds(raw = process.env.CEO_TELEGRAM_ALLOWED_CHAT_IDS):
   return new Set((raw ?? '').split(/[\s,]+/).map((s) => s.trim()).filter(Boolean));
 }
 
-/** Deep links into the admin panel (ops host if configured, else the public app origin). */
+/** Deep links into the admin panel. The ops host serves panel pages at the root (/errors, /users …). */
 export function opsLink(path: string): string {
-  const base = (process.env.CEO_OPS_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://nurawell.vercel.app').replace(/\/$/, '');
-  return `${base}/ops${path.startsWith('/') ? path : `/${path}`}`;
+  const base = (process.env.CEO_OPS_BASE_URL || process.env.NEXT_PUBLIC_OPS_URL || 'https://ops.nurawell.ai').trim().replace(/\/$/, '');
+  const withProto = base.startsWith('http') ? base : `https://${base}`;
+  return `${withProto}${path.startsWith('/') ? path : `/${path}`}`;
 }

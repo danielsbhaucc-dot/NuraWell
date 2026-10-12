@@ -2,14 +2,17 @@ import type { CeoButton, CeoChannel } from './channel';
 
 const MAX = 4000; // Telegram limit is 4096 chars per message
 
-function api(method: string, body: unknown, fetchImpl: typeof fetch = fetch) {
+async function api(method: string, body: unknown, fetchImpl: typeof fetch = fetch) {
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
   if (!token) throw new Error('TELEGRAM_BOT_TOKEN missing');
-  return fetchImpl(`https://api.telegram.org/bot${token}/${method}`, {
+  const r = await fetchImpl(`https://api.telegram.org/bot${token}/${method}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   });
+  // never include the URL (it contains the token) in errors
+  if (!r.ok) throw new Error(`telegram ${method} failed: ${r.status} ${(await r.text().catch(() => '')).slice(0, 200)}`);
+  return r;
 }
 
 export function splitMessage(text: string, max = MAX): string[] {
