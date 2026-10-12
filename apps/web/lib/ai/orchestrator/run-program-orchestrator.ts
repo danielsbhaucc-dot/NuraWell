@@ -234,7 +234,7 @@ export async function orchestrateProgramForUser(
 
   // ── נוטיפיקציה — מקור אמת לתדירות + מנוע ה-push ──────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: notifyError } = await insertNotification(admin, {
+  const { error: notifyError, deduped: notifyDeduped } = await insertNotification(admin, {
     user_id: profile.id,
     type: 'ai_message',
     title: proposal.headline,
@@ -253,9 +253,11 @@ export async function orchestrateProgramForUser(
       requires_buyin: proposal.requires_buyin,
       model: proposal.model,
     },
-  });
+  }, { idempotencyKey: `program-orchestrator|${proposal.id}` });
 
-  if (notifyError) {
+  if (notifyDeduped) {
+    // already sent today (uq_notifications_dedupe_day) — no second push
+  } else if (notifyError) {
     // eslint-disable-next-line no-console
     console.warn('[program-orchestrator] notification insert failed', profile.id, notifyError.message);
   } else {

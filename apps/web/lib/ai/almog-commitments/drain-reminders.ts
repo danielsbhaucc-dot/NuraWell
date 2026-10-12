@@ -18,6 +18,14 @@ import { gateAlmogUserFacingTouch } from '../../notifications/almog-touch-send-g
 
 type Admin = SupabaseClient;
 
+/** SOS follow-up שאיחר יותר מזה אחרי fire_at כבר לא רלוונטי ("איך היה אחרי הרגע?" אחרי שעות) — מדלגים. */
+export const SOS_FOLLOWUP_STALE_MS = 3 * 60 * 60 * 1000;
+
+export function isStaleSosFollowUp(fireAt: string, now: Date): boolean {
+  const t = Date.parse(fireAt);
+  return Number.isFinite(t) && now.getTime() - t > SOS_FOLLOWUP_STALE_MS;
+}
+
 type ReminderRow = {
   id: string;
   user_id: string;
@@ -127,6 +135,14 @@ export async function drainAlmogReminders(
   for (const r of due) {
     try {
       if (r.metadata?.source === 'sos_followup') {
+        if (isStaleSosFollowUp(r.fire_at, now)) {
+          await admin
+            .from('scheduled_reminders')
+            .update({ status: 'skipped', metadata: { ...(r.metadata ?? {}), skip_reason: 'stale' } })
+            .eq('id', r.id);
+          skipped += 1;
+          continue;
+        }
         const ok = await skipSosFollowUpIfResolved(admin, r.user_id, r.id, r.metadata);
         if (!ok) {
           skipped += 1;
@@ -151,7 +167,7 @@ export async function drainAlmogReminders(
         continue;
       }
 
-      const { data: inserted, error: insertErr } = await insertNotification(admin, {
+      const { data: inserted, error: insertErr, deduped } = await insertNotification(admin, {
           user_id: r.user_id,
           type: 'ai_message',
           title: r.title,
@@ -173,6 +189,15 @@ export async function drainAlmogReminders(
           },
         }, { select: 'id', single: 'single' });
 
+      if (deduped) {
+        // uq_notifications_dedupe_day: אותה התראה כבר נשלחה היום — "כבר נשלח", לא שגיאה/ניסיון חוזר.
+        await admin
+          .from('scheduled_reminders')
+          .update({ status: 'skipped', metadata: { ...(r.metadata ?? {}), skip_reason: 'deduped' } })
+          .eq('id', r.id);
+        skipped += 1;
+        continue;
+      }
       if (insertErr) throw new Error(insertErr.message);
 
       const notificationId = (inserted as { id: string } | null)?.id ?? null;
