@@ -1568,6 +1568,7 @@ async function attemptContextRoute(opts: {
 }): Promise<ChatContextDecision | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
+  const perfRouterT0 = Date.now();
   try {
     const response = await fetch(opts.endpoint, {
       method: 'POST',
@@ -1614,6 +1615,7 @@ async function attemptContextRoute(opts: {
       choices?: Array<{ message?: { content?: string | null } }>;
     };
     const raw = data.choices?.[0]?.message?.content?.trim();
+    console.info('[ai/chat]', { stage: 'router_llm_done', ms: Date.now() - perfRouterT0, out_chars: raw?.length ?? 0 });
     if (!raw) return null;
     const parsed = chatContextRouterSchema.safeParse(parseLlmJsonObject(raw));
     if (!parsed.success) return null;
@@ -2576,6 +2578,7 @@ export async function POST(request: Request) {
    */
   const routerBundlePromise = (async () => {
     const profilePeek = await profilePromise;
+    console.info('[ai/chat]', { stage: 'profile_ready', since_start_ms: Date.now() - startedAt });
     const stickyStance = parseChatWriterStance(profilePeek.ai_context.writer_stance);
     const stickyLine = stickyStance
       ? `${stickyStance.writer} · ${stickyStance.reason} · turns=${stickyStance.turns}`
