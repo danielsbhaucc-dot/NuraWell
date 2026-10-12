@@ -52,12 +52,13 @@ export async function sendDigest(db: SupabaseClient, channel: CeoChannel, period
   return { sent: chats.length };
 }
 
-/** One daily schedule. Adds weekly on Sunday and monthly on the 1st (Israel time). ?period= forces one. */
+/** One daily 21:00 IL schedule: monthly on the last day of the month, weekly on Saturday, else daily. ?period= forces one. */
 export function periodsFor(now: Date, forced?: string | null): DigestPeriod[] {
   if (forced === 'daily' || forced === 'weekly' || forced === 'monthly') return [forced];
   const il = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
-  if (il.getDate() === 1) return ['monthly'];
-  if (il.getDay() === 0) return ['weekly'];
+  const tomorrow = new Date(il.getFullYear(), il.getMonth(), il.getDate() + 1);
+  if (tomorrow.getDate() === 1) return ['monthly'];
+  if (il.getDay() === 6) return ['weekly'];
   return ['daily'];
 }
 

@@ -13,7 +13,7 @@ type Msg = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 
 export const CEO_CHAT_MODEL = AI_MODELS.background_groq_strong; // gpt-oss-120b
 /** Complex reasoning/analysis/planning turns. Best cost/quality on OpenRouter for Hebrew + tool use. */
-export const CEO_STRONG_MODEL = process.env.CEO_STRONG_MODEL?.trim() || 'anthropic/claude-sonnet-5.5';
+export const CEO_STRONG_MODEL = process.env.CEO_STRONG_MODEL?.trim() || 'openai/gpt-5.4-mini';
 export const CEO_CONTENT_MODEL = process.env.CEO_CONTENT_MODEL?.trim() || CEO_STRONG_MODEL;
 const DEEPSEEK_MODEL = process.env.CEO_DEEPSEEK_MODEL?.trim() || 'deepseek-chat';
 const EXHAUSTED_TTL_MS = 6 * 3600_000;

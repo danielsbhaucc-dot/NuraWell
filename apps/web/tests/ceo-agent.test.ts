@@ -173,16 +173,16 @@ describe('digests', () => {
     const text = await buildDigest(db, 'daily', { complete: llm as never });
     expect(llm).toHaveBeenCalledTimes(1);
     expect((llm.mock.calls[0] as unknown[])[0]).toMatchObject({ sensitivity: 'technical' });
-    expect(text).toContain('/errors');
+    expect(text).toContain('nurawell.vercel.app/ops/errors');
   });
   it('weekly is sensitive; schedule picks period by Israel date', async () => {
     const { db } = fakeDb();
     const llm = vi.fn(async () => ({ message: { role: 'assistant', content: 'x' } }));
     await buildDigest(db, 'weekly', { complete: llm as never });
     expect((llm.mock.calls[0] as unknown[])[0]).toMatchObject({ sensitivity: 'sensitive' });
-    expect(periodsFor(new Date('2026-11-01T06:00:00Z'))).toEqual(['monthly']);
-    expect(periodsFor(new Date('2026-10-18T06:00:00Z'))).toEqual(['weekly']);
-    expect(periodsFor(new Date('2026-10-13T06:00:00Z'))).toEqual(['daily']);
+    expect(periodsFor(new Date('2026-10-31T18:00:00Z'))).toEqual(['monthly']);
+    expect(periodsFor(new Date('2026-10-17T18:00:00Z'))).toEqual(['weekly']);
+    expect(periodsFor(new Date('2026-10-13T18:00:00Z'))).toEqual(['daily']);
   });
 });
 
