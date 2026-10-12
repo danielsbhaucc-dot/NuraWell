@@ -11,7 +11,7 @@ const schema = z.object({
   assignmentId: z.string().uuid(),
   direction: z.enum(['easier', 'harder']),
   reason: z.string().trim().max(500).optional(),
-  source: z.enum(['user_button', 'sos']).default('user_button'),
+  source: z.enum(['user_button', 'sos', 'chat']).default('user_button'),
 });
 
 /** "קשה לי" / "גם זה קשה לי" / "קל לי" — one ladder step, owner only, recorded with reason. */
