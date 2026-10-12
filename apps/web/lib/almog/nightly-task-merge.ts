@@ -1,7 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { openrouter } from '@/lib/ai/client';
 import { parseLlmJsonObject } from '@/lib/ai/parse-llm-json';
-import { withAiUsage } from '@/lib/ai/usage-meter';
+import { meteredFetch } from '@/lib/ai/usage-meter';
 import { gateAlmogUserFacingTouch } from '@/lib/notifications/almog-touch-send-gate';
 import { insertNotification } from '@/lib/notifications/deliver';
 import { levelInfo, resolveLadder, type TaskDefinitionLike } from '@/lib/tasks/ladder';
@@ -72,29 +71,31 @@ export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (
   const decide =
     deps.decide ??
     (async (c: Cand[]) => {
-      const r = await withAiUsage({ feature: 'almog_task_merge' }, () =>
-        openrouter.chat.completions.create({
-          model: MERGE_MODEL,
-          messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: JSON.stringify(c) }],
-          response_format: { type: 'json_object' },
-        } as never)
-      );
-      return parseLlmJsonObject((r as { choices: { message: { content: string } }[] }).choices[0].message.content);
+      const r = await meteredFetch(fetch, { feature: 'almog_task_merge' })('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${process.env.OPENROUTER_API_KEY?.trim() ?? ''}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ model: MERGE_MODEL, messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: JSON.stringify(c) }], response_format: { type: 'json_object' } }),
+      });
+      if (!r.ok) throw new Error(`openrouter ${r.status}: ${(await r.text()).slice(0, 200)}`);
+      const j = (await r.json()) as { choices?: { message?: { content?: string } }[] };
+      return parseLlmJsonObject(j.choices?.[0]?.message?.content ?? '');
     });
 
-  const summary = { flaggedUsers: rows.length, mergedTasks: 0, usersMerged: 0, notified: 0 };
+  const summary = { flaggedUsers: rows.length, mergedTasks: 0, usersMerged: 0, notified: 0, errors: [] as string[] };
   for (const row of rows) {
     let decisions: MergeDecision[] = [];
     try {
       decisions = sanitizeDecisions(await decide(row.tasks), row.tasks);
-    } catch {
+    } catch (e) {
+      summary.errors.push(String(e).slice(0, 200));
       continue;
     }
     let merged = 0;
     let mainKeep: string | null = null;
     for (const d of decisions) {
       const { data: n, error: e } = await db.rpc('merge_task_assignments', { p_user: row.user_id, p_keep: d.keep, p_drop: d.drop, p_reason: d.reason ?? null });
-      if (!e) {
+      if (e) summary.errors.push(`merge: ${e.message.slice(0, 150)}`);
+      else {
         merged += Number(n) || 0;
         mainKeep ??= d.keep;
       }
@@ -103,7 +104,10 @@ export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (
     summary.mergedTasks += merged;
     summary.usersMerged += 1;
     const gate = await gateAlmogUserFacingTouch(db, row.user_id);
-    if (!gate.ok) continue;
+    if (!gate.ok) {
+      summary.errors.push(`gate: ${gate.reason}`);
+      continue;
+    }
     const { data: p } = await db.from('profiles').select('full_name').eq('id', row.user_id).maybeSingle();
     const first = ((p?.full_name as string | null) ?? '').trim().split(/\s+/)[0] || null;
     const msg = mergeMessage(first, merged, await keptTaskInfo(db, mainKeep));
@@ -120,6 +124,7 @@ export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (
       metadata: { source: 'almog_nightly_merge', merged },
     });
     if (!res.error) summary.notified += 1;
+    else summary.errors.push(`notify: ${res.error.message.slice(0, 150)}`);
   }
   return summary;
 }
