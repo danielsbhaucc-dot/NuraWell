@@ -384,9 +384,24 @@ const CHAT_ROUTER_PROVIDER_SORT = (() => {
   return raw === 'latency' || raw === 'throughput' || raw === 'price' ? raw : null;
 })();
 
+const CHAT_ROUTER_PROVIDER_ORDER = (() => {
+  const raw = process.env.AI_CHAT_ROUTER_PROVIDER_ORDER?.trim();
+  if (raw === 'off') return [] as string[];
+  return (raw || 'Parasail,Novita').split(',').map((x) => x.trim()).filter(Boolean);
+})();
+
 function chatRouterProviderPrefs(pinned: boolean): Record<string, unknown> {
   if (pinned && CHAT_ROUTER_PROVIDER_ONLY.length) {
     return { provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] } };
+  }
+  /**
+   * perf: same model (Llama 4 Maverick), pinned provider order. Benchmark 2026-10-12 on real
+   * router prompts (median / max): Parasail 2.1s / 3.2s, Novita 4.5s / 7.9s,
+   * DigitalOcean 9.4s / 12.4s, Google Vertex failing. `sort: latency` sometimes picked
+   * DigitalOcean and the router hit its timeout. allow_fallbacks keeps the others as backup.
+   */
+  if (CHAT_ROUTER_PROVIDER_ORDER.length) {
+    return { provider: { order: [...CHAT_ROUTER_PROVIDER_ORDER], allow_fallbacks: true } };
   }
   return CHAT_ROUTER_PROVIDER_SORT
     ? { provider: { sort: CHAT_ROUTER_PROVIDER_SORT, allow_fallbacks: true } }
@@ -557,6 +572,15 @@ function resolveChatModelRuntime(writer: ChatWriterKey): ChatModelRuntime {
   };
 }
 
+function fnv1a(s: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16);
+}
+
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 type StreamFinishPayload = {
@@ -679,6 +703,7 @@ async function createOpenRouterTextStreamResponse({
   providerOnly?: readonly string[];
 }) {
   const perfT0 = Date.now();
+  let perfGenId: string | null = null;
   const tokenizedStatic = staticSystemPrompt;
   const tokenizedDynamic = piiShield ? piiShield.tokenizeText(dynamicSystemPrompt) : dynamicSystemPrompt;
   const tokenizedMessages = piiShield
@@ -761,7 +786,7 @@ async function createOpenRouterTextStreamResponse({
       },
       body: requestBody,
     });
-    console.info('[ai/chat]', { stage: 'writer_upstream_open', model, attempt, status: upstream.status, prep_ms: perfPrepMs, fetch_ms: Date.now() - perfFetchAt, body_chars: requestBody.length });
+    console.info('[ai/chat]', { stage: 'writer_upstream_open', model, attempt, status: upstream.status, prep_ms: perfPrepMs, fetch_ms: Date.now() - perfFetchAt, body_chars: requestBody.length, static_chars: tokenizedStatic.length, static_hash: fnv1a(tokenizedStatic), head_hash: fnv1a(requestBody.slice(0, 6000)) });
     if (upstream.ok) break;
 
     lastErrorText = await upstream.text().catch(() => '');
@@ -847,6 +872,10 @@ async function createOpenRouterTextStreamResponse({
         }>;
         usage?: unknown;
       };
+      if (!perfGenId && typeof (parsed as { id?: unknown }).id === 'string') {
+        perfGenId = (parsed as { id: string }).id;
+        console.info('[ai/chat]', { stage: 'writer_gen', gen: perfGenId, since_prep_ms: Date.now() - perfT0 });
+      }
       const choice = parsed.choices?.[0];
       const content = extractOpenRouterDeltaText(choice);
       if (content.length > 0) {
@@ -1497,7 +1526,7 @@ const CHAT_ROUTER_TIMEOUT_MS = (() => {
   const n = raw ? Number(raw) : NaN;
   // 2000ms: 1200 היה צר מדי ל-Llama scout ונפל ל-fallback תכופות (תשובות
   // גנריות בלי RAG). 2s נותן מרווח אמין, וה-heuristic מכסה גם אם בכל זאת ייפול.
-  return Number.isFinite(n) && n >= 600 && n <= 15000 ? Math.floor(n) : 8000;
+  return Number.isFinite(n) && n >= 600 && n <= 15000 ? Math.floor(n) : 5000;
 })();
 
 function buildChatContextRouterPrompt(
