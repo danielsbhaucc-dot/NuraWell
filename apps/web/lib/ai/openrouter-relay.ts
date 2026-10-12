@@ -1,3 +1,4 @@
+import { meteredFetch, type AiUsageMeta } from '@/lib/ai/usage-meter';
 /**
  * OpenRouter calls with large prompts are slow from Vercel's syd1/fra1 (headers after ~5-6s for a
  * ~75KB chat prompt) but ~1s from iad1, next to OpenRouter/OpenAI. Probed 2026-10-12: the same
@@ -16,8 +17,19 @@ function relayBase(): string | null {
   return host ? `https://${host}` : null;
 }
 
-/** POST a chat-completions body to OpenRouter, via the iad1 relay when available. */
-export async function openRouterChatFetch(
+/** POST a chat-completions body to OpenRouter, via the iad1 relay when available. Usage is metered (cost page). */
+export function openRouterChatFetch(
+  body: string,
+  headers: Record<string, string>,
+  signal?: AbortSignal,
+  meta?: AiUsageMeta
+): Promise<Response> {
+  const base: typeof fetch = (_i, init) =>
+    rawOpenRouterChatFetch(String(init?.body ?? body), headers, signal);
+  return meteredFetch(base, meta)(OPENROUTER_URL, { method: 'POST', headers, body, signal });
+}
+
+async function rawOpenRouterChatFetch(
   body: string,
   headers: Record<string, string>,
   signal?: AbortSignal

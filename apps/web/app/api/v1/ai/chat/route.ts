@@ -1,3 +1,4 @@
+import { meteredFetch, setAiUsageUser, withAiUsage } from '@/lib/ai/usage-meter';
 import { detectCrisisSignals } from '@/lib/safety/crisis-detector';
 import { recordCrisisSignal } from '@/lib/safety/record-crisis';
 import { createAiProvider } from '@/lib/ai/provider-factory';
@@ -1640,8 +1641,8 @@ async function attemptContextRoute(opts: {
     };
     const response =
       opts.endpoint === 'https://openrouter.ai/api/v1/chat/completions'
-        ? await openRouterChatFetch(routerBody, routerHeaders, controller.signal)
-        : await fetch(opts.endpoint, { method: 'POST', headers: routerHeaders, body: routerBody, signal: controller.signal });
+        ? await openRouterChatFetch(routerBody, routerHeaders, controller.signal, { feature: 'chat_router' })
+        : await meteredFetch(fetch, { feature: 'chat_router' })(opts.endpoint, { method: 'POST', headers: routerHeaders, body: routerBody, signal: controller.signal });
     if (!response.ok) {
       console.warn('[ai/chat]', {
         debug_id: opts.debugId,
@@ -1754,7 +1755,7 @@ async function summarizeChatTurnWithCheapModel({
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8_000);
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await meteredFetch(fetch, { feature: 'chat_turn_summary' })('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2374,6 +2375,10 @@ function uiMessageRole(msg: unknown): 'system' | 'user' | 'assistant' | null {
 // Pre-existing orchestration handler; splitting it is tracked separately (perf audit).
 // skipcq: JS-R1005
 export async function POST(request: Request) {
+  return withAiUsage({ feature: 'chat' }, () => handleChatPost(request));
+}
+
+async function handleChatPost(request: Request) {
   const debugId = crypto.randomUUID();
   const startedAt = Date.now();
   let stage = 'init';
@@ -2384,6 +2389,7 @@ export async function POST(request: Request) {
     return auth.response;
   }
   const { supabase, user } = auth;
+  setAiUsageUser(user.id);
   stage = 'auth_ok';
 
   /**

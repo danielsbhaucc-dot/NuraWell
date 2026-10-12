@@ -1,0 +1,59 @@
+import { withAiUsage } from '@/lib/ai/usage-meter';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { timingSafeEqualStr } from '@/lib/api/timing-safe-equal';
+import { consumeRateLimit } from '@/lib/api/rate-limit';
+import { decideAction } from './actions';
+import { runCeoTurn } from './agent';
+import type { CeoChannel } from './channel';
+import { allowedChatIds } from './channel';
+import { setOwnerTask } from './owner-tasks';
+
+type Update = {
+  message?: { chat: { id: number }; text?: string };
+  callback_query?: { id: string; data?: string; message?: { chat: { id: number }; message_id: number } };
+};
+
+/** Secret-token header check (set via setWebhook secret_token). Fails closed when env is missing. */
+export function verifyTelegramSecret(header: string | null, secret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim()): boolean {
+  return Boolean(secret && header && timingSafeEqualStr(header, secret));
+}
+
+export async function handleTelegramUpdate(...a: Parameters<typeof handleTelegramUpdateInner>) {
+  return withAiUsage({ feature: 'gideon_chat' }, () => handleTelegramUpdateInner(...a));
+}
+
+async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel, u: Update, deps: { runTurn?: typeof runCeoTurn } = {}) {
+  const chatId = String(u.message?.chat.id ?? u.callback_query?.message?.chat.id ?? '');
+  if (!chatId || !allowedChatIds().has(chatId)) return { ignored: true }; // silent for strangers
+
+  const rl = await consumeRateLimit({ key: chatId, namespace: 'ceo-min', limit: 20, windowSeconds: 60 });
+  const rlDay = await consumeRateLimit({ key: chatId, namespace: 'ceo-day', limit: 300, windowSeconds: 86_400 });
+  if (!rl.ok || !rlDay.ok) {
+    await channel.send(chatId, 'יותר מדי בקשות, נסה שוב עוד רגע.');
+    return { limited: true };
+  }
+
+  const cb = u.callback_query;
+  if (cb?.data?.startsWith('ceo:')) {
+    const [, kind, id] = cb.data.split(':');
+    if (kind === 'td' || kind === 'ts' || kind === 'tw') {
+      const t = await setOwnerTask(db, id, kind === 'td' ? { status: 'done' } : { snoozeDays: kind === 'ts' ? 1 : 7 });
+      const msg = !t ? 'המשימה לא נמצאה.' : kind === 'td' ? `✅ סגרתי: ${t.title}` : `⏰ נדחה ל${kind === 'ts' ? 'מחר' : 'שבוע'}: ${t.title}`;
+      await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, msg);
+      return { task: kind };
+    }
+    const r = await decideAction(db, id, kind === 'a', `admin:${chatId}`);
+    await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, r.text);
+    return { decided: r.ok };
+  }
+
+  const text = u.message?.text?.trim();
+  if (!text) return { ignored: true };
+  if (text === '/start') {
+    await channel.send(chatId, 'שלום דניאל, אני כאן. אפשר לשאול אותי כל דבר על המערכת.');
+    return { ok: true };
+  }
+  const r = await (deps.runTurn ?? runCeoTurn)(db, `${channel.name}:${chatId}`, text.slice(0, 4000));
+  await channel.send(chatId, r.text, r.buttons);
+  return { ok: true };
+}
