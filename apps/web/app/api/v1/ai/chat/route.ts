@@ -1596,6 +1596,16 @@ function parseCompactRouterDecision(raw: unknown): ChatContextDecision | null {
   return decision;
 }
 
+/** JSON קטוע (max_tokens) — מחלצים w/h/n מה שנכתב עד החיתוך במקום ליפול להיוריסטיקה. */
+function salvageRouterJson(raw: string): ChatContextDecision | null {
+  const w = raw.match(/"w"\s*:\s*"(\w+)"/)?.[1];
+  if (!w) return null;
+  const h = /"h"\s*:\s*true/.test(raw);
+  const nBlock = raw.match(/"n"\s*:\s*\[([^\]]*)/)?.[1] ?? '';
+  const n = [...nBlock.matchAll(/"(\w+)"/g)].map((m) => m[1]!);
+  return parseCompactRouterDecision({ w, h, n });
+}
+
 /**
  * ניסיון נתב יחיד דרך OpenRouter. מחזיר החלטה מפורסרת, או null אם נכשל.
  * גם נתב-ההקשר וגם ה-safety-net משתמשים ב-OpenRouter.
@@ -1666,7 +1676,11 @@ async function attemptContextRoute(opts: {
     const raw = data.choices?.[0]?.message?.content?.trim();
     console.info('[ai/chat]', { stage: 'router_llm_done', ms: Date.now() - perfRouterT0, out_chars: raw?.length ?? 0 });
     if (!raw) return null;
-    return parseCompactRouterDecision(parseLlmJsonObject(raw));
+    const parsed = parseCompactRouterDecision(parseLlmJsonObject(raw)) ?? salvageRouterJson(raw);
+    if (!parsed) {
+      console.warn('[ai/chat]', { debug_id: opts.debugId, stage: 'context_router_unparsable', head: raw.slice(0, 120) });
+    }
+    return parsed;
   } catch (err) {
     console.warn('[ai/chat]', {
       debug_id: opts.debugId,
