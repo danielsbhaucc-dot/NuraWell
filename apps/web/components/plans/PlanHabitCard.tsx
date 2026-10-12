@@ -56,7 +56,7 @@ export function PlanHabitCard({ habit, index, canStepDown, canStepUp }: { habit:
         </dl>
 
         {habit.ladder.length > 1 ? (
-          <ol className="flex items-center gap-1" aria-label="שלבי ההרגל">
+          <ol className="flex items-center gap-1" aria-label="סולם הקושי">
             {habit.ladder.map((l) => (
               <li key={l.level} className={`h-1.5 flex-1 rounded-full ${l.current ? 'bg-brand-700' : l.reached ? 'bg-primary-300' : 'bg-primary-100'}`}>
                 <span className="sr-only">{l.current ? 'השלב הנוכחי' : l.level === 0 ? 'ההרגל המלא' : `שלב ${l.level}`}</span>
