@@ -25,6 +25,12 @@ function extractTextFromContent(raw: unknown): string {
     .join('');
 }
 
+/** Grok occasionally leaks raw tokenizer markers like <|eos|> at the end of a stream. */
+const SPECIAL_TOKEN_RE = /<\|[a-z_]{2,24}\|>/gi;
+function stripSpecialTokens(text: string): string {
+  return text.includes('<|') ? text.replace(SPECIAL_TOKEN_RE, '') : text;
+}
+
 export function extractOpenRouterDeltaText(choice: {
   delta?: {
     content?: unknown;
@@ -37,6 +43,5 @@ export function extractOpenRouterDeltaText(choice: {
   const fromDelta =
     extractTextFromContent(choice.delta?.content) ||
     extractTextFromContent(choice.delta?.text);
-  if (fromDelta) return fromDelta;
-  return extractTextFromContent(choice.message?.content);
+  return stripSpecialTokens(fromDelta || extractTextFromContent(choice.message?.content));
 }

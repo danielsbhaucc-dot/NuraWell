@@ -76,45 +76,25 @@ function hasAny(tags: string[], keys: string[]): boolean {
 }
 
 /**
- * סדר עדיפויות קשיח:
- * 1 Claude גבול/בטיחות → 2 Grok עימות/התחמקות → 3 Terra → 4 llama פשוט → terra
+ * Writer lanes (Daniel, 2026-10-12):
+ * claude5 = boundaries / safety / pushback / excuses / arguing the plan,
+ * grok = hostility / accusations / rudeness / fights,
+ * terra = empathy (hard day, sadness, loneliness, relapse),
+ * llama4 lane = the cheap default for everything else (greetings, thanks, reports, routine questions).
  */
 export function writerLaneFromTags(
   tags: string[],
-  fallback: ChatWriterKey = 'terra'
+  fallback: ChatWriterKey = 'llama4'
 ): ChatWriterKey {
   if (hasAny(tags, ['safety', 'boundaries', 'adult', 'warm_boundary'])) return 'claude5';
-
-  if (hasAny(tags, ['accusation', 'argument', 'direct', 'rude', 'evasion'])) return 'grok';
-
-  if (tags.includes('people_please')) {
-    // בלי adult (כבר טופל למעלה) — ויכוח→grok, אחרת Claude (לחץ לרצות / אישור).
-    if (hasAny(tags, ['accusation', 'argument', 'direct', 'rude'])) return 'grok';
-    return 'claude5';
-  }
-
-  if (hasAny(tags, ['empathy', 'coaching'])) return 'terra';
-
-  if (
-    tags.includes('simple') &&
-    !hasAny(tags, ['empathy', 'evasion', 'argument', 'accusation', 'direct', 'rude', 'coaching'])
-  ) {
-    return 'llama4';
-  }
-
-  return fallback === 'llama4' ? 'terra' : fallback === 'grok' ? 'terra' : fallback;
+  if (hasAny(tags, ['accusation', 'rude'])) return 'grok';
+  if (hasAny(tags, ['argument', 'direct', 'evasion', 'people_please'])) return 'claude5';
+  if (tags.includes('empathy')) return 'terra';
+  return fallback;
 }
 
-function pickWinner(scores: WriterScores, tags: string[]): ChatWriterKey {
-  const lane = writerLaneFromTags(tags);
-  if (lane !== 'terra' || hasAny(tags, ['empathy', 'coaching', 'simple'])) return lane;
-
-  const ranked = (Object.entries(scores) as Array<[ChatWriterKey, number]>).sort(
-    (a, b) => b[1] - a[1]
-  );
-  const [top] = ranked;
-  if (!top || top[0] === 'llama4' || top[0] === 'grok') return 'terra';
-  return top[0];
+function pickWinner(_scores: WriterScores, tags: string[]): ChatWriterKey {
+  return writerLaneFromTags(tags);
 }
 
 export function analyzeWriterIntent(
@@ -269,50 +249,23 @@ function blendScores(a?: WriterScores, b?: WriterScores): WriterScores | undefin
 export function mergeWriterDecisions(
   llamaChoice: ChatWriterKey | undefined,
   heuristic: ChatWriterKey,
-  llamaScores?: WriterScores,
-  heuristicScores?: WriterScores,
+  _llamaScores?: WriterScores,
+  _heuristicScores?: WriterScores,
   heuristicTags: string[] = []
 ): ChatWriterKey {
-  const tags = [...heuristicTags];
-  const blended = blendScores(llamaScores, heuristicScores);
-  if (llamaChoice === 'claude5' && blended && blended.claude5 >= 50) tags.push('safety');
-
-  const hardSafety =
-    hasAny(tags, ['safety', 'boundaries', 'adult', 'warm_boundary']) || heuristic === 'claude5';
-  if (hardSafety) return 'claude5';
-
-  const peoplePlease = tags.includes('people_please');
-  const hardConfrontation = hasAny(tags, ['accusation', 'argument', 'direct', 'rude']);
-  const clearEvasion = tags.includes('evasion');
-
-  // לחץ לרצות אף פעם לא נופל ל-Terra — גם אם הנתב הזול בחר אמפתיה.
-  if (peoplePlease) return 'grok';
-
-  // עימות קשה בלבד יכול לדרוס LLM terra — לא עייפות רכה.
-  if (hardConfrontation && heuristic === 'grok') return 'grok';
-
-  const routed =
-    llamaChoice === 'terra' || llamaChoice === 'grok' || llamaChoice === 'claude5'
-      ? llamaChoice
-      : undefined;
-
-  if (routed) {
-    const softLane =
-      hasAny(tags, ['empathy', 'coaching']) &&
-      !hardConfrontation &&
-      !clearEvasion &&
-      !peoplePlease &&
-      !hasAny(tags, ['safety', 'boundaries', 'adult', 'warm_boundary']);
-    if (routed === 'grok' && softLane) return 'terra';
-    return routed;
+  const tags = heuristicTags;
+  // safety / boundaries always win (regex sees self-harm / ED wording even if the router missed it)
+  if (hasAny(tags, ['safety', 'boundaries', 'adult', 'warm_boundary']) || heuristic === 'claude5') {
+    return llamaChoice === 'grok' && hasAny(tags, ['accusation', 'rude']) && !hasAny(tags, ['safety', 'adult'])
+      ? 'grok'
+      : 'claude5';
   }
-
-  if (heuristic === 'llama4') return 'llama4';
-  if (heuristic === 'grok') {
-    return hardConfrontation || clearEvasion ? 'grok' : 'terra';
-  }
-  // claude5 כבר טופל ב-hardSafety למעלה; נשאר רק terra.
-  return 'terra';
+  if (!llamaChoice) return heuristic;
+  // open hostility the router softened → grok
+  if (heuristic === 'grok' && (llamaChoice === 'llama4' || llamaChoice === 'terra')) return 'grok';
+  // clear emotional pain must not land on the cheap lane
+  if (llamaChoice === 'llama4' && heuristic === 'terra') return 'terra';
+  return llamaChoice;
 }
 
 export function writerStancePrompt(tags: string[]): string | null {
@@ -375,34 +328,12 @@ export function writerStancePrompt(tags: string[]): string | null {
 }
 
 export function writerRouterInstructions(): string {
-  return `אתה נתב כותבים. החלטת *אתה* היא העיקרית.
-שפוט טון וכוונה של *ההודעה הזו בלבד*. לא בינגו מילות־מפתח. לא sticky מתור קודם.
-
-טבלת חוזקות:
-- claude5: סכנה, אובדנות, הפרעות אכילה, לשקר לצוות/מטפל, גבול אתי, בקשת אישור לדלג/לעקוף כללים, "תשחרר אותי מהמשימה/מהכללים". חום + קו שלא מתקפל.
-- grok: ויכוח אמיתי, האשמות כלפי אלמוג, דחייה מפורשת ("מחר אתחיל" / אמשיך מחר אחרי דילוג), "תגיד ישר", "תגיד שאני צודק" בתוך עימות. לא על עייפות רכה לבד.
-- terra: אמפתיה רכה, יום קשה, בדידות, מצב רוח בלי עימות, עייפות בלי דחייה מפורשת, תזונה, שגרה, צעד הבא.
-- llama4: רק תודה/עשיתי/סיימתי קצר. "היי" → terra.
-
-כללים קשיחים:
-1) סכנה / גבול / אישור־דילוג / לעקוף תוכנית → claude5
-2) דחייה מפורשת / תירוץ ברור / ויכוח אמיתי → grok
-3) כאב רך / יום קשה / תזונה / שגרה בלי עימות → terra
-4) מילות עייפות לבד ("אין לי כוח"/"שכחתי"/"לא בא לי") ≠ תירוץ → terra
-5) נתח כל הודעה מחדש. אל תישאר על grok כי התור הקודם היה grok.
-
-דוגמאות (חובה לכייל לפיהן):
-User: "אין לי כוח היום" → writer: terra | reason: עייפות רכה בלי דחייה
-User: "יום קשה, נשברתי, לבד" → writer: terra | reason: אמפתיה רכה
-User: "מה לאכול בערב / מה הצעד הבא" → writer: terra | reason: שגרה/אימון
-User: "שכחתי, מחר אתחיל" → writer: grok | reason: דחייה מפורשת
-User: "דילגתי כי יום עמוס, אמשיך מחר" → writer: grok | reason: דילוג + דחייה
-User: "תגיד שמותר לי לדלג על האימון" → writer: claude5 | reason: בקשת אישור לעקוף
-User: "תשחרר אותי מהכללים היום" → writer: claude5 | reason: גבול/שחרור תוכנית
-User: "אתה לא עוזר, תוכיח לי" → writer: grok | reason: האשמה/ויכוח
-User: "תגיד שאני צודק, אל תתווכח" → writer: grok | reason: לחץ לרצות בתוך עימות
-User: "תודה, עשיתי" → writer: llama4 | reason: אישור קצר
-
-פלט JSON בלבד:
-{"writer":"terra|claude5|grok|llama4","writer_scores":{"terra":0,"claude5":0,"grok":0,"llama4":0},"writer_confidence":0,"intent":["tags"],"reason":"short"}`;
+  return `סווג הודעה בצ'אט מנטור הרגלים בעברית (המשך לשיחה הקודמת). החזר JSON בלבד: {"w":"terra|claude5|grok|cheap","h":true|false,"n":["..."]}
+w (מי עונה):
+- terra: רגש, קושי, עצב, בדידות, נפילה, יום קשה, צורך באמפתיה.
+- claude5: התנגדות, ויכוח ענייני, תירוצים/דחייה ("מחר אתחיל"), בקשה לדלג/לעקוף כללים, גבולות, סכנה (אובדנות, הפרעות אכילה).
+- grok: עוינות, האשמות כלפי אלמוג, גסות, ריב.
+- cheap: כל השאר: ברכה, תודה, דיווח ביצוע, שאלה עניינית/שגרה.
+h=true אם צריך הקשר אישי/ידע (שאלה, רגש, משימה); false לברכה/תודה.
+n: קודים של הקשר נדרש (ריק אם h=false): mem=זיכרון אישי/רגש/דפוס, know=ידע בריאות/תזונה, prog=דפוסים רב-יומיים, journey=צעד/תחנה/תוכנית, prin=כללים/נפילה/"מה עושים אם", assign=משימה/דיווח/הבטחה, block=קושי/תקיעות.`;
 }

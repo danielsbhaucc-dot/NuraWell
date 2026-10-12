@@ -202,9 +202,14 @@ import {
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 import { publicAppUrlForAiReferer } from '../../../../../lib/public-app-url';
+import { openRouterChatFetch } from '../../../../../lib/ai/openrouter-relay';
 
-/** Vercel Edge — סטרימינג צ׳אט ו-TTFB נמוך קרוב ל-POP הגלובלי */
-export const runtime = 'edge';
+/**
+ * Node (Fluid) rather than Edge: the turn fires many parallel subrequests (Supabase, RAG,
+ * emoji/router LLMs). Under Edge the writer fetch to OpenRouter took 5-6s to open while
+ * OpenRouter itself reported ~0.9s latency.
+ */
+export const runtime = 'nodejs';
 
 /** RAG + כותב ארוך; בלי זה Edge חותך ~25ש׳ והלקוח רואה כשל שליחה */
 export const maxDuration = 60;
@@ -385,9 +390,24 @@ const CHAT_ROUTER_PROVIDER_SORT = (() => {
   return raw === 'latency' || raw === 'throughput' || raw === 'price' ? raw : null;
 })();
 
+const CHAT_ROUTER_PROVIDER_ORDER = (() => {
+  const raw = process.env.AI_CHAT_ROUTER_PROVIDER_ORDER?.trim();
+  if (raw === 'off') return [] as string[];
+  return (raw || 'Parasail,Novita').split(',').map((x) => x.trim()).filter(Boolean);
+})();
+
 function chatRouterProviderPrefs(pinned: boolean): Record<string, unknown> {
   if (pinned && CHAT_ROUTER_PROVIDER_ONLY.length) {
     return { provider: { only: [...CHAT_ROUTER_PROVIDER_ONLY] } };
+  }
+  /**
+   * perf: same model (Llama 4 Maverick), pinned provider order. Benchmark 2026-10-12 on real
+   * router prompts (median / max): Parasail 2.1s / 3.2s, Novita 4.5s / 7.9s,
+   * DigitalOcean 9.4s / 12.4s, Google Vertex failing. `sort: latency` sometimes picked
+   * DigitalOcean and the router hit its timeout. allow_fallbacks keeps the others as backup.
+   */
+  if (CHAT_ROUTER_PROVIDER_ORDER.length) {
+    return { provider: { order: [...CHAT_ROUTER_PROVIDER_ORDER], allow_fallbacks: true } };
   }
   return CHAT_ROUTER_PROVIDER_SORT
     ? { provider: { sort: CHAT_ROUTER_PROVIDER_SORT, allow_fallbacks: true } }
@@ -536,7 +556,8 @@ function resolveChatModelRuntime(writer: ChatWriterKey): ChatModelRuntime {
   const isOpenAI = slug.startsWith('openai/');
   const isQwen = slug.toLowerCase().includes('qwen');
   const isGoogle = slug.startsWith('google/');
-  const supportsPromptCache = slug.startsWith('anthropic/');
+  /** GPT-5.6 caches only with explicit cache_control (measured: terra $0.027 → $0.0024/msg). Grok rejects the block format. */
+  const supportsPromptCache = slug.startsWith('anthropic/') || slug.startsWith('openai/');
   const useReasoning = CHAT_REASONING_ENABLED && isQwen;
   const useLeanPrompt = false;
   const claudeGuard =
@@ -617,7 +638,8 @@ function openRouterMessagesWithCachedSystem(
   staticSystemPrompt: string,
   dynamicSystemPrompt: string,
   recentMessages: TextChatMessage[],
-  supportsPromptCache: boolean
+  supportsPromptCache: boolean,
+  cacheTtlSupported = true
 ) {
   /**
    * הודעת מערכת *אחת*. שתי הודעות system גורמות ל-GPT-5/Grok לקחת רק אחת —
@@ -631,7 +653,9 @@ function openRouterMessagesWithCachedSystem(
           {
             type: 'text',
             text: staticSystemPrompt,
-            cache_control: { type: 'ephemeral', ttl: CHAT_PROMPT_CACHE_TTL },
+            cache_control: staticSystemPrompt && cacheTtlSupported
+              ? { type: 'ephemeral', ttl: CHAT_PROMPT_CACHE_TTL }
+              : { type: 'ephemeral' },
           },
           { type: 'text', text: dynamicSystemPrompt },
         ],
@@ -680,6 +704,7 @@ async function createOpenRouterTextStreamResponse({
   providerOnly?: readonly string[];
 }) {
   const perfT0 = Date.now();
+  let perfGenId: string | null = null;
   const tokenizedStatic = staticSystemPrompt;
   const tokenizedDynamic = piiShield ? piiShield.tokenizeText(dynamicSystemPrompt) : dynamicSystemPrompt;
   const tokenizedMessages = piiShield
@@ -693,8 +718,10 @@ async function createOpenRouterTextStreamResponse({
    * GPT-5.6 / Claude 5 חושבים כברירת מחדל. בלי effort:none כל הטוקנים הולכים
    * לחשיבה, content ריק, והמשתמש רואה הודעת גיבוי במקום אלמוג.
    */
+  /** Grok 4.5 can't disable thinking; effort low cuts its first token from ~8s to ~3s with the same voice. */
+  const grokLike = /x-ai\/grok/i.test(model);
   const effectiveReasoning: OpenRouterReasoning | null =
-    gpt5 || claude5 ? { effort: 'none' } : reasoning;
+    gpt5 || claude5 ? { effort: 'none' } : grokLike ? ({ effort: 'low' } as OpenRouterReasoning) : reasoning;
   const reasoningBudget =
     effectiveReasoning && 'max_tokens' in effectiveReasoning ? effectiveReasoning.max_tokens : 0;
   const effectiveMaxTokens = claude5
@@ -737,7 +764,8 @@ async function createOpenRouterTextStreamResponse({
         tokenizedStatic,
         tokenizedDynamic,
         tokenizedMessages,
-        supportsPromptCache
+        supportsPromptCache,
+        model.startsWith('anthropic/')
       ),
     });
 
@@ -751,16 +779,12 @@ async function createOpenRouterTextStreamResponse({
   let lastErrorText = '';
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     const perfFetchAt = Date.now();
-    upstream = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-        'HTTP-Referer': referer,
-        'X-Title': 'NuraWell',
-        'X-OpenRouter-Cache': 'false',
-      },
-      body: requestBody,
+    upstream = await openRouterChatFetch(requestBody, {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+      'HTTP-Referer': referer,
+      'X-Title': 'NuraWell',
+      'X-OpenRouter-Cache': 'false',
     });
     console.info('[ai/chat]', { stage: 'writer_upstream_open', model, attempt, status: upstream.status, prep_ms: perfPrepMs, fetch_ms: Date.now() - perfFetchAt, body_chars: requestBody.length });
     if (upstream.ok) break;
@@ -848,6 +872,10 @@ async function createOpenRouterTextStreamResponse({
         }>;
         usage?: unknown;
       };
+      if (!perfGenId && typeof (parsed as { id?: unknown }).id === 'string') {
+        perfGenId = (parsed as { id: string }).id;
+        console.info('[ai/chat]', { stage: 'writer_gen', gen: perfGenId, since_prep_ms: Date.now() - perfT0 });
+      }
       const choice = parsed.choices?.[0];
       const content = extractOpenRouterDeltaText(choice);
       if (content.length > 0) {
@@ -1498,7 +1526,7 @@ const CHAT_ROUTER_TIMEOUT_MS = (() => {
   const n = raw ? Number(raw) : NaN;
   // 2000ms: 1200 היה צר מדי ל-Llama scout ונפל ל-fallback תכופות (תשובות
   // גנריות בלי RAG). 2s נותן מרווח אמין, וה-heuristic מכסה גם אם בכל זאת ייפול.
-  return Number.isFinite(n) && n >= 600 && n <= 15000 ? Math.floor(n) : 8000;
+  return Number.isFinite(n) && n >= 600 && n <= 15000 ? Math.floor(n) : 5000;
 })();
 
 function buildChatContextRouterPrompt(
@@ -1513,39 +1541,51 @@ function buildChatContextRouterPrompt(
     signals.avoid_push_requested ? 'avoid_push=true' : '',
     signals.daily_availability_low_requested ? 'availability_low=true' : '',
   ].filter(Boolean);
+  return [
+    historySnippet ? `שיחה קודמת:\n${historySnippet}` : '',
+    stickyLine ? `כותב קודם: ${stickyLine}` : '',
+    signalParts.length ? `אותות: ${signalParts.join(', ')}` : '',
+    `הודעה חדשה: ${userMessage.slice(0, 2000)}`,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+}
 
-  const historyBlock = historySnippet
-    ? `\nשיחה קודמת (הקשר — ההודעה החדשה היא לרוב המשך שלה):\n${historySnippet}\n`
-    : '';
-  const stickyBlock = stickyLine ? `\nכותב דביק מתור קודם: ${stickyLine}\n` : '';
+/** Compact router output: {"w":"terra|claude5|grok|cheap","h":bool,"n":[codes]} (~30 tokens → ~0.7s on Maverick). */
+const ROUTER_NEED_CODES = {
+  mem: 'needs_user_memory_rag',
+  know: 'needs_system_knowledge_rag',
+  prog: 'needs_full_progress_report',
+  journey: 'needs_journey_knowledge',
+  prin: 'needs_principles',
+  assign: 'needs_assignments',
+  block: 'needs_blockers',
+} as const;
 
-  return `אתה נתב כוונה בכיר לצ'אט מנטור בריאות בעברית.
-המטרה: ניתוח מדויק מאוד של ההודעה — איזה הקשר צריך, ואיזה כותב הכי חזק לתור הזה. איכות ודיוק לפני מהירות.
-
-⚠️ קרא את ההודעה ביחס לשיחה הקודמת. הודעות קצרות הן לרוב *המשך*. פענח כוונה אמיתית, טון, ומידת עימות/סכנה/אמפתיה בנפרד.
-
-החלטת הקשר:
-- שאלה, קושי רגשי, חסם, התלבטות, חזרה, ידע/מסע/זיכרון -> heavy_context=true.
-- אישור/תודה/ביצוע קצר בלבד -> heavy_context=false.
-- בספק -> heavy_context=true.
-
-needs (נדיב בשאלות אמיתיות):
-- needs_user_memory_rag: אישי/רגש/דפוס.
-- needs_system_knowledge_rag: ידע בריאות/תזונה/הרגלים.
-- needs_full_progress_report: דפוסים רב-יומיים.
-- needs_journey_knowledge: צעד/תחנה/תוכנית.
-- needs_principles: חוקים, גבולות, "מה לעשות אם", נפילה.
-- needs_assignments: משימה אישית/דיווח/הבטחה.
-- needs_blockers: קושי/תקיעות.
-
-${writerRouterInstructions()}
-
-החזר JSON בלבד:
-{"heavy_context":true/false,"needs_user_memory_rag":true/false,"needs_system_knowledge_rag":true/false,"needs_full_progress_report":true/false,"needs_journey_knowledge":true/false,"needs_principles":true/false,"needs_assignments":true/false,"needs_blockers":true/false,"writer":"terra|claude5|grok|llama4","writer_scores":{"terra":0,"claude5":0,"grok":0,"llama4":0},"writer_confidence":0,"intent":"תגיות","reason":"ניתוח קצר ומדויק","summary":"סיכום קצר או null"}
-
-אותות regex: ${signalParts.join(', ') || 'none'}${historyBlock}${stickyBlock}
-הודעת משתמש (חדשה):
-${userMessage.slice(0, 4000)}`;
+function parseCompactRouterDecision(raw: unknown): ChatContextDecision | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as { w?: unknown; h?: unknown; n?: unknown };
+  const w = o.w === 'cheap' ? 'llama4' : o.w;
+  if (w !== 'terra' && w !== 'claude5' && w !== 'grok' && w !== 'llama4') return null;
+  const codes = new Set(Array.isArray(o.n) ? o.n.filter((x): x is string => typeof x === 'string') : []);
+  /** cheap lane = small talk / light turns only; knowledge or personal-context questions keep the strong writer. */
+  const needsDepth = ['know', 'prog', 'journey', 'prin', 'mem'].some((c) => codes.has(c));
+  const writer = w === 'llama4' && needsDepth ? 'terra' : w;
+  const decision: ChatContextDecision = {
+    heavy_context: o.h === true || codes.size > 0,
+    needs_user_memory_rag: false,
+    needs_system_knowledge_rag: false,
+    needs_full_progress_report: false,
+    needs_journey_knowledge: false,
+    needs_principles: false,
+    needs_assignments: false,
+    needs_blockers: false,
+    writer,
+    writer_confidence: 85,
+    reason: `router:${String(o.w)}${codes.size ? `:${[...codes].join('+')}` : ''}`,
+  };
+  for (const [code, key] of Object.entries(ROUTER_NEED_CODES)) if (codes.has(code)) decision[key] = true;
+  return decision;
 }
 
 /**
@@ -1571,24 +1611,17 @@ async function attemptContextRoute(opts: {
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
   const perfRouterT0 = Date.now();
   try {
-    const response = await meteredFetch(fetch, { feature: 'chat_router' })(opts.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${opts.apiKey}`,
-        ...(opts.extraHeaders ?? {}),
-      },
-      body: JSON.stringify({
+    const routerBody = JSON.stringify({
         model: opts.model,
         temperature: 0,
-        max_tokens: 720,
+        max_tokens: 90,
         response_format: { type: 'json_object' },
         ...chatRouterProviderPrefs(opts.pinProvider !== false),
         messages: [
           {
             role: 'system',
             content:
-              'אתה מחזיר JSON תקין בלבד. נתח לעומק: הקשר + ציוני כותבים. דיוק לפני מהירות. בספק הקשר: heavy_context=true. אל תברר את grok לterra בלי סיבה.',
+              writerRouterInstructions(),
           },
           {
             role: 'user',
@@ -1600,9 +1633,16 @@ async function attemptContextRoute(opts: {
             ),
           },
         ],
-      }),
-      signal: controller.signal,
-    });
+      });
+    const routerHeaders = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${opts.apiKey}`,
+      ...(opts.extraHeaders ?? {}),
+    };
+    const response =
+      opts.endpoint === 'https://openrouter.ai/api/v1/chat/completions'
+        ? await openRouterChatFetch(routerBody, routerHeaders, controller.signal, { feature: 'chat_router' })
+        : await meteredFetch(fetch, { feature: 'chat_router' })(opts.endpoint, { method: 'POST', headers: routerHeaders, body: routerBody, signal: controller.signal });
     if (!response.ok) {
       console.warn('[ai/chat]', {
         debug_id: opts.debugId,
@@ -1618,9 +1658,7 @@ async function attemptContextRoute(opts: {
     const raw = data.choices?.[0]?.message?.content?.trim();
     console.info('[ai/chat]', { stage: 'router_llm_done', ms: Date.now() - perfRouterT0, out_chars: raw?.length ?? 0 });
     if (!raw) return null;
-    const parsed = chatContextRouterSchema.safeParse(parseLlmJsonObject(raw));
-    if (!parsed.success) return null;
-    return parsed.data;
+    return parseCompactRouterDecision(parseLlmJsonObject(raw));
   } catch (err) {
     console.warn('[ai/chat]', {
       debug_id: opts.debugId,
@@ -2588,11 +2626,11 @@ async function handleChatPost(request: Request) {
     const stickyLine = stickyStance
       ? `${stickyStance.writer} · ${stickyStance.reason} · turns=${stickyStance.turns}`
       : undefined;
+    // small talk (greeting / thanks / short done-report): no router call, cheap lane, light context
     const skipRouterLlm =
-      Boolean(stickyStance) &&
-      (isTrivialBypassEligible(lastUserText, earlySignals) || isCasualGreeting(lastUserText));
+      isTrivialBypassEligible(lastUserText, earlySignals) || isCasualGreeting(lastUserText);
 
-    if (skipRouterLlm && stickyStance) {
+    if (skipRouterLlm) {
       const heuristic = heuristicContextDecision(
         lastUserText,
         earlySignals,
@@ -2603,7 +2641,7 @@ async function handleChatPost(request: Request) {
         profilePeek,
         contextDecision: {
           ...heuristic,
-          writer: stickyStance.writer,
+          writer: 'llama4',
           heavy_context: false,
           needs_full_progress_report: false,
           needs_system_knowledge_rag: false,
