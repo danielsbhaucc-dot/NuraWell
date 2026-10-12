@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '../supabase/server';
 import {
+  isAppHostOpsFallback,
   isOpsHostname,
   isOpsPanelBrowserPath,
   isOpsPreviewHostname,
@@ -25,8 +26,9 @@ export async function ensureOpsAdminServer(): Promise<void> {
     process.env.NODE_ENV === 'development' && (host === 'localhost' || host === '127.0.0.1');
 
   const forwardedHost = h.get('x-forwarded-host') || h.get('host');
+  const appHostOps = isAppHostOpsFallback(host);
   const allowedOpsHost =
-    isOpsHostname(forwardedHost) || isOpsPreviewHostname(forwardedHost);
+    isOpsHostname(forwardedHost) || isOpsPreviewHostname(forwardedHost) || appHostOps;
 
   if (process.env.NODE_ENV === 'production' && !allowedOpsHost && !isLocalDev) {
     redirect(appSync ? `${appSync}/home` : '/home');
@@ -42,6 +44,10 @@ export async function ensureOpsAdminServer(): Promise<void> {
   const opsReturnPath = isOpsPanelBrowserPath(path) ? path : '/';
 
   if (!user) {
+    if (appHostOps) {
+      const p = path.startsWith('/ops') ? path : '/ops';
+      redirect(`/login?redirect=${encodeURIComponent(p)}`);
+    }
     if (app && opsPublic) {
       const base = opsPublic.replace(/\/$/, '');
       let afterLogin: string;

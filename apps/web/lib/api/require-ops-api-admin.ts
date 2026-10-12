@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireApiAdmin } from './route-guards';
 import {
+  isAppHostOpsFallback,
   isOpsPanelBrowserPath,
   isTrustedOpsRequestHost,
   requestHostnameFromRequest,
@@ -14,6 +15,7 @@ function refererFromOpsPanel(request: Request): boolean {
     if (!raw) continue;
     try {
       const u = new URL(raw);
+      if (isAppHostOpsFallback(u.hostname) && (u.pathname === '/ops' || u.pathname.startsWith('/ops/'))) return true;
       if (!isTrustedOpsRequestHost(u.hostname)) continue;
       const path = u.pathname.endsWith('/') && u.pathname.length > 1
         ? u.pathname.slice(0, -1)
