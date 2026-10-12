@@ -5,6 +5,7 @@ import { decideAction } from './actions';
 import { runCeoTurn } from './agent';
 import type { CeoChannel } from './channel';
 import { allowedChatIds } from './channel';
+import { setOwnerTask } from './owner-tasks';
 
 type Update = {
   message?: { chat: { id: number }; text?: string };
@@ -30,6 +31,12 @@ export async function handleTelegramUpdate(db: SupabaseClient, channel: CeoChann
   const cb = u.callback_query;
   if (cb?.data?.startsWith('ceo:')) {
     const [, kind, id] = cb.data.split(':');
+    if (kind === 'td' || kind === 'ts' || kind === 'tw') {
+      const t = await setOwnerTask(db, id, kind === 'td' ? { status: 'done' } : { snoozeDays: kind === 'ts' ? 1 : 7 });
+      const msg = !t ? 'המשימה לא נמצאה.' : kind === 'td' ? `✅ סגרתי: ${t.title}` : `⏰ נדחה ל${kind === 'ts' ? 'מחר' : 'שבוע'}: ${t.title}`;
+      await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, msg);
+      return { task: kind };
+    }
     const r = await decideAction(db, id, kind === 'a', `admin:${chatId}`);
     await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, r.text);
     return { decided: r.ok };

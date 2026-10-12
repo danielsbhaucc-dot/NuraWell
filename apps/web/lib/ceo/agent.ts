@@ -6,6 +6,7 @@ import { audit, proposeAction } from './actions';
 import { CEO_CHAT_MODEL, CEO_CONTENT_MODEL, CEO_STRONG_MODEL, complete } from './llm';
 import { TOOL_BY_NAME, toolSpecs } from './tools';
 import { israelTimeContext } from './time-context';
+import { openOwnerTasks } from './owner-tasks';
 
 export const CEO_NAME = 'גדעון';
 type Msg = OpenAI.Chat.Completions.ChatCompletionMessageParam;
@@ -41,6 +42,7 @@ export const CEO_SYSTEM_PROMPT = `אתה ${CEO_NAME}, מנכ"ל ה-AI של NuraW
 - כל שינוי ([REQUIRES DANIEL APPROVAL]) לא מתבצע מיד, אלא נשלח לדניאל ככפתור אישור. אמור במפורש שזה ממתין לאישור. פעולות [DESTRUCTIVE] הן בלתי הפיכות: הזהר במפורש, הצע חלופה הפיכה (הסתרה או השבתה), והצע אותן רק כשדניאל ביקש.
 - לפני שינוי, ודא את המזהים בקריאה. שינוי אחד ממוקד עדיף על הרבה שינויים.
 - טיוטת שיעור: draft_lesson_content ואז create_draft_step.
+- מעקב משימות לדניאל (owner_task_*): המטרה היא SaaS שרץ לבד. כל מה שאפשר לעשות אוטומטית, עשה בעצמך או הצע לאישור. פתח משימה לדניאל רק לעבודה שדורשת אדם: צילום סרטון HeyGen, החלטה משפטית, חשבונאית או של תמחור, ופעולה בחשבון או מול ספק. ברוב הימים לא תהיה אף משימה. כשדניאל אומר שסיים, דחה או ביטל משימה, עדכן אותה מיד.
 - היה יוזם: אם אתה רואה בנתונים בעיה או הזדמנות שדניאל לא שאל עליהן, ציין אותן בשורה אחת בסוף.
 - צרף קישור לפאנל כשכלי מחזיר link.
 - כשדניאל מבקש שינוי, קרא מיד לכלי המתאים (הוא רק יוצר בקשת אישור). אל תתאר שאתה "תיצור בקשה", פשוט צור אותה.
@@ -76,12 +78,13 @@ async function draftLessonContent(args: { topic?: string; station?: string; note
 /** Compact live snapshot (~1 RPC + 2 tiny queries) so simple questions need no tool round-trip. */
 export async function liveSnapshot(db: SupabaseClient): Promise<string> {
   try {
-    const [m, pend, ev] = await Promise.all([
+    const [m, pend, ev, tasks] = await Promise.all([
       db.rpc('ceo_metrics', { p_days: 1 }),
       db.from('ceo_pending_actions').select('summary, created_at').eq('status', 'pending').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }).limit(5),
       db.from('ceo_audit_log').select('created_at, event, tool').neq('event', 'tool_read').order('created_at', { ascending: false }).limit(5),
+      openOwnerTasks(db),
     ]);
-    return JSON.stringify({ metrics: m.data ?? null, pendingApprovals: (pend.data ?? []).map((p) => p.summary), recentCeoEvents: ev.data ?? [] });
+    return JSON.stringify({ metrics: m.data ?? null, pendingApprovals: (pend.data ?? []).map((p) => p.summary), recentCeoEvents: ev.data ?? [], danielOpenTasks: tasks.map((t) => ({ id: t.id, title: t.title, priority: t.priority, due: t.due_date })) });
   } catch {
     return '(לא זמין)';
   }
