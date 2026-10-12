@@ -18,7 +18,7 @@ type Cand = { id: string; title: string; level: number; main: boolean; source: s
 export type MergeDecision = { keep: string; drop: string[]; reason?: string };
 
 const SYSTEM = `אתה בודק כפילויות במשימות של אפליקציה לשינוי הרגלים.
-תקבל רשימת משימות פעילות של משתמש אחד. החזר JSON בלבד: {"merges":[{"keep":"<id>","drop":["<id>",...],"reason":"<קצר>"}]}.
+תקבל רשימת משימות פעילות של משתמש אחד. החזר json בלבד (פורמט json): {"merges":[{"keep":"<id>","drop":["<id>",...],"reason":"<קצר>"}]}.
 כפילות = אותה פעולה ואותו הרגל באותו הקשר, גם בניסוח אחר או בכמות קרובה (למשל "2 כוסות מים לפני ארוחה" ו"לשים 2 כוסות מים ליד הצלחת לפני הארוחה").
 לא כפילות = הקשר או זמן שונה במהות (למשל "כוס מים לפני השינה" מול "מים לפני ארוחה"), או הרגל אחר.
 ב-keep בחר את המשימה הראשית (main) אם יש, אחרת זו עם הכי הרבה done, אחרת המנוסחת הכי ברור. אם אין כפילויות החזר {"merges":[]}.`;
@@ -74,7 +74,7 @@ export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (
       const r = await meteredFetch(fetch, { feature: 'almog_task_merge' })('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: { authorization: `Bearer ${process.env.OPENROUTER_API_KEY?.trim() ?? ''}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ model: MERGE_MODEL, messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: JSON.stringify(c) }], response_format: { type: 'json_object' } }),
+        body: JSON.stringify({ model: MERGE_MODEL, messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: `tasks json:\n${JSON.stringify(c)}` }], response_format: { type: 'json_object' } }),
       });
       if (!r.ok) throw new Error(`openrouter ${r.status}: ${(await r.text()).slice(0, 200)}`);
       const j = (await r.json()) as { choices?: { message?: { content?: string } }[] };
