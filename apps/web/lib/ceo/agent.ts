@@ -5,12 +5,20 @@ import type { CeoButton } from './channel';
 import { audit, proposeAction } from './actions';
 import { CEO_CHAT_MODEL, CEO_CONTENT_MODEL, CEO_STRONG_MODEL, complete } from './llm';
 import { TOOL_BY_NAME, toolSpecs } from './tools';
+import { israelTimeContext } from './time-context';
 
 export const CEO_NAME = 'גדעון';
 type Msg = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 
 /** Static (byte-identical every call) → provider prefix cache hits. Dynamic data goes in later messages only. */
-export const CEO_SYSTEM_PROMPT = `אתה ${CEO_NAME}, מנכ"ל ה-AI של NuraWell, והיד הימנית של דניאל, המייסד. אתה מדבר על עצמך בלשון זכר, בעברית טבעית, חדה ותמציתית, ברמה של יועץ בכיר: מסקנה קודם, אחר כך הנימוק בקצרה, ואז הצעד הבא.
+export const CEO_SYSTEM_PROMPT = `אתה ${CEO_NAME}, מנכ"ל ה-AI של NuraWell וראש המטה של דניאל, המייסד. אתה מדבר על עצמך בלשון זכר, בעברית טבעית, חדה ותמציתית, כמו ראש מטה חכם שמכיר את המערכת לעומק: מסקנה קודם, נימוק קצר, ואז הצעד הבא.
+
+## סגנון
+- בלי ברכות גנריות, בלי "שאלה מצוינת", בלי הקדמות. אם דניאל מברך, ענה בקצרה וטבעית לפי השעה והיום האמיתיים (מופיעים בהקשר), והמשך ישר לעניין: מה חשוב עכשיו. לעולם אל תחזור על ברכה שלא מתאימה לשעה ("בוקר טוב" בצהריים → "צהריים טובים").
+- תמיד התבסס על "תמונת מצב חיה" ועל הכלים. אם המידע בתמונת המצב מספיק, אל תקרא לכלים מיותרים.
+- זכור את השיחה: הודעות קודמות וסיכום השיחה מופיעים בהקשר. אל תשאל שוב על משהו שכבר נאמר.
+- התייחס לזמן: "היום", "הבוקר", שבת וחגים לפי ההקשר.
+- אורך: 1–6 שורות לרוב. יותר רק כשמבקשים ניתוח.
 
 ## המוצר
 - NuraWell היא SaaS לשינוי הרגלים, לא לירידה במשקל. משקל הוא אופציונלי ולעולם לא היעד המרכזי.
@@ -37,7 +45,7 @@ export const CEO_SYSTEM_PROMPT = `אתה ${CEO_NAME}, מנכ"ל ה-AI של NuraW
 - צרף קישור לפאנל כשכלי מחזיר link.
 - כשדניאל מבקש שינוי, קרא מיד לכלי המתאים (הוא רק יוצר בקשת אישור). אל תתאר שאתה "תיצור בקשה", פשוט צור אותה.
 - אם כלי לא החזיר נתון מסוים, אל תציין מספר עבורו. קרא לכלי הנכון (metrics לרוב השאלות הכמותיות).
-- פורמט לטלגרם: טקסט פשוט בלבד, בלי ** ובלי backticks ובלי טבלאות. שורות קצרות, תבליטים עם "•". אל תפתח בשם שלך.`;
+- פורמט: Markdown פשוט בלבד (**מודגש**, \`קוד\`, [טקסט](קישור)), תבליטים עם "•", בלי טבלאות ובלי כותרות #. אל תפתח בשם שלך.`;
 
 /** Cheap routing (no extra call): analysis/planning/strategy or long asks → strong model; lookups → gpt-oss-120b. */
 const STRONG_HINT = /(סמן|שנה|עדכן|מחק|הוסף|צור|פרסם|הסתר|השהה|שלח|ערוך|העלה|הורד|בטל|נתח|ניתוח|אסטרטג|תכנ[ןנ]|תוכנית|המלצ|הצע|למה|מדוע|איך לשפר|שפר|השווה|מגמ|תובנ|החלט|כתוב|נסח|בקר|ביקורת|דוח|סקירה|עומק|תעדוף|סדר עדיפ|analy|strategy|plan|why|review)/i;
@@ -65,17 +73,31 @@ async function draftLessonContent(args: { topic?: string; station?: string; note
   return r.message.content ?? '';
 }
 
+/** Compact live snapshot (~1 RPC + 2 tiny queries) so simple questions need no tool round-trip. */
+export async function liveSnapshot(db: SupabaseClient): Promise<string> {
+  try {
+    const [m, pend, ev] = await Promise.all([
+      db.rpc('ceo_metrics', { p_days: 1 }),
+      db.from('ceo_pending_actions').select('summary, created_at').eq('status', 'pending').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }).limit(5),
+      db.from('ceo_audit_log').select('created_at, event, tool').neq('event', 'tool_read').order('created_at', { ascending: false }).limit(5),
+    ]);
+    return JSON.stringify({ metrics: m.data ?? null, pendingApprovals: (pend.data ?? []).map((p) => p.summary), recentCeoEvents: ev.data ?? [] });
+  } catch {
+    return '(לא זמין)';
+  }
+}
+
 export type TurnResult = { text: string; buttons: CeoButton[][]; model?: string };
 
 export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: string, deps: { complete?: typeof complete } = {}): Promise<TurnResult> {
   const llm = deps.complete ?? complete;
   const { data: conv } = await db.from('ceo_conversations').select('summary, turns').eq('chat_key', chatKey).maybeSingle();
   const turns: { role: 'user' | 'assistant'; content: string }[] = (conv?.turns as never) ?? [];
-  const now = new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', dateStyle: 'full', timeStyle: 'short' }).format(new Date());
+  const snapshot = await liveSnapshot(db);
 
   const messages: Msg[] = [
     { role: 'system', content: CEO_SYSTEM_PROMPT },
-    { role: 'system', content: `עכשיו: ${now}.${conv?.summary ? `\nסיכום שיחה קודמת: ${conv.summary}` : ''}` },
+    { role: 'system', content: `${israelTimeContext()}\n\nתמונת מצב חיה (24 שעות אחרונות, מ-SQL):\n${snapshot}${conv?.summary ? `\n\nסיכום שיחה קודמת: ${conv.summary}` : ''}` },
     ...turns,
     { role: 'user', content: userText },
   ];

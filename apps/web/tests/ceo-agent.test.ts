@@ -148,20 +148,20 @@ describe('DeepSeek routing', () => {
     const ds = { chat: { completions: { create: vi.fn(async () => { throw Object.assign(new Error('Insufficient Balance'), { status: 402 }); }) } } };
     const gq = ok('groq');
     const m = [{ role: 'user' as const, content: '{"errors":3}' }];
-    const r1 = await complete({ messages: m, sensitivity: 'technical', clients: { deepseek: ds as never, groq: gq as never } });
-    expect(r1.provider).toBe('openrouter-groq');
-    await complete({ messages: m, sensitivity: 'technical', clients: { deepseek: ds as never, groq: gq as never } });
+    const r1 = await complete({ messages: m, sensitivity: 'technical', clients: { deepseek: ds as never, groq: gq as never, openrouter: gq as never } });
+    expect(r1.provider).toMatch(/^openrouter/);
+    await complete({ messages: m, sensitivity: 'technical', clients: { deepseek: ds as never, groq: gq as never, openrouter: gq as never } });
     expect(ds.chat.completions.create).toHaveBeenCalledTimes(1); // exhausted state cached
     _resetDeepseekState();
     const ds2 = ok('ds');
-    expect((await complete({ messages: m, sensitivity: 'technical', clients: { deepseek: ds2 as never, groq: gq as never } })).provider).toBe('deepseek');
+    expect((await complete({ messages: m, sensitivity: 'technical', clients: { deepseek: ds2 as never, groq: gq as never, openrouter: gq as never } })).provider).toBe('deepseek');
   });
   it('sensitive or personal payloads never reach deepseek', async () => {
     process.env.DEEPSEEK_API_KEY = 'k';
     const ds = ok('ds');
     const gq = ok('groq');
-    await complete({ messages: [{ role: 'user', content: 'hi' }], clients: { deepseek: ds as never, groq: gq as never } });
-    await complete({ messages: [{ role: 'user', content: '{"content":"chat text"}' }], sensitivity: 'technical', clients: { deepseek: ds as never, groq: gq as never } });
+    await complete({ messages: [{ role: 'user', content: 'hi' }], clients: { deepseek: ds as never, groq: gq as never, openrouter: gq as never } });
+    await complete({ messages: [{ role: 'user', content: '{"content":"chat text"}' }], sensitivity: 'technical', clients: { deepseek: ds as never, groq: gq as never, openrouter: gq as never } });
     expect(ds.chat.completions.create).not.toHaveBeenCalled();
   });
 });
@@ -187,10 +187,10 @@ describe('digests', () => {
 });
 
 describe('full admin tools + routing', () => {
-  it('routes analysis to strong model, lookups to gpt-oss-120b', async () => {
+  it('all conversational turns use gpt-5.4-mini by default', async () => {
     const { pickModel } = await import('@/lib/ceo/agent');
-    expect(pickModel('כמה משתמשים יש?')).toContain('gpt-oss-120b');
-    expect(pickModel('תנתח לי למה משתמשים נוטשים')).not.toContain('gpt-oss');
+    expect(pickModel('כמה משתמשים יש?')).toBe('openai/gpt-5.4-mini');
+    expect(pickModel('תנתח לי למה משתמשים נוטשים')).toBe('openai/gpt-5.4-mini');
   });
   it('blocks role escalation and non-allowlisted tables; destructive gets warning', async () => {
     const { db } = fakeDb();
@@ -201,5 +201,41 @@ describe('full admin tools + routing', () => {
     expect(() => upd.schema.parse({ table: 'profiles', match: {}, patch: { full_name: 'a' } })).toThrow();
     const a = await proposeAction(db, 'delete_user', { userId: '11111111-1111-4111-8111-111111111111' });
     expect(a.summary).toMatch(/^⚠️ בלתי הפיך/);
+  });
+});
+
+describe('formatting + time context', () => {
+  it('converts markdown to Telegram HTML and escapes the rest', async () => {
+    const { mdToTelegramHtml, mdToPlain } = await import('@/lib/ceo/format');
+    expect(mdToTelegramHtml('**חשוב** <x> & `a<b` [פאנל](https://n.app/ops)\n- פריט')).toBe('<b>חשוב</b> &lt;x&gt; &amp; <code>a&lt;b</code> <a href="https://n.app/ops">פאנל</a>\n• פריט');
+    expect(mdToPlain('**a** `b`')).toBe('a b');
+  });
+  it('falls back to plain text on HTML parse error', async () => {
+    const f = vi.fn()
+      .mockResolvedValueOnce(new Response('{"ok":false}', { status: 400 }))
+      .mockResolvedValueOnce(new Response('{"ok":true}'));
+    await createTelegramChannel(f as never).send('42', '**x**');
+    const bodies = f.mock.calls.map((c) => JSON.parse((c as [string, { body: string }])[1].body));
+    expect(bodies[0].parse_mode).toBe('HTML');
+    expect(bodies[1].parse_mode).toBeUndefined();
+    expect(bodies[1].text).toBe('x');
+  });
+  it('injects Israel time, day part and Shabbat', async () => {
+    const { israelTimeContext } = await import('@/lib/ceo/time-context');
+    const noon = israelTimeContext(new Date('2026-10-12T09:30:00Z'));
+    expect(noon).toContain('12:30');
+    expect(noon).toContain('צהריים');
+    expect(israelTimeContext(new Date('2026-10-17T08:00:00Z'))).toContain('שבת');
+  });
+  it('passes history + snapshot + time to the model', async () => {
+    const { db, t } = fakeDb();
+    t.ceo_conversations.push({ chat_key: 'telegram:42', summary: 'דיברנו על נטישה', turns: [{ role: 'user', content: 'שאלה קודמת' }, { role: 'assistant', content: 'תשובה קודמת' }] });
+    const llm = vi.fn(async () => ({ message: { role: 'assistant', content: 'ok' } }));
+    await runCeoTurn(db, 'telegram:42', 'מה קורה היום?', { complete: llm as never });
+    const msgs = (llm.mock.calls[0] as unknown as [{ messages: { role: string; content: string }[] }])[0].messages;
+    expect(msgs[1].content).toContain('עכשיו בישראל');
+    expect(msgs[1].content).toContain('users_total');
+    expect(msgs[1].content).toContain('דיברנו על נטישה');
+    expect(msgs.map((m) => m.content)).toContain('תשובה קודמת');
   });
 });

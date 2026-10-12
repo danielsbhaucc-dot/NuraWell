@@ -1,6 +1,7 @@
 import type { CeoButton, CeoChannel } from './channel';
+import { mdToPlain, mdToTelegramHtml } from './format';
 
-const MAX = 4000; // Telegram limit is 4096 chars per message
+const MAX = 3500; // Telegram limit is 4096; leave room for HTML escaping
 
 async function api(method: string, body: unknown, fetchImpl: typeof fetch = fetch) {
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
@@ -35,20 +36,22 @@ export function createTelegramChannel(fetchImpl: typeof fetch = fetch): CeoChann
       const parts = splitMessage(text);
       for (let i = 0; i < parts.length; i++) {
         const last = i === parts.length - 1;
-        await api('sendMessage', {
-          chat_id: chatId,
-          text: parts[i],
-          disable_web_page_preview: true,
-          ...(last && buttons?.length
-            ? { reply_markup: { inline_keyboard: buttons.map((row) => row.map((b: CeoButton) => ({ text: b.text, callback_data: b.data }))) } }
-            : {}),
-        }, fetchImpl);
+        const markup = last && buttons?.length
+          ? { reply_markup: { inline_keyboard: buttons.map((row) => row.map((b: CeoButton) => ({ text: b.text, callback_data: b.data }))) } }
+          : {};
+        try {
+          await api('sendMessage', { chat_id: chatId, text: mdToTelegramHtml(parts[i]), parse_mode: 'HTML', disable_web_page_preview: true, ...markup }, fetchImpl);
+        } catch (e) {
+          // HTML parse error (400) → resend as plain text
+          if (!/failed: 400/.test(String(e))) throw e;
+          await api('sendMessage', { chat_id: chatId, text: mdToPlain(parts[i]), disable_web_page_preview: true, ...markup }, fetchImpl);
+        }
       }
     },
     async ack(ref, text) {
       if (ref.callbackId) await api('answerCallbackQuery', { callback_query_id: ref.callbackId }, fetchImpl);
       if (text && ref.messageId) {
-        await api('editMessageText', { chat_id: ref.chatId, message_id: ref.messageId, text: text.slice(0, MAX), disable_web_page_preview: true }, fetchImpl);
+        await api('editMessageText', { chat_id: ref.chatId, message_id: ref.messageId, text: mdToPlain(text).slice(0, MAX), disable_web_page_preview: true }, fetchImpl);
       }
     },
   };
