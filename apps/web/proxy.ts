@@ -6,6 +6,7 @@ import {
   isOpsLoginRedirectUrl,
   isOpsPanelBrowserPath,
   isOpsPreviewHostname,
+  isAppHostOpsFallback,
   opsCanonicalHostname,
   requestHostname,
 } from './lib/ops-host';
@@ -264,13 +265,16 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   /** גישה ישירה ל־/ops מהדומיין הציבורי — כאילו לא קיים */
+  const appHostOpsPath =
+    isAppHostOpsFallback(incomingHost) && (pathname === '/ops' || pathname.startsWith('/ops/'));
   const canUseOpsPathPrefix =
-    (isLocal && process.env.NODE_ENV === 'development') || effectiveOpsHost;
+    (isLocal && process.env.NODE_ENV === 'development') || effectiveOpsHost || appHostOpsPath;
   if (pathname.startsWith('/ops') && !canUseOpsPathPrefix) {
     return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
   }
 
-  const devOpsPath = Boolean(isLocal && process.env.NODE_ENV === 'development' && pathname.startsWith('/ops'));
+  const devOpsPath =
+    Boolean(isLocal && process.env.NODE_ENV === 'development' && pathname.startsWith('/ops')) || appHostOpsPath;
 
   const needsOpsGate =
     devOpsPath ||
@@ -286,7 +290,9 @@ export async function proxy(request: NextRequest) {
       : await resolvePublicAppOriginForOpsRedirect();
     if (!user) {
       const loginUrl = new URL('/login', mainOrigin);
-      const opsReturnUrl = isOpsPanelBrowserPath(pathname)
+      const opsReturnUrl = appHostOpsPath
+        ? `${pathname}${request.nextUrl.search}`
+        : isOpsPanelBrowserPath(pathname)
         ? new URL(pathname, request.nextUrl.origin).href
         : new URL('/', request.nextUrl.origin).href;
       loginUrl.searchParams.set('redirect', opsReturnUrl);
