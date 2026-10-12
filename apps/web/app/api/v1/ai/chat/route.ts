@@ -555,7 +555,8 @@ function resolveChatModelRuntime(writer: ChatWriterKey): ChatModelRuntime {
   const isOpenAI = slug.startsWith('openai/');
   const isQwen = slug.toLowerCase().includes('qwen');
   const isGoogle = slug.startsWith('google/');
-  const supportsPromptCache = slug.startsWith('anthropic/');
+  /** GPT-5.6 caches only with explicit cache_control (measured: terra $0.027 → $0.0024/msg). Grok rejects the block format. */
+  const supportsPromptCache = slug.startsWith('anthropic/') || slug.startsWith('openai/');
   const useReasoning = CHAT_REASONING_ENABLED && isQwen;
   const useLeanPrompt = false;
   const claudeGuard =
@@ -636,7 +637,8 @@ function openRouterMessagesWithCachedSystem(
   staticSystemPrompt: string,
   dynamicSystemPrompt: string,
   recentMessages: TextChatMessage[],
-  supportsPromptCache: boolean
+  supportsPromptCache: boolean,
+  cacheTtlSupported = true
 ) {
   /**
    * הודעת מערכת *אחת*. שתי הודעות system גורמות ל-GPT-5/Grok לקחת רק אחת —
@@ -650,7 +652,9 @@ function openRouterMessagesWithCachedSystem(
           {
             type: 'text',
             text: staticSystemPrompt,
-            cache_control: { type: 'ephemeral', ttl: CHAT_PROMPT_CACHE_TTL },
+            cache_control: staticSystemPrompt && cacheTtlSupported
+              ? { type: 'ephemeral', ttl: CHAT_PROMPT_CACHE_TTL }
+              : { type: 'ephemeral' },
           },
           { type: 'text', text: dynamicSystemPrompt },
         ],
@@ -757,7 +761,8 @@ async function createOpenRouterTextStreamResponse({
         tokenizedStatic,
         tokenizedDynamic,
         tokenizedMessages,
-        supportsPromptCache
+        supportsPromptCache,
+        model.startsWith('anthropic/')
       ),
     });
 
