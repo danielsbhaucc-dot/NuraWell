@@ -17,7 +17,7 @@ const RESOLVED_RE = /⟦NW_UIR:([\s\S]*?)⟧/g;
 export type UiTaskOption = { id: string; title: string; emoji: string | null };
 export type UiProposal =
   | { kind: 'level'; assignmentId: string; direction: 'easier' | 'harder'; title: string }
-  | { kind: 'habit'; title: string; replaces: string | null }
+  | { kind: 'habit'; title: string; replaces: string | null; proposalId?: string }
   | { kind: 'goal'; text: string };
 export type ResolvedChatUi = {
   chips?: string[];

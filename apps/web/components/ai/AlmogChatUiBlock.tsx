@@ -40,7 +40,7 @@ async function applyProposal(p: UiProposal, sessionId?: string | null): Promise<
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(
               p.kind === 'habit'
-                ? { kind: 'habit', title: p.title, replaces: p.replaces, ...(sessionId ? { sessionId } : {}) }
+                ? { kind: 'habit', title: p.title, replaces: p.replaces, ...(p.proposalId ? { proposalId: p.proposalId } : {}), ...(sessionId ? { sessionId } : {}) }
                 : { kind: 'goal', text: p.text }
             ),
           });
