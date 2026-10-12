@@ -874,7 +874,7 @@ async function createOpenRouterTextStreamResponse({
           if (done) break;
           if (!perfFirstChunkLogged && accumulated) {
             perfFirstChunkLogged = true;
-            console.info('[ai/chat]', { stage: 'writer_first_content', model, since_prep_ms: Date.now() - perfT0, gen: /"id":"(gen-[^"]+)"/.exec(buffer + decoder.decode(value))?.[1] ?? null });
+            console.info('[ai/chat]', { stage: 'writer_first_content', model, since_prep_ms: Date.now() - perfT0 });
           }
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split(/\r?\n/);
@@ -1615,7 +1615,7 @@ async function attemptContextRoute(opts: {
       choices?: Array<{ message?: { content?: string | null } }>;
     };
     const raw = data.choices?.[0]?.message?.content?.trim();
-    console.info('[ai/chat]', { stage: 'router_llm_done', ms: Date.now() - perfRouterT0, out_chars: raw?.length ?? 0, gen: (data as { id?: string }).id ?? null });
+    console.info('[ai/chat]', { stage: 'router_llm_done', ms: Date.now() - perfRouterT0, out_chars: raw?.length ?? 0 });
     if (!raw) return null;
     const parsed = chatContextRouterSchema.safeParse(parseLlmJsonObject(raw));
     if (!parsed.success) return null;
@@ -2576,25 +2576,8 @@ export async function POST(request: Request) {
    * הנתב רץ אחרי profile (sticky) אבל במקביל לשאר שליפות ה-DB שכבר התחילו.
    * בתור טריוויאלי/ברכה עם sticky — מדלגים על LLM הנתב (כותב נשאר sticky/פרימיום).
    */
-  {
-    let lagLast = Date.now();
-    let lagMax = 0;
-    let lagSum = 0;
-    const lagTimer = setInterval(() => {
-      const now = Date.now();
-      const d = now - lagLast - 50;
-      if (d > 0) lagSum += d;
-      if (d > lagMax) lagMax = d;
-      lagLast = now;
-    }, 50);
-    setTimeout(() => {
-      clearInterval(lagTimer);
-      console.info('[ai/chat]', { stage: 'event_loop_lag', max_ms: lagMax, sum_ms: lagSum });
-    }, 9000);
-  }
   const routerBundlePromise = (async () => {
     const profilePeek = await profilePromise;
-    console.info('[ai/chat]', { stage: 'profile_ready', since_start_ms: Date.now() - startedAt });
     const stickyStance = parseChatWriterStance(profilePeek.ai_context.writer_stance);
     const stickyLine = stickyStance
       ? `${stickyStance.writer} · ${stickyStance.reason} · turns=${stickyStance.turns}`
