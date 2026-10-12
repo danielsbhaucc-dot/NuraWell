@@ -56,7 +56,7 @@ function fmt(iso: string) {
   }
 }
 
-export function AlmogPlanSections() {
+export function AlmogPlanSections({ n = 2 }: { n?: number } = {}) {
   const [data, setData] = useState<Payload | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [rateFor, setRateFor] = useState<string | null>(null);
@@ -110,7 +110,7 @@ export function AlmogPlanSections() {
   if (!focus && !proposed.length && !active.length && !blockers.length && !reminders.length && !data.completed.length) return null;
 
   return (
-    <PlanSection n={2} id="almog-plan-title" title="מה אלמוג מלווה" hint="צעדים קטנים, חסמים ותזכורות">
+    <PlanSection n={n} id="almog-plan-title" title="מה אלמוג מלווה מעבר להרגלים" hint="צעדים קטנים, חסמים ותזכורות">
       {error ? (
         <p role="alert" className="text-sm text-energy-700">
           {error}
