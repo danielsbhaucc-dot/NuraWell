@@ -31,6 +31,7 @@ const SYSTEM = `אתה מאחד משימות של אפליקציה לשינוי 
 תקבל את המשימות הפעילות של משתמש אחד, ולכל אחת את המקור וההיסטוריה שלה: source (step = מתוך שיעור, almog = נוצרה בצ'אט עם אלמוג, ai_daily = משימה יומית), why (למה נוצרה), chat_excerpt (מה המשתמש כתב כשנוצרה), related_habit (ההרגל שאליו היא קשורה), ladder (שלבי הקושי של המשימה: level 0 = היעד, שלילי = קל יותר), history (שינויי רמה, "קשה לי", SOS, איחודים, עם סיבה ותאריך).
 כללים:
 1. אחד באגרסיביות לפי התנהגות/נושא, לא לפי ניסוח: כל המשימות על אותה התנהגות (למשל "2 כוסות מים לפני הארוחה", "חצי כוס מים", "כוס מים קטנה לפני השינה", "לשים כוס ליד הצלחת") הופכות למשימה אחת. השאר נפרדות רק התנהגויות שונות באמת (מים מול הליכה מול ירקות).
+1א. משימה חד-פעמית (schedule=one_time) על אותה התנהגות כמו משימה קבועה — תמיד מתאחדת לתוך המשימה הקבועה.
 2. keep = המשימה הראשית (main) אם יש, אחרת זו שמגיעה משיעור (step), אחרת זו עם סולם שלבים, אחרת עם הכי הרבה done.
 3. השתמש במקור ובהיסטוריה רק כדי לבחור שלב: אם משימה שמאוחדת נוצרה כגרסה קלה יותר כי היה קשה (קשה לי, SOS, תחושת כישלון, ירידת רמה), או שהמשתמש ירד רמה לאחרונה, בחר ב-level את שלב ה-ladder של keep שהכי קרוב לגרסה הקלה (לרוב הנמוך ביותר). אם אין סיבה לשנות, השמט level. level חייב להיות אחד מערכי ה-ladder של keep.
 4. reason: משפט קצר בעברית שמסביר למה אוחד ולמה השלב.
@@ -60,6 +61,48 @@ export function sanitizeDecisions(raw: unknown, cands: Cand[]): MergeDecision[] 
     const dec: MergeDecision = { keep, drop: finalDrop, reason: typeof m.reason === 'string' ? m.reason.slice(0, 200) : undefined };
     if (rawLevel != null && rawLevel !== '' && Number.isInteger(lv) && levels.includes(lv) && lv !== keepCand?.level) dec.level = lv;
     out.push(dec);
+  }
+  return out;
+}
+
+/** Behavior families (deterministic). Order matters: "כוס מים לפני השינה" is water, not sleep. */
+const BEHAVIORS: Array<[string, RegExp]> = [
+  ['water', /(מים|כוס|כוסות|לשתות|שתיי?ה|בקבוק)/u],
+  ['walk', /(הליכ|ללכת ברגל|צעדים|לצעוד)/u],
+  ['veg', /(ירק|סלט)/u],
+  ['sleep', /(שינה|לישון|להירדם)/u],
+  ['sweets', /(מתוק|סוכר|חטיף)/u],
+];
+export function behaviorOf(c: Pick<Cand, 'title'> & { habit?: unknown; related_habit?: unknown }): string | null {
+  const text = [c.title, c.related_habit, typeof c.habit === 'string' && !/^(almog|ai_daily):/.test(c.habit) ? c.habit : '']
+    .filter(Boolean)
+    .join(' ');
+  if (typeof c.habit === 'string' && /^water$/i.test(c.habit)) return 'water';
+  for (const [k, re] of BEHAVIORS) if (re.test(text)) return k;
+  return null;
+}
+const isOneTime = (c: Cand) => c.schedule === 'one_time';
+
+/**
+ * Daniel's rule: never tell the user to do the same behavior twice. After the model's decisions, every remaining
+ * one-time task whose behavior matches a recurring task is folded into that recurring task (main first).
+ */
+export function foldOneTimeByBehavior(decisions: MergeDecision[], cands: Cand[]): MergeDecision[] {
+  const out = decisions.map((d) => ({ ...d, drop: [...d.drop] }));
+  const used = new Set(out.flatMap((d) => [d.keep, ...d.drop]));
+  const dropped = new Set(out.flatMap((d) => d.drop));
+  const recurring = cands
+    .filter((c) => !isOneTime(c) && !dropped.has(c.id) && behaviorOf(c))
+    .sort((a, b) => Number(b.main) - Number(a.main) || b.done - a.done);
+  for (const r of recurring) {
+    const b = behaviorOf(r);
+    const extra = cands.filter((o) => o.id !== r.id && isOneTime(o) && !used.has(o.id) && behaviorOf(o) === b);
+    if (!extra.length) continue;
+    extra.forEach((o) => used.add(o.id));
+    used.add(r.id);
+    const existing = out.find((d) => d.keep === r.id);
+    if (existing) existing.drop.push(...extra.map((o) => o.id));
+    else out.push({ keep: r.id, drop: extra.map((o) => o.id), reason: 'משימה חד-פעמית על אותה התנהגות אוחדה למשימה הקבועה' });
   }
   return out;
 }
@@ -118,7 +161,7 @@ export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (
   for (const row of rows) {
     let decisions: MergeDecision[] = [];
     try {
-      decisions = sanitizeDecisions(await decide(row.tasks), row.tasks);
+      decisions = foldOneTimeByBehavior(sanitizeDecisions(await decide(row.tasks), row.tasks), row.tasks);
     } catch (e) {
       summary.errors.push(String(e).slice(0, 200));
       continue;

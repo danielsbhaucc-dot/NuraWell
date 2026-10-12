@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mergeMessage, sanitizeDecisions } from '@/lib/almog/nightly-task-merge';
+import { behaviorOf, foldOneTimeByBehavior, mergeMessage, sanitizeDecisions } from '@/lib/almog/nightly-task-merge';
 
 const ladder = [
   { level: -2, title: 'כוס מים אחת לפני ארוחה אחת ביום' },
@@ -34,5 +34,29 @@ describe('nightly task merge', () => {
     const b = mergeMessage('דניאל', 3, { title: 'לשתות כוס מים לפני כל ארוחה', stage: 2 }).body;
     expect(b).toContain('היי דניאל, היו לך 4 משימות על אותו הרגל, אז איחדתי הכול למשימה אחת');
     expect(b).toContain('"לשתות כוס מים לפני כל ארוחה" (שלב 2)');
+  });
+});
+
+describe('fold one-time tasks by behavior', () => {
+  const cands = [
+    { id: 'main', title: 'שתיית 2 כוסות מים לפני הארוחה', level: 0, main: true, source: 'step', done: 3, habit: 'water', schedule: 'per_meal', ladder },
+    { id: 'half', title: 'לשתות חצי כוס מים', level: 0, main: false, source: 'almog', done: 0, habit: 'h1', schedule: 'one_time' },
+    { id: 'bed', title: 'לשתות כוס מים קטנה לפני השינה', level: 0, main: false, source: 'almog', done: 0, habit: 'h1', schedule: 'one_time' },
+    { id: 'rest', title: 'לתת לעצמך רשות לסגור את היום בלי שיפוטיות וללכת לישון', level: 0, main: false, source: 'almog', done: 0, habit: 'almog:x', schedule: 'one_time' },
+    { id: 'why', title: 'בוא נזכיר לעצמנו במשפט אחד למה זה חשוב לך', level: 0, main: false, source: 'ai_daily', done: 0, habit: 'ai_daily:x' },
+  ];
+  it('classifies water before sleep', () => {
+    expect(behaviorOf(cands[2])).toBe('water');
+    expect(behaviorOf(cands[3])).toBe('sleep');
+  });
+  it('folds one-time water tasks into the main task even if the model skipped them', () => {
+    expect(foldOneTimeByBehavior([], cands)).toEqual([{ keep: 'main', drop: ['half', 'bed'], reason: expect.any(String) }]);
+  });
+  it('extends the model decision and keeps its level; leaves other behaviors alone', () => {
+    const out = foldOneTimeByBehavior([{ keep: 'main', drop: ['half'], level: -2 }], cands);
+    expect(out).toEqual([{ keep: 'main', drop: ['half', 'bed'], level: -2 }]);
+  });
+  it('no recurring task for the behavior → nothing folded', () => {
+    expect(foldOneTimeByBehavior([], cands.filter((c) => c.id !== 'main'))).toEqual([]);
   });
 });
