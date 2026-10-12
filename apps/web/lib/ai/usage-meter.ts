@@ -111,7 +111,9 @@ export function meteredFetch(baseFetch?: typeof fetch, fixedMeta?: AiUsageMeta):
 
     const isStream = (res.headers.get('content-type') ?? '').includes('event-stream');
     if (!isStream) {
-      schedule(res.clone().json().then((j: { usage?: Usage; model?: string }) => save(j.usage ?? null, j.model ?? null)));
+      // awaited (bounded): serverless functions can freeze right after the caller returns, dropping a detached insert
+      const job = res.clone().json().then((j: { usage?: Usage; model?: string }) => save(j.usage ?? null, j.model ?? null)).catch(() => {});
+      await Promise.race([job, new Promise((r) => setTimeout(r, 1500))]);
       return res;
     }
     const [a, b] = res.body.tee();
