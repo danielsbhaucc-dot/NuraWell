@@ -12,6 +12,15 @@ import {
 } from '@/lib/admin/cost-model';
 
 export const runtime = 'nodejs';
+/** Fixed platform costs (USD/month) at current plans — not per user. Update when a plan changes. */
+const FIXED_MONTHLY_USD = [
+  { item: 'Supabase', plan: 'Free', usd: Number(process.env.COST_SUPABASE_USD ?? 0) },
+  { item: 'Vercel', plan: 'Hobby', usd: Number(process.env.COST_VERCEL_USD ?? 0) },
+  { item: 'Upstash QStash/Vector', plan: 'Free', usd: Number(process.env.COST_UPSTASH_USD ?? 0) },
+  { item: 'Bunny storage', plan: 'pay-as-you-go', usd: 0.004 },
+  { item: 'Telegram', plan: 'Bot API', usd: 0 },
+];
+
 export const dynamic = 'force-dynamic';
 
 /**
@@ -51,8 +60,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ scope: 'user', userId, days, pricing, ...report });
     }
 
-    const report = await buildAggregateCostReport(admin, sinceIso, days);
-    return NextResponse.json({ scope: 'aggregate', days, pricing, ...report });
+    const [report, trendRes] = await Promise.all([buildAggregateCostReport(admin, sinceIso, days), admin.rpc('cost_daily', { p_days: days })]);
+    const byDay = new Map<string, { day: string; usd: number; active: number }>();
+    for (const r of (trendRes.data ?? []) as { day: string; cost_usd: number; active_users: number }[]) {
+      const d = byDay.get(r.day) ?? { day: r.day, usd: 0, active: r.active_users };
+      d.usd += Number(r.cost_usd) || 0;
+      byDay.set(r.day, d);
+    }
+    const trend = [...byDay.values()].sort((a, b) => a.day.localeCompare(b.day));
+    return NextResponse.json({ scope: 'aggregate', days, pricing, fixedMonthly: FIXED_MONTHLY_USD, trend, ...report });
   } catch (err) {
     console.error('[admin/costs] error:', err);
     return NextResponse.json(

@@ -20,6 +20,7 @@ type Breakdown = {
   backgroundUsd?: number;
   notificationsUsd: number;
   videoUsd: number;
+  sharedUsd?: number;
   totalUsd: number;
 };
 
@@ -46,6 +47,11 @@ type AggregateResp = {
   averagePerActiveUser: Breakdown;
   topUsers: CostUserRow[];
   users: CostUserRow[];
+  measured?: boolean;
+  sharedTotalUsd?: number;
+  byFeature?: { feature: string; model: string; usd: number; calls: number }[];
+  trend?: { day: string; usd: number; active: number }[];
+  fixedMonthly?: { item: string; plan: string; usd: number }[];
 };
 
 type UserResp = {
@@ -114,6 +120,7 @@ function BreakdownBars({ b }: { b: Breakdown }) {
     { label: 'רקע', v: b.backgroundUsd ?? 0, color: 'bg-amber-500' },
     { label: 'התראות', v: b.notificationsUsd, color: 'bg-violet-500' },
     { label: 'וידאו', v: b.videoUsd, color: 'bg-sky-500' },
+    { label: 'משותף', v: b.sharedUsd ?? 0, color: 'bg-slate-400' },
   ];
   return (
     <div className="space-y-2">
@@ -122,7 +129,7 @@ function BreakdownBars({ b }: { b: Breakdown }) {
           <div key={p.label} className={p.color} style={{ width: pct(p.v) }} title={`${p.label} ${usd(p.v)}`} />
         ))}
       </div>
-      <div className="grid grid-cols-4 gap-2 text-center text-xs">
+      <div className="grid grid-cols-5 gap-2 text-center text-xs">
         {parts.map((p) => (
           <div key={p.label}>
             <p className="font-bold text-slate-800">{usd(p.v)}</p>
@@ -273,7 +280,56 @@ export function AdminCostsClient() {
           <div className="rounded-2xl border border-white/80 bg-background-card/60 p-4 backdrop-blur-xl">
             <p className="mb-3 text-sm font-bold text-slate-700">פירוק סך העלות לפי מקור</p>
             <BreakdownBars b={agg.totals} />
+            <p className="mt-2 text-xs text-slate-500">
+              {agg.measured
+                ? `AI לפי עלות שחויבה בפועל ב-OpenRouter. "משותף" = קריאות רקע בלי משתמש (${usd(agg.sharedTotalUsd ?? 0)}), מחולק בין הפעילים.`
+                : 'אין עדיין נתוני מדידה בחלון הזה, ולכן רקע והתראות הם אומדן.'}
+            </p>
           </div>
+
+          {agg.trend?.length ? (
+            <div className="rounded-2xl border border-white/80 bg-background-card/60 p-4 backdrop-blur-xl">
+              <p className="mb-3 text-sm font-bold text-slate-700">מגמה יומית (AI)</p>
+              <div className="flex h-24 items-end gap-1" dir="ltr">
+                {agg.trend.map((d) => {
+                  const max = Math.max(...agg.trend!.map((x) => x.usd), 0.0001);
+                  return <div key={d.day} className="flex-1 rounded-t bg-emerald-500/80" style={{ height: `${Math.max(2, (d.usd / max) * 100)}%` }} title={`${d.day}: ${usd(d.usd)} · ${d.active} פעילים`} />;
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {agg.byFeature?.length ? (
+            <div className="rounded-2xl border border-white/80 bg-background-card/60 p-4 backdrop-blur-xl">
+              <p className="mb-2 text-sm font-bold text-slate-700">AI לפי פיצ׳ר ומודל (נמדד)</p>
+              <table className="w-full text-xs">
+                <tbody>
+                  {agg.byFeature.slice(0, 15).map((f) => (
+                    <tr key={`${f.feature}|${f.model}`} className="border-t border-slate-100">
+                      <td className="py-1 font-mono" dir="ltr">{f.feature}</td>
+                      <td className="py-1 font-mono text-slate-500" dir="ltr">{f.model}</td>
+                      <td className="py-1 text-end">{f.calls}</td>
+                      <td className="py-1 text-end font-bold">{usd(f.usd)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+
+          {agg.fixedMonthly?.length ? (
+            <div className="rounded-2xl border border-white/80 bg-background-card/60 p-4 backdrop-blur-xl">
+              <p className="mb-2 text-sm font-bold text-slate-700">עלויות קבועות לחודש (לא לפי משתמש)</p>
+              <div className="grid grid-cols-2 gap-2 text-xs lg:grid-cols-5">
+                {agg.fixedMonthly.map((f) => (
+                  <div key={f.item} className="rounded-xl bg-background-card/70 p-2">
+                    <p className="font-bold text-slate-800">{usd(f.usd)}</p>
+                    <p className="text-slate-500">{f.item} · {f.plan}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </section>
       ) : null}
 

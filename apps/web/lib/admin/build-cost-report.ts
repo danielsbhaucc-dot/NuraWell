@@ -55,6 +55,12 @@ export interface AggregateCostReport {
   /** עלות ממוצעת למשתמש *פעיל* (שיש לו לפחות פעילות אחת). */
   averagePerActiveUser: CostBreakdown;
   activeUsers: number;
+  /** true = AI from measured ai_usage_events (OpenRouter billed cost); false = legacy estimates. */
+  measured: boolean;
+  /** measured AI with no user (crons/batch), total for the window */
+  sharedTotalUsd: number;
+  /** AI cost by feature and model (measured) */
+  byFeature: Array<{ feature: string; model: string; usd: number; calls: number }>;
   /** טופ-משתמשים יקרים, ממוין יורד. */
   topUsers: UserCostRow[];
   /** כל המשתמשים עם עלות מחושבת בחלון הזמן, כולל 0$. */
@@ -67,11 +73,12 @@ function addBreakdown(a: CostBreakdown, b: CostBreakdown): void {
   a.backgroundUsd += b.backgroundUsd;
   a.notificationsUsd += b.notificationsUsd;
   a.videoUsd += b.videoUsd;
+  a.sharedUsd += b.sharedUsd;
   a.totalUsd += b.totalUsd;
 }
 
 function finalizeBreakdown(b: CostBreakdown): void {
-  b.totalUsd = b.chatUsd + b.backgroundUsd + b.notificationsUsd + b.videoUsd;
+  b.totalUsd = b.chatUsd + b.backgroundUsd + b.notificationsUsd + b.videoUsd + b.sharedUsd;
 }
 
 function readNum(v: unknown): number {
@@ -125,6 +132,9 @@ interface VideoRow {
   estimated_seconds: number | null;
 }
 
+type UsageRow = { user_id: string | null; feature: string; model: string | null; cost_usd: number | string };
+const isNotifyFeature = (f: string) => f.startsWith('notify:');
+
 function chatRowCost(row: ChatRow): number {
   const meta = row.metadata ?? {};
   const billed = readNum(meta.provider_cost_usd);
@@ -176,7 +186,10 @@ export async function buildUserCostReport(
     videoSeconds: 0,
   };
 
-  const [chatRows, notifRows, videoRows] = await Promise.all([
+  const [usageRows, chatRows, notifRows, videoRows] = await Promise.all([
+    fetchAllRows<UsageRow>((from, to) =>
+      admin.from('ai_usage_events').select('user_id, feature, model, cost_usd').eq('user_id', userId).gte('created_at', sinceIso).range(from, to)
+    ),
     fetchAllRows<ChatRow>((from, to) =>
       admin
         .from('ai_interactions')
@@ -228,7 +241,15 @@ export async function buildUserCostReport(
   }
   counts.videoSeconds = videoSeconds;
   breakdown.videoUsd = computeVideoCostUsd(counts.videoViews, videoSeconds);
-  breakdown.backgroundUsd = estimateChatBackgroundUsd(counts.chatMessages);
+  if (usageRows.length) {
+    for (const u of usageRows) {
+      const c = Number(u.cost_usd) || 0;
+      if (isNotifyFeature(u.feature)) breakdown.notificationsUsd += c;
+      else breakdown.backgroundUsd += c;
+    }
+  } else {
+    breakdown.backgroundUsd = estimateChatBackgroundUsd(counts.chatMessages);
+  }
 
   finalizeBreakdown(breakdown);
   const byModel = Array.from(byModelMap.entries())
@@ -266,8 +287,11 @@ export async function buildAggregateCostReport(
     return row;
   };
 
-  const [profilesRes, chatRows, notifRows, videoRows] = await Promise.all([
+  const [profilesRes, usageRows, chatRows, notifRows, videoRows] = await Promise.all([
     admin.from('profiles').select('id, full_name'),
+    fetchAllRows<UsageRow>((from, to) =>
+      admin.from('ai_usage_events').select('user_id, feature, model, cost_usd').gte('created_at', sinceIso).range(from, to)
+    ),
     fetchAllRows<ChatRow>((from, to) =>
       admin
         .from('ai_interactions')
@@ -314,14 +338,36 @@ export async function buildAggregateCostReport(
     r.counts.videoSeconds += readNum(row.estimated_seconds);
   }
 
+  const measured = usageRows.length > 0;
+  let sharedTotalUsd = 0;
+  const featMap = new Map<string, { feature: string; model: string; usd: number; calls: number }>();
+  for (const u of usageRows) {
+    const c = Number(u.cost_usd) || 0;
+    const k = `${u.feature}|${u.model ?? '?'}`;
+    const f = featMap.get(k) ?? { feature: u.feature, model: u.model ?? '?', usd: 0, calls: 0 };
+    f.usd += c;
+    f.calls += 1;
+    featMap.set(k, f);
+    if (!u.user_id) {
+      sharedTotalUsd += c;
+      continue;
+    }
+    const r = ensure(u.user_id);
+    if (isNotifyFeature(u.feature)) r.breakdown.notificationsUsd += c;
+    else r.breakdown.backgroundUsd += c;
+  }
+  const activeCount = Math.max(1, perUser.size);
+
   const totals = emptyBreakdown();
   for (const row of perUser.values()) {
     row.breakdown.videoUsd = computeVideoCostUsd(row.counts.videoViews, row.counts.videoSeconds);
-    row.breakdown.backgroundUsd = estimateChatBackgroundUsd(row.counts.chatMessages);
+    if (!measured) row.breakdown.backgroundUsd = estimateChatBackgroundUsd(row.counts.chatMessages);
+    row.breakdown.sharedUsd = sharedTotalUsd / activeCount;
     finalizeBreakdown(row.breakdown);
     row.fullName = nameById.get(row.userId) ?? null;
     addBreakdown(totals, row.breakdown);
   }
+  if (perUser.size === 0) totals.sharedUsd = sharedTotalUsd;
   finalizeBreakdown(totals);
 
   const activeUsers = perUser.size;
@@ -333,6 +379,7 @@ export async function buildAggregateCostReport(
     backgroundUsd: totals.backgroundUsd / divUsers,
     notificationsUsd: totals.notificationsUsd / divUsers,
     videoUsd: totals.videoUsd / divUsers,
+    sharedUsd: totals.sharedUsd / divUsers,
     totalUsd: totals.totalUsd / divUsers,
   };
   const averagePerActiveUser: CostBreakdown = {
@@ -340,6 +387,7 @@ export async function buildAggregateCostReport(
     backgroundUsd: totals.backgroundUsd / divActive,
     notificationsUsd: totals.notificationsUsd / divActive,
     videoUsd: totals.videoUsd / divActive,
+    sharedUsd: totals.sharedUsd / divActive,
     totalUsd: totals.totalUsd / divActive,
   };
 
@@ -372,6 +420,9 @@ export async function buildAggregateCostReport(
     averagePerUser,
     averagePerActiveUser,
     activeUsers,
+    measured,
+    sharedTotalUsd,
+    byFeature: [...featMap.values()].sort((a, b) => b.usd - a.usd),
     topUsers,
     users,
     windowDays,

@@ -1,3 +1,4 @@
+import { withAiUsage } from '@/lib/ai/usage-meter';
 import 'server-only';
 
 /**
@@ -41,7 +42,7 @@ export async function runNotificationJob(
 ): Promise<Response> {
   const mod = (await NOTIFICATION_JOBS[job]()) as unknown as JobModule;
   const started = Date.now();
-  const res = method === 'POST' ? await mod.handlePost(request) : await mod.handleGet(request);
+  const res = await withAiUsage({ feature: `notify:${job}` }, () => (method === 'POST' ? mod.handlePost(request) : mod.handleGet(request)));
   if (method === 'POST') {
     // eslint-disable-next-line no-console
     console.log('[notify-scheduler]', JSON.stringify({ job, status: res.status, ms: Date.now() - started }));

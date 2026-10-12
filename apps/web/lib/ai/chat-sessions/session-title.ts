@@ -1,3 +1,4 @@
+import { meteredFetch } from '@/lib/ai/usage-meter';
 /**
  * שם ענייני לשיחה — מודל זול (Llama 4 Scout) ברקע, לא בנתיב ה-UI.
  */
@@ -51,7 +52,7 @@ export async function generateChatSessionTitle(params: {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 4_000);
   try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const res = await meteredFetch(fetch, { feature: 'chat_session_title' })('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

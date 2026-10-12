@@ -1,3 +1,4 @@
+import { meteredFetch } from '@/lib/ai/usage-meter';
 /**
  * עדכון קובץ שיחה חי — per session, עם תאריכים.
  */
@@ -38,7 +39,7 @@ export async function summarizeConversationTurn(params: {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10_000);
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await meteredFetch(fetch, { feature: 'chat_turn_summary' })('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -155,13 +155,11 @@ function numEnv(key: string, fallback: number): number {
 export const BUNNY_MINUTES_PER_VIEW = numEnv('BUNNY_MINUTES_PER_VIEW', 3);
 
 /**
- * מחיר Bunny לדקת הזרמה ($). ברירת מחדל מבוססת על:
- *   ~mobile bitrate (≈2 Mbps) → ~15MB/דקה → ~0.015GB
- *   × ~$0.01/GB (Bunny Stream volume) ≈ $0.00015/דקה.
- *   נלקח קצת גבוה יותר (0.0004) כ-buffer לאזורים יקרים + storage.
- * Override: `BUNNY_USD_PER_MINUTE`.
+ * מחיר Bunny לדקת צפייה ($), מדוד מחשבון Bunny (2026-10): 21 דקות צפייה → 110MB תעבורה
+ * (≈5.3MB/דקה), בתעריף ≈$0.01/GB באירופה → ≈$0.00005/דקה. מעוגל ל-0.00006 (אזורים יקרים).
+ * אחסון (≈$0.011/GB לחודש) הוא עלות קבועה, לא לפי משתמש. Override: `BUNNY_USD_PER_MINUTE`.
  */
-export const BUNNY_USD_PER_MINUTE = numEnv('BUNNY_USD_PER_MINUTE', 0.0004);
+export const BUNNY_USD_PER_MINUTE = numEnv('BUNNY_USD_PER_MINUTE', 0.00006);
 
 /**
  * עלות Bunny ($) — מעדיף סכום שניות-צפייה אמיתי אם קיים, אחרת נופל
@@ -191,9 +189,11 @@ export interface CostBreakdown {
   backgroundUsd: number;
   notificationsUsd: number;
   videoUsd: number;
+  /** measured AI calls with no user attribution (crons, batch jobs), split evenly across active users */
+  sharedUsd: number;
   totalUsd: number;
 }
 
 export function emptyBreakdown(): CostBreakdown {
-  return { chatUsd: 0, backgroundUsd: 0, notificationsUsd: 0, videoUsd: 0, totalUsd: 0 };
+  return { chatUsd: 0, backgroundUsd: 0, notificationsUsd: 0, videoUsd: 0, sharedUsd: 0, totalUsd: 0 };
 }

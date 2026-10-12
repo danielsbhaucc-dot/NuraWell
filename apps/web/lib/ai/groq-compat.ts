@@ -1,3 +1,4 @@
+import { meteredFetch } from './usage-meter';
 /**
  * Groq ↔ gpt-oss compatibility layer.
  *
@@ -101,6 +102,8 @@ export function adaptGroqChatBody(
   return out;
 }
 
+const metered = meteredFetch();
+
 export const groqCompatFetch: typeof fetch = async (input, init) => {
   try {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
@@ -112,12 +115,12 @@ export const groqCompatFetch: typeof fetch = async (input, init) => {
           viaOpenRouter: parsedUrl.hostname === 'openrouter.ai',
         });
         if (adapted !== parsed) {
-          return fetch(input, { ...init, body: JSON.stringify(adapted) });
+          return metered(input, { ...init, body: JSON.stringify(adapted) });
         }
       }
     }
   } catch {
     /* fall through: send the request unchanged */
   }
-  return fetch(input, init);
+  return metered(input, init);
 };
