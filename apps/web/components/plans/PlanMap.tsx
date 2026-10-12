@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { habitIcon } from '@/lib/journey/habit-icons';
-import { ScrollToCurrent } from './ScrollToCurrent';
 
 export type MapStation = { id: string; title: string; total: number; done: number; state: 'done' | 'current' | 'locked'; habitKey?: string | null };
 
@@ -13,7 +12,7 @@ const xs = [W / 2, W - 70, W / 2, 70]; // winding S: centre → right → centre
  * Journey map — smooth winding path with round emerald stations (line icons), glowing current station,
  * faded mint-glass locked stations. Server component; code/CSS only.
  */
-export function PlanMap({ stations }: { stations: MapStation[] }) {
+export function PlanMap({ stations, startIndex = 0 }: { stations: MapStation[]; startIndex?: number }) {
   if (!stations.length) return null;
   const h = stations.length * ROW + 24;
   const pt = (i: number) => ({ x: xs[i % xs.length], y: i * ROW + 48 });
@@ -23,7 +22,8 @@ export function PlanMap({ stations }: { stations: MapStation[] }) {
     return `M ${a.x} ${a.y} C ${a.x} ${a.y + ROW * 0.55}, ${b.x} ${b.y - ROW * 0.55}, ${b.x} ${b.y}`;
   };
   return (
-    <nav aria-label="מפת המסע" id="plan-map-scroll" className="relative max-h-[70vh] overflow-y-auto overscroll-contain rounded-3xl">
+    // No inner scroll container: a nested overflow box trapped touch scrolling on mobile. The page scrolls.
+    <nav aria-label="מפת המסע" className="relative">
       <div className="relative mx-auto w-full max-w-[360px]" style={{ height: h }}>
       <svg viewBox={`0 0 ${W} ${h}`} className="absolute inset-0 h-full w-full" aria-hidden>
         {stations.slice(1).map((s, k) => {
@@ -68,7 +68,7 @@ export function PlanMap({ stations }: { stations: MapStation[] }) {
                 style={{ width: NODE, height: NODE }}
               >
                 <Icon className="size-6" strokeWidth={1.75} aria-hidden />
-                <span className="sr-only">{`תחנה ${i + 1}: ${s.title}${s.state === 'done' ? ' (הושלמה)' : s.state === 'locked' ? ' (נעולה)' : ' (התחנה הנוכחית)'}`}</span>
+                <span className="sr-only">{`תחנה ${startIndex + i + 1}: ${s.title}${s.state === 'done' ? ' (הושלמה)' : s.state === 'locked' ? ' (נעולה)' : ' (התחנה הנוכחית)'}`}</span>
               </Link>
               <div
                 className={`absolute top-1/2 w-32 -translate-y-1/2 ${labelSide === 'end' ? 'right-full mr-3 text-left' : 'left-full ml-3 text-right'} ${s.state === 'locked' ? 'opacity-60' : ''}`}
@@ -85,7 +85,6 @@ export function PlanMap({ stations }: { stations: MapStation[] }) {
         })}
       </ol>
       </div>
-      {stations.length > 5 ? <ScrollToCurrent containerId="plan-map-scroll" /> : null}
     </nav>
   );
 }

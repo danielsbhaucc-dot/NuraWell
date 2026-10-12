@@ -1,19 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 
-import {
-  type PendingTaskTodayRow,
+import type {
+  PendingTaskTodayRow,
 } from '../../lib/journey/journey-report-parse';
-import {
-  pickNextTaskForNow,
-  type UserScheduleProfile,
-} from '../../lib/journey/pick-next-task-for-now';
-import { fetchUserTaskSnapshot } from '../../lib/client/user-task-snapshot';
-import { fetchDashboardBrief } from '../../lib/client/dashboard-brief';
-import { runWhenIdle } from '../../lib/client/run-when-idle';
 
 type DashboardBrief = {
   headline: string;
@@ -31,59 +24,12 @@ export function DynamicMentorWidgetClient({
   nextBestAction,
   isSensitiveState,
 }: DynamicMentorWidgetClientProps) {
-  const [nextTask, setNextTask] = useState<PendingTaskTodayRow | null>(null);
-  const [brief, setBrief] = useState<DashboardBrief | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const loadSnapshot = useCallback(async () => {
-    try {
-      const json = await fetchUserTaskSnapshot();
-      if (!json) {
-        setNextTask(null);
-        return;
-      }
-      const pending = (json.journey_today ?? []).filter((t) => !t.done);
-      const picked = pickNextTaskForNow(pending, (json.user_schedule ?? {}) as UserScheduleProfile);
-      const journeyNext = picked
-        ? (pending.find((t) => t.id === picked.taskId) ?? pending[0] ?? null)
-        : pending[0] ?? null;
-      if (journeyNext) {
-        setNextTask(journeyNext);
-      } else if ((json.almog_open ?? []).length > 0) {
-        const almog = json.almog_open![0]!;
-        setNextTask({
-          id: almog.id,
-          stepId: 'almog',
-          title: almog.title,
-          emoji: '✨',
-          stepTitle: 'מאלמוג',
-          stepNumber: 0,
-          pendingSlots: ['once'],
-          done: false,
-          schedule: 'one_time',
-          times_per_day: 1,
-          weekly_day: 0,
-          monthly_day: 1,
-          interval_days: 1,
-          meal_offset_minutes: null,
-          meal_timing: 'before',
-          meal_target: 'fixed',
-        });
-      } else {
-        setNextTask(null);
-      }
-    } catch {
-      setNextTask(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // /home dedupe: the hero already shows today's task and DashboardBriefCard shows the brief — this card
-  // carries only the mentorship strategy's next-best-action (no extra snapshot/brief fetches).
-  void loadSnapshot;
-  void fetchDashboardBrief;
-  void runWhenIdle;
+  // Root cause of the "slow" card: a /home dedupe refactor stopped calling the snapshot loader but left
+  // `loading` initialised to true, so the skeleton never resolved. The card now renders the server-provided
+  // next-best-action immediately (the hero already shows today's task; DashboardBriefCard shows the brief).
+  const nextTask = null as PendingTaskTodayRow | null;
+  const brief = null as DashboardBrief | null;
+  const loading = false;
 
   const name = firstName && firstName !== 'משתמש' ? firstName : null;
 
@@ -105,7 +51,7 @@ export function DynamicMentorWidgetClient({
         subtitle: isSensitiveState ? 'צעד קטן להיום' : 'הפעולה הבאה שלך',
         detail: timeHint
           ? `${friendlyLead}נראה לי ש${timeHint} זה הזמן הכי נוח — בלי לחץ, רק צעד אחד.`
-          : `${friendlyLead}בוא ניקח רגע אחד קטן. אני איתך.`,
+          : `${friendlyLead}ניקח יחד רגע אחד קטן. אני איתך.`,
       };
     }
 
@@ -123,8 +69,8 @@ export function DynamicMentorWidgetClient({
       title: nextBestAction,
       subtitle: isSensitiveState ? 'צעד קטן להיום' : 'הפעולה הבאה שלך',
       detail: name
-        ? `${name}, אני כאן — בוא ניקח רגע אחד קטן, בקצב שלך.`
-        : 'אני כאן — בוא ניקח רגע אחד קטן, בקצב שלך.',
+        ? `${name}, אני כאן — ניקח יחד רגע אחד קטן, בקצב שלך.`
+        : 'אני כאן — ניקח יחד רגע אחד קטן, בקצב שלך.',
     };
   }, [nextTask, brief, nextBestAction, isSensitiveState, name]);
 

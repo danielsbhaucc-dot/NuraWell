@@ -15,7 +15,7 @@ import { QuickAccessGrid } from './QuickAccessGrid';
 import { HomeSectionDivider } from './HomeSectionDivider';
 import { TodayTasksPopup } from './TodayTasksPopup';
 import { SosButton } from '../ai/SosButton';
-import { SosMemoryCard } from '../ai/SosMemoryCard';
+import { SosMemoryCard, type SosContextPayload } from '../ai/SosMemoryCard';
 import { buildAlmogGreeting, type GreetingTaskState } from '../../lib/ai/almog-greeting';
 import {
   type PendingTaskTodayRow,
@@ -51,6 +51,8 @@ interface HomeClientProps {
   simplifiedDashboard?: boolean;
   /** RSC — DynamicMentorWidget מוזרק מ-home/page (שליפה יחידה). */
   mentorWidget?: React.ReactNode;
+  /** RSC — SOS memory fetched server-side with the page (no client round-trip). */
+  sosInitial?: SosContextPayload | null;
 }
 
 const container = {
@@ -68,6 +70,7 @@ export function HomeClient({
   stats,
   simplifiedDashboard = false,
   mentorWidget,
+  sosInitial = null,
 }: HomeClientProps) {
   const progressReport = useProgressReport();
   const actionHub = useActionHub();
@@ -287,52 +290,13 @@ export function HomeClient({
         <motion.div variants={container} initial="hidden" animate="show" className="mx-auto max-w-lg space-y-3">
           <ProgramOrchestratorGate />
 
+          <HomeSectionDivider title="היום שלך" subtitle="משימות ומה שמחכה לך היום" />
+
           {mentorWidget ? (
             <motion.div variants={item}>
-              <HomeSectionDivider
-                title="צעד קטן להיום"
-                subtitle="מה הכי נכון לך עכשיו — בלי לחץ"
-              />
               {mentorWidget}
             </motion.div>
           ) : null}
-
-          {!simplifiedDashboard && (
-            <motion.div variants={item}>
-              <DashboardBriefCard onOpenTasks={() => actionHub.open()} firstName={firstName} />
-            </motion.div>
-          )}
-
-          <motion.div variants={item}>
-            <HomeSectionDivider
-              title="רגע, קשה לי עכשיו"
-              subtitle="סיוע קצר של אלמוג — בלי שיפוט"
-            />
-            <SosButton
-              firstName={firstName}
-              gender={gender}
-              focusTasks={todayTasks
-                .filter((t) => !t.done)
-                .map((t) => ({
-                  id: t.id,
-                  title: t.title,
-                  emoji: t.emoji,
-                  stepTitle: t.stepTitle,
-                  stepId: t.stepId,
-                  pendingSlots: t.pendingSlots,
-                }))}
-            />
-          </motion.div>
-
-          <motion.div variants={item}>
-            <HomeSectionDivider
-              title="רגעים אחרונים"
-              subtitle="מה עזר — ומה שפחות התאים"
-            />
-            <SosMemoryCard />
-          </motion.div>
-
-          <HomeSectionDivider title="היום שלך" subtitle="משימות ומה שמחכה לך היום" />
 
           {/* משימות */}
           <motion.div variants={item}>
@@ -422,6 +386,36 @@ export function HomeClient({
             </button>
           </motion.div>
 
+          {!simplifiedDashboard && (
+            <motion.div variants={item}>
+              <DashboardBriefCard onOpenTasks={() => actionHub.open()} firstName={firstName} />
+            </motion.div>
+          )}
+
+          <motion.div variants={item}>
+            <HomeSectionDivider title="רגע קשה?" subtitle="אלמוג כאן — בלי שיפוט" />
+            <SosButton
+              firstName={firstName}
+              gender={gender}
+              focusTasks={todayTasks
+                .filter((t) => !t.done)
+                .map((t) => ({
+                  id: t.id,
+                  title: t.title,
+                  emoji: t.emoji,
+                  stepTitle: t.stepTitle,
+                  stepId: t.stepId,
+                  pendingSlots: t.pendingSlots,
+                }))}
+            />
+          </motion.div>
+
+          <motion.div variants={item}>
+            <SosMemoryCard initial={sosInitial} />
+          </motion.div>
+
+          <HomeSectionDivider title="עוד בשבילך" subtitle="מדריכים וקיצורי דרך" />
+
           {/* מדריכים — מוסתר במצב רגשי רגיש (מטריקות מורכבות) */}
           {!simplifiedDashboard && stats.activeCoursesCount > 0 && (
             <motion.div variants={item}>
@@ -469,8 +463,6 @@ export function HomeClient({
               </Link>
             </motion.div>
           )}
-
-          <HomeSectionDivider title="ניווט מהיר" subtitle="קיצורי דרך לעמודים חשובים" />
 
           <motion.div variants={item}>
             <QuickAccessGrid

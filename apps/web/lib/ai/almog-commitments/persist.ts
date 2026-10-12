@@ -79,6 +79,8 @@ async function insertDeduped(
   }
   if (existing) return 'exists';
   const { error } = await admin.from(table).insert(payload);
+  // 23505 = same dedupe_key raced in, or the DB semantic guard (000108) found a similar active task.
+  if (error?.code === '23505') return 'exists';
   if (error) {
     console.warn('[almog-commitments] insert failed', {
       table,
@@ -190,10 +192,11 @@ export async function persistCommitmentExtraction(params: {
       continue;
     }
 
-    const softSimilar = [...knownTitles, ...batchTitles].some((existing) =>
-      titlesAreSimilar(task.title, existing, 0.55)
-    );
-    const status = softSimilar ? ('proposed' as const) : ('active' as const);
+    // Partial similarity used to be saved as status 'proposed', but the status CHECK only allows
+    // active|completed|dropped|frozen, so those inserts always failed. Near-duplicates are skipped instead
+    // (the DB guard in 000108 enforces the same rule for every insert path).
+    const softSimilar = false;
+    const status = 'active' as const;
 
     const relatedHabitId = task.related_habit
       ? params.habitTitleToId?.get(task.related_habit.trim()) ?? null
