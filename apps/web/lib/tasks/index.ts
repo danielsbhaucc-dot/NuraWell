@@ -117,7 +117,7 @@ export async function getPlan(admin: SupabaseClient, userId: string, now = new D
       canStepDown: stepDown(a.definition, a.current_level).ok,
       canStepUp: stepUp(a.definition, a.current_level).ok,
       history: ev
-        .filter((e) => e.kind === 'level_change' || e.kind === 'accepted')
+        .filter((e) => e.kind === 'level_change' || e.kind === 'accepted' || e.kind === 'merged')
         .map((e) => ({ kind: e.kind as string, date_key: e.date_key as string | null, from_level: e.from_level as number | null, to_level: e.to_level as number | null, reason: e.reason as string | null, occurred_at: e.occurred_at as string, source: (e as { source?: string | null }).source ?? null })),
     };
   });
@@ -271,7 +271,8 @@ export function planForPrompt(plan: PlanTask[]): string {
   return plan
     .map((t) => {
       const lvl = t.current_level === 0 ? 'רמה מקורית' : t.current_level < 0 ? `הוקלה (${t.current_level})` : `הוקשתה (+${t.current_level})`;
-      return `- ${t.level.title} [${lvl}] היום ${t.doneToday}/${t.targetToday}, רצף ${t.streakDays} ימים${t.is_main ? ' (משימה ראשית)' : ''}`;
+      const merged = t.history.find((h) => h.kind === 'merged' && Date.now() - new Date(h.occurred_at).getTime() < 7 * 86_400_000);
+      return `- ${t.level.title} [${lvl}] היום ${t.doneToday}/${t.targetToday}, רצף ${t.streakDays} ימים${t.is_main ? ' (משימה ראשית)' : ''}${merged ? ' (לאחרונה איחדת לתוכה משימות כמעט זהות של המשתמש; אפשר להזכיר בטבעיות אם רלוונטי)' : ''}`;
     })
     .join('\n');
 }
