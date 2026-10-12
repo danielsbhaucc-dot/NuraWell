@@ -27,3 +27,14 @@ export async function hasActiveDemoAccessSession(userId: string): Promise<boolea
     return false;
   }
 }
+
+/** מוחק סשני Auth של סשני דמו מתים — האורח מנותק מיד, המשתמש האמיתי לא. */
+export async function killDeadDemoAuthSessions(linkId?: string): Promise<void> {
+  const admin = createAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (admin as any).rpc('demo_access_kill_dead_auth_sessions', {
+    p_link: linkId ?? null,
+  });
+  if (error) console.error('[demo-access] kill auth sessions', error.message);
+}
+

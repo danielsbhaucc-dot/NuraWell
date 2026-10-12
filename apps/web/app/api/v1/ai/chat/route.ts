@@ -3788,6 +3788,7 @@ async function handleChatPost(request: Request) {
               userMessage: lastUserText,
               assistantMessage: assistantText,
               liveFile: updatedSummary ?? chatSession?.live_conversation_file,
+              messageCount: Number(chatSession?.message_count ?? 0) + 2,
             });
           } catch (summaryErr) {
             console.warn('[ai/chat]', {
