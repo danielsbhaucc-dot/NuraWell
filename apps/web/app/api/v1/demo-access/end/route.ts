@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { requireApiSession } from '@/lib/api/route-guards';
 import { mergeAuthCookieOptions } from '@/lib/supabase/cookie-options';
-import { DEMO_ACCESS_COOKIE, parseDemoAccessCookie } from '@/lib/demo-access/cookie';
+import {
+  DEMO_ACCESS_COOKIE,
+  clearDemoAccessCookieOptions,
+  parseDemoAccessCookie,
+} from '@/lib/demo-access/cookie';
 import { endDemoSessionForUser } from '@/lib/demo-access/claim';
 
 export const runtime = 'nodejs';
@@ -46,13 +50,7 @@ export async function POST(request: Request) {
   );
 
   await supabase.auth.signOut();
-  response.cookies.set(DEMO_ACCESS_COOKIE, '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0,
-  });
+  response.cookies.set(DEMO_ACCESS_COOKIE, '', clearDemoAccessCookieOptions());
   response.headers.set('Cache-Control', 'no-store, max-age=0');
 
   return response;
