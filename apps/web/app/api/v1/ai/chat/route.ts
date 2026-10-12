@@ -202,8 +202,12 @@ import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 import { publicAppUrlForAiReferer } from '../../../../../lib/public-app-url';
 
-/** Vercel Edge — סטרימינג צ׳אט ו-TTFB נמוך קרוב ל-POP הגלובלי */
-export const runtime = 'edge';
+/**
+ * Node (Fluid) rather than Edge: the turn fires many parallel subrequests (Supabase, RAG,
+ * emoji/router LLMs). Under Edge the writer fetch to OpenRouter took 5-6s to open while
+ * OpenRouter itself reported ~0.9s latency.
+ */
+export const runtime = 'nodejs';
 
 /** RAG + כותב ארוך; בלי זה Edge חותך ~25ש׳ והלקוח רואה כשל שליחה */
 export const maxDuration = 60;
