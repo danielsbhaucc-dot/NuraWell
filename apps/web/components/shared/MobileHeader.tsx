@@ -50,14 +50,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
             href={APP_HOME_PATH}
             prefetch
             aria-label="מעבר למסך הבית"
-            className="absolute left-1/2 -translate-x-1/2 rounded-xl px-3 py-1.5 no-tap-highlight"
-            style={{
-              background: 'rgba(255,255,255,0.14)',
-              border: '1px solid rgba(255,255,255,0.28)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.24)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
-            }}
+            className="absolute left-1/2 -translate-x-1/2 no-tap-highlight"
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- static brand SVG */}
             <img
