@@ -4,6 +4,7 @@ import {
   buildPassiveBody,
   decidePassiveKind,
   isPassivePresenceEligible,
+  passivePresenceGateDays,
   pickPassiveValueTemplate,
 } from '../lib/churn/passive-presence-batch';
 import { detectPassiveTrigger } from '../lib/churn/israeli-holidays';
@@ -104,5 +105,14 @@ describe('detectPassiveTrigger', () => {
   it('Monday → monday', () => {
     // 2026-06-08 is a Monday
     expect(detectPassiveTrigger(new Date('2026-06-08T09:00:00Z'), 'UTC')).toBe('monday');
+  });
+});
+
+describe('passivePresenceGateDays', () => {
+  it('weekly for 14-41 days, monthly from 42 (dormant_long)', () => {
+    expect(passivePresenceGateDays(14)).toBe(7);
+    expect(passivePresenceGateDays(41)).toBe(7);
+    expect(passivePresenceGateDays(42)).toBe(30);
+    expect(passivePresenceGateDays(Infinity)).toBe(30);
   });
 });

@@ -501,17 +501,27 @@ export function daysBetween(fromIso: string | null | undefined, now: Date): numb
   return Math.floor(diff / MS_PER_DAY);
 }
 
+/** ספי ימים של מכונת הדעיכה (source of truth אחד לכל המערכות). */
+export const CADENCE_DORMANT_EARLY_FROM_DAYS = 3;
+export const CADENCE_WITHDRAWING_FROM_DAYS = 6;
+export const CADENCE_EXTENDED_ABSENCE_FROM_DAYS = 9;
+export const CADENCE_GHOSTED_FROM_DAYS = 14;
+export const CADENCE_DORMANT_LONG_FROM_DAYS = 42;
+/** cooldown של מגעי נוכחות (ימים) — ghosted שבועי, dormant_long חודשי. */
+export const GHOSTED_TOUCH_COOLDOWN_DAYS = 7;
+export const DORMANT_LONG_TOUCH_COOLDOWN_DAYS = 30;
+
 /**
  * Mapping של dormancy → nudge level (קריא ב-LLM וב-cron back-off).
- *  0: 0–2d  (Active)            — שגרה רגילה, עד 3/יום
- *  1: 3–7d  (Dormant Early)     — 2/יום (בוקר + ערב)
- *  2: 8–13d (Withdrawing/Ext.)  — 1/יום אמפתי
- *  3: >=14d (Ghosted)           — 1/שבוע
+ *  0: 0–2d   (Active)            — שגרה רגילה, עד 3/יום
+ *  1: 3–5d   (Dormant Early)     — 2/יום (בוקר + ערב)
+ *  2: 6–13d  (Withdrawing/Ext.)  — 1/יום אמפתי
+ *  3: >=14d  (Ghosted/Long)      — 1/שבוע → 1/חודש מ-42
  */
 export function computeNudgeLevel(daysSinceLastActive: number): HabitCheckpointNudgeLevel {
-  if (!Number.isFinite(daysSinceLastActive) || daysSinceLastActive >= 14) return 3;
-  if (daysSinceLastActive >= 8) return 2;
-  if (daysSinceLastActive >= 3) return 1;
+  if (!Number.isFinite(daysSinceLastActive) || daysSinceLastActive >= CADENCE_GHOSTED_FROM_DAYS) return 3;
+  if (daysSinceLastActive >= CADENCE_WITHDRAWING_FROM_DAYS) return 2;
+  if (daysSinceLastActive >= CADENCE_DORMANT_EARLY_FROM_DAYS) return 1;
   return 0;
 }
 
@@ -519,20 +529,35 @@ export function computeNudgeLevel(daysSinceLastActive: number): HabitCheckpointN
  * שלב cadence מדויק — קובע גם תדירות (אילו slots מותרים) וגם טון ההודעה.
  * זה ה-source-of-truth של "כמה הודעות ביום וכמה מהן אמפתיות":
  *
- *   active            (0–2d):   3/יום (בוקר/צהריים/ערב). יום 2 = "יום עמוס?"
- *   dormant_early     (3–7d):   2/יום (בוקר + ערב). חבר שמרגיש שקט.
- *   withdrawing       (8d):     1/יום (רק בוקר). אמפתי במיוחד: "אני מבין שאתה בעומס".
- *   extended_absence  (9–13d):  1/יום (רק צהריים). נוכחות שקטה.
- *   ghosted           (14+d):   1/שבוע. cooldown אגרסיבי של 7 ימים.
+ *   active            (0–2d):    3/יום (בוקר/צהריים/ערב). יום 2 = "יום עמוס?"
+ *   dormant_early     (3–5d):    2/יום (בוקר + ערב). חבר שמרגיש שקט.
+ *   withdrawing       (6–8d):    1/יום (רק בוקר). אמפתי: "אני מבין שאתה בעומס".
+ *   extended_absence  (9–13d):   1/יום (רק צהריים). נוכחות שקטה.
+ *   ghosted           (14–41d):  1/שבוע (cooldown 7 ימים).
+ *   dormant_long      (42+d):    1/חודש (cooldown 30 יום). "הדלת פתוחה", בלי אשמה.
+ *
+ * חזרה לפעילות (צ'אט/ביצוע/עדכון פרוגרס) מאפסת את daysSinceLastActive → active מיד.
  */
 export function computeCadenceStage(
   daysSinceLastActive: number
 ): HabitCheckpointCadenceStage {
-  if (!Number.isFinite(daysSinceLastActive) || daysSinceLastActive >= 14) return 'ghosted';
-  if (daysSinceLastActive >= 9) return 'extended_absence';
-  if (daysSinceLastActive >= 8) return 'withdrawing';
-  if (daysSinceLastActive >= 3) return 'dormant_early';
+  if (!Number.isFinite(daysSinceLastActive) || daysSinceLastActive >= CADENCE_DORMANT_LONG_FROM_DAYS) {
+    return 'dormant_long';
+  }
+  if (daysSinceLastActive >= CADENCE_GHOSTED_FROM_DAYS) return 'ghosted';
+  if (daysSinceLastActive >= CADENCE_EXTENDED_ABSENCE_FROM_DAYS) return 'extended_absence';
+  if (daysSinceLastActive >= CADENCE_WITHDRAWING_FROM_DAYS) return 'withdrawing';
+  if (daysSinceLastActive >= CADENCE_DORMANT_EARLY_FROM_DAYS) return 'dormant_early';
   return 'active';
+}
+
+/** cooldown (ימים) למגעי נוכחות לפי שלב; null = אין cooldown נוסף (ה-slots מסננים). */
+export function presenceCooldownDaysForCadenceStage(
+  stage: HabitCheckpointCadenceStage
+): number | null {
+  if (stage === 'dormant_long') return DORMANT_LONG_TOUCH_COOLDOWN_DAYS;
+  if (stage === 'ghosted') return GHOSTED_TOUCH_COOLDOWN_DAYS;
+  return null;
 }
 
 /**
@@ -542,6 +567,7 @@ export function computeCadenceStage(
  *  - withdrawing: רק בוקר (אמפתי, מסר אחד)
  *  - extended_absence: רק צהריים (נוכחות אחת בלי לחץ)
  *  - ghosted: רק בוקר (ובנוסף weekly cooldown של 7 ימים)
+ *  - dormant_long: רק בוקר (ובנוסף monthly cooldown של 30 יום)
  */
 export function allowedSlotsForCadenceStage(
   stage: HabitCheckpointCadenceStage
@@ -556,6 +582,7 @@ export function allowedSlotsForCadenceStage(
     case 'extended_absence':
       return new Set<HabitCheckpointSlot>(['midday']);
     case 'ghosted':
+    case 'dormant_long':
       return new Set<HabitCheckpointSlot>(['morning']);
   }
 }
@@ -658,33 +685,25 @@ export function isUserRespondedRecently(
  * נמדד מרגע ההצטרפות — כך משתמש חדש שעוד לא ענה לא ייחשב מיידית Ghosted
  * (Infinity), אלא "צעיר" לפי גיל החשבון.
  *
- * חלון 14 ימים — מספיק לכל ה-state machine (Ghosted מתחיל ב-14).
+ * חלון 14 ימים לכולם, ואז pass שני עד 45 ימים רק למי שאין לו אות ב-14 —
+ * כדי להבחין בין ghosted (14–41) ל-dormant_long (42+) בלי שהרצפה
+ * created_at תסווג בטעות משתמש ותיק שנעלם לפני 20 יום כ-42+.
  */
 const TRUE_ACTIVE_WINDOW_DAYS = 14;
+const TRUE_ACTIVE_LONG_WINDOW_DAYS = 45;
 
-export async function fetchTrueLastActiveByUser(
+async function mergeTrueActivitySignals(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: any,
-  userIds: string[],
-  now = new Date()
-): Promise<Map<string, string | null>> {
-  const result = new Map<string, string | null>();
-  if (userIds.length === 0) return result;
-
-  const cappedIds = userIds.slice(0, 2000);
-  const windowIso = new Date(
-    now.getTime() - TRUE_ACTIVE_WINDOW_DAYS * MS_PER_DAY
-  ).toISOString();
-
-  const [profileRes, chatRes, execRes, progressRes] = await Promise.all([
-    admin
-      .from('profiles')
-      .select('id, created_at')
-      .in('id', cappedIds),
+  ids: string[],
+  windowIso: string,
+  result: Map<string, string | null>
+): Promise<void> {
+  const [chatRes, execRes, progressRes] = await Promise.all([
     admin
       .from('ai_interactions')
       .select('user_id, created_at')
-      .in('user_id', cappedIds)
+      .in('user_id', ids)
       .eq('role', 'user')
       .gte('created_at', windowIso)
       .order('created_at', { ascending: false })
@@ -692,7 +711,7 @@ export async function fetchTrueLastActiveByUser(
     admin
       .from('journey_task_executions')
       .select('user_id, completed_at')
-      .in('user_id', cappedIds)
+      .in('user_id', ids)
       .gte('completed_at', windowIso)
       .order('completed_at', { ascending: false })
       .limit(8000),
@@ -703,7 +722,7 @@ export async function fetchTrueLastActiveByUser(
     admin
       .from('journey_progress')
       .select('user_id, last_engaged_at')
-      .in('user_id', cappedIds)
+      .in('user_id', ids)
       .gte('last_engaged_at', windowIso)
       .order('last_engaged_at', { ascending: false })
       .limit(8000),
@@ -723,15 +742,6 @@ export async function fetchTrueLastActiveByUser(
     }
   };
 
-  // רצפה: created_at. *לא* last_active_at — ראה הסבר ב-doc-comment למעלה.
-  if (Array.isArray(profileRes?.data)) {
-    for (const row of profileRes.data as Array<{ id?: string; created_at?: string | null }>) {
-      if (typeof row.id === 'string') {
-        result.set(row.id, row.created_at ?? null);
-      }
-    }
-  }
-
   if (Array.isArray(chatRes?.data)) {
     for (const row of chatRes.data as Array<{ user_id?: string; created_at?: string | null }>) {
       if (typeof row.user_id === 'string') upsertMax(row.user_id, row.created_at);
@@ -748,6 +758,54 @@ export async function fetchTrueLastActiveByUser(
     for (const row of progressRes.data as Array<{ user_id?: string; last_engaged_at?: string | null }>) {
       if (typeof row.user_id === 'string') upsertMax(row.user_id, row.last_engaged_at);
     }
+  }
+
+}
+
+export async function fetchTrueLastActiveByUser(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  userIds: string[],
+  now = new Date()
+): Promise<Map<string, string | null>> {
+  const result = new Map<string, string | null>();
+  if (userIds.length === 0) return result;
+
+  const cappedIds = userIds.slice(0, 2000);
+  const windowIso = new Date(
+    now.getTime() - TRUE_ACTIVE_WINDOW_DAYS * MS_PER_DAY
+  ).toISOString();
+
+  const profileRes = await admin
+    .from('profiles')
+    .select('id, created_at')
+    .in('id', cappedIds);
+
+  // רצפה: created_at. *לא* last_active_at — ראה הסבר ב-doc-comment למעלה.
+  if (Array.isArray(profileRes?.data)) {
+    for (const row of profileRes.data as Array<{ id?: string; created_at?: string | null }>) {
+      if (typeof row.id === 'string') {
+        result.set(row.id, row.created_at ?? null);
+      }
+    }
+  }
+  const floorById = new Map(result);
+
+  await mergeTrueActivitySignals(admin, cappedIds, windowIso, result);
+
+  /** pass שני: רק מי שאין לו אות ב-14 ימים וגיל החשבון > 14 ימים. */
+  const windowMs = new Date(windowIso).getTime();
+  const staleIds = cappedIds.filter((id) => {
+    const cur = result.get(id);
+    if (cur !== floorById.get(id)) return false;
+    const ms = cur ? new Date(cur).getTime() : NaN;
+    return !Number.isFinite(ms) || ms < windowMs;
+  });
+  if (staleIds.length > 0) {
+    const longWindowIso = new Date(
+      now.getTime() - TRUE_ACTIVE_LONG_WINDOW_DAYS * MS_PER_DAY
+    ).toISOString();
+    await mergeTrueActivitySignals(admin, staleIds, longWindowIso, result);
   }
 
   return result;

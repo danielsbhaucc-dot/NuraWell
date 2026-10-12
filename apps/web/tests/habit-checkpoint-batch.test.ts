@@ -8,6 +8,7 @@ import {
   computeCadenceStage,
   computeNudgeLevel,
   isSlotAllowedForCadenceStage,
+  presenceCooldownDaysForCadenceStage,
   planHabitCheckpointTriggers,
   type ProgressRow,
 } from '../lib/workflows/habit-checkpoint-batch';
@@ -332,13 +333,18 @@ describe('planHabitCheckpointTriggers', () => {
     expect(computeCadenceStage(1)).toBe('active');
     expect(computeCadenceStage(2)).toBe('active');
     expect(computeCadenceStage(3)).toBe('dormant_early');
-    expect(computeCadenceStage(7)).toBe('dormant_early');
+    expect(computeCadenceStage(5)).toBe('dormant_early');
+    expect(computeCadenceStage(6)).toBe('withdrawing');
+    expect(computeCadenceStage(7)).toBe('withdrawing');
     expect(computeCadenceStage(8)).toBe('withdrawing');
     expect(computeCadenceStage(9)).toBe('extended_absence');
     expect(computeCadenceStage(13)).toBe('extended_absence');
     expect(computeCadenceStage(14)).toBe('ghosted');
     expect(computeCadenceStage(30)).toBe('ghosted');
-    expect(computeCadenceStage(Infinity)).toBe('ghosted');
+    expect(computeCadenceStage(41)).toBe('ghosted');
+    expect(computeCadenceStage(42)).toBe('dormant_long');
+    expect(computeCadenceStage(200)).toBe('dormant_long');
+    expect(computeCadenceStage(Infinity)).toBe('dormant_long');
   });
 
   it('cadence stage allows the right slots per stage', () => {
@@ -351,16 +357,31 @@ describe('planHabitCheckpointTriggers', () => {
     expect([...allowedSlotsForCadenceStage('withdrawing')]).toEqual(['morning']);
     expect([...allowedSlotsForCadenceStage('extended_absence')]).toEqual(['midday']);
     expect([...allowedSlotsForCadenceStage('ghosted')]).toEqual(['morning']);
+    expect([...allowedSlotsForCadenceStage('dormant_long')]).toEqual(['morning']);
   });
 
   it('nudge level remaps to new cadence thresholds (14+ ghosted)', () => {
     expect(computeNudgeLevel(0)).toBe(0);
     expect(computeNudgeLevel(2)).toBe(0);
     expect(computeNudgeLevel(3)).toBe(1);
-    expect(computeNudgeLevel(7)).toBe(1);
+    expect(computeNudgeLevel(5)).toBe(1);
+    expect(computeNudgeLevel(6)).toBe(2);
     expect(computeNudgeLevel(8)).toBe(2);
     expect(computeNudgeLevel(13)).toBe(2);
     expect(computeNudgeLevel(14)).toBe(3);
+    expect(computeNudgeLevel(60)).toBe(3);
+  });
+
+  it('presence cooldown: weekly for ghosted, monthly for dormant_long', () => {
+    expect(presenceCooldownDaysForCadenceStage('active')).toBeNull();
+    expect(presenceCooldownDaysForCadenceStage('extended_absence')).toBeNull();
+    expect(presenceCooldownDaysForCadenceStage('ghosted')).toBe(7);
+    expect(presenceCooldownDaysForCadenceStage('dormant_long')).toBe(30);
+  });
+
+  it('return to activity resets straight to active', () => {
+    expect(computeCadenceStage(0)).toBe('active');
+    expect(computeNudgeLevel(0)).toBe(0);
   });
 
   it('pending task overrides cadence stage — sends in all 3 slots even when dormant_early', () => {
