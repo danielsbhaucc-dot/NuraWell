@@ -38,9 +38,11 @@ export async function openRouterChatFetch(
         signal,
       });
       if (res.headers.get('x-nw-relayed') === '1') return res;
+      console.warn('[openrouter-relay] relay unavailable, direct call', { status: res.status });
       void res.body?.cancel();
     } catch (err) {
       if (signal?.aborted) throw err;
+      console.warn('[openrouter-relay] relay error, direct call', err instanceof Error ? err.message : String(err));
     }
   }
   return fetch(OPENROUTER_URL, { method: 'POST', headers, body, signal });

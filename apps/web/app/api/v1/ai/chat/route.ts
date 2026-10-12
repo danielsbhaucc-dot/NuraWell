@@ -1533,39 +1533,48 @@ function buildChatContextRouterPrompt(
     signals.avoid_push_requested ? 'avoid_push=true' : '',
     signals.daily_availability_low_requested ? 'availability_low=true' : '',
   ].filter(Boolean);
+  return [
+    historySnippet ? `שיחה קודמת:\n${historySnippet}` : '',
+    stickyLine ? `כותב קודם: ${stickyLine}` : '',
+    signalParts.length ? `אותות: ${signalParts.join(', ')}` : '',
+    `הודעה חדשה: ${userMessage.slice(0, 2000)}`,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+}
 
-  const historyBlock = historySnippet
-    ? `\nשיחה קודמת (הקשר — ההודעה החדשה היא לרוב המשך שלה):\n${historySnippet}\n`
-    : '';
-  const stickyBlock = stickyLine ? `\nכותב דביק מתור קודם: ${stickyLine}\n` : '';
+/** Compact router output: {"w":"terra|claude5|grok|cheap","h":bool,"n":[codes]} (~30 tokens → ~0.7s on Maverick). */
+const ROUTER_NEED_CODES = {
+  mem: 'needs_user_memory_rag',
+  know: 'needs_system_knowledge_rag',
+  prog: 'needs_full_progress_report',
+  journey: 'needs_journey_knowledge',
+  prin: 'needs_principles',
+  assign: 'needs_assignments',
+  block: 'needs_blockers',
+} as const;
 
-  return `אתה נתב כוונה בכיר לצ'אט מנטור בריאות בעברית.
-המטרה: ניתוח מדויק מאוד של ההודעה — איזה הקשר צריך, ואיזה כותב הכי חזק לתור הזה. איכות ודיוק לפני מהירות.
-
-⚠️ קרא את ההודעה ביחס לשיחה הקודמת. הודעות קצרות הן לרוב *המשך*. פענח כוונה אמיתית, טון, ומידת עימות/סכנה/אמפתיה בנפרד.
-
-החלטת הקשר:
-- שאלה, קושי רגשי, חסם, התלבטות, חזרה, ידע/מסע/זיכרון -> heavy_context=true.
-- אישור/תודה/ביצוע קצר בלבד -> heavy_context=false.
-- בספק -> heavy_context=true.
-
-needs (נדיב בשאלות אמיתיות):
-- needs_user_memory_rag: אישי/רגש/דפוס.
-- needs_system_knowledge_rag: ידע בריאות/תזונה/הרגלים.
-- needs_full_progress_report: דפוסים רב-יומיים.
-- needs_journey_knowledge: צעד/תחנה/תוכנית.
-- needs_principles: חוקים, גבולות, "מה לעשות אם", נפילה.
-- needs_assignments: משימה אישית/דיווח/הבטחה.
-- needs_blockers: קושי/תקיעות.
-
-${writerRouterInstructions()}
-
-החזר JSON בלבד:
-{"heavy_context":true/false,"needs_user_memory_rag":true/false,"needs_system_knowledge_rag":true/false,"needs_full_progress_report":true/false,"needs_journey_knowledge":true/false,"needs_principles":true/false,"needs_assignments":true/false,"needs_blockers":true/false,"writer":"terra|claude5|grok|llama4","writer_scores":{"terra":0,"claude5":0,"grok":0,"llama4":0},"writer_confidence":0,"intent":"תגיות","reason":"ניתוח קצר ומדויק","summary":"סיכום קצר או null"}
-
-אותות regex: ${signalParts.join(', ') || 'none'}${historyBlock}${stickyBlock}
-הודעת משתמש (חדשה):
-${userMessage.slice(0, 4000)}`;
+function parseCompactRouterDecision(raw: unknown): ChatContextDecision | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as { w?: unknown; h?: unknown; n?: unknown };
+  const w = o.w === 'cheap' ? 'llama4' : o.w;
+  if (w !== 'terra' && w !== 'claude5' && w !== 'grok' && w !== 'llama4') return null;
+  const codes = new Set(Array.isArray(o.n) ? o.n.filter((x): x is string => typeof x === 'string') : []);
+  const decision: ChatContextDecision = {
+    heavy_context: o.h === true || codes.size > 0,
+    needs_user_memory_rag: false,
+    needs_system_knowledge_rag: false,
+    needs_full_progress_report: false,
+    needs_journey_knowledge: false,
+    needs_principles: false,
+    needs_assignments: false,
+    needs_blockers: false,
+    writer: w,
+    writer_confidence: 85,
+    reason: `router:${String(o.w)}${codes.size ? `:${[...codes].join('+')}` : ''}`,
+  };
+  for (const [code, key] of Object.entries(ROUTER_NEED_CODES)) if (codes.has(code)) decision[key] = true;
+  return decision;
 }
 
 /**
@@ -1594,14 +1603,14 @@ async function attemptContextRoute(opts: {
     const routerBody = JSON.stringify({
         model: opts.model,
         temperature: 0,
-        max_tokens: 720,
+        max_tokens: 90,
         response_format: { type: 'json_object' },
         ...chatRouterProviderPrefs(opts.pinProvider !== false),
         messages: [
           {
             role: 'system',
             content:
-              'אתה מחזיר JSON תקין בלבד. נתח לעומק: הקשר + ציוני כותבים. דיוק לפני מהירות. בספק הקשר: heavy_context=true. אל תברר את grok לterra בלי סיבה.',
+              writerRouterInstructions(),
           },
           {
             role: 'user',
@@ -1638,9 +1647,7 @@ async function attemptContextRoute(opts: {
     const raw = data.choices?.[0]?.message?.content?.trim();
     console.info('[ai/chat]', { stage: 'router_llm_done', ms: Date.now() - perfRouterT0, out_chars: raw?.length ?? 0 });
     if (!raw) return null;
-    const parsed = chatContextRouterSchema.safeParse(parseLlmJsonObject(raw));
-    if (!parsed.success) return null;
-    return parsed.data;
+    return parseCompactRouterDecision(parseLlmJsonObject(raw));
   } catch (err) {
     console.warn('[ai/chat]', {
       debug_id: opts.debugId,
@@ -2603,11 +2610,11 @@ export async function POST(request: Request) {
     const stickyLine = stickyStance
       ? `${stickyStance.writer} · ${stickyStance.reason} · turns=${stickyStance.turns}`
       : undefined;
+    // small talk (greeting / thanks / short done-report): no router call, cheap lane, light context
     const skipRouterLlm =
-      Boolean(stickyStance) &&
-      (isTrivialBypassEligible(lastUserText, earlySignals) || isCasualGreeting(lastUserText));
+      isTrivialBypassEligible(lastUserText, earlySignals) || isCasualGreeting(lastUserText);
 
-    if (skipRouterLlm && stickyStance) {
+    if (skipRouterLlm) {
       const heuristic = heuristicContextDecision(
         lastUserText,
         earlySignals,
@@ -2618,7 +2625,7 @@ export async function POST(request: Request) {
         profilePeek,
         contextDecision: {
           ...heuristic,
-          writer: stickyStance.writer,
+          writer: 'llama4',
           heavy_context: false,
           needs_full_progress_report: false,
           needs_system_knowledge_rag: false,
