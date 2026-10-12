@@ -14,8 +14,9 @@ import {
   type ReengagementInfoByUser,
   type ReengagementUserInfo,
   type UserResponseInfo,
+  presenceCooldownDaysForCadenceStage,
 } from '@/lib/workflows/habit-checkpoint-batch';
-import { isChurnReengagementEnabled } from '@/lib/churn/feature-flags';
+import { isChurnReengagementEnabled, isPassivePresenceEnabled } from '@/lib/churn/feature-flags';
 import { readReengagementContext } from '@/lib/churn/patch-reengagement-context';
 import { updateEngagementStatuses } from '@/lib/churn/update-engagement-status';
 import {
@@ -595,20 +596,37 @@ async function runHabitCheckpointCron(request: Request) {
    * כך ש-fetchTrueLastActiveByUser רואה אותו דורמנטי. בלי הסינון הזה משתמש
    * כזה היה מקבל תזכורת אחת בשבוע בלבד על משימה פתוחה.
    */
-  const ghostedIds = plan
-    .filter((p) => p.payload.cadenceStage === 'ghosted' && p.payload.notifyMode === 'reinforce')
-    .map((p) => p.userId);
+  /**
+   * 42+ (dormant_long): מערכת אחת בלבד שולחת. כש-passive-presence דלוק — הוא
+   * הערוץ היחיד למגעי נוכחות (ה-habit-checkpoint מדלג). אחרת ה-habit-checkpoint
+   * שולח פעם בחודש. ה-cooldown סופר *גם* מגעי passive presence, כך שבין שתי
+   * המערכות לא יוצא יותר ממגע אחד בחלון (שבוע ל-ghosted, חודש ל-dormant_long).
+   */
+  const passiveOwnsDormantLong = isPassivePresenceEnabled();
   const ghostedWeeklyCooldownIds = new Set<string>();
+  const presenceCooldownById = new Map<string, number>();
+  for (const p of plan) {
+    if (p.payload.notifyMode !== 'reinforce') continue;
+    const days = presenceCooldownDaysForCadenceStage(p.payload.cadenceStage);
+    if (days == null) continue;
+    if (p.payload.cadenceStage === 'dormant_long' && passiveOwnsDormantLong) {
+      ghostedWeeklyCooldownIds.add(p.userId);
+      continue;
+    }
+    presenceCooldownById.set(p.userId, days);
+  }
+  const ghostedIds = [...presenceCooldownById.keys()];
 
   if (ghostedIds.length > 0) {
-    const weekAgoIso = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const maxDays = Math.max(...presenceCooldownById.values());
+    const windowStartIso = new Date(now.getTime() - maxDays * 24 * 60 * 60 * 1000).toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: recentGhostedNotifications } = await admin
       .from('notifications')
       .select('user_id, metadata, created_at')
       .in('user_id', ghostedIds.slice(0, 2000))
       .eq('type', 'ai_message')
-      .gte('created_at', weekAgoIso)
+      .gte('created_at', windowStartIso)
       .order('created_at', { ascending: false })
       .limit(4000);
 
@@ -616,10 +634,21 @@ async function runHabitCheckpointCron(request: Request) {
       for (const row of recentGhostedNotifications as Array<{
         user_id?: string;
         metadata?: Record<string, unknown> | null;
+        created_at?: string | null;
       }>) {
         const source = typeof row.metadata?.source === 'string' ? row.metadata.source : '';
-        if (source === 'almog_habit_checkpoint' && typeof row.user_id === 'string') {
-          ghostedWeeklyCooldownIds.add(row.user_id);
+        if (
+          (source === 'almog_habit_checkpoint' || source === 'almog_passive_presence') &&
+          typeof row.user_id === 'string'
+        ) {
+          const days = presenceCooldownById.get(row.user_id);
+          const ms = row.created_at ? Date.parse(row.created_at) : NaN;
+          if (
+            days != null &&
+            (!Number.isFinite(ms) || now.getTime() - ms < days * 24 * 60 * 60 * 1000)
+          ) {
+            ghostedWeeklyCooldownIds.add(row.user_id);
+          }
         }
       }
     }

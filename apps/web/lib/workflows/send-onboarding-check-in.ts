@@ -516,7 +516,7 @@ async function loadJourneyExecutionContextForUser(
   daysSinceLastActive: number;
   nudgeLevel: 0 | 1 | 2 | 3;
   completionStatus: 'none' | 'partial' | 'full';
-  cadenceStage: 'active' | 'dormant_early' | 'withdrawing' | 'extended_absence' | 'ghosted';
+  cadenceStage: 'active' | 'dormant_early' | 'withdrawing' | 'extended_absence' | 'ghosted' | 'dormant_long';
 }> {
   const todayKey = new Intl.DateTimeFormat('sv-SE', {
     timeZone: 'Asia/Jerusalem',

@@ -121,12 +121,22 @@ export function decidePassiveKind(params: {
  * מקור האמת הוא טבלת notifications (source passive או habit_checkpoint),
  * כך שגם אם cache נופל לא נייצר spam.
  */
+/**
+ * חלון ה-gate (ימים) לפי ימי היעדרות: 14–41 → שבועי (7), 42+ → חודשי (30).
+ * חייב להישאר מסונכרן עם computeCadenceStage ('dormant_long').
+ */
+export function passivePresenceGateDays(daysSinceLastActive: number): number {
+  const d = Number.isFinite(daysSinceLastActive) ? daysSinceLastActive : Infinity;
+  return d >= 42 ? 30 : 7;
+}
+
 export async function passivePresenceAllowed(
   admin: AdminDb,
   userId: string,
-  now = new Date()
+  now = new Date(),
+  gateDays = 7
 ): Promise<boolean> {
-  const weekAgo = new Date(now.getTime() - 7 * DAY_MS).toISOString();
+  const weekAgo = new Date(now.getTime() - gateDays * DAY_MS).toISOString();
   try {
     const { data } = await admin
       .from('notifications')

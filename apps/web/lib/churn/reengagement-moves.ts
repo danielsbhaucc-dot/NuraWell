@@ -194,7 +194,7 @@ export function computeReengagementMove(params: {
   if (d === 8 && slot === 'morning') return 'withdrawing';
   if (d === 7 && slot === 'morning' && !sentMoves.includes('identity')) return 'identity';
 
-  // יום 6 הוסר בכוונה — השהיה בבוקר. רק נוכחות ערב רכה (eveningLongingTier).
+  // יום 6: אין move — ה-cadence (withdrawing) שולח בוקר אמפתי אחד בלבד.
   // אסור לשאול "למה עזבת" לפני מהלך ה-Identity של יום 7 (Self-Perception Theory).
 
   if (d === 5 && slot === 'morning' && !sentMoves.includes('fresh_start')) return 'fresh_start';
@@ -219,17 +219,10 @@ export function shouldSilenceForReengagement(params: {
   slot: HabitCheckpointSlot;
   breakupSentAt: string | null;
 }): boolean {
-  const d = Number.isFinite(params.daysSinceLastActive)
-    ? Math.max(0, params.daysSinceLastActive)
-    : 999;
-
   // אחרי breakup — שקט מוחלט בערוץ ה-habit-checkpoint.
-  if (params.breakupSentAt) return true;
-
-  // יום 6 — השהיה בבוקר/צהריים. ערב נשאר (eveningLongingTier).
-  if (d === 6 && (params.slot === 'morning' || params.slot === 'midday')) return true;
-
-  return false;
+  // (יום 6 כבר לא מושתק: מיום 6 ה-cadence הוא withdrawing — בוקר אמפתי בלבד,
+  // בלי move ייעודי, כך שה-Identity של יום 7 נשמר בלי ריצוף מגעים.)
+  return Boolean(params.breakupSentAt);
 }
 
 /** timestamps ב-ai_context.reengagement לכל move (לתיעוד/אנליטיקס). */

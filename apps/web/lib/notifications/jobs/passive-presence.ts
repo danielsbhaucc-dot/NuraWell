@@ -4,8 +4,10 @@ import { maybeReturnCronIdleSkip } from '@/lib/api/cron-idle-guard';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isAvoidPushActive } from '@/lib/ai/avoid-push';
 import { isPassivePresenceEnabled } from '@/lib/churn/feature-flags';
+import { daysBetween, fetchTrueLastActiveByUser } from '@/lib/workflows/habit-checkpoint-batch';
 import {
   passivePresenceAllowed,
+  passivePresenceGateDays,
   planPassiveTouchForUser,
 } from '@/lib/churn/passive-presence-batch';
 import { patchPassiveTouch } from '@/lib/churn/patch-reengagement-context';
@@ -57,6 +59,13 @@ async function runPassivePresenceCron(request: Request) {
     ai_context?: Record<string, unknown> | null;
   }>;
 
+  /** ימי היעדרות אמיתיים → gate שבועי (14–41) או חודשי (42+, dormant_long). */
+  const lastActiveMap = await fetchTrueLastActiveByUser(
+    admin,
+    profiles.map((p) => p.id),
+    now
+  );
+
   let sent = 0;
   let skippedGate = 0;
   let skippedAvoid = 0;
@@ -72,7 +81,18 @@ async function runPassivePresenceCron(request: Request) {
         continue;
       }
 
-      const allowed = await passivePresenceAllowed(admin, userId, now);
+      const days = daysBetween(lastActiveMap.get(userId) ?? null, now);
+      /** חזר לפעילות אבל הסטטוס עוד לא עודכן — לא שולחים נוכחות פסיבית. */
+      if (days < 14) {
+        skippedGate++;
+        continue;
+      }
+      const allowed = await passivePresenceAllowed(
+        admin,
+        userId,
+        now,
+        passivePresenceGateDays(days)
+      );
       if (!allowed) {
         skippedGate++;
         continue;
