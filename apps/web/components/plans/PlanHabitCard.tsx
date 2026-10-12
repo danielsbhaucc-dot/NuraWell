@@ -3,79 +3,87 @@ import { formatPlanDate } from '@/lib/plans/plan-document';
 import { LadderActions } from './LadderActions';
 
 const STATUS_STYLE: Record<PlanHabit['status'], string> = {
-  original: 'bg-brand-700 text-white',
+  original: 'bg-brand-700 text-cream',
   eased: 'bg-primary-100 text-brand-700',
   stretched: 'bg-accent-100 text-accent-800',
 };
 
-/** One habit as a plan entry: where you are, the step after, the safety net, and why Almog changed it. */
-export function PlanHabitCard({ habit, index, canStepDown, canStepUp }: { habit: PlanHabit; index: number; canStepDown: boolean; canStepUp: boolean }) {
+/** One habit, clean first view (step + today), with the ladder, fallback and Almog's reason folded away. */
+export function PlanHabitCard({ habit, canStepDown, canStepUp, highlighted }: { habit: PlanHabit; canStepDown: boolean; canStepUp: boolean; highlighted?: boolean }) {
   const pct = Math.min(100, Math.round((habit.doneToday / Math.max(1, habit.targetToday)) * 100));
+  const doneToday = habit.doneToday >= habit.targetToday && habit.targetToday > 0;
   return (
-    <article className="overflow-hidden rounded-3xl border border-primary-100 bg-background-card shadow-[0_8px_24px_rgba(6,78,59,0.07)]">
-      <header className="flex items-start gap-3 border-b border-primary-100/80 bg-primary-50/60 px-4 py-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-cream text-2xl shadow-xs" aria-hidden>
+    <article
+      id={`task-${habit.id}`}
+      data-task-id={habit.id}
+      data-highlight={highlighted ? 'true' : undefined}
+      className="scroll-mt-24 rounded-[24px] border border-primary-100 bg-background-card p-4 shadow-[0_8px_24px_rgba(6,78,59,0.06)] transition-shadow data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70"
+    >
+      <div className="flex items-start gap-3">
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary-50 to-primary-100 text-2xl" aria-hidden>
           {habit.emoji}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-bold tracking-wide text-primary-700">
-            הרגל {index}
-            {habit.isMain ? ' · המיקוד שלך' : ''}
-          </p>
-          <h3 className="text-base font-black leading-snug text-primary-900">{habit.habitTitle}</h3>
-        </div>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${STATUS_STYLE[habit.status]}`}>{habit.statusLabel}</span>
-      </header>
-
-      <div className="flex flex-col gap-3 px-4 py-4">
-        <dl className="flex flex-col gap-2.5">
-          <div className="rounded-2xl bg-brand-700 px-3.5 py-3 text-white">
-            <dt className="text-[11px] font-bold text-white/70">הצעד שלך עכשיו</dt>
-            <dd className="mt-0.5 text-[15px] font-extrabold leading-snug">{habit.currentStep}</dd>
-            <div className="mt-2 flex items-center gap-2 text-[11px] text-white/80">
-              <span>
-                היום {habit.doneToday}/{habit.targetToday}
-              </span>
-              <span aria-hidden>·</span>
-              <span>רצף {habit.streakDays} {habit.streakDays === 1 ? 'יום' : 'ימים'}</span>
-            </div>
-            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/20" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="התקדמות היום">
-              <div className="h-full rounded-full bg-primary-300" style={{ width: `${pct}%` }} />
-            </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLE[habit.status]}`}>{habit.statusLabel}</span>
+            {habit.isMain ? <span className="rounded-full bg-cream px-2 py-0.5 text-[10px] font-bold text-primary-700 ring-1 ring-primary-200">המיקוד</span> : null}
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-2xl border border-primary-100 bg-cream/80 px-3 py-2.5">
+          <h3 className="mt-1 text-[17px] font-extrabold leading-snug text-primary-900">{habit.currentStep}</h3>
+          {habit.currentStep !== habit.habitTitle ? <p className="mt-0.5 text-xs text-primary-800/65">בדרך אל: {habit.habitTitle}</p> : null}
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center gap-3">
+        <div className="h-2 flex-1 overflow-hidden rounded-full bg-primary-50" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="התקדמות היום">
+          <div className="h-full rounded-full bg-linear-to-l from-brand-700 to-primary-500" style={{ width: `${pct}%` }} />
+        </div>
+        <span className="shrink-0 text-xs font-bold text-primary-800">
+          {doneToday ? 'הושלם היום ✓' : `היום ${habit.doneToday}/${habit.targetToday}`}
+          {habit.streakDays > 0 ? ` · ${habit.streakDays} ${habit.streakDays === 1 ? 'יום' : 'ימים'} ברצף` : ''}
+        </span>
+      </div>
+
+      <div className="mt-3">
+        <LadderActions assignmentId={habit.id} title={habit.currentStep} eased={habit.status === 'eased'} canStepDown={canStepDown} canStepUp={canStepUp} />
+      </div>
+
+      <details className="group mt-3 rounded-2xl bg-primary-50/60">
+        <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[13px] font-bold text-primary-700 [&::-webkit-details-marker]:hidden">
+          <span>הצעדים ויום קשה</span>
+          <svg aria-hidden viewBox="0 0 20 20" className="size-4 transition-transform group-open:rotate-180">
+            <path d="M5 8l5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </summary>
+        <div className="flex flex-col gap-2.5 px-3 pb-3">
+          <dl className="grid grid-cols-2 gap-2">
+            <div className="rounded-xl bg-cream px-3 py-2">
               <dt className="text-[11px] font-bold text-primary-700">הצעד הבא</dt>
               <dd className="mt-0.5 text-[13px] font-semibold leading-snug text-primary-900">{habit.nextStep ?? 'שומרים על מה שבנינו'}</dd>
             </div>
-            <div className="rounded-2xl border border-primary-100 bg-cream/80 px-3 py-2.5">
-              <dt className="text-[11px] font-bold text-primary-700">צעד גיבוי ליום קשה</dt>
-              <dd className="mt-0.5 text-[13px] font-semibold leading-snug text-primary-900">{habit.fallbackStep ?? 'גם יום של חצי צעד נחשב'}</dd>
+            <div className="rounded-xl bg-cream px-3 py-2">
+              <dt className="text-[11px] font-bold text-primary-700">ביום קשה</dt>
+              <dd className="mt-0.5 text-[13px] font-semibold leading-snug text-primary-900">{habit.fallbackStep ?? 'גם חצי צעד נחשב'}</dd>
             </div>
-          </div>
-        </dl>
-
-        {habit.ladder.length > 1 ? (
-          <ol className="flex items-center gap-1" aria-label="סולם הקושי">
-            {habit.ladder.map((l) => (
-              <li key={l.level} className={`h-1.5 flex-1 rounded-full ${l.current ? 'bg-brand-700' : l.reached ? 'bg-primary-300' : 'bg-primary-100'}`}>
-                <span className="sr-only">{l.current ? 'השלב הנוכחי' : l.level === 0 ? 'ההרגל המלא' : `שלב ${l.level}`}</span>
-              </li>
-            ))}
-          </ol>
-        ) : null}
-        <p className="text-xs leading-relaxed text-primary-800/80">{habit.progressNote}</p>
-
-        {habit.latestNote ? (
-          <figure className="rounded-2xl border-s-4 border-primary-300 bg-primary-50/70 px-3.5 py-2.5">
-            <figcaption className="text-[11px] font-bold text-primary-700">הערה של אלמוג · {formatPlanDate(habit.latestNote.at)}</figcaption>
-            <p className="mt-1 text-[13px] leading-relaxed text-primary-900">{habit.latestNote.text}</p>
-            {habit.latestNote.quote ? <blockquote className="mt-1 text-xs italic text-primary-800/75">״{habit.latestNote.quote}״</blockquote> : null}
-          </figure>
-        ) : null}
-
-        <LadderActions assignmentId={habit.id} title={habit.currentStep} eased={habit.status === 'eased'} canStepDown={canStepDown} canStepUp={canStepUp} />
-      </div>
+          </dl>
+          {habit.ladder.length > 1 ? (
+            <ol className="flex items-center gap-1" aria-label="סולם הקושי">
+              {habit.ladder.map((l) => (
+                <li key={l.level} className={`h-1.5 flex-1 rounded-full ${l.current ? 'bg-brand-700' : l.reached ? 'bg-primary-300' : 'bg-primary-100'}`}>
+                  <span className="sr-only">{l.current ? 'השלב הנוכחי' : l.level === 0 ? 'ההרגל המלא' : `שלב ${l.level}`}</span>
+                </li>
+              ))}
+            </ol>
+          ) : null}
+          <p className="text-xs leading-relaxed text-primary-800/80">{habit.progressNote}</p>
+          {habit.latestNote ? (
+            <p className="border-s-2 border-primary-300 ps-2.5 text-[13px] leading-relaxed text-primary-900">
+              <span className="block text-[11px] font-bold text-primary-700">למה אלמוג שינה · {formatPlanDate(habit.latestNote.at)}</span>
+              {habit.latestNote.text}
+              {habit.latestNote.quote ? <span className="block text-xs italic text-primary-800/75">״{habit.latestNote.quote}״</span> : null}
+            </p>
+          ) : null}
+        </div>
+      </details>
     </article>
   );
 }

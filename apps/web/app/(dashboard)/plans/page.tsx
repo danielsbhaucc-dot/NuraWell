@@ -8,8 +8,10 @@ import { PlanMap, type MapStation } from '@/components/plans/PlanMap';
 import { buildMapStations } from '@/lib/journey/map-stations';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SosButton } from '@/components/ai/SosButton';
-import { AlmogPlanSections } from '@/components/plans/AlmogPlanSections';
-import { PlanSection } from '@/components/plans/PlanSection';
+import { AlmogPlanSections, SectionHead } from '@/components/plans/AlmogPlanSections';
+import { PlanAccordion } from '@/components/plans/PlanAccordion';
+import { PlanProgressRing } from '@/components/plans/PlanProgressRing';
+import { PlanTaskFocus } from '@/components/plans/PlanTaskFocus';
 import { PlanHabitCard } from '@/components/plans/PlanHabitCard';
 import { AlmogAvatarChip } from '@/components/journey/AlmogPresence';
 import { almogChangeNote, almogPlanSummary, buildPlanHabit, formatPlanDate, planGoalLine, type Gender } from '@/lib/plans/plan-document';
@@ -19,11 +21,13 @@ export const metadata = { title: 'התוכנית שלי' };
 export const dynamic = 'force-dynamic';
 
 /**
- * "התוכנית שלך" — a written personal plan that Almog keeps up to date: goal, Almog's note, each habit with
- * current / next / fallback step and why it changed, the phases (stations) and the adjustment log.
- * Fully server-rendered from real data (ladder levels + level-change events); no AI call on render.
+ * "התוכנית שלך" — a written personal plan Almog keeps up to date. First view: hero (goal + why, progress ring,
+ * current phase, one "today" focus), then the habits. Dense parts (route, reminders, change log, fallbacks) live
+ * in collapsed accordions. Fully server-rendered from real data; no AI call on render. ?task=<id> highlights a task.
  */
-export default async function PlansPage() {
+export default async function PlansPage({ searchParams }: { searchParams: Promise<{ task?: string | string[] }> }) {
+  const sp = await searchParams;
+  const focusTaskId = typeof sp.task === 'string' && /^[\w-]{1,64}$/.test(sp.task) ? sp.task : null;
   const supabase = await createClient();
   const {
     data: { user },
@@ -55,56 +59,92 @@ export default async function PlansPage() {
     .flatMap((t) => t.history.filter((h) => h.kind === 'level_change').map((h) => ({ id: `${t.id}-${h.occurred_at}`, habit: t.definition.title, note: almogChangeNote(h, gender) })))
     .sort((a, b) => b.note.at.localeCompare(a.note.at))
     .slice(0, 12);
-  const lastUpdate = log[0]?.note.at ?? active.map((t) => t.accepted_at).filter(Boolean).sort().at(-1) ?? null;
 
   const currentIdx = Math.max(0, mapStations.findIndex((st) => st.state === 'current'));
-  const phaseStart = Math.max(0, currentIdx - 1);
-  const phases = mapStations.slice(phaseStart, phaseStart + 4);
+  const curStation = mapStations[currentIdx] ?? null;
+  const totalLessons = mapStations.reduce((n, st) => n + st.total, 0);
+  const doneLessons = mapStations.reduce((n, st) => n + st.done, 0);
+  const pct = totalLessons ? (doneLessons / totalLessons) * 100 : 0;
   const principles = mapStations
     .slice(0, currentIdx + 1)
     .map((st) => ({ title: st.title, text: stationDesc.get(st.id) ?? '' }))
     .filter((p) => p.text)
     .slice(-3);
 
+  const focusIdx = (() => {
+    const pending = habits.findIndex((h) => h.doneToday < h.targetToday);
+    const main = habits.findIndex((h) => h.isMain && h.doneToday < h.targetToday);
+    return main >= 0 ? main : pending;
+  })();
+  const today = focusIdx >= 0 ? habits[focusIdx]! : null;
+  const allDone = habits.length > 0 && !today;
+  const you = (f: string, m: string, n: string) => (gender === 'female' ? f : gender === 'male' ? m : n);
+
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-col gap-7 px-4 pb-28 pt-4">
-      <header className="relative overflow-hidden rounded-[28px] bg-linear-to-br from-[#033d2e] via-brand-700 to-primary-600 p-5 text-white shadow-[0_14px_36px_rgba(6,78,59,0.28)]">
-        <span aria-hidden className="pointer-events-none absolute -top-16 -left-10 size-48 rounded-full bg-primary-300/20 blur-2xl" />
-        <p className="relative text-[11px] font-bold tracking-wide text-white/70">תוכנית אישית · נכתבת ומתעדכנת על ידי אלמוג</p>
-        <h1 className="relative mt-1 text-[26px] font-black leading-tight">{firstName ? `התוכנית של ${firstName}` : 'התוכנית שלך'}</h1>
-        <p className="relative mt-2 text-sm font-semibold text-white/90">
-          <span className="text-white/65">המטרה: </span>
-          {planGoalLine(prof.main_goal)}
-        </p>
-        {obstacle ? (
-          <p className="relative mt-1 text-sm text-white/85">
-            <span className="text-white/65">נבנתה סביב: </span>
-            {obstacle}
-          </p>
+    <main className="mx-auto flex w-full max-w-xl flex-col gap-6 bg-cream px-4 pb-28 pt-4">
+      <PlanTaskFocus taskId={focusTaskId} />
+
+      <header className="relative overflow-hidden rounded-[30px] bg-linear-to-br from-[#022c22] via-[#04503a] to-brand-700 p-5 text-cream shadow-[0_18px_44px_rgba(2,44,34,0.32)]">
+        <span aria-hidden className="pointer-events-none absolute -top-20 -left-16 size-56 rounded-full bg-primary-300/20 blur-3xl" />
+        <span aria-hidden className="pointer-events-none absolute -bottom-24 -right-10 size-56 rounded-full bg-primary-500/15 blur-3xl" />
+        <p className="relative text-[11px] font-bold tracking-[0.12em] text-primary-100/75">תוכנית אישית · אלמוג כותב ומעדכן</p>
+        <div className="relative mt-2 flex items-center gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-[27px] font-black leading-[1.15]">{firstName ? `התוכנית של ${firstName}` : 'התוכנית שלך'}</h1>
+            <p className="mt-2 text-[14px] font-semibold leading-snug text-cream/95">{planGoalLine(prof.main_goal)}</p>
+            {obstacle ? <p className="mt-1.5 text-[13px] leading-snug text-primary-100/80">למה ככה: התוכנית בנויה סביב {obstacle}</p> : null}
+          </div>
+          <PlanProgressRing pct={pct} label="מהמסע" />
+        </div>
+        {curStation ? (
+          <div className="relative mt-4 flex items-center gap-3 rounded-2xl bg-primary-100/10 px-3.5 py-2.5 ring-1 ring-primary-100/15 backdrop-blur-sm">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-300 text-xs font-black text-[#022c22]">{currentIdx + 1}</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold text-primary-100/70">השלב הנוכחי · {currentIdx + 1} מתוך {mapStations.length}</p>
+              <p className="truncate text-[14px] font-bold">{curStation.title}</p>
+            </div>
+            <span className="shrink-0 text-xs font-semibold text-primary-100/80">{curStation.done}/{curStation.total} שיעורים</span>
+          </div>
         ) : null}
-        <dl className="relative mt-4 grid grid-cols-3 gap-2 text-center">
-          <CoverStat label="שלב" value={mapStations.length ? `${Math.min(currentIdx + 1, mapStations.length)} מתוך ${mapStations.length}` : 'התחלה'} />
-          <CoverStat label="הרגלים פעילים" value={String(habits.length)} />
-          <CoverStat label="עדכון אחרון" value={lastUpdate ? formatPlanDate(lastUpdate) : 'היום'} />
-        </dl>
+
+        <div className="relative mt-3 rounded-[22px] bg-cream p-4 text-primary-900 shadow-[0_10px_26px_rgba(2,44,34,0.25)]">
+          <p className="text-[11px] font-bold tracking-[0.08em] text-primary-700">{allDone ? 'היום' : 'הפוקוס של היום'}</p>
+          {today ? (
+            <a href={`#task-${today.id}`} className="mt-1 flex items-center gap-3">
+              <span className="text-3xl" aria-hidden>{today.emoji}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[17px] font-extrabold leading-snug">{today.currentStep}</span>
+                <span className="mt-0.5 block text-xs text-primary-800/70">
+                  {today.doneToday}/{today.targetToday} היום{today.streakDays > 0 ? ` · ${today.streakDays} ${today.streakDays === 1 ? 'יום' : 'ימים'} ברצף` : ''}
+                </span>
+              </span>
+              <span aria-hidden className="text-lg text-primary-700">←</span>
+            </a>
+          ) : (
+            <p className="mt-1 text-[15px] font-bold leading-snug">
+              {allDone ? you('סגרת את כל ההרגלים של היום. כל הכבוד, את בדרך הנכונה.', 'סגרת את כל ההרגלים של היום. כל הכבוד, אתה בדרך הנכונה.', 'כל ההרגלים של היום הושלמו. כל הכבוד.') : 'השיעור הבא במסע יפתח את ההרגל הראשון שלך.'}
+            </p>
+          )}
+        </div>
       </header>
 
-      <section aria-label="הערה של אלמוג" className="flex gap-3 rounded-3xl border border-primary-100 bg-background-card p-4 shadow-[0_8px_24px_rgba(6,78,59,0.06)]">
-        <div className="size-11 shrink-0 self-start">
-          <AlmogAvatarChip size={44} />
+      <section aria-label="מילה מאלמוג" className="flex gap-3 px-1">
+        <div className="size-10 shrink-0">
+          <AlmogAvatarChip size={40} />
         </div>
-        <div className="min-w-0">
-          <p className="text-[11px] font-bold text-primary-700">מילה מאלמוג</p>
-          <p className="mt-0.5 text-[14px] leading-relaxed text-primary-900">{summary}</p>
-        </div>
+        <p className="min-w-0 text-[14px] leading-[1.7] text-primary-900/90">
+          <span className="font-bold text-primary-700">אלמוג: </span>
+          {summary}
+        </p>
       </section>
 
-      <PlanSection n={1} id="plan-habits" title="ההרגלים שלי" hint="לכל הרגל: איפה אני עכשיו, מה הלאה, ומה עושים ביום קשה">
+      <section aria-labelledby="plan-habits" className="flex flex-col gap-3">
+        <SectionHead id="plan-habits" kicker={`${habits.length} ${habits.length === 1 ? 'הרגל פעיל' : 'הרגלים פעילים'}`} title="ההרגלים שלי" />
         {offers.map((o) => (
           <OfferCard key={o.id} definitionId={o.definition_id} title={o.definition.title} emoji={o.definition.emoji} description={o.definition.description} />
         ))}
         {habits.length ? (
-          habits.map((h, i) => <PlanHabitCard key={h.id} habit={h} index={i + 1} canStepDown={active[i]!.canStepDown} canStepUp={active[i]!.canStepUp} />)
+          habits.map((h, i) => <PlanHabitCard key={h.id} habit={h} canStepDown={active[i]!.canStepDown} canStepUp={active[i]!.canStepUp} highlighted={focusTaskId === h.id} />)
         ) : (
           <EmptyState
             title="עוד אין הרגלים בתוכנית"
@@ -116,111 +156,55 @@ export default async function PlansPage() {
             }
           />
         )}
-        <SosButton firstName={firstName} focusTasks={active.map((t) => ({ id: t.id, title: t.level.title, emoji: t.definition.emoji ?? undefined }))} />
-      </PlanSection>
+        {habits.length ? <SosButton firstName={firstName} focusTasks={active.map((t) => ({ id: t.id, title: t.level.title, emoji: t.definition.emoji ?? undefined }))} /> : null}
+      </section>
 
-      <AlmogPlanSections n={2} />
+      <AlmogPlanSections />
 
-      {phases.length ? (
-        <PlanSection n={3} id="plan-phases" title="שלבי התוכנית" hint="כל שלב מוסיף הרגל אחד ועיקרון אחד">
-          <ol className="flex flex-col gap-2">
-            {phases.map((st, k) => {
-              const i = phaseStart + k;
-              const cur = st.state === 'current';
-              return (
-                <li key={st.id} className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 ${cur ? 'border-primary-300 bg-primary-50/80' : 'border-primary-100 bg-background-card'} ${st.state === 'locked' ? 'opacity-70' : ''}`}>
-                  <span className={`flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-black ${st.state === 'done' ? 'bg-brand-700 text-white' : cur ? 'bg-cream text-brand-700 ring-2 ring-brand-700' : 'bg-primary-100 text-primary-700'}`}>
-                    {st.state === 'done' ? '✓' : i + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-primary-900">{st.title}</p>
-                    <p className="text-[11px] text-primary-800/70">
-                      {st.state === 'done' ? 'הושלם' : cur ? `השלב הנוכחי · ${st.done}/${st.total} שיעורים` : 'בהמשך הדרך'}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-          {principles.length ? (
-            <div className="rounded-2xl border border-primary-100 bg-cream/80 p-3.5">
-              <p className="text-[11px] font-bold text-primary-700">העקרונות שלמדנו עד עכשיו</p>
-              <ul className="mt-1.5 flex flex-col gap-1.5">
-                {principles.map((p) => (
-                  <li key={p.title} className="line-clamp-3 text-[13px] leading-relaxed text-primary-900">
-                    <span className="font-bold">{p.title}: </span>
-                    {p.text}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          {mapStations.length > phases.length ? (
-            <details className="group rounded-3xl border border-primary-100 bg-background-card">
-              <summary className="cursor-pointer list-none p-4 text-sm font-bold text-primary-800">
-                <span className="group-open:hidden">למפת המסע המלאה ({mapStations.length} שלבים)</span>
-                <span className="hidden group-open:inline">לסגור את המפה</span>
-              </summary>
-              <div className="px-2 pb-2">
-                <PlanMap stations={mapStations} />
+      <section aria-label="עוד בתוכנית" className="flex flex-col gap-2.5">
+        {mapStations.length ? (
+          <PlanAccordion icon="🗺️" title="המסלול המלא" meta={`${mapStations.length} שלבים · ${doneLessons}/${totalLessons} שיעורים`}>
+            {principles.length ? (
+              <div className="rounded-2xl bg-cream p-3.5">
+                <p className="text-[11px] font-bold text-primary-700">העקרונות שלמדנו עד עכשיו</p>
+                <ul className="mt-1.5 flex flex-col gap-1.5">
+                  {principles.map((p) => (
+                    <li key={p.title} className="text-[13px] leading-relaxed text-primary-900">
+                      <span className="font-bold">{p.title}: </span>
+                      {p.text}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </details>
-          ) : null}
-        </PlanSection>
-      ) : null}
+            ) : null}
+            <PlanMap stations={mapStations} />
+          </PlanAccordion>
+        ) : null}
+        {log.length ? (
+          <PlanAccordion icon="📝" title="השינויים שאלמוג עשה" meta={`${log.length} התאמות · אחרונה ${formatPlanDate(log[0]!.note.at)}`}>
+            <ol className="flex flex-col gap-2">
+              {log.map((e) => (
+                <li key={e.id} className="rounded-xl bg-cream px-3 py-2.5">
+                  <p className="text-[11px] font-bold text-primary-700">
+                    {e.note.direction === 'down' ? '↓' : e.note.direction === 'up' ? '↑' : '•'} {formatPlanDate(e.note.at)} · {e.habit}
+                  </p>
+                  <p className="mt-0.5 text-[13px] leading-relaxed text-primary-900">{e.note.text}</p>
+                  {e.note.quote ? <p className="mt-0.5 text-xs italic text-primary-800/75">״{e.note.quote}״</p> : null}
+                </li>
+              ))}
+            </ol>
+          </PlanAccordion>
+        ) : null}
+      </section>
 
-      {log.length ? (
-        <PlanSection n={4} id="plan-log" title="יומן ההתאמות" hint="כל שינוי שעשיתי בתוכנית, ולמה">
-          <ol className="flex flex-col gap-2">
-            {log.slice(0, 3).map((e) => (
-              <LogRow key={e.id} habit={e.habit} at={e.note.at} text={e.note.text} quote={e.note.quote} />
-            ))}
-          </ol>
-          {log.length > 3 ? (
-            <details className="group">
-              <summary className="cursor-pointer list-none text-sm font-bold text-primary-700">
-                <span className="group-open:hidden">עוד {log.length - 3} התאמות</span>
-                <span className="hidden group-open:inline">פחות</span>
-              </summary>
-              <ol className="mt-2 flex flex-col gap-2">
-                {log.slice(3).map((e) => (
-                  <LogRow key={e.id} habit={e.habit} at={e.note.at} text={e.note.text} quote={e.note.quote} />
-                ))}
-              </ol>
-            </details>
-          ) : null}
-        </PlanSection>
-      ) : null}
-
-      <div className="flex items-center justify-center gap-4 text-sm font-semibold">
-        <Link href="/progress" className="text-primary-700 underline">
+      <div className="flex items-center justify-center gap-5 text-sm font-semibold">
+        <Link href="/progress" className="text-primary-700 underline-offset-4 hover:underline">
           ההתקדמות שלי
         </Link>
-        <Link href="/progress/history" className="text-primary-700 underline">
+        <Link href="/progress/history" className="text-primary-700 underline-offset-4 hover:underline">
           היסטוריה מלאה
         </Link>
       </div>
     </main>
-  );
-}
-
-function CoverStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl bg-white/12 px-2 py-2 backdrop-blur-sm">
-      <dt className="text-[10px] font-semibold text-white/70">{label}</dt>
-      <dd className="text-[13px] font-black">{value}</dd>
-    </div>
-  );
-}
-
-function LogRow({ habit, at, text, quote }: { habit: string; at: string; text: string; quote: string | null }) {
-  return (
-    <li className="rounded-2xl border border-primary-100 bg-background-card px-3.5 py-2.5">
-      <p className="text-[11px] font-bold text-primary-700">
-        {formatPlanDate(at)} · {habit}
-      </p>
-      <p className="mt-0.5 text-[13px] leading-relaxed text-primary-900">{text}</p>
-      {quote ? <p className="mt-0.5 text-xs italic text-primary-800/75">״{quote}״</p> : null}
-    </li>
   );
 }
