@@ -717,8 +717,10 @@ async function createOpenRouterTextStreamResponse({
    * GPT-5.6 / Claude 5 חושבים כברירת מחדל. בלי effort:none כל הטוקנים הולכים
    * לחשיבה, content ריק, והמשתמש רואה הודעת גיבוי במקום אלמוג.
    */
+  /** Grok 4.5 can't disable thinking; effort low cuts its first token from ~8s to ~3s with the same voice. */
+  const grokLike = /x-ai\/grok/i.test(model);
   const effectiveReasoning: OpenRouterReasoning | null =
-    gpt5 || claude5 ? { effort: 'none' } : reasoning;
+    gpt5 || claude5 ? { effort: 'none' } : grokLike ? ({ effort: 'low' } as OpenRouterReasoning) : reasoning;
   const reasoningBudget =
     effectiveReasoning && 'max_tokens' in effectiveReasoning ? effectiveReasoning.max_tokens : 0;
   const effectiveMaxTokens = claude5
