@@ -5,7 +5,7 @@ import { ingestUserMessageIntoVectorMemory, previewVectorMemoryIngest } from '..
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
-export const preferredRegion = 'fra1';
+export const preferredRegion = 'syd1'; // next to Supabase (Sydney); fra1 meant a cross-world hop per DB query
 
 const bodySchema = z.object({
   message: z.string().min(1),

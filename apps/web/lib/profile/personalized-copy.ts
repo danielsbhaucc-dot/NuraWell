@@ -46,7 +46,14 @@ export function imperativeDontWrite(gender: ProfileGender): string {
 export function imperativeTap(gender: ProfileGender): string {
   if (gender === 'female') return 'תלחצי';
   if (gender === 'male') return 'תלחץ';
-  return 'לחץ/י';
+  return 'אפשר ללחוץ';
+}
+
+/** "ושלח" בהתאם למגדר; בלי לוכסן. */
+export function imperativeAndSend(gender: ProfileGender): string {
+  if (gender === 'female') return 'ושלחי';
+  if (gender === 'male') return 'ושלח';
+  return 'ולשלוח';
 }
 
 /** כותרת עמוד המדריכים */

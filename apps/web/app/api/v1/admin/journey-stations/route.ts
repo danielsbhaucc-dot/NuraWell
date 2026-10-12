@@ -7,6 +7,8 @@ import { jsonZodError } from '@/lib/validation/zod-http';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'edge';
+// Edge runs next to the user by default (fra1) — every Supabase round-trip then crosses to Sydney. Pin next to the DB.
+export const preferredRegion = 'syd1';
 
 export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);

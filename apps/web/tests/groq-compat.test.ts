@@ -102,3 +102,19 @@ describe('groq gpt-oss compat', () => {
     expect((spy.mock.calls[0] as unknown as [string, RequestInit])[1]).toBe(init);
   });
 });
+
+describe('adaptGroqChatBody gpt-5 family (OpenRouter)', () => {
+  it('adds low hidden reasoning and token headroom to gpt-5-mini', async () => {
+    const { adaptGroqChatBody, GPT5_REASONING_HEADROOM } = await import('../lib/ai/groq-compat');
+    const out = adaptGroqChatBody({ model: 'openai/gpt-5-mini', max_tokens: 600 }, { viaOpenRouter: true });
+    expect(out.reasoning).toEqual({ effort: 'low', exclude: true });
+    expect(out.max_tokens).toBe(600 + GPT5_REASONING_HEADROOM);
+  });
+  it('keeps caller reasoning and leaves gpt-5-chat alone', async () => {
+    const { adaptGroqChatBody } = await import('../lib/ai/groq-compat');
+    const kept = adaptGroqChatBody({ model: 'openai/gpt-5', reasoning: { effort: 'high' } }, { viaOpenRouter: true });
+    expect(kept.reasoning).toEqual({ effort: 'high' });
+    const chat = { model: 'openai/gpt-5-chat', max_tokens: 100 };
+    expect(adaptGroqChatBody(chat, { viaOpenRouter: true })).toBe(chat);
+  });
+});

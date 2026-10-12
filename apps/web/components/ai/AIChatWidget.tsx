@@ -22,7 +22,7 @@ import type { MentorEmojiReaction } from '../../lib/ai/emoji-reaction/types';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { MentorEmojiReactionBadge } from './MentorEmojiReactionBadge';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
-import { useChatBackground } from '../../lib/client/useChatBackground';
+import { prefetchChatBackground, useChatBackground } from '../../lib/client/useChatBackground';
 import { usePersonalGreeting } from '../../lib/time/usePersonalGreeting';
 import {
   consumePendingOpenAlmogChat,
@@ -522,6 +522,9 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
   const [open, setOpen] = useState(autoOpen);
   const { avatarUrl: avatarSrc } = useAlmogAvatarUrl({ enabled: open });
   const { url: bgUrl, hasPhoto } = useChatBackground(open);
+  useEffect(() => {
+    prefetchChatBackground();
+  }, []);
   const [sheetHeight, setSheetHeight] = useState('min(96dvh, 960px)');
   const [profileOnboardingOpen, setProfileOnboardingOpen] = useState(false);
   const [online, setOnline] = useState(true);
