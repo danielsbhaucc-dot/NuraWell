@@ -2,6 +2,16 @@
  * נקרא גם מ־middleware וגם מ־API guards.
  * NEXT_PUBLIC_OPS_HOSTNAME — hostname בלבד, למשל ops.nurawell.ai
  */
+/**
+ * Interim: until ops.nurawell.ai is connected, the panel is also served under /ops on the
+ * public app host (nurawell.vercel.app/ops/...). Still admin-gated in proxy and API guards.
+ */
+export const APP_HOST_OPS_FALLBACK = 'nurawell.vercel.app';
+export function isAppHostOpsFallback(hostname: string | null | undefined): boolean {
+  const h = (hostname ?? '').trim().toLowerCase().replace(/:\d+$/, '').replace(/^www\./, '');
+  return h === APP_HOST_OPS_FALLBACK;
+}
+
 export function opsCanonicalHostname(): string {
   return process.env.NEXT_PUBLIC_OPS_HOSTNAME?.trim().toLowerCase().replace(/^www\./, '') ?? '';
 }
@@ -141,6 +151,7 @@ export function isOpsPanelBrowserPath(pathname: string): boolean {
     '/costs',
     '/business',
     '/errors',
+    '/ceo',
     '/steps',
     '/site-settings',
     '/system-rag-ingest',

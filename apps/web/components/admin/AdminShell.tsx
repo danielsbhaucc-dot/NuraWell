@@ -26,6 +26,7 @@ import {
   Trophy,
   UserCircle,
   X,
+  Bot,
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { OpsSessionGuard } from './OpsSessionGuard';
@@ -278,6 +279,16 @@ export function AdminShell({
             >
               <TrendingUp size={20} className={cn('shrink-0', np === '/ops/business' && 'text-emerald-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>מדדים עסקיים</span>
+            </Link>
+
+            <Link
+              href={opsHref('/ceo')}
+              onClick={() => setSidebarOpen(false)}
+              className={navBtn(np === '/ops/ceo', 'emerald')}
+              title="מנכ״ל AI"
+            >
+              <Bot size={20} className={cn('shrink-0', np === '/ops/ceo' && 'text-emerald-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>מנכ״ל AI</span>
             </Link>
 
             <Link
