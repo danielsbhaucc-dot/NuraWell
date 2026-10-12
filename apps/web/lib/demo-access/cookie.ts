@@ -1,3 +1,5 @@
+import { mergeAuthCookieOptions } from '@/lib/supabase/cookie-options';
+
 /**
  * עוגיית סשן דמו חתומה (HMAC) — תואמת Edge Runtime.
  * payload: linkId.userId.expMs.sessionEpoch
@@ -103,12 +105,24 @@ export async function parseDemoAccessCookie(
   };
 }
 
+/** אותן אפשרויות domain כמו עוגיות auth — כדי ש-nw_demo יגיע גם ל-ops subdomain. */
 export function demoAccessCookieOptions(maxAgeSec: number) {
-  return {
+  return mergeAuthCookieOptions({
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax' as const,
     path: '/',
     maxAge: Math.max(60, maxAgeSec),
-  };
+  });
+}
+
+/** מחיקת עוגיית דמו עם אותו domain כמו בהגדרה. */
+export function clearDemoAccessCookieOptions() {
+  return mergeAuthCookieOptions({
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax' as const,
+    path: '/',
+    maxAge: 0,
+  });
 }

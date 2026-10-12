@@ -17,6 +17,7 @@ import {
 } from './lib/navigation/app-home-path';
 import { handleChallengeMiddleware } from './lib/challenge/middleware-challenge';
 import { DEMO_ACCESS_COOKIE, parseDemoAccessCookie } from './lib/demo-access/cookie';
+import { hasActiveDemoAccessSession } from './lib/demo-access/active-session';
 
 // ── CSP nonce ──────────────────────────────────────────────────────────────
 // Each request gets a unique cryptographic nonce, replacing 'unsafe-inline'
@@ -299,8 +300,10 @@ export async function proxy(request: NextRequest) {
       return applySecurityHeaders(NextResponse.redirect(loginUrl));
     }
 
+    // Cookie is a fast path; DB session is authoritative (cookie may be missing on ops host).
     const demoPayload = await parseDemoAccessCookie(request.cookies.get(DEMO_ACCESS_COOKIE)?.value);
-    if (demoPayload && demoPayload.userId === user.id) {
+    const cookieSaysDemo = Boolean(demoPayload && demoPayload.userId === user.id);
+    if (cookieSaysDemo || (await hasActiveDemoAccessSession(user.id))) {
       return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, mainOrigin)));
     }
 
@@ -371,7 +374,23 @@ export async function proxy(request: NextRequest) {
     return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
   }
 
+  if (user && pathname === '/auth/bridge-to-ops') {
+    if (await hasActiveDemoAccessSession(user.id)) {
+      return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
+    }
+  }
+
   if (user) {
+    if (pathname === '/login') {
+      const rawRedirect = request.nextUrl.searchParams.get('redirect');
+      if (
+        rawRedirect &&
+        isOpsLoginRedirectUrl(rawRedirect) &&
+        (await hasActiveDemoAccessSession(user.id))
+      ) {
+        return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
+      }
+    }
     const target = signedInRedirectTarget(user, pathname, request.nextUrl.searchParams, request.nextUrl.origin);
     if (target) return applySecurityHeaders(NextResponse.redirect(new URL(target, request.url)));
   }

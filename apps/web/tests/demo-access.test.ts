@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { buildDemoWelcomeHeadline, hebrewDayPartGreeting } from '../lib/demo-access/greeting';
 import { hashDemoPassword, verifyDemoPassword } from '../lib/demo-access/password';
 import { generateDemoAccessToken, hashDemoAccessToken, tokensMatch } from '../lib/demo-access/token';
-import { parseDemoAccessCookie, signDemoAccessCookie } from '../lib/demo-access/cookie';
+import {
+  clearDemoAccessCookieOptions,
+  demoAccessCookieOptions,
+  parseDemoAccessCookie,
+  signDemoAccessCookie,
+} from '../lib/demo-access/cookie';
 
 describe('demo-access greeting', () => {
   it('builds hebrew day-part greetings', () => {
@@ -54,5 +59,22 @@ describe('demo-access cookie', () => {
     expect(parsed?.guestName).toBe('דולב');
     expect(parsed?.reason).toBe('הדגמה למפתח');
     expect(parsed?.sessionEpoch).toBe(1);
+  });
+
+  it('applies auth cookie domain to demo cookie options when configured', () => {
+    const prev = process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN;
+    process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN = '.nurawell.ai';
+    try {
+      const opts = demoAccessCookieOptions(3600);
+      expect(opts.domain).toBe('.nurawell.ai');
+      expect(opts.path).toBe('/');
+      expect(opts.httpOnly).toBe(true);
+      const clear = clearDemoAccessCookieOptions();
+      expect(clear.domain).toBe('.nurawell.ai');
+      expect(clear.maxAge).toBe(0);
+    } finally {
+      if (prev === undefined) delete process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN;
+      else process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN = prev;
+    }
   });
 });

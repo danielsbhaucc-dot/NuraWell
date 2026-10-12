@@ -7,6 +7,7 @@ import { getR2Client, r2ImageBucketName } from '@/lib/storage/r2-almog';
 import { getPublicCdnImageUrl, deleteImageFromR2 } from '@/lib/cdn/public-images';
 import { isWebpBuffer, MAX_UPLOAD_BYTES } from '@/lib/validation/webp';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { demoWelcomeImageObjectKey } from '@/lib/demo-access/welcome-image';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,10 +16,6 @@ export const maxDuration = 60;
 const idSchema = z.string().uuid();
 
 type RouteCtx = { params: Promise<{ id: string }> };
-
-function demoWelcomeImageObjectKey(linkId: string): string {
-  return `demo-access/${linkId}/welcome.webp`;
-}
 
 export async function POST(request: Request, ctx: RouteCtx) {
   const auth = await requireOpsApiAdmin(request);
