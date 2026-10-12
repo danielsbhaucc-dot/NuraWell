@@ -1,3 +1,4 @@
+import { enterAiUsage } from '@/lib/ai/usage-meter';
 import { NextResponse } from 'next/server';
 import { Receiver } from '@upstash/qstash';
 import { workflowPublicBaseUrl } from '../workflows/resolve-workflow-public-url';
@@ -48,6 +49,11 @@ function buildCanonicalUrlsForRequest(request: Request): string[] {
 }
 
 export async function authorizeCronRequest(request: Request): Promise<NextResponse | null> {
+  try {
+    enterAiUsage({ feature: `cron:${new URL(request.url).pathname.replace(/^\/api\/v1\/(ai\/)?(cron\/)?/, '').slice(0, 50)}` });
+  } catch {
+    /* ignore */
+  }
   const secret = process.env.CRON_SECRET?.trim();
   const qstashCurrent = process.env.QSTASH_CURRENT_SIGNING_KEY?.trim();
   const qstashNext = process.env.QSTASH_NEXT_SIGNING_KEY?.trim();
