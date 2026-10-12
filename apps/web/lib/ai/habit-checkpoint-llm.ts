@@ -271,20 +271,22 @@ export function countUnansweredEarlierToday(
 function nudgeLabel(level: HabitCheckpointNudgeLevel): string {
   if (level === 1) return 'DormantEarly';
   if (level === 2) return 'Withdrawing/ExtendedAbsence';
-  if (level === 3) return 'Ghosted';
+  if (level === 3) return 'Ghosted/DormantLong';
   return 'Active';
 }
 
 function cadenceLabel(stage: HabitCheckpointCadenceStage): string {
   switch (stage) {
     case 'dormant_early':
-      return 'Dormant Early (3–7 days, morning+evening)';
+      return 'Dormant Early (3–5 days, morning+evening)';
     case 'withdrawing':
-      return 'Withdrawing (day 8, morning empathetic only)';
+      return 'Withdrawing (days 6–8, morning empathetic only)';
     case 'extended_absence':
       return 'Extended Absence (9–13 days, midday only, quiet presence)';
     case 'ghosted':
-      return 'Ghosted (14+ days, weekly cadence)';
+      return 'Ghosted (14–41 days, weekly cadence)';
+    case 'dormant_long':
+      return 'Dormant Long (42+ days, monthly cadence, door is open)';
     case 'active':
     default:
       return 'Active (0–2 days, full daily cadence)';
@@ -300,10 +302,11 @@ function cadenceLabel(stage: HabitCheckpointCadenceStage): string {
  *    Day 0 evening  → "לא עדכנת, הכל בסדר?"
  *    Day 1 (אתמול לא ענה) → INTERDAY ("נעלמת לי אתמול")
  *    Day 2 (יומיים)  → "היה יום עמוס, הכל בסדר?"
- *  dormant_early (3–7d) — בוקר + ערב בלבד: דאגה חברית
- *  withdrawing (8d) — רק בוקר: **אמפתי במיוחד**, מסר אחד "אני כאן בשבילך"
+ *  dormant_early (3–5d) — בוקר + ערב בלבד: דאגה חברית
+ *  withdrawing (6–8d) — רק בוקר: **אמפתי במיוחד**, מסר אחד "אני כאן בשבילך"
  *  extended_absence (9–13d) — רק צהריים: נוכחות שקטה, "חושב עליך"
- *  ghosted (14+d) — פעם בשבוע: "נעלמת לי 🥲 אני כאן כשתחזור"
+ *  ghosted (14–41d) — פעם בשבוע: "נעלמת לי 🥲 אני כאן כשתחזור"
+ *  dormant_long (42+d) — פעם בחודש: "הדלת פתוחה", אפס אשמה
  *
  *  FULL ו-PARTIAL completion גוברים על השלב — חוגגים/מדרבנים גם אם cadence
  *  מתקדם, כי זה רגע יזום של המשתמש.
@@ -333,9 +336,20 @@ function behavioralRule(ctx: BehavioralContext): string {
 - או: "וואלה [שם] 💪 עוד אחד יסגור — נתקעת?"`;
   }
 
-  /** 14+ ימים: פעם בשבוע, רגוע ואמפתי */
+  /** 42+ ימים: פעם בחודש — "הדלת פתוחה", בלי אשמה ובלי בקשה */
+  if (cadenceStage === 'dormant_long') {
+    return `DORMANT LONG (monthly cadence, 42+ days):
+- עבר זמן רב. ההודעה היחידה החודש — עדינה, חמה, קצרה (1–2 משפטים).
+- המסר: הדלת פתוחה, אפשר לחזור מתי שרוצים, מאיפה שנוח.
+- אסור: אשמה, "נעלמת", "לא עשית", ספירת ימים, שאלות על משימות, דחיפות.
+- אפשר להציע התחלה קטנה מאוד *כאפשרות*, לא כבקשה.
+- דוגמת טון: "היי [שם] 🌿 רק רציתי שתדע שהדלת פה פתוחה. מתי שמתאים לך — נמשיך בקטן."
+- או: "[שם], חשבתי עליך 💙 בלי שום לחץ. אם תרצה לחזור, אני כאן ונתחיל מאיפה שנוח לך."`;
+  }
+
+  /** 14–41 ימים: פעם בשבוע, רגוע ואמפתי */
   if (cadenceStage === 'ghosted') {
-    return `GHOSTED / STEPPING BACK (weekly cadence, 14+ days):
+    return `GHOSTED / STEPPING BACK (weekly cadence, 14–41 days):
 - אפס לחץ. לא שואלים על ביצוע, לא דוחפים, לא נעלבים.
 - אומרים שאתה כאן כשהוא יחזור — בקלילות, אנושי, עם רגש.
 - דוגמת טון: "היי [שם], נעלמת לי לגמרי 🥲 אני כאן כשתרצה להמשיך מאיפה שעצרנו."
@@ -356,7 +370,7 @@ function behavioralRule(ctx: BehavioralContext): string {
 
   /** יום 8: ההודעה האמפתית במיוחד שהמשתמש ביקש */
   if (cadenceStage === 'withdrawing') {
-    return `WITHDRAWING (day 8, empathetic morning-only):
+    return `WITHDRAWING (days 6–8, empathetic morning-only):
 - זו ההודעה ה-**הכי אמפתית** במחזור. שמירת קשר עדינה, בלי שום דרישה.
 - נוסחת המפתח: "אני מבין שאתה בעומס, תעדכן ברגע שאתה יכול. אני כאן בשבילך."
 - אפשר וריאציות אבל **חייב להעביר**: 1) שאתה מבין שיש עומס. 2) אין לחץ לעדכן. 3) שאתה כאן.
@@ -366,13 +380,13 @@ function behavioralRule(ctx: BehavioralContext): string {
 - או: "[שם] חברר, אין שום לחץ. תעדכן כשבא לך — אני כאן 🌿"`;
   }
 
-  /** 3–7 ימים: בוקר/ערב בלבד, חבר שמרגיש את השקט */
+  /** 3–5 ימים: בוקר/ערב בלבד, חבר שמרגיש את השקט */
   if (cadenceStage === 'dormant_early') {
     const slotCue =
       currentSlot === 'morning'
         ? 'בוקר → ברכת בוקר רכה + שאלת דאגה. "בוקר טובבב [שם]ל ☀️ נעלמת קצת — הכל סבבה?"'
         : 'ערב → סוף יום עם דאגה. "[שם] ערב, איפה אתה? הכל בסדר?"';
-    return `DORMANT EARLY (3–7 days, morning + evening only):
+    return `DORMANT EARLY (3–5 days, morning + evening only):
 - שקט של כמה ימים — מכירים בזה בלי אשמה ובלי תוכחה. חבר שדואג.
 - אפשר להציע התאמה רכה אם [Task] גדול מדי.
 - אסור: "ראיתי שלא עשית", "מצפים ממך". מותר: דאגה כנה.

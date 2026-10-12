@@ -58,10 +58,11 @@ export type HabitCheckpointCompletionStatus = z.infer<
 /**
  * שלב cadence — קובע כמה הודעות ביום וכמה מהן אמפתיות:
  *   active            — 0–2 ימים: 3/יום (בוקר + צהריים + ערב)
- *   dormant_early     — 3–7 ימים: 2/יום (בוקר + ערב)
- *   withdrawing       — 8 ימים: 1/יום (רק בוקר, אמפתי "אני כאן")
+ *   dormant_early     — 3–5 ימים: 2/יום (בוקר + ערב)
+ *   withdrawing       — 6–8 ימים: 1/יום (רק בוקר, אמפתי "אני כאן")
  *   extended_absence  — 9–13 ימים: 1/יום (רק צהריים, נוכחות שקטה)
- *   ghosted           — 14+ ימים: 1/שבוע (cooldown של 7 ימים)
+ *   ghosted           — 14–41 ימים: 1/שבוע (cooldown של 7 ימים)
+ *   dormant_long      — 42+ ימים: 1/חודש (cooldown של 30 יום, "הדלת פתוחה")
  */
 export const habitCheckpointCadenceStageSchema = z.enum([
   'active',
@@ -69,6 +70,7 @@ export const habitCheckpointCadenceStageSchema = z.enum([
   'withdrawing',
   'extended_absence',
   'ghosted',
+  'dormant_long',
 ]);
 
 export type HabitCheckpointCadenceStage = z.infer<

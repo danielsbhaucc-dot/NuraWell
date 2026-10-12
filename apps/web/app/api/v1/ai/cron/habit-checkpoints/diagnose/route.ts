@@ -7,6 +7,7 @@ import { timingSafeEqualStr } from '../../../../../../../lib/api/timing-safe-equ
 import { isAvoidPushActive } from '../../../../../../../lib/ai/avoid-push';
 import { fetchTodayAlmogTouches } from '../../../../../../../lib/ai/almog-notify-day-context';
 import { normalizeCheckInTimes } from '../../../../../../../lib/ai/onboarding-check-in-time';
+import { isPassivePresenceEnabled } from '../../../../../../../lib/churn/feature-flags';
 import { createAdminClient } from '../../../../../../../lib/supabase/admin';
 import { jsonZodError } from '../../../../../../../lib/validation/zod-http';
 import {
@@ -19,6 +20,7 @@ import {
   fetchTrueLastActiveByUser,
   isSlotAllowedForCadenceStage,
   planHabitCheckpointTriggers,
+  presenceCooldownDaysForCadenceStage,
   type ProgressRow,
 } from '../../../../../../../lib/workflows/habit-checkpoint-batch';
 import {
@@ -186,9 +188,10 @@ async function fetchAlreadySentThisSlot(
 async function fetchGhostedCooldownActive(
   admin: AdminClient,
   userId: string,
-  now: Date
+  now: Date,
+  windowDays = 7
 ): Promise<boolean> {
-  const weekAgoIso = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const weekAgoIso = new Date(now.getTime() - windowDays * 24 * 60 * 60 * 1000).toISOString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await admin
     .from('notifications')
@@ -201,7 +204,7 @@ async function fetchGhostedCooldownActive(
   if (!Array.isArray(data)) return false;
   return data.some((row: { metadata?: unknown }) => {
     const m = row.metadata as Record<string, unknown> | null | undefined;
-    return m?.source === 'almog_habit_checkpoint';
+    return m?.source === 'almog_habit_checkpoint' || m?.source === 'almog_passive_presence';
   });
 }
 
@@ -314,13 +317,22 @@ export async function POST(request: Request) {
   const daysSinceLastActive = daysBetween(trueLastActive, now);
   const cadenceStage = computeCadenceStage(daysSinceLastActive);
 
-  if (cadenceStage === 'ghosted') {
-    const cooldownActive = await fetchGhostedCooldownActive(admin, targetUserId, now);
+  if (cadenceStage === 'dormant_long' && isPassivePresenceEnabled()) {
+    blockers.push({
+      kind: 'dormant_long_owned_by_passive_presence',
+      explanation_he:
+        'המשתמש במצב dormant_long (42+ ימים) — מגעי נוכחות יוצאים רק מ-passive presence (פעם בחודש).',
+    });
+  } else if (cadenceStage === 'ghosted' || cadenceStage === 'dormant_long') {
+    const windowDays = presenceCooldownDaysForCadenceStage(cadenceStage) ?? 7;
+    const cooldownActive = await fetchGhostedCooldownActive(admin, targetUserId, now, windowDays);
     if (cooldownActive) {
       blockers.push({
-        kind: 'ghosted_weekly_cooldown',
+        kind: cadenceStage === 'ghosted' ? 'ghosted_weekly_cooldown' : 'dormant_long_monthly_cooldown',
         explanation_he:
-          'המשתמש במצב ghosted (14+ ימים בלי פעילות) וכבר נשלחה הודעה ב-7 ימים אחרונים. cooldown של שבוע.',
+          cadenceStage === 'ghosted'
+            ? 'המשתמש במצב ghosted (14–41 ימים בלי פעילות) וכבר נשלחה הודעה ב-7 ימים אחרונים. cooldown של שבוע.'
+            : 'המשתמש במצב dormant_long (42+ ימים) וכבר נשלחה הודעה ב-30 ימים אחרונים. cooldown חודשי.',
       });
     }
   }

@@ -103,13 +103,12 @@ describe('isActiveReengagementMove', () => {
 });
 
 describe('shouldSilenceForReengagement', () => {
-  it('silences day 6 morning/midday', () => {
-    expect(
-      shouldSilenceForReengagement({ daysSinceLastActive: 6, slot: 'morning', breakupSentAt: null })
-    ).toBe(true);
-    expect(
-      shouldSilenceForReengagement({ daysSinceLastActive: 6, slot: 'evening', breakupSentAt: null })
-    ).toBe(false);
+  it('day 6 is no longer silenced (withdrawing cadence handles it)', () => {
+    for (const slot of ['morning', 'midday', 'evening'] as const) {
+      expect(
+        shouldSilenceForReengagement({ daysSinceLastActive: 6, slot, breakupSentAt: null })
+      ).toBe(false);
+    }
   });
 
   it('silences everything after breakup', () => {
