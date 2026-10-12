@@ -9,19 +9,32 @@ import { levelInfo, resolveLadder, type TaskDefinitionLike } from '@/lib/tasks/l
  * Nightly "Almog checks": merge near-identical live tasks.
  *  1. SQL pre-filter (free): task_dup_candidates() flags users with likely duplicates.
  *  2. Only flagged users go to one cheap model call each (gpt-5.4-mini, static prompt first for caching).
- *  3. Merge via the single write path merge_task_assignments() (keeps higher level + progress, moves history, logs 'merged').
+ *  3. Merge by behavior via merge_task_assignments(); the model may set the kept task's ladder level (e.g. an easier step
+ *     that existed because the main task was hard). Moves history, logs level_change + 'merged' with the reason.
  *  4. One factual Almog notification through the unified gate + dedupe (no extra AI call).
  */
 export const MERGE_MODEL = process.env.ALMOG_MERGE_MODEL?.trim() || 'openai/gpt-5.4-mini';
 
-type Cand = { id: string; title: string; level: number; main: boolean; source: string; done: number };
-export type MergeDecision = { keep: string; drop: string[]; reason?: string };
+type Cand = {
+  id: string;
+  title: string;
+  level: number;
+  main: boolean;
+  source: string;
+  done: number;
+  ladder?: { level: number; title: string }[];
+  [k: string]: unknown;
+};
+export type MergeDecision = { keep: string; drop: string[]; level?: number; reason?: string };
 
-const SYSTEM = `אתה בודק כפילויות במשימות של אפליקציה לשינוי הרגלים.
-תקבל רשימת משימות פעילות של משתמש אחד. החזר json בלבד (פורמט json): {"merges":[{"keep":"<id>","drop":["<id>",...],"reason":"<קצר>"}]}.
-כפילות = אותה פעולה ואותו הרגל באותו הקשר, גם בניסוח אחר או בכמות קרובה (למשל "2 כוסות מים לפני ארוחה" ו"לשים 2 כוסות מים ליד הצלחת לפני הארוחה").
-לא כפילות = הקשר או זמן שונה במהות (למשל "כוס מים לפני השינה" מול "מים לפני ארוחה"), או הרגל אחר.
-ב-keep בחר את המשימה הראשית (main) אם יש, אחרת זו עם הכי הרבה done, אחרת המנוסחת הכי ברור. אם אין כפילויות החזר {"merges":[]}.`;
+const SYSTEM = `אתה מאחד משימות של אפליקציה לשינוי הרגלים. העיקרון: התנהגות אחת = משימה אחת. אין טעם לבקש מהמשתמש לשתות מים פעמיים.
+תקבל את המשימות הפעילות של משתמש אחד, ולכל אחת את המקור וההיסטוריה שלה: source (step = מתוך שיעור, almog = נוצרה בצ'אט עם אלמוג, ai_daily = משימה יומית), why (למה נוצרה), chat_excerpt (מה המשתמש כתב כשנוצרה), related_habit (ההרגל שאליו היא קשורה), ladder (שלבי הקושי של המשימה: level 0 = היעד, שלילי = קל יותר), history (שינויי רמה, "קשה לי", SOS, איחודים, עם סיבה ותאריך).
+כללים:
+1. אחד באגרסיביות לפי התנהגות/נושא, לא לפי ניסוח: כל המשימות על אותה התנהגות (למשל "2 כוסות מים לפני הארוחה", "חצי כוס מים", "כוס מים קטנה לפני השינה", "לשים כוס ליד הצלחת") הופכות למשימה אחת. השאר נפרדות רק התנהגויות שונות באמת (מים מול הליכה מול ירקות).
+2. keep = המשימה הראשית (main) אם יש, אחרת זו שמגיעה משיעור (step), אחרת זו עם סולם שלבים, אחרת עם הכי הרבה done.
+3. השתמש במקור ובהיסטוריה רק כדי לבחור שלב: אם משימה שמאוחדת נוצרה כגרסה קלה יותר כי היה קשה (קשה לי, SOS, תחושת כישלון, ירידת רמה), או שהמשתמש ירד רמה לאחרונה, בחר ב-level את שלב ה-ladder של keep שהכי קרוב לגרסה הקלה (לרוב הנמוך ביותר). אם אין סיבה לשנות, השמט level. level חייב להיות אחד מערכי ה-ladder של keep.
+4. reason: משפט קצר בעברית שמסביר למה אוחד ולמה השלב.
+החזר json בלבד (פורמט json): {"merges":[{"keep":"<id>","drop":["<id>",...],"level":<מספר או להשמיט>,"reason":"<קצר>"}]}. אם אין מה לאחד החזר {"merges":[]}.`;
 
 /** Validate model output against the candidate set (never trust ids blindly). */
 export function sanitizeDecisions(raw: unknown, cands: Cand[]): MergeDecision[] {
@@ -40,28 +53,48 @@ export function sanitizeDecisions(raw: unknown, cands: Cand[]): MergeDecision[] 
     const finalDrop = main ? [...drop.filter((d) => d !== main.id), m.keep] : drop;
     used.add(keep);
     finalDrop.forEach((d) => used.add(d));
-    out.push({ keep, drop: finalDrop, reason: typeof m.reason === 'string' ? m.reason.slice(0, 200) : undefined });
+    const keepCand = cands.find((c) => c.id === keep);
+    const rawLevel = (m as { level?: unknown }).level;
+    const lv = Number(rawLevel);
+    const levels = (keepCand?.ladder ?? []).map((l) => Number(l.level));
+    const dec: MergeDecision = { keep, drop: finalDrop, reason: typeof m.reason === 'string' ? m.reason.slice(0, 200) : undefined };
+    if (rawLevel != null && rawLevel !== '' && Number.isInteger(lv) && levels.includes(lv) && lv !== keepCand?.level) dec.level = lv;
+    out.push(dec);
   }
   return out;
 }
 
-export function mergeMessage(firstName: string | null, merged: number, kept: { title: string; stage: number }): { title: string; body: string } {
+export function mergeMessage(
+  firstName: string | null,
+  merged: number,
+  kept: { title: string; stage: number; mainTitle?: string },
+  change?: { fromLevel: number; toLevel: number; mergedTitles?: string[] },
+): { title: string; body: string } {
   const hi = firstName ? `היי ${firstName}` : 'היי';
-  const n = merged + 1;
+  const names = (change?.mergedTitles ?? []).filter(Boolean).slice(0, 2).map((t) => `"${t}"`).join(' ו-');
+  const verb = merged === 1 ? 'היתה' : 'היו';
+  const main = kept.mainTitle ?? kept.title;
+  if (change && change.toLevel < change.fromLevel) {
+    return {
+      title: 'סידרתי לך את המשימות',
+      body: `${hi}, ${names || (merged === 1 ? 'משימה אחת' : `${merged} משימות`)} ${verb} בעצם גרסה קלה יותר של המשימה "${main}", אז איחדתי למשימה אחת וקבעתי אותה לשלב קל יותר: "${kept.title}" (שלב ${kept.stage}). כשזה ירגיש קל, נעלה יחד 💪`,
+    };
+  }
+  const lead = names ? `${names} ${verb} על אותו הרגל כמו "${main}"` : `היו לך ${merged + 1} משימות על אותו הרגל`;
   return {
     title: 'סידרתי לך את המשימות',
-    body: `${hi}, שמתי לב שהיו לך ${n} משימות כמעט זהות, אז איחדתי אותן למשימה אחת: "${kept.title}" (שלב ${kept.stage}), כדי שיהיה לך פשוט יותר. נמשיך מכאן 💪`,
+    body: `${hi}, ${lead}, אז איחדתי הכול למשימה אחת: "${kept.title}" (שלב ${kept.stage}), כדי שיהיה לך פשוט יותר. נמשיך מכאן 💪`,
   };
 }
 
 /** Current title + 1-based ladder stage of the kept task. */
-export async function keptTaskInfo(db: SupabaseClient, id: string): Promise<{ title: string; stage: number }> {
+export async function keptTaskInfo(db: SupabaseClient, id: string): Promise<{ title: string; stage: number; mainTitle?: string }> {
   const { data } = await db.from('user_task_assignments').select('current_level, definition:task_definitions(title, times_per_day, ladder, floor_level, max_level)').eq('id', id).maybeSingle();
   const def = (data?.definition ?? null) as unknown as TaskDefinitionLike | null;
   if (!def) return { title: 'המשימה', stage: 1 };
   const lvl = Number(data?.current_level ?? 0);
   const info = levelInfo(def, lvl);
-  return { title: info.title, stage: Math.max(1, resolveLadder(def).findIndex((l) => l.level === info.level) + 1) };
+  return { title: info.title, mainTitle: (def as { title?: string }).title, stage: Math.max(1, resolveLadder(def).findIndex((l) => l.level === info.level) + 1) };
 }
 
 export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (c: Cand[]) => Promise<unknown> } = {}) {
@@ -93,8 +126,9 @@ export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (
     let merged = 0;
     let mainKeep: string | null = null;
     let mainCount = 0;
+    let mainChange: { fromLevel: number; toLevel: number; mergedTitles: string[] } | undefined;
     for (const d of decisions) {
-      const { data: n, error: e } = await db.rpc('merge_task_assignments', { p_user: row.user_id, p_keep: d.keep, p_drop: d.drop, p_reason: d.reason ?? null });
+      const { data: n, error: e } = await db.rpc('merge_task_assignments', { p_user: row.user_id, p_keep: d.keep, p_drop: d.drop, p_reason: d.reason ?? null, p_level: d.level ?? null });
       if (e) summary.errors.push(`merge: ${e.message.slice(0, 150)}`);
       else {
         const k = Number(n) || 0;
@@ -102,6 +136,8 @@ export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (
         if (k > mainCount) {
           mainCount = k;
           mainKeep = d.keep;
+          const from = Number(row.tasks.find((t) => t.id === d.keep)?.level ?? 0);
+          mainChange = { fromLevel: from, toLevel: d.level ?? from, mergedTitles: d.drop.map((id) => row.tasks.find((t) => t.id === id)?.title ?? '') };
         }
       }
     }
@@ -115,7 +151,7 @@ export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (
     }
     const { data: p } = await db.from('profiles').select('full_name').eq('id', row.user_id).maybeSingle();
     const first = ((p?.full_name as string | null) ?? '').trim().split(/\s+/)[0] || null;
-    const msg = mergeMessage(first, mainCount, await keptTaskInfo(db, mainKeep));
+    const msg = mergeMessage(first, mainCount, await keptTaskInfo(db, mainKeep), mainChange);
     const res = await insertNotification(db, {
       user_id: row.user_id,
       type: 'ai_message',
@@ -126,7 +162,7 @@ export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (
       is_read: false,
       is_sent: false,
       send_at: new Date().toISOString(),
-      metadata: { source: 'almog_nightly_merge', merged },
+      metadata: { source: 'almog_nightly_merge', merged, ...(mainChange ? { from_level: mainChange.fromLevel, to_level: mainChange.toLevel } : {}) },
     });
     if (!res.error) summary.notified += 1;
     else summary.errors.push(`notify: ${res.error.message.slice(0, 150)}`);
