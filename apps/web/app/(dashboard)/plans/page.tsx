@@ -90,7 +90,9 @@ export default async function PlansPage() {
       </header>
 
       <section aria-label="הערה של אלמוג" className="flex gap-3 rounded-3xl border border-primary-100 bg-background-card p-4 shadow-[0_8px_24px_rgba(6,78,59,0.06)]">
-        <AlmogAvatarChip size={44} />
+        <div className="size-11 shrink-0 self-start">
+          <AlmogAvatarChip size={44} />
+        </div>
         <div className="min-w-0">
           <p className="text-[11px] font-bold text-primary-700">מילה מאלמוג</p>
           <p className="mt-0.5 text-[14px] leading-relaxed text-primary-900">{summary}</p>
@@ -145,9 +147,9 @@ export default async function PlansPage() {
               <p className="text-[11px] font-bold text-primary-700">העקרונות שלמדנו עד עכשיו</p>
               <ul className="mt-1.5 flex flex-col gap-1.5">
                 {principles.map((p) => (
-                  <li key={p.title} className="text-[13px] leading-relaxed text-primary-900">
+                  <li key={p.title} className="line-clamp-3 text-[13px] leading-relaxed text-primary-900">
                     <span className="font-bold">{p.title}: </span>
-                    <span className="line-clamp-2 inline">{p.text}</span>
+                    {p.text}
                   </li>
                 ))}
               </ul>
