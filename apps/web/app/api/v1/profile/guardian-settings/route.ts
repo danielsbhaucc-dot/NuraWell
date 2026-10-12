@@ -10,6 +10,8 @@ import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { jsonZodError } from '../../../../../lib/validation/zod-http';
 
 export const runtime = 'edge';
+// Edge runs next to the user by default (fra1) — every Supabase round-trip then crosses to Sydney. Pin next to the DB.
+export const preferredRegion = 'syd1';
 
 const patchSchema = z.object({
   opted_in: z.boolean().optional(),

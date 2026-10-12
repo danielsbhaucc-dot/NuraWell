@@ -319,6 +319,8 @@ function openingReply(
   const name = firstNameHint?.trim();
   const hi = name ? `היי ${name}!` : 'היי!';
   const tap = imperativeTap(profileGender);
+  const g = (f: string, m: string, n: string) =>
+    profileGender === 'female' ? f : profileGender === 'male' ? m : n;
   const needsName = !flags.has_full_name;
   const next = leadQuestion(flags, updateMode);
   const knownCount = countKnownProfileFields(flags);
@@ -327,9 +329,9 @@ function openingReply(
 
   if (updateMode && profileComplete) {
     if (path === 'fun') {
-      return `${hi} 🎉 הפרופיל שלך כבר שלם — יופי. מה בא לך לשנות? תכתוב במילה (משקל? מטרה? שעת שינה?).`;
+      return `${hi} 🎉 הפרופיל שלך כבר שלם — יופי. מה בא לך לשנות? ${g('תכתבי', 'תכתוב', 'מספיק')} במילה (משקל? מטרה? שעת שינה?).`;
     }
-    return `${hi} הפרופיל שלך כבר מלא. מה תרצה לעדכן?`;
+    return `${hi} הפרופיל שלך כבר מלא. ${g('מה תרצי לעדכן?', 'מה תרצה לעדכן?', 'מה בא לך לעדכן?')}`;
   }
 
   if (path === 'fun') {
@@ -350,7 +352,7 @@ function openingReply(
     }
     return `${hi} נעדכן מהר ונעים. ${next}`;
   }
-  return `${hi} אלמוג כאן ✨ בוא נעדכן את הפרופיל בשיחה. איך בא לך לעבור — מהיר או כייפי?`;
+  return `${hi} אלמוג כאן ✨ ${g('בואי', 'בוא', 'בואו')} נעדכן את הפרופיל בשיחה. איך בא לך לעבור — מהיר או כייפי?`;
 }
 
 async function callLlm(
