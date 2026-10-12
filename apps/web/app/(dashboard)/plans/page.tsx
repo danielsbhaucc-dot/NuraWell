@@ -11,6 +11,8 @@ import { SosButton } from '@/components/ai/SosButton';
 import { AlmogPlanSections } from '@/components/plans/AlmogPlanSections';
 import { PlanSection } from '@/components/plans/PlanSection';
 import { PlanHabitCard } from '@/components/plans/PlanHabitCard';
+import { PlanAccordion } from '@/components/plans/PlanAccordion';
+import { ProgressRing } from '@/components/plans/ProgressRing';
 import { AlmogAvatarChip } from '@/components/journey/AlmogPresence';
 import { almogChangeNote, almogPlanSummary, buildPlanHabit, formatPlanDate, planGoalLine, type Gender } from '@/lib/plans/plan-document';
 import { mainObstacleLabelHe } from '@/lib/churn/reengagement-prompt-blocks';
@@ -58,48 +60,79 @@ export default async function PlansPage() {
   const lastUpdate = log[0]?.note.at ?? active.map((t) => t.accepted_at).filter(Boolean).sort().at(-1) ?? null;
 
   const currentIdx = Math.max(0, mapStations.findIndex((st) => st.state === 'current'));
-  const phaseStart = Math.max(0, currentIdx - 1);
-  const phases = mapStations.slice(phaseStart, phaseStart + 4);
   const principles = mapStations
     .slice(0, currentIdx + 1)
     .map((st) => ({ title: st.title, text: stationDesc.get(st.id) ?? '' }))
     .filter((p) => p.text)
     .slice(-3);
 
+  const totalSteps = mapStations.reduce((n, st) => n + st.total, 0);
+  const doneSteps = mapStations.reduce((n, st) => n + st.done, 0);
+  const journeyPct = totalSteps ? (doneSteps / totalSteps) * 100 : 0;
+  const currentPhase = mapStations[currentIdx] ?? null;
+  const nextPhase = mapStations[currentIdx + 1] ?? null;
+  const todayDone = habits.reduce((n, h) => n + Math.min(h.doneToday, h.targetToday), 0);
+  const todayTarget = habits.reduce((n, h) => n + h.targetToday, 0);
+  const g = (f: string, m: string, o: string) => (gender === 'female' ? f : gender === 'male' ? m : o);
+
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-col gap-7 px-4 pb-28 pt-4">
-      <header className="relative overflow-hidden rounded-[28px] bg-linear-to-br from-[#033d2e] via-brand-700 to-primary-600 p-5 text-white shadow-[0_14px_36px_rgba(6,78,59,0.28)]">
-        <span aria-hidden className="pointer-events-none absolute -top-16 -left-10 size-48 rounded-full bg-primary-300/20 blur-2xl" />
-        <p className="relative text-[11px] font-bold tracking-wide text-white/70">תוכנית אישית · נכתבת ומתעדכנת על ידי אלמוג</p>
-        <h1 className="relative mt-1 text-[26px] font-black leading-tight">{firstName ? `התוכנית של ${firstName}` : 'התוכנית שלך'}</h1>
-        <p className="relative mt-2 text-sm font-semibold text-white/90">
-          <span className="text-white/65">המטרה: </span>
-          {planGoalLine(prof.main_goal)}
-        </p>
-        {obstacle ? (
-          <p className="relative mt-1 text-sm text-white/85">
-            <span className="text-white/65">נבנתה סביב: </span>
-            {obstacle}
-          </p>
-        ) : null}
-        <dl className="relative mt-4 grid grid-cols-3 gap-2 text-center">
-          <CoverStat label="שלב" value={mapStations.length ? `${Math.min(currentIdx + 1, mapStations.length)} מתוך ${mapStations.length}` : 'התחלה'} />
-          <CoverStat label="הרגלים פעילים" value={String(habits.length)} />
-          <CoverStat label="עדכון אחרון" value={lastUpdate ? formatPlanDate(lastUpdate) : 'היום'} />
-        </dl>
+    <main className="mx-auto flex w-full max-w-xl flex-col gap-8 px-4 pb-28 pt-4">
+      <header className="relative overflow-hidden rounded-[32px] border border-primary-100/80 bg-linear-to-br from-cream via-primary-50/70 to-[#d9f5e8] p-6 shadow-[0_18px_44px_rgba(6,78,59,0.12)]">
+        <span aria-hidden className="pointer-events-none absolute -top-20 -left-16 size-56 rounded-full bg-primary-300/25 blur-3xl" />
+        <span aria-hidden className="pointer-events-none absolute -bottom-24 -right-10 size-56 rounded-full bg-brand-700/10 blur-3xl" />
+        <p className="relative text-[11px] font-bold tracking-[0.08em] text-primary-700">התוכנית האישית · אלמוג מעדכן אותה איתך</p>
+        <h1 className="relative mt-1.5 text-[28px] font-black leading-[1.15] text-primary-900">{firstName ? `התוכנית של ${firstName}` : 'התוכנית שלך'}</h1>
+        <div className="relative mt-5 flex items-center gap-5">
+          <ProgressRing pct={journeyPct} label="מהמסע" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-bold text-primary-700">המטרה</p>
+            <p className="text-[17px] font-extrabold leading-snug text-primary-900">{planGoalLine(prof.main_goal)}</p>
+            {currentPhase ? (
+              <p className="mt-2 text-[13px] text-primary-800/80">
+                <span className="font-bold text-brand-700">שלב {currentIdx + 1} מתוך {mapStations.length}:</span> {currentPhase.title}
+              </p>
+            ) : null}
+            {obstacle ? <p className="mt-1 text-[12px] text-primary-800/65">נבנתה סביב: {obstacle}</p> : null}
+          </div>
+        </div>
+        <div className="relative mt-5 flex gap-3 rounded-2xl border border-primary-100/70 bg-background-card/70 p-3.5 backdrop-blur-md">
+          <div className="size-10 shrink-0 self-start">
+            <AlmogAvatarChip size={40} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold text-primary-700">מילה מאלמוג{lastUpdate ? ` · ${formatPlanDate(lastUpdate)}` : ''}</p>
+            <p className="mt-0.5 text-[14px] leading-relaxed text-primary-900">{summary}</p>
+          </div>
+        </div>
       </header>
 
-      <section aria-label="הערה של אלמוג" className="flex gap-3 rounded-3xl border border-primary-100 bg-background-card p-4 shadow-[0_8px_24px_rgba(6,78,59,0.06)]">
-        <div className="size-11 shrink-0 self-start">
-          <AlmogAvatarChip size={44} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[11px] font-bold text-primary-700">מילה מאלמוג</p>
-          <p className="mt-0.5 text-[14px] leading-relaxed text-primary-900">{summary}</p>
-        </div>
-      </section>
+      {habits.length ? (
+        <section aria-labelledby="plan-today" className="rounded-[28px] bg-linear-to-br from-brand-700 to-[#064e3b] p-5 text-cream shadow-[0_16px_36px_rgba(4,120,87,0.25)]">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="plan-today" className="text-lg font-black">הפוקוס של היום</h2>
+            <span className="text-[12px] font-bold text-cream/80">{todayDone}/{todayTarget} בוצעו</span>
+          </div>
+          <ul className="mt-3 flex flex-col gap-2">
+            {habits.map((h) => {
+              const done = h.doneToday >= h.targetToday;
+              return (
+                <li key={h.id} className="flex items-center gap-3 rounded-2xl bg-cream/10 px-3 py-2.5 backdrop-blur-sm">
+                  <span aria-hidden className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[13px] font-black ${done ? 'bg-primary-300 text-brand-700' : 'border-2 border-cream/40'}`}>{done ? '✓' : ''}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[14px] font-bold leading-snug">{h.currentStep}</span>
+                    <span className="block text-[11px] text-cream/70">{h.emoji} {h.habitTitle}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-3 text-[12px] text-cream/75">
+            {todayDone >= todayTarget ? g('סגרת את היום. אני גאה בך.', 'סגרת את היום. אני גאה בך.', 'היום נסגר. כל הכבוד.') : g('צעד אחד קטן מספיק כדי לשמור על הרצף.', 'צעד אחד קטן מספיק כדי לשמור על הרצף.', 'צעד אחד קטן מספיק כדי לשמור על הרצף.')}
+          </p>
+        </section>
+      ) : null}
 
-      <PlanSection n={1} id="plan-habits" title="ההרגלים שלי" hint="לכל הרגל: איפה אני עכשיו, מה הלאה, ומה עושים ביום קשה">
+      <PlanSection n={1} id="plan-habits" title="ההרגלים שלי" hint="איפה אני עכשיו בכל הרגל, ומה אלמוג שינה">
         {offers.map((o) => (
           <OfferCard key={o.id} definitionId={o.definition_id} title={o.definition.title} emoji={o.definition.emoji} description={o.definition.description} />
         ))}
@@ -119,76 +152,44 @@ export default async function PlansPage() {
         <SosButton firstName={firstName} focusTasks={active.map((t) => ({ id: t.id, title: t.level.title, emoji: t.definition.emoji ?? undefined }))} />
       </PlanSection>
 
-      <AlmogPlanSections n={2} />
+      <AlmogPlanSections n={2} gender={gender} />
 
-      {phases.length ? (
-        <PlanSection n={3} id="plan-phases" title="שלבי התוכנית" hint="כל שלב מוסיף הרגל אחד ועיקרון אחד">
-          <ol className="flex flex-col gap-2">
-            {phases.map((st, k) => {
-              const i = phaseStart + k;
-              const cur = st.state === 'current';
-              return (
-                <li key={st.id} className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 ${cur ? 'border-primary-300 bg-primary-50/80' : 'border-primary-100 bg-background-card'} ${st.state === 'locked' ? 'opacity-70' : ''}`}>
-                  <span className={`flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-black ${st.state === 'done' ? 'bg-brand-700 text-white' : cur ? 'bg-cream text-brand-700 ring-2 ring-brand-700' : 'bg-primary-100 text-primary-700'}`}>
-                    {st.state === 'done' ? '✓' : i + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-primary-900">{st.title}</p>
-                    <p className="text-[11px] text-primary-800/70">
-                      {st.state === 'done' ? 'הושלם' : cur ? `השלב הנוכחי · ${st.done}/${st.total} שיעורים` : 'בהמשך הדרך'}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
+      {currentPhase ? (
+        <PlanSection n={3} id="plan-phases" title="השלב שלי במסע" hint="כל שלב מוסיף הרגל אחד ועיקרון אחד">
+          <div className="rounded-3xl border border-primary-200 bg-primary-50/70 p-4">
+            <p className="text-[11px] font-bold text-primary-700">עכשיו · {currentPhase.done}/{currentPhase.total} שיעורים</p>
+            <p className="mt-0.5 text-[16px] font-extrabold text-primary-900">{currentPhase.title}</p>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-primary-100" aria-hidden>
+              <div className="h-full rounded-full bg-brand-700" style={{ width: `${currentPhase.total ? Math.round((currentPhase.done / currentPhase.total) * 100) : 0}%` }} />
+            </div>
+            {nextPhase ? <p className="mt-2.5 text-[12px] text-primary-800/75">אחר כך: {nextPhase.title}</p> : null}
+          </div>
           {principles.length ? (
-            <div className="rounded-2xl border border-primary-100 bg-cream/80 p-3.5">
-              <p className="text-[11px] font-bold text-primary-700">העקרונות שלמדנו עד עכשיו</p>
-              <ul className="mt-1.5 flex flex-col gap-1.5">
-                {principles.map((p) => (
-                  <li key={p.title} className="line-clamp-3 text-[13px] leading-relaxed text-primary-900">
-                    <span className="font-bold">{p.title}: </span>
-                    {p.text}
-                  </li>
-                ))}
-              </ul>
+            <div className="rounded-3xl border border-primary-100 bg-cream/80 p-4">
+              <p className="text-[11px] font-bold text-primary-700">העיקרון שמלווה אותי עכשיו</p>
+              <p className="mt-1 line-clamp-4 text-[13px] leading-relaxed text-primary-900">
+                <span className="font-bold">{principles.at(-1)!.title}: </span>
+                {principles.at(-1)!.text}
+              </p>
             </div>
           ) : null}
-          {mapStations.length > phases.length ? (
-            <details className="group rounded-3xl border border-primary-100 bg-background-card">
-              <summary className="cursor-pointer list-none p-4 text-sm font-bold text-primary-800">
-                <span className="group-open:hidden">למפת המסע המלאה ({mapStations.length} שלבים)</span>
-                <span className="hidden group-open:inline">לסגור את המפה</span>
-              </summary>
-              <div className="px-2 pb-2">
-                <PlanMap stations={mapStations} />
-              </div>
-            </details>
+          {mapStations.length > 1 ? (
+            <PlanAccordion title="המסלול המלא" meta={`${mapStations.length} שלבים · ${doneSteps}/${totalSteps} שיעורים`}>
+              <PlanMap stations={mapStations} />
+            </PlanAccordion>
           ) : null}
         </PlanSection>
       ) : null}
 
       {log.length ? (
-        <PlanSection n={4} id="plan-log" title="יומן ההתאמות" hint="כל שינוי שעשיתי בתוכנית, ולמה">
-          <ol className="flex flex-col gap-2">
-            {log.slice(0, 3).map((e) => (
-              <LogRow key={e.id} habit={e.habit} at={e.note.at} text={e.note.text} quote={e.note.quote} />
-            ))}
-          </ol>
-          {log.length > 3 ? (
-            <details className="group">
-              <summary className="cursor-pointer list-none text-sm font-bold text-primary-700">
-                <span className="group-open:hidden">עוד {log.length - 3} התאמות</span>
-                <span className="hidden group-open:inline">פחות</span>
-              </summary>
-              <ol className="mt-2 flex flex-col gap-2">
-                {log.slice(3).map((e) => (
-                  <LogRow key={e.id} habit={e.habit} at={e.note.at} text={e.note.text} quote={e.note.quote} />
-                ))}
-              </ol>
-            </details>
-          ) : null}
+        <PlanSection n={4} id="plan-log" title="מה אלמוג שינה בתוכנית" hint="כל התאמה, ולמה">
+          <PlanAccordion title="היסטוריית ההתאמות" meta={`${log.length} התאמות · האחרונה ${formatPlanDate(log[0]!.note.at)}`}>
+            <ol className="flex flex-col gap-2">
+              {log.map((e) => (
+                <LogRow key={e.id} habit={e.habit} at={e.note.at} text={e.note.text} quote={e.note.quote} />
+              ))}
+            </ol>
+          </PlanAccordion>
         </PlanSection>
       ) : null}
 
@@ -201,15 +202,6 @@ export default async function PlansPage() {
         </Link>
       </div>
     </main>
-  );
-}
-
-function CoverStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl bg-white/12 px-2 py-2 backdrop-blur-sm">
-      <dt className="text-[10px] font-semibold text-white/70">{label}</dt>
-      <dd className="text-[13px] font-black">{value}</dd>
-    </div>
   );
 }
 

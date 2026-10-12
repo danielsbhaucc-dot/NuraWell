@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Button, Card } from '@/components/ui';
 import { PlanSection } from './PlanSection';
+import { PlanAccordion } from './PlanAccordion';
 import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog-chat';
 
 /**
@@ -56,7 +57,8 @@ function fmt(iso: string) {
   }
 }
 
-export function AlmogPlanSections({ n = 2 }: { n?: number } = {}) {
+export function AlmogPlanSections({ n = 2, gender = 'other' }: { n?: number; gender?: 'female' | 'male' | 'other' } = {}) {
+  const g = (f: string, m: string, o: string) => (gender === 'female' ? f : gender === 'male' ? m : o);
   const [data, setData] = useState<Payload | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [rateFor, setRateFor] = useState<string | null>(null);
@@ -126,7 +128,7 @@ export function AlmogPlanSections({ n = 2 }: { n?: number } = {}) {
             {focus.status === 'proposed' ? (
               <>
                 <Button size="sm" loading={busy === focus.id} onClick={() => run(focus.id, () => act({ action: 'confirm_focus', focus_id: focus.id }))}>
-                  כן, בוא נתמקד
+                  {g('כן, בואי נתמקד', 'כן, בוא נתמקד', 'כן, נתמקד')}
                 </Button>
                 <Button size="sm" variant="ghost" disabled={busy === focus.id} onClick={() => run(focus.id, () => act({ action: 'decline_focus', focus_id: focus.id }))}>
                   לא עכשיו
@@ -225,7 +227,7 @@ export function AlmogPlanSections({ n = 2 }: { n?: number } = {}) {
               onClick={() =>
                 run(b.id, async () => {
                   await blockerAct({ action: 'coach', blocker_id: b.id });
-                  dispatchOpenAlmogChatWithPrefill(`בוא נדבר על: ${b.description}`);
+                  dispatchOpenAlmogChatWithPrefill(`אלמוג, אני רוצה לדבר על: ${b.description}`);
                 })
               }
             >
@@ -242,8 +244,7 @@ export function AlmogPlanSections({ n = 2 }: { n?: number } = {}) {
       ))}
 
       {reminders.length ? (
-        <Card className="flex flex-col gap-2">
-          <h3 className="font-bold text-primary-900">התזכורות הקרובות</h3>
+        <PlanAccordion title="התזכורות הקרובות" meta={`${reminders.length} מתוזמנות`}>
           <ul className="flex flex-col gap-2">
             {reminders.map((r) => (
               <li key={r.id} className="text-sm text-primary-900">
@@ -252,18 +253,17 @@ export function AlmogPlanSections({ n = 2 }: { n?: number } = {}) {
               </li>
             ))}
           </ul>
-        </Card>
+        </PlanAccordion>
       ) : null}
 
       {data.completed.length ? (
-        <details className="rounded-3xl bg-cream/70 p-4">
-          <summary className="cursor-pointer font-bold text-primary-900">כבר עשית את זה ({data.completed.length})</summary>
-          <ul className="mt-2 flex flex-col gap-1 text-sm text-primary-800">
+        <PlanAccordion title={g('מה כבר עשית', 'מה כבר עשית', 'מה כבר בוצע')} meta={`${data.completed.length} צעדים`}>
+          <ul className="flex flex-col gap-1 text-sm text-primary-800">
             {data.completed.map((a) => (
               <li key={a.id}>✓ {a.title}</li>
             ))}
           </ul>
-        </details>
+        </PlanAccordion>
       ) : null}
     </PlanSection>
   );

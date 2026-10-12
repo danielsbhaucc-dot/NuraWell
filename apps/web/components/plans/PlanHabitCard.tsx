@@ -1,9 +1,10 @@
 import type { PlanHabit } from '@/lib/plans/plan-document';
 import { formatPlanDate } from '@/lib/plans/plan-document';
 import { LadderActions } from './LadderActions';
+import { PlanAccordion } from './PlanAccordion';
 
 const STATUS_STYLE: Record<PlanHabit['status'], string> = {
-  original: 'bg-brand-700 text-white',
+  original: 'bg-brand-700 text-cream',
   eased: 'bg-primary-100 text-brand-700',
   stretched: 'bg-accent-100 text-accent-800',
 };
@@ -12,8 +13,8 @@ const STATUS_STYLE: Record<PlanHabit['status'], string> = {
 export function PlanHabitCard({ habit, index, canStepDown, canStepUp }: { habit: PlanHabit; index: number; canStepDown: boolean; canStepUp: boolean }) {
   const pct = Math.min(100, Math.round((habit.doneToday / Math.max(1, habit.targetToday)) * 100));
   return (
-    <article className="overflow-hidden rounded-3xl border border-primary-100 bg-background-card shadow-[0_8px_24px_rgba(6,78,59,0.07)]">
-      <header className="flex items-start gap-3 border-b border-primary-100/80 bg-primary-50/60 px-4 py-3">
+    <article className="overflow-hidden rounded-[26px] border border-primary-100/80 bg-background-card shadow-[0_10px_30px_rgba(6,78,59,0.07)]">
+      <header className="flex items-start gap-3 px-4 pt-4">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-cream text-2xl shadow-xs" aria-hidden>
           {habit.emoji}
         </span>
@@ -29,28 +30,18 @@ export function PlanHabitCard({ habit, index, canStepDown, canStepUp }: { habit:
 
       <div className="flex flex-col gap-3 px-4 py-4">
         <dl className="flex flex-col gap-2.5">
-          <div className="rounded-2xl bg-brand-700 px-3.5 py-3 text-white">
-            <dt className="text-[11px] font-bold text-white/70">הצעד שלך עכשיו</dt>
+          <div className="rounded-2xl bg-linear-to-br from-brand-700 to-[#065f46] px-4 py-3.5 text-cream shadow-[0_8px_20px_rgba(4,120,87,0.22)]">
+            <dt className="text-[11px] font-bold text-cream/75">הצעד שלך עכשיו</dt>
             <dd className="mt-0.5 text-[15px] font-extrabold leading-snug">{habit.currentStep}</dd>
-            <div className="mt-2 flex items-center gap-2 text-[11px] text-white/80">
+            <div className="mt-2 flex items-center gap-2 text-[11px] text-cream/85">
               <span>
                 היום {habit.doneToday}/{habit.targetToday}
               </span>
               <span aria-hidden>·</span>
               <span>רצף {habit.streakDays} {habit.streakDays === 1 ? 'יום' : 'ימים'}</span>
             </div>
-            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/20" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="התקדמות היום">
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-cream/20" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="התקדמות היום">
               <div className="h-full rounded-full bg-primary-300" style={{ width: `${pct}%` }} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-2xl border border-primary-100 bg-cream/80 px-3 py-2.5">
-              <dt className="text-[11px] font-bold text-primary-700">הצעד הבא</dt>
-              <dd className="mt-0.5 text-[13px] font-semibold leading-snug text-primary-900">{habit.nextStep ?? 'שומרים על מה שבנינו'}</dd>
-            </div>
-            <div className="rounded-2xl border border-primary-100 bg-cream/80 px-3 py-2.5">
-              <dt className="text-[11px] font-bold text-primary-700">צעד גיבוי ליום קשה</dt>
-              <dd className="mt-0.5 text-[13px] font-semibold leading-snug text-primary-900">{habit.fallbackStep ?? 'גם יום של חצי צעד נחשב'}</dd>
             </div>
           </div>
         </dl>
@@ -73,6 +64,17 @@ export function PlanHabitCard({ habit, index, canStepDown, canStepUp }: { habit:
             {habit.latestNote.quote ? <blockquote className="mt-1 text-xs italic text-primary-800/75">״{habit.latestNote.quote}״</blockquote> : null}
           </figure>
         ) : null}
+
+        <PlanAccordion tone="inline" title="הצעד הבא וצעד הגיבוי" meta="מה מחכה בהמשך, ומה עושים ביום קשה">
+          <div className="rounded-2xl border border-primary-100 bg-cream/80 px-3 py-2.5">
+            <p className="text-[11px] font-bold text-primary-700">הצעד הבא</p>
+            <p className="mt-0.5 text-[13px] font-semibold leading-snug text-primary-900">{habit.nextStep ?? 'שומרים על מה שבנינו'}</p>
+          </div>
+          <div className="rounded-2xl border border-primary-100 bg-cream/80 px-3 py-2.5">
+            <p className="text-[11px] font-bold text-primary-700">צעד גיבוי ליום קשה</p>
+            <p className="mt-0.5 text-[13px] font-semibold leading-snug text-primary-900">{habit.fallbackStep ?? 'גם יום של חצי צעד נחשב'}</p>
+          </div>
+        </PlanAccordion>
 
         <LadderActions assignmentId={habit.id} title={habit.currentStep} eased={habit.status === 'eased'} canStepDown={canStepDown} canStepUp={canStepUp} />
       </div>
