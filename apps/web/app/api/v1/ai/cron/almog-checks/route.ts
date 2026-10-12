@@ -11,7 +11,15 @@ export const maxDuration = 120;
 async function handle(request: Request) {
   const denied = await authorizeCronRequest(request);
   if (denied) return denied;
-  return NextResponse.json({ ok: true, ...(await runNightlyTaskMerge(createAdminClient())) });
+  const db = createAdminClient();
+  let summary: Record<string, unknown>;
+  try {
+    summary = await runNightlyTaskMerge(db);
+  } catch (e) {
+    summary = { error: String(e).slice(0, 300) };
+  }
+  await db.from('ceo_audit_log').insert({ actor: 'cron', event: 'almog_checks', detail: summary });
+  return NextResponse.json({ ok: true, ...summary });
 }
 export const GET = handle;
 export const POST = handle;
