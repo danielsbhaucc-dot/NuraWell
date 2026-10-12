@@ -54,7 +54,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- static brand SVG */}
             <img
-              src="/brand/nurawell-special-on-green.svg"
+              src="/brand/nurawell-special-on-dark.svg"
               alt="NuraWell"
               width={112}
               height={22}
