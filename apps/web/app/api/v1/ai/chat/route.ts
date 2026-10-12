@@ -1,3 +1,4 @@
+import { createRawUiStreamFilter, encodeResolvedChatUi, hasResolvedContent, parseRawChatUi, resolveChatUi, stripRawChatUi } from '@/lib/ai/chat-ui/blocks';
 import { meteredFetch, setAiUsageUser, withAiUsage } from '@/lib/ai/usage-meter';
 import { detectCrisisSignals } from '@/lib/safety/crisis-detector';
 import { recordCrisisSignal } from '@/lib/safety/record-crisis';
@@ -3433,6 +3434,10 @@ async function handleChatPost(request: Request) {
         );
       }
     }
+    if (!crisisSignal.redFlag) {
+      const { CHAT_UI_PROMPT } = await import('../../../../../lib/ai/chat-ui/blocks');
+      contextSections.push(CHAT_UI_PROMPT);
+    }
     if (ragMemoryBlock) contextSections.push(ragMemoryBlock);
     // מצב רוח מהפרופיל כפול לזיכרון העבודה — מדלגים אם הזיכרון כבר נשלח.
     if (moodFromProfile && !(leanContext && workingMemoryBlock))
@@ -3578,7 +3583,7 @@ async function handleChatPost(request: Request) {
           }
         }
 
-        const assistantText = preferSanitizedWriterOutput(stripEmojiReactionMarker(t));
+        const assistantText = preferSanitizedWriterOutput(stripRawChatUi(stripEmojiReactionMarker(t)));
         if (!assistantText) {
           console.warn('[ai/chat]', {
             debug_id: debugId,
@@ -4433,6 +4438,7 @@ async function handleChatPost(request: Request) {
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         const reader = upstreamWithHeaders.body!.getReader();
+        const uiFilter = createRawUiStreamFilter();
         try {
           /** Marker בתחילת הזרם — הלקוח מחלץ ומציג על הודעת המשתמש. */
           if (headerReaction) {
@@ -4451,7 +4457,8 @@ async function handleChatPost(request: Request) {
               const chunkText = decoder.decode(value, { stream: true });
               if (!hadVisibleText && chunkText.trim().length > 0) hadVisibleText = true;
               /** מקודדים מחדש טקסט מפוענח → גבולות chunk תמיד על תו שלם, כך שאפשר להזריק marker ביניהם. */
-              if (chunkText) controller.enqueue(encoder.encode(chunkText));
+              const visible = uiFilter.push(chunkText);
+              if (visible) controller.enqueue(encoder.encode(visible));
               flushLateReaction();
             }
           }
@@ -4461,7 +4468,26 @@ async function handleChatPost(request: Request) {
             console.warn('[ai/chat]', { debug_id: debugId, stage: 'stream_empty_no_canned_fallback' });
           }
 
-          if (trailing) controller.enqueue(encoder.encode(trailing));
+          const tailVisible = uiFilter.push(trailing) + uiFilter.flush();
+          if (tailVisible) controller.enqueue(encoder.encode(tailVisible));
+          /** in-chat cards/chips: resolved against the REAL plan (ids never come from the model) */
+          const rawUiJson = uiFilter.rawJson();
+          if (rawUiJson && !crisisSignal.redFlag) {
+            try {
+              const rawUi = parseRawChatUi(rawUiJson);
+              if (rawUi) {
+                const uiPlan = (await taskPlanPromise) ?? [];
+                const offers =
+                  rawUi.pick === 'offer'
+                    ? await import('../../../../../lib/tasks').then(({ listOffers }) => listOffers(createAdminClient(), user.id)).catch(() => [])
+                    : [];
+                const ui = resolveChatUi(rawUi, uiPlan, offers);
+                if (hasResolvedContent(ui)) controller.enqueue(encoder.encode(encodeResolvedChatUi(ui)));
+              }
+            } catch (uiErr) {
+              console.warn('[ai/chat]', { debug_id: debugId, stage: 'chat_ui_resolve_failed', error: uiErr instanceof Error ? uiErr.message : String(uiErr) });
+            }
+          }
           if (!reactionSent) {
             const lateReaction =
               resolvedEmojiReaction ??

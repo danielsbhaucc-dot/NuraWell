@@ -2,6 +2,7 @@
  * חילוץ טקסט תצוגה בטוח מ-UIMessage (AI SDK v6) — ללא דליפת tool parts או פרוטוקול סטרימינג.
  */
 
+import { extractResolvedChatUi, stripAllChatUiMarkers, type ResolvedChatUi } from '@/lib/ai/chat-ui/blocks';
 import type { UIMessage } from 'ai';
 import {
   extractEmojiReactionMarker,
@@ -118,7 +119,7 @@ function textFromParts(parts: ChatMessagePart[]): string {
 
 function finalizeDisplayText(raw: string): string {
   return preferSanitizedWriterOutput(
-    stripEmojiReactionMarker(stripStreamProtocolArtifacts(raw))
+    stripAllChatUiMarkers(stripEmojiReactionMarker(stripStreamProtocolArtifacts(raw)))
   );
 }
 
@@ -157,6 +158,15 @@ export function extractEmojiReactionFromChatMessage(
   if (typeof message.content === 'string' && message.content.trim()) {
     return extractEmojiReactionMarker(message.content);
   }
+  return null;
+}
+
+/** In-chat cards/chips the server resolved for this assistant message (live turn only). */
+export function extractChatUiFromChatMessage(message: ChatDisplayMessage): ResolvedChatUi | null {
+  const parts = Array.isArray(message.parts) ? message.parts : [];
+  const fromParts = textFromParts(parts);
+  if (fromParts) return extractResolvedChatUi(fromParts);
+  if (typeof message.content === 'string') return extractResolvedChatUi(message.content);
   return null;
 }
 

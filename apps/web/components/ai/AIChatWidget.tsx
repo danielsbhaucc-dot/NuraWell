@@ -13,6 +13,7 @@ import { messagesHavePendingRecallTool } from '../../lib/ai/memory-recall/detect
 import {
   extractDisplayTextFromChatMessage,
   extractEmojiReactionFromChatMessage,
+  extractChatUiFromChatMessage,
   normalizeDisplayText,
   type ChatDisplayMessage,
 } from '../../lib/client/chat-message-display';
@@ -34,6 +35,7 @@ import { taskReportHintToPayload, type TaskReportHint } from '../../lib/ai/task-
 import { guideContextHintToPayload, type GuideContextHint } from '../../lib/ai/guide-context-hint';
 import { ChatSessionInbox } from './ChatSessionInbox';
 import { AiChatPrivacyNotice } from './AiChatPrivacyNotice';
+import { AlmogChatUiBlock } from './AlmogChatUiBlock';
 import {
   autoCloseStaleChatSessionsApi,
   closeChatSessionApi,
@@ -1101,6 +1103,26 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     [messages]
   );
 
+  /** cards/chips belong only to the LAST message, and only while it is Almog's */
+  const latestChatUi = useMemo(() => {
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== 'assistant') return null;
+    const ui = extractChatUiFromChatMessage(last as ChatDisplayMessage);
+    return ui ? { ui, key: last.id ?? String(messages.length) } : null;
+  }, [messages]);
+
+  const sendQuickReply = useCallback(
+    (text: string) => {
+      if (!text.trim() || isSessionClosed) return;
+      markChatSendStarted(sessionIdRef.current);
+      beginOutgoingTickChoreography();
+      sendMessage({ text }, { body: buildOutgoingChatBody() });
+      clearHintsAfterSend();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sendMessage, buildOutgoingChatBody, beginOutgoingTickChoreography, isSessionClosed]
+  );
+
   const pendingRecallTool = useMemo(
     () => messagesHavePendingRecallTool(messages),
     [messages]
@@ -1697,6 +1719,14 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                   </div>
                 );
               })}
+              {latestChatUi && !crisisInConversation && !isLoading && !isSessionClosed && !isClosing ? (
+                <AlmogChatUiBlock
+                  key={latestChatUi.key}
+                  ui={latestChatUi.ui}
+                  getSessionId={() => sessionIdRef.current}
+                  onSend={sendQuickReply}
+                />
+              ) : null}
               {crisisInConversation ? <CrisisResourcesCard /> : null}
 
               <MemorySearchIndicator visible={showMemorySearch} />
