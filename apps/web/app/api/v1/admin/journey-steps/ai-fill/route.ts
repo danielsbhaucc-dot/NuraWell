@@ -496,7 +496,7 @@ async function chatJson(
           { role: 'system', content: system },
           { role: 'user', content: user },
         ],
-      });
+      }, { timeout: 110_000, maxRetries: 0 });
       return {
         content: completion.choices[0]?.message?.content ?? '{}',
         model: openrouterModel,

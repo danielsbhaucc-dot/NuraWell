@@ -28,7 +28,6 @@ import { patchReengagementContext } from '../churn/patch-reengagement-context';
 import { checkpointShouldOpenPlansPage } from '../ai/almog-commitments/plans-page-tracking';
 import { reportError } from '../monitoring/report-error';
 import { gateAlmogUserFacingTouch } from '../notifications/almog-touch-send-gate';
-import { truncateAtWordBoundary } from '../text/truncate-graphemes';
 
 const SLOT_HE: Record<HabitCheckpointSlot, string> = {
   morning: 'בוקר',
@@ -268,18 +267,18 @@ function formatHabitTuneBlock(aiContext: unknown): string | null {
   }
 }
 
-function pickNotificationTitle(payload: AlmogHabitCheckpointPayload, firstName: string): string {
+function pickNotificationTitle(payload: AlmogHabitCheckpointPayload, firstName: string, gender: 'female' | 'male' | 'other' = 'other'): string {
   const task = payload.pendingTasks[0]?.title?.trim();
   const habit = payload.habits[0]?.title?.trim();
-  const shortTask = task ? truncateAtWordBoundary(task, 24) : '';
-  const shortHabit = habit ? truncateAtWordBoundary(habit, 24) : '';
+  // Task names are not embedded in titles any more: truncated names read badly ("מקום קטן ל-שתיית 2 כוסות מים לפני…").
+  // The AI body already names the task naturally.
   /** מהלך "כיף שחזרת" — כותרת חמה שמכירה בחזרה, בלי תוכחה. */
   if (payload.reengagementMove === 'welcome_back') {
     const welcomeVariants = [
       `${firstName}, כיף שחזרת 🙏`,
       `${firstName}, איזה כיף לראות אותך`,
       `${firstName}, חזרת! התגעגעתי`,
-      `${firstName}, טוב שאתה כאן`,
+      gender === 'female' ? `${firstName}, טוב שאת כאן` : gender === 'male' ? `${firstName}, טוב שאתה כאן` : `${firstName}, טוב לראות אותך`,
     ];
     const s = `${payload.userId}:${payload.checkpointDate}`;
     let h = 0;
@@ -295,8 +294,8 @@ function pickNotificationTitle(payload: AlmogHabitCheckpointPayload, firstName: 
         ]
       : [
           task ? `${firstName}, המשימה מחכה לרגע הנכון` : `${firstName}, תזכורת קטנה להיום`,
-          shortTask ? `${firstName}, איך הולך עם ${shortTask}?` : `${firstName}, בדיקה קצרה`,
-          shortHabit ? `${firstName}, מקום קטן ל-${shortHabit}` : `${firstName}, נזכרים בעדינות`,
+          `${firstName}, איך הולך היום?`,
+          habit ? `${firstName}, שומר לך מקום היום` : `${firstName}, נזכרים בעדינות`,
           `${firstName}, רגע לפני שזה בורח מהיום`,
         ];
   const seed = `${payload.userId}:${payload.checkpointDate}:${payload.slot}:${task ?? habit ?? ''}`;
@@ -506,7 +505,7 @@ export async function sendAlmogHabitCheckpointNotification(
     ],
   });
 
-  const title = pickNotificationTitle(payload, firstName);
+  const title = pickNotificationTitle(payload, firstName, (genderInstruction ?? '').startsWith('המשתמשת נקבה') ? 'female' : (genderInstruction ?? '').startsWith('המשתמש זכר') ? 'male' : 'other');
 
   const habitIds = payload.habits.map((h) => h.id);
   const habitTitles = payload.habits.map((h) => h.title.trim()).filter(Boolean);
