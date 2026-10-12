@@ -11,7 +11,8 @@ import { AI_MODELS, deepseek, groq, openrouter } from '@/lib/ai/client';
 export type Sensitivity = 'technical' | 'sensitive';
 type Msg = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 
-export const CEO_CHAT_MODEL = AI_MODELS.background_groq_strong; // gpt-oss-120b
+/** All conversational turns: gpt-5.4-mini (smart, cheap, reliable tool calls). gpt-oss stays for memory summaries only. */
+export const CEO_CHAT_MODEL = process.env.CEO_CHAT_MODEL?.trim() || 'openai/gpt-5.4-mini';
 /** Complex reasoning/analysis/planning turns. Best cost/quality on OpenRouter for Hebrew + tool use. */
 export const CEO_STRONG_MODEL = process.env.CEO_STRONG_MODEL?.trim() || 'openai/gpt-5.4-mini';
 export const CEO_CONTENT_MODEL = process.env.CEO_CONTENT_MODEL?.trim() || CEO_STRONG_MODEL;
