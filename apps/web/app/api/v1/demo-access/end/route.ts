@@ -49,7 +49,8 @@ export async function POST(request: Request) {
     },
   );
 
-  await supabase.auth.signOut();
+  // local בלבד — global היה מנתק גם את המשתמש האמיתי (למשל המנהל) מכל המכשירים.
+  await supabase.auth.signOut({ scope: 'local' });
   response.cookies.set(DEMO_ACCESS_COOKIE, '', clearDemoAccessCookieOptions());
   response.headers.set('Cache-Control', 'no-store, max-age=0');
 

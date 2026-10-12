@@ -16,7 +16,8 @@ import {
   MARKETING_PATHS_REDIRECT_WHEN_AUTHED,
 } from './lib/navigation/app-home-path';
 import { handleChallengeMiddleware } from './lib/challenge/middleware-challenge';
-import { DEMO_ACCESS_COOKIE, parseDemoAccessCookie } from './lib/demo-access/cookie';
+import { DEMO_ACCESS_COOKIE, clearDemoAccessCookieOptions, parseDemoAccessCookie } from './lib/demo-access/cookie';
+import { killDeadDemoAuthSessions } from './lib/demo-access/active-session';
 import { hasActiveDemoAccessSession } from './lib/demo-access/active-session';
 
 // ── CSP nonce ──────────────────────────────────────────────────────────────
@@ -265,6 +266,28 @@ export async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  /**
+   * אכיפת סשן דמו: אם יש עוגיית דמו (גם שפגה) של המשתמש הזה והסשן כבר לא פעיל
+   * (פג / בוטל / נותק) — מנתקים את האורח בלבד (scope local) ומפנים להתחברות.
+   */
+  const rawDemoCookie = request.cookies.get(DEMO_ACCESS_COOKIE)?.value;
+  if (user && rawDemoCookie && !pathname.startsWith('/demo') && !pathname.startsWith('/api/v1/demo-access')) {
+    const anyDemo = await parseDemoAccessCookie(rawDemoCookie, Date.now(), { allowExpired: true });
+    if (anyDemo && anyDemo.userId === user.id) {
+      const live = (await parseDemoAccessCookie(rawDemoCookie)) && (await hasActiveDemoAccessSession(user.id));
+      if (!live) {
+        await killDeadDemoAuthSessions(anyDemo.linkId);
+        await supabase.auth.signOut({ scope: 'local' });
+        const out = pathname.startsWith('/api/')
+          ? NextResponse.json({ error: 'גישת הדמו הסתיימה' }, { status: 401 })
+          : NextResponse.redirect(new URL('/login?demo_ended=1', request.url));
+        for (const c of response.cookies.getAll()) out.cookies.set(c);
+        out.cookies.set(DEMO_ACCESS_COOKIE, '', clearDemoAccessCookieOptions());
+        return applySecurityHeaders(out);
+      }
+    }
+  }
 
   /** גישה ישירה ל־/ops מהדומיין הציבורי — כאילו לא קיים */
   const appHostOpsPath =

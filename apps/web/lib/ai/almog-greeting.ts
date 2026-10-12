@@ -218,11 +218,10 @@ function buildPendingLead(params: {
   }
 
   if (firstTitle && pendingCount > 1) {
-    const others = pendingCount - 1;
     const variants = [
-      `${name}עוד ${others} מחכות, אבל קודם זו`,
-      `${name}${pendingCount} על היום — נתחיל מזו`,
-      `${name}יש ${pendingCount} פתוחות, הראשונה ברשימה`,
+      `${name}יש לך ${pendingCount} משימות היום, נתחיל מזו`,
+      `${name}${pendingCount} משימות על היום, נתחיל מזו`,
+      `${name}יש לך ${pendingCount} משימות פתוחות, הראשונה ברשימה`,
     ];
     return {
       lead: normalizeHebrewDashes(pickDaily(variants, `${seed}:multi`)),

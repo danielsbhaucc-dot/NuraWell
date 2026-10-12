@@ -1,4 +1,5 @@
 'use client';
+import { RetypingTitle } from './RetypingTitle';
 import { CrisisResourcesCard } from '@/components/safety/CrisisResourcesCard';
 import { detectCrisisSignals } from '@/lib/safety/crisis-detector';
 
@@ -802,6 +803,24 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     transport: chatTransport,
   });
 
+  // הכותרת נוצרת ברקע אחרי התור (after) — מושכים שוב את השיחה כדי שהכותרת תתחלף חי.
+  const prevStatusRef = useRef(status);
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    prevStatusRef.current = status;
+    if (status !== 'ready' || (prev !== 'streaming' && prev !== 'submitted')) return;
+    const sid = sessionIdRef.current;
+    if (!sid) return;
+    const timers = [5_000, 12_000].map((ms) =>
+      window.setTimeout(() => {
+        if (sessionIdRef.current === sid) void refreshChatSession(sid);
+        if (ms > 5_000) void refreshSessionList({ silent: true });
+      }, ms),
+    );
+    return () => timers.forEach((t) => window.clearTimeout(t));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
   attachReactionRef.current = (reaction: MentorEmojiReaction) => {
     pendingReactionRef.current = reaction;
     setMessages((prev) => {
@@ -1468,7 +1487,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                       <p className="text-[16px] font-black leading-none text-white">אלמוג</p>
                       {chatSession?.title?.trim() ? (
                         <p className="mt-0.5 max-w-44 truncate text-[11px] font-medium text-emerald-100/80">
-                          {chatSession.title}
+                          <RetypingTitle text={chatSession.title.trim()} />
                         </p>
                       ) : (
                         <ThreadPresenceText

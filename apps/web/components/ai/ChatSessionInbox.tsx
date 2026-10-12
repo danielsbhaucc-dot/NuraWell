@@ -3,6 +3,8 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { ChevronDown, Loader2, Lock, MessageSquarePlus, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { RetypingTitle } from './RetypingTitle';
+import { CHAT_TOPIC_ORDER, detectSessionTopic } from '../../lib/client/chat-session-topics';
 import { buildChatSessionListTitle } from '../../lib/ai/chat-sessions/session-list-title';
 import { formatSessionRelativeTime } from '../../lib/client/chat-session-messages';
 import {
@@ -119,6 +121,7 @@ function SessionRow({
         ? session.summary
         : null;
   const isOpen = session.status === 'open';
+  const topic = CHAT_TOPIC_ORDER.find((m) => m.id === detectSessionTopic(session, title));
 
   if (isProfileUpdate) {
     return (
@@ -161,18 +164,31 @@ function SessionRow({
     >
       <div className="flex items-start gap-2">
         <span
-          className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${isOpen ? 'bg-emerald-400' : 'bg-slate-600'}`}
+          className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+          style={{
+            background: topic?.accent ?? '#64748b',
+            boxShadow: isOpen ? `0 0 0 3px ${(topic?.accent ?? '#64748b')}33` : undefined,
+            opacity: isOpen ? 1 : 0.55,
+          }}
           aria-hidden
         />
         <span className="min-w-0 flex-1">
           <span className="flex items-baseline justify-between gap-2">
-            <span className="line-clamp-1 text-[13px] font-semibold text-slate-100">{title}</span>
+            <RetypingTitle text={title} className="line-clamp-1 text-[13px] font-semibold text-slate-100" />
             <span className="shrink-0 text-[10px] text-slate-500">
               {formatSessionRelativeTime(session.updated_at)}
             </span>
           </span>
           {preview ? (
             <span className="mt-0.5 line-clamp-1 text-[11px] text-slate-400">{preview}</span>
+          ) : null}
+          {topic ? (
+            <span
+              className="mt-1 inline-flex rounded-full px-2 py-[1px] text-[10px] font-semibold"
+              style={{ background: `${topic.accent}22`, color: topic.accent, border: `1px solid ${topic.accent}55` }}
+            >
+              {topic.label}
+            </span>
           ) : null}
         </span>
       </div>

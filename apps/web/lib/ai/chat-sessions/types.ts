@@ -7,6 +7,7 @@ export type ChatSessionListItem = {
   status: 'open' | 'closed';
   session_kind: ChatSessionKind;
   title: string | null;
+  topic?: string | null;
   summary: string | null;
   created_at: string;
   updated_at: string;

@@ -24,6 +24,7 @@ export function isMissingRelationError(error: PgError): boolean {
 }
 
 export const CHAT_SESSION_LIST_SELECTS = [
+  'id, status, session_kind, title, topic, summary, preview_text, message_count, created_at, updated_at, closed_at',
   'id, status, session_kind, title, summary, preview_text, message_count, created_at, updated_at, closed_at',
   'id, status, session_kind, summary, live_conversation_file, created_at, updated_at, closed_at',
   'id, status, session_kind, summary, created_at, updated_at, closed_at',
@@ -69,6 +70,7 @@ export function normalizeChatSessionListItem(row: Record<string, unknown>): Chat
     status: row.status as 'open' | 'closed',
     session_kind: kind,
     title: (row.title as string | null) ?? null,
+    topic: (row.topic as string | null) ?? null,
     summary: (row.summary as string | null) ?? null,
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
