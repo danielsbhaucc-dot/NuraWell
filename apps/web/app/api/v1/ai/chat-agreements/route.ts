@@ -5,6 +5,7 @@ import { requireApiSession } from '@/lib/api/route-guards';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getPlan, israelDateKey } from '@/lib/tasks';
 import { persistCommitmentExtraction, titlesAreSimilar } from '@/lib/ai/almog-commitments/persist';
+import { resolveTaskProposal } from '@/lib/ai/chat-ui/task-proposals';
 
 export const runtime = 'nodejs';
 
@@ -14,6 +15,7 @@ const schema = z.discriminatedUnion('kind', [
     title: z.string().trim().min(4).max(120),
     replaces: z.string().trim().max(160).nullable().optional(),
     sessionId: z.string().uuid().optional(),
+    proposalId: z.string().uuid().optional(),
   }),
   z.object({ kind: z.literal('goal'), text: z.string().trim().min(4).max(160) }),
 ]);
@@ -41,7 +43,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, kind: 'goal' });
   }
 
-  const { title, replaces } = p.data;
+  const { title, replaces, proposalId } = p.data;
+  if (proposalId) await resolveTaskProposal(admin, userId, proposalId, 'confirmed').catch(() => undefined);
   const plan = await getPlan(admin, userId).catch(() => []);
   const existing = plan.find((t) => t.status === 'accepted' && titlesAreSimilar(title, t.level.title, 0.72));
   if (existing) return NextResponse.json({ ok: true, kind: 'habit', duplicate: true, existingTitle: existing.level.title });

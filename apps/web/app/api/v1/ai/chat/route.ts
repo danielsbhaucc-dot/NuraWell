@@ -28,6 +28,8 @@ import {
   resolveChatSafetyNetModel,
   type ChatWriterKey,
 } from '../../../../../lib/ai/chat-writer-fleet';
+import { chatTrivialWriterSlug } from '../../../../../lib/ai/chat-writer-fleet';
+import { takeProposalForCard } from '../../../../../lib/ai/chat-ui/task-proposals';
 import {
   applyStickyWriterStance,
   parseChatWriterStance,
@@ -713,6 +715,8 @@ async function createOpenRouterTextStreamResponse({
     : recentMessages;
 
   const claude5 = isClaudeSonnet5(model);
+  /** Haiku 5.5 etc. think by default too; thinking ate ~75% of a 700 budget in the blind test → cut mid-sentence. */
+  const claudeLike = /anthropic\/claude/i.test(model);
   const gpt5 = isGpt5FamilySlug(model);
   const llamaLike = /llama/i.test(model);
   /**
@@ -722,12 +726,15 @@ async function createOpenRouterTextStreamResponse({
   /** Grok 4.5 can't disable thinking; effort low cuts its first token from ~8s to ~3s with the same voice. */
   const grokLike = /x-ai\/grok/i.test(model);
   const effectiveReasoning: OpenRouterReasoning | null =
-    gpt5 || claude5 ? { effort: 'none' } : grokLike ? ({ effort: 'low' } as OpenRouterReasoning) : reasoning;
+    gpt5 || claudeLike ? { effort: 'none' } : grokLike ? ({ effort: 'low' } as OpenRouterReasoning) : reasoning;
   const reasoningBudget =
     effectiveReasoning && 'max_tokens' in effectiveReasoning ? effectiveReasoning.max_tokens : 0;
-  const effectiveMaxTokens = claude5
+  /** Grok can't turn thinking off and its reasoning tokens count against max_tokens → headroom. */
+  const effectiveMaxTokens = claudeLike
     ? Math.max(maxOutputTokens, 2500)
-    : reasoningBudget
+    : grokLike
+      ? maxOutputTokens + 2048
+      : reasoningBudget
       ? maxOutputTokens + reasoningBudget
       : maxOutputTokens;
 
@@ -2729,13 +2736,13 @@ async function handleChatPost(request: Request) {
   const routedWriter = stickyResult.writer;
   const cheapTrivialWriter = trivialBypass && routedWriter === 'llama4';
   mcfg = resolveChatModelRuntime(routedWriter);
-  effectiveModel = mcfg.slug;
+  effectiveModel = cheapTrivialWriter ? chatTrivialWriterSlug() : mcfg.slug;
   /** תקרת פלט קצרה רק לתודה/ברכה — לא לשיחות מהותיות. */
   const shortTurnOutput =
     isTrivialBypassEligible(lastUserText, earlySignals) || isCasualGreeting(lastUserText);
-  const effectiveMaxOutputTokens = shortTurnOutput
-    ? Math.min(CHAT_MAX_OUTPUT_TOKENS, 700)
-    : CHAT_MAX_OUTPUT_TOKENS;
+  /** No short-turn cap: billing is per generated token, a low cap only cuts replies mid-sentence. */
+  void shortTurnOutput;
+  const effectiveMaxOutputTokens = CHAT_MAX_OUTPUT_TOKENS;
   console.info('[ai/chat]', {
     debug_id: debugId,
     stage: 'writer_routed',
@@ -3157,6 +3164,29 @@ async function handleChatPost(request: Request) {
 
     const journeyHabits = activeJourneyContext?.habits.slice(0, 8) ?? [];
 
+    /** כותרות בלבד (בלי תוכן) של שיעורים קרובים — כדי לומר "בעוד X שיעורים" בלי ספוילר. */
+    const upcomingLessonsPromise: Promise<string> =
+      journeyCap && typeof journeyCap.maxStepNumber === 'number' && !journeyCap.allJourneyComplete
+        ? (async () => {
+            try {
+              const cap = journeyCap.maxStepNumber as number;
+              const { data } = await supabase
+                .from('journey_steps')
+                .select('title, step_number')
+                .gt('step_number', cap)
+                .order('step_number', { ascending: true })
+                .limit(8);
+              const rows = (data ?? []) as Array<{ title?: string | null; step_number?: number }>;
+              if (!rows.length) return '';
+              return `שיעורים בהמשך (כותרות בלבד, אל תחשוף תוכן): ${rows
+                .map((r) => `בעוד ${(r.step_number ?? cap) - cap}: ${sanitizeUserVisibleTitle(r.title ?? '', 50)}`)
+                .join(' · ')}\n`;
+            } catch {
+              return '';
+            }
+          })()
+        : Promise.resolve('');
+
     const [returnSignals, pendingTasks, habitGap, commitmentContext] = await Promise.all([
       returnSignalsPromise,
       pendingTasksPromise,
@@ -3351,6 +3381,8 @@ async function handleChatPost(request: Request) {
 
     if (stationRules) contextSections.push(stationRules.trim());
     if (journeyStateLine) contextSections.push(journeyStateLine.trim());
+    const upcomingLessonsLine = (await upcomingLessonsPromise).trim();
+    if (upcomingLessonsLine) contextSections.push(upcomingLessonsLine);
 
     if (journeyGuidanceBlock) contextSections.push(journeyGuidanceBlock);
     if (guidesStateBlock) contextSections.push(guidesStateBlock);
@@ -3553,13 +3585,13 @@ async function handleChatPost(request: Request) {
               const out = await generateText({
                 model: openrouter.chat(effectiveModel),
                 temperature: 0.65,
-                maxOutputTokens: 160,
+                maxOutputTokens: 800,
                 providerOptions: {},
                 messages: [
                   {
                     role: 'user',
                     content:
-                      'המשך בעברית את תשובת אלמוג מהמקום שנקטע. אל תחזור על התחילה. סיים משפט אחד-שניים.',
+                      'המשך בעברית את תשובת אלמוג מהמקום שנקטע. אל תחזור על התחילה. השלם את המחשבה עד הסוף.',
                   },
                   { role: 'assistant', content: partialAssistant },
                   { role: 'user', content: 'המשך.' },
@@ -4157,7 +4189,7 @@ async function handleChatPost(request: Request) {
         const retry = await generateText({
           model: openrouter.chat(slug),
           temperature: Math.max(0.75, CHAT_TEMPERATURE - 0.1),
-          maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 1200),
+          maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
           system: `${mcfg.mainWriterSystemPrompt}\n\n${
             piiShield ? piiShield.tokenizeText(dynamicSystemPrompt) : dynamicSystemPrompt
           }`,
@@ -4263,7 +4295,7 @@ async function handleChatPost(request: Request) {
           dynamicSystemPrompt,
           recentMessages,
           temperature: Math.max(0.75, CHAT_TEMPERATURE - 0.1),
-          maxOutputTokens: Math.min(CHAT_MAX_OUTPUT_TOKENS, 220),
+          maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS,
           headers: {
             ...upstreamHeaders,
             'x-ai-writer': 'openrouter-cheap-trivial',
@@ -4472,6 +4504,7 @@ async function handleChatPost(request: Request) {
           if (tailVisible) controller.enqueue(encoder.encode(tailVisible));
           /** in-chat cards/chips: resolved against the REAL plan (ids never come from the model) */
           const rawUiJson = uiFilter.rawJson();
+          let writerEmittedUi = false;
           if (rawUiJson && !crisisSignal.redFlag) {
             try {
               const rawUi = parseRawChatUi(rawUiJson);
@@ -4482,10 +4515,31 @@ async function handleChatPost(request: Request) {
                     ? await import('../../../../../lib/tasks').then(({ listOffers }) => listOffers(createAdminClient(), user.id)).catch(() => [])
                     : [];
                 const ui = resolveChatUi(rawUi, uiPlan, offers);
-                if (hasResolvedContent(ui)) controller.enqueue(encoder.encode(encodeResolvedChatUi(ui)));
+                if (hasResolvedContent(ui)) {
+                  writerEmittedUi = true;
+                  controller.enqueue(encoder.encode(encodeResolvedChatUi(ui)));
+                }
               }
             } catch (uiErr) {
               console.warn('[ai/chat]', { debug_id: debugId, stage: 'chat_ui_resolve_failed', error: uiErr instanceof Error ? uiErr.message : String(uiErr) });
+            }
+          }
+          /** detected-but-unconfirmed tasks (background extractor) → one throttled confirm card */
+          if (!writerEmittedUi && !crisisSignal.redFlag && hadVisibleText) {
+            try {
+              const uiPlan = (await taskPlanPromise) ?? [];
+              const planTitles = uiPlan.filter((t) => t.status === 'accepted').map((t) => t.level.title);
+              const prop = await Promise.race([
+                takeProposalForCard(createAdminClient(), user.id, planTitles),
+                new Promise<null>((r) => setTimeout(() => r(null), 1200)),
+              ]);
+              if (prop) {
+                controller.enqueue(
+                  encoder.encode(encodeResolvedChatUi({ proposals: [{ kind: 'habit', title: prop.title, replaces: null, proposalId: prop.id }] }))
+                );
+              }
+            } catch (propErr) {
+              console.warn('[ai/chat]', { debug_id: debugId, stage: 'task_proposal_card_failed', error: propErr instanceof Error ? propErr.message : String(propErr) });
             }
           }
           if (!reactionSent) {

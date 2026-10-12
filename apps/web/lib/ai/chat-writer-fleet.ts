@@ -15,7 +15,11 @@ const DEFAULT_WRITER_SLUGS: Record<ChatWriterKey, string> = {
   terra: 'openai/gpt-5.6-terra',
   claude5: 'anthropic/claude-sonnet-5',
   grok: 'x-ai/grok-4.5',
-  /** "llama4" is the cheap default lane (key kept for compatibility); GPT-5.6 Luna: ~$0.0003-0.003/msg, natural Hebrew, ~1s TTFT. */
+  /**
+   * "llama4" = the default everyday lane (key kept for compatibility).
+   * Default unchanged (Luna). Proposal from the 2026-10-12 blind test: set
+   * AI_CHAT_WRITER_LLAMA4=openai/gpt-5.4-mini to move everyday turns to mini — Daniel decides.
+   */
   llama4: 'openai/gpt-5.6-luna',
 };
 
@@ -98,4 +102,9 @@ export function resolveChatSafetyNetModel(envValue?: string): string {
 
 export function isGpt5FamilySlug(slug: string): boolean {
   return /gpt-5/i.test(slug);
+}
+
+/** Trivial-only lane (thanks / 👍 / short ack): cheapest model with natural Hebrew. */
+export function chatTrivialWriterSlug(): string {
+  return process.env.AI_CHAT_WRITER_TRIVIAL?.trim() || 'openai/gpt-5.6-luna';
 }
