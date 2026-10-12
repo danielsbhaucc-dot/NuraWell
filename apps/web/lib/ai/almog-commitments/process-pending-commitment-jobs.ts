@@ -6,6 +6,8 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { extractAlmogCommitments } from './extract-commitments';
 import { persistCommitmentExtraction } from './persist';
+import { queueTaskProposals } from '../chat-ui/task-proposals';
+import { getPlan } from '../../tasks';
 
 type JobRow = {
   id: string;
@@ -102,11 +104,21 @@ export async function processPendingAlmogCommitmentJobs(
         openBlockers,
       });
 
+      /** Daniel 2026-10-12: detected tasks are proposed via the in-chat confirm card, never auto-added. */
+      const planTitles = await getPlan(admin, job.user_id)
+        .then((pl) => pl.filter((t) => t.status === 'accepted').map((t) => t.level.title))
+        .catch(() => [] as string[]);
+      await queueTaskProposals(admin, {
+        userId: job.user_id,
+        sessionId: job.session_id,
+        tasks: extraction.tasks ?? [],
+        planTitles,
+      }).catch(() => 0);
       const persistResult = await persistCommitmentExtraction({
         admin,
         userId: job.user_id,
         sessionId: job.session_id,
-        extraction,
+        extraction: { ...extraction, tasks: [] },
         habitTitleToId,
         blockerTagToId,
         relatedStepId: job.related_step_id,
