@@ -125,6 +125,7 @@ const PUBLIC_ROUTES = [
   '/privacy',
   '/safety',
   '/accessibility',
+  '/pricing',
   '/sitemap.xml',
   '/robots.txt',
   '/manifest.webmanifest',

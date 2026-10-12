@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '../../../lib/supabase/server';
 import { ProfilePageClient } from '../../../components/profile/ProfilePageClient';
 import { resolveDisplayWeightKg } from '../../../lib/profile/profile-field-ssot';
+import { CurrentPlanCard } from '../../../components/billing/CurrentPlanCard';
 import { isDemoAccessActiveForUser } from '../../../lib/demo-access/server';
 
 export const metadata: Metadata = {
@@ -18,7 +19,7 @@ export default async function ProfilePage() {
   const { data: rawProfile } = await supabase
     .from('profiles')
     .select(
-      'id, full_name, role, avatar_url, created_at, streak_days, onboarding_completed, goal_weight_kg, current_weight_kg, height_cm, activity_level, gender, wake_up_time, sleep_time, meal_count, meal_schedule, main_goal, main_obstacle, main_obstacle_detail, weakest_time_of_day'
+      'id, full_name, role, avatar_url, created_at, streak_days, onboarding_completed, goal_weight_kg, current_weight_kg, height_cm, activity_level, gender, wake_up_time, sleep_time, meal_count, meal_schedule, main_goal, main_obstacle, main_obstacle_detail, weakest_time_of_day, plan'
     )
     .eq('id', user.id)
     .single();
@@ -91,6 +92,7 @@ export default async function ProfilePage() {
   const isDemoAccess = await isDemoAccessActiveForUser(user.id);
 
   return (
+    <>
     <ProfilePageClient
       profile={profileForClient}
       email={user.email ?? ''}
@@ -104,5 +106,7 @@ export default async function ProfilePage() {
         meal_times: mealTimes,
       }}
     />
+    <CurrentPlanCard plan={(rawProfile as { plan?: string } | null)?.plan} />
+    </>
   );
 }
