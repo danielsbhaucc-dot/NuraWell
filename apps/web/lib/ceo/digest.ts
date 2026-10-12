@@ -1,3 +1,4 @@
+import { withAiUsage } from '@/lib/ai/usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { CEO_NAME, CEO_SYSTEM_PROMPT } from './agent';
 import { audit } from './actions';
@@ -6,6 +7,18 @@ import { allowedChatIds, opsLink } from './channel';
 import { CEO_CONTENT_MODEL, complete } from './llm';
 import { TOOL_BY_NAME } from './tools';
 import { dueForReminder, formatTaskLine, openOwnerTasks, taskButtons } from './owner-tasks';
+
+export type CostAnomaly = { component: string; culprit: string; yesterday_usd: number; baseline_usd: number; ratio: number | null };
+export async function costAnomalies(db: SupabaseClient): Promise<CostAnomaly[]> {
+  const { data } = await db.rpc('cost_anomalies');
+  return (data ?? []) as CostAnomaly[];
+}
+
+/** Systemic jump vs 14-day median → likely a bug burning resources. Not single heavy users (filtered in SQL). */
+export function formatCostAlert(a: CostAnomaly[]): string {
+  const lines = a.map((x) => `• ${x.component === 'per_active_user' ? 'עלות AI למשתמש פעיל' : x.component}: $${Number(x.yesterday_usd).toFixed(3)} אתמול מול $${Number(x.baseline_usd).toFixed(3)} רגיל (×${x.ratio ?? '?'})${x.culprit && x.culprit !== '-' ? `, חשוד: ${x.culprit}` : ''}`);
+  return `🚨 חריגת עלות מערכתית\n${lines.join('\n')}\nזה נראה כמו באג ששורף משאבים ולא משתמש כבד. פירוט: ${opsLink('/costs')}`;
+}
 
 export type DigestPeriod = 'daily' | 'weekly' | 'monthly';
 const DAYS: Record<DigestPeriod, number> = { daily: 1, weekly: 7, monthly: 30 };
@@ -17,7 +30,11 @@ const ASK: Record<DigestPeriod, string> = {
 };
 
 /** All numbers come from SQL/tools; exactly ONE model call per digest. */
-export async function buildDigest(db: SupabaseClient, period: DigestPeriod, deps: { complete?: typeof complete } = {}): Promise<string> {
+export async function buildDigest(...a: Parameters<typeof buildDigestInner>) {
+  return withAiUsage({ feature: 'gideon_digest' }, () => buildDigestInner(...a));
+}
+
+async function buildDigestInner(db: SupabaseClient, period: DigestPeriod, deps: { complete?: typeof complete } = {}): Promise<string> {
   const llm = deps.complete ?? complete;
   const days = DAYS[period];
   const run = (name: string, args: Record<string, unknown> = {}) => TOOL_BY_NAME.get(name)!.run(db, TOOL_BY_NAME.get(name)!.schema.parse(args));
@@ -28,7 +45,8 @@ export async function buildDigest(db: SupabaseClient, period: DigestPeriod, deps
     data.almogSample = quality;
     data.content = (content as { station: string; steps: { published: boolean; video: boolean }[] }[]).map((s) => ({ station: s.station, steps: s.steps.length, published: s.steps.filter((x) => x.published).length, withVideo: s.steps.filter((x) => x.video).length }));
   }
-  const tasks = await openOwnerTasks(db);
+  const [tasks, anomalies] = await Promise.all([openOwnerTasks(db), costAnomalies(db)]);
+  if (anomalies.length) data.costAnomalies = anomalies;
   if (tasks.length) data.danielOpenTasks = tasks.map((t) => formatTaskLine(t));
   if (period === 'monthly') data.business = await run('business_metrics', { days: 30 });
 
@@ -39,7 +57,7 @@ export async function buildDigest(db: SupabaseClient, period: DigestPeriod, deps
     model: period === 'monthly' ? CEO_CONTENT_MODEL : undefined,
     messages: [
       { role: 'system', content: CEO_SYSTEM_PROMPT },
-      { role: 'user', content: `${ASK[period]}${tasks.length ? '\nיש משימות פתוחות לדניאל: הזכר אותן בשורה אחת קצרה בסוף.' : ''}\nנתונים (${days} ימים, השוואה לתקופה הקודמת בשדות *_prev):\n${JSON.stringify(data)}` },
+      { role: 'user', content: `${ASK[period]}${tasks.length ? '\nיש משימות פתוחות לדניאל: הזכר אותן בשורה אחת קצרה בסוף.' : ''}${anomalies.length ? '\nיש חריגת עלות מערכתית (costAnomalies): ציין אותה בשורה אחת עם הרכיב והחשוד.' : ''}\nנתונים (${days} ימים, השוואה לתקופה הקודמת בשדות *_prev):\n${JSON.stringify(data)}` },
     ],
   });
   const title = { daily: '☀️ עדכון יומי', weekly: '📊 סיכום שבועי', monthly: '🧭 דוח חודשי' }[period];
@@ -51,6 +69,9 @@ export async function sendDigest(db: SupabaseClient, channel: CeoChannel, period
   const text = await buildDigest(db, period, deps);
   const chats = [...allowedChatIds()];
   for (const c of chats) await channel.send(c, text);
+  // systemic cost alert (separate message, only when the SQL check fires)
+  const anomalies = await costAnomalies(db);
+  if (anomalies.length) for (const c of chats) await channel.send(c, formatCostAlert(anomalies));
   // follow-up: one message per due/overdue human task, with done/snooze buttons (max 3/day)
   const due = dueForReminder(await openOwnerTasks(db)).slice(0, 3);
   for (const t of due) {

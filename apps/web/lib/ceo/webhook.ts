@@ -1,3 +1,4 @@
+import { withAiUsage } from '@/lib/ai/usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { timingSafeEqualStr } from '@/lib/api/timing-safe-equal';
 import { consumeRateLimit } from '@/lib/api/rate-limit';
@@ -17,7 +18,11 @@ export function verifyTelegramSecret(header: string | null, secret = process.env
   return Boolean(secret && header && timingSafeEqualStr(header, secret));
 }
 
-export async function handleTelegramUpdate(db: SupabaseClient, channel: CeoChannel, u: Update, deps: { runTurn?: typeof runCeoTurn } = {}) {
+export async function handleTelegramUpdate(...a: Parameters<typeof handleTelegramUpdateInner>) {
+  return withAiUsage({ feature: 'gideon_chat' }, () => handleTelegramUpdateInner(...a));
+}
+
+async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel, u: Update, deps: { runTurn?: typeof runCeoTurn } = {}) {
   const chatId = String(u.message?.chat.id ?? u.callback_query?.message?.chat.id ?? '');
   if (!chatId || !allowedChatIds().has(chatId)) return { ignored: true }; // silent for strangers
 
