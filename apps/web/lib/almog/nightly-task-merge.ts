@@ -99,14 +99,14 @@ export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (
         mainKeep ??= d.keep;
       }
     }
-    if (!merged) continue;
+    if (!merged || !mainKeep) continue;
     summary.mergedTasks += merged;
     summary.usersMerged += 1;
     const gate = await gateAlmogUserFacingTouch(db, row.user_id);
     if (!gate.ok) continue;
     const { data: p } = await db.from('profiles').select('full_name').eq('id', row.user_id).maybeSingle();
     const first = ((p?.full_name as string | null) ?? '').trim().split(/\s+/)[0] || null;
-    const msg = mergeMessage(first, merged, await keptTaskInfo(db, mainKeep!));
+    const msg = mergeMessage(first, merged, await keptTaskInfo(db, mainKeep));
     const res = await insertNotification(db, {
       user_id: row.user_id,
       type: 'ai_message',
