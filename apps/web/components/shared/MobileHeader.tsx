@@ -59,9 +59,14 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
               WebkitBackdropFilter: 'blur(10px)',
             }}
           >
-            <span style={{ color: '#fff', fontWeight: 900, fontSize: '13px', letterSpacing: '0.2px', fontFamily: "'Rubik','Heebo',sans-serif" }}>
-              NuraWell
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element -- static brand SVG */}
+            <img
+              src="/brand/nurawell-lockup-on-dark.svg"
+              alt="NuraWell"
+              width={99}
+              height={22}
+              style={{ display: 'block', height: 22, width: 'auto' }}
+            />
           </Link>
 
           <motion.div className="flex items-center gap-2">
