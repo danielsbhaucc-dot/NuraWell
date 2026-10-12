@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Button, Card } from '@/components/ui';
-import { PlanSection } from './PlanSection';
+import { PlanAccordion } from './PlanAccordion';
 import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog-chat';
 
 /**
@@ -56,7 +56,7 @@ function fmt(iso: string) {
   }
 }
 
-export function AlmogPlanSections({ n = 2 }: { n?: number } = {}) {
+export function AlmogPlanSections() {
   const [data, setData] = useState<Payload | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [rateFor, setRateFor] = useState<string | null>(null);
@@ -106,11 +106,15 @@ export function AlmogPlanSections({ n = 2 }: { n?: number } = {}) {
   const proposed = data.proposed ?? [];
   const active = data.assignments.filter((a) => a.status === 'active');
   const blockers = data.blockers.filter((b) => b.status === 'open');
-  const reminders = data.reminders.filter((r) => r.status === 'pending').slice(0, 3);
-  if (!focus && !proposed.length && !active.length && !blockers.length && !reminders.length && !data.completed.length) return null;
+  const reminders = data.reminders.filter((r) => r.status === 'pending').slice(0, 6);
+  const hasCore = Boolean(focus || proposed.length || active.length || blockers.length);
+  if (!hasCore && !reminders.length && !data.completed.length) return null;
 
   return (
-    <PlanSection n={n} id="almog-plan-title" title="מה אלמוג מלווה מעבר להרגלים" hint="צעדים קטנים, חסמים ותזכורות">
+    <>
+      {hasCore ? (
+        <section aria-labelledby="almog-plan-title" className="flex flex-col gap-3">
+          <SectionHead id="almog-plan-title" kicker="אלמוג מלווה" title="צעדים קטנים מסביב להרגלים" />
       {error ? (
         <p role="alert" className="text-sm text-energy-700">
           {error}
@@ -142,7 +146,7 @@ export function AlmogPlanSections({ n = 2 }: { n?: number } = {}) {
       ) : null}
 
       {proposed.map((a) => (
-        <Card key={a.id} className="flex flex-col gap-2">
+        <Card key={a.id} data-task-id={a.id} className="flex scroll-mt-24 flex-col gap-2 data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70">
           <span className="text-xs font-bold text-primary-700">הצעה של אלמוג</span>
           <h3 className="font-bold text-primary-900">{a.title}</h3>
           {a.reason ? <p className="text-sm text-primary-800/80">{a.reason}</p> : null}
@@ -158,7 +162,7 @@ export function AlmogPlanSections({ n = 2 }: { n?: number } = {}) {
       ))}
 
       {active.map((a) => (
-        <Card key={a.id} className="flex flex-col gap-2">
+        <Card key={a.id} data-task-id={a.id} className="flex scroll-mt-24 flex-col gap-2 data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70">
           <div className="flex items-center justify-between gap-2">
             <h3 className="font-bold text-primary-900">{a.title}</h3>
             <span className="shrink-0 rounded-full bg-primary-50 px-2 py-0.5 text-xs text-primary-800">{SCHEDULE[a.schedule]}</span>
@@ -214,7 +218,7 @@ export function AlmogPlanSections({ n = 2 }: { n?: number } = {}) {
       ))}
 
       {blockers.map((b) => (
-        <Card key={b.id} className="flex flex-col gap-2">
+        <Card key={b.id} data-task-id={b.id} className="flex scroll-mt-24 flex-col gap-2">
           <span className="text-xs font-bold text-primary-700">אלמוג כאן בשבילך</span>
           <p className="font-semibold text-primary-900">{b.description}</p>
           {b.strategy ? <p className="text-sm text-primary-800/80">{b.strategy}</p> : null}
@@ -241,30 +245,45 @@ export function AlmogPlanSections({ n = 2 }: { n?: number } = {}) {
         </Card>
       ))}
 
+        </section>
+      ) : null}
+
       {reminders.length ? (
-        <Card className="flex flex-col gap-2">
-          <h3 className="font-bold text-primary-900">התזכורות הקרובות</h3>
+        <PlanAccordion icon="⏰" title="תזכורות קרובות" meta={`${reminders.length} מתוזמנות · הקרובה ${fmt(reminders[0]!.fire_at)}`}>
           <ul className="flex flex-col gap-2">
             {reminders.map((r) => (
-              <li key={r.id} className="text-sm text-primary-900">
-                <span className="font-semibold">{REMINDER_KIND[r.kind] ?? 'תזכורת'}:</span> {r.title}{' '}
-                <span className="text-xs text-primary-700">({fmt(r.fire_at)})</span>
+              <li key={r.id} className="flex items-start justify-between gap-3 rounded-xl bg-cream px-3 py-2 text-sm text-primary-900">
+                <span className="min-w-0">
+                  <span className="block text-[11px] font-bold text-primary-700">{REMINDER_KIND[r.kind] ?? 'תזכורת'}</span>
+                  {r.title}
+                </span>
+                <span className="shrink-0 text-xs font-semibold text-primary-700">{fmt(r.fire_at)}</span>
               </li>
             ))}
           </ul>
-        </Card>
+        </PlanAccordion>
       ) : null}
 
       {data.completed.length ? (
-        <details className="rounded-3xl bg-cream/70 p-4">
-          <summary className="cursor-pointer font-bold text-primary-900">כבר עשית את זה ({data.completed.length})</summary>
-          <ul className="mt-2 flex flex-col gap-1 text-sm text-primary-800">
+        <PlanAccordion icon="🏁" title="צעדים שכבר הושלמו" meta={`${data.completed.length} צעדים`}>
+          <ul className="flex flex-col gap-1.5 text-sm text-primary-800">
             {data.completed.map((a) => (
               <li key={a.id}>✓ {a.title}</li>
             ))}
           </ul>
-        </details>
+        </PlanAccordion>
       ) : null}
-    </PlanSection>
+    </>
+  );
+}
+
+export function SectionHead({ id, kicker, title }: { id: string; kicker: string; title: string }) {
+  return (
+    <div className="mt-2">
+      <p className="text-[11px] font-bold tracking-[0.08em] text-primary-700/80">{kicker}</p>
+      <h2 id={id} className="text-[21px] font-black leading-tight text-primary-900">
+        {title}
+      </h2>
+    </div>
   );
 }
