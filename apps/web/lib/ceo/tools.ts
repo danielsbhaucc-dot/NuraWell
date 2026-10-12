@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { buildBusinessMetrics } from '@/lib/admin/business-metrics';
 import { deleteUserCompletely } from '@/lib/admin/delete-user-completely';
 import { opsLink } from './channel';
+import { openOwnerTasks, setOwnerTask } from './owner-tasks';
 
 /**
  * CEO tool registry. Read tools run immediately; write tools are NEVER executed by the model —
@@ -225,7 +226,7 @@ export const READ_TABLES = [
   ...WRITE_TABLES, 'task_events', 'ai_interactions', 'chat_sessions', 'guardian_sos_events', 'error_events', 'billing_events',
   'journey_progress', 'journey_task_executions', 'safety_events', 'almog_interventions', 'almog_blockers', 'almog_kickoff_status',
   'ops_admin_notifications', 'lesson_progress', 'challenge_task_completions', 'challenge_success_events', 'user_insights',
-  'notification_fall_episodes', 'ceo_audit_log', 'ceo_pending_actions',
+  'notification_fall_episodes', 'ceo_audit_log', 'ceo_pending_actions', 'ceo_owner_tasks',
 ] as const;
 /** profiles: never allow role / consent / auth-adjacent columns to be changed by the agent. */
 const PROFILE_WRITABLE = new Set(['full_name', 'gender', 'is_active', 'notify_test_opt_in', 'notify_paused_until', 'notification_prefs', 'program_state', 'engagement_status', 'main_goal', 'main_obstacle', 'main_obstacle_detail', 'wake_up_time', 'sleep_time', 'dinner_time', 'meal_count', 'meal_schedule', 'ai_check_in_times', 'daily_task', 'weakest_time_of_day', 'preferred_channel', 'ai_system_prompt']);
@@ -327,7 +328,51 @@ const GENERIC: CeoTool[] = [
   },
 ];
 
-CEO_TOOLS.push(...GENERIC);
+const OWNER: CeoTool[] = [
+  {
+    name: 'owner_tasks_list',
+    description: "Daniel's open human-only tasks (tracker).",
+    schema: z.object({}),
+    write: false,
+    run: (db) => openOwnerTasks(db),
+  },
+  {
+    name: 'owner_task_create',
+    description:
+      'Open a task for Daniel ONLY if it truly requires a human: filming a HeyGen video, a legal/accounting/billing decision, an account/provider action (signup, payment, DNS, keys). NEVER for anything you can do yourself or propose as an approval. Default: do not create tasks.',
+    schema: z.object({
+      title: z.string().min(3).max(120),
+      detail: z.string().max(600).default(''),
+      priority: z.enum(['high', 'normal', 'low']).default('normal'),
+      origin: z.enum(['content', 'legal', 'billing', 'account', 'ops', 'daniel']),
+      due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    }),
+    write: false,
+    run: async (db, a) => {
+      const { data, error } = await db.from('ceo_owner_tasks').insert(a).select('id, title').single();
+      if (error) {
+        if (error.message.includes('duplicate') || (error as { code?: string }).code === '23505') return { ok: true, note: 'already open' };
+        throw new Error(error.message);
+      }
+      return { ok: true, task: data };
+    },
+  },
+  {
+    name: 'owner_task_update',
+    description: 'Update a Daniel task when he says so: done, canceled, reopen, snooze N days, priority, due date.',
+    schema: z.object({
+      id: uuid,
+      status: z.enum(['done', 'canceled', 'open']).optional(),
+      snoozeDays: z.number().int().min(1).max(60).optional(),
+      priority: z.enum(['high', 'normal', 'low']).optional(),
+      due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+    }),
+    write: false,
+    run: async (db, a) => ({ ok: true, task: await setOwnerTask(db, String(a.id), a as never) }),
+  },
+];
+
+CEO_TOOLS.push(...GENERIC, ...OWNER);
 export const TOOL_BY_NAME = new Map(CEO_TOOLS.map((t) => [t.name, t]));
 
 /** OpenAI tool specs (JSON schema). The content-draft tool is handled in agent.ts. */
