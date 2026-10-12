@@ -136,6 +136,7 @@ function stripCotPrefixAndParagraphs(text: string): string {
 export function sanitizeWriterOutput(text: string): string {
   if (!text) return '';
   let next = stripThinkBlocks(text)
+    .replace(/<\|[a-z_]{2,24}\|>/gi, '')
     .replace(DOUBLE_PLACEHOLDER_RE, '')
     .replace(SINGLE_CAPS_PLACEHOLDER_RE, '')
     .replace(NAMED_PLACEHOLDER_RE, '')

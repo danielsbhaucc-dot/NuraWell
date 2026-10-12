@@ -15,7 +15,8 @@ const DEFAULT_WRITER_SLUGS: Record<ChatWriterKey, string> = {
   terra: 'openai/gpt-5.6-terra',
   claude5: 'anthropic/claude-sonnet-5',
   grok: 'x-ai/grok-4.5',
-  llama4: 'meta-llama/llama-4-maverick',
+  /** "llama4" is the cheap default lane (key kept for compatibility); GPT-5.6 Luna: ~$0.0003-0.003/msg, natural Hebrew, ~1s TTFT. */
+  llama4: 'openai/gpt-5.6-luna',
 };
 
 function envWriterSlug(key: ChatWriterKey, envName: string): string {
