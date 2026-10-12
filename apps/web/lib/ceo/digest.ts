@@ -5,6 +5,7 @@ import type { CeoChannel } from './channel';
 import { allowedChatIds, opsLink } from './channel';
 import { CEO_CONTENT_MODEL, complete } from './llm';
 import { TOOL_BY_NAME } from './tools';
+import { dueForReminder, formatTaskLine, openOwnerTasks, taskButtons } from './owner-tasks';
 
 export type DigestPeriod = 'daily' | 'weekly' | 'monthly';
 const DAYS: Record<DigestPeriod, number> = { daily: 1, weekly: 7, monthly: 30 };
@@ -27,6 +28,8 @@ export async function buildDigest(db: SupabaseClient, period: DigestPeriod, deps
     data.almogSample = quality;
     data.content = (content as { station: string; steps: { published: boolean; video: boolean }[] }[]).map((s) => ({ station: s.station, steps: s.steps.length, published: s.steps.filter((x) => x.published).length, withVideo: s.steps.filter((x) => x.video).length }));
   }
+  const tasks = await openOwnerTasks(db);
+  if (tasks.length) data.danielOpenTasks = tasks.map((t) => formatTaskLine(t));
   if (period === 'monthly') data.business = await run('business_metrics', { days: 30 });
 
   // Daily = aggregated numbers + error text only → classified technical (DeepSeek-eligible; guard re-checks).
@@ -36,7 +39,7 @@ export async function buildDigest(db: SupabaseClient, period: DigestPeriod, deps
     model: period === 'monthly' ? CEO_CONTENT_MODEL : undefined,
     messages: [
       { role: 'system', content: CEO_SYSTEM_PROMPT },
-      { role: 'user', content: `${ASK[period]}\nנתונים (${days} ימים, השוואה לתקופה הקודמת בשדות *_prev):\n${JSON.stringify(data)}` },
+      { role: 'user', content: `${ASK[period]}${tasks.length ? '\nיש משימות פתוחות לדניאל: הזכר אותן בשורה אחת קצרה בסוף.' : ''}\nנתונים (${days} ימים, השוואה לתקופה הקודמת בשדות *_prev):\n${JSON.stringify(data)}` },
     ],
   });
   const title = { daily: '☀️ עדכון יומי', weekly: '📊 סיכום שבועי', monthly: '🧭 דוח חודשי' }[period];
@@ -48,6 +51,12 @@ export async function sendDigest(db: SupabaseClient, channel: CeoChannel, period
   const text = await buildDigest(db, period, deps);
   const chats = [...allowedChatIds()];
   for (const c of chats) await channel.send(c, text);
+  // follow-up: one message per due/overdue human task, with done/snooze buttons (max 3/day)
+  const due = dueForReminder(await openOwnerTasks(db)).slice(0, 3);
+  for (const t of due) {
+    for (const c of chats) await channel.send(c, `📌 תזכורת: ${formatTaskLine(t)}${t.detail ? `\n${t.detail}` : ''}`, taskButtons(t.id));
+    await db.from('ceo_owner_tasks').update({ last_reminded_at: new Date().toISOString() }).eq('id', t.id);
+  }
   await audit(db, 'cron', 'digest', { period, chats: chats.length });
   return { sent: chats.length };
 }

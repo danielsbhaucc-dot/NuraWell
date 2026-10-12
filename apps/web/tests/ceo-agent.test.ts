@@ -239,3 +239,33 @@ describe('formatting + time context', () => {
     expect(msgs.map((m) => m.content)).toContain('תשובה קודמת');
   });
 });
+
+describe('owner task tracker', () => {
+  it('reminds only due/overdue or high-priority tasks, not twice a day', async () => {
+    const { dueForReminder } = await import('@/lib/ceo/owner-tasks');
+    const now = new Date('2026-10-12T18:00:00Z');
+    const base = { detail: '', status: 'open', origin: 'content', snoozed_until: null, last_reminded_at: null };
+    const r = dueForReminder([
+      { ...base, id: '1', title: 'צילום', priority: 'normal', due_date: '2026-10-12' },
+      { ...base, id: '2', title: 'עתידי', priority: 'normal', due_date: '2026-10-20' },
+      { ...base, id: '3', title: 'דחוף', priority: 'high', due_date: null },
+      { ...base, id: '4', title: 'הוזכר', priority: 'high', due_date: null, last_reminded_at: '2026-10-12T10:00:00Z' },
+    ], now);
+    expect(r.map((t) => t.id)).toEqual(['1', '3']);
+  });
+  it('done / snooze buttons update the task', async () => {
+    const { db, t } = fakeDb();
+    t.ceo_owner_tasks = [{ id: 'k1', title: 'לצלם סרטון', status: 'open' }];
+    const f = tgFetch();
+    await handleTelegramUpdate(db, createTelegramChannel(f as never), { callback_query: { id: 'cb', data: 'ceo:ts:k1', message: { chat: { id: 42 }, message_id: 3 } } });
+    expect(t.ceo_owner_tasks[0].status).toBe('snoozed');
+    await handleTelegramUpdate(db, createTelegramChannel(f as never), { callback_query: { id: 'cb', data: 'ceo:td:k1', message: { chat: { id: 42 }, message_id: 3 } } });
+    expect(t.ceo_owner_tasks[0].status).toBe('done');
+  });
+  it('create tool is restricted to human-only origins', async () => {
+    const { TOOL_BY_NAME } = await import('@/lib/ceo/tools');
+    const c = TOOL_BY_NAME.get('owner_task_create')!;
+    expect(() => c.schema.parse({ title: 'לתקן באג', origin: 'code' })).toThrow();
+    expect(c.description).toMatch(/ONLY if it truly requires a human/);
+  });
+});
