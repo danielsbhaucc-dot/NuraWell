@@ -93,7 +93,7 @@ export function SosMemoryCard({ initial }: { initial?: SosContextPayload | null 
           />
         ))}
 
-        {events.length > 0 && (expanded || !showAccordion) ? (
+        {events.length > 0 && (expanded || !showAccordion || helped.length === 0) ? (
           <div className="rounded-2xl border border-emerald-900/10 bg-emerald-50/60 px-3 py-2.5">
             <p className="mb-2 text-[11px] font-bold text-emerald-900/85">פעמים אחרונות</p>
             <div className="space-y-1.5">

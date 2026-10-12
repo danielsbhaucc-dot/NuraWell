@@ -95,7 +95,7 @@ export default async function PlansPage() {
           n={3}
           id="plan-map"
           title="המסלול"
-          hint={current ? `${here}: ${current.title} · ${doneStations} תחנות מאחור` : undefined}
+          hint={current ? `${here}: ${current.title} · ${doneStations === 0 ? 'ההתחלה' : doneStations === 1 ? 'תחנה אחת מאחור' : `${doneStations} תחנות מאחור`}` : undefined}
         >
           <div className="rounded-3xl border border-primary-100 bg-background-card/80 p-2">
             <PlanMap stations={nearStations} startIndex={windowStart} />
