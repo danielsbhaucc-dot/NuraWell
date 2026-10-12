@@ -3,20 +3,24 @@ import { NURAWELL_CHAT_SYSTEM_PROMPT } from '@/lib/ai/prompts';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
-async function one(sys: string, h: Record<string, string> = {}) {
+async function time(url: string, body: string, h: Record<string, string> = {}) {
   const t = Date.now();
-  const r = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json', ...h }, body: JSON.stringify({ model: 'openai/gpt-5.6-terra', reasoning: { effort: 'none' }, max_tokens: 40, stream: true, messages: [{ role: 'system', content: sys }, { role: 'user', content: 'משפט אחד: היי' }] }) });
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...h }, body });
   const hdr = Date.now() - t;
   await r.text();
-  return { hdr, total: Date.now() - t };
+  return { status: r.status, hdr };
 }
 export async function GET(req: Request) {
   if (req.headers.get('x-probe') !== 'ffe3faf08ce003eeb415bf2763817499') return NextResponse.json({}, { status: 404 });
   const big = NURAWELL_CHAT_SYSTEM_PROMPT + '\n' + 'הקשר: '.repeat(3000);
+  const junk = 'x' + big; // invalid JSON -> OpenRouter answers 400 right after upload
+  const auth = { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}` };
   return NextResponse.json({
-    small: await one('אתה אלמוג.'),
-    big1: await one(big),
-    big2: await one(big),
-    bigRef: await one(big, { 'HTTP-Referer': 'https://nurawell.ai/', 'X-Title': 'NuraWell' }),
+    bytes: Buffer.byteLength(big),
+    or_small_junk: await time('https://openrouter.ai/api/v1/chat/completions', 'x', auth),
+    or_big_junk: await time('https://openrouter.ai/api/v1/chat/completions', junk, auth),
+    or_big_junk2: await time('https://openrouter.ai/api/v1/chat/completions', junk, auth),
+    cf_up: await time('https://speed.cloudflare.com/__up', big),
+    httpbin: await time('https://httpbin.org/post', big),
   });
 }
