@@ -2576,6 +2576,22 @@ export async function POST(request: Request) {
    * הנתב רץ אחרי profile (sticky) אבל במקביל לשאר שליפות ה-DB שכבר התחילו.
    * בתור טריוויאלי/ברכה עם sticky — מדלגים על LLM הנתב (כותב נשאר sticky/פרימיום).
    */
+  {
+    let lagLast = Date.now();
+    let lagMax = 0;
+    let lagSum = 0;
+    const lagTimer = setInterval(() => {
+      const now = Date.now();
+      const d = now - lagLast - 50;
+      if (d > 0) lagSum += d;
+      if (d > lagMax) lagMax = d;
+      lagLast = now;
+    }, 50);
+    setTimeout(() => {
+      clearInterval(lagTimer);
+      console.info('[ai/chat]', { stage: 'event_loop_lag', max_ms: lagMax, sum_ms: lagSum });
+    }, 9000);
+  }
   const routerBundlePromise = (async () => {
     const profilePeek = await profilePromise;
     console.info('[ai/chat]', { stage: 'profile_ready', since_start_ms: Date.now() - startedAt });
