@@ -40,14 +40,18 @@ export function significantTokens(text: string): Set<string> {
 }
 
 /** גזע גס לעברית — תופס יחיד/רבים נפוצים (כוס/כוסות, צלחת/צלחות). */
-function stemHebrewToken(token: string): string {
-  return token
-    .replace(/יות$/u, '')
-    .replace(/ות$/u, '')
-    .replace(/ים$/u, '')
-    .replace(/יין$/u, '')
-    .replace(/ת$/u, '')
-    .replace(/ה$/u, '');
+/** Mirrors SQL public.nw_title_tokens (000108): drop one prefix ל/ה/ו/ב, then strip suffixes down to 2 letters,
+ *  so לשתות ≈ שתיית ≈ שתיה and כוס ≈ כוסות. */
+export function stemHebrewToken(token: string): string {
+  let s = token;
+  if (s.length > 3 && /^[להוב]/u.test(s)) s = s.slice(1);
+  for (;;) {
+    if (s.length <= 2) break;
+    if (/(יות|ות|ית|יה|ים)$/u.test(s) && s.length - 2 >= 2) s = s.slice(0, -2);
+    else if (/[תהי]$/u.test(s)) s = s.slice(0, -1);
+    else break;
+  }
+  return s;
 }
 
 /** התאמת אסימון כולל קידומת/גזע (כוס ≈ כוסות). */

@@ -5,6 +5,8 @@ import {
   DynamicMentorWidget,
   loadMentorshipHomeContext,
 } from '../../../components/mentorship/DynamicMentorWidget';
+import { fetchSosContext } from '../../../lib/ai/guardian/sos-memory';
+import { createAdminClient } from '../../../lib/supabase/admin';
 import { firstNameFromFull } from '../../../lib/onboarding/profile-summary-rows';
 import type { OnboardingGender } from '../../../lib/onboarding/types';
 import {
@@ -39,6 +41,7 @@ export default async function HomePage() {
     { data: rawProgressRows },
     profileRow,
     mentorship,
+    sosContext,
   ] = await Promise.all([
     supabase
       .from('enrollments')
@@ -48,6 +51,8 @@ export default async function HomePage() {
     supabase.from('lesson_progress').select('lesson_id, is_completed').eq('user_id', user.id),
     getCachedDashboardProfile(user.id),
     loadMentorshipHomeContext(supabase, user.id),
+    // was a client fetch after idle (up to ~3s + round-trip) — now parallel with the page queries
+    fetchSosContext(createAdminClient(), user.id).catch(() => null),
   ]);
 
   const enrollments = (rawEnrollments as RawEnrollmentRow[]) || [];
@@ -91,6 +96,7 @@ export default async function HomePage() {
         totalLessonsCompleted: completedLessonIds.size,
       }}
       simplifiedDashboard={simplifiedDashboard}
+      sosInitial={sosContext}
       mentorWidget={
         <DynamicMentorWidget userId={user.id} firstName={firstName} strategy={mentorshipStrategy} />
       }
