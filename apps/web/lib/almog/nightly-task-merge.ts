@@ -92,12 +92,17 @@ export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (
     }
     let merged = 0;
     let mainKeep: string | null = null;
+    let mainCount = 0;
     for (const d of decisions) {
       const { data: n, error: e } = await db.rpc('merge_task_assignments', { p_user: row.user_id, p_keep: d.keep, p_drop: d.drop, p_reason: d.reason ?? null });
       if (e) summary.errors.push(`merge: ${e.message.slice(0, 150)}`);
       else {
-        merged += Number(n) || 0;
-        mainKeep ??= d.keep;
+        const k = Number(n) || 0;
+        merged += k;
+        if (k > mainCount) {
+          mainCount = k;
+          mainKeep = d.keep;
+        }
       }
     }
     if (!merged || !mainKeep) continue;
@@ -110,7 +115,7 @@ export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (
     }
     const { data: p } = await db.from('profiles').select('full_name').eq('id', row.user_id).maybeSingle();
     const first = ((p?.full_name as string | null) ?? '').trim().split(/\s+/)[0] || null;
-    const msg = mergeMessage(first, merged, await keptTaskInfo(db, mainKeep));
+    const msg = mergeMessage(first, mainCount, await keptTaskInfo(db, mainKeep));
     const res = await insertNotification(db, {
       user_id: row.user_id,
       type: 'ai_message',
