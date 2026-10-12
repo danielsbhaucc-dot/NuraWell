@@ -218,7 +218,7 @@ export function AlmogPlanSections() {
       ))}
 
       {blockers.map((b) => (
-        <Card key={b.id} data-task-id={b.id} className="flex scroll-mt-24 flex-col gap-2">
+        <Card key={b.id} data-task-id={b.id} className="flex scroll-mt-24 flex-col gap-2 data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70">
           <span className="text-xs font-bold text-primary-700">אלמוג כאן בשבילך</span>
           <p className="font-semibold text-primary-900">{b.description}</p>
           {b.strategy ? <p className="text-sm text-primary-800/80">{b.strategy}</p> : null}
