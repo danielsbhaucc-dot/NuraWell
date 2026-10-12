@@ -215,7 +215,7 @@ export const dynamic = 'force-dynamic';
  * אזור קרוב ל-EU (מתאים לישראל/אירופה מול Supabase EU וספקי AI).
  * ניתן לשנות בפרויקט אם ה-DB באזור אחר.
  */
-export const preferredRegion = 'fra1';
+export const preferredRegion = 'syd1'; // next to Supabase (Sydney); fra1 meant a cross-world hop per DB query
 
 const chatBodySchema = z.object({
   /** `useChat` sends UI messages (with parts). Keep it flexible. */
@@ -678,6 +678,7 @@ async function createOpenRouterTextStreamResponse({
   supportsPromptCache: boolean;
   providerOnly?: readonly string[];
 }) {
+  const perfT0 = Date.now();
   const tokenizedStatic = staticSystemPrompt;
   const tokenizedDynamic = piiShield ? piiShield.tokenizeText(dynamicSystemPrompt) : dynamicSystemPrompt;
   const tokenizedMessages = piiShield
@@ -744,9 +745,11 @@ async function createOpenRouterTextStreamResponse({
     piiShield.assertNoRawPii(`${tokenizedDynamic}\n${JSON.stringify(tokenizedMessages)}`);
   }
 
+  const perfPrepMs = Date.now() - perfT0;
   let upstream: Response | null = null;
   let lastErrorText = '';
   for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const perfFetchAt = Date.now();
     upstream = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -758,6 +761,7 @@ async function createOpenRouterTextStreamResponse({
       },
       body: requestBody,
     });
+    console.info('[ai/chat]', { stage: 'writer_upstream_open', model, attempt, status: upstream.status, prep_ms: perfPrepMs, fetch_ms: Date.now() - perfFetchAt, body_chars: requestBody.length });
     if (upstream.ok) break;
 
     lastErrorText = await upstream.text().catch(() => '');
@@ -864,9 +868,14 @@ async function createOpenRouterTextStreamResponse({
     async start(controller) {
       const reader = upstream.body!.getReader();
       try {
+        let perfFirstChunkLogged = false;
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
+          if (!perfFirstChunkLogged && accumulated) {
+            perfFirstChunkLogged = true;
+            console.info('[ai/chat]', { stage: 'writer_first_content', model, since_prep_ms: Date.now() - perfT0 });
+          }
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split(/\r?\n/);
           buffer = lines.pop() ?? '';
@@ -1559,6 +1568,7 @@ async function attemptContextRoute(opts: {
 }): Promise<ChatContextDecision | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
+  const perfRouterT0 = Date.now();
   try {
     const response = await fetch(opts.endpoint, {
       method: 'POST',
@@ -1605,6 +1615,7 @@ async function attemptContextRoute(opts: {
       choices?: Array<{ message?: { content?: string | null } }>;
     };
     const raw = data.choices?.[0]?.message?.content?.trim();
+    console.info('[ai/chat]', { stage: 'router_llm_done', ms: Date.now() - perfRouterT0, out_chars: raw?.length ?? 0 });
     if (!raw) return null;
     const parsed = chatContextRouterSchema.safeParse(parseLlmJsonObject(raw));
     if (!parsed.success) return null;
