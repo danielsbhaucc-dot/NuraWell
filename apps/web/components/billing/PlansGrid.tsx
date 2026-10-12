@@ -2,7 +2,16 @@
 
 import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui';
-import { ANNUAL_FREE_MONTHS, EXTRA_MINUTES, LAUNCH_DISCOUNT, MOBILE_FEATURED, PLANS, planPrice, type PlanId, type PlanInterval } from '@/lib/billing/plans';
+import {
+  EXTRA_MINUTES,
+  LAUNCH_DISCOUNT,
+  MOBILE_FEATURED,
+  PLANS,
+  maxAnnualSavePercent,
+  planPrice,
+  type PlanId,
+  type PlanInterval,
+} from '@/lib/billing/plans';
 
 /** Pricing cards (display-only). CTA = join waitlist, no payment. WhatsApp plan in the middle; first on mobile. */
 export function PlansGrid({ currentPlan, signedIn }: { currentPlan?: PlanId | null; signedIn: boolean }) {
@@ -10,6 +19,7 @@ export function PlansGrid({ currentPlan, signedIn }: { currentPlan?: PlanId | nu
   const [joined, setJoined] = useState<Record<string, boolean>>({});
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const maxSave = maxAnnualSavePercent();
 
   const join = (plan: string) =>
     start(async () => {
@@ -17,7 +27,11 @@ export function PlansGrid({ currentPlan, signedIn }: { currentPlan?: PlanId | nu
         window.location.assign('/login?next=/pricing');
         return;
       }
-      const res = await fetch('/api/v1/billing/waitlist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan, interval }) });
+      const res = await fetch('/api/v1/billing/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, interval }),
+      });
       if (res.ok) {
         setJoined((j) => ({ ...j, [plan]: true }));
         setMsg('נרשמת לרשימת ההמתנה. נעדכן אותך ברגע שההצטרפות תיפתח.');
@@ -41,7 +55,7 @@ export function PlansGrid({ currentPlan, signedIn }: { currentPlan?: PlanId | nu
             onClick={() => setInterval(i)}
             className={`min-h-10 rounded-full px-4 text-sm font-semibold ${interval === i ? 'bg-[#14532d] text-[#f8f5ec]' : 'text-[#14532d]'}`}
           >
-            {i === 'monthly' ? 'חודשי' : `שנתי · ${ANNUAL_FREE_MONTHS} חודשים מתנה`}
+            {i === 'monthly' ? 'חודשי' : `שנתי · עד ${maxSave}% חיסכון`}
           </button>
         ))}
       </div>
@@ -59,10 +73,14 @@ export function PlansGrid({ currentPlan, signedIn }: { currentPlan?: PlanId | nu
                 featured ? 'border-2 border-[#22a06b] bg-[#eef8f0] shadow-lg md:-my-2 md:py-7' : 'border border-[#e2dccb] bg-[#faf7ef]'
               }`}
             >
-              {p.badge ? <span className="absolute -top-3 right-5 rounded-full bg-[#22a06b] px-3 py-1 text-xs font-black text-[#f8f5ec]">{p.badge}</span> : null}
+              {p.badge ? (
+                <span className="absolute -top-3 right-5 rounded-full bg-[#22a06b] px-3 py-1 text-xs font-black text-[#f8f5ec]">{p.badge}</span>
+              ) : null}
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-xl font-black text-[#14532d]">{p.name}</h2>
-                {p.comingSoon ? <span className="rounded-full bg-[#ece6d6] px-2 py-0.5 text-xs font-bold text-[#14532d]">בקרוב</span> : null}
+                {p.comingSoon ? (
+                  <span className="rounded-full bg-[#ece6d6] px-2 py-0.5 text-xs font-bold text-[#14532d]">בקרוב</span>
+                ) : null}
               </div>
               <p className="text-sm text-[#14532d]/80">{p.tagline}</p>
               <div className="flex flex-wrap items-baseline gap-2">
@@ -72,21 +90,43 @@ export function PlansGrid({ currentPlan, signedIn }: { currentPlan?: PlanId | nu
                     <s className="text-base text-[#14532d]/60">₪{pr.full}</s>
                     <span className="text-sm text-[#14532d]/80">לחודש</span>
                   </>
+                ) : pr.per === 'year' && pr.monthlyYearTotal != null ? (
+                  <>
+                    <span className="text-3xl font-black text-[#14532d]">₪{pr.full}</span>
+                    <s className="text-base text-[#14532d]/60">₪{pr.monthlyYearTotal}</s>
+                    <span className="text-sm text-[#14532d]/80">לשנה (≈₪{pr.monthlyEquivalent} לחודש)</span>
+                  </>
                 ) : (
                   <>
                     <span className="text-3xl font-black text-[#14532d]">₪{pr.full}</span>
-                    <span className="text-sm text-[#14532d]/80">{pr.per === 'year' ? `לשנה (≈₪${pr.monthlyEquivalent} לחודש)` : 'לחודש'}</span>
+                    <span className="text-sm text-[#14532d]/80">לחודש</span>
                   </>
                 )}
               </div>
-              {pr.launch != null ? <p className="text-xs text-[#14532d]/70">ל-{LAUNCH_DISCOUNT.months} החודשים הראשונים, אחר כך ₪{pr.full} לחודש</p> : null}
-              {p.valueIls ? <p className="text-xs font-semibold text-[#15803d]">שווי מלא ₪{p.valueIls} לחודש</p> : null}
+              {pr.launch != null ? (
+                <p className="text-xs text-[#14532d]/70">
+                  ל-{LAUNCH_DISCOUNT.months} החודשים הראשונים, אחר כך ₪{pr.full} לחודש
+                </p>
+              ) : null}
+              {pr.savePercent != null ? (
+                <p className="text-xs font-semibold text-[#15803d]">חיסכון של {pr.savePercent}% לעומת תשלום חודשי</p>
+              ) : null}
               <ul className="flex flex-1 flex-col gap-1.5 text-sm text-[#14532d]">
                 {p.features.map((f) => (
-                  <li key={f} className="flex gap-2"><span aria-hidden className="text-[#22a06b]">✓</span>{f}</li>
+                  <li key={f} className="flex gap-2">
+                    <span aria-hidden className="text-[#22a06b]">
+                      ✓
+                    </span>
+                    {f}
+                  </li>
                 ))}
               </ul>
-              <Button variant={featured ? 'primary' : 'secondary'} loading={pending} disabled={isCurrent || joined[p.id]} onClick={() => join(p.id)}>
+              <Button
+                variant={featured ? 'primary' : 'secondary'}
+                loading={pending}
+                disabled={isCurrent || joined[p.id]}
+                onClick={() => join(p.id)}
+              >
                 {isCurrent ? 'המסלול הנוכחי שלך' : joined[p.id] ? 'ברשימת ההמתנה ✓' : 'בקרוב · הצטרפות לרשימת המתנה'}
               </Button>
             </section>
@@ -95,9 +135,14 @@ export function PlansGrid({ currentPlan, signedIn }: { currentPlan?: PlanId | nu
       </div>
 
       <p className="text-center text-sm text-[#14532d]/80">
-        דקות שיחה נוספות: {EXTRA_MINUTES.minutes} דקות ב-₪{EXTRA_MINUTES.priceIls}{EXTRA_MINUTES.comingSoon ? ' (בקרוב)' : ''} · המחירים כוללים מע״מ · התשלום עוד לא פתוח
+        דקות שיחה נוספות: {EXTRA_MINUTES.minutes} דקות ב-₪{EXTRA_MINUTES.priceIls}
+        {EXTRA_MINUTES.comingSoon ? ' (בקרוב)' : ''} · המחירים כוללים מע״מ · התשלום עוד לא פתוח
       </p>
-      {msg ? <p role="status" className="text-center text-sm font-semibold text-[#14532d]">{msg}</p> : null}
+      {msg ? (
+        <p role="status" className="text-center text-sm font-semibold text-[#14532d]">
+          {msg}
+        </p>
+      ) : null}
     </div>
   );
 }
