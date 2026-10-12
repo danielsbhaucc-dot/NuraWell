@@ -141,6 +141,7 @@ export function isOpsPanelBrowserPath(pathname: string): boolean {
     '/costs',
     '/business',
     '/errors',
+    '/ceo',
     '/steps',
     '/site-settings',
     '/system-rag-ingest',
