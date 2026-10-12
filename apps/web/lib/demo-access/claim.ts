@@ -11,11 +11,24 @@ import {
 } from './cookie';
 import { verifyDemoPassword } from './password';
 import { hashDemoAccessToken } from './token';
+import { killDeadDemoAuthSessions } from './active-session';
+export { killDeadDemoAuthSessions };
 import type { DemoAccessLinkRow, DemoAccessPublicPreview } from './types';
 
 function asLink(row: unknown): DemoAccessLinkRow | null {
   if (!row || typeof row !== 'object') return null;
   return row as DemoAccessLinkRow;
+}
+
+function jwtSessionId(token: string): string | null {
+  try {
+    const part = token.split('.')[1];
+    if (!part) return null;
+    const json = JSON.parse(Buffer.from(part, 'base64url').toString('utf8')) as { session_id?: string };
+    return typeof json.session_id === 'string' ? json.session_id : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function loadDemoLinkByRawToken(rawToken: string): Promise<DemoAccessLinkRow | null> {
@@ -86,7 +99,7 @@ export async function claimDemoAccessLink(
   if (usability) return { ok: false, status: 410, error: usability };
 
   if (link.password_hash) {
-    if (!password || !verifyDemoPassword(password, link.password_hash)) {
+    if (!password || !verifyDemoPassword(password.trim(), link.password_hash)) {
       return { ok: false, status: 401, error: 'סיסמה זמנית שגויה.' };
     }
   }
@@ -125,17 +138,29 @@ export async function claimDemoAccessLink(
   const nowIso = new Date().toISOString();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: sessionInsErr } = await (admin as any).from('demo_access_sessions').insert({
+  const { data: demoSessionRow, error: sessionInsErr } = await (admin as any).from('demo_access_sessions').insert({
     link_id: link.id,
     user_id: link.target_user_id,
     session_epoch: link.session_epoch,
     expires_at: expiresAt,
     created_at: nowIso,
     last_seen_at: nowIso,
-  });
+  }).select('id').single();
   if (sessionInsErr) {
     console.error('[demo-access] session insert', sessionInsErr.message);
     return { ok: false, status: 500, error: 'לא ניתן לרשום סשן דמו.' };
+  }
+
+  // קשירה לסשן ה-Auth: not_after = תפוגת הקישור, כך ש-Supabase עצמו מפסיק לרענן אחרי התפוגה.
+  const authSessionId = jwtSessionId(sessionData.session.access_token);
+  if (authSessionId && demoSessionRow?.id) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: bindErr } = await (admin as any).rpc('demo_access_bind_auth_session', {
+      p_demo_session: demoSessionRow.id,
+      p_auth_session: authSessionId,
+      p_not_after: expiresAt,
+    });
+    if (bindErr) console.error('[demo-access] bind', bindErr.message);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -249,6 +274,7 @@ export async function revokeDemoSessionsForLink(linkId: string): Promise<void> {
       updated_at: nowIso,
     })
     .eq('id', linkId);
+  await killDeadDemoAuthSessions(linkId);
 }
 
 export async function endDemoSessionForUser(userId: string, linkId?: string): Promise<void> {
@@ -262,4 +288,5 @@ export async function endDemoSessionForUser(userId: string, linkId?: string): Pr
     .is('revoked_at', null);
   if (linkId) q = q.eq('link_id', linkId);
   await q;
+  await killDeadDemoAuthSessions(linkId);
 }

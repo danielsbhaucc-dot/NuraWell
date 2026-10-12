@@ -60,6 +60,8 @@ export function detectSessionTopic(
   session: InboxSession,
   title: string
 ): ChatTopicId {
+  const chosen = session.topic as ChatTopicId | null | undefined;
+  if (chosen && CHAT_TOPIC_ORDER.some((m) => m.id === chosen)) return chosen;
   const haystack = sessionTopicHaystack(session, title);
   for (const { id, pattern } of TOPIC_PATTERNS) {
     if (pattern.test(haystack)) return id;

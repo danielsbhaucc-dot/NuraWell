@@ -6,6 +6,7 @@ import { mergeAuthCookieOptions } from '@/lib/supabase/cookie-options';
  */
 
 export const DEMO_ACCESS_COOKIE = 'nw_demo';
+export const DEMO_COOKIE_TOMBSTONE_SEC = 7 * 24 * 3600;
 
 function cookieSecret(): string | null {
   const s =
@@ -68,6 +69,7 @@ export async function signDemoAccessCookie(
 export async function parseDemoAccessCookie(
   value: string | undefined,
   nowMs = Date.now(),
+  opts: { allowExpired?: boolean } = {},
 ): Promise<DemoAccessCookiePayload | null> {
   if (!value) return null;
   const secret = cookieSecret();
@@ -92,7 +94,7 @@ export async function parseDemoAccessCookie(
   const expMs = Number(expRaw);
   const sessionEpoch = Number(epochRaw);
   if (!Number.isFinite(expMs) || !Number.isFinite(sessionEpoch) || sessionEpoch < 1) return null;
-  if (expMs <= nowMs) return null;
+  if (!opts.allowExpired && expMs <= nowMs) return null;
   if (!/^[0-9a-f-]{36}$/i.test(linkId) || !/^[0-9a-f-]{36}$/i.test(userId)) return null;
 
   return {
@@ -112,7 +114,8 @@ export function demoAccessCookieOptions(maxAgeSec: number) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax' as const,
     path: '/',
-    maxAge: Math.max(60, maxAgeSec),
+    // +7 ימים: העוגייה נשארת כ"מצבה" אחרי התפוגה כדי שה-proxy יזהה ויסגור את סשן האורח.
+    maxAge: Math.max(60, maxAgeSec) + DEMO_COOKIE_TOMBSTONE_SEC,
   });
 }
 

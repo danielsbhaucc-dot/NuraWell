@@ -11,6 +11,7 @@ export type InboxSession = {
   status: 'open' | 'closed';
   session_kind?: 'chat' | 'profile_update';
   title?: string | null;
+  topic?: string | null;
   summary: string | null;
   created_at: string;
   updated_at: string;
