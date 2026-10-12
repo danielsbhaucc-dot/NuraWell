@@ -201,6 +201,7 @@ import {
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 import { publicAppUrlForAiReferer } from '../../../../../lib/public-app-url';
+import { openRouterChatFetch } from '../../../../../lib/ai/openrouter-relay';
 
 /**
  * Node (Fluid) rather than Edge: the turn fires many parallel subrequests (Supabase, RAG,
@@ -576,15 +577,6 @@ function resolveChatModelRuntime(writer: ChatWriterKey): ChatModelRuntime {
   };
 }
 
-function fnv1a(s: string): string {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return (h >>> 0).toString(16);
-}
-
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 type StreamFinishPayload = {
@@ -779,18 +771,14 @@ async function createOpenRouterTextStreamResponse({
   let lastErrorText = '';
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     const perfFetchAt = Date.now();
-    upstream = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-        'HTTP-Referer': referer,
-        'X-Title': 'NuraWell',
-        'X-OpenRouter-Cache': 'false',
-      },
-      body: requestBody,
+    upstream = await openRouterChatFetch(requestBody, {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+      'HTTP-Referer': referer,
+      'X-Title': 'NuraWell',
+      'X-OpenRouter-Cache': 'false',
     });
-    console.info('[ai/chat]', { stage: 'writer_upstream_open', model, attempt, status: upstream.status, prep_ms: perfPrepMs, fetch_ms: Date.now() - perfFetchAt, body_chars: requestBody.length, static_chars: tokenizedStatic.length, static_hash: fnv1a(tokenizedStatic), head_hash: fnv1a(requestBody.slice(0, 6000)) });
+    console.info('[ai/chat]', { stage: 'writer_upstream_open', model, attempt, status: upstream.status, prep_ms: perfPrepMs, fetch_ms: Date.now() - perfFetchAt, body_chars: requestBody.length });
     if (upstream.ok) break;
 
     lastErrorText = await upstream.text().catch(() => '');
@@ -1603,14 +1591,7 @@ async function attemptContextRoute(opts: {
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
   const perfRouterT0 = Date.now();
   try {
-    const response = await fetch(opts.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${opts.apiKey}`,
-        ...(opts.extraHeaders ?? {}),
-      },
-      body: JSON.stringify({
+    const routerBody = JSON.stringify({
         model: opts.model,
         temperature: 0,
         max_tokens: 720,
@@ -1632,9 +1613,16 @@ async function attemptContextRoute(opts: {
             ),
           },
         ],
-      }),
-      signal: controller.signal,
-    });
+      });
+    const routerHeaders = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${opts.apiKey}`,
+      ...(opts.extraHeaders ?? {}),
+    };
+    const response =
+      opts.endpoint === 'https://openrouter.ai/api/v1/chat/completions'
+        ? await openRouterChatFetch(routerBody, routerHeaders, controller.signal)
+        : await fetch(opts.endpoint, { method: 'POST', headers: routerHeaders, body: routerBody, signal: controller.signal });
     if (!response.ok) {
       console.warn('[ai/chat]', {
         debug_id: opts.debugId,
