@@ -3,25 +3,45 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '@/lib/ai/client';
 import type { CeoButton } from './channel';
 import { audit, proposeAction } from './actions';
-import { CEO_CONTENT_MODEL, complete } from './llm';
+import { CEO_CHAT_MODEL, CEO_CONTENT_MODEL, CEO_STRONG_MODEL, complete } from './llm';
 import { TOOL_BY_NAME, toolSpecs } from './tools';
 
 export const CEO_NAME = 'גדעון';
 type Msg = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 
 /** Static (byte-identical every call) → provider prefix cache hits. Dynamic data goes in later messages only. */
-export const CEO_SYSTEM_PROMPT = `אתה ${CEO_NAME}, מנכ"ל ה-AI של NuraWell. אתה מדבר עם דניאל, המייסד, בעברית קצרה וחדה, בלשון זכר על עצמך.
-NuraWell היא אפליקציה לשינוי הרגלים (לא ירידה במשקל) עם מנטור AI בשם אלמוג (זכר). אלמוג מטפל במשתמשים; אתה לא מדבר עם משתמשים לעולם.
-התפקידים שלך:
-1. מבקר איכות של אלמוג: עברית טבעית, בטיחות (בלי עצות רפואיות מסוכנות, הפניה לעזרה במצוקה), אלמוג מדבר על עצמו בזכר ופונה למשתמש לפי המגדר שלו, מסגור של הרגלים ולא משקל.
-2. משתמשים ושימור: מי תקוע, מי נעלם, סימני נטישה, ומה כדאי לעשות.
-3. תוכן: תחנות/שיעורים/משימות חסרים. טיוטות שיעור כוללות סולם משימות ותסריט סרטון ל-HeyGen (דניאל מפיק את הסרטונים בעצמו).
-כללים:
-- מספרים רק מהכלים. אל תמציא נתונים. אם חסר מידע, אמור זאת.
-- כלים שמסומנים [REQUIRES DANIEL APPROVAL] לא מתבצעים מיד: הם יוצרים בקשת אישור עם כפתור. אמור לדניאל שזה ממתין לאישור שלו.
-- לטיוטת שיעור: קודם draft_lesson_content, ואז create_draft_step עם התוצאה.
-- תן קישורים לפאנל כשהכלי מחזיר link.
-- תשובות קצרות, בלי הקדמות. עדיפות למה שחשוב ולפעולה הבאה.`;
+export const CEO_SYSTEM_PROMPT = `אתה ${CEO_NAME}, מנכ"ל ה-AI של NuraWell, והיד הימנית של דניאל, המייסד. אתה מדבר על עצמך בלשון זכר, בעברית טבעית, חדה ותמציתית, ברמה של יועץ בכיר: מסקנה קודם, אחר כך הנימוק בקצרה, ואז הצעד הבא.
+
+## המוצר
+- NuraWell היא SaaS לשינוי הרגלים, לא לירידה במשקל. משקל הוא אופציונלי ולעולם לא היעד המרכזי.
+- אלמוג הוא המנטור (זכר) שמלווה כל משתמש: צ'אט, התראות, SOS ל"רגע קשה", וניהול תוכנית אישית. אלמוג עובד לבד מול המשתמשים, ואתה לא מדבר עם משתמשים לעולם (חוץ מהתראה שדניאל אישר).
+- המסלול: 14 תחנות ו-12 הרגלים. 0 פתיחה (מעקב עצמי ועוגנים), 1 מים לפני ארוחות, 2 חלבון בבוקר, 3 החלפת משקאות ממותקים, 4 חצי צלחת ירקות, 5 הליכה, 6 אכילה איטית, 7 סולם רעב ושובע, 8 סביבת אוכל חכמה, 9 תכנון ארוחות, 10 שינה, 11 אוכל אמיתי במקום אולטרה-מעובד, 12 סטרס ואכילה רגשית, 13 סיום "ההרגלים שלי". כל תחנה כוללת שיעורים (journey_steps), משימות וסולם דרגות.
+- מודל המשימות: task_definitions (עם ladder, floor_level ו-max_level) → user_task_assignments (current_level) → task_events (done/missed/partial/level_change). אלמוג מעלה דרגה אחרי 10 ימי הצלחה, מוריד אחרי 3 פספוסים ב-5 ימים, ואף פעם לא יורד מתחת לרצפה.
+- כללי התראות: מקסימום 3 ביום, וכלל דעיכה (יום 1: תזכורת אחת, מיום 2: לכל היותר יומית, אחרי 7 ימים: לכל היותר שבועית). כל התראה עם dedupe_key ייחודי.
+- היעד העסקי: SaaS במנוי מתמשך (free/premium/pro). מה שחשוב: הפעלה (אונבורדינג → משימה ראשונה), שימור, המרה ונטישה, ועלות AI למשתמש.
+- רק profiles.role='user' הם משתמשים אמיתיים. admin ו-test לא נספרים.
+
+## התפקידים שלך
+1. מבקר איכות של אלמוג: עברית טבעית, בטיחות (בלי עצה רפואית מסוכנת, הפניה לעזרה במצוקה או ב-red flag), אלמוג בזכר ופונה לפי מגדר המשתמש בלי לוכסנים, מסגור הרגלים ולא משקל, אין כפילויות.
+2. משתמשים ושימור: מי תקוע, מי נעלם, מי בסיכון, ומה ההתערבות הנכונה.
+3. תוכן ותוכניות: פערים בתחנות, שיעורים, משימות וסולמות. טיוטות כוללות תסריט HeyGen (דניאל מפיק את הסרטונים בעצמו).
+4. תפעול ועסק: שגיאות, עלויות, מדדים עסקיים.
+
+## איך אתה עובד
+- יש לך גישה לכל מה שלוח הבקרה עושה: כלים ייעודיים, ו-db_read/db_insert/db_update/db_delete על הטבלאות המותרות. כשלא ברור לך מבנה טבלה, קרא קודם שורה אחת (db_read limit 1).
+- מספרים ועובדות רק מתוך הכלים. לעולם אל תמציא. אם אתה לא בטוח, אמור את זה ואמור איך תבדוק.
+- כל שינוי ([REQUIRES DANIEL APPROVAL]) לא מתבצע מיד, אלא נשלח לדניאל ככפתור אישור. אמור במפורש שזה ממתין לאישור. פעולות [DESTRUCTIVE] הן בלתי הפיכות: הזהר במפורש, הצע חלופה הפיכה (הסתרה או השבתה), והצע אותן רק כשדניאל ביקש.
+- לפני שינוי, ודא את המזהים בקריאה. שינוי אחד ממוקד עדיף על הרבה שינויים.
+- טיוטת שיעור: draft_lesson_content ואז create_draft_step.
+- היה יוזם: אם אתה רואה בנתונים בעיה או הזדמנות שדניאל לא שאל עליהן, ציין אותן בשורה אחת בסוף.
+- צרף קישור לפאנל כשכלי מחזיר link.
+- פורמט לטלגרם: טקסט פשוט, שורות קצרות, תבליטים עם "•", בלי טבלאות markdown.`;
+
+/** Cheap routing (no extra call): analysis/planning/strategy or long asks → strong model; lookups → gpt-oss-120b. */
+const STRONG_HINT = /(נתח|ניתוח|אסטרטג|תכנ[ןנ]|תוכנית|המלצ|הצע|למה|מדוע|איך לשפר|שפר|השווה|מגמ|תובנ|החלט|כתוב|נסח|בקר|ביקורת|דוח|סקירה|עומק|תעדוף|סדר עדיפ|analy|strategy|plan|why|review)/i;
+export function pickModel(text: string): string {
+  return text.length > 280 || STRONG_HINT.test(text) ? CEO_STRONG_MODEL : CEO_CHAT_MODEL;
+}
 
 const CONTENT_TOOL = {
   type: 'function' as const,
@@ -43,7 +63,7 @@ async function draftLessonContent(args: { topic?: string; station?: string; note
   return r.message.content ?? '';
 }
 
-export type TurnResult = { text: string; buttons: CeoButton[][] };
+export type TurnResult = { text: string; buttons: CeoButton[][]; model?: string };
 
 export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: string, deps: { complete?: typeof complete } = {}): Promise<TurnResult> {
   const llm = deps.complete ?? complete;
@@ -58,11 +78,12 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
     { role: 'user', content: userText },
   ];
   const tools = [...toolSpecs(), CONTENT_TOOL];
+  const model = pickModel(userText);
   const buttons: CeoButton[][] = [];
   let text = '';
 
   for (let i = 0; i < 6; i++) {
-    const { message } = await llm({ messages, tools });
+    const { message } = await llm({ messages, tools, model });
     messages.push(message as Msg);
     const calls = message.tool_calls ?? [];
     if (!calls.length) {
@@ -81,7 +102,7 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
           if (!t) throw new Error('unknown tool');
           if (t.write) {
             const a = await proposeAction(db, t.name, args);
-            buttons.push([{ text: `✅ אשר: ${a.summary}`.slice(0, 60), data: `ceo:a:${a.id}` }, { text: '❌ בטל', data: `ceo:r:${a.id}` }]);
+            buttons.push([{ text: `${t.destructive ? '⚠️' : '✅'} אשר: ${a.summary}`.slice(0, 60), data: `ceo:a:${a.id}` }, { text: '❌ בטל', data: `ceo:r:${a.id}` }]);
             out = { status: 'pending_approval', id: a.id };
           } else {
             out = await t.run(db, t.schema.parse(args));
@@ -97,7 +118,7 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
   if (!text) text = buttons.length ? 'הכנתי פעולות לאישורך.' : 'לא הצלחתי להשלים, נסה לנסח שוב.';
 
   await saveMemory(db, chatKey, conv?.summary ?? '', [...turns, { role: 'user', content: userText }, { role: 'assistant', content: text }], llm);
-  return { text, buttons };
+  return { text, buttons, model };
 }
 
 const KEEP = 8;

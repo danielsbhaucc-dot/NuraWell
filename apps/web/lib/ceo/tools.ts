@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { buildBusinessMetrics } from '@/lib/admin/business-metrics';
+import { deleteUserCompletely } from '@/lib/admin/delete-user-completely';
 import { opsLink } from './channel';
 
 /**
@@ -14,6 +15,8 @@ export type CeoTool = {
   description: string;
   schema: z.ZodObject<z.ZodRawShape>;
   write: boolean;
+  /** irreversible: approval card carries an explicit warning */
+  destructive?: boolean;
   /** read: returns data for the model. write: executes after approval. */
   run: (db: Db, args: Record<string, unknown>) => Promise<unknown>;
   /** write tools: one-line Hebrew description shown on the approval card */
@@ -209,12 +212,128 @@ export const CEO_TOOLS: CeoTool[] = [
   },
 ];
 
+
+// ---------------- generic admin data access (allowlisted) ----------------
+/** Everything the panel manages. Writes only on these; reads on these + analytics tables. */
+export const WRITE_TABLES = [
+  'journey_stations', 'journey_steps', 'task_definitions', 'user_task_assignments', 'almog_assignments', 'almog_focus_periods',
+  'notifications', 'scheduled_reminders', 'almog_knowledge', 'site_settings', 'courses', 'lessons', 'enrollments',
+  'challenge_campaigns', 'challenge_task_definitions', 'challenge_enrollments', 'demo_access_links', 'audio_playlists', 'audio_tracks',
+  'media_assets', 'user_memories', 'subscriptions', 'profiles',
+] as const;
+export const READ_TABLES = [
+  ...WRITE_TABLES, 'task_events', 'ai_interactions', 'chat_sessions', 'guardian_sos_events', 'error_events', 'billing_events',
+  'journey_progress', 'journey_task_executions', 'safety_events', 'almog_interventions', 'almog_blockers', 'almog_kickoff_status',
+  'ops_admin_notifications', 'lesson_progress', 'challenge_task_completions', 'challenge_success_events', 'user_insights',
+  'notification_fall_episodes', 'ceo_audit_log', 'ceo_pending_actions',
+] as const;
+/** profiles: never allow role / consent / auth-adjacent columns to be changed by the agent. */
+const PROFILE_WRITABLE = new Set(['full_name', 'gender', 'is_active', 'notify_test_opt_in', 'notify_paused_until', 'notification_prefs', 'program_state', 'engagement_status', 'main_goal', 'main_obstacle', 'main_obstacle_detail', 'wake_up_time', 'sleep_time', 'dinner_time', 'meal_count', 'meal_schedule', 'ai_check_in_times', 'daily_task', 'weakest_time_of_day', 'preferred_channel', 'ai_system_prompt']);
+const ident = z.string().regex(/^[a-z_][a-z0-9_]*$/);
+const filt = z.array(z.object({ col: ident, op: z.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'ilike', 'is', 'in']), value: z.unknown() })).max(8).default([]);
+const match = z.record(ident, z.union([z.string(), z.number(), z.boolean()])).refine((m) => Object.keys(m).length > 0, 'match must not be empty');
+
+function guardWrite(table: string, row?: Record<string, unknown>) {
+  if (!(WRITE_TABLES as readonly string[]).includes(table)) throw new Error(`table not writable: ${table}`);
+  if (table === 'profiles' && row) for (const k of Object.keys(row)) if (!PROFILE_WRITABLE.has(k)) throw new Error(`profiles.${k} is not writable`);
+}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyFilters(q: any, f: { col: string; op: string; value: unknown }[]) {
+  for (const x of f) q = q[x.op](x.col, x.value);
+  return q;
+}
+const short = (v: unknown) => clip(JSON.stringify(v), 160);
+
+const GENERIC: CeoTool[] = [
+  {
+    name: 'db_read',
+    description: `Read any admin table (select columns, filters, order, limit≤100). Tables: ${READ_TABLES.join(', ')}. Use for anything not covered by a specific tool.`,
+    schema: z.object({ table: z.enum(READ_TABLES), columns: z.string().max(400).default('*'), filters: filt, order: ident.optional(), ascending: z.boolean().default(false), limit: z.number().int().min(1).max(100).default(20) }),
+    write: false,
+    run: async (db, a) => {
+      let q = db.from(String(a.table)).select(String(a.columns ?? '*'));
+      q = applyFilters(q, (a.filters as never) ?? []);
+      if (a.order) q = q.order(String(a.order), { ascending: Boolean(a.ascending) });
+      const r = await rows(q.limit(Number(a.limit ?? 20)) as never);
+      return r.map((x) => Object.fromEntries(Object.entries(x as Record<string, unknown>).map(([k, v]) => [k, typeof v === 'string' ? clip(v, 600) : v])));
+    },
+  },
+  {
+    name: 'db_insert',
+    description: `Insert a row (content, tasks/ladders, stations, notifications, settings, etc.). Writable: ${WRITE_TABLES.join(', ')}.`,
+    schema: z.object({ table: z.enum(WRITE_TABLES), row: z.record(ident, z.unknown()) }),
+    write: true,
+    summarize: (a) => `הוספה ל-${a.table}: ${short(a.row)}`,
+    run: async (db, a) => {
+      guardWrite(String(a.table), a.row as never);
+      const { data, error } = await db.from(String(a.table)).insert(a.row as never).select('*').single();
+      if (error) throw new Error(error.message);
+      return { ok: true, row: data };
+    },
+  },
+  {
+    name: 'db_update',
+    description: 'Update rows matching an exact match object (e.g. {"id": "..."}). Use for editing lessons, ladders, levels, settings, user fields.',
+    schema: z.object({ table: z.enum(WRITE_TABLES), match, patch: z.record(ident, z.unknown()) }),
+    write: true,
+    summarize: (a) => `עדכון ${a.table} ${short(a.match)} ← ${short(a.patch)}`,
+    run: async (db, a) => {
+      guardWrite(String(a.table), a.patch as never);
+      const { data, error } = await db.from(String(a.table)).update(a.patch as never).match(a.match as never).select('*');
+      if (error) throw new Error(error.message);
+      return { ok: true, updated: data?.length ?? 0 };
+    },
+  },
+  {
+    name: 'db_delete',
+    description: 'DESTRUCTIVE: delete rows matching an exact match object. Prefer unpublish/deactivate when possible.',
+    schema: z.object({ table: z.enum(WRITE_TABLES), match }),
+    write: true,
+    destructive: true,
+    summarize: (a) => `מחיקה מ-${a.table} ${short(a.match)}`,
+    run: async (db, a) => {
+      guardWrite(String(a.table));
+      if (a.table === 'profiles') throw new Error('use delete_user');
+      const { data, error } = await db.from(String(a.table)).delete().match(a.match as never).select('*');
+      if (error) throw new Error(error.message);
+      return { ok: true, deleted: data?.length ?? 0 };
+    },
+  },
+  {
+    name: 'send_user_notification',
+    description: "Send an in-app notification to a user in Almog's voice (masculine, user's gender). Respect the fade rule; use rarely.",
+    schema: z.object({ userId: uuid, title: z.string().min(2).max(80), body: z.string().min(2).max(400), action_url: z.string().max(200).default('/dashboard') }),
+    write: true,
+    summarize: (a) => `התראה למשתמש ${a.userId}: "${a.title}"`,
+    run: async (db, a) => {
+      const day = new Date().toISOString().slice(0, 10);
+      const { error } = await db.from('notifications').insert({ user_id: a.userId, type: 'admin_message', title: a.title, body: a.body, action_url: a.action_url, icon_emoji: '💬', dedupe_key: `ceo:${a.userId}:${day}:${String(a.title).slice(0, 40)}`, metadata: { source: 'ceo' } });
+      if (error) throw new Error(error.message);
+      return { ok: true };
+    },
+  },
+  {
+    name: 'delete_user',
+    description: 'DESTRUCTIVE: permanently delete a user account and all their data.',
+    schema: z.object({ userId: uuid }),
+    write: true,
+    destructive: true,
+    summarize: (a) => `מחיקה מלאה של המשתמש ${a.userId} וכל הנתונים שלו`,
+    run: async (db, a) => {
+      const r = await deleteUserCompletely(db, String(a.userId));
+      if (!r.ok) throw new Error(r.error);
+      return { ok: true };
+    },
+  },
+];
+
+CEO_TOOLS.push(...GENERIC);
 export const TOOL_BY_NAME = new Map(CEO_TOOLS.map((t) => [t.name, t]));
 
 /** OpenAI tool specs (JSON schema). The content-draft tool is handled in agent.ts. */
 export function toolSpecs() {
   return CEO_TOOLS.map((t) => ({
     type: 'function' as const,
-    function: { name: t.name, description: (t.write ? '[REQUIRES DANIEL APPROVAL] ' : '') + t.description, parameters: z.toJSONSchema(t.schema) as Record<string, unknown> },
+    function: { name: t.name, description: (t.destructive ? '[DESTRUCTIVE · REQUIRES APPROVAL] ' : t.write ? '[REQUIRES DANIEL APPROVAL] ' : '') + t.description, parameters: z.toJSONSchema(t.schema) as Record<string, unknown> },
   }));
 }

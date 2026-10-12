@@ -185,3 +185,21 @@ describe('digests', () => {
     expect(periodsFor(new Date('2026-10-13T06:00:00Z'))).toEqual(['daily']);
   });
 });
+
+describe('full admin tools + routing', () => {
+  it('routes analysis to strong model, lookups to gpt-oss-120b', async () => {
+    const { pickModel } = await import('@/lib/ceo/agent');
+    expect(pickModel('כמה משתמשים יש?')).toContain('gpt-oss-120b');
+    expect(pickModel('תנתח לי למה משתמשים נוטשים')).not.toContain('gpt-oss');
+  });
+  it('blocks role escalation and non-allowlisted tables; destructive gets warning', async () => {
+    const { db } = fakeDb();
+    const { TOOL_BY_NAME } = await import('@/lib/ceo/tools');
+    const upd = TOOL_BY_NAME.get('db_update')!;
+    await expect(upd.run(db, { table: 'profiles', match: { id: 'x' }, patch: { role: 'admin' } })).rejects.toThrow(/not writable/);
+    expect(() => upd.schema.parse({ table: 'auth_users', match: { id: 'x' }, patch: {} })).toThrow();
+    expect(() => upd.schema.parse({ table: 'profiles', match: {}, patch: { full_name: 'a' } })).toThrow();
+    const a = await proposeAction(db, 'delete_user', { userId: '11111111-1111-4111-8111-111111111111' });
+    expect(a.summary).toMatch(/^⚠️ בלתי הפיך/);
+  });
+});

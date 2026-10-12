@@ -10,7 +10,7 @@ export async function proposeAction(db: SupabaseClient, tool: string, args: Reco
   const t = TOOL_BY_NAME.get(tool);
   if (!t?.write) throw new Error(`not a write tool: ${tool}`);
   const parsed = t.schema.parse(args);
-  const summary = t.summarize?.(parsed) ?? tool;
+  const summary = `${t.destructive ? '⚠️ בלתי הפיך! ' : ''}${t.summarize?.(parsed) ?? tool}`;
   const { data, error } = await db.from('ceo_pending_actions').insert({ tool, args: parsed, summary, channel }).select('id, summary').single();
   if (error) throw new Error(error.message);
   await audit(db, 'ceo', 'action_proposed', { summary }, tool, data.id);
