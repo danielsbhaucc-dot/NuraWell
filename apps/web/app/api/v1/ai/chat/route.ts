@@ -1565,6 +1565,9 @@ function parseCompactRouterDecision(raw: unknown): ChatContextDecision | null {
   const w = o.w === 'cheap' ? 'llama4' : o.w;
   if (w !== 'terra' && w !== 'claude5' && w !== 'grok' && w !== 'llama4') return null;
   const codes = new Set(Array.isArray(o.n) ? o.n.filter((x): x is string => typeof x === 'string') : []);
+  /** cheap lane = small talk / light turns only; knowledge or personal-context questions keep the strong writer. */
+  const needsDepth = ['know', 'prog', 'journey', 'prin', 'mem'].some((c) => codes.has(c));
+  const writer = w === 'llama4' && needsDepth ? 'terra' : w;
   const decision: ChatContextDecision = {
     heavy_context: o.h === true || codes.size > 0,
     needs_user_memory_rag: false,
@@ -1574,7 +1577,7 @@ function parseCompactRouterDecision(raw: unknown): ChatContextDecision | null {
     needs_principles: false,
     needs_assignments: false,
     needs_blockers: false,
-    writer: w,
+    writer,
     writer_confidence: 85,
     reason: `router:${String(o.w)}${codes.size ? `:${[...codes].join('+')}` : ''}`,
   };
