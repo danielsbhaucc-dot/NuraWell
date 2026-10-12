@@ -35,9 +35,11 @@ export type PlanTask = TaskAssignment & {
   doneToday: number;
   targetToday: number;
   streakDays: number;
+  /** consecutive success days at the current level since the last level change (auto step-up uses 10) */
+  successDaysAtLevel: number;
   canStepDown: boolean;
   canStepUp: boolean;
-  history: { kind: string; date_key: string | null; from_level: number | null; to_level: number | null; reason: string | null; occurred_at: string }[];
+  history: { kind: string; date_key: string | null; from_level: number | null; to_level: number | null; reason: string | null; occurred_at: string; source?: string | null }[];
 };
 
 export function israelDateKey(d = new Date()): string {
@@ -85,7 +87,7 @@ export async function getPlan(admin: SupabaseClient, userId: string, now = new D
   const since = israelDateKey(new Date(now.getTime() - 60 * 86_400_000));
   const { data: events } = await admin
     .from('task_events')
-    .select('assignment_id, kind, date_key, from_level, to_level, reason, occurred_at')
+    .select('assignment_id, kind, date_key, from_level, to_level, reason, occurred_at, source')
     .eq('user_id', userId)
     .in('assignment_id', assignments.map((a) => a.id))
     .gte('occurred_at', `${since}T00:00:00Z`)
@@ -108,11 +110,15 @@ export async function getPlan(admin: SupabaseClient, userId: string, now = new D
       doneToday,
       targetToday: level.times_per_day ?? 1,
       streakDays: consecutiveDays(successDays, today),
+      successDaysAtLevel: consecutiveDays(
+        [...new Set(ev.filter((e) => e.kind === 'done' && (!a.last_level_change_at || (e.occurred_at as string) > a.last_level_change_at)).map((e) => e.date_key as string))],
+        today
+      ),
       canStepDown: stepDown(a.definition, a.current_level).ok,
       canStepUp: stepUp(a.definition, a.current_level).ok,
       history: ev
         .filter((e) => e.kind === 'level_change' || e.kind === 'accepted')
-        .map((e) => ({ kind: e.kind as string, date_key: e.date_key as string | null, from_level: e.from_level as number | null, to_level: e.to_level as number | null, reason: e.reason as string | null, occurred_at: e.occurred_at as string })),
+        .map((e) => ({ kind: e.kind as string, date_key: e.date_key as string | null, from_level: e.from_level as number | null, to_level: e.to_level as number | null, reason: e.reason as string | null, occurred_at: e.occurred_at as string, source: (e as { source?: string | null }).source ?? null })),
     };
   });
 }
