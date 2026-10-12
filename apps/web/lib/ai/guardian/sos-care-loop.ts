@@ -72,21 +72,22 @@ export async function shouldDeliverSosFollowUp(
 export async function cancelPendingSosFollowUps(
   admin: SupabaseClient,
   userId: string,
-  eventId: string | null
+  eventId: string | null,
+  opts: { allEvents?: boolean } = {}
 ): Promise<void> {
-  if (!eventId) return;
+  if (!eventId && !opts.allEvents) return;
   const { data: rows } = await admin
     .from('scheduled_reminders')
     .select('id, metadata')
     .eq('user_id', userId)
     .eq('status', 'pending')
-    .limit(30);
+    .limit(200);
 
   const ids = ((rows ?? []) as Array<{ id: string; metadata: Record<string, unknown> | null }>)
     .filter(
       (r) =>
         r.metadata?.source === 'sos_followup' &&
-        r.metadata?.event_id === eventId
+        (opts.allEvents || r.metadata?.event_id === eventId)
     )
     .map((r) => r.id);
 
@@ -155,7 +156,9 @@ export async function scheduleSosFollowUpChain(params: {
   const now = params.now ?? new Date();
   const urgency = params.urgency ?? 'normal';
 
-  await cancelPendingSosFollowUps(params.admin, params.userId, params.eventId);
+  // A new SOS moment supersedes any older care chain — otherwise each SOS stacked its own 3 follow-ups
+  // ("אני כאן אם תרצה" ×6 at the same minute).
+  await cancelPendingSosFollowUps(params.admin, params.userId, params.eventId, { allEvents: true });
 
   let phases = 0;
   for (const phase of [1, 2, 3] as FollowUpPhase[]) {

@@ -1,14 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, ChevronLeft, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronLeft } from 'lucide-react';
 
 import type { SosMemorySnippet, SosRecentEvent } from '../../lib/ai/guardian/sos-memory';
 import { filterRelevantSosEvents } from '../../lib/ai/guardian/sos-ease-shared';
 import { formatHebrewRelative } from '../../lib/time/hebrew-relative';
-import { runWhenIdle } from '../../lib/client/run-when-idle';
-import { AlmogAvatarChip } from '../journey/AlmogPresence';
 
 function outcomeLabel(outcome: string): string {
   if (outcome === 'passed') return 'עבר ✓';
@@ -18,65 +16,16 @@ function outcomeLabel(outcome: string): string {
   return 'נסגר';
 }
 
-function SosMemoryCardSkeleton() {
-  return (
-    <div
-      dir="rtl"
-      className="glass-surface-home animate-pulse rounded-[22px] p-4"
-      aria-busy="true"
-      aria-label="טוען רגעים אחרונים"
-    >
-      <div className="mb-3 flex items-center gap-3">
-        <div className="h-10 w-10 shrink-0 rounded-full bg-emerald-900/10" />
-        <div className="flex-1 space-y-2">
-          <div className="h-4 w-36 rounded-lg bg-emerald-900/10" />
-          <div className="h-3 w-24 rounded-md" />
-        </div>
-      </div>
-      <div className="space-y-2">
-        {[0, 1].map((i) => (
-          <div key={i} className="rounded-2xl border px-3 py-2.5">
-            <div className="h-3.5 w-4/5 rounded-md" />
-            <div className="mt-2 h-3 w-full rounded-md bg-emerald-900/5" />
-          </div>
-        ))}
-      </div>
-      <div className="mt-3 h-3 w-16 rounded-md" />
-    </div>
-  );
-}
+export type SosContextPayload = { memory: SosMemorySnippet[]; recent_events: SosRecentEvent[] };
 
-export function SosMemoryCard() {
-  const [memory, setMemory] = useState<SosMemorySnippet[]>([]);
-  const [events, setEvents] = useState<SosRecentEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+/**
+ * "What helped" memory for /home. Data arrives with the page (RSC, parallel to the other home queries),
+ * so there is no client fetch, no idle delay and no skeleton. The section header lives in HomeClient.
+ */
+export function SosMemoryCard({ initial }: { initial?: SosContextPayload | null }) {
   const [expanded, setExpanded] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/v1/ai/sos', { cache: 'no-store' });
-      const json = (await res.json()) as {
-        ok?: boolean;
-        memory?: SosMemorySnippet[];
-        recent_events?: SosRecentEvent[];
-      };
-      if (res.ok && json.ok) {
-        setMemory(json.memory ?? []);
-        setEvents(filterRelevantSosEvents(json.recent_events ?? []));
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    return runWhenIdle(() => {
-      void load();
-    }, 3000);
-  }, [load]);
-
-  if (loading) return <SosMemoryCardSkeleton />;
+  const memory = initial?.memory ?? [];
+  const events = filterRelevantSosEvents(initial?.recent_events ?? []);
   if (memory.length === 0 && events.length === 0) return null;
 
   const helped = memory.filter((m) => m.outcome === 'helped' || m.outcome === 'resolved').slice(0, 4);
@@ -108,29 +57,14 @@ export function SosMemoryCard() {
         showAccordion ? 'cursor-pointer transition active:scale-[0.995]' : ''
       }`}
     >
-      <div className="relative mb-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <AlmogAvatarChip size={40} />
-          <div>
-            <p className="text-sm font-black text-slate-900">רגעים אחרונים</p>
-            <p className="text-[10px] font-semibold text-slate-500">
-              {showAccordion ? 'לחץ לפתיחה / סגירה' : 'מה עזר ומה שפחות התאים'}
-            </p>
-          </div>
-        </div>
-        {showAccordion ? (
-          <span
-            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold text-white"
-            style={{
-              background: 'linear-gradient(145deg, #047857, #10b981)',
-              boxShadow: '0 4px 12px rgba(4,120,87,0.2)',
-            }}
-          >
-            {expanded ? 'סגור' : 'פתח'}
-            <ChevronDown className={`h-3.5 w-3.5 transition ${expanded ? 'rotate-180' : ''}`} />
+      {showAccordion ? (
+        <div className="mb-2 flex justify-end">
+          <span className="flex items-center gap-1 rounded-full bg-emerald-900/8 px-2.5 py-1 text-[10px] font-bold text-emerald-900">
+            {expanded ? 'פחות' : 'עוד'}
+            <ChevronDown className={`h-3.5 w-3.5 transition ${expanded ? 'rotate-180' : ''}`} aria-hidden />
           </span>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       <div className="relative space-y-2">
         {helped.length > 0 ? (
@@ -140,7 +74,7 @@ export function SosMemoryCard() {
           <JourneyStepRow
             key={`h-${m.strategy}-${m.created_at}-${i}`}
             tone="good"
-            title={m.task_title ? `"${m.task_title}"` : 'רגע קשה'}
+            title={m.task_title ? `"${m.task_title}"` : 'מה שעזר'}
             body={m.strategy}
             index={i + 1}
           />
@@ -160,17 +94,12 @@ export function SosMemoryCard() {
         ))}
 
         {events.length > 0 && (expanded || !showAccordion) ? (
-          <div className="rounded-2xl border border-violet-200/50 bg-linear-to-br from-violet-50/80 to-background-card px-3 py-2.5">
-            <p className="mb-2 flex items-center gap-1 text-[11px] font-bold text-violet-900">
-              <Sparkles className="h-3 w-3" />
-              רגעים אחרונים
-            </p>
+          <div className="rounded-2xl border border-emerald-900/10 bg-emerald-50/60 px-3 py-2.5">
+            <p className="mb-2 text-[11px] font-bold text-emerald-900/85">פעמים אחרונות</p>
             <div className="space-y-1.5">
               {events.slice(0, expanded ? 4 : 2).map((ev, i) => (
                 <div key={ev.id} className="flex items-start gap-2 text-[11px] leading-5 text-slate-700">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-[9px] font-black text-violet-800">
-                    {i + 1}
-                  </span>
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600/60" aria-hidden />
                   <span>
                     <span className="font-bold">{formatHebrewRelative(ev.created_at)}</span>
                     {' · '}
@@ -189,7 +118,7 @@ export function SosMemoryCard() {
         onClick={(e) => e.stopPropagation()}
         className="relative mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-800 hover:text-emerald-950"
       >
-        ראה הכל
+        לכל הרגעים
         <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
       </Link>
     </div>
@@ -200,32 +129,21 @@ function JourneyStepRow({
   tone,
   title,
   body,
-  index,
 }: {
   tone: 'good' | 'warn';
   title: string;
   body: string;
-  index: number;
+  index?: number;
 }) {
-  const accent = tone === 'good' ? '#8b5cf6' : '#f59e0b';
   const surface =
-    tone === 'good'
-      ? 'border-violet-200/50 bg-linear-to-br from-violet-50/80 to-background-card'
-      : 'border-amber-200/50 bg-linear-to-br from-amber-50/80 to-background-card';
+    tone === 'good' ? 'border-emerald-900/10 bg-emerald-50/60' : 'border-amber-900/10 bg-amber-50/60';
+  const bar = tone === 'good' ? 'bg-emerald-600/70' : 'bg-amber-500/70';
   return (
     <div className={`flex gap-3 rounded-2xl border px-3 py-2.5 ${surface}`}>
-      <div className="flex flex-col items-center pt-0.5">
-        <div
-          className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black text-white"
-          style={{ background: accent, boxShadow: `0 2px 8px ${accent}44` }}
-        >
-          {index}
-        </div>
-        <div className="mt-1 w-px flex-1 min-h-[8px] bg-slate-900/10" aria-hidden />
-      </div>
+      <span className={`w-1 shrink-0 rounded-full ${bar}`} aria-hidden />
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-black text-slate-900">{title}</p>
-        <p className="mt-0.5 text-[11px] leading-5 text-slate-600">{body}</p>
+        <p className="text-xs font-black text-emerald-950">{title}</p>
+        <p className="mt-0.5 text-[11px] leading-5 text-emerald-900/75">{body}</p>
       </div>
     </div>
   );

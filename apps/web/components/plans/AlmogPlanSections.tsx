@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Button, Card } from '@/components/ui';
+import { PlanSection } from './PlanSection';
 import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog-chat';
 
 /**
@@ -64,7 +65,15 @@ export function AlmogPlanSections() {
   const load = useCallback(async () => {
     try {
       const res = await fetch('/api/v1/almog-assignments', { credentials: 'include' });
-      if (res.ok) setData((await res.json()) as Payload);
+      if (res.ok) {
+        const json = (await res.json()) as Payload;
+        // only upcoming reminders, soonest first (past-due pending rows cluttered the plan with ~30 lines)
+        const cutoff = Date.now() - 60_000;
+        json.reminders = (json.reminders ?? [])
+          .filter((r) => new Date(r.fire_at).getTime() >= cutoff)
+          .sort((a, b) => a.fire_at.localeCompare(b.fire_at));
+        setData(json);
+      }
     } catch {
       /* section stays hidden */
     }
@@ -97,14 +106,11 @@ export function AlmogPlanSections() {
   const proposed = data.proposed ?? [];
   const active = data.assignments.filter((a) => a.status === 'active');
   const blockers = data.blockers.filter((b) => b.status === 'open');
-  const reminders = data.reminders.filter((r) => r.status === 'pending');
+  const reminders = data.reminders.filter((r) => r.status === 'pending').slice(0, 3);
   if (!focus && !proposed.length && !active.length && !blockers.length && !reminders.length && !data.completed.length) return null;
 
   return (
-    <section aria-labelledby="almog-plan-title" className="flex flex-col gap-3">
-      <h2 id="almog-plan-title" className="text-lg font-bold text-primary-900">
-        מה אלמוג מלווה עכשיו
-      </h2>
+    <PlanSection n={2} id="almog-plan-title" title="מה אלמוג מלווה" hint="צעדים קטנים, חסמים ותזכורות">
       {error ? (
         <p role="alert" className="text-sm text-energy-700">
           {error}
@@ -237,7 +243,7 @@ export function AlmogPlanSections() {
 
       {reminders.length ? (
         <Card className="flex flex-col gap-2">
-          <h3 className="font-bold text-primary-900">אזכיר לך</h3>
+          <h3 className="font-bold text-primary-900">התזכורות הקרובות</h3>
           <ul className="flex flex-col gap-2">
             {reminders.map((r) => (
               <li key={r.id} className="text-sm text-primary-900">
@@ -259,6 +265,6 @@ export function AlmogPlanSections() {
           </ul>
         </details>
       ) : null}
-    </section>
+    </PlanSection>
   );
 }
