@@ -874,7 +874,7 @@ async function createOpenRouterTextStreamResponse({
           if (done) break;
           if (!perfFirstChunkLogged && accumulated) {
             perfFirstChunkLogged = true;
-            console.info('[ai/chat]', { stage: 'writer_first_content', model, since_prep_ms: Date.now() - perfT0 });
+            console.info('[ai/chat]', { stage: 'writer_first_content', model, since_prep_ms: Date.now() - perfT0, gen: /"id":"(gen-[^"]+)"/.exec(buffer + decoder.decode(value))?.[1] ?? null });
           }
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split(/\r?\n/);
@@ -1615,7 +1615,7 @@ async function attemptContextRoute(opts: {
       choices?: Array<{ message?: { content?: string | null } }>;
     };
     const raw = data.choices?.[0]?.message?.content?.trim();
-    console.info('[ai/chat]', { stage: 'router_llm_done', ms: Date.now() - perfRouterT0, out_chars: raw?.length ?? 0 });
+    console.info('[ai/chat]', { stage: 'router_llm_done', ms: Date.now() - perfRouterT0, out_chars: raw?.length ?? 0, gen: (data as { id?: string }).id ?? null });
     if (!raw) return null;
     const parsed = chatContextRouterSchema.safeParse(parseLlmJsonObject(raw));
     if (!parsed.success) return null;
