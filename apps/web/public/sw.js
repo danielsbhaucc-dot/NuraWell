@@ -61,8 +61,8 @@ self.addEventListener('push', (event) => {
       // הרקע — system notification רגיל
       await self.registration.showNotification(payload.title || 'אלמוג', {
         body: payload.body || '',
-        icon: '/icons/icon-192.png',
-        badge: '/icons/icon-192.png',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
         dir: 'rtl',
         lang: 'he',
         tag: payload.tag || 'almog',

@@ -50,18 +50,16 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
             href={APP_HOME_PATH}
             prefetch
             aria-label="מעבר למסך הבית"
-            className="absolute left-1/2 -translate-x-1/2 rounded-xl px-3 py-1.5 no-tap-highlight"
-            style={{
-              background: 'rgba(255,255,255,0.14)',
-              border: '1px solid rgba(255,255,255,0.28)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.24)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
-            }}
+            className="absolute left-1/2 -translate-x-1/2 no-tap-highlight"
           >
-            <span style={{ color: '#fff', fontWeight: 900, fontSize: '13px', letterSpacing: '0.2px', fontFamily: "'Rubik','Heebo',sans-serif" }}>
-              NuraWell
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element -- static brand SVG */}
+            <img
+              src="/brand/nurawell-special-on-dark.svg"
+              alt="NuraWell"
+              width={112}
+              height={22}
+              style={{ display: 'block', height: 22, width: 'auto' }}
+            />
           </Link>
 
           <motion.div className="flex items-center gap-2">
