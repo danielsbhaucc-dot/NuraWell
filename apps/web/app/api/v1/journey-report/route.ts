@@ -3,6 +3,8 @@ import { requireApiSession } from '../../../../lib/api/route-guards';
 import { jerusalemDateKey } from '../../../../lib/journey/task-schedule';
 
 export const runtime = 'edge';
+// Edge runs next to the user by default (fra1) — every Supabase round-trip then crosses to Sydney. Pin next to the DB.
+export const preferredRegion = 'syd1';
 export const dynamic = 'force-dynamic';
 
 const JOURNEY_PROGRESS_SELECT =

@@ -53,11 +53,36 @@ export function groqLaneApiKey(): string {
   );
 }
 
+/** gpt-5 / gpt-5-mini / gpt-5-nano reason by default; `gpt-5-chat` does not. */
+export function isGpt5ReasoningModel(model: unknown): boolean {
+  return typeof model === 'string' && /(^|\/)gpt-5(\.\d+)?(-mini|-nano)?$/i.test(model);
+}
+
+/**
+ * Reasoning tokens count against `max_tokens`. With the small budgets used by the
+ * JSON helpers (400-700) gpt-5-mini spent the whole budget thinking and returned
+ * empty `content` (finish_reason=length), so every caller silently fell back to
+ * templates. Default to low effort, hide the reasoning, and add headroom.
+ */
+export const GPT5_REASONING_HEADROOM = 1_200;
+function adaptGpt5Body(body: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...body };
+  if (out.reasoning === undefined && out.reasoning_effort === undefined) {
+    out.reasoning = { effort: 'low', exclude: true };
+  }
+  for (const key of ['max_tokens', 'max_completion_tokens'] as const) {
+    const v = out[key];
+    if (typeof v === 'number' && Number.isFinite(v)) out[key] = Math.min(65_536, v + GPT5_REASONING_HEADROOM);
+  }
+  return out;
+}
+
 /** Pure transform (unit-tested): returns the adjusted JSON body. */
 export function adaptGroqChatBody(
   body: Record<string, unknown>,
   opts: { viaOpenRouter?: boolean } = {}
 ): Record<string, unknown> {
+  if (opts.viaOpenRouter && isGpt5ReasoningModel(body.model)) return adaptGpt5Body(body);
   if (!isGptOssModel(body.model)) return body;
   const out: Record<string, unknown> = { ...body };
   if (opts.viaOpenRouter) {

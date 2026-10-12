@@ -3,7 +3,7 @@ import { isUpstashVectorConfigured } from '../../../../../../lib/ai/upstash-vect
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
-export const preferredRegion = 'fra1';
+export const preferredRegion = 'syd1'; // next to Supabase (Sydney); fra1 meant a cross-world hop per DB query
 
 async function upstashPing(): Promise<{ ok: boolean; error?: string }> {
   if (!isUpstashVectorConfigured()) {

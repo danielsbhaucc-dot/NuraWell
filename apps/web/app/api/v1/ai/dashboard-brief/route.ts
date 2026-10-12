@@ -38,12 +38,13 @@ export async function GET(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profileRow } = await supabase
       .from('profiles')
-      .select('full_name, ai_context')
+      .select('full_name, gender, ai_context')
       .eq('id', user.id)
       .maybeSingle();
 
     const profile = (profileRow ?? null) as {
       full_name: string | null;
+      gender: string | null;
       ai_context: AiUserContext | null;
     } | null;
 
@@ -70,14 +71,18 @@ export async function GET(request: Request) {
       admin,
       userId: user.id,
       firstName,
+      gender: profile?.gender === 'female' || profile?.gender === 'male' ? profile.gender : null,
     });
 
     // שמירת מטמון יומי — לא חוסם את התגובה אם נכשל.
-    void updateAiContext(supabase, user.id, {
-      dashboard_brief: { date: today, brief, model },
-    }).catch((err) => {
-      console.error('[dashboard-brief] cache write failed', err);
-    });
+    // fallback לא נשמר: אחרת תקלה רגעית במודל נתקעת כל היום.
+    if (!used_fallback) {
+      void updateAiContext(supabase, user.id, {
+        dashboard_brief: { date: today, brief, model },
+      }).catch((err) => {
+        console.error('[dashboard-brief] cache write failed', err);
+      });
+    }
 
     return NextResponse.json({
       brief,

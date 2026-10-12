@@ -2,7 +2,7 @@ import type { DiscreteFieldKey } from './onboarding-discrete-fields';
 import { DISCRETE_FIELD_LABELS } from './onboarding-discrete-fields';
 import type { OnboardingPath } from './onboarding-chat-llm';
 import type { ProfileFieldFlags } from '../profile/extracted-field-flags';
-import { imperativeTap, type ProfileGender } from '../profile/personalized-copy';
+import { imperativeAndSend, imperativeTap, type ProfileGender } from '../profile/personalized-copy';
 
 const TIME_RE = /\b(?:0?[0-9]|1[0-9]|2[0-3]):[0-5]\d\b/;
 const WEIGHT_WITH_UNIT_RE =
@@ -88,17 +88,18 @@ export function buildSensitiveLeakRedirect(
 ): string {
   const label = DISCRETE_FIELD_LABELS[key];
   const tap = imperativeTap(gender);
+  const send = imperativeAndSend(gender);
 
   if (key === 'full_name') {
     if (path === 'fun') {
-      return `רגע — שם לא עובר בצ'אט הפתוח, גם לא כשזה נשמע כמו שם 😅 ${tap} על 🔐 למטה ושלח שם בערוץ מאובטח בלבד.`;
+      return `רגע — שם לא עובר בצ'אט הפתוח, גם לא כשזה נשמע כמו שם 😅 ${tap} על 🔐 למטה ${send} שם בערוץ מאובטח בלבד.`;
     }
     return `שם נשמר רק בערוץ 🔐 — לא בצ'אט הפתוח, גם אם כתבת "שמי…". ${tap} על "שלח בערוץ מאובטח" למטה.`;
   }
 
   if (path === 'fun') {
-    return `אוי — תפסתי ${label} בצ'אט הפתוח! 😅 זה לא עובר דרך השיחה (גם לא אליי במודל) — מחקתי את זה מהדרך. ${tap} על 🔐 למטה ושלח בערוץ מאובטח, ונמשיך משם.`;
+    return `אוי — תפסתי ${label} בצ'אט הפתוח! 😅 זה לא עובר דרך השיחה (גם לא אליי במודל) — מחקתי את זה מהדרך. ${tap} על 🔐 למטה ${send} בערוץ מאובטח, ונמשיך משם.`;
   }
 
-  return `שמתי לב ששלחת ${label} כאן בצ'אט הפתוח. מסיבות פרטיות זה לא נשמר ולא עובר למודל שפה — ${tap} על 🔐 "שלח בערוץ מאובטח" למטה ושלח שם.`;
+  return `שמתי לב ששלחת ${label} כאן בצ'אט הפתוח. מסיבות פרטיות זה לא נשמר ולא עובר למודל שפה — ${tap} על 🔐 "שלח בערוץ מאובטח" למטה ${send} שם.`;
 }

@@ -109,7 +109,12 @@ function coerceMood(value: unknown): DashboardBriefMood {
  * המשפטים נבחרים יומית לפי seed (תאריך + שם), כך שלא חוזר אותו דבר כל יום,
  * והם מבוססים על עקרונות שינוי-התנהגות (ניצחון קטן, שמירת רצף, חמלה, התחלה חדשה).
  */
-function buildFallbackBrief(signals: BriefSignals, firstName: string): DashboardBrief {
+function buildFallbackBrief(
+  signals: BriefSignals,
+  firstName: string,
+  gender: 'male' | 'female' | null = null
+): DashboardBrief {
+  const g = (f: string, m: string, n: string) => (gender === 'female' ? f : gender === 'male' ? m : n);
   const name = firstName && firstName !== 'משתמש' ? firstName : '';
   const seed = `${signals.dateKey}:${name || 'x'}`;
   const greet = name ? `${name}, ` : '';
@@ -120,7 +125,7 @@ function buildFallbackBrief(signals: BriefSignals, firstName: string): Dashboard
     return {
       headline: name ? `טוב לראות אותך, ${name}` : 'טוב לראות אותך',
       body: normalizeHebrewDashes(`עבר קצת זמן, וזה ממש בסדר. ${spark} מה שלומך עכשיו?`),
-      cta_label: 'בוא נדבר רגע',
+      cta_label: g('בואי נדבר רגע', 'בוא נדבר רגע', 'נדבר רגע?'),
       cta_action: 'open_chat',
       cta_prompt: 'היי אלמוג, עבר קצת זמן. בוא נחזור בעדינות.',
       mood: 'gentle',
@@ -136,8 +141,8 @@ function buildFallbackBrief(signals: BriefSignals, firstName: string): Dashboard
         : `${signals.activeDaysLast7} מתוך 7 הימים האחרונים היית בתנועה`;
     return {
       headline: 'יש לך מומנטום 🔥',
-      body: normalizeHebrewDashes(`${streakLine}. ${spark} בוא נשמור על הקצב היפה הזה.`),
-      cta_label: 'שמור על המומנטום',
+      body: normalizeHebrewDashes(`${streakLine}. ${spark} ${g('בואי', 'בוא', 'בואו')} נשמור על הקצב היפה הזה.`),
+      cta_label: g('לשמור על המומנטום', 'לשמור על המומנטום', 'לשמור על המומנטום'),
       cta_action: 'open_journey',
       cta_prompt: null,
       mood: 'celebrate',
@@ -151,7 +156,7 @@ function buildFallbackBrief(signals: BriefSignals, firstName: string): Dashboard
       signals.openTasksToday === 1 ? 'צעד אחד קטן' : `${signals.openTasksToday} צעדים קטנים`;
     return {
       headline: signals.partOfDay === 'evening' || signals.partOfDay === 'night' ? 'עוד יש זמן להיום' : 'יש משהו קטן להיום',
-      body: normalizeHebrewDashes(`נשאר לך ${count} להיום. ${spark} ספר לי כשעשית.`),
+      body: normalizeHebrewDashes(`נשאר לך ${count} להיום. ${spark} ${g('ספרי לי כשעשית.', 'ספר לי כשעשית.', 'אני כאן לשמוע איך הלך.')}`),
       cta_label: 'עדכון משימות',
       cta_action: 'open_tasks',
       cta_prompt: null,
@@ -164,7 +169,7 @@ function buildFallbackBrief(signals: BriefSignals, firstName: string): Dashboard
     const spark = pickMomentumSpark('fresh', seed);
     return {
       headline: 'מתחילים את המסע',
-      body: normalizeHebrewDashes(`כיף שאתה כאן 🌿 ${spark} אני איתך לאורך כל הדרך.`),
+      body: normalizeHebrewDashes(`${g('כיף שאת כאן', 'כיף שאתה כאן', 'כיף שהגעת')} 🌿 ${spark} אני איתך לאורך כל הדרך.`),
       cta_label: 'לצעד הראשון',
       cta_action: 'open_journey',
       cta_prompt: null,
@@ -213,8 +218,9 @@ export async function buildDashboardBrief(params: {
   admin: SupabaseClient | any;
   userId: string;
   firstName: string;
+  gender?: 'male' | 'female' | null;
 }): Promise<DashboardBriefResult> {
-  const { supabase, admin, userId, firstName } = params;
+  const { supabase, admin, userId, firstName, gender } = params;
 
   const [contextResult, chatTurns, report] = await Promise.all([
     buildUserContext(supabase, userId).catch(() => null),
@@ -297,7 +303,7 @@ export async function buildDashboardBrief(params: {
     .join('\n\n');
 
   if (!process.env.OPENROUTER_API_KEY?.trim()) {
-    return { brief: buildFallbackBrief(signals, firstName), used_fallback: true, model: null };
+    return { brief: buildFallbackBrief(signals, firstName, gender ?? null), used_fallback: true, model: null };
   }
 
   try {
@@ -318,7 +324,7 @@ export async function buildDashboardBrief(params: {
     const headline = clampText(parsed.headline, 60);
     const body = clampText(parsed.body, 360);
     if (!headline || !body) {
-      return { brief: buildFallbackBrief(signals, firstName), used_fallback: true, model: BRIEF_MODEL };
+      return { brief: buildFallbackBrief(signals, firstName, gender ?? null), used_fallback: true, model: BRIEF_MODEL };
     }
 
     const action = coerceAction(parsed.cta_action);
@@ -336,6 +342,6 @@ export async function buildDashboardBrief(params: {
     return { brief, used_fallback: false, model: BRIEF_MODEL };
   } catch (error) {
     console.error('[dashboard-brief-llm] generation failed', error);
-    return { brief: buildFallbackBrief(signals, firstName), used_fallback: true, model: BRIEF_MODEL };
+    return { brief: buildFallbackBrief(signals, firstName, gender ?? null), used_fallback: true, model: BRIEF_MODEL };
   }
 }

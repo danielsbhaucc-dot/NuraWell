@@ -58,8 +58,8 @@ export async function resolveSiteBackgroundResponse(opts: {
     {
       headers: {
         'Cache-Control': hasCustom
-          ? 'public, max-age=3600, stale-while-revalidate=86400'
-          : 'public, max-age=60',
+          ? 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400'
+          : 'public, max-age=60, s-maxage=60',
       },
     }
   );
