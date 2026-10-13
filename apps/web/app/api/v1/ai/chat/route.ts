@@ -206,6 +206,7 @@ import {
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 import { publicAppUrlForAiReferer } from '../../../../../lib/public-app-url';
+import { dedupeSystemPrompt, isChatFastModeEnabled } from '../../../../../lib/ai/chat-fast-mode';
 import { openRouterChatFetch } from '../../../../../lib/ai/openrouter-relay';
 
 /**
@@ -2676,6 +2677,13 @@ async function handleChatPost(request: Request) {
       };
     }
 
+    if (isChatFastModeEnabled() && !crisisSignal.redFlag) {
+      return {
+        profilePeek,
+        contextDecision: heuristicContextDecision(lastUserText, earlySignals, 'fast_mode_heuristic'),
+      };
+    }
+
     const contextDecision = await routeChatContextWithCheapModel(
       lastUserText,
       earlySignals,
@@ -3550,7 +3558,8 @@ async function handleChatPost(request: Request) {
       .filter((s) => s !== null && s !== undefined)
       .join('\n');
     // הכותב הראשי מקבל את הפרומפט המתאים למודל; משמש גם ל-empty-retry שלו.
-    const systemPromptWithMemory = `${mcfg.mainWriterSystemPrompt}\n\n${dynamicSystemPrompt}`;
+    const systemPromptRaw = `${mcfg.mainWriterSystemPrompt}\n\n${dynamicSystemPrompt}`;
+    const systemPromptWithMemory = isChatFastModeEnabled() ? dedupeSystemPrompt(systemPromptRaw) : systemPromptRaw;
 
     stage = 'stream_init';
     const perfContextDoneAt = Date.now();
