@@ -56,3 +56,4 @@ logs/
 
 # Local audit artifacts
 apps/web/.lighthouse-landing.json
+.env*
