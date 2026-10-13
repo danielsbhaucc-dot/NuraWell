@@ -1,3 +1,4 @@
+import { meteredFetch } from '@/lib/ai/usage-meter';
 import { createOpenAI } from '@ai-sdk/openai';
 import { publicAppUrlForAiReferer } from '../public-app-url';
 
@@ -46,6 +47,7 @@ export function createAiProvider(opts: {
     ...(opts.attribution === false
       ? {}
       : { headers: { 'HTTP-Referer': publicAppUrlForAiReferer(), 'X-Title': opts.title ?? 'NuraWell' } }),
-    fetch: withTimeoutFetch(opts.fetch ?? ((i, n) => fetch(i, n)), timeoutMs),
+    // default goes through meteredFetch: usage metering + the central outbound PII guard
+    fetch: withTimeoutFetch(opts.fetch ?? meteredFetch(), timeoutMs),
   });
 }

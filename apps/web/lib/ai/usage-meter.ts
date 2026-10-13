@@ -1,3 +1,4 @@
+import { guardOutboundBody, restoreAiResponse } from '@/lib/ai/privacy/outbound-pii-guard';
 /**
  * Measured AI spend. Wraps fetch for OpenRouter chat/embeddings calls:
  *  - asks OpenRouter to include billed cost (`usage: { include: true }`),
@@ -29,6 +30,12 @@ export function enterAiUsage(meta: AiUsageMeta) {
 }
 
 /** Attach the user once known (e.g. after auth) to the current attribution context. */
+/** userId of the current AI usage scope (ALS), if any */
+export function currentAiUserId(): string | null {
+  const id = als?.getStore()?.userId;
+  return id && UUID.test(id) ? id : null;
+}
+
 export function setAiUsageUser(userId: string) {
   const st = als?.getStore();
   if (st) st.userId = userId;
@@ -82,7 +89,8 @@ export function meteredFetch(baseFetch?: typeof fetch, fixedMeta?: AiUsageMeta):
   const base: typeof fetch = (i, n) => (baseFetch ?? globalThis.fetch)(i, n);
   return async (input, init) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-    if (!/openrouter\.ai\/api\/v1\/(chat\/completions|embeddings)$/.test(url) || typeof init?.body !== 'string') return base(input, init);
+    const isAi = /(openrouter\.ai\/api\/v1|api\.groq\.com\/openai\/v1|api\.deepseek\.com\/v1)\/(chat\/completions|embeddings)$/.test(url);
+    if (!isAi || typeof init?.body !== 'string') return base(input, init);
     let body: Record<string, unknown>;
     try {
       body = JSON.parse(init.body);
@@ -92,10 +100,21 @@ export function meteredFetch(baseFetch?: typeof fetch, fixedMeta?: AiUsageMeta):
     const store = als?.getStore() ?? {};
     const ctx: AiUsageMeta = { userId: fixedMeta?.userId ?? store.userId, feature: fixedMeta?.feature ?? store.feature };
     const userId = ctx.userId ?? (typeof body.user === 'string' && UUID.test(body.user) ? body.user : null);
+    // Central PII guard: nothing identifying leaves; replies are restored below.
+    const shield = await guardOutboundBody(body, userId && UUID.test(userId) ? userId : null);
+    try {
+      shield.assertNoRawPii(JSON.stringify(body));
+    } catch {
+      // never prints the value; visible in Vercel logs for auditing
+      console.error('[pii-guard] residual identifier in outbound AI payload', { feature: ctx.feature ?? null, url });
+    }
+    if (!/openrouter\.ai/.test(url)) {
+      return restoreAiResponse(await base(input, { ...init, body: JSON.stringify(body) }), shield);
+    }
     const feature = ctx.feature ?? (url.endsWith('embeddings') ? 'embeddings' : 'unknown');
     const reqModel = typeof body.model === 'string' ? body.model : null;
     if (!url.endsWith('embeddings')) body.usage = { include: true };
-    const res = await base(input, { ...init, body: JSON.stringify(body) });
+    const res = restoreAiResponse(await base(input, { ...init, body: JSON.stringify(body) }), shield);
     if (!res.ok || !res.body) return res;
 
     const save = (u: Usage | null, model: string | null) =>
