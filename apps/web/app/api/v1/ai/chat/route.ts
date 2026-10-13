@@ -4377,6 +4377,7 @@ async function handleChatPost(request: Request) {
     }
 
     const perfWriterOpenAt = Date.now();
+    const llmPath = upstream.headers.get('x-nw-relayed') === '1' ? 'relay_iad1' : 'direct';
     upstream = withChatPerfTiming(upstream, ({ firstByteAt, endAt, aborted }) => {
       // persisted (Hobby logs keep ~1h): no user id, no text — numbers only; 30-day retention in DB
       void createAdminClient()
@@ -4393,6 +4394,7 @@ async function handleChatPost(request: Request) {
           router_skipped: contextDecision.reason === 'trivial_skip_router_sticky',
           router_fallback: contextDecision.reason === 'cheap_router_failed_heuristic',
           aborted,
+          llm_path: llmPath,
         })
         .then(({ error }) => {
           if (error) console.warn('[ai/chat] perf persist failed', error.message);
