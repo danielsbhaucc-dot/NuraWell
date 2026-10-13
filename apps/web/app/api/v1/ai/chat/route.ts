@@ -1003,9 +1003,12 @@ async function createOpenRouterTextStreamResponse({
     },
   });
 
+  // network path of the writer call (edge relay vs direct) → chat_perf_timings.llm_path
+  const outHeaders = new Headers(headers);
+  if (upstream.headers.get('x-nw-relayed') === '1') outHeaders.set('x-nw-relayed', '1');
   return new Response(stream, {
     status: 200,
-    headers,
+    headers: outHeaders,
   });
 }
 
