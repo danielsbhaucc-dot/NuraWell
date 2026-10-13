@@ -888,7 +888,11 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     const fromStream = extractEmojiReactionFromChatMessage(lastAssistant as ChatDisplayMessage);
     if (!fromStream) return;
 
-    const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+    const lastUserIdx = messages.map((m) => m.role).lastIndexOf('user');
+    const lastUser = lastUserIdx >= 0 ? messages[lastUserIdx] : undefined;
+    // Only a reply that comes *after* the newest user message may react to it. Otherwise the previous
+    // turn's marker got re-attached to the just-sent message ("previous emoji on send").
+    if (messages.lastIndexOf(lastAssistant) < lastUserIdx) return;
     if (!lastUser?.id) {
       attachReactionRef.current(fromStream);
       return;
