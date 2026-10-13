@@ -18,3 +18,8 @@ describe('kinship names + plates', () => {
     expect(run('ירדתי 12 ק"ג')).toBe('ירדתי 12 ק"ג');
   });
 });
+describe('card keyword', () => {
+  it('redacts non-Luhn card after keyword', () => {
+    expect(run('כרטיס אשראי 4580 1234 5678 9123')).toBe('כרטיס אשראי <CARD>');
+  });
+});
