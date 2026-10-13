@@ -2604,6 +2604,25 @@ async function handleChatPost(request: Request) {
   const notificationContextPromiseEarly = notificationId
     ? fetchNotificationContextBlock(supabase, user.id, notificationId)
     : Promise.resolve(null);
+  /** repeated request/theme across turns+sessions → one hint line (lexical, no LLM) */
+  const repetitionHintPromise = (async () => {
+    if (!lastUserText || lastUserText.trim().length < 6) return null;
+    const { data } = await supabase
+      .from('ai_interactions')
+      .select('content, created_at, session_id')
+      .eq('user_id', user.id)
+      .eq('role', 'user')
+      .gte('created_at', new Date(Date.now() - 21 * 86400000).toISOString())
+      .lte('created_at', new Date(Date.now() - 15000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(80);
+    const { buildRepetitionHint } = await import('../../../../../lib/ai/repetition-hint');
+    return buildRepetitionHint(
+      lastUserText,
+      (data ?? []).map((r) => ({ content: String(r.content ?? ''), createdAt: String(r.created_at), sessionId: (r.session_id as string | null) ?? null })),
+      { sessionId }
+    );
+  })().catch(() => null);
   const almogNotificationsPromiseEarly = fetchRecentAlmogNotifications(supabase, user.id).catch(
     () => []
   );
@@ -3032,7 +3051,11 @@ async function handleChatPost(request: Request) {
     windowSize: historyWindow,
   });
   // V2: short full window + session live file (rolling summary) carries older turns
-  const recentMessages = almogPromptV2Enabled() ? budgetHistoryV2(mergedMessages) : mergedMessages;
+  // UI/reaction markers are display protocol — never show them to the writer (Claude started imitating them).
+  const cleanHistory = mergedMessages.map((m) =>
+    m.role === 'assistant' ? { ...m, content: stripRawChatUi(stripEmojiReactionMarker(m.content)).replace(/⟦NW_UIR?:[^⟧]*⟧/g, '') } : m
+  );
+  const recentMessages = almogPromptV2Enabled() ? budgetHistoryV2(cleanHistory) : cleanHistory;
 
   const genderCorrection = detectGenderCorrectionFromRecentMessages(recentMessages);
   const profileGender = genderCorrection ?? profileRow.gender;
@@ -3510,6 +3533,8 @@ async function handleChatPost(request: Request) {
       const { CHAT_UI_PROMPT } = await import('../../../../../lib/ai/chat-ui/blocks');
       contextSections.push(CHAT_UI_PROMPT);
     }
+    const repetitionHint = await repetitionHintPromise;
+    if (repetitionHint) contextSections.push(repetitionHint);
     if (ragMemoryBlock) contextSections.push(ragMemoryBlock);
     // מצב רוח מהפרופיל כפול לזיכרון העבודה — מדלגים אם הזיכרון כבר נשלח.
     if (moodFromProfile && !(leanContext && workingMemoryBlock))
@@ -4525,6 +4550,7 @@ async function handleChatPost(request: Request) {
             controller.enqueue(encoder.encode(encodeEmojiReactionMarker(headerReaction)));
           }
           let reactionSent = Boolean(headerReaction);
+          let hadVisibleOut = false;
           const flushLateReaction = () => {
             if (reactionSent || !resolvedEmojiReaction) return;
             reactionSent = true;
@@ -4537,9 +4563,14 @@ async function handleChatPost(request: Request) {
               const chunkText = decoder.decode(value, { stream: true });
               if (!hadVisibleText && chunkText.trim().length > 0) hadVisibleText = true;
               /** מקודדים מחדש טקסט מפוענח → גבולות chunk תמיד על תו שלם, כך שאפשר להזריק marker ביניהם. */
+              // reaction ready before any visible text → send it first; otherwise it waits for the end of the
+              // stream (injecting it mid-text split the first word: "ה⟦NW_RX⟧יי" rendered the first letter apart)
+              if (!hadVisibleOut) flushLateReaction();
               const visible = uiFilter.push(chunkText);
-              if (visible) controller.enqueue(encoder.encode(visible));
-              flushLateReaction();
+              if (visible) {
+                hadVisibleOut = true;
+                controller.enqueue(encoder.encode(visible));
+              }
             }
           }
           const trailing = decoder.decode();
@@ -4591,6 +4622,7 @@ async function handleChatPost(request: Request) {
             }
           }
           if (!reactionSent) {
+            reactionSent = true;
             const lateReaction =
               resolvedEmojiReaction ??
               (await Promise.race([
