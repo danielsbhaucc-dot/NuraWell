@@ -1,5 +1,7 @@
 'use client';
 
+import { JourneyAgentPanel } from './JourneyAgentPanel';
+import type { AiFilledStep } from '@/lib/admin/journey-agent/fill-core';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import {
@@ -336,6 +338,20 @@ export function StepEditor({ step }: StepEditorProps) {
   // PDF
   const [pdfUrl, setPdfUrl] = useState(step?.pdf_url || '');
   const [pdfName, setPdfName] = useState(step?.pdf_name || '');
+
+  const applyAiFilledStep = (s: AiFilledStep) => {
+    if (s.title) setTitle(s.title);
+    if (s.description) setDescription(s.description);
+    if (s.summary_text) setSummaryText(s.summary_text);
+    if (s.duration_minutes) setDurationMinutes(s.duration_minutes);
+    setQuizQuestions(s.quiz_questions ?? []);
+    setGameItems(s.game_items ?? []);
+    setCommitment(s.commitment ?? null);
+    setResearches(s.researches ?? []);
+    setTasks(s.tasks ?? []);
+    setHabits(s.habits ?? []);
+    setImmersiveAttentionStops(s.attention_stops ?? []);
+  };
 
   const runAiGeneration = async (
     text: string,
@@ -978,135 +994,15 @@ export function StepEditor({ step }: StepEditorProps) {
                 <Wand2 className="h-4 w-4 text-white" />
               </span>
               <span className="flex flex-col">
-                <span className="text-sm font-black" style={{ color: '#3730a3' }}>מילוי אוטומטי עם AI (LLaMA 4)</span>
-                <span className="text-[11px] font-semibold text-violet-700/80">הדביקו טקסט ארוך — ה-AI ימלא את כל הסעיפים חוץ מהווידאו</span>
+                <span className="text-sm font-black" style={{ color: '#3730a3' }}>סוכן AI למילוי הצעד</span>
+                <span className="text-[11px] font-semibold text-violet-700/80">קורא, אומר מה הוא חושב, שואל אם צריך, כותב ובודק את עצמו — בלייב</span>
               </span>
             </span>
             {aiPanelOpen ? <ChevronUp className="h-4 w-4 text-violet-700" /> : <ChevronDown className="h-4 w-4 text-violet-700" />}
           </button>
 
           {aiPanelOpen && (
-            <div className="space-y-3">
-              {aiFillMode !== 'clarifying' && (
-                <textarea
-                  value={aiSourceText}
-                  onChange={(e) => setAiSourceText(e.target.value)}
-                  disabled={aiFilling}
-                  className="input-field min-h-[140px] leading-relaxed"
-                  placeholder="הדביקו כאן את התוכן הגולמי של השיעור (תמלול / סיכום / טקסט מקצועי). ה-AI ייתן כותרת, סיכום, שאלות הבנה, משחק, התחייבות, מחקרים, משימות, הרגלים ונקודות קשב — ויסונכרן לזיכרון של אלמוג בשמירה."
-                />
-              )}
-
-              {/* ═══ שיחת חידוד בסגנון צ'אט ═══ */}
-              {(aiChatLog.length > 0 || aiFillMode === 'clarifying') && (
-                <div
-                  className="space-y-3 rounded-2xl p-3"
-                  style={{ background: 'rgba(248,251,246,0.6)', border: '1px solid rgba(124,58,237,0.2)' }}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-violet-900">שיחת חידוד עם ה-AI</span>
-                    {aiFillMode === 'clarifying' && (
-                      <span className="rounded-full px-2 py-0.5 text-[10px] font-bold text-violet-700" style={{ background: 'rgba(124,58,237,0.12)' }}>
-                        {CLARIFICATION_PHASE_LABEL[aiClarificationPhase]}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                    {aiChatLog.map((entry) => (
-                      <div
-                        key={entry.id}
-                        className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className="max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-[12px] leading-relaxed shadow-xs"
-                          style={
-                            entry.role === 'user'
-                              ? { background: 'linear-gradient(135deg, #7c3aed, #2563eb)', color: '#fff', borderBottomRightRadius: 4 }
-                              : { background: 'rgba(241,245,249,0.95)', color: '#1e1b4b', borderBottomLeftRadius: 4 }
-                          }
-                        >
-                          {entry.text}
-                        </div>
-                      </div>
-                    ))}
-                    {aiFilling && aiFillMode === 'clarifying' && (
-                      <div className="flex justify-start">
-                        <div className="flex items-center gap-1.5 rounded-2xl px-3 py-2 text-[12px] text-violet-700" style={{ background: 'rgba(241,245,249,0.95)' }}>
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> חושב…
-                        </div>
-                      </div>
-                    )}
-                    <div ref={aiChatEndRef} />
-                  </div>
-
-                  {aiFillMode === 'clarifying' && aiClarificationQuestions.length > 0 && (
-                    <div className="space-y-3 rounded-xl p-3" style={{ background: 'rgba(248,251,246,0.7)', border: '1px solid rgba(124,58,237,0.18)' }}>
-                      {aiClarificationQuestions.map((q) => (
-                        <Field key={q.id} label={q.label}>
-                          {q.input_type === 'textarea' ? (
-                            <textarea
-                              value={aiClarificationAnswers[q.id] ?? ''}
-                              onChange={(e) =>
-                                setAiClarificationAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
-                              }
-                              disabled={aiFilling}
-                              className="input-field min-h-[72px]"
-                              placeholder={q.help_text ?? 'הקלד תשובה…'}
-                            />
-                          ) : (
-                            <input
-                              value={aiClarificationAnswers[q.id] ?? ''}
-                              onChange={(e) =>
-                                setAiClarificationAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
-                              }
-                              disabled={aiFilling}
-                              className="input-field"
-                              placeholder={q.help_text ?? 'הקלד תשובה…'}
-                            />
-                          )}
-                        </Field>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="flex flex-wrap items-center gap-3">
-                {aiFillMode !== 'clarifying' ? (
-                  <button
-                    type="button"
-                    onClick={() => void handleAiFill()}
-                    disabled={aiFilling || aiSourceText.trim().length < 40}
-                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-50"
-                    style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)' }}
-                  >
-                    {aiFilling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {aiFilling ? 'ה-AI מנתח…' : 'התחל מילוי חכם'}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => void handleAiClarificationSubmit()}
-                    disabled={aiFilling}
-                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-50"
-                    style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)' }}
-                  >
-                    {aiFilling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {aiFilling ? 'שולח תשובות…' : 'שלח תשובות והמשך'}
-                  </button>
-                )}
-                <span className="text-[11px] font-semibold text-violet-700/70">
-                  {aiSourceText.trim().length} תווים · הווידאו תמיד נשאר למילוי ידני
-                </span>
-              </div>
-
-              {aiError && (
-                <p className="rounded-xl px-3 py-2 text-xs font-semibold text-red-700" style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.25)' }}>
-                  {aiError}
-                </p>
-              )}
-            </div>
+            <JourneyAgentPanel stepId={step?.id ?? null} onApply={applyAiFilledStep} />
           )}
 
           {aiMessage && (
