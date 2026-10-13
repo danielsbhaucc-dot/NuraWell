@@ -1,3 +1,5 @@
+import { NURAWELL_CHAT_SYSTEM_PROMPT_V2, ALMOG_CHAT_FINAL_GUARDRAILS_V2, almogPromptV2Enabled } from '../../../../../lib/ai/prompts-v2';
+import { budgetHistoryV2, budgetContextSectionsV2, sectionSizes } from '../../../../../lib/ai/context-budget-v2';
 import { createRawUiStreamFilter, encodeResolvedChatUi, hasResolvedContent, parseRawChatUi, resolveChatUi, stripRawChatUi } from '@/lib/ai/chat-ui/blocks';
 import { meteredFetch, setAiUsageUser, withAiUsage } from '@/lib/ai/usage-meter';
 import { detectCrisisSignals } from '@/lib/safety/crisis-detector';
@@ -564,10 +566,12 @@ function resolveChatModelRuntime(writer: ChatWriterKey): ChatModelRuntime {
   const supportsPromptCache = slug.startsWith('anthropic/') || slug.startsWith('openai/');
   const useReasoning = CHAT_REASONING_ENABLED && isQwen;
   const useLeanPrompt = false;
+  const v2 = almogPromptV2Enabled();
+  const guardBase = v2 ? ALMOG_CHAT_FINAL_GUARDRAILS_V2 : ALMOG_CHAT_FINAL_GUARDRAILS;
   const claudeGuard =
     writer === 'claude5'
-      ? `${ALMOG_CHAT_FINAL_GUARDRAILS}\nכתוב למשתמש רק את התשובה בעברית. אסור סוגריים מרובעים, תגיות מטה, הערות מערכת או placeholders.`
-      : ALMOG_CHAT_FINAL_GUARDRAILS;
+      ? `${guardBase}\nכתוב למשתמש רק את התשובה בעברית. אסור סוגריים מרובעים, תגיות מטה, הערות מערכת או placeholders.`
+      : guardBase;
   return {
     writer,
     slug,
@@ -578,7 +582,7 @@ function resolveChatModelRuntime(writer: ChatWriterKey): ChatModelRuntime {
     useReasoning,
     useLeanPrompt,
     providerOnly: entry?.providerOnly,
-    mainWriterSystemPrompt: useLeanPrompt ? NURAWELL_CHAT_SYSTEM_PROMPT_LEAN : BASE_SYSTEM_PROMPT,
+    mainWriterSystemPrompt: useLeanPrompt ? NURAWELL_CHAT_SYSTEM_PROMPT_LEAN : v2 ? NURAWELL_CHAT_SYSTEM_PROMPT_V2 : BASE_SYSTEM_PROMPT,
     finalGuardrails: useLeanPrompt ? ALMOG_CHAT_FINAL_GUARDRAILS_LEAN : claudeGuard,
   };
 }
@@ -3013,12 +3017,14 @@ async function handleChatPost(request: Request) {
     })
     .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m));
 
-  const recentMessages = mergeTranscriptWithClientMessages({
+  const mergedMessages = mergeTranscriptWithClientMessages({
     dbTurns,
     clientTurns,
     lastUserText,
     windowSize: historyWindow,
   });
+  // V2: short full window + session live file (rolling summary) carries older turns
+  const recentMessages = almogPromptV2Enabled() ? budgetHistoryV2(mergedMessages) : mergedMessages;
 
   const genderCorrection = detectGenderCorrectionFromRecentMessages(recentMessages);
   const profileGender = genderCorrection ?? profileRow.gender;
@@ -3533,6 +3539,11 @@ async function handleChatPost(request: Request) {
     ]
       .filter(Boolean)
       .join('\n');
+    if (almogPromptV2Enabled()) {
+      const b = budgetContextSectionsV2(contextSections);
+      console.info('[ai/chat]', { debug_id: debugId, stage: 'context_budget_v2', before: b.before, after: b.after, trimmed: b.trimmed, dropped: b.dropped, sizes: sectionSizes(contextSections) });
+      contextSections.splice(0, contextSections.length, ...b.sections);
+    }
     const dynamicSystemPrompt = [
       '— הקשר לשיחה הזו —',
       writerPersona,
