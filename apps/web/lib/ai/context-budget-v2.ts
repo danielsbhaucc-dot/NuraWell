@@ -30,7 +30,11 @@ export function budgetHistoryV2<T extends { role: string; content: string }>(msg
   return out;
 }
 
-const PROTECTED = [/^\[בטיחות/, /\[פעולה שבוצעה/, /\[לא בוצע שינוי רמה\]/, /^כלל: אל תטען/, /\[מענה להתראה\]/, /^\[התוכנית של המשתמש/, /שעה עכשיו|השעה בישראל|\[זמן/, /^\[כרטיסים בצ׳אט/];
+/**
+ * Anchored to the section start. Unanchored patterns matched text *inside* other sections (the notifications
+ * block mentions "[מענה להתראה]"), which made the 5k notifications list un-trimmable.
+ */
+const PROTECTED = [/^\[בטיחות/, /^\[פעולה שבוצעה/, /^\[לא בוצע שינוי רמה\]/, /^כלל: אל תטען/, /^\[מענה להתראה/, /^\[התוכנית של המשתמש/, /^\[זמן עכשיו\]/, /^\[כרטיסים בצ׳אט/];
 /** lower = dropped first when over budget */
 const LOW_PRIORITY = [/זיכרון ארוך|\[RAG|רמזי זיכרון/, /שיחות קודמות|cross-session|סיכומי שיחות/, /שיעורים קרובים/, /דו"ח התקדמות|התקדמות מלא/, /\[מדריכים|מדריך/, /אסטרטגיית מנטור|mentor/i];
 
@@ -42,7 +46,9 @@ export function budgetContextSectionsV2(sections: string[]): { sections: string[
   let out = sections.map((s) => {
     if (isProtected(s) || s.length <= V2_SECTION_CAP_CHARS) return s;
     trimmed += 1;
-    return `${s.slice(0, V2_SECTION_CAP_CHARS)}…`;
+    const cut = s.slice(0, V2_SECTION_CAP_CHARS);
+    const nl = cut.lastIndexOf('\n');
+    return `${nl > V2_SECTION_CAP_CHARS * 0.6 ? cut.slice(0, nl) : cut}\n…(קוצר)`;
   });
   let total = out.reduce((n, s) => n + s.length, 0);
   for (const re of LOW_PRIORITY) {
