@@ -1,5 +1,6 @@
 'use client';
 
+import { summarizeJourneyProgress } from '../../lib/journey/journey-progress-summary';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JourneyStepProgress } from '../../lib/types/journey';
@@ -45,6 +46,9 @@ interface JourneyPageProps {
   initialNextStep?: NextStepCardData | null;
   /** steps whose task the user is actively practicing (unified task model) — half credit until the step is completed */
   practicingStepIds?: string[];
+  /** כל הצעדים המפורסמים — בסיס "X מתוך Y" אחיד בכל האתר (summarizeJourneyProgress) */
+  publishedStepIds?: string[];
+  completedStepIds?: string[];
 }
 
 export function JourneyPage({
@@ -55,6 +59,8 @@ export function JourneyPage({
   hasFoundationStation = false,
   initialNextStep = null,
   practicingStepIds = [],
+  publishedStepIds,
+  completedStepIds = [],
 }: JourneyPageProps) {
   const [liveProgressByStep, setLiveProgressByStep] = useState<
     Record<string, JourneyStepProgress>
@@ -113,9 +119,19 @@ export function JourneyPage({
     [mergedGroups, practicingSet]
   );
 
-  const overallPct = totalAcrossAll.all
-    ? Math.round((totalAcrossAll.credit / totalAcrossAll.all) * 100)
-    : 0;
+  /** מספרי ה-HERO מהמקור האחיד (כל הצעדים המפורסמים) — זהים לעמודי התקדמות/תוכנית. */
+  const journeySummary = useMemo(() => {
+    if (!publishedStepIds?.length) return null;
+    const rows = completedStepIds.map((id) => ({ step_id: id, is_completed: true }));
+    for (const g of mergedGroups) for (const st of g.steps) if (st.progress?.is_completed) rows.push({ step_id: st.id, is_completed: true });
+    return summarizeJourneyProgress(publishedStepIds, rows);
+  }, [publishedStepIds, completedStepIds, mergedGroups]);
+
+  const overallPct = journeySummary
+    ? journeySummary.pct
+    : totalAcrossAll.all
+      ? Math.round((totalAcrossAll.credit / totalAcrossAll.all) * 100)
+      : 0;
 
   // ⤵ ימים מאז תחילת המסע — חישוב פר-משתמש (אם יש progress כלשהו)
   const daysInJourney = useMemo(() => computeDaysInJourney(mergedGroups), [mergedGroups]);
@@ -174,8 +190,8 @@ export function JourneyPage({
             firstName={firstName}
             groups={mergedGroups}
             overall={{
-              done: totalAcrossAll.done,
-              all: totalAcrossAll.all,
+              done: journeySummary?.done ?? totalAcrossAll.done,
+              all: journeySummary?.total ?? totalAcrossAll.all,
               pct: overallPct,
               stations: totalAcrossAll.stations,
               stationsDone: totalAcrossAll.stationsDone,

@@ -18,6 +18,7 @@ import {
   extractChatUiFromChatMessage,
   normalizeDisplayText,
   type ChatDisplayMessage,
+  setChatDisplayFirstName,
 } from '../../lib/client/chat-message-display';
 import { NuraWellChatTransport } from '../../lib/client/nurawell-chat-transport';
 import { headerDecodeEmojiReaction } from '../../lib/ai/emoji-reaction/marker';
@@ -520,6 +521,7 @@ export interface AIChatWidgetProps {
 
 export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidgetProps) {
   const fabHidden = useHideOnScrollDown();
+  setChatDisplayFirstName(firstName);
   const overlayRoot = useAppOverlayRoot();
   const greeting = usePersonalGreeting();
   const displayName = firstName?.trim() || '';

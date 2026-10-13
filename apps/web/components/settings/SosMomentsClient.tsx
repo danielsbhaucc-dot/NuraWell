@@ -1,4 +1,5 @@
 'use client';
+import { PageBackButton } from '../shared/PageBackButton';
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
@@ -416,18 +417,9 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
           }}
         />
 
-        <Link
-          href={APP_HOME_PATH}
-          className="absolute inset-s-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95"
-          style={{
-            background: 'rgba(167, 243, 208, 0.18)',
-            border: '1px solid rgba(167, 243, 208, 0.38)',
-            boxShadow: 'inset 0 1px 0 rgba(167, 243, 208, 0.45), 0 4px 16px rgba(6,78,59,0.12)',
-          }}
-          aria-label="חזרה לבית"
-        >
-          <ArrowRight className="h-5 w-5 text-emerald-50" aria-hidden />
-        </Link>
+        <div className="absolute inset-s-4 top-4 z-10">
+          <PageBackButton href={APP_HOME_PATH} label="לבית" ariaLabel="חזרה לבית" />
+        </div>
 
         <div className="relative mx-auto max-w-lg">
           <div className="flex flex-col items-center pt-8 text-center">

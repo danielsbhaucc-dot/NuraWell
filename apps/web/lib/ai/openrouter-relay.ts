@@ -13,8 +13,17 @@ export const RELAY_HEADER = 'x-nw-relay';
 function relayBase(): string | null {
   if ((process.env.AI_OPENROUTER_RELAY ?? '').trim().toLowerCase() === 'off') return null;
   if (!process.env.CRON_SECRET) return null;
-  const host = process.env.VERCEL_URL?.trim();
-  return host ? `https://${host}` : null;
+  /**
+   * Production: the per-deployment URL (VERCEL_URL) sits behind Vercel Deployment Protection
+   * (302 → SSO), so the relay never answered and every call fell back to the slow direct path.
+   * The production domain is public — use it. Previews keep VERCEL_URL + the bypass header.
+   */
+  const prodHost =
+    process.env.VERCEL_ENV === 'production'
+      ? process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '').trim()
+      : null;
+  const host = prodHost || process.env.VERCEL_URL?.trim();
+  return host ? `https://${host.replace(/\/+$/, '')}` : null;
 }
 
 /** POST a chat-completions body to OpenRouter, via the iad1 relay when available. Usage is metered (cost page). */

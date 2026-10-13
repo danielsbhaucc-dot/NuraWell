@@ -161,6 +161,8 @@ export default async function JourneyRoute() {
       hasFoundationStation={Boolean(accessCtx.foundationStationId)}
       initialNextStep={initialNextStep}
       practicingStepIds={practicingStepIds}
+      publishedStepIds={((rawSteps ?? []) as { id: string }[]).map((st) => st.id)}
+      completedStepIds={progressList.filter((p) => p.is_completed).map((p) => p.step_id)}
     />
   );
 }
