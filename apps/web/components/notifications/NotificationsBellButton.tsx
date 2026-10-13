@@ -42,14 +42,17 @@ export function NotificationsBellButton({
         isChallenge
           ? undefined
           : {
-              background: 'rgba(255,255,255,0.7)',
-              border: '1px solid rgba(4,120,87,0.14)',
-              boxShadow: '0 1px 2px rgba(4,47,36,0.06), inset 0 1px 0 rgba(255,255,255,0.9)',
+              background:
+                'linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08))',
+              border: '1px solid rgba(255,255,255,0.35)',
+              backdropFilter: 'blur(10px)',
+              boxShadow:
+                'inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 16px rgba(192,38,211,0.15)',
             }
       }
     >
       <Bell
-        className={cn(isChallenge ? 'h-5 w-5' : 'w-5 h-5 text-emerald-900')}
+        className={cn(isChallenge ? 'h-5 w-5' : 'w-5 h-5 text-white drop-shadow-xs')}
         strokeWidth={2.2}
       />
       {unreadCount > 0 && (
