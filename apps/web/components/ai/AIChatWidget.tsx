@@ -6,7 +6,7 @@ import { detectCrisisSignals } from '@/lib/safety/crisis-detector';
 
 import { Fragment, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BellRing, Clock, MessageCircle, Send, Loader2, X, RotateCcw, PlusCircle, LogOut, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { BellRing, Clock, MessageCircle, Send, Loader2, X, RotateCcw, PlusCircle, LogOut, ChevronRight, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useChat } from '@ai-sdk/react';
 import { useAppOverlayRoot } from '../../lib/dom/use-app-overlay-root';
@@ -39,6 +39,7 @@ import { guideContextHintToPayload, type GuideContextHint } from '../../lib/ai/g
 import { ChatSessionInbox } from './ChatSessionInbox';
 import { AiChatPrivacyNotice } from './AiChatPrivacyNotice';
 import { AlmogChatUiBlock } from './AlmogChatUiBlock';
+import { SecureVaultBox } from './SecureVaultBox';
 import {
   autoCloseStaleChatSessionsApi,
   closeChatSessionApi,
@@ -1134,6 +1135,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     return ui ? { ui, key: last.id ?? String(messages.length) } : null;
   }, [messages]);
 
+  const [vaultOpen, setVaultOpen] = useState(false);
   const sendQuickReply = useCallback(
     (text: string) => {
       if (!text.trim() || isSessionClosed) return;
@@ -1890,6 +1892,15 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
               {!isSessionClosed && !isClosing ? (
                 <AiChatPrivacyNotice variant="dark" className="mb-2 px-0.5" />
               ) : null}
+              {vaultOpen && !isSessionClosed && !isClosing ? (
+                <SecureVaultBox
+                  onClose={() => setVaultOpen(false)}
+                  onSaved={(notice) => {
+                    sendQuickReply(notice);
+                    setTimeout(() => setVaultOpen(false), 2200);
+                  }}
+                />
+              ) : null}
               <form
                 className="flex items-end gap-2 rounded-2xl border bg-background-card/6 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
                   onSubmit={(e) => {
@@ -1914,6 +1925,17 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                     }
                   }}
                 >
+                  <button
+                    type="button"
+                    onClick={() => setVaultOpen((v) => !v)}
+                    disabled={isSessionClosed || isClosing}
+                    aria-label="כספת מאובטחת לפרט רגיש"
+                    aria-expanded={vaultOpen}
+                    title="כספת מאובטחת"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-emerald-200 transition hover:bg-emerald-400/10 active:scale-95 disabled:opacity-40"
+                  >
+                    <Lock className="h-4 w-4" />
+                  </button>
                   <textarea
                     dir="rtl"
                     rows={1}
