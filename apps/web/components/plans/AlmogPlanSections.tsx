@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Button, Card } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { PlanAccordion } from './PlanAccordion';
 import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog-chat';
 
@@ -122,11 +122,11 @@ export function AlmogPlanSections() {
       ) : null}
 
       {focus ? (
-        <Card className="flex flex-col gap-2">
-          <h3 className="font-bold text-primary-900">{focus.status === 'proposed' ? 'אלמוג מציע לקחת רגע פוקוס' : 'מצב פוקוס פעיל'}</h3>
+        <PlanCard tone="sky">
+          <h3 className="text-[16px] font-extrabold leading-snug text-primary-900">{focus.status === 'proposed' ? 'אלמוג מציע לקחת רגע פוקוס' : 'מצב פוקוס פעיל'}</h3>
           {focus.reason ? <p className="text-sm text-primary-800/80">{focus.reason}</p> : null}
           {focus.ends_at ? <p className="text-xs text-primary-700">עד {fmt(focus.ends_at)}</p> : null}
-          <div className="flex flex-wrap gap-2">
+          <div className="mt-1 flex flex-wrap gap-2">
             {focus.status === 'proposed' ? (
               <>
                 <Button size="sm" loading={busy === focus.id} onClick={() => run(focus.id, () => act({ action: 'confirm_focus', focus_id: focus.id }))}>
@@ -142,15 +142,14 @@ export function AlmogPlanSections() {
               </Button>
             )}
           </div>
-        </Card>
+        </PlanCard>
       ) : null}
 
       {proposed.map((a) => (
-        <Card key={a.id} data-task-id={a.id} className="flex scroll-mt-24 flex-col gap-2 data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70">
-          <span className="text-xs font-bold text-primary-700">הצעה של אלמוג</span>
-          <h3 className="font-bold text-primary-900">{a.title}</h3>
+        <PlanCard key={a.id} taskId={a.id} tone="amber" kicker="הצעה של אלמוג">
+          <h3 className="text-[16px] font-extrabold leading-snug text-primary-900">{a.title}</h3>
           {a.reason ? <p className="text-sm text-primary-800/80">{a.reason}</p> : null}
-          <div className="flex gap-2">
+          <div className="mt-1 flex flex-wrap gap-2">
             <Button size="sm" loading={busy === a.id} onClick={() => run(a.id, () => act({ action: 'approve', assignment_id: a.id }))}>
               כן, מתאים לי
             </Button>
@@ -158,13 +157,13 @@ export function AlmogPlanSections() {
               לא מתאים לי
             </Button>
           </div>
-        </Card>
+        </PlanCard>
       ))}
 
       {active.map((a) => (
-        <Card key={a.id} data-task-id={a.id} className="flex scroll-mt-24 flex-col gap-2 data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70">
+        <PlanCard key={a.id} taskId={a.id} tone="emerald">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="font-bold text-primary-900">{a.title}</h3>
+            <h3 className="text-[16px] font-extrabold leading-snug text-primary-900">{a.title}</h3>
             <span className="shrink-0 rounded-full bg-primary-50 px-2 py-0.5 text-xs text-primary-800">{SCHEDULE[a.schedule]}</span>
           </div>
           {a.detail || a.reason ? <p className="text-sm text-primary-800/80">{a.detail || a.reason}</p> : null}
@@ -196,7 +195,7 @@ export function AlmogPlanSections() {
               ))}
             </div>
           ) : (
-            <div className="flex gap-2">
+            <div className="mt-1 flex flex-wrap gap-2">
               <Button
                 size="sm"
                 loading={busy === a.id}
@@ -214,15 +213,14 @@ export function AlmogPlanSections() {
               </Button>
             </div>
           )}
-        </Card>
+        </PlanCard>
       ))}
 
       {blockers.map((b) => (
-        <Card key={b.id} data-task-id={b.id} className="flex scroll-mt-24 flex-col gap-2 data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70">
-          <span className="text-xs font-bold text-primary-700">אלמוג כאן בשבילך</span>
+        <PlanCard key={b.id} taskId={b.id} tone="rose" kicker="אלמוג כאן בשבילך">
           <p className="font-semibold text-primary-900">{b.description}</p>
           {b.strategy ? <p className="text-sm text-primary-800/80">{b.strategy}</p> : null}
-          <div className="flex flex-wrap gap-2">
+          <div className="mt-1 flex flex-wrap gap-2">
             <Button
               size="sm"
               loading={busy === b.id}
@@ -242,7 +240,7 @@ export function AlmogPlanSections() {
               זה עזר לי
             </Button>
           </div>
-        </Card>
+        </PlanCard>
       ))}
 
         </section>
@@ -274,6 +272,37 @@ export function AlmogPlanSections() {
         </PlanAccordion>
       ) : null}
     </>
+  );
+}
+
+const TONE = {
+  emerald: { bar: 'before:from-emerald-500 before:to-teal-300', pill: 'bg-emerald-50 text-emerald-800 ring-emerald-200' },
+  amber: { bar: 'before:from-amber-400 before:to-orange-300', pill: 'bg-amber-50 text-amber-800 ring-amber-200' },
+  rose: { bar: 'before:from-rose-400 before:to-pink-300', pill: 'bg-rose-50 text-rose-800 ring-rose-200' },
+  sky: { bar: 'before:from-sky-400 before:to-cyan-300', pill: 'bg-sky-50 text-sky-800 ring-sky-200' },
+} as const;
+
+/** Same visual language as PlanHabitCard: white card, soft shadow, colored top accent, kicker pill. */
+function PlanCard({
+  tone,
+  kicker,
+  taskId,
+  children,
+}: {
+  tone: keyof typeof TONE;
+  kicker?: string;
+  taskId?: string;
+  children: React.ReactNode;
+}) {
+  const t = TONE[tone];
+  return (
+    <div
+      data-task-id={taskId}
+      className={`relative flex scroll-mt-24 flex-col gap-2 overflow-hidden rounded-[24px] bg-white p-4 pt-5 shadow-[0_10px_28px_rgba(6,78,59,0.08)] ring-1 ring-emerald-900/6 before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-linear-to-l ${t.bar} data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70`}
+    >
+      {kicker ? <span className={`w-fit rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${t.pill}`}>{kicker}</span> : null}
+      {children}
+    </div>
   );
 }
 
