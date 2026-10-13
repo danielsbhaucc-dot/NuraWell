@@ -28,10 +28,11 @@ function randomBetween(min: number, max: number): number {
  */
 export function sampleTickChoreographyDelays(): TickChoreographyDelays {
   return {
-    pendingMs: randomBetween(100, 280),
-    sentMs: randomBetween(160, 380),
-    deliveredMs: randomBetween(220, 480),
-    readHoldMs: randomBetween(280, 720),
+    // מקוצר: "מקליד" מופיע תוך ~0.25–0.5 שנ׳ מהשליחה, כדי שההמתנה ל-TTFT תורגש פחות.
+    pendingMs: randomBetween(40, 90),
+    sentMs: randomBetween(50, 110),
+    deliveredMs: randomBetween(60, 130),
+    readHoldMs: randomBetween(100, 170),
   };
 }
 
