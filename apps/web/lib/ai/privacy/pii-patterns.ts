@@ -82,6 +82,8 @@ const KIN_NOT_NAME = new Set(['אמרה','אמר','אוהב','אוהבת','רו�
 export const DETECTORS: Det[] = [
   // credit cards (Luhn) — before phones/ids so their digits are not split
   { kind: 'CARD', re: new RegExp(`${NOT_DIGIT_BEFORE}(?:\\d[ -]?){12,18}\\d${NOT_DIGIT_AFTER}`, 'g'), valid: (m) => luhnValid(m) },
+  // card by keyword even if checksum fails (typos still identify the account)
+  { kind: 'CARD', re: /(?:כרטיס(?:\s+(?:אשראי|חיוב|דיירקט))?|אשראי|ויזה|card(?:\s+number)?|visa|mastercard|amex)\s*[:#]?\s*((?:\d[ -]?){12,18}\d)(?!\d)/gi, group: 1 },
   // IBAN (mod-97); IL = 23 chars
   { kind: 'IBAN', re: /\b[A-Za-z]{2}\d{2}(?:[ -]?[A-Za-z0-9]{2,4}){3,8}\b/g, valid: (m) => ibanValid(m) },
   // IPv4 (valid octets) / IPv6 (full or compressed with ≥3 groups)
