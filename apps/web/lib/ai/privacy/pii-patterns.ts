@@ -4,7 +4,7 @@
  * plan dates, food words) out. Names inside words are never touched ("נועה" ≠ "תנועה").
  */
 export type PiiKind =
-  | 'CARD' | 'IBAN' | 'IP' | 'PHONE' | 'ID' | 'PASSPORT' | 'BANK_ACCOUNT' | 'BIRTHDATE' | 'ADDRESS' | 'PERSON';
+  | 'CARD' | 'IBAN' | 'IP' | 'PHONE' | 'ID' | 'PASSPORT' | 'BANK_ACCOUNT' | 'BIRTHDATE' | 'ADDRESS' | 'PERSON' | 'PLATE';
 
 export const PII_KIND_PLACEHOLDER: Record<PiiKind, string> = {
   CARD: '[[USER_CARD]]',
@@ -17,6 +17,7 @@ export const PII_KIND_PLACEHOLDER: Record<PiiKind, string> = {
   BIRTHDATE: '[[USER_BIRTHDATE]]',
   ADDRESS: '[[USER_ADDRESS]]',
   PERSON: '[[PERSON]]',
+  PLATE: '[[USER_PLATE]]',
 };
 
 const H = '\\u05D0-\\u05EA';
@@ -75,6 +76,9 @@ const birthYearOk = (y: string) => {
 /** Words that follow naming phrases but are not names. */
 const NOT_A_NAME = new Set(['לי', 'לו', 'לה', 'להם', 'לך', 'זה', 'את', 'אותו', 'אותה', 'הוא', 'היא', 'כך', 'ככה', 'the', 'a', 'an', 'not', 'just']);
 
+/** Common words after a kinship term that are not names ("אשתי אמרה", "הבן שלי אוהב"). */
+const KIN_NOT_NAME = new Set(['אמרה','אמר','אוהב','אוהבת','רוצה','חושב','חושבת','גם','לא','כן','היא','הוא','עושה','מבשל','מבשלת','שואל','שואלת','תמיד','עכשיו','קנתה','קנה','אומרת','אומר','בבית','מאוד','יותר','פחות','עובד','עובדת','הייתה','היה','ואני','ממש','כבר','עדיין','צוחק','צוחקת','מכינה','מכין','שלי','שלו','שלה','ילד','ילדה','קטן','קטנה','גדול','גדולה','בן','בת','מתלוננת','מתלונן','אכלה','אכל','מעודדת','מעודד','תומכת','תומך','לא']);
+
 export const DETECTORS: Det[] = [
   // credit cards (Luhn) — before phones/ids so their digits are not split
   { kind: 'CARD', re: new RegExp(`${NOT_DIGIT_BEFORE}(?:\\d[ -]?){12,18}\\d${NOT_DIGIT_AFTER}`, 'g'), valid: (m) => luhnValid(m) },
@@ -103,6 +107,18 @@ export const DETECTORS: Det[] = [
   // street addresses: Hebrew street keyword + name + number; English number + name + suffix
   { kind: 'ADDRESS', re: new RegExp(`(?:רחוב|רח['׳]|שדרות|שד['׳]|דרך|סמטת|סמ['׳]|כיכר|ככר)\\s+[${H}"״'׳\\-]+(?:\\s+[${H}"״'׳\\-]+){0,3}\\s+\\d{1,4}[א-ת]?(?:\\s*(?:\\/|דירה|ד['׳])\\s*\\d{1,4})?(?:\\s*,\\s*[${H}\\-]+(?:\\s+[${H}\\-]+){0,2})?`, 'g') },
   { kind: 'ADDRESS', re: /\b\d{1,5}\s+(?:[A-Z][a-z]+\s+){1,3}(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Ln|Lane|Dr|Drive|Way|Ct|Court)\b\.?/g },
+  // relatives named after a kinship word: "אשתי מיכל", "הבן שלי יואב", "אמא שלי רחל", "my wife Sarah"
+  {
+    kind: 'PERSON',
+    re: new RegExp(`(?:^|[^${H}])(?:ו|ש|ל|ה)?(?:אשתי|בעלי|בת\\s+הזוג\\s+שלי|בן\\s+הזוג\\s+שלי|החבר(?:ה)?\\s+שלי|(?:ה)?(?:בן|בת|אמא|אבא|אח|אחות|סבא|סבתא|דוד|דודה|חבר|חברה)\\s+שלי|בתי|אמי|אחותי|סבתי)\\s*,?\\s+([${H}]{2,})(?![${H}])|\\bmy\\s+(?:wife|husband|son|daughter|mother|father|mom|dad|brother|sister|partner|boyfriend|girlfriend)\\s*,?\\s+([A-Z][a-z]+)\\b`, 'g'),
+    group: 1,
+    valid: (_m, g) => {
+      const v = (g[0] ?? '').trim();
+      return v.length >= 2 && !NOT_A_NAME.has(v) && !KIN_NOT_NAME.has(v);
+    },
+  },
+  // Israeli license plates by keyword (רכב/לוחית/מספר רישוי + 7–8 digits)
+  { kind: 'PLATE', re: /(?:לוחית(?:\s+רישוי)?|מספר\s+רישוי|מס['׳]?\s+רכב|מספר\s+(?:ה)?רכב|license\s+plate|plate)\s*[:#]?\s*(\d{2,3}-?\d{2,3}-?\d{2,3})/gi, group: 1, valid: (_m, g) => [7, 8].includes(digits(g[0]).length) },
   // names the user introduces explicitly: "קוראים לי X", "שמי X", "בשם X", "קוראים לו/לה X", "my name is X", "named X"
   {
     kind: 'PERSON',
