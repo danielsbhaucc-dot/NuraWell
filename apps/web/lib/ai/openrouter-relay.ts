@@ -73,6 +73,24 @@ async function rawOpenRouterChatFetch(
   return fetch(OPENROUTER_URL, { method: 'POST', headers, body, signal });
 }
 
+/**
+ * Fire-and-forget at chat start: opens TLS to the relay host and wakes the iad1 relay isolate,
+ * which in turn opens its connection to OpenRouter — while the route is still doing auth/DB/router.
+ * No body, no model call, no user data.
+ */
+export function prewarmOpenRouterRelay(): void {
+  const base = relayBase();
+  if (!base) return;
+  const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  void fetch(`${base}/api/v1/ai/llm-relay`, {
+    method: 'GET',
+    headers: { [RELAY_HEADER]: process.env.CRON_SECRET!, ...(bypass ? { 'x-vercel-protection-bypass': bypass } : {}) },
+    signal: AbortSignal.timeout(3000),
+  })
+    .then((r) => r.body?.cancel())
+    .catch(() => {});
+}
+
 const FORWARD = ['http-referer', 'x-title', 'x-openrouter-cache'];
 function pickForward(h: Record<string, string>): Record<string, string> {
   const out: Record<string, string> = {};

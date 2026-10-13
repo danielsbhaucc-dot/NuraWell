@@ -206,7 +206,8 @@ import {
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 import { publicAppUrlForAiReferer } from '../../../../../lib/public-app-url';
-import { openRouterChatFetch } from '../../../../../lib/ai/openrouter-relay';
+import { openRouterChatFetch, prewarmOpenRouterRelay } from '../../../../../lib/ai/openrouter-relay';
+import { prewarmPiiShield } from '../../../../../lib/ai/privacy/outbound-pii-guard';
 
 /**
  * Node (Fluid) rather than Edge: the turn fires many parallel subrequests (Supabase, RAG,
@@ -2416,6 +2417,9 @@ async function handleChatPost(request: Request) {
   }
   const { supabase, user } = auth;
   setAiUsageUser(user.id);
+  // perf: warm the PII seed cache and the iad1 LLM relay while auth/DB/router work runs (no context change).
+  prewarmPiiShield(user.id);
+  prewarmOpenRouterRelay();
   stage = 'auth_ok';
 
   /**
