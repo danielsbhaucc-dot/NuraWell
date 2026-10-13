@@ -12,6 +12,11 @@ export async function POST(req: Request) {
   if (!secret || req.headers.get(RELAY_HEADER) !== secret) {
     return new Response('not found', { status: 404 });
   }
+  // warm-up: open TLS to OpenRouter from this iad1 isolate (tiny authenticated GET, no generation)
+  if (req.headers.get('x-nw-warm') === '1') {
+    await fetch('https://openrouter.ai/api/v1/key', { headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY?.trim() ?? ''}` } }).then((r) => r.body?.cancel()).catch(() => {});
+    return new Response(null, { status: 204, headers: { 'x-nw-relayed': '1', 'Cache-Control': 'no-store' } });
+  }
   const forward: Record<string, string> = {};
   try {
     const parsed = JSON.parse(req.headers.get('x-nw-forward') ?? '{}') as Record<string, unknown>;

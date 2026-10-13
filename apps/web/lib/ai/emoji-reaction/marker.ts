@@ -26,6 +26,11 @@ function base64ToUtf8(value: string): string {
 
 function looksLikeEmoji(emoji: string): boolean {
   if (!emoji || emoji.length > 16) return false;
+  // exactly one grapheme (❤️‍🩹 / 👍🏽 / 🇮🇱 count as one)
+  if (typeof Intl !== 'undefined' && 'Segmenter' in Intl) {
+    const n = [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(emoji)].length;
+    if (n !== 1) return false;
+  }
   if (/[A-Za-z\u0590-\u05FF]{3,}/.test(emoji)) return false;
   if (/\p{Extended_Pictographic}/u.test(emoji)) return true;
   if (/\p{Emoji_Presentation}/u.test(emoji)) return true;
@@ -78,6 +83,11 @@ export function stripEmojiReactionMarker(text: string): string {
   if (!text) return text;
   return text
     .replace(MARKER_RE, '')
+    // unfinished marker while streaming
+    .replace(/⟦NW_RX:[^⟧]*$/, '')
+    // a model imitating the marker from history can leave a broken fragment (seen: `ישיר"}⟧לא מגזים`)
+    .replace(/⟦NW_RX:[^⟧\n]*⟧?/g, '')
+    .replace(/^[^\n⟦]{0,60}?"\s*\}\s*⟧/, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }

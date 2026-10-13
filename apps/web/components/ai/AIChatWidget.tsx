@@ -6,7 +6,7 @@ import { detectCrisisSignals } from '@/lib/safety/crisis-detector';
 
 import { Fragment, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BellRing, Clock, MessageCircle, Send, Loader2, X, RotateCcw, PlusCircle, LogOut, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { BellRing, Clock, MessageCircle, Send, Loader2, X, RotateCcw, PlusCircle, LogOut, ChevronRight, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useChat } from '@ai-sdk/react';
 import { useAppOverlayRoot } from '../../lib/dom/use-app-overlay-root';
@@ -39,6 +39,9 @@ import { guideContextHintToPayload, type GuideContextHint } from '../../lib/ai/g
 import { ChatSessionInbox } from './ChatSessionInbox';
 import { AiChatPrivacyNotice } from './AiChatPrivacyNotice';
 import { AlmogChatUiBlock } from './AlmogChatUiBlock';
+import { SecureVaultBox } from './SecureVaultBox';
+import { detectVaultCandidate } from '@/lib/secure-vault/detect';
+import { VAULT_KIND_LABEL, type VaultKind } from '@/lib/secure-vault/crypto-labels';
 import {
   autoCloseStaleChatSessionsApi,
   closeChatSessionApi,
@@ -527,6 +530,13 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
   const displayName = firstName?.trim() || '';
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(autoOpen);
+  const lastWarmRef = useRef(0);
+  useEffect(() => {
+    // Warm the chat lambda + relay/OpenRouter connections so the first message isn't a cold start.
+    if (!open || Date.now() - lastWarmRef.current < 4 * 60_000) return;
+    lastWarmRef.current = Date.now();
+    void fetch('/api/v1/ai/chat', { method: 'GET', credentials: 'same-origin' }).catch(() => {});
+  }, [open]);
   const { avatarUrl: avatarSrc } = useAlmogAvatarUrl({ enabled: open });
   const { url: bgUrl, hasPhoto } = useChatBackground(open);
   useEffect(() => {
@@ -878,7 +888,11 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     const fromStream = extractEmojiReactionFromChatMessage(lastAssistant as ChatDisplayMessage);
     if (!fromStream) return;
 
-    const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+    const lastUserIdx = messages.map((m) => m.role).lastIndexOf('user');
+    const lastUser = lastUserIdx >= 0 ? messages[lastUserIdx] : undefined;
+    // Only a reply that comes *after* the newest user message may react to it. Otherwise the previous
+    // turn's marker got re-attached to the just-sent message ("previous emoji on send").
+    if (messages.lastIndexOf(lastAssistant) < lastUserIdx) return;
     if (!lastUser?.id) {
       attachReactionRef.current(fromStream);
       return;
@@ -1126,6 +1140,14 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     [messages]
   );
 
+  const [vaultOpen, setVaultOpen] = useState(false);
+  const [vaultPreset, setVaultPreset] = useState<{ kind?: VaultKind; value?: string; n: number }>({ n: 0 });
+  const vaultAutoKeyRef = useRef<string | null>(null);
+  const openVault = useCallback((kind?: VaultKind, value?: string) => {
+    setVaultPreset((p) => ({ kind, value, n: p.n + 1 }));
+    setVaultOpen(true);
+  }, []);
+
   /** cards/chips belong only to the LAST message, and only while it is Almog's */
   const latestChatUi = useMemo(() => {
     const last = messages[messages.length - 1];
@@ -1133,6 +1155,14 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     const ui = extractChatUiFromChatMessage(last as ChatDisplayMessage);
     return ui ? { ui, key: last.id ?? String(messages.length) } : null;
   }, [messages]);
+
+  useEffect(() => {
+    const k = latestChatUi?.ui.vault;
+    if (!k || isLoading || vaultAutoKeyRef.current === latestChatUi.key) return;
+    vaultAutoKeyRef.current = latestChatUi.key;
+    openVault(k);
+  }, [latestChatUi, isLoading, openVault]);
+  const vaultCandidate = useMemo(() => detectVaultCandidate(input), [input]);
 
   const sendQuickReply = useCallback(
     (text: string) => {
@@ -1890,6 +1920,33 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
               {!isSessionClosed && !isClosing ? (
                 <AiChatPrivacyNotice variant="dark" className="mb-2 px-0.5" />
               ) : null}
+              {vaultCandidate && !vaultOpen ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = input.split(vaultCandidate.value).join('').replace(/\s{2,}/g, ' ').trim();
+                    setInput(next);
+                    writeChatInputDraft(sessionIdRef.current, next);
+                    openVault(vaultCandidate.kind, vaultCandidate.value);
+                  }}
+                  className="mb-2 flex w-full items-center gap-2 rounded-2xl border border-emerald-300/40 bg-emerald-900/40 px-3 py-2 text-start text-[12.5px] font-semibold text-emerald-100"
+                >
+                  <Lock className="h-4 w-4 shrink-0" />
+                  נראה שזה {VAULT_KIND_LABEL[vaultCandidate.kind]}. כדאי לשמור בכספת המאובטחת במקום לשלוח בצ׳אט — לחץ להעברה
+                </button>
+              ) : null}
+              {vaultOpen && !isSessionClosed && !isClosing ? (
+                <SecureVaultBox
+                  key={vaultPreset.n}
+                  initialKind={vaultPreset.kind}
+                  initialValue={vaultPreset.value}
+                  onClose={() => setVaultOpen(false)}
+                  onSaved={(notice) => {
+                    sendQuickReply(notice);
+                    setTimeout(() => setVaultOpen(false), 2200);
+                  }}
+                />
+              ) : null}
               <form
                 className="flex items-end gap-2 rounded-2xl border bg-background-card/6 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
                   onSubmit={(e) => {
@@ -1914,6 +1971,17 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                     }
                   }}
                 >
+                  <button
+                    type="button"
+                    onClick={() => (vaultOpen ? setVaultOpen(false) : openVault())}
+                    disabled={isSessionClosed || isClosing}
+                    aria-label="כספת מאובטחת לפרט רגיש"
+                    aria-expanded={vaultOpen}
+                    title="כספת מאובטחת"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-emerald-200 transition hover:bg-emerald-400/10 active:scale-95 disabled:opacity-40"
+                  >
+                    <Lock className="h-4 w-4" />
+                  </button>
                   <textarea
                     dir="rtl"
                     rows={1}

@@ -60,3 +60,18 @@ describe('fold one-time tasks by behavior', () => {
     expect(foldOneTimeByBehavior([], cands.filter((c) => c.id !== 'main'))).toEqual([]);
   });
 });
+
+describe('behavior guard', () => {
+  it('never merges a sleep task into a water task', async () => {
+    const { sanitizeDecisions } = await import('@/lib/almog/nightly-task-merge');
+    const cands = [
+      { id: 'w', title: 'שתיית 2 כוסות מים לפני הארוחה', level: -2, main: true, source: 'step', done: 3 },
+      { id: 's', title: 'לתת לעצמך רשות לסגור את היום בלי שיפוטיות וללכת לישון', level: 0, main: false, source: 'almog', done: 0, schedule: 'one_time' },
+      { id: 'w2', title: 'לשתות חצי כוס מים', level: 0, main: false, source: 'almog', done: 1 },
+      { id: 'x', title: 'משימה כללית', level: 0, main: false, source: 'almog', done: 0 },
+    ];
+    const d = sanitizeDecisions({ merges: [{ keep: 'w', drop: ['s', 'w2', 'x'] }] }, cands);
+    expect(d).toEqual([{ keep: 'w', drop: ['w2'], reason: undefined }]);
+    expect(sanitizeDecisions({ merges: [{ keep: 'w', drop: ['s'] }] }, cands)).toEqual([]);
+  });
+});

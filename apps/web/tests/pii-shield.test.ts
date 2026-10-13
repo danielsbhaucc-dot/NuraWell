@@ -81,4 +81,14 @@ describe('pii-shield unique placeholders', () => {
     // a common word is never produced as a fake name, so it is never "restored" wrongly
     expect(shield.detokenizeText('טל ומור הלכו')).toBe('טל ומור הלכו');
   });
+
+  it('residual: name glued inside a longer word never trips assertNoRawPii, restore is exact', () => {
+    const shield = createPiiShield({ full_name: 'דניאל רחמן' });
+    const raw = 'שלום דניאלה, רחמנות ולדניאל';
+    const tok = shield.tokenizeText(raw);
+    expect(() => shield.assertNoRawPii(tok)).not.toThrow();
+    expect(tok).not.toMatch(/ולדניאל/);
+    expect(tok).toContain('רחמנות');
+    expect(shield.detokenizeText(tok)).toBe(raw);
+  });
 });
