@@ -1766,7 +1766,10 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                       border: '1px solid rgba(255,255,255,0.1)',
                     }}
                   >
-                    <div className="inline-flex items-center gap-2">
+                    <div className="inline-flex items-center gap-2" role="status" aria-live="polite">
+                      <span className="text-[12px] font-semibold text-sky-100/90">
+                        {waitSeconds >= 4 ? 'אלמוג חושב על תשובה טובה' : 'אלמוג מקליד'}
+                      </span>
                       <AlmogChatTypingDots />
                     </div>
                     {isLongWait ? (
