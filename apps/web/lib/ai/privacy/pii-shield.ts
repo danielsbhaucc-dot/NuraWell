@@ -295,7 +295,9 @@ export class PiiShield {
   /** חוסם קריאה אם מזהה רגיש עדיין מופיע ב-payload שנשלח למודל חיצוני */
   assertNoRawPii(payload: string): void {
     for (const value of this.sensitiveValues) {
-      if (value.length >= 3 && payload.includes(value)) {
+      // same whole-word rule as tokenizeText (Hebrew name inside another word, e.g. נועה in תנועה, is not PII);
+      // a plain substring check here failed every chat whose context had such a word.
+      if (value.length >= 3 && payload.includes(value) && replaceWord(payload, value, '\u0000') !== payload) {
         throw new Error('PII shield: blocked outbound request containing raw sensitive identifier');
       }
     }
