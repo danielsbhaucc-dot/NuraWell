@@ -12,7 +12,7 @@ import { requireApiSession } from '../../../../../lib/api/route-guards';
 /** Vercel Edge — תגובת משוב AI מהירה */
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
-export const preferredRegion = 'syd1'; // next to Supabase (Sydney); fra1 meant a cross-world hop per DB query
+export const preferredRegion = 'fra1'; // next to Supabase (Sydney); fra1 meant a cross-world hop per DB query
 
 const lessonFeedbackSchema = z.object({
   step_id: z.string().uuid().optional(),

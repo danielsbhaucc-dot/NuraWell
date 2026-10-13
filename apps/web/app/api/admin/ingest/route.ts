@@ -16,7 +16,7 @@ import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit'
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-export const preferredRegion = 'syd1';
+export const preferredRegion = 'fra1';
 
 /** טקסטים גדולים + embeddings מקביליים — מאפשר זמן ריצה ארוך יותר ב-Vercel. */
 export const maxDuration = 120;
