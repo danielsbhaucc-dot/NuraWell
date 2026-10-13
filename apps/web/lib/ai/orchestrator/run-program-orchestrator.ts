@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 /**
  * 🫀 לב הפעימה — Program Orchestrator.
  *
@@ -216,13 +217,13 @@ export async function orchestrateProgramForUser(
 
   // ── ניסוח ההצעה (LLM + fallback) ────────────────────────────────
   const firstName = firstNameFromFull(profile.full_name) || 'משתמש';
-  const proposal = await buildProgramProposal({
+  const proposal = await withAiUser(profile.id, () => buildProgramProposal({
     decision,
     firstName,
     aiCtx,
     companion,
     consecutiveCompletedDays: signals.consecutiveCompletedDays,
-  });
+  }));
 
   await writePendingProposal(admin, profile.id, proposal);
 

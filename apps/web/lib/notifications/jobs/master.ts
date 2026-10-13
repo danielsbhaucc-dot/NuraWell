@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
 import { evaluateNotifyGate, filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
 import { NextResponse } from 'next/server';
@@ -245,14 +246,14 @@ async function runMasterCron() {
           .join('\n');
 
         const analysisModel = getDeepseekAnalysisModel();
-        const completion = await deepseek.chat.completions.create({
+        const completion = await withAiUser(userId, () => deepseek.chat.completions.create({
           model: analysisModel,
           temperature: 0.2,
           messages: [
             { role: 'system', content: ANALYSIS_PROMPT },
             { role: 'user', content: `תמליל אינטראקציות (24 שעות אחרונות):\n\n${transcript}` },
           ],
-        });
+        }));
 
         const raw = completion.choices[0]?.message?.content?.trim();
         if (!raw) throw new Error('Empty analysis model output');

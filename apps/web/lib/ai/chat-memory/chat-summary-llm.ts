@@ -1,3 +1,5 @@
+import { guardOutboundBody } from '@/lib/ai/privacy/outbound-pii-guard';
+import { currentAiUserId } from '@/lib/ai/usage-meter';
 /**
  * סיכום שיחות — מודל זול OpenRouter (או Batch API אם מוגדר).
  */
@@ -87,6 +89,17 @@ async function callOpenRouterBatch(params: {
   if (!key) return null;
 
   try {
+    // Batch API bypasses meteredFetch, so run the central PII guard on the inner request explicitly.
+    const innerBody: Record<string, unknown> = {
+      model: CHAT_SUMMARY_MODEL,
+      temperature: 0.2,
+      max_tokens: params.maxTokens,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: params.userContent },
+      ],
+    };
+    const shield = await guardOutboundBody(innerBody, currentAiUserId());
     const createRes = await fetch('https://openrouter.ai/api/v1/batches', {
       method: 'POST',
       headers: {
@@ -99,17 +112,7 @@ async function callOpenRouterBatch(params: {
             custom_id: params.customId,
             method: 'POST',
             url: '/v1/chat/completions',
-            body: adaptGroqChatBody(
-              {
-                model: CHAT_SUMMARY_MODEL,
-                temperature: 0.2,
-                max_tokens: params.maxTokens,
-                messages: [
-                  { role: 'system', content: SYSTEM_PROMPT },
-                  { role: 'user', content: params.userContent },
-                ],
-              },
-              { viaOpenRouter: true }
+            body: adaptGroqChatBody(innerBody as Parameters<typeof adaptGroqChatBody>[0], { viaOpenRouter: true }
             ),
           },
         ],
@@ -142,7 +145,8 @@ async function callOpenRouterBatch(params: {
         const parsed = JSON.parse(line) as {
           response?: { body?: { choices?: Array<{ message?: { content?: string } }> } };
         };
-        return parsed.response?.body?.choices?.[0]?.message?.content?.trim() ?? null;
+        const out = parsed.response?.body?.choices?.[0]?.message?.content?.trim();
+        return out ? shield.detokenizeText(out) : null;
       }
       if (status.status === 'failed' || status.status === 'cancelled') return null;
     }

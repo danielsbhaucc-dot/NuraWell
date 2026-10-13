@@ -1,3 +1,4 @@
+import { enterAiUsage } from '@/lib/ai/usage-meter';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
@@ -78,6 +79,7 @@ export async function POST(request: Request) {
   const firstName = (profile?.full_name as string | null)?.trim().split(/\s+/)[0] ?? 'חבר/ה';
   const gender = (profile?.gender as 'male' | 'female' | null) ?? null;
 
+  enterAiUsage({ userId: auth.user.id });
   const result = await runChallengeInterviewTurn({ messages, firstName, gender });
 
   const transcript = [

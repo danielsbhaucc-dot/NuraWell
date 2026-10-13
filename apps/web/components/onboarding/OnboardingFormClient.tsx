@@ -1,5 +1,6 @@
 'use client';
 
+import { PageBackButton } from '@/components/shared/PageBackButton';
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -282,13 +283,7 @@ export function OnboardingFormClient() {
       <main id="main-content" className="onboarding-shell-dark px-4 py-6 pb-28">
         <div className="onboarding-page-inner max-w-lg mx-auto w-full">
           <div className="flex items-center justify-between mb-4">
-            <Link
-              href="/register"
-              className="text-sm text-white/60 hover:text-white flex items-center gap-1"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              חזרה
-            </Link>
+            <PageBackButton href="/register" />
             <span className="text-xs font-bold text-emerald-300/90">
               שלב {step} מתוך {TOTAL_STEPS}
             </span>

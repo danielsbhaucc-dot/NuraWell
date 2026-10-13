@@ -1,3 +1,4 @@
+import { sanitizeWriterOutput } from '../sanitize-writer-output';
 import {
   FRICTION_META,
   normalizeFrictionCategory,
@@ -93,18 +94,23 @@ export function buildDeterministicSosFallback(trigger: unknown): SosIntervention
   return FALLBACKS[normalizeSosTrigger(trigger)];
 }
 
-export function buildSosInterventionFromPivot(pivot: GeneratedPivotResult): SosIntervention {
+export function buildSosInterventionFromPivot(
+  pivot: GeneratedPivotResult,
+  firstName?: string | null
+): SosIntervention {
   const category = normalizeFrictionCategory(pivot.category);
   const fallback = FALLBACKS[category];
-  const empathy = pivot.empathy?.trim() || fallback.message;
-  const microStep = pivot.proposal.micro_step?.trim() || fallback.micro_step;
+  const clean = (t: string | null | undefined) => sanitizeWriterOutput(t?.trim() ?? '', { firstName });
+  const empathy = clean(pivot.empathy) || fallback.message;
+  const microStep = clean(pivot.proposal.micro_step) || fallback.micro_step;
 
   return {
     category,
     used_fallback: false,
     strategy_type: normalizeStrategyType(pivot.proposal.strategy_type),
-    label: pivot.proposal.label?.trim() || FRICTION_META[category].labelHe,
-    message: `${empathy}\n\n${microStep}`,
+    label: clean(pivot.proposal.label) || FRICTION_META[category].labelHe,
+    // הצעד מוצג בכרטיס "הצעד שלך עכשיו" — לא משכפלים אותו בבועת ההודעה.
+    message: empathy,
     micro_step: microStep,
   };
 }

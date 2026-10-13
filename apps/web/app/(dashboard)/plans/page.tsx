@@ -1,3 +1,4 @@
+import { summarizeJourneyProgress } from '@/lib/journey/journey-progress-summary';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -63,9 +64,11 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
 
   const currentIdx = Math.max(0, mapStations.findIndex((st) => st.state === 'current'));
   const curStation = mapStations[currentIdx] ?? null;
-  const totalLessons = mapStations.reduce((n, st) => n + st.total, 0);
-  const doneLessons = mapStations.reduce((n, st) => n + st.done, 0);
-  const pct = totalLessons ? (doneLessons / totalLessons) * 100 : 0;
+  const journeySummary = summarizeJourneyProgress(
+    ((steps ?? []) as { id: string }[]).map((st) => st.id),
+    (progress ?? []) as { step_id: string; is_completed: boolean | null }[]
+  );
+  const pct = journeySummary.pct;
   const principles = mapStations
     .slice(0, currentIdx + 1)
     .map((st) => ({ title: st.title, text: stationDesc.get(st.id) ?? '' }))
@@ -164,7 +167,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
 
       <section aria-label="עוד בתוכנית" className="flex flex-col gap-2.5">
         {mapStations.length ? (
-          <PlanAccordion icon="🗺️" title="המסלול המלא" meta={`${mapStations.length} שלבים · ${doneLessons}/${totalLessons} שיעורים`}>
+          <PlanAccordion icon="🗺️" title="המסלול המלא" meta={`${mapStations.length} שלבים · ${journeySummary.done}/${journeySummary.total} צעדים`}>
             {principles.length ? (
               <div className="rounded-2xl bg-cream p-3.5">
                 <p className="text-[11px] font-bold text-primary-700">העקרונות שלמדנו עד עכשיו</p>

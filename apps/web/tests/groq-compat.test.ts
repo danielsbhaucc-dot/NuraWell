@@ -99,7 +99,7 @@ describe('groq gpt-oss compat', () => {
     vi.stubGlobal('fetch', spy);
     const init = { method: 'POST', body: JSON.stringify({ model: 'openai/gpt-oss-20b' }) };
     await groqCompatFetch('https://api.groq.com/openai/v1/embeddings', init);
-    expect((spy.mock.calls[0] as unknown as [string, RequestInit])[1]).toBe(init);
+    expect((spy.mock.calls[0] as unknown as [string, RequestInit])[1]).toStrictEqual(init);
   });
 });
 

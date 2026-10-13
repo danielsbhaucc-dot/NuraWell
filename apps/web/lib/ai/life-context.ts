@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 /**
  * הקשר חיים מהצ'אט — זיהוי אירועים (לא רק חופשה/אשפוז), regex בלי LLM.
  */
@@ -411,7 +412,7 @@ export async function sendLifeContextTouch(
     `${buildSlotDaypartPromptBlock(slot)}\n${formatLifeContextNotifyBlock(lc)}`
   )}`;
 
-  const body = await completeEmpathyNotifyBody({
+  const body = await withAiUser(userId, () => completeEmpathyNotifyBody({
     label: 'almog_life_context',
     temperature: 0.86,
     presencePenalty: 0.5,
@@ -424,7 +425,7 @@ export async function sendLifeContextTouch(
         content: `${firstName} · ${genderInstruction} · 2–3 משפטים, אימוג'י, שאלה פתוחה.`,
       },
     ],
-  });
+  }));
 
   const emoji = lc.profile === 'pause' ? '💙' : '🌴';
 

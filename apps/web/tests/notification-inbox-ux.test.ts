@@ -66,7 +66,8 @@ describe('groupSimilarNotifications', () => {
     expect(grouped).toHaveLength(1);
     expect(grouped[0]?.kind).toBe('group');
     if (grouped[0]?.kind === 'group') {
-      expect(grouped[0].groupTitle).toBe('שתיית מים · 3 תזכורות מאלמוג');
+      expect(grouped[0].habitLabel).toBe('שתיית מים');
+      expect(grouped[0].groupTitle).toBe(grouped[0].notifications[0]!.title);
       expect(grouped[0].notifications).toHaveLength(3);
     }
   });

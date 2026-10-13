@@ -1,3 +1,4 @@
+import { enterAiUsage } from '@/lib/ai/usage-meter';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireApiSession } from '../../../../lib/api/route-guards';
@@ -532,6 +533,7 @@ export async function POST(request: Request) {
     const taskByRef = new Map(linkable.map((t, i) => [`T${i + 1}`, t.id]));
     const activeTasks = linkable.map((t, i) => ({ ref: `T${i + 1}`, title: t.title }));
 
+    enterAiUsage({ userId: user.id });
     const generated = await generateBlockerOptions({
       description: blocker.description,
       category: blocker.category,
@@ -624,6 +626,7 @@ export async function POST(request: Request) {
     const taskByRef = new Map(linkable.map((t, i) => [`T${i + 1}`, t.id]));
     const activeTasks = linkable.map((t, i) => ({ ref: `T${i + 1}`, title: t.title }));
 
+    enterAiUsage({ userId: user.id });
     const generated = await generateBlockerOptions({
       description: blocker.description,
       category: blocker.category,

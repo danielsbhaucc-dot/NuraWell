@@ -117,9 +117,16 @@ function textFromParts(parts: ChatMessagePart[]): string {
     .trim();
 }
 
+/** שם פרטי להשלמת placeholder ([PERSON_NAME] וכו') בתצוגה — נקבע ע"י הווידג'ט (client בלבד). */
+let displayFirstName: string | null = null;
+export function setChatDisplayFirstName(name: string | null | undefined): void {
+  displayFirstName = name?.trim() || null;
+}
+
 function finalizeDisplayText(raw: string): string {
   return preferSanitizedWriterOutput(
-    stripAllChatUiMarkers(stripEmojiReactionMarker(stripStreamProtocolArtifacts(raw)))
+    stripAllChatUiMarkers(stripEmojiReactionMarker(stripStreamProtocolArtifacts(raw))),
+    { firstName: displayFirstName }
   );
 }
 

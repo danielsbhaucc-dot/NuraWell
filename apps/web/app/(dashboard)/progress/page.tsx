@@ -1,3 +1,4 @@
+import { summarizeJourneyProgress } from '../../../lib/journey/journey-progress-summary';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '../../../lib/supabase/server';
@@ -33,7 +34,7 @@ export default async function ProgressPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, gender, current_weight_kg, safety_screening')
+    .select('full_name, gender, current_weight_kg, safety_screening, created_at')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -135,8 +136,9 @@ export default async function ProgressPage() {
     updated_at: string;
   }[];
 
-  const journeyStepsTotal = jSteps.length;
-  const journeyStepsCompleted = jProg.filter(p => p.is_completed).length;
+  const journeySummary = summarizeJourneyProgress(jSteps.map((st) => st.id), jProg);
+  const journeyStepsTotal = journeySummary.total;
+  const journeyStepsCompleted = journeySummary.done;
   let journeyTasksAccepted = 0;
   let journeyTasksReportedDone = 0;
   let journeyHabitChecks = 0;
@@ -270,7 +272,8 @@ export default async function ProgressPage() {
     dayCount,
     30,
     today,
-    attemptDayCount
+    attemptDayCount,
+    profile?.created_at ? jerusalemDateKey(new Date(profile.created_at as string)) : null
   );
 
   return (

@@ -442,10 +442,12 @@ export async function executeSosFlow(params: {
   const { activeTasks, originalTaskTitle } = buildActiveTaskRefs(params.focusTask, linkable);
   const [memory, genderRow] = await Promise.all([
     fetchInterventionMemory(params.admin, params.userId, 6),
-    params.admin.from('profiles').select('gender').eq('id', params.userId).maybeSingle(),
+    params.admin.from('profiles').select('gender, full_name').eq('id', params.userId).maybeSingle(),
   ]);
   const g = (genderRow.data as { gender?: string | null } | null)?.gender;
   const userGender = g === 'male' || g === 'female' ? g : null;
+  const fullName = (genderRow.data as { full_name?: string | null } | null)?.full_name?.trim();
+  const firstName = fullName ? fullName.split(/\s+/)[0] : null;
   const failedTypes = (params.failedStrategyTypes ?? []).map(normalizeStrategyType);
   const pivotNote = params.pivotFromLabel
     ? `PIVOT: "${params.pivotFromLabel}" לא עזר — צריך גישה אחרת.`
@@ -476,7 +478,7 @@ export async function executeSosFlow(params: {
         userGender,
       })
     );
-    intervention = buildSosInterventionFromPivot(pivot);
+    intervention = buildSosInterventionFromPivot(pivot, firstName);
     usedFallback = false;
     memoryHint = pickMemoryHint(memory, category, intervention.strategy_type);
   } catch (error) {

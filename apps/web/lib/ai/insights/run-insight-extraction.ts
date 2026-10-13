@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 /**
  * אורקסטרטור מנוע התובנות: מושך את ההודעות האחרונות מ-session צ'אט, מריץ את
  * החילוץ (LLM) ושומר עם מיזוג. זו נקודת-הכניסה היחידה שתהליכי-רקע/CRON/route
@@ -84,10 +85,10 @@ export async function runInsightExtraction(params: {
     .limit(30);
 
   // 3) חילוץ.
-  const extraction = await extractInsights({
+  const extraction = await withAiUser(userId, () => extractInsights({
     transcript,
     existingInsights: (existing ?? []) as { category: string; insight_text: string }[],
-  });
+  }));
 
   if (extraction.insights.length === 0) {
     return { ...EMPTY_RESULT, messages_analyzed: messages.length };

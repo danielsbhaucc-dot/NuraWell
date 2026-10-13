@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fallbackLiveConversationFile } from '../chat-conversation-file';
 import { summarizeConversationTurn } from './summarize-conversation-turn';
@@ -15,12 +16,12 @@ export async function updateSessionLiveConversationFile(
   }
 ): Promise<string | null> {
   const updated =
-    (await summarizeConversationTurn({
+    (await withAiUser(params.userId, () => summarizeConversationTurn({
       previousFile: params.previousFile,
       userMessage: params.userMessage,
       assistantMessage: params.assistantMessage,
       turnAt: params.turnAt,
-    })) ??
+    }))) ??
     fallbackLiveConversationFile({
       previousFile: params.previousFile,
       userMessage: params.userMessage,

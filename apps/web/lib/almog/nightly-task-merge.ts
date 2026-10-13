@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { parseLlmJsonObject } from '@/lib/ai/parse-llm-json';
-import { meteredFetch } from '@/lib/ai/usage-meter';
+import { meteredFetch, withAiUser } from '@/lib/ai/usage-meter';
 import { gateAlmogUserFacingTouch } from '@/lib/notifications/almog-touch-send-gate';
 import { insertNotification } from '@/lib/notifications/deliver';
 import { levelInfo, resolveLadder, type TaskDefinitionLike } from '@/lib/tasks/ladder';
@@ -161,7 +161,7 @@ export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (
   for (const row of rows) {
     let decisions: MergeDecision[] = [];
     try {
-      decisions = foldOneTimeByBehavior(sanitizeDecisions(await decide(row.tasks), row.tasks), row.tasks);
+      decisions = foldOneTimeByBehavior(sanitizeDecisions(await withAiUser(row.user_id, () => decide(row.tasks)), row.tasks), row.tasks);
     } catch (e) {
       summary.errors.push(String(e).slice(0, 200));
       continue;

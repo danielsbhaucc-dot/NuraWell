@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import { animate, motion, useMotionValue } from 'framer-motion';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { JourneyStep, JourneyStepProgress, JourneyTaskDecisionStatus, StepSection } from '../../lib/types/journey';
 import type { LessonAudioTrack } from '../../lib/types/audio';
 import { VideoSection } from './VideoSection';
@@ -354,14 +354,13 @@ export function StepLesson({ step, initialProgress, userId, userGender = null, a
       >
         <div className="relative z-10 px-4 pb-8 pt-3">
           <div className="flex items-center justify-between mb-3">
-            <button onClick={() => goBack()} disabled={currentIndex <= 0}
-              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
-              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
-              <ArrowRight className="w-4 h-4 text-white" />
+            <button onClick={() => goBack()} disabled={currentIndex <= 0} aria-label="השלב הקודם"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-md transition hover:bg-white/25 active:scale-95 disabled:opacity-0 disabled:pointer-events-none">
+              <ChevronRight className="h-5 w-5" strokeWidth={2.4} aria-hidden />
             </button>
-            <div className="text-center flex-1 px-3">
+            <div className="min-w-0 text-center flex-1 px-3">
               <p className="text-white/70 text-xs font-medium">צעד {step.step_number}</p>
-              <h1 className="text-white text-lg font-black leading-tight truncate" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
+              <h1 className="text-white text-lg font-black leading-snug line-clamp-2 wrap-break-word text-balance" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
                 {step.title}
               </h1>
             </div>
@@ -373,11 +372,10 @@ export function StepLesson({ step, initialProgress, userId, userGender = null, a
                 !sections[currentIndex + 1] ||
                 !canNavigateToTarget(sections[currentIndex + 1]!)
               }
-              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
-              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-md transition hover:bg-white/25 active:scale-95 disabled:opacity-0 disabled:pointer-events-none"
               aria-label="השלב הבא"
             >
-              <ArrowLeft className="w-4 h-4 text-white" />
+              <ChevronLeft className="h-5 w-5" strokeWidth={2.4} aria-hidden />
             </button>
           </div>
 

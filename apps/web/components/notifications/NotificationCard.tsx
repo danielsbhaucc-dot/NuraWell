@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Archive, ArchiveRestore, Check, MessageCircle, Zap } from 'lucide-react';
+import { Archive, ArchiveRestore, Check, ChevronLeft, MessageCircle, Zap } from 'lucide-react';
 import { ALMOG_AVATAR_ALT } from '@/lib/a11y/alt-text';
 import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
 import { getMentorAvatarFallback } from '../../lib/mentors/avatar-url';
@@ -23,6 +23,8 @@ type NotificationCardProps = {
   onArchive: (id: string, e: React.MouseEvent) => void;
   onUnarchive: (id: string, e: React.MouseEvent) => void;
   onCloseDrawer: () => void;
+  /** שם ההרגל (לתג) */
+  habitLabel?: string | null;
   /** כשמציגים קבוצת תובנות מרוכזת */
   groupCount?: number;
 };
@@ -37,8 +39,10 @@ export function NotificationCard({
   onArchive,
   onUnarchive,
   onCloseDrawer,
+  habitLabel: habitLabelProp,
   groupCount,
 }: NotificationCardProps) {
+  const habitLabel = habitLabelProp ?? n.habitTitles?.[0] ?? null;
   const isPlatform = n.channel === 'platform';
   const isAi = n.type === 'ai_message' && !isPlatform;
   const isDolev = !isPlatform && n.mentorId === 'dolev';
@@ -170,7 +174,8 @@ export function NotificationCard({
             )}
             {isCheckpoint && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-200/60 px-2 py-0.5 text-[10px] font-bold text-amber-950">
-                ✨ {groupCount && groupCount > 1 ? `${groupCount} תזכורות להרגל` : 'תזכורת להרגל'}
+                🌿 {habitLabel ? `מעקב הרגל · ${habitLabel}` : 'מעקב הרגל'}
+                {groupCount && groupCount > 1 ? ` · ${groupCount} הודעות` : ''}
               </span>
             )}
             <div className="flex flex-row items-baseline justify-between gap-2">
@@ -212,13 +217,10 @@ export function NotificationCard({
                       void onMarkRead(n.id, !n.is_read);
                       onCloseDrawer();
                     }}
-                    className="inline-flex items-center rounded-full border border-emerald-300/60 bg-emerald-100/70 px-3.5 py-1.5 text-xs font-bold text-emerald-900 transition hover:bg-emerald-200/60"
+                    className="inline-flex items-center gap-1 rounded-full border border-emerald-300/60 bg-emerald-100/70 px-3.5 py-1.5 text-xs font-bold text-emerald-900 transition hover:bg-emerald-200/60"
                   >
-                    {n.action_url.includes('challenge')
-                      ? 'לאתגר'
-                      : n.action_url.includes('journey')
-                        ? 'למסלול'
-                        : 'פתח'}
+                    {notificationActionLabel(n.action_url)}
+                    <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
                   </Link>
                 )}
               </div>
@@ -260,4 +262,18 @@ export function NotificationCard({
       </div>
     </article>
   );
+}
+/** תווית כפתור לפי יעד הקישור — כדי שיהיה ברור לאן הלחיצה מובילה. */
+function notificationActionLabel(url: string): string {
+  if (url.includes('challenge')) return 'לאתגר';
+  if (url.includes('chatSession') || url.includes('chat=')) return 'לשיחה';
+  if (url.includes('task=')) return 'למשימה';
+  if (url.startsWith('/plans')) return 'לתוכנית שלי';
+  if (url.startsWith('/journey')) return 'למסע';
+  if (url.startsWith('/lessons')) return 'לשיעור';
+  if (url.startsWith('/progress')) return 'להתקדמות';
+  if (url.startsWith('/summaries')) return 'לסיכום';
+  if (url.startsWith('/settings')) return 'להגדרות';
+  if (url.startsWith('/guides')) return 'למדריך';
+  return 'לצפייה';
 }

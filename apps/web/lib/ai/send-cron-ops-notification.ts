@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { buildCoachingStylePromptBlock } from './almog-coaching-style';
@@ -66,7 +67,7 @@ export async function generateCronOpsNotificationBody(
     .filter(Boolean)
     .join('\n');
 
-  return completeEmpathyNotifyBody({
+  return withAiUser(params.userId, () => completeEmpathyNotifyBody({
     label: `cron_ops_${params.action}`,
     temperature: 0.8,
     presencePenalty: 0.45,
@@ -83,7 +84,7 @@ export async function generateCronOpsNotificationBody(
 כתוב רק את גוף ההודעה — 2–3 משפטים קצרים, שאלה פתוחה בסוף.`,
       },
     ],
-  });
+  }));
 }
 
 export function cronOpsNotificationTitle(

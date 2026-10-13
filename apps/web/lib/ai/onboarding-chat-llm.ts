@@ -17,6 +17,7 @@ import {
 } from '../profile/profile-chat-bootstrap';
 import { imperativeTap, type ProfileGender } from '../profile/personalized-copy';
 import { isGroqLaneAvailable } from './groq-compat';
+import { parseLlmJsonObject } from './parse-llm-json';
 import { HEBREW_JSON_VALUES_RULE, hebrewAddressingRule } from './hebrew-output-rules';
 
 export type OnboardingChatTurn = { role: 'user' | 'assistant'; content: string };
@@ -480,18 +481,33 @@ export async function runOnboardingChatTurn(params: {
   }
 
   try {
-    const parsed = JSON.parse(llm.content) as Record<string, unknown>;
+    // tolerant: models sometimes wrap JSON in ``` fences or add a preamble
+    const parsed = parseLlmJsonObject(llm.content) as Record<string, unknown> | null;
+    if (!parsed || typeof parsed !== 'object') throw new Error('onboarding-chat: no JSON object in reply');
     const reply = typeof parsed.reply === 'string' ? parsed.reply.trim() : '';
     const llmExtracted = stripSensitiveFromLlmExtracted(sanitizeExtracted(parsed.extracted));
+    // What this turn just captured counts as known — otherwise the next question repeats the same field.
+    const turnFlags: ProfileFieldFlags = {
+      ...flags,
+      has_full_name: flags.has_full_name || Boolean(llmExtracted.full_name),
+      has_gender: flags.has_gender || llmExtracted.gender === 'male' || llmExtracted.gender === 'female',
+      has_main_goal: flags.has_main_goal || Boolean(llmExtracted.main_goal),
+      has_current_weight: flags.has_current_weight || typeof llmExtracted.current_weight_kg === 'number',
+      has_goal_weight: flags.has_goal_weight || typeof llmExtracted.goal_weight_kg === 'number',
+      has_weakest_time: flags.has_weakest_time || Boolean(llmExtracted.weakest_time_of_day),
+      has_main_obstacle: flags.has_main_obstacle || Boolean(llmExtracted.main_obstacle),
+      has_wake_time: flags.has_wake_time || Boolean(llmExtracted.wake_up_time),
+      has_sleep_time: flags.has_sleep_time || Boolean(llmExtracted.sleep_time),
+    };
     const llmDiscrete = parseDiscreteField(parsed.request_discrete_field);
     const diversion = lastUser ? classifyUserDiversion(lastUser.content) : null;
 
     if (lastUser && AFFIRMATION_RE.test(lastUser.content.trim())) {
       return {
-        reply: `מעולה. ${leadQuestion(flags, updateMode)}`,
+        reply: `מעולה. ${leadQuestion(turnFlags, updateMode)}`,
         extracted: llmExtracted,
-        request_discrete_field: discreteFieldForCurrentLead(flags),
-        ready_for_summary: isProfileUpdateComplete(flags),
+        request_discrete_field: discreteFieldForCurrentLead(turnFlags),
+        ready_for_summary: isProfileUpdateComplete(turnFlags),
         summary: null,
         used_fallback: true,
         model: llm.model,
@@ -499,9 +515,9 @@ export async function runOnboardingChatTurn(params: {
     }
 
     if (diversion) {
-      const field = llmDiscrete ?? nextMissingDiscreteField(flags);
+      const field = llmDiscrete ?? nextMissingDiscreteField(turnFlags);
       return {
-        reply: redirectToProfileMission(diversion, flags, field, updateMode),
+        reply: redirectToProfileMission(diversion, turnFlags, field, updateMode),
         extracted: llmExtracted,
         request_discrete_field: field,
         ready_for_summary: parsed.ready_for_summary === true,

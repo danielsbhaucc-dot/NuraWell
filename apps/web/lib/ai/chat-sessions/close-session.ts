@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ingestConversationToVector } from '../chat-memory/conversation-vector';
 import { rollupUserChatContext } from '../chat-memory/session-conversation-file';
@@ -57,8 +58,8 @@ export async function closeChatSession(
   const turns = await fetchChatSessionTranscript(supabase, params);
   const transcript = formatTranscriptForLlm(turns);
   const [summary, facts] = await Promise.all([
-    summarizeChatSession(turns),
-    extractMemoriesFromTranscript(transcript),
+    withAiUser(params.userId, () => summarizeChatSession(turns)),
+    withAiUser(params.userId, () => extractMemoriesFromTranscript(transcript)),
   ]);
 
   const now = new Date().toISOString();
@@ -67,10 +68,10 @@ export async function closeChatSession(
   if (!title) {
     const firstUser = turns.find((t) => t.role === 'user')?.content ?? '';
     title =
-      (await generateChatSessionTitle({
+      (await withAiUser(params.userId, () => generateChatSessionTitle({
         userMessage: firstUser,
         liveFile: normalized.live_conversation_file,
-      })) ?? titleFromSummaryFallback(summary);
+      }))) ?? titleFromSummaryFallback(summary);
   }
 
   const updatePayload: Record<string, unknown> = {
@@ -143,12 +144,12 @@ export async function closeChatSession(
       .eq('id', params.userId)
       .maybeSingle();
     const prevRollup = (prof?.ai_context as { chat_summary?: string } | null)?.chat_summary;
-    await rollupUserChatContext(supabase, {
+    await withAiUser(params.userId, () => rollupUserChatContext(supabase, {
       userId: params.userId,
       sessionSummary: summary,
       sessionClosedAt: now,
       previousRollup: prevRollup,
-    });
+    }));
   } catch (rollupErr) {
     console.warn('[closeChatSession] rollup failed', {
       sessionId: params.sessionId,

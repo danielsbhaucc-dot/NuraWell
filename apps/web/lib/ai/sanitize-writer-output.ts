@@ -133,9 +133,19 @@ function stripCotPrefixAndParagraphs(text: string): string {
   return kept.join('\n\n').trim();
 }
 
-export function sanitizeWriterOutput(text: string): string {
+const NAME_PLACEHOLDER_FILL_RE =
+  /\[\[?\s*(?:PERSON_NAME|PERSON|USER_FIRST_NAME|FIRST_?NAME|NAME|USER|שם)\s*\]?\]/gi;
+
+/** ממלא placeholder של שם (PII shield שלא שוחזר / המצאת מודל) בשם הפרטי האמיתי. */
+export function fillNamePlaceholders(text: string, firstName?: string | null): string {
   if (!text) return '';
-  let next = stripThinkBlocks(text)
+  const name = firstName?.trim();
+  return text.replace(NAME_PLACEHOLDER_FILL_RE, name ? name : '');
+}
+
+export function sanitizeWriterOutput(text: string, opts?: { firstName?: string | null }): string {
+  if (!text) return '';
+  let next = stripThinkBlocks(opts?.firstName ? fillNamePlaceholders(text, opts.firstName) : text)
     .replace(/<\|[a-z_]{2,24}\|>/gi, '')
     .replace(DOUBLE_PLACEHOLDER_RE, '')
     .replace(SINGLE_CAPS_PLACEHOLDER_RE, '')
@@ -209,8 +219,8 @@ function isLatinOnlyThinkingPrefix(raw: string): boolean {
   return isCotBlob(t) || latinRatio(t) >= 0.85;
 }
 
-export function preferSanitizedWriterOutput(raw: string): string {
-  const cleaned = sanitizeWriterOutput(raw);
+export function preferSanitizedWriterOutput(raw: string, opts?: { firstName?: string | null }): string {
+  const cleaned = sanitizeWriterOutput(raw, opts);
   if (!cleaned) {
     if (
       looksLikeLeakedThinking(raw) ||
