@@ -314,7 +314,7 @@ export function NotificationsProvider({
         cursor: null,
         limit: 1,
       });
-      const res = await fetch(url, { cache: 'no-store' });
+      const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}badge=1`, { cache: 'no-store' });
       const data = (await res.json()) as { unread_total?: number };
       if (!res.ok) return;
       if (typeof data.unread_total === 'number') setUnreadTotal(data.unread_total);
@@ -577,7 +577,10 @@ export function NotificationsProvider({
     /** visibility — חזרה לטאב: badge + ודא שה-channel חי. */
     const onVis = () => {
       if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
-      void loadBadgeOnly();
+      /** perf: tab flips fire constantly; while Realtime is live (new rows arrive pushed) a 60s-old badge is fresh enough. */
+      if (channelStatusRef.current !== 'SUBSCRIBED' || Date.now() - badgeLastAt.current > 60_000) {
+        void loadBadgeOnly();
+      }
       if (!started) {
         connect();
         return;

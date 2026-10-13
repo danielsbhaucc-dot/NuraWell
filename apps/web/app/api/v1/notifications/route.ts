@@ -41,6 +41,21 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const p = parseInboxSearchParams(url.searchParams);
 
+    /** perf: badge polling only needs the unread count — skip the list query + row JSON. */
+    if (url.searchParams.get('badge') === '1') {
+      const { count, error: badgeErr } = await supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .is('archived_at', null)
+        .eq('is_read', false);
+      if (badgeErr) {
+        console.error('[notifications GET] badge count error', badgeErr);
+        return NextResponse.json({ error: 'Failed to load notifications' }, { status: 500 });
+      }
+      return NextResponse.json({ unread_total: count ?? 0 });
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let q = supabase
       .from('notifications')

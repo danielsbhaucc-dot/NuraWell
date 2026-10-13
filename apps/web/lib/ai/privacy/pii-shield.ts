@@ -100,25 +100,39 @@ export class PiiShield {
   private sensitiveValues: string[] = [];
   private usedPseudonyms = new Set<string>();
   private firstNamePseudonym: string | null = null;
+  /** perf: O(1) lookups instead of scanning `replacements` (directory shields hold thousands of names). */
+  private byValueLower = new Map<string, string>();
+  private usedPlaceholders = new Set<string>();
+  private nextSuffix = new Map<string, number>();
+  private deferSort = false;
 
   constructor(seed: PiiProfileSeed) {
+    this.deferSort = true;
     this.registerFromSeed(seed);
+    this.deferSort = false;
+    this.replacements.sort((a, b) => b.value.length - a.value.length);
   }
 
   /** Registers value→placeholder; placeholders are unique per value (`[[USER_EMAIL_2]]` …). */
   private register(value: string, placeholder: string): string {
     const v = value.trim();
     if (v.length < 2) return placeholder;
-    const existing = this.replacements.find((r) => r.value.toLowerCase() === v.toLowerCase());
-    if (existing) return existing.placeholder;
-    let ph = placeholder;
-    for (let n = 2; this.replacements.some((r) => r.placeholder === ph); n += 1) {
-      ph = placeholder.replace(/\]\]$/, `_${n}]]`);
+    const key = v.toLowerCase();
+    const existing = this.byValueLower.get(key);
+    if (existing) return existing;
+    const base = placeholder;
+    let ph = base;
+    // placeholders are never removed, so resuming from the last used suffix finds the same first free one
+    for (let n = this.nextSuffix.get(base) ?? 2; this.usedPlaceholders.has(ph); n += 1) {
+      ph = base.replace(/\]\]$/, `_${n}]]`);
+      this.nextSuffix.set(base, n + 1);
     }
     placeholder = ph;
     this.replacements.push({ value: v, placeholder });
+    this.byValueLower.set(key, placeholder);
+    this.usedPlaceholders.add(placeholder);
     this.sensitiveValues.push(v);
-    this.replacements.sort((a, b) => b.value.length - a.value.length);
+    if (!this.deferSort) this.replacements.sort((a, b) => b.value.length - a.value.length);
     return placeholder;
   }
 
@@ -168,6 +182,16 @@ export class PiiShield {
     });
   }
 
+  private placeholderIndex: { size: number; map: Map<string, string> } | null = null;
+  private valueByPlaceholder(): Map<string, string> {
+    if (!this.placeholderIndex || this.placeholderIndex.size !== this.replacements.length) {
+      const map = new Map<string, string>();
+      for (const r of this.replacements) if (!map.has(r.placeholder)) map.set(r.placeholder, r.value);
+      this.placeholderIndex = { size: this.replacements.length, map };
+    }
+    return this.placeholderIndex.map;
+  }
+
   /** הפסיאודונים העברי שהוקצה לשם הפרטי (לשימוש בהוראת הפרומפט). */
   get firstNamePlaceholder(): string | null {
     return this.firstNamePseudonym;
@@ -213,11 +237,11 @@ export class PiiShield {
     }
     // מעבר נוסף: placeholders עם רווחים פנימיים שהמודל הוסיף.
     if (out.includes('[[')) {
-      for (const { value, placeholder } of this.replacements) {
-        const inner = placeholder.replace(/^\[\[/, '').replace(/\]\]$/, '');
-        const re = new RegExp(`\\[\\[\\s*${escapeRegExp(inner)}\\s*\\]\\]`, 'g');
-        out = out.replace(re, value);
-      }
+      // one pass instead of one RegExp per registered value; only exact registered tokens are restored
+      out = out.replace(/\[\[\s*([^\[\]]*?)\s*\]\]/g, (m, inner: string) => {
+        const value = this.valueByPlaceholder().get(`[[${inner}]]`);
+        return value ?? m;
+      });
     }
     return out;
   }
