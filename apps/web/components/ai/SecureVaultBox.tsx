@@ -5,14 +5,14 @@ import { VAULT_KINDS, VAULT_KIND_LABEL, type VaultKind } from '@/lib/secure-vaul
 
 /** Generic mode (onboarding profile fields): same UI, caller-owned submit; nothing goes through AI. */
 export type SecureField = { label: string; placeholder?: string; numeric?: boolean; submit: (value: string) => Promise<boolean> };
-type Props = { onSaved?: (notice: string) => void; onClose: () => void; field?: SecureField };
+type Props = { onSaved?: (notice: string) => void; onClose: () => void; field?: SecureField; initialKind?: VaultKind; initialValue?: string };
 const GLYPHS = '#%&@$*7A9X';
 
 /** Vault-style secure input (approved design). The value goes only to /api/v1/secure-vault — never into chat or AI. */
-export function SecureVaultBox({ onSaved, onClose, field }: Props) {
-  const [kind, setKind] = useState<VaultKind>('id');
-  const [value, setValue] = useState('');
-  const [state, setState] = useState<'idle' | 'typing' | 'busy' | 'sealed' | 'error'>('idle');
+export function SecureVaultBox({ onSaved, onClose, field, initialKind, initialValue }: Props) {
+  const [kind, setKind] = useState<VaultKind>(initialKind ?? 'id');
+  const [value, setValue] = useState(initialValue ?? '');
+  const [state, setState] = useState<'idle' | 'typing' | 'busy' | 'sealed' | 'error'>(initialValue ? 'typing' : 'idle');
   const [flash, setFlash] = useState('');
   const [ref, setRef] = useState('');
   const inputId = useId();

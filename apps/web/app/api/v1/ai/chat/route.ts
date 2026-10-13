@@ -3076,7 +3076,7 @@ async function handleChatPost(request: Request) {
     // במקום טוקן לטיני שומר על עברית שוטפת ועל איכות התשובה של Qwen.
     const nameToken = piiShield ? piiShield.firstNamePlaceholder ?? firstName : firstName;
     const personalNameInstruction = firstName
-      ? `השם הפרטי של המשתמש הוא ${nameToken}. כאשר אתה פונה בשם — השתמש בדיוק ב-${nameToken} (בלי שם משפחה).`
+      ? `השם הפרטי של המשתמש הוא ${nameToken}. כאשר אתה פונה בשם — השתמש בדיוק ב-${nameToken} (בלי שם משפחה). פנה בשם באופן טבעי וחם בערך פעם ב-2–3 תשובות: בפתיחה, ברגע של עידוד או כשמשהו חשוב. לא בכל הודעה ולא פעמיים באותה תשובה.`
       : 'אין שם פרטי זמין בפרופיל כרגע.';
     let ragMemoryBlock = '';
     let systemKnowledgeBlock = '';
