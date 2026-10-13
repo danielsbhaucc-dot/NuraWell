@@ -2,6 +2,7 @@ import { after, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createTelegramChannel } from '@/lib/ceo/telegram';
 import { handleTelegramUpdate, verifyTelegramSecret } from '@/lib/ceo/webhook';
+import { gideonSecrets } from '@/lib/ceo/settings';
 import { reportError } from '@/lib/monitoring/report-error';
 
 export const runtime = 'nodejs';
@@ -10,7 +11,8 @@ export const maxDuration = 120;
 
 /** Telegram webhook for the AI CEO. Answers 200 immediately (no Telegram retries), works in after(). */
 export async function POST(request: Request) {
-  if (!verifyTelegramSecret(request.headers.get('x-telegram-bot-api-secret-token'))) {
+  const { webhook } = await gideonSecrets(createAdminClient()).catch(() => ({ webhook: process.env.TELEGRAM_WEBHOOK_SECRET?.trim() || null }));
+  if (!verifyTelegramSecret(request.headers.get('x-telegram-bot-api-secret-token'), webhook ?? undefined)) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
   const update = await request.json().catch(() => null);

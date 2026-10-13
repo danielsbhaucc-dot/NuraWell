@@ -29,7 +29,10 @@ export default async function OpsCeoPage() {
   ]);
   return (
     <main className="flex flex-col gap-4 p-4">
-      <h1 className="text-2xl font-black text-primary-900">{CEO_NAME} · מנכ&quot;ל AI</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-2xl font-black text-primary-900">{CEO_NAME} · מנכ&quot;ל AI</h1>
+        <a href="/ops/ceo/settings" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">הגדרות</a>
+      </div>
       <p className="text-sm text-primary-800/80">כל שינוי ש{CEO_NAME} מציע ממתין כאן ובטלגרם לאישור שלך. פג תוקף אחרי 24 שעות.</p>
       <h2 className="text-lg font-bold text-primary-900">ממתין לאישור ({pending?.length ?? 0})</h2>
       {!pending?.length ? <Card>אין פעולות ממתינות</Card> : null}

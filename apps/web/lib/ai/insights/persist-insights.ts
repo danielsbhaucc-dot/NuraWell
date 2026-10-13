@@ -1,3 +1,4 @@
+import { isStorableMemoryText } from '../safety/memory-text-guard';
 /**
  * שמירת תובנות שחולצו לטבלת `user_insights` — עם לוגיקת מיזוג (anti-duplication).
  *
@@ -61,7 +62,7 @@ export async function persistInsights(params: {
 
   for (const insight of extraction.insights) {
     const key = insightDedupeKey(insight.category, insight.insight_text);
-    if (!key || key.endsWith('|')) {
+    if (!key || key.endsWith('|') || !isStorableMemoryText(insight.insight_text)) {
       result.skipped += 1;
       continue;
     }

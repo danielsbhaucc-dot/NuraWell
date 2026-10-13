@@ -1,3 +1,4 @@
+import { ALMOG_NUTRITION_SAFETY_RULES } from '../safety/nutrition-safety';
 import { hebrewAddressingRule, type HebrewGender } from '../hebrew-output-rules';
 /**
  * מנוע התערבויות — יצירת אופציות A/B ו-pivot לחסמים.
@@ -207,7 +208,9 @@ function fallbackPivot(
   };
 }
 
-const SYSTEM = `אתה מנוע "התערבות התנהגותית" ל-NuraWell (רקע, לא צ'אט).
+const SYSTEM = `${ALMOG_NUTRITION_SAFETY_RULES}
+
+אתה מנוע "התערבות התנהגותית" ל-NuraWell (רקע, לא צ'אט).
 צור בדיוק 2 אופציות A/B קטנות לחסם, לפי מדע שינוי התנהגות.
 
 כללים:

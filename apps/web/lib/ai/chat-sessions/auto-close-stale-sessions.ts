@@ -46,14 +46,20 @@ export function shouldAutoCloseOpenSession(params: {
   sessionUpdatedAt: string;
   nowMs?: number;
 }): boolean {
-  if (params.lastTurnRole === 'user') return false;
-
   const lastActivity = resolveSessionLastActivity({
     sessionUpdatedAt: params.sessionUpdatedAt,
     lastInteractionAt: params.lastTurnAt,
   });
+  if (params.lastTurnRole === 'user') {
+    // Waiting for Almog's reply — but if no reply came for a day the turn failed; close it anyway,
+    // otherwise the session (and its memory) stays open forever (11 such sessions in prod, oldest Aug).
+    const ts = new Date(lastActivity).getTime();
+    return Number.isFinite(ts) && (params.nowMs ?? Date.now()) - ts >= ABANDONED_USER_TURN_MS;
+  }
   return isChatSessionStale(lastActivity, params.nowMs);
 }
+
+const ABANDONED_USER_TURN_MS = 24 * 60 * 60 * 1000;
 
 type OpenSessionRow = {
   id: string;
@@ -101,7 +107,8 @@ async function fetchLastTurnBySession(
  */
 export async function autoCloseStaleSessionsForUser(
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  opts: { deadline?: number } = {}
 ): Promise<{ closedSessionIds: string[] }> {
   const { data: openSessions, error } = await supabase
     .from('chat_sessions')
@@ -124,6 +131,7 @@ export async function autoCloseStaleSessionsForUser(
   const nowMs = Date.now();
 
   for (const session of sessions) {
+    if (opts.deadline && Date.now() > opts.deadline) break;
     const lastTurn = lastBySession.get(session.id) ?? null;
 
     if (
@@ -157,7 +165,7 @@ export async function autoCloseStaleSessionsForUser(
  */
 export async function autoCloseStaleSessionsBatch(
   supabase: SupabaseClient,
-  params: { limit?: number } = {}
+  params: { limit?: number; budgetMs?: number } = {}
 ): Promise<{ closed: number; scanned: number; errors: number }> {
   const limit = params.limit ?? 40;
   const cutoff = new Date(Date.now() - staleChatSessionMs()).toISOString();
@@ -175,13 +183,16 @@ export async function autoCloseStaleSessionsBatch(
   let closed = 0;
   let errors = 0;
   const rows = candidates ?? [];
+  // one pass per user (the per-user call closes all of that user's stale sessions) and a time
+  // budget so a backlog never runs into the function's maxDuration and loses the whole run
+  const users = [...new Set(rows.map((r) => r.user_id as string))];
+  const deadline = Date.now() + (params.budgetMs ?? 200_000);
 
-  for (const row of rows) {
-    const userId = row.user_id as string;
-    const sessionId = row.id as string;
+  for (const userId of users) {
+    if (Date.now() > deadline) break;
     try {
-      const { closedSessionIds } = await autoCloseStaleSessionsForUser(supabase, userId);
-      if (closedSessionIds.includes(sessionId)) closed += 1;
+      const { closedSessionIds } = await autoCloseStaleSessionsForUser(supabase, userId, { deadline });
+      closed += closedSessionIds.length;
     } catch {
       errors += 1;
     }
