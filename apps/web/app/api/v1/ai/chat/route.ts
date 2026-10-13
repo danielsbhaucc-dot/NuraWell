@@ -69,7 +69,8 @@ import {
   NURAWELL_CHAT_SYSTEM_PROMPT_LEAN,
 } from '../../../../../lib/ai/prompts';
 import { buildCoachingStylePromptBlock } from '../../../../../lib/ai/almog-coaching-style';
-import { stitchModelTextUntilComplete } from '../../../../../lib/ai/almog-message-complete';
+import { stitchModelTextUntilComplete, looksLikeCompleteHebrewMessage } from '../../../../../lib/ai/almog-message-complete';
+import { routeV3, routingV3Enabled, dailySoftCapUsd } from '../../../../../lib/ai/routing-v3';
 import {
   formatAiWorkingMemoryPromptBlock,
   updateAiContext,
@@ -555,10 +556,10 @@ type ChatModelRuntime = {
   finalGuardrails: string;
 };
 
-function resolveChatModelRuntime(writer: ChatWriterKey): ChatModelRuntime {
+function resolveChatModelRuntime(writer: ChatWriterKey, slugOverride?: string | null): ChatModelRuntime {
   const fleet = chatWriterFleet();
-  const entry = fleet[writer];
-  const slug = openRouterSlugForWriter(writer);
+  const entry = slugOverride ? undefined : fleet[writer];
+  const slug = slugOverride || openRouterSlugForWriter(writer);
   const isOpenAI = slug.startsWith('openai/');
   const isQwen = slug.toLowerCase().includes('qwen');
   const isGoogle = slug.startsWith('google/');
@@ -676,6 +677,28 @@ function openRouterMessagesWithCachedSystem(
     { role: 'system', content: `${staticSystemPrompt}\n\n${dynamicSystemPrompt}` },
     ...recentMessages,
   ];
+}
+
+function looksLikeCompleteReply(text: string): boolean {
+  const t = text.replace(/⟦[^⟧]*⟧/g, '').trim();
+  return looksLikeCompleteHebrewMessage(t) || /\p{Extended_Pictographic}\uFE0F?$/u.test(t);
+}
+
+async function continueTruncatedReply(requestBody: string, partial: string, apiKey: string, referer: string): Promise<string> {
+  const body = JSON.parse(requestBody) as Record<string, unknown> & { messages: unknown[] };
+  const res = await openRouterChatFetch(
+    JSON.stringify({
+      ...body,
+      stream: false,
+      stream_options: undefined,
+      max_tokens: 800,
+      messages: [...body.messages, { role: 'assistant', content: partial }, { role: 'user', content: 'המשך בדיוק מהנקודה שנעצרת, בלי לחזור על מה שנכתב. סיים את המחשבה בקצרה.' }],
+    }),
+    { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}`, 'HTTP-Referer': referer, 'X-Title': 'NuraWell' }
+  );
+  if (!res.ok) return '';
+  const j = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+  return (j.choices?.[0]?.message?.content ?? '').trim();
 }
 
 async function createOpenRouterTextStreamResponse({
@@ -951,6 +974,17 @@ async function createOpenRouterTextStreamResponse({
             emittedVisibleLength = 0;
             streamStarted = false;
             emitSanitizedVisibleDelta(controller);
+          }
+        }
+
+        /** Haiku once stopped mid-sentence in the blind test → one non-streamed continuation, streamed on. */
+        if (/claude-haiku/i.test(model) && accumulated.trim() && (finishReason !== 'stop' || !looksLikeCompleteReply(accumulated))) {
+          const piece = await continueTruncatedReply(requestBody, accumulated, apiKey, referer).catch(() => '');
+          console.info('[ai/chat]', { stage: 'writer_truncation_guard', model, finish: finishReason, added_chars: piece.length });
+          if (piece) {
+            const glued = /\s$/.test(accumulated) ? piece : ` ${piece}`;
+            accumulated += glued;
+            enqueueModelText(glued, controller);
           }
         }
 
@@ -2782,9 +2816,24 @@ async function handleChatPost(request: Request) {
     sticky: stickyStance,
     userMessage: lastUserText,
   });
-  const routedWriter = stickyResult.writer;
+  let v3: ReturnType<typeof routeV3> | null = routingV3Enabled() ? routeV3(lastUserText, heuristicAnalysis.tags) : null;
+  if (v3 && v3.lane !== 'claude_sonnet') {
+    // abuse-only soft cap: heavy daily spend → cheap lane (never block, never for safety turns)
+    const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+    const { data: spendRows } = await createAdminClient()
+      .from('ai_usage_events')
+      .select('cost_usd')
+      .eq('user_id', user.id)
+      .eq('feature', 'chat')
+      .gte('created_at', since)
+      .limit(2000);
+    const spent = (spendRows ?? []).reduce((n, r) => n + Number(r.cost_usd ?? 0), 0);
+    if (spent > dailySoftCapUsd()) v3 = { writer: v3.writer === 'grok' ? 'grok' : v3.writer, slug: 'openai/gpt-5.6-luna', lane: 'soft_cap_luna', light: true };
+  }
+  const routedWriter = v3?.writer ?? stickyResult.writer;
   const cheapTrivialWriter = trivialBypass && routedWriter === 'llama4';
-  mcfg = resolveChatModelRuntime(routedWriter);
+  mcfg = resolveChatModelRuntime(routedWriter, v3?.slug);
+  if (v3) console.info('[ai/chat]', { debug_id: debugId, stage: 'routing_v3', lane: v3.lane, slug: mcfg.slug });
   effectiveModel = cheapTrivialWriter ? chatTrivialWriterSlug() : mcfg.slug;
   /** תקרת פלט קצרה רק לתודה/ברכה — לא לשיחות מהותיות. */
   const shortTurnOutput =
@@ -3572,6 +3621,12 @@ async function handleChatPost(request: Request) {
     ]
       .filter(Boolean)
       .join('\n');
+    if (v3?.light) {
+      // light turn: background-only sections add tokens, not quality
+      const heavy = /^\[(?:רמזי זיכרון|RAG|זיכרון בין-שיחות|שיחות קודמות|סיכומי שיחות|דו"ח התקדמות|שיעורים קרובים|מדריכים|חומר עזר מהמסע|אסטרטגיית מנטור|תיק זיכרון)/;
+      const kept = contextSections.filter((x) => !heavy.test(x.trim()));
+      contextSections.splice(0, contextSections.length, ...kept);
+    }
     if (almogPromptV2Enabled()) {
       const b = budgetContextSectionsV2(contextSections);
       console.info('[ai/chat]', { debug_id: debugId, stage: 'context_budget_v2', before: b.before, after: b.after, trimmed: b.trimmed, dropped: b.dropped, sizes: sectionSizes(contextSections) });
