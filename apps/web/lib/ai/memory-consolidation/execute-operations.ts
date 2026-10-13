@@ -1,3 +1,4 @@
+import { isStorableMemoryText } from '../safety/memory-text-guard';
 /**
  * ביצוע פעולות זיכרון ב-Supabase — יעיל, עם ולידציה מקדימה של insight_id.
  * וקטורי recall סמנטי מסונכרנים ל-Upstash (לא נשמרים ב-Supabase).
@@ -42,6 +43,11 @@ export async function executeMemoryOperations(params: {
 
   for (const op of operations) {
     try {
+      // anonymiser placeholders ("[PERSON_NAME]") destroy meaning — never store them as memory
+      if ((op.op === 'ADD' || op.op === 'UPDATE') && !isStorableMemoryText(op.insight_text)) {
+        result.skipped += 1;
+        continue;
+      }
       if (op.op === 'ADD') {
         const key = insightDedupeKey(op.category, op.insight_text);
         if (!key || key.endsWith('|')) {

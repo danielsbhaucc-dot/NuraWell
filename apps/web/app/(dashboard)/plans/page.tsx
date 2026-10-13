@@ -16,6 +16,7 @@ import { PlanHabitCard } from '@/components/plans/PlanHabitCard';
 import { AlmogAvatarChip } from '@/components/journey/AlmogPresence';
 import { almogChangeNote, almogPlanSummary, buildPlanHabit, formatPlanDate, planGoalLine, type Gender } from '@/lib/plans/plan-document';
 import { mainObstacleLabelHe } from '@/lib/churn/reengagement-prompt-blocks';
+import { PatternInsightsCard } from '@/components/insights/PatternInsightsCard';
 
 export const metadata = { title: 'התוכנית שלי' };
 export const dynamic = 'force-dynamic';
@@ -196,6 +197,8 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
           </PlanAccordion>
         ) : null}
       </section>
+
+      <PatternInsightsCard userId={user.id} max={2} />
 
       <div className="flex items-center justify-center gap-5 text-sm font-semibold">
         <Link href="/progress" className="text-primary-700 underline-offset-4 hover:underline">

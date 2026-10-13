@@ -47,8 +47,10 @@ export function buildSlotDaypartPromptBlock(slot: HabitCheckpointSlot): string {
 }
 
 export function jerusalemTodayStartIso(now = new Date()): string {
-  const minutesSinceMidnight = getIsraelNowMinutes();
-  return new Date(now.getTime() - minutesSinceMidnight * 60 * 1000).toISOString();
+  // minutes since Israel midnight *of `now`* (was: of the real clock — wrong for any explicit `now`)
+  const minutesSinceMidnight = getIsraelNowMinutes(now);
+  const startMs = now.getTime() - minutesSinceMidnight * 60 * 1000;
+  return new Date(startMs - (startMs % 60000)).toISOString();
 }
 
 function slotFromMetadata(meta: Record<string, unknown> | null): HabitCheckpointSlot | null {

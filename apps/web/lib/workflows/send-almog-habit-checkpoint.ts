@@ -267,7 +267,12 @@ function formatHabitTuneBlock(aiContext: unknown): string | null {
   }
 }
 
-function pickNotificationTitle(payload: AlmogHabitCheckpointPayload, firstName: string, gender: 'female' | 'male' | 'other' = 'other'): string {
+export function pickNotificationTitle(
+  payload: AlmogHabitCheckpointPayload,
+  firstName: string,
+  gender: 'female' | 'male' | 'other' = 'other',
+  recentTitles: string[] = []
+): string {
   const task = payload.pendingTasks[0]?.title?.trim();
   const habit = payload.habits[0]?.title?.trim();
   // Task names are not embedded in titles any more: truncated names read badly ("מקום קטן ל-שתיית 2 כוסות מים לפני…").
@@ -297,10 +302,21 @@ function pickNotificationTitle(payload: AlmogHabitCheckpointPayload, firstName: 
           `${firstName}, איך הולך היום?`,
           habit ? `${firstName}, שומר לך מקום היום` : `${firstName}, נזכרים בעדינות`,
           `${firstName}, רגע לפני שזה בורח מהיום`,
+          ...(payload.slot === 'morning'
+            ? [`בוקר טוב ${firstName} ☀️`, `${firstName}, מתחילים את היום בקטן`]
+            : payload.slot === 'evening'
+              ? [`${firstName}, רגע של ערב`, `ערב טוב ${firstName} 🌙`]
+              : [`${firstName}, הפסקה קטנה באמצע היום`]),
         ];
   const seed = `${payload.userId}:${payload.checkpointDate}:${payload.slot}:${task ?? habit ?? ''}`;
   let hash = 0;
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  // don't repeat a title the user just saw (prod: the same title 16× in 10 days)
+  const recent = new Set(recentTitles.map((t) => t.trim()));
+  for (let i = 0; i < variants.length; i++) {
+    const v = variants[(hash + i) % variants.length]!;
+    if (!recent.has(v)) return v;
+  }
   return variants[hash % variants.length]!;
 }
 
@@ -505,7 +521,18 @@ export async function sendAlmogHabitCheckpointNotification(
     ],
   });
 
-  const title = pickNotificationTitle(payload, firstName, (genderInstruction ?? '').startsWith('המשתמשת נקבה') ? 'female' : (genderInstruction ?? '').startsWith('המשתמש זכר') ? 'male' : 'other');
+  const { data: recentTitleRows } = await admin
+    .from('notifications')
+    .select('title')
+    .eq('user_id', payload.userId)
+    .order('created_at', { ascending: false })
+    .limit(4);
+  const title = pickNotificationTitle(
+    payload,
+    firstName,
+    (genderInstruction ?? '').startsWith('המשתמשת נקבה') ? 'female' : (genderInstruction ?? '').startsWith('המשתמש זכר') ? 'male' : 'other',
+    ((recentTitleRows ?? []) as Array<{ title: string | null }>).map((r) => r.title ?? '')
+  );
 
   const habitIds = payload.habits.map((h) => h.id);
   const habitTitles = payload.habits.map((h) => h.title.trim()).filter(Boolean);

@@ -1,27 +1,37 @@
 /**
- * Inactivity fade (Daniel's design) — keyed on the user's TRUE last activity.
+ * Inactivity fade — the OUTER cap every automatic sender passes (evaluateNotifyGate), keyed on the
+ * user's TRUE last activity. Aligned with the cadence stages of #127 (computeCadenceStage):
  *
- *   active (inactive < 1 day)         → no fade limit (the normal rules apply, incl. open-task 3/day)
- *   inactive ≥ 1 day  (day 1)         → a single nudge that day
- *   inactive ≥ 2 days (day 2..week)   → at most once per day
- *   inactive ≥ ~1 week                → at most once per week
+ *   active            (0–2 days)   → no fade cap (the normal rules apply, incl. 3/day touch fatigue)
+ *   dormant_early     (3–5 days)   → at most 2 per day
+ *   withdrawing /
+ *   extended_absence  (6–13 days)  → at most 1 per day
+ *   ghosted           (14–41 days) → at most 1 per week
+ *   dormant_long      (42+ days)   → at most 1 per 30 days
  *
- * Applied BEFORE the open-task 3/day touch-fatigue rule (gateAlmogUserFacingTouch).
- * Thresholds are constants so the product can tune them.
+ * Before 13.10.2026 this gate stopped at "weekly from day 7" and the master churn nudge was not
+ * counted as a touch, so an 83-day inactive user got a nudge every 3 days.
  */
-export const FADE_DAILY_FROM_DAYS = 1;
-export const FADE_WEEKLY_FROM_DAYS = 7;
+export const FADE_DAILY_FROM_DAYS = 3;
+export const FADE_ONE_PER_DAY_FROM_DAYS = 6;
+export const FADE_WEEKLY_FROM_DAYS = 14;
+export const FADE_MONTHLY_FROM_DAYS = 42;
 export const FADE_WEEKLY_INTERVAL_DAYS = 7;
+export const FADE_MONTHLY_INTERVAL_DAYS = 30;
+/** how far back the gate must look for previous touches */
+export const FADE_LOOKBACK_DAYS = FADE_MONTHLY_INTERVAL_DAYS;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+export type FadeTier = 'active' | 'daily' | 'weekly' | 'monthly';
+
 export type FadeDecision =
-  | { ok: true; tier: 'active' | 'daily' | 'weekly'; inactiveDays: number }
-  | { ok: false; tier: 'daily' | 'weekly'; inactiveDays: number; reason: 'inactivity_fade' };
+  | { ok: true; tier: FadeTier; inactiveDays: number }
+  | { ok: false; tier: Exclude<FadeTier, 'active'>; inactiveDays: number; reason: 'inactivity_fade' };
 
 /**
  * @param lastActiveAt  true last activity (max of last_active_at / last_responded_at); null = unknown → no fade
- * @param recentTouchTimes  Almog touch timestamps (ms), at least the last FADE_WEEKLY_INTERVAL_DAYS
+ * @param recentTouchTimes  automatic touch timestamps (ms), at least the last FADE_LOOKBACK_DAYS
  * @param todayStartMs  start of the user's local day (Asia/Jerusalem) in ms
  */
 export function decideInactivityFade(params: {
@@ -40,18 +50,31 @@ export function decideInactivityFade(params: {
   /** touches that happened after the user went quiet */
   const sinceQuiet = recentTouchTimes.filter((t) => t > lastActiveAt);
 
-  if (inactiveDays >= FADE_WEEKLY_FROM_DAYS) {
-    const windowStart = now - FADE_WEEKLY_INTERVAL_DAYS * DAY_MS;
-    const sentThisWeek = sinceQuiet.some((t) => t >= windowStart);
-    return sentThisWeek
-      ? { ok: false, tier: 'weekly', inactiveDays, reason: 'inactivity_fade' }
-      : { ok: true, tier: 'weekly', inactiveDays };
+  if (inactiveDays >= FADE_MONTHLY_FROM_DAYS) {
+    const sent = sinceQuiet.some((t) => t >= now - FADE_MONTHLY_INTERVAL_DAYS * DAY_MS);
+    return sent ? { ok: false, tier: 'monthly', inactiveDays, reason: 'inactivity_fade' } : { ok: true, tier: 'monthly', inactiveDays };
   }
-
-  const sentToday = sinceQuiet.some((t) => t >= todayStartMs);
-  return sentToday
+  if (inactiveDays >= FADE_WEEKLY_FROM_DAYS) {
+    const sent = sinceQuiet.some((t) => t >= now - FADE_WEEKLY_INTERVAL_DAYS * DAY_MS);
+    return sent ? { ok: false, tier: 'weekly', inactiveDays, reason: 'inactivity_fade' } : { ok: true, tier: 'weekly', inactiveDays };
+  }
+  const perDay = inactiveDays >= FADE_ONE_PER_DAY_FROM_DAYS ? 1 : 2;
+  const sentToday = sinceQuiet.filter((t) => t >= todayStartMs).length;
+  return sentToday >= perDay
     ? { ok: false, tier: 'daily', inactiveDays, reason: 'inactivity_fade' }
     : { ok: true, tier: 'daily', inactiveDays };
+}
+
+/**
+ * Which stored notifications count as an automatic "touch" for the fade. Everything Almog-ish
+ * that the system sent on its own — not only sources prefixed "almog" (cron_ops, sos_followup,
+ * guardian and summaries were invisible to the fade before).
+ */
+const NON_TOUCH_SOURCES = new Set(['admin_transcript_security', 'admin_transcript_delivery', 'almog_intro_welcome', 'task_completion_celebration']);
+export function isAutomaticTouch(meta: Record<string, unknown> | null): boolean {
+  const src = typeof meta?.source === 'string' ? meta.source : '';
+  if (NON_TOUCH_SOURCES.has(src)) return false;
+  return true;
 }
 
 /** notification_prefs (profiles.notification_prefs, default {push,email,daily_reminder: true}) */
