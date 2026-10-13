@@ -4,7 +4,8 @@ import { PageBackButton } from '@/components/shared/PageBackButton';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
 import { motion } from 'framer-motion';
-import { Check, ChevronRight, FileLock2, MessageCircle, Send, X } from 'lucide-react';
+import { Check, ChevronRight, MessageCircle, Send, X } from 'lucide-react';
+import { SecureVaultBox } from '@/components/ai/SecureVaultBox';
 import {
   FUN_ASSISTANT_BUBBLE,
   FUN_AVATAR_RING,
@@ -598,9 +599,9 @@ export function OnboardingChat({
     dispatchOpenAlmogChat();
   }
 
-  async function sendDiscrete() {
-    const value = discreteValue.trim();
-    if (!value || !discreteField || loading) return;
+  async function sendDiscrete(raw: string): Promise<boolean> {
+    const value = raw.trim();
+    if (!value || !discreteField || loading) return false;
     setLoading(true);
     setMessages((prev) => [
       ...prev,
@@ -621,7 +622,7 @@ export function OnboardingChat({
           path,
         }),
       });
-      if (!res.ok) return;
+      if (!res.ok) return false;
       const json = (await res.json()) as {
         reply: string;
         field_flags: ProfileFieldFlags;
@@ -639,6 +640,7 @@ export function OnboardingChat({
         setPendingDiscrete(null);
       }
       setMessages((prev) => [...prev, { role: 'assistant', content: json.reply }]);
+      return true;
     } finally {
       setLoading(false);
     }
@@ -933,38 +935,17 @@ export function OnboardingChat({
                   ) : null}
 
                   {discreteField ? (
-                    <div className="px-4 pt-2 pb-2 space-y-2">
-                      <p className="text-[11px] font-bold text-amber-200/90 flex items-center gap-1">
-                        <FileLock2 className="h-3.5 w-3.5" />
-                        {DISCRETE_FIELD_LABELS[discreteField]} · מוצפן
-                      </p>
-                      <div className="flex gap-2">
-                        <input
-                          value={discreteValue}
-                          onChange={(e) => setDiscreteValue(e.target.value)}
-                          onFocus={focusChatInput}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') void sendDiscrete();
-                          }}
-                          placeholder={DISCRETE_FIELD_PLACEHOLDERS[discreteField]}
-                          className="flex-1 rounded-xl px-3 py-2.5 text-base text-emerald-50 outline-hidden placeholder:text-slate-500"
-                          style={{
-                            background: 'rgba(16,185,129,0.12)',
-                            border: '1px solid rgba(52,211,153,0.35)',
-                          }}
-                          dir="rtl"
-                          type={discreteField.includes('weight') ? 'number' : 'text'}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => void sendDiscrete()}
-                          disabled={!discreteValue.trim() || loading}
-                          className="shrink-0 rounded-xl px-3 py-2 text-sm font-bold text-white disabled:opacity-40"
-                          style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
-                        >
-                          שלח
-                        </button>
-                      </div>
+                    <div className="px-3 pt-2 pb-2">
+                      <SecureVaultBox
+                        key={discreteField}
+                        onClose={() => setDiscreteField(null)}
+                        field={{
+                          label: DISCRETE_FIELD_LABELS[discreteField],
+                          placeholder: DISCRETE_FIELD_PLACEHOLDERS[discreteField],
+                          numeric: discreteField.includes('weight'),
+                          submit: (v) => sendDiscrete(v),
+                        }}
+                      />
                     </div>
                   ) : null}
 
