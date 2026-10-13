@@ -2,9 +2,6 @@ import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { autoCloseStaleSessionsBatch } from '@/lib/ai/chat-sessions/auto-close-stale-sessions';
-import { runMemoryConsolidationBatch } from '@/lib/ai/memory-consolidation/run-batch';
-import { runAllDueChatSummaryTiers } from '@/lib/ai/chat-memory/chat-periodic-summaries';
-import { runPatternInsightsBatch } from '@/lib/ai/insights/patterns/run-pattern-batch';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -41,9 +38,16 @@ export async function POST(request: Request) {
   };
   await step('auto_close', () => autoCloseStaleSessionsBatch(admin, { limit: 100 }));
   if (full) {
-    await step('consolidation', () => runMemoryConsolidationBatch(admin, {}));
-    await step('tiers', () => runAllDueChatSummaryTiers(admin, { limit: 60 }));
-    await step('patterns', () => runPatternInsightsBatch(admin, { budgetMs: 120_000 }));
+    // perf: full-only modules load lazily so the 23 hourly non-full runs skip parsing them
+    await step('consolidation', async () =>
+      (await import('@/lib/ai/memory-consolidation/run-batch')).runMemoryConsolidationBatch(admin, {})
+    );
+    await step('tiers', async () =>
+      (await import('@/lib/ai/chat-memory/chat-periodic-summaries')).runAllDueChatSummaryTiers(admin, { limit: 60 })
+    );
+    await step('patterns', async () =>
+      (await import('@/lib/ai/insights/patterns/run-pattern-batch')).runPatternInsightsBatch(admin, { budgetMs: 120_000 })
+    );
   }
   return NextResponse.json({ ok: true, ...out });
 }
