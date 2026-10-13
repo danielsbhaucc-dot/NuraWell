@@ -1,5 +1,6 @@
 'use client';
 
+import { PageBackButton } from '@/components/shared/PageBackButton';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -619,15 +620,7 @@ export function SosDialog({
         >
           <div className="mb-3 flex items-center justify-between gap-2">
             {showBackButton ? (
-              <button
-                type="button"
-                onClick={goBackFromResponse}
-                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white/15 px-3 text-xs font-bold text-white ring-1 ring-white/25 backdrop-blur-sm transition hover:bg-white/25 active:scale-95"
-                aria-label="חזרה לבחירת הקושי"
-              >
-                <ArrowRight className="h-4 w-4" aria-hidden />
-                חזרה
-              </button>
+              <PageBackButton onClick={goBackFromResponse} ariaLabel="חזרה לבחירת הקושי" />
             ) : (
               <span aria-hidden />
             )}

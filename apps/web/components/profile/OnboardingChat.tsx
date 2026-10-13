@@ -1,5 +1,6 @@
 'use client';
 
+import { PageBackButton } from '@/components/shared/PageBackButton';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
 import { motion } from 'framer-motion';
@@ -290,14 +291,7 @@ function ChatHeader({
         <div className="min-w-0 flex-1" aria-hidden />
 
         {showBack ? (
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background-card/10 text-white border border-white/15"
-            aria-label={phase === 'chat' ? 'חזרה לבחירת מסלול' : 'חזרה'}
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
+          <PageBackButton onClick={onBack} ariaLabel={phase === 'chat' ? 'חזרה לבחירת מסלול' : 'חזרה'} />
         ) : null}
 
         <button
