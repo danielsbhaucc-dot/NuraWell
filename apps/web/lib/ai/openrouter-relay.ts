@@ -18,9 +18,13 @@ function relayBase(): string | null {
    * (302 → SSO), so the relay never answered and every call fell back to the slow direct path.
    * The production domain is public — use it. Previews keep VERCEL_URL + the bypass header.
    */
+  // The custom domain (ops.nurawell.ai) sits behind Cloudflare, which 403s server-to-server calls from
+  // Vercel IPs (seen in prod logs) — so AI_OPENROUTER_RELAY_HOST (e.g. nurawell.vercel.app) wins.
   const prodHost =
     process.env.VERCEL_ENV === 'production'
-      ? process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '').trim()
+      ? process.env.AI_OPENROUTER_RELAY_HOST?.trim() ||
+        process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() ||
+        process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '').trim()
       : null;
   const host = prodHost || process.env.VERCEL_URL?.trim();
   return host ? `https://${host.replace(/\/+$/, '')}` : null;
