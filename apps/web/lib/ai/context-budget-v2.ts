@@ -34,7 +34,7 @@ export function budgetHistoryV2<T extends { role: string; content: string }>(msg
  * Anchored to the section start. Unanchored patterns matched text *inside* other sections (the notifications
  * block mentions "[מענה להתראה]"), which made the 5k notifications list un-trimmable.
  */
-const PROTECTED = [/^\[בטיחות/, /^\[פעולה שבוצעה/, /^\[לא בוצע שינוי רמה\]/, /^כלל: אל תטען/, /^\[מענה להתראה/, /^\[התוכנית של המשתמש/, /^\[זמן עכשיו\]/, /^\[כרטיסים בצ׳אט/];
+const PROTECTED = [/^\[בטיחות/, /^\[פעולה שבוצעה/, /^\[לא בוצע שינוי רמה\]/, /^כלל: אל תטען/, /^\[מענה להתראה/, /^\[התוכנית של המשתמש/, /^\[זמן עכשיו\]/, /^\[כרטיסים בצ׳אט/, /^\[חזרה\]/];
 /** lower = dropped first when over budget */
 const LOW_PRIORITY = [/זיכרון ארוך|\[RAG|רמזי זיכרון/, /שיחות קודמות|cross-session|סיכומי שיחות/, /שיעורים קרובים/, /דו"ח התקדמות|התקדמות מלא/, /\[מדריכים|מדריך/, /אסטרטגיית מנטור|mentor/i];
 
