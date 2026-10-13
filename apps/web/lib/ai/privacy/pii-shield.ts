@@ -20,11 +20,11 @@ export type PiiProfileSeed = {
   known_person_names?: string[];
 };
 
+import { applyPiiDetectors, PII_KIND_PLACEHOLDER } from './pii-patterns';
+
 type Replacement = { value: string; placeholder: string };
 
 const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-const PHONE_REGEX = /(?:\+972[\-\s]?|0)(?:5[0-9]|[23489])[\-\s]?\d{3}[\-\s]?\d{4,5}/g;
-const ISRAELI_ID_REGEX = /\b\d{9}\b/g;
 
 /**
  * אורך מרבי של placeholder (כולל סוגריים ורווחים). משמש את ה-stream detokenizer
@@ -206,13 +206,7 @@ export class PiiShield {
       return this.register(match, PII_PLACEHOLDERS.USER_EMAIL);
     });
 
-    out = out.replace(PHONE_REGEX, (match) => {
-      return this.register(match, PII_PLACEHOLDERS.USER_PHONE);
-    });
-
-    out = out.replace(ISRAELI_ID_REGEX, (match) => {
-      return this.register(match, PII_PLACEHOLDERS.USER_ID);
-    });
+    out = applyPiiDetectors(out, (value, kind) => this.register(value, PII_KIND_PLACEHOLDER[kind]));
 
     for (const { value, placeholder } of this.replacements) {
       if (out.includes(value)) out = replaceWord(out, value, placeholder);
@@ -320,6 +314,9 @@ const HEB = '\\u05D0-\\u05EA';
  * so "נועה" never hits the middle of "תנועה". Non-Hebrew values (phone/email/[[TOKENS]]) stay plain substring.
  */
 function replaceWord(text: string, from: string, to: string): string {
+  if (/^[A-Za-z][A-Za-z '\-]*$/.test(from)) {
+    return text.replace(new RegExp(`(?<![A-Za-z])${escapeRegExp(from)}(?![A-Za-z])`, 'g'), to);
+  }
   if (!/^[\u05D0-\u05EA][\u05D0-\u05EA '\-]*$/.test(from)) return text.split(from).join(to);
   const re = new RegExp(`(^|[^${HEB}]|(?:^|[^${HEB}])[ובכלמשה]{1,2})${escapeRegExp(from)}(?![${HEB}])`, 'g');
   return text.replace(re, (_m, pre: string) => `${pre}${to}`);
