@@ -135,7 +135,15 @@ export default async function JourneyRoute() {
   });
   const initialNextStep = buildFallback(nextPick);
   if (accessCtx.foundationComplete && accessCtx.foundationStationId) {
-    accessCtx = await loadJourneyAccessContext(supabase, user.id, report);
+    // pickNextJourneyStep may have just unlocked a step — refresh only the unlocks (1 query, not the whole context)
+    const { data: unlockRows } = await supabase
+      .from('user_journey_step_unlocks')
+      .select('step_id')
+      .eq('user_id', user.id);
+    accessCtx = {
+      ...accessCtx,
+      unlockedStepIds: new Set<string>((unlockRows ?? []).map((r: { step_id: string }) => r.step_id)),
+    };
   }
 
   const groups = filterJourneyGroupsForUser(rawGroups, accessCtx, progressMap);
