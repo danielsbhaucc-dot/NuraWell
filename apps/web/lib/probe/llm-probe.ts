@@ -31,7 +31,7 @@ async function one(v: V) {
     await new Promise((res) => setTimeout(res, 5000));
     const g = await fetch(`https://openrouter.ai/api/v1/generation?id=${id}`, { headers: { Authorization: `Bearer ${key}` } }).then((x) => x.json()).catch(() => null);
     const d = (g as { data?: Record<string, unknown> } | null)?.data;
-    if (d) or = { latency: d.latency, provider: d.provider_name, cached: d.native_tokens_cached, prompt_tokens: d.native_tokens_prompt };
+    if (d) { const { id: _i, ...rest } = d; or = rest; }
   }
   return { v: v.name, status: r.status, bytes: json.length, headers_ms: h, ttft, provider, or };
 }
@@ -40,7 +40,7 @@ export async function runLlmProbe(): Promise<Response> {
   if (process.env.VERCEL_ENV !== 'preview') return new Response('not found', { status: 404 });
   const S = NURAWELL_CHAT_SYSTEM_PROMPT;
   const full = `${S}\n\n${S.slice(2000, 17000)}`;
-  const vs: V[] = process.env.PROBE_MIN ? [{ name: 'full_46k_string', system: full }] : [
+  const vs: V[] = true ? [{ name: 'full_46k_string', system: full }, { name: 'small_2k', system: S.slice(0, 2000) }] : [
     { name: 'echo_46k_postman', system: full, url: 'https://postman-echo.com/post' },
     { name: 'bad_model_46k', system: full, model: 'nonexistent/model-x' },
     { name: 'bad_model_2k', system: S.slice(0, 2000), model: 'nonexistent/model-x' },
