@@ -36,3 +36,13 @@ export async function POST(req: Request) {
   if (ct) headers.set('content-type', ct);
   return new Response(upstream.body, { status: upstream.status, headers });
 }
+
+/** Warm-up ping (see prewarmOpenRouterRelay): wakes this isolate and pre-opens TLS to OpenRouter. */
+export async function GET(req: Request) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || req.headers.get(RELAY_HEADER) !== secret) {
+    return new Response('not found', { status: 404 });
+  }
+  await fetch('https://openrouter.ai/api/v1/models?limit=1', { method: 'HEAD' }).catch(() => null);
+  return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
+}

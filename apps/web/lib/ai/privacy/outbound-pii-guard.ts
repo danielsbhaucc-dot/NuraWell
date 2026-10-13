@@ -93,6 +93,16 @@ function tokenizeContent(shield: PiiShield, c: unknown): unknown {
   return c;
 }
 
+/**
+ * Fire-and-forget warm-up: loads the user's PII seed into the cache at request start, so the
+ * guard on the first LLM call (router/writer) doesn't wait on 2 DB/auth round-trips. Same seed,
+ * same tokens — only the timing moves.
+ */
+export function prewarmPiiShield(userId: string | null | undefined): void {
+  if (!userId) return;
+  void shieldFor(userId).catch(() => {});
+}
+
 /** Tokenizes messages / prompt / embeddings input in a parsed request body (mutates + returns it). */
 export async function guardOutboundBody(
   body: Record<string, unknown>,
