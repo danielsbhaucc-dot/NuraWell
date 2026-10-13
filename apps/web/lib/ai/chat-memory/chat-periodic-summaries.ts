@@ -1,3 +1,4 @@
+import { hasPlaceholderCorruption } from '../safety/memory-text-guard';
 /**
  * סיכומים תקופתיים לשיחות — פירמידה daily → annual.
  * Cron: tier=daily|weekly|monthly|bi_monthly|quarterly|semi_annual|annual
@@ -12,6 +13,7 @@ import {
   getChatChildPeriodKeys,
   isValidChatPeriodKey,
   israelDateKey,
+  israelDayUtcBounds,
   type ChatSummaryType,
 } from './chat-period-keys';
 import { fetchDailyChatSource } from './fetch-daily-chat-source';
@@ -221,7 +223,7 @@ export async function generateAndStoreChatPeriodicSummary(
     childInsights,
   });
 
-  if (!aiInsight.trim()) {
+  if (!aiInsight.trim() || hasPlaceholderCorruption(aiInsight)) {
     return { sessionCount, generated: false };
   }
 
@@ -240,18 +242,27 @@ export async function generateAndStoreChatPeriodicSummary(
 async function fetchUsersWithChatActivity(
   admin: SupabaseClient,
   sinceIso: string,
-  limit: number
+  limit: number,
+  untilIso?: string
 ): Promise<string[]> {
-  const { data, error } = await admin
+  let q = admin
     .from('ai_interactions')
     .select('user_id')
     .gte('created_at', sinceIso)
-    .in('role', ['user', 'assistant']);
+    .eq('role', 'user')
+    .limit(5000);
+  if (untilIso) q = q.lte('created_at', untilIso);
+  const { data, error } = await q;
 
   if (error) throw error;
   return [...new Set((data ?? []).map((r) => r.user_id as string))].slice(0, limit);
 }
 
+
+/** Reference instant inside the period that just closed: 12h before now (03:00 IL → yesterday 15:00). */
+export function closedPeriodReference(now = new Date()): Date {
+  return new Date(now.getTime() - 12 * 60 * 60 * 1000);
+}
 
 /** האם ה-cron צריך לרוץ ברמה זו היום (ישראל) */
 export function shouldRunChatSummaryTier(tier: ChatSummaryTier, now = new Date()): boolean {
@@ -270,7 +281,8 @@ export function shouldRunChatSummaryTier(tier: ChatSummaryTier, now = new Date()
     case 'daily':
       return true;
     case 'weekly':
-      return weekday === 'Sat';
+      // runs the night after the week closes (Sat→Sun); summarises the week that ended yesterday
+      return weekday === 'Sun';
     case 'monthly':
       return day === 1;
     case 'bi_monthly':
@@ -313,21 +325,25 @@ export async function runChatPeriodicSummariesBatch(
   }
 
   const limit = params.limit ?? 40;
-  const dateKey = params.dateKey ?? israelDateKey(now);
+  // The nightly run (03:00 IL) summarises the period that just CLOSED — yesterday / last week /
+  // last month. Summarising "today" at 03:00 found no chat and nothing was ever stored
+  // (chat_periodic_summaries had 0 rows in prod until 13.10.2026).
+  const ref = closedPeriodReference(now);
+  const dateKey = params.dateKey ?? israelDateKey(ref);
+  const periodKey = tier === 'daily' ? dateKey : buildChatPeriodKey(tier, ref);
+  const bounds =
+    tier === 'daily'
+      ? israelDayUtcBounds(dateKey)
+      : chatPeriodUtcBounds(tier, periodKey);
 
-  let sinceIso: string;
-  if (tier === 'daily') {
-    const { start } = (await import('./chat-period-keys')).israelDayUtcBounds(dateKey);
-    sinceIso = start.toISOString();
-  } else {
-    sinceIso = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-  }
-
-  const userIds = await fetchUsersWithChatActivity(admin, sinceIso, limit);
+  const userIds = await fetchUsersWithChatActivity(
+    admin,
+    bounds.start.toISOString(),
+    limit,
+    bounds.end.toISOString()
+  );
   let generated = 0;
   let errors = 0;
-
-  const periodKey = tier === 'daily' ? dateKey : buildChatPeriodKey(tier, now);
 
   for (const userId of userIds) {
     try {

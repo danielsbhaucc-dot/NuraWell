@@ -52,6 +52,16 @@ export async function grantGuideAccess(
     .eq('course_id', courseId)
     .maybeSingle();
 
+  // an active, unexpired trial is "already has access" — re-granting extended the trial on every
+  // chat turn and logged a grant each time (10 grants in one day for one user in prod)
+  const trialStillValid =
+    existing?.is_active &&
+    existing.access_type === 'trial' &&
+    (!existing.trial_ends_at || Date.parse(existing.trial_ends_at) > Date.now());
+  if (trialStillValid && accessType === 'trial') {
+    return { granted: false, alreadyHadAccess: true, enrollmentId: existing!.id, message: 'כבר יש גישה למדריך' };
+  }
+
   if (existing?.is_active && existing.access_type === 'full') {
     return {
       granted: false,

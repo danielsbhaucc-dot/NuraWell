@@ -18,16 +18,20 @@ function admin(profile: Record<string, unknown>, touches: string[]) {
 const profile = { id: 'u', role: 'user', notification_prefs: { daily_reminder: true }, last_active_at: '2026-10-04T14:40:33Z', last_responded_at: null };
 
 describe('fade rule on the real prod scenario', () => {
-  it('inactive 8 days, already nudged this week → blocked (weekly)', async () => {
+  it('inactive 8 days (cadence #127: 1/day), nudged on an earlier day → allowed today', async () => {
     const r = await evaluateNotifyGate(admin(profile, ['2026-10-09T05:00:00Z']) as never, 'u', { now: new Date('2026-10-12T15:00:00Z') });
+    expect(r.ok).toBe(true);
+  });
+  it('inactive 8 days, already nudged today → blocked', async () => {
+    const r = await evaluateNotifyGate(admin(profile, ['2026-10-12T05:00:00Z']) as never, 'u', { now: new Date('2026-10-12T15:00:00Z') });
     expect(r).toMatchObject({ ok: false, reason: 'inactivity_fade' });
   });
   it('the 13:00 send on Oct 11 (after the 08:01 one) must be blocked', async () => {
     const r = await evaluateNotifyGate(admin(profile, ['2026-10-11T05:01:00Z']) as never, 'u', { now: new Date('2026-10-11T10:00:00Z') });
     expect(r).toMatchObject({ ok: false, reason: 'inactivity_fade' });
   });
-  it('inactive 5 days, already nudged today → blocked (max once/day)', async () => {
-    const r = await evaluateNotifyGate(admin(profile, ['2026-10-09T05:01:00Z']) as never, 'u', { now: new Date('2026-10-09T10:00:00Z') });
+  it('inactive 5 days, already nudged twice today → blocked (max 2/day)', async () => {
+    const r = await evaluateNotifyGate(admin(profile, ['2026-10-09T05:01:00Z', '2026-10-09T09:00:00Z']) as never, 'u', { now: new Date('2026-10-09T10:00:00Z') });
     expect(r).toMatchObject({ ok: false, reason: 'inactivity_fade' });
   });
   it('inactive 5 days, nothing today → one allowed', async () => {
