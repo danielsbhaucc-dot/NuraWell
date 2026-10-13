@@ -3,14 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { createPiiShield, PII_PLACEHOLDERS, modelRequiresPiiShield } from '../lib/ai/privacy/pii-shield';
 
 describe('pii-shield', () => {
-  it('replaces first name and full name with a natural Hebrew pseudonym', () => {
+  it('replaces first/full/last name with unique bracket tokens', () => {
     const shield = createPiiShield({ full_name: 'שרון כהן', phone: '050-1234567' });
     const pseudonym = shield.firstNamePlaceholder;
     const out = shield.tokenizeText('שלום שרון, איך הולך? שרון כהן מדברת.');
     expect(pseudonym).toBeTruthy();
     expect(pseudonym).not.toBe('שרון');
-    // הפסיאודונים הוא שם עברי טבעי — לא טוקן ברקטים לטיני.
-    expect(pseudonym).not.toMatch(/\[\[/);
+    expect(pseudonym).toBe(PII_PLACEHOLDERS.USER_FIRST_NAME);
+    expect(shield.tokenizeText('משפחת כהן')).toBe('משפחת [[USER_LAST_NAME]]');
     expect(out).toContain(pseudonym!);
     expect(out).not.toContain('שרון');
     expect(out).not.toContain('שרון כהן');
@@ -65,5 +65,20 @@ describe('pii-shield', () => {
   it('modelRequiresPiiShield detects qwen models', () => {
     expect(modelRequiresPiiShield('qwen/qwen3.7-plus')).toBe(true);
     expect(modelRequiresPiiShield('meta-llama/llama-4-scout')).toBe(false);
+  });
+});
+
+describe('pii-shield unique placeholders', () => {
+  it('different values never share a placeholder and all restore correctly', () => {
+    const shield = createPiiShield({ email: 'a@x.com', known_person_names: ['אבי לוי', 'גל'] });
+    const t = shield.tokenizeText('a@x.com ו-b@y.com, אבי לוי וגל, 050-1111111 ו-052-2222222');
+    expect(t).toContain('[[USER_EMAIL]]');
+    expect(t).toContain('[[USER_EMAIL_2]]');
+    expect(t).toContain('[[PERSON]]');
+    expect(t).toContain('[[PERSON_2]]');
+    expect(t).toContain('[[USER_PHONE_2]]');
+    expect(shield.detokenizeText(t)).toBe('a@x.com ו-b@y.com, אבי לוי וגל, 050-1111111 ו-052-2222222');
+    // a common word is never produced as a fake name, so it is never "restored" wrongly
+    expect(shield.detokenizeText('טל ומור הלכו')).toBe('טל ומור הלכו');
   });
 });

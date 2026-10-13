@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
@@ -82,7 +83,7 @@ ${styleBlock}
 ${cooldownBlock ?? ''}
 קונטקסט: ${formatStateForPrompt(state)}`;
 
-  const body = await completeEmpathyNotifyBody({
+  const body = await withAiUser(userId, () => completeEmpathyNotifyBody({
     label: 'task_followup',
     temperature: 0.78,
     presencePenalty: 0.45,
@@ -99,7 +100,7 @@ ${cooldownBlock ?? ''}
 כתוב את גוף ההודעה לנוטיפיקציה בלבד — 1–2 משפטים קצרים כמו וואטסאפ של חבר, אימוג'י לפעמים, שאלה ישירה ("מה קורה?", "איך הולך?") בסוף. עברית חיה וטבעית.`,
       },
     ],
-  });
+  }));
 
   const title = `${firstName} · מאלמוג`;
 

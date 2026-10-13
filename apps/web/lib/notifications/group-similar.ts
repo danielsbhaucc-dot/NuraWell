@@ -19,8 +19,10 @@ export type NotificationListEntry<T extends GroupableNotification> =
       kind: 'group';
       key: string;
       notifications: T[];
-      /** כותרת מרוכזת, למשל "שתיית מים · 5 תזכורות מאלמוג" */
+      /** כותרת ההתראה האחרונה (מותאמת אישית) */
       groupTitle: string;
+      /** שם ההרגל שעליו הקבוצה, למשל "שתיית 2 כוסות מים" */
+      habitLabel: string;
       /** גוף מההתראה האחרונה */
       previewBody: string;
       unreadCount: number;
@@ -80,7 +82,8 @@ export function groupSimilarNotifications<T extends GroupableNotification>(
       kind: 'group',
       key: `habit:${key}:${cluster.map((n) => n.id).join(',')}`,
       notifications: cluster,
-      groupTitle: `${label} · ${cluster.length} תזכורות מאלמוג`,
+      groupTitle: cluster[0]!.title?.trim() || label,
+      habitLabel: label,
       previewBody: cluster[0]!.body,
       unreadCount,
       latestCreatedAt: cluster[0]!.created_at,

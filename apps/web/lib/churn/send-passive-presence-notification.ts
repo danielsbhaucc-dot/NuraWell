@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 /**
  * send-passive-presence-notification.ts
  * -------------------------------------
@@ -207,7 +208,7 @@ export async function sendPassivePresenceNotification(
 
   const systemPrompt = buildPassivePresenceSystemPrompt(promptInput);
 
-  const body = await completeEmpathyNotifyBody({
+  const body = await withAiUser(userId, () => completeEmpathyNotifyBody({
     label: 'passive_presence',
     temperature: 0.82,
     presencePenalty: 0.45,
@@ -220,7 +221,7 @@ export async function sendPassivePresenceNotification(
         content: `שם המשתמש: ${firstName}\nהזמן: ${weekdayName}, ${timeHHMM}.\nסוג מגע: ${params.kind}${params.trigger ? ` (${params.trigger})` : ''}.\nימים בלי פעילות: ${promptInput.daysSinceLastActive}.`,
       },
     ],
-  });
+  }));
 
   const title = `${firstName} 🌿`;
 

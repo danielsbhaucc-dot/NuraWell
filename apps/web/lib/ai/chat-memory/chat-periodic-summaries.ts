@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 import { hasPlaceholderCorruption } from '../safety/memory-text-guard';
 /**
  * סיכומים תקופתיים לשיחות — פירמידה daily → annual.
@@ -215,13 +216,13 @@ export async function generateAndStoreChatPeriodicSummary(
   }
 
   const firstName = await fetchFirstName(admin, params.userId);
-  const aiInsight = await generateChatSummaryInsight({
+  const aiInsight = await withAiUser(params.userId, () => generateChatSummaryInsight({
     type: params.type,
     periodKey: params.periodKey,
     firstName,
     sourceBlock,
     childInsights,
-  });
+  }));
 
   if (!aiInsight.trim() || hasPlaceholderCorruption(aiInsight)) {
     return { sessionCount, generated: false };

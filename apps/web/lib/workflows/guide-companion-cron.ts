@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 import { readGuideRules } from '../guides/guide-rules';
 import { isStorableMemoryText } from '../ai/safety/memory-text-guard';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -102,14 +103,14 @@ export async function runGuideCompanionForUser(
     if (result.revoked) closed++;
   }
 
-  const llmResult = await runGuideCompanionLlm({
+  const llmResult = await withAiUser(userId, async () => runGuideCompanionLlm({
     firstName,
     gender: profile.gender,
     struggles,
     activeGuides: await fetchUserGuideSummaries(admin, userId),
     catalog,
     todayIso: today,
-  });
+  }));
 
   const refuseOverload =
     llmResult?.refuse_new ||

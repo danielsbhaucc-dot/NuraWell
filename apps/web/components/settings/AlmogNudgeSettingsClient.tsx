@@ -1,4 +1,5 @@
 'use client';
+import { PageBackButton } from '../shared/PageBackButton';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -211,11 +212,7 @@ export function AlmogNudgeSettingsClient({
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-2 text-sm text-slate-500"
         >
-          <Link href="/profile" className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:underline">
-            פרופיל
-            <ChevronRight className="h-4 w-4 rotate-180" aria-hidden />
-          </Link>
-          <span className="text-slate-400">/</span>
+          <PageBackButton href="/profile" label="לפרופיל" ariaLabel="חזרה לפרופיל" variant="onLight" />
           <span className="text-slate-700">התראות מאלמוג</span>
         </motion.div>
 

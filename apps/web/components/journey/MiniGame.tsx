@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gamepad2, ArrowLeft, ClipboardList, RotateCcw } from 'lucide-react';
 import type { GameItem } from '../../lib/types/journey';
-import { AlmogLessonFeedback } from './AlmogLessonFeedback';
+import { StaticAnswerFeedback } from './StaticAnswerFeedback';
 import { AlmogCompletionHero } from './AlmogPresence';
 import { JourneyResultsDrawer } from './JourneyResultsDrawer';
 import { GameResultMapCard } from './JourneyResultsMap';
@@ -195,16 +195,7 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTt
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-4"
               >
-                <AlmogLessonFeedback
-                  isCorrect={isCorrect}
-                  tone="game"
-                  interactionType="game"
-                  score={isCorrect ? 88 : 42}
-                  stepId={stepId}
-                  fallback={
-                    <p className="text-sm leading-relaxed text-gray-800">{item.explanation}</p>
-                  }
-                />
+                <StaticAnswerFeedback isCorrect={isCorrect} explanation={item.explanation} />
               </motion.div>
             )}
           </div>

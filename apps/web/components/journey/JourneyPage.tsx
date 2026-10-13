@@ -1,5 +1,7 @@
 'use client';
 
+import { PageBackButton } from '@/components/shared/PageBackButton';
+import { summarizeJourneyProgress } from '../../lib/journey/journey-progress-summary';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JourneyStepProgress } from '../../lib/types/journey';
@@ -45,6 +47,9 @@ interface JourneyPageProps {
   initialNextStep?: NextStepCardData | null;
   /** steps whose task the user is actively practicing (unified task model) — half credit until the step is completed */
   practicingStepIds?: string[];
+  /** כל הצעדים המפורסמים — בסיס "X מתוך Y" אחיד בכל האתר (summarizeJourneyProgress) */
+  publishedStepIds?: string[];
+  completedStepIds?: string[];
 }
 
 export function JourneyPage({
@@ -55,6 +60,8 @@ export function JourneyPage({
   hasFoundationStation = false,
   initialNextStep = null,
   practicingStepIds = [],
+  publishedStepIds,
+  completedStepIds = [],
 }: JourneyPageProps) {
   const [liveProgressByStep, setLiveProgressByStep] = useState<
     Record<string, JourneyStepProgress>
@@ -113,9 +120,19 @@ export function JourneyPage({
     [mergedGroups, practicingSet]
   );
 
-  const overallPct = totalAcrossAll.all
-    ? Math.round((totalAcrossAll.credit / totalAcrossAll.all) * 100)
-    : 0;
+  /** מספרי ה-HERO מהמקור האחיד (כל הצעדים המפורסמים) — זהים לעמודי התקדמות/תוכנית. */
+  const journeySummary = useMemo(() => {
+    if (!publishedStepIds?.length) return null;
+    const rows = completedStepIds.map((id) => ({ step_id: id, is_completed: true }));
+    for (const g of mergedGroups) for (const st of g.steps) if (st.progress?.is_completed) rows.push({ step_id: st.id, is_completed: true });
+    return summarizeJourneyProgress(publishedStepIds, rows);
+  }, [publishedStepIds, completedStepIds, mergedGroups]);
+
+  const overallPct = journeySummary
+    ? journeySummary.pct
+    : totalAcrossAll.all
+      ? Math.round((totalAcrossAll.credit / totalAcrossAll.all) * 100)
+      : 0;
 
   // ⤵ ימים מאז תחילת המסע — חישוב פר-משתמש (אם יש progress כלשהו)
   const daysInJourney = useMemo(() => computeDaysInJourney(mergedGroups), [mergedGroups]);
@@ -174,8 +191,8 @@ export function JourneyPage({
             firstName={firstName}
             groups={mergedGroups}
             overall={{
-              done: totalAcrossAll.done,
-              all: totalAcrossAll.all,
+              done: journeySummary?.done ?? totalAcrossAll.done,
+              all: journeySummary?.total ?? totalAcrossAll.all,
               pct: overallPct,
               stations: totalAcrossAll.stations,
               stationsDone: totalAcrossAll.stationsDone,
@@ -264,7 +281,9 @@ function GalleryView({
             {/* 1. הצעד הבא — אלמוג ממליץ מה לעשות עכשיו */}
             <JourneyNextStepCard initial={initialNextStep} />
 
-            {hasFoundationStation && !foundationComplete ? (
+            {hasFoundationStation &&
+            !foundationComplete &&
+            !completedGroups.some((g) => g.isFoundation) ? (
               <p className="mb-4 rounded-2xl border border-primary-200/60 bg-primary-50/80 px-4 py-3 text-sm text-primary-900">
                 קודם נשלים את <strong>תחנת החובה</strong> — אחר כך אלמוג יפתח שיעורים מותאמים אישית
                 בקצב שלך.
@@ -534,153 +553,10 @@ function HeroSection({
             </motion.div>
           ) : null}
 
-          {/* צ׳יפים סטטיסטיים אישיים */}
-          {overall.all > 0 ? (
-            <StatChips overall={overall} daysInJourney={daysInJourney} />
-          ) : null}
+          {/* (צ׳יפים סטטיסטיים הוסרו: כפלו את כרטיס ההתקדמות ואת צ׳יפ "יום N במסע") */}
         </motion.div>
       </div>
     </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   STAT CHIPS — שורת הישגים אישיים מתחת ל-progress card
-   ════════════════════════════════════════════════════════════════ */
-
-function StatChips({
-  overall,
-  daysInJourney,
-}: {
-  overall: { done: number; all: number; pct: number; stations: number; stationsDone: number };
-  daysInJourney: number;
-}) {
-  const chips: Array<{
-    icon: React.ReactNode;
-    label: string;
-    value: string;
-    tone: 'emerald' | 'amber' | 'rose';
-  }> = [];
-
-  if (overall.stationsDone > 0) {
-    chips.push({
-      icon: <Trophy className="h-3.5 w-3.5" strokeWidth={2.4} />,
-      label: 'תחנות',
-      value: `${overall.stationsDone}/${overall.stations}`,
-      tone: 'amber',
-    });
-  }
-  if (overall.done > 0) {
-    chips.push({
-      icon: <Target className="h-3.5 w-3.5" strokeWidth={2.4} />,
-      label: 'צעדים',
-      value: `${overall.done}`,
-      tone: 'emerald',
-    });
-  }
-  if (daysInJourney > 1) {
-    chips.push({
-      icon: <Flame className="h-3.5 w-3.5" strokeWidth={2.4} fill="rgba(254,215,170,0.45)" />,
-      label: 'ימי מסע',
-      value: `${daysInJourney}`,
-      tone: 'rose',
-    });
-  }
-
-  if (chips.length === 0) return null;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.55 }}
-      className="mx-auto mt-3.5 flex max-w-md flex-wrap items-center justify-center gap-2"
-    >
-      {chips.map((c, i) => {
-        /**
-         * צ'יפים על ה-HERO (רקע ירוק כהה) — זכוכית-iOS-כהה אמיתית.
-         * רקע נייטרלי-לבן-שקוף + רמז צבע מאוד עדין דרך ה-iconBg + הגלואו.
-         */
-        const palette = {
-          emerald: {
-            glow: 'rgba(167,243,208,0.45)',
-            iconBg: 'linear-gradient(135deg, rgba(167,243,208,0.95), rgba(52,211,153,0.85))',
-            iconColor: tokens.primary[950],
-          },
-          amber: {
-            glow: 'rgba(252,211,77,0.55)',
-            iconBg: 'linear-gradient(135deg, rgba(253,224,71,0.98), rgba(245,158,11,0.92))',
-            iconColor: tokens.accent[950],
-          },
-          rose: {
-            glow: 'rgba(253,164,175,0.55)',
-            iconBg: 'linear-gradient(135deg, rgba(254,202,202,0.95), rgba(251,113,133,0.92))',
-            iconColor: tokens.danger950,
-          },
-        }[c.tone];
-
-        return (
-          <motion.div
-            key={i}
-            dir="rtl"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, delay: 0.6 + i * 0.07, ease: [0.22, 1, 0.36, 1] as const }}
-            whileHover={{ y: -2, scale: 1.03 }}
-            className="glass-pill-dark relative flex items-center gap-2 rounded-full py-1.5 pe-3.5 ps-1.5 overflow-hidden"
-          >
-            {/* ✦ הילה רכה מאחורי האייקון (מרמזת את הגוון מבלי לצבוע את הזכוכית) */}
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-s-1 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full"
-              style={{
-                background: `radial-gradient(circle, ${palette.glow} 0%, transparent 70%)`,
-                filter: 'blur(8px)',
-              }}
-            />
-            {/* ✦ קו אור עליון — specular highlight */}
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-x-2 top-px h-px"
-              style={{
-                background:
-                  'linear-gradient(90deg, transparent, rgba(248,251,246,0.7), transparent)',
-              }}
-            />
-
-            {/* ─── כיפת אייקון משלה — כאן יש את הצבע ─── */}
-            <span
-              className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
-              style={{
-                background: palette.iconBg,
-                color: palette.iconColor,
-                boxShadow:
-                  'inset 0 1px 0 rgba(248,251,246,0.6), 0 2px 6px rgba(2,44,34,0.25)',
-              }}
-            >
-              {c.icon}
-            </span>
-
-            <span
-              className="relative text-[11px] font-bold tracking-wide"
-              style={{ color: 'rgba(255,255,255,0.92)' }}
-            >
-              {c.label}
-            </span>
-
-            <span
-              className="relative text-[14px] font-black tabular-nums text-white"
-              style={{
-                fontFamily: "'Rubik','Heebo',sans-serif",
-                textShadow: '0 1px 4px rgba(2,44,34,0.45)',
-              }}
-            >
-              {c.value}
-            </span>
-          </motion.div>
-        );
-      })}
-    </motion.div>
   );
 }
 
@@ -1576,38 +1452,7 @@ function StationHeader({
           }}
         />
 
-        <button
-          type="button"
-          onClick={onBack}
-          className="group relative flex shrink-0 items-center gap-2 overflow-hidden rounded-full px-4 py-2.5 text-[13.5px] font-black text-white transition-transform duration-200 hover:scale-[1.04] active:scale-95"
-          style={{
-            background:
-              'linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.10) 100%)',
-            backdropFilter: 'blur(18px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(18px) saturate(180%)',
-            border: '1px solid rgba(255,255,255,0.48)',
-            boxShadow:
-              '0 10px 28px rgba(2,44,34,0.42), 0 2px 6px rgba(2,44,34,0.20), inset 0 1px 0 rgba(255,255,255,0.40), inset 0 -1px 0 rgba(255,255,255,0.10)',
-            textShadow: '0 1px 6px rgba(2,44,34,0.65)',
-            fontFamily: "'Rubik','Heebo',sans-serif",
-          }}
-          aria-label="חזרה לרשימת התחנות"
-        >
-          {/* ✦ specular highlight — קו אור עליון עדין */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-3 top-px h-px"
-            style={{
-              background:
-                'linear-gradient(90deg, transparent, rgba(248,251,246,0.75), transparent)',
-            }}
-          />
-          <ChevronRight
-            className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-0.5"
-            strokeWidth={2.5}
-          />
-          <span>חזרה למסע</span>
-        </button>
+        <PageBackButton onClick={onBack} label="חזרה למסע" ariaLabel="חזרה לרשימת התחנות" />
 
         {allDone ? (
           <div

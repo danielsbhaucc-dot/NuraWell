@@ -105,13 +105,21 @@ export class PiiShield {
     this.registerFromSeed(seed);
   }
 
-  private register(value: string, placeholder: string) {
+  /** Registers value→placeholder; placeholders are unique per value (`[[USER_EMAIL_2]]` …). */
+  private register(value: string, placeholder: string): string {
     const v = value.trim();
-    if (v.length < 2) return;
-    if (this.replacements.some((r) => r.value.toLowerCase() === v.toLowerCase())) return;
+    if (v.length < 2) return placeholder;
+    const existing = this.replacements.find((r) => r.value.toLowerCase() === v.toLowerCase());
+    if (existing) return existing.placeholder;
+    let ph = placeholder;
+    for (let n = 2; this.replacements.some((r) => r.placeholder === ph); n += 1) {
+      ph = placeholder.replace(/\]\]$/, `_${n}]]`);
+    }
+    placeholder = ph;
     this.replacements.push({ value: v, placeholder });
     this.sensitiveValues.push(v);
     this.replacements.sort((a, b) => b.value.length - a.value.length);
+    return placeholder;
   }
 
   /**
@@ -119,17 +127,11 @@ export class PiiShield {
    * עם פסיאודונים שכבר בשימוש, או עם ערכים רגישים אחרים. אם הבריכה מוצתה
    * (נדיר מאוד) — נופלים חזרה לטוקן הברקטים כדי לא לאבד הגנה.
    */
-  private allocatePseudonym(realValue: string, pool: readonly string[], fallback: string): string {
-    const start = stableHash(realValue.toLowerCase()) % pool.length;
-    for (let i = 0; i < pool.length; i += 1) {
-      const cand = pool[(start + i) % pool.length];
-      const lc = cand.toLowerCase();
-      if (lc === realValue.toLowerCase()) continue;
-      if (this.usedPseudonyms.has(lc)) continue;
-      if (this.sensitiveValues.some((v) => v.toLowerCase() === lc)) continue;
-      this.usedPseudonyms.add(lc);
-      return cand;
-    }
+  /**
+   * Names become bracket tokens, never Hebrew fake names: a fake name can collide with a real word
+   * (גל/טל/מור) and be "restored" wrongly. Uniqueness is enforced in register().
+   */
+  private allocatePseudonym(_realValue: string, _pool: readonly string[], fallback: string): string {
     return fallback;
   }
 
@@ -143,18 +145,13 @@ export class PiiShield {
           HEBREW_PSEUDONYM_POOL,
           PII_PLACEHOLDERS.USER_FIRST_NAME
         );
-        this.firstNamePseudonym = pseudoFirst;
-        this.register(first, pseudoFirst);
+        this.firstNamePseudonym = this.register(first, pseudoFirst);
         // שם מלא: פסיאודונים עברי טבעי (שם פרטי בדוי + שם משפחה בדוי) כדי
         // שהמודל לעולם לא יראה את השם האמיתי, אך עדיין יקבל טקסט עברי שוטף.
         const lastPart = full.slice(first.length).trim();
         if (lastPart) {
-          const pseudoLast = this.allocatePseudonym(
-            lastPart,
-            HEBREW_SURNAME_POOL,
-            PII_PLACEHOLDERS.USER_FULL_NAME
-          );
-          this.register(full, `${pseudoFirst} ${pseudoLast}`);
+          this.register(full, PII_PLACEHOLDERS.USER_FULL_NAME);
+          if (lastPart.length >= 2) this.register(lastPart, '[[USER_LAST_NAME]]');
         }
       } else {
         this.register(full, PII_PLACEHOLDERS.USER_FULL_NAME);
@@ -166,10 +163,7 @@ export class PiiShield {
     seed.known_person_names?.forEach((name) => {
       const clean = name.trim();
       if (clean.length >= 2) {
-        this.register(
-          clean,
-          this.allocatePseudonym(clean, HEBREW_PSEUDONYM_POOL, PII_PLACEHOLDERS.USER_FULL_NAME)
-        );
+        this.register(clean, '[[PERSON]]');
       }
     });
   }
@@ -185,24 +179,19 @@ export class PiiShield {
     let out = text;
 
     out = out.replace(EMAIL_REGEX, (match) => {
-      this.register(match, PII_PLACEHOLDERS.USER_EMAIL);
-      return PII_PLACEHOLDERS.USER_EMAIL;
+      return this.register(match, PII_PLACEHOLDERS.USER_EMAIL);
     });
 
     out = out.replace(PHONE_REGEX, (match) => {
-      this.register(match, PII_PLACEHOLDERS.USER_PHONE);
-      return PII_PLACEHOLDERS.USER_PHONE;
+      return this.register(match, PII_PLACEHOLDERS.USER_PHONE);
     });
 
     out = out.replace(ISRAELI_ID_REGEX, (match) => {
-      this.register(match, PII_PLACEHOLDERS.USER_ID);
-      return PII_PLACEHOLDERS.USER_ID;
+      return this.register(match, PII_PLACEHOLDERS.USER_ID);
     });
 
     for (const { value, placeholder } of this.replacements) {
-      if (out.includes(value)) {
-        out = out.split(value).join(placeholder);
-      }
+      if (out.includes(value)) out = replaceWord(out, value, placeholder);
     }
 
     return out;
@@ -220,9 +209,7 @@ export class PiiShield {
     if (!text) return text;
     let out = text;
     for (const { value, placeholder } of this.replacements) {
-      if (out.includes(placeholder)) {
-        out = out.split(placeholder).join(value);
-      }
+      if (out.includes(placeholder)) out = replaceWord(out, placeholder, value);
     }
     // מעבר נוסף: placeholders עם רווחים פנימיים שהמודל הוסיף.
     if (out.includes('[[')) {
@@ -299,6 +286,17 @@ export class PiiShield {
   get registeredCount(): number {
     return this.replacements.length;
   }
+}
+
+const HEB = '\\u05D0-\\u05EA';
+/**
+ * Hebrew names are replaced as whole words only (an optional 1-2 letter prefix like ל/ו/ש is allowed),
+ * so "נועה" never hits the middle of "תנועה". Non-Hebrew values (phone/email/[[TOKENS]]) stay plain substring.
+ */
+function replaceWord(text: string, from: string, to: string): string {
+  if (!/^[\u05D0-\u05EA][\u05D0-\u05EA '\-]*$/.test(from)) return text.split(from).join(to);
+  const re = new RegExp(`(^|[^${HEB}]|(?:^|[^${HEB}])[ובכלמשה]{1,2})${escapeRegExp(from)}(?![${HEB}])`, 'g');
+  return text.replace(re, (_m, pre: string) => `${pre}${to}`);
 }
 
 export function createPiiShield(seed: PiiProfileSeed): PiiShield {

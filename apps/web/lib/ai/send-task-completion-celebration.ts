@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from './client';
@@ -250,7 +251,7 @@ export async function sendTaskCompletionCelebration(
   const systemPrompt =
     outcome === 'attempt_failed' ? CELEBRATION_SYSTEM_ATTEMPT_FAILED : CELEBRATION_SYSTEM_COMPLETED;
 
-  const body = await completeEmpathyNotifyBody({
+  const body = await withAiUser(userId, () => completeEmpathyNotifyBody({
     label: outcome === 'attempt_failed' ? 'task_attempt_support' : 'task_completion_celebration',
     temperature: 0.75,
     maxTokens: ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
@@ -265,7 +266,7 @@ export async function sendTaskCompletionCelebration(
 כתוב רק את גוף ההודעה. אלמוג בגוף ראשון זכר על עצמו.`,
       },
     ],
-  });
+  }));
 
   /** טייטל דינמי לפי outcome + streak. */
   const titleEmoji = outcome === 'attempt_failed' ? '💙' : streak && streak.currentStreak >= 3 ? '🔥' : '✨';

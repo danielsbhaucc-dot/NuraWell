@@ -185,7 +185,7 @@ export async function buildAdminUserJourneyReport(
   const recentKeySet = new Set(recentKeys);
   const last7KeySet = new Set(recentKeys.slice(0, 7));
 
-  const [{ data: rawSteps }, { data: rawProgress }, { data: rawExecutions }] = await Promise.all([
+  const [{ data: rawSteps, error: stepsErr }, { data: rawProgress, error: progErr }, { data: rawExecutions, error: execErr }] = await Promise.all([
     admin
       .from('journey_steps')
       .select('id, title, step_number, is_published, station_id, tasks, habits, journey_stations(id, title, sort_order)')
@@ -204,6 +204,11 @@ export async function buildAdminUserJourneyReport(
       .order('completed_at', { ascending: true })
       .limit(5000),
   ]);
+
+  // A failed select (e.g. a missing column) used to look like "no progress" — make it loud.
+  for (const [name, err] of [['steps', stepsErr], ['progress', progErr], ['executions', execErr]] as const) {
+    if (err) console.error('[journey-report] query failed', { name, userId, message: err.message });
+  }
 
   const progByStep = new Map<string, ProgressRow>(
     (rawProgress ?? []).map((p: ProgressRow) => [p.step_id, p])

@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
@@ -497,7 +498,7 @@ export async function sendAlmogHabitCheckpointNotification(
    * שתפס את כל הכשלים וירד ל-template סטטי `buildHabitCheckpointFallbackBody`.
    * הסרנו אותו כדי לאלץ ריצה אמינה מקצה לקצה.
    */
-  const body = await completeEmpathyNotifyBody({
+  const body = await withAiUser(payload.userId, () => completeEmpathyNotifyBody({
     label: 'habit_checkpoint',
     temperature: 0.85,
     presencePenalty: 0.5,
@@ -519,7 +520,7 @@ export async function sendAlmogHabitCheckpointNotification(
         }.`,
       },
     ],
-  });
+  }));
 
   const { data: recentTitleRows } = await admin
     .from('notifications')
