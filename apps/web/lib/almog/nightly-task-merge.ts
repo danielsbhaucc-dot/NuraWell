@@ -46,7 +46,10 @@ export function sanitizeDecisions(raw: unknown, cands: Cand[]): MergeDecision[] 
   if (!Array.isArray(merges)) return out;
   for (const m of merges as MergeDecision[]) {
     if (!m || typeof m.keep !== 'string' || !ids.has(m.keep) || used.has(m.keep) || !Array.isArray(m.drop)) continue;
-    const drop = [...new Set(m.drop.filter((d) => typeof d === 'string' && ids.has(d) && d !== m.keep && !used.has(d)))];
+    const keepB = sameBehaviorKey(cands.find((c) => c.id === m.keep));
+    // guard: only the same behavior/habit may merge (model once folded a sleep task into a water task)
+    const drop = [...new Set(m.drop.filter((d) => typeof d === 'string' && ids.has(d) && d !== m.keep && !used.has(d)
+      && keepB != null && sameBehaviorKey(cands.find((c) => c.id === d)) === keepB))];
     if (!drop.length) continue;
     // a main task is never dropped; if the model tried, keep the main one instead
     const main = cands.find((c) => c.main && drop.includes(c.id));
@@ -82,6 +85,14 @@ export function behaviorOf(c: Pick<Cand, 'title'> & { habit?: unknown; related_h
   return null;
 }
 const isOneTime = (c: Cand) => c.schedule === 'one_time';
+/** Merge key: real habit_key when present, else deterministic behavior family; null = never auto-merge. */
+export function sameBehaviorKey(c: Cand | undefined): string | null {
+  if (!c) return null;
+  const b = behaviorOf(c);
+  if (b) return `b:${b}`;
+  const h = typeof c.habit === 'string' && !/^(almog|ai_daily):/.test(c.habit) ? c.habit : null;
+  return h ? `h:${h}` : null;
+}
 
 /**
  * Daniel's rule: never tell the user to do the same behavior twice. After the model's decisions, every remaining
@@ -180,7 +191,9 @@ export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (
           mainCount = k;
           mainKeep = d.keep;
           const from = Number(row.tasks.find((t) => t.id === d.keep)?.level ?? 0);
-          mainChange = { fromLevel: from, toLevel: d.level ?? from, mergedTitles: d.drop.map((id) => row.tasks.find((t) => t.id === id)?.title ?? '') };
+          const { data: after } = await db.from('user_task_assignments').select('current_level').eq('id', d.keep).maybeSingle();
+          const to = after?.current_level != null ? Number(after.current_level) : (d.level ?? from);
+          mainChange = { fromLevel: from, toLevel: to, mergedTitles: d.drop.map((id) => row.tasks.find((t) => t.id === id)?.title ?? '') };
         }
       }
     }
