@@ -176,6 +176,7 @@ import { applyGuideAccessFromSignals } from '../../../../../lib/ai/chat-guide-ac
 import { fetchUserGuideSummaries } from '../../../../../lib/guides/fetch-user-guides';
 import { formatGuidesStateForAi, formatGuideCompanionForAi } from '../../../../../lib/guides/progress';
 import { createAdminClient } from '../../../../../lib/supabase/admin';
+import { formatGuideRulesForAi, readGuideRules } from '../../../../../lib/guides/guide-rules';
 import {
   fetchTodayChatTurns,
   formatDailyShortTermBlock,
@@ -3401,6 +3402,14 @@ async function handleChatPost(request: Request) {
     if (journeyGuidanceBlock) contextSections.push(journeyGuidanceBlock);
     if (guidesStateBlock) contextSections.push(guidesStateBlock);
     if (guideCompanionBlock) contextSections.push(guideCompanionBlock);
+    // guide rules only matter when the user talks about guides — keep the hot path query-free otherwise
+    if (/מדריך/.test(lastUserText)) {
+      try {
+        contextSections.push(formatGuideRulesForAi(await readGuideRules(createAdminClient())));
+      } catch {
+        /* defaults are safe: no promise to open */
+      }
+    }
     const pendingTasksBlock = formatPendingAcceptedTasksPromptBlock(pendingTasks, {
       isGreeting: isGreetingTurn,
     });

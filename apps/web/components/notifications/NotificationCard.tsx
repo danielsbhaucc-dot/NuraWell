@@ -170,7 +170,7 @@ export function NotificationCard({
             )}
             {isCheckpoint && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-200/60 px-2 py-0.5 text-[10px] font-bold text-amber-950">
-                ✨ {groupCount && groupCount > 1 ? `${groupCount} תובנות רגע` : 'תובנה רגע'}
+                ✨ {groupCount && groupCount > 1 ? `${groupCount} תזכורות להרגל` : 'תזכורת להרגל'}
               </span>
             )}
             <div className="flex flex-row items-baseline justify-between gap-2">

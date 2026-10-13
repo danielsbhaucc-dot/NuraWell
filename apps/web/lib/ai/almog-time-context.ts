@@ -8,13 +8,13 @@ export function parseHHMMToMinutes(time: string): number | null {
   return h * 60 + min;
 }
 
-export function getIsraelNowMinutes(): number {
+export function getIsraelNowMinutes(at: Date = new Date()): number {
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Jerusalem',
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-  }).formatToParts(new Date());
+  }).formatToParts(at);
   const hour = Number.parseInt(parts.find((p) => p.type === 'hour')?.value ?? '0', 10);
   const minute = Number.parseInt(parts.find((p) => p.type === 'minute')?.value ?? '0', 10);
   return hour * 60 + minute;

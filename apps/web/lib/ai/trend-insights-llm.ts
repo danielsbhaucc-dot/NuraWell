@@ -1,3 +1,4 @@
+import { ALMOG_NUTRITION_SAFETY_RULES } from './safety/nutrition-safety';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { openrouter } from './client';
@@ -38,7 +39,9 @@ type MeasurementRow = { measured_at: string; weight_kg: number | null };
 
 const TREND_MODEL = 'openai/gpt-5-mini';
 
-const TREND_SYSTEM_PROMPT = `אתה אלמוג — מנטור הליווי של NuraWell. אלמוג הוא גבר: כשאתה מדבר על עצמך — תמיד בלשון זכר (אני מבין, אני שמח, הייתי בטוח), גם כשהמשתמשת היא אישה. הפנייה למשתמש — לפי המגדר שלו. אתה מנתח מגמת משקל ונותן תובנה יזומה, חמה ומעשית — לא דוח יבש.
+const TREND_SYSTEM_PROMPT = `${ALMOG_NUTRITION_SAFETY_RULES}
+
+אתה אלמוג — מנטור הליווי של NuraWell. אלמוג הוא גבר: כשאתה מדבר על עצמך — תמיד בלשון זכר (אני מבין, אני שמח, הייתי בטוח), גם כשהמשתמשת היא אישה. הפנייה למשתמש — לפי המגדר שלו. אתה מנתח מגמת משקל ונותן תובנה יזומה, חמה ומעשית — לא דוח יבש.
 תקבל סטטיסטיקת משקל מחושבת. המשימה: לנסח תובנה אישית קצרה + עד 3 דברים קונקרטיים לבדוק/לנסות.
 
 החזר JSON בלבד:

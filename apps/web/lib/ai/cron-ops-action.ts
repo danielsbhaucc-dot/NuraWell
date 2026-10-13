@@ -43,9 +43,20 @@ export function daysSinceIso(iso: string | null): number | null {
 }
 
 export function extractFirstName(fullName: string | null | undefined): string {
+  // '' when unknown — never the literal word "שם" (prod titles read "שם · מאלמוג")
   const clean = fullName?.trim();
-  if (!clean) return 'שם';
-  return clean.split(/\s+/)[0]!.trim() || 'שם';
+  if (!clean) return '';
+  return clean.split(/\s+/)[0]!.trim();
+}
+
+/** "דניאל · מאלמוג" / "מאלמוג 🌿" when the name is unknown */
+export function almogTitle(first: string): string {
+  return first ? `${first} · מאלמוג` : 'מאלמוג 🌿';
+}
+
+/** "דניאל, …" / "…" (capitalised start) when the name is unknown */
+function withName(first: string, rest: string): string {
+  return first ? `${first}, ${rest}` : rest;
 }
 
 /**
@@ -143,7 +154,7 @@ export function buildCronOpsNotification(
     case 'celebrate': {
       const streak = streakDays ?? 0;
       return {
-        title: `יופי, ${first}! · מאלמוג`,
+        title: first ? `יופי, ${first}! · מאלמוג` : 'יופי! · מאלמוג',
         body:
           streak >= 7
             ? `שמתי לב לרצף של ${streak} ימים — זה לא מובן מאליו. רוצה לספר מה עזר לך הכי הרבה בשבוע האחרון?`
@@ -154,35 +165,35 @@ export function buildCronOpsNotification(
       const days = daysSinceActive ?? 7;
       const daysHe = days >= 7 ? 'כמה ימים' : `${days} ימים`;
       return {
-        title: `${first} · מאלמוג`,
+        title: almogTitle(first),
         body: `שמתי לב שלא היית פה ${daysHe}. אני מנחש שקצת יצאת מאיזון או שהיה סופ"ש קשוח — וזה הכי נורמלי בעולם. אני לא פה כדי לשפוט. בוא נתחיל מחדש עכשיו, רק בכוס מים אחת. אתה איתי? 💧`,
       };
     }
     case 'micro_win':
       if (reason === 'habit_gap_water') {
         return {
-          title: `${first} · מאלמוג`,
-          body: `${first}, כמה ימים בלי מים — זה קורה. אני לא פה לשפוט. כוס אחת עכשיו, רק זה. אתה איתי? 💧`,
+          title: almogTitle(first),
+          body: withName(first, `כמה ימים בלי מים — זה קורה. אני לא פה לשפוט. כוס אחת עכשיו, רק זה. אתה איתי? 💧`),
         };
       }
       if (reason === 'ghosting_unanswered') {
         return {
-          title: `${first} · מאלמוג`,
+          title: almogTitle(first),
           body: `שמתי לב שלא ענית כבר כמה ימים — אולי עומס או סתם לא בראש. הכל בסדר. מה הכי קל לך עכשיו — מים, נשימה, או סתם לספר מה קורה?`,
         };
       }
       return {
-        title: `${first} · מאלמוג`,
+        title: almogTitle(first),
         body: 'רוצה ניצחון זעיר? כוס מים, נשימה אחת, או משהו קטן מהמסע — מה הכי קל לך עכשיו?',
       };
     case 'check_in':
       return {
         title: `רגע קצר · מאלמוג`,
-        body: `${first}, איך הגוף מרגיש השבוע? אם נוח — עדכון משקל בדשבורד, או ספר לי כאן במשפט.`,
+        body: withName(first, 'איך הגוף מרגיש השבוע? אם נוח — עדכון משקל בדשבורד, או ספר לי כאן במשפט.'),
       };
     case 're_engage':
       return {
-        title: `${first} · מאלמוג`,
+        title: almogTitle(first),
         body: 'מה הכי כבד כרגע — עומס, שעמום, משהו אחר? אפשר בקצרה, בלי ביקורת.',
       };
     default:

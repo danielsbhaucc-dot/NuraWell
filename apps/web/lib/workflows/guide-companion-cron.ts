@@ -1,3 +1,5 @@
+import { readGuideRules } from '../guides/guide-rules';
+import { isStorableMemoryText } from '../ai/safety/memory-text-guard';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fetchUserGuideSummaries } from '../guides/fetch-user-guides';
 import { grantGuideAccess } from '../guides/grant-access';
@@ -115,7 +117,12 @@ export async function runGuideCompanionForUser(
     (ctx.daily_availability?.date === today && ctx.daily_availability?.level === 'low') ||
     activeGuides.length >= 4;
 
-  if (llmResult && !refuseOverload) {
+  // admin rules (/ops/guides): the nightly companion only *opens* guides when companion_auto_open is on;
+  // otherwise its picks stay as suggestions for Almog (ai_context.guide_companion).
+  const guideRules = await readGuideRules(admin);
+  const mayAutoOpen = guideRules.enabled && guideRules.companion_auto_open && activeGuides.length < guideRules.max_active_guides;
+
+  if (llmResult && !refuseOverload && mayAutoOpen) {
     for (const item of llmResult.open_guides) {
       if (!catalog.some((c) => c.id === item.course_id)) continue;
       const entry = catalog.find((c) => c.id === item.course_id)!;
@@ -126,7 +133,7 @@ export async function runGuideCompanionForUser(
         courseId: item.course_id,
         accessType: 'trial',
         grantedBy: 'ai',
-        grantedReason: item.reason || 'המלצת אלמוג יומית',
+        grantedReason: item.reason && isStorableMemoryText(item.reason) ? item.reason : 'המלצת אלמוג יומית',
         trialDays: 14,
       });
       if (grant.granted) opened++;

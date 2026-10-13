@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { buildCoachingStylePromptBlock } from './almog-coaching-style';
 import { completeEmpathyNotifyBody } from './empathy-notify-completion';
 import type { CronOpsAction } from './cron-ops-action';
-import { extractFirstName } from './cron-ops-action';
+import { almogTitle, extractFirstName } from './cron-ops-action';
 import { fetchNotifyUserProfile } from './notify-user-profile';
 import {
   ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
@@ -93,10 +93,10 @@ export function cronOpsNotificationTitle(
   const first = extractFirstName(fullName);
   switch (action) {
     case 'celebrate':
-      return `יופי, ${first}! · מאלמוג`;
+      return first ? `יופי, ${first}! · מאלמוג` : 'יופי! · מאלמוג';
     case 'check_in':
       return `רגע קצר · מאלמוג`;
     default:
-      return `${first} · מאלמוג`;
+      return almogTitle(first);
   }
 }
