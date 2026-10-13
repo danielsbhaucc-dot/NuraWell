@@ -372,7 +372,53 @@ const OWNER: CeoTool[] = [
   },
 ];
 
-CEO_TOOLS.push(...GENERIC, ...OWNER);
+const JOURNEY: CeoTool[] = [
+  {
+    name: 'journey_agent_start',
+    description:
+      'Start the journey-step content agent on raw material Daniel pasted (lesson transcript / research / links, ≥40 chars). Runs in the background (1-3 min); the agent reports back on Telegram with its opinion, questions, or a finished draft + editor link. Creates only a draft — nothing is published.',
+    schema: z.object({ sourceText: z.string().min(40).max(60_000) }),
+    write: false,
+    run: async (db, a) => {
+      const { createAgentSession } = await import('@/lib/admin/journey-agent/agent');
+      const { runAgentInBackground } = await import('@/lib/admin/journey-agent/telegram-bridge');
+      const s = await createAgentSession(db, { createdBy: 'gideon', sourceText: String(a.sourceText) });
+      const kick = await runAgentInBackground(s.id);
+      return { ok: kick.ok, sessionId: s.id, note: kick.ok ? 'הסוכן התחיל, יעדכן כאן בטלגרם' : `לא הצלחתי להפעיל ברקע: ${kick.reason}` };
+    },
+  },
+  {
+    name: 'journey_agent_reply',
+    description:
+      "Pass Daniel's answers / change requests to a journey-agent session that is waiting or done (sessionId from journey_agent_sessions_list). The agent continues in the background and reports on Telegram.",
+    schema: z.object({ sessionId: uuid, reply: z.string().min(1).max(8000) }),
+    write: false,
+    run: async (db, a) => {
+      const { applyAdminInput, loadAgentSession } = await import('@/lib/admin/journey-agent/agent');
+      const { runAgentInBackground } = await import('@/lib/admin/journey-agent/telegram-bridge');
+      const s = await loadAgentSession(db, String(a.sessionId));
+      if (!s) return { ok: false, error: 'session not found' };
+      if (s.status === 'working') return { ok: false, error: 'agent still working' };
+      const answers = Object.fromEntries(s.pending_questions.map((q) => [q.id, `${q.label} → (ראה תשובת המנהל)`]));
+      const next = applyAdminInput(s, { answers, comment: String(a.reply) });
+      await db.from('journey_agent_sessions').update({ status: 'working', answers: next.answers, pending_questions: [], draft: next.draft, review: next.review }).eq('id', s.id);
+      const kick = await runAgentInBackground(s.id);
+      return { ok: kick.ok, note: kick.ok ? 'הסוכן ממשיך, יעדכן בטלגרם' : kick.reason };
+    },
+  },
+  {
+    name: 'journey_agent_sessions_list',
+    description: 'Latest journey-agent sessions (id, status working/waiting/done/error, summary, open questions).',
+    schema: z.object({ limit: z.number().int().min(1).max(10).default(5) }),
+    write: false,
+    run: async (db, a) => {
+      const { latestAgentSessions } = await import('@/lib/admin/journey-agent/telegram-bridge');
+      return latestAgentSessions(db, Number(a.limit ?? 5));
+    },
+  },
+];
+
+CEO_TOOLS.push(...GENERIC, ...OWNER, ...JOURNEY);
 export const TOOL_BY_NAME = new Map(CEO_TOOLS.map((t) => [t.name, t]));
 
 /** OpenAI tool specs (JSON schema). The content-draft tool is handled in agent.ts. */

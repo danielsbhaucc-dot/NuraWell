@@ -3,8 +3,19 @@ import { mdToPlain, mdToTelegramHtml } from './format';
 
 const MAX = 3500; // Telegram limit is 4096; leave room for HTML escaping
 
-async function api(method: string, body: unknown, fetchImpl: typeof fetch = fetch) {
-  const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
+/** Bot token: admin-set (encrypted in gideon_settings) → env TELEGRAM_BOT_TOKEN. */
+export async function resolveBotToken(): Promise<string | null> {
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const { gideonSecrets } = await import('./settings');
+    return (await gideonSecrets(createAdminClient())).token;
+  } catch {
+    return process.env.TELEGRAM_BOT_TOKEN?.trim() || null;
+  }
+}
+
+async function api(method: string, body: unknown, fetchImpl: typeof fetch = fetch, getToken: () => Promise<string | null> = resolveBotToken) {
+  const token = (await getToken())?.trim();
   if (!token) throw new Error('TELEGRAM_BOT_TOKEN missing');
   const r = await fetchImpl(`https://api.telegram.org/bot${token}/${method}`, {
     method: 'POST',
@@ -29,7 +40,7 @@ export function splitMessage(text: string, max = MAX): string[] {
   return out;
 }
 
-export function createTelegramChannel(fetchImpl: typeof fetch = fetch): CeoChannel {
+export function createTelegramChannel(fetchImpl: typeof fetch = fetch, getToken: () => Promise<string | null> = resolveBotToken): CeoChannel {
   return {
     name: 'telegram',
     async send(chatId, text, buttons) {
@@ -40,18 +51,18 @@ export function createTelegramChannel(fetchImpl: typeof fetch = fetch): CeoChann
           ? { reply_markup: { inline_keyboard: buttons.map((row) => row.map((b: CeoButton) => ({ text: b.text, callback_data: b.data }))) } }
           : {};
         try {
-          await api('sendMessage', { chat_id: chatId, text: mdToTelegramHtml(parts[i]), parse_mode: 'HTML', disable_web_page_preview: true, ...markup }, fetchImpl);
+          await api('sendMessage', { chat_id: chatId, text: mdToTelegramHtml(parts[i]), parse_mode: 'HTML', disable_web_page_preview: true, ...markup }, fetchImpl, getToken);
         } catch (e) {
           // HTML parse error (400) → resend as plain text
           if (!/failed: 400/.test(String(e))) throw e;
-          await api('sendMessage', { chat_id: chatId, text: mdToPlain(parts[i]), disable_web_page_preview: true, ...markup }, fetchImpl);
+          await api('sendMessage', { chat_id: chatId, text: mdToPlain(parts[i]), disable_web_page_preview: true, ...markup }, fetchImpl, getToken);
         }
       }
     },
     async ack(ref, text) {
-      if (ref.callbackId) await api('answerCallbackQuery', { callback_query_id: ref.callbackId }, fetchImpl);
+      if (ref.callbackId) await api('answerCallbackQuery', { callback_query_id: ref.callbackId }, fetchImpl, getToken);
       if (text && ref.messageId) {
-        await api('editMessageText', { chat_id: ref.chatId, message_id: ref.messageId, text: mdToPlain(text).slice(0, MAX), disable_web_page_preview: true }, fetchImpl);
+        await api('editMessageText', { chat_id: ref.chatId, message_id: ref.messageId, text: mdToPlain(text).slice(0, MAX), disable_web_page_preview: true }, fetchImpl, getToken);
       }
     },
   };
