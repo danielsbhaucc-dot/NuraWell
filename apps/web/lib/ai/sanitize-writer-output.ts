@@ -219,8 +219,8 @@ function isLatinOnlyThinkingPrefix(raw: string): boolean {
   return isCotBlob(t) || latinRatio(t) >= 0.85;
 }
 
-export function preferSanitizedWriterOutput(raw: string): string {
-  const cleaned = sanitizeWriterOutput(raw);
+export function preferSanitizedWriterOutput(raw: string, opts?: { firstName?: string | null }): string {
+  const cleaned = sanitizeWriterOutput(raw, opts);
   if (!cleaned) {
     if (
       looksLikeLeakedThinking(raw) ||

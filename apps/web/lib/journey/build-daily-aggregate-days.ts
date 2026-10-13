@@ -48,7 +48,9 @@ export function buildDailyAggregateDays(
   executionCountByDate: Map<string, number>,
   daysBack = 30,
   now: Date = new Date(),
-  attemptCountByDate?: Map<string, number>
+  attemptCountByDate?: Map<string, number>,
+  /** תחילת החשבון (YYYY-MM-DD, ירושלים) — ימים לפניו לא נספרים (לא "פספוס"). */
+  startDateKey?: string | null
 ): DailyAggregateDay[] {
   void jerusalemDateKey(now); /** keep ref — todayKey unused after refactor */
   const progByStep = new Map(progressRows.map((p) => [p.step_id, p]));
@@ -86,12 +88,16 @@ export function buildDailyAggregateDays(
     }
     const c = executionCountByDate.get(dateKey) ?? 0;
     const a = attemptCountByDate?.get(dateKey) ?? 0;
-    out.push({ d: dateKey, c, t: expectedTotal, a });
+    const beforeStart = Boolean(startDateKey && dateKey < startDateKey);
+    out.push({ d: dateKey, c, t: beforeStart && c === 0 && a === 0 ? 0 : expectedTotal, a });
   }
 
-  /** אם אין משימות מקובלות — נשמור t=1 לתאימות (התנהגות ישנה) */
+  /**
+   * אין משימות מסע מקובלות — אין "יעד" יומי, ולכן אין פספוס: יום בלי ביצוע = כבוי (t=0).
+   * יום עם ביצוע/ניסיון מקבל t=c כדי להיצבע כמלא. (בעבר t=1 לכל יום → חודש שלם אדום לחשבון חדש.)
+   */
   if (acceptedTasks.length === 0) {
-    return out.map((day) => ({ ...day, t: 1 }));
+    return out.map((day) => ({ ...day, t: day.c > 0 ? day.c : (day.a ?? 0) > 0 ? 1 : 0 }));
   }
 
   return out;
