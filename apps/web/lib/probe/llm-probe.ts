@@ -40,7 +40,7 @@ export async function runLlmProbe(): Promise<Response> {
   if (process.env.VERCEL_ENV !== 'preview') return new Response('not found', { status: 404 });
   const S = NURAWELL_CHAT_SYSTEM_PROMPT;
   const full = `${S}\n\n${S.slice(2000, 17000)}`;
-  const vs: V[] = [
+  const vs: V[] = process.env.PROBE_MIN ? [{ name: 'full_46k_string', system: full }] : [
     { name: 'echo_46k_postman', system: full, url: 'https://postman-echo.com/post' },
     { name: 'bad_model_46k', system: full, model: 'nonexistent/model-x' },
     { name: 'bad_model_2k', system: S.slice(0, 2000), model: 'nonexistent/model-x' },
@@ -49,7 +49,10 @@ export async function runLlmProbe(): Promise<Response> {
     { name: 'full_46k_bytes', system: full, enc: 'bytes' },
     { name: 'full_46k_string_again', system: full },
   ];
-  const out = [];
+  const k = process.env.OPENROUTER_API_KEY ?? '';
+  const keyHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(k)))).slice(0, 4).map((b) => b.toString(16).padStart(2, '0')).join('');
+  const keyInfo = await fetch('https://openrouter.ai/api/v1/key', { headers: { Authorization: `Bearer ${k}` } }).then((x) => x.json()).catch(() => null);
+  const out: unknown[] = [{ keyHash, keyInfo: (keyInfo as { data?: unknown })?.data ?? null }];
   for (const v of vs) out.push(await one(v).catch((e) => ({ v: v.name, error: String(e) })));
   return Response.json({ region: process.env.VERCEL_REGION, out }, { headers: { 'Cache-Control': 'no-store' } });
 }
