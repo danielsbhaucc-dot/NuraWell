@@ -1,4 +1,4 @@
--- Extend 000119: memory/insight tables also never keep raw AI placeholders ([[USER_*]], [PERSON_NAME], ...).
+-- Extend 000121: memory/insight tables also never keep raw AI placeholders ([[USER_*]], [PERSON_NAME], ...).
 -- Policy: stored text holds real (restored) values, same as everything shown to the user.
 create or replace function public.trg_restore_pii_generic()
 returns trigger language plpgsql security definer set search_path = public as $$
