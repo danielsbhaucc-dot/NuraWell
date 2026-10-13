@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { autoCloseStaleSessionsBatch } from '@/lib/ai/chat-sessions/auto-close-stale-sessions';
 import { runMemoryConsolidationBatch } from '@/lib/ai/memory-consolidation/run-batch';
 import { runAllDueChatSummaryTiers } from '@/lib/ai/chat-memory/chat-periodic-summaries';
+import { runPatternInsightsBatch } from '@/lib/ai/insights/patterns/run-pattern-batch';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -13,7 +14,10 @@ export const dynamic = 'force-dynamic';
  * POST /api/v1/ai/cron/memory-pipeline — one QStash schedule (hourly) for the whole memory chain:
  *  every hour: close idle sessions (CHAT_SESSION_STALE_HOURS, default 2h) → dated key points + memory facts.
  *  at 03:00 IL (or ?full=1): consolidate pending logs into memory facts, then roll up due tiers
- *  (daily → weekly → monthly → … → annual). Each step is independent; one failing doesn't stop the rest.
+ *  (daily → weekly → monthly → … → annual), then the behaviour-pattern insights batch.
+ *  Each step is independent; one failing doesn't stop the rest.
+ *  Also kicked once a day by the master cron (QStash publish, ?full=1) so the chain runs even if
+ *  the hourly schedule is missing.
  */
 export async function POST(request: Request) {
   const authError = await authorizeCronRequest(request);
@@ -39,6 +43,7 @@ export async function POST(request: Request) {
   if (full) {
     await step('consolidation', () => runMemoryConsolidationBatch(admin, {}));
     await step('tiers', () => runAllDueChatSummaryTiers(admin, { limit: 60 }));
+    await step('patterns', () => runPatternInsightsBatch(admin, { budgetMs: 120_000 }));
   }
   return NextResponse.json({ ok: true, ...out });
 }

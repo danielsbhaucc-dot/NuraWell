@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decideInactivityFade, parseNotificationPrefs } from '../lib/notifications/inactivity-fade';
+import { decideInactivityFade, isAutomaticTouch, parseNotificationPrefs } from '../lib/notifications/inactivity-fade';
 
 const H = 3600_000;
 const D = 24 * H;
@@ -13,23 +13,38 @@ describe('decideInactivityFade', () => {
   it('unknown last activity: no fade', () => {
     expect(decideInactivityFade({ now, lastActiveAt: null, recentTouchTimes: [], todayStartMs: todayStart }).ok).toBe(true);
   });
-  it('day 1 inactive: one nudge, then blocked that day', () => {
-    const last = now - 1.2 * D;
-    expect(decideInactivityFade({ now, lastActiveAt: last, recentTouchTimes: [], todayStartMs: todayStart })).toMatchObject({ ok: true, tier: 'daily' });
-    expect(decideInactivityFade({ now, lastActiveAt: last, recentTouchTimes: [todayStart + H], todayStartMs: todayStart })).toMatchObject({ ok: false, reason: 'inactivity_fade' });
+  it('0–2 days inactive: no fade cap', () => {
+    const last = now - 2.5 * D;
+    expect(decideInactivityFade({ now, lastActiveAt: last, recentTouchTimes: [todayStart + H, todayStart + 2 * H], todayStartMs: todayStart })).toMatchObject({ ok: true, tier: 'active' });
   });
-  it('day 2..6: once per day (yesterday touch does not block today)', () => {
+  it('3–5 days: up to 2 per day', () => {
     const last = now - 4 * D;
+    expect(decideInactivityFade({ now, lastActiveAt: last, recentTouchTimes: [todayStart + H], todayStartMs: todayStart }).ok).toBe(true);
+    expect(decideInactivityFade({ now, lastActiveAt: last, recentTouchTimes: [todayStart + H, todayStart + 2 * H], todayStartMs: todayStart }).ok).toBe(false);
+  });
+  it('6–13 days: once per day (yesterday does not block today)', () => {
+    const last = now - 10 * D;
     expect(decideInactivityFade({ now, lastActiveAt: last, recentTouchTimes: [todayStart - 3 * H], todayStartMs: todayStart }).ok).toBe(true);
+    expect(decideInactivityFade({ now, lastActiveAt: last, recentTouchTimes: [todayStart + H], todayStartMs: todayStart }).ok).toBe(false);
   });
   it('touches before the user went quiet are ignored', () => {
     const last = now - 3 * D;
-    expect(decideInactivityFade({ now, lastActiveAt: last, recentTouchTimes: [last - H], todayStartMs: todayStart }).ok).toBe(true);
+    expect(decideInactivityFade({ now, lastActiveAt: last, recentTouchTimes: [last - H, last - 2 * H], todayStartMs: todayStart }).ok).toBe(true);
   });
-  it('a week+ inactive: once per week', () => {
-    const last = now - 10 * D;
+  it('14–41 days: once per week', () => {
+    const last = now - 20 * D;
     expect(decideInactivityFade({ now, lastActiveAt: last, recentTouchTimes: [now - 3 * D], todayStartMs: todayStart })).toMatchObject({ ok: false, tier: 'weekly' });
     expect(decideInactivityFade({ now, lastActiveAt: last, recentTouchTimes: [now - 8 * D], todayStartMs: todayStart })).toMatchObject({ ok: true, tier: 'weekly' });
+  });
+  it('42+ days (prod: 83 days, nudged every 3 days): once per 30 days', () => {
+    const last = now - 83 * D;
+    expect(decideInactivityFade({ now, lastActiveAt: last, recentTouchTimes: [now - 3 * D], todayStartMs: todayStart })).toMatchObject({ ok: false, tier: 'monthly' });
+    expect(decideInactivityFade({ now, lastActiveAt: last, recentTouchTimes: [now - 31 * D], todayStartMs: todayStart })).toMatchObject({ ok: true, tier: 'monthly' });
+  });
+  it('every automatic source counts as a touch (cron_ops was invisible before)', () => {
+    expect(isAutomaticTouch({ source: 'cron_ops' })).toBe(true);
+    expect(isAutomaticTouch({ source: 'sos_followup' })).toBe(true);
+    expect(isAutomaticTouch({ source: 'admin_transcript_delivery' })).toBe(false);
   });
 });
 

@@ -776,6 +776,15 @@ async function runMasterCron() {
     }
   }
 
+  // --- Nightly memory chain (session close → rollups → behaviour patterns) in its own invocation
+  let memoryPipelineKick: { ok: boolean; reason?: string } | null = null;
+  if (process.env.MEMORY_PIPELINE_KICK_FROM_MASTER?.trim() !== '0') {
+    const { kickCronRouteViaQstash } = await import('@/lib/api/kick-cron-route');
+    const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' }).format(new Date());
+    memoryPipelineKick = await kickCronRouteViaQstash('/api/v1/ai/cron/memory-pipeline?full=1', day);
+    console.log('[cron/master] memory_pipeline_kick', JSON.stringify(memoryPipelineKick));
+  }
+
   // --- Guide companion — סריקה יומית של מדריכים (Llama 4 / Groq)
   let guideCompanion: Awaited<ReturnType<typeof import('@/lib/workflows/guide-companion-cron').runGuideCompanionBatch>> | null = null;
   if (process.env.GUIDE_COMPANION_IN_MASTER?.trim() !== '0') {
@@ -835,6 +844,7 @@ async function runMasterCron() {
       failed: kickoffWatchdogFailed,
     },
     memory_consolidation: memoryConsolidation,
+    memory_pipeline_kick: memoryPipelineKick,
     guide_companion: guideCompanion,
     notifications_sent:
       celebrated + churnNotificationsSent + journeyCompanionSent + kickoffWatchdogSent,

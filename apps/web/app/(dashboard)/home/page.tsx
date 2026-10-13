@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { HomeClient } from '../../../components/home/HomeClient';
+import { PatternInsightsCard } from '../../../components/insights/PatternInsightsCard';
 import {
   DynamicMentorWidget,
   loadMentorshipHomeContext,
@@ -98,7 +99,10 @@ export default async function HomePage() {
       simplifiedDashboard={simplifiedDashboard}
       sosInitial={sosContext}
       mentorWidget={
-        <DynamicMentorWidget userId={user.id} firstName={firstName} strategy={mentorshipStrategy} />
+        <>
+          <DynamicMentorWidget userId={user.id} firstName={firstName} strategy={mentorshipStrategy} />
+          {simplifiedDashboard ? null : <PatternInsightsCard userId={user.id} max={1} compact />}
+        </>
       }
     />
   );

@@ -4,13 +4,20 @@ import { CEO_NAME, CEO_SYSTEM_PROMPT } from './agent';
 import { audit } from './actions';
 import type { CeoChannel } from './channel';
 import { allowedChatIds, opsLink } from './channel';
+import { digestRecipients, readGideonSettings, type GideonSettings } from './settings';
 import { CEO_CONTENT_MODEL, complete } from './llm';
 import { TOOL_BY_NAME } from './tools';
 import { dueForReminder, formatTaskLine, openOwnerTasks, taskButtons } from './owner-tasks';
 
 export type CostAnomaly = { component: string; culprit: string; yesterday_usd: number; baseline_usd: number; ratio: number | null };
-export async function costAnomalies(db: SupabaseClient): Promise<CostAnomaly[]> {
-  const { data } = await db.rpc('cost_anomalies');
+export async function costAnomalies(db: SupabaseClient, t?: Pick<GideonSettings, 'cost_ratio_threshold' | 'cost_min_delta_usd' | 'cost_per_user_min_delta_usd' | 'cost_max_single_user_share'>): Promise<CostAnomaly[]> {
+  const s = t ?? (await readGideonSettings(db));
+  const { data } = await db.rpc('cost_anomalies', {
+    p_ratio: s.cost_ratio_threshold,
+    p_min_delta: s.cost_min_delta_usd,
+    p_min_delta_user: s.cost_per_user_min_delta_usd,
+    p_max_share: s.cost_max_single_user_share,
+  });
   return (data ?? []) as CostAnomaly[];
 }
 
@@ -45,7 +52,11 @@ async function buildDigestInner(db: SupabaseClient, period: DigestPeriod, deps: 
     data.almogSample = quality;
     data.content = (content as { station: string; steps: { published: boolean; video: boolean }[] }[]).map((s) => ({ station: s.station, steps: s.steps.length, published: s.steps.filter((x) => x.published).length, withVideo: s.steps.filter((x) => x.video).length }));
   }
-  const [tasks, anomalies] = await Promise.all([openOwnerTasks(db), costAnomalies(db)]);
+  const settings = await readGideonSettings(db);
+  const [tasks, anomalies] = await Promise.all([
+    settings.alert_topics.owner_tasks ? openOwnerTasks(db) : Promise.resolve([]),
+    settings.alert_topics.cost ? costAnomalies(db, settings) : Promise.resolve([] as CostAnomaly[]),
+  ]);
   if (anomalies.length) data.costAnomalies = anomalies;
   if (tasks.length) data.danielOpenTasks = tasks.map((t) => formatTaskLine(t));
   if (period === 'monthly') data.business = await run('business_metrics', { days: 30 });
@@ -66,14 +77,17 @@ async function buildDigestInner(db: SupabaseClient, period: DigestPeriod, deps: 
 }
 
 export async function sendDigest(db: SupabaseClient, channel: CeoChannel, period: DigestPeriod, deps: { complete?: typeof complete } = {}) {
-  const text = await buildDigest(db, period, deps);
-  const chats = [...allowedChatIds()];
-  for (const c of chats) await channel.send(c, text);
-  // systemic cost alert (separate message, only when the SQL check fires)
-  const anomalies = await costAnomalies(db);
+  const settings = await readGideonSettings(db);
+  const chats = digestRecipients(settings, allowedChatIds());
+  if (settings.alert_topics[period]) {
+    const text = await buildDigest(db, period, deps);
+    for (const c of chats) await channel.send(c, text);
+  }
+  // systemic cost alert (separate message, only when the SQL check fires with the admin thresholds)
+  const anomalies = settings.alert_topics.cost ? await costAnomalies(db, settings) : [];
   if (anomalies.length) for (const c of chats) await channel.send(c, formatCostAlert(anomalies));
   // follow-up: one message per due/overdue human task, with done/snooze buttons (max 3/day)
-  const due = dueForReminder(await openOwnerTasks(db)).slice(0, 3);
+  const due = settings.alert_topics.owner_tasks ? dueForReminder(await openOwnerTasks(db)).slice(0, 3) : [];
   for (const t of due) {
     for (const c of chats) await channel.send(c, `📌 תזכורת: ${formatTaskLine(t)}${t.detail ? `\n${t.detail}` : ''}`, taskButtons(t.id));
     await db.from('ceo_owner_tasks').update({ last_reminded_at: new Date().toISOString() }).eq('id', t.id);
@@ -92,3 +106,17 @@ export function periodsFor(now: Date, forced?: string | null): DigestPeriod[] {
   return ['daily'];
 }
 
+
+/** Next run of the configured digest hour (Israel), as epoch seconds, strictly after `now`. */
+export function nextDigestAt(hourIl: number, now = new Date()): number {
+  for (let h = 1; h <= 48; h++) {
+    const t = new Date(Math.floor(now.getTime() / 3_600_000) * 3_600_000 + h * 3_600_000);
+    const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', hour: '2-digit', hour12: false }).format(t)) % 24;
+    if (hour === hourIl) return Math.floor(t.getTime() / 1000);
+  }
+  return Math.floor(now.getTime() / 1000) + 86_400;
+}
+
+export function israelHourNow(now = new Date()): number {
+  return Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', hour: '2-digit', hour12: false }).format(now)) % 24;
+}

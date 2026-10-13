@@ -1,3 +1,4 @@
+import { isStorableMemoryText } from '../safety/memory-text-guard';
 import type { ExtractedMemoryFact } from '../extract-memory-facts';
 import { normalizeFactTextForDedupe, stableMemoryVectorId } from '../memory-fact-dedupe';
 import { embedTextForRag } from '../openrouter-embeddings';
@@ -158,6 +159,9 @@ export async function reconcileSessionMemories(params: {
   for (const fact of params.facts) {
     try {
       const text = fact.text.replace(/\s+/g, ' ').trim();
+      if (!isStorableMemoryText(text)) {
+        continue;
+      }
       const vec = isUpstashVectorConfigured() ? await embedTextForRag(text) : [];
 
       const hits = isUpstashVectorConfigured()
