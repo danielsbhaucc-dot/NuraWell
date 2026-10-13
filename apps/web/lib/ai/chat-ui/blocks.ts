@@ -23,9 +23,13 @@ export type ResolvedChatUi = {
   chips?: string[];
   pick?: { kind: 'struggle' | 'offer'; options: UiTaskOption[] };
   proposals?: UiProposal[];
+  /** open the secure vault with this type preselected */
+  vault?: VaultUiKind;
 };
 
-export type RawChatUi = { chips: string[]; pick: 'struggle' | 'offer' | null; do: Array<Record<string, unknown>> };
+export const VAULT_UI_KINDS = ['id', 'passport', 'card', 'bank', 'address', 'phone', 'other'] as const;
+export type VaultUiKind = (typeof VAULT_UI_KINDS)[number];
+export type RawChatUi = { chips: string[]; pick: 'struggle' | 'offer' | null; do: Array<Record<string, unknown>>; vault?: VaultUiKind | null };
 
 const clean = (v: unknown, max: number): string =>
   typeof v === 'string' ? v.replace(/[⟦⟧\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max) : '';
@@ -46,7 +50,8 @@ export function parseRawChatUi(json: string): RawChatUi | null {
   const doItems = Array.isArray(r.do)
     ? r.do.filter((x): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x)).slice(0, 8)
     : [];
-  return { chips, pick, do: doItems };
+  const vault = (VAULT_UI_KINDS as readonly string[]).includes(String(r.vault)) ? (r.vault as VaultUiKind) : null;
+  return { chips, pick, do: doItems, vault };
 }
 
 /** Streaming filter: holds back the raw marker (even split across chunks) and returns only visible text. */
@@ -113,7 +118,7 @@ export function encodeResolvedChatUi(ui: ResolvedChatUi): string {
 }
 
 export function hasResolvedContent(ui: ResolvedChatUi): boolean {
-  return Boolean(ui.chips?.length || ui.pick?.options.length || ui.proposals?.length);
+  return Boolean(ui.chips?.length || ui.pick?.options.length || ui.proposals?.length || ui.vault);
 }
 
 export function extractResolvedChatUi(text: string): ResolvedChatUi | null {
@@ -156,6 +161,7 @@ type OfferLike = { definition_id: string; definition: { title: string; emoji: st
 export function resolveChatUi(raw: RawChatUi, plan: PlanLike[], offers: OfferLike[] = []): ResolvedChatUi {
   const out: ResolvedChatUi = {};
   if (raw.chips.length) out.chips = raw.chips;
+  if (raw.vault) out.vault = raw.vault;
   const active = plan.filter((t) => t.status === 'accepted');
   if (raw.pick === 'struggle' && active.length) {
     out.pick = {
@@ -199,5 +205,6 @@ export const CHAT_UI_PROMPT = [
   '- "chips": עד 4 תשובות קצרות שהמשתמש עשוי לרצות לשלוח (בגוף ראשון של המשתמש, עד 5 מילים). רק כששאלת שאלה עם כמה תשובות ברורות.',
   '- "pick":"struggle" — כשהמשתמש אומר שקשה לו ולא ברור באיזו משימה מדובר. "pick":"offer" — כשמציעים לו לבחור משימה מהשיעור.',
   '- "do": שינויים שסיכמתם עכשיו במפורש, לאישור בלחיצה: {"t":"easier","n":מספר משימה} / {"t":"harder","n":..} / {"t":"habit","title":"הרגל חלופי או משימה חדשה","n":מספר המשימה שהוא מחליף אם יש} / {"t":"goal","text":"המטרה החדשה"}.',
+  '- "vault": כשצריך ממנו פרט מזהה רגיש (ת"ז, דרכון, כרטיס אשראי, חשבון בנק, כתובת, טלפון) — אל תבקש שיכתוב אותו בצ׳אט; הוסף "vault":"id"|"passport"|"card"|"bank"|"address"|"phone"|"other" ותכתוב שנפתחה לו כספת מאובטחת. אתה לא תראה את הערך.',
   'אל תכתוב שהשינוי כבר בוצע — כתוב שאפשר לאשר בכפתור. בלי JSON בתוך הטקסט עצמו. ברוב התשובות אין צורך בשורה הזו.',
 ].join('\n');

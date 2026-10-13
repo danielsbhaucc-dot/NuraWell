@@ -40,6 +40,8 @@ import { ChatSessionInbox } from './ChatSessionInbox';
 import { AiChatPrivacyNotice } from './AiChatPrivacyNotice';
 import { AlmogChatUiBlock } from './AlmogChatUiBlock';
 import { SecureVaultBox } from './SecureVaultBox';
+import { detectVaultCandidate } from '@/lib/secure-vault/detect';
+import { VAULT_KIND_LABEL, type VaultKind } from '@/lib/secure-vault/crypto-labels';
 import {
   autoCloseStaleChatSessionsApi,
   closeChatSessionApi,
@@ -1127,6 +1129,14 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     [messages]
   );
 
+  const [vaultOpen, setVaultOpen] = useState(false);
+  const [vaultPreset, setVaultPreset] = useState<{ kind?: VaultKind; value?: string; n: number }>({ n: 0 });
+  const vaultAutoKeyRef = useRef<string | null>(null);
+  const openVault = useCallback((kind?: VaultKind, value?: string) => {
+    setVaultPreset((p) => ({ kind, value, n: p.n + 1 }));
+    setVaultOpen(true);
+  }, []);
+
   /** cards/chips belong only to the LAST message, and only while it is Almog's */
   const latestChatUi = useMemo(() => {
     const last = messages[messages.length - 1];
@@ -1135,7 +1145,14 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     return ui ? { ui, key: last.id ?? String(messages.length) } : null;
   }, [messages]);
 
-  const [vaultOpen, setVaultOpen] = useState(false);
+  useEffect(() => {
+    const k = latestChatUi?.ui.vault;
+    if (!k || isLoading || vaultAutoKeyRef.current === latestChatUi.key) return;
+    vaultAutoKeyRef.current = latestChatUi.key;
+    openVault(k);
+  }, [latestChatUi, isLoading, openVault]);
+  const vaultCandidate = useMemo(() => detectVaultCandidate(input), [input]);
+
   const sendQuickReply = useCallback(
     (text: string) => {
       if (!text.trim() || isSessionClosed) return;
@@ -1892,8 +1909,26 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
               {!isSessionClosed && !isClosing ? (
                 <AiChatPrivacyNotice variant="dark" className="mb-2 px-0.5" />
               ) : null}
+              {vaultCandidate && !vaultOpen ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = input.split(vaultCandidate.value).join('').replace(/\s{2,}/g, ' ').trim();
+                    setInput(next);
+                    writeChatInputDraft(sessionIdRef.current, next);
+                    openVault(vaultCandidate.kind, vaultCandidate.value);
+                  }}
+                  className="mb-2 flex w-full items-center gap-2 rounded-2xl border border-emerald-300/40 bg-emerald-900/40 px-3 py-2 text-start text-[12.5px] font-semibold text-emerald-100"
+                >
+                  <Lock className="h-4 w-4 shrink-0" />
+                  נראה שזה {VAULT_KIND_LABEL[vaultCandidate.kind]}. כדאי לשמור בכספת המאובטחת במקום לשלוח בצ׳אט — לחץ להעברה
+                </button>
+              ) : null}
               {vaultOpen && !isSessionClosed && !isClosing ? (
                 <SecureVaultBox
+                  key={vaultPreset.n}
+                  initialKind={vaultPreset.kind}
+                  initialValue={vaultPreset.value}
                   onClose={() => setVaultOpen(false)}
                   onSaved={(notice) => {
                     sendQuickReply(notice);
@@ -1927,7 +1962,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                 >
                   <button
                     type="button"
-                    onClick={() => setVaultOpen((v) => !v)}
+                    onClick={() => (vaultOpen ? setVaultOpen(false) : openVault())}
                     disabled={isSessionClosed || isClosing}
                     aria-label="כספת מאובטחת לפרט רגיש"
                     aria-expanded={vaultOpen}
