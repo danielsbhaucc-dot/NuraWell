@@ -2,6 +2,8 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 (globalThis as unknown as { AsyncLocalStorage: unknown }).AsyncLocalStorage ??= AsyncLocalStorage;
 import { describe, expect, it, vi } from 'vitest';
 const { _parseSseUsage, meteredFetch, withAiUsage } = await import('@/lib/ai/usage-meter');
+const { _setPiiSeedLoader } = await import('@/lib/ai/privacy/outbound-pii-guard');
+_setPiiSeedLoader(async () => null); // no DB lookups from the PII guard in this test
 
 describe('usage meter', () => {
   it('parses billed cost from the final SSE chunk', () => {
@@ -23,7 +25,7 @@ describe('usage meter', () => {
       f('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', body: JSON.stringify({ model: 'm', messages: [] }) }));
     expect((await res.json()).usage.cost).toBe(0.5);
     await new Promise((r) => setTimeout(r, 20));
-    expect(JSON.parse(calls[0].body).usage).toEqual({ include: true });
+    expect(JSON.parse(calls.find((c) => c.url.includes('openrouter'))!.body).usage).toEqual({ include: true });
     const rec = calls.find((c) => c.url.includes('ai_usage_events'));
     expect(rec).toBeTruthy();
     expect(JSON.parse(rec!.body)).toMatchObject({ feature: 'test_feat', cost_usd: 0.5 });
