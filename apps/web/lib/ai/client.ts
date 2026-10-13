@@ -1,3 +1,4 @@
+import { meteredFetch } from './usage-meter';
 /**
  * AI clients for NuraWell.
  *
@@ -63,6 +64,8 @@ export const openrouter = new OpenAI({
 export const deepseek = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY?.trim() || BUILD_SAFE_API_KEY,
   baseURL: DEEPSEEK_BASE_URL,
+  /** central outbound PII guard (meteredFetch) */
+  fetch: meteredFetch(),
 });
 
 /**

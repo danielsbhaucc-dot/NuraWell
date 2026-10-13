@@ -200,9 +200,7 @@ export class PiiShield {
     });
 
     for (const { value, placeholder } of this.replacements) {
-      if (out.includes(value)) {
-        out = out.split(value).join(placeholder);
-      }
+      if (out.includes(value)) out = replaceWord(out, value, placeholder);
     }
 
     return out;
@@ -220,9 +218,7 @@ export class PiiShield {
     if (!text) return text;
     let out = text;
     for (const { value, placeholder } of this.replacements) {
-      if (out.includes(placeholder)) {
-        out = out.split(placeholder).join(value);
-      }
+      if (out.includes(placeholder)) out = replaceWord(out, placeholder, value);
     }
     // מעבר נוסף: placeholders עם רווחים פנימיים שהמודל הוסיף.
     if (out.includes('[[')) {
@@ -299,6 +295,17 @@ export class PiiShield {
   get registeredCount(): number {
     return this.replacements.length;
   }
+}
+
+const HEB = '\\u05D0-\\u05EA';
+/**
+ * Hebrew names are replaced as whole words only (an optional 1-2 letter prefix like ל/ו/ש is allowed),
+ * so "נועה" never hits the middle of "תנועה". Non-Hebrew values (phone/email/[[TOKENS]]) stay plain substring.
+ */
+function replaceWord(text: string, from: string, to: string): string {
+  if (!/^[\u05D0-\u05EA][\u05D0-\u05EA '\-]*$/.test(from)) return text.split(from).join(to);
+  const re = new RegExp(`(^|[^${HEB}]|(?:^|[^${HEB}])[ובכלמשה]{1,2})${escapeRegExp(from)}(?![${HEB}])`, 'g');
+  return text.replace(re, (_m, pre: string) => `${pre}${to}`);
 }
 
 export function createPiiShield(seed: PiiProfileSeed): PiiShield {

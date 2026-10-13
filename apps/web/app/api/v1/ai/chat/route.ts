@@ -1043,7 +1043,7 @@ async function createOpenRouterCheapTextResponse({
   const tokenizedMessages = piiShield ? piiShield.tokenizeMessages(recentMessages) : recentMessages;
 
   const postCheap = (groqOnly: boolean) =>
-    fetch('https://openrouter.ai/api/v1/chat/completions', {
+    meteredFetch(fetch, { feature: 'chat_cheap' })('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
