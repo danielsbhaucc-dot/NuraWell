@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 /**
  * סיכומים תקופתיים לשיחות — פירמידה daily → annual.
  * Cron: tier=daily|weekly|monthly|bi_monthly|quarterly|semi_annual|annual
@@ -213,13 +214,13 @@ export async function generateAndStoreChatPeriodicSummary(
   }
 
   const firstName = await fetchFirstName(admin, params.userId);
-  const aiInsight = await generateChatSummaryInsight({
+  const aiInsight = await withAiUser(params.userId, () => generateChatSummaryInsight({
     type: params.type,
     periodKey: params.periodKey,
     firstName,
     sourceBlock,
     childInsights,
-  });
+  }));
 
   if (!aiInsight.trim()) {
     return { sessionCount, generated: false };

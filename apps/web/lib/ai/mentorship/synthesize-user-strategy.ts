@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 /**
  * מנוע הסינתזה — synthesizeUserStrategy(userId)
  */
@@ -46,7 +47,7 @@ export async function synthesizeUserStrategy(
   const groupedText = groupInsightsForPrompt(insights);
 
   try {
-    const strategy = await synthesizeStrategyWithLlm(groupedText);
+    const strategy = await withAiUser(userId, () => synthesizeStrategyWithLlm(groupedText));
     await upsertUserMentorshipStrategy(admin, userId, strategy, options?.now);
 
     return {

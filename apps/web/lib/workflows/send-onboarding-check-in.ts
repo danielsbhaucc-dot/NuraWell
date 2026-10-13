@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
@@ -370,7 +371,7 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
     return { body: '', inserted: null };
   }
 
-  const body = await completeEmpathyNotifyBody({
+  const body = await withAiUser(payload.userId, () => completeEmpathyNotifyBody({
     label: 'almog_personalized_check_in',
     temperature: 0.82,
     presencePenalty: 0.45,
@@ -389,7 +390,7 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
           : `${firstName} · ${genderInstruction} · מגע חברי עם אימוג'י, 2–3 משפטים, שאלה פתוחה.${journeyHint}`,
       },
     ],
-  });
+  }));
 
   /**
    * משתמש שלא פתח את הצעד הראשון — ה-CTA מפנה ישירות לצעד (ולא רק ל-/home או /journey),

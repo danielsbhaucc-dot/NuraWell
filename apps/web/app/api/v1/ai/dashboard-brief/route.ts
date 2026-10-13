@@ -1,3 +1,4 @@
+import { enterAiUsage } from '@/lib/ai/usage-meter';
 import { NextResponse } from 'next/server';
 
 import { requireApiSession } from '../../../../../lib/api/route-guards';
@@ -66,6 +67,7 @@ export async function GET(request: Request) {
     const firstName = firstNameFromFull(fullName) || 'משתמש';
 
     const admin = createAdminClient();
+    enterAiUsage({ userId: user.id });
     const { brief, used_fallback, model } = await buildDashboardBrief({
       supabase,
       admin,

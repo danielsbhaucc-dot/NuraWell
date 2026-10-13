@@ -16,12 +16,25 @@ const als: Als | null = AlsCtor ? new AlsCtor() : null;
 
 /** Run `fn` with AI-usage attribution (user + feature) for every metered call inside it. */
 export function withAiUsage<T>(meta: AiUsageMeta, fn: () => T): T {
-  return als ? als.run({ ...meta }, fn) : fn();
+  return als ? als.run({ ...(als.getStore() ?? {}), ...meta }, fn) : fn();
+}
+
+/**
+ * Per-user AI scope: every AI call inside redacts only this user's identifiers (stable tokens)
+ * and is attributed to them. Use around any per-user cron / batch / workflow AI call.
+ */
+export function withAiUser<T>(userId: string | null | undefined, fn: () => T): T {
+  return userId ? withAiUsage({ userId }, fn) : fn();
 }
 
 /** Label the rest of the current request (no callback needed; Node only). Used by cron auth. */
 export function enterAiUsage(meta: AiUsageMeta) {
-  if (als?.getStore()) return; // keep a more specific context
+  const cur = als?.getStore();
+  if (cur) {
+    // keep a more specific context, but fill in the user when it was missing
+    if (meta.userId && !cur.userId) cur.userId = meta.userId;
+    return;
+  }
   try {
     als?.enterWith?.({ ...meta });
   } catch {

@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '../ai/client';
@@ -156,7 +157,7 @@ export async function sendJourneyCompanionNudge(
     .filter(Boolean)
     .join('\n\n');
 
-  const body = await completeEmpathyNotifyBody({
+  const body = await withAiUser(userId, () => completeEmpathyNotifyBody({
     label: 'almog_journey_companion',
     temperature: 0.84,
     presencePenalty: 0.48,
@@ -176,7 +177,7 @@ export async function sendJourneyCompanionNudge(
         ].join('\n'),
       },
     ],
-  });
+  }));
 
   /**
    * משתמש שעדיין לא פתח את הצעד — אייקון/כותרת קצת יותר מזמינה ("בוא נתחיל" במקום עלה).

@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 import { updateAiContext, type AiUserContext } from '../memory';
 import { ingestUserMessageIntoVectorMemory } from '../vector-memory-ingest';
 import type { ExtractedMemoryFact } from '../extract-memory-facts';
@@ -50,13 +51,13 @@ export async function ingestChatTurnIntoMemoryDossier(params: {
   const habitContext =
     params.habitTitles?.length ? params.habitTitles.slice(0, 6).join(', ') : '';
 
-  const patch = await extractMemoryDossierPatch({
+  const patch = await withAiUser(params.userId, () => extractMemoryDossierPatch({
     userMessage: params.userMessage,
     assistantMessage: params.assistantMessage,
     existingDossier: existing,
     taskContext: taskContext || undefined,
     habitContext: habitContext || undefined,
-  });
+  }));
 
   const hasPatch =
     Object.keys(patch).length > 0 &&

@@ -1,3 +1,4 @@
+import { enterAiUsage } from '@/lib/ai/usage-meter';
 import { createAiProvider } from '@/lib/ai/provider-factory';
 import { z } from 'zod';
 import { generateText } from 'ai';
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
     const sessionId = crypto.randomUUID();
     const contextId = payload.step_id ?? payload.lesson_id;
 
+    enterAiUsage({ userId: user.id });
     const { contextString, raw: userCtx } = await buildUserContext(supabase, user.id);
     const coachingBlock = buildCoachingStylePromptBlock(userCtx.aiContext);
     const systemPrompt = [LESSON_FEEDBACK_PROMPT, coachingBlock, contextString]
