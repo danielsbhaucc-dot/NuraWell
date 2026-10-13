@@ -154,28 +154,41 @@ export async function fetchRecentAlmogNotifications(
   });
 }
 
+/** Prompt shows only the newest N distinct notifications in full; older/duplicate ones are counted. */
+export const PROMPT_NOTIFICATIONS_FULL = 8;
+const PROMPT_BODY_CLIP = 140;
+
 export function formatAlmogNotificationsPromptBlock(
   records: AlmogNotificationRecord[],
   opts: { highlightNotificationId?: string | null } = {}
 ): string | null {
   if (!records.length) return null;
-
-  const lines = records.map((r) => {
+  const hl = opts.highlightNotificationId ?? null;
+  // records arrive newest-first. Dedupe by kind+body: keep the newest, count repeats.
+  const groups = new Map<string, { r: AlmogNotificationRecord; n: number; hl: boolean }>();
+  for (const r of records) {
+    const key = `${r.source ?? ''}|${r.body.replace(/\s+/g, ' ').slice(0, 80)}`;
+    const g = groups.get(key);
+    if (g) {
+      g.n += 1;
+      if (r.id === hl) g.hl = true;
+    } else groups.set(key, { r, n: 1, hl: r.id === hl });
+  }
+  const all = [...groups.values()];
+  const shown = all.filter((g, i) => i < PROMPT_NOTIFICATIONS_FULL || g.hl);
+  const omitted = all.length - shown.length;
+  const lines = shown.map(({ r, n, hl: isHl }) => {
     const kind = r.sourceLabel ?? r.source ?? 'הודעה';
-    const bodyShort =
-      r.body.length > BODY_CLIP ? `${r.body.slice(0, BODY_CLIP)}…` : r.body;
-    const titlePart = r.title && !bodyShort.startsWith(r.title.slice(0, 20)) ? ` "${r.title.slice(0, 60)}" ·` : '';
-    const read = r.isRead ? 'נקרא' : 'לא נקרא';
-    const reply = r.userRepliedAfter ? 'המשתמש ענה בצ׳אט אחר כך' : 'ללא תשובה בצ׳אט';
-    const sent = r.isSent ? 'נשלח' : 'נוצר באפליקציה';
-    const highlight =
-      opts.highlightNotificationId && r.id === opts.highlightNotificationId ? ' ← מגיבים עכשיו' : '';
-    return `• ${r.sentAtLabel} · ${kind}${titlePart} "${bodyShort}"\n  (${sent} · ${read} · ${reply})${highlight}`;
+    const body = r.body.replace(/\s+/g, ' ');
+    const clip = isHl ? 400 : PROMPT_BODY_CLIP;
+    const bodyShort = body.length > clip ? `${body.slice(0, clip)}…` : body;
+    const status = [r.isSent ? null : 'באפליקציה', r.isRead ? 'נקרא' : 'לא נקרא', r.userRepliedAfter ? 'ענה' : 'לא ענה']
+      .filter(Boolean)
+      .join('/');
+    const rep = n > 1 ? ` ×${n}` : '';
+    return `• ${r.sentAtLabel} · ${kind}${rep}: "${bodyShort}" (${status})${isHl ? ' ← מגיבים עכשיו' : ''}`;
   });
-
-  return `[התראות שאלמוג שלח — מקור אמת עם תאריך ושעה (ישראל). אל תטען שלא שלחת משהו שמופיע כאן. אל תמציא התראות שלא ברשימה.]
-
-${lines.join('\n')}
-
-כללים: אם המשתמש מתייחס ל"מה ששלחת"/"קיבלתי הודעה"/"התראה" — התאם לשורה המדויקת לפי זמן ותוכן. [מענה להתראה] ספציפית קודם ברשימה — עדיפות עליונה.`;
+  const more = omitted > 0 ? `\n(+${omitted} התראות ישנות יותר ב-14 הימים האחרונים, לא מפורטות)` : '';
+  return `[התראות שאלמוג שלח — מקור אמת, שעון ישראל, חדש→ישן. אל תכחיש ואל תמציא התראות. כשהמשתמש מתייחס להודעה/התראה — התאם לשורה לפי זמן ותוכן; שורה "← מגיבים עכשיו" קודמת.]
+${lines.join('\n')}${more}`;
 }

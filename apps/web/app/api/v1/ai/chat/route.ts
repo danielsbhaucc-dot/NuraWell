@@ -1,3 +1,5 @@
+import { NURAWELL_CHAT_SYSTEM_PROMPT_V2, ALMOG_CHAT_FINAL_GUARDRAILS_V2, almogPromptV2Enabled } from '../../../../../lib/ai/prompts-v2';
+import { budgetHistoryV2, budgetContextSectionsV2, sectionSizes } from '../../../../../lib/ai/context-budget-v2';
 import { createRawUiStreamFilter, encodeResolvedChatUi, hasResolvedContent, parseRawChatUi, resolveChatUi, stripRawChatUi } from '@/lib/ai/chat-ui/blocks';
 import { meteredFetch, setAiUsageUser, withAiUsage } from '@/lib/ai/usage-meter';
 import { detectCrisisSignals } from '@/lib/safety/crisis-detector';
@@ -206,7 +208,7 @@ import {
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 import { publicAppUrlForAiReferer } from '../../../../../lib/public-app-url';
-import { openRouterChatFetch } from '../../../../../lib/ai/openrouter-relay';
+import { openRouterChatFetch, warmOpenRouterPath } from '../../../../../lib/ai/openrouter-relay';
 
 /**
  * Node (Fluid) rather than Edge: the turn fires many parallel subrequests (Supabase, RAG,
@@ -564,10 +566,12 @@ function resolveChatModelRuntime(writer: ChatWriterKey): ChatModelRuntime {
   const supportsPromptCache = slug.startsWith('anthropic/') || slug.startsWith('openai/');
   const useReasoning = CHAT_REASONING_ENABLED && isQwen;
   const useLeanPrompt = false;
+  const v2 = almogPromptV2Enabled();
+  const guardBase = v2 ? ALMOG_CHAT_FINAL_GUARDRAILS_V2 : ALMOG_CHAT_FINAL_GUARDRAILS;
   const claudeGuard =
     writer === 'claude5'
-      ? `${ALMOG_CHAT_FINAL_GUARDRAILS}\nכתוב למשתמש רק את התשובה בעברית. אסור סוגריים מרובעים, תגיות מטה, הערות מערכת או placeholders.`
-      : ALMOG_CHAT_FINAL_GUARDRAILS;
+      ? `${guardBase}\nכתוב למשתמש רק את התשובה בעברית. אסור סוגריים מרובעים, תגיות מטה, הערות מערכת או placeholders.`
+      : guardBase;
   return {
     writer,
     slug,
@@ -578,7 +582,7 @@ function resolveChatModelRuntime(writer: ChatWriterKey): ChatModelRuntime {
     useReasoning,
     useLeanPrompt,
     providerOnly: entry?.providerOnly,
-    mainWriterSystemPrompt: useLeanPrompt ? NURAWELL_CHAT_SYSTEM_PROMPT_LEAN : BASE_SYSTEM_PROMPT,
+    mainWriterSystemPrompt: useLeanPrompt ? NURAWELL_CHAT_SYSTEM_PROMPT_LEAN : v2 ? NURAWELL_CHAT_SYSTEM_PROMPT_V2 : BASE_SYSTEM_PROMPT,
     finalGuardrails: useLeanPrompt ? ALMOG_CHAT_FINAL_GUARDRAILS_LEAN : claudeGuard,
   };
 }
@@ -2400,6 +2404,14 @@ function uiMessageRole(msg: unknown): 'system' | 'user' | 'assistant' | null {
 
 // Pre-existing orchestration handler; splitting it is tracked separately (perf audit).
 // skipcq: JS-R1005
+/** Warm-up on chat open (same function as POST, so this instance stays warm). No AI generation, no cost. */
+export async function GET(request: Request) {
+  const auth = await requireApiSession(request);
+  if (!auth.ok) return auth.response;
+  await warmOpenRouterPath().catch(() => {});
+  return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
+}
+
 export async function POST(request: Request) {
   return withAiUsage({ feature: 'chat' }, () => handleChatPost(request));
 }
@@ -2592,6 +2604,25 @@ async function handleChatPost(request: Request) {
   const notificationContextPromiseEarly = notificationId
     ? fetchNotificationContextBlock(supabase, user.id, notificationId)
     : Promise.resolve(null);
+  /** repeated request/theme across turns+sessions → one hint line (lexical, no LLM) */
+  const repetitionHintPromise = (async () => {
+    if (!lastUserText || lastUserText.trim().length < 6) return null;
+    const { data } = await supabase
+      .from('ai_interactions')
+      .select('content, created_at, session_id')
+      .eq('user_id', user.id)
+      .eq('role', 'user')
+      .gte('created_at', new Date(Date.now() - 21 * 86400000).toISOString())
+      .lte('created_at', new Date(Date.now() - 15000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(80);
+    const { buildRepetitionHint } = await import('../../../../../lib/ai/repetition-hint');
+    return buildRepetitionHint(
+      lastUserText,
+      (data ?? []).map((r) => ({ content: String(r.content ?? ''), createdAt: String(r.created_at), sessionId: (r.session_id as string | null) ?? null })),
+      { sessionId }
+    );
+  })().catch(() => null);
   const almogNotificationsPromiseEarly = fetchRecentAlmogNotifications(supabase, user.id).catch(
     () => []
   );
@@ -3013,12 +3044,18 @@ async function handleChatPost(request: Request) {
     })
     .filter((m): m is { role: 'user' | 'assistant'; content: string } => Boolean(m));
 
-  const recentMessages = mergeTranscriptWithClientMessages({
+  const mergedMessages = mergeTranscriptWithClientMessages({
     dbTurns,
     clientTurns,
     lastUserText,
     windowSize: historyWindow,
   });
+  // V2: short full window + session live file (rolling summary) carries older turns
+  // UI/reaction markers are display protocol — never show them to the writer (Claude started imitating them).
+  const cleanHistory = mergedMessages.map((m) =>
+    m.role === 'assistant' ? { ...m, content: stripRawChatUi(stripEmojiReactionMarker(m.content)).replace(/⟦NW_UIR?:[^⟧]*⟧/g, '') } : m
+  );
+  const recentMessages = almogPromptV2Enabled() ? budgetHistoryV2(cleanHistory) : cleanHistory;
 
   const genderCorrection = detectGenderCorrectionFromRecentMessages(recentMessages);
   const profileGender = genderCorrection ?? profileRow.gender;
@@ -3076,7 +3113,7 @@ async function handleChatPost(request: Request) {
     // במקום טוקן לטיני שומר על עברית שוטפת ועל איכות התשובה של Qwen.
     const nameToken = piiShield ? piiShield.firstNamePlaceholder ?? firstName : firstName;
     const personalNameInstruction = firstName
-      ? `השם הפרטי של המשתמש הוא ${nameToken}. כאשר אתה פונה בשם — השתמש בדיוק ב-${nameToken} (בלי שם משפחה).`
+      ? `השם הפרטי של המשתמש הוא ${nameToken}. כאשר אתה פונה בשם — השתמש בדיוק ב-${nameToken} (בלי שם משפחה). פנה בשם באופן טבעי וחם בערך פעם ב-2–3 תשובות: בפתיחה, ברגע של עידוד או כשמשהו חשוב. לא בכל הודעה ולא פעמיים באותה תשובה.`
       : 'אין שם פרטי זמין בפרופיל כרגע.';
     let ragMemoryBlock = '';
     let systemKnowledgeBlock = '';
@@ -3496,6 +3533,8 @@ async function handleChatPost(request: Request) {
       const { CHAT_UI_PROMPT } = await import('../../../../../lib/ai/chat-ui/blocks');
       contextSections.push(CHAT_UI_PROMPT);
     }
+    const repetitionHint = await repetitionHintPromise;
+    if (repetitionHint) contextSections.push(repetitionHint);
     if (ragMemoryBlock) contextSections.push(ragMemoryBlock);
     // מצב רוח מהפרופיל כפול לזיכרון העבודה — מדלגים אם הזיכרון כבר נשלח.
     if (moodFromProfile && !(leanContext && workingMemoryBlock))
@@ -3533,6 +3572,11 @@ async function handleChatPost(request: Request) {
     ]
       .filter(Boolean)
       .join('\n');
+    if (almogPromptV2Enabled()) {
+      const b = budgetContextSectionsV2(contextSections);
+      console.info('[ai/chat]', { debug_id: debugId, stage: 'context_budget_v2', before: b.before, after: b.after, trimmed: b.trimmed, dropped: b.dropped, sizes: sectionSizes(contextSections) });
+      contextSections.splice(0, contextSections.length, ...b.sections);
+    }
     const dynamicSystemPrompt = [
       '— הקשר לשיחה הזו —',
       writerPersona,
@@ -4506,6 +4550,7 @@ async function handleChatPost(request: Request) {
             controller.enqueue(encoder.encode(encodeEmojiReactionMarker(headerReaction)));
           }
           let reactionSent = Boolean(headerReaction);
+          let hadVisibleOut = false;
           const flushLateReaction = () => {
             if (reactionSent || !resolvedEmojiReaction) return;
             reactionSent = true;
@@ -4518,9 +4563,14 @@ async function handleChatPost(request: Request) {
               const chunkText = decoder.decode(value, { stream: true });
               if (!hadVisibleText && chunkText.trim().length > 0) hadVisibleText = true;
               /** מקודדים מחדש טקסט מפוענח → גבולות chunk תמיד על תו שלם, כך שאפשר להזריק marker ביניהם. */
+              // reaction ready before any visible text → send it first; otherwise it waits for the end of the
+              // stream (injecting it mid-text split the first word: "ה⟦NW_RX⟧יי" rendered the first letter apart)
+              if (!hadVisibleOut) flushLateReaction();
               const visible = uiFilter.push(chunkText);
-              if (visible) controller.enqueue(encoder.encode(visible));
-              flushLateReaction();
+              if (visible) {
+                hadVisibleOut = true;
+                controller.enqueue(encoder.encode(visible));
+              }
             }
           }
           const trailing = decoder.decode();
@@ -4572,6 +4622,7 @@ async function handleChatPost(request: Request) {
             }
           }
           if (!reactionSent) {
+            reactionSent = true;
             const lateReaction =
               resolvedEmojiReaction ??
               (await Promise.race([

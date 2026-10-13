@@ -20,11 +20,11 @@ export type PiiProfileSeed = {
   known_person_names?: string[];
 };
 
+import { applyPiiDetectors, PII_KIND_PLACEHOLDER } from './pii-patterns';
+
 type Replacement = { value: string; placeholder: string };
 
 const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-const PHONE_REGEX = /(?:\+972[\-\s]?|0)(?:5[0-9]|[23489])[\-\s]?\d{3}[\-\s]?\d{4,5}/g;
-const ISRAELI_ID_REGEX = /\b\d{9}\b/g;
 
 /**
  * אורך מרבי של placeholder (כולל סוגריים ורווחים). משמש את ה-stream detokenizer
@@ -100,25 +100,39 @@ export class PiiShield {
   private sensitiveValues: string[] = [];
   private usedPseudonyms = new Set<string>();
   private firstNamePseudonym: string | null = null;
+  /** perf: O(1) lookups instead of scanning `replacements` (directory shields hold thousands of names). */
+  private byValueLower = new Map<string, string>();
+  private usedPlaceholders = new Set<string>();
+  private nextSuffix = new Map<string, number>();
+  private deferSort = false;
 
   constructor(seed: PiiProfileSeed) {
+    this.deferSort = true;
     this.registerFromSeed(seed);
+    this.deferSort = false;
+    this.replacements.sort((a, b) => b.value.length - a.value.length);
   }
 
   /** Registers value→placeholder; placeholders are unique per value (`[[USER_EMAIL_2]]` …). */
   private register(value: string, placeholder: string): string {
     const v = value.trim();
     if (v.length < 2) return placeholder;
-    const existing = this.replacements.find((r) => r.value.toLowerCase() === v.toLowerCase());
-    if (existing) return existing.placeholder;
-    let ph = placeholder;
-    for (let n = 2; this.replacements.some((r) => r.placeholder === ph); n += 1) {
-      ph = placeholder.replace(/\]\]$/, `_${n}]]`);
+    const key = v.toLowerCase();
+    const existing = this.byValueLower.get(key);
+    if (existing) return existing;
+    const base = placeholder;
+    let ph = base;
+    // placeholders are never removed, so resuming from the last used suffix finds the same first free one
+    for (let n = this.nextSuffix.get(base) ?? 2; this.usedPlaceholders.has(ph); n += 1) {
+      ph = base.replace(/\]\]$/, `_${n}]]`);
+      this.nextSuffix.set(base, n + 1);
     }
     placeholder = ph;
     this.replacements.push({ value: v, placeholder });
+    this.byValueLower.set(key, placeholder);
+    this.usedPlaceholders.add(placeholder);
     this.sensitiveValues.push(v);
-    this.replacements.sort((a, b) => b.value.length - a.value.length);
+    if (!this.deferSort) this.replacements.sort((a, b) => b.value.length - a.value.length);
     return placeholder;
   }
 
@@ -168,6 +182,16 @@ export class PiiShield {
     });
   }
 
+  private placeholderIndex: { size: number; map: Map<string, string> } | null = null;
+  private valueByPlaceholder(): Map<string, string> {
+    if (!this.placeholderIndex || this.placeholderIndex.size !== this.replacements.length) {
+      const map = new Map<string, string>();
+      for (const r of this.replacements) if (!map.has(r.placeholder)) map.set(r.placeholder, r.value);
+      this.placeholderIndex = { size: this.replacements.length, map };
+    }
+    return this.placeholderIndex.map;
+  }
+
   /** הפסיאודונים העברי שהוקצה לשם הפרטי (לשימוש בהוראת הפרומפט). */
   get firstNamePlaceholder(): string | null {
     return this.firstNamePseudonym;
@@ -182,13 +206,7 @@ export class PiiShield {
       return this.register(match, PII_PLACEHOLDERS.USER_EMAIL);
     });
 
-    out = out.replace(PHONE_REGEX, (match) => {
-      return this.register(match, PII_PLACEHOLDERS.USER_PHONE);
-    });
-
-    out = out.replace(ISRAELI_ID_REGEX, (match) => {
-      return this.register(match, PII_PLACEHOLDERS.USER_ID);
-    });
+    out = applyPiiDetectors(out, (value, kind) => this.register(value, PII_KIND_PLACEHOLDER[kind]));
 
     for (const { value, placeholder } of this.replacements) {
       if (out.includes(value)) out = replaceWord(out, value, placeholder);
@@ -213,11 +231,11 @@ export class PiiShield {
     }
     // מעבר נוסף: placeholders עם רווחים פנימיים שהמודל הוסיף.
     if (out.includes('[[')) {
-      for (const { value, placeholder } of this.replacements) {
-        const inner = placeholder.replace(/^\[\[/, '').replace(/\]\]$/, '');
-        const re = new RegExp(`\\[\\[\\s*${escapeRegExp(inner)}\\s*\\]\\]`, 'g');
-        out = out.replace(re, value);
-      }
+      // one pass instead of one RegExp per registered value; only exact registered tokens are restored
+      out = out.replace(/\[\[\s*([^\[\]]*?)\s*\]\]/g, (m, inner: string) => {
+        const value = this.valueByPlaceholder().get(`[[${inner}]]`);
+        return value ?? m;
+      });
     }
     return out;
   }
@@ -277,7 +295,9 @@ export class PiiShield {
   /** חוסם קריאה אם מזהה רגיש עדיין מופיע ב-payload שנשלח למודל חיצוני */
   assertNoRawPii(payload: string): void {
     for (const value of this.sensitiveValues) {
-      if (value.length >= 3 && payload.includes(value)) {
+      // same whole-word rule as tokenizeText (Hebrew name inside another word, e.g. נועה in תנועה, is not PII);
+      // a plain substring check here failed every chat whose context had such a word.
+      if (value.length >= 3 && payload.includes(value) && replaceWord(payload, value, '\u0000') !== payload) {
         throw new Error('PII shield: blocked outbound request containing raw sensitive identifier');
       }
     }
@@ -294,6 +314,9 @@ const HEB = '\\u05D0-\\u05EA';
  * so "נועה" never hits the middle of "תנועה". Non-Hebrew values (phone/email/[[TOKENS]]) stay plain substring.
  */
 function replaceWord(text: string, from: string, to: string): string {
+  if (/^[A-Za-z][A-Za-z '\-]*$/.test(from)) {
+    return text.replace(new RegExp(`(?<![A-Za-z])${escapeRegExp(from)}(?![A-Za-z])`, 'g'), to);
+  }
   if (!/^[\u05D0-\u05EA][\u05D0-\u05EA '\-]*$/.test(from)) return text.split(from).join(to);
   const re = new RegExp(`(^|[^${HEB}]|(?:^|[^${HEB}])[ובכלמשה]{1,2})${escapeRegExp(from)}(?![${HEB}])`, 'g');
   return text.replace(re, (_m, pre: string) => `${pre}${to}`);

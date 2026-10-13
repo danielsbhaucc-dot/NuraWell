@@ -11,23 +11,12 @@ import {
 } from '@/lib/ai/onboarding-check-in-time';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { workflowPublicBaseUrl } from '@/lib/workflows/resolve-workflow-public-url';
-import {
-  drainAlmogReminders,
-  type DrainRemindersResult,
-} from '@/lib/ai/almog-commitments/drain-reminders';
-import {
-  processPendingAlmogCommitmentJobs,
-  type ProcessCommitmentJobsResult,
-} from '@/lib/ai/almog-commitments/process-pending-commitment-jobs';
-import {
-  sweepStaleAssignments,
-  type SweepAssignmentsResult,
-} from '@/lib/ai/almog-commitments/sweep-assignments';
-import {
-  runProgramOrchestrator,
-  type RunOrchestratorResult,
-} from '@/lib/ai/orchestrator/run-program-orchestrator';
-import { runRecoveryOrchestrationBatch } from '@/lib/ai/almog-commitments/recovery-orchestrator';
+import type { DrainRemindersResult } from '@/lib/ai/almog-commitments/drain-reminders';
+import type { ProcessCommitmentJobsResult } from '@/lib/ai/almog-commitments/process-pending-commitment-jobs';
+import type { SweepAssignmentsResult } from '@/lib/ai/almog-commitments/sweep-assignments';
+import type { RunOrchestratorResult } from '@/lib/ai/orchestrator/run-program-orchestrator';
+import type { runRecoveryOrchestrationBatch } from '@/lib/ai/almog-commitments/recovery-orchestrator';
+// perf: phase modules are imported lazily below — split schedules (?phase=…) only load what they run.
 
 
 type ProfileRow = {
@@ -81,6 +70,12 @@ async function runOnboardingCheckInsCron(request: Request) {
   let almogReminders: DrainRemindersResult | { error: string } | null = null;
 
   if (runReminders) {
+    const [{ sweepStaleAssignments }, { processPendingAlmogCommitmentJobs }, { drainAlmogReminders }] =
+      await Promise.all([
+        import('@/lib/ai/almog-commitments/sweep-assignments'),
+        import('@/lib/ai/almog-commitments/process-pending-commitment-jobs'),
+        import('@/lib/ai/almog-commitments/drain-reminders'),
+      ]);
     try {
       assignmentSweep = await sweepStaleAssignments(createAdminClient(), { dryRun: isDryRun });
     } catch (e) {
@@ -137,8 +132,12 @@ async function runOnboardingCheckInsCron(request: Request) {
           errors: [],
         };
       } else {
+        const { runProgramOrchestrator } = await import('@/lib/ai/orchestrator/run-program-orchestrator');
         orchestrator = await runProgramOrchestrator(adminForOrch, { dryRun: isDryRun });
         try {
+          const { runRecoveryOrchestrationBatch } = await import(
+            '@/lib/ai/almog-commitments/recovery-orchestrator'
+          );
           recoveryOrchestration = await runRecoveryOrchestrationBatch(adminForOrch, {
             dryRun: isDryRun,
           });
