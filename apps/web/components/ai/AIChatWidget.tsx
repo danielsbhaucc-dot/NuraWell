@@ -530,6 +530,13 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
   const displayName = firstName?.trim() || '';
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(autoOpen);
+  const lastWarmRef = useRef(0);
+  useEffect(() => {
+    // Warm the chat lambda + relay/OpenRouter connections so the first message isn't a cold start.
+    if (!open || Date.now() - lastWarmRef.current < 4 * 60_000) return;
+    lastWarmRef.current = Date.now();
+    void fetch('/api/v1/ai/chat', { method: 'GET', credentials: 'same-origin' }).catch(() => {});
+  }, [open]);
   const { avatarUrl: avatarSrc } = useAlmogAvatarUrl({ enabled: open });
   const { url: bgUrl, hasPhoto } = useChatBackground(open);
   useEffect(() => {

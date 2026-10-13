@@ -208,7 +208,7 @@ import {
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { createSupabaseForApiRoute } from '../../../../../lib/supabase/api-route-client';
 import { publicAppUrlForAiReferer } from '../../../../../lib/public-app-url';
-import { openRouterChatFetch } from '../../../../../lib/ai/openrouter-relay';
+import { openRouterChatFetch, warmOpenRouterPath } from '../../../../../lib/ai/openrouter-relay';
 
 /**
  * Node (Fluid) rather than Edge: the turn fires many parallel subrequests (Supabase, RAG,
@@ -2404,6 +2404,14 @@ function uiMessageRole(msg: unknown): 'system' | 'user' | 'assistant' | null {
 
 // Pre-existing orchestration handler; splitting it is tracked separately (perf audit).
 // skipcq: JS-R1005
+/** Warm-up on chat open (same function as POST, so this instance stays warm). No AI generation, no cost. */
+export async function GET(request: Request) {
+  const auth = await requireApiSession(request);
+  if (!auth.ok) return auth.response;
+  await warmOpenRouterPath().catch(() => {});
+  return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
+}
+
 export async function POST(request: Request) {
   return withAiUsage({ feature: 'chat' }, () => handleChatPost(request));
 }

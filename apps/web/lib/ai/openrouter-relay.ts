@@ -79,3 +79,20 @@ function pickForward(h: Record<string, string>): Record<string, string> {
   for (const [k, v] of Object.entries(h)) if (FORWARD.includes(k.toLowerCase())) out[k] = v;
   return out;
 }
+
+/** Warm the chat path on chat open: chat function instance, TLS to the relay, relay isolate → OpenRouter, and direct OpenRouter (router). */
+export async function warmOpenRouterPath(): Promise<void> {
+  const base = relayBase();
+  const key = process.env.OPENROUTER_API_KEY?.trim() ?? '';
+  const t = AbortSignal.timeout(4000);
+  await Promise.allSettled([
+    base
+      ? fetch(`${base}/api/v1/ai/llm-relay`, {
+          method: 'POST',
+          headers: { [RELAY_HEADER]: process.env.CRON_SECRET!, 'x-nw-warm': '1', ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET ? { 'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET } : {}) },
+          signal: t,
+        }).then((r) => r.body?.cancel())
+      : Promise.resolve(),
+    fetch('https://openrouter.ai/api/v1/key', { headers: { Authorization: `Bearer ${key}` }, signal: t }).then((r) => r.body?.cancel()),
+  ]);
+}
