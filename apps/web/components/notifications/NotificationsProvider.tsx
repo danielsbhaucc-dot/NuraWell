@@ -12,7 +12,7 @@ import {
 } from 'react';
 import type { RealtimeChannel, User } from '@supabase/supabase-js';
 import { Drawer } from 'vaul';
-import { CheckCheck, ChevronDown, Loader2 } from 'lucide-react';
+import { CheckCheck, ChevronDown, History, Loader2 } from 'lucide-react';
 import { useAppOverlayRoot } from '../../lib/dom/use-app-overlay-root';
 import { NotificationCard } from './NotificationCard';
 import { LiveToastStack } from './LiveNotificationToast';
@@ -357,6 +357,19 @@ export function NotificationsProvider({
     [filterKind, viewMode]
   );
 
+  const [loadMoreAnchorId, setLoadMoreAnchorId] = useState<string | null>(null);
+
+  /** אחרי "טען עוד" — גוללים לפריט הראשון שנטען (לא לאחרון), מתחת למפריד. */
+  useEffect(() => {
+    if (!loadMoreAnchorId) return;
+    const raf = requestAnimationFrame(() => {
+      document
+        .getElementById(`notif-load-divider-${loadMoreAnchorId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [loadMoreAnchorId]);
+
   const loadMore = useCallback(async () => {
     if (!nextCursor) return;
     setLoadingMore(true);
@@ -380,9 +393,14 @@ export function NotificationsProvider({
       setItems((prev) => {
         const seen = new Set(prev.map((p) => p.id));
         const merged = [...prev];
+        let first: string | null = null;
         for (const n of list) {
-          if (!seen.has(n.id)) merged.push(n);
+          if (!seen.has(n.id)) {
+            if (!first) first = n.id;
+            merged.push(n);
+          }
         }
+        if (first) setLoadMoreAnchorId(first);
         return merged;
       });
     } finally {
@@ -979,8 +997,26 @@ export function NotificationsProvider({
                 </div>
               )}
               {listEntries.map((entry) => {
+                const entryIds =
+                  entry.kind === 'single' ? [entry.notification.id] : entry.notifications.map((n) => n.id);
+                const divider =
+                  loadMoreAnchorId && entryIds.includes(loadMoreAnchorId) ? (
+                    <div
+                      key={`divider-${loadMoreAnchorId}`}
+                      id={`notif-load-divider-${loadMoreAnchorId}`}
+                      className="flex scroll-mt-3 items-center gap-3 py-2"
+                      role="separator"
+                    >
+                      <span className="h-px flex-1 bg-linear-to-l from-transparent via-emerald-300/70 to-emerald-300/70" />
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1 text-[11px] font-bold text-emerald-800 ring-1 ring-emerald-200/70 backdrop-blur-sm">
+                        <History className="h-3.5 w-3.5" aria-hidden />
+                        התראות קודמות
+                      </span>
+                      <span className="h-px flex-1 bg-linear-to-r from-transparent via-emerald-300/70 to-emerald-300/70" />
+                    </div>
+                  ) : null;
                 if (entry.kind === 'single') {
-                  return (
+                  return [divider,
                     <NotificationCard
                       key={entry.notification.id}
                       notification={entry.notification}
@@ -992,8 +1028,8 @@ export function NotificationsProvider({
                       onArchive={archiveOne}
                       onUnarchive={unarchiveOne}
                       onCloseDrawer={() => setOpen(false)}
-                    />
-                  );
+                    />,
+                  ];
                 }
 
                 const latest = entry.notifications[0]!;
@@ -1003,7 +1039,7 @@ export function NotificationsProvider({
                   body: entry.previewBody,
                   is_read: entry.unreadCount === 0,
                 };
-                return (
+                return [divider,
                   <NotificationCard
                     key={entry.key}
                     notification={grouped}
@@ -1026,25 +1062,28 @@ export function NotificationsProvider({
                     }}
                     onUnarchive={unarchiveOne}
                     onCloseDrawer={() => setOpen(false)}
+                    habitLabel={entry.habitLabel}
                     groupCount={entry.notifications.length}
-                  />
-                );
+                  />,
+                ];
               })}
 
               {nextCursor ? (
-                <div className="flex justify-center pt-2 pb-6">
+                <div dir="rtl" className="flex justify-center pt-3 pb-6">
                   <button
                     type="button"
                     disabled={loadingMore}
                     onClick={() => void loadMore()}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-emerald-300/50 bg-emerald-100/70 px-5 py-2.5 text-sm font-bold text-emerald-900 shadow-xs transition hover:bg-emerald-200/50 disabled:opacity-50"
+                    className="group inline-flex min-h-11 items-center gap-2.5 rounded-full border border-white/70 bg-white/75 py-2 ps-2 pe-5 text-sm font-bold text-emerald-900 shadow-[0_6px_20px_rgba(4,120,87,0.12)] ring-1 ring-emerald-200/60 backdrop-blur-md transition hover:bg-white hover:shadow-[0_8px_24px_rgba(4,120,87,0.18)] active:scale-[0.98] disabled:opacity-60"
                   >
-                    {loadingMore ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" aria-hidden />
-                    )}
-                    טען עוד
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-teal-500 text-white shadow-sm">
+                      {loadingMore ? (
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 transition-transform group-hover:translate-y-0.5" aria-hidden />
+                      )}
+                    </span>
+                    {loadingMore ? 'טוען…' : 'הצג התראות קודמות'}
                   </button>
                 </div>
               ) : null}

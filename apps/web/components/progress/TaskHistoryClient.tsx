@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { PageBackButton } from '../shared/PageBackButton';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useProgressLiveRefresh } from '../../lib/journey/use-progress-live-refresh';
 import {
-  ArrowRight,
   CalendarDays,
   CheckCircle2,
   ChevronDown,
@@ -504,7 +504,7 @@ function TaskCard({
                 </p>
                 <p className="text-[10px] font-semibold text-emerald-900/65 mt-0.5 flex items-center gap-1 flex-wrap justify-end">
                   <MapPin className="w-3 h-3 shrink-0" />
-                  צעד {task.step_number}: {task.step_title}
+                  {task.step_number > 0 ? `צעד ${task.step_number}: ${task.step_title}` : task.step_title}
                 </p>
               </div>
               <ChevronDown
@@ -811,19 +811,9 @@ export function TaskHistoryClient({
           style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.45), transparent 70%)' }}
         />
 
-        <div className="relative z-10 px-5 pb-18 pt-3">
-          <div className="mb-3 flex justify-end">
-            <Link
-              href="/progress"
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-emerald-50"
-              style={{
-                background: 'rgba(220,252,231,0.2)',
-                border: '1px solid rgba(167,243,208,0.35)',
-              }}
-              aria-label="חזרה להתקדמות"
-            >
-              <ArrowRight className="w-5 h-5" />
-            </Link>
+        <div className="relative z-10 px-5 pb-14 pt-3">
+          <div className="mb-3 flex justify-start">
+            <PageBackButton href="/progress" label="להתקדמות" />
           </div>
 
           {/* Avatar + title side-by-side (same composition as ProgressPageClient) */}
@@ -875,7 +865,7 @@ export function TaskHistoryClient({
         </div>
       </motion.header>
 
-      <div className="container-mobile relative z-3 -mt-30 pb-10 space-y-7">
+      <div className="container-mobile relative z-3 -mt-8 pb-10 space-y-7">
         {/* ─── Stats grid (4 cards — same as progress page) ─── */}
         <section>
           <motion.div

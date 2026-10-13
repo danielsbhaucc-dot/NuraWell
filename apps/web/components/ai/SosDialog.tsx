@@ -617,25 +617,29 @@ export function SosDialog({
           className="relative shrink-0 px-5 pb-4 pt-5"
           style={{ background: 'linear-gradient(145deg, #047857, #059669, #10b981)' }}
         >
-          <button
-            type="button"
-            onClick={closeDialog}
-            className="absolute inset-e-4 top-4 rounded-full bg-background-card/15 p-2 text-white/90 transition hover:bg-background-card/25"
-            aria-label="סגירה"
-          >
-            <X className="h-4 w-4" />
-          </button>
-          {showBackButton ? (
+          <div className="mb-3 flex items-center justify-between gap-2">
+            {showBackButton ? (
+              <button
+                type="button"
+                onClick={goBackFromResponse}
+                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white/15 px-3 text-xs font-bold text-white ring-1 ring-white/25 backdrop-blur-sm transition hover:bg-white/25 active:scale-95"
+                aria-label="חזרה לבחירת הקושי"
+              >
+                <ArrowRight className="h-4 w-4" aria-hidden />
+                חזרה
+              </button>
+            ) : (
+              <span aria-hidden />
+            )}
             <button
               type="button"
-              onClick={goBackFromResponse}
-              className="absolute inset-s-4 top-4 inline-flex items-center gap-1 rounded-full bg-background-card/15 px-3 py-2 text-xs font-bold text-white/95 transition hover:bg-background-card/25"
-              aria-label="חזרה לבחירת הקושי"
+              onClick={closeDialog}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-sm transition hover:bg-white/25 active:scale-95"
+              aria-label="סגירה"
             >
-              <ArrowRight className="h-4 w-4" aria-hidden />
-              חזרה
+              <X className="h-4 w-4" aria-hidden />
             </button>
-          ) : null}
+          </div>
           <div className="flex items-start gap-3">
             <motion.div
               initial={{ opacity: 0, scale: 0.88 }}
@@ -873,6 +877,25 @@ export function SosDialog({
                 </div>
               ) : null}
 
+              <label className="block">
+                <span className={`mb-1.5 block ${SOS_LABEL}`}>
+                  {firstName ? `${firstName}, ${wantAddWordLabel}` : wantAddWordLabel}
+                </span>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  maxLength={240}
+                  rows={2}
+                  className={SOS_NOTE_FIELD}
+                  placeholder={
+                    selectedTask?.title
+                      ? `למשל: קשה לי עם "${selectedTask.title}" אחרי יום עמוס`
+                      : 'למשל: היה יום עמוס ואני מול המקרר'
+                  }
+                />
+                <span className="mt-1 block text-[11px] font-semibold text-slate-500">אלמוג יקרא את זה ויתאים את ההצעה — עכשיו בוחרים מה הכי קרוב לרגע.</span>
+              </label>
+
               <p className={SOS_LABEL}>
                 {firstName ? `${firstName}, מה הכי קרוב לרגע הזה?` : 'מה הכי קרוב לרגע הזה?'}
               </p>
@@ -898,23 +921,6 @@ export function SosDialog({
                 ))}
               </div>
 
-              <label className="block">
-                <span className={`mb-1.5 block ${SOS_LABEL}`}>
-                  {firstName ? `${firstName}, ${wantAddWordLabel}` : wantAddWordLabel}
-                </span>
-                <textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  maxLength={240}
-                  rows={2}
-                  className={SOS_NOTE_FIELD}
-                  placeholder={
-                    selectedTask?.title
-                      ? `למשל: קשה לי עם "${selectedTask.title}" אחרי יום עמוס`
-                      : 'למשל: היה יום עמוס ואני מול המקרר'
-                  }
-                />
-              </label>
                 </div>
               ) : null}
             </div>
@@ -951,7 +957,12 @@ export function SosDialog({
                 />
                 <div className="flex items-start justify-between gap-2">
                   <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm font-semibold leading-7">
-                    {response.intervention.message}
+                    {(() => {
+                      const step = response.intervention.micro_step?.trim();
+                      const msg = response.intervention.message ?? '';
+                      const deduped = step && msg.includes(step) ? msg.replace(step, '').trim() : msg;
+                      return deduped || msg;
+                    })()}
                   </p>
                   <button
                     type="button"

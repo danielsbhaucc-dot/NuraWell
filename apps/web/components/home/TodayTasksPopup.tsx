@@ -440,7 +440,16 @@ export function TodayTasksPopup({
                         </div>
                       </div>
                     </button>
+                    <AnimatePresence initial={false}>
                     {isExpanded ? (
+                      <motion.div
+                        key="actions"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                        className="overflow-hidden"
+                      >
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         <button
                           type="button"
@@ -461,17 +470,17 @@ export function TodayTasksPopup({
                         <button
                           type="button"
                           onClick={() => openChatForAlmog(task)}
-                          className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-black text-emerald-900"
-                          style={{
-                            background: 'rgba(167,243,208,0.45)',
-                            border: '1px solid rgba(110,231,183,0.4)',
-                          }}
+                          className="flex items-center justify-center gap-1.5 rounded-xl bg-white py-2.5 text-[11px] font-black text-emerald-800 shadow-[0_1px_3px_rgba(4,47,36,0.08)] ring-1 ring-emerald-200 transition hover:bg-emerald-50 active:scale-[0.98]"
                         >
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          מעבר לצ׳אט
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-linear-to-br from-teal-500 to-emerald-500 text-white">
+                            <MessageCircle className="h-3 w-3" aria-hidden />
+                          </span>
+                          לדבר על זה עם אלמוג
                         </button>
                       </div>
+                      </motion.div>
                     ) : null}
+                    </AnimatePresence>
                   </article>
                 );
               })}
@@ -558,7 +567,16 @@ export function TodayTasksPopup({
                         </div>
                       </div>
                     </button>
+                    <AnimatePresence initial={false}>
                     {isExpanded ? (
+                      <motion.div
+                        key="actions"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                        className="overflow-hidden"
+                      >
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         <button
                           type="button"
@@ -579,17 +597,17 @@ export function TodayTasksPopup({
                         <button
                           type="button"
                           onClick={() => openChatForJourney(task)}
-                          className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-black text-emerald-900"
-                          style={{
-                            background: 'rgba(167,243,208,0.45)',
-                            border: '1px solid rgba(110,231,183,0.4)',
-                          }}
+                          className="flex items-center justify-center gap-1.5 rounded-xl bg-white py-2.5 text-[11px] font-black text-emerald-800 shadow-[0_1px_3px_rgba(4,47,36,0.08)] ring-1 ring-emerald-200 transition hover:bg-emerald-50 active:scale-[0.98]"
                         >
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          מעבר לצ׳אט
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-linear-to-br from-teal-500 to-emerald-500 text-white">
+                            <MessageCircle className="h-3 w-3" aria-hidden />
+                          </span>
+                          לדבר על זה עם אלמוג
                         </button>
                       </div>
+                      </motion.div>
                     ) : null}
+                    </AnimatePresence>
                   </article>
                 );
               })}

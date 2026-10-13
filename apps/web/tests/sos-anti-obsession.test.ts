@@ -31,6 +31,19 @@ describe('sos helpers', () => {
     expect(SOS_DAILY_SOFT_LIMIT).toBe(6);
   });
 
+  it('fills leaked [PERSON_NAME] with the real first name', () => {
+    const intervention = buildSosInterventionFromPivot(
+      {
+        category: 'emotional',
+        empathy: 'אני מבין ש[PERSON_NAME] עייף',
+        proposal: { label: 'נשימה', strategy_type: 'emotional_regulation', micro_step: 'נשימה אחת', relation: 'supports' },
+        relatesToRef: null,
+      },
+      'דניאל'
+    );
+    expect(intervention.message).toBe('אני מבין שדניאל עייף');
+  });
+
   it('builds an intervention from an LLM pivot result', () => {
     const intervention = buildSosInterventionFromPivot({
       category: 'emotional',
@@ -45,7 +58,9 @@ describe('sos helpers', () => {
     });
     expect(intervention.used_fallback).toBe(false);
     expect(intervention.message).toContain('אני שומע אותך');
-    expect(intervention.message).toContain('ניקח שלוש נשימות');
+    // הצעד מוצג בכרטיס נפרד — לא משוכפל בהודעה
+    expect(intervention.message).not.toContain('ניקח שלוש נשימות');
+    expect(intervention.micro_step).toBe('ניקח שלוש נשימות');
   });
 
   it('withTimeout rejects slow promises with SOS_LLM_TIMEOUT', async () => {

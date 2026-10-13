@@ -11,7 +11,8 @@ import { APP_HOME_PATH } from '../../lib/navigation/app-home-path';
 
 interface MobileHeaderProps {
   user: User;
-  title?: string;
+  /** שם מלא מהפרופיל (מקור אמת) — עדיף על user_metadata */
+  profileFullName?: string | null;
 }
 
 const menuItems = [
@@ -22,11 +23,11 @@ const menuItems = [
   { href: '/profile',    label: 'הפרופיל שלי',  icon: UserCircle, color: '#f59e0b' },
 ];
 
-export function MobileHeader({ user, title }: MobileHeaderProps) {
+export function MobileHeader({ user, profileFullName }: MobileHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'משתמש';
-  const firstName = String(fullName).trim().split(/\s+/)[0] || 'משתמש';
+  const fullName = String(profileFullName || user.user_metadata?.full_name || '').trim();
+  const firstName = fullName.split(/\s+/)[0] || '';
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -36,54 +37,59 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
 
   return (
     <>
-      <header className="fixed top-0 inset-e-0 inset-s-0 z-50 safe-area-top overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #047857 0%, #059669 50%, #10b981 100%)' }}>
-
-        <motion.div className="container-mobile h-16 flex items-center justify-between gap-3 relative z-10">
-          <Link href={APP_HOME_PATH} prefetch className="no-tap-highlight min-w-[72px]" onClick={() => setIsMenuOpen(false)}>
-            <motion.div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontFamily: "'Rubik','Heebo',sans-serif" }}>
-              {title || 'NuraWell'}
-            </motion.div>
-          </Link>
-
-          <Link
-            href={APP_HOME_PATH}
-            prefetch
-            aria-label="מעבר למסך הבית"
-            className="absolute left-1/2 -translate-x-1/2 no-tap-highlight"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element -- static brand SVG */}
-            <img
-              src="/brand/nurawell-special-on-dark.svg"
-              alt="NuraWell"
-              width={112}
-              height={22}
-              style={{ display: 'block', height: 22, width: 'auto' }}
-            />
-          </Link>
-
-          <motion.div className="flex items-center gap-2">
-            <NotificationsBellButton />
+      <header
+        className="fixed top-0 inset-e-0 inset-s-0 z-50 safe-area-top border-b border-emerald-900/8"
+        style={{
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.82), rgba(244,251,247,0.72))',
+          backdropFilter: 'saturate(160%) blur(18px)',
+          WebkitBackdropFilter: 'saturate(160%) blur(18px)',
+          boxShadow: '0 4px 24px rgba(4,47,36,0.06)',
+        }}
+      >
+        <div className="container-mobile h-16 flex items-center justify-between gap-3 relative z-10">
+          {/* RTL: הילד הראשון בצד ימין — ההמבורגר בימין */}
+          <div className="flex min-w-[96px] items-center justify-start">
             <button
               aria-label={isMenuOpen ? 'סגור תפריט' : 'פתח תפריט'}
               className="w-[42px] h-[42px] rounded-[14px] flex flex-col items-center justify-center gap-[4px] transition-all duration-200 hover:scale-105 active:scale-90"
-              style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15)' }}
+              style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(4,120,87,0.14)', boxShadow: '0 1px 2px rgba(4,47,36,0.06), inset 0 1px 0 rgba(255,255,255,0.9)' }}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               <AnimatePresence mode="wait" initial={false}>
                 {isMenuOpen ? (
                   <motion.span key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                    <X className="w-5 h-5 text-white" />
+                    <X className="w-5 h-5 text-emerald-900" />
                   </motion.span>
                 ) : (
                   <motion.span key="menu" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                    <Menu className="w-5 h-5 text-white" />
+                    <Menu className="w-5 h-5 text-emerald-900" />
                   </motion.span>
                 )}
               </AnimatePresence>
             </button>
-          </motion.div>
-        </motion.div>
+          </div>
+
+          <Link
+            href={APP_HOME_PATH}
+            prefetch
+            aria-label="NuraWell — מעבר למסך הבית"
+            className="absolute left-1/2 -translate-x-1/2 no-tap-highlight"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- static brand SVG */}
+            <img
+              src="/brand/nurawell-special.svg"
+              alt="NuraWell"
+              width={122}
+              height={24}
+              style={{ display: 'block', height: 24, width: 'auto' }}
+            />
+          </Link>
+
+          <div className="flex min-w-[96px] items-center justify-end">
+            <NotificationsBellButton />
+          </div>
+        </div>
 
         <AnimatePresence>
           {isMenuOpen && (
@@ -131,7 +137,7 @@ export function MobileHeader({ user, title }: MobileHeaderProps) {
                 </button>
                 <motion.div className="flex items-center gap-2.5 border-t border-gray-100 px-5 py-3">
                   <UserCircle className="h-4 w-4 text-gray-400" />
-                  <p className="text-xs font-medium text-gray-400">שלום, {firstName}</p>
+                  <p className="text-xs font-medium text-gray-500">{firstName ? `שלום ${firstName}` : 'שלום'} 👋</p>
                 </motion.div>
               </motion.div>
             </motion.div>

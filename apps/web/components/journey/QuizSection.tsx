@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, ArrowLeft, HelpCircle, ClipboardList, RotateCcw } from 'lucide-react';
 import type { QuizQuestion } from '../../lib/types/journey';
-import { AlmogLessonFeedback } from './AlmogLessonFeedback';
+import { StaticAnswerFeedback } from './StaticAnswerFeedback';
 import { AlmogCompletionHero } from './AlmogPresence';
 import { JourneyResultsDrawer } from './JourneyResultsDrawer';
 import { QuizResultMapCard } from './JourneyResultsMap';
@@ -248,16 +248,7 @@ export function QuizSection({
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden"
                 >
-                  <AlmogLessonFeedback
-                    isCorrect={isCorrect}
-                    tone="quiz"
-                    interactionType="quiz"
-                    score={isCorrect ? 90 : 40}
-                    stepId={stepId}
-                    fallback={
-                      <p className="text-sm leading-relaxed text-gray-800">{question.explanation}</p>
-                    }
-                  />
+                  <StaticAnswerFeedback isCorrect={isCorrect} explanation={question.explanation} />
                 </motion.div>
               )}
             </AnimatePresence>

@@ -93,10 +93,10 @@ export function cronOpsNotificationTitle(
   const first = extractFirstName(fullName);
   switch (action) {
     case 'celebrate':
-      return `יופי, ${first}! · מאלמוג`;
+      return first ? `יופי, ${first}! · מאלמוג` : 'יופי! · מאלמוג';
     case 'check_in':
       return `רגע קצר · מאלמוג`;
     default:
-      return `${first} · מאלמוג`;
+      return first ? `${first} · מאלמוג` : 'מאלמוג 🌿';
   }
 }

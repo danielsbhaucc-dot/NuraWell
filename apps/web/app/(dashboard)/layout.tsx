@@ -79,9 +79,9 @@ export default async function DashboardLayout({
           <div className="min-h-screen bg-dashboard">
             <DolevFirstLoginHost show={Boolean(showDolevWelcome)} profile={profileForDrawer} />
             <AlmogFirstLoginHost show={Boolean(showAlmogWelcome)} profile={profileForDrawer} />
-            <MobileHeader user={user} />
+            <MobileHeader user={user} profileFullName={profile?.full_name ?? null} />
             <DemoAccessBanner />
-            <main id="main-content" className="pb-24 pt-16 min-h-screen page-enter" tabIndex={-1}>
+            <main id="main-content" className="pb-44 pt-16 min-h-screen page-enter" tabIndex={-1}>
               {children}
             </main>
             <BottomNav />
