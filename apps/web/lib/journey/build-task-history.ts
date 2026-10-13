@@ -388,7 +388,7 @@ export async function buildTaskHistoryReport(
   /** רוחב טווח לסקירת רצף — מספיק 90 יום להצגת best_streak גם אם הטווח קצר */
   const streakWindowKey = jerusalemDateKey(addDays(now, -89));
 
-  const [{ data: rawSteps }, { data: rawProgress }, { data: rawExecutions }, almogDroppedRes] =
+  const [{ data: rawSteps }, { data: rawProgress }, { data: rawExecutions }, almogDroppedRes, almogOpenRes] =
     await Promise.all([
       supabase
         .from('journey_steps')
@@ -412,11 +412,74 @@ export async function buildTaskHistoryReport(
         .eq('status', 'dropped')
         .order('given_at', { ascending: false })
         .limit(100),
+      // משימות אלמוג פעילות/מוקפאות/שהושלמו — אותו SSOT כמו בית/תוכנית, כדי שההיסטוריה תכלול את כולן.
+      supabase
+        .from('almog_assignments')
+        .select('id, title, schedule, status, given_at, history')
+        .eq('user_id', userId)
+        .in('status', ['active', 'frozen', 'completed'])
+        .order('given_at', { ascending: false })
+        .limit(100),
     ]);
 
-  const steps: StepRow[] = (rawSteps ?? []) as StepRow[];
-  const progRows: ProgressRow[] = (rawProgress ?? []) as ProgressRow[];
-  const allExecutions: ExecutionRow[] = (rawExecutions ?? []) as ExecutionRow[];
+  const steps: StepRow[] = [...((rawSteps ?? []) as StepRow[])];
+  const progRows: ProgressRow[] = [...((rawProgress ?? []) as ProgressRow[])];
+  const allExecutions: ExecutionRow[] = [...((rawExecutions ?? []) as ExecutionRow[])];
+
+  /**
+   * משימות אלמוג → "צעד" וירטואלי, כדי שיעברו את אותו חישוב ימים/רצפים כמו משימות המסע.
+   * ביצועים נלקחים מ-history (action='done') — שם נרשם "סמן בוצע" של משימת אלמוג.
+   */
+  type AlmogOpenRow = {
+    id: string;
+    title: string;
+    schedule: string | null;
+    status: string;
+    given_at: string;
+    history: Array<{ at?: string; action?: string; note?: string }> | null;
+  };
+  const almogOpen = ((almogOpenRes as { data?: unknown }).data ?? []) as AlmogOpenRow[];
+  if (almogOpen.length > 0) {
+    const ALMOG_STEP_ID = 'almog-assignments';
+    const taskStatuses: Record<string, TaskStatusEntry> = {};
+    const tasksRaw = almogOpen.map((a) => {
+      const schedule = a.schedule === 'one_time' ? 'one_time' : a.schedule === 'weekly' ? 'weekly' : 'daily';
+      taskStatuses[a.id] = {
+        status: 'accepted',
+        decided_at: a.given_at,
+        execution_done: a.status === 'completed',
+      } as TaskStatusEntry;
+      for (const h of a.history ?? []) {
+        if (h?.action !== 'done' || typeof h.at !== 'string') continue;
+        allExecutions.push({
+          step_id: ALMOG_STEP_ID,
+          task_id: a.id,
+          date_key: jerusalemDateKey(new Date(h.at)),
+          slot: 'full_day',
+          completed_at: h.at,
+          source: 'manual',
+          note: null,
+        } as ExecutionRow);
+      }
+      return {
+        id: a.id,
+        title: a.title,
+        emoji: '🌿',
+        description: 'משימה מאלמוג',
+        schedule,
+        weekly_day: schedule === 'weekly' ? new Date(a.given_at).getDay() : null,
+      };
+    });
+    steps.push({
+      id: ALMOG_STEP_ID,
+      title: 'משימות מאלמוג',
+      step_number: 0,
+      is_published: true,
+      tasks: tasksRaw,
+    } as unknown as StepRow);
+    progRows.push({ step_id: ALMOG_STEP_ID, task_statuses: taskStatuses } as unknown as ProgressRow);
+    allExecutions.sort((x, y) => x.completed_at.localeCompare(y.completed_at));
+  }
 
   /** index: stepId → progress row */
   const progByStep = new Map<string, ProgressRow>();

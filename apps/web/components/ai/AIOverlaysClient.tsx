@@ -1,4 +1,5 @@
 'use client';
+import { useHideOnScrollDown } from '@/lib/hooks/use-hide-on-scroll-down';
 
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
@@ -63,6 +64,7 @@ function useReminderSelfHeal() {
 }
 
 function ChatFabPlaceholder({ onOpen }: { onOpen: () => void }) {
+  const fabHidden = useHideOnScrollDown();
   return (
     <button
       type="button"
@@ -72,6 +74,10 @@ function ChatFabPlaceholder({ onOpen }: { onOpen: () => void }) {
       style={{
         bottom: 'calc(7.25rem + env(safe-area-inset-bottom, 0px))',
         right: 'calc(1rem + env(safe-area-inset-right, 0px))',
+        transform: fabHidden ? 'translateY(140%) scale(0.85)' : undefined,
+        opacity: fabHidden ? 0 : 1,
+        pointerEvents: fabHidden ? 'none' : undefined,
+        transition: 'transform 220ms ease, opacity 220ms ease',
         background: 'linear-gradient(145deg, #047857, #10b981)',
         boxShadow: '0 10px 28px rgba(16,185,129,0.35)',
       }}

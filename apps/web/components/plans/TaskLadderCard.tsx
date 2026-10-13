@@ -1,4 +1,5 @@
 'use client';
+import { MessageCircle } from 'lucide-react';
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
@@ -80,16 +81,19 @@ export function TaskLadderCard({ task, onChanged }: { task: LadderCardTask; onCh
           ))}
         </ol>
       ) : null}
-      <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" size="sm" disabled={!task.canStepDown} onClick={() => setSheet('easier')}>
+      <div className="grid grid-cols-3 gap-2">
+        <button type="button" disabled={!task.canStepDown} onClick={() => setSheet('easier')} className="inline-flex min-h-10 items-center justify-center gap-1 rounded-xl bg-amber-50 px-2 text-[13px] font-bold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100 active:scale-[0.98] disabled:opacity-40">
+          <span aria-hidden>🌱</span>
           {easierLabel}
-        </Button>
-        <Button variant="secondary" size="sm" disabled={!task.canStepUp} onClick={() => setSheet('harder')}>
+        </button>
+        <button type="button" disabled={!task.canStepUp} onClick={() => setSheet('harder')} className="inline-flex min-h-10 items-center justify-center gap-1 rounded-xl bg-emerald-50 px-2 text-[13px] font-bold text-emerald-800 ring-1 ring-emerald-200 transition hover:bg-emerald-100 active:scale-[0.98] disabled:opacity-40">
+          <span aria-hidden>💪</span>
           קל לי
-        </Button>
-        <Button variant="ghost" size="sm" onClick={() => dispatchOpenAlmogChatWithPrefill(`לגבי המשימה "${task.title}" — `)}>
-          לדבר עם אלמוג
-        </Button>
+        </button>
+        <button type="button" onClick={() => dispatchOpenAlmogChatWithPrefill(`לגבי המשימה "${task.title}" — `)} className="inline-flex min-h-10 items-center justify-center gap-1 rounded-xl bg-linear-to-br from-emerald-600 to-teal-500 px-2 text-[13px] font-bold text-white shadow-[0_4px_12px_rgba(5,150,105,0.25)] transition hover:brightness-105 active:scale-[0.98]">
+          <MessageCircle className="h-3.5 w-3.5" aria-hidden />
+          לאלמוג
+        </button>
       </div>
       {msg ? (
         <p role="status" className="text-sm font-semibold text-primary-800">

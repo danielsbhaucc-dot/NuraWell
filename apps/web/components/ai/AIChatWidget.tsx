@@ -1,4 +1,5 @@
 'use client';
+import { useHideOnScrollDown } from '@/lib/hooks/use-hide-on-scroll-down';
 import { RetypingTitle } from './RetypingTitle';
 import { CrisisResourcesCard } from '@/components/safety/CrisisResourcesCard';
 import { detectCrisisSignals } from '@/lib/safety/crisis-detector';
@@ -518,6 +519,7 @@ export interface AIChatWidgetProps {
 }
 
 export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidgetProps) {
+  const fabHidden = useHideOnScrollDown();
   const overlayRoot = useAppOverlayRoot();
   const greeting = usePersonalGreeting();
   const displayName = firstName?.trim() || '';
@@ -1319,9 +1321,12 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
             style={{
               bottom: 'calc(7.25rem + env(safe-area-inset-bottom, 0px))',
               right: 'calc(1rem + env(safe-area-inset-right, 0px))',
+              pointerEvents: fabHidden ? 'none' : undefined,
               background: 'linear-gradient(145deg, #047857, #10b981)',
               boxShadow: '0 10px 28px rgba(16,185,129,0.35)',
             }}
+            animate={{ y: fabHidden ? 120 : 0, opacity: fabHidden ? 0 : 1 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
             whileTap={{ scale: 0.94 }}
           >
             <MessageCircle className="h-7 w-7 md:h-8 md:w-8" strokeWidth={2} />
