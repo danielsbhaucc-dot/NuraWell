@@ -1,3 +1,4 @@
+import { withAiUser } from '@/lib/ai/usage-meter';
 /**
  * אורקסטרטור Memory Consolidation — אצווה יומית (05:00 IL, master cron).
  */
@@ -164,10 +165,10 @@ export async function runMemoryConsolidationBatch(
         continue;
       }
 
-      const llmResult = await consolidateMemoryWithLlm({
+      const llmResult = await withAiUser(userId, () => consolidateMemoryWithLlm({
         insights,
         pendingLogs: userLogs,
-      });
+      }));
 
       if (llmResult.operations.length > 0) {
         const exec = await executeMemoryOperations({

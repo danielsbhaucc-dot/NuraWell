@@ -1,3 +1,4 @@
+import { enterAiUsage } from '@/lib/ai/usage-meter';
 import { NextResponse } from 'next/server';
 
 import { requireApiSession } from '../../../../../lib/api/route-guards';
@@ -17,6 +18,7 @@ export async function GET(request: Request) {
     const { supabase, user } = auth;
     const admin = createAdminClient();
 
+    enterAiUsage({ userId: user.id });
     const { recommendation, used_fallback, model } = await buildAdaptiveNextStep({
       supabase,
       admin,

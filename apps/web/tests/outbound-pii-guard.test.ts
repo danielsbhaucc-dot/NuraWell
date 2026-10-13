@@ -1,4 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+// Next.js provides globalThis.AsyncLocalStorage at runtime; mirror that here (before usage-meter loads).
+vi.hoisted(async () => {
+  const { AsyncLocalStorage } = await import('node:async_hooks');
+  (globalThis as unknown as { AsyncLocalStorage: unknown }).AsyncLocalStorage = AsyncLocalStorage;
+});
 import { meteredFetch, withAiUsage } from '@/lib/ai/usage-meter';
 import { _setPiiSeedLoader, _setPiiDirectoryLoader } from '@/lib/ai/privacy/outbound-pii-guard';
 
@@ -98,5 +103,23 @@ describe('central outbound PII guard (meteredFetch)', () => {
       })
     );
     expect(sent[0]).not.toMatch(/נועה|ברקוביץ/);
+    expect(sent[0]).toContain('[[USER_FULL_NAME]]'); // user seed, not directory
+  });
+});
+
+describe('per-user scope (withAiUser) inside a cron context', () => {
+  it('uses only that user’s seed, stable tokens, nested inside enterAiUsage-like scope', async () => {
+    const { withAiUser } = await import('@/lib/ai/usage-meter');
+    const seen: string[] = [];
+    _setPiiSeedLoader(async (id) => (id === UID ? { full_name: 'נועה ברקוביץ' } : { full_name: 'אבי לוי' }));
+    const { sent, base } = capture(() => new Response(JSON.stringify({ choices: [{ message: { content: '[[USER_FIRST_NAME]] ✓' } }] })));
+    await withAiUsage({ feature: 'notify:master' }, () =>
+      withAiUser(UID, async () => {
+        const r = await meteredFetch(base)(URL_, { method: 'POST', body: JSON.stringify({ model: 'x', messages: [{ role: 'user', content: 'נועה ברקוביץ ונועה' }] }) });
+        seen.push((await r.json()).choices[0].message.content);
+      })
+    );
+    expect(sent[0]).toContain('[[USER_FULL_NAME]] ו[[USER_FIRST_NAME]]');
+    expect(seen[0]).toBe('נועה ✓');
   });
 });

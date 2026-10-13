@@ -1,3 +1,4 @@
+import { enterAiUsage } from '@/lib/ai/usage-meter';
 import { NextResponse } from 'next/server';
 
 import { requireApiSession } from '../../../../../lib/api/route-guards';
@@ -14,6 +15,7 @@ export async function GET(request: Request) {
     if (!auth.ok) return auth.response;
 
     const { supabase, user } = auth;
+    enterAiUsage({ userId: user.id });
     const { stats, insight, used_fallback, model } = await buildTrendInsight({
       supabase,
       userId: user.id,

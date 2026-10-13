@@ -1,3 +1,4 @@
+import { enterAiUsage } from '@/lib/ai/usage-meter';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -138,6 +139,7 @@ export async function POST(request: Request) {
     };
 
     if (!parsed.data.persist) {
+      enterAiUsage({ userId: user.id });
       result = await runOnboardingChatTurn({
         messages,
         path,
