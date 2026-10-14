@@ -37,6 +37,7 @@ import {
 import { taskReportHintToPayload, type TaskReportHint } from '../../lib/ai/task-report-hint';
 import { guideContextHintToPayload, type GuideContextHint } from '../../lib/ai/guide-context-hint';
 import { ChatSessionInbox } from './ChatSessionInbox';
+import { closeReasonLabel } from '../../lib/ai/chat-sessions/close-reason';
 import { AiChatPrivacyNotice } from './AiChatPrivacyNotice';
 import { AlmogChatUiBlock } from './AlmogChatUiBlock';
 import { SecureVaultBox } from './SecureVaultBox';
@@ -646,6 +647,9 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     void autoCloseStaleChatSessionsApi()
       .then((result) => {
         if (result.closedSessionIds.length === 0) return;
+        // the thread on screen was just auto-closed → show it as closed (quietly, no notification)
+        const current = sessionIdRef.current;
+        if (current && result.closedSessionIds.includes(current)) void refreshChatSession(current);
         return fetchChatSessionsList().then(setSessionList);
       })
       .catch(() => {
@@ -1843,6 +1847,10 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
             >
               {isSessionClosed && (
                 <div className="mb-2 space-y-2">
+                  <p className="flex items-center justify-center gap-1.5 text-center text-[11.5px] font-medium text-slate-400">
+                    <Lock className="h-3 w-3" aria-hidden />
+                    {closeReasonLabel(chatSession?.close_reason)}
+                  </p>
                   <button
                     type="button"
                     onClick={() => setSummaryExpanded((value) => !value)}

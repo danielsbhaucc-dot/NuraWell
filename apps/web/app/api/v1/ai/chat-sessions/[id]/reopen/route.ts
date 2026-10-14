@@ -30,6 +30,8 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const now = new Date().toISOString();
+  // clear the close reason when the column exists (probe once; older schema just skips it)
+  const reasonColumn = !(await auth.supabase.from('chat_sessions').select('close_reason').limit(1)).error;
 
   const { data, error } = await queryWithColumnFallbacks<Record<string, unknown>>(
     CHAT_SESSION_DETAIL_SELECTS,
@@ -40,6 +42,7 @@ export async function POST(request: Request, context: RouteContext) {
           status: 'open',
           closed_at: null,
           updated_at: now,
+          ...(reasonColumn ? { close_reason: null } : {}),
         })
         .eq('id', id)
         .eq('user_id', auth.user.id)

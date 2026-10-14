@@ -59,6 +59,7 @@ export async function GET(request: Request, context: RouteContext) {
         session_kind: 'chat',
         title: session.title ?? null,
         summary: session.summary,
+        close_reason: session.close_reason ?? null,
       },
       messages: turns,
       awaiting_assistant: isAwaitingAssistantResponse(turns),

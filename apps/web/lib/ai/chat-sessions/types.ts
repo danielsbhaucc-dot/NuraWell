@@ -1,3 +1,5 @@
+import type { ChatCloseReason } from './close-reason';
+
 export type ChatSessionStatus = 'open' | 'closed';
 
 export type ChatSessionKind = 'chat' | 'profile_update';
@@ -12,6 +14,7 @@ export type ChatSessionListItem = {
   created_at: string;
   updated_at: string;
   closed_at: string | null;
+  close_reason?: ChatCloseReason | null;
   preview_text: string | null;
   message_count: number;
 };
@@ -28,6 +31,7 @@ export type ChatSessionRow = {
   created_at: string;
   updated_at: string;
   closed_at: string | null;
+  close_reason?: ChatCloseReason | null;
 };
 
 export type ChatTranscriptEmojiReaction = {

@@ -25,6 +25,7 @@ export async function POST(request: Request, context: RouteContext) {
           status: result.session.status,
           title: result.session.title,
           summary: result.session.summary,
+          close_reason: result.session.close_reason ?? 'user',
         },
       memories_extracted: result.memories_extracted,
       summary: result.summary,

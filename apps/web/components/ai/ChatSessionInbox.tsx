@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { ChevronDown, Loader2, Lock, MessageSquarePlus, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RetypingTitle } from './RetypingTitle';
+import { closeReasonLabel } from '../../lib/ai/chat-sessions/close-reason';
 import { CHAT_TOPIC_ORDER, detectSessionTopic } from '../../lib/client/chat-session-topics';
 import { buildChatSessionListTitle } from '../../lib/ai/chat-sessions/session-list-title';
 import { formatSessionRelativeTime } from '../../lib/client/chat-session-messages';
@@ -199,7 +200,12 @@ function SessionRow({
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden />
                 פתוחה
               </span>
-            ) : null}
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-400/10 px-2 py-[1px] text-[10px] font-semibold text-slate-400">
+                <Lock className="h-2.5 w-2.5" aria-hidden />
+                {closeReasonLabel(session.close_reason)}
+              </span>
+            )}
           </span>
         </span>
       </div>

@@ -1,3 +1,4 @@
+import type { ChatCloseReason } from '../ai/chat-sessions/close-reason';
 export type ChatSessionKindClient = 'chat' | 'profile_update';
 
 export type ChatSessionListItemClient = {
@@ -9,6 +10,7 @@ export type ChatSessionListItemClient = {
   created_at: string;
   updated_at: string;
   closed_at: string | null;
+  close_reason?: ChatCloseReason | null;
   preview_text: string | null;
   message_count: number;
 };
@@ -19,6 +21,7 @@ export type ChatSessionClientState = {
   session_kind?: ChatSessionKindClient;
   title?: string | null;
   summary: string | null;
+  close_reason?: ChatCloseReason | null;
 };
 
 export async function autoCloseStaleChatSessionsApi(): Promise<{ closedSessionIds: string[] }> {

@@ -15,6 +15,7 @@ import {
 import { generateChatSessionTitle, sanitizeChatSessionTitle, titleFromSummaryFallback } from './session-title';
 import { summarizeChatSession } from './summarize-session';
 import type { ChatSessionRow } from './types';
+import type { ChatCloseReason } from './close-reason';
 
 export type CloseChatSessionResult = {
   session: ChatSessionRow;
@@ -35,7 +36,7 @@ export type CloseChatSessionResult = {
  */
 export async function closeChatSession(
   supabase: SupabaseClient,
-  params: { sessionId: string; userId: string }
+  params: { sessionId: string; userId: string; reason?: ChatCloseReason }
 ): Promise<CloseChatSessionResult> {
   const { data: session, error: sessionErr } = await selectChatSessionRow(
     supabase,
@@ -79,6 +80,7 @@ export async function closeChatSession(
     summary,
     closed_at: now,
     updated_at: now,
+    close_reason: params.reason ?? 'user',
   };
   if (title) updatePayload.title = title;
 
@@ -94,8 +96,9 @@ export async function closeChatSession(
         .single()
   );
 
-  if (updatedResult.error && isMissingColumnError(updatedResult.error) && title) {
-    const { title: _title, ...withoutTitle } = updatePayload;
+  if (updatedResult.error && isMissingColumnError(updatedResult.error)) {
+    // older schema: drop optional columns (title / close_reason) and retry
+    const { title: _title, close_reason: _reason, ...withoutTitle } = updatePayload;
     updatedResult = await queryWithColumnFallbacks<Record<string, unknown>>(
       CHAT_SESSION_CLOSE_SELECTS,
       (select) =>

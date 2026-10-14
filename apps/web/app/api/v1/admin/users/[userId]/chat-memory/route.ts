@@ -357,7 +357,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   try {
     if (action === 'close') {
-      const result = await closeChatSession(admin, { sessionId, userId });
+      const result = await closeChatSession(admin, { sessionId, userId, reason: 'admin' });
       return NextResponse.json({
         session: {
           id: result.session.id,

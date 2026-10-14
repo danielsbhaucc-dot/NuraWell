@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { closeChatSession } from './close-session';
+import { FAREWELL_CLOSE_MS, isFarewellMessage, type ChatCloseReason } from './close-reason';
 
 /** סשן נסגר אוטומטית אם המשתמש לא הגיב תוך X שעות מתשובת אלמוג האחרונה (ברירת מחדל: שעה). */
 export function staleChatSessionMs(): number {
@@ -61,6 +62,31 @@ export function shouldAutoCloseOpenSession(params: {
 
 const ABANDONED_USER_TURN_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Which close (if any) applies: farewell → almog_ended after 15 min, idle → auto_idle,
+ * user turn never answered for 24h → auto_abandoned.
+ */
+export function autoCloseReason(params: {
+  lastTurnRole: 'user' | 'assistant' | null;
+  lastTurnAt: string | null;
+  sessionUpdatedAt: string;
+  lastUserText?: string | null;
+  nowMs?: number;
+}): ChatCloseReason | null {
+  const nowMs = params.nowMs ?? Date.now();
+  if (params.lastTurnRole === 'user') return shouldAutoCloseOpenSession(params) ? 'auto_abandoned' : null;
+  if (shouldAutoCloseOpenSession(params)) return 'auto_idle';
+  if (params.lastTurnRole === 'assistant' && isFarewellMessage(params.lastUserText)) {
+    const ts = new Date(resolveSessionLastActivity({ sessionUpdatedAt: params.sessionUpdatedAt, lastInteractionAt: params.lastTurnAt })).getTime();
+    if (Number.isFinite(ts) && nowMs - ts >= FAREWELL_CLOSE_MS) return 'almog_ended';
+  }
+  return null;
+}
+
+function candidateCutoffIso(): string {
+  return new Date(Date.now() - Math.min(staleChatSessionMs(), FAREWELL_CLOSE_MS)).toISOString();
+}
+
 type OpenSessionRow = {
   id: string;
   updated_at: string;
@@ -69,6 +95,7 @@ type OpenSessionRow = {
 type LastTurnInfo = {
   role: 'user' | 'assistant';
   created_at: string;
+  lastUserText?: string | null;
 };
 
 async function fetchLastTurnBySession(
@@ -81,7 +108,7 @@ async function fetchLastTurnBySession(
 
   const { data, error } = await supabase
     .from('ai_interactions')
-    .select('session_id, role, created_at')
+    .select('session_id, role, created_at, content')
     .eq('user_id', userId)
     .in('session_id', sessionIds)
     .in('role', ['user', 'assistant'])
@@ -91,11 +118,15 @@ async function fetchLastTurnBySession(
 
   for (const row of data ?? []) {
     const sid = row.session_id as string;
-    if (!map.has(sid)) {
+    const cur = map.get(sid);
+    if (!cur) {
       map.set(sid, {
         role: row.role as LastTurnInfo['role'],
         created_at: row.created_at as string,
+        lastUserText: row.role === 'user' ? ((row.content as string | null) ?? null) : undefined,
       });
+    } else if (cur.lastUserText === undefined && row.role === 'user') {
+      cur.lastUserText = (row.content as string | null) ?? null;
     }
   }
   return map;
@@ -115,7 +146,7 @@ export async function autoCloseStaleSessionsForUser(
     .select('id, updated_at')
     .eq('user_id', userId)
     .eq('status', 'open')
-    .lt('updated_at', new Date(Date.now() - staleChatSessionMs()).toISOString());
+    .lt('updated_at', candidateCutoffIso());
 
   if (error) throw error;
   const sessions = (openSessions ?? []) as OpenSessionRow[];
@@ -134,19 +165,17 @@ export async function autoCloseStaleSessionsForUser(
     if (opts.deadline && Date.now() > opts.deadline) break;
     const lastTurn = lastBySession.get(session.id) ?? null;
 
-    if (
-      !shouldAutoCloseOpenSession({
-        lastTurnRole: lastTurn?.role ?? null,
-        lastTurnAt: lastTurn?.created_at ?? null,
-        sessionUpdatedAt: session.updated_at,
-        nowMs,
-      })
-    ) {
-      continue;
-    }
+    const reason = autoCloseReason({
+      lastTurnRole: lastTurn?.role ?? null,
+      lastTurnAt: lastTurn?.created_at ?? null,
+      sessionUpdatedAt: session.updated_at,
+      lastUserText: lastTurn?.lastUserText ?? null,
+      nowMs,
+    });
+    if (!reason) continue;
 
     try {
-      await closeChatSession(supabase, { sessionId: session.id, userId });
+      await closeChatSession(supabase, { sessionId: session.id, userId, reason });
       closedSessionIds.push(session.id);
     } catch (err) {
       console.warn('[autoCloseStaleSessionsForUser] close failed', {
@@ -168,7 +197,7 @@ export async function autoCloseStaleSessionsBatch(
   params: { limit?: number; budgetMs?: number } = {}
 ): Promise<{ closed: number; scanned: number; errors: number }> {
   const limit = params.limit ?? 40;
-  const cutoff = new Date(Date.now() - staleChatSessionMs()).toISOString();
+  const cutoff = candidateCutoffIso();
 
   const { data: candidates, error } = await supabase
     .from('chat_sessions')
