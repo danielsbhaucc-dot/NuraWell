@@ -2,9 +2,8 @@ import { withAiUser } from '@/lib/ai/usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ingestConversationToVector } from '../chat-memory/conversation-vector';
 import { rollupUserChatContext } from '../chat-memory/session-conversation-file';
-import { extractMemoriesFromTranscript } from '../user-memories/extract-from-transcript';
 import { reconcileSessionMemories } from '../user-memories/reconcile-session-memories';
-import { fetchChatSessionTranscript, formatTranscriptForLlm } from './fetch-transcript';
+import { fetchChatSessionTranscript } from './fetch-transcript';
 import {
   CHAT_SESSION_CLOSE_SELECTS,
   isMissingColumnError,
@@ -12,8 +11,8 @@ import {
   queryWithColumnFallbacks,
   selectChatSessionRow,
 } from './select-fallbacks';
-import { generateChatSessionTitle, sanitizeChatSessionTitle, titleFromSummaryFallback } from './session-title';
-import { summarizeChatSession } from './summarize-session';
+import { sanitizeChatSessionTitle, titleFromSummaryFallback } from './session-title';
+import { buildCloseDigest } from './close-digest';
 import type { ChatSessionRow } from './types';
 import type { ChatCloseReason } from './close-reason';
 
@@ -57,23 +56,14 @@ export async function closeChatSession(
   }
 
   const turns = await fetchChatSessionTranscript(supabase, params);
-  const transcript = formatTranscriptForLlm(turns);
-  const [summary, facts] = await Promise.all([
-    withAiUser(params.userId, () => summarizeChatSession(turns)),
-    withAiUser(params.userId, () => extractMemoriesFromTranscript(transcript)),
-  ]);
-
-  const now = new Date().toISOString();
   const existingTitle = sanitizeChatSessionTitle(normalized.title);
-  let title = existingTitle;
-  if (!title) {
-    const firstUser = turns.find((t) => t.role === 'user')?.content ?? '';
-    title =
-      (await withAiUser(params.userId, () => generateChatSessionTitle({
-        userMessage: firstUser,
-        liveFile: normalized.live_conversation_file,
-      }))) ?? titleFromSummaryFallback(summary);
-  }
+  // one structured LLM call (summary + facts + title if missing); none at all for trivial chats
+  const digest = await withAiUser(params.userId, () =>
+    buildCloseDigest(turns, { needTitle: !existingTitle, liveFile: normalized.live_conversation_file })
+  );
+  const { summary, facts } = digest;
+  const now = new Date().toISOString();
+  const title = existingTitle ?? digest.title ?? titleFromSummaryFallback(summary);
 
   const updatePayload: Record<string, unknown> = {
     status: 'closed',
