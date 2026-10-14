@@ -717,6 +717,7 @@ async function createOpenRouterTextStreamResponse({
   reasoning,
   supportsPromptCache,
   providerOnly,
+  cacheConvId,
 }: {
   apiKey: string;
   referer: string;
@@ -733,6 +734,8 @@ async function createOpenRouterTextStreamResponse({
   reasoning: OpenRouterReasoning | null;
   supportsPromptCache: boolean;
   providerOnly?: readonly string[];
+  /** Stable per-conversation id → x-grok-conv-id (sticky xAI server = prefix cache hits, ~-69% cost in probe). */
+  cacheConvId?: string | null;
 }) {
   const perfT0 = Date.now();
   let perfGenId: string | null = null;
@@ -821,6 +824,7 @@ async function createOpenRouterTextStreamResponse({
       'HTTP-Referer': referer,
       'X-Title': 'NuraWell',
       'X-OpenRouter-Cache': 'false',
+      ...(grokLike && cacheConvId ? { 'x-grok-conv-id': `nw-${cacheConvId}` } : {}),
     });
     console.info('[ai/chat]', { stage: 'writer_upstream_open', model, attempt, status: upstream.status, prep_ms: perfPrepMs, fetch_ms: Date.now() - perfFetchAt, body_chars: requestBody.length });
     if (upstream.ok) break;
@@ -4397,6 +4401,7 @@ async function handleChatPost(request: Request) {
         reasoning: reasoningParam,
         supportsPromptCache: mcfg.supportsPromptCache,
         providerOnly: mcfg.providerOnly,
+        cacheConvId: sessionId,
         onEmptyRetry: emptyRetryHandler,
         onFinish: handleChatFinish,
       });

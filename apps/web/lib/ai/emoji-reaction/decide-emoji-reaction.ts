@@ -23,7 +23,8 @@ import { isGroqLaneAvailable } from '../groq-compat';
 export type { MentorEmojiReaction };
 
 const DECISION_TIMEOUT_MS = 3400;
-const MAX_TOKENS = 140;
+/** gpt-5-mini reasons by default; 140 tokens were eaten by reasoning → empty JSON → heuristic fallback fired instead. */
+const MAX_TOKENS = 400;
 
 const INTENT_VALUES = [
   'crisis_care',
@@ -45,39 +46,41 @@ const decisionSchema = z.object({
   react: z.boolean(),
   emoji: z.string().max(16).optional().nullable(),
   verb: z.string().max(24).optional().nullable(),
-  intent: z.enum(INTENT_VALUES).optional().nullable(),
+  /** Model often invents intent labels ("humor", "hard_day"); a strict enum silently dropped good reactions. */
+  intent: z.string().max(32).optional().nullable(),
 });
 
 const SYSTEM = [
-  'אתה בוחר תגובת אימוג\'י עבור המנטור "אלמוג" — כמו react בוואטסאפ, *בנוסף* לתשובה המילולית.',
+  'אתה מחליט אם אלמוג שם react (אימוג\'י אחד) על הודעת המשתמש, כמו בוואטסאפ. התשובה המילולית נשלחת בכל מקרה.',
   '',
-  'תפקיד האימוג\'י: להעביר *מסר רגשי מדויק* בסימן אחד. לא קישוט, לא ספאם, לא קלישאה חוזרת.',
+  'ברירת המחדל: לא שמים. רוב ההודעות (בערך 2 מתוך 3) לא מקבלות אימוג\'י.',
+  'שמים רק כשיש בהודעה רגע רגשי ברור, שחבר באמת היה מגיב עליו:',
+  '- הצלחה שהוא מספר עליה → אימוג\'י של הנושא כשיש: הליכה 🚶, מים 💧, שינה 😴, עמד בפיתוי 💪, הישג גדול 🔥 🎉. אחרת 👏.',
+  '- משהו מצחיק שהוא כתב (חחח, בדיחה על עצמו) → 😄 😂 😅. למשל "אכלתי את השוקולד של הילדים והאשמתי את הכלב" → 😂.',
+  '- רגע קשה רגיל (יום קשה בעבודה, עייפות, בדידות, עצב) → 🫂 🤍. למשל "היה לי יום ממש קשה" → 🫂.',
+  '- תודה חמה ואישית ("באמת עזרת לי") → ❤️ 🙏. "תודה" קצר — לא.',
   '',
-  'יש לך גישה לכל אימוג\'י בעולם (Unicode מלא). אל תצטמצם ללב/שריר/תודה.',
-  'בחר את הסימן הכי מדויק לסיטואציה — כולל ניואנסים:',
-  '- פחד/חרדה → 🤍 🤗 🫧 🕊️ (לא בהכרח 💙)',
-  '- עייפות/שחיקה → 😮‍💨 🌑 🛏️ ❤️‍🩹',
-  '- געגוע לתמיכה → 🫂 🤲 🫶',
-  '- גאווה גדולה → 🏆 🌟 🚀 🔥 🎉 (לא רק 💪)',
-  '- ניצחון קטן (מים/הליכה/שינה) → אימוג\'י ספציפי לנושא (💧 🚶 😴 🥗 🧘) או 👏 ✅ 🌱',
-  '- תודה חמה → ❤️ 💕 🌹 🙏 🫶',
-  '- הקלה → 😮‍💨 🌿 ☀️ 😌',
-  '- הומור עדין מהמשתמש → 🙂 😊 😉 (לעולם לא הגזמה)',
-  '- מיקוד/התחייבות → 🎯 ⚡ 📌',
+  'לא שמים (react=false):',
+  '- שאלה, בקשה, עדכון יבש, פטפוט, "היי", "אוקיי", "תודה" קצר, דיון על התוכנית.',
+  '- ויכוח, האשמה, עצבים על אלמוג, תירוצים.',
+  '- כשלא בטוח.',
+  '- אף פעם בנושאים רגישים: משבר, פגיעה עצמית, מחשבות אובדניות, הפרעות אכילה (הקאות, צום, בולמוס, משלשלים), אלימות, התעללות, אבל/מוות, מצב רפואי, תרופות, הריון, משקל ומראה הגוף.',
   '',
-  'רוב ההודעות לא מקבלות אימוג\'י. react=true רק כשיש רגע רגשי אמיתי: הצלחה, תודה חמה, כאב/מצוקה שצריך חיבוק, הקלה, ניצחון קטן ברור.',
-  'react=false: שאלה, עדכון שגרתי, פטפוט, בקשת מידע, "אוקיי", או כשאין אימוג\'י שמוסיף משהו מעבר לתשובה.',
-  '',
-  'חוקי ברזל:',
-  '- לעולם לא 😂 🤣 💀 על כאב/כישלון/עצבות/משבר.',
-  '- אימוג\'י יחיד בלבד (גרפמה אחת, למשל ❤️‍🩹 או 👍🏽). לא שניים.',
-  '- verb קצר בעברית לטולטיפ (בלי שם המנטור): תומך / מחבק / אהב / חיזק / עודד / הזדהה / מחא כפיים / שמח איתך / מרגיע / חוגג / ציין / איתך / מעריך',
-  '- גוון: אל תחזור תמיד על אותו אימוג\'י לאותה קטגוריה — התאם למילים של ההודעה הזו.',
+  'חוקים: אימוג\'י אחד בלבד. אף פעם לא צחוק על כאב או כישלון. האימוג\'י צריך להתאים לתוכן הספציפי.',
+  'verb קצר בעברית לטולטיפ: שמח איתך / מחא כפיים / צחק / איתך / מחבק / אהב.',
   '',
   'החזר JSON בלבד:',
-  '{"react":true,"emoji":"🕊️","verb":"מרגיע","intent":"support"}',
+  '{"react":true,"emoji":"👏","verb":"מחא כפיים","intent":"micro_win"}',
   'או {"react":false,"emoji":null,"verb":null,"intent":"none"}',
 ].join('\n');
+
+/** נושאים רגישים — אף פעם לא react. */
+const SENSITIVE_RE =
+  /(להתאבד|אובדנ|לא רוצה לחיות|שלא אהיה|שלא הייתי|להיעלם|לא אוכל כבר|למות|לפגוע בעצמ|חותכ|חתכתי|הקא|מקיא|להקיא|בולמוס|צום|לא אכלתי .*ימים|משלשל|הפרעת אכילה|אנורקס|בולימ|מכה אותי|הרביץ|התעלל|אונס|הטריד|נפטר|לוויה|יושבים שבעה|(?:^|\s)מת(?:ה|ו)?(?:\s|$)|סרטן|אבחנ|אבחון|תרופ|כדורים|בהריון|הפלה|שוקל|קילו|שמנ|מכוער|הגוף שלי)/;
+
+export function isSensitiveForReaction(text: string): boolean {
+  return SENSITIVE_RE.test(text);
+}
 
 function looksTrivialAck(text: string): boolean {
   const t = text.trim();
@@ -108,12 +111,12 @@ async function decideWithLlm(params: {
       ? `הודעה קודמת של המשתמש (הקשר):\n${params.prior.trim().slice(0, 280)}`
       : null,
     params.intentHint
-      ? `רמז כוונה מהמערכת (לא חובה להיצמד לאימוג'י ספציפי — בחר חופשי ומדויק): ${params.intentHint}${
+      ? `רמז (לא מחייב, מותר גם לא להגיב): ${params.intentHint}${
           params.hints?.length ? ` · ${params.hints.join(', ')}` : ''
         }`
       : null,
     `הודעת המשתמש לתגובה:\n${params.userMessage.slice(0, 900)}`,
-    "בחר אימוג'י *מדויק להודעה הזו* מכל Unicode. אל תתקבע על 💙/💪/❤️ אלא אם הם באמת הכי מדויקים.",
+    "יש פה רגע רגשי ברור (הצלחה / מצחיק / רגע קשה לא רגיש)? אם לא — react=false.",
   ]
     .filter(Boolean)
     .join('\n\n');
@@ -125,9 +128,10 @@ async function decideWithLlm(params: {
     const completion = await client.chat.completions.create(
       {
         model,
-        temperature: 0.55,
+        temperature: 0.2,
         max_tokens: MAX_TOKENS,
         response_format: { type: 'json_object' },
+        ...(hasGroq ? {} : ({ reasoning: { effort: 'minimal' } } as Record<string, unknown>)),
         messages: [
           { role: 'system', content: SYSTEM },
           { role: 'user', content: userContent },
@@ -165,7 +169,10 @@ export async function decideEmojiReaction(
   const userMessage = params.userMessage.trim();
   if (!userMessage || userMessage.length < 2) return null;
 
+  if (isSensitiveForReaction(userMessage)) return null;
+
   const signal = detectReactionSignal(userMessage);
+  if (signal?.intent === 'crisis_care') return null;
 
   if (looksTrivialAck(userMessage) && !signal?.mustReact) return null;
 
