@@ -73,7 +73,7 @@ async function rawOpenRouterChatFetch(
   return fetch(OPENROUTER_URL, { method: 'POST', headers, body, signal });
 }
 
-const FORWARD = ['http-referer', 'x-title', 'x-openrouter-cache'];
+const FORWARD = ['x-grok-conv-id', 'http-referer', 'x-title', 'x-openrouter-cache'];
 function pickForward(h: Record<string, string>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(h)) if (FORWARD.includes(k.toLowerCase())) out[k] = v;
