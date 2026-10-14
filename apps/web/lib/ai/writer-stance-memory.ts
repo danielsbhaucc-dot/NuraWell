@@ -53,8 +53,8 @@ function stickyExpired(stance: ChatWriterStance, now: Date): boolean {
 }
 
 /**
- * ברירת מחדל: הכותב מהנתב/מיזוג כל תור מחדש.
- * Sticky קל בלבד (עד 2 תורים) להמשך עימות ברור — לא על תור רך.
+ * ברירת מחדל: הכותב מהנתב/מיזוג כל הודעה מחדש.
+ * Sticky קל בלבד (עד 2 תורים) להמשך עימות ברור — לא על הודעה רך.
  */
 export function applyStickyWriterStance(opts: {
   turnWriter: ChatWriterKey;

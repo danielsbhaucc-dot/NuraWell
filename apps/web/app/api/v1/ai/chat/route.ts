@@ -353,7 +353,7 @@ const CHAT_ROUTER_PROVIDER_ONLY = (() => {
  * ערכים: latency (ברירת מחדל) | throughput | price | off.
  */
 /**
- * לוג זמנים לפי שלב — שורה אחת לכל תור צ'אט, בלי תוכן/PII (רק מספרים + מזהי debug/writer).
+ * לוג זמנים לפי שלב — שורה אחת לכל הודעה צ'אט, בלי תוכן/PII (רק מספרים + מזהי debug/writer).
  * כיבוי: AI_CHAT_PERF_LOG=off.
  */
 const CHAT_PERF_LOG_ENABLED =
@@ -461,12 +461,12 @@ const CHAT_REASONING_MAX_TOKENS = (() => {
   const n = raw ? Number(raw) : NaN;
   // 1536: max_tokens של חשיבה הוא *תקרה*, לא עלות קבועה — המודל עוצר לבד הרבה
   // לפניה ברוב התורים. שומרים תקרה גבוהה כדי לא לקטוע חשיבה בתורים הרגשיים
-  // המורכבים ביותר. ההאצה מגיעה מהפעלת-חשיבה-מותנית-תור, לא מהורדת התקרה.
+  // המורכבים ביותר. ההאצה מגיעה מהפעלת-חשיבה-מותנית-הודעה, לא מהורדת התקרה.
   return Number.isFinite(n) && n >= 256 && n <= 8192 ? Math.floor(n) : 1536;
 })();
 /**
  * היקף החשיבה (reasoning) — איזה תורים מקבלים חשיבה לפני התשובה:
- *   'always' (ברירת מחדל) — חשיבה בכל תור. *חובה* ל-Qwen: זהו מודל hybrid-thinking,
+ *   'always' (ברירת מחדל) — חשיבה בכל הודעה. *חובה* ל-Qwen: זהו מודל hybrid-thinking,
  *            ובלי reasoning דרך OpenRouter התשובות יוצאות שבורות/נחתכות ובאיכות נמוכה.
  *   'heavy'  — חשיבה רק בתורים כבדים. מהיר יותר אך *פוגע באיכות Qwen* בתורים הקלים
  *            (התשובות נשברות) — לא מומלץ ל-Qwen.
@@ -1389,7 +1389,7 @@ const chatContextRouterSchema = z.object({
   // ⚠️ אופציונלי עם default=false: נתב ישן/מודל שלא מחזיר את השדה לא ישבור את הפרסור.
   needs_principles: z.boolean().optional().default(false),
   // משימות אישיות שאלמוג נתן (almog_assignments) — נטען רק כשהמשתמש מדבר על
-  // משימות/הבטחות/דיווח ביצוע, כדי לא להציף את הפרומפט בכל תור.
+  // משימות/הבטחות/דיווח ביצוע, כדי לא להציף את הפרומפט בכל הודעה.
   needs_assignments: z.boolean().optional().default(false),
   // חסמים שאלמוג מזהה ובמעקב (almog_blockers) — נטען על קושי/חסם/רגש.
   needs_blockers: z.boolean().optional().default(false),
@@ -1426,7 +1426,7 @@ function lowContextDecision(reason: string): ChatContextDecision {
 }
 
 /**
- * זיהוי דטרמיניסטי בעברית של תור "שאלה" ו"בקשת ידע". משמש לשתי מטרות:
+ * זיהוי דטרמיניסטי בעברית של הודעה "שאלה" ו"בקשת ידע". משמש לשתי מטרות:
  *  1. fallback כשהנתב הזול נכשל/חרג מ-timeout — במקום להחזיר "בלי RAG" (שגרם
  *     לתשובות גנריות על שאלות ידע כמו "למה לשתות מים"), מזהים את כוונת השאלה
  *     ומפעילים RAG בהתאם.
@@ -1499,7 +1499,7 @@ function heuristicContextDecision(
     needs_full_progress_report:
       Boolean(opts?.forceHeavy) || memoryHint || goalFocusHint || assignmentsHint,
     needs_journey_knowledge: knowledge || goalFocusHint || assignmentsHint || Boolean(opts?.forceHeavy),
-    // עקרונות נשלפים בנדיבות: כל תור "כבד" אמיתי (שאלה/חסם/רגש/התלבטות) או
+    // עקרונות נשלפים בנדיבות: כל הודעה "כבד" אמיתי (שאלה/חסם/רגש/התלבטות) או
     // ניסוח שמרמז על חוקי תוכנית / "איך להתמודד". זול וסמנטי, אז עדיף לשלוף.
     needs_principles:
       Boolean(opts?.forceHeavy) ||
@@ -1510,7 +1510,7 @@ function heuristicContextDecision(
       signals.blocker_mentioned ||
       Boolean(signals.emotional_hint) ||
       Boolean(signals.avoid_push_requested),
-    // משימות אישיות: רק כשמדברים על משימה/דיווח/הבטחה (לא בכל תור — שומר רזה).
+    // משימות אישיות: רק כשמדברים על משימה/דיווח/הבטחה (לא בכל הודעה — שומר רזה).
     needs_assignments: Boolean(opts?.forceHeavy) || assignmentsHint || goalFocusHint,
     // חסמים: על קושי/חסם/רגש/התלבטות.
     needs_blockers: Boolean(opts?.forceHeavy) || blockerHint,
@@ -2817,7 +2817,7 @@ async function handleChatPost(request: Request) {
     userMessage: lastUserText,
   });
   let v3: ReturnType<typeof routeV3> | null = routingV3Enabled() ? routeV3(lastUserText, heuristicAnalysis.tags) : null;
-  if (v3 && v3.lane !== 'claude_sonnet') {
+  if (v3 && !v3.lane.startsWith('claude')) {
     // abuse-only soft cap: heavy daily spend → cheap lane (never block, never for safety turns)
     const since = new Date(Date.now() - 24 * 3600_000).toISOString();
     const { data: spendRows } = await createAdminClient()
@@ -2871,8 +2871,8 @@ async function handleChatPost(request: Request) {
   }).catch(() => EMPTY_ALMOG_COMMITMENT_CONTEXT);
 
   /**
-   * חשיבה (reasoning) מותנית-תור — רכיב ה-TTFB הדומיננטי של Qwen. מפעילים אותה
-   * רק כשבאמת צריך עומק (תור כבד: שאלה/רגש/חסם/התלבטות). תורים קלים (ברכה/אישור/
+   * חשיבה (reasoning) מותנית-הודעה — רכיב ה-TTFB הדומיננטי של Qwen. מפעילים אותה
+   * רק כשבאמת צריך עומק (הודעה כבד: שאלה/רגש/חסם/התלבטות). תורים קלים (ברכה/אישור/
    * דיווח קצר) עונים מיידית בלי המתנה לחשיבה — האצה דרמטית במקרה הנפוץ, בלי לפגוע
    * באיכות בתורים העמוקים (שם הנתב קובע heavy_context, ובספק תמיד כבד).
    */
@@ -3424,7 +3424,7 @@ async function handleChatPost(request: Request) {
      * שולחים לספק רק את ההכרחי. מדלגים על שכבות זיכרון/פרופיל כבדות וכפולות
      * (dossier, onboarding, coaching style, סיכום מתגלגל, mood כפול) ששמורות
      * לתורים שבאמת צריכים אותן. חוסך טוקנים, מאיץ TTFB, ומקטין סיכוי לקריסה.
-     * הקשר חי (הודעות אחרונות + מה שקרה היום + אותות התור) תמיד נשלח.
+     * הקשר חי (הודעות אחרונות + מה שקרה היום + אותות ההודעה) תמיד נשלח.
      */
     const leanLightTurn = leanContext && !useHeavyContext;
 
@@ -3456,7 +3456,7 @@ async function handleChatPost(request: Request) {
     /**
      * עקרונות אלמוג (חוקי תוכנית + "איך להתמודד עם X") — קו מנחה התנהגותי מחייב.
      * גבוה בעדיפות (מיד אחרי סגנון האימון) כדי שיעצב את התשובה, ולא ייקבר תחת RAG.
-     * נשלף סמנטית לפי התור (needs_principles) — נכנס רק כשרלוונטי.
+     * נשלף סמנטית לפי ההודעה (needs_principles) — נכנס רק כשרלוונטי.
      */
     if (principlesBlock) contextSections.push(principlesBlock);
     if (workingMemoryBlock) contextSections.push(workingMemoryBlock);
@@ -3604,25 +3604,25 @@ async function handleChatPost(request: Request) {
      */
     const writerPersona = buildAlmogWriterPersona(mcfg.writer);
     const continuityAnchor =
-      '[חובה · הקשר] אותו אדם. הודעות *השיחה הזו* = מקור האמת לתור. יעד/משימות/זיכרון = רקע שקט, לא מריבה להמשיך ואל תתוודה עליהם. אם אין תשובה קודמת שלך פה — זו פתיחה. כרטיס הכותב = האופי. ה-DNA לא כלוב.';
+      '[חובה · רצף] אותו אדם. הודעות *השיחה הזו* = מקור האמת להודעה. יעד/משימות/זיכרון = רקע שקט, לא מריבה להמשיך ואל תתוודה עליהם. אם אין תשובה קודמת שלך פה — זו פתיחה. כרטיס הכותב = האופי. ה-DNA לא כלוב.';
     const hasPriorAssistantTurn = recentMessages.some(
       (m) => m.role === 'assistant' && m.content.trim().length > 0
     );
     const freshSessionLine = hasPriorAssistantTurn
       ? null
-      : '[פתיחה] אין תשובה קודמת שלך בשיחה הזו. ההודעה הנוכחית היא הפתיחה. אל תמציא תור קודם. אל תתוודה על טון/פישול/התנשאות שלא הופיעו פה.';
+      : '[פתיחה] אין תשובה קודמת שלך בשיחה הזו. ההודעה הנוכחית היא הפתיחה. אל תמציא הודעה קודמת. אל תתוודה על טון/פישול/התנשאות שלא הופיעו פה.';
     const turnStance = [
       continuityAnchor,
       freshSessionLine,
       writerStancePrompt(heuristicAnalysis.tags),
       stickyResult.stickyApplied
         ? `[נתב] ממשיך ${mcfg.writer} מאותו עימות/גבול. כשהנושא מתחלף חוזרים ל-Terra.`
-        : `[נתב] כותב לפי חוזקה: Claude=גבול, Grok=תירוץ/ויכוח/התקפה, Terra=אמפתיה/שגרה, Llama=קצר. בחירה לתור: ${mcfg.writer}.`,
+        : `[נתב] כותב לפי חוזקה: Claude=גבול, Grok=תירוץ/ויכוח/התקפה, Terra=אמפתיה/שגרה, Llama=קצר. בחירה להודעה: ${mcfg.writer}.`,
     ]
       .filter(Boolean)
       .join('\n');
     if (v3?.light) {
-      // light turn: background-only sections add tokens, not quality
+      // light turn / crisis turn: background-only sections (memory, progress, lessons) add tokens, not quality
       const heavy = /^\[(?:רמזי זיכרון|RAG|זיכרון בין-שיחות|שיחות קודמות|סיכומי שיחות|דו"ח התקדמות|שיעורים קרובים|מדריכים|חומר עזר מהמסע|אסטרטגיית מנטור|תיק זיכרון)/;
       const kept = contextSections.filter((x) => !heavy.test(x.trim()));
       contextSections.splice(0, contextSections.length, ...kept);
@@ -3633,7 +3633,7 @@ async function handleChatPost(request: Request) {
       contextSections.splice(0, contextSections.length, ...b.sections);
     }
     const dynamicSystemPrompt = [
-      '— הקשר לשיחה הזו —',
+      '— מה שידוע לך על השיחה הזו —',
       writerPersona,
       continuityAnchor,
       freshSessionLine,
@@ -4147,7 +4147,7 @@ async function handleChatPost(request: Request) {
 
         /**
          * חילוץ זיכרון מאוחד (Llama 4) — *רקע מלא* דרך after(), לא חוסם את Qwen.
-         * קריאת חילוץ אחת בלבד לתור: בונה את ה-dossier + ai_context + vector facts.
+         * קריאת חילוץ אחת בלבד להודעה: בונה את ה-dossier + ai_context + vector facts.
          * Gating: מדלגים על small-talk ("תודה"/"היי") כדי לא לבזבז טוקנים.
          */
         if (shouldAttemptMemorySync(lastUserText)) {
