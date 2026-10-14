@@ -204,7 +204,7 @@ describe('chat writer routing', () => {
 
   it('covers Terra empathy/coaching and Llama short stances', () => {
     expect(writerStancePrompt(['empathy'])).toMatch(/אמפתיה תותחית|רגש רך|עולם שלו/);
-    expect(writerStancePrompt(['empathy'])).toMatch(/דימוי אחד חזק/);
+    expect(writerStancePrompt(['empathy'])).toMatch(/בלי מטאפורות קבועות/);
     expect(writerStancePrompt(['coaching'])).toMatch(/שגרה\/תזונה/);
     expect(writerStancePrompt(['simple'])).toMatch(/תודה\/עשיתי/);
     expect(writerStancePrompt(['safety'])).toMatch(/גבול\/בטיחות/);
@@ -228,12 +228,12 @@ describe('Almog voice: enter world without people-pleasing', () => {
   });
 
   it('gives each writer a distinct persona card, not a one-line overlay', () => {
-    expect(buildAlmogWriterPersona('grok')).toMatch(/כותב התור: Grok/);
+    expect(buildAlmogWriterPersona('grok')).toMatch(/כותב ההודעה: Grok/);
     expect(buildAlmogWriterPersona('grok')).toMatch(/למה אתה מדבר שטויות/);
     expect(buildAlmogWriterPersona('grok')).not.toMatch(/אם דיברתי מלמעלה/);
-    expect(buildAlmogWriterPersona('claude5')).toMatch(/כותב התור: Claude/);
+    expect(buildAlmogWriterPersona('claude5')).toMatch(/כותב ההודעה: Claude/);
     expect(buildAlmogWriterPersona('claude5')).toMatch(/קו שלא מתקפל/);
-    expect(buildAlmogWriterPersona('terra')).toMatch(/כותב התור: Terra/);
+    expect(buildAlmogWriterPersona('terra')).toMatch(/כותב ההודעה: Terra/);
     expect(buildAlmogWriterPersona('terra')).toMatch(/כניסה ≠ ריצוי/);
     expect(buildAlmogWriterPersona('llama4')).toMatch(/תודה\/עשיתי/);
     expect(buildAlmogWriterPersona('grok')).not.toEqual(buildAlmogWriterPersona('terra'));
