@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { parseLlmJsonObject } from '@/lib/ai/parse-llm-json';
 import { meteredFetch, withAiUser } from '@/lib/ai/usage-meter';
@@ -151,7 +152,32 @@ export async function keptTaskInfo(db: SupabaseClient, id: string): Promise<{ ti
   return { title: info.title, mainTitle: (def as { title?: string }).title, stage: Math.max(1, resolveLadder(def).findIndex((l) => l.level === info.level) + 1) };
 }
 
-export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (c: Cand[]) => Promise<unknown> } = {}) {
+/** Stable fingerprint of a user's candidate tasks (ids, titles, levels, completions). */
+export function taskSetFingerprint(tasks: Cand[]): string {
+  const raw = tasks
+    .map((t) => `${t.id}:${t.level}:${t.done}:${t.title}`)
+    .sort()
+    .join('|');
+  // hashed: the audit log never stores task titles
+  return createHash('sha1').update(raw).digest('hex').slice(0, 16);
+}
+
+async function loadPreviousFingerprints(db: SupabaseClient): Promise<Record<string, string>> {
+  const { data } = await db
+    .from('ceo_audit_log')
+    .select('detail')
+    .eq('event', 'almog_checks')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const fp = (data?.detail as { fingerprints?: unknown } | null)?.fingerprints;
+  return fp && typeof fp === 'object' ? (fp as Record<string, string>) : {};
+}
+
+export async function runNightlyTaskMerge(
+  db: SupabaseClient,
+  deps: { decide?: (c: Cand[]) => Promise<unknown>; previousFingerprints?: Record<string, string> } = {}
+) {
   const { data, error } = await db.rpc('task_dup_candidates', { p_limit: 200 });
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as { user_id: string; tasks: Cand[] }[];
@@ -168,13 +194,23 @@ export async function runNightlyTaskMerge(db: SupabaseClient, deps: { decide?: (
       return parseLlmJsonObject(j.choices?.[0]?.message?.content ?? '');
     });
 
-  const summary = { flaggedUsers: rows.length, mergedTasks: 0, usersMerged: 0, notified: 0, errors: [] as string[] };
+  // Skip users whose duplicate-candidate set is unchanged since the last run (LLM already said "no merge").
+  const prev = deps.previousFingerprints ?? (await loadPreviousFingerprints(db));
+  const fingerprints: Record<string, string> = {};
+  const summary = { flaggedUsers: rows.length, mergedTasks: 0, usersMerged: 0, notified: 0, skippedUnchanged: 0, errors: [] as string[], fingerprints };
   for (const row of rows) {
+    const fp = taskSetFingerprint(row.tasks);
+    fingerprints[row.user_id] = fp;
+    if (prev[row.user_id] === fp) {
+      summary.skippedUnchanged += 1;
+      continue;
+    }
     let decisions: MergeDecision[] = [];
     try {
       decisions = foldOneTimeByBehavior(sanitizeDecisions(await withAiUser(row.user_id, () => decide(row.tasks)), row.tasks), row.tasks);
     } catch (e) {
       summary.errors.push(String(e).slice(0, 200));
+      delete fingerprints[row.user_id]; // retry tomorrow
       continue;
     }
     let merged = 0;
