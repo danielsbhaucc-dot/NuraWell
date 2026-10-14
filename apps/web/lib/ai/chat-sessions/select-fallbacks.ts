@@ -1,3 +1,4 @@
+import { normalizeCloseReason } from './close-reason';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ChatSessionKind, ChatSessionListItem } from './types';
 import type { ChatSessionRow } from './types';
@@ -24,6 +25,7 @@ export function isMissingRelationError(error: PgError): boolean {
 }
 
 export const CHAT_SESSION_LIST_SELECTS = [
+  'id, status, session_kind, title, topic, summary, preview_text, message_count, created_at, updated_at, closed_at, close_reason',
   'id, status, session_kind, title, topic, summary, preview_text, message_count, created_at, updated_at, closed_at',
   'id, status, session_kind, title, summary, preview_text, message_count, created_at, updated_at, closed_at',
   'id, status, session_kind, summary, live_conversation_file, created_at, updated_at, closed_at',
@@ -38,12 +40,14 @@ export const CHAT_SESSION_ROW_SELECTS = [
 ] as const;
 
 export const CHAT_SESSION_CLOSE_SELECTS = [
+  'id, user_id, status, title, summary, live_conversation_file, created_at, updated_at, closed_at, close_reason',
   'id, user_id, status, title, summary, live_conversation_file, created_at, updated_at, closed_at',
   'id, user_id, status, summary, live_conversation_file, created_at, updated_at, closed_at',
   'id, user_id, status, summary, created_at, updated_at, closed_at',
 ] as const;
 
 export const CHAT_SESSION_DETAIL_SELECTS = [
+  'id, status, session_kind, title, summary, closed_at, close_reason',
   'id, status, session_kind, title, summary',
   'id, status, session_kind, summary',
   'id, status, summary',
@@ -75,6 +79,7 @@ export function normalizeChatSessionListItem(row: Record<string, unknown>): Chat
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
     closed_at: (row.closed_at as string | null) ?? null,
+    close_reason: normalizeCloseReason(row.close_reason),
     preview_text: kind === 'profile_update' ? null : ((row.preview_text as string | null) ?? null),
     message_count: kind === 'profile_update' ? 0 : Number(row.message_count ?? 0),
   };
@@ -93,6 +98,7 @@ export function normalizeChatSessionRow(row: Record<string, unknown>): ChatSessi
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
     closed_at: (row.closed_at as string | null) ?? null,
+    close_reason: normalizeCloseReason(row.close_reason),
   };
 }
 
