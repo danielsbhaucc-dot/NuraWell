@@ -15,7 +15,7 @@ import {
   type InboxSession,
   type InboxTimeFolderId,
 } from '../../lib/client/chat-session-inbox-organize';
-import { greenGlassButtonStyle, chipStyle, INBOX_TIME_COLORS } from '../../lib/client/chat-inbox-colors';
+import { greenGlassButtonStyle, chipStyle, glassTint, INBOX_TIME_COLORS } from '../../lib/client/chat-inbox-colors';
 import type { ChatSessionListItemClient } from '../../lib/client/chat-session-api';
 
 const TOPIC_EMOJIS: Record<string, string> = {
@@ -63,7 +63,7 @@ function InboxTabBar({
 
   return (
     <div
-      className="shrink-0 border-b bg-[#0f172a] px-3 pb-3 pt-2"
+      className="shrink-0 border-b border-emerald-400/10 bg-[#0f172a] px-3 pb-3 pt-2"
       role="tablist"
       aria-label="ניווט שיחות"
     >
@@ -152,44 +152,55 @@ function SessionRow({
     );
   }
 
+  const accent = topic?.accent ?? '#64748b';
+  const emoji = TOPIC_EMOJIS[topic?.id ?? 'general'] ?? '💬';
+
   return (
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full rounded-xl border px-3 py-2.5 text-start transition ${
-        isActive
-          ? 'border-emerald-400/40'
-          : 'border-white/10 bg-background-card/4 hover:bg-background-card/6'
-      }`}
+      className="relative w-full overflow-hidden rounded-2xl px-3 py-2.5 text-start transition active:scale-[0.99]"
+      style={{
+        background: `linear-gradient(135deg, ${glassTint(accent, isActive ? 0.24 : 0.14)} 0%, ${glassTint(accent, 0.04)} 70%)`,
+        border: `1px solid ${glassTint(accent, isActive ? 0.55 : 0.22)}`,
+        boxShadow: isActive ? `0 6px 20px ${glassTint(accent, 0.25)}` : undefined,
+      }}
     >
-      <div className="flex items-start gap-2">
+      <span aria-hidden className="absolute inset-y-2 inset-s-0 w-[3px] rounded-full" style={{ background: accent }} />
+      <div className="flex items-start gap-2.5">
         <span
-          className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
-          style={{
-            background: topic?.accent ?? '#64748b',
-            boxShadow: isOpen ? `0 0 0 3px ${(topic?.accent ?? '#64748b')}33` : undefined,
-            opacity: isOpen ? 1 : 0.55,
-          }}
+          className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[17px] leading-none"
+          style={{ background: glassTint(accent, 0.22), boxShadow: `inset 0 0 0 1px ${glassTint(accent, 0.35)}` }}
           aria-hidden
-        />
+        >
+          {emoji}
+        </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-baseline justify-between gap-2">
-            <RetypingTitle text={title} className="line-clamp-1 text-[13px] font-semibold text-slate-100" />
-            <span className="shrink-0 text-[10px] text-slate-500">
+            <RetypingTitle text={title} className="line-clamp-1 text-[13.5px] font-bold text-slate-50" />
+            <span className="shrink-0 text-[10px] text-slate-400">
               {formatSessionRelativeTime(session.updated_at)}
             </span>
           </span>
           {preview ? (
-            <span className="mt-0.5 line-clamp-1 text-[11px] text-slate-400">{preview}</span>
+            <span className="mt-0.5 line-clamp-1 text-[11.5px] text-slate-300/80">{preview}</span>
           ) : null}
-          {topic ? (
-            <span
-              className="mt-1 inline-flex rounded-full px-2 py-[1px] text-[10px] font-semibold"
-              style={{ background: `${topic.accent}22`, color: topic.accent, border: `1px solid ${topic.accent}55` }}
-            >
-              {topic.label}
-            </span>
-          ) : null}
+          <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {topic ? (
+              <span
+                className="inline-flex rounded-full px-2 py-[1px] text-[10px] font-bold"
+                style={{ background: glassTint(accent, 0.2), color: accent }}
+              >
+                {topic.label}
+              </span>
+            ) : null}
+            {isOpen ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-[1px] text-[10px] font-bold text-emerald-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden />
+                פתוחה
+              </span>
+            ) : null}
+          </span>
         </span>
       </div>
     </button>
@@ -218,6 +229,9 @@ function AccordionSection({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const emoji = kind === 'topic' ? (TOPIC_EMOJIS[id] ?? '💬') : null;
+  const tone =
+    accent ??
+    (INBOX_TIME_COLORS[id as keyof typeof INBOX_TIME_COLORS]?.main ?? '#10b981');
 
   return (
     <section>
@@ -227,19 +241,26 @@ function AccordionSection({
         aria-expanded={open}
         className="mb-2 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-start transition active:scale-[0.98]"
         style={{
-          background: open ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
-          border: `1px solid ${open ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.06)'}`,
+          background: `linear-gradient(90deg, ${glassTint(tone, open ? 0.3 : 0.18)} 0%, ${glassTint(tone, 0.06)} 100%)`,
+          border: `1px solid ${glassTint(tone, open ? 0.45 : 0.25)}`,
         }}
       >
-        {emoji ? (
-          <span className="text-[16px] leading-none" aria-hidden>{emoji}</span>
-        ) : null}
-        <span className="flex-1 text-[14px] font-bold text-slate-200">{label}</span>
-        <span className="rounded-full bg-background-card/10 px-2 py-px text-[10px] font-bold text-slate-400">
+        <span
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[16px] leading-none"
+          style={{ background: tone, boxShadow: `0 4px 12px ${glassTint(tone, 0.4)}` }}
+          aria-hidden
+        >
+          {emoji ?? <span className="h-2.5 w-2.5 rounded-full bg-white/90" />}
+        </span>
+        <span className="flex-1 text-[14px] font-black text-white">{label}</span>
+        <span
+          className="rounded-full px-2 py-px text-[11px] font-black"
+          style={{ background: glassTint(tone, 0.3), color: '#fff' }}
+        >
           {sessions.length}
         </span>
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.22 }} className="shrink-0">
-          <ChevronDown className="h-4 w-4 text-slate-500" aria-hidden />
+          <ChevronDown className="h-4 w-4 text-white/70" aria-hidden />
         </motion.span>
       </button>
 
@@ -253,7 +274,7 @@ function AccordionSection({
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] as const }}
             className="overflow-hidden"
           >
-            <ul className="mb-3 space-y-1.5 pe-1">
+            <ul className="mb-3 space-y-2 pe-1">
               {sessions.map((session) => (
                 <li key={session.id}>
                   <SessionRow
@@ -296,7 +317,7 @@ export function ChatSessionInbox({
   const [tab, setTab] = useState<InboxTab>('new');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFolder, setActiveFolder] = useState<InboxFolderId>('all');
-  const [topicsOpen, setTopicsOpen] = useState(false);
+  const [topicsOpen, setTopicsOpen] = useState(true);
 
   const inboxSessions = sessions as InboxSession[];
   const folderChips = useMemo(
@@ -377,7 +398,7 @@ export function ChatSessionInbox({
                       onStartNewChat();
                     }
                   }}
-                  className="w-full rounded-xl border border-white/10 bg-background-card/4 px-3 py-3 text-[13px] font-semibold text-slate-200 transition active:scale-[0.98] hover:border-emerald-400/25 hover:bg-emerald-500/10 disabled:opacity-60"
+                  className="w-full rounded-xl border border-emerald-400/15 bg-background-card/4 px-3 py-3 text-[13px] font-semibold text-slate-200 transition active:scale-[0.98] hover:border-emerald-400/25 hover:bg-emerald-500/10 disabled:opacity-60"
                 >
                   {chip.label}
                 </button>
@@ -399,7 +420,7 @@ export function ChatSessionInbox({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="חיפוש בשיחות..."
-                className="w-full rounded-xl border border-white/10 bg-background-card/4 py-2.5 pe-8 ps-9 text-[13px] text-white outline-hidden placeholder:text-slate-500 focus:border-emerald-400/35"
+                className="w-full rounded-xl border border-emerald-400/15 bg-background-card/4 py-2.5 pe-8 ps-9 text-[13px] text-white outline-hidden placeholder:text-slate-500 focus:border-emerald-400/35"
               />
               {searchQuery ? (
                 <button
@@ -437,7 +458,7 @@ export function ChatSessionInbox({
             ) : null}
 
             {!trimmedSearch && topicChips.length > 0 ? (
-              <div className="rounded-xl border bg-background-card/2">
+              <div className="rounded-xl border border-white/5 bg-background-card/2">
                 <button
                   type="button"
                   aria-expanded={topicsOpen}
@@ -464,7 +485,7 @@ export function ChatSessionInbox({
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] as const }}
-                      className="overflow-hidden border-t"
+                      className="overflow-hidden border-t border-white/5"
                     >
                       <div className="px-1 py-2">
                         <HorizontalChipRow>
