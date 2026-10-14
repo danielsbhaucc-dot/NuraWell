@@ -4,13 +4,17 @@
  *    (lying/covering, skipping rules, "tell me I'm right", adult-line requests)
  *  • grok (grok-4.5):   argument / attack / accusation (incl. subtle & indirect) / soft disagreement / excuses
  *  • gpt (empathy):     sadness, breaking down, shame, loneliness, hard day → terra (or AI_CHAT_WRITER_EMPATHY, e.g. gpt-5.4-mini)
- *  • cheap (haiku-5.5): everything else — routine, chit-chat, light turns, nutrition questions (non-crisis)
+ *  • cheap (luna, Daniel round 2): everything else — routine, chit-chat, light turns, nutrition questions (non-crisis)
  *  • abuse-only daily soft cap → cheap lane for non-safety turns (never blocks)
  * The cheap model is NOT steered into arguments — those go to grok.
  */
 import type { ChatWriterKey } from './chat-writer-fleet';
 
 export const HAIKU_SLUG_DEFAULT = 'anthropic/claude-haiku-5.5';
+/** Cheap lane = the fleet everyday writer (luna). AI_CHAT_WRITER_CHEAP_V3 overrides (e.g. haiku). */
+export function cheapSlug(): string | null {
+  return process.env.AI_CHAT_WRITER_CHEAP_V3?.trim() || null;
+}
 export function routingV3Enabled(): boolean {
   return (process.env.ALMOG_ROUTING_V3 ?? '').trim() === '1';
 }
@@ -61,5 +65,5 @@ export function routeV3(text: string, tags: string[]): V3Route {
   if (lane === 'grok') return { writer: 'grok', slug: null, lane: 'grok' };
   if (lane === 'gpt') return { writer: 'terra', slug: empathySlug(), lane: 'gpt_empathy' };
   const t = text.trim();
-  return { writer: 'llama4', slug: haikuSlug(), lane: 'cheap_haiku', light: t.length <= 40 && LIGHT_RE.test(t) };
+  return { writer: 'llama4', slug: cheapSlug(), lane: 'cheap_luna', light: t.length <= 40 && LIGHT_RE.test(t) };
 }
