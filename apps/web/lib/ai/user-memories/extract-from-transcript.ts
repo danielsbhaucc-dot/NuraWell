@@ -8,7 +8,7 @@ function stripMarkdownFences(text: string): string {
   return (fence ? fence[1] : text).trim();
 }
 
-function parseFactsPayload(raw: string): ExtractedMemoryFact[] {
+export function parseFactsPayload(raw: string): ExtractedMemoryFact[] {
   const stripped = stripMarkdownFences(raw);
   const start = stripped.indexOf('{');
   const end = stripped.lastIndexOf('}');
