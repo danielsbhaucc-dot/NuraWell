@@ -508,7 +508,7 @@ function ThreadHeaderIconButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-background-card/6 text-white backdrop-blur-md transition hover:bg-background-card/12 active:scale-95 disabled:opacity-50"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-emerald-100/10 bg-background-card/6 text-white backdrop-blur-md transition hover:bg-background-card/12 active:scale-95 disabled:opacity-50"
     >
       {children}
     </button>
@@ -1384,7 +1384,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
             height: sheetHeight,
             minHeight: sheetHeight,
             maxHeight: sheetHeight,
-            border: '1px solid rgba(255,255,255,0.18)',
+            border: '1px solid rgba(52,211,153,0.12)',
             background: 'linear-gradient(180deg, rgba(15,23,42,0.96), rgba(2,6,23,0.96))',
             boxShadow: '0 -24px 60px rgba(2,6,23,0.45)',
           }}
@@ -1609,7 +1609,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                     className="max-w-[88%] rounded-[20px] rounded-bl-md px-4 py-3 text-[15px] leading-relaxed text-white shadow-lg"
                     style={{
                       background: 'linear-gradient(145deg, #059669 0%, #10b981 100%)',
-                      border: '1px solid rgba(255,255,255,0.22)',
+                      border: '1px solid rgba(167,243,208,0.16)',
                       boxShadow: '0 8px 24px rgba(16,185,129,0.28)',
                     }}
                   >
@@ -1718,7 +1718,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                           style={{
                             background:
                               'linear-gradient(145deg, rgba(51,65,85,0.92), rgba(30,41,59,0.88))',
-                            border: '1px solid rgba(255,255,255,0.1)',
+                            border: '1px solid rgba(148,163,184,0.10)',
                             boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
                           }}
                         >
@@ -1751,7 +1751,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                           className="max-w-[82%] rounded-[20px] rounded-ee-md px-3.5 py-2.5 text-[14px] leading-relaxed text-white"
                           style={{
                             background: 'linear-gradient(145deg, #047857 0%, #059669 55%, #10b981 100%)',
-                            border: '1px solid rgba(255,255,255,0.22)',
+                            border: '1px solid rgba(167,243,208,0.16)',
                             boxShadow: '0 8px 22px rgba(16,185,129,0.28)',
                           }}
                         >
@@ -1793,14 +1793,14 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                     className="max-w-[80%] rounded-[20px] rounded-ee-md px-3.5 py-2.5 text-[14px] text-white"
                     style={{
                       background: 'linear-gradient(145deg, rgba(51,65,85,0.85), rgba(30,41,59,0.8))',
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      border: '1px solid rgba(148,163,184,0.10)',
                     }}
                   >
                     <div className="inline-flex items-center gap-2">
                       <AlmogChatTypingDots />
                     </div>
                     {isLongWait ? (
-                      <div className="mt-2 border-t border-white/10 pt-2 text-[11px] leading-relaxed text-slate-300">
+                      <div className="mt-2 border-t border-slate-400/10 pt-2 text-[11px] leading-relaxed text-slate-300">
                         <p>לפעמים תשובה טובה לוקחת עוד קצת.</p>
                         {!notifyWhenReady ? (
                           <button
@@ -1838,7 +1838,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
             </div>
 
             <div
-              className="shrink-0 border-t bg-[#0c1222]/95 px-3 pt-2 backdrop-blur-md"
+              className="shrink-0 border-t border-emerald-400/10 bg-[#0c1222]/95 px-3 pt-2 backdrop-blur-md"
               style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))' }}
             >
               {isSessionClosed && (
@@ -1870,7 +1870,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                       type="button"
                       disabled={sessionActionLoading}
                       onClick={() => void handleReopenChatSession()}
-                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-background-card/10 px-3 py-2 text-xs font-bold text-white backdrop-blur-md transition hover:bg-background-card/15 disabled:opacity-50"
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-emerald-300/15 bg-background-card/10 px-3 py-2 text-xs font-bold text-white backdrop-blur-md transition hover:bg-background-card/15 disabled:opacity-50"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                       פתיחה מחדש
@@ -1948,7 +1948,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                 />
               ) : null}
               <form
-                className="flex items-end gap-2 rounded-2xl border bg-background-card/6 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                className="flex items-end gap-2 rounded-2xl border border-emerald-400/15 bg-background-card/6 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
                   onSubmit={(e) => {
                     e.preventDefault();
                     const text = input.trim();

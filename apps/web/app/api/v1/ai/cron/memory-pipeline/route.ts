@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/v1/ai/cron/memory-pipeline — one QStash schedule (hourly) for the whole memory chain:
- *  every hour: close idle sessions (CHAT_SESSION_STALE_HOURS, default 2h) → dated key points + memory facts.
+ *  every hour: close idle sessions (CHAT_SESSION_STALE_HOURS, default 1h) → dated key points + memory facts.
  *  at 03:00 IL (or ?full=1): consolidate pending logs into memory facts, then roll up due tiers
  *  (daily → weekly → monthly → … → annual), then the behaviour-pattern insights batch.
  *  Each step is independent; one failing doesn't stop the rest.

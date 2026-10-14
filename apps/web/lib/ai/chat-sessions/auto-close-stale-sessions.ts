@@ -1,11 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { closeChatSession } from './close-session';
 
-/** סשן נסגר אוטומטית אם המשתמש לא הגיב תוך X שעות מתשובת אלמוג האחרונה. */
+/** סשן נסגר אוטומטית אם המשתמש לא הגיב תוך X שעות מתשובת אלמוג האחרונה (ברירת מחדל: שעה). */
 export function staleChatSessionMs(): number {
   const raw = process.env.CHAT_SESSION_STALE_HOURS?.trim();
   const hours = raw ? Number(raw) : NaN;
-  const h = Number.isFinite(hours) && hours >= 0.5 && hours <= 72 ? hours : 2;
+  const h = Number.isFinite(hours) && hours >= 0.5 && hours <= 72 ? hours : 1;
   return h * 60 * 60 * 1000;
 }
 

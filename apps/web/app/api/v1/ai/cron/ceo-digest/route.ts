@@ -46,6 +46,8 @@ async function handle(request: Request) {
 
   // Nightly "Almog checks" ride on the fixed 21:00 schedule only (not on the delayed digest run).
   const almogChecks = scheduled ? null : await runNightlyTaskMerge(db).catch((e) => ({ error: String(e).slice(0, 200) }));
+  // audit trail so the nightly merge's last run is visible (it was only logged by the manual route)
+  if (almogChecks) await db.from('ceo_audit_log').insert({ actor: 'cron', event: 'almog_checks', detail: almogChecks }).then(() => null, () => null);
   if (!(await resolveBotToken())) return NextResponse.json({ skipped: 'telegram not configured', almogChecks });
   if (!settings.digest_enabled && !forced) return NextResponse.json({ skipped: 'digest disabled', almogChecks });
 
