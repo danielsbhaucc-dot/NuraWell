@@ -5,7 +5,7 @@ export const runtime = 'edge';
 export const preferredRegion = 'iad1';
 export const dynamic = 'force-dynamic';
 
-const ALLOWED_FORWARD = new Set(['http-referer', 'x-title', 'x-openrouter-cache']);
+const ALLOWED_FORWARD = new Set(['x-grok-conv-id', 'http-referer', 'x-title', 'x-openrouter-cache']);
 
 export async function POST(req: Request) {
   const secret = process.env.CRON_SECRET;
