@@ -717,6 +717,7 @@ async function createOpenRouterTextStreamResponse({
   reasoning,
   supportsPromptCache,
   providerOnly,
+  cacheConvId,
 }: {
   apiKey: string;
   referer: string;
@@ -733,6 +734,8 @@ async function createOpenRouterTextStreamResponse({
   reasoning: OpenRouterReasoning | null;
   supportsPromptCache: boolean;
   providerOnly?: readonly string[];
+  /** Stable per-conversation id → x-grok-conv-id (sticky xAI server = prefix cache hits, ~-69% cost in probe). */
+  cacheConvId?: string | null;
 }) {
   const perfT0 = Date.now();
   let perfGenId: string | null = null;
@@ -821,6 +824,7 @@ async function createOpenRouterTextStreamResponse({
       'HTTP-Referer': referer,
       'X-Title': 'NuraWell',
       'X-OpenRouter-Cache': 'false',
+      ...(grokLike && cacheConvId ? { 'x-grok-conv-id': `nw-${cacheConvId}` } : {}),
     });
     console.info('[ai/chat]', { stage: 'writer_upstream_open', model, attempt, status: upstream.status, prep_ms: perfPrepMs, fetch_ms: Date.now() - perfFetchAt, body_chars: requestBody.length });
     if (upstream.ok) break;
@@ -3615,9 +3619,7 @@ async function handleChatPost(request: Request) {
       continuityAnchor,
       freshSessionLine,
       writerStancePrompt(heuristicAnalysis.tags),
-      stickyResult.stickyApplied
-        ? `[נתב] ממשיך ${mcfg.writer} מאותו עימות/גבול. כשהנושא מתחלף חוזרים ל-Terra.`
-        : `[נתב] כותב לפי חוזקה: Claude=גבול, Grok=תירוץ/ויכוח/התקפה, Terra=אמפתיה/שגרה, Llama=קצר. בחירה להודעה: ${mcfg.writer}.`,
+      // [נתב] line removed: it named the models (Claude/Grok/Terra/Llama) to the writer — leak risk, no quality value (judge test 2026-10-14).
     ]
       .filter(Boolean)
       .join('\n');
@@ -3625,6 +3627,15 @@ async function handleChatPost(request: Request) {
       // light turn / crisis turn: background-only sections (memory, progress, lessons) add tokens, not quality
       const heavy = /^\[(?:רמזי זיכרון|RAG|זיכרון בין-שיחות|שיחות קודמות|סיכומי שיחות|דו"ח התקדמות|שיעורים קרובים|מדריכים|חומר עזר מהמסע|אסטרטגיית מנטור|תיק זיכרון)/;
       const kept = contextSections.filter((x) => !heavy.test(x.trim()));
+      contextSections.splice(0, contextSections.length, ...kept);
+    }
+    if (v3?.lane === 'gpt_empathy') {
+      // Terra empathy: journey/progress/lessons/strategy sections don't help an emotional reply (judge: 51 pairs, equal wins, -16% prompt tokens). Memory + plan stay.
+      const terraHeavy = new Set(
+        [mentorStrategyBlock, guideContextBlock, stationRules.trim(), journeyStateLine.trim(), upcomingLessonsLine]
+          .filter((x): x is string => typeof x === 'string' && x.length > 0)
+      );
+      const kept = contextSections.filter((x) => !terraHeavy.has(x) && !terraHeavy.has(x.trim()));
       contextSections.splice(0, contextSections.length, ...kept);
     }
     if (almogPromptV2Enabled()) {
@@ -3635,8 +3646,7 @@ async function handleChatPost(request: Request) {
     const dynamicSystemPrompt = [
       '— מה שידוע לך על השיחה הזו —',
       writerPersona,
-      continuityAnchor,
-      freshSessionLine,
+      // continuityAnchor / freshSessionLine already go in turnStance below (were sent twice)
       ...contextSections,
       '',
       '— פנייה אישית —',
@@ -4397,6 +4407,7 @@ async function handleChatPost(request: Request) {
         reasoning: reasoningParam,
         supportsPromptCache: mcfg.supportsPromptCache,
         providerOnly: mcfg.providerOnly,
+        cacheConvId: sessionId,
         onEmptyRetry: emptyRetryHandler,
         onFinish: handleChatFinish,
       });

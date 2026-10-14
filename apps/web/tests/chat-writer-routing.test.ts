@@ -48,7 +48,7 @@ describe('chat writer routing', () => {
 
   it('routes "talking nonsense" as Grok accusation, not a confession lecture', () => {
     expect(heuristicWriterDecision('למה אתה מדבר שטויות', emptySignals)).toBe('grok');
-    expect(writerStancePrompt(['accusation'])).toMatch(/אל תמציא חטא|אל תתוודה/);
+    expect(writerStancePrompt(['accusation'])).toMatch(/לא ממציאים חטא|לא מתוודים|מתוודים/);
   });
 
   it('routes frustrated conflict to Grok not Claude', () => {
@@ -192,22 +192,22 @@ describe('chat writer routing', () => {
   });
 
   it('keeps mixed-intent stance prompts for Claude and Grok lanes', () => {
-    expect(writerStancePrompt(['empathy', 'adult'])).toMatch(/כאב אמיתי וגם גבול/);
+    expect(writerStancePrompt(['empathy', 'adult'])).toMatch(/כואב לו באמת, וגם צריך גבול/);
     expect(writerStancePrompt(['evasion'])).toMatch(/אל תקנה|בלי לקנות/);
-    expect(writerStancePrompt(['evasion'])).toMatch(/סקריפט אימון|בחירה בינארית/);
+    expect(writerStancePrompt(['evasion'])).toMatch(/תסריט של מאמן/);
     expect(writerStancePrompt(['evasion'])).not.toMatch(/1\)/);
     expect(writerStancePrompt(['people_please'])).toMatch(/אל תרצה|בלי לרצות/);
-    expect(writerStancePrompt(['people_please'])).toMatch(/עולם שלו|גובה עיניים/);
-    expect(writerStancePrompt(['argument'])).toMatch(/בחן|העמד במקום|אל תרצה|עובדות/);
+    expect(writerStancePrompt(['people_please'])).toMatch(/מה באמת קורה|ישירה/);
+    expect(writerStancePrompt(['argument'])).toMatch(/אמת לפני ריצוי|בלי להתקפל/);
     expect(writerStancePrompt(['accusation'])).toMatch(/אתה צודק|עובדות|אמת/);
   });
 
   it('covers Terra empathy/coaching and Llama short stances', () => {
-    expect(writerStancePrompt(['empathy'])).toMatch(/אמפתיה תותחית|רגש רך|עולם שלו/);
-    expect(writerStancePrompt(['empathy'])).toMatch(/בלי מטאפורות קבועות/);
-    expect(writerStancePrompt(['coaching'])).toMatch(/שגרה\/תזונה/);
-    expect(writerStancePrompt(['simple'])).toMatch(/תודה\/עשיתי/);
-    expect(writerStancePrompt(['safety'])).toMatch(/גבול\/בטיחות/);
+    expect(writerStancePrompt(['empathy'])).toMatch(/רגש, בלי עימות/);
+    expect(writerStancePrompt(['empathy'])).toMatch(/בלי דימויים/);
+    expect(writerStancePrompt(['coaching'])).toMatch(/שגרה או אוכל/);
+    expect(writerStancePrompt(['simple'])).toMatch(/"תודה" או "עשיתי"/);
+    expect(writerStancePrompt(['safety'])).toMatch(/גבול או בטיחות/);
   });
 });
 
@@ -228,14 +228,14 @@ describe('Almog voice: enter world without people-pleasing', () => {
   });
 
   it('gives each writer a distinct persona card, not a one-line overlay', () => {
-    expect(buildAlmogWriterPersona('grok')).toMatch(/כותב ההודעה: Grok/);
+    expect(buildAlmogWriterPersona('grok')).toMatch(/החצוף עם החיוך/);
     expect(buildAlmogWriterPersona('grok')).toMatch(/למה אתה מדבר שטויות/);
     expect(buildAlmogWriterPersona('grok')).not.toMatch(/אם דיברתי מלמעלה/);
-    expect(buildAlmogWriterPersona('claude5')).toMatch(/כותב ההודעה: Claude/);
-    expect(buildAlmogWriterPersona('claude5')).toMatch(/קו שלא מתקפל/);
-    expect(buildAlmogWriterPersona('terra')).toMatch(/כותב ההודעה: Terra/);
-    expect(buildAlmogWriterPersona('terra')).toMatch(/כניסה ≠ ריצוי/);
-    expect(buildAlmogWriterPersona('llama4')).toMatch(/תודה\/עשיתי/);
+    expect(buildAlmogWriterPersona('claude5')).toMatch(/החבר הבוגר/);
+    expect(buildAlmogWriterPersona('claude5')).toMatch(/לא מתקפל/);
+    expect(buildAlmogWriterPersona('terra')).toMatch(/החבר שמרגיש/);
+    expect(buildAlmogWriterPersona('terra')).toMatch(/לא לרצות/);
+    expect(buildAlmogWriterPersona('llama4')).toMatch(/"תודה" או "עשיתי"/);
     expect(buildAlmogWriterPersona('grok')).not.toEqual(buildAlmogWriterPersona('terra'));
   });
 
