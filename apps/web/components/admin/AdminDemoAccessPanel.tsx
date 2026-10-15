@@ -55,6 +55,7 @@ export function AdminDemoAccessPanel() {
   const [busy, setBusy] = useState<string | null>(null);
 
   const [targetUserId, setTargetUserId] = useState('');
+  const [defaultTargetId, setDefaultTargetId] = useState('');
   const [reason, setReason] = useState('');
   const [guestName, setGuestName] = useState('');
   const [ttlMinutes, setTtlMinutes] = useState(120);
@@ -67,10 +68,17 @@ export function AdminDemoAccessPanel() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const [linksRes, usersRes] = await Promise.all([
+      const [linksRes, usersRes, settingsRes] = await Promise.all([
         fetch('/api/v1/admin/demo-access', { credentials: 'include' }),
         fetch('/api/v1/admin/users?limit=100', { credentials: 'include' }),
+        fetch('/api/v1/admin/demo-access/settings', { credentials: 'include' }),
       ]);
+      if (settingsRes.ok) {
+        const st = await settingsRes.json();
+        const d = st.default_target_user_id ?? '';
+        setDefaultTargetId(d);
+        setTargetUserId((cur) => cur || d);
+      }
       const linksData = await linksRes.json();
       const usersData = await usersRes.json();
       if (!linksRes.ok) {
@@ -109,6 +117,30 @@ export function AdminDemoAccessPanel() {
       u.role.toLowerCase().includes(q)
     );
   });
+
+  const saveDefaultTarget = async (id: string) => {
+    setBusy('default');
+    setError(null);
+    try {
+      const res = await fetch('/api/v1/admin/demo-access/settings', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ default_target_user_id: id || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? 'שמירה נכשלה');
+        return;
+      }
+      setDefaultTargetId(id);
+      if (!targetUserId) setTargetUserId(id);
+    } catch {
+      setError('שגיאת רשת');
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const createLink = async () => {
     setBusy('create');
@@ -258,6 +290,25 @@ export function AdminDemoAccessPanel() {
         </p>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <label className="block sm:col-span-2">
+            <span className="mb-1.5 block text-sm font-semibold text-slate-700">
+              משתמש דמו ברירת מחדל (נבחר אוטומטית כאן, וגם גדעון משתמש בו)
+            </span>
+            <select
+              value={defaultTargetId}
+              disabled={busy === 'default'}
+              onChange={(e) => void saveDefaultTarget(e.target.value)}
+              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+            >
+              <option value="">לא הוגדר</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {(u.full_name || 'ללא שם') + (u.email ? ` · ${u.email}` : '') + ` · ${u.role}`}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <label className="block sm:col-span-2">
             <span className="mb-1.5 block text-sm font-semibold text-slate-700">חיפוש משתמש יעד</span>
             <input

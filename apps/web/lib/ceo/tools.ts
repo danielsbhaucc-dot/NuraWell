@@ -5,7 +5,7 @@ import { buildBusinessMetrics } from '@/lib/admin/business-metrics';
 import { deleteUserCompletely } from '@/lib/admin/delete-user-completely';
 import { opsLink } from './channel';
 import { openOwnerTasks, setOwnerTask } from './owner-tasks';
-import { createDemoAccessLink, resolveCeoActorUserId, resolveDefaultDemoTarget } from '@/lib/demo-access/create';
+import { createDemoAccessLink, resolveCeoActorUserId, readDemoDefaultTarget } from '@/lib/demo-access/create';
 
 /**
  * CEO tool registry. Read tools run immediately; write tools are NEVER executed by the model —
@@ -288,7 +288,7 @@ const GENERIC: CeoTool[] = [
     name: 'create_demo_link',
     secretResult: true,
     description:
-      'Create a demo access link for a guest (the ONLY way to create demo links — never db_insert into demo_access_links). The server generates the token, stores only its hash and returns the real URL after approval. Default target = the usual demo account.',
+      'Create a demo access link for a guest (the ONLY way to create demo links — never db_insert into demo_access_links). The server generates the token, stores only its hash and returns the real URL after approval. Target = the default demo account set in the Ops dashboard; pass targetUserId only if Daniel names a specific account (find it with list_users / db_read profiles).',
     schema: z.object({
       guest_name: z.string().trim().min(1).max(80).optional(),
       hours: z.number().int().min(1).max(168).default(24),
@@ -297,10 +297,10 @@ const GENERIC: CeoTool[] = [
       max_claims: z.number().int().min(1).max(500).optional(),
     }),
     write: true,
-    summarize: (a) => `יצירת קישור דמו${a.guest_name ? ` ל${a.guest_name}` : ''}, בתוקף ${a.hours === 24 ? 'ליממה' : `ל-${a.hours} שעות`}${a.max_claims ? `, עד ${a.max_claims} כניסות` : ''}`,
+    summarize: (a) => `יצירת קישור דמו${a.guest_name ? ` ל${a.guest_name}` : ''}, בתוקף ${a.hours === 24 ? 'ליממה' : `ל-${a.hours} שעות`}${a.max_claims ? `, עד ${a.max_claims} כניסות` : ''}${a.targetUserId ? `, לחשבון של ${a.targetUserId}` : ''}`,
     run: async (db, a) => {
-      const target = (a.targetUserId as string | undefined) ?? (await resolveDefaultDemoTarget(db));
-      if (!target) throw new Error('no demo target user');
+      const target = (a.targetUserId as string | undefined) ?? (await readDemoDefaultTarget(db));
+      if (!target) throw new Error('לא הוגדר משתמש דמו ברירת מחדל בדשבורד (Ops ← גישת דמו)');
       const r = await createDemoAccessLink(db, {
         target_user_id: target,
         reason: String(a.reason),

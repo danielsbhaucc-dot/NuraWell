@@ -66,14 +66,16 @@ export async function createDemoAccessLink(admin: SupabaseClient, input: CreateD
   };
 }
 
-/** Default demo target: env DEMO_TARGET_USER_ID → the most recently used demo target → the 'test' role user. */
-export async function resolveDefaultDemoTarget(admin: SupabaseClient): Promise<string | null> {
-  const env = process.env.DEMO_TARGET_USER_ID?.trim();
-  if (env) return env;
-  const { data: last } = await admin.from('demo_access_links').select('target_user_id').order('created_at', { ascending: false }).limit(1).maybeSingle();
-  if (last?.target_user_id) return String(last.target_user_id);
-  const { data: t } = await admin.from('profiles').select('id').eq('role', 'test').limit(1).maybeSingle();
-  return t?.id ? String(t.id) : null;
+/** Default demo target = the one set in Ops (site_settings.demo_default_target_user_id). No silent fallback. */
+export async function readDemoDefaultTarget(admin: SupabaseClient): Promise<string | null> {
+  const { data } = await admin.from('site_settings').select('demo_default_target_user_id').eq('id', 1).maybeSingle();
+  const v = (data as { demo_default_target_user_id?: string | null } | null)?.demo_default_target_user_id;
+  return v ? String(v) : null;
+}
+
+export async function writeDemoDefaultTarget(admin: SupabaseClient, userId: string | null): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await admin.from('site_settings').update({ demo_default_target_user_id: userId, updated_at: new Date().toISOString() }).eq('id', 1);
+  return error ? { ok: false, error: error.message } : { ok: true };
 }
 
 /** demo_access_links.created_by is NOT NULL: Gideon acts on behalf of the owner (env CEO_ADMIN_USER_ID → first admin). */
