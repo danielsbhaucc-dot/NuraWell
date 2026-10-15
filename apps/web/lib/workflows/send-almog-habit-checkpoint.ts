@@ -1,4 +1,5 @@
-import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -335,7 +336,7 @@ async function clearHabitTuneFlag(admin: SupabaseClient, userId: string): Promis
     const next = { ...ctx };
     delete next.almog_habit_tune;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await admin.from('profiles').update(encryptProfilePatch({ ai_context: next }, userId)).eq('id', userId);
+    await admin.from('profiles').update(await sealProfilePatch({ ai_context: next }, userId)).eq('id', userId);
   } catch (e) {
     await reportError(e, {
       source: 'habit-checkpoint.clear-habit-tune-flag',

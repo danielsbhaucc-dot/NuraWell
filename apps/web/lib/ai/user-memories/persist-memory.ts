@@ -1,4 +1,4 @@
-import { encryptTableRow } from '@/lib/crypto/pii-fields';
+import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { embedTextForRag } from '../openrouter-embeddings';
 import { normalizeFactTextForDedupe, stableMemoryVectorId } from '../memory-fact-dedupe';
 import { UPSTASH_NAMESPACE_USER_MEMORY } from '../rag-config';
@@ -73,11 +73,11 @@ export async function persistUserMemory(params: PersistUserMemoryParams): Promis
   const { data, error } = existing?.id
     ? await admin
         .from('user_memories')
-        .update(encryptTableRow('user_memories', row, row.user_id))
+        .update(await sealTableRow('user_memories', row, row.user_id))
         .eq('id', existing.id)
         .select('id, upstash_vector_id')
         .single()
-    : await admin.from('user_memories').insert(encryptTableRow('user_memories', row, row.user_id)).select('id, upstash_vector_id').single();
+    : await admin.from('user_memories').insert(await sealTableRow('user_memories', row, row.user_id)).select('id, upstash_vector_id').single();
 
   if (error) throw error;
 

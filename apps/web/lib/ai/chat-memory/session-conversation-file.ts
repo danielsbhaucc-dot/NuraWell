@@ -1,4 +1,5 @@
-import { decProfileResult, encryptTableRow, encryptProfilePatch } from '@/lib/crypto/pii-fields';
+import { sealTableRow, sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fallbackLiveConversationFile } from '../chat-conversation-file';
@@ -34,7 +35,7 @@ export async function updateSessionLiveConversationFile(
   const now = new Date().toISOString();
   const { error } = await supabase
     .from('chat_sessions')
-    .update(encryptTableRow('chat_sessions', {
+    .update(await sealTableRow('chat_sessions', {
       live_conversation_file: updated,
       updated_at: now,
     }, params.userId))
@@ -100,7 +101,7 @@ export async function rollupUserChatContext(
     const ctx = (prof?.ai_context as Record<string, unknown> | null) ?? {};
     await supabase
       .from('profiles')
-      .update(encryptProfilePatch({
+      .update(await sealProfilePatch({
         ai_context: { ...ctx, chat_summary: rollup },
       }, params.userId))
       .eq('id', params.userId);

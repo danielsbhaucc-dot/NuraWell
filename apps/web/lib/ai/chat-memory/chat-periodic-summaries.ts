@@ -1,4 +1,5 @@
-import { decTableResult, encryptTableRow } from '@/lib/crypto/pii-fields';
+import { sealTableRow } from '@/lib/crypto/pii-seal';
+import { decTableResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import { hasPlaceholderCorruption } from '../safety/memory-text-guard';
 /**
@@ -112,7 +113,7 @@ async function upsertChatPeriodicSummary(
     metrics?: Record<string, unknown>;
   }
 ): Promise<void> {
-  const { error } = await admin.from('chat_periodic_summaries').upsert(encryptTableRow('chat_periodic_summaries', {
+  const { error } = await admin.from('chat_periodic_summaries').upsert(await sealTableRow('chat_periodic_summaries', {
       user_id: row.userId,
       type: row.type,
       period_key: row.periodKey,

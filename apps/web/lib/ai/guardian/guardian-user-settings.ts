@@ -1,4 +1,5 @@
-import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AiUserContext } from '../memory';
 
@@ -74,7 +75,7 @@ export async function updateGuardianUserSettings(
     guardian_opted_in: nextGuardian.opted_in === true,
   };
 
-  const { error } = await supabase.from('profiles').update(encryptProfilePatch({ ai_context: merged }, userId)).eq('id', userId);
+  const { error } = await supabase.from('profiles').update(await sealProfilePatch({ ai_context: merged }, userId)).eq('id', userId);
   if (error) throw error;
 
   return readGuardianUserSettings(merged);

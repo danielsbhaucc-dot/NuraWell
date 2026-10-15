@@ -1,4 +1,5 @@
-import { decTableResult, encryptTableRow } from '@/lib/crypto/pii-fields';
+import { sealTableRow } from '@/lib/crypto/pii-seal';
+import { decTableResult } from '@/lib/crypto/pii-fields';
 import { isStorableMemoryText } from '../safety/memory-text-guard';
 /**
  * שמירת תובנות שחולצו לטבלת `user_insights` — עם לוגיקת מיזוג (anti-duplication).
@@ -86,7 +87,7 @@ export async function persistInsights(params: {
       const textChanged = insight.insight_text.trim() !== row.insight_text.trim();
       const { error: updateErr } = await admin
         .from('user_insights')
-        .update(encryptTableRow('user_insights', {
+        .update(await sealTableRow('user_insights', {
           insight_text: insight.insight_text,
           actionability_score: Math.max(row.actionability_score, insight.actionability_score),
           confidence: insight.confidence,
@@ -119,7 +120,7 @@ export async function persistInsights(params: {
 
     const { data: inserted, error: insertErr } = await admin
       .from('user_insights')
-      .insert(encryptTableRow('user_insights', {
+      .insert(await sealTableRow('user_insights', {
         user_id: userId,
         category: insight.category,
         insight_text: insight.insight_text,

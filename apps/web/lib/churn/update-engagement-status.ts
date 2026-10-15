@@ -1,4 +1,4 @@
-import { encryptProfilePatch } from '@/lib/crypto/pii-fields';
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
 /**
  * churn/update-engagement-status.ts
  * ---------------------------------
@@ -102,7 +102,7 @@ export async function updateEngagementStatuses(
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await admin.from('profiles').update(encryptProfilePatch(patch, row.id)).eq('id', row.id);
+      const { error } = await admin.from('profiles').update(await sealProfilePatch(patch, row.id)).eq('id', row.id);
       if (error) {
         errors.push(`${row.id}: ${error.message}`);
         continue;

@@ -1,4 +1,3 @@
-import { encryptTableRow } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 import {
   CHAT_SESSION_DETAIL_SELECTS,
@@ -39,12 +38,12 @@ export async function POST(request: Request, context: RouteContext) {
     (select) =>
       auth.supabase
         .from('chat_sessions')
-        .update(encryptTableRow('chat_sessions', {
+        .update({
           status: 'open',
           closed_at: null,
           updated_at: now,
           ...(reasonColumn ? { close_reason: null } : {}),
-        }, auth.user.id))
+        })
         .eq('id', id)
         .eq('user_id', auth.user.id)
         .select(select)
