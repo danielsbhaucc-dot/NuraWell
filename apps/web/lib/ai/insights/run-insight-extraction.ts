@@ -1,3 +1,4 @@
+import { decInteractionResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 /**
  * אורקסטרטור מנוע התובנות: מושך את ההודעות האחרונות מ-session צ'אט, מריץ את
@@ -65,7 +66,7 @@ export async function runInsightExtraction(params: {
     .limit(limit);
   if (params.sessionId) query = query.eq('session_id', params.sessionId);
 
-  const { data: rows, error } = await query;
+  const { data: rows, error } = await query.then(decInteractionResult(userId));
   if (error) {
     console.warn('[insights] fetch messages failed', { code: error.code, error: error.message });
     return EMPTY_RESULT;

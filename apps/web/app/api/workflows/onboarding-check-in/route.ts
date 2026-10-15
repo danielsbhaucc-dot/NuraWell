@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { serve } from '@upstash/workflow/nextjs';
 import { requireQstashConfigured } from '../../../../lib/workflows/require-qstash-configured';
 import { createAdminClient } from '../../../../lib/supabase/admin';
@@ -23,7 +24,7 @@ const { POST: workflowPost } = serve<WorkflowBody>(async (context) => {
       .from('profiles')
       .select('ai_system_prompt')
       .eq('id', payload.userId)
-      .maybeSingle();
+      .maybeSingle().then(decProfileResult(payload.userId));
     return ((data?.ai_system_prompt as string | null) ?? '').trim();
   });
 

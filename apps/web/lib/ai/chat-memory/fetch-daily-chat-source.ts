@@ -1,3 +1,4 @@
+import { decInteractionResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { israelDayUtcBounds } from './chat-period-keys';
 
@@ -39,7 +40,7 @@ export async function fetchDailyChatSource(
       .gte('created_at', start.toISOString())
       .lte('created_at', end.toISOString())
       .order('created_at', { ascending: true })
-      .limit(120),
+      .limit(120).then(decInteractionResult(userId)),
     admin
       .from('chat_sessions')
       .select('summary, closed_at, live_conversation_file')

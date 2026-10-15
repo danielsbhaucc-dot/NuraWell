@@ -1,3 +1,4 @@
+import { decMeasurementResult, decProfileResult } from '@/lib/crypto/pii-fields';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '../../../lib/supabase/server';
@@ -22,7 +23,7 @@ export default async function ProfilePage() {
       'id, full_name, role, avatar_url, created_at, streak_days, onboarding_completed, goal_weight_kg, current_weight_kg, height_cm, activity_level, gender, wake_up_time, sleep_time, meal_count, meal_schedule, main_goal, main_obstacle, main_obstacle_detail, weakest_time_of_day, plan'
     )
     .eq('id', user.id)
-    .single();
+    .single().then(decProfileResult(user.id));
 
   const profile = rawProfile as {
     id: string;
@@ -68,7 +69,7 @@ export default async function ProfilePage() {
         .eq('user_id', user.id)
         .order('measured_at', { ascending: false })
         .limit(1)
-        .maybeSingle(),
+        .maybeSingle().then(decMeasurementResult(user.id)),
     ]);
 
   const stats = rawStats as { lesson_id: string; is_completed: boolean }[] | null;

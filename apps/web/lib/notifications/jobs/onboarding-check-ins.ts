@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
 import { NextResponse } from 'next/server';
 import { Client as WorkflowClient } from '@upstash/workflow';
@@ -237,7 +238,7 @@ async function runOnboardingCheckInsCron(request: Request) {
       const { data: promptRows, error: promptErr } = await admin
         .from('profiles')
         .select('id, ai_system_prompt')
-        .in('id', dueIds.slice(i, i + 300));
+        .in('id', dueIds.slice(i, i + 300)).then(decProfileResult());
       if (promptErr) return NextResponse.json({ error: promptErr.message }, { status: 500 });
       for (const r of (promptRows ?? []) as Array<{ id: string; ai_system_prompt: string | null }>) {
         const p = r.ai_system_prompt?.trim();

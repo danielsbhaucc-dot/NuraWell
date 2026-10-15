@@ -1,3 +1,4 @@
+import { decMeasurementResult, decProfileResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 import { requireApiSession } from '../../../../lib/api/route-guards';
 import {
@@ -152,14 +153,14 @@ export async function GET(request: Request) {
         .from('profiles')
         .select('gender, current_weight_kg, wake_up_time, sleep_time, meal_count, meal_schedule')
         .eq('id', user.id)
-        .maybeSingle(),
+        .maybeSingle().then(decProfileResult(user.id)),
       supabase
         .from('user_measurements')
         .select('weight_kg')
         .eq('user_id', user.id)
         .order('measured_at', { ascending: false })
         .limit(1)
-        .maybeSingle(),
+        .maybeSingle().then(decMeasurementResult(user.id)),
     ]);
 
     if (stepsRes.error) {

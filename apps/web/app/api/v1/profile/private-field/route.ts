@@ -1,3 +1,4 @@
+import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
   const patch = extractedToProfilePatch(key as DiscreteFieldKey, applied.extracted[key] as string | number);
   const { error } = await auth.supabase
     .from('profiles')
-    .update({ ...patch, updated_at: new Date().toISOString() })
+    .update(encryptProfilePatch({ ...patch, updated_at: new Date().toISOString() }, auth.user.id))
     .eq('id', auth.user.id);
 
   if (error) {
@@ -83,7 +84,7 @@ export async function POST(request: Request) {
       'gender, full_name, main_goal, current_weight_kg, goal_weight_kg, weakest_time_of_day, main_obstacle, main_obstacle_detail, wake_up_time, sleep_time'
     )
     .eq('id', auth.user.id)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(auth.user.id));
 
   const gender =
     profileRow?.gender === 'male' || profileRow?.gender === 'female' ? profileRow.gender : null;

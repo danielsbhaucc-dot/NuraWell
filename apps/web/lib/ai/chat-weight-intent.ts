@@ -1,3 +1,4 @@
+import { encryptMeasurementPatch, encryptProfilePatch } from '@/lib/crypto/pii-fields';
 /**
  * זיהוי משקל מהודעת צ'אט — עדכון user_measurements בלי טופס.
  */
@@ -42,12 +43,12 @@ export async function applyWeightFromUserMessage(
   const measuredAt = new Date().toISOString().slice(0, 10);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await supabase.from('user_measurements').insert({
+  const { error } = await supabase.from('user_measurements').insert(encryptMeasurementPatch({
     user_id: userId,
     measured_at: measuredAt,
     weight_kg: weightKg,
     notes: 'מצ׳אט',
-  });
+  }, userId));
 
   if (error) {
     return { logged: false };
@@ -56,7 +57,7 @@ export async function applyWeightFromUserMessage(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await supabase
     .from('profiles')
-    .update({ current_weight_kg: weightKg })
+    .update(encryptProfilePatch({ current_weight_kg: weightKg }, userId))
     .eq('id', userId);
 
   return { logged: true, weightKg };
